@@ -1,0 +1,1457 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Avatar\Animal\AnimalCharacterConverter.h" />
+    <ClInclude Include="Avatar\Animal\AnimalCharacterEvaluator.h" />
+    <ClInclude Include="Avatar\Animal\AnimalCharacterModel.h" />
+    <ClInclude Include="Avatar\AvatarMesh.h" />
+    <ClInclude Include="Avatar\Human\HumanCharacterConverter.h" />
+    <ClInclude Include="Avatar\Human\HumanCharacterEvaluator.h" />
+    <ClInclude Include="Avatar\Human\HumanCharacterModel.h" />
+    <ClInclude Include="Camera\Camera.h" />
+    <ClInclude Include="Camera\CameraBrain.h" />
+    <ClInclude Include="Camera\CanvasCamera.h" />
+    <ClInclude Include="Camera\EditorCamera.h" />
+    <ClInclude Include="Camera\EditorCameraController.h" />
+    <ClInclude Include="Camera\PreviewCamera.h" />
+    <ClInclude Include="Camera\PreviewCameraController.h" />
+    <ClInclude Include="Camera\ScreenSpace.h" />
+    <ClInclude Include="Constraint\AttachmentConstraint.h" />
+    <ClInclude Include="Constraint\IKConstraint.h" />
+    <ClInclude Include="Constraint\LookAtConstraint.h" />
+    <ClInclude Include="Constraint\ParentConstraint.h" />
+    <ClInclude Include="Constraint\PositionConstraint.h" />
+    <ClInclude Include="Constraint\RotationConstraint.h" />
+    <ClInclude Include="D3D12\Buffer\ArgumentBuffer.h" />
+    <ClInclude Include="D3D12\Buffer\Buffer.h" />
+    <ClInclude Include="D3D12\Buffer\ConstantBuffer.h" />
+    <ClInclude Include="D3D12\Buffer\DepthResizeBuffer.h" />
+    <ClInclude Include="D3D12\Buffer\FrameBuffer.h" />
+    <ClInclude Include="D3D12\Buffer\GeometryBuffer.h" />
+    <ClInclude Include="D3D12\Buffer\HiZBuffer.h" />
+    <ClInclude Include="D3D12\Buffer\HudlessBuffer.h" />
+    <ClInclude Include="D3D12\Buffer\IndexBuffer.h" />
+    <ClInclude Include="D3D12\Buffer\ReservoirBuffer.h" />
+    <ClInclude Include="D3D12\Buffer\StructuredBuffer.h" />
+    <ClInclude Include="D3D12\Buffer\VertexBuffer.h" />
+    <ClInclude Include="D3D12\Context\D3D12Adapter.h" />
+    <ClInclude Include="D3D12\Context\D3D12Check.h" />
+    <ClInclude Include="D3D12\Context\D3D12CommandAllocator.h" />
+    <ClInclude Include="D3D12\Context\D3D12CommandList.h" />
+    <ClInclude Include="D3D12\Context\D3D12CommandQueue.h" />
+    <ClInclude Include="D3D12\Context\D3D12Context.h" />
+    <ClInclude Include="D3D12\Context\D3D12DebugLayer.h" />
+    <ClInclude Include="D3D12\Context\D3D12Device.h" />
+    <ClInclude Include="D3D12\Context\D3D12Factory.h" />
+    <ClInclude Include="D3D12\Context\D3D12Fence.h" />
+    <ClInclude Include="D3D12\D3D12Common.h" />
+    <ClInclude Include="D3D12\D3D12Types.h" />
+    <ClInclude Include="D3D12\Descriptor\BindlessHeap.h" />
+    <ClInclude Include="D3D12\Descriptor\DescriptorHeap.h" />
+    <ClInclude Include="D3D12\FrameRing.h" />
+    <ClInclude Include="D3D12\PipelineState\AmplificationShader.h" />
+    <ClInclude Include="D3D12\PipelineState\BlendState.h" />
+    <ClInclude Include="D3D12\PipelineState\ComputeShader.h" />
+    <ClInclude Include="D3D12\PipelineState\DepthStencilState.h" />
+    <ClInclude Include="D3D12\PipelineState\DomainShader.h" />
+    <ClInclude Include="D3D12\PipelineState\GeometryShader.h" />
+    <ClInclude Include="D3D12\PipelineState\HullShader.h" />
+    <ClInclude Include="D3D12\PipelineState\MeshShader.h" />
+    <ClInclude Include="D3D12\PipelineState\PipelineStateObject.h" />
+    <ClInclude Include="D3D12\PipelineState\PixelShader.h" />
+    <ClInclude Include="D3D12\PipelineState\RasterizerState.h" />
+    <ClInclude Include="D3D12\PipelineState\RaytracingShader.h" />
+    <ClInclude Include="D3D12\PipelineState\RaytracingStateObject.h" />
+    <ClInclude Include="D3D12\PipelineState\RootSignature.h" />
+    <ClInclude Include="D3D12\PipelineState\SamplerState.h" />
+    <ClInclude Include="D3D12\PipelineState\VertexShader.h" />
+    <ClInclude Include="D3D12\SwapChain\GraphicsResolution.h" />
+    <ClInclude Include="D3D12\SwapChain\SwapChain.h" />
+    <ClInclude Include="DLSS\DlssBackgroundVelocityShader.h" />
+    <ClInclude Include="DLSS\DlssManager.h" />
+    <ClInclude Include="DLSS\DlssNormalRoughnessShader.h" />
+    <ClInclude Include="Effect\Effekseer\EffekseerCache.h" />
+    <ClInclude Include="Effect\Effekseer\EffekseerEffect.h" />
+    <ClInclude Include="Effect\Effekseer\EffekseerFileInterface.h" />
+    <ClInclude Include="Effect\Effekseer\EffekseerLoader.h" />
+    <ClInclude Include="Effect\Effekseer\EffekseerManager.h" />
+    <ClInclude Include="Effect\Effekseer\EffekseerResource.h" />
+    <ClInclude Include="Effect\Zephyr\Effect.h" />
+    <ClInclude Include="Effect\Zephyr\EffectLoader.h" />
+    <ClInclude Include="Effect\Zephyr\EffectResource.h" />
+    <ClInclude Include="Effect\Zephyr\Zephyr.h" />
+    <ClInclude Include="Effect\Zephyr\ZephyrModuleAssembler.h" />
+    <ClInclude Include="Effect\Zephyr\ZephyrModuleRegistry.h" />
+    <ClInclude Include="Environment\Weather.h" />
+    <ClInclude Include="Environment\WeatherParticleShader.h" />
+    <ClInclude Include="Font\Font.h" />
+    <ClInclude Include="Font\FontManager.h" />
+    <ClInclude Include="Font\FontLoader.h" />
+    <ClInclude Include="Font\FontResource.h" />
+    <ClInclude Include="Font\FontShader.h" />
+    <ClInclude Include="Font\ShapedText.h" />
+    <ClInclude Include="Font\Text.h" />
+    <ClInclude Include="Graphics.h" />
+    <ClInclude Include="Light\DirectionalLight.h" />
+    <ClInclude Include="Light\PointLight.h" />
+    <ClInclude Include="Light\RectangleLight.h" />
+    <ClInclude Include="Light\SkyLight.h" />
+    <ClInclude Include="Light\SpotLight.h" />
+    <ClInclude Include="Model\Animation\Animation.h" />
+    <ClInclude Include="Model\Animation\AnimationLoader.h" />
+    <ClInclude Include="Model\Animation\AnimationResource.h" />
+    <ClInclude Include="Model\Animation\Animator.h" />
+    <ClInclude Include="Model\Animation\AnimatorControllerState.h" />
+    <ClInclude Include="Model\Cluster\QuadricErrorMetrics.h" />
+    <ClInclude Include="Model\Collision\MeshCollision.h" />
+    <ClInclude Include="Model\Collision\MeshCollisionLoader.h" />
+    <ClInclude Include="Model\Collision\MeshCollisionResource.h" />
+    <ClInclude Include="Model\Crister.h" />
+    <ClInclude Include="Model\Culling\ModelCullingBuffer.h" />
+    <ClInclude Include="Model\IK\FABRIK.h" />
+    <ClInclude Include="Model\IK\FullBodyIK.h" />
+    <ClInclude Include="Model\IK\IKPose.h" />
+    <ClInclude Include="Model\IK\TreeFABRIK.h" />
+    <ClInclude Include="Model\IK\TwoBoneIK.h" />
+    <ClInclude Include="Model\Material\Material.h" />
+    <ClInclude Include="Model\Material\MaterialLoader.h" />
+    <ClInclude Include="Model\Material\MaterialResolveShader.h" />
+    <ClInclude Include="Model\Material\MaterialResource.h" />
+    <ClInclude Include="Model\Material\MaterialSortBuffer.h" />
+    <ClInclude Include="Model\Material\MaterialState.h" />
+    <ClInclude Include="Model\Mesh.h" />
+    <ClInclude Include="Model\ModelExporter.h" />
+    <ClInclude Include="Model\ModelLoader.h" />
+    <ClInclude Include="Model\ModelRecord.h" />
+    <ClInclude Include="Model\ModelResource.h" />
+    <ClInclude Include="Model\ModelShader.h" />
+    <ClInclude Include="Model\Morph\MorphBlendShader.h" />
+    <ClInclude Include="Model\Skeleton\Skeleton.h" />
+    <ClInclude Include="Model\Skeleton\SkeletonLoader.h" />
+    <ClInclude Include="Model\Skeleton\SkeletonResource.h" />
+    <ClInclude Include="Model\Skeleton\SkeletonState.h" />
+    <ClInclude Include="Model\Skin\SkinBlendShader.h" />
+    <ClInclude Include="Model\SoftbodyMesh.h" />
+    <ClInclude Include="Model\Transparent\OITBuffer.h" />
+    <ClInclude Include="Movie\Movie.h" />
+    <ClInclude Include="Movie\MovieByteStream.h" />
+    <ClInclude Include="Movie\MovieDecoder.h" />
+    <ClInclude Include="Movie\MovieLoader.h" />
+    <ClInclude Include="Movie\MovieResource.h" />
+    <ClInclude Include="Movie\MovieShader.h" />
+    <ClInclude Include="Movie\Video.h" />
+    <ClInclude Include="PostProcess\PostEffect\AnamorphicFlare.h" />
+    <ClInclude Include="PostProcess\PostEffect\AutoExposure.h" />
+    <ClInclude Include="PostProcess\PostEffect\Bokeh.h" />
+    <ClInclude Include="PostProcess\PostEffect\ChromaticAberration.h" />
+    <ClInclude Include="PostProcess\PostEffect\ColorGrading.h" />
+    <ClInclude Include="PostProcess\PostEffect\DepthOfField.h" />
+    <ClInclude Include="PostProcess\PostEffect\DirectionalBlur.h" />
+    <ClInclude Include="PostProcess\PostEffect\FilmGrain.h" />
+    <ClInclude Include="PostProcess\PostEffect\KawaseBloom.h" />
+    <ClInclude Include="PostProcess\PostEffect\LensDistortion.h" />
+    <ClInclude Include="PostProcess\PostEffect\LensFlare.h" />
+    <ClInclude Include="PostProcess\PostEffect\MotionBlur.h" />
+    <ClInclude Include="PostProcess\PostEffect\RadialBlur.h" />
+    <ClInclude Include="PostProcess\PostEffect\Sharpness.h" />
+    <ClInclude Include="PostProcess\PostEffect\ToneMapping.h" />
+    <ClInclude Include="PostProcess\PostEffect\Vignette.h" />
+    <ClInclude Include="PostProcess\PostEffect\ZoomBlur.h" />
+    <ClInclude Include="PostProcess\PostProcess.h" />
+    <ClInclude Include="Profiler\GpuProfiler.h" />
+    <ClInclude Include="Profiler\ProfilerStats.h" />
+    <ClInclude Include="Quality\GraphicsQuality.h" />
+    <ClInclude Include="Quality\Upscale.h" />
+    <ClInclude Include="Rasterization\RasterizationContext.h" />
+    <ClInclude Include="Raytracing\AmbientOcclusion\AmbientOcclusionDenoiseShader.h" />
+    <ClInclude Include="Raytracing\AmbientOcclusion\AmbientOcclusionShader.h" />
+    <ClInclude Include="Raytracing\BottomLevelAccelerationStructure.h" />
+    <ClInclude Include="Raytracing\GlobalIllumination\GlobalIlluminationDenoiseShader.h" />
+    <ClInclude Include="Raytracing\GlobalIllumination\GlobalIlluminationShader.h" />
+    <ClInclude Include="Raytracing\RaytracingContext.h" />
+    <ClInclude Include="Raytracing\RaytracingView.h" />
+    <ClInclude Include="Raytracing\Reflection\ReflectionDenoiseShader.h" />
+    <ClInclude Include="Raytracing\Reflection\ReflectionShader.h" />
+    <ClInclude Include="Raytracing\Refraction\RefractionShader.h" />
+    <ClInclude Include="Raytracing\Shadow\ShadowDenoiseShader.h" />
+    <ClInclude Include="Raytracing\Shadow\ShadowShader.h" />
+    <ClInclude Include="Raytracing\SubsurfaceScattering\SubsurfaceScatteringShader.h" />
+    <ClInclude Include="Raytracing\TopLevelAccelerationStructure.h" />
+    <ClInclude Include="Raytracing\VolumetricCloudScapes\VolumetricCloudScapesShader.h" />
+    <ClInclude Include="Raytracing\VolumetricLight\VolumetricLightShader.h" />
+    <ClInclude Include="Raytracing\VolumetricStar\VolumetricStarShader.h" />
+    <ClInclude Include="Renderer\AmbientOcclusionRenderer.h" />
+    <ClInclude Include="Renderer\AvatarRenderer.h" />
+    <ClInclude Include="Renderer\BootScreenRenderer.h" />
+    <ClInclude Include="Renderer\ColliderRenderer.h" />
+    <ClInclude Include="Renderer\DecalRenderer.h" />
+    <ClInclude Include="Renderer\DlssRayReconstructionRenderer.h" />
+    <ClInclude Include="Renderer\EffekseerRenderer.h" />
+    <ClInclude Include="Renderer\FontRenderer.h" />
+    <ClInclude Include="Renderer\GlobalIlluminationRenderer.h" />
+    <ClInclude Include="Renderer\HUDComposeRenderer.h" />
+    <ClInclude Include="Renderer\MaterialRenderer.h" />
+    <ClInclude Include="Renderer\ModelRenderer.h" />
+    <ClInclude Include="Renderer\ModelTransformRenderer.h" />
+    <ClInclude Include="Renderer\MovieRenderer.h" />
+    <ClInclude Include="Renderer\OutlineRenderer.h" />
+    <ClInclude Include="Renderer\PostProcessRenderer.h" />
+    <ClInclude Include="Renderer\RaytracingRenderer.h" />
+    <ClInclude Include="Renderer\ReflectionRenderer.h" />
+    <ClInclude Include="Renderer\RefractionRenderer.h" />
+    <ClInclude Include="Renderer\Renderer.h" />
+    <ClInclude Include="Renderer\ShadowRenderer.h" />
+    <ClInclude Include="Renderer\ShapeRenderer.h" />
+    <ClInclude Include="Renderer\SkeletonControllerRenderer.h" />
+    <ClInclude Include="Renderer\SkyRenderer.h" />
+    <ClInclude Include="Renderer\SubsurfaceScatteringRenderer.h" />
+    <ClInclude Include="Renderer\TaauUpsamplingRenderer.h" />
+    <ClInclude Include="Renderer\TextureRenderer.h" />
+    <ClInclude Include="Renderer\TimelineRenderer.h" />
+    <ClInclude Include="Renderer\ViewMode.h" />
+    <ClInclude Include="Renderer\VolumetricCloudScapesRenderer.h" />
+    <ClInclude Include="Renderer\VolumetricLightRenderer.h" />
+    <ClInclude Include="Renderer\VolumetricStarRenderer.h" />
+    <ClInclude Include="Renderer\WeatherParticleRenderer.h" />
+    <ClInclude Include="ScreenSpace\ScreenSpaceContext.h" />
+    <ClInclude Include="Shader\ShaderCache.h" />
+    <ClInclude Include="Shader\ShaderCompiler.h" />
+    <ClInclude Include="Shader\ShaderHotReload.h" />
+    <ClInclude Include="Shape\Collider\ColliderLineShader.h" />
+    <ClInclude Include="Shape\HUD\HUDComposeShader.h" />
+    <ClInclude Include="Shape\Outline\OutlineShader.h" />
+    <ClInclude Include="Shape\Screen\BootScreen.h" />
+    <ClInclude Include="Shape\Screen\FadeScreen.h" />
+    <ClInclude Include="Shape\Screen\LetterScreen.h" />
+    <ClInclude Include="Shape\Screen\SplashScreen.h" />
+    <ClInclude Include="Sky\Skymap.h" />
+    <ClInclude Include="Sky\SkymapCache.h" />
+    <ClInclude Include="Sky\SkymapLoader.h" />
+    <ClInclude Include="Sky\SkymapResource.h" />
+    <ClInclude Include="System\AnimationSystem.h" />
+    <ClInclude Include="System\CameraSystem.h" />
+    <ClInclude Include="System\CelestialSystem.h" />
+    <ClInclude Include="System\ConstraintSystem.h" />
+    <ClInclude Include="System\IndicesSystem.h" />
+    <ClInclude Include="System\LightSystem.h" />
+    <ClInclude Include="System\MovieSystem.h" />
+    <ClInclude Include="System\SceneSystem.h" />
+    <ClInclude Include="System\WeatherSystem.h" />
+    <ClInclude Include="TAAU\TaauResolveShader.h" />
+    <ClInclude Include="Texture\Compression\BC7CompressShader.h" />
+    <ClInclude Include="Texture\Image.h" />
+    <ClInclude Include="Texture\Texture.h" />
+    <ClInclude Include="Texture\TextureLoader.h" />
+    <ClInclude Include="Texture\TextureResource.h" />
+    <ClInclude Include="Texture\TextureShader.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Avatar\Animal\AnimalCharacterConverter.cpp" />
+    <ClCompile Include="Avatar\Animal\AnimalCharacterEvaluator.cpp" />
+    <ClCompile Include="Avatar\Animal\AnimalCharacterModel.cpp" />
+    <ClCompile Include="Avatar\AvatarMesh.cpp" />
+    <ClCompile Include="Avatar\Human\HumanCharacterConverter.cpp" />
+    <ClCompile Include="Avatar\Human\HumanCharacterEvaluator.cpp" />
+    <ClCompile Include="Avatar\Human\HumanCharacterModel.cpp" />
+    <ClCompile Include="Camera\CameraBrain.cpp" />
+    <ClCompile Include="Camera\CanvasCamera.cpp" />
+    <ClCompile Include="Camera\PreviewCamera.cpp" />
+    <ClCompile Include="Camera\PreviewCameraController.cpp" />
+    <ClCompile Include="Camera\ScreenSpace.cpp" />
+    <ClCompile Include="Constraint\AttachmentConstraint.cpp" />
+    <ClCompile Include="Constraint\IKConstraint.cpp" />
+    <ClCompile Include="D3D12\Buffer\DepthResizeBuffer.cpp" />
+    <ClCompile Include="D3D12\Buffer\HudlessBuffer.cpp" />
+    <ClCompile Include="D3D12\Buffer\ReservoirBuffer.cpp" />
+    <ClCompile Include="D3D12\Context\D3D12Check.cpp" />
+    <ClCompile Include="DLSS\DlssBackgroundVelocityShader.cpp" />
+    <ClCompile Include="DLSS\DlssNormalRoughnessShader.cpp" />
+    <ClCompile Include="Effect\Effekseer\EffekseerEffect.cpp" />
+    <ClCompile Include="Effect\Effekseer\EffekseerFileInterface.cpp" />
+    <ClCompile Include="Effect\Effekseer\EffekseerLoader.cpp" />
+    <ClCompile Include="Effect\Effekseer\EffekseerManager.cpp" />
+    <ClCompile Include="Effect\Effekseer\EffekseerResource.cpp" />
+    <ClCompile Include="Effect\Zephyr\EffectLoader.cpp" />
+    <ClCompile Include="Effect\Zephyr\EffectResource.cpp" />
+    <ClCompile Include="Effect\Zephyr\ZephyrModuleAssembler.cpp" />
+    <ClCompile Include="Effect\Zephyr\ZephyrModuleRegistry.cpp" />
+    <ClCompile Include="Environment\WeatherParticleShader.cpp" />
+    <ClCompile Include="Font\Font.cpp" />
+    <ClCompile Include="Font\FontManager.cpp" />
+    <ClCompile Include="Font\FontLoader.cpp" />
+    <ClCompile Include="Font\FontResource.cpp" />
+    <ClCompile Include="Font\FontShader.cpp" />
+    <ClCompile Include="Font\ShapedText.cpp" />
+    <ClCompile Include="Model\Animation\Animation.cpp" />
+    <ClCompile Include="Model\Animation\AnimationLoader.cpp" />
+    <ClCompile Include="Model\Animation\AnimationResource.cpp" />
+    <ClCompile Include="Model\Animation\Animator.cpp" />
+    <ClCompile Include="Model\Cluster\QuadricErrorMetrics.cpp" />
+    <ClCompile Include="Model\Collision\MeshCollision.cpp" />
+    <ClCompile Include="Model\Collision\MeshCollisionLoader.cpp" />
+    <ClCompile Include="Model\Collision\MeshCollisionResource.cpp" />
+    <ClCompile Include="Model\Crister.cpp" />
+    <ClCompile Include="Model\Culling\ModelCullingBuffer.cpp" />
+    <ClCompile Include="Model\IK\FABRIK.cpp" />
+    <ClCompile Include="Model\IK\FullBodyIK.cpp" />
+    <ClCompile Include="Model\IK\IKPose.cpp" />
+    <ClCompile Include="Model\IK\TreeFABRIK.cpp" />
+    <ClCompile Include="Model\IK\TwoBoneIK.cpp" />
+    <ClCompile Include="Model\Material\Material.cpp" />
+    <ClCompile Include="Model\Material\MaterialLoader.cpp" />
+    <ClCompile Include="Model\Material\MaterialResolveShader.cpp" />
+    <ClCompile Include="Model\Material\MaterialResource.cpp" />
+    <ClCompile Include="Model\Material\MaterialSortBuffer.cpp" />
+    <ClCompile Include="Model\ModelCommon.cpp" />
+    <ClCompile Include="Model\ModelExporter.cpp" />
+    <ClCompile Include="Model\ModelLoader.cpp" />
+    <ClCompile Include="Model\ModelResource.cpp" />
+    <ClCompile Include="Model\ModelShader.cpp" />
+    <ClCompile Include="Model\Morph\MorphBlendShader.cpp" />
+    <ClCompile Include="Model\Skeleton\Skeleton.cpp" />
+    <ClCompile Include="Model\Skeleton\SkeletonLoader.cpp" />
+    <ClCompile Include="Model\Skeleton\SkeletonResource.cpp" />
+    <ClCompile Include="Model\Skin\SkinBlendShader.cpp" />
+    <ClCompile Include="Model\SoftbodyMesh.cpp" />
+    <ClCompile Include="Model\Transparent\OITBuffer.cpp" />
+    <ClCompile Include="Movie\MovieByteStream.cpp" />
+    <ClCompile Include="Movie\MovieDecoder.cpp" />
+    <ClCompile Include="Movie\MovieLoader.cpp" />
+    <ClCompile Include="Movie\MovieResource.cpp" />
+    <ClCompile Include="Movie\MovieShader.cpp" />
+    <ClCompile Include="Movie\Video.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\AnamorphicFlare.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\AutoExposure.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\Bokeh.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\ChromaticAberration.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\ColorGrading.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\DepthOfField.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\DirectionalBlur.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\FilmGrain.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\KawaseBloom.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\LensDistortion.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\LensFlare.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\MotionBlur.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\RadialBlur.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\Sharpness.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\ToneMapping.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\Vignette.cpp" />
+    <ClCompile Include="PostProcess\PostEffect\ZoomBlur.cpp" />
+    <ClCompile Include="Prelude.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">FoundationEngine/Prelude.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">FoundationEngine/Prelude.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="Camera\Camera.cpp">
+    </ClCompile>
+    <ClCompile Include="Camera\EditorCamera.cpp">
+    </ClCompile>
+    <ClCompile Include="Camera\EditorCameraController.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Buffer\ArgumentBuffer.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Buffer\FrameBuffer.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Buffer\HiZBuffer.cpp" />
+    <ClCompile Include="D3D12\Buffer\GeometryBuffer.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Buffer\IndexBuffer.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Context\D3D12CommandAllocator.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Context\D3D12CommandList.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Context\D3D12CommandQueue.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Context\D3D12Context.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Context\D3D12DebugLayer.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Context\D3D12Device.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Context\D3D12Factory.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Context\D3D12Fence.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Descriptor\BindlessHeap.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\Descriptor\DescriptorHeap.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\AmplificationShader.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\BlendState.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\ComputeShader.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\DepthStencilState.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\DomainShader.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\GeometryShader.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\HullShader.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\MeshShader.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\PipelineStateObject.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\PixelShader.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\RasterizerState.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\RaytracingShader.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\RaytracingStateObject.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\RootSignature.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\SamplerState.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\PipelineState\VertexShader.cpp">
+    </ClCompile>
+    <ClCompile Include="D3D12\SwapChain\SwapChain.cpp">
+    </ClCompile>
+    <ClCompile Include="DLSS\DlssManager.cpp">
+    </ClCompile>
+    <ClCompile Include="Graphics.cpp">
+    </ClCompile>
+    <ClCompile Include="Profiler\GpuProfiler.cpp" />
+    <ClCompile Include="Quality\GraphicsQuality.cpp" />
+    <ClCompile Include="Raytracing\AmbientOcclusion\AmbientOcclusionDenoiseShader.cpp" />
+    <ClCompile Include="Raytracing\AmbientOcclusion\AmbientOcclusionShader.cpp" />
+    <ClCompile Include="Raytracing\BottomLevelAccelerationStructure.cpp" />
+    <ClCompile Include="Raytracing\GlobalIllumination\GlobalIlluminationDenoiseShader.cpp" />
+    <ClCompile Include="Raytracing\GlobalIllumination\GlobalIlluminationShader.cpp" />
+    <ClCompile Include="Raytracing\Reflection\ReflectionDenoiseShader.cpp" />
+    <ClCompile Include="Raytracing\Reflection\ReflectionShader.cpp" />
+    <ClCompile Include="Raytracing\Refraction\RefractionShader.cpp" />
+    <ClCompile Include="Raytracing\Shadow\ShadowDenoiseShader.cpp" />
+    <ClCompile Include="Raytracing\Shadow\ShadowShader.cpp" />
+    <ClCompile Include="Raytracing\SubsurfaceScattering\SubsurfaceScatteringShader.cpp" />
+    <ClCompile Include="Raytracing\TopLevelAccelerationStructure.cpp" />
+    <ClCompile Include="Raytracing\VolumetricCloudScapes\VolumetricCloudScapesShader.cpp" />
+    <ClCompile Include="Raytracing\VolumetricLight\VolumetricLightShader.cpp" />
+    <ClCompile Include="Raytracing\VolumetricStar\VolumetricStarShader.cpp" />
+    <ClCompile Include="Renderer\AmbientOcclusionRenderer.cpp" />
+    <ClCompile Include="Renderer\AvatarRenderer.cpp" />
+    <ClCompile Include="Renderer\BootScreenRenderer.cpp" />
+    <ClCompile Include="Renderer\ColliderRenderer.cpp" />
+    <ClCompile Include="Renderer\DecalRenderer.cpp" />
+    <ClCompile Include="Renderer\DlssRayReconstructionRenderer.cpp" />
+    <ClCompile Include="Renderer\EffekseerRenderer.cpp" />
+    <ClCompile Include="Renderer\FontRenderer.cpp" />
+    <ClCompile Include="Renderer\GlobalIlluminationRenderer.cpp" />
+    <ClCompile Include="Renderer\HUDComposeRenderer.cpp" />
+    <ClCompile Include="Renderer\MaterialRenderer.cpp" />
+    <ClCompile Include="Renderer\ModelRenderer.cpp" />
+    <ClCompile Include="Renderer\ModelTransformRenderer.cpp" />
+    <ClCompile Include="Renderer\MovieRenderer.cpp" />
+    <ClCompile Include="Renderer\OutlineRenderer.cpp" />
+    <ClCompile Include="Renderer\PostProcessRenderer.cpp" />
+    <ClCompile Include="Renderer\RaytracingRenderer.cpp" />
+    <ClCompile Include="Renderer\ReflectionRenderer.cpp" />
+    <ClCompile Include="Renderer\RefractionRenderer.cpp" />
+    <ClCompile Include="Renderer\Renderer.cpp" />
+    <ClCompile Include="Renderer\ShadowRenderer.cpp" />
+    <ClCompile Include="Renderer\ShapeRenderer.cpp" />
+    <ClCompile Include="Renderer\SkeletonControllerRenderer.cpp" />
+    <ClCompile Include="Renderer\SkyRenderer.cpp" />
+    <ClCompile Include="Renderer\SubsurfaceScatteringRenderer.cpp" />
+    <ClCompile Include="Renderer\TaauUpsamplingRenderer.cpp" />
+    <ClCompile Include="Renderer\TextureRenderer.cpp" />
+    <ClCompile Include="Renderer\TimelineRenderer.cpp" />
+    <ClCompile Include="Renderer\VolumetricCloudScapesRenderer.cpp" />
+    <ClCompile Include="Renderer\VolumetricLightRenderer.cpp" />
+    <ClCompile Include="Renderer\VolumetricStarRenderer.cpp" />
+    <ClCompile Include="Renderer\WeatherParticleRenderer.cpp" />
+    <ClCompile Include="Shader\ShaderCache.cpp">
+    </ClCompile>
+    <ClCompile Include="Shader\ShaderCompiler.cpp">
+    </ClCompile>
+    <ClCompile Include="Shader\ShaderHotReload.cpp" />
+    <ClCompile Include="Shape\Collider\ColliderLineShader.cpp" />
+    <ClCompile Include="Shape\HUD\HUDComposeShader.cpp" />
+    <ClCompile Include="Shape\Outline\OutlineShader.cpp" />
+    <ClCompile Include="Shape\Screen\BootScreen.cpp" />
+    <ClCompile Include="Shape\Screen\FadeScreen.cpp" />
+    <ClCompile Include="Shape\Screen\LetterScreen.cpp" />
+    <ClCompile Include="Shape\Screen\SplashScreen.cpp" />
+    <ClCompile Include="Sky\Skymap.cpp" />
+    <ClCompile Include="Sky\SkymapCache.cpp" />
+    <ClCompile Include="Sky\SkymapLoader.cpp" />
+    <ClCompile Include="Sky\SkymapResource.cpp" />
+    <ClCompile Include="System\AnimationSystem.cpp" />
+    <ClCompile Include="System\CameraSystem.cpp" />
+    <ClCompile Include="System\CelestialSystem.cpp" />
+    <ClCompile Include="System\ConstraintSystem.cpp" />
+    <ClCompile Include="System\IndicesSystem.cpp">
+    </ClCompile>
+    <ClCompile Include="System\LightSystem.cpp">
+    </ClCompile>
+    <ClCompile Include="System\MovieSystem.cpp" />
+    <ClCompile Include="System\SceneSystem.cpp">
+    </ClCompile>
+    <ClCompile Include="System\WeatherSystem.cpp" />
+    <ClCompile Include="TAAU\TaauResolveShader.cpp" />
+    <ClCompile Include="Texture\Compression\BC7CompressShader.cpp" />
+    <ClCompile Include="Texture\Texture.cpp" />
+    <ClCompile Include="Texture\TextureLoader.cpp" />
+    <ClCompile Include="Texture\TextureResource.cpp" />
+    <ClCompile Include="Texture\TextureShader.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FoundationEngine\FoundationEngine.vcxproj">
+      <Project>{30996a34-7fa2-4977-89d9-fbd1f2b64a18}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="DLSS\Dlss.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Effect\Zephyr\Module\DragModule.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Effect\Zephyr\Module\GravityModule.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Effect\Zephyr\Particle.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Effect\Zephyr\ParticlePool.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Environment\Weather.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Environment\WeatherParticle.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Font\Font.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Light\BidirectionalReflectanceDistributionFunction.hlsli" />
+    <None Include="Light\Light.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Model\Model.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Model\Opaque\FurShading.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Model\Opaque\GeometryBuffer.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Model\Opaque\PbrShading.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Model\Opaque\PhongShading.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Model\Opaque\ToonShading.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Model\Transparent\OitShading.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Movie\Movie.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="PostProcess\PostProcess.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="PostProcess\ToneMappingCurves.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Raytracing\AmbientOcclusion\AmbientOcclusion.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Raytracing\Froxel\Froxel.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Raytracing\GlobalIllumination\GlobalIllumination.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Raytracing\GlobalIllumination\GlobalIlluminationReSTIR.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Raytracing\Raytracing.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Raytracing\Reflection\Reflection.hlsli" />
+    <None Include="Raytracing\Reflection\ReflectionReSTIR.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Raytracing\Refraction\Refraction.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Raytracing\Shadow\Shadow.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Raytracing\SubsurfaceScattering\SubsurfaceScattering.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Raytracing\VolumetricCloudScapes\CloudNoiseBake.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Raytracing\VolumetricCloudScapes\VolumetricCloudScapes.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Raytracing\VolumetricLight\VolumetricLight.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Raytracing\VolumetricStar\VolumetricStar.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shader\Constants.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shader\Culling.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Light\Cluster.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shader\Denoiser.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shader\Dispatch.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shader\Material.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shader\Noise.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shader\Normal.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shader\Precipitation.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shader\Sampler.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shader\Scene.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shader\ShaderResources.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shader\UnorderedAccesses.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shader\Vertex.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shape\Collider\ColliderLine.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shape\HUD\HUD.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Sky\IBL\ImageBasedLighting.hlsli" />
+    <None Include="Sky\Sky.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Sky\SkyGenerate.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Texture\Texture.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Light\ClusterAssignCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Raytracing\Shadow\ShadowRT.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Raytracing\GlobalIllumination\GlobalIlluminationRT.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Raytracing\AmbientOcclusion\AmbientOcclusionRT.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Raytracing\Fog\FogInjectionCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Raytracing\Froxel\FroxelIntegrationCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Raytracing\Reflection\ReflectionRT.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Raytracing\Refraction\RefractionRT.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Raytracing\SubsurfaceScattering\SubsurfaceScatteringRT.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Raytracing\VolumetricCloudScapes\VolumetricCloudScapesRT.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Raytracing\VolumetricLight\VolumetricLightScatteringRT.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Raytracing\Shadow\ShadowDenoiseCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Raytracing\AmbientOcclusion\AmbientOcclusionDenoiseCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Raytracing\VolumetricCloudScapes\CloudNoiseShapeBakeCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Raytracing\VolumetricCloudScapes\CloudNoiseDetailBakeCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Shape\Collider\ColliderLineMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Shape\Collider\ColliderLinePS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="PostProcess\AutoExposureAverageCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="PostProcess\AutoExposureHistogramCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="PostProcess\ToneMappingCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Raytracing\GlobalIllumination\GlobalIlluminationDenoiseCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="DLSS\DlssNormalRoughnessCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="DLSS\DlssBackgroundVelocityCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="PostProcess\LensFlareCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="PostProcess\DepthOfFieldCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="PostProcess\BokehCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Raytracing\VolumetricStar\VolumetricStarRT.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Environment\WeatherParticleSimulateCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Environment\WeatherParticleAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Environment\WeatherParticleMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Environment\WeatherParticlePS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Raytracing\Reflection\ReflectionDenoiseCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="TAAU\TaauResolveCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="PostProcess\SharpnessCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="PostProcess\KawaseBloomCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="PostProcess\AnamorphicFlareCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="PostProcess\ChromaticAberrationCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="PostProcess\VignetteCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="PostProcess\FilmGrainCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="PostProcess\LensDistortionCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="PostProcess\ColorGradingCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\Material\MaterialClassifyCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Material\MaterialPrefixSumCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Material\MaterialResolveCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Material\MaterialScatterCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\Morph\MorphBlendCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\Transparent\ModelTransparentAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Transparent\OITResolveMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Transparent\OITResolvePS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\Opaque\DeferredLightingMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Opaque\DeferredLightingPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Opaque\ModelAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Opaque\SkeletalModelMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Opaque\SkeletalModelPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Opaque\StaticModelMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Opaque\StaticModelPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\ModelPreviewPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\WireframePS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\Transparent\ModelTransparentPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Raytracing\GlobalIllumination\GlobalIlluminationReservoirSpatialCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Raytracing\Reflection\ReflectionReservoirSpatialCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Shape\HUD\HUDComposeMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Shape\HUD\HUDComposePS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Avatar\AvatarPreviewPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\Opaque\FurShellAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Opaque\FurShellMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\Opaque\FurShellPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\Opaque\FurShellVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\Opaque\SkeletalModelVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Opaque\StaticModelVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Movie\MovieSilhouettePS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\ModelSilhouettePS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\ModelSilhouetteAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Opaque\GeometryBufferAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Font\FontSilhouettePS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Shape\Outline\OutlineMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Shape\Outline\OutlinePS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Shape\HUD\FullscreenVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Environment\WeatherParticleVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Shape\Collider\ColliderLineVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\Skin\SkinBlendCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\Cluster\MeshletPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\Culling\FurShellCullingCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Culling\GeometryBufferCullingCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Culling\ModelCullingCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Culling\ModelSilhouetteCullingCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Culling\ModelTransparentCullingCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Depth\DepthPrepassMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Depth\DepthPrepassPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Depth\DepthPrepassVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Depth\DepthResizeCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Model\Depth\HiZBufferCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Texture\Compression\BC7CompressCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Font\Billboard\FontBillboardAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Font\Billboard\FontBillboardMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Font\Billboard\FontBillboardPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Font\Billboard\FontBillboardSilhouetteAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Font\Billboard\FontBillboardSilhouetteVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Font\Billboard\FontBillboardVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Font\Sprite\FontSpriteAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Font\Sprite\FontSpriteMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Font\Sprite\FontSpritePS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Font\Sprite\FontSpriteSilhouetteAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Font\Sprite\FontSpriteSilhouetteVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Font\Sprite\FontSpriteVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Movie\Billboard\MovieBillboardAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Movie\Billboard\MovieBillboardMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Movie\Billboard\MovieBillboardPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Movie\Billboard\MovieBillboardSilhouetteAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Movie\Billboard\MovieBillboardSilhouetteVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Movie\Billboard\MovieBillboardVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Movie\Fullscreen\MovieFullscreenAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Movie\Fullscreen\MovieFullscreenMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Movie\Fullscreen\MovieFullscreenPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Movie\Fullscreen\MovieFullscreenVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Movie\Sprite\MovieSpriteAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Movie\Sprite\MovieSpriteMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Movie\Sprite\MovieSpritePS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Movie\Sprite\MovieSpriteSilhouetteAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Movie\Sprite\MovieSpriteSilhouetteVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Movie\Sprite\MovieSpriteVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Sky\IBL\BrdfLutCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Sky\IBL\DiffuseIrradianceCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Sky\IBL\SpecularPrefilterCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Sky\Cubemap\EquirectCubemapCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Sky\Cubemap\ProceduralCubemapCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Shape\Screen\FadeScreenPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Shape\Screen\SplashScreenPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Shape\Screen\SplashScreenVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Texture\TextureSilhouettePS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Texture\Sprite\TextureSpriteAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Texture\Sprite\TextureSpriteMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Texture\Sprite\TextureSpritePS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Texture\Sprite\TextureSpriteSilhouetteAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Texture\Sprite\TextureSpriteSilhouetteVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Texture\Sprite\TextureSpriteVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Texture\Billboard\TextureBillboardAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Texture\Billboard\TextureBillboardMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Texture\Billboard\TextureBillboardPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Texture\Billboard\TextureBillboardSilhouetteAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Texture\Billboard\TextureBillboardSilhouetteVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Texture\Billboard\TextureBillboardVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Shape\Screen\LetterScreenPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Shape\Screen\BootScreenPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{3058c8bb-7169-45cf-8a76-ea50e2dc8099}</ProjectGuid>
+    <RootNamespace>GraphicsEngine</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v143</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>ClangCL</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Label="Vcpkg">
+    <VcpkgEnabled>false</VcpkgEnabled>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions);FOUNDATIONENGINE_EXPORTS</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>FoundationEngine/Prelude.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>FoundationEngine/Prelude.h</ForcedIncludeFiles>
+      <LanguageStandard>stdcpp23</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalOptions>/utf-8 /Zc:preprocessor %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <FxCompile>
+      <ShaderModel>6.8</ShaderModel>
+      <ObjectFileOutput>../CompiledShaderObject/%(Filename).cso</ObjectFileOutput>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+      <AssemblerOutputFile>
+      </AssemblerOutputFile>
+    </FxCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions);FOUNDATIONENGINE_EXPORTS</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>FoundationEngine/Prelude.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>FoundationEngine/Prelude.h</ForcedIncludeFiles>
+      <LanguageStandard>stdcpp23</LanguageStandard>
+      <AdditionalIncludeDirectories>$(SolutionDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+    <FxCompile>
+      <ShaderModel>6.8</ShaderModel>
+      <ObjectFileOutput>../CompiledShaderObject/%(Filename).cso</ObjectFileOutput>
+      <AssemblerOutput>NoListing</AssemblerOutput>
+      <AssemblerOutputFile>
+      </AssemblerOutputFile>
+    </FxCompile>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

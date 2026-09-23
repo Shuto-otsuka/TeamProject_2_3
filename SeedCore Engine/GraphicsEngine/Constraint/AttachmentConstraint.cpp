@@ -1,0 +1,48 @@
+#include <GraphicsEngine/Constraint/AttachmentConstraint.h>
+#include <GraphicsEngine/Model/Skeleton/Skeleton.h>
+#include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/Actor/Actor.h>
+
+namespace SeedCore
+{
+	void AttachmentConstraint::OnInspectorGUI()
+	{
+		if (target_ == 0)
+		{
+			ImGui::TextDisabled("ターゲット未設定");
+			return;
+		}
+
+		Actor targetActor = GetWorld().FindActor(target_);
+		Skeleton* skeleton = targetActor ? targetActor.GetComponent<Skeleton>() : nullptr;
+		if (!skeleton || skeleton->BoneNames().empty())
+		{
+			ImGui::TextDisabled("スケルタル未取得（ターゲットに Skeleton が必要）");
+			return;
+		}
+
+		const Char* preview = boneName_.c_str();
+		if (ImGui::BeginCombo("ボーン", preview ? preview : ""))
+		{
+			for (const String& name : skeleton->BoneNames())
+			{
+				const Char* label = name.c_str();
+				if (!label || *label == '\0')
+				{
+					continue;
+				}
+
+				Bool selected = name == boneName_;
+				if (ImGui::Selectable(label, selected))
+				{
+					boneName_ = name;
+				}
+				if (selected)
+				{
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
+	}
+}

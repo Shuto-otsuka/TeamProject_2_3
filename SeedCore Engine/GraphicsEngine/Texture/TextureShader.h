@@ -1,0 +1,63 @@
+#pragma once
+#include <FoundationEngine/Prelude.h>
+#include <FoundationEngine/Utility/Handle.h>
+#include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
+#include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
+
+namespace SeedCore
+{
+	class ShaderCache;
+
+	class VertexShader;
+	class AmplificationShader;
+	class MeshShader;
+	class PixelShader;
+
+	class TextureShader
+	{
+	public:
+		TextureShader(RootSignature& rootSignature, PipelineStateObject& pipelineStateObject);
+		~TextureShader() = default;
+
+		void Create(ShaderCache& shaderCache, ID3D12Device* device);
+
+		[[nodiscard]] ID3D12PipelineState* GetPipelineStateSprite()const;
+
+		[[nodiscard]] ID3D12PipelineState* GetPipelineStateBillboard()const;
+
+		[[nodiscard]] ID3D12PipelineState* GetPipelineStateSilhouetteSprite()const;
+
+		[[nodiscard]] ID3D12PipelineState* GetPipelineStateSilhouetteBillboard()const;
+
+		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
+
+	private:
+		Handle<VertexShader> spriteVertexShader_;
+		Handle<AmplificationShader> spriteAmplificationShader_;
+		Handle<MeshShader> spriteMeshShader_;
+		Handle<PixelShader> spritePixelShader_;
+
+		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectSprite_;
+
+		Handle<VertexShader> billboardVertexShader_;
+		Handle<AmplificationShader> billboardAmplificationShader_;
+		Handle<MeshShader> billboardMeshShader_;
+		Handle<PixelShader> billboardPixelShader_;
+
+		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectBillboard_;
+
+		Handle<VertexShader> spriteSilhouetteVertexShader_;
+		Handle<VertexShader> billboardSilhouetteVertexShader_;
+		Handle<AmplificationShader> spriteSilhouetteAmplificationShader_;
+		Handle<AmplificationShader> billboardSilhouetteAmplificationShader_;
+		Handle<PixelShader> silhouettePixelShader_;
+
+		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectSilhouetteSprite_;
+		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectSilhouetteBillboard_;
+
+		Handle<RootSignature> imageRootSignature_;
+
+		RootSignature& rootSignature_;
+		PipelineStateObject& pipelineStateObject_;
+	};
+}

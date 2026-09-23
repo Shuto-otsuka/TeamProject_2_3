@@ -1,0 +1,477 @@
+#include <Editor/Editor/Editor.h>
+#include <Editor/Editor/Build/AtomCraft.h>
+#include <FoundationEngine/Log/Notice.h>
+#include <FoundationEngine/File/FileDialog.h>
+#include <FoundationEngine/Resource/Config/EditorConfig.h>
+#include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/Actor/Blueprint.h>
+#include <FoundationEngine/World/World.h>
+#include <FoundationEngine/Time/GameTimer.h>
+#include <GraphicsEngine/Model/Animation/Animator.h>
+#include <GraphicsEngine/Model/Animation/AnimatorControllerState.h>
+#include <GraphicsEngine/Model/Material/MaterialState.h>
+#include <GraphicsEngine/Model/Skeleton/SkeletonState.h>
+#include <GraphicsEngine/Camera/EditorCamera.h>
+#include <GraphicsEngine/Camera/CanvasCamera.h>
+#include <GraphicsEngine/Texture/Image.h>
+#include <GraphicsEngine/Font/Text.h>
+#include <GraphicsEngine/Movie/Movie.h>
+#include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
+#include <GraphicsEngine/Graphics.h>
+#include <FoundationEngine/World/ECS/Component/Bounds.h>
+
+namespace SeedCore
+{
+	Editor::Editor(EditorContext& context) :context_(context), resourceSync_(context.worldContext_.resource_->ProjectRootPath()), imguiTexture_(context_)
+	{
+		context_.resourceSync_ = &resourceSync_;
+		hierarchyPanel_ = MakePtr<HierarchyPanel>(context_, imguiTexture_);
+		inspectorPanel_ = MakePtr<InspectorPanel>(context_, imguiTexture_);
+		diagnosticsPanel_ = MakePtr<DiagnosticsPanel>(context_, imguiTexture_);
+		editorWindowPanel_ = MakePtr<EditorWindowPanel>(context_, imguiTexture_);
+		gameWindowPanel_ = MakePtr<GameWindowPanel>(*context_.cameraContext_.cameraSystem_, imguiTexture_);
+		canvasViewPanel_ = MakePtr<CanvasViewPanel>(context_, imguiTexture_);
+		contentsDrawerPanel_ = MakePtr<ContentsDrawerPanel>(context_, imguiTexture_);
+		controlPanel_ = MakePtr<ControlPanel>(context_, imguiTexture_);
+		menuBarPanel_ = MakePtr<MenuBarPanel>(context_);
+		shortCutKeyPanel_ = MakePtr<ShortCutKeyPanel>(context_);
+		specMemoPanel_ = MakePtr<SpecMemoPanel>(context_);
+		todoListPanel_ = MakePtr<TodoListPanel>(context_, imguiTexture_);
+		versionPanel_ = MakePtr<VersionPanel>(context_);
+		configPanel_ = MakePtr<ConfigPanel>(context_, imguiTexture_);
+		layerSettingsPanel_ = MakePtr<LayerSettingsPanel>(context_);
+		animatorControllerPanel_ = MakePtr<AnimatorControllerPanel>(context_, imguiTexture_);
+		timelinePanel_ = MakePtr<TimelinePanel>(context_);
+		skeletonControllerPanel_ = MakePtr<SkeletonControllerPanel>(context_);
+		materialViewerPanel_ = MakePtr<MaterialViewerPanel>(context_);
+		modelTransformPanel_ = MakePtr<ModelTransformPanel>(context_);
+		avatarPanel_ = MakePtr<AvatarPanel>(context_);
+		bootScreenPanel_ = MakePtr<BootScreenPanel>(context_);
+
+		context_.panelContext_.animatorControllerPanel_ = &*animatorControllerPanel_;
+		context_.panelContext_.timelinePanel_ = &*timelinePanel_;
+		context_.panelContext_.layerSettingsPanel_ = &*layerSettingsPanel_;
+		context_.panelContext_.materialViewerPanel_ = &*materialViewerPanel_;
+		context_.panelContext_.skeletonControllerPanel_ = &*skeletonControllerPanel_;
+		context_.panelContext_.avatarPanel_ = &*avatarPanel_;
+		context_.panelContext_.bootScreenPanel_ = &*bootScreenPanel_;
+
+		SC_LOG_NOTICE("エディターの初期化が完了しました");
+	}
+
+	void Editor::PruneDeadSelection()
+	{
+		World* world = context_.worldContext_.world_;
+		if (!world)
+		{
+			return;
+		}
+
+		SelectionContext& selection = context_.selectionContext_;
+
+		SeedCore::erase_if(selection.selectedActors_, [](Actor actor) { return !actor; });
+
+		if (!selection.selectedActor_)
+		{
+			selection.selectedActor_ = selection.selectedActors_.empty() ? Actor() : selection.selectedActors_.back();
+			selection.selectedEntity_ = selection.selectedActor_ ? selection.selectedActor_.GetEntity() : Entity::Null();
+		}
+	}
+
+	Float Editor::DrawToolbar()
+	{
+		resourceSync_.Update();
+
+		/// [EN] Which scene is open decides which one the library follows, and opening a scene is not a single place in the Editor.
+		/// [JP] どの Scene を追いかけるかは、開いている Scene で決まる。Scene を開く操作は Editor の1か所には限られない。
+		if (followedScenePath_ != context_.sceneContext_.currentScenePath_)
+		{
+			followedScenePath_ = context_.sceneContext_.currentScenePath_;
+			resourceSync_.RequestOpenScene(followedScenePath_);
+		}
+
+		/// [EN] An asset the library replaced on disk is still the old one in memory, so each is reloaded here.
+		/// [JP] ライブラリがディスク上で差し替えたアセットも、メモリ上はまだ古いままなので、ここで読み直す。
+
+		/// [EN] This runs on the Editor thread between frames, which is the only safe place to swap what the renderer uses.
+		/// [JP] これは Editor のスレッドでフレームの合間に動く。レンダラが使っているものを入れ替えてよいのはそこだけ。
+		/// [EN] A file an artist dropped into the library arrives without an identity, so it is taken in and then shared from here.
+		/// [JP] アーティストがライブラリへ置いたファイルは識別情報を持たずに届くため、ここで取り込んでから共有へ回す。
+		D3D12Context* d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+		DynamicArray<String> importedAssets;
+		resourceSync_.ConsumeImportedAsset(importedAssets);
+		for (const String& imported : importedAssets)
+		{
+			/// [EN] Reloading is what mints the .meta beside it, which is what gives the file the identifier the team will know it by.
+			/// [JP] 読み直しが隣に .meta を作る。それが、チームがそのファイルを識別する番号を与える処理にあたる。
+			context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+
+			std::filesystem::path local = context_.worldContext_.resource_->ProjectRootPath() / "UserProject" / imported.str();
+			Uint32 importedId = context_.worldContext_.resource_->GetAssetID(String(local.generic_string()));
+			AssetRecord* record = importedId == 0 ? nullptr : context_.worldContext_.resource_->GetAsset(importedId);
+
+			/// [EN] Sharing it here is what puts it in the catalog, from where every other member receives it on their own.
+			/// [JP] ここで共有することでカタログに載り、そこから他の全メンバーへ自動で届くようになる。
+			if (record && !resourceSync_.Shared(importedId))
+			{
+				resourceSync_.RequestRegister(*record);
+			}
+		}
+
+		DynamicArray<Uint32> changedAssets;
+		resourceSync_.ConsumeChangedAsset(changedAssets);
+		if (!changedAssets.empty())
+		{
+			/// [EN] An asset arriving for the first time is not in the cache yet, so the whole project is taken in before anything is swapped.
+			/// [JP] 初めて届いたアセットはまだキャッシュに無いため、入れ替えの前にプロジェクト全体を取り込む。
+			context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+
+			for (Uint32 assetId : changedAssets)
+			{
+				context_.worldContext_.resource_->Reload(assetId, *context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+
+				/// [EN] Reloading the scene asset is not enough, because what the member is looking at is the world, not the file.
+				/// [JP] Scene アセットを読み直すだけでは足りない。メンバーが見ているのはファイルではなく world であるため。
+				const SharedAsset* shared = resourceSync_.GetAsset(assetId);
+				if (!shared || !shared->scene_ || followedScenePath_.empty())
+				{
+					continue;
+				}
+
+				/// [EN] The arriving scene is read into an instance of its own, so nothing that is live is touched while it is parsed.
+				/// [JP] 届いた Scene はそれ専用のインスタンスへ読み込む。解析の間、生きているものに触れないようにするため。
+
+				/// [EN] It is not the pool's scratch, because a transition may be using that one at the same moment.
+				/// [JP] プールの作業用インスタンスは使わない。同じ瞬間に遷移処理がそれを使っていることがあるため。
+				Scene arriving;
+				if (!arriving.Read(followedScenePath_))
+				{
+					continue;
+				}
+
+				World& world = *context_.worldContext_.world_;
+				const DynamicArray<BlueprintNode>& nodes = arriving.Nodes();
+
+				/// [EN] Actors are matched by the identifier each one keeps, so a rename or a move does not look like a different actor.
+				/// [JP] Actor は、各自が持ち続ける識別子で突き合わせる。リネームや移動が別の Actor に見えないようにするため。
+				std::unordered_map<String, Actor> live;
+				for (Actor actor : world.GetActors())
+				{
+					if (!actor.CollaborationID().str().empty())
+					{
+						live[actor.CollaborationID()] = actor;
+					}
+				}
+
+				for (const BlueprintNode& node : nodes)
+				{
+					/// [EN] An entity this member holds the right to edit is being worked on right now, so what arrives is not applied over it.
+					/// [JP] このメンバーが編集権を持つ Entity は今まさに作業中なので、届いたものをその上から適用しない。
+					String scope = String(std::format("entity:{}", node.collaborationId_.str()));
+					if (resourceSync_.Editable(assetId, scope))
+					{
+						continue;
+					}
+
+					/// [EN] An actor already here is written over in place, which keeps its children, its selection and its undo history.
+					/// [JP] 既にいる Actor はその場に書き込む。子・選択状態・Undo 履歴が保たれる。
+					auto existing = live.find(node.collaborationId_);
+					if (existing != live.end())
+					{
+						ApplyActorNode(world, *context_.worldContext_.resource_, node, existing->second);
+						continue;
+					}
+
+					/// [EN] One that is not here yet was added by another member, and is created under the parent the hierarchy names.
+					/// [JP] まだ居ない Actor は他のメンバーが追加したもので、階層が示す親の下に作る。
+					Actor parent;
+					if (node.parentIndex_ >= 0 && static_cast<Size>(node.parentIndex_) < nodes.size())
+					{
+						auto found = live.find(nodes[static_cast<Size>(node.parentIndex_)].collaborationId_);
+						parent = found == live.end() ? Actor() : found->second;
+					}
+					live[node.collaborationId_] = InstantiateActorNode(world, *context_.worldContext_.resource_, node, parent, false);
+				}
+
+				/// [EN] An actor the arriving scene no longer lists was deleted by another member, so it goes here as well.
+				/// [JP] 届いた Scene に載っていない Actor は、他のメンバーが削除したもの。ここでも同じように消す。
+				for (const std::pair<const String, Actor>& entry : live)
+				{
+					Bool present = std::ranges::any_of(nodes, [&entry](const BlueprintNode& node) { return node.collaborationId_ == entry.first; });
+					if (!present && !resourceSync_.Editable(assetId, String(std::format("entity:{}", entry.first.str()))))
+					{
+						world.DestroyActor(entry.second);
+					}
+				}
+			}
+		}
+
+		PruneDeadSelection();
+
+		/// [EN] Must run before any ImGuizmo call this frame (per ImGuizmo's
+		///      own contract: "call BeginFrame right after ImGui NewFrame").
+		///      DrawToolbar() runs first each frame (Engine::MainLoop calls it
+		///      before Draw()), and both TimelinePanel's preview grid and
+		///      EditorWindowPanel's transform gizmo use ImGuizmo — a single
+		///      BeginFrame() here covers both instead of leaving it buried
+		///      inside EditorWindowPanel::Draw(), where TimelinePanel's grid
+		///      (drawn earlier, from here) would run on last frame's stale
+		///      ImGuizmo state.
+		/// [JP] このフレームで最初のImGuizmo呼び出しより前に実行する必要がある
+		///      (ImGuizmo自身の規約: 「BeginFrameはImGuiのNewFrame直後に呼ぶ」)。
+		///      DrawToolbar()は毎フレーム最初に呼ばれる(Engine::MainLoopが
+		///      Draw()より前に呼ぶ)、かつTimelinePanelのプレビューグリッドと
+		///      EditorWindowPanelのトランスフォームギズモの両方がImGuizmoを
+		///      使うため、ここで1回BeginFrame()すれば両方をカバーできる —
+		///      EditorWindowPanel::Draw()内に埋もれたままだと、それより先に
+		///      呼ばれるTimelinePanelのグリッドが前フレームの古いImGuizmo
+		///      状態のまま描画されてしまう。
+		ImGuizmo::BeginFrame();
+
+		menuBarPanel_->Draw();
+		if (menuBarPanel_->ConsumeShortCutKeyRequest())
+		{
+			shortCutKeyPanel_->Open();
+		}
+		if (menuBarPanel_->ConsumeSpecMemoRequest())
+		{
+			specMemoPanel_->Open();
+		}
+		if (menuBarPanel_->ConsumeConsoleRequest())
+		{
+			diagnosticsPanel_->ShowConsoleTab();
+		}
+		if (menuBarPanel_->ConsumeProfilerRequest())
+		{
+			diagnosticsPanel_->ShowProfilerTab();
+		}
+		if (menuBarPanel_->ConsumeTodoListRequest())
+		{
+			todoListPanel_->Open();
+		}
+		if (menuBarPanel_->ConsumeVersionRequest())
+		{
+			versionPanel_->Open();
+		}
+		if (menuBarPanel_->ConsumeAtomCraftRequest())
+		{
+			std::filesystem::path pickedProjectPath;
+			if (FileDialog::OpenFile(pickedProjectPath, std::filesystem::current_path(), L"Atom Craft Project (*.atmcproject)", L"*.atmcproject"))
+			{
+				EditorConfig editorConfig;
+				editorConfig.Load();
+				AtomCraft::Open(editorConfig.atomCraftPath_, String(pickedProjectPath.generic_string()));
+			}
+		}
+		if (menuBarPanel_->ConsumeConfigRequest())
+		{
+			configPanel_->Open();
+		}
+		if (menuBarPanel_->ConsumeLayerSettingsRequest())
+		{
+			layerSettingsPanel_->Open();
+		}
+		if (menuBarPanel_->ConsumeAnimatorControllerRequest())
+		{
+			Animator* animator = context_.selectionContext_.selectedActor_ ? const_cast<Animator*>(context_.selectionContext_.selectedActor_.GetComponent<Animator>()) : nullptr;
+			animatorControllerPanel_->Open(animator);
+		}
+		if (AnimatorControllerRequest::requested_)
+		{
+			AnimatorControllerRequest::requested_ = false;
+			Animator* animator = context_.selectionContext_.selectedActor_ ? const_cast<Animator*>(context_.selectionContext_.selectedActor_.GetComponent<Animator>()) : nullptr;
+			animatorControllerPanel_->Open(animator);
+		}
+		if (menuBarPanel_->ConsumeTimelineRequest())
+		{
+			timelinePanel_->Open();
+		}
+		if (TimelineRequest::requested_)
+		{
+			TimelineRequest::requested_ = false;
+			timelinePanel_->Open();
+		}
+		if (menuBarPanel_->ConsumeSkeletonControllerRequest())
+		{
+			skeletonControllerPanel_->Open();
+		}
+		if (SkeletonControllerRequest::requested_)
+		{
+			SkeletonControllerRequest::requested_ = false;
+			skeletonControllerPanel_->Open();
+		}
+		if (menuBarPanel_->ConsumeMaterialViewerRequest())
+		{
+			materialViewerPanel_->Open();
+		}
+		if (MaterialPanelRequest::openRequested_)
+		{
+			MaterialPanelRequest::openRequested_ = false;
+			materialViewerPanel_->Open();
+		}
+		if (menuBarPanel_->ConsumeModelTransformRequest())
+		{
+			modelTransformPanel_->Open();
+		}
+		if (menuBarPanel_->ConsumeAvatarRequest())
+		{
+			avatarPanel_->Open();
+		}
+		if (menuBarPanel_->ConsumeBootScreenRequest())
+		{
+			bootScreenPanel_->Open();
+		}
+		if (context_.modelTransformPreviewContext_.requestedAssetId_ != 0)
+		{
+			modelTransformPanel_->Open(context_.modelTransformPreviewContext_.requestedAssetId_);
+			context_.modelTransformPreviewContext_.requestedAssetId_ = 0;
+		}
+		shortCutKeyPanel_->Draw();
+		specMemoPanel_->Draw();
+		todoListPanel_->Draw();
+		versionPanel_->Draw();
+		configPanel_->Draw();
+		layerSettingsPanel_->Draw();
+		toolbarHeight_ = controlPanel_->Draw();
+		return toolbarHeight_;
+	}
+
+	void Editor::Draw(D3D12_GPU_DESCRIPTOR_HANDLE editorFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE gameFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE canvasFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE timelinePreviewFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE modelTransformPreviewFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE materialPreviewFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE skeletonControllerPreviewFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE avatarPreviewFrameBufferHandle, const GpuProfiler& gpuProfiler)
+	{
+		timelinePanel_->SetPreviewHandle(timelinePreviewFrameBufferHandle);
+		modelTransformPanel_->SetPreviewHandle(modelTransformPreviewFrameBufferHandle);
+		materialViewerPanel_->SetPreviewHandle(materialPreviewFrameBufferHandle);
+		skeletonControllerPanel_->SetPreviewHandle(skeletonControllerPreviewFrameBufferHandle);
+		avatarPanel_->SetPreviewHandle(avatarPreviewFrameBufferHandle);
+
+		/// [EN] Must run after DockSpaceBegin() (called by Engine before this
+		///      function) so ImGui::DockSpace() has already created/refreshed
+		///      this frame's dock node — DockBuilderDockWindow() inside these
+		///      panels' Draw() would otherwise target a node ImGui hasn't
+		///      registered as active yet this frame and silently drop the
+		///      request (this was the actual reason forced docking never
+		///      took effect when these were called from DrawToolbar(),
+		///      which runs before DockSpaceBegin()).
+		/// [JP] (Engineがこの関数より前に呼ぶ)DockSpaceBegin()の後に実行する
+		///      必要がある — ImGui::DockSpace()が今フレームのドックノードを
+		///      生成/更新済みである前提のため。これらのパネルのDraw()内の
+		///      DockBuilderDockWindow()は、そうしないとImGuiが今フレームまだ
+		///      アクティブと認識していないノードを対象にリクエストしてしまい、
+		///      黙って無視されていた(DockSpaceBegin()より前に実行される
+		///      DrawToolbar()から呼んでいた際、強制ドッキングが一切効かなかった
+		///      本当の原因)。
+		animatorControllerPanel_->Draw();
+		timelinePanel_->Draw();
+		skeletonControllerPanel_->Draw();
+		materialViewerPanel_->Draw();
+		modelTransformPanel_->Draw();
+		avatarPanel_->Draw();
+		bootScreenPanel_->Draw();
+
+		gameWindowPanel_->Draw(gameFrameBufferHandle, toolbarHeight_);
+
+		if (!gameWindowPanel_->Fullscreen())
+		{
+			hierarchyPanel_->Draw();
+			inspectorPanel_->Draw();
+			diagnosticsPanel_->Draw(gpuProfiler);
+			canvasViewPanel_->Draw(canvasFrameBufferHandle);
+			editorWindowPanel_->Draw(editorFrameBufferHandle);
+			contentsDrawerPanel_->Draw();
+		}
+
+		if (!context_.worldContext_.gameTimer_->Playing() && !ImGui::GetIO().WantTextInput)
+		{
+			Bool ctrlPressed = ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl);
+			if (ctrlPressed && ImGui::IsKeyPressed(ImGuiKey_Z))
+			{
+				context_.sceneContext_.history_.Undo();
+			}
+			if (ctrlPressed && ImGui::IsKeyPressed(ImGuiKey_Y))
+			{
+				context_.sceneContext_.history_.Redo();
+			}
+
+			/// [EN] Unreal-style "frame selected": Ctrl+F slides a viewport
+			///      camera to the selected actor. Kept in sync with
+			///      HierarchyPanel's double-click, which does the same - a
+			///      Sprite-view Image/Text/Movie animates the CanvasView
+			///      camera and pulls that panel forward (it is drawn only in
+			///      the 2D canvas, offset +100000); a skinned actor (has an
+			///      Animator) pans to the pivot at the current distance
+			///      because its bind-pose Bounds is unreliable for a dolly
+			///      fit; anything else dollies to fit its world-space Bounds
+			///      centre. See HierarchyPanel::Draw for the full rationale.
+			/// [JP] Unreal 風の「選択対象にフレーム」: Ctrl+F で選択中の
+			///      アクターへビューポートのカメラがスライドする。
+			///      HierarchyPanel のダブルクリックと同期 - 表示形式が
+			///      Sprite の Image/Text/Movie は CanvasView のカメラを
+			///      アニメーションで寄せ、そのパネルを前面に出す（2D
+			///      キャンバスにしか描かれず +100000 ずれる）。スキンアクター
+			///      （Animator を持つ）はバインドポーズ Bounds がドリー
+			///      フィットに使えないため、現在の距離のままピボットへパン。
+			///      それ以外はワールド空間 Bounds 中心へドリーフィット。
+			///      詳細は HierarchyPanel::Draw のコメント参照。
+			if (ctrlPressed && ImGui::IsKeyPressed(ImGuiKey_F) && context_.selectionContext_.selectedActor_)
+			{
+				Actor selectedActor = context_.selectionContext_.selectedActor_;
+				const Matrix& worldMatrix = selectedActor.WorldMatrix();
+
+				const Image* image = selectedActor.GetComponent<Image>();
+				const Text* text = selectedActor.GetComponent<Text>();
+				const Movie* movie = selectedActor.GetComponent<Movie>();
+				Bool isCanvasActor = (image && image->viewType_ == Image::ViewType::Sprite) || (text && text->viewType_ == Text::ViewType::Sprite) || (movie && movie->displayMode_ == Movie::DisplayMode::Sprite);
+
+				if (isCanvasActor && context_.cameraContext_.canvasCamera_)
+				{
+					Vector3 canvasTarget = Vector3(100000.0f + worldMatrix._41, 100000.0f + (ScResolution::SC_CANVAS.Height - worldMatrix._42), 100000.0f);
+					context_.cameraContext_.canvasCamera_->FocusOn(canvasTarget);
+
+					ImGui::SetWindowFocus("キャンバスビュー");
+				}
+				else if (context_.cameraContext_.editorCamera_)
+				{
+					Bool skinned = selectedActor.GetComponent<Animator>() != nullptr;
+
+					Float radius = 0.0f;
+					Vector3 target = Vector3(worldMatrix._41, worldMatrix._42, worldMatrix._43);
+
+					const Bounds* bounds = selectedActor.GetComponent<Bounds>();
+					if (bounds && !skinned)
+					{
+						Float worldScale = Max(Max(Vector3(worldMatrix._11, worldMatrix._12, worldMatrix._13).Length(), Vector3(worldMatrix._21, worldMatrix._22, worldMatrix._23).Length()), Vector3(worldMatrix._31, worldMatrix._32, worldMatrix._33).Length());
+						radius = bounds->extent_.Length() * worldScale;
+						target = Vector3::Transform(bounds->center_, worldMatrix);
+					}
+
+					context_.cameraContext_.editorCamera_->FocusOn(target, radius);
+
+					ImGui::SetWindowFocus("エディタービュー");
+				}
+			}
+		}
+	}
+
+	ViewMode Editor::GetViewMode()const
+	{
+		return menuBarPanel_->GetViewMode();
+	}
+
+	DynamicArray<Entity> Editor::GetSelectedEntities()const
+	{
+		DynamicArray<Entity> selectedEntities;
+		for (Actor actor : context_.selectionContext_.selectedActors_)
+		{
+			if (actor)
+			{
+				selectedEntities.push_back(actor.GetEntity());
+			}
+		}
+		return selectedEntities;
+	}
+
+	const RaytracingContext& Editor::GetRaytracingSettings()const
+	{
+		return context_.viewportContext_.raytracing_;
+	}
+}

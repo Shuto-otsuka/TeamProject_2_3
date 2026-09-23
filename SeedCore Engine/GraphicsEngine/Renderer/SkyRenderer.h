@@ -1,0 +1,241 @@
+#pragma once
+#include <FoundationEngine/Prelude.h>
+#include <FoundationEngine/Utility/Handle.h>
+#include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
+#include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
+#include <GraphicsEngine/System/SceneSystem.h>
+#include <GraphicsEngine/System/IndicesSystem.h>
+
+namespace SeedCore
+{
+	struct RootAddresses;
+	class BindlessHeap;
+	class World;
+	class ShaderCache;
+	class RootSignature;
+	class PipelineStateObject;
+	class ComputeShader;
+	class D3D12CommandList;
+	class ResourceCache;
+	struct LoaderSystem;
+
+	/**
+	* [EN]
+	* Per-dispatch constants for the skymap IBL generation compute passes.
+	* Mirrors the HLSL SkyDispatchBuffer (Sky/SkyGenerate.hlsli); 32 bytes.
+	* Reached through the shared root signature's param[3] 32-bit constant
+	* (dispatch_buffer_index_, see Shader/Dispatch.hlsli) rather than a root
+	* CBV, since param[0]-[2] are reserved for the shared shader_resource_indices/
+	* unordered_access_indices/constant_indices.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* IBL 生成コンピュートパスのディスパッチ毎定数。HLSL の SkyDispatchBuffer
+	* （Sky/SkyGenerate.hlsli）と一致。32 バイト。共有ルートシグネチャの
+	* param[3] 32bit定数(dispatch_buffer_index_、Shader/Dispatch.hlsli参照)
+	* 経由で参照する(ルートCBVではない) — param[0]〜[2]は共有の
+	* shader_resource_indices/unordered_access_indices/constant_indices用に予約されているため。
+	*/
+	struct SkyDispatchBuffer
+	{
+		Uint sourceIndex_ = 0;
+		Uint destIndex_ = 0;
+		Uint faceSize_ = 0;
+		Uint sampleCount_ = 0;
+		Float roughness_ = 0.0f;
+		Uint mipLevel_ = 0;
+		Uint faceOffset_ = 0;
+		Uint skyDispatchBufferPadding0_ = 0;
+	};
+
+	/**
+	* [EN]
+	* Sky's own contribution to image-based lighting. Mirrors the HLSL
+	* SkyConstantBuffer (Sky/SkyGenerate.hlsli); 16 bytes. Reached through
+	* ConstantIndices::skyIndex_, unlike SkyDispatchBuffer above - every
+	* lighting shader that samples the environment/irradiance/prefiltered
+	* cubes reads this, not just SkyRenderer's own generate dispatches.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 空自身が担う IBL への寄与。HLSL の SkyConstantBuffer
+	* （Sky/SkyGenerate.hlsli）と一致。16 バイト。上の SkyDispatchBuffer とは
+	* 違い ConstantIndices::skyIndex_ 経由で参照する - SkyRenderer 自身の
+	* 生成ディスパッチだけでなく、environment/irradiance/prefilter キューブを
+	* サンプルする全ライティングシェーダーがこれを読む。
+	*/
+	struct SkyConstantBuffer
+	{
+		Float intensity_ = 1.0f;
+		Vector3 skyConstantBufferPadding0_;
+	};
+	SC_STATIC_ASSERT_SIZE(SkyConstantBuffer, 16, "Sky/SkyGenerate.hlsli");
+
+	/**
+	* [EN]
+	* Owns the whole image-based-lighting machinery for the scene's sky.
+	* Holds the environment cube (sky), the diffuse irradiance / specular
+	* prefiltered cubes and the shared BRDF lookup table, plus every compute
+	* pass. An HDR skymap (or the procedural sky) fills the environment cube,
+	* which is then convolved into irradiance / prefilter.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* シーンの空の IBL 機構一式を所有する。environment キューブ（空）、拡散
+	* irradiance / 鏡面 prefilter キューブ、共有 BRDF ルックアップテーブル、
+	* および全コンピュートパスを持つ。HDR スカイマップ(またはプロシージャル
+	* 空)が environment キューブを充填し、irradiance / prefilter へ畳み込む。
+	*/
+	class SkyRenderer :public NonCopyable
+	{
+	public:
+		SkyRenderer() = default;
+		~SkyRenderer() = default;
+
+		void Create(ID3D12Device* device, BindlessHeap* bindlessHeap, ShaderCache& shaderCache, RootSignature& rootSignature, PipelineStateObject& pipelineStateObject);
+
+		void Gather(LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world);
+
+		void SetIndices(ConstantIndicesSystem& constantIndicesSystem, ShaderResourceIndicesSystem& shaderResourceIndicesSystem, Float directionalIntensity);
+
+		/// [EN] Procedural-sky IBL mode (used only when no skymap is bound):
+		///      renders VolumetricCloudScapes' analytic sky+sun into the
+		///      environment cube and convolves it, so the procedural sky
+		///      lights the scene. settingsHash triggers a regenerate when the
+		///      sky parameters change; lightIndex is the LightConstantBuffer
+		///      bindless index (sun direction).
+		/// [JP] プロシージャル空の IBL モード(スカイマップ未バインド時のみ):
+		///      VolumetricCloudScapes の解析的な空+太陽を environment キューブへ
+		///      描いて畳み込み、プロシージャル空がシーンを照らすようにする。
+		///      settingsHash は空パラメータ変更時の再生成トリガー。lightIndex は
+		///      LightConstantBuffer の bindless インデックス(太陽方向用)。
+		void SetProceduralSky(Bool enabled, Uint32 settingsHash, Uint lightIndex, Float totalTime);
+
+		/// [EN] One-time BRDF LUT + static environment generation (Lietime, or the
+		///      base sky for Realtime) when the sky source changes. Also drives the
+		///      procedural-sky regenerate; addresses is needed by that pass (root
+		///      parameters 0-3) and must point at this frame's uploaded indices.
+		/// [JP] BRDF LUT と、空ソース変更時の静的 environment 生成（Lietime、または
+		///      Realtime のベース空）を 1 回だけ行う。プロシージャル空の再生成も
+		///      ここで駆動する。addresses はそのパスが使う(ルートパラメータ0-3)
+		///      ため、今フレームのアップロード済みインデックスを指すこと。
+		void Generate(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
+
+	private:
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> CreateComputePipeline(ID3D12Device* device, ShaderCache& shaderCache, PipelineStateObject& pipelineStateObject, const String& filePath);
+
+		void CreateBrdfLookupTable(ID3D12Device* device, BindlessHeap* bindlessHeap);
+
+		void CreateIblCubes(ID3D12Device* device, BindlessHeap* bindlessHeap);
+
+		void CreateCube(ID3D12Device* device, BindlessHeap* heap, Uint faceSize, Uint mipLevels, DescriptorHeap* renderTargetViewHeap, D3D12_RESOURCE_STATES initialState,
+			Microsoft::WRL::ComPtr<ID3D12Resource>& resource, Uint& shaderResourceViewIndex, Uint* unorderedAccessViewIndices);
+
+		/// [EN] Fills the environment cube (all 6 faces) from the current HDR
+		///      equirect source, then convolves it into irradiance / prefilter.
+		/// [JP] 現在の HDR equirect ソースから environment キューブ（6 面）を充填し、
+		///      irradiance / prefilter へ畳み込む。
+		void GenerateStaticEnvironment(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
+
+		/// [EN] Convolves a source cube (SRV in a shader-resource state) into the
+		///      irradiance / prefilter cubes.
+		/// [JP] ソースキューブ（シェーダーリソース状態）を irradiance / prefilter
+		///      キューブへ畳み込む。
+		void ConvolveFromSource(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, Uint sourceShaderResourceViewIndex, const RootAddresses& addresses);
+
+		/// [EN] Binds the shared root parameters 0-2 (addresses) plus this
+		///      dispatch's own SkyDispatchBuffer through root parameter 3 (the
+		///      32-bit dispatch_buffer_index_ constant, see Shader/Dispatch.hlsli) -
+		///      the same generic per-dispatch-data mechanism Zephyr uses.
+		/// [JP] 共有ルートパラメータ0-2(addresses)に加え、このディスパッチ自身の
+		///      SkyDispatchBuffer をルートパラメータ3(32bitの
+		///      dispatch_buffer_index_ 定数、Shader/Dispatch.hlsli 参照)経由で
+		///      バインドする - Zephyr が使うのと同じ汎用ディスパッチ毎データの
+		///      仕組み。
+		void Dispatch(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, ID3D12PipelineState* pipeline, const SkyDispatchBuffer& data, Uint groupsX, Uint groupsY, Uint groupsZ, const RootAddresses& addresses);
+
+		void GenerateProceduralEnvironment(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
+
+		void Transition(D3D12CommandList* cmdList, ID3D12Resource* resource, D3D12_RESOURCE_STATES before, D3D12_RESOURCE_STATES after, Uint subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES);
+
+		void UnorderedAccessBarrier(D3D12CommandList* cmdList, ID3D12Resource* resource);
+
+	private:
+		static constexpr Uint environmentSize_ = 512;
+		static constexpr Uint environmentMipLevels_ = 10;
+		static constexpr Uint irradianceSize_ = 32;
+		static constexpr Uint prefilterSize_ = 128;
+		static constexpr Uint prefilterMipLevels_ = 5;
+
+		static constexpr DXGI_FORMAT cubeFormat_ = DXGI_FORMAT_R16G16B16A16_FLOAT;
+
+		static constexpr Uint brdfLookupTableSize_ = 512;
+		static constexpr Uint brdfSampleCount_ = 1024;
+		static constexpr Uint prefilterSampleCount_ = 256;
+		static constexpr Uint maxGenerateDispatches_ = 16;
+		static constexpr DXGI_FORMAT brdfLookupTableFormat_ = DXGI_FORMAT_R16G16_FLOAT;
+
+		ID3D12Device* device_ = nullptr;
+		BindlessHeap* bindlessHeap_ = nullptr;
+
+		RootSignature* rootSignature_ = nullptr;
+		Handle<RootSignature> rootSignatureHandle_;
+
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> equirectCubemapPipeline_;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> diffuseIrradiancePipeline_;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> specularPrefilterPipeline_;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> brdfLookupTablePipeline_;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> proceduralCubemapPipeline_;
+
+		DynamicArray<ResourcePtr<ConstantBuffer<SkyDispatchBuffer>>> constantBuffers_;
+		Uint dispatchCursor_ = 0;
+
+		ResourcePtr<ConstantBuffer<SkyConstantBuffer>> skyConstantBuffer_;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> brdfLookupTableResource_;
+		Uint brdfLookupTableShaderResourceViewIndex_ = SC_INVALID;
+		Uint brdfLookupTableUnorderedAccessViewIndex_ = SC_INVALID;
+		Bool brdfLookupTableGenerated_ = false;
+
+		/// [EN] Sky-only cube: skybox background + IBL source.
+		/// [JP] 空だけのキューブ: スカイボックス背景 + IBL ソース。
+		Microsoft::WRL::ComPtr<ID3D12Resource> environmentResource_;
+		Uint environmentShaderResourceViewIndex_ = SC_INVALID;
+		Uint environmentUnorderedAccessViewIndices_[environmentMipLevels_] = {};
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> irradianceResource_;
+		Uint irradianceShaderResourceViewIndex_ = SC_INVALID;
+		Uint irradianceUnorderedAccessViewIndex_ = SC_INVALID;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> prefilterResource_;
+		Uint prefilterShaderResourceViewIndex_ = SC_INVALID;
+		Uint prefilterUnorderedAccessViewIndices_[prefilterMipLevels_] = {};
+
+		/// [EN] Current sky source state (resolved each Gather).
+		/// [JP] 現在の空ソース状態（Gather 毎に解決）。
+		Bool hasSkymap_ = false;
+		Uint sourceShaderResourceViewIndex_ = SC_INVALID;
+		Uint generatedSourceShaderResourceViewIndex_ = SC_INVALID;
+		Float intensity_ = 1.0f;
+
+		/// [EN] Procedural-sky IBL state (SetProceduralSky). Regenerates when
+		///      the settings hash changes or periodically (sun rotation isn't
+		///      in the hash). Generated/skymap states invalidate each other so
+		///      toggling between modes always regenerates correctly.
+		/// [JP] プロシージャル空 IBL の状態(SetProceduralSky)。設定ハッシュの
+		///      変化時、または定期的に再生成する(太陽の回転はハッシュに含まれ
+		///      ないため)。生成状態はスカイマップ側と相互に無効化し合うので、
+		///      モードを切り替えても必ず正しく再生成される。
+		Bool proceduralSkyEnabled_ = false;
+		Uint32 proceduralSkyHash_ = 0;
+		Uint proceduralSkyLightIndex_ = 0;
+		Float proceduralSkyTime_ = 0.0f;
+		Uint32 generatedProceduralSkyHash_ = 0;
+		Bool proceduralSkyGenerated_ = false;
+		Uint proceduralSkyRefreshCounter_ = 0;
+		static constexpr Uint proceduralSkyRefreshInterval_ = 120;
+	};
+}

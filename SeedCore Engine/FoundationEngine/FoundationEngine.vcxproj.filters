@@ -1,0 +1,834 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <ItemGroup>
+    <Filter Include="JobSystem">
+      <UniqueIdentifier>{9dbabcc7-87ed-4e09-8974-6decad331374}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math">
+      <UniqueIdentifier>{c08df867-32d0-4bc6-9d6f-d1416f4d2e35}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Utility">
+      <UniqueIdentifier>{96bf49e2-b491-4170-bb9c-8788a914119c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Log">
+      <UniqueIdentifier>{b44ffef0-bd16-4fbf-97c6-6dbab4b93b31}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Pool">
+      <UniqueIdentifier>{2e80dd9c-fb80-4d8d-bb4c-6a730a6a530f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Memory">
+      <UniqueIdentifier>{4be45a4b-7de3-4695-a079-8a6d4c39d8f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math\Random">
+      <UniqueIdentifier>{0bce8bfc-01ae-4b40-8a60-776ed080de7d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Input">
+      <UniqueIdentifier>{387778eb-d688-4754-811e-74c24b801133}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="File">
+      <UniqueIdentifier>{f22d5a97-1f12-429d-b5e7-f07cb3e88102}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource">
+      <UniqueIdentifier>{ecf535db-1b40-4dca-ab80-da0d3c3b5791}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Time">
+      <UniqueIdentifier>{20e56ac5-20ef-4fe0-83b2-db27fff14f23}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Reflection">
+      <UniqueIdentifier>{a1b2c3d4-refl-0000-0000-000000000001}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Payload">
+      <UniqueIdentifier>{a1b2c3d4-payl-0000-0000-000000000001}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Interop">
+      <UniqueIdentifier>{febad004-00b5-450b-aaa9-3d3101ab61d2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Serialization">
+      <UniqueIdentifier>{0273aca2-c01c-4cd0-8279-d0d90544d0b5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Serialization\Bainary">
+      <UniqueIdentifier>{c10667b9-a2d8-4173-b593-ba1612f443fc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Serialization\Json">
+      <UniqueIdentifier>{d1876de6-9c4d-4cc5-a365-c13df8d5f17a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Serialization\Encryption">
+      <UniqueIdentifier>{439cb8d7-1026-42ba-b7d3-68cb7fe0617f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Plugin">
+      <UniqueIdentifier>{5ba222e3-10a6-4eef-8556-a8e10ac414a7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World">
+      <UniqueIdentifier>{f529b68a-9c76-453b-92f3-09c51c91602f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World\ECS">
+      <UniqueIdentifier>{397d2a74-c036-4fae-b1b7-87cab259842e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World\ECS\System">
+      <UniqueIdentifier>{42634442-0c2b-4613-ace7-da0a614d1f84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World\ECS\Component">
+      <UniqueIdentifier>{c7cfad59-a446-4010-9b24-2a79d3181ff0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World\ECS\Entity">
+      <UniqueIdentifier>{ae0405e8-d838-4c58-88fa-aa63e8cc8007}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World\Tag">
+      <UniqueIdentifier>{6375662b-84fb-46b1-8fb6-9bd90bd098cb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World\Layer">
+      <UniqueIdentifier>{d6740f15-2fab-425a-bb0d-7996b871434d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World\Actor">
+      <UniqueIdentifier>{ad874af1-ba26-4464-b286-2a056c623872}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World\Command">
+      <UniqueIdentifier>{5444748f-b751-40f6-9c11-849da114cdc7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World\ECS\Archetype">
+      <UniqueIdentifier>{ad5e2cf1-008d-4121-b631-06f2895f5f7e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World\ECS\SparseSet">
+      <UniqueIdentifier>{0a0ad03d-e447-46cc-9e0e-16fcdb34dda7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World\ECS\Query">
+      <UniqueIdentifier>{09b5e78c-817e-42de-8e69-65b122707cca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Scene">
+      <UniqueIdentifier>{087b4382-43d3-4481-8b13-43708247f333}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Prefab">
+      <UniqueIdentifier>{b5b4ec39-9368-4bf2-85e2-9f98a5a5c196}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Config">
+      <UniqueIdentifier>{06820f08-9189-4c7e-b81e-e095f39d8ade}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Asset">
+      <UniqueIdentifier>{3208c952-c199-44be-8f66-c2884195048f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource\Sharing">
+      <UniqueIdentifier>{0ace1b20-e7cb-4422-b66e-7d7777730675}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="JobSystem\FlowBuilder.cpp">
+      <Filter>JobSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="JobSystem\JobNode.cpp">
+      <Filter>JobSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="JobSystem\JobTask.cpp">
+      <Filter>JobSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="JobSystem\JobNodeBase.cpp">
+      <Filter>JobSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="JobSystem\JobGraph.cpp">
+      <Filter>JobSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="JobSystem\JobTopology.cpp">
+      <Filter>JobSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="JobSystem\JobTaskflow.cpp">
+      <Filter>JobSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="JobSystem\JobWorker.cpp">
+      <Filter>JobSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="JobSystem\JobExecutor.cpp">
+      <Filter>JobSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="JobSystem\JobRuntime.cpp">
+      <Filter>JobSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="Pool\ObjectPool.cpp">
+      <Filter>Pool</Filter>
+    </ClCompile>
+    <ClCompile Include="Pool\InternPool.cpp">
+      <Filter>Pool</Filter>
+    </ClCompile>
+    <ClCompile Include="JobSystem\JobVector.cpp">
+      <Filter>JobSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility\String.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Prelude.cpp" />
+    <ClCompile Include="File\FileUtility.cpp">
+      <Filter>File</Filter>
+    </ClCompile>
+    <ClCompile Include="File\FileDialog.cpp">
+      <Filter>File</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility\Bitset.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\ResourceCache.cpp">
+      <Filter>Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="File\FileDirectory.cpp">
+      <Filter>File</Filter>
+    </ClCompile>
+    <ClCompile Include="JobSystem\Semaphore.cpp">
+      <Filter>JobSystem</Filter>
+    </ClCompile>
+    <ClCompile Include="Time\Timer.cpp">
+      <Filter>Time</Filter>
+    </ClCompile>
+    <ClCompile Include="Time\WorldTimer.cpp">
+      <Filter>Time</Filter>
+    </ClCompile>
+    <ClCompile Include="Time\GameTimer.cpp">
+      <Filter>Time</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\Input.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Input\InputSystem.cpp">
+      <Filter>Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\LoaderSystem.cpp">
+      <Filter>Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Log\LogSystem.cpp">
+      <Filter>Log</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Gateway.cpp">
+      <Filter>Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Reflection\Reflection.generated.cpp">
+      <Filter>Reflection</Filter>
+    </ClCompile>
+    <ClCompile Include="Payload\Payload.generated.cpp">
+      <Filter>Payload</Filter>
+    </ClCompile>
+    <ClCompile Include="Math\Random\Hash.cpp">
+      <Filter>Math\Random</Filter>
+    </ClCompile>
+    <ClCompile Include="Utility\Delegate.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
+    <ClCompile Include="Serialization\Json\JsonArchive.cpp">
+      <Filter>Serialization\Json</Filter>
+    </ClCompile>
+    <ClCompile Include="Serialization\Binary\BinaryArchive.cpp">
+      <Filter>Serialization\Bainary</Filter>
+    </ClCompile>
+    <ClCompile Include="Log\AftermathCrashTracker.cpp">
+      <Filter>Log</Filter>
+    </ClCompile>
+    <ClCompile Include="Serialization\Encryption\Sha256.cpp">
+      <Filter>Serialization\Encryption</Filter>
+    </ClCompile>
+    <ClCompile Include="Serialization\Encryption\Aes256.cpp">
+      <Filter>Serialization\Encryption</Filter>
+    </ClCompile>
+    <ClCompile Include="Plugin\PluginModule.cpp">
+      <Filter>Plugin</Filter>
+    </ClCompile>
+    <ClCompile Include="Plugin\PluginHost.cpp">
+      <Filter>Plugin</Filter>
+    </ClCompile>
+    <ClCompile Include="Payload\PayloadRegistry.cpp">
+      <Filter>Payload</Filter>
+    </ClCompile>
+    <ClCompile Include="Reflection\ReflectionRegistry.cpp">
+      <Filter>Reflection</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\Component\ComponentRegistry.cpp">
+      <Filter>World\ECS\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\Entity\Entity.cpp">
+      <Filter>World\ECS\Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\Entity\EntityRecord.cpp">
+      <Filter>World\ECS\Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\Archetype\Archetype.cpp">
+      <Filter>World\ECS\Archetype</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\Archetype\ArchetypeRegistry.cpp">
+      <Filter>World\ECS\Archetype</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\Archetype\Chunk.cpp">
+      <Filter>World\ECS\Archetype</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\System\LifetimeSystem.cpp">
+      <Filter>World\ECS\System</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\System\MoveSystem.cpp">
+      <Filter>World\ECS\System</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\System\SpawnerSystem.cpp">
+      <Filter>World\ECS\System</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\System\SystemGraph.cpp">
+      <Filter>World\ECS\System</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\System\SystemScheduler.cpp">
+      <Filter>World\ECS\System</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\System\TransformSystem.cpp">
+      <Filter>World\ECS\System</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Layer\LayerCollisionMatrix.cpp">
+      <Filter>World\Layer</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Layer\LayerRegistry.cpp">
+      <Filter>World\Layer</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Actor\Actor.cpp">
+      <Filter>World\Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Command\ActorCommand.cpp">
+      <Filter>World\Command</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Command\ArrayFieldCommand.cpp">
+      <Filter>World\Command</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Command\CommandBuffer.cpp">
+      <Filter>World\Command</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Command\ComponentLifecycleCommand.cpp">
+      <Filter>World\Command</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Command\CompoundCommand.cpp">
+      <Filter>World\Command</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Command\History.cpp">
+      <Filter>World\Command</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Tag\TagRegistry.cpp">
+      <Filter>World\Tag</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Scene\Scene.cpp">
+      <Filter>Resource\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Scene\ScenePool.cpp">
+      <Filter>Resource\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Scene\SceneTransitionSystem.cpp">
+      <Filter>Resource\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Actor\Blueprint.cpp">
+      <Filter>World\Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Config\BootConfig.cpp">
+      <Filter>Resource\Config</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Config\EditorConfig.cpp">
+      <Filter>Resource\Config</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Config\GameConfig.cpp">
+      <Filter>Resource\Config</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Config\IconConfig.cpp">
+      <Filter>Resource\Config</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Prefab\Prefab.cpp">
+      <Filter>Resource\Prefab</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Prefab\PrefabPool.cpp">
+      <Filter>Resource\Prefab</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Asset\Asset.cpp">
+      <Filter>Resource\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Asset\AxisConvention.cpp">
+      <Filter>Resource\Asset</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\Component\ComponentBehaviour.cpp">
+      <Filter>World\ECS\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="World\World.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="World\WorldSnapshot.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\ResourceSync.cpp">
+      <Filter>Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Sharing\HttpClient.cpp">
+      <Filter>Resource\Sharing</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Sharing\GoogleAuth.cpp">
+      <Filter>Resource\Sharing</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Sharing\GoogleDocument.cpp">
+      <Filter>Resource\Sharing</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Sharing\GoogleDrive.cpp">
+      <Filter>Resource\Sharing</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Sharing\SharedLockTable.cpp">
+      <Filter>Resource\Sharing</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Sharing\SharedCatalog.cpp">
+      <Filter>Resource\Sharing</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Sharing\SharedScene.cpp">
+      <Filter>Resource\Sharing</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Sharing\SharingWorker.cpp">
+      <Filter>Resource\Sharing</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Log\DxFail.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\WorkerCommon.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\Assert.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\Exeption.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Types.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\FlowBuilder.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\JobExecutor.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\AtomicNotifier.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Algorithm.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Memory\ChunkAllocator.h">
+      <Filter>Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Pool\InternPool.h">
+      <Filter>Pool</Filter>
+    </ClInclude>
+    <ClInclude Include="Pool\ObjectPool.h">
+      <Filter>Pool</Filter>
+    </ClInclude>
+    <ClInclude Include="Pool\StablePool.h">
+      <Filter>Pool</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Array.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Bitset.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Bootstrap.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\DestructiveCopy.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Handle.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\IndexRange.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\NonCopyable.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\NonMovable.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\NonTransferable.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\ResourcePtr.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\String.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\JobCommon.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\JobConcept.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\JobDeclaretions.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\WorkerQueue.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\Semaphore.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\NonblockingNotifier.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\JobWorker.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\JobVector.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\JobTopology.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\JobTaskflow.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\JobTask.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\JobRuntime.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\JobNodeBase.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\JobNode.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\JobGraph.h">
+      <Filter>JobSystem</Filter>
+    </ClInclude>
+    <ClInclude Include="Prelude.h" />
+    <ClInclude Include="File\FileUtility.h">
+      <Filter>File</Filter>
+    </ClInclude>
+    <ClInclude Include="File\FileDialog.h">
+      <Filter>File</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\ArtMap.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\MathCommon.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\FlatMap.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\ReadWrite.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Matrix.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Quaternion.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\ResourceCache.h">
+      <Filter>Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Random\Xorshift.h">
+      <Filter>Math\Random</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\SlFail.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="File\FileDirectory.h">
+      <Filter>File</Filter>
+    </ClInclude>
+    <ClInclude Include="SeedScript.h" />
+    <ClInclude Include="Time\Timer.h">
+      <Filter>Time</Filter>
+    </ClInclude>
+    <ClInclude Include="Time\GameTimer.h">
+      <Filter>Time</Filter>
+    </ClInclude>
+    <ClInclude Include="Time\WorldTimer.h">
+      <Filter>Time</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\Input.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Input\InputSystem.h">
+      <Filter>Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\LoaderSystem.h">
+      <Filter>Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\Error.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\Warning.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\Notice.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\LogSystem.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Gateway.h">
+      <Filter>Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\ResourceRef.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Random\Hash.h">
+      <Filter>Math\Random</Filter>
+    </ClInclude>
+    <ClInclude Include="Interop\ColliderInstance.h">
+      <Filter>Interop</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Halton.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Delegate.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Serialization\Json\JsonArchive.h">
+      <Filter>Serialization\Json</Filter>
+    </ClInclude>
+    <ClInclude Include="Serialization\Binary\BinaryArchive.h">
+      <Filter>Serialization\Bainary</Filter>
+    </ClInclude>
+    <ClInclude Include="Serialization\SerializeSupport.h">
+      <Filter>Serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="Log\AftermathCrashTracker.h">
+      <Filter>Log</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Ray.h">
+      <Filter>Math</Filter>
+    </ClInclude>
+    <ClInclude Include="Serialization\Encryption\Sha256.h">
+      <Filter>Serialization\Encryption</Filter>
+    </ClInclude>
+    <ClInclude Include="Serialization\Encryption\Aes256.h">
+      <Filter>Serialization\Encryption</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugin\PluginModule.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Plugin\PluginHost.h">
+      <Filter>Plugin</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\DynamicArray.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\StaticArray.h">
+      <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="Payload\PayloadRegistry.h">
+      <Filter>Payload</Filter>
+    </ClInclude>
+    <ClInclude Include="Reflection\ReflectionRegistry.h">
+      <Filter>Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Active.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Awakeable.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Bounds.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Collisionable.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Component.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\ComponentRegistry.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Destroyable.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\FixedTick.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\InspectorDrawable.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\LateTickable.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Lifetime.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Name.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Position.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Rotation.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Scale.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Spawner.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Startable.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Tickable.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Triggerable.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Velocity.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Entity\Entity.h">
+      <Filter>World\ECS\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Entity\EntityRecord.h">
+      <Filter>World\ECS\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Archetype\Archetype.h">
+      <Filter>World\ECS\Archetype</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Archetype\ArchetypeRegistry.h">
+      <Filter>World\ECS\Archetype</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Archetype\Chunk.h">
+      <Filter>World\ECS\Archetype</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Query\Query.h">
+      <Filter>World\ECS\Query</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\SparseSet\SparseSet.h">
+      <Filter>World\ECS\SparseSet</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\System\LifetimeSystem.h">
+      <Filter>World\ECS\System</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\System\MoveSystem.h">
+      <Filter>World\ECS\System</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\System\SpawnerSystem.h">
+      <Filter>World\ECS\System</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\System\SystemGraph.h">
+      <Filter>World\ECS\System</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\System\SystemScheduler.h">
+      <Filter>World\ECS\System</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\System\TransformSystem.h">
+      <Filter>World\ECS\System</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Layer\LayerCollisionMatrix.h">
+      <Filter>World\Layer</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Layer\LayerRegistry.h">
+      <Filter>World\Layer</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Actor\Actor.h">
+      <Filter>World\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Command\ActorCommand.h">
+      <Filter>World\Command</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Command\ArrayFieldCommand.h">
+      <Filter>World\Command</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Command\Command.h">
+      <Filter>World\Command</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Command\CommandBuffer.h">
+      <Filter>World\Command</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Command\ComponentCommand.h">
+      <Filter>World\Command</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Command\ComponentLifecycleCommand.h">
+      <Filter>World\Command</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Command\CompoundCommand.h">
+      <Filter>World\Command</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Command\History.h">
+      <Filter>World\Command</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Tag\TagRegistry.h">
+      <Filter>World\Tag</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Scene\Scene.h">
+      <Filter>Resource\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Scene\ScenePool.h">
+      <Filter>Resource\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Scene\SceneTransitionSystem.h">
+      <Filter>Resource\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Actor\Blueprint.h">
+      <Filter>World\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Config\BootConfig.h">
+      <Filter>Resource\Config</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Config\EditorConfig.h">
+      <Filter>Resource\Config</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Config\GameConfig.h">
+      <Filter>Resource\Config</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Config\IconConfig.h">
+      <Filter>Resource\Config</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Prefab\Prefab.h">
+      <Filter>Resource\Prefab</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Prefab\PrefabPool.h">
+      <Filter>Resource\Prefab</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\ComponentConcept.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Asset\Asset.h">
+      <Filter>Resource\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Asset\AxisConvention.h">
+      <Filter>Resource\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\ComponentBehaviour.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\World.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\WorldSnapshot.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\ResourceSync.h">
+      <Filter>Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Sharing\HttpClient.h">
+      <Filter>Resource\Sharing</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Sharing\GoogleAuth.h">
+      <Filter>Resource\Sharing</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Sharing\GoogleDocument.h">
+      <Filter>Resource\Sharing</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Sharing\GoogleDrive.h">
+      <Filter>Resource\Sharing</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Sharing\SharedLockTable.h">
+      <Filter>Resource\Sharing</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Sharing\SharedCatalog.h">
+      <Filter>Resource\Sharing</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Sharing\SharedScene.h">
+      <Filter>Resource\Sharing</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Sharing\SharingWorker.h">
+      <Filter>Resource\Sharing</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

@@ -1,0 +1,1062 @@
+#include <FoundationEngine/Resource/ResourceCache.h>
+#include <FoundationEngine/Resource/LoaderSystem.h>
+#include <FoundationEngine/Log/Warning.h>
+#include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
+#include <FoundationEngine/JobSystem/JobExecutor.h>
+#include <FoundationEngine/JobSystem/JobTaskflow.h>
+#include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
+#include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
+
+namespace SeedCore
+{
+	/**
+	* [EN]
+	* Constructs the cache, creating each resource manager and resolving
+	* the project root path.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* キャッシュを構築し、各リソースマネージャを生成し、プロジェクト
+	* ルートパスを解決する。
+	*/
+	ResourceCache::ResourceCache(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap) : loader_(loader), heap_(heap)
+	{
+		/// [EN] The project root is one level above the executable's working directory.
+		/// [JP] プロジェクトルートは、実行ファイルの作業ディレクトリの1つ上にある。
+		projectRootPath_ = std::filesystem::current_path().parent_path();
+
+		for (const std::pair<AssetType, AssetRegistry::Factory>& entry : AssetRegistry::GetRegistry())
+		{
+			resourceMap_.insert({ entry.first, entry.second() });
+		}
+	}
+
+	/**
+	* [EN]
+	* Destroys the cache, unloading every currently-loaded asset.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* キャッシュを破棄し、現在読み込まれている全アセットを解放する。
+	*/
+	ResourceCache::~ResourceCache()
+	{
+		/// [EN] Destroying the executor first waits (in ~JobExecutor) for any running StepAsync() job, so the cache can be destroyed mid-load.
+		/// [JP] 先に実行器を破棄し、動いている StepAsync() のジョブの終了を(~JobExecutor で)待つ。これで読み込み中でもキャッシュを破棄できる。
+		loadExecutor_ = nullptr;
+
+		Unload(loader_, heap_);
+	}
+
+	/**
+	* [EN]
+	* Starts (or restarts) an incremental scan/load pass: rescans the
+	* project directory tree, builds the pending-load queue ordered by
+	* AssetType, and resets progress counters.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 逐次的なスキャン/読み込みパスを開始（または再開始）する:
+	* プロジェクトディレクトリツリーを再スキャンし、AssetType 順に並べた
+	* 保留読み込みキューを構築し、進捗カウンタをリセットする。
+	*/
+	void ResourceCache::Async()
+	{
+		scanComplete_.store(false, std::memory_order_release);
+		pendingAssetIDs_.clear();
+		pendingIndex_ = 0;
+		totalAssetCount_.store(0, std::memory_order_release);
+		loadedAssetCount_.store(0, std::memory_order_release);
+		loadStarted_.store(false, std::memory_order_release);
+
+		Scan(String(projectRootPath_.c_str()));
+
+		/// [EN] Load order matters: textures/models/animations before the things that reference them (e.g. effects/audio after visuals), scenes/prefabs last since they may reference everything else.
+		/// [JP] 読み込み順序が重要: テクスチャ/モデル/アニメーションを、それらを参照するもの（ビジュアルの後にエフェクト/オーディオなど）より先に読み込む。シーン/プレハブは他の全てを参照し得るため最後にする。
+		static const AssetType order[] =
+		{
+			AssetType::Texture,
+			AssetType::Model,
+			AssetType::Animation,
+			AssetType::MeshCollision,
+			AssetType::Material,
+			AssetType::Skeleton,
+			AssetType::Font,
+			AssetType::Effect,
+			AssetType::Audio,
+			AssetType::Movie,
+			AssetType::Prefab,
+			AssetType::Scene,
+			AssetType::Skymap,
+		};
+
+		for (AssetType type : order)
+		{
+			for (auto& [id, asset] : assetsMap_)
+			{
+				if (asset.type_ == type && !asset.isLoaded_)
+				{
+					pendingAssetIDs_.push_back(id);
+				}
+			}
+		}
+
+		totalAssetCount_.store(static_cast<Uint32>(pendingAssetIDs_.size()), std::memory_order_release);
+		scanComplete_.store(true, std::memory_order_release);
+	}
+
+	/**
+	* [EN]
+	* Loads exactly one pending asset from the queue built by Async(),
+	* if any remain. Returns whether an asset was processed this call
+	* (false once the queue is drained or Async hasn't been called).
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Async() が構築したキューから、残っていればちょうど1つの保留
+	* アセットを読み込む。この呼び出しでアセットを処理したかどうかを
+	* 返す（キューが尽きた、または Async が呼ばれていない場合は false）。
+	*/
+	Bool ResourceCache::Step(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader)
+	{
+		if (!scanComplete_.load(std::memory_order_acquire))
+		{
+			return false;
+		}
+
+		if (pendingIndex_ >= pendingAssetIDs_.size())
+		{
+			return false;
+		}
+
+		Uint32 assetID = pendingAssetIDs_[pendingIndex_++];
+
+		AssetRecord* asset = GetAsset(assetID);
+		if (asset && !asset->isLoaded_)
+		{
+			/// [EN] Dispatch to the manager for this asset type (Prefab/Scene have no Step loader). This runs on StepAsync's worker while the main thread may use the same Direct queue,
+			///      so each Load() locks D3D12CommandQueue::AcquireLock() only around ExecuteCommandLists/Signal.
+			/// [JP] アセット種別に対応する管理クラスへ渡す(Prefab/Scene は Step の読み込みを持たない)。これは StepAsync のワーカーで動き、メインスレッドも同じ Direct キューを使うので、
+			///      各 Load() は ExecuteCommandLists/Signal の間だけ D3D12CommandQueue::AcquireLock() でロックする。
+			Asset* resource = GetResource(asset->type_);
+			if (resource)
+			{
+				AssetContext context{ loader, *this, device, cmdQueue, heap, &bc7Shader };
+				resource->Load(context, asset->assetID_);
+			}
+
+			asset->isLoaded_ = true;
+		}
+
+		loadedAssetCount_.fetch_add(1, std::memory_order_acq_rel);
+		return true;
+	}
+
+	/**
+	* [EN]
+	* Starts (once per Async() pass) a background job that repeatedly calls
+	* Step() on a dedicated worker thread until the pending queue is
+	* drained. See the header doc comment for the full contract.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* バックグラウンドジョブを開始する（Async() パスごとに1回）。専用の
+	* ワーカースレッド上でキューが尽きるまで Step() を繰り返し呼ぶ。
+	* 完全な契約についてはヘッダのドキュメントコメント参照。
+	*/
+	void ResourceCache::StepAsync(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader)
+	{
+		Bool expected = false;
+		if (!loadStarted_.compare_exchange_strong(expected, true, std::memory_order_acq_rel))
+		{
+			return;
+		}
+
+		if (!loadExecutor_)
+		{
+			loadExecutor_ = MakePtr<JobExecutor>(1);
+		}
+
+		/// [EN] Clear the member taskflow first, since a rescan (Unload() resetting loadStarted_) would otherwise re-run it with the previous pass's finished task still inside.
+		/// [JP] 先にメンバーの taskflow を空にする。再スキャン(Unload() が loadStarted_ を戻した場合)で、前回の完了済みタスクが残ったまま再実行しないため。
+		loadTaskflow_.Clear();
+		loadTaskflow_.emplace([this, &loader, device, cmdQueue, heap, &bc7Shader]()
+		{
+			while (Step(loader, device, cmdQueue, heap, bc7Shader))
+			{
+				/// No Code
+			}
+		});
+
+		/// [EN] Passed by reference, not moved: the JobTopology only keeps a reference to the taskflow, which the member loadTaskflow_ keeps alive.
+		/// [JP] ムーブせず参照で渡す。JobTopology は taskflow への参照しか持たず、その寿命はメンバーの loadTaskflow_ が保つ。
+		loadExecutor_->Run(loadTaskflow_);
+	}
+
+	/**
+	* [EN]
+	* Returns whether the current Async() pass has scanned and loaded
+	* every pending asset.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 現在の Async() パスが、保留中の全アセットをスキャン・読み込み済みか
+	* どうかを返す。
+	*/
+	Bool ResourceCache::Complete()const
+	{
+		return scanComplete_.load(std::memory_order_acquire) && pendingIndex_ >= pendingAssetIDs_.size();
+	}
+
+	/**
+	* [EN]
+	* Returns the current load progress of the Async() pass, from 0 to 1
+	* (1 if there is nothing to load).
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Async() パスの現在の読み込み進捗を 0 から 1 の範囲で返す
+	* （読み込むものが無ければ 1）。
+	*/
+	Float ResourceCache::Progress()const
+	{
+		if (!scanComplete_.load(std::memory_order_acquire))
+		{
+			return 0.0f;
+		}
+
+		Uint32 total = totalAssetCount_.load(std::memory_order_acquire);
+		if (total == 0)
+		{
+			return 1.0f;
+		}
+
+		return static_cast<Float>(loadedAssetCount_.load(std::memory_order_acquire)) / static_cast<Float>(total);
+	}
+
+	/**
+	* [EN]
+	* Returns the AssetRecord registered under id, or nullptr if unknown.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* id に登録されている AssetRecord を返す。不明であれば nullptr を返す。
+	*/
+	AssetRecord* ResourceCache::GetAsset(Uint32 id)
+	{
+		auto it = assetsMap_.find(id);
+		if (it != assetsMap_.end())
+		{
+			return &(it->second);
+		}
+		return nullptr;
+	}
+
+	/**
+	* [EN]
+	* Returns the asset ID whose path matches filename, or 0 if not
+	* found. filename can be a full project-root-relative path (e.g.
+	* "UserProject/Assets/Scene/Foo.scene", matched exactly) or just a
+	* bare filename (e.g. "Foo.scene", matched against every asset's own
+	* filename - the caller doesn't need to know which subfolder it
+	* lives in). If more than one asset shares that bare filename, the
+	* first one found wins and a warning is logged, since which one is
+	* "correct" is ambiguous.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* パスが filename に一致するアセットの ID を返す。見つからなければ
+	* 0 を返す。filename には、プロジェクトルート相対のフルパス(例:
+	* "UserProject/Assets/Scene/Foo.scene"、完全一致)か、単なるファイル名
+	* (例: "Foo.scene"、各アセット自身のファイル名と比較 - 呼び出し側は
+	* どのサブフォルダにあるか知らなくてよい)のどちらも渡せる。同じ
+	* ファイル名を持つアセットが複数ある場合は最初に見つかったものを使い、
+	* 警告を出す(どれが「正しい」かは判別できないため)。
+	*/
+	Uint32 ResourceCache::GetAssetID(String filename)
+	{
+		if (searchMap_.contains(filename))
+		{
+			return searchMap_.at(filename);
+		}
+
+		std::string targetFilename = std::filesystem::path(filename.c_str()).filename().string();
+
+		Uint32 matchedAssetID = 0;
+		Uint32 matchCount = 0;
+		for (const auto& [assetID, asset] : assetsMap_)
+		{
+			std::string candidateFilename = std::filesystem::path(asset.path_.c_str()).filename().string();
+			if (candidateFilename != targetFilename)
+			{
+				continue;
+			}
+
+			if (matchCount == 0)
+			{
+				matchedAssetID = assetID;
+			}
+			++matchCount;
+		}
+
+		if (matchCount > 1)
+		{
+			SC_LOG_WARNING("ファイル名 \"{}\" のアセットが複数見つかりました。最初に見つかったものを使います。", filename.c_str());
+		}
+
+		return matchedAssetID;
+	}
+
+	/**
+	* [EN]
+	* Returns every AssetRecord whose path contains key as a substring.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* パスに key を部分文字列として含む、全ての AssetRecord を返す。
+	*/
+	DynamicArray<AssetRecord*> ResourceCache::Search(String key)
+	{
+		DynamicArray<AssetRecord*> result;
+
+		for (auto& asset : assetsMap_ | std::ranges::views::values)
+		{
+			if (asset.path_.str().contains(key.c_str()))
+			{
+				result.push_back(&asset);
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	* [EN]
+	* Reads the AxisConvention persisted in id's .meta sidecar. Returns a
+	* default-constructed AxisConvention (matching the engine's existing
+	* fixed RH->LH behavior) if the asset or its .meta file don't exist,
+	* or if the .meta predates this field.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* id の .meta サイドカーに永続化されている AxisConvention を読み取る。
+	* アセットや .meta ファイルが存在しない場合、またはこのフィールドより
+	* 前の .meta の場合は、デフォルト構築の AxisConvention（エンジン既存の
+	* 固定 RH->LH 挙動と一致）を返す。
+	*/
+	AxisConvention ResourceCache::ReadAxisConvention(Uint32 assetId)const
+	{
+		auto it = assetsMap_.find(assetId);
+		if (it == assetsMap_.end())
+		{
+			return AxisConvention{};
+		}
+
+		std::filesystem::path metaPath = std::filesystem::path(it->second.fullpath_.c_str());
+		metaPath += ".meta";
+		if (!std::filesystem::exists(metaPath))
+		{
+			return AxisConvention{};
+		}
+
+		BinaryInputArchive archive;
+		if (!archive.Read(String(metaPath.string())))
+		{
+			return AxisConvention{};
+		}
+
+		AssetMeta meta;
+		meta.Serialize(archive);
+
+		return meta.axisConvention_;
+	}
+
+	/**
+	* [EN]
+	* Reads the total transform baked into the Model asset behind id, as
+	* persisted in its .meta sidecar. Returns the identity matrix if the
+	* asset or its .meta file don't exist, or if the .meta predates this
+	* field.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* id の Model アセットに焼き込まれている合計トランスフォームを、その
+	* .meta サイドカーに永続化されている値として読み取る。アセットや .meta
+	* ファイルが存在しない場合、またはこのフィールドより前の .meta の場合は、
+	* 単位行列を返す。
+	*/
+	Matrix ResourceCache::ReadModelTransform(Uint32 assetId)const
+	{
+		auto it = assetsMap_.find(assetId);
+		if (it == assetsMap_.end())
+		{
+			return Matrix::Identity;
+		}
+
+		std::filesystem::path metaPath = std::filesystem::path(it->second.fullpath_.c_str());
+		metaPath += ".meta";
+		if (!std::filesystem::exists(metaPath))
+		{
+			return Matrix::Identity;
+		}
+
+		BinaryInputArchive archive;
+		if (!archive.Read(String(metaPath.string())))
+		{
+			return Matrix::Identity;
+		}
+
+		AssetMeta meta;
+		meta.Serialize(archive);
+
+		return meta.modelTransform_;
+	}
+
+	/**
+	* [EN]
+	* Persists convention into id's .meta sidecar, preserving the
+	* existing guid_. Creates the .meta file if it doesn't exist yet.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* id の .meta サイドカーへ convention を永続化する。既存の guid_ は
+	* 保持する。.meta ファイルがまだ無ければ新規作成する。
+	*/
+	void ResourceCache::WriteAssetMeta(Uint32 assetId, const AxisConvention& convention)
+	{
+		auto it = assetsMap_.find(assetId);
+		if (it == assetsMap_.end())
+		{
+			return;
+		}
+
+		std::filesystem::path metaPath = std::filesystem::path(it->second.fullpath_.c_str());
+		metaPath += ".meta";
+
+		AssetMeta meta;
+		meta.guid_ = assetId;
+
+		if (std::filesystem::exists(metaPath))
+		{
+			BinaryInputArchive inputArchive;
+			if (inputArchive.Read(String(metaPath.string())))
+			{
+				meta.Serialize(inputArchive);
+			}
+			else
+			{
+				meta = AssetMeta{};
+				meta.guid_ = assetId;
+			}
+		}
+
+		meta.axisConvention_ = convention;
+
+		BinaryOutputArchive outputArchive;
+		meta.Serialize(outputArchive);
+		outputArchive.Write(String(metaPath.string()));
+	}
+
+	/**
+	* [EN]
+	* Persists transform into id's .meta sidecar as the total transform
+	* baked into that Model asset, preserving the existing guid_. Replaces
+	* the stored matrix rather than accumulating onto it. Creates the .meta
+	* file if it doesn't exist yet.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* id の .meta サイドカーへ、その Model アセットに焼き込まれた合計
+	* トランスフォームとして transform を永続化する。既存の guid_ は保持する。
+	* 保存済みの行列へ積み上げるのではなく置き換える。.meta ファイルがまだ
+	* 無ければ新規作成する。
+	*/
+	void ResourceCache::WriteAssetMeta(Uint32 assetId, const Matrix& transform)
+	{
+		auto it = assetsMap_.find(assetId);
+		if (it == assetsMap_.end())
+		{
+			return;
+		}
+
+		std::filesystem::path metaPath = std::filesystem::path(it->second.fullpath_.c_str());
+		metaPath += ".meta";
+
+		AssetMeta meta;
+		meta.guid_ = assetId;
+
+		if (std::filesystem::exists(metaPath))
+		{
+			BinaryInputArchive inputArchive;
+			if (inputArchive.Read(String(metaPath.string())))
+			{
+				meta.Serialize(inputArchive);
+			}
+			else
+			{
+				meta = AssetMeta{};
+				meta.guid_ = assetId;
+			}
+		}
+
+		meta.modelTransform_ = transform;
+
+		BinaryOutputArchive outputArchive;
+		meta.Serialize(outputArchive);
+		outputArchive.Write(String(metaPath.string()));
+	}
+
+	/**
+	* [EN]
+	* Synchronously rescans the project for asset changes and loads
+	* every not-yet-loaded asset in a single pass.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* プロジェクトのアセット変更を同期的に再スキャンし、まだ読み込まれて
+	* いない全アセットを一括で読み込む。
+	*/
+	void ResourceCache::Reload(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
+	{
+		Rescan();
+
+		AssetContext context{ loader, *this, device, cmdQueue, heap_, &bc7Shader };
+
+		for (auto& asset : assetsMap_ | std::ranges::views::values)
+		{
+			if (asset.isLoaded_ || asset.type_ == AssetType::Unknown)
+			{
+				continue;
+			}
+
+			Asset* resource = GetResource(asset.type_);
+			if (resource)
+			{
+				resource->Load(context, asset.assetID_);
+			}
+
+			asset.isLoaded_ = true;
+		}
+	}
+
+	/**
+	* [EN]
+	* Reloads one asset whose file on disk has been replaced: releases
+	* what is held in memory and loads the new contents in its place.
+	* Used when the shared library brings down a newer revision while
+	* the Editor is running.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ディスク上のファイルが差し替わったアセット1件を読み直す。メモリ上
+	* のものを解放し、新しい中身をその場所へ読み込む。Editor の実行中に
+	* 共有ライブラリが新しい Revision を持ってきた場合に使う。
+	*/
+	void ResourceCache::Reload(Uint32 assetID, LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
+	{
+		/// [EN] An asset this cache has never seen has nothing to release, and its file is picked up by the next scan instead.
+		/// [JP] このキャッシュが知らないアセットには解放するものが無く、そのファイルは次の走査で拾われる。
+		auto it = assetsMap_.find(assetID);
+		if (it == assetsMap_.end() || it->second.type_ == AssetType::Unknown)
+		{
+			return;
+		}
+
+		Asset* resource = GetResource(it->second.type_);
+		if (!resource)
+		{
+			return;
+		}
+
+		/// [EN] The identifier survives the swap, so every reference held elsewhere keeps pointing at this asset.
+		/// [JP] 識別子は入れ替えをまたいで変わらないため、他所が持っている参照はこのアセットを指したままになる。
+		AssetContext context{ loader, *this, device, cmdQueue, heap_, &bc7Shader };
+		if (it->second.isLoaded_)
+		{
+			resource->Unload(context, assetID);
+			it->second.isLoaded_ = false;
+		}
+
+		resource->Load(context, assetID);
+		it->second.isLoaded_ = true;
+	}
+
+	/**
+	* [EN]
+	* Unloads every currently-loaded asset from its owning resource
+	* manager and clears the asset/search maps.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 現在読み込まれている全アセットを、それぞれの所有元リソース
+	* マネージャから解放し、アセット/検索マップをクリアする。
+	*/
+	void ResourceCache::Unload(LoaderSystem& loader, BindlessHeap* heap)
+	{
+		AssetContext context{ loader, *this, nullptr, nullptr, heap, nullptr };
+
+		for (auto& asset : assetsMap_ | std::ranges::views::values)
+		{
+			if (!asset.isLoaded_ || asset.type_ == AssetType::Unknown)
+			{
+				continue;
+			}
+
+			Asset* resource = GetResource(asset.type_);
+			if (resource)
+			{
+				resource->Unload(context, asset.assetID_);
+			}
+
+			asset.isLoaded_ = false;
+		}
+
+		for (const ResourcePtr<Asset>& resource : resourceMap_ | std::ranges::views::values)
+		{
+			resource->Clear(context);
+		}
+
+		assetsMap_.clear();
+		searchMap_.clear();
+	}
+
+	/**
+	* [EN]
+	* Returns the resource manager registered for type, or nullptr if no
+	* manager registered itself for it.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* type に登録されているリソースマネージャを返す。登録が無ければ
+	* nullptr を返す。
+	*/
+	Asset* ResourceCache::GetResource(AssetType type)const
+	{
+		if (!resourceMap_.contains(type))
+		{
+			return nullptr;
+		}
+
+		return resourceMap_.at(type).get();
+	}
+
+	/**
+	* [EN]
+	* Returns the prefab pool.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* プレハブプールを返す。
+	*/
+	PrefabPool& ResourceCache::GetPrefabPool()
+	{
+		return prefabPool_;
+	}
+
+	/**
+	* [EN]
+	* Returns the scene pool.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* シーンプールを返す。
+	*/
+	ScenePool& ResourceCache::GetScenePool()
+	{
+		return scenePool_;
+	}
+
+	/**
+	* [EN]
+	* Returns the full map of discovered assets, keyed by asset ID.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 発見済みの全アセットのマップを、アセット ID をキーとして返す。
+	*/
+	const FlatMap<Uint32, AssetRecord>& ResourceCache::AssetList()const
+	{
+		return assetsMap_;
+	}
+
+	/**
+	* [EN]
+	* Returns the resolved project root path.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 解決済みのプロジェクトルートパスを返す。
+	*/
+	const std::filesystem::path& ResourceCache::ProjectRootPath()const
+	{
+		return projectRootPath_;
+	}
+
+	/**
+	* [EN]
+	* Returns the bindless descriptor heap used for GPU resource views.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* GPU リソースビュー用のバインドレスディスクリプタヒープを返す。
+	*/
+	BindlessHeap* ResourceCache::Heap()const
+	{
+		return heap_;
+	}
+
+	/**
+	* [EN]
+	* Walks targetPath's directory tree, discovering asset files by
+	* extension, reconciling/recovering their .meta-derived GUIDs
+	* (including orphaned .meta recovery after a rename), and
+	* registering new AssetRecord entries.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* targetPath のディレクトリツリーを走査し、拡張子でアセットファイルを
+	* 発見し、.meta 由来の GUID を整合・復旧（リネーム後の孤立した .meta
+	* ファイルの復旧を含む）し、新しい AssetRecord エントリを登録する。
+	*/
+	void ResourceCache::Scan(String targetPath)
+	{
+		std::filesystem::path root(targetPath.c_str());
+		if (!std::filesystem::exists(root))
+		{
+			return;
+		}
+
+		/// [EN] Remember which paths are already registered, so the second pass below only adds genuinely new assets.
+		/// [JP] 既に登録済みのパスを記憶しておく。これにより、以下の第二パスでは本当に新しいアセットのみを追加する。
+		std::unordered_set<std::string> existingPaths;
+		for (auto& asset : assetsMap_ | std::ranges::views::values)
+		{
+			existingPaths.insert(asset.path_.str());
+		}
+
+		std::unordered_map<std::string, std::filesystem::path> orphanedMetas;
+		std::unordered_set<std::string> ambiguousOrphanNames;
+
+		/// [EN] First pass: find "orphaned" .meta files (a .meta with no corresponding asset file anymore, likely because the asset was renamed) so their GUID can be recovered instead of minted fresh. A filename appearing more than once is ambiguous and excluded, since we can't tell which orphan matches which renamed file.
+		/// [JP] 第一パス: 「孤立した」.meta ファイル（対応するアセットファイルがもう存在しない、おそらくアセットがリネームされたもの）を見つける。これにより、新規に発行するのではなくその GUID を復旧できるようにする。同じファイル名が複数回現れる場合は曖昧なため除外する。どの孤立ファイルがどのリネーム後ファイルに対応するか判別できないため。
+		for (auto it = std::filesystem::recursive_directory_iterator(root); it != std::filesystem::recursive_directory_iterator(); ++it)
+		{
+			if (it->is_directory())
+			{
+				std::string dirName = it->path().filename().string();
+				if (excludeDirectories_.contains(dirName))
+				{
+					it.disable_recursion_pending();
+				}
+				continue;
+			}
+
+			const auto& entry = *it;
+			if (!entry.is_regular_file() || entry.path().extension().string() != ".meta")
+			{
+				continue;
+			}
+
+			std::filesystem::path targetPath = entry.path();
+			targetPath.replace_extension();
+
+			if (std::filesystem::exists(targetPath))
+			{
+				continue;
+			}
+
+			std::string filename = targetPath.filename().string();
+			if (ambiguousOrphanNames.contains(filename))
+			{
+				continue;
+			}
+
+			if (orphanedMetas.contains(filename))
+			{
+				orphanedMetas.erase(filename);
+				ambiguousOrphanNames.insert(filename);
+			}
+			else
+			{
+				orphanedMetas.insert({ filename, entry.path() });
+			}
+		}
+
+		/// [EN] Second pass: discover actual asset files by extension and register any not already known.
+		/// [JP] 第二パス: 拡張子で実際のアセットファイルを発見し、まだ知られていないものを登録する。
+		for (auto it = std::filesystem::recursive_directory_iterator(root); it != std::filesystem::recursive_directory_iterator(); ++it)
+		{
+			if (it->is_directory())
+			{
+				std::string dirName = it->path().filename().string();
+				if (excludeDirectories_.contains(dirName))
+				{
+					it.disable_recursion_pending();
+					continue;
+				}
+				continue;
+			}
+
+			const auto& entry = *it;
+
+			if (!entry.is_regular_file())
+			{
+				continue;
+			}
+
+			std::string extention = entry.path().extension().string();
+
+			if (!includeExtensions_.contains(extention))
+			{
+				continue;
+			}
+
+			std::string rootPath = std::filesystem::relative(entry.path(), root).string();
+			std::ranges::replace(rootPath, '\\', '/');
+
+			if (existingPaths.contains(rootPath))
+			{
+				continue;
+			}
+
+			AssetRecord asset;
+
+			std::string fullPath = std::filesystem::absolute(entry.path()).string();
+			std::ranges::replace(fullPath, '\\', '/');
+			asset.fullpath_ = String(fullPath);
+
+			asset.path_ = String(rootPath);
+
+			/// [EN] Classify the asset's type from its extension.
+			/// [JP] 拡張子からアセットの種別を分類する。
+			{
+				if (extention == ".png" || extention == ".jpg" || extention == ".jpeg" || extention == ".dds" || extention == ".texture")
+				{
+					asset.type_ = AssetType::Texture;
+				}
+				else if (extention == ".gltf" || extention == ".glb" || extention == ".fbx" || extention == ".crister")
+				{
+					asset.type_ = AssetType::Model;
+				}
+				else if (extention == ".animation")
+				{
+					asset.type_ = AssetType::Animation;
+				}
+				else if (extention == ".collision")
+				{
+					asset.type_ = AssetType::MeshCollision;
+				}
+				else if (extention == ".material")
+				{
+					asset.type_ = AssetType::Material;
+				}
+				else if (extention == ".skeleton")
+				{
+					asset.type_ = AssetType::Skeleton;
+				}
+				else if (extention == ".efkefc" || extention == ".effekseer" || extention == ".zephyr")
+				{
+					asset.type_ = AssetType::Effect;
+				}
+				else if (extention == ".mp3" || extention == ".wav" || extention == ".acb" || extention == ".awb" || extention == ".audio")
+				{
+					asset.type_ = AssetType::Audio;
+				}
+				else if (extention == ".ttf" || extention == ".otf" || extention == ".ttc")
+				{
+					asset.type_ = AssetType::Font;
+				}
+				else if (extention == ".mp4" || extention == ".movie")
+				{
+					asset.type_ = AssetType::Movie;
+				}
+				else if (extention == ".prefab")
+				{
+					asset.type_ = AssetType::Prefab;
+				}
+				else if (extention == ".scene")
+				{
+					asset.type_ = AssetType::Scene;
+				}
+				else if (extention == ".hdr" || extention == ".skymap")
+				{
+					asset.type_ = AssetType::Skymap;
+				}
+				else
+				{
+					asset.type_ = AssetType::Unknown;
+				}
+			}
+
+			AssetMeta meta;
+			Bool skipMeta = noMetaExtensions_.contains(extention);
+
+			if (skipMeta)
+			{
+				/// [EN] This extension never gets a .meta file: derive a GUID from the path hash instead, bumping on collision.
+				/// [JP] この拡張子は .meta ファイルを持たない: 代わりにパスハッシュから GUID を導出し、衝突時はインクリメントする。
+				meta.guid_ = static_cast<Uint32>(std::hash<std::string>{}(asset.path_.c_str()));
+				while (assetsMap_.count(meta.guid_))
+				{
+					meta.guid_++;
+				}
+			}
+			else
+			{
+				std::filesystem::path metaPath = entry.path();
+				metaPath += ".meta";
+				if (std::filesystem::exists(metaPath))
+				{
+					/// [EN] A .meta already exists: read its GUID; if that fails and a new GUID is minted, rewrite the file so the next scan does not repeat the repair.
+					/// [JP] .meta が既にあるのでその GUID を読む。読めずに新しい GUID を発行した場合は、次のスキャンで同じ修復を繰り返さないよう書き直す。
+					BinaryInputArchive inputArchive;
+					if (inputArchive.Read(String(metaPath.string())))
+					{
+						meta.Serialize(inputArchive);
+					}
+					else
+					{
+						meta = AssetMeta{};
+						meta.guid_ = static_cast<Uint32>(std::hash<std::string>{}(asset.path_.c_str() + std::to_string(std::time(nullptr))));
+						while (assetsMap_.count(meta.guid_))
+						{
+							meta.guid_++;
+						}
+
+						BinaryOutputArchive outputArchive;
+						meta.Serialize(outputArchive);
+						outputArchive.Write(String(metaPath.string()));
+					}
+				}
+				else
+				{
+					/// [EN] No .meta file yet: check whether an orphaned .meta from a same-named file (i.e. this file was likely renamed/moved) can be recovered and relocated here, preserving its GUID.
+					/// [JP] まだ .meta ファイルが無い: 同名のファイルから孤立した .meta（すなわちこのファイルがリネーム/移動された可能性がある）を復旧し、この場所へ再配置してその GUID を維持できるか確認する。
+					auto orphanIt = orphanedMetas.find(entry.path().filename().string());
+					Bool recovered = false;
+
+					if (orphanIt != orphanedMetas.end())
+					{
+						/// [EN] Reads the orphaned .meta so the renamed asset recovers
+						///      its original GUID instead of being minted a new one.
+						/// [JP] 孤立した .meta を読み取り、リネームされたアセットが新規
+						///      GUID を発行されるのではなく元の GUID を復旧するようにする。
+						BinaryInputArchive inputArchive;
+						if (inputArchive.Read(String(orphanIt->second.string())))
+						{
+							meta.Serialize(inputArchive);
+
+							/// [EN] Move the recovered .meta file to sit alongside the renamed asset; fall back to copy+delete if the rename fails (e.g. across volumes).
+							/// [JP] 復旧した .meta ファイルを、リネームされたアセットの隣へ移動する。リネームが失敗した場合（異なるボリューム間など）はコピー＋削除にフォールバックする。
+							std::error_code errorCode;
+							std::filesystem::rename(orphanIt->second, metaPath, errorCode);
+							if (errorCode)
+							{
+								std::filesystem::copy_file(orphanIt->second, metaPath, std::filesystem::copy_options::overwrite_existing, errorCode);
+								std::filesystem::remove(orphanIt->second, errorCode);
+							}
+
+							recovered = true;
+						}
+
+						orphanedMetas.erase(orphanIt);
+					}
+
+					if (!recovered)
+					{
+						/// [EN] Genuinely new asset (or recovery failed): mint a fresh GUID and persist a new .meta file for it.
+						/// [JP] 本当に新規のアセット（または復旧に失敗した場合）: 新しい GUID を発行し、そのための新しい .meta ファイルを永続化する。
+						meta.guid_ = static_cast<Uint32>(std::hash<std::string>{}(asset.path_.c_str() + std::to_string(std::time(nullptr))));
+						while (assetsMap_.count(meta.guid_))
+						{
+							meta.guid_++;
+						}
+
+						BinaryOutputArchive outputArchive;
+						meta.Serialize(outputArchive);
+						outputArchive.Write(String(metaPath.string()));
+					}
+				}
+			}
+
+			asset.assetID_ = meta.guid_;
+
+			assetsMap_.insert({ asset.assetID_, asset });
+			searchMap_.insert(asset.path_, asset.assetID_);
+
+			std::string directory = std::filesystem::path(asset.path_.c_str()).parent_path().string();
+			std::ranges::replace(directory, '\\', '/');
+		}
+	}
+
+	/**
+	* [EN]
+	* Removes AssetRecord entries whose backing file no longer exists
+	* (unloading them first if loaded), then re-runs Scan to pick up any
+	* new/changed files.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 裏付けとなるファイルがもう存在しない AssetRecord エントリを削除し
+	* （読み込み済みであれば先に解放する）、その後 Scan を再実行して
+	* 新規/変更されたファイルを取り込む。
+	*/
+	void ResourceCache::Rescan()
+	{
+		for (auto it = assetsMap_.begin(); it != assetsMap_.end();)
+		{
+			if (!std::filesystem::exists(it->second.fullpath_.c_str()))
+			{
+				if (it->second.isLoaded_)
+				{
+					Asset* resource = GetResource(it->second.type_);
+					if (resource)
+					{
+						AssetContext context{ loader_, *this, nullptr, nullptr, heap_, nullptr };
+						resource->Unload(context, it->second.assetID_);
+					}
+				}
+				it = assetsMap_.erase(it);
+			}
+			else
+			{
+				++it;
+			}
+		}
+
+		/// [EN] Rebuild the search index from the surviving assets before re-scanning for new ones.
+		/// [JP] 新規アセットを再スキャンする前に、生き残ったアセットから検索インデックスを再構築する。
+		searchMap_.clear();
+		for (auto& asset : assetsMap_ | std::ranges::views::values)
+		{
+			searchMap_.insert(asset.path_, asset.assetID_);
+		}
+
+		Scan(String(projectRootPath_.c_str()));
+	}
+}
