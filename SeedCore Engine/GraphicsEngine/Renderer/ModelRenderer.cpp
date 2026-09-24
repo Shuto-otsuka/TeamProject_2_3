@@ -431,27 +431,37 @@ namespace SeedCore
 					Float viewDistance = Max((instancePosition - Vector3(scene.cameraPosition_.x, scene.cameraPosition_.y, scene.cameraPosition_.z)).Length(), 0.0001f);
 					Float pixelsPerUnit = scene.projection_._22 * scene.screenSize_.y * 0.5f / viewDistance;
 
-					/// [EN] Texture streaming: same worldScale/pixelsPerUnit metric
-					///      as the cluster LOD selection above, applied per material
-					///      texture slot (Crister::TextureDesiredMip). The request
-					///      carries the desired mip and MakeTextureMipResident jumps
-					///      straight to it in one upload (not one level per frame);
-					///      TextureBindlessIndex always resolves to whatever is
-					///      currently resident, so there is never a missing SRV.
-					/// [JP] テクスチャストリーミング: 上のクラスタ LOD 選択と同じ
-					///      worldScale/pixelsPerUnit 指標を、マテリアルの各テクスチャ
-					///      スロットに適用する(Crister::TextureDesiredMip)。要求には
-					///      目標ミップを持たせ、MakeTextureMipResident が1回の
-					///      アップロードで直接そこへ到達する(1フレーム1段ずつではない)。
-					///      TextureBindlessIndex は常にそのとき常駐しているものへ
-					///      解決するため、SRV が欠けることはない。
+					/// [EN] Texture streaming, per material texture slot
+					///      (Crister::TextureDesiredMip): the SubMesh's baked texel
+					///      density against screen pixels per world unit. Unlike
+					///      cluster LOD, the distance is measured to the NEAR side of
+					///      the model's bounding sphere rather than to its origin -
+					///      the closest surface is what needs the sharpest mip. The
+					///      request carries the desired mip and MakeTextureMipResident
+					///      jumps straight to it in one upload (not one level per
+					///      frame); TextureBindlessIndex always resolves to whatever
+					///      is currently resident, so there is never a missing SRV.
+					/// [JP] テクスチャストリーミング: マテリアルの各テクスチャスロット
+					///      ごとに(Crister::TextureDesiredMip)、SubMesh に焼いた
+					///      テクセル密度と 1 ワールド単位あたりの画面ピクセル数を比べる。
+					///      クラスタ LOD と違い、距離はモデル原点ではなくバウンディング
+					///      スフィアの手前側まで測る — 最も鮮明なミップが要るのは一番
+					///      近い面だから。要求には目標ミップを持たせ、
+					///      MakeTextureMipResident が1回のアップロードで直接そこへ到達
+					///      する(1フレーム1段ずつではない)。TextureBindlessIndex は常に
+					///      そのとき常駐しているものへ解決するため、SRV が欠けることはない。
+					Vector3 boundsCenter = Vector3::Transform(crister->PositionMin() + crister->PositionExtent() * 0.5f, lodWorldMatrix);
+					Float boundsRadius = crister->PositionExtent().Length() * 0.5f * worldScale;
+					Float textureViewDistance = Max((boundsCenter - Vector3(scene.cameraPosition_.x, scene.cameraPosition_.y, scene.cameraPosition_.z)).Length() - boundsRadius, Max(scene.nearPlane_, 0.0001f));
+					Float texturePixelsPerUnit = scene.projection_._22 * scene.screenSize_.y * 0.5f / textureViewDistance;
+
 					auto requestTextureMip = [&](Uint32 materialTextureIndex)
 					{
 						if (materialTextureIndex == 0xFFFFFFFF)
 						{
 							return;
 						}
-						Uint32 desiredMip = crister->TextureDesiredMip(materialTextureIndex, worldScale, pixelsPerUnit);
+						Uint32 desiredMip = crister->TextureDesiredMip(materialTextureIndex, subMesh.texcoordDensity_, worldScale, texturePixelsPerUnit);
 						if (crister->TextureFinestMip(materialTextureIndex) > desiredMip)
 						{
 							textureStreamingRequests_.push_back({ crister, materialTextureIndex, desiredMip });

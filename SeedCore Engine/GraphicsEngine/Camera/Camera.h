@@ -18,11 +18,6 @@ namespace SeedCore
 
 		SC_REFLECTION_FIELD_EX("アクティブカメラ")
 		Bool isActive_ = true;
-
-	public:
-		void OnTick(Float elapsedTime);
-
-		void OnLateTick(Float elapsedTime);
 	};
 	REGISTER_COMPONENT(Camera, "Camera");
 }

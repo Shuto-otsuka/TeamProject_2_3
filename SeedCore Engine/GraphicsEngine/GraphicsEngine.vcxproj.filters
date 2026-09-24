@@ -1063,9 +1063,6 @@
     <ClCompile Include="System\SceneSystem.cpp">
       <Filter>System</Filter>
     </ClCompile>
-    <ClCompile Include="Camera\Camera.cpp">
-      <Filter>Camera</Filter>
-    </ClCompile>
     <ClCompile Include="Camera\EditorCamera.cpp">
       <Filter>Camera</Filter>
     </ClCompile>

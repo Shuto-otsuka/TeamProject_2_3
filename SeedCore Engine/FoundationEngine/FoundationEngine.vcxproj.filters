@@ -376,6 +376,9 @@
     <ClCompile Include="Resource\Sharing\SharingWorker.cpp">
       <Filter>Resource\Sharing</Filter>
     </ClCompile>
+    <ClCompile Include="Coroutine\Coroutine.cpp">
+      <Filter>Coroutine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\DxFail.h">
@@ -832,6 +835,9 @@
     </ClInclude>
     <ClInclude Include="Resource\Sharing\SharingWorker.h">
       <Filter>Resource\Sharing</Filter>
+    </ClInclude>
+    <ClInclude Include="Coroutine\Coroutine.h">
+      <Filter>Coroutine</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

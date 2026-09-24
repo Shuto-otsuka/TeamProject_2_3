@@ -361,8 +361,6 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">FoundationEngine/Prelude.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">FoundationEngine/Prelude.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="Camera\Camera.cpp">
-    </ClCompile>
     <ClCompile Include="Camera\EditorCamera.cpp">
     </ClCompile>
     <ClCompile Include="Camera\EditorCameraController.cpp">

@@ -2282,6 +2282,34 @@ namespace SeedCore
 			/// [JP] 元の（メシュレット化前の）インデックスからこの SubMesh のインデックススライスを抽出する。
 			DynamicArray<Uint32> currentIndices(originalIndices.begin() + sub.indexOffset_, originalIndices.begin() + sub.indexOffset_ + sub.indexCount_);
 
+			/// [EN] Texel density for texture streaming (SubMesh::texcoordDensity_):
+			///      sqrt(sum UV area / sum world area) over the full-detail
+			///      triangles, i.e. UV units per mesh-local world unit. Area-
+			///      weighted, so a few stretched/degenerate triangles don't skew it.
+			/// [JP] テクスチャストリーミング用のテクセル密度(SubMesh::texcoordDensity_):
+			///      フル詳細の三角形全体での sqrt(UV 面積合計 / ワールド面積合計)、
+			///      すなわちメッシュローカル 1 ワールド単位あたりの UV 量。面積で
+			///      重み付けするため、少数の引き伸ばされた/縮退した三角形に引きずられない。
+			{
+				Double worldAreaSum = 0.0;
+				Double texcoordAreaSum = 0.0;
+				for (Size corner = 0; corner + 2 < currentIndices.size(); corner += 3)
+				{
+					const Vertex& vertex0 = crister.vertices_[currentIndices[corner + 0]];
+					const Vertex& vertex1 = crister.vertices_[currentIndices[corner + 1]];
+					const Vertex& vertex2 = crister.vertices_[currentIndices[corner + 2]];
+
+					Vector3 edge1 = vertex1.position_ - vertex0.position_;
+					Vector3 edge2 = vertex2.position_ - vertex0.position_;
+					worldAreaSum += 0.5 * static_cast<Double>(edge1.Cross(edge2).Length());
+
+					Vector2 texcoordEdge1 = vertex1.texcoord_ - vertex0.texcoord_;
+					Vector2 texcoordEdge2 = vertex2.texcoord_ - vertex0.texcoord_;
+					texcoordAreaSum += 0.5 * std::abs(static_cast<Double>(texcoordEdge1.x) * texcoordEdge2.y - static_cast<Double>(texcoordEdge2.x) * texcoordEdge1.y);
+				}
+				sub.texcoordDensity_ = (worldAreaSum > 1e-12 && texcoordAreaSum > 1e-12) ? static_cast<Float>(std::sqrt(texcoordAreaSum / worldAreaSum)) : 0.0f;
+			}
+
 			/**
 			* [EN]
 			* Build a local ↔ global vertex index mapping for this SubMesh.
