@@ -15,6 +15,7 @@ namespace SeedCore
 	*/
 	std::string FileUtility::LoadFileText(String filePath)
 	{
+		auto a = std::filesystem::current_path();
 		std::ifstream ifs(filePath.c_str(), std::ios::binary);
 		if (!ifs)
 		{
