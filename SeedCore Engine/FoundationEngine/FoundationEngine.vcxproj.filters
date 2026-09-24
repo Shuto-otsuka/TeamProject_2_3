@@ -109,6 +109,9 @@
     <Filter Include="Resource\Sharing">
       <UniqueIdentifier>{0ace1b20-e7cb-4422-b66e-7d7777730675}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Coroutine">
+      <UniqueIdentifier>{2af5dcce-f01a-4dc0-b098-cd2e5a60c5d3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JobSystem\FlowBuilder.cpp">
