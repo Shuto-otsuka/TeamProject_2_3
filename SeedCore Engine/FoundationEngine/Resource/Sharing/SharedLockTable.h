@@ -179,6 +179,19 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Every unexpired lease in the table, whoever holds it and whatever
+		* its scope, as of the last read.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 直近の読み取り時点で表にある、失効していない全ての Lease。保持者
+		* も範囲も問わない。
+		*/
+		DynamicArray<EditLease> Leases()const;
+
+		/**
+		* [EN]
 		* The token proving this Editor's lease on the given scope, which a
 		* publish has to present. Empty when no such lease is held.
 		*

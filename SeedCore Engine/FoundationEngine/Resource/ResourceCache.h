@@ -95,6 +95,21 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Releases one asset and drops its record, so the next scan reads its
+		* file and .meta afresh. Used when the .meta on disk has been replaced
+		* and now names a different identifier than the one held in memory.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* アセット1件を解放し、その記録を捨てる。次の走査で、ファイルと
+		* .meta が改めて読み込まれるようにする。ディスク上の .meta が差し
+		* 替わり、メモリ上とは別の識別子を示すようになった場合に使う。
+		*/
+		void Forget(Uint32 assetID);
+
+		/**
+		* [EN]
 		* Starts (or restarts) an incremental scan/load pass: rescans the
 		* project directory tree, builds the pending-load queue ordered
 		* by AssetType, and resets progress counters.

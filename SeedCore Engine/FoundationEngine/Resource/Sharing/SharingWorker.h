@@ -126,6 +126,10 @@ namespace SeedCore
 		/// [JP] ローカルの写しを、カタログの Revision まで引き上げる。
 		Get,
 
+		/// [EN] Replace the local copy with the library's, including its .meta, even where the local files differ.
+		/// [JP] ローカルの写しを、.meta も含めてライブラリのもので置き換える。ローカルのファイルが異なっていても置き換える。
+		Adopt,
+
 		/// [EN] Share a local asset for the first time.
 		/// [JP] ローカルのアセットを初めて共有する。
 		Register,
@@ -416,6 +420,20 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Replaces the local copy of an asset with the library's, .meta
+		* included, even where the local files differ from what was last
+		* recorded.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* アセットのローカルの写しを、.meta も含めてライブラリのもので
+		* 置き換える。ローカルのファイルが最後の記録と異なっていても置き換える。
+		*/
+		Bool Adopt(const String& assetId);
+
+		/**
+		* [EN]
 		* Uploads whichever of an asset's files changed and records them as
 		* the next revision.
 		*
@@ -430,12 +448,15 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Shares a local asset for the first time, together with the .meta
-		* beside it.
+		* and any files it reads from beside itself. When the library
+		* already holds the same path, the library's copy is taken instead.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* ローカルのアセットを、隣の .meta と一緒に初めて共有する。
+		* ローカルのアセットを、隣の .meta と、アセットが隣から読み込む
+		* ファイルと一緒に初めて共有する。ライブラリが既に同じ位置を持って
+		* いる場合は、代わりにライブラリの写しを取る。
 		*/
 		Bool Register(const SharingRequest& request);
 
@@ -467,6 +488,21 @@ namespace SeedCore
 		* アップロードし、その置き場所を返す。
 		*/
 		Bool Store(const String& logicalPath, SharedFile& stored);
+
+		/**
+		* [EN]
+		* The workspace paths of the files an asset reads from beside itself,
+		* which have to travel with it. Only a .gltf has any: its buffers and
+		* images may live in separate files that its JSON names by URI.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* アセットが隣から読み込むファイルの、ワークスペース内の位置。
+		* アセットと一緒に運ぶ必要がある。持つのは .gltf だけで、その
+		* バッファと画像は、JSON が URI で示す別ファイルに置かれることがある。
+		*/
+		DynamicArray<String> Companions(const String& logicalPath)const;
 
 		/**
 		* [EN]

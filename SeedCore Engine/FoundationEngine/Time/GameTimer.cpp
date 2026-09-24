@@ -94,7 +94,7 @@ namespace SeedCore
 	{
 		if (!playing_ || paused_)
 		{
-			delta_ = 0.0f;
+			scaledDelta_ = 0.0f;
 			unscaledDelta_ = 0.0f;
 			return;
 		}
@@ -102,10 +102,10 @@ namespace SeedCore
 		/// [EN] Derive both the unscaled and time-scaled delta from worldDelta before accumulating either total.
 		/// [JP] どちらの合計を累積する前にも、worldDelta からタイムスケール未適用/適用後の両方のデルタを導出する。
 		unscaledDelta_ = worldDelta;
-		delta_ = worldDelta * timeScale_;
+		scaledDelta_ = worldDelta * timeScale_;
 
 		unscaledTotal_ += static_cast<Double>(unscaledDelta_);
-		scaledTotal_ += static_cast<Double>(delta_);
+		scaledTotal_ += static_cast<Double>(scaledDelta_);
 	}
 
 	/**
@@ -117,9 +117,9 @@ namespace SeedCore
 	* [JP]
 	* 直近の Tick() によるタイムスケール適用後のデルタタイムを返す。
 	*/
-	Float GameTimer::DeltaTime()const
+	Float GameTimer::ScaledDeltaTime()const
 	{
-		return delta_;
+		return scaledDelta_;
 	}
 
 	/**
@@ -145,7 +145,7 @@ namespace SeedCore
 	* [JP]
 	* Play()/Stop() 以降に累積された、タイムスケール適用後の合計時間を返す。
 	*/
-	Float GameTimer::TotalTime()const
+	Float GameTimer::ScaledTotalTime()const
 	{
 		return static_cast<Float>(scaledTotal_);
 	}
@@ -162,6 +162,20 @@ namespace SeedCore
 	Float GameTimer::UnscaledTotalTime()const
 	{
 		return static_cast<Float>(unscaledTotal_);
+	}
+
+	/**
+	* [EN]
+	* Returns the fixed timestep used for physics/FixedTick stepping.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 物理/FixedTick のステップに使う固定タイムステップを返す。
+	*/
+	Float GameTimer::FixedDeltaTime()const
+	{
+		return fixedDeltaTime_;
 	}
 
 	/**
@@ -187,7 +201,7 @@ namespace SeedCore
 	* [JP]
 	* Tick() で worldDelta に適用されるタイムスケール倍率を設定する。
 	*/
-	void GameTimer::SetTimeScale(Float scale)
+	void GameTimer::TimeScale(Float scale)
 	{
 		timeScale_ = scale;
 	}
@@ -218,33 +232,5 @@ namespace SeedCore
 	Bool GameTimer::Paused()const
 	{
 		return paused_;
-	}
-
-	/**
-	* [EN]
-	* Returns the fixed timestep used for physics/FixedTick stepping.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 物理/FixedTick のステップに使う固定タイムステップを返す。
-	*/
-	Float GameTimer::FixedDeltaTime()const
-	{
-		return fixedDeltaTime_;
-	}
-
-	/**
-	* [EN]
-	* Sets the fixed timestep used for physics/FixedTick stepping.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 物理/FixedTick のステップに使う固定タイムステップを設定する。
-	*/
-	void GameTimer::SetFixedDeltaTime(Float fixedDeltaTime)
-	{
-		fixedDeltaTime_ = fixedDeltaTime;
 	}
 }

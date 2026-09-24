@@ -599,6 +599,44 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Releases one asset and drops its record, so the next scan reads its
+	* file and .meta afresh. Used when the .meta on disk has been replaced
+	* and now names a different identifier than the one held in memory.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* アセット1件を解放し、その記録を捨てる。次の走査で、ファイルと
+	* .meta が改めて読み込まれるようにする。ディスク上の .meta が差し
+	* 替わり、メモリ上とは別の識別子を示すようになった場合に使う。
+	*/
+	void ResourceCache::Forget(Uint32 assetID)
+	{
+		auto it = assetsMap_.find(assetID);
+		if (it == assetsMap_.end())
+		{
+			return;
+		}
+
+		/// [EN] What is loaded under the old identifier is released first, since nothing will ever ask for it by that identifier again.
+		/// [JP] 古い識別子で読み込まれているものを先に解放する。以後その識別子で求められることは無いため。
+		if (it->second.isLoaded_ && it->second.type_ != AssetType::Unknown)
+		{
+			Asset* resource = GetResource(it->second.type_);
+			if (resource)
+			{
+				AssetContext context{ loader_, *this, nullptr, nullptr, heap_, nullptr };
+				resource->Unload(context, assetID);
+			}
+		}
+
+		/// [EN] A scan skips paths it already knows, so dropping the record is what makes it read the replaced .meta.
+		/// [JP] 走査は既に知っている位置を飛ばす。記録を捨てることが、差し替わった .meta を読ませることにつながる。
+		assetsMap_.erase(it);
+	}
+
+	/**
+	* [EN]
 	* Unloads every currently-loaded asset from its owning resource
 	* manager and clears the asset/search maps.
 	*

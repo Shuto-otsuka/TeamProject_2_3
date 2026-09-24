@@ -16,16 +16,14 @@
 * [EN]
 * Asserts that a C++ struct's size matches its HLSL mirror's, with a
 * Japanese message generated from the type name and the HLSL file it
-* mirrors - avoids hand-writing "<Type> が <file> と一致していません"
-* at every call site.
+* mirrors, so every call site reports the mismatch in the same words.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
 * C++ 構造体のサイズが対応する HLSL 側と一致することを表明する。
 * 型名とミラー先の HLSL ファイル名から日本語メッセージを自動生成する
-* ため、呼び出し側で「<型> が <ファイル> と一致していません」を
-* 毎回手書きしなくてよい。
+* ため、どの呼び出し箇所でも同じ言い回しで不一致を報告する。
 */
 #define SC_STATIC_ASSERT_SIZE(type, size, hlslFile) static_assert(sizeof(type) == (size), #type " が " hlslFile " と一致していません")
 
@@ -47,15 +45,15 @@
 
 /**
 * [EN]
-* Runtime assertion. If cond is false, reports via HandleAssert
-* (optionally with a formatted message) and terminates. Wrapped in a
-* do { } while (false) so it behaves like a single statement at the
-* call site (safe inside unbraced if/else).
+* Runtime assertion, active in every build configuration. If cond is
+* false, reports via HandleAssert (optionally with a formatted message)
+* and terminates. Wrapped in a do { } while (false) so it behaves like
+* a single statement at the call site (safe inside unbraced if/else).
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* 実行時アサーション。cond が偽の場合、HandleAssert（任意で整形済み
+* 実行時アサーション。どのビルド構成でも有効。cond が偽の場合、HandleAssert（任意で整形済み
 * メッセージ付き）を通じて報告し、終了する。呼び出し側で単一の文として
 * 振る舞うよう do { } while (false) でラップしている（波括弧なしの
 * if/else 内でも安全）。
@@ -85,7 +83,12 @@ namespace SeedCore
 	template<typename... Args>
 	void HandleAssert(const Char* cond, const std::source_location& loc, std::format_string<Args...> fmt, Args&&... args)
 	{
+		/// [EN] The condition text, location and message are written in one call so they stay together in the output.
+		/// [JP] 条件の文字列・位置・メッセージを1回で書き出し、出力の中でまとまったままにする。
 		std::cerr << std::format("[Assert Failed] {}\nFile: {}\nLine: {}\nMessage: {}\n", cond, loc.file_name(), loc.line(), std::format(fmt, std::forward<Args>(args)...));
+
+		/// [EN] A broken invariant makes carrying on unsafe, so the process stops here.
+		/// [JP] 前提が崩れたまま続けるのは危険なので、ここでプロセスを止める。
 		std::terminate();
 	}
 
@@ -105,6 +108,9 @@ namespace SeedCore
 	inline void HandleAssert(const Char* cond, const std::source_location& loc)
 	{
 		std::cerr << std::format("[Assert Failed] {}\nFile: {}\nLine: {}\n", cond, loc.file_name(), loc.line());
+
+		/// [EN] A broken invariant makes carrying on unsafe, so the process stops here.
+		/// [JP] 前提が崩れたまま続けるのは危険なので、ここでプロセスを止める。
 		std::terminate();
 	}
 }

@@ -245,7 +245,11 @@ namespace SeedCore
 			String("Active"),
 			String("Bounds"),
 			String("Material"),
-			String("Skeleton")
+			String("Skeleton"),
+
+			/// [EN] Only ever made by loading a component whose script is missing, never added by hand.
+			/// [JP] スクリプトの無いコンポーネントを読み込んだときにだけ作られるもので、手で追加するものではない。
+			String("UnknownComponent")
 		};
 
 		return std::ranges::contains(builtinComponents, componentName);

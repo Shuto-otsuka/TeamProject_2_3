@@ -31,6 +31,17 @@ namespace SeedCore
 	class Exception : public std::runtime_error
 	{
 	public:
+		/**
+		* [EN]
+		* Builds the final message as "[file:line] message" from the
+		* throwing location.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* スロー元の位置から、"[ファイル:行] メッセージ" の形で最終的な
+		* メッセージを作る。
+		*/
 		Exception(const std::string& message, const std::source_location& loc) : std::runtime_error(std::format("[{}:{}] {}", loc.file_name(), loc.line(), message))
 		{
 			/// No Code

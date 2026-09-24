@@ -13,6 +13,7 @@
 #include <FoundationEngine/World/ECS/Component/Component.h>
 #include <FoundationEngine/World/ECS/Component/Name.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
+#include <FoundationEngine/World/ECS/Component/UnknownComponent.h>
 #include <FoundationEngine/World/Command/ComponentCommand.h>
 #include <FoundationEngine/World/Command/ComponentLifecycleCommand.h>
 #include <FoundationEngine/World/Command/ArrayFieldCommand.h>
@@ -774,9 +775,12 @@ namespace SeedCore
 		///      ので、上のループには一切現れない。代わりに登録済みの全
 		///      コンポーネント型を走査し、スパースなものだけエンティティに
 		///      直接尋ねる。
+		/// [EN] The holder of unknown components is not drawn as a component of its own; each component it holds gets its own header at the end instead.
+		/// [JP] 型の分からないコンポーネントの保持役は、それ自体を1つのコンポーネントとしては描かない。代わりに、保持している各コンポーネントへ末尾でそれぞれヘッダーを与える。
+		ComponentID unknownID = ComponentRegistry::GetComponentID<UnknownComponent>();
 		for (const auto& [componentID, metadata] : ComponentRegistry::Registry())
 		{
-			if (metadata.storage_ != ComponentStorage::SparseSet || metadata.isComponentBehaviour_)
+			if (metadata.storage_ != ComponentStorage::SparseSet || metadata.isComponentBehaviour_ || componentID == unknownID)
 			{
 				continue;
 			}
@@ -883,6 +887,87 @@ namespace SeedCore
 				static_cast<ComponentBehaviour*>(componentData)->DispatchInspectorGUI();
 
 				ImGui::PopID();
+			}
+		}
+
+		DrawUnknownComponents(actor);
+	}
+
+	/**
+	* [EN]
+	* Draws one header per component whose type this build does not know,
+	* labelled "Unknown Component". Its real name and fields appear only
+	* once its script is registered and it turns back into the real
+	* component; until then it can only be removed.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* この実行ファイルが型を知らないコンポーネントごとに、
+	* 「Unknown Component」という名前でヘッダーを1つずつ描く。本来の名前と
+	* フィールドが出るのは、そのスクリプトが登録されて本来のコンポーネントへ
+	* 戻ってから。それまでは削除だけができる。
+	*/
+	void InspectorPanel::DrawUnknownComponents(Actor actor)
+	{
+		ComponentID unknownID = ComponentRegistry::GetComponentID<UnknownComponent>();
+		if (!unknownID)
+		{
+			return;
+		}
+		UnknownComponent* unknown = static_cast<UnknownComponent*>(context_.worldContext_.world_->GetComponent(actor.GetEntity(), unknownID));
+		if (!unknown)
+		{
+			return;
+		}
+
+		for (Size index = 0; index < unknown->components_.size(); ++index)
+		{
+			/// [EN] Same TreeNodeEx + AllowOverlap overlay technique as DrawComponentEntry, keyed by position since the entries share one component.
+			/// [JP] DrawComponentEntry と同じ TreeNodeEx + AllowOverlap の重ね描画。各項目は1つのコンポーネントを共有しているため、位置で識別する。
+			ImGui::PushID("UnknownComponent");
+			ImGui::PushID(static_cast<Int>(index));
+			Bool isHeaderOpen = ImGui::TreeNodeEx("##header", ImGuiTreeNodeFlags_CollapsingHeader | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_DefaultOpen);
+
+			/// [EN] Removing drops only this entry, and the holder goes with the last one, so the actor is left with nothing unknown.
+			/// [JP] 削除で外すのはこの項目だけ。最後の1つと一緒に保持役も外し、actor に型の分からないものが残らないようにする。
+			Bool removed = false;
+			if (ImGui::BeginPopupContextItem())
+			{
+				if (ImGui::MenuItem("コンポーネントを削除"))
+				{
+					unknown->components_.erase(unknown->components_.begin() + index);
+					if (unknown->components_.empty())
+					{
+						actor.RemoveComponent(unknownID);
+					}
+					removed = true;
+				}
+				ImGui::EndPopup();
+			}
+
+			ImVec2 headerMin = ImGui::GetItemRectMin();
+			Float headerHeight = ImGui::GetItemRectSize().y;
+			Float iconSize = ImGui::GetTextLineHeight();
+			Float contentX = headerMin.x + ImGui::GetTreeNodeToLabelSpacing();
+			Float iconY = headerMin.y + (headerHeight - iconSize) * 0.5f;
+			ImGui::GetWindowDrawList()->AddImage(GetComponentIcon(String("UnknownComponent")), ImVec2(contentX, iconY), ImVec2(contentX + iconSize, iconY + iconSize));
+
+			Float textY = headerMin.y + (headerHeight - ImGui::GetTextLineHeight()) * 0.5f;
+			ImGui::GetWindowDrawList()->AddText(ImVec2(contentX + iconSize + ImGui::GetStyle().ItemInnerSpacing.x, textY), ImGui::GetColorU32(ImGuiCol_Text), "Unknown Component");
+			ImGui::PopID();
+			ImGui::PopID();
+
+			if (removed)
+			{
+				return;
+			}
+
+			/// [EN] The saved values are kept but not shown, since without the script there is no telling what they mean.
+			/// [JP] 保存済みの値は保持するが表示はしない。スクリプトが無ければ、その値が何を意味するのか分からないため。
+			if (isHeaderOpen)
+			{
+				ImGui::TextWrapped("このコンポーネントのスクリプトが見つかりません。git pull してビルドすると、元のコンポーネントに戻ります。");
 			}
 		}
 	}

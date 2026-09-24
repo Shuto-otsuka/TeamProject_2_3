@@ -14,6 +14,8 @@ namespace SeedCore
 	*/
 	String String::intern(std::string_view view)
 	{
+		/// [EN] char and char8_t hold the same UTF-8 bytes, so the data is only reinterpreted, not converted.
+		/// [JP] char と char8_t は同じ UTF-8 のバイトを持つので、データは変換せずに読み替えるだけ。
 		return intern(std::u8string_view(reinterpret_cast<const Char8*>(view.data()), view.size()));
 	}
 
@@ -28,6 +30,8 @@ namespace SeedCore
 	*/
 	String String::intern(std::wstring_view view)
 	{
+		/// [EN] The pool stores UTF-8 only, so UTF-16 input is converted before interning.
+		/// [JP] プールは UTF-8 だけを格納するので、UTF-16 の入力はインターンの前に変換する。
 		std::string string = ConvertToCharString(view);
 		return intern(std::string_view(string));
 	}
@@ -43,6 +47,8 @@ namespace SeedCore
 	*/
 	String String::intern(const Char8* string)
 	{
+		/// [EN] The length is found by scanning for the terminating NUL.
+		/// [JP] 長さは終端の NUL を探して求める。
 		return intern(std::u8string_view(reinterpret_cast<const Char8*>(string)));
 	}
 
@@ -58,6 +64,8 @@ namespace SeedCore
 	*/
 	String String::intern(std::u8string_view view)
 	{
+		/// [EN] The pool returns the existing copy when the content is already interned, and stores a new one otherwise.
+		/// [JP] 内容が既にインターン済みならプールは既存の写しを返し、そうでなければ新しく格納する。
 		return InternPool::Singleton().Intern<String>(view);
 	}
 
@@ -137,15 +145,19 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Returns a NUL-terminated char pointer to the interned UTF-8 data.
+	* Returns a NUL-terminated char pointer to the interned UTF-8 data,
+	* or nullptr for an empty String.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* インターン済みのUTF-8データへの、NUL終端の char ポインタを返す。
+	* 空の String では nullptr を返す。
 	*/
 	const Char* String::c_str()const
 	{
+		/// [EN] Pool strings are stored with a terminating NUL, so the view's data can be handed out as a C string.
+		/// [JP] プールの文字列は終端の NUL 付きで格納されているので、view のデータを C 文字列として渡せる。
 		return reinterpret_cast<const Char*>(view_.data());
 	}
 

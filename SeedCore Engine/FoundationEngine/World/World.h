@@ -11,6 +11,7 @@
 #include <FoundationEngine/World/ECS/Archetype/Chunk.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/Pool/StablePool.h>
+#include <FoundationEngine/Time/GameTimer.h>
 #include <FoundationEngine/Utility/FlatMap.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <AudioEngine/Audio/Audio.h>
@@ -164,6 +165,34 @@ namespace SeedCore
 		* される。メインループを所有するホストが毎フレーム1回呼び出す。
 		*/
 		[[nodiscard]] Bool ConsumeQuit();
+
+		/**
+		* [EN]
+		* Sets the game timer this world runs on. The host that owns the
+		* timer (Engine) calls this once after creating the world; the
+		* world only refers to it and does not own it.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このワールドが使うゲームタイマーを設定する。タイマーを持つホスト
+		* （Engine）が、ワールドを作った直後に1回呼ぶ。ワールドは参照する
+		* だけで、所有はしない。
+		*/
+		void Timer(GameTimer& gameTimer);
+
+		/**
+		* [EN]
+		* Returns the game timer, so gameplay code can read values such as
+		* the unscaled delta time that Tick does not receive.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ゲームタイマーを返す。Tick には渡らないタイムスケール未適用の
+		* デルタタイムなどを、ゲームプレイのコードから読めるようにする。
+		*/
+		const GameTimer& Timer()const;
 
 		// ============================================================
 		// Entity
@@ -1081,6 +1110,10 @@ namespace SeedCore
 		/// [EN] Whether RequestQuit has been called and not yet observed by ConsumeQuit.
 		/// [JP] RequestQuit が呼ばれ、まだ ConsumeQuit に観測されていないかどうか。
 		Bool quitRequested_ = false;
+
+		/// [EN] The game timer set by the host; not owned by the world.
+		/// [JP] ホストが設定したゲームタイマー。ワールドは所有しない。
+		GameTimer* gameTimer_ = nullptr;
 
 		// ============================================================
 		// Entity

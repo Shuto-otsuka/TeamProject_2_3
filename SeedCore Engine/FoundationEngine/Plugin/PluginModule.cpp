@@ -4,6 +4,7 @@
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
+#include <FoundationEngine/World/ECS/Component/UnknownComponent.h>
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
 #include <FoundationEngine/Payload/PayloadRegistry.h>
 #include <Windows.h>
@@ -36,14 +37,16 @@ namespace SeedCore
 	* [EN]
 	* Shadow-copies the source DLL, loads it, resolves its entry points,
 	* forwards imguiContext, calls SC_OnGameLoad, then restores any
-	* components captured by a prior Unload.
+	* components captured by a prior Unload and turns unknown components
+	* whose types it now registers back into real ones.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 元 DLL をシャドウコピーしてロードし、エントリポイントを解決し、
 	* imguiContext を渡し、SC_OnGameLoad を呼び、直前の Unload で取得した
-	* コンポーネントがあれば復元する。
+	* コンポーネントがあれば復元する。型の分からないコンポーネントのうち、
+	* このモジュールが型を登録したものは本来のコンポーネントへ戻す。
 	*/
 	Bool PluginModule::Load(World& world, ImGuiContext* imguiContext)
 	{
@@ -133,6 +136,10 @@ namespace SeedCore
 		onGameLoad_(world);
 
 		RestoreCapturedComponents(world);
+
+		/// [EN] A scene read before this module was built kept its scripts as unknown components, and they become real now that their types are registered.
+		/// [JP] このモジュールのビルド前に読み込んだ Scene は、スクリプトを型の分からないコンポーネントとして保持している。型が登録された今、それらを本来のコンポーネントへ戻す。
+		UnknownComponent::Resolve(world);
 
 		SC_LOG_NOTICE("Plugin: {} をロードしました。", sourcePath_.filename().string());
 
@@ -433,22 +440,27 @@ namespace SeedCore
 	* [EN]
 	* Re-adds every component in capturedComponents_ to its original Actor
 	* and restores its captured field values, then clears
-	* capturedComponents_.
+	* capturedComponents_. A component whose type the module no longer
+	* registers is kept on the Actor as an unknown component instead.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* capturedComponents_ の各コンポーネントを元の Actor へ再追加し、
 	* 取得済みのフィールド値を復元した上で、capturedComponents_ を
-	* クリアする。
+	* クリアする。モジュールがもう登録していない型のコンポーネントは、
+	* 代わりに型の分からないコンポーネントとして Actor に保持させる。
 	*/
 	void PluginModule::RestoreCapturedComponents(World& world)
 	{
 		for (auto& [actor, component] : capturedComponents_)
 		{
+			/// [EN] A script that the rebuilt module no longer defines is kept as an unknown component, so its values survive until it is removed on purpose.
+			/// [JP] 作り直したモジュールがもう定義していないスクリプトは、型の分からないコンポーネントとして保持する。意図して外すまで、その値が失われないようにするため。
 			ComponentID id = ComponentRegistry::GetComponentID(component.componentName_);
 			if (!id)
 			{
+				UnknownComponent::Keep(actor, component);
 				continue;
 			}
 

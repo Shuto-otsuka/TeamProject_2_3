@@ -72,10 +72,8 @@ namespace SeedCore
 	template <typename T, typename... Ts>
 	struct GetIndex<T, std::variant<Ts...>> : GetIndexImplementation<0, T, Ts...> {};
 
-	/// [EN] Convenience variable template: the compile-time index of T within
-	///      std::variant<Ts...>, e.g. GetIndexValue<Foo, MyVariant>.
-	/// [JP] 利便性のための変数テンプレート: std::variant<Ts...> 内における
-	///      T のコンパイル時インデックス。例: GetIndexValue<Foo, MyVariant>。
+	/// [EN] The compile-time index of T within a std::variant, e.g. GetIndexValue<Foo, MyVariant>.
+	/// [JP] std::variant 内における T のコンパイル時インデックス。例: GetIndexValue<Foo, MyVariant>。
 	template <typename T, typename... Ts>
 	constexpr auto GetIndexValue = GetIndex<T, Ts...>::value;
 }

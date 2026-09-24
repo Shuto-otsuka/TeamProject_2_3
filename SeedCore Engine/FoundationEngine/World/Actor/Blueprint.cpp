@@ -10,6 +10,7 @@
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
+#include <FoundationEngine/World/ECS/Component/UnknownComponent.h>
 
 namespace SeedCore
 {
@@ -465,9 +466,12 @@ namespace SeedCore
 			///      GetLayout() only lists archetype components and ComponentIDList() only ComponentBehaviour-derived ones, so neither loop above sees them.
 			/// [JP] SparseSet に格納された素の struct コンポーネント(ComponentBehaviour 派生でないもの、例: PostProcess)も取り込む。
 			///      GetLayout() はアーキタイプのコンポーネントだけ、ComponentIDList() は ComponentBehaviour 派生だけを返すので、上の2つのループでは拾えない。
+			ComponentID unknownID = ComponentRegistry::GetComponentID<UnknownComponent>();
 			for (const auto& [id, metadata] : ComponentRegistry::Registry())
 			{
-				if (metadata.storage_ != ComponentStorage::SparseSet || metadata.isComponentBehaviour_)
+				/// [EN] The holder of unknown components is not saved as itself; what it holds is written out below instead.
+				/// [JP] 型の分からないコンポーネントの保持役は、それ自体としては保存しない。代わりに、保持している中身を下で書き出す。
+				if (metadata.storage_ != ComponentStorage::SparseSet || metadata.isComponentBehaviour_ || id == unknownID)
 				{
 					continue;
 				}
@@ -485,6 +489,19 @@ namespace SeedCore
 				CaptureFields(name, componentData, serializedComponent.fields_);
 
 				node.components_.push_back(std::move(serializedComponent));
+			}
+
+			/// [EN] Components whose type this build does not know are written back exactly as they were read, so saving here never drops another member's script.
+			/// [JP] この実行ファイルが型を知らないコンポーネントは、読み込んだときのまま書き戻す。ここで保存しても、他のメンバーのスクリプトを落とすことはない。
+			/// [EN] The holder is read by its identifier, since the typed accessor only takes trivially copyable components and its list is not one.
+			/// [JP] 保持役は識別子で読む。型付きの取得はトリビアルにコピーできるコンポーネントしか受け付けず、一覧を持つ保持役はそれにあたらないため。
+			const UnknownComponent* unknown = unknownID ? static_cast<const UnknownComponent*>(world.GetComponent(entity, unknownID)) : nullptr;
+			if (unknown)
+			{
+				for (const BlueprintComponent& component : unknown->components_)
+				{
+					node.components_.push_back(component);
+				}
 			}
 		}
 
@@ -558,9 +575,12 @@ namespace SeedCore
 			/// [JP] 取得済みの各コンポーネントを再生成し、そのフィールド値を復元する。
 			for (const BlueprintComponent& component : node.components_)
 			{
+				/// [EN] A component whose type is not registered - a script not built on this machine yet - is kept as it was saved rather than dropped.
+				/// [JP] 型が登録されていないコンポーネント（この PC ではまだビルドしていないスクリプトなど）は、捨てずに保存されたまま保持する。
 				ComponentID id = ComponentRegistry::GetComponentID(component.componentName_);
 				if (!id)
 				{
+					UnknownComponent::Keep(actor, component);
 					continue;
 				}
 
@@ -669,9 +689,12 @@ namespace SeedCore
 		/// [JP] ノードが持つものは、無ければ追加し、いずれにせよ中身を入れ直す。他のメンバーの編集が渡ってくるのはこの処理。
 		for (const BlueprintComponent& component : node.components_)
 		{
+			/// [EN] The holder of unknown components was removed above along with everything the node does not name, so it is rebuilt here from what arrived.
+			/// [JP] 型の分からないコンポーネントの保持役は、ノードに無いものとして上で外れている。そのため、届いた内容からここで作り直す。
 			ComponentID id = ComponentRegistry::GetComponentID(component.componentName_);
 			if (!id)
 			{
+				UnknownComponent::Keep(actor, component);
 				continue;
 			}
 			if (!actor.HasComponent(id))

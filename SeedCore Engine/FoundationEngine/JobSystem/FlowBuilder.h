@@ -28,17 +28,21 @@ namespace SeedCore
 	class FlowBuilder
 	{
 	private:
+		/// [EN] The executor reads graph_ when it schedules what a builder produced.
+		/// [JP] エグゼキュータは、ビルダーが作ったものをスケジュールするときに graph_ を読む。
 		friend class JobExecutor;
 
 	public:
 		/**
 		* [EN]
 		* Constructs a builder that creates/modifies tasks in graph.
+		* The builder does not own graph.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* graph 内のタスクを生成・変更するビルダーを構築する。
+		* graph 内のタスクを生成・変更するビルダーを構築する。ビルダーは
+		* graph を所有しない。
 		*/
 		FlowBuilder(JobGraph& graph);
 
@@ -56,6 +60,8 @@ namespace SeedCore
 		template<StaticTaskLike C>
 		JobTask emplace(C&& callable)
 		{
+			/// [EN] A new node starts with no state, no topology and no parent; those are filled in when a run is prepared.
+			/// [JP] 新しいノードは状態・トポロジー・親を持たずに始まる。それらは実行の準備のときに埋まる。
 			return JobTask(graph_.emplace_back(JobNodeState::NONE, JobExceptionState::NONE, DefaultTaskParams{}, nullptr, nullptr, 0, std::in_place_type_t<JobNode::Static>{}, std::forward<C>(callable)));
 		}
 
@@ -76,6 +82,8 @@ namespace SeedCore
 		template<RuntimeTaskLike C>
 		JobTask emplace(C&& callable)
 		{
+			/// [EN] The runtime type the callable accepts decides whether the node may suspend to wait for what it spawns.
+			/// [JP] 処理が受け取るランタイムの型で、生成したものを待つためにノードが中断できるかが決まる。
 			if constexpr (std::is_invocable_v<C, JobPreemptiveRuntime&>)
 			{
 				return JobTask(graph_.emplace_back(JobNodeState::NONE, JobExceptionState::NONE, DefaultTaskParams{}, nullptr, nullptr, 0, std::in_place_type_t<JobNode::PreemptiveRuntime>{}, std::forward<C>(callable)));
@@ -89,19 +97,21 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Creates a new Subflow task from callable (which receives a
-		* Subflow& builder to construct the nested graph at runtime) and
-		* returns a handle to it.
+		* JobSubflow& builder to construct the nested graph at runtime)
+		* and returns a handle to it.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* callable（実行時にネストされたグラフを構築するための Subflow&
+		* callable（実行時にネストされたグラフを構築するための JobSubflow&
 		* ビルダーを受け取る）から新しい Subflow タスクを生成し、その
 		* ハンドルを返す。
 		*/
 		template<SubflowTaskLike C>
 		JobTask emplace(C&& callable)
 		{
+			/// [EN] A new node starts with no state, no topology and no parent; those are filled in when a run is prepared.
+			/// [JP] 新しいノードは状態・トポロジー・親を持たずに始まる。それらは実行の準備のときに埋まる。
 			return JobTask(graph_.emplace_back(JobNodeState::NONE, JobExceptionState::NONE, DefaultTaskParams{}, nullptr, nullptr, 0, std::in_place_type_t<JobNode::Subflow>{}, std::forward<C>(callable)));
 		}
 
@@ -119,6 +129,8 @@ namespace SeedCore
 		template<SingleConditionTaskLike C>
 		JobTask emplace(C&& callable)
 		{
+			/// [EN] A new node starts with no state, no topology and no parent; those are filled in when a run is prepared.
+			/// [JP] 新しいノードは状態・トポロジー・親を持たずに始まる。それらは実行の準備のときに埋まる。
 			return JobTask(graph_.emplace_back(JobNodeState::NONE, JobExceptionState::NONE, DefaultTaskParams{}, nullptr, nullptr, 0, std::in_place_type_t<JobNode::SingleCondition>{}, std::forward<C>(callable)));
 		}
 
@@ -136,6 +148,8 @@ namespace SeedCore
 		template<MultiConditionTaskLike C>
 		JobTask emplace(C&& callable)
 		{
+			/// [EN] A new node starts with no state, no topology and no parent; those are filled in when a run is prepared.
+			/// [JP] 新しいノードは状態・トポロジー・親を持たずに始まる。それらは実行の準備のときに埋まる。
 			return JobTask(graph_.emplace_back(JobNodeState::NONE, JobExceptionState::NONE, DefaultTaskParams{}, nullptr, nullptr, 0, std::in_place_type_t<JobNode::MultiCondition>{}, std::forward<C>(callable)));
 		}
 
@@ -155,35 +169,43 @@ namespace SeedCore
 			requires(sizeof...(C) > 1)
 		auto emplace(C&&... callables)
 		{
+			/// [EN] Each callable goes through the single-callable overloads, so every kind of task can be mixed in one call.
+			/// [JP] 各処理は単一版のオーバーロードを通るので、1回の呼び出しに種類の違うタスクを混ぜられる。
 			return std::make_tuple(emplace(std::forward<C>(callables))...);
 		}
 
 		/**
 		* [EN]
-		* Removes task from the graph.
+		* Removes task from the graph, first detaching it from every
+		* node it is connected to.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* task をグラフから削除する。
+		* task をグラフから削除する。先に、つながっている全ノードから
+		* task を切り離す。
 		*/
 		void Erase(JobTask task);
 
 		/**
 		* [EN]
-		* Creates a new module task wrapping callable's underlying graph
-		* (owned externally) and returns a handle to it.
+		* Creates a new module task that runs callable's graph (owned
+		* externally, so callable must outlive every run) and returns a
+		* handle to it.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* callable の内部グラフ（外部が所有）を包む新しいモジュールタスクを
+		* callable のグラフ（外部が所有するので、callable は全ての実行より
+		* 長く生きている必要がある）を実行する新しいモジュールタスクを
 		* 生成し、そのハンドルを返す。
 		*/
 		template<GraphLike C>
 		JobTask Composed(C& callable)
 		{
-			return JobTask(graph_.emplace_back(JobNodeState::NONE, JobExceptionState::NONE, DefaultTaskParams{}, nullptr, nullptr, 0, std::in_place_type_t<JobNode::OwnedModule>{}, std::forward<C>(callable)));
+			/// [EN] RetrieveGraph accepts both a JobGraph and anything exposing graph(); the node only keeps a reference to it.
+			/// [JP] RetrieveGraph は JobGraph そのものも graph() を持つものも受け付ける。ノードはそれへの参照だけを持つ。
+			return JobTask(graph_.emplace_back(JobNodeState::NONE, JobExceptionState::NONE, DefaultTaskParams{}, nullptr, nullptr, 0, std::in_place_type_t<JobNode::OwnedModule>{}, RetrieveGraph(callable)));
 		}
 
 		/**
@@ -227,8 +249,8 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Chains every task in keys into a straight-line sequence (see
-		* the DynamicArray overload), from an initializer list.
+		* Chains every task in keys into a straight-line sequence, from
+		* an initializer list.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -239,8 +261,8 @@ namespace SeedCore
 		void Linearize(std::initializer_list<JobTask>& keys);
 
 	protected:
-		/// [EN] The graph this builder creates/modifies tasks in.
-		/// [JP] このビルダーがタスクを生成・変更する対象のグラフ。
+		/// [EN] The graph this builder creates/modifies tasks in; protected so JobSubflow can read it.
+		/// [JP] このビルダーがタスクを生成・変更する対象のグラフ。JobSubflow から読めるよう protected にしている。
 		JobGraph& graph_;
 
 	private:
@@ -266,6 +288,8 @@ namespace SeedCore
 				return;
 			}
 
+			/// [EN] next runs one step ahead of iterator, so each pair of neighbours gets exactly one edge.
+			/// [JP] next は iterator の1つ先を進むので、隣り合う組ごとにちょうど1本のエッジが張られる。
 			auto next = iterator;
 
 			for (++next;next != end;++next, ++iterator)
@@ -277,34 +301,40 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* FlowBuilder specialization passed to a Subflow task's callable at
-	* runtime, letting it build the task's nested subgraph and control
-	* whether that subgraph joins (waits for completion) immediately or
-	* is retained for later reuse.
+	* FlowBuilder for a Subflow task's nested subgraph, created by the
+	* executor when the task runs. It builds the subgraph and controls
+	* whether the subgraph is joined (waited for) inside the task, and
+	* whether it is kept after the task finishes.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* Subflow タスクの呼び出し可能オブジェクトへ実行時に渡される
-	* FlowBuilder の特殊化。タスクのネストされたサブグラフを構築し、
-	* そのサブグラフを即座に join（完了を待機）するか、後で再利用する
-	* ために保持するかを制御できるようにする。
+	* Subflow タスクのネストされたサブグラフ用の FlowBuilder。タスクの
+	* 実行時にエグゼキュータが作る。サブグラフを構築し、タスクの中で
+	* サブグラフに合流（完了を待機）するか、タスクが終わった後も
+	* サブグラフを残すかを制御する。
 	*/
 	class JobSubflow :public FlowBuilder
 	{
 	private:
+		/// [EN] Only the executor creates a subflow, through the private constructor.
+		/// [JP] サブフローを作るのはエグゼキュータだけで、private なコンストラクタを通す。
 		friend class JobExecutor;
 		friend class FlowBuilder;
 
 	public:
 		/**
 		* [EN]
-		* Blocks until this subflow's subgraph finishes executing.
+		* Runs this subflow's subgraph to completion on the current
+		* worker, helping with other work while waiting, and marks the
+		* subflow as joined. Throws if it was already joined.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* このサブフローのサブグラフの実行が完了するまでブロックする。
+		* このサブフローのサブグラフを、今のワーカー上で完了まで実行する。
+		* 待つ間は他の処理を手伝い、終わったら合流済みにする。既に合流済み
+		* なら例外を投げる。
 		*/
 		void Join();
 
@@ -374,13 +404,15 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Constructs a subflow builder for node's subgraph, running under
-		* executor/worker.
+		* executor/worker, and resets the subgraph and the joined/retain
+		* flags for this run.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* executor/worker のもとで実行される、node のサブグラフに対する
-		* サブフロービルダーを構築する。
+		* サブフロービルダーを構築し、この実行に向けてサブグラフと
+		* 合流済み/保持のフラグを初期化する。
 		*/
 		JobSubflow(JobExecutor& executor, JobWorker& worker, JobNode* node, JobGraph& graph);
 
@@ -399,23 +431,25 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Copy construction is disabled.
+		* Copy construction is disabled: a subflow is tied to one node's
+		* run.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* コピー構築は禁止されている。
+		* コピー構築は禁止されている。サブフローは1つのノードの1回の実行に
+		* 結びついている。
 		*/
 		JobSubflow(const JobSubflow&) = delete;
 
 		/**
 		* [EN]
-		* Move construction is disabled.
+		* Move construction is disabled, for the same reason as copying.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* ムーブ構築は禁止されている。
+		* ムーブ構築も、コピーと同じ理由で禁止されている。
 		*/
 		JobSubflow(JobSubflow&&) = delete;
 
@@ -423,12 +457,12 @@ namespace SeedCore
 		/// [JP] このサブフローを実行しているエグゼキュータ。
 		JobExecutor& executor_;
 
-		/// [EN] The worker thread currently executing this subflow.
-		/// [JP] このサブフローを現在実行しているワーカースレッド。
+		/// [EN] The worker running the Subflow task; Join coruns the subgraph on it.
+		/// [JP] Subflow タスクを実行しているワーカー。Join はこの上でサブグラフを Corun する。
 		JobWorker& worker_;
 
-		/// [EN] The Subflow-type node that owns this subflow's subgraph.
-		/// [JP] このサブフローのサブグラフを所有する、Subflow 種別のノード。
+		/// [EN] The Subflow-type node that owns this subflow's subgraph and carries its joined/retain flags.
+		/// [JP] このサブフローのサブグラフを所有し、合流済み/保持のフラグを持つ、Subflow 種別のノード。
 		JobNode* node_;
 	};
 }

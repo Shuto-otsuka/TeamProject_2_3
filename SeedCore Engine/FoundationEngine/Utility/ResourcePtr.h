@@ -13,7 +13,8 @@ namespace SeedCore
 	* pointee can never be ambiguous. Supports moving/converting from a
 	* ResourcePtr<U> to a ResourcePtr<T> when U* is implicitly convertible
 	* to T* (e.g. Derived -> Base), so factories can return a derived
-	* instance through a base-typed ResourcePtr.
+	* instance through a base-typed ResourcePtr; the pointee is then
+	* deleted through T*, so T needs a virtual destructor in that case.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -22,7 +23,9 @@ namespace SeedCore
 	* ムーブ専用（コピーは禁止）で、所有権の所在が曖昧にならないように
 	* している。U* が T* へ暗黙変換可能（例: 派生 -> 基底）な場合、
 	* ResourcePtr<U> から ResourcePtr<T> へのムーブ/変換に対応しており、
-	* ファクトリが派生インスタンスを基底型の ResourcePtr で返せる。
+	* ファクトリが派生インスタンスを基底型の ResourcePtr で返せる。その
+	* 場合オブジェクトは T* 経由で delete されるので、T には仮想
+	* デストラクタが必要。
 	*/
 	template <typename T>
 	class ResourcePtr
@@ -108,6 +111,8 @@ namespace SeedCore
 		*/
 		ResourcePtr(ResourcePtr&& other)noexcept: pointer_(other.pointer_)
 		{
+			/// [EN] other lets go of the pointer, so exactly one ResourcePtr deletes it.
+			/// [JP] other がポインタを手放すので、それを delete する ResourcePtr はちょうど1つになる。
 			other.pointer_ = nullptr;
 		}
 
@@ -128,6 +133,8 @@ namespace SeedCore
 			requires std::is_convertible_v<U*, T*>
 		ResourcePtr(ResourcePtr<U>&& other)noexcept: pointer_(other.pointer_)
 		{
+			/// [EN] The pointer converts from U* to T* in the initializer; other lets go of it.
+			/// [JP] 初期化の中でポインタは U* から T* へ変換される。other はそれを手放す。
 			other.pointer_ = nullptr;
 		}
 
@@ -144,6 +151,8 @@ namespace SeedCore
 		*/
 		ResourcePtr& operator=(ResourcePtr&& other)noexcept
 		{
+			/// [EN] Self-assignment is skipped, since reset() would delete the object about to be taken over.
+			/// [JP] 自己代入は飛ばす。reset() が、これから引き取るはずのオブジェクトを delete してしまうため。
 			if (this != &other)
 			{
 				reset();
@@ -168,6 +177,8 @@ namespace SeedCore
 			requires std::is_convertible_v<U*, T*>
 		ResourcePtr& operator=(ResourcePtr<U>&& other)noexcept
 		{
+			/// [EN] The previous pointee is deleted before the new one is taken over.
+			/// [JP] 新しいオブジェクトを引き取る前に、前のオブジェクトを delete する。
 			reset();
 			pointer_ = other.pointer_;
 			other.pointer_ = nullptr;
@@ -216,6 +227,8 @@ namespace SeedCore
 		*/
 		void reset()noexcept
 		{
+			/// [EN] The pointer is cleared after deleting, so a second reset does nothing.
+			/// [JP] delete した後にポインタを消すので、2回目の reset は何もしない。
 			if (pointer_ != nullptr)
 			{
 				delete pointer_;
@@ -239,14 +252,14 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Dereferences the owned pointee. Asserts in debug builds if
-		* this ResourcePtr is null.
+		* Dereferences the owned pointee. Asserts (in every build) if this
+		* ResourcePtr is null.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 所有しているオブジェクトを間接参照する。この ResourcePtr が
-		* null の場合、デバッグビルドではアサートする。
+		* null の場合はアサートする（どのビルドでも）。
 		*/
 		T* operator->()const
 		{
@@ -257,13 +270,13 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Same as operator->(), but returns a reference instead of a pointer.
-		* Asserts in debug builds if this ResourcePtr is null.
+		* Asserts (in every build) if this ResourcePtr is null.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* operator->() と同様だが、ポインタではなく参照を返す。この
-		* ResourcePtr が null の場合、デバッグビルドではアサートする。
+		* ResourcePtr が null の場合はアサートする（どのビルドでも）。
 		*/
 		T& operator*()const
 		{
@@ -328,21 +341,22 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Constructs a T in place and returns it wrapped in a ResourcePtr,
-	* analogous to std::make_unique. The sole way to obtain a
-	* newly-allocated ResourcePtr, so every ResourcePtr<T> in the codebase
-	* traces back to exactly one `new T`.
+	* analogous to std::make_unique. The intended way to obtain a new
+	* ResourcePtr, since the allocation and the wrapping happen in one
+	* place and the raw pointer never escapes.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* T をその場で構築し、ResourcePtr でラップして返す。std::make_unique
-	* に相当する。新規に確保された ResourcePtr を得る唯一の手段であり、
-	* コードベース中のあらゆる ResourcePtr<T> は必ずただ一つの `new T`
-	* に由来する。
+	* に相当する。確保とラップが1か所で行われ、生ポインタが外に漏れない
+	* ので、新しい ResourcePtr はこれで得るのが基本。
 	*/
 	template <typename T, typename... Args>
 	[[nodiscard]] ResourcePtr<T> MakePtr(Args&&... args)
 	{
+		/// [EN] The raw pointer goes straight into the ResourcePtr, so nothing else can hold it.
+		/// [JP] 生ポインタはそのまま ResourcePtr へ渡るので、他の誰もそれを持てない。
 		return ResourcePtr<T>(new T(std::forward<Args>(args)...));
 	}
 }

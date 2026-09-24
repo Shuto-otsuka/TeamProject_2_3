@@ -22,17 +22,23 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Resizes to bitCount bits. Newly added bits are set to
-	* defaultValue; shrinking discards the trailing bits.
+	* Resizes to bitCount bits. Every newly added bit is set to
+	* defaultValue, including those that fall into the old last block;
+	* shrinking discards the trailing bits. Bits past the logical size
+	* are always kept at 0.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* bitCount ビットにリサイズする。新たに追加されたビットは
-	* defaultValue に設定される。縮小する場合は末尾のビットが破棄される。
+	* bitCount ビットにリサイズする。新しく追加されたビットは、元の最後の
+	* ブロックに入るものも含めて全て defaultValue にする。縮小では末尾の
+	* ビットを捨てる。論理サイズより後ろのビットは常に 0 に保つ。
 	*/
 	void Bitset::resize(Size bitCount, Bool defaultValue)
 	{
+		/// [EN] The old size and block count mark where the newly added bits and blocks begin.
+		/// [JP] 元の大きさとブロック数が、新しく足したビットとブロックの始まる位置になる。
+		const Size oldBitCount = bitCount_;
 		const Size oldBlockCount = data_.size();
 
 		bitCount_ = bitCount;
@@ -50,12 +56,17 @@ namespace SeedCore
 			std::fill(data_.begin() + oldBlockCount, data_.end(), fillValue);
 		}
 
-		/// [EN] When filling with 1s, the last block may have been over-filled past bitCount_; trim it back to the logical size.
-		/// [JP] 1で埋める場合、最終ブロックが bitCount_ を超えて埋められている可能性がある。論理サイズに合わせて切り詰める。
-		if (defaultValue)
+		/// [EN] New bits that land in the old last block are set too; the bits there were 0, since unused bits are always kept cleared.
+		/// [JP] 元の最後のブロックに入る新しいビットも立てる。使われないビットは常に 0 にしてあるので、そこは 0 になっている。
+		const Size oldRemainBits = oldBitCount % BitsPerBlock;
+		if (defaultValue && bitCount_ > oldBitCount && oldRemainBits != 0)
 		{
-			clear_unused_bits();
+			data_[oldBlockCount - 1] |= (~0ULL << oldRemainBits);
 		}
+
+		/// [EN] Bits past the new logical size are cleared, whether they came from filling with 1s or were left over by shrinking.
+		/// [JP] 新しい論理サイズより後ろのビットは消す。1 で埋めた余りでも、縮小で残ったものでも同じ。
+		clear_unused_bits();
 	}
 
 	/**
@@ -71,6 +82,8 @@ namespace SeedCore
 	*/
 	void Bitset::reserve(Size bitCount)
 	{
+		/// [EN] Only the block array's capacity changes; bitCount_ stays as it is.
+		/// [JP] 変わるのはブロック配列の容量だけで、bitCount_ はそのまま。
 		data_.reserve(get_required_block_count(bitCount));
 	}
 
@@ -101,6 +114,8 @@ namespace SeedCore
 	{
 		std::ranges::fill(data_, ~0ULL);
 
+		/// [EN] The last block was filled past bitCount_ too, so the bits outside the logical size are cleared again.
+		/// [JP] 最後のブロックは bitCount_ を超えて埋まっているので、論理サイズの外のビットを消し直す。
 		clear_unused_bits();
 	}
 
@@ -117,8 +132,12 @@ namespace SeedCore
 	*/
 	void Bitset::set(Size index, Bool value)
 	{
+		/// [EN] Setting past the end grows the bitset instead of failing.
+		/// [JP] 末尾より先へ設定すると、失敗せずにビットセットを広げる。
 		ensure_size(index);
 
+		/// [EN] A bit index splits into the block that holds it and its position inside that block.
+		/// [JP] ビットの番号を、それを持つブロックと、ブロック内の位置に分ける。
 		const Size blockIndex = index / BitsPerBlock;
 		const Size bitIndex = index % BitsPerBlock;
 
@@ -159,8 +178,12 @@ namespace SeedCore
 	*/
 	void Bitset::flip(Size index)
 	{
+		/// [EN] Flipping past the end grows the bitset first instead of failing.
+		/// [JP] 末尾より先を反転すると、失敗せずに先にビットセットを広げる。
 		ensure_size(index);
 
+		/// [EN] A bit index splits into the block that holds it and its position inside that block.
+		/// [JP] ビットの番号を、それを持つブロックと、ブロック内の位置に分ける。
 		const Size blockIndex = index / BitsPerBlock;
 		const Size bitIndex = index % BitsPerBlock;
 
@@ -180,11 +203,15 @@ namespace SeedCore
 	*/
 	Bool Bitset::test(Size index)const
 	{
+		/// [EN] Reading never grows the bitset: a bit outside the logical size reads as 0.
+		/// [JP] 読み取りではビットセットを広げない。論理サイズの外のビットは 0 として読む。
 		if (index >= bitCount_) [[unlikely]]
 		{
 			return false;
 		}
 
+		/// [EN] A bit index splits into the block that holds it and its position inside that block.
+		/// [JP] ビットの番号を、それを持つブロックと、ブロック内の位置に分ける。
 		const Size blockIndex = index / BitsPerBlock;
 		const Size bitIndex = index % BitsPerBlock;
 
@@ -202,6 +229,8 @@ namespace SeedCore
 	*/
 	Bool Bitset::any()const
 	{
+		/// [EN] Whole blocks are tested at once; the first non-zero one answers the question.
+		/// [JP] ブロック単位でまとめて調べ、最初に 0 でないブロックが見つかった時点で答えが出る。
 		for (Block block : data_)
 		{
 			if (block != 0)
@@ -238,6 +267,8 @@ namespace SeedCore
 	*/
 	Bool Bitset::all()const
 	{
+		/// [EN] An empty bitset has no bit that is unset, so it counts as "all set".
+		/// [JP] 空のビットセットには立っていないビットが無いので、「全て立っている」とみなす。
 		if (bitCount_ == 0)
 		{
 			return true;
@@ -280,6 +311,8 @@ namespace SeedCore
 	*/
 	Size Bitset::count()const
 	{
+		/// [EN] std::popcount counts a whole block per call, usually as one CPU instruction.
+		/// [JP] std::popcount は1回の呼び出しでブロック全体を数え、多くの場合 CPU 命令1つで済む。
 		Size count = 0;
 
 		for (Block block : data_)
@@ -306,6 +339,8 @@ namespace SeedCore
 		{
 			Block block = data_[index];
 
+			/// [EN] countr_zero gives the position of the lowest set bit within the first non-zero block.
+			/// [JP] countr_zero で、最初の 0 でないブロックの中の、最も下位の立っているビットの位置が分かる。
 			if (block != 0) [[unlikely]]
 			{
 				return index * BitsPerBlock + std::countr_zero(block);
@@ -328,6 +363,8 @@ namespace SeedCore
 	*/
 	Size Bitset::find_next_set(Size startIndex)const
 	{
+		/// [EN] Nothing can be found past the logical size.
+		/// [JP] 論理サイズより先には何も見つからない。
 		if (startIndex >= bitCount_) [[unlikely]]
 		{
 			return InvalidIndex;
@@ -342,8 +379,12 @@ namespace SeedCore
 		/// [JP] 自身のブロック内で startIndex より前の全ビットをマスクする。これにより、以下の走査が要求より前の一致を返すことがなくなる。
 		block &= (~0ULL << bitIndex);
 
+		/// [EN] Block-by-block scan: test the current block, then move to the next until the array ends.
+		/// [JP] ブロック単位の走査。今のブロックを調べ、配列が終わるまで次へ進む。
 		while (true)
 		{
+			/// [EN] assume(true) gives the optimizer no information; it has no effect on the result.
+			/// [JP] assume(true) は最適化に何の情報も与えず、結果にも影響しない。
 #if defined(__cpp_assume)
 			[[assume(true)]];
 #else
@@ -464,8 +505,8 @@ namespace SeedCore
 	*/
 	Bitset& Bitset::operator&=(const Bitset& other)
 	{
-		/// [EN] AND only where both bitsets actually have data.
-		/// [JP] 両方のビットセットが実際にデータを持つ範囲でのみ AND を行う。
+		/// [EN] AND only where both bitsets actually have data; bitCount_ is left unchanged.
+		/// [JP] 両方のビットセットが実際にデータを持つ範囲でのみ AND を行う。bitCount_ は変えない。
 		const Size minBlocks = Min(data_.size(), other.data_.size());
 
 		for (Size index = 0; index < minBlocks; ++index)
@@ -496,6 +537,8 @@ namespace SeedCore
 	*/
 	Bitset& Bitset::operator|=(const Bitset& other)
 	{
+		/// [EN] Growing first guarantees every block of other has a counterpart here.
+		/// [JP] 先に広げることで、other の全ブロックに対応するブロックがこちらにもあるようにする。
 		if (other.bitCount_ > bitCount_)
 		{
 			resize(other.bitCount_);
@@ -522,6 +565,8 @@ namespace SeedCore
 	*/
 	Bitset& Bitset::operator^=(const Bitset& other)
 	{
+		/// [EN] Growing first guarantees every block of other has a counterpart here.
+		/// [JP] 先に広げることで、other の全ブロックに対応するブロックがこちらにもあるようにする。
 		if (other.bitCount_ > bitCount_)
 		{
 			resize(other.bitCount_);
@@ -552,6 +597,8 @@ namespace SeedCore
 			return;
 		}
 
+		/// [EN] Grows just enough to make bitIndex the last addressable bit.
+		/// [JP] bitIndex がちょうど最後のビットになるだけ広げる。
 		resize(bitIndex + 1);
 	}
 
@@ -566,6 +613,8 @@ namespace SeedCore
 	*/
 	Size Bitset::get_required_block_count(Size bitCount)
 	{
+		/// [EN] Integer division rounded up, so a partial last block still counts.
+		/// [JP] 切り上げの整数除算なので、途中までしか使わない最後のブロックも数に入る。
 		return (bitCount + BitsPerBlock - 1) / BitsPerBlock;
 	}
 
@@ -582,6 +631,8 @@ namespace SeedCore
 	*/
 	void Bitset::clear_unused_bits()
 	{
+		/// [EN] A logical size that is a whole number of blocks leaves no unused bits.
+		/// [JP] 論理サイズがブロックの整数倍なら、使われないビットは無い。
 		const Size remainBits = bitCount_ % BitsPerBlock;
 
 		if (remainBits == 0 || data_.empty())
@@ -589,6 +640,8 @@ namespace SeedCore
 			return;
 		}
 
+		/// [EN] The mask keeps the low remainBits bits, which are the ones still inside the logical size.
+		/// [JP] マスクは下位 remainBits ビットを残す。それが論理サイズの内側にあるビット。
 		const Uint64 mask = (1ULL << remainBits) - 1ULL;
 
 		data_.back() &= mask;

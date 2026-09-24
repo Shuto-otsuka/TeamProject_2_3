@@ -65,46 +65,44 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Returns the number of strong dependencies (e.g. unconditional
-	* predecessors) this node has.
+	* Returns the number of strong dependencies: predecessors that are
+	* not condition nodes.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* このノードが持つ強い依存関係（条件分岐を伴わない先行ノードなど）の
-	* 数を返す。
+	* 強い依存関係の数を返す。条件ノードではない先行ノードのこと。
 	*/
 	Size JobNode::NumberStrongDependencies()const
 	{
-		/// [EN] Among the predecessor portion of edges_, count those that are NOT conditioners (i.e. unconditional/strong dependencies).
-		/// [JP] edges_ の先行ノード部分のうち、条件分岐（conditioner）でないもの（＝無条件・強い依存関係）の数を数える。
+		/// [EN] Walks the predecessor part of edges_ and counts the predecessors that are not condition nodes.
+		/// [JP] edges_ の先行ノード部分を辿り、条件ノードではない先行ノードを数える。
 		Size n = 0;
 		for (Size index = numberSuccessors_;index < edges_.size();index++)
 		{
-			n += edges_[index]->Conditioner();
+			n += !edges_[index]->Conditioner();
 		}
 		return n;
 	}
 
 	/**
 	* [EN]
-	* Returns the number of weak dependencies (e.g. predecessors reached
-	* only through a conditional branch) this node has.
+	* Returns the number of weak dependencies: predecessors that are
+	* condition nodes.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* このノードが持つ弱い依存関係（条件分岐を経由してのみ到達される
-	* 先行ノードなど）の数を返す。
+	* 弱い依存関係の数を返す。条件ノードである先行ノードのこと。
 	*/
 	Size JobNode::NumberWeakDependencies()const
 	{
-		/// [EN] Among the predecessor portion of edges_, count those that ARE conditioners (i.e. dependencies reached only via a conditional branch, hence "weak").
-		/// [JP] edges_ の先行ノード部分のうち、条件分岐（conditioner）であるもの（＝条件分岐を経由してのみ到達される、「弱い」依存関係）の数を数える。
+		/// [EN] Walks the predecessor part of edges_ and counts the predecessors that are condition nodes.
+		/// [JP] edges_ の先行ノード部分を辿り、条件ノードである先行ノードを数える。
 		Size n = 0;
 		for (Size index = numberSuccessors_;index < edges_.size();index++)
 		{
-			n += !edges_[index]->Conditioner();
+			n += edges_[index]->Conditioner();
 		}
 		return n;
 	}
@@ -125,19 +123,20 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Returns whether this node's parent has been cancelled, meaning
-	* this node should not proceed with execution.
+	* Returns whether this node's topology or parent node has been
+	* cancelled or has failed with an exception, in which case this
+	* node is skipped instead of run.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* このノードの親がキャンセルされているかどうかを返す。
-	* キャンセルされている場合、このノードは実行を進めるべきではない。
+	* このノードのトポロジーか親ノードが、キャンセルされたか例外で失敗
+	* しているかを返す。その場合、このノードは実行されずに飛ばされる。
 	*/
 	Bool JobNode::ParentCancelled()const
 	{
-		/// [EN] Cancelled if this node's topology is flagged CANCELLED/EXCEPTION, or if its parent node is flagged CANCELLED/EXCEPTION.
-		/// [JP] このノードが属するトポロジーが CANCELLED/EXCEPTION フラグを持つ場合、または親ノードが CANCELLED/EXCEPTION フラグを持つ場合にキャンセル済みとなる。
+		/// [EN] An exception counts as cancellation too, so the rest of a failed run is skipped rather than executed.
+		/// [JP] 例外もキャンセルとして扱う。失敗した実行の残りは、実行されずに飛ばされる。
 		return (topology_ && topology_->estate_.load(std::memory_order_relaxed) & (JobExceptionState::CANCELLED | JobExceptionState::EXCEPTION)) || (parent_ && (parent_->estate_.load(std::memory_order_relaxed) & (JobExceptionState::CANCELLED | JobExceptionState::EXCEPTION)));
 	}
 
@@ -159,19 +158,21 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Attempts to acquire all of this node's required semaphores. If any
-	* acquisition must wait, the corresponding waiting jobs are
-	* collected into nodes and the call fails as a whole.
+	* Takes every semaphore this node must hold before it runs, in
+	* order. If one is not free, this node is parked on it, the ones
+	* already taken are given back and false is returned.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* このノードが必要とするすべてのセマフォの獲得を試みる。いずれかの
-	* 獲得が待機を要する場合、該当する待機ジョブを nodes に収集し、
-	* この呼び出し全体は失敗とする。
+	* このノードが実行前に持つべきセマフォを、順に全て取る。どれかに
+	* 空きが無ければ、このノードをそこで待機させ、既に取った分を返し、
+	* false を返す。
 	*/
 	Bool JobNode::AcquireAll(HybridArray<JobNode*>& nodes)
 	{
+		/// [EN] All or nothing: holding some semaphores while waiting for another could deadlock two nodes against each other.
+		/// [JP] 全部取るか、何も持たないか。一部を持ったまま別のものを待つと、2つのノードが互いを待って止まりうる。
 		auto& acquire = semaphores_->acquire_;
 		for (Size index = 0;index < acquire.size();++index)
 		{
@@ -191,17 +192,19 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Releases all of this node's held semaphores, collecting any jobs
-	* that become runnable as a result into nodes.
+	* Gives back every semaphore this node releases after running,
+	* collecting the tasks that were waiting on them into nodes.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* このノードが保持しているすべてのセマフォを解放し、その結果
-	* 実行可能になったジョブを nodes に収集する。
+	* このノードが実行後に解放するセマフォを全て返し、それらを待って
+	* いたタスクを nodes へ集める。
 	*/
 	void JobNode::ReleaseAll(HybridArray<JobNode*>& nodes)
 	{
+		/// [EN] The waiters of every semaphore are gathered into one list, so the caller schedules them in a single batch.
+		/// [JP] 全セマフォの待機者を1つのリストへ集め、呼び出し側が1回でまとめてスケジュールできるようにする。
 		auto& release = semaphores_->release_;
 		for (Semaphore* semaphore : release)
 		{
@@ -211,14 +214,14 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Establishes a precedence (dependency) edge from this node to node,
-	* making node a successor of this node.
+	* Adds an edge from this node to node: node becomes a successor
+	* here, and this node becomes a predecessor there.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* このノードから node への先行関係（依存関係）のエッジを確立し、
-	* node をこのノードの後続として設定する。
+	* このノードから node へのエッジを足す。こちらでは node が後続に、
+	* あちらではこのノードが先行ノードになる。
 	*/
 	void JobNode::Precede(JobNode* node)
 	{
@@ -234,19 +237,18 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Initializes/recomputes this node's join counter based on its
-	* current set of dependencies.
+	* Adds the number of strong dependencies to nstate_ and sets the
+	* join counter to it.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 現在の依存関係の集合に基づいて、このノードの join カウンタを
-	* 初期化・再計算する。
+	* 強い依存関係の数を nstate_ に足し、join カウンタをその値にする。
 	*/
 	void JobNode::SetUpJoinCounter()
 	{
-		/// [EN] Count unconditional (non-conditioner) predecessors and fold that count into nstate_.
-		/// [JP] 無条件（非 conditioner）の先行ノードの数を数え、その数を nstate_ に組み込む。
+		/// [EN] The count lives in the low bits of nstate_, so Invoke can restore the counter after each run without recounting.
+		/// [JP] 数は nstate_ の下位ビットに置く。Invoke は実行のたびに数え直さずにカウンタを戻せる。
 		for (Size index = numberSuccessors_;index < edges_.size();index++)
 		{
 			nstate_ += !edges_[index]->Conditioner();
@@ -259,12 +261,12 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Removes node from this node's list of successors.
+	* Removes every edge to node from this node's successors.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* このノードの後続一覧から node を削除する。
+	* このノードの後続から、node へのエッジを全て取り除く。
 	*/
 	void JobNode::RemoveSuccessors(JobNode* node)
 	{
@@ -282,12 +284,12 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Removes node from this node's list of predecessors.
+	* Removes every edge from node out of this node's predecessors.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* このノードの先行一覧から node を削除する。
+	* このノードの先行ノードから、node からのエッジを全て取り除く。
 	*/
 	void JobNode::RemovePredecessors(JobNode* node)
 	{

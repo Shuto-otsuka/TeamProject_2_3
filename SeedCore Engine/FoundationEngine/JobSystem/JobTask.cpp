@@ -57,6 +57,8 @@ namespace SeedCore
 	*/
 	JobTask& JobTask::operator=(std::nullptr_t null)
 	{
+		/// [EN] Only the handle is cleared; the node stays in its graph.
+		/// [JP] 消すのはハンドルだけで、ノードはグラフに残る。
 		node_ = null;
 		return *this;
 	}
@@ -187,6 +189,8 @@ namespace SeedCore
 	*/
 	JobTask& JobTask::Adopt(JobGraph&& graph)
 	{
+		/// [EN] Replacing the handle alternative destroys the previous work, including a previously adopted graph.
+		/// [JP] ハンドルの選択肢を置き換えると、以前に引き受けたグラフも含めて前の処理が破棄される。
 		node_->handle_.emplace<JobNode::AdoptedModule>(std::move(graph));
 		return *this;
 	}
@@ -218,6 +222,8 @@ namespace SeedCore
 	*/
 	void JobTask::Reset()
 	{
+		/// [EN] Same as assigning nullptr: the node keeps its work, edges and semaphores.
+		/// [JP] nullptr の代入と同じ。ノードは処理・エッジ・セマフォをそのまま持つ。
 		node_ = nullptr;
 	}
 
@@ -234,6 +240,8 @@ namespace SeedCore
 	*/
 	void JobTask::ResetWork()
 	{
+		/// [EN] std::monostate is the Placeholder alternative, so the node runs no work from now on.
+		/// [JP] std::monostate は Placeholder の選択肢なので、ノードはこれ以降何も実行しない。
 		node_->handle_.emplace<std::monostate>();
 	}
 
@@ -264,6 +272,8 @@ namespace SeedCore
 	*/
 	Bool JobTask::HasWork()const
 	{
+		/// [EN] Index 0 is the Placeholder alternative; an empty handle has no work either.
+		/// [JP] インデックス 0 は Placeholder の選択肢。空のハンドルも処理を持たないとみなす。
 		return node_ ? node_->handle_.index() != 0 : false;
 	}
 
@@ -278,6 +288,8 @@ namespace SeedCore
 	*/
 	Size JobTask::HashValue()const
 	{
+		/// [EN] Hashing the address makes two handles to the same node hash alike.
+		/// [JP] アドレスをハッシュするので、同じノードを指す2つのハンドルは同じ値になる。
 		return std::hash<JobNode*>{}(node_);
 	}
 
@@ -294,6 +306,8 @@ namespace SeedCore
 	*/
 	JobTaskType JobTask::Type()const
 	{
+		/// [EN] Preemptive/non-preemptive, single/multi condition and owned/adopted module each collapse into one public kind.
+		/// [JP] プリエンプティブ/非プリエンプティブ、単一/複数の条件、所有/養子のモジュールは、それぞれ公開用の1種類にまとめる。
 		switch (node_->handle_.index())
 		{
 		case JobNode::PLACEHOLDER:
@@ -321,6 +335,29 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Registers semaphore to be released once this task finishes
+	* executing. Returns *this for chaining.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* このタスクの実行完了時に解放されるセマフォとして semaphore を
+	* 登録する。メソッドチェーン用に *this を返す。
+	*/
+	JobTask& JobTask::Release(Semaphore& semaphore)
+	{
+		/// [EN] The semaphore block is created only once a task actually uses one.
+		/// [JP] セマフォ用のまとまりは、実際に使うタスクで初めて作る。
+		if (!node_->semaphores_)
+		{
+			node_->semaphores_ = std::make_unique<JobNode::Semaphores>();
+		}
+		node_->semaphores_->release_.push_back(&semaphore);
+		return *this;
+	}
+
+	/**
+	* [EN]
 	* Registers semaphore to be acquired before this task may execute.
 	* Returns *this for chaining.
 	*
@@ -332,11 +369,13 @@ namespace SeedCore
 	*/
 	JobTask& JobTask::Acquire(Semaphore& semaphore)
 	{
+		/// [EN] The semaphore block is created only once a task actually uses one.
+		/// [JP] セマフォ用のまとまりは、実際に使うタスクで初めて作る。
 		if (!node_->semaphores_)
 		{
 			node_->semaphores_ = std::make_unique<JobNode::Semaphores>();
 		}
-		node_->semaphores_->release_.push_back(&semaphore);
+		node_->semaphores_->acquire_.push_back(&semaphore);
 		return *this;
 	}
 
@@ -356,12 +395,14 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Returns the exception propagated to this task, if any.
+	* Returns the exception stored on this task's node, if any; nullptr
+	* for an empty handle.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* このタスクに伝播した例外があれば、それを返す。
+	* このタスクのノードに格納された例外があれば、それを返す。空の
+	* ハンドルでは nullptr。
 	*/
 	std::exception_ptr JobTask::ExceptionPtr()const
 	{
@@ -482,6 +523,8 @@ namespace SeedCore
 	*/
 	JobTaskType JobTaskView::Type()const
 	{
+		/// [EN] Preemptive/non-preemptive, single/multi condition and owned/adopted module each collapse into one public kind.
+		/// [JP] プリエンプティブ/非プリエンプティブ、単一/複数の条件、所有/養子のモジュールは、それぞれ公開用の1種類にまとめる。
 		switch (node_.handle_.index())
 		{
 		case JobNode::PLACEHOLDER:
@@ -526,34 +569,35 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* Returns the display name of type as a null-terminated string, or
-	* "Undefined" if type is out of range.
+	* Returns the display name of type as a null-terminated string;
+	* UNDEFINED and any unknown value give "Undefined".
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* type の表示名をヌル終端文字列として返す。type が範囲外であれば
+	* type の表示名をヌル終端文字列として返す。UNDEFINED や未知の値では
 	* "Undefined" を返す。
 	*/
-	inline const Char* ToString(JobTaskType type)
+	const Char* ToString(JobTaskType type)
 	{
-		static constexpr StaticArray<const Char*, 7> names =
+		/// [EN] A switch keeps each name tied to its enumerator, independent of the enumerators' numeric order.
+		/// [JP] switch にすることで、各名前が列挙子と直接結びつき、列挙子の数値の並びに左右されない。
+		switch (type)
 		{
-			"Placeholder",
-			"Static",
-			"Runtime",
-			"Subflow",
-			"Condition",
-			"Module",
-			"Async"
-		};
-
-		const auto index = std::to_underlying(type);
-		if (index >= names.size())
-		{
+		case JobTaskType::PLACEHOLDER:
+			return "Placeholder";
+		case JobTaskType::STATIC:
+			return "Static";
+		case JobTaskType::RUNTIME:
+			return "Runtime";
+		case JobTaskType::SUBFLOW:
+			return "Subflow";
+		case JobTaskType::CONDITION:
+			return "Condition";
+		case JobTaskType::MODULE:
+			return "Module";
+		default:
 			return "Undefined";
 		}
-
-		return names[index];
 	}
 }

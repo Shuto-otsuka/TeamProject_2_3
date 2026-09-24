@@ -56,14 +56,22 @@ namespace SeedCore
 			return;
 		}
 
+		/// [EN] _com_error turns the HRESULT into the system's own description of the error.
+		/// [JP] _com_error で、HRESULT をシステム自身のエラー説明に変える。
 		_com_error error(hr);
 
+		/// [EN] Only the file name is shown, since __FILE__ is a full build path.
+		/// [JP] __FILE__ はビルド時の完全なパスなので、ファイル名だけを表示する。
 		std::string output = std::format("重要：DirectX 処理が失敗しました。\n\n" "詳細: {}\n" "コード: {:#010x}\n" "内容: {}\n\n" "場所: {}:{}", msg, static_cast<Uint32>(hr), ConvertToCharString(error.ErrorMessage()), std::filesystem::path(file).filename().string(), line);
 
+		/// [EN] The message box takes UTF-16, so the Japanese text is converted first.
+		/// [JP] メッセージボックスは UTF-16 を受け取るので、先に日本語の文字列を変換する。
 		std::wstring wideOutput = ConvertToWideString(output);
 
 		MessageBoxW(NULL, wideOutput.c_str(), L"SeedCore Engine - DirectX Error", MB_ICONERROR | MB_OK);
 
+		/// [EN] Stops in the debugger at the failing call once the message has been read.
+		/// [JP] メッセージを読んだ後、失敗した呼び出しの位置でデバッガを止める。
 		__debugbreak();
 	}
 
@@ -159,12 +167,16 @@ namespace SeedCore
 			return;
 		}
 
+		/// [EN] Any other failure has no removal reason or breadcrumbs to collect.
+		/// [JP] それ以外の失敗には、集めるべき削除理由もブレッドクラムも無い。
 		if (hr != DXGI_ERROR_DEVICE_REMOVED && hr != DXGI_ERROR_DEVICE_HUNG)
 		{
 			DxFail(hr, msg, file, line);
 			return;
 		}
 
+		/// [EN] The HRESULT from Present only says "removed"; the device knows why.
+		/// [JP] Present の HRESULT は「削除された」としか言わない。理由はデバイスが知っている。
 		HRESULT removedReason = device ? device->GetDeviceRemovedReason() : E_FAIL;
 		_com_error reasonError(removedReason);
 
@@ -172,6 +184,8 @@ namespace SeedCore
 
 		if (device)
 		{
+			/// [EN] Each DRED query can fail on its own, and every failure is written into the report instead of stopping it.
+			/// [JP] DRED の問い合わせはそれぞれ単独で失敗しうる。失敗はレポートを止めずに、その中へ書き込む。
 			Microsoft::WRL::ComPtr<ID3D12DeviceRemovedExtendedData1> dred;
 			HRESULT dredHr = device->QueryInterface(IID_PPV_ARGS(&dred));
 			if (FAILED(dredHr))
@@ -200,12 +214,16 @@ namespace SeedCore
 					{
 						nodeCount++;
 
+						/// [EN] pLastBreadcrumbValue is how many ops of this list the GPU finished; a list that finished them all is not the culprit.
+						/// [JP] pLastBreadcrumbValue は、このリストのうち GPU が終えたコマンドの数。全て終えたリストは原因ではない。
 						Uint32 completedCount = node->pLastBreadcrumbValue ? *node->pLastBreadcrumbValue : 0;
 						if (!node->pCommandHistory || completedCount >= node->BreadcrumbCount)
 						{
 							continue;
 						}
 
+						/// [EN] Only the first four incomplete lists are detailed, to keep the message box readable; the rest are only counted.
+						/// [JP] メッセージボックスを読める大きさに保つため、詳しく出すのは未完了のリストの最初の4つだけ。残りは数えるだけ。
 						incompleteCount++;
 						if (incompleteCount > 4)
 						{
@@ -226,6 +244,8 @@ namespace SeedCore
 					output += std::format("\n\nDRED ノード数: {} (うち未完了 {})", nodeCount, incompleteCount);
 				}
 
+				/// [EN] A non-zero page-fault address means the GPU touched memory that was not (or no longer) mapped.
+				/// [JP] ページフォルトのアドレスが 0 でなければ、GPU がマップされていない（もう無い）メモリに触れたことを示す。
 				D3D12_DRED_PAGE_FAULT_OUTPUT1 pageFault{};
 				HRESULT pageFaultHr = dred->GetPageFaultAllocationOutput1(&pageFault);
 				if (FAILED(pageFaultHr))
@@ -247,6 +267,8 @@ namespace SeedCore
 		/// [JP] Aftermath のレポートはドライバがダンプを書き終えるまで数秒止まることがあるので、上の DRED レポートを遅らせないよう最後に行う。
 		output += AftermathCrashTracker::Report().str();
 
+		/// [EN] The message box takes UTF-16, so the Japanese text is converted first.
+		/// [JP] メッセージボックスは UTF-16 を受け取るので、先に日本語の文字列を変換する。
 		std::wstring wideOutput = ConvertToWideString(output);
 
 		MessageBoxW(NULL, wideOutput.c_str(), L"SeedCore Engine - GPU Device Removed", MB_ICONERROR | MB_OK);

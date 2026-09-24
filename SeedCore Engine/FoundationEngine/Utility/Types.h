@@ -4,10 +4,8 @@
 
 namespace SeedCore
 {
-	/// [EN] Signed integer aliases. Int is the default choice; the fixed-width
-	///      variants pin down an exact bit width (e.g. wire/file formats).
-	/// [JP] 符号付き整数のエイリアス。Int が既定の選択肢で、固定幅版は
-	///      ビット幅を明示したい場合（通信/ファイルフォーマットなど）に使う。
+	/// [EN] Signed integer aliases. Int is the default; the fixed-width ones pin an exact bit width (e.g. file formats).
+	/// [JP] 符号付き整数のエイリアス。Int が既定で、固定幅版はビット幅を決めたい場合（ファイル形式など）に使う。
 	using Int = int;
 	using Int8 = std::int8_t;
 	using Int16 = std::int16_t;
@@ -27,10 +25,8 @@ namespace SeedCore
 	using Float = float;
 	using Double = double;
 
-	/// [EN] Alias for unsigned, kept separate from Uint for call sites
-	///      that spell out the bare keyword (e.g. matching a third-party signature).
-	/// [JP] unsigned のエイリアス。生のキーワードを使う呼び出し箇所
-	///      （サードパーティのシグネチャに合わせる場合など）のために Uint とは別に用意。
+	/// [EN] The same type as Uint, named after the bare keyword for places that mirror a third-party signature.
+	/// [JP] Uint と同じ型。サードパーティのシグネチャに合わせる箇所向けに、生のキーワードに合わせた名前にしている。
 	using Unsigned = unsigned;
 
 	/// [EN] long/long long aliases, for interop with APIs that use them explicitly.
@@ -57,10 +53,8 @@ namespace SeedCore
 	using Char32 = char32_t;
 	using Wchar = wchar_t;
 
-	/// [EN] Unsigned 8-bit character, mainly for locale-safe <cctype>-style
-	///      functions (e.g. std::tolower) that require an unsigned argument.
-	/// [JP] 符号なし8ビット文字。主に std::tolower のような、符号なし引数を
-	///      要求するロケール安全な <cctype> 系関数のために使う。
+	/// [EN] Unsigned 8-bit character, mainly for <cctype> functions (e.g. std::tolower) whose argument must not be negative.
+	/// [JP] 符号なし8ビット文字。主に std::tolower など、引数が負であってはならない <cctype> 系関数に使う。
 	using Uchar = unsigned char;
 
 	/// [EN] Alias for std::size_t, used for sizes/counts/indices.

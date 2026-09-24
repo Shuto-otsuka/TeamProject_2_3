@@ -17,6 +17,8 @@
 
 namespace SeedCore
 {
+	/// [EN] Streamline is left out of builds made for RenderDoc capture, so its error helpers are too.
+	/// [JP] RenderDoc でキャプチャするためのビルドでは Streamline を外すので、そのエラー処理も外す。
 #if !SC_RENDER_DOC_USAGE
 	/**
 	* [EN]
@@ -95,12 +97,18 @@ namespace SeedCore
 			return;
 		}
 
+		/// [EN] Both the enumerator name and the raw value are shown, so an unknown result can still be looked up.
+		/// [JP] 列挙子名と生の値の両方を出すので、名前の分からない結果でも調べられる。
 		std::string output = std::format("重要：処理が中断されました。\n\n" "詳細: {}\n" "エラー: {} ({:#010x})\n\n" "場所: {}:{}", msg, SlResultToString(sr), static_cast<Uint32>(sr), file, line);
 
+		/// [EN] The message box takes UTF-16, so the Japanese text is converted first.
+		/// [JP] メッセージボックスは UTF-16 を受け取るので、先に日本語の文字列を変換する。
 		std::wstring wideOutput = ConvertToWideString(output);
 
 		MessageBoxW(NULL, wideOutput.c_str(), L"SeedCore Engine - Streamline Notification", MB_ICONERROR | MB_OK);
 
+		/// [EN] Stops in the debugger at the failing call once the message has been read.
+		/// [JP] メッセージを読んだ後、失敗した呼び出しの位置でデバッガを止める。
 		__debugbreak();
 	}
 #endif

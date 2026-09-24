@@ -34,6 +34,15 @@ namespace SeedCore
 		static constexpr Size BitsPerBlock = sizeof(Block) * 8;
 
 	public:
+		/**
+		* [EN]
+		* Constructs an empty bitset with no storage.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ストレージを持たない、空のビットセットを構築する。
+		*/
 		Bitset() = default;
 
 		/**
@@ -50,14 +59,17 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
-		* Resizes to bitCount bits. Newly added bits are set to
-		* defaultValue; shrinking discards the trailing bits.
+		* Resizes to bitCount bits. Every newly added bit is set to
+		* defaultValue, including those that fall into the old last block;
+		* shrinking discards the trailing bits. Bits past the logical size
+		* are always kept at 0.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* bitCount ビットにリサイズする。新たに追加されたビットは
-		* defaultValue に設定される。縮小する場合は末尾のビットが破棄される。
+		* bitCount ビットにリサイズする。新しく追加されたビットは、元の最後の
+		* ブロックに入るものも含めて全て defaultValue にする。縮小では末尾の
+		* ビットを捨てる。論理サイズより後ろのビットは常に 0 に保つ。
 		*/
 		void resize(Size bitCount, Bool defaultValue = false);
 
@@ -340,6 +352,8 @@ namespace SeedCore
 		*/
 		friend Bitset operator&(Bitset lhs, const Bitset& rhs)
 		{
+			/// [EN] lhs is taken by value, so it is the copy the result is built in.
+			/// [JP] lhs は値で受け取るので、それがそのまま結果を作るための写しになる。
 			lhs &= rhs;
 			return lhs;
 		}
@@ -389,6 +403,8 @@ namespace SeedCore
 		*/
 		friend Bool operator==(const Bitset& lhs, const Bitset& rhs)
 		{
+			/// [EN] Comparing up to the longer side makes bitsets that differ only in trailing zero blocks equal.
+			/// [JP] 長い方まで比べるので、末尾のゼロのブロックだけが違うビットセットは等しいとみなされる。
 			Size maxBlocks = (lhs.data_.size() > rhs.data_.size()) ? lhs.data_.size() : rhs.data_.size();
 			for (Size index = 0; index < maxBlocks; ++index)
 			{
@@ -459,8 +475,8 @@ namespace SeedCore
 		void clear_unused_bits();
 
 	private:
-		/// [EN] Backing block storage.
-		/// [JP] 裏付けとなるブロックストレージ。
+		/// [EN] Backing block storage; bit i lives in block i / 64 at position i % 64.
+		/// [JP] 裏付けとなるブロックストレージ。ビット i はブロック i / 64 の位置 i % 64 にある。
 		DynamicArray<Block> data_;
 
 		/// [EN] Logical bit count, as last set by the constructor/resize().

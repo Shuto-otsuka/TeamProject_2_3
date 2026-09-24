@@ -35,8 +35,8 @@ namespace SeedCore
 		/// [JP] 所有または養子化された JobGraph を包むモジュール。
 		MODULE,
 
-		/// [EN] Sentinel marking an invalid/unrecognized task type.
-		/// [JP] 無効・未認識のタスク種別を表す番兵値。
+		/// [EN] Sentinel returned for a handle alternative with no matching kind.
+		/// [JP] 対応する種類が無いハンドルの選択肢に対して返す番兵値。
 		UNDEFINED
 	};
 
@@ -55,14 +55,14 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Returns the display name of type as a null-terminated string
-	* (defined elsewhere).
+	* (defined in JobTask.cpp).
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* type の表示名をヌル終端文字列として返す（定義は別の場所にある）。
+	* type の表示名をヌル終端文字列として返す（定義は JobTask.cpp）。
 	*/
-	inline const Char* ToString(JobTaskType type);
+	SEEDCORE_API const Char* ToString(JobTaskType type);
 
 	/// [EN] Satisfied when C is invocable with no arguments and returns void (a Static task callable).
 	/// [JP] C が引数なしで呼び出し可能で void を返す場合に満たされる（Static タスクの呼び出し可能条件）。
@@ -136,6 +136,8 @@ namespace SeedCore
 	class SEEDCORE_API JobTask
 	{
 	private:
+		/// [EN] Builders and runtimes create handles from nodes and reach node_ directly.
+		/// [JP] ビルダーとランタイムは、ノードからハンドルを作り、node_ に直接触れる。
 		friend class FlowBuilder;
 		friend class JobPreemptiveRuntime;
 		friend class JobNonpreemptiveRuntime;
@@ -293,13 +295,24 @@ namespace SeedCore
 		template<typename C>
 		JobTask& Work(C&& callable)
 		{
+			/// [EN] Replacing the handle alternative destroys the previous work, whatever kind it was.
+			/// [JP] ハンドルの選択肢を置き換えると、前の処理は種類に関係なく破棄される。
 			if constexpr (IsStaticTaskValue<C>)
 			{
 				node_->handle_.emplace<JobNode::Static>(std::forward<C>(callable));
 			}
 			else if constexpr (IsRuntimeTaskValue<C>)
 			{
-				node_->handle_.emplace<JobNode::PreemptiveRuntime>(std::forward<C>(callable));
+				/// [EN] The runtime type the callable accepts decides between the preemptive and non-preemptive alternatives, as in FlowBuilder::emplace.
+				/// [JP] 処理が受け取るランタイムの型で、FlowBuilder::emplace と同じく、プリエンプティブか非プリエンプティブかを選ぶ。
+				if constexpr (std::is_invocable_v<C, JobPreemptiveRuntime&>)
+				{
+					node_->handle_.emplace<JobNode::PreemptiveRuntime>(std::forward<C>(callable));
+				}
+				else
+				{
+					node_->handle_.emplace<JobNode::NonpreemptiveRuntime>(std::forward<C>(callable));
+				}
 			}
 			else if constexpr (IsSubflowTaskValue<C>)
 			{
@@ -313,6 +326,8 @@ namespace SeedCore
 			{
 				node_->handle_.emplace<JobNode::MultiCondition>(std::forward<C>(callable));
 			}
+			/// [EN] A callable matching none of the kinds leaves the current work unchanged.
+			/// [JP] どの種類にも当てはまらない処理では、今の処理をそのまま残す。
 			else
 			{
 
@@ -322,14 +337,16 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Turns this task into a module wrapping target's underlying
-		* graph (owned externally). Returns *this for chaining.
+		* Turns this task into a module that runs target's graph (owned
+		* externally, so target must outlive every run). Returns *this for
+		* chaining.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* target の内部グラフ（外部が所有）を包むモジュールへこのタスクを
-		* 変換する。メソッドチェーン用に *this を返す。
+		* target のグラフ（外部が所有するので、target は全ての実行より長く
+		* 生きている必要がある）を実行するモジュールへこのタスクを変換する。
+		* メソッドチェーン用に *this を返す。
 		*/
 		template<GraphLike T>
 		JobTask& Composed(T& target)
@@ -365,6 +382,8 @@ namespace SeedCore
 		template<typename... Ts>
 		JobTask& Precede(Ts&&... tasks)
 		{
+			/// [EN] One edge per task, added in argument order.
+			/// [JP] タスクごとに1本ずつ、引数の順にエッジを足す。
 			(node_->Precede(tasks.node_), ...);
 			return *this;
 		}
@@ -383,6 +402,8 @@ namespace SeedCore
 		template<typename... Ts>
 		JobTask& Succeed(Ts&&... tasks)
 		{
+			/// [EN] The same edges as Precede, drawn from the other end.
+			/// [JP] Precede と同じエッジを、反対側から張る。
 			(tasks.node_->Precede(node_), ...);
 			return *this;
 		}
@@ -401,6 +422,8 @@ namespace SeedCore
 		template<typename... Ts>
 		JobTask& RemovePredecessors(Ts&&... tasks)
 		{
+			/// [EN] An edge is recorded on both nodes, so it is removed from each side.
+			/// [JP] エッジは両方のノードに記録されているので、それぞれの側から取り除く。
 			(tasks.node_->RemoveSuccessors(node_), ...);
 			(node_->RemovePredecessors(tasks.node_), ...);
 			return *this;
@@ -420,10 +443,25 @@ namespace SeedCore
 		template<typename... Ts>
 		JobTask& RemoveSuccessors(Ts&&... tasks)
 		{
+			/// [EN] An edge is recorded on both nodes, so it is removed from each side.
+			/// [JP] エッジは両方のノードに記録されているので、それぞれの側から取り除く。
 			(node_->RemoveSuccessors(tasks.node_), ...);
 			(tasks.node_->RemovePredecessors(node_), ...);
 			return *this;
 		}
+
+		/**
+		* [EN]
+		* Registers semaphore to be released once this task finishes
+		* executing. Returns *this for chaining.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このタスクの実行完了時に解放されるセマフォとして semaphore を
+		* 登録する。メソッドチェーン用に *this を返す。
+		*/
+		JobTask& Release(Semaphore& semaphore);
 
 		/**
 		* [EN]
@@ -439,6 +477,8 @@ namespace SeedCore
 		template<typename I>
 		JobTask& Release(I first, I last)
 		{
+			/// [EN] The semaphore block is created only once a task actually uses one, keeping ordinary nodes small.
+			/// [JP] セマフォ用のまとまりは、実際に使うタスクで初めて作る。普通のノードは小さいままで済む。
 			if (!node_->semaphores_)
 			{
 				node_->semaphores_ = std::make_unique<JobNode::Semaphores>();
@@ -482,7 +522,10 @@ namespace SeedCore
 			{
 				node_->semaphores_ = std::make_unique<JobNode::Semaphores>();
 			}
-			node_->semaphores_->acquire_.reserve(node_->semaphores_->acquire_.size() + std::distance(first.last));
+
+			/// [EN] Only pointers are stored, so every semaphore must outlive the task's runs.
+			/// [JP] 持つのはポインタだけなので、各セマフォはタスクの実行より長く生きている必要がある。
+			node_->semaphores_->acquire_.reserve(node_->semaphores_->acquire_.size() + std::distance(first, last));
 			for (auto s = first;s != last;++s)
 			{
 				node_->semaphores_->acquire_.push_back(&(*s));
@@ -504,14 +547,14 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Resets the underlying node to its default (placeholder) state,
-		* clearing work, dependencies, and semaphores.
+		* Resets this handle to point at no node; the node itself is left
+		* untouched.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 内部ノードをデフォルト（プレースホルダー）状態にリセットし、
-		* 処理・依存関係・セマフォをクリアする。
+		* このハンドルをどのノードも指さない状態にリセットする。ノード自体
+		* には触れない。
 		*/
 		void Reset();
 
@@ -564,7 +607,9 @@ namespace SeedCore
 		template<typename V>
 		void EachSuccessor(V&& visitor)const
 		{
-			for (Size index = node_->numberSuccessors_;index < node_->edges_.size();++index)
+			/// [EN] Successors occupy the front numberSuccessors_ entries of edges_.
+			/// [JP] 後続は edges_ の先頭 numberSuccessors_ 個に並んでいる。
+			for (Size index = 0;index < node_->numberSuccessors_;++index)
 			{
 				visitor(JobTask(node_->edges_[index]));
 			}
@@ -582,6 +627,8 @@ namespace SeedCore
 		template<typename V>
 		void EachPredecessor(V&& visitor)const
 		{
+			/// [EN] Predecessors are stored after the successors in edges_.
+			/// [JP] edges_ では、先行ノードは後続の後ろに並んでいる。
 			for (Size index = node_->numberSuccessors_;index < node_->edges_.size();++index)
 			{
 				visitor(JobTask(node_->edges_[index]));
@@ -603,6 +650,8 @@ namespace SeedCore
 		template<typename V>
 		void EachSubflowTask(V&& visitor)const
 		{
+			/// [EN] The subgraph holds whatever the last run built, unless it was cleared afterwards.
+			/// [JP] サブグラフには、後で消されていなければ、直前の実行で作られたものが入っている。
 			if (auto ptr = std::get_if<JobNode::Subflow>(&node_->handle_);ptr)
 			{
 				for (auto iterator = ptr->subgraph_.begin();iterator != ptr->subgraph_.end();++iterator)
@@ -614,12 +663,13 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Returns a hash value identifying the underlying node.
+		* Returns a hash value identifying the underlying node (derived
+		* from its address).
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 内部ノードを識別するハッシュ値を返す。
+		* 内部ノードを識別するハッシュ値を返す（アドレスから求める）。
 		*/
 		Size HashValue()const;
 
@@ -647,12 +697,14 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Returns the exception propagated to this task, if any.
+		* Returns the exception stored on this task's node, if any;
+		* nullptr for an empty handle.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* このタスクに伝播した例外があれば、それを返す。
+		* このタスクのノードに格納された例外があれば、それを返す。空の
+		* ハンドルでは nullptr。
 		*/
 		std::exception_ptr ExceptionPtr()const;
 
@@ -703,6 +755,8 @@ namespace SeedCore
 	class JobTaskView
 	{
 	private:
+		/// [EN] Only the executor creates views, to hand nodes out without allowing changes.
+		/// [JP] ビューを作るのはエグゼキュータだけで、変更を許さずにノードを渡すために使う。
 		friend class JobExecutor;
 
 	public:
@@ -773,6 +827,8 @@ namespace SeedCore
 		template<typename V>
 		void EachSuccessor(V&& visitor)const
 		{
+			/// [EN] Successors occupy the front numberSuccessors_ entries of edges_.
+			/// [JP] 後続は edges_ の先頭 numberSuccessors_ 個に並んでいる。
 			for (Size index = 0;index < node_.numberSuccessors_;++index)
 			{
 				visitor(JobTaskView(*node_.edges_[index]));
@@ -791,7 +847,9 @@ namespace SeedCore
 		template<typename V>
 		void EachPredecessor(V&& visitor)const
 		{
-			for (Size index = 0;index < node_.numberSuccessors_;++index)
+			/// [EN] Predecessors are stored after the successors in edges_.
+			/// [JP] edges_ では、先行ノードは後続の後ろに並んでいる。
+			for (Size index = node_.numberSuccessors_;index < node_.edges_.size();++index)
 			{
 				visitor(JobTaskView(*node_.edges_[index]));
 			}
@@ -842,8 +900,8 @@ namespace SeedCore
 		*/
 		JobTaskView(const JobTaskView&) = default;
 
-		/// [EN] The node this view refers to.
-		/// [JP] このビューが参照するノード。
+		/// [EN] The node this view refers to; a reference, so a view can never be empty.
+		/// [JP] このビューが参照するノード。参照なので、ビューが空になることは無い。
 		const JobNode& node_;
 	};
 }

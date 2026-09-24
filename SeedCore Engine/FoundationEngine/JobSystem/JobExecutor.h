@@ -11,6 +11,7 @@
 #include <FoundationEngine/JobSystem/WorkerQueue.h>
 #include <FoundationEngine/JobSystem/WorkerCommon.h>
 #include <FoundationEngine/Pool/ObjectPool.h>
+#include <FoundationEngine/Log/Exeption.h>
 
 namespace SeedCore
 {
@@ -40,6 +41,8 @@ namespace SeedCore
 	class SEEDCORE_API JobExecutor
 	{
 	private:
+		/// [EN] Builders and runtimes schedule, corun and spawn work through the executor's private scheduling functions.
+		/// [JP] ビルダーとランタイムは、エグゼキュータの private なスケジューリング関数を通じて処理の投入・Corun・生成を行う。
 		friend class FlowBuilder;
 		friend class JobSubflow;
 		friend class JobPreemptiveRuntime;
@@ -51,7 +54,7 @@ namespace SeedCore
 		* Constructs an executor with n worker threads (defaulting to the
 		* hardware concurrency), optionally supplying a custom
 		* JobWorkerInterface (e.g. for custom thread naming/affinity)
-		* used to spawn each worker.
+		* whose hooks run at the start and end of each worker thread.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -59,7 +62,8 @@ namespace SeedCore
 		* n 個のワーカースレッド（デフォルトはハードウェア並行度）を持つ
 		* エグゼキュータを構築する。各ワーカーの生成に使用する、カスタムの
 		* JobWorkerInterface（スレッド名やアフィニティのカスタマイズ用など）
-		* を任意で指定できる。
+		* を任意で指定でき、そのフックが各ワーカースレッドの開始時と終了時に
+		* 呼ばれる。
 		*/
 		explicit JobExecutor(Size n = std::thread::hardware_concurrency(), ResourceRef<JobWorkerInterface> worker = nullptr);
 
@@ -174,6 +178,8 @@ namespace SeedCore
 		template<typename C>
 		JobFuture<void> RunNumber(JobTaskflow& taskflow, Size n, C&& callable)
 		{
+			/// [EN] The predicate is asked once before the first pass and once after each pass, so it is true after exactly n passes.
+			/// [JP] 述語は最初の周の前に1回、各周の後に1回ずつ呼ばれるので、ちょうど n 周の後に true になる。
 			return RunUntil(taskflow, [n]() mutable {return n-- == 0;}, std::forward<C>(callable));
 		}
 
@@ -191,6 +197,8 @@ namespace SeedCore
 		template<typename C>
 		JobFuture<void> RunNumber(JobTaskflow&& taskflow, Size n, C&& callable)
 		{
+			/// [EN] The predicate is asked once before the first pass and once after each pass, so it is true after exactly n passes.
+			/// [JP] 述語は最初の周の前に1回、各周の後に1回ずつ呼ばれるので、ちょうど n 周の後に true になる。
 			return RunUntil(std::move(taskflow), [n]() mutable {return n-- == 0;}, std::forward<C>(callable));
 		}
 
@@ -252,6 +260,8 @@ namespace SeedCore
 		template<typename P, typename C>
 		JobFuture<void> RunUntil(JobTaskflow& taskflow, P&& predicate, C&& callable)
 		{
+			/// [EN] Nothing to run: the callback fires right here and the returned future is already complete.
+			/// [JP] 実行するものが無いので、コールバックをここで呼び、完了済みの future を返す。
 			if (taskflow.Empty() || predicate())
 			{
 				callable();
@@ -260,12 +270,18 @@ namespace SeedCore
 				return JobFuture<void>(promise.get_future());
 			}
 
+			/// [EN] Counted before anything is scheduled, so WaitForAll cannot slip through while this run is being set up.
+			/// [JP] 何かをスケジュールする前に数えておくので、準備中に WaitForAll がすり抜けることはない。
 			IncrementTopology();
 
 			ResourceRef<JobTopology> topology = MakeRef<JobTopology>(taskflow, std::forward<P>(predicate), std::forward<C>(callable));
 
+			/// [EN] The future only observes the topology, so it can tell whether the run still exists (e.g. to cancel it).
+			/// [JP] future はトポロジーを監視するだけで、実行がまだ存在するか（キャンセルできるか等）を判断できる。
 			JobFuture<void> future(topology->promise_.get_future(), MakeObserve(topology));
 
+			/// [EN] Only the first queued run starts now; later ones are started by TearDownTopology when the one before finishes.
+			/// [JP] 今始めるのは列の最初の実行だけ。後のものは、前の実行が終わったときに TearDownTopology が始める。
 			if (taskflow.FetchEnqueue(topology) == 0)
 			{
 				SetUpTopology(ThisWorker(), topology.get());
@@ -290,6 +306,8 @@ namespace SeedCore
 		template<typename P, typename C>
 		JobFuture<void> RunUntil(JobTaskflow&& taskflow, P&& predicate, C&& callable)
 		{
+			/// [EN] Nothing to run: the callback fires right here and the returned future is already complete.
+			/// [JP] 実行するものが無いので、コールバックをここで呼び、完了済みの future を返す。
 			if (taskflow.Empty() || predicate())
 			{
 				callable();
@@ -298,13 +316,25 @@ namespace SeedCore
 				return JobFuture<void>(promise.get_future());
 			}
 
+			/// [EN] Counted before anything is scheduled, so WaitForAll cannot slip through while this run is being set up.
+			/// [JP] 何かをスケジュールする前に数えておくので、準備中に WaitForAll がすり抜けることはない。
 			IncrementTopology();
 
-			ResourceRef<JobTopology> topology = MakeRef<JobTopology>(taskflow, std::forward<P>(predicate), std::forward<C>(callable));
+			/// [EN] The caller's object may be gone right after this call, so the taskflow is moved into storage the topology owns.
+			/// [JP] 呼び出し側のオブジェクトはこの呼び出しの直後に消えうるので、タスクフローはトポロジーが所有する領域へムーブする。
+			ResourcePtr<JobTaskflow> ownedTaskflow = MakePtr<JobTaskflow>(std::move(taskflow));
+			JobTaskflow& owned = *ownedTaskflow;
 
+			ResourceRef<JobTopology> topology = MakeRef<JobTopology>(owned, std::forward<P>(predicate), std::forward<C>(callable));
+			topology->ownedTaskflow_ = std::move(ownedTaskflow);
+
+			/// [EN] The future only observes the topology, so it can tell whether the run still exists (e.g. to cancel it).
+			/// [JP] future はトポロジーを監視するだけで、実行がまだ存在するか（キャンセルできるか等）を判断できる。
 			JobFuture<void> future(topology->promise_.get_future(), MakeObserve(topology));
 
-			if (taskflow.FetchEnqueue(topology) == 0)
+			/// [EN] The owned taskflow has no other run queued, so this one always starts right away.
+			/// [JP] 所有したタスクフローには他の実行が積まれていないので、この実行は必ずすぐに始まる。
+			if (owned.FetchEnqueue(topology) == 0)
 			{
 				SetUpTopology(ThisWorker(), topology.get());
 			}
@@ -326,12 +356,16 @@ namespace SeedCore
 		template<typename T>
 		void Corun(T& target)
 		{
+			/// [EN] Coruning needs a worker to keep running tasks, so a call from outside the pool is an error.
+			/// [JP] Corun にはタスクを実行し続けるワーカーが必要なので、プールの外からの呼び出しはエラーにする。
 			JobWorker* worker = ThisWorker();
 			if (worker == nullptr)
 			{
-
+				SC_THROW("Corun は JobExecutor のワーカーから呼び出す必要があります。");
 			}
 
+			/// [EN] A local anchor stands in as the parent node, so its counter tells when every node of the graph is done.
+			/// [JP] ローカルのアンカーを親ノード代わりにし、そのカウンタで graph の全ノードが終わったことを知る。
 			JobNodeBase anchor;
 			CorunGraph(*worker, RetrieveGraph(target), nullptr, &anchor);
 		}
@@ -351,10 +385,12 @@ namespace SeedCore
 		template<typename P>
 		void CorunUntil(P&& predicate)
 		{
+			/// [EN] Coruning needs a worker to keep running tasks, so a call from outside the pool is an error.
+			/// [JP] Corun にはタスクを実行し続けるワーカーが必要なので、プールの外からの呼び出しはエラーにする。
 			JobWorker* worker = ThisWorker();
 			if (worker == nullptr)
 			{
-
+				SC_THROW("CorunUntil は JobExecutor のワーカーから呼び出す必要があります。");
 			}
 
 			CorunUntil(*worker, std::forward<P>(predicate));
@@ -459,12 +495,12 @@ namespace SeedCore
 		*/
 		struct Buffer
 		{
-			/// [EN] Guards concurrent pushes to queue_ from non-owning threads.
-			/// [JP] 非所有スレッドからの queue_ への並行 push を保護する。
+			/// [EN] Serializes pushes, since any thread may push here while the queue itself allows only one pusher.
+			/// [JP] push を1つずつにする。ここへは任意のスレッドが push するが、キュー自体は push 側を1つしか許さないため。
 			std::mutex mutex_;
 
-			/// [EN] The underlying unbounded work-stealing queue.
-			/// [JP] 内部の無制限ワークスティーリングキュー。
+			/// [EN] The underlying unbounded work-stealing queue; stealing from it needs no lock.
+			/// [JP] 内部の無制限ワークスティーリングキュー。ここからの盗み取りにロックは要らない。
 			UnboundedWorkerQueue<JobNode*> queue_;
 		};
 
@@ -472,8 +508,8 @@ namespace SeedCore
 		/// [JP] このエグゼキュータが所有するワーカースレッドのプール。
 		DynamicArray<JobWorker> workers_;
 
-		/// [EN] Overflow buffer queues, one per shard, used when a worker's own queue is full.
-		/// [JP] シャードごとに 1 つずつ存在する、あふれ用バッファキュー。ワーカー自身のキューが満杯の場合に使用される。
+		/// [EN] Overflow queues (bit_width of the worker count), used when a worker's own queue is full or the pusher is not a worker.
+		/// [JP] あふれ用キュー（ワーカー数の bit_width 個）。ワーカー自身のキューが満杯のときや、投入元がワーカーでないときに使う。
 		DynamicArray<Buffer> buffers_;
 
 		/// [EN] Eventcount notifier used to wake parked workers when new work becomes available.
@@ -491,167 +527,187 @@ namespace SeedCore
 	private:
 		/**
 		* [EN]
-		* Signals every worker to stop and joins their threads.
+		* Waits for every outstanding topology, then signals every worker
+		* to stop and joins their threads.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 全ワーカーへ停止を通知し、それらのスレッドを join する。
+		* 未完了のトポロジーを全て待ってから、全ワーカーへ停止を通知し、
+		* それらのスレッドを join する。
 		*/
 		void Shutdown();
 
 		/**
 		* [EN]
-		* Spawns n worker threads (using worker as the spawn strategy if
-		* provided) and registers them in thread2Worker_.
+		* Starts n worker threads, each running the exploit/wait
+		* scheduling loop with worker's prologue and epilogue around it,
+		* and registers each thread in thread2Worker_.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* n 個のワーカースレッドを生成し（worker が指定されていれば
-		* それを生成戦略として使用する）、thread2Worker_ に登録する。
+		* n 個のワーカースレッドを起動する。各スレッドは worker の前処理と
+		* 後処理に挟まれた、消化/待機のスケジューリングループを回す。各
+		* スレッドは thread2Worker_ に登録する。
 		*/
 		void Spawn(Size n, ResourceRef<JobWorkerInterface> worker);
 
 		/**
 		* [EN]
-		* Pops and invokes tasks from worker's own queue as long as any
-		* remain, updating cache with the last one instead of invoking it immediately.
+		* Runs cache, then keeps popping and running nodes from worker's
+		* own queue until it is empty; cache is left null.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* worker 自身のキューに残っている限りタスクを取り出して実行する。
-		* 最後の 1 つは即座に実行せず cache に保持する。
+		* cache を実行し、その後 worker 自身のキューが空になるまでノードを
+		* 取り出して実行し続ける。終わったとき cache は null になっている。
 		*/
 		void ExploitTask(JobWorker& worker, JobNode*& cache);
 
 		/**
 		* [EN]
-		* Attempts to steal and invoke a task from another worker/buffer;
-		* returns whether one was found.
+		* Tries to steal one node from another worker's queue or a buffer
+		* into cache (it does not run it). Returns false only when worker
+		* has been told to stop; true otherwise, whether or not anything
+		* was stolen.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 他のワーカー/バッファからタスクを盗み取って実行することを試みる。
-		* 見つかったかどうかを返す。
+		* 他のワーカーのキューかバッファから、ノードを1つ cache へ盗み取る
+		* （実行はしない）。false を返すのは worker に停止が指示されたとき
+		* だけで、それ以外は盗めたかどうかに関係なく true を返す。
 		*/
 		Bool ExploreTask(JobWorker& worker, JobNode*& cache);
 
 		/**
 		* [EN]
-		* Pushes cache onto worker's own queue (or a buffer if full) and
-		* notifies a waiting worker, then clears cache.
+		* Pushes cache onto worker's own queue (or a buffer if that queue
+		* is full) and wakes one parked worker to come and steal it.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* cache を worker 自身のキュー（満杯であればバッファ）へ push し、
-		* 待機中のワーカーへ通知した後、cache をクリアする。
+		* それを盗みに来るよう、眠っているワーカーを1つ起こす。
 		*/
 		void Schedule(JobWorker& worker, JobNode*& cache);
 
 		/**
 		* [EN]
-		* Schedules cache from a non-worker thread by spilling it to a buffer, then clears cache.
+		* Schedules cache from a thread that is not a worker, by putting
+		* it in a buffer and waking one parked worker.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* ワーカーでないスレッドから cache をバッファへ溢れさせることで
-		* スケジューリングし、その後 cache をクリアする。
+		* ワーカーではないスレッドから cache をスケジューリングする。
+		* バッファへ入れ、眠っているワーカーを1つ起こす。
 		*/
 		void Schedule(JobNode*& cache);
 
 		/**
 		* [EN]
-		* Schedules every runnable (zero strong-dependency) node in graph
-		* under topology/parent.
+		* Prepares every node of graph to run under topology/parent and
+		* schedules the ones with no predecessor, adding their count to
+		* parent's join counter.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* graph 内の実行可能な（強依存数が 0 の）全ノードを、topology/parent
-		* のもとでスケジューリングする。
+		* graph の全ノードを topology/parent のもとで実行できるよう整え、
+		* 先行ノードを持たないものをスケジューリングする。その数を parent
+		* の join カウンタへ足す。
 		*/
 		void ScheduleGraph(JobWorker& worker, JobGraph& graph, JobTopology* topology, JobNodeBase* parent);
 
 		/**
 		* [EN]
-		* Spills node into an overflow buffer queue.
+		* Puts node into one of the overflow buffer queues.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* node をあふれ用バッファキューへ溢れさせる。
+		* node を、あふれ用バッファキューのどれか1つへ入れる。
 		*/
 		void Spill(JobNode* node);
 
 		/**
 		* [EN]
-		* Initializes topology's graph (see SetUpGraph) and schedules its
-		* initially-runnable nodes.
+		* Starts one run of topology's graph: prepares every node, sets
+		* the topology's join counter to the number of source nodes and
+		* schedules them. worker is null when called from outside the pool.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* topology のグラフを初期化し（SetUpGraph を参照）、初期時点で
-		* 実行可能なノードをスケジューリングする。
+		* topology のグラフの1回分の実行を始める。全ノードを整え、トポロジー
+		* の join カウンタをソースノードの数にし、それらをスケジューリング
+		* する。プールの外から呼ばれた場合、worker は null になる。
 		*/
 		void SetUpTopology(JobWorker* worker, JobTopology* topology);
 
 		/**
 		* [EN]
-		* Initializes every node in graph's join counter under topology/
-		* parent, returning the count of initially-runnable (zero
-		* strong-dependency) nodes.
+		* Resets every node of graph for a new run under topology/parent
+		* and moves the source nodes (no predecessor) to the front of the
+		* graph. Returns how many source nodes there are.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* topology/parent のもとで graph の各ノードの join カウンタを
-		* 初期化し、初期時点で実行可能な（強依存数が 0 の）ノード数を返す。
+		* graph の全ノードを、topology/parent のもとでの新しい実行に向けて
+		* 初期化し、ソースノード（先行ノードなし）をグラフの先頭へ寄せる。
+		* ソースノードの数を返す。
 		*/
 		Size SetUpGraph(JobGraph& graph, JobTopology* topology, JobNodeBase* parent);
 
 		/**
 		* [EN]
-		* Finalizes a finished topology: re-runs it if its predicate says
-		* to continue, otherwise fulfills its promise and decrements the
-		* outstanding topology count.
+		* Called when every node of topology's run has finished. Starts
+		* another pass if the topology is not cancelled and its predicate
+		* is still false; otherwise finishes the topology and moves on to
+		* the next run queued on the same taskflow, or notifies the
+		* parent node that waited on it.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 完了したトポロジーを終端処理する: 述語が続行を指示していれば
-		* 再実行し、そうでなければ promise を満たして未完了トポロジー数を
-		* デクリメントする。
+		* topology の実行で全ノードが終わったときに呼ばれる。キャンセル
+		* されておらず述語がまだ false なら、もう1周実行する。そうでなければ
+		* トポロジーを終わらせ、同じタスクフローに積まれた次の実行へ進むか、
+		* これを待っていた親ノードへ知らせる。
 		*/
 		void TearDownTopology(JobWorker& worker, JobTopology* topology, JobNode*& cache);
 
 		/**
 		* [EN]
-		* Finalizes a non-async node once it has finished: notifies
-		* successors/parent and, if it was the graph's last node, tears
-		* down the owning topology.
+		* Accounts for a finished node on its parent: decrements the
+		* parent's join counter and, if this was the last outstanding
+		* child, either finishes the topology or resumes the suspended
+		* parent node.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 非非同期ノードが完了した際の終端処理: 後続/親ノードへ通知し、
-		* それがグラフ最後のノードであれば所有元のトポロジーを終端処理する。
+		* 終わったノードを親の側に反映する。親の join カウンタを減らし、
+		* これが最後の子だった場合、トポロジーを終わらせるか、中断している
+		* 親ノードを再開する。
 		*/
 		void TearDownNonasync(JobWorker& worker, JobNode* node, JobNode*& cache);
 
 		/**
 		* [EN]
-		* Invokes node then tears it down as a non-async node.
+		* Tears node down without running it, as done for a node whose
+		* run was cancelled.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* node を実行した後、非非同期ノードとして終端処理する。
+		* node を実行せずに片付ける。実行がキャンセルされたノードに対して
+		* 行う。
 		*/
 		void TearDownInvoke(JobWorker& worker, JobNode* node, JobNode*& cache);
 
@@ -668,25 +724,32 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Decrements the executor-wide outstanding topology count.
+		* Decrements the executor-wide outstanding topology count, waking
+		* any thread blocked in WaitForAll if it just reached zero.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* エグゼキュータ全体の未完了トポロジー数をデクリメントする。
+		* エグゼキュータ全体の未完了トポロジー数をデクリメントし、それが
+		* ちょうど 0 になった場合は WaitForAll でブロック中のスレッドを
+		* 起床させる。
 		*/
 		void DecrementTopology();
 
 		/**
 		* [EN]
-		* Dispatches node to the appropriate InvokeXxxTask overload based
-		* on its NodeHandle alternative, then handles any resulting exception.
+		* Runs node according to its NodeHandle alternative, then releases
+		* its semaphores, makes ready the successors it unblocked and
+		* tears it down. One newly ready successor is run next in the same
+		* call, in a loop rather than by recursion.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* node の NodeHandle の選択肢に応じて、適切な InvokeXxxTask
-		* オーバーロードへディスパッチし、発生した例外があれば処理する。
+		* node をその NodeHandle の選択肢に従って実行し、その後セマフォを
+		* 解放し、待ちが解けた後続ノードを実行可能にし、node を片付ける。
+		* 新たに実行可能になった後続の1つは、再帰ではなくループで、同じ
+		* 呼び出しの中で続けて実行する。
 		*/
 		void Invoke(JobWorker& worker, JobNode* node);
 
@@ -716,42 +779,43 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Invokes a SingleCondition task's callable, appending the single
-		* resulting successor index to conds.
+		* Invokes a SingleCondition task's callable and replaces conds
+		* with the single successor index it returns.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* SingleCondition タスクの呼び出し可能オブジェクトを実行し、
-		* 結果として得られる単一の後続インデックスを conds へ追加する。
+		* SingleCondition タスクの呼び出し可能オブジェクトを実行し、conds
+		* をそれが返した単一の後続インデックスで置き換える。
 		*/
 		void InvokeSingleConditionTask(JobWorker& worker, JobNode* node, HybridArray<Int>& conds);
 
 		/**
 		* [EN]
-		* Invokes a MultiCondition task's callable, appending every
-		* resulting successor index to conds.
+		* Invokes a MultiCondition task's callable and replaces conds with
+		* every successor index it returns.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* MultiCondition タスクの呼び出し可能オブジェクトを実行し、
-		* 結果として得られる全後続インデックスを conds へ追加する。
+		* MultiCondition タスクの呼び出し可能オブジェクトを実行し、conds を
+		* それが返した全ての後続インデックスで置き換える。
 		*/
 		void InvokeMultiConditionTask(JobWorker& worker, JobNode* node, HybridArray<Int>& conds);
 
 		/**
 		* [EN]
-		* Invokes a Subflow task's builder callable, scheduling the
-		* resulting subgraph. Returns whether the node should be
-		* considered async (i.e. not yet finished).
+		* On first entry, creates the JobSubflow builder for the node and
+		* schedules the subgraph, suspending the node (returns true). On
+		* the resuming call, clears the subgraph unless it is retained and
+		* returns false so the node finishes.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* Subflow タスクのビルダー呼び出し可能オブジェクトを実行し、結果の
-		* サブグラフをスケジューリングする。ノードを非同期（まだ完了して
-		* いない）として扱うべきかどうかを返す。
+		* 初回はノード用の JobSubflow ビルダーを作ってサブグラフをスケジュール
+		* し、ノードを中断する（true を返す）。再開時は、保持指定が無ければ
+		* サブグラフを消し、ノードが終わるよう false を返す。
 		*/
 		Bool InvokeSubflowTask(JobWorker& worker, JobNode* node);
 
@@ -783,137 +847,156 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Shared implementation for OwnedModule/AdoptedModule: schedules
-		* graph as node's subgraph. Returns whether the node should be
-		* considered async.
+		* Shared implementation for OwnedModule/AdoptedModule: on first
+		* entry schedules graph as node's children and suspends the node
+		* (returns true); on the resuming call returns false so the node
+		* finishes.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* OwnedModule/AdoptedModule の共通実装: graph を node のサブグラフ
-		* としてスケジューリングする。ノードを非同期として扱うべきかどうかを
-		* 返す。
+		* OwnedModule/AdoptedModule の共通実装。初回は graph を node の子と
+		* してスケジューリングしてノードを中断する（true を返す）。再開時は
+		* ノードが終わるよう false を返す。
 		*/
 		Bool InvokeModuleTaskImplementation(JobWorker& worker, JobNode* node, JobGraph& graph);
 
 		/**
 		* [EN]
 		* Invokes a PreemptiveRuntime task's callable, passing it a
-		* JobPreemptiveRuntime handle that can yield/suspend execution.
-		* Returns whether the node should be considered async.
+		* JobPreemptiveRuntime through which it can spawn more tasks.
+		* Returns whether the node was suspended to wait for them.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* PreemptiveRuntime タスクの呼び出し可能オブジェクトを、実行を
-		* yield/中断できる JobPreemptiveRuntime ハンドルを渡して実行する。
-		* ノードを非同期として扱うべきかどうかを返す。
+		* PreemptiveRuntime タスクの呼び出し可能オブジェクトを、さらに
+		* タスクを生成できる JobPreemptiveRuntime を渡して実行する。それらを
+		* 待つためにノードを中断したかどうかを返す。
 		*/
 		Bool InvokePreemptiveRuntimeTask(JobWorker& worker, JobNode* node);
 
 		/**
 		* [EN]
-		* Shared implementation invoking function against node's
-		* preemptive runtime state. Returns whether the node should be
-		* considered async.
+		* Calls function(runtime) on first entry; if tasks it spawned are
+		* still running when it returns, suspends the node (returns true)
+		* until the last of them resumes it.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* node のプリエンプティブランタイム状態に対して function を実行する
-		* 共通実装。ノードを非同期として扱うべきかどうかを返す。
+		* 初回は function(runtime) を呼ぶ。戻った時点で生成したタスクが
+		* まだ走っていれば、それらの最後の1つが再開させるまでノードを中断
+		* する（true を返す）。
 		*/
 		Bool InvokeRuntimeTaskImplementation(JobWorker& worker, JobNode* node, std::function<void(JobPreemptiveRuntime&)>& function);
 
 		/**
 		* [EN]
-		* Overload of InvokeRuntimeTaskImplementation for callables that
-		* additionally receive a resume/first-call flag.
+		* Variant for callables that also receive a "resumed" flag: calls
+		* function(runtime, false) first, and function(runtime, true) once
+		* every task it spawned has finished.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 再開/初回呼び出しフラグを追加で受け取る呼び出し可能オブジェクト
-		* 向けの InvokeRuntimeTaskImplementation オーバーロード。
+		* 「再開か」のフラグも受け取る処理向けの版。最初に
+		* function(runtime, false) を呼び、生成したタスクが全て終わった時点で
+		* function(runtime, true) を呼ぶ。
 		*/
 		Bool InvokeRuntimeTaskImplementation(JobWorker& worker, JobNode* node, std::function<void(JobPreemptiveRuntime&, Bool)>& function);
 
 		/**
 		* [EN]
-		* Captures the exception currently in flight and propagates it up
-		* through node's parent chain / owning topology.
+		* Records the exception currently in flight: flags node and its
+		* ancestors up to the nearest explicit anchor with EXCEPTION, and
+		* stores the exception on that explicit anchor, or else on the
+		* nearest implicit anchor, or else on node itself.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 現在発生している例外を捕捉し、node の親チェーン/所有元の
-		* トポロジーへ伝播させる。
+		* 今投げられている例外を記録する。node から最も近い明示アンカーの
+		* 手前までの祖先に EXCEPTION を立て、例外はその明示アンカーに、
+		* 無ければ最も近い暗黙アンカーに、それも無ければ node 自身に格納する。
 		*/
 		void ProcessException(JobWorker& worker, JobNode* node);
 
 		/**
 		* [EN]
-		* Updates cache with node, first scheduling whatever was
-		* previously cached (see Schedule).
+		* Makes node the next one to run on this thread, first scheduling
+		* whatever was previously in cache so other workers can take it.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* cache を node で更新する。その前に、以前 cache されていたものを
-		* スケジューリングする（Schedule を参照）。
+		* node を、このスレッドで次に実行するものにする。その前に、それまで
+		* cache にあったものをスケジューリングし、他のワーカーが取れるように
+		* する。
 		*/
 		void UpdateCache(JobWorker& worker, JobNode*& cache, JobNode* node);
 
 		/**
 		* [EN]
-		* Runs graph to completion synchronously on worker (used by Corun
-		* and subflow execution), under topology/parent.
+		* Schedules graph under topology/parent on worker and keeps worker
+		* running tasks (its own or stolen) until every node of graph has
+		* finished, so the calling task blocks without idling its thread.
+		* parent is explicitly anchored meanwhile, and an exception thrown
+		* inside the graph is rethrown to the caller afterwards.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* worker 上で graph を同期的に完了まで実行する（Corun やサブフロー
-		* 実行で使用される）。topology/parent のもとで実行する。
+		* worker 上で graph を topology/parent のもとでスケジューリングし、
+		* graph の全ノードが終わるまで worker にタスク（自分のものでも盗んだ
+		* ものでも）を実行させ続ける。呼び出し元のタスクは、スレッドを遊ば
+		* せずに待てる。その間 parent を明示アンカーにし、graph の中で投げ
+		* られた例外は終わった後に呼び出し側へ投げ直す。
 		*/
 		void CorunGraph(JobWorker& worker, JobGraph& graph, JobTopology* topology, JobNodeBase* parent);
 
 		/**
 		* [EN]
-		* Blocks worker until a task becomes available (parking it via
-		* the notifier if necessary), storing it in cache. Returns
-		* whether a task was obtained (false typically means the executor is shutting down).
+		* Finds the next node for worker: steals one if possible, and
+		* otherwise parks the thread on the notifier until new work is
+		* published. Returns true with a node in cache, or false once
+		* worker has been told to stop.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* タスクが利用可能になるまで worker をブロックし（必要なら
-		* notifier 経由でパークする）、cache へ格納する。タスクを取得
-		* できたかどうかを返す（false は通常、エグゼキュータがシャット
-		* ダウン中であることを意味する）。
+		* worker の次のノードを探す。盗めるなら盗み、無ければ新しい仕事が
+		* 公開されるまで notifier でスレッドを眠らせる。cache にノードを
+		* 入れて true を返すか、worker に停止が指示されていれば false を返す。
 		*/
 		Bool WaitForTask(JobWorker& worker, JobNode*& cache);
 
 		/**
 		* [EN]
-		* Work-stealing loop run by a corouning worker: exploits its own
-		* queue, then explores (steals from) other queues, until
-		* stopPredicate returns true.
+		* Keeps worker running tasks until stopPredicate returns true:
+		* pops from its own queue first, and steals from the other queues
+		* when its own is empty. Lets a task wait for other work without
+		* leaving its thread idle.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* Corun 中のワーカーが実行するワークスティーリングループ:
-		* stopPredicate が true を返すまで、自身のキューを消費し、その後
-		* 他のキューを探索（盗み取り）する。
+		* stopPredicate が true を返すまで、worker にタスクを実行させ続ける。
+		* まず自分のキューから取り、空なら他のキューから盗む。タスクが他の
+		* 処理を待つ間も、そのスレッドを遊ばせない。
 		*/
 		template<typename P>
 		void CorunUntil(JobWorker& worker, P&& stopPredicate)
 		{
+			/// [EN] After about two full rounds of failed steals the thread yields between attempts.
+			/// [JP] 盗み取りにおよそ2周分失敗したら、試行の合間にタイムスライスを譲る。
 			const Size MAX_VICTIM = NumberQueues();
 			const Size MAX_STEALS = ((MAX_VICTIM + 1) << 1);
 
 		exploit:
 
+			/// [EN] The predicate is re-checked after every task, since any of them may be the one it waits for.
+			/// [JP] どのタスクが待っている相手かは分からないので、1つ実行するごとに述語を確かめ直す。
 			while (!stopPredicate())
 			{
 				if (auto t = worker.wsq_.pop();t)
@@ -927,8 +1010,12 @@ namespace SeedCore
 
 				explore:
 
+					/// [EN] Victim indices below the worker count are worker queues; the rest map onto the buffers.
+					/// [JP] ワーカー数未満の番号はワーカーのキュー、それ以降はバッファに対応する。
 					t = (victim < workers_.size()) ? workers_[victim].wsq_.steal() : buffers_[victim - workers_.size()].queue_.steal();
 
+					/// [EN] A successful steal goes back to the own queue first, since running t may have pushed new work there.
+					/// [JP] 盗めたら、まず自分のキューへ戻る。t の実行でそこに新しい仕事が積まれている可能性があるため。
 					if (t)
 					{
 						Invoke(worker, t);
@@ -937,6 +1024,8 @@ namespace SeedCore
 					}
 					else if (!stopPredicate())
 					{
+						/// [EN] Unlike the idle loop this never parks: the waiting task must notice the predicate as soon as it turns true.
+						/// [JP] 待機中のループと違って決して眠らない。待っているタスクは、述語が true になったらすぐ気づく必要がある。
 						if (++numberSteals > MAX_STEALS)
 						{
 							std::this_thread::yield();
@@ -955,13 +1044,14 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Bulk-pushes n items starting at first onto worker's own queue,
-		* spilling whatever doesn't fit, then notifies n waiters.
+		* spilling whatever doesn't fit, then wakes up to n parked workers.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* first から始まる n 個の要素を worker 自身のキューへ一括 push し、
-		* 収まらなかった分をあふれさせた後、n 個分の待機者へ通知する。
+		* 収まらなかった分をあふれさせた後、眠っているワーカーを最大 n 個
+		* 起こす。
 		*/
 		template<typename I>
 		void BulkSchedule(JobWorker& worker, I first, Size n)
@@ -971,23 +1061,29 @@ namespace SeedCore
 				return;
 			}
 
+			/// [EN] try_bulk_push advances first past what it pushed, so the spill starts at the first item that did not fit.
+			/// [JP] try_bulk_push は push した分だけ first を進めるので、あふれ処理は入りきらなかった最初の要素から始まる。
 			if (auto num = worker.wsq_.try_bulk_push(first, n);num != n)
 			{
 				BulkSpill(first, n - num);
 			}
+
+			/// [EN] One wakeup per item, so each can be stolen by a different worker.
+			/// [JP] 要素1つにつき1回起こし、それぞれを別のワーカーが盗めるようにする。
 			notifier_.notify_count(n);
 		}
 
 		/**
 		* [EN]
 		* Bulk-schedules n items starting at first from a non-worker
-		* thread by spilling all of them, then notifies n waiters.
+		* thread by spilling all of them, then wakes up to n parked workers.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* ワーカーでないスレッドから、first で始まる n 個の要素をすべて
-		* あふれさせることで一括スケジューリングし、n 個分の待機者へ通知する。
+		* あふれさせることで一括スケジューリングし、眠っているワーカーを
+		* 最大 n 個起こす。
 		*/
 		template<typename I>
 		void BulkSchedule(I first, Size n)
@@ -1015,6 +1111,8 @@ namespace SeedCore
 		template<typename I>
 		void BulkSpill(I first, Size n)
 		{
+			/// [EN] Multiplicative (Knuth) hashing of the first node's address spreads batches from different graphs across the buffers.
+			/// [JP] 先頭ノードのアドレスを乗算（Knuth）ハッシュすることで、別々のグラフから来たまとまりをバッファへ散らす。
 			auto buffer = ((reinterpret_cast<uintptr_t>(*first) * 2654435761ULL) >> 32) % buffers_.size();
 			std::scoped_lock lock(buffers_[buffer].mutex_);
 			buffers_[buffer].queue_.bulk_push(first, n);
@@ -1036,6 +1134,8 @@ namespace SeedCore
 		template<typename I>
 		void BulkSpillRoundRobin(I first, Size n)
 		{
+			/// [EN] Each buffer receives at most ceil(n / buffer count) items, starting from a hash-chosen buffer.
+			/// [JP] ハッシュで選んだバッファから始めて、各バッファに最大 ceil(n / バッファ数) 個ずつ入れる。
 			const Size buffer = buffers_.size();
 			const Size start = ((reinterpret_cast<uintptr_t>(*first) * 2654435761ULL) >> 32) % buffer;
 			const Size perBuffer = (n + buffer - 1) / buffer;
@@ -1045,6 +1145,8 @@ namespace SeedCore
 				Size b = (start + index) % buffer;
 				Size chunk = Min(perBuffer, remaining);
 
+				/// [EN] Each buffer is locked only for its own chunk.
+				/// [JP] ロックするのは、そのバッファへ入れる分の間だけ。
 				{
 					std::scoped_lock lock(buffers_[b].mutex_);
 					buffers_[b].queue_.bulk_push(first, chunk);
@@ -1070,12 +1172,14 @@ namespace SeedCore
 		template<Size N>
 		void BulkUpdateCache(JobWorker& worker, JobNode*& cache, JobNode* node, StaticArray<JobNode*, N>& array, Size& n)
 		{
+			/// [EN] The previous cache goes into the batch instead of being scheduled one by one, saving a notify per node.
+			/// [JP] それまでの cache は1つずつスケジュールせずにまとめへ入れ、ノードごとの通知を省く。
 			if (cache)
 			{
 				array[n++] = cache;
 				if (n == N)
 				{
-					BulkSchedule(worker, array, n);
+					BulkSchedule(worker, array.begin(), n);
 					n = 0;
 				}
 			}

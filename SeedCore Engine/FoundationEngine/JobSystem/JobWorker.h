@@ -10,7 +10,7 @@
 
 namespace SeedCore
 {
-#ifdef SC_ENABLE_ATOMIC_NOTIFIER
+#if SC_ENABLE_ATOMIC_NOTIFIER
 	/// [EN] The eventcount notifier type used by JobExecutor, selected at compile time via SC_ENABLE_ATOMIC_NOTIFIER.
 	/// [JP] JobExecutor が使用する eventcount notifier 型。SC_ENABLE_ATOMIC_NOTIFIER によりコンパイル時に選択される。
 	using DefaultNotifier = AtomicNotifier;
@@ -41,6 +41,8 @@ namespace SeedCore
 	class JobWorker
 	{
 	private:
+		/// [EN] The executor drives the worker's queue and loop state; the runtime and the view read it.
+		/// [JP] ワーカーのキューとループの状態を動かすのはエグゼキュータで、ランタイムとビューはそれを読む。
 		friend class JobExecutor;
 		friend class JobPreemptiveRuntime;
 		friend class JobWorkerView;
@@ -60,7 +62,7 @@ namespace SeedCore
 		* 所有元のエグゼキュータのプール内における、このワーカーの
 		* インデックスを返す。
 		*/
-		inline Size ID()const;
+		Size ID()const;
 
 		/**
 		* [EN]
@@ -71,7 +73,7 @@ namespace SeedCore
 		* [JP]
 		* このワーカーに現在キューイングされているノードの数を返す。
 		*/
-		inline Size QueueSize()const;
+		Size QueueSize()const;
 
 		/**
 		* [EN]
@@ -82,7 +84,7 @@ namespace SeedCore
 		* [JP]
 		* このワーカーのキュー容量を返す。
 		*/
-		inline Size QueueCapacity()const;
+		Size QueueCapacity()const;
 
 		/**
 		* [EN]
@@ -96,16 +98,16 @@ namespace SeedCore
 		std::thread& Thread();
 
 	private:
-		/// [EN] Flag signaling this worker to stop once its current work is drained; set by JobExecutor::Shutdown.
-		/// [JP] 現在の処理を消化し終えた時点で停止するようこのワーカーへ通知するフラグ。JobExecutor::Shutdown により設定される。
+		/// [EN] Tells this worker to leave its scheduling loop; set by JobExecutor::Shutdown after all work has finished.
+		/// [JP] このワーカーにスケジューリングループを抜けるよう伝えるフラグ。全ての仕事が終わった後に JobExecutor::Shutdown が立てる。
 		alignas(SC_CACHELINE_SIZE)std::atomic_flag done_{};
 
 		/// [EN] Index of this worker within the owning executor's pool.
 		/// [JP] 所有元のエグゼキュータのプール内における、このワーカーのインデックス。
 		Size id_;
 
-		/// [EN] The victim worker/buffer index this worker will preferentially steal from next.
-		/// [JP] このワーカーが次に優先的に盗み取りを行う、対象ワーカー/バッファのインデックス。
+		/// [EN] The worker/buffer index this worker tries first when stealing; it sticks to the last victim that had work.
+		/// [JP] 盗み取りで最初に試す、ワーカー/バッファの番号。最後に仕事があった相手を覚えておく。
 		Size stickyVictim_;
 
 		/// [EN] Per-worker RNG, used to pick a random steal victim when the sticky victim yields nothing.
@@ -137,6 +139,8 @@ namespace SeedCore
 	class JobWorkerView
 	{
 	private:
+		/// [EN] Only the executor creates views, to hand workers out without exposing their scheduling state.
+		/// [JP] ビューを作るのはエグゼキュータだけで、スケジューリングの状態を見せずにワーカーを渡すために使う。
 		friend class JobExecutor;
 
 	public:
@@ -274,6 +278,8 @@ namespace SeedCore
 	template<typename T, typename... Args>
 	ResourceRef<T> MakeWorkerInterface(Args&&... args)
 	{
+		/// [EN] The executor keeps the returned reference, so the hooks live as long as the worker threads.
+		/// [JP] エグゼキュータが返した参照を持ち続けるので、フックはワーカースレッドと同じだけ生きる。
 		return MakeRef<T>(std::forward<Args>(args)...);
 	}
 }

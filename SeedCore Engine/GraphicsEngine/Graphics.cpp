@@ -267,7 +267,7 @@ namespace SeedCore
 
 	void Graphics::GameRender(GameTimer& timer, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world)
 	{
-		PrepareFrame(timer.DeltaTime(), loaderSystem, resourceCache, world, {});
+		PrepareFrame(timer.ScaledDeltaTime(), loaderSystem, resourceCache, world, {});
 
 		cameraSystem_.Update(world, timer, static_cast<Float>(nativeWidth_), static_cast<Float>(nativeHeight_));
 
@@ -282,7 +282,7 @@ namespace SeedCore
 			gameSceneSystem_->Upload(gameSceneConstantBuffer);
 		}
 
-		renderer_->GameFlush(context_->GetDirectList(), gameSceneSystem_.get(), timer.DeltaTime(), hasActiveCamera);
+		renderer_->GameFlush(context_->GetDirectList(), gameSceneSystem_.get(), timer.ScaledDeltaTime(), hasActiveCamera);
 
 		fadeScreen_.Draw(context_->GetDirectList()->Get(), Scene::FadeAlpha(), static_cast<Float>(nativeWidth_), static_cast<Float>(nativeHeight_));
 

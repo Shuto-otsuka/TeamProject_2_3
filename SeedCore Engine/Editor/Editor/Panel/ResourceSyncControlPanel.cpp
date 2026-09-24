@@ -63,6 +63,13 @@ namespace SeedCore
 			return;
 		}
 
+		/// [EN] Source code and anything outside the workspace get no entries at all, rather than ones that could only fail.
+		/// [JP] ソースコードやワークスペース外のものには、失敗するしかない項目を出すのではなく、項目自体を出さない。
+		if (!sync.Shareable(std::filesystem::path(asset.fullpath_.str())))
+		{
+			return;
+		}
+
 		/// [EN] Every entry is disabled while the library is out of reach, since each one needs it to answer.
 		/// [JP] ライブラリへ届いていない間は全ての項目を無効にする。どれも応答を必要とするため。
 		ImGui::BeginDisabled(!sync.Online());

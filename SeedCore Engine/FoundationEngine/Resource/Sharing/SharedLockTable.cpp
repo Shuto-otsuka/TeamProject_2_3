@@ -250,6 +250,29 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Every unexpired lease in the table, whoever holds it and whatever
+	* its scope, as of the last read.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 直近の読み取り時点で表にある、失効していない全ての Lease。保持者
+	* も範囲も問わない。
+	*/
+	DynamicArray<EditLease> SharedLockTable::Leases()const
+	{
+		/// [EN] Entity leases are named by an identifier no caller can list in advance, so the table hands over everything rather than answering per scope.
+		/// [JP] Entity の Lease は、呼び出し側が前もって列挙できない識別子で名付けられる。そのため範囲ごとに答えるのではなく、全てを渡す。
+		DynamicArray<EditLease> leases;
+		for (const std::pair<const String, EditLease>& entry : leases_)
+		{
+			leases.push_back(entry.second);
+		}
+		return leases;
+	}
+
+	/**
+	* [EN]
 	* The token proving this Editor's lease on the given scope, which a
 	* publish has to present. Empty when no such lease is held.
 	*

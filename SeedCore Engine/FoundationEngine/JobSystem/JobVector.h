@@ -10,14 +10,15 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* Forward declaration; defined in JobVector.cpp. Rounds array up to
-	* the next power of two (used to size new backing storage).
+	* Forward declaration; defined in JobVector.cpp. Returns the smallest
+	* power of two strictly greater than array (used to size new
+	* backing storage).
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 前方宣言。JobVector.cpp で定義される。array を次の2の冪へ切り上げる
-	* （新しい裏付けストレージのサイズ決定に使う）。
+	* 前方宣言。JobVector.cpp で定義される。array より真に大きい最小の
+	* 2の冪を返す（新しい裏付けストレージのサイズ決定に使う）。
 	*/
 	inline Uint64 ArrayNextCapacity(Uint64 array);
 
@@ -63,8 +64,8 @@ namespace SeedCore
 	class SEEDCORE_API JobVectorBase
 	{
 	protected:
-		/// [EN] Pointer to the first element (or to inline storage if not yet grown onto the heap).
-		/// [JP] 最初の要素へのポインタ（ヒープへ成長する前はインラインストレージを指す）。
+		/// [EN] Pointer to the first element: the inline storage until the vector first grows, the heap block after that.
+		/// [JP] 最初の要素へのポインタ。初めて成長するまではインラインストレージ、その後はヒープのブロックを指す。
 		void* begin_;
 
 		/// [EN] Pointer one past the last live element.
@@ -91,17 +92,19 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* POD-path buffer growth: reallocates (or, if still on inline
-		* storage identified by firstElement, mallocs+copies) to at least
-		* minSizeInBytes, growing geometrically by roughly 2x + size otherwise.
+		* POD-path buffer growth to twice the current capacity plus size
+		* bytes, or minSizeInBytes if that is larger. A heap buffer is
+		* realloc'd; the inline buffer (begin_ still equal to
+		* firstElement) cannot be, so it is malloc'd and copied instead.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* POD経路でのバッファ成長: 少なくとも minSizeInBytes まで
-		* 再確保する（まだインラインストレージ上であれば、firstElement で
-		* 判定し malloc+コピーする）。それ以外の場合は概ね2倍+size で
-		* 幾何的に成長する。
+		* POD 経路でのバッファ成長。今の容量の2倍に size バイトを足した大きさ
+		* まで、minSizeInBytes の方が大きければそこまで広げる。ヒープの
+		* バッファは realloc する。インラインのバッファ（begin_ がまだ
+		* firstElement と等しい）は realloc できないので、malloc してコピー
+		* する。
 		*/
 		void grow_pod(void* firstElement, Size minSizeInBytes, Size size);
 
@@ -175,20 +178,23 @@ namespace SeedCore
 	class JobVectorTemplateCommon :public JobVectorBase
 	{
 	private:
+		/// [EN] The storage struct names U to size its extra inline slots like firstElement.
+		/// [JP] ストレージ用の構造体は、追加のインラインスロットを firstElement と同じ大きさにするため U を使う。
 		template<typename, Unsigned>
 		friend struct JobVectorStorage;
 
 		/**
 		* [EN]
-		* A byte buffer sized/aligned to hold one T, used only as the
-		* anchor address for "is this still pointing at inline storage?" checks.
+		* A byte buffer sized/aligned to hold one T without constructing
+		* it. It is the first inline slot, and its address is the anchor
+		* for "is this still pointing at inline storage?" checks.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* T を1個保持できるサイズ/アラインメントを持つバイトバッファ。
-		* 「まだインラインストレージを指しているか」判定の基準アドレスとして
-		* のみ使う。
+		* T を構築せずに1個保持できるサイズ/アラインメントを持つバイト
+		* バッファ。最初のインラインスロットであり、そのアドレスが「まだ
+		* インラインストレージを指しているか」判定の基準になる。
 		*/
 		template<typename X>
 		struct AlignedUnionType
@@ -202,10 +208,12 @@ namespace SeedCore
 			alignas(X) std::byte buffer_[maxSize];
 		};
 
+		/// [EN] One uninitialized, T-sized slot; JobVectorStorage lays its extra slots out as more of these.
+		/// [JP] 未初期化の T 1個分のスロット。JobVectorStorage は追加スロットをこれを並べて作る。
 		typedef AlignedUnionType<T> U;
 
-		/// [EN] Anchor address representing "still using inline storage" (see is()).
-		/// [JP] 「まだインラインストレージを使用中」を表す基準アドレス（is() を参照）。
+		/// [EN] First inline slot, and the anchor address meaning "still using inline storage" (see is()).
+		/// [JP] 最初のインラインスロットであり、「まだインラインストレージを使用中」を表す基準アドレス（is() を参照）。
 		U firstElement;
 
 	protected:
@@ -276,12 +284,12 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Sets end_ to P.
+		* Sets end_ to P without constructing or destroying anything.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* end_ を P に設定する。
+		* 何も構築・破棄せずに end_ を P に設定する。
 		*/
 		void set_end(T* P)
 		{
@@ -289,10 +297,14 @@ namespace SeedCore
 		}
 
 	public:
+		/// [EN] Standard container type names, so JobVector works with std algorithms and range-for.
+		/// [JP] 標準コンテナと同じ型名。JobVector を std のアルゴリズムや範囲 for で使えるようにする。
 		using size_type = Size;
 		using difference_type = std::ptrdiff_t;
 		using value_type = T;
 
+		/// [EN] Iterators are plain pointers, since the elements are always contiguous.
+		/// [JP] 要素は常に連続しているので、イテレータはただのポインタ。
 		using Iterator = T*;
 		using ConstIterator = const T*;
 
@@ -305,150 +317,303 @@ namespace SeedCore
 		using pointer = T*;
 		using const_pointer = const T*;
 
-		/// [EN] Returns an iterator to the first element.
-		/// [JP] 最初の要素を指すイテレータを返す。
+		/**
+		* [EN]
+		* Returns an iterator to the first element.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 最初の要素を指すイテレータを返す。
+		*/
 		inline Iterator begin()
 		{
 			return (Iterator)this->begin_;
 		}
 
-		/// [EN] Const overload of begin().
-		/// [JP] begin() の const オーバーロード。
+		/**
+		* [EN]
+		* Const overload of begin().
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* begin() の const オーバーロード。
+		*/
 		inline ConstIterator begin()const
 		{
 			return (ConstIterator)this->begin_;
 		}
 
-		/// [EN] Returns the past-the-end iterator.
-		/// [JP] 終端の次を指すイテレータを返す。
+		/**
+		* [EN]
+		* Returns the past-the-end iterator.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 終端の次を指すイテレータを返す。
+		*/
 		inline Iterator end()
 		{
 			return (Iterator)this->end_;
 		}
 
-		/// [EN] Const overload of end().
-		/// [JP] end() の const オーバーロード。
+		/**
+		* [EN]
+		* Const overload of end().
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* end() の const オーバーロード。
+		*/
 		inline ConstIterator end()const
 		{
 			return (ConstIterator)this->end_;
 		}
 
 	protected:
-		/// [EN] Returns a pointer one past the end of allocated storage.
-		/// [JP] 確保済みストレージの終端の1つ先を指すポインタを返す。
+		/**
+		* [EN]
+		* Returns a pointer one past the end of allocated storage.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 確保済みストレージの終端の1つ先を指すポインタを返す。
+		*/
 		Iterator capacity_ptr()
 		{
 			return (Iterator)this->capacity_;
 		}
 
-		/// [EN] Const overload of capacity_ptr().
-		/// [JP] capacity_ptr() の const オーバーロード。
+		/**
+		* [EN]
+		* Const overload of capacity_ptr().
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* capacity_ptr() の const オーバーロード。
+		*/
 		ConstIterator capacity_ptr()const
 		{
 			return (ConstIterator)this->capacity_;
 		}
 
 	public:
-		/// [EN] Returns a reverse iterator to the last element.
-		/// [JP] 最後の要素を指す逆イテレータを返す。
+		/**
+		* [EN]
+		* Returns a reverse iterator to the last element (built from end()).
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 最後の要素を指す逆イテレータを返す（end() から作る）。
+		*/
 		ReverseIterator reverse_begin()
-		{
-			return ReverseIterator(begin());
-		}
-
-		/// [EN] Const overload of reverse_begin().
-		/// [JP] reverse_begin() の const オーバーロード。
-		ConstReverseIterator reverse_begin()const
-		{
-			return ConstReverseIterator(begin());
-		}
-
-		/// [EN] Returns the reverse past-the-end iterator.
-		/// [JP] 逆順走査における終端の次を指すイテレータを返す。
-		ReverseIterator reverse_end()
 		{
 			return ReverseIterator(end());
 		}
 
-		/// [EN] Const overload of reverse_end().
-		/// [JP] reverse_end() の const オーバーロード。
-		ConstReverseIterator reverse_end()const
+		/**
+		* [EN]
+		* Const overload of reverse_begin().
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* reverse_begin() の const オーバーロード。
+		*/
+		ConstReverseIterator reverse_begin()const
 		{
 			return ConstReverseIterator(end());
 		}
 
-		/// [EN] Returns the number of live elements.
-		/// [JP] 有効な要素数を返す。
+		/**
+		* [EN]
+		* Returns the reverse past-the-end iterator (built from begin()).
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 逆順走査での終端の次を指すイテレータを返す（begin() から作る）。
+		*/
+		ReverseIterator reverse_end()
+		{
+			return ReverseIterator(begin());
+		}
+
+		/**
+		* [EN]
+		* Const overload of reverse_end().
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* reverse_end() の const オーバーロード。
+		*/
+		ConstReverseIterator reverse_end()const
+		{
+			return ConstReverseIterator(begin());
+		}
+
+		/**
+		* [EN]
+		* Returns the number of live elements.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 有効な要素数を返す。
+		*/
 		inline size_type size()const
 		{
 			return end() - begin();
 		}
 
-		/// [EN] Returns the theoretical maximum number of elements addressable by size_type.
-		/// [JP] size_type で表現可能な、理論上の最大要素数を返す。
+		/**
+		* [EN]
+		* Returns the theoretical maximum number of elements addressable
+		* by size_type.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* size_type で表現可能な、理論上の最大要素数を返す。
+		*/
 		inline size_type max_size()const
 		{
 			return size_type(-1) / sizeof(T);
 		}
 
-		/// [EN] Returns the number of elements the current buffer can hold before regrowing.
-		/// [JP] 再成長せずに現在のバッファが保持できる要素数を返す。
+		/**
+		* [EN]
+		* Returns the number of elements the current buffer can hold
+		* before growing again.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 再成長せずに現在のバッファが保持できる要素数を返す。
+		*/
 		Size capacity()const
 		{
 			return capacity_ptr() - begin();
 		}
 
-		/// [EN] Returns a pointer to the underlying element storage.
-		/// [JP] 基盤となる要素ストレージへのポインタを返す。
+		/**
+		* [EN]
+		* Returns a pointer to the underlying element storage; it moves
+		* whenever the buffer grows.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 基盤となる要素ストレージへのポインタを返す。バッファが成長する
+		* たびに場所は変わる。
+		*/
 		pointer data()
 		{
 			return pointer(begin());
 		}
 
-		/// [EN] Const overload of data().
-		/// [JP] data() の const オーバーロード。
+		/**
+		* [EN]
+		* Const overload of data().
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* data() の const オーバーロード。
+		*/
 		const_pointer data()const
 		{
 			return const_pointer(begin());
 		}
 
-		/// [EN] Returns a reference to the element at index (no bounds check).
-		/// [JP] index の要素への参照を返す（範囲チェックなし）。
+		/**
+		* [EN]
+		* Returns a reference to the element at index (no bounds check).
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* index の要素への参照を返す（範囲チェックなし）。
+		*/
 		inline reference operator[](size_type index)
 		{
 			return begin()[index];
 		}
 
-		/// [EN] Const overload of operator[].
-		/// [JP] operator[] の const オーバーロード。
+		/**
+		* [EN]
+		* Const overload of operator[].
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* operator[] の const オーバーロード。
+		*/
 		inline const_reference operator[](size_type index)const
 		{
 			return begin()[index];
 		}
 
-		/// [EN] Returns a reference to the first element.
-		/// [JP] 最初の要素への参照を返す。
+		/**
+		* [EN]
+		* Returns a reference to the first element; the vector must not
+		* be empty.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 最初の要素への参照を返す。ベクタは空であってはならない。
+		*/
 		reference front()
 		{
 			return begin()[0];
 		}
 
-		/// [EN] Const overload of front().
-		/// [JP] front() の const オーバーロード。
+		/**
+		* [EN]
+		* Const overload of front().
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* front() の const オーバーロード。
+		*/
 		const_reference front()const
 		{
 			return begin()[0];
 		}
 
-		/// [EN] Returns a reference to the last element.
-		/// [JP] 最後の要素への参照を返す。
+		/**
+		* [EN]
+		* Returns a reference to the last element; the vector must not be
+		* empty.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 最後の要素への参照を返す。ベクタは空であってはならない。
+		*/
 		reference back()
 		{
 			return end()[-1];
 		}
 
-		/// [EN] Const overload of back().
-		/// [JP] back() の const オーバーロード。
+		/**
+		* [EN]
+		* Const overload of back().
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* back() の const オーバーロード。
+		*/
 		const_reference back()const
 		{
 			return end()[-1];
@@ -555,6 +720,8 @@ namespace SeedCore
 		*/
 		void grow(Size minSize = 0)
 		{
+			/// [EN] The next power of two above capacity + 2, so even a tiny vector grows by a useful step.
+			/// [JP] 容量 + 2 より大きい次の2の冪。小さなベクタでも意味のある幅で成長する。
 			Size currentCapacity = this->capacity();
 			Size currentSize = this->size();
 			Size newCapacity = Size(ArrayNextCapacity(currentCapacity + 2));
@@ -563,12 +730,18 @@ namespace SeedCore
 				newCapacity = minSize;
 			}
 
+			/// [EN] Raw memory: elements are constructed in it one by one below.
+			/// [JP] 生のメモリ。要素は下で1つずつそこへ構築する。
 			T* newElement = static_cast<T*>(std::malloc(newCapacity * sizeof(T)));
 
+			/// [EN] Elements are moved to the new block, and the moved-from originals are destroyed.
+			/// [JP] 要素を新しいブロックへムーブし、ムーブ元は破棄する。
 			this->uninitialized_move(this->begin(), this->end(), newElement);
 
 			destroy_range(this->begin(), this->end());
 
+			/// [EN] The inline storage is part of the object itself and is never freed.
+			/// [JP] インラインストレージはオブジェクト自身の一部なので、解放しない。
 			if (!this->is())
 			{
 				std::free(this->begin());
@@ -592,11 +765,15 @@ namespace SeedCore
 		*/
 		void push_back(const T& element)
 		{
-			if ((this->end >= this->capacity_)) [[unlikely]]
+			/// [EN] Growing first keeps the new element's slot inside the allocation.
+			/// [JP] 先に成長させて、新しい要素のスロットが確保範囲に収まるようにする。
+			if ((this->end_ >= this->capacity_)) [[unlikely]]
 			{
 				this->grow();
 			}
 
+			/// [EN] Placement new constructs the copy in the uninitialized slot at end().
+			/// [JP] 配置 new で、end() の未初期化スロットにコピーを構築する。
 			::new((void*)this->end()) T(element);
 			this->set_end(this->end() + 1);
 		}
@@ -613,7 +790,9 @@ namespace SeedCore
 		*/
 		void push_back(T&& element)
 		{
-			if ((this->end >= this->capacity_)) [[unlikely]]
+			/// [EN] Growing first keeps the new element's slot inside the allocation.
+			/// [JP] 先に成長させて、新しい要素のスロットが確保範囲に収まるようにする。
+			if ((this->end_ >= this->capacity_)) [[unlikely]]
 			{
 				this->grow();
 			}
@@ -633,6 +812,8 @@ namespace SeedCore
 		*/
 		void pop_back()
 		{
+			/// [EN] end_ is moved back first, so end() then points at the element being destroyed.
+			/// [JP] 先に end_ を戻すので、その後の end() は破棄する要素を指す。
 			this->set_end(this->end() - 1);
 			this->end()->~T();
 		}
@@ -685,13 +866,14 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Forwards to uninitialized_copy (a raw-memory move is just a copy for PODs).
+		* Forwards to uninitialized_copy (moving a POD is just copying its
+		* bytes).
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* uninitialized_copy へ転送する（PODにとって生メモリのムーブは
-		* コピーと同じ）。
+		* uninitialized_copy へ転送する（POD のムーブはバイトのコピーと
+		* 同じ）。
 		*/
 		template<typename A, typename B>
 		static void uninitialized_move(A a, A element, B destination)
@@ -730,6 +912,8 @@ namespace SeedCore
 		template<typename A, typename B>
 		static void uninitialized_copy(A* a, A* element, B* destination, typename std::enable_if<std::is_same<typename std::remove_const<A>::type, B>::value>::type* = nullptr)
 		{
+			/// [EN] An empty range is skipped, since memcpy must not be given a null pointer even for zero bytes.
+			/// [JP] 空の範囲は飛ばす。0 バイトでも memcpy に null ポインタを渡してはならないため。
 			if (a != element)
 			{
 				std::memcpy(destination, a, (element - a) * sizeof(T));
@@ -739,16 +923,19 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Grows the buffer via JobVectorTemplateCommon::grow_pod, which
-		* reallocates in place (no per-element move needed for PODs).
+		* moves the bytes with realloc/memcpy (no per-element move needed
+		* for PODs).
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* JobVectorTemplateCommon::grow_pod 経由でバッファを成長させる。
-		* その場で再確保する（PODには要素ごとのムーブは不要）。
+		* バイトは realloc/memcpy で移す（POD には要素ごとのムーブは不要）。
 		*/
 		void grow(Size minSize = 0)
 		{
+			/// [EN] Sizes are converted to bytes here, since grow_pod works on raw bytes.
+			/// [JP] grow_pod は生のバイト単位で動くので、ここで大きさをバイトに直す。
 			this->grow_pod(minSize * sizeof(T), sizeof(T));
 		}
 
@@ -766,10 +953,15 @@ namespace SeedCore
 		*/
 		void push_back(const T& element)
 		{
+			/// [EN] Growing first keeps the new element's slot inside the allocation.
+			/// [JP] 先に成長させて、新しい要素のスロットが確保範囲に収まるようにする。
 			if ((this->end_ >= this->capacity_)) [[unlikely]]
 			{
 				this->grow();
 			}
+
+			/// [EN] A POD needs no constructor, so copying its bytes creates the element.
+			/// [JP] POD にはコンストラクタが要らないので、バイトをコピーするだけで要素になる。
 			memcpy(this->end(), &element, sizeof(T));
 			this->set_end(this->end() + 1);
 		}
@@ -796,7 +988,9 @@ namespace SeedCore
 	* (resize/reserve/insert/erase/append/assign/swap/operators/etc.),
 	* built on top of JobVectorTemplateBase's growth strategy. Non-copyable
 	* directly (the copy constructor is deleted) so it's only ever used
-	* through the JobVector<T, N> wrapper, which supplies the inline storage.
+	* through the JobVector<T, N> wrapper, which supplies the inline
+	* storage. Functions taking a JobVectorImplementation<T>& accept a
+	* JobVector of any N.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -807,16 +1001,24 @@ namespace SeedCore
 	* assign/swap/演算子など）を提供する。それ自体は直接コピー不可
 	* （コピーコンストラクタは削除済み）で、インラインストレージを
 	* 供給する JobVector<T, N> ラッパー経由でのみ使われる。
+	* JobVectorImplementation<T>& を受け取る関数には、どの N の
+	* JobVector でも渡せる。
 	*/
 	template<typename T>
 	class JobVectorImplementation :public JobVectorTemplateBase<T, IsPod<T>::value>
 	{
 	private:
+		/// [EN] The growth strategy chosen for T (POD or not).
+		/// [JP] T に合わせて選ばれた成長戦略（POD かどうか）。
 		typedef JobVectorTemplateBase<T, IsPod<T>::value> SuperClass;
 
+		/// [EN] Copying without the inline storage of a concrete JobVector<T, N> is not possible.
+		/// [JP] 具体的な JobVector<T, N> のインラインストレージ無しでは、コピーはできない。
 		JobVectorImplementation(const JobVectorImplementation&) = delete;
 
 	public:
+		/// [EN] Re-exported from the base so derived code can name them without the dependent-name prefix.
+		/// [JP] 派生側で依存名の前置き無しに使えるよう、基底から再公開する。
 		typedef typename SuperClass::Iterator Iterator;
 		typedef typename SuperClass::ConstIterator ConstIterator;
 		typedef typename SuperClass::size_type size_type;
@@ -824,12 +1026,13 @@ namespace SeedCore
 	protected:
 		/**
 		* [EN]
-		* Constructs with n bytes of initial (inline) capacity.
+		* Constructs with room for n elements of initial (inline)
+		* capacity.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* n バイトの初期（インライン）容量で構築する。
+		* n 要素分の初期（インライン）容量で構築する。
 		*/
 		explicit JobVectorImplementation(Unsigned n) :JobVectorTemplateBase<T, IsPod<T>::value>(n * sizeof(T))
 		{
@@ -851,6 +1054,8 @@ namespace SeedCore
 		{
 			this->destroy_range(this->begin(), this->end());
 
+			/// [EN] Only a heap block is freed; the inline storage belongs to the object itself.
+			/// [JP] 解放するのはヒープのブロックだけ。インラインストレージはオブジェクト自身のもの。
 			if (!this->is())
 			{
 				std::free(this->begin());
@@ -868,6 +1073,8 @@ namespace SeedCore
 		*/
 		void clear()
 		{
+			/// [EN] The buffer is kept, so refilling up to the old size needs no allocation.
+			/// [JP] バッファは残すので、元の大きさまで詰め直すのに確保は要らない。
 			this->destroy_range(this->begin(), this->end());
 			this->end_ = this->begin_;
 		}
@@ -896,12 +1103,15 @@ namespace SeedCore
 				if (this->capacity() < n)
 				{
 					this->grow(n);
-					for (auto index = this->end(), element = this->begin() + n;index != element;++index)
-					{
-						new(&*index)T();
-						this->set_end(this->begin() + n);
-					}
 				}
+
+				/// [EN] The slots past end() are raw memory, so each new element is default-constructed in place.
+				/// [JP] end() より後ろのスロットは生のメモリなので、新しい要素はその場で1つずつデフォルト構築する。
+				for (auto index = this->end(), element = this->begin() + n;index != element;++index)
+				{
+					new(&*index)T();
+				}
+				this->set_end(this->begin() + n);
 			}
 		}
 
@@ -931,6 +1141,9 @@ namespace SeedCore
 				{
 					this->grow(n);
 				}
+
+				/// [EN] The slots past end() are raw memory, so they are copy-constructed rather than assigned.
+				/// [JP] end() より後ろのスロットは生のメモリなので、代入ではなくコピー構築する。
 				std::uninitialized_fill(this->end(), this->begin() + n, nv);
 				this->set_end(this->begin() + n);
 			}
@@ -964,6 +1177,8 @@ namespace SeedCore
 		*/
 		T pop_back_value()
 		{
+			/// [EN] The value is moved out before the element is destroyed.
+			/// [JP] 要素を破棄する前に値をムーブで取り出す。
 			T result = ::std::move(this->back());
 			this->pop_back();
 			return result;
@@ -989,6 +1204,8 @@ namespace SeedCore
 				return;
 			}
 
+			/// [EN] Two heap buffers are exchanged by swapping pointers; inline storage cannot move, so it needs the element-wise path.
+			/// [JP] ヒープのバッファ同士はポインタの交換で済む。インラインストレージは動かせないので、要素ごとの経路になる。
 			if (!this->is() && !rhs.is())
 			{
 				std::swap(this->begin_, rhs.begin_);
@@ -997,6 +1214,8 @@ namespace SeedCore
 				return;
 			}
 
+			/// [EN] Each side must be able to hold the other's elements.
+			/// [JP] どちらの側も、相手の要素を収められる必要がある。
 			if (rhs.size() > this->capacity())
 			{
 				this->grow(rhs.size());
@@ -1013,11 +1232,15 @@ namespace SeedCore
 				numberShared = rhs.size();
 			}
 
+			/// [EN] The overlapping part is swapped element by element.
+			/// [JP] 重なっている部分は要素ごとに交換する。
 			for (size_type index = 0;index != numberShared;++index)
 			{
 				std::swap((*this)[index], rhs[index]);
 			}
 
+			/// [EN] The longer side's extra elements are copied over to the shorter one, then destroyed at their origin.
+			/// [JP] 長い側の余りの要素は短い側へコピーし、元の場所では破棄する。
 			if (this->size() > rhs.size())
 			{
 				Size elementDefference = this->size() - rhs.size();
@@ -1050,6 +1273,8 @@ namespace SeedCore
 		template<typename InIterator>
 		void append(InIterator inStart, InIterator inEnd)
 		{
+			/// [EN] One growth for the whole range, instead of one per element.
+			/// [JP] 要素ごとではなく、範囲全体に対して1回だけ成長させる。
 			size_type numberInputs = std::distance(inStart, inEnd);
 
 			if (numberInputs > size_type(this->capacity_ptr() - this->end()))
@@ -1073,6 +1298,8 @@ namespace SeedCore
 		*/
 		void append(size_type numberInputs, const T& element)
 		{
+			/// [EN] One growth for all the copies, instead of one per element.
+			/// [JP] 要素ごとではなく、全コピーに対して1回だけ成長させる。
 			if (numberInputs > SizeType(this->capacity_ptr() - this->end()))
 			{
 				this->grow(this->size() + numberInputs);
@@ -1106,6 +1333,8 @@ namespace SeedCore
 		*/
 		void assign(size_type numberElments, const T& element)
 		{
+			/// [EN] Everything is destroyed first, so the whole range is filled into raw slots.
+			/// [JP] 先に全て破棄するので、範囲全体を生のスロットへ埋めることになる。
 			clear();
 			if (this->capacity() < numberElments)
 			{
@@ -1146,6 +1375,8 @@ namespace SeedCore
 		{
 			Iterator iterator = const_cast<Iterator>(cIterator);
 
+			/// [EN] Shifting the tail down by one leaves a moved-from duplicate at the back, which pop_back destroys.
+			/// [JP] 後ろを1つ前へずらすと、末尾にムーブ済みの重複が残るので、それを pop_back で破棄する。
 			Iterator n = iterator;
 			std::move(iterator + 1, this->end(), iterator);
 
@@ -1170,6 +1401,8 @@ namespace SeedCore
 			Iterator size = const_cast<Iterator>(cSize);
 			Iterator element = const_cast<Iterator>(cElement);
 
+			/// [EN] The tail is moved down over the removed range, and the leftover slots at the back are destroyed.
+			/// [JP] 後ろの要素を削除範囲へ詰め、末尾に残ったスロットを破棄する。
 			Iterator n = size;
 			Iterator iterator = std::move(element, this->end(), size);
 
@@ -1199,6 +1432,8 @@ namespace SeedCore
 				return this->end() - 1;
 			}
 
+			/// [EN] Growing moves the buffer, so the position is kept as an index and rebuilt afterwards.
+			/// [JP] 成長するとバッファが動くので、位置は番号で覚えておき後で作り直す。
 			if (this->end_ >= this->capacity_)
 			{
 				Size elementNo = iterator - this->begin();
@@ -1206,10 +1441,14 @@ namespace SeedCore
 				iterator = this->begin() + elementNo;
 			}
 
+			/// [EN] The last element is move-constructed into the new raw slot, then the rest shift up by one.
+			/// [JP] 最後の要素を新しい生のスロットへムーブ構築し、残りを1つ後ろへずらす。
 			::new((void*)this->end())T(::std::move(this->back()));
 			std::move_backward(iterator, this->end() - 1, this->end());
 			this->set_end(this->end() + 1);
 
+			/// [EN] If element lived inside the shifted range, it is now one slot further back.
+			/// [JP] element がずらした範囲の中にあった場合、今は1つ後ろのスロットにある。
 			T* elementPtr = &element;
 			if (iterator <= elementPtr && elementPtr < this->end_)
 			{
@@ -1241,6 +1480,8 @@ namespace SeedCore
 				return this->end() - 1;
 			}
 
+			/// [EN] Growing moves the buffer, so the position is kept as an index and rebuilt afterwards.
+			/// [JP] 成長するとバッファが動くので、位置は番号で覚えておき後で作り直す。
 			if (this->end_ >= this->capacity_)
 			{
 				Size elementNamber = iterator - this->begin();
@@ -1248,10 +1489,14 @@ namespace SeedCore
 				iterator = this->begin() + elementNamber;
 			}
 
+			/// [EN] The last element is move-constructed into the new raw slot, then the rest shift up by one.
+			/// [JP] 最後の要素を新しい生のスロットへムーブ構築し、残りを1つ後ろへずらす。
 			::new((void*)this->end())T(std::move(this->back()));
 			std::move_backward(iterator, this->end() - 1, this->end());
 			this->set_end(this->end() + 1);
 
+			/// [EN] If element lived inside the shifted range, it is now one slot further back.
+			/// [JP] element がずらした範囲の中にあった場合、今は1つ後ろのスロットにある。
 			const T* elementPtr = &element;
 			if (iterator <= elementPtr && elementPtr < this->end_)
 			{
@@ -1285,10 +1530,14 @@ namespace SeedCore
 				return this->begin() + insertElement;
 			}
 
+			/// [EN] Reserving can move the buffer, so the position is rebuilt from its index afterwards.
+			/// [JP] 容量の確保でバッファが動くことがあるので、位置は後で番号から作り直す。
 			reserve(this->size() + numberInsert);
 
 			iterator = this->begin() + insertElement;
 
+			/// [EN] Enough existing elements after the position: the last numberInsert move into new slots, the rest shift up, and the gap is assigned.
+			/// [JP] 位置の後ろに十分な要素がある場合。最後の numberInsert 個を新しいスロットへ移し、残りをずらし、空いた所に代入する。
 			if (Size(this->end() - iterator) >= numberInsert)
 			{
 				T* oldEnd = this->end();
@@ -1300,11 +1549,15 @@ namespace SeedCore
 				return iterator;
 			}
 
+			/// [EN] Fewer elements after the position than inserted: they all move to the far end, and the gap spans both old and raw slots.
+			/// [JP] 位置の後ろの要素が挿入数より少ない場合。それらは全て奥へ移り、空きは既存のスロットと生のスロットにまたがる。
 			T* oldEnd = this->end();
 			this->set_end(this->end() + numberInsert);
 			Size numberOverwritten = oldEnd - iterator;
 			this->uninitialized_move(iterator, oldEnd, this->end() - numberOverwritten);
 
+			/// [EN] Old slots are assigned, raw ones past the old end are constructed.
+			/// [JP] 既存のスロットには代入し、元の終端より後ろの生のスロットには構築する。
 			std::fill_n(iterator, numberOverwritten, element);
 
 			std::uninitialized_fill_n(oldEnd, numberInsert - numberOverwritten, element);
@@ -1337,10 +1590,14 @@ namespace SeedCore
 
 			Size numberInsert = std::distance(from, to);
 
+			/// [EN] Reserving can move the buffer, so the position is rebuilt from its index afterwards.
+			/// [JP] 容量の確保でバッファが動くことがあるので、位置は後で番号から作り直す。
 			reserve(this->size() + numberInsert);
 
 			iterator = this->begin() + insertElement;
 
+			/// [EN] Enough existing elements after the position: same shuffle as the fill overload, then the range is copied in.
+			/// [JP] 位置の後ろに十分な要素がある場合。値で埋める版と同じ並べ替えの後、範囲をコピーする。
 			if (Size(this->end() - iterator) >= numberInsert)
 			{
 				T* oldEnd = this->end();
@@ -1352,6 +1609,8 @@ namespace SeedCore
 				return iterator;
 			}
 
+			/// [EN] Fewer elements after the position: they move to the far end, then old slots are assigned and raw ones constructed.
+			/// [JP] 位置の後ろの要素が少ない場合。それらを奥へ移し、既存のスロットには代入、生のスロットには構築する。
 			T* oldEnd = this->end();
 			this->set_end(this->end() + numberInsert);
 			Size numberOverwritten = oldEnd - iterator;
@@ -1397,11 +1656,15 @@ namespace SeedCore
 		template<typename... Args>
 		void emplace_back(Args&&... args)
 		{
+			/// [EN] Growing first keeps the new element's slot inside the allocation.
+			/// [JP] 先に成長させて、新しい要素のスロットが確保範囲に収まるようにする。
 			if ((this->end_ >= this->capacity_)) [[unlikely]]
 			{
 				this->grow();
 			}
 
+			/// [EN] The element is built directly in the raw slot from args, with no temporary.
+			/// [JP] 要素は一時オブジェクトを作らずに、args から生のスロットへ直接構築する。
 			::new((void*)this->end())T(std::forward<Args>(args)...);
 			this->set_end(this->end() + 1);
 		}
@@ -1426,6 +1689,8 @@ namespace SeedCore
 				return *this;
 			}
 
+			/// [EN] With at least as many elements here, assignment covers everything and the surplus is destroyed.
+			/// [JP] こちらの要素数が同じか多ければ、全て代入で済み、余りは破棄する。
 			Size rhsSize = rhs.size();
 			Size currentSize = this->size();
 			if (currentSize >= rhsSize)
@@ -1446,6 +1711,8 @@ namespace SeedCore
 				return *this;
 			}
 
+			/// [EN] Growing would move the current elements for nothing, so they are destroyed first and everything is constructed anew.
+			/// [JP] 成長すると今の要素を無駄に移すことになるので、先に破棄して全てを新しく構築する。
 			if (this->capacity() < rhsSize)
 			{
 				this->destroy_range(this->begin(), this->end());
@@ -1458,6 +1725,8 @@ namespace SeedCore
 				std::copy(rhs.begin(), rhs.begin() + currentSize, this->begin());
 			}
 
+			/// [EN] The remaining elements go into raw slots, so they are copy-constructed.
+			/// [JP] 残りの要素は生のスロットへ入るので、コピー構築する。
 			this->uninitialized_copy(rhs.begin() + currentSize, rhs.end(), this->begin() + currentSize);
 
 			this->set_end(this->begin() + rhsSize);
@@ -1486,6 +1755,8 @@ namespace SeedCore
 				return *this;
 			}
 
+			/// [EN] A heap buffer can simply change owner; rhs goes back to its empty inline storage.
+			/// [JP] ヒープのバッファは持ち主を替えるだけで済む。rhs は空のインラインストレージに戻る。
 			if (!rhs.is())
 			{
 				this->destroy_range(this->begin(), this->end());
@@ -1500,6 +1771,8 @@ namespace SeedCore
 				return *this;
 			}
 
+			/// [EN] rhs uses inline storage, so its elements are moved one by one, the same way the copy assignment copies them.
+			/// [JP] rhs はインラインストレージを使っているので、コピー代入と同じ手順で要素を1つずつムーブする。
 			Size rhsSize = rhs.size();
 			Size currentSize = this->size();
 			if (currentSize >= rhsSize)
@@ -1548,6 +1821,8 @@ namespace SeedCore
 		*/
 		Bool operator==(const JobVectorImplementation& rhs)const
 		{
+			/// [EN] Different sizes can never be equal, and std::equal needs the sizes to match.
+			/// [JP] 大きさが違えば等しくはなりえず、std::equal も大きさが揃っている前提で使う。
 			if (this->size() != rhs.size())
 			{
 				return false;
@@ -1597,7 +1872,7 @@ namespace SeedCore
 		*/
 		void set_size(size_type n)
 		{
-			this->set_end(this->begin(), n);
+			this->set_end(this->begin() + n);
 		}
 	};
 
@@ -1617,8 +1892,8 @@ namespace SeedCore
 	template<typename T, Unsigned N>
 	struct JobVectorStorage
 	{
-		/// [EN] The N-1 additional inline element slots.
-		/// [JP] N-1 個分の追加インライン要素スロット。
+		/// [EN] The N-1 additional inline element slots, laid out right after firstElement.
+		/// [JP] N-1 個分の追加インライン要素スロット。firstElement のすぐ後ろに並ぶ。
 		typename JobVectorTemplateCommon<T>::U InlineElements[N - 1];
 	};
 
@@ -1639,12 +1914,14 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Specialization for N=0: no inline storage at all.
+	* Specialization for N=0: no extra slots; the vector starts with
+	* zero capacity and allocates on the first push.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* N=0 の特殊化: インラインストレージを一切持たない。
+	* N=0 の特殊化。追加スロットを持たず、ベクタは容量 0 から始まり、
+	* 最初の push で確保する。
 	*/
 	template<typename T>
 	struct JobVectorStorage<T, 0>
@@ -1671,8 +1948,8 @@ namespace SeedCore
 	class JobVector :public JobVectorImplementation<T>
 	{
 	private:
-		/// [EN] The N (or N-1, see JobVectorStorage) inline element slots beyond firstElement.
-		/// [JP] firstElement に加えた N（または N-1、JobVectorStorage を参照）個分のインライン要素スロット。
+		/// [EN] The inline slots that follow firstElement (N-1 of them; none when N is 0 or 1).
+		/// [JP] firstElement に続くインラインスロット（N-1 個。N が 0 か 1 なら無し）。
 		JobVectorStorage<T, N> storage_;
 
 	public:
@@ -1744,6 +2021,8 @@ namespace SeedCore
 		*/
 		JobVector(const JobVector& rhs) :JobVectorImplementation<T>(N)
 		{
+			/// [EN] An empty source leaves the fresh inline storage as it is.
+			/// [JP] コピー元が空なら、作ったばかりのインラインストレージをそのまま使う。
 			if (!rhs.empty())
 			{
 				JobVectorImplementation<T>::operator=(rhs);
@@ -1761,6 +2040,8 @@ namespace SeedCore
 		*/
 		JobVector(JobVector&& rhs) :JobVectorImplementation<T>(N)
 		{
+			/// [EN] An empty source leaves the fresh inline storage as it is.
+			/// [JP] ムーブ元が空なら、作ったばかりのインラインストレージをそのまま使う。
 			if (!rhs.empty())
 			{
 				JobVectorImplementation<T>::operator=(::std::move(rhs));
@@ -1810,6 +2091,8 @@ namespace SeedCore
 		*/
 		JobVector(JobVectorImplementation<T>&& rhs) :JobVectorImplementation<T>(N)
 		{
+			/// [EN] An empty source leaves the fresh inline storage as it is.
+			/// [JP] ムーブ元が空なら、作ったばかりのインラインストレージをそのまま使う。
 			if (!rhs.empty())
 			{
 				JobVectorImplementation<T>::operator=(::std::move(rhs));
@@ -1866,16 +2149,34 @@ namespace SeedCore
 
 namespace std
 {
-	/// [EN] ADL swap for JobVectorImplementation, forwarding to its member swap().
-	/// [JP] JobVectorImplementation 向けの ADL swap。メンバの swap() へ転送する。
+	/**
+	* [EN]
+	* std::swap overload for JobVectorImplementation, forwarding to its
+	* member swap().
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* JobVectorImplementation 向けの std::swap オーバーロード。メンバの
+	* swap() へ転送する。
+	*/
 	template<typename T>
 	inline void swap(SeedCore::JobVectorImplementation<T>& lhs, SeedCore::JobVectorImplementation<T>& rhs)
 	{
 		lhs.swap(rhs);
 	}
 
-	/// [EN] ADL swap for JobVector, forwarding to its inherited swap().
-	/// [JP] JobVector 向けの ADL swap。継承した swap() へ転送する。
+	/**
+	* [EN]
+	* std::swap overload for JobVector, forwarding to its inherited
+	* swap().
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* JobVector 向けの std::swap オーバーロード。継承した swap() へ
+	* 転送する。
+	*/
 	template<typename T, SeedCore::Unsigned N>
 	inline void swap(SeedCore::JobVector<T, N>& lhs, SeedCore::JobVector<T, N>& rhs)
 	{

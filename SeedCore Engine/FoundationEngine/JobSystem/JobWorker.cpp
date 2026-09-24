@@ -13,7 +13,7 @@ namespace SeedCore
 	* 所有元のエグゼキュータのプール内における、このワーカーの
 	* インデックスを返す。
 	*/
-	inline Size JobWorker::ID()const
+	Size JobWorker::ID()const
 	{
 		return id_;
 	}
@@ -27,7 +27,7 @@ namespace SeedCore
 	* [JP]
 	* このワーカーに現在キューイングされているノードの数を返す。
 	*/
-	inline Size JobWorker::QueueSize()const
+	Size JobWorker::QueueSize()const
 	{
 		return wsq_.size();
 	}
@@ -41,7 +41,7 @@ namespace SeedCore
 	* [JP]
 	* このワーカーのキュー容量を返す。
 	*/
-	inline Size JobWorker::QueueCapacity()const
+	Size JobWorker::QueueCapacity()const
 	{
 		return static_cast<Size>(wsq_.capacity());
 	}

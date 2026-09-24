@@ -15,9 +15,6 @@ namespace SeedCore
 	{
 		delta_ = delta;
 		total_ += static_cast<Double>(delta);
-
-		constexpr Float maxAccumulatedSteps = 8.0f;
-		accumulator_ = Min(accumulator_ + delta, fixedDeltaTime_ * maxAccumulatedSteps);
 	}
 
 	/**
@@ -46,55 +43,5 @@ namespace SeedCore
 	Float WorldTimer::TotalTime()const
 	{
 		return static_cast<Float>(total_);
-	}
-
-	/**
-	* [EN]
-	* Returns the fixed timestep used for physics/FixedTick stepping.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 物理/FixedTick のステップに使う固定タイムステップを返す。
-	*/
-	Float WorldTimer::FixedDeltaTime()const
-	{
-		return fixedDeltaTime_;
-	}
-
-	/**
-	* [EN]
-	* Sets the fixed timestep used for physics/FixedTick stepping.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 物理/FixedTick のステップに使う固定タイムステップを設定する。
-	*/
-	void WorldTimer::SetFixedDeltaTime(Float fixedDeltaTime)
-	{
-		fixedDeltaTime_ = fixedDeltaTime;
-	}
-
-	/**
-	* [EN]
-	* Consumes one FixedDeltaTime() worth of accumulated time, if enough
-	* has built up since the last successful call.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 前回の成功呼び出し以降に十分な時間が蓄積されていれば、
-	* FixedDeltaTime() 分の蓄積時間を1回消費する。
-	*/
-	Bool WorldTimer::Step()
-	{
-		if (accumulator_ < fixedDeltaTime_)
-		{
-			return false;
-		}
-
-		accumulator_ -= fixedDeltaTime_;
-		return true;
 	}
 }

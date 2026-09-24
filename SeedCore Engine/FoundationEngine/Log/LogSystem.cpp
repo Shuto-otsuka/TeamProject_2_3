@@ -2,6 +2,8 @@
 
 namespace SeedCore
 {
+	/// [EN] Definition of the shared log buffer declared in LogSystem.h.
+	/// [JP] LogSystem.h で宣言した、共有のログバッファの定義。
 	DynamicArray<LogEntry> LogSystem::logs_;
 
 	/**
@@ -17,6 +19,8 @@ namespace SeedCore
 	*/
 	void LogSystem::Push(LogLevel level, const std::string& message, const Char* file, Int line)
 	{
+		/// [EN] __FILE__ is a full build path; only the file name is kept, which is what the Console shows.
+		/// [JP] __FILE__ はビルド時の完全なパスなので、Console に表示するファイル名だけを残す。
 		logs_.push_back({ level, String(message), String(std::filesystem::path(file).filename().string()), line });
 	}
 

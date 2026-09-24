@@ -41,6 +41,8 @@ namespace SeedCore
 		*/
 		static constexpr Handle null()noexcept
 		{
+			/// [EN] The member defaults already describe the null handle.
+			/// [JP] メンバーの既定値が、そのまま null ハンドルを表している。
 			return {};
 		}
 
@@ -59,6 +61,8 @@ namespace SeedCore
 		*/
 		constexpr Bool exists()const noexcept
 		{
+			/// [EN] Only the index is looked at; generation_ is meaningless without the container.
+			/// [JP] 見るのはインデックスだけ。generation_ はコンテナ無しでは意味を持たない。
 			return index_ != std::numeric_limits<Uint64>::max();
 		}
 

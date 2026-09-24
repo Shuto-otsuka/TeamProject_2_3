@@ -25,20 +25,20 @@ namespace SeedCore
 		/// [JP] フラグなし：初期デフォルト状態。
 		static constexpr NodeStateType NONE = 0x00000000;
 
-		/// [EN] Node is implicitly anchored; it will not be destroyed when the graph is destroyed.
-		/// [JP] 暗黙的にアンカーされた状態。グラフ破棄時にこのノードは破棄されない。
+		/// [EN] Set while a runtime task's callable runs; exceptions thrown by tasks it spawned are stored on this node.
+		/// [JP] ランタイムタスクの処理の実行中に立つ。そこで生成したタスクが投げた例外は、このノードに格納される。
 		static constexpr NodeStateType IMPLICITLY_ANCHORED = 0x10000000;
 		
-		/// [EN] Node has been preempted and is waiting to be resumed.
-		/// [JP] ノードがプリエンプトされ、再開待ち状態にある。
+		/// [EN] Node suspended itself to wait for child work, and is run again by the last child to finish.
+		/// [JP] ノードが子の処理を待つために自分を中断している。最後に終わった子によって再び実行される。
 		static constexpr NodeStateType PREEMPTED = 0x20000000;
 		
-		/// [EN] Node should retain its subflow after execution completes.
-		/// [JP] 実行完了後もサブフローを保持する。
+		/// [EN] Keeps the subflow's graph after the node finishes instead of clearing it.
+		/// [JP] ノードが終わった後も、サブフローのグラフを消さずに残す。
 		static constexpr NodeStateType RETAIN_SUBFLOW = 0x40000000;
 		
-		/// [EN] Node has already joined its subflow.
-		/// [JP] サブフローへの合流が完了している。
+		/// [EN] The subflow was already joined inside the callable, so it is not scheduled again afterwards.
+		/// [JP] サブフローは処理の中で既に合流済みなので、その後に改めてスケジュールしない。
 		static constexpr NodeStateType JOINED_SUBFLOW = 0x80000000;
 
 		/// [EN] Bitmask to extract the strong dependency counter from the state value (lower 28 bits).
@@ -52,14 +52,16 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Represents the exception and lifecycle state of a job node.
-	* The upper byte encodes exception/completion flags; the lower bits are reserved for extensions.
+	* Represents the exception and cancellation state of a job node or
+	* topology, as flags in the upper byte. It is atomic on the node
+	* because several workers may set flags at once.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* ジョブノードの例外状態とライフサイクル状態を表す構造体。
-	* 上位バイトが例外・完了フラグを保持し、下位ビットは拡張用として予約されている。
+	* ジョブノードやトポロジーの例外状態とキャンセル状態を、上位バイトの
+	* フラグで表す構造体。複数のワーカーが同時にフラグを立てうるため、
+	* ノード側ではアトミックに持つ。
 	*/
 	struct JobExceptionState
 	{
@@ -71,24 +73,28 @@ namespace SeedCore
 		/// [JP] 例外なし：初期デフォルト状態。
 		static constexpr ExceptionStateType NONE = 0x00000000;
 
-		/// [EN] An exception was thrown during node execution.
-		/// [JP] ノードの実行中に例外がスローされた。
+		/// [EN] An exception was thrown by this node or a descendant; remaining work under it is skipped.
+		/// [JP] このノードか子孫が例外を投げた。その下の残りの処理は飛ばされる。
 		static constexpr ExceptionStateType EXCEPTION = 0x10000000;
 
-		/// [EN] The exception has been caught and handled.
-		/// [JP] 例外がキャッチされ処理済みになった。
+		/// [EN] This node already stores an exception, so later ones are not stored here.
+		/// [JP] このノードは既に例外を格納しているので、後から来たものはここに格納しない。
 		static constexpr ExceptionStateType CAUGHT = 0x20000000;
 
-		/// [EN] The node was cancelled before it could execute.
-		/// [JP] ノードは実行前にキャンセルされた。
+		/// [EN] The run was cancelled; nodes not yet started are skipped.
+		/// [JP] 実行がキャンセルされた。まだ始まっていないノードは飛ばされる。
 		static constexpr ExceptionStateType CANCELLED = 0x40000000;
 
-		/// [EN] The state is locked; no further exception state transitions are permitted.
-		/// [JP] 状態がロックされており、以降の例外状態遷移は禁止される。
+		/// [EN] A caller is blocked on this node (corun/join, or a topology's future), so exceptions from below are stored here.
+		/// [JP] 呼び出し側がこのノードで待っている（corun/join、あるいはトポロジーの future）ので、下から来た例外はここに格納する。
+		static constexpr ExceptionStateType EXPLICITLY_ANCHORED = 0x80000000;
+
+		/// [EN] Reserved flag; nothing in the job system sets or reads it.
+		/// [JP] 予約済みのフラグ。ジョブシステムの中で立てたり読んだりしている箇所は無い。
 		static constexpr ExceptionStateType LOCKED = 0x01000000;
 
-		/// [EN] The node has finished all execution and cleanup.
-		/// [JP] ノードの実行とクリーンアップがすべて完了した。
+		/// [EN] Reserved flag; nothing in the job system sets or reads it.
+		/// [JP] 予約済みのフラグ。ジョブシステムの中で立てたり読んだりしている箇所は無い。
 		static constexpr ExceptionStateType FINISHED = 0x02000000;
 
 		/// [EN] Bitmask covering all exception state flag bits (upper byte).
@@ -120,6 +126,8 @@ namespace SeedCore
 	class SEEDCORE_API JobNodeBase
 	{
 	private:
+		/// [EN] Graph-related classes manipulate this state directly instead of through public setters.
+		/// [JP] グラフ関連のクラスは、public なセッターを通さずにこの状態を直接操作する。
 		friend class JobNode;
 		friend class JobGraph;
 		friend class JobTask;
@@ -130,26 +138,27 @@ namespace SeedCore
 		friend class JobSubflow;
 		friend class JobPreemptiveRuntime;
 		friend class JobNonpreemptiveRuntime;
+		friend class JobExplicitAnchorGuard;
 
 	protected:
 		/// [EN] Scheduling state bitfield (control flags + strong dependency counter).
 		/// [JP] スケジューリング状態ビットフィールド（制御フラグ＋強依存関係カウンタ）。
 		NState nstate_ = JobNodeState::NONE;
 
-		/// [EN] Exception / lifecycle state; atomic because executor threads may update it concurrently.
-		/// [JP] 例外・ライフサイクル状態。エグゼキュータスレッドが並行更新するためアトミック。
+		/// [EN] Exception and cancellation flags; atomic because several workers may set them at once.
+		/// [JP] 例外とキャンセルのフラグ。複数のワーカーが同時に立てうるためアトミック。
 		std::atomic<EState> estate_ = JobExceptionState::NONE;
 
 		/// [EN] Pointer to the parent node; nullptr if this node is a root.
 		/// [JP] 親ノードへのポインタ。ルートノードの場合は nullptr。
 		JobNodeBase* parent_ = nullptr;
 
-		/// [EN] Number of predecessors that have not yet notified this node; decremented atomically on join.
-		/// [JP] まだ通知していない先行ノードの数。合流時にアトミックにデクリメントされる。
+		/// [EN] For a node waiting to run: predecessors not yet finished. For a parent: children still in flight.
+		/// [JP] 実行を待つノードでは、まだ終わっていない先行ノードの数。親としては、まだ実行中の子の数。
 		std::atomic<Size> joinCounter_ = 0;
 
-		/// [EN] Stores an exception propagated from a child or the node itself; nullptr if no exception.
-		/// [JP] 子ノードまたはノード自身から伝播した例外を保持する。例外がなければ nullptr。
+		/// [EN] The first exception thrown by this node or one of its children; nullptr if none.
+		/// [JP] このノードかその子が最初に投げた例外。無ければ nullptr。
 		std::exception_ptr exceptionPtr_ = nullptr;
 
 	protected:
@@ -176,5 +185,67 @@ namespace SeedCore
 		* 全フィールドを一括初期化するための明示的コンストラクタ。
 		*/
 		JobNodeBase(NState nstate, EState estate, JobNodeBase* parent, Size joinCounter);
+
+		/**
+		* [EN]
+		* If an exception has been stored on this node, clears it (and the
+		* EXCEPTION/CAUGHT flags) and rethrows it to the caller.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このノードに例外が格納されていれば、それ（と EXCEPTION/CAUGHT の
+		* フラグ）を消してから、呼び出し側へ投げ直す。
+		*/
+		void RethrowException();
+	};
+
+	/**
+	* [EN]
+	* Scope guard that marks a node as EXPLICITLY_ANCHORED while a caller
+	* blocks on it (corun, subflow join), so exceptions thrown by the work
+	* it waits for are stored on that node and can be rethrown afterwards.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 呼び出し側がノードで待っている間（corun、サブフローの合流）、その
+	* ノードに EXPLICITLY_ANCHORED を立てておくスコープガード。待っている
+	* 処理が投げた例外はそのノードに格納され、後で投げ直せる。
+	*/
+	class SEEDCORE_API JobExplicitAnchorGuard
+	{
+	public:
+		/**
+		* [EN]
+		* Sets EXPLICITLY_ANCHORED on node.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* node に EXPLICITLY_ANCHORED を立てる。
+		*/
+		explicit JobExplicitAnchorGuard(JobNodeBase* node);
+
+		/**
+		* [EN]
+		* Clears EXPLICITLY_ANCHORED from the node again.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* node から EXPLICITLY_ANCHORED を再び消す。
+		*/
+		~JobExplicitAnchorGuard();
+
+		/// [EN] The guard is tied to one scope and one node.
+		/// [JP] ガードは1つのスコープと1つのノードに結びついている。
+		JobExplicitAnchorGuard(const JobExplicitAnchorGuard&) = delete;
+		JobExplicitAnchorGuard& operator=(const JobExplicitAnchorGuard&) = delete;
+
+	private:
+		/// [EN] The node anchored for the lifetime of this guard.
+		/// [JP] このガードが生きている間、アンカーにしているノード。
+		JobNodeBase* node_ = nullptr;
 	};
 }

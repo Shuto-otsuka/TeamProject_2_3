@@ -63,8 +63,8 @@ namespace SeedCore
 	*/
 	void JobGraph::clear()
 	{
-		/// [EN] Return every node back to the object pool before clearing the container itself.
-		/// [JP] コンテナ自体をクリアする前に、すべてのノードをオブジェクトプールへ返却する。
+		/// [EN] Every node is released (to the pool or with delete) before the pointers themselves are dropped.
+		/// [JP] ポインタそのものを捨てる前に、全ノードを（プールへ、あるいは delete で）解放する。
 		for (JobNode* node : nodes_)
 		{
 			recycle(node);
@@ -167,8 +167,8 @@ namespace SeedCore
 	*/
 	void JobGraph::erase(JobNode* node)
 	{
-		/// [EN] Find the matching node, recycle it back to the pool as a side effect of the predicate, then physically remove it from the container (erase-remove idiom).
-		/// [JP] 該当するノードを見つけ、述語の副作用としてそれをプールへ返却（recycle）した上で、コンテナから物理的に削除する（erase-remove イディオム）。
+		/// [EN] The predicate releases the matching node as it goes, and erase_if then drops its pointer from the list.
+		/// [JP] 述語が一致したノードをその場で解放し、その後 erase_if がリストからそのポインタを取り除く。
 		SeedCore::erase_if(nodes_, [&](auto& p)
 			{
 				if (p == node)
