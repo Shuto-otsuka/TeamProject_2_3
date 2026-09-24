@@ -3266,54 +3266,73 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Approximates the mip a material texture needs from the same
-	* worldScale/pixelsPerUnit metric ModelRenderer already computes for
-	* cluster LOD selection (screen coverage of the instance).
+	* Picks the mip a material texture needs so that one texel covers
+	* about one screen pixel: texels per world unit (the SubMesh's baked
+	* texcoordDensity * texture resolution) versus screen pixels per
+	* world unit (worldScale * pixelsPerUnit). texcoordDensity 0 falls
+	* back to assuming the texture spans the whole model once.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* ModelRenderer がクラスタ LOD 選択のために既に計算している
-	* worldScale/pixelsPerUnit（インスタンスの画面被覆率）から、
-	* マテリアルテクスチャに必要なミップを近似する。
+	* 1 テクセルが画面 1 ピクセル程度になるミップを選ぶ: 1 ワールド単位
+	* あたりのテクセル数(SubMesh に焼いた texcoordDensity × テクスチャ
+	* 解像度)と、1 ワールド単位あたりの画面ピクセル数(worldScale ×
+	* pixelsPerUnit)を比べる。texcoordDensity が 0 のときはテクスチャが
+	* モデル全体に 1 回貼られている前提にフォールバックする。
 	*/
-	Uint32 Crister::TextureDesiredMip(Uint32 textureIndex, Float worldScale, Float pixelsPerUnit)const
+	Uint32 Crister::TextureDesiredMip(Uint32 textureIndex, Float texcoordDensity, Float worldScale, Float pixelsPerUnit)const
 	{
 		if (textureIndex >= streamingTextures_.size() || !streamingTextures_[textureIndex].valid_)
 		{
 			return 0;
 		}
 
-		/// [EN] worldScale is the transform's scale factor, NOT the model's size:
-		///      an unscaled 10-unit building and an unscaled 0.1-unit prop both
-		///      report 1.0. Using it alone underestimates screen coverage by the
-		///      model's extent and picks a far too coarse mip (this is what made
-		///      everything look soft). Scale it by the quantisation AABB's
-		///      diagonal, which is the model's actual world-space size, to get
-		///      the real on-screen pixel span.
+		/// [JP] カメラが無い/射影が未設定だと pixelsPerUnit が 0 になる。
+		///      その場合は判断材料が無いので最も細かいミップを要求する
+		///      (最粗へ倒すと全テクスチャが平均色になってしまう)。
+		Float screenPixelsPerWorldUnit = worldScale * pixelsPerUnit;
+		if (!(screenPixelsPerWorldUnit > 0.0f))
+		{
+			return 0;
+		}
+
+		/// [EN] texelsPerWorldUnit: how many mip-0 texels one (mesh-local) world
+		///      unit of surface spans. With the baked texcoordDensity this is
+		///      exact on average for the SubMesh - a UV atlas that packs many
+		///      islands into one texture gets a proportionally higher density
+		///      than "the texture spans the model once", which is what used to
+		///      pick a mip 1-2 levels too coarse. max(width, height) keeps
+		///      non-square textures on the sharp side.
 		///      texelsPerScreenPixel is then how many mip-0 texels crowd into one
-		///      screen pixel; each doubling costs exactly one mip level. Assumes
-		///      the texture maps roughly once across the model — there is no
-		///      per-mesh texel-density data to do better, so bias toward sharp
-		///      (round down) rather than risk over-blurring.
-		/// [JP] worldScale はトランスフォームの倍率でありモデルの大きさではない:
-		///      等倍の 10 ユニットの建物も等倍の 0.1 ユニットの小物も 1.0 を返す。
-		///      これだけで判断するとモデルの実寸分だけ画面被覆を過小評価し、
-		///      粗すぎるミップを選んでしまう(これが全体が眠く見えた原因)。
-		///      モデルの実ワールドサイズである量子化 AABB の対角長を掛けて、
-		///      実際の画面上のピクセル幅を求める。
+		///      screen pixel; each doubling costs exactly one mip level (rounded
+		///      down, toward sharp).
+		/// [JP] texelsPerWorldUnit: 表面の(メッシュローカル)1 ワールド単位が
+		///      mip 0 の何テクセルに相当するか。焼き込んだ texcoordDensity を
+		///      使うと SubMesh 平均で正確になる — 多数の UV アイランドを 1 枚に
+		///      詰めたアトラスは「モデルに 1 回貼られる」前提より密度が高く、
+		///      以前はそれを見落として 1〜2 段粗いミップを選んでいた。
+		///      非正方形テクスチャは max(width, height) で鮮明側に倒す。
 		///      texelsPerScreenPixel は画面 1 ピクセルに詰め込まれる mip 0 の
-		///      テクセル数で、2 倍になるごとにちょうど 1 ミップ粗くできる。
-		///      テクスチャがモデル全体におよそ 1 回貼られる前提(メッシュごとの
-		///      テクセル密度データが無いためこれ以上詰められない)。ぼやけ過ぎる
-		///      リスクを避けるため切り捨てて鮮明側に倒す。
-		Vector3 extent = positionExtent_;
-		Float modelSize = Max(Max(extent.x, extent.y), extent.z);
-		Float screenPixels = Max(worldScale * modelSize * pixelsPerUnit, 1.0f);
-		Float textureWidth = static_cast<Float>(bitmaps_[textureIndex].width_);
+		///      テクセル数で、2 倍になるごとにちょうど 1 ミップ粗くできる
+		///      (切り捨てて鮮明側に倒す)。
+		const Bitmap& bitmap = bitmaps_[textureIndex];
+		Float textureResolution = static_cast<Float>(Max(bitmap.width_, bitmap.height_));
+
+		Float texelsPerWorldUnit = 0.0f;
+		if (texcoordDensity > 0.0f)
+		{
+			texelsPerWorldUnit = texcoordDensity * textureResolution;
+		}
+		else
+		{
+			Vector3 extent = positionExtent_;
+			Float modelSize = Max(Max(extent.x, extent.y), extent.z);
+			texelsPerWorldUnit = textureResolution / Max(modelSize, 1e-6f);
+		}
 
 		Uint32 desiredMip = 0;
-		Float texelsPerScreenPixel = textureWidth / screenPixels;
+		Float texelsPerScreenPixel = texelsPerWorldUnit / screenPixelsPerWorldUnit;
 		if (texelsPerScreenPixel > 1.0f)
 		{
 			desiredMip = static_cast<Uint32>(std::log2(texelsPerScreenPixel));

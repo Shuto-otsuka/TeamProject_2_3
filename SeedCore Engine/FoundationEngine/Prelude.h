@@ -96,6 +96,7 @@
 #include <chrono>
 #include <cmath>
 #include <concepts>
+#include <coroutine>
 #include <cctype>
 #include <cstddef>
 #include <cstdint>

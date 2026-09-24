@@ -133,7 +133,7 @@ namespace SeedCore
 		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE AvatarImGuiGPUHandle()const;
 
 	private:
-		void PrepareFrame(Float deltaTime, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world, std::span<const Entity> selectedEntities);
+		void PrepareFrame(Float deltaTime, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world, std::span<const Entity> selectedEntities, const SceneConstantBuffer* viewScene = nullptr);
 
 	private:
 		Float width_ = ScResolution::SC_HD.Width;

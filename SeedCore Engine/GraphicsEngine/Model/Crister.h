@@ -383,6 +383,18 @@ namespace SeedCore
 		///      のコメント参照)。実行時のみで、シリアライズしない。
 		Uint32 morphDeltaOffset_ = SC_INVALID;
 
+		/// [EN] Texel-density metric for texture streaming: UV units per
+		///      mesh-local world unit, sqrt(total UV area / total world area)
+		///      over this SubMesh's LOD 0 triangles. Baked by BuildMeshlets.
+		///      0 = no usable UVs (degenerate/absent) - the streaming side
+		///      then falls back to the whole-model estimate.
+		/// [JP] テクスチャストリーミング用のテクセル密度: メッシュローカルの
+		///      1 ワールド単位あたりの UV 量。この SubMesh の LOD 0 三角形全体の
+		///      sqrt(UV 面積合計 / ワールド面積合計)。BuildMeshlets が焼き込む。
+		///      0 は使える UV が無い(縮退/欠落) — その場合ストリーミング側は
+		///      モデル全体からの見積もりにフォールバックする。
+		Float texcoordDensity_ = 0.0f;
+
 		template<class Archive>
 		void Serialize(Archive& archive)
 		{
@@ -396,6 +408,7 @@ namespace SeedCore
 			archive.Field("morphs", morphs_);
 			archive.Field("vertex_offset", vertexOffset_);
 			archive.Field("vertex_count", vertexCount_);
+			archive.Field("texcoord_density", texcoordDensity_);
 		}
 	};
 
@@ -2349,18 +2362,22 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Approximates the mip a material texture needs from the same
-		* worldScale/pixelsPerUnit metric ModelRenderer already computes for
-		* cluster LOD selection (screen coverage of the instance).
+		* Picks the mip a material texture needs so that one texel covers
+		* about one screen pixel: texels per world unit (the SubMesh's baked
+		* texcoordDensity * texture resolution) versus screen pixels per
+		* world unit (worldScale * pixelsPerUnit). texcoordDensity 0 falls
+		* back to assuming the texture spans the whole model once.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* ModelRenderer がクラスタ LOD 選択のために既に計算している
-		* worldScale/pixelsPerUnit（インスタンスの画面被覆率）から、
-		* マテリアルテクスチャに必要なミップを近似する。
+		* 1 テクセルが画面 1 ピクセル程度になるミップを選ぶ: 1 ワールド単位
+		* あたりのテクセル数(SubMesh に焼いた texcoordDensity × テクスチャ
+		* 解像度)と、1 ワールド単位あたりの画面ピクセル数(worldScale ×
+		* pixelsPerUnit)を比べる。texcoordDensity が 0 のときはテクスチャが
+		* モデル全体に 1 回貼られている前提にフォールバックする。
 		*/
-		[[nodiscard]] Uint32 TextureDesiredMip(Uint32 textureIndex, Float worldScale, Float pixelsPerUnit)const;
+		[[nodiscard]] Uint32 TextureDesiredMip(Uint32 textureIndex, Float texcoordDensity, Float worldScale, Float pixelsPerUnit)const;
 
 	private:
 		/**

@@ -232,9 +232,6 @@ namespace SeedCore
 
 	void Graphics::EditorRender(WorldTimer& timer, const EditorCamera& editorCamera, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world, ViewMode viewMode, std::span<const Entity> selectedEntities)
 	{
-		PrepareFrame(timer.DeltaTime(), loaderSystem, resourceCache, world, selectedEntities);
-		renderer_->GatherColliders(world);
-
 		SceneConstantBuffer editorSceneConstantBuffer{};
 		editorSceneConstantBuffer.view_ = editorCamera.View();
 		editorSceneConstantBuffer.inverseView_ = editorCamera.InverseView();
@@ -257,6 +254,10 @@ namespace SeedCore
 		editorSceneConstantBuffer.screenSize_ = Vector2(static_cast<Float>(nativeWidth_), static_cast<Float>(nativeHeight_));
 		editorSceneConstantBuffer.inverseScreenSize_ = Vector2(1.0f / nativeWidth_, 1.0f / nativeHeight_);
 		editorSceneConstantBuffer.displaySize_ = renderer_->PostProcessOutputSize();
+
+		PrepareFrame(timer.DeltaTime(), loaderSystem, resourceCache, world, selectedEntities, &editorSceneConstantBuffer);
+		renderer_->GatherColliders(world);
+
 		editorSceneSystem_->Upload(editorSceneConstantBuffer);
 
 		renderer_->BeginEditorFrame(context_->GetDirectList());
@@ -285,12 +286,6 @@ namespace SeedCore
 
 		fadeScreen_.Draw(context_->GetDirectList()->Get(), Scene::FadeAlpha(), static_cast<Float>(nativeWidth_), static_cast<Float>(nativeHeight_));
 
-		/// [JP] アクティブカメラが無いフレームでも EndGameFrame は必ず呼ぶ
-		///      (PostProcess/DLSS-RRの経路を毎フレーム一貫させるため)。その
-		///      場合 GetSceneConstantBuffer() は前回有効だった値(または既定値)
-		///      を返す — DLSS-RR はこのフレームだけ多少不正確なリプロジェクション
-		///      になり得るが、そもそも表示するゲーム画面が無い状況なので実害は
-		///      無い。
 		renderer_->EndGameFrame(context_->GetDirectList(), gameSceneConstantBuffer);
 	}
 
@@ -660,7 +655,7 @@ namespace SeedCore
 		return renderer_->AvatarImGuiGPUHandle();
 	}
 
-	void Graphics::PrepareFrame(Float deltaTime, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world, std::span<const Entity> selectedEntities)
+	void Graphics::PrepareFrame(Float deltaTime, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world, std::span<const Entity> selectedEntities, const SceneConstantBuffer* viewScene)
 	{
 		if (preparedFrame_ == frameCount_)
 		{
@@ -673,9 +668,8 @@ namespace SeedCore
 		movieSystem_.Update(loaderSystem, world, resourceCache);
 		resourceCache.GetResource<MovieResource>(AssetType::Movie)->Update(loaderSystem, context_->GetDevice(), context_->GetDirectList()->Get(), bindlessHeap_.get());
 
-		/// [JP] ストリーミングの LOD 要求判定用に前フレームのカメラを渡す
-		///      （カメラ更新は Gather の後 — 1 フレーム遅れで十分）。
-		renderer_->PrepareFrame(context_->GetDirectList(), loaderSystem, resourceCache, world, cameraSystem_.GetSceneConstantBuffer(), deltaTime, selectedEntities);
+		const SceneConstantBuffer& streamingScene = viewScene ? *viewScene : cameraSystem_.GetSceneConstantBuffer();
+		renderer_->PrepareFrame(context_->GetDirectList(), loaderSystem, resourceCache, world, streamingScene, deltaTime, selectedEntities);
 	}
 
 	CameraSystem& Graphics::GetCameraSystem()
