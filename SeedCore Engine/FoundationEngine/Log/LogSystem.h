@@ -15,8 +15,8 @@ namespace SeedCore
 		/// [JP] 致命的ではないが確認すべき問題。
 		Warning,
 
-		/// [EN] Failure.
-		/// [JP] 失敗。
+		/// [EN] Something failed and needs fixing.
+		/// [JP] 何かが失敗しており、直す必要がある。
 		Error
 	};
 
@@ -52,14 +52,16 @@ namespace SeedCore
 	* [EN]
 	* Process-wide, in-memory log buffer. Entries are pushed via the
 	* SC_LOG_NOTICE/SC_LOG_WARNING/SC_LOG_ERROR macros and read back
-	* by the Editor's Console panel.
+	* by the Editor's Console panel. The buffer has no lock, so it is
+	* meant to be written from one thread at a time.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* プロセス全体で共有される、メモリ上のログバッファ。エントリは
 	* SC_LOG_NOTICE/SC_LOG_WARNING/SC_LOG_ERROR マクロ経由で追加され、
-	* Editor の Console パネルから読み出される。
+	* Editor の Console パネルから読み出される。バッファにロックは無い
+	* ので、一度に1つのスレッドから書き込む前提になっている。
 	*/
 	class SEEDCORE_API LogSystem
 	{
@@ -100,8 +102,8 @@ namespace SeedCore
 		static void Clear();
 
 	private:
-		/// [EN] Backing storage for all logged entries.
-		/// [JP] 全ログエントリを保持するストレージ。
+		/// [EN] Every logged entry in push order; it keeps growing until Clear is called.
+		/// [JP] 追加順に並んだ全ログエントリ。Clear が呼ばれるまで増え続ける。
 		static DynamicArray<LogEntry> logs_;
 	};
 }

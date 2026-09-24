@@ -41,8 +41,8 @@ namespace SeedCore
 	*/
 	JobTaskflow::JobTaskflow(JobTaskflow&& rhs) :FlowBuilder(graph_)
 	{
-		/// [EN] Lock rhs's mutex before reading its members, since another thread (e.g. an executor) may be concurrently enqueueing topologies onto it.
-		/// [JP] rhs のメンバを読み取る前にその mutex_ をロックする。別スレッド（エグゼキュータなど）が並行してトポロジーを追加登録している可能性があるため。
+		/// [EN] rhs is locked while its members are taken, since another thread may be queueing a run on it.
+		/// [JP] rhs のメンバーを取る間はロックする。別のスレッドが実行を積んでいる可能性があるため。
 		std::scoped_lock<std::mutex> lock(rhs.mutex_);
 		name_ = std::move(rhs.name_);
 		graph_ = std::move(rhs.graph_);
@@ -62,8 +62,8 @@ namespace SeedCore
 	{
 		if (this != &rhs)
 		{
-			/// [EN] Lock both mutexes together (deadlock-safe ordering via std::scoped_lock) since either side could be concurrently accessed by an executor thread.
-			/// [JP] 両方の mutex_ を同時にロックする（std::scoped_lock によるデッドロック安全な順序）。どちらの側もエグゼキュータスレッドから並行アクセスされ得るため。
+			/// [EN] Both sides are locked at once; std::scoped_lock picks an order that cannot deadlock.
+			/// [JP] 両側を同時にロックする。std::scoped_lock は、デッドロックしない順序で取る。
 			std::scoped_lock<std::mutex, std::mutex> lock(mutex_, rhs.mutex_);
 			name_ = std::move(rhs.name_);
 			graph_ = std::move(rhs.graph_);
@@ -139,22 +139,24 @@ namespace SeedCore
 	*/
 	void JobTaskflow::Clear()
 	{
+		/// [EN] Every node is released, so JobTask handles taken from this taskflow must not be used afterwards.
+		/// [JP] 全ノードが解放されるので、このタスクフローから得た JobTask ハンドルはこの後使ってはならない。
 		graph_.clear();
 	}
 
 	/**
 	* [EN]
-	* Removes the precedence edge between from and to.
+	* Removes every edge from from to to, on both nodes.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* from と to の間の先行関係エッジを削除する。
+	* from から to へのエッジを、両方のノードから全て取り除く。
 	*/
 	void JobTaskflow::RemoveDependency(JobTask from, JobTask to)
 	{
-		/// [EN] Remove the edge from both sides: from's successor list and to's predecessor list.
-		/// [JP] 両側からエッジを削除する: from の後続一覧と to の先行一覧の両方から。
+		/// [EN] Each edge is recorded on both nodes, so it is removed from from's successors and from to's predecessors.
+		/// [JP] エッジは両方のノードに記録されているので、from の後続と to の先行ノードの両方から取り除く。
 		from.node_->RemoveSuccessors(to.node_);
 
 		to.node_->RemovePredecessors(from.node_);
@@ -176,19 +178,21 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Enqueues topologies for execution and returns the resulting queue size.
+	* Appends a run to the queue and returns the queue size from before
+	* the append; 0 means no other run is in progress.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* topologies を実行キューへ追加し、追加後のキューサイズを返す。
+	* 実行を列の末尾へ足し、足す前の列の長さを返す。0 は他に進行中の
+	* 実行が無いことを意味する。
 	*/
 	Size JobTaskflow::FetchEnqueue(ResourceRef<JobTopology> topologies)
 	{
 		std::lock_guard<std::mutex> lock(mutex_);
 
-		/// [EN] Capture the size before insertion: the caller uses 0 to mean "this was the only pending topology, so schedule it immediately."
-		/// [JP] 挿入前のサイズを取得する。呼び出し側は 0 を「これが唯一の保留中トポロジーだったので即座にスケジューリングする」という意味で使う。
+		/// [EN] The size before insertion tells the caller whether this run is the only one and must be started now.
+		/// [JP] 挿入前の長さで、呼び出し側はこの実行が唯一のもので、今すぐ始めるべきかを知る。
 		auto preSize = topologies_.size();
 		topologies_.emplace(std::move(topologies));
 		return preSize;

@@ -29,6 +29,20 @@ namespace SeedCore
 		/// [JP] Z 軸方向のスケール。
 		SC_SERIALIZE_FIELD()
 		Float z_;
+
+		/**
+		* [EN]
+		* Returns the scale as a Vector3.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 拡大縮小を Vector3 として取得する。
+		*/
+		[[nodiscard]] Vector3 Vector()const noexcept
+		{
+			return Vector3(x_, y_, z_);
+		}
 	};
 	REGISTER_COMPONENT(Scale, "Core", ComponentStorage::Archetype);
 }

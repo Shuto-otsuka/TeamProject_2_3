@@ -21,6 +21,15 @@ namespace SeedCore
 	struct SEEDCORE_API DelegateHandle
 	{
 	public:
+		/**
+		* [EN]
+		* Constructs an invalid handle (id 0) that matches no listener.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* どのリスナーにも一致しない、無効なハンドル（id 0）を構築する。
+		*/
 		DelegateHandle() = default;
 
 	public:
@@ -75,10 +84,21 @@ namespace SeedCore
 	template <typename Signature>
 	class SinglecastDelegate;
 
+	/// [EN] The partial specialization splits a function type such as Int(Float) into Ret and Args, so it can be written as SinglecastDelegate<Int(Float)>.
+	/// [JP] 部分特殊化で Int(Float) のような関数型を Ret と Args に分け、SinglecastDelegate<Int(Float)> と書けるようにする。
 	template <typename Ret, typename... Args>
 	class SinglecastDelegate<Ret(Args...)>
 	{
 	public:
+		/**
+		* [EN]
+		* Constructs a delegate with nothing bound.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 何もバインドされていないデリゲートを構築する。
+		*/
 		SinglecastDelegate() = default;
 
 	public:
@@ -94,6 +114,8 @@ namespace SeedCore
 		template <typename Callable>
 		void Bind(Callable&& callable)
 		{
+			/// [EN] Assigning to std::function destroys the previous callable and anything it captured.
+			/// [JP] std::function へ代入すると、前の処理とそれがキャプチャしていたものは破棄される。
 			function_ = std::forward<Callable>(callable);
 		}
 
@@ -156,6 +178,8 @@ namespace SeedCore
 		*/
 		Ret ExecuteIfBound(Args... args)const
 		{
+			/// [EN] Ret must be default-constructible for the unbound case; void works as well.
+			/// [JP] 未バインド時のために Ret はデフォルト構築できる必要がある。void でもよい。
 			if (function_)
 			{
 				return function_(args...);
@@ -188,6 +212,15 @@ namespace SeedCore
 	class MulticastDelegate
 	{
 	public:
+		/**
+		* [EN]
+		* Constructs a delegate with no listeners.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* リスナーを持たないデリゲートを構築する。
+		*/
 		MulticastDelegate() = default;
 
 	public:
@@ -205,6 +238,8 @@ namespace SeedCore
 		template <typename Callable>
 		DelegateHandle Bind(Callable&& callable)
 		{
+			/// [EN] Every listener gets its own handle, even when the same callable is bound twice.
+			/// [JP] 同じ処理を2回バインドしても、リスナーごとに別のハンドルが付く。
 			DelegateHandle handle = DelegateHandle::Generate();
 			listeners_.push_back(Listener{ handle, std::function<void(Args...)>(std::forward<Callable>(callable)) });
 			return handle;
@@ -221,6 +256,8 @@ namespace SeedCore
 		*/
 		void Unbind(const DelegateHandle& handle)
 		{
+			/// [EN] Handles are unique, so the search stops at the first match; erase keeps the rest in bind order.
+			/// [JP] ハンドルは一意なので、最初に一致したところで止める。erase なので残りのバインド順は保たれる。
 			for (Size index = 0; index < listeners_.size(); ++index)
 			{
 				if (listeners_[index].handle_ == handle)
@@ -262,14 +299,20 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Invokes every currently-bound listener with args, in bind order.
+		* A listener must not bind or unbind on this delegate while it is
+		* being broadcast, since that changes the list being walked.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* バインドされている全リスナーを、バインド順に args で呼び出す。
+		* 走査中のリストが変わってしまうので、ブロードキャスト中のリスナー
+		* から、このデリゲートへバインドやアンバインドをしてはならない。
 		*/
 		void Broadcast(Args... args)const
 		{
+			/// [EN] Every listener receives the same args; with reference parameter types, a change made by one listener is seen by the next.
+			/// [JP] 全リスナーが同じ args を受け取る。引数が参照型なら、あるリスナーの変更は次のリスナーから見える。
 			for (const Listener& listener : listeners_)
 			{
 				listener.function_(args...);

@@ -1,4 +1,9 @@
 #include <FoundationEngine/Resource/ResourceSync.h>
+#include <FoundationEngine/Resource/ResourceCache.h>
+#include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
+#include <FoundationEngine/Payload/PayloadRegistry.h>
 
 namespace SeedCore
 {
@@ -149,6 +154,240 @@ namespace SeedCore
 		if (worker_)
 		{
 			worker_->ConsumeImported(paths);
+		}
+	}
+
+	/**
+	* [EN]
+	* Keeps what the engine writes out on its own - baked models, extracted
+	* materials, skeletons, clips, collision and the caches of textures,
+	* audio, movies and skies - in the library together with its .meta.
+	* One not in the library yet is shared, one changed here is published,
+	* and one whose identity or contents disagree with the library is
+	* replaced by the library's copy. Called once a frame; it acts only
+	* every few seconds.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* エンジンが自分で書き出すもの（焼いたモデル、取り出したマテリアル、
+	* スケルトン、クリップ、コリジョン、テクスチャ・オーディオ・ムービー・
+	* スカイのキャッシュ）を、.meta と一緒にライブラリへ揃えておく。まだ
+	* ライブラリに無いものは共有し、ここで変わったものは Publish し、識別子
+	* や中身がライブラリと食い違うものはライブラリの写しで置き換える。
+	* 毎フレーム呼ばれるが、動くのは数秒に1回だけ。
+	*/
+	void ResourceSync::ShareGenerated(const ResourceCache& cache)
+	{
+		/// [EN] Nothing is decided while the library is out of reach, since every decision below compares against it.
+		/// [JP] ライブラリへ届いていない間は何も決めない。以下の判断は全て、ライブラリとの比較で行うため。
+		if (!worker_ || !snapshot_.online_)
+		{
+			return;
+		}
+
+		/// [EN] Walking every asset each frame would cost more than it finds, so the walk runs on an interval.
+		/// [JP] 毎フレーム全アセットを辿るのは見つかるものに対して高くつくため、間隔を空けて辿る。
+		Uint64 now = GetTickCount64();
+		if (now < nextShareGenerated_)
+		{
+			return;
+		}
+		nextShareGenerated_ = now + 3000;
+
+		for (const auto& [assetId, record] : cache.AssetList())
+		{
+			/// [EN] Only files the engine produces are handled here; what a member made by hand is still shared on purpose.
+			/// [JP] ここで扱うのはエンジンが作るファイルだけ。メンバーが手で作ったものは、引き続き本人の判断で共有する。
+			std::filesystem::path local(record.fullpath_.str());
+			if (!generatedExtensions_.contains(local.extension().string()))
+			{
+				continue;
+			}
+
+			String logical = Logical(local);
+			if (logical.str().empty())
+			{
+				continue;
+			}
+
+			/// [EN] A request already sent for this path is given time to land, so the queue does not fill with repeats of it.
+			/// [JP] この位置について送った要求には、届くまでの時間を与える。待ち行列が同じ要求の繰り返しで埋まらないようにするため。
+			auto attempt = nextShareAttempt_.find(logical);
+			if (attempt != nextShareAttempt_.end() && now < attempt->second)
+			{
+				continue;
+			}
+
+			const SharedAsset* shared = nullptr;
+			for (const SharedAsset& asset : snapshot_.assets_)
+			{
+				if (!asset.deleted_ && asset.path_ == logical)
+				{
+					shared = &asset;
+					break;
+				}
+			}
+
+			/// [EN] Not in the library yet: it is registered, which carries the .meta up with it.
+			/// [JP] まだライブラリに無い: 登録する。その際に .meta も一緒に上がる。
+			if (!shared)
+			{
+				RequestRegister(record);
+				nextShareAttempt_[logical] = now + 30000;
+				continue;
+			}
+
+			SharingRequest request;
+			request.assetId_ = shared->id_;
+
+			/// [EN] Every machine bakes the same file on its own and mints its own .meta, so the first one registered decides the identifier.
+			/// [JP] どの PC も同じファイルを各自で焼き、各自で .meta を作る。そのため最初に登録されたものが識別子を決める。
+
+			/// [EN] A machine whose .meta names a different identifier takes the library's copy, so scenes and prefabs resolve alike everywhere.
+			/// [JP] .meta が別の識別子を示している PC はライブラリの写しを取る。Scene や Prefab の参照が、どの PC でも同じものを指すようにするため。
+			if (shared->runtimeId_ != assetId)
+			{
+				request.action_ = SharingAction::Adopt;
+				worker_->Enqueue(request);
+				nextShareAttempt_[logical] = now + 30000;
+				continue;
+			}
+
+			/// [EN] An asset that matches the library needs nothing, and one merely behind is brought down by the worker's own follow.
+			/// [JP] ライブラリと一致しているアセットには何も要らない。単に遅れているだけのものは、ワーカー自身の追従で降りてくる。
+			const SharedProgress* progress = nullptr;
+			for (const SharedProgress& entry : snapshot_.progress_)
+			{
+				if (entry.assetId_ == shared->id_)
+				{
+					progress = &entry;
+					break;
+				}
+			}
+			if (!progress || !progress->modified_)
+			{
+				continue;
+			}
+
+			/// [EN] A generated file can always be made again, so when both sides moved the library's copy wins rather than asking anyone.
+			/// [JP] 生成されたファイルはいつでも作り直せる。そのため両側が動いた場合は、誰かに尋ねずライブラリの写しを優先する。
+			if (progress->conflicted_)
+			{
+				request.action_ = SharingAction::Adopt;
+				worker_->Enqueue(request);
+				nextShareAttempt_[logical] = now + 30000;
+				continue;
+			}
+
+			/// [EN] Changed here only: the lease is taken and the new bake published, and the publish hands the lease back on success.
+			/// [JP] ここでだけ変わっている: 編集権を取り、焼き直したものを Publish する。成功すれば Publish が編集権を返す。
+			request.action_ = SharingAction::Checkout;
+			request.scope_ = String("asset");
+			worker_->Enqueue(request);
+
+			request.action_ = SharingAction::Publish;
+			request.scope_ = String();
+			worker_->Enqueue(request);
+			nextShareAttempt_[logical] = now + 30000;
+		}
+	}
+
+	/**
+	* [EN]
+	* Brings down every asset the open world refers to that the team
+	* has but this machine does not: whatever an actor's asset fields
+	* name, and the prefab each actor was made from. Called once a
+	* frame; it acts only every few seconds, so actors another member
+	* adds later are covered as well.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 開いている world が参照しているアセットのうち、チームは持っていて
+	* この PC には無いものを取得する。対象は、Actor のアセット参照
+	* フィールドが示すものと、各 Actor の元になった Prefab。毎フレーム
+	* 呼ばれるが動くのは数秒に1回で、後から他のメンバーが足した Actor
+	* の分も拾える。
+	*/
+	void ResourceSync::FetchReferenced(World& world)
+	{
+		if (!worker_ || !snapshot_.online_)
+		{
+			return;
+		}
+
+		/// [EN] The world is walked on an interval rather than once on opening, since a scene may finish loading, or gain actors, after that moment.
+		/// [JP] 開いた瞬間に1度だけではなく、間隔を空けて辿る。Scene の読み込みが終わるのも、Actor が増えるのも、その後であり得るため。
+		Uint64 now = GetTickCount64();
+		if (now < nextFetchReferenced_)
+		{
+			return;
+		}
+		nextFetchReferenced_ = now + 5000;
+
+		/// [EN] The live world is read rather than the scene file, because it is the reflection of each live component that says which fields hold assets.
+		/// [JP] Scene のファイルではなく、生きている world を読む。どのフィールドがアセットを持つかを教えてくれるのは、生きたコンポーネントのリフレクションであるため。
+		DynamicArray<Uint32> referenced;
+		for (const Actor& actor : world.GetActors())
+		{
+			/// [EN] An actor made from a prefab needs the prefab itself as well, since the scene re-instantiates it from there.
+			/// [JP] Prefab から作られた Actor には Prefab 自体も要る。Scene はそこから作り直すため。
+			if (actor.PrefabID() != 0)
+			{
+				referenced.push_back(actor.PrefabID());
+			}
+
+			/// [EN] Only the component types that carry asset fields are asked about, which is a short list next to every registered component.
+			/// [JP] 問い合わせるのは、アセット参照フィールドを持つコンポーネントの型だけ。登録済みの全コンポーネントに比べれば短い一覧で済む。
+			Entity entity = actor.GetEntity();
+			for (const auto& [typeName, payload] : PayloadRegistry::GetRegistry())
+			{
+				ComponentID id = ComponentRegistry::GetComponentID(typeName);
+				if (!id)
+				{
+					continue;
+				}
+				void* data = world.GetComponent(entity, id);
+				if (!data)
+				{
+					continue;
+				}
+
+				DynamicArray<FieldInfo> fields;
+				payload(data, fields);
+				for (const FieldInfo& field : fields)
+				{
+					/// [EN] An array's header only describes the array, and its elements follow as fields of their own that point straight at each value.
+					/// [JP] 配列の見出しは配列そのものの説明にすぎない。要素は、それぞれの値を直接指す個別のフィールドとして後に続く。
+					if (field.assetType_ == PayloadAssetType::None || field.array_.add_)
+					{
+						continue;
+					}
+					void* value = field.directPtr_ ? field.directPtr_ : static_cast<Uint8*>(data) + field.offset_;
+					referenced.push_back(*static_cast<Uint32*>(value));
+				}
+			}
+		}
+
+		for (Uint32 assetId : referenced)
+		{
+			/// [EN] Only what the team has and this machine lacks is fetched; an empty field or an asset nobody shared has nothing to come down.
+			/// [JP] 取得するのは、チームは持っていてこの PC に無いものだけ。空のフィールドや、誰も共有していないアセットには降りてくるものが無い。
+			if (assetId == 0 || !RemoteOnly(assetId))
+			{
+				continue;
+			}
+
+			/// [EN] A get already sent is given time to land, so the same asset referenced by many actors is asked for once.
+			/// [JP] 送った取得要求には届くまでの時間を与える。多くの Actor が参照する同じアセットを、1回だけ要求するため。
+			auto attempt = nextFetchAttempt_.find(assetId);
+			if (attempt != nextFetchAttempt_.end() && now < attempt->second)
+			{
+				continue;
+			}
+			nextFetchAttempt_[assetId] = now + 30000;
+			RequestGet(assetId);
 		}
 	}
 
@@ -428,6 +667,30 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Whether the file at path can be shared through the library at
+	* all. Source code is not: it is shared through git, and carries no
+	* .meta for the library to identify it by.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* その位置のファイルを、そもそもライブラリで共有できるかどうか。
+	* ソースコードはできない。git で共有するものであり、ライブラリが
+	* 識別に使う .meta も持たないため。
+	*/
+	Bool ResourceSync::Shareable(const std::filesystem::path& path)const
+	{
+		/// [EN] Anything outside the workspace is out of the library's reach as well, whatever it is.
+		/// [JP] ワークスペースの外にあるものも、何であれライブラリの手は届かない。
+		if (!configured_ || Logical(path).str().empty())
+		{
+			return false;
+		}
+		return !sourceExtensions_.contains(path.extension().string());
+	}
+
+	/**
+	* [EN]
 	* Whether this Editor may change the given scope right now. It asks
 	* only; taking the right to edit is RequestEdit's job.
 	*
@@ -456,6 +719,19 @@ namespace SeedCore
 				return lease.mine_;
 			}
 		}
+
+		/// [EN] A held structure lease stands in for every entity of the scene, the same way it does when a publish presents its token.
+		/// [JP] 保持している structure の Lease は、その Scene の全 Entity の代わりを務める。Publish でトークンを示す際と同じ扱い。
+		if (scope.str().rfind("entity:", 0) == 0)
+		{
+			for (const EditLease& lease : snapshot_.leases_)
+			{
+				if (lease.assetId_ == asset->id_ && lease.scope_ == String("structure") && lease.mine_)
+				{
+					return true;
+				}
+			}
+		}
 		return false;
 	}
 
@@ -482,11 +758,17 @@ namespace SeedCore
 
 		/// [EN] A member dragging a gizmo asks on every frame, and each ask is a write to the shared table.
 		/// [JP] ギズモを掴んでいるメンバーは毎フレーム要求し、その1回ごとが共有表への書き込みになる。
-		if (GetTickCount64() < nextEditRequest_)
+
+		/// [EN] The interval is kept per scope, so several actors asked for in the same frame each get through rather than only the first.
+		/// [JP] 間隔は範囲ごとに持つ。同じフレームで複数の Actor を要求しても、先頭だけでなくそれぞれが通るようにするため。
+		String key = String(std::format("{}/{}", asset->id_.str(), scope.str()));
+		Uint64 now = GetTickCount64();
+		auto next = nextEditRequest_.find(key);
+		if (next != nextEditRequest_.end() && now < next->second)
 		{
 			return;
 		}
-		nextEditRequest_ = GetTickCount64() + 1500;
+		nextEditRequest_[key] = now + 1500;
 
 		SharingRequest request;
 		request.action_ = SharingAction::Checkout;
@@ -582,8 +864,11 @@ namespace SeedCore
 	{
 		/// [EN] Only content inside the workspace can be shared, so anything else is refused here rather than half-published.
 		/// [JP] 共有できるのはワークスペース内のものだけ。それ以外は中途半端に公開せず、ここで断る。
-		String logical = Logical(std::filesystem::path(asset.fullpath_.str()));
-		if (!worker_ || logical.str().empty())
+		/// [EN] Source code is refused here as well, so no caller can send a file that would only fail for lack of a .meta.
+		/// [JP] ソースコードもここで断る。.meta が無いために必ず失敗するファイルを、どの呼び出し元からも送れないようにするため。
+		std::filesystem::path local(asset.fullpath_.str());
+		String logical = Logical(local);
+		if (!worker_ || logical.str().empty() || !Shareable(local))
 		{
 			return;
 		}

@@ -149,6 +149,8 @@ namespace SeedCore
 		*/
 		explicit DynamicArray(Size count)
 		{
+			/// [EN] A count of zero allocates nothing, the same as the default constructor.
+			/// [JP] 0 個ならデフォルトコンストラクタと同じく何も確保しない。
 			if (count > 0)
 			{
 				data_ = Allocate(count);
@@ -169,6 +171,8 @@ namespace SeedCore
 		*/
 		DynamicArray(Size count, const T& value)
 		{
+			/// [EN] The allocation is exact: no growth headroom is added at construction.
+			/// [JP] 確保はちょうどの大きさ。構築時に成長の余裕は足さない。
 			if (count > 0)
 			{
 				data_ = Allocate(count);
@@ -255,6 +259,8 @@ namespace SeedCore
 		*/
 		DynamicArray(DynamicArray&& other)noexcept :data_(other.data_), size_(other.size_), capacity_(other.capacity_)
 		{
+			/// [EN] other is reset to the empty state, so its destructor frees nothing.
+			/// [JP] other は空の状態に戻すので、そのデストラクタは何も解放しない。
 			other.data_ = nullptr;
 			other.size_ = 0;
 			other.capacity_ = 0;
@@ -271,6 +277,8 @@ namespace SeedCore
 		*/
 		~DynamicArray()
 		{
+			/// [EN] Elements are destroyed before the memory they live in is released.
+			/// [JP] 要素を破棄してから、それが入っていたメモリを解放する。
 			DestroyAll();
 			Deallocate(data_);
 		}
@@ -286,6 +294,8 @@ namespace SeedCore
 		*/
 		DynamicArray& operator=(const DynamicArray& other)
 		{
+			/// [EN] assign clears first, so assigning an array to itself would read destroyed elements; that case is skipped.
+			/// [JP] assign は先に消すので、自分自身を代入すると破棄済みの要素を読むことになる。その場合は飛ばす。
 			if (this != &other)
 			{
 				assign(other.data_, other.data_ + other.size_);
@@ -304,6 +314,8 @@ namespace SeedCore
 		*/
 		DynamicArray& operator=(DynamicArray&& other)noexcept
 		{
+			/// [EN] The current contents are released first, then other's buffer is taken over and other is left empty.
+			/// [JP] 今の中身を先に手放し、その後 other のバッファを引き取って other を空にする。
 			if (this != &other)
 			{
 				DestroyAll();
@@ -362,6 +374,8 @@ namespace SeedCore
 		*/
 		void assign(Size count, const T& value)
 		{
+			/// [EN] clear keeps the buffer, so an assignment that fits reuses it without reallocating.
+			/// [JP] clear はバッファを残すので、収まる大きさの代入なら再確保せずに使い回す。
 			clear();
 			if (count > 0)
 			{
@@ -383,6 +397,8 @@ namespace SeedCore
 		template<typename InputIt, typename = std::enable_if_t<!std::is_integral_v<InputIt>>>
 		void assign(InputIt first, InputIt last)
 		{
+			/// [EN] The range must not point into this array, since clear destroys the elements it would read.
+			/// [JP] clear が読み取り元の要素を破棄してしまうので、範囲はこの配列の中を指していてはならない。
 			clear();
 			for (; first != last; ++first)
 			{
@@ -436,6 +452,8 @@ namespace SeedCore
 		*/
 		reference at(Size index)
 		{
+			/// [EN] The only difference from operator[] is this check against the current size.
+			/// [JP] operator[] との違いは、今の大きさに対するこの確認だけ。
 			if (index >= size_)
 			{
 				throw std::out_of_range("DynamicArray::at");
@@ -445,6 +463,8 @@ namespace SeedCore
 
 		const_reference at(Size index)const
 		{
+			/// [EN] The only difference from operator[] is this check against the current size.
+			/// [JP] operator[] との違いは、今の大きさに対するこの確認だけ。
 			if (index >= size_)
 			{
 				throw std::out_of_range("DynamicArray::at");
@@ -687,6 +707,8 @@ namespace SeedCore
 		*/
 		void reserve(Size newCapacity)
 		{
+			/// [EN] Exactly newCapacity is allocated, with no growth factor applied.
+			/// [JP] 成長率は掛けずに、ちょうど newCapacity を確保する。
 			if (newCapacity > capacity_)
 			{
 				Reallocate(newCapacity);
@@ -708,6 +730,8 @@ namespace SeedCore
 		{
 			if (capacity_ > size_)
 			{
+				/// [EN] An empty array goes back to holding no buffer at all, like a default-constructed one.
+				/// [JP] 空の配列は、デフォルト構築したものと同じく、バッファを一切持たない状態に戻す。
 				if (size_ == 0)
 				{
 					Deallocate(data_);
@@ -747,6 +771,8 @@ namespace SeedCore
 		*/
 		void push_back(const T& value)
 		{
+			/// [EN] The slot at size_ is raw memory, so the element is copy-constructed into it with placement new.
+			/// [JP] size_ の位置のスロットは生のメモリなので、配置 new で要素をそこへコピー構築する。
 			EnsureOneMore();
 			new (data_ + size_) T(value);
 			++size_;
@@ -763,6 +789,8 @@ namespace SeedCore
 		*/
 		void push_back(T&& value)
 		{
+			/// [EN] The slot at size_ is raw memory, so the element is move-constructed into it with placement new.
+			/// [JP] size_ の位置のスロットは生のメモリなので、配置 new で要素をそこへムーブ構築する。
 			EnsureOneMore();
 			new (data_ + size_) T(std::move(value));
 			++size_;
@@ -781,6 +809,8 @@ namespace SeedCore
 		template<typename... Args>
 		reference emplace_back(Args&&... args)
 		{
+			/// [EN] The element is built directly from args in the raw slot, with no temporary.
+			/// [JP] 要素は一時オブジェクトを作らずに、args から生のスロットへ直接構築する。
 			EnsureOneMore();
 			new (data_ + size_) T(std::forward<Args>(args)...);
 			++size_;
@@ -798,6 +828,8 @@ namespace SeedCore
 		*/
 		void pop_back()
 		{
+			/// [EN] The size is lowered first, so data_[size_] is the element being removed.
+			/// [JP] 先に大きさを減らすので、data_[size_] が取り除く要素になる。
 			--size_;
 			data_[size_].~T();
 		}
@@ -814,6 +846,8 @@ namespace SeedCore
 		*/
 		void resize(Size count)
 		{
+			/// [EN] Shrinking destroys the trailing elements but keeps the buffer, like clear().
+			/// [JP] 縮めるときは末尾の要素を破棄するが、clear() と同じくバッファは残す。
 			if (count < size_)
 			{
 				std::destroy(data_ + count, data_ + size_);
@@ -838,6 +872,8 @@ namespace SeedCore
 		*/
 		void resize(Size count, const T& value)
 		{
+			/// [EN] Shrinking destroys the trailing elements but keeps the buffer, like clear().
+			/// [JP] 縮めるときは末尾の要素を破棄するが、clear() と同じくバッファは残す。
 			if (count < size_)
 			{
 				std::destroy(data_ + count, data_ + size_);
@@ -896,10 +932,15 @@ namespace SeedCore
 		iterator insert(const_iterator position, Size count, const T& value)
 		{
 			Size offset = static_cast<Size>(position - data_);
+			/// [EN] Nothing to insert: returning early keeps MakeGap from reallocating for no reason.
+			/// [JP] 挿入するものが無ければ早く戻り、MakeGap が無駄に再確保しないようにする。
 			if (count == 0)
 			{
 				return data_ + offset;
 			}
+
+			/// [EN] The gap consists of raw slots, so the new elements are constructed rather than assigned.
+			/// [JP] 空けた隙間は生のスロットなので、新しい要素は代入ではなく構築する。
 			MakeGap(offset, count);
 			for (Size index = 0; index < count; ++index)
 			{
@@ -925,10 +966,15 @@ namespace SeedCore
 		{
 			Size offset = static_cast<Size>(position - data_);
 			Size count = static_cast<Size>(std::distance(first, last));
+			/// [EN] Nothing to insert: returning early keeps MakeGap from reallocating for no reason.
+			/// [JP] 挿入するものが無ければ早く戻り、MakeGap が無駄に再確保しないようにする。
 			if (count == 0)
 			{
 				return data_ + offset;
 			}
+
+			/// [EN] The gap consists of raw slots, so the new elements are constructed rather than assigned.
+			/// [JP] 空けた隙間は生のスロットなので、新しい要素は代入ではなく構築する。
 			MakeGap(offset, count);
 			Size index = 0;
 			for (; first != last; ++first, ++index)
@@ -985,6 +1031,8 @@ namespace SeedCore
 		*/
 		iterator erase(const_iterator position)
 		{
+			/// [EN] The tail shifts down by one, leaving a moved-from duplicate at the end that is then destroyed.
+			/// [JP] 後ろを1つ前へずらすと、末尾にムーブ済みの重複が残るので、それを破棄する。
 			Size offset = static_cast<Size>(position - data_);
 			std::move(data_ + offset + 1, data_ + size_, data_ + offset);
 			--size_;
@@ -1011,6 +1059,8 @@ namespace SeedCore
 			{
 				return data_ + offset;
 			}
+			/// [EN] The tail moves down over the removed range, and the last count slots, now moved-from, are destroyed.
+			/// [JP] 後ろの要素を削除範囲へ詰め、ムーブ済みになった末尾の count 個を破棄する。
 			std::move(data_ + offset + count, data_ + size_, data_ + offset);
 			std::destroy(data_ + size_ - count, data_ + size_);
 			size_ -= count;
@@ -1028,6 +1078,8 @@ namespace SeedCore
 		*/
 		void swap(DynamicArray& other)noexcept
 		{
+			/// [EN] Only the three members are exchanged; no element is moved or copied.
+			/// [JP] 交換するのは3つのメンバーだけで、要素は1つも動かさない。
 			std::swap(data_, other.data_);
 			std::swap(size_, other.size_);
 			std::swap(capacity_, other.capacity_);
@@ -1045,6 +1097,8 @@ namespace SeedCore
 		*/
 		friend Bool operator==(const DynamicArray& lhs, const DynamicArray& rhs)
 		{
+			/// [EN] Different sizes can never be equal, which also makes the loop below safe to index both sides.
+			/// [JP] 大きさが違えば等しくはなりえない。これで下のループが両側を安全に添字で読める。
 			if (lhs.size_ != rhs.size_)
 			{
 				return false;
@@ -1073,6 +1127,8 @@ namespace SeedCore
 		*/
 		static pointer Allocate(Size count)
 		{
+			/// [EN] The aligned operator new honours any alignof(T), including over-aligned types such as SIMD vectors.
+			/// [JP] アライン指定の operator new は、SIMD ベクトルのような過剰アラインの型も含め、どの alignof(T) にも従う。
 			return static_cast<pointer>(::operator new(count * sizeof(T), std::align_val_t{ alignof(T) }));
 		}
 
@@ -1087,6 +1143,8 @@ namespace SeedCore
 		*/
 		static void Deallocate(pointer block)noexcept
 		{
+			/// [EN] Must use the same alignment as Allocate, since aligned new and delete are paired.
+			/// [JP] アライン指定の new と delete は対になるので、Allocate と同じアラインメントを渡す必要がある。
 			::operator delete(block, std::align_val_t{ alignof(T) });
 		}
 
@@ -1121,6 +1179,8 @@ namespace SeedCore
 		*/
 		Size GrowthTarget(Size required)const
 		{
+			/// [EN] capacity_ + capacity_ / 2 is 1.5x in integer arithmetic.
+			/// [JP] capacity_ + capacity_ / 2 が、整数演算での 1.5 倍。
 			Size grown = capacity_ + capacity_ / 2;
 			if (grown < required)
 			{
@@ -1192,6 +1252,9 @@ namespace SeedCore
 			{
 				Reallocate(GrowthTarget(size_ + count));
 			}
+
+			/// [EN] Walks from the back so no element is overwritten before it has been moved; each source slot is left destroyed.
+			/// [JP] 後ろから進むので、動かす前に上書きされる要素は無い。移動元のスロットは破棄した状態で残す。
 			for (Size index = size_; index > offset; --index)
 			{
 				new (data_ + index - 1 + count) T(std::move(data_[index - 1]));
@@ -1213,6 +1276,8 @@ namespace SeedCore
 		template<typename... Args>
 		iterator EmplaceAt(const_iterator position, Args&&... args)
 		{
+			/// [EN] position is turned into an offset first, because MakeGap may reallocate and invalidate it.
+			/// [JP] MakeGap が再確保して position を無効にしうるので、先にオフセットへ直しておく。
 			Size offset = static_cast<Size>(position - data_);
 			MakeGap(offset, 1);
 			new (data_ + offset) T(std::forward<Args>(args)...);
@@ -1235,12 +1300,16 @@ namespace SeedCore
 		*/
 		static void Relocate(pointer destination, pointer source, Size count)
 		{
+			/// [EN] A trivially copyable T is fully described by its bytes, so one memcpy relocates everything.
+			/// [JP] trivially copyable な T はバイトだけで完全に表されるので、memcpy 1回で全てを移せる。
 			if constexpr (std::is_trivially_copyable_v<T>)
 			{
 				std::memcpy(destination, source, count * sizeof(T));
 			}
 			else
 			{
+				/// [EN] move_if_noexcept falls back to copying when moving could throw, so a failure leaves the source intact.
+				/// [JP] move_if_noexcept は、ムーブが例外を投げうる場合にコピーへ切り替える。失敗しても移動元は壊れない。
 				for (Size index = 0; index < count; ++index)
 				{
 					new (destination + index) T(std::move_if_noexcept(source[index]));
@@ -1262,6 +1331,8 @@ namespace SeedCore
 		*/
 		void Reallocate(Size newCapacity)
 		{
+			/// [EN] The new block is filled before the old one is freed, since the elements are moved out of it.
+			/// [JP] 要素は古いブロックから移すので、新しいブロックを埋めてから古いものを解放する。
 			pointer block = Allocate(newCapacity);
 			Relocate(block, data_, size_);
 			Deallocate(data_);
@@ -1291,6 +1362,8 @@ namespace SeedCore
 		template<typename InputIt>
 		void AssignRange(InputIt first, InputIt last)
 		{
+			/// [EN] Only forward-or-better iterators can be walked twice, so only they are measured up front.
+			/// [JP] 2回辿れるのは forward 以上のイテレータだけなので、それだけを先に数える。
 			if constexpr (std::is_base_of_v<std::forward_iterator_tag, typename std::iterator_traits<InputIt>::iterator_category>)
 			{
 				reserve(static_cast<Size>(std::distance(first, last)));
@@ -1326,6 +1399,8 @@ namespace SeedCore
 	template<typename T>
 	void swap(DynamicArray<T>& lhs, DynamicArray<T>& rhs)noexcept
 	{
+		/// [EN] Forwards to the O(1) member swap instead of std::swap's three moves.
+		/// [JP] std::swap の3回のムーブではなく、O(1) のメンバーの swap へ転送する。
 		lhs.swap(rhs);
 	}
 
@@ -1346,6 +1421,8 @@ namespace SeedCore
 	template<typename T, typename U>
 	Size erase(DynamicArray<T>& container, const U& value)
 	{
+		/// [EN] remove packs the survivors to the front; erase then drops the leftover tail.
+		/// [JP] remove が残す要素を前に詰め、その後 erase が余った後ろを落とす。
 		Size before = container.size();
 		auto newEnd = std::remove(container.begin(), container.end(), value);
 		container.erase(newEnd, container.end());
@@ -1368,6 +1445,8 @@ namespace SeedCore
 	template<typename T, typename Predicate>
 	Size erase_if(DynamicArray<T>& container, Predicate predicate)
 	{
+		/// [EN] remove_if packs the survivors to the front; erase then drops the leftover tail.
+		/// [JP] remove_if が残す要素を前に詰め、その後 erase が余った後ろを落とす。
 		Size before = container.size();
 		auto newEnd = std::remove_if(container.begin(), container.end(), predicate);
 		container.erase(newEnd, container.end());

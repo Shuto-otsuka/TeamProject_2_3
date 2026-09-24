@@ -334,9 +334,14 @@ namespace SeedCore
 
 		/// [EN] On the way out every lease is handed back, so another member can edit at once rather than after two minutes.
 		/// [JP] 終了時に全ての Lease を返す。他のメンバーが2分待たずにすぐ編集できるようにするため。
-		for (const EditLease& lease : snapshot_.leases_)
+		/// [EN] Only this Editor's own leases are handed back, since each release is a write and another member's would be refused anyway.
+		/// [JP] 返すのはこの Editor 自身の Lease だけ。解放は1回ごとに書き込みになり、他のメンバーの分はどのみち拒否されるため。
+		for (const EditLease& lease : locks_.Leases())
 		{
-			locks_.Release(lease.assetId_, lease.scope_);
+			if (lease.mine_)
+			{
+				locks_.Release(lease.assetId_, lease.scope_);
+			}
 		}
 		SaveWorkspace();
 	}
@@ -374,6 +379,10 @@ namespace SeedCore
 				snapshot_.operation_ = String("取得中");
 				break;
 
+			case SharingAction::Adopt:
+				snapshot_.operation_ = String("ライブラリの版で置き換え中");
+				break;
+
 			case SharingAction::Register:
 				snapshot_.operation_ = String("共有ライブラリへ登録中");
 				break;
@@ -407,6 +416,10 @@ namespace SeedCore
 
 		case SharingAction::Get:
 			done = Get(request.assetId_);
+			break;
+
+		case SharingAction::Adopt:
+			done = Adopt(request.assetId_);
 			break;
 
 		case SharingAction::Register:
@@ -716,6 +729,29 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Replaces the local copy of an asset with the library's, .meta
+	* included, even where the local files differ from what was last
+	* recorded.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* アセットのローカルの写しを、.meta も含めてライブラリのもので
+	* 置き換える。ローカルのファイルが最後の記録と異なっていても置き換える。
+	*/
+	Bool SharingWorker::Adopt(const String& assetId)
+	{
+		/// [EN] Forgetting what this machine recorded is what lets Get replace local files it would otherwise protect as unpublished work.
+		/// [JP] この PC の記録を忘れることで、未公開の作業として守るはずのローカルファイルも Get が置き換えられるようになる。
+
+		/// [EN] The .meta comes down with the rest, so this machine ends up knowing the asset by the same identifier as the team.
+		/// [JP] .meta も一緒に降りてくるため、この PC もチームと同じ識別子でそのアセットを知ることになる。
+		workspace_.erase(assetId);
+		return Get(assetId);
+	}
+
+	/**
+	* [EN]
 	* Uploads whichever of an asset's files changed and records them as
 	* the next revision.
 	*
@@ -930,6 +966,23 @@ namespace SeedCore
 			files.push_back(stored);
 		}
 
+		/// [EN] Files the asset reads from beside itself are added when missing, so an asset shared before it named them still carries them from now on.
+		/// [JP] アセットが隣から読み込むファイルは、欠けていれば足す。それらを持たずに共有されたアセットも、以後は一緒に運ぶようにするため。
+		for (const String& companion : Companions(asset->path_))
+		{
+			if (std::ranges::any_of(files, [&companion](const SharedFile& file) { return file.path_ == companion; }))
+			{
+				continue;
+			}
+
+			SharedFile stored;
+			if (!Store(companion, stored))
+			{
+				return false;
+			}
+			files.push_back(stored);
+		}
+
 		/// [EN] The revision recorded at get time is what the catalog checks, and a mismatch is reported as someone else being ahead.
 		/// [JP] 取得時に記録した Revision をカタログが照合する。食い違えば「他の人が先にいる」として報告される。
 		if (!catalog_.Publish(assetId, workspace_[assetId].revision_, files, asset->dependencies_))
@@ -961,15 +1014,26 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Shares a local asset for the first time, together with the .meta
-	* beside it.
+	* and any files it reads from beside itself. When the library
+	* already holds the same path, the library's copy is taken instead.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* ローカルのアセットを、隣の .meta と一緒に初めて共有する。
+	* ローカルのアセットを、隣の .meta と、アセットが隣から読み込む
+	* ファイルと一緒に初めて共有する。ライブラリが既に同じ位置を持って
+	* いる場合は、代わりにライブラリの写しを取る。
 	*/
 	Bool SharingWorker::Register(const SharingRequest& request)
 	{
+		/// [EN] A path the library already holds was shared by someone else first, so their copy and .meta are taken instead of a second entry being made.
+		/// [JP] ライブラリが既に持っている位置は、他の誰かが先に共有したもの。2つ目の項目を作るのではなく、その写しと .meta を取る。
+		const SharedAsset* existing = catalog_.FindPath(request.path_);
+		if (existing && !existing->deleted_)
+		{
+			return Adopt(existing->id_);
+		}
+
 		SharedAsset asset;
 
 		/// [EN] The shared identifier is made here and never changes again, even if the asset is later renamed or moved.
@@ -991,8 +1055,30 @@ namespace SeedCore
 		asset.files_.push_back(main);
 		asset.files_.push_back(meta);
 
+		/// [EN] Files the asset reads from beside itself travel with it, since the asset cannot be opened without them.
+		/// [JP] アセットが隣から読み込むファイルも一緒に運ぶ。それらが無いとアセットを開けないため。
+		for (const String& companion : Companions(request.path_))
+		{
+			SharedFile stored;
+			if (!Store(companion, stored))
+			{
+				return false;
+			}
+			asset.files_.push_back(stored);
+		}
+
 		if (!catalog_.Register(asset))
 		{
+			/// [EN] Another member can register the same path in the moment between the check above and this write, and then this machine takes theirs.
+			/// [JP] 上の確認からこの書き込みまでの間に、他のメンバーが同じ位置を登録することがある。その場合はこの PC がそちらを取る。
+			if (catalog_.Refresh())
+			{
+				const SharedAsset* winner = catalog_.FindPath(request.path_);
+				if (winner && !winner->deleted_)
+				{
+					return Adopt(winner->id_);
+				}
+			}
 			return false;
 		}
 
@@ -1196,6 +1282,87 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* The workspace paths of the files an asset reads from beside itself,
+	* which have to travel with it. Only a .gltf has any: its buffers and
+	* images may live in separate files that its JSON names by URI.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* アセットが隣から読み込むファイルの、ワークスペース内の位置。
+	* アセットと一緒に運ぶ必要がある。持つのは .gltf だけで、その
+	* バッファと画像は、JSON が URI で示す別ファイルに置かれることがある。
+	*/
+	DynamicArray<String> SharingWorker::Companions(const String& logicalPath)const
+	{
+		DynamicArray<String> companions;
+		std::filesystem::path logical(logicalPath.str());
+		if (logical.extension() != ".gltf")
+		{
+			return companions;
+		}
+
+		std::ifstream stream(Local(logicalPath));
+		nlohmann::json gltf = nlohmann::json::parse(stream, nullptr, false);
+		if (!gltf.is_object())
+		{
+			return companions;
+		}
+
+		static const std::string sections[] = { "buffers", "images" };
+		for (const std::string& section : sections)
+		{
+			if (!gltf.contains(section) || !gltf[section].is_array())
+			{
+				continue;
+			}
+
+			for (const nlohmann::json& entry : gltf[section])
+			{
+				/// [EN] Data carried inline as a data: URI is already inside the .gltf, and an image taken from a buffer view has no URI at all.
+				/// [JP] data: URI として埋め込まれたデータは既に .gltf の中にあり、バッファビューから取る画像はそもそも URI を持たない。
+				std::string uri = entry.value("uri", "");
+				if (uri.empty() || uri.rfind("data:", 0) == 0)
+				{
+					continue;
+				}
+
+				/// [EN] A URI escapes characters such as spaces as %XX, which have to be turned back into bytes before it names a file.
+				/// [JP] URI は空白などの文字を %XX の形に置き換えている。ファイル名として使う前に、元のバイトへ戻す必要がある。
+				std::string decoded;
+				for (Size index = 0; index < uri.size(); ++index)
+				{
+					if (uri[index] == '%' && index + 2 < uri.size() && std::isxdigit(static_cast<Uchar>(uri[index + 1])) && std::isxdigit(static_cast<Uchar>(uri[index + 2])))
+					{
+						decoded += static_cast<Char>(std::stoi(uri.substr(index + 1, 2), nullptr, 16));
+						index += 2;
+					}
+					else
+					{
+						decoded += uri[index];
+					}
+				}
+
+				/// [EN] The URI is relative to the .gltf and written in UTF-8, and one that climbs out of the workspace cannot be shared.
+				/// [JP] URI は .gltf からの相対位置で、UTF-8 で書かれている。ワークスペースの外へ出るものは共有できない。
+				std::filesystem::path companion = (logical.parent_path() / std::filesystem::path(std::u8string(decoded.begin(), decoded.end()))).lexically_normal();
+				if (companion.empty() || *companion.begin() == "..")
+				{
+					continue;
+				}
+
+				String path = String(companion.generic_string());
+				if (!std::ranges::contains(companions, path))
+				{
+					companions.push_back(path);
+				}
+			}
+		}
+		return companions;
+	}
+
+	/**
+	* [EN]
 	* Turns a workspace-relative path into a path on this machine.
 	*
 	* ---------------------------------------------------------------------
@@ -1290,18 +1457,10 @@ namespace SeedCore
 
 		/// [EN] Leases are flattened out of the table so the Editor can show them without knowing how the table is stored.
 		/// [JP] Lease は表から平らに取り出す。Editor が、表の保持形式を知らずに表示できるようにするため。
-		snapshot_.leases_.clear();
-		for (const SharedAsset& asset : snapshot_.assets_)
-		{
-			for (const String& scope : { String("asset"), String("structure"), String("context") })
-			{
-				const EditLease* lease = locks_.Find(asset.id_, scope);
-				if (lease)
-				{
-					snapshot_.leases_.push_back(*lease);
-				}
-			}
-		}
+
+		/// [EN] Every scope is carried, entity leases included, since whether an actor may be edited is answered from this copy alone.
+		/// [JP] Entity の Lease も含め、全ての範囲を運ぶ。Actor を編集してよいかどうかは、この写しだけを見て答えるため。
+		snapshot_.leases_ = locks_.Leases();
 
 		/// [EN] Moving this number is the signal the Editor watches to know its own view has gone stale.
 		/// [JP] この番号を動かすことが、Editor が「自分の表示が古くなった」と知るための合図になる。

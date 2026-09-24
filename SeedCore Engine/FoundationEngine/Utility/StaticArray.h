@@ -38,6 +38,8 @@ namespace SeedCore
 	* DynamicArray 参照。
 	*/
 	template<typename T, Size N>
+		/// [EN] A zero-length C array member is not allowed, so N must be at least 1.
+		/// [JP] 長さ 0 の C 配列はメンバーにできないので、N は 1 以上である必要がある。
 		requires (N > 0)
 	struct StaticArray
 	{
@@ -121,6 +123,8 @@ namespace SeedCore
 		*/
 		reference at(Size index)
 		{
+			/// [EN] N is known at compile time, so the check is a single comparison with a constant.
+			/// [JP] N はコンパイル時に決まっているので、確認は定数との比較1回で済む。
 			if (index >= N)
 			{
 				throw std::out_of_range("StaticArray::at");
@@ -130,6 +134,8 @@ namespace SeedCore
 
 		const_reference at(Size index)const
 		{
+			/// [EN] N is known at compile time, so the check is a single comparison with a constant.
+			/// [JP] N はコンパイル時に決まっているので、確認は定数との比較1回で済む。
 			if (index >= N)
 			{
 				throw std::out_of_range("StaticArray::at");
@@ -310,6 +316,8 @@ namespace SeedCore
 		*/
 		Bool empty()const noexcept
 		{
+			/// [EN] Kept for the standard container interface, so generic code can call it.
+			/// [JP] 汎用のコードから呼べるよう、標準コンテナと同じ形で用意している。
 			return N == 0;
 		}
 
@@ -352,6 +360,8 @@ namespace SeedCore
 		*/
 		void fill(const T& value)
 		{
+			/// [EN] Plain assignment, since every element is already constructed.
+			/// [JP] 全要素は構築済みなので、ただの代入で済む。
 			for (Size index = 0; index < N; ++index)
 			{
 				data_[index] = value;
@@ -369,6 +379,8 @@ namespace SeedCore
 		*/
 		void swap(StaticArray& other)noexcept
 		{
+			/// [EN] The storage is inline, so contents cannot be exchanged by swapping pointers; every element is swapped.
+			/// [JP] ストレージがインラインなので、ポインタの交換では済まず、全要素を交換する。
 			for (Size index = 0; index < N; ++index)
 			{
 				std::swap(data_[index], other.data_[index]);
@@ -386,6 +398,8 @@ namespace SeedCore
 		*/
 		friend Bool operator==(const StaticArray& lhs, const StaticArray& rhs)
 		{
+			/// [EN] Written as !(a == b) so T only needs operator==; operator!= is generated from this by the compiler.
+			/// [JP] !(a == b) の形にしているので、T には operator== だけあればよい。operator!= はこれからコンパイラが作る。
 			for (Size index = 0; index < N; ++index)
 			{
 				if (!(lhs.data_[index] == rhs.data_[index]))
@@ -409,6 +423,8 @@ namespace SeedCore
 	template<typename T, Size N>
 	void swap(StaticArray<T, N>& lhs, StaticArray<T, N>& rhs)noexcept
 	{
+		/// [EN] Lets "using std::swap; swap(a, b);" pick the element-wise member swap.
+		/// [JP] "using std::swap; swap(a, b);" の形で呼ばれたときに、要素ごとのメンバーの swap が選ばれるようにする。
 		lhs.swap(rhs);
 	}
 }

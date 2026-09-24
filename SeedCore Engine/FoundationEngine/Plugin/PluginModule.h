@@ -67,8 +67,9 @@ namespace SeedCore
 		* Shadow-copies the source DLL, loads it, resolves its entry
 		* points, forwards imguiContext to it (if it exports
 		* SC_SetImGuiContext), calls SC_OnGameLoad, then restores any
-		* components captured by a prior Unload. Returns whether the load
-		* succeeded.
+		* components captured by a prior Unload and turns unknown
+		* components whose types it now registers back into real ones.
+		* Returns whether the load succeeded.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -76,8 +77,9 @@ namespace SeedCore
 		* 元 DLL をシャドウコピーしてロードし、エントリポイントを解決し、
 		* imguiContext を（SC_SetImGuiContext をエクスポートしていれば）
 		* そのモジュールへ渡し、SC_OnGameLoad を呼び、直前の Unload で
-		* 取得したコンポーネントがあれば復元する。ロードに成功したか
-		* どうかを返す。
+		* 取得したコンポーネントがあれば復元する。型の分からないコンポー
+		* ネントのうち、このモジュールが型を登録したものは本来のコンポー
+		* ネントへ戻す。ロードに成功したかどうかを返す。
 		*/
 		Bool Load(World& world, ImGuiContext* imguiContext);
 
@@ -251,14 +253,16 @@ namespace SeedCore
 		* [EN]
 		* Re-adds every component in capturedComponents_ to its original
 		* Actor and restores its captured field values, then clears
-		* capturedComponents_.
+		* capturedComponents_. A component whose type the module no longer
+		* registers is kept on the Actor as an unknown component instead.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* capturedComponents_ の各コンポーネントを元の Actor へ再追加し、
 		* 取得済みのフィールド値を復元した上で、capturedComponents_ を
-		* クリアする。
+		* クリアする。モジュールがもう登録していない型のコンポーネントは、
+		* 代わりに型の分からないコンポーネントとして Actor に保持させる。
 		*/
 		void RestoreCapturedComponents(World& world);
 

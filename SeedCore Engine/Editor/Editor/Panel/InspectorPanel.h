@@ -43,6 +43,23 @@ namespace SeedCore
 		///      削除されたら true。
 		Bool DrawComponentEntry(Actor actor, ComponentID componentID, const String& componentName, void* componentData);
 
+		/**
+		* [EN]
+		* Draws one header per component whose type this build does not know,
+		* labelled "Unknown Component". Its real name and fields appear only
+		* once its script is registered and it turns back into the real
+		* component; until then it can only be removed.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* この実行ファイルが型を知らないコンポーネントごとに、
+		* 「Unknown Component」という名前でヘッダーを1つずつ描く。本来の名前と
+		* フィールドが出るのは、そのスクリプトが登録されて本来のコンポーネントへ
+		* 戻ってから。それまでは削除だけができる。
+		*/
+		void DrawUnknownComponents(Actor actor);
+
 		void DrawReflectedFields(String componentName, void* componentData, ComponentID componentID, Entity entity);
 
 		/// [EN] baseOffset is baseData's own byte offset (0 at the top level) from the start of the component named by componentID - used to build the undo Command for each field drawn, unless that field's own FieldInfo::directPtr_ is set (not part of the component's fixed-offset POD layout, e.g. a DynamicArray element), in which case its pointer is used directly instead.

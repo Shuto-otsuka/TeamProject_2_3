@@ -104,7 +104,7 @@ namespace SeedCore
 		}
 
 		freeCamera_.Resize(width, height);
-		freeCamera_.Tick(timer.DeltaTime());
+		freeCamera_.Tick(timer.ScaledDeltaTime());
 
 		sceneConstantBuffer_.view_ = freeCamera_.View();
 		sceneConstantBuffer_.inverseView_ = freeCamera_.InverseView();
@@ -121,8 +121,8 @@ namespace SeedCore
 		sceneConstantBuffer_.fieldOfView_ = freeCamera_.Fov();
 		sceneConstantBuffer_.nearPlane_ = freeCamera_.Near();
 		sceneConstantBuffer_.farPlane_ = freeCamera_.Far();
-		sceneConstantBuffer_.totalTime_ = timer.TotalTime();
-		sceneConstantBuffer_.deltaTime_ = timer.DeltaTime();
+		sceneConstantBuffer_.totalTime_ = timer.ScaledTotalTime();
+		sceneConstantBuffer_.deltaTime_ = timer.ScaledDeltaTime();
 		sceneConstantBuffer_.screenSize_ = Vector2(width, height);
 		sceneConstantBuffer_.inverseScreenSize_ = Vector2(1.0f / width, 1.0f / height);
 		sceneConstantBuffer_.displaySize_ = sceneConstantBuffer_.screenSize_;
@@ -213,7 +213,7 @@ namespace SeedCore
 
 		if (blendElapsed_ < blendDuration_)
 		{
-			blendElapsed_ += timer.DeltaTime();
+			blendElapsed_ += timer.ScaledDeltaTime();
 			Float blendRatio = Clamp(blendElapsed_ / blendDuration_, 0.0f, 1.0f);
 			blendRatio = blendRatio * blendRatio * (3.0f - 2.0f * blendRatio);
 			eye = Vector3::Lerp(blendFromEye_, eye, blendRatio);
@@ -267,8 +267,8 @@ namespace SeedCore
 		sceneConstantBuffer_.fieldOfView_ = activeCamera->fieldOfView_;
 		sceneConstantBuffer_.nearPlane_ = activeCamera->nearPlane_;
 		sceneConstantBuffer_.farPlane_ = activeCamera->farPlane_;
-		sceneConstantBuffer_.totalTime_ = timer.TotalTime();
-		sceneConstantBuffer_.deltaTime_ = timer.DeltaTime();
+		sceneConstantBuffer_.totalTime_ = timer.ScaledTotalTime();
+		sceneConstantBuffer_.deltaTime_ = timer.ScaledDeltaTime();
 		sceneConstantBuffer_.screenSize_ = Vector2(width, height);
 		sceneConstantBuffer_.inverseScreenSize_ = Vector2(1.0f / width, 1.0f / height);
 		sceneConstantBuffer_.displaySize_ = sceneConstantBuffer_.screenSize_;

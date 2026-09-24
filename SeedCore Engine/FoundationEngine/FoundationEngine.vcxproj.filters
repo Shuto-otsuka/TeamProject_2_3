@@ -379,6 +379,9 @@
     <ClCompile Include="Coroutine\Coroutine.cpp">
       <Filter>Coroutine</Filter>
     </ClCompile>
+    <ClCompile Include="World\ECS\Component\UnknownComponent.cpp">
+      <Filter>World\ECS\Component</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\DxFail.h">
@@ -838,6 +841,9 @@
     </ClInclude>
     <ClInclude Include="Coroutine\Coroutine.h">
       <Filter>Coroutine</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\UnknownComponent.h">
+      <Filter>World\ECS\Component</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

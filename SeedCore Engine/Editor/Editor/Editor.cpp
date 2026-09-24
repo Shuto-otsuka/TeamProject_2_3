@@ -122,6 +122,27 @@ namespace SeedCore
 		resourceSync_.ConsumeChangedAsset(changedAssets);
 		if (!changedAssets.empty())
 		{
+			/// [EN] An asset whose .meta was replaced by the library's is known here under the old identifier, so that record is dropped before the rescan.
+			/// [JP] .meta がライブラリのものに差し替わったアセットは、ここではまだ古い識別子で知られている。そのため再走査の前にその記録を捨てる。
+			for (Uint32 assetId : changedAssets)
+			{
+				const SharedAsset* shared = resourceSync_.GetAsset(assetId);
+				if (!shared || context_.worldContext_.resource_->GetAsset(assetId))
+				{
+					continue;
+				}
+
+				/// [EN] The path is matched exactly, since a lookup by bare file name could land on a different asset of the same name.
+				/// [JP] 位置は完全一致で照合する。ファイル名だけで引くと、同名の別アセットに当たることがあるため。
+				String path = String((std::filesystem::path("UserProject") / shared->path_.str()).generic_string());
+				Uint32 staleId = context_.worldContext_.resource_->GetAssetID(path);
+				AssetRecord* stale = staleId == 0 ? nullptr : context_.worldContext_.resource_->GetAsset(staleId);
+				if (stale && stale->path_ == path)
+				{
+					context_.worldContext_.resource_->Forget(staleId);
+				}
+			}
+
 			/// [EN] An asset arriving for the first time is not in the cache yet, so the whole project is taken in before anything is swapped.
 			/// [JP] 初めて届いたアセットはまだキャッシュに無いため、入れ替えの前にプロジェクト全体を取り込む。
 			context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
@@ -205,6 +226,14 @@ namespace SeedCore
 				}
 			}
 		}
+
+		/// [EN] Whatever the engine baked or extracted is sent up with its .meta, so no member is left with an asset the others never received.
+		/// [JP] エンジンが焼いたもの・取り出したものは .meta と一緒に上げる。他のメンバーに届いていないアセットが残らないようにするため。
+		resourceSync_.ShareGenerated(*context_.worldContext_.resource_);
+
+		/// [EN] Whatever the open scene uses but this machine lacks is fetched, so opening a shared scene does not leave its actors without models or materials.
+		/// [JP] 開いている Scene が使っていてこの PC に無いものを取得する。共有された Scene を開いたとき、Actor のモデルやマテリアルが欠けたままにならないようにするため。
+		resourceSync_.FetchReferenced(*context_.worldContext_.world_);
 
 		PruneDeadSelection();
 

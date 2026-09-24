@@ -6,20 +6,23 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* Immutable, interned, reference-counted-free string type. Every
-	* distinct string value is stored once by InternPool (see
-	* FoundationEngine/Pool/InternPool.h), so a String is a lightweight
-	* view into that shared storage: copies are cheap (a pointer/size
-	* copy) and equality is a pointer comparison, not a content compare.
+	* Immutable, interned string type with no reference counting.
+	* Every distinct non-empty string value is stored once by InternPool
+	* (see FoundationEngine/Pool/InternPool.h) and lives until the pool
+	* is destroyed, so a String is a lightweight view into that shared
+	* storage: copies are cheap (a pointer/size copy) and equality is a
+	* pointer comparison, not a content compare. The empty string is
+	* not stored at all and is represented by a null view.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 不変で、インターン化され、参照カウント不要な文字列型。個々の異なる
-	* 文字列値は InternPool（FoundationEngine/Pool/InternPool.h 参照）に
-	* 一度だけ格納されるため、String はその共有ストレージへの軽量な view
-	* である。コピーは軽量（ポインタ/サイズのコピー）で、等価比較は内容比較
-	* ではなくポインタ比較になる。
+	* 不変で、インターン化された、参照カウントを持たない文字列型。空でない
+	* 個々の文字列値は InternPool（FoundationEngine/Pool/InternPool.h
+	* 参照）に一度だけ格納され、プールが破棄されるまで生き続けるため、
+	* String はその共有ストレージへの軽量な view である。コピーは軽量
+	* （ポインタ/サイズのコピー）で、等価比較は内容比較ではなくポインタ
+	* 比較になる。空文字列は一切格納せず、null の view で表す。
 	*/
 	class SEEDCORE_API String
 	{
@@ -70,6 +73,17 @@ namespace SeedCore
 		*/
 		static String intern(std::u8string_view view);
 
+		/**
+		* [EN]
+		* Constructs an empty String (a null view), equal to any String
+		* interned from an empty string.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 空の String（null の view）を構築する。空文字列からインターンした
+		* String と等しい。
+		*/
 		String() = default;
 
 		/**
@@ -140,12 +154,14 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Returns a NUL-terminated char pointer to the interned UTF-8 data.
+		* Returns a NUL-terminated char pointer to the interned UTF-8 data,
+		* or nullptr for an empty String.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* インターン済みのUTF-8データへの、NUL終端の char ポインタを返す。
+		* 空の String では nullptr を返す。
 		*/
 		const Char* c_str()const;
 
@@ -195,6 +211,8 @@ namespace SeedCore
 		*/
 		friend Bool operator==(String first, String second)noexcept
 		{
+			/// [EN] Interning guarantees one address per distinct content, so comparing addresses is comparing contents.
+			/// [JP] インターンにより内容ごとにアドレスは1つなので、アドレスの比較がそのまま内容の比較になる。
 			return first.view_.data() == second.view_.data();
 		}
 
@@ -278,6 +296,8 @@ namespace SeedCore
 		*/
 		explicit String(const Char8* view, Size size);
 
+		/// [EN] Only the pool may build a String from a raw pointer, since only it can vouch that the pointer is interned.
+		/// [JP] 生のポインタから String を作れるのはプールだけ。そのポインタがインターン済みだと保証できるのはプールだけのため。
 		friend class InternPool;
 	};
 }
@@ -311,6 +331,8 @@ namespace std
 		*/
 		size_t operator()(const SeedCore::String& string)const noexcept
 		{
+			/// [EN] Hashing the address is consistent with operator==, which also compares addresses.
+			/// [JP] アドレスをハッシュするので、同じくアドレスを比べる operator== と食い違わない。
 			return std::hash<const void*>{}(string.view().data());
 		}
 	};

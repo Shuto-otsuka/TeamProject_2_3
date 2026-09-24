@@ -30,6 +30,8 @@ namespace SeedCore
 	class JobNode :public JobNodeBase
 	{
 	private:
+		/// [EN] Everything that builds, inspects or runs graphs works on the node's private state directly.
+		/// [JP] グラフを組み立てる・調べる・実行するクラスは、ノードの private な状態を直接扱う。
 		friend class JobGraph;
 		friend class JobTask;
 		friend class JobTaskView;
@@ -80,16 +82,16 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Node handle alternative for work that runs under a preemptive
-		* runtime, receiving a JobPreemptiveRuntime& to interact with
-		* the scheduler (e.g. to yield).
+		* Node handle alternative for work that receives a
+		* JobPreemptiveRuntime&, through which it can spawn more tasks;
+		* the node stays suspended until those tasks have finished.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* プリエンプティブなランタイム上で実行される処理を表す
-		* NodeHandle の選択肢。スケジューラと連携（yield など）するための
-		* JobPreemptiveRuntime& を受け取る。
+		* JobPreemptiveRuntime& を受け取る処理を表す NodeHandle の選択肢。
+		* それを通じてさらにタスクを生成でき、ノードはそれらのタスクが終わる
+		* まで中断したままになる。
 		*/
 		struct PreemptiveRuntime
 		{
@@ -116,16 +118,17 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Node handle alternative for work that runs under a
-		* non-preemptive runtime, receiving a JobNonpreemptiveRuntime&
-		* to interact with the scheduler.
+		* Node handle alternative for work that receives a
+		* JobNonpreemptiveRuntime&; anything started through it must be
+		* waited for (corun) before the work returns, so the node never
+		* suspends.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 非プリエンプティブなランタイム上で実行される処理を表す
-		* NodeHandle の選択肢。スケジューラと連携するための
-		* JobNonpreemptiveRuntime& を受け取る。
+		* JobNonpreemptiveRuntime& を受け取る処理を表す NodeHandle の選択肢。
+		* それを通じて始めたものは処理が戻る前に（Corun で）待つ必要があり、
+		* ノードが中断することはない。
 		*/
 		struct NonpreemptiveRuntime
 		{
@@ -311,8 +314,8 @@ namespace SeedCore
 			*/
 			AdoptedModule(JobGraph&& graph);
 
-			/// [EN] The graph owned (adopted) by this module.
-			/// [JP] このモジュールが所有（養子化）しているグラフ。
+			/// [EN] The graph moved into and owned by this module.
+			/// [JP] このモジュールへムーブされ、所有されているグラフ。
 			JobGraph graph_;
 		};
 
@@ -344,18 +347,18 @@ namespace SeedCore
 		*/
 		struct Semaphores
 		{
-			/// [EN] Semaphores that must be successfully acquired before this node may execute.
-			/// [JP] このノードが実行可能になる前に、獲得に成功している必要があるセマフォ群。
+			/// [EN] Semaphores that must all be taken before this node may run.
+			/// [JP] このノードが実行できるようになる前に、全て取っておく必要があるセマフォ群。
 			HybridArray<Semaphore*> acquire_;
 
-			/// [EN] Semaphores that must be released once this node has finished executing.
-			/// [JP] このノードの実行が完了した後に解放される必要があるセマフォ群。
+			/// [EN] Semaphores given back once this node has finished running.
+			/// [JP] このノードの実行が終わった後に返すセマフォ群。
 			HybridArray<Semaphore*> release_;
 		};
 
 	public:
-		/// [EN] Index of Placeholder within NodeHandle, used to query/check the node's current handle kind.
-		/// [JP] NodeHandle 内における Placeholder のインデックス。ノードの現在のハンドル種別を判定・取得する際に使用する。
+		/// [EN] Index of Placeholder within NodeHandle; these constants are compared against handle_.index() to tell the node kind.
+		/// [JP] NodeHandle 内における Placeholder のインデックス。これらの定数を handle_.index() と比べてノードの種類を判定する。
 		constexpr static auto PLACEHOLDER = GetIndexValue<Placeholder, NodeHandle>;
 		
 		/// [EN] Index of Static within NodeHandle.
@@ -407,12 +410,14 @@ namespace SeedCore
 		* [EN]
 		* Constructs a node using a full TaskParams (name + user data),
 		* forwarding the remaining args to construct the NodeHandle.
+		* The first four arguments go to JobNodeBase.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 完全な TaskParams（名前 + ユーザーデータ）を用いてノードを
-		* 構築し、残りの args を NodeHandle の構築へ転送する。
+		* 構築し、残りの args を NodeHandle の構築へ転送する。最初の4つの
+		* 引数は JobNodeBase へ渡す。
 		*/
 		template<typename... Args>
 		JobNode(NState nstate, EState estate, const TaskParams& params, JobTopology* topology, JobNodeBase* parent, Size joinCounter, Args&&... args) : JobNodeBase(nstate, estate, parent, joinCounter), name_(params.name_), data_(params.data_), topology_(topology), handle_(std::forward<Args>(args)...)
@@ -453,7 +458,7 @@ namespace SeedCore
 		* 転送する。
 		*/
 		template<StringLike S, typename... Args>
-		JobNode(NState nstate, EState estate, const S&& name, JobTopology* topology, JobNodeBase* parent, Size joinCounter, Args&&... args) : JobNodeBase(nstate, estate, parent, joinCounter), name_(std::forward<S>(name)), topology_(topology), handle_(std::forward<Args>(args)...)
+		JobNode(NState nstate, EState estate, S&& name, JobTopology* topology, JobNodeBase* parent, Size joinCounter, Args&&... args) : JobNodeBase(nstate, estate, parent, joinCounter), name_(std::forward<S>(name)), topology_(topology), handle_(std::forward<Args>(args)...)
 		{
 			/// No Code
 		}
@@ -482,27 +487,29 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Returns the number of strong dependencies (e.g. unconditional
-		* predecessors) this node has.
+		* Returns the number of strong dependencies: predecessors that are
+		* not condition nodes, all of which must finish before this node
+		* runs.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* このノードが持つ強い依存関係（条件分岐を伴わない先行ノードなど）の
-		* 数を返す。
+		* 強い依存関係の数を返す。条件ノードではない先行ノードのことで、
+		* このノードの実行前にその全てが終わっている必要がある。
 		*/
 		Size NumberStrongDependencies()const;
 
 		/**
 		* [EN]
-		* Returns the number of weak dependencies (e.g. predecessors
-		* reached only through a conditional branch) this node has.
+		* Returns the number of weak dependencies: predecessors that are
+		* condition nodes, any one of which can start this node by
+		* choosing it.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* このノードが持つ弱い依存関係（条件分岐を経由してのみ到達される
-		* 先行ノードなど）の数を返す。
+		* 弱い依存関係の数を返す。条件ノードである先行ノードのことで、その
+		* どれか1つが選ぶだけでこのノードを開始できる。
 		*/
 		Size NumberWeakDependencies()const;
 
@@ -522,40 +529,41 @@ namespace SeedCore
 		/// [JP] このノードの表示名。
 		String name_;
 
-		/// [EN] Pointer to arbitrary user-defined data associated with this node. Ownership is not managed here.
-		/// [JP] このノードに関連付けられた、任意のユーザー定義データへのポインタ。所有権はここでは管理しない。
+		/// [EN] Arbitrary user data attached to this node; the node does not own it.
+		/// [JP] このノードに付けられた任意のユーザーデータ。ノードはこれを所有しない。
 		void* data_ = nullptr;
 
-		/// [EN] The topology this node belongs to.
-		/// [JP] このノードが属するトポロジー。
+		/// [EN] The run this node is currently part of; set each time the graph is prepared for a run.
+		/// [JP] このノードが今属している実行。グラフを実行に向けて整えるたびに設定される。
 		JobTopology* topology_ = nullptr;
 
-		/// [EN] Cached count of successor edges, kept in sync with edges_.
-		/// [JP] 後続エッジの数をキャッシュした値。edges_ と同期して保持される。
+		/// [EN] How many entries at the front of edges_ are successors; the rest are predecessors.
+		/// [JP] edges_ の先頭から何個が後続か。残りは先行ノード。
 		Size numberSuccessors_ = 0;
 
-		/// [EN] Outgoing edges to other nodes (e.g. successors), stored inline for up to 4 entries before spilling to the heap.
-		/// [JP] 他ノードへの出力エッジ（後続ノードなど）。最大 4 要素まではインラインに格納され、それを超えるとヒープへ格納される。
+		/// [EN] Successors in the front numberSuccessors_ entries, predecessors after them; up to 4 are stored inline.
+		/// [JP] 先頭 numberSuccessors_ 個が後続、その後ろが先行ノード。4 個まではインラインに格納される。
 		HybridArray<JobNode*, 4> edges_;
 
 		/// [EN] The active variant describing what kind of work this node performs.
 		/// [JP] このノードが行う処理の種類を表す、現在有効なバリアント値。
 		NodeHandle handle_;
 
-		/// [EN] Semaphores to acquire/release around this node's execution; null if the node uses no semaphores.
-		/// [JP] このノードの実行前後で獲得・解放するセマフォ群。セマフォを使用しないノードでは null になる。
+		/// [EN] Semaphores to take and give back around this node's run; null when the node uses none, which is the common case.
+		/// [JP] このノードの実行前後で取り・返すセマフォ群。使わないノードでは null で、ほとんどのノードがそう。
 		std::unique_ptr<Semaphores> semaphores_;
 
 		/**
 		* [EN]
-		* Returns whether this node's parent has been cancelled,
-		* meaning this node should not proceed with execution.
+		* Returns whether this node's topology or parent node has been
+		* cancelled or has failed with an exception, in which case this
+		* node is skipped instead of run.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* このノードの親がキャンセルされているかどうかを返す。
-		* キャンセルされている場合、このノードは実行を進めるべきではない。
+		* このノードのトポロジーか親ノードが、キャンセルされたか例外で失敗
+		* しているかを返す。その場合、このノードは実行されずに飛ばされる。
 		*/
 		Bool ParentCancelled()const;
 		
@@ -574,84 +582,88 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Attempts to acquire all of this node's required semaphores.
-		* If any acquisition must wait, the corresponding waiting jobs
-		* are collected into nodes and the call fails as a whole.
+		* Takes every semaphore this node must hold before it runs, in
+		* order. If one is not free, this node is parked on it, the ones
+		* already taken are given back (their waiters are collected into
+		* nodes for rescheduling) and false is returned.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* このノードが必要とするすべてのセマフォの獲得を試みる。いずれかの
-		* 獲得が待機を要する場合、該当する待機ジョブを nodes に収集し、
-		* この呼び出し全体は失敗とする。
+		* このノードが実行前に持つべきセマフォを、順に全て取る。どれかに
+		* 空きが無ければ、このノードをそこで待機させ、既に取った分を返し
+		* （その待機者はスケジュールし直すために nodes へ集める）、false を
+		* 返す。
 		*/
 		Bool AcquireAll(HybridArray<JobNode*>& nodes);
 
 		/**
 		* [EN]
-		* Releases all of this node's held semaphores, collecting any
-		* jobs that become runnable as a result into nodes.
+		* Gives back every semaphore this node releases after running,
+		* collecting the tasks that were waiting on them into nodes so
+		* they can be rescheduled.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* このノードが保持しているすべてのセマフォを解放し、その結果
-		* 実行可能になったジョブを nodes に収集する。
+		* このノードが実行後に解放するセマフォを全て返し、それらを待って
+		* いたタスクを、スケジュールし直せるよう nodes へ集める。
 		*/
 		void ReleaseAll(HybridArray<JobNode*>& nodes);
 
 		/**
 		* [EN]
-		* Establishes a precedence (dependency) edge from this node to
-		* node, making node a successor of this node.
+		* Adds an edge from this node to node: node becomes a successor
+		* here, and this node becomes a predecessor there.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* このノードから node への先行関係（依存関係）のエッジを確立し、
-		* node をこのノードの後続として設定する。
+		* このノードから node へのエッジを足す。こちらでは node が後続に、
+		* あちらではこのノードが先行ノードになる。
 		*/
 		void Precede(JobNode* node);
 
 		/**
 		* [EN]
-		* Initializes/recomputes this node's join counter based on its
-		* current set of dependencies.
+		* Adds the number of strong dependencies to nstate_ and sets the
+		* join counter to it, so the node becomes ready when that many
+		* predecessors have finished.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 現在の依存関係の集合に基づいて、このノードの join カウンタを
-		* 初期化・再計算する。
+		* 強い依存関係の数を nstate_ に足し、join カウンタをその値にする。
+		* その数の先行ノードが終わったところで、このノードは実行可能になる。
 		*/
 		void SetUpJoinCounter();
 
 		/**
 		* [EN]
-		* Removes node from this node's list of successors.
+		* Removes every edge to node from this node's successors.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* このノードの後続一覧から node を削除する。
+		* このノードの後続から、node へのエッジを全て取り除く。
 		*/
 		void RemoveSuccessors(JobNode* node);
 
 		/**
 		* [EN]
-		* Removes node from this node's list of predecessors.
+		* Removes every edge from node out of this node's predecessors.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* このノードの先行一覧から node を削除する。
+		* このノードの先行ノードから、node からのエッジを全て取り除く。
 		*/
 		void RemovePredecessors(JobNode* node);
 	};
 
-#ifdef SC_ENABLE_TASK_POOL
-	/// [EN] Object pool type used to allocate/recycle JobNode instances, chosen based on whether the platform's atomics for SynchronizedPointer are lock-free.
-	/// [JP] JobNode インスタンスの確保・再利用に使用するオブジェクトプール型。プラットフォームの SynchronizedPointer 用アトミックがロックフリーかどうかに基づいて選択される。
+#if SC_ENABLE_TASK_POOL
+	/// [EN] Pool type for JobNode; the packed pointer is used where an atomic SynchronizedPointer would not be lock-free.
+	/// [JP] JobNode 用のプール型。アトミックな SynchronizedPointer がロックフリーにならない環境では、詰め込んだポインタを使う。
 	using NodePool = std::conditional_t
 		<
 		std::atomic<SynchronizedPointer>::is_always_lock_free,
@@ -659,28 +671,28 @@ namespace SeedCore
 		ObjectPool<JobNode, PackedSynchronizedPointer<>>
 		>;
 
-	/// [EN] Global pool instance from which JobNode objects are allocated/recycled when pooling is enabled.
-	/// [JP] プーリングが有効な場合に JobNode オブジェクトを確保・再利用するための、グローバルなプールインスタンス。
+	/// [EN] The one pool every executor allocates JobNode objects from when pooling is enabled.
+	/// [JP] プールが有効なときに、全てのエグゼキュータが JobNode を確保する唯一のプール。
 	inline NodePool nodePool_;
 #endif
 
 	/**
 	* [EN]
 	* Constructs a new JobNode with the given arguments, using the
-	* object pool if SC_ENABLE_TASK_POOL is defined, or plain new
+	* object pool if SC_ENABLE_TASK_POOL is non-zero, or plain new
 	* otherwise.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 指定された引数で新しい JobNode を構築する。SC_ENABLE_TASK_POOL
-	* が定義されている場合はオブジェクトプールを使用し、それ以外の場合は
+	* が 0 でなければオブジェクトプールを使用し、それ以外の場合は
 	* 通常の new を使用する。
 	*/
 	template<typename... Args>
 	__forceinline JobNode* animate(Args&&... args)
 	{
-#ifdef SC_ENABLE_TASK_POOL
+#if SC_ENABLE_TASK_POOL
 		return nodePool_.Create(std::forward<Args>(args)...);
 #else
 		return new JobNode(std::forward<Args>(args)...);
@@ -690,19 +702,19 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Releases a JobNode previously created by animate, returning
-	* it to the object pool if SC_ENABLE_TASK_POOL is defined, or
+	* it to the object pool if SC_ENABLE_TASK_POOL is non-zero, or
 	* deleting it otherwise.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* animate で生成された JobNode を解放する。SC_ENABLE_TASK_POOL
-	* が定義されている場合はオブジェクトプールへ返却し、それ以外の場合は
+	* が 0 でなければオブジェクトプールへ返却し、それ以外の場合は
 	* delete する。
 	*/
 	__forceinline void recycle(JobNode* node)
 	{
-#ifdef SC_ENABLE_TASK_POOL
+#if SC_ENABLE_TASK_POOL
 		nodePool_.Recycle(node);
 #else
 		delete node;

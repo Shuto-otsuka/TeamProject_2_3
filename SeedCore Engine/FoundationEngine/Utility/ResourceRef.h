@@ -8,6 +8,8 @@
 
 namespace SeedCore
 {
+	/// [EN] Declared ahead so MakeRef and MakeObserve can name it in their signatures.
+	/// [JP] MakeRef と MakeObserve のシグネチャで名前を使えるよう、先に宣言しておく。
 	template <typename T>
 	class ResourceRef;
 
@@ -36,9 +38,11 @@ namespace SeedCore
 	* Folds weak_ptr-equivalent behavior into the same ResourceRef type:
 	* if the owner side has since released the object, get()/operator->
 	* on the resulting ResourceRef safely report "gone" instead of
-	* dangling. Intended for breaking ownership cycles: the edge that
-	* should not keep the object alive is created via MakeObserve()
-	* instead of a copy.
+	* dangling. An observer cannot keep the object alive while using
+	* it, so it is only safe to use when the owners are known not to
+	* release it meanwhile (e.g. on the same thread). Intended for
+	* breaking ownership cycles: the edge that should not keep the
+	* object alive is created via MakeObserve() instead of a copy.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -47,9 +51,11 @@ namespace SeedCore
 	* 作る。所有側のカウントは増やさない。weak_ptr 相当の挙動を同じ
 	* ResourceRef 型の中に内包しており、所有側が既にオブジェクトを
 	* 解放していた場合、生成された ResourceRef の get()/operator-> は
-	* ダングリングせず安全に「消滅済み」を報告する。所有権の循環を
-	* 切りたい辺で、コピーの代わりに MakeObserve() を使うことを想定
-	* している。
+	* ダングリングせず安全に「消滅済み」を報告する。観測側は使っている
+	* 間オブジェクトを生かし続けることはできないので、その間に所有側が
+	* 解放しないと分かっている場合（同じスレッドなど）にだけ安全に使える。
+	* 所有権の循環を切りたい辺で、コピーの代わりに MakeObserve() を使う
+	* ことを想定している。
 	*/
 	template <typename T>
 	[[nodiscard]] ResourceRef<T> MakeObserve(const ResourceRef<T>& owner)noexcept;
@@ -163,6 +169,8 @@ namespace SeedCore
 			*/
 			T* GetPointer()
 			{
+				/// [EN] storage_ is aligned and sized for T, and holds a T from MakeRef until DestroyObject.
+				/// [JP] storage_ は T に合わせたアラインメントと大きさを持ち、MakeRef から DestroyObject までは T が入っている。
 				return reinterpret_cast<T*>(storage_);
 			}
 
@@ -179,6 +187,8 @@ namespace SeedCore
 			*/
 			void DestroyObject()override
 			{
+				/// [EN] Only the object dies here; the block stays until the last observer is gone, so observers can still read alive_.
+				/// [JP] ここで消えるのはオブジェクトだけ。ブロックは最後の観測者がいなくなるまで残り、観測者は alive_ を読み続けられる。
 				GetPointer()->~T();
 				alive_.store(false, std::memory_order_release);
 			}
@@ -257,6 +267,8 @@ namespace SeedCore
 		*/
 		ResourceRef(const ResourceRef& other)noexcept: control_(other.control_), pointer_(other.pointer_), mode_(other.mode_)
 		{
+			/// [EN] The copy counts on the same side as other: strong for Owning, observer for Observing.
+			/// [JP] コピーは other と同じ側で数える。Owning なら strong、Observing なら observer。
 			AddRef();
 		}
 
@@ -273,6 +285,8 @@ namespace SeedCore
 		*/
 		ResourceRef(ResourceRef&& other)noexcept: control_(other.control_), pointer_(other.pointer_), mode_(other.mode_)
 		{
+			/// [EN] The count moves with the reference, so nothing is incremented; other simply lets go.
+			/// [JP] カウントは参照と一緒に移るので、何も増やさない。other は手放すだけ。
 			other.control_ = nullptr;
 			other.pointer_ = nullptr;
 		}
@@ -295,6 +309,8 @@ namespace SeedCore
 			requires std::is_convertible_v<U*, T*>
 		ResourceRef(const ResourceRef<U>& other)noexcept: control_(other.control_), pointer_(other.pointer_), mode_(other.mode_)
 		{
+			/// [EN] pointer_ is converted from U* to T* in the initializer, while the control block stays shared.
+			/// [JP] 初期化の中で pointer_ は U* から T* へ変換され、コントロールブロックは共有したまま。
 			AddRef();
 		}
 
@@ -315,6 +331,8 @@ namespace SeedCore
 			requires std::is_convertible_v<U*, T*>
 		ResourceRef(ResourceRef<U>&& other)noexcept: control_(other.control_), pointer_(other.pointer_), mode_(other.mode_)
 		{
+			/// [EN] The count moves with the reference, so nothing is incremented; other simply lets go.
+			/// [JP] カウントは参照と一緒に移るので、何も増やさない。other は手放すだけ。
 			other.control_ = nullptr;
 			other.pointer_ = nullptr;
 		}
@@ -346,6 +364,8 @@ namespace SeedCore
 		*/
 		ResourceRef& operator=(const ResourceRef& other)noexcept
 		{
+			/// [EN] Self-assignment is skipped, since releasing first could destroy the object being copied.
+			/// [JP] 自己代入は飛ばす。先に手放すと、コピーするはずのオブジェクトを破棄してしまうことがあるため。
 			if (this != &other)
 			{
 				Release();
@@ -370,6 +390,8 @@ namespace SeedCore
 		*/
 		ResourceRef& operator=(ResourceRef&& other)noexcept
 		{
+			/// [EN] Self-assignment is skipped, since releasing first would drop the reference about to be taken over.
+			/// [JP] 自己代入は飛ばす。先に手放すと、これから引き取る参照を落としてしまうため。
 			if (this != &other)
 			{
 				Release();
@@ -397,6 +419,8 @@ namespace SeedCore
 			requires std::is_convertible_v<U*, T*>
 		ResourceRef& operator=(const ResourceRef<U>& other)noexcept
 		{
+			/// [EN] The old reference is dropped before the new one is counted.
+			/// [JP] 古い参照を手放してから、新しい参照を数える。
 			Release();
 			control_ = other.control_;
 			pointer_ = other.pointer_;
@@ -420,6 +444,8 @@ namespace SeedCore
 			requires std::is_convertible_v<U*, T*>
 		ResourceRef& operator=(ResourceRef<U>&& other)noexcept
 		{
+			/// [EN] The old reference is dropped, then other's is taken over without touching any count.
+			/// [JP] 古い参照を手放し、その後どのカウントにも触れずに other の参照を引き取る。
 			Release();
 			control_ = other.control_;
 			pointer_ = other.pointer_;
@@ -476,19 +502,21 @@ namespace SeedCore
 		*/
 		T* get()const noexcept
 		{
+			/// [EN] pointer_ is kept even after the object dies, so alive_ decides whether it may be handed out.
+			/// [JP] pointer_ はオブジェクトが消えた後も残っているので、渡してよいかは alive_ で決める。
 			return (control_ != nullptr && control_->alive_.load(std::memory_order_acquire)) ? pointer_ : nullptr;
 		}
 
 		/**
 		* [EN]
-		* Dereferences the pointee. Asserts in debug builds if this
+		* Dereferences the pointee. Asserts (in every build) if this
 		* ResourceRef is empty or the pointee has already been destroyed.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 対象を間接参照する。この ResourceRef が空、または対象が既に
-		* 破棄されている場合、デバッグビルドではアサートする。
+		* 破棄されている場合はアサートする（どのビルドでも）。
 		*/
 		T* operator->()const
 		{
@@ -499,12 +527,14 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Same as operator->(), but returns a reference instead of a
-		* pointer.
+		* pointer. Asserts (in every build) if this ResourceRef is empty or
+		* the pointee has already been destroyed.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* operator->() と同様だが、ポインタではなく参照を返す。
+		* operator->() と同様だが、ポインタではなく参照を返す。空、または
+		* 対象が既に破棄されている場合はアサートする（どのビルドでも）。
 		*/
 		T& operator*()const
 		{
@@ -525,6 +555,8 @@ namespace SeedCore
 		*/
 		Uint32 use_count()const noexcept
 		{
+			/// [EN] A snapshot only: other threads may change the count right after it is read.
+			/// [JP] 一時点の値でしかない。読んだ直後に他のスレッドが数を変えることもある。
 			return (control_ != nullptr) ? control_->strongCount_.load(std::memory_order_relaxed) : 0;
 		}
 
@@ -586,6 +618,8 @@ namespace SeedCore
 		*/
 		friend Bool operator==(const ResourceRef& lhs, const ResourceRef& rhs)noexcept
 		{
+			/// [EN] The mode is ignored: an owner and an observer of the same object compare equal.
+			/// [JP] モードは見ない。同じオブジェクトの所有側と観測側は等しいとみなす。
 			return lhs.control_ == rhs.control_;
 		}
 
@@ -600,6 +634,8 @@ namespace SeedCore
 		*/
 		friend Bool operator==(const ResourceRef& lhs, std::nullptr_t)noexcept
 		{
+			/// [EN] An expired observer compares equal to nullptr, just like an empty ResourceRef.
+			/// [JP] 期限切れの観測側も、空の ResourceRef と同じく nullptr と等しいとみなす。
 			return !lhs.exists();
 		}
 
@@ -609,6 +645,8 @@ namespace SeedCore
 		template <typename U>
 		friend class ResourceRef;
 
+		/// [EN] The factories build ResourceRefs through the private constructor.
+		/// [JP] ファクトリは private なコンストラクタを通じて ResourceRef を作る。
 		template <typename U, typename... Args>
 		friend ResourceRef<U> MakeRef(Args&&... args);
 
@@ -652,6 +690,9 @@ namespace SeedCore
 			{
 				return;
 			}
+
+			/// [EN] Relaxed is enough for increments: the caller already holds a reference, so the block cannot go away meanwhile.
+			/// [JP] 増やすときは relaxed で足りる。呼び出し側が既に参照を持っているので、その間にブロックが消えることは無い。
 			if (mode_ == RefMode::Owning)
 			{
 				control_->strongCount_.fetch_add(1, std::memory_order_relaxed);
@@ -693,8 +734,12 @@ namespace SeedCore
 				return;
 			}
 
+			/// [EN] acq_rel on decrements makes every owner's writes visible to whichever thread ends up destroying the object.
+			/// [JP] 減らすときの acq_rel により、全所有者の書き込みが、最終的にオブジェクトを破棄するスレッドから見える。
 			if (mode_ == RefMode::Owning)
 			{
+				/// [EN] The last owner destroys the object, then gives up the observer count the owners held as a group.
+				/// [JP] 最後の所有者がオブジェクトを破棄し、その後所有者全体で持っていた observer のカウントを手放す。
 				if (control_->strongCount_.fetch_sub(1, std::memory_order_acq_rel) == 1)
 				{
 					control_->DestroyObject();
@@ -706,11 +751,16 @@ namespace SeedCore
 			}
 			else
 			{
+				/// [EN] The last observer frees the block, but only once the owners' shared count is gone too.
+				/// [JP] 最後の観測者がブロックを解放する。ただし所有者側の共有のカウントも無くなっている場合に限る。
 				if (control_->observerCount_.fetch_sub(1, std::memory_order_acq_rel) == 1)
 				{
 					delete control_;
 				}
 			}
+
+			/// [EN] This instance is empty afterwards, so a second Release does nothing.
+			/// [JP] この後このインスタンスは空になるので、2回目の Release は何もしない。
 			control_ = nullptr;
 			pointer_ = nullptr;
 		}
@@ -728,9 +778,22 @@ namespace SeedCore
 		RefMode mode_ = RefMode::Owning;
 	};
 
+	/**
+	* [EN]
+	* Allocates the control block with room for T, constructs T inside it
+	* and returns the first owning ResourceRef.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* T の入る場所を持つコントロールブロックを確保し、その中に T を構築して、
+	* 最初の所有側の ResourceRef を返す。
+	*/
 	template <typename T, typename... Args>
 	[[nodiscard]] ResourceRef<T> MakeRef(Args&&... args)
 	{
+		/// [EN] The block starts with one strong and one observer count, which the returned ResourceRef takes over.
+		/// [JP] ブロックは strong と observer のカウントを1つずつ持った状態で始まり、返す ResourceRef がそれを引き継ぐ。
 		Detail::RefControlBlock<T>* block = new Detail::RefControlBlock<T>();
 		try
 		{
@@ -738,15 +801,30 @@ namespace SeedCore
 		}
 		catch (...)
 		{
+			/// [EN] T was never constructed, so only the block is freed; DestroyObject must not run.
+			/// [JP] T は構築されていないので、解放するのはブロックだけ。DestroyObject を呼んではならない。
 			delete block;
 			throw;
 		}
 		return ResourceRef<T>(block, block->GetPointer(), RefMode::Owning);
 	}
 
+	/**
+	* [EN]
+	* Returns an Observing ResourceRef on owner's object; an empty owner
+	* gives an empty observer.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* owner のオブジェクトを指す Observing の ResourceRef を返す。空の
+	* owner からは空の観測側ができる。
+	*/
 	template <typename T>
 	[[nodiscard]] ResourceRef<T> MakeObserve(const ResourceRef<T>& owner)noexcept
 	{
+		/// [EN] The private constructor adds no count, so the observer count is added explicitly.
+		/// [JP] private なコンストラクタはカウントを増やさないので、observer のカウントは明示的に足す。
 		ResourceRef<T> observer(owner.control_, owner.pointer_, RefMode::Observing);
 		observer.AddRef();
 		return observer;

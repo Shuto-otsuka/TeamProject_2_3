@@ -89,14 +89,15 @@ namespace SeedCore
 	inline constexpr Size SC_DEFAULT_BOUNDED_QUEUE_LOG_SIZE = 8;
 
 	/**
-	*[EN]
+	* [EN]
 	* A Chase-Lev style work-stealing deque whose internal ring buffer
 	* grows automatically when it becomes full.
 	*
 	* The owning thread calls push/pop from the "bottom" end, while
 	* other threads may concurrently call steal from the "top" end.
-	* This makes it suitable as the local task queue of a worker thread
-	* in a work-stealing job system.
+	* JobExecutor uses it for its overflow buffers, where pushes from
+	* many threads are serialized by a mutex so there is still only one
+	* pusher at a time.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -105,9 +106,10 @@ namespace SeedCore
 	* バッファが満杯になった場合に自動的に拡張される。
 	*
 	* 所有スレッドは「底（bottom）」側から push/pop を行い、他のスレッドは
-	* 「頂点（top）」側から並行して steal を呼び出すことができる。これにより、
-	* ワークスティーリング方式のジョブシステムにおけるワーカースレッドの
-	* ローカルタスクキューとして利用するのに適している。
+	* 「頂点（top）」側から並行して steal を呼び出すことができる。
+	* JobExecutor はこれをあふれ用バッファに使い、多くのスレッドからの
+	* push をミューテックスで1つずつにすることで、push 側を常に1つに
+	* 保っている。
 	*/
 	template <typename T>
 	class UnboundedWorkerQueue
@@ -140,16 +142,45 @@ namespace SeedCore
 			/// [JP] ヒープ上に確保された、アトミックなスロット配列へのポインタ。
 			std::atomic<T>* slots_;
 
+			/**
+			* [EN]
+			* Allocates capacity slots; capacity must be a power of two
+			* so mask_ can wrap indices.
+			*
+			* ---------------------------------------------------------------------
+			*
+			* [JP]
+			* capacity 個のスロットを確保する。mask_ でインデックスを折り返す
+			* ため、capacity は 2 のべき乗である必要がある。
+			*/
 			explicit Array(Size capacity) :capacity_(capacity), mask_(capacity - 1), slots_(new std::atomic<T>[capacity_])
 			{
 				/// No Code
 			}
 
+			/**
+			* [EN]
+			* Frees the slot array.
+			*
+			* ---------------------------------------------------------------------
+			*
+			* [JP]
+			* スロット配列を解放する。
+			*/
 			~Array()
 			{
 				delete[] slots_;
 			}
 
+			/**
+			* [EN]
+			* Returns the number of slots in this buffer.
+			*
+			* ---------------------------------------------------------------------
+			*
+			* [JP]
+			* このバッファのスロット数を返す。
+			*/
 			Size capacity()const noexcept
 			{
 				return capacity_;
@@ -200,6 +231,8 @@ namespace SeedCore
 			*/
 			Array* resize(Int64 bottom, Int64 top)
 			{
+				/// [EN] Elements keep their logical indices; only the slot they map to changes with the larger mask.
+				/// [JP] 要素は論理的なインデックスをそのまま保つ。大きくなったマスクで、対応するスロットだけが変わる。
 				Array* ptr = new Array(2 * capacity_);
 				for (Int64 index = top;index != bottom;index++)
 				{
@@ -224,6 +257,8 @@ namespace SeedCore
 			*/
 			Array* resize(Int64 bottom, Int64 top, Int64 n)
 			{
+				/// [EN] Rounded up to a power of two so the index mask still works.
+				/// [JP] インデックスのマスクが使えるよう、2 のべき乗に切り上げる。
 				Array* ptr = new Array(std::bit_ceil(capacity_ + n));
 				for (Int64 index = top;index != bottom;++index)
 				{
@@ -273,6 +308,9 @@ namespace SeedCore
 			top_.store(0, std::memory_order_relaxed);
 			bottom_.store(0, std::memory_order_relaxed);
 			array_.store(new Array{ (Size{ 1 } << logSize) }, std::memory_order_relaxed);
+
+			/// [EN] Each retirement doubles the buffer, so a handful of entries covers any realistic growth.
+			/// [JP] 1回の廃棄でバッファは倍になるので、現実的な成長はこの程度の数で足りる。
 			garbage_.reserve(32);
 		}
 
@@ -289,6 +327,8 @@ namespace SeedCore
 		*/
 		~UnboundedWorkerQueue()
 		{
+			/// [EN] No thread may steal any more at this point, so the retired buffers can finally be freed.
+			/// [JP] この時点では誰も steal しないので、廃棄済みのバッファをようやく解放できる。
 			for (auto garbage : garbage_)
 			{
 				delete garbage;
@@ -311,6 +351,8 @@ namespace SeedCore
 		*/
 		Bool empty()const noexcept
 		{
+			/// [EN] Relaxed loads are enough for a snapshot that may already be out of date when it returns.
+			/// [JP] 戻った時点で古くなっているかもしれない一時点の値なので、relaxed の読み取りで足りる。
 			Int64 top = top_.load(std::memory_order_relaxed);
 			Int64 bottom = bottom_.load(std::memory_order_relaxed);
 			return (bottom <= top);
@@ -345,6 +387,8 @@ namespace SeedCore
 		*/
 		Size capacity()const noexcept
 		{
+			/// [EN] The buffer may be replaced right after this read; the value is only a hint.
+			/// [JP] この読み取りの直後にバッファが置き換わることもあるので、値は目安でしかない。
 			return array_.load(std::memory_order_relaxed)->capacity();
 		}
 
@@ -412,6 +456,8 @@ namespace SeedCore
 			Int64 bottom = bottom_.load(std::memory_order_relaxed);
 			Array* array = array_.load(std::memory_order_relaxed);
 
+			/// [EN] Same check as push, for n items at once: the cached top first, then the real one before resizing.
+			/// [JP] push と同じ確認を n 個まとめて行う。まずキャッシュした top、リサイズ前に実際の top で確かめる。
 			if ((bottom - cacheTop_ + n) > array->capacity()) [[unlikely]]
 			{
 				cacheTop_ = top_.load(std::memory_order_acquire);
@@ -421,10 +467,15 @@ namespace SeedCore
 				}
 			}
 
+			/// [EN] first is advanced as items are read, so the caller sees where the pushed range ended.
+			/// [JP] 読み取りに合わせて first を進めるので、呼び出し側は push した範囲の終わりが分かる。
 			for (Size index = 0;index < n;++index)
 			{
 				array->push(bottom++, *first++);
 			}
+
+			/// [EN] All items become visible to stealers at once, when bottom_ is published after the fence.
+			/// [JP] フェンスの後に bottom_ を公開した時点で、全要素がまとめて steal 側から見えるようになる。
 			std::atomic_thread_fence(std::memory_order_release);
 
 			bottom_.store(bottom, std::memory_order_release);
@@ -447,17 +498,20 @@ namespace SeedCore
 		*/
 		ValueType pop()
 		{
+			/// [EN] bottom_ is lowered first and fenced before top_ is read, so a stealer sees the claim on the slot.
+			/// [JP] top_ を読む前に bottom_ を下げてフェンスを挟む。これで steal 側がスロットの確保を見られる。
 			Int64 bottom = bottom_.load(std::memory_order_relaxed) - 1;
 			Array* array = array_.load(std::memory_order_relaxed);
-			bottom_.store(bottom, std::memory_order_seq_cst);
+			bottom_.store(bottom, std::memory_order_relaxed);
+			std::atomic_thread_fence(std::memory_order_seq_cst);
 			Int64 top = top_.load(std::memory_order_relaxed);
 
 			auto item = empty_value();
 
 			if (top <= bottom)
 			{
-				/// [EN] More than one element remains: a simple pop is safe with no contention against steal().
-				/// [JP] 2 個以上の要素が残っている場合、steal() との競合を考慮せずに単純な pop で安全に取得できる。
+				/// [EN] At least one element remains; it is read first, and only the last-element case below needs to race steal().
+				/// [JP] 少なくとも1個の要素が残っている。まず読み取り、steal() と競う必要があるのは下の最後の1個の場合だけ。
 				item = array->pop(bottom);
 				if (top == bottom)
 				{
@@ -499,6 +553,8 @@ namespace SeedCore
 		*/
 		ValueType steal()
 		{
+			/// [EN] top is read before bottom with a full fence between, pairing with the fence in pop() so both never take the last element.
+			/// [JP] top を bottom より先に、間に完全なフェンスを挟んで読む。pop() 側のフェンスと対になり、最後の1個を両方が取ることは無い。
 			Int64 top = top_.load(std::memory_order_acquire);
 			std::atomic_thread_fence(std::memory_order_seq_cst);
 			Int64 bottom = bottom_.load(std::memory_order_acquire);
@@ -507,8 +563,8 @@ namespace SeedCore
 
 			if (top < bottom)
 			{
-				/// [EN] An element may be available: read the current buffer pointer and load the value at top.
-				/// [JP] 要素が存在する可能性があるため、現在のバッファポインタを読み込み、top の値を取得する。
+				/// [EN] An element may be available: read the current buffer pointer and load the value at top; retired buffers stay alive, so an old pointer is still safe to read.
+				/// [JP] 要素がある可能性があるので、今のバッファを読み top の値を取る。廃棄済みバッファも生きているので、古いポインタでも安全に読める。
 				Array* array = array_.load(std::memory_order_consume);
 				item = array->pop(top);
 				if (!top_.compare_exchange_strong(top, top + 1, std::memory_order_seq_cst, std::memory_order_relaxed))
@@ -554,6 +610,8 @@ namespace SeedCore
 		*/
 		Array* resize_array(Array* array, Int64 bottom, Int64 top)
 		{
+			/// [EN] The old buffer is kept rather than freed, because a stealer may have loaded its pointer just before the swap.
+			/// [JP] 古いバッファは解放せずに残す。入れ替えの直前に steal 側がそのポインタを読んでいる可能性があるため。
 			Array* temporary = array->resize(bottom, top);
 			garbage_.push_back(array);
 			array_.store(temporary, std::memory_order_release);
@@ -576,6 +634,8 @@ namespace SeedCore
 		*/
 		Array* resize_array(Array* array, Int64 bottom, Int64 top, Size n)
 		{
+			/// [EN] The old buffer is kept rather than freed, because a stealer may have loaded its pointer just before the swap.
+			/// [JP] 古いバッファは解放せずに残す。入れ替えの直前に steal 側がそのポインタを読んでいる可能性があるため。
 			Array* temporary = array->resize(bottom, top, n);
 			garbage_.push_back(array);
 			array_.store(temporary, std::memory_order_release);
@@ -610,6 +670,8 @@ namespace SeedCore
 		/// [JP] リングバッファのインデックスを折り返すために使用するビットマスク（bufferSize - 1）。
 		constexpr static Size bufferMask = (bufferSize - 1);
 
+		/// [EN] The index mask only works for a power-of-two size of at least 2.
+		/// [JP] インデックスのマスクは、2 以上の 2 のべき乗の大きさでしか使えない。
 		static_assert((bufferSize >= 2) && ((bufferSize& (bufferSize - 1)) == 0));
 
 		/// [EN] Index of the "top" end of the deque, from which other threads steal. Cache-line aligned to avoid false sharing.
@@ -629,8 +691,27 @@ namespace SeedCore
 		/// [JP] pop()/steal() が返す値の型。T がポインタ型ならば T そのもの、それ以外なら std::optional<T>。
 		using ValueType = std::conditional_t<std::is_pointer_v<T>, T, std::optional<T>>;
 
+		/**
+		* [EN]
+		* Constructs an empty queue; top_ and bottom_ start at zero.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 空のキューを構築する。top_ と bottom_ は 0 から始まる。
+		*/
 		BoundedWorkerQueue() = default;
 
+		/**
+		* [EN]
+		* Destroys the queue; nothing is allocated, so there is nothing
+		* to free.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* キューを破棄する。何も確保していないので、解放するものは無い。
+		*/
 		~BoundedWorkerQueue() = default;
 
 		/**
@@ -648,6 +729,8 @@ namespace SeedCore
 		*/
 		Bool empty()const noexcept
 		{
+			/// [EN] Relaxed loads are enough for a snapshot that may already be out of date when it returns.
+			/// [JP] 戻った時点で古くなっているかもしれない一時点の値なので、relaxed の読み取りで足りる。
 			Int64 top = top_.load(std::memory_order_relaxed);
 			Int64 bottom = bottom_.load(std::memory_order_relaxed);
 			return bottom <= top;
@@ -701,6 +784,8 @@ namespace SeedCore
 		template <typename O>
 		Bool try_push(O&& item)
 		{
+			/// [EN] top is read with acquire, so slots freed by stealers are known to be reusable.
+			/// [JP] top を acquire で読むので、steal 側が空けたスロットを再利用してよいと分かる。
 			Int64 bottom = bottom_.load(std::memory_order_relaxed);
 			Int64 top = top_.load(std::memory_order_acquire);
 
@@ -711,6 +796,8 @@ namespace SeedCore
 
 			buffer_[bottom & bufferMask].store(std::forward<O>(item), std::memory_order_relaxed);
 
+			/// [EN] The item is made visible before bottom_ is published, so a stealer never reads a half-written slot.
+			/// [JP] bottom_ を公開する前に要素を見えるようにするので、steal 側が書きかけのスロットを読むことは無い。
 			std::atomic_thread_fence(std::memory_order_release);
 
 			bottom_.store(bottom + 1, std::memory_order_release);
@@ -750,6 +837,8 @@ namespace SeedCore
 			Size remaining = bufferSize - (bottom - top);
 			Size number = Min(n, remaining);
 
+			/// [EN] first is advanced for every item pushed, so the caller can spill the rest from where it stops.
+			/// [JP] push した要素ごとに first を進めるので、呼び出し側は止まった所から残りをあふれさせられる。
 			if (n > 0)
 			{
 				for (Size index = 0;index < number;index++)
@@ -781,6 +870,8 @@ namespace SeedCore
 		*/
 		ValueType pop()
 		{
+			/// [EN] bottom_ is lowered first and fenced before top_ is read, so a stealer sees the claim on the slot.
+			/// [JP] top_ を読む前に bottom_ を下げてフェンスを挟む。これで steal 側がスロットの確保を見られる。
 			Int64 bottom = bottom_.load(std::memory_order_relaxed) - 1;
 			bottom_.store(bottom, std::memory_order_relaxed);
 			std::atomic_thread_fence(std::memory_order_seq_cst);
@@ -790,8 +881,8 @@ namespace SeedCore
 
 			if (top <= bottom)
 			{
-				/// [EN] More than one element remains: a simple pop is safe with no contention against steal().
-				/// [JP] 2 個以上の要素が残っている場合、steal() との競合を考慮せずに単純な pop で安全に取得できる。
+				/// [EN] At least one element remains; it is read first, and only the last-element case below needs to race steal().
+				/// [JP] 少なくとも1個の要素が残っている。まず読み取り、steal() と競う必要があるのは下の最後の1個の場合だけ。
 				item = buffer_[bottom & bufferMask].load(std::memory_order_relaxed);
 				if (top == bottom)
 				{
@@ -833,6 +924,8 @@ namespace SeedCore
 		*/
 		ValueType steal()
 		{
+			/// [EN] top is read before bottom with a full fence between, pairing with the fence in pop() so both never take the last element.
+			/// [JP] top を bottom より先に、間に完全なフェンスを挟んで読む。pop() 側のフェンスと対になり、最後の1個を両方が取ることは無い。
 			Int64 top = top_.load(std::memory_order_acquire);
 			std::atomic_thread_fence(std::memory_order_seq_cst);
 			Int64 bottom = bottom_.load(std::memory_order_acquire);

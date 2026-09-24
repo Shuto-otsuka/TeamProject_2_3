@@ -20,34 +20,40 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Removes task from the graph.
+	* Removes task from the graph, first detaching it from every node
+	* it is connected to.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* task をグラフから削除する。
+	* task をグラフから削除する。先に、つながっている全ノードから task
+	* を切り離す。
 	*/
 	void FlowBuilder::Erase(JobTask task)
 	{
+		/// [EN] An empty handle refers to no node, so there is nothing to remove.
+		/// [JP] 空のハンドルはどのノードも指していないので、消すものは無い。
 		if (!task.node_)
 		{
 			return;
 		}
 
-		/// [EN] Unlink task from every successor's predecessor list (the front portion of edges_).
-		/// [JP] task を各後続の先行一覧（edges_ の前方部分）から切り離す。
+		/// [EN] For each successor of task (front part of task's edges_), drop task from that node's predecessors.
+		/// [JP] task の後続（task の edges_ の前方）それぞれについて、そのノードの先行ノードから task を外す。
 		for (Size index = 0;index < task.node_->numberSuccessors_;++index)
 		{
 			task.node_->edges_[index]->RemovePredecessors(task.node_);
 		}
 
-		/// [EN] Unlink task from every predecessor's successor list (the remaining portion of edges_).
-		/// [JP] task を各先行の後続一覧（edges_ の残り部分）から切り離す。
+		/// [EN] For each predecessor of task (rest of task's edges_), drop task from that node's successors.
+		/// [JP] task の先行ノード（task の edges_ の残り）それぞれについて、そのノードの後続から task を外す。
 		for (Size index = task.node_->numberSuccessors_;index < task.node_->edges_.size();++index)
 		{
 			task.node_->edges_[index]->RemoveSuccessors(task.node_);
 		}
 
+		/// [EN] With no edge left pointing at it, the node can be released safely.
+		/// [JP] 指しているエッジが無くなったので、ノードを安全に解放できる。
 		graph_.erase(task.node_);
 	}
 
@@ -64,6 +70,8 @@ namespace SeedCore
 	*/
 	JobTask FlowBuilder::Adopt(JobGraph&& graph)
 	{
+		/// [EN] The graph is moved into the node, so it lives exactly as long as the task does.
+		/// [JP] グラフはノードへムーブされるので、タスクとちょうど同じ期間だけ生きる。
 		return JobTask(graph_.emplace_back(JobNodeState::NONE, JobExceptionState::NONE, DefaultTaskParams{}, nullptr, nullptr, 0, std::in_place_type_t<JobNode::AdoptedModule>{}, std::move(graph)));
 	}
 
@@ -80,6 +88,8 @@ namespace SeedCore
 	*/
 	JobTask FlowBuilder::Placeholder()
 	{
+		/// [EN] The node gets no work; it can be given some later, or serve only as a join point for dependencies.
+		/// [JP] ノードには処理を持たせない。後から与えるか、依存関係の合流点としてだけ使う。
 		auto node = graph_.emplace_back(JobNodeState::NONE, JobExceptionState::NONE, DefaultTaskParams{}, nullptr, nullptr, 0, std::in_place_type_t<JobNode::Placeholder>{});
 		return JobTask(node);
 	}
@@ -132,35 +142,41 @@ namespace SeedCore
 	*/
 	JobSubflow::JobSubflow(JobExecutor& executor, JobWorker& worker, JobNode* node, JobGraph& graph) :FlowBuilder(graph), executor_(executor), worker_(worker), node_(node)
 	{
-		/// [EN] Clear any joined/retain flags left over from a previous run of this node's subflow.
-		/// [JP] このノードのサブフローの前回実行から残っている、joined/retain フラグをクリアする。
+		/// [EN] Clears the joined/retain flags left over from a previous run of this node's subflow.
+		/// [JP] このノードのサブフローの前回実行から残っている、合流済み/保持のフラグを消す。
 		node_->nstate_ &= ~(JobNodeState::JOINED_SUBFLOW | JobNodeState::RETAIN_SUBFLOW);
 
-		/// [EN] Start with an empty subgraph so the user's builder callable populates it fresh each time.
-		/// [JP] 空のサブグラフから開始し、ユーザーのビルダー呼び出し可能オブジェクトが毎回新規に構築できるようにする。
+		/// [EN] The subgraph starts empty on every run, so it is built from scratch each time.
+		/// [JP] サブグラフは実行のたびに空から始まり、毎回作り直される。
 		graph.clear();
 	}
 
 	/**
 	* [EN]
-	* Blocks until this subflow's subgraph finishes executing.
+	* Runs this subflow's subgraph to completion on the current worker
+	* and marks the subflow as joined. Throws if it was already joined.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* このサブフローのサブグラフの実行が完了するまでブロックする。
+	* このサブフローのサブグラフを、今のワーカー上で完了まで実行し、
+	* 合流済みにする。既に合流済みなら例外を投げる。
 	*/
 	void JobSubflow::Join()
 	{
+		/// [EN] Joining twice would run the same subgraph a second time within one run.
+		/// [JP] 2回合流すると、1回の実行の中で同じサブグラフをもう一度回すことになる。
 		if (!Joinable())
 		{
-			SC_THROW("", true);
+			SC_THROW("サブフローは既に合流済みです。");
 		}
 
 		/// [EN] Synchronously run the subgraph to completion on the calling worker, helping process other work while waiting.
 		/// [JP] 呼び出し元のワーカー上でサブグラフを同期的に完了まで実行する。待機中は他の処理を手伝う。
 		executor_.CorunGraph(worker_, graph_, node_->topology_, node_);
 
+		/// [EN] Marked as joined so the executor does not schedule the subgraph again after the task returns.
+		/// [JP] 合流済みにしておくことで、タスクが戻った後にエグゼキュータがサブグラフを再びスケジュールしない。
 		node_->nstate_ |= JobNodeState::JOINED_SUBFLOW;
 	}
 
@@ -227,7 +243,7 @@ namespace SeedCore
 		}
 		else
 		{
-			node_->nstate_ |= ~JobNodeState::RETAIN_SUBFLOW;
+			node_->nstate_ &= ~JobNodeState::RETAIN_SUBFLOW;
 		}
 	}
 

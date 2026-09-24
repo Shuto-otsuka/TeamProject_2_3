@@ -5,6 +5,9 @@
 
 namespace SeedCore
 {
+	class ResourceCache;
+	class World;
+
 	/**
 	* [EN]
 	* The Editor's window onto the shared asset library. It answers what
@@ -97,6 +100,47 @@ namespace SeedCore
 		* 走査して識別情報を与え、チームへ共有する。
 		*/
 		void ConsumeImportedAsset(DynamicArray<String>& paths);
+
+		/**
+		* [EN]
+		* Keeps what the engine writes out on its own - baked models, extracted
+		* materials, skeletons, clips, collision and the caches of textures,
+		* audio, movies and skies - in the library together with its .meta.
+		* One not in the library yet is shared, one changed here is published,
+		* and one whose identity or contents disagree with the library is
+		* replaced by the library's copy. Called once a frame; it acts only
+		* every few seconds.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* エンジンが自分で書き出すもの（焼いたモデル、取り出したマテリアル、
+		* スケルトン、クリップ、コリジョン、テクスチャ・オーディオ・ムービー・
+		* スカイのキャッシュ）を、.meta と一緒にライブラリへ揃えておく。まだ
+		* ライブラリに無いものは共有し、ここで変わったものは Publish し、識別子
+		* や中身がライブラリと食い違うものはライブラリの写しで置き換える。
+		* 毎フレーム呼ばれるが、動くのは数秒に1回だけ。
+		*/
+		void ShareGenerated(const ResourceCache& cache);
+
+		/**
+		* [EN]
+		* Brings down every asset the open world refers to that the team
+		* has but this machine does not: whatever an actor's asset fields
+		* name, and the prefab each actor was made from. Called once a
+		* frame; it acts only every few seconds, so actors another member
+		* adds later are covered as well.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 開いている world が参照しているアセットのうち、チームは持っていて
+		* この PC には無いものを取得する。対象は、Actor のアセット参照
+		* フィールドが示すものと、各 Actor の元になった Prefab。毎フレーム
+		* 呼ばれるが動くのは数秒に1回で、後から他のメンバーが足した Actor
+		* の分も拾える。
+		*/
+		void FetchReferenced(World& world);
 
 		/**
 		* [EN]
@@ -219,6 +263,21 @@ namespace SeedCore
 		* 通して行う。
 		*/
 		Bool Managed(const std::filesystem::path& path)const;
+
+		/**
+		* [EN]
+		* Whether the file at path can be shared through the library at
+		* all. Source code is not: it is shared through git, and carries no
+		* .meta for the library to identify it by.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* その位置のファイルを、そもそもライブラリで共有できるかどうか。
+		* ソースコードはできない。git で共有するものであり、ライブラリが
+		* 識別に使う .meta も持たないため。
+		*/
+		Bool Shareable(const std::filesystem::path& path)const;
 
 		/**
 		* [EN]
@@ -419,8 +478,39 @@ namespace SeedCore
 		/// [JP] 直近の Update 時点におけるワーカーの状態。ここでの回答は全てこれに基づく。
 		SharingSnapshot snapshot_;
 
-		/// [EN] Earliest time another edit request may be sent, since a member holding a slider asks every frame.
-		/// [JP] 次に編集の要求を送ってよい時刻。スライダーを掴んでいるメンバーは毎フレーム要求するため。
-		Uint64 nextEditRequest_ = 0;
+		/// [EN] Earliest time another edit request may be sent for each asset and scope, since a member holding a slider asks every frame.
+		/// [JP] アセットと範囲ごとの、次に編集の要求を送ってよい時刻。スライダーを掴んでいるメンバーは毎フレーム要求するため。
+		std::unordered_map<String, Uint64> nextEditRequest_;
+
+		/// [EN] Extensions of source code, which is shared through git rather than through the library.
+		/// [JP] ソースコードの拡張子。ライブラリではなく git で共有するもの。
+		std::set<std::string_view> sourceExtensions_ =
+		{
+			".h", ".cpp", ".cs", ".hlsl", ".hlsli",
+		};
+
+		/// [EN] Extensions of the files the engine writes out by itself, which are shared without a member asking.
+		/// [JP] エンジンが自分で書き出すファイルの拡張子。メンバーが頼まなくても共有する対象。
+		std::set<std::string_view> generatedExtensions_ =
+		{
+			".crister", ".material", ".skeleton", ".animation", ".collision", ".navmesh",
+			".texture", ".audio", ".movie", ".skymap",
+		};
+
+		/// [EN] Earliest time the generated assets may be walked again.
+		/// [JP] 生成アセットを次に辿ってよい時刻。
+		Uint64 nextShareGenerated_ = 0;
+
+		/// [EN] Earliest time another request may be sent for each generated asset, by its workspace path.
+		/// [JP] 生成アセットごとの、次に要求を送ってよい時刻。ワークスペース内の位置で引く。
+		std::unordered_map<String, Uint64> nextShareAttempt_;
+
+		/// [EN] Earliest time the open world's references may be walked again.
+		/// [JP] 開いている world の参照を次に辿ってよい時刻。
+		Uint64 nextFetchReferenced_ = 0;
+
+		/// [EN] Earliest time another get may be sent for each referenced asset, so one still downloading is not asked for again.
+		/// [JP] 参照されているアセットごとの、次に取得を要求してよい時刻。ダウンロード中のものを重ねて要求しないようにするため。
+		std::unordered_map<Uint32, Uint64> nextFetchAttempt_;
 	};
 }

@@ -37,6 +37,7 @@ namespace SeedCore
 		}
 
 		world_ = MakePtr<World>();
+		world_->Timer(gameTimer_);
 
 		system_ = MakePtr<SystemScheduler>();
 
@@ -248,22 +249,22 @@ namespace SeedCore
 					system_->Step(*world_, worldTimer_.FixedDeltaTime());
 				}
 
-				system_->Run(*world_, *resource_, *executor_, gameTimer_.DeltaTime(), gameTimer_.Playing());
+				system_->Run(*world_, *resource_, *executor_, gameTimer_.ScaledDeltaTime(), gameTimer_.Playing());
 
-				Scene::Update(gameTimer_.DeltaTime());
+				Scene::Update(gameTimer_.ScaledDeltaTime());
 
 				if (const Scene* switchedScene = Scene::ConsumeSwitchedScene())
 				{
 					raytracing_ = DeserializeRaytracingContext(switchedScene->Visual().raytracing_);
 				}
 
-				AudioSystem::Update(*world_, gameTimer_.DeltaTime());
+				AudioSystem::Update(*world_, gameTimer_.ScaledDeltaTime());
 
 				criManager_->Execute();
 
 				if (raytracing_.daySystemEnabled_)
 				{
-					CelestialSystem::Advance(gameTimer_.DeltaTime(), raytracing_.daySystem_);
+					CelestialSystem::Advance(gameTimer_.ScaledDeltaTime(), raytracing_.daySystem_);
 
 					if (raytracing_.sunLightEnabled_)
 					{
@@ -275,7 +276,7 @@ namespace SeedCore
 						}
 					}
 				}
-				weatherSystem_.Execute(*world_, gameTimer_.DeltaTime(), raytracing_.daySystem_.monthOfYear_, raytracing_.volumetricCloudScapes_);
+				weatherSystem_.Execute(*world_, gameTimer_.ScaledDeltaTime(), raytracing_.daySystem_.monthOfYear_, raytracing_.volumetricCloudScapes_);
 
 				graphics_->Raytracing(raytracing_);
 				graphics_->Upscale(gameConfig_.useDlss_, gameConfig_.upscaleMode_);

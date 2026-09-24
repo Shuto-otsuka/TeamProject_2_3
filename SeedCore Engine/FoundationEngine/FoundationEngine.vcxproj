@@ -85,6 +85,7 @@
     <ClCompile Include="World\ECS\Archetype\Chunk.cpp" />
     <ClCompile Include="World\ECS\Component\ComponentBehaviour.cpp" />
     <ClCompile Include="World\ECS\Component\ComponentRegistry.cpp" />
+    <ClCompile Include="World\ECS\Component\UnknownComponent.cpp" />
     <ClCompile Include="World\ECS\Entity\Entity.cpp" />
     <ClCompile Include="World\ECS\Entity\EntityRecord.cpp" />
     <ClCompile Include="World\ECS\System\LifetimeSystem.cpp" />
@@ -215,6 +216,7 @@
     <ClInclude Include="World\ECS\Component\Startable.h" />
     <ClInclude Include="World\ECS\Component\Tickable.h" />
     <ClInclude Include="World\ECS\Component\Triggerable.h" />
+    <ClInclude Include="World\ECS\Component\UnknownComponent.h" />
     <ClInclude Include="World\ECS\Component\Velocity.h" />
     <ClInclude Include="World\ECS\Entity\Entity.h" />
     <ClInclude Include="World\ECS\Entity\EntityRecord.h" />

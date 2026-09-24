@@ -21,20 +21,21 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* POD-path buffer growth: reallocates (or, if still on inline
-	* storage identified by firstElement, mallocs+copies) to at least
-	* minSizeInBytes, growing geometrically by roughly 2x + size otherwise.
+	* POD-path buffer growth to twice the current capacity plus size
+	* bytes, or minSizeInBytes if that is larger. A heap buffer is
+	* realloc'd; the inline buffer is malloc'd and copied instead.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* POD経路でのバッファ成長: 少なくとも minSizeInBytes まで再確保する
-	* （まだインラインストレージ上であれば、firstElement で判定し
-	* malloc+コピーする）。それ以外の場合は概ね2倍+size で幾何的に
-	* 成長する。
+	* POD 経路でのバッファ成長。今の容量の2倍に size バイトを足した
+	* 大きさまで、minSizeInBytes の方が大きければそこまで広げる。ヒープの
+	* バッファは realloc し、インラインのバッファは malloc してコピーする。
 	*/
 	void JobVectorBase::grow_pod(void* firstElement, Size minSizeInBytes, Size size)
 	{
+		/// [EN] Adding size guarantees room for at least one more element even when the capacity is still zero.
+		/// [JP] size を足すことで、容量がまだ 0 のときでも少なくとも1要素分の空きができる。
 		Size currentSizeBytes = size_in_byte();
 		Size newCapacityInBytes = 2 * capacity_in_byte() + size;
 		if (newCapacityInBytes < minSizeInBytes)
@@ -57,6 +58,8 @@ namespace SeedCore
 			newElement = realloc(this->begin_, newCapacityInBytes);
 		}
 
+		/// [EN] All three pointers are rebuilt relative to the new block.
+		/// [JP] 3本のポインタを全て、新しいブロックを基準に作り直す。
 		this->end_ = (Char*)newElement + currentSizeBytes;
 		this->begin_ = newElement;
 		this->capacity_ = (Char*)this->begin_ + newCapacityInBytes;
@@ -109,20 +112,19 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* Rounds array up to the next power of two (used to size new backing storage).
+	* Returns the smallest power of two strictly greater than array
+	* (used to size new backing storage).
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* array を次の2の冪へ切り上げる（新しい裏付けストレージのサイズ
-	* 決定に使う）。
+	* array より真に大きい最小の2の冪を返す（新しい裏付けストレージの
+	* サイズ決定に使う）。
 	*/
 	Uint64 ArrayNextCapacity(Uint64 array)
 	{
-		/// [EN] Bit-OR cascade sets every bit below the highest set bit,
-		///      producing (2^n - 1); adding 1 rounds up to the next power of two.
-		/// [JP] ビットOR連鎖により、最上位ビットより下の全ビットを1にする
-		///      （2^n - 1 になる）。1を加算することで次の2の冪へ切り上げる。
+		/// [EN] The OR cascade sets every bit below the highest set bit, giving 2^n - 1; adding 1 gives the next power of two.
+		/// [JP] OR の連鎖で最上位ビットより下を全て 1 にして 2^n - 1 を作り、1 を足して次の2の冪にする。
 		array |= (array >> 1);
 		array |= (array >> 2);
 		array |= (array >> 4);

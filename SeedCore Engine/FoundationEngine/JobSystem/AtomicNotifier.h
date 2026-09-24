@@ -1,3 +1,4 @@
+#pragma once
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/JobSystem/WorkerCommon.h>
 #include <FoundationEngine/Log/Assert.h>
@@ -12,11 +13,11 @@ namespace SeedCore
 	* A single 64-bit state_ packs an epoch (upper 32 bits) and the current
 	* waiter count (lower 32 bits): a waiter records the epoch it observed
 	* in prepare_wait, then only actually blocks in commit_wait if the
-	* epoch hasn't since changed — any notify_one/notify_all in between
-	* bumps the epoch first, so the race where a wakeup fires before the
-	* waiter starts sleeping can never be missed. Selected as the job
-	* system's notifier when SC_ENABLE_ATOMIC_NOTIFIER is set (see
-	* WorkerCommon.h); NonblockingNotifier is used otherwise.
+	* epoch hasn't since changed. Any notify_one/notify_all in between
+	* bumps the epoch first, so a wakeup that fires before the waiter
+	* starts sleeping is never missed. Selected as the job system's
+	* notifier (JobWorker.h's DefaultNotifier) when SC_ENABLE_ATOMIC_NOTIFIER
+	* is set in WorkerCommon.h; NonblockingNotifier is used otherwise.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -26,16 +27,19 @@ namespace SeedCore
 	* なく待機・起床させるために使う。単一の64ビット state_ に、エポック
 	* （上位32ビット）と現在の待機者数（下位32ビット）を詰め込む。
 	* 待機者は prepare_wait で観測したエポックを記録し、commit_wait では
-	* そのエポックが変化していない場合にのみ実際にブロックする — 途中の
+	* そのエポックが変化していない場合にのみ実際にブロックする。途中の
 	* notify_one/notify_all は先にエポックを進めるため、待機者が眠りに
-	* 就く前に起床が発生する競合を見逃すことはない。WorkerCommon.h の
-	* SC_ENABLE_ATOMIC_NOTIFIER が設定されている場合にジョブシステムの
-	* notifier として選ばれる。それ以外では NonblockingNotifier が使われる。
+	* 就く前に起床が発生しても見逃すことはない。WorkerCommon.h の
+	* SC_ENABLE_ATOMIC_NOTIFIER が設定されている場合に、ジョブシステムの
+	* notifier（JobWorker.h の DefaultNotifier）として選ばれる。それ以外では
+	* NonblockingNotifier が使われる。
 	*/
 	class AtomicNotifier :public NonTransferable
 	{
 	private:
-		friend class Executor;
+		/// [EN] Grants the executor direct access to the waiter slots.
+		/// [JP] JobExecutor に待機者スロットへの直接アクセスを許す。
+		friend class JobExecutor;
 
 	public:
 		/**
@@ -75,17 +79,19 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Asserts that no waiter is currently registered before destruction
-		* (a live waiter here would indicate a use-after-free elsewhere).
+		* Asserts that no waiter is still registered: a thread left waiting
+		* would be blocked on a state_ that no longer exists.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 破棄前に、現在登録中の待機者がいないことをアサートする
-		* （ここで待機者が残っていれば、他所での use-after-free を示す）。
+		* 待機者が登録されたまま残っていないことをアサートする。待機中の
+		* スレッドが残っていると、存在しなくなった state_ の上で止まることになる。
 		*/
 		~AtomicNotifier()
 		{
+			/// [EN] Only the waiter-count half is checked; the epoch may hold any value at shutdown.
+			/// [JP] 見るのは待機者数の側だけ。終了時のエポックはどんな値でもよい。
 			SC_ASSERT((state_.load(std::memory_order_relaxed) & WAITER_MASK) == 0, "通知処理の開始時に待機中のスレッドが残っています（State: {:#x}）", state_.load(std::memory_order_relaxed));
 		}
 
@@ -100,6 +106,8 @@ namespace SeedCore
 		*/
 		Size count()const noexcept
 		{
+			/// [EN] Relaxed is enough because the count is only a snapshot that may change right after.
+			/// [JP] 直後に変わりうる一時点の値でしかないので、relaxed で足りる。
 			return state_.load(std::memory_order_relaxed) & WAITER_MASK;
 		}
 
@@ -115,7 +123,7 @@ namespace SeedCore
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* waiter がこれから待機することを登録する: 待機者数をインクリメントし、
+		* waiter がこれから待機することを登録する。待機者数をインクリメントし、
 		* 現在のエポックを記録する。同じ waiter インデックスに対して、後で
 		* commit_wait または cancel_wait と対にする必要がある。待機対象の
 		* 条件を再チェックする前にこれを呼ぶことで、チェックと競合する
@@ -123,8 +131,13 @@ namespace SeedCore
 		*/
 		void prepare_wait(Size waiter)noexcept
 		{
+			/// [EN] Joining the waiter count and reading the epoch happen in one atomic step.
+			/// [JP] 待機者数への参加とエポックの読み取りを、1回の不可分な操作で行う。
 			auto previous = state_.fetch_add(WAITER_INC, std::memory_order_relaxed);
 			waiters_[waiter].epoch_ = (previous >> EPOCH_SHIFT);
+
+			/// [EN] Pairs with the fence in notify_*: either the notifier sees this waiter, or the caller's re-check sees the new work.
+			/// [JP] notify_* 側のフェンスと対になる。通知側がこの待機者を見るか、呼び出し側の再確認が新しい仕事を見るかのどちらかになる。
 			std::atomic_thread_fence(std::memory_order_seq_cst);
 		}
 
@@ -143,12 +156,19 @@ namespace SeedCore
 		*/
 		void commit_wait(Size waiter)noexcept
 		{
+			/// [EN] Sleeps only while the epoch is still the recorded one, so a notify that already happened returns at once.
+			/// [JP] エポックが記録時のままの間だけ眠る。既に通知が来ていれば、すぐに戻る。
 			Uint64 previous = state_.load(std::memory_order_relaxed);
 			while ((previous >> EPOCH_SHIFT) == waiters_[waiter].epoch_)
 			{
+				/// [EN] wait() also returns spuriously or when only the waiter count changed, hence the reload and re-check.
+				/// [JP] wait() は偽の起床や待機者数だけの変化でも戻るため、読み直して確かめ直す。
 				state_.wait(previous, std::memory_order_relaxed);
 				previous = state_.load(std::memory_order_relaxed);
 			}
+
+			/// [EN] Leaves the waiter count only after waking, so notifiers keep counting this thread as a target until then.
+			/// [JP] 起きてから待機者数を抜ける。それまでは通知側から見て起こす対象であり続ける。
 			state_.fetch_sub(WAITER_INC, std::memory_order_relaxed);
 		}
 
@@ -163,10 +183,12 @@ namespace SeedCore
 		* [JP]
 		* 実際にはブロックせずに、保留中の prepare_wait を取り消す
 		* （例: commit_wait を呼ぶ前に呼び出し側が実行すべき仕事を見つけた
-		* 場合）: 待機者数を元に戻す。
+		* 場合）。待機者数を元に戻す。
 		*/
 		void cancel_wait(Size /* No Argument */)noexcept
 		{
+			/// [EN] The recorded epoch is left as is; the next prepare_wait on this slot overwrites it.
+			/// [JP] 記録したエポックはそのまま置いておく。このスロットの次の prepare_wait が上書きする。
 			state_.fetch_sub(WAITER_INC, std::memory_order_relaxed);
 		}
 
@@ -183,9 +205,16 @@ namespace SeedCore
 		*/
 		void notify_one()noexcept
 		{
+			/// [EN] Pairs with the fence in prepare_wait, so work published before this call is visible to the woken thread.
+			/// [JP] prepare_wait 側のフェンスと対になり、この呼び出しより前に積んだ仕事が起きたスレッドから見える。
 			std::atomic_thread_fence(std::memory_order_seq_cst);
+
+			/// [EN] With no waiter registered there is nobody to wake, and the epoch is left alone.
+			/// [JP] 待機者が登録されていなければ起こす相手はいないので、エポックにも触れない。
 			for (Uint64 state = state_.load(std::memory_order_relaxed);state & WAITER_MASK;)
 			{
+				/// [EN] Bumping the epoch is what releases a waiter; a failed exchange reloads state and loops.
+				/// [JP] 待機者を解放するのはエポックの進行。交換に失敗すると state が読み直されるので、もう一度回る。
 				if (state_.compare_exchange_weak(state, state + EPOCH_INC, std::memory_order_relaxed))
 				{
 					state_.notify_one();
@@ -207,9 +236,16 @@ namespace SeedCore
 		*/
 		void notify_all()noexcept
 		{
+			/// [EN] Pairs with the fence in prepare_wait, so work published before this call is visible to the woken threads.
+			/// [JP] prepare_wait 側のフェンスと対になり、この呼び出しより前に積んだ仕事が起きたスレッドから見える。
 			std::atomic_thread_fence(std::memory_order_seq_cst);
+
+			/// [EN] With no waiter registered there is nobody to wake, and the epoch is left alone.
+			/// [JP] 待機者が登録されていなければ起こす相手はいないので、エポックにも触れない。
 			for (Uint64 state = state_.load(std::memory_order_relaxed);state & WAITER_MASK;)
 			{
+				/// [EN] One epoch bump releases every waiter that recorded the old epoch.
+				/// [JP] エポックを1回進めるだけで、古いエポックを記録した全待機者が解放される。
 				if (state_.compare_exchange_weak(state, state + EPOCH_INC, std::memory_order_relaxed))
 				{
 					state_.notify_all();
@@ -231,12 +267,16 @@ namespace SeedCore
 		*/
 		void notify_count(Size n)noexcept
 		{
+			/// [EN] Asking for every slot or more is the same as waking everyone, done in one call.
+			/// [JP] 全スロット以上を求めるのは全員を起こすのと同じなので、1回の呼び出しで済ませる。
 			if (n >= waiters_.size())
 			{
 				notify_all();
 			}
 			else
 			{
+				/// [EN] Each notify_one bumps the epoch once and wakes at most one sleeper.
+				/// [JP] notify_one は1回ごとにエポックを1つ進め、眠っているスレッドを最大1つ起こす。
 				for (Size waiterIndex = 0;waiterIndex < n;++waiterIndex)
 				{
 					notify_one();
@@ -259,17 +299,15 @@ namespace SeedCore
 		}
 
 	private:
-		/// [EN] Sanity checks for the bit-packing scheme used by state_ below.
-		/// [JP] 以下の state_ で使うビット詰め込み方式に対する健全性チェック。
+		/// [EN] The bit-packing of state_ below assumes these exact sizes.
+		/// [JP] 以下の state_ のビット詰め込みは、これらの大きさを前提にしている。
 		SC_STATIC_ASSERT(sizeof(Int) == 4, "Int型は4バイトでなければなりません");
 		SC_STATIC_ASSERT(sizeof(Uint32) == 4, "Uint32型は4バイトでなければなりません");
 		SC_STATIC_ASSERT(sizeof(Uint64) == 8, "Uint64型は8バイトでなければなりません");
 		SC_STATIC_ASSERT(sizeof(std::atomic<Uint64>) == 8, "std::atomic<Uint64>型は8バイトでなければなりません");
 
-		/// [EN] Packed state: epoch in the upper 32 bits (WAITER_MASK's
-		///      complement), waiter count in the lower 32 bits (WAITER_MASK).
-		/// [JP] 詰め込まれた状態: 上位32ビット（WAITER_MASKの補数）がエポック、
-		///      下位32ビット（WAITER_MASK）が待機者数。
+		/// [EN] Packed state: epoch in the upper 32 bits, waiter count in the lower 32 bits (WAITER_MASK).
+		/// [JP] 詰め込まれた状態。上位32ビットがエポック、下位32ビット（WAITER_MASK）が待機者数。
 		std::atomic<Uint64> state_;
 
 		/// [EN] Per-slot epoch snapshots, indexed by the waiter index passed to prepare_wait/commit_wait.

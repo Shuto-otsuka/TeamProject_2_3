@@ -59,6 +59,37 @@ namespace SeedCore
 		return false;
 	}
 
+	/**
+	* [EN]
+	* Sets the game timer this world runs on; the world does not own it.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* このワールドが使うゲームタイマーを設定する。ワールドは所有しない。
+	*/
+	void World::Timer(GameTimer& gameTimer)
+	{
+		gameTimer_ = &gameTimer;
+	}
+
+	/**
+	* [EN]
+	* Returns the game timer set by the host.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ホストが設定したゲームタイマーを返す。
+	*/
+	const GameTimer& World::Timer()const
+	{
+		/// [EN] Reading the timer before the host has set it is a setup mistake, so it is caught here.
+		/// [JP] ホストが設定する前にタイマーを読むのは初期化の誤りなので、ここで捕まえる。
+		SC_ASSERT(gameTimer_ != nullptr, "World にゲームタイマーが設定されていません。");
+		return *gameTimer_;
+	}
+
 	// ============================================================
 	// Entity
 	// ============================================================

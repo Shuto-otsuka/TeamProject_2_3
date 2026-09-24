@@ -22,19 +22,21 @@ namespace SeedCore
 		/// [JP] タスクに関連付けられた表示名。
 		String name_;
 
-		/// [EN] Pointer to arbitrary user-defined data associated with the task. Ownership is not managed here.
-		/// [JP] タスクに関連付けられた、任意のユーザー定義データへのポインタ。所有権はここでは管理しない。
+		/// [EN] Arbitrary user data attached to the task; neither the parameters nor the node own it.
+		/// [JP] タスクに付ける任意のユーザーデータ。パラメータもノードもこれを所有しない。
 		void* data_ = nullptr;
 	};
 
 	/**
 	* [EN]
-	* Empty marker type used to indicate that a task has no parameters.
+	* Empty marker type used to indicate that a task has no parameters;
+	* it selects the JobNode constructor that leaves the name empty.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* タスクがパラメータを持たないことを示すための、空のマーカー型。
+	* 名前を空のままにする JobNode のコンストラクタを選ばせる。
 	*/
 	class DefaultTaskParams {};
 
@@ -64,19 +66,21 @@ namespace SeedCore
 	* Owns a collection of JobNode pointers that together form a task
 	* graph. Provides creation, iteration, and lifetime management of
 	* the nodes; the actual graph-building API is exposed through
-	* friend classes such as FlowBuilder and Subflow.
+	* friend classes such as FlowBuilder and JobSubflow.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* タスクグラフを構成する JobNode ポインタの集合を所有するクラス。
 	* ノードの生成、走査、ライフタイム管理を提供する。実際のグラフ構築用
-	* API は FlowBuilder や Subflow といった friend クラスを通じて
+	* API は FlowBuilder や JobSubflow といった friend クラスを通じて
 	* 公開される。
 	*/
 	class SEEDCORE_API JobGraph
 	{
 	private:
+		/// [EN] Builders add and remove nodes, and the executor walks and rearranges them, through the private members.
+		/// [JP] ビルダーはノードの追加と削除を、エグゼキュータは走査と並べ替えを、private なメンバーを通じて行う。
 		friend class JobNode;
 		friend class FlowBuilder;
 		friend class Subflow;
@@ -92,8 +96,8 @@ namespace SeedCore
 		/// [JP] 保持しているノードに対する、読み取り専用のイテレータ型。
 		using ConstIterator = DynamicArray<JobNode*>::const_iterator;
 
-		/// [EN] The collection of nodes owned by this graph.
-		/// [JP] このグラフが所有するノードの集合。
+		/// [EN] The nodes owned by this graph; the order is not meaningful and is rearranged before each run.
+		/// [JP] このグラフが所有するノード。並び順に意味は無く、実行のたびに並べ替えられる。
 		DynamicArray<JobNode*> nodes_;
 
 	public:
@@ -251,15 +255,15 @@ namespace SeedCore
 	private:
 		/**
 		* [EN]
-		* Removes and destroys a single node from the graph.
-		* Intended to be called by JobNode itself or other friend
-		* classes during graph maintenance.
+		* Removes and destroys a single node from the graph. The caller
+		* is responsible for removing the edges other nodes still have to
+		* it.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* グラフから単一の node を削除し、破棄する。グラフの保守処理中に
-		* JobNode 自身や他の friend クラスから呼び出されることを想定している。
+		* グラフから単一の node を削除し、破棄する。他のノードに残っている
+		* node へのエッジを取り除くのは、呼び出し側の責任。
 		*/
 		void erase(JobNode* node);
 
@@ -277,6 +281,8 @@ namespace SeedCore
 		template <typename ...Args>
 		JobNode* emplace_back(Args&&... args)
 		{
+			/// [EN] animate allocates from the node pool or with new, matching the recycle done in clear and erase.
+			/// [JP] animate はノードプールか new で確保する。clear と erase で行う recycle と対になる。
 			nodes_.push_back(animate(std::forward<Args>(args)...));
 			return nodes_.back();
 		}
