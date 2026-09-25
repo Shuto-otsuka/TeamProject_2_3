@@ -1,0 +1,51 @@
+SeedCore Coroutine Reference
+===========================
+
+include
+-------
+#include <SeedCore/ScCoroutine.h>
+
+Coroutineは、SeedScriptのメンバ関数から一定時間・一定フレーム待機を含む
+処理の流れを記述するための機能です。
+
+基本例
+------
+SeedCore::Coroutine Attack()
+{
+    // 呼び出した直後にここまで実行される
+    SC_COROUTINE(SeedCore::Coroutine::WaitForSeconds(1.0f));
+
+    // 1秒後にここから再開される
+}
+
+void MyScript::OnStart()
+{
+    Attack();
+}
+
+待機API
+------
+Coroutine::WaitForSeconds(seconds)
+    ゲーム時間で指定秒数待つ。
+
+Coroutine::WaitForFrames(frames)
+    プレイ中の指定フレーム数だけ待つ。
+
+SeedCore::Coroutine Attack()
+{
+    SC_COROUTINE(SeedCore::Coroutine::WaitForFrames(1));
+    SC_COROUTINE(SeedCore::Coroutine::WaitForSeconds(0.5f));
+}
+
+SC_COROUTINE(x) は、Coroutineの待機処理で使うエンジン推奨の記法です。
+Coroutineを待機させるときは、基本的にこのマクロを使います。
+直接 co_await を書いても動作します。
+
+仕様と注意
+----------
+- Coroutineは呼び出した時点で開始します。
+- 戻り値は所有権を持たない開始トークンなので、通常は捨てて呼び出します。
+- 所有Actorまたはコンポーネントが削除されると、関連Coroutineも自動キャンセルされます。
+- CoroutineSystem::Updateはエンジン側が毎フレーム呼ぶため、ゲーム側から呼びません。
+- 同じ関数を複数回呼ぶと、その回数だけ別Coroutineが開始されます。
+- 毎フレーム処理はOnTick、物理周期の処理はOnFixedTickを使います。

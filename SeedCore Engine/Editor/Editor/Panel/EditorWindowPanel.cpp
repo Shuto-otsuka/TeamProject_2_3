@@ -450,7 +450,7 @@ namespace SeedCore
 			{
 				auto& guizmo = context_.viewportContext_.guizmo_;
 
-				Float wheel = InputSystem::MouseWheelDelta();
+				Float wheel = InputSystem::MouseWheel();
 				if (Abs(wheel) > 0.0f)
 				{
 					if (guizmo.guizmoOperation_ == ImGuizmo::TRANSLATE)
@@ -503,7 +503,7 @@ namespace SeedCore
 			///      だけでは出さず、実際にホイールが動いたフレームだけツール
 			///      チップを出し、その後は moveSpeedTooltipTimer_ で短時間表示を
 			///      維持する（1フレームだけの点滅で読めなくなるのを防ぐ）。
-			if (editorRotateHeld && ImGui::IsWindowHovered() && Abs(InputSystem::MouseWheelDelta()) > 0.0f)
+			if (editorRotateHeld && ImGui::IsWindowHovered() && Abs(InputSystem::MouseWheel()) > 0.0f)
 			{
 				moveSpeedTooltipTimer_ = 1.0f;
 			}
@@ -519,7 +519,7 @@ namespace SeedCore
 
 			if (!ImGuizmo::IsUsing() && ImGui::IsWindowHovered() && context_.cameraContext_.editorCamera_ && context_.cameraContext_.editorCameraController_)
 			{
-				if ((editorRotateHeld || editorPanHeld) && !InputSystem::MouseCaptured())
+				if (editorRotateHeld || editorPanHeld)
 				{
 					InputSystem::BeginMouseCapture();
 				}
@@ -528,7 +528,7 @@ namespace SeedCore
 				context_.cameraContext_.editorCameraController_->Update(*context_.cameraContext_.editorCamera_, deltaTime);
 			}
 
-			if (!editorRotateHeld && !editorPanHeld && InputSystem::MouseCaptured())
+			if (!editorRotateHeld && !editorPanHeld)
 			{
 				InputSystem::EndMouseCapture();
 			}

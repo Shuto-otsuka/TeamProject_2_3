@@ -38,7 +38,7 @@ namespace SeedCore
 		Float moonPhase_ = 0.0f;
 		Uint directionalLightPadding3_[3] = { 0, 0, 0 };
 	};
-	SC_STATIC_ASSERT_SIZE(DirectionalLightConstantBuffer, 96, "Light/Light.hlsli");
+	SC_STATIC_ASSERT(DirectionalLightConstantBuffer, 96, "Light/Light.hlsli");
 
 	struct PointLightStructuredBuffer
 	{
@@ -85,7 +85,7 @@ namespace SeedCore
 		Uint clusterCountY_ = 0;
 		Uint lightConstantPadding0_[2] = { 0, 0 };
 	};
-	SC_STATIC_ASSERT_SIZE(LightConstantBuffer, 32, "Light/Light.hlsli");
+	SC_STATIC_ASSERT(LightConstantBuffer, 32, "Light/Light.hlsli");
 
 	struct LightShaderResourceIndices
 	{
@@ -97,7 +97,7 @@ namespace SeedCore
 		Uint clusterLightListIndex_ = 0;
 		Uint lightShaderResourcePadding0_[3] = { 0, 0, 0 };
 	};
-	SC_STATIC_ASSERT_SIZE(LightShaderResourceIndices, 32, "Light/Cluster.hlsli");
+	SC_STATIC_ASSERT(LightShaderResourceIndices, 32, "Light/Cluster.hlsli");
 
 	struct ClusterAssignConstantBuffer
 	{
@@ -111,7 +111,7 @@ namespace SeedCore
 		Float nearPlane_ = 0.1f;
 		Float farPlane_ = 1000.0f;
 	};
-	SC_STATIC_ASSERT_SIZE(ClusterAssignConstantBuffer, 32, "Light/Cluster.hlsli");
+	SC_STATIC_ASSERT(ClusterAssignConstantBuffer, 32, "Light/Cluster.hlsli");
 
 	struct ClusterAssignShaderResourceIndices
 	{
@@ -120,7 +120,7 @@ namespace SeedCore
 		Uint rectLightIndex_ = 0;
 		Uint clusterAssignShaderResourcePadding0_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(ClusterAssignShaderResourceIndices, 16, "Light/Cluster.hlsli");
+	SC_STATIC_ASSERT(ClusterAssignShaderResourceIndices, 16, "Light/Cluster.hlsli");
 
 	struct ClusterAssignUnorderedAccessIndices
 	{
@@ -128,7 +128,7 @@ namespace SeedCore
 		Uint clusterLightListIndex_ = 0;
 		Uint clusterAssignUnorderedAccessPadding0_[2] = { 0, 0 };
 	};
-	SC_STATIC_ASSERT_SIZE(ClusterAssignUnorderedAccessIndices, 16, "Light/Cluster.hlsli");
+	SC_STATIC_ASSERT(ClusterAssignUnorderedAccessIndices, 16, "Light/Cluster.hlsli");
 
 	struct ClusterInstance
 	{

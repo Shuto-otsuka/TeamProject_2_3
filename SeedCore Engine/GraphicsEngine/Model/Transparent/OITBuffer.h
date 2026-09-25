@@ -28,7 +28,7 @@ namespace SeedCore
 		Uint fragmentCapacity_ = 0;
 		Vector3 oitConstantBufferPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(OitConstantBuffer, 16, "Model/Transparent/OitShading.hlsli");
+	SC_STATIC_ASSERT(OitConstantBuffer, 16, "Model/Transparent/OitShading.hlsli");
 
 	/**
 	* [EN]

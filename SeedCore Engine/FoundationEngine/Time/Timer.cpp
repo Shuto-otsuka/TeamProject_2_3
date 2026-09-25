@@ -13,12 +13,16 @@ namespace SeedCore
 	*/
 	void Timer::Start()
 	{
+		/// [EN] Resuming from Stop(): the stretch from stop_ to now is added to paused_, so Total() leaves it out.
+		/// [JP] Stop() からの再開: stop_ から今までの区間を paused_ に足し、Total() がその分を含めないようにする。
 		if (stopped_)
 		{
 			paused_ += std::chrono::duration<Double>(std::chrono::high_resolution_clock::now() - stop_);
 			stopped_ = false;
 		}
 
+		/// [EN] The next Tick() measures from now, so the first delta after a restart never includes the stopped time.
+		/// [JP] 次の Tick() はここから測るので、再開直後のデルタに停止していた時間が入ることは無い。
 		last_ = std::chrono::high_resolution_clock::now();
 	}
 
@@ -33,6 +37,8 @@ namespace SeedCore
 	*/
 	void Timer::Stop()
 	{
+		/// [EN] Only the first Stop() records the time; stopping again keeps the original stop_, so the whole stopped stretch is counted once.
+		/// [JP] 時刻を記録するのは最初の Stop() だけ。重ねて止めても元の stop_ を保つので、停止区間全体が一度だけ数えられる。
 		if (!stopped_)
 		{
 			stop_ = std::chrono::high_resolution_clock::now();
@@ -51,11 +57,17 @@ namespace SeedCore
 	*/
 	void Timer::Reset()
 	{
+		/// [EN] Both Total() and the next Tick() measure from now.
+		/// [JP] Total() も次の Tick() も、ここから測り始める。
 		start_ = std::chrono::high_resolution_clock::now();
 		last_ = std::chrono::high_resolution_clock::now();
 
+		/// [EN] Stopped time accumulated before the reset no longer applies to the new start_.
+		/// [JP] リセット前に貯まった停止時間は、新しい start_ には関係ないので捨てる。
 		paused_ = std::chrono::duration<Double>::zero();
 
+		/// [EN] The timer comes out running, with no delta until the next Tick().
+		/// [JP] リセット後のタイマーは動いている状態で、次の Tick() まではデルタ 0。
 		delta_ = 0.0f;
 		stopped_ = false;
 	}
@@ -73,12 +85,16 @@ namespace SeedCore
 	*/
 	void Timer::Tick()
 	{
+		/// [EN] While stopped no time passes; last_ is left alone because Start() resets it on resume.
+		/// [JP] 停止中は時間が進まない。再開時に Start() が last_ を置き直すので、ここでは触らない。
 		if (stopped_)
 		{
 			delta_ = 0.0f;
 			return;
 		}
 
+		/// [EN] Delta is the time since the previous Tick()/Start(); last_ then moves to now for the next one.
+		/// [JP] デルタは前回の Tick()/Start() からの時間。その後 last_ を今に進め、次の計測の起点にする。
 		delta_ = std::chrono::duration<Double>(std::chrono::high_resolution_clock::now() - last_).count();
 		last_ = std::chrono::high_resolution_clock::now();
 	}
@@ -94,6 +110,8 @@ namespace SeedCore
 	*/
 	Float Timer::Delta()const
 	{
+		/// [EN] Kept in Double internally for precision; narrowed to Float only when handed out.
+		/// [JP] 内部では精度のため Double で持ち、渡すときだけ Float に落とす。
 		return static_cast<Float>(delta_);
 	}
 
@@ -108,7 +126,12 @@ namespace SeedCore
 	*/
 	Float Timer::Total()const
 	{
+		/// [EN] While stopped the total freezes at stop_; while running it advances with each Tick() (last_), not with the live clock.
+		/// [JP] 停止中は合計が stop_ の時点で止まる。動いている間は現在時刻ではなく Tick() ごと（last_）に進む。
 		auto end = stopped_ ? stop_ : last_;
+
+		/// [EN] Elapsed since start_, minus the stretches spent stopped that Start() has folded into paused_.
+		/// [JP] start_ からの経過時間から、Start() が paused_ にまとめた停止区間を差し引く。
 		return static_cast<Float>(std::chrono::duration<Double>(end - start_ - paused_).count());
 	}
 }

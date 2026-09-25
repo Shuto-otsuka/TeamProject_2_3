@@ -34,7 +34,7 @@ namespace SeedCore
 		Uint depthNormalIndex_ = 0;
 		Vector2 shadowAccumulationShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ShadowAccumulationShaderResourceIndices, 80, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(ShadowAccumulationShaderResourceIndices, 80, "Shader/Denoiser.hlsli");
 
 	struct ShadowAccumulationUnorderedAccessIndices
 	{
@@ -53,7 +53,7 @@ namespace SeedCore
 		Uint historyLengthIndex_ = 0;
 		Uint depthNormalIndex_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(ShadowAccumulationUnorderedAccessIndices, 48, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(ShadowAccumulationUnorderedAccessIndices, 48, "Shader/Denoiser.hlsli");
 
 	struct AmbientOcclusionAccumulationShaderResourceIndices
 	{
@@ -61,14 +61,14 @@ namespace SeedCore
 		Uint opennessIndex_ = 0;
 		Vector2 ambientOcclusionAccumulationShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(AmbientOcclusionAccumulationShaderResourceIndices, 16, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(AmbientOcclusionAccumulationShaderResourceIndices, 16, "Shader/Denoiser.hlsli");
 
 	struct AmbientOcclusionAccumulationUnorderedAccessIndices
 	{
 		Uint accumulatedIndex_ = 0;
 		Vector3 ambientOcclusionAccumulationUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(AmbientOcclusionAccumulationUnorderedAccessIndices, 16, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(AmbientOcclusionAccumulationUnorderedAccessIndices, 16, "Shader/Denoiser.hlsli");
 
 	struct GlobalIlluminationAccumulationShaderResourceIndices
 	{
@@ -81,7 +81,7 @@ namespace SeedCore
 		Uint reservoirWriteIndex_ = 0;
 		Vector2 globalIlluminationAccumulationShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(GlobalIlluminationAccumulationShaderResourceIndices, 32, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(GlobalIlluminationAccumulationShaderResourceIndices, 32, "Shader/Denoiser.hlsli");
 
 	struct GlobalIlluminationAccumulationUnorderedAccessIndices
 	{
@@ -90,7 +90,7 @@ namespace SeedCore
 		Uint atrousScratch1Index_ = 0;
 		Uint reservoirIndex_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(GlobalIlluminationAccumulationUnorderedAccessIndices, 16, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(GlobalIlluminationAccumulationUnorderedAccessIndices, 16, "Shader/Denoiser.hlsli");
 
 	struct ReflectionAccumulationShaderResourceIndices
 	{
@@ -112,7 +112,7 @@ namespace SeedCore
 		Uint reservoirWriteIndex_ = 0;
 		Vector3 reflectionAccumulationShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ReflectionAccumulationShaderResourceIndices, 64, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(ReflectionAccumulationShaderResourceIndices, 64, "Shader/Denoiser.hlsli");
 
 	struct ReflectionAccumulationUnorderedAccessIndices
 	{
@@ -126,7 +126,7 @@ namespace SeedCore
 		Uint denoisedIndex_ = 0;
 		Uint reservoirIndex_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(ReflectionAccumulationUnorderedAccessIndices, 32, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(ReflectionAccumulationUnorderedAccessIndices, 32, "Shader/Denoiser.hlsli");
 
 	struct DlssUnorderedAccessIndices
 	{
@@ -135,7 +135,7 @@ namespace SeedCore
 		Uint diffuseAlbedoIndex_ = 0;
 		Uint dlssUnorderedAccessPadding0_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(DlssUnorderedAccessIndices, 16, "DLSS/Dlss.hlsli");
+	SC_STATIC_ASSERT(DlssUnorderedAccessIndices, 16, "DLSS/Dlss.hlsli");
 
 	struct ExposureIndices
 	{
@@ -149,7 +149,7 @@ namespace SeedCore
 		Float adaptSpeedToDark_ = 0.0f;
 		Uint exposurePadding0_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(ExposureIndices, 32, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(ExposureIndices, 32, "PostProcess/PostProcess.hlsli");
 
 	struct ExposureUnorderedAccessIndices
 	{
@@ -157,7 +157,7 @@ namespace SeedCore
 		Uint exposureIndex_ = 0;
 		Vector2 exposureUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ExposureUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(ExposureUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct ToneMappingIndices
 	{
@@ -165,7 +165,7 @@ namespace SeedCore
 		Uint toneMappingMode_ = 0;
 		Vector2 toneMappingPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ToneMappingIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(ToneMappingIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct LensFlareIndices
 	{
@@ -187,21 +187,21 @@ namespace SeedCore
 		Float spikeVariation_ = 0.0f;
 		Vector3 lensFlarePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(LensFlareIndices, 64, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(LensFlareIndices, 64, "PostProcess/PostProcess.hlsli");
 
 	struct LensFlareUnorderedAccessIndices
 	{
 		Uint index_ = 0;
 		Vector3 lensFlareUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(LensFlareUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(LensFlareUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct LensFlareShaderResourceIndices
 	{
 		Uint index_ = 0;
 		Vector3 lensFlareShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(LensFlareShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(LensFlareShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct LensFlareStreakAxisIndices
 	{
@@ -215,7 +215,7 @@ namespace SeedCore
 		Uint brightIndex_ = 0;
 		Vector2 lensFlareStreakUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(LensFlareStreakUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(LensFlareStreakUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct LensFlareStreakShaderResourceIndices
 	{
@@ -223,7 +223,7 @@ namespace SeedCore
 		Uint brightIndex_ = 0;
 		Vector2 lensFlareStreakShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(LensFlareStreakShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(LensFlareStreakShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct BloomIndices
 	{
@@ -235,7 +235,7 @@ namespace SeedCore
 		Float filterRadius_ = 0.0f;
 		Vector3 bloomPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(BloomIndices, 32, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(BloomIndices, 32, "PostProcess/PostProcess.hlsli");
 
 	struct BloomUnorderedAccessIndices
 	{
@@ -248,7 +248,7 @@ namespace SeedCore
 		Uint level5Index_ = 0;
 		Vector2 bloomUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(BloomUnorderedAccessIndices, 32, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(BloomUnorderedAccessIndices, 32, "PostProcess/PostProcess.hlsli");
 
 	struct BloomShaderResourceIndices
 	{
@@ -261,7 +261,7 @@ namespace SeedCore
 		Uint level5Index_ = 0;
 		Vector2 bloomShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(BloomShaderResourceIndices, 32, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(BloomShaderResourceIndices, 32, "PostProcess/PostProcess.hlsli");
 
 	struct AnamorphicFlareIndices
 	{
@@ -275,7 +275,7 @@ namespace SeedCore
 
 		Float tint_[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
 	};
-	SC_STATIC_ASSERT_SIZE(AnamorphicFlareIndices, 48, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(AnamorphicFlareIndices, 48, "PostProcess/PostProcess.hlsli");
 
 	struct AnamorphicFlareUnorderedAccessIndices
 	{
@@ -284,7 +284,7 @@ namespace SeedCore
 		Uint pongIndex_ = 0;
 		Uint anamorphicFlareUnorderedAccessPadding0_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(AnamorphicFlareUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(AnamorphicFlareUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct AnamorphicFlareShaderResourceIndices
 	{
@@ -293,7 +293,7 @@ namespace SeedCore
 		Uint pongIndex_ = 0;
 		Uint anamorphicFlareShaderResourcePadding0_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(AnamorphicFlareShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(AnamorphicFlareShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct ColorGradingRangeIndices
 	{
@@ -306,7 +306,7 @@ namespace SeedCore
 		Float offset_ = 0.0f;
 		Vector2 colorGradingRangePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ColorGradingRangeIndices, 32, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(ColorGradingRangeIndices, 32, "PostProcess/PostProcess.hlsli");
 
 	struct ColorGradingIndices
 	{
@@ -320,14 +320,14 @@ namespace SeedCore
 		ColorGradingRangeIndices midtones_;
 		ColorGradingRangeIndices highlights_;
 	};
-	SC_STATIC_ASSERT_SIZE(ColorGradingIndices, 144, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(ColorGradingIndices, 144, "PostProcess/PostProcess.hlsli");
 
 	struct ColorGradingUnorderedAccessIndices
 	{
 		Uint destinationIndex_ = 0;
 		Vector3 colorGradingUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ColorGradingUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(ColorGradingUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct ColorGradingShaderResourceIndices
 	{
@@ -335,7 +335,7 @@ namespace SeedCore
 		Uint outputIndex_ = 0;
 		Vector2 colorGradingShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ColorGradingShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(ColorGradingShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct LensDistortionIndices
 	{
@@ -347,21 +347,21 @@ namespace SeedCore
 		Float scale_ = 1.0f;
 		Vector3 lensDistortionPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(LensDistortionIndices, 32, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(LensDistortionIndices, 32, "PostProcess/PostProcess.hlsli");
 
 	struct LensDistortionUnorderedAccessIndices
 	{
 		Uint destinationIndex_ = 0;
 		Vector3 lensDistortionUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(LensDistortionUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(LensDistortionUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct LensDistortionShaderResourceIndices
 	{
 		Uint sourceIndex_ = 0;
 		Vector3 lensDistortionShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(LensDistortionShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(LensDistortionShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct ChromaticAberrationIndices
 	{
@@ -370,21 +370,21 @@ namespace SeedCore
 		Uint sampleCount_ = 8;
 		Uint chromaticAberrationPadding0_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(ChromaticAberrationIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(ChromaticAberrationIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct ChromaticAberrationUnorderedAccessIndices
 	{
 		Uint destinationIndex_ = 0;
 		Vector3 chromaticAberrationUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ChromaticAberrationUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(ChromaticAberrationUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct ChromaticAberrationShaderResourceIndices
 	{
 		Uint sourceIndex_ = 0;
 		Vector3 chromaticAberrationShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ChromaticAberrationShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(ChromaticAberrationShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct VignetteIndices
 	{
@@ -395,21 +395,21 @@ namespace SeedCore
 
 		Float color_[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	};
-	SC_STATIC_ASSERT_SIZE(VignetteIndices, 32, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(VignetteIndices, 32, "PostProcess/PostProcess.hlsli");
 
 	struct VignetteUnorderedAccessIndices
 	{
 		Uint destinationIndex_ = 0;
 		Vector3 vignetteUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(VignetteUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(VignetteUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct VignetteShaderResourceIndices
 	{
 		Uint sourceIndex_ = 0;
 		Vector3 vignetteShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(VignetteShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(VignetteShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct DepthOfFieldIndices
 	{
@@ -418,21 +418,21 @@ namespace SeedCore
 		Float focusRange_ = 0.0f;
 		Float maxBlurRadius_ = 0.0f;
 	};
-	SC_STATIC_ASSERT_SIZE(DepthOfFieldIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(DepthOfFieldIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct DepthOfFieldUnorderedAccessIndices
 	{
 		Uint index_ = 0;
 		Vector3 depthOfFieldUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(DepthOfFieldUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(DepthOfFieldUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct DepthOfFieldShaderResourceIndices
 	{
 		Uint index_ = 0;
 		Vector3 depthOfFieldShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(DepthOfFieldShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(DepthOfFieldShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct BokehIndices
 	{
@@ -441,7 +441,7 @@ namespace SeedCore
 		Float highlightIntensity_ = 0.0f;
 		Uint bladeCount_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(BokehIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(BokehIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct SharpnessIndices
 	{
@@ -449,21 +449,21 @@ namespace SeedCore
 		Float amount_ = 0.0f;
 		Vector2 sharpnessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(SharpnessIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(SharpnessIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct SharpnessUnorderedAccessIndices
 	{
 		Uint destinationIndex_ = 0;
 		Vector3 sharpnessUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(SharpnessUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(SharpnessUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct SharpnessShaderResourceIndices
 	{
 		Uint sourceIndex_ = 0;
 		Vector3 sharpnessShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(SharpnessShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(SharpnessShaderResourceIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct FilmGrainIndices
 	{
@@ -475,14 +475,14 @@ namespace SeedCore
 		Float luminanceResponse_ = 0.0f;
 		Vector3 filmGrainPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(FilmGrainIndices, 32, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(FilmGrainIndices, 32, "PostProcess/PostProcess.hlsli");
 
 	struct FilmGrainUnorderedAccessIndices
 	{
 		Uint destinationIndex_ = 0;
 		Vector3 filmGrainUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(FilmGrainUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(FilmGrainUnorderedAccessIndices, 16, "PostProcess/PostProcess.hlsli");
 
 	struct PostProcessConstantBuffer
 	{
@@ -503,7 +503,7 @@ namespace SeedCore
 		SharpnessIndices sharpness_;
 		FilmGrainIndices filmGrain_;
 	};
-	SC_STATIC_ASSERT_SIZE(PostProcessConstantBuffer, 512, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(PostProcessConstantBuffer, 512, "PostProcess/PostProcess.hlsli");
 
 	struct PostProcessUnorderedAccessIndices
 	{
@@ -523,7 +523,7 @@ namespace SeedCore
 		SharpnessUnorderedAccessIndices sharpness_;
 		FilmGrainUnorderedAccessIndices filmGrain_;
 	};
-	SC_STATIC_ASSERT_SIZE(PostProcessUnorderedAccessIndices, 224, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(PostProcessUnorderedAccessIndices, 224, "PostProcess/PostProcess.hlsli");
 
 	struct PostProcessShaderResourceIndices
 	{
@@ -542,7 +542,7 @@ namespace SeedCore
 		DepthOfFieldShaderResourceIndices depthOfField_;
 		SharpnessShaderResourceIndices sharpness_;
 	};
-	SC_STATIC_ASSERT_SIZE(PostProcessShaderResourceIndices, 192, "PostProcess/PostProcess.hlsli");
+	SC_STATIC_ASSERT(PostProcessShaderResourceIndices, 192, "PostProcess/PostProcess.hlsli");
 
 	struct HUDShaderResourceIndices
 	{
@@ -557,7 +557,7 @@ namespace SeedCore
 		Uint billboardIndex_ = 0;
 		Vector2 textureShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(TextureShaderResourceIndices, 16, "Texture/Texture.hlsli");
+	SC_STATIC_ASSERT(TextureShaderResourceIndices, 16, "Texture/Texture.hlsli");
 
 	struct FontShaderResourceIndices
 	{
@@ -565,7 +565,7 @@ namespace SeedCore
 		Uint billboardIndex_ = 0;
 		Vector2 fontShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(FontShaderResourceIndices, 16, "Font/Font.hlsli");
+	SC_STATIC_ASSERT(FontShaderResourceIndices, 16, "Font/Font.hlsli");
 
 	struct MovieShaderResourceIndices
 	{
@@ -574,7 +574,7 @@ namespace SeedCore
 		Uint fullscreenIndex_ = 0;
 		Uint movieShaderResourcePadding0_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(MovieShaderResourceIndices, 16, "Movie/Movie.hlsli");
+	SC_STATIC_ASSERT(MovieShaderResourceIndices, 16, "Movie/Movie.hlsli");
 
 	struct ModelShaderResourceIndices
 	{
@@ -588,7 +588,7 @@ namespace SeedCore
 		Uint silhouetteIndex_ = 0;
 		Uint modelShaderResourcePadding0_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(ModelShaderResourceIndices, 32, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(ModelShaderResourceIndices, 32, "Model/Model.hlsli");
 
 	struct OitUnorderedAccessIndices
 	{
@@ -597,7 +597,7 @@ namespace SeedCore
 		Uint counterIndex_ = 0;
 		Uint oitUnorderedAccessPadding0_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(OitUnorderedAccessIndices, 16, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(OitUnorderedAccessIndices, 16, "Model/Model.hlsli");
 
 	struct GeometryBufferShaderResourceIndices
 	{
@@ -610,7 +610,7 @@ namespace SeedCore
 		Uint depthIndex_ = 0;
 		Vector2 geometryBufferShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(GeometryBufferShaderResourceIndices, 32, "Model/Opaque/GeometryBuffer.hlsli");
+	SC_STATIC_ASSERT(GeometryBufferShaderResourceIndices, 32, "Model/Opaque/GeometryBuffer.hlsli");
 
 	struct GeometryBufferUnorderedAccessIndices
 	{
@@ -619,7 +619,7 @@ namespace SeedCore
 		Uint index2_ = 0;
 		Uint index3_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(GeometryBufferUnorderedAccessIndices, 16, "Model/Opaque/GeometryBuffer.hlsli");
+	SC_STATIC_ASSERT(GeometryBufferUnorderedAccessIndices, 16, "Model/Opaque/GeometryBuffer.hlsli");
 
 	struct MaterialSortUnorderedAccessIndices
 	{
@@ -627,7 +627,7 @@ namespace SeedCore
 		Uint sortedPixelListIndex_ = 0;
 		Vector2 materialSortUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(MaterialSortUnorderedAccessIndices, 16, "Shader/Material.hlsli");
+	SC_STATIC_ASSERT(MaterialSortUnorderedAccessIndices, 16, "Shader/Material.hlsli");
 
 	struct SkyShaderResourceIndices
 	{
@@ -636,7 +636,7 @@ namespace SeedCore
 		Uint specularPrefilteredIndex_ = 0;
 		Uint brdfLutIndex_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(SkyShaderResourceIndices, 16, "Sky/Sky.hlsli");
+	SC_STATIC_ASSERT(SkyShaderResourceIndices, 16, "Sky/Sky.hlsli");
 
 	struct RaytracingShaderResourceIndices
 	{
@@ -644,49 +644,49 @@ namespace SeedCore
 		Uint instanceDataIndex_ = 0;
 		Vector2 raytracingShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(RaytracingShaderResourceIndices, 16, "Raytracing/Raytracing.hlsli");
+	SC_STATIC_ASSERT(RaytracingShaderResourceIndices, 16, "Raytracing/Raytracing.hlsli");
 
 	struct ShadowShaderResourceIndices
 	{
 		Uint rawVisibilityIndex_ = 0;
 		Vector3 shadowShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ShadowShaderResourceIndices, 16, "Raytracing/Shadow/Shadow.hlsli");
+	SC_STATIC_ASSERT(ShadowShaderResourceIndices, 16, "Raytracing/Shadow/Shadow.hlsli");
 
 	struct ShadowUnorderedAccessIndices
 	{
 		Uint rawVisibilityIndex_ = 0;
 		Vector3 shadowUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ShadowUnorderedAccessIndices, 16, "Raytracing/Shadow/Shadow.hlsli");
+	SC_STATIC_ASSERT(ShadowUnorderedAccessIndices, 16, "Raytracing/Shadow/Shadow.hlsli");
 
 	struct AmbientOcclusionShaderResourceIndices
 	{
 		Uint rawIndex_ = 0;
 		Vector3 ambientOcclusionShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(AmbientOcclusionShaderResourceIndices, 16, "Raytracing/AmbientOcclusion/AmbientOcclusion.hlsli");
+	SC_STATIC_ASSERT(AmbientOcclusionShaderResourceIndices, 16, "Raytracing/AmbientOcclusion/AmbientOcclusion.hlsli");
 
 	struct AmbientOcclusionUnorderedAccessIndices
 	{
 		Uint rawIndex_ = 0;
 		Vector3 ambientOcclusionUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(AmbientOcclusionUnorderedAccessIndices, 16, "Raytracing/AmbientOcclusion/AmbientOcclusion.hlsli");
+	SC_STATIC_ASSERT(AmbientOcclusionUnorderedAccessIndices, 16, "Raytracing/AmbientOcclusion/AmbientOcclusion.hlsli");
 
 	struct SubsurfaceScatteringShaderResourceIndices
 	{
 		Uint transmittanceIndex_ = 0;
 		Vector3 subsurfaceScatteringShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(SubsurfaceScatteringShaderResourceIndices, 16, "Raytracing/SubsurfaceScattering/SubsurfaceScattering.hlsli");
+	SC_STATIC_ASSERT(SubsurfaceScatteringShaderResourceIndices, 16, "Raytracing/SubsurfaceScattering/SubsurfaceScattering.hlsli");
 
 	struct SubsurfaceScatteringUnorderedAccessIndices
 	{
 		Uint transmittanceIndex_ = 0;
 		Vector3 subsurfaceScatteringUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(SubsurfaceScatteringUnorderedAccessIndices, 16, "Raytracing/SubsurfaceScattering/SubsurfaceScattering.hlsli");
+	SC_STATIC_ASSERT(SubsurfaceScatteringUnorderedAccessIndices, 16, "Raytracing/SubsurfaceScattering/SubsurfaceScattering.hlsli");
 
 	struct ReflectionShaderResourceIndices
 	{
@@ -694,7 +694,7 @@ namespace SeedCore
 		Uint confidenceIndex_ = 0;
 		Vector2 reflectionShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ReflectionShaderResourceIndices, 16, "Raytracing/Reflection/ReflectionReSTIR.hlsli");
+	SC_STATIC_ASSERT(ReflectionShaderResourceIndices, 16, "Raytracing/Reflection/ReflectionReSTIR.hlsli");
 
 	struct ReflectionUnorderedAccessIndices
 	{
@@ -702,21 +702,21 @@ namespace SeedCore
 		Uint confidenceIndex_ = 0;
 		Vector2 reflectionUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ReflectionUnorderedAccessIndices, 16, "Raytracing/Reflection/ReflectionReSTIR.hlsli");
+	SC_STATIC_ASSERT(ReflectionUnorderedAccessIndices, 16, "Raytracing/Reflection/ReflectionReSTIR.hlsli");
 
 	struct RefractionShaderResourceIndices
 	{
 		Uint outputIndex_ = 0;
 		Vector3 refractionShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(RefractionShaderResourceIndices, 16, "Raytracing/Refraction/Refraction.hlsli");
+	SC_STATIC_ASSERT(RefractionShaderResourceIndices, 16, "Raytracing/Refraction/Refraction.hlsli");
 
 	struct RefractionUnorderedAccessIndices
 	{
 		Uint outputIndex_ = 0;
 		Vector3 refractionUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(RefractionUnorderedAccessIndices, 16, "Raytracing/Refraction/Refraction.hlsli");
+	SC_STATIC_ASSERT(RefractionUnorderedAccessIndices, 16, "Raytracing/Refraction/Refraction.hlsli");
 
 	struct GlobalIlluminationShaderResourceIndices
 	{
@@ -724,7 +724,7 @@ namespace SeedCore
 		Uint confidenceIndex_ = 0;
 		Vector2 globalIlluminationShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(GlobalIlluminationShaderResourceIndices, 16, "Raytracing/GlobalIllumination/GlobalIlluminationReSTIR.hlsli");
+	SC_STATIC_ASSERT(GlobalIlluminationShaderResourceIndices, 16, "Raytracing/GlobalIllumination/GlobalIlluminationReSTIR.hlsli");
 
 	struct GlobalIlluminationUnorderedAccessIndices
 	{
@@ -732,7 +732,7 @@ namespace SeedCore
 		Uint confidenceIndex_ = 0;
 		Vector2 globalIlluminationUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(GlobalIlluminationUnorderedAccessIndices, 16, "Raytracing/GlobalIllumination/GlobalIlluminationReSTIR.hlsli");
+	SC_STATIC_ASSERT(GlobalIlluminationUnorderedAccessIndices, 16, "Raytracing/GlobalIllumination/GlobalIlluminationReSTIR.hlsli");
 
 	struct CloudShaderResourceIndices
 	{
@@ -741,7 +741,7 @@ namespace SeedCore
 		Uint detailNoiseIndex_ = 0;
 		Uint cloudShaderResourcePadding0_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(CloudShaderResourceIndices, 16, "Raytracing/VolumetricCloudScapes/VolumetricCloudScapes.hlsli");
+	SC_STATIC_ASSERT(CloudShaderResourceIndices, 16, "Raytracing/VolumetricCloudScapes/VolumetricCloudScapes.hlsli");
 
 	struct CloudUnorderedAccessIndices
 	{
@@ -750,21 +750,21 @@ namespace SeedCore
 		Uint detailNoiseIndex_ = 0;
 		Uint cloudUnorderedAccessPadding0_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(CloudUnorderedAccessIndices, 16, "Raytracing/VolumetricCloudScapes/VolumetricCloudScapes.hlsli");
+	SC_STATIC_ASSERT(CloudUnorderedAccessIndices, 16, "Raytracing/VolumetricCloudScapes/VolumetricCloudScapes.hlsli");
 
 	struct StarShaderResourceIndices
 	{
 		Uint outputIndex_ = 0;
 		Vector3 starShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(StarShaderResourceIndices, 16, "Raytracing/VolumetricStar/VolumetricStar.hlsli");
+	SC_STATIC_ASSERT(StarShaderResourceIndices, 16, "Raytracing/VolumetricStar/VolumetricStar.hlsli");
 
 	struct StarUnorderedAccessIndices
 	{
 		Uint outputIndex_ = 0;
 		Vector3 starUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(StarUnorderedAccessIndices, 16, "Raytracing/VolumetricStar/VolumetricStar.hlsli");
+	SC_STATIC_ASSERT(StarUnorderedAccessIndices, 16, "Raytracing/VolumetricStar/VolumetricStar.hlsli");
 
 	struct WeatherParticleShaderResourceIndices
 	{
@@ -772,7 +772,7 @@ namespace SeedCore
 		Uint snowParticleIndex_ = 0;
 		Vector2 weatherParticleShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(WeatherParticleShaderResourceIndices, 16, "Environment/WeatherParticle.hlsli");
+	SC_STATIC_ASSERT(WeatherParticleShaderResourceIndices, 16, "Environment/WeatherParticle.hlsli");
 
 	struct WeatherParticleUnorderedAccessIndices
 	{
@@ -780,14 +780,14 @@ namespace SeedCore
 		Uint snowParticleIndex_ = 0;
 		Vector2 weatherParticleUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(WeatherParticleUnorderedAccessIndices, 16, "Environment/WeatherParticle.hlsli");
+	SC_STATIC_ASSERT(WeatherParticleUnorderedAccessIndices, 16, "Environment/WeatherParticle.hlsli");
 
 	struct VolumetricLightShaderResourceIndices
 	{
 		Uint integrationIndex_ = 0;
 		Vector3 volumetricLightShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(VolumetricLightShaderResourceIndices, 16, "Raytracing/VolumetricLight/VolumetricLight.hlsli");
+	SC_STATIC_ASSERT(VolumetricLightShaderResourceIndices, 16, "Raytracing/VolumetricLight/VolumetricLight.hlsli");
 
 	struct VolumetricLightUnorderedAccessIndices
 	{
@@ -795,7 +795,7 @@ namespace SeedCore
 		Uint integrationIndex_ = 0;
 		Vector2 volumetricLightUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(VolumetricLightUnorderedAccessIndices, 16, "Raytracing/VolumetricLight/VolumetricLight.hlsli");
+	SC_STATIC_ASSERT(VolumetricLightUnorderedAccessIndices, 16, "Raytracing/VolumetricLight/VolumetricLight.hlsli");
 
 	struct ShaderResourceIndices
 	{
@@ -825,7 +825,7 @@ namespace SeedCore
 		WeatherParticleShaderResourceIndices weatherParticle_;
 		VolumetricLightShaderResourceIndices volumetricLight_;
 	};
-	SC_STATIC_ASSERT_SIZE(ShaderResourceIndices, 752, "Shader/ShaderResources.hlsli");
+	SC_STATIC_ASSERT(ShaderResourceIndices, 752, "Shader/ShaderResources.hlsli");
 
 	struct UnorderedAccessIndices
 	{
@@ -850,7 +850,7 @@ namespace SeedCore
 		WeatherParticleUnorderedAccessIndices weatherParticle_;
 		VolumetricLightUnorderedAccessIndices volumetricLight_;
 	};
-	SC_STATIC_ASSERT_SIZE(UnorderedAccessIndices, 576, "Shader/UnorderedAccesses.hlsli");
+	SC_STATIC_ASSERT(UnorderedAccessIndices, 576, "Shader/UnorderedAccesses.hlsli");
 
 	struct ConstantIndices
 	{
@@ -879,7 +879,7 @@ namespace SeedCore
 		Uint volumetricLightIndex_ = 0;
 		Uint colliderIndex_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(ConstantIndices, 80, "Shader/Constants.hlsli");
+	SC_STATIC_ASSERT(ConstantIndices, 80, "Shader/Constants.hlsli");
 
 	class BindlessHeap;
 

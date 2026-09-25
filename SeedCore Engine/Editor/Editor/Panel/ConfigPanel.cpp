@@ -625,7 +625,7 @@ namespace SeedCore
 			if (addClicked)
 			{
 				InputSystem::RegisterAction(String(std::string(newActionBuffer_.c_str())));
-				InputSystem::SaveBindings();
+				InputSystem::Save();
 				std::ranges::fill(newActionBuffer_, '\0');
 			}
 			ImGui::EndDisabled();
@@ -635,7 +635,7 @@ namespace SeedCore
 		ImGui::Spacing();
 
 		String actionToRemove;
-		for (const String& action : InputSystem::GetActionNames())
+		for (const String& action : InputSystem::ActionNameList())
 		{
 			ImGui::PushID(action.c_str());
 
@@ -660,12 +660,12 @@ namespace SeedCore
 
 				ImGui::SeparatorText("キー");
 				ImGui::PushID("Keys");
-				DrawChipList(InputSystem::GetBoundKeys(action),
+				DrawChipList(InputSystem::BoundKey(action),
 					[](InputSystem::Key key) { return std::string(KeyLabel(key)); },
 					[&action](InputSystem::Key key)
 					{
 						InputSystem::UnbindKey(action, key);
-						InputSystem::SaveBindings();
+						InputSystem::Save();
 					});
 				ImGui::SetNextItemWidth(160.0f);
 				if (ImGui::BeginCombo("##Add", "+ キーを追加"))
@@ -675,7 +675,7 @@ namespace SeedCore
 						if (ImGui::Selectable(entry.first))
 						{
 							InputSystem::BindKey(action, entry.second);
-							InputSystem::SaveBindings();
+							InputSystem::Save();
 						}
 					}
 					ImGui::EndCombo();
@@ -684,12 +684,12 @@ namespace SeedCore
 
 				ImGui::SeparatorText("ゲームパッドボタン");
 				ImGui::PushID("Pad");
-				DrawChipList(InputSystem::GetBoundGamepadButtons(action),
+				DrawChipList(InputSystem::BoundGamepad(action),
 					[](SDL_GamepadButton button) { return std::string(GamepadButtonLabel(button)); },
 					[&action](SDL_GamepadButton button)
 					{
-						InputSystem::UnbindGamepadButton(action, button);
-						InputSystem::SaveBindings();
+						InputSystem::UnbindGamepad(action, button);
+						InputSystem::Save();
 					});
 				ImGui::SetNextItemWidth(160.0f);
 				if (ImGui::BeginCombo("##Add", "+ ボタンを追加"))
@@ -698,8 +698,8 @@ namespace SeedCore
 					{
 						if (ImGui::Selectable(entry.first))
 						{
-							InputSystem::BindGamepadButton(action, entry.second);
-							InputSystem::SaveBindings();
+							InputSystem::BindGamepad(action, entry.second);
+							InputSystem::Save();
 						}
 					}
 					ImGui::EndCombo();
@@ -708,53 +708,53 @@ namespace SeedCore
 
 				ImGui::SeparatorText("移動軸 (WASD/矢印キー)");
 				ImGui::PushID("AxisKeys");
-				DrawChipList(InputSystem::GetBoundAxisKeys(action),
-					[](const InputSystem::DirectionalKeys& keys)
+				DrawChipList(InputSystem::BoundAxisKey(action),
+					[](const InputSystem::DirectionalKey& keys)
 					{
 						return std::string(KeyLabel(keys.up_)) + "/" + KeyLabel(keys.left_) + "/" + KeyLabel(keys.down_) + "/" + KeyLabel(keys.right_);
 					},
-					[&action](const InputSystem::DirectionalKeys& keys)
+					[&action](const InputSystem::DirectionalKey& keys)
 					{
-						InputSystem::UnbindAxisKeys(action, keys);
-						InputSystem::SaveBindings();
+						InputSystem::UnbindAxisKey(action, keys);
+						InputSystem::Save();
 					});
 
-				InputSystem::DirectionalKeys wasd{ InputSystem::Key::W, InputSystem::Key::S, InputSystem::Key::A, InputSystem::Key::D };
+				InputSystem::DirectionalKey wasd{ InputSystem::Key::W, InputSystem::Key::S, InputSystem::Key::A, InputSystem::Key::D };
 				if (ImGui::SmallButton("+ WASD"))
 				{
-					InputSystem::BindAxisKeys(action, wasd);
-					InputSystem::SaveBindings();
+					InputSystem::BindAxisKey(action, wasd);
+					InputSystem::Save();
 				}
 				ImGui::SameLine();
 
-				InputSystem::DirectionalKeys arrows{ InputSystem::Key::Up, InputSystem::Key::Down, InputSystem::Key::Left, InputSystem::Key::Right };
+				InputSystem::DirectionalKey arrows{ InputSystem::Key::Up, InputSystem::Key::Down, InputSystem::Key::Left, InputSystem::Key::Right };
 				if (ImGui::SmallButton("+ 矢印キー"))
 				{
-					InputSystem::BindAxisKeys(action, arrows);
-					InputSystem::SaveBindings();
+					InputSystem::BindAxisKey(action, arrows);
+					InputSystem::Save();
 				}
 				ImGui::PopID();
 
 				ImGui::SeparatorText("移動軸 (アナログスティック)");
 				ImGui::PushID("Sticks");
-				DrawChipList(InputSystem::GetBoundSticks(action),
-					[](InputSystem::StickSide side) { return std::string(side == InputSystem::StickSide::Left ? "左スティック" : "右スティック"); },
-					[&action](InputSystem::StickSide side)
+				DrawChipList(InputSystem::BoundStick(action),
+					[](InputSystem::GamepadStick side) { return std::string(side == InputSystem::GamepadStick::Left ? "左スティック" : "右スティック"); },
+					[&action](InputSystem::GamepadStick side)
 					{
 						InputSystem::UnbindStick(action, side);
-						InputSystem::SaveBindings();
+						InputSystem::Save();
 					});
 
 				if (ImGui::SmallButton("+ 左スティック"))
 				{
-					InputSystem::BindStick(action, InputSystem::StickSide::Left);
-					InputSystem::SaveBindings();
+					InputSystem::BindStick(action, InputSystem::GamepadStick::Left);
+					InputSystem::Save();
 				}
 				ImGui::SameLine();
 				if (ImGui::SmallButton("+ 右スティック"))
 				{
-					InputSystem::BindStick(action, InputSystem::StickSide::Right);
-					InputSystem::SaveBindings();
+					InputSystem::BindStick(action, InputSystem::GamepadStick::Right);
+					InputSystem::Save();
 				}
 				ImGui::PopID();
 			}
@@ -767,8 +767,8 @@ namespace SeedCore
 
 		if (!actionToRemove.str().empty())
 		{
-			InputSystem::RemoveAction(actionToRemove);
-			InputSystem::SaveBindings();
+			InputSystem::UnregisterAction(actionToRemove);
+			InputSystem::Save();
 		}
 
 		ImGui::PopStyleVar(2);

@@ -93,7 +93,7 @@ NodeEditor.json
 **/AtomCraft/*/*_Backup/
 
 ## ソリューション関連
-.vs/
+*.vs/
 *.userosscache
 *.suo
 *.sdf

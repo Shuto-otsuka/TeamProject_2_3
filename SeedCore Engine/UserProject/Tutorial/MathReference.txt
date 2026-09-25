@@ -1,0 +1,33 @@
+SeedCore Math Reference
+=======================
+
+include
+-------
+#include <SeedCore/ScMath.h>
+
+基本型
+------
+Vector2    : x, y。2軸入力や画面座標
+Vector3    : x, y, z。位置、方向、速度
+Vector4    : x, y, z, w
+Quaternion : 回転
+Matrix     : 変換行列
+Ray        : origin と direction を持つ光線
+
+時間を使った移動
+----------------
+OnTickのelapsedTimeは前フレームからの経過秒数。速度に掛けて移動する。
+
+SeedCore::Vector3 velocity(0.0f, 0.0f, 3.0f);
+position += velocity * elapsedTime;
+
+毎フレーム固定値を足すとフレームレートで速度が変わるので避ける。
+物理で動かすActorはPositionを直接書き換えず、Rigidbodyを使う。
+
+入力から移動方向を作る例
+------------------------
+SeedCore::Vector2 axis = SeedCore::Input::ActionAxis(SeedCore::String("Move"));
+SeedCore::Vector3 direction(axis.x, 0.0f, axis.y);
+position += direction * 5.0f * elapsedTime;
+
+方向ベクトルを正規化するときは、長さ0のVectorを正規化しない。

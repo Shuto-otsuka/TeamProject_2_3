@@ -1,0 +1,66 @@
+SeedCore Component Reference
+============================
+
+include
+-------
+#include <SeedCore/ScComponent.h>
+
+ScComponent.h は、ゲーム側でよく使うComponent、Actor、Worldをまとめてincludeする。
+
+SeedScriptから取得
+------------------
+SeedScriptにはGetActor()とGetWorld()がある。
+
+SeedCore::Entity entity = GetActor().GetEntity();
+SeedCore::Position* position = GetWorld().GetComponent<SeedCore::Position>(entity);
+
+取得できない場合はnullptrなので、使用前に確認する。
+
+Actorから取得する場合:
+SeedCore::Position* position = GetActor().GetComponent<SeedCore::Position>();
+
+Actor / Entity / World
+---------------------
+- Entity : World内のActorを識別する値
+- Actor  : Entityを扱うための軽量なハンドル
+- World  : ActorとComponentを管理する実体
+
+名前からActorを探す場合:
+SeedCore::Actor actor = GetWorld().GetActor(SeedCore::String("Player"));
+
+Transform系
+----------
+Position : 位置
+Rotation : 回転
+Scale    : 拡縮
+Velocity : 速度
+
+Positionの値を変更する例:
+position->x = 0.0f;
+position->y = 1.0f;
+position->z = 0.0f;
+
+物理で動かすActorはPositionを直接書き換えず、Rigidbodyを使う。
+
+主なComponent
+-------------
+- Active / Name / Bounds / Lifetime
+- Position / Rotation / Scale / Velocity
+- Spawner
+- Camera / CameraBrain
+- Mesh / Animator / Skeleton / Material
+- Light / Weather / Text / Image / Movie
+- Collider各種 / Rigidbody / Softbody
+- CharacterController / Joint各種
+- AudioSource / AudioListener
+
+Componentの追加・削除
+---------------------
+ActorのComponent操作APIを使う場合は、実際のActor.hの定義を確認する。
+エディターから追加するComponentは、対応するComponentが登録されている必要がある。
+
+注意
+----
+- GetComponentの戻り値は常に存在するとは限らない。
+- ActorやComponentが破棄された後に、以前取得したポインタを使わない。
+- Componentの詳細なメンバや設定値は、それぞれのComponentヘッダーを参照する。

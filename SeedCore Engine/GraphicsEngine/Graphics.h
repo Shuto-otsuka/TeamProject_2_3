@@ -67,7 +67,7 @@ namespace SeedCore
 
 		void End();
 
-		void Clear();
+		void Bind();
 
 		void VerticalSync(Bool vsync);
 

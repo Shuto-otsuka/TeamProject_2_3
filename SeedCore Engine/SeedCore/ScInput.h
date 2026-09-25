@@ -1,2 +1,2 @@
 #pragma once
-#include <FoundationEngine/Input/InputSystem.h>
+#include <FoundationEngine/Input/Input.h>

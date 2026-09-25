@@ -158,7 +158,7 @@ namespace SeedCore
 		break;
 		case WM_MOUSEWHEEL:
 		{
-			InputSystem::PushMouseWheel(static_cast<Float>(GET_WHEEL_DELTA_WPARAM(wparam)) / 120.0f);
+			InputSystem::MouseWheel(static_cast<Float>(GET_WHEEL_DELTA_WPARAM(wparam)) / 120.0f);
 		}
 		break;
 		case WM_SETFOCUS:

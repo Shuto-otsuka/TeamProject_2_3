@@ -71,7 +71,7 @@ namespace SeedCore
 		Float intensity_ = 1.0f;
 		Vector3 skyConstantBufferPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(SkyConstantBuffer, 16, "Sky/SkyGenerate.hlsli");
+	SC_STATIC_ASSERT(SkyConstantBuffer, 16, "Sky/SkyGenerate.hlsli");
 
 	/**
 	* [EN]

@@ -14,7 +14,7 @@ namespace SeedCore
 		Uint shellIndex_ = 0;
 		Uint modelCullingStructuredBufferPadding0_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(ModelCullingStructuredBuffer, 16, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(ModelCullingStructuredBuffer, 16, "Model/Model.hlsli");
 
 	struct ModelCullingConstantBuffer
 	{
@@ -23,7 +23,7 @@ namespace SeedCore
 		Uint argumentsIndex_ = 0;
 		Uint modelCullingConstantBufferPadding0_ = 0;
 	};
-	SC_STATIC_ASSERT_SIZE(ModelCullingConstantBuffer, 16, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(ModelCullingConstantBuffer, 16, "Model/Model.hlsli");
 
 	class ModelCullingBuffer
 	{

@@ -29,7 +29,7 @@
     <ClCompile Include="Tutorial\ScTutorial.cpp">
       <Filter>Tutorial</Filter>
     </ClCompile>
-  </ItemGroup>
+    </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EntryPoint\EntryGame.h">
       <Filter>EntryPoint</Filter>
@@ -37,5 +37,28 @@
     <ClInclude Include="Tutorial\ScTutorial.h">
       <Filter>Tutorial</Filter>
     </ClInclude>
+    </ItemGroup>
+  <ItemGroup>
+    <Text Include="Tutorial\AssetReference.txt">
+      <Filter>Tutorial</Filter>
+    </Text>
+    <Text Include="Tutorial\CoroutineReference.txt">
+      <Filter>Tutorial</Filter>
+    </Text>
+    <Text Include="Tutorial\InputReference.txt">
+      <Filter>Tutorial</Filter>
+    </Text>
+    <Text Include="Tutorial\MathReference.txt">
+      <Filter>Tutorial</Filter>
+    </Text>
+    <Text Include="Tutorial\PhysicsReference.txt">
+      <Filter>Tutorial</Filter>
+    </Text>
+    <Text Include="Tutorial\LogReference.txt">
+      <Filter>Tutorial</Filter>
+    </Text>
+    <Text Include="Tutorial\ComponentReference.txt">
+      <Filter>Tutorial</Filter>
+    </Text>
   </ItemGroup>
 </Project>

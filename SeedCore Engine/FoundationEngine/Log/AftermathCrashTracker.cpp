@@ -56,7 +56,8 @@ namespace SeedCore
 			OnShaderDebugInfo,
 			OnDescription,
 			nullptr,
-			nullptr);
+			nullptr
+		);
 
 		/// [EN] Failing here is expected on non-NVIDIA hardware, so it is only a warning and the engine carries on without dumps.
 		/// [JP] NVIDIA 以外のハードウェアではここで失敗するのが普通なので、警告だけ出してダンプ無しで続ける。
@@ -157,10 +158,7 @@ namespace SeedCore
 
 		/// [EN] The wait ends on CollectingDataFailed, Finished or Unknown, or when the time limit runs out.
 		/// [JP] 待つのは CollectingDataFailed、Finished、Unknown のどれかになるか、時間切れになるまで。
-		while (crashDumpStatus != GFSDK_Aftermath_CrashDump_Status_CollectingDataFailed &&
-			crashDumpStatus != GFSDK_Aftermath_CrashDump_Status_Finished &&
-			crashDumpStatus != GFSDK_Aftermath_CrashDump_Status_Unknown &&
-			std::chrono::steady_clock::now() - waitStart < crashDumpTimeout)
+		while (crashDumpStatus != GFSDK_Aftermath_CrashDump_Status_CollectingDataFailed && crashDumpStatus != GFSDK_Aftermath_CrashDump_Status_Finished && crashDumpStatus != GFSDK_Aftermath_CrashDump_Status_Unknown && std::chrono::steady_clock::now() - waitStart < crashDumpTimeout)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 			GFSDK_Aftermath_GetCrashDumpStatus(&crashDumpStatus);

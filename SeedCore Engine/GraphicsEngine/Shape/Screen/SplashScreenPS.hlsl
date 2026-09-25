@@ -40,8 +40,8 @@ float4 main(PSInput input) : SV_Target
 	{
 		float2 tex_coord = (input.uv - min_uv) / (max_uv - min_uv);
 		float4 tex_color = splash_texture.Sample(splash_sampler, tex_coord);
-		return float4(tex_color.rgb, tex_color.a * alpha_);
+		return float4(tex_color.rgb * tex_color.a * alpha_, 1.0f);
 	}
 
-	return float4(0.0f, 0.0f, 0.0f, alpha_);
+	return float4(0.0f, 0.0f, 0.0f, 1.0f);
 }

@@ -21,7 +21,7 @@ namespace SeedCore
 		Float thunderSeed_ = 0.0f;
 		Vector2 weatherPadding1_;
 	};
-	SC_STATIC_ASSERT_SIZE(WeatherConstantBuffer, 32, "Environment/Weather.hlsli");
+	SC_STATIC_ASSERT(WeatherConstantBuffer, 32, "Environment/Weather.hlsli");
 
 	/// [EN] Snapshot of the scene's Weather runtime state for the GPU (see
 	///      LightSystem::Gather's weather parameter). Zeroed when the scene

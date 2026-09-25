@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Coroutine\Coroutine.cpp" />
+    <ClCompile Include="Coroutine\CoroutineSystem.cpp" />
     <ClCompile Include="File\FileDialog.cpp">
     </ClCompile>
     <ClCompile Include="File\FileDirectory.cpp">
@@ -100,6 +101,7 @@
     <ClCompile Include="World\World.cpp" />
     <ClCompile Include="World\WorldSnapshot.cpp" />
     <ClInclude Include="Coroutine\Coroutine.h" />
+    <ClInclude Include="Coroutine\CoroutineSystem.h" />
     <ClInclude Include="File\FileDialog.h" />
     <ClInclude Include="File\FileDirectory.h" />
     <ClInclude Include="Input\Input.h" />

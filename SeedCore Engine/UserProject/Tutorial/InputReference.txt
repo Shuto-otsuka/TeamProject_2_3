@@ -1,0 +1,41 @@
+SeedCore Input Reference
+========================
+
+include
+-------
+#include <SeedCore/ScInput.h>
+
+Input::KeyState(key, mode) でキー状態を取得する。
+
+- IsPressed    : 押されている間、毎フレーム true
+- OnPressed    : 押した瞬間だけ true
+- OnReleased   : 離した瞬間だけ true
+
+SeedCore::Input::KeyState(SeedCore::Input::Key::Space, SeedCore::Input::OnPressed);
+
+キーを直接指定するより、アクション名を使う方が入力設定を変更しやすい。
+
+if (SeedCore::Input::ActionState(SeedCore::String("Jump"), SeedCore::Input::OnPressed))
+{
+    // ジャンプ処理
+}
+
+2軸入力
+-------
+SeedCore::Vector2 move = SeedCore::Input::ActionAxis(SeedCore::String("Move"));
+
+マウス
+------
+MousePoint()  : 画面上の座標
+MouseMotion() : 前フレームからの移動量
+MouseWheel()  : ホイール量
+
+カーソル固定:
+SeedCore::Input::LockCursor();
+SeedCore::Input::HideCursor();
+
+解除:
+SeedCore::Input::UnlockCursor();
+SeedCore::Input::RevealCursor();
+
+ゲームパッドは GamepadAxis、振動は RumbleBody / RumbleTrigger を使う。

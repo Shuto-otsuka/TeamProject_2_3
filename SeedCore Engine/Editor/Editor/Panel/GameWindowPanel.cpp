@@ -21,12 +21,12 @@ namespace SeedCore
 			Bool rotateHeld = InputSystem::MouseState(InputSystem::MouseButton::Right, InputSystem::IsPressed);
 			Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
 
-			if (hovered && (rotateHeld || panHeld) && !InputSystem::MouseCaptured())
+			if (hovered && (rotateHeld || panHeld))
 			{
 				InputSystem::BeginMouseCapture();
 			}
 
-			if (!rotateHeld && !panHeld && InputSystem::MouseCaptured())
+			if (!rotateHeld && !panHeld)
 			{
 				InputSystem::EndMouseCapture();
 			}

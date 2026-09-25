@@ -7,6 +7,7 @@
 #include <FoundationEngine/World/ECS/Component/Velocity.h>
 #include <FoundationEngine/World/ECS/Component/Active.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
+#include <FoundationEngine/Coroutine/CoroutineSystem.h>
 #include <FoundationEngine/Log/Assert.h>
 
 namespace SeedCore
@@ -172,6 +173,8 @@ namespace SeedCore
 		SC_ASSERT(queryIterationDepth_ == 0, "Query::ForEach の走査中に DestroyEntity が呼ばれました。ForEach の後へ遅延させるか、コマンドバッファ経由にしてください。");
 
 		EntityID entityID = entity.GetID();
+
+		CoroutineSystem::Cancel(entityID);
 
 		/// [EN] Drop entityID's entry from every sparse-set-stored component, regardless of whether it actually has one (Remove is a no-op if absent).
 		/// [JP] スパースセット格納の全コンポーネントから entityID のエントリを削除する。実際に持っているかどうかに関わらず（無ければ Remove は無操作）。
@@ -478,6 +481,8 @@ namespace SeedCore
 	{
 		EntityID entityID = entity.GetID();
 		const ComponentMetadata& meta = ComponentRegistry::Get(id);
+
+		CoroutineSystem::Cancel(entityID, id);
 
 		if (meta.storage_ == ComponentStorage::SparseSet)
 		{

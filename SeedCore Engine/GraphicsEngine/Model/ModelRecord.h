@@ -21,7 +21,7 @@ namespace SeedCore
 		Matrix inverseTransposeWorld_;
 		Matrix previousWorld_;
 	};
-	SC_STATIC_ASSERT_SIZE(ModelTransform, 192, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(ModelTransform, 192, "Model/Model.hlsli");
 
 	/**
 	* [EN]
@@ -49,7 +49,7 @@ namespace SeedCore
 		Uint meshletCount_;
 		Uint modelGeometryPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ModelGeometry, 32, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(ModelGeometry, 32, "Model/Model.hlsli");
 
 	/**
 	* [EN]
@@ -77,7 +77,7 @@ namespace SeedCore
 		Float lodError_;
 		Float lodErrorNext_;
 	};
-	SC_STATIC_ASSERT_SIZE(ModelStreaming, 48, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(ModelStreaming, 48, "Model/Model.hlsli");
 
 	/**
 	* [EN]
@@ -108,7 +108,7 @@ namespace SeedCore
 		Uint selected_;
 		Uint modelShadingPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ModelShading, 32, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(ModelShading, 32, "Model/Model.hlsli");
 
 	/**
 	* [EN]
@@ -128,7 +128,7 @@ namespace SeedCore
 		Uint skinVertexBufferIndex_;
 		Uint modelSkiningPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ModelSkining, 16, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(ModelSkining, 16, "Model/Model.hlsli");
 
 	/**
 	* [EN]
@@ -176,7 +176,7 @@ namespace SeedCore
 		Uint morphWeightOffset_;
 		Uint modelMorphPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ModelMorph, 32, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(ModelMorph, 32, "Model/Model.hlsli");
 
 	/**
 	* [EN]
@@ -216,7 +216,7 @@ namespace SeedCore
 		Uint occlusionTextureIndex_;
 		Vector3 modelTexturePadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ModelTexture, 80, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(ModelTexture, 80, "Model/Model.hlsli");
 
 	/**
 	* [EN]
@@ -265,7 +265,7 @@ namespace SeedCore
 		Uint anisotropyTextureIndex_;
 		Vector2 modelExtensionPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(ModelExtension, 144, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(ModelExtension, 144, "Model/Model.hlsli");
 
 	/**
 	* [EN]
@@ -295,5 +295,5 @@ namespace SeedCore
 		ModelTexture texture_;
 		ModelExtension extension_;
 	};
-	SC_STATIC_ASSERT_SIZE(ModelStructuredBuffer, 576, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(ModelStructuredBuffer, 576, "Model/Model.hlsli");
 }

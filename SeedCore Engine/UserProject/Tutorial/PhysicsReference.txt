@@ -1,0 +1,36 @@
+SeedCore Physics Reference
+==========================
+
+include
+-------
+#include <SeedCore/ScComponent.h>
+#include <SeedCore/ScPhysics.h>
+
+コンポーネント取得
+------------------
+World::GetComponent<T>(entity) は同じActorのコンポーネントへのポインタを返す。
+存在しない場合はnullptrなので、使用前に確認する。
+
+SeedCore::Entity entity = GetActor().GetEntity();
+SeedCore::Rigidbody* body = GetWorld().GetComponent<SeedCore::Rigidbody>(entity);
+
+物理シミュレーション中はPositionを毎フレーム直接変更せず、Rigidbodyの速度や力を使う。
+
+Raycast / マウスピッキング
+--------------------------
+SeedCore::Ray ray = SeedCore::ScreenSpace::ScreenToWorld(SeedCore::Input::MousePoint());
+SeedCore::RaycastHit hit;
+if (GetActor().GetPhysics().Raycast(ray.origin_, ray.direction_, 1000.0f, hit))
+{
+    SeedCore::Actor picked = GetWorld().GetActor(hit.entityID_);
+}
+
+hitにはposition_、normal_、distance_、entityID_が入る。
+
+衝突コールバック
+----------------
+OnCollisionEnter / Stay / Exit   : 通常の衝突
+OnTriggerEnter   / Stay / Exit   : Triggerへの侵入・滞在・退出
+
+コールバックのentityは相手のEntity。GetWorld().GetActor(entity)でActorを取得できる。
+相手の判定は名前比較よりタグやレイヤーを使う。

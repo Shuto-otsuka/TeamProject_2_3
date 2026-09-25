@@ -1,6 +1,10 @@
 #include <Runtime/Application/Engine.h>
 #include <FoundationEngine/Utility/Bootstrap.h>
 #include <FoundationEngine/Input/InputSystem.h>
+#include <FoundationEngine/Coroutine/CoroutineSystem.h>
+#include <FoundationEngine/File/FileDirectory.h>
+#include <PhysicsEngine/Physics/PhysicsSystem.h>
+#include <AudioEngine/Audio/AudioSystem.h>
 #include <FoundationEngine/Resource/Gateway.h>
 #include <FoundationEngine/Resource/Scene/Scene.h>
 #include <FoundationEngine/Resource/Prefab/Prefab.h>
@@ -10,9 +14,6 @@
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/System/CelestialSystem.h>
-
-#include <PhysicsEngine/Physics/PhysicsSystem.h>
-#include <AudioEngine/Audio/AudioSystem.h>
 
 namespace SeedCore
 {
@@ -92,9 +93,7 @@ namespace SeedCore
 		InputSystem::Initialize();
 		LayerRegistry::Load();
 
-		Char exePathBuffer[MAX_PATH]{};
-		GetModuleFileNameA(nullptr, exePathBuffer, MAX_PATH);
-		std::filesystem::path pluginDirectory = std::filesystem::path(exePathBuffer).parent_path();
+		std::filesystem::path pluginDirectory = FileDirectory::ExecutableDirectory();
 		pluginHost_.Initialize(pluginDirectory, nullptr);
 		pluginHost_.Load(*world_);
 
@@ -205,10 +204,9 @@ namespace SeedCore
 				}
 
 				window_->GetTimer().Tick();
-				worldTimer_.Tick(window_->GetTimer().Delta());
 				gameTimer_.Tick(window_->GetTimer().Delta());
 
-				InputSystem::Update();
+				InputSystem::Update(true);
 
 				Uint32 resizedWidth = 0;
 				Uint32 resizedHeight = 0;
@@ -223,7 +221,7 @@ namespace SeedCore
 				{
 					resource_->StepAsync(*loaderSystem_, graphics_->GetContext()->GetDevice(), graphics_->GetContext()->GetDirectQueue(), graphics_->GetBindlessHeap(), graphics_->GetBC7CompressShader());
 
-					graphics_->Clear();
+					graphics_->Bind();
 					graphics_->DrawSplashScreen(resource_->Complete(), resource_->Progress(), gameConfig_.showSplashWarning_, gameConfig_.showSplashFiction_);
 					graphics_->End();
 					graphics_->GetSwapChain()->Present(graphics_->GetContext()->GetDevice());
@@ -237,16 +235,23 @@ namespace SeedCore
 
 				AudioSystem::ResolveSound(*loaderSystem_, *resource_, *world_);
 
+				/// [EN] Coroutines resume before physics and the script ticks, with this frame's input already read; they do not advance while paused, so frame waits do not count down.
+				/// [JP] コルーチンは物理とスクリプトの Tick より前に、今フレームの入力を読んだ後で再開する。ポーズ中は進めないので、フレーム待ちも減らない。
+				if (!gameTimer_.Paused())
+				{
+					CoroutineSystem::Update(gameTimer_.ScaledDeltaTime());
+				}
+
 				PhysicsSystem::ResolveMeshCollider(*loaderSystem_, *resource_, *world_);
 				PhysicsSystem::ResolveSoftbody(*loaderSystem_, *resource_, *world_);
 				PhysicsSystem::ApplyActive(*world_);
 
 				joltManager_->ActiveWorld(world_.get());
 
-				while (worldTimer_.Step())
+				while (gameTimer_.Step())
 				{
-					joltManager_->Execute(worldTimer_.FixedDeltaTime());
-					system_->Step(*world_, worldTimer_.FixedDeltaTime());
+					joltManager_->Execute(gameTimer_.FixedDeltaTime());
+					system_->Step(*world_, gameTimer_.FixedDeltaTime());
 				}
 
 				system_->Run(*world_, *resource_, *executor_, gameTimer_.ScaledDeltaTime(), gameTimer_.Playing());

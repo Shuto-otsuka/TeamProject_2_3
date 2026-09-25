@@ -6,7 +6,6 @@
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/Resource/Config/GameConfig.h>
-#include <FoundationEngine/Time/WorldTimer.h>
 #include <FoundationEngine/Time/GameTimer.h>
 #include <FoundationEngine/Plugin/PluginHost.h>
 #include <AudioEngine/CRI/CriManager.h>
@@ -61,8 +60,6 @@ namespace SeedCore
 		PluginHost pluginHost_;
 
 		GameConfig gameConfig_;
-
-		WorldTimer worldTimer_;
 
 		GameTimer gameTimer_;
 

@@ -52,21 +52,42 @@ void ScTutorial::OnTick(float elapsedTime)
 {
 	// elapsedTimeは前フレームからの経過秒数。毎フレーム動く処理はここに書く
 
-	// キー入力を直接見たいときはInputSystem::KeyStateを使う。第2引数のTriggerModeは
-	// NONE(既定、押しっぱなし判定) / RISING_EDGE(押した瞬間だけ) / FALLING_EDGE(離した瞬間だけ)
-	//if (SeedCore::InputSystem::KeyState(SeedCore::InputSystem::Key::Space, SeedCore::InputSystem::TriggerMode::RISING_EDGE))
+	// キー入力を直接見たいときはInput::KeyStateを使う。第2引数は
+	// IsPressed(既定、押しっぱなし判定) / OnPressed(押した瞬間だけ) / OnReleased(離した瞬間だけ)
+	//if (SeedCore::Input::KeyState(SeedCore::Input::Key::Space, SeedCore::Input::OnPressed))
 	//{
 	//}
 
 	// ただしキーを直書きすると後から割り当てを変えづらいので、基本は「アクション」名で判定するのがおすすめ
 	// （アクション⇔キー/ゲームパッドボタンの対応はエディターの「入力設定」で編集・保存できる）
-	//if (SeedCore::InputSystem::ActionState(SeedCore::String("Jump"), SeedCore::InputSystem::TriggerMode::RISING_EDGE))
+	//if (SeedCore::Input::ActionState(SeedCore::String("Jump"), SeedCore::Input::OnPressed))
 	//{
 	//}
 
-	// 移動のような2軸入力は ActionAxis2D が便利。WASD/矢印キー/アナログスティックのどれが押されていても
+	// 移動のような2軸入力は ActionAxis が便利。WASD/矢印キー/アナログスティックのどれが押されていても
 	// 同じ1つのVector2として返ってくるので、キーボード/ゲームパッドを呼び出し側で分岐する必要が無い
-	//SeedCore::Vector2 moveInput = SeedCore::InputSystem::ActionAxis2D(SeedCore::String("Move"));
+	//SeedCore::Vector2 moveInput = SeedCore::Input::ActionAxis(SeedCore::String("Move"));
+
+	// スティックやトリガーを直接読みたいときは GamepadAxis。スティックは上が+YのVector2、トリガーは0〜1の引き具合
+	//SeedCore::Vector2 lookInput = SeedCore::Input::GamepadAxis(SeedCore::Input::GamepadStick::Right);
+	//SeedCore::Float accelerator = SeedCore::Input::GamepadAxis(SeedCore::Input::GamepadTrigger::Right);
+
+	// 振動は RumbleBody(本体の低周波, 高周波, ミリ秒) と RumbleTrigger(左トリガー, 右トリガー, ミリ秒)。強さは0〜65535
+	//SeedCore::Input::RumbleBody(30000, 10000, 200);
+
+	// マウスの位置/移動量/ホイールは MousePoint(画面ピクセルのVector2) / MouseMotion(前フレームからの移動量のVector2) / MouseWheel(ノッチ数、奥へ回すと正)
+	//SeedCore::Vector2 mouseMove = SeedCore::Input::MouseMotion();
+	//SeedCore::Float wheel = SeedCore::Input::MouseWheel();
+
+	// FPS/TPSの視点操作のようにカーソルを動かさず移動量だけ使いたいときは、LockCursorで固定してHideCursorで隠す
+	// 固定中もMouseMotionはマウスを動かした量を返し続ける。引数にVector2を渡すと、その画面座標に固定できる
+	// （エディターではゲームビュー上にある間だけ固定され、プレイを止めると固定も非表示も必ず元に戻る）
+	//SeedCore::Input::LockCursor();
+	//SeedCore::Input::HideCursor();
+	//
+	// 元に戻すとき（ポーズメニューを開いたときなど）
+	//SeedCore::Input::UnlockCursor();
+	//SeedCore::Input::RevealCursor();
 }
 
 void ScTutorial::OnLateTick(float elapsedTime)
@@ -101,8 +122,8 @@ void ScTutorial::OnInspectorGUI()
 // マウスでクリックしたところにある物を拾いたい（マウスピッキング）ときは、
 // ScreenSpace::ScreenToWorld でスクリーン座標をワールド空間のRayに変換してからRaycastする。
 // ScreenToWorldは常にゲーム自身のアクティブなCameraを基準にするので、エディターのゲームビューでも
-// 単体で実行したRuntimeでも同じコードで動く（渡す引数もInputSystem::MouseX()/MouseY()だけで、view/projection等は不要）。
-//SeedCore::Ray mouseRay = SeedCore::ScreenSpace::ScreenToWorld(SeedCore::Vector2(SeedCore::InputSystem::MouseX(), SeedCore::InputSystem::MouseY()));
+// 単体で実行したRuntimeでも同じコードで動く（渡す引数もInput::MousePoint()だけで、view/projection等は不要）。
+//SeedCore::Ray mouseRay = SeedCore::ScreenSpace::ScreenToWorld(SeedCore::Input::MousePoint());
 //SeedCore::RaycastHit hit;
 //if (GetActor().GetPhysics().Raycast(mouseRay.origin_, mouseRay.direction_, 1000.0f, hit))
 //{
