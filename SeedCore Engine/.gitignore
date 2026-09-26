@@ -188,3 +188,6 @@ __pycache__/
 *.rar
 *.bak
 *.old
+
+## 同梱する実行環境（.NET / Python / VC++ ランタイム）は、上の *.dll / *.exe / *.zip を打ち消して全て管理する
+!/Platform/**

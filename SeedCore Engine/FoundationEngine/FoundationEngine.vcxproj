@@ -424,8 +424,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>py "..\Tools\Python\Reflection.py" ".."
-py "..\Tools\Python\Payload.py" ".."</Command>
+      <Command>"..\Platform\Python\python.exe"  "..\Tools\Python\Reflection.py" ".."
+"..\Platform\Python\python.exe"  "..\Tools\Python\Payload.py" ".."</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -452,8 +452,8 @@ py "..\Tools\Python\Payload.py" ".."</Command>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>py "..\Tools\Python\Reflection.py" ".."
-py "..\Tools\Python\Payload.py" ".."</Command>
+      <Command>"..\Platform\Python\python.exe"  "..\Tools\Python\Reflection.py" ".."
+"..\Platform\Python\python.exe"  "..\Tools\Python\Payload.py" ".."</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

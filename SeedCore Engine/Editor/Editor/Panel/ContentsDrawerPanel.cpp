@@ -1652,12 +1652,13 @@ namespace SeedCore
 			return true;
 		}
 
+		std::filesystem::path pythonExecutable = projectRoot / "Platform" / "Python" / "python.exe";
 		std::filesystem::path scriptPath = projectRoot / "Tools" / "Python" / "CreateScript.py";
 
 		std::string headerRelative = std::filesystem::relative(headerFullPath, projectRoot / "UserProject").string();
 		std::string cppRelative = std::filesystem::relative(cppFullPath, projectRoot / "UserProject").string();
 
-		std::wstring commandLine = std::format(L"py \"{}\" \"{}\" \"{}\" \"{}\"", scriptPath.wstring(), projectRoot.wstring(), std::filesystem::path(headerRelative).wstring(), std::filesystem::path(cppRelative).wstring());
+		std::wstring commandLine = std::format(L"\"{}\" \"{}\" \"{}\" \"{}\" \"{}\"", pythonExecutable.wstring(), scriptPath.wstring(), projectRoot.wstring(), std::filesystem::path(headerRelative).wstring(), std::filesystem::path(cppRelative).wstring());
 
 		STARTUPINFOW startupInfo{};
 		startupInfo.cb = sizeof(startupInfo);

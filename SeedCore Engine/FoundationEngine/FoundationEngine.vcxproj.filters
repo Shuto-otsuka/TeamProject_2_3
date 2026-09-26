@@ -382,6 +382,7 @@
     <ClCompile Include="World\ECS\Component\UnknownComponent.cpp">
       <Filter>World\ECS\Component</Filter>
     </ClCompile>
+    <ClCompile Include="Coroutine\CoroutineSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\DxFail.h">
@@ -845,5 +846,6 @@
     <ClInclude Include="World\ECS\Component\UnknownComponent.h">
       <Filter>World\ECS\Component</Filter>
     </ClInclude>
+    <ClInclude Include="Coroutine\CoroutineSystem.h" />
   </ItemGroup>
 </Project>

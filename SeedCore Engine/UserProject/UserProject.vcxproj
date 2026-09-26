@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -203,9 +203,9 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PreBuildEvent>
-      <Command>py "..\Tools\Python\Reflection.py" ".."
-py "..\Tools\Python\Payload.py" ".."
-py "..\Tools\Python\SyncScript.py" ".."</Command>
+      <Command>"..\Platform\Python\python.exe"  "..\Tools\Python\Reflection.py" ".."
+"..\Platform\Python\python.exe"  "..\Tools\Python\Payload.py" ".."
+"..\Platform\Python\python.exe"  "..\Tools\Python\SyncScript.py" ".."</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -234,9 +234,9 @@ py "..\Tools\Python\SyncScript.py" ".."</Command>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <PreBuildEvent>
-      <Command>py "..\Tools\Python\Reflection.py" ".."
-py "..\Tools\Python\Payload.py" ".."
-py "..\Tools\Python\SyncScript.py" ".."</Command>
+      <Command>"..\Platform\Python\python.exe"  "..\Tools\Python\Reflection.py" ".."
+"..\Platform\Python\python.exe"  "..\Tools\Python\Payload.py" ".."
+"..\Platform\Python\python.exe"  "..\Tools\Python\SyncScript.py" ".."</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -296,10 +296,12 @@ namespace SeedCore
 
 	Bool RuntimeBuilder::Package(const std::filesystem::path& projectRoot, const std::filesystem::path& outputDir, std::string& outLog)
 	{
+		std::filesystem::path pythonExecutable = projectRoot / "Platform" / "Python" / "python.exe";
 		std::filesystem::path packagerScript = projectRoot / "Tools" / "Python" / "RuntimePackager.py";
 
 		std::wstring commandLine =
-			L"py \"" + packagerScript.wstring() + L"\" "
+			L"\"" + pythonExecutable.wstring() + L"\" "
+			L"\"" + packagerScript.wstring() + L"\" "
 			L"\"" + projectRoot.wstring() + L"\" "
 			L"\"" + outputDir.wstring() + L"\"";
 
