@@ -24,8 +24,8 @@ namespace SeedCore
 
 		if (orbitHeld)
 		{
-			Float dx = InputSystem::MouseDeltaX();
-			Float dy = InputSystem::MouseDeltaY();
+			Float dx = InputSystem::MouseMotion().x;
+			Float dy = InputSystem::MouseMotion().y;
 
 			yaw_ += dx * rotateSpeed_;
 			pitch_ = Clamp(pitch_ - dy * rotateSpeed_, -89.0f, 89.0f);
@@ -41,8 +41,8 @@ namespace SeedCore
 
 		if (panHeld)
 		{
-			Float dx = InputSystem::MouseDeltaX();
-			Float dy = InputSystem::MouseDeltaY();
+			Float dx = InputSystem::MouseMotion().x;
+			Float dy = InputSystem::MouseMotion().y;
 
 			if (Abs(dx) > 0.0f || Abs(dy) > 0.0f)
 			{
@@ -64,7 +64,7 @@ namespace SeedCore
 			}
 		}
 
-		Float wheel = InputSystem::MouseWheelDelta();
+		Float wheel = InputSystem::MouseWheel();
 		if (Abs(wheel) > 0.0f)
 		{
 			distance_ = Max(0.05f, distance_ - wheel * distance_ * zoomSpeed_);

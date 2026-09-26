@@ -885,6 +885,16 @@ def main():
             return 1
         shutil.copy2(dxc_dll, os.path.join(plugins_dir, file))
 
+    # --- VC++ ランタイムは Platform/VCRuntime の版を Runtime.exe の隣へ同梱する（プレイヤー側に再頒布パッケージが無くても起動できるように） ---
+    vc_runtime_dir = os.path.join(project_root, "Platform", "VCRuntime")
+    vc_runtime_dlls = [file for file in os.listdir(vc_runtime_dir) if file.lower().endswith(".dll")] if os.path.isdir(vc_runtime_dir) else []
+    if not vc_runtime_dlls:
+        print(f"VC++ ランタイムが見つかりません: {vc_runtime_dir}")
+        return 1
+    for file in vc_runtime_dlls:
+        shutil.copy2(os.path.join(vc_runtime_dir, file), os.path.join(plugins_dir, file))
+    print(f"VC++ ランタイム コピー完了 ({len(vc_runtime_dlls)} 件)")
+
     # --- シェーダは毎回全て事前コンパイルし、ソース(.hlsl)無しで動くキャッシュとして同梱する ---
     shader_count = precompile_shaders(project_root, output_dir)
     if shader_count is None:

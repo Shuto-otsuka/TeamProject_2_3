@@ -510,14 +510,11 @@ namespace SeedCore
 		bindlessHeap_->Retire();
 	}
 
-	void Graphics::Clear()
+	void Graphics::Bind()
 	{
 		auto cmdList = context_->GetDirectList();
 		D3D12_CPU_DESCRIPTOR_HANDLE renderTargetViewHandle = swapChain_->Handle();
 		cmdList->Get()->OMSetRenderTargets(1, &renderTargetViewHandle, FALSE, nullptr);
-		
-		const Float clearColor[4] = { 0.3f, 0.3f, 0.3f, 1.0f };
-		cmdList->Get()->ClearRenderTargetView(renderTargetViewHandle, clearColor, 0, nullptr);
 	}
 
 	void Graphics::VerticalSync(Bool vsync)

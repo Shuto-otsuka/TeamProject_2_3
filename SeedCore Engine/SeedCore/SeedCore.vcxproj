@@ -41,6 +41,7 @@
   <ItemGroup>
     <ClInclude Include="ScAll.h" />
     <ClInclude Include="ScComponent.h" />
+    <ClInclude Include="ScCoroutine.h" />
     <ClInclude Include="ScInput.h" />
     <ClInclude Include="ScLog.h" />
     <ClInclude Include="ScMath.h" />

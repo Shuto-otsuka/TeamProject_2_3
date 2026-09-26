@@ -20,12 +20,18 @@ namespace SeedCore
 		shaderResourceViewRange.RegisterSpace = 0;
 		shaderResourceViewRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-		D3D12_ROOT_PARAMETER params[1]{};
+		D3D12_ROOT_PARAMETER params[2]{};
 
 		params[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 		params[0].DescriptorTable.NumDescriptorRanges = 1;
 		params[0].DescriptorTable.pDescriptorRanges = &shaderResourceViewRange;
 		params[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+		params[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+		params[1].Constants.ShaderRegister = 0;
+		params[1].Constants.RegisterSpace = 0;
+		params[1].Constants.Num32BitValues = 4;
+		params[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 		D3D12_STATIC_SAMPLER_DESC sampler{};
 		sampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
@@ -43,7 +49,7 @@ namespace SeedCore
 		sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 		D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc{};
-		rootSignatureDesc.NumParameters = 1;
+		rootSignatureDesc.NumParameters = 2;
 		rootSignatureDesc.pParameters = params;
 		rootSignatureDesc.NumStaticSamplers = 1;
 		rootSignatureDesc.pStaticSamplers = &sampler;
@@ -136,17 +142,18 @@ namespace SeedCore
 
 		cmdList->OMSetRenderTargets(1, &renderTargetViewHandle, FALSE, nullptr);
 
-		const Float clearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-		cmdList->ClearRenderTargetView(renderTargetViewHandle, clearColor, 0, nullptr);
-
 		D3D12_VIEWPORT viewport{};
-		viewport.TopLeftX = (screenWidth - letterWidth) * 0.5f;
-		viewport.TopLeftY = (screenHeight - letterHeight) * 0.5f;
-		viewport.Width = letterWidth;
-		viewport.Height = letterHeight;
+		viewport.TopLeftX = 0.0f;
+		viewport.TopLeftY = 0.0f;
+		viewport.Width = screenWidth;
+		viewport.Height = screenHeight;
 		viewport.MinDepth = 0.0f;
 		viewport.MaxDepth = 1.0f;
 		cmdList->RSSetViewports(1, &viewport);
+
+		Float letterLeft = (screenWidth - letterWidth) * 0.5f;
+		Float letterTop = (screenHeight - letterHeight) * 0.5f;
+		Float constants[4] = { letterLeft, letterTop, letterLeft + letterWidth, letterTop + letterHeight };
 
 		D3D12_RECT scissor{};
 		scissor.left = 0;
@@ -161,6 +168,7 @@ namespace SeedCore
 		ID3D12DescriptorHeap* heaps[] = { bindlessHeap_->Heap() };
 		cmdList->SetDescriptorHeaps(1, heaps);
 		cmdList->SetGraphicsRootDescriptorTable(0, bindlessHeap_->GPUHandle(sourceTextureIndex_));
+		cmdList->SetGraphicsRoot32BitConstants(1, 4, constants, 0);
 
 		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		cmdList->DrawInstanced(3, 1, 0, 0);

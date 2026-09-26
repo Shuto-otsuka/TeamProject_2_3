@@ -42,41 +42,6 @@ if (-not $ProjectRoot)
 }
 Write-Host "プロジェクト: $ProjectRoot"
 
-# --- Python -------------------------------------------------------------
-# コード生成は MSBuild のビルド前イベントで走るので、py が PATH に無いと
-# ビルドそのものが通らない。ここで入っているか確かめる。
-Write-Host ''
-if (Get-Command py -ErrorAction SilentlyContinue)
-{
-	Write-Host "Python は既にインストールされています。"
-	& py --version
-}
-else
-{
-	$answer = ''
-	while ($answer -ne 'Y' -and $answer -ne 'N')
-	{
-		$answer = (Read-Host 'Python が検出されませんでした。インストールを開始しますか？ (Y/N)').Trim().ToUpper()
-	}
-	if ($answer -eq 'N')
-	{
-		return
-	}
-
-	# インストーラは一時フォルダへ落とす。プロジェクトの中に残らないようにするため。
-	$installer = Join-Path $env:TEMP 'python_installer.exe'
-	Write-Host 'インストーラーをダウンロード中...'
-	Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.14.4/python-3.14.4-amd64.exe' -OutFile $installer
-
-	Write-Host 'インストールを実行中...'
-	Start-Process -FilePath $installer -ArgumentList '/quiet', 'InstallAllUsers=1', 'PrependPath=1', 'Include_pip=1' -Wait
-	Remove-Item $installer -Force -ErrorAction SilentlyContinue
-	Write-Host 'インストールが完了しました。'
-
-	# PrependPath で PATH は通るが、それが効くのは次に開いたウィンドウから。
-	Write-Host '  (py を使うには、このウィンドウを閉じて開き直してください)'
-}
-
 # --- shared assets ------------------------------------------------------
 # .asset は隠しフォルダなので、作成と属性付けはどちらの道でも通る形でここに置く。
 # 先頭のドットだけでは Windows で隠れないため、属性でも隠しておく。

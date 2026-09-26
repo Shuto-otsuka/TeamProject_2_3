@@ -1,0 +1,31 @@
+SeedCore Asset Reference
+========================
+
+Prefab
+------
+SeedCore::Actor actor = SeedCore::Prefab::Spawn(SeedCore::String("Bullet.prefab"));
+
+親を指定する場合:
+SeedCore::Actor child = SeedCore::Prefab::Spawn(SeedCore::String("Muzzle.prefab"), GetActor());
+
+SC_PAYLOAD_FIELDで設定したアセットIDもSpawnに渡せる。
+生成物を一定時間で消す場合はLifetimeコンポーネントを使う。
+
+Scene
+-----
+SeedCore::Scene::Change("NextScene.scene");
+SeedCore::Scene::Change("NextScene.scene", 0.3f, 0.3f);
+SeedCore::Scene::Change("NextScene.scene", "LoadingScene.scene");
+
+Scene::UpdateはEditor/Runtimeが毎フレーム呼ぶため、SeedScriptから呼ばない。
+ファイル名からアセットIDを得る場合はScene::AssetIDを使う。
+
+Reflection / Inspector
+---------------------
+SC_REFLECTION_FIELD() はインスペクター表示とシーン保存。
+SC_REFLECTION_FIELD_EX("表示名") は表示名を指定する。
+SC_REFLECTION_CLAMPED_EX は範囲を制限する。
+SC_SERIALIZE_FIELD は保存だけでインスペクターには表示しない。
+SC_PAYLOAD_FIELD_EX はアセットをドラッグ&ドロップで指定する。
+
+表示名はシーン保存時のキーでもあるため、使用中の名前を変更すると値を読めなくなる。

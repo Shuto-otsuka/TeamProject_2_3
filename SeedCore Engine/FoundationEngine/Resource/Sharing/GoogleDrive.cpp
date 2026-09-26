@@ -87,6 +87,7 @@ namespace SeedCore
 	{
 		/// [EN] A folder of a shared library holds tens of entries at most, so one page is enough and no paging is kept.
 		/// [JP] 共有ライブラリのフォルダに入る項目はせいぜい数十なので、1ページで足り、続きの管理は持たない。
+
 		/// [EN] The hash is asked for here so that deciding whether a file is already held costs no download.
 		/// [JP] ここでハッシュまで求めておくことで、「既に持っているか」の判断にダウンロードが要らなくなる。
 		String query = String(std::format("'{}' in parents and trashed = false", EscapeQuery(parentId).str()));

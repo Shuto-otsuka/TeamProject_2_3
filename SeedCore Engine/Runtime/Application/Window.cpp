@@ -167,11 +167,6 @@ namespace SeedCore
 			}
 		}
 		break;
-		case WM_ACTIVATEAPP:
-		{
-			InputSystem::SetInputEnabled(wparam != FALSE);
-		}
-		break;
 		case WM_SYSKEYDOWN:
 		{
 			if (wparam == VK_RETURN && (lparam & (1 << 29)))
@@ -206,7 +201,7 @@ namespace SeedCore
 		}
 		case WM_MOUSEWHEEL:
 		{
-			InputSystem::PushMouseWheel(static_cast<Float>(GET_WHEEL_DELTA_WPARAM(wparam)) / 120.0f);
+			InputSystem::MouseWheel(static_cast<Float>(GET_WHEEL_DELTA_WPARAM(wparam)) / 120.0f);
 		}
 		break;
 		default:

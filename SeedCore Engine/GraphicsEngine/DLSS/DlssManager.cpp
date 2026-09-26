@@ -50,7 +50,7 @@ namespace SeedCore
 		/// [EN] sl.interposer.dll intercepts every D3D12/Vulkan call the engine makes, so verify it is the genuine NVIDIA-signed binary before slInit loads it - a replaced module at this location could hijack the entire graphics pipeline. Skipped in Debug, since development/self-built SL DLLs are unsigned per the Streamline security guide.
 		/// [JP] sl.interposer.dllはエンジンが行う全てのD3D12/Vulkan呼び出しを横取りするため、slInitで読み込む前に本物のNVIDIA署名付きバイナリか検証する - ここが差し替えられるとグラフィックスパイプライン全体を乗っ取られかねない。開発版/自前ビルドのSL DLLは署名が無いため(Streamlineセキュリティガイド)、Debugではスキップする。
 #ifndef _DEBUG
-		std::wstring interposerPath = FileDirectory::ExecutableDirectory() + L"\\sl.interposer.dll";
+		std::wstring interposerPath = (FileDirectory::ExecutableDirectory() / L"sl.interposer.dll").wstring();
 		if (!sl::security::verifyEmbeddedSignature(interposerPath.c_str()))
 		{
 			SC_LOG_WARNING("sl.interposer.dllの署名検証に失敗しました - 改ざんされた/非公式のモジュールの可能性があります");

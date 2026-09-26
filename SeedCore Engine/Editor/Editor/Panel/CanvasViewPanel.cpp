@@ -533,8 +533,8 @@ namespace SeedCore
 					CanvasCamera& canvasCamera = *context_.cameraContext_.canvasCamera_;
 
 					Float worldPerPixel = canvasCamera.VisibleHeight() / imageHeight;
-					Float deltaX = -InputSystem::MouseDeltaX() * worldPerPixel;
-					Float deltaY = InputSystem::MouseDeltaY() * worldPerPixel;
+					Float deltaX = -InputSystem::MouseMotion().x * worldPerPixel;
+					Float deltaY = InputSystem::MouseMotion().y * worldPerPixel;
 
 					Vector3 eye = canvasCamera.Eye();
 					Vector3 focus = canvasCamera.Focus();

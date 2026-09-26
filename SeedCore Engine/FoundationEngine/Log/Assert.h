@@ -3,29 +3,69 @@
 
 /**
 * [EN]
-* Thin wrapper over static_assert for naming consistency with SC_ASSERT.
+* Two-argument form of SC_STATIC_ASSERT: a thin wrapper over
+* static_assert, named to match SC_ASSERT.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* SC_ASSERT と命名を揃えるための static_assert の薄いラッパー。
+* SC_STATIC_ASSERT の2引数版。SC_ASSERT と命名を揃えた static_assert の
+* 薄いラッパー。
 */
-#define SC_STATIC_ASSERT(cond, msg) static_assert(cond, msg)
+#define SC_STATIC_ASSERT_2(cond, msg) static_assert(cond, msg)
 
 /**
 * [EN]
-* Asserts that a C++ struct's size matches its HLSL mirror's, with a
-* Japanese message generated from the type name and the HLSL file it
-* mirrors, so every call site reports the mismatch in the same words.
+* Three-argument form of SC_STATIC_ASSERT: asserts that a C++ struct's
+* size matches its HLSL mirror's, with a Japanese message generated from
+* the type name and the HLSL file it mirrors, so every call site reports
+* the mismatch in the same words.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* C++ 構造体のサイズが対応する HLSL 側と一致することを表明する。
-* 型名とミラー先の HLSL ファイル名から日本語メッセージを自動生成する
-* ため、どの呼び出し箇所でも同じ言い回しで不一致を報告する。
+* SC_STATIC_ASSERT の3引数版。C++ 構造体のサイズが対応する HLSL 側と
+* 一致することを表明する。型名とミラー先の HLSL ファイル名から日本語
+* メッセージを自動生成するため、どの呼び出し箇所でも同じ言い回しで
+* 不一致を報告する。
 */
-#define SC_STATIC_ASSERT_SIZE(type, size, hlslFile) static_assert(sizeof(type) == (size), #type " が " hlslFile " と一致していません")
+#define SC_STATIC_ASSERT_3(type, size, hlslFile) static_assert(sizeof(type) == (size), #type " が " hlslFile " と一致していません")
+
+/**
+* [EN]
+* Picks the macro name that sits in the NAME slot once the call's
+* arguments are placed in front of the candidates: with two arguments
+* SC_STATIC_ASSERT_2 lands there, with three SC_STATIC_ASSERT_3 does.
+*
+* ---------------------------------------------------------------------
+*
+* [JP]
+* 呼び出しの引数を候補の前に並べたとき、NAME の位置に来るマクロ名を
+* 取り出す。引数が2つなら SC_STATIC_ASSERT_2、3つなら SC_STATIC_ASSERT_3
+* がそこに来る。
+*/
+#define SC_STATIC_ASSERT_GET_MACRO(_1, _2, _3, NAME, ...) NAME
+
+/**
+* [EN]
+* Compile-time assertion, dispatched on the argument count:
+* SC_STATIC_ASSERT(cond, msg) is a plain static_assert, and
+* SC_STATIC_ASSERT(type, size, hlslFile) checks that type matches the
+* byte size of its HLSL mirror. Arguments are counted by their commas,
+* so a type whose name itself contains a comma (e.g. a template with two
+* parameters) has to be given a single-word alias first.
+*
+* ---------------------------------------------------------------------
+*
+* [JP]
+* 引数の数で振り分けるコンパイル時アサーション。
+* SC_STATIC_ASSERT(cond, msg) は通常の static_assert、
+* SC_STATIC_ASSERT(type, size, hlslFile) は type のサイズが HLSL 側の
+* バイト数と一致するかを確かめる。引数はカンマで数えるので、名前に
+* カンマを含む型（例: 引数2つのテンプレート）は、先に1語の別名を
+* 付けてから渡すこと。
+*/
+#define SC_STATIC_ASSERT(...) SC_STATIC_ASSERT_GET_MACRO(__VA_ARGS__, SC_STATIC_ASSERT_3, SC_STATIC_ASSERT_2)(__VA_ARGS__)
 
 /**
 * [EN]

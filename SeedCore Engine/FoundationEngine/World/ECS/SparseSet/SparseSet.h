@@ -1,6 +1,7 @@
 #pragma once
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
+#include <FoundationEngine/Pool/ObjectPool.h>
 
 namespace SeedCore
 {
@@ -8,27 +9,37 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Classic sparse-set container mapping EntityID to a densely-packed
-	* T, giving O(1) add/remove/lookup while keeping T's storage
-	* contiguous for fast iteration. sparse_ maps an entity ID to its
-	* index in the dense array (or UINT32_MAX if absent); removal is
-	* swap-remove, so Remove() returns whichever entity got moved into
-	* the vacated slot (so callers can fix up that entity's index cache).
-	* Used as the alternative storage strategy to archetype/chunk
-	* storage for components registered with ComponentStorage::SparseSet.
+	* Classic sparse-set container mapping EntityID to a T, giving O(1)
+	* add/remove/lookup with a densely-packed array for fast iteration.
+	* The dense array holds each entity's ID and an owning pointer to its
+	* T; the T itself is created in pool_, so it sits together with the
+	* other T in pooled memory and never moves while present - a pointer
+	* or reference to a stored T (including a coroutine's captured this)
+	* stays valid until that entity's T is removed. sparse_ maps an entity
+	* ID to its index in the dense array (or UINT32_MAX if absent);
+	* removal is swap-remove of the dense entries only, so Remove()
+	* returns whichever entity's entry got moved into the vacated slot (so
+	* callers can fix up that entity's index cache). Used as the
+	* alternative storage strategy to archetype/chunk storage for
+	* components registered with ComponentStorage::SparseSet.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* EntityID を密に詰められた T へ対応付ける、古典的なスパースセット
-	* コンテナ。O(1) の追加・削除・検索を提供しつつ、T のストレージを
-	* 連続配置にして高速な走査を可能にする。sparse_ はエンティティ ID を
-	* 密配列内のインデックスへ対応付ける（存在しなければ UINT32_MAX）。
-	* 削除は swap-remove 方式であり、Remove() は空いたスロットへ移動
-	* してきたエンティティを返す（呼び出し側がそのエンティティの
-	* インデックスキャッシュを修正できるように）。
-	* ComponentStorage::SparseSet で登録されたコンポーネント向けの、
-	* アーキタイプ/チャンクストレージに代わる格納戦略として使われる。
+	* EntityID を T へ対応付ける、古典的なスパースセットコンテナ。
+	* O(1) の追加・削除・検索を提供しつつ、密配列で高速な走査を可能に
+	* する。密配列には各エンティティの ID と、その T を所有するポインタを
+	* 持つ。T 本体は pool_ 内に生成されるので、他の T とまとまって
+	* プールのメモリ上に置かれ、存在している間は移動しない。そのため
+	* 格納された T へのポインタや参照（コルーチンが保持する this も含む）は、
+	* そのエンティティの T が削除されるまで有効なまま保たれる。sparse_ は
+	* エンティティ ID を密配列内のインデックスへ対応付ける（存在しなければ
+	* UINT32_MAX）。削除は密配列のエントリだけを swap-remove する方式で
+	* あり、Remove() は空いたスロットへエントリが移動してきたエンティティを
+	* 返す（呼び出し側がそのエンティティのインデックスキャッシュを修正
+	* できるように）。ComponentStorage::SparseSet で登録された
+	* コンポーネント向けの、アーキタイプ/チャンクストレージに代わる
+	* 格納戦略として使われる。
 	*/
 	template<typename T>
 	class SparseSet
@@ -36,14 +47,14 @@ namespace SeedCore
 	private:
 		/**
 		* [EN]
-		* A single dense-array slot: the owning entity's ID alongside its
-		* component data.
+		* A single dense-array slot: the owning entity's ID alongside the
+		* owning pointer to its component data in pool_.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 密配列の単一スロット: 所有元エンティティの ID と、その
-		* コンポーネントデータを保持する。
+		* 密配列の単一スロット: 所有元エンティティの ID と、pool_ 内に
+		* あるそのコンポーネントデータを所有するポインタを保持する。
 		*/
 		struct Element
 		{
@@ -51,9 +62,9 @@ namespace SeedCore
 			/// [JP] このスロットのデータが属するエンティティ。データの隣に置くことで、Contains() が古い世代を弾ける。
 			EntityID id_;
 
-			/// [EN] The component data itself.
-			/// [JP] コンポーネントデータ本体。
-			T data_;
+			/// [EN] The component data, created in pool_; swap-remove moves only this pointer, never the data it points to.
+			/// [JP] pool_ 内に生成されたコンポーネントデータ。swap-remove で動くのはこのポインタだけで、指す先のデータは動かない。
+			ResourcePtr<T> data_;
 		};
 
 	public:
@@ -70,26 +81,35 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Destructor; uses the compiler-generated default.
+		* Destructor; uses the compiler-generated default. Members are
+		* destroyed in reverse declaration order, so dense_ goes first and
+		* returns every T to pool_, and pool_ then frees its memory.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* デストラクタ。コンパイラ生成のデフォルトを使用する。
+		* デストラクタ。コンパイラ生成のデフォルトを使用する。メンバは宣言と
+		* 逆順に破棄されるので、まず dense_ が全ての T を pool_ へ返却し、
+		* その後で pool_ が自分のメモリを解放する。
 		*/
 		~SparseSet() = default;
 
 		/**
 		* [EN]
-		* Inserts a default-constructed element for id if not already
-		* present, growing sparse_ as needed. Returns the entity's dense index.
+		* Inserts an element for id if not already present, growing sparse_
+		* as needed: a default-constructed T is created in pool_ and dense_
+		* gets an entry owning it. Returns the entity's dense index. dense_
+		* growing only moves the entries, so every existing T keeps its
+		* address.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* id 用のデフォルト構築された要素を、まだ存在しなければ挿入する
-		* （必要なら sparse_ を成長させる）。エンティティの密インデックスを
-		* 返す。
+		* id 用の要素を、まだ存在しなければ挿入する（必要なら sparse_ を
+		* 成長させる）: デフォルト構築した T を pool_ 内に生成し、dense_ に
+		* それを所有するエントリを追加する。エンティティの密インデックスを
+		* 返す。dense_ が伸びて動くのはエントリだけなので、既存の T の
+		* アドレスは変わらない。
 		*/
 		Uint32 Add(EntityID id)
 		{
@@ -107,28 +127,32 @@ namespace SeedCore
 				return sparse_[id.index_];
 			}
 
-			/// [EN] The new element goes at the end of dense_, and sparse_ points the entity at that position.
-			/// [JP] 新しい要素は dense_ の末尾に置き、sparse_ でエンティティをその位置に結び付ける。
+			/// [EN] The new element goes at the end of dense_ with its data created in pool_, and sparse_ points the entity at that position.
+			/// [JP] 新しい要素は dense_ の末尾に置き、データは pool_ 内に生成する。sparse_ でエンティティをその位置に結び付ける。
 			Uint32 denseIndex = static_cast<Uint32>(dense_.size());
 			sparse_[id.index_] = denseIndex;
-			dense_.push_back({ id, T() });
+			dense_.push_back({ id, MakePtr<T>(pool_) });
 			return denseIndex;
 		}
 
 		/**
 		* [EN]
-		* Removes id via swap-remove: moves the last dense element into
-		* id's vacated slot (unless id was already last). Returns the
-		* EntityID of whichever entity was moved into the removed slot
-		* (so its index cache can be updated), or a default (invalid)
-		* EntityID if none was moved (id not found, or it was already last).
+		* Removes id via swap-remove: id's T is destroyed and returned to
+		* pool_, and the last dense entry is moved into id's vacated slot
+		* (unless id was already last). Only the entry moves - the moved
+		* entity's T stays where it is in pool_. Returns the EntityID of
+		* whichever entity's entry was moved into the removed slot (so its
+		* index cache can be updated), or a default (invalid) EntityID if
+		* none was moved (id not found, or it was already last).
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* id を swap-remove 方式で削除する: 最後の密要素を id の空いた
-		* スロットへ移動する（id が既に最後だった場合を除く）。削除された
-		* スロットへ移動したエンティティの EntityID を返す（その
+		* id を swap-remove 方式で削除する: id の T を破棄して pool_ へ
+		* 返却し、最後の密エントリを id の空いたスロットへ移動する（id が
+		* 既に最後だった場合を除く）。動くのはエントリだけで、移動した
+		* エンティティの T は pool_ 内の同じ場所に留まる。削除された
+		* スロットへエントリが移動したエンティティの EntityID を返す（その
 		* インデックスキャッシュを更新できるように）。何も移動されな
 		* かった場合（id が見つからない、または既に最後だった場合）は
 		* デフォルト（無効）の EntityID を返す。
@@ -145,8 +169,8 @@ namespace SeedCore
 			Uint32 removeIndex = sparse_[id.index_];
 			Uint32 lastIndex = static_cast<Uint32>(dense_.size()) - 1;
 
-			/// [EN] Removing the last element leaves no gap: drop it and clear the entity's sparse_ entry.
-			/// [JP] 最後の要素なら穴は空かないので、取り除いて sparse_ の枠を空に戻すだけでよい。
+			/// [EN] Removing the last element leaves no gap: dropping it returns its T to pool_, then the entity's sparse_ entry is cleared.
+			/// [JP] 最後の要素なら穴は空かないので、取り除いて(その T はここで pool_ へ返却される) sparse_ の枠を空に戻すだけでよい。
 			if (removeIndex == lastIndex)
 			{
 				dense_.pop_back();
@@ -154,14 +178,14 @@ namespace SeedCore
 				return EntityID{};
 			}
 
-			/// [EN] Swap-remove: copy the last element into the gap and repoint that entity's sparse_ entry at its new position.
-			/// [JP] swap-remove: 最後の要素を穴へ写し、そのエンティティの sparse_ の枠を新しい位置へ向け直す。
+			/// [EN] Swap-remove: move the last entry into the gap (which returns the removed data to pool_) and repoint that entity's sparse_ entry at its new position.
+			/// [JP] swap-remove: 最後のエントリを穴へムーブし（消す側のデータはここで pool_ へ返却される）、そのエンティティの sparse_ の枠を新しい位置へ向け直す。
 			EntityID lastEntity = dense_[lastIndex].id_;
-			dense_[removeIndex] = dense_[lastIndex];
+			dense_[removeIndex] = std::move(dense_[lastIndex]);
 			sparse_[lastEntity.index_] = removeIndex;
 
-			/// [EN] The old last slot is now a duplicate; drop it and clear the removed entity's entry.
-			/// [JP] 元の末尾は複製になったので取り除き、消したエンティティの枠を空に戻す。
+			/// [EN] The old last slot is now empty; drop it and clear the removed entity's entry.
+			/// [JP] 元の末尾は中身が空になったので取り除き、消したエンティティの枠を空に戻す。
 			dense_.pop_back();
 			sparse_[id.index_] = UINT32_MAX;
 			return lastEntity;
@@ -182,7 +206,7 @@ namespace SeedCore
 		{
 			/// [EN] Two lookups, both O(1): entity -> dense index -> data. No presence check, for speed.
 			/// [JP] O(1) の参照を2回たどる: エンティティ → 密インデックス → データ。速さのため存在の確認はしない。
-			return dense_[sparse_[id.index_]].data_;
+			return *dense_[sparse_[id.index_]].data_;
 		}
 
 		/**
@@ -196,7 +220,7 @@ namespace SeedCore
 		*/
 		const T& Get(EntityID id)const
 		{
-			return dense_[sparse_[id.index_]].data_;
+			return *dense_[sparse_[id.index_]].data_;
 		}
 
 		/**
@@ -248,8 +272,8 @@ namespace SeedCore
 		*/
 		const DynamicArray<Element>& Dense()const
 		{
-			/// [EN] Order is not stable: swap-remove moves the last element whenever something is removed.
-			/// [JP] 並び順は保たれない。何かを消すたびに、swap-remove で最後の要素が移動する。
+			/// [EN] Order is not stable: swap-remove moves the last entry whenever something is removed. Each entry's data_ still points at the same T in pool_.
+			/// [JP] 並び順は保たれない。何かを消すたびに、swap-remove で最後のエントリが移動する。各エントリの data_ が指す pool_ 内の T は変わらない。
 			return dense_;
 		}
 
@@ -272,8 +296,16 @@ namespace SeedCore
 		/// [JP] エンティティのスロット番号を dense_ 内の位置へ対応付ける。無ければ UINT32_MAX。最大のスロット番号まで伸びるので、まばらになりうる。
 		DynamicArray<Uint32> sparse_;
 
-		/// [EN] Densely-packed storage of every present entity's ID and component data.
-		/// [JP] 現在存在する全エンティティの ID とコンポーネントデータを、密に詰めて格納するストレージ。
+		/// [EN] Where every T lives. A single shard (LogSize 0), so successive T are carved from the same backing memory side by side instead of being spread round-robin over many shards.
+		///      PackedSynchronizedPointer keeps the freelist head in one word and is defined entirely in the header, so a module that instantiates this template (e.g. UserProject for its scripts) needs nothing exported from FoundationEngine.
+		///      Declared before dense_ so it is destroyed after dense_, outliving every pointer dense_ holds.
+		/// [JP] 全ての T の置き場所。シャードは1つ(LogSize 0)なので、続けて生成した T は複数のシャードへ順番に振り分けられず、同じバッキングメモリから隣り合って切り出される。
+		///      PackedSynchronizedPointer はフリーリストの先頭を1ワードに収め、ヘッダだけで定義が完結するので、このテンプレートを実体化するモジュール(例: スクリプトを持つ UserProject)は FoundationEngine からのエクスポートを必要としない。
+		///      dense_ より前に宣言し、dense_ より後に破棄されるようにして、dense_ が持つ全ポインタより長く生きるようにする。
+		ObjectPool<T, PackedSynchronizedPointer<>, 0> pool_;
+
+		/// [EN] Densely-packed storage of every present entity's ID and owning pointer to its component data.
+		/// [JP] 現在存在する全エンティティの ID と、そのコンポーネントデータを所有するポインタを、密に詰めて格納するストレージ。
 		DynamicArray<Element> dense_;
 	};
 

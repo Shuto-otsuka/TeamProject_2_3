@@ -1,5 +1,5 @@
 @echo off
 
-py ..\Tools\Python\Clean.py
+..\Platform\Python\python.exe ..\Tools\Python\Clean.py
 
 pause

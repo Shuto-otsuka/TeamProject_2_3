@@ -51,7 +51,7 @@ namespace SeedCore
 		Uint furInstanceCount_ = 0;
 		Vector2 furConstantBufferPadding0_;
 	};
-	SC_STATIC_ASSERT_SIZE(FurConstantBuffer, 16, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(FurConstantBuffer, 16, "Model/Model.hlsli");
 
 	class SEEDCORE_API ModelRenderer
 	{

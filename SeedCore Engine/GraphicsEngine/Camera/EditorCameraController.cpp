@@ -42,8 +42,8 @@ namespace SeedCore
 
 		if (rightMouseHeld)
 		{
-			Float dx = InputSystem::MouseDeltaX();
-			Float dy = InputSystem::MouseDeltaY();
+			Float dx = InputSystem::MouseMotion().x;
+			Float dy = InputSystem::MouseMotion().y;
 
 			if (Abs(dx) > 0.0f || Abs(dy) > 0.0f)
 			{
@@ -60,7 +60,7 @@ namespace SeedCore
 			/// [JP] Unreal 風: 右クリックでの視点移動中は、ホイールでカメラを
 			///      ドリーさせるのではなく WASD の移動速度自体を変更する
 			///      （下のホイールドリー処理は rightMouseHeld 中はスキップされる）。
-			Float speedWheel = InputSystem::MouseWheelDelta();
+			Float speedWheel = InputSystem::MouseWheel();
 			if (Abs(speedWheel) > 0.0f)
 			{
 				moveSpeed_ = Clamp(moveSpeed_ * std::pow(1.1f, speedWheel), 0.1f, 1000.0f);
@@ -111,8 +111,8 @@ namespace SeedCore
 		/// [JP] 中ボタンドラッグでパン（Unreal風）。掴んだ景色が指に追従する向き。
 		if (InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed))
 		{
-			Float dx = InputSystem::MouseDeltaX();
-			Float dy = InputSystem::MouseDeltaY();
+			Float dx = InputSystem::MouseMotion().x;
+			Float dy = InputSystem::MouseMotion().y;
 
 			if (Abs(dx) > 0.0f || Abs(dy) > 0.0f)
 			{
@@ -137,7 +137,7 @@ namespace SeedCore
 		}
 
 		/// [JP] Ctrl押下中のホイールはギズモのスナップ値変更に使うため（EditorWindowPanel::Draw参照）、右クリック押下中のホイールは移動速度変更に使うため（上記参照）、ここでのドリー移動からは除外する。
-		Float wheel = InputSystem::MouseWheelDelta();
+		Float wheel = InputSystem::MouseWheel();
 		if (Abs(wheel) > 0.0f && !InputSystem::KeyState(InputSystem::Key::Control) && !rightMouseHeld)
 		{
 			Vector3 forward = Vector3::Transform(Vector3::Forward, rotation_);

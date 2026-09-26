@@ -22,14 +22,14 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Stops playback entirely, resetting both total-time accumulators and
-	* the time scale back to 1.
+	* Stops playback entirely, resetting both total-time accumulators, the
+	* fixed-step accumulator, and the time scale back to 1.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 再生を完全に停止し、2つの合計時間の累積値とタイムスケール（1 に
-	* 戻す）をリセットする。
+	* 再生を完全に停止し、2つの合計時間の累積値、固定ステップの蓄積時間、
+	* タイムスケール（1 に戻す）をリセットする。
 	*/
 	void GameTimer::Stop()
 	{
@@ -39,6 +39,7 @@ namespace SeedCore
 			paused_ = false;
 			scaledTotal_ = 0.0;
 			unscaledTotal_ = 0.0;
+			accumulator_ = 0.0f;
 			timeScale_ = 1.0f;
 		}
 	}
@@ -79,16 +80,18 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Advances one tick using worldDelta (typically WorldTimer::DeltaTime()).
-	* Updates both the time-scaled and unscaled delta/total. No-op
-	* while stopped or paused.
+	* Advances one tick using worldDelta (the frame's real delta time).
+	* Updates both the time-scaled and unscaled delta/total, and feeds
+	* the scaled delta into the fixed-step accumulator. While stopped or
+	* paused, both deltas become 0 and nothing accumulates.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* worldDelta（通常は WorldTimer::DeltaTime()）を用いて1ティック
-	* 進める。タイムスケール適用後と未適用の両方のデルタ/合計を
-	* 更新する。停止中または一時停止中は何もしない。
+	* worldDelta（フレームの実時間デルタ）を用いて1ティック進める。
+	* タイムスケール適用後と未適用の両方のデルタ/合計を更新し、適用後の
+	* デルタを固定ステップの蓄積時間に足す。停止中または一時停止中は
+	* 両方のデルタが 0 になり、何も蓄積しない。
 	*/
 	void GameTimer::Tick(Float worldDelta)
 	{
@@ -106,6 +109,11 @@ namespace SeedCore
 
 		unscaledTotal_ += static_cast<Double>(unscaledDelta_);
 		scaledTotal_ += static_cast<Double>(scaledDelta_);
+
+		/// [EN] The accumulator is capped at a few steps' worth, so a long stall costs at most that many catch-up steps.
+		/// [JP] 蓄積時間は数ステップ分で頭打ちにし、長い停止の後でも追いつくためのステップはその回数までで済ませる。
+		constexpr Float maxAccumulatedSteps = 8.0f;
+		accumulator_ = Min(accumulator_ + scaledDelta_, fixedDeltaTime_ * maxAccumulatedSteps);
 	}
 
 	/**
@@ -176,6 +184,28 @@ namespace SeedCore
 	Float GameTimer::FixedDeltaTime()const
 	{
 		return fixedDeltaTime_;
+	}
+
+	/**
+	* [EN]
+	* Consumes one FixedDeltaTime() worth of accumulated scaled time, if
+	* enough has built up since the last successful call.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 前回の成功呼び出し以降に十分な時間が蓄積されていれば、タイムスケール
+	* 適用後の蓄積時間を FixedDeltaTime() 分だけ1回消費する。
+	*/
+	Bool GameTimer::Step()
+	{
+		if (accumulator_ < fixedDeltaTime_)
+		{
+			return false;
+		}
+
+		accumulator_ -= fixedDeltaTime_;
+		return true;
 	}
 
 	/**

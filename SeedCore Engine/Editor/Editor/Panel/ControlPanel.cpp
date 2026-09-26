@@ -101,11 +101,10 @@ namespace SeedCore
 				{
 					MixerSystem::CategoryVolume(categoryNames[categoryIndex], context_.sceneContext_.playModeCategoryVolumes_[categoryIndex]);
 				}
-				if (InputSystem::MouseCaptured())
-				{
-					InputSystem::EndMouseCapture();
-				}
-				InputSystem::Rumble(0, 0, 0);
+				InputSystem::EndMouseCapture();
+				InputSystem::UnlockCursor();
+				InputSystem::RevealCursor();
+				InputSystem::RumbleBody(0, 0, 0);
 				isPlaying = false;
 				EndPlayMemCheck();
 				ImGui::SetWindowFocus("エディタービュー");
@@ -213,11 +212,10 @@ namespace SeedCore
 					{
 						MixerSystem::CategoryVolume(categoryNames[categoryIndex], context_.sceneContext_.playModeCategoryVolumes_[categoryIndex]);
 					}
-					if (InputSystem::MouseCaptured())
-					{
-						InputSystem::EndMouseCapture();
-					}
-					InputSystem::Rumble(0, 0, 0);
+					InputSystem::EndMouseCapture();
+					InputSystem::UnlockCursor();
+					InputSystem::RevealCursor();
+					InputSystem::RumbleBody(0, 0, 0);
 					EndPlayMemCheck();
 					ImGui::SetWindowFocus("エディタービュー");
 				}

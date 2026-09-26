@@ -1,4 +1,5 @@
 #include <Editor/Editor/Build/HotReload.h>
+#include <FoundationEngine/File/FileDirectory.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Log/Notice.h>
 #include <FoundationEngine/Plugin/PluginHost.h>
@@ -39,9 +40,7 @@ namespace SeedCore
 	{
 		/// [EN] exeDirectory is Runtime\Build\x64\Debug (or Release); the repo root is three levels up from Runtime\.
 		/// [JP] exeDirectory は Runtime\Build\x64\Debug(またはRelease); リポジトリルートは Runtime\ からさらに1つ上。
-		Char buffer[MAX_PATH]{};
-		GetModuleFileNameA(nullptr, buffer, MAX_PATH);
-		std::filesystem::path exeDirectory = std::filesystem::path(buffer).parent_path();
+		std::filesystem::path exeDirectory = FileDirectory::ExecutableDirectory();
 		std::filesystem::path repositoryRoot = exeDirectory.parent_path().parent_path().parent_path().parent_path();
 		return repositoryRoot / "UserProject";
 	}

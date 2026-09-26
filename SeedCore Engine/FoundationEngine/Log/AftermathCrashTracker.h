@@ -113,18 +113,6 @@ namespace SeedCore
 		static void Disable();
 
 	private:
-		/// [EN] Guards lastCrashDumpPath_ and shaderDebugInfoCount_, which Aftermath callbacks write from driver threads.
-		/// [JP] Aftermath のコールバックがドライバのスレッドから書き込む lastCrashDumpPath_ と shaderDebugInfoCount_ を守る。
-		static std::mutex mutex_;
-
-		/// [EN] Path of the most recently written crash dump, or empty if none has been written in this process.
-		/// [JP] 直近に書き出したクラッシュダンプのパス。このプロセスで一度も書いていなければ空。
-		static String lastCrashDumpPath_;
-
-		/// [EN] Number of shader debug info files written in this process; included in Report()'s summary.
-		/// [JP] このプロセスで書き出したシェーダデバッグ情報ファイルの数。Report() の要約に含める。
-		static Uint32 shaderDebugInfoCount_;
-
 		/**
 		* [EN]
 		* Returns the directory every crash dump / shader debug info file
@@ -180,5 +168,18 @@ namespace SeedCore
 		* 追加する Aftermath のコールバック。
 		*/
 		static void OnDescription(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addValue, void* userData);
+
+	private:
+		/// [EN] Guards lastCrashDumpPath_ and shaderDebugInfoCount_, which Aftermath callbacks write from driver threads.
+           /// [JP] Aftermath のコールバックがドライバのスレッドから書き込む lastCrashDumpPath_ と shaderDebugInfoCount_ を守る。
+		static std::mutex mutex_;
+
+		/// [EN] Path of the most recently written crash dump, or empty if none has been written in this process.
+		/// [JP] 直近に書き出したクラッシュダンプのパス。このプロセスで一度も書いていなければ空。
+		static String lastCrashDumpPath_;
+
+		/// [EN] Number of shader debug info files written in this process; included in Report()'s summary.
+		/// [JP] このプロセスで書き出したシェーダデバッグ情報ファイルの数。Report() の要約に含める。
+		static Uint32 shaderDebugInfoCount_;
 	};
 }

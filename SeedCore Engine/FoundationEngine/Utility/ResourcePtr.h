@@ -6,6 +6,9 @@
 
 namespace SeedCore
 {
+	template<typename T, typename H, Size LogSize>
+	class ObjectPool;
+
 	/**
 	* [EN]
 	* Sole-ownership smart pointer, custom-built as a replacement for
@@ -14,7 +17,11 @@ namespace SeedCore
 	* ResourcePtr<U> to a ResourcePtr<T> when U* is implicitly convertible
 	* to T* (e.g. Derived -> Base), so factories can return a derived
 	* instance through a base-typed ResourcePtr; the pointee is then
-	* deleted through T*, so T needs a virtual destructor in that case.
+	* destroyed through T*, so T needs a virtual destructor in that case.
+	* The pointee is either heap-allocated (released with delete) or
+	* created from an ObjectPool (returned to that pool with Recycle); a
+	* pooled ResourcePtr remembers its pool and how to recycle into it,
+	* and that pool must outlive it.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -24,8 +31,11 @@ namespace SeedCore
 	* している。U* が T* へ暗黙変換可能（例: 派生 -> 基底）な場合、
 	* ResourcePtr<U> から ResourcePtr<T> へのムーブ/変換に対応しており、
 	* ファクトリが派生インスタンスを基底型の ResourcePtr で返せる。その
-	* 場合オブジェクトは T* 経由で delete されるので、T には仮想
-	* デストラクタが必要。
+	* 場合オブジェクトは T* 経由で破棄されるので、T には仮想
+	* デストラクタが必要。オブジェクトはヒープ確保（delete で解放）か
+	* ObjectPool からの生成（Recycle でそのプールへ返却）のどちらかで、
+	* プール生成の ResourcePtr は自分のプールと返却方法を覚えている。
+	* そのプールは ResourcePtr より長く生きていなければならない。
 	*/
 	template <typename T>
 	class ResourcePtr
@@ -80,6 +90,24 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Takes ownership of a pointer created from pool; on release,
+		* recycle(pool, object) returns it to that pool instead of deleting
+		* it. Prefer the MakePtr(ObjectPool&, ...) overload at call sites.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* pool から生成されたポインタの所有権を引き取る。解放時は delete
+		* せず、recycle(pool, object) でそのプールへ返却する。呼び出し側では
+		* 基本的に MakePtr(ObjectPool&, ...) オーバーロードを使うこと。
+		*/
+		ResourcePtr(T* pointer, void* pool, void (*recycle)(void*, void*))noexcept: pointer_(pointer), pool_(pool), recycle_(recycle)
+		{
+			/// No Code
+		}
+
+		/**
+		* [EN]
 		* Copy construction is disabled — ownership must never be shared.
 		*
 		* ---------------------------------------------------------------------
@@ -109,11 +137,13 @@ namespace SeedCore
 		* [JP]
 		* other から所有権を引き継ぎ、other は null になる。
 		*/
-		ResourcePtr(ResourcePtr&& other)noexcept: pointer_(other.pointer_)
+		ResourcePtr(ResourcePtr&& other)noexcept: pointer_(other.pointer_), pool_(other.pool_), recycle_(other.recycle_)
 		{
-			/// [EN] other lets go of the pointer, so exactly one ResourcePtr deletes it.
-			/// [JP] other がポインタを手放すので、それを delete する ResourcePtr はちょうど1つになる。
+			/// [EN] other lets go of the pointer, so exactly one ResourcePtr releases it.
+			/// [JP] other がポインタを手放すので、それを解放する ResourcePtr はちょうど1つになる。
 			other.pointer_ = nullptr;
+			other.pool_ = nullptr;
+			other.recycle_ = nullptr;
 		}
 
 		/**
@@ -131,11 +161,13 @@ namespace SeedCore
 		*/
 		template <typename U>
 			requires std::is_convertible_v<U*, T*>
-		ResourcePtr(ResourcePtr<U>&& other)noexcept: pointer_(other.pointer_)
+		ResourcePtr(ResourcePtr<U>&& other)noexcept: pointer_(other.pointer_), pool_(other.pool_), recycle_(other.recycle_)
 		{
 			/// [EN] The pointer converts from U* to T* in the initializer; other lets go of it.
 			/// [JP] 初期化の中でポインタは U* から T* へ変換される。other はそれを手放す。
 			other.pointer_ = nullptr;
+			other.pool_ = nullptr;
+			other.recycle_ = nullptr;
 		}
 
 		/**
@@ -151,13 +183,17 @@ namespace SeedCore
 		*/
 		ResourcePtr& operator=(ResourcePtr&& other)noexcept
 		{
-			/// [EN] Self-assignment is skipped, since reset() would delete the object about to be taken over.
-			/// [JP] 自己代入は飛ばす。reset() が、これから引き取るはずのオブジェクトを delete してしまうため。
+			/// [EN] Self-assignment is skipped, since reset() would release the object about to be taken over.
+			/// [JP] 自己代入は飛ばす。reset() が、これから引き取るはずのオブジェクトを解放してしまうため。
 			if (this != &other)
 			{
 				reset();
 				pointer_ = other.pointer_;
+				pool_ = other.pool_;
+				recycle_ = other.recycle_;
 				other.pointer_ = nullptr;
+				other.pool_ = nullptr;
+				other.recycle_ = nullptr;
 			}
 			return *this;
 		}
@@ -177,11 +213,15 @@ namespace SeedCore
 			requires std::is_convertible_v<U*, T*>
 		ResourcePtr& operator=(ResourcePtr<U>&& other)noexcept
 		{
-			/// [EN] The previous pointee is deleted before the new one is taken over.
-			/// [JP] 新しいオブジェクトを引き取る前に、前のオブジェクトを delete する。
+			/// [EN] The previous pointee is released before the new one is taken over.
+			/// [JP] 新しいオブジェクトを引き取る前に、前のオブジェクトを解放する。
 			reset();
 			pointer_ = other.pointer_;
+			pool_ = other.pool_;
+			recycle_ = other.recycle_;
 			other.pointer_ = nullptr;
+			other.pool_ = nullptr;
+			other.recycle_ = nullptr;
 			return *this;
 		}
 
@@ -216,23 +256,45 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Destroys the owned pointee (if any) and becomes null. Safe to
+		* Destroys the owned pointee (if any) and becomes null: a pooled
+		* pointee is returned to its pool, any other is deleted. Safe to
 		* call on an already-null ResourcePtr (no-op).
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 所有しているオブジェクトを（あれば）破棄し、null になる。
+		* 所有しているオブジェクトを（あれば）破棄し、null になる。プール
+		* 生成のものはそのプールへ返却し、それ以外は delete する。
 		* 既に null な ResourcePtr に対して呼んでも安全（何もしない）。
 		*/
 		void reset()noexcept
 		{
-			/// [EN] The pointer is cleared after deleting, so a second reset does nothing.
-			/// [JP] delete した後にポインタを消すので、2回目の reset は何もしない。
+			/// [EN] The pointer is cleared after releasing, so a second reset does nothing.
+			/// [JP] 解放した後にポインタを消すので、2回目の reset は何もしない。
 			if (pointer_ != nullptr)
 			{
-				delete pointer_;
+				if (recycle_ != nullptr)
+				{
+					/// [EN] The pool takes the most-derived object's address; for a polymorphic T held through a base, dynamic_cast<void*> recovers it.
+					/// [JP] プールには最派生オブジェクトのアドレスを渡す。基底型で持つ多態的な T は dynamic_cast<void*> でそれを取り戻す。
+					void* object = nullptr;
+					if constexpr (std::is_polymorphic_v<T>)
+					{
+						object = dynamic_cast<void*>(const_cast<std::remove_cv_t<T>*>(pointer_));
+					}
+					else
+					{
+						object = const_cast<std::remove_cv_t<T>*>(pointer_);
+					}
+					recycle_(pool_, object);
+				}
+				else
+				{
+					delete pointer_;
+				}
 				pointer_ = nullptr;
+				pool_ = nullptr;
+				recycle_ = nullptr;
 			}
 		}
 
@@ -336,6 +398,14 @@ namespace SeedCore
 		/// [EN] The owned raw pointer; nullptr when this ResourcePtr owns nothing.
 		/// [JP] 所有している生ポインタ。何も所有していない場合は nullptr。
 		T* pointer_ = nullptr;
+
+		/// [EN] The ObjectPool the pointee was created from, type-erased; nullptr for a heap-allocated pointee.
+		/// [JP] オブジェクトの生成元の ObjectPool（型消去済み）。ヒープ確保のものは nullptr。
+		void* pool_ = nullptr;
+
+		/// [EN] Returns the most-derived object to pool_; nullptr for a heap-allocated pointee, which is deleted instead.
+		/// [JP] 最派生オブジェクトを pool_ へ返却する関数。ヒープ確保のものは nullptr で、代わりに delete される。
+		void (*recycle_)(void*, void*) = nullptr;
 	};
 
 	/**
@@ -358,5 +428,28 @@ namespace SeedCore
 		/// [EN] The raw pointer goes straight into the ResourcePtr, so nothing else can hold it.
 		/// [JP] 生ポインタはそのまま ResourcePtr へ渡るので、他の誰もそれを持てない。
 		return ResourcePtr<T>(new T(std::forward<Args>(args)...));
+	}
+
+	/**
+	* [EN]
+	* Constructs a T in a block of pool and returns it wrapped in a
+	* ResourcePtr that recycles it back into pool on release. Objects
+	* created from one pool sit together in its memory and never move,
+	* unlike a plain heap allocation per object. pool must outlive the
+	* returned ResourcePtr.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* pool のブロック内に T を構築し、解放時に pool へ返却する
+	* ResourcePtr でラップして返す。1つのプールから生成したオブジェクトは
+	* そのメモリ上にまとまって置かれ、移動することもない（オブジェクト
+	* ごとのヒープ確保とは異なる）。pool は返された ResourcePtr より長く
+	* 生きていなければならない。
+	*/
+	template <typename T, typename H, Size LogSize, typename... Args>
+	[[nodiscard]] ResourcePtr<T> MakePtr(ObjectPool<T, H, LogSize>& pool, Args&&... args)
+	{
+		return ResourcePtr<T>(pool.Create(std::forward<Args>(args)...), &pool, [](void* owner, void* object) { static_cast<ObjectPool<T, H, LogSize>*>(owner)->Recycle(static_cast<T*>(object)); });
 	}
 }

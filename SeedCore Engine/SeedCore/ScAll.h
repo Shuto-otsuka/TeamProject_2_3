@@ -4,6 +4,7 @@
 // to pick. Including one by one keeps compile times shorter.
 #include <SeedCore/ScScript.h>
 #include <SeedCore/ScComponent.h>
+#include <SeedCore/ScCoroutine.h>
 #include <SeedCore/ScInput.h>
 #include <SeedCore/ScLog.h>
 #include <SeedCore/ScMath.h>

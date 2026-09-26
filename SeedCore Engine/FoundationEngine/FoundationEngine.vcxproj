@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Coroutine\Coroutine.cpp" />
+    <ClCompile Include="Coroutine\CoroutineSystem.cpp" />
     <ClCompile Include="File\FileDialog.cpp">
     </ClCompile>
     <ClCompile Include="File\FileDirectory.cpp">
@@ -100,6 +101,7 @@
     <ClCompile Include="World\World.cpp" />
     <ClCompile Include="World\WorldSnapshot.cpp" />
     <ClInclude Include="Coroutine\Coroutine.h" />
+    <ClInclude Include="Coroutine\CoroutineSystem.h" />
     <ClInclude Include="File\FileDialog.h" />
     <ClInclude Include="File\FileDirectory.h" />
     <ClInclude Include="Input\Input.h" />
@@ -422,8 +424,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>py "..\Tools\Python\Reflection.py" ".."
-py "..\Tools\Python\Payload.py" ".."</Command>
+      <Command>"..\Platform\Python\python.exe"  "..\Tools\Python\Reflection.py" ".."
+"..\Platform\Python\python.exe"  "..\Tools\Python\Payload.py" ".."</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -450,8 +452,8 @@ py "..\Tools\Python\Payload.py" ".."</Command>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PreBuildEvent>
-      <Command>py "..\Tools\Python\Reflection.py" ".."
-py "..\Tools\Python\Payload.py" ".."</Command>
+      <Command>"..\Platform\Python\python.exe"  "..\Tools\Python\Reflection.py" ".."
+"..\Platform\Python\python.exe"  "..\Tools\Python\Payload.py" ".."</Command>
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
