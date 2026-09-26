@@ -3,7 +3,7 @@
 #include <filesystem>
 
 // Package-root launcher: starts Plugins/Runtime.exe with its working directory
-// set to Plugins/ - the same directory, so the loader resolves SeedCore.dll and
+// set to Plugins/ - the same directory, so the loader resolves SeedCore.Cplusplus.dll and
 // the third-party DLLs next to it, and the engine's "../CompiledShaderObject" /
 // "../UserProject" relative paths resolve against the package root one level up.
 // Forwards the command line and mirrors the child's exit code.

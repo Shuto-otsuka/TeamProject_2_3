@@ -33,21 +33,21 @@ namespace SeedCore
 	void HotReload::Initialize(PluginHost& pluginHost)
 	{
 		pluginHost_ = &pluginHost;
-		userProjectPlugin_ = pluginHost.Find("UserProject");
+		userProjectPlugin_ = pluginHost.Find("UserProject.Cplusplus");
 	}
 
 	std::filesystem::path HotReload::UserProjectSourceDirectory()
 	{
-		/// [EN] exeDirectory is Runtime\Build\x64\Debug (or Release); the repo root is three levels up from Runtime\.
-		/// [JP] exeDirectory は Runtime\Build\x64\Debug(またはRelease); リポジトリルートは Runtime\ からさらに1つ上。
+		/// [EN] exeDirectory is Runtime\Build\x64\Debug\Cplusplus (or Release\Cplusplus); the repo root is one level above Runtime\.
+		/// [JP] exeDirectory は Runtime\Build\x64\Debug\Cplusplus(またはRelease\Cplusplus); リポジトリルートは Runtime\ からさらに1つ上。
 		std::filesystem::path exeDirectory = FileDirectory::ExecutableDirectory();
-		std::filesystem::path repositoryRoot = exeDirectory.parent_path().parent_path().parent_path().parent_path();
+		std::filesystem::path repositoryRoot = exeDirectory.parent_path().parent_path().parent_path().parent_path().parent_path();
 		return repositoryRoot / "UserProject";
 	}
 
 	std::filesystem::path HotReload::UserProjectVcxprojPath()
 	{
-		return UserProjectSourceDirectory() / "UserProject.vcxproj";
+		return UserProjectSourceDirectory() / "UserProject.Cplusplus.vcxproj";
 	}
 
 	Uint64 HotReload::GetLastWriteTime(const std::filesystem::path& path)
@@ -199,8 +199,8 @@ namespace SeedCore
 		const Wchar* configuration = L"Release";
 #endif
 
-		/// [EN] UserProject.vcxproj's OutDir/IntDir are defined in terms of $(SolutionDir), which MSBuild only auto-populates when building through Runtime.sln. Since this invokes the .vcxproj directly (bypassing the .sln), SolutionDir must be passed explicitly or the build silently lands outside Runtime\Build\ — where nothing here is watching it.
-		/// [JP] UserProject.vcxproj の OutDir/IntDir は $(SolutionDir) を使って定義されているが、これは Runtime.sln 経由でビルドしたときだけ MSBuild が自動設定する。ここでは .sln を介さず .vcxproj を直接呼んでいるため、SolutionDir を明示的に渡さないと、ビルド成果物が誰も監視していない Runtime\Build\ 以外の場所へ静かに出力されてしまう。
+		/// [EN] UserProject.Cplusplus.vcxproj's OutDir/IntDir are defined in terms of $(SolutionDir), which MSBuild only auto-populates when building through Runtime.sln. Since this invokes the .vcxproj directly (bypassing the .sln), SolutionDir must be passed explicitly or the build silently lands outside Runtime\Build\ — where nothing here is watching it.
+		/// [JP] UserProject.Cplusplus.vcxproj の OutDir/IntDir は $(SolutionDir) を使って定義されているが、これは Runtime.sln 経由でビルドしたときだけ MSBuild が自動設定する。ここでは .sln を介さず .vcxproj を直接呼んでいるため、SolutionDir を明示的に渡さないと、ビルド成果物が誰も監視していない Runtime\Build\ 以外の場所へ静かに出力されてしまう。
 		std::filesystem::path solutionDir = UserProjectSourceDirectory().parent_path() / L"Runtime\\";
 
 		/// [EN] A trailing backslash immediately before the closing quote in a Windows command line escapes that quote (\" is read as a literal "), corrupting everything after it — double it so the parser sees one literal backslash followed by a properly closed quote.
@@ -211,12 +211,12 @@ namespace SeedCore
 			solutionDirArgument.push_back(L'\\');
 		}
 
-		/// [EN] BuildProjectReferences=false is essential, not an optimization: UserProject.vcxproj references SeedCore.vcxproj, so a default build would walk the whole engine graph and relink SeedCore.dll — which this very Editor process has loaded and therefore holds locked, making the link fail with LNK1104 and the auto-build fail forever. Skipping reference builds links UserProject.dll against the already-built SeedCore.lib instead, which is exactly what a gameplay-script hot-reload needs (engine changes still require a normal full build from Visual Studio).
-		/// [JP] BuildProjectReferences=false は最適化ではなく必須: UserProject.vcxproj は SeedCore.vcxproj を参照しているため、既定のビルドではエンジン全体をたどって SeedCore.dll を再リンクしてしまう — その SeedCore.dll はこの Editor プロセス自身がロード中でロックされているので、リンクが LNK1104 で失敗し、自動ビルドが永久に失敗し続ける。参照プロジェクトのビルドを省くことで、代わりにビルド済みの SeedCore.lib に対して UserProject.dll をリンクする — ゲームプレイスクリプトのホットリロードに必要なのはまさにこれ(エンジン側の変更は従来通り Visual Studio でのフルビルドが必要)。
+		/// [EN] BuildProjectReferences=false is essential, not an optimization: UserProject.Cplusplus.vcxproj references SeedCore.Cplusplus.vcxproj, so a default build would walk the whole engine graph and relink SeedCore.Cplusplus.dll — which this very Editor process has loaded and therefore holds locked, making the link fail with LNK1104 and the auto-build fail forever. Skipping reference builds links UserProject.Cplusplus.dll against the already-built SeedCore.lib instead, which is exactly what a gameplay-script hot-reload needs (engine changes still require a normal full build from Visual Studio).
+		/// [JP] BuildProjectReferences=false は最適化ではなく必須: UserProject.Cplusplus.vcxproj は SeedCore.Cplusplus.vcxproj を参照しているため、既定のビルドではエンジン全体をたどって SeedCore.Cplusplus.dll を再リンクしてしまう — その SeedCore.Cplusplus.dll はこの Editor プロセス自身がロード中でロックされているので、リンクが LNK1104 で失敗し、自動ビルドが永久に失敗し続ける。参照プロジェクトのビルドを省くことで、代わりにビルド済みの SeedCore.lib に対して UserProject.Cplusplus.dll をリンクする — ゲームプレイスクリプトのホットリロードに必要なのはまさにこれ(エンジン側の変更は従来通り Visual Studio でのフルビルドが必要)。
 
-		/// [EN] A debugger attached to this process keeps UserProject.pdb open for as long as the module is loaded — the shadow copy still names the original PDB path internally — so relinking to that same fixed path fails with LNK1201 on every reload. Giving each build its own PDB name sidesteps the lock entirely and keeps hot-reloaded gameplay code breakpoint-able. The debounce in Tick() is far longer than a tick's resolution, so the tick count cannot collide between two builds.
-		/// [JP] このプロセスにデバッガがアタッチされていると、モジュールがロードされている間 UserProject.pdb は開かれたままになる(シャドウコピーも内部的には元のPDBパスを指しているため) — そのため同じ固定パスへ再リンクすると、リロードのたびに LNK1201 で失敗する。ビルドごとに別のPDB名を与えることでロックを完全に回避でき、ホットリロードしたゲームプレイコードにブレークポイントも張れるままになる。Tick() のデバウンス時間はティックの分解能より遥かに長いため、2つのビルドでティック値が衝突することはない。
-		std::wstring hotReloadPdbName = std::format(L"UserProject_HotReload_{}", GetTickCount64());
+		/// [EN] A debugger attached to this process keeps UserProject.Cplusplus.pdb open for as long as the module is loaded — the shadow copy still names the original PDB path internally — so relinking to that same fixed path fails with LNK1201 on every reload. Giving each build its own PDB name sidesteps the lock entirely and keeps hot-reloaded gameplay code breakpoint-able. The debounce in Tick() is far longer than a tick's resolution, so the tick count cannot collide between two builds.
+		/// [JP] このプロセスにデバッガがアタッチされていると、モジュールがロードされている間 UserProject.Cplusplus.pdb は開かれたままになる(シャドウコピーも内部的には元のPDBパスを指しているため) — そのため同じ固定パスへ再リンクすると、リロードのたびに LNK1201 で失敗する。ビルドごとに別のPDB名を与えることでロックを完全に回避でき、ホットリロードしたゲームプレイコードにブレークポイントも張れるままになる。Tick() のデバウンス時間はティックの分解能より遥かに長いため、2つのビルドでティック値が衝突することはない。
+		std::wstring hotReloadPdbName = std::format(L"UserProject.Cplusplus_HotReload_{}", GetTickCount64());
 
 		std::wstring commandLine = std::format(L"\"{}\" \"{}\" /nologo /verbosity:minimal /p:Configuration={} /p:Platform=x64 /p:BuildProjectReferences=false /p:HotReloadPdbName={} /p:SolutionDir=\"{}\"", msbuildPath_.wstring(), UserProjectVcxprojPath().wstring(), configuration, hotReloadPdbName, solutionDirArgument);
 
@@ -356,11 +356,11 @@ namespace SeedCore
 		{
 			reloadRequested_ = false;
 
-			/// [EN] The plugin may not have been present at Initialize (e.g. UserProject.dll built for the first time during this session) — pick it up now that a build has produced it.
-			/// [JP] Initialize 時点ではプラグインが存在しなかった可能性がある(例: このセッション中に UserProject.dll が初めてビルドされた) — ビルドが生成した今、拾い直す。
+			/// [EN] The plugin may not have been present at Initialize (e.g. UserProject.Cplusplus.dll built for the first time during this session) — pick it up now that a build has produced it.
+			/// [JP] Initialize 時点ではプラグインが存在しなかった可能性がある(例: このセッション中に UserProject.Cplusplus.dll が初めてビルドされた) — ビルドが生成した今、拾い直す。
 			if (!userProjectPlugin_ && pluginHost_)
 			{
-				userProjectPlugin_ = pluginHost_->Find("UserProject");
+				userProjectPlugin_ = pluginHost_->Find("UserProject.Cplusplus");
 			}
 
 			if (pluginHost_ && userProjectPlugin_)

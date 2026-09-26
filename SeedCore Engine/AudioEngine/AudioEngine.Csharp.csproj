@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<ItemGroup>
+		<ProjectReference Include="..\FoundationEngine\FoundationEngine.Csharp.csproj" Private="false" />
+	</ItemGroup>
+</Project>

@@ -72,11 +72,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IntDir>$(SolutionDir)Intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\Cplusplus\</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IntDir>$(SolutionDir)Intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
-    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\Cplusplus\</OutDir>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnabled>false</VcpkgEnabled>
@@ -128,7 +128,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
-      <AdditionalOptions>/NODEFAULTLIB:FoundationEngine.lib /NODEFAULTLIB:GraphicsEngine.lib /NODEFAULTLIB:PhysicsEngine.lib /NODEFAULTLIB:AIEngine.lib /NODEFAULTLIB:AudioEngine.lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/NODEFAULTLIB:FoundationEngine.Cplusplus.lib /NODEFAULTLIB:GraphicsEngine.Cplusplus.lib /NODEFAULTLIB:PhysicsEngine.Cplusplus.lib /NODEFAULTLIB:AIEngine.Cplusplus.lib /NODEFAULTLIB:AudioEngine.Cplusplus.lib %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -149,7 +149,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
-      <AdditionalOptions>/NODEFAULTLIB:FoundationEngine.lib /NODEFAULTLIB:GraphicsEngine.lib /NODEFAULTLIB:PhysicsEngine.lib /NODEFAULTLIB:AIEngine.lib /NODEFAULTLIB:AudioEngine.lib %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions>/NODEFAULTLIB:FoundationEngine.Cplusplus.lib /NODEFAULTLIB:GraphicsEngine.Cplusplus.lib /NODEFAULTLIB:PhysicsEngine.Cplusplus.lib /NODEFAULTLIB:AIEngine.Cplusplus.lib /NODEFAULTLIB:AudioEngine.Cplusplus.lib %(AdditionalOptions)</AdditionalOptions>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -157,14 +157,15 @@
       </AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
-      <Command>xcopy /Y /D "$(SolutionDir)..\External\DXC\*.dll" "$(OutDir)"</Command>
+      <Command>xcopy /Y /D "$(SolutionDir)..\External\DXC\*.dll" "$(OutDir)"
+xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SeedCore\SeedCore.vcxproj">
+    <ProjectReference Include="..\SeedCore\SeedCore.Cplusplus.vcxproj">
       <Project>{8f3c1a72-5e4b-4c9a-9d7f-1b6a3e8c2f05}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\UserProject\UserProject.vcxproj">
+    <ProjectReference Include="..\UserProject\UserProject.Cplusplus.vcxproj">
       <Project>{5a68d96a-2812-4a6e-ba12-e20c779bdc3d}</Project>
     </ProjectReference>
   </ItemGroup>
@@ -302,7 +303,8 @@
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PostBuildEvent>
-      <Command>xcopy /Y /D "$(SolutionDir)..\External\DXC\*.dll" "$(OutDir)"</Command>
+      <Command>xcopy /Y /D "$(SolutionDir)..\External\DXC\*.dll" "$(OutDir)"
+xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET\"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

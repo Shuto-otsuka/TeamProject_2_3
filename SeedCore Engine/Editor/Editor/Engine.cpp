@@ -35,48 +35,37 @@ namespace SeedCore
 		auto worker = MakeWorkerInterface<JobScheduler>();
 		executor_ = MakePtr<JobExecutor>(std::thread::hardware_concurrency(), std::move(worker));
 
-		joltManager_ = MakePtr<JoltManager>();
-		if (!joltManager_->Initialize(*executor_))
-		{
-			return;
-		}
-		Gateway::BindJoltManager(joltManager_.get());
-
-		graphics_ = MakePtr<Graphics>();
-		if (!graphics_->Initialize(hwnd_, static_cast<Float>(boot.WindowDesc_.Width_), static_cast<Float>(boot.WindowDesc_.Height_)))
+		if (!BootPhysics())
 		{
 			return;
 		}
 
-		ID3D12Device* device = graphics_->GetContext()->GetDevice();
+		if (!BootGraphics())
+		{
+			return;
+		}
 
 		editorConfig_.Load();
 
-		criManager_ = MakePtr<CriManager>();
-		criManager_->MasterPath(editorConfig_.acfPath_);
-		if (!criManager_->Initialize())
-		{
-			return;
-		}
-		Gateway::BindCriManager(criManager_.get());
-
-		fontManager_ = MakePtr<FontManager>();
-		if (!fontManager_->Initialize())
-		{
-			return;
-		}
-		Gateway::BindFontManager(fontManager_.get());
-
-		imgui_ = MakePtr<ImGuiRenderer>();
-		if (!imgui_->Initialize(hwnd_, device, static_cast<Int>(graphics_->GetSwapChain()->BufferCount())))
+		if (!BootAudio())
 		{
 			return;
 		}
 
-		graphics_->RegisterImGuiShaderResourceViews(device, imgui_->GetDescriptorHeap());
+		if (!BootFont())
+		{
+			return;
+		}
+
+		if (!BootImGui())
+		{
+			return;
+		}
+
+		ID3D12Device* device = graphics_->GetContext().GetDevice();
 
 		loaderSystem_ = MakePtr<LoaderSystem>(device);
-		resource_ = MakePtr<ResourceCache>(*loaderSystem_, device, graphics_->GetContext()->GetDirectQueue(), graphics_->GetBindlessHeap());
+		resource_ = MakePtr<ResourceCache>(*loaderSystem_, device, graphics_->GetContext().GetDirectQueue(), &graphics_->GetBindlessHeap());
 		resource_->Async();
 
 		Scene::Initialize(*world_, *resource_, *executor_);
@@ -102,13 +91,13 @@ namespace SeedCore
 		editorContext_.cameraContext_.avatarCameraController_ = &avatarCameraController_;
 		editorContext_.graphicsContext_.graphics_ = graphics_.get();
 		editorContext_.graphicsContext_.imgui_ = imgui_.get();
-		editorContext_.cameraContext_.cameraSystem_ = &graphics_->GetCameraSystem();
+		editorContext_.cameraContext_.cameraSystem_ = &cameraSystem_;
 
 		InputSystem::Initialize();
 		LayerRegistry::Load();
 
-		std::filesystem::path pluginDirectory = FileDirectory::ExecutableDirectory();
-		pluginHost_.Initialize(pluginDirectory, ImGui::GetCurrentContext());
+		csharpHost_.Initialize(FileDirectory::ExecutableDirectory());
+		pluginHost_.Initialize(FileDirectory::ExecutableDirectory(), ImGui::GetCurrentContext());
 		pluginHost_.Load(*world_);
 		hotReload_.Initialize(pluginHost_);
 
@@ -174,7 +163,7 @@ namespace SeedCore
 	{
 		if (graphics_)
 		{
-			graphics_->WaitForGpuIdle();
+			graphics_->Wait();
 		}
 
 		if (imgui_)
@@ -204,6 +193,7 @@ namespace SeedCore
 		if (world_)
 		{
 			pluginHost_.Unload(*world_);
+			csharpHost_.Finalize();
 		}
 
 		InputSystem::Finalize();
@@ -304,11 +294,7 @@ namespace SeedCore
 					Uint32 outputWidth = static_cast<Uint32>(outputSize.Width);
 					Uint32 outputHeight = static_cast<Uint32>(outputSize.Height);
 
-					Float scale = UpscaleRenderScale(editorContext_.viewportContext_.upscale_.upscaleMode_);
-					Uint32 nativeWidth = Max<Uint32>(64, static_cast<Uint32>(outputWidth * scale + 0.5f));
-					Uint32 nativeHeight = Max<Uint32>(64, static_cast<Uint32>(outputHeight * scale + 0.5f));
-
-					graphics_->Resize(nativeWidth, nativeHeight, outputWidth, outputHeight, imgui_->GetDescriptorHeap());
+					graphics_->ResizeRenderTarget(outputWidth, outputHeight, editorContext_.viewportContext_.upscale_.upscaleMode_);
 				}
 
 				if (editorContext_.viewportContext_.recreateRequested_)
@@ -318,18 +304,15 @@ namespace SeedCore
 					graphics_->FrameGeneration(editorContext_.viewportContext_.frameGeneration_.enabled_);
 				}
 
-				graphics_->Begin();
-
-				if (!graphics_->SplashFinished())
+				splashSystem_.Update(*resource_);
+				if (!splashSystem_.Complete())
 				{
-					resource_->StepAsync(*loaderSystem_, graphics_->GetContext()->GetDevice(), graphics_->GetContext()->GetDirectQueue(), graphics_->GetBindlessHeap(), graphics_->GetBC7CompressShader());
-
-					graphics_->Bind();
-					graphics_->DrawSplashScreen(resource_->Complete(), resource_->Progress(), false, false);
-					graphics_->End();
-					graphics_->GetSwapChain()->Present(graphics_->GetContext()->GetDevice());
+					resource_->StepAsync(*loaderSystem_, graphics_->GetContext().GetDevice(), graphics_->GetContext().GetDirectQueue(), &graphics_->GetBindlessHeap(), graphics_->GetBC7CompressShader());
+					graphics_->DrawSplashScreen(splashSystem_);
 					continue;
 				}
+
+				graphics_->Begin();
 
 				AudioSystem::ResolveSound(*loaderSystem_, *resource_, *world_);
 
@@ -409,7 +392,7 @@ namespace SeedCore
 				graphics_->VerticalSync(editorContext_.viewportContext_.vsync_);
 
 				graphics_->EditorRender(worldTimer_, editorCamera_, *loaderSystem_, *resource_, *world_, editor_->GetViewMode(), editor_->GetSelectedEntities());
-				graphics_->GameRender(gameTimer_, *loaderSystem_, *resource_, *world_);
+				graphics_->GameRender(gameTimer_, cameraSystem_, *loaderSystem_, *resource_, *world_);
 				graphics_->CanvasRender(worldTimer_, canvasCamera_, *loaderSystem_, *resource_, *world_);
 
 				if (editorContext_.timelinePreviewContext_.previewActive_)
@@ -442,19 +425,19 @@ namespace SeedCore
 				if (editorContext_.bootScreenPreviewContext_.previewActive_ && editorContext_.bootScreenPreviewContext_.renderer_ && editorContext_.bootScreenPreviewContext_.config_)
 				{
 					const BootScreenPreviewContext& bootScreenPreview = editorContext_.bootScreenPreviewContext_;
-					bootScreenPreview.renderer_->Render(graphics_->GetContext()->GetDirectList(), *bootScreenPreview.config_, bootScreenPreview.progress_, worldTimer_.TotalTime());
+					bootScreenPreview.renderer_->Render(graphics_->GetContext().GetDirectList(), *bootScreenPreview.config_, bootScreenPreview.progress_, worldTimer_.TotalTime());
 				}
 
 				graphics_->Bind();
 
 				imgui_->DockSpaceBegin(editor_->DrawToolbar());
-				editor_->Draw(graphics_->EditorImGuiGPUHandle(), graphics_->GameImGuiGPUHandle(), graphics_->CanvasImGuiGPUHandle(), graphics_->TimelineImGuiGPUHandle(), graphics_->ModelTransformImGuiGPUHandle(), graphics_->MaterialImGuiGPUHandle(), graphics_->SkeletonControllerImGuiGPUHandle(), graphics_->AvatarImGuiGPUHandle(), graphics_->GetGpuProfiler());
+				editor_->Draw(graphics_->EditorDisplayGPUHandle(), graphics_->GameDisplayGPUHandle(), graphics_->CanvasDisplayGPUHandle(), graphics_->TimelineDisplayGPUHandle(), graphics_->ModelTransformDisplayGPUHandle(), graphics_->MaterialDisplayGPUHandle(), graphics_->SkeletonControllerDisplayGPUHandle(), graphics_->AvatarDisplayGPUHandle(), graphics_->GetGpuProfiler());
 				imgui_->DockSpaceEnd();
 
-				imgui_->Render(graphics_->GetContext()->GetDirectList()->Get());
+				imgui_->Render(graphics_->GetContext().GetDirectList()->Get());
 
 				graphics_->End();
-				graphics_->GetSwapChain()->Present(graphics_->GetContext()->GetDevice());
+				graphics_->GetSwapChain().Present(graphics_->GetContext().GetDevice());
 			}
 		}
 	}
@@ -469,5 +452,57 @@ namespace SeedCore
 			return true;
 		}
 		return false;
+	}
+
+	Bool Engine::BootPhysics()
+	{
+		joltManager_ = MakePtr<JoltManager>();
+		if (!joltManager_->Initialize(*executor_))
+		{
+			return false;
+		}
+		Gateway::BindJoltManager(joltManager_.get());
+		return true;
+	}
+
+	Bool Engine::BootGraphics()
+	{
+		splashSystem_.Initialize(false, false);
+
+		RECT clientRect{};
+		GetClientRect(hwnd_, &clientRect);
+		Uint32 clientWidth = static_cast<Uint32>(clientRect.right - clientRect.left);
+		Uint32 clientHeight = static_cast<Uint32>(clientRect.bottom - clientRect.top);
+
+		graphics_ = MakePtr<Graphics>();
+		return graphics_->Initialize(hwnd_, clientWidth, clientHeight, splashSystem_.Config());
+	}
+
+	Bool Engine::BootAudio()
+	{
+		criManager_ = MakePtr<CriManager>(editorConfig_.acfPath_);
+		if (!criManager_->Initialize())
+		{
+			return false;
+		}
+		Gateway::BindCriManager(criManager_.get());
+		return true;
+	}
+
+	Bool Engine::BootFont()
+	{
+		fontManager_ = MakePtr<FontManager>();
+		if (!fontManager_->Initialize())
+		{
+			return false;
+		}
+		Gateway::BindFontManager(fontManager_.get());
+		return true;
+	}
+
+	Bool Engine::BootImGui()
+	{
+		imgui_ = MakePtr<ImGuiRenderer>();
+		return imgui_->Initialize(hwnd_, graphics_->GetContext().GetDevice(), graphics_->GetContext().GetDirectQueue()->GetCommandQueue(), &graphics_->GetBindlessHeap(), static_cast<Int>(graphics_->GetSwapChain().BufferCount()));
 	}
 }

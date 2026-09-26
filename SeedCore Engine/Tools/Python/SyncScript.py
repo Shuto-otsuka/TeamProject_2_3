@@ -1,7 +1,7 @@
 """
-UserProject.vcxproj / UserProject.vcxproj.filters の Script フォルダ分のエントリを、
+UserProject.Cplusplus.vcxproj / UserProject.Cplusplus.vcxproj.filters の Script フォルダ分のエントリを、
 実際に UserProject/Script 配下に存在する .h/.cpp と一致させる(足りないものを追加し、
-既に消えているものを取り除く)。UserProject.vcxproj の PreBuildEvent から
+既に消えているものを取り除く)。UserProject.Cplusplus.vcxproj の PreBuildEvent から
 Reflection.py/Payload.py と同じタイミングで、毎ビルド前に呼ばれる想定。
 
 Editor の「新規 C++ スクリプト」機能(ContentsDrawerPanel)は作成時に
@@ -187,11 +187,11 @@ def main():
 
     project_root = os.path.abspath(sys.argv[1])
     user_project_root = os.path.join(project_root, 'UserProject')
-    vcxproj_path = os.path.join(user_project_root, 'UserProject.vcxproj')
+    vcxproj_path = os.path.join(user_project_root, 'UserProject.Cplusplus.vcxproj')
     filters_path = vcxproj_path + '.filters'
 
     if not os.path.exists(vcxproj_path):
-        print(f'UserProject.vcxproj が見つかりません: {vcxproj_path}')
+        print(f'UserProject.Cplusplus.vcxproj が見つかりません: {vcxproj_path}')
         return 1
 
     headers, cpps = scan_script_files(user_project_root)

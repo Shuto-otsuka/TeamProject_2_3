@@ -157,16 +157,18 @@ namespace SeedCore
 		void Dispatch(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, RaytracingView view, ID3D12Resource* sourceColorResource, Bool useUpscaledOutput);
 
 		/// [EN] The tone-mapped, sRGB-encoded, UNORM display texture for that
-		///      view — what Renderer::RegisterImGuiShaderResourceViews should
-		///      point the editor/game ImGui SRV at instead of the raw HDR
-		///      FrameBuffer. Returns whichever chain (SD/UHD) that view's most
-		///      recent PrepareView() selected.
+		///      view — what the editor/game views show in ImGui instead of the
+		///      raw HDR FrameBuffer. Returns whichever chain (SD/UHD) that
+		///      view's most recent PrepareView() selected.
 		/// [JP] そのビューのトーンマップ済み・sRGB エンコード済み UNORM 表示
-		///      テクスチャ。Renderer::RegisterImGuiShaderResourceViews が
-		///      editor/game の ImGui SRV を、生の HDR FrameBuffer ではなく
-		///      こちらへ向けるべき対象。そのビューの直近の PrepareView() が
-		///      選んだ方のチェーン(SD/UHD)を返す。
+		///      テクスチャ。editor/game のビューが ImGui に、生の HDR
+		///      FrameBuffer ではなくこちらを表示する。そのビューの直近の
+		///      PrepareView() が選んだ方のチェーン(SD/UHD)を返す。
 		[[nodiscard]] ID3D12Resource* OutputResource(RaytracingView view)const;
+
+		/// [EN] Bindless SRV index of the same resource OutputResource() returns, for showing the view in ImGui.
+		/// [JP] OutputResource() が返すのと同じリソースのバインドレス SRV インデックス。ビューを ImGui に表示するために使う。
+		[[nodiscard]] Uint32 OutputShaderResourceViewIndex(RaytracingView view)const;
 
 		/// [EN] outputWidth_/outputHeight_ (the DLSS-RR-upscaled chain's resolution), unconditionally - not gated by whether that chain is the currently active one. Lets a caller that runs before this frame's PrepareView() (e.g. Graphics::EditorRender building the scene constant buffer) know what resolution the debug overlay will end up drawing at later this same frame if DLSS-RR is active.
 		/// [JP] outputWidth_/outputHeight_(DLSS-RRアップスケール後チェーンの解像度)を無条件に返す - そのチェーンが現在アクティブかどうかには関係しない。この関数を、今フレームのPrepareView()より前に実行される呼び出し側(例えばシーン定数バッファを組み立てるGraphics::EditorRender)が、DLSS-RR有効時にデバッグオーバーレイが今フレーム後で実際に描画することになる解像度を知るために使う。
@@ -206,10 +208,11 @@ namespace SeedCore
 		void BeginDebugOverlay(D3D12CommandList* cmdList, RaytracingView view);
 
 		/// [EN] Transitions view's active output chain from RENDER_TARGET back
-		///      to PIXEL_SHADER_RESOURCE, so RefreshImGui can read it.
+		///      to PIXEL_SHADER_RESOURCE, so ImGui can sample it through its
+		///      bindless SRV.
 		/// [JP] viewのアクティブな出力チェーンをRENDER_TARGETから
-		///      PIXEL_SHADER_RESOURCEへ戻す。RefreshImGuiが
-		///      読み取れるようにするため。
+		///      PIXEL_SHADER_RESOURCEへ戻す。ImGui がバインドレス SRV 経由で
+		///      サンプリングできるようにするため。
 		void EndDebugOverlay(D3D12CommandList* cmdList, RaytracingView view);
 
 		void CaptureHudless(D3D12CommandList* cmdList, HudlessBuffer& hudlessBuffer, RaytracingView view);
@@ -262,10 +265,14 @@ namespace SeedCore
 			Uint32 sharpenUnorderedAccessViewIndex_ = 0;
 			Uint32 sharpenRenderTargetViewIndex_ = 0;
 
+			Uint32 sharpenShaderResourceViewIndex_ = 0;
+
 			Microsoft::WRL::ComPtr<ID3D12Resource> sharpenResourceUpscaled_;
 			D3D12_RESOURCE_STATES sharpenStateUpscaled_ = D3D12_RESOURCE_STATE_COMMON;
 			Uint32 sharpenUnorderedAccessViewIndexUpscaled_ = 0;
 			Uint32 sharpenRenderTargetViewIndexUpscaled_ = 0;
+
+			Uint32 sharpenShaderResourceViewIndexUpscaled_ = 0;
 
 			/// [EN] Which chain the most recent PrepareView() selected - what
 			///      OutputResource() reports back to Renderer for ImGui.

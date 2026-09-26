@@ -10,6 +10,7 @@
 #include <GraphicsEngine/Font/Text.h>
 #include <GraphicsEngine/Movie/Movie.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
+#include <FoundationEngine/World/ECS/Component/Rotation.h>
 
 namespace SeedCore
 {
@@ -470,11 +471,11 @@ namespace SeedCore
 					dragStartWorldMatrices_.push_back(actor.WorldMatrix());
 
 					Float* positionData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, positionID));
-					Float* rotationData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, rotationID));
+					Rotation* rotationData = static_cast<Rotation*>(context_.worldContext_.world_->GetComponent(entity, rotationID));
 					Float* scaleData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, scaleID));
 
 					dragStartPositions_.push_back(positionData ? Vector3(positionData[0], positionData[1], positionData[2]) : Vector3::Zero);
-					dragStartRotations_.push_back(rotationData ? Vector3(rotationData[0], rotationData[1], rotationData[2]) : Vector3::Zero);
+					dragStartRotations_.push_back(rotationData ? rotationData->Quat() : Quaternion::Identity);
 					dragStartScales_.push_back(scaleData ? Vector3(scaleData[0], scaleData[1], scaleData[2]) : Vector3::One);
 				}
 			}
@@ -525,7 +526,7 @@ namespace SeedCore
 					Entity entity = dragEntities_[index];
 
 					Float* positionData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, positionID));
-					Float* rotationData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, rotationID));
+					Rotation* rotationData = static_cast<Rotation*>(context_.worldContext_.world_->GetComponent(entity, rotationID));
 					Float* scaleData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, scaleID));
 
 					if (positionData)
@@ -538,10 +539,10 @@ namespace SeedCore
 					}
 					if (rotationData)
 					{
-						Vector3 newRotation(rotationData[0], rotationData[1], rotationData[2]);
+						Quaternion newRotation = rotationData->Quat();
 						if (newRotation != dragStartRotations_[index])
 						{
-							dragCommand->Add(MakePtr<ComponentCommand<Vector3>>(*context_.worldContext_.world_, entity, rotationID, 0, dragStartRotations_[index], newRotation));
+							dragCommand->Add(MakePtr<ComponentCommand<Quaternion>>(*context_.worldContext_.world_, entity, rotationID, 0, dragStartRotations_[index], newRotation));
 						}
 					}
 					if (scaleData)
@@ -622,7 +623,7 @@ namespace SeedCore
 				if (localMatrix.Decompose(scale, rotation, position))
 				{
 					Float* positionData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, positionID));
-					Float* rotationData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, rotationID));
+					Rotation* rotationData = static_cast<Rotation*>(context_.worldContext_.world_->GetComponent(entity, rotationID));
 
 					if (positionData && (operation & ImGuizmo::TRANSLATE))
 					{
@@ -631,8 +632,10 @@ namespace SeedCore
 					}
 					if (rotationData && (operation & ImGuizmo::ROTATE))
 					{
-						Vector3 euler = rotation.ToEuler();
-						rotationData[0] = ToDegrees(euler.z);
+						rotationData->x_ = rotation.x;
+						rotationData->y_ = rotation.y;
+						rotationData->z_ = rotation.z;
+						rotationData->w_ = rotation.w;
 					}
 				}
 			}

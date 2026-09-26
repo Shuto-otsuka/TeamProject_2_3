@@ -671,10 +671,10 @@ def collect_all_reflectable_structs(project_root):
 def is_userproject_file(full_path, project_root):
     """
     full_path が UserProject/ 配下にあるかどうかを判定する。
-    UserProject で定義された型のリフレクションコードは UserProject.dll 側の
+    UserProject で定義された型のリフレクションコードは UserProject.Cplusplus.dll 側の
     出力ファイルへ、それ以外(エンジン側)は FoundationEngine 側の出力ファイル
-    へ振り分けるために使う — UserProject.dll だけを再ビルドしてもリフレクション
-    のフィールドオフセットが古いまま SeedCore.dll に取り残される事故を防ぐため。
+    へ振り分けるために使う — UserProject.Cplusplus.dll だけを再ビルドしてもリフレクション
+    のフィールドオフセットが古いまま SeedCore.Cplusplus.dll に取り残される事故を防ぐため。
     """
     rel = os.path.relpath(full_path, project_root)
     return rel.split(os.sep)[0].split('/')[0] == 'UserProject'
@@ -752,9 +752,9 @@ def run_auto_scan():
 
     UserProject/ 配下で定義された型は、FoundationEngine 側の集約ファイルへ
     混ぜず、UserProject/Reflection/Reflection.generated.cpp という別ファイルへ
-    出力し UserProject.vcxproj 側でコンパイルする。UserProject.dll だけを
+    出力し UserProject.Cplusplus.vcxproj 側でコンパイルする。UserProject.Cplusplus.dll だけを
     再ビルドしてリフレクションフィールドを追加/削除/並べ替えても、
-    そのオフセット情報は同じ UserProject.dll 内で更新される — SeedCore.dll
+    そのオフセット情報は同じ UserProject.Cplusplus.dll 内で更新される — SeedCore.Cplusplus.dll
     (FoundationEngineの集約ファイル)側に古いオフセットが取り残されて
     ホットリロード時にメモリ破壊を起こす事故を防ぐ。
     """
@@ -814,9 +814,9 @@ def run_auto_scan():
     userproject_changed = write_generated_file(userproject_output_path, userproject_code, 'Reflection.generated.cpp (UserProject)')
 
     if foundation_changed:
-        delete_stale_objs(project_root, 'FoundationEngine')
+        delete_stale_objs(project_root, 'FoundationEngine.Cplusplus')
     if userproject_changed:
-        delete_stale_objs(project_root, 'UserProject')
+        delete_stale_objs(project_root, 'UserProject.Cplusplus')
 
     registry_cpp = os.path.join(project_root, 'FoundationEngine', 'ECS', 'ReflectionRegistry.cpp')
     if os.path.exists(registry_cpp):
@@ -965,7 +965,7 @@ if __name__ == "__main__":
     project_root = os.path.dirname(os.path.dirname(script_dir))
 
     output_dir = os.path.join(project_root, 'FoundationEngine', 'Reflection')
-    foundation_vcxproj = os.path.join(project_root, 'FoundationEngine', 'FoundationEngine.vcxproj')
+    foundation_vcxproj = os.path.join(project_root, 'FoundationEngine', 'FoundationEngine.Cplusplus.vcxproj')
 
     reflection_cpps = [os.path.join(output_dir, 'Reflection.generated.cpp')]
 
@@ -973,7 +973,7 @@ if __name__ == "__main__":
         sync_vcxproj(foundation_vcxproj, reflection_cpps)
 
     userproject_output_dir = os.path.join(project_root, 'UserProject', 'Reflection')
-    userproject_vcxproj = os.path.join(project_root, 'UserProject', 'UserProject.vcxproj')
+    userproject_vcxproj = os.path.join(project_root, 'UserProject', 'UserProject.Cplusplus.vcxproj')
 
     userproject_reflection_cpps = [os.path.join(userproject_output_dir, 'Reflection.generated.cpp')]
 

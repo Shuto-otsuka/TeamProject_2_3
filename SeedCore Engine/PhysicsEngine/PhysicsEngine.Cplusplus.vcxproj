@@ -19,31 +19,73 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FoundationEngine\FoundationEngine.vcxproj">
+    <ProjectReference Include="..\FoundationEngine\FoundationEngine.Cplusplus.vcxproj">
       <Project>{30996a34-7fa2-4977-89d9-fbd1f2b64a18}</Project>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CharacterAI\BehaviorTree\BehaviorTreeData.h" />
-    <ClInclude Include="CharacterAI\BehaviorTree\BehaviorTreeGraph.h" />
-    <ClInclude Include="CharacterAI\BehaviorTree\BehaviorTreeNode.h" />
-    <ClInclude Include="SpatialAI\NavigationAI\NavMesh.h" />
+    <ClInclude Include="CharacterController\CharacterController.h" />
+    <ClInclude Include="Collider\BoxCollider.h" />
+    <ClInclude Include="Collider\CapsuleCollider.h" />
+    <ClInclude Include="Collider\CircleCollider.h" />
+    <ClInclude Include="Collider\MeshCollider.h" />
+    <ClInclude Include="Collider\RectCollider.h" />
+    <ClInclude Include="Collider\SphereCollider.h" />
+    <ClInclude Include="Collider\CylinderCollider.h" />
+    <ClInclude Include="Joint\FixedJoint.h" />
+    <ClInclude Include="Joint\HingeJoint.h" />
+    <ClInclude Include="Joint\SliderJoint.h" />
+    <ClInclude Include="Joint\SpringJoint.h" />
+    <ClInclude Include="JoltPhysics\JoltCharacterContactListener.h" />
+    <ClInclude Include="JoltPhysics\JoltConstraintPool.h" />
+    <ClInclude Include="JoltPhysics\JoltContactListener.h" />
+    <ClInclude Include="JoltPhysics\JoltExecutorBridge.h" />
+    <ClInclude Include="JoltPhysics\JoltLayerdef.h" />
+    <ClInclude Include="JoltPhysics\JoltManager.h" />
+    <ClInclude Include="JoltPhysics\JoltShapePool.h" />
+    <ClInclude Include="Physics\Physics.h" />
+    <ClInclude Include="Physics\PhysicsSystem.h" />
+    <ClInclude Include="Rigidbody\Rigidbody.h" />
+    <ClInclude Include="Softbody\Softbody.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CharacterController\CharacterController.cpp" />
+    <ClCompile Include="Collider\BoxCollider.cpp" />
+    <ClCompile Include="Collider\CapsuleCollider.cpp" />
+    <ClCompile Include="Collider\CircleCollider.cpp" />
+    <ClCompile Include="Collider\CylinderCollider.cpp" />
+    <ClCompile Include="Collider\MeshCollider.cpp" />
+    <ClCompile Include="Collider\RectCollider.cpp" />
+    <ClCompile Include="Collider\SphereCollider.cpp" />
+    <ClCompile Include="Joint\FixedJoint.cpp" />
+    <ClCompile Include="Joint\HingeJoint.cpp" />
+    <ClCompile Include="Joint\SliderJoint.cpp" />
+    <ClCompile Include="Joint\SpringJoint.cpp" />
+    <ClCompile Include="JoltPhysics\JoltCharacterContactListener.cpp" />
+    <ClCompile Include="JoltPhysics\JoltConstraintPool.cpp" />
+    <ClCompile Include="JoltPhysics\JoltContactListener.cpp" />
+    <ClCompile Include="JoltPhysics\JoltLayerdef.cpp" />
+    <ClCompile Include="JoltPhysics\JoltShapePool.cpp" />
+    <ClCompile Include="Physics\Physics.cpp" />
+    <ClCompile Include="Physics\PhysicsSystem.cpp" />
     <ClCompile Include="Prelude.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">FoundationEngine/Prelude.h</PrecompiledHeaderFile>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">FoundationEngine/Prelude.h</PrecompiledHeaderFile>
     </ClCompile>
-    <ClCompile Include="CharacterAI\BehaviorTree\BehaviorTreeNode.cpp">
+    <ClCompile Include="JoltPhysics\JoltExecutorBridge.cpp">
     </ClCompile>
+    <ClCompile Include="JoltPhysics\JoltManager.cpp">
+    </ClCompile>
+    <ClCompile Include="Rigidbody\Rigidbody.cpp" />
+    <ClCompile Include="Softbody\Softbody.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{3003355d-5a7f-40ac-af4c-a93ad9ac38db}</ProjectGuid>
-    <RootNamespace>AIEngine</RootNamespace>
+    <ProjectGuid>{fd1a1645-dabc-42f9-9960-57c5540473df}</ProjectGuid>
+    <RootNamespace>PhysicsEngine</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -92,11 +134,11 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\Cplusplus\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\Cplusplus\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
@@ -147,8 +189,8 @@
       <ForcedIncludeFiles>FoundationEngine/Prelude.h</ForcedIncludeFiles>
       <LanguageStandard>stdcpp23</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/utf-8 /Zc:preprocessor %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>
@@ -169,8 +211,8 @@
       <ForcedIncludeFiles>FoundationEngine/Prelude.h</ForcedIncludeFiles>
       <LanguageStandard>stdcpp23</LanguageStandard>
       <AdditionalIncludeDirectories>$(SolutionDir)..\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>

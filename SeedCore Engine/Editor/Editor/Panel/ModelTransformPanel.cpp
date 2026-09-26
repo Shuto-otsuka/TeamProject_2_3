@@ -113,7 +113,7 @@ namespace SeedCore
 		context_.modelTransformPreviewContext_.previewActive_ = false;
 		context_.modelTransformPreviewContext_.previewWorldMatrix_ = Matrix::Identity;
 
-		ImGui::DockBuilderDockWindow("モデル変換", context_.graphicsContext_.imgui_->GetDockSpaceID());
+		ImGui::DockBuilderDockWindow("モデル変換", context_.graphicsContext_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
 
 		if (ImGui::Begin("モデル変換", &show_))
@@ -362,14 +362,14 @@ namespace SeedCore
 		ModelResource* modelResource = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model);
 		BindlessHeap* heap = context_.worldContext_.resource_->Heap();
 
-		D3D12Context* d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
 		BC7CompressShader& bc7Shader = context_.graphicsContext_.graphics_->GetBC7CompressShader();
 
 		if (isSourceAsset)
 		{
 			context_.worldContext_.resource_->WriteAssetMeta(assetId, editConvention_);
 			modelResource->Unload(*context_.worldContext_.loader_, assetId, heap);
-			modelResource->Load(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), heap, bc7Shader, *context_.worldContext_.resource_, assetId);
+			modelResource->Load(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), heap, bc7Shader, *context_.worldContext_.resource_, assetId);
 		}
 		else
 		{
@@ -387,7 +387,7 @@ namespace SeedCore
 
 			context_.worldContext_.resource_->WriteAssetMeta(assetId, editConvention_);
 			modelResource->Unload(*context_.worldContext_.loader_, assetId, heap);
-			modelResource->Load(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), heap, bc7Shader, *context_.worldContext_.resource_, assetId);
+			modelResource->Load(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), heap, bc7Shader, *context_.worldContext_.resource_, assetId);
 		}
 	}
 
@@ -470,8 +470,8 @@ namespace SeedCore
 		baseTransformPivot_ = Vector3(0.0f, 0.0f, 0.0f);
 
 		BindlessHeap* heap = context_.worldContext_.resource_->Heap();
-		D3D12Context* d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
 		modelResource->Unload(*context_.worldContext_.loader_, assetId, heap);
-		modelResource->Load(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), heap, context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, assetId);
+		modelResource->Load(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), heap, context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, assetId);
 	}
 }

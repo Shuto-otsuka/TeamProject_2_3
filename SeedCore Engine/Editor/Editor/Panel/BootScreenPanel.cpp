@@ -48,7 +48,7 @@ namespace SeedCore
 			return;
 		}
 
-		ImGui::DockBuilderDockWindow("起動ローディング画面", context_.graphicsContext_.imgui_->GetDockSpaceID());
+		ImGui::DockBuilderDockWindow("起動ローディング画面", context_.graphicsContext_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(1180, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("起動ローディング画面", &show_, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
@@ -59,11 +59,11 @@ namespace SeedCore
 			if (!renderer_)
 			{
 				renderer_ = MakePtr<BootScreenRenderer>();
-				renderer_->Create(graphics->GetContext()->GetDevice(), graphics->GetContext()->GetDirectQueue(), graphics->GetBindlessHeap(), context_.graphicsContext_.imgui_->GetDescriptorHeap(), screenWidth_, screenHeight_);
+				renderer_->Create(graphics->GetContext().GetDevice(), graphics->GetContext().GetDirectQueue(), &graphics->GetBindlessHeap(), screenWidth_, screenHeight_);
 			}
 			else if (renderer_->Width() != screenWidth_ || renderer_->Height() != screenHeight_)
 			{
-				graphics->WaitForGpuIdle();
+				graphics->Wait();
 				renderer_->Resize(screenWidth_, screenHeight_);
 			}
 
@@ -420,7 +420,7 @@ namespace SeedCore
 		drawList->PushClipRect(canvasPosition, ImVec2(canvasPosition.x + canvasSize.x, canvasPosition.y + canvasSize.y), true);
 
 		drawList->AddRectFilled(canvasPosition, ImVec2(canvasPosition.x + canvasSize.x, canvasPosition.y + canvasSize.y), IM_COL32(32, 32, 32, 255));
-		drawList->AddImage(ImTextureID(renderer_->ImGuiGPUHandle().ptr), ImVec2(imageMin.x, imageMin.y), ImVec2(imageMax.x, imageMax.y));
+		drawList->AddImage(ImTextureID(renderer_->DisplayGPUHandle().ptr), ImVec2(imageMin.x, imageMin.y), ImVec2(imageMax.x, imageMax.y));
 		drawList->AddRect(ImVec2(imageMin.x, imageMin.y), ImVec2(imageMax.x, imageMax.y), IM_COL32(110, 110, 110, 255));
 
 		Int32 anchorIndex = static_cast<Int32>(config_.anchor_);

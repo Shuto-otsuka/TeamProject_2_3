@@ -11,7 +11,7 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Editor-only development loop for the UserProject plugin: watches its
-	* source tree, auto-builds UserProject.dll via MSBuild when a .h/.cpp
+	* source tree, auto-builds UserProject.Cplusplus.dll via MSBuild when a .h/.cpp
 	* changes, and — once the build finishes — asks the PluginHost to
 	* reload that one plugin. Both the source-change and DLL-rebuild
 	* detection debounce on a stable timestamp window before acting, since
@@ -28,7 +28,7 @@ namespace SeedCore
 	*
 	* [JP]
 	* UserProject プラグイン用の、エディタ限定の開発ループ: そのソース
-	* ツリーを監視し、.h/.cpp が変わると MSBuild で UserProject.dll を自動
+	* ツリーを監視し、.h/.cpp が変わると MSBuild で UserProject.Cplusplus.dll を自動
 	* ビルドし、ビルド完了時に PluginHost へそのプラグイン1個のリロードを
 	* 依頼する。ソース変更検知・DLL 再ビルド検知のどちらも、タイムスタンプ
 	* が一定時間安定するまで待ってから動作する（MSBuild は書き込み中に
@@ -49,7 +49,7 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Binds the PluginHost this class drives and caches its
-		* already-loaded UserProject plugin (nullptr if UserProject.dll was
+		* already-loaded UserProject plugin (nullptr if UserProject.Cplusplus.dll was
 		* not among the loaded plugins). Call once after
 		* PluginHost::Load.
 		*
@@ -57,7 +57,7 @@ namespace SeedCore
 		*
 		* [JP]
 		* このクラスが駆動する PluginHost を束縛し、そこでロード済みの
-		* UserProject プラグインをキャッシュする（UserProject.dll が
+		* UserProject プラグインをキャッシュする（UserProject.Cplusplus.dll が
 		* ロード済みプラグインに無ければ nullptr）。PluginHost::Load の
 		* 後に一度呼ぶこと。
 		*/
@@ -136,8 +136,8 @@ namespace SeedCore
 		/// [JP] バックグラウンドビルドプロセスが終了したか確認する; 結果をログに出し、成功していれば reloadRequested_ を立てる。
 		void PollBuildProcess();
 
-		/// [EN] Launches an async MSBuild.exe build of UserProject.vcxproj. No-op if MSBuild couldn't be resolved.
-		/// [JP] UserProject.vcxproj の非同期ビルドを MSBuild.exe で起動する。MSBuild が見つからなければ何もしない。
+		/// [EN] Launches an async MSBuild.exe build of UserProject.Cplusplus.vcxproj. No-op if MSBuild couldn't be resolved.
+		/// [JP] UserProject.Cplusplus.vcxproj の非同期ビルドを MSBuild.exe で起動する。MSBuild が見つからなければ何もしない。
 		void TriggerBuild();
 
 		[[nodiscard]] static std::filesystem::path UserProjectSourceDirectory();

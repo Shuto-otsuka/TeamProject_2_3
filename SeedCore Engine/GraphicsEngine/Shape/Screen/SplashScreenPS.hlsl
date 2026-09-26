@@ -22,7 +22,7 @@ float4 main(PSInput input) : SV_Target
 	float2 center = float2(0.5f, 0.5f);
 	float2 half_size;
 
-	if (texture_aspect_ > screen_aspect)
+	if (texture_aspect_ < screen_aspect)
 	{
 		half_size.x = 0.5f;
 		half_size.y = half_size.x * screen_aspect / texture_aspect_;

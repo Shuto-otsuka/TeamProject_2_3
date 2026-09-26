@@ -955,6 +955,9 @@
     <ClInclude Include="Renderer\BootScreenRenderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="System\SplashSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">
@@ -1576,6 +1579,9 @@
     </ClCompile>
     <ClCompile Include="Renderer\BootScreenRenderer.cpp">
       <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="System\SplashSystem.cpp">
+      <Filter>System</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -29,13 +29,18 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Constructs an uninitialized manager; Initialize does the work.
+		* masterPath is the .acf file that Atom Craft writes, which the
+		* editor passes so a rebuilt ACF is picked up; the runtime leaves it
+		* empty.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 未初期化の管理機構を作る。実際の準備は Initialize が行う。
+		* masterPath は Atom Craft が出力する .acf ファイルで、エディタは
+		* ビルドし直した ACF を取り込むために渡し、ランタイムは空のままにする。
 		*/
-		CriManager() = default;
+		explicit CriManager(const String& masterPath = String());
 
 		/**
 		* [EN]
@@ -88,19 +93,6 @@ namespace SeedCore
 		void Finalize();
 
 	public:
-		/**
-		* [EN]
-		* Sets the path of the .acf file that Atom Craft writes. Used by the
-		* editor to pick up a rebuilt ACF; the runtime leaves it empty.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Atom Craft が出力する .acf ファイルのパスを設定する。エディタが
-		* ビルドし直した ACF を取り込むのに使い、ランタイムは空のままにする。
-		*/
-		void MasterPath(const String& path);
-
 		/**
 		* [EN]
 		* Sets the master volume and applies it to the master bus at once.

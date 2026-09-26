@@ -264,7 +264,7 @@ namespace SeedCore
 												Scale* scaleComponent = world.GetComponent<Scale>(entity);
 
 												Matrix scaleMatrix = scaleComponent ? Matrix::CreateScale(scaleComponent->x_, scaleComponent->y_, scaleComponent->z_) : Matrix::Identity;
-												Matrix rotationMatrix = rotationComponent ? Matrix::CreateFromYawPitchRoll(ToRadians(rotationComponent->y_), ToRadians(rotationComponent->x_), ToRadians(rotationComponent->z_)) : Matrix::Identity;
+												Matrix rotationMatrix = rotationComponent ? Matrix::CreateFromQuaternion(rotationComponent->Quat()) : Matrix::Identity;
 
 												Vector3 localDelta = Vector3::TransformNormal(delta, scaleMatrix * rotationMatrix);
 

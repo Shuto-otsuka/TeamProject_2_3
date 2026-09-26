@@ -47,9 +47,7 @@ namespace SeedCore
 
 		void End(D3D12CommandList* cmdList);
 
-		void RegisterImGuiShaderResourceView(ID3D12Device* device, DescriptorHeap* imguiHeap);
-
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE ImGuiGPUHandle()const;
+		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE DisplayGPUHandle()const;
 
 	private:
 		static constexpr Uint maxBoneInstanceCount_ = 2048;
@@ -104,8 +102,5 @@ namespace SeedCore
 		Uint sphereEdgeCount_ = 0;
 
 		Uint groupsPerBoneInstance_ = 1;
-
-		DescriptorHeap* imguiHeap_ = nullptr;
-		Uint32 imguiShaderResourceViewIndex_ = 0;
 	};
 }

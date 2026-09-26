@@ -11,6 +11,8 @@ namespace SeedCore
 
 		ID3D12Device5* Get()const;
 
+		[[nodiscard]] D3D_FEATURE_LEVEL FeatureLevel()const noexcept;
+
 		[[nodiscard]] D3D12_RAYTRACING_TIER RaytracingTier()const noexcept;
 
 		[[nodiscard]] Bool RaytracingSupported()const noexcept;

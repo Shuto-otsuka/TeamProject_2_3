@@ -1,7 +1,7 @@
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <Editor/Editor/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
-#include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
+#include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/Graphics.h>
 #include <FoundationEngine/Resource/LoaderSystem.h>
@@ -10,18 +10,18 @@ namespace SeedCore
 {
 	ImGuiTexture::ImGuiTexture(EditorContext& context)
 	{
-		D3D12Context* d3d12Context = context.graphicsContext_.graphics_->GetContext();
-		DescriptorHeap* descHeap = context.graphicsContext_.imgui_->GetDescriptorHeap();
+		D3D12Context& d3d12Context = context.graphicsContext_.graphics_->GetContext();
+		BindlessHeap* bindlessHeap = &context.graphicsContext_.graphics_->GetBindlessHeap();
 
 		auto load = [&](IconType type, const Char* folder, const Char* name)
 		{
-			Uint index = descHeap->AllocateIndex();
+			Uint index = bindlessHeap->AllocateIndex();
 
 			Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 			String filePath = String(std::string("Icon/") + folder + "/" + name + ".icon");
-			TextureLoader::CreateTexturePath(d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), descHeap->Get(), filePath, resource, index);
+			TextureLoader::CreateTexturePath(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bindlessHeap->Heap(), filePath, resource, index);
 
-			icons_[static_cast<Uint>(type)] = static_cast<ImTextureID>(descHeap->GPUHandle(index).ptr);
+			icons_[static_cast<Uint>(type)] = static_cast<ImTextureID>(bindlessHeap->GPUHandle(index).ptr);
 			resources_.push_back(std::move(resource));
 		};
 
@@ -155,14 +155,14 @@ namespace SeedCore
 		///      String's hash/equality compare interned pointers, and this
 		///      table's literals intern in Editor.exe's own copy of the
 		///      intern pool while ComponentRegistry's names intern in
-		///      SeedCore.dll's — same text, different pointers, so a
+		///      SeedCore.Cplusplus.dll's — same text, different pointers, so a
 		///      String-keyed lookup silently missed every entry and fell
 		///      back to ComponentCustom for everything. Comparing actual
 		///      characters sidesteps that entirely.
 		/// [JP] String 自体ではなく std::string の中身をキーにする:
 		///      String のハッシュ/比較はインターン済みポインタを見るが、
 		///      この対応表のリテラルは Editor.exe 自身が持つインターン
-		///      プールに、ComponentRegistry の名前は SeedCore.dll 側の
+		///      プールに、ComponentRegistry の名前は SeedCore.Cplusplus.dll 側の
 		///      プールにそれぞれインターンされる — 同じ文字列でもポインタが
 		///      異なるため、String をキーにした検索は全項目で静かに
 		///      不一致となり、常に ComponentCustom にフォールバックして

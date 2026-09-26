@@ -481,10 +481,10 @@ def update_registry_cpp(registry_cpp_path, all_struct_names):
 def is_userproject_file(full_path, project_root):
     """
     full_path が UserProject/ 配下にあるかどうかを判定する。
-    UserProject で定義された型の Payload コードは UserProject.dll 側の
+    UserProject で定義された型の Payload コードは UserProject.Cplusplus.dll 側の
     出力ファイルへ、それ以外(エンジン側)は FoundationEngine 側の出力ファイル
-    へ振り分けるために使う — UserProject.dll だけを再ビルドしてもPayload
-    フィールドのオフセットが古いまま SeedCore.dll に取り残される事故を防ぐ。
+    へ振り分けるために使う — UserProject.Cplusplus.dll だけを再ビルドしてもPayload
+    フィールドのオフセットが古いまま SeedCore.Cplusplus.dll に取り残される事故を防ぐ。
     """
     rel = os.path.relpath(full_path, project_root)
     return rel.split(os.sep)[0].split('/')[0] == 'UserProject'
@@ -534,7 +534,7 @@ def run_auto_scan():
 
     UserProject/ 配下で定義された型は、FoundationEngine 側の集約ファイルへ
     混ぜず、UserProject/Payload/Payload.generated.cpp という別ファイルへ
-    出力し UserProject.vcxproj 側でコンパイルする(Reflection.py と同じ理由)。
+    出力し UserProject.Cplusplus.vcxproj 側でコンパイルする(Reflection.py と同じ理由)。
     """
     script_dir = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(os.path.dirname(script_dir))
@@ -582,9 +582,9 @@ def run_auto_scan():
     userproject_changed = write_generated_file(userproject_output_path, userproject_code, 'Payload.generated.cpp (UserProject)')
 
     if foundation_changed:
-        delete_stale_objs(project_root, 'FoundationEngine')
+        delete_stale_objs(project_root, 'FoundationEngine.Cplusplus')
     if userproject_changed:
-        delete_stale_objs(project_root, 'UserProject')
+        delete_stale_objs(project_root, 'UserProject.Cplusplus')
 
     registry_cpp = os.path.join(project_root, 'FoundationEngine', 'ECS', 'PayloadRegistry.cpp')
     if os.path.exists(registry_cpp):
@@ -724,7 +724,7 @@ if __name__ == "__main__":
     project_root = os.path.dirname(os.path.dirname(script_dir))
 
     output_dir = os.path.join(project_root, 'FoundationEngine', 'Payload')
-    foundation_vcxproj = os.path.join(project_root, 'FoundationEngine', 'FoundationEngine.vcxproj')
+    foundation_vcxproj = os.path.join(project_root, 'FoundationEngine', 'FoundationEngine.Cplusplus.vcxproj')
 
     payload_cpps = [os.path.join(output_dir, 'Payload.generated.cpp')]
 
@@ -732,7 +732,7 @@ if __name__ == "__main__":
         sync_vcxproj(foundation_vcxproj, payload_cpps)
 
     userproject_output_dir = os.path.join(project_root, 'UserProject', 'Payload')
-    userproject_vcxproj = os.path.join(project_root, 'UserProject', 'UserProject.vcxproj')
+    userproject_vcxproj = os.path.join(project_root, 'UserProject', 'UserProject.Cplusplus.vcxproj')
 
     userproject_payload_cpps = [os.path.join(userproject_output_dir, 'Payload.generated.cpp')]
 

@@ -101,7 +101,7 @@ namespace SeedCore
 		Actor actor = context_.selectionContext_.selectedActor_;
 		target_ = actor ? context_.worldContext_.world_->GetComponent<Material>(actor.GetEntity()) : nullptr;
 
-		ImGui::DockBuilderDockWindow("マテリアルビューア", context_.graphicsContext_.imgui_->GetDockSpaceID());
+		ImGui::DockBuilderDockWindow("マテリアルビューア", context_.graphicsContext_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(960, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("マテリアルビューア", &show_);
@@ -234,8 +234,8 @@ namespace SeedCore
 			{
 				std::filesystem::path newPath = std::filesystem::path(asset->fullpath_.c_str()).parent_path() / (name + ".material");
 				loader->materialLoader_->Save(surface, String(newPath.string()));
-				D3D12Context* d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-				cache->Reload(*loader, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+				D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+				cache->Reload(*loader, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
 			}
 		}
 

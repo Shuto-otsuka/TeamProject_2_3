@@ -10,6 +10,7 @@
 #include <GraphicsEngine/D3D12/D3D12Types.h>
 #include <GraphicsEngine/D3D12/FrameRing.h>
 #include <FoundationEngine/Log/DxFail.h>
+#include <FoundationEngine/Log/Notice.h>
 
 namespace SeedCore
 {
@@ -181,6 +182,34 @@ namespace SeedCore
 		{
 			return false;
 		}
+
+		DXGI_ADAPTER_DESC3 adapterDesc{};
+		adapter_->Get()->GetDesc3(&adapterDesc);
+
+		const Uint64 gigabyte = 1024ull * 1024ull * 1024ull;
+		Uint64 videoMemory = (adapterDesc.DedicatedVideoMemory + gigabyte / 2) / gigabyte;
+
+		const Char* featureLevel = "12_0";
+		if (device_->FeatureLevel() == D3D_FEATURE_LEVEL_12_2)
+		{
+			featureLevel = "12_2";
+		}
+		else if (device_->FeatureLevel() == D3D_FEATURE_LEVEL_12_1)
+		{
+			featureLevel = "12_1";
+		}
+
+		const Char* raytracing = "DXR 非対応";
+		if (device_->RaytracingTier() >= D3D12_RAYTRACING_TIER_1_1)
+		{
+			raytracing = "DXR Tier 1.1";
+		}
+		else if (device_->RaytracingTier() >= D3D12_RAYTRACING_TIER_1_0)
+		{
+			raytracing = "DXR Tier 1.0";
+		}
+
+		SC_LOG_NOTICE("GPU: {}（VRAM {}GB、機能レベル {}、{}）", String(std::wstring_view(adapterDesc.Description)).str(), videoMemory, featureLevel, raytracing);
 
 		return true;
 	}

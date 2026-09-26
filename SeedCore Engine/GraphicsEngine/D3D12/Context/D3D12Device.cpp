@@ -1,7 +1,6 @@
 #include <GraphicsEngine/D3D12/Context/D3D12Device.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Check.h>
 #include <FoundationEngine/Log/DxFail.h>
-#include <FoundationEngine/Log/Notice.h>
 #include <FoundationEngine/Log/Warning.h>
 
 namespace SeedCore
@@ -57,24 +56,16 @@ namespace SeedCore
 		}
 
 		raytracingTier_ = options5.RaytracingTier;
-
-		if (raytracingTier_ >= D3D12_RAYTRACING_TIER_1_1)
-		{
-			SC_LOG_NOTICE("DXR Tier 1.1 対応: インラインレイトレーシング(RayQuery)が利用可能です。");
-		}
-		else if (raytracingTier_ >= D3D12_RAYTRACING_TIER_1_0)
-		{
-			SC_LOG_WARNING("DXR Tier 1.0 のみ対応: DispatchRaysは可能ですがRayQueryは利用できません。");
-		}
-		else
-		{
-			SC_LOG_WARNING("このGPUはDXR非対応です。レイトレーシング機能は無効になります。");
-		}
 	}
 
 	ID3D12Device5* D3D12Device::Get()const
 	{
 		return device_.Get();
+	}
+
+	D3D_FEATURE_LEVEL D3D12Device::FeatureLevel()const noexcept
+	{
+		return featureLevel_;
 	}
 
 	D3D12_RAYTRACING_TIER D3D12Device::RaytracingTier()const noexcept

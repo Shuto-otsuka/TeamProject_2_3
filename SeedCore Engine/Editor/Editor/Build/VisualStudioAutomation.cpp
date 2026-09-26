@@ -329,7 +329,7 @@ namespace SeedCore
 							/// [JP] 生バイトのまま1バイト=1文字として幅を広げて読む(正しいUTF-8デコードではない) — ここでは問題ない。探すのは Include="Script"、Include="Script\Player" のような純ASCIIの文字列だけであり、UTF-8はASCIIを変化させず1バイトのまま符号化し、マルチバイト列のバイトは全て0x80以上になるため、ASCIIの探索文字列と一致することは絶対に無い。1つの文字列を探すだけなら、正しいUTF-8デコードは不要。
 							std::wstring onDiskFiltersContent;
 							{
-								std::ifstream filtersFile(userProjectRoot / "UserProject.vcxproj.filters", std::ios::binary);
+								std::ifstream filtersFile(userProjectRoot / "UserProject.Cplusplus.vcxproj.filters", std::ios::binary);
 								if (filtersFile)
 								{
 									std::string rawContent((std::istreambuf_iterator<Char>(filtersFile)), std::istreambuf_iterator<Char>());
@@ -374,8 +374,8 @@ namespace SeedCore
 
 						if (success)
 						{
-							/// [EN] AddFile() alone marks the project dirty in memory; Save() flushes that to UserProject.vcxproj/.filters on disk so the registration survives even if Visual Studio (or the whole machine) closes before the user's next manual save.
-							/// [JP] AddFile() だけではプロジェクトがメモリ上でダーティになるだけなので、Save() で UserProject.vcxproj/.filters へ実際に書き出す。次にユーザーが手動保存するより前に Visual Studio(や PC 自体)が閉じても、登録内容が失われないようにするため。
+							/// [EN] AddFile() alone marks the project dirty in memory; Save() flushes that to UserProject.Cplusplus.vcxproj/.filters on disk so the registration survives even if Visual Studio (or the whole machine) closes before the user's next manual save.
+							/// [JP] AddFile() だけではプロジェクトがメモリ上でダーティになるだけなので、Save() で UserProject.Cplusplus.vcxproj/.filters へ実際に書き出す。次にユーザーが手動保存するより前に Visual Studio(や PC 自体)が閉じても、登録内容が失われないようにするため。
 							VARIANT emptyPath;
 							VariantInit(&emptyPath);
 							emptyPath.vt = VT_BSTR;

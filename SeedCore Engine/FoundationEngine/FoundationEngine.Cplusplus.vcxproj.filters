@@ -112,6 +112,9 @@
     <Filter Include="Coroutine">
       <UniqueIdentifier>{2af5dcce-f01a-4dc0-b098-cd2e5a60c5d3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Bridge">
+      <UniqueIdentifier>{43162e6c-2152-4fd7-8be1-07caebc000dd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JobSystem\FlowBuilder.cpp">
@@ -383,6 +386,12 @@
       <Filter>World\ECS\Component</Filter>
     </ClCompile>
     <ClCompile Include="Coroutine\CoroutineSystem.cpp" />
+    <ClCompile Include="Bridge\CsharpHost.cpp">
+      <Filter>Bridge</Filter>
+    </ClCompile>
+    <ClCompile Include="Interop\ImGuiInstance.cpp">
+      <Filter>Interop</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\DxFail.h">
@@ -847,5 +856,14 @@
       <Filter>World\ECS\Component</Filter>
     </ClInclude>
     <ClInclude Include="Coroutine\CoroutineSystem.h" />
+    <ClInclude Include="Bridge\CsharpNativeApi.h">
+      <Filter>Bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="Bridge\CsharpHost.h">
+      <Filter>Bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="Interop\ImGuiInstance.h">
+      <Filter>Interop</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

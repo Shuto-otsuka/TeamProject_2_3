@@ -90,9 +90,7 @@ namespace SeedCore
 
 		void End(D3D12CommandList* cmdList);
 
-		void RegisterImGuiShaderResourceView(ID3D12Device* device, DescriptorHeap* imguiHeap);
-
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE ImGuiGPUHandle()const;
+		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE DisplayGPUHandle()const;
 
 	private:
 		ModelShader modelShader_;
@@ -126,8 +124,5 @@ namespace SeedCore
 		ShaderResourceIndices shaderResourceIndices_{};
 		ResourcePtr<ConstantBuffer<ConstantIndices>> constantIndicesBuffer_;
 		ResourcePtr<ConstantBuffer<ShaderResourceIndices>> shaderResourceIndicesBuffer_;
-
-		DescriptorHeap* imguiHeap_ = nullptr;
-		Uint32 imguiShaderResourceViewIndex_ = 0;
 	};
 }

@@ -60,10 +60,11 @@ namespace SeedCore
 
 		RECT rect{ 0, 0, static_cast<LONG>(boot.WindowDesc_.Width_), static_cast<LONG>(boot.WindowDesc_.Height_) };
 		DWORD style = WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX & ~WS_THICKFRAME;
-		AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
+		AdjustWindowRect(&rect, style, FALSE);
+
 		hwnd_ = CreateWindowExW(0, boot.WindowDesc_.Title_, L"SeedCore Engine", style, CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, NULL, NULL, instance_, NULL);
 		title_ = String::intern(boot.WindowDesc_.Title_);
-		ShowWindow(hwnd_, SW_SHOW);
+		ShowWindow(hwnd_, SW_MAXIMIZE);
 		UpdateWindow(hwnd_);
 		SetWindowLongPtr(hwnd_, GWLP_USERDATA, (LONG_PTR)this);
 
@@ -159,11 +160,6 @@ namespace SeedCore
 		case WM_MOUSEWHEEL:
 		{
 			InputSystem::MouseWheel(static_cast<Float>(GET_WHEEL_DELTA_WPARAM(wparam)) / 120.0f);
-		}
-		break;
-		case WM_SETFOCUS:
-		{
-			ImGuiRenderer::ClearInputKeys();
 		}
 		break;
 		default:

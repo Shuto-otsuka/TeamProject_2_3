@@ -57,8 +57,10 @@ namespace SeedCore
 		Uint32 clientWidth = static_cast<Uint32>(clientRect.right - clientRect.left);
 		Uint32 clientHeight = static_cast<Uint32>(clientRect.bottom - clientRect.top);
 
+		splashSystem_.Initialize(gameConfig_.showSplashWarning_, gameConfig_.showSplashFiction_);
+
 		graphics_ = MakePtr<Graphics>();
-		if (!graphics_->Initialize(hwnd_, static_cast<Float>(clientWidth), static_cast<Float>(clientHeight)))
+		if (!graphics_->Initialize(hwnd_, clientWidth, clientHeight, splashSystem_.Config()))
 		{
 			return;
 		}
@@ -67,7 +69,7 @@ namespace SeedCore
 		Uint32 resizedHeight = 0;
 		window_->ConsumeResized(resizedWidth, resizedHeight);
 
-		ID3D12Device* device = graphics_->GetContext()->GetDevice();
+		ID3D12Device* device = graphics_->GetContext().GetDevice();
 
 		criManager_ = MakePtr<CriManager>();
 		if (!criManager_->Initialize())
@@ -84,7 +86,7 @@ namespace SeedCore
 		Gateway::BindFontManager(fontManager_.get());
 
 		loaderSystem_ = MakePtr<LoaderSystem>(device);
-		resource_ = MakePtr<ResourceCache>(*loaderSystem_, device, graphics_->GetContext()->GetDirectQueue(), graphics_->GetBindlessHeap());
+		resource_ = MakePtr<ResourceCache>(*loaderSystem_, device, graphics_->GetContext().GetDirectQueue(), &graphics_->GetBindlessHeap());
 		resource_->Async();
 
 		Scene::Initialize(*world_, *resource_, *executor_);
@@ -101,11 +103,7 @@ namespace SeedCore
 		Uint32 outputWidth = static_cast<Uint32>(outputSize.Width);
 		Uint32 outputHeight = static_cast<Uint32>(outputSize.Height);
 
-		Float scale = UpscaleRenderScale(gameConfig_.upscaleMode_);
-		Uint32 nativeWidth = Max<Uint32>(64, static_cast<Uint32>(outputWidth * scale + 0.5f));
-		Uint32 nativeHeight = Max<Uint32>(64, static_cast<Uint32>(outputHeight * scale + 0.5f));
-
-		graphics_->Resize(nativeWidth, nativeHeight, outputWidth, outputHeight, nullptr);
+		graphics_->ResizeRenderTarget(outputWidth, outputHeight, gameConfig_.upscaleMode_);
 
 		graphics_->Reflex(gameConfig_.useReflex_, false);
 		graphics_->DeepDVC(gameConfig_.useDeepDVC_, 0.5f, 0.25f);
@@ -125,7 +123,7 @@ namespace SeedCore
 	{
 		if (graphics_)
 		{
-			graphics_->WaitForGpuIdle();
+			graphics_->Wait();
 		}
 
 		if (window_)
@@ -215,18 +213,16 @@ namespace SeedCore
 					graphics_->ResizeSwapChain(resizedWidth, resizedHeight);
 				}
 
-				graphics_->Begin();
-
-				if (!graphics_->SplashFinished())
+				splashSystem_.Update(*resource_);
+				if (!splashSystem_.Complete())
 				{
-					resource_->StepAsync(*loaderSystem_, graphics_->GetContext()->GetDevice(), graphics_->GetContext()->GetDirectQueue(), graphics_->GetBindlessHeap(), graphics_->GetBC7CompressShader());
+					resource_->StepAsync(*loaderSystem_, graphics_->GetContext().GetDevice(), graphics_->GetContext().GetDirectQueue(), &graphics_->GetBindlessHeap(), graphics_->GetBC7CompressShader());
 
-					graphics_->Bind();
-					graphics_->DrawSplashScreen(resource_->Complete(), resource_->Progress(), gameConfig_.showSplashWarning_, gameConfig_.showSplashFiction_);
-					graphics_->End();
-					graphics_->GetSwapChain()->Present(graphics_->GetContext()->GetDevice());
+					graphics_->DrawSplashScreen(splashSystem_);
 					continue;
 				}
+
+				graphics_->Begin();
 
 				if (!gameTimer_.Playing())
 				{
@@ -287,12 +283,12 @@ namespace SeedCore
 				graphics_->Upscale(gameConfig_.useDlss_, gameConfig_.upscaleMode_);
 				graphics_->VerticalSync(gameConfig_.vsync_);
 
-				graphics_->GameRender(gameTimer_, *loaderSystem_, *resource_, *world_);
+				graphics_->GameRender(gameTimer_, cameraSystem_, *loaderSystem_, *resource_, *world_);
 
 				graphics_->DrawLetterScreen();
 
 				graphics_->End();
-				graphics_->GetSwapChain()->Present(graphics_->GetContext()->GetDevice());
+				graphics_->GetSwapChain().Present(graphics_->GetContext().GetDevice());
 			}
 		}
 	}

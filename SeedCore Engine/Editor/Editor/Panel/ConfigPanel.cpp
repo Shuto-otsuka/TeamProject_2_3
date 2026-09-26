@@ -10,7 +10,7 @@
 #include <AudioEngine/CRI/CriManager.h>
 #include <GraphicsEngine/DLSS/DlssManager.h>
 #include <GraphicsEngine/Graphics.h>
-#include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
+#include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/Texture/TextureLoader.h>
 
@@ -185,7 +185,7 @@ namespace SeedCore
 		executableNameBuffer_.resize(256);
 		newActionBuffer_.resize(128);
 
-		iconPreviewIndex_ = context_.graphicsContext_.imgui_->GetDescriptorHeap()->AllocateIndex();
+		iconPreviewIndex_ = context_.graphicsContext_.graphics_->GetBindlessHeap().AllocateIndex();
 	}
 
 	void ConfigPanel::Open()
@@ -523,7 +523,7 @@ namespace SeedCore
 	{
 		Bool changed = false;
 
-		DescriptorHeap* imguiHeap = context_.graphicsContext_.imgui_->GetDescriptorHeap();
+		BindlessHeap* bindlessHeap = &context_.graphicsContext_.graphics_->GetBindlessHeap();
 
 		if (iconPreviewDirty_)
 		{
@@ -537,9 +537,9 @@ namespace SeedCore
 			}
 
 			Graphics* graphics = context_.graphicsContext_.graphics_;
-			graphics->WaitForGpuIdle();
+			graphics->Wait();
 			iconPreviewResource_.Reset();
-			TextureLoader::CreateTextureMemory(graphics->GetContext()->GetDevice(), graphics->GetContext()->GetDirectQueue(), imguiHeap->Get(), previewData, iconPreviewResource_, iconPreviewIndex_);
+			TextureLoader::CreateTextureMemory(graphics->GetContext().GetDevice(), graphics->GetContext().GetDirectQueue(), bindlessHeap->Heap(), previewData, iconPreviewResource_, iconPreviewIndex_);
 		}
 
 		ImGui::TextDisabled("実行ファイルのアイコン");
@@ -547,7 +547,7 @@ namespace SeedCore
 
 		if (iconPreviewResource_)
 		{
-			ImTextureID previewTexture = static_cast<ImTextureID>(imguiHeap->GPUHandle(iconPreviewIndex_).ptr);
+			ImTextureID previewTexture = static_cast<ImTextureID>(bindlessHeap->GPUHandle(iconPreviewIndex_).ptr);
 			ImGui::Image(previewTexture, ImVec2(128.0f, 128.0f));
 			ImGui::SameLine();
 			ImGui::BeginGroup();

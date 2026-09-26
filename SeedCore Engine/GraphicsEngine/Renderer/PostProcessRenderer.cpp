@@ -191,6 +191,9 @@ namespace SeedCore
 		view.sharpenRenderTargetViewIndex_ = renderTargetViewHeap_.AllocateIndex();
 		device->CreateRenderTargetView(view.sharpenResource_.Get(), &outputRenderTargetViewDesc, renderTargetViewHeap_.CPUHandle(view.sharpenRenderTargetViewIndex_));
 
+		view.sharpenShaderResourceViewIndex_ = bindlessHeap->AllocateIndex();
+		device->CreateShaderResourceView(view.sharpenResource_.Get(), &outputShaderResourceViewDesc, bindlessHeap->CPUHandle(view.sharpenShaderResourceViewIndex_));
+
 		hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &outputDescUpscaled, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.sharpenResourceUpscaled_));
 		SC_HR_CHECK(hr, "シャープネス表示テクスチャ(UHD)の生成に失敗しました");
 #ifdef _DEBUG
@@ -204,6 +207,9 @@ namespace SeedCore
 
 		view.sharpenRenderTargetViewIndexUpscaled_ = renderTargetViewHeap_.AllocateIndex();
 		device->CreateRenderTargetView(view.sharpenResourceUpscaled_.Get(), &outputRenderTargetViewDesc, renderTargetViewHeap_.CPUHandle(view.sharpenRenderTargetViewIndexUpscaled_));
+
+		view.sharpenShaderResourceViewIndexUpscaled_ = bindlessHeap->AllocateIndex();
+		device->CreateShaderResourceView(view.sharpenResourceUpscaled_.Get(), &outputShaderResourceViewDesc, bindlessHeap->CPUHandle(view.sharpenShaderResourceViewIndexUpscaled_));
 
 		// ---- ヒストグラムバッファ (256 x uint) ----
 		{
@@ -556,6 +562,8 @@ namespace SeedCore
 		bindlessHeap->FreeIndex(view.outputShaderResourceViewIndexUpscaled_);
 		bindlessHeap->FreeIndex(view.sharpenUnorderedAccessViewIndex_);
 		bindlessHeap->FreeIndex(view.sharpenUnorderedAccessViewIndexUpscaled_);
+		bindlessHeap->FreeIndex(view.sharpenShaderResourceViewIndex_);
+		bindlessHeap->FreeIndex(view.sharpenShaderResourceViewIndexUpscaled_);
 		bindlessHeap->FreeIndex(view.histogramUnorderedAccessViewIndex_);
 		bindlessHeap->FreeIndex(view.histogramClearGpuUnorderedAccessViewIndex_);
 		bindlessHeap->FreeIndex(view.exposureUnorderedAccessViewIndex_);
@@ -1446,6 +1454,12 @@ namespace SeedCore
 		return target.activeIsUpscaled_ ? target.sharpenResourceUpscaled_.Get() : target.sharpenResource_.Get();
 	}
 
+	Uint32 PostProcessRenderer::OutputShaderResourceViewIndex(RaytracingView view)const
+	{
+		const View& target = view == RaytracingView::Editor ? editorView_ : gameView_;
+		return target.activeIsUpscaled_ ? target.sharpenShaderResourceViewIndexUpscaled_ : target.sharpenShaderResourceViewIndex_;
+	}
+
 	Vector2 PostProcessRenderer::OutputSize()const
 	{
 		return Vector2(static_cast<Float>(outputWidth_), static_cast<Float>(outputHeight_));
@@ -1503,13 +1517,14 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Transitions view's active output chain from RENDER_TARGET back to
-	* PIXEL_SHADER_RESOURCE, so RefreshImGui can read it.
+	* PIXEL_SHADER_RESOURCE, so ImGui can sample it through its bindless
+	* SRV.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* viewのアクティブな出力チェーンをRENDER_TARGETからPIXEL_SHADER_RESOURCE
-	* へ戻す。RefreshImGuiが読み取れるようにするため。
+	* へ戻す。ImGui がバインドレス SRV 経由でサンプリングできるようにするため。
 	*/
 	void PostProcessRenderer::EndDebugOverlay(D3D12CommandList* cmdList, RaytracingView view)
 	{

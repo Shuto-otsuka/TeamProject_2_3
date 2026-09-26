@@ -183,8 +183,8 @@ namespace SeedCore
 		/// [JP] 取得時点でのローカル位置。
 		Vector3 position_;
 
-		/// [EN] Local rotation (Euler angles) at capture time.
-		/// [JP] 取得時点でのローカル回転（オイラー角）。
+		/// [EN] Local rotation as Euler angles in degrees, used by the human-readable blueprint format.
+		/// [JP] 人が読める Blueprint 形式で使用する、度数のオイラー角としてのローカル回転。
 		Vector3 rotation_;
 
 		/// [EN] Local scale at capture time.

@@ -144,35 +144,24 @@ namespace SeedCore
 
 		[[nodiscard]] FrameBuffer* GetCanvasFrameBuffer()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE EditorFrameBufferGPUHandle()const;
-
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE GameFrameBufferGPUHandle()const;
-
 		[[nodiscard]] ID3D12Resource* GameDisplayResource()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE CanvasFrameBufferGPUHandle()const;
-
 	public:
-		void RegisterImGuiShaderResourceViews(ID3D12Device* device, DescriptorHeap* imguiHeap);
+		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE EditorDisplayGPUHandle()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE EditorImGuiGPUHandle()const;
+		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE GameDisplayGPUHandle()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE GameImGuiGPUHandle()const;
+		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE CanvasDisplayGPUHandle()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE CanvasImGuiGPUHandle()const;
+		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE TimelineDisplayGPUHandle()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE TimelineImGuiGPUHandle()const;
+		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE ModelTransformDisplayGPUHandle()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE ModelTransformImGuiGPUHandle()const;
+		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE MaterialDisplayGPUHandle()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE MaterialImGuiGPUHandle()const;
+		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE SkeletonControllerDisplayGPUHandle()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE SkeletonControllerImGuiGPUHandle()const;
-
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE AvatarImGuiGPUHandle()const;
-
-	private:
-		void RefreshImGui(RaytracingView view);
+		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE AvatarDisplayGPUHandle()const;
 
 	private:
 		RootSignature rootSignature_;
@@ -359,13 +348,5 @@ namespace SeedCore
 		BindlessHeap* bindlessHeap_ = nullptr;
 
 		ID3D12Device* device_ = nullptr;
-
-		DescriptorHeap* imguiHeap_ = nullptr;
-
-		Uint32 editorImGuiShaderResourceViewIndex_ = 0;
-
-		Uint32 gameImGuiShaderResourceViewIndex_ = 0;
-
-		Uint32 canvasImGuiShaderResourceViewIndex_ = 0;
 	};
 }

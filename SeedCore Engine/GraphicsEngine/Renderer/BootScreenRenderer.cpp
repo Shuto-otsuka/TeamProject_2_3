@@ -5,11 +5,10 @@
 
 namespace SeedCore
 {
-	void BootScreenRenderer::Create(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap, DescriptorHeap* imguiHeap, Uint32 width, Uint32 height)
+	void BootScreenRenderer::Create(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height)
 	{
 		device_ = device;
 		bindlessHeap_ = bindlessHeap;
-		imguiHeap_ = imguiHeap;
 		width_ = Max<Uint32>(width, 1);
 		height_ = Max<Uint32>(height, 1);
 
@@ -17,9 +16,6 @@ namespace SeedCore
 
 		renderTargetViewHeap_.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1);
 		frameBuffer_ = MakePtr<FrameBuffer>(device, &renderTargetViewHeap_, bindlessHeap, width_, height_, DXGI_FORMAT_R8G8B8A8_UNORM, nullptr, 0.0f, 0.0f, 0.0f, 1.0f);
-
-		imguiShaderResourceViewIndex_ = imguiHeap->AllocateIndex();
-		RegisterImGuiShaderResourceView();
 	}
 
 	void BootScreenRenderer::Resize(Uint32 width, Uint32 height)
@@ -36,7 +32,6 @@ namespace SeedCore
 
 		renderTargetViewHeap_.Create(device_, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1);
 		frameBuffer_->Resize(device_, bindlessHeap_, width_, height_);
-		RegisterImGuiShaderResourceView();
 	}
 
 	void BootScreenRenderer::LoadImages(const BootConfig& config)
@@ -77,19 +72,8 @@ namespace SeedCore
 		return bootScreen_.BarAspect();
 	}
 
-	D3D12_GPU_DESCRIPTOR_HANDLE BootScreenRenderer::ImGuiGPUHandle()const
+	D3D12_GPU_DESCRIPTOR_HANDLE BootScreenRenderer::DisplayGPUHandle()const
 	{
-		return imguiHeap_->GPUHandle(imguiShaderResourceViewIndex_);
-	}
-
-	void BootScreenRenderer::RegisterImGuiShaderResourceView()
-	{
-		D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc{};
-		shaderResourceViewDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		shaderResourceViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		shaderResourceViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		shaderResourceViewDesc.Texture2D.MipLevels = 1;
-
-		device_->CreateShaderResourceView(frameBuffer_->ColorResource(), &shaderResourceViewDesc, imguiHeap_->CPUHandle(imguiShaderResourceViewIndex_));
+		return bindlessHeap_->GPUHandle(frameBuffer_->ColorShaderResourceViewIndex());
 	}
 }

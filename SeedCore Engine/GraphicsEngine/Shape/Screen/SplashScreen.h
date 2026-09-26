@@ -1,5 +1,6 @@
 #pragma once
 #include <FoundationEngine/Prelude.h>
+#include <GraphicsEngine/System/SplashSystem.h>
 
 namespace SeedCore
 {
@@ -15,9 +16,9 @@ namespace SeedCore
 
 		void Initialize(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap);
 
-		void Draw(ID3D12GraphicsCommandList6* cmdList, D3D12_CPU_DESCRIPTOR_HANDLE renderTargetViewHandle, Float screenWidth, Float screenHeight, Bool showWarning, Bool showFiction);
+		void Finalize();
 
-		[[nodiscard]] Bool Finished()const;
+		void Draw(ID3D12GraphicsCommandList6* cmdList, D3D12_CPU_DESCRIPTOR_HANDLE renderTargetViewHandle, Float screenWidth, Float screenHeight, SplashPhase phase, Float alpha);
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D12Resource> dayResource_;
@@ -26,13 +27,11 @@ namespace SeedCore
 		Uint dayTextureIndex_ = 0;
 		Uint nightTextureIndex_ = 0;
 
-		/// [EN] The warning/fiction disclaimer screens, shown (if showWarning_/
-		///      showFiction_) before the logo, in that order - each a single
+		/// [EN] The warning/fiction disclaimer screens - each a single
 		///      centered/letterboxed image drawn through the same t0 slot and
 		///      texture_aspect_ path as the day/night logo (see Draw()'s phase
 		///      selection). Runtime/Logo/Warning.sub.logo and Fiction.sub.logo.
-		/// [JP] 警告/フィクション免責画面。showWarning_/showFiction_が立っていれば
-		///      ロゴの前に、その順で表示される - どちらも day/night ロゴと同じ
+		/// [JP] 警告/フィクション免責画面 - どちらも day/night ロゴと同じ
 		///      t0スロット・texture_aspect_の経路で描画される単一の
 		///      中央寄せ/レターボックス画像（Draw()のフェーズ選択参照）。
 		///      Runtime/Logo/Warning.sub.logo と Fiction.sub.logo。
@@ -57,36 +56,8 @@ namespace SeedCore
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
 
-		Float minDuration_ = 3.0f;
-		Float warningDuration_ = 2.5f;
-		Float fictionDuration_ = 2.5f;
-		Float criLogoDuration_ = 2.5f;
-		Float fadeInTime_ = 0.5f;
-		Float fadeOutTime_ = 0.5f;
-
-		Bool finished_ = false;
 		Bool initialized_ = false;
-		Bool started_ = false;
-
-		/// [EN] Whether the warning/fiction disclaimer screens play as part of
-		///      this sequence (Warning -> Fiction -> CRI logo -> Engine logo,
-		///      each of the first two phases skipped entirely if its flag is
-		///      false) - set from Draw()'s showWarning/showFiction parameters on
-		///      the first call, mirroring started_. The Runtime passes
-		///      GameConfig's showSplashWarning_/showSplashFiction_; the Editor
-		///      passes false for both.
-		/// [JP] 警告/フィクション免責画面をこのシーケンスの一部として再生するか
-		///      どうか（Warning -> Fiction -> CRIロゴ -> エンジンロゴ の順で、
-		///      最初の2フェーズはフラグがfalseならそのフェーズ自体を丸ごと
-		///      スキップする） - started_ と同様、初回の Draw() 呼び出し時に
-		///      showWarning/showFiction 引数から設定する。Runtime は GameConfig の
-		///      showSplashWarning_/showSplashFiction_ を、Editor は両方 false を渡す。
-		Bool showWarning_ = false;
-		Bool showFiction_ = false;
 
 		BindlessHeap* bindlessHeap_ = nullptr;
-		D3D12CommandQueue* cmdQueue_ = nullptr;
-
-		std::chrono::steady_clock::time_point startTime_;
 	};
 }

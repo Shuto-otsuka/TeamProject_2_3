@@ -27,6 +27,8 @@ namespace SeedCore
 		void ShowProfilerTab();
 
 	private:
+		EditorContext& context_;
+
 		DiagnosticsTab currentTab_ = DiagnosticsTab::Console;
 
 		Bool requestChange_ = false;

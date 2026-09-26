@@ -820,7 +820,7 @@ def main():
 
     os.makedirs(output_dir, exist_ok=True)
 
-    build_dir = os.path.join(project_root, "Runtime", "Build", "x64", "Release")
+    build_dir = os.path.join(project_root, "Runtime", "Build", "x64", "Release", "Cplusplus")
 
     # --- Launcher.exe: パッケージルートに置く、プレイヤーが起動する薄い exe。GameConfig の実行ファイル名で置く ---
     launcher_path = os.path.join(build_dir, "Launcher.exe")
@@ -831,9 +831,9 @@ def main():
     shutil.copy2(launcher_path, launcher_output_path)
     print(f"Launcher コピー完了: {launcher_output_path}")
 
-    # --- Plugins: Runtime.exe + エンジン / サードパーティ DLL + UserProject.dll(プラグイン) ---
+    # --- Plugins: Runtime.exe + エンジン / サードパーティ DLL + UserProject.Cplusplus.dll(プラグイン) ---
     # ランチャーが Plugins\Runtime.exe を作業ディレクトリ Plugins\ で起動するので、
-    # SeedCore.dll 等が隣で解決され、PluginHost は UserProject.dll をこのフォルダから拾う。
+    # SeedCore.Cplusplus.dll 等が隣で解決され、PluginHost は UserProject.Cplusplus.dll をこのフォルダから拾う。
     exe_path = os.path.join(build_dir, "Runtime.exe")
     if not os.path.exists(exe_path):
         print(f"Runtime.exe が見つかりません: {exe_path}")
@@ -850,8 +850,8 @@ def main():
             continue
         shutil.copy2(os.path.join(build_dir, file), os.path.join(plugins_dir, file))
 
-    if not os.path.exists(os.path.join(plugins_dir, "UserProject.dll")):
-        print(f"UserProject.dll が見つかりません: {os.path.join(build_dir, 'UserProject.dll')}")
+    if not os.path.exists(os.path.join(plugins_dir, "UserProject.Cplusplus.dll")):
+        print(f"UserProject.Cplusplus.dll が見つかりません: {os.path.join(build_dir, 'UserProject.Cplusplus.dll')}")
         return 1
     print(f"Plugins コピー完了: {plugins_dir}")
 

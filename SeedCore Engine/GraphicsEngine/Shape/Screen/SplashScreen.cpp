@@ -11,7 +11,6 @@ namespace SeedCore
 	void SplashScreen::Initialize(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap)
 	{
 		bindlessHeap_ = bindlessHeap;
-		cmdQueue_ = cmdQueue;
 
 		auto load = [&](const Char* name, const Char* tag, Uint& textureIndex, Microsoft::WRL::ComPtr<ID3D12Resource>& resource)
 		{
@@ -116,89 +115,40 @@ namespace SeedCore
 		SC_HR_CHECK(hr, "SplashScreen PipelineStateの生成に失敗しました");
 
 		initialized_ = true;
-		finished_ = false;
-		started_ = false;
 
 		SC_LOG_NOTICE("スプラッシュスクリーンを初期化しました");
 	}
 
-	void SplashScreen::Draw(ID3D12GraphicsCommandList6* cmdList, D3D12_CPU_DESCRIPTOR_HANDLE renderTargetViewHandle, Float screenWidth, Float screenHeight, Bool showWarning, Bool showFiction)
+	void SplashScreen::Finalize()
 	{
-		if (!initialized_ || finished_)
+		if (!initialized_)
 		{
 			return;
 		}
 
-		if (!started_)
+		dayResource_.Reset();
+		nightResource_.Reset();
+		warningResource_.Reset();
+		fictionResource_.Reset();
+		criLogoResource_.Reset();
+		bindlessHeap_->FreeIndex(dayTextureIndex_);
+		bindlessHeap_->FreeIndex(nightTextureIndex_);
+		bindlessHeap_->FreeIndex(warningTextureIndex_);
+		bindlessHeap_->FreeIndex(fictionTextureIndex_);
+		bindlessHeap_->FreeIndex(criLogoTextureIndex_);
+
+		rootSignature_.Reset();
+		pipelineState_.Reset();
+
+		bindlessHeap_ = nullptr;
+		initialized_ = false;
+	}
+
+	void SplashScreen::Draw(ID3D12GraphicsCommandList6* cmdList, D3D12_CPU_DESCRIPTOR_HANDLE renderTargetViewHandle, Float screenWidth, Float screenHeight, SplashPhase phase, Float alpha)
+	{
+		if (!initialized_)
 		{
-			startTime_ = std::chrono::steady_clock::now();
-			started_ = true;
-			showWarning_ = showWarning;
-			showFiction_ = showFiction;
-		}
-
-		auto now = std::chrono::steady_clock::now();
-		Float elapsed = std::chrono::duration<Float>(now - startTime_).count();
-
-		/// [EN] Warning -> Fiction -> CRI logo -> Engine logo, in that order.
-		///      Each of the first two phases is skipped entirely (zero
-		///      duration) if its show flag is false; all four single-image
-		///      phases fade in/out the same way.
-		/// [JP] Warning -> Fiction -> CRIロゴ -> エンジンロゴ の順。
-		///      最初の2フェーズはそれぞれの表示フラグがfalseなら丸ごと
-		///      スキップ（時間0）される。単一画像の4フェーズとも同じように
-		///      フェードイン/アウトする。
-		Float warningPhaseDuration = showWarning_ ? warningDuration_ : 0.0f;
-		Float fictionPhaseDuration = showFiction_ ? fictionDuration_ : 0.0f;
-
-		Float warningEnd = warningPhaseDuration;
-		Float fictionEnd = warningEnd + fictionPhaseDuration;
-		Float criLogoEnd = fictionEnd + criLogoDuration_;
-		Float logoEnd = criLogoEnd + minDuration_;
-
-		if (elapsed >= logoEnd)
-		{
-			finished_ = true;
-
-			cmdQueue_->Signal();
-			cmdQueue_->Wait();
-
-			dayResource_.Reset();
-			nightResource_.Reset();
-			warningResource_.Reset();
-			fictionResource_.Reset();
-			criLogoResource_.Reset();
-			bindlessHeap_->FreeIndex(dayTextureIndex_);
-			bindlessHeap_->FreeIndex(nightTextureIndex_);
-			bindlessHeap_->FreeIndex(warningTextureIndex_);
-			bindlessHeap_->FreeIndex(fictionTextureIndex_);
-			bindlessHeap_->FreeIndex(criLogoTextureIndex_);
-
-			rootSignature_.Reset();
-			pipelineState_.Reset();
-
 			return;
-		}
-
-		Bool warningPhase = elapsed < warningEnd;
-		Bool fictionPhase = !warningPhase && elapsed < fictionEnd;
-		Bool criLogoPhase = !warningPhase && !fictionPhase && elapsed < criLogoEnd;
-
-		/// [EN] Elapsed time local to whichever phase is active, and that
-		///      phase's total duration - used for the shared fade in/out.
-		/// [JP] 現在アクティブなフェーズを基準にしたローカル経過時間と、
-		///      そのフェーズの総時間 - 共通のフェードイン/アウトに使う。
-		Float phaseElapsed = warningPhase ? elapsed : (fictionPhase ? elapsed - warningEnd : (criLogoPhase ? elapsed - fictionEnd : elapsed - criLogoEnd));
-		Float phaseDuration = warningPhase ? warningPhaseDuration : (fictionPhase ? fictionPhaseDuration : (criLogoPhase ? criLogoDuration_ : minDuration_));
-
-		Float alpha = 1.0f;
-		if (phaseElapsed < fadeInTime_)
-		{
-			alpha = phaseElapsed / fadeInTime_;
-		}
-		else if (phaseElapsed > phaseDuration - fadeOutTime_)
-		{
-			alpha = (phaseDuration - phaseElapsed) / fadeOutTime_;
 		}
 
 		/// [EN] Selects which single centered/letterboxed image is active this
@@ -211,17 +161,17 @@ namespace SeedCore
 		Uint textureIndex = 0;
 		ID3D12Resource* texResource = nullptr;
 
-		if (warningPhase)
+		if (phase == SplashPhase::Warning)
 		{
 			textureIndex = warningTextureIndex_;
 			texResource = warningResource_.Get();
 		}
-		else if (fictionPhase)
+		else if (phase == SplashPhase::Fiction)
 		{
 			textureIndex = fictionTextureIndex_;
 			texResource = fictionResource_.Get();
 		}
-		else if (criLogoPhase)
+		else if (phase == SplashPhase::CriLogo)
 		{
 			textureIndex = criLogoTextureIndex_;
 			texResource = criLogoResource_.Get();
@@ -276,10 +226,5 @@ namespace SeedCore
 
 		cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		cmdList->DrawInstanced(3, 1, 0, 0);
-	}
-
-	Bool SplashScreen::Finished()const
-	{
-		return finished_;
 	}
 }

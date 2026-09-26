@@ -7,7 +7,7 @@
 #include <FoundationEngine/Payload/PayloadRegistry.h>
 #include <Editor/Editor/Panel/AddComponentPanel.h>
 
-namespace SeedCore
+	namespace SeedCore
 {
 	struct EditorContext;
 	class ImGuiTexture;
@@ -62,8 +62,6 @@ namespace SeedCore
 
 		void DrawReflectedFields(String componentName, void* componentData, ComponentID componentID, Entity entity);
 
-		/// [EN] baseOffset is baseData's own byte offset (0 at the top level) from the start of the component named by componentID - used to build the undo Command for each field drawn, unless that field's own FieldInfo::directPtr_ is set (not part of the component's fixed-offset POD layout, e.g. a DynamicArray element), in which case its pointer is used directly instead.
-		/// [JP] baseOffsetは、componentIDで指されるコンポーネント先頭からの、baseData自身のバイトオフセット(トップレベルでは0) - 描画する各フィールドのundo Commandを組み立てるために使う。ただしそのフィールド自身のFieldInfo::directPtr_が設定されている場合(コンポーネントの固定オフセットPODレイアウトの一部でない場合。例: DynamicArrayの要素)は、代わりにそのポインタを直接使う。
 		void DrawFieldList(DynamicArray<FieldInfo>& fields, void* baseData, Entity entity, ComponentID componentID, Size baseOffset);
 
 		void DrawField(const FieldInfo& field, void* pointer, Entity entity, ComponentID componentID, Size fieldOffset);
@@ -74,7 +72,7 @@ namespace SeedCore
 
 		void DrawPayloadArrayAppendSlot(const FieldInfo& field, const DynamicArray<Int>& existingValues, Entity entity, ComponentID componentID);
 
-		void DrawTransform(Float* data, const Char* label, Bool& linked, Float* previousValues, Entity entity, ComponentID componentID);
+		void DrawTransform(void* componentData, const Char* label, Bool& linked, Float* previousValues, Entity entity, ComponentID componentID);
 
 		const Char* GetPayloadDropType(PayloadAssetType assetType)const;
 
@@ -108,6 +106,27 @@ namespace SeedCore
 		Float pendingOldFloat_ = 0.0f;
 		Vector2 pendingOldVector2_ = Vector2::Zero;
 		Vector3 pendingOldVector3_ = Vector3::Zero;
+
+		/// [EN] Quaternion captured before an Inspector rotation edit, used to restore exact stored orientation on Undo.
+		/// [JP] Inspector の回転編集前に捕捉したクォータニオン。Undo 時に保持していた正確な姿勢を復元するために使う。
+		Quaternion pendingOldQuaternion_ = Quaternion::Identity;
+
+		/// [EN] Euler degree values retained while the represented Quaternion is unchanged, so the Inspector does not replace an entered equivalent Euler representation with a canonical one.
+		/// [JP] Rotation ウィジェットで保持する度数のオイラー値。同一の Quaternion を表示する間は、正規化された別表現へ置き換えないために使う。
+		Vector3 pendingRotationDegrees_ = Vector3::Zero;
+
+		/// [EN] Entity for which pendingRotationDegrees_ was captured.
+		/// [JP] pendingRotationDegrees_ を取得した Entity。
+		EntityID pendingRotationEntity_;
+
+		/// [EN] Quaternion corresponding to pendingRotationDegrees_; an external rotation update invalidates the displayed Euler cache.
+		/// [JP] pendingRotationDegrees_ に対応する Quaternion。外部から回転が更新された場合に Euler 表示キャッシュを無効化するために使う。
+		Quaternion pendingRotationQuaternion_ = Quaternion::Identity;
+
+		/// [EN] Whether the Inspector currently has a valid Euler display cache for Rotation.
+		/// [JP] Inspector が Rotation 用の有効な Euler 表示キャッシュを持っているかどうか。
+		Bool hasPendingRotation_ = false;
+
 		Color pendingOldColor_ = Color(0.0f, 0.0f, 0.0f, 0.0f);
 		String pendingOldString_;
 	};

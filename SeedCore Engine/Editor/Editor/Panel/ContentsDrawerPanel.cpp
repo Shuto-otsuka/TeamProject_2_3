@@ -14,7 +14,6 @@
 #include <GraphicsEngine/Model/Crister.h>
 #include <FoundationEngine/File/FileDialog.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
-#include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 #include <GraphicsEngine/Graphics.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Log/Notice.h>
@@ -57,13 +56,13 @@ namespace SeedCore
 			sharingRevision_ = context_.resourceSync_->Revision();
 			needsRebuild_ = true;
 		}
-		ImGuiID dockspaceID = ImGui::GetID("ScDockSpace");
+		ImGuiID dockspaceID = context_.graphicsContext_.imgui_->DockSpaceID();
 		ImGui::SetNextWindowDockID(dockspaceID, ImGuiCond_FirstUseEver);
 
 		if (directoryWatchHandle_ != INVALID_HANDLE_VALUE && WaitForSingleObject(directoryWatchHandle_, 0) == WAIT_OBJECT_0)
 		{
-			D3D12Context* d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-			context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+			D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+			context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
 			needsRebuild_ = true;
 			FindNextChangeNotification(directoryWatchHandle_);
 		}
@@ -234,8 +233,8 @@ namespace SeedCore
 						std::filesystem::path savedPath = Prefab::SaveToDirectory(dropped, directory);
 						if (!savedPath.empty())
 						{
-							D3D12Context* d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-							context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+							D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+							context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
 							needsRebuild_ = true;
 
 							std::string relative = std::filesystem::relative(savedPath, context_.worldContext_.resource_->ProjectRootPath()).string();
@@ -815,23 +814,25 @@ namespace SeedCore
 
 			TextureResource* textureResource = context_.worldContext_.resource_->GetResource<TextureResource>(AssetType::Texture);
 			Handle<Texture> handle = textureResource->GetHandle(asset.assetID_);
-			Texture* texture = textureResource->Resolve(*context_.worldContext_.loader_, context_.graphicsContext_.graphics_->GetBindlessHeap(), handle, context_.uiFrame_);
+			Texture* texture = textureResource->Resolve(*context_.worldContext_.loader_, &context_.graphicsContext_.graphics_->GetBindlessHeap(), handle, context_.uiFrame_);
 			if (texture && texture->Resource())
 			{
 				texture->Pin();
 
-				/// [EN] Shader-visible heaps are CPU write-only, so they cannot be a
-				///      CopyDescriptorsSimple source. Create the SRV directly into the
-				///      ImGui heap from the texture resource instead (null desc =
-				///      default view covering the whole resource).
-				/// [JP] shader-visible ヒープは CPU 書き込み専用のため CopyDescriptorsSimple の
-				///      コピー元にできない。代わりにテクスチャリソースから ImGui ヒープへ
-				///      SRV を直接作成する（desc null = リソース全体のデフォルトビュー）。
-				DescriptorHeap* descHeap = context_.graphicsContext_.imgui_->GetDescriptorHeap();
-				Uint descIndex = descHeap->AllocateIndex();
-				D3D12_CPU_DESCRIPTOR_HANDLE dest = descHeap->CPUHandle(descIndex);
-				context_.graphicsContext_.graphics_->GetContext()->GetDevice()->CreateShaderResourceView(texture->Resource(), nullptr, dest);
-				ImTextureID textureID = static_cast<ImTextureID>(descHeap->GPUHandle(descIndex).ptr);
+				/// [EN] The thumbnail gets an SRV slot of its own rather than the
+				///      texture's bindless index, because streaming swaps that index
+				///      whenever it changes mips and the cached ImTextureID must stay
+				///      valid (null desc = default view covering the whole resource).
+				/// [JP] サムネイルは、テクスチャ自身のバインドレスインデックスではなく
+				///      専用の SRV スロットを持つ。ストリーミングはミップを切り替える
+				///      たびにそのインデックスを差し替えるが、キャッシュした ImTextureID は
+				///      有効なままでなければならないため（desc null = リソース全体の
+				///      デフォルトビュー）。
+				BindlessHeap* bindlessHeap = &context_.graphicsContext_.graphics_->GetBindlessHeap();
+				Uint descIndex = bindlessHeap->AllocateIndex();
+				D3D12_CPU_DESCRIPTOR_HANDLE dest = bindlessHeap->CPUHandle(descIndex);
+				context_.graphicsContext_.graphics_->GetContext().GetDevice()->CreateShaderResourceView(texture->Resource(), nullptr, dest);
+				ImTextureID textureID = static_cast<ImTextureID>(bindlessHeap->GPUHandle(descIndex).ptr);
 				thumbnailCache_.insert({ asset.assetID_, textureID });
 				return textureID;
 			}
@@ -963,7 +964,7 @@ namespace SeedCore
 		{
 			TextureResource* textureResource = context_.worldContext_.resource_->GetResource<TextureResource>(AssetType::Texture);
 			Handle<Texture> handle = textureResource->GetHandle(asset.assetID_);
-			Texture* texture = textureResource->Resolve(*context_.worldContext_.loader_, context_.graphicsContext_.graphics_->GetBindlessHeap(), handle, context_.uiFrame_);
+			Texture* texture = textureResource->Resolve(*context_.worldContext_.loader_, &context_.graphicsContext_.graphics_->GetBindlessHeap(), handle, context_.uiFrame_);
 			if (texture && texture->Resource())
 			{
 				D3D12_RESOURCE_DESC desc = texture->Resource()->GetDesc();
@@ -1265,9 +1266,9 @@ namespace SeedCore
 
 	void ContentsDrawerPanel::GenerateMeshCollision(const AssetRecord& asset, MeshCollisionDetail detail)
 	{
-		D3D12Context* d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
 
-		Bool baked = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateCollision(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, detail);
+		Bool baked = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateCollision(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, detail);
 		if (!baked)
 		{
 			SC_LOG_WARNING("ContentsDrawerPanel: コリジョン生成に失敗しました: {}", asset.path_.c_str());
@@ -1276,7 +1277,7 @@ namespace SeedCore
 
 		/// [EN] Rescan so the just-written ".collision" sibling is picked up as its own asset, and rebuild the tree so it shows in the panel.
 		/// [JP] 書き出した ".collision" 兄弟を個別アセットとして拾えるよう再スキャンし、パネルに出るようツリーを再構築する。
-		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
 		needsRebuild_ = true;
 
 		SC_LOG_NOTICE("ContentsDrawerPanel: コリジョンを生成しました: {}", asset.path_.c_str());
@@ -1284,9 +1285,9 @@ namespace SeedCore
 
 	void ContentsDrawerPanel::GenerateMaterial(const AssetRecord& asset)
 	{
-		D3D12Context* d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
 
-		Bool written = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateMaterial(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, true);
+		Bool written = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateMaterial(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, true);
 		if (!written)
 		{
 			SC_LOG_WARNING("ContentsDrawerPanel: マテリアル生成に失敗しました: {}", asset.path_.c_str());
@@ -1295,7 +1296,7 @@ namespace SeedCore
 
 		/// [EN] Rescan so the just-written ".material" siblings are picked up as their own assets, and rebuild the tree so they show in the panel.
 		/// [JP] 書き出した ".material" 兄弟を個別アセットとして拾えるよう再スキャンし、パネルに出るようツリーを再構築する。
-		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
 		needsRebuild_ = true;
 
 		SC_LOG_NOTICE("ContentsDrawerPanel: マテリアルを生成しました: {}", asset.path_.c_str());
@@ -1303,9 +1304,9 @@ namespace SeedCore
 
 	void ContentsDrawerPanel::GenerateSkeleton(const AssetRecord& asset)
 	{
-		D3D12Context* d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
 
-		Bool written = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateSkeleton(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, false);
+		Bool written = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateSkeleton(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, false);
 		if (!written)
 		{
 			SC_LOG_WARNING("ContentsDrawerPanel: スケルトン生成に失敗しました（スキン無し？）: {}", asset.path_.c_str());
@@ -1314,7 +1315,7 @@ namespace SeedCore
 
 		/// [EN] Rescan so the just-written ".skeleton" sibling is picked up as its own asset, and rebuild the tree so it shows in the panel.
 		/// [JP] 書き出した ".skeleton" 兄弟を個別アセットとして拾えるよう再スキャンし、パネルに出るようツリーを再構築する。
-		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
 		needsRebuild_ = true;
 
 		SC_LOG_NOTICE("ContentsDrawerPanel: スケルトンを生成しました: {}", asset.path_.c_str());
@@ -1337,16 +1338,16 @@ namespace SeedCore
 			return;
 		}
 
-		D3D12Context* d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
 
-		Bool exported = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->Export(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, preset, String(outputPath.string()));
+		Bool exported = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->Export(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, preset, String(outputPath.string()));
 		if (!exported)
 		{
 			SC_LOG_WARNING("ContentsDrawerPanel: モデルのエクスポートに失敗しました: {}", asset.path_.c_str());
 			return;
 		}
 
-		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
 		needsRebuild_ = true;
 
 		SC_LOG_NOTICE("ContentsDrawerPanel: モデルをエクスポートしました: {}", asset.path_.c_str());
@@ -1556,8 +1557,8 @@ namespace SeedCore
 			sanitized.insert(sanitized.begin(), '_');
 		}
 
-		/// [EN] UserProject.vcxproj lives at UserProject/ and its Include paths are relative to that directory, but parentRelative (like every other DirectoryNode path in this panel) is relative to the repository root. Scripts only make sense under UserProject (the only project SeedScript-derived types can be part of), so anything outside it falls back to UserProject/Script instead of failing outright.
-		/// [JP] UserProject.vcxproj は UserProject/ にあり、その Include パスは同ディレクトリからの相対パスになる。一方 parentRelative は(このパネルの他のDirectoryNodeパスと同様)リポジトリルートからの相対パス。スクリプトは UserProject 配下でしか意味を持たない(SeedScript 派生型が所属できる唯一のプロジェクトのため)ので、その外側が指定された場合は失敗させずに UserProject/Script へフォールバックする。
+		/// [EN] UserProject.Cplusplus.vcxproj lives at UserProject/ and its Include paths are relative to that directory, but parentRelative (like every other DirectoryNode path in this panel) is relative to the repository root. Scripts only make sense under UserProject (the only project SeedScript-derived types can be part of), so anything outside it falls back to UserProject/Script instead of failing outright.
+		/// [JP] UserProject.Cplusplus.vcxproj は UserProject/ にあり、その Include パスは同ディレクトリからの相対パスになる。一方 parentRelative は(このパネルの他のDirectoryNodeパスと同様)リポジトリルートからの相対パス。スクリプトは UserProject 配下でしか意味を持たない(SeedScript 派生型が所属できる唯一のプロジェクトのため)ので、その外側が指定された場合は失敗させずに UserProject/Script へフォールバックする。
 		std::string projectRelativeDirectory;
 		if (parentRelative == "UserProject")
 		{
@@ -1645,9 +1646,9 @@ namespace SeedCore
 	{
 		std::filesystem::path projectRoot = context_.worldContext_.resource_->ProjectRootPath();
 
-		/// [EN] Tried first: if Visual Studio has Runtime.sln open, letting it add the files itself keeps Solution Explorer in sync immediately and never triggers the "project modified outside the editor" reload prompt (see VisualStudioAutomation's own doc comment). Falls through to editing UserProject.vcxproj directly — the only path available when Visual Studio isn't running this solution at all.
-		/// [JP] まずこちらを試す: Visual Studio が Runtime.sln を開いていれば、ファイルの追加自体をVSにやらせることで Solution Explorer が即座に同期され、「プロジェクトが外部で変更されました」という再読み込み確認も一切発生しない(詳細は VisualStudioAutomation 自身のドキュメントコメントを参照)。Visual Studio がこのソリューションを開いていない場合にのみ、UserProject.vcxproj を直接編集する経路へフォールバックする。
-		if (VisualStudioAutomation::TryAddFilesToProject(projectRoot / "Runtime" / "Runtime.sln", "UserProject", headerFullPath, cppFullPath))
+		/// [EN] Tried first: if Visual Studio has Runtime.sln open, letting it add the files itself keeps Solution Explorer in sync immediately and never triggers the "project modified outside the editor" reload prompt (see VisualStudioAutomation's own doc comment). Falls through to editing UserProject.Cplusplus.vcxproj directly — the only path available when Visual Studio isn't running this solution at all.
+		/// [JP] まずこちらを試す: Visual Studio が Runtime.sln を開いていれば、ファイルの追加自体をVSにやらせることで Solution Explorer が即座に同期され、「プロジェクトが外部で変更されました」という再読み込み確認も一切発生しない(詳細は VisualStudioAutomation 自身のドキュメントコメントを参照)。Visual Studio がこのソリューションを開いていない場合にのみ、UserProject.Cplusplus.vcxproj を直接編集する経路へフォールバックする。
+		if (VisualStudioAutomation::TryAddFilesToProject(projectRoot / "Runtime" / "Runtime.sln", "UserProject.Cplusplus", headerFullPath, cppFullPath))
 		{
 			return true;
 		}

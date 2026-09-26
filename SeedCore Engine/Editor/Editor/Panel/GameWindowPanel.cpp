@@ -1,4 +1,5 @@
 #include <Editor/Editor/Panel/GameWindowPanel.h>
+#include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <FoundationEngine/Input/InputSystem.h>
 
 namespace SeedCore
@@ -33,7 +34,7 @@ namespace SeedCore
 		}
 	}
 
-	GameWindowPanel::GameWindowPanel(CameraSystem& cameraSystem, ImGuiTexture& imguiTexture) : cameraSystem_(cameraSystem), imguiTexture_(imguiTexture)
+	GameWindowPanel::GameWindowPanel(CameraSystem& cameraSystem, ImGuiRenderer& imgui, ImGuiTexture& imguiTexture) : cameraSystem_(cameraSystem), imgui_(imgui), imguiTexture_(imguiTexture)
 	{
 		/// No Code
 	}
@@ -120,7 +121,7 @@ namespace SeedCore
 			return;
 		}
 
-		ImGuiID dockspaceID = ImGui::GetID("ScDockSpace");
+		ImGuiID dockspaceID = imgui_.DockSpaceID();
 		ImGui::SetNextWindowDockID(dockspaceID, ImGuiCond_FirstUseEver);
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));

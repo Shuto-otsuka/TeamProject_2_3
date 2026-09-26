@@ -13,7 +13,9 @@
 #include <GraphicsEngine/Font/FontManager.h>
 #include <GraphicsEngine/Graphics.h>
 #include <GraphicsEngine/Raytracing/RaytracingContext.h>
+#include <GraphicsEngine/System/CameraSystem.h>
 #include <GraphicsEngine/System/WeatherSystem.h>
+#include <GraphicsEngine/System/SplashSystem.h>
 #include <Runtime/Application/Window.h>
 
 namespace SeedCore
@@ -65,7 +67,11 @@ namespace SeedCore
 
 		RaytracingContext raytracing_;
 
+		CameraSystem cameraSystem_;
+
 		WeatherSystem weatherSystem_;
+
+		SplashSystem splashSystem_;
 	};
 
 	class JobScheduler : public JobWorkerInterface

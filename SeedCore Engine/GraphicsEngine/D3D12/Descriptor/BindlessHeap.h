@@ -55,6 +55,8 @@ namespace SeedCore
 
 		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE GPUHandle(Uint index)const;
 
+		[[nodiscard]] Uint Index(D3D12_CPU_DESCRIPTOR_HANDLE handle)const;
+
 		[[nodiscard]] ID3D12DescriptorHeap* Heap()const;
 
 	private:

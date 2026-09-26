@@ -25,7 +25,7 @@
     <ClCompile Include="Payload\Payload.generated.cpp">
       <Filter>Payload</Filter>
     </ClCompile>
-    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="DLLMain.cpp" />
     <ClCompile Include="Tutorial\ScTutorial.cpp">
       <Filter>Tutorial</Filter>
     </ClCompile>

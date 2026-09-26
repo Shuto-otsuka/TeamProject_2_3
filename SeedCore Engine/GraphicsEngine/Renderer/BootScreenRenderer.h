@@ -17,7 +17,7 @@ namespace SeedCore
 		BootScreenRenderer() = default;
 		~BootScreenRenderer() = default;
 
-		void Create(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap, DescriptorHeap* imguiHeap, Uint32 width, Uint32 height);
+		void Create(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height);
 
 		void Resize(Uint32 width, Uint32 height);
 
@@ -33,10 +33,7 @@ namespace SeedCore
 
 		[[nodiscard]] Float BarAspect()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE ImGuiGPUHandle()const;
-
-	private:
-		void RegisterImGuiShaderResourceView();
+		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE DisplayGPUHandle()const;
 
 	private:
 		BootScreen bootScreen_;
@@ -46,9 +43,6 @@ namespace SeedCore
 
 		ID3D12Device* device_ = nullptr;
 		BindlessHeap* bindlessHeap_ = nullptr;
-		DescriptorHeap* imguiHeap_ = nullptr;
-
-		Uint32 imguiShaderResourceViewIndex_ = 0;
 
 		Uint32 width_ = 0;
 		Uint32 height_ = 0;

@@ -10,7 +10,7 @@ namespace SeedCore
 	* [EN]
 	* Owns every loaded gameplay plugin (see PluginModule) found in the
 	* plugin directory - the directory the executable itself lives in,
-	* shared with SeedCore.dll and the third-party DLLs - and drives their
+	* shared with SeedCore.Cplusplus.dll and the third-party DLLs - and drives their
 	* lifecycle: load all on startup, unload all on shutdown, and once per
 	* frame reload any whose DLL was rebuilt (debounced on a
 	* stable-timestamp window, since MSBuild can touch a file's write time
@@ -23,12 +23,12 @@ namespace SeedCore
 	* Plugins are loaded from shadow copies with
 	* LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR so a plugin can carry its own
 	* sidecar DLLs; the application directory stays in the search set for
-	* SeedCore.dll.
+	* SeedCore.Cplusplus.dll.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* プラグインディレクトリ - 実行ファイル自身が置かれ、SeedCore.dll や
+	* プラグインディレクトリ - 実行ファイル自身が置かれ、SeedCore.Cplusplus.dll や
 	* サードパーティ DLL と共有されるディレクトリ - で見つかった、ロード済み
 	* の全ゲームプレイプラグイン（PluginModule 参照）を所有し、そのライフ
 	* サイクルを統括する: 起動時に全ロード、終了時に全アンロード、毎フレーム
@@ -42,7 +42,7 @@ namespace SeedCore
 	* にあるエンジン/サードパーティ DLL は、そのコードを実行せずに除外する。
 	* プラグインは LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR 付きでシャドウコピー
 	* からロードされるため、プラグインは自身の付随 DLL を持てる;
-	* SeedCore.dll のためにアプリケーションディレクトリは検索対象に残る。
+	* SeedCore.Cplusplus.dll のためにアプリケーションディレクトリは検索対象に残る。
 	*/
 	class SEEDCORE_API PluginHost :public NonTransferable
 	{
@@ -111,12 +111,12 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Returns the loaded plugin whose source DLL file name stem equals
-		* stem (e.g. "UserProject"), or nullptr if none is loaded.
+		* stem (e.g. "UserProject.Cplusplus"), or nullptr if none is loaded.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 元 DLL のファイル名 stem が stem（例: "UserProject"）に一致する
+		* 元 DLL のファイル名 stem が stem（例: "UserProject.Cplusplus"）に一致する
 		* ロード済みプラグインを返す。無ければ nullptr。
 		*/
 		[[nodiscard]] PluginModule* Find(const std::filesystem::path& stem)const;
