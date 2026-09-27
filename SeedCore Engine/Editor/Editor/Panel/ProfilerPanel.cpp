@@ -65,7 +65,7 @@ namespace SeedCore
 			ImGui::ProgressBar(cpuRatio, ImVec2(-1.0f, 0.0f), cpuOverlay);
 		}
 
-		IDXGIAdapter4* adapter = context_.graphicsContext_.graphics_->GetContext()->GetAdapter()->Get();
+		IDXGIAdapter4* adapter = context_.graphicsContext_.graphics_->GetContext().GetAdapter()->Get();
 		if (adapter)
 		{
 			DXGI_QUERY_VIDEO_MEMORY_INFO localInfo{};

@@ -39,7 +39,7 @@ namespace SeedCore
 		/// [EN] Position/Rotation/Scale values captured at drag-start, diffed against the current values at drag-end to build undo Commands.
 		/// [JP] ドラッグ開始時点で捕捉したPosition/Rotation/Scale値。ドラッグ終了時点の現在値と比較し、undo Commandを組み立てる。
 		DynamicArray<Vector3> dragStartPositions_;
-		DynamicArray<Vector3> dragStartRotations_;
+		DynamicArray<Quaternion> dragStartRotations_;
 		DynamicArray<Vector3> dragStartScales_;
 
 		/// [EN] The gizmo's own matrix at drag-start. With a single actor selected this equals that actor's world matrix; with multiple actors selected it's their unrotated average position (see Draw()). Move() computes each frame's pivot delta as dragStartPivotMatrix_.Invert() * (current gizmo matrix) and applies it to every dragged actor's dragStartWorldMatrices_ entry.

@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<ItemGroup>
+		<ProjectReference Include="..\SeedCore\SeedCore.Csharp.csproj" Private="false" />
+	</ItemGroup>
+</Project>

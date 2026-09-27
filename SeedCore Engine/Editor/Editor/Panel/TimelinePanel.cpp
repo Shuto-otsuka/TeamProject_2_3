@@ -341,7 +341,7 @@ namespace SeedCore
 
 		context_.timelinePreviewContext_.previewActive_ = false;
 
-		ImGui::DockBuilderDockWindow("タイムライン", context_.graphicsContext_.imgui_->GetDockSpaceID());
+		ImGui::DockBuilderDockWindow("タイムライン", context_.graphicsContext_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("タイムライン", &show_);

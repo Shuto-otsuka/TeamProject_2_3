@@ -18,7 +18,9 @@
 #include <GraphicsEngine/Camera/PreviewCamera.h>
 #include <GraphicsEngine/Camera/PreviewCameraController.h>
 #include <GraphicsEngine/System/CelestialSystem.h>
+#include <GraphicsEngine/System/CameraSystem.h>
 #include <GraphicsEngine/System/WeatherSystem.h>
+#include <GraphicsEngine/System/SplashSystem.h>
 #include <Editor/Editor/Window.h>
 #include <Editor/Editor/EditorContext.h>
 #include <Editor/Editor/Editor.h>
@@ -26,6 +28,7 @@
 #include <Editor/Editor/Build/HotReload.h>
 #include <FoundationEngine/Resource/Config/GameConfig.h>
 #include <FoundationEngine/Resource/Config/EditorConfig.h>
+#include <FoundationEngine/Bridge/CsharpHost.h>
 #include <FoundationEngine/Plugin/PluginHost.h>
 
 namespace SeedCore
@@ -44,6 +47,11 @@ namespace SeedCore
 
 	private:
 		Bool BootWindow(const Bootstrap& boot);
+		Bool BootPhysics();
+		Bool BootGraphics();
+		Bool BootAudio();
+		Bool BootFont();
+		Bool BootImGui();
 
 	private:
 		HWND hwnd_;
@@ -72,6 +80,8 @@ namespace SeedCore
 		ResourcePtr<ImGuiRenderer> imgui_;
 
 		ResourcePtr<LoaderSystem> loaderSystem_;
+
+		CsharpHost csharpHost_;
 
 		PluginHost pluginHost_;
 
@@ -104,7 +114,11 @@ namespace SeedCore
 		PreviewCameraController skeletonControllerCameraController_;
 		PreviewCameraController avatarCameraController_;
 
+		CameraSystem cameraSystem_;
+
 		WeatherSystem weatherSystem_;
+
+		SplashSystem splashSystem_;
 	};
 
 	class JobScheduler : public JobWorkerInterface

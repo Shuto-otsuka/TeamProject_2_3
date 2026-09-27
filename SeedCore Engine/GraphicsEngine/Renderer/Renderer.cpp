@@ -369,8 +369,6 @@ namespace SeedCore
 		outlineRenderer_->DrawDebugOverlay(cmdList, debugRenderTargetView, debugViewport, bindlessHeap_->Heap(), addresses);
 
 		postProcessRenderer_->EndDebugOverlay(cmdList, RaytracingView::Editor);
-
-		RefreshImGui(RaytracingView::Editor);
 	}
 
 	void Renderer::BeginGameFrame(D3D12CommandList* cmdList)
@@ -459,8 +457,6 @@ namespace SeedCore
 		hudComposeRenderer_->Draw(cmdList, gameDisplayRenderTargetView, gameDisplayViewport, spriteHeap, addresses);
 
 		postProcessRenderer_->EndDebugOverlay(cmdList, RaytracingView::Game);
-
-		RefreshImGui(RaytracingView::Game);
 	}
 
 	void Renderer::BeginCanvasFrame(D3D12CommandList* cmdList)
@@ -543,7 +539,7 @@ namespace SeedCore
 			const Rotation* rotation = actor.GetComponent<Rotation>();
 
 			Vector3 actorPosition = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
-			Quaternion actorRotation = rotation ? Quaternion::CreateFromYawPitchRoll(ToRadians(rotation->y_), ToRadians(rotation->x_), ToRadians(rotation->z_)) : Quaternion::Identity;
+			Quaternion actorRotation = rotation ? rotation->Quat() : Quaternion::Identity;
 
 			colliderRenderer_->AddInstance(ColliderShapeKind::Box, actorPosition + Vector3::Transform(collider->center_, actorRotation), actorRotation, collider->size_ * 0.5f, colliderDebugColor);
 		}
@@ -561,7 +557,7 @@ namespace SeedCore
 			const Rotation* rotation = actor.GetComponent<Rotation>();
 
 			Vector3 actorPosition = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
-			Quaternion actorRotation = rotation ? Quaternion::CreateFromYawPitchRoll(ToRadians(rotation->y_), ToRadians(rotation->x_), ToRadians(rotation->z_)) : Quaternion::Identity;
+			Quaternion actorRotation = rotation ? rotation->Quat() : Quaternion::Identity;
 
 			colliderRenderer_->AddInstance(ColliderShapeKind::Sphere, actorPosition, actorRotation, Vector3(collider->radius_, 0.0f, 0.0f), colliderDebugColor);
 		}
@@ -579,7 +575,7 @@ namespace SeedCore
 			const Rotation* rotation = actor.GetComponent<Rotation>();
 
 			Vector3 actorPosition = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
-			Quaternion actorRotation = rotation ? Quaternion::CreateFromYawPitchRoll(ToRadians(rotation->y_), ToRadians(rotation->x_), ToRadians(rotation->z_)) : Quaternion::Identity;
+			Quaternion actorRotation = rotation ? rotation->Quat() : Quaternion::Identity;
 
 			colliderRenderer_->AddInstance(ColliderShapeKind::Capsule, actorPosition, actorRotation, Vector3(collider->radius_, collider->height_ * 0.5f, 0.0f), colliderDebugColor);
 		}
@@ -597,7 +593,7 @@ namespace SeedCore
 			const Rotation* rotation = actor.GetComponent<Rotation>();
 
 			Vector3 actorPosition = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
-			Quaternion actorRotation = rotation ? Quaternion::CreateFromYawPitchRoll(ToRadians(rotation->y_), ToRadians(rotation->x_), ToRadians(rotation->z_)) : Quaternion::Identity;
+			Quaternion actorRotation = rotation ? rotation->Quat() : Quaternion::Identity;
 
 			colliderRenderer_->AddInstance(ColliderShapeKind::Cylinder, actorPosition, actorRotation, Vector3(collider->radius_, collider->height_ * 0.5f, 0.0f), colliderDebugColor);
 		}
@@ -616,7 +612,7 @@ namespace SeedCore
 
 			Float pixelX = position ? position->x_ : 0.0f;
 			Float pixelY = position ? position->y_ : 0.0f;
-			Float angle = rotation ? ToRadians(rotation->x_) : 0.0f;
+			Float angle = rotation ? rotation->Euler().x : 0.0f;
 			Float cosAngle = std::cos(angle);
 			Float sinAngle = std::sin(angle);
 
@@ -638,7 +634,7 @@ namespace SeedCore
 
 			Float pixelX = position ? position->x_ : 0.0f;
 			Float pixelY = position ? position->y_ : 0.0f;
-			Float angle = rotation ? ToRadians(rotation->x_) : 0.0f;
+			Float angle = rotation ? rotation->Euler().x : 0.0f;
 			Float cosAngle = std::cos(angle);
 			Float sinAngle = std::sin(angle);
 
@@ -1061,10 +1057,6 @@ namespace SeedCore
 		lightSystem_->DispatchCluster(cmdList, heap, addresses);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::LightCluster);
 
-		/// [JP] TLAS 自体はビュー非依存（同じ 3D シーン）なので PrepareFrame で
-		///      毎フレーム 1 回だけ構築済み。ここでは Game カメラの G-Buffer と
-		///      クラスタライトリストに対してシャドウレイのディスパッチだけ行う
-		///      （Editor 側と同じくクラスタの後）。
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::RaytraceShadow);
 		raytracingRenderer_->DispatchShadow(cmdList, heap, addresses, RaytracingView::Game);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::RaytraceShadow);
@@ -1208,141 +1200,48 @@ namespace SeedCore
 		return canvasFrameBuffer_.get();
 	}
 
-	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::EditorFrameBufferGPUHandle()const
-	{
-		return bindlessHeap_->GPUHandle(editorFrameBuffer_->ColorShaderResourceViewIndex());
-	}
-
-	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::GameFrameBufferGPUHandle()const
-	{
-		return bindlessHeap_->GPUHandle(gameFrameBuffer_->ColorShaderResourceViewIndex());
-	}
-
 	ID3D12Resource* Renderer::GameDisplayResource()const
 	{
 		return postProcessRenderer_->OutputResource(RaytracingView::Game);
 	}
 
-	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::CanvasFrameBufferGPUHandle()const
+	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::EditorDisplayGPUHandle()const
+	{
+		return bindlessHeap_->GPUHandle(postProcessRenderer_->OutputShaderResourceViewIndex(RaytracingView::Editor));
+	}
+
+	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::GameDisplayGPUHandle()const
+	{
+		return bindlessHeap_->GPUHandle(postProcessRenderer_->OutputShaderResourceViewIndex(RaytracingView::Game));
+	}
+
+	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::CanvasDisplayGPUHandle()const
 	{
 		return bindlessHeap_->GPUHandle(canvasFrameBuffer_->ColorShaderResourceViewIndex());
 	}
 
-	void Renderer::RegisterImGuiShaderResourceViews(ID3D12Device* device, DescriptorHeap* imguiHeap)
+	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::TimelineDisplayGPUHandle()const
 	{
-		/// [EN] Called again on every resize (see Graphics::Resize).
-		///      DescriptorHeap is a bump allocator with no FreeIndex, so
-		///      re-allocating a fresh index here every time would leak 3
-		///      slots per resize until the heap is exhausted and
-		///      AllocateIndex starts handing back garbage. Instead, reuse
-		///      the same index across every call after the first (matching
-		///      RefreshImGui's existing pattern) and only
-		///      overwrite the descriptor at that slot.
-		/// [JP] リサイズのたびに再度呼ばれる(Graphics::Resize参照)。
-		///      DescriptorHeap は FreeIndex を持たない増加専用アロケータなので、
-		///      毎回新しい Index を確保すると1リサイズにつき3枠ずつ漏れ続け、
-		///      いずれ枯渇して AllocateIndex がおかしな値を返すようになる。
-		///      代わりに初回以降は同じ Index を使い回し(RefreshImGui
-		///      が既にやってるのと同じパターン)、そのスロットのディスクリプタ
-		///      だけ上書きする。
-		Bool alreadyRegistered = imguiHeap_ != nullptr;
-		imguiHeap_ = imguiHeap;
-
-		auto createShaderResourceView = [&](ID3D12Resource* resource, Uint32& index) -> Uint32
-		{
-			if (!alreadyRegistered)
-			{
-				index = imguiHeap->AllocateIndex();
-			}
-
-			D3D12_RESOURCE_DESC desc = resource->GetDesc();
-
-			D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDescription{};
-			shaderResourceViewDescription.Format = desc.Format;
-			shaderResourceViewDescription.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-			shaderResourceViewDescription.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			shaderResourceViewDescription.Texture2D.MipLevels = 1;
-
-			device->CreateShaderResourceView(resource, &shaderResourceViewDescription, imguiHeap->CPUHandle(index));
-			return index;
-		};
-
-		/// [EN] Editor/Game show PostProcessRenderer's tone-mapped, sRGB-encoded
-		///      UNORM output, not the raw linear HDR FrameBuffer - see
-		///      PostProcessRenderer's class doc comment and ToneMappingCS.hlsl
-		///      for why the raw buffer was never correct to display directly.
-		///      Canvas (pure 2D UI, no lighting) is untouched.
-		/// [JP] Editor/Game は PostProcessRenderer のトーンマップ済み・sRGB
-		///      エンコード済み UNORM 出力を表示する — 生のリニア HDR
-		///      FrameBuffer ではない(そのまま表示するのが元々正しくなかった
-		///      理由は PostProcessRenderer のクラスコメントと
-		///      ToneMappingCS.hlsl 参照)。Canvas(純粋な2D UI、ライティング
-		///      無し)は変更しない。
-		createShaderResourceView(postProcessRenderer_->OutputResource(RaytracingView::Editor), editorImGuiShaderResourceViewIndex_);
-		createShaderResourceView(postProcessRenderer_->OutputResource(RaytracingView::Game), gameImGuiShaderResourceViewIndex_);
-		createShaderResourceView(canvasFrameBuffer_->ColorResource(), canvasImGuiShaderResourceViewIndex_);
-
-		timelineRenderer_->RegisterImGuiShaderResourceView(device, imguiHeap);
-		modelTransformRenderer_->RegisterImGuiShaderResourceView(device, imguiHeap);
-		materialRenderer_->RegisterImGuiShaderResourceView(device, imguiHeap);
-		skeletonControllerRenderer_->RegisterImGuiShaderResourceView(device, imguiHeap);
-		avatarRenderer_->RegisterImGuiShaderResourceView(device, imguiHeap);
+		return timelineRenderer_->DisplayGPUHandle();
 	}
 
-	void Renderer::RefreshImGui(RaytracingView view)
+	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::ModelTransformDisplayGPUHandle()const
 	{
-		if (!imguiHeap_)
-		{
-			return;
-		}
-
-		D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDescription{};
-		shaderResourceViewDescription.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		shaderResourceViewDescription.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		shaderResourceViewDescription.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		shaderResourceViewDescription.Texture2D.MipLevels = 1;
-
-		Uint32 index = view == RaytracingView::Editor ? editorImGuiShaderResourceViewIndex_ : gameImGuiShaderResourceViewIndex_;
-		device_->CreateShaderResourceView(postProcessRenderer_->OutputResource(view), &shaderResourceViewDescription, imguiHeap_->CPUHandle(index));
+		return modelTransformRenderer_->DisplayGPUHandle();
 	}
 
-	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::EditorImGuiGPUHandle()const
+	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::MaterialDisplayGPUHandle()const
 	{
-		return imguiHeap_->GPUHandle(editorImGuiShaderResourceViewIndex_);
+		return materialRenderer_->DisplayGPUHandle();
 	}
 
-	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::GameImGuiGPUHandle()const
+	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::SkeletonControllerDisplayGPUHandle()const
 	{
-		return imguiHeap_->GPUHandle(gameImGuiShaderResourceViewIndex_);
+		return skeletonControllerRenderer_->DisplayGPUHandle();
 	}
 
-	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::CanvasImGuiGPUHandle()const
+	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::AvatarDisplayGPUHandle()const
 	{
-		return imguiHeap_->GPUHandle(canvasImGuiShaderResourceViewIndex_);
-	}
-
-	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::TimelineImGuiGPUHandle()const
-	{
-		return timelineRenderer_->ImGuiGPUHandle();
-	}
-
-	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::ModelTransformImGuiGPUHandle()const
-	{
-		return modelTransformRenderer_->ImGuiGPUHandle();
-	}
-
-	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::MaterialImGuiGPUHandle()const
-	{
-		return materialRenderer_->ImGuiGPUHandle();
-	}
-
-	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::SkeletonControllerImGuiGPUHandle()const
-	{
-		return skeletonControllerRenderer_->ImGuiGPUHandle();
-	}
-
-	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::AvatarImGuiGPUHandle()const
-	{
-		return avatarRenderer_->ImGuiGPUHandle();
+		return avatarRenderer_->DisplayGPUHandle();
 	}
 }

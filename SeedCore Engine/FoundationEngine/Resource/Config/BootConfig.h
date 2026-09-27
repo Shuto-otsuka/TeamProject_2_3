@@ -1,6 +1,5 @@
 #pragma once
 #include <FoundationEngine/Prelude.h>
-#include <FoundationEngine/Math/Vector.h>
 
 namespace SeedCore
 {

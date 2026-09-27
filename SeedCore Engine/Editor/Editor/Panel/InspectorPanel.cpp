@@ -1,5 +1,6 @@
 #include <Editor/Editor/Panel/InspectorPanel.h>
 #include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <Editor/Editor/Panel/AnimatorControllerPanel.h>
 #include <Editor/Editor/Panel/TimelinePanel.h>
@@ -12,6 +13,7 @@
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/Component.h>
 #include <FoundationEngine/World/ECS/Component/Name.h>
+#include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
 #include <FoundationEngine/World/ECS/Component/UnknownComponent.h>
 #include <FoundationEngine/World/Command/ComponentCommand.h>
@@ -47,7 +49,7 @@ namespace SeedCore
 
 	void InspectorPanel::Draw()
 	{
-		ImGuiID dockspaceID = ImGui::GetID("ScDockSpace");
+		ImGuiID dockspaceID = context_.graphicsContext_.imgui_->DockSpaceID();
 		ImGui::SetNextWindowDockID(dockspaceID, ImGuiCond_FirstUseEver);
 
 		if (ImGui::Begin("インスペクター"))
@@ -379,14 +381,6 @@ namespace SeedCore
 		ImGui::SetNextItemWidth(-1.0f);
 		if (ImGui::BeginCombo("##Layer", layerNames[currentLayer].c_str()))
 		{
-			/// [EN] The combo's popup is its own ImGui window - refresh the
-			///      edit buffers from LayerRegistry only on the frame it
-			///      opens, not every frame, so an in-progress edit isn't
-			///      overwritten by its own unsubmitted keystrokes.
-			/// [JP] コンボのポップアップはそれ自体が1つのImGuiウィンドウ -
-			///      毎フレームではなく開いたフレームだけ編集バッファを
-			///      LayerRegistry から再読込する。そうしないと入力中の文字が
-			///      自分自身の未確定な入力で上書きされてしまう。
 			if (ImGui::IsWindowAppearing())
 			{
 				for (Size index = 0; index < LayerRegistry::LayerCount; ++index)
@@ -507,32 +501,9 @@ namespace SeedCore
 	*/
 	Bool InspectorPanel::DrawComponentEntry(Actor actor, ComponentID componentID, const String& componentName, void* componentData)
 	{
-		/// [EN] CollapsingHeader always draws its own label starting at the
-		///      left edge and ignores a preceding SameLine(), so an icon
-		///      placed before it (like Unity's "▽ [icon] Name" row) would
-		///      land on its own line instead of inline. Use the same
-		///      TreeNodeEx + AllowOverlap technique HierarchyPanel already
-		///      uses for Actor rows instead: an empty-label header (arrow
-		///      only) reserves the row, then the icon/text are drawn
-		///      overlapping it via SameLine().
-		/// [JP] CollapsingHeader は常に自前のラベルを左端から描画し、直前の
-		///      SameLine() を無視するため、その前にアイコンを置いても
-		///      （Unity の「▽ [icon] Name」行のように）別行になってしまう。
-		///      HierarchyPanel が Actor 行で既に使っている
-		///      TreeNodeEx + AllowOverlap の手法に合わせる: 空ラベルの
-		///      ヘッダー（矢印のみ）で行を確保し、アイコン/テキストは
-		///      SameLine() でその上に重ねて描画する。
 		ImGui::PushID(componentData);
 		Bool isHeaderOpen = ImGui::TreeNodeEx("##header", ImGuiTreeNodeFlags_CollapsingHeader | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_DefaultOpen);
 
-		/// [EN] Bind the right-click menu to the header item itself (the
-		///      "last item" BeginPopupContextItem defaults to) before
-		///      drawing the icon/text overlay, so the overlay doesn't
-		///      become the new "last item" instead.
-		/// [JP] 右クリックメニューは、アイコン/テキストの重ね描画を行う前に
-		///      ヘッダー自身（BeginPopupContextItem が既定で使う「直前の
-		///      アイテム」）へ結び付ける。そうしないと重ね描画の方が
-		///      新しい「直前のアイテム」になってしまう。
 		Bool removed = false;
 		if (ImGui::BeginPopupContextItem())
 		{
@@ -545,22 +516,6 @@ namespace SeedCore
 			ImGui::EndPopup();
 		}
 
-		/// [EN] ImGui::Image() top-aligns to the cursor, but the header row
-		///      is taller than the icon (frame padding above/below), so a
-		///      plain SameLine()+Image()+Text() sits the icon above center
-		///      relative to the text. Measure the header's own item rect
-		///      and place both the icon and the text into it by hand via
-		///      the draw list (same technique DrawSearchBar already uses
-		///      for its search icon) so both land on the row's true
-		///      vertical center regardless of frame padding.
-		/// [JP] ImGui::Image() はカーソル位置に対してトップ揃えで描画されるが、
-		///      ヘッダー行自体はアイコンより背が高い（上下にフレーム
-		///      パディングがある）ため、単純な SameLine()+Image()+Text()
-		///      だとアイコンがテキストより上寄りになる。ヘッダー自身の
-		///      アイテム矩形を測り、アイコンとテキストの両方を DrawList で
-		///      直接その中へ配置する（DrawSearchBar が検索アイコンで既に
-		///      使っている手法と同じ）ことで、フレームパディングに関係なく
-		///      両方とも行の真の垂直中央に来るようにする。
 		ImVec2 headerMin = ImGui::GetItemRectMin();
 		Float headerHeight = ImGui::GetItemRectSize().y;
 		Float iconSize = ImGui::GetTextLineHeight();
@@ -669,23 +624,8 @@ namespace SeedCore
 
 		if (hasTransform)
 		{
-			/// [EN] Same TreeNodeEx + AllowOverlap overlay technique as
-			///      DrawComponentEntry - see its comment for why a plain
-			///      Image()+SameLine() before CollapsingHeader doesn't work.
-			/// [JP] DrawComponentEntry と同じ TreeNodeEx + AllowOverlap の
-			///      重ね描画手法 — CollapsingHeader の前に単純な
-			///      Image()+SameLine() を置いても効かない理由はそちらの
-			///      コメント参照。
 			Bool transformHeaderOpen = ImGui::TreeNodeEx("##transformHeader", ImGuiTreeNodeFlags_CollapsingHeader | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_DefaultOpen);
 
-			/// [EN] See DrawComponentEntry's comment: Image() top-aligns to
-			///      the cursor while the header row is taller (frame
-			///      padding), so icon+text are placed by hand into the
-			///      header's own measured rect instead of via SameLine().
-			/// [JP] DrawComponentEntry のコメント参照: Image() はカーソル
-			///      位置にトップ揃えされる一方ヘッダー行はそれより背が
-			///      高い（フレームパディング）ため、アイコン/テキストは
-			///      SameLine() ではなくヘッダー自身の実測矩形へ手動で配置する。
 			ImVec2 transformHeaderMin = ImGui::GetItemRectMin();
 			Float transformHeaderHeight = ImGui::GetItemRectSize().y;
 			Float transformIconSize = ImGui::GetTextLineHeight();
@@ -699,16 +639,16 @@ namespace SeedCore
 			if (transformHeaderOpen)
 			{
 				Float* positionData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, positionID));
-				Float* rotationData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, rotationID));
+				Rotation* rotation = static_cast<Rotation*>(context_.worldContext_.world_->GetComponent(entity, rotationID));
 				Float* scaleData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, scaleID));
 
 				if (positionData)
 				{
 					DrawTransform(positionData, "位置", positionLinked_, previousPosition_, entity, positionID);
 				}
-				if (rotationData)
+				if (rotation)
 				{
-					DrawTransform(rotationData, "回転", rotationLinked_, previousRotation_, entity, rotationID);
+					DrawTransform(rotation, "回転", rotationLinked_, previousRotation_, entity, rotationID);
 				}
 				if (scaleData)
 				{
@@ -759,24 +699,6 @@ namespace SeedCore
 			}
 		}
 
-		/// [EN] World::GetLayout only returns the entity's ARCHETYPE component
-		///      list (World.cpp: "it->second.archetype_->Layout()") - components
-		///      registered with ComponentStorage::SparseSet live outside the
-		///      archetype by design (that is the whole point of sparse-set
-		///      storage: attaching/detaching one never migrates the entity to a
-		///      different archetype), so the loop above never sees them. Walk
-		///      every registered component type instead and ask the entity
-		///      directly whether it has each sparse one.
-		/// [JP] World::GetLayout はエンティティの【アーキタイプ】のコンポーネント
-		///      一覧しか返さない(World.cpp: "it->second.archetype_->Layout()")。
-		///      ComponentStorage::SparseSet で登録されたコンポーネントは設計上
-		///      アーキタイプの外に置かれる(付け外ししてもエンティティが別
-		///      アーキタイプへ移行しない、というのがスパースセットの存在理由)
-		///      ので、上のループには一切現れない。代わりに登録済みの全
-		///      コンポーネント型を走査し、スパースなものだけエンティティに
-		///      直接尋ねる。
-		/// [EN] The holder of unknown components is not drawn as a component of its own; each component it holds gets its own header at the end instead.
-		/// [JP] 型の分からないコンポーネントの保持役は、それ自体を1つのコンポーネントとしては描かない。代わりに、保持している各コンポーネントへ末尾でそれぞれヘッダーを与える。
 		ComponentID unknownID = ComponentRegistry::GetComponentID<UnknownComponent>();
 		for (const auto& [componentID, metadata] : ComponentRegistry::Registry())
 		{
@@ -815,13 +737,6 @@ namespace SeedCore
 				continue;
 			}
 
-			/// [EN] Same TreeNodeEx + AllowOverlap overlay technique as
-			///      DrawComponentEntry - see its comment for why a plain
-			///      Image()+SameLine() before CollapsingHeader doesn't work.
-			/// [JP] DrawComponentEntry と同じ TreeNodeEx + AllowOverlap の
-			///      重ね描画手法 — CollapsingHeader の前に単純な
-			///      Image()+SameLine() を置いても効かない理由はそちらの
-			///      コメント参照。
 			ImGui::PushID(componentData);
 			Bool isHeaderOpen = ImGui::TreeNodeEx("##header", ImGuiTreeNodeFlags_CollapsingHeader | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_AllowOverlap | ImGuiTreeNodeFlags_DefaultOpen);
 
@@ -837,14 +752,6 @@ namespace SeedCore
 				ImGui::EndPopup();
 			}
 
-			/// [EN] See DrawComponentEntry's comment: Image() top-aligns to
-			///      the cursor while the header row is taller (frame
-			///      padding), so icon+text are placed by hand into the
-			///      header's own measured rect instead of via SameLine().
-			/// [JP] DrawComponentEntry のコメント参照: Image() はカーソル
-			///      位置にトップ揃えされる一方ヘッダー行はそれより背が
-			///      高い（フレームパディング）ため、アイコン/テキストは
-			///      SameLine() ではなくヘッダー自身の実測矩形へ手動で配置する。
 			ImVec2 componentBaseHeaderMin = ImGui::GetItemRectMin();
 			Float componentBaseHeaderHeight = ImGui::GetItemRectSize().y;
 			Float componentBaseIconSize = ImGui::GetTextLineHeight();
@@ -1008,8 +915,26 @@ namespace SeedCore
 		ImGui::PopID();
 	}
 
-	void InspectorPanel::DrawTransform(Float* data, const Char* label, Bool& linked, Float* previousValues, Entity entity, ComponentID componentID)
+	void InspectorPanel::DrawTransform(void* componentData, const Char* label, Bool& linked, Float* previousValues, Entity entity, ComponentID componentID)
 	{
+		static const String rotationString("Rotation");
+		Bool isRotation = componentID == ComponentRegistry::GetComponentID(rotationString);
+		Rotation* rotation = isRotation ? static_cast<Rotation*>(componentData) : nullptr;
+		if (isRotation)
+		{
+			Quaternion quaternion = rotation->Quat();
+			if (!hasPendingRotation_ || entity.GetID() != pendingRotationEntity_ || quaternion != pendingRotationQuaternion_)
+			{
+				pendingRotationDegrees_ = rotation->Degree();
+				pendingRotationEntity_ = entity.GetID();
+				pendingRotationQuaternion_ = quaternion;
+				hasPendingRotation_ = true;
+			}
+		}
+
+		Vector3 degree = isRotation ? pendingRotationDegrees_ : Vector3::Zero;
+		Float* data = isRotation ? &degree.x : static_cast<Float*>(componentData);
+
 		std::string checkboxID = std::string("##Link_") + label;
 
 		ImGui::Checkbox(checkboxID.c_str(), &linked);
@@ -1020,14 +945,25 @@ namespace SeedCore
 
 		ImGui::SameLine();
 		ImGui::SetNextItemWidth(300.0f);
-		ImGui::DragFloat3(label, data, 0.1f);
+		Bool edited = ImGui::DragFloat3(label, data, 0.1f);
 
 		if (ImGui::IsItemActivated())
 		{
-			pendingOldVector3_ = Vector3(data[0], data[1], data[2]);
+			if (isRotation)
+			{
+				pendingOldQuaternion_ = rotation->Quat();
+			}
+			else
+			{
+				pendingOldVector3_ = Vector3(data[0], data[1], data[2]);
+			}
+
+			previousValues[0] = data[0];
+			previousValues[1] = data[1];
+			previousValues[2] = data[2];
 		}
 
-		if (linked)
+		if (edited && linked)
 		{
 			for (Int axis = 0; axis < 3; ++axis)
 			{
@@ -1042,12 +978,44 @@ namespace SeedCore
 			}
 		}
 
+		if (isRotation && edited)
+		{
+			Vector3 deltaDegree = degree - Vector3(previousValues[0], previousValues[1], previousValues[2]);
+			Matrix rotationMatrix = Matrix::CreateFromQuaternion(rotation->Quat());
+			rotationMatrix *= Matrix::CreateFromYawPitchRoll(ToRadians(deltaDegree.y), ToRadians(deltaDegree.x), ToRadians(deltaDegree.z));
+
+			Vector3 discardedScale;
+			Vector3 discardedPosition;
+			Quaternion quaternion;
+			if (rotationMatrix.Decompose(discardedScale, quaternion, discardedPosition))
+			{
+				rotation->x_ = quaternion.x;
+				rotation->y_ = quaternion.y;
+				rotation->z_ = quaternion.z;
+				rotation->w_ = quaternion.w;
+			}
+
+			pendingRotationDegrees_ = degree;
+			pendingRotationQuaternion_ = rotation->Quat();
+		}
+
 		if (ImGui::IsItemDeactivatedAfterEdit())
 		{
-			Vector3 newValue(data[0], data[1], data[2]);
-			if (newValue != pendingOldVector3_)
+			if (isRotation)
 			{
-				context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Vector3>>(*context_.worldContext_.world_, entity, componentID, 0, pendingOldVector3_, newValue));
+				Quaternion newQuaternion = rotation->Quat();
+				if (newQuaternion != pendingOldQuaternion_)
+				{
+					context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Quaternion>>(*context_.worldContext_.world_, entity, componentID, 0, pendingOldQuaternion_, newQuaternion));
+				}
+			}
+			else
+			{
+				Vector3 newValue(data[0], data[1], data[2]);
+				if (newValue != pendingOldVector3_)
+				{
+					context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Vector3>>(*context_.worldContext_.world_, entity, componentID, 0, pendingOldVector3_, newValue));
+				}
 			}
 		}
 
@@ -1073,9 +1041,6 @@ namespace SeedCore
 			{
 				Size skipCount = field.array_.size_;
 
-				/// [EN] A single embedded struct (not an array of structs):
-				///      recurse and draw its own fields as a collapsible child
-				///      group.
 				if (skipCount == 0 && !field.array_.add_)
 				{
 					void* nestedData = field.directPtr_ ? field.directPtr_ : (static_cast<Uint8*>(baseData) + field.offset_);
@@ -1100,23 +1065,6 @@ namespace SeedCore
 					{
 						std::ranges::stable_sort(nestedFields, [](const FieldInfo& a, const FieldInfo& b) { return a.offset_ < b.offset_; });
 
-						/// [EN] Honour SC_REFLECTION_FIELD_CONDITION here too.
-						///      This branch returns via continue before ever
-						///      reaching the scalar path's enableIf_ check
-						///      below, so without this a condition on a nested
-						///      struct field silently did nothing - the group
-						///      stayed fully editable no matter what it was
-						///      conditioned on. Disabling the whole subtree
-						///      rather than hiding it matches how scalar
-						///      fields behave when their condition is false.
-						/// [JP] SC_REFLECTION_FIELD_CONDITION をここでも見る。
-						///      この分岐は下のスカラー側の enableIf_ 判定へ
-						///      到達する前に continue で抜けるため、これが
-						///      無いとネストされた構造体フィールドに付けた
-						///      条件が黙って無視され、何を条件にしていても
-						///      グループが編集可能なままだった。非表示に
-						///      せず部分木ごと無効化するのは、条件が偽の
-						///      ときのスカラーフィールドの挙動に合わせるため。
 						Bool nestedEnabled = !field.enableIf_ || field.enableIf_(baseData);
 						ImGui::BeginDisabled(!nestedEnabled);
 
@@ -1141,16 +1089,6 @@ namespace SeedCore
 					continue;
 				}
 
-				/// [EN] An array of structs: header row (name, count, "+")
-				///      followed by one collapsible sub-tree per element,
-				///      each merging that struct type's own reflection and
-				///      payload fields the same way a top-level component
-				///      does, then recursing through DrawFieldList again.
-				/// [JP] 構造体の配列: ヘッダ行(名前・個数・「+」)の後に、
-				///      要素ごとに折りたたみ可能なサブツリーを1つずつ描く。
-				///      各要素はトップレベルのコンポーネントと同じ要領で
-				///      その構造体型自身の reflection/payload フィールドを
-				///      まとめ、再度 DrawFieldList を通して描画する。
 				ImGui::PushID(field.name_.c_str());
 
 				ImGui::AlignTextToFramePadding();
@@ -1262,11 +1200,6 @@ namespace SeedCore
 
 				if (isPayloadArray)
 				{
-					/// [EN] Flat layout, no collapse arrow: label -> fixed append
-					///      drop zone -> "<name>一覧:" -> list of what's already
-					///      assigned.
-					/// [JP] 折りたたみ無しのフラットなレイアウト: ラベル→固定の
-					///      追加用ドロップ枠→「<name>一覧:」→登録済み一覧。
 					ImGui::TextUnformatted(field.name_.c_str());
 
 					DynamicArray<Int> existingValues;
@@ -1384,19 +1317,6 @@ namespace SeedCore
 							}
 						}
 
-						/// [EN] A plain (non-payload) array's "-" removal has no undo
-						///      support: unlike payload arrays, ArrayInfo exposes no
-						///      lastPtr_ equivalent for these elements, so there is
-						///      no way to recover the removed value on Undo (add_'s
-						///      counterpart ArrayAppendCommand is safe precisely
-						///      because add_/remove_ are exact inverses with nothing
-						///      to lose).
-						/// [JP] プレーン(Payloadでない)配列の「-」削除にはUndo対応が
-						///      無い: Payload配列と異なり、ArrayInfoはこれらの要素
-						///      向けのlastPtr_相当を持たないため、Undo時に削除された
-						///      値を復元する手段が無い(add_側のArrayAppendCommandが
-						///      安全なのは、add_/remove_が失うデータの無い完全な逆
-						///      操作だからである)。
 						if (removeIndex != SIZE_MAX && field.array_.remove_)
 						{
 							field.array_.remove_(removeIndex);
@@ -1682,15 +1602,6 @@ namespace SeedCore
 		}
 	}
 
-	/// [EN] Maps a component's registered name to its Inspector header icon
-	///      (Unity-style). Falls back to IconType::ComponentCustom for
-	///      anything not explicitly listed — covers UserProject scripts and
-	///      any built-in component without a dedicated icon.
-	/// [JP] コンポーネントの登録名を Inspector ヘッダー用アイコン（Unity 風）
-	///      へ対応付ける。明示的に列挙されていないものは
-	///      IconType::ComponentCustom にフォールバックする — UserProject の
-	///      スクリプトや、専用アイコンを持たない組み込みコンポーネントを
-	///      カバーする。
 	ImTextureID InspectorPanel::GetComponentIcon(const String& componentName)const
 	{
 		return imguiTexture_.Icon(ImGuiTexture::ComponentIconType(componentName));

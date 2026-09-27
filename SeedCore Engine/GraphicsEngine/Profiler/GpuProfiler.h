@@ -86,7 +86,7 @@ namespace SeedCore
 	* 読むことになる。読み出しは最も古い領域を対象にし、そこは frameCount-1
 	* フレーム前=確実に完了済み。
 	*
-	* SEEDCORE_API が必要なのは、Editor が SeedCore.dll 越しにこのクラスを直接
+	* SEEDCORE_API が必要なのは、Editor が SeedCore.Cplusplus.dll 越しにこのクラスを直接
 	* 呼ぶため(ProfilerPanel)。Renderer に付いていないのは Editor が Renderer を
 	* 直接触らないから — 付ける基準は「DLL の外から呼ぶかどうか」。
 	*/

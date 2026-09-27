@@ -130,12 +130,12 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Returns the loaded plugin whose source DLL file name stem equals
-	* stem (e.g. "UserProject"), or nullptr if none is loaded.
+	* stem (e.g. "UserProject.Cplusplus"), or nullptr if none is loaded.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 元 DLL のファイル名 stem が stem（例: "UserProject"）に一致する
+	* 元 DLL のファイル名 stem が stem（例: "UserProject.Cplusplus"）に一致する
 	* ロード済みプラグインを返す。無ければ nullptr。
 	*/
 	PluginModule* PluginHost::Find(const std::filesystem::path& stem)const
@@ -200,8 +200,8 @@ namespace SeedCore
 			return std::ranges::all_of(digits, [](wchar_t character){ return character >= L'0' && character <= L'9'; });
 		};
 
-		/// [EN] A gameplay plugin, not engine / third-party code sharing the directory. Already-loaded modules (e.g. SeedCore.dll) are rejected at once; the rest are probed with DONT_RESOLVE_DLL_REFERENCES so no DllMain runs and no dependencies load.
-		/// [JP] ディレクトリを共有しているだけのエンジン/サードパーティコードではなく、ゲームプレイプラグインかどうか。既にロード済みのモジュール（例: SeedCore.dll）は即除外し、残りは DONT_RESOLVE_DLL_REFERENCES でプローブするため DllMain は走らず依存もロードされない。
+		/// [EN] A gameplay plugin, not engine / third-party code sharing the directory. Already-loaded modules (e.g. SeedCore.Cplusplus.dll) are rejected at once; the rest are probed with DONT_RESOLVE_DLL_REFERENCES so no DllMain runs and no dependencies load.
+		/// [JP] ディレクトリを共有しているだけのエンジン/サードパーティコードではなく、ゲームプレイプラグインかどうか。既にロード済みのモジュール（例: SeedCore.Cplusplus.dll）は即除外し、残りは DONT_RESOLVE_DLL_REFERENCES でプローブするため DllMain は走らず依存もロードされない。
 		auto isPluginCandidate = [](const std::filesystem::path& path) -> Bool
 		{
 			if (GetModuleHandleW(path.filename().c_str()))

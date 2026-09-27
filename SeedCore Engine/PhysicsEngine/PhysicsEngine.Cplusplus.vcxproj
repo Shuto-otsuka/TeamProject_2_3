@@ -19,7 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FoundationEngine\FoundationEngine.vcxproj">
+    <ProjectReference Include="..\FoundationEngine\FoundationEngine.Cplusplus.vcxproj">
       <Project>{30996a34-7fa2-4977-89d9-fbd1f2b64a18}</Project>
     </ProjectReference>
   </ItemGroup>
@@ -134,11 +134,11 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\Cplusplus\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\Cplusplus\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">

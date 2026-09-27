@@ -1,5 +1,6 @@
 #include <Editor/Editor/Panel/EditorWindowPanel.h>
 #include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <Editor/Editor/ViewportPicking.h>
 #include <GraphicsEngine/Camera/EditorCamera.h>
@@ -263,7 +264,7 @@ namespace SeedCore
 
 	void EditorWindowPanel::Draw(D3D12_GPU_DESCRIPTOR_HANDLE frameBufferHandle)
 	{
-		ImGuiID dockspaceID = ImGui::GetID("ScDockSpace");
+		ImGuiID dockspaceID = context_.graphicsContext_.imgui_->DockSpaceID();
 		ImGui::SetNextWindowDockID(dockspaceID, ImGuiCond_FirstUseEver);
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));

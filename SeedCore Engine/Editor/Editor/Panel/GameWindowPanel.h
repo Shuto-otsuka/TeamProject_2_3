@@ -5,10 +5,12 @@
 
 namespace SeedCore
 {
+	class ImGuiRenderer;
+
 	class GameWindowPanel
 	{
 	public:
-		GameWindowPanel(CameraSystem& cameraSystem, ImGuiTexture& imguiTexture);
+		GameWindowPanel(CameraSystem& cameraSystem, ImGuiRenderer& imgui, ImGuiTexture& imguiTexture);
 		~GameWindowPanel() = default;
 
 		void Draw(D3D12_GPU_DESCRIPTOR_HANDLE frameBufferHandle, Float toolbarHeight);
@@ -19,6 +21,7 @@ namespace SeedCore
 
 	private:
 		CameraSystem& cameraSystem_;
+		ImGuiRenderer& imgui_;
 		ImGuiTexture& imguiTexture_;
 		Bool fullscreen_ = false;
 		Bool imageHovered_ = false;

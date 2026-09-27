@@ -397,7 +397,7 @@ namespace SeedCore
 		const Rotation* rotation = actor.GetComponent<Rotation>();
 		if (rotation)
 		{
-			node.rotation_ = Vector3(rotation->x_, rotation->y_, rotation->z_);
+			node.rotation_ = rotation->Degree();
 		}
 
 		const Scale* scale = actor.GetComponent<Scale>();
@@ -611,9 +611,11 @@ namespace SeedCore
 		Rotation* rotation = const_cast<Rotation*>(actor.GetComponent<Rotation>());
 		if (rotation)
 		{
-			rotation->x_ = node.rotation_.x;
-			rotation->y_ = node.rotation_.y;
-			rotation->z_ = node.rotation_.z;
+			Quaternion quaternion = Quaternion::CreateFromYawPitchRoll(ToRadians(node.rotation_.y), ToRadians(node.rotation_.x), ToRadians(node.rotation_.z));
+			rotation->x_ = quaternion.x;
+			rotation->y_ = quaternion.y;
+			rotation->z_ = quaternion.z;
+			rotation->w_ = quaternion.w;
 		}
 
 		Scale* scale = const_cast<Scale*>(actor.GetComponent<Scale>());
@@ -722,9 +724,11 @@ namespace SeedCore
 		Rotation* rotation = const_cast<Rotation*>(actor.GetComponent<Rotation>());
 		if (rotation)
 		{
-			rotation->x_ = node.rotation_.x;
-			rotation->y_ = node.rotation_.y;
-			rotation->z_ = node.rotation_.z;
+			Quaternion quaternion = Quaternion::CreateFromYawPitchRoll(ToRadians(node.rotation_.y), ToRadians(node.rotation_.x), ToRadians(node.rotation_.z));
+			rotation->x_ = quaternion.x;
+			rotation->y_ = quaternion.y;
+			rotation->z_ = quaternion.z;
+			rotation->w_ = quaternion.w;
 		}
 
 		Scale* scale = const_cast<Scale*>(actor.GetComponent<Scale>());

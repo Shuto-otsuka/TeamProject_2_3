@@ -49,7 +49,7 @@ namespace SeedCore
 			return;
 		}
 
-		ImGui::DockBuilderDockWindow("スケルトンコントローラー", context_.graphicsContext_.imgui_->GetDockSpaceID());
+		ImGui::DockBuilderDockWindow("スケルトンコントローラー", context_.graphicsContext_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("スケルトンコントローラー", &show_);

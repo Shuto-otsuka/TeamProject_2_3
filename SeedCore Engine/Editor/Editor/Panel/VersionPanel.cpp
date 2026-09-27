@@ -1,7 +1,7 @@
 #include <Editor/Editor/Panel/VersionPanel.h>
 #include <Editor/Editor/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
-#include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
+#include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/Texture/TextureLoader.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Adapter.h>
@@ -19,13 +19,13 @@ namespace SeedCore
 
 		String logoPath = isDaytime ? String("../Runtime/Logo/Day.logo") : String("../Runtime/Logo/Night.logo");
 
-		D3D12Context* d3d12Context = context.graphicsContext_.graphics_->GetContext();
-		DescriptorHeap* descHeap = context.graphicsContext_.imgui_->GetDescriptorHeap();
-		IDXGIAdapter4* adapter = d3d12Context->GetAdapter()->Get();
+		D3D12Context& d3d12Context = context.graphicsContext_.graphics_->GetContext();
+		BindlessHeap* bindlessHeap = &context.graphicsContext_.graphics_->GetBindlessHeap();
+		IDXGIAdapter4* adapter = d3d12Context.GetAdapter()->Get();
 
-		Uint index = descHeap->AllocateIndex();
-		TextureLoader::CreateTexturePath(d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), descHeap->Get(), logoPath, logoResource_, index);
-		logoTextureId_ = static_cast<ImTextureID>(descHeap->GPUHandle(index).ptr);
+		Uint index = bindlessHeap->AllocateIndex();
+		TextureLoader::CreateTexturePath(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bindlessHeap->Heap(), logoPath, logoResource_, index);
+		logoTextureId_ = static_cast<ImTextureID>(bindlessHeap->GPUHandle(index).ptr);
 
 		if (logoResource_)
 		{

@@ -88,8 +88,8 @@ namespace SeedCore
 		DynamicArray<String> reflectionKeysBefore = CollectRegistryKeys(ReflectionRegistry::GetRegistry());
 		DynamicArray<String> payloadKeysBefore = CollectRegistryKeys(PayloadRegistry::GetRegistry());
 
-		/// [EN] LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR lets a plugin resolve its own sidecar DLLs from the plugin directory; LOAD_LIBRARY_SEARCH_DEFAULT_DIRS keeps the application directory (and any AddDllDirectory paths, e.g. the engine's) in the search set so SeedCore.dll still resolves.
-		/// [JP] LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR により、プラグインは自身の付随 DLL をプラグインディレクトリから解決できる; LOAD_LIBRARY_SEARCH_DEFAULT_DIRS はアプリケーションディレクトリ（および AddDllDirectory で追加したパス、例: エンジンの）を検索対象に残すため、SeedCore.dll も解決できる。
+		/// [EN] LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR lets a plugin resolve its own sidecar DLLs from the plugin directory; LOAD_LIBRARY_SEARCH_DEFAULT_DIRS keeps the application directory (and any AddDllDirectory paths, e.g. the engine's) in the search set so SeedCore.Cplusplus.dll still resolves.
+		/// [JP] LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR により、プラグインは自身の付随 DLL をプラグインディレクトリから解決できる; LOAD_LIBRARY_SEARCH_DEFAULT_DIRS はアプリケーションディレクトリ（および AddDllDirectory で追加したパス、例: エンジンの）を検索対象に残すため、SeedCore.Cplusplus.dll も解決できる。
 		HMODULE handle = LoadLibraryExW(shadowPath.c_str(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
 		if (!handle)
 		{

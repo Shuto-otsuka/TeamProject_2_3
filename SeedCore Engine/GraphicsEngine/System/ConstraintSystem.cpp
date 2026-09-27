@@ -99,11 +99,7 @@ namespace SeedCore
 
 		if (rotation)
 		{
-			local *= Matrix::CreateFromYawPitchRoll(
-				ToRadians(rotation->y_),
-				ToRadians(rotation->x_),
-				ToRadians(rotation->z_)
-			);
+			local *= Matrix::CreateFromQuaternion(rotation->Quat());
 		}
 
 		if (position)

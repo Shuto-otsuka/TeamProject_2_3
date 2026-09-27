@@ -6,13 +6,13 @@ namespace SeedCore
 	{
 		const DynamicArray<std::string> projectNames =
 		{
-			"FoundationEngine.vcxproj",
-			"AIEngine.vcxproj",
-			"PhysicsEngine.vcxproj",
-			"AudioEngine.vcxproj",
-			"GraphicsEngine.vcxproj",
-			"SeedCore.vcxproj",
-			"UserProject.vcxproj",
+			"FoundationEngine.Cplusplus.vcxproj",
+			"AIEngine.Cplusplus.vcxproj",
+			"PhysicsEngine.Cplusplus.vcxproj",
+			"AudioEngine.Cplusplus.vcxproj",
+			"GraphicsEngine.Cplusplus.vcxproj",
+			"SeedCore.Cplusplus.vcxproj",
+			"UserProject.Cplusplus.vcxproj",
 			"Runtime.vcxproj",
 		};
 	}
@@ -242,8 +242,8 @@ namespace SeedCore
 
 		std::filesystem::path runtimeProject = projectRoot / "Runtime" / "Runtime.vcxproj";
 
-		/// [EN] $(SolutionDir) is only auto-populated when building through Runtime.sln. This invokes Runtime.vcxproj directly, so without passing it explicitly, every referenced project (SeedCore.vcxproj, FoundationEngine.vcxproj, ...) evaluates $(SolutionDir) as blank and writes its own output under its own project folder instead of Runtime\Build\. That went unnoticed while the engine was statically linked (the linker consumed those .lib files wherever they landed), but now that SeedCore.dll/UserProject.dll are runtime dependencies, RuntimePackager.py — which only copies .dll files it finds in Runtime\Build\...\Release — would silently ship a package missing them.
-		/// [JP] $(SolutionDir) は Runtime.sln 経由でビルドしたときだけ MSBuild が自動設定する。ここでは Runtime.vcxproj を直接呼んでいるため、明示的に渡さないと、参照される全プロジェクト(SeedCore.vcxproj、FoundationEngine.vcxproj、…)が $(SolutionDir) を空と評価し、Runtime\Build\ではなく自分自身のプロジェクトフォルダ配下に出力してしまう。エンジンが静的リンクだった頃は気づかれなかった(リンカがその.libをどこにあっても取り込めたため)が、今は SeedCore.dll/UserProject.dll が実行時の依存になっているため、Runtime\Build\...\Release にある.dllしかコピーしない RuntimePackager.py が、それらを含まないパッケージを黙って出荷してしまう。
+		/// [EN] $(SolutionDir) is only auto-populated when building through Runtime.sln. This invokes Runtime.vcxproj directly, so without passing it explicitly, every referenced project (SeedCore.Cplusplus.vcxproj, FoundationEngine.Cplusplus.vcxproj, ...) evaluates $(SolutionDir) as blank and writes its own output under its own project folder instead of Runtime\Build\. That went unnoticed while the engine was statically linked (the linker consumed those .lib files wherever they landed), but now that SeedCore.Cplusplus.dll/UserProject.Cplusplus.dll are runtime dependencies, RuntimePackager.py — which only copies .dll files it finds in Runtime\Build\...\Release\Cplusplus — would silently ship a package missing them.
+		/// [JP] $(SolutionDir) は Runtime.sln 経由でビルドしたときだけ MSBuild が自動設定する。ここでは Runtime.vcxproj を直接呼んでいるため、明示的に渡さないと、参照される全プロジェクト(SeedCore.Cplusplus.vcxproj、FoundationEngine.Cplusplus.vcxproj、…)が $(SolutionDir) を空と評価し、Runtime\Build\ではなく自分自身のプロジェクトフォルダ配下に出力してしまう。エンジンが静的リンクだった頃は気づかれなかった(リンカがその.libをどこにあっても取り込めたため)が、今は SeedCore.Cplusplus.dll/UserProject.Cplusplus.dll が実行時の依存になっているため、Runtime\Build\...\Release\Cplusplus にある.dllしかコピーしない RuntimePackager.py が、それらを含まないパッケージを黙って出荷してしまう。
 		/// [EN] Appending "Runtime\\" as a single path component (rather than "Runtime" alone) guarantees the resulting path string ends in a backslash, matching $(SolutionDir)'s own convention. The trailing backslash is then doubled below since, immediately before a closing quote on a Windows command line, a lone backslash escapes that quote instead of closing the path.
 		/// [JP] "Runtime" 単体ではなく "Runtime\\" を1つのパス要素として付加することで、結果の文字列が確実に末尾にバックスラッシュを持つようにしている($(SolutionDir) 自身の慣習に合わせるため)。この末尾のバックスラッシュは、Windowsのコマンドライン上で閉じ引用符の直前に単独である場合その引用符をエスケープしてしまうため、下でさらに2つに増やす。
 		std::wstring solutionDirArgument = (projectRoot / L"Runtime\\").wstring();

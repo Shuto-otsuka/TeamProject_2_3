@@ -1,5 +1,5 @@
 """
-UserProject.vcxproj / UserProject.vcxproj.filters へ、新規作成したスクリプトの
+UserProject.Cplusplus.vcxproj / UserProject.Cplusplus.vcxproj.filters へ、新規作成したスクリプトの
 .h/.cpp を登録する。Editor の「新規作成 > C++ スクリプト」機能から、ファイルを
 実際に書き出した直後に呼び出される想定。
 
@@ -76,11 +76,11 @@ def main():
     header_relative = sys.argv[2]
     cpp_relative = sys.argv[3]
 
-    vcxproj_path = os.path.join(project_root, 'UserProject', 'UserProject.vcxproj')
+    vcxproj_path = os.path.join(project_root, 'UserProject', 'UserProject.Cplusplus.vcxproj')
     filters_path = vcxproj_path + '.filters'
 
     if not os.path.exists(vcxproj_path):
-        print(f'UserProject.vcxproj が見つかりません: {vcxproj_path}')
+        print(f'UserProject.Cplusplus.vcxproj が見つかりません: {vcxproj_path}')
         return 1
 
     ET.register_namespace('', NS)

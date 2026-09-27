@@ -29,7 +29,7 @@ namespace SeedCore
 		inspectorPanel_ = MakePtr<InspectorPanel>(context_, imguiTexture_);
 		diagnosticsPanel_ = MakePtr<DiagnosticsPanel>(context_, imguiTexture_);
 		editorWindowPanel_ = MakePtr<EditorWindowPanel>(context_, imguiTexture_);
-		gameWindowPanel_ = MakePtr<GameWindowPanel>(*context_.cameraContext_.cameraSystem_, imguiTexture_);
+		gameWindowPanel_ = MakePtr<GameWindowPanel>(*context_.cameraContext_.cameraSystem_, *context_.graphicsContext_.imgui_, imguiTexture_);
 		canvasViewPanel_ = MakePtr<CanvasViewPanel>(context_, imguiTexture_);
 		contentsDrawerPanel_ = MakePtr<ContentsDrawerPanel>(context_, imguiTexture_);
 		controlPanel_ = MakePtr<ControlPanel>(context_, imguiTexture_);
@@ -97,14 +97,14 @@ namespace SeedCore
 		/// [JP] これは Editor のスレッドでフレームの合間に動く。レンダラが使っているものを入れ替えてよいのはそこだけ。
 		/// [EN] A file an artist dropped into the library arrives without an identity, so it is taken in and then shared from here.
 		/// [JP] アーティストがライブラリへ置いたファイルは識別情報を持たずに届くため、ここで取り込んでから共有へ回す。
-		D3D12Context* d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
 		DynamicArray<String> importedAssets;
 		resourceSync_.ConsumeImportedAsset(importedAssets);
 		for (const String& imported : importedAssets)
 		{
 			/// [EN] Reloading is what mints the .meta beside it, which is what gives the file the identifier the team will know it by.
 			/// [JP] 読み直しが隣に .meta を作る。それが、チームがそのファイルを識別する番号を与える処理にあたる。
-			context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+			context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
 
 			std::filesystem::path local = context_.worldContext_.resource_->ProjectRootPath() / "UserProject" / imported.str();
 			Uint32 importedId = context_.worldContext_.resource_->GetAssetID(String(local.generic_string()));
@@ -145,11 +145,11 @@ namespace SeedCore
 
 			/// [EN] An asset arriving for the first time is not in the cache yet, so the whole project is taken in before anything is swapped.
 			/// [JP] 初めて届いたアセットはまだキャッシュに無いため、入れ替えの前にプロジェクト全体を取り込む。
-			context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+			context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
 
 			for (Uint32 assetId : changedAssets)
 			{
-				context_.worldContext_.resource_->Reload(assetId, *context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+				context_.worldContext_.resource_->Reload(assetId, *context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
 
 				/// [EN] Reloading the scene asset is not enough, because what the member is looking at is the world, not the file.
 				/// [JP] Scene アセットを読み直すだけでは足りない。メンバーが見ているのはファイルではなく world であるため。

@@ -1,5 +1,6 @@
 #include <Editor/Editor/Panel/HierarchyPanel.h>
 #include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
@@ -29,7 +30,7 @@ namespace SeedCore
 
 	void HierarchyPanel::Draw()
 	{
-		ImGuiID dockspaceID = ImGui::GetID("ScDockSpace");
+		ImGuiID dockspaceID = context_.graphicsContext_.imgui_->DockSpaceID();
 		ImGui::SetNextWindowDockID(dockspaceID, ImGuiCond_FirstUseEver);
 
 		if (ImGui::Begin("ヒエラルキー"))
@@ -515,8 +516,8 @@ namespace SeedCore
 			return;
 		}
 
-		D3D12Context* d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context->GetDevice(), d3d12Context->GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
 
 		/// [EN] Rebind this Actor's Apply target to the newly-saved file, so a later
 		///      "Prefab に適用" writes to this new Prefab instead of any Prefab it

@@ -571,7 +571,7 @@ namespace SeedCore
 		/// [JP] 全ての actor に共通するベースラインのコンポーネント一式を付与する: 表示名、単位トランスフォーム、ゼロ速度、デフォルトでアクティブ、そして小さいデフォルトサイズの境界ボックス。
 		AddComponent(entity, Name{ name });
 		AddComponent(entity, Position{ 0.0f,0.0f,0.0f });
-		AddComponent(entity, Rotation{ 0.0f,0.0f,0.0f });
+		AddComponent(entity, Rotation{ 0.0f,0.0f,0.0f,1.0f });
 		AddComponent(entity, Scale{ 1.0f,1.0f,1.0f });
 		AddComponent(entity, Velocity{ 0.0f,0.0f,0.0f });
 		AddComponent(entity, Active{ true });

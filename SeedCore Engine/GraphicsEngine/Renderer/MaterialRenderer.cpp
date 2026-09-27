@@ -410,29 +410,8 @@ namespace SeedCore
 		frameBuffer_->End(cmdList);
 	}
 
-	void MaterialRenderer::RegisterImGuiShaderResourceView(ID3D12Device* device, DescriptorHeap* imguiHeap)
+	D3D12_GPU_DESCRIPTOR_HANDLE MaterialRenderer::DisplayGPUHandle()const
 	{
-		Bool alreadyRegistered = imguiHeap_ != nullptr;
-		imguiHeap_ = imguiHeap;
-
-		if (!alreadyRegistered)
-		{
-			imguiShaderResourceViewIndex_ = imguiHeap->AllocateIndex();
-		}
-
-		D3D12_RESOURCE_DESC desc = frameBuffer_->ColorResource()->GetDesc();
-
-		D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDescription{};
-		shaderResourceViewDescription.Format = desc.Format;
-		shaderResourceViewDescription.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		shaderResourceViewDescription.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		shaderResourceViewDescription.Texture2D.MipLevels = 1;
-
-		device->CreateShaderResourceView(frameBuffer_->ColorResource(), &shaderResourceViewDescription, imguiHeap->CPUHandle(imguiShaderResourceViewIndex_));
-	}
-
-	D3D12_GPU_DESCRIPTOR_HANDLE MaterialRenderer::ImGuiGPUHandle()const
-	{
-		return imguiHeap_->GPUHandle(imguiShaderResourceViewIndex_);
+		return bindlessHeap_->GPUHandle(frameBuffer_->ColorShaderResourceViewIndex());
 	}
 }

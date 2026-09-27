@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Bridge\CsharpHost.cpp" />
     <ClCompile Include="Coroutine\Coroutine.cpp" />
     <ClCompile Include="Coroutine\CoroutineSystem.cpp" />
     <ClCompile Include="File\FileDialog.cpp">
@@ -31,6 +32,7 @@
     </ClCompile>
     <ClCompile Include="Input\InputSystem.cpp">
     </ClCompile>
+    <ClCompile Include="Interop\ImGuiInstance.cpp" />
     <ClCompile Include="JobSystem\FlowBuilder.cpp">
     </ClCompile>
     <ClCompile Include="JobSystem\JobExecutor.cpp">
@@ -100,6 +102,8 @@
     <ClCompile Include="World\Tag\TagRegistry.cpp" />
     <ClCompile Include="World\World.cpp" />
     <ClCompile Include="World\WorldSnapshot.cpp" />
+    <ClInclude Include="Bridge\CsharpHost.h" />
+    <ClInclude Include="Bridge\CsharpNativeApi.h" />
     <ClInclude Include="Coroutine\Coroutine.h" />
     <ClInclude Include="Coroutine\CoroutineSystem.h" />
     <ClInclude Include="File\FileDialog.h" />
@@ -107,6 +111,7 @@
     <ClInclude Include="Input\Input.h" />
     <ClInclude Include="Input\InputSystem.h" />
     <ClInclude Include="Interop\ColliderInstance.h" />
+    <ClInclude Include="Interop\ImGuiInstance.h" />
     <ClInclude Include="Log\AftermathCrashTracker.h" />
     <ClInclude Include="Log\Error.h" />
     <ClInclude Include="Log\LogSystem.h" />
@@ -360,11 +365,11 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\Cplusplus\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\</OutDir>
+    <OutDir>$(SolutionDir)Build\$(Platform)\$(Configuration)\Cplusplus\</OutDir>
     <IntDir>$(SolutionDir)Intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">

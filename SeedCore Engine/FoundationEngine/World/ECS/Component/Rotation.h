@@ -6,57 +6,80 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* Component holding an entity's local-space rotation, in Euler angles.
+	* Component holding an entity's local-space rotation as a normalized
+	* quaternion. Euler angles are derived only at human-facing boundaries.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* エンティティのローカル空間回転（オイラー角）を保持するコンポーネント。
+	* エンティティのローカル空間回転を正規化済みクォータニオンとして保持する
+	* コンポーネント。オイラー角は人が扱う境界でのみ導出する。
 	*/
 	struct Rotation
 	{
-		/// [EN] Rotation about the X axis.
-		/// [JP] X 軸周りの回転。
+		/// [EN] Quaternion X component.
+		/// [JP] クォータニオンの X 成分。
 		SC_SERIALIZE_FIELD()
 		Float x_;
 
-		/// [EN] Rotation about the Y axis.
-		/// [JP] Y 軸周りの回転。
+		/// [EN] Quaternion Y component.
+		/// [JP] クォータニオンの Y 成分。
 		SC_SERIALIZE_FIELD()
 		Float y_;
 
-		/// [EN] Rotation about the Z axis.
-		/// [JP] Z 軸周りの回転。
+		/// [EN] Quaternion Z component.
+		/// [JP] クォータニオンの Z 成分。
 		SC_SERIALIZE_FIELD()
 		Float z_;
 
-		/**
-        * [EN]
-        * Returns the rotation as a Vector3.
-        *
-        * ---------------------------------------------------------------------
-        *
-        * [JP]
-        * 回転を Vector3 として取得する。
-        */
-		[[nodiscard]] Vector3 Vector()const noexcept
-		{
-			return Vector3(x_, y_, z_);
-		}
+		/// [EN] Quaternion scalar component; one for the identity rotation.
+		/// [JP] クォータニオンのスカラー成分。恒等回転では 1 となる。
+		SC_SERIALIZE_FIELD()
+		Float w_;
 
 		/**
 		* [EN]
-		* Returns the rotation as a Quaternion.
+		* Returns the quaternion stored by this component.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 回転を Quaternion として取得する。
+		* このコンポーネントが保持するクォータニオンを返す。
 		*/
 		[[nodiscard]] Quaternion Quat()const noexcept
 		{
-			return Quaternion::CreateFromYawPitchRoll(ToRadians(y_), ToRadians(x_), ToRadians(z_));
+			return Quaternion(x_, y_, z_, w_);
 		}
+
+		/**
+		* [EN]
+		* Returns the stored rotation as Euler angles in radians.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 保持する回転をラジアン単位のオイラー角として返す。
+		*/
+		[[nodiscard]] Vector3 Euler()const noexcept
+		{
+			return Quat().ToEuler();
+		}
+
+		/**
+		* [EN]
+		* Returns the stored rotation as Euler angles in degrees for editor and asset UI.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* エディターおよびアセット UI 用に、保持する回転を度数のオイラー角として返す。
+		*/
+		[[nodiscard]] Vector3 Degree()const noexcept
+		{
+			Vector3 euler = Euler();
+			return Vector3(ToDegrees(euler.x), ToDegrees(euler.y), ToDegrees(euler.z));
+		}
+
 	};
 	REGISTER_COMPONENT(Rotation, "Core", ComponentStorage::Archetype);
 }

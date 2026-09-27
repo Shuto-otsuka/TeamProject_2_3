@@ -479,38 +479,8 @@ namespace SeedCore
 		frameBuffer_->End(cmdList);
 	}
 
-	void ModelTransformRenderer::RegisterImGuiShaderResourceView(ID3D12Device* device, DescriptorHeap* imguiHeap)
+	D3D12_GPU_DESCRIPTOR_HANDLE ModelTransformRenderer::DisplayGPUHandle()const
 	{
-		/// [EN] Called again on every resize - DescriptorHeap is a bump
-		///      allocator with no FreeIndex, so only allocate once and
-		///      reuse the same slot on every later call (see
-		///      Renderer::RegisterImGuiShaderResourceViews for the same
-		///      pattern/rationale).
-		/// [JP] リサイズのたびに再度呼ばれる - DescriptorHeap は FreeIndex を
-		///      持たない増加専用アロケータなので、最初の1回だけ確保し、以降は
-		///      同じスロットを使い回す(同じパターン/理由は
-		///      Renderer::RegisterImGuiShaderResourceViews 参照)。
-		Bool alreadyRegistered = imguiHeap_ != nullptr;
-		imguiHeap_ = imguiHeap;
-
-		if (!alreadyRegistered)
-		{
-			imguiShaderResourceViewIndex_ = imguiHeap->AllocateIndex();
-		}
-
-		D3D12_RESOURCE_DESC desc = frameBuffer_->ColorResource()->GetDesc();
-
-		D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDescription{};
-		shaderResourceViewDescription.Format = desc.Format;
-		shaderResourceViewDescription.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		shaderResourceViewDescription.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		shaderResourceViewDescription.Texture2D.MipLevels = 1;
-
-		device->CreateShaderResourceView(frameBuffer_->ColorResource(), &shaderResourceViewDescription, imguiHeap->CPUHandle(imguiShaderResourceViewIndex_));
-	}
-
-	D3D12_GPU_DESCRIPTOR_HANDLE ModelTransformRenderer::ImGuiGPUHandle()const
-	{
-		return imguiHeap_->GPUHandle(imguiShaderResourceViewIndex_);
+		return bindlessHeap_->GPUHandle(frameBuffer_->ColorShaderResourceViewIndex());
 	}
 }

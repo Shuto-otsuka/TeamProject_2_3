@@ -106,6 +106,11 @@ namespace SeedCore
 		return heap_->GPUHandle(index);
 	}
 
+	Uint BindlessHeap::Index(D3D12_CPU_DESCRIPTOR_HANDLE handle)const
+	{
+		return static_cast<Uint>((handle.ptr - heap_->CPUHandle(0).ptr) / heap_->IncrementSize());
+	}
+
 	ID3D12DescriptorHeap* BindlessHeap::Heap()const
 	{
 		return heap_->Get();

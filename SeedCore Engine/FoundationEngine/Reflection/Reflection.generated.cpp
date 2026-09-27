@@ -301,6 +301,14 @@ namespace SeedCore
 						fi.editorVisible_ = false;
 						outInfo.push_back(std::move(fi));
 					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("w_");
+						fi.offset_ = offsetof(Rotation, w_);
+						fi.type_ = AttributeType::Float;
+						fi.editorVisible_ = false;
+						outInfo.push_back(std::move(fi));
+					}
 				});
 			}
 		};
