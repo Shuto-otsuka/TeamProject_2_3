@@ -1,428 +1,443 @@
 #pragma once
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
-#include <GraphicsEngine/Raytracing/BottomLevelAccelerationStructure.h>
-#include <GraphicsEngine/Raytracing/TopLevelAccelerationStructure.h>
+#include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
+#include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
 #include <GraphicsEngine/D3D12/FrameRing.h>
-#include <GraphicsEngine/Renderer/ShadowRenderer.h>
+#include <GraphicsEngine/Model/Morph/MorphBlendShader.h>
+#include <GraphicsEngine/Model/Skin/SkinBlendShader.h>
+#include <GraphicsEngine/Raytracing/BottomLevelAccelerationStructure.h>
+#include <GraphicsEngine/Raytracing/RaytracingContext.h>
+#include <GraphicsEngine/Raytracing/RaytracingDispatch.h>
+#include <GraphicsEngine/Raytracing/TopLevelAccelerationStructure.h>
 #include <GraphicsEngine/Renderer/AmbientOcclusionRenderer.h>
-#include <GraphicsEngine/Renderer/SubsurfaceScatteringRenderer.h>
+#include <GraphicsEngine/Renderer/GlobalIlluminationRenderer.h>
 #include <GraphicsEngine/Renderer/ReflectionRenderer.h>
 #include <GraphicsEngine/Renderer/RefractionRenderer.h>
-#include <GraphicsEngine/Renderer/GlobalIlluminationRenderer.h>
+#include <GraphicsEngine/Renderer/ShadowRenderer.h>
+#include <GraphicsEngine/Renderer/SubsurfaceScatteringRenderer.h>
 #include <GraphicsEngine/Renderer/VolumetricCloudScapesRenderer.h>
-#include <GraphicsEngine/Renderer/VolumetricStarRenderer.h>
 #include <GraphicsEngine/Renderer/VolumetricLightRenderer.h>
+#include <GraphicsEngine/Renderer/VolumetricStarRenderer.h>
 #include <GraphicsEngine/Renderer/WeatherParticleRenderer.h>
 #include <GraphicsEngine/System/WeatherSystem.h>
-#include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
-#include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
-#include <GraphicsEngine/Raytracing/RaytracingContext.h>
-#include <GraphicsEngine/Model/Skin/SkinBlendShader.h>
-#include <GraphicsEngine/Model/Morph/MorphBlendShader.h>
 
 namespace SeedCore
 {
 	struct LoaderSystem;
-	class ModelResource;
-	class World;
-	class Crister;
-	class BindlessHeap;
-	class D3D12CommandList;
-	class ShaderCache;
-	class ConstantIndicesSystem;
-	class ShaderResourceIndicesSystem;
-	class UnorderedAccessIndicesSystem;
 	struct RootAddresses;
-	class RootSignature;
-	class PipelineStateObject;
-	class ModelRenderer;
+
+	class BindlessHeap;
+	class ConstantIndicesSystem;
+	class Crister;
+	class D3D12CommandList;
 	class FrameBuffer;
 	class GeometryBuffer;
+	class ModelRenderer;
+	class ModelResource;
+	class PipelineStateObject;
+	class RootSignature;
+	class ShaderCache;
+	class ShaderResourceIndicesSystem;
+	class UnorderedAccessIndicesSystem;
+	class World;
 
 	/**
 	* [EN]
-	* Owns the scene's raytracing acceleration structures, shared by every RT
-	* effect (shadow, AO, GI, reflection, ...): one BLAS per unique mesh asset
-	* (built once and cached — bind pose only, no per-frame skinning deformation
-	* yet since there is no animation system), and one TLAS rebuilt every frame
-	* from the current instance transforms.
+	* Owns the scene's raytracing acceleration structures and every ray-traced
+	* pass that consumes them, so Renderer talks to this one class for anything
+	* raytraced.
 	*
-	* Deliberately independent from ModelRenderer's Gather (which splits
-	* instances into meshlet/LOD dispatch batches for rasterization): this class
-	* only needs one (Crister*, world matrix) pair per actor, so it does its own
-	* minimal ECS traversal.
+	* Static meshes get one BLAS per unique Crister, built once and cached.
+	* Skinned and morphed actors get a BLAS per entity and frame-ring slot,
+	* rebuilt every frame from positions deformed on the GPU (MorphBlendCS,
+	* then SkinBlendCS). The TLAS is rebuilt every frame from the instances
+	* collected by Gather.
+	*
+	* Gather does its own minimal ECS traversal instead of reusing
+	* ModelRenderer's, because it only needs one (Crister, world matrix) pair
+	* per actor, not meshlet/LOD dispatch batches.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* シーンのレイトレーシング アクセラレーション構造を保持する。全 RT 機能
-	* （シャドウ、AO、GI、反射...）で共有する: メッシュアセットごとに BLAS を
-	* 1 つ（1 度構築してキャッシュ — アニメーションシステムがまだ無いため
-	* バインドポーズのみ、フレームごとのスキン変形は無し）、TLAS は現在の
-	* インスタンス変換から毎フレーム再構築する。
+	* シーンのレイトレーシング アクセラレーション構造と、それを使う全ての
+	* レイトレーシングのパスを保持する。Renderer はレイトレ関連について
+	* このクラス 1 つとだけやり取りする。
 	*
-	* ModelRenderer の Gather（ラスタライズ用にメシュレット/LOD ディスパッチ
-	* バッチへ分割する）とは意図的に独立させている: このクラスはアクターごとに
-	* (Crister*, ワールド行列) の組が 1 つあればよいため、独自の最小限の ECS
-	* 走査を行う。
+	* 静的メッシュはユニークな Crister ごとに BLAS を 1 つ持ち、1 度だけ
+	* 構築してキャッシュする。スキンやモーフのあるアクターは、エンティティと
+	* フレームリングスロットごとに BLAS を持ち、GPU で変形した位置
+	* (MorphBlendCS、続いて SkinBlendCS)から毎フレーム再構築する。TLAS は
+	* Gather が集めたインスタンスから毎フレーム再構築する。
 	*
-	* Also owns the individual RT-effect renderers that consume the TLAS
-	* (currently just ShadowRenderer; AO/GI/reflection would join here later),
-	* so Renderer only ever talks to this one class for anything raytraced.
-	* 併せて、TLAS を消費する個々の RT エフェクトのレンダラーも保持する
-	* （現状は ShadowRenderer のみ。将来 AO/GI/反射もここに加わる想定）。
-	* これにより Renderer はレイトレ関連について常にこのクラス 1 つとだけ話す。
+	* Gather は ModelRenderer の走査を使い回さず、独自の最小限の ECS 走査を
+	* 行う。必要なのはアクターごとの (Crister, ワールド行列) の組 1 つだけで、
+	* メシュレット/LOD のディスパッチバッチは要らないため。
 	*/
 	class RaytracingRenderer
 	{
 	public:
+		/**
+		* [EN]
+		* Creates every pass renderer, sharing the engine-wide root signature and
+		* pipeline-state / raytracing-state caches with them.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 全パスのレンダラーを生成し、エンジン共通のルートシグネチャと
+		* パイプラインステート/レイトレーシングステートのキャッシュを共有させる。
+		*/
 		RaytracingRenderer(RootSignature& rootSignature, PipelineStateObject& pipelineStateObject, RaytracingStateObject& raytracingStateObject);
 		~RaytracingRenderer() = default;
 
+		/**
+		* [EN]
+		* Reserves one TLAS bindless slot per frame-ring slot, creates every pass
+		* at width x height, and compiles the morph and skin blend shaders.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* フレームリングスロットごとに TLAS の bindless スロットを 1 つ確保し、
+		* 全パスを width x height で生成し、モーフとスキンのブレンドシェーダを
+		* コンパイルする。
+		*/
 		void Create(ID3D12Device* device, BindlessHeap* bindlessHeap, ShaderCache& shaderCache, ConstantIndicesSystem& constantIndicesSystem, ShaderResourceIndicesSystem& shaderResourceIndicesSystem, UnorderedAccessIndicesSystem& unorderedAccessIndicesSystem, Uint32 width, Uint32 height);
 
-		/// [EN] Resizes every screen-space RT-effect buffer (Shadow/AO/SSS/
-		///      Reflection/GI/VolumetricCloudScapes) to the new native
-		///      resolution. VolumetricLightRenderer is intentionally excluded —
-		///      its froxel volumes are a fixed 160x90x64 grid, independent of
-		///      screen resolution. The BLAS/TLAS caches and tlasBindlessIndices_
-		///      are also untouched — acceleration structures are geometry-sized,
-		///      not screen-sized.
-		/// [JP] 全スクリーン空間RTエフェクトバッファ(Shadow/AO/SSS/Reflection/
-		///      GI/VolumetricCloudScapes)を新しいネイティブ解像度でリサイズする。
-		///      VolumetricLightRenderer は対象外 — froxelボリュームは固定
-		///      160x90x64グリッドで画面解像度に依存しない。BLAS/TLASキャッシュと
-		///      tlasBindlessIndices_ も対象外 — 加速構造はジオメトリサイズであり
-		///      画面サイズではない。
-		void Resize(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height);
+		/**
+		* [EN]
+		* Resizes every screen-sized pass to the new native resolution.
+		* VolumetricLight is left alone because its froxel volume is a fixed grid,
+		* and the BLAS/TLAS are left alone because they are sized by geometry, not
+		* by the screen.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 画面サイズに依存する全パスを新しいネイティブ解像度にリサイズする。
+		* VolumetricLight は froxel ボリュームが固定グリッドのため対象外。
+		* BLAS/TLAS も画面ではなくジオメトリでサイズが決まるため対象外。
+		*/
+		void Resize(ID3D12Device* device, Uint32 width, Uint32 height);
 
-		/// [EN] Collects (Crister*, world matrix) pairs for every active Mesh
-		///      actor. Does not touch the GPU.
-		/// [JP] 全ての有効な Mesh アクターについて (Crister*, ワールド行列) の
-		///      組を収集する。GPU には触れない。
+		/**
+		* [EN]
+		* Collects one PendingInstance per active Mesh actor, queues meshes whose
+		* static BLAS is not cached yet, and prunes the caches of meshes and
+		* entities that are gone. Records no GPU work.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 有効な Mesh アクターごとに PendingInstance を 1 つ集め、静的 BLAS が
+		* 未キャッシュのメッシュを積み、消えたメッシュやエンティティの
+		* キャッシュを刈る。GPU の処理は記録しない。
+		*/
 		void Gather(LoaderSystem& loaderSystem, ModelResource& modelResource, World& world, const ModelRenderer& modelRenderer);
 
-		/// [EN] Builds any BLAS not yet cached for meshes seen this Gather, then
-		///      rebuilds the TLAS from the collected instances and refreshes its
-		///      bindless SRV for the current frame-ring slot. Also registers the
-		///      TLAS index into IndicesSystem and preps every owned RT-effect
-		///      renderer's per-frame constant data (currently just
-		///      ShadowRenderer::PrepareFrame) — all of this has no G-Buffer
-		///      dependency, so it must run before any view's IndicesSystem
-		///      upload bakes this frame's structured indices (see
-		///      Renderer::PrepareFrame).
-		/// [JP] 今回の Gather で見つかった未キャッシュの BLAS を構築し、収集した
-		///      インスタンスから TLAS を再構築、現在のフレームリングスロット用の
-		///      bindless SRV を更新する。併せて TLAS インデックスを IndicesSystem
-		///      へ登録し、保持している各 RT エフェクトレンダラーの毎フレーム定数
-		///      データも準備する（現状は ShadowRenderer::PrepareFrame のみ）—
-		///      これらはすべて G-Buffer に依存しないため、どのビューの
-		///      IndicesSystem のアップロードが今フレームの structured indices を
-		///      確定するよりも前に実行する必要がある（Renderer::PrepareFrame 参照）。
-		/// [EN] deltaTime/nightFactor feed VolumetricStarRenderer::PrepareFrame
-		///      (shooting star spawn/lifetime advance). cameraPosition/
-		///      totalTime/weather additionally feed
-		///      WeatherParticleRenderer::PrepareFrame (particle recycling
-		///      volume follows the camera; weather carries the scene Weather
-		///      component's rain/snow tuning plus its fast "is it snowing now"
-		///      signal - see Environment/Weather.h).
-		/// [JP] deltaTime/nightFactor は VolumetricStarRenderer::PrepareFrame
-		///      (流れ星のスポーン/寿命進行)へ渡す。cameraPosition/totalTime/
-		///      weather はさらに WeatherParticleRenderer::PrepareFrame
-		///      へ渡す(パーティクルの再スポーンボリュームはカメラに追従。
-		///      weather はシーンの Weather コンポーネントの雨/雪の調整値と
-		///      「今降っているか」の速い信号を運ぶ - Environment/Weather.h 参照)。
-		void Build(D3D12CommandList* cmdList, ID3D12Device* device, const ModelRenderer& modelRenderer, Float deltaTime, Float nightFactor, const Vector3& cameraPosition, Float totalTime, const WeatherGpuState& weather);
+		/**
+		* [EN]
+		* Records this frame's BLAS/TLAS work (static BLAS builds, morph and skin
+		* blending, per-entity BLAS rebuilds, TLAS rebuild), publishes the TLAS
+		* index to ShaderResourceIndicesSystem, then prepares every pass for the
+		* frame. None of this needs the G-Buffer, so it runs before any view
+		* uploads its indices (see Renderer::PrepareFrame).
+		*
+		* The morph and skin blend passes run on the shared root signature, so
+		* they need heap and addresses like every other pass.
+		*
+		* deltaTime and nightFactor drive the shooting stars of VolumetricStar.
+		* cameraPosition, totalTime and weather drive WeatherParticle: the
+		* particle volume follows the camera, and weather carries the rain/snow
+		* tuning of the scene's Weather component.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 今フレームの BLAS/TLAS の処理(静的 BLAS の構築、モーフとスキンの
+		* ブレンド、エンティティごとの BLAS 再構築、TLAS 再構築)を記録し、
+		* TLAS のインデックスを ShaderResourceIndicesSystem へ公開してから、
+		* 全パスをこのフレーム用に準備する。どれも G-Buffer を必要としないため、
+		* どのビューがインデックスをアップロードするよりも前に実行する
+		* (Renderer::PrepareFrame 参照)。
+		*
+		* モーフとスキンのブレンドパスは共有のルートシグネチャで動くため、
+		* 他のパスと同じく heap と addresses を必要とする。
+		*
+		* deltaTime と nightFactor は VolumetricStar の流れ星を進める。
+		* cameraPosition、totalTime、weather は WeatherParticle を進める。
+		* パーティクルのボリュームはカメラに追従し、weather はシーンの Weather
+		* コンポーネントの雨/雪の調整値を運ぶ。
+		*/
+		void Build(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, ID3D12Device* device, const ModelRenderer& modelRenderer, Float deltaTime, Float nightFactor, const Vector3& cameraPosition, Float totalTime, const WeatherGpuState& weather);
 
-		/// [EN] The actual shadow ray GPU work (or fallback clear if the TLAS
-		///      isn't valid this frame) — requires the G-Buffer depth/normal to
-		///      already be written, so it runs later than Build().
-		/// [JP] 実際のシャドウレイ GPU 処理（今フレーム TLAS が無効ならフォール
-		///      バッククリア）— G-Buffer の深度/法線が書き込み済みである必要が
-		///      あるため、Build() より後に実行する。
-		void DispatchShadow(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, RaytracingView view);
+		/**
+		* [EN]
+		* Records the ray-traced pass type for view: the pass's own work, or
+		* its fallback clear when it is off this frame. It needs the G-Buffer
+		* depth and normals, so it runs later in the frame than Build. Passes
+		* that keep no per-view history (SubsurfaceScattering, Refraction,
+		* VolumetricCloudScapes, VolumetricStar) ignore view.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* view について、レイトレーシングのパス type を記録する。パス本来の
+		* 処理か、今フレームに無効ならそのフォールバックのクリアを行う。
+		* G-Buffer の深度と法線が必要なため、フレームの中で Build より後に
+		* 呼び出す。ビューごとの履歴を持たないパス（SubsurfaceScattering、
+		* Refraction、VolumetricCloudScapes、VolumetricStar）は view を使わない。
+		*/
+		void Dispatch(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, RaytracingType type, RaytracingView view);
 
-		/// [EN] Same contract as DispatchShadow, for the AO pass.
-		/// [JP] DispatchShadow と同じ契約。AO パス用。
-		void DispatchAmbientOcclusion(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, RaytracingView view);
-
-		/// [EN] Same contract, for the SSS pass. No view parameter: the pass
-		///      is deterministic (no temporal accumulation), so one shared
-		///      transmittance texture is written and consumed per flush.
-		/// [JP] 同じ契約の SSS パス用。ビュー引数は無し: このパスは決定論的
-		///      (時間積分なし)なので、共有の透過率テクスチャ1枚を Flush ごとに
-		///      書いて読む。
-		void DispatchSubsurfaceScattering(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
-
-		/// [EN] Same contract, for the reflection RTPSO pass. GGX-sampled and
-		///      denoised per-view (like AO/GI), so it now takes a view
-		///      parameter too — no longer deterministic once roughness > 0.
-		/// [JP] 同じ契約の反射 RTPSO パス用。GGXサンプリング+ビューごとの
-		///      デノイズ(AO/GIと同様)になったため、こちらもビュー引数を取る —
-		///      roughness > 0 では決定論的ではなくなった。
-		void DispatchReflection(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, RaytracingView view);
-
-		/// [EN] Same contract, for the refraction RTPSO pass. Deterministic
-		///      (Snell-refracted ray per pixel, no importance sampling/denoiser)
-		///      like SSS, so no view parameter either - one shared output.
-		/// [JP] 同じ契約の屈折 RTPSO パス用。SSSと同様に決定論的(ピクセルごと
-		///      Snell屈折レイ1本、重点サンプリング/デノイザ無し)なので、
-		///      こちらもビュー引数は無し - 共有の出力1枚。
-		void DispatchRefraction(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
-
-		/// [EN] Same contract, for the volumetric cloud pass. Needs no TLAS
-		///      at all (pure raymarch), so its enabled flag is the only gate.
-		/// [JP] 同じ契約の雲パス用。TLAS を一切使わない(純レイマーチ)ので、
-		///      有効フラグだけがゲート。
-		/// [EN] Same contract, for the one-bounce diffuse GI RTPSO pass. Also
-		///      view-shared, so no view parameter.
-		/// [JP] 同じ契約の1バウンス拡散GI RTPSO パス用。こちらもビュー共有なので
-		///      ビュー引数は無し。
-		void DispatchGlobalIllumination(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, RaytracingView view);
-
-		void DispatchVolumetricCloudScapes(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
-
-		/// [EN] Same contract, for the star/moon/shooting-star pass. Needs no
-		///      TLAS (pure screen-space), so its enabled flag is the only gate.
-		/// [JP] 同じ契約の星/月/流れ星パス用。TLAS を使わない(純スクリーン空間)
-		///      ので、有効フラグだけがゲート。
-		void DispatchVolumetricStar(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
-
-		/// [EN] The rain/snow particle compute simulate pass. Needs no TLAS or
-		///      G-Buffer, so - like clouds/star - it can run any time, but
-		///      should only run ONCE per frame (not once per view) since it
-		///      advances one shared world-space simulation; Renderer calls this
-		///      only from PrepareFrame, never from a per-view flush.
-		/// [JP] 雨/雪パーティクルのコンピュート・シミュレートパス。TLAS も
-		///      G-Buffer も不要(雲/星と同じ)なのでいつ実行してもよいが、
-		///      共有のワールド空間シミュレーションを1つ進めるだけなので
-		///      フレームに1回だけ実行すること(ビューごとではない) -
-		///      Renderer は PrepareFrame からのみ呼び、ビューごとの Flush からは
-		///      呼ばない。
+		/**
+		* [EN]
+		* Records the rain/snow particle simulation. It advances one shared
+		* world-space simulation, so it runs once per frame, not once per view.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 雨/雪パーティクルのシミュレーションを記録する。ワールド空間で共有する
+		* シミュレーションを 1 つ進めるため、ビューごとではなくフレームに 1 回
+		* 実行する。
+		*/
 		void SimulateWeatherParticles(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
 
-		/// [EN] The rain/snow particle mesh-shader draw pass - unlike Simulate,
-		///      this DOES run once per view (Editor/Game), each from its own
-		///      camera. Requires the G-Buffer depth already written and the
-		///      caller to be inside a geometryBuffer->BeginDepth()/EndDepth()
-		///      scope - see WeatherParticleRenderer::Draw.
-		/// [JP] 雨/雪パーティクルのメッシュシェーダ描画パス - Simulate とは違い、
-		///      こちらはビューごと(Editor/Game)に1回ずつ、それぞれ自分の
-		///      カメラで実行する。G-Buffer の深度が書き込み済みで、呼び出し側が
-		///      geometryBuffer->BeginDepth()/EndDepth() スコープ内であることが
-		///      前提 - WeatherParticleRenderer::Draw 参照。
+		/**
+		* [EN]
+		* Draws the rain/snow particles for one view from its own camera. The
+		* G-Buffer depth must already be written, and the caller must be inside
+		* a GeometryBuffer::BeginDepth()/EndDepth() scope.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 1 つのビューについて、そのカメラから雨/雪パーティクルを描画する。
+		* G-Buffer の深度が書き込み済みで、呼び出し側が
+		* GeometryBuffer::BeginDepth()/EndDepth() のスコープ内にいること。
+		*/
 		void DrawWeatherParticles(D3D12CommandList* cmdList, FrameBuffer* frameBuffer, GeometryBuffer* geometryBuffer, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
 
-		/// [EN] Same contract, for the froxel fog / volumetric light pipeline
-		///      (god rays). Uses the TLAS when present but degrades gracefully
-		///      without it (fog only, no geometry occlusion), so only the
-		///      enabled flag gates it.
-		/// [JP] 同じ契約の froxel フォグ/体積光パイプライン(ゴッドレイ)用。
-		///      TLAS があれば使うが無くても動く(ジオメトリ遮蔽なしのフォグのみ)
-		///      ので、ゲートは有効フラグのみ。
-		void DispatchVolumetricLight(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, RaytracingView view);
-
-		/// [EN] Per-effect settings are copied into each renderer's tuning
-		///      constant buffer every frame; the enabled flags are master
-		///      on/off switches — when every RT effect is disabled, Build()
-		///      skips BLAS/TLAS construction entirely (not just zeroing the
-		///      shader-side effects), so disabling everything costs nothing on
-		///      the GPU. A disabled individual effect skips its own dispatch
-		///      (falls back to the fully-lit/open clear).
-		/// [JP] 各エフェクトの設定は毎フレームそれぞれのチューニング用定数
-		///      バッファへコピーされる。enabled フラグはマスターオンオフ —
-		///      全 RT エフェクトが無効の間は Build() が BLAS/TLAS 構築そのものを
-		///      スキップする(シェーダ側の効果をゼロにするだけではない)ので、
-		///      全部無効なら GPU コストがかからない。個別に無効なエフェクトは
-		///      自分のディスパッチだけスキップする(全照射/全開放クリアへの
-		///      フォールバック)。
+		/**
+		* [EN]
+		* Copies each pass's tuning values and on/off switch. While every pass
+		* that traces the TLAS is off, Build skips the BLAS/TLAS work entirely,
+		* so turning everything off costs nothing on the GPU.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 各パスの調整値とオン/オフを写す。TLAS をトレースするパスが全て
+		* オフの間は Build が BLAS/TLAS の処理を丸ごと省くため、全てオフに
+		* すれば GPU のコストはかからない。
+		*/
 		void SetRaytracingSettings(const RaytracingContext& settings);
 
-		/// [EN] Bindless index of the current frame's TLAS SRV
-		///      (D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE), or
-		///      0xFFFFFFFF if nothing was built this frame (empty scene).
-		/// [JP] 現在フレームの TLAS SRV（D3D12_SRV_DIMENSION_RAYTRACING_
-		///      ACCELERATION_STRUCTURE）の bindless インデックス。今フレーム何も
-		///      構築されていなければ(シーンが空)0xFFFFFFFF。
-		[[nodiscard]] Uint32 TLASBindlessIndex()const;
-
 	private:
+		/// [EN] Maximum number of instances put into the TLAS. Must equal ReflectionRenderer's instance-table capacity, since the ray-traced passes look up that table with InstanceID().
+		/// [JP] TLAS に入れるインスタンスの最大数。レイトレーシングのパスは InstanceID() で ReflectionRenderer のインスタンステーブルを引くため、そのテーブルの容量と等しくする。
+		static constexpr Uint32 maxInstances_ = 4096;
+
+		/**
+		* [EN]
+		* One actor collected by Gather, waiting to become a TLAS instance in
+		* Build.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* Gather が集めたアクター 1 体。Build で TLAS インスタンスになるのを
+		* 待っている。
+		*/
 		struct PendingInstance
 		{
+			/// [EN] The mesh the actor draws.
+			/// [JP] アクターが描画するメッシュ。
 			const Crister* crister_ = nullptr;
+
+			/// [EN] The actor's world matrix, in the engine's row-vector convention.
+			/// [JP] アクターのワールド行列。エンジンの行ベクトル規約。
 			Matrix worldMatrix_ = Matrix::Identity;
+
+			/// [EN] Key of the per-entity BLAS and blend-buffer caches.
+			/// [JP] エンティティごとの BLAS とブレンドバッファのキャッシュのキー。
 			EntityID entityID_;
+
+			/// [EN] True when an Animator posed the skeleton this frame; the instance then uses a skinned BLAS.
+			/// [JP] 今フレーム Animator が骨格のポーズを付けたとき true。インスタンスはスキン済み BLAS を使う。
 			Bool hasSkeletalPose_ = false;
+
+			/// [EN] First bone matrix of this actor in ModelRenderer's shared bone buffer.
+			/// [JP] ModelRenderer の共有ボーンバッファにおける、このアクターの先頭ボーン行列。
 			Uint32 boneOffset_ = 0;
 
-			/// [EN] Sampled morph weights for this frame, indexed the same
-			///      way as crister_->SubMeshes() — morphWeights_[subMeshIndex]
-			///      is empty when that SubMesh has no morphs_ or no
-			///      Animator-driven weights this frame. hasMorphWeights_ is
-			///      true when at least one entry is non-empty, gating the
-			///      whole morph blend/BLAS path for this instance.
-			/// [JP] このフレームでサンプリング済みのモーフウェイト。
-			///      crister_->SubMeshes() と同じインデックスで
-			///      morphWeights_[subMeshIndex] を引く — その SubMesh に
-			///      morphs_ が無いか、今フレーム Animator 駆動のウェイトが
-			///      無ければ空。hasMorphWeights_ は1つでも非空のエントリが
-			///      あれば true — このインスタンスのモーフブレンド/BLAS
-			///      経路全体のゲートになる。
+			/// [EN] Sampled morph weights, indexed like crister_->SubMeshes(). An entry is empty when that SubMesh has no morph targets or no animated weights this frame.
+			/// [JP] サンプリング済みのモーフウェイト。crister_->SubMeshes() と同じ添字で引く。その SubMesh にモーフターゲットが無いか、今フレームのアニメーションのウェイトが無ければ空。
 			DynamicArray<DynamicArray<Float>> morphWeights_;
+
+			/// [EN] True when at least one entry of morphWeights_ is non-empty; gates the whole morph path for this instance.
+			/// [JP] morphWeights_ に空でない要素が 1 つでもあれば true。このインスタンスのモーフ経路全体の条件になる。
 			Bool hasMorphWeights_ = false;
 		};
 
+		/**
+		* [EN]
+		* A GPU-writable position buffer that receives morph-blended or skinned
+		* vertex positions, grown on demand and reused across frames. Its views
+		* live in the bindless heap, so the blend passes reach it through
+		* their DispatchBuffers.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* モーフブレンド済み、またはスキン済みの頂点位置を受け取る、GPU から
+		* 書き込める位置バッファ。必要に応じて拡張し、フレームを跨いで使い回す。
+		* ビューは bindless ヒープに置き、ブレンドパスは DispatchBuffer 経由で
+		* 参照する。
+		*/
 		struct SkinnedPositionBuffer
 		{
+			/// [EN] The buffer, float3 per vertex.
+			/// [JP] バッファ本体。頂点ごとに float3。
 			Microsoft::WRL::ComPtr<ID3D12Resource> resource_;
+
+			/// [EN] Number of vertices resource_ can hold.
+			/// [JP] resource_ が保持できる頂点数。
 			Uint32 capacity_ = 0;
 
-			/// [EN] Tracks resource_'s actual current state across frames -
-			/// morphedPositionBuffers_/skinnedPositionBuffers_ entries are reused
-			/// (not recreated) whenever capacity_ already covers this frame's
-			/// vertex count, so the barrier before each frame's write cannot
-			/// assume COMMON: the previous frame left it in whatever state its
-			/// own last transition set (UNORDERED_ACCESS for the morph path).
-			/// [JP] resource_ の実際の現在状態をフレームを跨いで追跡する -
-			/// morphedPositionBuffers_/skinnedPositionBuffers_ のエントリは、
-			/// capacity_ が今フレームの頂点数を既に満たしていれば(再生成せず)
-			/// 使い回されるため、各フレームの書き込み前バリアは COMMON を
-			/// 前提にできない - 前フレームは自分の最後の遷移が設定した状態
-			/// (モーフ経路なら UNORDERED_ACCESS)のまま残している。
+			/// [EN] The state resource_ was left in. The buffer is reused across frames, so the first barrier of a frame starts from the state the previous frame ended in.
+			/// [JP] resource_ が置かれている状態。バッファはフレームを跨いで使い回すため、フレーム最初のバリアは前フレームが終えた状態から遷移する。
 			D3D12_RESOURCE_STATES state_ = D3D12_RESOURCE_STATE_COMMON;
+
+			/// [EN] Bindless SRV of resource_, read when the morph-blended positions feed the skin pass.
+			/// [JP] resource_ の bindless SRV。モーフブレンド済み位置をスキンのパスへ渡すときに読む。
+			Uint32 shaderResourceViewIndex_ = SC_INVALID;
+
+			/// [EN] Bindless UAV of resource_, written by the blend pass.
+			/// [JP] resource_ の bindless UAV。ブレンドパスが書き込む。
+			Uint32 unorderedAccessViewIndex_ = SC_INVALID;
 		};
 
-		/// [EN] Per (entity, SubMesh) UPLOAD-heap buffer of this frame's
-		///      morph target weights (one float per target, mapped once and
-		///      memcpy'd into each frame — see morphWeightBuffers_), bound
-		///      as MorphBlendCS's morph_weights SRV (root descriptor, no
-		///      bindless heap registration needed).
-		/// [JP] (エンティティ, SubMesh) ごとの、今フレームのモーフターゲット
-		///      ウェイト(ターゲットごとに float 1つ)を持つ UPLOAD ヒープ
-		///      バッファ(一度だけ Map し毎フレーム memcpy —
-		///      morphWeightBuffers_ 参照)。MorphBlendCS の morph_weights
-		///      SRV(ルートディスクリプタ、bindless ヒープ登録不要)として
-		///      束縛する。
-		struct MorphWeightBuffer
+		/**
+		* [EN]
+		* What one MorphBlendCS dispatch of one (entity, SubMesh) reads besides
+		* the RT proxy: this frame's weights and the dispatch's constants. Both
+		* are frame-ring buffers in the bindless heap, created once, since the
+		* SubMesh's morph target count never changes.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 1 つの (エンティティ, SubMesh) の MorphBlendCS のディスパッチが、
+		* RT プロキシ以外に読むもの。今フレームのウェイトと、ディスパッチの
+		* 定数。どちらも bindless ヒープ上のフレームリングのバッファで、
+		* SubMesh のモーフターゲット数は変わらないため 1 度だけ生成する。
+		*/
+		struct MorphBlendBuffer
 		{
-			Microsoft::WRL::ComPtr<ID3D12Resource> resource_;
-			void* mappedPtr_ = nullptr;
-			Uint32 capacity_ = 0;
+			/// [EN] This frame's weights, one float per morph target.
+			/// [JP] 今フレームのウェイト。モーフターゲットごとに float 1 つ。
+			ResourcePtr<ReadOnlyStructuredBuffer<Float>> weights_;
+
+			/// [EN] The dispatch's MorphBlendDispatchBuffer.
+			/// [JP] ディスパッチの MorphBlendDispatchBuffer。
+			ResourcePtr<ConstantBuffer<MorphBlendDispatchBuffer>> dispatchBuffer_;
 		};
 
-		/// [EN] Per-Crister GPU tables consumed by
-		///      Reflection.hlsli::ResolveReflectionMaterial - the materials
-		///      array (Crister::Surfaces(), or one white fallback entry if
-		///      empty) and the per-triangle index into it (built from every
-		///      SubMesh's surfaceIndex_/indexOffset_/indexCount_). Both live
-		///      on an UPLOAD heap and are written once via Map/memcpy: they are
-		///      small, built once per unique mesh (cached like the BLAS below,
-		///      never rebuilt per-frame), and read rarely enough (one lookup
-		///      per ray hit) that the DEFAULT-heap-plus-copy dance is not worth
-		///      it here.
-		/// [JP] Reflection.hlsli::ResolveReflectionMaterial が読む、Crister
-		///      ごとの GPU テーブル — マテリアル配列(Crister::Surfaces()、
-		///      無ければ白1件のフォールバック)と、そこへの三角形ごとの
-		///      インデックス(各 SubMesh の
-		///      surfaceIndex_/indexOffset_/indexCount_ から構築)。どちらも
-		///      UPLOAD ヒープに置き Map/memcpy で一度だけ書く — 小さく、
-		///      ユニークなメッシュごとに一度しか構築せず(下の BLAS と同じく
-		///      キャッシュ、毎フレーム再構築しない)、読み取り頻度もレイが
-		///      当たった時に1回程度なので、DEFAULT ヒープ+コピーの手間を
-		///      掛ける価値がない。
-		struct ReflectionMaterialTable
+		/**
+		* [EN]
+		* The per-Crister tables that Reflection.hlsli's ResolveReflectionMaterial
+		* reads on a ray hit: the material array, and the index into it for every
+		* triangle of the RT proxy. Both are small, built once per unique mesh, and
+		* read once per hit, so they live on an UPLOAD heap and are written with a
+		* single Map/memcpy instead of a DEFAULT heap plus a copy.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* レイが当たったときに Reflection.hlsli の ResolveReflectionMaterial が
+		* 読む、Crister ごとのテーブル。マテリアル配列と、RT プロキシの
+		* 三角形ごとのそこへのインデックス。どちらも小さく、ユニークな
+		* メッシュごとに 1 度だけ構築し、ヒットごとに 1 回読むだけなので、
+		* DEFAULT ヒープとコピーではなく UPLOAD ヒープに置き、1 回の
+		* Map/memcpy で書き込む。
+		*/
+		struct MaterialTable
 		{
+			/// [EN] ReflectionMaterialData per material.
+			/// [JP] マテリアルごとの ReflectionMaterialData。
 			Microsoft::WRL::ComPtr<ID3D12Resource> materialsResource_;
+
+			/// [EN] Bindless slot of the view over materialsResource_.
+			/// [JP] materialsResource_ のビューの bindless スロット。
 			Uint32 materialsShaderResourceViewIndex_ = 0;
 
+			/// [EN] Material index per RT-proxy triangle.
+			/// [JP] RT プロキシの三角形ごとのマテリアルインデックス。
 			Microsoft::WRL::ComPtr<ID3D12Resource> triangleMaterialIndexResource_;
+
+			/// [EN] Bindless slot of the view over triangleMaterialIndexResource_.
+			/// [JP] triangleMaterialIndexResource_ のビューの bindless スロット。
 			Uint32 triangleMaterialIndexShaderResourceViewIndex_ = 0;
 		};
 
-		/// [JP] crister が初出のときだけ構築する(BLAS と同じライフサイクル —
-		///      pendingBlasBuilds_ のループに相乗りする)。
-		void BuildReflectionMaterialTable(ID3D12Device* device, const Crister* crister);
+		/// [EN] Material tables per unique mesh, kept as long as the mesh's static BLAS.
+		/// [JP] ユニークなメッシュごとのマテリアルテーブル。メッシュの静的 BLAS と同じ期間保持する。
+		std::unordered_map<const Crister*, MaterialTable> materialTableCache_;
 
-		std::unordered_map<const Crister*, ReflectionMaterialTable> reflectionMaterialTableCache_;
-
+		/// [EN] Bind-pose BLAS per unique mesh, shared by every frame-ring slot.
+		/// [JP] ユニークなメッシュごとのバインドポーズの BLAS。全フレームリングスロットで共有する。
 		std::unordered_map<const Crister*, ResourcePtr<BottomLevelAccelerationStructure>> blasCache_;
 
-		/// [EN] Cristers no longer seen live in Gather(), counting down the
-		///      number of frames left before their blasCache_/
-		///      reflectionMaterialTableCache_ entries are actually erased.
-		///      Unlike skinnedBlasCache_/morphedBlasCache_ below (already
-		///      frame-ring-indexed, so a stale entry naturally survives a
-		///      few frames), blasCache_ is keyed by Crister* and shared
-		///      across the whole frame ring - erasing it the instant an
-		///      actor is deactivated would free a static mesh's BLAS while
-		///      an already-submitted, still in-flight frame's TLAS may
-		///      still be traced against it.
-		/// [JP] Gather() でこのフレーム見えなくなった Crister。
-		///      blasCache_/reflectionMaterialTableCache_ のエントリを実際に
-		///      消去するまでの残りフレーム数をカウントダウンする。下の
-		///      skinnedBlasCache_/morphedBlasCache_(既にフレームリング化
-		///      されており、古いエントリは自然に数フレーム生き残る)と違い、
-		///      blasCache_ は Crister* キーでフレームリング全体から共有
-		///      されているため、actor が非表示になった瞬間に消すと、既に
-		///      投入済みでまだ実行中のフレームの TLAS がまだそれを参照して
-		///      いる可能性がある静的メッシュの BLAS を破棄してしまう。
+		/// [EN] Meshes no longer seen by Gather, with the number of frames left before their blasCache_ and materialTableCache_ entries are erased. blasCache_ is shared by every frame-ring slot, so an entry must outlive the frames still in flight that trace it.
+		/// [JP] Gather で見えなくなったメッシュと、その blasCache_ と materialTableCache_ のエントリを消去するまでの残りフレーム数。blasCache_ は全フレームリングスロットで共有するため、エントリはそれをトレースする実行中のフレームより長く生きる必要がある。
 		std::unordered_map<const Crister*, Uint32> pendingBlasEviction_;
 
+		/// [EN] BLAS per skinned entity, per frame-ring slot.
+		/// [JP] スキンのあるエンティティごと、フレームリングスロットごとの BLAS。
 		std::unordered_map<EntityID, ResourcePtr<BottomLevelAccelerationStructure>> skinnedBlasCache_[FrameRing::frameCount];
+
+		/// [EN] Skinned positions per skinned entity, per frame-ring slot; the vertex input of skinnedBlasCache_.
+		/// [JP] スキンのあるエンティティごと、フレームリングスロットごとのスキン済み位置。skinnedBlasCache_ の頂点入力。
 		std::unordered_map<EntityID, SkinnedPositionBuffer> skinnedPositionBuffers_[FrameRing::frameCount];
+
+		/// [EN] SkinBlendDispatchBuffer per skinned entity. ConstantBuffer rings over the frame-ring slots itself, so one per entity is enough.
+		/// [JP] スキンのあるエンティティごとの SkinBlendDispatchBuffer。ConstantBuffer 自体がフレームリングスロットを巡回するため、エンティティごとに 1 つでよい。
+		std::unordered_map<EntityID, ResourcePtr<ConstantBuffer<SkinBlendDispatchBuffer>>> skinBlendDispatchBuffers_;
+
+		/// [EN] Compute shader that skins RT-proxy positions with the bone matrices.
+		/// [JP] RT プロキシの位置をボーン行列でスキニングするコンピュートシェーダ。
 		SkinBlendShader skinBlendShader_;
 
-		/// [EN] Morph blend scratch positions (base rt_positions with
-		///      active SubMeshes' vertex ranges overwritten by
-		///      MorphBlendCS), one per morphed instance per frame-ring
-		///      slot. Feeds SkinBlendCS's input in place of
-		///      crister_->PositionBufferAddress() when an instance is
-		///      both morphed and skinned (morph composes before skin), and
-		///      feeds morphedBlasCache_'s BLAS build directly when an
-		///      instance is morphed but not skinned.
-		/// [JP] モーフブレンド用の一時位置(ベースの rt_positions に、
-		///      有効な SubMesh の頂点範囲だけ MorphBlendCS が上書きした
-		///      もの)。モーフのあるインスタンスごと・フレームリング
-		///      スロットごとに1つ。インスタンスがモーフとスキンの両方を
-		///      持つ場合(モーフはスキンより前に合成)、
-		///      crister_->PositionBufferAddress() の代わりに
-		///      SkinBlendCS の入力として使う。モーフのみでスキン無し
-		///      の場合は、直接 morphedBlasCache_ の BLAS 構築に使う。
+		/// [EN] Morph-blended positions per morphed entity, per frame-ring slot: the base positions with the vertex ranges of weighted SubMeshes overwritten by MorphBlendCS. Morph composes before skin, so this is the skin input of a skinned-and-morphed entity, and the BLAS input of a morph-only one.
+		/// [JP] モーフのあるエンティティごと、フレームリングスロットごとのモーフブレンド済み位置。ベース位置のうち、ウェイトのある SubMesh の頂点範囲を MorphBlendCS が上書きしたもの。モーフはスキンより前に合成するため、スキンとモーフの両方を持つエンティティではスキンの入力に、モーフのみのエンティティでは BLAS の入力になる。
 		std::unordered_map<EntityID, SkinnedPositionBuffer> morphedPositionBuffers_[FrameRing::frameCount];
 
-		/// [EN] This frame's per-(entity, SubMesh) morph weight upload
-		///      buffers — outer index matches crister_->SubMeshes(), same
-		///      shape as PendingInstance::morphWeights_.
-		/// [JP] このフレームの (エンティティ, SubMesh) ごとのモーフウェイト
-		///      アップロードバッファ — 外側のインデックスは
-		///      crister_->SubMeshes() と対応し、PendingInstance::
-		///      morphWeights_ と同じ形。
-		std::unordered_map<EntityID, DynamicArray<MorphWeightBuffer>> morphWeightBuffers_[FrameRing::frameCount];
+		/// [EN] MorphBlendBuffer per morphed entity, indexed like crister_->SubMeshes(). Its buffers ring over the frame-ring slots themselves, so one per entity is enough.
+		/// [JP] モーフのあるエンティティごとの MorphBlendBuffer。crister_->SubMeshes() と同じ添字で引く。中のバッファ自体がフレームリングスロットを巡回するため、エンティティごとに 1 つでよい。
+		std::unordered_map<EntityID, DynamicArray<MorphBlendBuffer>> morphBlendBuffers_;
 
-		/// [EN] BLAS for a morphed-but-not-skinned instance, built directly
-		///      from morphedPositionBuffers_ (no SkinBlendCS pass
-		///      involved). Parallel cache to skinnedBlasCache_.
-		/// [JP] モーフはあるがスキン無しのインスタンス用 BLAS。
-		///      morphedPositionBuffers_ から直接構築する
-		///      (SkinBlendCS パスは介さない)。skinnedBlasCache_ と
-		///      並列のキャッシュ。
+		/// [EN] BLAS per morph-only entity, per frame-ring slot, built straight from morphedPositionBuffers_.
+		/// [JP] モーフのみのエンティティごと、フレームリングスロットごとの BLAS。morphedPositionBuffers_ から直接構築する。
 		std::unordered_map<EntityID, ResourcePtr<BottomLevelAccelerationStructure>> morphedBlasCache_[FrameRing::frameCount];
 
+		/// [EN] Compute shader that adds weighted morph deltas to RT-proxy positions.
+		/// [JP] RT プロキシの位置に、ウェイトを掛けたモーフの差分を加えるコンピュートシェーダ。
 		MorphBlendShader morphBlendShader_;
 
-		/// [EN] One entry per active Mesh actor, collected by Gather(). The BLAS
-		///      address isn't resolved until Build(), once blasCache_ is caught up.
-		/// [JP] 有効な Mesh アクターごとに 1 エントリ、Gather() が収集する。BLAS
-		///      アドレスは blasCache_ が追いつく Build() まで解決しない。
+		/// [EN] One entry per active Mesh actor, collected by Gather and turned into TLAS instances by Build.
+		/// [JP] 有効な Mesh アクターごとに 1 エントリ。Gather が集め、Build が TLAS インスタンスにする。
 		DynamicArray<PendingInstance> pendingInstances_;
 
-		/// [EN] Meshes seen this Gather that are not yet in blasCache_ — built at
-		///      the start of Build() (needs a command list, Gather doesn't have one).
-		/// [JP] 今回の Gather で見つかったが blasCache_ に未登録のメッシュ —
-		///      Build() の先頭で構築する（コマンドリストが要るため Gather では行わない）。
+		/// [EN] Meshes seen by Gather without a cached static BLAS, built at the start of Build where a command list is available.
+		/// [JP] Gather で見つかった、静的 BLAS が未キャッシュのメッシュ。コマンドリストのある Build の先頭で構築する。
 		DynamicArray<const Crister*> pendingBlasBuilds_;
 
+		/// [EN] The scene TLAS, rebuilt every frame.
+		/// [JP] シーンの TLAS。毎フレーム再構築する。
 		TopLevelAccelerationStructure tlas_;
 
 		ResourcePtr<ShadowRenderer> shadowRenderer_;
@@ -463,17 +478,20 @@ namespace SeedCore
 		VolumetricLightRayConstantBuffer volumetricLightSettings_;
 		Bool volumetricLightEnabled_ = false;
 
+		/// [EN] Heap the TLAS views and material-table views are written into.
+		/// [JP] TLAS のビューとマテリアルテーブルのビューを書き込むヒープ。
 		BindlessHeap* bindlessHeap_ = nullptr;
-		ConstantIndicesSystem* constantIndicesSystem_ = nullptr;
+
+		/// [EN] Receives the TLAS index every frame in Build.
+		/// [JP] Build で毎フレーム TLAS のインデックスを受け取る。
 		ShaderResourceIndicesSystem* shaderResourceIndicesSystem_ = nullptr;
 
+		/// [EN] Bindless slot of the TLAS view per frame-ring slot, so a new frame never overwrites the view an in-flight frame still reads.
+		/// [JP] フレームリングスロットごとの TLAS ビューの bindless スロット。新しいフレームが、実行中のフレームが読むビューを上書きしないようにする。
 		Uint32 tlasBindlessIndices_[FrameRing::frameCount] = { 0xFFFFFFFF, 0xFFFFFFFF };
 
-		Bool tlasBuiltThisFrame_ = false;
-
-		/// [EN] Logs BLAS/TLAS build failures once instead of every frame — see
-		///      Build().
-		/// [JP] BLAS/TLAS 構築失敗のログを毎フレームでなく 1 度だけ出す — Build() 参照。
+		/// [EN] Each failure below is logged only on its first occurrence, not every frame.
+		/// [JP] 以下の各失敗は毎フレームではなく、初回のみログに出す。
 		Bool blasBuildFailureLogged_ = false;
 		Bool tlasBuildFailureLogged_ = false;
 		Bool skinnedBlasBuildFailureLogged_ = false;
@@ -481,9 +499,6 @@ namespace SeedCore
 		Bool degenerateInstanceLogged_ = false;
 		Bool rtProxyNotReadyLogged_ = false;
 		Bool instanceLimitLogged_ = false;
-
-		/// [EN] Reports the device-removed reason once instead of every frame.
-		/// [JP] デバイス削除の理由を毎フレームでなく 1 度だけ報告する。
 		Bool deviceRemovedLogged_ = false;
 	};
 }

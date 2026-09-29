@@ -13,6 +13,8 @@
 #include <FoundationEngine/Pool/StablePool.h>
 #include <FoundationEngine/Time/GameTimer.h>
 #include <FoundationEngine/Utility/FlatMap.h>
+#include <FoundationEngine/Reflection/ReflectionRegistry.h>
+#include <FoundationEngine/Log/Warning.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <AudioEngine/Audio/Audio.h>
 
@@ -1267,5 +1269,125 @@ namespace SeedCore
 	T* Actor::GetComponent()const
 	{
 		return world_ ? world_->GetComponent<T>(entity_) : nullptr;
+	}
+
+	/**
+	* [EN]
+	* Looks up this actor's component named componentName and, through
+	* its ReflectionRegistry entry, the field whose display name is
+	* fieldName and whose AttributeType matches T, and returns a
+	* reference to it. Going through ReflectionRegistry makes C++ and C#
+	* components look the same here: a C# script's entry synchronizes its
+	* values into its field block before reporting the fields. On a miss,
+	* logs a warning and returns a per-T dummy reset to T{}.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* この actor の componentName という名前のコンポーネントを探し、その
+	* ReflectionRegistry のエントリを通して、表示名が fieldName で
+	* AttributeType が T と一致するフィールドを探し、その参照を返す。
+	* ReflectionRegistry を通すことで、ここでは C++ と C# のコンポーネント
+	* が同じに見える: C# スクリプトのエントリは、フィールドを返す前に値を
+	* フィールドブロックへ同期する。見つからなければ警告ログを出し、T{} に
+	* 戻した T ごとのダミーを返す。
+	*/
+	template<typename T>
+	T& Actor::Field(const String& componentName, const String& fieldName)const
+	{
+		/// [EN] Returned on a miss so the caller always gets a valid reference; reset each call so a write to it never leaks into the next miss.
+		/// [JP] 見つからなかったときに返し、呼び出し側が常に有効な参照を受け取れるようにする。書き込まれた値が次に見つからなかったときへ持ち越されないよう、呼ぶたびに初期値へ戻す。
+		static T fallback{};
+		fallback = T{};
+
+		/// [EN] Resolve the component instance and the function that lists its reflected fields.
+		/// [JP] コンポーネントの実体と、そのリフレクション対象フィールドを列挙する関数を解決する。
+		ComponentID id = ComponentRegistry::GetComponentID(componentName);
+		void* data = (world_ && id) ? world_->GetComponent(entity_, id) : nullptr;
+		auto reflection = ReflectionRegistry::GetRegistry().find(componentName);
+		if (data == nullptr || reflection == ReflectionRegistry::GetRegistry().end())
+		{
+			SC_LOG_WARNING("Field: この actor は {} を持っていません", componentName.str());
+			return fallback;
+		}
+
+		/// [EN] Match on both the display name and the value kind, so a reference of the wrong type is never handed out.
+		/// [JP] 表示名と値種別の両方で照合し、型の違う参照を渡すことがないようにする。
+		DynamicArray<FieldInfo> fields;
+		reflection->second(data, fields);
+		for (const FieldInfo& field : fields)
+		{
+			if (field.name_ == fieldName && field.type_ == AttributeTraits<T>::type)
+			{
+				return *static_cast<T*>(field.directPtr_ ? field.directPtr_ : static_cast<Uint8*>(data) + field.offset_);
+			}
+		}
+
+		SC_LOG_WARNING("Field: {} に {} という名前でこの型のフィールドはありません", componentName.str(), fieldName.str());
+		return fallback;
+	}
+
+	/**
+	* [EN]
+	* Looks up this actor's component named componentName and its
+	* FunctionRegistry entry named functionName, checks that the entry's
+	* parameter and result kinds match Arguments and Result, then calls it
+	* with the address of each argument and the address of the local
+	* result. On any miss or mismatch, logs a warning and returns a
+	* default-initialized Result without calling anything.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* この actor の componentName という名前のコンポーネントと、その
+	* FunctionRegistry にある functionName という名前のエントリを探し、
+	* エントリの引数と戻り値の値種別が Arguments と Result に一致するかを
+	* 確かめてから、各引数のアドレスとローカルの戻り値のアドレスを渡して
+	* 呼ぶ。見つからないか一致しなければ、警告ログを出し、何も呼ばずに
+	* デフォルト初期化した Result を返す。
+	*/
+	template<typename Result, typename... Arguments>
+	Result Actor::Function(const String& componentName, const String& functionName, const Arguments&... arguments)const
+	{
+		/// [EN] Storage the invoker writes the result into; a function returning nothing gets an unused Int so the code below stays the same for both cases.
+		/// [JP] 呼び出し処理が戻り値を書き込む先。戻り値の無い関数では使われない Int にして、以下の処理を両方の場合で共通にする。
+		std::conditional_t<std::is_void_v<Result>, Int, Result> result{};
+
+		/// [EN] Resolve the component instance and the functions registered for its type.
+		/// [JP] コンポーネントの実体と、その型に登録されている関数の一覧を解決する。
+		ComponentID id = ComponentRegistry::GetComponentID(componentName);
+		void* data = (world_ && id) ? world_->GetComponent(entity_, id) : nullptr;
+		auto functions = FunctionRegistry::GetRegistry().find(componentName);
+		if (data == nullptr || functions == FunctionRegistry::GetRegistry().end())
+		{
+			SC_LOG_WARNING("Function: この actor は {} を持っていないか、{} に呼べる関数がありません", componentName.str(), componentName.str());
+		}
+		else
+		{
+			/// [EN] The value kinds of the arguments as passed, compared against the registered parameters, since the invoker trusts that they match.
+			/// [JP] 渡された引数の値種別。呼び出し処理は一致している前提で読むので、登録されている引数と照らし合わせる。
+			std::array<AttributeType, sizeof...(Arguments)> parameters{ AttributeTraits<Arguments>::type... };
+			auto function = std::ranges::find_if(functions->second, [&functionName](const FunctionInfo& info) { return info.name_ == functionName; });
+			if (function == functions->second.end())
+			{
+				SC_LOG_WARNING("Function: {} に {} という関数はありません", componentName.str(), functionName.str());
+			}
+			else if (function->result_ != AttributeTraits<Result>::type || !std::ranges::equal(function->parameters_, parameters))
+			{
+				SC_LOG_WARNING("Function: {}.{} の引数か戻り値の型が合いません", componentName.str(), functionName.str());
+			}
+			else
+			{
+				/// [EN] The address of each argument, in order. One extra slot keeps the array valid for a function that takes no arguments.
+				/// [JP] 各引数のアドレスを順に並べたもの。引数の無い関数でも配列が成り立つよう、1 つ余分に確保する。
+				void* pointers[sizeof...(Arguments) + 1]{ const_cast<void*>(static_cast<const void*>(&arguments))... };
+				function->invoke_(data, pointers, std::is_void_v<Result> ? nullptr : &result);
+			}
+		}
+
+		if constexpr (!std::is_void_v<Result>)
+		{
+			return result;
+		}
 	}
 }

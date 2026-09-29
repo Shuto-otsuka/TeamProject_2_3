@@ -398,7 +398,7 @@ def process_file(file_path, project_root):
                 lines.append(f'\t\t\t\t\t\theader.name_ = String("{display_name}");')
                 lines.append('\t\t\t\t\t\theader.offset_ = 0;')
                 lines.append(f'\t\t\t\t\t\theader.type_ = {attr_type};')
-                lines.append(f'\t\t\t\t\t\theader.assetType_ = PayloadAssetType::{asset_type};')
+                lines.append(f'\t\t\t\t\t\theader.assetType_ = PayloadType::{asset_type};')
                 lines.append('\t\t\t\t\t\theader.array_.size_ = arr.size();')
                 lines.append(f'\t\t\t\t\t\theader.array_.add_ = [&obj]() {{ obj.{f_name}.push_back({{}}); }};')
                 lines.append(f'\t\t\t\t\t\theader.array_.remove_ = [&obj](Size idx) {{ if (idx < obj.{f_name}.size()) obj.{f_name}.erase(obj.{f_name}.begin() + idx); }};')
@@ -409,7 +409,7 @@ def process_file(file_path, project_root):
                 lines.append(
                     f'\t\t\t\t\t\t\toutInfo.push_back({{ '
                     f'String("[" + std::to_string(i) + "]"), 0, {attr_type}, '
-                    f'PayloadAssetType::{asset_type}, &arr[i] '
+                    f'PayloadType::{asset_type}, &arr[i] '
                     f'}});'
                 )
                 lines.append('\t\t\t\t\t\t}')
@@ -423,7 +423,7 @@ def process_file(file_path, project_root):
                 lines.append(f'\t\t\t\t\t\tfi.name_ = String("{display_name}");')
                 lines.append(f'\t\t\t\t\t\tfi.offset_ = offsetof({struct_name}, {f_name});')
                 lines.append(f'\t\t\t\t\t\tfi.type_ = {attr_type};')
-                lines.append(f'\t\t\t\t\t\tfi.assetType_ = PayloadAssetType::{asset_type};')
+                lines.append(f'\t\t\t\t\t\tfi.assetType_ = PayloadType::{asset_type};')
                 lines.append(f'\t\t\t\t\t\tfi.enableIf_ = [](void* p) -> Bool {{ auto& o = *static_cast<{struct_name}*>(p); return {qualify_condition(condition, enum_owners)}; }};')
                 lines.append('\t\t\t\t\t\toutInfo.push_back(std::move(fi));')
                 lines.append('\t\t\t\t\t}')
@@ -433,7 +433,7 @@ def process_file(file_path, project_root):
                     f'String("{display_name}"), '
                     f'offsetof({struct_name}, {f_name}), '
                     f'{attr_type}, '
-                    f'PayloadAssetType::{asset_type} '
+                    f'PayloadType::{asset_type} '
                     f'}});'
                 )
 

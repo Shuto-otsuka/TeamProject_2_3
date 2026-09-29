@@ -6,4 +6,7 @@
 		<ProjectReference Include="..\AudioEngine\AudioEngine.Csharp.csproj" Private="false" />
 		<ProjectReference Include="..\GraphicsEngine\GraphicsEngine.Csharp.csproj" Private="false" />
 	</ItemGroup>
+	<ItemGroup>
+		<Compile Remove="Generator\**" />
+	</ItemGroup>
 </Project>

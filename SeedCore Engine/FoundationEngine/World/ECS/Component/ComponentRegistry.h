@@ -67,8 +67,10 @@ namespace SeedCore
 		* if storage is SparseSet, and (if T derives from ComponentBehaviour)
 		* installs a setupLifecycle_ callback that binds each lifecycle
 		* function pointer (awake_/start_/tick_/... ) T actually
-		* implements. Records the mapping between name, T's type_index,
-		* and the resulting ComponentID.
+		* implements. The finished metadata is recorded through the
+		* metadata overload of Register, and T's type_index is then mapped
+		* to the resulting ComponentID - a mapping only this typed overload
+		* can provide.
 		*
 		* callerAnchor is any address inside the module issuing the
 		* registration (REGISTER_COMPONENT passes the stringized type
@@ -87,8 +89,10 @@ namespace SeedCore
 		* スパースセットストレージのファクトリを配線する。T が
 		* ComponentBehaviour から派生していれば、T が実際に実装している各
 		* ライフサイクル関数ポインタ（awake_/start_/tick_/...）を束縛する
-		* setupLifecycle_ コールバックを設定する。名前、T の type_index、
-		* 結果として得られる ComponentID の対応関係を記録する。
+		* setupLifecycle_ コールバックを設定する。完成したメタデータは
+		* Register のメタデータ版を通じて記録し、その後 T の type_index を
+		* 結果として得られる ComponentID へ対応付ける - この対応付けは
+		* 型を知っているこの版にしかできない。
 		*
 		* callerAnchor は登録を発行したモジュール内の任意のアドレス
 		* （REGISTER_COMPONENT は型名の文字列を渡す）。別の、まだロード
@@ -107,14 +111,14 @@ namespace SeedCore
 			/// [EN] Resolves the module (HMODULE, as an opaque pointer) that contains an address, or nullptr - GetModuleHandleEx with FROM_ADDRESS. Doubles as an "is this module still loaded?" probe: pass a previously-resolved HMODULE (its base address) back in.
 			/// [JP] アドレスを含むモジュール（HMODULE を不透明ポインタとして）を解決する。無ければ nullptr - GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS 付きの GetModuleHandleEx。「このモジュールはまだロードされているか?」の判定も兼ねる: 以前解決した HMODULE（そのベースアドレス）を渡す。
 			auto moduleOf = [](const void* address) -> void*
-			{
-				HMODULE module = nullptr;
-				if (address != nullptr)
 				{
-					GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, reinterpret_cast<LPCWSTR>(address), &module);
-				}
-				return module;
-			};
+					HMODULE module = nullptr;
+					if (address != nullptr)
+					{
+						GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, reinterpret_cast<LPCWSTR>(address), &module);
+					}
+					return module;
+				};
 
 			/// [EN] Skip if a still-loaded module other than the caller already owns this component: the same header compiled into a downstream DLL (e.g. UserProject via ScComponent.h) must not replace the owner's function pointers, which would dangle when that DLL hot-reloads. Re-registration is allowed when the entry is new, the caller already owns it (its own hot reload), or the old owner is no longer loaded. callerAnchor is any address inside the calling module - REGISTER_COMPONENT passes the stringized type name literal.
 			/// [JP] 呼び出し元以外の、まだロードされているモジュールが既にこのコンポーネントを所有しているならスキップする: 同じヘッダが下流の DLL（例: ScComponent.h 経由の UserProject）でコンパイルされても、所有者の関数ポインタを差し替えてはならない。その DLL がホットリロード時に宙に浮くため。エントリが新規、呼び出し元が既に所有（自身のホットリロード）、または旧所有者が既にアンロード済みの場合は再登録を許可する。callerAnchor は呼び出し元モジュール内の任意のアドレス - REGISTER_COMPONENT は型名の文字列リテラルを渡す。
@@ -122,7 +126,7 @@ namespace SeedCore
 			auto existing = MetadataMap().find(id);
 			if (existing != MetadataMap().end())
 			{
-				void* owner = existing->second.owningModule_;
+				void* owner = existing->second.module_;
 				if (owner != nullptr && owner != callerModule && moduleOf(owner) != nullptr)
 				{
 					return;
@@ -130,8 +134,7 @@ namespace SeedCore
 			}
 
 			ComponentMetadata meta = Component<T>::Metadata(storage);
-			meta.category_ = category;
-			meta.owningModule_ = callerModule;
+			meta.module_ = callerModule;
 
 			/// [EN] Sparse-set-stored components need a factory that can construct their SparseSetStorage<T> lazily, the first time an instance is actually added.
 			/// [JP] スパースセット格納コンポーネントには、実際にインスタンスが追加される最初のタイミングで SparseSetStorage<T> を遅延構築できるファクトリが必要になる。
@@ -147,82 +150,113 @@ namespace SeedCore
 			{
 				meta.isComponentBehaviour_ = true;
 
-				meta.setupLifecycle_ = [](void* component, void* world, Entity entity)
-				{
-					T* ptr = static_cast<T*>(component);
-					ptr->world_ = static_cast<World*>(world);
-					ptr->entity_ = entity;
+				meta.setupLifecycle_ = [](void* component, void* world, Entity entity, ComponentID)
+					{
+						T* ptr = static_cast<T*>(component);
+						ptr->world_ = static_cast<World*>(world);
+						ptr->entity_ = entity;
 
-					/// [EN] Each HasXxx<T> concept check below binds the corresponding type-erased function pointer only if T actually implements that lifecycle mixin, otherwise the pointer stays nullptr and ComponentBehaviour::DispatchXxx becomes a no-op for that hook.
-					/// [JP] 以下の各 HasXxx<T> コンセプトチェックは、T が実際にそのライフサイクルミックスインを実装している場合にのみ、対応する型消去された関数ポインタを束縛する。実装していなければポインタは nullptr のままとなり、そのフックに対する ComponentBehaviour::DispatchXxx は無操作になる。
-					if constexpr (HasAwake<T>)
-					{
-						ptr->awake_ = [](ComponentBehaviour* cb) { static_cast<T*>(cb)->OnAwake(); };
-					}
-					if constexpr (HasStart<T>)
-					{
-						ptr->start_ = [](ComponentBehaviour* cb) { static_cast<T*>(cb)->OnStart(); };
-					}
-					if constexpr (HasTick<T>)
-					{
-						ptr->tick_ = [](ComponentBehaviour* cb, Float dt) { static_cast<T*>(cb)->OnTick(dt); };
-					}
-					if constexpr (HasFixedTick<T>)
-					{
-						ptr->fixedTick_ = [](ComponentBehaviour* cb, Float dt) { static_cast<T*>(cb)->OnFixedTick(dt); };
-					}
-					if constexpr (HasLateTick<T>)
-					{
-						ptr->lateTick_ = [](ComponentBehaviour* cb, Float dt) { static_cast<T*>(cb)->OnLateTick(dt); };
-					}
-					if constexpr (HasDestroy<T>)
-					{
-						ptr->destroy_ = [](ComponentBehaviour* cb) { static_cast<T*>(cb)->OnDestroy(); };
-					}
-					if constexpr (HasInspectorGUI<T>)
-					{
-						ptr->inspectorGUI_ = [](ComponentBehaviour* cb) { static_cast<T*>(cb)->OnInspectorGUI(); };
-					}
-					if constexpr (HasCollisionEnter<T>)
-					{
-						ptr->collisionEnter_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnCollisionEnter(other); };
-					}
-					if constexpr (HasCollisionStay<T>)
-					{
-						ptr->collisionStay_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnCollisionStay(other); };
-					}
-					if constexpr (HasCollisionExit<T>)
-					{
-						ptr->collisionExit_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnCollisionExit(other); };
-					}
-					if constexpr (HasTriggerEnter<T>)
-					{
-						ptr->triggerEnter_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnTriggerEnter(other); };
-					}
-					if constexpr (HasTriggerStay<T>)
-					{
-						ptr->triggerStay_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnTriggerStay(other); };
-					}
-					if constexpr (HasTriggerExit<T>)
-					{
-						ptr->triggerExit_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnTriggerExit(other); };
-					}
-				};
+					    /// [EN] Each HasXxx<T> concept check below binds the corresponding type-erased function pointer only if T actually implements that lifecycle mixin, otherwise the pointer stays nullptr and ComponentBehaviour::DispatchXxx becomes a no-op for that hook.
+					    /// [JP] 以下の各 HasXxx<T> コンセプトチェックは、T が実際にそのライフサイクルミックスインを実装している場合にのみ、対応する型消去された関数ポインタを束縛する。実装していなければポインタは nullptr のままとなり、そのフックに対する ComponentBehaviour::DispatchXxx は無操作になる。
+						if constexpr (HasAwake<T>)
+						{
+							ptr->awake_ = [](ComponentBehaviour* cb) { static_cast<T*>(cb)->OnAwake(); };
+						}
+						if constexpr (HasStart<T>)
+						{
+							ptr->start_ = [](ComponentBehaviour* cb) { static_cast<T*>(cb)->OnStart(); };
+						}
+						if constexpr (HasTick<T>)
+						{
+							ptr->tick_ = [](ComponentBehaviour* cb, Float dt) { static_cast<T*>(cb)->OnTick(dt); };
+						}
+						if constexpr (HasFixedTick<T>)
+						{
+							ptr->fixedTick_ = [](ComponentBehaviour* cb, Float dt) { static_cast<T*>(cb)->OnFixedTick(dt); };
+						}
+						if constexpr (HasLateTick<T>)
+						{
+							ptr->lateTick_ = [](ComponentBehaviour* cb, Float dt) { static_cast<T*>(cb)->OnLateTick(dt); };
+						}
+						if constexpr (HasDestroy<T>)
+						{
+							ptr->destroy_ = [](ComponentBehaviour* cb) { static_cast<T*>(cb)->OnDestroy(); };
+						}
+						if constexpr (HasInspectorGUI<T>)
+						{
+							ptr->inspectorGUI_ = [](ComponentBehaviour* cb) { static_cast<T*>(cb)->OnInspectorGUI(); };
+						}
+						if constexpr (HasCollisionEnter<T>)
+						{
+							ptr->collisionEnter_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnCollisionEnter(other); };
+						}
+						if constexpr (HasCollisionStay<T>)
+						{
+							ptr->collisionStay_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnCollisionStay(other); };
+						}
+						if constexpr (HasCollisionExit<T>)
+						{
+							ptr->collisionExit_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnCollisionExit(other); };
+						}
+						if constexpr (HasTriggerEnter<T>)
+						{
+							ptr->triggerEnter_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnTriggerEnter(other); };
+						}
+						if constexpr (HasTriggerStay<T>)
+						{
+							ptr->triggerStay_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnTriggerStay(other); };
+						}
+						if constexpr (HasTriggerExit<T>)
+						{
+							ptr->triggerExit_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnTriggerExit(other); };
+						}
+					};
 			}
 
-			/// [EN] Record all four cross-references at once so every lookup path (by ComponentID, by type_index, by name) stays in sync.
-			/// [JP] 4つの相互参照を一度に記録し、全ての検索経路（ComponentID による、type_index による、名前による）が同期した状態を保つようにする。
-			MetadataMap()[id] = meta;
+			/// [EN] The metadata overload records the ComponentID and name cross-references shared by every registration; the type_index mapping is added here because only this overload knows T. Together they keep every lookup path (by ComponentID, by type_index, by name) in sync.
+			/// [JP] ComponentID と名前の相互参照は全ての登録に共通する処理として Register のメタデータ版が記録し、type_index の対応だけは T を知っているこの版でここに追加する。両方が揃うことで、全ての検索経路（ComponentID による、type_index による、名前による）が同期した状態を保つ。
+			Register(name, category, meta);
 			TypeIndex()[std::type_index(typeid(T))] = id;
-			NameMap()[id] = name;
-			NameIndex()[name] = id;
 		}
 
 		/**
 		* [EN]
-		* Removes id's entry from every cross-reference map Register<T>()
-		* populates (MetadataMap(), InternalID(), TypeIndex(), NameMap(),
-		* NameIndex()). Used by hot reload to purge a component before the
+		* Registers a component from an already-built ComponentMetadata
+		* under name and category, recording the ComponentID-to-metadata
+		* and ComponentID-to-name cross-references. It takes no type, so it
+		* never touches TypeIndex(): a component registered only through
+		* this overload (e.g. a C# script, where many components share a
+		* single native type) is looked up by ComponentID or by name.
+		*
+		* The caller fills in every metadata field the component needs -
+		* createSparseStorage_ for SparseSet storage, isComponentBehaviour_
+		* and setupLifecycle_ for ComponentBehaviour-derived components.
+		* name must be interned, because the ComponentID is the address of
+		* its character data.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 構築済みの ComponentMetadata から、name と category でコンポーネント
+		* を登録し、ComponentID とメタデータ、ComponentID と名前の相互参照を
+		* 記録する。型を受け取らないため TypeIndex() には一切触れない:
+		* この版だけで登録されたコンポーネント（例: 多数のコンポーネントが
+		* 単一のネイティブ型を共有する C# スクリプト）は、ComponentID か
+		* 名前で検索される。
+		*
+		* コンポーネントに必要なメタデータのフィールドは呼び出し側が全て
+		* 設定する - SparseSet 格納なら createSparseStorage_、
+		* ComponentBehaviour 派生なら isComponentBehaviour_ と
+		* setupLifecycle_。ComponentID はその文字データのアドレスなので、
+		* name は intern 済みでなければならない。
+		*/
+		static void Register(String name, String category, const ComponentMetadata& metadata);
+
+		/**
+		* [EN]
+		* Removes id's entry from every cross-reference map (MetadataMap(),
+		* InternalID(), TypeIndex(), NameMap(), NameIndex()), whichever
+		* Register overload created it. Used by hot reload to purge a component before the
 		* module owning its construct_/destruct_ function pointers — and,
 		* more importantly, T's std::type_info — is unloaded. Left undone,
 		* a stale std::type_index entry would remain in TypeIndex() after
@@ -233,9 +267,9 @@ namespace SeedCore
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* id のエントリを、Register<T>() が書き込む全ての相互参照マップ
-		* (MetadataMap()、InternalID()、TypeIndex()、NameMap()、NameIndex())
-		* から削除する。ホットリロードが、construct_/destruct_ 関数
+		* id のエントリを、どちらの Register で登録されたかに関わらず、
+		* 全ての相互参照マップ(MetadataMap()、InternalID()、TypeIndex()、
+		* NameMap()、NameIndex())から削除する。ホットリロードが、construct_/destruct_ 関数
 		* ポインタ — そしてより重要な T の std::type_info — を所有する
 		* モジュールがアンロードされる前に、コンポーネントを消し去るために
 		* 使う。これを怠ると、FreeLibrary() 後も TypeIndex() に古い

@@ -17,7 +17,7 @@
 #include <GraphicsEngine/PostProcess/PostEffect/Sharpness.h>
 #include <GraphicsEngine/PostProcess/PostProcess.h>
 #include <GraphicsEngine/System/IndicesSystem.h>
-#include <GraphicsEngine/Raytracing/RaytracingView.h>
+#include <GraphicsEngine/Raytracing/RaytracingDispatch.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
 
 namespace SeedCore

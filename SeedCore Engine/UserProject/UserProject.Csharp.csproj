@@ -1,5 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+		<CompilerGeneratedFilesOutputPath>Reflection</CompilerGeneratedFilesOutputPath>
+	</PropertyGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\SeedCore\SeedCore.Csharp.csproj" Private="false" />
+		<ProjectReference Include="..\SeedCore\Generator\SeedCore.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+	</ItemGroup>
+	<ItemGroup>
+		<Compile Remove="Reflection\**" />
 	</ItemGroup>
 </Project>

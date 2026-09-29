@@ -96,6 +96,8 @@ namespace SeedCore
 		LayerRegistry::Load();
 
 		std::filesystem::path pluginDirectory = FileDirectory::ExecutableDirectory();
+		csharpHost_.Initialize(pluginDirectory);
+		csharpHost_.Load(*world_);
 		pluginHost_.Initialize(pluginDirectory, nullptr);
 		pluginHost_.Load(*world_);
 
@@ -134,6 +136,7 @@ namespace SeedCore
 		if (world_)
 		{
 			pluginHost_.Unload(*world_);
+			csharpHost_.Unload(*world_);
 		}
 
 		InputSystem::Finalize();

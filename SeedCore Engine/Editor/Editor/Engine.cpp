@@ -97,9 +97,10 @@ namespace SeedCore
 		LayerRegistry::Load();
 
 		csharpHost_.Initialize(FileDirectory::ExecutableDirectory());
+		csharpHost_.Load(*world_);
 		pluginHost_.Initialize(FileDirectory::ExecutableDirectory(), ImGui::GetCurrentContext());
 		pluginHost_.Load(*world_);
-		hotReload_.Initialize(pluginHost_);
+		hotReload_.Initialize(pluginHost_, csharpHost_);
 
 		editorCamera_.Eye(editorConfig_.cameraEye_);
 		editorCamera_.Focus(editorConfig_.cameraFocus_);
@@ -193,7 +194,7 @@ namespace SeedCore
 		if (world_)
 		{
 			pluginHost_.Unload(*world_);
-			csharpHost_.Finalize();
+			csharpHost_.Unload(*world_);
 		}
 
 		InputSystem::Finalize();

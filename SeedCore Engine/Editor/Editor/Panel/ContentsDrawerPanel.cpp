@@ -1054,13 +1054,13 @@ namespace SeedCore
 
 			if (ImGui::MenuItem("新規 C++ スクリプト"))
 			{
-				RequestCreateScript(relativePath);
+				RequestCreateScript(relativePath, false);
 				ImGui::CloseCurrentPopup();
 			}
 
 			if (ImGui::MenuItem("新規 C# スクリプト"))
 			{
-				// TODO C#
+				RequestCreateScript(relativePath, true);
 				ImGui::CloseCurrentPopup();
 			}
 
@@ -1365,13 +1365,13 @@ namespace SeedCore
 
 			if (ImGui::MenuItem("新規 C++ スクリプト"))
 			{
-				RequestCreateScript(selectedDirectory_);
+				RequestCreateScript(selectedDirectory_, false);
 				ImGui::CloseCurrentPopup();
 			}
 
 			if (ImGui::MenuItem("新規 C# スクリプト"))
 			{
-				// TODO C#
+				RequestCreateScript(selectedDirectory_, true);
 				ImGui::CloseCurrentPopup();
 			}
 
@@ -1495,10 +1495,11 @@ namespace SeedCore
 		renameBuffer_.resize(256);
 	}
 
-	void ContentsDrawerPanel::RequestCreateScript(const std::string& parentRelative)
+	void ContentsDrawerPanel::RequestCreateScript(const std::string& parentRelative, Bool csharp)
 	{
 		openCreateScriptPopup_ = true;
 		createScriptNeedsFocus_ = true;
+		createScriptCsharp_ = csharp;
 		createScriptParentRelative_ = parentRelative;
 		createScriptNameBuffer_ = "NewScript";
 		createScriptNameBuffer_.resize(256);
@@ -1506,14 +1507,15 @@ namespace SeedCore
 
 	void ContentsDrawerPanel::DrawCreateScriptPopup()
 	{
+		const Char* title = createScriptCsharp_ ? "新規 C# スクリプト" : "新規 C++ スクリプト";
 		if (openCreateScriptPopup_)
 		{
-			ImGui::OpenPopup("新規 C++ スクリプト");
+			ImGui::OpenPopup(title);
 			openCreateScriptPopup_ = false;
 		}
 
 		Bool open = true;
-		if (ImGui::BeginPopupModal("新規 C++ スクリプト", &open, ImGuiWindowFlags_AlwaysAutoResize))
+		if (ImGui::BeginPopupModal(title, &open, ImGuiWindowFlags_AlwaysAutoResize))
 		{
 			if (createScriptNeedsFocus_)
 			{
@@ -1577,13 +1579,45 @@ namespace SeedCore
 
 		std::string baseName = sanitized;
 		std::string finalName = baseName;
-		for (Int index = 2; std::filesystem::exists(targetDirectory / (finalName + ".h")) || std::filesystem::exists(targetDirectory / (finalName + ".cpp")); ++index)
+		for (Int index = 2; std::filesystem::exists(targetDirectory / (finalName + ".h")) || std::filesystem::exists(targetDirectory / (finalName + ".cpp")) || std::filesystem::exists(targetDirectory / (finalName + ".cs")); ++index)
 		{
-			finalName = baseName + "(" + std::to_string(index) + ")";
+			finalName = baseName + std::to_string(index);
 		}
 
 		std::error_code errorCode;
 		std::filesystem::create_directories(targetDirectory, errorCode);
+
+		if (createScriptCsharp_)
+		{
+			std::string csharpContent =
+				"using System;\r\n"
+				"using SeedCore;\r\n"
+				"\r\n"
+				"public class " + finalName + " : SeedScript\r\n"
+				"{\r\n"
+				"\tvoid OnStart() // 開始時に呼ばれる初期化処理\r\n"
+				"\t{\r\n"
+				"\r\n"
+				"\t}\r\n"
+				"\r\n"
+				"\tvoid OnTick(Single elapsedTime) // 更新処理\r\n"
+				"\t{\r\n"
+				"\r\n"
+				"\t}\r\n"
+				"}\r\n";
+
+			std::filesystem::path csharpFullPath = targetDirectory / (finalName + ".cs");
+			std::ofstream csharpFile(csharpFullPath, std::ios::binary);
+			csharpFile << csharpContent;
+			csharpFile.close();
+
+			needsRebuild_ = true;
+
+			SC_LOG_NOTICE("ContentsDrawerPanel: C# スクリプトを作成しました: {}", finalName);
+
+			ShellExecuteW(NULL, L"open", csharpFullPath.wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+			return;
+		}
 
 		std::string projectRelativeHeader = projectRelativeDirectory.empty() ? (finalName + ".h") : (projectRelativeDirectory + "/" + finalName + ".h");
 		std::string projectRelativeCpp = projectRelativeDirectory.empty() ? (finalName + ".cpp") : (projectRelativeDirectory + "/" + finalName + ".cpp");

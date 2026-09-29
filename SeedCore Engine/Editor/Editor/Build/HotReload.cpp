@@ -4,6 +4,9 @@
 #include <FoundationEngine/Log/Notice.h>
 #include <FoundationEngine/Plugin/PluginHost.h>
 #include <FoundationEngine/Plugin/PluginModule.h>
+#include <FoundationEngine/Bridge/CsharpHost.h>
+#include <FoundationEngine/Time/GameTimer.h>
+#include <FoundationEngine/World/World.h>
 
 namespace SeedCore
 {
@@ -20,20 +23,31 @@ namespace SeedCore
 
 	HotReload::~HotReload()
 	{
-		if (buildProcessHandle_)
+		for (BuildTask* task : { &cplusplusBuild_, &csharpBuild_ })
 		{
-			CloseHandle(buildProcessHandle_);
-		}
-		if (buildOutputReadPipe_)
-		{
-			CloseHandle(buildOutputReadPipe_);
+			if (task->process_)
+			{
+				CloseHandle(task->process_);
+			}
+			if (task->outputPipe_)
+			{
+				CloseHandle(task->outputPipe_);
+			}
 		}
 	}
 
-	void HotReload::Initialize(PluginHost& pluginHost)
+	void HotReload::Initialize(PluginHost& pluginHost, CsharpHost& csharpHost)
 	{
 		pluginHost_ = &pluginHost;
 		userProjectPlugin_ = pluginHost.Find("UserProject.Cplusplus");
+		csharpHost_ = &csharpHost;
+
+		std::filesystem::path csharpAssembly = FileDirectory::ExecutableDirectory().parent_path() / "Csharp" / "UserProject.Csharp.dll";
+		Uint64 csharpSourceWriteTime = ScanSourceLastWriteTime(true);
+		if (GetLastWriteTime(csharpAssembly) >= csharpSourceWriteTime)
+		{
+			csharpBuild_.lastTriggeredWriteTime_ = csharpSourceWriteTime;
+		}
 	}
 
 	std::filesystem::path HotReload::UserProjectSourceDirectory()
@@ -50,6 +64,11 @@ namespace SeedCore
 		return UserProjectSourceDirectory() / "UserProject.Cplusplus.vcxproj";
 	}
 
+	std::filesystem::path HotReload::UserProjectCsprojPath()
+	{
+		return UserProjectSourceDirectory() / "UserProject.Csharp.csproj";
+	}
+
 	Uint64 HotReload::GetLastWriteTime(const std::filesystem::path& path)
 	{
 		WIN32_FILE_ATTRIBUTE_DATA attributeData{};
@@ -64,7 +83,7 @@ namespace SeedCore
 		return writeTime.QuadPart;
 	}
 
-	Uint64 HotReload::ScanSourceLastWriteTime()
+	Uint64 HotReload::ScanSourceLastWriteTime(Bool csharp)
 	{
 		std::error_code errorCode;
 		std::filesystem::path sourceDirectory = UserProjectSourceDirectory();
@@ -77,7 +96,7 @@ namespace SeedCore
 			return 0;
 		}
 
-		for (const auto& entry : iterator)
+		for (const std::filesystem::directory_entry& entry : iterator)
 		{
 			if (!entry.is_regular_file(errorCode))
 			{
@@ -85,14 +104,22 @@ namespace SeedCore
 			}
 
 			std::filesystem::path extension = entry.path().extension();
-			if (extension != L".cpp" && extension != L".h" && extension != L".hpp")
+			if (csharp)
+			{
+				if (extension != L".cs")
+				{
+					continue;
+				}
+			}
+			else if (extension != L".cpp" && extension != L".h" && extension != L".hpp")
 			{
 				continue;
 			}
 
-			/// [EN] The codegen output is rewritten by the build's own pre-build step, so counting it here would make every build's output look like a fresh source edit and trigger another build. The generated file is derived entirely from the headers already being scanned, so ignoring it loses no change detection.
-			/// [JP] コード生成の出力はビルド自身のプレビルドステップによって書き換えられるため、ここで数えるとビルドの出力が新しいソース編集に見えてしまい、さらにビルドを誘発してしまう。生成ファイルの内容はここでスキャン済みのヘッダから完全に導出されるので、無視しても変更検知は失われない。
-			if (entry.path().filename().wstring().ends_with(L".generated.cpp"))
+			/// [EN] The codegen output is rewritten by the build itself, so counting it here would make every build's output look like a fresh source edit and trigger another build. The generated file is derived entirely from the sources already being scanned, so ignoring it loses no change detection.
+			/// [JP] コード生成の出力はビルド自身によって書き換えられるため、ここで数えるとビルドの出力が新しいソース編集に見えてしまい、さらにビルドを誘発してしまう。生成ファイルの内容はここでスキャン済みのソースから完全に導出されるので、無視しても変更検知は失われない。
+			std::wstring fileName = entry.path().filename().wstring();
+			if (fileName.ends_with(L".generated.cpp") || fileName.ends_with(L".generated.cs"))
 			{
 				continue;
 			}
@@ -175,7 +202,7 @@ namespace SeedCore
 		return result;
 	}
 
-	void HotReload::TriggerBuild()
+	void HotReload::TriggerCplusplusBuild()
 	{
 		if (!msbuildResolved_)
 		{
@@ -220,6 +247,24 @@ namespace SeedCore
 
 		std::wstring commandLine = std::format(L"\"{}\" \"{}\" /nologo /verbosity:minimal /p:Configuration={} /p:Platform=x64 /p:BuildProjectReferences=false /p:HotReloadPdbName={} /p:SolutionDir=\"{}\"", msbuildPath_.wstring(), UserProjectVcxprojPath().wstring(), configuration, hotReloadPdbName, solutionDirArgument);
 
+		Launch(cplusplusBuild_, commandLine, "UserProject");
+	}
+
+	void HotReload::TriggerCsharpBuild()
+	{
+#ifdef _DEBUG
+		const Wchar* configuration = L"Debug";
+#else
+		const Wchar* configuration = L"Release";
+#endif
+
+		std::wstring commandLine = std::format(L"dotnet build \"{}\" --no-dependencies -c {} -nologo -v:q", UserProjectCsprojPath().wstring(), configuration);
+
+		Launch(csharpBuild_, commandLine, "UserProject (C#)");
+	}
+
+	Bool HotReload::Launch(BuildTask& task, std::wstring commandLine, const Char* label)
+	{
 		SECURITY_ATTRIBUTES securityAttributes{};
 		securityAttributes.nLength = sizeof(securityAttributes);
 		securityAttributes.bInheritHandle = TRUE;
@@ -228,8 +273,8 @@ namespace SeedCore
 		HANDLE writePipe = nullptr;
 		if (!CreatePipe(&readPipe, &writePipe, &securityAttributes, 0))
 		{
-			SC_LOG_WARNING("HotReload: UserProject の自動ビルド起動に失敗しました(パイプ作成失敗)。");
-			return;
+			SC_LOG_WARNING("HotReload: {} の自動ビルド起動に失敗しました(パイプ作成失敗)。", label);
+			return false;
 		}
 		SetHandleInformation(readPipe, HANDLE_FLAG_INHERIT, 0);
 
@@ -248,113 +293,133 @@ namespace SeedCore
 
 		if (!created)
 		{
-			SC_LOG_WARNING("HotReload: UserProject の自動ビルド起動に失敗しました。");
+			SC_LOG_WARNING("HotReload: {} の自動ビルド起動に失敗しました。", label);
 			CloseHandle(readPipe);
-			return;
+			return false;
 		}
 
 		CloseHandle(processInfo.hThread);
-		buildProcessHandle_ = processInfo.hProcess;
-		buildOutputReadPipe_ = readPipe;
-		buildOutput_.clear();
+		task.process_ = processInfo.hProcess;
+		task.outputPipe_ = readPipe;
+		task.output_.clear();
 
-		SC_LOG_NOTICE("HotReload: UserProject の自動ビルドを開始しました。");
+		SC_LOG_NOTICE("HotReload: {} の自動ビルドを開始しました。", label);
+		return true;
 	}
 
-	void HotReload::DrainBuildOutput()
+	void HotReload::Drain(BuildTask& task)
 	{
-		if (!buildOutputReadPipe_)
+		if (!task.outputPipe_)
 		{
 			return;
 		}
 
 		DWORD bytesAvailable = 0;
-		while (PeekNamedPipe(buildOutputReadPipe_, nullptr, 0, nullptr, &bytesAvailable, nullptr) && bytesAvailable > 0)
+		while (PeekNamedPipe(task.outputPipe_, nullptr, 0, nullptr, &bytesAvailable, nullptr) && bytesAvailable > 0)
 		{
 			Char buffer[512]{};
 			DWORD bytesRead = 0;
-			if (!ReadFile(buildOutputReadPipe_, buffer, sizeof(buffer) - 1, &bytesRead, nullptr) || bytesRead == 0)
+			if (!ReadFile(task.outputPipe_, buffer, sizeof(buffer) - 1, &bytesRead, nullptr) || bytesRead == 0)
 			{
 				break;
 			}
-			buildOutput_.append(buffer, bytesRead);
+			task.output_.append(buffer, bytesRead);
 		}
 	}
 
-	void HotReload::PollBuildProcess()
+	void HotReload::Poll(BuildTask& task, const Char* label)
 	{
-		if (!buildProcessHandle_)
+		if (!task.process_)
 		{
 			return;
 		}
 
-		DrainBuildOutput();
+		Drain(task);
 
-		if (WaitForSingleObject(buildProcessHandle_, 0) != WAIT_OBJECT_0)
+		if (WaitForSingleObject(task.process_, 0) != WAIT_OBJECT_0)
 		{
 			return;
 		}
 
-		/// [EN] One final drain in case output arrived between the last DrainBuildOutput() and the process actually exiting.
-		/// [JP] 直前の DrainBuildOutput() 呼び出しからプロセス終了までの間に届いた出力を取りこぼさないよう、最後にもう一度読み出す。
-		DrainBuildOutput();
+		/// [EN] One final drain in case output arrived between the last Drain() and the process actually exiting.
+		/// [JP] 直前の Drain() 呼び出しからプロセス終了までの間に届いた出力を取りこぼさないよう、最後にもう一度読み出す。
+		Drain(task);
 
 		DWORD exitCode = 0;
-		GetExitCodeProcess(buildProcessHandle_, &exitCode);
-		CloseHandle(buildProcessHandle_);
-		buildProcessHandle_ = nullptr;
+		GetExitCodeProcess(task.process_, &exitCode);
+		CloseHandle(task.process_);
+		task.process_ = nullptr;
 
-		CloseHandle(buildOutputReadPipe_);
-		buildOutputReadPipe_ = nullptr;
+		CloseHandle(task.outputPipe_);
+		task.outputPipe_ = nullptr;
 
 		if (exitCode == 0)
 		{
-			SC_LOG_NOTICE("HotReload: UserProject の自動ビルドが完了しました。");
+			SC_LOG_NOTICE("HotReload: {} の自動ビルドが完了しました。", label);
 
-			/// [EN] The build process exiting is a stronger guarantee that the DLL is complete than any timestamp-stability window could be — every handle the linker held is closed by then. Reloading on this instead of waiting for the write-time watcher to settle removes that wait from the edit-to-reload path entirely.
-			/// [JP] ビルドプロセスが終了したという事実は、DLLが完全に書き終わっている保証として、タイムスタンプの安定待ちより強い(その時点でリンカが保持していたハンドルは全て閉じられている)。更新時刻監視の安定待ちを待たずにこれを合図としてリロードすることで、編集からリロードまでの待ち時間からその分を丸ごと削れる。
-			reloadRequested_ = true;
+			/// [EN] The build process exiting is a stronger guarantee that the output is complete than any timestamp-stability window could be — every handle the build held is closed by then. Reloading on this instead of waiting for the write-time watcher to settle removes that wait from the edit-to-reload path entirely.
+			/// [JP] ビルドプロセスが終了したという事実は、出力が完全に書き終わっている保証として、タイムスタンプの安定待ちより強い(その時点でビルドが保持していたハンドルは全て閉じられている)。更新時刻監視の安定待ちを待たずにこれを合図としてリロードすることで、編集からリロードまでの待ち時間からその分を丸ごと削れる。
+			task.reloadRequested_ = true;
 		}
 		else
 		{
-			SC_LOG_WARNING("HotReload: UserProject の自動ビルドが失敗しました(終了コード {})。\n{}", exitCode, buildOutput_);
+			SC_LOG_WARNING("HotReload: {} の自動ビルドが失敗しました(終了コード {})。\n{}", label, exitCode, task.output_);
 		}
 
-		buildOutput_.clear();
+		task.output_.clear();
+	}
+
+	Bool HotReload::Settled(BuildTask& task, Uint64 writeTime, Uint64 nowTick)
+	{
+		if (writeTime == 0 || writeTime == task.lastTriggeredWriteTime_)
+		{
+			return false;
+		}
+
+		if (writeTime != task.pendingWriteTime_)
+		{
+			task.pendingWriteTime_ = writeTime;
+			task.pendingStableSinceTick_ = nowTick;
+			return false;
+		}
+
+		if (nowTick - task.pendingStableSinceTick_ < SourceStableWindowMilliseconds)
+		{
+			return false;
+		}
+
+		task.lastTriggeredWriteTime_ = writeTime;
+		return true;
 	}
 
 	void HotReload::Tick(World& world)
 	{
-		PollBuildProcess();
+		Poll(cplusplusBuild_, "UserProject");
+		Poll(csharpBuild_, "UserProject (C#)");
 
 		Uint64 nowTick = GetTickCount64();
 
-		if (!buildProcessHandle_ && nowTick - lastSourceScanTick_ >= SourceScanIntervalMilliseconds)
+		if (!cplusplusBuild_.process_ && nowTick - cplusplusBuild_.lastScanTick_ >= SourceScanIntervalMilliseconds)
 		{
-			lastSourceScanTick_ = nowTick;
-
-			Uint64 sourceWriteTime = ScanSourceLastWriteTime();
-			if (sourceWriteTime != 0 && sourceWriteTime != lastTriggeredSourceWriteTime_)
+			cplusplusBuild_.lastScanTick_ = nowTick;
+			if (Settled(cplusplusBuild_, ScanSourceLastWriteTime(false), nowTick))
 			{
-				if (sourceWriteTime == pendingSourceWriteTime_)
-				{
-					if (nowTick - pendingSourceStableSinceTick_ >= SourceStableWindowMilliseconds)
-					{
-						lastTriggeredSourceWriteTime_ = sourceWriteTime;
-						TriggerBuild();
-					}
-				}
-				else
-				{
-					pendingSourceWriteTime_ = sourceWriteTime;
-					pendingSourceStableSinceTick_ = nowTick;
-				}
+				TriggerCplusplusBuild();
 			}
 		}
 
-		if (reloadRequested_)
+		if (csharpHost_ && !csharpBuild_.process_ && nowTick - csharpBuild_.lastScanTick_ >= SourceScanIntervalMilliseconds)
 		{
-			reloadRequested_ = false;
+			csharpBuild_.lastScanTick_ = nowTick;
+			if (Settled(csharpBuild_, ScanSourceLastWriteTime(true), nowTick))
+			{
+				TriggerCsharpBuild();
+			}
+		}
+
+		if (cplusplusBuild_.reloadRequested_)
+		{
+			cplusplusBuild_.reloadRequested_ = false;
 
 			/// [EN] The plugin may not have been present at Initialize (e.g. UserProject.Cplusplus.dll built for the first time during this session) — pick it up now that a build has produced it.
 			/// [JP] Initialize 時点ではプラグインが存在しなかった可能性がある(例: このセッション中に UserProject.Cplusplus.dll が初めてビルドされた) — ビルドが生成した今、拾い直す。
@@ -366,6 +431,24 @@ namespace SeedCore
 			if (pluginHost_ && userProjectPlugin_)
 			{
 				pluginHost_->ReloadModule(world, *userProjectPlugin_);
+			}
+		}
+
+		if (csharpBuild_.reloadRequested_)
+		{
+			if (world.Timer().Playing())
+			{
+				if (!csharpReloadDeferred_)
+				{
+					SC_LOG_NOTICE("HotReload: 再生中のため、C# スクリプトのリロードは再生を止めたときに行います。");
+					csharpReloadDeferred_ = true;
+				}
+			}
+			else
+			{
+				csharpBuild_.reloadRequested_ = false;
+				csharpReloadDeferred_ = false;
+				csharpHost_->Reload(world);
 			}
 		}
 	}

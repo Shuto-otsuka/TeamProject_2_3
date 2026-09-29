@@ -1194,7 +1194,7 @@ namespace SeedCore
 			if (field.array_.size_ > 0 || field.array_.add_)
 			{
 				Size count = field.array_.size_;
-				Bool isPayloadArray = field.assetType_ != PayloadAssetType::None;
+				Bool isPayloadArray = field.assetType_ != PayloadType::None;
 
 				ImGui::PushID(field.name_.c_str());
 
@@ -1307,7 +1307,7 @@ namespace SeedCore
 
 							Size elementOffset = baseOffset + element.offset_;
 
-							if (element.assetType_ != PayloadAssetType::None)
+							if (element.assetType_ != PayloadType::None)
 							{
 								DrawPayloadField(element, ptr, entity, componentID, elementOffset);
 							}
@@ -1338,7 +1338,7 @@ namespace SeedCore
 
 			Size fieldOffset = baseOffset + field.offset_;
 
-			if (field.assetType_ != PayloadAssetType::None)
+			if (field.assetType_ != PayloadType::None)
 			{
 				ImGui::PushID(static_cast<Int>(fieldOffset));
 				DrawPayloadField(field, ptr, entity, componentID, fieldOffset);
@@ -1567,35 +1567,35 @@ namespace SeedCore
 		}
 	}
 
-	const Char* InspectorPanel::GetPayloadDropType(PayloadAssetType assetType)const
+	const Char* InspectorPanel::GetPayloadDropType(PayloadType assetType)const
 	{
 		switch (assetType)
 		{
-		case PayloadAssetType::Texture:
+		case PayloadType::Texture:
 			return "ASSET_TEXTURE";
-		case PayloadAssetType::Model:
+		case PayloadType::Model:
 			return "ASSET_MODEL";
-		case PayloadAssetType::Effect:
+		case PayloadType::Effect:
 			return "ASSET_EFFECT";
-		case PayloadAssetType::Audio:
+		case PayloadType::Audio:
 			return "ASSET_AUDIO";
-		case PayloadAssetType::Font:
+		case PayloadType::Font:
 			return "ASSET_FONT";
-		case PayloadAssetType::Movie:
+		case PayloadType::Movie:
 			return "ASSET_MOVIE";
-		case PayloadAssetType::Animation:
+		case PayloadType::Animation:
 			return "ASSET_ANIMATION";
-		case PayloadAssetType::MeshCollision:
+		case PayloadType::MeshCollision:
 			return "ASSET_MESHCOLLISION";
-		case PayloadAssetType::Material:
+		case PayloadType::Material:
 			return "ASSET_MATERIAL";
-		case PayloadAssetType::Skeleton:
+		case PayloadType::Skeleton:
 			return "ASSET_SKELETON";
-		case PayloadAssetType::Sky:
+		case PayloadType::Sky:
 			return "ASSET_SKY";
-		case PayloadAssetType::Prefab:
+		case PayloadType::Prefab:
 			return "ASSET_PREFAB";
-		case PayloadAssetType::Actor:
+		case PayloadType::Actor:
 			return "HIERARCHY_ACTOR";
 		default:
 			return nullptr;
@@ -1613,9 +1613,9 @@ namespace SeedCore
 
 		const Char* dropType = GetPayloadDropType(field.assetType_);
 
-		/// [EN] PayloadAssetType::Actor references a live Actor by persistent ID via World::FindActor, not a ResourceCache asset -- resolve/accept it separately from every other payload type.
-		/// [JP] PayloadAssetType::Actor は ResourceCache のアセットではなく、World::FindActor 経由で永続IDから生きた Actor を参照する -- 他の全ペイロード型とは別に解決/受け付けを行う。
-		if (field.assetType_ == PayloadAssetType::Actor)
+		/// [EN] PayloadType::Actor references a live Actor by persistent ID via World::FindActor, not a ResourceCache asset -- resolve/accept it separately from every other payload type.
+		/// [JP] PayloadType::Actor は ResourceCache のアセットではなく、World::FindActor 経由で永続IDから生きた Actor を参照する -- 他の全ペイロード型とは別に解決/受け付けを行う。
+		if (field.assetType_ == PayloadType::Actor)
 		{
 			Uint32 targetId = static_cast<Uint32>(*value);
 			Actor target = (targetId != 0) ? context_.worldContext_.world_->FindActor(targetId) : Actor();

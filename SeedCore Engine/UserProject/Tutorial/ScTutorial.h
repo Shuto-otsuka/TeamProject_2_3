@@ -58,7 +58,7 @@ public:
 	//float demo6_;  // シーンには保存されるが、インスペクターには表示されない（コードからだけ触りたい値向け）
 
 	//SC_PAYLOAD_FIELD_EX("参照テクスチャ", Texture)
-	//SeedCore::Uint32 demo7_;  // インスペクターにドラッグ&ドロップでアセットを設定できるフィールド（中身はアセットID）。Texture/Model/Prefab等、PayloadAssetType.hを参照
+	//SeedCore::Uint32 demo7_;  // インスペクターにドラッグ&ドロップでアセットを設定できるフィールド（中身はアセットID）。Texture/Model/Prefab等、PayloadType.hを参照
 
 	//=== Physics ===//
 

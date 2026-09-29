@@ -360,7 +360,7 @@ namespace SeedCore
 				{
 					/// [EN] An array's header only describes the array, and its elements follow as fields of their own that point straight at each value.
 					/// [JP] 配列の見出しは配列そのものの説明にすぎない。要素は、それぞれの値を直接指す個別のフィールドとして後に続く。
-					if (field.assetType_ == PayloadAssetType::None || field.array_.add_)
+					if (field.assetType_ == PayloadType::None || field.array_.add_)
 					{
 						continue;
 					}

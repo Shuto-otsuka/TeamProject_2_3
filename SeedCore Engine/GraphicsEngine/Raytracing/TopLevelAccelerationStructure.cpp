@@ -27,12 +27,12 @@ namespace SeedCore
 			resourceDesc.Flags = (heapType == D3D12_HEAP_TYPE_DEFAULT) ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
 
 			/// [EN] Soft failure: a null return makes Build() bail out and leave the
-			///      TLAS unbuilt, so TLASBindlessIndex() stays 0xFFFFFFFF and every
+			///      TLAS unbuilt, so the published TLAS index stays 0xFFFFFFFF and every
 			///      RT effect takes its existing "no TLAS" neutral path. Hard-failing
 			///      here (modal box + __debugbreak) would instead fire once per
 			///      allocation while a removed device fails every call in a row.
 			/// [JP] ソフトフェイル: null を返すと Build() が中断して TLAS が未構築の
-			///      ままになり、TLASBindlessIndex() は 0xFFFFFFFF のままなので、各 RT
+			///      ままになり、公開される TLAS インデックスは 0xFFFFFFFF のままなので、各 RT
 			///      エフェクトが既存の「TLAS なし」中立経路へ倒れる。ここでハード
 			///      フェイル(モーダル + __debugbreak)すると、デバイス削除で全呼び出しが
 			///      連続して失敗する状況では確保のたびに発火してしまう。

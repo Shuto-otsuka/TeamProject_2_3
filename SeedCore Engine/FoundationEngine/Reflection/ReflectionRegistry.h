@@ -73,7 +73,7 @@ namespace SeedCore
 
 	/// [EN] Identifies the kind of asset a payload (asset-reference) field points at, driving which asset browser/drop target the inspector shows.
 	/// [JP] ペイロード（アセット参照）フィールドが指すアセットの種類を識別する。どのアセットブラウザ/ドロップターゲットをインスペクタに表示するかを決める。
-	enum class PayloadAssetType
+	enum class PayloadType
 	{
 		/// [EN] Not a payload field.
 		/// [JP] ペイロードフィールドではない。
@@ -217,7 +217,7 @@ namespace SeedCore
 
 		/// [EN] If this is a payload (asset-reference) field, the kind of asset it references; None otherwise.
 		/// [JP] このフィールドがペイロード（アセット参照）フィールドであれば、参照するアセットの種類。そうでなければ None。
-		PayloadAssetType assetType_ = PayloadAssetType::None;
+		PayloadType assetType_ = PayloadType::None;
 
 		/// [EN] Direct pointer to the field's storage, used instead of offset_ when the field isn't part of a POD layout.
 		/// [JP] フィールドのストレージへの直接ポインタ。フィールドが POD レイアウトの一部でない場合に offset_ の代わりに使用される。
@@ -250,6 +250,49 @@ namespace SeedCore
 		/// [EN] Whether this field should currently be shown in the inspector.
 		/// [JP] このフィールドを現在インスペクタに表示すべきかどうか。
 		Bool editorVisible_ = true;
+	};
+
+	/**
+	* [EN]
+	* Describes a single member function of a component/type that can be
+	* called by name: its name, the value kinds of its parameters and
+	* result, and a type-erased invoker. The counterpart of FieldInfo for
+	* functions.
+	*
+	* The invoker receives the component, an array holding the address of
+	* each argument, and the address to write the result to (nullptr for a
+	* function returning nothing). It does not check the arguments itself -
+	* callers compare them against parameters_ and result_ first.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 名前で呼び出せる、コンポーネント/型の単一メンバー関数を記述する:
+	* 名前、引数と戻り値の値種別、および型消去された呼び出し処理。
+	* FieldInfo の関数版。
+	*
+	* 呼び出し処理は、コンポーネント、各引数のアドレスを並べた配列、
+	* 戻り値の書き込み先のアドレス（戻り値が無い関数では nullptr）を
+	* 受け取る。引数の確認は自分では行わない - 呼び出し側が先に
+	* parameters_ と result_ と照らし合わせる。
+	*/
+	struct FunctionInfo
+	{
+		/// [EN] The function's name, used to look it up.
+		/// [JP] 関数名。検索に使う。
+		String name_;
+
+		/// [EN] Value kind of each parameter, in declaration order.
+		/// [JP] 各引数の値種別。宣言順。
+		DynamicArray<AttributeType> parameters_;
+
+		/// [EN] Value kind of the result; Unknown when the function returns nothing.
+		/// [JP] 戻り値の値種別。戻り値が無い関数では Unknown。
+		AttributeType result_ = AttributeType::Unknown;
+
+		/// [EN] Calls the function on component, reading each argument through arguments and writing the result through result.
+		/// [JP] component に対して関数を呼び出す。各引数は arguments から読み、戻り値は result へ書き込む。
+		std::function<void(void* component, void* const* arguments, void* result)> invoke_;
 	};
 
 	/**
@@ -352,6 +395,52 @@ namespace SeedCore
 		* 未登録であれば nullptr を返す。
 		*/
 		static const DynamicArray<EnumEntry>* GetEntries(const String& typeName);
+	};
+
+	/**
+	* [EN]
+	* Process-wide registry of the functions each component/type exposes
+	* for calling by name, keyed by the component's name. Populated by
+	* codegen for C++ (SC_FUNCTION in Tools/Python/Reflection.py) and by
+	* CsharpHost for C# ([SeedFunction]), and read by Actor::Function.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 各コンポーネント/型が名前で呼べるように公開している関数を、
+	* コンポーネント名をキーにして保持する、プロセス全体で共有される
+	* レジストリ。C++ はコード生成（Tools/Python/Reflection.py の
+	* SC_FUNCTION）、C# は CsharpHost（[SeedFunction]）によって埋められ、
+	* Actor::Function が読む。
+	*/
+	class SEEDCORE_API FunctionRegistry
+	{
+	public:
+		/**
+		* [EN]
+		* Returns the full registry mapping component names to their
+		* callable functions.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コンポーネント名を、その呼び出し可能な関数の一覧へ対応付ける、
+		* 完全なレジストリを返す。
+		*/
+		static FlatMap<String, DynamicArray<FunctionInfo>>& GetRegistry();
+
+		/**
+		* [EN]
+		* Adds function to the functions of the component named
+		* componentName, replacing a registered function of the same name.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* componentName という名前のコンポーネントの関数一覧へ function を
+		* 追加する。同じ名前の関数が登録済みであれば置き換える。
+		*/
+		static void Register(String componentName, FunctionInfo function);
 	};
 
 	/**

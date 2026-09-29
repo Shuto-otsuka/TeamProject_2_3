@@ -4,7 +4,7 @@
 #include <GraphicsEngine/DLSS/DlssManager.h>
 #include <GraphicsEngine/DLSS/DlssNormalRoughnessShader.h>
 #include <GraphicsEngine/DLSS/DlssBackgroundVelocityShader.h>
-#include <GraphicsEngine/Raytracing/RaytracingView.h>
+#include <GraphicsEngine/Raytracing/RaytracingDispatch.h>
 #include <GraphicsEngine/System/SceneSystem.h>
 
 namespace SeedCore

@@ -70,7 +70,7 @@ namespace SeedCore
 				void* data = world_->GetComponent(entity_.GetID(), id);
 				if (data)
 				{
-					meta.setupLifecycle_(data, world_, entity_);
+					meta.setupLifecycle_(data, world_, entity_, id);
 					static_cast<ComponentBehaviour*>(data)->componentName_ = ComponentRegistry::Name(id);
 				}
 			}

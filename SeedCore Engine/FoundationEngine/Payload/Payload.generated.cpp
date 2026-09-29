@@ -57,7 +57,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("AudioSource"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					AudioSource& obj = *static_cast<AudioSource*>(ptr);
-					outInfo.push_back({ String("サウンド"), offsetof(AudioSource, soundID_), AttributeType::Int, PayloadAssetType::Audio });
+					outInfo.push_back({ String("サウンド"), offsetof(AudioSource, soundID_), AttributeType::Int, PayloadType::Audio });
 				});
 			}
 		};
@@ -70,7 +70,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("Spawner"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					Spawner& obj = *static_cast<Spawner*>(ptr);
-					outInfo.push_back({ String("プレハブID"), offsetof(Spawner, prefabID_), AttributeType::Int, PayloadAssetType::Prefab });
+					outInfo.push_back({ String("プレハブID"), offsetof(Spawner, prefabID_), AttributeType::Int, PayloadType::Prefab });
 				});
 			}
 		};
@@ -88,7 +88,7 @@ namespace SeedCore
 						fi.name_ = String("メインターゲット");
 						fi.offset_ = offsetof(CameraBrain, mainTarget_);
 						fi.type_ = AttributeType::Int;
-						fi.assetType_ = PayloadAssetType::Actor;
+						fi.assetType_ = PayloadType::Actor;
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<CameraBrain*>(p); return o.mode_ != CameraBrainMode::Free && o.mode_ != CameraBrainMode::Cinematic; };
 						outInfo.push_back(std::move(fi));
 					}
@@ -97,7 +97,7 @@ namespace SeedCore
 						fi.name_ = String("サブターゲット");
 						fi.offset_ = offsetof(CameraBrain, subTarget_);
 						fi.type_ = AttributeType::Int;
-						fi.assetType_ = PayloadAssetType::Actor;
+						fi.assetType_ = PayloadType::Actor;
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<CameraBrain*>(p); return o.mode_ == CameraBrainMode::Lockon; };
 						outInfo.push_back(std::move(fi));
 					}
@@ -113,7 +113,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("AttachmentConstraint"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					AttachmentConstraint& obj = *static_cast<AttachmentConstraint*>(ptr);
-					outInfo.push_back({ String("ターゲット"), offsetof(AttachmentConstraint, target_), AttributeType::Int, PayloadAssetType::Actor });
+					outInfo.push_back({ String("ターゲット"), offsetof(AttachmentConstraint, target_), AttributeType::Int, PayloadType::Actor });
 				});
 			}
 		};
@@ -126,8 +126,8 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("Effector"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					Effector& obj = *static_cast<Effector*>(ptr);
-					outInfo.push_back({ String("ターゲット"), offsetof(Effector, target_), AttributeType::Int, PayloadAssetType::Actor });
-					outInfo.push_back({ String("ポール"), offsetof(Effector, pole_), AttributeType::Int, PayloadAssetType::Actor });
+					outInfo.push_back({ String("ターゲット"), offsetof(Effector, target_), AttributeType::Int, PayloadType::Actor });
+					outInfo.push_back({ String("ポール"), offsetof(Effector, pole_), AttributeType::Int, PayloadType::Actor });
 				});
 			}
 		};
@@ -140,7 +140,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("LookAtConstraint"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					LookAtConstraint& obj = *static_cast<LookAtConstraint*>(ptr);
-					outInfo.push_back({ String("ターゲット"), offsetof(LookAtConstraint, target_), AttributeType::Int, PayloadAssetType::Actor });
+					outInfo.push_back({ String("ターゲット"), offsetof(LookAtConstraint, target_), AttributeType::Int, PayloadType::Actor });
 				});
 			}
 		};
@@ -153,7 +153,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("ParentConstraint"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					ParentConstraint& obj = *static_cast<ParentConstraint*>(ptr);
-					outInfo.push_back({ String("ターゲット"), offsetof(ParentConstraint, target_), AttributeType::Int, PayloadAssetType::Actor });
+					outInfo.push_back({ String("ターゲット"), offsetof(ParentConstraint, target_), AttributeType::Int, PayloadType::Actor });
 				});
 			}
 		};
@@ -166,7 +166,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("PositionConstraint"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					PositionConstraint& obj = *static_cast<PositionConstraint*>(ptr);
-					outInfo.push_back({ String("ターゲット"), offsetof(PositionConstraint, target_), AttributeType::Int, PayloadAssetType::Actor });
+					outInfo.push_back({ String("ターゲット"), offsetof(PositionConstraint, target_), AttributeType::Int, PayloadType::Actor });
 				});
 			}
 		};
@@ -179,7 +179,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("RotationConstraint"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					RotationConstraint& obj = *static_cast<RotationConstraint*>(ptr);
-					outInfo.push_back({ String("ターゲット"), offsetof(RotationConstraint, target_), AttributeType::Int, PayloadAssetType::Actor });
+					outInfo.push_back({ String("ターゲット"), offsetof(RotationConstraint, target_), AttributeType::Int, PayloadType::Actor });
 				});
 			}
 		};
@@ -192,7 +192,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("Text"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					Text& obj = *static_cast<Text*>(ptr);
-					outInfo.push_back({ String("フォントID"), offsetof(Text, fontID_), AttributeType::Int, PayloadAssetType::Font });
+					outInfo.push_back({ String("フォントID"), offsetof(Text, fontID_), AttributeType::Int, PayloadType::Font });
 				});
 			}
 		};
@@ -210,7 +210,7 @@ namespace SeedCore
 						fi.name_ = String("スカイマップID");
 						fi.offset_ = offsetof(SkyLight, skymapID_);
 						fi.type_ = AttributeType::Int;
-						fi.assetType_ = PayloadAssetType::Sky;
+						fi.assetType_ = PayloadType::Sky;
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SkyLight*>(p); return o.useSkymap_; };
 						outInfo.push_back(std::move(fi));
 					}
@@ -226,7 +226,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("Mesh"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					Mesh& obj = *static_cast<Mesh*>(ptr);
-					outInfo.push_back({ String("メッシュID"), offsetof(Mesh, meshID_), AttributeType::Int, PayloadAssetType::Model });
+					outInfo.push_back({ String("メッシュID"), offsetof(Mesh, meshID_), AttributeType::Int, PayloadType::Model });
 				});
 			}
 		};
@@ -245,7 +245,7 @@ namespace SeedCore
 						header.name_ = String("アニメーションID");
 						header.offset_ = 0;
 						header.type_ = AttributeType::Int;
-						header.assetType_ = PayloadAssetType::Animation;
+						header.assetType_ = PayloadType::Animation;
 						header.array_.size_ = arr.size();
 						header.array_.add_ = [&obj]() { obj.animationIDs_.push_back({}); };
 						header.array_.remove_ = [&obj](Size idx) { if (idx < obj.animationIDs_.size()) obj.animationIDs_.erase(obj.animationIDs_.begin() + idx); };
@@ -253,7 +253,7 @@ namespace SeedCore
 						outInfo.push_back(std::move(header));
 						for (Size i = 0; i < arr.size(); ++i)
 						{
-							outInfo.push_back({ String("[" + std::to_string(i) + "]"), 0, AttributeType::Int, PayloadAssetType::Animation, &arr[i] });
+							outInfo.push_back({ String("[" + std::to_string(i) + "]"), 0, AttributeType::Int, PayloadType::Animation, &arr[i] });
 						}
 					}
 				});
@@ -274,7 +274,7 @@ namespace SeedCore
 						header.name_ = String("マテリアル");
 						header.offset_ = 0;
 						header.type_ = AttributeType::Int;
-						header.assetType_ = PayloadAssetType::Material;
+						header.assetType_ = PayloadType::Material;
 						header.array_.size_ = arr.size();
 						header.array_.add_ = [&obj]() { obj.materialIDs_.push_back({}); };
 						header.array_.remove_ = [&obj](Size idx) { if (idx < obj.materialIDs_.size()) obj.materialIDs_.erase(obj.materialIDs_.begin() + idx); };
@@ -282,7 +282,7 @@ namespace SeedCore
 						outInfo.push_back(std::move(header));
 						for (Size i = 0; i < arr.size(); ++i)
 						{
-							outInfo.push_back({ String("[" + std::to_string(i) + "]"), 0, AttributeType::Int, PayloadAssetType::Material, &arr[i] });
+							outInfo.push_back({ String("[" + std::to_string(i) + "]"), 0, AttributeType::Int, PayloadType::Material, &arr[i] });
 						}
 					}
 				});
@@ -297,7 +297,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("Skeleton"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					Skeleton& obj = *static_cast<Skeleton*>(ptr);
-					outInfo.push_back({ String("スケルトン"), offsetof(Skeleton, skeletonID_), AttributeType::Int, PayloadAssetType::Skeleton });
+					outInfo.push_back({ String("スケルトン"), offsetof(Skeleton, skeletonID_), AttributeType::Int, PayloadType::Skeleton });
 				});
 			}
 		};
@@ -310,7 +310,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("Movie"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					Movie& obj = *static_cast<Movie*>(ptr);
-					outInfo.push_back({ String("動画ID"), offsetof(Movie, movieID_), AttributeType::Int, PayloadAssetType::Movie });
+					outInfo.push_back({ String("動画ID"), offsetof(Movie, movieID_), AttributeType::Int, PayloadType::Movie });
 				});
 			}
 		};
@@ -323,7 +323,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("Image"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					Image& obj = *static_cast<Image*>(ptr);
-					outInfo.push_back({ String("テクスチャID"), offsetof(Image, textureID_), AttributeType::Int, PayloadAssetType::Texture });
+					outInfo.push_back({ String("テクスチャID"), offsetof(Image, textureID_), AttributeType::Int, PayloadType::Texture });
 				});
 			}
 		};
@@ -336,7 +336,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("MeshCollider"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					MeshCollider& obj = *static_cast<MeshCollider*>(ptr);
-					outInfo.push_back({ String("コリジョンメッシュ"), offsetof(MeshCollider, meshID_), AttributeType::Int, PayloadAssetType::MeshCollision });
+					outInfo.push_back({ String("コリジョンメッシュ"), offsetof(MeshCollider, meshID_), AttributeType::Int, PayloadType::MeshCollision });
 				});
 			}
 		};
@@ -349,7 +349,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("FixedJoint"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					FixedJoint& obj = *static_cast<FixedJoint*>(ptr);
-					outInfo.push_back({ String("接続先アクター"), offsetof(FixedJoint, connectedActor_), AttributeType::Int, PayloadAssetType::Actor });
+					outInfo.push_back({ String("接続先アクター"), offsetof(FixedJoint, connectedActor_), AttributeType::Int, PayloadType::Actor });
 				});
 			}
 		};
@@ -362,7 +362,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("HingeJoint"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					HingeJoint& obj = *static_cast<HingeJoint*>(ptr);
-					outInfo.push_back({ String("接続先アクター"), offsetof(HingeJoint, connectedActor_), AttributeType::Int, PayloadAssetType::Actor });
+					outInfo.push_back({ String("接続先アクター"), offsetof(HingeJoint, connectedActor_), AttributeType::Int, PayloadType::Actor });
 				});
 			}
 		};
@@ -375,7 +375,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("SliderJoint"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					SliderJoint& obj = *static_cast<SliderJoint*>(ptr);
-					outInfo.push_back({ String("接続先アクター"), offsetof(SliderJoint, connectedActor_), AttributeType::Int, PayloadAssetType::Actor });
+					outInfo.push_back({ String("接続先アクター"), offsetof(SliderJoint, connectedActor_), AttributeType::Int, PayloadType::Actor });
 				});
 			}
 		};
@@ -388,7 +388,7 @@ namespace SeedCore
 			{
 				PayloadRegistry::Register(String("SpringJoint"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					SpringJoint& obj = *static_cast<SpringJoint*>(ptr);
-					outInfo.push_back({ String("接続先アクター"), offsetof(SpringJoint, connectedActor_), AttributeType::Int, PayloadAssetType::Actor });
+					outInfo.push_back({ String("接続先アクター"), offsetof(SpringJoint, connectedActor_), AttributeType::Int, PayloadType::Actor });
 				});
 			}
 		};

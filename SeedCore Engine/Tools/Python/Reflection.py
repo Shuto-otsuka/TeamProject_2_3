@@ -510,14 +510,14 @@ def process_file(file_path, project_root, global_enums, enum_headers, enum_owner
                     lines.append(f'\t\t\t\t\t\tfor (Size i = 0; i < arr.size(); ++i)')
                     lines.append(f'\t\t\t\t\t\t{{')
                     if is_serialize_only:
-                        lines.append(f'\t\t\t\t\t\t\tFieldInfo elementInfo{{ String("[" + std::to_string(i) + "]"), 0, {attr_type}, PayloadAssetType::None, &arr[i] }};')
+                        lines.append(f'\t\t\t\t\t\t\tFieldInfo elementInfo{{ String("[" + std::to_string(i) + "]"), 0, {attr_type}, PayloadType::None, &arr[i] }};')
                         lines.append(f'\t\t\t\t\t\t\telementInfo.editorVisible_ = false;')
                         lines.append(f'\t\t\t\t\t\t\toutInfo.push_back(std::move(elementInfo));')
                     else:
                         lines.append(
                             f'\t\t\t\t\t\t\toutInfo.push_back({{ '
                             f'String("[" + std::to_string(i) + "]"), 0, {attr_type}, '
-                            f'PayloadAssetType::None, &arr[i] '
+                            f'PayloadType::None, &arr[i] '
                             f'}});'
                         )
                     lines.append(f'\t\t\t\t\t\t}}')

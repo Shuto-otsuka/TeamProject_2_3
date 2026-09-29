@@ -187,7 +187,7 @@
     <ClInclude Include="Raytracing\GlobalIllumination\GlobalIlluminationDenoiseShader.h" />
     <ClInclude Include="Raytracing\GlobalIllumination\GlobalIlluminationShader.h" />
     <ClInclude Include="Raytracing\RaytracingContext.h" />
-    <ClInclude Include="Raytracing\RaytracingView.h" />
+    <ClInclude Include="Raytracing\RaytracingDispatch.h" />
     <ClInclude Include="Raytracing\Reflection\ReflectionDenoiseShader.h" />
     <ClInclude Include="Raytracing\Reflection\ReflectionShader.h" />
     <ClInclude Include="Raytracing\Refraction\RefractionShader.h" />
@@ -567,6 +567,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
+    <None Include="Model\Morph\MorphBlend.hlsli" />
     <None Include="Model\Opaque\FurShading.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -587,6 +588,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
+    <None Include="Model\Skin\SkinBlend.hlsli" />
     <None Include="Model\Transparent\OitShading.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>

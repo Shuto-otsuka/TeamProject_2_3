@@ -1,0 +1,5 @@
+<Project>
+	<Target Name="SeedCoreCheckOutputType" BeforeTargets="Build" Condition="'$(MSBuildProjectExtension)' == '.csproj' And '$(OutputType)' != 'Library'">
+		<Error Text="$(MSBuildProjectName) の出力の種類が $(OutputType) になっています。エンジンの C# プロジェクトはクラス ライブラリにしてください（csproj の OutputType を削除）。" />
+	</Target>
+</Project>
