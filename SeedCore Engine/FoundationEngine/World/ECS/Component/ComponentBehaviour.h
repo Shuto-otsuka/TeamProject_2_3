@@ -187,9 +187,10 @@ namespace SeedCore
 
 	private:
 		friend class Actor;
-		friend class World;
-		friend class SystemScheduler;
 		friend class ComponentRegistry;
+		friend class CsharpBehaviour;
+		friend class SystemScheduler;
+		friend class World;
 		friend class WorldSnapshot;
 
 		/**

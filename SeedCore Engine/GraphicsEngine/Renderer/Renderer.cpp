@@ -193,7 +193,7 @@ namespace SeedCore
 		constantIndicesSystem_->SetClusterAssignIndex(lightSystem_->GetClusterAssignIndex());
 
 		modelRenderer_->Resize(device, bindlessHeap, *constantIndicesSystem_, *unorderedAccessIndicesSystem_, nativeWidth, nativeHeight);
-		raytracingRenderer_->Resize(device, bindlessHeap, nativeWidth, nativeHeight);
+		raytracingRenderer_->Resize(device, nativeWidth, nativeHeight);
 		timelineRenderer_->Resize(device, bindlessHeap, nativeWidth, nativeHeight);
 		modelTransformRenderer_->Resize(device, bindlessHeap, nativeWidth, nativeHeight);
 		materialRenderer_->Resize(device, bindlessHeap, nativeWidth, nativeHeight);
@@ -294,13 +294,14 @@ namespace SeedCore
 		///      既に設定済みである必要がある地点 — に実行する。実際のレイの
 		///      ディスパッチは、各ビューの G-Buffer の深度/法線ができた後に
 		///      ビューごとに行う。
-		raytracingRenderer_->Build(cmdList, device_, *modelRenderer_, deltaTime, celestialResult_.nightFactor_, lastCameraPosition_, skyTotalTime_, weatherState_);
+		ID3D12DescriptorHeap* heap = bindlessHeap_->Heap();
+		RootAddresses addresses{ shaderResourceIndicesSystem_->GameAddress(), unorderedAccessIndicesSystem_->GameAddress(), constantIndicesSystem_->GameConstantAddress() };
+
+		raytracingRenderer_->Build(cmdList, heap, addresses, device_, *modelRenderer_, deltaTime, celestialResult_.nightFactor_, lastCameraPosition_, skyTotalTime_, weatherState_);
 
 		/// [JP] 天候パーティクルのシミュレートは共有のワールド空間状態を進める
 		///      だけなので、フレームに1回(ここのみ)実行する。描画はビューごとに
 		///      別途行う。
-		ID3D12DescriptorHeap* heap = bindlessHeap_->Heap();
-		RootAddresses addresses{ shaderResourceIndicesSystem_->GameAddress(), unorderedAccessIndicesSystem_->GameAddress(), constantIndicesSystem_->GameConstantAddress() };
 
 		gpuProfiler_.Begin(cmdList, GpuProfileView::Game, GpuProfileScope::WeatherParticle);
 		raytracingRenderer_->SimulateWeatherParticles(cmdList, heap, addresses);
@@ -835,39 +836,39 @@ namespace SeedCore
 		///      ので、シャドウレイをディスパッチする。クラスタより前に走らせる
 		///      と前フレーム(しかも別ビュー)のライトリストを読んでしまう。
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::RaytraceShadow);
-		raytracingRenderer_->DispatchShadow(cmdList, heap, addresses, RaytracingView::Editor);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::Shadow, RaytracingView::Editor);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::RaytraceShadow);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::RaytraceAmbientOcclusion);
-		raytracingRenderer_->DispatchAmbientOcclusion(cmdList, heap, addresses, RaytracingView::Editor);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::AmbientOcclusion, RaytracingView::Editor);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::RaytraceAmbientOcclusion);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::RaytraceSubsurfaceScattering);
-		raytracingRenderer_->DispatchSubsurfaceScattering(cmdList, heap, addresses);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::SubsurfaceScattering, RaytracingView::Editor);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::RaytraceSubsurfaceScattering);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::RaytraceReflection);
-		raytracingRenderer_->DispatchReflection(cmdList, heap, addresses, RaytracingView::Editor);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::Reflection, RaytracingView::Editor);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::RaytraceReflection);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::RaytraceRefraction);
-		raytracingRenderer_->DispatchRefraction(cmdList, heap, addresses);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::Refraction, RaytracingView::Editor);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::RaytraceRefraction);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::RaytraceGlobalIllumination);
-		raytracingRenderer_->DispatchGlobalIllumination(cmdList, heap, addresses, RaytracingView::Editor);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::GlobalIllumination, RaytracingView::Editor);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::RaytraceGlobalIllumination);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::VolumetricCloudScapes);
-		raytracingRenderer_->DispatchVolumetricCloudScapes(cmdList, heap, addresses);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::VolumetricCloudScapes, RaytracingView::Editor);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::VolumetricCloudScapes);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::VolumetricStar);
-		raytracingRenderer_->DispatchVolumetricStar(cmdList, heap, addresses);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::VolumetricStar, RaytracingView::Editor);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::VolumetricStar);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::VolumetricLight);
-		raytracingRenderer_->DispatchVolumetricLight(cmdList, heap, addresses, RaytracingView::Editor);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::VolumetricLight, RaytracingView::Editor);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::VolumetricLight);
 
 		/// [JP] ワイヤーフレーム / メッシュレット表示: Lit 合成と透明を飛ばし、
@@ -1058,39 +1059,39 @@ namespace SeedCore
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::LightCluster);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::RaytraceShadow);
-		raytracingRenderer_->DispatchShadow(cmdList, heap, addresses, RaytracingView::Game);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::Shadow, RaytracingView::Game);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::RaytraceShadow);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::RaytraceAmbientOcclusion);
-		raytracingRenderer_->DispatchAmbientOcclusion(cmdList, heap, addresses, RaytracingView::Game);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::AmbientOcclusion, RaytracingView::Game);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::RaytraceAmbientOcclusion);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::RaytraceSubsurfaceScattering);
-		raytracingRenderer_->DispatchSubsurfaceScattering(cmdList, heap, addresses);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::SubsurfaceScattering, RaytracingView::Game);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::RaytraceSubsurfaceScattering);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::RaytraceReflection);
-		raytracingRenderer_->DispatchReflection(cmdList, heap, addresses, RaytracingView::Game);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::Reflection, RaytracingView::Game);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::RaytraceReflection);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::RaytraceRefraction);
-		raytracingRenderer_->DispatchRefraction(cmdList, heap, addresses);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::Refraction, RaytracingView::Game);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::RaytraceRefraction);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::RaytraceGlobalIllumination);
-		raytracingRenderer_->DispatchGlobalIllumination(cmdList, heap, addresses, RaytracingView::Game);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::GlobalIllumination, RaytracingView::Game);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::RaytraceGlobalIllumination);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::VolumetricCloudScapes);
-		raytracingRenderer_->DispatchVolumetricCloudScapes(cmdList, heap, addresses);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::VolumetricCloudScapes, RaytracingView::Game);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::VolumetricCloudScapes);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::VolumetricStar);
-		raytracingRenderer_->DispatchVolumetricStar(cmdList, heap, addresses);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::VolumetricStar, RaytracingView::Game);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::VolumetricStar);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::VolumetricLight);
-		raytracingRenderer_->DispatchVolumetricLight(cmdList, heap, addresses, RaytracingView::Game);
+		raytracingRenderer_->Dispatch(cmdList, heap, addresses, RaytracingType::VolumetricLight, RaytracingView::Game);
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::VolumetricLight);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::Composite);

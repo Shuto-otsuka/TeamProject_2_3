@@ -1,56 +1,57 @@
+#include "SkinBlend.hlsli"
 #include "../Model.hlsli"
 
-struct SkinBlendParams
-{
-	uint vertex_count_;
-	uint bone_offset_;
-	uint pad0_;
-	uint pad1_;
-};
-
-ConstantBuffer<SkinBlendParams> params : register(b0);
-StructuredBuffer<float3> rt_positions : register(t0);
-StructuredBuffer<CompressedModelSkin> rt_skin_vertices : register(t1);
-StructuredBuffer<ModelBoneMatrix> bone_matrices : register(t2);
-RWStructuredBuffer<float3> skinned_positions : register(u0);
-
+/**
+* [EN]
+* Skins the RT proxy positions of one actor with its bone matrices, one thread
+* per vertex. The result is the vertex input of the actor's BLAS.
+*
+* ---------------------------------------------------------------------
+*
+* [JP]
+* 1 体のアクターの RT プロキシの位置を、そのボーン行列でスキニングする。
+* 1 頂点 1 スレッド。結果はアクターの BLAS の頂点入力になる。
+*/
 [NumThreads(64, 1, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {
+	SkinBlendDispatchBuffer dispatch_buffer = GetSkinBlendDispatchBuffer();
+
 	uint index = id.x;
-	if (index >= params.vertex_count_)
+	if (index >= dispatch_buffer.vertex_count_)
 	{
 		return;
 	}
 
-	ExpandedModelSkin skin = DecodeSkinVertex(rt_skin_vertices[index]);
+	StructuredBuffer<float3> positions = ResourceDescriptorHeap[dispatch_buffer.position_index_];
+	StructuredBuffer<CompressedModelSkin> skin_vertices = ResourceDescriptorHeap[dispatch_buffer.skin_vertex_index_];
+	StructuredBuffer<ModelBoneMatrix> bone_matrices = ResourceDescriptorHeap[dispatch_buffer.bone_matrix_index_];
+	RWStructuredBuffer<float3> skinned_positions = ResourceDescriptorHeap[dispatch_buffer.skinned_position_index_];
 
-	float3 position = rt_positions[index];
+	ExpandedModelSkin skin = DecodeSkinVertex(skin_vertices[index]);
+	float3 position = positions[index];
 
+	/// [EN] A vertex bound to no joint stays where it is.
+	/// [JP] どのジョイントにも結び付いていない頂点はその場に残す。
 	if (dot(skin.weights_, 1.0) < 1e-5)
 	{
 		skinned_positions[index] = position;
 		return;
 	}
 
+	/// [EN] Linear blend skinning: the weighted sum of the four joints' bone matrices.
+	/// [JP] 線形ブレンドスキニング。4 つのジョイントのボーン行列の重み付き和。
+	uint bone_offset = dispatch_buffer.bone_offset_;
 	float4x4 skin_matrix =
-		LoadBoneMatrix(bone_matrices[params.bone_offset_ + skin.joints_.x]) * skin.weights_.x +
-		LoadBoneMatrix(bone_matrices[params.bone_offset_ + skin.joints_.y]) * skin.weights_.y +
-		LoadBoneMatrix(bone_matrices[params.bone_offset_ + skin.joints_.z]) * skin.weights_.z +
-		LoadBoneMatrix(bone_matrices[params.bone_offset_ + skin.joints_.w]) * skin.weights_.w;
+		LoadBoneMatrix(bone_matrices[bone_offset + skin.joints_.x]) * skin.weights_.x +
+		LoadBoneMatrix(bone_matrices[bone_offset + skin.joints_.y]) * skin.weights_.y +
+		LoadBoneMatrix(bone_matrices[bone_offset + skin.joints_.z]) * skin.weights_.z +
+		LoadBoneMatrix(bone_matrices[bone_offset + skin.joints_.w]) * skin.weights_.w;
 
 	float3 skinned = mul(float4(position, 1.0), skin_matrix).xyz;
 
-	/// [EN] These positions become a BLAS's triangle vertices. A non-finite
-	///      vertex builds a degenerate acceleration structure, and DXR
-	///      traversal over one never terminates - the GPU hangs and the
-	///      device is lost with no page fault to point at. Fall back to the
-	///      unskinned position so the frame renders wrong rather than dying.
-	/// [JP] ここで書いた位置はそのまま BLAS の三角形頂点になる。非有限な頂点は
-	///      退化した加速構造を作り、その上の DXR 走査は終了しない - GPU が
-	///      ハングし、手がかりとなるページフォルトも無いままデバイスが失われる。
-	///      スキン適用前の位置へフォールバックし、死ぬ代わりに絵が崩れるだけに
-	///      留める。
+	/// [EN] The result becomes BLAS triangle vertices, and traversal over a non-finite vertex never terminates, so such a vertex keeps its unskinned position.
+	/// [JP] 結果は BLAS の三角形頂点になり、非有限の頂点を含む走査は終わらないため、そうした頂点はスキン前の位置のままにする。
 	if (!all(isfinite(skinned)))
 	{
 		skinned = position;

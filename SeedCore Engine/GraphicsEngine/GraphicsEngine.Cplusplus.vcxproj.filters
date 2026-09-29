@@ -475,9 +475,6 @@
     <ClInclude Include="Raytracing\RaytracingContext.h">
       <Filter>Raytracing</Filter>
     </ClInclude>
-    <ClInclude Include="Raytracing\RaytracingView.h">
-      <Filter>Raytracing</Filter>
-    </ClInclude>
     <ClInclude Include="Raytracing\AmbientOcclusion\AmbientOcclusionShader.h">
       <Filter>Raytracing\AmbientOcclusion</Filter>
     </ClInclude>
@@ -957,6 +954,9 @@
     </ClInclude>
     <ClInclude Include="System\SplashSystem.h">
       <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="Raytracing\RaytracingDispatch.h">
+      <Filter>Raytracing</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1746,6 +1746,12 @@
     </None>
     <None Include="Sky\IBL\ImageBasedLighting.hlsli">
       <Filter>Sky\IBL</Filter>
+    </None>
+    <None Include="Model\Skin\SkinBlend.hlsli">
+      <Filter>Model\Skin</Filter>
+    </None>
+    <None Include="Model\Morph\MorphBlend.hlsli">
+      <Filter>Model\Morph</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

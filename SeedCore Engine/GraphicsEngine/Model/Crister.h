@@ -1791,6 +1791,19 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Bindless SRV of the same float3 position buffer, read by the morph
+		* and skin blend passes as their base positions.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 同じ float3 位置バッファの bindless SRV。モーフとスキンのブレンド
+		* パスがベース位置として読む。
+		*/
+		[[nodiscard]] Uint PositionBufferIndex()const;
+
+		/**
+		* [EN]
 		* Vertex count of the RT proxy's compact position/vertex buffers
 		* (positionResource_/vertexResource_) PositionBufferAddress() points
 		* to, i.e. the size a morph-blend scratch position buffer must be
@@ -1978,29 +1991,31 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* GPU address of the RT proxy's skin vertex pool
-		* (raytracingSkinVertexResource_), or 0 when ProxySkinned is false.
+		* Bindless SRV of the RT proxy's skin vertex pool
+		* (raytracingSkinVertexResource_), or SC_INVALID when ProxySkinned is
+		* false.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* RT プロキシのスキン頂点プール (raytracingSkinVertexResource_) の
-		* GPU アドレス。ProxySkinned が false なら 0。
+		* bindless SRV。ProxySkinned が false なら SC_INVALID。
 		*/
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS ProxySkinVertexBufferAddress()const;
+		[[nodiscard]] Uint ProxySkinVertexBufferIndex()const;
 
 		/**
 		* [EN]
-		* GPU address of the RT proxy's morph delta pool
-		* (raytracingMorphDeltaResource_), or 0 when no SubMesh has morphs_.
+		* Bindless SRV of the RT proxy's morph delta pool
+		* (raytracingMorphDeltaResource_), or SC_INVALID when no SubMesh has
+		* morphs_.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* RT プロキシのモーフデルタプール (raytracingMorphDeltaResource_) の
-		* GPU アドレス。どの SubMesh も morphs_ を持たなければ 0。
+		* bindless SRV。どの SubMesh も morphs_ を持たなければ SC_INVALID。
 		*/
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS ProxyMorphDeltaBufferAddress()const;
+		[[nodiscard]] Uint ProxyMorphDeltaBufferIndex()const;
 
 		/**
 		* [EN]
@@ -2728,8 +2743,7 @@ namespace SeedCore
 
 		/// [EN] Raster-side morph support, bindless-registered (pulled via
 		///      ResourceDescriptorHeap[...] from SkeletalModelMS.hlsl/
-		///      StaticModelMS.hlsl, unlike the RT buffers above which are
-		///      bound as root SRVs). morphDeltaResource_ is target-major
+		///      StaticModelMS.hlsl). morphDeltaResource_ is target-major
 		///      per SubMesh (SubMesh::morphDeltaOffset_), baked straight
 		///      from Morph::positionDeltas_ with no RT-proxy compaction.
 		///      vertexMorphSourceResource_ mirrors vertices_/
@@ -2738,8 +2752,7 @@ namespace SeedCore
 		///      vertex morphDeltaResource_ is indexed by (see
 		///      vertexMorphSource_'s comment). Both allocated only when at
 		///      least one SubMesh has morphs_.
-		/// [JP] ラスタ側のモーフ対応。bindless 登録される(上の RT 用
-		///      バッファがルート SRV で束縛されるのと違い、
+		/// [JP] ラスタ側のモーフ対応。bindless 登録される(
 		///      SkeletalModelMS.hlsl/StaticModelMS.hlsl から
 		///      ResourceDescriptorHeap[...] 経由で引く)。
 		///      morphDeltaResource_ は SubMesh ごとのターゲット主順
@@ -2759,6 +2772,13 @@ namespace SeedCore
 		Uint vertexBufferIndex_ = SC_INVALID;
 		Uint skinVertexBufferIndex_ = SC_INVALID;
 		Uint indexBufferIndex_ = SC_INVALID;
+
+		/// [EN] Bindless SRVs of positionResource_, raytracingSkinVertexResource_ and raytracingMorphDeltaResource_, read by the morph and skin blend passes.
+		/// [JP] positionResource_、raytracingSkinVertexResource_、raytracingMorphDeltaResource_ の bindless SRV。モーフとスキンのブレンドパスが読む。
+		Uint positionBufferIndex_ = SC_INVALID;
+		Uint raytracingSkinVertexBufferIndex_ = SC_INVALID;
+		Uint raytracingMorphDeltaBufferIndex_ = SC_INVALID;
+
 		Uint32 triangleIndexCount_ = 0;
 		Uint32 proxyVertexCount_ = 0;
 

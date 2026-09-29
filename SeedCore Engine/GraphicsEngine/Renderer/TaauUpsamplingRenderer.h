@@ -4,7 +4,7 @@
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/TAAU/TaauResolveShader.h>
 #include <GraphicsEngine/DLSS/DlssBackgroundVelocityShader.h>
-#include <GraphicsEngine/Raytracing/RaytracingView.h>
+#include <GraphicsEngine/Raytracing/RaytracingDispatch.h>
 
 namespace SeedCore
 {

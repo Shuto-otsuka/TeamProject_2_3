@@ -1106,9 +1106,9 @@ namespace SeedCore
 		}
 	}
 
-	D3D12_GPU_VIRTUAL_ADDRESS ModelRenderer::BoneMatrixBufferGPUAddress()const
+	Uint ModelRenderer::BoneMatrixBufferIndex()const
 	{
-		return boneBuffer_->GPUVirtualAddress();
+		return boneBuffer_->Index();
 	}
 
 	Bool ModelRenderer::TryGetAnimatedBoneOffset(EntityID entityID, Uint32& outBoneOffset)const

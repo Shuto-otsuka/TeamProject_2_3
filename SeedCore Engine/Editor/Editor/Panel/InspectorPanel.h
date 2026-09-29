@@ -74,7 +74,7 @@
 
 		void DrawTransform(void* componentData, const Char* label, Bool& linked, Float* previousValues, Entity entity, ComponentID componentID);
 
-		const Char* GetPayloadDropType(PayloadAssetType assetType)const;
+		const Char* GetPayloadDropType(PayloadType assetType)const;
 
 		[[nodiscard]] ImTextureID GetComponentIcon(const String& componentName)const;
 

@@ -7,6 +7,7 @@
 #include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/Resource/Config/GameConfig.h>
 #include <FoundationEngine/Time/GameTimer.h>
+#include <FoundationEngine/Bridge/CsharpHost.h>
 #include <FoundationEngine/Plugin/PluginHost.h>
 #include <AudioEngine/CRI/CriManager.h>
 #include <PhysicsEngine/JoltPhysics/JoltManager.h>
@@ -58,6 +59,8 @@ namespace SeedCore
 		ResourcePtr<Graphics> graphics_;
 
 		ResourcePtr<LoaderSystem> loaderSystem_;
+
+		CsharpHost csharpHost_;
 
 		PluginHost pluginHost_;
 

@@ -4,6 +4,33 @@ namespace SeedCore
 {
 	/**
 	* [EN]
+	* Stamps category onto a copy of metadata and writes it into the
+	* ComponentID-keyed and name-keyed maps. The ComponentID is the
+	* address of name's interned character data - the same identity
+	* Register<T> derives, so both overloads agree on a component's ID.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* metadata のコピーに category を設定し、ComponentID をキーとする
+	* マップと名前をキーとするマップへ書き込む。ComponentID は name の
+	* intern 済み文字データのアドレスで、Register<T> が求めるものと同じ
+	* 識別子なので、どちらの版でもコンポーネントの ID は一致する。
+	*/
+	void ComponentRegistry::Register(String name, String category, const ComponentMetadata& metadata)
+	{
+		ComponentID id = name.view().data();
+
+		ComponentMetadata registered = metadata;
+		registered.category_ = category;
+
+		MetadataMap()[id] = registered;
+		NameMap()[id] = name;
+		NameIndex()[name] = id;
+	}
+
+	/**
+	* [EN]
 	* Removes id from every cross-reference map. TypeIndex() is keyed
 	* by std::type_index rather than ComponentID, so it can't be erased
 	* by key directly here; instead this scans its entries for the one

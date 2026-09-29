@@ -149,4 +149,42 @@ namespace SeedCore
 		}
 		return nullptr;
 	}
+
+	/**
+	* [EN]
+	* Returns the full registry mapping component names to their
+	* callable functions.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* コンポーネント名を、その呼び出し可能な関数の一覧へ対応付ける、
+	* 完全なレジストリを返す。
+	*/
+	FlatMap<String, DynamicArray<FunctionInfo>>& FunctionRegistry::GetRegistry()
+	{
+		static FlatMap<String, DynamicArray<FunctionInfo>> instance;
+		return instance;
+	}
+
+	/**
+	* [EN]
+	* Adds function to the functions of the component named
+	* componentName, replacing a registered function of the same name.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* componentName という名前のコンポーネントの関数一覧へ function を
+	* 追加する。同じ名前の関数が登録済みであれば置き換える。
+	*/
+	void FunctionRegistry::Register(String componentName, FunctionInfo function)
+	{
+		DynamicArray<FunctionInfo>& functions = GetRegistry()[componentName];
+
+		/// [EN] A function name identifies one entry per component, so a re-registration (e.g. after a script reload) replaces the old entry instead of adding a second one.
+		/// [JP] 関数名はコンポーネントごとに 1 つのエントリを表すので、再登録（スクリプトのリロード後など）は 2 つ目を追加せず、古いエントリを置き換える。
+		erase_if(functions, [&function](const FunctionInfo& registered) { return registered.name_ == function.name_; });
+		functions.push_back(std::move(function));
+	}
 }

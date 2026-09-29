@@ -385,12 +385,17 @@
     <ClCompile Include="World\ECS\Component\UnknownComponent.cpp">
       <Filter>World\ECS\Component</Filter>
     </ClCompile>
-    <ClCompile Include="Coroutine\CoroutineSystem.cpp" />
     <ClCompile Include="Bridge\CsharpHost.cpp">
       <Filter>Bridge</Filter>
     </ClCompile>
     <ClCompile Include="Interop\ImGuiInstance.cpp">
       <Filter>Interop</Filter>
+    </ClCompile>
+    <ClCompile Include="Coroutine\CoroutineSystem.cpp">
+      <Filter>Coroutine</Filter>
+    </ClCompile>
+    <ClCompile Include="Bridge\CsharpBehaviour.cpp">
+      <Filter>Bridge</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -855,8 +860,7 @@
     <ClInclude Include="World\ECS\Component\UnknownComponent.h">
       <Filter>World\ECS\Component</Filter>
     </ClInclude>
-    <ClInclude Include="Coroutine\CoroutineSystem.h" />
-    <ClInclude Include="Bridge\CsharpNativeApi.h">
+    <ClInclude Include="Bridge\NativeApi.h">
       <Filter>Bridge</Filter>
     </ClInclude>
     <ClInclude Include="Bridge\CsharpHost.h">
@@ -864,6 +868,15 @@
     </ClInclude>
     <ClInclude Include="Interop\ImGuiInstance.h">
       <Filter>Interop</Filter>
+    </ClInclude>
+    <ClInclude Include="Coroutine\CoroutineSystem.h">
+      <Filter>Coroutine</Filter>
+    </ClInclude>
+    <ClInclude Include="Bridge\ManagedApi.h">
+      <Filter>Bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="Bridge\CsharpBehaviour.h">
+      <Filter>Bridge</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

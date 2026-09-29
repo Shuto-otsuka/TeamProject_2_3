@@ -200,6 +200,56 @@ namespace SeedCore
 		*/
 		SEEDCORE_API const DynamicArray<ComponentID>& ComponentIDList()const;
 
+		/**
+		* [EN]
+		* Returns a reference to the reflected field named fieldName (its
+		* display name) of this actor's component named componentName,
+		* whichever language the component is written in. Reading and
+		* writing both go through the returned reference. Use it right
+		* away rather than keeping it, since the component can be removed
+		* or moved. If the component or a field of type T with that name
+		* is missing, logs a warning and returns a reference to a
+		* default-initialized dummy.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* この actor の componentName という名前のコンポーネントにある、
+		* fieldName（表示名）という名前のリフレクション対象フィールドへの
+		* 参照を返す。コンポーネントがどちらの言語で書かれていても同じ。
+		* 読むのも書くのも返った参照で行う。コンポーネントは外されたり
+		* 移動したりしうるので、保持せずその場で使うこと。コンポーネント、
+		* またはその名前で型が T のフィールドが無ければ、警告ログを出し、
+		* デフォルト初期化したダミーへの参照を返す。
+		*/
+		template<typename T>
+		T& Field(const String& componentName, const String& fieldName)const;
+
+		/**
+		* [EN]
+		* Calls the function named functionName of this actor's component
+		* named componentName with arguments, whichever language the
+		* component is written in, and returns its result as Result (void
+		* for no result). The function must be registered in
+		* FunctionRegistry (SC_FUNCTION in C++, [SeedFunction] in C#). If
+		* it is missing, or the argument or result types do not match,
+		* logs a warning, calls nothing and returns a default-initialized
+		* Result.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* この actor の componentName という名前のコンポーネントにある、
+		* functionName という名前の関数を arguments を渡して呼び、戻り値を
+		* Result として返す（戻り値が無い場合は void）。コンポーネントが
+		* どちらの言語で書かれていても同じ。関数は FunctionRegistry に
+		* 登録されている必要がある（C++ は SC_FUNCTION、C# は
+		* [SeedFunction]）。見つからないか、引数や戻り値の型が合わなければ、
+		* 警告ログを出して何も呼ばず、デフォルト初期化した Result を返す。
+		*/
+		template<typename Result = void, typename... Arguments>
+		Result Function(const String& componentName, const String& functionName, const Arguments&... arguments)const;
+
 	public:
 		/**
 		* [EN]

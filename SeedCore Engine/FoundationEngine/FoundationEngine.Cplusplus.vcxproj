@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Bridge\CsharpBehaviour.cpp" />
     <ClCompile Include="Bridge\CsharpHost.cpp" />
     <ClCompile Include="Coroutine\Coroutine.cpp" />
     <ClCompile Include="Coroutine\CoroutineSystem.cpp" />
@@ -102,8 +103,10 @@
     <ClCompile Include="World\Tag\TagRegistry.cpp" />
     <ClCompile Include="World\World.cpp" />
     <ClCompile Include="World\WorldSnapshot.cpp" />
+    <ClInclude Include="Bridge\CsharpBehaviour.h" />
     <ClInclude Include="Bridge\CsharpHost.h" />
-    <ClInclude Include="Bridge\CsharpNativeApi.h" />
+    <ClInclude Include="Bridge\ManagedApi.h" />
+    <ClInclude Include="Bridge\NativeApi.h" />
     <ClInclude Include="Coroutine\Coroutine.h" />
     <ClInclude Include="Coroutine\CoroutineSystem.h" />
     <ClInclude Include="File\FileDialog.h" />

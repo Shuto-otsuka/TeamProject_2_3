@@ -1,69 +1,53 @@
+#include "MorphBlend.hlsli"
+
 /**
 * [EN]
-* Blends a SubMesh's morph target deltas into its RT proxy position range,
-* composing before SkinBlendCS's skin matrix pass (which reads
-* blended_positions instead of rt_positions when this SubMesh has morphs).
-* Dispatched once per SubMesh that has active morph weights this frame; the
-* caller pre-fills blended_positions with a full copy of rt_positions so
-* SubMeshes/vertices outside this dispatch's range keep their base position.
+* Blends the morph targets of one SubMesh into its vertex range of the RT
+* proxy positions, one thread per vertex. Morph composes before skin: the
+* result is either the vertex input of a morph-only actor's BLAS, or the input
+* positions of SkinBlendCS. The caller pre-fills the blended positions with
+* the base positions, so vertices outside this SubMesh keep them.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* SubMesh のモーフターゲットデルタを、その RT プロキシ位置範囲へブレンド
-* する。SkinBlendCS のスキン行列パス(この SubMesh がモーフを持つ場合
-* rt_positions の代わりに blended_positions を読む)より前に合成する。
-* 今フレーム有効なモーフウェイトを持つ SubMesh ごとに1回ディスパッチする —
-* 呼び出し側は blended_positions を rt_positions の全体コピーで事前に
-* 埋めておくこと。このディスパッチの範囲外の SubMesh/頂点は元の位置の
-* ままになる。
+* 1 つの SubMesh のモーフターゲットを、RT プロキシの位置のうちその頂点範囲へ
+* ブレンドする。1 頂点 1 スレッド。モーフはスキンより前に合成する。結果は、
+* モーフのみのアクターでは BLAS の頂点入力に、スキンもあるアクターでは
+* SkinBlendCS の入力位置になる。呼び出し側がブレンド先をベース位置で
+* 埋めておくので、この SubMesh の範囲外の頂点はベース位置のまま残る。
 */
-struct MorphBlendParams
-{
-	uint vertex_offset_;
-	uint vertex_count_;
-	uint target_count_;
-	uint pad0_;
-};
-
-ConstantBuffer<MorphBlendParams> params : register(b0);
-StructuredBuffer<float3> rt_positions : register(t0);
-StructuredBuffer<float3> rt_morph_deltas : register(t1);
-StructuredBuffer<float> morph_weights : register(t2);
-RWStructuredBuffer<float3> blended_positions : register(u0);
-
 [NumThreads(64, 1, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {
+	MorphBlendDispatchBuffer dispatch_buffer = GetMorphBlendDispatchBuffer();
+
 	uint local_index = id.x;
-	if (local_index >= params.vertex_count_)
+	if (local_index >= dispatch_buffer.vertex_count_)
 	{
 		return;
 	}
 
-	uint global_index = params.vertex_offset_ + local_index;
-	float3 position = rt_positions[global_index];
+	StructuredBuffer<float3> positions = ResourceDescriptorHeap[dispatch_buffer.position_index_];
+	StructuredBuffer<float3> morph_deltas = ResourceDescriptorHeap[dispatch_buffer.morph_delta_index_];
+	StructuredBuffer<float> morph_weights = ResourceDescriptorHeap[dispatch_buffer.morph_weight_index_];
+	RWStructuredBuffer<float3> blended_positions = ResourceDescriptorHeap[dispatch_buffer.blended_position_index_];
 
-	/// [EN] rt_morph_deltas is target-major within this SubMesh's compact
-	///      vertex range: target * vertex_count_ + local_index.
-	/// [JP] rt_morph_deltas は、この SubMesh のコンパクト頂点範囲内で
-	///      ターゲット主順: target * vertex_count_ + local_index。
-	for (uint target = 0; target < params.target_count_; ++target)
+	uint global_index = dispatch_buffer.vertex_offset_ + local_index;
+	float3 position = positions[global_index];
+
+	/// [EN] The SubMesh's deltas are target-major: the delta of this vertex for a target sits at target * vertex_count_ + local_index.
+	/// [JP] SubMesh のデルタはターゲット主順。あるターゲットでのこの頂点のデルタは target * vertex_count_ + local_index にある。
+	for (uint target = 0; target < dispatch_buffer.target_count_; ++target)
 	{
-		position += rt_morph_deltas[target * params.vertex_count_ + local_index] * morph_weights[target];
+		position += morph_deltas[dispatch_buffer.morph_delta_offset_ + target * dispatch_buffer.vertex_count_ + local_index] * morph_weights[target];
 	}
 
-	/// [EN] Same contract as SkinBlendCS: this feeds a BLAS build (either
-	///      directly for a morph-only instance, or through SkinBlendCS),
-	///      so a non-finite vertex here hangs DXR traversal later. Fall back to
-	///      the unmorphed base position.
-	/// [JP] SkinBlendCS と同じ約束: ここの出力は(モーフのみのインスタンス
-	///      なら直接、そうでなければ SkinBlendCS 経由で)BLAS 構築へ渡る
-	///      ため、非有限な頂点は後段の DXR 走査をハングさせる。モーフ適用前の
-	///      ベース位置へフォールバックする。
+	/// [EN] The result becomes BLAS triangle vertices, and traversal over a non-finite vertex never terminates, so such a vertex keeps its base position.
+	/// [JP] 結果は BLAS の三角形頂点になり、非有限の頂点を含む走査は終わらないため、そうした頂点はベース位置のままにする。
 	if (!all(isfinite(position)))
 	{
-		position = rt_positions[global_index];
+		position = positions[global_index];
 	}
 
 	blended_positions[global_index] = position;

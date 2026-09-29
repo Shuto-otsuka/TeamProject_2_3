@@ -84,7 +84,7 @@ namespace SeedCore
 
 		void CreateNewFolder(const std::string& parentRelative);
 
-		void RequestCreateScript(const std::string& parentRelative);
+		void RequestCreateScript(const std::string& parentRelative, Bool csharp);
 
 		void DrawCreateScriptPopup();
 
@@ -130,6 +130,7 @@ namespace SeedCore
 
 		Bool openCreateScriptPopup_ = false;
 		Bool createScriptNeedsFocus_ = false;
+		Bool createScriptCsharp_ = false;
 		std::string createScriptParentRelative_;
 		std::string createScriptNameBuffer_;
 

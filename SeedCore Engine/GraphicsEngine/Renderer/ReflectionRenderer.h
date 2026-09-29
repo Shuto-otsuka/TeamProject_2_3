@@ -3,59 +3,77 @@
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
-#include <GraphicsEngine/Raytracing/Reflection/ReflectionShader.h>
+#include <GraphicsEngine/Raytracing/RaytracingDispatch.h>
 #include <GraphicsEngine/Raytracing/Reflection/ReflectionDenoiseShader.h>
-#include <GraphicsEngine/Raytracing/RaytracingView.h>
+#include <GraphicsEngine/Raytracing/Reflection/ReflectionShader.h>
 
 namespace SeedCore
 {
-	class BindlessHeap;
-	class ShaderCache;
-	class D3D12CommandList;
-	class ConstantIndicesSystem;
-	class ShaderResourceIndicesSystem;
-	class UnorderedAccessIndicesSystem;
 	struct RootAddresses;
 
-	/// [EN] Mirrors Raytracing/Reflection/Reflection.hlsli's
-	///      ReflectionRayConstantBuffer — read by both ReflectionRT.hlsl and
-	///      DeferredLightingPS.hlsl via
-	///      constant_indices.reflection_index_. Must stay
-	///      byte-for-byte in sync with the HLSL side.
-	/// [JP] Raytracing/Reflection/Reflection.hlsli の
-	///      ReflectionRayConstantBuffer と対応。ReflectionRT.hlsl と
-	///      DeferredLightingPS.hlsl の両方が
-	///      constant_indices.reflection_index_ 経由で読む。
-	///      HLSL 側とバイト単位で一致させること。
+	class BindlessHeap;
+	class ConstantIndicesSystem;
+	class D3D12CommandList;
+	class ShaderCache;
+	class ShaderResourceIndicesSystem;
+	class UnorderedAccessIndicesSystem;
+
+	/**
+	* [EN]
+	* Tuning values of the reflection pass. Mirrors ReflectionRayConstantBuffer
+	* in Raytracing/Reflection/Reflection.hlsli, which both ReflectionRT.hlsl
+	* and DeferredLightingPS.hlsl read through constant_indices.reflection_index_,
+	* so the layout must match the HLSL side byte for byte.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 反射のパスの調整値。Raytracing/Reflection/Reflection.hlsli の
+	* ReflectionRayConstantBuffer と対応する。ReflectionRT.hlsl と
+	* DeferredLightingPS.hlsl の両方が constant_indices.reflection_index_ 経由で
+	* 読むため、レイアウトは HLSL 側とバイト単位で一致させる。
+	*/
 	struct ReflectionRayConstantBuffer
 	{
+		/// [EN] Maximum distance a reflection ray travels before it counts as a miss.
+		/// [JP] 反射レイがミスとして扱われるまでに進む最大距離。
 		Float rayTMax_ = 1000.0f;
+
+		/// [EN] Offset along the surface normal applied to each ray origin, so a ray does not hit the surface it leaves.
+		/// [JP] 各レイの原点に法線方向へ加えるオフセット。出発した面にレイがヒットしないようにする。
 		Float normalBias_ = 0.01f;
 
 		/// [EN] Overall reflection intensity applied in DeferredLightingPS.hlsl.
 		/// [JP] DeferredLightingPS.hlsl で適用する反射の全体強度。
 		Float strength_ = 1.0f;
 
-		/// [EN] Incremented once per frame by ReflectionRenderer (not the UI) —
-		///      rotates the GGX importance sample so the roughness-driven 1spp
-		///      noise averages out over time instead of being a fixed pattern.
-		/// [JP] ReflectionRenderer が毎フレーム1つずつ加算する(UI からは触らない)
-		///      — GGX 重点サンプルを回して、ラフネス由来の 1spp ノイズが固定
-		///      パターンにならず時間的に平均化されるようにする。
+		/// [EN] Frame counter written by ReflectionRenderer::Prepare, not by the editor UI. It rotates the GGX importance sample, so the roughness-driven one-sample noise averages out over time instead of forming a fixed pattern.
+		/// [JP] エディターの UI ではなく ReflectionRenderer::Prepare が書き込むフレームカウンター。GGX の重点サンプルを回し、roughness に起因する 1 サンプルのノイズが固定の模様にならず時間方向に平均化されるようにする。
 		Uint32 frameIndex_ = 0;
 
+		/// [EN] 1 while the reservoir reuses its history across frames; Prepare writes 0 when DLSS Ray Reconstruction does the temporal denoising instead.
+		/// [JP] reservoir がフレームをまたいで履歴を再利用する間 1。DLSS Ray Reconstruction が時間方向のデノイズを担うときは Prepare が 0 を書く。
 		Uint32 temporalReuseEnabled_ = 1;
 
+		/// [EN] Pads the structure to two full 16-byte registers.
+		/// [JP] 構造体を 16 バイトのレジスタ 2 つ分に揃える詰め物。
 		Vector3 reflectionRayPadding_ = { 0.0f, 0.0f, 0.0f };
 
-		/// [EN] Loaded field by field through TryField so a missing or
-		///      unparsable name (older save, a field added or renamed since)
-		///      only falls back to that field's own default; every other
-		///      field here still loads normally.
-		/// [JP] 名前が見つからない/パースできないフィールド(古い保存データ、
-		///      後から追加・改名したフィールド)があっても、そのフィールドだけ
-		///      既定値へフォールバックするよう、TryField でフィールドごとに
-		///      読む。他のフィールドは通常通り読み込まれる。
+		/**
+		* [EN]
+		* Reads or writes the tuning values through archive, one field at a
+		* time, so a missing or unreadable field falls back to its own default
+		* while the others still load. The values written by the renderer
+		* every frame and the padding are not serialized.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* archive を通して調整値をフィールドごとに読み書きする。見つからない、
+		* または読めないフィールドはそのフィールドだけ既定値になり、他は通常
+		* どおり読み込まれる。レンダラーが毎フレーム書き込む値と詰め物は
+		* シリアライズしない。
+		*/
 		template<class Archive>
 		void Serialize(Archive& archive)
 		{
@@ -65,475 +83,463 @@ namespace SeedCore
 		}
 	};
 
-	/// [EN] Mirrors Reflection.hlsli's ReflectionMaterialData — one entry per
-	///      material slot in a mesh's Crister::Surfaces() list. Uploaded once
-	///      per unique Crister (RaytracingRenderer::BuildReflectionMaterialTable).
-	/// [JP] Reflection.hlsli の ReflectionMaterialData と対応。メッシュの
-	///      Crister::Surfaces() 一覧のマテリアル1枠につき1エントリ。ユニークな
-	///      Crister ごとに一度だけアップロードする
-	///      (RaytracingRenderer::BuildReflectionMaterialTable)。
+	/**
+	* [EN]
+	* One material slot of a mesh's Crister::Surfaces() list, as read by the
+	* ray-traced passes. Mirrors ReflectionMaterialData in Reflection.hlsli
+	* and is uploaded once per unique Crister
+	* (RaytracingRenderer::BuildReflectionMaterialTable).
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* レイトレーシングのパスが読む、メッシュの Crister::Surfaces() 一覧の
+	* マテリアル 1 枠。Reflection.hlsli の ReflectionMaterialData と対応し、
+	* ユニークな Crister ごとに 1 度だけアップロードする
+	* （RaytracingRenderer::BuildReflectionMaterialTable）。
+	*/
 	struct ReflectionMaterialData
 	{
+		/// [EN] Base color factor (rgb).
+		/// [JP] ベースカラーの係数（rgb）。
 		Float baseColor_[3] = { 1.0f, 1.0f, 1.0f };
+
+		/// [EN] Bindless index of the base color texture, or 0xFFFFFFFF for none.
+		/// [JP] ベースカラーテクスチャの bindless インデックス。無ければ 0xFFFFFFFF。
 		Uint32 baseColorTextureIndex_ = 0xFFFFFFFF;
 
-		/// [EN] KHR_materials_ior/transmission/volume - unused by Reflection
-		///      itself, read by Raytracing/Refraction/RefractionRT.hlsl via the
-		///      same per-triangle table (ResolveReflectionMaterial).
-		/// [JP] KHR_materials_ior/transmission/volume - Reflection自体は使わない。
-		///      Raytracing/Refraction/RefractionRT.hlsl が同じ三角形単位の
-		///      テーブル(ResolveReflectionMaterial)経由で読む。
+		/// [EN] Index of refraction (KHR_materials_ior). Unused by Reflection itself; RefractionRT.hlsl reads it through the same per-triangle table.
+		/// [JP] 屈折率（KHR_materials_ior）。Reflection 自体は使わず、RefractionRT.hlsl が同じ三角形単位のテーブル経由で読む。
 		Float ior_ = 1.5f;
+
+		/// [EN] Transmission factor (KHR_materials_transmission), read by RefractionRT.hlsl.
+		/// [JP] 透過の係数（KHR_materials_transmission）。RefractionRT.hlsl が読む。
 		Float transmissionFactor_ = 0.0f;
+
+		/// [EN] Attenuation color of the volume (KHR_materials_volume), read by RefractionRT.hlsl.
+		/// [JP] ボリュームの減衰色（KHR_materials_volume）。RefractionRT.hlsl が読む。
 		Float volumeAttenuationColor_[3] = { 1.0f, 1.0f, 1.0f };
+
+		/// [EN] Attenuation distance of the volume (KHR_materials_volume); infinity means no absorption.
+		/// [JP] ボリュームの減衰距離（KHR_materials_volume）。無限大なら吸収しない。
 		Float volumeAttenuationDistance_ = FLT_MAX;
 
-		/// [EN] glTF alphaMode (0 OPAQUE / 1 MASK / 2 BLEND), alphaCutoff and
-		///      baseColorFactor.a - read by Material.hlsli's
-		///      IsMaterialPassthrough.
-		/// [JP] glTF の alphaMode(0 OPAQUE / 1 MASK / 2 BLEND)、alphaCutoff、
-		///      baseColorFactor.a — Material.hlsli の
-		///      IsMaterialPassthrough が読む。
+		/// [EN] glTF alphaMode: 0 OPAQUE, 1 MASK, 2 BLEND. Read by IsMaterialPassthrough in Material.hlsli.
+		/// [JP] glTF の alphaMode。0 が OPAQUE、1 が MASK、2 が BLEND。Material.hlsli の IsMaterialPassthrough が読む。
 		Uint32 alphaMode_ = 0;
+
+		/// [EN] glTF alphaCutoff used in MASK mode.
+		/// [JP] MASK モードで使う glTF の alphaCutoff。
 		Float alphaCutoff_ = 0.5f;
+
+		/// [EN] Alpha of the glTF baseColorFactor.
+		/// [JP] glTF の baseColorFactor のアルファ。
 		Float baseColorAlpha_ = 1.0f;
 
-		/// [EN] KHR_materials_volume thickness. Zero means thin-walled, which
-		///      RefractionRT.hlsl uses to skip Beer-Lambert absorption.
-		/// [JP] KHR_materials_volume の厚み。0 は thin-walled を意味し、
-		///      RefractionRT.hlsl はそれを見て Beer-Lambert 吸収を飛ばす。
+		/// [EN] Volume thickness (KHR_materials_volume). 0 means thin-walled, for which RefractionRT.hlsl skips Beer-Lambert absorption.
+		/// [JP] ボリュームの厚み（KHR_materials_volume）。0 は薄い壁を意味し、RefractionRT.hlsl はその場合 Beer-Lambert の吸収を省く。
 		Float thicknessFactor_ = 0.0f;
+
+		/// [EN] Bindless index of the thickness texture, or 0xFFFFFFFF for none.
+		/// [JP] 厚みテクスチャの bindless インデックス。無ければ 0xFFFFFFFF。
 		Uint32 thicknessTextureIndex_ = 0xFFFFFFFF;
+
+		/// [EN] Pads the structure to a whole number of 16-byte rows.
+		/// [JP] 構造体を 16 バイトの行の整数倍に揃える詰め物。
 		Float materialPadding_ = 0.0f;
 	};
 
-	/// [EN] Mirrors Reflection.hlsli's ReflectionInstanceData — one entry per
-	///      TLAS instance (same order), indexed by InstanceID() in the
-	///      closesthit shader. Structured buffer: tight packing.
-	/// [JP] Reflection.hlsli の ReflectionInstanceData と対応。TLAS インスタンス
-	///      ごとに1エントリ(同じ順序)、closesthit が InstanceID() で引く。
-	///      StructuredBuffer なので詰めパッキング。
+	/**
+	* [EN]
+	* One TLAS instance as seen by the ray-traced passes, in the same order as
+	* the TLAS and looked up by InstanceID() in the closest-hit shader.
+	* Mirrors ReflectionInstanceData in Reflection.hlsli; it lives in a
+	* structured buffer, so it is tightly packed.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* レイトレーシングのパスから見た TLAS のインスタンス 1 つ。TLAS と同じ
+	* 順序で並び、最近接ヒットシェーダーが InstanceID() で引く。
+	* Reflection.hlsli の ReflectionInstanceData と対応し、構造化バッファに
+	* 入るため詰めて配置する。
+	*/
 	struct ReflectionInstanceData
 	{
+		/// [EN] Bindless index of the instance's vertex buffer.
+		/// [JP] インスタンスの頂点バッファの bindless インデックス。
 		Uint32 vertexBufferIndex_ = 0;
+
+		/// [EN] Bindless index of the instance's index buffer.
+		/// [JP] インスタンスのインデックスバッファの bindless インデックス。
 		Uint32 indexBufferIndex_ = 0;
 
-		/// [EN] Bindless SRV of StructuredBuffer<ReflectionMaterialData> - the
-		///      mesh's full material list, resolved per-hit-triangle via
-		///      triangleMaterialIndexBufferIndex_ below rather than a single
-		///      flat color for the whole instance. See
-		///      RaytracingRenderer::BuildReflectionMaterialTable and
-		///      Reflection.hlsli's ResolveReflectionMaterial.
-		/// [JP] StructuredBuffer<ReflectionMaterialData> の bindless SRV —
-		///      メッシュの全マテリアル一覧。インスタンス全体で単一色にせず、
-		///      下の triangleMaterialIndexBufferIndex_ 経由でヒット三角形ごとに
-		///      解決する。RaytracingRenderer::BuildReflectionMaterialTable と
-		///      Reflection.hlsli の ResolveReflectionMaterial 参照。
+		/// [EN] Bindless read view of StructuredBuffer<ReflectionMaterialData>: the mesh's whole material list, resolved per hit triangle through triangleMaterialIndexBufferIndex_ (see ResolveReflectionMaterial in Reflection.hlsli).
+		/// [JP] StructuredBuffer<ReflectionMaterialData> の bindless 読み取りビュー。メッシュの全マテリアル一覧で、triangleMaterialIndexBufferIndex_ を通してヒットした三角形ごとに解決する（Reflection.hlsli の ResolveReflectionMaterial 参照）。
 		Uint32 materialDataIndex_ = 0;
 
-		/// [EN] Bindless SRV of StructuredBuffer<uint>, one entry per triangle,
-		///      mapping PrimitiveIndex() to an index into materialDataIndex_'s
-		///      array. Built once per unique Crister from each SubMesh's
-		///      surfaceIndex_ / indexOffset_ / indexCount_ - a multi-material
-		///      mesh (e.g. a Cornell box modeled as one Crister with a
-		///      red/green/white wall per submesh) needs this so a ray-traced
-		///      bounce resolves the material of the exact triangle it hit,
-		///      not one surface for the whole instance.
-		/// [JP] StructuredBuffer<uint> の bindless SRV。三角形1つにつき1要素で、
-		///      PrimitiveIndex() を materialDataIndex_ の配列インデックスへ
-		///      対応付ける。ユニークな Crister ごとに一度だけ、各 SubMesh の
-		///      surfaceIndex_ / indexOffset_ / indexCount_ から構築する —
-		///      複数マテリアルのメッシュ(例: 赤/緑/白の壁をサブメッシュに持つ
-		///      1つの Crister で作った Cornell box)では、レイトレのバウンスが
-		///      インスタンス全体で1つの surface ではなく、実際に当たった三角形の
-		///      マテリアルを解決するためにこれが必須。
+		/// [EN] Bindless read view of StructuredBuffer<uint> with one entry per triangle, mapping PrimitiveIndex() to an entry of the material list. It lets a multi-material mesh resolve the exact material of the triangle a ray hit rather than one material for the whole instance.
+		/// [JP] 三角形 1 つにつき 1 要素の StructuredBuffer<uint> の bindless 読み取りビュー。PrimitiveIndex() をマテリアル一覧の要素へ対応付ける。これにより複数マテリアルのメッシュでも、インスタンス全体で 1 つではなく、レイが当たった三角形そのもののマテリアルを解決できる。
 		Uint32 triangleMaterialIndexBufferIndex_ = 0;
 
-		/// [EN] The compressed vertex UVs are UNORM within this AABB, so the
-		///      closesthit shader needs it to decode them (Crister::TexcoordMin /
-		///      TexcoordExtent — the same values ModelRenderer feeds the raster
-		///      path through its instance data).
-		/// [JP] 圧縮頂点の UV はこの AABB 内の UNORM なので、closesthit が
-		///      デコードするのに必要(Crister::TexcoordMin / TexcoordExtent —
-		///      ラスタ経路で ModelRenderer がインスタンスデータ経由で渡している
-		///      のと同じ値)。
+		/// [EN] Minimum of the UV bounding box; the compressed vertex UVs are UNORM within it, so the closest-hit shader needs it to decode them.
+		/// [JP] UV のバウンディングボックスの最小値。圧縮された頂点 UV はこの範囲内の UNORM なので、最近接ヒットシェーダーがデコードに使う。
 		Float texcoordMin_[2] = { 0.0f, 0.0f };
+
+		/// [EN] Extent of the UV bounding box (Crister::TexcoordExtent, the same value the raster path uses).
+		/// [JP] UV のバウンディングボックスの大きさ（Crister::TexcoordExtent。ラスタ経路と同じ値）。
 		Float texcoordExtent_[2] = { 1.0f, 1.0f };
 	};
 
 	/**
 	* [EN]
-	* Dispatches the ray-traced glossy reflection RTPSO pass (ReflectionRT.hlsl —
-	* raygen / miss / closesthit via DispatchRays) into a raw single-buffered
-	* RGBA16F radiance texture (rgb = incoming reflected radiance, a = the ray's
-	* averaged hit distance in world units), then runs the 5-pass SVGF chain
-	* over it (ReflectionDenoiseCS.hlsl: dual-reprojection temporal accumulation
-	* with moment tracking -> spatial variance estimate for short history ->
-	* three variance-guided A-Trous wavelet iterations, one independent chain
-	* per view) and leaves the result in PIXEL_SHADER_RESOURCE state for
-	* DeferredLightingPS.hlsl to sample. GGX importance sampling (see
-	* ReflectionRT.hlsl) degenerates to the old exact mirror ray at roughness 0,
-	* so this is a superset of the v1 behavior rather than a replacement of it —
-	* same SVGF structure as ShadowRenderer, extended from a 2-channel binary
-	* visibility signal to continuous HDR RGB radiance plus a hit-point virtual
-	* motion reprojection candidate. Also owns the per-frame instance table
-	* (InstanceID() -> vertex/index/material data) that RaytracingRenderer
-	* fills while building the TLAS, and the 3-record shader table
-	* (raygen/miss/hitgroup — global root signature only, so records are bare
-	* shader identifiers).
+	* Runs the ray-traced glossy reflections. ReflectionRT.hlsl (ray
+	* generation, miss and closest hit through DispatchRays) GGX-samples a
+	* ReSTIR reservoir and writes a raw RGBA16F radiance texture (rgb is
+	* incoming reflected radiance, a the averaged hit distance in world
+	* units); a spatial reuse pass refines it together with a confidence
+	* texture; and, unless DLSS Ray Reconstruction is on, ReflectionDenoiseCS.hlsl
+	* runs a five-pass SVGF chain: dual-reprojection temporal accumulation
+	* with moments, a spatial variance estimate for short histories, and three
+	* variance-guided A-Trous iterations, one chain per view. At roughness 0
+	* the GGX sample becomes an exact mirror ray. The result is left in
+	* shader-resource state for DeferredLightingPS.hlsl. The structure matches
+	* ShadowRenderer, extended from binary visibility to HDR RGB radiance with
+	* a hit-point virtual-motion reprojection candidate. The renderer also
+	* owns the per-frame instance table that RaytracingRenderer fills while
+	* building the TLAS, and the three-record shader table.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* レイトレ光沢反射の RTPSO パス(ReflectionRT.hlsl — DispatchRays による
-	* raygen / miss / closesthit)を生の単一バッファ RGBA16F 放射輝度テクスチャ
-	* (rgb=入射反射放射輝度、a=レイの平均ヒット距離・ワールド単位)へ
-	* ディスパッチし、それに対して5パスの SVGF チェーンを回した
-	* (ReflectionDenoiseCS.hlsl: モーメント追跡つき二重リプロジェクション時間的
-	* 蓄積 → 履歴が短いピクセル向けの空間的分散推定 → 分散誘導 A-Trous
-	* ウェーブレット3反復。ビューごとに独立したチェーン)上で、
-	* DeferredLightingPS.hlsl がサンプルできるよう PIXEL_SHADER_RESOURCE 状態に
-	* しておく。GGX 重点サンプリング(ReflectionRT.hlsl 参照)は roughness 0 で
-	* 旧・厳密ミラーレイへ縮退するため、これは v1 の置き換えではなく上位互換 —
-	* ShadowRenderer と同じ SVGF 構成を、2チャンネルの二値可視性信号から連続値の
-	* HDR RGB放射輝度+ヒット点仮想モーションのリプロジェクション候補へ拡張した
-	* もの。RaytracingRenderer が TLAS 構築時に詰めるインスタンステーブル
-	* (InstanceID() → 頂点/インデックス/マテリアル)と、3 レコードの
-	* シェーダテーブル(raygen/miss/hitgroup — グローバルルートシグネチャのみ
-	* なのでレコードはシェーダ識別子だけ)も、ここが持つ。
+	* レイトレーシングによる光沢反射を実行する。ReflectionRT.hlsl（DispatchRays
+	* によるレイ生成、ミス、最近接ヒット）が GGX で ReSTIR の reservoir を
+	* サンプルし、生の RGBA16F 放射輝度テクスチャ（rgb は入射する反射の
+	* 放射輝度、a はワールド単位の平均ヒット距離）を書き、空間的リユースの
+	* パスがそれを信頼度テクスチャと共に整える。DLSS Ray Reconstruction が
+	* 無効なら、さらに ReflectionDenoiseCS.hlsl が 5 パスの SVGF チェーン
+	* （モーメントを伴う二重リプロジェクションの時間方向の蓄積、履歴の短い
+	* ピクセル向けの空間的な分散の推定、分散に導かれる A-Trous の 3 反復。
+	* ビューごとに 1 チェーン）を実行する。roughness 0 では GGX のサンプルが
+	* 厳密な鏡面反射のレイになる。結果は DeferredLightingPS.hlsl のために
+	* シェーダーリソース状態で残す。構成は ShadowRenderer と同じで、二値の
+	* 可視性を、ヒット点の仮想的な動きによるリプロジェクション候補を伴う HDR
+	* の RGB 放射輝度へ広げたもの。RaytracingRenderer が TLAS の構築中に詰める
+	* フレームごとのインスタンステーブルと、3 レコードのシェーダーテーブルも
+	* 持つ。
 	*/
 	class ReflectionRenderer
 	{
 	public:
-		/// [EN] Max TLAS instances the per-frame instance table can hold.
-		/// [JP] インスタンステーブルが保持できる TLAS インスタンスの最大数。
-		static constexpr Uint32 maxInstances = 4096;
-
+		/**
+		* [EN]
+		* Binds the shared root signature to the raytracing-state cache the
+		* ray pass compiles into and the pipeline-state cache the denoise
+		* passes compile into.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 共有のルートシグネチャを、レイのパスのコンパイル先となるレイトレー
+		* シングステートキャッシュと、デノイズのパスのコンパイル先となる
+		* パイプラインステートキャッシュへ関連付ける。
+		*/
 		ReflectionRenderer(RootSignature& rootSignature, RaytracingStateObject& raytracingStateObject, PipelineStateObject& pipelineStateObject);
+
+		/**
+		* [EN]
+		* Destroys the renderer. GPU resources are released together with the
+		* bindless heap at shutdown.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* レンダラーを破棄する。GPU リソースは終了時に bindless ヒープと共に
+		* 解放される。
+		*/
 		~ReflectionRenderer() = default;
 
+		/**
+		* [EN]
+		* Compiles the raytracing and denoise pipelines, creates the tuning
+		* constant buffer, the instance table and the three-record shader
+		* table, and allocates every texture and reservoir at width x height.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* レイトレーシングとデノイズのパイプラインをコンパイルし、調整値の定数
+		* バッファ、インスタンステーブル、3 レコードのシェーダーテーブルを作成
+		* して、width x height のすべてのテクスチャと reservoir を確保する。
+		*/
 		void Create(ID3D12Device* device, BindlessHeap* bindlessHeap, ShaderCache& shaderCache, ConstantIndicesSystem& constantIndicesSystem, ShaderResourceIndicesSystem& shaderResourceIndicesSystem, UnorderedAccessIndicesSystem& unorderedAccessIndicesSystem, Uint32 width, Uint32 height);
 
-		void Destroy(BindlessHeap* bindlessHeap);
+		/**
+		* [EN]
+		* Recreates every texture and reservoir for a new render size.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 新しいレンダーサイズに合わせて、すべてのテクスチャと reservoir を
+		* 作り直す。
+		*/
+		void Resize(ID3D12Device* device, Uint32 width, Uint32 height);
 
-		void Resize(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height);
-
-		/// [EN] Uploads this frame's instance table (same order as the TLAS
-		///      instance descs; entry i belongs to InstanceID() == i). Called
-		///      by RaytracingRenderer::Build right after collecting the
-		///      instances.
-		/// [JP] 今フレームのインスタンステーブルをアップロードする(TLAS の
-		///      インスタンス desc と同じ順序。エントリ i が InstanceID() == i)。
-		///      RaytracingRenderer::Build がインスタンス収集直後に呼ぶ。
+		/**
+		* [EN]
+		* Uploads this frame's instance table, in the same order as the TLAS
+		* instance descs (entry i belongs to InstanceID() == i). Called by
+		* RaytracingRenderer::Build right after it collects the instances.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 今フレームのインスタンステーブルを、TLAS のインスタンス desc と同じ
+		* 順序でアップロードする（要素 i が InstanceID() == i に対応する）。
+		* RaytracingRenderer::Build がインスタンスを集めた直後に呼ぶ。
+		*/
 		void UpdateInstanceTable(const ReflectionInstanceData* data, Uint32 count);
 
-		/// [EN] Updates the tuning constant buffer (stamping the frame counter),
-		///      decides this frame's history/write ping-pong slot, and
-		///      registers every bindless index into IndicesSystem. Must run
-		///      before IndicesSystem::UploadEditor/UploadGame bakes this frame's
-		///      indices. No GPU work. When useDlssRayReconstruction is true,
-		///      registers the RAW single-buffered radiance SRV
-		///      (radianceShaderResourceViewIndex_) as this view's "final"
-		///      reflection read index instead of the SVGF-denoised one — DLSS
-		///      Ray Reconstruction denoises the whole composited frame itself,
-		///      so this renderer's own temporal accumulation is skipped
-		///      entirely to avoid double-denoising.
-		/// [JP] チューニング用定数バッファを更新し(フレーム番号を焼き込む)、
-		///      今フレームのピンポン history/write スロットを決め、bindless
-		///      インデックスを IndicesSystem へ登録する。
-		///      IndicesSystem::UploadEditor/UploadGame が今フレームのインデックスを
-		///      確定する前に呼ぶこと。GPU 処理は無い。useDlssRayReconstruction が
-		///      true の間は、このビューの「最終的な」反射読み取りインデックスに
-		///      SVGFデノイズ済みSRVではなく生の単一バッファ放射輝度SRV
-		///      (radianceShaderResourceViewIndex_)を登録する — DLSS Ray
-		///      Reconstruction が合成フレーム全体を自身でデノイズするため、
-		///      この Renderer 自身の時間的蓄積は二重デノイズを避けるため丸ごと
-		///      スキップする。
-		void PrepareFrame(const ReflectionRayConstantBuffer& settings, Bool useDlssRayReconstruction);
+		/**
+		* [EN]
+		* Swaps the history slots, uploads the tuning values with the frame
+		* counter and temporal-reuse flag, records whether the pass runs and
+		* whether DLSS Ray Reconstruction (read from the DLSS manager) replaces
+		* the SVGF chain, and publishes every bindless index to the index
+		* systems. It records no GPU work, and must run before the index
+		* systems upload this frame's indices.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 履歴のスロットを入れ替え、フレームカウンターと時間方向の再利用フラグを
+		* 入れた調整値をアップロードし、パスを実行するか、DLSS Ray
+		* Reconstruction（DLSS マネージャーから読む）が SVGF チェーンの代わりに
+		* なるかを記録して、すべての bindless インデックスを各インデックス
+		* システムへ公開する。GPU 処理は記録せず、各インデックスシステムが
+		* 今フレームのインデックスをアップロードする前に呼び出す。
+		*/
+		void Prepare(const ReflectionRayConstantBuffer& settings, Bool enabled);
 
-		/// [EN] The actual GPU work: DispatchRays into the raw texture, then
-		///      (unless useDlssRayReconstruction) the SVGF chain — dual-
-		///      reprojection temporal accumulation into scratch0 (plus this
-		///      frame's moments/history length/depth-normal), FilterMoments
-		///      into scratch1, A-Trous step1 back into scratch0, A-Trous step2
-		///      into this frame's history write slot (the feedback tap),
-		///      A-Trous step4 into the per-view denoised output, which is left
-		///      in PIXEL_SHADER_RESOURCE state. When there is no TLAS / the
-		///      feature is off / the RTPSO/PSO is missing, the denoised output
-		///      is cleared to 0 and the history length to 0 instead. When
-		///      useDlssRayReconstruction is true, the whole chain is skipped —
-		///      only the raw texture is transitioned to PIXEL_SHADER_RESOURCE,
-		///      since PrepareFrame() already pointed the composite shader at
-		///      it directly. Requires the G-Buffer depth/normal/velocity to
-		///      already be written.
-		/// [JP] 実際の GPU 処理: DispatchRays を生テクスチャへ、続けて
-		///      (useDlssRayReconstruction でなければ) SVGF チェーン —
-		///      二重リプロジェクション時間的蓄積を scratch0 へ(今フレームの
-		///      モーメント/履歴長/深度法線も併せて)、FilterMoments を
-		///      scratch1 へ、A-Trous step1 を scratch0 へ戻し、A-Trous step2 を
-		///      今フレームの history write スロット(フィードバックタップ)へ、
-		///      A-Trous step4 をビューごとの denoised 出力へ書き、それを
-		///      PIXEL_SHADER_RESOURCE 状態で終える。TLAS が無い/機能が無効/
-		///      RTPSO・PSO が無ければ、代わりに denoised 出力を 0、履歴長を 0
-		///      でクリアする。useDlssRayReconstruction が true の間はチェーンを
-		///      丸ごとスキップする — 生テクスチャを PIXEL_SHADER_RESOURCE へ
-		///      遷移させるだけでよい(PrepareFrame() が既に合成シェーダの参照先を
-		///      そこへ直接向けているため)。G-Buffer の深度/法線/速度が書き込み
-		///      済みであることが前提。
-		void Dispatch(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Bool tlasValid, RaytracingView view, Bool useDlssRayReconstruction);
+		/**
+		* [EN]
+		* Records the pass for view: dispatches rays into the raw texture, runs
+		* the spatial reuse and, unless DLSS Ray Reconstruction is on, the SVGF
+		* chain - reprojection into scratch 0 with this frame's moments,
+		* history length and depth-normal copy, FilterMoments into scratch 1,
+		* A-Trous step 1 back into scratch 0, A-Trous step 2 into this frame's
+		* history write slot (the feedback tap), and A-Trous step 4 into the
+		* view's denoised output. When the pass is off, the texture deferred
+		* lighting reads, the history length and this frame's reservoir are
+		* cleared instead. The G-Buffer depth, normals and velocity must
+		* already be written.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* view のパスを記録する。生のテクスチャへレイをディスパッチし、空間的
+		* リユースを行い、DLSS Ray Reconstruction が無効なら SVGF チェーンを
+		* 実行する。リプロジェクションを今フレームのモーメント、履歴長、深度
+		* 法線コピーと共にスクラッチ 0 へ、FilterMoments をスクラッチ 1 へ、
+		* A-Trous ステップ 1 をスクラッチ 0 へ戻し、A-Trous ステップ 2 を今
+		* フレームの履歴の書き込みスロット（フィードバックタップ）へ、A-Trous
+		* ステップ 4 をビューのデノイズ済み出力へ書く。パスが無効なら、代わりに
+		* ディファードライティングが読むテクスチャ、履歴長、今フレームの
+		* reservoir をクリアする。G-Buffer の深度、法線、速度が書き込み済みで
+		* あることが前提。
+		*/
+		void Dispatch(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, RaytracingView view);
 
 	private:
-		/// [EN] Allocates the raw texture and every per-view buffer of the SVGF
-		///      chain. Shared by Create() and Resize() so the two can never
-		///      drift apart as the chain gains or loses a buffer.
-		/// [JP] raw テクスチャと、ビューごとの SVGF チェーン全バッファを確保
-		///      する。Create() と Resize() で共有し、チェーンにバッファが増減しても
-		///      両者がずれないようにする。
-		void CreateResources(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height);
+		/**
+		* [EN]
+		* Creates the width_ x height_ raw radiance and confidence textures
+		* and, per view, the whole SVGF chain and the reservoirs, and marks
+		* the new history chain for zeroing.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* width_ x height_ の生の放射輝度と信頼度のテクスチャ、ビューごとの
+		* SVGF チェーン一式と reservoir を作成し、新しい履歴チェーンを 0 埋めの
+		* 対象にする。
+		*/
+		void Allocate(ID3D12Device* device);
 
-		static constexpr Uint32 accumulationSlotCount = 2;
-		static constexpr Uint32 viewCount = 2;
+		/**
+		* [EN]
+		* Frees every texture's and reservoir's bindless views and defers
+		* their destruction until the GPU has finished with them.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* すべてのテクスチャと reservoir の bindless ビューを解放し、それらの
+		* 破棄は GPU が使い終えるまで遅延させる。
+		*/
+		void Release();
 
+	private:
+		/// [EN] History slots per view: one written this frame, one holding the previous frame.
+		/// [JP] ビューごとの履歴のスロットの数。今フレームに書き込む 1 つと、前フレームを持つ 1 つ。
+		static constexpr Uint32 accumulationSlotCount_ = 2;
+
+		/// [EN] Number of views that keep their own history (editor and game).
+		/// [JP] 独自の履歴を持つビューの数（エディターとゲーム）。
+		static constexpr Uint32 viewCount_ = 2;
+
+		/// [EN] Number of instances the instance table can hold. Must equal RaytracingRenderer's TLAS instance limit, so InstanceID() always stays inside the table.
+		/// [JP] インスタンステーブルが保持できるインスタンスの数。InstanceID() が常にテーブルの範囲内に収まるよう、RaytracingRenderer の TLAS のインスタンス上限と等しくする。
+		static constexpr Uint32 maxInstances_ = 4096;
+
+		/// [EN] Size in bytes of one reservoir element; must match ReflectionReservoir in ReflectionReSTIR.hlsli.
+		/// [JP] reservoir の要素 1 つのバイト数。ReflectionReSTIR.hlsli の ReflectionReservoir と一致させる。
+		static constexpr Uint32 reservoirElementSizeInBytes_ = 64;
+
+		/// [EN] Size of one shader-table record: the 32-byte shader identifier rounded up to the 64-byte table alignment.
+		/// [JP] シェーダーテーブルのレコード 1 つのサイズ。32 バイトのシェーダー識別子を 64 バイトのテーブルアライメントへ切り上げたもの。
+		static constexpr Uint32 shaderTableRecordSize_ = 64;
+
+		/// [EN] Raytracing pipeline of ReflectionRT.hlsl.
+		/// [JP] ReflectionRT.hlsl のレイトレーシングパイプライン。
 		ReflectionShader reflectionShader_;
+
+		/// [EN] Spatial reuse and SVGF compute pipelines of ReflectionDenoiseCS.hlsl.
+		/// [JP] ReflectionDenoiseCS.hlsl の空間的リユースと SVGF のコンピュートパイプライン。
 		ReflectionDenoiseShader denoiseShader_;
 
+		/// [EN] GPU copy of the tuning values, read through its bindless index.
+		/// [JP] 調整値の GPU 側コピー。bindless インデックス経由で読まれる。
 		ResourcePtr<ConstantBuffer<ReflectionRayConstantBuffer>> tuningBuffer_;
 
+		/// [EN] Per-frame instance table (InstanceID() to vertex, index and material data), shared with Refraction and GlobalIllumination.
+		/// [JP] フレームごとのインスタンステーブル（InstanceID() から頂点、インデックス、マテリアルのデータへ）。Refraction と GlobalIllumination も共有する。
 		ResourcePtr<ReadOnlyStructuredBuffer<ReflectionInstanceData>> instanceTable_;
 
-		/// [EN] Raw noisy RGBA16F radiance output of ReflectionRT.hlsl (rgb =
-		///      radiance, a = averaged hit distance in world units).
-		///      Single-buffered — fully consumed by ReflectionDenoiseCS.hlsl
-		///      the same frame it is written.
-		/// [JP] ReflectionRT.hlsl の生ノイズ RGBA16F 放射輝度出力(rgb=放射輝度、
-		///      a=平均ヒット距離・ワールド単位)。単一バッファ — 書かれた同じ
-		///      フレーム内で ReflectionDenoiseCS.hlsl に消費し切られる。
+		/// [EN] Raw RGBA16F radiance from the ray pass (rgb radiance, a averaged hit distance), refined in place by the spatial reuse. A single texture is enough, since the denoiser consumes it in the same flush.
+		/// [JP] レイのパスが書き、空間的リユースがその場で整える生の RGBA16F 放射輝度（rgb が放射輝度、a が平均ヒット距離）。デノイザが同じ Flush 内で消費するため、1 枚で足りる。
 		Microsoft::WRL::ComPtr<ID3D12Resource> radianceResource_;
 		D3D12_RESOURCE_STATES radianceState_ = D3D12_RESOURCE_STATE_COMMON;
 		Uint32 radianceUnorderedAccessViewIndex_ = 0;
 		Uint32 radianceShaderResourceViewIndex_ = 0;
 
-		/// [EN] Screen-sized single-channel confidence (0..1), written by
-		///      ReflectionReservoirSpatialCS.hlsl right after radianceResource_
-		///      (same lifetime/barriers - single-buffered, fully consumed by
-		///      ReflectionDenoiseCS.hlsl the same frame it is written) and read
-		///      there to let its own temporal blend defer to the reservoir's
-		///      already-converged history instead of re-integrating a second
-		///      one on top of it (same scheme as GlobalIlluminationRenderer's
-		///      confidence fields).
-		/// [JP] 画面サイズの単チャンネル信頼度(0..1)。
-		///      ReflectionReservoirSpatialCS.hlsl が radianceResource_ の直後に
-		///      書く(ライフタイム/バリアも同じ — 単一バッファで、書かれた
-		///      同じフレーム内で ReflectionDenoiseCS.hlsl に消費し切られる)。
-		///      そちらが自身の時間的ブレンドを reservoir の既に収束済みの
-		///      履歴に譲り、その上にもう一段の時間積分を重ねないようにする
-		///      ために読む(GlobalIlluminationRenderer の confidence 系
-		///      フィールドと同じ形)。
+		/// [EN] Per-pixel 0-1 confidence written by the spatial reuse next to the radiance. The denoiser reads it to let its own temporal blend defer to the reservoir's already converged history instead of stacking a second one on top.
+		/// [JP] 空間的リユースが放射輝度と並べて書く、ピクセルごとの 0 から 1 の信頼度。デノイザはこれを読み、自身の時間方向のブレンドを reservoir の既に収束した履歴に譲り、2 段目を重ねないようにする。
 		Microsoft::WRL::ComPtr<ID3D12Resource> confidenceResource_;
 		D3D12_RESOURCE_STATES confidenceState_ = D3D12_RESOURCE_STATE_COMMON;
 		Uint32 confidenceUnorderedAccessViewIndex_ = 0;
 		Uint32 confidenceShaderResourceViewIndex_ = 0;
 
-		/// [EN] SVGF's temporal history: rgb = filtered radiance, a = its
-		///      variance. Ping-ponged, one independent pair per view (see
-		///      RaytracingView). This is the FEEDBACK TAP, not the final
-		///      image - ATrousPass2 writes it and next frame's reprojection
-		///      reads it, while the image DeferredLightingPS.hlsl samples
-		///      comes from denoisedResource_ below.
-		/// [JP] SVGF の時間的履歴。rgb = フィルタ済み放射輝度、a = その分散。
-		///      ピンポン方式で、ビューごと(RaytracingView 参照)に独立した1ペア。
-		///      これは【フィードバックタップ】であって最終画ではない —
-		///      ATrousPass2 が書き、次フレームのリプロジェクションが読む。
-		///      DeferredLightingPS.hlsl がサンプルする画は下の denoisedResource_。
-		Microsoft::WRL::ComPtr<ID3D12Resource> accumulatedRadianceResource_[viewCount][accumulationSlotCount];
-		D3D12_RESOURCE_STATES accumulatedRadianceState_[viewCount][accumulationSlotCount] = {};
-		Uint32 accumulatedUnorderedAccessViewIndex_[viewCount][accumulationSlotCount] = {};
-		Uint32 accumulatedShaderResourceViewIndex_[viewCount][accumulationSlotCount] = {};
+		/// [EN] SVGF temporal history (rgb filtered radiance, a its variance), two slots per view. This is the feedback tap written by A-Trous step 2 and read by next frame's reprojection, not the final image.
+		/// [JP] SVGF の時間方向の履歴（rgb はフィルタ済みの放射輝度、a はその分散）。ビューごとに 2 スロット。A-Trous ステップ 2 が書き、次フレームのリプロジェクションが読むフィードバックタップで、最終画ではない。
+		Microsoft::WRL::ComPtr<ID3D12Resource> accumulatedRadianceResource_[viewCount_][accumulationSlotCount_];
+		D3D12_RESOURCE_STATES accumulatedRadianceState_[viewCount_][accumulationSlotCount_] = {};
+		Uint32 accumulatedUnorderedAccessViewIndex_[viewCount_][accumulationSlotCount_] = {};
+		Uint32 accumulatedShaderResourceViewIndex_[viewCount_][accumulationSlotCount_] = {};
 
-		/// [EN] Per-pixel first/second luminance moments, packed as (1st, 2nd).
-		///      Ping-ponged alongside the history above — SVGF derives its
-		///      variance from the temporally accumulated moments, so they have
-		///      to survive the frame exactly like the radiance does.
-		/// [JP] ピクセルごとの輝度の1次/2次モーメント。(1次, 2次)の順で詰める。
-		///      上の履歴と同じくピンポンする — SVGF は時間蓄積したモーメントから
-		///      分散を求めるので、放射輝度と全く同様にフレームをまたいで保持する
-		///      必要がある。
-		Microsoft::WRL::ComPtr<ID3D12Resource> momentsResource_[viewCount][accumulationSlotCount];
-		D3D12_RESOURCE_STATES momentsState_[viewCount][accumulationSlotCount] = {};
-		Uint32 momentsUnorderedAccessViewIndex_[viewCount][accumulationSlotCount] = {};
-		Uint32 momentsShaderResourceViewIndex_[viewCount][accumulationSlotCount] = {};
+		/// [EN] First and second luminance moments. SVGF derives variance from the temporally accumulated moments, so they carry over between frames exactly like the radiance.
+		/// [JP] 輝度の 1 次と 2 次のモーメント。SVGF は時間方向に蓄積したモーメントから分散を求めるため、放射輝度と同じくフレームをまたいで引き継ぐ。
+		Microsoft::WRL::ComPtr<ID3D12Resource> momentsResource_[viewCount_][accumulationSlotCount_];
+		D3D12_RESOURCE_STATES momentsState_[viewCount_][accumulationSlotCount_] = {};
+		Uint32 momentsUnorderedAccessViewIndex_[viewCount_][accumulationSlotCount_] = {};
+		Uint32 momentsShaderResourceViewIndex_[viewCount_][accumulationSlotCount_] = {};
 
-		/// [EN] Per-pixel count of successfully reprojected frames. Drives the
-		///      max(alpha, 1/length) blend factor and the switch to the
-		///      spatial variance estimate. Ping-ponged.
-		/// [JP] ピクセルごとのリプロジェクション成功フレーム数。
-		///      max(alpha, 1/履歴長) のブレンド係数と、空間的分散推定への
-		///      切り替え判定を駆動する。ピンポンする。
-		Microsoft::WRL::ComPtr<ID3D12Resource> historyLengthResource_[viewCount][accumulationSlotCount];
-		D3D12_RESOURCE_STATES historyLengthState_[viewCount][accumulationSlotCount] = {};
-		Uint32 historyLengthUnorderedAccessViewIndex_[viewCount][accumulationSlotCount] = {};
-		Uint32 historyLengthShaderResourceViewIndex_[viewCount][accumulationSlotCount] = {};
+		/// [EN] Per-pixel count of successfully reprojected frames. It drives the max(alpha, 1 / length) blend factor and the switch to the spatial variance estimate.
+		/// [JP] ピクセルごとのリプロジェクションに成功したフレーム数。max(alpha, 1 / 履歴長) のブレンド係数と、空間的な分散の推定への切り替えを決める。
+		Microsoft::WRL::ComPtr<ID3D12Resource> historyLengthResource_[viewCount_][accumulationSlotCount_];
+		D3D12_RESOURCE_STATES historyLengthState_[viewCount_][accumulationSlotCount_] = {};
+		Uint32 historyLengthUnorderedAccessViewIndex_[viewCount_][accumulationSlotCount_] = {};
+		Uint32 historyLengthShaderResourceViewIndex_[viewCount_][accumulationSlotCount_] = {};
 
-		/// [EN] Packed (view depth, depth derivative, oct normal) copy of this
-		///      frame's surface. Ping-ponged because SVGF's temporal
-		///      consistency test compares against the PREVIOUS frame's
-		///      version, and the engine's G-Buffer is single-buffered so it
-		///      cannot be read back.
-		/// [JP] 今フレームの面を (ビュー深度, 深度勾配, oct法線) で詰めたコピー。
-		///      SVGF の時間的整合性テストが【前フレーム】の値と比較するため
-		///      ピンポンする — エンジンの G-Buffer は単一バッファで、前フレームを
-		///      読み戻せないため。
-		Microsoft::WRL::ComPtr<ID3D12Resource> depthNormalResource_[viewCount][accumulationSlotCount];
-		D3D12_RESOURCE_STATES depthNormalState_[viewCount][accumulationSlotCount] = {};
-		Uint32 depthNormalUnorderedAccessViewIndex_[viewCount][accumulationSlotCount] = {};
-		Uint32 depthNormalShaderResourceViewIndex_[viewCount][accumulationSlotCount] = {};
+		/// [EN] This frame's surface packed as (view depth, depth derivative, octahedral normal). The temporal consistency test compares against the previous frame's copy, which the single-buffered G-Buffer cannot provide. It is 32-bit because SVGF compares depth differences in units of the depth derivative, and FP16 depth is coarser than that derivative at mid distances.
+		/// [JP] 今フレームの面を (ビュー深度, 深度の勾配, 八面体の法線) で詰めたもの。時間方向の整合性の判定は前フレームのコピーと比べるが、単一バッファの G-Buffer では前フレームを読めない。SVGF は深度差を深度の勾配を単位として比べるが、FP16 の深度は中距離でその勾配より粗くなるため、32 ビットにしている。
+		Microsoft::WRL::ComPtr<ID3D12Resource> depthNormalResource_[viewCount_][accumulationSlotCount_];
+		D3D12_RESOURCE_STATES depthNormalState_[viewCount_][accumulationSlotCount_] = {};
+		Uint32 depthNormalUnorderedAccessViewIndex_[viewCount_][accumulationSlotCount_] = {};
+		Uint32 depthNormalShaderResourceViewIndex_[viewCount_][accumulationSlotCount_] = {};
 
-		/// [EN] Fully filtered RGBA16F radiance DeferredLightingPS.hlsl
-		///      samples (rgb = radiance, a = 1 valid / 0 background) — the
-		///      output of the last A-Trous iteration. Single buffered per
-		///      view: it is consumed the same frame it is written and never
-		///      feeds back, which is exactly what lets the history above stop
-		///      at the earlier, sharper feedback tap.
-		/// [JP] DeferredLightingPS.hlsl がサンプルする、完全にフィルタ済みの
-		///      RGBA16F 放射輝度(rgb=放射輝度、a=1有効/0背景) — 最後の
-		///      A-Trous 反復の出力。ビューごとに単一バッファ: 書かれた同じ
-		///      フレームで消費されフィードバックしない。これがあるからこそ、
-		///      上の履歴を「より早く、よりシャープな」フィードバックタップで
-		///      止められる。
-		Microsoft::WRL::ComPtr<ID3D12Resource> denoisedResource_[viewCount];
-		D3D12_RESOURCE_STATES denoisedState_[viewCount] = {};
-		Uint32 denoisedUnorderedAccessViewIndex_[viewCount] = {};
-		Uint32 denoisedShaderResourceViewIndex_[viewCount] = {};
+		/// [EN] Fully filtered RGBA16F radiance that deferred lighting samples (rgb radiance, a 1 when valid, 0 for background): the output of the last A-Trous iteration, one per view. It never feeds back, which is what lets the history stop at the earlier, sharper feedback tap.
+		/// [JP] ディファードライティングがサンプルする、完全にフィルタ済みの RGBA16F 放射輝度（rgb が放射輝度、a は有効なら 1、背景なら 0）。最後の A-Trous 反復の出力で、ビューごとに 1 枚。フィードバックしないため、履歴をより早くシャープなフィードバックタップで止められる。
+		Microsoft::WRL::ComPtr<ID3D12Resource> denoisedResource_[viewCount_];
+		D3D12_RESOURCE_STATES denoisedState_[viewCount_] = {};
+		Uint32 denoisedUnorderedAccessViewIndex_[viewCount_] = {};
+		Uint32 denoisedShaderResourceViewIndex_[viewCount_] = {};
 
-		/// [EN] A-Trous ping-pong scratch, one pair per view. Pure scratch -
-		///      always fully overwritten by the pass that writes it.
-		/// [JP] A-Trous ピンポンスクラッチ、ビューごとに1ペア。純粋なスクラッチ
-		///      で、書き込むパスが必ず全画素を上書きする。
-		Microsoft::WRL::ComPtr<ID3D12Resource> atrousScratchResource_[viewCount][2];
-		D3D12_RESOURCE_STATES atrousScratchState_[viewCount][2] = {};
-		Uint32 atrousScratchUnorderedAccessViewIndex_[viewCount][2] = {};
-		Uint32 atrousScratchShaderResourceViewIndex_[viewCount][2] = {};
+		/// [EN] A-Trous scratch pair, one per view. Always fully overwritten by the pass that writes it.
+		/// [JP] A-Trous 用スクラッチ 2 枚。ビューごとに 1 組。書き込むパスが必ず全画素を上書きする。
+		Microsoft::WRL::ComPtr<ID3D12Resource> atrousScratchResource_[viewCount_][2];
+		D3D12_RESOURCE_STATES atrousScratchState_[viewCount_][2] = {};
+		Uint32 atrousScratchUnorderedAccessViewIndex_[viewCount_][2] = {};
+		Uint32 atrousScratchShaderResourceViewIndex_[viewCount_][2] = {};
 
-		/// [EN] ReSTIR reservoir, ping-ponged per view like
-		///      accumulatedRadianceResource_ above - ReflectionRayGeneration
-		///      reads last frame's slot (reprojected) and writes this frame's
-		///      slot in the same dispatch, then ReflectionReservoirSpatialCS.hlsl
-		///      reads/combines this frame's slot again for spatial reuse before
-		///      the SVGF chain ever sees the result. Both slots stay
-		///      screen-sized StructuredBuffers of reservoirElementSizeInBytes_-
-		///      byte elements (see ReflectionReservoir in ReflectionReSTIR.hlsli,
-		///      which this must match byte-for-byte). Same scheme as
-		///      GlobalIlluminationRenderer's reservoir fields.
-		/// [JP] ReSTIR Reservoir。上の accumulatedRadianceResource_ と同じく
-		///      ビューごとにピンポンする - ReflectionRayGeneration が同じ
-		///      ディスパッチ内で前フレームのスロット(再投影済み)を読み、今
-		///      フレームのスロットへ書き、続けて ReflectionReservoirSpatialCS.hlsl
-		///      が今フレームのスロットを読み直して空間的リユースを行ってから
-		///      初めて SVGF チェーンへ渡る。両スロットとも画面サイズの
-		///      StructuredBuffer(要素サイズ reservoirElementSizeInBytes_ バイト —
-		///      ReflectionReSTIR.hlsli の ReflectionReservoir とバイト単位で
-		///      一致させること)。GlobalIlluminationRenderer の reservoir 系
-		///      フィールドと同じ形。
-		static constexpr Uint32 reservoirElementSizeInBytes_ = 64;
-		Microsoft::WRL::ComPtr<ID3D12Resource> reservoirResource_[viewCount][accumulationSlotCount];
-		D3D12_RESOURCE_STATES reservoirState_[viewCount][accumulationSlotCount] = {};
-		Uint32 reservoirUnorderedAccessViewIndex_[viewCount][accumulationSlotCount] = {};
-		Uint32 reservoirShaderResourceViewIndex_[viewCount][accumulationSlotCount] = {};
+		/// [EN] ReSTIR reservoirs, two slots per view like the history. Ray generation reads last frame's slot (reprojected) and writes this frame's slot in the same dispatch, then the spatial reuse reads this frame's slot again; each is a screen-sized structured buffer of reservoirElementSizeInBytes_-byte elements.
+		/// [JP] ReSTIR の reservoir。履歴と同じくビューごとに 2 スロット。レイ生成が同じディスパッチの中で前フレームのスロットを（再投影して）読み、今フレームのスロットへ書き、その後空間的リユースが今フレームのスロットを読み直す。それぞれ reservoirElementSizeInBytes_ バイトの要素を持つ画面サイズの構造化バッファ。
+		Microsoft::WRL::ComPtr<ID3D12Resource> reservoirResource_[viewCount_][accumulationSlotCount_];
+		D3D12_RESOURCE_STATES reservoirState_[viewCount_][accumulationSlotCount_] = {};
+		Uint32 reservoirUnorderedAccessViewIndex_[viewCount_][accumulationSlotCount_] = {};
+		Uint32 reservoirShaderResourceViewIndex_[viewCount_][accumulationSlotCount_] = {};
 
-		/// [EN] Which slot holds the previous frame's finished result (this
-		///      frame's history). Swapped once per frame at the top of
-		///      PrepareFrame() — NOT in Dispatch(), which runs twice per frame
-		///      (Editor + Game views).
-		/// [JP] 前フレームの完成結果(今フレームの history)を持つスロット。
-		///      交換は PrepareFrame() の冒頭で1フレームに1回だけ — Dispatch()
-		///      では行わない(Editor/Game 両ビューで1フレームに2回走るため)。
+		/// [EN] Slot holding the previous frame's result, i.e. this frame's history. It swaps once per frame in Prepare, not in Dispatch, which runs once per view.
+		/// [JP] 前フレームの結果、つまり今フレームの履歴を持つスロット。入れ替えは 1 フレームに 1 回 Prepare で行い、ビューごとに走る Dispatch では行わない。
 		Uint32 historySlot_ = 0;
 
-		/// [EN] 3-record shader table: raygen @ 0, miss @ 64, hitgroup @ 128
-		///      (records are bare 32-byte shader identifiers padded to the
-		///      64-byte table alignment; no local root arguments). Built once
-		///      in Create() — identifiers are stable for the state object's
-		///      lifetime.
-		/// [JP] 3 レコードのシェーダテーブル: raygen @ 0、miss @ 64、
-		///      hitgroup @ 128(レコードは 32 バイトのシェーダ識別子のみで、
-		///      64 バイトのテーブルアラインメントまでパディング。ローカル
-		///      ルート引数は無し)。識別子はステートオブジェクトの生存期間中
-		///      不変なので Create() で 1 度だけ構築する。
+		/// [EN] Upload-heap shader table of three records: ray generation at 0, miss at 64, hit group at 128. Each record is a bare shader identifier with no local root arguments, built once in Create because identifiers stay valid for the state object's lifetime.
+		/// [JP] 3 レコードのアップロードヒープ上のシェーダーテーブル。レイ生成が 0、ミスが 64、ヒットグループが 128。各レコードはローカルルート引数の無いシェーダー識別子だけで、識別子はステートオブジェクトの生存中は変わらないため Create で 1 度だけ作る。
 		Microsoft::WRL::ComPtr<ID3D12Resource> shaderTableResource_;
-		static constexpr Uint32 shaderTableRecordSize = 64;
 
-		/// [EN] Non-shader-visible UAV descriptors required by
-		///      ClearUnorderedAccessViewFloat alongside the shader-visible
-		///      ones. Only the surfaces actually cleared on the "nothing to
-		///      trace" path need one: the raw texture, the per-view denoised
-		///      output, and the history length (cleared to 0 so the filter
-		///      re-converges from scratch rather than trusting a stale
-		///      history).
-		/// [JP] ClearUnorderedAccessViewFloat がシェーダ可視の UAV と併せて
-		///      要求する、非シェーダ可視の UAV ディスクリプタ。「追跡対象なし」
-		///      経路で実際にクリアする面だけが必要 — raw、ビューごとの
-		///      denoised 出力、そして履歴長(0 でクリアし、古い履歴を信用せず
-		///      ゼロから収束し直させる)。
+		/// [EN] Non-shader-visible heap holding the CPU-side write views that the clears require: the raw radiance, the confidence, each view's denoised output, and every buffer of the history chain and every reservoir.
+		/// [JP] クリアが要求する CPU 側の書き込み用ビューを置く非シェーダー可視ヒープ。生の放射輝度、信頼度、ビューごとのデノイズ済み出力、履歴チェーンのすべてのバッファとすべての reservoir の分。
 		DescriptorHeap clearHeap_;
+
+		/// [EN] Indices of the clearable resources' write views inside clearHeap_.
+		/// [JP] clearHeap_ 内での、クリアするリソースの書き込み用ビューのインデックス。
 		Uint32 clearRawIndex_ = 0;
 		Uint32 clearConfidenceIndex_ = 0;
-		Uint32 clearDenoisedIndex_[viewCount] = {};
-		Uint32 clearHistoryLengthIndex_[viewCount][accumulationSlotCount] = {};
-		Uint32 clearAccumulatedIndex_[viewCount][accumulationSlotCount] = {};
-		Uint32 clearMomentsIndex_[viewCount][accumulationSlotCount] = {};
-		Uint32 clearDepthNormalIndex_[viewCount][accumulationSlotCount] = {};
-		Uint32 clearReservoirIndex_[viewCount][accumulationSlotCount] = {};
+		Uint32 clearDenoisedIndex_[viewCount_] = {};
+		Uint32 clearHistoryLengthIndex_[viewCount_][accumulationSlotCount_] = {};
+		Uint32 clearAccumulatedIndex_[viewCount_][accumulationSlotCount_] = {};
+		Uint32 clearMomentsIndex_[viewCount_][accumulationSlotCount_] = {};
+		Uint32 clearDepthNormalIndex_[viewCount_][accumulationSlotCount_] = {};
+		Uint32 clearReservoirIndex_[viewCount_][accumulationSlotCount_] = {};
 
-		/// [EN] Shader-visible RAW UAV copy of clearReservoirIndex_'s view,
-		///      required alongside it - see ReservoirBuffer::Create()'s doc
-		///      comment for why ClearUnorderedAccessViewUint needs both a
-		///      GPU-visible and a CPU (clearHeap_) descriptor of the exact
-		///      same (non-structured) view.
-		/// [JP] clearReservoirIndex_ と同じビューの、シェーダ可視な RAW UAV
-		///      コピー - ClearUnorderedAccessViewUint が GPU可視と
-		///      CPU(clearHeap_)の両方に全く同じ(非構造化の)ビューを
-		///      要求する理由は ReservoirBuffer::Create() のドキュメント
-		///      コメント参照。
-		Uint32 clearReservoirGpuIndex_[viewCount][accumulationSlotCount] = {};
+		/// [EN] Shader-visible raw write view matching each reservoir's clear view. ClearUnorderedAccessViewUint needs the same non-structured view both on the GPU side and on the CPU side (see ReservoirBuffer::Create).
+		/// [JP] 各 reservoir のクリア用ビューと対になる、シェーダー可視の raw 書き込み用ビュー。ClearUnorderedAccessViewUint は GPU 側と CPU 側の両方に同じ非構造化ビューを要求する（ReservoirBuffer::Create 参照）。
+		Uint32 clearReservoirGpuIndex_[viewCount_][accumulationSlotCount_] = {};
 
-		/// [EN] Whether the history chain has been zeroed since it was created.
-		///      D3D12 does not guarantee a freshly created committed resource
-		///      reads as zero, and every buffer here is fed back into itself the
-		///      next frame - so a single uninitialized texel is not a one-frame
-		///      glitch, it is latched in permanently. Undefined FP16 bit patterns
-		///      are readily NaN, and because textures are stored swizzled the
-		///      garbage surfaces as rectangular blocks rather than noise.
-		/// [JP] 生成以降に履歴チェーンを 0 で埋めたかどうか。D3D12 は生成直後の
-		///      committed リソースが 0 で読める保証をせず、ここのバッファは全て
-		///      翌フレーム自分自身へ戻る — つまり未初期化テクセルが 1 つでもあると
-		///      1 フレームの乱れでは済まず、恒久的に焼き付く。未定義の fp16
-		///      ビットパターンは容易に NaN になり、テクスチャはスウィズルされて
-		///      配置されるため、ノイズではなく矩形の塊として現れる。
+		/// [EN] Whether the history chain and both reservoir slots have been zeroed since allocation. A new committed resource is not guaranteed to read as zero, and every history buffer feeds back into itself, so an uninitialized texel would persist (undefined FP16 bits are readily NaN). A zeroed reservoir (M_ and W_ at 0) makes the first frame treat its history as absent.
+		/// [JP] 確保以降に履歴チェーンと reservoir の両スロットを 0 で埋めたか。生成直後の committed リソースが 0 で読める保証は無く、履歴のバッファはすべて自分自身へ戻るため、未初期化のテクセルは消えずに残り続ける（未定義の FP16 のビットは容易に NaN になる）。0 の reservoir（M_ と W_ が 0）なら、最初のフレームは履歴を無いものとして扱う。
 		Bool historyCleared_ = false;
 
-		/// [EN] Both reservoir ping-pong slots are zeroed once, the first time
-		///      Dispatch() runs, folded into the same historyCleared_ pass above
-		///      - M_/W_ = 0 makes the very first frame's temporal combine treat
-		///      history as absent instead of resampling garbage.
-		/// [JP] Reservoir のピンポン両スロットも、上と同じ historyCleared_
-		///      パスでDispatch()が初めて走った時に1度だけゼロクリアする -
-		///      M_/W_ = 0 にしておけば、最初のフレームの時間的結合は履歴を
-		///      「無し」として扱い、ゴミ値をリサンプルしない。
-
+		/// [EN] Bindless heap that owns this pass's descriptors.
+		/// [JP] このパスのディスクリプタを所有する bindless ヒープ。
 		BindlessHeap* bindlessHeap_ = nullptr;
+
+		/// [EN] Index systems that receive this pass's bindless indices in Prepare.
+		/// [JP] Prepare でこのパスの bindless インデックスを受け取るインデックスシステム。
 		ConstantIndicesSystem* constantIndicesSystem_ = nullptr;
 		ShaderResourceIndicesSystem* shaderResourceIndicesSystem_ = nullptr;
 		UnorderedAccessIndicesSystem* unorderedAccessIndicesSystem_ = nullptr;
 
+		/// [EN] Size of every texture, equal to the native render size.
+		/// [JP] すべてのテクスチャのサイズ。ネイティブのレンダーサイズと等しい。
 		Uint32 width_ = 0;
 		Uint32 height_ = 0;
 
+		/// [EN] Frame counter copied into frameIndex_ of the uploaded tuning values.
+		/// [JP] アップロードする調整値の frameIndex_ へ写すフレームカウンター。
 		Uint32 frameIndex_ = 0;
 
-		/// [EN] Logs the state-object/shader-table/PSO failure once instead of
-		///      every frame.
-		/// [JP] ステートオブジェクト/シェーダテーブル/PSO 失敗の警告を毎フレーム
-		///      でなく 1 度だけログ出力する。
+		/// [EN] Whether the pass traces this frame: the pass is switched on and the scene has a TLAS.
+		/// [JP] 今フレームにパスをトレースするか。パスが有効で、かつシーンに TLAS がある場合に true。
+		Bool enabled_ = false;
+
+		/// [EN] Whether DLSS Ray Reconstruction denoises the frame this frame, replacing the SVGF chain.
+		/// [JP] 今フレームに DLSS Ray Reconstruction がフレームをデノイズし、SVGF チェーンの代わりになるか。
+		Bool useDlssRayReconstruction_ = false;
+
+		/// [EN] Whether the missing-pipeline warning has been logged, so it appears once rather than every frame.
+		/// [JP] パイプライン欠如の警告を出力済みか。毎フレームではなく 1 度だけ出すために使う。
 		Bool stateObjectMissingLogged_ = false;
 	};
 }

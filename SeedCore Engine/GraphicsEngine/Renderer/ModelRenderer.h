@@ -107,7 +107,7 @@ namespace SeedCore
 		///      コメント参照）。
 		void DrawSilhouette(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS BoneMatrixBufferGPUAddress()const;
+		[[nodiscard]] Uint BoneMatrixBufferIndex()const;
 
 		[[nodiscard]] Bool TryGetAnimatedBoneOffset(EntityID entityID, Uint32& outBoneOffset)const;
 

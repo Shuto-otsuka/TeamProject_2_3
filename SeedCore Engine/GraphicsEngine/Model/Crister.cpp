@@ -137,6 +137,21 @@ namespace SeedCore
 			bindlessHeap_->FreeIndex(indexBufferIndex_);
 			indexBufferIndex_ = SC_INVALID;
 		}
+		if (positionBufferIndex_ != SC_INVALID)
+		{
+			bindlessHeap_->FreeIndex(positionBufferIndex_);
+			positionBufferIndex_ = SC_INVALID;
+		}
+		if (raytracingSkinVertexBufferIndex_ != SC_INVALID)
+		{
+			bindlessHeap_->FreeIndex(raytracingSkinVertexBufferIndex_);
+			raytracingSkinVertexBufferIndex_ = SC_INVALID;
+		}
+		if (raytracingMorphDeltaBufferIndex_ != SC_INVALID)
+		{
+			bindlessHeap_->FreeIndex(raytracingMorphDeltaBufferIndex_);
+			raytracingMorphDeltaBufferIndex_ = SC_INVALID;
+		}
 		if (morphDeltaBufferIndex_ != SC_INVALID)
 		{
 			bindlessHeap_->FreeIndex(morphDeltaBufferIndex_);
@@ -1815,6 +1830,7 @@ namespace SeedCore
 
 			hr = CreateStaticBufferUnbounded(device, resourceUpload, raytracingPositions.data(), raytracingPositions.size(), sizeof(Vector3), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, positionResource_.ReleaseAndGetAddressOf());
 			SC_HR_CHECK(hr, "レイトレーシング用ポジションバッファの生成に失敗しました");
+			positionBufferIndex_ = CreateStructuredShaderResourceView(device, heap, positionResource_.Get(), static_cast<Uint>(raytracingPositions.size()), sizeof(Vector3));
 
 			hr = CreateStaticBufferUnbounded(device, resourceUpload, flatTriangleIndices.data(), flatTriangleIndices.size(), sizeof(Uint32), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, indexResource_.ReleaseAndGetAddressOf());
 			SC_HR_CHECK(hr, "レイトレーシング用インデックスバッファの生成に失敗しました");
@@ -1825,12 +1841,14 @@ namespace SeedCore
 			{
 				hr = CreateStaticBufferUnbounded(device, resourceUpload, raytracingSkinVertices.data(), raytracingSkinVertices.size(), sizeof(CompressedSkinVertex), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, raytracingSkinVertexResource_.ReleaseAndGetAddressOf());
 				SC_HR_CHECK(hr, "レイトレーシング用スキンバーテックスバッファの生成に失敗しました");
+				raytracingSkinVertexBufferIndex_ = CreateStructuredShaderResourceView(device, heap, raytracingSkinVertexResource_.Get(), static_cast<Uint>(raytracingSkinVertices.size()), sizeof(CompressedSkinVertex));
 			}
 
 			if (!raytracingMorphDeltas.empty())
 			{
 				hr = CreateStaticBufferUnbounded(device, resourceUpload, raytracingMorphDeltas.data(), raytracingMorphDeltas.size(), sizeof(Vector3), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, raytracingMorphDeltaResource_.ReleaseAndGetAddressOf());
 				SC_HR_CHECK(hr, "レイトレーシング用モーフデルタバッファの生成に失敗しました");
+				raytracingMorphDeltaBufferIndex_ = CreateStructuredShaderResourceView(device, heap, raytracingMorphDeltaResource_.Get(), static_cast<Uint>(raytracingMorphDeltas.size()), sizeof(Vector3));
 			}
 		}
 
@@ -2219,6 +2237,22 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Bindless SRV of the same float3 position buffer, read by the morph
+	* and skin blend passes as their base positions.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 同じ float3 位置バッファの bindless SRV。モーフとスキンのブレンド
+	* パスがベース位置として読む。
+	*/
+	Uint Crister::PositionBufferIndex()const
+	{
+		return positionBufferIndex_;
+	}
+
+	/**
+	* [EN]
 	* Vertex count of the RT proxy's compact position/vertex buffers
 	* (positionResource_/vertexResource_) PositionBufferAddress() points
 	* to, i.e. the size a morph-blend scratch position buffer must be
@@ -2445,34 +2479,36 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* GPU address of the RT proxy's skin vertex pool
-	* (raytracingSkinVertexResource_), or 0 when ProxySkinned is false.
+	* Bindless SRV of the RT proxy's skin vertex pool
+	* (raytracingSkinVertexResource_), or SC_INVALID when ProxySkinned is
+	* false.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* RT プロキシのスキン頂点プール (raytracingSkinVertexResource_) の
-	* GPU アドレス。ProxySkinned が false なら 0。
+	* bindless SRV。ProxySkinned が false なら SC_INVALID。
 	*/
-	D3D12_GPU_VIRTUAL_ADDRESS Crister::ProxySkinVertexBufferAddress()const
+	Uint Crister::ProxySkinVertexBufferIndex()const
 	{
-		return raytracingSkinVertexResource_ ? raytracingSkinVertexResource_->GetGPUVirtualAddress() : 0;
+		return raytracingSkinVertexBufferIndex_;
 	}
 
 	/**
 	* [EN]
-	* GPU address of the RT proxy's morph delta pool
-	* (raytracingMorphDeltaResource_), or 0 when no SubMesh has morphs_.
+	* Bindless SRV of the RT proxy's morph delta pool
+	* (raytracingMorphDeltaResource_), or SC_INVALID when no SubMesh has
+	* morphs_.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* RT プロキシのモーフデルタプール (raytracingMorphDeltaResource_) の
-	* GPU アドレス。どの SubMesh も morphs_ を持たなければ 0。
+	* bindless SRV。どの SubMesh も morphs_ を持たなければ SC_INVALID。
 	*/
-	D3D12_GPU_VIRTUAL_ADDRESS Crister::ProxyMorphDeltaBufferAddress()const
+	Uint Crister::ProxyMorphDeltaBufferIndex()const
 	{
-		return raytracingMorphDeltaResource_ ? raytracingMorphDeltaResource_->GetGPUVirtualAddress() : 0;
+		return raytracingMorphDeltaBufferIndex_;
 	}
 
 	/**

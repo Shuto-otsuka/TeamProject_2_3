@@ -30,6 +30,13 @@ namespace SeedCore
 	* type-erased construct/destruct/copy/move function pointers so the
 	* ECS can manage instances of T without a compile-time-known type.
 	*
+	* Fields are grouped by who fills them. Layout, storage kind and the
+	* instance functions come from Component<T>::Metadata, in the order
+	* its aggregate initializer lists them. The rest is filled per
+	* registration: the sparse-set storage factory, the
+	* ComponentBehaviour lifecycle setup, and the registration's own
+	* details (category, owning module, registrant context).
+	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
@@ -38,6 +45,13 @@ namespace SeedCore
 	* 型消去された構築・破棄・コピー・ムーブ用の関数ポインタを持ち、
 	* ECS がコンパイル時に型を知らずとも T のインスタンスを管理できる
 	* ようにする。
+	*
+	* フィールドは誰が埋めるかでまとめてある。レイアウト、ストレージ
+	* 種別、インスタンス操作の関数は Component<T>::Metadata が、その
+	* 集成体初期化子に並ぶ順で設定する。残りは登録ごとに設定される:
+	* スパースセットストレージのファクトリ、ComponentBehaviour の
+	* ライフサイクル設定、そして登録そのものの情報(分類、所有
+	* モジュール、登録側のコンテキスト)。
 	*/
 	struct ComponentMetadata
 	{
@@ -73,13 +87,15 @@ namespace SeedCore
 		/// [JP] このコンポーネントのスパースセットストレージを構築する、型消去されたファクトリ。アーキタイプ格納コンポーネントでは nullptr。
 		ResourcePtr<InterfaceSparseSetStorage>(*createSparseStorage_)() = nullptr;
 
-		/// [EN] For ComponentBehaviour-derived components: sets the component's world_/entity_ back-reference and binds each lifecycle function pointer (awake_/start_/tick_/...) the concrete type actually implements; nullptr otherwise.
-		/// [JP] ComponentBehaviour 派生コンポーネント向け: コンポーネントの world_/entity_ 逆参照を設定し、具体的な型が実際に実装している各ライフサイクル関数ポインタ（awake_/start_/tick_/...）を束縛する。それ以外では nullptr。
-		void (*setupLifecycle_)(void* component, void* world, Entity entity) = nullptr;
-
 		/// [EN] Whether this component type derives from ComponentBehaviour.
 		/// [JP] このコンポーネント型が ComponentBehaviour から派生しているかどうか。
 		Bool isComponentBehaviour_ = false;
+
+		/// [EN] For ComponentBehaviour-derived components: sets the component's world_/entity_ back-reference and binds each lifecycle function pointer (awake_/start_/tick_/...) the concrete type actually implements; nullptr otherwise.
+		///      id is the component's own registration, so types that share one native type (C# scripts) can look up which of them this instance is through context_.
+		/// [JP] ComponentBehaviour 派生コンポーネント向け: コンポーネントの world_/entity_ 逆参照を設定し、具体的な型が実際に実装している各ライフサイクル関数ポインタ（awake_/start_/tick_/...）を束縛する。それ以外では nullptr。
+		///      id はそのコンポーネント自身の登録を指すので、1 つのネイティブ型を共有する型(C# スクリプト)は、context_ を通じて自分がどの型かを引ける。
+		void (*setupLifecycle_)(void* component, void* world, Entity entity, ComponentID id) = nullptr;
 
 		/// [EN] Group label in the Add Component panel (e.g. "Light" for PointLight/SpotLight); set per registration by ComponentRegistry::Register, not by Metadata().
 		/// [JP] Add Component パネルでの分類名(例: PointLight/SpotLight をまとめる "Light")。Metadata() ではなく、登録ごとに ComponentRegistry::Register が設定する。
@@ -89,7 +105,13 @@ namespace SeedCore
 		///      never overwrites the engine's entry with function pointers that dangle after a hot reload. nullptr if the module could not be resolved.
 		/// [JP] この登録を作った REGISTER_COMPONENT が属するモジュール(HMODULE を不透明なポインタで保持)。同じヘッダが下流の DLL(例: UserProject)に入っても、
 		///      ホットリロード後に宙に浮く関数ポインタでエンジンの登録を上書きしないため。解決できなければ nullptr。
-		void* owningModule_ = nullptr;
+		void* module_ = nullptr;
+
+		/// [EN] Opaque per-type data owned by whoever registered this entry, handed back through ComponentRegistry::Get(id) to callbacks such as setupLifecycle_ that receive only the ComponentID.
+		///      Lets many component types share one native type and still tell themselves apart (e.g. a C# script's CsharpScriptType). nullptr when the registrant needs none.
+		/// [JP] この登録を行った側が所有する、型ごとの不透明なデータ。ComponentID しか受け取らない setupLifecycle_ などのコールバックへ、ComponentRegistry::Get(id) を通じて渡される。
+		///      複数のコンポーネント型が 1 つのネイティブ型を共有していても、それぞれを見分けられるようにする(例: C# スクリプトの CsharpScriptType)。登録側が使わなければ nullptr。
+		void* context_ = nullptr;
 	};
 
 	/**

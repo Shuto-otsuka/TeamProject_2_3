@@ -29,14 +29,14 @@ namespace SeedCore
 
         private static void Send(Level level, String message)
         {
-            CsharpNativeApi* api = CsharpNativeApi.current_;
-            if(api==null)
+            NativeApi* api = NativeApi.current_;
+            if (api == null) 
             {
                 return;
             }
 
             Byte[] bytes = Encoding.UTF8.GetBytes(message);
-            fixed(Byte* text=bytes)
+            fixed (Byte* text = bytes) 
             {
                 api->log_((Byte)level, text, bytes.Length);
             }

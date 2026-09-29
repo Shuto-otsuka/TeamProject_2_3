@@ -78,6 +78,8 @@
 
 #define SC_SERIALIZE_FIELD()
 
+#define SC_FUNCTION()
+
 #ifdef FOUNDATIONENGINE_EXPORTS
 #define SEEDCORE_API __declspec(dllexport)
 #else
