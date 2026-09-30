@@ -53,7 +53,7 @@ namespace SeedCore
 		Uint64 writeTime = GetLastWriteTime(sourcePath_);
 		if (writeTime == 0)
 		{
-			SC_LOG_WARNING("Plugin: {} が見つかりません。", sourcePath_.filename().string());
+			SC_LOG_WARNING("プラグイン: {} が見つかりません。", sourcePath_.filename().string());
 			return false;
 		}
 
@@ -79,7 +79,7 @@ namespace SeedCore
 
 		if (errorCode)
 		{
-			SC_LOG_WARNING("Plugin: {} のシャドウコピーに失敗しました。", sourcePath_.filename().string());
+			SC_LOG_WARNING("プラグイン: {} のシャドウコピーに失敗しました。", sourcePath_.filename().string());
 			return false;
 		}
 
@@ -93,7 +93,7 @@ namespace SeedCore
 		HMODULE handle = LoadLibraryExW(shadowPath.c_str(), nullptr, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
 		if (!handle)
 		{
-			SC_LOG_WARNING("Plugin: {} のロードに失敗しました。", sourcePath_.filename().string());
+			SC_LOG_WARNING("プラグイン: {} のロードに失敗しました。", sourcePath_.filename().string());
 			return false;
 		}
 
@@ -106,7 +106,7 @@ namespace SeedCore
 
 		if (!onGameLoad || !onGameUnload)
 		{
-			SC_LOG_WARNING("Plugin: {} に SC_OnGameLoad/SC_OnGameUnload が見つかりません。", sourcePath_.filename().string());
+			SC_LOG_WARNING("プラグイン: {} に SC_OnGameLoad/SC_OnGameUnload が見つかりません。", sourcePath_.filename().string());
 
 			/// [EN] The module's initializers already ran, so its registry entries exist even though the load is being abandoned; they must go before FreeLibrary or they would outlive their own code with no later Unload to clean them up (handle_ is never set on this path).
 			/// [JP] モジュールの初期化子は既に走っているため、ロードを中止する場合でもレジストリのエントリは存在している。この経路では handle_ が設定されず後の Unload で片付けられないので、FreeLibrary より前に削除しなければ、自身のコードより長く生き残ってしまう。
@@ -141,7 +141,7 @@ namespace SeedCore
 		/// [JP] このモジュールのビルド前に読み込んだ Scene は、スクリプトを型の分からないコンポーネントとして保持している。型が登録された今、それらを本来のコンポーネントへ戻す。
 		UnknownComponent::Resolve(world);
 
-		SC_LOG_NOTICE("Plugin: {} をロードしました。", sourcePath_.filename().string());
+		SC_LOG_NOTICE("プラグイン: {} をロードしました。", sourcePath_.filename().string());
 
 		return true;
 	}

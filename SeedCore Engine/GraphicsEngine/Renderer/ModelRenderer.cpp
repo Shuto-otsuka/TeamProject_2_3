@@ -877,7 +877,7 @@ namespace SeedCore
 				}
 			}
 
-			softbodyMesh->Update(softbody->VertexPositionList());
+			softbodyMesh->Update(softbody->BodyVertex());
 
 			Matrix worldMatrix = actor.WorldMatrix();
 			Matrix inverseTransposeWorld = worldMatrix.Invert().Transpose();

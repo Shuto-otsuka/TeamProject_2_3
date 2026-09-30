@@ -27,6 +27,7 @@
     </ClCompile>
     <ClCompile Include="File\FileDirectory.cpp">
     </ClCompile>
+    <ClCompile Include="File\FilePath.cpp" />
     <ClCompile Include="File\FileUtility.cpp">
     </ClCompile>
     <ClCompile Include="Input\Input.cpp">
@@ -111,6 +112,7 @@
     <ClInclude Include="Coroutine\CoroutineSystem.h" />
     <ClInclude Include="File\FileDialog.h" />
     <ClInclude Include="File\FileDirectory.h" />
+    <ClInclude Include="File\FilePath.h" />
     <ClInclude Include="Input\Input.h" />
     <ClInclude Include="Input\InputSystem.h" />
     <ClInclude Include="Interop\ColliderInstance.h" />

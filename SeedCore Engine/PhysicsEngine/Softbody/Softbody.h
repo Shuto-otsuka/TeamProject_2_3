@@ -144,6 +144,33 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
+		* Adds a force (N) for the next fixed step, spread evenly over the
+		* vertices. Does nothing until the body is built.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 次の固定ステップの間、力(N)を加える。力は頂点へ均等に分ける。
+		* ボディが構築されるまでは何もしない。
+		*/
+		void AddForce(const Vector3& force);
+
+		/**
+		* [EN]
+		* Adds an impulse (kg·m/s), giving every movable vertex the same
+		* change of velocity at once. Does nothing until the body is built.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 力積(kg·m/s)を加え、動ける頂点すべてに同じ速度変化を一度に与える。
+		* ボディが構築されるまでは何もしない。
+		*/
+		void AddImpulse(const Vector3& impulse);
+
+	public:
+		/**
+		* [EN]
 		* Returns the Jolt ID of the body; invalid until Build succeeds and
 		* after OnDestroy.
 		*
@@ -167,7 +194,7 @@ namespace SeedCore
 		* ローカル空間で返す。SoftbodyMesh がその変位をフル解像度の描画
 		* メッシュへ移す。
 		*/
-		const DynamicArray<Vector3>& VertexPositionList()const;
+		const DynamicArray<Vector3>& BodyVertex()const;
 
 	private:
 		/**

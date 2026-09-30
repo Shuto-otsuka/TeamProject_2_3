@@ -143,61 +143,10 @@ namespace SeedCore
 					}
 
 					String fieldTypeName = field.Type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
-					String kind = null;
-					String unsupportedReason = null;
-					switch (field.Type.SpecialType)
+					ValueKind value = Classify(field.Type);
+					if (value.kind_ == null)
 					{
-					case SpecialType.System_SByte:
-					case SpecialType.System_Byte:
-					case SpecialType.System_Int16:
-					case SpecialType.System_UInt16:
-					case SpecialType.System_Int32:
-					case SpecialType.System_UInt32:
-						kind = "Int";
-						break;
-					case SpecialType.System_Single:
-					case SpecialType.System_Double:
-						kind = "Float";
-						break;
-					case SpecialType.System_Boolean:
-						kind = "Bool";
-						break;
-					case SpecialType.System_String:
-						kind = "String";
-						break;
-					case SpecialType.System_Int64:
-					case SpecialType.System_UInt64:
-						unsupportedReason = "64 ビット整数（まだ未対応）の";
-						break;
-					default:
-						if (field.Type.TypeKind == TypeKind.Enum)
-						{
-							kind = "Enum";
-						}
-						else
-						{
-							switch (field.Type.ToDisplayString())
-							{
-							case "SeedCore.Vector2":
-								kind = "Vector2";
-								break;
-							case "SeedCore.Vector3":
-								kind = "Vector3";
-								break;
-							case "SeedCore.Color":
-								kind = "Color";
-								break;
-							case "SeedCore.Vector4":
-								unsupportedReason = "Vector4（まだ未対応）の";
-								break;
-							}
-						}
-						break;
-					}
-
-					if (kind == null)
-					{
-						context.ReportDiagnostic(Diagnostic.Create(unsupported_, location, field.Name, unsupportedReason ?? $"未対応の型（{field.Type.ToDisplayString()}）の"));
+						context.ReportDiagnostic(Diagnostic.Create(unsupported_, location, field.Name, value.unsupportedReason_ ?? $"未対応の型（{field.Type.ToDisplayString()}）の"));
 						continue;
 					}
 					if (payload != null && field.Type.SpecialType != SpecialType.System_Int32 && field.Type.SpecialType != SpecialType.System_UInt32)
@@ -206,35 +155,9 @@ namespace SeedCore
 						continue;
 					}
 
-					Int32 size;
-					Int32 alignment;
-					switch (kind)
-					{
-					case "Bool":
-						size = 1;
-						alignment = 1;
-						break;
-					case "Vector2":
-						size = 8;
-						alignment = 4;
-						break;
-					case "Vector3":
-						size = 12;
-						alignment = 4;
-						break;
-					case "Color":
-						size = 16;
-						alignment = 4;
-						break;
-					case "String":
-						size = 16;
-						alignment = 8;
-						break;
-					default:
-						size = 4;
-						alignment = 4;
-						break;
-					}
+					String kind = value.kind_;
+					Int32 size = value.size_;
+					Int32 alignment = value.alignment_;
 
 					String displayName = field.Name;
 					Double minimum = Double.NegativeInfinity;
@@ -302,30 +225,16 @@ namespace SeedCore
 
 					String member = $"o.{field.Name}";
 					String address = $"(block + {offset})";
-					switch (kind)
+					if (kind == "String")
 					{
-					case "Int":
-					case "Enum":
-						push.AppendLine($"\t\t\t{member} = ({fieldTypeName})(*(global::System.Int32*){address});");
-						pull.AppendLine($"\t\t\t*(global::System.Int32*){address} = (global::System.Int32){member};");
-						break;
-					case "Float":
-						push.AppendLine($"\t\t\t{member} = ({fieldTypeName})(*(global::System.Single*){address});");
-						pull.AppendLine($"\t\t\t*(global::System.Single*){address} = (global::System.Single){member};");
-						break;
-					case "Bool":
-						push.AppendLine($"\t\t\t{member} = block[{offset}] != 0;");
-						pull.AppendLine($"\t\t\tblock[{offset}] = {member} ? (global::System.Byte)1 : (global::System.Byte)0;");
-						break;
-					case "String":
 						push.AppendLine($"\t\t\t{member} = global::SeedCore.ScriptBlock.PushString(script, {stringIndex}, {address});");
 						pull.AppendLine($"\t\t\tglobal::SeedCore.ScriptBlock.PullString(script, {stringIndex}, {address}, {member});");
 						++stringIndex;
-						break;
-					default:
-						push.AppendLine($"\t\t\t{member} = *({fieldTypeName}*){address};");
-						pull.AppendLine($"\t\t\t*({fieldTypeName}*){address} = {member};");
-						break;
+					}
+					else
+					{
+						push.AppendLine($"\t\t\t{member} = {value.Read(address)};");
+						pull.AppendLine($"\t\t\t{value.Write(address, member)}");
 					}
 
 					offset += size;
@@ -388,6 +297,140 @@ namespace SeedCore
 			builder.AppendLine("}");
 
 			context.AddSource("Reflection.generated.cs", SourceText.From(builder.ToString(), Encoding.UTF8));
+		}
+
+		private static ValueKind Classify(ITypeSymbol type)
+		{
+			ValueKind value = new ValueKind();
+			value.typeName_ = type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat);
+			switch (type.SpecialType)
+			{
+			case SpecialType.System_SByte:
+			case SpecialType.System_Byte:
+			case SpecialType.System_Int16:
+			case SpecialType.System_UInt16:
+			case SpecialType.System_Int32:
+			case SpecialType.System_UInt32:
+				value.kind_ = "Int";
+				break;
+			case SpecialType.System_Single:
+			case SpecialType.System_Double:
+				value.kind_ = "Float";
+				break;
+			case SpecialType.System_Boolean:
+				value.kind_ = "Bool";
+				break;
+			case SpecialType.System_String:
+				value.kind_ = "String";
+				break;
+			case SpecialType.System_Int64:
+			case SpecialType.System_UInt64:
+				value.unsupportedReason_ = "64 ビット整数（まだ未対応）の";
+				break;
+			default:
+				if (type.TypeKind == TypeKind.Enum)
+				{
+					value.kind_ = "Enum";
+				}
+				else
+				{
+					switch (type.ToDisplayString())
+					{
+					case "SeedCore.Vector2":
+						value.kind_ = "Vector2";
+						break;
+					case "SeedCore.Vector3":
+						value.kind_ = "Vector3";
+						break;
+					case "SeedCore.Color":
+						value.kind_ = "Color";
+						break;
+					case "SeedCore.Vector4":
+						value.unsupportedReason_ = "Vector4（まだ未対応）の";
+						break;
+					}
+				}
+				break;
+			}
+
+			if (value.kind_ == null)
+			{
+				return value;
+			}
+
+			switch (value.kind_)
+			{
+			case "Bool":
+				value.size_ = 1;
+				value.alignment_ = 1;
+				break;
+			case "Vector2":
+				value.size_ = 8;
+				value.alignment_ = 4;
+				break;
+			case "Vector3":
+				value.size_ = 12;
+				value.alignment_ = 4;
+				break;
+			case "Color":
+				value.size_ = 16;
+				value.alignment_ = 4;
+				break;
+			case "String":
+				value.size_ = 16;
+				value.alignment_ = 8;
+				break;
+			default:
+				value.size_ = 4;
+				value.alignment_ = 4;
+				break;
+			}
+			return value;
+		}
+
+		private sealed class ValueKind
+		{
+			internal String kind_;
+
+			internal Int32 size_;
+
+			internal Int32 alignment_;
+
+			internal String unsupportedReason_;
+
+			internal String typeName_;
+
+			internal String Read(String address)
+			{
+				switch (kind_)
+				{
+				case "Int":
+				case "Enum":
+					return $"({typeName_})(*(global::System.Int32*){address})";
+				case "Float":
+					return $"({typeName_})(*(global::System.Single*){address})";
+				case "Bool":
+					return $"*(global::System.Byte*){address} != 0";
+				default:
+					return $"*({typeName_}*){address}";
+				}
+			}
+
+			internal String Write(String address, String source)
+			{
+				switch (kind_)
+				{
+				case "Int":
+				case "Enum":
+					return $"*(global::System.Int32*){address} = (global::System.Int32){source};";
+				case "Float":
+					return $"*(global::System.Single*){address} = (global::System.Single){source};";
+				case "Bool":
+					return $"*(global::System.Byte*){address} = {source} ? (global::System.Byte)1 : (global::System.Byte)0;";
+				default:
+					return $"*({typeName_}*){address} = {source};";
+				}
+			}
 		}
 
 		private sealed class ConditionRewriter : CSharpSyntaxRewriter

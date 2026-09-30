@@ -1,176 +1,177 @@
 #include <Editor/Editor/Panel/ContentsDrawerPanel.h>
+
+#include <Editor/Editor/Build/VisualStudioAutomation.h>
 #include <Editor/Editor/EditorContext.h>
-#include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
+#include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <Editor/Editor/Panel/MaterialViewerPanel.h>
-#include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/Prefab/Prefab.h>
-#include <FoundationEngine/World/Actor/Actor.h>
-#include <GraphicsEngine/Texture/TextureResource.h>
-#include <GraphicsEngine/Texture/Texture.h>
-#include <GraphicsEngine/Model/ModelResource.h>
-#include <GraphicsEngine/Model/ModelLoader.h>
-#include <GraphicsEngine/Model/ModelExporter.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <Editor/Editor/Panel/ResourceSyncControlPanel.h>
+
 #include <FoundationEngine/File/FileDialog.h>
+#include <FoundationEngine/Log/Notice.h>
+#include <FoundationEngine/Log/Warning.h>
+#include <FoundationEngine/Resource/Prefab/Prefab.h>
+#include <FoundationEngine/Resource/ResourceCache.h>
+#include <FoundationEngine/Resource/ResourceSync.h>
+#include <FoundationEngine/World/Actor/Actor.h>
+
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/Graphics.h>
-#include <FoundationEngine/Log/Warning.h>
-#include <FoundationEngine/Log/Notice.h>
-#include <Editor/Editor/Build/VisualStudioAutomation.h>
+#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/ModelExporter.h>
+#include <GraphicsEngine/Model/ModelResource.h>
+#include <GraphicsEngine/Texture/Texture.h>
+#include <GraphicsEngine/Texture/TextureResource.h>
 
 namespace SeedCore
 {
+	/**
+	* [EN]
+	* Binds the context and icons and builds the first tree.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* コンテキストとアイコンを結び付け、最初のツリーを作る。
+	*/
 	ContentsDrawerPanel::ContentsDrawerPanel(EditorContext& context, ImGuiTexture& imguiTexture) : context_(context), imguiTexture_(imguiTexture)
 	{
-		searchBuffer_.resize(256, '\0');
-		BuildDirectoryTree();
-
-		const std::filesystem::path& projectRoot = context_.worldContext_.resource_->ProjectRootPath();
-		std::filesystem::path contentRoot = projectRoot / "UserProject";
-		if (!std::filesystem::exists(contentRoot))
-		{
-			contentRoot = projectRoot;
-		}
-		directoryWatchHandle_ = FindFirstChangeNotificationW(contentRoot.wstring().c_str(), TRUE, FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE);
-		if (directoryWatchHandle_ == INVALID_HANDLE_VALUE || directoryWatchHandle_ == nullptr)
-		{
-			directoryWatchHandle_ = INVALID_HANDLE_VALUE;
-		}
+		BuildDirectory();
 	}
 
-	ContentsDrawerPanel::~ContentsDrawerPanel()
-	{
-		if (directoryWatchHandle_ != INVALID_HANDLE_VALUE && directoryWatchHandle_ != nullptr)
-		{
-			FindCloseChangeNotification(directoryWatchHandle_);
-			directoryWatchHandle_ = INVALID_HANDLE_VALUE;
-		}
-	}
-
-
+	/**
+	* [EN]
+	* Refreshes the tree when needed, then draws the toolbar, the search
+	* results or the tree and contents, and the new-script dialog.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 必要ならツリーを更新してから、ツールバー、検索結果またはツリーと中身、
+	* 新規スクリプトのダイアログを描く。
+	*/
 	void ContentsDrawerPanel::Draw()
 	{
-		if (context_.resourceSync_ && sharingRevision_ != context_.resourceSync_->Revision())
-		{
-			sharingRevision_ = context_.resourceSync_->Revision();
-			needsRebuild_ = true;
-		}
-		ImGuiID dockspaceID = context_.graphicsContext_.imgui_->DockSpaceID();
-		ImGui::SetNextWindowDockID(dockspaceID, ImGuiCond_FirstUseEver);
+		/// [EN] Let the ResourceCache reload on file changes under UserProject; a reload advances its revision.
+		/// [JP] UserProject 以下のファイル変更で ResourceCache に読み直させる。読み直すと revision が進む。
+		ResourceCache* resource = context_.worldContext_.resource_;
+		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+		resource->Watch(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
 
-		if (directoryWatchHandle_ != INVALID_HANDLE_VALUE && WaitForSingleObject(directoryWatchHandle_, 0) == WAIT_OBJECT_0)
+		/// [EN] Rebuild here, before anything is drawn, because the menus below hold references into the tree.
+		/// [JP] 下のメニューはツリーの中を参照するので、何かを描く前のここで作り直す。
+		Uint64 syncRevision = context_.resourceSync_ ? context_.resourceSync_->Revision() : 0;
+		if (resourceRevision_ != resource->Revision() || syncRevision_ != syncRevision)
 		{
-			D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-			context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
-			needsRebuild_ = true;
-			FindNextChangeNotification(directoryWatchHandle_);
+			resourceRevision_ = resource->Revision();
+			syncRevision_ = syncRevision;
+			BuildDirectory();
 		}
 
+		ImGui::SetNextWindowDockID(context_.graphicsContext_.imgui_->DockSpaceID(), ImGuiCond_FirstUseEver);
 		if (ImGui::Begin("コンテンツドロワー"))
 		{
 			if (context_.resourceSync_)
 			{
 				ResourceSyncControlPanel::DrawStatus(context_);
 			}
+
+			/// [EN] Mouse buttons 3 and 4 are the side back/forward buttons.
+			/// [JP] マウスボタン 3 と 4 は、横にある戻る/進むボタン。
 			if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows))
 			{
-				if (ImGui::IsMouseClicked(3) && historyIndex_ > 0)
+				if (ImGui::IsMouseClicked(3) && historyState_.index_ > 0)
 				{
-					--historyIndex_;
-					selectedDirectory_ = directoryHistory_[historyIndex_];
+					--historyState_.index_;
 				}
-				if (ImGui::IsMouseClicked(4) && historyIndex_ < static_cast<Int>(directoryHistory_.size()) - 1)
+				if (ImGui::IsMouseClicked(4) && historyState_.index_ + 1 < historyState_.directoryList_.size())
 				{
-					++historyIndex_;
-					selectedDirectory_ = directoryHistory_[historyIndex_];
+					++historyState_.index_;
 				}
 			}
 
-			if (needsRebuild_)
+			/// [EN] View switch, and the icon size slider that only grid view uses.
+			/// [JP] 表示の切り替えと、グリッド表示だけで使うアイコンの大きさのスライダー。
+			if (ImGui::RadioButton("リスト", viewType_ == ViewType::List))
 			{
-				BuildDirectoryTree();
-				needsRebuild_ = false;
-			}
-
-			if (ImGui::RadioButton("リスト", viewMode_ == ViewMode::List))
-			{
-				viewMode_ = ViewMode::List;
+				viewType_ = ViewType::List;
 			}
 			ImGui::SameLine();
-			if (ImGui::RadioButton("グリッド", viewMode_ == ViewMode::Grid))
+			if (ImGui::RadioButton("グリッド", viewType_ == ViewType::Grid))
 			{
-				viewMode_ = ViewMode::Grid;
+				viewType_ = ViewType::Grid;
 			}
 
-			if (viewMode_ == ViewMode::Grid)
+			if (viewType_ == ViewType::Grid)
 			{
 				ImGui::SameLine();
 				ImGui::SetNextItemWidth(120.0f);
 				ImGui::SliderFloat("##IconSize", &gridIconSize_, 32.0f, 128.0f, "%.0f");
 			}
 
+			/// [EN] Widen the left padding by one icon so the search icon can be drawn inside the field.
+			/// [JP] 検索アイコンを入力欄の中に描けるよう、左の余白をアイコン 1 つ分広げる。
 			ImGui::SameLine();
 			Float iconSize = ImGui::GetTextLineHeight();
-			Float originalPaddingX = ImGui::GetStyle().FramePadding.x;
-			Float iconPadding = iconSize + originalPaddingX * 2.0f;
-			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(iconPadding, ImGui::GetStyle().FramePadding.y));
+			Float paddingX = ImGui::GetStyle().FramePadding.x;
+			ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(iconSize + paddingX * 2.0f, ImGui::GetStyle().FramePadding.y));
 			ImGui::SetNextItemWidth(-1.0f);
-			ImGui::InputTextWithHint("##Search", "検索...", searchBuffer_.data(), searchBuffer_.size());
+			if (ImGui::InputTextWithHint("##Search", "検索...", searchFilter_.InputBuf, IM_ARRAYSIZE(searchFilter_.InputBuf)))
+			{
+				searchFilter_.Build();
+			}
 			ImGui::PopStyleVar();
+
+			/// [EN] Draw the search icon in that padding, centred vertically.
+			/// [JP] その余白に、縦中央で検索アイコンを描く。
 			ImVec2 inputMin = ImGui::GetItemRectMin();
-			Float inputHeight = ImGui::GetItemRectSize().y;
-			Float iconY = inputMin.y + (inputHeight - iconSize) * 0.5f;
-			ImGui::GetWindowDrawList()->AddImage(imguiTexture_.Icon(IconType::Search), ImVec2(inputMin.x + originalPaddingX, iconY), ImVec2(inputMin.x + originalPaddingX + iconSize, iconY + iconSize));
+			Float iconY = inputMin.y + (ImGui::GetItemRectSize().y - iconSize) * 0.5f;
+			ImGui::GetWindowDrawList()->AddImage(imguiTexture_.Icon(IconType::Search), ImVec2(inputMin.x + paddingX, iconY), ImVec2(inputMin.x + paddingX + iconSize, iconY + iconSize));
 			ImGui::Separator();
 
-			std::string searchKey(searchBuffer_.c_str());
-
-			if (!searchKey.empty())
+			/// [EN] A search lists matching assets from every folder instead of the tree.
+			/// [JP] 検索中は、ツリーの代わりに全フォルダから一致するアセットを一覧で出す。
+			if (searchFilter_.IsActive())
 			{
-				for (AssetRecord& record : browserAssets_)
+				for (const AssetRecord& asset : assetList_)
 				{
-					AssetRecord* asset = &record;
-					if (asset->path_.str().find(searchKey) == std::string::npos)
+					if (!searchFilter_.PassFilter(asset.path_.c_str()))
 					{
 						continue;
 					}
-					ImGui::PushID(asset->assetID_);
+					ImGui::PushID(asset.assetID_);
 
-					ImTextureID icon = GetAssetIcon(*asset);
-					ImGui::Image(icon, ImVec2(ImGui::GetTextLineHeight(), ImGui::GetTextLineHeight()));
+					ImGui::Image(GetAssetIcon(asset), ImVec2(iconSize, iconSize));
 
 					/// [EN] The badge sits on the lower-right quarter of the icon, the
 					///      corner an asset icon is least likely to fill.
 					/// [JP] バッジはアイコンの右下 1/4 に重ねる。アセットのアイコンが
 					///      埋めている可能性が最も低い角だから。
-					ImTextureID sharingIcon = GetSharingIcon(*asset);
-					if (sharingIcon)
+					if (ImTextureID sharingIcon = GetSharingIcon(asset))
 					{
-						ImVec2 badgeMin = ImGui::GetItemRectMin();
-						ImVec2 badgeMax = ImGui::GetItemRectMax();
-						badgeMin.x = badgeMin.x + (badgeMax.x - badgeMin.x) * 0.5f;
-						badgeMin.y = badgeMin.y + (badgeMax.y - badgeMin.y) * 0.5f;
-						ImGui::GetWindowDrawList()->AddImage(sharingIcon, badgeMin, badgeMax);
+						ImVec2 iconMin = ImGui::GetItemRectMin();
+						ImVec2 iconMax = ImGui::GetItemRectMax();
+						ImGui::GetWindowDrawList()->AddImage(sharingIcon, ImVec2((iconMin.x + iconMax.x) * 0.5f, (iconMin.y + iconMax.y) * 0.5f), iconMax);
 					}
 
 					ImGui::SameLine();
-					ImGui::Selectable(asset->path_.c_str(), false, ImGuiSelectableFlags_SpanAvailWidth | ImGuiSelectableFlags_AllowDoubleClick);
+					ImGui::Selectable(asset.path_.c_str(), false, ImGuiSelectableFlags_SpanAvailWidth | ImGuiSelectableFlags_AllowDoubleClick);
 
-					if ((!context_.resourceSync_ || !context_.resourceSync_->RemoteOnly(asset->assetID_)) && ImGui::BeginDragDropSource())
+					/// [EN] A remote-only asset has no local file yet, so it cannot be dragged anywhere.
+					/// [JP] 共有ライブラリにしか無いアセットはまだローカルのファイルが無いので、ドラッグできない。
+					if ((!context_.resourceSync_ || !context_.resourceSync_->RemoteOnly(asset.assetID_)) && ImGui::BeginDragDropSource())
 					{
-						const Char* payloadType = GetDragDropType(asset->type_);
-						ImGui::SetDragDropPayload(payloadType, &asset->assetID_, sizeof(Uint32));
-						ImGui::Text("%s", std::filesystem::path(asset->path_.c_str()).filename().string().c_str());
+						ImGui::SetDragDropPayload(GetPayloadType(asset.type_), &asset.assetID_, sizeof(Uint32));
+						ImGui::Text("%s", FilePath(asset.fullpath_.str(), resource->ProjectRootPath()).FilenameText().c_str());
 						ImGui::EndDragDropSource();
 					}
 
 					if (ImGui::IsItemHovered())
 					{
-						DrawAssetTooltip(*asset);
+						DrawAssetTooltip(asset);
 						if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 						{
-							OpenAssetExternal(*asset);
+							OpenAssetPopup(asset);
 						}
 					}
 
@@ -179,68 +180,82 @@ namespace SeedCore
 			}
 			else
 			{
-				Float panelWidth = ImGui::GetContentRegionAvail().x;
-				Float treeWidth = panelWidth * 0.3f;
-				if (treeWidth < 150.0f)
-				{
-					treeWidth = 150.0f;
-				}
-
-				ImGui::BeginChild("##DirectoryTree", ImVec2(treeWidth, 0), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
+				/// [EN] Folder tree on the left, 30% of the width but never narrower than 150 pixels, resizable by dragging its edge.
+				/// [JP] 左はフォルダのツリー。幅の 30% だが 150 ピクセルより狭くはせず、端をドラッグして変えられる。
+				ImGui::BeginChild("##DirectoryTree", ImVec2(std::max(ImGui::GetContentRegionAvail().x * 0.3f, 150.0f), 0), ImGuiChildFlags_Borders | ImGuiChildFlags_ResizeX);
 				DrawDirectoryTree(root_);
-
-				if (ImGui::BeginPopupContextWindow("##TreeBackground", ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
-				{
-					if (ImGui::MenuItem("新規フォルダ"))
-					{
-						CreateNewFolder(root_.fullPath);
-						ImGui::CloseCurrentPopup();
-					}
-
-					Bool canPaste = clipboardAction_ != ClipboardAction::None;
-					if (ImGui::MenuItem("貼り付け", nullptr, false, canPaste))
-					{
-						ExecutePaste(selectedDirectory_);
-						ImGui::CloseCurrentPopup();
-					}
-
-					ImGui::Separator();
-
-					if (ImGui::MenuItem("エクスプローラーで開く"))
-					{
-						std::filesystem::path fullPath = ResolveFullPath(selectedDirectory_);
-						ShellExecuteW(NULL, L"explore", fullPath.wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-						ImGui::CloseCurrentPopup();
-					}
-
-					ImGui::EndPopup();
-				}
-
+				DrawBackgroundMenu();
 				ImGui::EndChild();
 
 				ImGui::SameLine();
 
+				/// [EN] Contents of the selected folder on the right.
+				/// [JP] 右は選択中のフォルダの中身。
 				ImGui::BeginChild("##AssetList", ImVec2(0, 0), ImGuiChildFlags_Borders);
-				DrawAssetList();
+
+				/// [EN] Walk the selected folder's relative path down the tree, stopping early if a folder has gone.
+				/// [JP] 選択中のフォルダの相対パスをたどってツリーを下りる。途中のフォルダが無くなっていればそこで止まる。
+				FolderNode* folder = &root_;
+				DynamicArray<FolderNode*> breadcrumb{ folder };
+				for (const std::filesystem::path& segment : SelectedDirectory().RelativePath())
+				{
+					if (!folder->children_.contains(segment.string()))
+					{
+						break;
+					}
+					breadcrumb.push_back(folder = &folder->children_.at(segment.string()));
+				}
+
+				/// [EN] Breadcrumb: every ancestor is a borderless button that jumps there; the last entry is plain text.
+				/// [JP] パンくずリスト。祖先はそこへ移動する枠無しのボタン、最後の要素はただの文字。
+				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+				for (Size breadIndex = 0; breadIndex < breadcrumb.size(); ++breadIndex)
+				{
+					ImGui::PushID(static_cast<Int>(breadIndex));
+					if (breadIndex > 0)
+					{
+						ImGui::SameLine(0.0f, 2.0f);
+						ImGui::TextDisabled(">");
+						ImGui::SameLine(0.0f, 2.0f);
+					}
+					if (breadIndex + 1 == breadcrumb.size())
+					{
+						ImGui::Text("%s", breadcrumb[breadIndex]->path_.FilenameText().c_str());
+					}
+					else if (ImGui::SmallButton(breadcrumb[breadIndex]->path_.FilenameText().c_str()))
+					{
+						SelectDirectory(breadcrumb[breadIndex]->path_);
+					}
+					ImGui::PopID();
+				}
+				ImGui::PopStyleColor();
+				ImGui::Separator();
+
+				if (viewType_ == ViewType::List)
+				{
+					DrawAssetListMode(*folder);
+				}
+				else
+				{
+					DrawAssetGridMode(*folder);
+				}
+				DrawBackgroundMenu();
 				ImGui::EndChild();
 
+				/// [EN] An actor dropped from the Hierarchy is saved as a Prefab in the selected folder and linked to it.
+				/// [JP] Hierarchy からドロップしたアクターは、選択中のフォルダへ Prefab として保存し、その Prefab に結び付ける。
 				if (ImGui::BeginDragDropTarget())
 				{
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("HIERARCHY_ACTOR"))
 					{
 						Actor dropped = *static_cast<const Actor*>(payload->Data);
-						std::filesystem::path directory = ResolveFullPath(selectedDirectory_);
-						std::filesystem::path savedPath = Prefab::SaveToDirectory(dropped, directory);
-						if (!savedPath.empty())
+						const FilePath savedPath(Prefab::SaveToDirectory(dropped, SelectedDirectory().FullPath()), SelectedDirectory().RootPath());
+						if (!savedPath.Empty())
 						{
-							D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-							context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
-							needsRebuild_ = true;
-
-							std::string relative = std::filesystem::relative(savedPath, context_.worldContext_.resource_->ProjectRootPath()).string();
-							std::ranges::replace(relative, '\\', '/');
-							Uint32 newAssetID = context_.worldContext_.resource_->GetAssetID(String(relative));
-							if (newAssetID != 0)
+							/// [EN] Reload at once rather than waiting for the watch, because the new Prefab's ID is needed right now.
+							/// [JP] 新しい Prefab の ID がすぐ要るので、監視を待たずにここで読み直す。
+							resource->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+							if (Uint32 newAssetID = resource->GetAssetID(String(savedPath.RelativeText())))
 							{
 								dropped.PrefabID(newAssetID);
 							}
@@ -249,26 +264,772 @@ namespace SeedCore
 					ImGui::EndDragDropTarget();
 				}
 			}
+
+			/// [EN] Drawn at window level so a request from any menu, tree or contents, opens in the same place.
+			/// [JP] ウィンドウの階層で描くので、ツリーと中身どちらのメニューからの要求も同じ場所で開く。
+			DrawScriptMenu();
 		}
 
 		ImGui::End();
 	}
 
-	void ContentsDrawerPanel::BuildDirectoryTree()
+	/**
+	* [EN]
+	* Draws one tree folder and its open children.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ツリーのフォルダ 1 つと、開いている子を描く。
+	*/
+	void ContentsDrawerPanel::DrawDirectoryTree(FolderNode& node)
 	{
-		root_ = {};
-		root_.name = "Project";
-		root_.fullPath = "";
+		/// [EN] A folder with no subfolders is a leaf, the selected folder is highlighted, and the root starts open.
+		/// [JP] 子フォルダが無ければ葉、選択中のフォルダは強調、根は最初から開いておく。
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap | (node.children_.empty() ? ImGuiTreeNodeFlags_Leaf : 0) | (SelectedDirectory().FullPath() == node.path_.FullPath() ? ImGuiTreeNodeFlags_Selected : 0) | (&node == &root_ ? ImGuiTreeNodeFlags_DefaultOpen : 0);
 
+		/// [EN] A cut folder is dimmed; pushing the current alpha otherwise keeps a cut parent's dimming on its children.
+		/// [JP] 切り取ったフォルダは薄くする。そうでなければ今の alpha を積むので、切り取った親の薄さが子にも残る。
+		ImGui::PushStyleVar(ImGuiStyleVar_Alpha, clipboardState_.type_ == ClipboardType::Cut && clipboardState_.path_.FullPath() == node.path_.FullPath() ? 0.4f : ImGui::GetStyle().Alpha);
+		ImGui::PushID(node.path_.FilenameText().c_str());
+
+		/// [EN] The tree node itself has no label; icon and name follow it on the same line.
+		/// [JP] ツリーノード自体はラベル無しで、アイコンと名前を同じ行に続ける。
+		Bool opened = ImGui::TreeNodeEx("##tree", flags);
+		Bool treeClicked = ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen();
+		DrawFolderMenu(node.path_);
+
+		ImGui::SameLine();
+		ImGui::Image(GetFolderIcon(node), ImVec2(ImGui::GetTextLineHeight(), ImGui::GetTextLineHeight()));
+		ImGui::SameLine();
+		if (!DrawRenameMenu(node.path_))
+		{
+			ImGui::Text("%s", node.path_.FilenameText().c_str());
+		}
+
+		/// [EN] Clicking the row or the name selects the folder; clicking the arrow only opens or closes it.
+		/// [JP] 行か名前をクリックするとフォルダを選ぶ。矢印のクリックは開閉だけ。
+		if (treeClicked || ImGui::IsItemClicked())
+		{
+			SelectDirectory(node.path_);
+		}
+
+		if (opened)
+		{
+			for (FolderNode& child : node.children_ | std::ranges::views::values)
+			{
+				DrawDirectoryTree(child);
+			}
+			ImGui::TreePop();
+		}
+
+		ImGui::PopID();
+		ImGui::PopStyleVar();
+	}
+
+	/**
+	* [EN]
+	* Draws the folder's contents as icon-and-name rows.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* フォルダの中身をアイコンと名前の行で描く。
+	*/
+	void ContentsDrawerPanel::DrawAssetListMode(FolderNode& folder)
+	{
+		Float iconSize = ImGui::GetTextLineHeight();
+		ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+		/// [EN] Folders first. The icon space is reserved with a dummy and drawn after the row, so the selection highlight does not cover it.
+		/// [JP] 先にフォルダ。アイコンの場所はダミーで空けておき、行の後で描くので、選択の強調に隠れない。
+		for (FolderNode& child : folder.children_ | std::ranges::views::values)
+		{
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, clipboardState_.type_ == ClipboardType::Cut && clipboardState_.path_.FullPath() == child.path_.FullPath() ? 0.4f : ImGui::GetStyle().Alpha);
+			ImGui::PushID(child.path_.FilenameText().c_str());
+
+			ImGui::Dummy(ImVec2(iconSize, iconSize));
+			ImVec2 iconMin = ImGui::GetItemRectMin();
+			ImVec2 iconMax = ImGui::GetItemRectMax();
+			ImGui::SameLine();
+
+			if (!DrawRenameMenu(child.path_))
+			{
+				ImGui::Selectable(child.path_.FilenameText().c_str(), false, ImGuiSelectableFlags_SpanAvailWidth | ImGuiSelectableFlags_AllowDoubleClick);
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+				{
+					SelectDirectory(child.path_);
+				}
+				DrawFolderMenu(child.path_);
+			}
+
+			drawList->AddImage(GetFolderIcon(child), iconMin, iconMax);
+
+			ImGui::PopID();
+			ImGui::PopStyleVar();
+		}
+
+		/// [EN] Then assets, laid out the same way.
+		/// [JP] 次にアセット。並べ方はフォルダと同じ。
+		for (const AssetRecord* asset : folder.assets_)
+		{
+			const FilePath assetPath(asset->fullpath_.str(), root_.path_.RootPath());
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, clipboardState_.type_ == ClipboardType::Cut && clipboardState_.path_.FullPath() == assetPath.FullPath() ? 0.4f : ImGui::GetStyle().Alpha);
+			ImGui::PushID(asset->assetID_);
+
+			ImGui::Dummy(ImVec2(iconSize, iconSize));
+			ImVec2 iconMin = ImGui::GetItemRectMin();
+			ImVec2 iconMax = ImGui::GetItemRectMax();
+			ImGui::SameLine();
+
+			if (!DrawRenameMenu(assetPath))
+			{
+				ImGui::Selectable(assetPath.FilenameText().c_str(), false, ImGuiSelectableFlags_SpanAvailWidth | ImGuiSelectableFlags_AllowDoubleClick);
+			}
+
+			/// [EN] A remote-only asset has no local file yet, so it cannot be dragged anywhere.
+			/// [JP] 共有ライブラリにしか無いアセットはまだローカルのファイルが無いので、ドラッグできない。
+			if ((!context_.resourceSync_ || !context_.resourceSync_->RemoteOnly(asset->assetID_)) && ImGui::BeginDragDropSource())
+			{
+				ImGui::SetDragDropPayload(GetPayloadType(asset->type_), &asset->assetID_, sizeof(Uint32));
+				ImGui::Text("%s", assetPath.FilenameText().c_str());
+				ImGui::EndDragDropSource();
+			}
+
+			DrawAssetMenu(*asset, assetPath);
+
+			if (ImGui::IsItemHovered())
+			{
+				DrawAssetTooltip(*asset);
+				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+				{
+					OpenAssetPopup(*asset);
+				}
+			}
+
+			drawList->AddImage(GetAssetIcon(*asset), iconMin, iconMax);
+
+			/// [EN] The badge sits on the lower-right quarter of the icon, the
+			///      corner an asset icon is least likely to fill.
+			/// [JP] バッジはアイコンの右下 1/4 に重ねる。アセットのアイコンが
+			///      埋めている可能性が最も低い角だから。
+			if (ImTextureID sharingIcon = GetSharingIcon(*asset))
+			{
+				drawList->AddImage(sharingIcon, ImVec2((iconMin.x + iconMax.x) * 0.5f, (iconMin.y + iconMax.y) * 0.5f), iconMax);
+			}
+
+			ImGui::PopID();
+			ImGui::PopStyleVar();
+		}
+	}
+
+	/**
+	* [EN]
+	* Draws the folder's contents as a grid of icon buttons.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* フォルダの中身をアイコンボタンの格子で描く。
+	*/
+	void ContentsDrawerPanel::DrawAssetGridMode(FolderNode& folder)
+	{
+		/// [EN] As many columns as whole cells fit the width, at least one.
+		/// [JP] 列の数は、幅に収まるセルの数。最低 1 列。
+		Float buttonWidth = gridIconSize_ + ImGui::GetStyle().FramePadding.x * 2.0f;
+		Int columns = std::max(1, static_cast<Int>(ImGui::GetContentRegionAvail().x / (buttonWidth + ImGui::GetStyle().ItemSpacing.x)));
+		Int index = 0;
+
+		/// [EN] A name under a button: wrapped when wider than the button, otherwise centred under it.
+		/// [JP] ボタンの下の名前。ボタンより広ければ折り返し、そうでなければ中央に寄せる。
+		auto drawLabel = [buttonWidth](const std::string& label)
+		{
+			Float textWidth = ImGui::CalcTextSize(label.c_str()).x;
+			if (textWidth > buttonWidth)
+			{
+				ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + buttonWidth);
+				ImGui::TextWrapped("%s", label.c_str());
+				ImGui::PopTextWrapPos();
+			}
+			else
+			{
+				ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (buttonWidth - textWidth) * 0.5f);
+				ImGui::Text("%s", label.c_str());
+			}
+		};
+
+		/// [EN] Folders first; every cell except the first of a row continues the current line.
+		/// [JP] 先にフォルダ。行の先頭以外のセルは、今の行に続けて並べる。
+		for (FolderNode& child : folder.children_ | std::ranges::views::values)
+		{
+			if (index++ % columns != 0)
+			{
+				ImGui::SameLine();
+			}
+
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, clipboardState_.type_ == ClipboardType::Cut && clipboardState_.path_.FullPath() == child.path_.FullPath() ? 0.4f : ImGui::GetStyle().Alpha);
+			ImGui::BeginGroup();
+
+			ImGui::PushID(child.path_.FilenameText().c_str());
+			ImGui::ImageButton("##folder", GetFolderIcon(child), ImVec2(gridIconSize_, gridIconSize_));
+			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+			{
+				SelectDirectory(child.path_);
+			}
+			DrawFolderMenu(child.path_);
+			ImGui::PopID();
+
+			ImGui::SetNextItemWidth(buttonWidth);
+			if (!DrawRenameMenu(child.path_))
+			{
+				drawLabel(child.path_.FilenameText());
+			}
+
+			ImGui::EndGroup();
+			ImGui::PopStyleVar();
+		}
+
+		/// [EN] Then assets, continuing the same grid.
+		/// [JP] 次にアセット。同じ格子の続きに並べる。
+		for (const AssetRecord* asset : folder.assets_)
+		{
+			if (index++ % columns != 0)
+			{
+				ImGui::SameLine();
+			}
+
+			const FilePath assetPath(asset->fullpath_.str(), root_.path_.RootPath());
+			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, clipboardState_.type_ == ClipboardType::Cut && clipboardState_.path_.FullPath() == assetPath.FullPath() ? 0.4f : ImGui::GetStyle().Alpha);
+			ImGui::BeginGroup();
+
+			ImGui::PushID(asset->assetID_);
+			ImGui::ImageButton("##asset", GetAssetIcon(*asset), ImVec2(gridIconSize_, gridIconSize_));
+
+			/// [EN] The badge takes a third of the button in grid mode, where the
+			///      icon is large enough that a quarter would read as noise.
+			/// [JP] グリッド表示ではボタンの1/3をバッジに使う。アイコンが大きいため、
+			///      1/4 ではゴミのように見えてしまう。
+			if (ImTextureID sharingIcon = GetSharingIcon(*asset))
+			{
+				ImVec2 badgeMax = ImGui::GetItemRectMax();
+				ImGui::GetWindowDrawList()->AddImage(sharingIcon, ImVec2(badgeMax.x - gridIconSize_ / 3.0f, badgeMax.y - gridIconSize_ / 3.0f), badgeMax);
+			}
+
+			/// [EN] A remote-only asset has no local file yet, so it cannot be dragged anywhere.
+			/// [JP] 共有ライブラリにしか無いアセットはまだローカルのファイルが無いので、ドラッグできない。
+			if ((!context_.resourceSync_ || !context_.resourceSync_->RemoteOnly(asset->assetID_)) && ImGui::BeginDragDropSource())
+			{
+				ImGui::SetDragDropPayload(GetPayloadType(asset->type_), &asset->assetID_, sizeof(Uint32));
+				ImGui::Text("%s", assetPath.FilenameText().c_str());
+				ImGui::EndDragDropSource();
+			}
+
+			DrawAssetMenu(*asset, assetPath);
+			ImGui::PopID();
+
+			if (ImGui::IsItemHovered())
+			{
+				DrawAssetTooltip(*asset);
+				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+				{
+					OpenAssetPopup(*asset);
+				}
+			}
+
+			ImGui::SetNextItemWidth(buttonWidth);
+			if (!DrawRenameMenu(assetPath))
+			{
+				drawLabel(assetPath.FilenameText());
+			}
+
+			ImGui::EndGroup();
+			ImGui::PopStyleVar();
+		}
+	}
+
+	/**
+	* [EN]
+	* Draws an asset's hover tooltip.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* アセットのツールチップを描く。
+	*/
+	void ContentsDrawerPanel::DrawAssetTooltip(const AssetRecord& asset)
+	{
+		ImGui::BeginTooltip();
+
+		/// [EN] A loaded texture gets a 128-pixel preview above the text; anything else a small icon beside it.
+		/// [JP] 読み込み済みのテクスチャは文字の上に 128 ピクセルのプレビュー、それ以外は横に小さなアイコン。
+		Bool preview = asset.type_ == AssetType::Texture && asset.isLoaded_;
+		Float iconSize = preview ? 128.0f : ImGui::GetTextLineHeight();
+		ImGui::Image(GetAssetIcon(asset), ImVec2(iconSize, iconSize));
+		if (preview)
+		{
+			ImGui::Separator();
+		}
+		else
+		{
+			ImGui::SameLine();
+		}
+
+		ImGui::Text("%s", asset.path_.c_str());
+		ImGui::Text("ID: %u", asset.assetID_);
+		if (context_.resourceSync_)
+		{
+			ResourceSyncControlPanel::DrawState(context_, asset);
+		}
+
+		/// [EN] File size in the largest unit that keeps the number at 1 or above; a remote-only asset has no file and shows none.
+		/// [JP] ファイルサイズは、数字が 1 以上になる最大の単位で出す。共有ライブラリにしか無いアセットはファイルが無いので出さない。
+		std::error_code errorCode;
+		Uint64 fileSize = std::filesystem::file_size(std::filesystem::path(asset.fullpath_.c_str()), errorCode);
+		if (!errorCode)
+		{
+			if (fileSize >= 1024 * 1024)
+			{
+				ImGui::Text("%.2f MB", static_cast<Float>(fileSize) / (1024.0f * 1024.0f));
+			}
+			else if (fileSize >= 1024)
+			{
+				ImGui::Text("%.1f KB", static_cast<Float>(fileSize) / 1024.0f);
+			}
+			else
+			{
+				ImGui::Text("%llu Bytes", fileSize);
+			}
+		}
+
+		/// [EN] Pixel size of the texture, read from its GPU resource.
+		/// [JP] テクスチャのピクセルサイズ。GPU リソースから読む。
+		if (preview)
+		{
+			TextureResource* textureResource = context_.worldContext_.resource_->GetResource<TextureResource>(AssetType::Texture);
+			Texture* texture = textureResource->Resolve(*context_.worldContext_.loader_, &context_.graphicsContext_.graphics_->GetBindlessHeap(), textureResource->GetHandle(asset.assetID_), context_.uiFrame_);
+			if (texture && texture->Resource())
+			{
+				D3D12_RESOURCE_DESC desc = texture->Resource()->GetDesc();
+				ImGui::Text("%llu x %u", desc.Width, desc.Height);
+			}
+		}
+
+		ImGui::EndTooltip();
+	}
+
+	/**
+	* [EN]
+	* Draws a folder's right-click menu. A MenuItem closes its popup when
+	* clicked, so no item closes it by hand.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* フォルダの右クリックメニューを描く。MenuItem はクリックでポップアップを
+	* 閉じるので、どの項目も自分では閉じない。
+	*/
+	void ContentsDrawerPanel::DrawFolderMenu(const FilePath& folderPath)
+	{
+		if (ImGui::BeginPopupContextItem("##FolderContext"))
+		{
+			if (ImGui::MenuItem("新規フォルダ"))
+			{
+				CreateNewFolder(FilePath(folderPath.ChildPath("New Folder"), folderPath.RootPath()));
+			}
+			if (ImGui::MenuItem("新規 C++ スクリプト"))
+			{
+				OpenScriptPopup(folderPath, ScriptType::Cpp);
+			}
+			if (ImGui::MenuItem("新規 C# スクリプト"))
+			{
+				OpenScriptPopup(folderPath, ScriptType::Csharp);
+			}
+
+			ImGui::Separator();
+
+			if (ImGui::MenuItem("切り取り"))
+			{
+				clipboardState_.type_ = ClipboardType::Cut;
+				clipboardState_.path_ = folderPath;
+			}
+			if (ImGui::MenuItem("コピー"))
+			{
+				clipboardState_.type_ = ClipboardType::Copy;
+				clipboardState_.path_ = folderPath;
+			}
+			if (ImGui::MenuItem("貼り付け", nullptr, false, clipboardState_.type_ != ClipboardType::None))
+			{
+				ExecutePaste(folderPath);
+			}
+
+			ImGui::Separator();
+
+			/// [EN] The name field edits the filename text in place, so it is padded to 256 characters of buffer.
+			/// [JP] 入力欄はファイル名の文字列をそのまま編集するので、バッファとして 256 文字に広げる。
+			if (ImGui::MenuItem("名前変更"))
+			{
+				renameMenuState_.focusRequested_ = true;
+				renameMenuState_.targetPath_.emplace(folderPath);
+				renameMenuState_.targetPath_->FilenameText().resize(256);
+			}
+			if (ImGui::MenuItem("削除"))
+			{
+				ExecuteDelete(folderPath);
+			}
+
+			ImGui::Separator();
+
+			if (ImGui::MenuItem("エクスプローラーで開く"))
+			{
+				ShellExecuteW(NULL, L"explore", folderPath.FullPath().wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
+	/**
+	* [EN]
+	* Draws an asset's right-click menu.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* アセットの右クリックメニューを描く。
+	*/
+	void ContentsDrawerPanel::DrawAssetMenu(const AssetRecord& asset, const FilePath& assetPath)
+	{
+		if (ImGui::BeginPopupContextItem("##AssetContext"))
+		{
+			if (context_.resourceSync_)
+			{
+				ResourceSyncControlPanel::DrawActions(context_, asset);
+			}
+			if (ImGui::MenuItem("開く"))
+			{
+				OpenAssetPopup(asset);
+			}
+
+			/// [EN] Asset actions exist only for models.
+			/// [JP] アセットアクションはモデルにだけある。
+			if (asset.type_ == AssetType::Model && ImGui::BeginMenu("アセットアクション"))
+			{
+				if (ImGui::BeginMenu("コリジョン生成"))
+				{
+					if (ImGui::MenuItem("Proxy"))
+					{
+						GenerateMeshCollision(asset, MeshCollisionDetail::Proxy);
+					}
+					if (ImGui::MenuItem("Exact"))
+					{
+						GenerateMeshCollision(asset, MeshCollisionDetail::Exact);
+					}
+					ImGui::EndMenu();
+				}
+				if (ImGui::MenuItem("モデル変換"))
+				{
+					context_.modelTransformPreviewContext_.requestedAssetId_ = asset.assetID_;
+				}
+				if (ImGui::MenuItem("マテリアル生成"))
+				{
+					GenerateMaterial(asset);
+				}
+				if (ImGui::MenuItem("スケルトン生成"))
+				{
+					GenerateSkeleton(asset);
+				}
+
+				/// [EN] One entry per export preset: its label, the preset and the file extension it writes.
+				/// [JP] エクスポートのプリセットごとに 1 項目。表示名、プリセット、書き出す拡張子。
+				if (ImGui::BeginMenu("エクスポート"))
+				{
+					static const std::tuple<const Char*, ExportPreset, const Wchar*> exportList[] =
+					{
+						{ "glTF", ExportPreset::Gltf, L"gltf" },
+						{ "glTF binary", ExportPreset::Glb, L"glb" },
+						{ "FBX (Maya)", ExportPreset::FbxMaya, L"fbx" },
+						{ "FBX (Unreal)", ExportPreset::FbxUnreal, L"fbx" },
+						{ "FBX (Unity)", ExportPreset::FbxUnity, L"fbx" },
+						{ "FBX (エンジン)", ExportPreset::FbxNative, L"fbx" },
+					};
+					for (const auto& [label, preset, extension] : exportList)
+					{
+						if (ImGui::MenuItem(label))
+						{
+							ExportModel(asset, preset, extension);
+						}
+					}
+					ImGui::EndMenu();
+				}
+				ImGui::EndMenu();
+			}
+
+			ImGui::Separator();
+
+			if (ImGui::MenuItem("切り取り"))
+			{
+				clipboardState_.type_ = ClipboardType::Cut;
+				clipboardState_.path_ = assetPath;
+			}
+			if (ImGui::MenuItem("コピー"))
+			{
+				clipboardState_.type_ = ClipboardType::Copy;
+				clipboardState_.path_ = assetPath;
+			}
+
+			ImGui::Separator();
+
+			/// [EN] The name field edits the filename text in place, so it is padded to 256 characters of buffer.
+			/// [JP] 入力欄はファイル名の文字列をそのまま編集するので、バッファとして 256 文字に広げる。
+			if (ImGui::MenuItem("名前変更"))
+			{
+				renameMenuState_.focusRequested_ = true;
+				renameMenuState_.targetPath_.emplace(assetPath);
+				renameMenuState_.targetPath_->FilenameText().resize(256);
+			}
+			if (ImGui::MenuItem("削除"))
+			{
+				ExecuteDelete(assetPath);
+			}
+
+			ImGui::Separator();
+
+			/// [EN] "/select," opens the containing folder with the file highlighted.
+			/// [JP] "/select," は、そのファイルを選んだ状態で入っているフォルダを開く。
+			if (ImGui::MenuItem("エクスプローラーで表示"))
+			{
+				std::wstring param = L"/select,\"" + assetPath.FullPath().wstring() + L"\"";
+				ShellExecuteW(NULL, L"open", L"explorer.exe", param.c_str(), NULL, SW_SHOWNORMAL);
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
+	/**
+	* [EN]
+	* Draws the empty-space menu for the selected folder. It only opens
+	* where no item is under the cursor, so folder and asset menus win.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 選択中のフォルダを対象に、何も無いところのメニューを描く。カーソルの下に
+	* 項目が無いときだけ開くので、フォルダとアセットのメニューが優先される。
+	*/
+	void ContentsDrawerPanel::DrawBackgroundMenu()
+	{
+		if (ImGui::BeginPopupContextWindow("##BackgroundContext", ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
+		{
+			const FilePath& directoryPath = SelectedDirectory();
+			if (ImGui::MenuItem("新規フォルダ"))
+			{
+				CreateNewFolder(FilePath(directoryPath.ChildPath("New Folder"), directoryPath.RootPath()));
+			}
+			if (ImGui::MenuItem("新規 C++ スクリプト"))
+			{
+				OpenScriptPopup(directoryPath, ScriptType::Cpp);
+			}
+			if (ImGui::MenuItem("新規 C# スクリプト"))
+			{
+				OpenScriptPopup(directoryPath, ScriptType::Csharp);
+			}
+			if (ImGui::MenuItem("貼り付け", nullptr, false, clipboardState_.type_ != ClipboardType::None))
+			{
+				ExecutePaste(directoryPath);
+			}
+
+			ImGui::Separator();
+
+			if (ImGui::MenuItem("エクスプローラーで開く"))
+			{
+				ShellExecuteW(NULL, L"explore", directoryPath.FullPath().wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
+	/**
+	* [EN]
+	* Opens and draws the new-script dialog.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 新規スクリプトのダイアログを開いて描く。
+	*/
+	void ContentsDrawerPanel::DrawScriptMenu()
+	{
+		/// [EN] The title is also the popup's ID, so the language picks which dialog opens.
+		/// [JP] タイトルはポップアップの ID も兼ねるので、言語でどちらのダイアログを開くかが決まる。
+		const Char* title = scriptMenuState_.scriptType_ == ScriptType::Csharp ? "新規 C# スクリプト" : "新規 C++ スクリプト";
+		if (scriptMenuState_.openRequested_)
+		{
+			ImGui::OpenPopup(title);
+			scriptMenuState_.openRequested_ = false;
+		}
+
+		/// [EN] Passing open gives the dialog a close button.
+		/// [JP] open を渡すと、ダイアログに閉じるボタンが付く。
+		Bool open = true;
+		if (ImGui::BeginPopupModal(title, &open, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			if (scriptMenuState_.focusRequested_)
+			{
+				ImGui::SetKeyboardFocusHere();
+				scriptMenuState_.focusRequested_ = false;
+			}
+
+			/// [EN] The name field edits the target path's filename text directly.
+			/// [JP] 名前の入力欄は、作るパスのファイル名の文字列を直接編集する。
+			std::string& nameBuffer = scriptMenuState_.targetPath_->FilenameText();
+			Bool confirmed = ImGui::InputText("スクリプト名", nameBuffer.data(), nameBuffer.size(), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+
+			ImGui::Separator();
+
+			/// [EN] Editing the text leaves the path's other parts stale, so the path is rebuilt from the typed name first.
+			/// [JP] 文字列を編集してもパスの他の部分は古いままなので、入力した名前からパスを作り直してから渡す。
+			if (ImGui::Button("作成") || confirmed)
+			{
+				const FilePath& targetPath = *scriptMenuState_.targetPath_;
+				CreateNewScript(FilePath(targetPath.SiblingPath(targetPath.FilenameText().c_str()), targetPath.RootPath()));
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("キャンセル"))
+			{
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+	}
+
+	/**
+	* [EN]
+	* Draws the inline rename field for the item being renamed.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 名前変更中の項目に、その場の入力欄を描く。
+	*/
+	Bool ContentsDrawerPanel::DrawRenameMenu(const FilePath& itemPath)
+	{
+		if (!renameMenuState_.targetPath_ || renameMenuState_.targetPath_->FullPath() != itemPath.FullPath())
+		{
+			return false;
+		}
+
+		if (renameMenuState_.focusRequested_)
+		{
+			ImGui::SetKeyboardFocusHere();
+			renameMenuState_.focusRequested_ = false;
+		}
+
+		std::string& nameBuffer = renameMenuState_.targetPath_->FilenameText();
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2.0f, 0.0f));
+		Bool confirmed = ImGui::InputText("##InlineRename", nameBuffer.data(), nameBuffer.size(), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
+		ImGui::PopStyleVar();
+
+		/// [EN] Enter renames unless the name is empty; Enter or leaving the field ends the rename either way.
+		/// [JP] Enter で名前を変える（空なら変えない）。Enter でも入力欄を離れても、名前変更はどちらでも終わる。
+		if (confirmed && nameBuffer.front() != '\0')
+		{
+			ExecuteRename(*renameMenuState_.targetPath_);
+		}
+		if (confirmed || ImGui::IsItemDeactivated())
+		{
+			renameMenuState_.targetPath_.reset();
+		}
+
+		return true;
+	}
+
+	/**
+	* [EN]
+	* Moves to a folder and records it in the history.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* フォルダへ移動し、履歴に記録する。
+	*/
+	void ContentsDrawerPanel::SelectDirectory(const FilePath& directoryPath)
+	{
+		if (SelectedDirectory().FullPath() == directoryPath.FullPath())
+		{
+			return;
+		}
+
+		/// [EN] Moving somewhere new drops the entries after the current one, as a browser does.
+		/// [JP] 新しい場所へ移動したら、ブラウザと同じく今より後の履歴を捨てる。
+		historyState_.directoryList_.erase(historyState_.directoryList_.begin() + historyState_.index_ + 1, historyState_.directoryList_.end());
+		historyState_.directoryList_.push_back(directoryPath);
+		historyState_.index_ = historyState_.directoryList_.size() - 1;
+	}
+
+	/**
+	* [EN]
+	* Returns the history entry at the current position.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 今の位置にある履歴の要素を返す。
+	*/
+	const FilePath& ContentsDrawerPanel::SelectedDirectory()const
+	{
+		return historyState_.directoryList_[historyState_.index_];
+	}
+
+	/**
+	* [EN]
+	* Rebuilds the folder tree from disk and the asset list.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ディスクとアセット一覧からフォルダのツリーを作り直す。
+	*/
+	void ContentsDrawerPanel::BuildDirectory()
+	{
+		/// [EN] Engine, tooling and build folders under the root; they hold no gameplay content, so they are not listed or descended into.
+		/// [JP] ルート直下のエンジン、ツール、ビルドのフォルダ。ゲームの中身は無いので、並べず中にも入らない。
 		static const std::set<std::string> excludeDirectories =
 		{
 			"AIEngine", "AudioEngine", "CompiledShaderObject", "Editor",
 			"External", "FoundationEngine", "GraphicsEngine", "Launcher", "Logs",
-			"Package", "PhysicsEngine", "Runtime", "SeedCore", "Tools",
+			"Package", "PhysicsEngine", "Platform", "Runtime", "SeedCore", "Tools",
 			".vs", "x64", ".git", ".asset",
 		};
 
 		const std::filesystem::path& projectRoot = context_.worldContext_.resource_->ProjectRootPath();
+		root_ = {};
+		root_.path_ = FilePath(projectRoot, projectRoot);
+
+		/// [EN] Walks a relative path down from the root, creating each missing folder on the way, and returns the last one.
+		/// [JP] 相対パスをたどって根から下り、途中で無いフォルダを作りながら、最後のフォルダを返す。
+		auto insertDirectory = [this, &projectRoot](const std::filesystem::path& relativePath) -> FolderNode*
+		{
+			FolderNode* current = &root_;
+			for (const std::filesystem::path& segment : relativePath)
+			{
+				const std::string name = segment.string();
+				if (!current->children_.contains(name))
+				{
+					FolderNode node;
+					node.path_ = FilePath(current->path_.ChildPath(segment), projectRoot);
+					current->children_.insert(name, std::move(node));
+				}
+				current = &current->children_.at(name);
+			}
+			return current;
+		};
+
+		/// [EN] Every folder on disk appears, including empty ones.
+		/// [JP] ディスク上のフォルダは、空のものも含めて全て出す。
 		std::error_code errorCode;
 		for (auto it = std::filesystem::recursive_directory_iterator(projectRoot, errorCode); it != std::filesystem::recursive_directory_iterator(); ++it)
 		{
@@ -276,46 +1037,20 @@ namespace SeedCore
 			{
 				continue;
 			}
-
-			std::string directoryName = it->path().filename().string();
-			if (excludeDirectories.contains(directoryName))
+			if (excludeDirectories.contains(it->path().filename().string()))
 			{
 				it.disable_recursion_pending();
 				continue;
 			}
-
-			std::string relativePath = std::filesystem::relative(it->path(), projectRoot, errorCode).string();
-			std::ranges::replace(relativePath, '\\', '/');
-
-			DirectoryNode* current = &root_;
-			std::istringstream stream(relativePath);
-			std::string segment;
-			std::string builtPath;
-
-			while (std::getline(stream, segment, '/'))
-			{
-				if (!builtPath.empty())
-				{
-					builtPath += "/";
-				}
-				builtPath += segment;
-
-				if (!current->children.contains(segment))
-				{
-					DirectoryNode node;
-					node.name = segment;
-					node.fullPath = builtPath;
-					current->children.insert(segment, std::move(node));
-				}
-				current = &current->children.at(segment);
-			}
+			insertDirectory(FilePath(it->path(), projectRoot).RelativePath());
 		}
 
-		const auto& allAssets = context_.worldContext_.resource_->AssetList();
-		browserAssets_.clear();
-		for (const AssetRecord& asset : allAssets | std::ranges::views::values)
+		/// [EN] Local assets first, then shared-library assets that are not in this workspace yet.
+		/// [JP] 先にローカルのアセット、次に共有ライブラリにあってこのワークスペースにまだ無いアセット。
+		assetList_.clear();
+		for (const AssetRecord& asset : context_.worldContext_.resource_->AssetList() | std::ranges::views::values)
 		{
-			browserAssets_.push_back(asset);
+			assetList_.push_back(asset);
 		}
 		if (context_.resourceSync_)
 		{
@@ -323,452 +1058,40 @@ namespace SeedCore
 			context_.resourceSync_->Gather(remoteAssets);
 			for (const AssetRecord& remote : remoteAssets)
 			{
-				if (!std::ranges::any_of(browserAssets_, [&remote](const AssetRecord& local) { return local.assetID_ == remote.assetID_; }))
+				if (!std::ranges::any_of(assetList_, [&remote](const AssetRecord& local) { return local.assetID_ == remote.assetID_; }))
 				{
-					browserAssets_.push_back(remote);
+					assetList_.push_back(remote);
 				}
 			}
 		}
-		for (const AssetRecord& asset : browserAssets_)
+
+		/// [EN] Filed only after assetList_ stops growing, so the pointers into it stay valid.
+		/// [JP] assetList_ が増えなくなってから振り分けるので、その中を指すポインタは有効なまま。
+		for (const AssetRecord& asset : assetList_)
 		{
-			std::string path = asset.path_.str();
-
-			std::string directory;
-			auto lastSlash = path.rfind('/');
-			if (lastSlash != std::string::npos)
-			{
-				directory = path.substr(0, lastSlash);
-			}
-
-			DirectoryNode* current = &root_;
-			if (!directory.empty())
-			{
-				std::istringstream stream(directory);
-				std::string segment;
-				std::string builtPath;
-
-				while (std::getline(stream, segment, '/'))
-				{
-					if (!builtPath.empty())
-					{
-						builtPath += "/";
-					}
-					builtPath += segment;
-
-					if (!current->children.contains(segment))
-					{
-						DirectoryNode node;
-						node.name = segment;
-						node.fullPath = builtPath;
-						current->children.insert(segment, std::move(node));
-					}
-					current = &current->children.at(segment);
-				}
-			}
-
-			current->assets.push_back(&asset);
+			insertDirectory(std::filesystem::path(asset.path_.str()).parent_path())->assets_.push_back(&asset);
 		}
 
-		if (selectedDirectory_.empty())
+		/// [EN] The first build starts the history at the root; later builds keep the history as it is.
+		/// [JP] 最初の作成では履歴を根から始める。以降の作成では履歴をそのまま残す。
+		if (historyState_.directoryList_.empty())
 		{
-			selectedDirectory_ = root_.fullPath;
-			if (directoryHistory_.empty())
-			{
-				directoryHistory_.push_back(selectedDirectory_);
-				historyIndex_ = 0;
-			}
+			historyState_.directoryList_.push_back(root_.path_);
 		}
 	}
 
-	void ContentsDrawerPanel::DrawDirectoryTree(DirectoryNode& node)
-	{
-		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap;
-
-		if (node.children.empty())
-		{
-			flags |= ImGuiTreeNodeFlags_Leaf;
-		}
-
-		if (selectedDirectory_ == node.fullPath)
-		{
-			flags |= ImGuiTreeNodeFlags_Selected;
-		}
-
-		if (&node == &root_)
-		{
-			flags |= ImGuiTreeNodeFlags_DefaultOpen;
-		}
-
-		Bool isCut = clipboardAction_ == ClipboardAction::Cut && clipboardIsDirectory_ && clipboardPath_ == ResolveFullPath(node.fullPath);
-		if (isCut)
-		{
-			ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.4f);
-		}
-
-		ImGui::PushID(node.name.c_str());
-		Bool opened = ImGui::TreeNodeEx("##tree", flags);
-		Bool treeClicked = ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen();
-		DrawFolderContextMenu(node.fullPath, node.name);
-
-		ImGui::SameLine();
-		ImTextureID folderIcon = GetFolderIcon(node);
-		Float iconSize = ImGui::GetTextLineHeight();
-		ImGui::Image(folderIcon, ImVec2(iconSize, iconSize));
-		ImGui::SameLine();
-		if (!DrawInlineRename(ResolveFullPath(node.fullPath), node.name))
-		{
-			ImGui::Text("%s", node.name.c_str());
-		}
-
-		if (treeClicked || ImGui::IsItemClicked())
-		{
-			NavigateTo(node.fullPath);
-		}
-
-		if (opened)
-		{
-			for (auto& child : node.children | std::ranges::views::values)
-			{
-				DrawDirectoryTree(child);
-			}
-			ImGui::TreePop();
-		}
-		ImGui::PopID();
-
-		if (isCut)
-		{
-			ImGui::PopStyleVar();
-		}
-	}
-
-	void ContentsDrawerPanel::DrawAssetList()
-	{
-		DirectoryNode* target = &root_;
-
-		DynamicArray<std::pair<std::string, DirectoryNode*>> breadcrumb;
-		breadcrumb.push_back({ root_.name, &root_ });
-
-		if (!selectedDirectory_.empty())
-		{
-			std::istringstream stream(selectedDirectory_);
-			std::string segment;
-			DirectoryNode* current = &root_;
-
-			while (std::getline(stream, segment, '/'))
-			{
-				if (current->children.contains(segment))
-				{
-					current = &current->children.at(segment);
-					breadcrumb.push_back({ segment, current });
-				}
-				else
-				{
-					break;
-				}
-			}
-			target = current;
-		}
-
-		for (Size breadIndex = 0; breadIndex < breadcrumb.size(); ++breadIndex)
-		{
-			if (breadIndex > 0)
-			{
-				ImGui::SameLine(0.0f, 2.0f);
-				ImGui::TextDisabled(">");
-				ImGui::SameLine(0.0f, 2.0f);
-			}
-
-			auto& [name, node] = breadcrumb[breadIndex];
-			if (breadIndex == breadcrumb.size() - 1)
-			{
-				ImGui::Text("%s", name.c_str());
-			}
-			else
-			{
-				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
-				ImGui::PushID(static_cast<Int>(breadIndex));
-				if (ImGui::SmallButton(name.c_str()))
-				{
-					NavigateTo(node->fullPath);
-				}
-				ImGui::PopID();
-				ImGui::PopStyleColor();
-			}
-		}
-		ImGui::Separator();
-
-		switch (viewMode_)
-		{
-		case ViewMode::List:
-			DrawAssetListMode(target);
-			break;
-		case ViewMode::Grid:
-			DrawAssetGridMode(target);
-			break;
-		}
-	}
-
-	void ContentsDrawerPanel::DrawAssetListMode(DirectoryNode* target)
-	{
-		Float iconSize = ImGui::GetTextLineHeight();
-		Float indent = iconSize + ImGui::GetStyle().ItemSpacing.x;
-		ImDrawList* drawList = ImGui::GetWindowDrawList();
-
-		for (auto& [name, child] : target->children)
-		{
-			Bool isCut = clipboardAction_ == ClipboardAction::Cut && clipboardIsDirectory_ && clipboardPath_ == ResolveFullPath(child.fullPath);
-			if (isCut) 
-			{
-				ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.4f);
-			}
-
-			ImGui::PushID(name.c_str());
-
-			ImGui::Dummy(ImVec2(iconSize, iconSize));
-			ImVec2 iconMin = ImGui::GetItemRectMin();
-			ImVec2 iconMax = ImGui::GetItemRectMax();
-			ImGui::SameLine();
-
-			std::filesystem::path folderFullPath = ResolveFullPath(child.fullPath);
-			if (!DrawInlineRename(folderFullPath, name))
-			{
-				if (ImGui::Selectable(name.c_str(), false, ImGuiSelectableFlags_SpanAvailWidth))
-				{
-					NavigateTo(child.fullPath);
-				}
-				DrawFolderContextMenu(child.fullPath, name);
-			}
-
-			ImTextureID folderIcon = GetFolderIcon(child);
-			drawList->AddImage(folderIcon, iconMin, iconMax);
-
-			ImGui::PopID();
-
-			if (isCut) 
-			{
-				ImGui::PopStyleVar();
-			}
-		}
-
-		for (const AssetRecord* asset : target->assets)
-		{
-			Bool isCut = clipboardAction_ == ClipboardAction::Cut && !clipboardIsDirectory_ && clipboardPath_ == std::filesystem::path(asset->fullpath_.str());
-			if (isCut)
-			{
-				ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.4f);
-			}
-
-			ImGui::PushID(asset->assetID_);
-
-			ImGui::Dummy(ImVec2(iconSize, iconSize));
-			ImVec2 iconMin = ImGui::GetItemRectMin();
-			ImVec2 iconMax = ImGui::GetItemRectMax();
-			ImGui::SameLine();
-
-			std::string assetFilename = std::filesystem::path(asset->path_.c_str()).filename().string();
-			std::filesystem::path assetFullPath(asset->fullpath_.str());
-			if (!DrawInlineRename(assetFullPath, assetFilename))
-			{
-				ImGui::Selectable(assetFilename.c_str(), false, ImGuiSelectableFlags_SpanAvailWidth | ImGuiSelectableFlags_AllowDoubleClick);
-			}
-
-			if ((!context_.resourceSync_ || !context_.resourceSync_->RemoteOnly(asset->assetID_)) && ImGui::BeginDragDropSource())
-			{
-				const Char* payloadType = GetDragDropType(asset->type_);
-				ImGui::SetDragDropPayload(payloadType, &asset->assetID_, sizeof(Uint32));
-				ImGui::Text("%s", std::filesystem::path(asset->path_.c_str()).filename().string().c_str());
-				ImGui::EndDragDropSource();
-			}
-
-			DrawAssetContextMenu(*asset);
-
-			if (ImGui::IsItemHovered())
-			{
-				DrawAssetTooltip(*asset);
-				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-				{
-					OpenAssetExternal(*asset);
-				}
-			}
-
-			ImTextureID icon = GetAssetIcon(*asset);
-			drawList->AddImage(icon, iconMin, iconMax);
-
-			/// [EN] The badge sits on the lower-right quarter of the icon, the
-			///      corner an asset icon is least likely to fill.
-			/// [JP] バッジはアイコンの右下 1/4 に重ねる。アセットのアイコンが
-			///      埋めている可能性が最も低い角だから。
-			ImTextureID sharingIcon = GetSharingIcon(*asset);
-			if (sharingIcon)
-			{
-				ImVec2 badgeMin = ImVec2(iconMin.x + (iconMax.x - iconMin.x) * 0.5f, iconMin.y + (iconMax.y - iconMin.y) * 0.5f);
-				drawList->AddImage(sharingIcon, badgeMin, iconMax);
-			}
-
-			ImGui::PopID();
-
-			if (isCut) 
-			{
-				ImGui::PopStyleVar();
-			}
-		}
-
-		DrawBackgroundContextMenu();
-	}
-
-	void ContentsDrawerPanel::DrawAssetGridMode(DirectoryNode* target)
-	{
-		Float availWidth = ImGui::GetContentRegionAvail().x;
-		Float cellWidth = gridIconSize_ + ImGui::GetStyle().FramePadding.x * 2.0f + ImGui::GetStyle().ItemSpacing.x;
-		Int columns = static_cast<Int>(availWidth / cellWidth);
-		if (columns < 1)
-		{
-			columns = 1;
-		}
-
-		Int index = 0;
-
-		for (auto& [name, child] : target->children)
-		{
-			if (index > 0 && index % columns != 0)
-			{
-				ImGui::SameLine();
-			}
-
-			Bool isCut = clipboardAction_ == ClipboardAction::Cut && clipboardIsDirectory_ && clipboardPath_ == ResolveFullPath(child.fullPath);
-			if (isCut)
-			{
-				ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.4f);
-			}
-
-			ImGui::BeginGroup();
-
-			ImTextureID folderIcon = GetFolderIcon(child);
-			ImGui::PushID(name.c_str());
-			if (ImGui::ImageButton("##folder", folderIcon, ImVec2(gridIconSize_, gridIconSize_)))
-			{
-				NavigateTo(child.fullPath);
-			}
-
-			DrawFolderContextMenu(child.fullPath, name);
-
-			ImGui::PopID();
-
-			Float buttonWidth = gridIconSize_ + ImGui::GetStyle().FramePadding.x * 2.0f;
-			std::filesystem::path folderFullPath = ResolveFullPath(child.fullPath);
-			if (!DrawInlineRename(folderFullPath, name, buttonWidth))
-			{
-				Float textWidth = ImGui::CalcTextSize(name.c_str()).x;
-				if (textWidth > buttonWidth)
-				{
-					ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + buttonWidth);
-					ImGui::TextWrapped("%s", name.c_str());
-					ImGui::PopTextWrapPos();
-				}
-				else
-				{
-					Float offset = (buttonWidth - textWidth) * 0.5f;
-					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset);
-					ImGui::Text("%s", name.c_str());
-				}
-			}
-
-			ImGui::EndGroup();
-
-			if (isCut)
-			{
-				ImGui::PopStyleVar();
-			}
-
-			++index;
-		}
-
-		for (const AssetRecord* asset : target->assets)
-		{
-			if (index > 0 && index % columns != 0)
-			{
-				ImGui::SameLine();
-			}
-
-			Bool isCut = clipboardAction_ == ClipboardAction::Cut && !clipboardIsDirectory_ && clipboardPath_ == std::filesystem::path(asset->fullpath_.str());
-			if (isCut) 
-			{
-				ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.4f);
-			}
-
-			ImGui::BeginGroup();
-
-			ImTextureID icon = GetAssetIcon(*asset);
-			ImGui::PushID(asset->assetID_);
-			ImGui::ImageButton("##asset", icon, ImVec2(gridIconSize_, gridIconSize_));
-
-			/// [EN] The badge takes a third of the button in grid mode, where the
-			///      icon is large enough that a quarter would read as noise.
-			/// [JP] グリッド表示ではボタンの1/3をバッジに使う。アイコンが大きいため、
-			///      1/4 ではゴミのように見えてしまう。
-			ImTextureID sharingIcon = GetSharingIcon(*asset);
-			if (sharingIcon)
-			{
-				ImVec2 badgeMax = ImGui::GetItemRectMax();
-				ImVec2 badgeMin = ImVec2(badgeMax.x - gridIconSize_ / 3.0f, badgeMax.y - gridIconSize_ / 3.0f);
-				ImGui::GetWindowDrawList()->AddImage(sharingIcon, badgeMin, badgeMax);
-			}
-
-			if ((!context_.resourceSync_ || !context_.resourceSync_->RemoteOnly(asset->assetID_)) && ImGui::BeginDragDropSource())
-			{
-				const Char* payloadType = GetDragDropType(asset->type_);
-				ImGui::SetDragDropPayload(payloadType, &asset->assetID_, sizeof(Uint32));
-				ImGui::Text("%s", std::filesystem::path(asset->path_.c_str()).filename().string().c_str());
-				ImGui::EndDragDropSource();
-			}
-
-			DrawAssetContextMenu(*asset);
-
-			ImGui::PopID();
-
-			if (ImGui::IsItemHovered())
-			{
-				DrawAssetTooltip(*asset);
-				if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-				{
-					OpenAssetExternal(*asset);
-				}
-			}
-
-			std::string filename = std::filesystem::path(asset->path_.c_str()).filename().string();
-			Float buttonWidth = gridIconSize_ + ImGui::GetStyle().FramePadding.x * 2.0f;
-			std::filesystem::path assetFullPath(asset->fullpath_.str());
-			if (!DrawInlineRename(assetFullPath, filename, buttonWidth))
-			{
-				Float textWidth = ImGui::CalcTextSize(filename.c_str()).x;
-				if (textWidth > buttonWidth)
-				{
-					ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + buttonWidth);
-					ImGui::TextWrapped("%s", filename.c_str());
-					ImGui::PopTextWrapPos();
-				}
-				else
-				{
-					Float offset = (buttonWidth - textWidth) * 0.5f;
-					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offset);
-					ImGui::Text("%s", filename.c_str());
-				}
-			}
-
-			ImGui::EndGroup();
-
-			if (isCut) 
-			{
-				ImGui::PopStyleVar();
-			}
-
-			++index;
-		}
-
-		DrawBackgroundContextMenu();
-	}
-
-	ImTextureID ContentsDrawerPanel::GetAssetTypeIcon(AssetType type)const
+	/**
+	* [EN]
+	* Returns the icon of an asset type; a texture falls back to the text
+	* icon when it has no thumbnail.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* アセットの種類のアイコンを返す。テクスチャはサムネイルが無いときに
+	* テキストのアイコンになる。
+	*/
+	ImTextureID ContentsDrawerPanel::GetAssetIcon(AssetType type)const
 	{
 		switch (type)
 		{
@@ -803,6 +1126,16 @@ namespace SeedCore
 		}
 	}
 
+	/**
+	* [EN]
+	* Returns an asset's icon, creating and caching a texture thumbnail on
+	* first use.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* アセットのアイコンを返す。テクスチャのサムネイルは初回に作ってキャッシュする。
+	*/
 	ImTextureID ContentsDrawerPanel::GetAssetIcon(const AssetRecord& asset)const
 	{
 		if (asset.type_ == AssetType::Texture && asset.isLoaded_)
@@ -812,49 +1145,53 @@ namespace SeedCore
 				return thumbnailCache_.at(asset.assetID_);
 			}
 
+			BindlessHeap& bindlessHeap = context_.graphicsContext_.graphics_->GetBindlessHeap();
 			TextureResource* textureResource = context_.worldContext_.resource_->GetResource<TextureResource>(AssetType::Texture);
-			Handle<Texture> handle = textureResource->GetHandle(asset.assetID_);
-			Texture* texture = textureResource->Resolve(*context_.worldContext_.loader_, &context_.graphicsContext_.graphics_->GetBindlessHeap(), handle, context_.uiFrame_);
+			Texture* texture = textureResource->Resolve(*context_.worldContext_.loader_, &bindlessHeap, textureResource->GetHandle(asset.assetID_), context_.uiFrame_);
 			if (texture && texture->Resource())
 			{
+				/// [EN] Pin the texture so streaming never evicts the resource the thumbnail views.
+				/// [JP] サムネイルが参照するリソースをストリーミングが追い出さないよう、テクスチャを固定する。
 				texture->Pin();
 
-				/// [EN] The thumbnail gets an SRV slot of its own rather than the
-				///      texture's bindless index, because streaming swaps that index
-				///      whenever it changes mips and the cached ImTextureID must stay
-				///      valid (null desc = default view covering the whole resource).
-				/// [JP] サムネイルは、テクスチャ自身のバインドレスインデックスではなく
-				///      専用の SRV スロットを持つ。ストリーミングはミップを切り替える
-				///      たびにそのインデックスを差し替えるが、キャッシュした ImTextureID は
-				///      有効なままでなければならないため（desc null = リソース全体の
-				///      デフォルトビュー）。
-				BindlessHeap* bindlessHeap = &context_.graphicsContext_.graphics_->GetBindlessHeap();
-				Uint descIndex = bindlessHeap->AllocateIndex();
-				D3D12_CPU_DESCRIPTOR_HANDLE dest = bindlessHeap->CPUHandle(descIndex);
-				context_.graphicsContext_.graphics_->GetContext().GetDevice()->CreateShaderResourceView(texture->Resource(), nullptr, dest);
-				ImTextureID textureID = static_cast<ImTextureID>(bindlessHeap->GPUHandle(descIndex).ptr);
+				/// [EN] A view slot of its own, covering the whole resource, so the thumbnail stays valid when streaming swaps the texture's own bindless index.
+				/// [JP] リソース全体を覆う専用のビューの枠を使う。ストリーミングがテクスチャ自身のバインドレス番号を差し替えても、サムネイルは有効なまま。
+				Uint descIndex = bindlessHeap.AllocateIndex();
+				context_.graphicsContext_.graphics_->GetContext().GetDevice()->CreateShaderResourceView(texture->Resource(), nullptr, bindlessHeap.CPUHandle(descIndex));
+				ImTextureID textureID = static_cast<ImTextureID>(bindlessHeap.GPUHandle(descIndex).ptr);
 				thumbnailCache_.insert({ asset.assetID_, textureID });
 				return textureID;
 			}
 		}
 
-		std::string ext = std::filesystem::path(asset.path_.c_str()).extension().string();
-		if (ext == ".h")
+		/// [EN] Source files are not asset types of their own, so they are told apart by extension.
+		/// [JP] ソースファイルはアセットの種類としては区別されないので、拡張子で見分ける。
+		std::string extension = std::filesystem::path(asset.path_.c_str()).extension().string();
+		if (extension == ".h")
 		{
 			return imguiTexture_.Icon(IconType::Header);
 		}
-		if (ext == ".cpp")
+		if (extension == ".cpp")
 		{
 			return imguiTexture_.Icon(IconType::Cpp);
 		}
-		if (ext == ".hlsli" || ext == ".hlsl")
+		if (extension == ".hlsli" || extension == ".hlsl")
 		{
 			return imguiTexture_.Icon(IconType::Hlsl);
 		}
 
-		return GetAssetTypeIcon(asset.type_);
+		return GetAssetIcon(asset.type_);
 	}
 
+	/**
+	* [EN]
+	* Returns the sharing badge that matters most for the asset.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* そのアセットにとって最も重要な共有のバッジを返す。
+	*/
 	ImTextureID ContentsDrawerPanel::GetSharingIcon(const AssetRecord& asset)const
 	{
 		if (!context_.resourceSync_)
@@ -880,12 +1217,10 @@ namespace SeedCore
 		///      stops this member from doing anything with the asset.
 		/// [JP] 次は他のメンバーの Lease。このメンバーがそのアセットに何もできない、
 		///      唯一の状態だから。
-		for (const EditLease& lease : context_.resourceSync_->GetLeases())
+		const DynamicArray<EditLease>& leaseList = context_.resourceSync_->GetLeases();
+		if (std::ranges::any_of(leaseList, [shared](const EditLease& lease) { return lease.assetId_ == shared->id_ && !lease.mine_; }))
 		{
-			if (lease.assetId_ == shared->id_ && !lease.mine_)
-			{
-				return imguiTexture_.Icon(IconType::Lock);
-			}
+			return imguiTexture_.Icon(IconType::Lock);
 		}
 
 		/// [EN] Unsent work outranks holding the lease, because the lease is
@@ -897,12 +1232,11 @@ namespace SeedCore
 			return imguiTexture_.Icon(IconType::SharedModified);
 		}
 
-		for (const EditLease& lease : context_.resourceSync_->GetLeases())
+		/// [EN] Any lease left at this point is this member's own.
+		/// [JP] ここまで来て残っている Lease は、このメンバー自身のもの。
+		if (std::ranges::any_of(leaseList, [shared](const EditLease& lease) { return lease.assetId_ == shared->id_; }))
 		{
-			if (lease.assetId_ == shared->id_)
-			{
-				return imguiTexture_.Icon(IconType::Unlock);
-			}
+			return imguiTexture_.Icon(IconType::Unlock);
 		}
 
 		/// [EN] Remote-only means the catalog has it but this workspace does
@@ -917,88 +1251,31 @@ namespace SeedCore
 		return imguiTexture_.Icon(IconType::SharedAsset);
 	}
 
-	void ContentsDrawerPanel::DrawAssetTooltip(const AssetRecord& asset)
+	/**
+	* [EN]
+	* Returns the filled folder icon when the folder holds a subfolder or
+	* an asset, the empty one otherwise.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 子フォルダかアセットがあれば中身ありのフォルダのアイコン、無ければ空のアイコンを返す。
+	*/
+	ImTextureID ContentsDrawerPanel::GetFolderIcon(const FolderNode& node)const
 	{
-		ImGui::BeginTooltip();
-
-		ImTextureID icon = GetAssetIcon(asset);
-		Float previewSize = 128.0f;
-
-		if (asset.type_ == AssetType::Texture && asset.isLoaded_)
-		{
-			ImGui::Image(icon, ImVec2(previewSize, previewSize));
-			ImGui::Separator();
-		}
-		else
-		{
-			ImGui::Image(icon, ImVec2(ImGui::GetTextLineHeight(), ImGui::GetTextLineHeight()));
-			ImGui::SameLine();
-		}
-
-		ImGui::Text("%s", asset.path_.c_str());
-		ImGui::Text("ID: %u", asset.assetID_);
-		if (context_.resourceSync_)
-		{
-			ResourceSyncControlPanel::DrawState(context_, asset);
-		}
-
-		std::error_code errorCode;
-		auto fileSize = std::filesystem::file_size(std::filesystem::path(asset.fullpath_.c_str()), errorCode);
-		if (!errorCode)
-		{
-			if (fileSize >= 1024 * 1024)
-			{
-				ImGui::Text("%.2f MB", static_cast<Float>(fileSize) / (1024.0f * 1024.0f));
-			}
-			else if (fileSize >= 1024)
-			{
-				ImGui::Text("%.1f KB", static_cast<Float>(fileSize) / 1024.0f);
-			}
-			else
-			{
-				ImGui::Text("%llu Bytes", fileSize);
-			}
-		}
-
-		if (asset.type_ == AssetType::Texture && asset.isLoaded_)
-		{
-			TextureResource* textureResource = context_.worldContext_.resource_->GetResource<TextureResource>(AssetType::Texture);
-			Handle<Texture> handle = textureResource->GetHandle(asset.assetID_);
-			Texture* texture = textureResource->Resolve(*context_.worldContext_.loader_, &context_.graphicsContext_.graphics_->GetBindlessHeap(), handle, context_.uiFrame_);
-			if (texture && texture->Resource())
-			{
-				D3D12_RESOURCE_DESC desc = texture->Resource()->GetDesc();
-				ImGui::Text("%llu x %u", desc.Width, desc.Height);
-			}
-		}
-
-		ImGui::EndTooltip();
+		return imguiTexture_.Icon(node.children_.empty() && node.assets_.empty() ? IconType::FolderNoItem : IconType::FolderInItem);
 	}
 
-	void ContentsDrawerPanel::OpenAssetExternal(const AssetRecord& asset)
-	{
-		if (context_.resourceSync_ && context_.resourceSync_->RemoteOnly(asset.assetID_))
-		{
-			context_.resourceSync_->RequestGet(asset.assetID_);
-			return;
-		}
-		if (asset.type_ == AssetType::Scene)
-		{
-			context_.sceneContext_.requestedSceneAssetID_ = asset.assetID_;
-			return;
-		}
-
-		if (asset.type_ == AssetType::Material)
-		{
-			context_.panelContext_.materialViewerPanel_->Open();
-			return;
-		}
-
-		std::wstring widePath = asset.fullpath_.w_str();
-		ShellExecuteW(NULL, L"open", widePath.c_str(), NULL, NULL, SW_SHOWNORMAL);
-	}
-
-	const Char* ContentsDrawerPanel::GetDragDropType(AssetType type)const
+	/**
+	* [EN]
+	* Returns the drag-and-drop payload name of an asset type.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* アセットの種類のドラッグ&ドロップのペイロード名を返す。
+	*/
+	const Char* ContentsDrawerPanel::GetPayloadType(AssetType type)const
 	{
 		switch (type)
 		{
@@ -1033,551 +1310,299 @@ namespace SeedCore
 		}
 	}
 
-	ImTextureID ContentsDrawerPanel::GetFolderIcon(const DirectoryNode& node)const
-	{
-		if (!node.children.empty() || !node.assets.empty())
-		{
-			return imguiTexture_.Icon(IconType::FolderInItem);
-		}
-		return imguiTexture_.Icon(IconType::FolderNoItem);
-	}
-
-	void ContentsDrawerPanel::DrawFolderContextMenu(const std::string& relativePath, const std::string& folderName)
-	{
-		if (ImGui::BeginPopupContextItem("##FolderContext"))
-		{
-			if (ImGui::MenuItem("新規フォルダ"))
-			{
-				CreateNewFolder(relativePath);
-				ImGui::CloseCurrentPopup();
-			}
-
-			if (ImGui::MenuItem("新規 C++ スクリプト"))
-			{
-				RequestCreateScript(relativePath, false);
-				ImGui::CloseCurrentPopup();
-			}
-
-			if (ImGui::MenuItem("新規 C# スクリプト"))
-			{
-				RequestCreateScript(relativePath, true);
-				ImGui::CloseCurrentPopup();
-			}
-
-			ImGui::Separator();
-
-			if (ImGui::MenuItem("切り取り"))
-			{
-				clipboardAction_ = ClipboardAction::Cut;
-				clipboardPath_ = ResolveFullPath(relativePath);
-				clipboardIsDirectory_ = true;
-				ImGui::CloseCurrentPopup();
-			}
-
-			if (ImGui::MenuItem("コピー"))
-			{
-				clipboardAction_ = ClipboardAction::Copy;
-				clipboardPath_ = ResolveFullPath(relativePath);
-				clipboardIsDirectory_ = true;
-				ImGui::CloseCurrentPopup();
-			}
-
-			Bool canPaste = clipboardAction_ != ClipboardAction::None;
-			if (ImGui::MenuItem("貼り付け", nullptr, false, canPaste))
-			{
-				ExecutePaste(relativePath);
-				ImGui::CloseCurrentPopup();
-			}
-
-			ImGui::Separator();
-
-			if (ImGui::MenuItem("名前変更"))
-			{
-				renaming_ = true;
-				renameNeedsFocus_ = true;
-				renameTargetPath_ = ResolveFullPath(relativePath);
-				renameBuffer_ = folderName;
-				renameBuffer_.resize(256);
-				ImGui::CloseCurrentPopup();
-			}
-
-			if (ImGui::MenuItem("削除"))
-			{
-				ExecuteDelete(ResolveFullPath(relativePath));
-				ImGui::CloseCurrentPopup();
-			}
-
-			ImGui::Separator();
-
-			if (ImGui::MenuItem("エクスプローラーで開く"))
-			{
-				std::filesystem::path fullPath = ResolveFullPath(relativePath);
-				ShellExecuteW(NULL, L"explore", fullPath.wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-				ImGui::CloseCurrentPopup();
-			}
-
-			ImGui::EndPopup();
-		}
-	}
-
-	void ContentsDrawerPanel::DrawAssetContextMenu(const AssetRecord& asset)
-	{
-		if (ImGui::BeginPopupContextItem("##AssetContext"))
-		{
-			if (context_.resourceSync_)
-			{
-				ResourceSyncControlPanel::DrawActions(context_, asset);
-			}
-			if (ImGui::MenuItem("開く"))
-			{
-				OpenAssetExternal(asset);
-				ImGui::CloseCurrentPopup();
-			}
-
-			if (asset.type_ == AssetType::Model && ImGui::BeginMenu("アセットアクション"))
-			{
-				if (ImGui::BeginMenu("コリジョン生成"))
-				{
-					if (ImGui::MenuItem("Proxy"))
-					{
-						GenerateMeshCollision(asset, MeshCollisionDetail::Proxy);
-						ImGui::CloseCurrentPopup();
-					}
-
-					if (ImGui::MenuItem("Exact"))
-					{
-						GenerateMeshCollision(asset, MeshCollisionDetail::Exact);
-						ImGui::CloseCurrentPopup();
-					}
-
-					ImGui::EndMenu();
-				}
-
-				if (ImGui::MenuItem("モデル変換"))
-				{
-					context_.modelTransformPreviewContext_.requestedAssetId_ = asset.assetID_;
-					ImGui::CloseCurrentPopup();
-				}
-
-				if (ImGui::MenuItem("マテリアル生成"))
-				{
-					GenerateMaterial(asset);
-					ImGui::CloseCurrentPopup();
-				}
-
-				if (ImGui::MenuItem("スケルトン生成"))
-				{
-					GenerateSkeleton(asset);
-					ImGui::CloseCurrentPopup();
-				}
-
-				if (ImGui::BeginMenu("エクスポート"))
-				{
-					if (ImGui::MenuItem("glTF"))
-					{
-						ExportModel(asset, ExportPreset::Gltf, L"gltf");
-						ImGui::CloseCurrentPopup();
-					}
-
-					if (ImGui::MenuItem("glTF binary"))
-					{
-						ExportModel(asset, ExportPreset::Glb, L"glb");
-						ImGui::CloseCurrentPopup();
-					}
-
-					if (ImGui::MenuItem("FBX (Maya)"))
-					{
-						ExportModel(asset, ExportPreset::FbxMaya, L"fbx");
-						ImGui::CloseCurrentPopup();
-					}
-
-					if (ImGui::MenuItem("FBX (Unreal)"))
-					{
-						ExportModel(asset, ExportPreset::FbxUnreal, L"fbx");
-						ImGui::CloseCurrentPopup();
-					}
-
-					if (ImGui::MenuItem("FBX (Unity)"))
-					{
-						ExportModel(asset, ExportPreset::FbxUnity, L"fbx");
-						ImGui::CloseCurrentPopup();
-					}
-
-					if (ImGui::MenuItem("FBX (エンジン)"))
-					{
-						ExportModel(asset, ExportPreset::FbxNative, L"fbx");
-						ImGui::CloseCurrentPopup();
-					}
-
-					ImGui::EndMenu();
-				}
-
-				ImGui::EndMenu();
-			}
-
-			ImGui::Separator();
-
-			if (ImGui::MenuItem("切り取り"))
-			{
-				clipboardAction_ = ClipboardAction::Cut;
-				clipboardPath_ = std::filesystem::path(asset.fullpath_.str());
-				clipboardIsDirectory_ = false;
-				ImGui::CloseCurrentPopup();
-			}
-
-			if (ImGui::MenuItem("コピー"))
-			{
-				clipboardAction_ = ClipboardAction::Copy;
-				clipboardPath_ = std::filesystem::path(asset.fullpath_.str());
-				clipboardIsDirectory_ = false;
-				ImGui::CloseCurrentPopup();
-			}
-
-			ImGui::Separator();
-
-			if (ImGui::MenuItem("名前変更"))
-			{
-				renaming_ = true;
-				renameNeedsFocus_ = true;
-				renameTargetPath_ = std::filesystem::path(asset.fullpath_.str());
-				renameBuffer_ = std::filesystem::path(asset.path_.c_str()).filename().string();
-				renameBuffer_.resize(256);
-				ImGui::CloseCurrentPopup();
-			}
-
-			if (ImGui::MenuItem("削除"))
-			{
-				ExecuteDelete(std::filesystem::path(asset.fullpath_.str()));
-				ImGui::CloseCurrentPopup();
-			}
-
-			ImGui::Separator();
-
-			if (ImGui::MenuItem("エクスプローラーで表示"))
-			{
-				std::wstring param = L"/select,\"" + std::filesystem::path(asset.fullpath_.str()).wstring() + L"\"";
-				ShellExecuteW(NULL, L"open", L"explorer.exe", param.c_str(), NULL, SW_SHOWNORMAL);
-				ImGui::CloseCurrentPopup();
-			}
-
-			ImGui::EndPopup();
-		}
-	}
-
+	/**
+	* [EN]
+	* Bakes a model's collision and registers it as an asset.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* モデルのコリジョンを焼き、アセットとして登録する。
+	*/
 	void ContentsDrawerPanel::GenerateMeshCollision(const AssetRecord& asset, MeshCollisionDetail detail)
 	{
 		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-
-		Bool baked = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateCollision(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, detail);
-		if (!baked)
+		if (!context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateCollision(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, detail))
 		{
-			SC_LOG_WARNING("ContentsDrawerPanel: コリジョン生成に失敗しました: {}", asset.path_.c_str());
+			SC_LOG_WARNING("コンテンツドロワー: コリジョン生成に失敗しました: {}", asset.path_.c_str());
 			return;
 		}
 
-		/// [EN] Rescan so the just-written ".collision" sibling is picked up as its own asset, and rebuild the tree so it shows in the panel.
-		/// [JP] 書き出した ".collision" 兄弟を個別アセットとして拾えるよう再スキャンし、パネルに出るようツリーを再構築する。
+		/// [EN] Rescan so the just-written ".collision" sibling is picked up as its own asset.
+		/// [JP] 書き出した ".collision" 兄弟を個別アセットとして拾えるよう再スキャンする。
 		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
-		needsRebuild_ = true;
-
-		SC_LOG_NOTICE("ContentsDrawerPanel: コリジョンを生成しました: {}", asset.path_.c_str());
+		SC_LOG_NOTICE("コンテンツドロワー: コリジョンを生成しました: {}", asset.path_.c_str());
 	}
 
+	/**
+	* [EN]
+	* Writes a model's materials and registers them as assets.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* モデルのマテリアルを書き出し、アセットとして登録する。
+	*/
 	void ContentsDrawerPanel::GenerateMaterial(const AssetRecord& asset)
 	{
 		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-
-		Bool written = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateMaterial(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, true);
-		if (!written)
+		if (!context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateMaterial(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, true))
 		{
-			SC_LOG_WARNING("ContentsDrawerPanel: マテリアル生成に失敗しました: {}", asset.path_.c_str());
+			SC_LOG_WARNING("コンテンツドロワー: マテリアル生成に失敗しました: {}", asset.path_.c_str());
 			return;
 		}
 
-		/// [EN] Rescan so the just-written ".material" siblings are picked up as their own assets, and rebuild the tree so they show in the panel.
-		/// [JP] 書き出した ".material" 兄弟を個別アセットとして拾えるよう再スキャンし、パネルに出るようツリーを再構築する。
+		/// [EN] Rescan so the just-written ".material" siblings are picked up as their own assets.
+		/// [JP] 書き出した ".material" 兄弟を個別アセットとして拾えるよう再スキャンする。
 		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
-		needsRebuild_ = true;
-
-		SC_LOG_NOTICE("ContentsDrawerPanel: マテリアルを生成しました: {}", asset.path_.c_str());
+		SC_LOG_NOTICE("コンテンツドロワー: マテリアルを生成しました: {}", asset.path_.c_str());
 	}
 
+	/**
+	* [EN]
+	* Writes a skinned model's skeleton and registers it as an asset.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* スキン付きモデルのスケルトンを書き出し、アセットとして登録する。
+	*/
 	void ContentsDrawerPanel::GenerateSkeleton(const AssetRecord& asset)
 	{
 		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-
-		Bool written = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateSkeleton(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, false);
-		if (!written)
+		if (!context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateSkeleton(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, false))
 		{
-			SC_LOG_WARNING("ContentsDrawerPanel: スケルトン生成に失敗しました（スキン無し？）: {}", asset.path_.c_str());
+			SC_LOG_WARNING("コンテンツドロワー: スケルトン生成に失敗しました（スキン無し？）: {}", asset.path_.c_str());
 			return;
 		}
 
-		/// [EN] Rescan so the just-written ".skeleton" sibling is picked up as its own asset, and rebuild the tree so it shows in the panel.
-		/// [JP] 書き出した ".skeleton" 兄弟を個別アセットとして拾えるよう再スキャンし、パネルに出るようツリーを再構築する。
+		/// [EN] Rescan so the just-written ".skeleton" sibling is picked up as its own asset.
+		/// [JP] 書き出した ".skeleton" 兄弟を個別アセットとして拾えるよう再スキャンする。
 		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
-		needsRebuild_ = true;
-
-		SC_LOG_NOTICE("ContentsDrawerPanel: スケルトンを生成しました: {}", asset.path_.c_str());
+		SC_LOG_NOTICE("コンテンツドロワー: スケルトンを生成しました: {}", asset.path_.c_str());
 	}
 
-	void ContentsDrawerPanel::ExportModel(const AssetRecord& asset, ExportPreset preset, const Wchar* extension)
+	/**
+	* [EN]
+	* Deletes a file or folder with its ".meta".
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ファイルかフォルダを ".meta" ごと削除する。
+	*/
+	void ContentsDrawerPanel::ExecuteDelete(const FilePath& targetPath)
 	{
-		std::filesystem::path sourcePath(asset.fullpath_.str());
-
-		std::wstring filterName = L"*.";
-		filterName += extension;
-		std::wstring filterExt = L"*.";
-		filterExt += extension;
-
-		std::wstring initialFileName = sourcePath.stem().wstring();
-
-		std::filesystem::path outputPath;
-		if (!FileDialog::SaveFile(outputPath, sourcePath.parent_path(), filterName.c_str(), filterExt.c_str(), extension, initialFileName.c_str()))
+		/// [EN] Shared content changes only through the shared library, so local deletion is refused.
+		/// [JP] 共有コンテンツは共有ライブラリを通してしか変えないので、ローカルでの削除は断る。
+		if (context_.resourceSync_ && context_.resourceSync_->Managed(targetPath.FullPath()))
 		{
+			SC_LOG_WARNING("コンテンツドロワー: 共有コンテンツはローカルのファイル操作で削除・名前変更できません");
 			return;
 		}
 
-		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+		/// [EN] Errors are ignored; a ".meta" that does not exist is simply not removed.
+		/// [JP] エラーは無視する。".meta" が無ければ単に何も消さない。
+		std::error_code errorCode;
+		std::filesystem::remove_all(targetPath.FullPath(), errorCode);
+		std::filesystem::remove(targetPath.AppendedSuffixPath(".meta"), errorCode);
 
-		Bool exported = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->Export(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, preset, String(outputPath.string()));
-		if (!exported)
+		if (clipboardState_.path_.FullPath() == targetPath.FullPath())
 		{
-			SC_LOG_WARNING("ContentsDrawerPanel: モデルのエクスポートに失敗しました: {}", asset.path_.c_str());
+			clipboardState_.type_ = ClipboardType::None;
+		}
+	}
+
+	/**
+	* [EN]
+	* Renames a file or folder with its ".meta".
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ファイルかフォルダを ".meta" ごと名前変更する。
+	*/
+	void ContentsDrawerPanel::ExecuteRename(const FilePath& targetPath)
+	{
+		/// [EN] Shared content changes only through the shared library, so local renaming is refused.
+		/// [JP] 共有コンテンツは共有ライブラリを通してしか変えないので、ローカルでの名前変更は断る。
+		if (context_.resourceSync_ && context_.resourceSync_->Managed(targetPath.FullPath()))
+		{
+			SC_LOG_WARNING("コンテンツドロワー: 共有コンテンツはローカルのファイル操作で削除・名前変更できません");
 			return;
 		}
 
-		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
-		needsRebuild_ = true;
+		/// [EN] The new name is the edited filename text; the full path still holds the old name.
+		/// [JP] 新しい名前は編集したファイル名の文字列。フルパスはまだ古い名前のまま。
+		const FilePath renamedPath(targetPath.SiblingPath(targetPath.FilenameText().c_str()), targetPath.RootPath());
+		std::error_code errorCode;
+		std::filesystem::rename(targetPath.FullPath(), renamedPath.FullPath(), errorCode);
+		std::filesystem::rename(targetPath.AppendedSuffixPath(".meta"), renamedPath.AppendedSuffixPath(".meta"), errorCode);
 
-		SC_LOG_NOTICE("ContentsDrawerPanel: モデルをエクスポートしました: {}", asset.path_.c_str());
+		if (clipboardState_.path_.FullPath() == targetPath.FullPath())
+		{
+			clipboardState_.path_ = renamedPath;
+		}
 	}
 
-	void ContentsDrawerPanel::DrawBackgroundContextMenu()
+	/**
+	* [EN]
+	* Moves or copies the clipboard item into a folder.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* クリップボードの項目をフォルダへ移動かコピーする。
+	*/
+	void ContentsDrawerPanel::ExecutePaste(const FilePath& directoryPath)
 	{
-		if (ImGui::BeginPopupContextWindow("##BackgroundContext", ImGuiPopupFlags_NoOpenOverItems | ImGuiPopupFlags_MouseButtonRight))
+		/// [EN] An item deleted since it was cut or copied empties the clipboard.
+		/// [JP] 切り取りかコピーの後に項目が消えていたら、クリップボードを空にする。
+		const FilePath& sourcePath = clipboardState_.path_;
+		if (clipboardState_.type_ == ClipboardType::None || !std::filesystem::exists(sourcePath.FullPath()))
 		{
-			if (ImGui::MenuItem("新規フォルダ"))
-			{
-				CreateNewFolder(selectedDirectory_);
-				ImGui::CloseCurrentPopup();
-			}
-
-			if (ImGui::MenuItem("新規 C++ スクリプト"))
-			{
-				RequestCreateScript(selectedDirectory_, false);
-				ImGui::CloseCurrentPopup();
-			}
-
-			if (ImGui::MenuItem("新規 C# スクリプト"))
-			{
-				RequestCreateScript(selectedDirectory_, true);
-				ImGui::CloseCurrentPopup();
-			}
-
-			Bool canPaste = clipboardAction_ != ClipboardAction::None;
-			if (ImGui::MenuItem("貼り付け", nullptr, false, canPaste))
-			{
-				ExecutePaste(selectedDirectory_);
-				ImGui::CloseCurrentPopup();
-			}
-
-			ImGui::Separator();
-
-			if (ImGui::MenuItem("エクスプローラーで開く"))
-			{
-				std::filesystem::path fullPath = ResolveFullPath(selectedDirectory_);
-				ShellExecuteW(NULL, L"explore", fullPath.wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-				ImGui::CloseCurrentPopup();
-			}
-
-			ImGui::EndPopup();
+			clipboardState_.type_ = ClipboardType::None;
+			return;
 		}
 
-		DrawCreateScriptPopup();
+		/// [EN] Refused when either side is shared content.
+		/// [JP] どちらか一方でも共有コンテンツなら断る。
+		const FilePath destPath(directoryPath.ChildPath(sourcePath.FilenamePath()), directoryPath.RootPath());
+		if (context_.resourceSync_ && (context_.resourceSync_->Managed(sourcePath.FullPath()) || context_.resourceSync_->Managed(destPath.FullPath())))
+		{
+			SC_LOG_WARNING("コンテンツドロワー: 共有コンテンツはローカルのクリップボード操作で移動・コピーできません");
+			return;
+		}
+
+		/// [EN] A cut moves the item with its ".meta" so the asset keeps its ID; a copy leaves the ".meta" behind so the copy gets a new one.
+		/// [JP] 切り取りは ".meta" ごと移動するのでアセットの ID は変わらない。コピーは ".meta" を持っていかないので、複製には新しい ID が付く。
+		std::error_code errorCode;
+		if (clipboardState_.type_ == ClipboardType::Cut)
+		{
+			std::filesystem::rename(sourcePath.FullPath(), destPath.FullPath(), errorCode);
+			std::filesystem::rename(sourcePath.AppendedSuffixPath(".meta"), destPath.AppendedSuffixPath(".meta"), errorCode);
+			clipboardState_.type_ = ClipboardType::None;
+		}
+		else if (std::filesystem::is_directory(sourcePath.FullPath()))
+		{
+			std::filesystem::copy(sourcePath.FullPath(), destPath.FullPath(), std::filesystem::copy_options::recursive, errorCode);
+		}
+		else
+		{
+			std::filesystem::copy_file(sourcePath.FullPath(), destPath.FullPath(), std::filesystem::copy_options::skip_existing, errorCode);
+		}
 	}
 
-	Bool ContentsDrawerPanel::DrawInlineRename(const std::filesystem::path& itemFullPath, const std::string& displayName, Float width)
+	/**
+	* [EN]
+	* Adds a script's files to UserProject.Cplusplus.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* スクリプトのファイルを UserProject.Cplusplus に追加する。
+	*/
+	Bool ContentsDrawerPanel::ExecuteRegister(const FilePath& headerPath, const FilePath& cppPath)
 	{
-		if (!renaming_ || renameTargetPath_ != itemFullPath)
+		const std::filesystem::path& projectRoot = context_.worldContext_.resource_->ProjectRootPath();
+
+		/// [EN] Tried first: if Visual Studio has Runtime.sln open, letting it add the files itself keeps Solution Explorer in sync immediately and never triggers the "project modified outside the editor" reload prompt (see VisualStudioAutomation's own doc comment). Falls through to editing UserProject.Cplusplus.vcxproj directly — the only path available when Visual Studio isn't running this solution at all.
+		/// [JP] まずこちらを試す: Visual Studio が Runtime.sln を開いていれば、ファイルの追加自体をVSにやらせることで Solution Explorer が即座に同期され、「プロジェクトが外部で変更されました」という再読み込み確認も一切発生しない(詳細は VisualStudioAutomation 自身のドキュメントコメントを参照)。Visual Studio がこのソリューションを開いていない場合にのみ、UserProject.Cplusplus.vcxproj を直接編集する経路へフォールバックする。
+		if (VisualStudioAutomation::TryAddFile(projectRoot / "Runtime" / "Runtime.sln", "UserProject.Cplusplus", headerPath.FullPath(), cppPath.FullPath()))
+		{
+			return true;
+		}
+
+		/// [EN] Otherwise CreateScript.py edits the .vcxproj, run on the bundled Python with paths relative to UserProject.
+		/// [JP] そうでなければ CreateScript.py が .vcxproj を書き換える。同梱の Python で、UserProject 基準のパスを渡して実行する。
+		std::wstring commandLine = std::format(L"\"{}\" \"{}\" \"{}\" \"{}\" \"{}\"", (projectRoot / "Platform" / "Python" / "python.exe").wstring(), (projectRoot / "Tools" / "Python" / "CreateScript.py").wstring(), projectRoot.wstring(), headerPath.RelativePath().wstring(), cppPath.RelativePath().wstring());
+
+		/// [EN] CreateProcessW may write into the command line, which std::wstring::data() allows.
+		/// [JP] CreateProcessW はコマンドラインを書き換えることがあるが、std::wstring::data() はそれを許す。
+		STARTUPINFOW startupInfo{};
+		startupInfo.cb = sizeof(startupInfo);
+		PROCESS_INFORMATION processInfo{};
+		if (!CreateProcessW(nullptr, commandLine.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &startupInfo, &processInfo))
 		{
 			return false;
 		}
 
-		if (renameNeedsFocus_)
-		{
-			ImGui::SetKeyboardFocusHere();
-			renameNeedsFocus_ = false;
-		}
+		/// [EN] Wait for the script so the files are registered before this returns; exit code 0 means success.
+		/// [JP] 戻る前に登録が済むようスクリプトの終了を待つ。終了コード 0 が成功。
+		WaitForSingleObject(processInfo.hProcess, INFINITE);
+		DWORD exitCode = 1;
+		GetExitCodeProcess(processInfo.hProcess, &exitCode);
+		CloseHandle(processInfo.hProcess);
+		CloseHandle(processInfo.hThread);
 
-		if (width > 0.0f)
-		{
-			ImGui::SetNextItemWidth(width);
-		}
-
-		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(2.0f, 0.0f));
-		Bool confirmed = ImGui::InputText("##InlineRename", renameBuffer_.data(), renameBuffer_.capacity(), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-		ImGui::PopStyleVar();
-
-		if (confirmed)
-		{
-			std::string newName(renameBuffer_.c_str());
-			if (!newName.empty())
-			{
-				ExecuteRename(renameTargetPath_, newName);
-			}
-			renaming_ = false;
-		}
-		else if (ImGui::IsItemDeactivated())
-		{
-			renaming_ = false;
-		}
-
-		return true;
+		return exitCode == 0;
 	}
 
-	std::filesystem::path ContentsDrawerPanel::ResolveFullPath(const std::string& relativePath)const
+	/**
+	* [EN]
+	* Creates a folder with a free name and starts renaming it.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 空いている名前でフォルダを作り、名前変更を始める。
+	*/
+	void ContentsDrawerPanel::CreateNewFolder(const FilePath& targetPath)
 	{
-		if (relativePath.empty())
+		/// [EN] Number the name the same way Explorer does: "New Folder", "New Folder(2)", ...
+		/// [JP] エクスプローラーと同じく番号を付ける。"New Folder"、"New Folder(2)"…
+		std::filesystem::path newPath = targetPath.FullPath();
+		for (Int index = 2; std::filesystem::exists(newPath); ++index)
 		{
-			return context_.worldContext_.resource_->ProjectRootPath();
-		}
-		return context_.worldContext_.resource_->ProjectRootPath() / relativePath;
-	}
-
-	void ContentsDrawerPanel::CreateNewFolder(const std::string& parentRelative)
-	{
-		std::filesystem::path parentFull = ResolveFullPath(parentRelative);
-		std::string baseName = "New Folder";
-		std::filesystem::path newPath = parentFull / baseName;
-
-		if (std::filesystem::exists(newPath))
-		{
-			for (Int index = 2; ; ++index)
-			{
-				newPath = parentFull / (baseName + "(" + std::to_string(index) + ")");
-				if (!std::filesystem::exists(newPath))
-				{
-					break;
-				}
-			}
+			newPath = targetPath.SiblingPath(targetPath.FilenameText() + "(" + std::to_string(index) + ")");
 		}
 
 		std::error_code errorCode;
 		std::filesystem::create_directories(newPath, errorCode);
-
-		std::string newName = newPath.filename().string();
-		std::string newRelative = parentRelative.empty() ? newName : parentRelative + "/" + newName;
-
-		DirectoryNode* parent = &root_;
-		if (!parentRelative.empty())
+		if (errorCode)
 		{
-			std::istringstream stream(parentRelative);
-			std::string segment;
-			while (std::getline(stream, segment, '/'))
-			{
-				if (parent->children.contains(segment))
-				{
-					parent = &parent->children.at(segment);
-				}
-			}
+			SC_LOG_WARNING("コンテンツドロワー: フォルダの作成に失敗しました: {}", newPath.string());
+			return;
 		}
 
-		DirectoryNode node;
-		node.name = newName;
-		node.fullPath = newRelative;
-		parent->children.insert(newName, std::move(node));
-
-		renaming_ = true;
-		renameNeedsFocus_ = true;
-		renameTargetPath_ = newPath;
-		renameBuffer_ = newName;
-		renameBuffer_.resize(256);
+		/// [EN] The field shows once the watch reloads and the new folder is in the tree.
+		/// [JP] 入力欄は、監視が読み直して新しいフォルダがツリーに入ってから出る。
+		renameMenuState_.focusRequested_ = true;
+		renameMenuState_.targetPath_.emplace(newPath, targetPath.RootPath());
+		renameMenuState_.targetPath_->FilenameText().resize(256);
 	}
 
-	void ContentsDrawerPanel::RequestCreateScript(const std::string& parentRelative, Bool csharp)
+	/**
+	* [EN]
+	* Creates a C++ or C# script and opens it.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* C++ か C# のスクリプトを作って開く。
+	*/
+	void ContentsDrawerPanel::CreateNewScript(const FilePath& targetPath)
 	{
-		openCreateScriptPopup_ = true;
-		createScriptNeedsFocus_ = true;
-		createScriptCsharp_ = csharp;
-		createScriptParentRelative_ = parentRelative;
-		createScriptNameBuffer_ = "NewScript";
-		createScriptNameBuffer_.resize(256);
-	}
-
-	void ContentsDrawerPanel::DrawCreateScriptPopup()
-	{
-		const Char* title = createScriptCsharp_ ? "新規 C# スクリプト" : "新規 C++ スクリプト";
-		if (openCreateScriptPopup_)
+		/// [EN] Reduce the name to a valid identifier: letters, digits and underscores, never starting with a digit.
+		/// [JP] 名前を有効な識別子に削る。英数字とアンダースコアだけで、数字では始めない。
+		std::string baseName;
+		std::ranges::copy_if(targetPath.StemText(), std::back_inserter(baseName), [](Char character) { return std::isalnum(static_cast<unsigned char>(character)) || character == '_'; });
+		if (baseName.empty())
 		{
-			ImGui::OpenPopup(title);
-			openCreateScriptPopup_ = false;
+			baseName = "NewScript";
+		}
+		if (std::isdigit(static_cast<unsigned char>(baseName.front())))
+		{
+			baseName.insert(baseName.begin(), '_');
 		}
 
-		Bool open = true;
-		if (ImGui::BeginPopupModal(title, &open, ImGuiWindowFlags_AlwaysAutoResize))
-		{
-			if (createScriptNeedsFocus_)
-			{
-				ImGui::SetKeyboardFocusHere();
-				createScriptNeedsFocus_ = false;
-			}
+		/// [EN] Scripts belong to UserProject, so a folder outside it ("..") falls back to UserProject/Script.
+		/// [JP] スクリプトは UserProject に属するので、その外（".."）のフォルダなら UserProject/Script にする。
+		const FilePath parentPath(targetPath.ParentPath(), targetPath.RootPath() / "UserProject");
+		const std::filesystem::path targetDirectory = *parentPath.RelativePath().begin() == ".." ? parentPath.RootPath() / "Script" : parentPath.FullPath();
 
-			Bool confirmed = ImGui::InputText("スクリプト名", createScriptNameBuffer_.data(), createScriptNameBuffer_.capacity(), ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_AutoSelectAll);
-
-			ImGui::Separator();
-
-			if (ImGui::Button("作成") || confirmed)
-			{
-				CreateNewScript(createScriptParentRelative_, std::string(createScriptNameBuffer_.c_str()));
-				ImGui::CloseCurrentPopup();
-			}
-
-			ImGui::SameLine();
-
-			if (ImGui::Button("キャンセル"))
-			{
-				ImGui::CloseCurrentPopup();
-			}
-
-			ImGui::EndPopup();
-		}
-	}
-
-	void ContentsDrawerPanel::CreateNewScript(const std::string& parentRelative, const std::string& requestedName)
-	{
-		/// [EN] Sanitize down to a valid C++ identifier: keep only alnum/underscore, and prefix an underscore if the result would otherwise start with a digit (or be empty).
-		/// [JP] 有効なC++識別子まで削る: 英数字とアンダースコアのみを残し、結果が数字始まり(または空)になる場合はアンダースコアを前置する。
-		std::string sanitized;
-		std::ranges::copy_if(requestedName, std::back_inserter(sanitized), [](Char character) { return std::isalnum(static_cast<unsigned char>(character)) || character == '_'; });
-		if (sanitized.empty())
-		{
-			sanitized = "NewScript";
-		}
-		if (std::isdigit(static_cast<unsigned char>(sanitized.front())))
-		{
-			sanitized.insert(sanitized.begin(), '_');
-		}
-
-		/// [EN] UserProject.Cplusplus.vcxproj lives at UserProject/ and its Include paths are relative to that directory, but parentRelative (like every other DirectoryNode path in this panel) is relative to the repository root. Scripts only make sense under UserProject (the only project SeedScript-derived types can be part of), so anything outside it falls back to UserProject/Script instead of failing outright.
-		/// [JP] UserProject.Cplusplus.vcxproj は UserProject/ にあり、その Include パスは同ディレクトリからの相対パスになる。一方 parentRelative は(このパネルの他のDirectoryNodeパスと同様)リポジトリルートからの相対パス。スクリプトは UserProject 配下でしか意味を持たない(SeedScript 派生型が所属できる唯一のプロジェクトのため)ので、その外側が指定された場合は失敗させずに UserProject/Script へフォールバックする。
-		std::string projectRelativeDirectory;
-		if (parentRelative == "UserProject")
-		{
-			projectRelativeDirectory = "";
-		}
-		else if (parentRelative.rfind("UserProject/", 0) == 0)
-		{
-			projectRelativeDirectory = parentRelative.substr(std::string("UserProject/").size());
-		}
-		else
-		{
-			projectRelativeDirectory = "Script";
-		}
-
-		std::filesystem::path targetDirectory = context_.worldContext_.resource_->ProjectRootPath() / "UserProject" / projectRelativeDirectory;
-
-		std::string baseName = sanitized;
+		/// [EN] Number the name while any of its .h/.cpp/.cs already exists, so C++ and C# never share a class name.
+		/// [JP] .h/.cpp/.cs のどれかがあれば番号を付ける。C++ と C# でクラス名が重ならないようにするため。
 		std::string finalName = baseName;
 		for (Int index = 2; std::filesystem::exists(targetDirectory / (finalName + ".h")) || std::filesystem::exists(targetDirectory / (finalName + ".cpp")) || std::filesystem::exists(targetDirectory / (finalName + ".cs")); ++index)
 		{
@@ -1586,253 +1611,146 @@ namespace SeedCore
 
 		std::error_code errorCode;
 		std::filesystem::create_directories(targetDirectory, errorCode);
-
-		if (createScriptCsharp_)
+		if (errorCode)
 		{
-			std::string csharpContent =
-				"using System;\r\n"
-				"using SeedCore;\r\n"
-				"\r\n"
-				"public class " + finalName + " : SeedScript\r\n"
-				"{\r\n"
-				"\tvoid OnStart() // 開始時に呼ばれる初期化処理\r\n"
-				"\t{\r\n"
-				"\r\n"
-				"\t}\r\n"
-				"\r\n"
-				"\tvoid OnTick(Single elapsedTime) // 更新処理\r\n"
-				"\t{\r\n"
-				"\r\n"
-				"\t}\r\n"
-				"}\r\n";
-
-			std::filesystem::path csharpFullPath = targetDirectory / (finalName + ".cs");
-			std::ofstream csharpFile(csharpFullPath, std::ios::binary);
-			csharpFile << csharpContent;
-			csharpFile.close();
-
-			needsRebuild_ = true;
-
-			SC_LOG_NOTICE("ContentsDrawerPanel: C# スクリプトを作成しました: {}", finalName);
-
-			ShellExecuteW(NULL, L"open", csharpFullPath.wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+			SC_LOG_WARNING("コンテンツドロワー: スクリプト保存先の作成に失敗しました: {}", targetDirectory.string());
 			return;
 		}
 
-		std::string projectRelativeHeader = projectRelativeDirectory.empty() ? (finalName + ".h") : (projectRelativeDirectory + "/" + finalName + ".h");
-		std::string projectRelativeCpp = projectRelativeDirectory.empty() ? (finalName + ".cpp") : (projectRelativeDirectory + "/" + finalName + ".cpp");
+		/// [EN] Opens a created file in the Visual Studio that has Runtime.sln open, falling back to the file's shell association when none does.
+		/// [JP] 作ったファイルを、Runtime.sln を開いている Visual Studio で開く。開いているものが無ければ、ファイルの関連付けで開く。
+		const std::filesystem::path solutionPath = targetPath.RootPath() / "Runtime" / "Runtime.sln";
+		auto openScript = [&solutionPath](const FilePath& scriptPath)
+		{
+			if (!VisualStudioAutomation::TryOpenFile(solutionPath, scriptPath.FullPath()))
+			{
+				ShellExecuteW(NULL, L"open", scriptPath.FullPath().wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+			}
+		};
 
-		std::string headerContent =
-			"#pragma once\n"
-			"#include <FoundationEngine/Prelude.h>\n"
-			"#include <FoundationEngine/SeedScript.h>\n"
-			"\n"
-			"class " + finalName + " :public SeedCore::SeedScript\n"
-			"{\n"
-			"public:\n"
-			"\tvoid OnStart(); // 開始時に呼ばれる初期化処理\n"
-			"\n"
-			"\tvoid OnTick(float elapsedTime); // 更新処理\n"
-			"};\n"
-			"REGISTER_COMPONENT(" + finalName + ");\n";
+		/// [EN] C# is a single file that needs no project registration.
+		/// [JP] C# はファイル 1 つで、プロジェクトへの登録は要らない。
+		if (scriptMenuState_.scriptType_ == ScriptType::Csharp)
+		{
+			const FilePath scriptPath(targetDirectory / (finalName + ".cs"), parentPath.RootPath());
+			std::ofstream file(scriptPath.FullPath(), std::ios::binary);
+			file << "using System;\r\nusing SeedCore;\r\n\r\npublic class " << finalName << " : SeedScript\r\n{\r\n\tvoid OnStart()\r\n\t{\r\n\t}\r\n\r\n\tvoid OnTick(Single elapsedTime)\r\n\t{\r\n\t}\r\n}\r\n";
+			file.close();
+			SC_LOG_NOTICE("コンテンツドロワー: C# スクリプトを作成しました: {}", finalName);
+			openScript(scriptPath);
+			return;
+		}
 
-		std::string cppContent =
-			"#include \"UserProject/" + projectRelativeHeader + "\"\n"
-			"\n"
-			"void " + finalName + "::OnStart()\n"
-			"{\n"
-			"\n"
-			"}\n"
-			"\n"
-			"void " + finalName + "::OnTick(float elapsedTime)\n"
-			"{\n"
-			"\n"
-			"}\n";
+		/// [EN] C++ is a header and source; the source includes the header by its UserProject-relative path.
+		/// [JP] C++ はヘッダとソース。ソースはヘッダを UserProject 基準のパスで include する。
+		const FilePath headerPath(targetDirectory / (finalName + ".h"), parentPath.RootPath());
+		const FilePath cppPath(targetDirectory / (finalName + ".cpp"), parentPath.RootPath());
+		std::ofstream headerFile(headerPath.FullPath(), std::ios::binary);
+		headerFile << "#pragma once\n#include <FoundationEngine/Prelude.h>\n#include <FoundationEngine/SeedScript.h>\n\nclass " << finalName << " :public SeedCore::SeedScript\n{\npublic:\n\tvoid OnStart();\n\tvoid OnTick(float elapsedTime);\n};\nREGISTER_COMPONENT(" << finalName << ");\n";
+		std::ofstream cppFile(cppPath.FullPath(), std::ios::binary);
+		cppFile << "#include \"UserProject/" << headerPath.RelativeText() << "\"\n\nvoid " << finalName << "::OnStart()\n{\n}\n\nvoid " << finalName << "::OnTick(float elapsedTime)\n{\n}\n";
 
-		std::filesystem::path headerFullPath = targetDirectory / (finalName + ".h");
-		std::filesystem::path cppFullPath = targetDirectory / (finalName + ".cpp");
-
-		/// [EN] Files must exist on disk before registration: both registration paths require it — the Visual Studio automation path's AddFromFile() expects an existing file, and even the Python/XML path, while it wouldn't itself fail on a missing file, would leave the .vcxproj referencing something that isn't there yet if a build raced it.
-		/// [JP] 登録の前にファイルをディスクへ書き出しておく必要がある: どちらの登録経路でも要求される — Visual Studio自動化経路の AddFromFile() は既存ファイルを前提とし、Python/XML経路自体はファイルが無くても失敗はしないものの、その隙にビルドが走れば .vcxproj がまだ存在しないファイルを参照する状態になってしまう。
-		std::ofstream headerFile(headerFullPath, std::ios::binary);
-		headerFile << headerContent;
+		/// [EN] Close both files before Visual Studio reads them for registration and opening, so it sees the full contents.
+		/// [JP] Visual Studio が登録と表示のために読む前に両方のファイルを閉じ、中身が全て書き込まれた状態にする。
 		headerFile.close();
-
-		std::ofstream cppFile(cppFullPath, std::ios::binary);
-		cppFile << cppContent;
 		cppFile.close();
 
-		if (!RegisterScriptInProject(headerFullPath, cppFullPath))
+		if (!ExecuteRegister(headerPath, cppPath))
 		{
-			SC_LOG_WARNING("ContentsDrawerPanel: スクリプトのプロジェクトへの登録に失敗しました: {}", finalName);
+			SC_LOG_WARNING("コンテンツドロワー: スクリプトのプロジェクトへの登録に失敗しました: {}", finalName);
 			return;
 		}
 
-		needsRebuild_ = true;
-
-		SC_LOG_NOTICE("ContentsDrawerPanel: スクリプトを作成しました: {}", finalName);
-
-		ShellExecuteW(NULL, L"open", headerFullPath.wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
-		ShellExecuteW(NULL, L"open", cppFullPath.wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
+		SC_LOG_NOTICE("コンテンツドロワー: C++ スクリプトを生成しました: {}", finalName);
+		openScript(headerPath);
+		openScript(cppPath);
 	}
 
-	Bool ContentsDrawerPanel::RegisterScriptInProject(const std::filesystem::path& headerFullPath, const std::filesystem::path& cppFullPath)
+	/**
+	* [EN]
+	* Opens an asset according to its type.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* アセットを種類に応じて開く。
+	*/
+	void ContentsDrawerPanel::OpenAssetPopup(const AssetRecord& asset)
 	{
-		std::filesystem::path projectRoot = context_.worldContext_.resource_->ProjectRootPath();
-
-		/// [EN] Tried first: if Visual Studio has Runtime.sln open, letting it add the files itself keeps Solution Explorer in sync immediately and never triggers the "project modified outside the editor" reload prompt (see VisualStudioAutomation's own doc comment). Falls through to editing UserProject.Cplusplus.vcxproj directly — the only path available when Visual Studio isn't running this solution at all.
-		/// [JP] まずこちらを試す: Visual Studio が Runtime.sln を開いていれば、ファイルの追加自体をVSにやらせることで Solution Explorer が即座に同期され、「プロジェクトが外部で変更されました」という再読み込み確認も一切発生しない(詳細は VisualStudioAutomation 自身のドキュメントコメントを参照)。Visual Studio がこのソリューションを開いていない場合にのみ、UserProject.Cplusplus.vcxproj を直接編集する経路へフォールバックする。
-		if (VisualStudioAutomation::TryAddFilesToProject(projectRoot / "Runtime" / "Runtime.sln", "UserProject.Cplusplus", headerFullPath, cppFullPath))
+		if (context_.resourceSync_ && context_.resourceSync_->RemoteOnly(asset.assetID_))
 		{
-			return true;
+			context_.resourceSync_->RequestGet(asset.assetID_);
+			return;
+		}
+		if (asset.type_ == AssetType::Scene)
+		{
+			context_.sceneContext_.requestedSceneAssetID_ = asset.assetID_;
+			return;
+		}
+		if (asset.type_ == AssetType::Material)
+		{
+			context_.panelContext_.materialViewerPanel_->Open();
+			return;
 		}
 
-		std::filesystem::path pythonExecutable = projectRoot / "Platform" / "Python" / "python.exe";
-		std::filesystem::path scriptPath = projectRoot / "Tools" / "Python" / "CreateScript.py";
-
-		std::string headerRelative = std::filesystem::relative(headerFullPath, projectRoot / "UserProject").string();
-		std::string cppRelative = std::filesystem::relative(cppFullPath, projectRoot / "UserProject").string();
-
-		std::wstring commandLine = std::format(L"\"{}\" \"{}\" \"{}\" \"{}\" \"{}\"", pythonExecutable.wstring(), scriptPath.wstring(), projectRoot.wstring(), std::filesystem::path(headerRelative).wstring(), std::filesystem::path(cppRelative).wstring());
-
-		STARTUPINFOW startupInfo{};
-		startupInfo.cb = sizeof(startupInfo);
-		PROCESS_INFORMATION processInfo{};
-
-		DynamicArray<Wchar> mutableCommandLine(commandLine.begin(), commandLine.end());
-		mutableCommandLine.push_back(L'\0');
-
-		Bool created = CreateProcessW(nullptr, mutableCommandLine.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr, nullptr, &startupInfo, &processInfo);
-		if (!created)
-		{
-			return false;
-		}
-
-		WaitForSingleObject(processInfo.hProcess, INFINITE);
-
-		DWORD exitCode = 1;
-		GetExitCodeProcess(processInfo.hProcess, &exitCode);
-
-		CloseHandle(processInfo.hProcess);
-		CloseHandle(processInfo.hThread);
-
-		return exitCode == 0;
+		/// [EN] Anything else opens in the application Windows associates with it.
+		/// [JP] それ以外は、Windows が関連付けているアプリケーションで開く。
+		const FilePath assetPath(asset.fullpath_.str(), context_.worldContext_.resource_->ProjectRootPath());
+		ShellExecuteW(NULL, L"open", assetPath.FullPath().wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
 	}
 
-	void ContentsDrawerPanel::ExecuteDelete(const std::filesystem::path& fullPath)
+	/**
+	* [EN]
+	* Requests the new-script dialog.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 新規スクリプトのダイアログを要求する。
+	*/
+	void ContentsDrawerPanel::OpenScriptPopup(const FilePath& parentPath, ScriptType script)
 	{
-		if (context_.resourceSync_ && context_.resourceSync_->Managed(fullPath))
-		{
-			SC_LOG_WARNING("Shared content cannot be deleted or renamed through local file operations.");
-			return;
-		}
-		std::error_code errorCode;
-		std::filesystem::remove_all(fullPath, errorCode);
-
-		std::filesystem::path metaPath = fullPath;
-		metaPath += ".meta";
-		if (std::filesystem::exists(metaPath))
-		{
-			std::filesystem::remove(metaPath, errorCode);
-		}
-
-		if (clipboardPath_ == fullPath)
-		{
-			clipboardAction_ = ClipboardAction::None;
-		}
-
-		needsRebuild_ = true;
+		/// [EN] The name field edits the filename text in place, so it is padded to 256 characters of buffer.
+		/// [JP] 入力欄はファイル名の文字列をそのまま編集するので、バッファとして 256 文字に広げる。
+		scriptMenuState_.openRequested_ = true;
+		scriptMenuState_.focusRequested_ = true;
+		scriptMenuState_.scriptType_ = script;
+		scriptMenuState_.targetPath_.emplace(parentPath.ChildPath("NewScript"), parentPath.RootPath());
+		scriptMenuState_.targetPath_->FilenameText().resize(256);
 	}
 
-	void ContentsDrawerPanel::ExecuteRename(const std::filesystem::path& oldPath, const std::string& newName)
+	/**
+	* [EN]
+	* Exports a model to a file chosen with a save dialog.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 保存ダイアログで選んだファイルへモデルを書き出す。
+	*/
+	void ContentsDrawerPanel::ExportModel(const AssetRecord& asset, ExportPreset preset, const Wchar* extension)
 	{
-		if (context_.resourceSync_ && context_.resourceSync_->Managed(oldPath))
-		{
-			SC_LOG_WARNING("Shared content cannot be deleted or renamed through local file operations.");
-			return;
-		}
-		std::filesystem::path newPath = oldPath.parent_path() / newName;
-		std::error_code errorCode;
-		std::filesystem::rename(oldPath, newPath, errorCode);
+		/// [EN] The dialog starts next to the model with the model's name, filtered to the preset's extension.
+		/// [JP] ダイアログはモデルの隣、モデルの名前で始め、プリセットの拡張子で絞り込む。
+		const FilePath sourcePath(asset.fullpath_.str(), context_.worldContext_.resource_->ProjectRootPath());
+		const std::wstring filter = std::wstring(L"*.") + extension;
 
-		std::filesystem::path oldMeta = oldPath;
-		oldMeta += ".meta";
-		if (std::filesystem::exists(oldMeta))
-		{
-			std::filesystem::path newMeta = newPath;
-			newMeta += ".meta";
-			std::filesystem::rename(oldMeta, newMeta, errorCode);
-		}
-
-		if (clipboardPath_ == oldPath)
-		{
-			clipboardPath_ = newPath;
-		}
-
-		needsRebuild_ = true;
-	}
-
-	void ContentsDrawerPanel::ExecutePaste(const std::string& destinationRelative)
-	{
-		if (clipboardAction_ == ClipboardAction::None || !std::filesystem::exists(clipboardPath_))
-		{
-			clipboardAction_ = ClipboardAction::None;
-			return;
-		}
-
-		std::filesystem::path destDirectory = ResolveFullPath(destinationRelative);
-		std::filesystem::path destPath = destDirectory / clipboardPath_.filename();
-		if (context_.resourceSync_ && (context_.resourceSync_->Managed(clipboardPath_) || context_.resourceSync_->Managed(destPath)))
-		{
-			SC_LOG_WARNING("Shared content cannot be moved or copied through local clipboard operations.");
-			return;
-		}
-		std::error_code errorCode;
-
-		if (clipboardAction_ == ClipboardAction::Cut)
-		{
-			std::filesystem::rename(clipboardPath_, destPath, errorCode);
-
-			std::filesystem::path metaPath = clipboardPath_;
-			metaPath += ".meta";
-			if (std::filesystem::exists(metaPath))
-			{
-				std::filesystem::path destMeta = destPath;
-				destMeta += ".meta";
-				std::filesystem::rename(metaPath, destMeta, errorCode);
-			}
-
-			clipboardAction_ = ClipboardAction::None;
-		}
-		else if (clipboardAction_ == ClipboardAction::Copy)
-		{
-			if (clipboardIsDirectory_)
-			{
-				std::filesystem::copy(clipboardPath_, destPath, std::filesystem::copy_options::recursive, errorCode);
-			}
-			else
-			{
-				std::filesystem::copy_file(clipboardPath_, destPath, std::filesystem::copy_options::skip_existing, errorCode);
-			}
-		}
-
-		needsRebuild_ = true;
-	}
-
-	void ContentsDrawerPanel::NavigateTo(const std::string& directory)
-	{
-		if (selectedDirectory_ == directory)
+		std::filesystem::path outputPath;
+		if (!FileDialog::SaveFile(outputPath, sourcePath.ParentPath(), filter.c_str(), filter.c_str(), extension, sourcePath.StemPath().wstring().c_str()))
 		{
 			return;
 		}
 
-		if (historyIndex_ >= 0 && historyIndex_ < static_cast<Int>(directoryHistory_.size()) - 1)
+		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+		if (!context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->Export(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, preset, String(outputPath.string())))
 		{
-			directoryHistory_.erase(directoryHistory_.begin() + historyIndex_ + 1, directoryHistory_.end());
+			SC_LOG_WARNING("コンテンツドロワー: モデルのエクスポートに失敗しました: {}", asset.path_.c_str());
+			return;
 		}
 
-		directoryHistory_.push_back(directory);
-		historyIndex_ = static_cast<Int>(directoryHistory_.size()) - 1;
-		selectedDirectory_ = directory;
+		/// [EN] Reload so an export written inside the project shows up as an asset.
+		/// [JP] プロジェクト内へ書き出した場合にアセットとして出てくるよう、読み直す。
+		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+		SC_LOG_NOTICE("コンテンツドロワー: モデルをエクスポートしました: {}", asset.path_.c_str());
 	}
 }

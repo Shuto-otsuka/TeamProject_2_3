@@ -76,7 +76,7 @@ namespace SeedCore
 			return;
 		}
 
-		for (Actor child : actor.ChildList())
+		for (Actor child : actor.Children())
 		{
 			MarkDirtySubtree(child, dirty);
 		}
@@ -225,7 +225,7 @@ namespace SeedCore
 		worldMatrix = Matrix::CreateScale(finalScale) * Matrix::CreateFromQuaternion(finalRotation) * Matrix::CreateTranslation(finalTranslation);
 		actor.WorldMatrix(worldMatrix);
 
-		for (Actor child : actor.ChildList())
+		for (Actor child : actor.Children())
 		{
 			if (dirty.contains(child.GetEntity().GetID()))
 			{

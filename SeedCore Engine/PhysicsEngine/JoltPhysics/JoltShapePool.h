@@ -117,25 +117,31 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Creates or reuses a triangle mesh shape for the specified asset.
+		* Creates or reuses a triangle mesh shape for the specified asset,
+		* with its vertices scaled per axis. Each asset and scale pair is a
+		* separate shape.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 指定したアセットの三角形メッシュ形状を生成または再利用する。
+		* 指定したアセットの頂点を軸ごとに拡縮した三角形メッシュ形状を生成
+		* または再利用する。アセットとスケールの組ごとに別の形状になる。
 		*/
-		Handle<JPH::Shape> CreateMeshShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const DynamicArray<Uint32>& indices);
+		Handle<JPH::Shape> CreateMeshShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const DynamicArray<Uint32>& indices, const Vector3& scale);
 
 		/**
 		* [EN]
-		* Creates or reuses a convex hull shape for the specified asset.
+		* Creates or reuses a convex hull shape for the specified asset,
+		* with its points scaled per axis. Each asset and scale pair is a
+		* separate shape.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 指定したアセットの凸包形状を生成または再利用する。
+		* 指定したアセットの点を軸ごとに拡縮した凸包形状を生成または再利用
+		* する。アセットとスケールの組ごとに別の形状になる。
 		*/
-		Handle<JPH::Shape> CreateConvexShape(Uint32 assetID, const DynamicArray<Vector3>& positions);
+		Handle<JPH::Shape> CreateConvexShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const Vector3& scale);
 
 		/**
 		* [EN]

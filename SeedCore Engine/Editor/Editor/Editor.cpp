@@ -3,6 +3,7 @@
 #include <FoundationEngine/Log/Notice.h>
 #include <FoundationEngine/File/FileDialog.h>
 #include <FoundationEngine/Resource/Config/EditorConfig.h>
+#include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/Actor/Blueprint.h>
 #include <FoundationEngine/World/World.h>

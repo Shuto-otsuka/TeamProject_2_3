@@ -180,17 +180,23 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Creates or reuses a triangle mesh shape for the specified asset.
+	* Creates or reuses a triangle mesh shape for the specified asset,
+	* with its vertices scaled per axis. Each asset and scale pair is a
+	* separate shape.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 指定したアセットの三角形メッシュ形状を生成または再利用する。
+	* 指定したアセットの頂点を軸ごとに拡縮した三角形メッシュ形状を生成
+	* または再利用する。アセットとスケールの組ごとに別の形状になる。
 	*/
-	Handle<JPH::Shape> JoltShapePool::CreateMeshShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const DynamicArray<Uint32>& indices)
+	Handle<JPH::Shape> JoltShapePool::CreateMeshShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const DynamicArray<Uint32>& indices, const Vector3& scale)
 	{
+		/// [EN] The scale is baked into the vertices, so the same asset at another scale is another shape.
+		/// [JP] スケールは頂点に焼き込むので、同じアセットでもスケールが違えば別の形状になる。
 		Uint64 key = HashCombine(0, static_cast<Uint64>(ShapeKind::Mesh));
 		key = HashCombine(key, static_cast<Uint64>(assetID));
+		key = HashVector3(key, scale);
 
 		if (auto it = cache_.find(key); it != cache_.end())
 		{
@@ -203,15 +209,28 @@ namespace SeedCore
 			return Handle<JPH::Shape>::null();
 		}
 
+		/// [EN] Every vertex is stretched per axis by the scale.
+		/// [JP] 全ての頂点を、軸ごとにスケールだけ伸ばす。
 		JPH::VertexList vertices;
 		vertices.reserve(positions.size());
-		std::ranges::transform(positions, std::back_inserter(vertices), [](const Vector3& position) { return JPH::Float3(position.x, position.y, position.z); });
+		std::ranges::transform(positions, std::back_inserter(vertices), [&scale](const Vector3& position) { return JPH::Float3(position.x * scale.x, position.y * scale.y, position.z * scale.z); });
+
+		/// [EN] An odd number of mirrored axes turns every triangle inside out, so two corners are swapped to keep the faces pointing outward.
+		/// [JP] 反転した軸が奇数個だと全ての三角形が裏返るので、2つの角を入れ替えて面を外向きに保つ。
+		Bool insideOut = scale.x * scale.y * scale.z < 0.0f;
 
 		JPH::IndexedTriangleList triangles;
 		triangles.reserve(indices.size() / 3);
 		for (Size cornerIndex = 0; cornerIndex + 2 < indices.size(); cornerIndex += 3)
 		{
-			triangles.push_back(JPH::IndexedTriangle(indices[cornerIndex], indices[cornerIndex + 1], indices[cornerIndex + 2]));
+			if (insideOut)
+			{
+				triangles.push_back(JPH::IndexedTriangle(indices[cornerIndex], indices[cornerIndex + 2], indices[cornerIndex + 1]));
+			}
+			else
+			{
+				triangles.push_back(JPH::IndexedTriangle(indices[cornerIndex], indices[cornerIndex + 1], indices[cornerIndex + 2]));
+			}
 		}
 
 		JPH::MeshShapeSettings settings(std::move(vertices), std::move(triangles));
@@ -231,17 +250,23 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Creates or reuses a convex hull shape for the specified asset.
+	* Creates or reuses a convex hull shape for the specified asset,
+	* with its points scaled per axis. Each asset and scale pair is a
+	* separate shape.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 指定したアセットの凸包形状を生成または再利用する。
+	* 指定したアセットの点を軸ごとに拡縮した凸包形状を生成または再利用
+	* する。アセットとスケールの組ごとに別の形状になる。
 	*/
-	Handle<JPH::Shape> JoltShapePool::CreateConvexShape(Uint32 assetID, const DynamicArray<Vector3>& positions)
+	Handle<JPH::Shape> JoltShapePool::CreateConvexShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const Vector3& scale)
 	{
+		/// [EN] The scale is baked into the points, so the same asset at another scale is another shape.
+		/// [JP] スケールは点に焼き込むので、同じアセットでもスケールが違えば別の形状になる。
 		Uint64 key = HashCombine(0, static_cast<Uint64>(ShapeKind::Convex));
 		key = HashCombine(key, static_cast<Uint64>(assetID));
+		key = HashVector3(key, scale);
 
 		if (auto it = cache_.find(key); it != cache_.end())
 		{
@@ -256,7 +281,9 @@ namespace SeedCore
 
 		JPH::Array<JPH::Vec3> points;
 		points.reserve(positions.size());
-		std::ranges::transform(positions, std::back_inserter(points), [](const Vector3& position) { return JPH::Vec3(position.x, position.y, position.z); });
+		/// [EN] Every point is stretched per axis by the scale; the hull is rebuilt from them, so a mirrored axis needs no special care.
+		/// [JP] 全ての点を軸ごとにスケールだけ伸ばす。凸包は点から作り直すので、反転した軸にも特別な扱いは要らない。
+		std::ranges::transform(positions, std::back_inserter(points), [&scale](const Vector3& position) { return JPH::Vec3(position.x * scale.x, position.y * scale.y, position.z * scale.z); });
 
 		JPH::ConvexHullShapeSettings settings(points, JPH::cDefaultConvexRadius);
 		settings.SetEmbedded();

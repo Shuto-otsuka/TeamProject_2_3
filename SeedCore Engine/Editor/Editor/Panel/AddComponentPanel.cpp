@@ -21,7 +21,6 @@ namespace SeedCore
 		if (ImGui::Button("コンポーネントを追加", ImVec2(buttonWidth, 0)))
 		{
 			state_.searchBuffer = String("");
-			state_.selectedName = String("");
 			ImGui::OpenPopup("AddComponentPopup");
 		}
 
@@ -214,17 +213,11 @@ namespace SeedCore
 		ImGui::Image(imguiTexture.Icon(ImGuiTexture::ComponentIconType(componentName)), ImVec2(iconSize, iconSize));
 		ImGui::SameLine();
 
-		Bool isSelected = (componentName == state_.selectedName);
-		ImGuiSelectableFlags flags = ImGuiSelectableFlags_NoAutoClosePopups | ImGuiSelectableFlags_AllowDoubleClick;
-		if (ImGui::Selectable(componentName.c_str(), isSelected, flags))
+		if (ImGui::Selectable(componentName.c_str(), false, ImGuiSelectableFlags_NoAutoClosePopups))
 		{
-			state_.selectedName = componentName;
-			if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
-			{
-				context_.sceneContext_.history_.Push(MakePtr<ComponentAddCommand>(*context_.worldContext_.world_, actor.PersistentID(), componentID));
-				actor.AddComponent(componentID);
-				ImGui::CloseCurrentPopup();
-			}
+			context_.sceneContext_.history_.Push(MakePtr<ComponentAddCommand>(*context_.worldContext_.world_, actor.PersistentID(), componentID));
+			actor.AddComponent(componentID);
+			ImGui::CloseCurrentPopup();
 		}
 
 		if (alreadyAttached)

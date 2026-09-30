@@ -283,7 +283,7 @@ namespace SeedCore
 	* [JP]
 	* この actor の直接の子一覧を、現在の順序で返す。
 	*/
-	DynamicArray<Actor> Actor::ChildList()const
+	DynamicArray<Actor> Actor::Children()const
 	{
 		DynamicArray<Actor> result;
 

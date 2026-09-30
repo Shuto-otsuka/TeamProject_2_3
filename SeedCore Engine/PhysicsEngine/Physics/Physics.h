@@ -289,25 +289,30 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Creates or reuses a triangle mesh collision shape.
+		* Creates or reuses a triangle mesh collision shape, with its
+		* vertices scaled per axis. Each asset and scale pair is a separate
+		* shape.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 三角形メッシュ衝突形状を生成または再利用する。
+		* 頂点を軸ごとに拡縮した三角形メッシュ衝突形状を生成または再利用する。
+		* アセットとスケールの組ごとに別の形状になる。
 		*/
-		Handle<JPH::Shape> CreateMeshShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const DynamicArray<Uint32>& indices);
+		Handle<JPH::Shape> CreateMeshShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const DynamicArray<Uint32>& indices, const Vector3& scale);
 
 		/**
 		* [EN]
-		* Creates or reuses a convex hull collision shape.
+		* Creates or reuses a convex hull collision shape, with its points
+		* scaled per axis. Each asset and scale pair is a separate shape.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 凸包衝突形状を生成または再利用する。
+		* 点を軸ごとに拡縮した凸包衝突形状を生成または再利用する。アセットと
+		* スケールの組ごとに別の形状になる。
 		*/
-		Handle<JPH::Shape> CreateConvexShape(Uint32 assetID, const DynamicArray<Vector3>& positions);
+		Handle<JPH::Shape> CreateConvexShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const Vector3& scale);
 
 		/**
 		* [EN]
@@ -476,7 +481,7 @@ namespace SeedCore
 		* [JP]
 		* ソフトボディの全頂点のワールド位置を書き出す。
 		*/
-		void VertexPositionList(JPH::BodyID bodyID, DynamicArray<Vector3>& outPositions)const;
+		void BodyVertex(JPH::BodyID bodyID, DynamicArray<Vector3>& outPositions)const;
 
 		/**
 		* [EN]
@@ -499,6 +504,65 @@ namespace SeedCore
 		* すべての物理ボディ識別子を返す。
 		*/
 		DynamicArray<JPH::BodyID> BodyList()const;
+
+	public:
+		/**
+		* [EN]
+		* Adds a force (N) at the body's center of mass for the next step
+		* and wakes the body. On a soft body the force is spread evenly
+		* over its vertices. Non-dynamic bodies are left untouched.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 次のステップの間、ボディの重心に力(N)を加え、ボディを起こす。
+		* ソフトボディでは力を頂点へ均等に分ける。動的でないボディには
+		* 何もしない。
+		*/
+		void AddForce(JPH::BodyID bodyID, const Vector3& force);
+
+		/**
+		* [EN]
+		* Adds an impulse (kg·m/s) at the body's center of mass, changing
+		* its velocity at once, and wakes the body. On a soft body every
+		* movable vertex gets the same change of velocity. Non-dynamic
+		* bodies are left untouched.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ボディの重心に力積(kg·m/s)を加えて速度を一度に変え、ボディを
+		* 起こす。ソフトボディでは、動ける頂点すべてに同じ速度変化を与える。
+		* 動的でないボディには何もしない。
+		*/
+		void AddImpulse(JPH::BodyID bodyID, const Vector3& impulse);
+
+		/**
+		* [EN]
+		* Adds a torque (N·m) in world space for the next step and wakes
+		* the body. Has no effect on a soft body or a non-dynamic body.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 次のステップの間、ワールド空間のトルク(N·m)を加え、ボディを起こす。
+		* ソフトボディと動的でないボディには効かない。
+		*/
+		void AddTorque(JPH::BodyID bodyID, const Vector3& torque);
+
+		/**
+		* [EN]
+		* Adds an angular impulse (N·m·s) in world space, changing the
+		* body's angular velocity at once, and wakes the body. Has no
+		* effect on a soft body or a non-dynamic body.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ワールド空間の角力積(N·m·s)を加えて角速度を一度に変え、ボディを
+		* 起こす。ソフトボディと動的でないボディには効かない。
+		*/
+		void AddSpin(JPH::BodyID bodyID, const Vector3& angularImpulse);
 
 	public:
 		/**

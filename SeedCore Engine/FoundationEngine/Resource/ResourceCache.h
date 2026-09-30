@@ -140,6 +140,23 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Watches UserProject (the project root when UserProject does not
+		* exist) for file and folder changes and runs Reload() when one has
+		* happened. The first call only starts the watch, so only a host that
+		* calls this every frame (the Editor) pays for it.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* UserProject（UserProject が無ければプロジェクトルート）のファイルと
+		* フォルダの変更を監視し、変更があれば Reload() を実行する。最初の
+		* 呼び出しは監視を始めるだけなので、毎フレーム呼ぶホスト（Editor）
+		* だけがその負担を持つ。
+		*/
+		void Watch(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
+
+		/**
+		* [EN]
 		* Starts (once per Async() pass - later calls are ignored until the
 		* pass finishes) a background job that repeatedly calls Step() on a
 		* dedicated worker thread until the pending queue is drained. Callers
@@ -187,6 +204,21 @@ namespace SeedCore
 		* （読み込むものが無ければ 1）。
 		*/
 		Float Progress()const;
+
+		/**
+		* [EN]
+		* Returns a counter that advances on every full Reload(), so a
+		* caller that keeps the last value it saw can tell the asset list
+		* has changed without being told who reloaded it.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 全体の Reload() のたびに進むカウンタを返す。呼び出し側は最後に見た値を
+		* 覚えておけば、誰が読み直したかを知らなくても、アセット一覧が変わった
+		* ことを判断できる。
+		*/
+		Uint64 Revision()const;
 
 		/**
 		* [EN]
@@ -504,6 +536,14 @@ namespace SeedCore
 		/// [JP] 現在の Async() パスのバックグラウンドジョブがまだ実行中の間に、StepAsync() が2つ目のジョブを開始しないようにする。
 		std::atomic<Bool> loadStarted_{ false };
 
+		/// [EN] Change-notification handle for the folder Watch() observes; INVALID_HANDLE_VALUE until Watch() is first called.
+		/// [JP] Watch() が監視するフォルダの変更通知ハンドル。Watch() が初めて呼ばれるまでは INVALID_HANDLE_VALUE。
+		HANDLE watchHandle_ = INVALID_HANDLE_VALUE;
+
+		/// [EN] Number of full Reload() calls so far, returned by Revision().
+		/// [JP] これまでの全体の Reload() の回数。Revision() が返す。
+		Uint64 revision_ = 0;
+
 	private:
 		/// [EN] File extensions Scan recognizes as candidate assets.
 		/// [JP] Scan がアセット候補として認識するファイル拡張子。
@@ -522,7 +562,7 @@ namespace SeedCore
 			".ttf", ".otf", ".ttc",
 			".mp4", ".movie",
 			".scene", ".prefab",
-			".h", ".cpp", ".hlsli", ".hlsl",
+			".h", ".cpp", ".cs", ".hlsli", ".hlsl",
 		};
 
 		/// [EN] Directory names Scan skips entirely (engine/tooling directories, not user assets).
@@ -540,6 +580,7 @@ namespace SeedCore
 			"Logs",
 			"Package",
 			"PhysicsEngine",
+			"Platform",
 			"Runtime",
 			"SeedCore",
 			"Tools",

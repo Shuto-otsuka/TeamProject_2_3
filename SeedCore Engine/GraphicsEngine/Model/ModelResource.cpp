@@ -52,15 +52,6 @@ namespace SeedCore
 
 		assetHandleMap_.insert({ assetId, handle });
 
-		/// [EN] Import-time material extraction: write a ".material" sibling
-		///      per slot the first time this model is loaded (existing files
-		///      are kept). They become AssetType::Material assets on the next
-		///      ResourceCache scan and back the Mesh component's material slots.
-		/// [JP] インポート時のマテリアル抽出: このモデルを初めてロードした時に
-		///      スロットごとの ".material" 兄弟ファイルを書き出す（既存は
-		///      維持）。次回の ResourceCache スキャンで AssetType::Material
-		///      アセットになり、Mesh コンポーネントのマテリアルスロットの
-		///      裏付けになる。
 		if (Crister* crister = loader.modelLoader_->Get(handle))
 		{
 			const DynamicArray<Surface>& materials = crister->Surfaces();
@@ -96,16 +87,6 @@ namespace SeedCore
 				loader.materialLoader_->Save(material, String(filePath.string()));
 			}
 
-			/// [EN] Import-time skeleton extraction: skinned models get a
-			///      ".skeleton" sibling (rig: sockets + root bone) the first
-			///      time they load. The rig holds only human-authored data -
-			///      the bone hierarchy and reference pose stay on the Crister,
-			///      linked back through SkeletonRig::sourceModelID_.
-			/// [JP] インポート時のスケルトン抽出: スキン付きモデルは初回
-			///      ロード時に ".skeleton" 兄弟（リグ: ソケット + ルート
-			///      ボーン）を得る。リグが持つのは人が編集したデータだけ -
-			///      ボーン階層と参照ポーズは Crister に残り、
-			///      SkeletonRig::sourceModelID_ で紐づく。
 			if (!crister->Skins().empty())
 			{
 				std::filesystem::path skeletonPath = modelPath.parent_path() / (modelPath.stem().string() + ".skeleton");

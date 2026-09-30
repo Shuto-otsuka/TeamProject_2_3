@@ -86,7 +86,30 @@ namespace SeedCore
 		* ファイルベースのフォールバックへ押し戻す。そちらは常にファイル自体を
 		* 読み直すため、常に正しい。
 		*/
-		[[nodiscard]] static Bool TryAddFilesToProject(const std::filesystem::path& solutionPath, const std::string& projectName, const std::filesystem::path& headerPath, const std::filesystem::path& cppPath);
+		[[nodiscard]] static Bool TryAddFile(const std::filesystem::path& solutionPath, const std::string& projectName, const std::filesystem::path& headerPath, const std::filesystem::path& cppPath);
+
+		/**
+		* [EN]
+		* Finds a running Visual Studio instance with solutionPath open, opens
+		* filePath in its editor (DTE.ItemOperations.OpenFile) and brings its
+		* main window to the front. Opening it inside the instance that has the
+		* solution loaded gives the file its project context (IntelliSense,
+		* build, debugging), which the file's shell association cannot promise.
+		* Returns false if no matching instance is found or any COM step
+		* fails, so the caller can fall back to opening the file some other way.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* solutionPath を開いている実行中の Visual Studio インスタンスを探し、
+		* その編集画面で filePath を開き(DTE.ItemOperations.OpenFile)、メイン
+		* ウィンドウを前面に出す。ソリューションを読み込んでいるインスタンスの中で
+		* 開くので、ファイルにプロジェクトの文脈(IntelliSense、ビルド、デバッグ)が
+		* 付く。ファイルの関連付けで開く場合はそれが保証されない。一致する
+		* インスタンスが見つからない、または COM 呼び出しのいずれかが失敗した場合は
+		* false を返すので、呼び出し側は別の方法でファイルを開ける。
+		*/
+		[[nodiscard]] static Bool TryOpenFile(const std::filesystem::path& solutionPath, const std::filesystem::path& filePath);
 
 	private:
 		/// [EN] Invokes a zero/one-arg property-get, property-put, or method member by name via IDispatch, using late binding (GetIDsOfNames + Invoke) so no generated type-library wrapper is needed.
@@ -109,8 +132,8 @@ namespace SeedCore
 		/// [JP] Running Object Table を "!VisualStudio.DTE.*" というモニカで列挙し、Solution.FullName が solutionPath と(大文字小文字を無視して)一致する最初のものの IDispatch を返す。返されたポインタの所有権は呼び出し側にあり(Release() が必要)、使い終わるまでは CoUninitialize() してはならない。一致するものが無ければ nullptr を返す。
 		[[nodiscard]] static IDispatch* FindDTEForSolution(const std::filesystem::path& solutionPath);
 
-		/// [EN] Finds a child filter named name directly under owner (a VCProject or VCFilter — both expose a Filters collection and an AddFilter(name) method in the VCProjectEngine object model), creating it via AddFilter() if it doesn't exist yet. onDiskFiltersContent is the raw text of UserProject.Cplusplus.vcxproj.filters as last read from disk (see TryAddFilesToProject's own doc comment for why this matters): if name doesn't turn up in owner's live Filters collection but its Include="..." does appear literally in onDiskFiltersContent, that means some process other than this running Visual Studio instance (typically SyncScript.py's PreBuildEvent) already registered it — Visual Studio's in-memory project model just hasn't caught up, and calling AddFilter() here would write a second, duplicate <Filter> node for the same name. In that situation this returns nullptr instead, refusing to create anything, which makes the whole call chain fail and the caller fall back to registering directly against the file, which is always disk-truth-correct. The caller owns the returned pointer. Returns nullptr on a COM failure (e.g. AddFilter() itself failing) too.
-		/// [JP] owner(VCProject または VCFilter — どちらも VCProjectEngine オブジェクトモデルにおいて Filters コレクションと AddFilter(name) メソッドを持つ)の直下から name という名前の子フィルタを探す。無ければ AddFilter() で作成する。onDiskFiltersContent は UserProject.Cplusplus.vcxproj.filters を直近にディスクから読み込んだ生テキスト(理由は TryAddFilesToProject 自身のドキュメントコメントを参照): owner のライブな Filters コレクションには name が見当たらないのに、その Include="..." が onDiskFiltersContent 内に文字列として存在する場合、今動いているVisual Studioインスタンス以外の何か(典型的には SyncScript.py の PreBuildEvent)が既にそれを登録済みであることを意味する — Visual Studioのメモリ上のプロジェクトモデルが単に追いついていないだけであり、ここで AddFilter() を呼ぶと同じ名前の <Filter> ノードが重複して書き込まれてしまう。この状況では何も作成せず nullptr を返す — これにより呼び出し連鎖全体が失敗し、呼び出し側はファイルへの直接登録(常にディスクの実態と一致する)にフォールバックする。返されたポインタの所有権は呼び出し側にある。COM呼び出し自体が失敗した場合(AddFilter() 自体の失敗など)も nullptr を返す。
+		/// [EN] Finds a child filter named name directly under owner (a VCProject or VCFilter — both expose a Filters collection and an AddFilter(name) method in the VCProjectEngine object model), creating it via AddFilter() if it doesn't exist yet. onDiskFiltersContent is the raw text of UserProject.Cplusplus.vcxproj.filters as last read from disk (see TryAddFile's own doc comment for why this matters): if name doesn't turn up in owner's live Filters collection but its Include="..." does appear literally in onDiskFiltersContent, that means some process other than this running Visual Studio instance (typically SyncScript.py's PreBuildEvent) already registered it — Visual Studio's in-memory project model just hasn't caught up, and calling AddFilter() here would write a second, duplicate <Filter> node for the same name. In that situation this returns nullptr instead, refusing to create anything, which makes the whole call chain fail and the caller fall back to registering directly against the file, which is always disk-truth-correct. The caller owns the returned pointer. Returns nullptr on a COM failure (e.g. AddFilter() itself failing) too.
+		/// [JP] owner(VCProject または VCFilter — どちらも VCProjectEngine オブジェクトモデルにおいて Filters コレクションと AddFilter(name) メソッドを持つ)の直下から name という名前の子フィルタを探す。無ければ AddFilter() で作成する。onDiskFiltersContent は UserProject.Cplusplus.vcxproj.filters を直近にディスクから読み込んだ生テキスト(理由は TryAddFile 自身のドキュメントコメントを参照): owner のライブな Filters コレクションには name が見当たらないのに、その Include="..." が onDiskFiltersContent 内に文字列として存在する場合、今動いているVisual Studioインスタンス以外の何か(典型的には SyncScript.py の PreBuildEvent)が既にそれを登録済みであることを意味する — Visual Studioのメモリ上のプロジェクトモデルが単に追いついていないだけであり、ここで AddFilter() を呼ぶと同じ名前の <Filter> ノードが重複して書き込まれてしまう。この状況では何も作成せず nullptr を返す — これにより呼び出し連鎖全体が失敗し、呼び出し側はファイルへの直接登録(常にディスクの実態と一致する)にフォールバックする。返されたポインタの所有権は呼び出し側にある。COM呼び出し自体が失敗した場合(AddFilter() 自体の失敗など)も nullptr を返す。
 		[[nodiscard]] static IDispatch* FindOrCreateFilter(IDispatch* owner, const std::wstring& name, const std::wstring& onDiskFiltersContent);
 
 		/// [EN] Walks/creates the full filter chain for relativeDirectory (backslash-joined path segments, relative to the project root, e.g. L"Script\\Player") starting from vcProject, returning the leaf filter. Returns vcProject itself (AddRef'd) if relativeDirectory is empty, so the return value can always be AddFile()'d against directly regardless of depth. onDiskFiltersContent is forwarded to FindOrCreateFilter at every level (see its doc comment). The caller owns the returned pointer; returns nullptr if any level's FindOrCreateFilter does.

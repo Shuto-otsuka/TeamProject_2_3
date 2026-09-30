@@ -397,6 +397,9 @@
     <ClCompile Include="Bridge\CsharpBehaviour.cpp">
       <Filter>Bridge</Filter>
     </ClCompile>
+    <ClCompile Include="File\FilePath.cpp">
+      <Filter>File</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\DxFail.h">
@@ -877,6 +880,9 @@
     </ClInclude>
     <ClInclude Include="Bridge\CsharpBehaviour.h">
       <Filter>Bridge</Filter>
+    </ClInclude>
+    <ClInclude Include="File\FilePath.h">
+      <Filter>File</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -27,6 +27,7 @@
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
+#include <FoundationEngine/World/ECS/Component/Scale.h>
 
 namespace SeedCore
 {
@@ -538,11 +539,17 @@ namespace SeedCore
 			BoxCollider* collider = actor.GetComponent<BoxCollider>();
 			const Position* position = actor.GetComponent<Position>();
 			const Rotation* rotation = actor.GetComponent<Rotation>();
+			const Scale* scale = actor.GetComponent<Scale>();
 
 			Vector3 actorPosition = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
 			Quaternion actorRotation = rotation ? rotation->Quat() : Quaternion::Identity;
 
-			colliderRenderer_->AddInstance(ColliderShapeKind::Box, actorPosition + Vector3::Transform(collider->center_, actorRotation), actorRotation, collider->size_ * 0.5f, colliderDebugColor);
+			/// [EN] Same scaling as BoxCollider::GetShapeHandle: the size by the absolute scale per axis, the offset by the signed scale.
+			/// [JP] BoxCollider::GetShapeHandle と同じ拡縮。サイズは軸ごとのスケールの絶対値、オフセットは符号付きのスケールで掛ける。
+			Vector3 size(collider->size_.x * Abs(scale->x_), collider->size_.y * Abs(scale->y_), collider->size_.z * Abs(scale->z_));
+			Vector3 center(collider->center_.x * scale->x_, collider->center_.y * scale->y_, collider->center_.z * scale->z_);
+
+			colliderRenderer_->AddInstance(ColliderShapeKind::Box, actorPosition + Vector3::Transform(center, actorRotation), actorRotation, size * 0.5f, colliderDebugColor);
 		}
 
 		for (EntityID id : world.GetComponents<SphereCollider>())
@@ -556,11 +563,16 @@ namespace SeedCore
 			SphereCollider* collider = actor.GetComponent<SphereCollider>();
 			const Position* position = actor.GetComponent<Position>();
 			const Rotation* rotation = actor.GetComponent<Rotation>();
+			const Scale* scale = actor.GetComponent<Scale>();
 
 			Vector3 actorPosition = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
 			Quaternion actorRotation = rotation ? rotation->Quat() : Quaternion::Identity;
 
-			colliderRenderer_->AddInstance(ColliderShapeKind::Sphere, actorPosition, actorRotation, Vector3(collider->radius_, 0.0f, 0.0f), colliderDebugColor);
+			/// [EN] Same scaling as SphereCollider::GetShapeHandle: the radius follows the largest axis.
+			/// [JP] SphereCollider::GetShapeHandle と同じ拡縮。半径は最も大きい軸に合わせる。
+			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->y_), Abs(scale->z_));
+
+			colliderRenderer_->AddInstance(ColliderShapeKind::Sphere, actorPosition, actorRotation, Vector3(radius, 0.0f, 0.0f), colliderDebugColor);
 		}
 
 		for (EntityID id : world.GetComponents<CapsuleCollider>())
@@ -574,11 +586,17 @@ namespace SeedCore
 			CapsuleCollider* collider = actor.GetComponent<CapsuleCollider>();
 			const Position* position = actor.GetComponent<Position>();
 			const Rotation* rotation = actor.GetComponent<Rotation>();
+			const Scale* scale = actor.GetComponent<Scale>();
 
 			Vector3 actorPosition = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
 			Quaternion actorRotation = rotation ? rotation->Quat() : Quaternion::Identity;
 
-			colliderRenderer_->AddInstance(ColliderShapeKind::Capsule, actorPosition, actorRotation, Vector3(collider->radius_, collider->height_ * 0.5f, 0.0f), colliderDebugColor);
+			/// [EN] Same scaling as CapsuleCollider::GetShapeHandle: the height follows Y, the radius the larger of X and Z.
+			/// [JP] CapsuleCollider::GetShapeHandle と同じ拡縮。高さは Y に、半径は X と Z の大きい方に合わせる。
+			Float height = collider->height_ * Abs(scale->y_);
+			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->z_));
+
+			colliderRenderer_->AddInstance(ColliderShapeKind::Capsule, actorPosition, actorRotation, Vector3(radius, height * 0.5f, 0.0f), colliderDebugColor);
 		}
 
 		for (EntityID id : world.GetComponents<CylinderCollider>())
@@ -592,11 +610,17 @@ namespace SeedCore
 			CylinderCollider* collider = actor.GetComponent<CylinderCollider>();
 			const Position* position = actor.GetComponent<Position>();
 			const Rotation* rotation = actor.GetComponent<Rotation>();
+			const Scale* scale = actor.GetComponent<Scale>();
 
 			Vector3 actorPosition = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
 			Quaternion actorRotation = rotation ? rotation->Quat() : Quaternion::Identity;
 
-			colliderRenderer_->AddInstance(ColliderShapeKind::Cylinder, actorPosition, actorRotation, Vector3(collider->radius_, collider->height_ * 0.5f, 0.0f), colliderDebugColor);
+			/// [EN] Same scaling as CylinderCollider::GetShapeHandle: the height follows Y, the radius the larger of X and Z.
+			/// [JP] CylinderCollider::GetShapeHandle と同じ拡縮。高さは Y に、半径は X と Z の大きい方に合わせる。
+			Float height = collider->height_ * Abs(scale->y_);
+			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->z_));
+
+			colliderRenderer_->AddInstance(ColliderShapeKind::Cylinder, actorPosition, actorRotation, Vector3(radius, height * 0.5f, 0.0f), colliderDebugColor);
 		}
 
 		for (EntityID id : world.GetComponents<RectCollider>())
@@ -610,6 +634,7 @@ namespace SeedCore
 			RectCollider* collider = actor.GetComponent<RectCollider>();
 			const Position* position = actor.GetComponent<Position>();
 			const Rotation* rotation = actor.GetComponent<Rotation>();
+			const Scale* scale = actor.GetComponent<Scale>();
 
 			Float pixelX = position ? position->x_ : 0.0f;
 			Float pixelY = position ? position->y_ : 0.0f;
@@ -617,8 +642,13 @@ namespace SeedCore
 			Float cosAngle = std::cos(angle);
 			Float sinAngle = std::sin(angle);
 
-			Vector3 instancePosition(100000.0f + pixelX + collider->center_.x * cosAngle - collider->center_.y * sinAngle, 100000.0f + (ScResolution::SC_CANVAS.Height - pixelY) - collider->center_.x * sinAngle - collider->center_.y * cosAngle, 100000.0f);
-			colliderRenderer_->AddInstance(ColliderShapeKind::Rect, instancePosition, Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -angle), Vector3(collider->size_.x * 0.5f, collider->size_.y * 0.5f, 0.0f), colliderDebugColor);
+			/// [EN] Same scaling as RectCollider::GetShapeHandle: only X and Y apply, the size by their absolute values, the offset by the signed ones.
+			/// [JP] RectCollider::GetShapeHandle と同じ拡縮。効くのは X と Y だけで、サイズは絶対値、オフセットは符号付きで掛ける。
+			Vector2 size(collider->size_.x * Abs(scale->x_), collider->size_.y * Abs(scale->y_));
+			Vector2 center(collider->center_.x * scale->x_, collider->center_.y * scale->y_);
+
+			Vector3 instancePosition(100000.0f + pixelX + center.x * cosAngle - center.y * sinAngle, 100000.0f + (ScResolution::SC_CANVAS.Height - pixelY) - center.x * sinAngle - center.y * cosAngle, 100000.0f);
+			colliderRenderer_->AddInstance(ColliderShapeKind::Rect, instancePosition, Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -angle), Vector3(size.x * 0.5f, size.y * 0.5f, 0.0f), colliderDebugColor);
 		}
 
 		for (EntityID id : world.GetComponents<CircleCollider>())
@@ -632,6 +662,7 @@ namespace SeedCore
 			CircleCollider* collider = actor.GetComponent<CircleCollider>();
 			const Position* position = actor.GetComponent<Position>();
 			const Rotation* rotation = actor.GetComponent<Rotation>();
+			const Scale* scale = actor.GetComponent<Scale>();
 
 			Float pixelX = position ? position->x_ : 0.0f;
 			Float pixelY = position ? position->y_ : 0.0f;
@@ -639,8 +670,13 @@ namespace SeedCore
 			Float cosAngle = std::cos(angle);
 			Float sinAngle = std::sin(angle);
 
-			Vector3 instancePosition(100000.0f + pixelX + collider->center_.x * cosAngle - collider->center_.y * sinAngle, 100000.0f + (ScResolution::SC_CANVAS.Height - pixelY) - collider->center_.x * sinAngle - collider->center_.y * cosAngle, 100000.0f);
-			colliderRenderer_->AddInstance(ColliderShapeKind::Circle, instancePosition, Quaternion::Identity, Vector3(collider->radius_, 0.0f, 0.0f), colliderDebugColor);
+			/// [EN] Same scaling as CircleCollider::GetShapeHandle: the radius follows the larger of X and Y, the offset the signed scale.
+			/// [JP] CircleCollider::GetShapeHandle と同じ拡縮。半径は X と Y の大きい方に、オフセットは符号付きのスケールに合わせる。
+			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->y_));
+			Vector2 center(collider->center_.x * scale->x_, collider->center_.y * scale->y_);
+
+			Vector3 instancePosition(100000.0f + pixelX + center.x * cosAngle - center.y * sinAngle, 100000.0f + (ScResolution::SC_CANVAS.Height - pixelY) - center.x * sinAngle - center.y * cosAngle, 100000.0f);
+			colliderRenderer_->AddInstance(ColliderShapeKind::Circle, instancePosition, Quaternion::Identity, Vector3(radius, 0.0f, 0.0f), colliderDebugColor);
 		}
 
 		colliderRenderer_->Upload();

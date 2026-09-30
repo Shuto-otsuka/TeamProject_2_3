@@ -29,6 +29,10 @@ SERIALIZE_FIELD_PATTERN = re.compile(
     r'SC_SERIALIZE_FIELD\(\)\s*([\w:<>,\s]+)\s+(\w+)\s*(\[\d+\])?\s*(?:=[^;]*)?\s*;'
 )
 
+FUNCTION_PATTERN = re.compile(
+    r'SC_FUNCTION\(\)\s*(?:virtual\s+|inline\s+)*([\w:<>\s&]+?)\s+(\w+)\s*\(([^)]*)\)'
+)
+
 FIELD_MARKER_PATTERN = re.compile(
     r'SC_REFLECTION_FIELD\(\)|SC_REFLECTION_FIELD_EX\(|SC_REFLECTION_CLAMPED\(|SC_REFLECTION_CLAMPED_EX\(|SC_SERIALIZE_FIELD\b'
 )
@@ -80,6 +84,16 @@ TYPE_MAP = {
     "String": "AttributeType::String",
 
     "Color": "AttributeType::Color",
+}
+
+FUNCTION_TYPES = {
+    'Int',
+    'Float',
+    'Bool',
+    'Vector2',
+    'Vector3',
+    'String',
+    'Color'
 }
 
 def qualify_condition(condition, struct_name, enum_defs, enum_owners, own_enum_names=None):
@@ -157,6 +171,26 @@ def parse_array_info(type_str, bracket_str=None):
 
     return None
 
+def parse_function_type(type_text):
+    """'const String&' → 'String'。対応していない型なら None を返す。"""
+    cleaned = re.sub(r'\bconst\b', ' ', type_text).replace('&', ' ').strip()
+    if cleaned in FUNCTION_TYPES:
+        return cleaned
+    return None
+
+def parse_function_parameters(parameters_text):
+    """'Int damage, const Vector3& point' → ['Int', 'Vector3']。1つでも未対応なら None。"""
+    types = []
+    for parameter in parameters_text.split(','):
+        parameter = parameter.split('=')[0].strip()
+        if not parameter or parameter == 'void':
+            continue
+        type_text = parameter.rsplit(None, 1)[0]
+        parse_text = parse_function_type(type_text)
+        if parse_text is None:
+            return None
+        types.append(parse_text)
+    return types
 
 # ---------------------------
 # コメント・文字列除去
@@ -347,8 +381,21 @@ def process_file(file_path, project_root, global_enums, enum_headers, enum_owner
                         break
             resolved_fields.append((f_type, f_name, display_name, bracket, condition, clamp_min, clamp_max, is_serialize_only))
         fields = resolved_fields
-        if fields:
-            results.append((struct_name, fields))
+
+        functions = []
+        for function_match in FUNCTION_PATTERN.finditer(body):
+            return_text = function_match.group(1).strip()
+            function_name = function_match.group(2)
+            parameter_types = parse_function_parameters(function_match.group(3))
+
+            return_type = None if return_text == 'void' else parse_function_type(return_text)
+            if parameter_types is None or (return_text != 'void' and return_type is None):
+                print(f"警告: {struct_name}::{function_name} は SC_FUNCTION で使えない型があるため登録しません")
+                continue
+            functions.append((return_type, function_name, parameter_types))
+
+        if fields or functions:
+            results.append((struct_name, fields, functions))
 
     if not results:
         return None
@@ -359,7 +406,7 @@ def process_file(file_path, project_root, global_enums, enum_headers, enum_owner
     header_name = os.path.basename(file_path)
 
     used_enum_headers = set()
-    for struct_name, fields in results:
+    for struct_name, fields, functions in results:
         for f_type, f_name, display_name, bracket, condition, clamp_min, clamp_max, is_serialize_only in fields:
             stripped = f_type.strip()
             if stripped in enum_defs and stripped in enum_headers:
@@ -374,7 +421,7 @@ def process_file(file_path, project_root, global_enums, enum_headers, enum_owner
             includes.append(eh)
 
     force_lines = []
-    for struct_name, fields in results:
+    for struct_name, fields, functions in results:
         force_lines.append(f'extern "C" int _force_reflection_{struct_name} = 0;')
 
     lines = []
@@ -382,7 +429,9 @@ def process_file(file_path, project_root, global_enums, enum_headers, enum_owner
 
     generated_enums = set()
 
-    for struct_name, fields in results:
+    for struct_name, fields, functions in results:
+        if not fields:
+            continue
         lines.append(f'\t\tstruct Register_{struct_name}')
         lines.append('\t\t{')
         lines.append(f'\t\t\tRegister_{struct_name}()')
@@ -549,7 +598,43 @@ def process_file(file_path, project_root, global_enums, enum_headers, enum_owner
         lines.append(f'\t\tstatic Register_{struct_name} global_{struct_name}_register;')
         lines.append('')
 
-    struct_names = [s for s, _ in results]
+    for struct_name, fields, functions in results:
+        if not functions:
+            continue
+        lines.append(f'\t\tstruct RegisterFunction_{struct_name}')
+        lines.append('\t\t{')
+        lines.append(f'\t\t\tRegisterFunction_{struct_name}()')
+        lines.append('\t\t\t{')
+
+        for return_type, function_name, parameter_types in functions:
+            parameter_kinds = ', '.join(f'AttributeType::{t}' for t in parameter_types)
+            arguments = ', '.join(f'*static_cast<const {t}*>(arguments[{i}])' for i, t in enumerate(parameter_types))
+            call = f'obj.{function_name}({arguments})'
+
+            lines.append('\t\t\t\t{')
+            lines.append('\t\t\t\t\tFunctionInfo info;')
+            lines.append(f'\t\t\t\t\tinfo.name_ = String("{function_name}");')
+            if parameter_types:
+                lines.append(f'\t\t\t\t\tinfo.parameters_ = {{ {parameter_kinds} }};')
+            if return_type is not None:
+                lines.append(f'\t\t\t\t\tinfo.result_ = AttributeType::{return_type};')
+            lines.append('\t\t\t\t\tinfo.invoke_ = [](void* component, void* const* arguments, void* result)')
+            lines.append('\t\t\t\t\t{')
+            lines.append(f'\t\t\t\t\t\t{struct_name}& obj = *static_cast<{struct_name}*>(component);')
+            if return_type is None:
+                lines.append(f'\t\t\t\t\t\t{call};')
+            else:
+                lines.append(f'\t\t\t\t\t\t*static_cast<{return_type}*>(result) = {call};')
+            lines.append('\t\t\t\t\t};')
+            lines.append(f'\t\t\t\t\tFunctionRegistry::Register(String("{struct_name}"), std::move(info));')
+            lines.append('\t\t\t\t}')
+
+        lines.append('\t\t\t}')
+        lines.append('\t\t};')
+        lines.append(f'\t\tstatic RegisterFunction_{struct_name} global_{struct_name}_function_register;')
+        lines.append('')
+
+    struct_names = [s for s, _, _ in results]
     return includes, force_lines, lines, struct_names, generated_enums
 
 
