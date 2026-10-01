@@ -47,7 +47,7 @@ namespace SeedCore
 
 		/// [EN] Jolt returns world positions.
 		/// [JP] Jolt はワールド位置を返す。
-		GetActor().GetPhysics().VertexPositionList(bodyID_, vertexPositions_);
+		GetActor().GetPhysics().BodyVertex(bodyID_, vertexPositions_);
 
 		/// [EN] The render mesh is drawn with the actor's world matrix, so the positions are taken back to local space.
 		/// [JP] 描画メッシュは Actor のワールド行列で描かれるので、位置をローカル空間へ戻す。
@@ -91,6 +91,42 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Adds a force (N) for the next fixed step, spread evenly over the
+	* vertices. Does nothing until the body is built.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 次の固定ステップの間、力(N)を加える。力は頂点へ均等に分ける。
+	* ボディが構築されるまでは何もしない。
+	*/
+	void Softbody::AddForce(const Vector3& force)
+	{
+		/// [EN] An invalid ID while the body is still pending is ignored by Physics.
+		/// [JP] 構築待ちの間の無効な ID は、Physics 側で無視される。
+		GetActor().GetPhysics().AddForce(bodyID_, force);
+	}
+
+	/**
+	* [EN]
+	* Adds an impulse (kg·m/s), giving every movable vertex the same
+	* change of velocity at once. Does nothing until the body is built.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 力積(kg·m/s)を加え、動ける頂点すべてに同じ速度変化を一度に与える。
+	* ボディが構築されるまでは何もしない。
+	*/
+	void Softbody::AddImpulse(const Vector3& impulse)
+	{
+		/// [EN] An invalid ID while the body is still pending is ignored by Physics.
+		/// [JP] 構築待ちの間の無効な ID は、Physics 側で無視される。
+		GetActor().GetPhysics().AddImpulse(bodyID_, impulse);
+	}
+
+	/**
+	* [EN]
 	* Returns the Jolt ID of the body; invalid until Build succeeds and
 	* after OnDestroy.
 	*
@@ -117,7 +153,7 @@ namespace SeedCore
 	* ローカル空間で返す。SoftbodyMesh がその変位をフル解像度の描画
 	* メッシュへ移す。
 	*/
-	const DynamicArray<Vector3>& Softbody::VertexPositionList()const
+	const DynamicArray<Vector3>& Softbody::BodyVertex()const
 	{
 		return vertexPositions_;
 	}

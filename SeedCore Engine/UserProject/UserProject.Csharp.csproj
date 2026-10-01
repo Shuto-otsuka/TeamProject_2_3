@@ -10,4 +10,7 @@
 	<ItemGroup>
 		<Compile Remove="Reflection\**" />
 	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="Script\" />
+	</ItemGroup>
 </Project>

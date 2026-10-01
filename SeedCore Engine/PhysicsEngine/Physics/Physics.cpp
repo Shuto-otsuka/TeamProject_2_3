@@ -112,30 +112,35 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Creates or reuses a triangle mesh collision shape.
+	* Creates or reuses a triangle mesh collision shape, with its
+	* vertices scaled per axis. Each asset and scale pair is a separate
+	* shape.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 三角形メッシュ衝突形状を生成または再利用する。
+	* 頂点を軸ごとに拡縮した三角形メッシュ衝突形状を生成または再利用する。
+	* アセットとスケールの組ごとに別の形状になる。
 	*/
-	Handle<JPH::Shape> Physics::CreateMeshShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const DynamicArray<Uint32>& indices)
+	Handle<JPH::Shape> Physics::CreateMeshShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const DynamicArray<Uint32>& indices, const Vector3& scale)
 	{
-		return joltManager_.ShapePool().CreateMeshShape(assetID, positions, indices);
+		return joltManager_.ShapePool().CreateMeshShape(assetID, positions, indices, scale);
 	}
 
 	/**
 	* [EN]
-	* Creates or reuses a convex hull collision shape.
+	* Creates or reuses a convex hull collision shape, with its points
+	* scaled per axis. Each asset and scale pair is a separate shape.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 凸包衝突形状を生成または再利用する。
+	* 点を軸ごとに拡縮した凸包衝突形状を生成または再利用する。アセットと
+	* スケールの組ごとに別の形状になる。
 	*/
-	Handle<JPH::Shape> Physics::CreateConvexShape(Uint32 assetID, const DynamicArray<Vector3>& positions)
+	Handle<JPH::Shape> Physics::CreateConvexShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const Vector3& scale)
 	{
-		return joltManager_.ShapePool().CreateConvexShape(assetID, positions);
+		return joltManager_.ShapePool().CreateConvexShape(assetID, positions, scale);
 	}
 
 	/**
@@ -576,7 +581,7 @@ namespace SeedCore
 	* [JP]
 	* ソフトボディの全頂点のワールド位置を書き出す。
 	*/
-	void Physics::VertexPositionList(JPH::BodyID bodyID, DynamicArray<Vector3>& outPositions)const
+	void Physics::BodyVertex(JPH::BodyID bodyID, DynamicArray<Vector3>& outPositions)const
 	{
 		if (bodyID.IsInvalid())
 		{
@@ -665,6 +670,165 @@ namespace SeedCore
 		JPH::BodyIDVector bodyIDs;
 		joltManager_.PhysicsSystem().GetBodies(bodyIDs);
 		return DynamicArray<JPH::BodyID>(bodyIDs.begin(), bodyIDs.end());
+	}
+
+	/**
+	* [EN]
+	* Adds a force (N) at the body's center of mass for the next step
+	* and wakes the body. On a soft body the force is spread evenly
+	* over its vertices. Non-dynamic bodies are left untouched.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 次のステップの間、ボディの重心に力(N)を加え、ボディを起こす。
+	* ソフトボディでは力を頂点へ均等に分ける。動的でないボディには
+	* 何もしない。
+	*/
+	void Physics::AddForce(JPH::BodyID bodyID, const Vector3& force)
+	{
+		if (bodyID.IsInvalid())
+		{
+			return;
+		}
+
+		/// [EN] Jolt accumulates the force until the next update and skips bodies that are not dynamic.
+		/// [JP] Jolt は次の更新まで力を溜め、動的でないボディは飛ばす。
+		/// [EN] A soft body consumes the same accumulated force, dividing it among its vertices.
+		/// [JP] ソフトボディも同じ溜めた力を使い、頂点の数で割って配る。
+		joltManager_.BodyInterface().AddForce(bodyID, JPH::Vec3(force.x, force.y, force.z));
+	}
+
+	/**
+	* [EN]
+	* Adds an impulse (kg·m/s) at the body's center of mass, changing
+	* its velocity at once, and wakes the body. On a soft body every
+	* movable vertex gets the same change of velocity. Non-dynamic
+	* bodies are left untouched.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディの重心に力積(kg·m/s)を加えて速度を一度に変え、ボディを
+	* 起こす。ソフトボディでは、動ける頂点すべてに同じ速度変化を与える。
+	* 動的でないボディには何もしない。
+	*/
+	void Physics::AddImpulse(JPH::BodyID bodyID, const Vector3& impulse)
+	{
+		if (bodyID.IsInvalid())
+		{
+			return;
+		}
+
+		/// [EN] A rigid body takes the impulse directly as a change of its linear velocity.
+		/// [JP] 剛体は力積をそのまま移動速度の変化として受け取る。
+		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
+		if (bodyInterface.GetBodyType(bodyID) != JPH::EBodyType::SoftBody)
+		{
+			bodyInterface.AddImpulse(bodyID, JPH::Vec3(impulse.x, impulse.y, impulse.z));
+			return;
+		}
+
+		/// [EN] A soft body moves by its vertices' own velocities, so the impulse is applied to them directly.
+		/// [JP] ソフトボディは各頂点の速度で動くので、力積を頂点へ直接与える。
+		/// [EN] The scope releases the write lock before the body is woken, since waking takes its own lock.
+		/// [JP] ボディを起こす処理は自分でロックを取るので、その前にこのスコープで書き込みロックを外す。
+		{
+			JPH::BodyLockWrite lock(joltManager_.PhysicsSystem().GetBodyLockInterface(), bodyID);
+			if (!lock.Succeeded())
+			{
+				return;
+			}
+
+			/// [EN] A soft body keeps its vertices in its motion properties.
+			/// [JP] ソフトボディは頂点を運動特性の中に持つ。
+			JPH::SoftBodyMotionProperties* motionProperties = static_cast<JPH::SoftBodyMotionProperties*>(lock.GetBody().GetMotionPropertiesUnchecked());
+			if (!motionProperties)
+			{
+				return;
+			}
+
+			/// [EN] Total mass of the movable vertices; a vertex with inverse mass 0 is pinned and takes no share.
+			/// [JP] 動ける頂点の質量の合計。逆質量が 0 の頂点は固定されていて、分け前を受け取らない。
+			JPH::Array<JPH::SoftBodyMotionProperties::Vertex>& vertices = motionProperties->GetVertices();
+			Float totalMass = 0.0f;
+			for (const JPH::SoftBodyMotionProperties::Vertex& vertex : vertices)
+			{
+				if (vertex.mInvMass > 0.0f)
+				{
+					totalMass += 1.0f / vertex.mInvMass;
+				}
+			}
+
+			/// [EN] With every vertex pinned the body cannot move.
+			/// [JP] 全ての頂点が固定されていれば、ボディは動けない。
+			if (totalMass <= 0.0f)
+			{
+				return;
+			}
+
+			/// [EN] Impulse over total mass is the change of velocity; giving every movable vertex the same change moves the whole body without deforming it.
+			/// [JP] 力積を総質量で割ったものが速度変化。動ける頂点すべてに同じ変化を与えれば、形を崩さずボディ全体が動く。
+			JPH::Vec3 deltaVelocity = JPH::Vec3(impulse.x, impulse.y, impulse.z) / totalMass;
+			for (JPH::SoftBodyMotionProperties::Vertex& vertex : vertices)
+			{
+				if (vertex.mInvMass > 0.0f)
+				{
+					vertex.mVelocity += deltaVelocity;
+				}
+			}
+		}
+
+		/// [EN] A sleeping body would ignore the new velocities, so it is woken.
+		/// [JP] 眠っているボディは新しい速度を無視するので、起こす。
+		bodyInterface.ActivateBody(bodyID);
+	}
+
+	/**
+	* [EN]
+	* Adds a torque (N·m) in world space for the next step and wakes
+	* the body. Has no effect on a soft body or a non-dynamic body.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 次のステップの間、ワールド空間のトルク(N·m)を加え、ボディを起こす。
+	* ソフトボディと動的でないボディには効かない。
+	*/
+	void Physics::AddTorque(JPH::BodyID bodyID, const Vector3& torque)
+	{
+		if (bodyID.IsInvalid())
+		{
+			return;
+		}
+
+		/// [EN] Jolt accumulates the torque until the next update and skips bodies that are not dynamic.
+		/// [JP] Jolt は次の更新までトルクを溜め、動的でないボディは飛ばす。
+		joltManager_.BodyInterface().AddTorque(bodyID, JPH::Vec3(torque.x, torque.y, torque.z));
+	}
+
+	/**
+	* [EN]
+	* Adds an angular impulse (N·m·s) in world space, changing the
+	* body's angular velocity at once, and wakes the body. Has no
+	* effect on a soft body or a non-dynamic body.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ワールド空間の角力積(N·m·s)を加えて角速度を一度に変え、ボディを
+	* 起こす。ソフトボディと動的でないボディには効かない。
+	*/
+	void Physics::AddSpin(JPH::BodyID bodyID, const Vector3& angularImpulse)
+	{
+		if (bodyID.IsInvalid())
+		{
+			return;
+		}
+
+		/// [EN] The angular velocity changes by the inverse inertia times the angular impulse.
+		/// [JP] 角速度は、慣性の逆数に角力積を掛けた分だけ変わる。
+		joltManager_.BodyInterface().AddAngularImpulse(bodyID, JPH::Vec3(angularImpulse.x, angularImpulse.y, angularImpulse.z));
 	}
 
 	/**

@@ -58,12 +58,14 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
-		* Creates and returns a box shape from the current settings.
+		* Creates and returns a box shape from the current settings, scaled
+		* by the actor's own Scale; the parent's scale is not included.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 現在の設定から箱形状を生成して返す。
+		* 現在の設定に Actor 自身の Scale を掛けた箱形状を生成して返す。
+		* 親のスケールは含めない。
 		*/
 		Handle<JPH::Shape> GetShapeHandle()const;
 

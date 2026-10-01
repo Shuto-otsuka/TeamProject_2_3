@@ -121,7 +121,7 @@ namespace SeedCore
 		Actor parent = actor.Parent();
 		parentPersistentId_ = parent ? parent.PersistentID() : 0;
 
-		std::ranges::transform(actor.ChildList(), std::back_inserter(childPersistentIds_), [](const Actor& child) { return child.PersistentID(); });
+		std::ranges::transform(actor.Children(), std::back_inserter(childPersistentIds_), [](const Actor& child) { return child.PersistentID(); });
 	}
 
 	/**
@@ -402,7 +402,7 @@ namespace SeedCore
 			entry.oldActive_ = current.Active();
 			entries_.push_back(entry);
 
-			std::ranges::copy(current.ChildList(), std::back_inserter(pending));
+			std::ranges::copy(current.Children(), std::back_inserter(pending));
 		}
 	}
 

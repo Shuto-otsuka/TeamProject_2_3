@@ -332,7 +332,7 @@ namespace SeedCore
 		* [JP]
 		* この actor の直接の子一覧を、現在の順序で返す。
 		*/
-		SEEDCORE_API DynamicArray<Actor> ChildList()const;
+		SEEDCORE_API DynamicArray<Actor> Children()const;
 
 		/**
 		* [EN]

@@ -272,7 +272,7 @@ namespace SeedCore
 		return current;
 	}
 
-	Bool VisualStudioAutomation::TryAddFilesToProject(const std::filesystem::path& solutionPath, const std::string& projectName, const std::filesystem::path& headerPath, const std::filesystem::path& cppPath)
+	Bool VisualStudioAutomation::TryAddFile(const std::filesystem::path& solutionPath, const std::string& projectName, const std::filesystem::path& headerPath, const std::filesystem::path& cppPath)
 	{
 		Bool comInitializedHere = SUCCEEDED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED));
 
@@ -396,6 +396,63 @@ namespace SeedCore
 				}
 				solution->Release();
 			}
+			dte->Release();
+		}
+
+		if (comInitializedHere)
+		{
+			CoUninitialize();
+		}
+
+		return success;
+	}
+
+	Bool VisualStudioAutomation::TryOpenFile(const std::filesystem::path& solutionPath, const std::filesystem::path& filePath)
+	{
+		Bool comInitializedHere = SUCCEEDED(CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED));
+
+		Bool success = false;
+
+		IDispatch* dte = FindDTEForSolution(solutionPath);
+		if (dte)
+		{
+			/// [EN] ItemOperations.OpenFile's second parameter (the view kind) is optional, so passing only the path opens the file in its default editor.
+			/// [JP] ItemOperations.OpenFile の第2引数(ビューの種類)は省略できるので、パスだけを渡すと既定のエディタで開く。
+			IDispatch* itemOperations = GetDispatchProperty(dte, L"ItemOperations");
+			if (itemOperations)
+			{
+				VARIANT pathArg;
+				VariantInit(&pathArg);
+				pathArg.vt = VT_BSTR;
+				pathArg.bstrVal = SysAllocString(filePath.wstring().c_str());
+
+				VARIANT openResult;
+				VariantInit(&openResult);
+				success = InvokeMember(itemOperations, L"OpenFile", DISPATCH_METHOD, &pathArg, &openResult);
+				VariantClear(&openResult);
+				VariantClear(&pathArg);
+
+				itemOperations->Release();
+			}
+
+			/// [EN] Windows only lets the foreground process hand the foreground to another, so this process allows it before asking Visual Studio to activate its window.
+			/// [JP] Windows は前面のプロセスだけが他のプロセスに前面を譲れるので、Visual Studio にウィンドウの有効化を頼む前に、このプロセスがそれを許可する。
+			IDispatch* mainWindow = success ? GetDispatchProperty(dte, L"MainWindow") : nullptr;
+			if (mainWindow)
+			{
+				AllowSetForegroundWindow(ASFW_ANY);
+
+				VARIANT activateResult;
+				VariantInit(&activateResult);
+				/// [EN] Result ignored: the file is already open, and a window that stays behind is only an inconvenience.
+				/// [JP] 結果は無視する。ファイルは既に開いており、ウィンドウが後ろに残っても不便なだけだから。
+				Bool activated = InvokeMember(mainWindow, L"Activate", DISPATCH_METHOD, nullptr, &activateResult);
+				(void)activated;
+				VariantClear(&activateResult);
+
+				mainWindow->Release();
+			}
+
 			dte->Release();
 		}
 

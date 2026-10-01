@@ -12,6 +12,7 @@
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
+#include <FoundationEngine/World/ECS/Component/Scale.h>
 
 namespace SeedCore
 {
@@ -63,7 +64,10 @@ namespace SeedCore
 
 			/// [EN] Without a collider the body still needs a shape, so a small sphere stands in.
 			/// [JP] コライダーが無くてもボディには形状が要るので、小さな球で代用する。
-			return actor.GetPhysics().CreateSphereShape(defaultShapeRadius_);
+			/// [EN] Like SphereCollider, the radius follows the largest axis of the actor's own Scale; the parent's scale is not included.
+			/// [JP] SphereCollider と同じく、半径は Actor 自身の Scale の最も大きい軸に合わせる。親のスケールは含めない。
+			const Scale* scale = actor.GetComponent<Scale>();
+			return actor.GetPhysics().CreateSphereShape(defaultShapeRadius_ * Max(Abs(scale->x_), Abs(scale->y_), Abs(scale->z_)));
 		}();
 
 		/// [EN] Starts with every axis free and removes each frozen one.
@@ -245,6 +249,123 @@ namespace SeedCore
 		actor.GetPhysics().ReleaseShape(shapeHandle_);
 
 		bodyID_ = JPH::BodyID();
+	}
+
+	/**
+	* [EN]
+	* Adds a force (N) at the center of mass for the next fixed step.
+	* On a canvas body the force is given in pixels with Y down, and
+	* its Z is ignored. Only a Dynamic body is affected.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 次の固定ステップの間、重心に力(N)を加える。Canvas のボディでは
+	* 力をピクセル単位・Y 下向きで与え、Z は無視する。効くのは Dynamic
+	* のボディだけ。
+	*/
+	void Rigidbody::AddForce(const Vector3& force)
+	{
+		Actor actor = GetActor();
+
+		/// [EN] Canvas bodies go from pixels (Y down) to meters (Y up); the body stays on the z = 0 plane.
+		/// [JP] Canvas のボディは、ピクセル(Y 下向き)からメートル(Y 上向き)へ直す。ボディは z = 0 の平面上に留まる。
+		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
+		{
+			actor.GetPhysics().AddForce(bodyID_, Vector3(force.x / pixelsPerMeter_, -force.y / pixelsPerMeter_, 0.0f));
+			return;
+		}
+
+		actor.GetPhysics().AddForce(bodyID_, force);
+	}
+
+	/**
+	* [EN]
+	* Adds an impulse (kg·m/s) at the center of mass, changing the
+	* velocity at once. On a canvas body the impulse is given in pixels
+	* with Y down, and its Z is ignored. Only a Dynamic body is affected.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 重心に力積(kg·m/s)を加え、速度を一度に変える。Canvas のボディでは
+	* 力積をピクセル単位・Y 下向きで与え、Z は無視する。効くのは Dynamic
+	* のボディだけ。
+	*/
+	void Rigidbody::AddImpulse(const Vector3& impulse)
+	{
+		Actor actor = GetActor();
+
+		/// [EN] Canvas bodies go from pixels (Y down) to meters (Y up); the body stays on the z = 0 plane.
+		/// [JP] Canvas のボディは、ピクセル(Y 下向き)からメートル(Y 上向き)へ直す。ボディは z = 0 の平面上に留まる。
+		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
+		{
+			actor.GetPhysics().AddImpulse(bodyID_, Vector3(impulse.x / pixelsPerMeter_, -impulse.y / pixelsPerMeter_, 0.0f));
+			return;
+		}
+
+		actor.GetPhysics().AddImpulse(bodyID_, impulse);
+	}
+
+	/**
+	* [EN]
+	* Adds a world-space torque (N·m) for the next fixed step. On a
+	* canvas body only X is used, as the in-plane torque in the same
+	* direction as Rotation::x_. Only a Dynamic body is affected.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 次の固定ステップの間、ワールド空間のトルク(N·m)を加える。Canvas の
+	* ボディでは X だけを、Rotation::x_ と同じ向きの平面内トルクとして使う。
+	* 効くのは Dynamic のボディだけ。
+	*/
+	void Rigidbody::AddTorque(const Vector3& torque)
+	{
+		Actor actor = GetActor();
+
+		/// [EN] A canvas body only turns about Z. Its angle is kept in Rotation::x_ with the sign flipped, so X is negated onto Z.
+		/// [JP] Canvas のボディは Z 軸まわりにしか回らない。角度は符号を反転して Rotation::x_ に持つので、X を反転して Z へ移す。
+		/// [EN] Torque carries length squared (kg·m²/s²), so pixels come back to meters by dividing twice.
+		/// [JP] トルクは長さの2乗(kg·m²/s²)を含むので、ピクセルからメートルへは2回割って戻す。
+		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
+		{
+			actor.GetPhysics().AddTorque(bodyID_, Vector3(0.0f, 0.0f, -torque.x / (pixelsPerMeter_ * pixelsPerMeter_)));
+			return;
+		}
+
+		actor.GetPhysics().AddTorque(bodyID_, torque);
+	}
+
+	/**
+	* [EN]
+	* Adds a world-space angular impulse (N·m·s), changing the angular
+	* velocity at once. On a canvas body only X is used, as the
+	* in-plane angular impulse in the same direction as Rotation::x_.
+	* Only a Dynamic body is affected.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ワールド空間の角力積(N·m·s)を加え、角速度を一度に変える。Canvas の
+	* ボディでは X だけを、Rotation::x_ と同じ向きの平面内の角力積として
+	* 使う。効くのは Dynamic のボディだけ。
+	*/
+	void Rigidbody::AddSpin(const Vector3& angularImpulse)
+	{
+		Actor actor = GetActor();
+
+		/// [EN] A canvas body only turns about Z. Its angle is kept in Rotation::x_ with the sign flipped, so X is negated onto Z.
+		/// [JP] Canvas のボディは Z 軸まわりにしか回らない。角度は符号を反転して Rotation::x_ に持つので、X を反転して Z へ移す。
+		/// [EN] Angular impulse carries length squared (kg·m²/s), so pixels come back to meters by dividing twice.
+		/// [JP] 角力積は長さの2乗(kg·m²/s)を含むので、ピクセルからメートルへは2回割って戻す。
+		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
+		{
+			actor.GetPhysics().AddSpin(bodyID_, Vector3(0.0f, 0.0f, -angularImpulse.x / (pixelsPerMeter_ * pixelsPerMeter_)));
+			return;
+		}
+
+		actor.GetPhysics().AddSpin(bodyID_, angularImpulse);
 	}
 
 	/**

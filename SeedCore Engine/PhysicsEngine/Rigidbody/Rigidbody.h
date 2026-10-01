@@ -169,6 +169,68 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
+		* Adds a force (N) at the center of mass for the next fixed step.
+		* On a canvas body the force is given in pixels with Y down, and
+		* its Z is ignored. Only a Dynamic body is affected.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 次の固定ステップの間、重心に力(N)を加える。Canvas のボディでは
+		* 力をピクセル単位・Y 下向きで与え、Z は無視する。効くのは Dynamic
+		* のボディだけ。
+		*/
+		void AddForce(const Vector3& force);
+
+		/**
+		* [EN]
+		* Adds an impulse (kg·m/s) at the center of mass, changing the
+		* velocity at once. On a canvas body the impulse is given in pixels
+		* with Y down, and its Z is ignored. Only a Dynamic body is affected.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 重心に力積(kg·m/s)を加え、速度を一度に変える。Canvas のボディでは
+		* 力積をピクセル単位・Y 下向きで与え、Z は無視する。効くのは Dynamic
+		* のボディだけ。
+		*/
+		void AddImpulse(const Vector3& impulse);
+
+		/**
+		* [EN]
+		* Adds a world-space torque (N·m) for the next fixed step. On a
+		* canvas body only X is used, as the in-plane torque in the same
+		* direction as Rotation::x_. Only a Dynamic body is affected.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 次の固定ステップの間、ワールド空間のトルク(N·m)を加える。Canvas の
+		* ボディでは X だけを、Rotation::x_ と同じ向きの平面内トルクとして使う。
+		* 効くのは Dynamic のボディだけ。
+		*/
+		void AddTorque(const Vector3& torque);
+
+		/**
+		* [EN]
+		* Adds a world-space angular impulse (N·m·s), changing the angular
+		* velocity at once. On a canvas body only X is used, as the
+		* in-plane angular impulse in the same direction as Rotation::x_.
+		* Only a Dynamic body is affected.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ワールド空間の角力積(N·m·s)を加え、角速度を一度に変える。Canvas の
+		* ボディでは X だけを、Rotation::x_ と同じ向きの平面内の角力積として
+		* 使う。効くのは Dynamic のボディだけ。
+		*/
+		void AddSpin(const Vector3& angularImpulse);
+
+	public:
+		/**
+		* [EN]
 		* Returns the Jolt ID of the body; invalid before OnAwake and after
 		* OnDestroy.
 		*

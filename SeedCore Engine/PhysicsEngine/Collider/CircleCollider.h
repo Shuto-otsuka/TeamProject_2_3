@@ -58,12 +58,15 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
-		* Creates and returns a circle shape from the current settings.
+		* Creates and returns a circle shape from the current settings, scaled
+		* by the X and Y of the actor's own Scale; the parent's scale is not
+		* included. The radius follows the larger of X and Y.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 現在の設定から円形状を生成して返す。
+		* 現在の設定に Actor 自身の Scale の X と Y を掛けた円形状を生成して
+		* 返す。親のスケールは含めない。半径は X と Y の大きい方に合わせる。
 		*/
 		Handle<JPH::Shape> GetShapeHandle()const;
 

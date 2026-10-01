@@ -510,7 +510,7 @@ namespace SeedCore
 
 		if (!isNestedInstance)
 		{
-			for (Actor child : actor.ChildList())
+			for (Actor child : actor.Children())
 			{
 				CaptureActorNode(child, myIndex, outNodes);
 			}

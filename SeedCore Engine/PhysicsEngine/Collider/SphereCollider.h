@@ -53,12 +53,17 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
-		* Creates and returns a sphere shape from the current settings.
+		* Creates and returns a sphere shape from the current settings, scaled
+		* by the actor's own Scale; the parent's scale is not included. The
+		* radius follows the largest axis, so the sphere encloses the scaled
+		* shape.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 現在の設定から球形状を生成して返す。
+		* 現在の設定に Actor 自身の Scale を掛けた球形状を生成して返す。
+		* 親のスケールは含めない。半径は最も大きい軸に合わせるので、球は
+		* 拡縮後の形を包む。
 		*/
 		Handle<JPH::Shape> GetShapeHandle()const;
 

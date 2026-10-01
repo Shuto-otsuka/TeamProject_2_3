@@ -47,6 +47,13 @@ namespace SeedCore
 		/// [JP] 先に実行器を破棄し、動いている StepAsync() のジョブの終了を(~JobExecutor で)待つ。これで読み込み中でもキャッシュを破棄できる。
 		loadExecutor_ = nullptr;
 
+		/// [EN] The watch exists only once Watch() has been called, which the Runtime never does.
+		/// [JP] 監視は Watch() が呼ばれて初めて作られる。Runtime は一度も呼ばない。
+		if (watchHandle_ != INVALID_HANDLE_VALUE)
+		{
+			FindCloseChangeNotification(watchHandle_);
+		}
+
 		Unload(loader_, heap_);
 	}
 
@@ -158,6 +165,40 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Starts the folder watch on the first call, and on later calls runs
+	* Reload() once a change has been signalled.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 最初の呼び出しでフォルダの監視を始め、以降の呼び出しでは変更が通知されて
+	* いれば Reload() を実行する。
+	*/
+	void ResourceCache::Watch(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
+	{
+		/// [EN] Gameplay assets live under UserProject; watching the whole root would also catch build output and Visual Studio's own files.
+		/// [JP] ゲームのアセットは UserProject 以下にある。ルート全体を監視すると、ビルド出力や Visual Studio 自身のファイルまで拾ってしまう。
+		if (watchHandle_ == INVALID_HANDLE_VALUE)
+		{
+			std::filesystem::path watchPath = projectRootPath_ / "UserProject";
+			if (!std::filesystem::exists(watchPath))
+			{
+				watchPath = projectRootPath_;
+			}
+			watchHandle_ = FindFirstChangeNotificationW(watchPath.wstring().c_str(), TRUE, FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME | FILE_NOTIFY_CHANGE_LAST_WRITE);
+			return;
+		}
+
+		/// [EN] A zero timeout only checks the signal, so an idle frame never waits here.
+		/// [JP] タイムアウト 0 は通知の有無を見るだけなので、何も変わっていないフレームがここで待つことはない。
+		if (WaitForSingleObject(watchHandle_, 0) == WAIT_OBJECT_0)
+		{
+			Reload(loader, device, cmdQueue, bc7Shader);
+		}
+	}
+
+	/**
+	* [EN]
 	* Starts (once per Async() pass) a background job that repeatedly calls
 	* Step() on a dedicated worker thread until the pending queue is
 	* drained. See the header doc comment for the full contract.
@@ -239,6 +280,20 @@ namespace SeedCore
 		}
 
 		return static_cast<Float>(loadedAssetCount_.load(std::memory_order_acquire)) / static_cast<Float>(total);
+	}
+
+	/**
+	* [EN]
+	* Returns the number of full Reload() calls so far.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* これまでの全体の Reload() の回数を返す。
+	*/
+	Uint64 ResourceCache::Revision()const
+	{
+		return revision_;
 	}
 
 	/**
@@ -552,6 +607,17 @@ namespace SeedCore
 
 			asset.isLoaded_ = true;
 		}
+
+		/// [EN] This scan already covers every change signalled so far, so drain the watch; each FindNextChangeNotification re-signals at once while changes are still queued, hence the loop.
+		/// [JP] ここまでに通知された変更は今回の走査で全て反映済みなので、監視の通知を空にする。変更が溜まっている間は FindNextChangeNotification がすぐ再通知するため、ループで回す。
+		while (watchHandle_ != INVALID_HANDLE_VALUE && WaitForSingleObject(watchHandle_, 0) == WAIT_OBJECT_0)
+		{
+			FindNextChangeNotification(watchHandle_);
+		}
+
+		/// [EN] Advance last, once the asset list is final, so a caller rebuilding from it sees the finished state.
+		/// [JP] アセット一覧が確定してから最後に進める。それを見て作り直す呼び出し側が、完成した状態を見られるようにするため。
+		++revision_;
 	}
 
 	/**

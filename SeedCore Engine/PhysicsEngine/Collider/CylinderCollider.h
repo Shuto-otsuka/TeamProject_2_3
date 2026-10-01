@@ -58,12 +58,15 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
-		* Creates and returns a cylinder shape from the current settings.
+		* Creates and returns a cylinder shape from the current settings, scaled
+		* by the actor's own Scale; the parent's scale is not included. The
+		* height follows Y and the radius the larger of X and Z.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 現在の設定から円柱形状を生成して返す。
+		* 現在の設定に Actor 自身の Scale を掛けた円柱形状を生成して返す。
+		* 親のスケールは含めない。高さは Y に、半径は X と Z の大きい方に合わせる。
 		*/
 		Handle<JPH::Shape> GetShapeHandle()const;
 

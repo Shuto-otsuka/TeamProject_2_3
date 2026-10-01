@@ -5,6 +5,7 @@
 #include <GraphicsEngine/Model/Collision/MeshCollision.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/ECS/Component/Scale.h>
 #include <FoundationEngine/Log/Warning.h>
 
 namespace SeedCore
@@ -76,9 +77,14 @@ namespace SeedCore
 			convex = true;
 		}
 
+		/// [EN] The baked vertices are in model space, so the actor's own Scale is applied to match the rendered mesh; the parent's scale is not included.
+		/// [JP] 焼いた頂点はモデル空間なので、描画されるメッシュに合わせて Actor 自身の Scale を掛ける。親のスケールは含めない。
+		const Scale* scale = actor.GetComponent<Scale>();
+		Vector3 scaleVector = scale->Vector();
+
 		/// [EN] Build either a convex hull or triangle mesh from the resolved asset data.
 		/// [JP] 解決済みアセットデータから凸包または三角形メッシュを構築する。
-		shapeHandle_ = convex ? actor.GetPhysics().CreateConvexShape(meshID_, meshCollision.Positions()) : actor.GetPhysics().CreateMeshShape(meshID_, meshCollision.Positions(), meshCollision.Indices());
+		shapeHandle_ = convex ? actor.GetPhysics().CreateConvexShape(meshID_, meshCollision.Positions(), scaleVector) : actor.GetPhysics().CreateMeshShape(meshID_, meshCollision.Positions(), meshCollision.Indices(), scaleVector);
 
 		if (shapeHandle_.empty())
 		{

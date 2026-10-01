@@ -248,7 +248,7 @@ namespace SeedCore
 		}
 
 		Bool selected = Selected(actor);
-		Bool hasChildren = !actor.ChildList().empty();
+		Bool hasChildren = !actor.Children().empty();
 		Bool isChild = static_cast<Bool>(actor.Parent());
 
 		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap;
@@ -277,35 +277,6 @@ namespace SeedCore
 		Bool opened = ImGui::TreeNodeEx("##actor", flags);
 		Bool treeClicked = ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen();
 
-		/// [EN] Unreal-style "frame selected": double-clicking an actor row
-		///      slides a viewport camera to it. An Image/Text/Movie whose
-		///      view type is Sprite is drawn only in the 2D canvas
-		///      (TextureRenderer/FontRenderer/MovieRenderer offset it by
-		///      +100000 into canvas space), so framing it with the 3D editor
-		///      camera would just fly that off to the canvas origin - those
-		///      animate the CanvasView camera and pull the canvas panel
-		///      forward instead. The same components in Billboard/Fullscreen
-		///      mode are ordinary world-space geometry and take the 3D path
-		///      like everything else. The 3D path frames the editor camera on
-		///      the actor's world-space Bounds centre (Vector3::Transform of
-		///      the local centre by the composed world matrix), not the raw
-		///      pivot - a skeletal mesh's pivot is usually at the feet / DCC
-		///      origin while the body sits well above it, so framing the
-		///      pivot puts the character off screen.
-		/// [JP] Unreal 風の「選択対象にフレーム」: アクター行をダブルクリック
-		///      するとビューポートのカメラがそこへスライドする。表示形式が
-		///      Sprite の Image/Text/Movie は 2D キャンバスにしか描かれない
-		///      （TextureRenderer/FontRenderer/MovieRenderer が +100000 で
-		///      キャンバス空間へずらす）ので、3D エディタカメラでフレーム
-		///      するとキャンバス原点へ飛んでいくだけ - これらは CanvasView の
-		///      カメラをアニメーションで寄せ、キャンバスパネルを前面に出す。
-		///      同じコンポーネントでも Billboard/Fullscreen のときは通常の
-		///      ワールド空間ジオメトリなので、他と同じく 3D 経路をとる。
-		///      3D 経路は、生のピボットではなくアクターのワールド空間 Bounds
-		///      中心（合成ワールド行列でローカル中心を Vector3::Transform
-		///      したもの）へフレームする - スケルタルメッシュのピボットは
-		///      通常、足元 / DCC 原点にあり本体はその上方にあるため、
-		///      ピボットへフレームするとキャラが画面外になる。
 		if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 		{
 			const Matrix& worldMatrix = actor.WorldMatrix();
@@ -326,27 +297,6 @@ namespace SeedCore
 			}
 			else if (context_.cameraContext_.editorCamera_)
 			{
-				/// [EN] An actor with an Animator is skinned: its Bounds is
-				///      ModelRenderer's copy of the crister's bind-pose vertex
-				///      AABB, which neither tracks the animated pose nor
-				///      excludes helper/off-model geometry baked into the bind
-				///      pose - so a dolly radius derived from it (and its
-				///      centre) can be wildly off and fling the camera away.
-				///      Pan to the pivot at the current distance instead. Any
-				///      other actor gets the bounds-fit dolly onto its
-				///      world-space Bounds centre; every actor has a Bounds
-				///      (default 0.5 half-extent, centre 0) so a non-mesh
-				///      actor just pans onto its pivot with a small radius.
-				/// [JP] Animator を持つアクターはスキン付き: その Bounds は
-				///      ModelRenderer が持つ crister のバインドポーズ頂点 AABB
-				///      の写しで、アニメ後のポーズを追わず、バインドポーズに
-				///      焼き込まれたヘルパー/モデル外ジオメトリも除外しない -
-				///      そこから出したドリー radius(と中心)は大きくズレて
-				///      カメラを飛ばしうる。代わりに現在の距離のままピボットへ
-				///      パンする。それ以外のアクターはワールド空間 Bounds
-				///      中心へのバウンズフィットドリー。全アクターが Bounds を
-				///      持つ(デフォルトは半径 0.5、中心 0)ので、メッシュでない
-				///      アクターは小さな radius でピボットへパンするだけになる。
 				Bool skinned = actor.GetComponent<Animator>() != nullptr;
 
 				Float radius = 0.0f;
@@ -490,7 +440,7 @@ namespace SeedCore
 
 		if (opened)
 		{
-			for (Actor child : actor.ChildList())
+			for (Actor child : actor.Children())
 			{
 				DrawActorNode(child);
 			}
@@ -519,12 +469,6 @@ namespace SeedCore
 		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
 		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
 
-		/// [EN] Rebind this Actor's Apply target to the newly-saved file, so a later
-		///      "Prefab に適用" writes to this new Prefab instead of any Prefab it
-		///      may have originally been instantiated from.
-		/// [JP] この Actor の適用先を、新しく保存されたファイルに再バインドする。
-		///      これにより以降の「Prefab に適用」は、元々インスタンス化された Prefab
-		///      ではなく、この新しい Prefab に書き込まれる。
 		std::string relative = std::filesystem::relative(savedPath, context_.worldContext_.resource_->ProjectRootPath()).string();
 		std::ranges::replace(relative, '\\', '/');
 		Uint32 newAssetID = context_.worldContext_.resource_->GetAssetID(String(relative));
@@ -738,7 +682,7 @@ namespace SeedCore
 			return 0;
 		}
 
-		const DynamicArray<Actor>& siblings = parent.ChildList();
+		const DynamicArray<Actor>& siblings = parent.Children();
 		auto it = std::ranges::find(siblings, actor);
 		if (it == siblings.end() || it == siblings.begin())
 		{
