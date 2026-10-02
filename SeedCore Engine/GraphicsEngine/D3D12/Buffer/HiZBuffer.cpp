@@ -83,7 +83,7 @@ namespace SeedCore
 		mipConstants_.resize(mipCount_);
 		for (Uint mip = 0; mip < mipCount_; mip++)
 		{
-			mipConstantBuffers_[mip] = MakePtr<ConstantBuffer<HiZBuildConstantBuffer>>(device, bindlessHeap);
+			mipConstantBuffers_[mip] = MakePtr<StaticConstantBuffer<HiZBuildConstantBuffer>>(device, bindlessHeap);
 
 			HiZBuildConstantBuffer constants{};
 			constants.destinationIndex_ = mipUnorderedAccessViewIndices_[mip];
@@ -124,12 +124,10 @@ namespace SeedCore
 	{
 		for (Uint mip = 0; mip < mipCount_; mip++)
 		{
-			bindlessHeap->FreeIndex(mipUnorderedAccessViewIndices_[mip]);
+			bindlessHeap->Release(nullptr, mipUnorderedAccessViewIndices_[mip]);
 		}
-		bindlessHeap->FreeIndex(shaderResourceViewIndex_);
 
-		bindlessHeap->DeferRelease(resource_);
-		resource_.Reset();
+		bindlessHeap->Release(std::move(resource_), shaderResourceViewIndex_);
 		mipConstantBuffers_.clear();
 		mipConstants_.clear();
 		mipCount_ = 0;
@@ -164,7 +162,7 @@ namespace SeedCore
 		for (Uint mip = 0; mip < mipCount_; mip++)
 		{
 			mipConstantBuffers_[mip]->Update(mipConstants_[mip]);
-			Uint dispatchBufferIndex = mipConstantBuffers_[mip]->GetIndex();
+			Uint dispatchBufferIndex = mipConstantBuffers_[mip]->Index();
 			cmd->SetComputeRoot32BitConstants(3, 1, &dispatchBufferIndex, 0);
 
 			Uint dispatchX = (mipWidths_[mip] + 7) / 8;

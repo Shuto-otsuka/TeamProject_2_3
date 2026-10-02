@@ -107,7 +107,7 @@ namespace SeedCore
 	{
 		if (bindlessHeap_)
 		{
-			bindlessHeap_->FreeIndex(sourceTextureIndex_);
+			bindlessHeap_->Release(nullptr, sourceTextureIndex_);
 			bindlessHeap_ = nullptr;
 		}
 

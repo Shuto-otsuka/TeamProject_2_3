@@ -62,18 +62,13 @@ namespace SeedCore
 			{
 				continue;
 			}
-			bindlessHeap_->FreeIndex(page.meshletBufferIndex_);
-			bindlessHeap_->FreeIndex(page.meshletBoundBufferIndex_);
-			bindlessHeap_->FreeIndex(page.vertexIndicesBufferIndex_);
-			bindlessHeap_->FreeIndex(page.primitiveIndicesBufferIndex_);
-			bindlessHeap_->DeferRelease(page.meshletResource_);
-			bindlessHeap_->DeferRelease(page.meshletBoundResource_);
-			bindlessHeap_->DeferRelease(page.vertexIndicesResource_);
-			bindlessHeap_->DeferRelease(page.primitiveIndicesResource_);
+			bindlessHeap_->Release(std::move(page.meshletResource_), page.meshletBufferIndex_);
+			bindlessHeap_->Release(std::move(page.meshletBoundResource_), page.meshletBoundBufferIndex_);
+			bindlessHeap_->Release(std::move(page.vertexIndicesResource_), page.vertexIndicesBufferIndex_);
+			bindlessHeap_->Release(std::move(page.primitiveIndicesResource_), page.primitiveIndicesBufferIndex_);
 			if (page.ownsVertices_)
 			{
-				bindlessHeap_->FreeIndex(page.vertexBufferIndex_);
-				bindlessHeap_->DeferRelease(page.vertexResource_);
+				bindlessHeap_->Release(std::move(page.vertexResource_), page.vertexBufferIndex_);
 			}
 			totalResidentGeometryBytes_ -= page.sizeBytes_;
 			page.resident_ = false;
@@ -81,8 +76,7 @@ namespace SeedCore
 
 		if (poolResident_)
 		{
-			bindlessHeap_->FreeIndex(poolBufferIndex_);
-			bindlessHeap_->DeferRelease(poolResource_);
+			bindlessHeap_->Release(std::move(poolResource_), poolBufferIndex_);
 			totalResidentGeometryBytes_ -= poolSizeBytes_;
 			poolResident_ = false;
 		}
@@ -91,15 +85,13 @@ namespace SeedCore
 		{
 			if (streamingTexture.pinnedMip_.resource_)
 			{
-				bindlessHeap_->FreeIndex(streamingTexture.pinnedMip_.bindlessIndex_);
-				bindlessHeap_->DeferRelease(streamingTexture.pinnedMip_.resource_);
 				totalResidentTextureBytes_ -= streamingTexture.pinnedMip_.sizeBytes_;
+				bindlessHeap_->Release(std::move(streamingTexture.pinnedMip_.resource_), streamingTexture.pinnedMip_.bindlessIndex_);
 			}
 			if (streamingTexture.currentMip_.resource_)
 			{
-				bindlessHeap_->FreeIndex(streamingTexture.currentMip_.bindlessIndex_);
-				bindlessHeap_->DeferRelease(streamingTexture.currentMip_.resource_);
 				totalResidentTextureBytes_ -= streamingTexture.currentMip_.sizeBytes_;
+				bindlessHeap_->Release(std::move(streamingTexture.currentMip_.resource_), streamingTexture.currentMip_.bindlessIndex_);
 			}
 		}
 
@@ -122,79 +114,14 @@ namespace SeedCore
 		///      これらのバッファから頂点属性を読む。ComPtr メンバにここで
 		///      同期的に解放させず、遅延回収リングへ渡し、bindless SRV
 		///      スロットを返す。
-		if (vertexBufferIndex_ != SC_INVALID)
-		{
-			bindlessHeap_->FreeIndex(vertexBufferIndex_);
-			vertexBufferIndex_ = SC_INVALID;
-		}
-		if (skinVertexBufferIndex_ != SC_INVALID)
-		{
-			bindlessHeap_->FreeIndex(skinVertexBufferIndex_);
-			skinVertexBufferIndex_ = SC_INVALID;
-		}
-		if (indexBufferIndex_ != SC_INVALID)
-		{
-			bindlessHeap_->FreeIndex(indexBufferIndex_);
-			indexBufferIndex_ = SC_INVALID;
-		}
-		if (positionBufferIndex_ != SC_INVALID)
-		{
-			bindlessHeap_->FreeIndex(positionBufferIndex_);
-			positionBufferIndex_ = SC_INVALID;
-		}
-		if (raytracingSkinVertexBufferIndex_ != SC_INVALID)
-		{
-			bindlessHeap_->FreeIndex(raytracingSkinVertexBufferIndex_);
-			raytracingSkinVertexBufferIndex_ = SC_INVALID;
-		}
-		if (raytracingMorphDeltaBufferIndex_ != SC_INVALID)
-		{
-			bindlessHeap_->FreeIndex(raytracingMorphDeltaBufferIndex_);
-			raytracingMorphDeltaBufferIndex_ = SC_INVALID;
-		}
-		if (morphDeltaBufferIndex_ != SC_INVALID)
-		{
-			bindlessHeap_->FreeIndex(morphDeltaBufferIndex_);
-			morphDeltaBufferIndex_ = SC_INVALID;
-		}
-		if (vertexMorphSourceBufferIndex_ != SC_INVALID)
-		{
-			bindlessHeap_->FreeIndex(vertexMorphSourceBufferIndex_);
-			vertexMorphSourceBufferIndex_ = SC_INVALID;
-		}
-
-		if (vertexResource_)
-		{
-			bindlessHeap_->DeferRelease(vertexResource_);
-		}
-		if (positionResource_)
-		{
-			bindlessHeap_->DeferRelease(positionResource_);
-		}
-		if (skinVertexResource_)
-		{
-			bindlessHeap_->DeferRelease(skinVertexResource_);
-		}
-		if (indexResource_)
-		{
-			bindlessHeap_->DeferRelease(indexResource_);
-		}
-		if (raytracingSkinVertexResource_)
-		{
-			bindlessHeap_->DeferRelease(raytracingSkinVertexResource_);
-		}
-		if (raytracingMorphDeltaResource_)
-		{
-			bindlessHeap_->DeferRelease(raytracingMorphDeltaResource_);
-		}
-		if (morphDeltaResource_)
-		{
-			bindlessHeap_->DeferRelease(morphDeltaResource_);
-		}
-		if (vertexMorphSourceResource_)
-		{
-			bindlessHeap_->DeferRelease(vertexMorphSourceResource_);
-		}
+		bindlessHeap_->Release(std::move(vertexResource_), vertexBufferIndex_);
+		bindlessHeap_->Release(std::move(skinVertexResource_), skinVertexBufferIndex_);
+		bindlessHeap_->Release(std::move(indexResource_), indexBufferIndex_);
+		bindlessHeap_->Release(std::move(positionResource_), positionBufferIndex_);
+		bindlessHeap_->Release(std::move(raytracingSkinVertexResource_), raytracingSkinVertexBufferIndex_);
+		bindlessHeap_->Release(std::move(raytracingMorphDeltaResource_), raytracingMorphDeltaBufferIndex_);
+		bindlessHeap_->Release(std::move(morphDeltaResource_), morphDeltaBufferIndex_);
+		bindlessHeap_->Release(std::move(vertexMorphSourceResource_), vertexMorphSourceBufferIndex_);
 	}
 
 	/**
@@ -2805,7 +2732,6 @@ namespace SeedCore
 		{
 			if (streamingTexture.currentMip_.resource_)
 			{
-				bindlessHeap_->FreeIndex(streamingTexture.currentMip_.bindlessIndex_);
 				/// [EN] The mip being replaced is the one the in-flight frames are
 				///      still sampling - this upgrade is driven by worldScale, so it
 				///      fires on the very frame the Actor's Scale changes. Dropping
@@ -2816,7 +2742,7 @@ namespace SeedCore
 				///      駆動されるため、Actor の Scale を変えたまさにそのフレームで
 				///      発火する。ここで最後の参照を落とすと、GPU が使っている
 				///      最中にテクスチャを破棄することになる。
-				bindlessHeap_->DeferRelease(streamingTexture.currentMip_.resource_);
+				bindlessHeap_->Release(std::move(streamingTexture.currentMip_.resource_), streamingTexture.currentMip_.bindlessIndex_);
 				totalResidentTextureBytes_ -= streamingTexture.currentMip_.sizeBytes_;
 			}
 			streamingTexture.currentMip_.resource_ = newResource;
@@ -2887,23 +2813,13 @@ namespace SeedCore
 			return;
 		}
 
-		bindlessHeap_->FreeIndex(page.meshletBufferIndex_);
-		bindlessHeap_->FreeIndex(page.meshletBoundBufferIndex_);
-		bindlessHeap_->FreeIndex(page.vertexIndicesBufferIndex_);
-		bindlessHeap_->FreeIndex(page.primitiveIndicesBufferIndex_);
-		bindlessHeap_->DeferRelease(page.meshletResource_);
-		bindlessHeap_->DeferRelease(page.meshletBoundResource_);
-		bindlessHeap_->DeferRelease(page.vertexIndicesResource_);
-		bindlessHeap_->DeferRelease(page.primitiveIndicesResource_);
-		page.meshletResource_.Reset();
-		page.meshletBoundResource_.Reset();
-		page.vertexIndicesResource_.Reset();
-		page.primitiveIndicesResource_.Reset();
+		bindlessHeap_->Release(std::move(page.meshletResource_), page.meshletBufferIndex_);
+		bindlessHeap_->Release(std::move(page.meshletBoundResource_), page.meshletBoundBufferIndex_);
+		bindlessHeap_->Release(std::move(page.vertexIndicesResource_), page.vertexIndicesBufferIndex_);
+		bindlessHeap_->Release(std::move(page.primitiveIndicesResource_), page.primitiveIndicesBufferIndex_);
 		if (page.ownsVertices_)
 		{
-			bindlessHeap_->FreeIndex(page.vertexBufferIndex_);
-			bindlessHeap_->DeferRelease(page.vertexResource_);
-			page.vertexResource_.Reset();
+			bindlessHeap_->Release(std::move(page.vertexResource_), page.vertexBufferIndex_);
 		}
 		else
 		{
@@ -2941,9 +2857,7 @@ namespace SeedCore
 			return;
 		}
 
-		bindlessHeap_->FreeIndex(streamingTexture.currentMip_.bindlessIndex_);
-		bindlessHeap_->DeferRelease(streamingTexture.currentMip_.resource_);
-		streamingTexture.currentMip_.resource_.Reset();
+		bindlessHeap_->Release(std::move(streamingTexture.currentMip_.resource_), streamingTexture.currentMip_.bindlessIndex_);
 		streamingTexture.currentMip_.bindlessIndex_ = SC_INVALID;
 		totalResidentTextureBytes_ -= streamingTexture.currentMip_.sizeBytes_;
 		streamingTexture.currentMip_.sizeBytes_ = 0;
@@ -2970,9 +2884,7 @@ namespace SeedCore
 		{
 			return;
 		}
-		bindlessHeap_->FreeIndex(poolBufferIndex_);
-		bindlessHeap_->DeferRelease(poolResource_);
-		poolResource_.Reset();
+		bindlessHeap_->Release(std::move(poolResource_), poolBufferIndex_);
 		totalResidentGeometryBytes_ -= poolSizeBytes_;
 		poolSizeBytes_ = 0;
 		poolResident_ = false;

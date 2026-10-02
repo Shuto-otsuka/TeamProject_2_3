@@ -135,7 +135,7 @@ namespace SeedCore
 		DynamicArray<ModelStructuredBuffer> furInstances_;
 		static constexpr Uint32 furShellMax_ = 32;
 
-		ResourcePtr<ConstantBuffer<FurConstantBuffer>> modelFurConstantBuffer_;
+		ResourcePtr<StaticConstantBuffer<FurConstantBuffer>> modelFurConstantBuffer_;
 
 		ResourcePtr<ReadOnlyStructuredBuffer<ModelStructuredBuffer>> instanceBuffer_;
 

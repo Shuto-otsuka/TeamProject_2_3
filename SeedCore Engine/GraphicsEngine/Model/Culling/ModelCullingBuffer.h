@@ -58,7 +58,7 @@ namespace SeedCore
 		Microsoft::WRL::ComPtr<ID3D12Resource> argumentResetBuffer_;
 		Microsoft::WRL::ComPtr<ID3D12CommandSignature> commandSignature_;
 
-		ResourcePtr<ConstantBuffer<ModelCullingConstantBuffer>> constantBuffer_;
+		ResourcePtr<StaticConstantBuffer<ModelCullingConstantBuffer>> constantBuffer_;
 
 		Uint singleSidedUnorderedAccessViewIndex_ = 0;
 		Uint singleSidedShaderResourceViewIndex_ = 0;

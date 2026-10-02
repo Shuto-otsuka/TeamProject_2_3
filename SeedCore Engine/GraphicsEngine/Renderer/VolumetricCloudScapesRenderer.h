@@ -410,7 +410,7 @@ namespace SeedCore
 
 		/// [EN] GPU copy of the tuning values, read through its bindless index.
 		/// [JP] 調整値の GPU 側コピー。bindless インデックス経由で読まれる。
-		ResourcePtr<ConstantBuffer<VolumetricCloudScapesRayConstantBuffer>> tuningBuffer_;
+		ResourcePtr<StaticConstantBuffer<VolumetricCloudScapesRayConstantBuffer>> tuningBuffer_;
 
 		/// [EN] Cloud texture: rgb is in-scattered radiance, a is coverage.
 		/// [JP] 雲テクスチャ。rgb は内散乱の放射輝度、a はカバレッジ。

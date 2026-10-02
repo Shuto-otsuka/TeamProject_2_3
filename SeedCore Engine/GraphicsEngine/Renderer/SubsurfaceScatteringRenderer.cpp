@@ -56,7 +56,7 @@ namespace SeedCore
 
 		/// [EN] The tuning values live in a constant buffer the shaders find through its bindless index.
 		/// [JP] 調整値は、シェーダーが bindless インデックスで見つける定数バッファに置く。
-		tuningBuffer_ = MakePtr<ConstantBuffer<SubsurfaceScatteringRayConstantBuffer>>(device, bindlessHeap);
+		tuningBuffer_ = MakePtr<StaticConstantBuffer<SubsurfaceScatteringRayConstantBuffer>>(device, bindlessHeap);
 
 		/// [EN] Create the size-dependent resources at the current size.
 		/// [JP] サイズに依存するリソースを現在のサイズで作る。
@@ -112,7 +112,7 @@ namespace SeedCore
 
 		/// [EN] The ray pass writes through the write view; deferred lighting reads through the read view.
 		/// [JP] レイパスは書き込み用ビューで書き、ディファードライティングは読み取り用ビューで読む。
-		constantIndicesSystem_->SetSubsurfaceScatteringRayConstantIndex(tuningBuffer_->GetIndex());
+		constantIndicesSystem_->SetSubsurfaceScatteringRayConstantIndex(tuningBuffer_->Index());
 		unorderedAccessIndicesSystem_->SetSubsurfaceScatteringTransmittanceUnorderedAccessViewIndex(transmittanceUnorderedAccessViewIndex_);
 		shaderResourceIndicesSystem_->SetSubsurfaceScatteringTransmittanceShaderResourceViewIndex(transmittanceShaderResourceViewIndex_);
 	}
@@ -275,14 +275,8 @@ namespace SeedCore
 	*/
 	void SubsurfaceScatteringRenderer::Release()
 	{
-		/// [EN] Return the view slots to the bindless heap.
-		/// [JP] ビューのスロットを bindless ヒープへ返す。
-		bindlessHeap_->FreeIndex(transmittanceUnorderedAccessViewIndex_);
-		bindlessHeap_->FreeIndex(transmittanceShaderResourceViewIndex_);
-
-		/// [EN] Keep the resource alive until the GPU has finished with it; then drop this reference.
-		/// [JP] GPU が使い終えるまでリソースを生かしておき、その後この参照を手放す。
-		bindlessHeap_->DeferRelease(transmittanceResource_);
-		transmittanceResource_.Reset();
+		/// [EN] Queue the view slots and the resource on the bindless heap, which holds them until the in-flight frames that may still read them have finished.
+		/// [JP] ビューのスロットとリソースを bindless ヒープに積む。ヒープは、それらを読みうるインフライトのフレームが完了するまで保持する。
+		bindlessHeap_->Release(std::move(transmittanceResource_), { transmittanceUnorderedAccessViewIndex_, transmittanceShaderResourceViewIndex_ });
 	}
 }

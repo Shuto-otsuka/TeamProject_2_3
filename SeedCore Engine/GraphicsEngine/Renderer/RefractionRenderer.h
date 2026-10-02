@@ -217,7 +217,7 @@ namespace SeedCore
 
 		/// [EN] GPU copy of the tuning values, read through its bindless index.
 		/// [JP] 調整値の GPU 側コピー。bindless インデックス経由で読まれる。
-		ResourcePtr<ConstantBuffer<RefractionRayConstantBuffer>> tuningBuffer_;
+		ResourcePtr<StaticConstantBuffer<RefractionRayConstantBuffer>> tuningBuffer_;
 
 		/// [EN] Refracted radiance written by the pass and read by deferred lighting.
 		/// [JP] パスが書き込み、ディファードライティングが読む屈折後の放射輝度。

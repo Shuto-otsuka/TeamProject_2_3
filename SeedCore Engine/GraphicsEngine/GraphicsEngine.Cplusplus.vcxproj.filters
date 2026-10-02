@@ -583,7 +583,7 @@
     <ClInclude Include="Renderer\TextureRenderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Effect\Zephyr\Zephyr.h">
+    <ClInclude Include="Effect\Zephyr\ZephyParticler.h">
       <Filter>Effect\Zephyr</Filter>
     </ClInclude>
     <ClInclude Include="Effect\Zephyr\Effect.h">
@@ -957,6 +957,18 @@
     </ClInclude>
     <ClInclude Include="Raytracing\RaytracingDispatch.h">
       <Filter>Raytracing</Filter>
+    </ClInclude>
+    <ClInclude Include="Effect\Zephyr\ZephyrParticleStorage.h">
+      <Filter>Effect\Zephyr</Filter>
+    </ClInclude>
+    <ClInclude Include="Effect\Zephyr\EffectShader.h">
+      <Filter>Effect\Zephyr</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer\EffectRenderer.h">
+      <Filter>Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="System\EffectSystem.h">
+      <Filter>System</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1583,6 +1595,24 @@
     <ClCompile Include="System\SplashSystem.cpp">
       <Filter>System</Filter>
     </ClCompile>
+    <ClCompile Include="D3D12\Buffer\ConstantBuffer.cpp">
+      <Filter>D3D12\Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12\FrameRing.cpp">
+      <Filter>D3D12</Filter>
+    </ClCompile>
+    <ClCompile Include="Effect\Zephyr\ZephyrParticleStorage.cpp">
+      <Filter>Effect\Zephyr</Filter>
+    </ClCompile>
+    <ClCompile Include="Effect\Zephyr\EffectShader.cpp">
+      <Filter>Effect\Zephyr</Filter>
+    </ClCompile>
+    <ClCompile Include="Renderer\EffectRenderer.cpp">
+      <Filter>Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="System\EffectSystem.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\Sampler.hlsli">
@@ -1752,6 +1782,9 @@
     </None>
     <None Include="Model\Morph\MorphBlend.hlsli">
       <Filter>Model\Morph</Filter>
+    </None>
+    <None Include="Effect\Zephyr\ParticleTemplate.hlsli">
+      <Filter>Effect\Zephyr</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -2186,6 +2219,9 @@
     </Text>
     <Text Include="Shape\Screen\BootScreenPS.hlsl">
       <Filter>Shape\Screen</Filter>
+    </Text>
+    <Text Include="Effect\Zephyr\ParticleSystemCS.hlsl">
+      <Filter>Effect\Zephyr</Filter>
     </Text>
   </ItemGroup>
 </Project>

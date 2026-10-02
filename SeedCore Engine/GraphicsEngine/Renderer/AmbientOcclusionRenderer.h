@@ -241,7 +241,7 @@ namespace SeedCore
 
 		/// [EN] GPU copy of the tuning values, read through its bindless index.
 		/// [JP] 調整値の GPU 側コピー。bindless インデックス経由で読まれる。
-		ResourcePtr<ConstantBuffer<AmbientOcclusionRayConstantBuffer>> tuningBuffer_;
+		ResourcePtr<StaticConstantBuffer<AmbientOcclusionRayConstantBuffer>> tuningBuffer_;
 
 		/// [EN] Raw, noisy single-channel openness written by AmbientOcclusionRT.hlsl. A single texture is enough, since the denoiser consumes it in the same flush.
 		/// [JP] AmbientOcclusionRT.hlsl が書く、生のノイズを含む 1 チャンネルの開放度。デノイザが同じ Flush 内で消費するため、1 枚で足りる。

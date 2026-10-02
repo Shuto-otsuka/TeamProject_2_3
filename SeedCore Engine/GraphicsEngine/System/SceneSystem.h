@@ -52,7 +52,7 @@ namespace SeedCore
 		Uint GetIndex()const;
 
 	private:
-		ResourcePtr<ConstantBuffer<SceneConstantBuffer>> sceneConstantBuffer_;
+		ResourcePtr<StaticConstantBuffer<SceneConstantBuffer>> sceneConstantBuffer_;
 
 	};
 }

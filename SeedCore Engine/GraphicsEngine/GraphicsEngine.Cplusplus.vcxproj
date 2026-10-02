@@ -97,9 +97,11 @@
     <ClInclude Include="Effect\Zephyr\Effect.h" />
     <ClInclude Include="Effect\Zephyr\EffectLoader.h" />
     <ClInclude Include="Effect\Zephyr\EffectResource.h" />
-    <ClInclude Include="Effect\Zephyr\Zephyr.h" />
+    <ClInclude Include="Effect\Zephyr\EffectShader.h" />
+    <ClInclude Include="Effect\Zephyr\ZephyParticler.h" />
     <ClInclude Include="Effect\Zephyr\ZephyrModuleAssembler.h" />
     <ClInclude Include="Effect\Zephyr\ZephyrModuleRegistry.h" />
+    <ClInclude Include="Effect\Zephyr\ZephyrParticleStorage.h" />
     <ClInclude Include="Environment\Weather.h" />
     <ClInclude Include="Environment\WeatherParticleShader.h" />
     <ClInclude Include="Font\Font.h" />
@@ -204,6 +206,7 @@
     <ClInclude Include="Renderer\ColliderRenderer.h" />
     <ClInclude Include="Renderer\DecalRenderer.h" />
     <ClInclude Include="Renderer\DlssRayReconstructionRenderer.h" />
+    <ClInclude Include="Renderer\EffectRenderer.h" />
     <ClInclude Include="Renderer\EffekseerRenderer.h" />
     <ClInclude Include="Renderer\FontRenderer.h" />
     <ClInclude Include="Renderer\GlobalIlluminationRenderer.h" />
@@ -250,6 +253,7 @@
     <ClInclude Include="System\CameraSystem.h" />
     <ClInclude Include="System\CelestialSystem.h" />
     <ClInclude Include="System\ConstraintSystem.h" />
+    <ClInclude Include="System\EffectSystem.h" />
     <ClInclude Include="System\IndicesSystem.h" />
     <ClInclude Include="System\LightSystem.h" />
     <ClInclude Include="System\MovieSystem.h" />
@@ -279,10 +283,12 @@
     <ClCompile Include="Camera\ScreenSpace.cpp" />
     <ClCompile Include="Constraint\AttachmentConstraint.cpp" />
     <ClCompile Include="Constraint\IKConstraint.cpp" />
+    <ClCompile Include="D3D12\Buffer\ConstantBuffer.cpp" />
     <ClCompile Include="D3D12\Buffer\DepthResizeBuffer.cpp" />
     <ClCompile Include="D3D12\Buffer\HudlessBuffer.cpp" />
     <ClCompile Include="D3D12\Buffer\ReservoirBuffer.cpp" />
     <ClCompile Include="D3D12\Context\D3D12Check.cpp" />
+    <ClCompile Include="D3D12\FrameRing.cpp" />
     <ClCompile Include="DLSS\DlssBackgroundVelocityShader.cpp" />
     <ClCompile Include="DLSS\DlssNormalRoughnessShader.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerEffect.cpp" />
@@ -292,8 +298,10 @@
     <ClCompile Include="Effect\Effekseer\EffekseerResource.cpp" />
     <ClCompile Include="Effect\Zephyr\EffectLoader.cpp" />
     <ClCompile Include="Effect\Zephyr\EffectResource.cpp" />
+    <ClCompile Include="Effect\Zephyr\EffectShader.cpp" />
     <ClCompile Include="Effect\Zephyr\ZephyrModuleAssembler.cpp" />
     <ClCompile Include="Effect\Zephyr\ZephyrModuleRegistry.cpp" />
+    <ClCompile Include="Effect\Zephyr\ZephyrParticleStorage.cpp" />
     <ClCompile Include="Environment\WeatherParticleShader.cpp" />
     <ClCompile Include="Font\Font.cpp" />
     <ClCompile Include="Font\FontManager.cpp" />
@@ -458,6 +466,7 @@
     <ClCompile Include="Renderer\ColliderRenderer.cpp" />
     <ClCompile Include="Renderer\DecalRenderer.cpp" />
     <ClCompile Include="Renderer\DlssRayReconstructionRenderer.cpp" />
+    <ClCompile Include="Renderer\EffectRenderer.cpp" />
     <ClCompile Include="Renderer\EffekseerRenderer.cpp" />
     <ClCompile Include="Renderer\FontRenderer.cpp" />
     <ClCompile Include="Renderer\GlobalIlluminationRenderer.cpp" />
@@ -504,6 +513,7 @@
     <ClCompile Include="System\CameraSystem.cpp" />
     <ClCompile Include="System\CelestialSystem.cpp" />
     <ClCompile Include="System\ConstraintSystem.cpp" />
+    <ClCompile Include="System\EffectSystem.cpp" />
     <ClCompile Include="System\IndicesSystem.cpp">
     </ClCompile>
     <ClCompile Include="System\LightSystem.cpp">
@@ -543,6 +553,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
     <None Include="Effect\Zephyr\ParticlePool.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Effect\Zephyr\ParticleTemplate.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
@@ -1295,6 +1309,19 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="Shape\Screen\BootScreenPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Effect\Zephyr\ParticleSystemCS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>

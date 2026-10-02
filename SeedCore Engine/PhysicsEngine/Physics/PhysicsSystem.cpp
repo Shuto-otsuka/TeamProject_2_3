@@ -45,17 +45,17 @@ namespace SeedCore
 			/// [JP] 物理の1メートルに当たる Canvas のピクセル数。
 			static constexpr Float pixelsPerMeter = 100.0f;
 
-			/// [EN] Canvas Y points down and physics Y up, so Y and the Z rotation (stored in Rotation::x_) are negated.
-			/// [JP] Canvas の Y は下向き、物理の Y は上向きなので、Y と Z 軸回転(Rotation::x_ に入っている)の符号を反転する。
+			/// [EN] Canvas Y points down and physics Y up, so Y and the canvas angle (the X component of Rotation's Euler angles) are negated.
+			/// [JP] Canvas の Y は下向き、物理の Y は上向きなので、Y と Canvas の角度(Rotation のオイラー角の X 成分)の符号を反転する。
 			desc.position_ = position ? Vector3{ position->x_ / pixelsPerMeter, -position->y_ / pixelsPerMeter, 0.0f } : Vector3{ 0.0f, 0.0f, 0.0f };
-			desc.rotation_ = rotation ? Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -ToRadians(rotation->x_)) : Quaternion::Identity;
+			desc.rotation_ = rotation ? Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -rotation->Euler().x) : Quaternion::Identity;
 		}
 		else
 		{
-			/// [EN] Rotation holds Euler angles in degrees: x pitch, y yaw, z roll.
-			/// [JP] Rotation は度単位のオイラー角で、x がピッチ、y がヨー、z がロール。
+			/// [EN] Rotation holds a normalized quaternion, passed to the body as is.
+			/// [JP] Rotation は正規化済みクォータニオンを持つので、そのままボディへ渡す。
 			desc.position_ = position ? Vector3{ position->x_, position->y_, position->z_ } : Vector3{ 0.0f, 0.0f, 0.0f };
-			desc.rotation_ = rotation ? Quaternion::CreateFromYawPitchRoll(ToRadians(rotation->y_), ToRadians(rotation->x_), ToRadians(rotation->z_)) : Quaternion::Identity;
+			desc.rotation_ = rotation ? rotation->Quat() : Quaternion::Identity;
 		}
 
 		/// [EN] Lets physics queries and contacts find their way back to the actor.

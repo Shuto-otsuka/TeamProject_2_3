@@ -126,16 +126,11 @@ namespace SeedCore
 			return;
 		}
 
-		dayResource_.Reset();
-		nightResource_.Reset();
-		warningResource_.Reset();
-		fictionResource_.Reset();
-		criLogoResource_.Reset();
-		bindlessHeap_->FreeIndex(dayTextureIndex_);
-		bindlessHeap_->FreeIndex(nightTextureIndex_);
-		bindlessHeap_->FreeIndex(warningTextureIndex_);
-		bindlessHeap_->FreeIndex(fictionTextureIndex_);
-		bindlessHeap_->FreeIndex(criLogoTextureIndex_);
+		bindlessHeap_->Release(std::move(dayResource_), dayTextureIndex_);
+		bindlessHeap_->Release(std::move(nightResource_), nightTextureIndex_);
+		bindlessHeap_->Release(std::move(warningResource_), warningTextureIndex_);
+		bindlessHeap_->Release(std::move(fictionResource_), fictionTextureIndex_);
+		bindlessHeap_->Release(std::move(criLogoResource_), criLogoTextureIndex_);
 
 		rootSignature_.Reset();
 		pipelineState_.Reset();

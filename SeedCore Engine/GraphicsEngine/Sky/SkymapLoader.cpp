@@ -169,20 +169,14 @@ namespace SeedCore
 		Skymap* skymap = pool_.Get(handle);
 		if (skymap && heap)
 		{
-			if (skymap->shaderResourceViewIndex_ != SC_INVALID)
-			{
-				heap->FreeIndex(skymap->shaderResourceViewIndex_);
-				skymap->shaderResourceViewIndex_ = SC_INVALID;
-			}
-
 			/// [EN] pool_.Destroy below runs the Skymap's destructor right here,
 			///      so the equirect texture must be handed to the deferred ring
 			///      first - the frames still in flight are sampling it.
 			/// [JP] 下の pool_.Destroy はこの場で Skymap のデストラクタを走らせる
 			///      ため、先に equirect テクスチャを遅延回収リングへ渡す必要が
 			///      ある — インフライトのフレームがまだサンプリングしている。
-			heap->DeferRelease(skymap->resource_);
-			skymap->resource_.Reset();
+			heap->Release(std::move(skymap->resource_), skymap->shaderResourceViewIndex_);
+			skymap->shaderResourceViewIndex_ = SC_INVALID;
 		}
 
 		pool_.Destroy(handle);

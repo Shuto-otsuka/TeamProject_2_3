@@ -138,8 +138,8 @@ namespace SeedCore
 
 		spatialInstanceBuffer_ = MakePtr<ReadOnlyStructuredBuffer<ColliderStructuredBuffer>>(device, bindlessHeap, maxInstanceCount_);
 		planarInstanceBuffer_ = MakePtr<ReadOnlyStructuredBuffer<ColliderStructuredBuffer>>(device, bindlessHeap, maxInstanceCount_);
-		spatialInstanceConstantsBuffer_ = MakePtr<ConstantBuffer<ColliderConstantBuffer>>(device, bindlessHeap);
-		planarInstanceConstantsBuffer_ = MakePtr<ConstantBuffer<ColliderConstantBuffer>>(device, bindlessHeap);
+		spatialInstanceConstantsBuffer_ = MakePtr<StaticConstantBuffer<ColliderConstantBuffer>>(device, bindlessHeap);
+		planarInstanceConstantsBuffer_ = MakePtr<StaticConstantBuffer<ColliderConstantBuffer>>(device, bindlessHeap);
 
 		BuildIcosphereEdges(icosphereSubdivisionLevel_, sphereEdgeData_, hemisphereEdgeData_);
 		sphereEdgeCount_ = static_cast<Uint>(sphereEdgeData_.size() / 2);
@@ -214,7 +214,7 @@ namespace SeedCore
 			constants.hemisphereEdgeCount_ = hemisphereEdgeCount_;
 			spatialInstanceConstantsBuffer_->Update(constants);
 
-			constantIndicesSystem_->SetEditorColliderIndex(spatialInstanceConstantsBuffer_->GetIndex());
+			constantIndicesSystem_->SetEditorColliderIndex(spatialInstanceConstantsBuffer_->Index());
 		}
 
 		if (!planarInstances_.empty())
@@ -237,7 +237,7 @@ namespace SeedCore
 			constants.hemisphereEdgeCount_ = hemisphereEdgeCount_;
 			planarInstanceConstantsBuffer_->Update(constants);
 
-			constantIndicesSystem_->SetCanvasColliderIndex(planarInstanceConstantsBuffer_->GetIndex());
+			constantIndicesSystem_->SetCanvasColliderIndex(planarInstanceConstantsBuffer_->Index());
 		}
 	}
 

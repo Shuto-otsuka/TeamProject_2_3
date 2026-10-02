@@ -8,9 +8,9 @@ struct GravityModule
 	float3 gravity_;
 };
 
-void ApplyGravityUpdate(inout ParticleSeed seed, GravityModule module_, ParticleMeta meta)
+void ApplyGravityUpdate(inout ParticleSeed seed, GravityModule module_, ParticleConstantBuffer particle)
 {
-	seed.velocity_ += module_.gravity_ * meta.emitter_delta_;
+	seed.live_velocity_ += module_.gravity_ * particle.emitter_delta_;
 }
 
 #endif // __GRAVITY_MODULE_HLSL__

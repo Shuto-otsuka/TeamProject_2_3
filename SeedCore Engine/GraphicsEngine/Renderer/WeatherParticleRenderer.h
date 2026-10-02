@@ -145,7 +145,7 @@ namespace SeedCore
 
 		WeatherParticleShader particleShader_;
 
-		ResourcePtr<ConstantBuffer<WeatherParticleConstantBuffer>> tuningBuffer_;
+		ResourcePtr<StaticConstantBuffer<WeatherParticleConstantBuffer>> tuningBuffer_;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> rainParticleResource_;
 		D3D12_RESOURCE_STATES rainParticleState_ = D3D12_RESOURCE_STATE_COMMON;

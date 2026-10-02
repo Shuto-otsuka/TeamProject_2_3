@@ -15,12 +15,8 @@ namespace SeedCore
 	*/
 	std::string FileUtility::LoadFileText(String filePath)
 	{
-<<<<<<< HEAD
-		auto a = std::filesystem::current_path();
-=======
 		/// [EN] Opened in binary mode so the text comes back byte for byte, with CRLF line endings left as they are.
 		/// [JP] バイナリモードで開くので、CRLF の改行も変換されず、テキストがバイト単位でそのまま返る。
->>>>>>> 219f02415566c4ec6f292a4796f5097843f562e0
 		std::ifstream ifs(filePath.c_str(), std::ios::binary);
 
 		/// [EN] A missing or unreadable file is reported as empty text rather than an error.

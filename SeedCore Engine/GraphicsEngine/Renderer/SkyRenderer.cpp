@@ -33,10 +33,10 @@ namespace SeedCore
 		constantBuffers_.reserve(maxGenerateDispatches_);
 		for (Uint dispatchIndex = 0; dispatchIndex < maxGenerateDispatches_; dispatchIndex++)
 		{
-			constantBuffers_.push_back(MakePtr<ConstantBuffer<SkyDispatchBuffer>>(device, bindlessHeap));
+			constantBuffers_.push_back(MakePtr<StaticConstantBuffer<SkyDispatchBuffer>>(device, bindlessHeap));
 		}
 
-		skyConstantBuffer_ = MakePtr<ConstantBuffer<SkyConstantBuffer>>(device, bindlessHeap);
+		skyConstantBuffer_ = MakePtr<StaticConstantBuffer<SkyConstantBuffer>>(device, bindlessHeap);
 
 		CreateBrdfLookupTable(device, bindlessHeap);
 		CreateIblCubes(device, bindlessHeap);
@@ -281,7 +281,7 @@ namespace SeedCore
 		SkyConstantBuffer data{};
 		data.intensity_ = uploadIntensity;
 		skyConstantBuffer_->Update(data);
-		constantIndicesSystem.SetSkyIndex(skyConstantBuffer_->GetIndex());
+		constantIndicesSystem.SetSkyIndex(skyConstantBuffer_->Index());
 	}
 
 	void SkyRenderer::Generate(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses)
@@ -427,7 +427,7 @@ namespace SeedCore
 
 	void SkyRenderer::Dispatch(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, ID3D12PipelineState* pipeline, const SkyDispatchBuffer& data, Uint groupsX, Uint groupsY, Uint groupsZ, const RootAddresses& addresses)
 	{
-		ConstantBuffer<SkyDispatchBuffer>* constantBuffer = constantBuffers_[dispatchCursor_ % maxGenerateDispatches_].get();
+		StaticConstantBuffer<SkyDispatchBuffer>* constantBuffer = constantBuffers_[dispatchCursor_ % maxGenerateDispatches_].get();
 		dispatchCursor_++;
 		constantBuffer->Update(data);
 
@@ -437,7 +437,7 @@ namespace SeedCore
 		cmd->SetDescriptorHeaps(_countof(heaps), heaps);
 		cmd->SetComputeRootSignature(rootSignature_->Get());
 		RootSignature::BindCompute(cmd, addresses);
-		Uint dispatchBufferIndex = constantBuffer->GetIndex();
+		Uint dispatchBufferIndex = constantBuffer->Index();
 		cmd->SetComputeRoot32BitConstants(3, 1, &dispatchBufferIndex, 0);
 		cmd->SetPipelineState(pipeline);
 		cmd->Dispatch(groupsX, groupsY, groupsZ);

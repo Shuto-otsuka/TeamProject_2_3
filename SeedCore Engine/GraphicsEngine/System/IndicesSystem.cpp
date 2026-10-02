@@ -5,9 +5,9 @@ namespace SeedCore
 {
 	ConstantIndicesSystem::ConstantIndicesSystem(ID3D12Device* device, BindlessHeap* heap)
 	{
-		editorConstantIndicesBuffer_ = MakePtr<ConstantBuffer<ConstantIndices>>(device, heap);
-		gameConstantIndicesBuffer_ = MakePtr<ConstantBuffer<ConstantIndices>>(device, heap);
-		canvasConstantIndicesBuffer_ = MakePtr<ConstantBuffer<ConstantIndices>>(device, heap);
+		editorConstantIndicesBuffer_ = MakePtr<StaticConstantBuffer<ConstantIndices>>(device, heap);
+		gameConstantIndicesBuffer_ = MakePtr<StaticConstantBuffer<ConstantIndices>>(device, heap);
+		canvasConstantIndicesBuffer_ = MakePtr<StaticConstantBuffer<ConstantIndices>>(device, heap);
 	}
 
 	void ConstantIndicesSystem::UploadEditor()
@@ -196,9 +196,9 @@ namespace SeedCore
 
 	ShaderResourceIndicesSystem::ShaderResourceIndicesSystem(ID3D12Device* device, BindlessHeap* heap)
 	{
-		editorBuffer_ = MakePtr<ConstantBuffer<ShaderResourceIndices>>(device, heap);
-		gameBuffer_ = MakePtr<ConstantBuffer<ShaderResourceIndices>>(device, heap);
-		canvasBuffer_ = MakePtr<ConstantBuffer<ShaderResourceIndices>>(device, heap);
+		editorBuffer_ = MakePtr<StaticConstantBuffer<ShaderResourceIndices>>(device, heap);
+		gameBuffer_ = MakePtr<StaticConstantBuffer<ShaderResourceIndices>>(device, heap);
+		canvasBuffer_ = MakePtr<StaticConstantBuffer<ShaderResourceIndices>>(device, heap);
 	}
 
 	void ShaderResourceIndicesSystem::UploadEditor()
@@ -595,9 +595,9 @@ namespace SeedCore
 
 	UnorderedAccessIndicesSystem::UnorderedAccessIndicesSystem(ID3D12Device* device, BindlessHeap* heap)
 	{
-		editorBuffer_ = MakePtr<ConstantBuffer<UnorderedAccessIndices>>(device, heap);
-		gameBuffer_ = MakePtr<ConstantBuffer<UnorderedAccessIndices>>(device, heap);
-		canvasBuffer_ = MakePtr<ConstantBuffer<UnorderedAccessIndices>>(device, heap);
+		editorBuffer_ = MakePtr<StaticConstantBuffer<UnorderedAccessIndices>>(device, heap);
+		gameBuffer_ = MakePtr<StaticConstantBuffer<UnorderedAccessIndices>>(device, heap);
+		canvasBuffer_ = MakePtr<StaticConstantBuffer<UnorderedAccessIndices>>(device, heap);
 	}
 
 	void UnorderedAccessIndicesSystem::UploadEditor()

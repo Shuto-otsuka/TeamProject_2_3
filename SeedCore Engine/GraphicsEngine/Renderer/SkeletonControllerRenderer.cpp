@@ -126,8 +126,8 @@ namespace SeedCore
 
 		sceneSystem_ = MakePtr<SceneSystem>(device, bindlessHeap);
 
-		constantIndicesBuffer_ = MakePtr<ConstantBuffer<ConstantIndices>>(device, bindlessHeap);
-		shaderResourceIndicesBuffer_ = MakePtr<ConstantBuffer<ShaderResourceIndices>>(device, bindlessHeap);
+		constantIndicesBuffer_ = MakePtr<StaticConstantBuffer<ConstantIndices>>(device, bindlessHeap);
+		shaderResourceIndicesBuffer_ = MakePtr<StaticConstantBuffer<ShaderResourceIndices>>(device, bindlessHeap);
 
 		if (D3D12Check::GetLevel() != D3D12Level::D12_2)
 		{
@@ -137,7 +137,7 @@ namespace SeedCore
 		boneLineShader_.Create(shaderCache, device, DepthStencilStateType::DepthOff);
 
 		boneInstanceBuffer_ = MakePtr<ReadOnlyStructuredBuffer<ColliderStructuredBuffer>>(device, bindlessHeap, maxBoneInstanceCount_);
-		boneInstanceConstantsBuffer_ = MakePtr<ConstantBuffer<ColliderConstantBuffer>>(device, bindlessHeap);
+		boneInstanceConstantsBuffer_ = MakePtr<StaticConstantBuffer<ColliderConstantBuffer>>(device, bindlessHeap);
 
 		BuildIcosphereEdges(icosphereSubdivisionLevel_, sphereEdgeData_);
 		sphereEdgeCount_ = static_cast<Uint>(sphereEdgeData_.size() / 2);
@@ -603,7 +603,7 @@ namespace SeedCore
 		sceneSystem_->Upload(scene);
 
 		constantIndices_.sceneIndex_ = sceneSystem_->GetIndex();
-		constantIndices_.colliderIndex_ = boneInstanceConstantsBuffer_->GetIndex();
+		constantIndices_.colliderIndex_ = boneInstanceConstantsBuffer_->Index();
 		constantIndicesBuffer_->Update(constantIndices_);
 		shaderResourceIndicesBuffer_->Update(shaderResourceIndices_);
 

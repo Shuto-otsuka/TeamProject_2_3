@@ -213,12 +213,12 @@ namespace SeedCore
 		/// [JP] 物理クエリや接触から Actor へたどり着けるようにする。
 		desc.userData_ = actor.GetEntity().GetID();
 
-		/// [EN] Rotation holds Euler angles in degrees: x pitch, y yaw, z roll.
-		/// [JP] Rotation は度単位のオイラー角で、x がピッチ、y がヨー、z がロール。
+		/// [EN] Rotation holds a normalized quaternion, passed to the body as is.
+		/// [JP] Rotation は正規化済みクォータニオンを持つので、そのままボディへ渡す。
 		const Position* position = actor.GetComponent<Position>();
 		const Rotation* rotation = actor.GetComponent<Rotation>();
 		desc.position_ = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
-		desc.rotation_ = rotation ? Quaternion::CreateFromYawPitchRoll(ToRadians(rotation->y_), ToRadians(rotation->x_), ToRadians(rotation->z_)) : Quaternion::Identity;
+		desc.rotation_ = rotation ? rotation->Quat() : Quaternion::Identity;
 
 		/// [EN] On failure the soft body stays pending and is tried again next frame.
 		/// [JP] 失敗したら構築待ちのまま残り、次のフレームで再び試す。

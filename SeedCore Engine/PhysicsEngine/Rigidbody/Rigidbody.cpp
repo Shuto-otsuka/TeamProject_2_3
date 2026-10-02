@@ -198,11 +198,15 @@ namespace SeedCore
 				position->y_ = -outPosition.y * pixelsPerMeter_;
 			}
 
-			/// [EN] The body only turns about Z, so the angle is 2·atan2(z, w), negated with the flipped Y.
-			/// [JP] ボディは Z 軸まわりにしか回らないので、角度は 2·atan2(z, w)。Y の反転に合わせて符号を反転する。
+			/// [EN] The body only turns about Z, so the angle is 2·atan2(z, w), negated with the flipped Y and stored as the X component of Rotation's Euler angles.
+			/// [JP] ボディは Z 軸まわりにしか回らないので、角度は 2·atan2(z, w)。Y の反転に合わせて符号を反転し、Rotation のオイラー角の X 成分として格納する。
 			if (rotation)
 			{
-				rotation->x_ = -ToDegrees(2.0f * std::atan2(outRotation.z, outRotation.w));
+				Quaternion canvasRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitX, -2.0f * std::atan2(outRotation.z, outRotation.w));
+				rotation->x_ = canvasRotation.x;
+				rotation->y_ = canvasRotation.y;
+				rotation->z_ = canvasRotation.z;
+				rotation->w_ = canvasRotation.w;
 			}
 
 			return;
@@ -215,14 +219,14 @@ namespace SeedCore
 			position->z_ = outPosition.z;
 		}
 
-		/// [EN] Rotation is stored as Euler angles in degrees.
-		/// [JP] Rotation は度単位のオイラー角で持つ。
+		/// [EN] Rotation is stored as a normalized quaternion.
+		/// [JP] Rotation は正規化済みクォータニオンで持つ。
 		if (rotation)
 		{
-			const Vector3 euler = outRotation.ToEuler();
-			rotation->x_ = ToDegrees(euler.x);
-			rotation->y_ = ToDegrees(euler.y);
-			rotation->z_ = ToDegrees(euler.z);
+			rotation->x_ = outRotation.x;
+			rotation->y_ = outRotation.y;
+			rotation->z_ = outRotation.z;
+			rotation->w_ = outRotation.w;
 		}
 	}
 

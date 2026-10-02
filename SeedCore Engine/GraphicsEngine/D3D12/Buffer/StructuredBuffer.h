@@ -80,8 +80,7 @@ namespace SeedCore
 				}
 				if (heap_)
 				{
-					heap_->FreeIndex(indices_[frame]);
-					heap_->DeferRelease(resources_[frame]);
+					heap_->Release(resources_[frame], indices_[frame]);
 				}
 			}
 		}
@@ -91,12 +90,6 @@ namespace SeedCore
 			Uint frame = FrameRing::Index();
 			memcpy(mappedPtrs_[frame], data, sizeof(T) * count);
 
-			/// [EN] Only clear the range this slot's previous use wrote beyond the
-			///      new count — zeroing the whole tail every frame moved tens of
-			///      megabytes of write-combined memory per frame.
-			/// [JP] このスロットが前回書いた範囲のうち新しい count を超える部分
-			///      だけをクリアする — 毎フレーム残り全域をゼロ埋めすると、
-			///      フレームごとに数十 MB の write-combined 書き込みになる。
 			if (count < lastCounts_[frame])
 			{
 				memset(static_cast<Byte*>(mappedPtrs_[frame]) + sizeof(T) * count, 0, sizeof(T) * (lastCounts_[frame] - count));
@@ -202,8 +195,7 @@ namespace SeedCore
 				}
 				if (heap_)
 				{
-					heap_->FreeIndex(indices_[frame]);
-					heap_->DeferRelease(resources_[frame]);
+					heap_->Release(resources_[frame], indices_[frame]);
 				}
 			}
 		}
@@ -239,10 +231,34 @@ namespace SeedCore
 	class ReadWriteStructuredBuffer :public Buffer<ReadWriteStructuredBuffer<T>>
 	{
 	public:
-		ReadWriteStructuredBuffer(ID3D12Device* device, Uint elementCount) :Buffer<ReadWriteStructuredBuffer<T>>(device, sizeof(T)* elementCount, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS), elementCount_(elementCount)
+		ReadWriteStructuredBuffer(ID3D12Device* device, BindlessHeap* heap, Uint elementCount) :Buffer<ReadWriteStructuredBuffer<T>>(device, sizeof(T)* elementCount, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS), heap_(heap), elementCount_(elementCount)
 		{
-			/// No Code
+			unorderedAccessViewIndex_ = heap->AllocateIndex();
+			D3D12_UNORDERED_ACCESS_VIEW_DESC unorderedAccessViewDesc = ViewImplementation();
+			device->CreateUnorderedAccessView(this->resource_.Get(), nullptr, &unorderedAccessViewDesc, heap->CPUHandle(unorderedAccessViewIndex_));
+
+			shaderResourceViewIndex_ = heap->AllocateIndex();
+			D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc{};
+			shaderResourceViewDesc.Format = DXGI_FORMAT_UNKNOWN;
+			shaderResourceViewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
+			shaderResourceViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+			shaderResourceViewDesc.Buffer.FirstElement = 0;
+			shaderResourceViewDesc.Buffer.NumElements = elementCount_;
+			shaderResourceViewDesc.Buffer.StructureByteStride = sizeof(T);
+			shaderResourceViewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE;
+			device->CreateShaderResourceView(this->resource_.Get(), &shaderResourceViewDesc, heap->CPUHandle(shaderResourceViewIndex_));
 		}
+
+		~ReadWriteStructuredBuffer()
+		{
+			if (heap_)
+			{
+				heap_->Release(this->resource_, { unorderedAccessViewIndex_,shaderResourceViewIndex_ });
+			}
+		}
+
+		ReadWriteStructuredBuffer(const ReadWriteStructuredBuffer&) = delete;
+		ReadWriteStructuredBuffer& operator=(const ReadWriteStructuredBuffer&) = delete;
 
 		D3D12_UNORDERED_ACCESS_VIEW_DESC ViewImplementation()const
 		{
@@ -257,7 +273,25 @@ namespace SeedCore
 			return unorderedAccessViewDesc;
 		}
 
+		[[nodiscard]] Uint UnorderedAccessViewIndex()const
+		{
+			return unorderedAccessViewIndex_;
+		}
+
+		[[nodiscard]] Uint ShaderResourceViewIndex()const
+		{
+			return shaderResourceViewIndex_;
+		}
+
+		[[nodiscard]] Uint ElementCount()const
+		{
+			return elementCount_;
+		}
+
 	private:
+		BindlessHeap* heap_;
 		Uint elementCount_;
+		Uint unorderedAccessViewIndex_ = 0;
+		Uint shaderResourceViewIndex_ = 0;
 	};
 }

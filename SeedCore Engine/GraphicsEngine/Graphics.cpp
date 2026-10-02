@@ -79,6 +79,7 @@ namespace SeedCore
 		/// [EN] Renderer and utility passes share one shader cache and one bindless descriptor space.
 		/// [JP] Renderer とユーティリティパスは、一つのシェーダーキャッシュと bindless ディスクリプタ空間を共有する。
 		shaderCache_ = MakePtr<ShaderCache>();
+		shaderHotReload_ = MakePtr<ShaderHotReload>();
 
 		bc7CompressShader_ = MakePtr<BC7CompressShader>();
 		bc7CompressShader_->Create(*shaderCache_, context_->GetDevice());
@@ -104,7 +105,7 @@ namespace SeedCore
 		/// [EN] Renderer is created after all services it receives by reference are ready.
 		/// [JP] Renderer は、参照で受け取る全サービスの準備完了後に作成する。
 		renderer_ = MakePtr<Renderer>();
-		renderer_->Create(context_->GetDevice(), context_->GetDirectQueue()->GetCommandQueue(), static_cast<Uint32>(swapChain_->BufferCount()), bindlessHeap_.get(), *shaderCache_, nativeWidth_, nativeHeight_);
+		renderer_->Create(context_->GetDevice(), context_->GetDirectQueue()->GetCommandQueue(), static_cast<Uint32>(swapChain_->BufferCount()), bindlessHeap_.get(), *shaderCache_, *shaderHotReload_, nativeWidth_, nativeHeight_);
 
 		/// [EN] Each independently rendered view owns separate scene constant-buffer state.
 		/// [JP] 独立して描画される各ビューは、個別のシーン定数バッファ状態を所有する。
@@ -217,6 +218,13 @@ namespace SeedCore
 			shaderCache_ = nullptr;
 		}
 
+		if (shaderHotReload_)
+		{
+			shaderHotReload_->Clear();
+			shaderHotReload_.reset();
+			shaderHotReload_ = nullptr;
+		}
+
 		fadeScreen_.Finalize();
 
 		/// [EN] Crash tracking stops while the device still exists, then the device itself is destroyed last.
@@ -284,7 +292,7 @@ namespace SeedCore
 
 		/// [EN] Renderer renders at the native extent and upscales to the output extent.
 		/// [JP] Renderer はネイティブサイズで描画し、出力サイズへアップスケールする。
-		renderer_->Resize(context_->GetDevice(), bindlessHeap_.get(), *shaderCache_, nativeWidth_, nativeHeight_, outputWidth, outputHeight);
+		renderer_->Resize(context_->GetDevice(), bindlessHeap_.get(), *shaderCache_, *shaderHotReload_, nativeWidth_, nativeHeight_, outputWidth, outputHeight);
 
 		dlssManager_->FrameGenerationSuppress(false);
 	}

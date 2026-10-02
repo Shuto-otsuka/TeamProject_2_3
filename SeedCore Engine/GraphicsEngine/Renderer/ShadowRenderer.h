@@ -300,7 +300,7 @@ namespace SeedCore
 
 		/// [EN] GPU copy of the tuning values, read through its bindless index.
 		/// [JP] 調整値の GPU 側コピー。bindless インデックス経由で読まれる。
-		ResourcePtr<ConstantBuffer<ShadowRayConstantBuffer>> tuningBuffer_;
+		ResourcePtr<StaticConstantBuffer<ShadowRayConstantBuffer>> tuningBuffer_;
 
 		/// [EN] Raw, noisy output of ShadowRT.hlsl: r is directional visibility, gba the visibility-weighted BRDF RGB radiance of the punctual light picked by ReSTIR. A single texture is enough, since the denoiser consumes it in the same flush.
 		/// [JP] ShadowRT.hlsl の生のノイズを含む出力。r はディレクショナルの可視性、gba は ReSTIR で選んだパンクチュアルライトの、可視性を掛けた BRDF の RGB 放射輝度。デノイザが同じ Flush 内で消費するため、1 枚で足りる。

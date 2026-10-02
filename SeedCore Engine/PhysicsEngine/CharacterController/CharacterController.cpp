@@ -28,7 +28,7 @@ namespace SeedCore
 
 		CharacterDesc desc;
 		desc.position_ = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
-		desc.rotation_ = rotation ? Quaternion::CreateFromYawPitchRoll(ToRadians(rotation->y_), ToRadians(rotation->x_), ToRadians(rotation->z_)) : Quaternion::Identity;
+		desc.rotation_ = rotation ? rotation->Quat() : Quaternion::Identity;
 		desc.radius_ = radius_;
 		desc.height_ = height_;
 		desc.maxSlopeAngle_ = ToRadians(maxSlopeAngle_);
@@ -184,10 +184,10 @@ namespace SeedCore
 		Rotation* rotation = world.GetComponent<Rotation>(entity);
 		if (rotation)
 		{
-			const Vector3 euler = Quaternion(outRotation.GetX(), outRotation.GetY(), outRotation.GetZ(), outRotation.GetW()).ToEuler();
-			rotation->x_ = ToDegrees(euler.x);
-			rotation->y_ = ToDegrees(euler.y);
-			rotation->z_ = ToDegrees(euler.z);
+			rotation->x_ = outRotation.GetX();
+			rotation->y_ = outRotation.GetY();
+			rotation->z_ = outRotation.GetZ();
+			rotation->w_ = outRotation.GetW();
 		}
 	}
 

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <ItemGroup>
     <Filter Include="EntryPoint">
@@ -13,10 +13,7 @@
     <Filter Include="Tutorial">
       <UniqueIdentifier>{09007d97-ab19-4e6e-a4fc-1369293bc115}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Script">
-      <UniqueIdentifier>{a4a6b7f9-982d-4a27-9c0d-300474c1d5b2}</UniqueIdentifier>
-    </Filter>
-  </ItemGroup>
+    </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Prelude.cpp" />
     <ClCompile Include="EntryPoint\EntryGame.cpp">
@@ -32,14 +29,7 @@
     <ClCompile Include="Tutorial\ScTutorial.cpp">
       <Filter>Tutorial</Filter>
     </ClCompile>
-<<<<<<< HEAD
-    <ClCompile Include="Script\Test.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
   </ItemGroup>
-=======
-    </ItemGroup>
->>>>>>> 219f02415566c4ec6f292a4796f5097843f562e0
   <ItemGroup>
     <ClInclude Include="EntryPoint\EntryGame.h">
       <Filter>EntryPoint</Filter>
@@ -47,19 +37,8 @@
     <ClInclude Include="Tutorial\ScTutorial.h">
       <Filter>Tutorial</Filter>
     </ClInclude>
-<<<<<<< HEAD
-    <ClInclude Include="Script\Test.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-=======
-    </ItemGroup>
+  </ItemGroup>
   <ItemGroup>
-    <Text Include="Tutorial\AssetReference.txt">
-      <Filter>Tutorial</Filter>
-    </Text>
-    <Text Include="Tutorial\CoroutineReference.txt">
-      <Filter>Tutorial</Filter>
-    </Text>
     <Text Include="Tutorial\InputReference.txt">
       <Filter>Tutorial</Filter>
     </Text>
@@ -72,9 +51,5 @@
     <Text Include="Tutorial\LogReference.txt">
       <Filter>Tutorial</Filter>
     </Text>
-    <Text Include="Tutorial\ComponentReference.txt">
-      <Filter>Tutorial</Filter>
-    </Text>
->>>>>>> 219f02415566c4ec6f292a4796f5097843f562e0
   </ItemGroup>
 </Project>

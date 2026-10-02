@@ -111,7 +111,7 @@ namespace SeedCore
 
 		Uint fragmentCapacity_ = 0;
 
-		ResourcePtr<ConstantBuffer<OitConstantBuffer>> oitConstantBuffer_;
+		ResourcePtr<StaticConstantBuffer<OitConstantBuffer>> oitConstantBuffer_;
 
 		BindlessHeap* bindlessHeap_ = nullptr;
 

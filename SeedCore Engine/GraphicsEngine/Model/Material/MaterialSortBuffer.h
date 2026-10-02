@@ -74,8 +74,8 @@ namespace SeedCore
 
 		DescriptorHeap clearHeap_;
 
-		Uint bucketUAVIndex_ = 0;
-		Uint sortedPixelListUAVIndex_ = 0;
+		Uint bucketUnorderdAccessViewIndex_ = 0;
+		Uint sortedPixelListUnorderdAccessViewIndex_ = 0;
 
 		Uint clearBucketIndex_ = 0;
 		Uint clearSortedPixelListIndex_ = 0;

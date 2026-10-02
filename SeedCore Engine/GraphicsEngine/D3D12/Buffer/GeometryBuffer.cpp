@@ -121,19 +121,16 @@ namespace SeedCore
 	{
 		for (Int bufferIndex = 0; bufferIndex < bufferCount_; ++bufferIndex)
 		{
-			bindlessHeap->FreeIndex(colorShaderResourceViewIndices_[bufferIndex]);
+			Uint unorderedAccessViewIndex = SC_INVALID;
 			if (bufferIndex != 4)
 			{
-				bindlessHeap->FreeIndex(colorUnorderedAccessViewIndices_[bufferIndex]);
+				unorderedAccessViewIndex = colorUnorderedAccessViewIndices_[bufferIndex];
 			}
 
-			bindlessHeap->DeferRelease(colorResources_[bufferIndex]);
-			colorResources_[bufferIndex].Reset();
+			bindlessHeap->Release(std::move(colorResources_[bufferIndex]), { colorShaderResourceViewIndices_[bufferIndex], unorderedAccessViewIndex });
 		}
 
-		bindlessHeap->FreeIndex(depthShaderResourceViewIndex_);
-		bindlessHeap->DeferRelease(depthResource_);
-		depthResource_.Reset();
+		bindlessHeap->Release(std::move(depthResource_), depthShaderResourceViewIndex_);
 	}
 
 	void GeometryBuffer::Resize(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height)

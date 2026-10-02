@@ -70,7 +70,7 @@ namespace SeedCore
 
 		particleShader_.Create(shaderCache, device);
 
-		tuningBuffer_ = MakePtr<ConstantBuffer<WeatherParticleConstantBuffer>>(device, bindlessHeap);
+		tuningBuffer_ = MakePtr<StaticConstantBuffer<WeatherParticleConstantBuffer>>(device, bindlessHeap);
 
 		CreateParticleBuffer(device, bindlessHeap, rainCapacity_, rainParticleResource_, rainParticleUnorderedAccessViewIndex_, rainParticleShaderResourceViewIndex_);
 		CreateParticleBuffer(device, bindlessHeap, snowCapacity_, snowParticleResource_, snowParticleUnorderedAccessViewIndex_, snowParticleShaderResourceViewIndex_);
@@ -80,13 +80,8 @@ namespace SeedCore
 
 	void WeatherParticleRenderer::Destroy(BindlessHeap* bindlessHeap)
 	{
-		bindlessHeap->FreeIndex(rainParticleUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(rainParticleShaderResourceViewIndex_);
-		bindlessHeap->FreeIndex(snowParticleUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(snowParticleShaderResourceViewIndex_);
-
-		rainParticleResource_.Reset();
-		snowParticleResource_.Reset();
+		bindlessHeap->Release(std::move(rainParticleResource_), { rainParticleUnorderedAccessViewIndex_, rainParticleShaderResourceViewIndex_ });
+		bindlessHeap->Release(std::move(snowParticleResource_), { snowParticleUnorderedAccessViewIndex_, snowParticleShaderResourceViewIndex_ });
 	}
 
 	void WeatherParticleRenderer::PrepareFrame(const Vector3& cameraPosition, Float deltaTime, Float totalTime, const Vector3& wind, Bool rainEnabled, const Rain& rainSettings, Float rainAmount, Bool snowEnabled, const Snow& snowSettings, Float snowAmount)
@@ -121,7 +116,7 @@ namespace SeedCore
 		activeTotal_ = settings.rainActiveCount_ + settings.snowActiveCount_;
 
 		tuningBuffer_->Update(settings);
-		constantIndicesSystem_->SetWeatherParticleRayConstantIndex(tuningBuffer_->GetIndex());
+		constantIndicesSystem_->SetWeatherParticleRayConstantIndex(tuningBuffer_->Index());
 		unorderedAccessIndicesSystem_->SetRainParticleUnorderedAccessViewIndex(rainParticleUnorderedAccessViewIndex_);
 		shaderResourceIndicesSystem_->SetRainParticleShaderResourceViewIndex(rainParticleShaderResourceViewIndex_);
 		unorderedAccessIndicesSystem_->SetSnowParticleUnorderedAccessViewIndex(snowParticleUnorderedAccessViewIndex_);

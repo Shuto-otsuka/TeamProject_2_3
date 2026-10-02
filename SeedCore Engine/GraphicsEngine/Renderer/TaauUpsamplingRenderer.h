@@ -62,7 +62,7 @@ namespace SeedCore
 			Uint32 accumulatedShaderResourceViewIndex_[accumulationSlotCount_] = { 0, 0 };
 			Uint32 writeSlot_ = 0;
 
-			ResourcePtr<ConstantBuffer<TaauResolveConstantBuffer>> constantBuffer_;
+			ResourcePtr<StaticConstantBuffer<TaauResolveConstantBuffer>> constantBuffer_;
 		};
 
 		TaauResolveShader resolveShader_;

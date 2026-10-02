@@ -66,7 +66,7 @@ namespace SeedCore
 
 		ConstantIndices constantIndices_{};
 		ShaderResourceIndices shaderResourceIndices_{};
-		ResourcePtr<ConstantBuffer<ConstantIndices>> constantIndicesBuffer_;
-		ResourcePtr<ConstantBuffer<ShaderResourceIndices>> shaderResourceIndicesBuffer_;
+		ResourcePtr<StaticConstantBuffer<ConstantIndices>> constantIndicesBuffer_;
+		ResourcePtr<StaticConstantBuffer<ShaderResourceIndices>> shaderResourceIndicesBuffer_;
 	};
 }

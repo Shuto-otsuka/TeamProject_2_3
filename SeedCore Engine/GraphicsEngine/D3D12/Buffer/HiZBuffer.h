@@ -90,7 +90,7 @@ namespace SeedCore
 		Uint mipUnorderedAccessViewIndices_[maxMipCount] = {};
 		Uint shaderResourceViewIndex_ = 0;
 
-		DynamicArray<ResourcePtr<ConstantBuffer<HiZBuildConstantBuffer>>> mipConstantBuffers_;
+		DynamicArray<ResourcePtr<StaticConstantBuffer<HiZBuildConstantBuffer>>> mipConstantBuffers_;
 		DynamicArray<HiZBuildConstantBuffer> mipConstants_;
 
 		BindlessHeap* bindlessHeap_ = nullptr;

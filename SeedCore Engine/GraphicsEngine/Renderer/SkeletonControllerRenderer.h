@@ -88,14 +88,14 @@ namespace SeedCore
 
 		ConstantIndices constantIndices_{};
 		ShaderResourceIndices shaderResourceIndices_{};
-		ResourcePtr<ConstantBuffer<ConstantIndices>> constantIndicesBuffer_;
-		ResourcePtr<ConstantBuffer<ShaderResourceIndices>> shaderResourceIndicesBuffer_;
+		ResourcePtr<StaticConstantBuffer<ConstantIndices>> constantIndicesBuffer_;
+		ResourcePtr<StaticConstantBuffer<ShaderResourceIndices>> shaderResourceIndicesBuffer_;
 
 		ColliderLineShader boneLineShader_;
 
 		DynamicArray<ColliderStructuredBuffer> boneInstances_;
 		ResourcePtr<ReadOnlyStructuredBuffer<ColliderStructuredBuffer>> boneInstanceBuffer_;
-		ResourcePtr<ConstantBuffer<ColliderConstantBuffer>> boneInstanceConstantsBuffer_;
+		ResourcePtr<StaticConstantBuffer<ColliderConstantBuffer>> boneInstanceConstantsBuffer_;
 
 		DynamicArray<Vector3> sphereEdgeData_;
 		ResourcePtr<ReadOnlyStructuredBuffer<Vector3>> sphereEdgeBuffer_;

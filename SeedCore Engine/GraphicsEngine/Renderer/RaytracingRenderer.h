@@ -344,7 +344,7 @@ namespace SeedCore
 
 			/// [EN] The dispatch's MorphBlendDispatchBuffer.
 			/// [JP] ディスパッチの MorphBlendDispatchBuffer。
-			ResourcePtr<ConstantBuffer<MorphBlendDispatchBuffer>> dispatchBuffer_;
+			ResourcePtr<StaticConstantBuffer<MorphBlendDispatchBuffer>> dispatchBuffer_;
 		};
 
 		/**
@@ -404,9 +404,9 @@ namespace SeedCore
 		/// [JP] スキンのあるエンティティごと、フレームリングスロットごとのスキン済み位置。skinnedBlasCache_ の頂点入力。
 		std::unordered_map<EntityID, SkinnedPositionBuffer> skinnedPositionBuffers_[FrameRing::frameCount];
 
-		/// [EN] SkinBlendDispatchBuffer per skinned entity. ConstantBuffer rings over the frame-ring slots itself, so one per entity is enough.
-		/// [JP] スキンのあるエンティティごとの SkinBlendDispatchBuffer。ConstantBuffer 自体がフレームリングスロットを巡回するため、エンティティごとに 1 つでよい。
-		std::unordered_map<EntityID, ResourcePtr<ConstantBuffer<SkinBlendDispatchBuffer>>> skinBlendDispatchBuffers_;
+		/// [EN] SkinBlendDispatchBuffer per skinned entity. StaticConstantBuffer rings over the frame-ring slots itself, so one per entity is enough.
+		/// [JP] スキンのあるエンティティごとの SkinBlendDispatchBuffer。StaticConstantBuffer 自体がフレームリングスロットを巡回するため、エンティティごとに 1 つでよい。
+		std::unordered_map<EntityID, ResourcePtr<StaticConstantBuffer<SkinBlendDispatchBuffer>>> skinBlendDispatchBuffers_;
 
 		/// [EN] Compute shader that skins RT-proxy positions with the bone matrices.
 		/// [JP] RT プロキシの位置をボーン行列でスキニングするコンピュートシェーダ。

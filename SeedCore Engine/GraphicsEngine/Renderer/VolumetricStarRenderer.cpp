@@ -56,7 +56,7 @@ namespace SeedCore
 
 		/// [EN] The tuning values live in a constant buffer the shaders find through its bindless index.
 		/// [JP] 調整値は、シェーダーが bindless インデックスで見つける定数バッファに置く。
-		tuningBuffer_ = MakePtr<ConstantBuffer<VolumetricStarRayConstantBuffer>>(device, bindlessHeap);
+		tuningBuffer_ = MakePtr<StaticConstantBuffer<VolumetricStarRayConstantBuffer>>(device, bindlessHeap);
 
 		/// [EN] Create the size-dependent resources at the current size.
 		/// [JP] サイズに依存するリソースを現在のサイズで作る。
@@ -197,7 +197,7 @@ namespace SeedCore
 
 		/// [EN] The star pass writes through the write view; deferred lighting reads through the read view.
 		/// [JP] 星パスは書き込み用ビューで書き、ディファードライティングは読み取り用ビューで読む。
-		constantIndicesSystem_->SetStarRayConstantIndex(tuningBuffer_->GetIndex());
+		constantIndicesSystem_->SetStarRayConstantIndex(tuningBuffer_->Index());
 		unorderedAccessIndicesSystem_->SetStarOutputUnorderedAccessViewIndex(starUnorderedAccessViewIndex_);
 		shaderResourceIndicesSystem_->SetStarOutputShaderResourceViewIndex(starShaderResourceViewIndex_);
 	}
@@ -360,14 +360,8 @@ namespace SeedCore
 	*/
 	void VolumetricStarRenderer::Release()
 	{
-		/// [EN] Return the view slots to the bindless heap.
-		/// [JP] ビューのスロットを bindless ヒープへ返す。
-		bindlessHeap_->FreeIndex(starUnorderedAccessViewIndex_);
-		bindlessHeap_->FreeIndex(starShaderResourceViewIndex_);
-
-		/// [EN] Keep the resource alive until the GPU has finished with it; then drop this reference.
-		/// [JP] GPU が使い終えるまでリソースを生かしておき、その後この参照を手放す。
-		bindlessHeap_->DeferRelease(starResource_);
-		starResource_.Reset();
+		/// [EN] Queue the view slots and the resource on the bindless heap, which holds them until the in-flight frames that may still read them have finished.
+		/// [JP] ビューのスロットとリソースを bindless ヒープに積む。ヒープは、それらを読みうるインフライトのフレームが完了するまで保持する。
+		bindlessHeap_->Release(std::move(starResource_), { starUnorderedAccessViewIndex_, starShaderResourceViewIndex_ });
 	}
 }

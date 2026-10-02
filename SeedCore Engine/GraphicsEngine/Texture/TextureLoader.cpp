@@ -50,14 +50,13 @@ namespace SeedCore
 		{
 			if (texture->resource_)
 			{
-				heap->FreeIndex(texture->textureIndex_);
 				/// [EN] pool_.Destroy below runs the Texture's destructor right
 				///      here, so the resource must be handed to the deferred
 				///      ring first - the frames still in flight are sampling it.
 				/// [JP] 下の pool_.Destroy はこの場で Texture のデストラクタを
 				///      走らせるため、先にリソースを遅延回収リングへ渡す必要が
 				///      ある — インフライトのフレームがまだサンプリングしている。
-				heap->DeferRelease(texture->resource_);
+				heap->Release(std::move(texture->resource_), texture->textureIndex_);
 				totalResidentBytes_ -= texture->sizeBytes_;
 			}
 			auto found = std::ranges::find_if(loadedHandles_, [handle](const auto& candidate){ return candidate == handle; });
@@ -134,10 +133,8 @@ namespace SeedCore
 				continue;
 			}
 
-			heap->FreeIndex(texture->textureIndex_);
+			heap->Release(std::move(texture->resource_), texture->textureIndex_);
 			texture->textureIndex_ = 0xFFFFFFFF;
-			heap->DeferRelease(texture->resource_);
-			texture->resource_.Reset();
 			totalResidentBytes_ -= texture->sizeBytes_;
 			texture->sizeBytes_ = 0;
 		}

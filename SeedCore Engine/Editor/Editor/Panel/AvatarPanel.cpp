@@ -118,12 +118,8 @@ namespace SeedCore
 		BindlessHeap* bindlessHeap = &context_.graphicsContext_.graphics_->GetBindlessHeap();
 		for (Uint32 regionIndex = 0; regionIndex < regionSlotCount_; regionIndex++)
 		{
-			if (regionTextureIndices_[regionIndex] != 0xFFFFFFFF)
-			{
-				bindlessHeap->FreeIndex(regionTextureIndices_[regionIndex]);
-				regionTextureIndices_[regionIndex] = 0xFFFFFFFF;
-			}
-			regionTextureResources_[regionIndex].Reset();
+			bindlessHeap->Release(std::move(regionTextureResources_[regionIndex]), regionTextureIndices_[regionIndex]);
+			regionTextureIndices_[regionIndex] = 0xFFFFFFFF;
 			regionTexturePaths_[regionIndex] = String();
 		}
 	}
@@ -491,12 +487,8 @@ namespace SeedCore
 					if (ImGui::SmallButton("解除"))
 					{
 						BindlessHeap* bindlessHeap = &context_.graphicsContext_.graphics_->GetBindlessHeap();
-						if (regionTextureIndices_[regionIndex] != 0xFFFFFFFF)
-						{
-							bindlessHeap->FreeIndex(regionTextureIndices_[regionIndex]);
-							regionTextureIndices_[regionIndex] = 0xFFFFFFFF;
-						}
-						regionTextureResources_[regionIndex].Reset();
+						bindlessHeap->Release(std::move(regionTextureResources_[regionIndex]), regionTextureIndices_[regionIndex]);
+						regionTextureIndices_[regionIndex] = 0xFFFFFFFF;
 						regionTexturePaths_[regionIndex] = String();
 					}
 				}
