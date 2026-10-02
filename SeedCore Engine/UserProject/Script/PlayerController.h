@@ -11,6 +11,8 @@ public:
 	void OnTick(float elapsedTime); // 更新処理
 
 	SC_REFLECTION_FIELD()
+	    float turnSpeed;
+	SC_REFLECTION_FIELD()
 		float minJumpPower;
 	SC_REFLECTION_FIELD()
 		float maxJumpPower;
@@ -18,13 +20,14 @@ public:
 		float maxJumpInputTime;
 	SC_REFLECTION_FIELD()
 		float coyoteTime;
+
 private:
 	void UpdateUsually(float elapsedTime);
 	void UpdateHorizontalAcceleration(float elapsedTime);
 	void UpdateInputJump(float elapsedTime);
 	void Jump(float jumpPower);
 	void UpdateCoyoteTime(float elapsedTime);
-	void Turn(SeedCore::Vector3 lookDirection);
+	void Turn(float elapsedTime);
 
 	bool OnGroundOrCoyote();
 
@@ -42,8 +45,11 @@ private:
 	float jumpInputTimer = 0.0f;
 	float coyoteTimer = 0.0f;
 
+	SeedCore::Vector3 lookDirection = { 0.0f,0.0f,1.0f };
+
 	SeedCore::Actor cameraBrain;
 	SeedCore::Position* position = nullptr;
+	SeedCore::Rotation* rotation = nullptr;
 	SeedCore::CharacterController* myCharacterController = nullptr;
 };
 REGISTER_COMPONENT(PlayerController);

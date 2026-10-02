@@ -53,6 +53,7 @@ namespace SeedCore
 			{
 				ReflectionRegistry::Register(String("PlayerController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					PlayerController& obj = *static_cast<PlayerController*>(ptr);
+					outInfo.push_back({ String("turnSpeed"), offsetof(PlayerController, turnSpeed), AttributeType::Float });
 					outInfo.push_back({ String("minJumpPower"), offsetof(PlayerController, minJumpPower), AttributeType::Float });
 					outInfo.push_back({ String("maxJumpPower"), offsetof(PlayerController, maxJumpPower), AttributeType::Float });
 					outInfo.push_back({ String("maxJumpInputTime"), offsetof(PlayerController, maxJumpInputTime), AttributeType::Float });

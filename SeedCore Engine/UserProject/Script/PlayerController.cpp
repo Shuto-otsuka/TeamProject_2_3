@@ -11,6 +11,7 @@ void PlayerController::OnStart()
     cameraBrain = world.GetActor("CameraBrain");
 
     position = world.GetComponent<SeedCore::Position>(entity);
+    rotation = world.GetComponent<SeedCore::Rotation>(entity);
     myCharacterController = world.GetComponent<SeedCore::CharacterController>(entity);
 }
 
@@ -22,7 +23,6 @@ void PlayerController::OnTick(float elapsedTime)
     case PlayerController::State::USUALLY:
         //いったん通常ステート
         UpdateUsually(elapsedTime);
-        ImGui::Checkbox("isCoyote", &isCoyote);
         break;
     default:
         break;
@@ -31,8 +31,13 @@ void PlayerController::OnTick(float elapsedTime)
 
 void PlayerController::UpdateUsually(float elapsedTime)
 {
+    //水平加速処理
     UpdateHorizontalAcceleration(elapsedTime);
+    //旋回処理
+    Turn(elapsedTime);
+    //コヨーテタイム更新
     UpdateCoyoteTime(elapsedTime);
+    //ジャンプ入力更新
     UpdateInputJump(elapsedTime);
 }
 
@@ -58,9 +63,11 @@ void PlayerController::UpdateHorizontalAcceleration(float elapsedTime)
     //移動方向をキャラクターコントローラーにセット
     myCharacterController->MoveDirection(moveDirection);
     //旋回方向をセット
-    SeedCore::Vector3 lookDirection = moveDirection;
-    lookDirection.Normalize();
-    Turn(lookDirection);
+    if (moveDirection.Length() > 0.001f)
+    {
+        moveDirection.Normalize();
+        lookDirection = moveDirection;
+    }
 }
 
 void PlayerController::UpdateInputJump(float elapsedTime)
@@ -134,10 +141,29 @@ void PlayerController::UpdateCoyoteTime(float elapsedTime)
     beforeIsGround = myCharacterController->OnGround();
 }
 
-void PlayerController::Turn(SeedCore::Vector3 lookDirection)
+void PlayerController::Turn(float elapsedTime)
 {
     //旋回処理
-    //myCharacterController->ForwardDirection(lookDirection);
+    //移動方向(lookDirection)を向く
+
+    //軸とアングルを算出
+    SeedCore::Vector3 front = GetActor().WorldMatrix().Forward();//右手系
+    front.Normalize();
+    float dot = front.Dot(lookDirection);
+    if (dot > 0.995f)return;//角度がほぼ0だったら終了
+    const float minTurnSpeed = 0.2f;//角度が近づくにつれて旋回スピードを小さくするだけだと最後の方が遅すぎるため最低旋回速度を設ける
+    float angle = ((1.0f - dot) + minTurnSpeed) * turnSpeed * elapsedTime;//内積から1フレームで旋回させる角度を計算
+    SeedCore::Vector3 cross;
+    cross = front.Cross(lookDirection);
+    cross.Normalize();
+    
+    //軸とアングルから回転分のクォータニオンを作成
+    SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(cross, angle);
+    quaternion.Normalize();
+   
+    //ベクトルと合成してセット
+    front = SeedCore::Vector3::Transform(front, quaternion);
+    myCharacterController->ForwardDirection(front);
 }
 
 bool PlayerController::OnGroundOrCoyote()
