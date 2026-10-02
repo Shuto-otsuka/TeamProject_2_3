@@ -56,7 +56,7 @@ namespace SeedCore
 		materialResolveShader_ = MakePtr<MaterialResolveShader>(rootSignature_, pipelineStateObject_);
 	}
 
-	void Renderer::Create(ID3D12Device* device, ID3D12CommandQueue* commandQueue, Uint32 swapBufferCount, BindlessHeap* bindlessHeap, ShaderCache& shaderCache, Uint32 width, Uint32 height)
+	void Renderer::Create(ID3D12Device* device, ID3D12CommandQueue* commandQueue, Uint32 swapBufferCount, BindlessHeap* bindlessHeap, ShaderCache& shaderCache, ShaderHotReload& shaderHotReload, Uint32 width, Uint32 height)
 	{
 		bindlessHeap_ = bindlessHeap;
 		device_ = device;
@@ -143,7 +143,7 @@ namespace SeedCore
 		gpuProfiler_.Create(device, commandQueue, swapBufferCount);
 	}
 
-	void Renderer::Resize(ID3D12Device* device, BindlessHeap* bindlessHeap, ShaderCache& shaderCache, Uint32 nativeWidth, Uint32 nativeHeight, Uint32 outputWidth, Uint32 outputHeight)
+	void Renderer::Resize(ID3D12Device* device, BindlessHeap* bindlessHeap, ShaderCache& shaderCache, ShaderHotReload& shaderHotReload, Uint32 nativeWidth, Uint32 nativeHeight, Uint32 outputWidth, Uint32 outputHeight)
 	{
 		device_ = device;
 		bindlessHeap_ = bindlessHeap;
@@ -638,7 +638,7 @@ namespace SeedCore
 
 			Float pixelX = position ? position->x_ : 0.0f;
 			Float pixelY = position ? position->y_ : 0.0f;
-			Float angle = rotation ? rotation->Euler().x : 0.0f;
+			Float angle = rotation ? rotation->Euler().z : 0.0f;
 			Float cosAngle = std::cos(angle);
 			Float sinAngle = std::sin(angle);
 
@@ -666,7 +666,7 @@ namespace SeedCore
 
 			Float pixelX = position ? position->x_ : 0.0f;
 			Float pixelY = position ? position->y_ : 0.0f;
-			Float angle = rotation ? rotation->Euler().x : 0.0f;
+			Float angle = rotation ? rotation->Euler().z : 0.0f;
 			Float cosAngle = std::cos(angle);
 			Float sinAngle = std::sin(angle);
 

@@ -112,7 +112,7 @@ namespace SeedCore
 
 					MovieSpriteStructuredBuffer instance{};
 					instance.position_ = Vector2(worldTranslation.x, worldTranslation.y) * spriteReferenceScale;
-					instance.rotation_ = worldRotation.ToEuler().x;
+					instance.rotation_ = worldRotation.ToEuler().z;
 					instance.scale_ = Vector2(worldScale.x, worldScale.y) * spriteReferenceScale;
 					instance.size_ = size;
 					instance.pivot_ = movie.pivot_;

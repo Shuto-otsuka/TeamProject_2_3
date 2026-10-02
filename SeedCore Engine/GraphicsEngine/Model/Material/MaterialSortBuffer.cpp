@@ -40,7 +40,7 @@ namespace SeedCore
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(bucketBuffer_.Get());
 #endif
 
-			bucketUAVIndex_ = bindlessHeap->AllocateIndex();
+			bucketUnorderdAccessViewIndex_ = bindlessHeap->AllocateIndex();
 
 			D3D12_UNORDERED_ACCESS_VIEW_DESC unorderedAccessViewDesc{};
 			unorderedAccessViewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
@@ -50,7 +50,7 @@ namespace SeedCore
 			unorderedAccessViewDesc.Buffer.StructureByteStride = 0;
 			unorderedAccessViewDesc.Buffer.CounterOffsetInBytes = 0;
 			unorderedAccessViewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-			device->CreateUnorderedAccessView(bucketBuffer_.Get(), nullptr, &unorderedAccessViewDesc, bindlessHeap->CPUHandle(bucketUAVIndex_));
+			device->CreateUnorderedAccessView(bucketBuffer_.Get(), nullptr, &unorderedAccessViewDesc, bindlessHeap->CPUHandle(bucketUnorderdAccessViewIndex_));
 
 			clearBucketIndex_ = clearHeap_.AllocateIndex();
 			device->CreateUnorderedAccessView(bucketBuffer_.Get(), nullptr, &unorderedAccessViewDesc, clearHeap_.CPUHandle(clearBucketIndex_));
@@ -80,7 +80,7 @@ namespace SeedCore
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(sortedPixelListBuffer_.Get());
 #endif
 
-			sortedPixelListUAVIndex_ = bindlessHeap->AllocateIndex();
+			sortedPixelListUnorderdAccessViewIndex_ = bindlessHeap->AllocateIndex();
 
 			D3D12_UNORDERED_ACCESS_VIEW_DESC unorderedAccessViewDesc{};
 			unorderedAccessViewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
@@ -90,29 +90,20 @@ namespace SeedCore
 			unorderedAccessViewDesc.Buffer.StructureByteStride = 0;
 			unorderedAccessViewDesc.Buffer.CounterOffsetInBytes = 0;
 			unorderedAccessViewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-			device->CreateUnorderedAccessView(sortedPixelListBuffer_.Get(), nullptr, &unorderedAccessViewDesc, bindlessHeap->CPUHandle(sortedPixelListUAVIndex_));
+			device->CreateUnorderedAccessView(sortedPixelListBuffer_.Get(), nullptr, &unorderedAccessViewDesc, bindlessHeap->CPUHandle(sortedPixelListUnorderdAccessViewIndex_));
 
 			clearSortedPixelListIndex_ = clearHeap_.AllocateIndex();
 			device->CreateUnorderedAccessView(sortedPixelListBuffer_.Get(), nullptr, &unorderedAccessViewDesc, clearHeap_.CPUHandle(clearSortedPixelListIndex_));
 		}
 
-		unorderedAccessIndicesSystem.SetMaterialSortBucketIndex(bucketUAVIndex_);
-		unorderedAccessIndicesSystem.SetMaterialSortedPixelListIndex(sortedPixelListUAVIndex_);
+		unorderedAccessIndicesSystem.SetMaterialSortBucketIndex(bucketUnorderdAccessViewIndex_);
+		unorderedAccessIndicesSystem.SetMaterialSortedPixelListIndex(sortedPixelListUnorderdAccessViewIndex_);
 	}
 
 	void MaterialSortBuffer::Destroy(BindlessHeap* bindlessHeap)
 	{
-		bindlessHeap->FreeIndex(bucketUAVIndex_);
-		bindlessHeap->FreeIndex(sortedPixelListUAVIndex_);
-
-		/// [EN] Resize() destroys and immediately recreates these while previous
-		///      frames may still be in flight reading/writing them, so the old
-		///      buffers have to outlive this call - same reasoning as OITBuffer::Destroy.
-		/// [JP] Resize() はこれらを破棄して即座に作り直すが、前フレームがまだ
-		///      インフライトで読み書きしている可能性があるため、古いバッファは
-		///      この呼び出しより長く生存させる必要がある - OITBuffer::Destroy と同じ理由。
-		bindlessHeap->DeferRelease(bucketBuffer_);
-		bindlessHeap->DeferRelease(sortedPixelListBuffer_);
+		bindlessHeap->Release(bucketBuffer_, bucketUnorderdAccessViewIndex_);
+		bindlessHeap->Release(sortedPixelListBuffer_, sortedPixelListUnorderdAccessViewIndex_);
 
 		bucketBuffer_.Reset();
 		sortedPixelListBuffer_.Reset();
@@ -140,21 +131,9 @@ namespace SeedCore
 	void MaterialSortBuffer::Clear(ID3D12GraphicsCommandList* cmdList)
 	{
 		const UINT zeroClearValues[4] = { 0, 0, 0, 0 };
-		cmdList->ClearUnorderedAccessViewUint(
-			bindlessHeap_->GPUHandle(bucketUAVIndex_),
-			clearHeap_.CPUHandle(clearBucketIndex_),
-			bucketBuffer_.Get(),
-			zeroClearValues,
-			0, nullptr
-		);
+		cmdList->ClearUnorderedAccessViewUint(bindlessHeap_->GPUHandle(bucketUnorderdAccessViewIndex_), clearHeap_.CPUHandle(clearBucketIndex_), bucketBuffer_.Get(), zeroClearValues, 0, nullptr);
 
 		const UINT invalidPixelClearValues[4] = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
-		cmdList->ClearUnorderedAccessViewUint(
-			bindlessHeap_->GPUHandle(sortedPixelListUAVIndex_),
-			clearHeap_.CPUHandle(clearSortedPixelListIndex_),
-			sortedPixelListBuffer_.Get(),
-			invalidPixelClearValues,
-			0, nullptr
-		);
+		cmdList->ClearUnorderedAccessViewUint(bindlessHeap_->GPUHandle(sortedPixelListUnorderdAccessViewIndex_), clearHeap_.CPUHandle(clearSortedPixelListIndex_), sortedPixelListBuffer_.Get(), invalidPixelClearValues, 0, nullptr);
 	}
 }

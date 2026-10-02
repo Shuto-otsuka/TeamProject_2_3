@@ -955,9 +955,9 @@ namespace SeedCore
 		ConstantIndices gameConstantIndices_{};
 		ConstantIndices canvasConstantIndices_{};
 
-		ResourcePtr<ConstantBuffer<ConstantIndices>> editorConstantIndicesBuffer_;
-		ResourcePtr<ConstantBuffer<ConstantIndices>> gameConstantIndicesBuffer_;
-		ResourcePtr<ConstantBuffer<ConstantIndices>> canvasConstantIndicesBuffer_;
+		ResourcePtr<StaticConstantBuffer<ConstantIndices>> editorConstantIndicesBuffer_;
+		ResourcePtr<StaticConstantBuffer<ConstantIndices>> gameConstantIndicesBuffer_;
+		ResourcePtr<StaticConstantBuffer<ConstantIndices>> canvasConstantIndicesBuffer_;
 	};
 
 	class ShaderResourceIndicesSystem
@@ -1092,9 +1092,9 @@ namespace SeedCore
 		ShaderResourceIndices gameIndices_{};
 		ShaderResourceIndices canvasIndices_{};
 
-		ResourcePtr<ConstantBuffer<ShaderResourceIndices>> editorBuffer_;
-		ResourcePtr<ConstantBuffer<ShaderResourceIndices>> gameBuffer_;
-		ResourcePtr<ConstantBuffer<ShaderResourceIndices>> canvasBuffer_;
+		ResourcePtr<StaticConstantBuffer<ShaderResourceIndices>> editorBuffer_;
+		ResourcePtr<StaticConstantBuffer<ShaderResourceIndices>> gameBuffer_;
+		ResourcePtr<StaticConstantBuffer<ShaderResourceIndices>> canvasBuffer_;
 	};
 
 	class UnorderedAccessIndicesSystem
@@ -1205,8 +1205,8 @@ namespace SeedCore
 		UnorderedAccessIndices gameIndices_{};
 		UnorderedAccessIndices canvasIndices_{};
 
-		ResourcePtr<ConstantBuffer<UnorderedAccessIndices>> editorBuffer_;
-		ResourcePtr<ConstantBuffer<UnorderedAccessIndices>> gameBuffer_;
-		ResourcePtr<ConstantBuffer<UnorderedAccessIndices>> canvasBuffer_;
+		ResourcePtr<StaticConstantBuffer<UnorderedAccessIndices>> editorBuffer_;
+		ResourcePtr<StaticConstantBuffer<UnorderedAccessIndices>> gameBuffer_;
+		ResourcePtr<StaticConstantBuffer<UnorderedAccessIndices>> canvasBuffer_;
 	};
 }

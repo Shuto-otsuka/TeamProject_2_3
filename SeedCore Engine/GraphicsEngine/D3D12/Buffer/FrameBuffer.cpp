@@ -109,15 +109,11 @@ namespace SeedCore
 
 	void FrameBuffer::Destroy(BindlessHeap* shaderResourceViewHeap)
 	{
-		shaderResourceViewHeap->FreeIndex(shaderResourceViewIndex_);
-		shaderResourceViewHeap->DeferRelease(bufferResource_);
-		bufferResource_.Reset();
+		shaderResourceViewHeap->Release(std::move(bufferResource_), shaderResourceViewIndex_);
 
 		if (depthStencilViewHeap_)
 		{
-			shaderResourceViewHeap->FreeIndex(depthShaderResourceViewIndex_);
-			shaderResourceViewHeap->DeferRelease(depthStencilResource_);
-			depthStencilResource_.Reset();
+			shaderResourceViewHeap->Release(std::move(depthStencilResource_), depthShaderResourceViewIndex_);
 		}
 	}
 

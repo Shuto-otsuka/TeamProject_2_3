@@ -90,7 +90,7 @@ namespace SeedCore
 	*/
 	void PostProcessRenderer::CreateView(ID3D12Device* device, BindlessHeap* bindlessHeap, View& view, Uint32 width, Uint32 height, Uint32 outputWidth, Uint32 outputHeight)
 	{
-		view.constantBuffer_ = MakePtr<ConstantBuffer<PostProcessConstantBuffer>>(device, bindlessHeap);
+		view.constantBuffer_ = MakePtr<StaticConstantBuffer<PostProcessConstantBuffer>>(device, bindlessHeap);
 		view.lensFlareStreakUnorderedAccessAxisBuffer_ = MakePtr<ReadOnlyStructuredBuffer<LensFlareStreakAxisIndices>>(device, bindlessHeap, lensFlareMaxAxisCount);
 		view.lensFlareStreakShaderResourceAxisBuffer_ = MakePtr<ReadOnlyStructuredBuffer<LensFlareStreakAxisIndices>>(device, bindlessHeap, lensFlareMaxAxisCount);
 
@@ -556,88 +556,42 @@ namespace SeedCore
 	///      コマンドで新リソースを踏みに行く事故になる - 全リソースを遅延破棄する。
 	void PostProcessRenderer::DestroyView(BindlessHeap* bindlessHeap, View& view)
 	{
-		bindlessHeap->FreeIndex(view.outputUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(view.outputUnorderedAccessViewIndexUpscaled_);
-		bindlessHeap->FreeIndex(view.outputShaderResourceViewIndex_);
-		bindlessHeap->FreeIndex(view.outputShaderResourceViewIndexUpscaled_);
-		bindlessHeap->FreeIndex(view.sharpenUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(view.sharpenUnorderedAccessViewIndexUpscaled_);
-		bindlessHeap->FreeIndex(view.sharpenShaderResourceViewIndex_);
-		bindlessHeap->FreeIndex(view.sharpenShaderResourceViewIndexUpscaled_);
-		bindlessHeap->FreeIndex(view.histogramUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(view.histogramClearGpuUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(view.exposureUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(view.exposureClearGpuUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(view.lensFlareUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(view.lensFlareShaderResourceViewIndex_);
-		bindlessHeap->FreeIndex(view.lensFlareBrightUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(view.lensFlareBrightShaderResourceViewIndex_);
-		bindlessHeap->FreeIndex(view.depthOfFieldUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(view.depthOfFieldShaderResourceViewIndex_);
+		bindlessHeap->Release(std::move(view.outputResource_), { view.outputUnorderedAccessViewIndex_, view.outputShaderResourceViewIndex_ });
+		bindlessHeap->Release(std::move(view.outputResourceUpscaled_), { view.outputUnorderedAccessViewIndexUpscaled_, view.outputShaderResourceViewIndexUpscaled_ });
+		bindlessHeap->Release(std::move(view.sharpenResource_), { view.sharpenUnorderedAccessViewIndex_, view.sharpenShaderResourceViewIndex_ });
+		bindlessHeap->Release(std::move(view.sharpenResourceUpscaled_), { view.sharpenUnorderedAccessViewIndexUpscaled_, view.sharpenShaderResourceViewIndexUpscaled_ });
+		bindlessHeap->Release(std::move(view.histogramResource_), { view.histogramUnorderedAccessViewIndex_, view.histogramClearGpuUnorderedAccessViewIndex_ });
+		bindlessHeap->Release(std::move(view.exposureResource_), { view.exposureUnorderedAccessViewIndex_, view.exposureClearGpuUnorderedAccessViewIndex_ });
+		bindlessHeap->Release(std::move(view.lensFlareResource_), { view.lensFlareUnorderedAccessViewIndex_, view.lensFlareShaderResourceViewIndex_ });
+		bindlessHeap->Release(std::move(view.lensFlareBrightResource_), { view.lensFlareBrightUnorderedAccessViewIndex_, view.lensFlareBrightShaderResourceViewIndex_ });
+		bindlessHeap->Release(std::move(view.depthOfFieldResource_), { view.depthOfFieldUnorderedAccessViewIndex_, view.depthOfFieldShaderResourceViewIndex_ });
 
 		for (Uint32 axis = 0; axis < lensFlareMaxAxisCount; axis++)
 		{
 			for (Uint32 slot = 0; slot < 2; slot++)
 			{
-				bindlessHeap->FreeIndex(view.lensFlareStreakUnorderedAccessViewIndex_[axis][slot]);
-				bindlessHeap->FreeIndex(view.lensFlareStreakShaderResourceViewIndex_[axis][slot]);
-				bindlessHeap->DeferRelease(view.lensFlareStreakResource_[axis][slot]);
-				view.lensFlareStreakResource_[axis][slot].Reset();
+				bindlessHeap->Release(std::move(view.lensFlareStreakResource_[axis][slot]), { view.lensFlareStreakUnorderedAccessViewIndex_[axis][slot], view.lensFlareStreakShaderResourceViewIndex_[axis][slot] });
 			}
 		}
 
 		for (Uint32 level = 0; level < 6; level++)
 		{
-			bindlessHeap->FreeIndex(view.bloomUnorderedAccessViewIndex_[level]);
-			bindlessHeap->FreeIndex(view.bloomShaderResourceViewIndex_[level]);
-			bindlessHeap->DeferRelease(view.bloomResource_[level]);
-			view.bloomResource_[level].Reset();
+			bindlessHeap->Release(std::move(view.bloomResource_[level]), { view.bloomUnorderedAccessViewIndex_[level], view.bloomShaderResourceViewIndex_[level] });
 		}
 
 		for (Uint32 slot = 0; slot < 2; slot++)
 		{
-			bindlessHeap->FreeIndex(view.anamorphicFlareUnorderedAccessViewIndex_[slot]);
-			bindlessHeap->FreeIndex(view.anamorphicFlareShaderResourceViewIndex_[slot]);
-			bindlessHeap->DeferRelease(view.anamorphicFlareResource_[slot]);
-			view.anamorphicFlareResource_[slot].Reset();
+			bindlessHeap->Release(std::move(view.anamorphicFlareResource_[slot]), { view.anamorphicFlareUnorderedAccessViewIndex_[slot], view.anamorphicFlareShaderResourceViewIndex_[slot] });
 		}
 
-		bindlessHeap->FreeIndex(view.anamorphicFlareOutputUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(view.anamorphicFlareOutputShaderResourceViewIndex_);
-		bindlessHeap->DeferRelease(view.anamorphicFlareOutputResource_);
-		view.anamorphicFlareOutputResource_.Reset();
+		bindlessHeap->Release(std::move(view.anamorphicFlareOutputResource_), { view.anamorphicFlareOutputUnorderedAccessViewIndex_, view.anamorphicFlareOutputShaderResourceViewIndex_ });
 
 		for (Uint32 slot = 0; slot < 2; slot++)
 		{
-			bindlessHeap->FreeIndex(view.lensStageUnorderedAccessViewIndex_[slot]);
-			bindlessHeap->FreeIndex(view.lensStageShaderResourceViewIndex_[slot]);
-			bindlessHeap->DeferRelease(view.lensStageResource_[slot]);
-			view.lensStageResource_[slot].Reset();
+			bindlessHeap->Release(std::move(view.lensStageResource_[slot]), { view.lensStageUnorderedAccessViewIndex_[slot], view.lensStageShaderResourceViewIndex_[slot] });
 		}
 
-		bindlessHeap->FreeIndex(view.colorGradingUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(view.colorGradingShaderResourceViewIndex_);
-		bindlessHeap->DeferRelease(view.colorGradingResource_);
-		view.colorGradingResource_.Reset();
-
-		bindlessHeap->DeferRelease(view.outputResource_);
-		view.outputResource_.Reset();
-		bindlessHeap->DeferRelease(view.outputResourceUpscaled_);
-		view.outputResourceUpscaled_.Reset();
-		bindlessHeap->DeferRelease(view.sharpenResource_);
-		view.sharpenResource_.Reset();
-		bindlessHeap->DeferRelease(view.sharpenResourceUpscaled_);
-		view.sharpenResourceUpscaled_.Reset();
-		bindlessHeap->DeferRelease(view.histogramResource_);
-		view.histogramResource_.Reset();
-		bindlessHeap->DeferRelease(view.exposureResource_);
-		view.exposureResource_.Reset();
-		bindlessHeap->DeferRelease(view.lensFlareResource_);
-		view.lensFlareResource_.Reset();
-		bindlessHeap->DeferRelease(view.lensFlareBrightResource_);
-		view.lensFlareBrightResource_.Reset();
-		bindlessHeap->DeferRelease(view.depthOfFieldResource_);
-		view.depthOfFieldResource_.Reset();
+		bindlessHeap->Release(std::move(view.colorGradingResource_), { view.colorGradingUnorderedAccessViewIndex_, view.colorGradingShaderResourceViewIndex_ });
 
 		view.activeIsUpscaled_ = false;
 		view.exposureInitialized_ = false;
@@ -932,13 +886,13 @@ namespace SeedCore
 
 		if (view == RaytracingView::Editor)
 		{
-			constantIndicesSystem.SetEditorPostProcessIndex(target.constantBuffer_->GetIndex());
+			constantIndicesSystem.SetEditorPostProcessIndex(target.constantBuffer_->Index());
 			shaderResourceIndicesSystem.SetEditorPostProcessIndices(srvValues);
 			unorderedAccessIndicesSystem.SetEditorPostProcessIndices(uavValues);
 		}
 		else
 		{
-			constantIndicesSystem.SetGamePostProcessIndex(target.constantBuffer_->GetIndex());
+			constantIndicesSystem.SetGamePostProcessIndex(target.constantBuffer_->Index());
 			shaderResourceIndicesSystem.SetGamePostProcessIndices(srvValues);
 			unorderedAccessIndicesSystem.SetGamePostProcessIndices(uavValues);
 		}

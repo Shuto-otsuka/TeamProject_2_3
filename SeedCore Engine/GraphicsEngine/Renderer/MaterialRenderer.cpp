@@ -33,8 +33,8 @@ namespace SeedCore
 
 		sceneSystem_ = MakePtr<SceneSystem>(device, bindlessHeap);
 
-		constantIndicesBuffer_ = MakePtr<ConstantBuffer<ConstantIndices>>(device, bindlessHeap);
-		shaderResourceIndicesBuffer_ = MakePtr<ConstantBuffer<ShaderResourceIndices>>(device, bindlessHeap);
+		constantIndicesBuffer_ = MakePtr<StaticConstantBuffer<ConstantIndices>>(device, bindlessHeap);
+		shaderResourceIndicesBuffer_ = MakePtr<StaticConstantBuffer<ShaderResourceIndices>>(device, bindlessHeap);
 
 		if (D3D12Check::GetLevel() != D3D12Level::D12_2)
 		{

@@ -65,8 +65,8 @@ namespace SeedCore
 		previousMorphWeightBuffer_ = MakePtr<ReadOnlyStructuredBuffer<Float>>(device, bindlessHeap, maxMorphWeightCount_);
 		shaderResourceIndicesSystem.SetModelPreviousMorphWeightIndex(previousMorphWeightBuffer_->Index());
 
-		modelFurConstantBuffer_ = MakePtr<ConstantBuffer<FurConstantBuffer>>(device, bindlessHeap);
-		constantIndicesSystem.SetModelFurIndex(modelFurConstantBuffer_->GetIndex());
+		modelFurConstantBuffer_ = MakePtr<StaticConstantBuffer<FurConstantBuffer>>(device, bindlessHeap);
+		constantIndicesSystem.SetModelFurIndex(modelFurConstantBuffer_->Index());
 
 		oitBuffer_.Create(device, bindlessHeap, constantIndicesSystem, unorderedAccessIndicesSystem, width, height);
 
@@ -1068,7 +1068,7 @@ namespace SeedCore
 		shaderResourceIndicesSystem_->SetModelInstanceIndex(instanceBuffer_->Index());
 		shaderResourceIndicesSystem_->SetModelBoneMatrixIndex(boneBuffer_->Index());
 		shaderResourceIndicesSystem_->SetModelMorphWeightIndex(morphWeightBuffer_->Index());
-		constantIndicesSystem_->SetModelFurIndex(modelFurConstantBuffer_->GetIndex());
+		constantIndicesSystem_->SetModelFurIndex(modelFurConstantBuffer_->Index());
 		shaderResourceIndicesSystem_->SetModelPreviousBoneMatrixIndex(previousBoneBuffer_->Index());
 		shaderResourceIndicesSystem_->SetModelPreviousMorphWeightIndex(previousMorphWeightBuffer_->Index());
 

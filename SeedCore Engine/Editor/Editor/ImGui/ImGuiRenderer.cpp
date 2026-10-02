@@ -349,7 +349,7 @@ namespace SeedCore
 		/// [EN] The slot index is recovered from the CPU handle alone; the GPU handle points at the same slot.
 		/// [JP] スロットのインデックスは CPU ハンドルだけから求める。GPU ハンドルは同じスロットを指している。
 		BindlessHeap* bindlessHeap = static_cast<BindlessHeap*>(info->UserData);
-		bindlessHeap->FreeIndex(bindlessHeap->Index(cpuHandle));
+		bindlessHeap->Release(nullptr, bindlessHeap->Index(cpuHandle));
 	}
 
 	/**

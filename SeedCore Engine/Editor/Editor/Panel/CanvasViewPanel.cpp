@@ -221,7 +221,7 @@ namespace SeedCore
 					Matrix worldMatrix = actor.WorldMatrix();
 					worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
 
-					Float rotation = worldRotation.ToEuler().x;
+					Float rotation = worldRotation.ToEuler().z;
 					Float cosRotation = std::cos(rotation);
 					Float sinRotation = std::sin(rotation);
 
@@ -365,7 +365,7 @@ namespace SeedCore
 					Matrix worldMatrix = actor.WorldMatrix();
 					worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
 
-					Float rotation = worldRotation.ToEuler().x;
+					Float rotation = worldRotation.ToEuler().z;
 					Float cosRotation = std::cos(rotation);
 					Float sinRotation = std::sin(rotation);
 

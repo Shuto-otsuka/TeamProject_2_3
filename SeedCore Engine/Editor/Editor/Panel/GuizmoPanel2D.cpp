@@ -132,7 +132,7 @@ namespace SeedCore
 						Matrix worldMatrix = actor.WorldMatrix();
 						worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
 
-						Float rotation = isImage ? worldRotation.ToEuler().x : 0.0f;
+						Float rotation = isImage ? worldRotation.ToEuler().z : 0.0f;
 
 						origin = Vector2(100000.0f + worldTranslation.x, 100000.0f + canvasHeight - worldTranslation.y);
 						axisU = Vector2(std::cos(rotation), -std::sin(rotation));

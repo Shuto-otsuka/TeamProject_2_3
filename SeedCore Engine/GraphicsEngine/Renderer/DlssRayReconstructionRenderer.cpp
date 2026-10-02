@@ -29,19 +29,13 @@ namespace SeedCore
 		View* views[] = { &editorView_, &gameView_ };
 		for (View* view : views)
 		{
-			bindlessHeap->FreeIndex(view->normalRoughnessUnorderedAccessViewIndex_);
-			bindlessHeap->FreeIndex(view->specularAlbedoUnorderedAccessViewIndex_);
-			bindlessHeap->FreeIndex(view->diffuseAlbedoUnorderedAccessViewIndex_);
-			bindlessHeap->FreeIndex(view->outputUnorderedAccessViewIndex_);
-			bindlessHeap->FreeIndex(view->outputShaderResourceViewIndex_);
-
-			bindlessHeap->DeferRelease(view->normalRoughnessResource_);
+			bindlessHeap->Release(view->normalRoughnessResource_, view->normalRoughnessUnorderedAccessViewIndex_);
+			bindlessHeap->Release(view->specularAlbedoResource_, view->specularAlbedoUnorderedAccessViewIndex_);
+			bindlessHeap->Release(view->diffuseAlbedoResource_, view->diffuseAlbedoUnorderedAccessViewIndex_);
+			bindlessHeap->Release(view->outputResource_, { view->outputUnorderedAccessViewIndex_ ,view->outputShaderResourceViewIndex_ });
 			view->normalRoughnessResource_.Reset();
-			bindlessHeap->DeferRelease(view->specularAlbedoResource_);
 			view->specularAlbedoResource_.Reset();
-			bindlessHeap->DeferRelease(view->diffuseAlbedoResource_);
 			view->diffuseAlbedoResource_.Reset();
-			bindlessHeap->DeferRelease(view->outputResource_);
 			view->outputResource_.Reset();
 		}
 	}

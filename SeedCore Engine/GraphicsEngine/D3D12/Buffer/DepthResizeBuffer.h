@@ -127,7 +127,7 @@ namespace SeedCore
 		DescriptorHeap depthStencilViewHeap_;
 		Uint32 unorderedAccessViewIndex_ = 0;
 
-		ResourcePtr<ConstantBuffer<DepthResizeConstantBuffer>> constantBuffer_;
+		ResourcePtr<StaticConstantBuffer<DepthResizeConstantBuffer>> constantBuffer_;
 
 		BindlessHeap* bindlessHeap_ = nullptr;
 		RootSignature* rootSignature_ = nullptr;

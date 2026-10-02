@@ -102,7 +102,7 @@ namespace SeedCore
 			device->CreateUnorderedAccessView(fragmentBuffer_.Get(), nullptr, &unorderedAccessViewDesc, bindlessHeap->CPUHandle(fragmentBufferUAVIndex_));
 
 			fragmentCapacity_ = static_cast<Uint>(fragmentCount);
-			oitConstantBuffer_ = MakePtr<ConstantBuffer<OitConstantBuffer>>(device, bindlessHeap);
+			oitConstantBuffer_ = MakePtr<StaticConstantBuffer<OitConstantBuffer>>(device, bindlessHeap);
 			OitConstantBuffer data{};
 			data.fragmentCapacity_ = fragmentCapacity_;
 			oitConstantBuffer_->Update(data);
@@ -152,28 +152,20 @@ namespace SeedCore
 		unorderedAccessIndicesSystem.SetOITHeadPointerIndex(headPointerUAVIndex_);
 		unorderedAccessIndicesSystem.SetOITFragmentBufferIndex(fragmentBufferUAVIndex_);
 		unorderedAccessIndicesSystem.SetOITCounterIndex(counterUAVIndex_);
-		constantIndicesSystem.SetOitIndex(oitConstantBuffer_->GetIndex());
+		constantIndicesSystem.SetOitIndex(oitConstantBuffer_->Index());
 	}
 
 	void OITBuffer::Destroy(BindlessHeap* bindlessHeap)
 	{
-		bindlessHeap->FreeIndex(headPointerUAVIndex_);
-		bindlessHeap->FreeIndex(fragmentBufferUAVIndex_);
-		bindlessHeap->FreeIndex(counterUAVIndex_);
-
 		/// [EN] Resize() destroys and immediately recreates these while the
 		///      previous frames are still in flight writing their PPLL fragments,
 		///      so the old buffers have to outlive this call.
 		/// [JP] Resize() はこれらを破棄して即座に作り直すが、その時点で前フレームは
 		///      まだインフライトで PPLL のフラグメントを書き込んでいるため、
 		///      古いバッファはこの呼び出しより長く生存させる必要がある。
-		bindlessHeap->DeferRelease(headPointerTexture_);
-		bindlessHeap->DeferRelease(fragmentBuffer_);
-		bindlessHeap->DeferRelease(counterBuffer_);
-
-		headPointerTexture_.Reset();
-		fragmentBuffer_.Reset();
-		counterBuffer_.Reset();
+		bindlessHeap->Release(std::move(headPointerTexture_), headPointerUAVIndex_);
+		bindlessHeap->Release(std::move(fragmentBuffer_), fragmentBufferUAVIndex_);
+		bindlessHeap->Release(std::move(counterBuffer_), counterUAVIndex_);
 	}
 
 	void OITBuffer::Resize(ID3D12Device* device, BindlessHeap* bindlessHeap, ConstantIndicesSystem& constantIndicesSystem, UnorderedAccessIndicesSystem& unorderedAccessIndicesSystem, Uint32 width, Uint32 height)

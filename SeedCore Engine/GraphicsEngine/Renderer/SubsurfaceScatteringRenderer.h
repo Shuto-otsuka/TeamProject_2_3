@@ -234,7 +234,7 @@ namespace SeedCore
 
 		/// [EN] GPU copy of the tuning values, read through its bindless index.
 		/// [JP] 調整値の GPU 側コピー。bindless インデックス経由で読まれる。
-		ResourcePtr<ConstantBuffer<SubsurfaceScatteringRayConstantBuffer>> tuningBuffer_;
+		ResourcePtr<StaticConstantBuffer<SubsurfaceScatteringRayConstantBuffer>> tuningBuffer_;
 
 		/// [EN] Single-channel transmittance texture: 0 is fully opaque, 1 fully translucent.
 		/// [JP] 1 チャンネルの透過率テクスチャ。0 が完全に不透明、1 が完全に透ける。

@@ -5,7 +5,7 @@ namespace SeedCore
 {
 	SceneSystem::SceneSystem(ID3D12Device* device, BindlessHeap* bindlessHeap)
 	{
-		sceneConstantBuffer_ = MakePtr<ConstantBuffer<SceneConstantBuffer>>(device, bindlessHeap);
+		sceneConstantBuffer_ = MakePtr<StaticConstantBuffer<SceneConstantBuffer>>(device, bindlessHeap);
 	}
 
 	SceneSystem::~SceneSystem()
@@ -26,6 +26,6 @@ namespace SeedCore
 	/// [JP] フレームリングバッファ: インデックスは毎フレーム変わる — キャッシュ禁止。
 	Uint SceneSystem::GetIndex()const
 	{
-		return sceneConstantBuffer_->GetIndex();
+		return sceneConstantBuffer_->Index();
 	}
 }

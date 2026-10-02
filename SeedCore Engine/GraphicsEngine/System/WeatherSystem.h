@@ -96,6 +96,6 @@ namespace SeedCore
 
 		std::mt19937 randomEngine_ = std::mt19937(std::random_device{}());
 
-		ResourcePtr<ConstantBuffer<WeatherConstantBuffer>> weatherConstantBuffer_;
+		ResourcePtr<StaticConstantBuffer<WeatherConstantBuffer>> weatherConstantBuffer_;
 	};
 }

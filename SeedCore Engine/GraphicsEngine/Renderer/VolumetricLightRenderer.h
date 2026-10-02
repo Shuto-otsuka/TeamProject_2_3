@@ -10,9 +10,9 @@ namespace SeedCore
 	struct RootAddresses;
 
 	class BindlessHeap;
-	class ConstantIndicesSystem;
 	class D3D12CommandList;
 	class ShaderCache;
+	class ConstantIndicesSystem;
 	class ShaderResourceIndicesSystem;
 	class UnorderedAccessIndicesSystem;
 
@@ -312,7 +312,7 @@ namespace SeedCore
 
 			/// [EN] GPU copy of this view's dispatch constants.
 			/// [JP] このビューのディスパッチ用定数の GPU 側コピー。
-			ResourcePtr<ConstantBuffer<VolumetricLightDispatchConstantBuffer>> constantBuffer_;
+			ResourcePtr<StaticConstantBuffer<VolumetricLightDispatchConstantBuffer>> constantBuffer_;
 		};
 
 		/// [EN] Injection, scattering and integration compute shaders of the pass.
@@ -321,7 +321,7 @@ namespace SeedCore
 
 		/// [EN] GPU copy of the tuning values, read through its bindless index.
 		/// [JP] 調整値の GPU 側コピー。bindless インデックス経由で読まれる。
-		ResourcePtr<ConstantBuffer<VolumetricLightRayConstantBuffer>> tuningBuffer_;
+		ResourcePtr<StaticConstantBuffer<VolumetricLightRayConstantBuffer>> tuningBuffer_;
 
 		/// [EN] Output of pass 1: rgb is the scattering coefficient, a is extinction.
 		/// [JP] パス 1 の出力。rgb は散乱係数、a は消衰。

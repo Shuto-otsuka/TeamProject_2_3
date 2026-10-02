@@ -231,7 +231,7 @@ namespace SeedCore
 			///      postProcessIndex_ がこのバッファを指す -
 			///      SceneSystem/WeatherSystem 自前の独立到達型定数バッファと
 			///      同じ形。
-			ResourcePtr<ConstantBuffer<PostProcessConstantBuffer>> constantBuffer_;
+			ResourcePtr<StaticConstantBuffer<PostProcessConstantBuffer>> constantBuffer_;
 
 			Microsoft::WRL::ComPtr<ID3D12Resource> outputResource_;
 			D3D12_RESOURCE_STATES outputState_ = D3D12_RESOURCE_STATE_COMMON;

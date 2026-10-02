@@ -17,7 +17,7 @@
 /**
 * [EN]
 * Three-argument form of SC_STATIC_ASSERT: asserts that a C++ struct's
-* size matches its HLSL mirror's, with a Japanese message generated from
+* size matches its HLSL mirror's, with an English message generated from
 * the type name and the HLSL file it mirrors, so every call site reports
 * the mismatch in the same words.
 *
@@ -25,11 +25,11 @@
 *
 * [JP]
 * SC_STATIC_ASSERT の3引数版。C++ 構造体のサイズが対応する HLSL 側と
-* 一致することを表明する。型名とミラー先の HLSL ファイル名から日本語
+* 一致することを表明する。型名とミラー先の HLSL ファイル名から英語の
 * メッセージを自動生成するため、どの呼び出し箇所でも同じ言い回しで
 * 不一致を報告する。
 */
-#define SC_STATIC_ASSERT_3(type, size, hlslFile) static_assert(sizeof(type) == (size), #type " が " hlslFile " と一致していません")
+#define SC_STATIC_ASSERT_3(type, size, hlslFile) static_assert(sizeof(type) == (size), #type " does not match " hlslFile)
 
 /**
 * [EN]
@@ -70,7 +70,7 @@
 /**
 * [EN]
 * Asserts that a C++ struct's size is a whole multiple of 16 bytes (one
-* cbuffer row), with a generated Japanese message. For cbuffer-mirror
+* cbuffer row), with a generated English message. For cbuffer-mirror
 * structs whose HLSL side has no single fixed byte size to compare
 * against directly.
 *
@@ -78,10 +78,10 @@
 *
 * [JP]
 * C++ 構造体のサイズが 16 バイト(cbuffer の1行)の倍数であることを
-* 表明する。日本語メッセージは自動生成する。HLSL 側に比較すべき単一の
+* 表明する。英語のメッセージは自動生成する。HLSL 側に比較すべき単一の
 * 固定バイト数が無い cbuffer ミラー構造体向け。
 */
-#define SC_STATIC_ASSERT_ALIGNED16(type) static_assert(sizeof(type) % 16 == 0, #type " が 16 バイト行の倍数ではありません")
+#define SC_STATIC_ASSERT_ALIGNED16(type) static_assert(sizeof(type) % 16 == 0, #type " is not a multiple of 16 bytes")
 
 /**
 * [EN]

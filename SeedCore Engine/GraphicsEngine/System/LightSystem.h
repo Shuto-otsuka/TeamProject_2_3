@@ -190,9 +190,9 @@ namespace SeedCore
 		DynamicArray<SpotLightStructuredBuffer> spotLights_;
 		DynamicArray<RectLightStructuredBuffer> rectLights_;
 
-		ResourcePtr<ConstantBuffer<LightConstantBuffer>> lightConstantBuffer_;
-		ResourcePtr<ConstantBuffer<DirectionalLightConstantBuffer>> directionalLightConstantBuffer_;
-		ResourcePtr<ConstantBuffer<ClusterAssignConstantBuffer>> clusterAssignConstantBuffer_;
+		ResourcePtr<StaticConstantBuffer<LightConstantBuffer>> lightConstantBuffer_;
+		ResourcePtr<StaticConstantBuffer<DirectionalLightConstantBuffer>> directionalLightConstantBuffer_;
+		ResourcePtr<StaticConstantBuffer<ClusterAssignConstantBuffer>> clusterAssignConstantBuffer_;
 
 		ResourcePtr<ReadOnlyStructuredBuffer<PointLightStructuredBuffer>> pointLightBuffer_;
 		ResourcePtr<ReadOnlyStructuredBuffer<SpotLightStructuredBuffer>> spotLightBuffer_;

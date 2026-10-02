@@ -69,7 +69,7 @@ namespace SeedCore
 
 		/// [EN] The tuning values live in a constant buffer the shaders find through its bindless index.
 		/// [JP] 調整値は、シェーダーが bindless インデックスで見つける定数バッファに置く。
-		tuningBuffer_ = MakePtr<ConstantBuffer<ReflectionRayConstantBuffer>>(device, bindlessHeap);
+		tuningBuffer_ = MakePtr<StaticConstantBuffer<ReflectionRayConstantBuffer>>(device, bindlessHeap);
 		instanceTable_ = MakePtr<ReadOnlyStructuredBuffer<ReflectionInstanceData>>(device, bindlessHeap, maxInstances_);
 
 		/// [EN] Create the size-dependent resources at the current size.
@@ -228,7 +228,7 @@ namespace SeedCore
 
 		/// [EN] The ray pass and the spatial reuse write the raw radiance and confidence; the denoiser reads them.
 		/// [JP] レイのパスと空間的リユースが生の放射輝度と信頼度を書き、デノイザがそれを読む。
-		constantIndicesSystem_->SetReflectionRayConstantIndex(tuningBuffer_->GetIndex());
+		constantIndicesSystem_->SetReflectionRayConstantIndex(tuningBuffer_->Index());
 		unorderedAccessIndicesSystem_->SetReflectionOutputUnorderedAccessViewIndex(radianceUnorderedAccessViewIndex_);
 		shaderResourceIndicesSystem_->SetReflectionOutputShaderResourceViewIndex(radianceShaderResourceViewIndex_);
 		unorderedAccessIndicesSystem_->SetReflectionConfidenceUnorderedAccessViewIndex(confidenceUnorderedAccessViewIndex_);
@@ -777,14 +777,9 @@ namespace SeedCore
 		/// [JP] リソース 1 つの bindless ビュー 2 つを解放し、破棄を遅延させる。
 		auto releaseResource = [this](Microsoft::WRL::ComPtr<ID3D12Resource>& resource, Uint32 unorderedAccessViewIndex, Uint32 shaderResourceViewIndex)
 		{
-			/// [EN] Return both view slots to the bindless heap.
-			/// [JP] 両方のビューのスロットを bindless ヒープへ返す。
-			bindlessHeap_->FreeIndex(unorderedAccessViewIndex);
-			bindlessHeap_->FreeIndex(shaderResourceViewIndex);
-			/// [EN] Keep the resource alive until the GPU has finished with it; then drop this reference.
-			/// [JP] GPU が使い終えるまでリソースを生かしておき、その後この参照を手放す。
-			bindlessHeap_->DeferRelease(resource);
-			resource.Reset();
+			/// [EN] Queue both view slots and the resource on the bindless heap, which holds them until the in-flight frames that may still read them have finished.
+			/// [JP] 両方のビューのスロットとリソースを bindless ヒープに積む。ヒープは、それらを読みうるインフライトのフレームが完了するまで保持する。
+			bindlessHeap_->Release(std::move(resource), { unorderedAccessViewIndex, shaderResourceViewIndex });
 		};
 
 		releaseResource(radianceResource_, radianceUnorderedAccessViewIndex_, radianceShaderResourceViewIndex_);
@@ -798,8 +793,7 @@ namespace SeedCore
 
 				/// [EN] A reservoir also owns the shader-visible raw view used by its clear.
 				/// [JP] reservoir は、クリアに使うシェーダー可視の raw ビューも持つ。
-				bindlessHeap_->FreeIndex(clearReservoirGpuIndex_[viewIndex][slotIndex]);
-				releaseResource(reservoirResource_[viewIndex][slotIndex], reservoirUnorderedAccessViewIndex_[viewIndex][slotIndex], reservoirShaderResourceViewIndex_[viewIndex][slotIndex]);
+				bindlessHeap_->Release(std::move(reservoirResource_[viewIndex][slotIndex]), { reservoirUnorderedAccessViewIndex_[viewIndex][slotIndex], reservoirShaderResourceViewIndex_[viewIndex][slotIndex], clearReservoirGpuIndex_[viewIndex][slotIndex] });
 
 				releaseResource(momentsResource_[viewIndex][slotIndex], momentsUnorderedAccessViewIndex_[viewIndex][slotIndex], momentsShaderResourceViewIndex_[viewIndex][slotIndex]);
 				releaseResource(historyLengthResource_[viewIndex][slotIndex], historyLengthUnorderedAccessViewIndex_[viewIndex][slotIndex], historyLengthShaderResourceViewIndex_[viewIndex][slotIndex]);

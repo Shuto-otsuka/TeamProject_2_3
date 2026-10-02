@@ -257,8 +257,8 @@ namespace SeedCore
 		std::erase_if(skinnedBlasCache_[frameIndex], isStale);
 		std::erase_if(morphedBlasCache_[frameIndex], isStale);
 
-		/// [EN] Position buffers return their bindless views by hand. DispatchBuffers and weight buffers defer their own release, so they are simply dropped once their entity is gone.
-		/// [JP] 位置バッファは bindless のビューを自分で返す。DispatchBuffer とウェイトバッファは自身で解放を遅延させるため、エンティティが消えたら捨てるだけでよい。
+		/// [EN] Position buffers hand their bindless views and resource to the heap by hand. DispatchBuffers and weight buffers defer their own release, so they are simply dropped once their entity is gone.
+		/// [JP] 位置バッファは bindless のビューとリソースを自分でヒープへ渡す。DispatchBuffer とウェイトバッファは自身で解放を遅延させるため、エンティティが消えたら捨てるだけでよい。
 		auto releaseStalePositions = [&](std::unordered_map<EntityID, SkinnedPositionBuffer>& buffers)
 			{
 				std::erase_if(buffers, [&](const auto& entry)
@@ -267,11 +267,7 @@ namespace SeedCore
 						{
 							return false;
 						}
-						if (entry.second.shaderResourceViewIndex_ != SC_INVALID)
-						{
-							bindlessHeap_->FreeIndex(entry.second.shaderResourceViewIndex_);
-							bindlessHeap_->FreeIndex(entry.second.unorderedAccessViewIndex_);
-						}
+						bindlessHeap_->Release(entry.second.resource_, { entry.second.shaderResourceViewIndex_, entry.second.unorderedAccessViewIndex_ });
 						return true;
 					});
 			};
@@ -559,12 +555,12 @@ namespace SeedCore
 					if (!blendBuffer.weights_)
 					{
 						blendBuffer.weights_ = MakePtr<ReadOnlyStructuredBuffer<Float>>(device, bindlessHeap_, targetCount);
-						blendBuffer.dispatchBuffer_ = MakePtr<ConstantBuffer<MorphBlendDispatchBuffer>>(device, bindlessHeap_);
+						blendBuffer.dispatchBuffer_ = MakePtr<StaticConstantBuffer<MorphBlendDispatchBuffer>>(device, bindlessHeap_);
 					}
 					blendBuffer.weights_->Update(weights.data(), static_cast<Uint>(Min(weights.size(), static_cast<Size>(targetCount))));
 					blendBuffer.dispatchBuffer_->Update(MorphBlendDispatchBuffer{ subMesh.raytracingVertexOffset_, subMesh.raytracingVertexCount_, targetCount, subMesh.raytracingMorphDeltaOffset_, crister->PositionBufferIndex(), crister->ProxyMorphDeltaBufferIndex(), blendBuffer.weights_->Index(), blendedBuffer.unorderedAccessViewIndex_ });
 
-					Uint dispatchBufferIndex = blendBuffer.dispatchBuffer_->GetIndex();
+					Uint dispatchBufferIndex = blendBuffer.dispatchBuffer_->Index();
 					commandList4->SetPipelineState(morphBlendShader_.GetPipelineState());
 					commandList4->SetComputeRoot32BitConstants(3, 1, &dispatchBufferIndex, 0);
 					commandList4->Dispatch((subMesh.raytracingVertexCount_ + 63) / 64, 1, 1);
@@ -616,14 +612,14 @@ namespace SeedCore
 					inputPositionIndex = morphed->second.shaderResourceViewIndex_;
 				}
 
-				ResourcePtr<ConstantBuffer<SkinBlendDispatchBuffer>>& dispatchBuffer = skinBlendDispatchBuffers_[pending.entityID_];
+				ResourcePtr<StaticConstantBuffer<SkinBlendDispatchBuffer>>& dispatchBuffer = skinBlendDispatchBuffers_[pending.entityID_];
 				if (!dispatchBuffer)
 				{
-					dispatchBuffer = MakePtr<ConstantBuffer<SkinBlendDispatchBuffer>>(device, bindlessHeap_);
+					dispatchBuffer = MakePtr<StaticConstantBuffer<SkinBlendDispatchBuffer>>(device, bindlessHeap_);
 				}
 				dispatchBuffer->Update(SkinBlendDispatchBuffer{ vertexCount, pending.boneOffset_, inputPositionIndex, crister->ProxySkinVertexBufferIndex(), modelRenderer.BoneMatrixBufferIndex(), skinnedBuffer.unorderedAccessViewIndex_, 0, 0 });
 
-				Uint dispatchBufferIndex = dispatchBuffer->GetIndex();
+				Uint dispatchBufferIndex = dispatchBuffer->Index();
 				commandList4->SetPipelineState(skinBlendShader_.GetPipelineState());
 				commandList4->SetComputeRoot32BitConstants(3, 1, &dispatchBufferIndex, 0);
 				commandList4->Dispatch((vertexCount + 63) / 64, 1, 1);

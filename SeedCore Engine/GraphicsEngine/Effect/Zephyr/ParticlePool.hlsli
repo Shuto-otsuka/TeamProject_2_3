@@ -4,7 +4,37 @@
 #include "../../Shader/Dispatch.hlsli"
 #include "Particle.hlsli"
 
-struct ParticleCountersConstantBuffer
+struct ParticleDispatchBuffer
+{
+    uint particle_index_;
+    uint dead_list_index_;
+    uint alive_list_read_index_;
+    uint alive_list_write_index_;
+
+    uint counter_index_;
+    uint module_index_;
+    uint meta_index_;
+    uint particle_dispatch_buffer_padding_0_;
+};
+
+ConstantBuffer<ParticleDispatchBuffer> GetParticleDispatchBuffer()
+{
+    return ResourceDescriptorHeap[dispatch_buffer_index_];
+}
+
+ConstantBuffer<ParticleConstantBuffer> GetParticleConstantBuffer()
+{
+    ParticleDispatchBuffer dispatchBuffer = GetParticleDispatchBuffer();
+    return ResourceDescriptorHeap[dispatchBuffer.meta_index_];
+}
+
+RWStructuredBuffer<ParticleSeed> GetParticleSeed()
+{
+    ParticleDispatchBuffer dispatchBuffer = GetParticleDispatchBuffer();
+    return ResourceDescriptorHeap[dispatchBuffer.particle_index_];
+}
+
+struct ParticleCounters
 {
 	uint alive_count_;
 	uint dead_count_;
@@ -12,10 +42,10 @@ struct ParticleCountersConstantBuffer
 	uint particle_counters_padding_0_;
 };
 
-RWStructuredBuffer<ParticleSeed> GetParticleBuffer()
+RWStructuredBuffer<ParticleCounters> GetParticleCounters()
 {
 	ParticleDispatchBuffer dispatchBuffer = GetParticleDispatchBuffer();
-	return ResourceDescriptorHeap[dispatchBuffer.particle_index_];
+	return ResourceDescriptorHeap[dispatchBuffer.counter_index_];
 }
 
 RWStructuredBuffer<uint> GetDeadList()
@@ -34,12 +64,6 @@ RWStructuredBuffer<uint> GetAliveListWrite()
 {
 	ParticleDispatchBuffer dispatchBuffer = GetParticleDispatchBuffer();
 	return ResourceDescriptorHeap[dispatchBuffer.alive_list_write_index_];
-}
-
-RWStructuredBuffer<ParticleCountersConstantBuffer> GetParticleCountersConstantBuffer()
-{
-	ParticleDispatchBuffer dispatchBuffer = GetParticleDispatchBuffer();
-	return ResourceDescriptorHeap[dispatchBuffer.counter_index_];
 }
 
 #endif // __PARTICLE_POOL_HLSL__

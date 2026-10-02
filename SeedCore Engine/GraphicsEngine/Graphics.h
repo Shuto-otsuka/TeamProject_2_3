@@ -10,6 +10,7 @@
 #include <GraphicsEngine/Renderer/Renderer.h>
 #include <GraphicsEngine/Renderer/ViewMode.h>
 #include <GraphicsEngine/Shader/ShaderCache.h>
+#include <GraphicsEngine/Shader/ShaderHotReload.h>
 #include <GraphicsEngine/Shape/Screen/BootScreen.h>
 #include <GraphicsEngine/Shape/Screen/FadeScreen.h>
 #include <GraphicsEngine/Shape/Screen/LetterScreen.h>
@@ -583,6 +584,10 @@ namespace SeedCore
 		/// [EN] Caches shader objects shared by renderer and utility passes.
 		/// [JP] Renderer とユーティリティパスで共有するシェーダーオブジェクトをキャッシュする。
 		ResourcePtr<ShaderCache> shaderCache_;
+
+		/// [EN] Compiles shaders whose source can change while the engine runs (generated effect shaders, custom nodes) and recompiles them in place on Reload.
+        /// [JP] エンジンの実行中にソースが変わりうるシェーダー（生成されるエフェクトシェーダーやカスタムノード）をコンパイルし、Reload で同じハンドルのまま再コンパイルする。
+		ResourcePtr<ShaderHotReload> shaderHotReload_;
 
 		/// [EN] Performs GPU BC7 compression for streamed texture data.
 		/// [JP] ストリーミングテクスチャデータの GPU BC7 圧縮を行う。

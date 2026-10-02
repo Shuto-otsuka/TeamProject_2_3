@@ -411,7 +411,7 @@ namespace SeedCore
 
 		/// [EN] GPU copy of the tuning values, read through its bindless index.
 		/// [JP] 調整値の GPU 側コピー。bindless インデックス経由で読まれる。
-		ResourcePtr<ConstantBuffer<ReflectionRayConstantBuffer>> tuningBuffer_;
+		ResourcePtr<StaticConstantBuffer<ReflectionRayConstantBuffer>> tuningBuffer_;
 
 		/// [EN] Per-frame instance table (InstanceID() to vertex, index and material data), shared with Refraction and GlobalIllumination.
 		/// [JP] フレームごとのインスタンステーブル（InstanceID() から頂点、インデックス、マテリアルのデータへ）。Refraction と GlobalIllumination も共有する。

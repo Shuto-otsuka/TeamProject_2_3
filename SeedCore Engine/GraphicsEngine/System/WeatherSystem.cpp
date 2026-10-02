@@ -266,7 +266,7 @@ namespace SeedCore
 	{
 		if (!weatherConstantBuffer_)
 		{
-			weatherConstantBuffer_ = MakePtr<ConstantBuffer<WeatherConstantBuffer>>(device, bindlessHeap);
+			weatherConstantBuffer_ = MakePtr<StaticConstantBuffer<WeatherConstantBuffer>>(device, bindlessHeap);
 		}
 
 		weatherConstantBuffer_->Update(buffer);
@@ -274,6 +274,6 @@ namespace SeedCore
 
 	Uint WeatherSystem::GetIndex()const
 	{
-		return weatherConstantBuffer_ ? weatherConstantBuffer_->GetIndex() : 0;
+		return weatherConstantBuffer_ ? weatherConstantBuffer_->Index() : 0;
 	}
 }

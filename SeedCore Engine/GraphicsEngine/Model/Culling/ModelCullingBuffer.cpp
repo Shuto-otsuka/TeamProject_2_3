@@ -11,24 +11,19 @@ namespace SeedCore
 			return;
 		}
 
-		bindlessHeap_->FreeIndex(argumentUnorderedAccessViewIndex_);
-		bindlessHeap_->DeferRelease(argumentBuffer_);
-		bindlessHeap_->DeferRelease(argumentResetBuffer_);
+		bindlessHeap_->Release(argumentBuffer_, argumentUnorderedAccessViewIndex_);
+		bindlessHeap_->Release(argumentResetBuffer_, SC_INVALID);
 
 		if (singleSidedBuffer_)
 		{
-			bindlessHeap_->FreeIndex(singleSidedUnorderedAccessViewIndex_);
-			bindlessHeap_->FreeIndex(singleSidedShaderResourceViewIndex_);
-			bindlessHeap_->FreeIndex(doubleSidedUnorderedAccessViewIndex_);
-			bindlessHeap_->FreeIndex(doubleSidedShaderResourceViewIndex_);
-			bindlessHeap_->DeferRelease(singleSidedBuffer_);
-			bindlessHeap_->DeferRelease(doubleSidedBuffer_);
+			bindlessHeap_->Release(singleSidedBuffer_, { singleSidedUnorderedAccessViewIndex_ ,singleSidedShaderResourceViewIndex_ });
+			bindlessHeap_->Release(doubleSidedBuffer_, { doubleSidedUnorderedAccessViewIndex_ ,doubleSidedShaderResourceViewIndex_ });
 		}
 	}
 
 	void ModelCullingBuffer::Create(ID3D12Device* device, BindlessHeap* bindlessHeap)
 	{
-		HRESULT hr = S_OK;
+		HRESULT hr{ S_OK };
 
 		device_ = device;
 		bindlessHeap_ = bindlessHeap;
@@ -114,7 +109,7 @@ namespace SeedCore
 			SC_HR_CHECK(hr, "モデルカリングのコマンドシグネチャの生成に失敗しました");
 		}
 
-		constantBuffer_ = MakePtr<ConstantBuffer<ModelCullingConstantBuffer>>(device, bindlessHeap);
+		constantBuffer_ = MakePtr<StaticConstantBuffer<ModelCullingConstantBuffer>>(device, bindlessHeap);
 	}
 
 	void ModelCullingBuffer::Reserve(Uint capacity)
@@ -126,17 +121,13 @@ namespace SeedCore
 
 		if (singleSidedBuffer_)
 		{
-			bindlessHeap_->FreeIndex(singleSidedUnorderedAccessViewIndex_);
-			bindlessHeap_->FreeIndex(singleSidedShaderResourceViewIndex_);
-			bindlessHeap_->FreeIndex(doubleSidedUnorderedAccessViewIndex_);
-			bindlessHeap_->FreeIndex(doubleSidedShaderResourceViewIndex_);
-			bindlessHeap_->DeferRelease(singleSidedBuffer_);
-			bindlessHeap_->DeferRelease(doubleSidedBuffer_);
+			bindlessHeap_->Release(singleSidedBuffer_, { singleSidedUnorderedAccessViewIndex_ ,singleSidedShaderResourceViewIndex_ });
+			bindlessHeap_->Release(doubleSidedBuffer_, { doubleSidedUnorderedAccessViewIndex_ ,doubleSidedShaderResourceViewIndex_ });
 		}
 
 		capacity_ = capacity;
 
-		HRESULT hr = S_OK;
+		HRESULT hr{ S_OK };
 
 		D3D12_HEAP_PROPERTIES heapProperties{};
 		heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -291,7 +282,7 @@ namespace SeedCore
 
 	Uint ModelCullingBuffer::GetConstantBufferIndex()const
 	{
-		return constantBuffer_->GetIndex();
+		return constantBuffer_->Index();
 	}
 
 	Uint ModelCullingBuffer::GetSingleSidedShaderResourceViewIndex()const

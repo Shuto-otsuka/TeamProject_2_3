@@ -62,7 +62,7 @@ namespace SeedCore
 
 		/// [EN] The tuning values live in a constant buffer the shaders find through its bindless index.
 		/// [JP] 調整値は、シェーダーが bindless インデックスで見つける定数バッファに置く。
-		tuningBuffer_ = MakePtr<ConstantBuffer<RefractionRayConstantBuffer>>(device, bindlessHeap);
+		tuningBuffer_ = MakePtr<StaticConstantBuffer<RefractionRayConstantBuffer>>(device, bindlessHeap);
 
 		/// [EN] Create the size-dependent resources at the current size.
 		/// [JP] サイズに依存するリソースを現在のサイズで作る。
@@ -182,7 +182,7 @@ namespace SeedCore
 
 		/// [EN] The ray pass writes through the write view; deferred lighting reads through the read view.
 		/// [JP] レイパスは書き込み用ビューで書き、ディファードライティングは読み取り用ビューで読む。
-		constantIndicesSystem_->SetRefractionRayConstantIndex(tuningBuffer_->GetIndex());
+		constantIndicesSystem_->SetRefractionRayConstantIndex(tuningBuffer_->Index());
 		unorderedAccessIndicesSystem_->SetRefractionOutputUnorderedAccessViewIndex(outputUnorderedAccessViewIndex_);
 		shaderResourceIndicesSystem_->SetRefractionOutputShaderResourceViewIndex(outputShaderResourceViewIndex_);
 	}
@@ -354,14 +354,8 @@ namespace SeedCore
 	*/
 	void RefractionRenderer::Release()
 	{
-		/// [EN] Return the view slots to the bindless heap.
-		/// [JP] ビューのスロットを bindless ヒープへ返す。
-		bindlessHeap_->FreeIndex(outputUnorderedAccessViewIndex_);
-		bindlessHeap_->FreeIndex(outputShaderResourceViewIndex_);
-
-		/// [EN] Keep the resource alive until the GPU has finished with it; then drop this reference.
-		/// [JP] GPU が使い終えるまでリソースを生かしておき、その後この参照を手放す。
-		bindlessHeap_->DeferRelease(outputResource_);
-		outputResource_.Reset();
+		/// [EN] Queue the view slots and the resource on the bindless heap, which holds them until the in-flight frames that may still read them have finished.
+		/// [JP] ビューのスロットとリソースを bindless ヒープに積む。ヒープは、それらを読みうるインフライトのフレームが完了するまで保持する。
+		bindlessHeap_->Release(std::move(outputResource_), { outputUnorderedAccessViewIndex_, outputShaderResourceViewIndex_ });
 	}
 }

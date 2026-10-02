@@ -312,7 +312,7 @@ namespace SeedCore
 
 		/// [EN] GPU copy of the tuning values, read through its bindless index.
 		/// [JP] 調整値の GPU 側コピー。bindless インデックス経由で読まれる。
-		ResourcePtr<ConstantBuffer<VolumetricStarRayConstantBuffer>> tuningBuffer_;
+		ResourcePtr<StaticConstantBuffer<VolumetricStarRayConstantBuffer>> tuningBuffer_;
 
 		/// [EN] CPU-side state of each shooting-star slot, carried from frame to frame.
 		/// [JP] 流れ星スロットごとの CPU 側の状態。フレームをまたいで引き継ぐ。

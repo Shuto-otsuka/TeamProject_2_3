@@ -108,8 +108,8 @@ namespace SeedCore
 		SC_REFLECTION_FIELD_EX("位置Z軸固定")
 		Bool freezePositionZ_ = false;
 
-		/// [EN] Locks rotation about X; on a canvas body it locks the in-plane rotation.
-		/// [JP] X 軸まわりの回転を固定する。Canvas のボディでは平面内の回転を固定する。
+		/// [EN] Locks rotation about X; has no effect on a canvas body.
+		/// [JP] X 軸まわりの回転を固定する。Canvas のボディには効かない。
 		SC_REFLECTION_FIELD_EX("回転X軸固定")
 		Bool freezeRotationX_ = false;
 
@@ -200,14 +200,14 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Adds a world-space torque (N·m) for the next fixed step. On a
-		* canvas body only X is used, as the in-plane torque in the same
-		* direction as Rotation::x_. Only a Dynamic body is affected.
+		* canvas body only Z is used, as the in-plane torque in the same
+		* direction as the canvas angle. Only a Dynamic body is affected.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 次の固定ステップの間、ワールド空間のトルク(N·m)を加える。Canvas の
-		* ボディでは X だけを、Rotation::x_ と同じ向きの平面内トルクとして使う。
+		* ボディでは Z だけを、Canvas の角度と同じ向きの平面内トルクとして使う。
 		* 効くのは Dynamic のボディだけ。
 		*/
 		void AddTorque(const Vector3& torque);
@@ -215,15 +215,15 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Adds a world-space angular impulse (N·m·s), changing the angular
-		* velocity at once. On a canvas body only X is used, as the
-		* in-plane angular impulse in the same direction as Rotation::x_.
+		* velocity at once. On a canvas body only Z is used, as the
+		* in-plane angular impulse in the same direction as the canvas angle.
 		* Only a Dynamic body is affected.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* ワールド空間の角力積(N·m·s)を加え、角速度を一度に変える。Canvas の
-		* ボディでは X だけを、Rotation::x_ と同じ向きの平面内の角力積として
+		* ボディでは Z だけを、Canvas の角度と同じ向きの平面内の角力積として
 		* 使う。効くのは Dynamic のボディだけ。
 		*/
 		void AddSpin(const Vector3& angularImpulse);

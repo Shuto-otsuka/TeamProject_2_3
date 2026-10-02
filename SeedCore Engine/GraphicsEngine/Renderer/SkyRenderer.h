@@ -190,10 +190,10 @@ namespace SeedCore
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> brdfLookupTablePipeline_;
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> proceduralCubemapPipeline_;
 
-		DynamicArray<ResourcePtr<ConstantBuffer<SkyDispatchBuffer>>> constantBuffers_;
+		DynamicArray<ResourcePtr<StaticConstantBuffer<SkyDispatchBuffer>>> constantBuffers_;
 		Uint dispatchCursor_ = 0;
 
-		ResourcePtr<ConstantBuffer<SkyConstantBuffer>> skyConstantBuffer_;
+		ResourcePtr<StaticConstantBuffer<SkyConstantBuffer>> skyConstantBuffer_;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> brdfLookupTableResource_;
 		Uint brdfLookupTableShaderResourceViewIndex_ = SC_INVALID;

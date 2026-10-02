@@ -195,8 +195,8 @@ namespace SeedCore
 
 		/// [EN] Per-batch constants. The spatial one is registered in the editor's index table, the planar one in the canvas's.
 		/// [JP] バッチごとの定数。spatial はエディタの、planar は Canvas のインデックステーブルに登録する。
-		ResourcePtr<ConstantBuffer<ColliderConstantBuffer>> spatialInstanceConstantsBuffer_;
-		ResourcePtr<ConstantBuffer<ColliderConstantBuffer>> planarInstanceConstantsBuffer_;
+		ResourcePtr<StaticConstantBuffer<ColliderConstantBuffer>> spatialInstanceConstantsBuffer_;
+		ResourcePtr<StaticConstantBuffer<ColliderConstantBuffer>> planarInstanceConstantsBuffer_;
 
 		/// [EN] Persistent (never change after Create()) unit-sphere edge
 		///      tables, built once from a subdivided icosahedron. Re-uploaded

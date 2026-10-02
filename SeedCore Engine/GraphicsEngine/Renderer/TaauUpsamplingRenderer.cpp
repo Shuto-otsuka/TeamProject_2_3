@@ -27,11 +27,7 @@ namespace SeedCore
 		{
 			for (Uint32 slot = 0; slot < accumulationSlotCount_; ++slot)
 			{
-				bindlessHeap->FreeIndex(view->accumulatedUnorderedAccessViewIndex_[slot]);
-				bindlessHeap->FreeIndex(view->accumulatedShaderResourceViewIndex_[slot]);
-
-				bindlessHeap->DeferRelease(view->accumulatedResource_[slot]);
-				view->accumulatedResource_[slot].Reset();
+				bindlessHeap->Release(std::move(view->accumulatedResource_[slot]), { view->accumulatedUnorderedAccessViewIndex_[slot], view->accumulatedShaderResourceViewIndex_[slot] });
 			}
 			view->constantBuffer_ = nullptr;
 		}
@@ -96,7 +92,7 @@ namespace SeedCore
 				device->CreateShaderResourceView(view->accumulatedResource_[slot].Get(), &shaderResourceViewDesc, bindlessHeap->CPUHandle(view->accumulatedShaderResourceViewIndex_[slot]));
 			}
 
-			view->constantBuffer_ = MakePtr<ConstantBuffer<TaauResolveConstantBuffer>>(device, bindlessHeap);
+			view->constantBuffer_ = MakePtr<StaticConstantBuffer<TaauResolveConstantBuffer>>(device, bindlessHeap);
 		}
 	}
 
@@ -171,7 +167,7 @@ namespace SeedCore
 		cmd->SetDescriptorHeaps(_countof(heaps), heaps);
 		cmd->SetComputeRootSignature(resolveShader_.GetRootSignature());
 		RootSignature::BindCompute(cmd, addresses);
-		Uint dispatchBufferIndex = target.constantBuffer_->GetIndex();
+		Uint dispatchBufferIndex = target.constantBuffer_->Index();
 		cmd->SetComputeRoot32BitConstants(3, 1, &dispatchBufferIndex, 0);
 		cmd->SetPipelineState(resolvePipelineState);
 		cmd->Dispatch((outputWidth_ + 7) / 8, (outputHeight_ + 7) / 8, 1);

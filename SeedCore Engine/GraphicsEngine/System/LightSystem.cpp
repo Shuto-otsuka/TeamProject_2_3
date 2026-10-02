@@ -22,11 +22,11 @@ namespace SeedCore
 {
 	LightSystem::LightSystem(ID3D12Device* device, BindlessHeap* bindlessHeap, ShaderCache& shaderCache, RootSignature& rootSignature, PipelineStateObject& pipelineStateObject, Uint32 width, Uint32 height) : bindlessHeap_(bindlessHeap)
 	{
-		lightConstantBuffer_ = MakePtr<ConstantBuffer<LightConstantBuffer>>(device, bindlessHeap);
+		lightConstantBuffer_ = MakePtr<StaticConstantBuffer<LightConstantBuffer>>(device, bindlessHeap);
 
-		directionalLightConstantBuffer_ = MakePtr<ConstantBuffer<DirectionalLightConstantBuffer>>(device, bindlessHeap);
+		directionalLightConstantBuffer_ = MakePtr<StaticConstantBuffer<DirectionalLightConstantBuffer>>(device, bindlessHeap);
 
-		clusterAssignConstantBuffer_ = MakePtr<ConstantBuffer<ClusterAssignConstantBuffer>>(device, bindlessHeap);
+		clusterAssignConstantBuffer_ = MakePtr<StaticConstantBuffer<ClusterAssignConstantBuffer>>(device, bindlessHeap);
 
 		pointLightBuffer_ = MakePtr<ReadOnlyStructuredBuffer<PointLightStructuredBuffer>>(device, bindlessHeap, maxPointLights_);
 
@@ -51,16 +51,8 @@ namespace SeedCore
 
 	void LightSystem::Destroy(BindlessHeap* bindlessHeap)
 	{
-		bindlessHeap->FreeIndex(clusterDataUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(clusterDataClearUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(clusterDataShaderResourceViewIndex_);
-		bindlessHeap->FreeIndex(clusterLightListUnorderedAccessViewIndex_);
-		bindlessHeap->FreeIndex(clusterLightListShaderResourceViewIndex_);
-
-		bindlessHeap->DeferRelease(clusterDataResource_);
-		clusterDataResource_.Reset();
-		bindlessHeap->DeferRelease(clusterLightListResource_);
-		clusterLightListResource_.Reset();
+		bindlessHeap->Release(std::move(clusterDataResource_), { clusterDataUnorderedAccessViewIndex_, clusterDataClearUnorderedAccessViewIndex_, clusterDataShaderResourceViewIndex_ });
+		bindlessHeap->Release(std::move(clusterLightListResource_), { clusterLightListUnorderedAccessViewIndex_, clusterLightListShaderResourceViewIndex_ });
 	}
 
 	void LightSystem::Resize(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height)
@@ -528,17 +520,17 @@ namespace SeedCore
 
 	Uint LightSystem::GetIndex()const
 	{
-		return lightConstantBuffer_->GetIndex();
+		return lightConstantBuffer_->Index();
 	}
 
 	Uint LightSystem::GetDirectionalLightIndex()const
 	{
-		return directionalLightConstantBuffer_->GetIndex();
+		return directionalLightConstantBuffer_->Index();
 	}
 
 	Uint LightSystem::GetClusterAssignIndex()const
 	{
-		return clusterAssignConstantBuffer_->GetIndex();
+		return clusterAssignConstantBuffer_->Index();
 	}
 
 	LightShaderResourceIndices LightSystem::GetLightShaderResourceIndices()const

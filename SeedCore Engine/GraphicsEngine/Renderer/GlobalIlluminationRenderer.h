@@ -274,7 +274,7 @@ namespace SeedCore
 
 		/// [EN] GPU copy of the tuning values, read through its bindless index.
 		/// [JP] 調整値の GPU 側コピー。bindless インデックス経由で読まれる。
-		ResourcePtr<ConstantBuffer<GlobalIlluminationRayConstantBuffer>> tuningBuffer_;
+		ResourcePtr<StaticConstantBuffer<GlobalIlluminationRayConstantBuffer>> tuningBuffer_;
 
 		/// [EN] Raw RGBA16F radiance from the ray pass, refined in place by the spatial reuse. A single texture is enough, since the denoiser consumes it in the same flush.
 		/// [JP] レイのパスが書き、空間的リユースがその場で整える生の RGBA16F 放射輝度。デノイザが同じ Flush 内で消費するため、1 枚で足りる。

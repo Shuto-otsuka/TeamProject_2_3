@@ -273,17 +273,8 @@ namespace SeedCore
 
 	void BootScreen::ReleaseImage(Uint& textureIndex, Microsoft::WRL::ComPtr<ID3D12Resource>& resource)
 	{
-		if (resource)
-		{
-			bindlessHeap_->DeferRelease(resource);
-			resource.Reset();
-		}
-
-		if (textureIndex != invalidIndex_)
-		{
-			bindlessHeap_->FreeIndex(textureIndex);
-			textureIndex = invalidIndex_;
-		}
+		bindlessHeap_->Release(std::move(resource), textureIndex);
+		textureIndex = invalidIndex_;
 	}
 
 	Float BootScreen::ImageAspect(const Microsoft::WRL::ComPtr<ID3D12Resource>& resource)

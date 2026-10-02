@@ -17,6 +17,7 @@
 #include <GraphicsEngine/Constraint/ParentConstraint.h>
 #include <GraphicsEngine/Constraint/PositionConstraint.h>
 #include <GraphicsEngine/Constraint/RotationConstraint.h>
+#include <GraphicsEngine/Effect/Zephyr/Effect.h>
 #include <GraphicsEngine/Environment/Weather.h>
 #include <GraphicsEngine/Font/Text.h>
 #include <GraphicsEngine/Light/DirectionalLight.h>
@@ -42,7 +43,6 @@
 #include <PhysicsEngine/Joint/SpringJoint.h>
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
-#include <Runtime/enc_temp_folder/4aeec38d37c94875374f8f397a33b3/CameraController.h>
 
 extern "C" int _force_reflection_AudioListener = 0;
 extern "C" int _force_reflection_AudioSource = 0;
@@ -62,6 +62,7 @@ extern "C" int _force_reflection_LookAtConstraint = 0;
 extern "C" int _force_reflection_ParentConstraint = 0;
 extern "C" int _force_reflection_PositionConstraint = 0;
 extern "C" int _force_reflection_RotationConstraint = 0;
+extern "C" int _force_reflection_Effect = 0;
 extern "C" int _force_reflection_Rain = 0;
 extern "C" int _force_reflection_Snow = 0;
 extern "C" int _force_reflection_Weather = 0;
@@ -107,7 +108,6 @@ extern "C" int _force_reflection_SliderJoint = 0;
 extern "C" int _force_reflection_SpringJoint = 0;
 extern "C" int _force_reflection_Rigidbody = 0;
 extern "C" int _force_reflection_Softbody = 0;
-extern "C" int _force_reflection_CameraController = 0;
 
 namespace SeedCore
 {
@@ -700,6 +700,19 @@ namespace SeedCore
 			}
 		};
 		static Register_RotationConstraint global_RotationConstraint_register;
+
+		// ---- GraphicsEngine/Effect/Zephyr/Effect.h ----
+		struct Register_Effect
+		{
+			Register_Effect()
+			{
+				ReflectionRegistry::Register(String("Effect"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					Effect& obj = *static_cast<Effect*>(ptr);
+					outInfo.push_back({ String("スポーンレート"), offsetof(Effect, spawnRate_), AttributeType::Float });
+				});
+			}
+		};
+		static Register_Effect global_Effect_register;
 
 		// ---- GraphicsEngine/Environment/Weather.h ----
 		struct Register_Rain
@@ -3165,24 +3178,6 @@ namespace SeedCore
 			}
 		};
 		static Register_Softbody global_Softbody_register;
-
-		// ---- Runtime/enc_temp_folder/4aeec38d37c94875374f8f397a33b3/CameraController.h ----
-		struct Register_CameraController
-		{
-			Register_CameraController()
-			{
-				ReflectionRegistry::Register(String("CameraController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
-					CameraController& obj = *static_cast<CameraController*>(ptr);
-					outInfo.push_back({ String("smoothFocusSpeed"), offsetof(CameraController, smoothFocusSpeed), AttributeType::Float });
-					outInfo.push_back({ String("lookPlayerHeight"), offsetof(CameraController, lookPlayerHeight), AttributeType::Float });
-					outInfo.push_back({ String("distance"), offsetof(CameraController, distance), AttributeType::Float });
-					outInfo.push_back({ String("sensitivity"), offsetof(CameraController, sensitivity), AttributeType::Float });
-					outInfo.push_back({ String("pitchMin"), offsetof(CameraController, pitchMin), AttributeType::Float });
-					outInfo.push_back({ String("pitchMax"), offsetof(CameraController, pitchMax), AttributeType::Float });
-				});
-			}
-		};
-		static Register_CameraController global_CameraController_register;
 
 		struct RegisterEnum_AnimationConditionComparison
 		{

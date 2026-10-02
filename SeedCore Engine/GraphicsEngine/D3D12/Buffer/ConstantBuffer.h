@@ -9,27 +9,27 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Frame-ring constant buffer: one upload resource (and CBV) per frame in
-	* flight. Update writes the current frame's slot, Address / GetIndex return
+	* flight. Update writes the current frame's slot, Address / Index return
 	* the current slot, so the CPU never touches memory the GPU is still reading.
 	* Consequence: Update must be called every frame the buffer is used, and
-	* GetIndex must be re-queried per frame (never cache it across frames).
+	* Index must be re-queried per frame (never cache it across frames).
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* フレームリング定数バッファ: インフライトフレーム数ぶんのアップロード
 	* リソース（と CBV）を持つ。Update は現在フレームのスロットに書き、
-	* Address / GetIndex も現在スロットを返すため、GPU が読んでいる最中の
+	* Address / Index も現在スロットを返すため、GPU が読んでいる最中の
 	* メモリに CPU が触れることはない。その代わり、使用するフレームでは毎回
-	* Update を呼ぶこと、GetIndex はフレームを跨いでキャッシュしないこと。
+	* Update を呼ぶこと、Index はフレームを跨いでキャッシュしないこと。
 	*/
 	template<typename T>
-	class ConstantBuffer :public NonCopyable
+	class StaticConstantBuffer :public NonCopyable
 	{
 	public:
-		ConstantBuffer(ID3D12Device* device, BindlessHeap* heap) : heap_(heap)
+		StaticConstantBuffer(ID3D12Device* device, BindlessHeap* heap) : heap_(heap)
 		{
-			static_assert(sizeof(T) % 16 == 0, "ConstantBuffer type must be 16-byte aligned");
+			static_assert(sizeof(T) % 16 == 0, "StaticConstantBuffer type must be 16-byte aligned");
 
 			constexpr Uint64 alignedSize = (sizeof(T) + 255) & ~255ull;
 
@@ -55,7 +55,7 @@ namespace SeedCore
 				HRESULT hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resources_[frame]));
 				SC_HR_CHECK(hr, "定数バッファの生成に失敗しました");
 #ifdef _DEBUG
-				resources_[frame]->SetName(L"ConstantBuffer");
+				resources_[frame]->SetName(L"StaticConstantBuffer");
 				GFSDK_Aftermath_DX12_UpdateResourceInfo(resources_[frame].Get());
 #endif
 
@@ -73,7 +73,7 @@ namespace SeedCore
 			}
 		}
 
-		~ConstantBuffer()
+		~StaticConstantBuffer()
 		{
 			for (Uint frame = 0; frame < FrameRing::frameCount; frame++)
 			{
@@ -83,8 +83,7 @@ namespace SeedCore
 				}
 				if (heap_)
 				{
-					heap_->FreeIndex(indices_[frame]);
-					heap_->DeferRelease(resources_[frame]);
+					heap_->Release(resources_[frame], indices_[frame]);
 				}
 			}
 		}
@@ -99,7 +98,7 @@ namespace SeedCore
 			return resources_[FrameRing::Index()]->GetGPUVirtualAddress();
 		}
 
-		[[nodiscard]] Uint GetIndex()const
+		[[nodiscard]] Uint Index()const
 		{
 			return indices_[FrameRing::Index()];
 		}
@@ -109,6 +108,40 @@ namespace SeedCore
 		void* mappedPtrs_[FrameRing::frameCount] = {};
 		Uint indices_[FrameRing::frameCount] = {};
 
-		BindlessHeap* heap_;
+		BindlessHeap* heap_ = nullptr;
+	};
+
+	class DynamicConstantBuffer :public NonCopyable
+	{
+	public:
+		DynamicConstantBuffer(ID3D12Device* device, BindlessHeap* heap, Uint byteSize);
+
+		~DynamicConstantBuffer();
+
+		void Update(ID3D12Device* device, const void* data, Uint byteSize);
+
+		template<typename T>
+		void Update(ID3D12Device* device, const DynamicArray<T>& data)
+		{
+			Update(device, data.data(), static_cast<Uint>(sizeof(T) * data.size()));
+		}
+
+		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS Address()const;
+
+		[[nodiscard]] Uint Index()const;
+
+	private:
+		void Allocate(ID3D12Device* device, Uint byteSize);
+
+		void Release();
+
+	private:
+		Microsoft::WRL::ComPtr<ID3D12Resource> resources_[FrameRing::frameCount];
+		void* mappedPtrs_[FrameRing::frameCount] = {};
+		Uint indices_[FrameRing::frameCount] = {};
+
+		Uint capacity_ = 0;
+
+		BindlessHeap* heap_ = nullptr;
 	};
 }

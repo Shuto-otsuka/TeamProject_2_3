@@ -61,7 +61,7 @@ namespace SeedCore
 
 		/// [EN] The tuning values live in a constant buffer the shaders find through its bindless index.
 		/// [JP] 調整値は、シェーダーが bindless インデックスで見つける定数バッファに置く。
-		tuningBuffer_ = MakePtr<ConstantBuffer<ShadowRayConstantBuffer>>(device, bindlessHeap);
+		tuningBuffer_ = MakePtr<StaticConstantBuffer<ShadowRayConstantBuffer>>(device, bindlessHeap);
 
 		/// [EN] Create the size-dependent resources at the current size.
 		/// [JP] サイズに依存するリソースを現在のサイズで作る。
@@ -134,7 +134,7 @@ namespace SeedCore
 		/// [EN] Copy the tuning values into this frame's constant buffer.
 		/// [JP] 調整値を今フレームの定数バッファへ写す。
 		tuningBuffer_->Update(uploadSettings);
-		constantIndicesSystem_->SetShadowRayConstantIndex(tuningBuffer_->GetIndex());
+		constantIndicesSystem_->SetShadowRayConstantIndex(tuningBuffer_->Index());
 
 		/// [EN] The trace always writes the raw texture.
 		/// [JP] トレースは常に生のテクスチャへ書き込む。
@@ -683,20 +683,14 @@ namespace SeedCore
 		/// [JP] テクスチャ 1 枚の bindless ビュー 2 つを解放し、破棄を遅延させる。
 		auto releaseTexture = [this](Microsoft::WRL::ComPtr<ID3D12Resource>& resource, Uint32 unorderedAccessViewIndex, Uint32 shaderResourceViewIndex)
 		{
-			/// [EN] Return both view slots to the bindless heap.
-			/// [JP] 両方のビューのスロットを bindless ヒープへ返す。
-			bindlessHeap_->FreeIndex(unorderedAccessViewIndex);
-			bindlessHeap_->FreeIndex(shaderResourceViewIndex);
-			/// [EN] Keep the resource alive until the GPU has finished with it; then drop this reference.
-			/// [JP] GPU が使い終えるまでリソースを生かしておき、その後この参照を手放す。
-			bindlessHeap_->DeferRelease(resource);
-			resource.Reset();
+			/// [EN] Queue both view slots and the resource on the bindless heap, which holds them until the in-flight frames that may still read them have finished.
+			/// [JP] 両方のビューのスロットとリソースを bindless ヒープに積む。ヒープは、それらを読みうるインフライトのフレームが完了するまで保持する。
+			bindlessHeap_->Release(std::move(resource), { unorderedAccessViewIndex, shaderResourceViewIndex });
 		};
 
 		/// [EN] The raw texture also owns the shifted punctual read view.
 		/// [JP] 生のテクスチャは、ずらしたパンクチュアル用の読み取りビューも持つ。
-		bindlessHeap_->FreeIndex(rawPunctualShaderResourceViewIndex_);
-		releaseTexture(rawVisibilityResource_, rawVisibilityUnorderedAccessViewIndex_, rawVisibilityShaderResourceViewIndex_);
+		bindlessHeap_->Release(std::move(rawVisibilityResource_), { rawVisibilityUnorderedAccessViewIndex_, rawVisibilityShaderResourceViewIndex_, rawPunctualShaderResourceViewIndex_ });
 
 		for (Uint32 viewIndex = 0; viewIndex < viewCount_; viewIndex++)
 		{

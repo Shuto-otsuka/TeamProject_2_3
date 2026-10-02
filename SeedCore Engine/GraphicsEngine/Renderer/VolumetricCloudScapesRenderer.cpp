@@ -59,7 +59,7 @@ namespace SeedCore
 
 		/// [EN] The tuning values live in a constant buffer the shaders find through its bindless index.
 		/// [JP] 調整値は、シェーダーが bindless インデックスで見つける定数バッファに置く。
-		tuningBuffer_ = MakePtr<ConstantBuffer<VolumetricCloudScapesRayConstantBuffer>>(device, bindlessHeap);
+		tuningBuffer_ = MakePtr<StaticConstantBuffer<VolumetricCloudScapesRayConstantBuffer>>(device, bindlessHeap);
 
 		/// [EN] Creates one size^3 R16_FLOAT noise volume with a write view for the bake and a read view for the raymarch.
 		/// [JP] 焼き込み用の書き込みビューとレイマーチ用の読み取りビューを持つ、size^3 の R16_FLOAT ノイズボリュームを 1 つ作る。
@@ -187,7 +187,7 @@ namespace SeedCore
 
 		/// [EN] The raymarch writes the cloud texture and deferred lighting reads it; the noise volumes are written by the bake and read by the raymarch.
 		/// [JP] 雲テクスチャはレイマーチが書いてディファードライティングが読む。ノイズボリュームは焼き込みが書いてレイマーチが読む。
-		constantIndicesSystem_->SetCloudRayConstantIndex(tuningBuffer_->GetIndex());
+		constantIndicesSystem_->SetCloudRayConstantIndex(tuningBuffer_->Index());
 		unorderedAccessIndicesSystem_->SetCloudOutputUnorderedAccessViewIndex(cloudUnorderedAccessViewIndex_);
 		shaderResourceIndicesSystem_->SetCloudOutputShaderResourceViewIndex(cloudShaderResourceViewIndex_);
 		unorderedAccessIndicesSystem_->SetCloudShapeNoiseUnorderedAccessViewIndex(shapeNoiseUnorderedAccessViewIndex_);
@@ -384,14 +384,8 @@ namespace SeedCore
 	*/
 	void VolumetricCloudScapesRenderer::Release()
 	{
-		/// [EN] Return the view slots to the bindless heap.
-		/// [JP] ビューのスロットを bindless ヒープへ返す。
-		bindlessHeap_->FreeIndex(cloudUnorderedAccessViewIndex_);
-		bindlessHeap_->FreeIndex(cloudShaderResourceViewIndex_);
-
-		/// [EN] Keep the resource alive until the GPU has finished with it; then drop this reference.
-		/// [JP] GPU が使い終えるまでリソースを生かしておき、その後この参照を手放す。
-		bindlessHeap_->DeferRelease(cloudResource_);
-		cloudResource_.Reset();
+		/// [EN] Queue the view slots and the resource on the bindless heap, which holds them until the in-flight frames that may still read them have finished.
+		/// [JP] ビューのスロットとリソースを bindless ヒープに積む。ヒープは、それらを読みうるインフライトのフレームが完了するまで保持する。
+		bindlessHeap_->Release(std::move(cloudResource_), { cloudUnorderedAccessViewIndex_, cloudShaderResourceViewIndex_ });
 	}
 }

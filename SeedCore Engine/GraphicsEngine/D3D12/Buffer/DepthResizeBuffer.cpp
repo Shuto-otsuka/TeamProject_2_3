@@ -78,7 +78,7 @@ namespace SeedCore
 		unorderedAccessViewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
 		device->CreateUnorderedAccessView(uavResource_.Get(), nullptr, &unorderedAccessViewDesc, bindlessHeap->CPUHandle(unorderedAccessViewIndex_));
 
-		constantBuffer_ = MakePtr<ConstantBuffer<DepthResizeConstantBuffer>>(device, bindlessHeap);
+		constantBuffer_ = MakePtr<StaticConstantBuffer<DepthResizeConstantBuffer>>(device, bindlessHeap);
 
 		Handle<RootSignature> rootSignatureHandle = rootSignature.GetOrCreate(device);
 		rootSignature_ = rootSignature.Get(rootSignatureHandle);
@@ -95,11 +95,8 @@ namespace SeedCore
 
 	void DepthResizeBuffer::Destroy(BindlessHeap* bindlessHeap)
 	{
-		bindlessHeap->FreeIndex(unorderedAccessViewIndex_);
-		bindlessHeap->DeferRelease(depthResource_);
-		depthResource_.Reset();
-		bindlessHeap->DeferRelease(uavResource_);
-		uavResource_.Reset();
+		bindlessHeap->Release(std::move(depthResource_), SC_INVALID);
+		bindlessHeap->Release(std::move(uavResource_), unorderedAccessViewIndex_);
 		constantBuffer_ = nullptr;
 	}
 
@@ -159,7 +156,7 @@ namespace SeedCore
 		cmd->SetDescriptorHeaps(_countof(heaps), heaps);
 		cmd->SetComputeRootSignature(rootSignature_->Get());
 		RootSignature::BindCompute(cmd, addresses);
-		Uint dispatchBufferIndex = constantBuffer_->GetIndex();
+		Uint dispatchBufferIndex = constantBuffer_->Index();
 		cmd->SetComputeRoot32BitConstants(3, 1, &dispatchBufferIndex, 0);
 		cmd->SetPipelineState(pipelineState_.Get());
 

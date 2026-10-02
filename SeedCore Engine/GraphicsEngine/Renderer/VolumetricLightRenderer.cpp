@@ -53,7 +53,7 @@ namespace SeedCore
 
 		/// [EN] The tuning values live in a constant buffer the shaders find through its bindless index.
 		/// [JP] 調整値は、シェーダーが bindless インデックスで見つける定数バッファに置く。
-		tuningBuffer_ = MakePtr<ConstantBuffer<VolumetricLightRayConstantBuffer>>(device, bindlessHeap);
+		tuningBuffer_ = MakePtr<StaticConstantBuffer<VolumetricLightRayConstantBuffer>>(device, bindlessHeap);
 
 		/// [EN] Recreate the CPU-side heap that holds the clear views, sized for every clearable resource.
 		/// [JP] クリア用ビューを置く CPU 側のヒープを、クリアするリソースの数だけ作り直す。
@@ -142,7 +142,7 @@ namespace SeedCore
 			view->writeSlot_ = 0;
 			view->frameIndex_ = 0;
 			view->historyValid_ = false;
-			view->constantBuffer_ = MakePtr<ConstantBuffer<VolumetricLightDispatchConstantBuffer>>(device, bindlessHeap);
+			view->constantBuffer_ = MakePtr<StaticConstantBuffer<VolumetricLightDispatchConstantBuffer>>(device, bindlessHeap);
 		}
 
 		/// [EN] The integration volume is read by the composite and cleared when the pass is off, so it gets both extra views.
@@ -184,7 +184,7 @@ namespace SeedCore
 
 		/// [EN] The per-view scattering volumes are passed through the dispatch constants instead, since they differ per view.
 		/// [JP] ビューごとの散乱ボリュームはビューによって異なるため、代わりにディスパッチ用定数で渡す。
-		constantIndicesSystem_->SetVolumetricLightRayConstantIndex(tuningBuffer_->GetIndex());
+		constantIndicesSystem_->SetVolumetricLightRayConstantIndex(tuningBuffer_->Index());
 		unorderedAccessIndicesSystem_->SetVolumetricLightDensityUnorderedAccessViewIndex(densityVolumeUnorderedAccessViewIndex_);
 		unorderedAccessIndicesSystem_->SetVolumetricLightIntegrationUnorderedAccessViewIndex(integrationVolumeUnorderedAccessViewIndex_);
 		shaderResourceIndicesSystem_->SetVolumetricLightIntegrationShaderResourceViewIndex(integrationVolumeShaderResourceViewIndex_);
@@ -294,7 +294,7 @@ namespace SeedCore
 			/// [EN] Bind the shared per-frame root arguments (constant and index buffers).
 			/// [JP] フレーム共通のルート引数（定数とインデックスのバッファ）をバインドする。
 			RootSignature::BindCompute(cmd, addresses);
-			Uint dispatchBufferIndex = target.constantBuffer_->GetIndex();
+			Uint dispatchBufferIndex = target.constantBuffer_->Index();
 			cmd->SetComputeRoot32BitConstants(3, 1, &dispatchBufferIndex, 0);
 
 			/// [EN] Injection and scattering run one 4x4x4 thread group per 4x4x4 froxel block.
