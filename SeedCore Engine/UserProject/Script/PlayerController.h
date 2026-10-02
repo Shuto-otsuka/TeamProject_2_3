@@ -9,6 +9,7 @@ public:
 	void OnStart(); // 開始時に呼ばれる初期化処理
 
 	void OnTick(float elapsedTime); // 更新処理
+	void OnInspectorGUI();
 
 	SC_REFLECTION_FIELD()
 	    float turnSpeed;
@@ -18,6 +19,8 @@ public:
 		float maxJumpPower;
 	SC_REFLECTION_FIELD()
 		float maxJumpInputTime;
+	SC_REFLECTION_FIELD()
+		float jumpEnableTime;
 	SC_REFLECTION_FIELD()
 		float coyoteTime;
 
@@ -41,7 +44,9 @@ private:
 	bool jumpReady = false;
 	bool beforeIsGround = true;
 	bool isCoyote = false;
+	bool jumpInputEnable = true;
 
+	float jumpInputEnableTimer = 0.0f;
 	float jumpInputTimer = 0.0f;
 	float coyoteTimer = 0.0f;
 

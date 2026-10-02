@@ -273,7 +273,7 @@ namespace SeedCore
 	*/
 	void CharacterController::Jump()
 	{
-		if (!character_ || character_->GetGroundState() != JPH::CharacterBase::EGroundState::OnGround)
+		if (!character_)
 		{
 			return;
 		}

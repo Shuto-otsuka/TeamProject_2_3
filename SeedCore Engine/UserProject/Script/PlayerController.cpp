@@ -29,6 +29,11 @@ void PlayerController::OnTick(float elapsedTime)
     }
 }
 
+void PlayerController::OnInspectorGUI()
+{
+    ImGui::Checkbox("isCoyote", &isCoyote);
+}
+
 void PlayerController::UpdateUsually(float elapsedTime)
 {
     //水平加速処理
@@ -72,6 +77,17 @@ void PlayerController::UpdateHorizontalAcceleration(float elapsedTime)
 
 void PlayerController::UpdateInputJump(float elapsedTime)
 {
+    if (!jumpInputEnable)
+    {
+        //ジャンプ入力不可時間
+        //ジャンプ直後にもコヨーテタイムが発動して2段ジャンプできるのを防ぐ
+        jumpInputEnableTimer += elapsedTime;
+        if (jumpInputEnableTimer >= jumpEnableTime)
+            jumpInputEnable = true;
+        else
+            return;
+    }
+
     if (!OnGroundOrCoyote())
     {
         //地面についていなければ終了
@@ -104,6 +120,8 @@ void PlayerController::UpdateInputJump(float elapsedTime)
         //ジャンプキーが押されていた時間が長いほどジャンプ力を高くする
         float jumpPower = SeedCore::Lerp(minJumpPower, maxJumpPower, (jumpInputTimer / maxJumpInputTime));
         Jump(jumpPower);
+        jumpInputEnable = false;
+        jumpInputEnableTimer = 0.0f;
         jumpReady = false;
     }
 }
@@ -134,6 +152,7 @@ void PlayerController::UpdateCoyoteTime(float elapsedTime)
         {
             //足が地面から離れた瞬間にコヨーテタイムに入る
             isCoyote = true;
+            coyoteTimer = 0.0f;
         }
     }
 
