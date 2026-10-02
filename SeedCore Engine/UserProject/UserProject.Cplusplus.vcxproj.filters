@@ -61,6 +61,9 @@
     <ClCompile Include="Script\CameraController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
+    <ClCompile Include="Script\MoveStopController.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\ScTutorial.h">
@@ -73,6 +76,9 @@
       <Filter>Script</Filter>
     </ClInclude>
     <ClInclude Include="Script\CameraController.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\MoveStopController.h">
       <Filter>Script</Filter>
     </ClInclude>
   </ItemGroup>

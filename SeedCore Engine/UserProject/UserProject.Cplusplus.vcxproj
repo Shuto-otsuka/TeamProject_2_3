@@ -42,12 +42,14 @@
     </ClCompile>
     <ClCompile Include="Reflection\Reflection.generated.cpp" />
     <ClCompile Include="Script\CameraController.cpp" />
+    <ClCompile Include="Script\MoveStopController.cpp" />
     <ClCompile Include="Tutorial\ScTutorial.cpp" />
     <ClCompile Include="Script\PlayerController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EntryPoint\EntryGame.h" />
     <ClInclude Include="Script\CameraController.h" />
+    <ClInclude Include="Script\MoveStopController.h" />
     <ClInclude Include="Tutorial\ScTutorial.h" />
     <ClInclude Include="Script\PlayerController.h" />
   </ItemGroup>

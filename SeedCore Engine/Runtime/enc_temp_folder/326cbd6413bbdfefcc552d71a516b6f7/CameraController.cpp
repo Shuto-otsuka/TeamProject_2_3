@@ -24,8 +24,6 @@ void CameraController::OnTick(float elapsedTime)
     Rotate();
     //フォーカス処理
     LookPlayer();
-    //ズームイン、ズームアウト処理
-    UpdateZoom();
     //デバッグ関連
     UpdateDebug();
 }
@@ -34,7 +32,6 @@ void CameraController::SmoothFocus(float elapsedTime)
 {
     //注視点をプレイヤーの位置にLerp
     SeedCore::Vector3 targetPosition = playerPosition->Vector();
-    targetPosition.y += lookPlayerHeight;
     smoothFocusPoint = SeedCore::Vector3::Lerp(smoothFocusPoint, targetPosition, smoothFocusSpeed * elapsedTime);
 }
 
@@ -79,14 +76,6 @@ void CameraController::Rotate()
     rotation->y_ = quaternion.y;
     rotation->z_ = quaternion.z;
     rotation->w_ = quaternion.w;
-}
-
-void CameraController::UpdateZoom()
-{
-    //ホイールでズームイン、ズームアウト
-    float moveWheel = SeedCore::Input::MouseWheel();
-    distance -= moveWheel * zoomSpeed;
-    distance = std::clamp(distance, minDistance, maxDistance);
 }
 
 void CameraController::UpdateDebug()

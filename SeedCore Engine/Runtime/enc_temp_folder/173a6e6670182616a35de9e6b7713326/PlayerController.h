@@ -9,24 +9,11 @@ public:
 	void OnStart(); // 開始時に呼ばれる初期化処理
 
 	void OnTick(float elapsedTime); // 更新処理
-
-	SC_REFLECTION_FIELD()
-		float minJumpPower;
-	SC_REFLECTION_FIELD()
-		float maxJumpPower;
-	SC_REFLECTION_FIELD()
-		float maxJumpInputTime;
-	SC_REFLECTION_FIELD()
-		float coyoteTime;
 private:
 	void UpdateUsually(float elapsedTime);
 	void UpdateHorizontalAcceleration(float elapsedTime);
 	void UpdateInputJump(float elapsedTime);
-	void Jump(float jumpPower);
-	void UpdateCoyoteTime(float elapsedTime);
-	void Turn(SeedCore::Vector3 lookDirection);
-
-	bool OnGroundOrCoyote();
+	void Jump();
 
 	enum class State
 	{
@@ -34,13 +21,6 @@ private:
 	};
 
 	State state = State::USUALLY;
-
-	bool jumpReady = false;
-	bool beforeIsGround = true;
-	bool isCoyote = false;
-
-	float jumpInputTimer = 0.0f;
-	float coyoteTimer = 0.0f;
 
 	SeedCore::Actor cameraBrain;
 	SeedCore::Position* position = nullptr;
