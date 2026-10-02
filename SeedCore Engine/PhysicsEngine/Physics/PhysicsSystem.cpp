@@ -45,10 +45,10 @@ namespace SeedCore
 			/// [JP] 物理の1メートルに当たる Canvas のピクセル数。
 			static constexpr Float pixelsPerMeter = 100.0f;
 
-			/// [EN] Canvas Y points down and physics Y up, so Y and the canvas angle (the X component of Rotation's Euler angles) are negated.
-			/// [JP] Canvas の Y は下向き、物理の Y は上向きなので、Y と Canvas の角度(Rotation のオイラー角の X 成分)の符号を反転する。
+			/// [EN] Canvas Y points down and physics Y up, so Y and the canvas angle (the rotation about Z) are negated.
+			/// [JP] Canvas の Y は下向き、物理の Y は上向きなので、Y と Canvas の角度(Z 軸まわりの回転)の符号を反転する。
 			desc.position_ = position ? Vector3{ position->x_ / pixelsPerMeter, -position->y_ / pixelsPerMeter, 0.0f } : Vector3{ 0.0f, 0.0f, 0.0f };
-			desc.rotation_ = rotation ? Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -rotation->Euler().x) : Quaternion::Identity;
+			desc.rotation_ = rotation ? Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -rotation->Euler().z) : Quaternion::Identity;
 		}
 		else
 		{

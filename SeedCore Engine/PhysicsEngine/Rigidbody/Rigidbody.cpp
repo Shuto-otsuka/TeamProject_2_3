@@ -142,9 +142,9 @@ namespace SeedCore
 				desc.allowedDOFs_ &= ~JPH::EAllowedDOFs::TranslationY;
 			}
 
-			/// [EN] The canvas keeps its in-plane angle in Rotation::x_, so the X freeze also locks it.
-			/// [JP] Canvas は平面内の角度を Rotation::x_ に持つので、X の固定でもそれを固定する。
-			if (freezeRotationX_ || freezeRotationZ_)
+			/// [EN] The canvas angle is the rotation about Z, so the Z freeze locks it.
+			/// [JP] Canvas の角度は Z 軸まわりの回転なので、Z の固定でそれを固定する。
+			if (freezeRotationZ_)
 			{
 				desc.allowedDOFs_ &= ~JPH::EAllowedDOFs::RotationZ;
 			}
@@ -198,11 +198,11 @@ namespace SeedCore
 				position->y_ = -outPosition.y * pixelsPerMeter_;
 			}
 
-			/// [EN] The body only turns about Z, so the angle is 2·atan2(z, w), negated with the flipped Y and stored as the X component of Rotation's Euler angles.
-			/// [JP] ボディは Z 軸まわりにしか回らないので、角度は 2·atan2(z, w)。Y の反転に合わせて符号を反転し、Rotation のオイラー角の X 成分として格納する。
+			/// [EN] The body only turns about Z, so the angle is 2·atan2(z, w), negated with the flipped Y and stored as a rotation about Z.
+			/// [JP] ボディは Z 軸まわりにしか回らないので、角度は 2·atan2(z, w)。Y の反転に合わせて符号を反転し、Z 軸まわりの回転として格納する。
 			if (rotation)
 			{
-				Quaternion canvasRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitX, -2.0f * std::atan2(outRotation.z, outRotation.w));
+				Quaternion canvasRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -2.0f * std::atan2(outRotation.z, outRotation.w));
 				rotation->x_ = canvasRotation.x;
 				rotation->y_ = canvasRotation.y;
 				rotation->z_ = canvasRotation.z;
@@ -314,27 +314,27 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Adds a world-space torque (N·m) for the next fixed step. On a
-	* canvas body only X is used, as the in-plane torque in the same
-	* direction as Rotation::x_. Only a Dynamic body is affected.
+	* canvas body only Z is used, as the in-plane torque in the same
+	* direction as the canvas angle. Only a Dynamic body is affected.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 次の固定ステップの間、ワールド空間のトルク(N·m)を加える。Canvas の
-	* ボディでは X だけを、Rotation::x_ と同じ向きの平面内トルクとして使う。
+	* ボディでは Z だけを、Canvas の角度と同じ向きの平面内トルクとして使う。
 	* 効くのは Dynamic のボディだけ。
 	*/
 	void Rigidbody::AddTorque(const Vector3& torque)
 	{
 		Actor actor = GetActor();
 
-		/// [EN] A canvas body only turns about Z. Its angle is kept in Rotation::x_ with the sign flipped, so X is negated onto Z.
-		/// [JP] Canvas のボディは Z 軸まわりにしか回らない。角度は符号を反転して Rotation::x_ に持つので、X を反転して Z へ移す。
+		/// [EN] A canvas body only turns about Z, and the canvas angle runs opposite to the physics angle because of the flipped Y, so Z is negated.
+		/// [JP] Canvas のボディは Z 軸まわりにしか回らず、Y の反転により Canvas の角度は物理の角度と逆向きなので、Z を反転する。
 		/// [EN] Torque carries length squared (kg·m²/s²), so pixels come back to meters by dividing twice.
 		/// [JP] トルクは長さの2乗(kg·m²/s²)を含むので、ピクセルからメートルへは2回割って戻す。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			actor.GetPhysics().AddTorque(bodyID_, Vector3(0.0f, 0.0f, -torque.x / (pixelsPerMeter_ * pixelsPerMeter_)));
+			actor.GetPhysics().AddTorque(bodyID_, Vector3(0.0f, 0.0f, -torque.z / (pixelsPerMeter_ * pixelsPerMeter_)));
 			return;
 		}
 
@@ -344,28 +344,28 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Adds a world-space angular impulse (N·m·s), changing the angular
-	* velocity at once. On a canvas body only X is used, as the
-	* in-plane angular impulse in the same direction as Rotation::x_.
+	* velocity at once. On a canvas body only Z is used, as the
+	* in-plane angular impulse in the same direction as the canvas angle.
 	* Only a Dynamic body is affected.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* ワールド空間の角力積(N·m·s)を加え、角速度を一度に変える。Canvas の
-	* ボディでは X だけを、Rotation::x_ と同じ向きの平面内の角力積として
+	* ボディでは Z だけを、Canvas の角度と同じ向きの平面内の角力積として
 	* 使う。効くのは Dynamic のボディだけ。
 	*/
 	void Rigidbody::AddSpin(const Vector3& angularImpulse)
 	{
 		Actor actor = GetActor();
 
-		/// [EN] A canvas body only turns about Z. Its angle is kept in Rotation::x_ with the sign flipped, so X is negated onto Z.
-		/// [JP] Canvas のボディは Z 軸まわりにしか回らない。角度は符号を反転して Rotation::x_ に持つので、X を反転して Z へ移す。
+		/// [EN] A canvas body only turns about Z, and the canvas angle runs opposite to the physics angle because of the flipped Y, so Z is negated.
+		/// [JP] Canvas のボディは Z 軸まわりにしか回らず、Y の反転により Canvas の角度は物理の角度と逆向きなので、Z を反転する。
 		/// [EN] Angular impulse carries length squared (kg·m²/s), so pixels come back to meters by dividing twice.
 		/// [JP] 角力積は長さの2乗(kg·m²/s)を含むので、ピクセルからメートルへは2回割って戻す。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			actor.GetPhysics().AddSpin(bodyID_, Vector3(0.0f, 0.0f, -angularImpulse.x / (pixelsPerMeter_ * pixelsPerMeter_)));
+			actor.GetPhysics().AddSpin(bodyID_, Vector3(0.0f, 0.0f, -angularImpulse.z / (pixelsPerMeter_ * pixelsPerMeter_)));
 			return;
 		}
 

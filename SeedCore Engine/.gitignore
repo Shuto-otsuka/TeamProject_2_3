@@ -94,6 +94,7 @@ NodeEditor.json
 
 ## ソリューション関連
 *.vs/
+enc_temp_folder/
 *.userosscache
 *.suo
 *.sdf

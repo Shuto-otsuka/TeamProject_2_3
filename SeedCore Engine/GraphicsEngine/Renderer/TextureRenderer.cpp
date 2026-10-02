@@ -119,7 +119,7 @@ namespace SeedCore
 					hasSelectedSpriteInstance_ = hasSelectedSpriteInstance_ || selected != 0;
 
 					Vector2 position = Vector2(worldTranslation.x, worldTranslation.y);
-					Float rotationAngle = worldRotation.ToEuler().x;
+					Float rotationAngle = worldRotation.ToEuler().z;
 					Vector2 scale = Vector2(worldScale.x, worldScale.y);
 
 					TextureSpriteStructuredBuffer instance{};

@@ -50,7 +50,7 @@ namespace SeedCore
 			unorderedAccessViewDesc.Buffer.StructureByteStride = 0;
 			unorderedAccessViewDesc.Buffer.CounterOffsetInBytes = 0;
 			unorderedAccessViewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_RAW;
-			device->CreateUnorderedAccessView(bucketBuffer_.Get(), nullptr, &unorderedAccessViewDesc, bindlessHeap->CPUHandle(sortedPixelListUnorderdAccessViewIndex_));
+			device->CreateUnorderedAccessView(bucketBuffer_.Get(), nullptr, &unorderedAccessViewDesc, bindlessHeap->CPUHandle(bucketUnorderdAccessViewIndex_));
 
 			clearBucketIndex_ = clearHeap_.AllocateIndex();
 			device->CreateUnorderedAccessView(bucketBuffer_.Get(), nullptr, &unorderedAccessViewDesc, clearHeap_.CPUHandle(clearBucketIndex_));
@@ -80,7 +80,7 @@ namespace SeedCore
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(sortedPixelListBuffer_.Get());
 #endif
 
-			bucketUnorderdAccessViewIndex_ = bindlessHeap->AllocateIndex();
+			sortedPixelListUnorderdAccessViewIndex_ = bindlessHeap->AllocateIndex();
 
 			D3D12_UNORDERED_ACCESS_VIEW_DESC unorderedAccessViewDesc{};
 			unorderedAccessViewDesc.Format = DXGI_FORMAT_R32_TYPELESS;

@@ -33,6 +33,11 @@
 #include <GraphicsEngine/Model/Material/Material.h>
 #include <GraphicsEngine/Model/Skeleton/Skeleton.h>
 #include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Texture/Image.h>
+#include <GraphicsEngine/Font/Text.h>
+#include <GraphicsEngine/Movie/Movie.h>
+#include <PhysicsEngine/Collider/RectCollider.h>
+#include <PhysicsEngine/Collider/CircleCollider.h>
 
 namespace SeedCore
 {
@@ -932,7 +937,21 @@ namespace SeedCore
 			}
 		}
 
+		Bool isCanvasRotation = false;
+		if (isRotation)
+		{
+			World& world = *context_.worldContext_.world_;
+			const Image* image = world.GetComponent<Image>(entity);
+			const Text* text = world.GetComponent<Text>(entity);
+			const Movie* movie = world.GetComponent<Movie>(entity);
+			isCanvasRotation = (image && image->viewType_ == Image::ViewType::Sprite) || (text && text->viewType_ == Text::ViewType::Sprite) || (movie && movie->displayMode_ == Movie::DisplayMode::Sprite) || world.GetComponent<RectCollider>(entity) || world.GetComponent<CircleCollider>(entity);
+		}
+
 		Vector3 degree = isRotation ? pendingRotationDegrees_ : Vector3::Zero;
+		if (isCanvasRotation)
+		{
+			std::swap(degree.x, degree.z);
+		}
 		Float* data = isRotation ? &degree.x : static_cast<Float*>(componentData);
 
 		std::string checkboxID = std::string("##Link_") + label;
@@ -981,6 +1000,13 @@ namespace SeedCore
 		if (isRotation && edited)
 		{
 			Vector3 deltaDegree = degree - Vector3(previousValues[0], previousValues[1], previousValues[2]);
+			Vector3 editedDegree = degree;
+			if (isCanvasRotation)
+			{
+				std::swap(deltaDegree.x, deltaDegree.z);
+				std::swap(editedDegree.x, editedDegree.z);
+			}
+
 			Matrix rotationMatrix = Matrix::CreateFromQuaternion(rotation->Quat());
 			rotationMatrix *= Matrix::CreateFromYawPitchRoll(ToRadians(deltaDegree.y), ToRadians(deltaDegree.x), ToRadians(deltaDegree.z));
 
@@ -995,7 +1021,7 @@ namespace SeedCore
 				rotation->w_ = quaternion.w;
 			}
 
-			pendingRotationDegrees_ = degree;
+			pendingRotationDegrees_ = editedDegree;
 			pendingRotationQuaternion_ = rotation->Quat();
 		}
 

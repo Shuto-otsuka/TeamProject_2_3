@@ -638,7 +638,7 @@ namespace SeedCore
 
 			Float pixelX = position ? position->x_ : 0.0f;
 			Float pixelY = position ? position->y_ : 0.0f;
-			Float angle = rotation ? rotation->Euler().x : 0.0f;
+			Float angle = rotation ? rotation->Euler().z : 0.0f;
 			Float cosAngle = std::cos(angle);
 			Float sinAngle = std::sin(angle);
 
@@ -666,7 +666,7 @@ namespace SeedCore
 
 			Float pixelX = position ? position->x_ : 0.0f;
 			Float pixelY = position ? position->y_ : 0.0f;
-			Float angle = rotation ? rotation->Euler().x : 0.0f;
+			Float angle = rotation ? rotation->Euler().z : 0.0f;
 			Float cosAngle = std::cos(angle);
 			Float sinAngle = std::sin(angle);
 
