@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <ItemGroup>
     <Filter Include="Reflection">
@@ -13,7 +13,10 @@
     <Filter Include="Tutorial">
       <UniqueIdentifier>{b1839eb4-9730-40a6-83c1-f04dcfeb04f8}</UniqueIdentifier>
     </Filter>
-  <Filter Include="Script"><UniqueIdentifier>{96ff39bd-f73e-44f7-9755-5e2240797ad1}</UniqueIdentifier></Filter></ItemGroup>
+    <Filter Include="Script">
+      <UniqueIdentifier>{96ff39bd-f73e-44f7-9755-5e2240797ad1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
   <ItemGroup>
     <Text Include="Tutorial\AssetReference.txt">
       <Filter>Tutorial</Filter>
@@ -52,7 +55,13 @@
     </ClCompile>
     <ClCompile Include="DLLMain.cpp" />
     <ClCompile Include="Prelude.cpp" />
-  <ClCompile Include="Script\PlayerController.cpp"><Filter>Script</Filter></ClCompile></ItemGroup>
+    <ClCompile Include="Script\PlayerController.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\CameraController.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
+  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\ScTutorial.h">
       <Filter>Tutorial</Filter>
@@ -60,5 +69,11 @@
     <ClInclude Include="EntryPoint\EntryGame.h">
       <Filter>EntryPoint</Filter>
     </ClInclude>
-  <ClInclude Include="Script\PlayerController.h"><Filter>Script</Filter></ClInclude></ItemGroup>
+    <ClInclude Include="Script\PlayerController.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\CameraController.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+  </ItemGroup>
 </Project>
