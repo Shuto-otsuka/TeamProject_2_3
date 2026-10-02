@@ -42,6 +42,7 @@
 #include <PhysicsEngine/Joint/SpringJoint.h>
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
+#include <Runtime/enc_temp_folder/4aeec38d37c94875374f8f397a33b3/CameraController.h>
 
 extern "C" int _force_reflection_AudioListener = 0;
 extern "C" int _force_reflection_AudioSource = 0;
@@ -106,6 +107,7 @@ extern "C" int _force_reflection_SliderJoint = 0;
 extern "C" int _force_reflection_SpringJoint = 0;
 extern "C" int _force_reflection_Rigidbody = 0;
 extern "C" int _force_reflection_Softbody = 0;
+extern "C" int _force_reflection_CameraController = 0;
 
 namespace SeedCore
 {
@@ -3163,6 +3165,24 @@ namespace SeedCore
 			}
 		};
 		static Register_Softbody global_Softbody_register;
+
+		// ---- Runtime/enc_temp_folder/4aeec38d37c94875374f8f397a33b3/CameraController.h ----
+		struct Register_CameraController
+		{
+			Register_CameraController()
+			{
+				ReflectionRegistry::Register(String("CameraController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					CameraController& obj = *static_cast<CameraController*>(ptr);
+					outInfo.push_back({ String("smoothFocusSpeed"), offsetof(CameraController, smoothFocusSpeed), AttributeType::Float });
+					outInfo.push_back({ String("lookPlayerHeight"), offsetof(CameraController, lookPlayerHeight), AttributeType::Float });
+					outInfo.push_back({ String("distance"), offsetof(CameraController, distance), AttributeType::Float });
+					outInfo.push_back({ String("sensitivity"), offsetof(CameraController, sensitivity), AttributeType::Float });
+					outInfo.push_back({ String("pitchMin"), offsetof(CameraController, pitchMin), AttributeType::Float });
+					outInfo.push_back({ String("pitchMax"), offsetof(CameraController, pitchMax), AttributeType::Float });
+				});
+			}
+		};
+		static Register_CameraController global_CameraController_register;
 
 		struct RegisterEnum_AnimationConditionComparison
 		{

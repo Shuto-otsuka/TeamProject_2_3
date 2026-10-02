@@ -19,8 +19,26 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="EntryPoint\EntryGame.cpp" />
+    <ProjectReference Include="..\SeedCore\SeedCore.Cplusplus.vcxproj">
+      <Project>{8f3c1a72-5e4b-4c9a-9d7f-1b6a3e8c2f05}</Project>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Tutorial\AssetReference.txt" />
+    <Text Include="Tutorial\ComponentReference.txt" />
+    <Text Include="Tutorial\CoroutineReference.txt" />
+    <Text Include="Tutorial\InputReference.txt" />
+    <Text Include="Tutorial\LogReference.txt" />
+    <Text Include="Tutorial\MathReference.txt" />
+    <Text Include="Tutorial\PhysicsReference.txt" />
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="DLLMain.cpp" />
+    <ClCompile Include="EntryPoint\EntryGame.cpp" />
+    <ClCompile Include="Payload\Payload.generated.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="Prelude.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -31,38 +49,15 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Payload\Payload.generated.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
-    </ClCompile>
+    <ClCompile Include="Script\CameraController.cpp" />
     <ClCompile Include="Tutorial\ScTutorial.cpp" />
+    <ClCompile Include="Script\PlayerController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EntryPoint\EntryGame.h" />
+    <ClInclude Include="Script\CameraController.h" />
     <ClInclude Include="Tutorial\ScTutorial.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\SeedCore\SeedCore.Cplusplus.vcxproj">
-      <Project>{8f3c1a72-5e4b-4c9a-9d7f-1b6a3e8c2f05}</Project>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Tutorial\InputReference.txt">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </Text>
-    <Text Include="Tutorial\LogReference.txt">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </Text>
-    <Text Include="Tutorial\MathReference.txt">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </Text>
-    <Text Include="Tutorial\PhysicsReference.txt">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </Text>
+    <ClInclude Include="Script\PlayerController.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
