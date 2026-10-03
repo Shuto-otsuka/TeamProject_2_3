@@ -409,7 +409,7 @@ namespace SeedCore
 			/// [JP] 存在しない頂点を参照する面は飛ばす。
 			if (vertex0 >= vertexCount || vertex1 >= vertexCount || vertex2 >= vertexCount)
 			{
-				SC_LOG_WARNING("Softbody: 頂点数(%u)を超える頂点インデックス(%u, %u, %u)を持つ面をスキップしました", vertexCount, vertex0, vertex1, vertex2);
+				SC_LOG_WARNING("Softbody: 頂点数({})を超える頂点インデックス({}, {}, {})を持つ面をスキップしました", vertexCount, vertex0, vertex1, vertex2);
 				continue;
 			}
 
@@ -544,6 +544,27 @@ namespace SeedCore
 			bodyInterface.RemoveBody(bodyID);
 		}
 		bodyInterface.DestroyBody(bodyID);
+	}
+
+	/**
+	* [EN]
+	* Reports whether a body is currently added to the simulation.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディが現在シミュレーションに追加されているかを返す。
+	*/
+	Bool Physics::BodyExists(JPH::BodyID bodyID)const
+	{
+		if (bodyID.IsInvalid())
+		{
+			return false;
+		}
+
+		/// [EN] Destroyed and suspended bodies are both outside the simulation and report false.
+		/// [JP] 破棄済みのボディも停止中のボディもシミュレーション外なので false を返す。
+		return joltManager_.BodyInterface().IsAdded(bodyID);
 	}
 
 	/**
@@ -829,6 +850,40 @@ namespace SeedCore
 		/// [EN] The angular velocity changes by the inverse inertia times the angular impulse.
 		/// [JP] 角速度は、慣性の逆数に角力積を掛けた分だけ変わる。
 		joltManager_.BodyInterface().AddAngularImpulse(bodyID, JPH::Vec3(angularImpulse.x, angularImpulse.y, angularImpulse.z));
+	}
+
+	/**
+	* [EN]
+	* Sets the velocities of a kinematic body so that it reaches the
+	* target position and rotation after elapsedTime, and wakes the
+	* body. Has no effect on a body that is not kinematic.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* elapsedTime 後に目標の位置と回転へ着くようキネマティックボディの
+	* 速度を設定し、ボディを起こす。キネマティックでないボディには効かない。
+	*/
+	void Physics::MoveTarget(JPH::BodyID bodyID, const Vector3& targetPosition, const Quaternion& targetRotation, Float elapsedTime)
+	{
+		/// [EN] The velocity is the distance divided by elapsedTime, so a zero step has no defined velocity.
+		/// [JP] 速度は距離を elapsedTime で割ったものなので、時間が 0 のステップでは速度が定まらない。
+		if (bodyID.IsInvalid() || elapsedTime <= 0.0f)
+		{
+			return;
+		}
+
+		/// [EN] Only a kinematic body follows a target; a dynamic one is driven by forces and a static one never moves.
+		/// [JP] 目標に従うのはキネマティックボディだけ。動的ボディは力で動き、静的ボディは動かない。
+		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
+		if (bodyInterface.GetMotionType(bodyID) != JPH::EMotionType::Kinematic)
+		{
+			return;
+		}
+
+		/// [EN] Moving by velocity rather than by teleporting lets the body push dynamic bodies and carry whatever stands on it.
+		/// [JP] 瞬間移動ではなく速度で動かすことで、ボディが動的ボディを押し、上に乗っているものを運べる。
+		bodyInterface.MoveKinematic(bodyID, JPH::RVec3(targetPosition.x, targetPosition.y, targetPosition.z), JPH::Quat(targetRotation.x, targetRotation.y, targetRotation.z, targetRotation.w).Normalized(), elapsedTime);
 	}
 
 	/**

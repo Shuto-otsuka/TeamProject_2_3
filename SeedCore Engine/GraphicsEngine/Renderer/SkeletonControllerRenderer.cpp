@@ -9,99 +9,6 @@
 
 namespace SeedCore
 {
-	namespace
-	{
-		void BuildIcosphereEdges(Uint subdivisionLevel, DynamicArray<Vector3>& outFullEdges)
-		{
-			auto edgeKey = [](Uint32 a, Uint32 b) -> Uint64
-			{
-				Uint32 lo = a < b ? a : b;
-				Uint32 hi = a < b ? b : a;
-				return (static_cast<Uint64>(lo) << 32) | static_cast<Uint64>(hi);
-			};
-
-			const Float t = (1.0f + std::sqrt(5.0f)) * 0.5f;
-
-			DynamicArray<Vector3> vertices =
-			{
-				Vector3(-1.0f, t, 0.0f), Vector3(1.0f, t, 0.0f), Vector3(-1.0f, -t, 0.0f), Vector3(1.0f, -t, 0.0f),
-				Vector3(0.0f, -1.0f, t), Vector3(0.0f, 1.0f, t), Vector3(0.0f, -1.0f, -t), Vector3(0.0f, 1.0f, -t),
-				Vector3(t, 0.0f, -1.0f), Vector3(t, 0.0f, 1.0f), Vector3(-t, 0.0f, -1.0f), Vector3(-t, 0.0f, 1.0f),
-			};
-			for (Vector3& vertex : vertices)
-			{
-				vertex.Normalize();
-			}
-
-			DynamicArray<Uint32> faces =
-			{
-				0,11, 5,  0, 5, 1,  0, 1, 7,  0, 7,10,  0,10,11,
-				1, 5, 9,  5,11, 4, 11,10, 2, 10, 7, 6,  7, 1, 8,
-				3, 9, 4,  3, 4, 2,  3, 2, 6,  3, 6, 8,  3, 8, 9,
-				4, 9, 5,  2, 4,11,  6, 2,10,  8, 6, 7,  9, 8, 1,
-			};
-
-			for (Uint level = 0; level < subdivisionLevel; level++)
-			{
-				std::unordered_map<Uint64, Uint32> midpointCache;
-
-				auto getOrCreateMidpoint = [&vertices, &midpointCache, &edgeKey](Uint32 a, Uint32 b) -> Uint32
-				{
-					Uint64 key = edgeKey(a, b);
-					if (auto it = midpointCache.find(key); it != midpointCache.end())
-					{
-						return it->second;
-					}
-
-					Vector3 midpoint = (vertices[a] + vertices[b]) * 0.5f;
-					midpoint.Normalize();
-
-					Uint32 index = static_cast<Uint32>(vertices.size());
-					vertices.push_back(midpoint);
-					midpointCache.emplace(key, index);
-					return index;
-				};
-
-				DynamicArray<Uint32> subdividedFaces;
-
-				for (Size faceIndex = 0; faceIndex < faces.size(); faceIndex += 3)
-				{
-					Uint32 a = faces[faceIndex + 0];
-					Uint32 b = faces[faceIndex + 1];
-					Uint32 c = faces[faceIndex + 2];
-
-					Uint32 ab = getOrCreateMidpoint(a, b);
-					Uint32 bc = getOrCreateMidpoint(b, c);
-					Uint32 ca = getOrCreateMidpoint(c, a);
-
-					subdividedFaces.insert(subdividedFaces.end(), { a, ab, ca, b, bc, ab, c, ca, bc, ab, bc, ca });
-				}
-
-				faces = std::move(subdividedFaces);
-			}
-
-			std::unordered_set<Uint64> seenEdges;
-			for (Size faceIndex = 0; faceIndex < faces.size(); faceIndex += 3)
-			{
-				Uint32 corners[3] = { faces[faceIndex + 0], faces[faceIndex + 1], faces[faceIndex + 2] };
-
-				for (Uint32 cornerIndex = 0; cornerIndex < 3; cornerIndex++)
-				{
-					Uint32 indexA = corners[cornerIndex];
-					Uint32 indexB = corners[(cornerIndex + 1) % 3];
-
-					if (!seenEdges.insert(edgeKey(indexA, indexB)).second)
-					{
-						continue;
-					}
-
-					outFullEdges.push_back(vertices[indexA]);
-					outFullEdges.push_back(vertices[indexB]);
-				}
-			}
-		}
-	}
-
 	SkeletonControllerRenderer::SkeletonControllerRenderer(RootSignature& rootSignature, PipelineStateObject& pipelineStateObject) : modelShader_(rootSignature, pipelineStateObject), boneLineShader_(rootSignature, pipelineStateObject)
 	{
 		/// No Code
@@ -138,15 +45,6 @@ namespace SeedCore
 
 		boneInstanceBuffer_ = MakePtr<ReadOnlyStructuredBuffer<ColliderStructuredBuffer>>(device, bindlessHeap, maxBoneInstanceCount_);
 		boneInstanceConstantsBuffer_ = MakePtr<StaticConstantBuffer<ColliderConstantBuffer>>(device, bindlessHeap);
-
-		BuildIcosphereEdges(icosphereSubdivisionLevel_, sphereEdgeData_);
-		sphereEdgeCount_ = static_cast<Uint>(sphereEdgeData_.size() / 2);
-
-		sphereEdgeBuffer_ = MakePtr<ReadOnlyStructuredBuffer<Vector3>>(device, bindlessHeap, static_cast<Uint>(sphereEdgeData_.size()));
-
-		Uint coneLineCount = boneConeRingSegments_ + boneConeVerticalLineCount_;
-		Uint maxLinesPerBoneInstance = std::max(coneLineCount, sphereEdgeCount_);
-		groupsPerBoneInstance_ = (maxLinesPerBoneInstance + threadsPerGroup_ - 1) / threadsPerGroup_;
 	}
 
 	void SkeletonControllerRenderer::Resize(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height)
@@ -696,16 +594,11 @@ namespace SeedCore
 		}
 
 		boneInstanceBuffer_->Update(boneInstances_.data(), instanceCount);
-		sphereEdgeBuffer_->Update(sphereEdgeData_.data(), static_cast<Uint>(sphereEdgeData_.size()));
 
 		ColliderConstantBuffer constants{};
 		constants.instanceBufferIndex_ = boneInstanceBuffer_->Index();
 		constants.instanceCount_ = instanceCount;
-		constants.groupsPerInstance_ = groupsPerBoneInstance_;
-		constants.sphereEdgeBufferIndex_ = sphereEdgeBuffer_->Index();
-		constants.sphereEdgeCount_ = sphereEdgeCount_;
-		constants.hemisphereEdgeBufferIndex_ = 0;
-		constants.hemisphereEdgeCount_ = 0;
+		constants.groupsPerInstance_ = ColliderRenderer::groupsPerInstance_;
 		boneInstanceConstantsBuffer_->Update(constants);
 
 		auto* cmd = cmdList->Get();
@@ -728,12 +621,12 @@ namespace SeedCore
 
 		if (D3D12Check::GetLevel() == D3D12Level::D12_2)
 		{
-			cmd->DispatchMesh(instanceCount * groupsPerBoneInstance_, 1, 1);
+			cmd->DispatchMesh(instanceCount * ColliderRenderer::groupsPerInstance_, 1, 1);
 		}
 		else
 		{
-			cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_LINELIST);
-			cmd->DrawInstanced(groupsPerBoneInstance_ * threadsPerGroup_ * 2, instanceCount, 0, 0);
+			cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			cmd->DrawInstanced(ColliderRenderer::groupsPerInstance_ * ColliderRenderer::threadsPerGroup_ * ColliderRenderer::verticesPerLine_, instanceCount, 0, 0);
 		}
 		ProfilerStats::AddDrawCall();
 	}

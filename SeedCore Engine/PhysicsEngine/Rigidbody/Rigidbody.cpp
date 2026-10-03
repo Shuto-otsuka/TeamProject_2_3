@@ -13,6 +13,7 @@
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
+#include <FoundationEngine/Log/Error.h>
 
 namespace SeedCore
 {
@@ -270,6 +271,20 @@ namespace SeedCore
 	*/
 	void Rigidbody::AddForce(const Vector3& force)
 	{
+		/// [EN] The body exists only between OnAwake and OnDestroy, and a force moves only a Dynamic body.
+		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、力で動くのは Dynamic のボディだけ。
+		if (bodyID_.IsInvalid())
+		{
+			SC_LOG_ERROR("Rigidbody::AddForce を適用できません: ボディが生成されていません。");
+			return;
+		}
+
+		if (bodyType_ != BodyType::Dynamic)
+		{
+			SC_LOG_ERROR("Rigidbody::AddForce を適用できません: Dynamic のボディにしか効きません。");
+			return;
+		}
+
 		Actor actor = GetActor();
 
 		/// [EN] Canvas bodies go from pixels (Y down) to meters (Y up); the body stays on the z = 0 plane.
@@ -298,6 +313,20 @@ namespace SeedCore
 	*/
 	void Rigidbody::AddImpulse(const Vector3& impulse)
 	{
+		/// [EN] The body exists only between OnAwake and OnDestroy, and an impulse moves only a Dynamic body.
+		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、力積で動くのは Dynamic のボディだけ。
+		if (bodyID_.IsInvalid())
+		{
+			SC_LOG_ERROR("Rigidbody::AddImpulse を適用できません: ボディが生成されていません。");
+			return;
+		}
+
+		if (bodyType_ != BodyType::Dynamic)
+		{
+			SC_LOG_ERROR("Rigidbody::AddImpulse を適用できません: Dynamic のボディにしか効きません。");
+			return;
+		}
+
 		Actor actor = GetActor();
 
 		/// [EN] Canvas bodies go from pixels (Y down) to meters (Y up); the body stays on the z = 0 plane.
@@ -326,6 +355,20 @@ namespace SeedCore
 	*/
 	void Rigidbody::AddTorque(const Vector3& torque)
 	{
+		/// [EN] The body exists only between OnAwake and OnDestroy, and a torque turns only a Dynamic body.
+		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、トルクで回るのは Dynamic のボディだけ。
+		if (bodyID_.IsInvalid())
+		{
+			SC_LOG_ERROR("Rigidbody::AddTorque を適用できません: ボディが生成されていません。");
+			return;
+		}
+
+		if (bodyType_ != BodyType::Dynamic)
+		{
+			SC_LOG_ERROR("Rigidbody::AddTorque を適用できません: Dynamic のボディにしか効きません。");
+			return;
+		}
+
 		Actor actor = GetActor();
 
 		/// [EN] A canvas body only turns about Z, and the canvas angle runs opposite to the physics angle because of the flipped Y, so Z is negated.
@@ -357,6 +400,20 @@ namespace SeedCore
 	*/
 	void Rigidbody::AddSpin(const Vector3& angularImpulse)
 	{
+		/// [EN] The body exists only between OnAwake and OnDestroy, and an angular impulse turns only a Dynamic body.
+		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、角力積で回るのは Dynamic のボディだけ。
+		if (bodyID_.IsInvalid())
+		{
+			SC_LOG_ERROR("Rigidbody::AddSpin を適用できません: ボディが生成されていません。");
+			return;
+		}
+
+		if (bodyType_ != BodyType::Dynamic)
+		{
+			SC_LOG_ERROR("Rigidbody::AddSpin を適用できません: Dynamic のボディにしか効きません。");
+			return;
+		}
+
 		Actor actor = GetActor();
 
 		/// [EN] A canvas body only turns about Z, and the canvas angle runs opposite to the physics angle because of the flipped Y, so Z is negated.
@@ -370,6 +427,63 @@ namespace SeedCore
 		}
 
 		actor.GetPhysics().AddSpin(bodyID_, angularImpulse);
+	}
+
+	/**
+	* [EN]
+	* Moves the body so that it reaches the target position and rotation
+	* after elapsedTime, carrying along whatever stands on it. Call it
+	* every fixed step with that step's elapsedTime. On a canvas body the
+	* position is given in pixels with Y down and its Z is ignored, and
+	* only the rotation about Z is used. Only a Kinematic body is affected.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* elapsedTime 後に目標の位置と回転へ着くようボディを動かし、上に乗って
+	* いるものも一緒に運ぶ。固定ステップごとに、そのステップの elapsedTime
+	* を渡して呼ぶ。Canvas のボディでは位置をピクセル単位・Y 下向きで与えて
+	* Z は無視し、回転は Z 軸まわりだけを使う。効くのは Kinematic のボディ
+	* だけ。
+	*/
+	void Rigidbody::MoveTarget(const Vector3& targetPosition, const Quaternion& targetRotation, Float elapsedTime)
+	{
+		/// [EN] The body exists only between OnAwake and OnDestroy, and only a Kinematic body follows a target.
+		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、目標に従うのは Kinematic のボディだけ。
+		if (bodyID_.IsInvalid())
+		{
+			SC_LOG_ERROR("Rigidbody::MoveTarget を適用できません: ボディが生成されていません。");
+			return;
+		}
+
+		if (bodyType_ != BodyType::Kinematic)
+		{
+			SC_LOG_ERROR("Rigidbody::MoveTarget を適用できません: Kinematic のボディにしか効きません。");
+			return;
+		}
+
+		/// [EN] The body's velocity is the distance divided by elapsedTime, so the step must have a positive length.
+		/// [JP] ボディの速度は距離を elapsedTime で割ったものなので、ステップの長さは正でなければならない。
+		if (elapsedTime <= 0.0f)
+		{
+			SC_LOG_ERROR("Rigidbody::MoveTarget を適用できません: elapsedTime は正の値が必要です (現在: {})。", elapsedTime);
+			return;
+		}
+
+		Actor actor = GetActor();
+
+		/// [EN] A canvas body goes from pixels (Y down) to meters (Y up) on the z = 0 plane.
+		/// [JP] Canvas のボディは、ピクセル(Y 下向き)から z = 0 平面上のメートル(Y 上向き)へ変換する。
+		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
+		{
+			/// [EN] The canvas angle is 2·atan2(z, w); it is negated with the flipped Y and rebuilt as a pure rotation about Z.
+			/// [JP] Canvas の角度は 2·atan2(z, w)。Y の反転に合わせて符号を反転し、Z 軸まわりだけの回転として作り直す。
+			Quaternion physicsRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -2.0f * std::atan2(targetRotation.z, targetRotation.w));
+			actor.GetPhysics().MoveTarget(bodyID_, Vector3(targetPosition.x / pixelsPerMeter_, -targetPosition.y / pixelsPerMeter_, 0.0f), physicsRotation, elapsedTime);
+			return;
+		}
+
+		actor.GetPhysics().MoveTarget(bodyID_, targetPosition, targetRotation, elapsedTime);
 	}
 
 	/**

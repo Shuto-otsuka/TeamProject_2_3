@@ -15,21 +15,23 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Manages the PSO for collider debug-line rendering (unlit, vertex-colored
-	* line list). Uses the engine's shared bindless RootSignature like every
-	* other renderer: the current view comes from ConstantIndices (b2 space1),
-	* and this frame's ColliderConstantBuffer is reached through
+	* lines, each drawn as a screen-space quad of two triangles so it can be
+	* thicker than one pixel). Uses the engine's shared bindless RootSignature
+	* like every other renderer: the current view comes from ConstantIndices
+	* (b2 space1), and this frame's ColliderConstantBuffer is reached through
 	* ConstantIndices::collider_index_. Builds a Mesh Shader PSO on D12_2
-	* devices and a Vertex Shader line-list PSO otherwise.
+	* devices and a Vertex Shader triangle-list PSO otherwise.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* コライダーのデバッグライン描画（アンリット・頂点カラーのラインリスト）用の
+	* コライダーのデバッグライン描画（アンリット・頂点カラーの線。1ピクセルより
+	* 太く描けるよう、各線を三角形2つの画面空間の四角形として描く）用の
 	* PSO を管理する。他の全レンダラーと同じくエンジン共有の bindless
 	* RootSignature を使う — 現在ビューは ConstantIndices（b2 space1）から、
 	* このフレームの ColliderConstantBuffer は ConstantIndices::collider_index_
 	* 経由で引く。D12_2 のデバイスではメッシュシェーダの PSO、それ以外では
-	* 頂点シェーダのラインリスト PSO を構築する。
+	* 頂点シェーダのトライアングルリスト PSO を構築する。
 	*/
 	class ColliderLineShader
 	{

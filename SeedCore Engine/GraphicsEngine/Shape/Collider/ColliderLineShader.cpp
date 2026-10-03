@@ -33,7 +33,7 @@ namespace SeedCore
 		{
 			lineVertexShader_ = shaderCache.GetOrCreateVertexShader(String("../GraphicsEngine/Shape/Collider/ColliderLineVS.hlsl"));
 			psoKey.vertexShader_ = shaderCache.GetVertexShader(lineVertexShader_)->Bytecode();
-			psoKey.primitiveTopologyType_ = D3D12_PRIMITIVE_TOPOLOGY_TYPE_LINE;
+			psoKey.primitiveTopologyType_ = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 		}
 		psoKey.pixelShader_ = shaderCache.GetPixelShader(linePixelShader_)->Bytecode();
 		psoKey.rasterizerDesc_ = RasterizerState::Get(RasterizerStateType::SolidNoneLHS);

@@ -32,6 +32,8 @@ namespace SeedCore
 		/// [JP] 3次元ベクトル値。
 		Vector3,
 
+		/// [EN] 4D vector value.
+		/// [JP] 4次元ベクトル値。
 		Vector4,
 
 		/// [EN] String value.

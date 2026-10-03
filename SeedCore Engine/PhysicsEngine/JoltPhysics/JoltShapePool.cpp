@@ -239,7 +239,7 @@ namespace SeedCore
 		JPH::ShapeSettings::ShapeResult result = settings.Create();
 		if (!result.IsValid())
 		{
-			SC_LOG_ERROR("メッシュ形状の生成に失敗しました: %s", result.GetError().c_str());
+			SC_LOG_ERROR("メッシュ形状の生成に失敗しました: {}", result.GetError().c_str());
 			return Handle<JPH::Shape>::null();
 		}
 
@@ -291,7 +291,7 @@ namespace SeedCore
 		JPH::ShapeSettings::ShapeResult result = settings.Create();
 		if (!result.IsValid())
 		{
-			SC_LOG_ERROR("凸包形状の生成に失敗しました: %s", result.GetError().c_str());
+			SC_LOG_ERROR("凸包形状の生成に失敗しました: {}", result.GetError().c_str());
 			return Handle<JPH::Shape>::null();
 		}
 

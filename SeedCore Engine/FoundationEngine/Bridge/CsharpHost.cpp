@@ -321,6 +321,8 @@ namespace SeedCore
 			return &actor.Field<Vector2>(componentName, fieldName);
 		case AttributeType::Vector3:
 			return &actor.Field<Vector3>(componentName, fieldName);
+		case AttributeType::Vector4:
+			return &actor.Field<Vector4>(componentName, fieldName);
 		case AttributeType::Color:
 			return &actor.Field<Color>(componentName, fieldName);
 		default:

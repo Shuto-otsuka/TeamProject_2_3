@@ -14,32 +14,21 @@ namespace SeedCore
 
 	/// [EN] Per-frame constants for the collider instance shader, one per
 	///      batch (3D or 2D): which bindless structured-buffer index holds
-	///      that batch's collider instances and how many there are, how many mesh-shader groups
-	///      each instance spans (groupsPerInstance_ — needed since a single
-	///      64/128-thread group can no longer cover a Jolt-density sphere's
-	///      worth of edges), and the bindless index/edge-count of the two
-	///      persistent unit-sphere edge tables (full sphere + single
-	///      hemisphere, for capsule caps) built once in Create(). Mirrors
-	///      ColliderLine.hlsli's ColliderConstantBuffer byte-for-byte.
+	///      that batch's collider instances and how many there are, and how
+	///      many mesh-shader groups each instance spans (groupsPerInstance_ —
+	///      a capsule has more lines than one 128-thread group covers).
+	///      Mirrors ColliderLine.hlsli's ColliderConstantBuffer byte-for-byte.
 	/// [JP] コライダーインスタンスシェーダ用の毎フレーム定数で、バッチ（3D か 2D）
 	///      ごとに1つずつ持つ: そのバッチのコライダーインスタンスを保持する
-	///      bindless 構造化バッファのインデックスと個数、各インスタンスが何個のメッシュシェーダ
-	///      グループにまたがるか(groupsPerInstance_ — Jolt本家相当の密度の
-	///      球は、もはや1グループ(64/128スレッド)には収まらないため必要)、
-	///      Create() で一度だけ構築する単位球エッジテーブル2種（球全体 +
-	///      半球1つ、カプセルのキャップ用）の bindless インデックス/辺数。
-	///      ColliderLine.hlsli の ColliderConstantBuffer と
-	///      バイト単位で一致する。
+	///      bindless 構造化バッファのインデックスと個数、各インスタンスが何個の
+	///      メッシュシェーダグループにまたがるか(groupsPerInstance_ — カプセルは
+	///      1グループの128スレッドより線が多いため)。ColliderLine.hlsli の
+	///      ColliderConstantBuffer とバイト単位で一致する。
 	struct ColliderConstantBuffer
 	{
 		Uint instanceBufferIndex_ = 0;
 		Uint instanceCount_ = 0;
 		Uint groupsPerInstance_ = 0;
-		Uint sphereEdgeBufferIndex_ = 0;
-
-		Uint sphereEdgeCount_ = 0;
-		Uint hemisphereEdgeBufferIndex_ = 0;
-		Uint hemisphereEdgeCount_ = 0;
 		Uint colliderConstantBufferPadding0_ = 0;
 	};
 
@@ -47,8 +36,8 @@ namespace SeedCore
 	* [EN]
 	* Editor-only debug wireframe renderer for collider visualization.
 	* Deliberately does NOT inherit JPH::DebugRenderer — Renderer::Gather
-	* walks each Box/Sphere/Capsule/Cylinder/Rect/CircleCollider component in
-	* the World directly (regardless of Play/Stop state, since it no longer
+	* walks each Box/Sphere/Capsule/Cylinder/Rect/CircleCollider component and
+	* each CharacterController's capsule in the World directly (regardless of Play/Stop state, since it no longer
 	* depends on live JPH::Body instances) and calls AddInstance with each
 	* collider's own shape/transform data. The mesh shader (or, below D12_2,
 	* the vertex shader) then expands each instance's wireframe geometry on
@@ -69,7 +58,7 @@ namespace SeedCore
 	* コライダー可視化用の、エディタ専用デバッグワイヤーフレームレンダラー。
 	* 意図的に JPH::DebugRenderer を継承しない — Renderer::Gather が
 	* World 内の各 Box/Sphere/Capsule/Cylinder/Rect/CircleCollider
-	* コンポーネントを直接走査し（生きた JPH::Body に依存しなくなったため
+	* コンポーネントと各 CharacterController のカプセルを直接走査し（生きた JPH::Body に依存しなくなったため
 	* Play/Stop を問わず動作する）、各コライダー自身の形状/変換データで
 	* AddInstance を呼ぶ。ワイヤーフレーム形状の展開はメッシュシェーダ
 	* （D12_2 未満では頂点シェーダ）が GPU上で行う（ColliderLineMS.hlsl /
@@ -150,6 +139,29 @@ namespace SeedCore
 		///      輪郭が隠れてしまう。planar バッチが空なら何もしない。
 		void Draw2D(D3D12CommandList* cmdList, D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, D3D12_VIEWPORT viewport, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
 
+	public:
+		/// [EN] Line count of the densest shape, the capsule: two 32-segment
+		///      rings, four side lines, four 16-segment cap arcs, and the
+		///      silhouette (two 16-segment cap half circles and two side lines).
+		///      Must match COLLIDER_CAPSULE_LINE_COUNT in ColliderLine.hlsli.
+		/// [JP] 最も線の多い形状であるカプセルの線数: 32分割のリング2本、側面の
+		///      縦線4本、16分割のキャップの半円4本、輪郭線(16分割のキャップの
+		///      半円2本と側面の線2本)。ColliderLine.hlsli の
+		///      COLLIDER_CAPSULE_LINE_COUNT と一致させること。
+		static constexpr Uint maxLinesPerInstance_ = 2 * 32 + 4 + 6 * 16 + 2;
+
+		/// [EN] Threads per mesh-shader group; each thread emits one line as a 4-vertex quad, so 64 lines fill the 256-vertex output limit. Must match COLLIDER_LINES_PER_GROUP in ColliderLine.hlsli.
+		/// [JP] メッシュシェーダの1グループのスレッド数。各スレッドが線を1本、頂点4つの四角形として出すので、64本で出力上限の256頂点に達する。ColliderLine.hlsli の COLLIDER_LINES_PER_GROUP と一致させること。
+		static constexpr Uint threadsPerGroup_ = 64;
+
+		/// [EN] Vertices per line on the vertex-shader path: its quad drawn as two triangles. Must match ColliderLineVS.hlsl.
+		/// [JP] 頂点シェーダ経路での1本あたりの頂点数。線の四角形を三角形2つで描く。ColliderLineVS.hlsl と一致させること。
+		static constexpr Uint verticesPerLine_ = 6;
+
+		/// [EN] Mesh-shader groups one instance spans, enough to cover the densest shape.
+		/// [JP] 1インスタンスがまたがるメッシュシェーダグループ数。最も線の多い形状を賄える数にする。
+		static constexpr Uint groupsPerInstance_ = (maxLinesPerInstance_ + threadsPerGroup_ - 1) / threadsPerGroup_;
+
 	private:
 		/// [EN] Capacity of each batch's collider-instance structured buffer
 		///      (spatial and planar each get this many). Instances beyond this
@@ -159,27 +171,6 @@ namespace SeedCore
 		///      planar がそれぞれこの数を持つ）。1フレーム内でこれを超えた
 		///      インスタンスは、フレーム途中の再確保を避けるため黙って破棄される。
 		static constexpr Uint maxInstanceCount_ = 8192;
-
-		/// [EN] Icosahedron subdivision level for the sphere/capsule-cap edge
-		///      tables — level 3 matches JPH::DebugRenderer's own default
-		///      DrawWireSphere density (20 * 4^3 = 1280 faces, 1920 edges).
-		/// [JP] 球/カプセルキャップ用エッジテーブルの正20面体細分割レベル —
-		///      レベル3は JPH::DebugRenderer 自身の DrawWireSphere 既定密度
-		///      (20 * 4^3 = 1280面、1920辺)と一致する。
-		static constexpr Uint icosphereSubdivisionLevel_ = 3;
-
-		/// [EN] Must match the ring/vertical segment counts hardcoded in
-		///      ColliderLine.hlsli's GetCylinderLine and the line counts in
-		///      ColliderLineMS.hlsl / ColliderLineVS.hlsl exactly — only used
-		///      here to size groupsPerInstance_, not to generate any geometry
-		///      (cylinder/circle/box/rect stay fully procedural in the shader).
-		/// [JP] ColliderLine.hlsli の GetCylinderLine と ColliderLineMS.hlsl /
-		///      ColliderLineVS.hlsl の線数がハードコードしているリング/縦線の
-		///      分割数と厳密に一致させること — ここでは groupsPerInstance_ のサイズ計算にのみ使う
-		///      (cylinder/circle/box/rect の形状生成自体は今も完全に
-		///      シェーダ側の手続き生成のまま)。
-		static constexpr Uint cylinderRingSegments_ = 32;
-		static constexpr Uint cylinderVerticalLineCount_ = 8;
 
 		ColliderLineShader colliderLineShader_;
 
@@ -197,36 +188,6 @@ namespace SeedCore
 		/// [JP] バッチごとの定数。spatial はエディタの、planar は Canvas のインデックステーブルに登録する。
 		ResourcePtr<StaticConstantBuffer<ColliderConstantBuffer>> spatialInstanceConstantsBuffer_;
 		ResourcePtr<StaticConstantBuffer<ColliderConstantBuffer>> planarInstanceConstantsBuffer_;
-
-		/// [EN] Persistent (never change after Create()) unit-sphere edge
-		///      tables, built once from a subdivided icosahedron. Re-uploaded
-		///      every Upload() anyway — ReadOnlyStructuredBuffer is a
-		///      frame-ring upload buffer, so a single upload at Create()
-		///      would only populate one of its in-flight slots.
-		/// [JP] Create() 以降は不変の単位球エッジテーブル。細分割した
-		///      正20面体から一度だけ構築する。Upload() のたびに再アップロード
-		///      している理由: ReadOnlyStructuredBuffer はフレームリング式の
-		///      アップロードバッファなので、Create() で1回だけアップロード
-		///      すると、インフライトスロットの1つにしか書き込まれない。
-		DynamicArray<Vector3> sphereEdgeData_;
-		DynamicArray<Vector3> hemisphereEdgeData_;
-
-		ResourcePtr<ReadOnlyStructuredBuffer<Vector3>> sphereEdgeBuffer_;
-		ResourcePtr<ReadOnlyStructuredBuffer<Vector3>> hemisphereEdgeBuffer_;
-
-		Uint sphereEdgeCount_ = 0;
-		Uint hemisphereEdgeCount_ = 0;
-
-		/// [EN] How many mesh-shader groups a single collider instance spans,
-		///      computed once in Create() from the densest shape's line
-		///      count (always the sphere/capsule after Jolt-density
-		///      subdivision) divided by threadsPerGroup_.
-		/// [JP] コライダー1インスタンスが何個のメッシュシェーダグループに
-		///      またがるか。Create() で一度だけ、最も線分数の多い形状
-		///      (Jolt相当密度に細分割した後は常に球/カプセル)の線数を
-		///      threadsPerGroup_ で割って求める。
-		static constexpr Uint threadsPerGroup_ = 128;
-		Uint groupsPerInstance_ = 1;
 
 		BindlessHeap* bindlessHeap_ = nullptr;
 		ConstantIndicesSystem* constantIndicesSystem_ = nullptr;

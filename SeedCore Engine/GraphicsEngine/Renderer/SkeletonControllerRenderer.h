@@ -52,13 +52,6 @@ namespace SeedCore
 	private:
 		static constexpr Uint maxBoneInstanceCount_ = 2048;
 
-		static constexpr Uint icosphereSubdivisionLevel_ = 3;
-
-		static constexpr Uint boneConeRingSegments_ = 32;
-		static constexpr Uint boneConeVerticalLineCount_ = 8;
-
-		static constexpr Uint threadsPerGroup_ = 128;
-
 		ModelShader modelShader_;
 		ModelCullingBuffer modelCullingBuffer_;
 
@@ -96,11 +89,5 @@ namespace SeedCore
 		DynamicArray<ColliderStructuredBuffer> boneInstances_;
 		ResourcePtr<ReadOnlyStructuredBuffer<ColliderStructuredBuffer>> boneInstanceBuffer_;
 		ResourcePtr<StaticConstantBuffer<ColliderConstantBuffer>> boneInstanceConstantsBuffer_;
-
-		DynamicArray<Vector3> sphereEdgeData_;
-		ResourcePtr<ReadOnlyStructuredBuffer<Vector3>> sphereEdgeBuffer_;
-		Uint sphereEdgeCount_ = 0;
-
-		Uint groupsPerBoneInstance_ = 1;
 	};
 }

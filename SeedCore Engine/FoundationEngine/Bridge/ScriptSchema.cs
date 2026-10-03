@@ -13,6 +13,7 @@ namespace SeedCore
 		Bool,
 		Vector2,
 		Vector3,
+		Vector4,
 		String,
 		Color,
 		Enum,
