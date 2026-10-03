@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -49,16 +49,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Script\CameraController.cpp" />
     <ClCompile Include="Tutorial\ScTutorial.cpp" />
-    <ClCompile Include="Script\PlayerController.cpp" />
-  </ItemGroup>
+    <ClCompile Include="Script\CameraController.cpp" /><ClCompile Include="Script\PlayerController.cpp" /></ItemGroup>
   <ItemGroup>
     <ClInclude Include="EntryPoint\EntryGame.h" />
-    <ClInclude Include="Script\CameraController.h" />
     <ClInclude Include="Tutorial\ScTutorial.h" />
-    <ClInclude Include="Script\PlayerController.h" />
-  </ItemGroup>
+    <ClInclude Include="Script\CameraController.h" /><ClInclude Include="Script\PlayerController.h" /></ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

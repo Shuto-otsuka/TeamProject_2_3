@@ -11,9 +11,9 @@ void CameraController::OnStart()
 
     //注視点をプレイヤーの位置に設定
     smoothFocusPoint = playerPosition->Vector();
-
-    //マウス中央固定、隠す
-    ChangeCursorMode();
+    //回転初期化
+    Rotate();
+    isCursorLock = false;
 }
 
 void CameraController::OnTick(float elapsedTime)
@@ -24,6 +24,8 @@ void CameraController::OnTick(float elapsedTime)
     Rotate();
     //フォーカス処理
     LookPlayer();
+    //ズームイン、ズームアウト処理
+    UpdateZoom();
     //デバッグ関連
     UpdateDebug();
 }
@@ -32,6 +34,7 @@ void CameraController::SmoothFocus(float elapsedTime)
 {
     //注視点をプレイヤーの位置にLerp
     SeedCore::Vector3 targetPosition = playerPosition->Vector();
+    targetPosition.y += lookPlayerHeight;
     smoothFocusPoint = SeedCore::Vector3::Lerp(smoothFocusPoint, targetPosition, smoothFocusSpeed * elapsedTime);
 }
 
@@ -52,14 +55,19 @@ void CameraController::LookPlayer()
 
 void CameraController::Rotate()
 {
+    //右クリックでカーソル固定、解除切り替え
+    if (SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Right, SeedCore::Input::OnPressed) ||
+        SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Right, SeedCore::Input::OnReleased))
+        ChangeCursorMode();
+
     //マウスカーソルが自由に動かせる状態なら回転処理しない
     if (!isCursorLock)return;
 
     //マウスの移動量を取得
     SeedCore::Vector2 mouseMove = SeedCore::Input::MouseMotion();
     //マウスの移動量をピッチ、ヨーに適応
-    pitch += mouseMove.y * sensitivity;
-    yaw += mouseMove.x * sensitivity;
+    pitch += mouseMove.y * horizontalSensitivity;
+    yaw += mouseMove.x * verticalSensitivity;
     //ピッチをクランプ
     pitch = std::clamp(pitch, pitchMin, pitchMax);
     //ヨーを0から360の範囲に
@@ -78,11 +86,17 @@ void CameraController::Rotate()
     rotation->w_ = quaternion.w;
 }
 
+void CameraController::UpdateZoom()
+{
+    //ホイールでズームイン、ズームアウト
+    float moveWheel = SeedCore::Input::MouseWheel();
+    distance -= moveWheel * zoomSpeed;
+    distance = std::clamp(distance, minDistance, maxDistance);
+}
+
 void CameraController::UpdateDebug()
 {
-    //Lキー押されたときにマウスカーソル固定切り替え
-    if (SeedCore::Input::KeyState(SeedCore::Input::Key::L,SeedCore::Input::OnPressed))
-        ChangeCursorMode();
+   
 }
 
 void CameraController::ChangeCursorMode()

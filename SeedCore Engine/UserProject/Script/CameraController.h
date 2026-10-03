@@ -16,7 +16,15 @@ public:
 	SC_REFLECTION_FIELD()
 		float distance;
 	SC_REFLECTION_FIELD()
-		float sensitivity;
+		float minDistance;
+	SC_REFLECTION_FIELD()
+		float maxDistance;
+	SC_REFLECTION_FIELD()
+		float zoomSpeed;
+	SC_REFLECTION_FIELD()
+		float horizontalSensitivity;
+	SC_REFLECTION_FIELD()
+		float verticalSensitivity;
 	SC_REFLECTION_FIELD()
 		float pitchMin;
 	SC_REFLECTION_FIELD()
@@ -26,14 +34,15 @@ private:
 	void SmoothFocus(float elapsedTime);
 	void LookPlayer();
 	void Rotate();
+	void UpdateZoom();
 	void UpdateDebug();
 	void ChangeCursorMode();
 
 	SeedCore::Vector3 smoothFocusPoint;
 
-	bool isCursorLock = false;
+	bool isCursorLock = true;
 
-	float pitch = 45.0f;
+	float pitch = 50.0f;
 	float yaw = 180.0f;
 
 	SeedCore::Actor cameraBrain;
