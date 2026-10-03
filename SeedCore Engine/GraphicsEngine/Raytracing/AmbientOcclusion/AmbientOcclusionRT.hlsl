@@ -11,14 +11,14 @@
 * [EN]
 * Distance to the closest occluder along ray_desc, or a negative value when the
 * ray reaches ray_desc.TMax unoccluded. Same alpha handling as
-* IsReflectionRayOccluded (Reflection.hlsli), but keeps the hit distance, which
+* IsRayOccluded (Reflection.hlsli), but keeps the hit distance, which
 * the openness falloff below needs.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
 * ray_desc に沿った最も近い遮蔽物までの距離。TMax まで遮蔽が無ければ負値を
-* 返す。アルファの扱いは IsReflectionRayOccluded(Reflection.hlsli)と同じだが、
+* 返す。アルファの扱いは IsRayOccluded(Reflection.hlsli)と同じだが、
 * 下の開放度の減衰に必要なヒット距離を保持する。
 */
 float AmbientOcclusionOccluderDistance(RaytracingAccelerationStructure tlas, RayDesc ray_desc, uint instance_data_index)

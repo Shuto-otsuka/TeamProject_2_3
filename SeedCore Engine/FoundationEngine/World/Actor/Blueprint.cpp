@@ -113,6 +113,9 @@ namespace SeedCore
 			case AttributeType::Vector3:
 				capturedField.vector3Value_ = *static_cast<Vector3*>(ptr);
 				break;
+			case AttributeType::Vector4:
+				capturedField.vector4Value_ = *static_cast<Vector4*>(ptr);
+				break;
 			case AttributeType::String:
 				capturedField.stringValue_ = *static_cast<String*>(ptr);
 				break;
@@ -165,6 +168,9 @@ namespace SeedCore
 				break;
 			case AttributeType::Vector3:
 				*static_cast<Vector3*>(ptr) = match.vector3Value_;
+				break;
+			case AttributeType::Vector4:
+				*static_cast<Vector4*>(ptr) = match.vector4Value_;
 				break;
 			case AttributeType::String:
 				*static_cast<String*>(ptr) = match.stringValue_;

@@ -196,7 +196,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
 			ray_desc.TMin = 0.001;
 			ray_desc.TMax = tuning.ray_t_max_;
 
-			directional_visibility = IsReflectionRayOccluded(tlas, ray_desc, shader_resource_indices.raytracing_.instance_data_index_) ? 0.0 : 1.0;
+			directional_visibility = IsRayOccluded(tlas, ray_desc, shader_resource_indices.raytracing_.instance_data_index_) ? 0.0 : 1.0;
 		}
 	}
 
@@ -438,7 +438,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
 			ray_desc.TMin = 0.001;
 			ray_desc.TMax = max(distance_to_light - 0.01, 0.001);
 
-			float ray_visibility = IsReflectionRayOccluded(tlas, ray_desc, shader_resource_indices.raytracing_.instance_data_index_) ? 0.0 : 1.0;
+			float ray_visibility = IsRayOccluded(tlas, ray_desc, shader_resource_indices.raytracing_.instance_data_index_) ? 0.0 : 1.0;
 			float shadow_factor = saturate(lerp(1.0, ray_visibility, max(tuning.shadow_strength_, 0.0)));
 
 			/// [EN] Resolve this pixel's G-Buffer material. Using the exact

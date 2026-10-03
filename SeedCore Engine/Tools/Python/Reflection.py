@@ -79,7 +79,7 @@ TYPE_MAP = {
     "Vector2": "AttributeType::Vector2",
 
     "Vector3": "AttributeType::Vector3",
-    "Vector4": "AttributeType::Vector3",
+    "Vector4": "AttributeType::Vector4",
 
     "String": "AttributeType::String",
 
@@ -95,6 +95,11 @@ FUNCTION_TYPES = {
     'String',
     'Color'
 }
+
+ENGINE_NAMESPACE_PATTERN = re.compile(r'(?:::)?\bSeedCore::')
+
+def strip_engine_namespace(type_text):
+    return ENGINE_NAMESPACE_PATTERN.sub('', type_text).strip()
 
 def qualify_condition(condition, struct_name, enum_defs, enum_owners, own_enum_names=None):
     own_enum_names = own_enum_names or set()
@@ -173,7 +178,7 @@ def parse_array_info(type_str, bracket_str=None):
 
 def parse_function_type(type_text):
     """'const String&' → 'String'。対応していない型なら None を返す。"""
-    cleaned = re.sub(r'\bconst\b', ' ', type_text).replace('&', ' ').strip()
+    cleaned = strip_engine_namespace(re.sub(r'\bconst\b', ' ', type_text).replace('&', ' '))
     if cleaned in FUNCTION_TYPES:
         return cleaned
     return None
@@ -379,7 +384,7 @@ def process_file(file_path, project_root, global_enums, enum_headers, enum_owner
                         condition = cond_expr
                         used_conditions.add(cond_end)
                         break
-            resolved_fields.append((f_type, f_name, display_name, bracket, condition, clamp_min, clamp_max, is_serialize_only))
+            resolved_fields.append((strip_engine_namespace(f_type), f_name, display_name, bracket, condition, clamp_min, clamp_max, is_serialize_only))
         fields = resolved_fields
 
         functions = []
