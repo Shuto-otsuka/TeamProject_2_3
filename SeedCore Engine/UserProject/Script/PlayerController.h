@@ -12,6 +12,10 @@ public:
 	void OnInspectorGUI();
 
 	SC_REFLECTION_FIELD()
+		float acceleration;
+	SC_REFLECTION_FIELD()
+		float airAcceleration;
+	SC_REFLECTION_FIELD()
 	    float turnSpeed;
 	SC_REFLECTION_FIELD()
 		float minJumpPower;
@@ -21,6 +25,8 @@ public:
 		float maxJumpInputTime;
 	SC_REFLECTION_FIELD()
 		float jumpEnableTime;
+	SC_REFLECTION_FIELD()
+		float jumpInputBufferTime;
 	SC_REFLECTION_FIELD()
 		float coyoteTime;
 
@@ -42,10 +48,13 @@ private:
 	State state = State::USUALLY;
 
 	bool jumpReady = false;
+	bool jumpInputEnable = true;
+	bool jumpInputBuffer = false;
 	bool beforeIsGround = true;
 	bool isCoyote = false;
-	bool jumpInputEnable = true;
 
+	float jumpInputBufferTimer = 0.0f;
+	float inputBufferJumpPower = 0.0f;
 	float jumpInputEnableTimer = 0.0f;
 	float jumpInputTimer = 0.0f;
 	float coyoteTimer = 0.0f;

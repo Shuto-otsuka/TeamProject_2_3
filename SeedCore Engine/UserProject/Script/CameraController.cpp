@@ -11,9 +11,9 @@ void CameraController::OnStart()
 
     //注視点をプレイヤーの位置に設定
     smoothFocusPoint = playerPosition->Vector();
-
-    //マウス中央固定、隠す
-    ChangeCursorMode();
+    //回転初期化
+    Rotate();
+    isCursorLock = false;
 }
 
 void CameraController::OnTick(float elapsedTime)
@@ -55,14 +55,19 @@ void CameraController::LookPlayer()
 
 void CameraController::Rotate()
 {
+    //右クリックでカーソル固定、解除切り替え
+    if (SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Right, SeedCore::Input::OnPressed) ||
+        SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Right, SeedCore::Input::OnReleased))
+        ChangeCursorMode();
+
     //マウスカーソルが自由に動かせる状態なら回転処理しない
     if (!isCursorLock)return;
 
     //マウスの移動量を取得
     SeedCore::Vector2 mouseMove = SeedCore::Input::MouseMotion();
     //マウスの移動量をピッチ、ヨーに適応
-    pitch += mouseMove.y * sensitivity;
-    yaw += mouseMove.x * sensitivity;
+    pitch += mouseMove.y * horizontalSensitivity;
+    yaw += mouseMove.x * verticalSensitivity;
     //ピッチをクランプ
     pitch = std::clamp(pitch, pitchMin, pitchMax);
     //ヨーを0から360の範囲に
@@ -91,9 +96,7 @@ void CameraController::UpdateZoom()
 
 void CameraController::UpdateDebug()
 {
-    //Lキー押されたときにマウスカーソル固定切り替え
-    if (SeedCore::Input::KeyState(SeedCore::Input::Key::L,SeedCore::Input::OnPressed))
-        ChangeCursorMode();
+   
 }
 
 void CameraController::ChangeCursorMode()

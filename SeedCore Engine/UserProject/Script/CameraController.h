@@ -22,7 +22,9 @@ public:
 	SC_REFLECTION_FIELD()
 		float zoomSpeed;
 	SC_REFLECTION_FIELD()
-		float sensitivity;
+		float horizontalSensitivity;
+	SC_REFLECTION_FIELD()
+		float verticalSensitivity;
 	SC_REFLECTION_FIELD()
 		float pitchMin;
 	SC_REFLECTION_FIELD()
@@ -38,7 +40,7 @@ private:
 
 	SeedCore::Vector3 smoothFocusPoint;
 
-	bool isCursorLock = false;
+	bool isCursorLock = true;
 
 	float pitch = 50.0f;
 	float yaw = 180.0f;
