@@ -41,9 +41,15 @@ namespace SeedCore
 	{
 		if (isPlaying)
 		{
-			for (Actor actor : world.GetActors())
+			/// [EN] Each pass walks the actors that existed when it began; actors spawned during a pass are first processed in the next frame.
+			/// [JP] 各パスは、開始時点で存在していた actor を回す。パス中に生成された actor は次のフレームから処理される。
+			DynamicArray<Actor> awakeActors = world.GetActors();
+			for (const Actor& listedActor : awakeActors)
 			{
-				if (!actor.Active())
+				/// [EN] An actor destroyed earlier in the pass is skipped.
+				/// [JP] パスの途中で破棄された actor は飛ばす。
+				Actor actor = world.GetActor(listedActor.GetEntity());
+				if (!actor || !actor.Active())
 				{
 					continue;
 				}
@@ -51,8 +57,11 @@ namespace SeedCore
 				Entity entity = actor.GetEntity();
 				EntityID entityID = entity.GetID();
 
-				for (ComponentID id : actor.ComponentIDList())
+				/// [EN] The component list is read by index on every step, so it always reflects the actor's current components.
+				/// [JP] コンポーネント一覧は毎回インデックスで読み、常にその actor の現在のコンポーネントを反映させる。
+				for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
 				{
+					ComponentID id = actor.ComponentIDList()[componentIndex];
 					void* data = world.GetComponent(entityID, id);
 					if (!data)
 					{
@@ -68,12 +77,21 @@ namespace SeedCore
 							component->awake_(component);
 						}
 					}
+
+					/// [EN] Processing of an actor ends once it no longer exists.
+					/// [JP] actor が存在しなくなった時点で、その actor の処理を終える。
+					if (!world.GetActor(entityID))
+					{
+						break;
+					}
 				}
 			}
 
-			for (Actor actor : world.GetActors())
+			DynamicArray<Actor> startActors = world.GetActors();
+			for (const Actor& listedActor : startActors)
 			{
-				if (!actor.Active())
+				Actor actor = world.GetActor(listedActor.GetEntity());
+				if (!actor || !actor.Active())
 				{
 					continue;
 				}
@@ -81,8 +99,9 @@ namespace SeedCore
 				Entity entity = actor.GetEntity();
 				EntityID entityID = entity.GetID();
 
-				for (ComponentID id : actor.ComponentIDList())
+				for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
 				{
+					ComponentID id = actor.ComponentIDList()[componentIndex];
 					void* data = world.GetComponent(entityID, id);
 					if (!data)
 					{
@@ -97,6 +116,11 @@ namespace SeedCore
 						{
 							component->start_(component);
 						}
+					}
+
+					if (!world.GetActor(entityID))
+					{
+						break;
 					}
 				}
 			}
@@ -134,9 +158,13 @@ namespace SeedCore
 
 		if (isPlaying)
 		{
-			for (Actor actor : world.GetActors())
+			/// [EN] Tick and LateTick walk the actors the same way as Awake/Start above.
+			/// [JP] Tick と LateTick も、上の Awake/Start と同じ方法で actor を回す。
+			DynamicArray<Actor> tickActors = world.GetActors();
+			for (const Actor& listedActor : tickActors)
 			{
-				if (!actor.Active())
+				Actor actor = world.GetActor(listedActor.GetEntity());
+				if (!actor || !actor.Active())
 				{
 					continue;
 				}
@@ -144,8 +172,9 @@ namespace SeedCore
 				Entity entity = actor.GetEntity();
 				EntityID entityID = entity.GetID();
 
-				for (ComponentID id : actor.ComponentIDList())
+				for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
 				{
+					ComponentID id = actor.ComponentIDList()[componentIndex];
 					void* data = world.GetComponent(entityID, id);
 					if (!data)
 					{
@@ -157,12 +186,19 @@ namespace SeedCore
 					{
 						component->tick_(component, elapsedTime);
 					}
+
+					if (!world.GetActor(entityID))
+					{
+						break;
+					}
 				}
 			}
 
-			for (Actor actor : world.GetActors())
+			DynamicArray<Actor> lateTickActors = world.GetActors();
+			for (const Actor& listedActor : lateTickActors)
 			{
-				if (!actor.Active())
+				Actor actor = world.GetActor(listedActor.GetEntity());
+				if (!actor || !actor.Active())
 				{
 					continue;
 				}
@@ -170,8 +206,9 @@ namespace SeedCore
 				Entity entity = actor.GetEntity();
 				EntityID entityID = entity.GetID();
 
-				for (ComponentID id : actor.ComponentIDList())
+				for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
 				{
+					ComponentID id = actor.ComponentIDList()[componentIndex];
 					void* data = world.GetComponent(entityID, id);
 					if (!data)
 					{
@@ -182,6 +219,11 @@ namespace SeedCore
 					if (component->lateTick_)
 					{
 						component->lateTick_(component, elapsedTime);
+					}
+
+					if (!world.GetActor(entityID))
+					{
+						break;
 					}
 				}
 			}
@@ -203,9 +245,13 @@ namespace SeedCore
 	*/
 	void SystemScheduler::Step(World& world, Float fixedTime)
 	{
-		for (Actor actor : world.GetActors())
+		/// [EN] FixedTick walks the actors the same way as Run: those that existed when the step began, skipping any destroyed along the way.
+		/// [JP] FixedTick も Run と同じ方法で actor を回す。ステップ開始時点で存在していたものを、途中で破棄されたものを飛ばしながら処理する。
+		DynamicArray<Actor> fixedTickActors = world.GetActors();
+		for (const Actor& listedActor : fixedTickActors)
 		{
-			if (!actor.Active())
+			Actor actor = world.GetActor(listedActor.GetEntity());
+			if (!actor || !actor.Active())
 			{
 				continue;
 			}
@@ -213,8 +259,9 @@ namespace SeedCore
 			Entity entity = actor.GetEntity();
 			EntityID entityID = entity.GetID();
 
-			for (ComponentID id : actor.ComponentIDList())
+			for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
 			{
+				ComponentID id = actor.ComponentIDList()[componentIndex];
 				void* data = world.GetComponent(entityID, id);
 				if (!data)
 				{
@@ -225,6 +272,11 @@ namespace SeedCore
 				if (component->fixedTick_)
 				{
 					component->fixedTick_(component, fixedTime);
+				}
+
+				if (!world.GetActor(entityID))
+				{
+					break;
 				}
 			}
 		}

@@ -2,10 +2,12 @@
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
 #include <UserProject/Script/BulletController.h>
 #include <UserProject/Script/CameraController.h>
+#include <UserProject/Script/FloorMoveSystem.h>
 #include <UserProject/Script/PlayerController.h>
 
 extern "C" int _force_reflection_BulletController = 0;
 extern "C" int _force_reflection_CameraController = 0;
+extern "C" int _force_reflection_FloorMoveSystem = 0;
 extern "C" int _force_reflection_PlayerController = 0;
 
 namespace SeedCore
@@ -54,6 +56,27 @@ namespace SeedCore
 		};
 		static Register_CameraController global_CameraController_register;
 
+		// ---- UserProject/Script/FloorMoveSystem.h ----
+		struct Register_FloorMoveSystem
+		{
+			Register_FloorMoveSystem()
+			{
+				ReflectionRegistry::Register(String("FloorMoveSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					FloorMoveSystem& obj = *static_cast<FloorMoveSystem*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("動き方");
+						fi.offset_ = offsetof(FloorMoveSystem, moveType_);
+						fi.type_ = AttributeType::Enum;
+						fi.enum_.typeName_ = String("MoveType");
+						outInfo.push_back(std::move(fi));
+					}
+					outInfo.push_back({ String("端での待ち時間"), offsetof(FloorMoveSystem, waitTime_), AttributeType::Float });
+				});
+			}
+		};
+		static Register_FloorMoveSystem global_FloorMoveSystem_register;
+
 		// ---- UserProject/Script/PlayerController.h ----
 		struct Register_PlayerController
 		{
@@ -78,6 +101,18 @@ namespace SeedCore
 			}
 		};
 		static Register_PlayerController global_PlayerController_register;
+
+		struct RegisterEnum_MoveType
+		{
+			RegisterEnum_MoveType()
+			{
+				EnumRegistry::Register(String("MoveType"), {
+					{ static_cast<Int>(FloorMoveSystem::MoveType::PingPong), String("PingPong") },
+					{ static_cast<Int>(FloorMoveSystem::MoveType::Repeat), String("Repeat") },
+				});
+			}
+		};
+		static RegisterEnum_MoveType global_MoveType_enum_register;
 
 	}
 }

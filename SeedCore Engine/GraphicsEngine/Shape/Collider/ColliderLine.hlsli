@@ -556,7 +556,7 @@ float4 GetColliderLineColor(float4 color, bool silhouette)
 * width pixels thick. Corners 0 and 1 sit on the a end, 2 and 3 on the b
 * end, on opposite sides of the line; each end is also pushed out by
 * half the width so neighbouring segments of a curve overlap at their
-* joints instead of leaving notches.
+* joints.
 */
 float4 ExpandColliderLine(float4 clip_a, float4 clip_b, float2 display_size, float width, uint corner)
 {
