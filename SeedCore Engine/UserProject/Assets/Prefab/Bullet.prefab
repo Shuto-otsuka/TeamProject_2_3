@@ -1,0 +1,384 @@
+{
+	"basePrefabAssetID": 0,
+	"nodes": [
+		{
+			"active": true,
+			"collaborationId": "01db6af9-6dc0-487a-9f6b-2f7814da858d",
+			"components": [
+				{
+					"component": "Mesh",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": -446382692,
+							"is_array": false,
+							"name": "メッシュID",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Bounds",
+					"fields": []
+				},
+				{
+					"component": "BoxCollider",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "サイズ",
+							"string": "",
+							"type": 5,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 1.0,
+								"y": 1.0,
+								"z": 1.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "中心オフセット",
+							"string": "",
+							"type": 5,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "トリガー",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Material",
+					"fields": [
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 0.0,
+										"g": 0.0,
+										"r": 0.0
+									},
+									"float": 0.0,
+									"int": -1602242984,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "マテリアル",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "BulletController",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 1.2999999523162842,
+							"int": 0,
+							"is_array": false,
+							"name": "maxChargeTime",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "minSize",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 5.0,
+							"int": 0,
+							"is_array": false,
+							"name": "maxSize",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 2.0,
+							"int": 0,
+							"is_array": false,
+							"name": "minSpeed",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 13.0,
+							"int": 0,
+							"is_array": false,
+							"name": "maxSpeed",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 2.0,
+							"int": 0,
+							"is_array": false,
+							"name": "minAliveTime",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 10.0,
+							"int": 0,
+							"is_array": false,
+							"name": "maxAliveTime",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				}
+			],
+			"layer": "Default",
+			"name": "Bullet",
+			"nestedPrefabAssetID": 0,
+			"overrides": [],
+			"parentIndex": -1,
+			"persistentId": 8,
+			"position": {
+				"x": 0.0,
+				"y": 5.363828659057617,
+				"z": 59.10124588012695
+			},
+			"rotation": {
+				"w": 1.0,
+				"x": -0.0,
+				"y": 0.0,
+				"z": 0.0
+			},
+			"scale": {
+				"x": 1.0,
+				"y": 1.0,
+				"z": 1.0
+			},
+			"tags": []
+		}
+	]
+}
