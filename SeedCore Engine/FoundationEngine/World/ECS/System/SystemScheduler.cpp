@@ -41,9 +41,15 @@ namespace SeedCore
 	{
 		if (isPlaying)
 		{
-			for (Actor actor : world.GetActors())
+			/// [EN] Every pass below walks a copy of the actor list: a callback may spawn or destroy actors, which reallocates or reorders the World's own list mid-loop. Actors spawned during a pass are picked up from the next frame.
+			/// [JP] 以下の各パスは actor 一覧のコピーを回す。コールバックが actor を生成・破棄すると、World 自身の一覧がループ途中で再確保されたり並び替わったりするため。パス中に生成された actor は次のフレームから処理される。
+			DynamicArray<Actor> awakeActors = world.GetActors();
+			for (const Actor& listedActor : awakeActors)
 			{
-				if (!actor.Active())
+				/// [EN] An earlier callback in this pass may have destroyed this actor.
+				/// [JP] このパスの先のコールバックが、この actor を破棄しているかもしれない。
+				Actor actor = world.GetActor(listedActor.GetEntity());
+				if (!actor || !actor.Active())
 				{
 					continue;
 				}
@@ -51,8 +57,11 @@ namespace SeedCore
 				Entity entity = actor.GetEntity();
 				EntityID entityID = entity.GetID();
 
-				for (ComponentID id : actor.ComponentIDList())
+				/// [EN] The component list is re-read by index each step, since a callback may add or remove components or reallocate the record holding the list.
+				/// [JP] コールバックがコンポーネントを追加・削除したり、一覧を持つ記録を再確保したりし得るため、コンポーネント一覧は毎回インデックスで読み直す。
+				for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
 				{
+					ComponentID id = actor.ComponentIDList()[componentIndex];
 					void* data = world.GetComponent(entityID, id);
 					if (!data)
 					{
@@ -68,12 +77,21 @@ namespace SeedCore
 							component->awake_(component);
 						}
 					}
+
+					/// [EN] The callback may have destroyed its own actor, which leaves no component list to read.
+					/// [JP] コールバックが自分の actor を破棄した場合、読むべきコンポーネント一覧はもう無い。
+					if (!world.GetActor(entityID))
+					{
+						break;
+					}
 				}
 			}
 
-			for (Actor actor : world.GetActors())
+			DynamicArray<Actor> startActors = world.GetActors();
+			for (const Actor& listedActor : startActors)
 			{
-				if (!actor.Active())
+				Actor actor = world.GetActor(listedActor.GetEntity());
+				if (!actor || !actor.Active())
 				{
 					continue;
 				}
@@ -81,8 +99,9 @@ namespace SeedCore
 				Entity entity = actor.GetEntity();
 				EntityID entityID = entity.GetID();
 
-				for (ComponentID id : actor.ComponentIDList())
+				for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
 				{
+					ComponentID id = actor.ComponentIDList()[componentIndex];
 					void* data = world.GetComponent(entityID, id);
 					if (!data)
 					{
@@ -97,6 +116,11 @@ namespace SeedCore
 						{
 							component->start_(component);
 						}
+					}
+
+					if (!world.GetActor(entityID))
+					{
+						break;
 					}
 				}
 			}
@@ -134,9 +158,13 @@ namespace SeedCore
 
 		if (isPlaying)
 		{
-			for (Actor actor : world.GetActors())
+			/// [EN] Same copy-and-recheck walk as Awake/Start above, since Tick is where gameplay most often spawns and destroys actors.
+			/// [JP] 上の Awake/Start と同じく、コピーを回して存在を確かめ直す。Tick はゲームプレイが最もよく actor を生成・破棄する場所であるため。
+			DynamicArray<Actor> tickActors = world.GetActors();
+			for (const Actor& listedActor : tickActors)
 			{
-				if (!actor.Active())
+				Actor actor = world.GetActor(listedActor.GetEntity());
+				if (!actor || !actor.Active())
 				{
 					continue;
 				}
@@ -144,8 +172,9 @@ namespace SeedCore
 				Entity entity = actor.GetEntity();
 				EntityID entityID = entity.GetID();
 
-				for (ComponentID id : actor.ComponentIDList())
+				for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
 				{
+					ComponentID id = actor.ComponentIDList()[componentIndex];
 					void* data = world.GetComponent(entityID, id);
 					if (!data)
 					{
@@ -157,12 +186,19 @@ namespace SeedCore
 					{
 						component->tick_(component, elapsedTime);
 					}
+
+					if (!world.GetActor(entityID))
+					{
+						break;
+					}
 				}
 			}
 
-			for (Actor actor : world.GetActors())
+			DynamicArray<Actor> lateTickActors = world.GetActors();
+			for (const Actor& listedActor : lateTickActors)
 			{
-				if (!actor.Active())
+				Actor actor = world.GetActor(listedActor.GetEntity());
+				if (!actor || !actor.Active())
 				{
 					continue;
 				}
@@ -170,8 +206,9 @@ namespace SeedCore
 				Entity entity = actor.GetEntity();
 				EntityID entityID = entity.GetID();
 
-				for (ComponentID id : actor.ComponentIDList())
+				for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
 				{
+					ComponentID id = actor.ComponentIDList()[componentIndex];
 					void* data = world.GetComponent(entityID, id);
 					if (!data)
 					{
@@ -182,6 +219,11 @@ namespace SeedCore
 					if (component->lateTick_)
 					{
 						component->lateTick_(component, elapsedTime);
+					}
+
+					if (!world.GetActor(entityID))
+					{
+						break;
 					}
 				}
 			}
@@ -203,9 +245,13 @@ namespace SeedCore
 	*/
 	void SystemScheduler::Step(World& world, Float fixedTime)
 	{
-		for (Actor actor : world.GetActors())
+		/// [EN] Same copy-and-recheck walk as Run, since FixedTick may spawn or destroy actors too.
+		/// [JP] Run と同じく、コピーを回して存在を確かめ直す。FixedTick も actor を生成・破棄し得るため。
+		DynamicArray<Actor> fixedTickActors = world.GetActors();
+		for (const Actor& listedActor : fixedTickActors)
 		{
-			if (!actor.Active())
+			Actor actor = world.GetActor(listedActor.GetEntity());
+			if (!actor || !actor.Active())
 			{
 				continue;
 			}
@@ -213,8 +259,9 @@ namespace SeedCore
 			Entity entity = actor.GetEntity();
 			EntityID entityID = entity.GetID();
 
-			for (ComponentID id : actor.ComponentIDList())
+			for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
 			{
+				ComponentID id = actor.ComponentIDList()[componentIndex];
 				void* data = world.GetComponent(entityID, id);
 				if (!data)
 				{
@@ -225,6 +272,11 @@ namespace SeedCore
 				if (component->fixedTick_)
 				{
 					component->fixedTick_(component, fixedTime);
+				}
+
+				if (!world.GetActor(entityID))
+				{
+					break;
 				}
 			}
 		}
