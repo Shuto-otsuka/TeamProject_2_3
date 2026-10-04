@@ -29,6 +29,14 @@ public:
 		float jumpInputBufferTime;
 	SC_REFLECTION_FIELD()
 		float coyoteTime;
+	SC_REFLECTION_FIELD()
+		float maxShotChargeTime;
+	SC_REFLECTION_FIELD()
+		float bulletOffsetY = 130.0f;
+	SC_REFLECTION_FIELD()
+		float minBulletOffsetZ = 10.0f;
+	SC_REFLECTION_FIELD()
+		float maxBulletOffsetZ = 80.0f;
 
 private:
 	void UpdateUsually(float elapsedTime);
@@ -64,7 +72,7 @@ private:
 	float shotInputTimer = 0.0f;
 
 	SeedCore::Vector3 lookDirection = { 0.0f,0.0f,1.0f };
-	SeedCore::Vector3 bulletOffset = { 0.0f,10.0f,5.0f };
+	SeedCore::Vector3 shotDirection = { 0.0f,0.0f,1.0f };
 
 	SeedCore::Actor cameraBrain;
 	SeedCore::Position* position = nullptr;

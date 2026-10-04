@@ -3,6 +3,8 @@
 
 #include <SeedCore/ScInput.h>
 #include<SeedCore/ScPrefab.h>
+#include <SeedCore/ScScreen.h>
+#include <SeedCore/ScPhysics.h>
 
 void PlayerController::OnStart()
 {
@@ -206,26 +208,51 @@ void PlayerController::UpdateCoyoteTime(float elapsedTime)
 void PlayerController::Turn(float elapsedTime)
 {
     //旋回処理
-    //移動方向(lookDirection)を向く
+     
+    if (shotReady)
+    {
+        //ショットチャージ時 照準方向(shotDirection)を向く
+        SeedCore::Vector2 cursorScreenPosition = SeedCore::Input::MousePoint();//カーソルのスクリーン座標
+        SeedCore::Ray ray = SeedCore::ScreenSpace::ScreenToWorld(cursorScreenPosition);//レイキャスト情報
+        SeedCore::RaycastHit hit;
+        if (GetActor().GetPhysics().Raycast(ray.origin_, ray.direction_, 1000.0f, hit))
+        {
+            SeedCore::Actor hitActor = GetWorld().GetActor(hit.entityID_);//ヒットしたアクターの取得
+            if (!hitActor.HasTag("CanStop") && hit.normal_.y > 0.99f)
+            {
+                //止められない・オブジェクトの上面だった場合
 
-    //軸とアングルを算出
-    SeedCore::Vector3 front = GetActor().WorldMatrix().Forward();//右手系
-    front.Normalize();
-    float dot = front.Dot(lookDirection);
-    if (dot > 0.995f)return;//角度がほぼ0だったら終了
-    const float minTurnSpeed = 0.2f;//角度が近づくにつれて旋回スピードを小さくするだけだと最後の方が遅すぎるため最低旋回速度を設ける
-    float angle = ((1.0f - dot) + minTurnSpeed) * turnSpeed * elapsedTime;//内積から1フレームで旋回させる角度を計算
-    SeedCore::Vector3 cross;
-    cross = front.Cross(lookDirection);
-    cross.Normalize();
-    
-    //軸とアングルから回転分のクォータニオンを作成
-    SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(cross, angle);
-    quaternion.Normalize();
-   
-    //ベクトルと合成してセット
-    front = SeedCore::Vector3::Transform(front, quaternion);
-    myCharacterController->ForwardDirection(front);
+            }
+            else
+            {
+                //止められるオブジェクトもしくは壁などに当たった場合当たった場所をターゲットにする
+                SeedCore::Vector3 targetPosition = hit.position_;
+            }
+        }
+    }
+    else
+    {
+        //通常時 移動方向(lookDirection)を向く
+
+        //軸とアングルを算出
+        SeedCore::Vector3 front = GetActor().WorldMatrix().Forward();//右手系
+        front.Normalize();
+        float dot = front.Dot(lookDirection);
+        if (dot > 0.995f)return;//角度がほぼ0だったら終了
+        const float minTurnSpeed = 0.2f;//角度が近づくにつれて旋回スピードを小さくするだけだと最後の方が遅すぎるため最低旋回速度を設ける
+        float angle = ((1.0f - dot) + minTurnSpeed) * turnSpeed * elapsedTime;//内積から1フレームで旋回させる角度を計算
+        SeedCore::Vector3 cross;
+        cross = front.Cross(lookDirection);
+        cross.Normalize();
+
+        //軸とアングルから回転分のクォータニオンを作成
+        SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(cross, angle);
+        quaternion.Normalize();
+
+        //ベクトルと合成してセット
+        front = SeedCore::Vector3::Transform(front, quaternion);
+        myCharacterController->ForwardDirection(front);
+    }
 }
 
 void PlayerController::UpdateInputShot(float elapsedTime)
@@ -254,10 +281,19 @@ void PlayerController::UpdateInputShot(float elapsedTime)
 void PlayerController::Shot()
 {
     //とりあえず前に撃つ
-    SeedCore::Actor bullet = SeedCore::Prefab::Spawn("Bullet.prefab");//弾生成
+    SeedCore::Actor bullet = SeedCore::Prefab::Spawn(SeedCore::String("Bullet.prefab"));//弾生成
     BulletController* bulletController = GetWorld().GetComponent<BulletController>(bullet.GetEntity());
-    SeedCore::Vector3 bulletPosition = SeedCore::Vector3::Transform(bulletOffset, GetActor().WorldMatrix());//プレイヤー姿勢、弾のローカルオフセットから弾のワールド位置を計算
-    bulletController->SetParam(bulletPosition,lookDirection, shotInputTimer);//現在位置、見てる方向、入力時間を渡す
+
+    float chargeTime = std::min(shotInputTimer, maxShotChargeTime);
+    float chargeRate = chargeTime / maxShotChargeTime;//チャージ時間からチャージ率を計算
+
+    SeedCore::Vector3 bulletOffset;
+    bulletOffset.y = bulletOffsetY;
+    bulletOffset.z = SeedCore::Lerp(minBulletOffsetZ, maxBulletOffsetZ, chargeRate);//埋まり防止のため弾のサイズがでかいほどオフセットを空ける
+    //プレイヤー姿勢、弾のローカルオフセットから弾のワールド位置を計算
+    SeedCore::Vector3 bulletPosition = SeedCore::Vector3::Transform(bulletOffset, GetActor().WorldMatrix());
+
+    bulletController->SetParam(bulletPosition,lookDirection, chargeRate);//位置、見てる方向、チャージ率を渡す
 }
 
 bool PlayerController::OnGroundOrCoyote()
