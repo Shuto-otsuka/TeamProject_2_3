@@ -64,6 +64,9 @@
     <ClCompile Include="Script\BulletController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
+    <ClCompile Include="Script\FloorMoveSystem.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\ScTutorial.h">
@@ -79,6 +82,9 @@
       <Filter>Script</Filter>
     </ClInclude>
     <ClInclude Include="Script\BulletController.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\FloorMoveSystem.h">
       <Filter>Script</Filter>
     </ClInclude>
   </ItemGroup>
