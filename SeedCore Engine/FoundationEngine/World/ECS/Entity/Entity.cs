@@ -45,6 +45,10 @@ namespace SeedCore
 			{
 				type = AttributeType.Vector3;
 			}
+			else if (typeof(T)==typeof(Vector4))
+			{
+				type = AttributeType.Vector4;
+			}
 			else if (typeof(T) == typeof(Color))
 			{
 				type = AttributeType.Color;

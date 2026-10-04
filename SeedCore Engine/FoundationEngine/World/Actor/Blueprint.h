@@ -47,6 +47,8 @@ namespace SeedCore
 		/// [JP] type_ が Vector3 の場合の値。
 		Vector3 vector3Value_;
 
+		Vector4 vector4Value_;
+
 		/// [EN] Value when type_ is Color.
 		/// [JP] type_ が Color の場合の値。
 		Color colorValue_;
@@ -93,6 +95,7 @@ namespace SeedCore
 			archive.Field("float", floatValue_);
 			archive.Field("vector2", vector2Value_);
 			archive.Field("vector3", vector3Value_);
+			archive.Field("vector4", vector4Value_);
 			archive.Field("color", colorValue_);
 			archive.Field("bool", boolValue_);
 			archive.Field("int", intValue_);

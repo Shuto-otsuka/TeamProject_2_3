@@ -156,9 +156,9 @@ void main(uint3 dtid : SV_DispatchThreadID)
 
 	/// [EN] The translucency thickness needs the distance to the closest
 	///      hit, so the candidate loop is run directly here instead of the
-	///      occlusion-only IsReflectionRayOccluded.
+	///      occlusion-only IsRayOccluded.
 	/// [JP] 透光の厚みは最近接ヒットまでの距離が要るため、遮蔽判定用の
-	///      IsReflectionRayOccluded ではなく候補ループを直接回す。
+	///      IsRayOccluded ではなく候補ループを直接回す。
 	RayQuery<RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES> query;
 	query.TraceRayInline(tlas, RAY_FLAG_NONE, 0xFF, ray_desc);
 

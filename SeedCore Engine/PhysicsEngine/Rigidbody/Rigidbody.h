@@ -231,6 +231,26 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
+		* Moves the body so that it reaches the target position and rotation
+		* after elapsedTime, carrying along whatever stands on it. Call it
+		* every fixed step with that step's elapsedTime. On a canvas body the
+		* position is given in pixels with Y down and its Z is ignored, and
+		* only the rotation about Z is used. Only a Kinematic body is affected.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* elapsedTime 後に目標の位置と回転へ着くようボディを動かし、上に乗って
+		* いるものも一緒に運ぶ。固定ステップごとに、そのステップの elapsedTime
+		* を渡して呼ぶ。Canvas のボディでは位置をピクセル単位・Y 下向きで与えて
+		* Z は無視し、回転は Z 軸まわりだけを使う。効くのは Kinematic のボディ
+		* だけ。
+		*/
+		void MoveTarget(const Vector3& targetPosition, const Quaternion& targetRotation, Float elapsedTime);
+
+	public:
+		/**
+		* [EN]
 		* Returns the Jolt ID of the body; invalid before OnAwake and after
 		* OnDestroy.
 		*

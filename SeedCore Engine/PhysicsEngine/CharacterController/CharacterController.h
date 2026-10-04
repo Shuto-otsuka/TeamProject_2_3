@@ -364,6 +364,33 @@ namespace SeedCore
 		SinglecastDelegate<void(Float)> onCustomMove_;
 
 	private:
+		/**
+		* [EN]
+		* Record of the body the character stands on, used to carry the character
+		* along with that body's movement and rotation.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* キャラクターが立っているボディの記録。そのボディの移動と回転に
+		* キャラクターを追従させるために使う。
+		*/
+		struct Foothold
+		{
+			/// [EN] Body being stood on; invalid while not standing on anything.
+			/// [JP] 立っているボディ。何にも立っていない間は無効。
+			JPH::BodyID bodyID_;
+
+			/// [EN] Character position in the body's LOCAL space, not world space.
+			/// [JP] キャラクターの位置。ワールド空間ではなく、ボディのローカル空間の値。
+			Vector3 position_ = { 0.0f, 0.0f, 0.0f };
+
+			/// [EN] World rotation of the body when the position was recorded.
+			/// [JP] 位置を記録した時点でのボディのワールド回転。
+			Quaternion rotation_ = Quaternion::Identity;
+		};
+
+	private:
 		/// [EN] Absolute vertical-normal dot value below which a contact is treated as a wall.
 		/// [JP] 接触を壁として扱う垂直法線内積の絶対値上限。
 		static constexpr Float wallNormalDotLimit_ = 0.5f;
@@ -379,6 +406,14 @@ namespace SeedCore
 		/// [EN] Whether the crouched capsule height was applied successfully.
 		/// [JP] しゃがみ用カプセル高の適用に成功しているか。
 		Bool isCrouched_ = false;
+
+		/// [EN] Velocity carried over from the foothold; kept as inertia while airborne.
+		/// [JP] 足場から引き継いだ速度。空中では慣性として保持する。
+		Vector3 inheritedVelocity_ = { 0.0f, 0.0f, 0.0f };
+
+		/// [EN] Body the character stood on at the end of the previous step and where it stood on it.
+		/// [JP] 前のステップの終わりにキャラクターが立っていたボディと、その上での立ち位置。
+		Foothold foothold_;
 
 		/// [EN] Jolt virtual-character instance owned by this component.
 		/// [JP] このコンポーネントが所有する Jolt 仮想キャラクター。

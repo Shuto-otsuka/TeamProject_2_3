@@ -57,7 +57,7 @@ struct ReflectionRayConstantBuffer
 * raytracing has no any-hit stage, so the candidate loop is the only place a
 * RayQuery can run it.
 */
-bool IsReflectionRayOccluded(RaytracingAccelerationStructure tlas, RayDesc ray_desc, uint instance_data_index)
+bool IsRayOccluded(RaytracingAccelerationStructure tlas, RayDesc ray_desc, uint instance_data_index)
 {
 	RayQuery<RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES> query;
 	query.TraceRayInline(tlas, RAY_FLAG_NONE, 0xFF, ray_desc);

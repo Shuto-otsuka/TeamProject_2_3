@@ -25,17 +25,16 @@ namespace SeedCore
 		void Dispatch(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
 
 	private:
+		struct EffectEmitter
+		{
+			ResourcePtr<ZephyrParticleStorage> storage_;
+
+			EffectPipelineState effectPipelineState_;
+
+			Bool initialized_ = false;
+		};
+
 		EffectShader effectShader_;
-
-		ResourcePtr<ZephyrParticleStorage> storage_;
-
-		EffectPipelineState effectPipelineState_;
-
-		Float spawnAccumulator_ = 0.0f;
-
-		Float emitterAge_ = 0.0f;
-
-		Bool initialized_ = false;
 
 		Bool enabled_ = false;
 

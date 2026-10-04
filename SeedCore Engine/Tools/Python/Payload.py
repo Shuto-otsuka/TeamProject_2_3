@@ -21,6 +21,11 @@ ENUM_CLASS_PATTERN = re.compile(
     r'enum\s+class\s+(\w+)\s*\{([^}]*)\}'
 )
 
+ENGINE_NAMESPACE_PATTERN = re.compile(r'(?:::)?\bSeedCore::')
+
+def strip_engine_namespace(type_text):
+    return ENGINE_NAMESPACE_PATTERN.sub('', type_text).strip()
+
 DYNAMIC_ARRAY_PREFIXES = ['std::vector', 'DynamicArray']
 
 def parse_array_info(type_str):
@@ -85,7 +90,7 @@ TYPE_MAP = {
     "Vector2": "AttributeType::Vector2",
 
     "Vector3": "AttributeType::Vector3",
-    "Vector4": "AttributeType::Vector3",
+    "Vector4": "AttributeType::Vector4",
 
     "String": "AttributeType::String",
 
@@ -278,7 +283,7 @@ def parse_payload_structs(content):
                         condition = cond_expr
                         used_conditions.add(cond_end)
                         break
-            resolved_fields.append((f_type, f_name, display_name, asset_type, condition))
+            resolved_fields.append((strip_engine_namespace(f_type), f_name, display_name, asset_type, condition))
         fields = resolved_fields
         if fields:
             results.append((struct_name, fields))

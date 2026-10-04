@@ -1193,6 +1193,10 @@ namespace SeedCore
 		movieSystem_.Update(loaderSystem, world, resourceCache);
 		resourceCache.GetResource<MovieResource>(AssetType::Movie)->Update(loaderSystem, context_->GetDevice(), context_->GetDirectList()->Get(), bindlessHeap_.get());
 
+		/// [EN] Effects advance before Renderer::PrepareFrame so the renderer uploads this frame's age and spawn count.
+		/// [JP] Renderer が今フレームの経過時間と発生数を送れるよう、エフェクトは Renderer::PrepareFrame より先に進める。
+		effectSystem_.Update(world, deltaTime);
+
 		/// [EN] Renderer receives the selected view's scene constants and entity selection after shared assets are current.
 		/// [JP] 共有アセットが最新化された後、Renderer は選択されたビューのシーン定数とエンティティ選択を受け取る。
 		renderer_->PrepareFrame(context_->GetDirectList(), loaderSystem, resourceCache, world, streamingScene, deltaTime, selectedEntities);

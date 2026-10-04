@@ -106,6 +106,7 @@
 		Float pendingOldFloat_ = 0.0f;
 		Vector2 pendingOldVector2_ = Vector2::Zero;
 		Vector3 pendingOldVector3_ = Vector3::Zero;
+		Vector4 pendingOldVector4_ = Vector4::Zero;
 
 		/// [EN] Quaternion captured before an Inspector rotation edit, used to restore exact stored orientation on Undo.
 		/// [JP] Inspector の回転編集前に捕捉したクォータニオン。Undo 時に保持していた正確な姿勢を復元するために使う。

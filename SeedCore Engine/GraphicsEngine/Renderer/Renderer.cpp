@@ -23,6 +23,7 @@
 #include <PhysicsEngine/Collider/CylinderCollider.h>
 #include <PhysicsEngine/Collider/RectCollider.h>
 #include <PhysicsEngine/Collider/CircleCollider.h>
+#include <PhysicsEngine/CharacterController/CharacterController.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
@@ -528,6 +529,10 @@ namespace SeedCore
 
 		const Color colliderDebugColor(0.0f, 1.0f, 0.0f, 1.0f);
 
+		/// [EN] Fully saturated magenta, so character capsules stand out from the green colliders.
+		/// [JP] キャラクターのカプセルが緑のコライダーの中で目立つよう、彩度最大のマゼンタにする。
+		const Color characterDebugColor(1.0f, 0.0f, 1.0f, 1.0f);
+
 		for (EntityID id : world.GetComponents<BoxCollider>())
 		{
 			Actor actor = world.GetActor(id);
@@ -597,6 +602,33 @@ namespace SeedCore
 			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->z_));
 
 			colliderRenderer_->AddInstance(ColliderShapeKind::Capsule, actorPosition, actorRotation, Vector3(radius, height * 0.5f, 0.0f), colliderDebugColor);
+		}
+
+		for (EntityID id : world.GetComponents<CharacterController>())
+		{
+			Actor actor = world.GetActor(id);
+			if (!actor || !actor.Active())
+			{
+				continue;
+			}
+
+			CharacterController* controller = actor.GetComponent<CharacterController>();
+			const Position* position = actor.GetComponent<Position>();
+			const Rotation* rotation = actor.GetComponent<Rotation>();
+
+			Vector3 actorPosition = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
+			Quaternion actorRotation = rotation ? rotation->Quat() : Quaternion::Identity;
+
+			/// [EN] Same capsule as Physics::CreateCharacter: the height is the cylinder part, switched to the crouch height while crouched, and Scale is not applied.
+			/// [JP] Physics::CreateCharacter と同じカプセル。高さは円柱部分で、しゃがみ中はしゃがみ時の高さに切り替わり、Scale は掛けない。
+			Float height = controller->Crouching() ? controller->crouchHeight_ : controller->height_;
+			Float radius = controller->radius_;
+
+			/// [EN] The character's origin is its feet, so the capsule center sits half the cylinder plus one radius above it.
+			/// [JP] キャラクターの原点は足元なので、カプセルの中心は円柱の半分と半径1つ分だけ上にある。
+			Vector3 center(0.0f, height * 0.5f + radius, 0.0f);
+
+			colliderRenderer_->AddInstance(ColliderShapeKind::Capsule, actorPosition + Vector3::Transform(center, actorRotation), actorRotation, Vector3(radius, height * 0.5f, 0.0f), characterDebugColor);
 		}
 
 		for (EntityID id : world.GetComponents<CylinderCollider>())

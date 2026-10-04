@@ -73,7 +73,7 @@ namespace SeedCore
 		Bool convex = convex_;
 		if (!convex && rigidbody && rigidbody->bodyType_ == Rigidbody::BodyType::Dynamic)
 		{
-			SC_LOG_WARNING("MeshCollider: Dynamic な Rigidbody には凹メッシュ形状を使えないため凸包で生成します (assetID: %u)", meshID_);
+			SC_LOG_WARNING("MeshCollider: Dynamic な Rigidbody には凹メッシュ形状を使えないため凸包で生成します (assetID: {})", meshID_);
 			convex = true;
 		}
 

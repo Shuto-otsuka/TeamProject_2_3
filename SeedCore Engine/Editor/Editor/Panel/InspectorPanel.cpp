@@ -1490,6 +1490,27 @@ namespace SeedCore
 			}
 			break;
 		}
+		case AttributeType::Vector4:
+		{
+			Vector4* value = static_cast<Vector4*>(pointer);
+			ImGui::DragFloat4(label, &value->x, 0.1f, cMin, cMax);
+			if (ImGui::IsItemActivated())
+			{
+				pendingOldVector4_ = *value;
+			}
+			if (ImGui::IsItemDeactivatedAfterEdit())
+			{
+				if (field.directPtr_)
+				{
+					context_.sceneContext_.history_.Push(MakePtr<PointerCommand<Vector4>>(value, pendingOldVector4_, *value));
+				}
+				else
+				{
+					context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Vector4>>(*context_.worldContext_.world_, entity, componentID, fieldOffset, pendingOldVector4_, *value));
+				}
+			}
+			break;
+		}
 		case AttributeType::String:
 		{
 			String* stringValue = static_cast<String*>(pointer);

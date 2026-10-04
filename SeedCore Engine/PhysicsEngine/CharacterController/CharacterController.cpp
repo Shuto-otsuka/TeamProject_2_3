@@ -66,6 +66,11 @@ namespace SeedCore
 		/// [JP] カスタムコールバックが設定されている場合は、標準移動処理を完全に置き換える。
 		if (onCustomMove_.Bound())
 		{
+			/// [EN] The custom callback owns the velocity, so foothold tracking restarts once it is unbound.
+			/// [JP] 速度はカスタムコールバックが管理するため、解除後は足場の追従を最初からやり直す。
+			foothold_.bodyID_ = JPH::BodyID();
+			inheritedVelocity_ = Vector3(0.0f, 0.0f, 0.0f);
+
 			onCustomMove_.Execute(elapsedTime);
 			return;
 		}
@@ -83,9 +88,11 @@ namespace SeedCore
 			isCrouched_ = !actor.GetPhysics().CharacterHeight(character_.GetPtr(), height_, radius_);
 		}
 
+		/// [EN] Work in velocity relative to the foothold so input acceleration never acts on the carried velocity.
+		/// [JP] 入力による加減速が引き継いだ速度にかからないよう、足場に対する相対速度で計算する。
 		JPH::Vec3 currentVelocity = character_->GetLinearVelocity();
-		Vector3 horizontalVelocity(currentVelocity.GetX(), 0.0f, currentVelocity.GetZ());
-		Float verticalVelocity = currentVelocity.GetY();
+		Vector3 horizontalVelocity(currentVelocity.GetX() - inheritedVelocity_.x, 0.0f, currentVelocity.GetZ() - inheritedVelocity_.z);
+		Float verticalVelocity = currentVelocity.GetY() - inheritedVelocity_.y;
 
 		/// [EN] Normalize movement input while preserving values below full magnitude.
 		/// [JP] 最大未満の入力強度を保持しながら移動入力を正規化する。
@@ -120,26 +127,82 @@ namespace SeedCore
 
 		Bool grounded = character_->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround;
 
-		/// [EN] Apply air damping, moving-ground velocity and gravity to the current velocity.
-		/// [JP] 現在速度へ空気抵抗、移動床の速度、重力を適用する。
+		/// [EN] Air damping slows both the character's own motion and the inertia carried from the foothold.
+		/// [JP] 空気抵抗は、キャラクター自身の動きと足場から引き継いだ慣性の両方を減速させる。
 		if (!grounded)
 		{
-			horizontalVelocity *= Max(0.0f, 1.0f - airDrag_ * elapsedTime);
+			Float airDamping = Max(0.0f, 1.0f - airDrag_ * elapsedTime);
+			horizontalVelocity *= airDamping;
+			inheritedVelocity_.x *= airDamping;
+			inheritedVelocity_.z *= airDamping;
 		}
 
 		if (grounded && verticalVelocity <= 0.0f)
 		{
-			JPH::Vec3 groundVelocity = character_->GetGroundVelocity();
-			horizontalVelocity.x += groundVelocity.GetX();
-			horizontalVelocity.z += groundVelocity.GetZ();
-			verticalVelocity = groundVelocity.GetY();
+			/// [EN] While standing, the foothold supplies the vertical motion, so the character's own vertical velocity restarts from rest.
+			/// [JP] 立っている間は足場が上下の動きを担うため、キャラクター自身の上下速度は静止から計算し直す。
+			verticalVelocity = 0.0f;
+
+			Vector3 footholdPosition;
+			Quaternion footholdRotation;
+			if (!foothold_.bodyID_.IsInvalid() && actor.GetPhysics().BodyExists(foothold_.bodyID_) && elapsedTime > 0.0f)
+			{
+				actor.GetPhysics().BodyTransform(foothold_.bodyID_, footholdPosition, footholdRotation);
+
+				/// [EN] Carry the recorded local position along with the body's current transform; the exact displacement over this step becomes the inherited velocity, so no drift accumulates.
+				/// [JP] 記録したローカル位置をボディの現在の変換で運ぶ。このステップでの正確な移動量を引き継ぐ速度にするため、ずれが蓄積しない。
+				JPH::RVec3 characterPosition = character_->GetPosition();
+				Vector3 carriedPosition = Vector3::Transform(foothold_.position_, footholdRotation) + footholdPosition;
+				Vector3 displacement = carriedPosition - Vector3(static_cast<Float>(characterPosition.GetX()), static_cast<Float>(characterPosition.GetY()), static_cast<Float>(characterPosition.GetZ()));
+				inheritedVelocity_ = displacement / elapsedTime;
+
+				/// [EN] World-space rotation of the body since the record: the recorded rotation undone, followed by the current one.
+				/// [JP] 記録時からのボディのワールド空間での回転。記録時の回転を戻し、現在の回転を続けて適用したもの。
+				Quaternion inverseRotation;
+				foothold_.rotation_.Inverse(inverseRotation);
+				Quaternion deltaRotation = inverseRotation * footholdRotation;
+
+				/// [EN] The shorter of the two equivalent quaternions keeps the extracted angle within half a turn.
+				/// [JP] 等価な2つのクォータニオンのうち短い方を使い、取り出す角度を半回転以内に収める。
+				if (deltaRotation.w < 0.0f)
+				{
+					deltaRotation = -deltaRotation;
+				}
+
+				/// [EN] Only the twist about the vertical axis turns the character; a tilting foothold must not tip it over.
+				/// [JP] キャラクターを回すのは垂直軸まわりのねじれ成分だけ。足場が傾いてもキャラクターは倒さない。
+				Float yawDelta = 2.0f * Atan2(deltaRotation.y, deltaRotation.w);
+				Quaternion yawRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitY, yawDelta);
+
+				JPH::Quat currentJoltRotation = character_->GetRotation();
+				Quaternion turnedRotation = Quaternion(currentJoltRotation.GetX(), currentJoltRotation.GetY(), currentJoltRotation.GetZ(), currentJoltRotation.GetW()) * yawRotation;
+				character_->SetRotation(JPH::Quat(turnedRotation.x, turnedRotation.y, turnedRotation.z, turnedRotation.w));
+
+				/// [EN] Turn the requested facing too, so the rotation step below does not undo the foothold's turn.
+				/// [JP] 下の回転処理が足場の回転を打ち消さないよう、要求中の正面方向も一緒に回す。
+				forwardDirection_ = Vector3::Transform(forwardDirection_, yawRotation);
+			}
+			else
+			{
+				/// [EN] On the first step on a new foothold there is no record yet, so its contact-point velocity stands in.
+				/// [JP] 新しい足場に乗った最初のステップは記録がないため、接地点の速度で代用する。
+				JPH::Vec3 groundVelocity = character_->GetGroundVelocity();
+				inheritedVelocity_ = Vector3(groundVelocity.GetX(), groundVelocity.GetY(), groundVelocity.GetZ());
+			}
+		}
+		else
+		{
+			/// [EN] Once off the foothold, its vertical velocity becomes part of the character's own so gravity acts on the total.
+			/// [JP] 足場を離れたら、足場の上下速度をキャラクター自身の速度へ移し、重力が合計に対して働くようにする。
+			verticalVelocity += inheritedVelocity_.y;
+			inheritedVelocity_.y = 0.0f;
 		}
 
 		Vector3 gravity = actor.GetPhysics().Gravity();
 		verticalVelocity += gravity.y * gravityScale_ * elapsedTime;
 		verticalVelocity = Max(verticalVelocity, -maxFallSpeed_);
 
-		character_->SetLinearVelocity(JPH::Vec3(horizontalVelocity.x, verticalVelocity, horizontalVelocity.z));
+		character_->SetLinearVelocity(JPH::Vec3(horizontalVelocity.x + inheritedVelocity_.x, verticalVelocity + inheritedVelocity_.y, horizontalVelocity.z + inheritedVelocity_.z));
 
 		/// [EN] Rotate toward the requested horizontal facing direction at a limited angular speed.
 		/// [JP] 角速度を制限しながら、要求された水平方向へ回転する。
@@ -165,10 +228,34 @@ namespace SeedCore
 
 		actor.GetPhysics().UpdateCharacter(character_.GetPtr(), elapsedTime, ToRadians(maxSlopeAngle_), maxStepHeight_);
 
-		/// [EN] Synchronize the actor transform components with the simulated character pose.
-		/// [JP] シミュレーション後のキャラクター姿勢をアクターの変換コンポーネントへ同期する。
 		JPH::RVec3 outPosition = character_->GetPosition();
 		JPH::Quat outRotation = character_->GetRotation();
+
+		/// [EN] Record where the character now stands on its foothold, in the foothold's local space, for the next step to carry it from.
+		/// [JP] 次のステップで運ぶ基準として、キャラクターが今足場のどこに立っているかを足場のローカル空間で記録する。
+		JPH::BodyID groundBodyID = character_->GetGroundBodyID();
+		if (character_->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround && actor.GetPhysics().BodyExists(groundBodyID))
+		{
+			Vector3 footholdPosition;
+			Quaternion footholdRotation;
+			actor.GetPhysics().BodyTransform(groundBodyID, footholdPosition, footholdRotation);
+
+			Quaternion inverseRotation;
+			footholdRotation.Inverse(inverseRotation);
+
+			Vector3 characterPosition = { static_cast<Float>(outPosition.GetX()), static_cast<Float>(outPosition.GetY()), static_cast<Float>(outPosition.GetZ()) };
+
+			foothold_.bodyID_ = groundBodyID;
+			foothold_.position_ = Vector3::Transform(characterPosition - footholdPosition, inverseRotation);
+			foothold_.rotation_ = footholdRotation;
+		}
+		else
+		{
+			foothold_.bodyID_ = JPH::BodyID();
+		}
+
+		/// [EN] Synchronize the actor transform components with the simulated character pose.
+		/// [JP] シミュレーション後のキャラクター姿勢をアクターの変換コンポーネントへ同期する。
 
 		World& world = actor.GetWorld();
 		Entity entity = actor.GetEntity();
@@ -278,8 +365,10 @@ namespace SeedCore
 			return;
 		}
 
+		/// [EN] The jump power is relative to the foothold, so jumping from a rising foothold goes higher.
+		/// [JP] ジャンプ力は足場に対する相対値なので、上昇中の足場から跳ぶとその分高く跳ぶ。
 		JPH::Vec3 velocity = character_->GetLinearVelocity();
-		character_->SetLinearVelocity(JPH::Vec3(velocity.GetX(), jumpPower_, velocity.GetZ()));
+		character_->SetLinearVelocity(JPH::Vec3(velocity.GetX(), inheritedVelocity_.y + jumpPower_, velocity.GetZ()));
 	}
 
 	/**
@@ -299,6 +388,11 @@ namespace SeedCore
 		}
 
 		character_->SetPosition(JPH::RVec3(position.x, position.y, position.z));
+
+		/// [EN] A teleport leaves the foothold behind, so neither its record nor its velocity carries over.
+		/// [JP] テレポートすると足場から離れるため、足場の記録も速度も引き継がない。
+		foothold_.bodyID_ = JPH::BodyID();
+		inheritedVelocity_ = Vector3(0.0f, 0.0f, 0.0f);
 
 		Actor actor = GetActor();
 		actor.GetPhysics().RefreshCharacter(character_.GetPtr());

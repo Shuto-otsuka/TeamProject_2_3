@@ -146,7 +146,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
 			ray_desc.TMin = 0.001;
 			ray_desc.TMax = tuning.ray_t_max_;
 
-			if (IsReflectionRayOccluded(tlas, ray_desc, shader_resource_indices.raytracing_.instance_data_index_))
+			if (IsRayOccluded(tlas, ray_desc, shader_resource_indices.raytracing_.instance_data_index_))
 			{
 				visibility = 0.0;
 			}

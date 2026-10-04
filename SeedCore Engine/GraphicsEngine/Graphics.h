@@ -16,6 +16,7 @@
 #include <GraphicsEngine/Shape/Screen/LetterScreen.h>
 #include <GraphicsEngine/Shape/Screen/SplashScreen.h>
 #include <GraphicsEngine/System/MovieSystem.h>
+#include <GraphicsEngine/System/EffectSystem.h>
 #include <GraphicsEngine/System/SceneSystem.h>
 #include <GraphicsEngine/Texture/Compression/BC7CompressShader.h>
 
@@ -620,6 +621,10 @@ namespace SeedCore
 		/// [EN] Updates movie resources before rendering consumes their current frame.
 		/// [JP] 描画が現在フレームを消費する前に、ムービーリソースを更新する。
 		MovieSystem movieSystem_;
+
+		/// [EN] Advances each effect's age and decides how many particles it spawns this frame, before rendering reads them.
+		/// [JP] 描画が読む前に、各エフェクトの経過時間を進め、今フレームに発生させるパーティクルの数を決める。
+		EffectSystem effectSystem_;
 
 		/// [EN] Draws phase-specific logos and splash imagery.
 		/// [JP] フェーズ固有のロゴとスプラッシュ画像を描画する。

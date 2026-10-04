@@ -463,6 +463,17 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Reports whether a body is currently added to the simulation.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ボディが現在シミュレーションに追加されているかを返す。
+		*/
+		Bool BodyExists(JPH::BodyID bodyID)const;
+
+		/**
+		* [EN]
 		* Writes the world position and rotation of a body.
 		*
 		* ---------------------------------------------------------------------
@@ -563,6 +574,21 @@ namespace SeedCore
 		* 起こす。ソフトボディと動的でないボディには効かない。
 		*/
 		void AddSpin(JPH::BodyID bodyID, const Vector3& angularImpulse);
+
+	public:
+		/**
+		* [EN]
+		* Sets the velocities of a kinematic body so that it reaches the
+		* target position and rotation after elapsedTime, and wakes the
+		* body. Has no effect on a body that is not kinematic.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* elapsedTime 後に目標の位置と回転へ着くようキネマティックボディの
+		* 速度を設定し、ボディを起こす。キネマティックでないボディには効かない。
+		*/
+		void MoveTarget(JPH::BodyID bodyID, const Vector3& targetPosition, const Quaternion& targetRotation, Float elapsedTime);
 
 	public:
 		/**

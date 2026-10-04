@@ -224,9 +224,9 @@ void RefractionRayGeneration()
 
 		/// [EN] Refraction needs the closest-hit interface, so the candidate
 		///      loop is run directly here instead of the occlusion-only
-		///      IsReflectionRayOccluded.
+		///      IsRayOccluded.
 		/// [JP] 屈折は最近接ヒットの界面が必要なため、遮蔽判定用の
-		///      IsReflectionRayOccluded ではなく候補ループを直接回す。
+		///      IsRayOccluded ではなく候補ループを直接回す。
 		RayQuery<RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES> query;
 		query.TraceRayInline(tlas, RAY_FLAG_NONE, 0xFF, ray_desc);
 

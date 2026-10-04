@@ -315,7 +315,7 @@ void GlobalIlluminationClosestHit(inout GlobalIlluminationPayload payload, in Bu
 			shadow_ray.TMin = 0.001;
 			shadow_ray.TMax = tuning.ray_t_max_;
 
-			if (IsReflectionRayOccluded(tlas, shadow_ray, shader_resource_indices.raytracing_.instance_data_index_))
+			if (IsRayOccluded(tlas, shadow_ray, shader_resource_indices.raytracing_.instance_data_index_))
 			{
 				sun_visibility = 0.0;
 			}

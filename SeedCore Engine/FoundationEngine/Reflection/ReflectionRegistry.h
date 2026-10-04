@@ -32,6 +32,10 @@ namespace SeedCore
 		/// [JP] 3次元ベクトル値。
 		Vector3,
 
+		/// [EN] 4D vector value.
+		/// [JP] 4次元ベクトル値。
+		Vector4,
+
 		/// [EN] String value.
 		/// [JP] 文字列値。
 		String,
@@ -544,6 +548,12 @@ namespace SeedCore
 		/// [EN] The editor-facing value kind for Vector3.
 		/// [JP] Vector3 に対応する、エディタ向けの値種別。
 		static constexpr AttributeType type = AttributeType::Vector3;
+	};
+
+	template<>
+	struct AttributeTraits<Vector4>
+	{
+		static constexpr AttributeType type = AttributeType::Vector4;
 	};
 
 	/**
