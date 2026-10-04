@@ -1,8 +1,10 @@
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
+#include <UserProject/Script/BulletController.h>
 #include <UserProject/Script/CameraController.h>
 #include <UserProject/Script/PlayerController.h>
 
+extern "C" int _force_reflection_BulletController = 0;
 extern "C" int _force_reflection_CameraController = 0;
 extern "C" int _force_reflection_PlayerController = 0;
 
@@ -10,6 +12,25 @@ namespace SeedCore
 {
 	 namespace ScReflection
 	 {
+		// ---- UserProject/Script/BulletController.h ----
+		struct Register_BulletController
+		{
+			Register_BulletController()
+			{
+				ReflectionRegistry::Register(String("BulletController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					BulletController& obj = *static_cast<BulletController*>(ptr);
+					outInfo.push_back({ String("maxChargeTime"), offsetof(BulletController, maxChargeTime), AttributeType::Float });
+					outInfo.push_back({ String("minSize"), offsetof(BulletController, minSize), AttributeType::Float });
+					outInfo.push_back({ String("maxSize"), offsetof(BulletController, maxSize), AttributeType::Float });
+					outInfo.push_back({ String("minSpeed"), offsetof(BulletController, minSpeed), AttributeType::Float });
+					outInfo.push_back({ String("maxSpeed"), offsetof(BulletController, maxSpeed), AttributeType::Float });
+					outInfo.push_back({ String("minAliveTime"), offsetof(BulletController, minAliveTime), AttributeType::Float });
+					outInfo.push_back({ String("maxAliveTime"), offsetof(BulletController, maxAliveTime), AttributeType::Float });
+				});
+			}
+		};
+		static Register_BulletController global_BulletController_register;
+
 		// ---- UserProject/Script/CameraController.h ----
 		struct Register_CameraController
 		{

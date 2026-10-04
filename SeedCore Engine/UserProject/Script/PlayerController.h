@@ -37,6 +37,8 @@ private:
 	void Jump(float jumpPower);
 	void UpdateCoyoteTime(float elapsedTime);
 	void Turn(float elapsedTime);
+	void UpdateInputShot(float elapsedTime);
+	void Shot();
 
 	bool OnGroundOrCoyote();
 
@@ -52,14 +54,17 @@ private:
 	bool jumpInputBuffer = false;
 	bool beforeIsGround = true;
 	bool isCoyote = false;
+	bool shotReady = false;
 
 	float jumpInputBufferTimer = 0.0f;
 	float inputBufferJumpPower = 0.0f;
 	float jumpInputEnableTimer = 0.0f;
 	float jumpInputTimer = 0.0f;
 	float coyoteTimer = 0.0f;
+	float shotInputTimer = 0.0f;
 
 	SeedCore::Vector3 lookDirection = { 0.0f,0.0f,1.0f };
+	SeedCore::Vector3 bulletOffset = { 0.0f,10.0f,5.0f };
 
 	SeedCore::Actor cameraBrain;
 	SeedCore::Position* position = nullptr;

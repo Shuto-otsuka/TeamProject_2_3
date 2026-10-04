@@ -1,14 +1,16 @@
 #include "UserProject/Script/PlayerController.h"
+#include"UserProject/Script/BulletController.h"
 
 #include <SeedCore/ScInput.h>
-#include <SeedCore/ScLog.h>  
+#include<SeedCore/ScPrefab.h>
 
 void PlayerController::OnStart()
 {
     SeedCore::World& world = GetWorld();
-    SeedCore::Entity entity = GetActor().GetEntity();
 
     cameraBrain = world.GetActor("CameraBrain");
+
+    SeedCore::Entity entity = GetActor().GetEntity();
 
     position = world.GetComponent<SeedCore::Position>(entity);
     rotation = world.GetComponent<SeedCore::Rotation>(entity);
@@ -44,6 +46,8 @@ void PlayerController::UpdateUsually(float elapsedTime)
     UpdateCoyoteTime(elapsedTime);
     //ジャンプ入力更新
     UpdateInputJump(elapsedTime);
+    //発射更新処理
+    UpdateInputShot(elapsedTime);
 }
 
 void PlayerController::UpdateHorizontalAcceleration(float elapsedTime)
@@ -115,6 +119,7 @@ void PlayerController::UpdateInputJump(float elapsedTime)
 
     if (SeedCore::Input::ActionState("Jump", SeedCore::Input::OnPressed))
     {
+        //ジャンプキー押された瞬間にタイマーリセット
         jumpInputTimer = 0.0f;
         jumpReady = true;
     }
@@ -169,8 +174,6 @@ void PlayerController::Jump(float jumpPower)
     //ジャンプ
     myCharacterController->jumpPower_ = jumpPower;//ジャンプ力をキャラクターコントローラーにセット
     myCharacterController->Jump();
-   
-    
 }
 
 void PlayerController::UpdateCoyoteTime(float elapsedTime)
@@ -223,6 +226,38 @@ void PlayerController::Turn(float elapsedTime)
     //ベクトルと合成してセット
     front = SeedCore::Vector3::Transform(front, quaternion);
     myCharacterController->ForwardDirection(front);
+}
+
+void PlayerController::UpdateInputShot(float elapsedTime)
+{
+    if (SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Left, SeedCore::Input::OnPressed))
+    {
+        //発射キー押された瞬間にタイマーリセット
+        shotReady = true;
+        shotInputTimer = 0.0f;
+    }
+
+    if (SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Left, SeedCore::Input::IsPressed) && shotReady)
+    {
+        //発射キー押されている間タイマー経過
+        shotInputTimer += elapsedTime;
+    }
+
+    if (SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Left, SeedCore::Input::OnReleased) && shotReady)
+    {
+        //発射キーが離された瞬間に発射
+        Shot();
+        shotReady = false;
+    }
+}
+
+void PlayerController::Shot()
+{
+    //とりあえず前に撃つ
+    SeedCore::Actor bullet = SeedCore::Prefab::Spawn("Bullet.prefab");//弾生成
+    BulletController* bulletController = GetWorld().GetComponent<BulletController>(bullet.GetEntity());
+    SeedCore::Vector3 bulletPosition = SeedCore::Vector3::Transform(bulletOffset, GetActor().WorldMatrix());//プレイヤー姿勢、弾のローカルオフセットから弾のワールド位置を計算
+    bulletController->SetParam(bulletPosition,lookDirection, shotInputTimer);//現在位置、見てる方向、入力時間を渡す
 }
 
 bool PlayerController::OnGroundOrCoyote()
