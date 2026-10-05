@@ -7,6 +7,7 @@
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Active.h>
 #include <FoundationEngine/Time/GameTimer.h>
+#include <FoundationEngine/World/ECS/Component/Transform.h>
 
 namespace SeedCore
 {
@@ -181,7 +182,7 @@ namespace SeedCore
 				brain.fieldOfView_ = fieldOfView;
 				brain.aspectRatio_ = aspectRatio;
 
-				Quaternion rotationQuaternion = rotation.Quat();
+				Quaternion rotationQuaternion = Transform::Quat(rotation);
 				Bool directionChanged = brain.synced_ && (brain.direction_ - brain.syncedDirection_).LengthSquared() > 1e-10f;
 				Bool rotationChanged = !brain.synced_ || rotationQuaternion != brain.syncedRotation_;
 
@@ -197,7 +198,7 @@ namespace SeedCore
 					direction.Normalize();
 					brain.direction_ = direction;
 
-					Vector3 rotationDegree = rotation.Degree();
+					Vector3 rotationDegree = Transform::Degree(rotation);
 					rotationDegree.x = ToDegrees(Asin(Clamp(-direction.y, -1.0f, 1.0f)));
 					if (direction.x * direction.x + direction.z * direction.z > 1e-8f)
 					{
@@ -205,10 +206,7 @@ namespace SeedCore
 					}
 
 					Quaternion synchronizedRotation = Quaternion::CreateFromYawPitchRoll(ToRadians(rotationDegree.y), ToRadians(rotationDegree.x), ToRadians(rotationDegree.z));
-					rotation.x_ = synchronizedRotation.x;
-					rotation.y_ = synchronizedRotation.y;
-					rotation.z_ = synchronizedRotation.z;
-					rotation.w_ = synchronizedRotation.w;
+					Transform::Quat(rotation, synchronizedRotation);
 					rotationQuaternion = synchronizedRotation;
 				}
 				/// [EN] Rotation was edited: derive direction_ from its forward axis.
@@ -321,7 +319,7 @@ namespace SeedCore
 				hasActiveCamera_ = true;
 				activeCamera = &camera;
 				eye = Vector3(position.x_, position.y_, position.z_);
-				orientation = rotation.Quat();
+				orientation = Transform::Quat(rotation);
 			});
 
 		if (!hasActiveCamera_)
@@ -357,7 +355,7 @@ namespace SeedCore
 				activeBrainCut = brainCut;
 				brainEye = Vector3(position.x_, position.y_, position.z_);
 				Quaternion shakeRotation = Quaternion::CreateFromYawPitchRoll(ToRadians(brain.shakeAngles_.y), ToRadians(brain.shakeAngles_.x), ToRadians(brain.shakeAngles_.z));
-				brainOrientation = rotation.Quat() * shakeRotation;
+				brainOrientation = Transform::Quat(rotation) * shakeRotation;
 			});
 
 		/// [EN] Switching brains starts a blend from last frame's eye/orientation; a cut drops any blend and resets motion history.

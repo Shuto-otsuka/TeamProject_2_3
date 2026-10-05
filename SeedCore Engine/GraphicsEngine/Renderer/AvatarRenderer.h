@@ -42,9 +42,9 @@ namespace SeedCore
 		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE DisplayGPUHandle()const;
 
 	private:
-		static constexpr Uint32 maxMeshletsPerDispatch_ = 32;
-		static constexpr Uint32 maxInstanceCount_ = 4096;
-		static constexpr Uint32 maxBoneCount_ = 2048;
+		SC_CONST Uint32 maxMeshletsPerDispatch_ = 32;
+		SC_CONST Uint32 maxInstanceCount_ = 4096;
+		SC_CONST Uint32 maxBoneCount_ = 2048;
 
 		ModelShader modelShader_;
 		ModelCullingBuffer modelCullingBuffer_;

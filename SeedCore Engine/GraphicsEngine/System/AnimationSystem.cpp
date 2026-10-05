@@ -16,6 +16,7 @@
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
 #include <GraphicsEngine/Model/Mesh.h>
+#include <FoundationEngine/World/ECS/Component/Transform.h>
 
 namespace SeedCore
 {
@@ -264,7 +265,7 @@ namespace SeedCore
 												Scale* scaleComponent = world.GetComponent<Scale>(entity);
 
 												Matrix scaleMatrix = scaleComponent ? Matrix::CreateScale(scaleComponent->x_, scaleComponent->y_, scaleComponent->z_) : Matrix::Identity;
-												Matrix rotationMatrix = rotationComponent ? Matrix::CreateFromQuaternion(rotationComponent->Quat()) : Matrix::Identity;
+												Matrix rotationMatrix = rotationComponent ? Matrix::CreateFromQuaternion(Transform::Quat(*rotationComponent)) : Matrix::Identity;
 
 												Vector3 localDelta = Vector3::TransformNormal(delta, scaleMatrix * rotationMatrix);
 

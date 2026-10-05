@@ -324,5 +324,11 @@
     <ClInclude Include="Editor\Context\ConfigContext.h">
       <Filter>Editor\Context</Filter>
     </ClInclude>
+    <ClInclude Include="Editor\Context\PreviewContext.h">
+      <Filter>Editor\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Context\PanelContext.h">
+      <Filter>Editor\Context</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

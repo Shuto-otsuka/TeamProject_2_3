@@ -1,8 +1,5 @@
 #include <Editor/Editor/Editor.h>
-#include <Editor/Editor/Build/AtomCraft.h>
 #include <FoundationEngine/Log/Notice.h>
-#include <FoundationEngine/File/FileDialog.h>
-#include <FoundationEngine/Resource/Config/EditorConfig.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/Actor/Blueprint.h>
@@ -23,14 +20,14 @@
 
 namespace SeedCore
 {
-	Editor::Editor(EditorContext& context) :context_(context), resourceSync_(context.world_.resource_->ProjectRootPath()), imguiTexture_(context_)
+	Editor::Editor(EditorContext& context, CameraSystem& cameraSystem) :context_(context), resourceSync_(context.world_.resource_->ProjectRootPath()), imguiTexture_(context_)
 	{
 		context_.application_.resourceSync_ = &resourceSync_;
 		hierarchyPanel_ = MakePtr<HierarchyPanel>(context_, imguiTexture_);
 		inspectorPanel_ = MakePtr<InspectorPanel>(context_, imguiTexture_);
 		diagnosticsPanel_ = MakePtr<DiagnosticsPanel>(context_, imguiTexture_);
 		editorWindowPanel_ = MakePtr<EditorWindowPanel>(context_, imguiTexture_);
-		gameWindowPanel_ = MakePtr<GameWindowPanel>(*context_.cameraContext_.cameraSystem_, *context_.graphics_.imgui_, imguiTexture_);
+		gameWindowPanel_ = MakePtr<GameWindowPanel>(cameraSystem, *context_.graphics_.imgui_, imguiTexture_);
 		canvasViewPanel_ = MakePtr<CanvasViewPanel>(context_, imguiTexture_);
 		contentsDrawerPanel_ = MakePtr<ContentsDrawerPanel>(context_, imguiTexture_);
 		controlPanel_ = MakePtr<ControlPanel>(context_, imguiTexture_);
@@ -49,13 +46,20 @@ namespace SeedCore
 		avatarPanel_ = MakePtr<AvatarPanel>(context_);
 		bootScreenPanel_ = MakePtr<BootScreenPanel>(context_);
 
-		context_.panelContext_.animatorControllerPanel_ = &*animatorControllerPanel_;
-		context_.panelContext_.timelinePanel_ = &*timelinePanel_;
-		context_.panelContext_.layerSettingsPanel_ = &*layerSettingsPanel_;
-		context_.panelContext_.materialViewerPanel_ = &*materialViewerPanel_;
-		context_.panelContext_.skeletonControllerPanel_ = &*skeletonControllerPanel_;
-		context_.panelContext_.avatarPanel_ = &*avatarPanel_;
-		context_.panelContext_.bootScreenPanel_ = &*bootScreenPanel_;
+		context_.panel_.layerSettings_ = &*layerSettingsPanel_;
+		context_.panel_.animatorController_ = &*animatorControllerPanel_;
+		context_.panel_.timeline_ = &*timelinePanel_;
+		context_.panel_.skeletonController_ = &*skeletonControllerPanel_;
+		context_.panel_.materialViewer_ = &*materialViewerPanel_;
+		context_.panel_.modelTransform_ = &*modelTransformPanel_;
+		context_.panel_.avatar_ = &*avatarPanel_;
+		context_.panel_.bootScreen_ = &*bootScreenPanel_;
+		context_.panel_.shortCutKey_ = &*shortCutKeyPanel_;
+		context_.panel_.specMemo_ = &*specMemoPanel_;
+		context_.panel_.diagnostics_ = &*diagnosticsPanel_;
+		context_.panel_.todoList_ = &*todoListPanel_;
+		context_.panel_.version_ = &*versionPanel_;
+		context_.panel_.config_ = &*configPanel_;
 
 		SC_LOG_NOTICE("エディターの初期化が完了しました");
 	}
@@ -253,102 +257,26 @@ namespace SeedCore
 		ImGuizmo::BeginFrame();
 
 		menuBarPanel_->Draw();
-		if (menuBarPanel_->ConsumeShortCutKeyRequest())
-		{
-			shortCutKeyPanel_->Open();
-		}
-		if (menuBarPanel_->ConsumeSpecMemoRequest())
-		{
-			specMemoPanel_->Open();
-		}
-		if (menuBarPanel_->ConsumeConsoleRequest())
-		{
-			diagnosticsPanel_->ShowConsoleTab();
-		}
-		if (menuBarPanel_->ConsumeProfilerRequest())
-		{
-			diagnosticsPanel_->ShowProfilerTab();
-		}
-		if (menuBarPanel_->ConsumeTodoListRequest())
-		{
-			todoListPanel_->Open();
-		}
-		if (menuBarPanel_->ConsumeVersionRequest())
-		{
-			versionPanel_->Open();
-		}
-		if (menuBarPanel_->ConsumeAtomCraftRequest())
-		{
-			std::filesystem::path pickedProjectPath;
-			if (FileDialog::OpenFile(pickedProjectPath, std::filesystem::current_path(), L"Atom Craft Project (*.atmcproject)", L"*.atmcproject"))
-			{
-				EditorConfig editorConfig;
-				editorConfig.Load();
-				AtomCraft::Open(editorConfig.atomCraftPath_, String(pickedProjectPath.generic_string()));
-			}
-		}
-		if (menuBarPanel_->ConsumeConfigRequest())
-		{
-			configPanel_->Open();
-		}
-		if (menuBarPanel_->ConsumeLayerSettingsRequest())
-		{
-			layerSettingsPanel_->Open();
-		}
-		if (menuBarPanel_->ConsumeAnimatorControllerRequest())
-		{
-			Animator* animator = context_.selection_.Primary() ? const_cast<Animator*>(context_.selection_.Primary().GetComponent<Animator>()) : nullptr;
-			animatorControllerPanel_->Open(animator);
-		}
 		if (AnimatorControllerRequest::requested_)
 		{
 			AnimatorControllerRequest::requested_ = false;
 			Animator* animator = context_.selection_.Primary() ? const_cast<Animator*>(context_.selection_.Primary().GetComponent<Animator>()) : nullptr;
 			animatorControllerPanel_->Open(animator);
 		}
-		if (menuBarPanel_->ConsumeTimelineRequest())
-		{
-			timelinePanel_->Open();
-		}
 		if (TimelineRequest::requested_)
 		{
 			TimelineRequest::requested_ = false;
 			timelinePanel_->Open();
-		}
-		if (menuBarPanel_->ConsumeSkeletonControllerRequest())
-		{
-			skeletonControllerPanel_->Open();
 		}
 		if (SkeletonControllerRequest::requested_)
 		{
 			SkeletonControllerRequest::requested_ = false;
 			skeletonControllerPanel_->Open();
 		}
-		if (menuBarPanel_->ConsumeMaterialViewerRequest())
-		{
-			materialViewerPanel_->Open();
-		}
 		if (MaterialPanelRequest::openRequested_)
 		{
 			MaterialPanelRequest::openRequested_ = false;
 			materialViewerPanel_->Open();
-		}
-		if (menuBarPanel_->ConsumeModelTransformRequest())
-		{
-			modelTransformPanel_->Open();
-		}
-		if (menuBarPanel_->ConsumeAvatarRequest())
-		{
-			avatarPanel_->Open();
-		}
-		if (menuBarPanel_->ConsumeBootScreenRequest())
-		{
-			bootScreenPanel_->Open();
-		}
-		if (context_.modelTransformPreviewContext_.requestedAssetId_ != 0)
-		{
-			modelTransformPanel_->Open(context_.modelTransformPreviewContext_.requestedAssetId_);
-			context_.modelTransformPreviewContext_.requestedAssetId_ = 0;
 		}
 		shortCutKeyPanel_->Draw();
 		specMemoPanel_->Draw();

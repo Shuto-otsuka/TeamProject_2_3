@@ -41,11 +41,11 @@ namespace SeedCore
 		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
 
 	public:
-		static constexpr const Char* rayGenExportName = "ReflectionRayGeneration";
-		static constexpr const Char* missExportName = "ReflectionMiss";
-		static constexpr const Char* closestHitExportName = "ReflectionClosestHit";
-		static constexpr const Char* anyHitExportName = "ReflectionAnyHit";
-		static constexpr const Char* hitGroupName = "ReflectionHitGroup";
+		SC_CONST const Char* rayGenExportName = "ReflectionRayGeneration";
+		SC_CONST const Char* missExportName = "ReflectionMiss";
+		SC_CONST const Char* closestHitExportName = "ReflectionClosestHit";
+		SC_CONST const Char* anyHitExportName = "ReflectionAnyHit";
+		SC_CONST const Char* hitGroupName = "ReflectionHitGroup";
 
 	private:
 		Handle<RaytracingShader> libraryShader_;

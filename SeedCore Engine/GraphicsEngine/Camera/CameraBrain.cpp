@@ -3,6 +3,7 @@
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
+#include <FoundationEngine/World/ECS/Component/Transform.h>
 
 namespace SeedCore
 {
@@ -157,9 +158,7 @@ namespace SeedCore
 		}
 		snap_ = false;
 
-		position->x_ = next.x;
-		position->y_ = next.y;
-		position->z_ = next.z;
+		Transform::Vector(*position, next);
 
 		Vector3 look = pivot - next;
 		if (look.LengthSquared() > 1e-8f)
@@ -229,9 +228,7 @@ namespace SeedCore
 		Position* current = GetWorld().GetComponent<Position>(GetActor().GetEntity());
 		if (current)
 		{
-			current->x_ = position.x;
-			current->y_ = position.y;
-			current->z_ = position.z;
+			Transform::Vector(*current, position);
 		}
 
 		if (direction.LengthSquared() > 1e-8f)

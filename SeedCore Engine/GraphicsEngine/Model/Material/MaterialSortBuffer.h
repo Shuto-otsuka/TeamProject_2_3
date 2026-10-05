@@ -53,7 +53,7 @@ namespace SeedCore
 	class MaterialSortBuffer
 	{
 	public:
-		static constexpr Uint bucketCount_ = 1024;
+		SC_CONST Uint bucketCount_ = 1024;
 
 		MaterialSortBuffer() = default;
 		~MaterialSortBuffer() = default;

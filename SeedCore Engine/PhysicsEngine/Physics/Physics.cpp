@@ -10,14 +10,16 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* Constructs a physics facade connected to the engine Jolt manager.
+	* Constructs a physics facade connected to the engine Jolt manager,
+	* recording every query into queryInstance.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* エンジンのJolt管理機構へ接続された物理ファサードを構築する。
+	* クエリはすべて queryInstance に記録する。
 	*/
-	Physics::Physics() :joltManager_(Gateway::GetJoltManager())
+	Physics::Physics(QueryInstance& queryInstance) :joltManager_(Gateway::GetJoltManager()), queryInstance_(queryInstance)
 	{
 		/// No Code
 	}
@@ -1210,6 +1212,16 @@ namespace SeedCore
 		/// [JP] Jolt のレイは、始点と、長さが届く距離になるベクトルで表す。
 		JPH::RRayCast ray(JPH::RVec3(origin.x, origin.y, origin.z), dir * maxDistance);
 
+#ifdef _DEBUG
+		/// [EN] Every query is recorded for the debug display: what was asked now, what was found just before returning.
+		/// [JP] クエリはすべてデバッグ表示のために記録する。問い合わせた内容はここで、結果は返す直前に入れる。
+		QueryDesc query;
+		query.kind_ = QueryKind::Raycast;
+		query.origin_ = origin;
+		query.direction_ = Vector3(dir.GetX(), dir.GetY(), dir.GetZ());
+		query.distance_ = maxDistance;
+#endif
+
 		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
 
 		/// [EN] Collects every hit, since the nearest one may be filtered out below.
@@ -1219,6 +1231,9 @@ namespace SeedCore
 
 		if (!collector.HadHit())
 		{
+#ifdef _DEBUG
+			queryInstance_.Add(query);
+#endif
 			return false;
 		}
 
@@ -1271,9 +1286,20 @@ namespace SeedCore
 			outHit.normal_ = Vector3(normal.GetX(), normal.GetY(), normal.GetZ());
 			outHit.distance_ = hit.mFraction * maxDistance;
 			outHit.entityID_ = BodyEntityID(hit.mBodyID);
+
+#ifdef _DEBUG
+			query.hit_ = true;
+			query.hitPoint_ = outHit.position_;
+			query.hitNormal_ = outHit.normal_;
+			query.hitDistance_ = outHit.distance_;
+			queryInstance_.Add(query);
+#endif
 			return true;
 		}
 
+#ifdef _DEBUG
+		queryInstance_.Add(query);
+#endif
 		return false;
 	}
 
@@ -1301,6 +1327,17 @@ namespace SeedCore
 		JPH::SphereShape sphereShape(radius);
 		JPH::RShapeCast shapeCast(&sphereShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(JPH::RVec3(origin.x, origin.y, origin.z)), dir * maxDistance);
 
+#ifdef _DEBUG
+		/// [EN] Every query is recorded for the debug display: what was asked now, what was found just before returning.
+		/// [JP] クエリはすべてデバッグ表示のために記録する。問い合わせた内容はここで、結果は返す直前に入れる。
+		QueryDesc query;
+		query.kind_ = QueryKind::Spherecast;
+		query.origin_ = origin;
+		query.direction_ = Vector3(dir.GetX(), dir.GetY(), dir.GetZ());
+		query.distance_ = maxDistance;
+		query.radius_ = radius;
+#endif
+
 		JPH::ShapeCastSettings settings;
 
 		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
@@ -1312,6 +1349,9 @@ namespace SeedCore
 
 		if (!collector.HadHit())
 		{
+#ifdef _DEBUG
+			queryInstance_.Add(query);
+#endif
 			return false;
 		}
 
@@ -1353,9 +1393,20 @@ namespace SeedCore
 			outHit.normal_ = Vector3(normal.GetX(), normal.GetY(), normal.GetZ());
 			outHit.distance_ = hit.mFraction * maxDistance;
 			outHit.entityID_ = BodyEntityID(hit.mBodyID2);
+
+#ifdef _DEBUG
+			query.hit_ = true;
+			query.hitPoint_ = outHit.position_;
+			query.hitNormal_ = outHit.normal_;
+			query.hitDistance_ = outHit.distance_;
+			queryInstance_.Add(query);
+#endif
 			return true;
 		}
 
+#ifdef _DEBUG
+		queryInstance_.Add(query);
+#endif
 		return false;
 	}
 
@@ -1383,6 +1434,51 @@ namespace SeedCore
 		/// [EN] Places the query shape at the given pose.
 		/// [JP] クエリ形状を指定の姿勢に置く。
 		JPH::RMat44 transform = JPH::RMat44::sRotationTranslation(JPH::Quat(rotation.x, rotation.y, rotation.z, rotation.w), JPH::RVec3(position.x, position.y, position.z));
+
+#ifdef _DEBUG
+		/// [EN] Every query is recorded for the debug display. The shape is read back from Jolt: a center offset is a RotatedTranslatedShape around the actual shape, moved by the query pose; only box, sphere, capsule and cylinder have a matching ColliderKind, so other shapes are not recorded.
+		/// [JP] クエリはすべてデバッグ表示のために記録する。形は Jolt から読み戻す。中心のずれは実際の形を包む RotatedTranslatedShape で、クエリの姿勢で動かす。対応する ColliderKind があるのは箱・球・カプセル・円柱だけなので、それ以外の形は記録しない。
+		QueryDesc query;
+		query.kind_ = QueryKind::Overlap;
+		query.rotation_ = rotation;
+		Bool recordable = true;
+		const JPH::Shape* innerShape = queryShape.GetPtr();
+		Vector3 offset = { 0.0f, 0.0f, 0.0f };
+		if (innerShape->GetSubType() == JPH::EShapeSubType::RotatedTranslated)
+		{
+			const JPH::RotatedTranslatedShape* rotatedTranslated = static_cast<const JPH::RotatedTranslatedShape*>(innerShape);
+			offset = Vector3(rotatedTranslated->GetPosition().GetX(), rotatedTranslated->GetPosition().GetY(), rotatedTranslated->GetPosition().GetZ());
+			innerShape = rotatedTranslated->GetInnerShape();
+		}
+		query.origin_ = position + Vector3::Transform(offset, rotation);
+		if (innerShape->GetSubType() == JPH::EShapeSubType::Box)
+		{
+			JPH::Vec3 halfExtent = static_cast<const JPH::BoxShape*>(innerShape)->GetHalfExtent();
+			query.shape_ = ColliderKind::Box;
+			query.dimensions_ = Vector3(halfExtent.GetX(), halfExtent.GetY(), halfExtent.GetZ());
+		}
+		else if (innerShape->GetSubType() == JPH::EShapeSubType::Sphere)
+		{
+			query.shape_ = ColliderKind::Sphere;
+			query.dimensions_ = Vector3(static_cast<const JPH::SphereShape*>(innerShape)->GetRadius(), 0.0f, 0.0f);
+		}
+		else if (innerShape->GetSubType() == JPH::EShapeSubType::Capsule)
+		{
+			const JPH::CapsuleShape* capsule = static_cast<const JPH::CapsuleShape*>(innerShape);
+			query.shape_ = ColliderKind::Capsule;
+			query.dimensions_ = Vector3(capsule->GetRadius(), capsule->GetHalfHeightOfCylinder(), 0.0f);
+		}
+		else if (innerShape->GetSubType() == JPH::EShapeSubType::Cylinder)
+		{
+			const JPH::CylinderShape* cylinder = static_cast<const JPH::CylinderShape*>(innerShape);
+			query.shape_ = ColliderKind::Cylinder;
+			query.dimensions_ = Vector3(cylinder->GetRadius(), cylinder->GetHalfHeight(), 0.0f);
+		}
+		else
+		{
+			recordable = false;
+		}
+#endif
 
 		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
 
@@ -1418,6 +1514,14 @@ namespace SeedCore
 			result.push_back(BodyEntityID(hit.mBodyID2));
 		}
 
+#ifdef _DEBUG
+		if (recordable)
+		{
+			query.hit_ = !result.empty();
+			queryInstance_.Add(query);
+		}
+#endif
+
 		return result;
 	}
 
@@ -1444,6 +1548,16 @@ namespace SeedCore
 		/// [JP] 始点と届く距離をピクセルからメートルへ変換する。
 		JPH::RRayCast ray(JPH::RVec3(origin.x / pixelsPerMeter_, -origin.y / pixelsPerMeter_, 0.0f), dir * (maxDistance / pixelsPerMeter_));
 
+#ifdef _DEBUG
+		/// [EN] Every query is recorded for the debug display, in canvas pixels with Y down: what was asked now, what was found just before returning.
+		/// [JP] クエリはすべてデバッグ表示のために、Y 下向きの Canvas ピクセルで記録する。問い合わせた内容はここで、結果は返す直前に入れる。
+		QueryDesc query;
+		query.kind_ = QueryKind::Raycast2D;
+		query.origin_ = Vector3(origin.x, origin.y, 0.0f);
+		query.direction_ = Vector3(dir.GetX(), -dir.GetY(), 0.0f);
+		query.distance_ = maxDistance;
+#endif
+
 		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
 
 		/// [EN] Collects every hit, since the nearest one may be filtered out below.
@@ -1453,6 +1567,9 @@ namespace SeedCore
 
 		if (!collector.HadHit())
 		{
+#ifdef _DEBUG
+			queryInstance_.Add(query);
+#endif
 			return false;
 		}
 
@@ -1505,9 +1622,20 @@ namespace SeedCore
 			outHit.normal_ = Vector2(normal.GetX(), -normal.GetY());
 			outHit.distance_ = hit.mFraction * maxDistance;
 			outHit.entityID_ = BodyEntityID(hit.mBodyID);
+
+#ifdef _DEBUG
+			query.hit_ = true;
+			query.hitPoint_ = Vector3(outHit.position_.x, outHit.position_.y, 0.0f);
+			query.hitNormal_ = Vector3(outHit.normal_.x, outHit.normal_.y, 0.0f);
+			query.hitDistance_ = outHit.distance_;
+			queryInstance_.Add(query);
+#endif
 			return true;
 		}
 
+#ifdef _DEBUG
+		queryInstance_.Add(query);
+#endif
 		return false;
 	}
 
@@ -1535,6 +1663,17 @@ namespace SeedCore
 		JPH::SphereShape sphereShape(radius / pixelsPerMeter_);
 		JPH::RShapeCast shapeCast(&sphereShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(JPH::RVec3(origin.x / pixelsPerMeter_, -origin.y / pixelsPerMeter_, 0.0f)), dir * (maxDistance / pixelsPerMeter_));
 
+#ifdef _DEBUG
+		/// [EN] Every query is recorded for the debug display, in canvas pixels with Y down: what was asked now, what was found just before returning.
+		/// [JP] クエリはすべてデバッグ表示のために、Y 下向きの Canvas ピクセルで記録する。問い合わせた内容はここで、結果は返す直前に入れる。
+		QueryDesc query;
+		query.kind_ = QueryKind::Circlecast2D;
+		query.origin_ = Vector3(origin.x, origin.y, 0.0f);
+		query.direction_ = Vector3(dir.GetX(), -dir.GetY(), 0.0f);
+		query.distance_ = maxDistance;
+		query.radius_ = radius;
+#endif
+
 		JPH::ShapeCastSettings settings;
 		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
 
@@ -1545,6 +1684,9 @@ namespace SeedCore
 
 		if (!collector.HadHit())
 		{
+#ifdef _DEBUG
+			queryInstance_.Add(query);
+#endif
 			return false;
 		}
 
@@ -1586,9 +1728,20 @@ namespace SeedCore
 			outHit.normal_ = Vector2(normal.GetX(), -normal.GetY());
 			outHit.distance_ = hit.mFraction * maxDistance;
 			outHit.entityID_ = BodyEntityID(hit.mBodyID2);
+
+#ifdef _DEBUG
+			query.hit_ = true;
+			query.hitPoint_ = Vector3(outHit.position_.x, outHit.position_.y, 0.0f);
+			query.hitNormal_ = Vector3(outHit.normal_.x, outHit.normal_.y, 0.0f);
+			query.hitDistance_ = outHit.distance_;
+			queryInstance_.Add(query);
+#endif
 			return true;
 		}
 
+#ifdef _DEBUG
+		queryInstance_.Add(query);
+#endif
 		return false;
 	}
 
@@ -1616,6 +1769,40 @@ namespace SeedCore
 		/// [EN] Rotation is in degrees about Z and negated with the flipped Y; position goes from pixels to meters.
 		/// [JP] 回転は Z 軸まわりの度で、Y の反転に合わせて符号を反転する。位置はピクセルからメートルへ変換する。
 		JPH::RMat44 transform = JPH::RMat44::sRotationTranslation(JPH::Quat::sRotation(JPH::Vec3::sAxisZ(), -ToRadians(rotation)), JPH::RVec3(position.x / pixelsPerMeter_, -position.y / pixelsPerMeter_, 0.0f));
+
+#ifdef _DEBUG
+		/// [EN] Every query is recorded for the debug display, in canvas pixels with Y down and the rotation turning about Z by the canvas angle. The shape is read back from Jolt in meters: a center offset is a RotatedTranslatedShape around the actual shape (physics Y up), turned by the canvas angle; only box and sphere are canvas shapes (Rect and Circle), so other shapes are not recorded.
+		/// [JP] クエリはすべてデバッグ表示のために、Y 下向きの Canvas ピクセルで記録し、回転は Canvas の角度だけ Z 軸まわりに回す。形はメートルで Jolt から読み戻す。中心のずれは実際の形を包む RotatedTranslatedShape（物理の Y は上向き）で、Canvas の角度で回す。Canvas の形は箱と球（Rect と Circle）だけなので、それ以外の形は記録しない。
+		QueryDesc query;
+		query.kind_ = QueryKind::Overlap2D;
+		Float angle = ToRadians(rotation);
+		query.rotation_ = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, angle);
+		Bool recordable = true;
+		const JPH::Shape* innerShape = queryShape.GetPtr();
+		Vector2 offset = { 0.0f, 0.0f };
+		if (innerShape->GetSubType() == JPH::EShapeSubType::RotatedTranslated)
+		{
+			const JPH::RotatedTranslatedShape* rotatedTranslated = static_cast<const JPH::RotatedTranslatedShape*>(innerShape);
+			offset = Vector2(rotatedTranslated->GetPosition().GetX() * pixelsPerMeter_, -rotatedTranslated->GetPosition().GetY() * pixelsPerMeter_);
+			innerShape = rotatedTranslated->GetInnerShape();
+		}
+		query.origin_ = Vector3(position.x + offset.x * Cos(angle) - offset.y * Sin(angle), position.y + offset.x * Sin(angle) + offset.y * Cos(angle), 0.0f);
+		if (innerShape->GetSubType() == JPH::EShapeSubType::Box)
+		{
+			JPH::Vec3 halfExtent = static_cast<const JPH::BoxShape*>(innerShape)->GetHalfExtent();
+			query.shape_ = ColliderKind::Rect;
+			query.dimensions_ = Vector3(halfExtent.GetX() * pixelsPerMeter_, halfExtent.GetY() * pixelsPerMeter_, 0.0f);
+		}
+		else if (innerShape->GetSubType() == JPH::EShapeSubType::Sphere)
+		{
+			query.shape_ = ColliderKind::Circle;
+			query.dimensions_ = Vector3(static_cast<const JPH::SphereShape*>(innerShape)->GetRadius() * pixelsPerMeter_, 0.0f, 0.0f);
+		}
+		else
+		{
+			recordable = false;
+		}
+#endif
 
 		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
 
@@ -1650,6 +1837,14 @@ namespace SeedCore
 
 			result.push_back(BodyEntityID(hit.mBodyID2));
 		}
+
+#ifdef _DEBUG
+		if (recordable)
+		{
+			query.hit_ = !result.empty();
+			queryInstance_.Add(query);
+		}
+#endif
 
 		return result;
 	}

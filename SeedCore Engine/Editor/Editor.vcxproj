@@ -263,6 +263,8 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClInclude Include="Editor\Context\EditorContext.h" />
     <ClInclude Include="Editor\Context\GraphicsContext.h" />
     <ClInclude Include="Editor\Context\GuizmoContext.h" />
+    <ClInclude Include="Editor\Context\PanelContext.h" />
+    <ClInclude Include="Editor\Context\PreviewContext.h" />
     <ClInclude Include="Editor\Context\SceneContext.h" />
     <ClInclude Include="Editor\Context\SceneVisualContext.h" />
     <ClInclude Include="Editor\Context\SelectionContext.h" />

@@ -205,7 +205,7 @@ namespace SeedCore
 	private:
 		/// [EN] Half thickness assigned to flat two-dimensional shapes.
 		/// [JP] 平面形状に与える厚みの半分。
-		static constexpr Float flatShapeHalfThickness_ = 0.5f;
+		SC_CONST Float flatShapeHalfThickness_ = 0.5f;
 
 		/**
 		* [EN]

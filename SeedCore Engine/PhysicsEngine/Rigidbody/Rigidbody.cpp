@@ -14,6 +14,7 @@
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
 #include <FoundationEngine/Log/Error.h>
+#include <FoundationEngine/World/ECS/Component/Transform.h>
 
 namespace SeedCore
 {
@@ -204,10 +205,7 @@ namespace SeedCore
 			if (rotation)
 			{
 				Quaternion canvasRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -2.0f * std::atan2(outRotation.z, outRotation.w));
-				rotation->x_ = canvasRotation.x;
-				rotation->y_ = canvasRotation.y;
-				rotation->z_ = canvasRotation.z;
-				rotation->w_ = canvasRotation.w;
+				Transform::Quat(*rotation, canvasRotation);
 			}
 
 			return;
@@ -215,19 +213,14 @@ namespace SeedCore
 
 		if (position)
 		{
-			position->x_ = outPosition.x;
-			position->y_ = outPosition.y;
-			position->z_ = outPosition.z;
+			Transform::Vector(*position, outPosition);
 		}
 
 		/// [EN] Rotation is stored as a normalized quaternion.
 		/// [JP] Rotation は正規化済みクォータニオンで持つ。
 		if (rotation)
 		{
-			rotation->x_ = outRotation.x;
-			rotation->y_ = outRotation.y;
-			rotation->z_ = outRotation.z;
-			rotation->w_ = outRotation.w;
+			Transform::Quat(*rotation, outRotation);
 		}
 	}
 

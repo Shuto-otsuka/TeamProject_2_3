@@ -239,7 +239,7 @@ namespace SeedCore
 	private:
 		/// [EN] Maximum number of instances put into the TLAS. Must equal ReflectionRenderer's instance-table capacity, since the ray-traced passes look up that table with InstanceID().
 		/// [JP] TLAS に入れるインスタンスの最大数。レイトレーシングのパスは InstanceID() で ReflectionRenderer のインスタンステーブルを引くため、そのテーブルの容量と等しくする。
-		static constexpr Uint32 maxInstances_ = 4096;
+		SC_CONST Uint32 maxInstances_ = 4096;
 
 		/**
 		* [EN]

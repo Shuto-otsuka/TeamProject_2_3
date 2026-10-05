@@ -383,23 +383,23 @@ namespace SeedCore
 	private:
 		/// [EN] History slots per view: one written this frame, one holding the previous frame.
 		/// [JP] ビューごとの履歴のスロットの数。今フレームに書き込む 1 つと、前フレームを持つ 1 つ。
-		static constexpr Uint32 accumulationSlotCount_ = 2;
+		SC_CONST Uint32 accumulationSlotCount_ = 2;
 
 		/// [EN] Number of views that keep their own history (editor and game).
 		/// [JP] 独自の履歴を持つビューの数（エディターとゲーム）。
-		static constexpr Uint32 viewCount_ = 2;
+		SC_CONST Uint32 viewCount_ = 2;
 
 		/// [EN] Number of instances the instance table can hold. Must equal RaytracingRenderer's TLAS instance limit, so InstanceID() always stays inside the table.
 		/// [JP] インスタンステーブルが保持できるインスタンスの数。InstanceID() が常にテーブルの範囲内に収まるよう、RaytracingRenderer の TLAS のインスタンス上限と等しくする。
-		static constexpr Uint32 maxInstances_ = 4096;
+		SC_CONST Uint32 maxInstances_ = 4096;
 
 		/// [EN] Size in bytes of one reservoir element; must match ReflectionReservoir in ReflectionReSTIR.hlsli.
 		/// [JP] reservoir の要素 1 つのバイト数。ReflectionReSTIR.hlsli の ReflectionReservoir と一致させる。
-		static constexpr Uint32 reservoirElementSizeInBytes_ = 64;
+		SC_CONST Uint32 reservoirElementSizeInBytes_ = 64;
 
 		/// [EN] Size of one shader-table record: the 32-byte shader identifier rounded up to the 64-byte table alignment.
 		/// [JP] シェーダーテーブルのレコード 1 つのサイズ。32 バイトのシェーダー識別子を 64 バイトのテーブルアライメントへ切り上げたもの。
-		static constexpr Uint32 shaderTableRecordSize_ = 64;
+		SC_CONST Uint32 shaderTableRecordSize_ = 64;
 
 		/// [EN] Raytracing pipeline of ReflectionRT.hlsl.
 		/// [JP] ReflectionRT.hlsl のレイトレーシングパイプライン。

@@ -101,9 +101,9 @@ namespace SeedCore
 		using PointerType = std::uintptr_t;
 		using TagType     = Uint16;
 
-		static constexpr Int PTR_BITS = PtrBits;
-		static constexpr Int TAG_BITS = 64 - PtrBits;
-		static constexpr PointerType PTR_MASK = (PointerType{ 1 } << PTR_BITS) - 1;
+		SC_CONST Int PTR_BITS = PtrBits;
+		SC_CONST Int TAG_BITS = 64 - PtrBits;
+		SC_CONST PointerType PTR_MASK = (PointerType{ 1 } << PTR_BITS) - 1;
 
 		/// [EN] Packed pointer (low PTR_BITS bits) and tag (remaining bits).
 		/// [JP] 詰め込まれたポインタ（下位 PTR_BITS ビット）とタグ（残りのビット）。
@@ -237,7 +237,7 @@ namespace SeedCore
 	private:
 		using Block = ObjectBlock<T>;
 
-		static constexpr Size NumberPools = 1u << LogSize;
+		SC_CONST Size NumberPools = 1u << LogSize;
 
 		/**
 		* [EN]

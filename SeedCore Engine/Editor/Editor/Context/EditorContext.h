@@ -13,6 +13,8 @@
 #include <Editor/Editor/Context/SelectionContext.h>
 #include <Editor/Editor/Context/ViewContext.h>
 #include <Editor/Editor/Context/ConfigContext.h>
+#include <Editor/Editor/Context/PreviewContext.h>
+#include <Editor/Editor/Context/PanelContext.h>
 #include <GraphicsEngine/Renderer/ViewMode.h>
 #include <GraphicsEngine/Raytracing/RaytracingContext.h>
 #include <GraphicsEngine/ScreenSpace/ScreenSpaceContext.h>
@@ -22,98 +24,6 @@
 
 namespace SeedCore
 {
-	class PreviewCamera;
-	class PreviewCameraController;
-	class CameraSystem;
-	class AnimatorControllerPanel;
-	class TimelinePanel;
-	class LayerSettingsPanel;
-	class MaterialViewerPanel;
-	class SkeletonControllerPanel;
-	class AvatarPanel;
-	class BootScreenPanel;
-	class AvatarMesh;
-	class BootScreenRenderer;
-	struct BootConfig;
-
-	struct CameraContext
-	{
-		PreviewCamera* timelineCamera_ = nullptr;
-		PreviewCamera* modelTransformCamera_ = nullptr;
-		PreviewCamera* materialCamera_ = nullptr;
-		PreviewCamera* skeletonControllerCamera_ = nullptr;
-		PreviewCamera* avatarCamera_ = nullptr;
-		PreviewCameraController* timelineCameraController_ = nullptr;
-		PreviewCameraController* modelTransformCameraController_ = nullptr;
-		PreviewCameraController* materialCameraController_ = nullptr;
-		PreviewCameraController* skeletonControllerCameraController_ = nullptr;
-		PreviewCameraController* avatarCameraController_ = nullptr;
-		CameraSystem* cameraSystem_ = nullptr;
-	};
-
-	struct TimelinePreviewContext
-	{
-		Bool previewActive_ = false;
-		Uint32 previewMeshAssetId_ = 0;
-		Uint32 previewAnimationAssetId_ = 0;
-		Float previewTime_ = 0.0f;
-	};
-
-	struct ModelTransformPreviewContext
-	{
-		Bool previewActive_ = false;
-		Uint32 previewMeshAssetId_ = 0;
-		Matrix previewWorldMatrix_ = Matrix::Identity;
-		Uint32 requestedAssetId_ = 0;
-	};
-
-	struct MaterialPreviewContext
-	{
-		Bool previewActive_ = false;
-		Uint32 previewMeshAssetId_ = 0;
-		Uint32 previewSurfaceAssetId_ = 0;
-		Matrix previewWorldMatrix_ = Matrix::Identity;
-	};
-
-	struct SkeletonControllerPreviewContext
-	{
-		Bool previewActive_ = false;
-		Uint32 previewMeshAssetId_ = 0;
-		Matrix previewWorldMatrix_ = Matrix::Identity;
-		Int selectedNodeIndex_ = -1;
-	};
-
-	struct AvatarPreviewContext
-	{
-		Bool previewActive_ = false;
-		AvatarMesh* mesh_ = nullptr;
-		std::span<const Vector3> positions_;
-		std::span<const Vector3> normals_;
-		Uint32 boneCount_ = 0;
-		Matrix previewWorldMatrix_ = Matrix::Identity;
-		Uint32 regionTextureIndices_[4] = { 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF };
-		Uint32 regionCount_ = 0;
-	};
-
-	struct BootScreenPreviewContext
-	{
-		Bool previewActive_ = false;
-		BootScreenRenderer* renderer_ = nullptr;
-		const BootConfig* config_ = nullptr;
-		Float progress_ = 0.0f;
-	};
-
-	struct PanelContext
-	{
-		AnimatorControllerPanel* animatorControllerPanel_ = nullptr;
-		TimelinePanel* timelinePanel_ = nullptr;
-		LayerSettingsPanel* layerSettingsPanel_ = nullptr;
-		MaterialViewerPanel* materialViewerPanel_ = nullptr;
-		SkeletonControllerPanel* skeletonControllerPanel_ = nullptr;
-		AvatarPanel* avatarPanel_ = nullptr;
-		BootScreenPanel* bootScreenPanel_ = nullptr;
-	};
-
 	/**
 	* [EN]
 	* Everything the editor's panels share, passed to each panel by
@@ -161,17 +71,16 @@ namespace SeedCore
 		/// [JP] シーンを編集するビュー。3D のエディタービューと 2D の Canvas ビュー。
 		ViewContext view_;
 
-		/// [EN] The game's settings file shared with Engine, and the requests to rebuild rendering after it changes.
-		/// [JP] Engine と共有するゲームの設定ファイルと、変更後に描画を作り直す依頼。
+		/// [EN] The game's and the editor's settings files shared with Engine, and the requests to rebuild rendering after a game setting changes.
+		/// [JP] Engine と共有するゲームとエディタの設定ファイルと、ゲームの設定が変わったあとに描画を作り直す依頼。
 		ConfigContext config_;
 
-		CameraContext cameraContext_;
-		TimelinePreviewContext timelinePreviewContext_;
-		ModelTransformPreviewContext modelTransformPreviewContext_;
-		MaterialPreviewContext materialPreviewContext_;
-		SkeletonControllerPreviewContext skeletonControllerPreviewContext_;
-		AvatarPreviewContext avatarPreviewContext_;
-		BootScreenPreviewContext bootScreenPreviewContext_;
-		PanelContext panelContext_;
+		/// [EN] The previews drawn in the tool panels (timeline, model transform, material, skeleton, avatar, boot screen).
+		/// [JP] ツールパネルに出すプレビュー（タイムライン、モデル変換、マテリアル、スケルトン、アバター、起動画面）。
+		PreviewContext preview_;
+
+		/// [EN] Panels that other panels open or ask to draw their details in the inspector.
+		/// [JP] ほかのパネルから開いたり、インスペクターに詳細を描かせたりするパネル。
+		PanelContext panel_;
 	};
 }

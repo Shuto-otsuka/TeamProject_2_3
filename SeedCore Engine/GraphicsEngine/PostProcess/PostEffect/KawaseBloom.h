@@ -56,8 +56,8 @@ namespace SeedCore
 		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
 
 	private:
-		static constexpr Uint32 levelCount = 6;
-		static constexpr Uint32 chainPassCount = levelCount - 1;
+		SC_CONST Uint32 levelCount = 6;
+		SC_CONST Uint32 chainPassCount = levelCount - 1;
 
 		Handle<ComputeShader> prefilterComputeShader_;
 		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> prefilterPipelineStateHandle_;

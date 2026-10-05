@@ -359,39 +359,39 @@ namespace SeedCore
 	public:
 		/// [EN] Index of Placeholder within NodeHandle; these constants are compared against handle_.index() to tell the node kind.
 		/// [JP] NodeHandle 内における Placeholder のインデックス。これらの定数を handle_.index() と比べてノードの種類を判定する。
-		constexpr static auto PLACEHOLDER = GetIndexValue<Placeholder, NodeHandle>;
+		SC_CONST auto PLACEHOLDER = GetIndexValue<Placeholder, NodeHandle>;
 		
 		/// [EN] Index of Static within NodeHandle.
 		/// [JP] NodeHandle 内における Static のインデックス。
-		constexpr static auto STATIC = GetIndexValue<Static, NodeHandle>;
+		SC_CONST auto STATIC = GetIndexValue<Static, NodeHandle>;
 		
 		/// [EN] Index of PreemptiveRuntime within NodeHandle.
 		/// [JP] NodeHandle 内における PreemptiveRuntime のインデックス。
-		constexpr static auto PREEMPTIVE_RUNTIME = GetIndexValue<PreemptiveRuntime, NodeHandle>;
+		SC_CONST auto PREEMPTIVE_RUNTIME = GetIndexValue<PreemptiveRuntime, NodeHandle>;
 		
 		/// [EN] Index of NonpreemptiveRuntime within NodeHandle.
 		/// [JP] NodeHandle 内における NonpreemptiveRuntime のインデックス。
-		constexpr static auto NONPREEMPTIVE_RUNTIME = GetIndexValue<NonpreemptiveRuntime, NodeHandle>;
+		SC_CONST auto NONPREEMPTIVE_RUNTIME = GetIndexValue<NonpreemptiveRuntime, NodeHandle>;
 		
 		/// [EN] Index of Subflow within NodeHandle.
 		/// [JP] NodeHandle 内における Subflow のインデックス。
-		constexpr static auto SUBFLOW = GetIndexValue<Subflow, NodeHandle>;
+		SC_CONST auto SUBFLOW = GetIndexValue<Subflow, NodeHandle>;
 		
 		/// [EN] Index of SingleCondition within NodeHandle.
 		/// [JP] NodeHandle 内における SingleCondition のインデックス。
-		constexpr static auto SINGLE_CONDITION = GetIndexValue<SingleCondition, NodeHandle>;
+		SC_CONST auto SINGLE_CONDITION = GetIndexValue<SingleCondition, NodeHandle>;
 		
 		/// [EN] Index of MultiCondition within NodeHandle.
 		/// [JP] NodeHandle 内における MultiCondition のインデックス。
-		constexpr static auto MULTI_CONDITION = GetIndexValue<MultiCondition, NodeHandle>;
+		SC_CONST auto MULTI_CONDITION = GetIndexValue<MultiCondition, NodeHandle>;
 		
 		/// [EN] Index of OwnedModule within NodeHandle.
 		/// [JP] NodeHandle 内における OwnedModule のインデックス。
-		constexpr static auto OWNED_MODULE = GetIndexValue<OwnedModule, NodeHandle>;
+		SC_CONST auto OWNED_MODULE = GetIndexValue<OwnedModule, NodeHandle>;
 		
 		/// [EN] Index of AdoptedModule within NodeHandle.
 		/// [JP] NodeHandle 内における AdoptedModule のインデックス。
-		constexpr static auto ADOPTED_MODULE = GetIndexValue<AdoptedModule, NodeHandle>;
+		SC_CONST auto ADOPTED_MODULE = GetIndexValue<AdoptedModule, NodeHandle>;
 
 		/**
 		* [EN]

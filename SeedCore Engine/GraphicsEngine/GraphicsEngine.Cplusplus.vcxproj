@@ -241,6 +241,7 @@
     <ClInclude Include="Shape\Collider\ColliderLineShader.h" />
     <ClInclude Include="Shape\HUD\HUDComposeShader.h" />
     <ClInclude Include="Shape\Outline\OutlineShader.h" />
+    <ClInclude Include="Shape\Primitive\PrimitiveWireframeShader.h" />
     <ClInclude Include="Shape\Screen\BootScreen.h" />
     <ClInclude Include="Shape\Screen\FadeScreen.h" />
     <ClInclude Include="Shape\Screen\LetterScreen.h" />
@@ -252,12 +253,14 @@
     <ClInclude Include="System\AnimationSystem.h" />
     <ClInclude Include="System\CameraSystem.h" />
     <ClInclude Include="System\CelestialSystem.h" />
+    <ClInclude Include="System\ColliderSystem.h" />
     <ClInclude Include="System\ConstraintSystem.h" />
     <ClInclude Include="System\EffectSystem.h" />
     <ClInclude Include="System\IndicesSystem.h" />
     <ClInclude Include="System\LightSystem.h" />
     <ClInclude Include="System\MovieSystem.h" />
     <ClInclude Include="System\SceneSystem.h" />
+    <ClInclude Include="System\ShapeSystem.h" />
     <ClInclude Include="System\SplashSystem.h" />
     <ClInclude Include="System\WeatherSystem.h" />
     <ClInclude Include="TAAU\TaauResolveShader.h" />
@@ -501,6 +504,7 @@
     <ClCompile Include="Shape\Collider\ColliderLineShader.cpp" />
     <ClCompile Include="Shape\HUD\HUDComposeShader.cpp" />
     <ClCompile Include="Shape\Outline\OutlineShader.cpp" />
+    <ClCompile Include="Shape\Primitive\PrimitiveWireframeShader.cpp" />
     <ClCompile Include="Shape\Screen\BootScreen.cpp" />
     <ClCompile Include="Shape\Screen\FadeScreen.cpp" />
     <ClCompile Include="Shape\Screen\LetterScreen.cpp" />
@@ -512,6 +516,7 @@
     <ClCompile Include="System\AnimationSystem.cpp" />
     <ClCompile Include="System\CameraSystem.cpp" />
     <ClCompile Include="System\CelestialSystem.cpp" />
+    <ClCompile Include="System\ColliderSystem.cpp" />
     <ClCompile Include="System\ConstraintSystem.cpp" />
     <ClCompile Include="System\EffectSystem.cpp" />
     <ClCompile Include="System\IndicesSystem.cpp">
@@ -521,6 +526,7 @@
     <ClCompile Include="System\MovieSystem.cpp" />
     <ClCompile Include="System\SceneSystem.cpp">
     </ClCompile>
+    <ClCompile Include="System\ShapeSystem.cpp" />
     <ClCompile Include="System\SplashSystem.cpp" />
     <ClCompile Include="System\WeatherSystem.cpp" />
     <ClCompile Include="TAAU\TaauResolveShader.cpp" />
@@ -733,6 +739,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </None>
     <None Include="Shape\HUD\HUD.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shape\Primitive\Primitive.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
@@ -1322,6 +1332,17 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Shape\Primitive\PrimitiveWireframeMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Shape\Primitive\PrimitiveWireframePS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Shape\Primitive\PrimitiveWireframeVS.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>

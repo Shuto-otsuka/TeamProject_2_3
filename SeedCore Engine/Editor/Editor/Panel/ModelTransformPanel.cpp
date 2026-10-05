@@ -2,7 +2,6 @@
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
-#include <External/ImGui/Include/imgui_internal.h>
 #include <GraphicsEngine/Model/Crister.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
@@ -105,13 +104,13 @@ namespace SeedCore
 	{
 		if (!show_)
 		{
-			context_.modelTransformPreviewContext_.previewActive_ = false;
-			context_.modelTransformPreviewContext_.previewWorldMatrix_ = Matrix::Identity;
+			context_.preview_.modelTransform_.active_ = false;
+			context_.preview_.modelTransform_.worldMatrix_ = Matrix::Identity;
 			return;
 		}
 
-		context_.modelTransformPreviewContext_.previewActive_ = false;
-		context_.modelTransformPreviewContext_.previewWorldMatrix_ = Matrix::Identity;
+		context_.preview_.modelTransform_.active_ = false;
+		context_.preview_.modelTransform_.worldMatrix_ = Matrix::Identity;
 
 		ImGui::DockBuilderDockWindow("モデル変換", context_.graphics_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
@@ -169,21 +168,21 @@ namespace SeedCore
 
 	void ModelTransformPanel::DrawPreview()
 	{
-		context_.modelTransformPreviewContext_.previewActive_ = true;
-		context_.modelTransformPreviewContext_.previewMeshAssetId_ = targetMeshAssetId_;
+		context_.preview_.modelTransform_.active_ = true;
+		context_.preview_.modelTransform_.meshAssetID_ = targetMeshAssetId_;
 
 		/// [EN] Mirrors Crister::ApplyTransformConversion's fullTransform exactly,
 		///      so the preview is a WYSIWYG of what 適用 will apply.
 		/// [JP] Crister::ApplyTransformConversion の fullTransform と厳密に一致
 		///      させる。適用 した結果をそのままプレビューできるように。
 		Matrix baseTransformLinearBasis = Matrix::CreateScale(baseTransformScale_.x, baseTransformScale_.y, baseTransformScale_.z) * Matrix::CreateFromYawPitchRoll(ToRadians(baseTransformRotation_.y), ToRadians(baseTransformRotation_.x), ToRadians(baseTransformRotation_.z));
-		context_.modelTransformPreviewContext_.previewWorldMatrix_ = Matrix::CreateTranslation(-baseTransformPivot_) * baseTransformLinearBasis * Matrix::CreateTranslation(baseTransformPivot_ + baseTransformPosition_);
+		context_.preview_.modelTransform_.worldMatrix_ = Matrix::CreateTranslation(-baseTransformPivot_) * baseTransformLinearBasis * Matrix::CreateTranslation(baseTransformPivot_ + baseTransformPosition_);
 
 		ImVec2 previewSize = ImGui::GetContentRegionAvail();
 		previewSize.y = Max(previewSize.y - ImGui::GetFrameHeightWithSpacing(), 100.0f);
-		if (context_.cameraContext_.modelTransformCamera_)
+		if (context_.preview_.modelTransform_.camera_)
 		{
-			context_.cameraContext_.modelTransformCamera_->Resize(previewSize.x, previewSize.y);
+			context_.preview_.modelTransform_.camera_->Resize(previewSize.x, previewSize.y);
 		}
 
 		ImVec2 imagePosition = ImGui::GetCursorScreenPos();
@@ -204,14 +203,14 @@ namespace SeedCore
 		Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
 		Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
 
-		if (!ImGuizmo::IsUsing() && !ImGuizmo::IsOver() && ImGui::IsItemHovered() && context_.cameraContext_.modelTransformCamera_ && context_.cameraContext_.modelTransformCameraController_)
+		if (!ImGuizmo::IsUsing() && !ImGuizmo::IsOver() && ImGui::IsItemHovered() && context_.preview_.modelTransform_.camera_ && context_.preview_.modelTransform_.cameraController_)
 		{
 			if (orbitHeld || panHeld)
 			{
 				InputSystem::BeginMouseCapture();
 			}
 
-			context_.cameraContext_.modelTransformCameraController_->Update(*context_.cameraContext_.modelTransformCamera_, ImGui::GetIO().DeltaTime);
+			context_.preview_.modelTransform_.cameraController_->Update(*context_.preview_.modelTransform_.camera_, ImGui::GetIO().DeltaTime);
 		}
 
 		if (!orbitHeld && !panHeld)
@@ -247,15 +246,15 @@ namespace SeedCore
 			baseTransformGizmoOperation_ = ImGuizmo::SCALE;
 		}
 
-		if (context_.cameraContext_.modelTransformCamera_)
+		if (context_.preview_.modelTransform_.camera_)
 		{
 			ImGuizmo::SetDrawlist();
 			ImGuizmo::SetRect(imagePosition.x, imagePosition.y, previewSize.x, previewSize.y);
 			ImGuizmo::SetOrthographic(false);
 			ImGuizmo::AllowAxisFlip(false);
 
-			Matrix view = context_.cameraContext_.modelTransformCamera_->View();
-			Matrix projection = context_.cameraContext_.modelTransformCamera_->Projection();
+			Matrix view = context_.preview_.modelTransform_.camera_->View();
+			Matrix projection = context_.preview_.modelTransform_.camera_->Projection();
 
 			/// [EN] The anchor: pivot/position/rotation/scale collapsed into the
 			///      single matrix ImGuizmo manipulates, placed at pivot+position

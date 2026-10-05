@@ -7,6 +7,7 @@
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <GraphicsEngine/Model/Crister.h>
 #include <GraphicsEngine/Model/Mesh.h>
+#include <FoundationEngine/World/ECS/Component/Transform.h>
 
 namespace SeedCore
 {
@@ -218,7 +219,7 @@ namespace SeedCore
 		const Position* position = actor.GetComponent<Position>();
 		const Rotation* rotation = actor.GetComponent<Rotation>();
 		desc.position_ = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
-		desc.rotation_ = rotation ? rotation->Quat() : Quaternion::Identity;
+		desc.rotation_ = rotation ? Transform::Quat(*rotation) : Quaternion::Identity;
 
 		/// [EN] On failure the soft body stays pending and is tried again next frame.
 		/// [JP] 失敗したら構築待ちのまま残り、次のフレームで再び試す。

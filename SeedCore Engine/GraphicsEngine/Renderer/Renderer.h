@@ -26,6 +26,7 @@
 #include <GraphicsEngine/Renderer/OutlineRenderer.h>
 #include <GraphicsEngine/Renderer/HUDComposeRenderer.h>
 #include <GraphicsEngine/Renderer/ColliderRenderer.h>
+#include <GraphicsEngine/Renderer/ShapeRenderer.h>
 #include <GraphicsEngine/Renderer/RaytracingRenderer.h>
 #include <GraphicsEngine/Renderer/SkyRenderer.h>
 #include <GraphicsEngine/Renderer/TimelineRenderer.h>
@@ -100,7 +101,9 @@ namespace SeedCore
 		void EndAvatarFrame(D3D12CommandList* cmdList);
 
 	public:
-		void GatherColliders(World& world);
+		void UploadColliders(std::span<const ColliderDesc> colliders);
+
+		void UploadShapes(std::span<const ShapeDesc> shapes);
 
 		void GatherTimelinePreview(LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix);
 
@@ -195,6 +198,8 @@ namespace SeedCore
 		ResourcePtr<HUDComposeRenderer> hudComposeRenderer_;
 
 		ResourcePtr<ColliderRenderer> colliderRenderer_;
+
+		ResourcePtr<ShapeRenderer> shapeRenderer_;
 
 		ResourcePtr<RaytracingRenderer> raytracingRenderer_;
 

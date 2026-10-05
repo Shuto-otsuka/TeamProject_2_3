@@ -36,50 +36,6 @@ namespace SeedCore
 		/// [JP] クォータニオンのスカラー成分。恒等回転では 1 となる。
 		SC_SERIALIZE_FIELD()
 		Float w_;
-
-		/**
-		* [EN]
-		* Returns the quaternion stored by this component.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このコンポーネントが保持するクォータニオンを返す。
-		*/
-		[[nodiscard]] Quaternion Quat()const noexcept
-		{
-			return Quaternion(x_, y_, z_, w_);
-		}
-
-		/**
-		* [EN]
-		* Returns the stored rotation as Euler angles in radians.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 保持する回転をラジアン単位のオイラー角として返す。
-		*/
-		[[nodiscard]] Vector3 Euler()const noexcept
-		{
-			return Quat().ToEuler();
-		}
-
-		/**
-		* [EN]
-		* Returns the stored rotation as Euler angles in degrees for editor and asset UI.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* エディターおよびアセット UI 用に、保持する回転を度数のオイラー角として返す。
-		*/
-		[[nodiscard]] Vector3 Degree()const noexcept
-		{
-			Vector3 euler = Euler();
-			return Vector3(ToDegrees(euler.x), ToDegrees(euler.y), ToDegrees(euler.z));
-		}
-
 	};
 	REGISTER_COMPONENT(Rotation, "Core", ComponentStorage::Archetype);
 }

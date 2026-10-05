@@ -159,11 +159,11 @@ namespace SeedCore
 	private:
 		/// [EN] How long a plugin DLL's write time must stay unchanged before a reload fires - MSBuild can touch a file's write time more than once while writing it.
 		/// [JP] リロードが発火するまでに、プラグイン DLL の更新時刻が変化なしで安定していなければならない時間 - MSBuild は書き込み中に最終更新時刻を複数回更新することがある。
-		static constexpr Uint64 stableWindowMilliseconds_ = 500;
+		SC_CONST Uint64 stableWindowMilliseconds_ = 500;
 
 		/// [EN] How often the plugin directory is rescanned for added / removed DLLs.
 		/// [JP] プラグインディレクトリの DLL 追加/削除を再スキャンする間隔。
-		static constexpr Uint64 rescanIntervalMilliseconds_ = 500;
+		SC_CONST Uint64 rescanIntervalMilliseconds_ = 500;
 
 		/**
 		* [EN]

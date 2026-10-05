@@ -2,7 +2,6 @@
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
-#include <External/ImGui/Include/imgui_internal.h>
 #include <GraphicsEngine/Graphics.h>
 #include <GraphicsEngine/Camera/PreviewCamera.h>
 #include <GraphicsEngine/Camera/PreviewCameraController.h>
@@ -247,8 +246,8 @@ namespace SeedCore
 
 	void AvatarPanel::Draw()
 	{
-		context_.avatarPreviewContext_.previewActive_ = false;
-		context_.avatarPreviewContext_.mesh_ = nullptr;
+		context_.preview_.avatar_.active_ = false;
+		context_.preview_.avatar_.mesh_ = nullptr;
 		isFocused_ = false;
 
 		if (!show_)
@@ -285,18 +284,18 @@ namespace SeedCore
 				pendingAnimalGroup_ = -1;
 			}
 
-			if ((kindChanged || !cameraReady_) && context_.cameraContext_.avatarCamera_)
+			if ((kindChanged || !cameraReady_) && context_.preview_.avatar_.camera_)
 			{
 				cameraReady_ = true;
 				if (kind_ == AvatarKind::Human)
 				{
-					context_.cameraContext_.avatarCamera_->Focus(Vector3(0.0f, 0.05f, 0.0f));
-					context_.cameraContext_.avatarCamera_->Eye(Vector3(0.6f, 0.25f, 2.6f));
+					context_.preview_.avatar_.camera_->Focus(Vector3(0.0f, 0.05f, 0.0f));
+					context_.preview_.avatar_.camera_->Eye(Vector3(0.6f, 0.25f, 2.6f));
 				}
 				else
 				{
-					context_.cameraContext_.avatarCamera_->Focus(Vector3(0.0f, 0.45f, 0.0f));
-					context_.cameraContext_.avatarCamera_->Eye(Vector3(1.7f, 0.75f, 2.2f));
+					context_.preview_.avatar_.camera_->Focus(Vector3(0.0f, 0.45f, 0.0f));
+					context_.preview_.avatar_.camera_->Eye(Vector3(1.7f, 0.75f, 2.2f));
 				}
 			}
 
@@ -352,9 +351,9 @@ namespace SeedCore
 				ImVec2 previewSize = ImGui::GetContentRegionAvail();
 				previewSize.y = Max(previewSize.y, 100.0f);
 
-				if (context_.cameraContext_.avatarCamera_)
+				if (context_.preview_.avatar_.camera_)
 				{
-					context_.cameraContext_.avatarCamera_->Resize(previewSize.x, previewSize.y);
+					context_.preview_.avatar_.camera_->Resize(previewSize.x, previewSize.y);
 				}
 
 				ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
@@ -362,13 +361,13 @@ namespace SeedCore
 				Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
 				Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
 
-				if (ImGui::IsItemHovered() && context_.cameraContext_.avatarCamera_ && context_.cameraContext_.avatarCameraController_)
+				if (ImGui::IsItemHovered() && context_.preview_.avatar_.camera_ && context_.preview_.avatar_.cameraController_)
 				{
 					if (orbitHeld || panHeld)
 					{
 						InputSystem::BeginMouseCapture();
 					}
-					context_.cameraContext_.avatarCameraController_->Update(*context_.cameraContext_.avatarCamera_, ImGui::GetIO().DeltaTime);
+					context_.preview_.avatar_.cameraController_->Update(*context_.preview_.avatar_.camera_, ImGui::GetIO().DeltaTime);
 				}
 
 				if (!orbitHeld && !panHeld)
@@ -378,26 +377,25 @@ namespace SeedCore
 
 				if (mesh->Created())
 				{
-					context_.avatarPreviewContext_.previewActive_ = true;
-					context_.avatarPreviewContext_.mesh_ = &*mesh;
+					context_.preview_.avatar_.active_ = true;
+					context_.preview_.avatar_.mesh_ = &*mesh;
 					if (kind_ == AvatarKind::Human)
 					{
-						context_.avatarPreviewContext_.positions_ = humanEvaluator_.Positions();
-						context_.avatarPreviewContext_.normals_ = humanEvaluator_.Normals();
-						context_.avatarPreviewContext_.boneCount_ = humanModel_.BoneCount();
+						context_.preview_.avatar_.positions_ = humanEvaluator_.Positions();
+						context_.preview_.avatar_.normals_ = humanEvaluator_.Normals();
+						context_.preview_.avatar_.boneCount_ = humanModel_.BoneCount();
 					}
 					else
 					{
-						context_.avatarPreviewContext_.positions_ = animalEvaluator_.Positions();
-						context_.avatarPreviewContext_.normals_ = animalEvaluator_.Normals();
-						context_.avatarPreviewContext_.boneCount_ = animalModel_.BoneCount();
+						context_.preview_.avatar_.positions_ = animalEvaluator_.Positions();
+						context_.preview_.avatar_.normals_ = animalEvaluator_.Normals();
+						context_.preview_.avatar_.boneCount_ = animalModel_.BoneCount();
 					}
-					context_.avatarPreviewContext_.previewWorldMatrix_ = Matrix::Identity;
 
-					context_.avatarPreviewContext_.regionCount_ = ActiveRegionCount();
+					context_.preview_.avatar_.regionCount_ = ActiveRegionCount();
 					for (Uint32 regionIndex = 0; regionIndex < regionSlotCount_; regionIndex++)
 					{
-						context_.avatarPreviewContext_.regionTextureIndices_[regionIndex] = regionTextureIndices_[regionIndex];
+						context_.preview_.avatar_.regionTextureIndices_[regionIndex] = regionTextureIndices_[regionIndex];
 					}
 				}
 			}

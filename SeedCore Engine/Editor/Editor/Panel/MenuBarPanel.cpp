@@ -1,6 +1,23 @@
 #include <Editor/Editor/Panel/MenuBarPanel.h>
 #include <Editor/Editor/Context/EditorContext.h>
+#include <Editor/Editor/Build/AtomCraft.h>
+#include <Editor/Editor/Panel/LayerSettingsPanel.h>
+#include <Editor/Editor/Panel/AnimatorControllerPanel.h>
+#include <Editor/Editor/Panel/TimelinePanel.h>
+#include <Editor/Editor/Panel/SkeletonControllerPanel.h>
+#include <Editor/Editor/Panel/MaterialViewerPanel.h>
+#include <Editor/Editor/Panel/ModelTransformPanel.h>
+#include <Editor/Editor/Panel/AvatarPanel.h>
+#include <Editor/Editor/Panel/BootScreenPanel.h>
+#include <Editor/Editor/Panel/ShortCutKeyPanel.h>
+#include <Editor/Editor/Panel/SpecMemoPanel.h>
+#include <Editor/Editor/Panel/DiagnosticsPanel.h>
+#include <Editor/Editor/Panel/TodoListPanel.h>
+#include <Editor/Editor/Panel/VersionPanel.h>
+#include <Editor/Editor/Panel/ConfigPanel.h>
 #include <FoundationEngine/File/FileDialog.h>
+#include <FoundationEngine/Resource/Config/EditorConfig.h>
+#include <GraphicsEngine/Model/Animation/Animator.h>
 #include <FoundationEngine/Log/Notice.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Resource/Scene/Scene.h>
@@ -54,15 +71,15 @@ namespace SeedCore
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F1, false))
 		{
-			shortCutKeyRequested_ = true;
+			context_.panel_.shortCutKey_->Open();
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F2, false))
 		{
-			specMemoRequested_ = true;
+			context_.panel_.specMemo_->Open();
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F3, false))
 		{
-			consoleRequested_ = true;
+			context_.panel_.diagnostics_->ShowConsoleTab();
 		}
 		if (io.KeyAlt && ImGui::IsKeyPressed(ImGuiKey_F4, false))
 		{
@@ -70,15 +87,15 @@ namespace SeedCore
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F4, false))
 		{
-			profilerRequested_ = true;
+			context_.panel_.diagnostics_->ShowProfilerTab();
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F8, false))
 		{
-			todoListRequested_ = true;
+			context_.panel_.todoList_->Open();
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F9, false))
 		{
-			versionRequested_ = true;
+			context_.panel_.version_->Open();
 		}
 
 		if (ImGui::BeginMainMenuBar())
@@ -129,7 +146,7 @@ namespace SeedCore
 				ImGui::Separator();
 				if (ImGui::MenuItem("レイヤー編集"))
 				{
-					layerSettingsRequested_ = true;
+					context_.panel_.layerSettings_->Open();
 				}
 				ImGui::EndMenu();
 			}
@@ -138,23 +155,24 @@ namespace SeedCore
 			{
 				if (ImGui::MenuItem("アニメーターコントローラー"))
 				{
-					animatorControllerRequested_ = true;
+					Animator* animator = context_.selection_.Primary() ? const_cast<Animator*>(context_.selection_.Primary().GetComponent<Animator>()) : nullptr;
+					context_.panel_.animatorController_->Open(animator);
 				}
 				if (ImGui::MenuItem("タイムライン"))
 				{
-					timelineRequested_ = true;
+					context_.panel_.timeline_->Open();
 				}
 				if (ImGui::MenuItem("スケルトンコントローラー"))
 				{
-					skeletonControllerRequested_ = true;
+					context_.panel_.skeletonController_->Open();
 				}
 				if (ImGui::MenuItem("マテリアルビューア"))
 				{
-					materialViewerRequested_ = true;
+					context_.panel_.materialViewer_->Open();
 				}
 				if (ImGui::MenuItem("モデル変換"))
 				{
-					modelTransformRequested_ = true;
+					context_.panel_.modelTransform_->Open();
 				}
 				ImGui::EndMenu();
 			}
@@ -165,17 +183,21 @@ namespace SeedCore
 			{
 				if (ImGui::MenuItem("アバター生成"))
 				{
-					avatarRequested_ = true;
+					context_.panel_.avatar_->Open();
 				}
 				if (ImGui::MenuItem("起動ローディング画面"))
 				{
-					bootScreenRequested_ = true;
+					context_.panel_.bootScreen_->Open();
 				}
 				if (ImGui::BeginMenu("CRI ADX2"))
 				{
 					if (ImGui::MenuItem("AtomCraft を開く"))
 					{
-						atomCraftRequested_ = true;
+						std::filesystem::path projectPath;
+						if (FileDialog::OpenFile(projectPath, std::filesystem::current_path(), L"Atom Craft Project (*.atmcproject)", L"*.atmcproject"))
+						{
+							AtomCraft::Open(context_.config_.editor_->atomCraftPath_, String(projectPath.generic_string()));
+						}
 					}
 					ImGui::EndMenu();
 				}
@@ -186,34 +208,34 @@ namespace SeedCore
 			{
 				if (ImGui::MenuItem("ショートカットキー一覧", "Ctrl+F1"))
 				{
-					shortCutKeyRequested_ = true;
+					context_.panel_.shortCutKey_->Open();
 				}
 				if (ImGui::MenuItem("仕様メモ", "Ctrl+F2"))
 				{
-					specMemoRequested_ = true;
+					context_.panel_.specMemo_->Open();
 				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("コンソール", "Ctrl+F3"))
 				{
-					consoleRequested_ = true;
+					context_.panel_.diagnostics_->ShowConsoleTab();
 				}
 				if (ImGui::MenuItem("パフォーマンスプロファイラー", "Ctrl+F4"))
 				{
-					profilerRequested_ = true;
+					context_.panel_.diagnostics_->ShowProfilerTab();
 				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("ToDoリスト", "Ctrl+F8"))
 				{
-					todoListRequested_ = true;
+					context_.panel_.todoList_->Open();
 				}
 				if (ImGui::MenuItem("バージョン情報", "Ctrl+F9"))
 				{
-					versionRequested_ = true;
+					context_.panel_.version_->Open();
 				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("エンジン/ゲーム構成設定"))
 				{
-					configRequested_ = true;
+					context_.panel_.config_->Open();
 				}
 				ImGui::EndMenu();
 			}
@@ -286,166 +308,6 @@ namespace SeedCore
 		}
 	}
 
-	Bool MenuBarPanel::ConsumeShortCutKeyRequest()
-	{
-		if (shortCutKeyRequested_)
-		{
-			shortCutKeyRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeSpecMemoRequest()
-	{
-		if (specMemoRequested_)
-		{
-			specMemoRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeConsoleRequest()
-	{
-		if (consoleRequested_)
-		{
-			consoleRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeProfilerRequest()
-	{
-		if (profilerRequested_)
-		{
-			profilerRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeTodoListRequest()
-	{
-		if (todoListRequested_)
-		{
-			todoListRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeVersionRequest()
-	{
-		if (versionRequested_)
-		{
-			versionRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeAtomCraftRequest()
-	{
-		if (atomCraftRequested_)
-		{
-			atomCraftRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeConfigRequest()
-	{
-		if (configRequested_)
-		{
-			configRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeLayerSettingsRequest()
-	{
-		if (layerSettingsRequested_)
-		{
-			layerSettingsRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeAnimatorControllerRequest()
-	{
-		if (animatorControllerRequested_)
-		{
-			animatorControllerRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeTimelineRequest()
-	{
-		if (timelineRequested_)
-		{
-			timelineRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeSkeletonControllerRequest()
-	{
-		if (skeletonControllerRequested_)
-		{
-			skeletonControllerRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeMaterialViewerRequest()
-	{
-		if (materialViewerRequested_)
-		{
-			materialViewerRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeModelTransformRequest()
-	{
-		if (modelTransformRequested_)
-		{
-			modelTransformRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeAvatarRequest()
-	{
-		if (avatarRequested_)
-		{
-			avatarRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeBootScreenRequest()
-	{
-		if (bootScreenRequested_)
-		{
-			bootScreenRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
 	void MenuBarPanel::BuildRuntime()
 	{
 		if (runtimeBuilder_.IsBuilding())
@@ -498,6 +360,7 @@ namespace SeedCore
 			context_.sceneVisual_.qualityPreset_ = GraphicsQualityPreset::Custom;
 			context_.scene_.path_ = FilePath(path, context_.world_.resource_->ProjectRootPath());
 			context_.selection_.Clear();
+			context_.scene_.history_.Clear();
 			SC_LOG_NOTICE("シーンを読み込みました: {}", path.string());
 			break;
 		}
@@ -515,6 +378,7 @@ namespace SeedCore
 			context_.sceneVisual_.qualityPreset_ = GraphicsQualityPreset::Custom;
 			context_.scene_.path_ = FilePath(context_.world_.resource_->GetAsset(assetID)->fullpath_.c_str(), context_.world_.resource_->ProjectRootPath());
 			context_.selection_.Clear();
+			context_.scene_.history_.Clear();
 			SC_LOG_NOTICE("シーンを読み込みました: {}", context_.scene_.path_.FullPath().string());
 			break;
 		}
@@ -532,6 +396,7 @@ namespace SeedCore
 
 		context_.scene_.path_ = FilePath();
 		context_.selection_.Clear();
+		context_.scene_.history_.Clear();
 
 		SC_LOG_NOTICE("新規シーンを作成しました");
 	}

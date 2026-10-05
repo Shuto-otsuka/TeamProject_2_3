@@ -58,7 +58,7 @@ namespace SeedCore
 		/// [JP] フラグメントバッファ: RWStructuredBuffer、width * height *
 		///      poolLayers 要素（poolByteBudget_ で上限クランプ）。
 		{
-			static constexpr Uint fragmentStride = 16;
+			SC_CONST Uint fragmentStride = 16;
 			Uint64 fragmentCount = static_cast<Uint64>(width) * height * poolLayers_;
 			Uint64 budgetFragmentCount = poolByteBudget_ / fragmentStride;
 			if (fragmentCount > budgetFragmentCount)

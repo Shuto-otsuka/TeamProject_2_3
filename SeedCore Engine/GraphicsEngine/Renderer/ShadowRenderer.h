@@ -284,11 +284,11 @@ namespace SeedCore
 	private:
 		/// [EN] History slots per view: one written this frame, one holding the previous frame.
 		/// [JP] ビューごとの履歴のスロットの数。今フレームに書き込む 1 つと、前フレームを持つ 1 つ。
-		static constexpr Uint32 accumulationSlotCount_ = 2;
+		SC_CONST Uint32 accumulationSlotCount_ = 2;
 
 		/// [EN] Number of views that keep their own history (editor and game).
 		/// [JP] 独自の履歴を持つビューの数（エディターとゲーム）。
-		static constexpr Uint32 viewCount_ = 2;
+		SC_CONST Uint32 viewCount_ = 2;
 
 		/// [EN] Compute shader and pipeline of ShadowRT.hlsl.
 		/// [JP] ShadowRT.hlsl のコンピュートシェーダーとパイプライン。

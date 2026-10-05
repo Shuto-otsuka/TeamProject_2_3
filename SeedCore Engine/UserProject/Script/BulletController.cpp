@@ -27,9 +27,7 @@ void BulletController::SetParam(SeedCore::Vector3 startPosition,SeedCore::Vector
     rotation = world.GetComponent<SeedCore::Rotation>(entity);
 
     //初期位置をセット
-    position->x_ = startPosition.x;
-    position->y_ = startPosition.y;
-    position->z_ = startPosition.z;
+    SeedCore::Transform::Vector(*position, startPosition);
 
     //進行方向をセット
     this->moveDirection = moveDirection;
@@ -48,11 +46,9 @@ void BulletController::SetParam(SeedCore::Vector3 startPosition,SeedCore::Vector
 void BulletController::Move(float elapsedTime)
 {
     //移動処理
-    SeedCore::Vector3 pos = position->Vector();
+    SeedCore::Vector3 pos = SeedCore::Transform::Vector(*position);
     pos += moveDirection * speed * elapsedTime;
-    position->x_ = pos.x;
-    position->y_ = pos.y;
-    position->z_ = pos.z;
+    SeedCore::Transform::Vector(*position, pos);
 }
 
 void BulletController::Turn(float elapsedTime)
@@ -61,12 +57,9 @@ void BulletController::Turn(float elapsedTime)
     //回転分のクォータニオンを作成
     SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(turnAxis, turnSpeed * elapsedTime);
     //現在のクォータニオンに合成
-    quaternion = quaternion * rotation->Quat();
+    quaternion = quaternion * SeedCore::Transform::Quat(*rotation);
     //クォータニオンを適応
-    rotation->x_ = quaternion.x;
-    rotation->y_ = quaternion.y;
-    rotation->z_ = quaternion.z;
-    rotation->w_ = quaternion.w;
+    SeedCore::Transform::Quat(*rotation, quaternion);
 }
 
 void BulletController::UpdateAliveTime(float elapsedTime)

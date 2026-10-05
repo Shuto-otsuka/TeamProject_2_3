@@ -394,15 +394,15 @@ namespace SeedCore
 	private:
 		/// [EN] The cloud texture is 1/resolutionDivisor_ of the render size on each axis and is upsampled bilinearly by DeferredLightingPS.hlsl. Clouds are a low-frequency signal, so a divisor of N cuts the cost by N^2 at the price of softer edges; 1 renders at full resolution.
 		/// [JP] 雲テクスチャは各軸でレンダーサイズの 1/resolutionDivisor_ とし、DeferredLightingPS.hlsl がバイリニアで拡大する。雲は低周波な信号なので、N で割るとコストは N^2 分の 1 になり、代償は輪郭が柔らかくなることだけ。1 ならフル解像度で描く。
-		static constexpr Uint32 resolutionDivisor_ = 1;
+		SC_CONST Uint32 resolutionDivisor_ = 1;
 
 		/// [EN] Edge length in texels of the Perlin-Worley shape-noise volume.
 		/// [JP] Perlin-Worley 形状ノイズボリュームの一辺のテクセル数。
-		static constexpr Uint32 shapeNoiseSize_ = 128;
+		SC_CONST Uint32 shapeNoiseSize_ = 128;
 
 		/// [EN] Edge length in texels of the Worley detail-noise volume.
 		/// [JP] Worley ディテールノイズボリュームの一辺のテクセル数。
-		static constexpr Uint32 detailNoiseSize_ = 64;
+		SC_CONST Uint32 detailNoiseSize_ = 64;
 
 		/// [EN] Raymarch and noise-bake compute shaders of the cloud pass.
 		/// [JP] 雲パスのレイマーチ用とノイズ焼き込み用のコンピュートシェーダー。

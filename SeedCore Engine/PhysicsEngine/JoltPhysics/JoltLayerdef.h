@@ -63,21 +63,21 @@ namespace SeedCore
 	 */
 	namespace Layers
 	{
-		static constexpr JPH::ObjectLayer STATIC    = 0;
-		static constexpr JPH::ObjectLayer KINEMATIC = 1;
-		static constexpr JPH::ObjectLayer DYNAMIC   = 2;
+		SC_CONST JPH::ObjectLayer STATIC    = 0;
+		SC_CONST JPH::ObjectLayer KINEMATIC = 1;
+		SC_CONST JPH::ObjectLayer DYNAMIC   = 2;
 
 		/// [EN] Number of low bits a packed ObjectLayer reserves for the motion type; the remaining high bits hold the Actor's LayerRegistry slot index.
 		/// [JP] パックされた ObjectLayer が運動タイプ用に確保する下位ビット数。残りの上位ビットは Actor の LayerRegistry スロットインデックスを保持する。
-		static constexpr JPH::uint MOTION_TYPE_BITS = 2;
+		SC_CONST JPH::uint MOTION_TYPE_BITS = 2;
 
 		/// [EN] Topmost ObjectLayer bit, set on bodies simulated on the 2D canvas (Rect/CircleCollider). OR'd onto a Pack result; bodies with and without it never collide.
 		/// [JP] ObjectLayer の最上位ビット。2D Canvas 上でシミュレートされるボディ（Rect/CircleCollider）に立てる。Pack の結果に OR して使い、このビットの有無が異なるボディ同士は衝突しない。
-		static constexpr JPH::ObjectLayer PLANAR = static_cast<JPH::ObjectLayer>(1u << 15);
+		SC_CONST JPH::ObjectLayer PLANAR = static_cast<JPH::ObjectLayer>(1u << 15);
 
 		/// [EN] Distinct packed ObjectLayer values below the PLANAR bit: one motion-type slot per LayerRegistry slot. A 2D body's layer is one of these with PLANAR added.
 		/// [JP] PLANAR ビットより下の、パック済み ObjectLayer の総数: LayerRegistry の各スロットにつき1つの運動タイプスロット。2D ボディのレイヤーは、このいずれかに PLANAR を加えたもの。
-		static constexpr JPH::uint COUNT = static_cast<JPH::uint>(LayerRegistry::LayerCount) << MOTION_TYPE_BITS;
+		SC_CONST JPH::uint COUNT = static_cast<JPH::uint>(LayerRegistry::LayerCount) << MOTION_TYPE_BITS;
 
 		/**
 		* [EN]
@@ -136,9 +136,9 @@ namespace SeedCore
 	*/
 	namespace BPLayers
 	{
-		static constexpr JPH::BroadPhaseLayer STATIC{ 0 };
-		static constexpr JPH::BroadPhaseLayer DYNAMIC{ 1 };
-		static constexpr JPH::uint            COUNT{ 2 };
+		SC_CONST JPH::BroadPhaseLayer STATIC{ 0 };
+		SC_CONST JPH::BroadPhaseLayer DYNAMIC{ 1 };
+		SC_CONST JPH::uint            COUNT{ 2 };
 	}
 
 	/**

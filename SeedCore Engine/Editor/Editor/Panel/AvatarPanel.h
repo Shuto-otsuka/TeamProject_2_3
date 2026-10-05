@@ -35,7 +35,7 @@ namespace SeedCore
 		[[nodiscard]] Bool Focused()const;
 
 	private:
-		static constexpr Uint32 regionSlotCount_ = 4;
+		SC_CONST Uint32 regionSlotCount_ = 4;
 
 		void EnsureLoaded();
 

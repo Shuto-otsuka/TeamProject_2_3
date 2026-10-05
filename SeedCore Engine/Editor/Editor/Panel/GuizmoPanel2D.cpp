@@ -12,6 +12,7 @@
 #include <GraphicsEngine/Movie/Movie.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
+#include <FoundationEngine/World/ECS/Component/Transform.h>
 
 namespace SeedCore
 {
@@ -476,7 +477,7 @@ namespace SeedCore
 					Float* scaleData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, scaleID));
 
 					dragStartPositions_.push_back(positionData ? Vector3(positionData[0], positionData[1], positionData[2]) : Vector3::Zero);
-					dragStartRotations_.push_back(rotationData ? rotationData->Quat() : Quaternion::Identity);
+					dragStartRotations_.push_back(rotationData ? Transform::Quat(*rotationData) : Quaternion::Identity);
 					dragStartScales_.push_back(scaleData ? Vector3(scaleData[0], scaleData[1], scaleData[2]) : Vector3::One);
 				}
 			}
@@ -540,7 +541,7 @@ namespace SeedCore
 					}
 					if (rotationData)
 					{
-						Quaternion newRotation = rotationData->Quat();
+						Quaternion newRotation = Transform::Quat(*rotationData);
 						if (newRotation != dragStartRotations_[index])
 						{
 							dragCommand->Add(MakePtr<ComponentCommand<Quaternion>>(*context_.world_.world_, entity, rotationID, 0, dragStartRotations_[index], newRotation));
@@ -633,10 +634,7 @@ namespace SeedCore
 					}
 					if (rotationData && (operation & ImGuizmo::ROTATE))
 					{
-						rotationData->x_ = rotation.x;
-						rotationData->y_ = rotation.y;
-						rotationData->z_ = rotation.z;
-						rotationData->w_ = rotation.w;
+						Transform::Quat(*rotationData, rotation);
 					}
 				}
 			}

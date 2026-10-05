@@ -34,7 +34,7 @@ namespace SeedCore
 		[[nodiscard]] Uint32 OutputShaderResourceViewIndex(RaytracingView view)const;
 
 	private:
-		static constexpr Uint32 accumulationSlotCount_ = 2;
+		SC_CONST Uint32 accumulationSlotCount_ = 2;
 
 		struct TaauResolveConstantBuffer
 		{

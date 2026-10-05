@@ -133,7 +133,7 @@ namespace SeedCore
 		/// [JP] マテリアルが ShadingModel::Fur の不透明インスタンスのコピー -
 		///      シェルファー前方パスがこれらを fur_shell_count_ 回ずつ描画する。
 		DynamicArray<ModelStructuredBuffer> furInstances_;
-		static constexpr Uint32 furShellMax_ = 32;
+		SC_CONST Uint32 furShellMax_ = 32;
 
 		ResourcePtr<StaticConstantBuffer<FurConstantBuffer>> modelFurConstantBuffer_;
 

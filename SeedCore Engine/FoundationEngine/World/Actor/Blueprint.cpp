@@ -11,6 +11,7 @@
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
 #include <FoundationEngine/World/ECS/Component/UnknownComponent.h>
+#include <FoundationEngine/World/ECS/Component/Transform.h>
 
 namespace SeedCore
 {
@@ -403,7 +404,7 @@ namespace SeedCore
 		const Rotation* rotation = actor.GetComponent<Rotation>();
 		if (rotation)
 		{
-			node.rotation_ = rotation->Quat();
+			node.rotation_ = Transform::Quat(*rotation);
 		}
 
 		const Scale* scale = actor.GetComponent<Scale>();
@@ -609,26 +610,19 @@ namespace SeedCore
 		Position* position = const_cast<Position*>(actor.GetComponent<Position>());
 		if (position)
 		{
-			position->x_ = node.position_.x;
-			position->y_ = node.position_.y;
-			position->z_ = node.position_.z;
+			Transform::Vector(*position, node.position_);
 		}
 
 		Rotation* rotation = const_cast<Rotation*>(actor.GetComponent<Rotation>());
 		if (rotation)
 		{
-			rotation->x_ = node.rotation_.x;
-			rotation->y_ = node.rotation_.y;
-			rotation->z_ = node.rotation_.z;
-			rotation->w_ = node.rotation_.w;
+			Transform::Quat(*rotation, node.rotation_);
 		}
 
 		Scale* scale = const_cast<Scale*>(actor.GetComponent<Scale>());
 		if (scale)
 		{
-			scale->x_ = node.scale_.x;
-			scale->y_ = node.scale_.y;
-			scale->z_ = node.scale_.z;
+			Transform::Vector(*scale, node.scale_);
 		}
 
 		actor.Active(node.active_);
@@ -721,26 +715,19 @@ namespace SeedCore
 		Position* position = const_cast<Position*>(actor.GetComponent<Position>());
 		if (position)
 		{
-			position->x_ = node.position_.x;
-			position->y_ = node.position_.y;
-			position->z_ = node.position_.z;
+			Transform::Vector(*position, node.position_);
 		}
 
 		Rotation* rotation = const_cast<Rotation*>(actor.GetComponent<Rotation>());
 		if (rotation)
 		{
-			rotation->x_ = node.rotation_.x;
-			rotation->y_ = node.rotation_.y;
-			rotation->z_ = node.rotation_.z;
-			rotation->w_ = node.rotation_.w;
+			Transform::Quat(*rotation, node.rotation_);
 		}
 
 		Scale* scale = const_cast<Scale*>(actor.GetComponent<Scale>());
 		if (scale)
 		{
-			scale->x_ = node.scale_.x;
-			scale->y_ = node.scale_.y;
-			scale->z_ = node.scale_.z;
+			Transform::Vector(*scale, node.scale_);
 		}
 
 		/// [EN] The name lives in a component rather than on the actor, so a rename by another member is applied there.

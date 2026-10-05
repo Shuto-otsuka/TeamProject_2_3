@@ -16,38 +16,6 @@ namespace SeedCore
 
 		void Draw();
 
-		Bool ConsumeShortCutKeyRequest();
-
-		Bool ConsumeSpecMemoRequest();
-
-		Bool ConsumeConsoleRequest();
-
-		Bool ConsumeProfilerRequest();
-
-		Bool ConsumeTodoListRequest();
-
-		Bool ConsumeVersionRequest();
-
-		Bool ConsumeAtomCraftRequest();
-
-		Bool ConsumeConfigRequest();
-
-		Bool ConsumeLayerSettingsRequest();
-
-		Bool ConsumeAnimatorControllerRequest();
-
-		Bool ConsumeTimelineRequest();
-
-		Bool ConsumeSkeletonControllerRequest();
-
-		Bool ConsumeMaterialViewerRequest();
-
-		Bool ConsumeModelTransformRequest();
-
-		Bool ConsumeAvatarRequest();
-
-		Bool ConsumeBootScreenRequest();
-
 	private:
 		enum class PendingSceneOp
 		{
@@ -74,24 +42,6 @@ namespace SeedCore
 
 	private:
 		EditorContext& context_;
-
-		Bool shortCutKeyRequested_ = false;
-		Bool specMemoRequested_ = false;
-		Bool consoleRequested_ = false;
-		Bool profilerRequested_ = false;
-		Bool todoListRequested_ = false;
-		Bool versionRequested_ = false;
-		Bool atomCraftRequested_ = false;
-
-		Bool configRequested_ = false;
-		Bool layerSettingsRequested_ = false;
-		Bool animatorControllerRequested_ = false;
-		Bool timelineRequested_ = false;
-		Bool skeletonControllerRequested_ = false;
-		Bool materialViewerRequested_ = false;
-		Bool modelTransformRequested_ = false;
-		Bool avatarRequested_ = false;
-		Bool bootScreenRequested_ = false;
 
 		GraphicsMenuPanel graphicsMenuPanel_;
 		RuntimeBuilder runtimeBuilder_;

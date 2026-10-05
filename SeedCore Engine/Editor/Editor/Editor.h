@@ -31,7 +31,7 @@ namespace SeedCore
 	class Editor
 	{
 	public:
-		Editor(EditorContext& context);
+		Editor(EditorContext& context, CameraSystem& cameraSystem);
 		~Editor() = default;
 
 		Float DrawToolbar();

@@ -39,7 +39,7 @@ namespace SeedCore
 		* [JP]
 		* null（存在しない）ハンドルを返す。
 		*/
-		static constexpr Handle null()noexcept
+		SC_CONST Handle null()noexcept
 		{
 			/// [EN] The member defaults already describe the null handle.
 			/// [JP] メンバーの既定値が、そのまま null ハンドルを表している。

@@ -15,6 +15,7 @@
 #include <FoundationEngine/Utility/FlatMap.h>
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
 #include <FoundationEngine/Log/Warning.h>
+#include <FoundationEngine/Interop/QueryInstance.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <AudioEngine/Audio/Audio.h>
 
@@ -839,6 +840,28 @@ namespace SeedCore
 		*/
 		const ResourcePtr<Physics>& GetPhysics()const;
 
+		/**
+		* [EN]
+		* Returns the record of physics queries asked in this world, which Physics fills and the debug display reads and clears.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このワールドで行われた物理クエリの記録を返す。Physics が書き込み、デバッグ表示が読んで空にする。
+		*/
+		QueryInstance& GetQueryInstance();
+
+		/**
+		* [EN]
+		* Const overload of GetQueryInstance().
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* GetQueryInstance() の const オーバーロード。
+		*/
+		const QueryInstance& GetQueryInstance()const;
+
 		// ============================================================
 		// Audio
 		// ============================================================
@@ -1172,6 +1195,10 @@ namespace SeedCore
 		// ============================================================
 		// Physics
 		// ============================================================
+
+		/// [EN] Record of the physics queries asked in this world; declared before physics_, which holds a reference to it.
+		/// [JP] このワールドで行われた物理クエリの記録。これへの参照を持つ physics_ より先に宣言する。
+		QueryInstance queryInstance_;
 
 		/// [EN] This world's Physics resource.
 		/// [JP] このワールドの Physics リソース。

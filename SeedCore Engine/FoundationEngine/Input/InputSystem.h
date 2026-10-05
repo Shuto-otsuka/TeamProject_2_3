@@ -146,20 +146,20 @@ namespace SeedCore
 		*/
 		struct GamepadButton
 		{
-			static constexpr SDL_GamepadButton A = SDL_GAMEPAD_BUTTON_SOUTH;
-			static constexpr SDL_GamepadButton B = SDL_GAMEPAD_BUTTON_EAST;
-			static constexpr SDL_GamepadButton X = SDL_GAMEPAD_BUTTON_WEST;
-			static constexpr SDL_GamepadButton Y = SDL_GAMEPAD_BUTTON_NORTH;
-			static constexpr SDL_GamepadButton LeftShoulder = SDL_GAMEPAD_BUTTON_LEFT_SHOULDER;
-			static constexpr SDL_GamepadButton RightShoulder = SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER;
-			static constexpr SDL_GamepadButton LeftStick = SDL_GAMEPAD_BUTTON_LEFT_STICK;
-			static constexpr SDL_GamepadButton RightStick = SDL_GAMEPAD_BUTTON_RIGHT_STICK;
-			static constexpr SDL_GamepadButton DPadUp = SDL_GAMEPAD_BUTTON_DPAD_UP;
-			static constexpr SDL_GamepadButton DPadDown = SDL_GAMEPAD_BUTTON_DPAD_DOWN;
-			static constexpr SDL_GamepadButton DPadLeft = SDL_GAMEPAD_BUTTON_DPAD_LEFT;
-			static constexpr SDL_GamepadButton DPadRight = SDL_GAMEPAD_BUTTON_DPAD_RIGHT;
-			static constexpr SDL_GamepadButton Start = SDL_GAMEPAD_BUTTON_START;
-			static constexpr SDL_GamepadButton Back = SDL_GAMEPAD_BUTTON_BACK;
+			SC_CONST SDL_GamepadButton A = SDL_GAMEPAD_BUTTON_SOUTH;
+			SC_CONST SDL_GamepadButton B = SDL_GAMEPAD_BUTTON_EAST;
+			SC_CONST SDL_GamepadButton X = SDL_GAMEPAD_BUTTON_WEST;
+			SC_CONST SDL_GamepadButton Y = SDL_GAMEPAD_BUTTON_NORTH;
+			SC_CONST SDL_GamepadButton LeftShoulder = SDL_GAMEPAD_BUTTON_LEFT_SHOULDER;
+			SC_CONST SDL_GamepadButton RightShoulder = SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER;
+			SC_CONST SDL_GamepadButton LeftStick = SDL_GAMEPAD_BUTTON_LEFT_STICK;
+			SC_CONST SDL_GamepadButton RightStick = SDL_GAMEPAD_BUTTON_RIGHT_STICK;
+			SC_CONST SDL_GamepadButton DPadUp = SDL_GAMEPAD_BUTTON_DPAD_UP;
+			SC_CONST SDL_GamepadButton DPadDown = SDL_GAMEPAD_BUTTON_DPAD_DOWN;
+			SC_CONST SDL_GamepadButton DPadLeft = SDL_GAMEPAD_BUTTON_DPAD_LEFT;
+			SC_CONST SDL_GamepadButton DPadRight = SDL_GAMEPAD_BUTTON_DPAD_RIGHT;
+			SC_CONST SDL_GamepadButton Start = SDL_GAMEPAD_BUTTON_START;
+			SC_CONST SDL_GamepadButton Back = SDL_GAMEPAD_BUTTON_BACK;
 
 		private:
 			GamepadButton() = delete;
@@ -230,15 +230,15 @@ namespace SeedCore
 	public:
 		/// [EN] Readable alias for TriggerMode::NONE, for use at KeyState/MouseState/GamepadState call sites.
 		/// [JP] TriggerMode::NONE の読みやすいエイリアス。KeyState/MouseState/GamepadState の呼び出し箇所で使う。
-		static constexpr TriggerMode IsPressed = TriggerMode::NONE;
+		SC_CONST TriggerMode IsPressed = TriggerMode::NONE;
 
 		/// [EN] Readable alias for TriggerMode::RISING_EDGE.
 		/// [JP] TriggerMode::RISING_EDGE の読みやすいエイリアス。
-		static constexpr TriggerMode OnPressed = TriggerMode::RISING_EDGE;
+		SC_CONST TriggerMode OnPressed = TriggerMode::RISING_EDGE;
 
 		/// [EN] Readable alias for TriggerMode::FALLING_EDGE.
 		/// [JP] TriggerMode::FALLING_EDGE の読みやすいエイリアス。
-		static constexpr TriggerMode OnReleased = TriggerMode::FALLING_EDGE;
+		SC_CONST TriggerMode OnReleased = TriggerMode::FALLING_EDGE;
 
 	public:
 		/**
@@ -747,15 +747,15 @@ namespace SeedCore
 	private:
 		/// [EN] Number of tracked virtual-key slots.
 		/// [JP] 追跡する仮想キースロットの数。
-		static constexpr Int KEY_COUNT = 256;
+		SC_CONST Int KEY_COUNT = 256;
 
 		/// [EN] Number of tracked mouse buttons.
 		/// [JP] 追跡するマウスボタンの数。
-		static constexpr Int MOUSE_BUTTON_COUNT = 5;
+		SC_CONST Int MOUSE_BUTTON_COUNT = 5;
 
 		/// [EN] Number of tracked gamepad buttons.
 		/// [JP] 追跡するゲームパッドボタンの数。
-		static constexpr Int GAMEPAD_BUTTON_COUNT = SDL_GAMEPAD_BUTTON_COUNT;
+		SC_CONST Int GAMEPAD_BUTTON_COUNT = SDL_GAMEPAD_BUTTON_COUNT;
 
 		/// [EN] Whether this frame's keyboard/mouse input belongs to the game (see Update()); read by Input.
 		/// [JP] このフレームのキーボード/マウス入力をゲームに渡すか（Update() 参照）。Input が読む。

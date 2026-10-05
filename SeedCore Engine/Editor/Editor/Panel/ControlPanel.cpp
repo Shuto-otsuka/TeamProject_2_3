@@ -90,6 +90,7 @@ namespace SeedCore
 				playModeScene_.Clear();
 				context_.world_.system_->Reset();
 				context_.selection_.Clear();
+				context_.scene_.history_.Clear();
 				context_.sceneVisual_.raytracing_ = playModeRaytracing_;
 				context_.sceneVisual_.screenSpace_ = playModeScreenSpace_;
 				context_.sceneVisual_.rasterization_ = playModeRasterization_;
@@ -199,6 +200,7 @@ namespace SeedCore
 					playModeScene_.Clear();
 					context_.world_.system_->Reset();
 					context_.selection_.Clear();
+					context_.scene_.history_.Clear();
 					context_.sceneVisual_.raytracing_ = playModeRaytracing_;
 					context_.sceneVisual_.screenSpace_ = playModeScreenSpace_;
 					context_.sceneVisual_.rasterization_ = playModeRasterization_;

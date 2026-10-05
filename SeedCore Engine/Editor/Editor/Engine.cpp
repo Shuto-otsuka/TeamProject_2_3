@@ -79,19 +79,18 @@ namespace SeedCore
 		editorContext_.view_.editor_.camera_ = &editorCamera_;
 		editorContext_.view_.editor_.cameraController_ = &editorCameraController_;
 		editorContext_.view_.canvas_.camera_ = &canvasCamera_;
-		editorContext_.cameraContext_.timelineCamera_ = &timelineCamera_;
-		editorContext_.cameraContext_.modelTransformCamera_ = &modelTransformCamera_;
-		editorContext_.cameraContext_.materialCamera_ = &materialCamera_;
-		editorContext_.cameraContext_.skeletonControllerCamera_ = &skeletonControllerCamera_;
-		editorContext_.cameraContext_.avatarCamera_ = &avatarCamera_;
-		editorContext_.cameraContext_.timelineCameraController_ = &timelineCameraController_;
-		editorContext_.cameraContext_.modelTransformCameraController_ = &modelTransformCameraController_;
-		editorContext_.cameraContext_.materialCameraController_ = &materialCameraController_;
-		editorContext_.cameraContext_.skeletonControllerCameraController_ = &skeletonControllerCameraController_;
-		editorContext_.cameraContext_.avatarCameraController_ = &avatarCameraController_;
+		editorContext_.preview_.timeline_.camera_ = &timelineCamera_;
+		editorContext_.preview_.timeline_.cameraController_ = &timelineCameraController_;
+		editorContext_.preview_.modelTransform_.camera_ = &modelTransformCamera_;
+		editorContext_.preview_.modelTransform_.cameraController_ = &modelTransformCameraController_;
+		editorContext_.preview_.material_.camera_ = &materialCamera_;
+		editorContext_.preview_.material_.cameraController_ = &materialCameraController_;
+		editorContext_.preview_.skeletonController_.camera_ = &skeletonControllerCamera_;
+		editorContext_.preview_.skeletonController_.cameraController_ = &skeletonControllerCameraController_;
+		editorContext_.preview_.avatar_.camera_ = &avatarCamera_;
+		editorContext_.preview_.avatar_.cameraController_ = &avatarCameraController_;
 		editorContext_.graphics_.graphics_ = graphics_.get();
 		editorContext_.graphics_.imgui_ = imgui_.get();
-		editorContext_.cameraContext_.cameraSystem_ = &cameraSystem_;
 
 		InputSystem::Initialize();
 		LayerRegistry::Load();
@@ -156,7 +155,7 @@ namespace SeedCore
 			}
 		}
 
-		editor_ = MakePtr<Editor>(editorContext_);
+		editor_ = MakePtr<Editor>(editorContext_, cameraSystem_);
 	}
 
 	void Engine::Shutdown()
@@ -390,42 +389,43 @@ namespace SeedCore
 				graphics_->Raytracing(editor_->GetRaytracingSettings());
 				graphics_->Upscale(gameConfig_.useDlss_, gameConfig_.upscaleMode_);
 				graphics_->VerticalSync(gameConfig_.vsync_);
+				graphics_->ShapeVisible(editorContext_.view_.editor_.shapeVisible_);
 
 				graphics_->EditorRender(worldTimer_, editorCamera_, *loaderSystem_, *resource_, *world_, editorContext_.view_.editor_.viewMode_, editor_->GetSelectedEntities());
 				graphics_->GameRender(gameTimer_, cameraSystem_, *loaderSystem_, *resource_, *world_);
 				graphics_->CanvasRender(worldTimer_, canvasCamera_, *loaderSystem_, *resource_, *world_);
 
-				if (editorContext_.timelinePreviewContext_.previewActive_)
+				const PreviewContext& preview = editorContext_.preview_;
+
+				if (preview.timeline_.active_)
 				{
-					graphics_->TimelineRender(worldTimer_, timelineCamera_, *loaderSystem_, *resource_, editorContext_.timelinePreviewContext_.previewMeshAssetId_, editorContext_.timelinePreviewContext_.previewAnimationAssetId_, editorContext_.timelinePreviewContext_.previewTime_, Matrix::Identity);
+					graphics_->TimelineRender(worldTimer_, timelineCamera_, *loaderSystem_, *resource_, preview.timeline_.meshAssetID_, preview.timeline_.animationAssetID_, preview.timeline_.time_, Matrix::Identity);
 				}
 
-				if (editorContext_.modelTransformPreviewContext_.previewActive_)
+				if (preview.modelTransform_.active_)
 				{
-					graphics_->ModelTransformRender(worldTimer_, modelTransformCamera_, *loaderSystem_, *resource_, editorContext_.modelTransformPreviewContext_.previewMeshAssetId_, 0, 0.0f, editorContext_.modelTransformPreviewContext_.previewWorldMatrix_);
+					graphics_->ModelTransformRender(worldTimer_, modelTransformCamera_, *loaderSystem_, *resource_, preview.modelTransform_.meshAssetID_, 0, 0.0f, preview.modelTransform_.worldMatrix_);
 				}
 
-				if (editorContext_.materialPreviewContext_.previewActive_)
+				if (preview.material_.active_)
 				{
-					graphics_->MaterialRender(worldTimer_, materialCamera_, *loaderSystem_, *resource_, editorContext_.materialPreviewContext_.previewMeshAssetId_, editorContext_.materialPreviewContext_.previewSurfaceAssetId_, editorContext_.materialPreviewContext_.previewWorldMatrix_);
+					graphics_->MaterialRender(worldTimer_, materialCamera_, *loaderSystem_, *resource_, preview.material_.meshAssetID_, preview.material_.surfaceAssetID_, Matrix::Identity);
 				}
 
-				if (editorContext_.skeletonControllerPreviewContext_.previewActive_)
+				if (preview.skeletonController_.active_)
 				{
-					graphics_->SkeletonControllerRender(worldTimer_, skeletonControllerCamera_, *loaderSystem_, *resource_, editorContext_.skeletonControllerPreviewContext_.previewMeshAssetId_, 0, 0.0f, editorContext_.skeletonControllerPreviewContext_.previewWorldMatrix_, editorContext_.skeletonControllerPreviewContext_.selectedNodeIndex_);
+					graphics_->SkeletonControllerRender(worldTimer_, skeletonControllerCamera_, *loaderSystem_, *resource_, preview.skeletonController_.meshAssetID_, 0, 0.0f, Matrix::Identity, preview.skeletonController_.nodeIndex_);
 				}
 
-				if (editorContext_.avatarPreviewContext_.previewActive_ && editorContext_.avatarPreviewContext_.mesh_)
+				if (preview.avatar_.active_ && preview.avatar_.mesh_)
 				{
-					const AvatarPreviewContext& avatarPreview = editorContext_.avatarPreviewContext_;
-					avatarPreview.mesh_->Update(avatarPreview.positions_, avatarPreview.normals_);
-					graphics_->AvatarRender(worldTimer_, avatarCamera_, *avatarPreview.mesh_, avatarPreview.boneCount_, avatarPreview.previewWorldMatrix_, std::span<const Uint32>(avatarPreview.regionTextureIndices_, avatarPreview.regionCount_));
+					preview.avatar_.mesh_->Update(preview.avatar_.positions_, preview.avatar_.normals_);
+					graphics_->AvatarRender(worldTimer_, avatarCamera_, *preview.avatar_.mesh_, preview.avatar_.boneCount_, Matrix::Identity, std::span<const Uint32>(preview.avatar_.regionTextureIndices_, preview.avatar_.regionCount_));
 				}
 
-				if (editorContext_.bootScreenPreviewContext_.previewActive_ && editorContext_.bootScreenPreviewContext_.renderer_ && editorContext_.bootScreenPreviewContext_.config_)
+				if (preview.bootScreen_.active_ && preview.bootScreen_.renderer_ && preview.bootScreen_.config_)
 				{
-					const BootScreenPreviewContext& bootScreenPreview = editorContext_.bootScreenPreviewContext_;
-					bootScreenPreview.renderer_->Render(graphics_->GetContext().GetDirectList(), *bootScreenPreview.config_, bootScreenPreview.progress_, worldTimer_.TotalTime());
+					preview.bootScreen_.renderer_->Render(graphics_->GetContext().GetDirectList(), *preview.bootScreen_.config_, preview.bootScreen_.progress_, worldTimer_.TotalTime());
 				}
 
 				graphics_->Bind();

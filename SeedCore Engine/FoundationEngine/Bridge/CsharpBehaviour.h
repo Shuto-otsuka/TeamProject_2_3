@@ -52,7 +52,7 @@ namespace SeedCore
 	class SEEDCORE_API CsharpBehaviour :public ComponentBehaviour
 	{
 	public:
-		static constexpr Size blockCapacity_ = 256;
+		SC_CONST Size blockCapacity_ = 256;
 
 		CsharpBehaviour() = default;
 

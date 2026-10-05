@@ -878,8 +878,13 @@ namespace SeedCore
 		Uint weatherParticleIndex_ = 0;
 		Uint volumetricLightIndex_ = 0;
 		Uint colliderIndex_ = 0;
+
+		Uint primitiveWireframeIndex_ = 0;
+		Uint constantIndicesPadding0_ = 0;
+		Uint constantIndicesPadding1_ = 0;
+		Uint constantIndicesPadding2_ = 0;
 	};
-	SC_STATIC_ASSERT(ConstantIndices, 80, "Shader/Constants.hlsli");
+	SC_STATIC_ASSERT(ConstantIndices, 96, "Shader/Constants.hlsli");
 
 	class BindlessHeap;
 
@@ -949,6 +954,10 @@ namespace SeedCore
 		void SetEditorColliderIndex(Uint index);
 
 		void SetCanvasColliderIndex(Uint index);
+
+		void SetEditorPrimitiveWireframeIndex(Uint index);
+
+		void SetCanvasPrimitiveWireframeIndex(Uint index);
 
 	private:
 		ConstantIndices editorConstantIndices_{};

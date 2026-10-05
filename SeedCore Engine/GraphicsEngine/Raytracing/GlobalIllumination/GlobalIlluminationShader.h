@@ -49,11 +49,11 @@ namespace SeedCore
 		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
 
 	public:
-		static constexpr const Char* rayGenExportName = "GlobalIlluminationRayGeneration";
-		static constexpr const Char* missExportName = "GlobalIlluminationMiss";
-		static constexpr const Char* closestHitExportName = "GlobalIlluminationClosestHit";
-		static constexpr const Char* anyHitExportName = "GlobalIlluminationAnyHit";
-		static constexpr const Char* hitGroupName = "GlobalIlluminationHitGroup";
+		SC_CONST const Char* rayGenExportName = "GlobalIlluminationRayGeneration";
+		SC_CONST const Char* missExportName = "GlobalIlluminationMiss";
+		SC_CONST const Char* closestHitExportName = "GlobalIlluminationClosestHit";
+		SC_CONST const Char* anyHitExportName = "GlobalIlluminationAnyHit";
+		SC_CONST const Char* hitGroupName = "GlobalIlluminationHitGroup";
 
 	private:
 		Handle<RaytracingShader> libraryShader_;

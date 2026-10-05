@@ -164,19 +164,19 @@ namespace SeedCore
 		void UnorderedAccessBarrier(D3D12CommandList* cmdList, ID3D12Resource* resource);
 
 	private:
-		static constexpr Uint environmentSize_ = 512;
-		static constexpr Uint environmentMipLevels_ = 10;
-		static constexpr Uint irradianceSize_ = 32;
-		static constexpr Uint prefilterSize_ = 128;
-		static constexpr Uint prefilterMipLevels_ = 5;
+		SC_CONST Uint environmentSize_ = 512;
+		SC_CONST Uint environmentMipLevels_ = 10;
+		SC_CONST Uint irradianceSize_ = 32;
+		SC_CONST Uint prefilterSize_ = 128;
+		SC_CONST Uint prefilterMipLevels_ = 5;
 
-		static constexpr DXGI_FORMAT cubeFormat_ = DXGI_FORMAT_R16G16B16A16_FLOAT;
+		SC_CONST DXGI_FORMAT cubeFormat_ = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
-		static constexpr Uint brdfLookupTableSize_ = 512;
-		static constexpr Uint brdfSampleCount_ = 1024;
-		static constexpr Uint prefilterSampleCount_ = 256;
-		static constexpr Uint maxGenerateDispatches_ = 16;
-		static constexpr DXGI_FORMAT brdfLookupTableFormat_ = DXGI_FORMAT_R16G16_FLOAT;
+		SC_CONST Uint brdfLookupTableSize_ = 512;
+		SC_CONST Uint brdfSampleCount_ = 1024;
+		SC_CONST Uint prefilterSampleCount_ = 256;
+		SC_CONST Uint maxGenerateDispatches_ = 16;
+		SC_CONST DXGI_FORMAT brdfLookupTableFormat_ = DXGI_FORMAT_R16G16_FLOAT;
 
 		ID3D12Device* device_ = nullptr;
 		BindlessHeap* bindlessHeap_ = nullptr;
@@ -236,6 +236,6 @@ namespace SeedCore
 		Uint32 generatedProceduralSkyHash_ = 0;
 		Bool proceduralSkyGenerated_ = false;
 		Uint proceduralSkyRefreshCounter_ = 0;
-		static constexpr Uint proceduralSkyRefreshInterval_ = 120;
+		SC_CONST Uint proceduralSkyRefreshInterval_ = 120;
 	};
 }

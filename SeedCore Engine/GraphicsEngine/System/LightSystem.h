@@ -172,15 +172,15 @@ namespace SeedCore
 		void CreateClusterResources(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height);
 
 	private:
-		static constexpr Uint maxPointLights_ = 65536;
-		static constexpr Uint maxSpotLights_ = 65536;
-		static constexpr Uint maxRectLights_ = 4096;
-		static constexpr Uint clusterTileSize_ = 64;
-		static constexpr Uint clusterDepthSlices_ = 16;
-		static constexpr Uint clusterMaxPointLights_ = 64;
-		static constexpr Uint clusterMaxSpotLights_ = 64;
-		static constexpr Uint clusterMaxRectLights_ = 64;
-		static constexpr Uint clusterStride_ = clusterMaxPointLights_ + clusterMaxSpotLights_ + clusterMaxRectLights_;
+		SC_CONST Uint maxPointLights_ = 65536;
+		SC_CONST Uint maxSpotLights_ = 65536;
+		SC_CONST Uint maxRectLights_ = 4096;
+		SC_CONST Uint clusterTileSize_ = 64;
+		SC_CONST Uint clusterDepthSlices_ = 16;
+		SC_CONST Uint clusterMaxPointLights_ = 64;
+		SC_CONST Uint clusterMaxSpotLights_ = 64;
+		SC_CONST Uint clusterMaxRectLights_ = 64;
+		SC_CONST Uint clusterStride_ = clusterMaxPointLights_ + clusterMaxSpotLights_ + clusterMaxRectLights_;
 
 		LightConstantBuffer lightConstantData_;
 		DirectionalLightConstantBuffer directionalLightConstantData_;

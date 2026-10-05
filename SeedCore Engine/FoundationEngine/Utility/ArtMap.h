@@ -202,7 +202,7 @@ namespace SeedCore
 
 		/// [EN] Maximum inline path-compressed prefix length stored per node.
 		/// [JP] ノードごとに格納される、パス圧縮された接頭辞のインライン最大長。
-		static constexpr Size MAX_PREFIX = 8;
+		SC_CONST Size MAX_PREFIX = 8;
 
 		/// [EN] Discriminates the concrete type behind a NodePtr.
 		/// [JP] NodePtr の背後にある実際の型を判別する。

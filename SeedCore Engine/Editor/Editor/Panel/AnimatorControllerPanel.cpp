@@ -3,7 +3,6 @@
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
-#include <External/ImGui/Include/imgui_internal.h>
 #include <GraphicsEngine/Model/Animation/Animator.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/World/Actor/Actor.h>

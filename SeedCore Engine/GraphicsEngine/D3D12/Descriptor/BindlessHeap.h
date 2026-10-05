@@ -30,7 +30,7 @@ namespace SeedCore
 		[[nodiscard]] ID3D12DescriptorHeap* Heap()const;
 
 	private:
-		static constexpr Uint deferredSlotCount = FrameRing::frameCount + 1;
+		SC_CONST Uint deferredSlotCount = FrameRing::frameCount + 1;
 
 		std::mutex mutex_;
 

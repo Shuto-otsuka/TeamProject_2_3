@@ -2,7 +2,6 @@
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
-#include <External/ImGui/Include/imgui_internal.h>
 #include <GraphicsEngine/Model/Animation/Animator.h>
 #include <GraphicsEngine/Model/Animation/AnimationResource.h>
 #include <GraphicsEngine/Model/Mesh.h>
@@ -324,7 +323,7 @@ namespace SeedCore
 	{
 		if (!show_)
 		{
-			context_.timelinePreviewContext_.previewActive_ = false;
+			context_.preview_.timeline_.active_ = false;
 			isPlaying_ = false;
 			isFocused_ = false;
 			return;
@@ -339,7 +338,7 @@ namespace SeedCore
 			isPlaying_ = false;
 		}
 
-		context_.timelinePreviewContext_.previewActive_ = false;
+		context_.preview_.timeline_.active_ = false;
 
 		ImGui::DockBuilderDockWindow("タイムライン", context_.graphics_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
@@ -406,10 +405,10 @@ namespace SeedCore
 				const Mesh* mesh = context_.selection_.Primary() ? context_.selection_.Primary().GetComponent<Mesh>() : nullptr;
 				if (mesh && mesh->meshID_ != 0)
 				{
-					context_.timelinePreviewContext_.previewActive_ = true;
-					context_.timelinePreviewContext_.previewMeshAssetId_ = mesh->meshID_;
-					context_.timelinePreviewContext_.previewAnimationAssetId_ = assetId;
-					context_.timelinePreviewContext_.previewTime_ = animation ? EvaluateTimeRemap(animation->SpeedCurve(), scrubTime_) : scrubTime_;
+					context_.preview_.timeline_.active_ = true;
+					context_.preview_.timeline_.meshAssetID_ = mesh->meshID_;
+					context_.preview_.timeline_.animationAssetID_ = assetId;
+					context_.preview_.timeline_.time_ = animation ? EvaluateTimeRemap(animation->SpeedCurve(), scrubTime_) : scrubTime_;
 
 					Float unit = ImGui::GetFrameHeightWithSpacing();
 					Float separatorHeight = ImGui::GetStyle().ItemSpacing.y * 2.0f + 1.0f;
@@ -419,9 +418,9 @@ namespace SeedCore
 					ImVec2 previewSize = ImGui::GetContentRegionAvail();
 					previewSize.y = Max(previewSize.y - reservedHeight, 100.0f);
 
-					if (context_.cameraContext_.timelineCamera_)
+					if (context_.preview_.timeline_.camera_)
 					{
-						context_.cameraContext_.timelineCamera_->Resize(previewSize.x, previewSize.y);
+						context_.preview_.timeline_.camera_->Resize(previewSize.x, previewSize.y);
 					}
 
 					ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
@@ -437,14 +436,14 @@ namespace SeedCore
 					Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
 					Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
 
-					if (ImGui::IsItemHovered() && context_.cameraContext_.timelineCamera_ && context_.cameraContext_.timelineCameraController_)
+					if (ImGui::IsItemHovered() && context_.preview_.timeline_.camera_ && context_.preview_.timeline_.cameraController_)
 					{
 						if (orbitHeld || panHeld)
 						{
 							InputSystem::BeginMouseCapture();
 						}
 
-						context_.cameraContext_.timelineCameraController_->Update(*context_.cameraContext_.timelineCamera_, ImGui::GetIO().DeltaTime);
+						context_.preview_.timeline_.cameraController_->Update(*context_.preview_.timeline_.camera_, ImGui::GetIO().DeltaTime);
 					}
 
 					if (!orbitHeld && !panHeld)

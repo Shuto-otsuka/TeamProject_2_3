@@ -140,8 +140,8 @@ namespace SeedCore
 		void CreateParticleBuffer(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 capacity, Microsoft::WRL::ComPtr<ID3D12Resource>& outResource, Uint32& outUnorderedAccessViewIndex, Uint32& outShaderResourceViewIndex);
 
 	private:
-		static constexpr Uint32 rainCapacity_ = 10000;
-		static constexpr Uint32 snowCapacity_ = 6000;
+		SC_CONST Uint32 rainCapacity_ = 10000;
+		SC_CONST Uint32 snowCapacity_ = 6000;
 
 		WeatherParticleShader particleShader_;
 

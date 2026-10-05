@@ -29,20 +29,6 @@ namespace SeedCore
 		/// [JP] Z 軸方向の速度。
 		SC_SERIALIZE_FIELD()
 		Float z_;
-
-		/**
-		* [EN]
-		* Returns the velocity as a Vector3.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 速度を Vector3 として取得する。
-		*/
-		[[nodiscard]] Vector3 Vector()const noexcept
-		{
-			return Vector3(x_, y_, z_);
-		}
 	};
 	REGISTER_COMPONENT(Velocity, "Core", ComponentStorage::Archetype);
 }

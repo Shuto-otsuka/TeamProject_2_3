@@ -1,6 +1,6 @@
 #pragma once
 #include <FoundationEngine/Prelude.h>
-#include <FoundationEngine/Interop/ColliderInstance.h>
+#include <FoundationEngine/Interop/ShapeInstance.h>
 #include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
@@ -50,7 +50,7 @@ namespace SeedCore
 		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE DisplayGPUHandle()const;
 
 	private:
-		static constexpr Uint maxBoneInstanceCount_ = 2048;
+		SC_CONST Uint maxBoneInstanceCount_ = 2048;
 
 		ModelShader modelShader_;
 		ModelCullingBuffer modelCullingBuffer_;

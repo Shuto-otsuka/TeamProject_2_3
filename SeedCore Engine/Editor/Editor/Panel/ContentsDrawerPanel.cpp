@@ -5,6 +5,7 @@
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <Editor/Editor/Panel/MaterialViewerPanel.h>
+#include <Editor/Editor/Panel/ModelTransformPanel.h>
 #include <Editor/Editor/Panel/ResourceSyncControlPanel.h>
 
 #include <FoundationEngine/File/FileDialog.h>
@@ -728,7 +729,7 @@ namespace SeedCore
 				}
 				if (ImGui::MenuItem("モデル変換"))
 				{
-					context_.modelTransformPreviewContext_.requestedAssetId_ = asset.assetID_;
+					context_.panel_.modelTransform_->Open(asset.assetID_);
 				}
 				if (ImGui::MenuItem("マテリアル生成"))
 				{
@@ -1689,7 +1690,7 @@ namespace SeedCore
 		}
 		if (asset.type_ == AssetType::Material)
 		{
-			context_.panelContext_.materialViewerPanel_->Open();
+			context_.panel_.materialViewer_->Open();
 			return;
 		}
 

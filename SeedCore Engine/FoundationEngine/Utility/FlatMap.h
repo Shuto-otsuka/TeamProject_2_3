@@ -76,11 +76,11 @@ namespace SeedCore
 
 		/// [EN] Initial bucket count for a default-constructed map.
 		/// [JP] デフォルト構築されたマップの初期バケット数。
-		static constexpr size_type DefaultCapacity = 16;
+		SC_CONST size_type DefaultCapacity = 16;
 
 		/// [EN] Occupancy ratio above which the table is grown (see ensure_capacity).
 		/// [JP] これを超えるとテーブルを拡張する占有率のしきい値（ensure_capacity を参照）。
-		static constexpr Float MaxLoadFactor = 0.75f;
+		SC_CONST Float MaxLoadFactor = 0.75f;
 
 		/// [EN] Backing bucket array; size is always a power of two.
 		/// [JP] バケット配列本体。サイズは常に2の冪。

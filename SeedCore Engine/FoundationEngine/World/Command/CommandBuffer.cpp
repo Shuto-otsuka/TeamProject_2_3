@@ -6,6 +6,7 @@
 #include <FoundationEngine/Resource/Prefab/PrefabPool.h>
 #include <FoundationEngine/Resource/Prefab/Prefab.h>
 #include <FoundationEngine/Utility/Handle.h>
+#include <FoundationEngine/World/ECS/Component/Transform.h>
 
 namespace SeedCore
 {
@@ -196,9 +197,7 @@ namespace SeedCore
 				Position* position = world.GetComponent<Position>(spawned.GetEntity());
 				if (position != nullptr)
 				{
-					position->x_ = command.position_.x;
-					position->y_ = command.position_.y;
-					position->z_ = command.position_.z;
+					Transform::Vector(*position, command.position_);
 				}
 				break;
 			}

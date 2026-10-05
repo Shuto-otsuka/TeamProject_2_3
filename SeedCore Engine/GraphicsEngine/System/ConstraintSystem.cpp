@@ -10,6 +10,7 @@
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
+#include <FoundationEngine/World/ECS/Component/Transform.h>
 
 namespace SeedCore
 {
@@ -99,7 +100,7 @@ namespace SeedCore
 
 		if (rotation)
 		{
-			local *= Matrix::CreateFromQuaternion(rotation->Quat());
+			local *= Matrix::CreateFromQuaternion(Transform::Quat(*rotation));
 		}
 
 		if (position)

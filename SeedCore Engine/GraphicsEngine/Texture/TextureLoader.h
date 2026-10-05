@@ -39,6 +39,6 @@ namespace SeedCore
 
 		Uint64 totalResidentBytes_ = 0;
 		Uint64 budgetBytes_ = 128ull * 1024 * 1024;
-		static constexpr Uint64 evictAgeFrames_ = 8;
+		SC_CONST Uint64 evictAgeFrames_ = 8;
 	};
 }

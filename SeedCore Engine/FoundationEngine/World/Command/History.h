@@ -74,10 +74,26 @@ namespace SeedCore
 		*/
 		void Redo();
 
+		/**
+		* [EN]
+		* Discards every undo and redo entry. Called whenever the actors the
+		* entries point at are destroyed and rebuilt (a new or loaded scene,
+		* or the end of play mode), since entries address their targets by
+		* entity or by raw field pointer.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* Undo と Redo のエントリをすべて破棄する。エントリは対象を entity や
+		* フィールドの生ポインタで指しているため、それらのアクターが破棄されて
+		* 作り直されるとき（新規・読み込んだシーン、Play モードの終了）に呼ぶ。
+		*/
+		void Clear();
+
 	private:
 		/// [EN] Maximum number of undo entries retained before the oldest is dropped.
 		/// [JP] 保持するUndoエントリの最大数。超えると最古のものから破棄する。
-		static constexpr Size maxDepth_ = 100;
+		SC_CONST Size maxDepth_ = 100;
 
 		/// [EN] Commands applied so far, most recent last.
 		/// [JP] これまでに適用されたコマンド。最新のものが末尾。

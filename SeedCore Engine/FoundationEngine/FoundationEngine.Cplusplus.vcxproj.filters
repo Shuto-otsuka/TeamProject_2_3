@@ -400,6 +400,15 @@
     <ClCompile Include="File\FilePath.cpp">
       <Filter>File</Filter>
     </ClCompile>
+    <ClCompile Include="World\ECS\Component\Motion.cpp">
+      <Filter>World\ECS\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\Component\Transform.cpp">
+      <Filter>World\ECS\Component</Filter>
+    </ClCompile>
+    <ClCompile Include="Interop\QueryInstance.cpp">
+      <Filter>Interop</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\DxFail.h">
@@ -598,9 +607,6 @@
     </ClInclude>
     <ClInclude Include="Math\Random\Hash.h">
       <Filter>Math\Random</Filter>
-    </ClInclude>
-    <ClInclude Include="Interop\ColliderInstance.h">
-      <Filter>Interop</Filter>
     </ClInclude>
     <ClInclude Include="Math\Halton.h">
       <Filter>Math</Filter>
@@ -883,6 +889,21 @@
     </ClInclude>
     <ClInclude Include="File\FilePath.h">
       <Filter>File</Filter>
+    </ClInclude>
+    <ClInclude Include="Interop\ShapeInstance.h">
+      <Filter>Interop</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Motion.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Transform.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Interop\ColliderInstance.h">
+      <Filter>Interop</Filter>
+    </ClInclude>
+    <ClInclude Include="Interop\QueryInstance.h">
+      <Filter>Interop</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

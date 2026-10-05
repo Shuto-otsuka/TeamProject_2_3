@@ -79,7 +79,7 @@ namespace SeedCore
 		[[nodiscard]] Uint ShaderResourceViewIndex()const { return shaderResourceViewIndex_; }
 
 	private:
-		static constexpr Uint maxMipCount = 16;
+		SC_CONST Uint maxMipCount = 16;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> resource_;
 		D3D12_RESOURCE_STATES state_ = D3D12_RESOURCE_STATE_COMMON;

@@ -39,6 +39,7 @@
 #include <GraphicsEngine/Movie/Movie.h>
 #include <PhysicsEngine/Collider/RectCollider.h>
 #include <PhysicsEngine/Collider/CircleCollider.h>
+#include <FoundationEngine/World/ECS/Component/Transform.h>
 
 namespace SeedCore
 {
@@ -60,44 +61,44 @@ namespace SeedCore
 
 		if (ImGui::Begin("インスペクター"))
 		{
-			if (context_.panelContext_.animatorControllerPanel_ && context_.panelContext_.animatorControllerPanel_->Focused())
+			if (context_.panel_.animatorController_ && context_.panel_.animatorController_->Focused())
 			{
-				context_.panelContext_.animatorControllerPanel_->DrawDetails();
+				context_.panel_.animatorController_->DrawDetails();
 				ImGui::End();
 				return;
 			}
 
-			if (context_.panelContext_.timelinePanel_ && context_.panelContext_.timelinePanel_->Focused())
+			if (context_.panel_.timeline_ && context_.panel_.timeline_->Focused())
 			{
-				context_.panelContext_.timelinePanel_->DrawDetails();
+				context_.panel_.timeline_->DrawDetails();
 				ImGui::End();
 				return;
 			}
 
-			if (context_.panelContext_.materialViewerPanel_ && context_.panelContext_.materialViewerPanel_->Focused())
+			if (context_.panel_.materialViewer_ && context_.panel_.materialViewer_->Focused())
 			{
-				context_.panelContext_.materialViewerPanel_->DrawDetails();
+				context_.panel_.materialViewer_->DrawDetails();
 				ImGui::End();
 				return;
 			}
 
-			if (context_.panelContext_.skeletonControllerPanel_ && context_.panelContext_.skeletonControllerPanel_->Focused())
+			if (context_.panel_.skeletonController_ && context_.panel_.skeletonController_->Focused())
 			{
-				context_.panelContext_.skeletonControllerPanel_->DrawDetails();
+				context_.panel_.skeletonController_->DrawDetails();
 				ImGui::End();
 				return;
 			}
 
-			if (context_.panelContext_.avatarPanel_ && context_.panelContext_.avatarPanel_->Focused())
+			if (context_.panel_.avatar_ && context_.panel_.avatar_->Focused())
 			{
-				context_.panelContext_.avatarPanel_->DrawDetails();
+				context_.panel_.avatar_->DrawDetails();
 				ImGui::End();
 				return;
 			}
 
-			if (context_.panelContext_.bootScreenPanel_ && context_.panelContext_.bootScreenPanel_->Focused())
+			if (context_.panel_.bootScreen_ && context_.panel_.bootScreen_->Focused())
 			{
-				context_.panelContext_.bootScreenPanel_->DrawDetails();
+				context_.panel_.bootScreen_->DrawDetails();
 				ImGui::End();
 				return;
 			}
@@ -432,9 +433,9 @@ namespace SeedCore
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			if (ImGui::Selectable("編集") && context_.panelContext_.layerSettingsPanel_)
+			if (ImGui::Selectable("編集") && context_.panel_.layerSettings_)
 			{
-				context_.panelContext_.layerSettingsPanel_->Open();
+				context_.panel_.layerSettings_->Open();
 			}
 
 			ImGui::EndCombo();
@@ -928,10 +929,10 @@ namespace SeedCore
 		Rotation* rotation = isRotation ? static_cast<Rotation*>(componentData) : nullptr;
 		if (isRotation)
 		{
-			Quaternion quaternion = rotation->Quat();
+			Quaternion quaternion = Transform::Quat(*rotation);
 			if (!hasPendingRotation_ || entity.GetID() != pendingRotationEntity_ || quaternion != pendingRotationQuaternion_)
 			{
-				pendingRotationDegrees_ = rotation->Degree();
+				pendingRotationDegrees_ = Transform::Degree(*rotation);
 				pendingRotationEntity_ = entity.GetID();
 				pendingRotationQuaternion_ = quaternion;
 				hasPendingRotation_ = true;
@@ -971,7 +972,7 @@ namespace SeedCore
 		{
 			if (isRotation)
 			{
-				pendingOldQuaternion_ = rotation->Quat();
+				pendingOldQuaternion_ = Transform::Quat(*rotation);
 			}
 			else
 			{
@@ -1008,7 +1009,7 @@ namespace SeedCore
 				std::swap(editedDegree.x, editedDegree.z);
 			}
 
-			Matrix rotationMatrix = Matrix::CreateFromQuaternion(rotation->Quat());
+			Matrix rotationMatrix = Matrix::CreateFromQuaternion(Transform::Quat(*rotation));
 			rotationMatrix *= Matrix::CreateFromYawPitchRoll(ToRadians(deltaDegree.y), ToRadians(deltaDegree.x), ToRadians(deltaDegree.z));
 
 			Vector3 discardedScale;
@@ -1016,21 +1017,18 @@ namespace SeedCore
 			Quaternion quaternion;
 			if (rotationMatrix.Decompose(discardedScale, quaternion, discardedPosition))
 			{
-				rotation->x_ = quaternion.x;
-				rotation->y_ = quaternion.y;
-				rotation->z_ = quaternion.z;
-				rotation->w_ = quaternion.w;
+				Transform::Quat(*rotation, quaternion);
 			}
 
 			pendingRotationDegrees_ = editedDegree;
-			pendingRotationQuaternion_ = rotation->Quat();
+			pendingRotationQuaternion_ = Transform::Quat(*rotation);
 		}
 
 		if (ImGui::IsItemDeactivatedAfterEdit())
 		{
 			if (isRotation)
 			{
-				Quaternion newQuaternion = rotation->Quat();
+				Quaternion newQuaternion = Transform::Quat(*rotation);
 				if (newQuaternion != pendingOldQuaternion_)
 				{
 					context_.scene_.history_.Push(MakePtr<ComponentCommand<Quaternion>>(*context_.world_.world_, entity, componentID, 0, pendingOldQuaternion_, newQuaternion));

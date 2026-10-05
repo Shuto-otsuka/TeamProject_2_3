@@ -30,7 +30,7 @@ namespace SeedCore
 		static void Advance();
 
 	public:
-		static constexpr Uint frameCount = 2;
+		SC_CONST Uint frameCount = 2;
 
 	private:
 		static inline Uint index_ = 0;
