@@ -48,8 +48,6 @@ namespace SeedCore
 
 		Bool ConsumeBootScreenRequest();
 
-		[[nodiscard]] ViewMode GetViewMode()const;
-
 	private:
 		enum class PendingSceneOp
 		{

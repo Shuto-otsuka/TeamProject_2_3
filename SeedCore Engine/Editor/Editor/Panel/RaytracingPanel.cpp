@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/RaytracingPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 
 namespace SeedCore
 {
@@ -68,7 +68,7 @@ namespace SeedCore
 		DrawReflectionSettingsWindow();
 		DrawGlobalIlluminationSettingsWindow();
 		DrawRefractionSettingsWindow();
-		DrawPlaceholderSettingsWindow("レイトレーシング：集光", showCausticsSettings_, context_.viewportContext_.raytracing_.causticsEnabled_);
+		DrawPlaceholderSettingsWindow("レイトレーシング：集光", showCausticsSettings_, context_.sceneVisual_.raytracing_.causticsEnabled_);
 		DrawVolumetricLightSettingsWindow();
 		DrawVolumetricCloudScapesSettingsWindow();
 		DrawVolumetricStarSettingsWindow();
@@ -93,20 +93,20 @@ namespace SeedCore
 
 		if (ImGui::Begin("レイトレーシング：影", &showShadowSettings_, flags))
 		{
-			DrawEnableCheckbox(GraphicsEffect::Shadow, context_.viewportContext_.raytracing_.shadowEnabled_);
+			DrawEnableCheckbox(GraphicsEffect::Shadow, context_.sceneVisual_.raytracing_.shadowEnabled_);
 
 			ImGui::Spacing();
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			ImGui::BeginDisabled(!context_.viewportContext_.raytracing_.shadowEnabled_);
+			ImGui::BeginDisabled(!context_.sceneVisual_.raytracing_.shadowEnabled_);
 
 			ImGui::PushID("影");
-			ImGui::SliderFloat("強さ", &context_.viewportContext_.raytracing_.shadow_.shadowStrength_, 0.0f, 2.0f, "%.2f");
-			ImGui::SliderFloat("最大距離", &context_.viewportContext_.raytracing_.shadow_.rayTMax_, 1.0f, 5000.0f, "%.0f");
-			ImGui::SliderFloat("法線バイアス", &context_.viewportContext_.raytracing_.shadow_.normalBias_, 0.0001f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic);
-			ImGui::SliderFloat("太陽の半径角(ソフトシャドウ)", &context_.viewportContext_.raytracing_.shadow_.sunAngularRadius_, 0.0f, 0.2f, "%.4f");
-			ImGui::SliderFloat("Point/Spot/Rectの光源半径", &context_.viewportContext_.raytracing_.shadow_.punctualLightRadius_, 0.0f, 2.0f, "%.3f");
+			ImGui::SliderFloat("強さ", &context_.sceneVisual_.raytracing_.shadow_.shadowStrength_, 0.0f, 2.0f, "%.2f");
+			ImGui::SliderFloat("最大距離", &context_.sceneVisual_.raytracing_.shadow_.rayTMax_, 1.0f, 5000.0f, "%.0f");
+			ImGui::SliderFloat("法線バイアス", &context_.sceneVisual_.raytracing_.shadow_.normalBias_, 0.0001f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("太陽の半径角(ソフトシャドウ)", &context_.sceneVisual_.raytracing_.shadow_.sunAngularRadius_, 0.0f, 0.2f, "%.4f");
+			ImGui::SliderFloat("Point/Spot/Rectの光源半径", &context_.sceneVisual_.raytracing_.shadow_.punctualLightRadius_, 0.0f, 2.0f, "%.3f");
 			ImGui::PopID();
 
 			ImGui::EndDisabled();
@@ -141,18 +141,18 @@ namespace SeedCore
 
 		if (ImGui::Begin("レイトレーシング：AO", &showAmbientOcclusionSettings_, flags))
 		{
-			DrawEnableCheckbox(GraphicsEffect::AmbientOcclusion, context_.viewportContext_.raytracing_.ambientOcclusionEnabled_);
+			DrawEnableCheckbox(GraphicsEffect::AmbientOcclusion, context_.sceneVisual_.raytracing_.ambientOcclusionEnabled_);
 
 			ImGui::Spacing();
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			ImGui::BeginDisabled(!context_.viewportContext_.raytracing_.ambientOcclusionEnabled_);
+			ImGui::BeginDisabled(!context_.sceneVisual_.raytracing_.ambientOcclusionEnabled_);
 
 			ImGui::PushID("AO");
-			ImGui::SliderFloat("半径", &context_.viewportContext_.raytracing_.ambientOcclusion_.rayLength_, 0.05f, 10.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
-			ImGui::SliderFloat("強調(指数)", &context_.viewportContext_.raytracing_.ambientOcclusion_.power_, 0.25f, 5.0f, "%.2f");
-			ImGui::SliderFloat("法線バイアス", &context_.viewportContext_.raytracing_.ambientOcclusion_.normalBias_, 0.0001f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("半径", &context_.sceneVisual_.raytracing_.ambientOcclusion_.rayLength_, 0.05f, 10.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("強調(指数)", &context_.sceneVisual_.raytracing_.ambientOcclusion_.power_, 0.25f, 5.0f, "%.2f");
+			ImGui::SliderFloat("法線バイアス", &context_.sceneVisual_.raytracing_.ambientOcclusion_.normalBias_, 0.0001f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic);
 			ImGui::PopID();
 
 			ImGui::EndDisabled();
@@ -187,18 +187,18 @@ namespace SeedCore
 
 		if (ImGui::Begin("レイトレーシング：反射", &showReflectionSettings_, flags))
 		{
-			DrawEnableCheckbox(GraphicsEffect::Reflection, context_.viewportContext_.raytracing_.reflectionEnabled_);
+			DrawEnableCheckbox(GraphicsEffect::Reflection, context_.sceneVisual_.raytracing_.reflectionEnabled_);
 
 			ImGui::Spacing();
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			ImGui::BeginDisabled(!context_.viewportContext_.raytracing_.reflectionEnabled_);
+			ImGui::BeginDisabled(!context_.sceneVisual_.raytracing_.reflectionEnabled_);
 
 			ImGui::PushID("反射");
-			ImGui::SliderFloat("強さ", &context_.viewportContext_.raytracing_.reflection_.strength_, 0.0f, 5.0f, "%.2f");
-			ImGui::SliderFloat("最大距離", &context_.viewportContext_.raytracing_.reflection_.rayTMax_, 1.0f, 5000.0f, "%.0f");
-			ImGui::SliderFloat("法線バイアス", &context_.viewportContext_.raytracing_.reflection_.normalBias_, 0.0001f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("強さ", &context_.sceneVisual_.raytracing_.reflection_.strength_, 0.0f, 5.0f, "%.2f");
+			ImGui::SliderFloat("最大距離", &context_.sceneVisual_.raytracing_.reflection_.rayTMax_, 1.0f, 5000.0f, "%.0f");
+			ImGui::SliderFloat("法線バイアス", &context_.sceneVisual_.raytracing_.reflection_.normalBias_, 0.0001f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic);
 			ImGui::PopID();
 
 			ImGui::EndDisabled();
@@ -233,35 +233,35 @@ namespace SeedCore
 
 		if (ImGui::Begin("レイトレーシング：フォグ / 体積光", &showVolumetricLightSettings_, flags))
 		{
-			ImGui::Checkbox("有効", &context_.viewportContext_.raytracing_.volumetricLightEnabled_);
+			ImGui::Checkbox("有効", &context_.sceneVisual_.raytracing_.volumetricLightEnabled_);
 
 			ImGui::Spacing();
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			ImGui::BeginDisabled(!context_.viewportContext_.raytracing_.volumetricLightEnabled_);
+			ImGui::BeginDisabled(!context_.sceneVisual_.raytracing_.volumetricLightEnabled_);
 
 			ImGui::SeparatorText("フォグ媒質");
 
 			ImGui::PushID("フォグ媒質");
-			ImGui::SliderFloat("密度", &context_.viewportContext_.raytracing_.volumetricLight_.density_, 0.0001f, 0.5f, "%.4f", ImGuiSliderFlags_Logarithmic);
-			ImGui::SliderFloat("吸収", &context_.viewportContext_.raytracing_.volumetricLight_.absorption_, 0.0f, 0.2f, "%.4f");
-			ImGui::SliderFloat("高さ減衰", &context_.viewportContext_.raytracing_.volumetricLight_.heightFalloff_, 0.0f, 0.5f, "%.3f");
-			ImGui::SliderFloat("基準高さ", &context_.viewportContext_.raytracing_.volumetricLight_.heightReference_, -100.0f, 500.0f, "%.0f");
-			ImGui::ColorEdit3("フォグ色", context_.viewportContext_.raytracing_.volumetricLight_.fogAlbedo_);
+			ImGui::SliderFloat("密度", &context_.sceneVisual_.raytracing_.volumetricLight_.density_, 0.0001f, 0.5f, "%.4f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("吸収", &context_.sceneVisual_.raytracing_.volumetricLight_.absorption_, 0.0f, 0.2f, "%.4f");
+			ImGui::SliderFloat("高さ減衰", &context_.sceneVisual_.raytracing_.volumetricLight_.heightFalloff_, 0.0f, 0.5f, "%.3f");
+			ImGui::SliderFloat("基準高さ", &context_.sceneVisual_.raytracing_.volumetricLight_.heightReference_, -100.0f, 500.0f, "%.0f");
+			ImGui::ColorEdit3("フォグ色", context_.sceneVisual_.raytracing_.volumetricLight_.fogAlbedo_);
 			ImGui::PopID();
 
 			ImGui::SeparatorText("ゴッドレイ");
 
 			ImGui::PushID("ゴッドレイ");
-			ImGui::SliderFloat("強さ", &context_.viewportContext_.raytracing_.volumetricLight_.godrayStrength_, 0.0f, 8.0f, "%.2f");
-			ImGui::SliderFloat("前方散乱(HG g)", &context_.viewportContext_.raytracing_.volumetricLight_.scatteringG_, 0.0f, 0.95f, "%.2f");
-			ImGui::SliderFloat("シャドウレイ最大距離", &context_.viewportContext_.raytracing_.volumetricLight_.rayTMax_, 10.0f, 10000.0f, "%.0f");
+			ImGui::SliderFloat("強さ", &context_.sceneVisual_.raytracing_.volumetricLight_.godrayStrength_, 0.0f, 8.0f, "%.2f");
+			ImGui::SliderFloat("前方散乱(HG g)", &context_.sceneVisual_.raytracing_.volumetricLight_.scatteringG_, 0.0f, 0.95f, "%.2f");
+			ImGui::SliderFloat("シャドウレイ最大距離", &context_.sceneVisual_.raytracing_.volumetricLight_.rayTMax_, 10.0f, 10000.0f, "%.0f");
 
-			Bool cloudShadow = context_.viewportContext_.raytracing_.volumetricLight_.cloudShadowEnabled_ != 0;
+			Bool cloudShadow = context_.sceneVisual_.raytracing_.volumetricLight_.cloudShadowEnabled_ != 0;
 			if (ImGui::Checkbox("雲の影(雲間からの光芒)", &cloudShadow))
 			{
-				context_.viewportContext_.raytracing_.volumetricLight_.cloudShadowEnabled_ = cloudShadow ? 1 : 0;
+				context_.sceneVisual_.raytracing_.volumetricLight_.cloudShadowEnabled_ = cloudShadow ? 1 : 0;
 			}
 
 			ImGui::PopID();
@@ -299,15 +299,15 @@ namespace SeedCore
 
 		if (ImGui::Begin("レイトレーシング：GI", &showGlobalIlluminationSettings_, flags))
 		{
-			DrawEnableCheckbox(GraphicsEffect::GlobalIllumination, context_.viewportContext_.raytracing_.globalIlluminationEnabled_);
+			DrawEnableCheckbox(GraphicsEffect::GlobalIllumination, context_.sceneVisual_.raytracing_.globalIlluminationEnabled_);
 
-			ImGui::BeginDisabled(!context_.viewportContext_.raytracing_.globalIlluminationEnabled_);
+			ImGui::BeginDisabled(!context_.sceneVisual_.raytracing_.globalIlluminationEnabled_);
 
 			ImGui::PushID("GI");
-			ImGui::SliderFloat("強度", &context_.viewportContext_.raytracing_.globalIllumination_.intensity_, 0.0f, 5.0f, "%.2f");
-			ImGui::SliderFloat("レイ最大距離", &context_.viewportContext_.raytracing_.globalIllumination_.rayTMax_, 50.0f, 20000.0f, "%.0f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("強度", &context_.sceneVisual_.raytracing_.globalIllumination_.intensity_, 0.0f, 5.0f, "%.2f");
+			ImGui::SliderFloat("レイ最大距離", &context_.sceneVisual_.raytracing_.globalIllumination_.rayTMax_, 50.0f, 20000.0f, "%.0f", ImGuiSliderFlags_Logarithmic);
 			ImGui::SetItemTooltip("短いと室内のバウンスが消え、長いと全レイがシーン全体の走査コストを払う。");
-			ImGui::SliderFloat("法線バイアス", &context_.viewportContext_.raytracing_.globalIllumination_.normalBias_, 0.0f, 1.0f, "%.3f");
+			ImGui::SliderFloat("法線バイアス", &context_.sceneVisual_.raytracing_.globalIllumination_.normalBias_, 0.0f, 1.0f, "%.3f");
 			ImGui::PopID();
 
 			ImGui::EndDisabled();
@@ -342,18 +342,18 @@ namespace SeedCore
 
 		if (ImGui::Begin("レイトレーシング：屈折", &showRefractionSettings_, flags))
 		{
-			ImGui::Checkbox("有効", &context_.viewportContext_.raytracing_.refractionEnabled_);
+			ImGui::Checkbox("有効", &context_.sceneVisual_.raytracing_.refractionEnabled_);
 
 			ImGui::Spacing();
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			ImGui::BeginDisabled(!context_.viewportContext_.raytracing_.refractionEnabled_);
+			ImGui::BeginDisabled(!context_.sceneVisual_.raytracing_.refractionEnabled_);
 
 			ImGui::PushID("屈折");
-			ImGui::SliderFloat("強さ", &context_.viewportContext_.raytracing_.refraction_.strength_, 0.0f, 1.0f);
-			ImGui::SliderFloat("最大距離", &context_.viewportContext_.raytracing_.refraction_.rayTMax_, 1.0f, 5000.0f, "%.0f");
-			ImGui::SliderFloat("法線バイアス", &context_.viewportContext_.raytracing_.refraction_.normalBias_, 0.0001f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("強さ", &context_.sceneVisual_.raytracing_.refraction_.strength_, 0.0f, 1.0f);
+			ImGui::SliderFloat("最大距離", &context_.sceneVisual_.raytracing_.refraction_.rayTMax_, 1.0f, 5000.0f, "%.0f");
+			ImGui::SliderFloat("法線バイアス", &context_.sceneVisual_.raytracing_.refraction_.normalBias_, 0.0001f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic);
 			ImGui::PopID();
 
 			ImGui::EndDisabled();
@@ -393,7 +393,7 @@ namespace SeedCore
 
 		if (ImGui::Begin("レイトレーシング：雲", &showVolumetricCloudScapesSettings_, flags))
 		{
-			ImGui::Checkbox("有効", &context_.viewportContext_.raytracing_.volumetricCloudScapesEnabled_);
+			ImGui::Checkbox("有効", &context_.sceneVisual_.raytracing_.volumetricCloudScapesEnabled_);
 
 			ImGui::Spacing();
 			ImGui::Separator();
@@ -401,96 +401,96 @@ namespace SeedCore
 
 			ImGui::TextDisabled("※スカイマップ無効時のみ表示されます");
 
-			ImGui::BeginDisabled(!context_.viewportContext_.raytracing_.volumetricCloudScapesEnabled_);
+			ImGui::BeginDisabled(!context_.sceneVisual_.raytracing_.volumetricCloudScapesEnabled_);
 
 			ImGui::SeparatorText("雲");
 
 			ImGui::PushID("雲");
-			ImGui::SliderFloat("雲量", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.coverage_, 0.0f, 1.0f);
-			ImGui::SliderFloat("雲タイプ(左:層雲 右:積雲)", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.cloudType_, 0.0f, 1.0f);
-			ImGui::SliderFloat("雨", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.rain_, 0.0f, 1.0f);
-			ImGui::SliderFloat("下端高度", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.cloudBottom_, 0.0f, 5000.0f, "%.0f");
-			ImGui::SliderFloat("上端高度", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.cloudTop_, 100.0f, 10000.0f, "%.0f");
-			ImGui::SliderFloat("密度", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.densityScale_, 0.0001f, 0.5f, "%.4f", ImGuiSliderFlags_Logarithmic);
-			ImGui::SliderFloat("ノイズスケール", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.noiseScale_, 0.0001f, 0.01f, "%.5f", ImGuiSliderFlags_Logarithmic);
-			ImGui::SliderFloat("ディテールスケール", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.detailScale_, 1.0f, 16.0f, "%.1f");
-			ImGui::SliderFloat("風速", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.windSpeed_, 0.0f, 0.5f, "%.3f");
-			ImGui::ColorEdit3("アルベド", context_.viewportContext_.raytracing_.volumetricCloudScapes_.cloudAlbedo_);
+			ImGui::SliderFloat("雲量", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.coverage_, 0.0f, 1.0f);
+			ImGui::SliderFloat("雲タイプ(左:層雲 右:積雲)", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.cloudType_, 0.0f, 1.0f);
+			ImGui::SliderFloat("雨", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.rain_, 0.0f, 1.0f);
+			ImGui::SliderFloat("下端高度", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.cloudBottom_, 0.0f, 5000.0f, "%.0f");
+			ImGui::SliderFloat("上端高度", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.cloudTop_, 100.0f, 10000.0f, "%.0f");
+			ImGui::SliderFloat("密度", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.densityScale_, 0.0001f, 0.5f, "%.4f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("ノイズスケール", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.noiseScale_, 0.0001f, 0.01f, "%.5f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("ディテールスケール", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.detailScale_, 1.0f, 16.0f, "%.1f");
+			ImGui::SliderFloat("風速", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.windSpeed_, 0.0f, 0.5f, "%.3f");
+			ImGui::ColorEdit3("アルベド", context_.sceneVisual_.raytracing_.volumetricCloudScapes_.cloudAlbedo_);
 			ImGui::PopID();
 
 			ImGui::SeparatorText("ディテール");
 
 			ImGui::PushID("ディテール");
-			ImGui::SliderFloat("侵食の強さ", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.detailStrength_, 0.0f, 1.0f, "%.2f");
-			ImGui::SliderFloat("ディテール風速比", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.detailWindSpeed_, 0.0f, 2.0f, "%.2f");
+			ImGui::SliderFloat("侵食の強さ", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.detailStrength_, 0.0f, 1.0f, "%.2f");
+			ImGui::SliderFloat("ディテール風速比", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.detailWindSpeed_, 0.0f, 2.0f, "%.2f");
 			ImGui::PopID();
 
 			ImGui::SeparatorText("天候(大きな雲の塊)");
 
 			ImGui::PushID("天候(大きな雲の塊)");
-			ImGui::SliderFloat("weather スケール", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.weatherScale_, 0.005f, 0.5f, "%.3f", ImGuiSliderFlags_Logarithmic);
-			ImGui::SliderFloat("weather 強度", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.weatherAmount_, 0.0f, 1.0f, "%.2f");
+			ImGui::SliderFloat("weather スケール", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.weatherScale_, 0.005f, 0.5f, "%.3f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("weather 強度", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.weatherAmount_, 0.0f, 1.0f, "%.2f");
 			ImGui::TextDisabled("※0 にすると空全体で雲量が一定になります");
 			ImGui::PopID();
 
 			ImGui::SeparatorText("散乱");
 
 			ImGui::PushID("散乱");
-			ImGui::SliderFloat("前方散乱(HG g)", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.scatteringG_, -0.9f, 0.9f, "%.2f");
-			ImGui::SliderFloat("後方ローブ", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.phaseBackward_, 0.0f, 0.9f, "%.2f");
-			ImGui::SliderFloat("ローブブレンド", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.phaseBlend_, 0.0f, 1.0f, "%.2f");
-			ImGui::SliderFloat("powder(日向側の締まり)", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.powderStrength_, 0.0f, 1.0f, "%.2f");
-			ImGui::SliderFloat("環境光", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.ambientStrength_, 0.0f, 2.0f, "%.2f");
+			ImGui::SliderFloat("前方散乱(HG g)", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.scatteringG_, -0.9f, 0.9f, "%.2f");
+			ImGui::SliderFloat("後方ローブ", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.phaseBackward_, 0.0f, 0.9f, "%.2f");
+			ImGui::SliderFloat("ローブブレンド", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.phaseBlend_, 0.0f, 1.0f, "%.2f");
+			ImGui::SliderFloat("powder(日向側の締まり)", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.powderStrength_, 0.0f, 1.0f, "%.2f");
+			ImGui::SliderFloat("環境光", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.ambientStrength_, 0.0f, 2.0f, "%.2f");
 
-			Int multiScatterOctaves = static_cast<Int>(context_.viewportContext_.raytracing_.volumetricCloudScapes_.multiScatterOctaves_);
+			Int multiScatterOctaves = static_cast<Int>(context_.sceneVisual_.raytracing_.volumetricCloudScapes_.multiScatterOctaves_);
 			if (ImGui::SliderInt("多重散乱オクターブ", &multiScatterOctaves, 1, 8))
 			{
-				context_.viewportContext_.raytracing_.volumetricCloudScapes_.multiScatterOctaves_ = static_cast<Uint32>(multiScatterOctaves);
+				context_.sceneVisual_.raytracing_.volumetricCloudScapes_.multiScatterOctaves_ = static_cast<Uint32>(multiScatterOctaves);
 			}
 
-			ImGui::SliderFloat("多重散乱：消散減衰", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.multiScatterAttenuation_, 0.1f, 0.95f, "%.2f");
-			ImGui::SliderFloat("多重散乱：寄与減衰", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.multiScatterContribution_, 0.1f, 0.95f, "%.2f");
+			ImGui::SliderFloat("多重散乱：消散減衰", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.multiScatterAttenuation_, 0.1f, 0.95f, "%.2f");
+			ImGui::SliderFloat("多重散乱：寄与減衰", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.multiScatterContribution_, 0.1f, 0.95f, "%.2f");
 			ImGui::SetItemTooltip("雲の明るさを決める本体。オクターブ数との総和が\n""1/(1-この値) に近づく。総和3前後で日向の白い面と同じ明るさ。");
-			ImGui::SliderFloat("多重散乱：位相減衰", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.multiScatterEccentricity_, 0.1f, 0.95f, "%.2f");
+			ImGui::SliderFloat("多重散乱：位相減衰", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.multiScatterEccentricity_, 0.1f, 0.95f, "%.2f");
 			ImGui::PopID();
 
 			ImGui::SeparatorText("層の形状と遠景");
 
 			ImGui::PushID("層の形状と遠景");
-			ImGui::SliderFloat("惑星半径", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.planetRadius_, 100000.0f, 40000000.0f, "%.0f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("惑星半径", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.planetRadius_, 100000.0f, 40000000.0f, "%.0f", ImGuiSliderFlags_Logarithmic);
 			ImGui::SetItemTooltip("雲層を球殻として扱う半径。小さくすると雲が早く地平線へ落ちる。");
-			ImGui::SliderFloat("マーチ上限距離", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.maxMarchDistance_, 20000.0f, 400000.0f, "%.0f", ImGuiSliderFlags_Logarithmic);
-			ImGui::SliderFloat("LOD 開始距離", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.lodDistance_, 2000.0f, 100000.0f, "%.0f", ImGuiSliderFlags_Logarithmic);
-			ImGui::SliderFloat("空気遠近の濃さ", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.aerialDensity_, 0.0f, 0.0002f, "%.6f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("マーチ上限距離", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.maxMarchDistance_, 20000.0f, 400000.0f, "%.0f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("LOD 開始距離", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.lodDistance_, 2000.0f, 100000.0f, "%.0f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("空気遠近の濃さ", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.aerialDensity_, 0.0f, 0.0002f, "%.6f", ImGuiSliderFlags_Logarithmic);
 			ImGui::PopID();
 
 			ImGui::SeparatorText("サンプリング");
 
 			ImGui::PushID("サンプリング");
-			Int stepCount = static_cast<Int>(context_.viewportContext_.raytracing_.volumetricCloudScapes_.stepCount_);
+			Int stepCount = static_cast<Int>(context_.sceneVisual_.raytracing_.volumetricCloudScapes_.stepCount_);
 			if (ImGui::SliderInt("ステップ数", &stepCount, 8, 256))
 			{
-				context_.viewportContext_.raytracing_.volumetricCloudScapes_.stepCount_ = static_cast<Uint32>(stepCount);
+				context_.sceneVisual_.raytracing_.volumetricCloudScapes_.stepCount_ = static_cast<Uint32>(stepCount);
 			}
 
-			Int lightStepCount = static_cast<Int>(context_.viewportContext_.raytracing_.volumetricCloudScapes_.lightStepCount_);
+			Int lightStepCount = static_cast<Int>(context_.sceneVisual_.raytracing_.volumetricCloudScapes_.lightStepCount_);
 			if (ImGui::SliderInt("ライトステップ数", &lightStepCount, 1, 16))
 			{
-				context_.viewportContext_.raytracing_.volumetricCloudScapes_.lightStepCount_ = static_cast<Uint32>(lightStepCount);
+				context_.sceneVisual_.raytracing_.volumetricCloudScapes_.lightStepCount_ = static_cast<Uint32>(lightStepCount);
 			}
 
-			ImGui::SliderFloat("テンポラルジッタ", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.temporalJitter_, 0.0f, 1.0f, "%.2f");
+			ImGui::SliderFloat("テンポラルジッタ", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.temporalJitter_, 0.0f, 1.0f, "%.2f");
 			ImGui::SetItemTooltip("0=フレーム非依存ディザ(安定)。上げると毎フレーム変動するので TAA/DLSS 前提。");
 			ImGui::PopID();
 
 			ImGui::SeparatorText("空と太陽");
 
 			ImGui::PushID("空と太陽");
-			ImGui::ColorEdit3("天頂色(空の青さ)", context_.viewportContext_.raytracing_.volumetricCloudScapes_.skyZenithColor_);
-			ImGui::ColorEdit3("地平線色", context_.viewportContext_.raytracing_.volumetricCloudScapes_.skyHorizonColor_);
-			ImGui::ColorEdit3("地面色", context_.viewportContext_.raytracing_.volumetricCloudScapes_.groundColor_);
-			ImGui::SliderFloat("空の明るさ", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.skyBrightness_, 0.0f, 4.0f, "%.2f");
-			ImGui::SliderFloat("太陽の視半径", &context_.viewportContext_.raytracing_.volumetricCloudScapes_.sunSize_, 0.005f, 0.2f, "%.3f");
+			ImGui::ColorEdit3("天頂色(空の青さ)", context_.sceneVisual_.raytracing_.volumetricCloudScapes_.skyZenithColor_);
+			ImGui::ColorEdit3("地平線色", context_.sceneVisual_.raytracing_.volumetricCloudScapes_.skyHorizonColor_);
+			ImGui::ColorEdit3("地面色", context_.sceneVisual_.raytracing_.volumetricCloudScapes_.groundColor_);
+			ImGui::SliderFloat("空の明るさ", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.skyBrightness_, 0.0f, 4.0f, "%.2f");
+			ImGui::SliderFloat("太陽の視半径", &context_.sceneVisual_.raytracing_.volumetricCloudScapes_.sunSize_, 0.005f, 0.2f, "%.3f");
 			ImGui::PopID();
 
 			ImGui::EndDisabled();
@@ -525,35 +525,35 @@ namespace SeedCore
 
 		if (ImGui::Begin("レイトレーシング：星", &showVolumetricStarSettings_, flags))
 		{
-			ImGui::Checkbox("有効", &context_.viewportContext_.raytracing_.volumetricStarEnabled_);
+			ImGui::Checkbox("有効", &context_.sceneVisual_.raytracing_.volumetricStarEnabled_);
 			ImGui::TextDisabled("※グラフィックス→環境の DaySystem が有効で夜になるほど強く見えます");
 
 			ImGui::Spacing();
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			ImGui::BeginDisabled(!context_.viewportContext_.raytracing_.volumetricStarEnabled_);
+			ImGui::BeginDisabled(!context_.sceneVisual_.raytracing_.volumetricStarEnabled_);
 
 			ImGui::SeparatorText("星空");
 
 			ImGui::PushID("星空");
-			ImGui::SliderFloat("グリッドの角度サイズ", &context_.viewportContext_.raytracing_.volumetricStar_.cellSize_, 0.02f, 0.5f, "%.3f", ImGuiSliderFlags_Logarithmic);
-			ImGui::SliderFloat("密度", &context_.viewportContext_.raytracing_.volumetricStar_.density_, 0.0f, 1.0f, "%.2f");
-			ImGui::SliderFloat("明るさ", &context_.viewportContext_.raytracing_.volumetricStar_.brightness_, 0.0f, 5.0f, "%.2f");
-			ImGui::SliderFloat("瞬き速度", &context_.viewportContext_.raytracing_.volumetricStar_.twinkleSpeed_, 0.0f, 10.0f, "%.2f");
-			ImGui::ColorEdit3("色", context_.viewportContext_.raytracing_.volumetricStar_.color_);
-			ImGui::SliderFloat("サイズ(最小)", &context_.viewportContext_.raytracing_.volumetricStar_.sizeMin_, 0.005f, 0.2f, "%.3f", ImGuiSliderFlags_Logarithmic);
-			ImGui::SliderFloat("サイズ(最大)", &context_.viewportContext_.raytracing_.volumetricStar_.sizeMax_, 0.005f, 0.2f, "%.3f", ImGuiSliderFlags_Logarithmic);
-			ImGui::SliderFloat("Glow強さ", &context_.viewportContext_.raytracing_.volumetricStar_.glowIntensity_, 0.0f, 3.0f, "%.2f");
-			ImGui::SliderFloat("Glow減衰(大きいほど締まる)", &context_.viewportContext_.raytracing_.volumetricStar_.glowFalloff_, 10.0f, 400.0f, "%.0f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("グリッドの角度サイズ", &context_.sceneVisual_.raytracing_.volumetricStar_.cellSize_, 0.02f, 0.5f, "%.3f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("密度", &context_.sceneVisual_.raytracing_.volumetricStar_.density_, 0.0f, 1.0f, "%.2f");
+			ImGui::SliderFloat("明るさ", &context_.sceneVisual_.raytracing_.volumetricStar_.brightness_, 0.0f, 5.0f, "%.2f");
+			ImGui::SliderFloat("瞬き速度", &context_.sceneVisual_.raytracing_.volumetricStar_.twinkleSpeed_, 0.0f, 10.0f, "%.2f");
+			ImGui::ColorEdit3("色", context_.sceneVisual_.raytracing_.volumetricStar_.color_);
+			ImGui::SliderFloat("サイズ(最小)", &context_.sceneVisual_.raytracing_.volumetricStar_.sizeMin_, 0.005f, 0.2f, "%.3f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("サイズ(最大)", &context_.sceneVisual_.raytracing_.volumetricStar_.sizeMax_, 0.005f, 0.2f, "%.3f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("Glow強さ", &context_.sceneVisual_.raytracing_.volumetricStar_.glowIntensity_, 0.0f, 3.0f, "%.2f");
+			ImGui::SliderFloat("Glow減衰(大きいほど締まる)", &context_.sceneVisual_.raytracing_.volumetricStar_.glowFalloff_, 10.0f, 400.0f, "%.0f", ImGuiSliderFlags_Logarithmic);
 			ImGui::PopID();
 
 			ImGui::SeparatorText("流れ星");
 
 			ImGui::PushID("流れ星");
-			ImGui::SliderFloat("発生確率(1秒あたり)", &context_.viewportContext_.raytracing_.volumetricStar_.shootingStarChancePerSecond_, 0.0f, 1.0f, "%.3f");
-			ImGui::SliderFloat("明るさ", &context_.viewportContext_.raytracing_.volumetricStar_.shootingStarBrightness_, 0.0f, 10.0f, "%.2f");
-			ImGui::SliderFloat("筋の太さ", &context_.viewportContext_.raytracing_.volumetricStar_.shootingStarWidth_, 0.0002f, 0.02f, "%.4f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("発生確率(1秒あたり)", &context_.sceneVisual_.raytracing_.volumetricStar_.shootingStarChancePerSecond_, 0.0f, 1.0f, "%.3f");
+			ImGui::SliderFloat("明るさ", &context_.sceneVisual_.raytracing_.volumetricStar_.shootingStarBrightness_, 0.0f, 10.0f, "%.2f");
+			ImGui::SliderFloat("筋の太さ", &context_.sceneVisual_.raytracing_.volumetricStar_.shootingStarWidth_, 0.0002f, 0.02f, "%.4f", ImGuiSliderFlags_Logarithmic);
 			ImGui::PopID();
 
 			ImGui::EndDisabled();
@@ -588,20 +588,20 @@ namespace SeedCore
 
 		if (ImGui::Begin("レイトレーシング：表面下散乱", &showSubsurfaceScatteringSettings_, flags))
 		{
-			ImGui::Checkbox("有効", &context_.viewportContext_.raytracing_.subsurfaceScatteringEnabled_);
+			ImGui::Checkbox("有効", &context_.sceneVisual_.raytracing_.subsurfaceScatteringEnabled_);
 
 			ImGui::Spacing();
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			ImGui::BeginDisabled(!context_.viewportContext_.raytracing_.subsurfaceScatteringEnabled_);
+			ImGui::BeginDisabled(!context_.sceneVisual_.raytracing_.subsurfaceScatteringEnabled_);
 
 			ImGui::PushID("表面下散乱");
-			ImGui::SliderFloat("散乱距離", &context_.viewportContext_.raytracing_.subsurfaceScattering_.scatterDistance_, 0.01f, 5.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
-			ImGui::SliderFloat("強さ", &context_.viewportContext_.raytracing_.subsurfaceScattering_.strength_, 0.0f, 4.0f, "%.2f");
-			ImGui::SliderFloat("最大厚み", &context_.viewportContext_.raytracing_.subsurfaceScattering_.rayTMax_, 0.1f, 50.0f, "%.1f");
-			ImGui::SliderFloat("厚みバイアス", &context_.viewportContext_.raytracing_.subsurfaceScattering_.thicknessBias_, 0.0001f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic);
-			ImGui::ColorEdit3("透光色", context_.viewportContext_.raytracing_.subsurfaceScattering_.subsurfaceColor_);
+			ImGui::SliderFloat("散乱距離", &context_.sceneVisual_.raytracing_.subsurfaceScattering_.scatterDistance_, 0.01f, 5.0f, "%.3f", ImGuiSliderFlags_Logarithmic);
+			ImGui::SliderFloat("強さ", &context_.sceneVisual_.raytracing_.subsurfaceScattering_.strength_, 0.0f, 4.0f, "%.2f");
+			ImGui::SliderFloat("最大厚み", &context_.sceneVisual_.raytracing_.subsurfaceScattering_.rayTMax_, 0.1f, 50.0f, "%.1f");
+			ImGui::SliderFloat("厚みバイアス", &context_.sceneVisual_.raytracing_.subsurfaceScattering_.thicknessBias_, 0.0001f, 1.0f, "%.4f", ImGuiSliderFlags_Logarithmic);
+			ImGui::ColorEdit3("透光色", context_.sceneVisual_.raytracing_.subsurfaceScattering_.subsurfaceColor_);
 			ImGui::PopID();
 
 			ImGui::EndDisabled();
@@ -620,9 +620,9 @@ namespace SeedCore
 
 	void RaytracingPanel::DrawEnableCheckbox(GraphicsEffect effect, Bool& enabled)
 	{
-		ViewportContext& viewport = context_.viewportContext_;
+		SceneVisualContext& visual = context_.sceneVisual_;
 
-		Bool interactive = GraphicsQuality::EnableCheckboxInteractive(effect, GraphicsEffectFamily::Raytracing, viewport.qualityPreset_, viewport.raytracing_, viewport.screenSpace_, viewport.rasterization_);
+		Bool interactive = GraphicsQuality::EnableCheckboxInteractive(effect, GraphicsEffectFamily::Raytracing, visual.qualityPreset_, visual.raytracing_, visual.screenSpace_, visual.rasterization_);
 
 		ImGui::BeginDisabled(!interactive);
 		ImGui::Checkbox("有効", &enabled);
@@ -630,7 +630,7 @@ namespace SeedCore
 
 		if (!interactive && !enabled)
 		{
-			if (viewport.qualityPreset_ != GraphicsQualityPreset::Custom)
+			if (visual.qualityPreset_ != GraphicsQualityPreset::Custom)
 			{
 				ImGui::TextDisabled("※品質プリセットが「カスタム」のときのみ変更できます");
 			}

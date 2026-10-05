@@ -11,7 +11,7 @@ namespace SeedCore
 	struct EditorContext;
 
 	/// [JP] メインメニューバー内の「グラフィックス」メニュー。表示モード（ビューモード）
-	///      の選択を EditorContext::viewMode_ に対して行う。状態はエディタービューの
+	///      の選択を EditorViewContext::viewMode_ に対して行う。状態はエディタービューの
 	///      ツールバーと共有する。BeginMainMenuBar の内側で Draw を呼ぶこと。
 	///      「レイトレーシング」配下は RaytracingPanel、「環境」配下は
 	///      EnvironmentMenuPanel に委譲する。

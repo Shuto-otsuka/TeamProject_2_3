@@ -49,10 +49,6 @@ namespace SeedCore
 
 		ConfigCategory selectedCategory_ = ConfigCategory::Editor;
 
-		EditorConfig editorConfig_;
-
-		GameConfig gameConfig_;
-
 		IconConfig iconConfig_;
 
 		std::string initialScenePathBuffer_;

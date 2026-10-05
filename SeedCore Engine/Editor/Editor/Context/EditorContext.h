@@ -4,9 +4,15 @@
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/Command/History.h>
 #include <FoundationEngine/Resource/Scene/Scene.h>
-#include <Editor/Editor/GizmoContext.h>
-#include <FoundationEngine/Resource/ResourceSync.h>
-#include <Editor/Editor/Panel/ResourceSyncControlPanel.h>
+#include <Editor/Editor/Context/ApplicationContext.h>
+#include <Editor/Editor/Context/WorldContext.h>
+#include <Editor/Editor/Context/GraphicsContext.h>
+#include <Editor/Editor/Context/GuizmoContext.h>
+#include <Editor/Editor/Context/SceneContext.h>
+#include <Editor/Editor/Context/SceneVisualContext.h>
+#include <Editor/Editor/Context/SelectionContext.h>
+#include <Editor/Editor/Context/ViewContext.h>
+#include <Editor/Editor/Context/ConfigContext.h>
 #include <GraphicsEngine/Renderer/ViewMode.h>
 #include <GraphicsEngine/Raytracing/RaytracingContext.h>
 #include <GraphicsEngine/ScreenSpace/ScreenSpaceContext.h>
@@ -16,20 +22,9 @@
 
 namespace SeedCore
 {
-	class Actor;
-	class World;
-	class ResourceCache;
-	class SystemScheduler;
-	class GameTimer;
-	class EditorCamera;
-	class EditorCameraController;
-	class CanvasCamera;
 	class PreviewCamera;
 	class PreviewCameraController;
 	class CameraSystem;
-	struct LoaderSystem;
-	class Graphics;
-	class ImGuiRenderer;
 	class AnimatorControllerPanel;
 	class TimelinePanel;
 	class LayerSettingsPanel;
@@ -41,27 +36,8 @@ namespace SeedCore
 	class BootScreenRenderer;
 	struct BootConfig;
 
-	struct WorldContext
-	{
-		World* world_ = nullptr;
-		ResourceCache* resource_ = nullptr;
-		LoaderSystem* loader_ = nullptr;
-		GameTimer* gameTimer_ = nullptr;
-		SystemScheduler* system_ = nullptr;
-	};
-
-	struct GraphicsContext
-	{
-		Graphics* graphics_ = nullptr;
-
-		ImGuiRenderer* imgui_ = nullptr;
-	};
-
 	struct CameraContext
 	{
-		EditorCamera* editorCamera_ = nullptr;
-		EditorCameraController* editorCameraController_ = nullptr;
-		CanvasCamera* canvasCamera_ = nullptr;
 		PreviewCamera* timelineCamera_ = nullptr;
 		PreviewCamera* modelTransformCamera_ = nullptr;
 		PreviewCamera* materialCamera_ = nullptr;
@@ -73,53 +49,6 @@ namespace SeedCore
 		PreviewCameraController* skeletonControllerCameraController_ = nullptr;
 		PreviewCameraController* avatarCameraController_ = nullptr;
 		CameraSystem* cameraSystem_ = nullptr;
-	};
-
-	struct SelectionContext
-	{
-		Entity selectedEntity_ = Entity::Null();
-		Actor selectedActor_;
-		DynamicArray<Actor> selectedActors_;
-	};
-
-	struct SceneContext
-	{
-		Scene playModeScene_;
-		RaytracingContext playModeRaytracing_;
-		ScreenSpaceContext playModeScreenSpace_;
-		RasterizationContext playModeRasterization_;
-		Float playModeMasterVolume_ = 1.0f;
-		DynamicArray<Float> playModeCategoryVolumes_;
-		History history_;
-		std::filesystem::path currentScenePath_;
-		Uint32 requestedSceneAssetID_ = 0;
-	};
-
-	struct FrameGenerationContext
-	{
-		Bool enabled_ = false;
-	};
-
-	struct UpscaleContext
-	{
-		Bool dlssRayReconstructionEnabled_ = false;
-		UpscaleMode upscaleMode_ = UpscaleMode::Balanced;
-	};
-
-	struct ViewportContext
-	{
-		GuizmoContext guizmo_;
-		ViewMode viewMode_ = ViewMode::Lit;
-		RaytracingContext raytracing_;
-		ScreenSpaceContext screenSpace_;
-		RasterizationContext rasterization_;
-		GraphicsQualityPreset qualityPreset_ = GraphicsQualityPreset::Custom;
-		FrameGenerationContext frameGeneration_;
-		UpscaleContext upscale_;
-		ResolutionPreset outputResolution_ = ResolutionPreset::HD;
-		Bool vsync_ = false;
-		Bool resizeRequested_ = false;
-		Bool recreateRequested_ = false;
 	};
 
 	struct TimelinePreviewContext
@@ -185,15 +114,58 @@ namespace SeedCore
 		BootScreenPanel* bootScreenPanel_ = nullptr;
 	};
 
+	/**
+	* [EN]
+	* Everything the editor's panels share, passed to each panel by
+	* reference. Each member groups one area of the editor; the services in
+	* it are owned by Engine or Editor, not by this struct.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* エディタの各パネルが共有するものすべて。各パネルへ参照で渡す。
+	* メンバーはエディタの領域ごとのまとまりで、中のサービスはこの構造体では
+	* なく Engine や Editor が所有する。
+	*/
 	struct EditorContext
 	{
-		ResourceSync* resourceSync_ = nullptr;
-		WorldContext worldContext_;
-		GraphicsContext graphicsContext_;
+		/// [EN] Editor-wide state: shared-asset sync, UI frame counter, quit request.
+		/// [JP] エディタ全体の状態。共有アセットの同期、UI のフレーム番号、終了の要求。
+		ApplicationContext application_;
+
+		/// [EN] The world being edited and the services that load into and run it.
+		/// [JP] 編集中のワールドと、そこへの読み込みや実行を担うサービス。
+		WorldContext world_;
+
+		/// [EN] The renderer and the ImGui backend.
+		/// [JP] レンダラーと ImGui のバックエンド。
+		GraphicsContext graphics_;
+
+		/// [EN] Transform gizmo settings, shared by the editor view and the canvas view.
+		/// [JP] トランスフォームギズモの設定。エディタービューと Canvas ビューで共有する。
+		GuizmoContext guizmo_;
+
+		/// [EN] The scene being edited: its file, a request to open another, and the undo/redo history.
+		/// [JP] 編集中のシーン。ファイル、別のシーンを開く依頼、元に戻す・やり直しの履歴。
+		SceneContext scene_;
+
+		/// [EN] Rendering settings saved with the scene, until they become components.
+		/// [JP] シーンと一緒に保存する描画の設定。コンポーネントになるまでのつなぎ。
+		SceneVisualContext sceneVisual_;
+
+		/// [EN] Selected actors; the last one is the primary selection.
+		/// [JP] 選択中のアクター。最後の1つが主な選択。
+		SelectionContext selection_;
+
+		/// [EN] The views the scene is edited in: the 3D editor view and the 2D canvas view.
+		/// [JP] シーンを編集するビュー。3D のエディタービューと 2D の Canvas ビュー。
+		ViewContext view_;
+
+		/// [EN] The game's settings file shared with Engine, and the requests to rebuild rendering after it changes.
+		/// [JP] Engine と共有するゲームの設定ファイルと、変更後に描画を作り直す依頼。
+		ConfigContext config_;
+
 		CameraContext cameraContext_;
-		SelectionContext selectionContext_;
-		SceneContext sceneContext_;
-		ViewportContext viewportContext_;
 		TimelinePreviewContext timelinePreviewContext_;
 		ModelTransformPreviewContext modelTransformPreviewContext_;
 		MaterialPreviewContext materialPreviewContext_;
@@ -201,9 +173,5 @@ namespace SeedCore
 		AvatarPreviewContext avatarPreviewContext_;
 		BootScreenPreviewContext bootScreenPreviewContext_;
 		PanelContext panelContext_;
-
-		Uint64 uiFrame_ = 0;
-
-		Bool exitRequested_ = false;
 	};
 }

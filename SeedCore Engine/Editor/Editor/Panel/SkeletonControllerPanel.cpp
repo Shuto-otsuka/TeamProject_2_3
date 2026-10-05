@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/SkeletonControllerPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <External/ImGui/Include/imgui_internal.h>
@@ -49,13 +49,13 @@ namespace SeedCore
 			return;
 		}
 
-		ImGui::DockBuilderDockWindow("スケルトンコントローラー", context_.graphicsContext_.imgui_->DockSpaceID());
+		ImGui::DockBuilderDockWindow("スケルトンコントローラー", context_.graphics_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("スケルトンコントローラー", &show_);
 		if (isFocused_)
 		{
-			const Mesh* mesh = context_.selectionContext_.selectedActor_ ? context_.worldContext_.world_->GetComponent<Mesh>(context_.selectionContext_.selectedActor_.GetEntity()) : nullptr;
+			const Mesh* mesh = context_.selection_.Primary() ? context_.world_.world_->GetComponent<Mesh>(context_.selection_.Primary().GetEntity()) : nullptr;
 
 			if (!mesh || mesh->meshID_ == 0)
 			{
@@ -63,9 +63,9 @@ namespace SeedCore
 			}
 			else
 			{
-				ModelResource* modelResource = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model);
+				ModelResource* modelResource = context_.world_.resource_->GetResource<ModelResource>(AssetType::Model);
 				Handle<Crister> handle = modelResource->GetHandle(mesh->meshID_);
-				currentCrister_ = handle.empty() ? nullptr : modelResource->Resolve(*context_.worldContext_.loader_, handle);
+				currentCrister_ = handle.empty() ? nullptr : modelResource->Resolve(*context_.world_.loader_, handle);
 
 				if (!currentCrister_)
 				{
@@ -125,7 +125,7 @@ namespace SeedCore
 
 	void SkeletonControllerPanel::DrawPreview()
 	{
-		const Mesh* mesh = context_.worldContext_.world_->GetComponent<Mesh>(context_.selectionContext_.selectedActor_.GetEntity());
+		const Mesh* mesh = context_.world_.world_->GetComponent<Mesh>(context_.selection_.Primary().GetEntity());
 
 		context_.skeletonControllerPreviewContext_.previewActive_ = true;
 		context_.skeletonControllerPreviewContext_.previewMeshAssetId_ = mesh->meshID_;

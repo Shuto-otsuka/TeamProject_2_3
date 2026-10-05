@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/AvatarPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <External/ImGui/Include/imgui_internal.h>
@@ -115,7 +115,7 @@ namespace SeedCore
 
 	void AvatarPanel::ClearRegionTextures()
 	{
-		BindlessHeap* bindlessHeap = &context_.graphicsContext_.graphics_->GetBindlessHeap();
+		BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->GetBindlessHeap();
 		for (Uint32 regionIndex = 0; regionIndex < regionSlotCount_; regionIndex++)
 		{
 			bindlessHeap->Release(std::move(regionTextureResources_[regionIndex]), regionTextureIndices_[regionIndex]);
@@ -130,8 +130,8 @@ namespace SeedCore
 		{
 			return;
 		}
-		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-		BindlessHeap* bindlessHeap = &context_.graphicsContext_.graphics_->GetBindlessHeap();
+		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
+		BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->GetBindlessHeap();
 
 		if (regionTextureIndices_[regionIndex] == 0xFFFFFFFF)
 		{
@@ -256,7 +256,7 @@ namespace SeedCore
 			return;
 		}
 
-		ImGui::DockBuilderDockWindow("アバター生成", context_.graphicsContext_.imgui_->DockSpaceID());
+		ImGui::DockBuilderDockWindow("アバター生成", context_.graphics_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(1180, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("アバター生成", &show_);
@@ -310,8 +310,8 @@ namespace SeedCore
 				ResourcePtr<AvatarMesh>& mesh = kind_ == AvatarKind::Human ? humanMesh_ : animalMesh_;
 				if (!mesh)
 				{
-					ID3D12Device* device = context_.graphicsContext_.graphics_->GetContext().GetDevice();
-					BindlessHeap* bindlessHeap = &context_.graphicsContext_.graphics_->GetBindlessHeap();
+					ID3D12Device* device = context_.graphics_.graphics_->GetContext().GetDevice();
+					BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->GetBindlessHeap();
 					mesh = MakePtr<AvatarMesh>();
 					Uint32 regionRanges[regionSlotCount_ * 2] = {};
 					for (Uint32 regionIndex = 0; regionIndex < ActiveRegionCount(); regionIndex++)
@@ -486,7 +486,7 @@ namespace SeedCore
 					ImGui::SameLine();
 					if (ImGui::SmallButton("解除"))
 					{
-						BindlessHeap* bindlessHeap = &context_.graphicsContext_.graphics_->GetBindlessHeap();
+						BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->GetBindlessHeap();
 						bindlessHeap->Release(std::move(regionTextureResources_[regionIndex]), regionTextureIndices_[regionIndex]);
 						regionTextureIndices_[regionIndex] = 0xFFFFFFFF;
 						regionTexturePaths_[regionIndex] = String();

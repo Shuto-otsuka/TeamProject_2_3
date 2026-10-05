@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/EditorWindowPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <Editor/Editor/ViewportPicking.h>
@@ -23,60 +23,60 @@ namespace SeedCore
 		ImVec4 activeColor = ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive);
 		ImVec4 hoverColor = ImGui::GetStyleColorVec4(ImGuiCol_HeaderHovered);
 
-		auto& op = context_.viewportContext_.guizmo_.guizmoOperation_;
+		auto& op = context_.guizmo_.operation_;
 
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hoverColor);
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, activeColor);
 
-		ImGui::PushStyleColor(ImGuiCol_Button, !context_.viewportContext_.guizmo_.showGuizmo_ ? activeColor : transparent);
+		ImGui::PushStyleColor(ImGuiCol_Button, !context_.guizmo_.visible_ ? activeColor : transparent);
 		if (ImGui::ImageButton("##NonSelected", imguiTexture_.Icon(IconType::NonSelected), iconSize))
 		{
-			context_.viewportContext_.guizmo_.showGuizmo_ = !context_.viewportContext_.guizmo_.showGuizmo_;
-			context_.viewportContext_.guizmo_.rectTool_ = false;
+			context_.guizmo_.visible_ = !context_.guizmo_.visible_;
+			context_.guizmo_.rectTool_ = false;
 			op = (ImGuizmo::OPERATION)0;
 		}
 		ImGui::PopStyleColor();
 
 		ImGui::SameLine();
 
-		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.viewportContext_.guizmo_.rectTool_ && op == ImGuizmo::TRANSLATE) ? activeColor : transparent);
+		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && op == ImGuizmo::TRANSLATE) ? activeColor : transparent);
 		if (ImGui::ImageButton("##Translate", imguiTexture_.Icon(IconType::Translate), iconSize))
 		{
-			context_.viewportContext_.guizmo_.showGuizmo_ = true;
-			context_.viewportContext_.guizmo_.rectTool_ = false;
+			context_.guizmo_.visible_ = true;
+			context_.guizmo_.rectTool_ = false;
 			op = ImGuizmo::TRANSLATE;
 		}
 		ImGui::PopStyleColor();
 
 		ImGui::SameLine();
 
-		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.viewportContext_.guizmo_.rectTool_ && op == ImGuizmo::ROTATE) ? activeColor : transparent);
+		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && op == ImGuizmo::ROTATE) ? activeColor : transparent);
 		if (ImGui::ImageButton("##Rotate", imguiTexture_.Icon(IconType::Rotate), iconSize))
 		{
-			context_.viewportContext_.guizmo_.showGuizmo_ = true;
-			context_.viewportContext_.guizmo_.rectTool_ = false;
+			context_.guizmo_.visible_ = true;
+			context_.guizmo_.rectTool_ = false;
 			op = ImGuizmo::ROTATE;
 		}
 		ImGui::PopStyleColor();
 
 		ImGui::SameLine();
 
-		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.viewportContext_.guizmo_.rectTool_ && op == ImGuizmo::SCALE) ? activeColor : transparent);
+		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && op == ImGuizmo::SCALE) ? activeColor : transparent);
 		if (ImGui::ImageButton("##Scale", imguiTexture_.Icon(IconType::Scale), iconSize))
 		{
-			context_.viewportContext_.guizmo_.showGuizmo_ = true;
-			context_.viewportContext_.guizmo_.rectTool_ = false;
+			context_.guizmo_.visible_ = true;
+			context_.guizmo_.rectTool_ = false;
 			op = ImGuizmo::SCALE;
 		}
 		ImGui::PopStyleColor();
 
 		ImGui::SameLine();
 
-		ImGui::PushStyleColor(ImGuiCol_Button, context_.viewportContext_.guizmo_.rectTool_ ? activeColor : transparent);
+		ImGui::PushStyleColor(ImGuiCol_Button, context_.guizmo_.rectTool_ ? activeColor : transparent);
 		if (ImGui::ImageButton("##Rect", imguiTexture_.Icon(IconType::Rect), iconSize))
 		{
-			context_.viewportContext_.guizmo_.showGuizmo_ = true;
-			context_.viewportContext_.guizmo_.rectTool_ = true;
+			context_.guizmo_.visible_ = true;
+			context_.guizmo_.rectTool_ = true;
 		}
 		ImGui::PopStyleColor();
 
@@ -101,13 +101,13 @@ namespace SeedCore
 			ImGui::SeparatorText("スナップ");
 
 			ImGui::SetNextItemWidth(120.0f);
-			ImGui::DragFloat("移動", &context_.viewportContext_.guizmo_.translateSnap_, 0.1f, 0.01f, 100.0f, "%.2f");
+			ImGui::DragFloat("移動", &context_.guizmo_.translateSnap_, 0.1f, 0.01f, 100.0f, "%.2f");
 
 			ImGui::SetNextItemWidth(120.0f);
-			ImGui::DragFloat("回転", &context_.viewportContext_.guizmo_.rotateSnap_, 0.5f, 0.1f, 90.0f, "%.0f\xc2\xb0");
+			ImGui::DragFloat("回転", &context_.guizmo_.rotateSnap_, 0.5f, 0.1f, 90.0f, "%.0f\xc2\xb0");
 
 			ImGui::SetNextItemWidth(120.0f);
-			ImGui::DragFloat("拡大縮小", &context_.viewportContext_.guizmo_.scaleSnap_, 0.05f, 0.01f, 10.0f, "%.2f");
+			ImGui::DragFloat("拡大縮小", &context_.guizmo_.scaleSnap_, 0.05f, 0.01f, 10.0f, "%.2f");
 
 			ImGui::EndPopup();
 		}
@@ -129,9 +129,9 @@ namespace SeedCore
 		ImGui::PushStyleVar(ImGuiStyleVar_PopupBorderSize, 1.0f);
 		if (ImGui::BeginPopup("##CameraSettings"))
 		{
-			if (context_.cameraContext_.editorCamera_)
+			if (context_.view_.editor_.camera_)
 			{
-				EditorCamera& camera = *context_.cameraContext_.editorCamera_;
+				EditorCamera& camera = *context_.view_.editor_.camera_;
 				ImGui::SeparatorText("投影");
 
 				Float nearPlane = camera.Near();
@@ -156,9 +156,9 @@ namespace SeedCore
 				}
 			}
 
-			if (context_.cameraContext_.editorCameraController_)
+			if (context_.view_.editor_.cameraController_)
 			{
-				EditorCameraController& controller = *context_.cameraContext_.editorCameraController_;
+				EditorCameraController& controller = *context_.view_.editor_.cameraController_;
 				ImGui::SeparatorText("操作速度");
 
 				Float moveSpeed = controller.MoveSpeed();
@@ -219,9 +219,9 @@ namespace SeedCore
 		{
 			auto item = [&](const Char* label, ViewMode mode)
 			{
-				if (ImGui::MenuItem(label, nullptr, context_.viewportContext_.viewMode_ == mode))
+				if (ImGui::MenuItem(label, nullptr, context_.view_.editor_.viewMode_ == mode))
 				{
-					context_.viewportContext_.viewMode_ = mode;
+					context_.view_.editor_.viewMode_ = mode;
 				}
 			};
 
@@ -264,7 +264,7 @@ namespace SeedCore
 
 	void EditorWindowPanel::Draw(D3D12_GPU_DESCRIPTOR_HANDLE frameBufferHandle)
 	{
-		ImGuiID dockspaceID = context_.graphicsContext_.imgui_->DockSpaceID();
+		ImGuiID dockspaceID = context_.graphics_.imgui_->DockSpaceID();
 		ImGui::SetNextWindowDockID(dockspaceID, ImGuiCond_FirstUseEver);
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
@@ -335,13 +335,13 @@ namespace SeedCore
 				///      空間のレイへ逆投影し、その Bounds に当たる最も近い
 				///      アクターを選択する（ViewportPicking 参照）。何もない場所を
 				///      クリックすると選択解除する（Unrealの挙動と同じ）。
-				if (ImGui::IsWindowHovered() && !ImGuizmo::IsUsing() && !ImGuizmo::IsOver() && !guizmoPanel_.RectToolActive() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && context_.cameraContext_.editorCamera_ && context_.worldContext_.world_)
+				if (ImGui::IsWindowHovered() && !ImGuizmo::IsUsing() && !ImGuizmo::IsOver() && !guizmoPanel_.RectToolActive() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && context_.view_.editor_.camera_ && context_.world_.world_)
 				{
 					ImVec2 mousePosition = ImGui::GetMousePos();
 					if (mousePosition.x >= screenPosition.x && mousePosition.x <= screenPosition.x + imageWidth &&
 						mousePosition.y >= screenPosition.y && mousePosition.y <= screenPosition.y + imageHeight)
 					{
-						EditorCamera& camera = *context_.cameraContext_.editorCamera_;
+						EditorCamera& camera = *context_.view_.editor_.camera_;
 
 						Float ndcX = ((mousePosition.x - screenPosition.x) / imageWidth) * 2.0f - 1.0f;
 						Float ndcY = 1.0f - ((mousePosition.y - screenPosition.y) / imageHeight) * 2.0f;
@@ -352,45 +352,27 @@ namespace SeedCore
 						Vector3 rayDirection = farPoint - rayOrigin;
 						rayDirection.Normalize();
 
-						Actor hitActor = ViewportPicking::Pick(*context_.worldContext_.world_, rayOrigin, rayDirection);
+						Actor hitActor = ViewportPicking::Pick(*context_.world_.world_, rayOrigin, rayDirection);
 
-						SelectionContext& selection = context_.selectionContext_;
 						if (ImGui::GetIO().KeyCtrl)
 						{
-							if (hitActor)
-							{
-								auto it = std::ranges::find(selection.selectedActors_, hitActor);
-								if (it != selection.selectedActors_.end())
-								{
-									selection.selectedActors_.erase(it);
-								}
-								else
-								{
-									selection.selectedActors_.push_back(hitActor);
-								}
-							}
+							context_.selection_.Toggle(hitActor);
 						}
 						else
 						{
-							selection.selectedActors_.clear();
-							if (hitActor)
-							{
-								selection.selectedActors_.push_back(hitActor);
-							}
+							context_.selection_.Select(hitActor);
 						}
-						selection.selectedActor_ = selection.selectedActors_.empty() ? Actor() : selection.selectedActors_.back();
-						selection.selectedEntity_ = selection.selectedActor_ ? selection.selectedActor_.GetEntity() : Entity::Null();
 					}
 				}
 
-				if (context_.cameraContext_.editorCamera_)
+				if (context_.view_.editor_.camera_)
 				{
 					constexpr Float gizmoSize = 80.0f;
 					ImVec2 gizmoPosition = ImVec2(screenPosition.x, screenPosition.y + imageHeight - gizmoSize);
 
-					Matrix view = context_.cameraContext_.editorCamera_->View();
+					Matrix view = context_.view_.editor_.camera_->View();
 
-					Float orbitDistance = Vector3::Distance(context_.cameraContext_.editorCamera_->Eye(), context_.cameraContext_.editorCamera_->Focus());
+					Float orbitDistance = Vector3::Distance(context_.view_.editor_.camera_->Eye(), context_.view_.editor_.camera_->Focus());
 					if (orbitDistance < 0.01f)
 					{
 						orbitDistance = 8.0f;
@@ -412,13 +394,13 @@ namespace SeedCore
 						Vector3 newUp = worldUp - newForward * newForward.Dot(worldUp);
 						if (newUp.LengthSquared() < 1e-6f)
 						{
-							newUp = context_.cameraContext_.editorCamera_->Up();
+							newUp = context_.view_.editor_.camera_->Up();
 						}
 						newUp.Normalize();
 
-						context_.cameraContext_.editorCamera_->Eye(newEye);
-						context_.cameraContext_.editorCamera_->Focus(newEye + newForward * orbitDistance);
-						context_.cameraContext_.editorCamera_->Up(newUp);
+						context_.view_.editor_.camera_->Eye(newEye);
+						context_.view_.editor_.camera_->Focus(newEye + newForward * orbitDistance);
+						context_.view_.editor_.camera_->Up(newUp);
 					}
 
 					Vector2 cachePosition = { screenPosition.x, screenPosition.y };
@@ -447,22 +429,22 @@ namespace SeedCore
 			/// [JP] ビューポート上での Ctrl+ホイールは、カメラのドリーではなく
 			///      現在のギズモ操作のスナップ値を変更する - EditorCameraController は
 			///      Ctrl 押下中、自身のホイールドリーをスキップする（Update() 参照）。
-			if (ImGui::IsWindowHovered() && InputSystem::KeyState(InputSystem::Key::Control) && context_.viewportContext_.guizmo_.guizmoOperation_ != 0 && !context_.viewportContext_.guizmo_.rectTool_)
+			if (ImGui::IsWindowHovered() && InputSystem::KeyState(InputSystem::Key::Control) && context_.guizmo_.operation_ != 0 && !context_.guizmo_.rectTool_)
 			{
-				auto& guizmo = context_.viewportContext_.guizmo_;
+				auto& guizmo = context_.guizmo_;
 
 				Float wheel = InputSystem::MouseWheel();
 				if (Abs(wheel) > 0.0f)
 				{
-					if (guizmo.guizmoOperation_ == ImGuizmo::TRANSLATE)
+					if (guizmo.operation_ == ImGuizmo::TRANSLATE)
 					{
 						guizmo.translateSnap_ = Clamp(guizmo.translateSnap_ + wheel * 0.1f, 0.01f, 100.0f);
 					}
-					else if (guizmo.guizmoOperation_ == ImGuizmo::ROTATE)
+					else if (guizmo.operation_ == ImGuizmo::ROTATE)
 					{
 						guizmo.rotateSnap_ = Clamp(guizmo.rotateSnap_ + wheel * 0.5f, 0.1f, 90.0f);
 					}
-					else if (guizmo.guizmoOperation_ == ImGuizmo::SCALE)
+					else if (guizmo.operation_ == ImGuizmo::SCALE)
 					{
 						guizmo.scaleSnap_ = Clamp(guizmo.scaleSnap_ + wheel * 0.05f, 0.01f, 10.0f);
 					}
@@ -476,15 +458,15 @@ namespace SeedCore
 				///      現在の操作のスナップ値をツールチップ表示する。ホイールで
 				///      変更する前/最中に値が見えるように - 通常はツールバーの
 				///      ギズモ設定ポップアップの中でしか見えない。
-				if (guizmo.guizmoOperation_ == ImGuizmo::TRANSLATE)
+				if (guizmo.operation_ == ImGuizmo::TRANSLATE)
 				{
 					ImGui::SetTooltip("移動スナップ: %.2f", guizmo.translateSnap_);
 				}
-				else if (guizmo.guizmoOperation_ == ImGuizmo::ROTATE)
+				else if (guizmo.operation_ == ImGuizmo::ROTATE)
 				{
 					ImGui::SetTooltip("回転スナップ: %.0f\xc2\xb0", guizmo.rotateSnap_);
 				}
-				else if (guizmo.guizmoOperation_ == ImGuizmo::SCALE)
+				else if (guizmo.operation_ == ImGuizmo::SCALE)
 				{
 					ImGui::SetTooltip("拡大縮小スナップ: %.2f", guizmo.scaleSnap_);
 				}
@@ -513,12 +495,12 @@ namespace SeedCore
 				moveSpeedTooltipTimer_ = Max(0.0f, moveSpeedTooltipTimer_ - ImGui::GetIO().DeltaTime);
 			}
 
-			if (moveSpeedTooltipTimer_ > 0.0f && context_.cameraContext_.editorCameraController_)
+			if (moveSpeedTooltipTimer_ > 0.0f && context_.view_.editor_.cameraController_)
 			{
-				ImGui::SetTooltip("移動速度: %.2f", context_.cameraContext_.editorCameraController_->MoveSpeed());
+				ImGui::SetTooltip("移動速度: %.2f", context_.view_.editor_.cameraController_->MoveSpeed());
 			}
 
-			if (!ImGuizmo::IsUsing() && ImGui::IsWindowHovered() && context_.cameraContext_.editorCamera_ && context_.cameraContext_.editorCameraController_)
+			if (!ImGuizmo::IsUsing() && ImGui::IsWindowHovered() && context_.view_.editor_.camera_ && context_.view_.editor_.cameraController_)
 			{
 				if (editorRotateHeld || editorPanHeld)
 				{
@@ -526,7 +508,7 @@ namespace SeedCore
 				}
 
 				Float deltaTime = ImGui::GetIO().DeltaTime;
-				context_.cameraContext_.editorCameraController_->Update(*context_.cameraContext_.editorCamera_, deltaTime);
+				context_.view_.editor_.cameraController_->Update(*context_.view_.editor_.camera_, deltaTime);
 			}
 
 			if (!editorRotateHeld && !editorPanHeld)

@@ -1,5 +1,6 @@
 #include <Editor/Editor/Panel/GuizmoPanel3D.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
+#include <Editor/Editor/Panel/ResourceSyncControlPanel.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Command/ComponentCommand.h>
@@ -23,58 +24,58 @@ namespace SeedCore
 		{
 			if (ImGui::IsKeyPressed(ImGuiKey_Q))
 			{
-				context_.viewportContext_.guizmo_.showGuizmo_ = false;
-				context_.viewportContext_.guizmo_.rectTool_ = false;
-				context_.viewportContext_.guizmo_.guizmoOperation_ = (ImGuizmo::OPERATION)0;
+				context_.guizmo_.visible_ = false;
+				context_.guizmo_.rectTool_ = false;
+				context_.guizmo_.operation_ = (ImGuizmo::OPERATION)0;
 			}
 			if (ImGui::IsKeyPressed(ImGuiKey_W))
 			{
-				context_.viewportContext_.guizmo_.showGuizmo_ = true;
-				context_.viewportContext_.guizmo_.rectTool_ = false;
-				context_.viewportContext_.guizmo_.guizmoOperation_ = ImGuizmo::TRANSLATE;
+				context_.guizmo_.visible_ = true;
+				context_.guizmo_.rectTool_ = false;
+				context_.guizmo_.operation_ = ImGuizmo::TRANSLATE;
 			}
 			if (ImGui::IsKeyPressed(ImGuiKey_E))
 			{
-				context_.viewportContext_.guizmo_.showGuizmo_ = true;
-				context_.viewportContext_.guizmo_.rectTool_ = false;
-				context_.viewportContext_.guizmo_.guizmoOperation_ = ImGuizmo::ROTATE;
+				context_.guizmo_.visible_ = true;
+				context_.guizmo_.rectTool_ = false;
+				context_.guizmo_.operation_ = ImGuizmo::ROTATE;
 			}
 			if (ImGui::IsKeyPressed(ImGuiKey_R))
 			{
-				context_.viewportContext_.guizmo_.showGuizmo_ = true;
-				context_.viewportContext_.guizmo_.rectTool_ = false;
-				context_.viewportContext_.guizmo_.guizmoOperation_ = ImGuizmo::SCALE;
+				context_.guizmo_.visible_ = true;
+				context_.guizmo_.rectTool_ = false;
+				context_.guizmo_.operation_ = ImGuizmo::SCALE;
 			}
 			if (ImGui::IsKeyPressed(ImGuiKey_T))
 			{
-				context_.viewportContext_.guizmo_.showGuizmo_ = true;
-				context_.viewportContext_.guizmo_.rectTool_ = true;
+				context_.guizmo_.visible_ = true;
+				context_.guizmo_.rectTool_ = true;
 			}
 		}
 
-		if (!context_.viewportContext_.guizmo_.rectTool_ || !wasDragging_)
+		if (!context_.guizmo_.rectTool_ || !wasDragging_)
 		{
 			rectHandle_ = 0;
 		}
 
-		const DynamicArray<Actor>& selectedActors = context_.selectionContext_.selectedActors_;
+		const DynamicArray<Actor>& selectedActors = context_.selection_.actors_;
 		if (selectedActors.empty())
 		{
 			return;
 		}
 
-		if (context_.resourceSync_ && !ResourceSyncControlPanel::EditableSelection(context_, ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsMouseHoveringRect(ImVec2(position.x, position.y), ImVec2(position.x + size.x, position.y + size.y))))
+		if (context_.application_.resourceSync_ && !ResourceSyncControlPanel::EditableSelection(context_, ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsMouseHoveringRect(ImVec2(position.x, position.y), ImVec2(position.x + size.x, position.y + size.y))))
 		{
 			return;
 		}
 
-		if (context_.viewportContext_.guizmo_.showGuizmo_)
+		if (context_.guizmo_.visible_)
 		{
-			if (context_.viewportContext_.guizmo_.rectTool_)
+			if (context_.guizmo_.rectTool_)
 			{
 				ImGuiIO& io = ImGui::GetIO();
-				World& world = *context_.worldContext_.world_;
-				EditorCamera& camera = *context_.cameraContext_.editorCamera_;
+				World& world = *context_.world_.world_;
+				EditorCamera& camera = *context_.view_.editor_.camera_;
 
 				static const String positionString("Position");
 				static const String scaleString("Scale");
@@ -348,7 +349,7 @@ namespace SeedCore
 
 						if (!dragCommand->Empty())
 						{
-							context_.sceneContext_.history_.Push(std::move(dragCommand));
+							context_.scene_.history_.Push(std::move(dragCommand));
 						}
 
 						wasDragging_ = false;
@@ -487,8 +488,8 @@ namespace SeedCore
 			ImGuizmo::AllowAxisFlip(false);
 			ImGuizmo::SetGizmoSizeClipSpace(0.2f);
 
-			Matrix view = context_.cameraContext_.editorCamera_->View();
-			Matrix projection = Matrix::CreatePerspectiveFieldOfView(ToRadians(context_.cameraContext_.editorCamera_->Fov()), context_.cameraContext_.editorCamera_->AspectRatio(), context_.cameraContext_.editorCamera_->Near(), context_.cameraContext_.editorCamera_->Far());
+			Matrix view = context_.view_.editor_.camera_->View();
+			Matrix projection = Matrix::CreatePerspectiveFieldOfView(ToRadians(context_.view_.editor_.camera_->Fov()), context_.view_.editor_.camera_->AspectRatio(), context_.view_.editor_.camera_->Near(), context_.view_.editor_.camera_->Far());
 
 			Bool isDragging = ImGuizmo::IsUsing();
 
@@ -529,17 +530,17 @@ namespace SeedCore
 			Bool ctrlPressed = ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl);
 			if (ctrlPressed)
 			{
-				if (context_.viewportContext_.guizmo_.guizmoOperation_ == ImGuizmo::TRANSLATE)
+				if (context_.guizmo_.operation_ == ImGuizmo::TRANSLATE)
 				{
-					snapValues[0] = snapValues[1] = snapValues[2] = context_.viewportContext_.guizmo_.translateSnap_;
+					snapValues[0] = snapValues[1] = snapValues[2] = context_.guizmo_.translateSnap_;
 				}
-				else if (context_.viewportContext_.guizmo_.guizmoOperation_ == ImGuizmo::ROTATE)
+				else if (context_.guizmo_.operation_ == ImGuizmo::ROTATE)
 				{
-					snapValues[0] = snapValues[1] = snapValues[2] = context_.viewportContext_.guizmo_.rotateSnap_;
+					snapValues[0] = snapValues[1] = snapValues[2] = context_.guizmo_.rotateSnap_;
 				}
-				else if (context_.viewportContext_.guizmo_.guizmoOperation_ == ImGuizmo::SCALE)
+				else if (context_.guizmo_.operation_ == ImGuizmo::SCALE)
 				{
-					snapValues[0] = snapValues[1] = snapValues[2] = context_.viewportContext_.guizmo_.scaleSnap_;
+					snapValues[0] = snapValues[1] = snapValues[2] = context_.guizmo_.scaleSnap_;
 				}
 			}
 
@@ -566,9 +567,9 @@ namespace SeedCore
 					dragEntities_.push_back(entity);
 					dragStartWorldMatrices_.push_back(actor.WorldMatrix());
 
-					Float* positionData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, positionID));
-					Rotation* rotationData = static_cast<Rotation*>(context_.worldContext_.world_->GetComponent(entity, rotationID));
-					Float* scaleData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, scaleID));
+					Float* positionData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, positionID));
+					Rotation* rotationData = static_cast<Rotation*>(context_.world_.world_->GetComponent(entity, rotationID));
+					Float* scaleData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, scaleID));
 
 					dragStartPositions_.push_back(positionData ? Vector3(positionData[0], positionData[1], positionData[2]) : Vector3::Zero);
 					dragStartRotations_.push_back(rotationData ? rotationData->Quat() : Quaternion::Identity);
@@ -576,7 +577,7 @@ namespace SeedCore
 				}
 			}
 
-			Move(view, projection, pivotMatrix_, context_.viewportContext_.guizmo_.guizmoOperation_, ctrlPressed ? snapValues : nullptr);
+			Move(view, projection, pivotMatrix_, context_.guizmo_.operation_, ctrlPressed ? snapValues : nullptr);
 
 			if (!isDragging && wasDragging_)
 			{
@@ -588,16 +589,16 @@ namespace SeedCore
 				{
 					Entity entity = dragEntities_[index];
 
-					Float* positionData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, positionID));
-					Rotation* rotationData = static_cast<Rotation*>(context_.worldContext_.world_->GetComponent(entity, rotationID));
-					Float* scaleData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, scaleID));
+					Float* positionData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, positionID));
+					Rotation* rotationData = static_cast<Rotation*>(context_.world_.world_->GetComponent(entity, rotationID));
+					Float* scaleData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, scaleID));
 
 					if (positionData)
 					{
 						Vector3 newPosition(positionData[0], positionData[1], positionData[2]);
 						if (newPosition != dragStartPositions_[index])
 						{
-							dragCommand->Add(MakePtr<ComponentCommand<Vector3>>(*context_.worldContext_.world_, entity, positionID, 0, dragStartPositions_[index], newPosition));
+							dragCommand->Add(MakePtr<ComponentCommand<Vector3>>(*context_.world_.world_, entity, positionID, 0, dragStartPositions_[index], newPosition));
 						}
 					}
 					if (rotationData)
@@ -605,7 +606,7 @@ namespace SeedCore
 						Quaternion newRotation = rotationData->Quat();
 						if (newRotation != dragStartRotations_[index])
 						{
-							dragCommand->Add(MakePtr<ComponentCommand<Quaternion>>(*context_.worldContext_.world_, entity, rotationID, 0, dragStartRotations_[index], newRotation));
+							dragCommand->Add(MakePtr<ComponentCommand<Quaternion>>(*context_.world_.world_, entity, rotationID, 0, dragStartRotations_[index], newRotation));
 						}
 					}
 					if (scaleData)
@@ -613,14 +614,14 @@ namespace SeedCore
 						Vector3 newScale(scaleData[0], scaleData[1], scaleData[2]);
 						if (newScale != dragStartScales_[index])
 						{
-							dragCommand->Add(MakePtr<ComponentCommand<Vector3>>(*context_.worldContext_.world_, entity, scaleID, 0, dragStartScales_[index], newScale));
+							dragCommand->Add(MakePtr<ComponentCommand<Vector3>>(*context_.world_.world_, entity, scaleID, 0, dragStartScales_[index], newScale));
 						}
 					}
 				}
 
 				if (!dragCommand->Empty())
 				{
-					context_.sceneContext_.history_.Push(std::move(dragCommand));
+					context_.scene_.history_.Push(std::move(dragCommand));
 				}
 			}
 
@@ -677,7 +678,7 @@ namespace SeedCore
 				for (Size index = 0; index < dragEntities_.size(); ++index)
 				{
 					Entity entity = dragEntities_[index];
-					Float* scaleData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, scaleID));
+					Float* scaleData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, scaleID));
 					if (scaleData)
 					{
 						scaleData[0] = dragStartScales_[index].x * deltaScale.x;
@@ -692,7 +693,7 @@ namespace SeedCore
 			for (Size index = 0; index < dragEntities_.size(); ++index)
 			{
 				Entity entity = dragEntities_[index];
-				Actor actor = context_.worldContext_.world_->GetActor(entity);
+				Actor actor = context_.world_.world_->GetActor(entity);
 
 				Matrix newWorldMatrix = dragStartWorldMatrices_[index] * pivotDelta;
 
@@ -703,8 +704,8 @@ namespace SeedCore
 				Quaternion rotation;
 				if (localMatrix.Decompose(scale, rotation, position))
 				{
-					Float* positionData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, positionID));
-					Rotation* rotationData = static_cast<Rotation*>(context_.worldContext_.world_->GetComponent(entity, rotationID));
+					Float* positionData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, positionID));
+					Rotation* rotationData = static_cast<Rotation*>(context_.world_.world_->GetComponent(entity, rotationID));
 
 					if (positionData)
 					{

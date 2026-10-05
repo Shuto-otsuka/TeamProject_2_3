@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/BootScreenPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <External/ImGui/Include/imgui_internal.h>
 #include <GraphicsEngine/Graphics.h>
@@ -48,13 +48,13 @@ namespace SeedCore
 			return;
 		}
 
-		ImGui::DockBuilderDockWindow("起動ローディング画面", context_.graphicsContext_.imgui_->DockSpaceID());
+		ImGui::DockBuilderDockWindow("起動ローディング画面", context_.graphics_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(1180, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("起動ローディング画面", &show_, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		if (isFocused_)
 		{
-			Graphics* graphics = context_.graphicsContext_.graphics_;
+			Graphics* graphics = context_.graphics_.graphics_;
 
 			if (!renderer_)
 			{

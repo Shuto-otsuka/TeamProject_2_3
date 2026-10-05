@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/LayerSettingsPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <FoundationEngine/World/Layer/LayerRegistry.h>
 #include <FoundationEngine/World/Layer/LayerCollisionMatrix.h>
 

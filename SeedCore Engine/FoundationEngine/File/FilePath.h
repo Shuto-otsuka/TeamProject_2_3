@@ -73,6 +73,22 @@ namespace SeedCore
 
 		Bool Extension()const;
 
+	public:
+		/**
+		* [EN]
+		* Whether both refer to the same file: their full paths compare equal
+		* element by element. The root each was made with does not take part.
+		* != follows from this.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 両者が同じファイルを指すか。フルパス同士を要素ごとに比べて等しければ
+		* 同じとみなす。それぞれを作ったときのルートは比較に含めない。
+		* != はこれから導かれる。
+		*/
+		Bool operator==(const FilePath& other)const;
+
 	private:
 		std::filesystem::path fullPath_;
 

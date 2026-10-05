@@ -169,4 +169,22 @@ namespace SeedCore
 	{
 		return !extensionPath_.empty();
 	}
+
+	/**
+	* [EN]
+	* Whether both refer to the same file: their full paths compare equal
+	* element by element. The root each was made with does not take part.
+	* != follows from this.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 両者が同じファイルを指すか。フルパス同士を要素ごとに比べて等しければ
+	* 同じとみなす。それぞれを作ったときのルートは比較に含めない。
+	* != はこれから導かれる。
+	*/
+	Bool FilePath::operator==(const FilePath& other)const
+	{
+		return fullPath_ == other.fullPath_;
+	}
 }

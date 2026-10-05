@@ -13,6 +13,9 @@
     <Filter Include="Editor\Build">
       <UniqueIdentifier>{1f76d3b8-5df3-41e8-a924-c762239e8e98}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Editor\Context">
+      <UniqueIdentifier>{b8349d89-4c4a-41f5-bcf8-a7204b8df60a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Editor\ImGui\ImGuiRenderer.cpp">
@@ -151,6 +154,9 @@
     <ClCompile Include="Editor\Panel\ResourceSyncControlPanel.cpp">
       <Filter>Editor\Panel</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\Context\SelectionContext.cpp">
+      <Filter>Editor\Context</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Editor\ImGui\ImGuiCommon.h">
@@ -180,9 +186,6 @@
     <ClInclude Include="Editor\Editor.h">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\EditorContext.h">
-      <Filter>Editor</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\Engine.h">
       <Filter>Editor</Filter>
     </ClInclude>
@@ -209,9 +212,6 @@
     </ClInclude>
     <ClInclude Include="Editor\Panel\GuizmoPanel2D.h">
       <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\GizmoContext.h">
-      <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Panel\ProfilerPanel.h">
       <Filter>Editor\Panel</Filter>
@@ -293,6 +293,36 @@
     </ClInclude>
     <ClInclude Include="Editor\Panel\ResourceSyncControlPanel.h">
       <Filter>Editor\Panel</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Context\ApplicationContext.h">
+      <Filter>Editor\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Context\GraphicsContext.h">
+      <Filter>Editor\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Context\WorldContext.h">
+      <Filter>Editor\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Context\GuizmoContext.h">
+      <Filter>Editor\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Context\EditorContext.h">
+      <Filter>Editor\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Context\SceneContext.h">
+      <Filter>Editor\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Context\SceneVisualContext.h">
+      <Filter>Editor\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Context\SelectionContext.h">
+      <Filter>Editor\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Context\ViewContext.h">
+      <Filter>Editor\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Context\ConfigContext.h">
+      <Filter>Editor\Context</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

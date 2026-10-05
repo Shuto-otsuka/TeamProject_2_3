@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/ConfigPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <FoundationEngine/Input/InputSystem.h>
@@ -185,34 +185,23 @@ namespace SeedCore
 		executableNameBuffer_.resize(256);
 		newActionBuffer_.resize(128);
 
-		iconPreviewIndex_ = context_.graphicsContext_.graphics_->GetBindlessHeap().AllocateIndex();
+		iconPreviewIndex_ = context_.graphics_.graphics_->GetBindlessHeap().AllocateIndex();
 	}
 
 	void ConfigPanel::Open()
 	{
-		editorConfig_.Load();
-		gameConfig_.Load();
 		iconConfig_.Load();
 
-		/// [JP] gameConfig_ は GameConfig.scg(独立した設定ファイル)からの値で、
-		///      エディタが実際に使っている DLSS/解像度設定
-		///      (context_.viewportContext_.upscale_/context_.viewportContext_.outputResolution_)とは
-		///      ずれ得る。パネルを開く時点の実際の値で上書きし、表示を
-		///      現在の状態と一致させる。
-		gameConfig_.useDlss_ = context_.viewportContext_.upscale_.dlssRayReconstructionEnabled_;
-		gameConfig_.upscaleMode_ = context_.viewportContext_.upscale_.upscaleMode_;
-		gameConfig_.resolution_ = context_.viewportContext_.outputResolution_;
-		gameConfig_.useFrameGeneration_ = context_.viewportContext_.frameGeneration_.enabled_;
-		gameConfig_.vsync_ = context_.viewportContext_.vsync_;
-		gameConfig_.useReflex_ = Gateway::GetDlssManager().ReflexEnable();
-		gameConfig_.useDeepDVC_ = Gateway::GetDlssManager().DeepDVCEnable();
+		/// [EN] The game and editor configs are shared with Engine, loaded once at startup and saved on every change, so they are already current and are not reloaded here.
+		/// [JP] ゲームとエディタの設定は Engine と共有している。起動時に1回読み込み、変更のたびに保存しているので、すでに最新であり、ここでは読み直さない。
+		const GameConfig& config = *context_.config_.game_;
 
 		std::ranges::fill(initialScenePathBuffer_, '\0');
-		std::string initialScenePath = gameConfig_.initialScenePath_.str();
+		std::string initialScenePath = config.initialScenePath_.str();
 		std::ranges::copy(initialScenePath.substr(0, initialScenePathBuffer_.size() - 1), initialScenePathBuffer_.begin());
 
 		std::ranges::fill(executableNameBuffer_, '\0');
-		std::string executableName = gameConfig_.executableName_.str();
+		std::string executableName = config.executableName_.str();
 		std::ranges::copy(executableName.substr(0, executableNameBuffer_.size() - 1), executableNameBuffer_.begin());
 
 		iconPreviewDirty_ = true;
@@ -222,15 +211,16 @@ namespace SeedCore
 
 	Bool ConfigPanel::DrawEditorConfigTab()
 	{
+		EditorConfig& config = *context_.config_.editor_;
 		Bool changed = false;
 
 		ImGui::TextDisabled("エディターカメラ");
 		ImGui::Spacing();
 
-		changed |= ImGui::DragFloat3("視点(Eye)", &editorConfig_.cameraEye_.x, 0.1f);
-		changed |= ImGui::DragFloat3("注視点(Focus)", &editorConfig_.cameraFocus_.x, 0.1f);
-		changed |= ImGui::DragFloat3("上方向(Up)", &editorConfig_.cameraUp_.x, 0.01f);
-		changed |= ImGui::DragFloat("画角(FOV)", &editorConfig_.cameraFov_, 0.5f, 1.0f, 179.0f, "%.1f");
+		changed |= ImGui::DragFloat3("視点(Eye)", &config.cameraEye_.x, 0.1f);
+		changed |= ImGui::DragFloat3("注視点(Focus)", &config.cameraFocus_.x, 0.1f);
+		changed |= ImGui::DragFloat3("上方向(Up)", &config.cameraUp_.x, 0.01f);
+		changed |= ImGui::DragFloat("画角(FOV)", &config.cameraFov_, 0.5f, 1.0f, 179.0f, "%.1f");
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -239,11 +229,11 @@ namespace SeedCore
 		ImGui::TextDisabled("カメラ操作速度");
 		ImGui::Spacing();
 
-		changed |= ImGui::DragFloat("移動", &editorConfig_.cameraMoveSpeed_, 0.1f, 0.1f, 200.0f, "%.1f");
-		changed |= ImGui::DragFloat("回転", &editorConfig_.cameraRotateSpeed_, 0.01f, 0.01f, 2.0f, "%.2f");
-		changed |= ImGui::DragFloat("ズーム", &editorConfig_.cameraScrollSpeed_, 0.1f, 0.1f, 100.0f, "%.1f");
-		changed |= ImGui::DragFloat("パン", &editorConfig_.cameraPanSpeed_, 0.001f, 0.001f, 1.0f, "%.3f");
-		changed |= ImGui::DragFloat("Shift倍率", &editorConfig_.cameraShiftSpeedMultiplier_, 0.1f, 1.0f, 20.0f, "x%.1f");
+		changed |= ImGui::DragFloat("移動", &config.cameraMoveSpeed_, 0.1f, 0.1f, 200.0f, "%.1f");
+		changed |= ImGui::DragFloat("回転", &config.cameraRotateSpeed_, 0.01f, 0.01f, 2.0f, "%.2f");
+		changed |= ImGui::DragFloat("ズーム", &config.cameraScrollSpeed_, 0.1f, 0.1f, 100.0f, "%.1f");
+		changed |= ImGui::DragFloat("パン", &config.cameraPanSpeed_, 0.001f, 0.001f, 1.0f, "%.3f");
+		changed |= ImGui::DragFloat("Shift倍率", &config.cameraShiftSpeedMultiplier_, 0.1f, 1.0f, 20.0f, "x%.1f");
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -252,12 +242,12 @@ namespace SeedCore
 		ImGui::TextDisabled("ImGui");
 		ImGui::Spacing();
 
-		if (ImGui::DragFloat("文字サイズ倍率", &editorConfig_.fontScale_, 0.01f, 0.5f, 3.0f, "%.2f"))
+		if (ImGui::DragFloat("文字サイズ倍率", &config.fontScale_, 0.01f, 0.5f, 3.0f, "%.2f"))
 		{
 			changed = true;
-			if (context_.graphicsContext_.imgui_)
+			if (context_.graphics_.imgui_)
 			{
-				context_.graphicsContext_.imgui_->FontScale(editorConfig_.fontScale_);
+				context_.graphics_.imgui_->FontScale(config.fontScale_);
 			}
 		}
 
@@ -268,7 +258,7 @@ namespace SeedCore
 		ImGui::TextDisabled("最後に開いていたシーン");
 		ImGui::Spacing();
 
-		std::string lastScenePath = editorConfig_.lastScenePath_.str();
+		std::string lastScenePath = config.lastScenePath_.str();
 		ImGui::TextWrapped("%s", lastScenePath.empty() ? "(なし)" : lastScenePath.c_str());
 
 		return changed;
@@ -276,26 +266,27 @@ namespace SeedCore
 
 	Bool ConfigPanel::DrawGameConfigTab()
 	{
+		GameConfig& config = *context_.config_.game_;
 		Bool changed = false;
 
 		ImGui::TextDisabled("ウィンドウ");
 		ImGui::Spacing();
 
-		Int32 windowWidth = static_cast<Int32>(gameConfig_.windowWidth_);
+		Int32 windowWidth = static_cast<Int32>(config.windowWidth_);
 		if (ImGui::DragInt("幅", &windowWidth, 1.0f, 320, 7680))
 		{
-			gameConfig_.windowWidth_ = static_cast<Uint32>(windowWidth);
+			config.windowWidth_ = static_cast<Uint32>(windowWidth);
 			changed = true;
 		}
 
-		Int32 windowHeight = static_cast<Int32>(gameConfig_.windowHeight_);
+		Int32 windowHeight = static_cast<Int32>(config.windowHeight_);
 		if (ImGui::DragInt("高さ", &windowHeight, 1.0f, 240, 4320))
 		{
-			gameConfig_.windowHeight_ = static_cast<Uint32>(windowHeight);
+			config.windowHeight_ = static_cast<Uint32>(windowHeight);
 			changed = true;
 		}
 
-		changed |= ImGui::Checkbox("フルスクリーン", &gameConfig_.fullscreen_);
+		changed |= ImGui::Checkbox("フルスクリーン", &config.fullscreen_);
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -304,11 +295,10 @@ namespace SeedCore
 		ImGui::TextDisabled("グラフィックス");
 		ImGui::Spacing();
 
-		ImGui::BeginDisabled(gameConfig_.useFrameGeneration_ && !Gateway::GetDlssManager().FrameGenerationVSyncSupported());
-		if (ImGui::Checkbox("垂直同期(VSync)", &gameConfig_.vsync_))
+		ImGui::BeginDisabled(config.useFrameGeneration_ && !Gateway::GetDlssManager().FrameGenerationVSyncSupported());
+		if (ImGui::Checkbox("垂直同期(VSync)", &config.vsync_))
 		{
 			changed = true;
-			context_.viewportContext_.vsync_ = gameConfig_.vsync_;
 		}
 		ImGui::EndDisabled();
 
@@ -320,39 +310,35 @@ namespace SeedCore
 		ImGui::Spacing();
 
 		const Char* resolutionLabels[] = { "640x360 (HHD)", "1280x720 (HD)", "1920x1080 (FHD)", "2560x1440 (QHD)", "3840x2160 (4K)", "7680x4320 (8K)" };
-		Int32 resolutionIndex = static_cast<Int32>(gameConfig_.resolution_);
+		Int32 resolutionIndex = static_cast<Int32>(config.resolution_);
 
 		if (ImGui::Combo("出力解像度", &resolutionIndex, resolutionLabels, IM_ARRAYSIZE(resolutionLabels)))
 		{
-			gameConfig_.resolution_ = static_cast<ResolutionPreset>(resolutionIndex);
+			config.resolution_ = static_cast<ResolutionPreset>(resolutionIndex);
 			changed = true;
-			context_.viewportContext_.outputResolution_ = gameConfig_.resolution_;
-			context_.viewportContext_.resizeRequested_ = true;
+			context_.config_.resizeRequested_ = true;
 		}
 
-		if (ImGui::Checkbox("DLSSを使用する", &gameConfig_.useDlss_))
+		if (ImGui::Checkbox("DLSSを使用する", &config.useDlss_))
 		{
 			changed = true;
-			context_.viewportContext_.upscale_.dlssRayReconstructionEnabled_ = gameConfig_.useDlss_;
-			context_.viewportContext_.resizeRequested_ = true;
+			context_.config_.resizeRequested_ = true;
 		}
 
 		const Char* upscaleModeLabels[] = { "MaxPerformance（最高性能）", "Balanced（バランス）", "MaxQuality（最高画質）", "UltraPerformance（超高性能）", "DLAA" };
-		Int32 upscaleModeIndex = static_cast<Int32>(gameConfig_.upscaleMode_);
+		Int32 upscaleModeIndex = static_cast<Int32>(config.upscaleMode_);
 
 		if (ImGui::Combo("パフォーマンス", &upscaleModeIndex, upscaleModeLabels, IM_ARRAYSIZE(upscaleModeLabels)))
 		{
-			gameConfig_.upscaleMode_ = static_cast<UpscaleMode>(upscaleModeIndex);
+			config.upscaleMode_ = static_cast<UpscaleMode>(upscaleModeIndex);
 			changed = true;
-			context_.viewportContext_.upscale_.upscaleMode_ = gameConfig_.upscaleMode_;
-			context_.viewportContext_.resizeRequested_ = true;
+			context_.config_.resizeRequested_ = true;
 		}
 
-		if (ImGui::Checkbox("フレーム生成(FG)を使用する", &gameConfig_.useFrameGeneration_))
+		if (ImGui::Checkbox("フレーム生成(FG)を使用する", &config.useFrameGeneration_))
 		{
 			changed = true;
-			context_.viewportContext_.frameGeneration_.enabled_ = gameConfig_.useFrameGeneration_;
-			context_.viewportContext_.recreateRequested_ = true;
+			context_.config_.recreateRequested_ = true;
 		}
 		ImGui::SetItemTooltip("Editor状態では画面に反映されません。Runtime出力後、実際の機能をご確認ください。");
 
@@ -365,16 +351,16 @@ namespace SeedCore
 		ImGui::TextDisabled("NVIDIA機能");
 		ImGui::Spacing();
 
-		if (ImGui::Checkbox("色彩ブースト（DeepDVC）を使用する", &gameConfig_.useDeepDVC_))
+		if (ImGui::Checkbox("色彩ブースト（DeepDVC）を使用する", &config.useDeepDVC_))
 		{
 			changed = true;
-			Gateway::GetDlssManager().DeepDVCEnable(gameConfig_.useDeepDVC_);
+			Gateway::GetDlssManager().DeepDVCEnable(config.useDeepDVC_);
 		}
 
-		if (ImGui::Checkbox("低遅延化（Reflex）を使用する", &gameConfig_.useReflex_))
+		if (ImGui::Checkbox("低遅延化（Reflex）を使用する", &config.useReflex_))
 		{
 			changed = true;
-			Gateway::GetDlssManager().ReflexEnable(gameConfig_.useReflex_);
+			Gateway::GetDlssManager().ReflexEnable(config.useReflex_);
 		}
 
 		ImGui::TextDisabled("(エディターに即時反映されます)");
@@ -392,7 +378,7 @@ namespace SeedCore
 		ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - folderButtonWidth - ImGui::GetStyle().ItemSpacing.x);
 		if (ImGui::InputText("##InitialScene", initialScenePathBuffer_.data(), initialScenePathBuffer_.size()))
 		{
-			gameConfig_.initialScenePath_ = String(std::string(initialScenePathBuffer_.c_str()));
+			config.initialScenePath_ = String(std::string(initialScenePathBuffer_.c_str()));
 			changed = true;
 		}
 
@@ -400,7 +386,7 @@ namespace SeedCore
 
 		if (ImGui::ImageButton("##InitialSceneBrowse", imguiTexture_.Icon(IconType::FolderNoItem), ImVec2(folderIconSize, folderIconSize)))
 		{
-			std::filesystem::path projectRoot = context_.worldContext_.resource_->ProjectRootPath();
+			std::filesystem::path projectRoot = context_.world_.resource_->ProjectRootPath();
 			std::filesystem::path sceneDirectory = projectRoot / "UserProject" / "Assets" / "Scene";
 
 			std::filesystem::path pickedScenePath;
@@ -420,7 +406,7 @@ namespace SeedCore
 					SC_LOG_WARNING("プロジェクト外のシーンが選ばれました。Runtime書き出しには含まれません: {}", scenePath);
 				}
 
-				gameConfig_.initialScenePath_ = String(scenePath);
+				config.initialScenePath_ = String(scenePath);
 				std::ranges::fill(initialScenePathBuffer_, '\0');
 				std::ranges::copy(scenePath.substr(0, initialScenePathBuffer_.size() - 1), initialScenePathBuffer_.begin());
 				changed = true;
@@ -436,8 +422,8 @@ namespace SeedCore
 		ImGui::TextDisabled("スプラッシュ");
 		ImGui::Spacing();
 
-		changed |= ImGui::Checkbox("警告画面を表示する", &gameConfig_.showSplashWarning_);
-		changed |= ImGui::Checkbox("フィクション表記を表示する", &gameConfig_.showSplashFiction_);
+		changed |= ImGui::Checkbox("警告画面を表示する", &config.showSplashWarning_);
+		changed |= ImGui::Checkbox("フィクション表記を表示する", &config.showSplashFiction_);
 
 		ImGui::TextDisabled("(Runtime起動時のみ。エディターでは表示しません)");
 
@@ -450,7 +436,7 @@ namespace SeedCore
 
 		if (ImGui::InputText("実行ファイル名", executableNameBuffer_.data(), executableNameBuffer_.size()))
 		{
-			gameConfig_.executableName_ = String(std::string(executableNameBuffer_.c_str()));
+			config.executableName_ = String(std::string(executableNameBuffer_.c_str()));
 			changed = true;
 		}
 
@@ -461,12 +447,13 @@ namespace SeedCore
 
 	Bool ConfigPanel::DrawAudioBindingTab()
 	{
+		EditorConfig& config = *context_.config_.editor_;
 		Bool changed = false;
 
 		ImGui::TextDisabled("ACF");
 		ImGui::Spacing();
 
-		std::string acfPath = editorConfig_.acfPath_.str();
+		std::string acfPath = config.acfPath_.str();
 		ImGui::TextWrapped("%s", acfPath.empty() ? "(なし)" : acfPath.c_str());
 
 		ImGui::Spacing();
@@ -477,7 +464,7 @@ namespace SeedCore
 			std::filesystem::path acfInitialDir = acfPath.empty() ? std::filesystem::current_path() : std::filesystem::path(acfPath).parent_path();
 			if (FileDialog::OpenFile(pickedAcfPath, acfInitialDir, L"ACF Files (*.acf)", L"*.acf"))
 			{
-				editorConfig_.acfPath_ = String(pickedAcfPath.generic_string());
+				config.acfPath_ = String(pickedAcfPath.generic_string());
 				changed = true;
 			}
 		}
@@ -486,7 +473,7 @@ namespace SeedCore
 
 		if (ImGui::Button("解除") && !acfPath.empty())
 		{
-			editorConfig_.acfPath_ = String();
+			config.acfPath_ = String();
 			changed = true;
 		}
 
@@ -523,7 +510,7 @@ namespace SeedCore
 	{
 		Bool changed = false;
 
-		BindlessHeap* bindlessHeap = &context_.graphicsContext_.graphics_->GetBindlessHeap();
+		BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->GetBindlessHeap();
 
 		if (iconPreviewDirty_)
 		{
@@ -536,7 +523,7 @@ namespace SeedCore
 				previewData.assign(std::istreambuf_iterator<Char>(stream), std::istreambuf_iterator<Char>());
 			}
 
-			Graphics* graphics = context_.graphicsContext_.graphics_;
+			Graphics* graphics = context_.graphics_.graphics_;
 			graphics->Wait();
 			iconPreviewResource_.Reset();
 			TextureLoader::CreateTextureMemory(graphics->GetContext().GetDevice(), graphics->GetContext().GetDirectQueue(), bindlessHeap->Heap(), previewData, iconPreviewResource_, iconPreviewIndex_);
@@ -830,7 +817,7 @@ namespace SeedCore
 			{
 				if (DrawEditorConfigTab())
 				{
-					editorConfig_.Save();
+					context_.config_.editor_->Save();
 				}
 			}
 			break;
@@ -838,7 +825,7 @@ namespace SeedCore
 			{
 				if (DrawGameConfigTab())
 				{
-					gameConfig_.Save();
+					context_.config_.game_->Save();
 				}
 			}
 			break;
@@ -846,7 +833,7 @@ namespace SeedCore
 			{
 				if (DrawAudioBindingTab())
 				{
-					editorConfig_.Save();
+					context_.config_.editor_->Save();
 				}
 			}
 			break;

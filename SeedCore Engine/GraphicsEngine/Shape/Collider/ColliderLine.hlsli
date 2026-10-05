@@ -25,6 +25,10 @@
 /// [EN] Fixed vertical side lines of a capsule, cylinder or cone: front, back, left and right.
 #define COLLIDER_SIDE_LINE_COUNT 4
 
+/// [EN] Arrowhead length as a fraction of the arrow's length, and its half-width as a fraction of the head length.
+#define COLLIDER_ARROW_HEAD_LENGTH_RATIO 0.2
+#define COLLIDER_ARROW_HEAD_WIDTH_RATIO 0.4
+
 /// [EN] On-screen line widths in pixels; the silhouette is drawn thicker so the outline reads first.
 #define COLLIDER_LINE_WIDTH 3.0
 #define COLLIDER_SILHOUETTE_LINE_WIDTH 4.5
@@ -110,6 +114,14 @@ uint GetColliderLineCount(uint shape_kind)
 	if (shape_kind == COLLIDER_SHAPE_CONE)
 	{
 		return COLLIDER_CONE_LINE_COUNT;
+	}
+	if (shape_kind == COLLIDER_SHAPE_SEGMENT)
+	{
+		return COLLIDER_SEGMENT_LINE_COUNT;
+	}
+	if (shape_kind == COLLIDER_SHAPE_ARROW)
+	{
+		return COLLIDER_ARROW_LINE_COUNT;
 	}
 	return 0;
 }
@@ -496,6 +508,61 @@ void GetCircleLine(float3 dimensions, uint line_index, out float3 a, out float3 
 
 /**
 * [EN]
+* Single line from the origin to dimensions.
+*/
+void GetSegmentLine(float3 dimentions, out float3 a, out float3 b)
+{
+    a = float3(0.0, 0.0, 0.0);
+	b = dimentions;
+}
+
+/**
+* [EN]
+* Shaft from the origin to the tip at dimensions, plus four head lines
+* running back from the tip to points spread around the shaft on two
+* perpendicular axes, so the head reads from any viewing angle.
+*/
+void GetArrowLine(float3 dimentions, uint line_index, out float3 a, out float3 b)
+{
+	float arrow_length = length(dimentions);
+
+	/// [EN] A zero-length arrow has no direction and collapses to a point.
+	if (arrow_length < 1.0e-6)
+	{
+		a = float3(0.0, 0.0, 0.0);
+		b = a;
+		return;
+	}
+
+	/// [EN] Shaft.
+	if (line_index == 0)
+	{
+		a = float3(0.0, 0.0, 0.0);
+		b = dimentions;
+		return;
+	}
+
+	/// [EN] Two axes across the shaft; any pair perpendicular to it works, so Y is crossed with the shaft unless the shaft is nearly vertical, in which case X is used.
+	float3 forward = dimentions / arrow_length;
+	float3 side = normalize(cross(abs(forward.y) > 0.99 ? float3(1.0, 0.0, 0.0) : float3(0.0, 1.0, 0.0), forward));
+	float3 up = cross(forward, side);
+
+	/// [EN] The head is a fixed fraction of the arrow's length, and its width a fixed fraction of the head's length.
+	float head_length = arrow_length * COLLIDER_ARROW_HEAD_LENGTH_RATIO;
+	float head_width = head_length * COLLIDER_ARROW_HEAD_WIDTH_RATIO;
+	float3 head_base = dimentions - forward * head_length;
+
+	/// [EN] Head lines 1-4 run from the tip to +side, -side, +up and -up around the head base.
+	uint head_index = line_index - 1;
+	float3 across = (head_index < 2) ? side : up;
+	float sign = ((head_index % 2) == 0) ? 1.0 : -1.0;
+
+	a = dimentions;
+	b = head_base + across * (sign * head_width);
+}
+
+/**
+* [EN]
 * Local-space endpoints of one line of a shape, and whether that line
 * belongs to the camera-facing silhouette. local_camera is the camera
 * position in the shape's local space.
@@ -533,6 +600,14 @@ void GetColliderLine(uint shape_kind, float3 dimensions, float3 local_camera, ui
 	else if (shape_kind == COLLIDER_SHAPE_CONE)
 	{
 		GetConeLine(dimensions, local_camera, line_index, a, b, silhouette);
+	}
+	else if (shape_kind == COLLIDER_SHAPE_SEGMENT)
+	{
+		GetSegmentLine(dimensions, a, b);
+	}
+	else if (shape_kind == COLLIDER_SHAPE_ARROW)
+	{
+		GetArrowLine(dimensions, line_index, a, b);
 	}
 }
 

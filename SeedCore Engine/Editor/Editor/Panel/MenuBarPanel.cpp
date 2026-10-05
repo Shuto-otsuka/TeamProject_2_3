@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/MenuBarPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <FoundationEngine/File/FileDialog.h>
 #include <FoundationEngine/Log/Notice.h>
 #include <FoundationEngine/Log/Warning.h>
@@ -17,21 +17,21 @@ namespace SeedCore
 
 	void MenuBarPanel::Draw()
 	{
-		const Bool isPlaying = context_.worldContext_.gameTimer_->Playing();
+		const Bool isPlaying = context_.world_.timer_->Playing();
 
-		if (context_.sceneContext_.requestedSceneAssetID_ != 0)
+		if (context_.scene_.request_ != 0)
 		{
-			Uint32 assetID = context_.sceneContext_.requestedSceneAssetID_;
-			context_.sceneContext_.requestedSceneAssetID_ = 0;
+			Uint32 assetID = context_.scene_.request_;
+			context_.scene_.request_ = 0;
 			if (!isPlaying)
 			{
 				RequestSceneSwitch(PendingSceneOp::OpenAsset, {}, assetID);
 			}
 		}
 
-		if (context_.exitRequested_)
+		if (context_.application_.exitRequested_)
 		{
-			context_.exitRequested_ = false;
+			context_.application_.exitRequested_ = false;
 			RequestSceneSwitch(PendingSceneOp::Exit, {}, 0);
 		}
 
@@ -120,11 +120,11 @@ namespace SeedCore
 			{
 				if (ImGui::MenuItem("元に戻す", "Ctrl+Z", false, !isPlaying))
 				{
-					context_.sceneContext_.history_.Undo();
+					context_.scene_.history_.Undo();
 				}
 				if (ImGui::MenuItem("やり直す", "Ctrl+Y", false, !isPlaying))
 				{
-					context_.sceneContext_.history_.Redo();
+					context_.scene_.history_.Redo();
 				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("レイヤー編集"))
@@ -446,11 +446,6 @@ namespace SeedCore
 		return false;
 	}
 
-	ViewMode MenuBarPanel::GetViewMode()const
-	{
-		return context_.viewportContext_.viewMode_;
-	}
-
 	void MenuBarPanel::BuildRuntime()
 	{
 		if (runtimeBuilder_.IsBuilding())
@@ -459,7 +454,7 @@ namespace SeedCore
 		}
 
 		SC_LOG_NOTICE("Runtimeビルドを開始します");
-		runtimeBuilder_.BuildAsync(context_.worldContext_.resource_->ProjectRootPath());
+		runtimeBuilder_.BuildAsync(context_.world_.resource_->ProjectRootPath());
 	}
 
 	void MenuBarPanel::RequestSceneSwitch(PendingSceneOp op, const std::filesystem::path& path, Uint32 assetID)
@@ -468,7 +463,7 @@ namespace SeedCore
 		pendingScenePath_ = path;
 		pendingSceneAssetID_ = assetID;
 
-		if (context_.worldContext_.world_->GetActors().empty())
+		if (context_.world_.world_->GetActors().empty())
 		{
 			ExecutePendingSceneOp();
 		}
@@ -492,37 +487,35 @@ namespace SeedCore
 		case PendingSceneOp::OpenPath:
 		{
 			SceneVisual visual;
-			if (!Scene::Load(*context_.worldContext_.world_, *context_.worldContext_.resource_, path, &visual))
+			if (!Scene::Load(*context_.world_.world_, *context_.world_.resource_, path, &visual))
 			{
 				SC_LOG_WARNING("シーンの読み込みに失敗しました: {}", path.string());
 				break;
 			}
-			context_.viewportContext_.raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
-			context_.viewportContext_.screenSpace_ = DeserializeScreenSpaceContext(visual.screenSpace_);
-			context_.viewportContext_.rasterization_ = DeserializeRasterizationContext(visual.rasterization_);
-			context_.viewportContext_.qualityPreset_ = GraphicsQualityPreset::Custom;
-			context_.sceneContext_.currentScenePath_ = path;
-			context_.selectionContext_.selectedActor_ = Actor();
-			context_.selectionContext_.selectedActors_.clear();
+			context_.sceneVisual_.raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
+			context_.sceneVisual_.screenSpace_ = DeserializeScreenSpaceContext(visual.screenSpace_);
+			context_.sceneVisual_.rasterization_ = DeserializeRasterizationContext(visual.rasterization_);
+			context_.sceneVisual_.qualityPreset_ = GraphicsQualityPreset::Custom;
+			context_.scene_.path_ = FilePath(path, context_.world_.resource_->ProjectRootPath());
+			context_.selection_.Clear();
 			SC_LOG_NOTICE("シーンを読み込みました: {}", path.string());
 			break;
 		}
 		case PendingSceneOp::OpenAsset:
 		{
 			SceneVisual visual;
-			if (!Scene::Load(*context_.worldContext_.world_, *context_.worldContext_.resource_, assetID, &visual))
+			if (!Scene::Load(*context_.world_.world_, *context_.world_.resource_, assetID, &visual))
 			{
 				SC_LOG_WARNING("シーンの読み込みに失敗しました(assetID: {})", assetID);
 				break;
 			}
-			context_.viewportContext_.raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
-			context_.viewportContext_.screenSpace_ = DeserializeScreenSpaceContext(visual.screenSpace_);
-			context_.viewportContext_.rasterization_ = DeserializeRasterizationContext(visual.rasterization_);
-			context_.viewportContext_.qualityPreset_ = GraphicsQualityPreset::Custom;
-			context_.sceneContext_.currentScenePath_ = context_.worldContext_.resource_->GetAsset(assetID)->fullpath_.c_str();
-			context_.selectionContext_.selectedActor_ = Actor();
-			context_.selectionContext_.selectedActors_.clear();
-			SC_LOG_NOTICE("シーンを読み込みました: {}", context_.sceneContext_.currentScenePath_.string());
+			context_.sceneVisual_.raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
+			context_.sceneVisual_.screenSpace_ = DeserializeScreenSpaceContext(visual.screenSpace_);
+			context_.sceneVisual_.rasterization_ = DeserializeRasterizationContext(visual.rasterization_);
+			context_.sceneVisual_.qualityPreset_ = GraphicsQualityPreset::Custom;
+			context_.scene_.path_ = FilePath(context_.world_.resource_->GetAsset(assetID)->fullpath_.c_str(), context_.world_.resource_->ProjectRootPath());
+			context_.selection_.Clear();
+			SC_LOG_NOTICE("シーンを読み込みました: {}", context_.scene_.path_.FullPath().string());
 			break;
 		}
 		case PendingSceneOp::Exit:
@@ -535,18 +528,17 @@ namespace SeedCore
 
 	void MenuBarPanel::NewScene()
 	{
-		context_.worldContext_.world_->DestroyActors();
+		context_.world_.world_->DestroyActors();
 
-		context_.sceneContext_.currentScenePath_.clear();
-		context_.selectionContext_.selectedActor_ = Actor();
-		context_.selectionContext_.selectedActors_.clear();
+		context_.scene_.path_ = FilePath();
+		context_.selection_.Clear();
 
 		SC_LOG_NOTICE("新規シーンを作成しました");
 	}
 
 	void MenuBarPanel::OpenScene()
 	{
-		std::filesystem::path sceneDir = context_.worldContext_.resource_->ProjectRootPath() / "UserProject" / "Assets" / "Scene";
+		std::filesystem::path sceneDir = context_.world_.resource_->ProjectRootPath() / "UserProject" / "Assets" / "Scene";
 		std::filesystem::create_directories(sceneDir);
 
 		std::filesystem::path selectedPath;
@@ -560,7 +552,7 @@ namespace SeedCore
 
 	void MenuBarPanel::SaveScene()
 	{
-		std::filesystem::path sceneDir = context_.worldContext_.resource_->ProjectRootPath() / "UserProject" / "Assets" / "Scene";
+		std::filesystem::path sceneDir = context_.world_.resource_->ProjectRootPath() / "UserProject" / "Assets" / "Scene";
 		std::filesystem::create_directories(sceneDir);
 
 		std::filesystem::path savePath;
@@ -569,31 +561,31 @@ namespace SeedCore
 			return;
 		}
 
-		if (!Scene::Save(*context_.worldContext_.world_, *context_.worldContext_.resource_, savePath, SceneVisual{ SerializeRaytracingContext(context_.viewportContext_.raytracing_), SerializeScreenSpaceContext(context_.viewportContext_.screenSpace_), SerializeRasterizationContext(context_.viewportContext_.rasterization_) }))
+		if (!Scene::Save(*context_.world_.world_, *context_.world_.resource_, savePath, SceneVisual{ SerializeRaytracingContext(context_.sceneVisual_.raytracing_), SerializeScreenSpaceContext(context_.sceneVisual_.screenSpace_), SerializeRasterizationContext(context_.sceneVisual_.rasterization_) }))
 		{
 			SC_LOG_WARNING("シーンの保存に失敗しました: {}", savePath.string());
 			return;
 		}
 
-		context_.sceneContext_.currentScenePath_ = savePath;
+		context_.scene_.path_ = FilePath(savePath, context_.world_.resource_->ProjectRootPath());
 
 		SC_LOG_NOTICE("シーンを保存しました: {}", savePath.string());
 	}
 
 	void MenuBarPanel::OverwriteSaveScene()
 	{
-		if (context_.sceneContext_.currentScenePath_.empty())
+		if (context_.scene_.path_.Empty())
 		{
 			SaveScene();
 			return;
 		}
 
-		if (!Scene::Save(*context_.worldContext_.world_, *context_.worldContext_.resource_, context_.sceneContext_.currentScenePath_, SceneVisual{ SerializeRaytracingContext(context_.viewportContext_.raytracing_), SerializeScreenSpaceContext(context_.viewportContext_.screenSpace_), SerializeRasterizationContext(context_.viewportContext_.rasterization_) }))
+		if (!Scene::Save(*context_.world_.world_, *context_.world_.resource_, context_.scene_.path_.FullPath(), SceneVisual{ SerializeRaytracingContext(context_.sceneVisual_.raytracing_), SerializeScreenSpaceContext(context_.sceneVisual_.screenSpace_), SerializeRasterizationContext(context_.sceneVisual_.rasterization_) }))
 		{
-			SC_LOG_WARNING("シーンの上書き保存に失敗しました: {}", context_.sceneContext_.currentScenePath_.string());
+			SC_LOG_WARNING("シーンの上書き保存に失敗しました: {}", context_.scene_.path_.FullPath().string());
 			return;
 		}
 
-		SC_LOG_NOTICE("シーンを上書き保存しました: {}", context_.sceneContext_.currentScenePath_.string());
+		SC_LOG_NOTICE("シーンを上書き保存しました: {}", context_.scene_.path_.FullPath().string());
 	}
 }

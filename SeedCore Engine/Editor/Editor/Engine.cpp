@@ -71,14 +71,14 @@ namespace SeedCore
 		Scene::Initialize(*world_, *resource_, *executor_);
 		Prefab::Initialize(*world_, *resource_);
 
-		editorContext_.worldContext_.world_ = world_.get();
-		editorContext_.worldContext_.resource_ = resource_.get();
-		editorContext_.worldContext_.loader_ = loaderSystem_.get();
-		editorContext_.worldContext_.gameTimer_ = &gameTimer_;
-		editorContext_.worldContext_.system_ = system_.get();
-		editorContext_.cameraContext_.editorCamera_ = &editorCamera_;
-		editorContext_.cameraContext_.editorCameraController_ = &editorCameraController_;
-		editorContext_.cameraContext_.canvasCamera_ = &canvasCamera_;
+		editorContext_.world_.world_ = world_.get();
+		editorContext_.world_.resource_ = resource_.get();
+		editorContext_.world_.loader_ = loaderSystem_.get();
+		editorContext_.world_.timer_ = &gameTimer_;
+		editorContext_.world_.system_ = system_.get();
+		editorContext_.view_.editor_.camera_ = &editorCamera_;
+		editorContext_.view_.editor_.cameraController_ = &editorCameraController_;
+		editorContext_.view_.canvas_.camera_ = &canvasCamera_;
 		editorContext_.cameraContext_.timelineCamera_ = &timelineCamera_;
 		editorContext_.cameraContext_.modelTransformCamera_ = &modelTransformCamera_;
 		editorContext_.cameraContext_.materialCamera_ = &materialCamera_;
@@ -89,8 +89,8 @@ namespace SeedCore
 		editorContext_.cameraContext_.materialCameraController_ = &materialCameraController_;
 		editorContext_.cameraContext_.skeletonControllerCameraController_ = &skeletonControllerCameraController_;
 		editorContext_.cameraContext_.avatarCameraController_ = &avatarCameraController_;
-		editorContext_.graphicsContext_.graphics_ = graphics_.get();
-		editorContext_.graphicsContext_.imgui_ = imgui_.get();
+		editorContext_.graphics_.graphics_ = graphics_.get();
+		editorContext_.graphics_.imgui_ = imgui_.get();
 		editorContext_.cameraContext_.cameraSystem_ = &cameraSystem_;
 
 		InputSystem::Initialize();
@@ -130,17 +130,16 @@ namespace SeedCore
 			}
 		}
 
+		/// [EN] The game config is loaded once here and, with the editor config loaded above, shared with the config panel through the context; the render targets are sized from it on the first frame.
+		/// [JP] ゲームの設定はここで1回だけ読み込み、先に読み込んだエディタの設定と一緒にコンテキスト経由で設定パネルと共有する。描画先の大きさは最初のフレームでこれから決める。
 		gameConfig_.Load();
-		editorContext_.viewportContext_.outputResolution_ = gameConfig_.resolution_;
-		editorContext_.viewportContext_.upscale_.dlssRayReconstructionEnabled_ = gameConfig_.useDlss_;
-		editorContext_.viewportContext_.upscale_.upscaleMode_ = gameConfig_.upscaleMode_;
-		editorContext_.viewportContext_.frameGeneration_.enabled_ = gameConfig_.useFrameGeneration_;
-		editorContext_.viewportContext_.vsync_ = gameConfig_.vsync_;
-		editorContext_.viewportContext_.resizeRequested_ = true;
+		editorContext_.config_.game_ = &gameConfig_;
+		editorContext_.config_.editor_ = &editorConfig_;
+		editorContext_.config_.resizeRequested_ = true;
 
 		graphics_->Reflex(gameConfig_.useReflex_, false);
 		graphics_->DeepDVC(gameConfig_.useDeepDVC_, 0.5f, 0.25f);
-		graphics_->FrameGeneration(editorContext_.viewportContext_.frameGeneration_.enabled_);
+		graphics_->FrameGeneration(gameConfig_.useFrameGeneration_);
 
 		if (!editorConfig_.lastScenePath_.str().empty())
 		{
@@ -148,12 +147,12 @@ namespace SeedCore
 			SceneVisual visual;
 			if (Scene::Load(*world_, *resource_, lastScenePath, &visual))
 			{
-				editorContext_.viewportContext_.raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
-				editorContext_.viewportContext_.screenSpace_ = DeserializeScreenSpaceContext(visual.screenSpace_);
-				editorContext_.viewportContext_.rasterization_ = DeserializeRasterizationContext(visual.rasterization_);
-				editorContext_.viewportContext_.qualityPreset_ = GraphicsQualityPreset::Custom;
-				editorContext_.sceneContext_.currentScenePath_ = lastScenePath;
-				editorContext_.viewportContext_.resizeRequested_ = true;
+				editorContext_.sceneVisual_.raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
+				editorContext_.sceneVisual_.screenSpace_ = DeserializeScreenSpaceContext(visual.screenSpace_);
+				editorContext_.sceneVisual_.rasterization_ = DeserializeRasterizationContext(visual.rasterization_);
+				editorContext_.sceneVisual_.qualityPreset_ = GraphicsQualityPreset::Custom;
+				editorContext_.scene_.path_ = FilePath(lastScenePath, resource_->ProjectRootPath());
+				editorContext_.config_.resizeRequested_ = true;
 			}
 		}
 
@@ -181,7 +180,7 @@ namespace SeedCore
 			editorConfig_.cameraShiftSpeedMultiplier_ = editorCameraController_.ShiftSpeedMultiplier();
 
 			editorConfig_.fontScale_ = imgui_->FontScale();
-			editorConfig_.lastScenePath_ = String(editorContext_.sceneContext_.currentScenePath_.string());
+			editorConfig_.lastScenePath_ = String(editorContext_.scene_.path_.FullPath().string());
 
 			editorConfig_.Save();
 		}
@@ -272,7 +271,7 @@ namespace SeedCore
 			{
 				if (window_->ConsumeCloseRequested())
 				{
-					editorContext_.exitRequested_ = true;
+					editorContext_.application_.exitRequested_ = true;
 				}
 
 				window_->CalculateFrameStats();
@@ -285,24 +284,24 @@ namespace SeedCore
 				hotReload_.Tick(*world_);
 				pluginHost_.Tick(*world_);
 
-				editorContext_.uiFrame_++;
+				editorContext_.application_.uiFrame_++;
 
-				if (editorContext_.viewportContext_.resizeRequested_)
+				if (editorContext_.config_.resizeRequested_)
 				{
-					editorContext_.viewportContext_.resizeRequested_ = false;
+					editorContext_.config_.resizeRequested_ = false;
 
-					ScResolution::ResSize outputSize = ToResSize(editorContext_.viewportContext_.outputResolution_);
+					ScResolution::ResSize outputSize = ToResSize(gameConfig_.resolution_);
 					Uint32 outputWidth = static_cast<Uint32>(outputSize.Width);
 					Uint32 outputHeight = static_cast<Uint32>(outputSize.Height);
 
-					graphics_->ResizeRenderTarget(outputWidth, outputHeight, editorContext_.viewportContext_.upscale_.upscaleMode_);
+					graphics_->ResizeRenderTarget(outputWidth, outputHeight, gameConfig_.upscaleMode_);
 				}
 
-				if (editorContext_.viewportContext_.recreateRequested_)
+				if (editorContext_.config_.recreateRequested_)
 				{
-					editorContext_.viewportContext_.recreateRequested_ = false;
+					editorContext_.config_.recreateRequested_ = false;
 
-					graphics_->FrameGeneration(editorContext_.viewportContext_.frameGeneration_.enabled_);
+					graphics_->FrameGeneration(gameConfig_.useFrameGeneration_);
 				}
 
 				splashSystem_.Update(*resource_);
@@ -347,9 +346,9 @@ namespace SeedCore
 
 					if (const Scene* switchedScene = Scene::ConsumeSwitchedScene())
 					{
-						editorContext_.viewportContext_.raytracing_ = DeserializeRaytracingContext(switchedScene->Visual().raytracing_);
-						editorContext_.viewportContext_.screenSpace_ = DeserializeScreenSpaceContext(switchedScene->Visual().screenSpace_);
-						editorContext_.viewportContext_.rasterization_ = DeserializeRasterizationContext(switchedScene->Visual().rasterization_);
+						editorContext_.sceneVisual_.raytracing_ = DeserializeRaytracingContext(switchedScene->Visual().raytracing_);
+						editorContext_.sceneVisual_.screenSpace_ = DeserializeScreenSpaceContext(switchedScene->Visual().screenSpace_);
+						editorContext_.sceneVisual_.rasterization_ = DeserializeRasterizationContext(switchedScene->Visual().rasterization_);
 					}
 				}
 
@@ -372,27 +371,27 @@ namespace SeedCore
 				skeletonControllerCamera_.Tick(window_->GetTimer().Delta());
 				avatarCamera_.Tick(window_->GetTimer().Delta());
 
-				if (editorContext_.viewportContext_.raytracing_.daySystemEnabled_)
+				if (editorContext_.sceneVisual_.raytracing_.daySystemEnabled_)
 				{
-					CelestialSystem::Advance(gameTimer_.ScaledDeltaTime(), editorContext_.viewportContext_.raytracing_.daySystem_);
+					CelestialSystem::Advance(gameTimer_.ScaledDeltaTime(), editorContext_.sceneVisual_.raytracing_.daySystem_);
 
-					if (editorContext_.viewportContext_.raytracing_.sunLightEnabled_)
+					if (editorContext_.sceneVisual_.raytracing_.sunLightEnabled_)
 					{
-						CelestialResult celestial = CelestialSystem::Compute(editorContext_.viewportContext_.raytracing_.daySystem_, editorContext_.viewportContext_.raytracing_.sunLight_, editorContext_.viewportContext_.raytracing_.moonLight_);
+						CelestialResult celestial = CelestialSystem::Compute(editorContext_.sceneVisual_.raytracing_.daySystem_, editorContext_.sceneVisual_.raytracing_.sunLight_, editorContext_.sceneVisual_.raytracing_.moonLight_);
 						for (Int index = 0; index < 3; index++)
 						{
-							editorContext_.viewportContext_.raytracing_.volumetricCloudScapes_.skyZenithColor_[index] = celestial.skyZenithColor_[index];
-							editorContext_.viewportContext_.raytracing_.volumetricCloudScapes_.skyHorizonColor_[index] = celestial.skyHorizonColor_[index];
+							editorContext_.sceneVisual_.raytracing_.volumetricCloudScapes_.skyZenithColor_[index] = celestial.skyZenithColor_[index];
+							editorContext_.sceneVisual_.raytracing_.volumetricCloudScapes_.skyHorizonColor_[index] = celestial.skyHorizonColor_[index];
 						}
 					}
 				}
-				weatherSystem_.Execute(*world_, gameTimer_.ScaledDeltaTime(), editorContext_.viewportContext_.raytracing_.daySystem_.monthOfYear_, editorContext_.viewportContext_.raytracing_.volumetricCloudScapes_);
+				weatherSystem_.Execute(*world_, gameTimer_.ScaledDeltaTime(), editorContext_.sceneVisual_.raytracing_.daySystem_.monthOfYear_, editorContext_.sceneVisual_.raytracing_.volumetricCloudScapes_);
 
 				graphics_->Raytracing(editor_->GetRaytracingSettings());
-				graphics_->Upscale(editorContext_.viewportContext_.upscale_.dlssRayReconstructionEnabled_, editorContext_.viewportContext_.upscale_.upscaleMode_);
-				graphics_->VerticalSync(editorContext_.viewportContext_.vsync_);
+				graphics_->Upscale(gameConfig_.useDlss_, gameConfig_.upscaleMode_);
+				graphics_->VerticalSync(gameConfig_.vsync_);
 
-				graphics_->EditorRender(worldTimer_, editorCamera_, *loaderSystem_, *resource_, *world_, editor_->GetViewMode(), editor_->GetSelectedEntities());
+				graphics_->EditorRender(worldTimer_, editorCamera_, *loaderSystem_, *resource_, *world_, editorContext_.view_.editor_.viewMode_, editor_->GetSelectedEntities());
 				graphics_->GameRender(gameTimer_, cameraSystem_, *loaderSystem_, *resource_, *world_);
 				graphics_->CanvasRender(worldTimer_, canvasCamera_, *loaderSystem_, *resource_, *world_);
 

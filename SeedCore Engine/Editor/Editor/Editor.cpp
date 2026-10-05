@@ -23,14 +23,14 @@
 
 namespace SeedCore
 {
-	Editor::Editor(EditorContext& context) :context_(context), resourceSync_(context.worldContext_.resource_->ProjectRootPath()), imguiTexture_(context_)
+	Editor::Editor(EditorContext& context) :context_(context), resourceSync_(context.world_.resource_->ProjectRootPath()), imguiTexture_(context_)
 	{
-		context_.resourceSync_ = &resourceSync_;
+		context_.application_.resourceSync_ = &resourceSync_;
 		hierarchyPanel_ = MakePtr<HierarchyPanel>(context_, imguiTexture_);
 		inspectorPanel_ = MakePtr<InspectorPanel>(context_, imguiTexture_);
 		diagnosticsPanel_ = MakePtr<DiagnosticsPanel>(context_, imguiTexture_);
 		editorWindowPanel_ = MakePtr<EditorWindowPanel>(context_, imguiTexture_);
-		gameWindowPanel_ = MakePtr<GameWindowPanel>(*context_.cameraContext_.cameraSystem_, *context_.graphicsContext_.imgui_, imguiTexture_);
+		gameWindowPanel_ = MakePtr<GameWindowPanel>(*context_.cameraContext_.cameraSystem_, *context_.graphics_.imgui_, imguiTexture_);
 		canvasViewPanel_ = MakePtr<CanvasViewPanel>(context_, imguiTexture_);
 		contentsDrawerPanel_ = MakePtr<ContentsDrawerPanel>(context_, imguiTexture_);
 		controlPanel_ = MakePtr<ControlPanel>(context_, imguiTexture_);
@@ -62,21 +62,15 @@ namespace SeedCore
 
 	void Editor::PruneDeadSelection()
 	{
-		World* world = context_.worldContext_.world_;
+		World* world = context_.world_.world_;
 		if (!world)
 		{
 			return;
 		}
 
-		SelectionContext& selection = context_.selectionContext_;
-
-		SeedCore::erase_if(selection.selectedActors_, [](Actor actor) { return !actor; });
-
-		if (!selection.selectedActor_)
-		{
-			selection.selectedActor_ = selection.selectedActors_.empty() ? Actor() : selection.selectedActors_.back();
-			selection.selectedEntity_ = selection.selectedActor_ ? selection.selectedActor_.GetEntity() : Entity::Null();
-		}
+		/// [EN] Destroyed actors drop out of the selection; the primary selection follows as the last one left.
+		/// [JP] 破棄されたアクターは選択から外す。主な選択は、残った中の最後のものになる。
+		SeedCore::erase_if(context_.selection_.actors_, [](Actor actor) { return !actor; });
 	}
 
 	Float Editor::DrawToolbar()
@@ -85,10 +79,10 @@ namespace SeedCore
 
 		/// [EN] Which scene is open decides which one the library follows, and opening a scene is not a single place in the Editor.
 		/// [JP] どの Scene を追いかけるかは、開いている Scene で決まる。Scene を開く操作は Editor の1か所には限られない。
-		if (followedScenePath_ != context_.sceneContext_.currentScenePath_)
+		if (followedScenePath_ != context_.scene_.path_)
 		{
-			followedScenePath_ = context_.sceneContext_.currentScenePath_;
-			resourceSync_.RequestOpenScene(followedScenePath_);
+			followedScenePath_ = context_.scene_.path_;
+			resourceSync_.RequestOpenScene(followedScenePath_.FullPath());
 		}
 
 		/// [EN] An asset the library replaced on disk is still the old one in memory, so each is reloaded here.
@@ -98,18 +92,18 @@ namespace SeedCore
 		/// [JP] これは Editor のスレッドでフレームの合間に動く。レンダラが使っているものを入れ替えてよいのはそこだけ。
 		/// [EN] A file an artist dropped into the library arrives without an identity, so it is taken in and then shared from here.
 		/// [JP] アーティストがライブラリへ置いたファイルは識別情報を持たずに届くため、ここで取り込んでから共有へ回す。
-		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
+		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
 		DynamicArray<String> importedAssets;
 		resourceSync_.ConsumeImportedAsset(importedAssets);
 		for (const String& imported : importedAssets)
 		{
 			/// [EN] Reloading is what mints the .meta beside it, which is what gives the file the identifier the team will know it by.
 			/// [JP] 読み直しが隣に .meta を作る。それが、チームがそのファイルを識別する番号を与える処理にあたる。
-			context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+			context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 
-			std::filesystem::path local = context_.worldContext_.resource_->ProjectRootPath() / "UserProject" / imported.str();
-			Uint32 importedId = context_.worldContext_.resource_->GetAssetID(String(local.generic_string()));
-			AssetRecord* record = importedId == 0 ? nullptr : context_.worldContext_.resource_->GetAsset(importedId);
+			std::filesystem::path local = context_.world_.resource_->ProjectRootPath() / "UserProject" / imported.str();
+			Uint32 importedId = context_.world_.resource_->GetAssetID(String(local.generic_string()));
+			AssetRecord* record = importedId == 0 ? nullptr : context_.world_.resource_->GetAsset(importedId);
 
 			/// [EN] Sharing it here is what puts it in the catalog, from where every other member receives it on their own.
 			/// [JP] ここで共有することでカタログに載り、そこから他の全メンバーへ自動で届くようになる。
@@ -128,7 +122,7 @@ namespace SeedCore
 			for (Uint32 assetId : changedAssets)
 			{
 				const SharedAsset* shared = resourceSync_.GetAsset(assetId);
-				if (!shared || context_.worldContext_.resource_->GetAsset(assetId))
+				if (!shared || context_.world_.resource_->GetAsset(assetId))
 				{
 					continue;
 				}
@@ -136,26 +130,26 @@ namespace SeedCore
 				/// [EN] The path is matched exactly, since a lookup by bare file name could land on a different asset of the same name.
 				/// [JP] 位置は完全一致で照合する。ファイル名だけで引くと、同名の別アセットに当たることがあるため。
 				String path = String((std::filesystem::path("UserProject") / shared->path_.str()).generic_string());
-				Uint32 staleId = context_.worldContext_.resource_->GetAssetID(path);
-				AssetRecord* stale = staleId == 0 ? nullptr : context_.worldContext_.resource_->GetAsset(staleId);
+				Uint32 staleId = context_.world_.resource_->GetAssetID(path);
+				AssetRecord* stale = staleId == 0 ? nullptr : context_.world_.resource_->GetAsset(staleId);
 				if (stale && stale->path_ == path)
 				{
-					context_.worldContext_.resource_->Forget(staleId);
+					context_.world_.resource_->Forget(staleId);
 				}
 			}
 
 			/// [EN] An asset arriving for the first time is not in the cache yet, so the whole project is taken in before anything is swapped.
 			/// [JP] 初めて届いたアセットはまだキャッシュに無いため、入れ替えの前にプロジェクト全体を取り込む。
-			context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+			context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 
 			for (Uint32 assetId : changedAssets)
 			{
-				context_.worldContext_.resource_->Reload(assetId, *context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+				context_.world_.resource_->Reload(assetId, *context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 
 				/// [EN] Reloading the scene asset is not enough, because what the member is looking at is the world, not the file.
 				/// [JP] Scene アセットを読み直すだけでは足りない。メンバーが見ているのはファイルではなく world であるため。
 				const SharedAsset* shared = resourceSync_.GetAsset(assetId);
-				if (!shared || !shared->scene_ || followedScenePath_.empty())
+				if (!shared || !shared->scene_ || followedScenePath_.Empty())
 				{
 					continue;
 				}
@@ -166,12 +160,12 @@ namespace SeedCore
 				/// [EN] It is not the pool's scratch, because a transition may be using that one at the same moment.
 				/// [JP] プールの作業用インスタンスは使わない。同じ瞬間に遷移処理がそれを使っていることがあるため。
 				Scene arriving;
-				if (!arriving.Read(followedScenePath_))
+				if (!arriving.Read(followedScenePath_.FullPath()))
 				{
 					continue;
 				}
 
-				World& world = *context_.worldContext_.world_;
+				World& world = *context_.world_.world_;
 				const DynamicArray<BlueprintNode>& nodes = arriving.Nodes();
 
 				/// [EN] Actors are matched by the identifier each one keeps, so a rename or a move does not look like a different actor.
@@ -200,7 +194,7 @@ namespace SeedCore
 					auto existing = live.find(node.collaborationId_);
 					if (existing != live.end())
 					{
-						ApplyActorNode(world, *context_.worldContext_.resource_, node, existing->second);
+						ApplyActorNode(world, *context_.world_.resource_, node, existing->second);
 						continue;
 					}
 
@@ -212,7 +206,7 @@ namespace SeedCore
 						auto found = live.find(nodes[static_cast<Size>(node.parentIndex_)].collaborationId_);
 						parent = found == live.end() ? Actor() : found->second;
 					}
-					live[node.collaborationId_] = InstantiateActorNode(world, *context_.worldContext_.resource_, node, parent, false);
+					live[node.collaborationId_] = InstantiateActorNode(world, *context_.world_.resource_, node, parent, false);
 				}
 
 				/// [EN] An actor the arriving scene no longer lists was deleted by another member, so it goes here as well.
@@ -230,11 +224,11 @@ namespace SeedCore
 
 		/// [EN] Whatever the engine baked or extracted is sent up with its .meta, so no member is left with an asset the others never received.
 		/// [JP] エンジンが焼いたもの・取り出したものは .meta と一緒に上げる。他のメンバーに届いていないアセットが残らないようにするため。
-		resourceSync_.ShareGenerated(*context_.worldContext_.resource_);
+		resourceSync_.ShareGenerated(*context_.world_.resource_);
 
 		/// [EN] Whatever the open scene uses but this machine lacks is fetched, so opening a shared scene does not leave its actors without models or materials.
 		/// [JP] 開いている Scene が使っていてこの PC に無いものを取得する。共有された Scene を開いたとき、Actor のモデルやマテリアルが欠けたままにならないようにするため。
-		resourceSync_.FetchReferenced(*context_.worldContext_.world_);
+		resourceSync_.FetchReferenced(*context_.world_.world_);
 
 		PruneDeadSelection();
 
@@ -303,13 +297,13 @@ namespace SeedCore
 		}
 		if (menuBarPanel_->ConsumeAnimatorControllerRequest())
 		{
-			Animator* animator = context_.selectionContext_.selectedActor_ ? const_cast<Animator*>(context_.selectionContext_.selectedActor_.GetComponent<Animator>()) : nullptr;
+			Animator* animator = context_.selection_.Primary() ? const_cast<Animator*>(context_.selection_.Primary().GetComponent<Animator>()) : nullptr;
 			animatorControllerPanel_->Open(animator);
 		}
 		if (AnimatorControllerRequest::requested_)
 		{
 			AnimatorControllerRequest::requested_ = false;
-			Animator* animator = context_.selectionContext_.selectedActor_ ? const_cast<Animator*>(context_.selectionContext_.selectedActor_.GetComponent<Animator>()) : nullptr;
+			Animator* animator = context_.selection_.Primary() ? const_cast<Animator*>(context_.selection_.Primary().GetComponent<Animator>()) : nullptr;
 			animatorControllerPanel_->Open(animator);
 		}
 		if (menuBarPanel_->ConsumeTimelineRequest())
@@ -410,16 +404,16 @@ namespace SeedCore
 			contentsDrawerPanel_->Draw();
 		}
 
-		if (!context_.worldContext_.gameTimer_->Playing() && !ImGui::GetIO().WantTextInput)
+		if (!context_.world_.timer_->Playing() && !ImGui::GetIO().WantTextInput)
 		{
 			Bool ctrlPressed = ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl);
 			if (ctrlPressed && ImGui::IsKeyPressed(ImGuiKey_Z))
 			{
-				context_.sceneContext_.history_.Undo();
+				context_.scene_.history_.Undo();
 			}
 			if (ctrlPressed && ImGui::IsKeyPressed(ImGuiKey_Y))
 			{
-				context_.sceneContext_.history_.Redo();
+				context_.scene_.history_.Redo();
 			}
 
 			/// [EN] Unreal-style "frame selected": Ctrl+F slides a viewport
@@ -442,9 +436,9 @@ namespace SeedCore
 			///      フィットに使えないため、現在の距離のままピボットへパン。
 			///      それ以外はワールド空間 Bounds 中心へドリーフィット。
 			///      詳細は HierarchyPanel::Draw のコメント参照。
-			if (ctrlPressed && ImGui::IsKeyPressed(ImGuiKey_F) && context_.selectionContext_.selectedActor_)
+			if (ctrlPressed && ImGui::IsKeyPressed(ImGuiKey_F) && context_.selection_.Primary())
 			{
-				Actor selectedActor = context_.selectionContext_.selectedActor_;
+				Actor selectedActor = context_.selection_.Primary();
 				const Matrix& worldMatrix = selectedActor.WorldMatrix();
 
 				const Image* image = selectedActor.GetComponent<Image>();
@@ -452,14 +446,14 @@ namespace SeedCore
 				const Movie* movie = selectedActor.GetComponent<Movie>();
 				Bool isCanvasActor = (image && image->viewType_ == Image::ViewType::Sprite) || (text && text->viewType_ == Text::ViewType::Sprite) || (movie && movie->displayMode_ == Movie::DisplayMode::Sprite);
 
-				if (isCanvasActor && context_.cameraContext_.canvasCamera_)
+				if (isCanvasActor && context_.view_.canvas_.camera_)
 				{
 					Vector3 canvasTarget = Vector3(100000.0f + worldMatrix._41, 100000.0f + (ScResolution::SC_CANVAS.Height - worldMatrix._42), 100000.0f);
-					context_.cameraContext_.canvasCamera_->FocusOn(canvasTarget);
+					context_.view_.canvas_.camera_->FocusOn(canvasTarget);
 
 					ImGui::SetWindowFocus("キャンバスビュー");
 				}
-				else if (context_.cameraContext_.editorCamera_)
+				else if (context_.view_.editor_.camera_)
 				{
 					Bool skinned = selectedActor.GetComponent<Animator>() != nullptr;
 
@@ -474,7 +468,7 @@ namespace SeedCore
 						target = Vector3::Transform(bounds->center_, worldMatrix);
 					}
 
-					context_.cameraContext_.editorCamera_->FocusOn(target, radius);
+					context_.view_.editor_.camera_->FocusOn(target, radius);
 
 					ImGui::SetWindowFocus("エディタービュー");
 				}
@@ -482,15 +476,10 @@ namespace SeedCore
 		}
 	}
 
-	ViewMode Editor::GetViewMode()const
-	{
-		return menuBarPanel_->GetViewMode();
-	}
-
 	DynamicArray<Entity> Editor::GetSelectedEntities()const
 	{
 		DynamicArray<Entity> selectedEntities;
-		for (Actor actor : context_.selectionContext_.selectedActors_)
+		for (Actor actor : context_.selection_.actors_)
 		{
 			if (actor)
 			{
@@ -502,6 +491,6 @@ namespace SeedCore
 
 	const RaytracingContext& Editor::GetRaytracingSettings()const
 	{
-		return context_.viewportContext_.raytracing_;
+		return context_.sceneVisual_.raytracing_;
 	}
 }

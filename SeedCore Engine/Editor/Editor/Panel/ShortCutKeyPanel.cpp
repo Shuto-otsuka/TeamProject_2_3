@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/ShortCutKeyPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 
 namespace SeedCore
 {

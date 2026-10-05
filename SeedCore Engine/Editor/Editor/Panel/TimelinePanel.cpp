@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/TimelinePanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <External/ImGui/Include/imgui_internal.h>
@@ -330,7 +330,7 @@ namespace SeedCore
 			return;
 		}
 
-		Animator* selectedTarget = context_.selectionContext_.selectedActor_ ? const_cast<Animator*>(context_.selectionContext_.selectedActor_.GetComponent<Animator>()) : nullptr;
+		Animator* selectedTarget = context_.selection_.Primary() ? const_cast<Animator*>(context_.selection_.Primary().GetComponent<Animator>()) : nullptr;
 		if (selectedTarget != target_)
 		{
 			target_ = selectedTarget;
@@ -341,7 +341,7 @@ namespace SeedCore
 
 		context_.timelinePreviewContext_.previewActive_ = false;
 
-		ImGui::DockBuilderDockWindow("タイムライン", context_.graphicsContext_.imgui_->DockSpaceID());
+		ImGui::DockBuilderDockWindow("タイムライン", context_.graphics_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("タイムライン", &show_);
@@ -358,7 +358,7 @@ namespace SeedCore
 			else
 			{
 				std::string preview = (selectedAnimationIndex_ < target_->animationIDs_.size())
-					? AnimationLabel(context_.worldContext_.resource_, target_->animationIDs_[selectedAnimationIndex_])
+					? AnimationLabel(context_.world_.resource_, target_->animationIDs_[selectedAnimationIndex_])
 					: "(未選択)";
 
 				ImGui::SetNextItemWidth(200.0f);
@@ -366,7 +366,7 @@ namespace SeedCore
 				{
 					for (Size index = 0; index < target_->animationIDs_.size(); ++index)
 					{
-						std::string label = AnimationLabel(context_.worldContext_.resource_, target_->animationIDs_[index]);
+						std::string label = AnimationLabel(context_.world_.resource_, target_->animationIDs_[index]);
 						Bool selected = (selectedAnimationIndex_ == index);
 						if (ImGui::Selectable(label.c_str(), selected))
 						{
@@ -387,9 +387,9 @@ namespace SeedCore
 
 				if (selectedAnimationIndex_ != SIZE_MAX)
 				{
-					AnimationResource* animationResource = context_.worldContext_.resource_->GetResource<AnimationResource>(AssetType::Animation);
-					Handle<Animation> handle = animationResource->Load(*context_.worldContext_.loader_, *context_.worldContext_.resource_, assetId);
-					animation = animationResource->Resolve(*context_.worldContext_.loader_, handle);
+					AnimationResource* animationResource = context_.world_.resource_->GetResource<AnimationResource>(AssetType::Animation);
+					Handle<Animation> handle = animationResource->Load(*context_.world_.loader_, *context_.world_.resource_, assetId);
+					animation = animationResource->Resolve(*context_.world_.loader_, handle);
 
 					duration = animation ? animation->Duration() : 0.0f;
 
@@ -403,7 +403,7 @@ namespace SeedCore
 					}
 				}
 
-				const Mesh* mesh = context_.selectionContext_.selectedActor_ ? context_.selectionContext_.selectedActor_.GetComponent<Mesh>() : nullptr;
+				const Mesh* mesh = context_.selection_.Primary() ? context_.selection_.Primary().GetComponent<Mesh>() : nullptr;
 				if (mesh && mesh->meshID_ != 0)
 				{
 					context_.timelinePreviewContext_.previewActive_ = true;
@@ -489,9 +489,9 @@ namespace SeedCore
 		}
 
 		Uint32 assetId = target_->animationIDs_[selectedAnimationIndex_];
-		AnimationResource* animationResource = context_.worldContext_.resource_->GetResource<AnimationResource>(AssetType::Animation);
-		Handle<Animation> handle = animationResource->Load(*context_.worldContext_.loader_, *context_.worldContext_.resource_, assetId);
-		Animation* animation = animationResource->Resolve(*context_.worldContext_.loader_, handle);
+		AnimationResource* animationResource = context_.world_.resource_->GetResource<AnimationResource>(AssetType::Animation);
+		Handle<Animation> handle = animationResource->Load(*context_.world_.loader_, *context_.world_.resource_, assetId);
+		Animation* animation = animationResource->Resolve(*context_.world_.loader_, handle);
 		if (!animation)
 		{
 			ImGui::TextDisabled("アニメーションを選択してください");
@@ -548,12 +548,12 @@ namespace SeedCore
 		ImGui::Separator();
 		ImGui::Spacing();
 
-		AssetRecord* asset = context_.worldContext_.resource_->GetAsset(assetId);
+		AssetRecord* asset = context_.world_.resource_->GetAsset(assetId);
 
 		if (ImGui::Button("上書き保存") && asset)
 		{
 			std::filesystem::path overwritePath(asset->fullpath_.c_str());
-			if (context_.worldContext_.loader_->animationLoader_->Save(*animation, overwritePath))
+			if (context_.world_.loader_->animationLoader_->Save(*animation, overwritePath))
 			{
 				SC_LOG_NOTICE("アニメーションを上書き保存しました: {}", overwritePath.string());
 			}
@@ -570,7 +570,7 @@ namespace SeedCore
 			std::filesystem::path savePath;
 			if (FileDialog::SaveFile(savePath, initialDir, L"Animation Files (*.animation)", L"*.animation", L"animation"))
 			{
-				if (context_.worldContext_.loader_->animationLoader_->Save(*animation, savePath))
+				if (context_.world_.loader_->animationLoader_->Save(*animation, savePath))
 				{
 					SC_LOG_NOTICE("アニメーションを保存しました: {}", savePath.string());
 				}

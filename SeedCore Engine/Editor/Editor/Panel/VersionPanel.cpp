@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/VersionPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/Texture/TextureLoader.h>
@@ -19,8 +19,8 @@ namespace SeedCore
 
 		String logoPath = isDaytime ? String("../Runtime/Logo/Day.logo") : String("../Runtime/Logo/Night.logo");
 
-		D3D12Context& d3d12Context = context.graphicsContext_.graphics_->GetContext();
-		BindlessHeap* bindlessHeap = &context.graphicsContext_.graphics_->GetBindlessHeap();
+		D3D12Context& d3d12Context = context.graphics_.graphics_->GetContext();
+		BindlessHeap* bindlessHeap = &context.graphics_.graphics_->GetBindlessHeap();
 		IDXGIAdapter4* adapter = d3d12Context.GetAdapter()->Get();
 
 		Uint index = bindlessHeap->AllocateIndex();

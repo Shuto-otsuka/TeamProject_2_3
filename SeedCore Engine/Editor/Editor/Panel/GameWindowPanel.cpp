@@ -41,7 +41,7 @@ namespace SeedCore
 
 	void GameWindowPanel::Draw(D3D12_GPU_DESCRIPTOR_HANDLE frameBufferHandle, Float toolbarHeight)
 	{
-		ImTextureID displayTextureId = cameraSystem_.HasActiveCamera() ? ImTextureID(frameBufferHandle.ptr) : imguiTexture_.Icon(IconType::NonCameraWarning);
+		ImTextureID displayTextureId = cameraSystem_.ActiveCamera() ? ImTextureID(frameBufferHandle.ptr) : imguiTexture_.Icon(IconType::NonCameraWarning);
 
 		if ((ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl)) && ImGui::IsKeyPressed(ImGuiKey_F11))
 		{
@@ -83,12 +83,12 @@ namespace SeedCore
 				/// [JP] 全画面でも通常ビューと同じく Free カメラ入力を処理する
 				///      （Free モード＆ホバー中）。これが無いと全画面でカメラが動かない。
 				Bool fullscreenHovered = ImGui::IsWindowHovered();
-				UpdateFreeCameraMouseCapture(cameraSystem_.GetMode() == CameraSystem::Mode::Free && fullscreenHovered);
+				UpdateFreeCameraMouseCapture(cameraSystem_.Mode() == CameraMode::Free && fullscreenHovered);
 
-				if (cameraSystem_.GetMode() == CameraSystem::Mode::Free && fullscreenHovered)
+				if (cameraSystem_.Mode() == CameraMode::Free && fullscreenHovered)
 				{
 					Float deltaTime = ImGui::GetIO().DeltaTime;
-					cameraSystem_.UpdateFreeCameraInput(deltaTime);
+					cameraSystem_.Navigate(deltaTime);
 				}
 
 				ImVec2 regionSize = ImGui::GetContentRegionAvail();
@@ -109,6 +109,12 @@ namespace SeedCore
 				Float offsetY = ImFloor((regionSize.y - imageHeight) * 0.5f);
 
 				ImGui::SetCursorPos(ImVec2(offsetX, offsetY));
+
+				/// [EN] Publish where the game image sits on the desktop, so gameplay ScreenToWorld()/WorldToScreen() line up with it.
+				/// [JP] ゲーム画像のデスクトップ上の位置を公開し、ゲームプレイの ScreenToWorld()/WorldToScreen() と一致させる。
+				ImVec2 imageScreenPos = ImGui::GetCursorScreenPos();
+				cameraSystem_.Rect(Vector4(imageScreenPos.x, imageScreenPos.y, imageWidth, imageHeight));
+
 				ImGui::Image(displayTextureId, ImVec2(imageWidth, imageHeight));
 				imageHovered_ = ImGui::IsItemHovered();
 			}
@@ -128,19 +134,19 @@ namespace SeedCore
 
 		if (ImGui::Begin("ゲームビュー"))
 		{
-			Int currentMode = static_cast<Int>(cameraSystem_.GetMode());
+			Int currentMode = static_cast<Int>(cameraSystem_.Mode());
 			ImGui::RadioButton("Free", &currentMode, 0);
 			ImGui::SameLine();
 			ImGui::RadioButton("User", &currentMode, 1);
-			cameraSystem_.SetMode(static_cast<CameraSystem::Mode>(currentMode));
+			cameraSystem_.Mode(static_cast<CameraMode>(currentMode));
 
 			Bool windowedHovered = ImGui::IsWindowHovered();
-			UpdateFreeCameraMouseCapture(cameraSystem_.GetMode() == CameraSystem::Mode::Free && windowedHovered);
+			UpdateFreeCameraMouseCapture(cameraSystem_.Mode() == CameraMode::Free && windowedHovered);
 
-			if (cameraSystem_.GetMode() == CameraSystem::Mode::Free && windowedHovered)
+			if (cameraSystem_.Mode() == CameraMode::Free && windowedHovered)
 			{
 				Float deltaTime = ImGui::GetIO().DeltaTime;
-				cameraSystem_.UpdateFreeCameraInput(deltaTime);
+				cameraSystem_.Navigate(deltaTime);
 			}
 
 			ImVec2 regionSize = ImGui::GetContentRegionAvail();
@@ -169,6 +175,10 @@ namespace SeedCore
 				screenPos.x = IM_ROUND(screenPos.x);
 				screenPos.y = IM_ROUND(screenPos.y);
 				ImGui::SetCursorScreenPos(screenPos);
+
+				/// [EN] Publish where the game image sits on the desktop, so gameplay ScreenToWorld()/WorldToScreen() line up with it.
+				/// [JP] ゲーム画像のデスクトップ上の位置を公開し、ゲームプレイの ScreenToWorld()/WorldToScreen() と一致させる。
+				cameraSystem_.Rect(Vector4(screenPos.x, screenPos.y, imageWidth, imageHeight));
 
 				ImGui::PushStyleVar(ImGuiStyleVar_ImageBorderSize, 0.0f);
 				ImGui::Image(displayTextureId, ImVec2(imageWidth, imageHeight));

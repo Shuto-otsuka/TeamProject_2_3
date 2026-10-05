@@ -481,7 +481,7 @@ namespace SeedCore
 
 		/// [EN] Upload only when a game camera exists; the renderer still completes its frame without one.
 		/// [JP] ゲームカメラが存在するときだけアップロードする。存在しなくても Renderer はフレームを完了させる。
-		Bool hasActiveCamera = cameraSystem.HasActiveCamera();
+		Bool hasActiveCamera = cameraSystem.ActiveCamera();
 		if (hasActiveCamera)
 		{
 			gameSceneSystem_->Upload(gameSceneConstantBuffer);

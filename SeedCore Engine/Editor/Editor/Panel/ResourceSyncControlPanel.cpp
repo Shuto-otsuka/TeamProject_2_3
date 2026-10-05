@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/ResourceSyncControlPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 
 namespace SeedCore
@@ -18,7 +18,7 @@ namespace SeedCore
 	*/
 	void ResourceSyncControlPanel::DrawStatus(EditorContext& context)
 	{
-		ResourceSync& sync = *context.resourceSync_;
+		ResourceSync& sync = *context.application_.resourceSync_;
 		if (!sync.Configured())
 		{
 			return;
@@ -57,7 +57,7 @@ namespace SeedCore
 	*/
 	void ResourceSyncControlPanel::DrawActions(EditorContext& context, const AssetRecord& asset)
 	{
-		ResourceSync& sync = *context.resourceSync_;
+		ResourceSync& sync = *context.application_.resourceSync_;
 		if (!sync.Configured())
 		{
 			return;
@@ -130,7 +130,7 @@ namespace SeedCore
 	*/
 	void ResourceSyncControlPanel::DrawState(EditorContext& context, const AssetRecord& asset)
 	{
-		ResourceSync& sync = *context.resourceSync_;
+		ResourceSync& sync = *context.application_.resourceSync_;
 		const SharedAsset* shared = sync.GetAsset(asset.assetID_);
 		if (!shared)
 		{
@@ -178,11 +178,11 @@ namespace SeedCore
 	*/
 	Bool ResourceSyncControlPanel::EditableActor(EditorContext& context, Actor actor, Bool request)
 	{
-		ResourceSync& sync = *context.resourceSync_;
+		ResourceSync& sync = *context.application_.resourceSync_;
 
 		/// [EN] A scene that is not shared, or no scene at all, is nobody else's business.
 		/// [JP] 共有されていない Scene、あるいは Scene が開かれていない場合は、他の誰にも関係しない。
-		const SharedAsset* scene = sync.GetAsset(context.sceneContext_.currentScenePath_);
+		const SharedAsset* scene = sync.GetAsset(context.scene_.path_.FullPath());
 		if (!actor || !scene)
 		{
 			return true;
@@ -211,8 +211,8 @@ namespace SeedCore
 	*/
 	Bool ResourceSyncControlPanel::EditableStructure(EditorContext& context, Bool request)
 	{
-		ResourceSync& sync = *context.resourceSync_;
-		const SharedAsset* scene = sync.GetAsset(context.sceneContext_.currentScenePath_);
+		ResourceSync& sync = *context.application_.resourceSync_;
+		const SharedAsset* scene = sync.GetAsset(context.scene_.path_.FullPath());
 		if (!scene)
 		{
 			return true;
@@ -243,7 +243,7 @@ namespace SeedCore
 		/// [EN] The loop is not cut short, so a member dragging several actors asks for all of them rather than the first.
 		/// [JP] 途中で打ち切らない。複数の Actor を掴んでいるメンバーが、先頭だけでなく全てについて要求できるようにするため。
 		Bool editable = true;
-		for (Actor actor : context.selectionContext_.selectedActors_)
+		for (Actor actor : context.selection_.actors_)
 		{
 			editable = EditableActor(context, actor, request) && editable;
 		}
@@ -263,8 +263,8 @@ namespace SeedCore
 	*/
 	void ResourceSyncControlPanel::DrawActorState(EditorContext& context, Actor actor)
 	{
-		ResourceSync& sync = *context.resourceSync_;
-		const SharedAsset* scene = sync.GetAsset(context.sceneContext_.currentScenePath_);
+		ResourceSync& sync = *context.application_.resourceSync_;
+		const SharedAsset* scene = sync.GetAsset(context.scene_.path_.FullPath());
 		if (!scene)
 		{
 			return;
