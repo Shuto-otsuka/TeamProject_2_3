@@ -10,6 +10,8 @@
 #define COLLIDER_SHAPE_RECT 4
 #define COLLIDER_SHAPE_CIRCLE 5
 #define COLLIDER_SHAPE_CONE 6
+#define COLLIDER_SHAPE_SEGMENT 7
+#define COLLIDER_SHAPE_ARROW 8
 
 #define COLLIDER_TWO_PI 6.28318530717959
 #define COLLIDER_PI 3.14159265358979
@@ -38,6 +40,8 @@
 #define COLLIDER_RECT_LINE_COUNT 4
 #define COLLIDER_CIRCLE_LINE_COUNT COLLIDER_RING_SEGMENTS
 #define COLLIDER_CONE_LINE_COUNT (COLLIDER_RING_SEGMENTS + COLLIDER_SIDE_LINE_COUNT + 2)
+#define COLLIDER_SEGMENT_LINE_COUNT 1
+#define COLLIDER_ARROW_LINE_COUNT 5
 
 struct ColliderStructuredBuffer
 {
@@ -112,91 +116,13 @@ uint GetColliderLineCount(uint shape_kind)
 
 /**
 * [EN]
-* Rotates v by the unit quaternion q (xyz = vector part, w = scalar part).
+* One of the 12 edges of a box centered on the origin. dimensions holds
+* the half extents. Each corner is numbered 0-7 by its sign bits: bit 0
+* set means +X, bit 1 +Y and bit 2 +Z, otherwise the negative side.
 */
-float3 RotateByQuaternion(float4 q, float3 v)
-{
-	float3 t = 2.0 * cross(q.xyz, v);
-	return v + q.w * t + cross(q.xyz, t);
-}
-
-/**
-* [EN]
-* Point on a horizontal circle of radius r at height y; angle 0 lies on +X and the circle turns toward +Z.
-*/
-float3 RingPoint(float r, float y, float angle)
-{
-	return float3(r * cos(angle), y, r * sin(angle));
-}
-
-/**
-* [EN]
-* One segment of a horizontal ring of radius r at height y.
-*/
-void GetRingLine(float r, float y, uint segment, out float3 a, out float3 b)
-{
-	float angle0 = (float(segment) / float(COLLIDER_RING_SEGMENTS)) * COLLIDER_TWO_PI;
-	float angle1 = (float(segment + 1) / float(COLLIDER_RING_SEGMENTS)) * COLLIDER_TWO_PI;
-	a = RingPoint(r, y, angle0);
-	b = RingPoint(r, y, angle1);
-}
-
-/**
-* [EN]
-* Silhouette of a sphere seen from a point camera: the circle where the
-* view cone touches the sphere. It lies in the plane facing the camera,
-* pulled toward the camera by r^2/d from the center, with radius
-* r * sqrt(d^2 - r^2) / d, where d is the camera distance. Returns false
-* when the camera is inside the sphere, which has no silhouette.
-*/
-bool GetSphereSilhouette(float3 center, float r, float3 local_camera, out float3 circle_center, out float circle_radius, out float3 view_direction)
-{
-	float3 to_camera = local_camera - center;
-	float distance_to_camera = length(to_camera);
-
-	circle_center = center;
-	circle_radius = 0.0;
-	view_direction = float3(0.0, 0.0, 1.0);
-
-	if (distance_to_camera <= r)
-	{
-		return false;
-	}
-
-	view_direction = to_camera / distance_to_camera;
-	circle_center = center + view_direction * (r * r / distance_to_camera);
-	circle_radius = r * sqrt(distance_to_camera * distance_to_camera - r * r) / distance_to_camera;
-	return true;
-}
-
-/**
-* [EN]
-* Silhouette half circle of one capsule cap (sign +1 = top, -1 = bottom).
-* The half is bounded by the two points on the sides of the capsule axis
-* (along u, perpendicular to both the axis and the view direction) and
-* bulges away from the other cap (along v). Returns false when the camera
-* is inside the cap sphere.
-*/
-bool GetCapSilhouette(float r, float h, float sign, float3 local_camera, out float3 circle_center, out float circle_radius, out float3 u, out float3 v)
-{
-	float3 view_direction;
-	bool valid = GetSphereSilhouette(float3(0.0, sign * h, 0.0), r, local_camera, circle_center, circle_radius, view_direction);
-
-	/// [EN] Looking straight along the axis, every direction across it is a side; X is used.
-	u = cross(float3(0.0, 1.0, 0.0), view_direction);
-	u = (dot(u, u) > 1.0e-8) ? normalize(u) : float3(1.0, 0.0, 0.0);
-
-	v = cross(view_direction, u);
-	if (dot(v, float3(0.0, 1.0, 0.0)) * sign < 0.0)
-	{
-		v = -v;
-	}
-
-	return valid;
-}
-
 void GetBoxLine(float3 dimensions, uint line_index, out float3 a, out float3 b)
 {
+	/// [EN] Corner pairs that differ in exactly one bit, which are the corners joined by an edge.
 	uint2 edges[12] =
 	{
 		uint2(0, 1), uint2(0, 2), uint2(0, 4), uint2(1, 3),
@@ -204,6 +130,7 @@ void GetBoxLine(float3 dimensions, uint line_index, out float3 a, out float3 b)
 		uint2(4, 5), uint2(4, 6), uint2(5, 7), uint2(6, 7)
 	};
 
+	/// [EN] Each corner's sign bits pick + or - of the half extent on each axis.
 	uint2 edge = edges[line_index];
 	a = float3((edge.x & 1) ? dimensions.x : -dimensions.x, (edge.x & 2) ? dimensions.y : -dimensions.y, (edge.x & 4) ? dimensions.z : -dimensions.z);
 	b = float3((edge.y & 1) ? dimensions.x : -dimensions.x, (edge.y & 2) ? dimensions.y : -dimensions.y, (edge.y & 4) ? dimensions.z : -dimensions.z);
@@ -249,10 +176,20 @@ void GetSphereLine(float3 dimensions, float3 local_camera, uint line_index, out 
 
 	silhouette = true;
 
-	float3 circle_center;
-	float circle_radius;
-	float3 view_direction;
-	GetSphereSilhouette(float3(0.0, 0.0, 0.0), r, local_camera, circle_center, circle_radius, view_direction);
+	/// [EN] The silhouette is the circle where the view cone from the camera touches the sphere. It lies in the plane facing the camera, pulled toward the camera by r^2/d from the center, with radius r * sqrt(d^2 - r^2) / d, where d is the camera distance.
+	float camera_distance = length(local_camera);
+
+	/// [EN] A camera inside the sphere sees no silhouette, so the line collapses to a point.
+	if (camera_distance <= r)
+	{
+		a = float3(0.0, 0.0, 0.0);
+		b = a;
+		return;
+	}
+
+	float3 view_direction = local_camera / camera_distance;
+	float3 circle_center = view_direction * (r * r / camera_distance);
+	float circle_radius = r * sqrt(camera_distance * camera_distance - r * r) / camera_distance;
 
 	/// [EN] Any pair of axes perpendicular to the view direction spans the silhouette plane.
 	float3 u = normalize(cross(abs(view_direction.y) > 0.99 ? float3(1.0, 0.0, 0.0) : float3(0.0, 1.0, 0.0), view_direction));
@@ -277,10 +214,15 @@ void GetCapsuleLine(float3 dimensions, float3 local_camera, uint line_index, out
 
 	silhouette = false;
 
-	/// [EN] Rings at the bottom and top of the body.
+	/// [EN] Rings at the bottom and top of the body; angle 0 lies on +X and the ring turns toward +Z.
 	if (index < 2 * COLLIDER_RING_SEGMENTS)
 	{
-		GetRingLine(r, (index < COLLIDER_RING_SEGMENTS) ? -h : h, index % COLLIDER_RING_SEGMENTS, a, b);
+		float y = (index < COLLIDER_RING_SEGMENTS) ? -h : h;
+		uint segment = index % COLLIDER_RING_SEGMENTS;
+		float angle0 = (float(segment) / float(COLLIDER_RING_SEGMENTS)) * COLLIDER_TWO_PI;
+		float angle1 = (float(segment + 1) / float(COLLIDER_RING_SEGMENTS)) * COLLIDER_TWO_PI;
+		a = float3(r * cos(angle0), y, r * sin(angle0));
+		b = float3(r * cos(angle1), y, r * sin(angle1));
 		return;
 	}
 	index -= 2 * COLLIDER_RING_SEGMENTS;
@@ -289,8 +231,8 @@ void GetCapsuleLine(float3 dimensions, float3 local_camera, uint line_index, out
 	if (index < COLLIDER_SIDE_LINE_COUNT)
 	{
 		float angle = (float(index) / float(COLLIDER_SIDE_LINE_COUNT)) * COLLIDER_TWO_PI;
-		a = RingPoint(r, -h, angle);
-		b = RingPoint(r, h, angle);
+		a = float3(r * cos(angle), -h, r * sin(angle));
+		b = float3(r * cos(angle), h, r * sin(angle));
 		return;
 	}
 	index -= COLLIDER_SIDE_LINE_COUNT;
@@ -313,17 +255,37 @@ void GetCapsuleLine(float3 dimensions, float3 local_camera, uint line_index, out
 
 	silhouette = true;
 
-	/// [EN] Silhouette half circle of each cap.
+	/// [EN] Silhouette half circle of each cap (top first, then bottom). Each cap is a sphere whose silhouette is the circle where the view cone from the camera touches it: in the plane facing the camera, pulled toward the camera by r^2/d from the cap center, with radius r * sqrt(d^2 - r^2) / d.
 	if (index < 2 * COLLIDER_ARC_SEGMENTS)
 	{
 		float sign = (index < COLLIDER_ARC_SEGMENTS) ? 1.0 : -1.0;
 		uint segment = index % COLLIDER_ARC_SEGMENTS;
+		float3 cap_center = float3(0.0, sign * h, 0.0);
+		float3 to_camera = local_camera - cap_center;
+		float camera_distance = length(to_camera);
 
-		float3 circle_center;
-		float circle_radius;
-		float3 u;
-		float3 v;
-		GetCapSilhouette(r, h, sign, local_camera, circle_center, circle_radius, u, v);
+		/// [EN] A camera inside the cap sphere sees no silhouette, so the line collapses to a point.
+		if (camera_distance <= r)
+		{
+			a = cap_center;
+			b = a;
+			return;
+		}
+
+		float3 view_direction = to_camera / camera_distance;
+		float3 circle_center = cap_center + view_direction * (r * r / camera_distance);
+		float circle_radius = r * sqrt(camera_distance * camera_distance - r * r) / camera_distance;
+
+		/// [EN] The half circle runs between the two points beside the capsule axis (along u, perpendicular to both the axis and the view direction); looking straight along the axis, every direction across it is a side and X is used.
+		float3 u = cross(float3(0.0, 1.0, 0.0), view_direction);
+		u = (dot(u, u) > 1.0e-8) ? normalize(u) : float3(1.0, 0.0, 0.0);
+
+		/// [EN] It bulges away from the other cap (along v).
+		float3 v = cross(view_direction, u);
+		if (dot(v, float3(0.0, 1.0, 0.0)) * sign < 0.0)
+		{
+			v = -v;
+		}
 
 		float angle0 = (float(segment) / float(COLLIDER_ARC_SEGMENTS)) * COLLIDER_PI;
 		float angle1 = (float(segment + 1) / float(COLLIDER_ARC_SEGMENTS)) * COLLIDER_PI;
@@ -333,23 +295,34 @@ void GetCapsuleLine(float3 dimensions, float3 local_camera, uint line_index, out
 	}
 	index -= 2 * COLLIDER_ARC_SEGMENTS;
 
-	/// [EN] Silhouette side lines join the ends of the two cap half circles, so the outline is one closed loop.
+	/// [EN] Silhouette side lines join the ends of the two cap half circles, so the outline is one closed loop. The ends are found the same way as for the half circles above, for the bottom cap and then the top cap.
 	float side = (index == 0) ? 1.0 : -1.0;
+	float3 ends[2];
+	for (uint cap_index = 0; cap_index < 2; cap_index++)
+	{
+		float3 cap_center = float3(0.0, (cap_index == 0) ? -h : h, 0.0);
+		float3 to_camera = local_camera - cap_center;
+		float camera_distance = length(to_camera);
 
-	float3 bottom_center;
-	float bottom_radius;
-	float3 bottom_u;
-	float3 bottom_v;
-	GetCapSilhouette(r, h, -1.0, local_camera, bottom_center, bottom_radius, bottom_u, bottom_v);
+		/// [EN] A camera inside the cap sphere sees no silhouette; the end stays at the cap center.
+		if (camera_distance <= r)
+		{
+			ends[cap_index] = cap_center;
+			continue;
+		}
 
-	float3 top_center;
-	float top_radius;
-	float3 top_u;
-	float3 top_v;
-	GetCapSilhouette(r, h, 1.0, local_camera, top_center, top_radius, top_u, top_v);
+		float3 view_direction = to_camera / camera_distance;
+		float3 circle_center = cap_center + view_direction * (r * r / camera_distance);
+		float circle_radius = r * sqrt(camera_distance * camera_distance - r * r) / camera_distance;
 
-	a = bottom_center + bottom_u * (side * bottom_radius);
-	b = top_center + top_u * (side * top_radius);
+		float3 u = cross(float3(0.0, 1.0, 0.0), view_direction);
+		u = (dot(u, u) > 1.0e-8) ? normalize(u) : float3(1.0, 0.0, 0.0);
+
+		ends[cap_index] = circle_center + u * (side * circle_radius);
+	}
+
+	a = ends[0];
+	b = ends[1];
 }
 
 /**
@@ -367,10 +340,15 @@ void GetCylinderLine(float3 dimensions, float3 local_camera, uint line_index, ou
 
 	silhouette = false;
 
-	/// [EN] Rings at the bottom and top.
+	/// [EN] Rings at the bottom and top; angle 0 lies on +X and the ring turns toward +Z.
 	if (index < 2 * COLLIDER_RING_SEGMENTS)
 	{
-		GetRingLine(r, (index < COLLIDER_RING_SEGMENTS) ? -h : h, index % COLLIDER_RING_SEGMENTS, a, b);
+		float y = (index < COLLIDER_RING_SEGMENTS) ? -h : h;
+		uint segment = index % COLLIDER_RING_SEGMENTS;
+		float angle0 = (float(segment) / float(COLLIDER_RING_SEGMENTS)) * COLLIDER_TWO_PI;
+		float angle1 = (float(segment + 1) / float(COLLIDER_RING_SEGMENTS)) * COLLIDER_TWO_PI;
+		a = float3(r * cos(angle0), y, r * sin(angle0));
+		b = float3(r * cos(angle1), y, r * sin(angle1));
 		return;
 	}
 	index -= 2 * COLLIDER_RING_SEGMENTS;
@@ -379,8 +357,8 @@ void GetCylinderLine(float3 dimensions, float3 local_camera, uint line_index, ou
 	if (index < COLLIDER_SIDE_LINE_COUNT)
 	{
 		float angle = (float(index) / float(COLLIDER_SIDE_LINE_COUNT)) * COLLIDER_TWO_PI;
-		a = RingPoint(r, -h, angle);
-		b = RingPoint(r, h, angle);
+		a = float3(r * cos(angle), -h, r * sin(angle));
+		b = float3(r * cos(angle), h, r * sin(angle));
 		return;
 	}
 	index -= COLLIDER_SIDE_LINE_COUNT;
@@ -400,8 +378,8 @@ void GetCylinderLine(float3 dimensions, float3 local_camera, uint line_index, ou
 	/// [EN] The tangent point is acos(r / d) away from the direction toward the camera.
 	float side = (index == 0) ? 1.0 : -1.0;
 	float angle = atan2(camera_plane.y, camera_plane.x) + side * acos(r / camera_distance);
-	a = RingPoint(r, -h, angle);
-	b = RingPoint(r, h, angle);
+	a = float3(r * cos(angle), -h, r * sin(angle));
+	b = float3(r * cos(angle), h, r * sin(angle));
 }
 
 /**
@@ -421,10 +399,13 @@ void GetConeLine(float3 dimensions, float3 local_camera, uint line_index, out fl
 
 	silhouette = false;
 
-	/// [EN] Base ring.
+	/// [EN] Base ring; angle 0 lies on +X and the ring turns toward +Z.
 	if (index < COLLIDER_RING_SEGMENTS)
 	{
-		GetRingLine(r, -h, index, a, b);
+		float angle0 = (float(index) / float(COLLIDER_RING_SEGMENTS)) * COLLIDER_TWO_PI;
+		float angle1 = (float(index + 1) / float(COLLIDER_RING_SEGMENTS)) * COLLIDER_TWO_PI;
+		a = float3(r * cos(angle0), -h, r * sin(angle0));
+		b = float3(r * cos(angle1), -h, r * sin(angle1));
 		return;
 	}
 	index -= COLLIDER_RING_SEGMENTS;
@@ -433,7 +414,7 @@ void GetConeLine(float3 dimensions, float3 local_camera, uint line_index, out fl
 	if (index < COLLIDER_SIDE_LINE_COUNT)
 	{
 		float angle = (float(index) / float(COLLIDER_SIDE_LINE_COUNT)) * COLLIDER_TWO_PI;
-		a = RingPoint(r, -h, angle);
+		a = float3(r * cos(angle), -h, r * sin(angle));
 		b = apex;
 		return;
 	}
@@ -471,27 +452,41 @@ void GetConeLine(float3 dimensions, float3 local_camera, uint line_index, out fl
 		tangent_offset = acos(r / base_distance);
 	}
 
-	a = RingPoint(r, -h, base_angle + side * tangent_offset);
+	float tangent_angle = base_angle + side * tangent_offset;
+	a = float3(r * cos(tangent_angle), -h, r * sin(tangent_angle));
 	b = apex;
 }
 
+/**
+* [EN]
+* One of the 4 edges of a rectangle on the XY plane, centered on the
+* origin, for canvas colliders. dimensions.xy holds the half extents.
+*/
 void GetRectLine(float3 dimensions, uint line_index, out float3 a, out float3 b)
 {
 	float hx = dimensions.x;
 	float hy = dimensions.y;
 
+	/// [EN] Corners in order around the rectangle, so edge n joins corner n to the next one.
 	float3 corners[4] =
 	{
 		float3(-hx, -hy, 0.0), float3(hx, -hy, 0.0),
 		float3(hx, hy, 0.0), float3(-hx, hy, 0.0)
 	};
 
+	/// [EN] The last edge wraps from the fourth corner back to the first.
 	a = corners[line_index];
 	b = corners[(line_index + 1) % 4];
 }
 
+/**
+* [EN]
+* One segment of a circle on the XY plane, centered on the origin, for
+* canvas colliders. dimensions.x is the radius.
+*/
 void GetCircleLine(float3 dimensions, uint line_index, out float3 a, out float3 b)
 {
+	/// [EN] The circle is split into COLLIDER_RING_SEGMENTS equal arcs, each drawn as a straight line; angle 0 lies on +X and the circle turns toward +Y.
 	float r = dimensions.x;
 	float angle0 = (float(line_index) / float(COLLIDER_RING_SEGMENTS)) * COLLIDER_TWO_PI;
 	float angle1 = (float(line_index + 1) / float(COLLIDER_RING_SEGMENTS)) * COLLIDER_TWO_PI;
@@ -539,63 +534,6 @@ void GetColliderLine(uint shape_kind, float3 dimensions, float3 local_camera, ui
 	{
 		GetConeLine(dimensions, local_camera, line_index, a, b, silhouette);
 	}
-}
-
-/**
-* [EN]
-* Silhouette lines are drawn halfway to white so the outline stands out from the rest of the shape.
-*/
-float4 GetColliderLineColor(float4 color, bool silhouette)
-{
-	return silhouette ? float4(lerp(color.rgb, float3(1.0, 1.0, 1.0), 0.5), color.a) : color;
-}
-
-/**
-* [EN]
-* One corner of the screen-space quad that draws a clip-space line
-* width pixels thick. Corners 0 and 1 sit on the a end, 2 and 3 on the b
-* end, on opposite sides of the line; each end is also pushed out by
-* half the width so neighbouring segments of a curve overlap at their
-* joints.
-*/
-float4 ExpandColliderLine(float4 clip_a, float4 clip_b, float2 display_size, float width, uint corner)
-{
-	/// [EN] An end behind the camera has no screen position, so the line is cut where it crosses just in front of the eye.
-	const float near_w = 1.0e-3;
-	if (clip_a.w < near_w && clip_b.w < near_w)
-	{
-		return float4(0.0, 0.0, 0.0, 0.0);
-	}
-	if (clip_a.w < near_w)
-	{
-		clip_a = lerp(clip_a, clip_b, (near_w - clip_a.w) / (clip_b.w - clip_a.w));
-	}
-	if (clip_b.w < near_w)
-	{
-		clip_b = lerp(clip_b, clip_a, (near_w - clip_b.w) / (clip_a.w - clip_b.w));
-	}
-
-	/// [EN] The direction is taken in pixels so the width stays even however the viewport is stretched.
-	float2 pixel_a = (clip_a.xy / clip_a.w) * display_size;
-	float2 pixel_b = (clip_b.xy / clip_b.w) * display_size;
-	float2 pixel_direction = pixel_b - pixel_a;
-	float pixel_length = length(pixel_direction);
-	if (pixel_length < 1.0e-6)
-	{
-		return float4(0.0, 0.0, 0.0, 0.0);
-	}
-	pixel_direction /= pixel_length;
-	float2 pixel_normal = float2(-pixel_direction.y, pixel_direction.x);
-
-	/// [EN] Normalized device coordinates span 2 across display_size pixels, so half the width in pixels is width / display_size in them.
-	float2 to_ndc = width / display_size;
-	float2 side_offset = pixel_normal * to_ndc * (((corner & 1) != 0) ? 1.0 : -1.0);
-	float2 end_offset = pixel_direction * to_ndc * ((corner < 2) ? -1.0 : 1.0);
-
-	/// [EN] Offsets are scaled by w so they survive the perspective divide unchanged.
-	float4 clip_position = (corner < 2) ? clip_a : clip_b;
-	clip_position.xy += (side_offset + end_offset) * clip_position.w;
-	return clip_position;
 }
 
 #endif // __COLLIDER_LINE_HLSL__

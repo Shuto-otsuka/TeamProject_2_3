@@ -195,7 +195,7 @@ namespace SeedCore
 	* [JP]
 	* Jolt物理に対するエンジン向けの生成、制御、クエリ操作を提供する。
 	*/
-	class Physics
+	class SEEDCORE_API Physics
 	{
 	public:
 		/**
