@@ -14,6 +14,8 @@ namespace SeedCore
 		Rect = 4,
 		Circle = 5,
 		Cone = 6,
+		Segment = 7,
+		Arrow = 8,
 	};
 
 	/// [EN] One collider's debug-draw data for the GPU; what dimensions_ holds depends on shapeKind_ (see Renderer::GatherColliders).
