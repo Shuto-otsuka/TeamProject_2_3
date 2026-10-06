@@ -28,6 +28,7 @@ namespace SeedCore
 					outInfo.push_back({ String("minAliveTime"), offsetof(BulletController, minAliveTime), AttributeType::Float });
 					outInfo.push_back({ String("maxAliveTime"), offsetof(BulletController, maxAliveTime), AttributeType::Float });
 					outInfo.push_back({ String("turnSpeed"), offsetof(BulletController, turnSpeed), AttributeType::Float });
+					outInfo.push_back({ String("removeDistance"), offsetof(BulletController, removeDistance), AttributeType::Float });
 					outInfo.push_back({ String("turnAxis"), offsetof(BulletController, turnAxis), AttributeType::Vector3 });
 				});
 			}
@@ -97,6 +98,10 @@ namespace SeedCore
 					outInfo.push_back({ String("bulletOffsetY"), offsetof(PlayerController, bulletOffsetY), AttributeType::Float });
 					outInfo.push_back({ String("minBulletOffsetZ"), offsetof(PlayerController, minBulletOffsetZ), AttributeType::Float });
 					outInfo.push_back({ String("maxBulletOffsetZ"), offsetof(PlayerController, maxBulletOffsetZ), AttributeType::Float });
+					outInfo.push_back({ String("deadPosY"), offsetof(PlayerController, deadPosY), AttributeType::Float });
+					outInfo.push_back({ String("maxCostGauge"), offsetof(PlayerController, maxCostGauge), AttributeType::Int });
+					outInfo.push_back({ String("minAddCostGauge"), offsetof(PlayerController, minAddCostGauge), AttributeType::Int });
+					outInfo.push_back({ String("maxAddCostGauge"), offsetof(PlayerController, maxAddCostGauge), AttributeType::Int });
 				});
 			}
 		};

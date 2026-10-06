@@ -5,6 +5,8 @@
 #include<SeedCore/ScPrefab.h>
 #include <SeedCore/ScScreen.h>
 #include <SeedCore/ScPhysics.h>
+#include<SeedCore/ScLog.h>
+#include <SeedCore/ScScene.h> 
 
 void PlayerController::OnStart()
 {
@@ -13,10 +15,13 @@ void PlayerController::OnStart()
     cameraBrain = world.GetActor("CameraBrain");
 
     SeedCore::Entity entity = GetActor().GetEntity();
+    SeedCore::Entity testActorEntity = world.GetActor("Test").GetEntity();
 
     position = world.GetComponent<SeedCore::Position>(entity);
     rotation = world.GetComponent<SeedCore::Rotation>(entity);
+    scale = world.GetComponent<SeedCore::Scale>(entity);
     myCharacterController = world.GetComponent<SeedCore::CharacterController>(entity);
+    testActorPosition = world.GetComponent<SeedCore::Position>(testActorEntity);
 }
 
 void PlayerController::OnTick(float elapsedTime)
@@ -25,7 +30,7 @@ void PlayerController::OnTick(float elapsedTime)
     {
         //ステートごとに更新処理を分岐
     case PlayerController::State::USUALLY:
-        //いったん通常ステート
+        //いったん通常ステートのみ
         UpdateUsually(elapsedTime);
         break;
     default:
@@ -36,6 +41,15 @@ void PlayerController::OnTick(float elapsedTime)
 void PlayerController::OnInspectorGUI()
 {
     ImGui::Checkbox("isCoyote", &isCoyote);
+    ImGui::InputInt("costGauge", &costGauge);
+}
+
+void PlayerController::SubCostGauge(int costGauge)
+{
+    //盤面から弾が消えたときに呼ばれる
+    //コストゲージが減少する
+    this->costGauge -= costGauge;
+    if (this->costGauge < 0)this->costGauge = 0;
 }
 
 void PlayerController::UpdateUsually(float elapsedTime)
@@ -43,13 +57,15 @@ void PlayerController::UpdateUsually(float elapsedTime)
     //水平加速処理
     UpdateHorizontalAcceleration(elapsedTime);
     //旋回処理
-    Turn(elapsedTime);
+    UpdateTurn(elapsedTime);
     //コヨーテタイム更新
     UpdateCoyoteTime(elapsedTime);
     //ジャンプ入力更新
     UpdateInputJump(elapsedTime);
     //発射更新処理
     UpdateInputShot(elapsedTime);
+    //落下判定処理
+    UpdateFallJudge(elapsedTime);
 }
 
 void PlayerController::UpdateHorizontalAcceleration(float elapsedTime)
@@ -205,54 +221,97 @@ void PlayerController::UpdateCoyoteTime(float elapsedTime)
     beforeIsGround = myCharacterController->OnGround();
 }
 
-void PlayerController::Turn(float elapsedTime)
+void PlayerController::UpdateTurn(float elapsedTime)
 {
     //旋回処理
      
     if (shotReady)
     {
         //ショットチャージ時 照準方向(shotDirection)を向く
+
         SeedCore::Vector2 cursorScreenPosition = SeedCore::Input::MousePoint();//カーソルのスクリーン座標
         SeedCore::Ray ray = SeedCore::ScreenSpace::ScreenToWorld(cursorScreenPosition);//レイキャスト情報
         SeedCore::RaycastHit hit;
-        if (GetActor().GetPhysics().Raycast(ray.origin_, ray.direction_, 1000.0f, hit))
+        SeedCore::Vector3 targetPosition;
+        Uint32 layerMask = ~(1 << GetActor().Layer());//プレイヤー自身を除くレイヤーマスク
+
+        if (GetActor().GetPhysics().Raycast(ray.origin_, ray.direction_, 1000.0f, hit,layerMask))
         {
             SeedCore::Actor hitActor = GetWorld().GetActor(hit.entityID_);//ヒットしたアクターの取得
-            if (!hitActor.HasTag("CanStop") && hit.normal_.y > 0.99f)
+            if (!hitActor.HasTag("CanStop") && hit.normal_.y * -1 > 0.99f)
             {
-                //止められない・オブジェクトの上面だった場合
+                //止められないオブジェクトの上面だった場合
+                //レイと銃口の高さの平面が交わるところをターゲットにする
+                SeedCore::Vector3 gunOffset = { 0.0f,bulletOffsetY,0.0f };
+                SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
+                targetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f },gunOffset.y);
 
+                testActorPosition->x_ = targetPosition.x;
+                testActorPosition->y_ = targetPosition.y;
+                testActorPosition->z_ = targetPosition.z;
+
+                SC_LOG_NOTICE("止められんやつの上面: {}", 1);
             }
             else
             {
                 //止められるオブジェクトもしくは壁などに当たった場合当たった場所をターゲットにする
-                SeedCore::Vector3 targetPosition = hit.position_;
+                targetPosition = hit.position_;
+
+                testActorPosition->x_ = targetPosition.x;
+                testActorPosition->y_ = targetPosition.y;
+                testActorPosition->z_ = targetPosition.z;
+
+                SC_LOG_NOTICE("通常オブジェクト: {}", 1);
             }
         }
+        else
+        {
+            //なににも当たらなかった場合
+            //レイと銃口の高さの平面が交わるところをターゲットにする
+            SeedCore::Vector3 gunOffset = { 0.0f,bulletOffsetY,0.0f };
+            SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
+            targetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f }, gunOffset.y);
+
+            testActorPosition->x_ = targetPosition.x;
+            testActorPosition->y_ = targetPosition.y;
+            testActorPosition->z_ = targetPosition.z;
+
+            SC_LOG_NOTICE("なににもあたらん: {}", 1);
+        }
+
+        //ターゲットに対してのベクトルをshotDirectionとする
+        shotDirection = targetPosition - position->Vector();
+        shotDirection.Normalize();
+
+        TurnFromDirection(elapsedTime,shotDirection);
     }
     else
     {
         //通常時 移動方向(lookDirection)を向く
-
-        //軸とアングルを算出
-        SeedCore::Vector3 front = GetActor().WorldMatrix().Forward();//右手系
-        front.Normalize();
-        float dot = front.Dot(lookDirection);
-        if (dot > 0.995f)return;//角度がほぼ0だったら終了
-        const float minTurnSpeed = 0.2f;//角度が近づくにつれて旋回スピードを小さくするだけだと最後の方が遅すぎるため最低旋回速度を設ける
-        float angle = ((1.0f - dot) + minTurnSpeed) * turnSpeed * elapsedTime;//内積から1フレームで旋回させる角度を計算
-        SeedCore::Vector3 cross;
-        cross = front.Cross(lookDirection);
-        cross.Normalize();
-
-        //軸とアングルから回転分のクォータニオンを作成
-        SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(cross, angle);
-        quaternion.Normalize();
-
-        //ベクトルと合成してセット
-        front = SeedCore::Vector3::Transform(front, quaternion);
-        myCharacterController->ForwardDirection(front);
+        TurnFromDirection(elapsedTime,lookDirection);
     }
+}
+
+void PlayerController::TurnFromDirection(float elapsedTime,const SeedCore::Vector3& direction)
+{
+    //軸とアングルを算出
+    SeedCore::Vector3 front = GetActor().WorldMatrix().Forward();//右手系
+    front.Normalize();
+    float dot = front.Dot(direction);
+    if (dot > 0.995f)return;//角度がほぼ0だったら終了
+    const float minTurnSpeed = 0.2f;//角度が近づくにつれて旋回スピードを小さくするだけだと最後の方が遅すぎるため最低旋回速度を設ける
+    float angle = ((1.0f - dot) + minTurnSpeed) * turnSpeed * elapsedTime;//内積から1フレームで旋回させる角度を計算
+    SeedCore::Vector3 cross;
+    cross = front.Cross(direction);
+    cross.Normalize();
+
+    //軸とアングルから回転分のクォータニオンを作成
+    SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(cross, angle);
+    quaternion.Normalize();
+
+    //ベクトルと合成してセット
+    front = SeedCore::Vector3::Transform(front, quaternion);
+    myCharacterController->ForwardDirection(front);
 }
 
 void PlayerController::UpdateInputShot(float elapsedTime)
@@ -280,12 +339,22 @@ void PlayerController::UpdateInputShot(float elapsedTime)
 
 void PlayerController::Shot()
 {
-    //とりあえず前に撃つ
-    SeedCore::Actor bullet = SeedCore::Prefab::Spawn(SeedCore::String("Bullet.prefab"));//弾生成
-    BulletController* bulletController = GetWorld().GetComponent<BulletController>(bullet.GetEntity());
+    //向く方向を撃つ方向にする
+    //撃った後に元の向いていた方向に戻ってしまうのを防ぐため
+    lookDirection = shotDirection;
 
     float chargeTime = std::min(shotInputTimer, maxShotChargeTime);
     float chargeRate = chargeTime / maxShotChargeTime;//チャージ時間からチャージ率を計算
+
+    //コストの計算
+    int addCostGauge = static_cast<int>(SeedCore::Lerp(static_cast<float>(minAddCostGauge), static_cast<float>(maxAddCostGauge), chargeRate));
+    //コストが100超える場合撃たない
+    if (costGauge + addCostGauge > maxCostGauge)return;
+    //コスト増加
+    costGauge += addCostGauge;
+
+    SeedCore::Actor bullet = SeedCore::Prefab::Spawn(SeedCore::String("Bullet.prefab"));//弾生成
+    BulletController* bulletController = GetWorld().GetComponent<BulletController>(bullet.GetEntity());
 
     SeedCore::Vector3 bulletOffset;
     bulletOffset.y = bulletOffsetY;
@@ -293,10 +362,33 @@ void PlayerController::Shot()
     //プレイヤー姿勢、弾のローカルオフセットから弾のワールド位置を計算
     SeedCore::Vector3 bulletPosition = SeedCore::Vector3::Transform(bulletOffset, GetActor().WorldMatrix());
 
-    bulletController->SetParam(bulletPosition,lookDirection, chargeRate);//位置、見てる方向、チャージ率を渡す
+    bulletController->SetParam(bulletPosition,shotDirection, chargeRate,addCostGauge);//位置、見てる方向、チャージ率、増加コストを渡す
+}
+
+void PlayerController::UpdateFallJudge(float elapsedTime)
+{
+    if (position->y_ < deadPosY)
+    {
+        //落下のため死亡
+        //とりあえずシーン読み込みなおすだけ
+        SeedCore::Scene::Change("Sakatyan.scene");
+    }
 }
 
 bool PlayerController::OnGroundOrCoyote()
 {
     return myCharacterController->OnGround() || isCoyote;
+}
+
+const SeedCore::Vector3& PlayerController::RayToPlaneHitPosition(const SeedCore::Vector3& rayOrigin, const SeedCore::Vector3& rayDirection, const SeedCore::Vector3& planeNormal, float planeDistance)
+{
+    //レイと平面の交点を求める関数
+    float dot1 = rayDirection.Dot(planeNormal);
+    float dot2 = rayOrigin.Dot(planeNormal);
+    float sub = planeDistance - dot2;
+    float t = sub / dot1;
+    SeedCore::Vector3 hitPosition = { rayOrigin.x + rayDirection.x * t,
+                       rayOrigin.y + rayDirection.y * t,
+                        rayOrigin.z + rayDirection.z * t };
+    return hitPosition;
 }
