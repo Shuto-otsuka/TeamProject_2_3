@@ -22,11 +22,15 @@ namespace SeedCore
 		Sphere = 1,
 		Capsule = 2,
 		Cylinder = 3,
-		Rect = 4,
-		Circle = 5,
-		Cone = 6,
-		Segment = 7,
-		Arrow = 8,
+		Cone = 4,
+		Ramp = 5,
+		Torus = 6,
+		Rect = 7,
+		Circle = 8,
+		Plane = 9,
+		Disc = 10,
+		Segment = 11,
+		Arrow = 12,
 	};
 
 	/**
@@ -126,6 +130,8 @@ namespace SeedCore
 		/// [JP] 形を描く 3D ビュー。
 		ShapeScope scope_ = ShapeScope::Editor;
 
+		Uint32 textureID_ = 0;
+
 		/// [EN] World position of the shape's origin.
 		/// [JP] 形の原点のワールド位置。
 		Vector3 position_ = { 0.0f, 0.0f, 0.0f };
@@ -142,8 +148,14 @@ namespace SeedCore
 		/// [JP] 線または面の色。
 		Color color_ = { 1.0f, 1.0f, 1.0f, 1.0f };
 
+		Vector2 uvScale_ = { 1.0f,1.0f };
+
+		Vector2 uvOffset_ = { 0.0f,0.0f };
+
 		/// [EN] Arrow only: upper bound of the head's length, in the same units as dimensions_ (meters in the world, pixels on the canvas); 0 leaves the head at its fixed fraction of the arrow's length.
 		/// [JP] Arrow のときだけ使う、矢じりの長さの上限。単位は dimensions_ と同じ（ワールドはメートル、Canvas はピクセル）。0 なら矢じりは矢印の長さに対する決まった割合のまま。
 		Float headLength_ = 0.0f;
+
+		Bool doubleSided_ = false;
 	};
 }

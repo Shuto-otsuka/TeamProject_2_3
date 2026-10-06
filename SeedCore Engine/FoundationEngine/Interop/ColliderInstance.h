@@ -11,8 +11,8 @@ namespace SeedCore
 		Sphere = 1,
 		Capsule = 2,
 		Cylinder = 3,
-		Rect = 4,
-		Circle = 5,
+		Rect = 7,
+		Circle = 8,
 	};
 
 	/**

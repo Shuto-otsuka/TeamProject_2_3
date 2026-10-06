@@ -4,7 +4,7 @@
 
 namespace SeedCore
 {
-	struct BoxShape
+	struct PlaneShape
 	{
 		SC_PAYLOAD_FIELD_EX("テクスチャID", Texture)
 		Uint32 textureID_ = 0;
@@ -21,7 +21,10 @@ namespace SeedCore
 		Color color_ = { 1.0f,1.0f,1.0f,1.0f };
 
 		SC_REFLECTION_CLAMPED_EX("サイズ", 0.001f, 10000.0f)
-		Vector3 size_ = { 1.0f,1.0f,1.0f };
+		Vector2 size_ = { 1.0f,1.0f };
+
+		SC_REFLECTION_FIELD_EX("両面表示")
+		Bool doubleSided_ = false;
 	};
-	REGISTER_COMPONENT(BoxShape, "Geometry", ComponentStorage::Archetype);
+	REGISTER_COMPONENT(PlaneShape, "Geometry", ComponentStorage::Archetype);
 }

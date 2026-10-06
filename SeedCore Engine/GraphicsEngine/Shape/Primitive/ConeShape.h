@@ -4,7 +4,7 @@
 
 namespace SeedCore
 {
-	struct BoxShape
+	struct ConeShape
 	{
 		SC_PAYLOAD_FIELD_EX("テクスチャID", Texture)
 		Uint32 textureID_ = 0;
@@ -20,8 +20,11 @@ namespace SeedCore
 		SC_REFLECTION_FIELD_EX("色")
 		Color color_ = { 1.0f,1.0f,1.0f,1.0f };
 
-		SC_REFLECTION_CLAMPED_EX("サイズ", 0.001f, 10000.0f)
-		Vector3 size_ = { 1.0f,1.0f,1.0f };
+		SC_REFLECTION_CLAMPED_EX("高さ", 0.001f, 10000.0f)
+		Float height_ = 1.0f;
+
+		SC_REFLECTION_CLAMPED_EX("半径", 0.001f, 10000.0f)
+		Float radius_ = 0.5f;
 	};
-	REGISTER_COMPONENT(BoxShape, "Geometry", ComponentStorage::Archetype);
+	REGISTER_COMPONENT(ConeShape, "Geometry", ComponentStorage::Archetype);
 }

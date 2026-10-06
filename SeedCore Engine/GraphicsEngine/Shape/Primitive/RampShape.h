@@ -4,7 +4,7 @@
 
 namespace SeedCore
 {
-	struct BoxShape
+	struct RampShape
 	{
 		SC_PAYLOAD_FIELD_EX("テクスチャID", Texture)
 		Uint32 textureID_ = 0;
@@ -23,5 +23,5 @@ namespace SeedCore
 		SC_REFLECTION_CLAMPED_EX("サイズ", 0.001f, 10000.0f)
 		Vector3 size_ = { 1.0f,1.0f,1.0f };
 	};
-	REGISTER_COMPONENT(BoxShape, "Geometry", ComponentStorage::Archetype);
+	REGISTER_COMPONENT(RampShape, "Geometry", ComponentStorage::Archetype);
 }
