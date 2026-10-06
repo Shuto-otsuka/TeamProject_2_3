@@ -59,6 +59,7 @@ private:
 	void UpdateInputShot(float elapsedTime);
 	void Shot();
 	void UpdateFallJudge(float elapsedTime);
+	void UpdateAllBulletRemove(float elapsedTime);
 
 	bool OnGroundOrCoyote();
 

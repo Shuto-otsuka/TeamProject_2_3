@@ -62,6 +62,8 @@ void PlayerController::UpdateUsually(float elapsedTime)
     UpdateInputJump(elapsedTime);
     //発射更新処理
     UpdateInputShot(elapsedTime);
+    //弾全削除処理
+    UpdateAllBulletRemove(elapsedTime);
     //落下判定処理
     UpdateFallJudge(elapsedTime);
 }
@@ -243,6 +245,8 @@ void PlayerController::UpdateTurn(float elapsedTime)
                 SeedCore::Vector3 gunOffset = { 0.0f,bulletOffsetY,0.0f };
                 SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
                 targetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f },gunPosition.y);
+
+                SC_LOG_NOTICE("当たってる");
             }
             else
             {
@@ -352,6 +356,23 @@ void PlayerController::UpdateFallJudge(float elapsedTime)
         //落下のため死亡
         //とりあえずシーン読み込みなおすだけ
         SeedCore::Scene::Change("Sakatyan.scene");
+    }
+}
+
+void PlayerController::UpdateAllBulletRemove(float elapsedTime)
+{
+    if (!SeedCore::Input::KeyState(SeedCore::Input::Key::R, SeedCore::Input::OnPressed))return;//Rキー押された瞬間じゃなければ終了
+
+    //アクターを走査
+    for (auto& actor : GetWorld().GetActors())
+    {
+        //弾じゃなければ次
+        if (!actor.HasTag("Bullet"))continue;
+
+        //全ての弾を削除
+        SeedCore::Entity entity = actor.GetEntity();
+        BulletController* bulletController = GetWorld().GetComponent<BulletController>(entity);
+        bulletController->Remove();
     }
 }
 

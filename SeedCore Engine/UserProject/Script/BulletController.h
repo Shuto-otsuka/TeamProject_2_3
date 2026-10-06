@@ -13,7 +13,8 @@ public:
 	void SetParam(const SeedCore::Vector3& startPosition,const SeedCore::Vector3& moveDirection, float chargeRate,int cost);
 
 	void OnCollisionEnter(SeedCore::Entity entity);
-	void Stop(float stopTime);
+	void Stop();
+	void Remove();
 
 	bool IsStop() const { return isStop; }
 
@@ -32,26 +33,26 @@ public:
 	SC_REFLECTION_FIELD()
 		float maxAliveTime;
 	SC_REFLECTION_FIELD()
-		float turnSpeed;
+		float minTurnSpeed;
+	SC_REFLECTION_FIELD()
+		float maxTurnSpeed;
 	SC_REFLECTION_FIELD()
 		float removeDistance;
 	SC_REFLECTION_FIELD()
-		SeedCore::Vector3 turnAxis;
+		SeedCore::Vector3 turnDirection;
 
 private:
-	void Move(float elapsedTime);
+	void UpdateRemove(float elapsedTime);
 	void UpdateAliveTime(float elapsedTime);
-	void Remove();
-	void UpdateStopTime(float elapsedTime);
 
 	SeedCore::Vector3 moveDirection;
 	SeedCore::Vector3 startPosition;
 
 	float size;
 	float speed;
+	float turnSpeed;
 	float aliveTime;
 	float aliveTimer = 0.0f;
-	float stopTime = 0.0f;
 
 	int cost = 0;
 
@@ -61,7 +62,7 @@ private:
 	SeedCore::Position* position;
 	SeedCore::Rotation* rotation;
 	SeedCore::Rigidbody* rigidbody;
-	SeedCore::Transform* transform;
+	SeedCore::Velocity* velocity;
 
 	PlayerController* playerController;
 };

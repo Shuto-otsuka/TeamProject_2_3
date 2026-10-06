@@ -27,9 +27,10 @@ namespace SeedCore
 					outInfo.push_back({ String("maxSpeed"), offsetof(BulletController, maxSpeed), AttributeType::Float });
 					outInfo.push_back({ String("minAliveTime"), offsetof(BulletController, minAliveTime), AttributeType::Float });
 					outInfo.push_back({ String("maxAliveTime"), offsetof(BulletController, maxAliveTime), AttributeType::Float });
-					outInfo.push_back({ String("turnSpeed"), offsetof(BulletController, turnSpeed), AttributeType::Float });
+					outInfo.push_back({ String("minTurnSpeed"), offsetof(BulletController, minTurnSpeed), AttributeType::Float });
+					outInfo.push_back({ String("maxTurnSpeed"), offsetof(BulletController, maxTurnSpeed), AttributeType::Float });
 					outInfo.push_back({ String("removeDistance"), offsetof(BulletController, removeDistance), AttributeType::Float });
-					outInfo.push_back({ String("turnAxis"), offsetof(BulletController, turnAxis), AttributeType::Vector3 });
+					outInfo.push_back({ String("turnDirection"), offsetof(BulletController, turnDirection), AttributeType::Vector3 });
 				});
 			}
 		};

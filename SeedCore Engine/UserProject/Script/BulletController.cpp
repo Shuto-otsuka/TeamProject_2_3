@@ -5,16 +5,17 @@
 void BulletController::OnStart()
 {
     playerController = GetWorld().GetActor("Player").GetComponent<PlayerController>();
+
+    //速力と回転力を加える
+    //OnStartがSetParamより後で呼ばれるためここで処理
+    rigidbody->AddImpulse(moveDirection * speed);
+    rigidbody->AddTorque(turnDirection * turnSpeed);
 }
 
 void BulletController::OnTick(float elapsedTime)
 {
-    SC_LOG_NOTICE("弾更新");
-
-    //停止時間更新処理
-    UpdateStopTime(elapsedTime);
     //移動処理
-    Move(elapsedTime);
+    UpdateRemove(elapsedTime);
     //生存時間が終了したら削除
     UpdateAliveTime(elapsedTime);
 }
@@ -30,6 +31,7 @@ void BulletController::SetParam(const SeedCore::Vector3& startPosition,const See
     position = world.GetComponent<SeedCore::Position>(entity);
     rotation = world.GetComponent<SeedCore::Rotation>(entity);
     rigidbody = world.GetComponent<SeedCore::Rigidbody>(entity);
+    velocity = world.GetComponent<SeedCore::Velocity>(entity);
 
     //初期位置をセット
     this->startPosition = startPosition;
@@ -39,11 +41,14 @@ void BulletController::SetParam(const SeedCore::Vector3& startPosition,const See
 
     //進行方向をセット
     this->moveDirection = moveDirection;
-
+    //回転方向をセット
+    turnDirection.Normalize();
+ 
     //チャージ率からサイズ、スピード、生存時間を計算
     size = SeedCore::Lerp(minSize, maxSize, chargeRate);//チャージされているほど大きい
     speed = SeedCore::Lerp(maxSpeed, minSpeed, chargeRate);//チャージされているほど遅い
     aliveTime = SeedCore::Lerp(minAliveTime, maxAliveTime, chargeRate);//チャージされているほど生存時間が長い
+    turnSpeed = SeedCore::Lerp(minTurnSpeed, maxTurnSpeed, chargeRate);//チャージされているほどほど速い
 
     //スケールをセット
     scale->x_ = size;
@@ -70,7 +75,7 @@ void BulletController::OnCollisionEnter(SeedCore::Entity entity)
         if (aliveTimer > hitBulletController->GetAliveTimer())return;
 
         float stopTime = aliveTime - aliveTimer;//当たった弾の停止時間を残りの生存時間とする
-        hitBulletController->Stop(stopTime);//停止
+        hitBulletController->Stop();//停止
     }
     else
     {
@@ -78,32 +83,19 @@ void BulletController::OnCollisionEnter(SeedCore::Entity entity)
     }
 }
 
-void BulletController::Stop(float stopTime)
+void BulletController::Stop()
 {
     //停止処理
     isStop = true;
-    this->stopTime += stopTime;
+
+    //キネマティックにする
+    rigidbody->bodyType_ = SeedCore::Rigidbody::BodyType::Kinematic;
 }
 
-void BulletController::Move(float elapsedTime)
+void BulletController::UpdateRemove(float elapsedTime)
 {
     //移動・回転処理
-
-    //停止中なら終了
     if (isStop)return;
-
-    SeedCore::Vector3 pos = SeedCore::Transform::Vector(*position);
-    //moveDirectionの方向に移動
-    pos += moveDirection * speed * elapsedTime;
-
-    turnAxis.Normalize();
-    //回転分のクォータニオンを作成
-    SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(turnAxis, turnSpeed * elapsedTime);
-    //現在のクォータニオンに合成
-    quaternion = quaternion * SeedCore::Transform::Quat(*rotation);
-  
-    //キネマティック剛体を動かす
-    rigidbody->MoveTarget(pos, quaternion, elapsedTime);
 
     if ((SeedCore::Transform::Vector(*position) - startPosition).Length() >= removeDistance)
     {
@@ -126,14 +118,4 @@ void BulletController::Remove()
 {
     playerController->SubCostGauge(cost);//自分が圧迫してた分のコストを戻す
     GetWorld().DestroyActor(GetActor());//削除
-}
-
-void BulletController::UpdateStopTime(float elapsedTime)
-{
-    if (!isStop)return;//ストップ中じゃなければ終了
-
-    //ストップタイマー更新
-    stopTime -= elapsedTime;
-    if (stopTime <= 0.0f)
-        isStop = true;
 }

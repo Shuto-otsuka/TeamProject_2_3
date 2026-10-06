@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "52a0263a-2827-4e9b-af41-d97005cac6cd",
+			"collaborationId": "4b2c3da9-83d2-4e39-bc67-7453e079ca7f",
 			"components": [
 				{
 					"component": "Mesh",
@@ -224,7 +224,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": 1,
+							"int": 0,
 							"is_array": false,
 							"name": "動作モード",
 							"string": "",
@@ -285,7 +285,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 1.0,
+							"float": 100.0,
 							"int": 0,
 							"is_array": false,
 							"name": "質量",
@@ -316,7 +316,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 0.5,
+							"float": 0.0,
 							"int": 0,
 							"is_array": false,
 							"name": "空気抵抗",
@@ -347,7 +347,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 0.5,
+							"float": 0.0,
 							"int": 0,
 							"is_array": false,
 							"name": "角抵抗",
@@ -378,7 +378,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 0.20000000298023224,
+							"float": 0.0,
 							"int": 0,
 							"is_array": false,
 							"name": "摩擦係数",
@@ -409,7 +409,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 0.5,
+							"float": 0.0,
 							"int": 0,
 							"is_array": false,
 							"name": "反発係数",
@@ -432,7 +432,7 @@
 							}
 						},
 						{
-							"bool": true,
+							"bool": false,
 							"children": [],
 							"color": {
 								"a": 1.0,
@@ -724,7 +724,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 1.0,
+							"float": 0.3499999940395355,
 							"int": 0,
 							"is_array": false,
 							"name": "minSize",
@@ -755,7 +755,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 7.0,
+							"float": 1.600000023841858,
 							"int": 0,
 							"is_array": false,
 							"name": "maxSize",
@@ -786,7 +786,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 7.5,
+							"float": 400.0,
 							"int": 0,
 							"is_array": false,
 							"name": "minSpeed",
@@ -817,7 +817,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 50.0,
+							"float": 2600.0,
 							"int": 0,
 							"is_array": false,
 							"name": "maxSpeed",
@@ -910,10 +910,10 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 5.0,
+							"float": 800.0,
 							"int": 0,
 							"is_array": false,
-							"name": "turnSpeed",
+							"name": "minTurnSpeed",
 							"string": "",
 							"type": 2,
 							"vector2": {
@@ -941,7 +941,38 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 100.0,
+							"float": 7000.0,
+							"int": 0,
+							"is_array": false,
+							"name": "maxTurnSpeed",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 40.0,
 							"int": 0,
 							"is_array": false,
 							"name": "removeDistance",
@@ -975,7 +1006,7 @@
 							"float": 0.0,
 							"int": 0,
 							"is_array": false,
-							"name": "turnAxis",
+							"name": "turnDirection",
 							"string": "",
 							"type": 5,
 							"vector2": {
@@ -997,7 +1028,7 @@
 					]
 				}
 			],
-			"layer": "Default",
+			"layer": "Bullet",
 			"name": "Bullet",
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
