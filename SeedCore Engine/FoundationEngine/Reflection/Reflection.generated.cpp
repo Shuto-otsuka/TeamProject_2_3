@@ -28,6 +28,11 @@
 #include <GraphicsEngine/Model/Animation/Animator.h>
 #include <GraphicsEngine/Movie/Movie.h>
 #include <GraphicsEngine/PostProcess/PostProcess.h>
+#include <GraphicsEngine/Shape/Primitive/BoxShape.h>
+#include <GraphicsEngine/Shape/Primitive/CapsuleShape.h>
+#include <GraphicsEngine/Shape/Primitive/CylinderShape.h>
+#include <GraphicsEngine/Shape/Primitive/SegmentShape.h>
+#include <GraphicsEngine/Shape/Primitive/SphereShape.h>
 #include <GraphicsEngine/Texture/Image.h>
 #include <PhysicsEngine/CharacterController/CharacterController.h>
 #include <PhysicsEngine/Collider/BoxCollider.h>
@@ -93,6 +98,11 @@ extern "C" int _force_reflection_ToneMappingSettings = 0;
 extern "C" int _force_reflection_SharpnessSettings = 0;
 extern "C" int _force_reflection_FilmGrainSettings = 0;
 extern "C" int _force_reflection_PostProcess = 0;
+extern "C" int _force_reflection_BoxShape = 0;
+extern "C" int _force_reflection_CapsuleShape = 0;
+extern "C" int _force_reflection_CylinderShape = 0;
+extern "C" int _force_reflection_SegmentShape = 0;
+extern "C" int _force_reflection_SphereShape = 0;
 extern "C" int _force_reflection_Image = 0;
 extern "C" int _force_reflection_CharacterController = 0;
 extern "C" int _force_reflection_BoxCollider = 0;
@@ -2468,6 +2478,159 @@ namespace SeedCore
 			}
 		};
 		static Register_PostProcess global_PostProcess_register;
+
+		// ---- GraphicsEngine/Shape/Primitive/BoxShape.h ----
+		struct Register_BoxShape
+		{
+			Register_BoxShape()
+			{
+				ReflectionRegistry::Register(String("BoxShape"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					BoxShape& obj = *static_cast<BoxShape*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("UVの繰り返し");
+						fi.offset_ = offsetof(BoxShape, uvScale_);
+						fi.type_ = AttributeType::Vector2;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<BoxShape*>(p); return o.textureID_ != 0; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("UVのずらし");
+						fi.offset_ = offsetof(BoxShape, uvOffset_);
+						fi.type_ = AttributeType::Vector2;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<BoxShape*>(p); return o.textureID_ != 0; };
+						outInfo.push_back(std::move(fi));
+					}
+					outInfo.push_back({ String("色"), offsetof(BoxShape, color_), AttributeType::Color });
+					outInfo.push_back({ String("サイズ"), offsetof(BoxShape, size_), AttributeType::Vector3 });
+				});
+			}
+		};
+		static Register_BoxShape global_BoxShape_register;
+
+		// ---- GraphicsEngine/Shape/Primitive/CapsuleShape.h ----
+		struct Register_CapsuleShape
+		{
+			Register_CapsuleShape()
+			{
+				ReflectionRegistry::Register(String("CapsuleShape"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					CapsuleShape& obj = *static_cast<CapsuleShape*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("UVの繰り返し");
+						fi.offset_ = offsetof(CapsuleShape, uvScale_);
+						fi.type_ = AttributeType::Vector2;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<CapsuleShape*>(p); return o.textureID_ != 0; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("UVのずらし");
+						fi.offset_ = offsetof(CapsuleShape, uvOffset_);
+						fi.type_ = AttributeType::Vector2;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<CapsuleShape*>(p); return o.textureID_ != 0; };
+						outInfo.push_back(std::move(fi));
+					}
+					outInfo.push_back({ String("色"), offsetof(CapsuleShape, color_), AttributeType::Color });
+					outInfo.push_back({ String("高さ"), offsetof(CapsuleShape, height_), AttributeType::Float });
+					outInfo.push_back({ String("半径"), offsetof(CapsuleShape, radius_), AttributeType::Float });
+				});
+			}
+		};
+		static Register_CapsuleShape global_CapsuleShape_register;
+
+		// ---- GraphicsEngine/Shape/Primitive/CylinderShape.h ----
+		struct Register_CylinderShape
+		{
+			Register_CylinderShape()
+			{
+				ReflectionRegistry::Register(String("CylinderShape"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					CylinderShape& obj = *static_cast<CylinderShape*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("UVの繰り返し");
+						fi.offset_ = offsetof(CylinderShape, uvScale_);
+						fi.type_ = AttributeType::Vector2;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<CylinderShape*>(p); return o.textureID_ != 0; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("UVのずらし");
+						fi.offset_ = offsetof(CylinderShape, uvOffset_);
+						fi.type_ = AttributeType::Vector2;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<CylinderShape*>(p); return o.textureID_ != 0; };
+						outInfo.push_back(std::move(fi));
+					}
+					outInfo.push_back({ String("色"), offsetof(CylinderShape, color_), AttributeType::Color });
+					outInfo.push_back({ String("高さ"), offsetof(CylinderShape, height_), AttributeType::Float });
+					outInfo.push_back({ String("半径"), offsetof(CylinderShape, radius_), AttributeType::Float });
+				});
+			}
+		};
+		static Register_CylinderShape global_CylinderShape_register;
+
+		// ---- GraphicsEngine/Shape/Primitive/SegmentShape.h ----
+		struct Register_SegmentShape
+		{
+			Register_SegmentShape()
+			{
+				ReflectionRegistry::Register(String("SegmentShape"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					SegmentShape& obj = *static_cast<SegmentShape*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("UVの繰り返し");
+						fi.offset_ = offsetof(SegmentShape, uvScale_);
+						fi.type_ = AttributeType::Vector2;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SegmentShape*>(p); return o.textureID_ != 0; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("UVのずらし");
+						fi.offset_ = offsetof(SegmentShape, uvOffset_);
+						fi.type_ = AttributeType::Vector2;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SegmentShape*>(p); return o.textureID_ != 0; };
+						outInfo.push_back(std::move(fi));
+					}
+					outInfo.push_back({ String("色"), offsetof(SegmentShape, color_), AttributeType::Color });
+					outInfo.push_back({ String("長さ"), offsetof(SegmentShape, length_), AttributeType::Float });
+					outInfo.push_back({ String("幅"), offsetof(SegmentShape, width_), AttributeType::Float });
+				});
+			}
+		};
+		static Register_SegmentShape global_SegmentShape_register;
+
+		// ---- GraphicsEngine/Shape/Primitive/SphereShape.h ----
+		struct Register_SphereShape
+		{
+			Register_SphereShape()
+			{
+				ReflectionRegistry::Register(String("SphereShape"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					SphereShape& obj = *static_cast<SphereShape*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("UVの繰り返し");
+						fi.offset_ = offsetof(SphereShape, uvScale_);
+						fi.type_ = AttributeType::Vector2;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SphereShape*>(p); return o.textureID_ != 0; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("UVのずらし");
+						fi.offset_ = offsetof(SphereShape, uvOffset_);
+						fi.type_ = AttributeType::Vector2;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SphereShape*>(p); return o.textureID_ != 0; };
+						outInfo.push_back(std::move(fi));
+					}
+					outInfo.push_back({ String("色"), offsetof(SphereShape, color_), AttributeType::Color });
+					outInfo.push_back({ String("半径"), offsetof(SphereShape, radius_), AttributeType::Float });
+				});
+			}
+		};
+		static Register_SphereShape global_SphereShape_register;
 
 		// ---- GraphicsEngine/Texture/Image.h ----
 		struct Register_Image

@@ -982,6 +982,21 @@
     <ClInclude Include="Shape\Primitive\PrimitiveWireframeShader.h">
       <Filter>Shape\Primitive</Filter>
     </ClInclude>
+    <ClInclude Include="Shape\Primitive\BoxShape.h">
+      <Filter>Shape\Primitive</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Primitive\SphereShape.h">
+      <Filter>Shape\Primitive</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Primitive\CapsuleShape.h">
+      <Filter>Shape\Primitive</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Primitive\SegmentShape.h">
+      <Filter>Shape\Primitive</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Primitive\CylinderShape.h">
+      <Filter>Shape\Primitive</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">

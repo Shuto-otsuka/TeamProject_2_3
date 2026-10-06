@@ -16,6 +16,11 @@
 #include <GraphicsEngine/Model/Mesh.h>
 #include <GraphicsEngine/Model/Skeleton/Skeleton.h>
 #include <GraphicsEngine/Movie/Movie.h>
+#include <GraphicsEngine/Shape/Primitive/BoxShape.h>
+#include <GraphicsEngine/Shape/Primitive/CapsuleShape.h>
+#include <GraphicsEngine/Shape/Primitive/CylinderShape.h>
+#include <GraphicsEngine/Shape/Primitive/SegmentShape.h>
+#include <GraphicsEngine/Shape/Primitive/SphereShape.h>
 #include <GraphicsEngine/Texture/Image.h>
 #include <PhysicsEngine/Collider/MeshCollider.h>
 #include <PhysicsEngine/Joint/FixedJoint.h>
@@ -39,6 +44,11 @@ extern "C" int _force_payload_Animator = 0;
 extern "C" int _force_payload_Material = 0;
 extern "C" int _force_payload_Skeleton = 0;
 extern "C" int _force_payload_Movie = 0;
+extern "C" int _force_payload_BoxShape = 0;
+extern "C" int _force_payload_CapsuleShape = 0;
+extern "C" int _force_payload_CylinderShape = 0;
+extern "C" int _force_payload_SegmentShape = 0;
+extern "C" int _force_payload_SphereShape = 0;
 extern "C" int _force_payload_Image = 0;
 extern "C" int _force_payload_MeshCollider = 0;
 extern "C" int _force_payload_FixedJoint = 0;
@@ -315,6 +325,71 @@ namespace SeedCore
 			}
 		};
 		static Register_Movie global_Movie_register;
+
+		// ---- GraphicsEngine/Shape/Primitive/BoxShape.h ----
+		struct Register_BoxShape
+		{
+			Register_BoxShape()
+			{
+				PayloadRegistry::Register(String("BoxShape"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					BoxShape& obj = *static_cast<BoxShape*>(ptr);
+					outInfo.push_back({ String("テクスチャID"), offsetof(BoxShape, textureID_), AttributeType::Int, PayloadType::Texture });
+				});
+			}
+		};
+		static Register_BoxShape global_BoxShape_register;
+
+		// ---- GraphicsEngine/Shape/Primitive/CapsuleShape.h ----
+		struct Register_CapsuleShape
+		{
+			Register_CapsuleShape()
+			{
+				PayloadRegistry::Register(String("CapsuleShape"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					CapsuleShape& obj = *static_cast<CapsuleShape*>(ptr);
+					outInfo.push_back({ String("テクスチャID"), offsetof(CapsuleShape, textureID_), AttributeType::Int, PayloadType::Texture });
+				});
+			}
+		};
+		static Register_CapsuleShape global_CapsuleShape_register;
+
+		// ---- GraphicsEngine/Shape/Primitive/CylinderShape.h ----
+		struct Register_CylinderShape
+		{
+			Register_CylinderShape()
+			{
+				PayloadRegistry::Register(String("CylinderShape"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					CylinderShape& obj = *static_cast<CylinderShape*>(ptr);
+					outInfo.push_back({ String("テクスチャID"), offsetof(CylinderShape, textureID_), AttributeType::Int, PayloadType::Texture });
+				});
+			}
+		};
+		static Register_CylinderShape global_CylinderShape_register;
+
+		// ---- GraphicsEngine/Shape/Primitive/SegmentShape.h ----
+		struct Register_SegmentShape
+		{
+			Register_SegmentShape()
+			{
+				PayloadRegistry::Register(String("SegmentShape"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					SegmentShape& obj = *static_cast<SegmentShape*>(ptr);
+					outInfo.push_back({ String("テクスチャID"), offsetof(SegmentShape, textureID_), AttributeType::Int, PayloadType::Texture });
+				});
+			}
+		};
+		static Register_SegmentShape global_SegmentShape_register;
+
+		// ---- GraphicsEngine/Shape/Primitive/SphereShape.h ----
+		struct Register_SphereShape
+		{
+			Register_SphereShape()
+			{
+				PayloadRegistry::Register(String("SphereShape"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					SphereShape& obj = *static_cast<SphereShape*>(ptr);
+					outInfo.push_back({ String("テクスチャID"), offsetof(SphereShape, textureID_), AttributeType::Int, PayloadType::Texture });
+				});
+			}
+		};
+		static Register_SphereShape global_SphereShape_register;
 
 		// ---- GraphicsEngine/Texture/Image.h ----
 		struct Register_Image

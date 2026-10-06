@@ -199,6 +199,11 @@ namespace SeedCore
 		editorConstantIndices_.primitiveWireframeIndex_ = index;
 	}
 
+	void ConstantIndicesSystem::SetGamePrimitiveWireframeIndex(Uint index)
+	{
+		gameConstantIndices_.primitiveWireframeIndex_ = index;
+	}
+
 	void ConstantIndicesSystem::SetCanvasPrimitiveWireframeIndex(Uint index)
 	{
 		canvasConstantIndices_.primitiveWireframeIndex_ = index;

@@ -441,7 +441,6 @@ namespace SeedCore
 		/// [JP] 準備（ストリーミングとコライダーの収集）は、コライダーのアップロードと全エディターパスより先に行う。
 		Prepare(timer.DeltaTime(), loaderSystem, resourceCache, world, selectedEntities, editorSceneConstantBuffer);
 		renderer_->UploadColliders(colliderSystem_.Colliders());
-		renderer_->UploadShapes(shapeSystem_.Shapes());
 
 		/// [EN] Upload the view-specific constants before the renderer records editor commands.
 		/// [JP] Renderer がエディターコマンドを記録する前に、ビュー固有の定数をアップロードする。
@@ -494,7 +493,7 @@ namespace SeedCore
 		/// [JP] シーン遷移のフェードはゲーム画像の一部なので、ゲームフレームを閉じる前に描画する。
 		fadeScreen_.Draw(context_->GetDirectList()->Get(), Scene::FadeAlpha(), static_cast<Float>(nativeWidth_), static_cast<Float>(nativeHeight_));
 
-		renderer_->EndGameFrame(context_->GetDirectList(), gameSceneConstantBuffer);
+		renderer_->EndGameFrame(context_->GetDirectList(), gameSceneConstantBuffer, hasActiveCamera);
 	}
 
 	/**
@@ -1219,6 +1218,10 @@ namespace SeedCore
 		/// [EN] Shapes are gathered once per frame as well; the debug display follows the editor selection and the visibility flag, and camera frustums use the render aspect ratio.
 		/// [JP] 形もフレームに1回集める。デバッグ表示はエディタの選択と表示のフラグに従い、カメラの視錐台は描画の縦横比を使う。
 		shapeSystem_.Update(world, selectedEntities, shapeVisible_, static_cast<Float>(nativeWidth_) / static_cast<Float>(nativeHeight_));
+
+		/// [EN] Shapes are uploaded here rather than by one view, since the editor, game and canvas views each draw their own batch of them.
+		/// [JP] 形はエディター、ゲーム、Canvas の各ビューがそれぞれのバッチを描くので、どれか1つのビューではなくここでアップロードする。
+		renderer_->UploadShapes(shapeSystem_.Shapes());
 
 		/// [EN] Renderer receives the selected view's scene constants and entity selection after shared assets are current.
 		/// [JP] 共有アセットが最新化された後、Renderer は選択されたビューのシーン定数とエンティティ選択を受け取る。
