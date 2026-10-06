@@ -236,7 +236,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
         if (GetActor().GetPhysics().Raycast(ray.origin_, ray.direction_, 10000.0f, hit,layerMask))
         {
             SeedCore::Actor hitActor = GetWorld().GetActor(hit.entityID_);//ヒットしたアクターの取得
-            if (!hitActor.HasTag("CanStop") && hit.normal_.y * -1 > 0.99f)
+            if (!hitActor.HasTag("CanStop") && hit.normal_.y > 0.99f)
             {
                 //止められないオブジェクトの上面だった場合
                 //レイと銃口の高さの平面が交わるところをターゲットにする
