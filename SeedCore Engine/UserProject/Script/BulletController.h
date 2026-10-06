@@ -13,6 +13,11 @@ public:
 	void SetParam(const SeedCore::Vector3& startPosition,const SeedCore::Vector3& moveDirection, float chargeRate,int cost);
 
 	void OnCollisionEnter(SeedCore::Entity entity);
+	void Stop(float stopTime);
+
+	bool IsStop() const { return isStop; }
+
+	float GetAliveTimer() const { return aliveTimer; }
 
 	SC_REFLECTION_FIELD()
 		float minSize;
@@ -37,6 +42,7 @@ private:
 	void Move(float elapsedTime);
 	void UpdateAliveTime(float elapsedTime);
 	void Remove();
+	void UpdateStopTime(float elapsedTime);
 
 	SeedCore::Vector3 moveDirection;
 	SeedCore::Vector3 startPosition;
@@ -45,8 +51,11 @@ private:
 	float speed;
 	float aliveTime;
 	float aliveTimer = 0.0f;
+	float stopTime = 0.0f;
 
 	int cost = 0;
+
+	bool isStop = false;
 
 	SeedCore::Scale* scale;
 	SeedCore::Position* position;

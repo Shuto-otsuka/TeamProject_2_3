@@ -1,5 +1,6 @@
 #include "UserProject/Script/BulletController.h"
 #include"UserProject/Script/PlayerController.h"
+#include<SeedCore/ScLog.h>
 
 void BulletController::OnStart()
 {
@@ -8,6 +9,10 @@ void BulletController::OnStart()
 
 void BulletController::OnTick(float elapsedTime)
 {
+    SC_LOG_NOTICE("弾更新");
+
+    //停止時間更新処理
+    UpdateStopTime(elapsedTime);
     //移動処理
     Move(elapsedTime);
     //生存時間が終了したら削除
@@ -57,11 +62,35 @@ void BulletController::OnCollisionEnter(SeedCore::Entity entity)
     //止められるオブジェクトじゃなければ終了
     if (!hitActor.HasTag("CanStop"))return;
 
+    if (hitActor.HasTag("Bullet"))
+    {
+        BulletController* hitBulletController = GetWorld().GetComponent<BulletController>(entity);
+        //自分の方が長く生きてたら終了
+        //後で撃ったやつが先撃ってたやつに対して効果を発動するため
+        if (aliveTimer > hitBulletController->GetAliveTimer())return;
+
+        float stopTime = aliveTime - aliveTimer;//当たった弾の停止時間を残りの生存時間とする
+        hitBulletController->Stop(stopTime);//停止
+    }
+    else
+    {
+        //ギミック停止処理
+    }
+}
+
+void BulletController::Stop(float stopTime)
+{
+    //停止処理
+    isStop = true;
+    this->stopTime += stopTime;
 }
 
 void BulletController::Move(float elapsedTime)
 {
     //移動・回転処理
+
+    //停止中なら終了
+    if (isStop)return;
 
     SeedCore::Vector3 pos = SeedCore::Transform::Vector(*position);
     //moveDirectionの方向に移動
@@ -85,8 +114,8 @@ void BulletController::Move(float elapsedTime)
 
 void BulletController::UpdateAliveTime(float elapsedTime)
 {
-    aliveTimer -= elapsedTime;
-    if (aliveTime >= aliveTime)
+    aliveTimer += elapsedTime;
+    if (aliveTimer >= aliveTime)
     {
         //生存時間が終了したら削除
         Remove();
@@ -97,4 +126,14 @@ void BulletController::Remove()
 {
     playerController->SubCostGauge(cost);//自分が圧迫してた分のコストを戻す
     GetWorld().DestroyActor(GetActor());//削除
+}
+
+void BulletController::UpdateStopTime(float elapsedTime)
+{
+    if (!isStop)return;//ストップ中じゃなければ終了
+
+    //ストップタイマー更新
+    stopTime -= elapsedTime;
+    if (stopTime <= 0.0f)
+        isStop = true;
 }
