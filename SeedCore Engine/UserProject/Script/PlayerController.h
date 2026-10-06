@@ -59,6 +59,7 @@ private:
 	void UpdateInputShot(float elapsedTime);
 	void Shot();
 	void UpdateFallJudge(float elapsedTime);
+	void UpdateAllBulletRemove(float elapsedTime);
 
 	bool OnGroundOrCoyote();
 
@@ -95,7 +96,6 @@ private:
 	SeedCore::Vector3 shotDirection = { 0.0f,0.0f,1.0f };
 
 	SeedCore::Actor cameraBrain;
-	SeedCore::Position* testActorPosition = nullptr;
 	SeedCore::Position* position = nullptr;
 	SeedCore::Rotation* rotation = nullptr;
 	SeedCore::Scale* scale = nullptr;

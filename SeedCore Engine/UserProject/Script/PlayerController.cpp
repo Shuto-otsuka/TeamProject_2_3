@@ -15,13 +15,11 @@ void PlayerController::OnStart()
     cameraBrain = world.GetActor("CameraBrain");
 
     SeedCore::Entity entity = GetActor().GetEntity();
-    SeedCore::Entity testActorEntity = world.GetActor("Test").GetEntity();
 
     position = world.GetComponent<SeedCore::Position>(entity);
     rotation = world.GetComponent<SeedCore::Rotation>(entity);
     scale = world.GetComponent<SeedCore::Scale>(entity);
     myCharacterController = world.GetComponent<SeedCore::CharacterController>(entity);
-    testActorPosition = world.GetComponent<SeedCore::Position>(testActorEntity);
 }
 
 void PlayerController::OnTick(float elapsedTime)
@@ -64,6 +62,8 @@ void PlayerController::UpdateUsually(float elapsedTime)
     UpdateInputJump(elapsedTime);
     //発射更新処理
     UpdateInputShot(elapsedTime);
+    //弾全削除処理
+    UpdateAllBulletRemove(elapsedTime);
     //落下判定処理
     UpdateFallJudge(elapsedTime);
 }
@@ -235,33 +235,23 @@ void PlayerController::UpdateTurn(float elapsedTime)
         SeedCore::Vector3 targetPosition;
         Uint32 layerMask = ~(1 << GetActor().Layer());//プレイヤー自身を除くレイヤーマスク
 
-        if (GetActor().GetPhysics().Raycast(ray.origin_, ray.direction_, 1000.0f, hit,layerMask))
+        if (GetActor().GetPhysics().Raycast(ray.origin_, ray.direction_, 10000.0f, hit,layerMask))
         {
             SeedCore::Actor hitActor = GetWorld().GetActor(hit.entityID_);//ヒットしたアクターの取得
-            if (!hitActor.HasTag("CanStop") && hit.normal_.y * -1 > 0.99f)
+            if (!hitActor.HasTag("CanStop") && hit.normal_.y > 0.99f)
             {
                 //止められないオブジェクトの上面だった場合
                 //レイと銃口の高さの平面が交わるところをターゲットにする
                 SeedCore::Vector3 gunOffset = { 0.0f,bulletOffsetY,0.0f };
                 SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
-                targetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f },gunOffset.y);
+                targetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f },gunPosition.y);
 
-                testActorPosition->x_ = targetPosition.x;
-                testActorPosition->y_ = targetPosition.y;
-                testActorPosition->z_ = targetPosition.z;
-
-                SC_LOG_NOTICE("止められんやつの上面: {}", 1);
+                SC_LOG_NOTICE("当たってる");
             }
             else
             {
                 //止められるオブジェクトもしくは壁などに当たった場合当たった場所をターゲットにする
                 targetPosition = hit.position_;
-
-                testActorPosition->x_ = targetPosition.x;
-                testActorPosition->y_ = targetPosition.y;
-                testActorPosition->z_ = targetPosition.z;
-
-                SC_LOG_NOTICE("通常オブジェクト: {}", 1);
             }
         }
         else
@@ -270,13 +260,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
             //レイと銃口の高さの平面が交わるところをターゲットにする
             SeedCore::Vector3 gunOffset = { 0.0f,bulletOffsetY,0.0f };
             SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
-            targetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f }, gunOffset.y);
-
-            testActorPosition->x_ = targetPosition.x;
-            testActorPosition->y_ = targetPosition.y;
-            testActorPosition->z_ = targetPosition.z;
-
-            SC_LOG_NOTICE("なににもあたらん: {}", 1);
+            targetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f }, gunPosition.y);
         }
 
         //ターゲットに対してのベクトルをshotDirectionとする
@@ -372,6 +356,23 @@ void PlayerController::UpdateFallJudge(float elapsedTime)
         //落下のため死亡
         //とりあえずシーン読み込みなおすだけ
         SeedCore::Scene::Change("Sakatyan.scene");
+    }
+}
+
+void PlayerController::UpdateAllBulletRemove(float elapsedTime)
+{
+    if (!SeedCore::Input::KeyState(SeedCore::Input::Key::R, SeedCore::Input::OnPressed))return;//Rキー押された瞬間じゃなければ終了
+
+    //アクターを走査
+    for (auto& actor : GetWorld().GetActors())
+    {
+        //弾じゃなければ次
+        if (!actor.HasTag("Bullet"))continue;
+
+        //全ての弾を削除
+        SeedCore::Entity entity = actor.GetEntity();
+        BulletController* bulletController = GetWorld().GetComponent<BulletController>(entity);
+        bulletController->Remove();
     }
 }
 
