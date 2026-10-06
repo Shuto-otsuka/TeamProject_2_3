@@ -346,6 +346,10 @@ namespace SeedCore
 		/// [JP] キネマティックのトリガーがスタティックのボディを検知するのに必要。それ以外のキネマティックの組はシミュレーションに影響しないので立てない。
 		settings.mCollideKinematicVsNonDynamic = desc.motionType_ == JPH::EMotionType::Kinematic && desc.isSensor_;
 
+		/// [EN] A kinematic body that goes to sleep loses all its contacts, so it would leave every trigger it rests in; kinematic bodies are few, so keeping them awake is cheap.
+		/// [JP] 眠ったキネマティックのボディは接触をすべて失い、止まっているトリガーから出たことになってしまう。キネマティックのボディは数が少ないので、起こしたままでも負荷は小さい。
+		settings.mAllowSleeping = desc.motionType_ != JPH::EMotionType::Kinematic;
+
 		/// [EN] Static bodies have no mass or motion quality.
 		/// [JP] 静的ボディは質量も運動品質も持たない。
 		if (desc.motionType_ != JPH::EMotionType::Static)

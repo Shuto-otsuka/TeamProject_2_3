@@ -33,22 +33,69 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Drains queued contacts and dispatches their collision or trigger events.
+	* Decides which body pairs that lost their last contact really
+	* exited, then drains queued contacts and dispatches their
+	* collision or trigger events.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* キュー内の接触を取り出し、衝突またはトリガーイベントを通知する。
+	* 最後の接触を失ったボディペアのうち本当に離れたものを判定し、その後
+	* キュー内の接触を取り出して衝突またはトリガーイベントを通知する。
 	*/
-	void JoltContactListener::DispatchEvent()
+	void JoltContactListener::DispatchEvent(const JPH::BodyInterface& bodyInterface)
 	{
-		/// [EN] Move pending events to local storage while holding the callback mutex.
-		/// [JP] コールバック用ミューテックスの保持中に、保留イベントをローカルへ移す。
 		DynamicArray<ContactEvent> events;
 		{
 			std::lock_guard<std::mutex> lock(mutex_);
+
+			/// [EN] A sleeping body loses all its contacts, so a resting pair exits only once neither body is asleep.
+			/// [JP] 眠ったボディは接触をすべて失うので、休止中のペアが Exit するのは、どちらのボディも眠っていないときだけ。
+			for (auto restingIt = restingPairs_.begin(); restingIt != restingPairs_.end();)
+			{
+				Uint64 pairKey = *restingIt;
+				auto pairIt = contactPairs_.find(pairKey);
+				if (pairIt == contactPairs_.end())
+				{
+					restingIt = restingPairs_.erase(restingIt);
+					continue;
+				}
+
+				/// [EN] The key holds the smaller body ID in its upper half and the larger one in its lower half.
+				/// [JP] キーの上位側に小さいほうのボディ ID、下位側に大きいほうのボディ ID が入っている。
+				JPH::BodyID body1ID(static_cast<Uint32>(pairKey >> 32));
+				JPH::BodyID body2ID(static_cast<Uint32>(pairKey));
+
+				/// [EN] A destroyed or removed body ends the contact for good.
+				/// [JP] 破棄された、またはシミュレーションから外されたボディとの接触は、そこで終わる。
+				Bool bothAdded = bodyInterface.IsAdded(body1ID) && bodyInterface.IsAdded(body2ID);
+
+				/// [EN] A static body is never active, so only a non-static body that is not active is asleep.
+				/// [JP] スタティックのボディは常に非アクティブなので、眠っているのはスタティック以外で非アクティブなボディだけ。
+				Bool asleep = bothAdded && ((bodyInterface.GetMotionType(body1ID) != JPH::EMotionType::Static && !bodyInterface.IsActive(body1ID)) || (bodyInterface.GetMotionType(body2ID) != JPH::EMotionType::Static && !bodyInterface.IsActive(body2ID)));
+
+				if (asleep)
+				{
+					++restingIt;
+					continue;
+				}
+
+				/// [EN] Both bodies are awake and the contact did not come back, so the pair really separated.
+				/// [JP] 両方のボディが起きていて接触が戻らなかったので、ペアは本当に離れた。
+				const ContactPair& pair = pairIt->second;
+				pendingEvents_.push_back(ContactEvent{ pair.entityIDs_.first, pair.entityIDs_.second, ContactEventKind::Exit, pair.isSensor_ });
+				contactPairs_.erase(pairIt);
+				restingIt = restingPairs_.erase(restingIt);
+			}
+
+			/// [EN] Move pending events to local storage while holding the callback mutex.
+			/// [JP] コールバック用ミューテックスの保持中に、保留イベントをローカルへ移す。
 			events.assign(pendingEvents_.begin(), pendingEvents_.end());
 			pendingEvents_.clear();
+
+			/// [EN] Each step dispatches at most one enter or stay per body pair, so the record starts over here.
+			/// [JP] 1ステップにつきボディペアごとの Enter か Stay は最大1回なので、記録はここでやり直す。
+			notifiedPairs_.clear();
 		}
 
 		if (!world_)
@@ -104,75 +151,123 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Queues an enter event for a newly added body contact.
+	* Queues an enter event when the first sub-shape contact of a body
+	* pair is added, and a stay event when another one is added to a
+	* pair already in contact or to a resting pair picking its contact
+	* back up.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 新しく追加されたボディ接触の Enter イベントをキューへ積む。
+	* ボディペアで最初のサブシェイプの接触が追加されたときに Enter イベントを、
+	* 既に接触中のペアへさらに追加されたとき、または休止中のペアが接触を
+	* 取り戻したときに Stay イベントをキューへ積む。
 	*/
 	void JoltContactListener::OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)
 	{
-		/// [EN] Capture body metadata before entering the synchronized queue section.
-		/// [JP] 同期されたキュー区間へ入る前に、ボディのメタデータを取得する。
-		BodyInfo info1{ std::bit_cast<EntityID>(static_cast<Uint64>(body1.GetUserData())), body1.IsSensor() };
-		BodyInfo info2{ std::bit_cast<EntityID>(static_cast<Uint64>(body2.GetUserData())), body2.IsSensor() };
+		/// [EN] Both body IDs packed into one key; Jolt always passes the smaller ID as body1, so a pair keeps the same key.
+		/// [JP] 2つのボディ ID を1つのキーへまとめる。Jolt は常に小さいほうの ID を body1 として渡すので、同じペアは同じキーになる。
+		Uint64 pairKey = (static_cast<Uint64>(body1.GetID().GetIndexAndSequenceNumber()) << 32) | body2.GetID().GetIndexAndSequenceNumber();
 
 		std::lock_guard<std::mutex> lock(mutex_);
 
-		bodyEntityCache_[body1.GetID()] = info1;
-		bodyEntityCache_[body2.GetID()] = info2;
+		ContactPair& pair = contactPairs_[pairKey];
 
-		pendingEvents_.push_back(ContactEvent{ info1.entityID_, info2.entityID_, ContactEventKind::Enter, info1.isSensor_ || info2.isSensor_ });
+		/// [EN] A resting pair whose body woke up still in contact picks the contact back up instead of entering anew.
+		/// [JP] 接触したまま起きた休止中のペアは、新たに Enter せず接触を取り戻す。
+		Bool resumed = pair.contactCount_ == 0 && restingPairs_.erase(pairKey) > 0;
+
+		/// [EN] The first sub-shape contact enters the pair; the entities and sensor flag are kept for the removal callback, which only gives body IDs.
+		/// [JP] 最初のサブシェイプの接触でペアが Enter する。削除コールバックはボディ ID しか渡さないので、エンティティとセンサーの区分はここで保持する。
+		if (pair.contactCount_ == 0 && !resumed)
+		{
+			pair.entityIDs_ = { std::bit_cast<EntityID>(static_cast<Uint64>(body1.GetUserData())), std::bit_cast<EntityID>(static_cast<Uint64>(body2.GetUserData())) };
+			pair.isSensor_ = body1.IsSensor() || body2.IsSensor();
+
+			notifiedPairs_.insert(pairKey);
+			pendingEvents_.push_back(ContactEvent{ pair.entityIDs_.first, pair.entityIDs_.second, ContactEventKind::Enter, pair.isSensor_ });
+		}
+		/// [EN] Another sub-shape touching a pair already in contact, or a resting pair picking its contact back up, means the pair is staying.
+		/// [JP] 既に接触中のペアで別のサブシェイプが触れたのも、休止中のペアが接触を取り戻したのも、ペアとしては接触が続いているということ。
+		else if (notifiedPairs_.insert(pairKey).second)
+		{
+			pendingEvents_.push_back(ContactEvent{ pair.entityIDs_.first, pair.entityIDs_.second, ContactEventKind::Stay, pair.isSensor_ });
+		}
+
+		++pair.contactCount_;
 	}
 
 	/**
 	* [EN]
-	* Queues a stay event for a persisted body contact.
+	* Queues a stay event for a body pair still in contact, at most once
+	* per step.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 継続中のボディ接触の Stay イベントをキューへ積む。
+	* 接触が続いているボディペアの Stay イベントを、1ステップにつき最大1回
+	* キューへ積む。
 	*/
 	void JoltContactListener::OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)
 	{
-		/// [EN] Refresh cached body metadata and queue the continued contact atomically.
-		/// [JP] ボディ情報のキャッシュ更新と継続接触の追加を一括して行う。
-		BodyInfo info1{ std::bit_cast<EntityID>(static_cast<Uint64>(body1.GetUserData())), body1.IsSensor() };
-		BodyInfo info2{ std::bit_cast<EntityID>(static_cast<Uint64>(body2.GetUserData())), body2.IsSensor() };
+		/// [EN] Both body IDs packed into one key; Jolt always passes the smaller ID as body1, so a pair keeps the same key.
+		/// [JP] 2つのボディ ID を1つのキーへまとめる。Jolt は常に小さいほうの ID を body1 として渡すので、同じペアは同じキーになる。
+		Uint64 pairKey = (static_cast<Uint64>(body1.GetID().GetIndexAndSequenceNumber()) << 32) | body2.GetID().GetIndexAndSequenceNumber();
 
 		std::lock_guard<std::mutex> lock(mutex_);
 
-		bodyEntityCache_[body1.GetID()] = info1;
-		bodyEntityCache_[body2.GetID()] = info2;
-
-		pendingEvents_.push_back(ContactEvent{ info1.entityID_, info2.entityID_, ContactEventKind::Stay, info1.isSensor_ || info2.isSensor_ });
-	}
-
-	/**
-	* [EN]
-	* Queues an exit event for a removed body contact.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 削除されたボディ接触の Exit イベントをキューへ積む。
-	*/
-	void JoltContactListener::OnContactRemoved(const JPH::SubShapeIDPair& subShapePair)
-	{
-		std::lock_guard<std::mutex> lock(mutex_);
-
-		/// [EN] Recover entity and sensor data cached while the contact was active.
-		/// [JP] 接触中にキャッシュしたエンティティ・センサーデータを取得する。
-		auto it1 = bodyEntityCache_.find(subShapePair.GetBody1ID());
-		auto it2 = bodyEntityCache_.find(subShapePair.GetBody2ID());
-		if (it1 == bodyEntityCache_.end() || it2 == bodyEntityCache_.end())
+		auto it = contactPairs_.find(pairKey);
+		if (it == contactPairs_.end())
 		{
 			return;
 		}
 
-		Bool isSensor = it1->second.isSensor_ || it2->second.isSensor_;
-		pendingEvents_.push_back(ContactEvent{ it1->second.entityID_, it2->second.entityID_, ContactEventKind::Exit, isSensor });
+		/// [EN] Every touching sub-shape reports a persisted contact, but the pair stays only once per step.
+		/// [JP] 触れているサブシェイプごとに継続の報告が来るが、ペアの Stay は1ステップに1回だけ。
+		if (notifiedPairs_.insert(pairKey).second)
+		{
+			const ContactPair& pair = it->second;
+			pendingEvents_.push_back(ContactEvent{ pair.entityIDs_.first, pair.entityIDs_.second, ContactEventKind::Stay, pair.isSensor_ });
+		}
+	}
+
+	/**
+	* [EN]
+	* Marks a body pair as resting when its last sub-shape contact is
+	* removed. Whether it exited or only fell asleep is decided in
+	* DispatchEvent.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディペアの最後のサブシェイプの接触が削除されたとき、そのペアを休止中
+	* にする。離れたのか眠っただけなのかは DispatchEvent で判定する。
+	*/
+	void JoltContactListener::OnContactRemoved(const JPH::SubShapeIDPair& subShapePair)
+	{
+		/// [EN] Both body IDs packed into one key, in the same order as the added and persisted callbacks.
+		/// [JP] 2つのボディ ID を1つのキーへまとめる。順序は追加・継続のコールバックと同じ。
+		Uint64 pairKey = (static_cast<Uint64>(subShapePair.GetBody1ID().GetIndexAndSequenceNumber()) << 32) | subShapePair.GetBody2ID().GetIndexAndSequenceNumber();
+
+		std::lock_guard<std::mutex> lock(mutex_);
+
+		auto it = contactPairs_.find(pairKey);
+		if (it == contactPairs_.end())
+		{
+			return;
+		}
+
+		/// [EN] The pair stops touching only when its last touching sub-shape lets go.
+		/// [JP] ペアの接触が途切れるのは、最後に触れていたサブシェイプが離れたときだけ。
+		ContactPair& pair = it->second;
+		--pair.contactCount_;
+		if (pair.contactCount_ > 0)
+		{
+			return;
+		}
+
+		/// [EN] Bodies cannot be inspected during this callback, so whether the pair separated or a body only fell asleep is decided in DispatchEvent.
+		/// [JP] このコールバック中はボディを調べられないので、ペアが離れたのかボディが眠っただけなのかは DispatchEvent で判定する。
+		restingPairs_.insert(pairKey);
 	}
 }

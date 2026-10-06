@@ -54,7 +54,7 @@ namespace SeedCore
 	void JoltManager::Execute(Float elapsedTime)
 	{
 		physicsSystem_.Update(elapsedTime, 1, tempAllocator_.get(), executor_.get());
-		contactListener_.DispatchEvent();
+		contactListener_.DispatchEvent(physicsSystem_.GetBodyInterface());
 	}
 
 	/**
