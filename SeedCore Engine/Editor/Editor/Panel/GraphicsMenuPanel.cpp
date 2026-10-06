@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/GraphicsMenuPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 
 namespace SeedCore
 {
@@ -16,10 +16,10 @@ namespace SeedCore
 			{
 				auto presetItem = [&](const Char* label, GraphicsQualityPreset preset)
 				{
-					if (ImGui::MenuItem(label, nullptr, context_.viewportContext_.qualityPreset_ == preset))
+					if (ImGui::MenuItem(label, nullptr, context_.sceneVisual_.qualityPreset_ == preset))
 					{
-						context_.viewportContext_.qualityPreset_ = preset;
-						GraphicsQuality::ApplyPreset(preset, context_.viewportContext_.raytracing_, context_.viewportContext_.screenSpace_, context_.viewportContext_.rasterization_);
+						context_.sceneVisual_.qualityPreset_ = preset;
+						GraphicsQuality::ApplyPreset(preset, context_.sceneVisual_.raytracing_, context_.sceneVisual_.screenSpace_, context_.sceneVisual_.rasterization_);
 					}
 				};
 
@@ -35,9 +35,9 @@ namespace SeedCore
 			{
 				auto item = [&](const Char* label, ViewMode mode)
 				{
-					if (ImGui::MenuItem(label, nullptr, context_.viewportContext_.viewMode_ == mode))
+					if (ImGui::MenuItem(label, nullptr, context_.view_.editor_.viewMode_ == mode))
 					{
-						context_.viewportContext_.viewMode_ = mode;
+						context_.view_.editor_.viewMode_ = mode;
 					}
 				};
 

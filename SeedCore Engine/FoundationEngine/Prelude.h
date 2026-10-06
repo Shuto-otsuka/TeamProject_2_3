@@ -80,6 +80,8 @@
 
 #define SC_FUNCTION()
 
+#define SC_CONST static constexpr
+
 #ifdef FOUNDATIONENGINE_EXPORTS
 #define SEEDCORE_API __declspec(dllexport)
 #else

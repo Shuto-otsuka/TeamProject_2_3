@@ -35,6 +35,7 @@
     <ClCompile Include="Input\InputSystem.cpp">
     </ClCompile>
     <ClCompile Include="Interop\ImGuiInstance.cpp" />
+    <ClCompile Include="Interop\QueryInstance.cpp" />
     <ClCompile Include="JobSystem\FlowBuilder.cpp">
     </ClCompile>
     <ClCompile Include="JobSystem\JobExecutor.cpp">
@@ -90,6 +91,8 @@
     <ClCompile Include="World\ECS\Archetype\Chunk.cpp" />
     <ClCompile Include="World\ECS\Component\ComponentBehaviour.cpp" />
     <ClCompile Include="World\ECS\Component\ComponentRegistry.cpp" />
+    <ClCompile Include="World\ECS\Component\Motion.cpp" />
+    <ClCompile Include="World\ECS\Component\Transform.cpp" />
     <ClCompile Include="World\ECS\Component\UnknownComponent.cpp" />
     <ClCompile Include="World\ECS\Entity\Entity.cpp" />
     <ClCompile Include="World\ECS\Entity\EntityRecord.cpp" />
@@ -117,6 +120,8 @@
     <ClInclude Include="Input\InputSystem.h" />
     <ClInclude Include="Interop\ColliderInstance.h" />
     <ClInclude Include="Interop\ImGuiInstance.h" />
+    <ClInclude Include="Interop\QueryInstance.h" />
+    <ClInclude Include="Interop\ShapeInstance.h" />
     <ClInclude Include="Log\AftermathCrashTracker.h" />
     <ClInclude Include="Log\Error.h" />
     <ClInclude Include="Log\LogSystem.h" />
@@ -220,6 +225,7 @@
     <ClInclude Include="World\ECS\Component\InspectorDrawable.h" />
     <ClInclude Include="World\ECS\Component\LateTickable.h" />
     <ClInclude Include="World\ECS\Component\Lifetime.h" />
+    <ClInclude Include="World\ECS\Component\Motion.h" />
     <ClInclude Include="World\ECS\Component\Name.h" />
     <ClInclude Include="World\ECS\Component\Position.h" />
     <ClInclude Include="World\ECS\Component\Rotation.h" />
@@ -227,6 +233,7 @@
     <ClInclude Include="World\ECS\Component\Spawner.h" />
     <ClInclude Include="World\ECS\Component\Startable.h" />
     <ClInclude Include="World\ECS\Component\Tickable.h" />
+    <ClInclude Include="World\ECS\Component\Transform.h" />
     <ClInclude Include="World\ECS\Component\Triggerable.h" />
     <ClInclude Include="World\ECS\Component\UnknownComponent.h" />
     <ClInclude Include="World\ECS\Component\Velocity.h" />

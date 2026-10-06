@@ -5,6 +5,7 @@
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
+#include <FoundationEngine/World/ECS/Component/Transform.h>
 
 namespace SeedCore
 {
@@ -28,7 +29,7 @@ namespace SeedCore
 
 		CharacterDesc desc;
 		desc.position_ = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
-		desc.rotation_ = rotation ? rotation->Quat() : Quaternion::Identity;
+		desc.rotation_ = rotation ? Transform::Quat(*rotation) : Quaternion::Identity;
 		desc.radius_ = radius_;
 		desc.height_ = height_;
 		desc.maxSlopeAngle_ = ToRadians(maxSlopeAngle_);
@@ -403,9 +404,7 @@ namespace SeedCore
 		Position* positionComponent = world.GetComponent<Position>(entity);
 		if (positionComponent)
 		{
-			positionComponent->x_ = position.x;
-			positionComponent->y_ = position.y;
-			positionComponent->z_ = position.z;
+			Transform::Vector(*positionComponent, position);
 		}
 	}
 

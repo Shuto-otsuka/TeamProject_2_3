@@ -1,10 +1,11 @@
 #include <Editor/Editor/Panel/ContentsDrawerPanel.h>
 
 #include <Editor/Editor/Build/VisualStudioAutomation.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <Editor/Editor/Panel/MaterialViewerPanel.h>
+#include <Editor/Editor/Panel/ModelTransformPanel.h>
 #include <Editor/Editor/Panel/ResourceSyncControlPanel.h>
 
 #include <FoundationEngine/File/FileDialog.h>
@@ -54,13 +55,13 @@ namespace SeedCore
 	{
 		/// [EN] Let the ResourceCache reload on file changes under UserProject; a reload advances its revision.
 		/// [JP] UserProject 以下のファイル変更で ResourceCache に読み直させる。読み直すと revision が進む。
-		ResourceCache* resource = context_.worldContext_.resource_;
-		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-		resource->Watch(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+		ResourceCache* resource = context_.world_.resource_;
+		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
+		resource->Watch(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 
 		/// [EN] Rebuild here, before anything is drawn, because the menus below hold references into the tree.
 		/// [JP] 下のメニューはツリーの中を参照するので、何かを描く前のここで作り直す。
-		Uint64 syncRevision = context_.resourceSync_ ? context_.resourceSync_->Revision() : 0;
+		Uint64 syncRevision = context_.application_.resourceSync_ ? context_.application_.resourceSync_->Revision() : 0;
 		if (resourceRevision_ != resource->Revision() || syncRevision_ != syncRevision)
 		{
 			resourceRevision_ = resource->Revision();
@@ -68,10 +69,10 @@ namespace SeedCore
 			BuildDirectory();
 		}
 
-		ImGui::SetNextWindowDockID(context_.graphicsContext_.imgui_->DockSpaceID(), ImGuiCond_FirstUseEver);
+		ImGui::SetNextWindowDockID(context_.graphics_.imgui_->DockSpaceID(), ImGuiCond_FirstUseEver);
 		if (ImGui::Begin("コンテンツドロワー"))
 		{
-			if (context_.resourceSync_)
+			if (context_.application_.resourceSync_)
 			{
 				ResourceSyncControlPanel::DrawStatus(context_);
 			}
@@ -159,7 +160,7 @@ namespace SeedCore
 
 					/// [EN] A remote-only asset has no local file yet, so it cannot be dragged anywhere.
 					/// [JP] 共有ライブラリにしか無いアセットはまだローカルのファイルが無いので、ドラッグできない。
-					if ((!context_.resourceSync_ || !context_.resourceSync_->RemoteOnly(asset.assetID_)) && ImGui::BeginDragDropSource())
+					if ((!context_.application_.resourceSync_ || !context_.application_.resourceSync_->RemoteOnly(asset.assetID_)) && ImGui::BeginDragDropSource())
 					{
 						ImGui::SetDragDropPayload(GetPayloadType(asset.type_), &asset.assetID_, sizeof(Uint32));
 						ImGui::Text("%s", FilePath(asset.fullpath_.str(), resource->ProjectRootPath()).FilenameText().c_str());
@@ -254,7 +255,7 @@ namespace SeedCore
 						{
 							/// [EN] Reload at once rather than waiting for the watch, because the new Prefab's ID is needed right now.
 							/// [JP] 新しい Prefab の ID がすぐ要るので、監視を待たずにここで読み直す。
-							resource->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+							resource->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 							if (Uint32 newAssetID = resource->GetAssetID(String(savedPath.RelativeText())))
 							{
 								dropped.PrefabID(newAssetID);
@@ -389,7 +390,7 @@ namespace SeedCore
 
 			/// [EN] A remote-only asset has no local file yet, so it cannot be dragged anywhere.
 			/// [JP] 共有ライブラリにしか無いアセットはまだローカルのファイルが無いので、ドラッグできない。
-			if ((!context_.resourceSync_ || !context_.resourceSync_->RemoteOnly(asset->assetID_)) && ImGui::BeginDragDropSource())
+			if ((!context_.application_.resourceSync_ || !context_.application_.resourceSync_->RemoteOnly(asset->assetID_)) && ImGui::BeginDragDropSource())
 			{
 				ImGui::SetDragDropPayload(GetPayloadType(asset->type_), &asset->assetID_, sizeof(Uint32));
 				ImGui::Text("%s", assetPath.FilenameText().c_str());
@@ -517,7 +518,7 @@ namespace SeedCore
 
 			/// [EN] A remote-only asset has no local file yet, so it cannot be dragged anywhere.
 			/// [JP] 共有ライブラリにしか無いアセットはまだローカルのファイルが無いので、ドラッグできない。
-			if ((!context_.resourceSync_ || !context_.resourceSync_->RemoteOnly(asset->assetID_)) && ImGui::BeginDragDropSource())
+			if ((!context_.application_.resourceSync_ || !context_.application_.resourceSync_->RemoteOnly(asset->assetID_)) && ImGui::BeginDragDropSource())
 			{
 				ImGui::SetDragDropPayload(GetPayloadType(asset->type_), &asset->assetID_, sizeof(Uint32));
 				ImGui::Text("%s", assetPath.FilenameText().c_str());
@@ -576,7 +577,7 @@ namespace SeedCore
 
 		ImGui::Text("%s", asset.path_.c_str());
 		ImGui::Text("ID: %u", asset.assetID_);
-		if (context_.resourceSync_)
+		if (context_.application_.resourceSync_)
 		{
 			ResourceSyncControlPanel::DrawState(context_, asset);
 		}
@@ -605,8 +606,8 @@ namespace SeedCore
 		/// [JP] テクスチャのピクセルサイズ。GPU リソースから読む。
 		if (preview)
 		{
-			TextureResource* textureResource = context_.worldContext_.resource_->GetResource<TextureResource>(AssetType::Texture);
-			Texture* texture = textureResource->Resolve(*context_.worldContext_.loader_, &context_.graphicsContext_.graphics_->GetBindlessHeap(), textureResource->GetHandle(asset.assetID_), context_.uiFrame_);
+			TextureResource* textureResource = context_.world_.resource_->GetResource<TextureResource>(AssetType::Texture);
+			Texture* texture = textureResource->Resolve(*context_.world_.loader_, &context_.graphics_.graphics_->GetBindlessHeap(), textureResource->GetHandle(asset.assetID_), context_.application_.uiFrame_);
 			if (texture && texture->Resource())
 			{
 				D3D12_RESOURCE_DESC desc = texture->Resource()->GetDesc();
@@ -701,7 +702,7 @@ namespace SeedCore
 	{
 		if (ImGui::BeginPopupContextItem("##AssetContext"))
 		{
-			if (context_.resourceSync_)
+			if (context_.application_.resourceSync_)
 			{
 				ResourceSyncControlPanel::DrawActions(context_, asset);
 			}
@@ -728,7 +729,7 @@ namespace SeedCore
 				}
 				if (ImGui::MenuItem("モデル変換"))
 				{
-					context_.modelTransformPreviewContext_.requestedAssetId_ = asset.assetID_;
+					context_.panel_.modelTransform_->Open(asset.assetID_);
 				}
 				if (ImGui::MenuItem("マテリアル生成"))
 				{
@@ -1005,7 +1006,7 @@ namespace SeedCore
 			".vs", "x64", ".git", ".asset",
 		};
 
-		const std::filesystem::path& projectRoot = context_.worldContext_.resource_->ProjectRootPath();
+		const std::filesystem::path& projectRoot = context_.world_.resource_->ProjectRootPath();
 		root_ = {};
 		root_.path_ = FilePath(projectRoot, projectRoot);
 
@@ -1048,14 +1049,14 @@ namespace SeedCore
 		/// [EN] Local assets first, then shared-library assets that are not in this workspace yet.
 		/// [JP] 先にローカルのアセット、次に共有ライブラリにあってこのワークスペースにまだ無いアセット。
 		assetList_.clear();
-		for (const AssetRecord& asset : context_.worldContext_.resource_->AssetList() | std::ranges::views::values)
+		for (const AssetRecord& asset : context_.world_.resource_->AssetList() | std::ranges::views::values)
 		{
 			assetList_.push_back(asset);
 		}
-		if (context_.resourceSync_)
+		if (context_.application_.resourceSync_)
 		{
 			DynamicArray<AssetRecord> remoteAssets;
-			context_.resourceSync_->Gather(remoteAssets);
+			context_.application_.resourceSync_->Gather(remoteAssets);
 			for (const AssetRecord& remote : remoteAssets)
 			{
 				if (!std::ranges::any_of(assetList_, [&remote](const AssetRecord& local) { return local.assetID_ == remote.assetID_; }))
@@ -1145,9 +1146,9 @@ namespace SeedCore
 				return thumbnailCache_.at(asset.assetID_);
 			}
 
-			BindlessHeap& bindlessHeap = context_.graphicsContext_.graphics_->GetBindlessHeap();
-			TextureResource* textureResource = context_.worldContext_.resource_->GetResource<TextureResource>(AssetType::Texture);
-			Texture* texture = textureResource->Resolve(*context_.worldContext_.loader_, &bindlessHeap, textureResource->GetHandle(asset.assetID_), context_.uiFrame_);
+			BindlessHeap& bindlessHeap = context_.graphics_.graphics_->GetBindlessHeap();
+			TextureResource* textureResource = context_.world_.resource_->GetResource<TextureResource>(AssetType::Texture);
+			Texture* texture = textureResource->Resolve(*context_.world_.loader_, &bindlessHeap, textureResource->GetHandle(asset.assetID_), context_.application_.uiFrame_);
 			if (texture && texture->Resource())
 			{
 				/// [EN] Pin the texture so streaming never evicts the resource the thumbnail views.
@@ -1157,7 +1158,7 @@ namespace SeedCore
 				/// [EN] A view slot of its own, covering the whole resource, so the thumbnail stays valid when streaming swaps the texture's own bindless index.
 				/// [JP] リソース全体を覆う専用のビューの枠を使う。ストリーミングがテクスチャ自身のバインドレス番号を差し替えても、サムネイルは有効なまま。
 				Uint descIndex = bindlessHeap.AllocateIndex();
-				context_.graphicsContext_.graphics_->GetContext().GetDevice()->CreateShaderResourceView(texture->Resource(), nullptr, bindlessHeap.CPUHandle(descIndex));
+				context_.graphics_.graphics_->GetContext().GetDevice()->CreateShaderResourceView(texture->Resource(), nullptr, bindlessHeap.CPUHandle(descIndex));
 				ImTextureID textureID = static_cast<ImTextureID>(bindlessHeap.GPUHandle(descIndex).ptr);
 				thumbnailCache_.insert({ asset.assetID_, textureID });
 				return textureID;
@@ -1194,12 +1195,12 @@ namespace SeedCore
 	*/
 	ImTextureID ContentsDrawerPanel::GetSharingIcon(const AssetRecord& asset)const
 	{
-		if (!context_.resourceSync_)
+		if (!context_.application_.resourceSync_)
 		{
 			return 0;
 		}
 
-		const SharedAsset* shared = context_.resourceSync_->GetAsset(asset.assetID_);
+		const SharedAsset* shared = context_.application_.resourceSync_->GetAsset(asset.assetID_);
 		if (!shared)
 		{
 			return 0;
@@ -1208,7 +1209,7 @@ namespace SeedCore
 		/// [EN] A conflict comes first because it is the only state that no
 		///      automatic step will clear on its own.
 		/// [JP] 競合を最優先にする。自動の処理では解消されない唯一の状態だから。
-		if (context_.resourceSync_->Conflicted(asset.assetID_))
+		if (context_.application_.resourceSync_->Conflicted(asset.assetID_))
 		{
 			return imguiTexture_.Icon(IconType::SharedConflict);
 		}
@@ -1217,7 +1218,7 @@ namespace SeedCore
 		///      stops this member from doing anything with the asset.
 		/// [JP] 次は他のメンバーの Lease。このメンバーがそのアセットに何もできない、
 		///      唯一の状態だから。
-		const DynamicArray<EditLease>& leaseList = context_.resourceSync_->GetLeases();
+		const DynamicArray<EditLease>& leaseList = context_.application_.resourceSync_->GetLeases();
 		if (std::ranges::any_of(leaseList, [shared](const EditLease& lease) { return lease.assetId_ == shared->id_ && !lease.mine_; }))
 		{
 			return imguiTexture_.Icon(IconType::Lock);
@@ -1227,7 +1228,7 @@ namespace SeedCore
 		///      already visible in the panel while unsent work is not.
 		/// [JP] 未送信の作業は、Lease を持っていることより優先する。Lease はパネルに
 		///      既に出ているが、未送信の作業はどこにも出ないため。
-		if (context_.resourceSync_->Modified(asset.assetID_))
+		if (context_.application_.resourceSync_->Modified(asset.assetID_))
 		{
 			return imguiTexture_.Icon(IconType::SharedModified);
 		}
@@ -1243,7 +1244,7 @@ namespace SeedCore
 		///      not, so it is on its way in rather than usable.
 		/// [JP] RemoteOnly はカタログにあってこのワークスペースに無い状態。
 		///      使えるのではなく、これから入ってくるということ。
-		if (context_.resourceSync_->RemoteOnly(asset.assetID_))
+		if (context_.application_.resourceSync_->RemoteOnly(asset.assetID_))
 		{
 			return imguiTexture_.Icon(IconType::SharedOutdated);
 		}
@@ -1321,8 +1322,8 @@ namespace SeedCore
 	*/
 	void ContentsDrawerPanel::GenerateMeshCollision(const AssetRecord& asset, MeshCollisionDetail detail)
 	{
-		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-		if (!context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateCollision(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, detail))
+		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
+		if (!context_.world_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateCollision(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphics_.graphics_->GetBindlessHeap(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, detail))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: コリジョン生成に失敗しました: {}", asset.path_.c_str());
 			return;
@@ -1330,7 +1331,7 @@ namespace SeedCore
 
 		/// [EN] Rescan so the just-written ".collision" sibling is picked up as its own asset.
 		/// [JP] 書き出した ".collision" 兄弟を個別アセットとして拾えるよう再スキャンする。
-		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+		context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 		SC_LOG_NOTICE("コンテンツドロワー: コリジョンを生成しました: {}", asset.path_.c_str());
 	}
 
@@ -1345,8 +1346,8 @@ namespace SeedCore
 	*/
 	void ContentsDrawerPanel::GenerateMaterial(const AssetRecord& asset)
 	{
-		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-		if (!context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateMaterial(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, true))
+		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
+		if (!context_.world_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateMaterial(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphics_.graphics_->GetBindlessHeap(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, true))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: マテリアル生成に失敗しました: {}", asset.path_.c_str());
 			return;
@@ -1354,7 +1355,7 @@ namespace SeedCore
 
 		/// [EN] Rescan so the just-written ".material" siblings are picked up as their own assets.
 		/// [JP] 書き出した ".material" 兄弟を個別アセットとして拾えるよう再スキャンする。
-		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+		context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 		SC_LOG_NOTICE("コンテンツドロワー: マテリアルを生成しました: {}", asset.path_.c_str());
 	}
 
@@ -1369,8 +1370,8 @@ namespace SeedCore
 	*/
 	void ContentsDrawerPanel::GenerateSkeleton(const AssetRecord& asset)
 	{
-		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-		if (!context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateSkeleton(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, false))
+		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
+		if (!context_.world_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateSkeleton(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphics_.graphics_->GetBindlessHeap(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, false))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: スケルトン生成に失敗しました（スキン無し？）: {}", asset.path_.c_str());
 			return;
@@ -1378,7 +1379,7 @@ namespace SeedCore
 
 		/// [EN] Rescan so the just-written ".skeleton" sibling is picked up as its own asset.
 		/// [JP] 書き出した ".skeleton" 兄弟を個別アセットとして拾えるよう再スキャンする。
-		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+		context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 		SC_LOG_NOTICE("コンテンツドロワー: スケルトンを生成しました: {}", asset.path_.c_str());
 	}
 
@@ -1395,7 +1396,7 @@ namespace SeedCore
 	{
 		/// [EN] Shared content changes only through the shared library, so local deletion is refused.
 		/// [JP] 共有コンテンツは共有ライブラリを通してしか変えないので、ローカルでの削除は断る。
-		if (context_.resourceSync_ && context_.resourceSync_->Managed(targetPath.FullPath()))
+		if (context_.application_.resourceSync_ && context_.application_.resourceSync_->Managed(targetPath.FullPath()))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: 共有コンテンツはローカルのファイル操作で削除・名前変更できません");
 			return;
@@ -1426,7 +1427,7 @@ namespace SeedCore
 	{
 		/// [EN] Shared content changes only through the shared library, so local renaming is refused.
 		/// [JP] 共有コンテンツは共有ライブラリを通してしか変えないので、ローカルでの名前変更は断る。
-		if (context_.resourceSync_ && context_.resourceSync_->Managed(targetPath.FullPath()))
+		if (context_.application_.resourceSync_ && context_.application_.resourceSync_->Managed(targetPath.FullPath()))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: 共有コンテンツはローカルのファイル操作で削除・名前変更できません");
 			return;
@@ -1468,7 +1469,7 @@ namespace SeedCore
 		/// [EN] Refused when either side is shared content.
 		/// [JP] どちらか一方でも共有コンテンツなら断る。
 		const FilePath destPath(directoryPath.ChildPath(sourcePath.FilenamePath()), directoryPath.RootPath());
-		if (context_.resourceSync_ && (context_.resourceSync_->Managed(sourcePath.FullPath()) || context_.resourceSync_->Managed(destPath.FullPath())))
+		if (context_.application_.resourceSync_ && (context_.application_.resourceSync_->Managed(sourcePath.FullPath()) || context_.application_.resourceSync_->Managed(destPath.FullPath())))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: 共有コンテンツはローカルのクリップボード操作で移動・コピーできません");
 			return;
@@ -1504,7 +1505,7 @@ namespace SeedCore
 	*/
 	Bool ContentsDrawerPanel::ExecuteRegister(const FilePath& headerPath, const FilePath& cppPath)
 	{
-		const std::filesystem::path& projectRoot = context_.worldContext_.resource_->ProjectRootPath();
+		const std::filesystem::path& projectRoot = context_.world_.resource_->ProjectRootPath();
 
 		/// [EN] Tried first: if Visual Studio has Runtime.sln open, letting it add the files itself keeps Solution Explorer in sync immediately and never triggers the "project modified outside the editor" reload prompt (see VisualStudioAutomation's own doc comment). Falls through to editing UserProject.Cplusplus.vcxproj directly — the only path available when Visual Studio isn't running this solution at all.
 		/// [JP] まずこちらを試す: Visual Studio が Runtime.sln を開いていれば、ファイルの追加自体をVSにやらせることで Solution Explorer が即座に同期され、「プロジェクトが外部で変更されました」という再読み込み確認も一切発生しない(詳細は VisualStudioAutomation 自身のドキュメントコメントを参照)。Visual Studio がこのソリューションを開いていない場合にのみ、UserProject.Cplusplus.vcxproj を直接編集する経路へフォールバックする。
@@ -1677,25 +1678,25 @@ namespace SeedCore
 	*/
 	void ContentsDrawerPanel::OpenAssetPopup(const AssetRecord& asset)
 	{
-		if (context_.resourceSync_ && context_.resourceSync_->RemoteOnly(asset.assetID_))
+		if (context_.application_.resourceSync_ && context_.application_.resourceSync_->RemoteOnly(asset.assetID_))
 		{
-			context_.resourceSync_->RequestGet(asset.assetID_);
+			context_.application_.resourceSync_->RequestGet(asset.assetID_);
 			return;
 		}
 		if (asset.type_ == AssetType::Scene)
 		{
-			context_.sceneContext_.requestedSceneAssetID_ = asset.assetID_;
+			context_.scene_.request_ = asset.assetID_;
 			return;
 		}
 		if (asset.type_ == AssetType::Material)
 		{
-			context_.panelContext_.materialViewerPanel_->Open();
+			context_.panel_.materialViewer_->Open();
 			return;
 		}
 
 		/// [EN] Anything else opens in the application Windows associates with it.
 		/// [JP] それ以外は、Windows が関連付けているアプリケーションで開く。
-		const FilePath assetPath(asset.fullpath_.str(), context_.worldContext_.resource_->ProjectRootPath());
+		const FilePath assetPath(asset.fullpath_.str(), context_.world_.resource_->ProjectRootPath());
 		ShellExecuteW(NULL, L"open", assetPath.FullPath().wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
 	}
 
@@ -1732,7 +1733,7 @@ namespace SeedCore
 	{
 		/// [EN] The dialog starts next to the model with the model's name, filtered to the preset's extension.
 		/// [JP] ダイアログはモデルの隣、モデルの名前で始め、プリセットの拡張子で絞り込む。
-		const FilePath sourcePath(asset.fullpath_.str(), context_.worldContext_.resource_->ProjectRootPath());
+		const FilePath sourcePath(asset.fullpath_.str(), context_.world_.resource_->ProjectRootPath());
 		const std::wstring filter = std::wstring(L"*.") + extension;
 
 		std::filesystem::path outputPath;
@@ -1741,8 +1742,8 @@ namespace SeedCore
 			return;
 		}
 
-		D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-		if (!context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model)->Export(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphicsContext_.graphics_->GetBindlessHeap(), context_.graphicsContext_.graphics_->GetBC7CompressShader(), *context_.worldContext_.resource_, asset.assetID_, preset, String(outputPath.string())))
+		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
+		if (!context_.world_.resource_->GetResource<ModelResource>(AssetType::Model)->Export(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphics_.graphics_->GetBindlessHeap(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, preset, String(outputPath.string())))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: モデルのエクスポートに失敗しました: {}", asset.path_.c_str());
 			return;
@@ -1750,7 +1751,7 @@ namespace SeedCore
 
 		/// [EN] Reload so an export written inside the project shows up as an asset.
 		/// [JP] プロジェクト内へ書き出した場合にアセットとして出てくるよう、読み直す。
-		context_.worldContext_.resource_->Reload(*context_.worldContext_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+		context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 		SC_LOG_NOTICE("コンテンツドロワー: モデルをエクスポートしました: {}", asset.path_.c_str());
 	}
 }

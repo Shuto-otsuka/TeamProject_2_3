@@ -25,32 +25,29 @@ namespace SeedCore
 		colliderLineShader_.Create(shaderCache, device);
 	}
 
-	void ColliderRenderer::Clear()
+	void ColliderRenderer::Upload(std::span<const ColliderDesc> colliders)
 	{
 		spatialInstances_.clear();
 		planarInstances_.clear();
-	}
 
-	void ColliderRenderer::AddInstance(ColliderShapeKind shapeKind, const Vector3& position, const Quaternion& rotation, const Vector3& dimensions, const Color& color)
-	{
-		DynamicArray<ColliderStructuredBuffer>& instances = (shapeKind == ColliderShapeKind::Rect || shapeKind == ColliderShapeKind::Circle) ? planarInstances_ : spatialInstances_;
-		if (instances.size() >= maxInstanceCount_)
+		for (const ColliderDesc& collider : colliders)
 		{
-			return;
+			DynamicArray<ColliderStructuredBuffer>& instances = (collider.kind_ == ColliderKind::Rect || collider.kind_ == ColliderKind::Circle) ? planarInstances_ : spatialInstances_;
+			if (instances.size() >= maxInstanceCount_)
+			{
+				continue;
+			}
+
+			ColliderStructuredBuffer instance{};
+			instance.position_ = collider.position_;
+			instance.shapeKind_ = static_cast<Uint32>(collider.kind_);
+			instance.rotation_ = collider.rotation_;
+			instance.dimensions_ = collider.dimensions_;
+			instance.color_ = collider.color_;
+
+			instances.push_back(instance);
 		}
 
-		ColliderStructuredBuffer instance{};
-		instance.position_ = position;
-		instance.shapeKind_ = static_cast<Uint32>(shapeKind);
-		instance.rotation_ = rotation;
-		instance.dimensions_ = dimensions;
-		instance.color_ = color;
-
-		instances.push_back(instance);
-	}
-
-	void ColliderRenderer::Upload()
-	{
 		if (!spatialInstances_.empty())
 		{
 			Uint spatialInstanceCount = static_cast<Uint>(spatialInstances_.size());

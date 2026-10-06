@@ -26,7 +26,7 @@ namespace SeedCore
 	public:
 		/// [EN] Sentinel returned by Find() when a tag has not been registered.
 		/// [JP] タグが未登録の場合に Find() が返す番兵値。
-		static constexpr Size InvalidIndex = static_cast<Size>(-1);
+		SC_CONST Size InvalidIndex = static_cast<Size>(-1);
 
 		/**
 		* [EN]

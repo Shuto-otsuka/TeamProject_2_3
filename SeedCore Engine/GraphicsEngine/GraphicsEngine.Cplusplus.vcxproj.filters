@@ -223,6 +223,9 @@
     <Filter Include="Shape\Screen">
       <UniqueIdentifier>{8ded964f-aae8-4f96-847e-1c1f23de5944}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shape\Primitive">
+      <UniqueIdentifier>{66cdb5af-1f2f-4c6f-8547-350d2d86fd64}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12\Context\D3D12Adapter.h">
@@ -970,6 +973,15 @@
     <ClInclude Include="System\EffectSystem.h">
       <Filter>System</Filter>
     </ClInclude>
+    <ClInclude Include="System\ColliderSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\ShapeSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Primitive\PrimitiveWireframeShader.h">
+      <Filter>Shape\Primitive</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">
@@ -1613,6 +1625,15 @@
     <ClCompile Include="System\EffectSystem.cpp">
       <Filter>System</Filter>
     </ClCompile>
+    <ClCompile Include="System\ColliderSystem.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\ShapeSystem.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\Primitive\PrimitiveWireframeShader.cpp">
+      <Filter>Shape\Primitive</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\Sampler.hlsli">
@@ -1785,6 +1806,9 @@
     </None>
     <None Include="Effect\Zephyr\ParticleTemplate.hlsli">
       <Filter>Effect\Zephyr</Filter>
+    </None>
+    <None Include="Shape\Primitive\Primitive.hlsli">
+      <Filter>Shape\Primitive</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -2222,6 +2246,15 @@
     </Text>
     <Text Include="Effect\Zephyr\ParticleSystemCS.hlsl">
       <Filter>Effect\Zephyr</Filter>
+    </Text>
+    <Text Include="Shape\Primitive\PrimitiveWireframeMS.hlsl">
+      <Filter>Shape\Primitive</Filter>
+    </Text>
+    <Text Include="Shape\Primitive\PrimitiveWireframePS.hlsl">
+      <Filter>Shape\Primitive</Filter>
+    </Text>
+    <Text Include="Shape\Primitive\PrimitiveWireframeVS.hlsl">
+      <Filter>Shape\Primitive</Filter>
     </Text>
   </ItemGroup>
 </Project>

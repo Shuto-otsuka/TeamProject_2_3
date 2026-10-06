@@ -41,15 +41,15 @@ namespace SeedCore
 	public:
 		/// [EN] Fixed number of layer slots, matching the bit width of a Uint32 layerMask.
 		/// [JP] レイヤースロットの固定数。Uint32 の layerMask のビット幅と一致する。
-		static constexpr Size LayerCount = 16;
+		SC_CONST Size LayerCount = 16;
 
 		/// [EN] Index of the built-in "Default" layer every new Actor starts in.
 		/// [JP] 新規 Actor が最初に属する、組み込みの"Default"レイヤーのインデックス。
-		static constexpr Size DefaultLayer = 0;
+		SC_CONST Size DefaultLayer = 0;
 
 		/// [EN] Sentinel returned by Find() when no slot is named name.
 		/// [JP] name という名前のスロットが無い場合に Find() が返す番兵値。
-		static constexpr Size InvalidIndex = static_cast<Size>(-1);
+		SC_CONST Size InvalidIndex = static_cast<Size>(-1);
 
 		/**
 		* [EN]

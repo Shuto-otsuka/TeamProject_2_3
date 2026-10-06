@@ -82,4 +82,24 @@ namespace SeedCore
 
 		undoStack_.push_back(std::move(command));
 	}
+
+	/**
+	* [EN]
+	* Discards every undo and redo entry. Called whenever the actors the
+	* entries point at are destroyed and rebuilt (a new or loaded scene, or
+	* the end of play mode), since entries address their targets by entity
+	* or by raw field pointer.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Undo と Redo のエントリをすべて破棄する。エントリは対象を entity や
+	* フィールドの生ポインタで指しているため、それらのアクターが破棄されて
+	* 作り直されるとき（新規・読み込んだシーン、Play モードの終了）に呼ぶ。
+	*/
+	void History::Clear()
+	{
+		undoStack_.clear();
+		redoStack_.clear();
+	}
 }

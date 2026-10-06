@@ -60,15 +60,15 @@ namespace SeedCore
 
 		/// [EN] Readable alias for TriggerMode::NONE: held this frame.
 		/// [JP] TriggerMode::NONE の読みやすいエイリアス。このフレームに押されている。
-		static constexpr TriggerMode IsPressed = TriggerMode::NONE;
+		SC_CONST TriggerMode IsPressed = TriggerMode::NONE;
 
 		/// [EN] Readable alias for TriggerMode::RISING_EDGE: pressed this frame.
 		/// [JP] TriggerMode::RISING_EDGE の読みやすいエイリアス。このフレームに押された。
-		static constexpr TriggerMode OnPressed = TriggerMode::RISING_EDGE;
+		SC_CONST TriggerMode OnPressed = TriggerMode::RISING_EDGE;
 
 		/// [EN] Readable alias for TriggerMode::FALLING_EDGE: released this frame.
 		/// [JP] TriggerMode::FALLING_EDGE の読みやすいエイリアス。このフレームに離された。
-		static constexpr TriggerMode OnReleased = TriggerMode::FALLING_EDGE;
+		SC_CONST TriggerMode OnReleased = TriggerMode::FALLING_EDGE;
 
 	public:
 		/**

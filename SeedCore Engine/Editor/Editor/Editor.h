@@ -1,6 +1,6 @@
 #pragma once
 #include <FoundationEngine/Prelude.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 
 #include <Editor/Editor/Panel/HierarchyPanel.h>
@@ -31,7 +31,7 @@ namespace SeedCore
 	class Editor
 	{
 	public:
-		Editor(EditorContext& context);
+		Editor(EditorContext& context, CameraSystem& cameraSystem);
 		~Editor() = default;
 
 		Float DrawToolbar();
@@ -43,8 +43,6 @@ namespace SeedCore
 		///      に持たせずに引数で通すことで、パネルがレンダラーに依存している
 		///      ことをシグネチャに出しておく。
 		void Draw(D3D12_GPU_DESCRIPTOR_HANDLE editorFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE gameFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE canvasFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE timelinePreviewFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE modelTransformPreviewFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE materialPreviewFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE skeletonControllerPreviewFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE avatarPreviewFrameBufferHandle, const GpuProfiler& gpuProfiler);
-
-		[[nodiscard]] ViewMode GetViewMode()const;
 
 		[[nodiscard]] DynamicArray<Entity> GetSelectedEntities()const;
 
@@ -61,7 +59,7 @@ namespace SeedCore
 
 		/// [EN] The scene path the library was last told about, so it is told again only when the Editor opens a different one.
 		/// [JP] ライブラリへ最後に伝えた Scene の位置。別の Scene を開いた時だけ伝え直すために持つ。
-		std::filesystem::path followedScenePath_;
+		FilePath followedScenePath_;
 
 		Float toolbarHeight_ = 0.0f;
 

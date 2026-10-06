@@ -216,6 +216,24 @@ namespace SeedCore
 					graphics_->ResizeSwapChain(resizedWidth, resizedHeight);
 				}
 
+				/// [EN] Publish where the letterboxed game image sits on the desktop (same fit as LetterScreen), so gameplay ScreenToWorld()/WorldToScreen() line up with it.
+				/// [JP] レターボックス表示されたゲーム画像のデスクトップ上の位置を(LetterScreen と同じ収め方で)公開し、ゲームプレイの ScreenToWorld()/WorldToScreen() と一致させる。
+				RECT clientRect{};
+				GetClientRect(hwnd_, &clientRect);
+				POINT clientOrigin{};
+				ClientToScreen(hwnd_, &clientOrigin);
+				Float clientWidth = static_cast<Float>(clientRect.right - clientRect.left);
+				Float clientHeight = static_cast<Float>(clientRect.bottom - clientRect.top);
+				ScResolution::ResSize outputSize = ToResSize(gameConfig_.resolution_);
+				Float outputWidth = static_cast<Float>(outputSize.Width);
+				Float outputHeight = static_cast<Float>(outputSize.Height);
+				Float letterScale = Min(clientWidth / outputWidth, clientHeight / outputHeight);
+				Float letterWidth = outputWidth * letterScale;
+				Float letterHeight = outputHeight * letterScale;
+				Float letterLeft = static_cast<Float>(clientOrigin.x) + (clientWidth - letterWidth) * 0.5f;
+				Float letterTop = static_cast<Float>(clientOrigin.y) + (clientHeight - letterHeight) * 0.5f;
+				cameraSystem_.Rect(Vector4(letterLeft, letterTop, letterWidth, letterHeight));
+
 				splashSystem_.Update(*resource_);
 				if (!splashSystem_.Complete())
 				{

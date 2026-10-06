@@ -51,7 +51,7 @@ namespace SeedCore
 		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
 
 	private:
-		static constexpr Uint32 blurPassCount = 4;
+		SC_CONST Uint32 blurPassCount = 4;
 
 		Handle<ComputeShader> downsampleComputeShader_;
 		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> downsamplePipelineStateHandle_;

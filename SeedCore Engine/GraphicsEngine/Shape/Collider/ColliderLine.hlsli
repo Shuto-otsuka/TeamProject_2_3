@@ -25,6 +25,13 @@
 /// [EN] Fixed vertical side lines of a capsule, cylinder or cone: front, back, left and right.
 #define COLLIDER_SIDE_LINE_COUNT 4
 
+/// [EN] Arrowhead length as a fraction of the arrow's length, and its base radius as a fraction of the head length.
+#define COLLIDER_ARROW_HEAD_LENGTH_RATIO 0.2
+#define COLLIDER_ARROW_HEAD_WIDTH_RATIO 0.4
+
+/// [EN] Segments of an arrowhead's base ring; fewer than a full ring, since arrows are often drawn in large numbers.
+#define COLLIDER_ARROW_RING_SEGMENTS 16
+
 /// [EN] On-screen line widths in pixels; the silhouette is drawn thicker so the outline reads first.
 #define COLLIDER_LINE_WIDTH 3.0
 #define COLLIDER_SILHOUETTE_LINE_WIDTH 4.5
@@ -41,7 +48,7 @@
 #define COLLIDER_CIRCLE_LINE_COUNT COLLIDER_RING_SEGMENTS
 #define COLLIDER_CONE_LINE_COUNT (COLLIDER_RING_SEGMENTS + COLLIDER_SIDE_LINE_COUNT + 2)
 #define COLLIDER_SEGMENT_LINE_COUNT 1
-#define COLLIDER_ARROW_LINE_COUNT 5
+#define COLLIDER_ARROW_LINE_COUNT (1 + COLLIDER_ARROW_RING_SEGMENTS + COLLIDER_SIDE_LINE_COUNT + 2)
 
 struct ColliderStructuredBuffer
 {
@@ -49,7 +56,8 @@ struct ColliderStructuredBuffer
 	uint shape_kind_;
 	float4 rotation_;
 	float3 dimensions_;
-	float collider_structured_buffer_padding_0_;
+	/// [EN] Arrow only: upper bound of the head's length, in the same units as dimensions_; 0 leaves the head at its fixed fraction of the arrow's length.
+	float head_length_;
 	float4 color_;
 };
 
@@ -110,6 +118,14 @@ uint GetColliderLineCount(uint shape_kind)
 	if (shape_kind == COLLIDER_SHAPE_CONE)
 	{
 		return COLLIDER_CONE_LINE_COUNT;
+	}
+	if (shape_kind == COLLIDER_SHAPE_SEGMENT)
+	{
+		return COLLIDER_SEGMENT_LINE_COUNT;
+	}
+	if (shape_kind == COLLIDER_SHAPE_ARROW)
+	{
+		return COLLIDER_ARROW_LINE_COUNT;
 	}
 	return 0;
 }
@@ -496,11 +512,126 @@ void GetCircleLine(float3 dimensions, uint line_index, out float3 a, out float3 
 
 /**
 * [EN]
+* Single line from the origin to dimensions.
+*/
+void GetSegmentLine(float3 dimentions, out float3 a, out float3 b)
+{
+    a = float3(0.0, 0.0, 0.0);
+	b = dimentions;
+}
+
+/**
+* [EN]
+* Arrow from the origin to the tip at dimensions: a shaft up to the head,
+* and a cone-shaped head drawn like the Cone shape (its base ring, four
+* lines from the ring to the tip, and the two silhouette lines to the tip),
+* so it reads as an arrow from any viewing angle.
+*/
+void GetArrowLine(float3 dimensions, float head_limit, float3 local_camera, uint line_index, out float3 a, out float3 b, out bool silhouette)
+{
+	silhouette = false;
+
+	float arrow_length = length(dimensions);
+
+	/// [EN] A zero-length arrow has no direction and collapses to a point.
+	if (arrow_length < 1.0e-6)
+	{
+		a = float3(0.0, 0.0, 0.0);
+		b = a;
+		return;
+	}
+
+	/// [EN] Two axes across the shaft; any pair perpendicular to it works, so Y is crossed with the shaft unless the shaft is nearly vertical, in which case X is used.
+	float3 forward = dimensions / arrow_length;
+	float3 side = normalize(cross(abs(forward.y) > 0.99 ? float3(1.0, 0.0, 0.0) : float3(0.0, 1.0, 0.0), forward));
+	float3 up = cross(forward, side);
+
+	/// [EN] The head is a fixed fraction of the arrow's length, kept within head_limit when one is given so a long arrow does not get a huge head; its base radius is a fixed fraction of the head's length.
+	float head_length = arrow_length * COLLIDER_ARROW_HEAD_LENGTH_RATIO;
+	if (head_limit > 0.0)
+	{
+		head_length = min(head_length, head_limit);
+	}
+	float head_width = head_length * COLLIDER_ARROW_HEAD_WIDTH_RATIO;
+	float3 head_base = dimensions - forward * head_length;
+	uint index = line_index;
+
+	/// [EN] Shaft, stopping where the head's base begins.
+	if (index == 0)
+	{
+		a = float3(0.0, 0.0, 0.0);
+		b = head_base;
+		return;
+	}
+	index -= 1;
+
+	/// [EN] Base ring of the head; angle 0 lies on side and the ring turns toward up.
+	if (index < COLLIDER_ARROW_RING_SEGMENTS)
+	{
+		float angle0 = (float(index) / float(COLLIDER_ARROW_RING_SEGMENTS)) * COLLIDER_TWO_PI;
+		float angle1 = (float(index + 1) / float(COLLIDER_ARROW_RING_SEGMENTS)) * COLLIDER_TWO_PI;
+		a = head_base + (side * cos(angle0) + up * sin(angle0)) * head_width;
+		b = head_base + (side * cos(angle1) + up * sin(angle1)) * head_width;
+		return;
+	}
+	index -= COLLIDER_ARROW_RING_SEGMENTS;
+
+	/// [EN] Fixed lines from the ring to the tip.
+	if (index < COLLIDER_SIDE_LINE_COUNT)
+	{
+		float angle = (float(index) / float(COLLIDER_SIDE_LINE_COUNT)) * COLLIDER_TWO_PI;
+		a = head_base + (side * cos(angle) + up * sin(angle)) * head_width;
+		b = dimensions;
+		return;
+	}
+	index -= COLLIDER_SIDE_LINE_COUNT;
+
+	silhouette = true;
+
+	/// [EN] Silhouette lines, found the same way as the Cone shape's but in the head's own frame (side, forward, up), with the tip as the apex and the base plane head_length behind it.
+	float sign = (index == 0) ? 1.0 : -1.0;
+	float3 tip_to_camera = local_camera - dimensions;
+	float3 head_camera = float3(dot(tip_to_camera, side), dot(tip_to_camera, forward), dot(tip_to_camera, up));
+	float base_angle;
+	float tangent_offset;
+
+	if (abs(head_camera.y) < 1.0e-5)
+	{
+		/// [EN] A camera level with the tip sees the head edge-on; the tangent points are a quarter turn from the camera direction.
+		base_angle = atan2(head_camera.z, head_camera.x);
+		tangent_offset = COLLIDER_PI * 0.5;
+	}
+	else
+	{
+		/// [EN] Where the line through the tip and the camera meets the base plane.
+		float t = -head_length / head_camera.y;
+		float2 base_point = head_camera.xz * t;
+		float base_distance = length(base_point);
+
+		/// [EN] A camera looking into the head from in front of the tip or behind the base sees no side silhouette.
+		if (base_distance <= head_width)
+		{
+			a = dimensions;
+			b = dimensions;
+			return;
+		}
+
+		base_angle = atan2(base_point.y, base_point.x);
+		tangent_offset = acos(head_width / base_distance);
+	}
+
+	float tangent_angle = base_angle + sign * tangent_offset;
+	a = head_base + (side * cos(tangent_angle) + up * sin(tangent_angle)) * head_width;
+	b = dimensions;
+}
+
+/**
+* [EN]
 * Local-space endpoints of one line of a shape, and whether that line
 * belongs to the camera-facing silhouette. local_camera is the camera
 * position in the shape's local space.
 */
-void GetColliderLine(uint shape_kind, float3 dimensions, float3 local_camera, uint line_index, out float3 a, out float3 b, out bool silhouette)
+void GetColliderLine(uint shape_kind, float3 dimensions, float head_length, float3 local_camera, uint line_index, out float3 a, out float3 b, out bool silhouette)
 {
 	a = float3(0.0, 0.0, 0.0);
 	b = float3(0.0, 0.0, 0.0);
@@ -533,6 +664,14 @@ void GetColliderLine(uint shape_kind, float3 dimensions, float3 local_camera, ui
 	else if (shape_kind == COLLIDER_SHAPE_CONE)
 	{
 		GetConeLine(dimensions, local_camera, line_index, a, b, silhouette);
+	}
+	else if (shape_kind == COLLIDER_SHAPE_SEGMENT)
+	{
+		GetSegmentLine(dimensions, a, b);
+	}
+	else if (shape_kind == COLLIDER_SHAPE_ARROW)
+	{
+		GetArrowLine(dimensions, head_length, local_camera, line_index, a, b, silhouette);
 	}
 }
 

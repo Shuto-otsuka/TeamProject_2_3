@@ -17,18 +17,8 @@
 #include <GraphicsEngine/Model/Material/MaterialResource.h>
 #include <GraphicsEngine/Font/FontResource.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
-#include <PhysicsEngine/Collider/BoxCollider.h>
-#include <PhysicsEngine/Collider/SphereCollider.h>
-#include <PhysicsEngine/Collider/CapsuleCollider.h>
-#include <PhysicsEngine/Collider/CylinderCollider.h>
-#include <PhysicsEngine/Collider/RectCollider.h>
-#include <PhysicsEngine/Collider/CircleCollider.h>
-#include <PhysicsEngine/CharacterController/CharacterController.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
-#include <FoundationEngine/World/ECS/Component/Position.h>
-#include <FoundationEngine/World/ECS/Component/Rotation.h>
-#include <FoundationEngine/World/ECS/Component/Scale.h>
 
 namespace SeedCore
 {
@@ -43,6 +33,7 @@ namespace SeedCore
 		outlineRenderer_ = MakePtr<OutlineRenderer>(rootSignature_, pipelineStateObject_);
 		hudComposeRenderer_ = MakePtr<HUDComposeRenderer>(rootSignature_, pipelineStateObject_);
 		colliderRenderer_ = MakePtr<ColliderRenderer>(rootSignature_, pipelineStateObject_);
+		shapeRenderer_ = MakePtr<ShapeRenderer>(rootSignature_, pipelineStateObject_);
 		raytracingRenderer_ = MakePtr<RaytracingRenderer>(rootSignature_, pipelineStateObject_, raytracingStateObject_);
 		skyRenderer_ = MakePtr<SkyRenderer>();
 		timelineRenderer_ = MakePtr<TimelineRenderer>(rootSignature_, pipelineStateObject_);
@@ -129,6 +120,7 @@ namespace SeedCore
 		outlineRenderer_->Create(device, bindlessHeap, shaderCache);
 		hudComposeRenderer_->Create(device, bindlessHeap, shaderCache);
 		colliderRenderer_->Create(device, bindlessHeap, shaderCache, *constantIndicesSystem_);
+		shapeRenderer_->Create(device, bindlessHeap, shaderCache, *constantIndicesSystem_);
 		raytracingRenderer_->Create(device, bindlessHeap, shaderCache, *constantIndicesSystem_, *shaderResourceIndicesSystem_, *unorderedAccessIndicesSystem_, width, height);
 		skyRenderer_->Create(device, bindlessHeap, shaderCache, rootSignature_, pipelineStateObject_);
 		timelineRenderer_->Create(device, bindlessHeap, shaderCache, width, height);
@@ -367,6 +359,7 @@ namespace SeedCore
 
 		debugDepthResizeBuffer_.Dispatch(cmdList, bindlessHeap_->Heap(), geometryBuffer_, nativeWidth_, nativeHeight_, addresses);
 		colliderRenderer_->Draw3D(cmdList, debugRenderTargetView, debugDepthResizeBuffer_.DepthStencilViewHandle(), debugViewport, bindlessHeap_->Heap(), addresses);
+		shapeRenderer_->Draw3D(cmdList, debugRenderTargetView, debugDepthResizeBuffer_.DepthStencilViewHandle(), debugViewport, bindlessHeap_->Heap(), addresses);
 		geometryBuffer_.BeginDepth(cmdList);
 
 		outlineRenderer_->DrawDebugOverlay(cmdList, debugRenderTargetView, debugViewport, bindlessHeap_->Heap(), addresses);
@@ -523,195 +516,14 @@ namespace SeedCore
 		avatarRenderer_->End(cmdList);
 	}
 
-	void Renderer::GatherColliders(World& world)
+	void Renderer::UploadColliders(std::span<const ColliderDesc> colliders)
 	{
-		colliderRenderer_->Clear();
+		colliderRenderer_->Upload(colliders);
+	}
 
-		const Color colliderDebugColor(0.0f, 1.0f, 0.0f, 1.0f);
-
-		/// [EN] Fully saturated magenta, so character capsules stand out from the green colliders.
-		/// [JP] キャラクターのカプセルが緑のコライダーの中で目立つよう、彩度最大のマゼンタにする。
-		const Color characterDebugColor(1.0f, 0.0f, 1.0f, 1.0f);
-
-		for (EntityID id : world.GetComponents<BoxCollider>())
-		{
-			Actor actor = world.GetActor(id);
-			if (!actor || !actor.Active())
-			{
-				continue;
-			}
-
-			BoxCollider* collider = actor.GetComponent<BoxCollider>();
-			const Position* position = actor.GetComponent<Position>();
-			const Rotation* rotation = actor.GetComponent<Rotation>();
-			const Scale* scale = actor.GetComponent<Scale>();
-
-			Vector3 actorPosition = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
-			Quaternion actorRotation = rotation ? rotation->Quat() : Quaternion::Identity;
-
-			/// [EN] Same scaling as BoxCollider::GetShapeHandle: the size by the absolute scale per axis, the offset by the signed scale.
-			/// [JP] BoxCollider::GetShapeHandle と同じ拡縮。サイズは軸ごとのスケールの絶対値、オフセットは符号付きのスケールで掛ける。
-			Vector3 size(collider->size_.x * Abs(scale->x_), collider->size_.y * Abs(scale->y_), collider->size_.z * Abs(scale->z_));
-			Vector3 center(collider->center_.x * scale->x_, collider->center_.y * scale->y_, collider->center_.z * scale->z_);
-
-			colliderRenderer_->AddInstance(ColliderShapeKind::Box, actorPosition + Vector3::Transform(center, actorRotation), actorRotation, size * 0.5f, colliderDebugColor);
-		}
-
-		for (EntityID id : world.GetComponents<SphereCollider>())
-		{
-			Actor actor = world.GetActor(id);
-			if (!actor || !actor.Active())
-			{
-				continue;
-			}
-
-			SphereCollider* collider = actor.GetComponent<SphereCollider>();
-			const Position* position = actor.GetComponent<Position>();
-			const Rotation* rotation = actor.GetComponent<Rotation>();
-			const Scale* scale = actor.GetComponent<Scale>();
-
-			Vector3 actorPosition = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
-			Quaternion actorRotation = rotation ? rotation->Quat() : Quaternion::Identity;
-
-			/// [EN] Same scaling as SphereCollider::GetShapeHandle: the radius follows the largest axis.
-			/// [JP] SphereCollider::GetShapeHandle と同じ拡縮。半径は最も大きい軸に合わせる。
-			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->y_), Abs(scale->z_));
-
-			colliderRenderer_->AddInstance(ColliderShapeKind::Sphere, actorPosition, actorRotation, Vector3(radius, 0.0f, 0.0f), colliderDebugColor);
-		}
-
-		for (EntityID id : world.GetComponents<CapsuleCollider>())
-		{
-			Actor actor = world.GetActor(id);
-			if (!actor || !actor.Active())
-			{
-				continue;
-			}
-
-			CapsuleCollider* collider = actor.GetComponent<CapsuleCollider>();
-			const Position* position = actor.GetComponent<Position>();
-			const Rotation* rotation = actor.GetComponent<Rotation>();
-			const Scale* scale = actor.GetComponent<Scale>();
-
-			Vector3 actorPosition = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
-			Quaternion actorRotation = rotation ? rotation->Quat() : Quaternion::Identity;
-
-			/// [EN] Same scaling as CapsuleCollider::GetShapeHandle: the height follows Y, the radius the larger of X and Z.
-			/// [JP] CapsuleCollider::GetShapeHandle と同じ拡縮。高さは Y に、半径は X と Z の大きい方に合わせる。
-			Float height = collider->height_ * Abs(scale->y_);
-			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->z_));
-
-			colliderRenderer_->AddInstance(ColliderShapeKind::Capsule, actorPosition, actorRotation, Vector3(radius, height * 0.5f, 0.0f), colliderDebugColor);
-		}
-
-		for (EntityID id : world.GetComponents<CharacterController>())
-		{
-			Actor actor = world.GetActor(id);
-			if (!actor || !actor.Active())
-			{
-				continue;
-			}
-
-			CharacterController* controller = actor.GetComponent<CharacterController>();
-			const Position* position = actor.GetComponent<Position>();
-			const Rotation* rotation = actor.GetComponent<Rotation>();
-
-			Vector3 actorPosition = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
-			Quaternion actorRotation = rotation ? rotation->Quat() : Quaternion::Identity;
-
-			/// [EN] Same capsule as Physics::CreateCharacter: the height is the cylinder part, switched to the crouch height while crouched, and Scale is not applied.
-			/// [JP] Physics::CreateCharacter と同じカプセル。高さは円柱部分で、しゃがみ中はしゃがみ時の高さに切り替わり、Scale は掛けない。
-			Float height = controller->Crouching() ? controller->crouchHeight_ : controller->height_;
-			Float radius = controller->radius_;
-
-			/// [EN] The character's origin is its feet, so the capsule center sits half the cylinder plus one radius above it.
-			/// [JP] キャラクターの原点は足元なので、カプセルの中心は円柱の半分と半径1つ分だけ上にある。
-			Vector3 center(0.0f, height * 0.5f + radius, 0.0f);
-
-			colliderRenderer_->AddInstance(ColliderShapeKind::Capsule, actorPosition + Vector3::Transform(center, actorRotation), actorRotation, Vector3(radius, height * 0.5f, 0.0f), characterDebugColor);
-		}
-
-		for (EntityID id : world.GetComponents<CylinderCollider>())
-		{
-			Actor actor = world.GetActor(id);
-			if (!actor || !actor.Active())
-			{
-				continue;
-			}
-
-			CylinderCollider* collider = actor.GetComponent<CylinderCollider>();
-			const Position* position = actor.GetComponent<Position>();
-			const Rotation* rotation = actor.GetComponent<Rotation>();
-			const Scale* scale = actor.GetComponent<Scale>();
-
-			Vector3 actorPosition = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
-			Quaternion actorRotation = rotation ? rotation->Quat() : Quaternion::Identity;
-
-			/// [EN] Same scaling as CylinderCollider::GetShapeHandle: the height follows Y, the radius the larger of X and Z.
-			/// [JP] CylinderCollider::GetShapeHandle と同じ拡縮。高さは Y に、半径は X と Z の大きい方に合わせる。
-			Float height = collider->height_ * Abs(scale->y_);
-			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->z_));
-
-			colliderRenderer_->AddInstance(ColliderShapeKind::Cylinder, actorPosition, actorRotation, Vector3(radius, height * 0.5f, 0.0f), colliderDebugColor);
-		}
-
-		for (EntityID id : world.GetComponents<RectCollider>())
-		{
-			Actor actor = world.GetActor(id);
-			if (!actor || !actor.Active())
-			{
-				continue;
-			}
-
-			RectCollider* collider = actor.GetComponent<RectCollider>();
-			const Position* position = actor.GetComponent<Position>();
-			const Rotation* rotation = actor.GetComponent<Rotation>();
-			const Scale* scale = actor.GetComponent<Scale>();
-
-			Float pixelX = position ? position->x_ : 0.0f;
-			Float pixelY = position ? position->y_ : 0.0f;
-			Float angle = rotation ? rotation->Euler().z : 0.0f;
-			Float cosAngle = std::cos(angle);
-			Float sinAngle = std::sin(angle);
-
-			/// [EN] Same scaling as RectCollider::GetShapeHandle: only X and Y apply, the size by their absolute values, the offset by the signed ones.
-			/// [JP] RectCollider::GetShapeHandle と同じ拡縮。効くのは X と Y だけで、サイズは絶対値、オフセットは符号付きで掛ける。
-			Vector2 size(collider->size_.x * Abs(scale->x_), collider->size_.y * Abs(scale->y_));
-			Vector2 center(collider->center_.x * scale->x_, collider->center_.y * scale->y_);
-
-			Vector3 instancePosition(100000.0f + pixelX + center.x * cosAngle - center.y * sinAngle, 100000.0f + (ScResolution::SC_CANVAS.Height - pixelY) - center.x * sinAngle - center.y * cosAngle, 100000.0f);
-			colliderRenderer_->AddInstance(ColliderShapeKind::Rect, instancePosition, Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -angle), Vector3(size.x * 0.5f, size.y * 0.5f, 0.0f), colliderDebugColor);
-		}
-
-		for (EntityID id : world.GetComponents<CircleCollider>())
-		{
-			Actor actor = world.GetActor(id);
-			if (!actor || !actor.Active())
-			{
-				continue;
-			}
-
-			CircleCollider* collider = actor.GetComponent<CircleCollider>();
-			const Position* position = actor.GetComponent<Position>();
-			const Rotation* rotation = actor.GetComponent<Rotation>();
-			const Scale* scale = actor.GetComponent<Scale>();
-
-			Float pixelX = position ? position->x_ : 0.0f;
-			Float pixelY = position ? position->y_ : 0.0f;
-			Float angle = rotation ? rotation->Euler().z : 0.0f;
-			Float cosAngle = std::cos(angle);
-			Float sinAngle = std::sin(angle);
-
-			/// [EN] Same scaling as CircleCollider::GetShapeHandle: the radius follows the larger of X and Y, the offset the signed scale.
-			/// [JP] CircleCollider::GetShapeHandle と同じ拡縮。半径は X と Y の大きい方に、オフセットは符号付きのスケールに合わせる。
-			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->y_));
-			Vector2 center(collider->center_.x * scale->x_, collider->center_.y * scale->y_);
-
-			Vector3 instancePosition(100000.0f + pixelX + center.x * cosAngle - center.y * sinAngle, 100000.0f + (ScResolution::SC_CANVAS.Height - pixelY) - center.x * sinAngle - center.y * cosAngle, 100000.0f);
-			colliderRenderer_->AddInstance(ColliderShapeKind::Circle, instancePosition, Quaternion::Identity, Vector3(radius, 0.0f, 0.0f), colliderDebugColor);
-		}
-
-		colliderRenderer_->Upload();
+	void Renderer::UploadShapes(std::span<const ShapeDesc> shapes)
+	{
+		shapeRenderer_->Upload(shapes);
 	}
 
 	void Renderer::GatherTimelinePreview(LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
@@ -1211,6 +1023,7 @@ namespace SeedCore
 		outlineRenderer_->Draw(cmdList, canvasFrameBuffer_->RenderTargetViewHandle(), canvasFrameBuffer_->GetViewport(), heap, addresses);
 
 		colliderRenderer_->Draw2D(cmdList, canvasFrameBuffer_->RenderTargetViewHandle(), canvasFrameBuffer_->GetViewport(), heap, addresses);
+		shapeRenderer_->Draw2D(cmdList, canvasFrameBuffer_->RenderTargetViewHandle(), canvasFrameBuffer_->GetViewport(), heap, addresses);
 	}
 
 	void Renderer::TimelineFlush(D3D12CommandList* cmdList, const SceneConstantBuffer& scene)

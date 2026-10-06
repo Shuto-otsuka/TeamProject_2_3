@@ -3,8 +3,9 @@
 
 namespace SeedCore
 {
-	class World;
 	struct LoaderSystem;
+
+	class World;
 	class AnimationResource;
 	class ModelResource;
 

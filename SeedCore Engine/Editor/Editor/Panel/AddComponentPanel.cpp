@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/AddComponentPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
@@ -215,7 +215,7 @@ namespace SeedCore
 
 		if (ImGui::Selectable(componentName.c_str(), false, ImGuiSelectableFlags_NoAutoClosePopups))
 		{
-			context_.sceneContext_.history_.Push(MakePtr<ComponentAddCommand>(*context_.worldContext_.world_, actor.PersistentID(), componentID));
+			context_.scene_.history_.Push(MakePtr<ComponentAddCommand>(*context_.world_.world_, actor.PersistentID(), componentID));
 			actor.AddComponent(componentID);
 			ImGui::CloseCurrentPopup();
 		}

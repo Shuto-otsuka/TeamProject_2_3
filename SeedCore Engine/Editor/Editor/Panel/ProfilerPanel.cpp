@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/ProfilerPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <GraphicsEngine/Graphics.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Adapter.h>
 #include <GraphicsEngine/Profiler/ProfilerStats.h>
@@ -65,7 +65,7 @@ namespace SeedCore
 			ImGui::ProgressBar(cpuRatio, ImVec2(-1.0f, 0.0f), cpuOverlay);
 		}
 
-		IDXGIAdapter4* adapter = context_.graphicsContext_.graphics_->GetContext().GetAdapter()->Get();
+		IDXGIAdapter4* adapter = context_.graphics_.graphics_->GetContext().GetAdapter()->Get();
 		if (adapter)
 		{
 			DXGI_QUERY_VIDEO_MEMORY_INFO localInfo{};

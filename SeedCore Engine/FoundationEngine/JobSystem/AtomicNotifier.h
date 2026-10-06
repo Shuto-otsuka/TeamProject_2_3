@@ -316,18 +316,18 @@ namespace SeedCore
 
 		/// [EN] Bit position where the epoch field begins within state_.
 		/// [JP] state_ 内でエポックフィールドが始まるビット位置。
-		static constexpr Uint64 EPOCH_SHIFT = 32;
+		SC_CONST Uint64 EPOCH_SHIFT = 32;
 
 		/// [EN] Amount to add to state_ to advance the epoch by one.
 		/// [JP] エポックを1進めるために state_ に加算する量。
-		static constexpr Uint64 EPOCH_INC = Uint64(1) << EPOCH_SHIFT;
+		SC_CONST Uint64 EPOCH_INC = Uint64(1) << EPOCH_SHIFT;
 
 		/// [EN] Amount to add to/subtract from state_ to change the waiter count by one.
 		/// [JP] 待機者数を1増減させるために state_ に加減算する量。
-		static constexpr Uint64 WAITER_INC = 1;
+		SC_CONST Uint64 WAITER_INC = 1;
 
 		/// [EN] Mask isolating the waiter-count field (also the max representable waiter count).
 		/// [JP] 待機者数フィールドを取り出すマスク（表現可能な最大待機者数でもある）。
-		static constexpr Uint64 WAITER_MASK = EPOCH_INC - 1;
+		SC_CONST Uint64 WAITER_MASK = EPOCH_INC - 1;
 	};
 }

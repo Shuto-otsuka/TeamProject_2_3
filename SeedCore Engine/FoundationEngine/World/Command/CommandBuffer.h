@@ -217,7 +217,7 @@ namespace SeedCore
 	private:
 		/// [EN] Generation value that marks an EntityID as a CommandBuffer provisional handle; no live entity ever reaches it.
 		/// [JP] EntityID を CommandBuffer の暫定ハンドルとして印付ける世代値。生存中のエンティティがこの値に達することはない。
-		static constexpr Uint32 ProvisionalGeneration = 0xFFFFFFFFu;
+		SC_CONST Uint32 ProvisionalGeneration = 0xFFFFFFFFu;
 
 		/// [EN] Discriminates what a recorded Command does.
 		/// [JP] 記録された Command が何をするかを区別する。

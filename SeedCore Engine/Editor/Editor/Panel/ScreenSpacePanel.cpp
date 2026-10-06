@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/ScreenSpacePanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 
 namespace SeedCore
 {
@@ -41,9 +41,9 @@ namespace SeedCore
 
 	Bool ScreenSpacePanel::DrawEnableCheckbox(GraphicsEffect effect, Bool siblingClaimed, Bool& enabled)
 	{
-		ViewportContext& viewport = context_.viewportContext_;
+		SceneVisualContext& visual = context_.sceneVisual_;
 
-		Bool interactive = !siblingClaimed && GraphicsQuality::EnableCheckboxInteractive(effect, GraphicsEffectFamily::ScreenSpace, viewport.qualityPreset_, viewport.raytracing_, viewport.screenSpace_, viewport.rasterization_);
+		Bool interactive = !siblingClaimed && GraphicsQuality::EnableCheckboxInteractive(effect, GraphicsEffectFamily::ScreenSpace, visual.qualityPreset_, visual.raytracing_, visual.screenSpace_, visual.rasterization_);
 
 		ImGui::BeginDisabled(!interactive);
 		ImGui::Checkbox("有効", &enabled);
@@ -51,7 +51,7 @@ namespace SeedCore
 
 		if (!interactive && !enabled)
 		{
-			if (viewport.qualityPreset_ != GraphicsQualityPreset::Custom)
+			if (visual.qualityPreset_ != GraphicsQualityPreset::Custom)
 			{
 				ImGui::TextDisabled("※品質プリセットが「カスタム」のときのみ変更できます");
 			}
@@ -114,8 +114,8 @@ namespace SeedCore
 			return;
 		}
 
-		GroundTruthAmbientOcclusionSettings& settings = context_.viewportContext_.screenSpace_.groundTruthAmbientOcclusion_;
-		Bool enabled = DrawEnableCheckbox(GraphicsEffect::AmbientOcclusion, context_.viewportContext_.screenSpace_.ambientOcclusionEnabled_, context_.viewportContext_.screenSpace_.groundTruthAmbientOcclusionEnabled_);
+		GroundTruthAmbientOcclusionSettings& settings = context_.sceneVisual_.screenSpace_.groundTruthAmbientOcclusion_;
+		Bool enabled = DrawEnableCheckbox(GraphicsEffect::AmbientOcclusion, context_.sceneVisual_.screenSpace_.ambientOcclusionEnabled_, context_.sceneVisual_.screenSpace_.groundTruthAmbientOcclusionEnabled_);
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -151,8 +151,8 @@ namespace SeedCore
 			return;
 		}
 
-		ScreenSpaceAmbientOcclusionSettings& settings = context_.viewportContext_.screenSpace_.ambientOcclusion_;
-		Bool enabled = DrawEnableCheckbox(GraphicsEffect::AmbientOcclusion, context_.viewportContext_.screenSpace_.groundTruthAmbientOcclusionEnabled_, context_.viewportContext_.screenSpace_.ambientOcclusionEnabled_);
+		ScreenSpaceAmbientOcclusionSettings& settings = context_.sceneVisual_.screenSpace_.ambientOcclusion_;
+		Bool enabled = DrawEnableCheckbox(GraphicsEffect::AmbientOcclusion, context_.sceneVisual_.screenSpace_.groundTruthAmbientOcclusionEnabled_, context_.sceneVisual_.screenSpace_.ambientOcclusionEnabled_);
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -183,8 +183,8 @@ namespace SeedCore
 			return;
 		}
 
-		ScreenSpaceGlobalIlluminationSettings& settings = context_.viewportContext_.screenSpace_.globalIllumination_;
-		Bool enabled = DrawEnableCheckbox(GraphicsEffect::GlobalIllumination, false, context_.viewportContext_.screenSpace_.globalIlluminationEnabled_);
+		ScreenSpaceGlobalIlluminationSettings& settings = context_.sceneVisual_.screenSpace_.globalIllumination_;
+		Bool enabled = DrawEnableCheckbox(GraphicsEffect::GlobalIllumination, false, context_.sceneVisual_.screenSpace_.globalIlluminationEnabled_);
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -214,8 +214,8 @@ namespace SeedCore
 			return;
 		}
 
-		ScreenSpaceReflectionSettings& settings = context_.viewportContext_.screenSpace_.reflection_;
-		Bool enabled = DrawEnableCheckbox(GraphicsEffect::Reflection, false, context_.viewportContext_.screenSpace_.reflectionEnabled_);
+		ScreenSpaceReflectionSettings& settings = context_.sceneVisual_.screenSpace_.reflection_;
+		Bool enabled = DrawEnableCheckbox(GraphicsEffect::Reflection, false, context_.sceneVisual_.screenSpace_.reflectionEnabled_);
 
 		ImGui::Spacing();
 		ImGui::Separator();

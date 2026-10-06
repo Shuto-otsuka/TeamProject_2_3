@@ -4,11 +4,13 @@
 #include <FoundationEngine/World/ECS/Component/Active.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
 #include <FoundationEngine/World/ECS/Component/Lifetime.h>
+#include <FoundationEngine/World/ECS/Component/Motion.h>
 #include <FoundationEngine/World/ECS/Component/Name.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
 #include <FoundationEngine/World/ECS/Component/Spawner.h>
+#include <FoundationEngine/World/ECS/Component/Transform.h>
 #include <FoundationEngine/World/ECS/Component/Velocity.h>
 
 // GraphicsEngine

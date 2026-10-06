@@ -47,7 +47,7 @@ namespace SeedCore
 		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
 
 	public:
-		static constexpr const Char* rayGenExportName = "RefractionRayGeneration";
+		SC_CONST const Char* rayGenExportName = "RefractionRayGeneration";
 
 		/// [EN] Enter + exit a single convex refractive shell is 2 bounces; a
 		///      few extra allow for a second nested/adjacent surface (e.g. a
@@ -59,7 +59,7 @@ namespace SeedCore
 		///      よう、少し余裕を持たせる。RefractionRT.hlsl のインライン
 		///      RayQuery ループ回数の上限であり(maxTraceRecursionDepth_ とは
 		///      もう無関係、そちらは 1 のまま)。
-		static constexpr Uint32 maxBounces_ = 4;
+		SC_CONST Uint32 maxBounces_ = 4;
 
 	private:
 		Handle<RaytracingShader> libraryShader_;

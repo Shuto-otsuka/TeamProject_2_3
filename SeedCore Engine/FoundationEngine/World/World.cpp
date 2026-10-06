@@ -914,7 +914,7 @@ namespace SeedCore
 	{
 		if (!physics_)
 		{
-			physics_ = MakePtr<Physics>();
+			physics_ = MakePtr<Physics>(queryInstance_);
 		}
 
 		return physics_.get();
@@ -946,6 +946,34 @@ namespace SeedCore
 	const ResourcePtr<Physics>& World::GetPhysics()const
 	{
 		return physics_;
+	}
+
+	/**
+	* [EN]
+	* Returns the record of physics queries asked in this world, which Physics fills and the debug display reads and clears.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* このワールドで行われた物理クエリの記録を返す。Physics が書き込み、デバッグ表示が読んで空にする。
+	*/
+	QueryInstance& World::GetQueryInstance()
+	{
+		return queryInstance_;
+	}
+
+	/**
+	* [EN]
+	* Const overload of GetQueryInstance().
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* GetQueryInstance() の const オーバーロード。
+	*/
+	const QueryInstance& World::GetQueryInstance()const
+	{
+		return queryInstance_;
 	}
 
 	/**

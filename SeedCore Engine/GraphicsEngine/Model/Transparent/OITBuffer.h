@@ -74,13 +74,13 @@ namespace SeedCore
 		///      layer limit the resolve walks (Model.hlsli's OIT_MAX_LAYERS).
 		/// [JP] プールを見積もる 1 ピクセルあたりのフラグメント数。リゾルブが辿る
 		///      層数上限(Model.hlsli の OIT_MAX_LAYERS)とは別物。
-		static constexpr Uint poolLayers_ = 4;
+		SC_CONST Uint poolLayers_ = 4;
 
 		/// [EN] Hard ceiling on the fragment pool, so a 4K native target does not
 		///      ask for half a gigabyte in one committed resource.
 		/// [JP] フラグメントプールの上限。4K ネイティブで単一のコミットリソースに
 		///      0.5GB を要求しないようにするため。
-		static constexpr Uint64 poolByteBudget_ = 256ull * 1024ull * 1024ull;
+		SC_CONST Uint64 poolByteBudget_ = 256ull * 1024ull * 1024ull;
 
 		OITBuffer() = default;
 		~OITBuffer() = default;

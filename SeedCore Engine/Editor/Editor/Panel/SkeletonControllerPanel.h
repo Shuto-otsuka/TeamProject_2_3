@@ -27,7 +27,7 @@ namespace SeedCore
 		void DrawPreview();
 
 	private:
-		static constexpr Float boneTreeColumnWidthRatio_ = 0.2f;
+		SC_CONST Float boneTreeColumnWidthRatio_ = 0.2f;
 
 		EditorContext& context_;
 

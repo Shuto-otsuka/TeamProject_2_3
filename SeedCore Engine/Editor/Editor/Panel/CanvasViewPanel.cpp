@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/CanvasViewPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <GraphicsEngine/Camera/CanvasCamera.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
@@ -27,60 +27,60 @@ namespace SeedCore
 		ImVec4 activeColor = ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive);
 		ImVec4 hoverColor = ImGui::GetStyleColorVec4(ImGuiCol_HeaderHovered);
 
-		auto& op = context_.viewportContext_.guizmo_.guizmoOperation_;
+		auto& op = context_.guizmo_.operation_;
 
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hoverColor);
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, activeColor);
 
-		ImGui::PushStyleColor(ImGuiCol_Button, !context_.viewportContext_.guizmo_.showGuizmo_ ? activeColor : transparent);
+		ImGui::PushStyleColor(ImGuiCol_Button, !context_.guizmo_.visible_ ? activeColor : transparent);
 		if (ImGui::ImageButton("##NonSelected", imguiTexture_.Icon(IconType::NonSelected), iconSize))
 		{
-			context_.viewportContext_.guizmo_.showGuizmo_ = !context_.viewportContext_.guizmo_.showGuizmo_;
-			context_.viewportContext_.guizmo_.rectTool_ = false;
+			context_.guizmo_.visible_ = !context_.guizmo_.visible_;
+			context_.guizmo_.rectTool_ = false;
 			op = (ImGuizmo::OPERATION)0;
 		}
 		ImGui::PopStyleColor();
 
 		ImGui::SameLine();
 
-		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.viewportContext_.guizmo_.rectTool_ && op == ImGuizmo::TRANSLATE) ? activeColor : transparent);
+		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && op == ImGuizmo::TRANSLATE) ? activeColor : transparent);
 		if (ImGui::ImageButton("##Translate", imguiTexture_.Icon(IconType::Translate), iconSize))
 		{
-			context_.viewportContext_.guizmo_.showGuizmo_ = true;
-			context_.viewportContext_.guizmo_.rectTool_ = false;
+			context_.guizmo_.visible_ = true;
+			context_.guizmo_.rectTool_ = false;
 			op = ImGuizmo::TRANSLATE;
 		}
 		ImGui::PopStyleColor();
 
 		ImGui::SameLine();
 
-		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.viewportContext_.guizmo_.rectTool_ && op == ImGuizmo::ROTATE) ? activeColor : transparent);
+		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && op == ImGuizmo::ROTATE) ? activeColor : transparent);
 		if (ImGui::ImageButton("##Rotate", imguiTexture_.Icon(IconType::Rotate), iconSize))
 		{
-			context_.viewportContext_.guizmo_.showGuizmo_ = true;
-			context_.viewportContext_.guizmo_.rectTool_ = false;
+			context_.guizmo_.visible_ = true;
+			context_.guizmo_.rectTool_ = false;
 			op = ImGuizmo::ROTATE;
 		}
 		ImGui::PopStyleColor();
 
 		ImGui::SameLine();
 
-		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.viewportContext_.guizmo_.rectTool_ && op == ImGuizmo::SCALE) ? activeColor : transparent);
+		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && op == ImGuizmo::SCALE) ? activeColor : transparent);
 		if (ImGui::ImageButton("##Scale", imguiTexture_.Icon(IconType::Scale), iconSize))
 		{
-			context_.viewportContext_.guizmo_.showGuizmo_ = true;
-			context_.viewportContext_.guizmo_.rectTool_ = false;
+			context_.guizmo_.visible_ = true;
+			context_.guizmo_.rectTool_ = false;
 			op = ImGuizmo::SCALE;
 		}
 		ImGui::PopStyleColor();
 
 		ImGui::SameLine();
 
-		ImGui::PushStyleColor(ImGuiCol_Button, context_.viewportContext_.guizmo_.rectTool_ ? activeColor : transparent);
+		ImGui::PushStyleColor(ImGuiCol_Button, context_.guizmo_.rectTool_ ? activeColor : transparent);
 		if (ImGui::ImageButton("##Rect", imguiTexture_.Icon(IconType::Rect), iconSize))
 		{
-			context_.viewportContext_.guizmo_.showGuizmo_ = true;
-			context_.viewportContext_.guizmo_.rectTool_ = true;
+			context_.guizmo_.visible_ = true;
+			context_.guizmo_.rectTool_ = true;
 		}
 		ImGui::PopStyleColor();
 
@@ -105,13 +105,13 @@ namespace SeedCore
 			ImGui::SeparatorText("スナップ");
 
 			ImGui::SetNextItemWidth(120.0f);
-			ImGui::DragFloat("移動", &context_.viewportContext_.guizmo_.translateSnap_, 0.1f, 0.01f, 100.0f, "%.2f");
+			ImGui::DragFloat("移動", &context_.guizmo_.translateSnap_, 0.1f, 0.01f, 100.0f, "%.2f");
 
 			ImGui::SetNextItemWidth(120.0f);
-			ImGui::DragFloat("回転", &context_.viewportContext_.guizmo_.rotateSnap_, 0.5f, 0.1f, 90.0f, "%.0f\xc2\xb0");
+			ImGui::DragFloat("回転", &context_.guizmo_.rotateSnap_, 0.5f, 0.1f, 90.0f, "%.0f\xc2\xb0");
 
 			ImGui::SetNextItemWidth(120.0f);
-			ImGui::DragFloat("拡大縮小", &context_.viewportContext_.guizmo_.scaleSnap_, 0.05f, 0.01f, 10.0f, "%.2f");
+			ImGui::DragFloat("拡大縮小", &context_.guizmo_.scaleSnap_, 0.05f, 0.01f, 10.0f, "%.2f");
 
 			ImGui::EndPopup();
 		}
@@ -120,7 +120,7 @@ namespace SeedCore
 
 	void CanvasViewPanel::HandlePicking(const ImVec2& imageScreenPos, Float imageWidth, Float imageHeight)
 	{
-		if (!context_.cameraContext_.canvasCamera_ || !context_.worldContext_.world_)
+		if (!context_.view_.canvas_.camera_ || !context_.world_.world_)
 		{
 			return;
 		}
@@ -159,8 +159,8 @@ namespace SeedCore
 			}
 		}
 
-		CanvasCamera& camera = *context_.cameraContext_.canvasCamera_;
-		World& world = *context_.worldContext_.world_;
+		CanvasCamera& camera = *context_.view_.canvas_.camera_;
+		World& world = *context_.world_.world_;
 
 		/// [EN] Screen -> canvas world: the inverse of the grid-line placement in Draw(). A pixel offset from the image centre maps to a world offset from the camera focus; screen Y grows downward so it inverts.
 		/// [JP] スクリーン -> キャンバスワールド: Draw() のグリッド線配置の逆。画像中心からのピクセルオフセットを、カメラ focus からのワールドオフセットへ写す。スクリーン Y は下方向に増えるので反転する。
@@ -184,7 +184,7 @@ namespace SeedCore
 			return;
 		}
 
-		SelectionContext& selection = context_.selectionContext_;
+		SelectionContext& selection = context_.selection_;
 		Bool ctrl = ImGui::GetIO().KeyCtrl;
 
 		if (isBoxSelecting_)
@@ -327,13 +327,13 @@ namespace SeedCore
 
 			if (!ctrl)
 			{
-				selection.selectedActors_.clear();
+				selection.Clear();
 			}
 			for (Actor actor : hits)
 			{
-				if (std::ranges::find(selection.selectedActors_, actor) == selection.selectedActors_.end())
+				if (!selection.Contains(actor))
 				{
-					selection.selectedActors_.push_back(actor);
+					selection.actors_.push_back(actor);
 				}
 			}
 		}
@@ -451,28 +451,13 @@ namespace SeedCore
 
 			if (ctrl && hit)
 			{
-				auto it = std::ranges::find(selection.selectedActors_, hit);
-				if (it != selection.selectedActors_.end())
-				{
-					selection.selectedActors_.erase(it);
-				}
-				else
-				{
-					selection.selectedActors_.push_back(hit);
-				}
+				selection.Toggle(hit);
 			}
 			else
 			{
-				selection.selectedActors_.clear();
-				if (hit)
-				{
-					selection.selectedActors_.push_back(hit);
-				}
+				selection.Select(hit);
 			}
 		}
-
-		selection.selectedActor_ = selection.selectedActors_.empty() ? Actor() : selection.selectedActors_.back();
-		selection.selectedEntity_ = selection.selectedActor_ ? selection.selectedActor_.GetEntity() : Entity::Null();
 
 		isBoxSelectPending_ = false;
 		isBoxSelecting_ = false;
@@ -528,9 +513,9 @@ namespace SeedCore
 					InputSystem::BeginMouseCapture();
 				}
 
-				if (isPanning_ && panHeld && context_.cameraContext_.canvasCamera_)
+				if (isPanning_ && panHeld && context_.view_.canvas_.camera_)
 				{
-					CanvasCamera& canvasCamera = *context_.cameraContext_.canvasCamera_;
+					CanvasCamera& canvasCamera = *context_.view_.canvas_.camera_;
 
 					Float worldPerPixel = canvasCamera.VisibleHeight() / imageHeight;
 					Float deltaX = -InputSystem::MouseMotion().x * worldPerPixel;
@@ -557,9 +542,9 @@ namespace SeedCore
 					isResettingView_ = true;
 				}
 
-				if (isResettingView_ && context_.cameraContext_.canvasCamera_)
+				if (isResettingView_ && context_.view_.canvas_.camera_)
 				{
-					CanvasCamera& canvasCamera = *context_.cameraContext_.canvasCamera_;
+					CanvasCamera& canvasCamera = *context_.view_.canvas_.camera_;
 
 					Vector3 targetFocus = Vector3(100000.0f + ScResolution::SC_CANVAS.Width * 0.5f, 100000.0f + ScResolution::SC_CANVAS.Height * 0.5f, 100000.0f);
 					Vector3 targetEye = Vector3(100000.0f + ScResolution::SC_CANVAS.Width * 0.5f, 100000.0f + ScResolution::SC_CANVAS.Height * 0.5f, 99990.0f);
@@ -578,9 +563,9 @@ namespace SeedCore
 					}
 				}
 
-				if (context_.cameraContext_.canvasCamera_)
+				if (context_.view_.canvas_.camera_)
 				{
-					CanvasCamera& canvasCamera = *context_.cameraContext_.canvasCamera_;
+					CanvasCamera& canvasCamera = *context_.view_.canvas_.camera_;
 
 					Float worldPerPixel = canvasCamera.VisibleHeight() / imageHeight;
 					Vector3 focus = canvasCamera.Focus();

@@ -2862,6 +2862,6 @@ namespace SeedCore
 		static inline Uint64 geometryBudgetBytes_ = 512ull * 1024 * 1024;
 		static inline Uint64 textureBudgetBytes_ = 256ull * 1024 * 1024;
 
-		static constexpr Uint64 evictAgeFrames_ = 8;
+		SC_CONST Uint64 evictAgeFrames_ = 8;
 	};
 }

@@ -32,18 +32,31 @@ namespace SeedCore
 		Uint colliderConstantBufferPadding0_ = 0;
 	};
 
+	/// [EN] One collider's debug-draw data for the GPU, packed from a ColliderDesc; what dimensions_ holds depends on shapeKind_ (see ColliderDesc::dimensions_).
+	/// [JP] コライダー1つ分の、GPU 向けデバッグ描画データ。ColliderDesc から詰める。dimensions_ の中身は shapeKind_ で決まる(ColliderDesc::dimensions_ 参照)。
+	struct ColliderStructuredBuffer
+	{
+		Vector3 position_;
+		Uint32 shapeKind_ = 0;
+		Quaternion rotation_ = Quaternion::Identity;
+		Vector3 dimensions_;
+		/// [EN] Arrow only: upper bound of the head's length, in the same units as dimensions_; 0 leaves the head at its fixed fraction of the arrow's length.
+		/// [JP] Arrow のときだけ使う、矢じりの長さの上限。単位は dimensions_ と同じ。0 なら矢じりは矢印の長さに対する決まった割合のまま。
+		Float headLength_ = 0.0f;
+		Color color_;
+	};
+
 	/**
 	* [EN]
 	* Editor-only debug wireframe renderer for collider visualization.
-	* Deliberately does NOT inherit JPH::DebugRenderer — Renderer::Gather
-	* walks each Box/Sphere/Capsule/Cylinder/Rect/CircleCollider component and
-	* each CharacterController's capsule in the World directly (regardless of Play/Stop state, since it no longer
-	* depends on live JPH::Body instances) and calls AddInstance with each
-	* collider's own shape/transform data. The mesh shader (or, below D12_2,
-	* the vertex shader) then expands each instance's wireframe geometry on
-	* the GPU (see ColliderLineMS.hlsl / ColliderLineVS.hlsl) — this class
-	* only uploads the small per-instance descriptor batches and issues the
-	* draws.
+	* Deliberately does NOT inherit JPH::DebugRenderer — ColliderSystem
+	* gathers the colliders from the World's components (regardless of
+	* Play/Stop state, since it does not depend on live JPH::Body instances)
+	* and Upload receives them as ColliderDesc entries. The mesh shader (or,
+	* below D12_2, the vertex shader) then expands each instance's wireframe
+	* geometry on the GPU (see ColliderLineMS.hlsl / ColliderLineVS.hlsl) —
+	* this class only packs and uploads the small per-instance batches and
+	* issues the draws; it knows nothing about the World or its components.
 	*
 	* Instances are kept in two independent batches: spatial (3D colliders,
 	* drawn into the editor's 3D view by Draw3D) and planar (Rect/Circle,
@@ -56,14 +69,13 @@ namespace SeedCore
 	*
 	* [JP]
 	* コライダー可視化用の、エディタ専用デバッグワイヤーフレームレンダラー。
-	* 意図的に JPH::DebugRenderer を継承しない — Renderer::Gather が
-	* World 内の各 Box/Sphere/Capsule/Cylinder/Rect/CircleCollider
-	* コンポーネントと各 CharacterController のカプセルを直接走査し（生きた JPH::Body に依存しなくなったため
-	* Play/Stop を問わず動作する）、各コライダー自身の形状/変換データで
-	* AddInstance を呼ぶ。ワイヤーフレーム形状の展開はメッシュシェーダ
-	* （D12_2 未満では頂点シェーダ）が GPU上で行う（ColliderLineMS.hlsl /
-	* ColliderLineVS.hlsl 参照）— このクラスは小さなインスタンス記述子
-	* バッチをアップロードし、描画を発行するだけ。
+	* 意図的に JPH::DebugRenderer を継承しない — ColliderSystem が World の
+	* コンポーネントからコライダーを集め（生きた JPH::Body に依存しないため
+	* Play/Stop を問わず動作する）、Upload がそれを ColliderDesc として
+	* 受け取る。ワイヤーフレーム形状の展開はメッシュシェーダ（D12_2 未満では
+	* 頂点シェーダ）が GPU上で行う（ColliderLineMS.hlsl / ColliderLineVS.hlsl
+	* 参照）— このクラスは小さなインスタンスのバッチを詰めてアップロードし、
+	* 描画を発行するだけで、World やそのコンポーネントのことは知らない。
 	*
 	* インスタンスは独立した2つのバッチに分けて持つ: spatial（3D コライダー。
 	* Draw3D がエディタの 3D ビューへ描く）と planar（Rect/Circle。Draw2D が
@@ -80,30 +92,19 @@ namespace SeedCore
 
 		void Create(ID3D12Device* device, BindlessHeap* bindlessHeap, ShaderCache& shaderCache, ConstantIndicesSystem& constantIndicesSystem);
 
-		/// [EN] Resets both CPU-side instance batches (spatial and planar) for
-		///      a new frame. Called by Renderer::Gather before it repopulates
-		///      them from the World's collider components.
-		/// [JP] 新しいフレームに向けて、CPU 側の2つのインスタンスバッチ
-		///      （spatial と planar）をリセットする。Renderer::Gather が World の
-		///      コライダーコンポーネントから再び積み込む前に呼ぶ。
-		void Clear();
-
-		/// [EN] Appends one collider instance to the batch its shape belongs
-		///      to: Rect/Circle go to the planar batch, every other shape to
-		///      the spatial batch. Instances past maxInstanceCount_ in that
-		///      batch are dropped.
-		/// [JP] コライダーインスタンスを1つ、その形状が属するバッチへ追加する:
-		///      Rect/Circle は planar バッチ、それ以外の形状はすべて spatial
-		///      バッチ。そのバッチで maxInstanceCount_ を超えた分は破棄する。
-		void AddInstance(ColliderShapeKind shapeKind, const Vector3& position, const Quaternion& rotation, const Vector3& dimensions, const Color& color);
-
-		/// [EN] Uploads each non-empty batch to its own instance and constant
+		/// [EN] Packs the colliders into the GPU layout, sorting them into the
+		///      batch their kind belongs to (Rect/Circle to planar, the rest to
+		///      spatial; entries past maxInstanceCount_ in a batch are dropped),
+		///      uploads each non-empty batch to its own instance and constant
 		///      buffer, then registers the spatial constants in the editor's
 		///      index table and the planar constants in the canvas's.
-		/// [JP] 空でない各バッチを専用のインスタンスバッファ/定数バッファへ
-		///      アップロードし、spatial の定数をエディタのインデックステーブルへ、
-		///      planar の定数を Canvas のインデックステーブルへ登録する。
-		void Upload();
+		/// [JP] コライダーを GPU 用の並びに詰め、種類ごとのバッチへ振り分ける
+		///      （Rect/Circle は planar、それ以外は spatial。バッチで
+		///      maxInstanceCount_ を超えた分は破棄する）。空でない各バッチを専用の
+		///      インスタンスバッファ/定数バッファへアップロードし、spatial の定数を
+		///      エディタのインデックステーブルへ、planar の定数を Canvas の
+		///      インデックステーブルへ登録する。
+		void Upload(std::span<const ColliderDesc> colliders);
 
 		/// [EN] Draws the spatial (3D) batch Upload() sent this frame into the
 		///      editor's 3D view, depth-tested against the given depth view.
@@ -148,19 +149,19 @@ namespace SeedCore
 		///      縦線4本、16分割のキャップの半円4本、輪郭線(16分割のキャップの
 		///      半円2本と側面の線2本)。ColliderLine.hlsli の
 		///      COLLIDER_CAPSULE_LINE_COUNT と一致させること。
-		static constexpr Uint maxLinesPerInstance_ = 2 * 32 + 4 + 6 * 16 + 2;
+		SC_CONST Uint maxLinesPerInstance_ = 2 * 32 + 4 + 6 * 16 + 2;
 
 		/// [EN] Threads per mesh-shader group; each thread emits one line as a 4-vertex quad, so 64 lines fill the 256-vertex output limit. Must match COLLIDER_LINES_PER_GROUP in ColliderLine.hlsli.
 		/// [JP] メッシュシェーダの1グループのスレッド数。各スレッドが線を1本、頂点4つの四角形として出すので、64本で出力上限の256頂点に達する。ColliderLine.hlsli の COLLIDER_LINES_PER_GROUP と一致させること。
-		static constexpr Uint threadsPerGroup_ = 64;
+		SC_CONST Uint threadsPerGroup_ = 64;
 
 		/// [EN] Vertices per line on the vertex-shader path: its quad drawn as two triangles. Must match ColliderLineVS.hlsl.
 		/// [JP] 頂点シェーダ経路での1本あたりの頂点数。線の四角形を三角形2つで描く。ColliderLineVS.hlsl と一致させること。
-		static constexpr Uint verticesPerLine_ = 6;
+		SC_CONST Uint verticesPerLine_ = 6;
 
 		/// [EN] Mesh-shader groups one instance spans, enough to cover the densest shape.
 		/// [JP] 1インスタンスがまたがるメッシュシェーダグループ数。最も線の多い形状を賄える数にする。
-		static constexpr Uint groupsPerInstance_ = (maxLinesPerInstance_ + threadsPerGroup_ - 1) / threadsPerGroup_;
+		SC_CONST Uint groupsPerInstance_ = (maxLinesPerInstance_ + threadsPerGroup_ - 1) / threadsPerGroup_;
 
 	private:
 		/// [EN] Capacity of each batch's collider-instance structured buffer
@@ -170,7 +171,7 @@ namespace SeedCore
 		/// [JP] 各バッチのコライダーインスタンス構造化バッファの容量（spatial と
 		///      planar がそれぞれこの数を持つ）。1フレーム内でこれを超えた
 		///      インスタンスは、フレーム途中の再確保を避けるため黙って破棄される。
-		static constexpr Uint maxInstanceCount_ = 8192;
+		SC_CONST Uint maxInstanceCount_ = 8192;
 
 		ColliderLineShader colliderLineShader_;
 

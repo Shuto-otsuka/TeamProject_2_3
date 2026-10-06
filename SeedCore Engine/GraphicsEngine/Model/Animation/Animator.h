@@ -219,9 +219,9 @@ namespace SeedCore
 		void SetJointConstraint(const std::string& boneName, const Vector3& axis, const Vector3& swingAxis, Float swingAngle1, Float swingAngle2);
 
 	private:
-		static constexpr Int ExitState = -2;
+		SC_CONST Int ExitState = -2;
 
-		static constexpr Int AnyState = -3;
+		SC_CONST Int AnyState = -3;
 
 		SC_SERIALIZE_FIELD()
 		DynamicArray<AnimationParameter> parameters_;

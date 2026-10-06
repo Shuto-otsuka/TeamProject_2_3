@@ -1,5 +1,6 @@
 #include <Editor/Editor/Panel/InspectorPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
+#include <Editor/Editor/Panel/ResourceSyncControlPanel.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <Editor/Editor/Panel/AnimatorControllerPanel.h>
@@ -38,6 +39,7 @@
 #include <GraphicsEngine/Movie/Movie.h>
 #include <PhysicsEngine/Collider/RectCollider.h>
 #include <PhysicsEngine/Collider/CircleCollider.h>
+#include <FoundationEngine/World/ECS/Component/Transform.h>
 
 namespace SeedCore
 {
@@ -54,49 +56,49 @@ namespace SeedCore
 
 	void InspectorPanel::Draw()
 	{
-		ImGuiID dockspaceID = context_.graphicsContext_.imgui_->DockSpaceID();
+		ImGuiID dockspaceID = context_.graphics_.imgui_->DockSpaceID();
 		ImGui::SetNextWindowDockID(dockspaceID, ImGuiCond_FirstUseEver);
 
 		if (ImGui::Begin("インスペクター"))
 		{
-			if (context_.panelContext_.animatorControllerPanel_ && context_.panelContext_.animatorControllerPanel_->Focused())
+			if (context_.panel_.animatorController_ && context_.panel_.animatorController_->Focused())
 			{
-				context_.panelContext_.animatorControllerPanel_->DrawDetails();
+				context_.panel_.animatorController_->DrawDetails();
 				ImGui::End();
 				return;
 			}
 
-			if (context_.panelContext_.timelinePanel_ && context_.panelContext_.timelinePanel_->Focused())
+			if (context_.panel_.timeline_ && context_.panel_.timeline_->Focused())
 			{
-				context_.panelContext_.timelinePanel_->DrawDetails();
+				context_.panel_.timeline_->DrawDetails();
 				ImGui::End();
 				return;
 			}
 
-			if (context_.panelContext_.materialViewerPanel_ && context_.panelContext_.materialViewerPanel_->Focused())
+			if (context_.panel_.materialViewer_ && context_.panel_.materialViewer_->Focused())
 			{
-				context_.panelContext_.materialViewerPanel_->DrawDetails();
+				context_.panel_.materialViewer_->DrawDetails();
 				ImGui::End();
 				return;
 			}
 
-			if (context_.panelContext_.skeletonControllerPanel_ && context_.panelContext_.skeletonControllerPanel_->Focused())
+			if (context_.panel_.skeletonController_ && context_.panel_.skeletonController_->Focused())
 			{
-				context_.panelContext_.skeletonControllerPanel_->DrawDetails();
+				context_.panel_.skeletonController_->DrawDetails();
 				ImGui::End();
 				return;
 			}
 
-			if (context_.panelContext_.avatarPanel_ && context_.panelContext_.avatarPanel_->Focused())
+			if (context_.panel_.avatar_ && context_.panel_.avatar_->Focused())
 			{
-				context_.panelContext_.avatarPanel_->DrawDetails();
+				context_.panel_.avatar_->DrawDetails();
 				ImGui::End();
 				return;
 			}
 
-			if (context_.panelContext_.bootScreenPanel_ && context_.panelContext_.bootScreenPanel_->Focused())
+			if (context_.panel_.bootScreen_ && context_.panel_.bootScreen_->Focused())
 			{
-				context_.panelContext_.bootScreenPanel_->DrawDetails();
+				context_.panel_.bootScreen_->DrawDetails();
 				ImGui::End();
 				return;
 			}
@@ -107,11 +109,11 @@ namespace SeedCore
 				lockedActor_ = Actor();
 			}
 
-			Actor actor = locked_ ? lockedActor_ : context_.selectionContext_.selectedActor_;
+			Actor actor = locked_ ? lockedActor_ : context_.selection_.Primary();
 
 			if (actor && actor.GetEntity().Exists())
 			{
-				Bool sharingEditable = !context_.resourceSync_ || ResourceSyncControlPanel::EditableActor(context_, actor, ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseDown(ImGuiMouseButton_Left));
+				Bool sharingEditable = !context_.application_.resourceSync_ || ResourceSyncControlPanel::EditableActor(context_, actor, ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseDown(ImGuiMouseButton_Left));
 				if (!sharingEditable)
 				{
 					ImGui::TextDisabled("Shared entity: acquiring edit lease / read only");
@@ -176,7 +178,7 @@ namespace SeedCore
 
 		ImGui::SameLine();
 
-		Name* nameComponent = static_cast<Name*>(context_.worldContext_.world_->GetComponent(actor.GetEntity(), ComponentRegistry::GetComponentID<Name>()));
+		Name* nameComponent = static_cast<Name*>(context_.world_.world_->GetComponent(actor.GetEntity(), ComponentRegistry::GetComponentID<Name>()));
 		if (!nameComponent)
 		{
 			return;
@@ -189,7 +191,7 @@ namespace SeedCore
 		{
 			String oldValue = nameComponent->name_;
 			nameComponent->name_ = String(std::string_view(nameBuffer.c_str()));
-			context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<String>>(*context_.worldContext_.world_, actor.GetEntity(), ComponentRegistry::GetComponentID<Name>(), 0, oldValue, nameComponent->name_));
+			context_.scene_.history_.Push(MakePtr<ComponentCommand<String>>(*context_.world_.world_, actor.GetEntity(), ComponentRegistry::GetComponentID<Name>(), 0, oldValue, nameComponent->name_));
 		}
 
 		ImGui::SameLine();
@@ -197,7 +199,7 @@ namespace SeedCore
 		Bool active = actor.Active();
 		if (ImGui::Checkbox("有効", &active))
 		{
-			context_.sceneContext_.history_.Push(MakePtr<ActorActiveCommand>(*context_.worldContext_.world_, actor, active));
+			context_.scene_.history_.Push(MakePtr<ActorActiveCommand>(*context_.world_.world_, actor, active));
 			actor.Active(active);
 		}
 	}
@@ -286,7 +288,7 @@ namespace SeedCore
 
 		if (hasRemoveTag)
 		{
-			context_.sceneContext_.history_.Push(MakePtr<ActorTagCommand>(*context_.worldContext_.world_, actor.PersistentID(), removeTag, false));
+			context_.scene_.history_.Push(MakePtr<ActorTagCommand>(*context_.world_.world_, actor.PersistentID(), removeTag, false));
 			actor.RemoveTag(removeTag);
 		}
 		if (hasDeleteTag)
@@ -308,7 +310,7 @@ namespace SeedCore
 			if (!text.empty())
 			{
 				String newTag = String(std::string_view(text));
-				context_.sceneContext_.history_.Push(MakePtr<ActorTagCommand>(*context_.worldContext_.world_, actor.PersistentID(), newTag, true));
+				context_.scene_.history_.Push(MakePtr<ActorTagCommand>(*context_.world_.world_, actor.PersistentID(), newTag, true));
 				actor.AddTag(newTag);
 			}
 			std::ranges::fill(newTagBuffer_, '\0');
@@ -339,7 +341,7 @@ namespace SeedCore
 				Bool hasTag = actor.HasTag(tag);
 				if (ImGui::Checkbox(tag.c_str(), &hasTag))
 				{
-					context_.sceneContext_.history_.Push(MakePtr<ActorTagCommand>(*context_.worldContext_.world_, actor.PersistentID(), tag, hasTag));
+					context_.scene_.history_.Push(MakePtr<ActorTagCommand>(*context_.world_.world_, actor.PersistentID(), tag, hasTag));
 					if (hasTag)
 					{
 						actor.AddTag(tag);
@@ -405,7 +407,7 @@ namespace SeedCore
 				{
 					String oldLayerName = actor.LayerName();
 					String newLayerName = layerNames[index];
-					context_.sceneContext_.history_.Push(MakePtr<ActorLayerCommand>(*context_.worldContext_.world_, actor.PersistentID(), oldLayerName, newLayerName));
+					context_.scene_.history_.Push(MakePtr<ActorLayerCommand>(*context_.world_.world_, actor.PersistentID(), oldLayerName, newLayerName));
 					actor.Layer(index);
 				}
 
@@ -431,9 +433,9 @@ namespace SeedCore
 			ImGui::Separator();
 			ImGui::Spacing();
 
-			if (ImGui::Selectable("編集") && context_.panelContext_.layerSettingsPanel_)
+			if (ImGui::Selectable("編集") && context_.panel_.layerSettings_)
 			{
-				context_.panelContext_.layerSettingsPanel_->Open();
+				context_.panel_.layerSettings_->Open();
 			}
 
 			ImGui::EndCombo();
@@ -448,7 +450,7 @@ namespace SeedCore
 			return;
 		}
 
-		AssetRecord* asset = context_.worldContext_.resource_->GetAsset(assetID);
+		AssetRecord* asset = context_.world_.resource_->GetAsset(assetID);
 		if (!asset)
 		{
 			return;
@@ -456,7 +458,7 @@ namespace SeedCore
 
 		ImGui::Text("Prefab: %s", asset->path_.c_str());
 
-		Bool isPlaying = context_.worldContext_.gameTimer_->Playing();
+		Bool isPlaying = context_.world_.timer_->Playing();
 		if (isPlaying)
 		{
 			ImGui::BeginDisabled();
@@ -464,8 +466,8 @@ namespace SeedCore
 
 		if (ImGui::Button("Prefab に適用"))
 		{
-			Handle<Prefab> handle = context_.worldContext_.resource_->GetPrefabPool().Load(assetID, *context_.worldContext_.resource_);
-			Prefab* prefab = context_.worldContext_.resource_->GetPrefabPool().Get(handle);
+			Handle<Prefab> handle = context_.world_.resource_->GetPrefabPool().Load(assetID, *context_.world_.resource_);
+			Prefab* prefab = context_.world_.resource_->GetPrefabPool().Get(handle);
 			if (prefab)
 			{
 				prefab->Capture(actor);
@@ -514,7 +516,7 @@ namespace SeedCore
 		{
 			if (ImGui::MenuItem("コンポーネントを削除"))
 			{
-				context_.sceneContext_.history_.Push(MakePtr<ComponentRemoveCommand>(*context_.worldContext_.world_, actor.PersistentID(), componentID, componentName, componentData));
+				context_.scene_.history_.Push(MakePtr<ComponentRemoveCommand>(*context_.world_.world_, actor.PersistentID(), componentID, componentName, componentData));
 				actor.RemoveComponent(componentID);
 				removed = true;
 			}
@@ -554,14 +556,14 @@ namespace SeedCore
 			Skeleton* skeletonComponent = actor.GetComponent<Skeleton>();
 			if (!skeletonComponent || skeletonComponent->skeletonID_ == 0)
 			{
-				ModelResource* modelResource = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model);
-				Crister* crister = modelResource->Resolve(*context_.worldContext_.loader_, modelResource->GetHandle(mesh->meshID_));
-				AssetRecord* modelAsset = context_.worldContext_.resource_->GetAsset(mesh->meshID_);
+				ModelResource* modelResource = context_.world_.resource_->GetResource<ModelResource>(AssetType::Model);
+				Crister* crister = modelResource->Resolve(*context_.world_.loader_, modelResource->GetHandle(mesh->meshID_));
+				AssetRecord* modelAsset = context_.world_.resource_->GetAsset(mesh->meshID_);
 				if (crister && modelAsset && !crister->Skins().empty())
 				{
 					std::string target = (std::filesystem::path(modelAsset->fullpath_.c_str()).parent_path() / (std::filesystem::path(modelAsset->fullpath_.c_str()).stem().string() + ".skeleton")).string();
 					std::ranges::replace(target, '\\', '/');
-					for (const auto& [assetId, asset] : context_.worldContext_.resource_->AssetList())
+					for (const auto& [assetId, asset] : context_.world_.resource_->AssetList())
 					{
 						if (asset.type_ == AssetType::Skeleton && asset.fullpath_.str() == target)
 						{
@@ -583,9 +585,9 @@ namespace SeedCore
 		if (const Mesh* mesh = actor.GetComponent<Mesh>(); mesh && mesh->meshID_ != 0 && !actor.GetComponent<Material>())
 		{
 			Material* materialComponent = actor.AddComponent<Material>();
-			ModelResource* modelResource = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model);
-			Crister* crister = modelResource->Resolve(*context_.worldContext_.loader_, modelResource->GetHandle(mesh->meshID_));
-			AssetRecord* modelAsset = context_.worldContext_.resource_->GetAsset(mesh->meshID_);
+			ModelResource* modelResource = context_.world_.resource_->GetResource<ModelResource>(AssetType::Model);
+			Crister* crister = modelResource->Resolve(*context_.world_.loader_, modelResource->GetHandle(mesh->meshID_));
+			AssetRecord* modelAsset = context_.world_.resource_->GetAsset(mesh->meshID_);
 			if (materialComponent && crister && modelAsset)
 			{
 				std::filesystem::path modelPath(modelAsset->fullpath_.c_str());
@@ -596,7 +598,7 @@ namespace SeedCore
 				{
 					std::string target = (directory / (surfaces[slot].name_ + ".material")).string();
 					std::ranges::replace(target, '\\', '/');
-					for (const auto& [assetId, asset] : context_.worldContext_.resource_->AssetList())
+					for (const auto& [assetId, asset] : context_.world_.resource_->AssetList())
 					{
 						if (asset.type_ == AssetType::Material && asset.fullpath_.str() == target)
 						{
@@ -608,7 +610,7 @@ namespace SeedCore
 			}
 		}
 
-		const DynamicArray<ComponentID>& layout = context_.worldContext_.world_->GetLayout(entity);
+		const DynamicArray<ComponentID>& layout = context_.world_.world_->GetLayout(entity);
 
 		static const String nameString("Name");
 		static const String positionString("Position");
@@ -643,9 +645,9 @@ namespace SeedCore
 
 			if (transformHeaderOpen)
 			{
-				Float* positionData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, positionID));
-				Rotation* rotation = static_cast<Rotation*>(context_.worldContext_.world_->GetComponent(entity, rotationID));
-				Float* scaleData = static_cast<Float*>(context_.worldContext_.world_->GetComponent(entity, scaleID));
+				Float* positionData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, positionID));
+				Rotation* rotation = static_cast<Rotation*>(context_.world_.world_->GetComponent(entity, rotationID));
+				Float* scaleData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, scaleID));
 
 				if (positionData)
 				{
@@ -671,7 +673,7 @@ namespace SeedCore
 				continue;
 			}
 
-			void* fixedData = context_.worldContext_.world_->GetComponent(entity, fixedID);
+			void* fixedData = context_.world_.world_->GetComponent(entity, fixedID);
 			if (!fixedData)
 			{
 				continue;
@@ -692,7 +694,7 @@ namespace SeedCore
 				continue;
 			}
 
-			void* componentData = context_.worldContext_.world_->GetComponent(entity, componentID);
+			void* componentData = context_.world_.world_->GetComponent(entity, componentID);
 			if (!componentData)
 			{
 				continue;
@@ -712,7 +714,7 @@ namespace SeedCore
 				continue;
 			}
 
-			void* componentData = context_.worldContext_.world_->GetComponent(entity, componentID);
+			void* componentData = context_.world_.world_->GetComponent(entity, componentID);
 			if (!componentData)
 			{
 				continue;
@@ -736,7 +738,7 @@ namespace SeedCore
 			}
 
 			EntityID entityID = entity.GetID();
-			void* componentData = context_.worldContext_.world_->GetComponent(entityID, componentBaseID);
+			void* componentData = context_.world_.world_->GetComponent(entityID, componentBaseID);
 			if (!componentData)
 			{
 				continue;
@@ -750,7 +752,7 @@ namespace SeedCore
 			{
 				if (ImGui::MenuItem("コンポーネントを削除"))
 				{
-					context_.sceneContext_.history_.Push(MakePtr<ComponentRemoveCommand>(*context_.worldContext_.world_, actor.PersistentID(), componentBaseID, componentName, componentData));
+					context_.scene_.history_.Push(MakePtr<ComponentRemoveCommand>(*context_.world_.world_, actor.PersistentID(), componentBaseID, componentName, componentData));
 					actor.RemoveComponent(componentBaseID);
 					removed = true;
 				}
@@ -827,7 +829,7 @@ namespace SeedCore
 		{
 			return;
 		}
-		UnknownComponent* unknown = static_cast<UnknownComponent*>(context_.worldContext_.world_->GetComponent(actor.GetEntity(), unknownID));
+		UnknownComponent* unknown = static_cast<UnknownComponent*>(context_.world_.world_->GetComponent(actor.GetEntity(), unknownID));
 		if (!unknown)
 		{
 			return;
@@ -927,10 +929,10 @@ namespace SeedCore
 		Rotation* rotation = isRotation ? static_cast<Rotation*>(componentData) : nullptr;
 		if (isRotation)
 		{
-			Quaternion quaternion = rotation->Quat();
+			Quaternion quaternion = Transform::Quat(*rotation);
 			if (!hasPendingRotation_ || entity.GetID() != pendingRotationEntity_ || quaternion != pendingRotationQuaternion_)
 			{
-				pendingRotationDegrees_ = rotation->Degree();
+				pendingRotationDegrees_ = Transform::Degree(*rotation);
 				pendingRotationEntity_ = entity.GetID();
 				pendingRotationQuaternion_ = quaternion;
 				hasPendingRotation_ = true;
@@ -940,7 +942,7 @@ namespace SeedCore
 		Bool isCanvasRotation = false;
 		if (isRotation)
 		{
-			World& world = *context_.worldContext_.world_;
+			World& world = *context_.world_.world_;
 			const Image* image = world.GetComponent<Image>(entity);
 			const Text* text = world.GetComponent<Text>(entity);
 			const Movie* movie = world.GetComponent<Movie>(entity);
@@ -970,7 +972,7 @@ namespace SeedCore
 		{
 			if (isRotation)
 			{
-				pendingOldQuaternion_ = rotation->Quat();
+				pendingOldQuaternion_ = Transform::Quat(*rotation);
 			}
 			else
 			{
@@ -1007,7 +1009,7 @@ namespace SeedCore
 				std::swap(editedDegree.x, editedDegree.z);
 			}
 
-			Matrix rotationMatrix = Matrix::CreateFromQuaternion(rotation->Quat());
+			Matrix rotationMatrix = Matrix::CreateFromQuaternion(Transform::Quat(*rotation));
 			rotationMatrix *= Matrix::CreateFromYawPitchRoll(ToRadians(deltaDegree.y), ToRadians(deltaDegree.x), ToRadians(deltaDegree.z));
 
 			Vector3 discardedScale;
@@ -1015,24 +1017,21 @@ namespace SeedCore
 			Quaternion quaternion;
 			if (rotationMatrix.Decompose(discardedScale, quaternion, discardedPosition))
 			{
-				rotation->x_ = quaternion.x;
-				rotation->y_ = quaternion.y;
-				rotation->z_ = quaternion.z;
-				rotation->w_ = quaternion.w;
+				Transform::Quat(*rotation, quaternion);
 			}
 
 			pendingRotationDegrees_ = editedDegree;
-			pendingRotationQuaternion_ = rotation->Quat();
+			pendingRotationQuaternion_ = Transform::Quat(*rotation);
 		}
 
 		if (ImGui::IsItemDeactivatedAfterEdit())
 		{
 			if (isRotation)
 			{
-				Quaternion newQuaternion = rotation->Quat();
+				Quaternion newQuaternion = Transform::Quat(*rotation);
 				if (newQuaternion != pendingOldQuaternion_)
 				{
-					context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Quaternion>>(*context_.worldContext_.world_, entity, componentID, 0, pendingOldQuaternion_, newQuaternion));
+					context_.scene_.history_.Push(MakePtr<ComponentCommand<Quaternion>>(*context_.world_.world_, entity, componentID, 0, pendingOldQuaternion_, newQuaternion));
 				}
 			}
 			else
@@ -1040,7 +1039,7 @@ namespace SeedCore
 				Vector3 newValue(data[0], data[1], data[2]);
 				if (newValue != pendingOldVector3_)
 				{
-					context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Vector3>>(*context_.worldContext_.world_, entity, componentID, 0, pendingOldVector3_, newValue));
+					context_.scene_.history_.Push(MakePtr<ComponentCommand<Vector3>>(*context_.world_.world_, entity, componentID, 0, pendingOldVector3_, newValue));
 				}
 			}
 		}
@@ -1272,7 +1271,7 @@ namespace SeedCore
 							auto& removedElement = fields[index + 1 + removeIndex];
 							void* removedPtr = removedElement.directPtr_ ? removedElement.directPtr_ : (static_cast<Uint8*>(baseData) + removedElement.offset_);
 							Int removedValue = *static_cast<Int*>(removedPtr);
-							context_.sceneContext_.history_.Push(MakePtr<PayloadArrayCommand>(*context_.worldContext_.world_, entity, componentID, field.name_, removeIndex, removedValue, false));
+							context_.scene_.history_.Push(MakePtr<PayloadArrayCommand>(*context_.world_.world_, entity, componentID, field.name_, removeIndex, removedValue, false));
 							field.array_.remove_(removeIndex);
 						}
 					}
@@ -1297,7 +1296,7 @@ namespace SeedCore
 						ImGui::PopStyleColor();
 						if (addClicked)
 						{
-							context_.sceneContext_.history_.Push(MakePtr<ArrayAppendCommand>(*context_.worldContext_.world_, entity, componentID, field.name_, count));
+							context_.scene_.history_.Push(MakePtr<ArrayAppendCommand>(*context_.world_.world_, entity, componentID, field.name_, count));
 							field.array_.add_();
 						}
 					}
@@ -1401,11 +1400,11 @@ namespace SeedCore
 			{
 				if (field.directPtr_)
 				{
-					context_.sceneContext_.history_.Push(MakePtr<PointerCommand<Int>>(value, pendingOldInt_, *value));
+					context_.scene_.history_.Push(MakePtr<PointerCommand<Int>>(value, pendingOldInt_, *value));
 				}
 				else
 				{
-					context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Int>>(*context_.worldContext_.world_, entity, componentID, fieldOffset, pendingOldInt_, *value));
+					context_.scene_.history_.Push(MakePtr<ComponentCommand<Int>>(*context_.world_.world_, entity, componentID, fieldOffset, pendingOldInt_, *value));
 				}
 			}
 			break;
@@ -1422,11 +1421,11 @@ namespace SeedCore
 			{
 				if (field.directPtr_)
 				{
-					context_.sceneContext_.history_.Push(MakePtr<PointerCommand<Float>>(value, pendingOldFloat_, *value));
+					context_.scene_.history_.Push(MakePtr<PointerCommand<Float>>(value, pendingOldFloat_, *value));
 				}
 				else
 				{
-					context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Float>>(*context_.worldContext_.world_, entity, componentID, fieldOffset, pendingOldFloat_, *value));
+					context_.scene_.history_.Push(MakePtr<ComponentCommand<Float>>(*context_.world_.world_, entity, componentID, fieldOffset, pendingOldFloat_, *value));
 				}
 			}
 			break;
@@ -1439,11 +1438,11 @@ namespace SeedCore
 			{
 				if (field.directPtr_)
 				{
-					context_.sceneContext_.history_.Push(MakePtr<PointerCommand<Bool>>(value, oldValue, *value));
+					context_.scene_.history_.Push(MakePtr<PointerCommand<Bool>>(value, oldValue, *value));
 				}
 				else
 				{
-					context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Bool>>(*context_.worldContext_.world_, entity, componentID, fieldOffset, oldValue, *value));
+					context_.scene_.history_.Push(MakePtr<ComponentCommand<Bool>>(*context_.world_.world_, entity, componentID, fieldOffset, oldValue, *value));
 				}
 			}
 			break;
@@ -1460,11 +1459,11 @@ namespace SeedCore
 			{
 				if (field.directPtr_)
 				{
-					context_.sceneContext_.history_.Push(MakePtr<PointerCommand<Vector2>>(value, pendingOldVector2_, *value));
+					context_.scene_.history_.Push(MakePtr<PointerCommand<Vector2>>(value, pendingOldVector2_, *value));
 				}
 				else
 				{
-					context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Vector2>>(*context_.worldContext_.world_, entity, componentID, fieldOffset, pendingOldVector2_, *value));
+					context_.scene_.history_.Push(MakePtr<ComponentCommand<Vector2>>(*context_.world_.world_, entity, componentID, fieldOffset, pendingOldVector2_, *value));
 				}
 			}
 			break;
@@ -1481,11 +1480,11 @@ namespace SeedCore
 			{
 				if (field.directPtr_)
 				{
-					context_.sceneContext_.history_.Push(MakePtr<PointerCommand<Vector3>>(value, pendingOldVector3_, *value));
+					context_.scene_.history_.Push(MakePtr<PointerCommand<Vector3>>(value, pendingOldVector3_, *value));
 				}
 				else
 				{
-					context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Vector3>>(*context_.worldContext_.world_, entity, componentID, fieldOffset, pendingOldVector3_, *value));
+					context_.scene_.history_.Push(MakePtr<ComponentCommand<Vector3>>(*context_.world_.world_, entity, componentID, fieldOffset, pendingOldVector3_, *value));
 				}
 			}
 			break;
@@ -1502,11 +1501,11 @@ namespace SeedCore
 			{
 				if (field.directPtr_)
 				{
-					context_.sceneContext_.history_.Push(MakePtr<PointerCommand<Vector4>>(value, pendingOldVector4_, *value));
+					context_.scene_.history_.Push(MakePtr<PointerCommand<Vector4>>(value, pendingOldVector4_, *value));
 				}
 				else
 				{
-					context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Vector4>>(*context_.worldContext_.world_, entity, componentID, fieldOffset, pendingOldVector4_, *value));
+					context_.scene_.history_.Push(MakePtr<ComponentCommand<Vector4>>(*context_.world_.world_, entity, componentID, fieldOffset, pendingOldVector4_, *value));
 				}
 			}
 			break;
@@ -1528,11 +1527,11 @@ namespace SeedCore
 			{
 				if (field.directPtr_)
 				{
-					context_.sceneContext_.history_.Push(MakePtr<PointerCommand<String>>(stringValue, pendingOldString_, *stringValue));
+					context_.scene_.history_.Push(MakePtr<PointerCommand<String>>(stringValue, pendingOldString_, *stringValue));
 				}
 				else
 				{
-					context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<String>>(*context_.worldContext_.world_, entity, componentID, fieldOffset, pendingOldString_, *stringValue));
+					context_.scene_.history_.Push(MakePtr<ComponentCommand<String>>(*context_.world_.world_, entity, componentID, fieldOffset, pendingOldString_, *stringValue));
 				}
 			}
 			break;
@@ -1549,11 +1548,11 @@ namespace SeedCore
 			{
 				if (field.directPtr_)
 				{
-					context_.sceneContext_.history_.Push(MakePtr<PointerCommand<Color>>(value, pendingOldColor_, *value));
+					context_.scene_.history_.Push(MakePtr<PointerCommand<Color>>(value, pendingOldColor_, *value));
 				}
 				else
 				{
-					context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Color>>(*context_.worldContext_.world_, entity, componentID, fieldOffset, pendingOldColor_, *value));
+					context_.scene_.history_.Push(MakePtr<ComponentCommand<Color>>(*context_.world_.world_, entity, componentID, fieldOffset, pendingOldColor_, *value));
 				}
 			}
 			break;
@@ -1586,11 +1585,11 @@ namespace SeedCore
 							{
 								if (field.directPtr_)
 								{
-									context_.sceneContext_.history_.Push(MakePtr<PointerCommand<Int>>(current, oldValue, entry.value_));
+									context_.scene_.history_.Push(MakePtr<PointerCommand<Int>>(current, oldValue, entry.value_));
 								}
 								else
 								{
-									context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Int>>(*context_.worldContext_.world_, entity, componentID, fieldOffset, oldValue, entry.value_));
+									context_.scene_.history_.Push(MakePtr<ComponentCommand<Int>>(*context_.world_.world_, entity, componentID, fieldOffset, oldValue, entry.value_));
 								}
 							}
 						}
@@ -1665,12 +1664,12 @@ namespace SeedCore
 		if (field.assetType_ == PayloadType::Actor)
 		{
 			Uint32 targetId = static_cast<Uint32>(*value);
-			Actor target = (targetId != 0) ? context_.worldContext_.world_->FindActor(targetId) : Actor();
+			Actor target = (targetId != 0) ? context_.world_.world_->FindActor(targetId) : Actor();
 
 			std::string buttonLabel = "ここにドロップ";
 			if (target)
 			{
-				Name* nameComponent = static_cast<Name*>(context_.worldContext_.world_->GetComponent(target.GetEntity(), ComponentRegistry::GetComponentID<Name>()));
+				Name* nameComponent = static_cast<Name*>(context_.world_.world_->GetComponent(target.GetEntity(), ComponentRegistry::GetComponentID<Name>()));
 				buttonLabel = nameComponent ? nameComponent->name_.str() : "(名前なし)";
 			}
 
@@ -1686,11 +1685,11 @@ namespace SeedCore
 					*value = static_cast<Int>(droppedActor.PersistentID());
 					if (field.directPtr_)
 					{
-						context_.sceneContext_.history_.Push(MakePtr<PointerCommand<Int>>(value, oldValue, *value));
+						context_.scene_.history_.Push(MakePtr<PointerCommand<Int>>(value, oldValue, *value));
 					}
 					else
 					{
-						context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Int>>(*context_.worldContext_.world_, entity, componentID, fieldOffset, oldValue, *value));
+						context_.scene_.history_.Push(MakePtr<ComponentCommand<Int>>(*context_.world_.world_, entity, componentID, fieldOffset, oldValue, *value));
 					}
 				}
 				ImGui::EndDragDropTarget();
@@ -1700,7 +1699,7 @@ namespace SeedCore
 		}
 
 		Uint32 assetId = static_cast<Uint32>(*value);
-		AssetRecord* asset = (assetId != 0) ? context_.worldContext_.resource_->GetAsset(assetId) : nullptr;
+		AssetRecord* asset = (assetId != 0) ? context_.world_.resource_->GetAsset(assetId) : nullptr;
 
 		std::string buttonLabel = asset ? std::filesystem::path(asset->path_.c_str()).filename().string() : "ここにドロップ";
 
@@ -1715,11 +1714,11 @@ namespace SeedCore
 				*value = *static_cast<const Int*>(payload->Data);
 				if (field.directPtr_)
 				{
-					context_.sceneContext_.history_.Push(MakePtr<PointerCommand<Int>>(value, oldValue, *value));
+					context_.scene_.history_.Push(MakePtr<PointerCommand<Int>>(value, oldValue, *value));
 				}
 				else
 				{
-					context_.sceneContext_.history_.Push(MakePtr<ComponentCommand<Int>>(*context_.worldContext_.world_, entity, componentID, fieldOffset, oldValue, *value));
+					context_.scene_.history_.Push(MakePtr<ComponentCommand<Int>>(*context_.world_.world_, entity, componentID, fieldOffset, oldValue, *value));
 				}
 			}
 			ImGui::EndDragDropTarget();
@@ -1730,7 +1729,7 @@ namespace SeedCore
 	{
 		Int* value = static_cast<Int*>(pointer);
 		Uint32 assetId = static_cast<Uint32>(*value);
-		AssetRecord* asset = (assetId != 0) ? context_.worldContext_.resource_->GetAsset(assetId) : nullptr;
+		AssetRecord* asset = (assetId != 0) ? context_.world_.resource_->GetAsset(assetId) : nullptr;
 
 		std::string label = asset ? std::filesystem::path(asset->path_.c_str()).filename().string() : "(空)";
 		ImGui::Selectable(label.c_str());
@@ -1754,7 +1753,7 @@ namespace SeedCore
 				Bool alreadyExists = std::ranges::contains(existingValues, droppedValue);
 				if (!alreadyExists)
 				{
-					context_.sceneContext_.history_.Push(MakePtr<PayloadArrayCommand>(*context_.worldContext_.world_, entity, componentID, field.name_, existingValues.size(), droppedValue, true));
+					context_.scene_.history_.Push(MakePtr<PayloadArrayCommand>(*context_.world_.world_, entity, componentID, field.name_, existingValues.size(), droppedValue, true));
 					field.array_.add_();
 					*static_cast<Int*>(field.array_.lastPtr_()) = droppedValue;
 				}

@@ -17,6 +17,8 @@
 #include <GraphicsEngine/Shape/Screen/SplashScreen.h>
 #include <GraphicsEngine/System/MovieSystem.h>
 #include <GraphicsEngine/System/EffectSystem.h>
+#include <GraphicsEngine/System/ColliderSystem.h>
+#include <GraphicsEngine/System/ShapeSystem.h>
 #include <GraphicsEngine/System/SceneSystem.h>
 #include <GraphicsEngine/Texture/Compression/BC7CompressShader.h>
 
@@ -379,6 +381,17 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Sets whether the shape debug display (camera frustums, light and audio ranges) covers every actor rather than only the selected ones.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 形のデバッグ表示（カメラの視錐台、ライトと音の範囲）を、選択中だけでなく全アクターに出すか設定する。
+		*/
+		void ShapeVisible(Bool visible);
+
+		/**
+		* [EN]
 		* Returns whether vertical synchronization is enabled for presentation.
 		*
 		* ---------------------------------------------------------------------
@@ -574,6 +587,10 @@ namespace SeedCore
 		/// [JP] 現在のフレームで共有ストリーミング処理と Renderer 準備が完了した後に true となる。
 		Bool prepared_ = false;
 
+		/// [EN] Whether the shape debug display covers every actor; set by the editor every frame, off in the game runtime.
+		/// [JP] 形のデバッグ表示を全アクターに出すか。エディタが毎フレーム設定し、ゲームの実行時はオフ。
+		Bool shapeVisible_ = false;
+
 		/// [EN] Owns the D3D12 device, queues, and command-list frame lifecycle.
 		/// [JP] D3D12 デバイス、キュー、およびコマンドリストのフレームライフサイクルを所有する。
 		ResourcePtr<D3D12Context> context_;
@@ -625,6 +642,14 @@ namespace SeedCore
 		/// [EN] Advances each effect's age and decides how many particles it spawns this frame, before rendering reads them.
 		/// [JP] 描画が読む前に、各エフェクトの経過時間を進め、今フレームに発生させるパーティクルの数を決める。
 		EffectSystem effectSystem_;
+
+		/// [EN] Gathers the World's colliders for the collider wireframe, before the editor view uploads and draws them.
+		/// [JP] エディタービューがアップロードして描く前に、World のコライダーをコライダーのワイヤーフレーム用に集める。
+		ColliderSystem colliderSystem_;
+
+		/// [EN] Gathers the shapes that are not colliders (debug display, and later shape components), before the views upload and draw them.
+		/// [JP] ビューがアップロードして描く前に、コライダー以外の形（デバッグ表示と、将来の形のコンポーネント）を集める。
+		ShapeSystem shapeSystem_;
 
 		/// [EN] Draws phase-specific logos and splash imagery.
 		/// [JP] フェーズ固有のロゴとスプラッシュ画像を描画する。

@@ -1397,7 +1397,7 @@ namespace SeedCore
 			explicitAnchor = explicitAnchor->parent_;
 		}
 
-		constexpr static auto flag = JobExceptionState::EXCEPTION | JobExceptionState::CAUGHT;
+		SC_CONST auto flag = JobExceptionState::EXCEPTION | JobExceptionState::CAUGHT;
 
 		/// [EN] A blocked caller takes priority; CAUGHT is set atomically so only the first of several failures is stored.
 		/// [JP] 待っている呼び出し側が優先。CAUGHT を不可分に立てるので、複数の失敗のうち最初の1つだけが格納される。

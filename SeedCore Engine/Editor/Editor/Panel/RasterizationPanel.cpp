@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/RasterizationPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 
 namespace SeedCore
 {
@@ -41,9 +41,9 @@ namespace SeedCore
 
 	Bool RasterizationPanel::DrawEnableCheckbox(GraphicsEffect effect, Bool siblingClaimed, Bool& enabled)
 	{
-		ViewportContext& viewport = context_.viewportContext_;
+		SceneVisualContext& visual = context_.sceneVisual_;
 
-		Bool interactive = !siblingClaimed && GraphicsQuality::EnableCheckboxInteractive(effect, GraphicsEffectFamily::Rasterization, viewport.qualityPreset_, viewport.raytracing_, viewport.screenSpace_, viewport.rasterization_);
+		Bool interactive = !siblingClaimed && GraphicsQuality::EnableCheckboxInteractive(effect, GraphicsEffectFamily::Rasterization, visual.qualityPreset_, visual.raytracing_, visual.screenSpace_, visual.rasterization_);
 
 		ImGui::BeginDisabled(!interactive);
 		ImGui::Checkbox("有効", &enabled);
@@ -51,7 +51,7 @@ namespace SeedCore
 
 		if (!interactive && !enabled)
 		{
-			if (viewport.qualityPreset_ != GraphicsQualityPreset::Custom)
+			if (visual.qualityPreset_ != GraphicsQualityPreset::Custom)
 			{
 				ImGui::TextDisabled("※品質プリセットが「カスタム」のときのみ変更できます");
 			}
@@ -114,8 +114,8 @@ namespace SeedCore
 			return;
 		}
 
-		VirtualShadowMapSettings& settings = context_.viewportContext_.rasterization_.virtualShadowMap_;
-		Bool enabled = DrawEnableCheckbox(GraphicsEffect::Shadow, context_.viewportContext_.rasterization_.cascadedShadowMapEnabled_, context_.viewportContext_.rasterization_.virtualShadowMapEnabled_);
+		VirtualShadowMapSettings& settings = context_.sceneVisual_.rasterization_.virtualShadowMap_;
+		Bool enabled = DrawEnableCheckbox(GraphicsEffect::Shadow, context_.sceneVisual_.rasterization_.cascadedShadowMapEnabled_, context_.sceneVisual_.rasterization_.virtualShadowMapEnabled_);
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -157,8 +157,8 @@ namespace SeedCore
 			return;
 		}
 
-		CascadedShadowMapSettings& settings = context_.viewportContext_.rasterization_.cascadedShadowMap_;
-		Bool enabled = DrawEnableCheckbox(GraphicsEffect::Shadow, context_.viewportContext_.rasterization_.virtualShadowMapEnabled_, context_.viewportContext_.rasterization_.cascadedShadowMapEnabled_);
+		CascadedShadowMapSettings& settings = context_.sceneVisual_.rasterization_.cascadedShadowMap_;
+		Bool enabled = DrawEnableCheckbox(GraphicsEffect::Shadow, context_.sceneVisual_.rasterization_.virtualShadowMapEnabled_, context_.sceneVisual_.rasterization_.cascadedShadowMapEnabled_);
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -197,8 +197,8 @@ namespace SeedCore
 			return;
 		}
 
-		SignedDistanceFieldReflectionSettings& settings = context_.viewportContext_.rasterization_.signedDistanceFieldReflection_;
-		Bool enabled = DrawEnableCheckbox(GraphicsEffect::Reflection, false, context_.viewportContext_.rasterization_.signedDistanceFieldReflectionEnabled_);
+		SignedDistanceFieldReflectionSettings& settings = context_.sceneVisual_.rasterization_.signedDistanceFieldReflection_;
+		Bool enabled = DrawEnableCheckbox(GraphicsEffect::Reflection, false, context_.sceneVisual_.rasterization_.signedDistanceFieldReflectionEnabled_);
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -223,8 +223,8 @@ namespace SeedCore
 			return;
 		}
 
-		DynamicDiffuseGlobalIlluminationSettings& settings = context_.viewportContext_.rasterization_.dynamicDiffuseGlobalIllumination_;
-		Bool enabled = DrawEnableCheckbox(GraphicsEffect::GlobalIllumination, false, context_.viewportContext_.rasterization_.dynamicDiffuseGlobalIlluminationEnabled_);
+		DynamicDiffuseGlobalIlluminationSettings& settings = context_.sceneVisual_.rasterization_.dynamicDiffuseGlobalIllumination_;
+		Bool enabled = DrawEnableCheckbox(GraphicsEffect::GlobalIllumination, false, context_.sceneVisual_.rasterization_.dynamicDiffuseGlobalIlluminationEnabled_);
 
 		ImGui::Spacing();
 		ImGui::Separator();

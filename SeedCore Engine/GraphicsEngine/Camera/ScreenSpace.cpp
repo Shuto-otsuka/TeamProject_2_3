@@ -4,32 +4,36 @@ namespace SeedCore
 {
 	Matrix ScreenSpace::view_ = Matrix::Identity;
 	Matrix ScreenSpace::projection_ = Matrix::Identity;
-	Vector2 ScreenSpace::screenSize_ = Vector2(1.0f, 1.0f);
+	Vector4 ScreenSpace::rect_ = Vector4(0.0f, 0.0f, 1.0f, 1.0f);
 
 	/**
 	* [EN]
-	* Converts pixelPosition (screen pixels, origin top-left) into a
-	* world-space Ray from the current camera's near plane through
-	* pixelPosition, suitable for passing straight into
-	* Physics::Raycast()/Spherecast().
+	* Converts pixelPosition (desktop pixels, the same space as
+	* Input::MousePoint()) into a world-space Ray from the current
+	* camera's near plane through pixelPosition, suitable for passing
+	* straight into Physics::Raycast()/Spherecast().
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* pixelPosition(スクリーンピクセル、原点は左上)を、現在のカメラの
-	* 近平面から pixelPosition を通るワールド空間の Ray へ変換する。
+	* pixelPosition(デスクトップのピクセル座標。Input::MousePoint() と
+	* 同じ座標系)を、現在のカメラの近平面から pixelPosition を通る
+	* ワールド空間の Ray へ変換する。
 	* Physics::Raycast()/Spherecast() にそのまま渡せる。
 	*/
 	Ray ScreenSpace::ScreenToWorld(const Vector2& pixelPosition)
 	{
-		/// [EN] Pixel -> NDC: X maps [0, screenSize_.x] to [-1, 1], Y maps
-		///      [0, screenSize_.y] to [1, -1] (screen Y grows downward,
-		///      NDC Y grows upward).
-		/// [JP] ピクセル→NDC: Xは[0, screenSize_.x]を[-1, 1]へ、Yは
-		///      [0, screenSize_.y]を[1, -1]へ写す(スクリーンYは下向き、
-		///      NDCのYは上向きに増えるため)。
-		Float ndcX = (pixelPosition.x / screenSize_.x) * 2.0f - 1.0f;
-		Float ndcY = 1.0f - (pixelPosition.y / screenSize_.y) * 2.0f;
+		/// [EN] Desktop pixel -> position inside the displayed game image, normalized to [0, 1].
+		/// [JP] デスクトップのピクセル座標→表示中のゲーム画像内の位置を[0, 1]に正規化したもの。
+		Float normalizedX = (pixelPosition.x - rect_.x) / rect_.z;
+		Float normalizedY = (pixelPosition.y - rect_.y) / rect_.w;
+
+		/// [EN] Normalized -> NDC: X maps [0, 1] to [-1, 1], Y maps [0, 1]
+		///      to [1, -1] (screen Y grows downward, NDC Y grows upward).
+		/// [JP] 正規化座標→NDC: Xは[0, 1]を[-1, 1]へ、Yは[0, 1]を[1, -1]へ
+		///      写す(スクリーンYは下向き、NDCのYは上向きに増えるため)。
+		Float ndcX = normalizedX * 2.0f - 1.0f;
+		Float ndcY = 1.0f - normalizedY * 2.0f;
 
 		Matrix inverseViewProjection = (view_ * projection_).Invert();
 
@@ -56,21 +60,23 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Converts worldPosition into screen pixels (origin top-left) under
-	* the current camera.
+	* Converts worldPosition into desktop pixels (the same space as
+	* Input::MousePoint()) under the current camera.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* worldPosition を、現在のカメラでのスクリーンピクセル(原点は左上)へ
-	* 変換する。
+	* worldPosition を、現在のカメラでのデスクトップのピクセル座標
+	* (Input::MousePoint() と同じ座標系)へ変換する。
 	*/
 	Vector2 ScreenSpace::WorldToScreen(const Vector3& worldPosition)
 	{
 		Vector3 clipPosition = Vector3::Transform(worldPosition, view_ * projection_);
 
-		Float pixelX = (clipPosition.x * 0.5f + 0.5f) * screenSize_.x;
-		Float pixelY = (1.0f - (clipPosition.y * 0.5f + 0.5f)) * screenSize_.y;
+		/// [EN] NDC -> position inside the displayed game image, then offset by where that image sits on the desktop.
+		/// [JP] NDC→表示中のゲーム画像内の位置に変換し、その画像のデスクトップ上の位置を足す。
+		Float pixelX = rect_.x + (clipPosition.x * 0.5f + 0.5f) * rect_.z;
+		Float pixelY = rect_.y + (1.0f - (clipPosition.y * 0.5f + 0.5f)) * rect_.w;
 		return Vector2(pixelX, pixelY);
 	}
 
@@ -78,21 +84,23 @@ namespace SeedCore
 	* [EN]
 	* Called by CameraSystem once per frame (after computing the game's
 	* active Camera's view/projection) to publish the values
-	* ScreenToWorld()/WorldToScreen() use - not meant to be called from
-	* gameplay code.
+	* ScreenToWorld()/WorldToScreen() use, including where the game image
+	* is displayed on the desktop - not meant to be called from gameplay
+	* code.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* CameraSystem が毎フレーム(ゲームのアクティブな Camera の
 	* view/projection を計算した後に)呼び出し、
-	* ScreenToWorld()/WorldToScreen() が使う値を公開する - ゲームプレイ
-	* コードから呼ぶことは想定していない。
+	* ScreenToWorld()/WorldToScreen() が使う値(ゲーム画像のデスクトップ
+	* 上の表示位置を含む)を公開する - ゲームプレイコードから呼ぶことは
+	* 想定していない。
 	*/
-	void ScreenSpace::SetCurrentView(const Matrix& view, const Matrix& projection, const Vector2& screenSize)
+	void ScreenSpace::SetCurrentView(const Matrix& view, const Matrix& projection, const Vector4& rect)
 	{
 		view_ = view;
 		projection_ = projection;
-		screenSize_ = screenSize;
+		rect_ = rect;
 	}
 }

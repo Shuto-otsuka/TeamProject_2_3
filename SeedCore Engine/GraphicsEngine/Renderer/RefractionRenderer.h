@@ -241,7 +241,7 @@ namespace SeedCore
 
 		/// [EN] Size of one shader-table record: the 32-byte shader identifier rounded up to the 64-byte record alignment.
 		/// [JP] シェーダーテーブルのレコード 1 つのサイズ。32 バイトのシェーダー識別子を 64 バイトのレコードアライメントへ切り上げたもの。
-		static constexpr Uint32 shaderTableRecordSize_ = 64;
+		SC_CONST Uint32 shaderTableRecordSize_ = 64;
 
 		/// [EN] Non-shader-visible heap holding the CPU-side write view that ClearUnorderedAccessViewFloat requires alongside the shader-visible one.
 		/// [JP] ClearUnorderedAccessViewFloat がシェーダー可視のビューと併せて要求する、CPU 側の書き込み用ビューを置く非シェーダー可視ヒープ。

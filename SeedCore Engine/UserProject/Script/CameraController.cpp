@@ -10,7 +10,7 @@ void CameraController::OnStart()
     playerPosition = world.GetComponent<SeedCore::Position>(player.GetEntity());
 
     //注視点をプレイヤーの位置に設定
-    smoothFocusPoint = playerPosition->Vector();
+    smoothFocusPoint = SeedCore::Transform::Vector(*playerPosition);
     //回転初期化
     Rotate();
     isCursorLock = false;
@@ -33,7 +33,7 @@ void CameraController::OnTick(float elapsedTime)
 void CameraController::SmoothFocus(float elapsedTime)
 {
     //注視点をプレイヤーの位置にLerp
-    SeedCore::Vector3 targetPosition = playerPosition->Vector();
+    SeedCore::Vector3 targetPosition = SeedCore::Transform::Vector(*playerPosition);
     targetPosition.y += lookPlayerHeight;
     smoothFocusPoint = SeedCore::Vector3::Lerp(smoothFocusPoint, targetPosition, smoothFocusSpeed * elapsedTime);
 }
@@ -48,9 +48,7 @@ void CameraController::LookPlayer()
     SeedCore::Vector3 offset = SeedCore::Vector3::TransformNormal({ 0.0f,0.0f,-distance }, rotationMatrix);
     //ポジションを確定
     SeedCore::Vector3 p = smoothFocusPoint + offset;
-    position->x_ = p.x;
-    position->y_ = p.y;
-    position->z_ = p.z;
+    SeedCore::Transform::Vector(*position, p);
 }
 
 void CameraController::Rotate()
@@ -80,10 +78,7 @@ void CameraController::Rotate()
     SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromYawPitchRoll(SeedCore::Vector3(pitchRad, yawRad, 0.0f));
     quaternion.Normalize();
     //現在のローテーションにセット
-    rotation->x_ = quaternion.x;
-    rotation->y_ = quaternion.y;
-    rotation->z_ = quaternion.z;
-    rotation->w_ = quaternion.w;
+    SeedCore::Transform::Quat(*rotation, quaternion);
 }
 
 void CameraController::UpdateZoom()

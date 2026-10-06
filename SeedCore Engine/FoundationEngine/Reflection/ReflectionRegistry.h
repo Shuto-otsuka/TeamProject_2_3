@@ -462,7 +462,7 @@ namespace SeedCore
 	{
 		/// [EN] The editor-facing value kind for T.
 		/// [JP] T に対応する、エディタ向けの値種別。
-		static constexpr AttributeType type = AttributeType::Unknown;
+		SC_CONST AttributeType type = AttributeType::Unknown;
 	};
 
 	/**
@@ -479,7 +479,7 @@ namespace SeedCore
 	{
 		/// [EN] The editor-facing value kind for Int.
 		/// [JP] Int に対応する、エディタ向けの値種別。
-		static constexpr AttributeType type = AttributeType::Int;
+		SC_CONST AttributeType type = AttributeType::Int;
 	};
 
 	/**
@@ -496,7 +496,7 @@ namespace SeedCore
 	{
 		/// [EN] The editor-facing value kind for Float.
 		/// [JP] Float に対応する、エディタ向けの値種別。
-		static constexpr AttributeType type = AttributeType::Float;
+		SC_CONST AttributeType type = AttributeType::Float;
 	};
 
 	/**
@@ -513,7 +513,7 @@ namespace SeedCore
 	{
 		/// [EN] The editor-facing value kind for Bool.
 		/// [JP] Bool に対応する、エディタ向けの値種別。
-		static constexpr AttributeType type = AttributeType::Bool;
+		SC_CONST AttributeType type = AttributeType::Bool;
 	};
 
 	/**
@@ -530,7 +530,7 @@ namespace SeedCore
 	{
 		/// [EN] The editor-facing value kind for Vector2.
 		/// [JP] Vector2 に対応する、エディタ向けの値種別。
-		static constexpr AttributeType type = AttributeType::Vector2;
+		SC_CONST AttributeType type = AttributeType::Vector2;
 	};
 
 	/**
@@ -547,13 +547,13 @@ namespace SeedCore
 	{
 		/// [EN] The editor-facing value kind for Vector3.
 		/// [JP] Vector3 に対応する、エディタ向けの値種別。
-		static constexpr AttributeType type = AttributeType::Vector3;
+		SC_CONST AttributeType type = AttributeType::Vector3;
 	};
 
 	template<>
 	struct AttributeTraits<Vector4>
 	{
-		static constexpr AttributeType type = AttributeType::Vector4;
+		SC_CONST AttributeType type = AttributeType::Vector4;
 	};
 
 	/**
@@ -570,7 +570,7 @@ namespace SeedCore
 	{
 		/// [EN] The editor-facing value kind for String.
 		/// [JP] String に対応する、エディタ向けの値種別。
-		static constexpr AttributeType type = AttributeType::String;
+		SC_CONST AttributeType type = AttributeType::String;
 	};
 
 	/**
@@ -587,6 +587,6 @@ namespace SeedCore
 	{
 		/// [EN] The editor-facing value kind for Color.
 		/// [JP] Color に対応する、エディタ向けの値種別。
-		static constexpr AttributeType type = AttributeType::Color;
+		SC_CONST AttributeType type = AttributeType::Color;
 	};
 }

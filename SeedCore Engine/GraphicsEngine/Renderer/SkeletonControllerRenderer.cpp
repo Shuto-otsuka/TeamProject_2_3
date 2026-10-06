@@ -412,7 +412,7 @@ namespace SeedCore
 
 			ColliderStructuredBuffer sphereInstance{};
 			sphereInstance.position_ = worldNodePositions[static_cast<Size>(jointIndex)];
-			sphereInstance.shapeKind_ = static_cast<Uint32>(ColliderShapeKind::Sphere);
+			sphereInstance.shapeKind_ = static_cast<Uint32>(ShapeKind::Sphere);
 			sphereInstance.rotation_ = Quaternion::Identity;
 			sphereInstance.dimensions_ = Vector3(nodeRadius[static_cast<Size>(jointIndex)], 0.0f, 0.0f);
 			sphereInstance.color_ = jointIndex == selectedNodeIndex ? boneGizmoSelectedColor : boneGizmoColor;
@@ -449,7 +449,7 @@ namespace SeedCore
 
 			ColliderStructuredBuffer coneInstance{};
 			coneInstance.position_ = parentPosition + direction * (boneLength * 0.5f);
-			coneInstance.shapeKind_ = static_cast<Uint32>(ColliderShapeKind::Cone);
+			coneInstance.shapeKind_ = static_cast<Uint32>(ShapeKind::Cone);
 			coneInstance.rotation_ = coneRotation;
 			coneInstance.dimensions_ = Vector3(nodeRadius[static_cast<Size>(jointIndex)], boneLength * 0.5f, 0.0f);
 			coneInstance.color_ = jointIndex == selectedNodeIndex ? boneGizmoSelectedColor : boneGizmoColor;

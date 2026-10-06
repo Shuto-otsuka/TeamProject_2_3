@@ -43,12 +43,6 @@ namespace SeedCore
 		Add,
 		Remove,
 
-		/// [EN] Shared-asset states: in the library, behind it, ahead of it and
-		///      in conflict. Who holds the edit lease is shown with Lock and
-		///      Unlock instead, so the meaning stays the same everywhere.
-		/// [JP] 共有アセットの状態。ライブラリにある／遅れている／進んでいる／
-		///      競合している。誰が編集中かは Lock と Unlock で示すため、
-		///      鍵の意味はエディタ全体で揃う。
 		SharedAsset,
 		SharedOutdated,
 		SharedModified,
@@ -60,6 +54,8 @@ namespace SeedCore
 		Rotate,
 		Scale,
 		Rect,
+		ShowIcon,
+		ShowShape,
 		Camera,
 		ViewMode,
 
@@ -72,15 +68,16 @@ namespace SeedCore
 		ActorActive,
 		ActorNonActive,
 
-		/// [EN] Per-component icons shown next to each component's header in
-		///      the Inspector (Unity-style). CustomComponent is the fallback
-		///      for any component not explicitly mapped — user scripts and
-		///      any built-in component not given its own icon.
-		/// [JP] Inspector の各コンポーネントヘッダーの隣に表示する、
-		///      コンポーネントごとのアイコン（Unity 風）。CustomComponent は
-		///      明示的に対応付けられていないコンポーネント（ユーザー
-		///      スクリプトや、専用アイコンを持たない組み込みコンポーネント）
-		///      のフォールバック。
+		ViewCamera,
+		ViewPointLight,
+		ViewDirectionalLight,
+		ViewSpotLight,
+		ViewRectangleLight,
+		ViewSkyLight,
+		ViewAudioSource,
+		ViewAudioListener,
+		ViewActor,
+
 		ComponentTransform,
 		ComponentCamera,
 		ComponentCameraBrain,

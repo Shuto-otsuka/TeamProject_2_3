@@ -71,7 +71,7 @@ namespace SeedCore
 		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
 
 	private:
-		static constexpr Uint32 atrousPassCount = 3;
+		SC_CONST Uint32 atrousPassCount = 3;
 
 		Handle<ComputeShader> computeShader_;
 		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectHandle_;

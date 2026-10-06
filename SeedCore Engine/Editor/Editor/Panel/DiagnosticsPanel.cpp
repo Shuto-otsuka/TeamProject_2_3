@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/DiagnosticsPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 
 namespace SeedCore
@@ -11,7 +11,7 @@ namespace SeedCore
 
 	void DiagnosticsPanel::Draw(const GpuProfiler& gpuProfiler)
 	{
-		ImGuiID dockspaceID = context_.graphicsContext_.imgui_->DockSpaceID();
+		ImGuiID dockspaceID = context_.graphics_.imgui_->DockSpaceID();
 		ImGui::SetNextWindowDockID(dockspaceID, ImGuiCond_FirstUseEver);
 
 		if (ImGui::Begin("診断"))

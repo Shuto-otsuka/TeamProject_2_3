@@ -1,7 +1,6 @@
 #include <Editor/Editor/Panel/BootScreenPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
-#include <External/ImGui/Include/imgui_internal.h>
 #include <GraphicsEngine/Graphics.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Context.h>
 #include <GraphicsEngine/Shape/Screen/BootScreen.h>
@@ -38,9 +37,9 @@ namespace SeedCore
 
 	void BootScreenPanel::Draw()
 	{
-		context_.bootScreenPreviewContext_.previewActive_ = false;
-		context_.bootScreenPreviewContext_.renderer_ = nullptr;
-		context_.bootScreenPreviewContext_.config_ = nullptr;
+		context_.preview_.bootScreen_.active_ = false;
+		context_.preview_.bootScreen_.renderer_ = nullptr;
+		context_.preview_.bootScreen_.config_ = nullptr;
 		isFocused_ = false;
 
 		if (!show_)
@@ -48,13 +47,13 @@ namespace SeedCore
 			return;
 		}
 
-		ImGui::DockBuilderDockWindow("起動ローディング画面", context_.graphicsContext_.imgui_->DockSpaceID());
+		ImGui::DockBuilderDockWindow("起動ローディング画面", context_.graphics_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(1180, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("起動ローディング画面", &show_, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 		if (isFocused_)
 		{
-			Graphics* graphics = context_.graphicsContext_.graphics_;
+			Graphics* graphics = context_.graphics_.graphics_;
 
 			if (!renderer_)
 			{
@@ -90,10 +89,10 @@ namespace SeedCore
 				}
 			}
 
-			context_.bootScreenPreviewContext_.previewActive_ = true;
-			context_.bootScreenPreviewContext_.renderer_ = &*renderer_;
-			context_.bootScreenPreviewContext_.config_ = &config_;
-			context_.bootScreenPreviewContext_.progress_ = Min(progress_, 1.0f);
+			context_.preview_.bootScreen_.active_ = true;
+			context_.preview_.bootScreen_.renderer_ = &*renderer_;
+			context_.preview_.bootScreen_.config_ = &config_;
+			context_.preview_.bootScreen_.progress_ = Min(progress_, 1.0f);
 		}
 		ImGui::End();
 	}

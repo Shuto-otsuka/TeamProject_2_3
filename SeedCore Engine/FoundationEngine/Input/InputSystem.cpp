@@ -228,7 +228,7 @@ namespace SeedCore
 
 		/// [EN] Mouse buttons are also read from the same Win32 virtual-key table fetched above, rather than a separate API call.
 		/// [JP] マウスボタンも、別途 API 呼び出しをするのではなく、上で取得した同じ Win32 仮想キーテーブルから読み取る。
-		static constexpr Int mouseVKeys[MOUSE_BUTTON_COUNT] =
+		SC_CONST Int mouseVKeys[MOUSE_BUTTON_COUNT] =
 		{
 			VK_LBUTTON, VK_RBUTTON, VK_MBUTTON, VK_XBUTTON1, VK_XBUTTON2
 		};

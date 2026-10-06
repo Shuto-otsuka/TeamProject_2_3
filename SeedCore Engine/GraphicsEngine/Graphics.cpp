@@ -437,10 +437,11 @@ namespace SeedCore
 		editorSceneConstantBuffer.inverseScreenSize_ = Vector2(1.0f / nativeWidth_, 1.0f / nativeHeight_);
 		editorSceneConstantBuffer.displaySize_ = renderer_->PostProcessOutputSize();
 
-		/// [EN] Streaming preparation precedes collider gathering and every editor pass.
-		/// [JP] ストリーミング準備は、コライダー収集と全エディターパスより先に行う。
+		/// [EN] Preparation (streaming, and gathering the colliders) precedes the collider upload and every editor pass.
+		/// [JP] 準備（ストリーミングとコライダーの収集）は、コライダーのアップロードと全エディターパスより先に行う。
 		Prepare(timer.DeltaTime(), loaderSystem, resourceCache, world, selectedEntities, editorSceneConstantBuffer);
-		renderer_->GatherColliders(world);
+		renderer_->UploadColliders(colliderSystem_.Colliders());
+		renderer_->UploadShapes(shapeSystem_.Shapes());
 
 		/// [EN] Upload the view-specific constants before the renderer records editor commands.
 		/// [JP] Renderer がエディターコマンドを記録する前に、ビュー固有の定数をアップロードする。
@@ -481,7 +482,7 @@ namespace SeedCore
 
 		/// [EN] Upload only when a game camera exists; the renderer still completes its frame without one.
 		/// [JP] ゲームカメラが存在するときだけアップロードする。存在しなくても Renderer はフレームを完了させる。
-		Bool hasActiveCamera = cameraSystem.HasActiveCamera();
+		Bool hasActiveCamera = cameraSystem.ActiveCamera();
 		if (hasActiveCamera)
 		{
 			gameSceneSystem_->Upload(gameSceneConstantBuffer);
@@ -971,6 +972,20 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Stores whether the shape debug display covers every actor, for the next Prepare.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 形のデバッグ表示を全アクターに出すかを、次の Prepare のために保存する。
+	*/
+	void Graphics::ShapeVisible(Bool visible)
+	{
+		shapeVisible_ = visible;
+	}
+
+	/**
+	* [EN]
 	* Reads the presentation synchronization preference from SwapChain.
 	*
 	* ---------------------------------------------------------------------
@@ -1196,6 +1211,14 @@ namespace SeedCore
 		/// [EN] Effects advance before Renderer::PrepareFrame so the renderer uploads this frame's age and spawn count.
 		/// [JP] Renderer が今フレームの経過時間と発生数を送れるよう、エフェクトは Renderer::PrepareFrame より先に進める。
 		effectSystem_.Update(world, deltaTime);
+
+		/// [EN] Colliders are gathered once per frame, before the editor view uploads them.
+		/// [JP] コライダーは、エディタービューがアップロードする前に、フレームに1回集める。
+		colliderSystem_.Update(world);
+
+		/// [EN] Shapes are gathered once per frame as well; the debug display follows the editor selection and the visibility flag, and camera frustums use the render aspect ratio.
+		/// [JP] 形もフレームに1回集める。デバッグ表示はエディタの選択と表示のフラグに従い、カメラの視錐台は描画の縦横比を使う。
+		shapeSystem_.Update(world, selectedEntities, shapeVisible_, static_cast<Float>(nativeWidth_) / static_cast<Float>(nativeHeight_));
 
 		/// [EN] Renderer receives the selected view's scene constants and entity selection after shared assets are current.
 		/// [JP] 共有アセットが最新化された後、Renderer は選択されたビューのシーン定数とエンティティ選択を受け取る。

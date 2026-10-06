@@ -129,7 +129,7 @@ namespace SeedCore
 	{
 		/// [EN] The storage strategy T uses (overridden per type via SEED_TRAITS_SPEC, emitted by REGISTER_COMPONENT).
 		/// [JP] T が使用するストレージ戦略（REGISTER_COMPONENT が生成する SEED_TRAITS_SPEC 経由で、型ごとに上書きされる）。
-		static constexpr ComponentStorage storage = ComponentStorage::SparseSet;
+		SC_CONST ComponentStorage storage = ComponentStorage::SparseSet;
 	};
 
 	/**
@@ -158,7 +158,7 @@ namespace SeedCore
 		* [JP]
 		* T のコンパイル時に登録されたストレージ戦略を返す。
 		*/
-		static constexpr ComponentStorage Storage()
+		SC_CONST ComponentStorage Storage()
 		{
 			return ComponentTraits<T>::storage;
 		}
@@ -173,7 +173,7 @@ namespace SeedCore
 		* 指定されたストレージ種別でタグ付けされた、T の ComponentMetadata
 		* を構築する。
 		*/
-		static constexpr ComponentMetadata Metadata(ComponentStorage storage)
+		SC_CONST ComponentMetadata Metadata(ComponentStorage storage)
 		{
 			return {
 				sizeof(T), alignof(T), storage,
@@ -196,7 +196,7 @@ namespace SeedCore
 		* （ComponentTraits<T>::storage）を使用して、T の
 		* ComponentMetadata を構築する。
 		*/
-		static constexpr ComponentMetadata Metadata()
+		SC_CONST ComponentMetadata Metadata()
 		{
 			return Metadata(ComponentTraits<T>::storage);
 		}

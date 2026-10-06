@@ -194,6 +194,16 @@ namespace SeedCore
 		canvasConstantIndices_.colliderIndex_ = index;
 	}
 
+	void ConstantIndicesSystem::SetEditorPrimitiveWireframeIndex(Uint index)
+	{
+		editorConstantIndices_.primitiveWireframeIndex_ = index;
+	}
+
+	void ConstantIndicesSystem::SetCanvasPrimitiveWireframeIndex(Uint index)
+	{
+		canvasConstantIndices_.primitiveWireframeIndex_ = index;
+	}
+
 	ShaderResourceIndicesSystem::ShaderResourceIndicesSystem(ID3D12Device* device, BindlessHeap* heap)
 	{
 		editorBuffer_ = MakePtr<StaticConstantBuffer<ShaderResourceIndices>>(device, heap);

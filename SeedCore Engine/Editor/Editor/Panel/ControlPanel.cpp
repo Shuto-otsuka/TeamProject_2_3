@@ -1,5 +1,5 @@
 #include <Editor/Editor/Panel/ControlPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <FoundationEngine/Time/GameTimer.h>
 #include <FoundationEngine/World/ECS/System/SystemScheduler.h>
@@ -60,46 +60,45 @@ namespace SeedCore
 
 		if (ImGui::Begin("##ControlPanel", nullptr, flags))
 		{
-			Bool isPlaying = context_.worldContext_.gameTimer_->Playing();
-			Bool isPaused = context_.worldContext_.gameTimer_->Paused();
-			Bool quitRequested = context_.worldContext_.world_->ConsumeQuit();
+			Bool isPlaying = context_.world_.timer_->Playing();
+			Bool isPaused = context_.world_.timer_->Paused();
+			Bool quitRequested = context_.world_.world_->ConsumeQuit();
 
 			if (!isPlaying && ImGui::IsKeyPressed(ImGuiKey_F5))
 			{
-				context_.sceneContext_.playModeScene_.Capture(*context_.worldContext_.world_);
-				context_.sceneContext_.playModeRaytracing_ = context_.viewportContext_.raytracing_;
-				context_.sceneContext_.playModeScreenSpace_ = context_.viewportContext_.screenSpace_;
-				context_.sceneContext_.playModeRasterization_ = context_.viewportContext_.rasterization_;
-				context_.sceneContext_.playModeMasterVolume_ = MixerSystem::MasterVolume();
-				context_.sceneContext_.playModeCategoryVolumes_.clear();
+				playModeScene_.Capture(*context_.world_.world_);
+				playModeRaytracing_ = context_.sceneVisual_.raytracing_;
+				playModeScreenSpace_ = context_.sceneVisual_.screenSpace_;
+				playModeRasterization_ = context_.sceneVisual_.rasterization_;
+				playModeMasterVolume_ = MixerSystem::MasterVolume();
+				playModeCategoryVolumes_.clear();
 				for (const String& category : MixerSystem::CategoryNameList())
 				{
-					context_.sceneContext_.playModeCategoryVolumes_.push_back(MixerSystem::CategoryVolume(category));
+					playModeCategoryVolumes_.push_back(MixerSystem::CategoryVolume(category));
 				}
 				BeginPlayMemCheck();
-				context_.worldContext_.gameTimer_->Play();
+				context_.world_.timer_->Play();
 				isPlaying = true;
 				ImGui::SetWindowFocus("ゲームビュー");
 			}
 			if (isPlaying && (ImGui::IsKeyPressed(ImGuiKey_F7) || quitRequested))
 			{
-				context_.worldContext_.gameTimer_->Stop();
+				context_.world_.timer_->Stop();
 				Scene::Reset();
-				context_.worldContext_.world_->DestroyActors();
-				context_.sceneContext_.playModeScene_.Instantiate(*context_.worldContext_.world_, *context_.worldContext_.resource_);
-				context_.sceneContext_.playModeScene_.Clear();
-				context_.worldContext_.system_->Reset();
-				context_.selectionContext_.selectedActor_ = Actor();
-				context_.selectionContext_.selectedActors_.clear();
-				context_.selectionContext_.selectedEntity_ = Entity::Null();
-				context_.viewportContext_.raytracing_ = context_.sceneContext_.playModeRaytracing_;
-				context_.viewportContext_.screenSpace_ = context_.sceneContext_.playModeScreenSpace_;
-				context_.viewportContext_.rasterization_ = context_.sceneContext_.playModeRasterization_;
-				MixerSystem::MasterVolume(context_.sceneContext_.playModeMasterVolume_);
+				context_.world_.world_->DestroyActors();
+				playModeScene_.Instantiate(*context_.world_.world_, *context_.world_.resource_);
+				playModeScene_.Clear();
+				context_.world_.system_->Reset();
+				context_.selection_.Clear();
+				context_.scene_.history_.Clear();
+				context_.sceneVisual_.raytracing_ = playModeRaytracing_;
+				context_.sceneVisual_.screenSpace_ = playModeScreenSpace_;
+				context_.sceneVisual_.rasterization_ = playModeRasterization_;
+				MixerSystem::MasterVolume(playModeMasterVolume_);
 				const DynamicArray<String>& categoryNames = MixerSystem::CategoryNameList();
-				for (Size categoryIndex = 0; categoryIndex < categoryNames.size() && categoryIndex < context_.sceneContext_.playModeCategoryVolumes_.size(); ++categoryIndex)
+				for (Size categoryIndex = 0; categoryIndex < categoryNames.size() && categoryIndex < playModeCategoryVolumes_.size(); ++categoryIndex)
 				{
-					MixerSystem::CategoryVolume(categoryNames[categoryIndex], context_.sceneContext_.playModeCategoryVolumes_[categoryIndex]);
+					MixerSystem::CategoryVolume(categoryNames[categoryIndex], playModeCategoryVolumes_[categoryIndex]);
 				}
 				InputSystem::EndMouseCapture();
 				InputSystem::UnlockCursor();
@@ -113,12 +112,12 @@ namespace SeedCore
 			{
 				if (isPaused)
 				{
-					context_.worldContext_.gameTimer_->Resume();
+					context_.world_.timer_->Resume();
 					isPaused = false;
 				}
 				else
 				{
-					context_.worldContext_.gameTimer_->Pause();
+					context_.world_.timer_->Pause();
 					isPaused = true;
 				}
 			}
@@ -141,18 +140,18 @@ namespace SeedCore
 			{
 				if (ImGui::ImageButton("##Play", imguiTexture_.Icon(IconType::Play), buttonSize))
 				{
-					context_.sceneContext_.playModeScene_.Capture(*context_.worldContext_.world_);
-					context_.sceneContext_.playModeRaytracing_ = context_.viewportContext_.raytracing_;
-					context_.sceneContext_.playModeScreenSpace_ = context_.viewportContext_.screenSpace_;
-					context_.sceneContext_.playModeRasterization_ = context_.viewportContext_.rasterization_;
-					context_.sceneContext_.playModeMasterVolume_ = MixerSystem::MasterVolume();
-					context_.sceneContext_.playModeCategoryVolumes_.clear();
+					playModeScene_.Capture(*context_.world_.world_);
+					playModeRaytracing_ = context_.sceneVisual_.raytracing_;
+					playModeScreenSpace_ = context_.sceneVisual_.screenSpace_;
+					playModeRasterization_ = context_.sceneVisual_.rasterization_;
+					playModeMasterVolume_ = MixerSystem::MasterVolume();
+					playModeCategoryVolumes_.clear();
 					for (const String& category : MixerSystem::CategoryNameList())
 					{
-						context_.sceneContext_.playModeCategoryVolumes_.push_back(MixerSystem::CategoryVolume(category));
+						playModeCategoryVolumes_.push_back(MixerSystem::CategoryVolume(category));
 					}
 					BeginPlayMemCheck();
-					context_.worldContext_.gameTimer_->Play();
+					context_.world_.timer_->Play();
 					ImGui::SetWindowFocus("ゲームビュー");
 				}
 			}
@@ -170,7 +169,7 @@ namespace SeedCore
 				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
 				if (ImGui::ImageButton("##Pause", imguiTexture_.Icon(IconType::Pause), buttonSize))
 				{
-					context_.worldContext_.gameTimer_->Resume();
+					context_.world_.timer_->Resume();
 				}
 				ImGui::PopStyleColor();
 			}
@@ -178,7 +177,7 @@ namespace SeedCore
 			{
 				if (ImGui::ImageButton("##Pause", imguiTexture_.Icon(IconType::Pause), buttonSize))
 				{
-					context_.worldContext_.gameTimer_->Pause();
+					context_.world_.timer_->Pause();
 				}
 			}
 
@@ -194,23 +193,22 @@ namespace SeedCore
 			{
 				if (ImGui::ImageButton("##Stop", imguiTexture_.Icon(IconType::Stop), buttonSize))
 				{
-					context_.worldContext_.gameTimer_->Stop();
+					context_.world_.timer_->Stop();
 					Scene::Reset();
-					context_.worldContext_.world_->DestroyActors();
-					context_.sceneContext_.playModeScene_.Instantiate(*context_.worldContext_.world_, *context_.worldContext_.resource_);
-					context_.sceneContext_.playModeScene_.Clear();
-					context_.worldContext_.system_->Reset();
-					context_.selectionContext_.selectedActor_ = Actor();
-					context_.selectionContext_.selectedActors_.clear();
-					context_.selectionContext_.selectedEntity_ = Entity::Null();
-					context_.viewportContext_.raytracing_ = context_.sceneContext_.playModeRaytracing_;
-					context_.viewportContext_.screenSpace_ = context_.sceneContext_.playModeScreenSpace_;
-					context_.viewportContext_.rasterization_ = context_.sceneContext_.playModeRasterization_;
-					MixerSystem::MasterVolume(context_.sceneContext_.playModeMasterVolume_);
+					context_.world_.world_->DestroyActors();
+					playModeScene_.Instantiate(*context_.world_.world_, *context_.world_.resource_);
+					playModeScene_.Clear();
+					context_.world_.system_->Reset();
+					context_.selection_.Clear();
+					context_.scene_.history_.Clear();
+					context_.sceneVisual_.raytracing_ = playModeRaytracing_;
+					context_.sceneVisual_.screenSpace_ = playModeScreenSpace_;
+					context_.sceneVisual_.rasterization_ = playModeRasterization_;
+					MixerSystem::MasterVolume(playModeMasterVolume_);
 					const DynamicArray<String>& categoryNames = MixerSystem::CategoryNameList();
-					for (Size categoryIndex = 0; categoryIndex < categoryNames.size() && categoryIndex < context_.sceneContext_.playModeCategoryVolumes_.size(); ++categoryIndex)
+					for (Size categoryIndex = 0; categoryIndex < categoryNames.size() && categoryIndex < playModeCategoryVolumes_.size(); ++categoryIndex)
 					{
-						MixerSystem::CategoryVolume(categoryNames[categoryIndex], context_.sceneContext_.playModeCategoryVolumes_[categoryIndex]);
+						MixerSystem::CategoryVolume(categoryNames[categoryIndex], playModeCategoryVolumes_[categoryIndex]);
 					}
 					InputSystem::EndMouseCapture();
 					InputSystem::UnlockCursor();

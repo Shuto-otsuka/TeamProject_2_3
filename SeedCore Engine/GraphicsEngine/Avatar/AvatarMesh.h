@@ -44,10 +44,10 @@ namespace SeedCore
 		[[nodiscard]] Vector2 TexcoordExtent()const;
 
 	private:
-		static constexpr Uint32 maxVerticesPerMeshlet_ = 64;
-		static constexpr Uint32 maxTrianglesPerMeshlet_ = 124;
+		SC_CONST Uint32 maxVerticesPerMeshlet_ = 64;
+		SC_CONST Uint32 maxTrianglesPerMeshlet_ = 124;
 
-		static constexpr Uint32 maxRegionCount_ = 4;
+		SC_CONST Uint32 maxRegionCount_ = 4;
 
 		Uint32 bodyVertexCount_ = 0;
 		Uint32 regionCount_ = 0;

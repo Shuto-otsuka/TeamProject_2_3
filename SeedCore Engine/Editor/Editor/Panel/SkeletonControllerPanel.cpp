@@ -1,8 +1,7 @@
 #include <Editor/Editor/Panel/SkeletonControllerPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
-#include <External/ImGui/Include/imgui_internal.h>
 #include <GraphicsEngine/Model/Crister.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Model/Mesh.h>
@@ -39,8 +38,8 @@ namespace SeedCore
 
 	void SkeletonControllerPanel::Draw()
 	{
-		context_.skeletonControllerPreviewContext_.previewActive_ = false;
-		context_.skeletonControllerPreviewContext_.selectedNodeIndex_ = selectedNodeIndex_;
+		context_.preview_.skeletonController_.active_ = false;
+		context_.preview_.skeletonController_.nodeIndex_ = selectedNodeIndex_;
 		currentCrister_ = nullptr;
 		isFocused_ = false;
 
@@ -49,13 +48,13 @@ namespace SeedCore
 			return;
 		}
 
-		ImGui::DockBuilderDockWindow("スケルトンコントローラー", context_.graphicsContext_.imgui_->DockSpaceID());
+		ImGui::DockBuilderDockWindow("スケルトンコントローラー", context_.graphics_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("スケルトンコントローラー", &show_);
 		if (isFocused_)
 		{
-			const Mesh* mesh = context_.selectionContext_.selectedActor_ ? context_.worldContext_.world_->GetComponent<Mesh>(context_.selectionContext_.selectedActor_.GetEntity()) : nullptr;
+			const Mesh* mesh = context_.selection_.Primary() ? context_.world_.world_->GetComponent<Mesh>(context_.selection_.Primary().GetEntity()) : nullptr;
 
 			if (!mesh || mesh->meshID_ == 0)
 			{
@@ -63,9 +62,9 @@ namespace SeedCore
 			}
 			else
 			{
-				ModelResource* modelResource = context_.worldContext_.resource_->GetResource<ModelResource>(AssetType::Model);
+				ModelResource* modelResource = context_.world_.resource_->GetResource<ModelResource>(AssetType::Model);
 				Handle<Crister> handle = modelResource->GetHandle(mesh->meshID_);
-				currentCrister_ = handle.empty() ? nullptr : modelResource->Resolve(*context_.worldContext_.loader_, handle);
+				currentCrister_ = handle.empty() ? nullptr : modelResource->Resolve(*context_.world_.loader_, handle);
 
 				if (!currentCrister_)
 				{
@@ -125,18 +124,17 @@ namespace SeedCore
 
 	void SkeletonControllerPanel::DrawPreview()
 	{
-		const Mesh* mesh = context_.worldContext_.world_->GetComponent<Mesh>(context_.selectionContext_.selectedActor_.GetEntity());
+		const Mesh* mesh = context_.world_.world_->GetComponent<Mesh>(context_.selection_.Primary().GetEntity());
 
-		context_.skeletonControllerPreviewContext_.previewActive_ = true;
-		context_.skeletonControllerPreviewContext_.previewMeshAssetId_ = mesh->meshID_;
-		context_.skeletonControllerPreviewContext_.previewWorldMatrix_ = Matrix::Identity;
+		context_.preview_.skeletonController_.active_ = true;
+		context_.preview_.skeletonController_.meshAssetID_ = mesh->meshID_;
 
 		ImVec2 previewSize = ImGui::GetContentRegionAvail();
 		previewSize.y = Max(previewSize.y, 100.0f);
 
-		if (context_.cameraContext_.skeletonControllerCamera_)
+		if (context_.preview_.skeletonController_.camera_)
 		{
-			context_.cameraContext_.skeletonControllerCamera_->Resize(previewSize.x, previewSize.y);
+			context_.preview_.skeletonController_.camera_->Resize(previewSize.x, previewSize.y);
 		}
 
 		ImVec2 imagePosition = ImGui::GetCursorScreenPos();
@@ -151,14 +149,14 @@ namespace SeedCore
 		Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
 		Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
 
-		if (ImGui::IsItemHovered() && context_.cameraContext_.skeletonControllerCamera_ && context_.cameraContext_.skeletonControllerCameraController_)
+		if (ImGui::IsItemHovered() && context_.preview_.skeletonController_.camera_ && context_.preview_.skeletonController_.cameraController_)
 		{
 			if (orbitHeld || panHeld)
 			{
 				InputSystem::BeginMouseCapture();
 			}
 
-			context_.cameraContext_.skeletonControllerCameraController_->Update(*context_.cameraContext_.skeletonControllerCamera_, ImGui::GetIO().DeltaTime);
+			context_.preview_.skeletonController_.cameraController_->Update(*context_.preview_.skeletonController_.camera_, ImGui::GetIO().DeltaTime);
 		}
 
 		if (!orbitHeld && !panHeld)
@@ -175,17 +173,17 @@ namespace SeedCore
 		///      閾値を超えないただのクリックの場合のみ、プレビューカメラの
 		///      逆ビュープロジェクションで任意のNDC深度からマウス位置を
 		///      ワールド空間へ逆射影し、そのレイに最も近いジョイントを選択する。
-		if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !ImGui::IsMouseDragging(ImGuiMouseButton_Left, 4.0f) && context_.cameraContext_.skeletonControllerCamera_ && currentCrister_)
+		if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !ImGui::IsMouseDragging(ImGuiMouseButton_Left, 4.0f) && context_.preview_.skeletonController_.camera_ && currentCrister_)
 		{
 			Vector2 mousePosInImage(ImGui::GetMousePos().x - imagePosition.x, ImGui::GetMousePos().y - imagePosition.y);
 			Float ndcX = (mousePosInImage.x / previewSize.x) * 2.0f - 1.0f;
 			Float ndcY = 1.0f - (mousePosInImage.y / previewSize.y) * 2.0f;
 
-			Matrix inverseViewProjection = context_.cameraContext_.skeletonControllerCamera_->InverseViewProjection();
+			Matrix inverseViewProjection = context_.preview_.skeletonController_.camera_->InverseViewProjection();
 			Vector4 unprojected = Vector4::Transform(Vector4(ndcX, ndcY, 0.5f, 1.0f), inverseViewProjection);
 			Vector3 worldPoint = Vector3(unprojected.x, unprojected.y, unprojected.z) / unprojected.w;
 
-			Vector3 rayOrigin = context_.cameraContext_.skeletonControllerCamera_->Eye();
+			Vector3 rayOrigin = context_.preview_.skeletonController_.camera_->Eye();
 			Vector3 rayDirection = worldPoint - rayOrigin;
 			rayDirection.Normalize();
 

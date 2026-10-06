@@ -1,8 +1,7 @@
 #include <Editor/Editor/Panel/MaterialViewerPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
-#include <External/ImGui/Include/imgui_internal.h>
 #include <GraphicsEngine/Model/Material/Material.h>
 #include <GraphicsEngine/Model/Material/MaterialLoader.h>
 #include <GraphicsEngine/Model/Material/MaterialResource.h>
@@ -58,14 +57,14 @@ namespace SeedCore
 
 	void MaterialViewerPanel::EnsureEditingSurface()
 	{
-		Uint32 surfaceAssetId = context_.materialPreviewContext_.previewSurfaceAssetId_;
+		Uint32 surfaceAssetId = context_.preview_.material_.surfaceAssetID_;
 		if (surfaceAssetId == 0 || editingSurfaceAssetId_ == surfaceAssetId)
 		{
 			return;
 		}
 
-		LoaderSystem* loader = context_.worldContext_.loader_;
-		ResourceCache* cache = context_.worldContext_.resource_;
+		LoaderSystem* loader = context_.world_.loader_;
+		ResourceCache* cache = context_.world_.resource_;
 		MaterialResource* materialResource = cache->GetResource<MaterialResource>(AssetType::Material);
 
 		Handle<Surface> handle = materialResource->GetHandle(surfaceAssetId);
@@ -89,8 +88,8 @@ namespace SeedCore
 
 	void MaterialViewerPanel::Draw()
 	{
-		context_.materialPreviewContext_.previewActive_ = false;
-		context_.materialPreviewContext_.previewSurfaceAssetId_ = 0;
+		context_.preview_.material_.active_ = false;
+		context_.preview_.material_.surfaceAssetID_ = 0;
 		isFocused_ = false;
 
 		if (!show_)
@@ -98,16 +97,16 @@ namespace SeedCore
 			return;
 		}
 
-		Actor actor = context_.selectionContext_.selectedActor_;
-		target_ = actor ? context_.worldContext_.world_->GetComponent<Material>(actor.GetEntity()) : nullptr;
+		Actor actor = context_.selection_.Primary();
+		target_ = actor ? context_.world_.world_->GetComponent<Material>(actor.GetEntity()) : nullptr;
 
-		ImGui::DockBuilderDockWindow("マテリアルビューア", context_.graphicsContext_.imgui_->DockSpaceID());
+		ImGui::DockBuilderDockWindow("マテリアルビューア", context_.graphics_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(960, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("マテリアルビューア", &show_);
 		if (isFocused_)
 		{
-			const Mesh* mesh = actor ? context_.worldContext_.world_->GetComponent<Mesh>(actor.GetEntity()) : nullptr;
+			const Mesh* mesh = actor ? context_.world_.world_->GetComponent<Mesh>(actor.GetEntity()) : nullptr;
 
 			if (!target_ || !mesh || mesh->meshID_ == 0)
 			{
@@ -125,11 +124,11 @@ namespace SeedCore
 				}
 
 				ImGui::SetNextItemWidth(240.0f);
-				if (ImGui::BeginCombo("マテリアル", SlotLabel(context_.worldContext_.resource_, target_->materialIDs_[selectedSlot_], selectedSlot_).c_str()))
+				if (ImGui::BeginCombo("マテリアル", SlotLabel(context_.world_.resource_, target_->materialIDs_[selectedSlot_], selectedSlot_).c_str()))
 				{
 					for (Size slot = 0; slot < target_->materialIDs_.size(); slot++)
 					{
-						if (ImGui::Selectable(SlotLabel(context_.worldContext_.resource_, target_->materialIDs_[slot], slot).c_str(), selectedSlot_ == slot))
+						if (ImGui::Selectable(SlotLabel(context_.world_.resource_, target_->materialIDs_[slot], slot).c_str(), selectedSlot_ == slot))
 						{
 							selectedSlot_ = slot;
 						}
@@ -137,18 +136,18 @@ namespace SeedCore
 					ImGui::EndCombo();
 				}
 
-				context_.materialPreviewContext_.previewActive_ = true;
-				context_.materialPreviewContext_.previewMeshAssetId_ = mesh->meshID_;
-				context_.materialPreviewContext_.previewSurfaceAssetId_ = target_->materialIDs_[selectedSlot_];
+				context_.preview_.material_.active_ = true;
+				context_.preview_.material_.meshAssetID_ = mesh->meshID_;
+				context_.preview_.material_.surfaceAssetID_ = target_->materialIDs_[selectedSlot_];
 
 				ImGui::Spacing();
 
 				ImVec2 previewSize = ImGui::GetContentRegionAvail();
 				previewSize.y = Max(previewSize.y, 100.0f);
 
-				if (context_.cameraContext_.materialCamera_)
+				if (context_.preview_.material_.camera_)
 				{
-					context_.cameraContext_.materialCamera_->Resize(previewSize.x, previewSize.y);
+					context_.preview_.material_.camera_->Resize(previewSize.x, previewSize.y);
 				}
 
 				ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
@@ -156,13 +155,13 @@ namespace SeedCore
 				Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
 				Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
 
-				if (ImGui::IsItemHovered() && context_.cameraContext_.materialCamera_ && context_.cameraContext_.materialCameraController_)
+				if (ImGui::IsItemHovered() && context_.preview_.material_.camera_ && context_.preview_.material_.cameraController_)
 				{
 					if (orbitHeld || panHeld)
 					{
 						InputSystem::BeginMouseCapture();
 					}
-					context_.cameraContext_.materialCameraController_->Update(*context_.cameraContext_.materialCamera_, ImGui::GetIO().DeltaTime);
+					context_.preview_.material_.cameraController_->Update(*context_.preview_.material_.camera_, ImGui::GetIO().DeltaTime);
 				}
 
 				if (!orbitHeld && !panHeld)
@@ -190,13 +189,13 @@ namespace SeedCore
 		}
 
 		EnsureEditingSurface();
-		if (context_.resourceSync_)
+		if (context_.application_.resourceSync_)
 		{
 			if (ImGui::IsWindowHovered(ImGuiHoveredFlags_ChildWindows) && ImGui::IsMouseDown(ImGuiMouseButton_Left))
 			{
-				context_.resourceSync_->RequestEdit(surfaceAssetId, String("asset"));
+				context_.application_.resourceSync_->RequestEdit(surfaceAssetId, String("asset"));
 			}
-			if (!context_.resourceSync_->Editable(surfaceAssetId, String("asset")))
+			if (!context_.application_.resourceSync_->Editable(surfaceAssetId, String("asset")))
 			{
 				ImGui::TextDisabled("共有マテリアルです。クリックすると編集権を取得します。保存はローカルのみです。");
 				return;
@@ -208,8 +207,8 @@ namespace SeedCore
 			return;
 		}
 
-		LoaderSystem* loader = context_.worldContext_.loader_;
-		ResourceCache* cache = context_.worldContext_.resource_;
+		LoaderSystem* loader = context_.world_.loader_;
+		ResourceCache* cache = context_.world_.resource_;
 		MaterialResource* materialResource = cache->GetResource<MaterialResource>(AssetType::Material);
 		Surface& surface = *editingSurface_;
 
@@ -234,8 +233,8 @@ namespace SeedCore
 			{
 				std::filesystem::path newPath = std::filesystem::path(asset->fullpath_.c_str()).parent_path() / (name + ".material");
 				loader->materialLoader_->Save(surface, String(newPath.string()));
-				D3D12Context& d3d12Context = context_.graphicsContext_.graphics_->GetContext();
-				cache->Reload(*loader, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphicsContext_.graphics_->GetBC7CompressShader());
+				D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
+				cache->Reload(*loader, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 			}
 		}
 

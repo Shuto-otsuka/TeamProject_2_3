@@ -1,9 +1,8 @@
 #include <Editor/Editor/Panel/AnimatorControllerPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
-#include <External/ImGui/Include/imgui_internal.h>
 #include <GraphicsEngine/Model/Animation/Animator.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/World/Actor/Actor.h>
@@ -258,7 +257,7 @@ namespace SeedCore
 			return;
 		}
 
-		Animator* selectedTarget = context_.selectionContext_.selectedActor_ ? const_cast<Animator*>(context_.selectionContext_.selectedActor_.GetComponent<Animator>()) : nullptr;
+		Animator* selectedTarget = context_.selection_.Primary() ? const_cast<Animator*>(context_.selection_.Primary().GetComponent<Animator>()) : nullptr;
 		if (selectedTarget != target_)
 		{
 			target_ = selectedTarget;
@@ -268,7 +267,7 @@ namespace SeedCore
 			selectedConditionIndex_ = SIZE_MAX;
 		}
 
-		ImGui::DockBuilderDockWindow("アニメーターコントローラー", context_.graphicsContext_.imgui_->DockSpaceID());
+		ImGui::DockBuilderDockWindow("アニメーターコントローラー", context_.graphics_.imgui_->DockSpaceID());
 		ImGui::SetNextWindowSize(ImVec2(1100, 650), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("アニメーターコントローラー", &show_);
@@ -1416,12 +1415,12 @@ namespace SeedCore
 			}
 			ImGui::Spacing();
 
-			std::string preview = AssetLabel(context_.worldContext_.resource_, state.animationID_);
+			std::string preview = AssetLabel(context_.world_.resource_, state.animationID_);
 			if (ImGui::BeginCombo("Animation", preview.c_str()))
 			{
 				for (Uint32 animationId : target_->animationIDs_)
 				{
-					std::string label = AssetLabel(context_.worldContext_.resource_, static_cast<Int>(animationId));
+					std::string label = AssetLabel(context_.world_.resource_, static_cast<Int>(animationId));
 					Bool selected = (state.animationID_ == static_cast<Int>(animationId));
 					if (ImGui::Selectable(label.c_str(), selected))
 					{

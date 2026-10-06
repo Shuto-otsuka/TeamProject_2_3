@@ -22,7 +22,7 @@
 #include <GraphicsEngine/System/WeatherSystem.h>
 #include <GraphicsEngine/System/SplashSystem.h>
 #include <Editor/Editor/Window.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/Editor.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/Build/HotReload.h>

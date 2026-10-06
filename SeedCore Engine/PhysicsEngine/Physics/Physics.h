@@ -2,6 +2,7 @@
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 #include <FoundationEngine/Utility/Handle.h>
+#include <FoundationEngine/Interop/QueryInstance.h>
 
 namespace SeedCore
 {
@@ -200,14 +201,16 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
-		* Constructs a physics facade connected to the engine Jolt manager.
+		* Constructs a physics facade connected to the engine Jolt manager,
+		* recording every query into queryInstance.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* エンジンのJolt管理機構へ接続された物理ファサードを構築する。
+		* クエリはすべて queryInstance に記録する。
 		*/
-		Physics();
+		Physics(QueryInstance& queryInstance);
 
 		/**
 		* [EN]
@@ -741,10 +744,14 @@ namespace SeedCore
 	private:
 		/// [EN] Number of screen pixels represented by one physics meter.
 		/// [JP] 物理空間の1メートルに対応する画面上のピクセル数。
-		static constexpr Float pixelsPerMeter_ = 100.0f;
+		SC_CONST Float pixelsPerMeter_ = 100.0f;
 
 		/// [EN] Jolt services and pooled physics resources used by this facade.
 		/// [JP] このファサードが使用するJoltサービスと物理リソースプール。
 		JoltManager& joltManager_;
+
+		/// [EN] Record every query is added to, owned by World.
+		/// [JP] クエリをすべて記録する先。World が所有する。
+		QueryInstance& queryInstance_;
 	};
 }

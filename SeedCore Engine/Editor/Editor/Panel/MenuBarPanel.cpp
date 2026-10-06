@@ -1,6 +1,23 @@
 #include <Editor/Editor/Panel/MenuBarPanel.h>
-#include <Editor/Editor/EditorContext.h>
+#include <Editor/Editor/Context/EditorContext.h>
+#include <Editor/Editor/Build/AtomCraft.h>
+#include <Editor/Editor/Panel/LayerSettingsPanel.h>
+#include <Editor/Editor/Panel/AnimatorControllerPanel.h>
+#include <Editor/Editor/Panel/TimelinePanel.h>
+#include <Editor/Editor/Panel/SkeletonControllerPanel.h>
+#include <Editor/Editor/Panel/MaterialViewerPanel.h>
+#include <Editor/Editor/Panel/ModelTransformPanel.h>
+#include <Editor/Editor/Panel/AvatarPanel.h>
+#include <Editor/Editor/Panel/BootScreenPanel.h>
+#include <Editor/Editor/Panel/ShortCutKeyPanel.h>
+#include <Editor/Editor/Panel/SpecMemoPanel.h>
+#include <Editor/Editor/Panel/DiagnosticsPanel.h>
+#include <Editor/Editor/Panel/TodoListPanel.h>
+#include <Editor/Editor/Panel/VersionPanel.h>
+#include <Editor/Editor/Panel/ConfigPanel.h>
 #include <FoundationEngine/File/FileDialog.h>
+#include <FoundationEngine/Resource/Config/EditorConfig.h>
+#include <GraphicsEngine/Model/Animation/Animator.h>
 #include <FoundationEngine/Log/Notice.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Resource/Scene/Scene.h>
@@ -17,21 +34,21 @@ namespace SeedCore
 
 	void MenuBarPanel::Draw()
 	{
-		const Bool isPlaying = context_.worldContext_.gameTimer_->Playing();
+		const Bool isPlaying = context_.world_.timer_->Playing();
 
-		if (context_.sceneContext_.requestedSceneAssetID_ != 0)
+		if (context_.scene_.request_ != 0)
 		{
-			Uint32 assetID = context_.sceneContext_.requestedSceneAssetID_;
-			context_.sceneContext_.requestedSceneAssetID_ = 0;
+			Uint32 assetID = context_.scene_.request_;
+			context_.scene_.request_ = 0;
 			if (!isPlaying)
 			{
 				RequestSceneSwitch(PendingSceneOp::OpenAsset, {}, assetID);
 			}
 		}
 
-		if (context_.exitRequested_)
+		if (context_.application_.exitRequested_)
 		{
-			context_.exitRequested_ = false;
+			context_.application_.exitRequested_ = false;
 			RequestSceneSwitch(PendingSceneOp::Exit, {}, 0);
 		}
 
@@ -54,15 +71,15 @@ namespace SeedCore
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F1, false))
 		{
-			shortCutKeyRequested_ = true;
+			context_.panel_.shortCutKey_->Open();
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F2, false))
 		{
-			specMemoRequested_ = true;
+			context_.panel_.specMemo_->Open();
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F3, false))
 		{
-			consoleRequested_ = true;
+			context_.panel_.diagnostics_->ShowConsoleTab();
 		}
 		if (io.KeyAlt && ImGui::IsKeyPressed(ImGuiKey_F4, false))
 		{
@@ -70,15 +87,15 @@ namespace SeedCore
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F4, false))
 		{
-			profilerRequested_ = true;
+			context_.panel_.diagnostics_->ShowProfilerTab();
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F8, false))
 		{
-			todoListRequested_ = true;
+			context_.panel_.todoList_->Open();
 		}
 		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F9, false))
 		{
-			versionRequested_ = true;
+			context_.panel_.version_->Open();
 		}
 
 		if (ImGui::BeginMainMenuBar())
@@ -120,16 +137,16 @@ namespace SeedCore
 			{
 				if (ImGui::MenuItem("元に戻す", "Ctrl+Z", false, !isPlaying))
 				{
-					context_.sceneContext_.history_.Undo();
+					context_.scene_.history_.Undo();
 				}
 				if (ImGui::MenuItem("やり直す", "Ctrl+Y", false, !isPlaying))
 				{
-					context_.sceneContext_.history_.Redo();
+					context_.scene_.history_.Redo();
 				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("レイヤー編集"))
 				{
-					layerSettingsRequested_ = true;
+					context_.panel_.layerSettings_->Open();
 				}
 				ImGui::EndMenu();
 			}
@@ -138,23 +155,24 @@ namespace SeedCore
 			{
 				if (ImGui::MenuItem("アニメーターコントローラー"))
 				{
-					animatorControllerRequested_ = true;
+					Animator* animator = context_.selection_.Primary() ? const_cast<Animator*>(context_.selection_.Primary().GetComponent<Animator>()) : nullptr;
+					context_.panel_.animatorController_->Open(animator);
 				}
 				if (ImGui::MenuItem("タイムライン"))
 				{
-					timelineRequested_ = true;
+					context_.panel_.timeline_->Open();
 				}
 				if (ImGui::MenuItem("スケルトンコントローラー"))
 				{
-					skeletonControllerRequested_ = true;
+					context_.panel_.skeletonController_->Open();
 				}
 				if (ImGui::MenuItem("マテリアルビューア"))
 				{
-					materialViewerRequested_ = true;
+					context_.panel_.materialViewer_->Open();
 				}
 				if (ImGui::MenuItem("モデル変換"))
 				{
-					modelTransformRequested_ = true;
+					context_.panel_.modelTransform_->Open();
 				}
 				ImGui::EndMenu();
 			}
@@ -165,17 +183,21 @@ namespace SeedCore
 			{
 				if (ImGui::MenuItem("アバター生成"))
 				{
-					avatarRequested_ = true;
+					context_.panel_.avatar_->Open();
 				}
 				if (ImGui::MenuItem("起動ローディング画面"))
 				{
-					bootScreenRequested_ = true;
+					context_.panel_.bootScreen_->Open();
 				}
 				if (ImGui::BeginMenu("CRI ADX2"))
 				{
 					if (ImGui::MenuItem("AtomCraft を開く"))
 					{
-						atomCraftRequested_ = true;
+						std::filesystem::path projectPath;
+						if (FileDialog::OpenFile(projectPath, std::filesystem::current_path(), L"Atom Craft Project (*.atmcproject)", L"*.atmcproject"))
+						{
+							AtomCraft::Open(context_.config_.editor_->atomCraftPath_, String(projectPath.generic_string()));
+						}
 					}
 					ImGui::EndMenu();
 				}
@@ -186,34 +208,34 @@ namespace SeedCore
 			{
 				if (ImGui::MenuItem("ショートカットキー一覧", "Ctrl+F1"))
 				{
-					shortCutKeyRequested_ = true;
+					context_.panel_.shortCutKey_->Open();
 				}
 				if (ImGui::MenuItem("仕様メモ", "Ctrl+F2"))
 				{
-					specMemoRequested_ = true;
+					context_.panel_.specMemo_->Open();
 				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("コンソール", "Ctrl+F3"))
 				{
-					consoleRequested_ = true;
+					context_.panel_.diagnostics_->ShowConsoleTab();
 				}
 				if (ImGui::MenuItem("パフォーマンスプロファイラー", "Ctrl+F4"))
 				{
-					profilerRequested_ = true;
+					context_.panel_.diagnostics_->ShowProfilerTab();
 				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("ToDoリスト", "Ctrl+F8"))
 				{
-					todoListRequested_ = true;
+					context_.panel_.todoList_->Open();
 				}
 				if (ImGui::MenuItem("バージョン情報", "Ctrl+F9"))
 				{
-					versionRequested_ = true;
+					context_.panel_.version_->Open();
 				}
 				ImGui::Separator();
 				if (ImGui::MenuItem("エンジン/ゲーム構成設定"))
 				{
-					configRequested_ = true;
+					context_.panel_.config_->Open();
 				}
 				ImGui::EndMenu();
 			}
@@ -286,171 +308,6 @@ namespace SeedCore
 		}
 	}
 
-	Bool MenuBarPanel::ConsumeShortCutKeyRequest()
-	{
-		if (shortCutKeyRequested_)
-		{
-			shortCutKeyRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeSpecMemoRequest()
-	{
-		if (specMemoRequested_)
-		{
-			specMemoRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeConsoleRequest()
-	{
-		if (consoleRequested_)
-		{
-			consoleRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeProfilerRequest()
-	{
-		if (profilerRequested_)
-		{
-			profilerRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeTodoListRequest()
-	{
-		if (todoListRequested_)
-		{
-			todoListRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeVersionRequest()
-	{
-		if (versionRequested_)
-		{
-			versionRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeAtomCraftRequest()
-	{
-		if (atomCraftRequested_)
-		{
-			atomCraftRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeConfigRequest()
-	{
-		if (configRequested_)
-		{
-			configRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeLayerSettingsRequest()
-	{
-		if (layerSettingsRequested_)
-		{
-			layerSettingsRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeAnimatorControllerRequest()
-	{
-		if (animatorControllerRequested_)
-		{
-			animatorControllerRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeTimelineRequest()
-	{
-		if (timelineRequested_)
-		{
-			timelineRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeSkeletonControllerRequest()
-	{
-		if (skeletonControllerRequested_)
-		{
-			skeletonControllerRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeMaterialViewerRequest()
-	{
-		if (materialViewerRequested_)
-		{
-			materialViewerRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeModelTransformRequest()
-	{
-		if (modelTransformRequested_)
-		{
-			modelTransformRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeAvatarRequest()
-	{
-		if (avatarRequested_)
-		{
-			avatarRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	Bool MenuBarPanel::ConsumeBootScreenRequest()
-	{
-		if (bootScreenRequested_)
-		{
-			bootScreenRequested_ = false;
-			return true;
-		}
-		return false;
-	}
-
-	ViewMode MenuBarPanel::GetViewMode()const
-	{
-		return context_.viewportContext_.viewMode_;
-	}
-
 	void MenuBarPanel::BuildRuntime()
 	{
 		if (runtimeBuilder_.IsBuilding())
@@ -459,7 +316,7 @@ namespace SeedCore
 		}
 
 		SC_LOG_NOTICE("Runtimeビルドを開始します");
-		runtimeBuilder_.BuildAsync(context_.worldContext_.resource_->ProjectRootPath());
+		runtimeBuilder_.BuildAsync(context_.world_.resource_->ProjectRootPath());
 	}
 
 	void MenuBarPanel::RequestSceneSwitch(PendingSceneOp op, const std::filesystem::path& path, Uint32 assetID)
@@ -468,7 +325,7 @@ namespace SeedCore
 		pendingScenePath_ = path;
 		pendingSceneAssetID_ = assetID;
 
-		if (context_.worldContext_.world_->GetActors().empty())
+		if (context_.world_.world_->GetActors().empty())
 		{
 			ExecutePendingSceneOp();
 		}
@@ -492,37 +349,37 @@ namespace SeedCore
 		case PendingSceneOp::OpenPath:
 		{
 			SceneVisual visual;
-			if (!Scene::Load(*context_.worldContext_.world_, *context_.worldContext_.resource_, path, &visual))
+			if (!Scene::Load(*context_.world_.world_, *context_.world_.resource_, path, &visual))
 			{
 				SC_LOG_WARNING("シーンの読み込みに失敗しました: {}", path.string());
 				break;
 			}
-			context_.viewportContext_.raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
-			context_.viewportContext_.screenSpace_ = DeserializeScreenSpaceContext(visual.screenSpace_);
-			context_.viewportContext_.rasterization_ = DeserializeRasterizationContext(visual.rasterization_);
-			context_.viewportContext_.qualityPreset_ = GraphicsQualityPreset::Custom;
-			context_.sceneContext_.currentScenePath_ = path;
-			context_.selectionContext_.selectedActor_ = Actor();
-			context_.selectionContext_.selectedActors_.clear();
+			context_.sceneVisual_.raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
+			context_.sceneVisual_.screenSpace_ = DeserializeScreenSpaceContext(visual.screenSpace_);
+			context_.sceneVisual_.rasterization_ = DeserializeRasterizationContext(visual.rasterization_);
+			context_.sceneVisual_.qualityPreset_ = GraphicsQualityPreset::Custom;
+			context_.scene_.path_ = FilePath(path, context_.world_.resource_->ProjectRootPath());
+			context_.selection_.Clear();
+			context_.scene_.history_.Clear();
 			SC_LOG_NOTICE("シーンを読み込みました: {}", path.string());
 			break;
 		}
 		case PendingSceneOp::OpenAsset:
 		{
 			SceneVisual visual;
-			if (!Scene::Load(*context_.worldContext_.world_, *context_.worldContext_.resource_, assetID, &visual))
+			if (!Scene::Load(*context_.world_.world_, *context_.world_.resource_, assetID, &visual))
 			{
 				SC_LOG_WARNING("シーンの読み込みに失敗しました(assetID: {})", assetID);
 				break;
 			}
-			context_.viewportContext_.raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
-			context_.viewportContext_.screenSpace_ = DeserializeScreenSpaceContext(visual.screenSpace_);
-			context_.viewportContext_.rasterization_ = DeserializeRasterizationContext(visual.rasterization_);
-			context_.viewportContext_.qualityPreset_ = GraphicsQualityPreset::Custom;
-			context_.sceneContext_.currentScenePath_ = context_.worldContext_.resource_->GetAsset(assetID)->fullpath_.c_str();
-			context_.selectionContext_.selectedActor_ = Actor();
-			context_.selectionContext_.selectedActors_.clear();
-			SC_LOG_NOTICE("シーンを読み込みました: {}", context_.sceneContext_.currentScenePath_.string());
+			context_.sceneVisual_.raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
+			context_.sceneVisual_.screenSpace_ = DeserializeScreenSpaceContext(visual.screenSpace_);
+			context_.sceneVisual_.rasterization_ = DeserializeRasterizationContext(visual.rasterization_);
+			context_.sceneVisual_.qualityPreset_ = GraphicsQualityPreset::Custom;
+			context_.scene_.path_ = FilePath(context_.world_.resource_->GetAsset(assetID)->fullpath_.c_str(), context_.world_.resource_->ProjectRootPath());
+			context_.selection_.Clear();
+			context_.scene_.history_.Clear();
+			SC_LOG_NOTICE("シーンを読み込みました: {}", context_.scene_.path_.FullPath().string());
 			break;
 		}
 		case PendingSceneOp::Exit:
@@ -535,18 +392,18 @@ namespace SeedCore
 
 	void MenuBarPanel::NewScene()
 	{
-		context_.worldContext_.world_->DestroyActors();
+		context_.world_.world_->DestroyActors();
 
-		context_.sceneContext_.currentScenePath_.clear();
-		context_.selectionContext_.selectedActor_ = Actor();
-		context_.selectionContext_.selectedActors_.clear();
+		context_.scene_.path_ = FilePath();
+		context_.selection_.Clear();
+		context_.scene_.history_.Clear();
 
 		SC_LOG_NOTICE("新規シーンを作成しました");
 	}
 
 	void MenuBarPanel::OpenScene()
 	{
-		std::filesystem::path sceneDir = context_.worldContext_.resource_->ProjectRootPath() / "UserProject" / "Assets" / "Scene";
+		std::filesystem::path sceneDir = context_.world_.resource_->ProjectRootPath() / "UserProject" / "Assets" / "Scene";
 		std::filesystem::create_directories(sceneDir);
 
 		std::filesystem::path selectedPath;
@@ -560,7 +417,7 @@ namespace SeedCore
 
 	void MenuBarPanel::SaveScene()
 	{
-		std::filesystem::path sceneDir = context_.worldContext_.resource_->ProjectRootPath() / "UserProject" / "Assets" / "Scene";
+		std::filesystem::path sceneDir = context_.world_.resource_->ProjectRootPath() / "UserProject" / "Assets" / "Scene";
 		std::filesystem::create_directories(sceneDir);
 
 		std::filesystem::path savePath;
@@ -569,31 +426,31 @@ namespace SeedCore
 			return;
 		}
 
-		if (!Scene::Save(*context_.worldContext_.world_, *context_.worldContext_.resource_, savePath, SceneVisual{ SerializeRaytracingContext(context_.viewportContext_.raytracing_), SerializeScreenSpaceContext(context_.viewportContext_.screenSpace_), SerializeRasterizationContext(context_.viewportContext_.rasterization_) }))
+		if (!Scene::Save(*context_.world_.world_, *context_.world_.resource_, savePath, SceneVisual{ SerializeRaytracingContext(context_.sceneVisual_.raytracing_), SerializeScreenSpaceContext(context_.sceneVisual_.screenSpace_), SerializeRasterizationContext(context_.sceneVisual_.rasterization_) }))
 		{
 			SC_LOG_WARNING("シーンの保存に失敗しました: {}", savePath.string());
 			return;
 		}
 
-		context_.sceneContext_.currentScenePath_ = savePath;
+		context_.scene_.path_ = FilePath(savePath, context_.world_.resource_->ProjectRootPath());
 
 		SC_LOG_NOTICE("シーンを保存しました: {}", savePath.string());
 	}
 
 	void MenuBarPanel::OverwriteSaveScene()
 	{
-		if (context_.sceneContext_.currentScenePath_.empty())
+		if (context_.scene_.path_.Empty())
 		{
 			SaveScene();
 			return;
 		}
 
-		if (!Scene::Save(*context_.worldContext_.world_, *context_.worldContext_.resource_, context_.sceneContext_.currentScenePath_, SceneVisual{ SerializeRaytracingContext(context_.viewportContext_.raytracing_), SerializeScreenSpaceContext(context_.viewportContext_.screenSpace_), SerializeRasterizationContext(context_.viewportContext_.rasterization_) }))
+		if (!Scene::Save(*context_.world_.world_, *context_.world_.resource_, context_.scene_.path_.FullPath(), SceneVisual{ SerializeRaytracingContext(context_.sceneVisual_.raytracing_), SerializeScreenSpaceContext(context_.sceneVisual_.screenSpace_), SerializeRasterizationContext(context_.sceneVisual_.rasterization_) }))
 		{
-			SC_LOG_WARNING("シーンの上書き保存に失敗しました: {}", context_.sceneContext_.currentScenePath_.string());
+			SC_LOG_WARNING("シーンの上書き保存に失敗しました: {}", context_.scene_.path_.FullPath().string());
 			return;
 		}
 
-		SC_LOG_NOTICE("シーンを上書き保存しました: {}", context_.sceneContext_.currentScenePath_.string());
+		SC_LOG_NOTICE("シーンを上書き保存しました: {}", context_.scene_.path_.FullPath().string());
 	}
 }

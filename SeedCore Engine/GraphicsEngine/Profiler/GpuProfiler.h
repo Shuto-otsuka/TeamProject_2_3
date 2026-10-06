@@ -137,14 +137,14 @@ namespace SeedCore
 		[[nodiscard]] static const Char* ViewName(GpuProfileView view);
 
 	private:
-		static constexpr Uint32 viewCount_ = static_cast<Uint32>(GpuProfileView::Count);
-		static constexpr Uint32 scopeCount_ = static_cast<Uint32>(GpuProfileScope::Count);
+		SC_CONST Uint32 viewCount_ = static_cast<Uint32>(GpuProfileView::Count);
+		SC_CONST Uint32 scopeCount_ = static_cast<Uint32>(GpuProfileScope::Count);
 
 		/// [EN] Two timestamps (begin/end) per view-scope pair.
 		/// [JP] ビュー×スコープ 1組につきタイムスタンプ2つ(開始/終了)。
-		static constexpr Uint32 slotCount_ = viewCount_ * scopeCount_ * 2;
+		SC_CONST Uint32 slotCount_ = viewCount_ * scopeCount_ * 2;
 
-		static constexpr Uint32 maxFrameCount_ = 4;
+		SC_CONST Uint32 maxFrameCount_ = 4;
 
 		/// [EN] recorded_ is a bitmask over scopes, so the scope count must fit
 		///      in a Uint32.

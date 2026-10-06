@@ -589,7 +589,7 @@ namespace SeedCore
 		* 要素が無い場合に pop()/steal() が返す「空」を表すセンチネル値を
 		* 返す（WorkerQueueEmptyValue を参照）。
 		*/
-		static constexpr auto empty_value()
+		SC_CONST auto empty_value()
 		{
 			return WorkerQueueEmptyValue<T>();
 		}
@@ -664,11 +664,11 @@ namespace SeedCore
 	private:
 		/// [EN] Total number of slots in the fixed-size buffer (1 << logSize).
 		/// [JP] 固定サイズバッファのスロット総数（1 << logSize）。
-		constexpr static Size bufferSize = Size{ 1 } << logSize;
+		SC_CONST Size bufferSize = Size{ 1 } << logSize;
 
 		/// [EN] Bitmask (bufferSize - 1) used to wrap indices around the ring buffer.
 		/// [JP] リングバッファのインデックスを折り返すために使用するビットマスク（bufferSize - 1）。
-		constexpr static Size bufferMask = (bufferSize - 1);
+		SC_CONST Size bufferMask = (bufferSize - 1);
 
 		/// [EN] The index mask only works for a power-of-two size of at least 2.
 		/// [JP] インデックスのマスクは、2 以上の 2 のべき乗の大きさでしか使えない。
@@ -959,7 +959,7 @@ namespace SeedCore
 		* 要素が無い場合に pop()/steal() が返す「空」を表すセンチネル値を
 		* 返す（WorkerQueueEmptyValue を参照）。
 		*/
-		static constexpr auto empty_value()
+		SC_CONST auto empty_value()
 		{
 			return WorkerQueueEmptyValue<T>();
 		}

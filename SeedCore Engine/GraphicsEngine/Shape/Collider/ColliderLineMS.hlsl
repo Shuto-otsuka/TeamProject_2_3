@@ -54,7 +54,7 @@ void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices Coll
 		float3 local_a;
 		float3 local_b;
 		bool silhouette;
-		GetColliderLine(instance.shape_kind_, instance.dimensions_, local_camera, line_index, local_a, local_b, silhouette);
+		GetColliderLine(instance.shape_kind_, instance.dimensions_, instance.head_length_, local_camera, line_index, local_a, local_b, silhouette);
 
 		/// [EN] Both ends go back to world space by the instance rotation, then the instance position.
 		/// [JP] 両端をインスタンスの回転、続いて位置でワールド空間へ戻す。

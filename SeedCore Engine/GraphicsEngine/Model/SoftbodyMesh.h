@@ -70,7 +70,7 @@ namespace SeedCore
 	public:
 		/// [EN] How many nearest proxy vertices each render vertex binds to.
 		/// [JP] 各描画頂点が束縛する、最も近いプロキシ頂点の個数。
-		static constexpr Uint32 bindMaxWeights_ = 4;
+		SC_CONST Uint32 bindMaxWeights_ = 4;
 
 		SoftbodyMesh() = default;
 		~SoftbodyMesh() = default;

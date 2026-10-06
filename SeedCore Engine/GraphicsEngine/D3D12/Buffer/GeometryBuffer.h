@@ -10,7 +10,7 @@ namespace SeedCore
 	class GeometryBuffer
 	{
 	private:
-		static constexpr Int bufferCount_ = 5;
+		SC_CONST Int bufferCount_ = 5;
 
 		const DXGI_FORMAT formats_[bufferCount_] =
 		{

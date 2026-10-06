@@ -59,7 +59,7 @@ namespace SeedCore
 		[[nodiscard]] static Float ImageAspect(const Microsoft::WRL::ComPtr<ID3D12Resource>& resource);
 
 	private:
-		static constexpr Uint invalidIndex_ = 0xFFFFFFFF;
+		SC_CONST Uint invalidIndex_ = 0xFFFFFFFF;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> backgroundResource_;
 		Microsoft::WRL::ComPtr<ID3D12Resource> barResource_;

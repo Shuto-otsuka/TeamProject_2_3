@@ -1,6 +1,7 @@
 #include <PhysicsEngine/JoltPhysics/JoltCharacterContactListener.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <PhysicsEngine/Physics/PhysicsSystem.h>
+#include <FoundationEngine/World/World.h>
 
 namespace SeedCore
 {
@@ -37,7 +38,7 @@ namespace SeedCore
 
 		/// [EN] Resolve the contacted body to an entity and retain its sensor classification.
 		/// [JP] 接触先ボディをエンティティへ解決し、センサー区分を保持する。
-		EntityID otherEntityID = Physics().BodyEntityID(contact.mBodyB);
+		EntityID otherEntityID = world_->CreatePhysics()->BodyEntityID(contact.mBodyB);
 		if (otherEntityID == EntityID{})
 		{
 			return;
@@ -77,7 +78,7 @@ namespace SeedCore
 
 		/// [EN] Refresh the sensor classification and notify both entities of the ongoing contact.
 		/// [JP] センサー区分を更新し、継続中の接触を両方のエンティティへ通知する。
-		EntityID otherEntityID = Physics().BodyEntityID(contact.mBodyB);
+		EntityID otherEntityID = world_->CreatePhysics()->BodyEntityID(contact.mBodyB);
 		if (otherEntityID == EntityID{})
 		{
 			return;
@@ -113,7 +114,7 @@ namespace SeedCore
 			return;
 		}
 
-		EntityID otherEntityID = Physics().BodyEntityID(bodyID2);
+		EntityID otherEntityID = world_->CreatePhysics()->BodyEntityID(bodyID2);
 		if (otherEntityID == EntityID{})
 		{
 			return;
