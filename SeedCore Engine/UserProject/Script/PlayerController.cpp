@@ -280,7 +280,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
         }
 
         //ターゲットに対してのベクトルをshotDirectionとする
-        shotDirection = targetPosition - position->Vector();
+        shotDirection = targetPosition - SeedCore::Transform::Vector(*position);
         shotDirection.Normalize();
 
         TurnFromDirection(elapsedTime,shotDirection);

@@ -63,7 +63,7 @@ void BulletController::Move(float elapsedTime)
 {
     //移動・回転処理
 
-    SeedCore::Vector3 pos = position->Vector();
+    SeedCore::Vector3 pos = SeedCore::Transform::Vector(*position);
     //moveDirectionの方向に移動
     pos += moveDirection * speed * elapsedTime;
 
@@ -71,12 +71,12 @@ void BulletController::Move(float elapsedTime)
     //回転分のクォータニオンを作成
     SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(turnAxis, turnSpeed * elapsedTime);
     //現在のクォータニオンに合成
-    quaternion = quaternion * rotation->Quat();
+    quaternion = quaternion * SeedCore::Transform::Quat(*rotation);
   
     //キネマティック剛体を動かす
     rigidbody->MoveTarget(pos, quaternion, elapsedTime);
 
-    if ((position->Vector() - startPosition).Length() >= removeDistance)
+    if ((SeedCore::Transform::Vector(*position) - startPosition).Length() >= removeDistance)
     {
         //一定距離飛んだら消す
         Remove();
