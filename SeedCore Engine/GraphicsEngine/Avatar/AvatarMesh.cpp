@@ -13,97 +13,31 @@ namespace SeedCore
 
 		baseTexcoords_.assign(texcoords.begin(), texcoords.begin() + bodyVertexCount_);
 
-		std::unordered_map<Uint32, Uint32> localIndexMap;
-		DynamicArray<Uint32> currentVertexIndices;
-		DynamicArray<Uint8> currentPrimitiveIndices;
-
-		auto flushMeshlet = [&]()
-		{
-			if (currentVertexIndices.empty())
-			{
-				return;
-			}
-
-			Meshlet meshlet;
-			meshlet.vertexOffset_ = static_cast<Uint32>(vertexIndices_.size());
-			meshlet.triangleOffset_ = static_cast<Uint32>(primitiveIndices_.size());
-			meshlet.vertexCount_ = static_cast<Uint32>(currentVertexIndices.size());
-			meshlet.triangleCount_ = static_cast<Uint32>(currentPrimitiveIndices.size() / 3);
-			meshlets_.push_back(meshlet);
-
-			vertexIndices_.insert(vertexIndices_.end(), currentVertexIndices.begin(), currentVertexIndices.end());
-			primitiveIndices_.insert(primitiveIndices_.end(), currentPrimitiveIndices.begin(), currentPrimitiveIndices.end());
-
-			localIndexMap.clear();
-			currentVertexIndices.clear();
-			currentPrimitiveIndices.clear();
-		};
-
 		/// [EN] Build meshlets per region so no meshlet straddles a region boundary -
 		///      the renderer can then draw one region (one texture) at a time.
+		///      With one region or none, the whole mesh is one region.
 		/// [JP] メッシュレットをリージョン単位で構築し、リージョン境界をまたがない
 		///      ようにする - レンダラーがリージョン(=テクスチャ)ごとに描ける。
-		Uint32 triangleCount = static_cast<Uint32>(triangles.size() / 3);
-		regionCount_ = Min(static_cast<Uint32>(regionTriangleRanges.size() / 2), maxRegionCount_);
-		if (regionCount_ == 0)
-		{
-			regionCount_ = 1;
-			regionMeshletRanges_[0] = { 0, 0 };
-		}
+		///      リージョンが1つ以下なら、メッシュ全体を1つのリージョンにする。
+		regionCount_ = Max(Min(static_cast<Uint32>(regionTriangleRanges.size() / 2), maxRegionCount_), 1u);
 
+		Meshlet::TriangleRange triangleRanges[maxRegionCount_];
 		for (Uint32 regionIndex = 0; regionIndex < regionCount_; regionIndex++)
 		{
-			Uint32 firstTriangle = regionCount_ > 1 ? regionTriangleRanges[regionIndex * 2 + 0] : 0;
-			Uint32 regionTriangleCount = regionCount_ > 1 ? regionTriangleRanges[regionIndex * 2 + 1] : triangleCount;
-			Uint32 meshletOffset = static_cast<Uint32>(meshlets_.size());
+			triangleRanges[regionIndex].triangleOffset_ = regionCount_ > 1 ? regionTriangleRanges[regionIndex * 2 + 0] : 0;
+			triangleRanges[regionIndex].triangleCount_ = regionCount_ > 1 ? regionTriangleRanges[regionIndex * 2 + 1] : static_cast<Uint32>(triangles.size() / 3);
+		}
 
-			for (Uint32 localTriangle = 0; localTriangle < regionTriangleCount; localTriangle++)
-			{
-				Size triangleIndex = static_cast<Size>(firstTriangle + localTriangle) * 3;
-				if (triangleIndex + 2 >= triangles.size())
-				{
-					break;
-				}
-				Uint32 globalVertices[3] = { triangles[triangleIndex], triangles[triangleIndex + 1], triangles[triangleIndex + 2] };
-
-				Uint32 newVertexCount = 0;
-				for (Uint32 corner = 0; corner < 3; corner++)
-				{
-					if (!localIndexMap.contains(globalVertices[corner]))
-					{
-						newVertexCount++;
-					}
-				}
-
-				if (currentVertexIndices.size() + newVertexCount > maxVerticesPerMeshlet_ || currentPrimitiveIndices.size() / 3 + 1 > maxTrianglesPerMeshlet_)
-				{
-					flushMeshlet();
-				}
-
-				for (Uint32 corner = 0; corner < 3; corner++)
-				{
-					Uint32 globalIndex = globalVertices[corner];
-					auto found = localIndexMap.find(globalIndex);
-
-					Uint32 localIndex;
-					if (found == localIndexMap.end())
-					{
-						localIndex = static_cast<Uint32>(currentVertexIndices.size());
-						currentVertexIndices.push_back(globalIndex);
-						localIndexMap[globalIndex] = localIndex;
-					}
-					else
-					{
-						localIndex = found->second;
-					}
-
-					currentPrimitiveIndices.push_back(static_cast<Uint8>(localIndex));
-				}
-			}
-
-			flushMeshlet();
-			regionMeshletRanges_[regionIndex].meshletOffset_ = meshletOffset;
-			regionMeshletRanges_[regionIndex].meshletCount_ = static_cast<Uint32>(meshlets_.size()) - meshletOffset;
+		/// [EN] Meshlet also pads the primitive indices to the 4-byte alignment ReadOnlyByteAddressBuffer needs.
+		/// [JP] ReadOnlyByteAddressBuffer が必要とする4バイト境界へは Meshlet が揃える。
+		Meshlet meshlet(triangles, std::span<const Meshlet::TriangleRange>(triangleRanges, regionCount_));
+		meshlets_.assign(meshlet.Meshlets().begin(), meshlet.Meshlets().end());
+		vertexIndices_.assign(meshlet.VertexIndices().begin(), meshlet.VertexIndices().end());
+		primitiveIndices_.assign(meshlet.PrimitiveIndices().begin(), meshlet.PrimitiveIndices().end());
+		for (Uint32 regionIndex = 0; regionIndex < regionCount_; regionIndex++)
+		{
+			regionMeshletRanges_[regionIndex].meshletOffset_ = meshlet.MeshletRanges()[regionIndex].meshletOffset_;
+			regionMeshletRanges_[regionIndex].meshletCount_ = meshlet.MeshletRanges()[regionIndex].meshletCount_;
 		}
 
 		if (meshlets_.empty())
@@ -111,8 +45,7 @@ namespace SeedCore
 			return false;
 		}
 
-		Uint32 alignedPrimitiveByteSize = (static_cast<Uint32>(primitiveIndices_.size()) + 3) & ~3u;
-		primitiveIndices_.resize(alignedPrimitiveByteSize, 0);
+		Uint32 alignedPrimitiveByteSize = static_cast<Uint32>(primitiveIndices_.size());
 
 		skinVertices_.resize(bodyVertexCount_);
 		for (Uint32 vertexIndex = 0; vertexIndex < bodyVertexCount_; vertexIndex++)
@@ -165,7 +98,7 @@ namespace SeedCore
 
 		vertexBuffer_ = MakePtr<ReadOnlyStructuredBuffer<CompressedVertex>>(device, bindlessHeap, bodyVertexCount_);
 		skinVertexBuffer_ = MakePtr<ReadOnlyStructuredBuffer<CompressedSkinVertex>>(device, bindlessHeap, bodyVertexCount_);
-		meshletBuffer_ = MakePtr<ReadOnlyStructuredBuffer<Meshlet>>(device, bindlessHeap, static_cast<Uint>(meshlets_.size()));
+		meshletBuffer_ = MakePtr<ReadOnlyStructuredBuffer<MeshletDesc>>(device, bindlessHeap, static_cast<Uint>(meshlets_.size()));
 		meshletBoundBuffer_ = MakePtr<ReadOnlyStructuredBuffer<MeshletBound>>(device, bindlessHeap, static_cast<Uint>(meshlets_.size()));
 		vertexIndicesBuffer_ = MakePtr<ReadOnlyStructuredBuffer<Uint32>>(device, bindlessHeap, static_cast<Uint>(vertexIndices_.size()));
 		primitiveIndicesBuffer_ = MakePtr<ReadOnlyByteAddressBuffer>(device, bindlessHeap, alignedPrimitiveByteSize);

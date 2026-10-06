@@ -1869,11 +1869,6 @@ namespace SeedCore
 	*/
 	void ModelLoader::BuildMeshlets(Crister& crister)
 	{
-		/// [EN] Mesh Shader workgroup limits. These match D3D12 best practices.
-		/// [JP] Mesh Shader ワークグループの制限。D3D12 ベストプラクティスに準拠。
-		constexpr Uint32 maxVertices = 64;
-		constexpr Uint32 maxTriangles = 124;
-
 		/// [EN] Maximum LOD depth. 24 levels at 50% reduction per level gives
 		///      a theoretical reduction of 2^24 ≈ 16 million : 1.
 		/// [JP] 最大 LOD 深度。レベルごと 50% 削減で 24 レベルなら
@@ -1893,136 +1888,46 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Builds meshlets from a flat triangle index buffer.
-		*
-		* Algorithm (greedy bin-packing):
-		*   For each triangle:
-		*     1. Count how many of its 3 vertices are NEW to the current meshlet.
-		*     2. If adding them would exceed maxVertices, or the triangle count
-		*        would exceed maxTriangles, flush the current meshlet and start
-		*        a new one.
-		*     3. For each vertex of the triangle:
-		*        - If new, assign it a local index and append its global index
-		*          to vertexIndices_.
-		*        - Record the local index in primitiveIndices_ (3 per triangle).
-		*
-		* The two-level indirection works like this:
-		*
-		*   primitiveIndices_[i] = local index (0..63) within the meshlet
-		*   vertexIndices_[meshlet.vertexOffset_ + local] = global vertex index
-		*
-		* This allows the Mesh Shader to load only the vertices actually used
-		* by the meshlet, with compact 8-bit primitive indices.
+		* Packs a flat triangle index buffer (global vertex indices) into
+		* meshlets with Meshlet and appends them to the Crister. Meshlet
+		* places each meshlet at the start of its own tables, so the vertex
+		* and triangle offsets are shifted by how much the Crister already
+		* holds. Only the primitive index bytes the meshlets use are copied:
+		* primitiveIndices_ stays a tight run of three bytes per triangle,
+		* which the winding flip and page upload read as such.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* フラットな三角形インデックスバッファからメシュレットを構築する。
-		*
-		* アルゴリズム（貪欲ビンパッキング）:
-		*   各三角形について:
-		*     1. その 3 頂点のうち現在のメシュレットにとって新しい頂点数を数える。
-		*     2. 追加で maxVertices を超える、または三角形数が maxTriangles を超える
-		*        なら、現在のメシュレットをフラッシュして新しいものを開始する。
-		*     3. 三角形の各頂点について:
-		*        - 新しければ、ローカルインデックスを割り当て、グローバルインデックスを
-		*          vertexIndices_ に追加する。
-		*        - ローカルインデックスを primitiveIndices_ に記録する（三角形ごとに 3 つ）。
-		*
-		* 二段階の間接参照は以下のように機能する:
-		*
-		*   primitiveIndices_[i] = メシュレット内のローカルインデックス (0..63)
-		*   vertexIndices_[meshlet.vertexOffset_ + local] = グローバル頂点インデックス
-		*
-		* これにより Mesh Shader はメシュレットが実際に使う頂点のみをロードでき、
-		* コンパクトな 8 ビットプリミティブインデックスが使える。
+		* フラットな三角形インデックスバッファ（全体での頂点番号）を Meshlet で
+		* メッシュレットに詰め、Crister へ追加する。Meshlet は自分の表の先頭から
+		* 並べるので、頂点と三角形の開始位置は Crister がすでに持っている分だけ
+		* ずらす。三角形番号はメッシュレットが使うバイトだけを写す。
+		* primitiveIndices_ は三角形1つにつき3バイトが隙間なく並ぶ列のまま保ち、
+		* 向きの反転やページのアップロードはそれを前提に読む。
 		*/
 		auto buildMeshletsFromIndices = [&](const Uint32* indices, Size indexCount) -> void
 			{
+				Meshlet meshlet(std::span<const Uint32>(indices, indexCount));
+				std::span<const MeshletDesc> meshlets = meshlet.Meshlets();
 
-				Uint32 currentVertexCount = 0;
-				Uint32 currentTriangleCount = 0;
-
-				/// [EN] Maps global vertex index → local index (0..63) within the current meshlet.
-				/// [JP] グローバル頂点インデックス → 現在のメシュレット内のローカルインデックス (0..63) のマップ。
-				std::unordered_map<Uint32, Uint8> localVertexMap;
-
-				Uint32 vertexOffset = static_cast<Uint32>(crister.vertexIndices_.size());
-				Uint32 triangleOffset = static_cast<Uint32>(crister.primitiveIndices_.size());
-
-				/// [EN] Finalises the current meshlet and resets state for the next one.
-				/// [JP] 現在のメシュレットを確定し、次のメシュレットのために状態をリセットする。
-				auto flushMeshlet = [&]()
-					{
-						if (currentTriangleCount == 0)
-						{
-							return;
-						}
-
-						Meshlet& meshlet = crister.meshlets_.emplace_back();
-						meshlet.vertexOffset_ = vertexOffset;
-						meshlet.triangleOffset_ = triangleOffset;
-						meshlet.vertexCount_ = currentVertexCount;
-						meshlet.triangleCount_ = currentTriangleCount;
-
-						vertexOffset = static_cast<Uint32>(crister.vertexIndices_.size());
-						triangleOffset = static_cast<Uint32>(crister.primitiveIndices_.size());
-						currentVertexCount = 0;
-						currentTriangleCount = 0;
-						localVertexMap.clear();
-					};
-
-				Size triangleCount = indexCount / 3;
-				for (Size triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++)
+				Uint32 vertexBase = static_cast<Uint32>(crister.vertexIndices_.size());
+				Uint32 triangleBase = static_cast<Uint32>(crister.primitiveIndices_.size());
+				for (const MeshletDesc& source : meshlets)
 				{
-					Uint32 triangle[3] = { indices[triangleIndex * 3], indices[triangleIndex * 3 + 1], indices[triangleIndex * 3 + 2] };
-
-					/// [EN] Count how many of this triangle's vertices are not yet in the current meshlet.
-					/// [JP] この三角形の頂点のうち、現在のメシュレットにまだ入っていないものを数える。
-					Uint32 newVerts = 0;
-					for (Int index = 0; index < 3; index++)
-					{
-						if (!localVertexMap.contains(triangle[index]))
-						{
-							newVerts++;
-						}
-					}
-
-					/// [EN] If this triangle would overflow the meshlet, flush and start fresh.
-					/// [JP] この三角形でメシュレットがあふれるなら、フラッシュして新しく始める。
-					if (currentVertexCount + newVerts > maxVertices || currentTriangleCount + 1 > maxTriangles)
-					{
-						flushMeshlet();
-					}
-
-					/// [EN] Add each vertex to the meshlet, assigning a new local index if needed.
-					/// [JP] 各頂点をメシュレットに追加し、必要なら新しいローカルインデックスを割り当てる。
-					Uint8 localIndices[3];
-					for (Int index = 0; index < 3; index++)
-					{
-						auto it = localVertexMap.find(triangle[index]);
-						if (it == localVertexMap.end())
-						{
-							Uint8 localIndex = static_cast<Uint8>(currentVertexCount++);
-							localVertexMap[triangle[index]] = localIndex;
-							crister.vertexIndices_.push_back(triangle[index]);
-							localIndices[index] = localIndex;
-						}
-						else
-						{
-							localIndices[index] = it->second;
-						}
-					}
-
-					/// [EN] Append the 3 local indices as primitive (triangle) indices.
-					/// [JP] 3 つのローカルインデックスをプリミティブ（三角形）インデックスとして追加する。
-					crister.primitiveIndices_.push_back(localIndices[0]);
-					crister.primitiveIndices_.push_back(localIndices[1]);
-					crister.primitiveIndices_.push_back(localIndices[2]);
-					currentTriangleCount++;
+					MeshletDesc& destination = crister.meshlets_.emplace_back(source);
+					destination.vertexOffset_ += vertexBase;
+					destination.triangleOffset_ += triangleBase;
 				}
 
-				flushMeshlet();
+				std::span<const Uint32> vertexIndices = meshlet.VertexIndices();
+				crister.vertexIndices_.insert(crister.vertexIndices_.end(), vertexIndices.begin(), vertexIndices.end());
+
+				/// [EN] Leave out the padding Meshlet adds after the last triangle.
+				/// [JP] Meshlet が最後の三角形の後ろに足す詰め物は写さない。
+				Size usedByteCount = meshlets.empty() ? 0 : static_cast<Size>(meshlets.back().triangleOffset_) + static_cast<Size>(meshlets.back().triangleCount_) * 3;
+				std::span<const Uint8> primitiveIndices = meshlet.PrimitiveIndices().first(usedByteCount);
+				crister.primitiveIndices_.insert(crister.primitiveIndices_.end(), primitiveIndices.begin(), primitiveIndices.end());
 			};
 
 		/**
@@ -2070,7 +1975,7 @@ namespace SeedCore
 			{
 				for (Uint32 meshletIndex = meshletBegin; meshletIndex < meshletEnd; meshletIndex++)
 				{
-					const Meshlet& meshlet = crister.meshlets_[meshletIndex];
+					const MeshletDesc& meshlet = crister.meshlets_[meshletIndex];
 					MeshletBound& bound = crister.meshletBounds_.emplace_back();
 
 					/// [EN] Step 1: Compute bounding sphere.

@@ -14,7 +14,7 @@ namespace SeedCore
 	* pipeline entirely (a soft body's vertex positions are simulated
 	* CPU-side and must land in a stable, page-never-evicted buffer the
 	* mesh shader reads). Holds its own small, non-streamed, non-LOD'd
-	* CompressedVertex/Meshlet/vertexIndices/primitiveIndices buffer set —
+	* CompressedVertex/MeshletDesc/vertexIndices/primitiveIndices buffer set —
 	* built once from the bind-pose full-resolution render mesh
 	* (Crister::SoftbodyFinestVertices) — that StaticModelMS.hlsl/
 	* MaterialResolveCS.hlsl read exactly like any other Crister-owned
@@ -43,7 +43,7 @@ namespace SeedCore
 	* 完全にバイパスする（ソフトボディの頂点位置は CPU 側でシミュレートされ、
 	* メッシュシェーダが読む「ページが追い出されない安定したバッファ」に
 	* 収まる必要がある）。自前の小さな、非ストリーミング・非LODの
-	* CompressedVertex/Meshlet/vertexIndices/primitiveIndices バッファ一式を
+	* CompressedVertex/MeshletDesc/vertexIndices/primitiveIndices バッファ一式を
 	* 持つ — バインドポーズのフル解像度描画メッシュ
 	* （Crister::SoftbodyFinestVertices）から一度だけ構築する。これは
 	* StaticModelMS.hlsl/MaterialResolveCS.hlsl から見れば他の
@@ -188,7 +188,7 @@ namespace SeedCore
 		///      頂点への束縛。
 		DynamicArray<VertexBinding> renderVertexBindings_;
 
-		DynamicArray<Meshlet> meshlets_;
+		DynamicArray<MeshletDesc> meshlets_;
 		DynamicArray<Uint32> vertexIndices_;
 
 		/// [EN] Packed 3 bytes per triangle corner, padded to a 4-byte
@@ -211,7 +211,7 @@ namespace SeedCore
 		DynamicArray<MeshletBound> scratchBounds_;
 
 		ResourcePtr<ReadOnlyStructuredBuffer<CompressedVertex>> vertexBuffer_;
-		ResourcePtr<ReadOnlyStructuredBuffer<Meshlet>> meshletBuffer_;
+		ResourcePtr<ReadOnlyStructuredBuffer<MeshletDesc>> meshletBuffer_;
 		ResourcePtr<ReadOnlyStructuredBuffer<MeshletBound>> meshletBoundBuffer_;
 		ResourcePtr<ReadOnlyStructuredBuffer<Uint32>> vertexIndicesBuffer_;
 		ResourcePtr<ReadOnlyByteAddressBuffer> primitiveIndicesBuffer_;

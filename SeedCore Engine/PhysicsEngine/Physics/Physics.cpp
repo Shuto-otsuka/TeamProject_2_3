@@ -342,6 +342,10 @@ namespace SeedCore
 		settings.mUserData = std::bit_cast<JPH::uint64>(desc.userData_);
 		settings.mIsSensor = desc.isSensor_;
 
+		/// [EN] A kinematic trigger needs this to detect static bodies; other kinematic pairs have no simulation effect, so the flag stays off for them.
+		/// [JP] キネマティックのトリガーがスタティックのボディを検知するのに必要。それ以外のキネマティックの組はシミュレーションに影響しないので立てない。
+		settings.mCollideKinematicVsNonDynamic = desc.motionType_ == JPH::EMotionType::Kinematic && desc.isSensor_;
+
 		/// [EN] Static bodies have no mass or motion quality.
 		/// [JP] 静的ボディは質量も運動品質も持たない。
 		if (desc.motionType_ != JPH::EMotionType::Static)

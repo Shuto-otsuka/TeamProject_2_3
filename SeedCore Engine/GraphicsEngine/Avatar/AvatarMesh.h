@@ -44,9 +44,6 @@ namespace SeedCore
 		[[nodiscard]] Vector2 TexcoordExtent()const;
 
 	private:
-		SC_CONST Uint32 maxVerticesPerMeshlet_ = 64;
-		SC_CONST Uint32 maxTrianglesPerMeshlet_ = 124;
-
 		SC_CONST Uint32 maxRegionCount_ = 4;
 
 		Uint32 bodyVertexCount_ = 0;
@@ -55,7 +52,7 @@ namespace SeedCore
 
 		DynamicArray<Vector2> baseTexcoords_;
 
-		DynamicArray<Meshlet> meshlets_;
+		DynamicArray<MeshletDesc> meshlets_;
 		DynamicArray<Uint32> vertexIndices_;
 		DynamicArray<Uint8> primitiveIndices_;
 		DynamicArray<CompressedSkinVertex> skinVertices_;
@@ -70,7 +67,7 @@ namespace SeedCore
 
 		ResourcePtr<ReadOnlyStructuredBuffer<CompressedVertex>> vertexBuffer_;
 		ResourcePtr<ReadOnlyStructuredBuffer<CompressedSkinVertex>> skinVertexBuffer_;
-		ResourcePtr<ReadOnlyStructuredBuffer<Meshlet>> meshletBuffer_;
+		ResourcePtr<ReadOnlyStructuredBuffer<MeshletDesc>> meshletBuffer_;
 		ResourcePtr<ReadOnlyStructuredBuffer<MeshletBound>> meshletBoundBuffer_;
 		ResourcePtr<ReadOnlyStructuredBuffer<Uint32>> vertexIndicesBuffer_;
 		ResourcePtr<ReadOnlyByteAddressBuffer> primitiveIndicesBuffer_;

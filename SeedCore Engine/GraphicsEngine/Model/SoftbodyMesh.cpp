@@ -3,108 +3,6 @@
 
 namespace SeedCore
 {
-	namespace
-	{
-		constexpr Uint32 maxVerticesPerMeshlet = 64;
-		constexpr Uint32 maxTrianglesPerMeshlet = 124;
-
-		/// [EN] Greedy meshlet packer: walks the (global-index) triangle list
-		///      in order, keeping a running "current meshlet" vertex set, and
-		///      flushes into a new meshlet whenever adding the next triangle
-		///      would exceed the 64-vertex/124-triangle mesh-shader limits.
-		///      Not clustering-quality (no spatial locality optimisation like
-		///      ModelLoader::BuildMeshlets's meshoptimizer-equivalent), just
-		///      correct — acceptable for a Softbody's small, non-streamed
-		///      mesh. outVertexIndices holds, per meshlet-local slot, the
-		///      GLOBAL vertex index (mirrors Crister::vertexIndices_);
-		///      outPrimitiveIndices holds, per triangle corner, the
-		///      meshlet-LOCAL slot index 0..vertexCount-1 (mirrors
-		///      Crister::primitiveIndices_) — same two-level indirection
-		///      StaticModelMS.hlsl already expects.
-		/// [JP] 貪欲法のメシュレットパッカー: (グローバルインデックスの)
-		///      三角形リストを順に走査し、「現在のメシュレット」の頂点集合を
-		///      保持しながら、次の三角形を足すと 64頂点/124三角形の
-		///      メッシュシェーダ制限を超える時点で新しいメシュレットへ
-		///      フラッシュする。クラスタリング品質は狙わない（
-		///      ModelLoader::BuildMeshlets のような meshoptimizer 相当の
-		///      空間局所性最適化は無し）が、正しさは保つ — Softbody の
-		///      小さく非ストリーミングなメッシュには十分。outVertexIndices は
-		///      メシュレットローカルスロットごとに GLOBAL 頂点インデックスを
-		///      持つ（Crister::vertexIndices_ と同じ）。outPrimitiveIndices は
-		///      三角形の頂点1つごとにメシュレットLOCALスロットインデックス
-		///      0..vertexCount-1 を持つ（Crister::primitiveIndices_ と同じ）
-		///      — StaticModelMS.hlsl が既に期待するのと同じ二段間接参照。
-		void BuildSimpleMeshlets(const DynamicArray<Uint32>& indices, DynamicArray<Meshlet>& outMeshlets, DynamicArray<Uint32>& outVertexIndices, DynamicArray<Uint8>& outPrimitiveIndices)
-		{
-			std::unordered_map<Uint32, Uint32> localIndexMap;
-			DynamicArray<Uint32> currentVertexIndices;
-			DynamicArray<Uint8> currentPrimitiveIndices;
-
-			auto flush = [&]()
-			{
-				if (currentVertexIndices.empty())
-				{
-					return;
-				}
-
-				Meshlet meshlet;
-				meshlet.vertexOffset_ = static_cast<Uint32>(outVertexIndices.size());
-				meshlet.triangleOffset_ = static_cast<Uint32>(outPrimitiveIndices.size());
-				meshlet.vertexCount_ = static_cast<Uint32>(currentVertexIndices.size());
-				meshlet.triangleCount_ = static_cast<Uint32>(currentPrimitiveIndices.size() / 3);
-				outMeshlets.push_back(meshlet);
-
-				outVertexIndices.insert(outVertexIndices.end(), currentVertexIndices.begin(), currentVertexIndices.end());
-				outPrimitiveIndices.insert(outPrimitiveIndices.end(), currentPrimitiveIndices.begin(), currentPrimitiveIndices.end());
-
-				localIndexMap.clear();
-				currentVertexIndices.clear();
-				currentPrimitiveIndices.clear();
-			};
-
-			for (Size triangleIndex = 0; triangleIndex + 2 < indices.size(); triangleIndex += 3)
-			{
-				Uint32 globalVertices[3] = { indices[triangleIndex], indices[triangleIndex + 1], indices[triangleIndex + 2] };
-
-				Uint32 newVertexCount = 0;
-				for (Uint32 corner = 0; corner < 3; corner++)
-				{
-					if (!localIndexMap.contains(globalVertices[corner]))
-					{
-						newVertexCount++;
-					}
-				}
-
-				if (currentVertexIndices.size() + newVertexCount > maxVerticesPerMeshlet || currentPrimitiveIndices.size() / 3 + 1 > maxTrianglesPerMeshlet)
-				{
-					flush();
-				}
-
-				for (Uint32 corner = 0; corner < 3; corner++)
-				{
-					Uint32 globalIndex = globalVertices[corner];
-					auto found = localIndexMap.find(globalIndex);
-
-					Uint32 localIndex;
-					if (found == localIndexMap.end())
-					{
-						localIndex = static_cast<Uint32>(currentVertexIndices.size());
-						currentVertexIndices.push_back(globalIndex);
-						localIndexMap[globalIndex] = localIndex;
-					}
-					else
-					{
-						localIndex = found->second;
-					}
-
-					currentPrimitiveIndices.push_back(static_cast<Uint8>(localIndex));
-				}
-			}
-
-			flush();
-		}
-	}
-
 	/**
 	* [EN]
 	* For each full-resolution render vertex, finds the bindMaxWeights_
@@ -206,16 +104,18 @@ namespace SeedCore
 			return false;
 		}
 
-		BuildSimpleMeshlets(indices, meshlets_, vertexIndices_, primitiveIndices_);
+		/// [EN] The whole render mesh is one group; Meshlet already pads the primitive indices to the 4-byte alignment ReadOnlyByteAddressBuffer needs.
+		/// [JP] 描画メッシュ全体を1つのまとまりとして詰める。ReadOnlyByteAddressBuffer が必要とする4バイト境界へは Meshlet がすでに揃えている。
+		Meshlet meshlet(indices);
+		meshlets_.assign(meshlet.Meshlets().begin(), meshlet.Meshlets().end());
+		vertexIndices_.assign(meshlet.VertexIndices().begin(), meshlet.VertexIndices().end());
+		primitiveIndices_.assign(meshlet.PrimitiveIndices().begin(), meshlet.PrimitiveIndices().end());
 		if (meshlets_.empty())
 		{
 			return false;
 		}
 
-		/// [EN] ReadOnlyByteAddressBuffer capacity/updates are 4-byte aligned.
-		/// [JP] ReadOnlyByteAddressBuffer の容量/更新は4バイト境界であること。
-		Uint32 alignedPrimitiveByteSize = (static_cast<Uint32>(primitiveIndices_.size()) + 3) & ~3u;
-		primitiveIndices_.resize(alignedPrimitiveByteSize, 0);
+		Uint32 alignedPrimitiveByteSize = static_cast<Uint32>(primitiveIndices_.size());
 
 		texcoordMin_ = crister.TexcoordMin();
 		texcoordExtent_ = crister.TexcoordExtent();
@@ -228,7 +128,7 @@ namespace SeedCore
 		scratchBounds_.resize(meshlets_.size());
 
 		vertexBuffer_ = MakePtr<ReadOnlyStructuredBuffer<CompressedVertex>>(device, bindlessHeap, static_cast<Uint>(bindPoseVertices_.size()));
-		meshletBuffer_ = MakePtr<ReadOnlyStructuredBuffer<Meshlet>>(device, bindlessHeap, static_cast<Uint>(meshlets_.size()));
+		meshletBuffer_ = MakePtr<ReadOnlyStructuredBuffer<MeshletDesc>>(device, bindlessHeap, static_cast<Uint>(meshlets_.size()));
 		meshletBoundBuffer_ = MakePtr<ReadOnlyStructuredBuffer<MeshletBound>>(device, bindlessHeap, static_cast<Uint>(meshlets_.size()));
 		vertexIndicesBuffer_ = MakePtr<ReadOnlyStructuredBuffer<Uint32>>(device, bindlessHeap, static_cast<Uint>(vertexIndices_.size()));
 		primitiveIndicesBuffer_ = MakePtr<ReadOnlyByteAddressBuffer>(device, bindlessHeap, alignedPrimitiveByteSize);

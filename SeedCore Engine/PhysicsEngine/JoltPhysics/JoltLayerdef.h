@@ -13,9 +13,10 @@ namespace SeedCore
 	 * hold the body's motion-type classification (STATIC/KINEMATIC/
 	 * DYNAMIC, below), the bits above them hold the owning Actor's
 	 * LayerRegistry slot index (see Pack/UnpackMotionType/
-	 * UnpackUserLayer), and the topmost bit (PLANAR) marks a 2D canvas
-	 * body - so all three axes are encoded into the single value Jolt's
-	 * broad/narrow phase actually filters on.
+	 * UnpackUserLayer), the bit below the top (SENSOR) marks a trigger
+	 * body, and the topmost bit (PLANAR) marks a 2D canvas body - so all
+	 * four axes are encoded into the single value Jolt's broad/narrow
+	 * phase actually filters on.
 	 *
 	 * 2D and 3D bodies share one Jolt world but never interact: a body
 	 * only collides with bodies on the same side of the PLANAR bit,
@@ -27,10 +28,11 @@ namespace SeedCore
 	 * DYNAMIC   : Fully physics-simulated bodies (rigidbodies, ragdolls, etc.)
 	 *
 	 * Motion-type collision matrix (independent of, and applied in
-	 * addition to, LayerCollisionMatrix's per-Actor-Layer matrix):
+	 * addition to, LayerCollisionMatrix's per-Actor-Layer matrix).
+	 * "t" pairs only when at least one of the two is a trigger (SENSOR):
 	 *               STATIC  KINEMATIC  DYNAMIC
-	 *   STATIC         -        -        o
-	 *   KINEMATIC      -        -        o
+	 *   STATIC         -        t        o
+	 *   KINEMATIC      t        t        o
 	 *   DYNAMIC        o        o        o
 	 *
 	 * ---------------------------------------------------------------------
@@ -40,8 +42,9 @@ namespace SeedCore
 	 * ObjectLayer はパックされた値: 下位 MOTION_TYPE_BITS ビットがボディの
 	 * 運動タイプ分類（STATIC/KINEMATIC/DYNAMIC、下記）を保持し、その上の
 	 * ビットが所有 Actor の LayerRegistry スロットインデックスを保持し
-	 * （Pack/UnpackMotionType/UnpackUserLayer 参照）、最上位ビット（PLANAR）が
-	 * Canvas の 2D ボディであることを示す - こうして3つの軸すべてを、
+	 * （Pack/UnpackMotionType/UnpackUserLayer 参照）、最上位の1つ下のビット
+	 * （SENSOR）がトリガーのボディであることを、最上位ビット（PLANAR）が
+	 * Canvas の 2D ボディであることを示す - こうして4つの軸すべてを、
 	 * Jolt の Broad/Narrow Phase が実際にフィルタリングに使う単一の値へ
 	 * エンコードしている。
 	 *
@@ -55,10 +58,11 @@ namespace SeedCore
 	 * DYNAMIC   : 物理演算で完全にシミュレートされるボディ（剛体・ラグドールなど）
 	 *
 	 * 運動タイプの衝突マトリクス（LayerCollisionMatrix の
-	 * Actor レイヤーごとのマトリクスとは独立に、それに加えて適用される）:
+	 * Actor レイヤーごとのマトリクスとは独立に、それに加えて適用される）。
+	 * "t" は2つのうち少なくとも一方がトリガー（SENSOR）のときだけ組になる:
 	 *               STATIC  KINEMATIC  DYNAMIC
-	 *   STATIC         -        -        o
-	 *   KINEMATIC      -        -        o
+	 *   STATIC         -        t        o
+	 *   KINEMATIC      t        t        o
 	 *   DYNAMIC        o        o        o
 	 */
 	namespace Layers
@@ -71,12 +75,16 @@ namespace SeedCore
 		/// [JP] パックされた ObjectLayer が運動タイプ用に確保する下位ビット数。残りの上位ビットは Actor の LayerRegistry スロットインデックスを保持する。
 		SC_CONST JPH::uint MOTION_TYPE_BITS = 2;
 
+		/// [EN] ObjectLayer bit set on trigger bodies. OR'd onto a Pack result; it lets kinematic bodies report overlaps with static and kinematic bodies through the trigger.
+		/// [JP] トリガーのボディに立てる ObjectLayer のビット。Pack の結果に OR して使い、トリガーを介してキネマティックのボディがスタティック・キネマティックのボディとの重なりを知らせられるようにする。
+		SC_CONST JPH::ObjectLayer SENSOR = static_cast<JPH::ObjectLayer>(1u << 14);
+
 		/// [EN] Topmost ObjectLayer bit, set on bodies simulated on the 2D canvas (Rect/CircleCollider). OR'd onto a Pack result; bodies with and without it never collide.
 		/// [JP] ObjectLayer の最上位ビット。2D Canvas 上でシミュレートされるボディ（Rect/CircleCollider）に立てる。Pack の結果に OR して使い、このビットの有無が異なるボディ同士は衝突しない。
 		SC_CONST JPH::ObjectLayer PLANAR = static_cast<JPH::ObjectLayer>(1u << 15);
 
-		/// [EN] Distinct packed ObjectLayer values below the PLANAR bit: one motion-type slot per LayerRegistry slot. A 2D body's layer is one of these with PLANAR added.
-		/// [JP] PLANAR ビットより下の、パック済み ObjectLayer の総数: LayerRegistry の各スロットにつき1つの運動タイプスロット。2D ボディのレイヤーは、このいずれかに PLANAR を加えたもの。
+		/// [EN] Distinct packed ObjectLayer values below the SENSOR bit: one motion-type slot per LayerRegistry slot. A trigger or 2D body's layer is one of these with SENSOR and/or PLANAR added.
+		/// [JP] SENSOR ビットより下の、パック済み ObjectLayer の総数: LayerRegistry の各スロットにつき1つの運動タイプスロット。トリガーや 2D ボディのレイヤーは、このいずれかに SENSOR や PLANAR を加えたもの。
 		SC_CONST JPH::uint COUNT = static_cast<JPH::uint>(LayerRegistry::LayerCount) << MOTION_TYPE_BITS;
 
 		/**
@@ -108,13 +116,13 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Extracts the LayerRegistry slot index packed into objectLayer by
-		* Pack, ignoring the PLANAR bit.
+		* Pack, ignoring the SENSOR and PLANAR bits.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* Pack によって objectLayer へパックされた LayerRegistry
-		* スロットインデックスを取り出す。PLANAR ビットは無視する。
+		* スロットインデックスを取り出す。SENSOR と PLANAR のビットは無視する。
 		*/
 		Size UnpackUserLayer(JPH::ObjectLayer objectLayer);
 	}
@@ -125,6 +133,8 @@ namespace SeedCore
 	* STATIC    and KINEMATIC share one BP layer because neither moves continuously,
 	* so Jolt's broad-phase tree does not need to update them separately.
 	* DYNAMIC gets its own BP layer so it can be rebuilt every frame efficiently.
+	* SENSOR holds every trigger regardless of motion type, so kinematic
+	* bodies can search triggers without searching all static geometry.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -133,12 +143,15 @@ namespace SeedCore
 	* STATIC と KINEMATIC は同じ BP レイヤーに収める。
 	* どちらも連続的には動かないため、ブロードフェーズツリーを別々に更新する必要がない。
 	* DYNAMIC は専用の BP レイヤーを持ち、毎フレーム効率よく再構築される。
+	* SENSOR は運動タイプに関係なく全てのトリガーを収め、キネマティックのボディが
+	* スタティックのジオメトリ全体を検索せずにトリガーだけを検索できるようにする。
 	*/
 	namespace BPLayers
 	{
 		SC_CONST JPH::BroadPhaseLayer STATIC{ 0 };
 		SC_CONST JPH::BroadPhaseLayer DYNAMIC{ 1 };
-		SC_CONST JPH::uint            COUNT{ 2 };
+		SC_CONST JPH::BroadPhaseLayer SENSOR{ 2 };
+		SC_CONST JPH::uint            COUNT{ 3 };
 	}
 
 	/**
@@ -168,12 +181,14 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Maps an object layer's motion type to its broad-phase layer.
+		* Maps an object layer to its broad-phase layer: a trigger goes to
+		* SENSOR, any other body by its motion type.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* オブジェクトレイヤーの運動タイプをブロードフェーズレイヤーへ対応付ける。
+		* オブジェクトレイヤーをブロードフェーズレイヤーへ対応付ける。トリガーは
+		* SENSOR へ、それ以外のボディは運動タイプに従って振り分ける。
 		*/
 		JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer)const override;
 
@@ -195,18 +210,22 @@ namespace SeedCore
 	* [EN]
 	* Determines whether an object layer can collide with a broad-phase layer.
 	*
-	* STATIC    : only needs to test against DYNAMIC BP layer.
-	* KINEMATIC : only needs to test against DYNAMIC BP layer.
-	* DYNAMIC   : tests against both BP layers.
+	* STATIC            : only needs to test against DYNAMIC BP layer.
+	* KINEMATIC         : tests against DYNAMIC and SENSOR BP layers.
+	* KINEMATIC trigger : tests against all BP layers, since it reports
+	*                     overlaps with static bodies too.
+	* DYNAMIC           : tests against all BP layers.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* オブジェクトレイヤーがブロードフェーズレイヤーと衝突するかを返す。
 	*
-	* STATIC    : DYNAMIC BP レイヤーとのみ判定すればよい。
-	* KINEMATIC : DYNAMIC BP レイヤーとのみ判定すればよい。
-	* DYNAMIC   : 両方の BP レイヤーと判定する。
+	* STATIC                  : DYNAMIC BP レイヤーとのみ判定すればよい。
+	* KINEMATIC               : DYNAMIC と SENSOR の BP レイヤーと判定する。
+	* KINEMATIC のトリガー    : スタティックのボディとの重なりも知らせるので、
+	*                           全ての BP レイヤーと判定する。
+	* DYNAMIC                 : 全ての BP レイヤーと判定する。
 	*/
 	class ObjVsBPFilterImplementation final : public JPH::ObjectVsBroadPhaseLayerFilter
 	{
@@ -231,9 +250,9 @@ namespace SeedCore
 	* below AND LayerCollisionMatrix's per-Actor-Layer matrix must allow it.
 	*
 	* STATIC    vs STATIC    : no  (both immovable)
-	* STATIC    vs KINEMATIC : no  (Kinematic pushes Dynamic, not Static)
+	* STATIC    vs KINEMATIC : only with a trigger (Kinematic pushes Dynamic, not Static, so only overlaps matter)
 	* STATIC    vs DYNAMIC   : yes
-	* KINEMATIC vs KINEMATIC : no  (no physics response between script-driven bodies)
+	* KINEMATIC vs KINEMATIC : only with a trigger (no physics response between script-driven bodies, so only overlaps matter)
 	* KINEMATIC vs DYNAMIC   : yes (Kinematic can push Dynamic)
 	* DYNAMIC   vs DYNAMIC   : yes
 	*
@@ -246,9 +265,9 @@ namespace SeedCore
 	* Actor レイヤーごとのマトリクスの両方が許可している必要がある。
 	*
 	* STATIC    vs STATIC    : しない（どちらも動かない）
-	* STATIC    vs KINEMATIC : しない（Kinematic は Dynamic を押すが Static は押さない）
+	* STATIC    vs KINEMATIC : トリガーのときだけ（Kinematic は Dynamic を押すが Static は押さないので、意味があるのは重なりだけ）
 	* STATIC    vs DYNAMIC   : する
-	* KINEMATIC vs KINEMATIC : しない（スクリプト制御同士に物理応答は不要）
+	* KINEMATIC vs KINEMATIC : トリガーのときだけ（スクリプト制御同士に物理応答は無いので、意味があるのは重なりだけ）
 	* KINEMATIC vs DYNAMIC   : する（Kinematic は Dynamic を押せる）
 	* DYNAMIC   vs DYNAMIC   : する
 	*/

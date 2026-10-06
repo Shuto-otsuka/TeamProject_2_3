@@ -1,11 +1,48 @@
 #pragma once
 #include <FoundationEngine/Prelude.h>
+#include <FoundationEngine/Log/Assert.h>
+#include <FoundationEngine/Interop/ShapeInstance.h>
+#include <GraphicsEngine/Model/Cluster/Meshlet.h>
 
 namespace SeedCore
 {
-	class PrimitiveMesh
+	struct PrimitiveVertex
+	{
+		Vector3 position_;
+		Vector3 normal_;
+		Vector2 uv_;
+		Float cap_;
+	};
+	SC_STATIC_ASSERT(PrimitiveVertex, 36, "Shape/Primitive/Primitive.hlsli");
+
+	class PrimitiveMesh :public NonCopyable
 	{
 	public:
+		void Build();
 
+	public:
+		[[nodiscard]] std::span<const PrimitiveVertex> Vertices()const;
+
+		[[nodiscard]] std::span<const MeshletDesc> Meshlets()const;
+
+		[[nodiscard]] std::span<const Meshlet::MeshletRange> MeshletRanges()const;
+
+		[[nodiscard]] std::span<const Uint32> VertexIndices()const;
+
+		[[nodiscard]] std::span<const Uint8> PrimitiveIndices()const;
+
+	private:
+		static void CreateBoxShape(DynamicArray<PrimitiveVertex>& vertices, DynamicArray<Uint32>& triangles);
+
+	private:
+		DynamicArray<PrimitiveVertex> vertices_;
+
+		DynamicArray<MeshletDesc> meshlets_;
+
+		DynamicArray<Meshlet::MeshletRange> meshletRanges_;
+
+		DynamicArray<Uint32> vertexIndices_;
+
+		DynamicArray<Uint8> primitiveIndices_;
 	};
 }

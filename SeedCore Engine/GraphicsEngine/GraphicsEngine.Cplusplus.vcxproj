@@ -122,6 +122,7 @@
     <ClInclude Include="Model\Animation\AnimationResource.h" />
     <ClInclude Include="Model\Animation\Animator.h" />
     <ClInclude Include="Model\Animation\AnimatorControllerState.h" />
+    <ClInclude Include="Model\Cluster\Meshlet.h" />
     <ClInclude Include="Model\Cluster\QuadricErrorMetrics.h" />
     <ClInclude Include="Model\Collision\MeshCollision.h" />
     <ClInclude Include="Model\Collision\MeshCollisionLoader.h" />
@@ -327,6 +328,7 @@
     <ClCompile Include="Model\Animation\AnimationLoader.cpp" />
     <ClCompile Include="Model\Animation\AnimationResource.cpp" />
     <ClCompile Include="Model\Animation\Animator.cpp" />
+    <ClCompile Include="Model\Cluster\Meshlet.cpp" />
     <ClCompile Include="Model\Cluster\QuadricErrorMetrics.cpp" />
     <ClCompile Include="Model\Collision\MeshCollision.cpp" />
     <ClCompile Include="Model\Collision\MeshCollisionLoader.cpp" />
@@ -515,6 +517,7 @@
     <ClCompile Include="Shape\Collider\ColliderLineShader.cpp" />
     <ClCompile Include="Shape\HUD\HUDComposeShader.cpp" />
     <ClCompile Include="Shape\Outline\OutlineShader.cpp" />
+    <ClCompile Include="Shape\Primitive\PrimitiveMesh.cpp" />
     <ClCompile Include="Shape\Primitive\PrimitiveWireframeShader.cpp" />
     <ClCompile Include="Shape\Screen\BootScreen.cpp" />
     <ClCompile Include="Shape\Screen\FadeScreen.cpp" />
@@ -754,6 +757,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
     <None Include="Shape\Primitive\Primitive.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shape\Primitive\PrimitiveSolid.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shape\Primitive\PrimitiveWireframe.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>

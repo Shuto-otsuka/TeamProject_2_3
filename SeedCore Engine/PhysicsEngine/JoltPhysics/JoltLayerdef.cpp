@@ -32,16 +32,17 @@ namespace SeedCore::Layers
 
 	/**
 	* [EN]
-	* Extracts the Actor layer index while ignoring the planar marker.
+	* Extracts the Actor layer index while ignoring the trigger and planar
+	* markers.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 2D マーカーを無視して Actor レイヤーインデックスを取り出す。
+	* トリガーと 2D のマーカーを無視して Actor レイヤーインデックスを取り出す。
 	*/
 	Size UnpackUserLayer(JPH::ObjectLayer objectLayer)
 	{
-		return static_cast<Size>((objectLayer & ~PLANAR) >> MOTION_TYPE_BITS);
+		return static_cast<Size>((objectLayer & ~(PLANAR | SENSOR)) >> MOTION_TYPE_BITS);
 	}
 }
 
@@ -63,15 +64,24 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Maps an object layer's motion type to its broad-phase layer.
+	* Maps an object layer to its broad-phase layer: a trigger goes to
+	* SENSOR, any other body by its motion type.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* オブジェクトレイヤーの運動タイプをブロードフェーズレイヤーへ対応付ける。
+	* オブジェクトレイヤーをブロードフェーズレイヤーへ対応付ける。トリガーは
+	* SENSOR へ、それ以外のボディは運動タイプに従って振り分ける。
 	*/
 	JPH::BroadPhaseLayer BPLayerInterfaceImplementation::GetBroadPhaseLayer(JPH::ObjectLayer inLayer)const
 	{
+		/// [EN] Triggers of every motion type share their own BP layer, so only the bodies that need them search it.
+		/// [JP] トリガーは運動タイプに関係なく専用の BP レイヤーにまとめ、必要なボディだけがそこを検索するようにする。
+		if (inLayer & Layers::SENSOR)
+		{
+			return BPLayers::SENSOR;
+		}
+
 		switch (Layers::UnpackMotionType(inLayer))
 		{
 		case Layers::STATIC:
@@ -104,6 +114,8 @@ namespace SeedCore
 			return "STATIC";
 		case static_cast<JPH::uint8>(BPLayers::DYNAMIC):
 			return "DYNAMIC";
+		case static_cast<JPH::uint8>(BPLayers::SENSOR):
+			return "SENSOR";
 		default:
 			return "UNKNOWN";
 		}
@@ -129,7 +141,16 @@ namespace SeedCore
 		case Layers::STATIC:
 			[[fallthrough]];
 		case Layers::KINEMATIC:
-			return inBPLayer == BPLayers::DYNAMIC;
+			/// [EN] A kinematic trigger also searches static bodies, since it reports overlaps with everything.
+			/// [JP] キネマティックのトリガーは何とでも重なりを知らせるので、スタティックのボディも検索する。
+			if (inLayer & Layers::SENSOR)
+			{
+				return true;
+			}
+
+			/// [EN] Any other kinematic body searches triggers as well as dynamic bodies.
+			/// [JP] それ以外のキネマティックのボディは、動的ボディに加えてトリガーも検索する。
+			return inBPLayer == BPLayers::DYNAMIC || inBPLayer == BPLayers::SENSOR;
 		case Layers::DYNAMIC:
 			return true;
 		default:
@@ -159,14 +180,18 @@ namespace SeedCore
 		JPH::ObjectLayer motionTypeA = Layers::UnpackMotionType(inLayerA);
 		JPH::ObjectLayer motionTypeB = Layers::UnpackMotionType(inLayerB);
 
+		/// [EN] A trigger on either side lets a kinematic body pair with static and kinematic bodies too.
+		/// [JP] どちらかがトリガーなら、キネマティックのボディはスタティック・キネマティックのボディとも組になる。
+		Bool eitherSensor = ((inLayerA | inLayerB) & Layers::SENSOR) != 0;
+
 		Bool motionTypeCollides;
 		switch (motionTypeA)
 		{
 		case Layers::STATIC:
-			motionTypeCollides = motionTypeB == Layers::DYNAMIC;
+			motionTypeCollides = motionTypeB == Layers::DYNAMIC || (motionTypeB == Layers::KINEMATIC && eitherSensor);
 			break;
 		case Layers::KINEMATIC:
-			motionTypeCollides = motionTypeB == Layers::DYNAMIC;
+			motionTypeCollides = motionTypeB == Layers::DYNAMIC || eitherSensor;
 			break;
 		case Layers::DYNAMIC:
 			motionTypeCollides = true;

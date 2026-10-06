@@ -1015,6 +1015,9 @@
     <ClInclude Include="Shape\Primitive\PrimitiveMesh.h">
       <Filter>Shape\Primitive</Filter>
     </ClInclude>
+    <ClInclude Include="Model\Cluster\Meshlet.h">
+      <Filter>Model\Cluster</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">
@@ -1667,6 +1670,12 @@
     <ClCompile Include="Shape\Primitive\PrimitiveWireframeShader.cpp">
       <Filter>Shape\Primitive</Filter>
     </ClCompile>
+    <ClCompile Include="Model\Cluster\Meshlet.cpp">
+      <Filter>Model\Cluster</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\Primitive\PrimitiveMesh.cpp">
+      <Filter>Shape\Primitive</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\Sampler.hlsli">
@@ -1841,6 +1850,12 @@
       <Filter>Effect\Zephyr</Filter>
     </None>
     <None Include="Shape\Primitive\Primitive.hlsli">
+      <Filter>Shape\Primitive</Filter>
+    </None>
+    <None Include="Shape\Primitive\PrimitiveWireframe.hlsli">
+      <Filter>Shape\Primitive</Filter>
+    </None>
+    <None Include="Shape\Primitive\PrimitiveSolid.hlsli">
       <Filter>Shape\Primitive</Filter>
     </None>
   </ItemGroup>

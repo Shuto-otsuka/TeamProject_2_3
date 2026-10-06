@@ -1,16 +1,5 @@
 #include "Primitive.hlsli"
 
-/// [EN] One shape instance spans ColliderConstantBuffer::
-///      groups_per_instance_ groups (a capsule has more lines than a
-///      single group's COLLIDER_LINES_PER_GROUP) — gid decomposes into which
-///      instance and which slice of that instance's line list this group
-///      covers. Each line is emitted as a quad (4 vertices, 2 triangles) so
-///      it can be drawn thicker than one pixel.
-/// [JP] 1つの形のインスタンスは ColliderConstantBuffer::
-///      groups_per_instance_ 個のグループにまたがる(カプセルは1グループの
-///      COLLIDER_LINES_PER_GROUP 本より線が多いため) — gid を「どのインスタンスか」と
-///      「そのインスタンスの線リストのうちどのスライスか」に分解する。
-///      1ピクセルより太く描けるよう、各線は四角形(頂点4つ、三角形2つ)として出力する。
 [NumThreads(COLLIDER_LINES_PER_GROUP, 1, 1)]
 [OutputTopology("triangle")]
 void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices ColliderLineMSOutput verts[COLLIDER_LINES_PER_GROUP * 4], out indices uint3 triangles[COLLIDER_LINES_PER_GROUP * 2])

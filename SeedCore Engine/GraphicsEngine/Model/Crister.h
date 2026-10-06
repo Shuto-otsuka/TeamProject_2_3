@@ -1,5 +1,6 @@
 #pragma once
 #include <FoundationEngine/Prelude.h>
+#include <GraphicsEngine/Model/Cluster/Meshlet.h>
 
 /**
 * [EN]
@@ -132,47 +133,14 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* GPU meshlet-shader input: one meshlet's vertex/triangle range within
-	* its owning Cluster's page, addressed relative to vertexIndices_/
-	* primitiveIndices_ (page-local once a page is uploaded — see
-	* StreamingGeometry). A Cluster spans meshletOffset_/meshletCount_ of
-	* these.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* GPU メッシュシェーダ入力: 1 meshlet ぶんの、所属 Cluster のページ内での
-	* 頂点/三角形範囲。vertexIndices_/primitiveIndices_ を基準に指す
-	* （ページがアップロードされた後はページローカルになる — StreamingGeometry
-	* 参照）。Cluster は meshletOffset_/meshletCount_ 個ぶんのこれをまとめる。
-	*/
-	struct Meshlet
-	{
-		Uint32 vertexOffset_ = 0;
-		Uint32 triangleOffset_ = 0;
-		Uint32 vertexCount_ = 0;
-		Uint32 triangleCount_ = 0;
-
-		template<class Archive>
-		void Serialize(Archive& archive)
-		{
-			archive.Field("vertex_offset", vertexOffset_);
-			archive.Field("triangle_offset", triangleOffset_);
-			archive.Field("vertex_count", vertexCount_);
-			archive.Field("triangle_count", triangleCount_);
-		}
-	};
-
-	/**
-	* [EN]
-	* Culling bound for one Meshlet: a bounding sphere (center_/radius_)
+	* Culling bound for one MeshletDesc: a bounding sphere (center_/radius_)
 	* plus a normal cone (coneAxis_/coneCutoff_) for backface-cluster
-	* culling. One entry per Meshlet, same indexing as meshlets_.
+	* culling. One entry per MeshletDesc, same indexing as meshlets_.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* Meshlet 1 つぶんのカリング用バウンド: バウンディングスフィア
+	* MeshletDesc 1 つぶんのカリング用バウンド: バウンディングスフィア
 	* (center_/radius_) と、背面クラスタカリング用の法線コーン
 	* (coneAxis_/coneCutoff_)。meshlets_ と同じインデックスで 1 対 1。
 	*/
@@ -1172,7 +1140,7 @@ namespace SeedCore
 
 		DynamicArray<Uint32> vertexIndices_;
 		DynamicArray<Uint8> primitiveIndices_;
-		DynamicArray<Meshlet> meshlets_;
+		DynamicArray<MeshletDesc> meshlets_;
 		DynamicArray<MeshletBound> meshletBounds_;
 		DynamicArray<Cluster> clusters_;
 		DynamicArray<Stage> stages_;

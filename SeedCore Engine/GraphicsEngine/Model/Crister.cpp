@@ -704,7 +704,7 @@ namespace SeedCore
 
 				for (Uint32 meshletIndex = cluster.meshletOffset_; meshletIndex < cluster.meshletOffset_ + cluster.meshletCount_; meshletIndex++)
 				{
-					const Meshlet& meshlet = meshlets_[meshletIndex];
+					const MeshletDesc& meshlet = meshlets_[meshletIndex];
 					for (Uint32 triangleIndex = 0; triangleIndex < meshlet.triangleCount_; triangleIndex++)
 					{
 						Uint32 byteOffset = meshlet.triangleOffset_ + triangleIndex * 3;
@@ -782,7 +782,7 @@ namespace SeedCore
 				const Cluster& cluster = clusters_[subMesh.clusterOffset_];
 				for (Uint32 meshletIndex = cluster.meshletOffset_; meshletIndex < cluster.meshletOffset_ + cluster.meshletCount_; meshletIndex++)
 				{
-					const Meshlet& meshlet = meshlets_[meshletIndex];
+					const MeshletDesc& meshlet = meshlets_[meshletIndex];
 					for (Uint32 triangleIndex = 0; triangleIndex < meshlet.triangleCount_; triangleIndex++)
 					{
 						Uint32 byteOffset = meshlet.triangleOffset_ + triangleIndex * 3;
@@ -871,7 +871,7 @@ namespace SeedCore
 			const Cluster& cluster = clusters_[clusterIndex];
 			for (Uint32 meshletIndex = cluster.meshletOffset_; meshletIndex < cluster.meshletOffset_ + cluster.meshletCount_; meshletIndex++)
 			{
-				const Meshlet& meshlet = meshlets_[meshletIndex];
+				const MeshletDesc& meshlet = meshlets_[meshletIndex];
 				for (Uint32 triangleIndex = 0; triangleIndex < meshlet.triangleCount_; triangleIndex++)
 				{
 					Uint32 byteOffset = meshlet.triangleOffset_ + triangleIndex * 3;
@@ -1000,7 +1000,7 @@ namespace SeedCore
 			const Cluster& cluster = clusters_[clusterIndex];
 			for (Uint32 meshletIndex = cluster.meshletOffset_; meshletIndex < cluster.meshletOffset_ + cluster.meshletCount_; meshletIndex++)
 			{
-				const Meshlet& meshlet = meshlets_[meshletIndex];
+				const MeshletDesc& meshlet = meshlets_[meshletIndex];
 				for (Uint32 triangleIndex = 0; triangleIndex < meshlet.triangleCount_; triangleIndex++)
 				{
 					Uint32 byteOffset = meshlet.triangleOffset_ + triangleIndex * 3;
@@ -1487,8 +1487,8 @@ namespace SeedCore
 				continue;
 			}
 
-			const Meshlet& first = meshlets_[cluster.meshletOffset_];
-			const Meshlet& last = meshlets_[cluster.meshletOffset_ + cluster.meshletCount_ - 1];
+			const MeshletDesc& first = meshlets_[cluster.meshletOffset_];
+			const MeshletDesc& last = meshlets_[cluster.meshletOffset_ + cluster.meshletCount_ - 1];
 			page.vertexIndexBegin_ = first.vertexOffset_;
 			page.vertexIndexEnd_ = last.vertexOffset_ + last.vertexCount_;
 			page.primitiveBegin_ = first.triangleOffset_;
@@ -1618,7 +1618,7 @@ namespace SeedCore
 
 				for (Uint32 meshletIndex = cluster.meshletOffset_; meshletIndex < cluster.meshletOffset_ + cluster.meshletCount_; meshletIndex++)
 				{
-					const Meshlet& meshlet = meshlets_[meshletIndex];
+					const MeshletDesc& meshlet = meshlets_[meshletIndex];
 					for (Uint32 triangleIndex = 0; triangleIndex < meshlet.triangleCount_; triangleIndex++)
 					{
 						Uint32 byteOffset = meshlet.triangleOffset_ + triangleIndex * 3;
@@ -2529,11 +2529,11 @@ namespace SeedCore
 		/// [JP] クラスタの meshlet をページローカルオフセットへリベースする。
 		///      メッシュシェーダは無変更: ModelStructuredBuffer がページのバッファと
 		///      ページローカルの meshlet オフセットを指すだけ。
-		DynamicArray<Meshlet> localMeshlets(cluster.meshletCount_);
+		DynamicArray<MeshletDesc> localMeshlets(cluster.meshletCount_);
 		DynamicArray<MeshletBound> localBounds(cluster.meshletCount_);
 		for (Uint32 meshletIndex = 0; meshletIndex < cluster.meshletCount_; meshletIndex++)
 		{
-			Meshlet meshlet = meshlets_[cluster.meshletOffset_ + meshletIndex];
+			MeshletDesc meshlet = meshlets_[cluster.meshletOffset_ + meshletIndex];
 			meshlet.vertexOffset_ -= page.vertexIndexBegin_;
 			meshlet.triangleOffset_ -= page.primitiveBegin_;
 			localMeshlets[meshletIndex] = meshlet;
@@ -2564,9 +2564,9 @@ namespace SeedCore
 
 		DirectX::ResourceUploadBatch resourceUpload(device_);
 		resourceUpload.Begin();
-		HRESULT hr = CreateStaticBufferUnbounded(device_, resourceUpload, localMeshlets.data(), localMeshlets.size(), sizeof(Meshlet), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, page.meshletResource_.ReleaseAndGetAddressOf());
+		HRESULT hr = CreateStaticBufferUnbounded(device_, resourceUpload, localMeshlets.data(), localMeshlets.size(), sizeof(MeshletDesc), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, page.meshletResource_.ReleaseAndGetAddressOf());
 		SC_HR_CHECK(hr, "メッシュレットバッファの生成に失敗しました");
-		page.meshletBufferIndex_ = CreateStructuredShaderResourceView(device_, bindlessHeap_, page.meshletResource_.Get(), cluster.meshletCount_, sizeof(Meshlet));
+		page.meshletBufferIndex_ = CreateStructuredShaderResourceView(device_, bindlessHeap_, page.meshletResource_.Get(), cluster.meshletCount_, sizeof(MeshletDesc));
 
 		hr = CreateStaticBufferUnbounded(device_, resourceUpload, localBounds.data(), localBounds.size(), sizeof(MeshletBound), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, page.meshletBoundResource_.ReleaseAndGetAddressOf());
 		SC_HR_CHECK(hr, "メッシュレットバウンドバッファの生成に失敗しました");
@@ -2609,7 +2609,7 @@ namespace SeedCore
 		finished.wait();
 
 		page.sizeBytes_ =
-			static_cast<Uint64>(cluster.meshletCount_) * (sizeof(Meshlet) + sizeof(MeshletBound)) +
+			static_cast<Uint64>(cluster.meshletCount_) * (sizeof(MeshletDesc) + sizeof(MeshletBound)) +
 			localVertexIndices.size() * sizeof(Uint32) +
 			alignedSize +
 			localVertices.size() * sizeof(CompressedVertex);

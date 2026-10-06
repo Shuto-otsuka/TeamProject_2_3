@@ -154,6 +154,14 @@ namespace SeedCore
 		/// [EN] A trigger reports overlaps but does not push anything.
 		/// [JP] トリガーは重なりを知らせるだけで、何も押し返さない。
 		desc.isSensor_ = isTrigger;
+
+		/// [EN] A trigger is marked in the layer as well, so the layer filters can let it meet kinematic bodies.
+		/// [JP] トリガーはレイヤーにも印を付け、レイヤーフィルターがキネマティックのボディと組ませられるようにする。
+		if (isTrigger)
+		{
+			desc.layer_ |= Layers::SENSOR;
+		}
+
 		ApplyTransform(actor, desc);
 
 		return actor.GetPhysics().CreateRigidbody(desc);

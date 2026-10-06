@@ -125,6 +125,13 @@ namespace SeedCore
 		desc.allowedDOFs_ = allowedDOFs;
 		desc.isSensor_ = isTrigger_;
 
+		/// [EN] A trigger is marked in the layer as well, so the layer filters can let it meet static and kinematic bodies.
+		/// [JP] トリガーはレイヤーにも印を付け、レイヤーフィルターがスタティック・キネマティックのボディと組ませられるようにする。
+		if (isTrigger_)
+		{
+			desc.layer_ |= Layers::SENSOR;
+		}
+
 		/// [EN] A canvas body lives on the z = 0 plane and only collides with other canvas bodies.
 		/// [JP] Canvas のボディは z = 0 の平面上にあり、他の Canvas のボディとだけ衝突する。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
