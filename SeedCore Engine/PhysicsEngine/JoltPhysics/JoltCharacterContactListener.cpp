@@ -22,12 +22,32 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Dispatches enter events for a newly added character contact.
+	* Starts a new character update. Each contacted body dispatches at
+	* most one enter or stay until the next call. Call it right before
+	* the character's update.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 新しく追加されたキャラクター接触の Enter イベントを通知する。
+	* キャラクターの新しい更新を始める。次に呼ぶまで、接触先ボディごとの
+	* Enter か Stay は最大1回になる。キャラクターの更新の直前に呼ぶ。
+	*/
+	void JoltCharacterContactListener::Begin()
+	{
+		notifiedBodies_.clear();
+	}
+
+	/**
+	* [EN]
+	* Dispatches an enter event when the first sub-shape of a body is
+	* touched, and a stay event when another one of a body already in
+	* contact is touched.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディの最初のサブシェイプに触れたときに Enter イベントを、既に接触中の
+	* ボディの別のサブシェイプに触れたときに Stay イベントを通知する。
 	*/
 	void JoltCharacterContactListener::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::CharacterContact& contact, JPH::CharacterContactSettings& settings)
 	{
@@ -36,38 +56,69 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Resolve the contacted body to an entity and retain its sensor classification.
-		/// [JP] 接触先ボディをエンティティへ解決し、センサー区分を保持する。
-		EntityID otherEntityID = world_->CreatePhysics()->BodyEntityID(contact.mBodyB);
-		if (otherEntityID == EntityID{})
+		/// [EN] Jolt reports one contact per sub-shape of the body, so a body is entered only by its first one.
+		/// [JP] Jolt はボディのサブシェイプごとに接触を報告するので、ボディの Enter は最初の1つでだけ出す。
+		auto it = contactBodies_.find(contact.mBodyB);
+		if (it == contactBodies_.end())
+		{
+			/// [EN] Resolve the contacted body to an entity; the entity and sensor flag are kept for the removal callback, which only gives the body ID.
+			/// [JP] 接触先ボディをエンティティへ解決する。削除コールバックはボディ ID しか渡さないので、エンティティとセンサーの区分はここで保持する。
+			EntityID otherEntityID = world_->CreatePhysics()->BodyEntityID(contact.mBodyB);
+			if (otherEntityID == EntityID{})
+			{
+				return;
+			}
+
+			contactBodies_[contact.mBodyB] = ContactBody{ otherEntityID, contact.mIsSensorB, 1 };
+			notifiedBodies_.insert(contact.mBodyB);
+
+			/// [EN] Notify both entities with the event type selected by the contacted body.
+			/// [JP] 接触先ボディの種別に応じたイベントを両方のエンティティへ通知する。
+			if (contact.mIsSensorB)
+			{
+				PhysicsSystem::DispatchTriggerEnter(*world_, entityID_, otherEntityID);
+				PhysicsSystem::DispatchTriggerEnter(*world_, otherEntityID, entityID_);
+			}
+			else
+			{
+				PhysicsSystem::DispatchCollisionEnter(*world_, entityID_, otherEntityID);
+				PhysicsSystem::DispatchCollisionEnter(*world_, otherEntityID, entityID_);
+			}
+
+			return;
+		}
+
+		/// [EN] Another sub-shape touched on a body already in contact means the body is staying.
+		/// [JP] 既に接触中のボディで別のサブシェイプに触れたのは、ボディとしては接触が続いているということ。
+		ContactBody& body = it->second;
+		++body.contactCount_;
+		if (!notifiedBodies_.insert(contact.mBodyB).second)
 		{
 			return;
 		}
 
-		sensorCache_[contact.mBodyB] = contact.mIsSensorB;
-
-		/// [EN] Notify both entities with the event type selected by the contacted body.
-		/// [JP] 接触先ボディの種別に応じたイベントを両方のエンティティへ通知する。
-		if (contact.mIsSensorB)
+		if (body.isSensor_)
 		{
-			PhysicsSystem::DispatchTriggerEnter(*world_, entityID_, otherEntityID);
-			PhysicsSystem::DispatchTriggerEnter(*world_, otherEntityID, entityID_);
+			PhysicsSystem::DispatchTriggerStay(*world_, entityID_, body.entityID_);
+			PhysicsSystem::DispatchTriggerStay(*world_, body.entityID_, entityID_);
 		}
 		else
 		{
-			PhysicsSystem::DispatchCollisionEnter(*world_, entityID_, otherEntityID);
-			PhysicsSystem::DispatchCollisionEnter(*world_, otherEntityID, entityID_);
+			PhysicsSystem::DispatchCollisionStay(*world_, entityID_, body.entityID_);
+			PhysicsSystem::DispatchCollisionStay(*world_, body.entityID_, entityID_);
 		}
 	}
 
 	/**
 	* [EN]
-	* Dispatches stay events for a persisted character contact.
+	* Dispatches a stay event for a body still in contact, at most once
+	* per character update.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 継続中のキャラクター接触の Stay イベントを通知する。
+	* 接触が続いているボディの Stay イベントを、キャラクターの更新1回につき
+	* 最大1回通知する。
 	*/
 	void JoltCharacterContactListener::OnContactPersisted(const JPH::CharacterVirtual* character, const JPH::CharacterContact& contact, JPH::CharacterContactSettings& settings)
 	{
@@ -76,55 +127,72 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Refresh the sensor classification and notify both entities of the ongoing contact.
-		/// [JP] センサー区分を更新し、継続中の接触を両方のエンティティへ通知する。
-		EntityID otherEntityID = world_->CreatePhysics()->BodyEntityID(contact.mBodyB);
-		if (otherEntityID == EntityID{})
+		auto it = contactBodies_.find(contact.mBodyB);
+		if (it == contactBodies_.end())
 		{
 			return;
 		}
 
-		sensorCache_[contact.mBodyB] = contact.mIsSensorB;
-
-		if (contact.mIsSensorB)
+		/// [EN] Every touched sub-shape reports a persisted contact, but the body stays only once per update.
+		/// [JP] 触れているサブシェイプごとに継続の報告が来るが、ボディの Stay は更新1回につき1回だけ。
+		if (!notifiedBodies_.insert(contact.mBodyB).second)
 		{
-			PhysicsSystem::DispatchTriggerStay(*world_, entityID_, otherEntityID);
-			PhysicsSystem::DispatchTriggerStay(*world_, otherEntityID, entityID_);
+			return;
+		}
+
+		const ContactBody& body = it->second;
+		if (body.isSensor_)
+		{
+			PhysicsSystem::DispatchTriggerStay(*world_, entityID_, body.entityID_);
+			PhysicsSystem::DispatchTriggerStay(*world_, body.entityID_, entityID_);
 		}
 		else
 		{
-			PhysicsSystem::DispatchCollisionStay(*world_, entityID_, otherEntityID);
-			PhysicsSystem::DispatchCollisionStay(*world_, otherEntityID, entityID_);
+			PhysicsSystem::DispatchCollisionStay(*world_, entityID_, body.entityID_);
+			PhysicsSystem::DispatchCollisionStay(*world_, body.entityID_, entityID_);
 		}
 	}
 
 	/**
 	* [EN]
-	* Dispatches exit events for a removed character contact.
+	* Dispatches an exit event when the last touched sub-shape of a body
+	* is released, even if the body has been destroyed since.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 削除されたキャラクター接触の Exit イベントを通知する。
+	* ボディで最後に触れていたサブシェイプが離れたときに Exit イベントを
+	* 通知する。ボディがその間に破棄されていても通知する。
 	*/
 	void JoltCharacterContactListener::OnContactRemoved(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2)
 	{
+		auto it = contactBodies_.find(bodyID2);
+		if (it == contactBodies_.end())
+		{
+			return;
+		}
+
+		/// [EN] The body exits only when its last touched sub-shape is released.
+		/// [JP] ボディが Exit するのは、最後に触れていたサブシェイプが離れたときだけ。
+		ContactBody& body = it->second;
+		--body.contactCount_;
+		if (body.contactCount_ > 0)
+		{
+			return;
+		}
+
+		/// [EN] The entity kept at enter is used, so the exit still reaches the character when the body has been destroyed.
+		/// [JP] Enter 時に保持したエンティティを使うので、ボディが破棄されていても Exit はキャラクターへ届く。
+		EntityID otherEntityID = body.entityID_;
+		Bool isSensor = body.isSensor_;
+		contactBodies_.erase(it);
+
 		if (!world_)
 		{
 			return;
 		}
 
-		EntityID otherEntityID = world_->CreatePhysics()->BodyEntityID(bodyID2);
-		if (otherEntityID == EntityID{})
-		{
-			return;
-		}
-
-		/// [EN] Use the cached classification because the removal callback supplies only body IDs.
-		/// [JP] 削除コールバックではボディ ID だけが渡されるため、保持した区分を使う。
-		auto it = sensorCache_.find(bodyID2);
-
-		if (it != sensorCache_.end() && it->second)
+		if (isSensor)
 		{
 			PhysicsSystem::DispatchTriggerExit(*world_, entityID_, otherEntityID);
 			PhysicsSystem::DispatchTriggerExit(*world_, otherEntityID, entityID_);

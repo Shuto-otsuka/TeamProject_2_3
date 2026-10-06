@@ -139,7 +139,7 @@ namespace SeedCore
 		switch (Layers::UnpackMotionType(inLayer))
 		{
 		case Layers::STATIC:
-			[[fallthrough]];
+			return inBPLayer == BPLayers::DYNAMIC;
 		case Layers::KINEMATIC:
 			/// [EN] A kinematic trigger also searches static bodies, since it reports overlaps with everything.
 			/// [JP] キネマティックのトリガーは何とでも重なりを知らせるので、スタティックのボディも検索する。

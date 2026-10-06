@@ -227,6 +227,9 @@ namespace SeedCore
 			character_->SetRotation(JPH::Quat(newRotation.x, newRotation.y, newRotation.z, newRotation.w));
 		}
 
+		/// [EN] Each contacted body dispatches at most one enter or stay per update.
+		/// [JP] 接触先ボディごとの Enter か Stay は、更新1回につき最大1回。
+		characterContactListener_->Begin();
 		actor.GetPhysics().UpdateCharacter(character_.GetPtr(), elapsedTime, ToRadians(maxSlopeAngle_), maxStepHeight_);
 
 		JPH::RVec3 outPosition = character_->GetPosition();
