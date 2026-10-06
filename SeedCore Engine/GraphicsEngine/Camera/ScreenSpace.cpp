@@ -45,12 +45,13 @@ namespace SeedCore
 		///      除算するため、これらは既に通常のワールド空間の点として
 		///      返ってくる - 同じ(ndcX, ndcY)のスクリーン列上の、近平面上の
 		///      点と遠平面上の点。
-		Vector3 nearPoint = Vector3::Transform(Vector3(ndcX, ndcY, 0.0f), inverseViewProjection);
-		Vector3 farPoint = Vector3::Transform(Vector3(ndcX, ndcY, 1.0f), inverseViewProjection);
+		Vector3 nearPoint = Vector3::Transform(Vector3(ndcX, ndcY, 1.0f), inverseViewProjection);
+		
+		Vector3 cameraPosition = view_.Invert().Translation();
 
 		Ray ray;
 		ray.origin_ = nearPoint;
-		ray.direction_ = farPoint - nearPoint;
+		ray.direction_ = nearPoint - cameraPosition;
 		if (ray.direction_.LengthSquared() > 0.0f)
 		{
 			ray.direction_.Normalize();

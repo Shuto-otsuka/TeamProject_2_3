@@ -997,6 +997,24 @@
     <ClInclude Include="Shape\Primitive\CylinderShape.h">
       <Filter>Shape\Primitive</Filter>
     </ClInclude>
+    <ClInclude Include="Shape\Primitive\PlaneShape.h">
+      <Filter>Shape\Primitive</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Primitive\DiscShape.h">
+      <Filter>Shape\Primitive</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Primitive\ConeShape.h">
+      <Filter>Shape\Primitive</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Primitive\RampShape.h">
+      <Filter>Shape\Primitive</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Primitive\TorusShape.h">
+      <Filter>Shape\Primitive</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Primitive\PrimitiveMesh.h">
+      <Filter>Shape\Primitive</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">

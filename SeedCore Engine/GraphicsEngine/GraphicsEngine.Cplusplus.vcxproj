@@ -243,10 +243,16 @@
     <ClInclude Include="Shape\Outline\OutlineShader.h" />
     <ClInclude Include="Shape\Primitive\BoxShape.h" />
     <ClInclude Include="Shape\Primitive\CapsuleShape.h" />
+    <ClInclude Include="Shape\Primitive\ConeShape.h" />
     <ClInclude Include="Shape\Primitive\CylinderShape.h" />
+    <ClInclude Include="Shape\Primitive\DiscShape.h" />
+    <ClInclude Include="Shape\Primitive\PlaneShape.h" />
+    <ClInclude Include="Shape\Primitive\PrimitiveMesh.h" />
     <ClInclude Include="Shape\Primitive\PrimitiveWireframeShader.h" />
+    <ClInclude Include="Shape\Primitive\RampShape.h" />
     <ClInclude Include="Shape\Primitive\SegmentShape.h" />
     <ClInclude Include="Shape\Primitive\SphereShape.h" />
+    <ClInclude Include="Shape\Primitive\TorusShape.h" />
     <ClInclude Include="Shape\Screen\BootScreen.h" />
     <ClInclude Include="Shape\Screen\FadeScreen.h" />
     <ClInclude Include="Shape\Screen\LetterScreen.h" />

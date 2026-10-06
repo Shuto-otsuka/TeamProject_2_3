@@ -20,10 +20,10 @@ namespace SeedCore
 		SC_REFLECTION_FIELD_EX("色")
 		Color color_ = { 1.0f,1.0f,1.0f,1.0f };
 
-		SC_REFLECTION_FIELD_EX("高さ")
+		SC_REFLECTION_CLAMPED_EX("円柱の高さ", 0.001f, 10000.0f)
 		Float height_ = 1.0f;
 
-		SC_REFLECTION_FIELD_EX("半径")
+		SC_REFLECTION_CLAMPED_EX("半径", 0.001f, 10000.0f)
 		Float radius_ = 0.5f;
 	};
 	REGISTER_COMPONENT(CapsuleShape, "Geometry", ComponentStorage::Archetype);
