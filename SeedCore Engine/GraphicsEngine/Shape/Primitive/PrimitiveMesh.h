@@ -5,6 +5,7 @@ namespace SeedCore
 {
 	class PrimitiveMesh
 	{
+	public:
 
 	};
 }
