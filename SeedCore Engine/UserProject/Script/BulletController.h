@@ -3,12 +3,16 @@
 #include <FoundationEngine/SeedScript.h>
 #include<SeedCore/ScComponent.h>
 
+class PlayerController;
+
 class BulletController :public SeedCore::SeedScript
 {
 public:
 	void OnStart();
 	void OnTick(float elapsedTime);
-	void SetParam(SeedCore::Vector3 startPosition,SeedCore::Vector3 moveDirection, float chargeRate);
+	void SetParam(const SeedCore::Vector3& startPosition,const SeedCore::Vector3& moveDirection, float chargeRate,int cost);
+
+	void OnCollisionEnter(SeedCore::Entity entity);
 
 	SC_REFLECTION_FIELD()
 		float minSize;
@@ -25,20 +29,31 @@ public:
 	SC_REFLECTION_FIELD()
 		float turnSpeed;
 	SC_REFLECTION_FIELD()
+		float removeDistance;
+	SC_REFLECTION_FIELD()
 		SeedCore::Vector3 turnAxis;
 
 private:
 	void Move(float elapsedTime);
-	void Turn(float elapsedTime);
 	void UpdateAliveTime(float elapsedTime);
+	void Remove();
 
 	SeedCore::Vector3 moveDirection;
+	SeedCore::Vector3 startPosition;
+
 	float size;
 	float speed;
 	float aliveTime;
+	float aliveTimer = 0.0f;
+
+	int cost = 0;
 
 	SeedCore::Scale* scale;
 	SeedCore::Position* position;
 	SeedCore::Rotation* rotation;
+	SeedCore::Rigidbody* rigidbody;
+	SeedCore::Transform* transform;
+
+	PlayerController* playerController;
 };
 REGISTER_COMPONENT(BulletController);
