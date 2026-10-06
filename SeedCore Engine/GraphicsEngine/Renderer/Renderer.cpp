@@ -359,7 +359,7 @@ namespace SeedCore
 
 		debugDepthResizeBuffer_.Dispatch(cmdList, bindlessHeap_->Heap(), geometryBuffer_, nativeWidth_, nativeHeight_, addresses);
 		colliderRenderer_->Draw3D(cmdList, debugRenderTargetView, debugDepthResizeBuffer_.DepthStencilViewHandle(), debugViewport, bindlessHeap_->Heap(), addresses);
-		shapeRenderer_->Draw3D(cmdList, debugRenderTargetView, debugDepthResizeBuffer_.DepthStencilViewHandle(), debugViewport, bindlessHeap_->Heap(), addresses);
+		shapeRenderer_->DrawEditor3D(cmdList, debugRenderTargetView, debugDepthResizeBuffer_.DepthStencilViewHandle(), debugViewport, bindlessHeap_->Heap(), addresses);
 		geometryBuffer_.BeginDepth(cmdList);
 
 		outlineRenderer_->DrawDebugOverlay(cmdList, debugRenderTargetView, debugViewport, bindlessHeap_->Heap(), addresses);
@@ -373,7 +373,7 @@ namespace SeedCore
 		gameFrameBuffer_->Clear(cmdList);
 	}
 
-	void Renderer::EndGameFrame(D3D12CommandList* cmdList, const SceneConstantBuffer& scene)
+	void Renderer::EndGameFrame(D3D12CommandList* cmdList, const SceneConstantBuffer& scene, Bool hasActiveCamera)
 	{
 		gameFrameBuffer_->End(cmdList);
 
@@ -416,6 +416,15 @@ namespace SeedCore
 
 		D3D12_CPU_DESCRIPTOR_HANDLE gameDisplayRenderTargetView = postProcessRenderer_->OutputRenderTargetViewHandle(RaytracingView::Game);
 		D3D12_VIEWPORT gameDisplayViewport = postProcessRenderer_->Viewport(RaytracingView::Game);
+
+		/// [EN] Shapes scoped to the game, depth-tested against this frame's game depth; after the hudless capture so frame generation sees the scene without them, and only with a camera, since otherwise the game depth was not drawn this frame.
+		/// [JP] Game の形を、このフレームのゲームの深度で深度テストして描く。フレーム生成がそれを含まないシーンを見るよう hudless の取得より後に描き、カメラがないとこのフレームのゲームの深度は描かれていないので、カメラがあるときだけ描く。
+		if (hasActiveCamera)
+		{
+			debugDepthResizeBuffer_.Dispatch(cmdList, bindlessHeap_->Heap(), geometryBuffer_, nativeWidth_, nativeHeight_, addresses);
+			shapeRenderer_->DrawGame3D(cmdList, gameDisplayRenderTargetView, debugDepthResizeBuffer_.DepthStencilViewHandle(), gameDisplayViewport, bindlessHeap_->Heap(), addresses);
+			geometryBuffer_.BeginDepth(cmdList);
+		}
 
 		ID3D12DescriptorHeap* spriteHeap = bindlessHeap_->Heap();
 

@@ -74,7 +74,7 @@ namespace SeedCore
 
 		void BeginGameFrame(D3D12CommandList* cmdList);
 
-		void EndGameFrame(D3D12CommandList* cmdList, const SceneConstantBuffer& scene);
+		void EndGameFrame(D3D12CommandList* cmdList, const SceneConstantBuffer& scene, Bool hasActiveCamera);
 
 		void BeginCanvasFrame(D3D12CommandList* cmdList);
 

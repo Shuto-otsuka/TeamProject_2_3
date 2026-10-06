@@ -138,7 +138,10 @@ namespace SeedCore
 			systemGraph_.Add(
 				Query<Read<Velocity>, Write<Position>>::GetReadSignature(),
 				Query<Read<Velocity>, Write<Position>>::GetWriteSignature(),
-				[this, &world, elapsedTime]() { moveSystem_.Execute(world, elapsedTime); });
+				[this, &world, elapsedTime]()
+				{
+					moveSystem_.Execute(world, elapsedTime);
+				});
 			systemGraph_.Add(
 				Query<Read<Spawner>, Read<Lifetime>>::GetReadSignature(),
 				Query<Read<Spawner>, Read<Lifetime>>::GetWriteSignature(),

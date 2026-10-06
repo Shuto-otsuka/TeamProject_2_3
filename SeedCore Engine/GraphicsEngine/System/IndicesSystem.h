@@ -957,6 +957,8 @@ namespace SeedCore
 
 		void SetEditorPrimitiveWireframeIndex(Uint index);
 
+		void SetGamePrimitiveWireframeIndex(Uint index);
+
 		void SetCanvasPrimitiveWireframeIndex(Uint index);
 
 	private:

@@ -76,8 +76,8 @@ namespace SeedCore
 			/// [JP] 視点から奥の4隅への4本と、奥の四角。
 			for (Size cornerIndex = 0; cornerIndex < 4; ++cornerIndex)
 			{
-				shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, eye, Quaternion::Identity, corners[cornerIndex] - eye, cameraColor });
-				shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, corners[cornerIndex], Quaternion::Identity, corners[(cornerIndex + 1) % 4] - corners[cornerIndex], cameraColor });
+				shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, eye, Quaternion::Identity, corners[cornerIndex] - eye, cameraColor });
+				shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, corners[cornerIndex], Quaternion::Identity, corners[(cornerIndex + 1) % 4] - corners[cornerIndex], cameraColor });
 			}
 		}
 
@@ -129,8 +129,8 @@ namespace SeedCore
 
 			for (Size cornerIndex = 0; cornerIndex < 4; ++cornerIndex)
 			{
-				shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, eye, Quaternion::Identity, corners[cornerIndex] - eye, cameraColor });
-				shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, corners[cornerIndex], Quaternion::Identity, corners[(cornerIndex + 1) % 4] - corners[cornerIndex], cameraColor });
+				shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, eye, Quaternion::Identity, corners[cornerIndex] - eye, cameraColor });
+				shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, corners[cornerIndex], Quaternion::Identity, corners[(cornerIndex + 1) % 4] - corners[cornerIndex], cameraColor });
 			}
 		}
 
@@ -150,7 +150,7 @@ namespace SeedCore
 
 			/// [EN] Same position as LightSystem: the translation of the actor's world matrix.
 			/// [JP] LightSystem と同じ位置。アクターのワールド行列の平行移動。
-			shapes_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, actor.WorldMatrix().Translation(), Quaternion::Identity, Vector3(light->range_, 0.0f, 0.0f), lightColor });
+			shapes_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actor.WorldMatrix().Translation(), Quaternion::Identity, Vector3(light->range_, 0.0f, 0.0f), lightColor });
 		}
 
 		for (EntityID id : world.GetComponents<SpotLight>())
@@ -183,7 +183,7 @@ namespace SeedCore
 			Float outerHalfAngle = ToRadians(light->spotAngle_ * 0.5f);
 			Float outerHeight = light->range_ * Cos(outerHalfAngle);
 			Float outerRadius = light->range_ * Sin(outerHalfAngle);
-			shapes_.push_back({ ShapeKind::Cone, ShapeStyle::Wireframe, apex + direction * (outerHeight * 0.5f), coneRotation, Vector3(outerRadius, outerHeight * 0.5f, 0.0f), lightColor });
+			shapes_.push_back({ ShapeKind::Cone, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, apex + direction * (outerHeight * 0.5f), coneRotation, Vector3(outerRadius, outerHeight * 0.5f, 0.0f), lightColor });
 
 			/// [EN] Inner cone: where the spot fade reaches full strength, cos(angle) = cos(outer half angle) + softness * (1 - cos(outer half angle)), the same formula the lighting shaders use.
 			/// [JP] 内側の円錐：スポットの減衰が最大になる角度。cos(角度) = cos(外側の半角) + softness × (1 - cos(外側の半角)) で、ライティングのシェーダーと同じ式。
@@ -193,7 +193,7 @@ namespace SeedCore
 				Float innerHalfAngle = Acos(Clamp(outerCos + light->softness_ * (1.0f - outerCos), -1.0f, 1.0f));
 				Float innerHeight = light->range_ * Cos(innerHalfAngle);
 				Float innerRadius = light->range_ * Sin(innerHalfAngle);
-				shapes_.push_back({ ShapeKind::Cone, ShapeStyle::Wireframe, apex + direction * (innerHeight * 0.5f), coneRotation, Vector3(innerRadius, innerHeight * 0.5f, 0.0f), lightColor });
+				shapes_.push_back({ ShapeKind::Cone, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, apex + direction * (innerHeight * 0.5f), coneRotation, Vector3(innerRadius, innerHeight * 0.5f, 0.0f), lightColor });
 			}
 		}
 
@@ -224,12 +224,12 @@ namespace SeedCore
 
 			/// [EN] A ring facing the light direction, with parallel rays running from evenly spaced points on it (the same look as Unity's directional light), so the light reads as parallel rays rather than one source. The Circle shape lies on its local XY plane, so its +Z is turned to the light direction.
 			/// [JP] 光の向きに垂直な円と、その円周上に等間隔に並べた点から伸びる平行な光線（Unity の平行光源と同じ見た目）。1つの光源ではなく平行な光線だと分かるようにする。Circle の形はローカルの XY 平面にあるので、その +Z を光の向きに回す。
-			shapes_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, origin, Quaternion::FromToRotation(Vector3::UnitZ, direction), Vector3(directionalRadius_, 0.0f, 0.0f), lightColor });
+			shapes_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, origin, Quaternion::FromToRotation(Vector3::UnitZ, direction), Vector3(directionalRadius_, 0.0f, 0.0f), lightColor });
 			for (Uint rayIndex = 0; rayIndex < directionalRayCount_; ++rayIndex)
 			{
 				Float angle = static_cast<Float>(rayIndex) / static_cast<Float>(directionalRayCount_) * Pi<Float>::Two;
 				Vector3 start = origin + (side * Cos(angle) + up * Sin(angle)) * directionalRadius_;
-				shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, start, Quaternion::Identity, direction * directionalRayLength_, lightColor });
+				shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, start, Quaternion::Identity, direction * directionalRayLength_, lightColor });
 			}
 		}
 
@@ -277,10 +277,10 @@ namespace SeedCore
 			/// [JP] 発光面の四角と、面から出る、ライトの範囲の長さの矢印。
 			for (Size cornerIndex = 0; cornerIndex < 4; ++cornerIndex)
 			{
-				shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, corners[cornerIndex], Quaternion::Identity, corners[(cornerIndex + 1) % 4] - corners[cornerIndex], lightColor });
+				shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, corners[cornerIndex], Quaternion::Identity, corners[(cornerIndex + 1) % 4] - corners[cornerIndex], lightColor });
 			}
 
-			shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, center, Quaternion::Identity, normal * light->range_, lightColor, ShapeSpace::World, worldArrowHeadLength_ });
+			shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, center, Quaternion::Identity, normal * light->range_, lightColor, worldArrowHeadLength_ });
 		}
 
 		for (EntityID id : world.GetComponents<AudioSource>())
@@ -307,13 +307,13 @@ namespace SeedCore
 			/// [EN] Where attenuation starts and where it ends.
 			/// [JP] 減衰が始まる距離と、終わる距離。
 			Vector3 center = actor.WorldMatrix().Translation();
-			shapes_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, center, Quaternion::Identity, Vector3(source->minDistance_, 0.0f, 0.0f), audioColor });
-			shapes_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, center, Quaternion::Identity, Vector3(source->maxDistance_, 0.0f, 0.0f), audioColor });
+			shapes_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, center, Quaternion::Identity, Vector3(source->minDistance_, 0.0f, 0.0f), audioColor });
+			shapes_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, center, Quaternion::Identity, Vector3(source->maxDistance_, 0.0f, 0.0f), audioColor });
 		}
 
 #ifdef _DEBUG
-		/// [EN] Physics queries recorded since the last frame, in the colors of Unity's physics debugger: green when nothing was found, red when something was. They are read and then cleared, so each query is drawn once.
-		/// [JP] 前のフレームから記録された物理クエリ。Unity の物理デバッガーと同じく、何にも当たらなければ緑、当たれば赤で描く。読んだあと空にするので、各クエリは1回だけ描かれる。
+		/// [EN] Physics queries recorded since the last frame, in the colors of Unity's physics debugger: green when nothing was found, red when something was. They are read and then cleared, so each query is drawn once. 3D queries are drawn in the game view as well; 2D queries stay on the canvas.
+		/// [JP] 前のフレームから記録された物理クエリ。Unity の物理デバッガーと同じく、何にも当たらなければ緑、当たれば赤で描く。読んだあと空にするので、各クエリは1回だけ描かれる。3D のクエリはゲームビューにも描き、2D のクエリは Canvas にだけ描く。
 		const Color missColor(0.30f, 0.90f, 0.30f, 1.0f);
 		const Color hitColor(1.00f, 0.30f, 0.30f, 1.0f);
 		QueryInstance& queryInstance = world.GetQueryInstance();
@@ -326,11 +326,11 @@ namespace SeedCore
 				/// [EN] The ray up to where it stopped, then a marker and the surface normal at the hit.
 				/// [JP] 止まったところまでのレイと、当たった点の目印と面の法線。
 				Float length = query.hit_ ? query.hitDistance_ : query.distance_;
-				shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, query.origin_, Quaternion::Identity, query.direction_ * length, color, ShapeSpace::World, worldArrowHeadLength_ });
+				shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, query.origin_, Quaternion::Identity, query.direction_ * length, color, worldArrowHeadLength_ });
 				if (query.hit_)
 				{
-					shapes_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, query.hitPoint_, Quaternion::Identity, Vector3(queryHitRadius_, 0.0f, 0.0f), color });
-					shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, query.hitPoint_, Quaternion::Identity, query.hitNormal_ * queryNormalLength_, color, ShapeSpace::World, worldArrowHeadLength_ });
+					shapes_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, query.hitPoint_, Quaternion::Identity, Vector3(queryHitRadius_, 0.0f, 0.0f), color });
+					shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, query.hitPoint_, Quaternion::Identity, query.hitNormal_ * queryNormalLength_, color, worldArrowHeadLength_ });
 				}
 			}
 			else if (query.kind_ == QueryKind::Spherecast)
@@ -339,18 +339,18 @@ namespace SeedCore
 				/// [JP] 球が止まったところまでになぞった範囲を、向きに沿ったカプセルで描く（Capsule の形は +Y 方向に伸びる）。当たった点の目印と面の法線も描く。
 				Float length = query.hit_ ? query.hitDistance_ : query.distance_;
 				Quaternion sweepRotation = query.direction_.LengthSquared() > 0.0f ? Quaternion::FromToRotation(Vector3::Up, query.direction_) : Quaternion::Identity;
-				shapes_.push_back({ ShapeKind::Capsule, ShapeStyle::Wireframe, query.origin_ + query.direction_ * (length * 0.5f), sweepRotation, Vector3(query.radius_, length * 0.5f, 0.0f), color });
+				shapes_.push_back({ ShapeKind::Capsule, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, query.origin_ + query.direction_ * (length * 0.5f), sweepRotation, Vector3(query.radius_, length * 0.5f, 0.0f), color });
 				if (query.hit_)
 				{
-					shapes_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, query.hitPoint_, Quaternion::Identity, Vector3(queryHitRadius_, 0.0f, 0.0f), color });
-					shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, query.hitPoint_, Quaternion::Identity, query.hitNormal_ * queryNormalLength_, color, ShapeSpace::World, worldArrowHeadLength_ });
+					shapes_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, query.hitPoint_, Quaternion::Identity, Vector3(queryHitRadius_, 0.0f, 0.0f), color });
+					shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, query.hitPoint_, Quaternion::Identity, query.hitNormal_ * queryNormalLength_, color, worldArrowHeadLength_ });
 				}
 			}
 			else if (query.kind_ == QueryKind::Overlap)
 			{
 				/// [EN] The tested shape where it stood; ColliderKind and ShapeKind share their numbers, so the kind carries over as is.
 				/// [JP] 調べた形をその場所に描く。ColliderKind と ShapeKind は番号が共通なので、種類はそのまま移せる。
-				shapes_.push_back({ static_cast<ShapeKind>(static_cast<Uint32>(query.shape_)), ShapeStyle::Wireframe, query.origin_, query.rotation_, query.dimensions_, color });
+				shapes_.push_back({ static_cast<ShapeKind>(static_cast<Uint32>(query.shape_)), ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, query.origin_, query.rotation_, query.dimensions_, color });
 			}
 			else
 			{
@@ -366,11 +366,11 @@ namespace SeedCore
 					/// [EN] The ray up to where it stopped, then a marker and the surface normal at the hit.
 					/// [JP] 止まったところまでのレイと、当たった点の目印と面の法線。
 					Float length = query.hit_ ? query.hitDistance_ : query.distance_;
-					shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, origin, Quaternion::Identity, direction * length, color, ShapeSpace::Canvas, canvasArrowHeadLength_ });
+					shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, origin, Quaternion::Identity, direction * length, color, canvasArrowHeadLength_ });
 					if (query.hit_)
 					{
-						shapes_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, hitPoint, Quaternion::Identity, Vector3(queryHitPixels_, 0.0f, 0.0f), color, ShapeSpace::Canvas });
-						shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, hitPoint, Quaternion::Identity, hitNormal * queryNormalPixels_, color, ShapeSpace::Canvas, canvasArrowHeadLength_ });
+						shapes_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, hitPoint, Quaternion::Identity, Vector3(queryHitPixels_, 0.0f, 0.0f), color });
+						shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, hitPoint, Quaternion::Identity, hitNormal * queryNormalPixels_, color, canvasArrowHeadLength_ });
 					}
 				}
 				else if (query.kind_ == QueryKind::Circlecast2D)
@@ -380,14 +380,14 @@ namespace SeedCore
 					Float length = query.hit_ ? query.hitDistance_ : query.distance_;
 					Vector3 end = origin + direction * length;
 					Vector3 edge = Vector3(-direction.y, direction.x, 0.0f) * query.radius_;
-					shapes_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, origin, Quaternion::Identity, Vector3(query.radius_, 0.0f, 0.0f), color, ShapeSpace::Canvas });
-					shapes_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, end, Quaternion::Identity, Vector3(query.radius_, 0.0f, 0.0f), color, ShapeSpace::Canvas });
-					shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, origin + edge, Quaternion::Identity, end - origin, color, ShapeSpace::Canvas });
-					shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, origin - edge, Quaternion::Identity, end - origin, color, ShapeSpace::Canvas });
+					shapes_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, origin, Quaternion::Identity, Vector3(query.radius_, 0.0f, 0.0f), color });
+					shapes_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, end, Quaternion::Identity, Vector3(query.radius_, 0.0f, 0.0f), color });
+					shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, origin + edge, Quaternion::Identity, end - origin, color });
+					shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, origin - edge, Quaternion::Identity, end - origin, color });
 					if (query.hit_)
 					{
-						shapes_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, hitPoint, Quaternion::Identity, Vector3(queryHitPixels_, 0.0f, 0.0f), color, ShapeSpace::Canvas });
-						shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, hitPoint, Quaternion::Identity, hitNormal * queryNormalPixels_, color, ShapeSpace::Canvas, canvasArrowHeadLength_ });
+						shapes_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, hitPoint, Quaternion::Identity, Vector3(queryHitPixels_, 0.0f, 0.0f), color });
+						shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, hitPoint, Quaternion::Identity, hitNormal * queryNormalPixels_, color, canvasArrowHeadLength_ });
 					}
 				}
 				else if (query.kind_ == QueryKind::Overlap2D)
@@ -395,7 +395,7 @@ namespace SeedCore
 					/// [EN] The tested shape where it stood. The recorded rotation turns about Z by the canvas angle with Y down, so with Y flipped it turns the other way, as the 2D colliders do.
 					/// [JP] 調べた形をその場所に描く。記録された回転は Y 下向きでの Canvas の角度だけ Z 軸まわりに回るので、Y を反転した描画では、2D のコライダーと同じく逆向きに回す。
 					Quaternion rotation(-query.rotation_.x, -query.rotation_.y, -query.rotation_.z, query.rotation_.w);
-					shapes_.push_back({ static_cast<ShapeKind>(static_cast<Uint32>(query.shape_)), ShapeStyle::Wireframe, origin, rotation, query.dimensions_, color, ShapeSpace::Canvas });
+					shapes_.push_back({ static_cast<ShapeKind>(static_cast<Uint32>(query.shape_)), ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, origin, rotation, query.dimensions_, color });
 				}
 			}
 		}
