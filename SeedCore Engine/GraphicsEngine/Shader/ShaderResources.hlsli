@@ -6,22 +6,24 @@
 #include "../PostProcess/PostProcess.hlsli"
 #include "../Light/Cluster.hlsli"
 #include "../Shape/HUD/HUD.hlsli"
+#include "../Shape/Primitive/PrimitiveSolid.hlsli"
+#include "../Shape/Primitive/PrimitiveWireframe.hlsli"
 #include "../Texture/Texture.hlsli"
 #include "../Font/Font.hlsli"
 #include "../Movie/Movie.hlsli"
 #include "../Model/Model.hlsli"
-#include "../Sky/Sky.hlsli"
 #include "../Raytracing/Raytracing.hlsli"
 #include "../Raytracing/Shadow/Shadow.hlsli"
 #include "../Raytracing/AmbientOcclusion/AmbientOcclusion.hlsli"
-#include "../Raytracing/SubsurfaceScattering/SubsurfaceScattering.hlsli"
 #include "../Raytracing/Reflection/ReflectionReSTIR.hlsli"
-#include "../Raytracing/Refraction/Refraction.hlsli"
 #include "../Raytracing/GlobalIllumination/GlobalIlluminationReSTIR.hlsli"
+#include "../Raytracing/Refraction/Refraction.hlsli"
+#include "../Raytracing/SubsurfaceScattering/SubsurfaceScattering.hlsli"
+#include "../Raytracing/VolumetricLight/VolumetricLight.hlsli"
 #include "../Raytracing/VolumetricCloudScapes/VolumetricCloudScapes.hlsli"
 #include "../Raytracing/VolumetricStar/VolumetricStar.hlsli"
+#include "../Sky/Sky.hlsli"
 #include "../Environment/WeatherParticle.hlsli"
-#include "../Raytracing/VolumetricLight/VolumetricLight.hlsli"
 
 struct ShaderResourceIndices
 {
@@ -34,6 +36,8 @@ struct ShaderResourceIndices
 
 	PostProcessShaderResourceIndices post_process_;
 	HUDShaderResourceIndices hud_;
+	PrimitiveSolidShaderResourceIndices primitive_solid_;
+	PrimitiveWireframeShaderResourceIndices primitive_wireframe_;
 
 	TextureShaderResourceIndices texture_;
 	FontShaderResourceIndices font_;

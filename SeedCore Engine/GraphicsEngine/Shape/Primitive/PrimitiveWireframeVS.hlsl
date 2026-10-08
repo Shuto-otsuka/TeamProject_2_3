@@ -1,26 +1,20 @@
-#include "Primitive.hlsli"
+#include "PrimitiveWireframe.hlsli"
+#include "../../Shader/ShaderResources.hlsli"
 
 /// [EN] Six vertices per line draw its quad as two triangles; this maps each vertex to a quad corner (0/1 at the a end, 2/3 at the b end).
 /// [JP] 1本の線につき頂点6つで、四角形を三角形2つとして描く。各頂点を四角形の隅(a 端が 0/1、b 端が 2/3)へ対応させる。
 static const uint quad_corners[6] = { 0, 1, 2, 2, 1, 3 };
 
-ColliderLineMSOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
+PrimitiveWireframeMSOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 {
-	ColliderConstantBuffer wireframe = GetPrimitiveWireframeConstantBuffer();
-
-	ColliderLineMSOutput output = (ColliderLineMSOutput)0;
+	PrimitiveWireframeMSOutput output = (PrimitiveWireframeMSOutput)0;
 	output.position = float4(2.0, 2.0, 2.0, 1.0);
 
-	if (instance_id >= wireframe.instance_count_)
-	{
-		return output;
-	}
-
-	StructuredBuffer<ColliderStructuredBuffer> instances = GetColliderStructuredBuffer(wireframe.instance_buffer_index_);
-	ColliderStructuredBuffer instance = instances[instance_id];
+	StructuredBuffer<PrimitiveWireframeStructuredBuffer> instances = GetPrimitiveWireframeStructuredBuffer(shader_resource_indices.primitive_wireframe_.instance_index_);
+	PrimitiveWireframeStructuredBuffer instance = instances[instance_id];
 
 	uint line_index = vertex_id / 6;
-	if (line_index >= GetColliderLineCount(instance.shape_kind_))
+	if (line_index >= GetPrimitiveWireframeLineCount(instance.shape_kind_))
 	{
 		return output;
 	}
@@ -37,7 +31,7 @@ ColliderLineMSOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_In
 	float3 local_a;
 	float3 local_b;
 	bool silhouette;
-	GetColliderLine(instance.shape_kind_, instance.dimensions_, instance.head_length_, local_camera, line_index, local_a, local_b, silhouette);
+	GetPrimitiveWireframeLine(instance.shape_kind_, instance.dimensions_, instance.head_length_, local_camera, line_index, local_a, local_b, silhouette);
 
 	/// [EN] Both ends go back to world space by the instance rotation, then the instance position.
 	/// [JP] 両端をインスタンスの回転、続いて位置でワールド空間へ戻す。
@@ -48,10 +42,10 @@ ColliderLineMSOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_In
 	float4 clip_a = mul(float4(world_a, 1.0), scene.current_view_projection_);
 	float4 clip_b = mul(float4(world_b, 1.0), scene.current_view_projection_);
 
-	/// [EN] Silhouette lines are drawn halfway to white and thicker, so the outline stands out from the rest of the shape.
-	/// [JP] 輪郭線は白へ半分寄せた色で太く描き、形状のほかの線より目立たせる。
+	/// [EN] Silhouette lines are drawn halfway to white and 1.5 times the instance's line width, so the outline stands out from the rest of the shape.
+	/// [JP] 輪郭線は白へ半分寄せた色で、インスタンスの線の太さの 1.5 倍で描き、形状のほかの線より目立たせる。
 	float4 color = silhouette ? float4(lerp(instance.color_.rgb, float3(1.0, 1.0, 1.0), 0.5), instance.color_.a) : instance.color_;
-	float width = silhouette ? COLLIDER_SILHOUETTE_LINE_WIDTH : COLLIDER_LINE_WIDTH;
+	float width = silhouette ? instance.line_width_ * 1.5 : instance.line_width_;
 
 	/// [EN] An end behind the camera has no screen position, so the line is cut where it crosses just in front of the eye; a line entirely behind the camera is not drawn.
 	/// [JP] カメラの後ろにある端には画面上の位置が無いため、目のすぐ手前を横切る位置で線を切る。線全体がカメラの後ろにあれば描かない。

@@ -100,7 +100,9 @@ namespace SeedCore
 		Actor actor = context_.selection_.Primary();
 		target_ = actor ? context_.world_.world_->GetComponent<Material>(actor.GetEntity()) : nullptr;
 
-		ImGui::DockBuilderDockWindow("マテリアルビューア", context_.graphics_.imgui_->DockSpaceID());
+		ImGuiWindow* editorViewWindow = ImGui::FindWindowByName("エディタービュー");
+		ImGuiID dockID = (editorViewWindow && editorViewWindow->DockId != 0) ? editorViewWindow->DockId : context_.graphics_.imgui_->DockSpaceID();
+		ImGui::DockBuilderDockWindow("マテリアルビューア", dockID);
 		ImGui::SetNextWindowSize(ImVec2(960, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("マテリアルビューア", &show_);

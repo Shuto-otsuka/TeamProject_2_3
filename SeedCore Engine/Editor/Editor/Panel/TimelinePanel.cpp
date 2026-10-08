@@ -340,7 +340,9 @@ namespace SeedCore
 
 		context_.preview_.timeline_.active_ = false;
 
-		ImGui::DockBuilderDockWindow("タイムライン", context_.graphics_.imgui_->DockSpaceID());
+		ImGuiWindow* editorViewWindow = ImGui::FindWindowByName("エディタービュー");
+		ImGuiID dockID = (editorViewWindow && editorViewWindow->DockId != 0) ? editorViewWindow->DockId : context_.graphics_.imgui_->DockSpaceID();
+		ImGui::DockBuilderDockWindow("タイムライン", dockID);
 		ImGui::SetNextWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("タイムライン", &show_);

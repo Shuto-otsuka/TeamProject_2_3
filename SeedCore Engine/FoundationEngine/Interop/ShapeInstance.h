@@ -150,6 +150,10 @@ namespace SeedCore
 		/// [JP] Arrow のときだけ使う、矢じりの長さの上限。単位は dimensions_ と同じ（ワールドはメートル、Canvas はピクセル）。0 なら矢じりは矢印の長さに対する決まった割合のまま。
 		Float headLength_ = 0.0f;
 
+		/// [EN] Wireframe only: on-screen line width in pixels; silhouette lines are drawn 1.5 times this.
+		/// [JP] Wireframe のときだけ使う、画面上の線の太さ（ピクセル）。輪郭線はこの 1.5 倍で描く。
+		Float lineWidth_ = 3.0f;
+
 		/// [EN] Solid only: asset ID of the texture laid over the surfaces; 0 draws the color alone. The renderer resolves it to a bindless index.
 		/// [JP] Solid のときだけ使う、面に張るテクスチャのアセット ID。0 なら色だけで塗る。レンダラーが bindless の番号に直す。
 		Uint32 textureID_ = 0;

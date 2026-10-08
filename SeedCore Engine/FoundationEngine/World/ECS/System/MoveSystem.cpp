@@ -11,14 +11,16 @@ namespace SeedCore
 	* [EN]
 	* Advances every active actor with both Position and Velocity by
 	* deltaTime, adding Velocity's components onto Position's. Inactive
-	* actors keep their Position unchanged.
+	* actors, and actors whose Velocity is owned by a physics body, keep
+	* their Position unchanged.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* Position と Velocity の両方を持つアクティブな全 actor を deltaTime
 	* 分だけ進める。Velocity の各成分を Position へ加算する。非アクティブ
-	* な actor の Position は変えない。
+	* な actor と、Velocity を物理ボディが管理している actor の Position
+	* は変えない。
 	*/
 	void MoveSystem::Execute(World& world, Float deltaTime)
 	{
@@ -28,6 +30,13 @@ namespace SeedCore
 			{
 				Actor actor = world.GetActor(entityID);
 				if (actor && !actor.Active())
+				{
+					return;
+				}
+
+				/// [EN] A velocity owned by a physics body already moves Position through the body's pose.
+				/// [JP] 物理ボディが管理する速度は、ボディの姿勢を通して既に Position を動かしている。
+				if (velocity.simulated_)
 				{
 					return;
 				}

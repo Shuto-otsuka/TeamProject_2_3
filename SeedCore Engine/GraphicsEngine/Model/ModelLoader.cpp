@@ -1417,6 +1417,17 @@ namespace SeedCore
 						FbxDouble3 diffuse = diffuseProperty.Get<FbxDouble3>();
 						material.baseColor_ = Color(static_cast<Float>(diffuse[0]), static_cast<Float>(diffuse[1]), static_cast<Float>(diffuse[2]), 1.0f);
 					}
+					else
+					{
+						diffuseProperty = fbxMaterial->FindPropertyHierarchical("Maya|baseColor");
+						if (diffuseProperty.IsValid())
+						{
+							FbxDouble3 baseColor = diffuseProperty.Get<FbxDouble3>();
+							FbxProperty baseWeightProperty = fbxMaterial->FindPropertyHierarchical("Maya|base");
+							Float baseWeight = baseWeightProperty.IsValid() ? static_cast<Float>(baseWeightProperty.Get<FbxDouble>()) : 1.0f;
+							material.baseColor_ = Color(static_cast<Float>(baseColor[0]) * baseWeight, static_cast<Float>(baseColor[1]) * baseWeight, static_cast<Float>(baseColor[2]) * baseWeight, 1.0f);
+						}
+					}
 
 					FbxProperty emissiveProperty = fbxMaterial->FindProperty(FbxSurfaceMaterial::sEmissive);
 					if (emissiveProperty.IsValid())

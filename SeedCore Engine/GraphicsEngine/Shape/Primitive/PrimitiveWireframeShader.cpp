@@ -16,16 +16,18 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Compiles the shaders and builds both pipeline states: the debug
-	* overlay's, depth-tested without depth writes, and the canvas's,
-	* without depth.
+	* Compiles the shaders and builds the three pipeline states: the debug
+	* overlay's, depth-tested without depth writes; the canvas's, without
+	* depth; and the preview's, onto a 16-bit float target with a depth
+	* buffer that is not tested, so the lines sit over the previewed model.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* シェーダーをコンパイルし、2つのパイプラインステートを作る。デバッグの
+	* シェーダーをコンパイルし、3つのパイプラインステートを作る。デバッグの
 	* 重ね描き用は深度テストを行い深度は書き込まない。Canvas 用は深度を
-	* 使わない。
+	* 使わない。プレビュー用は 16 ビット浮動小数の描画先へ、深度バッファは
+	* あるがテストせずに描き、線がプレビューのモデルの上に乗るようにする。
 	*/
 	void PrimitiveWireframeShader::Create(ShaderCache& shaderCache, ID3D12Device* device)
 	{
@@ -55,30 +57,36 @@ namespace SeedCore
 		psoKey.rasterizerDesc_ = RasterizerState::Get(RasterizerStateType::SolidNoneLHS);
 		psoKey.blendDesc_ = BlendState::Get(BlendStateType::Opaque);
 
-		/// [EN] Same target as the collider lines' debug overlay: the post-tonemap 8-bit output with the resized depth.
-		/// [JP] コライダーの線のデバッグの重ね描きと同じ描画先。トーンマップ後の 8 ビット出力と、大きさを合わせた深度。
+		/// [EN] The debug overlay draws into the post-tonemap 8-bit output with the resized depth.
+		/// [JP] デバッグの重ね描きは、トーンマップ後の 8 ビット出力と、大きさを合わせた深度へ描く。
 		psoKey.depthStencilDesc_ = DepthStencilState::Get(DepthStencilStateType::DepthOnWriteOffReverseZ);
 		psoKey.renderTargetViewFormat_[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 		psoKey.renderTargetViewCount_ = 1;
 		psoKey.depthStencilViewFormat_ = DXGI_FORMAT_D32_FLOAT;
 		pipelineState_ = pipelineStateObject_.GetOrCreate(device, psoKey);
 
-		/// [EN] Same target as the collider lines on the canvas: the canvas frame buffer, drawn over everything without depth.
-		/// [JP] Canvas 上のコライダーの線と同じ描画先。Canvas のフレームバッファへ、深度を使わずに上から描く。
+		/// [EN] The canvas draws into the canvas frame buffer, over everything without depth.
+		/// [JP] Canvas は、Canvas のフレームバッファへ、深度を使わずに上から描く。
 		psoKey.renderTargetViewFormat_[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
 		psoKey.depthStencilDesc_ = DepthStencilState::Get(DepthStencilStateType::DepthOff);
 		psoKey.depthStencilViewFormat_ = DXGI_FORMAT_UNKNOWN;
 		pipelineStateCanvas_ = pipelineStateObject_.GetOrCreate(device, psoKey);
+
+		/// [EN] The preview views draw into their own 16-bit float frame buffer, which has a depth buffer bound; it is not tested, so the lines sit over the model.
+		/// [JP] プレビューのビューは、自分の 16 ビット浮動小数のフレームバッファへ描く。深度バッファは付いているがテストしないので、線はモデルの上に乗る。
+		psoKey.depthStencilViewFormat_ = DXGI_FORMAT_D32_FLOAT;
+		pipelineStatePreview_ = pipelineStateObject_.GetOrCreate(device, psoKey);
 	}
 
 	/**
 	* [EN]
-	* Returns the pipeline state for the editor view's debug overlay.
+	* Returns the pipeline state for the editor and game views' debug overlay.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* エディタービューのデバッグの重ね描き用のパイプラインステートを返す。
+	* エディターとゲームのビューのデバッグの重ね描き用のパイプライン
+	* ステートを返す。
 	*/
 	ID3D12PipelineState* PrimitiveWireframeShader::GetPipelineState()const
 	{
@@ -97,6 +105,21 @@ namespace SeedCore
 	ID3D12PipelineState* PrimitiveWireframeShader::GetPipelineStateCanvas()const
 	{
 		return pipelineStateObject_.Get(pipelineStateCanvas_);
+	}
+
+	/**
+	* [EN]
+	* Returns the pipeline state for the preview views, drawn over
+	* everything.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* すべての上に描く、プレビューのビュー用のパイプラインステートを返す。
+	*/
+	ID3D12PipelineState* PrimitiveWireframeShader::GetPipelineStatePreview()const
+	{
+		return pipelineStateObject_.Get(pipelineStatePreview_);
 	}
 
 	/**

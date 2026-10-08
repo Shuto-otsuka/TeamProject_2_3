@@ -184,31 +184,6 @@ namespace SeedCore
 		canvasConstantIndices_.volumetricLightIndex_ = index;
 	}
 
-	void ConstantIndicesSystem::SetEditorColliderIndex(Uint index)
-	{
-		editorConstantIndices_.colliderIndex_ = index;
-	}
-
-	void ConstantIndicesSystem::SetCanvasColliderIndex(Uint index)
-	{
-		canvasConstantIndices_.colliderIndex_ = index;
-	}
-
-	void ConstantIndicesSystem::SetEditorPrimitiveWireframeIndex(Uint index)
-	{
-		editorConstantIndices_.primitiveWireframeIndex_ = index;
-	}
-
-	void ConstantIndicesSystem::SetGamePrimitiveWireframeIndex(Uint index)
-	{
-		gameConstantIndices_.primitiveWireframeIndex_ = index;
-	}
-
-	void ConstantIndicesSystem::SetCanvasPrimitiveWireframeIndex(Uint index)
-	{
-		canvasConstantIndices_.primitiveWireframeIndex_ = index;
-	}
-
 	ShaderResourceIndicesSystem::ShaderResourceIndicesSystem(ID3D12Device* device, BindlessHeap* heap)
 	{
 		editorBuffer_ = MakePtr<StaticConstantBuffer<ShaderResourceIndices>>(device, heap);
@@ -319,6 +294,63 @@ namespace SeedCore
 		editorIndices_.hud_.uiColorAlphaIndex_ = index;
 		gameIndices_.hud_.uiColorAlphaIndex_ = index;
 		canvasIndices_.hud_.uiColorAlphaIndex_ = index;
+	}
+
+	void ShaderResourceIndicesSystem::SetPrimitiveSolidInstanceIndex(Uint index)
+	{
+		editorIndices_.primitiveSolid_.instanceIndex_ = index;
+		gameIndices_.primitiveSolid_.instanceIndex_ = index;
+		canvasIndices_.primitiveSolid_.instanceIndex_ = index;
+	}
+
+	void ShaderResourceIndicesSystem::SetPrimitiveSolidVertexIndex(Uint index)
+	{
+		editorIndices_.primitiveSolid_.vertexIndex_ = index;
+		gameIndices_.primitiveSolid_.vertexIndex_ = index;
+		canvasIndices_.primitiveSolid_.vertexIndex_ = index;
+	}
+
+	void ShaderResourceIndicesSystem::SetPrimitiveSolidMeshletIndex(Uint index)
+	{
+		editorIndices_.primitiveSolid_.meshletIndex_ = index;
+		gameIndices_.primitiveSolid_.meshletIndex_ = index;
+		canvasIndices_.primitiveSolid_.meshletIndex_ = index;
+	}
+
+	void ShaderResourceIndicesSystem::SetPrimitiveSolidMeshletBoundIndex(Uint index)
+	{
+		editorIndices_.primitiveSolid_.meshletBoundIndex_ = index;
+		gameIndices_.primitiveSolid_.meshletBoundIndex_ = index;
+		canvasIndices_.primitiveSolid_.meshletBoundIndex_ = index;
+	}
+
+	void ShaderResourceIndicesSystem::SetPrimitiveSolidVertexIndicesIndex(Uint index)
+	{
+		editorIndices_.primitiveSolid_.vertexIndicesIndex_ = index;
+		gameIndices_.primitiveSolid_.vertexIndicesIndex_ = index;
+		canvasIndices_.primitiveSolid_.vertexIndicesIndex_ = index;
+	}
+
+	void ShaderResourceIndicesSystem::SetPrimitiveSolidPrimitiveIndicesIndex(Uint index)
+	{
+		editorIndices_.primitiveSolid_.primitiveIndicesIndex_ = index;
+		gameIndices_.primitiveSolid_.primitiveIndicesIndex_ = index;
+		canvasIndices_.primitiveSolid_.primitiveIndicesIndex_ = index;
+	}
+
+	void ShaderResourceIndicesSystem::SetEditorPrimitiveWireframeIndex(Uint index)
+	{
+		editorIndices_.primitiveWireframe_.instanceIndex_ = index;
+	}
+
+	void ShaderResourceIndicesSystem::SetGamePrimitiveWireframeIndex(Uint index)
+	{
+		gameIndices_.primitiveWireframe_.instanceIndex_ = index;
+	}
+
+	void ShaderResourceIndicesSystem::SetCanvasPrimitiveWireframeIndex(Uint index)
+	{
+		canvasIndices_.primitiveWireframe_.instanceIndex_ = index;
 	}
 
 	void ShaderResourceIndicesSystem::SetTextureSpriteIndex(Uint index)

@@ -255,7 +255,9 @@ namespace SeedCore
 			return;
 		}
 
-		ImGui::DockBuilderDockWindow("アバター生成", context_.graphics_.imgui_->DockSpaceID());
+		ImGuiWindow* editorViewWindow = ImGui::FindWindowByName("エディタービュー");
+		ImGuiID dockID = (editorViewWindow && editorViewWindow->DockId != 0) ? editorViewWindow->DockId : context_.graphics_.imgui_->DockSpaceID();
+		ImGui::DockBuilderDockWindow("アバター生成", dockID);
 		ImGui::SetNextWindowSize(ImVec2(1180, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("アバター生成", &show_);

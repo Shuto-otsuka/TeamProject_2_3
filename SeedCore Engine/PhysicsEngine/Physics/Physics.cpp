@@ -532,6 +532,31 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Replaces the linear velocity (m/s) of a dynamic or kinematic body
+	* and wakes it when the velocity is not zero. A kinematic body keeps
+	* the velocity until it is replaced. Has no effect on a static body.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 動的またはキネマティックのボディの速度(m/s)を置き換え、速度が 0 で
+	* なければボディを起こす。キネマティックのボディは、置き換えられるまで
+	* その速度を保つ。静的ボディには効かない。
+	*/
+	void Physics::BodyVelocity(JPH::BodyID bodyID, const Vector3& linearVelocity)
+	{
+		if (bodyID.IsInvalid())
+		{
+			return;
+		}
+
+		/// [EN] The velocity is clamped to the body's maximum speed, and frozen axes stay at zero.
+		/// [JP] 速度はボディの最大速度に収められ、固定した軸は 0 のまま。
+		joltManager_.BodyInterface().SetLinearVelocity(bodyID, JPH::Vec3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+	}
+
+	/**
+	* [EN]
 	* Removes and destroys a physics body.
 	*
 	* ---------------------------------------------------------------------
@@ -601,6 +626,27 @@ namespace SeedCore
 		/// [JP] Jolt のベクトルとクォータニオンをエンジンの型へ変換する。
 		outPosition = Vector3(position.GetX(), position.GetY(), position.GetZ());
 		outRotation = Quaternion(rotation.GetX(), rotation.GetY(), rotation.GetZ(), rotation.GetW());
+	}
+
+	/**
+	* [EN]
+	* Returns the linear velocity (m/s) of a body; zero for a static
+	* body.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディの速度(m/s)を返す。静的ボディでは 0。
+	*/
+	Vector3 Physics::BodyVelocity(JPH::BodyID bodyID)const
+	{
+		if (bodyID.IsInvalid())
+		{
+			return { 0.0f, 0.0f, 0.0f };
+		}
+
+		JPH::Vec3 linearVelocity = joltManager_.BodyInterface().GetLinearVelocity(bodyID);
+		return Vector3(linearVelocity.GetX(), linearVelocity.GetY(), linearVelocity.GetZ());
 	}
 
 	/**

@@ -117,6 +117,39 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Hands the Velocity of every active actor with a Rigidbody to its
+	* body when code has written it. Called before every fixed step.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Rigidbody を持つ有効な全 Actor について、コードから書かれた Velocity
+	* をボディへ渡す。固定ステップの前に毎回呼ばれる。
+	*/
+	void PhysicsSystem::ApplyVelocity(World& world)
+	{
+		for (EntityID id : world.GetComponents<Rigidbody>())
+		{
+			/// [EN] An inactive actor's body is out of the simulation, so its Velocity waits until the actor is active again.
+			/// [JP] 無効な Actor のボディはシミュレーション外なので、その Velocity は Actor が再び有効になるまで待つ。
+			Actor actor = world.GetActor(id);
+			if (!actor || !actor.Active())
+			{
+				continue;
+			}
+
+			Rigidbody* rigidbody = actor.GetComponent<Rigidbody>();
+			if (!rigidbody)
+			{
+				continue;
+			}
+
+			rigidbody->ApplyVelocity();
+		}
+	}
+
+	/**
+	* [EN]
 	* Creates the static body of a collider on its own. Returns an
 	* invalid ID when the actor has a Rigidbody, which then owns the
 	* single body and borrows the collider's shape instead.

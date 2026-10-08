@@ -29,6 +29,10 @@ namespace SeedCore
 		/// [JP] Z 軸方向の速度。
 		SC_SERIALIZE_FIELD()
 		Float z_;
+
+		/// [EN] Whether a physics body owns this velocity; MoveSystem then leaves Position to the body.
+		/// [JP] この速度を物理ボディが管理しているか。そのとき MoveSystem は Position をボディに任せる。
+		Bool simulated_ = false;
 	};
 	REGISTER_COMPONENT(Velocity, "Core", ComponentStorage::Archetype);
 }

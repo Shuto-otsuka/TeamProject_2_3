@@ -133,36 +133,6 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Culling bound for one MeshletDesc: a bounding sphere (center_/radius_)
-	* plus a normal cone (coneAxis_/coneCutoff_) for backface-cluster
-	* culling. One entry per MeshletDesc, same indexing as meshlets_.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* MeshletDesc 1 つぶんのカリング用バウンド: バウンディングスフィア
-	* (center_/radius_) と、背面クラスタカリング用の法線コーン
-	* (coneAxis_/coneCutoff_)。meshlets_ と同じインデックスで 1 対 1。
-	*/
-	struct MeshletBound
-	{
-		Vector3 center_ = { 0,0,0 };
-		Float radius_ = 0.0f;
-		Vector3 coneAxis_ = { 0,0,1 };
-		Float coneCutoff_ = 1.0f;
-
-		template<class Archive>
-		void Serialize(Archive& archive)
-		{
-			archive.Field("center", center_);
-			archive.Field("radius", radius_);
-			archive.Field("cone_axis", coneAxis_);
-			archive.Field("cone_cutoff", coneCutoff_);
-		}
-	};
-
-	/**
-	* [EN]
 	* One LOD level's meshlet range within a SubMesh: meshletOffset_/
 	* meshletCount_ index into meshlets_/meshletBounds_, lodLevel_ selects
 	* the detail tier (0 = most detailed), and lodError_ is the QEM

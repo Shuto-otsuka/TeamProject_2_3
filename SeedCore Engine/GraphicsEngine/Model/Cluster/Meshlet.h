@@ -40,6 +40,39 @@ namespace SeedCore
 	};
 	SC_STATIC_ASSERT(MeshletDesc, 16, "Model/Model.hlsli");
 
+	/**
+	* [EN]
+	* Culling bound for one MeshletDesc: a bounding sphere (center_/radius_)
+	* plus a normal cone (coneAxis_/coneCutoff_) for backface culling. One
+	* entry per MeshletDesc, in the same order. A coneCutoff_ of 0 or below
+	* means the meshlet's faces spread too widely for the cone test.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* MeshletDesc 1 つぶんのカリング用バウンド: バウンディングスフィア
+	* (center_/radius_) と、背面カリング用の法線コーン
+	* (coneAxis_/coneCutoff_)。MeshletDesc と同じ並びで 1 対 1。coneCutoff_
+	* が 0 以下なら、面の向きが広がりすぎていてコーンの判定には使えない。
+	*/
+	struct MeshletBound
+	{
+		Vector3 center_ = { 0,0,0 };
+		Float radius_ = 0.0f;
+		Vector3 coneAxis_ = { 0,0,1 };
+		Float coneCutoff_ = 1.0f;
+
+		template<class Archive>
+		void Serialize(Archive& archive)
+		{
+			archive.Field("center", center_);
+			archive.Field("radius", radius_);
+			archive.Field("cone_axis", coneAxis_);
+			archive.Field("cone_cutoff", coneCutoff_);
+		}
+	};
+	SC_STATIC_ASSERT(MeshletBound, 32, "Model/Model.hlsli");
+
 	class Meshlet
 	{
 	public:

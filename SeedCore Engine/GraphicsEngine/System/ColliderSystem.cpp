@@ -60,7 +60,7 @@ namespace SeedCore
 			Vector3 size(collider->size_.x * Abs(scale->x_), collider->size_.y * Abs(scale->y_), collider->size_.z * Abs(scale->z_));
 			Vector3 center(collider->center_.x * scale->x_, collider->center_.y * scale->y_, collider->center_.z * scale->z_);
 
-			colliders_.push_back({ ColliderKind::Box, actorPosition + Vector3::Transform(center, actorRotation), actorRotation, size * 0.5f, colliderDebugColor });
+			colliders_.push_back({ ShapeKind::Box, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actorPosition + Vector3::Transform(center, actorRotation), actorRotation, size * 0.5f, colliderDebugColor });
 		}
 
 		for (EntityID id : world.GetComponents<SphereCollider>())
@@ -83,7 +83,7 @@ namespace SeedCore
 			/// [JP] SphereCollider::GetShapeHandle と同じ拡縮。半径は最も大きい軸に合わせる。
 			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->y_), Abs(scale->z_));
 
-			colliders_.push_back({ ColliderKind::Sphere, actorPosition, actorRotation, Vector3(radius, 0.0f, 0.0f), colliderDebugColor });
+			colliders_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actorPosition, actorRotation, Vector3(radius, 0.0f, 0.0f), colliderDebugColor });
 		}
 
 		for (EntityID id : world.GetComponents<CapsuleCollider>())
@@ -107,7 +107,7 @@ namespace SeedCore
 			Float height = collider->height_ * Abs(scale->y_);
 			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->z_));
 
-			colliders_.push_back({ ColliderKind::Capsule, actorPosition, actorRotation, Vector3(radius, height * 0.5f, 0.0f), colliderDebugColor });
+			colliders_.push_back({ ShapeKind::Capsule, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actorPosition, actorRotation, Vector3(radius, height * 0.5f, 0.0f), colliderDebugColor });
 		}
 
 		for (EntityID id : world.GetComponents<CharacterController>())
@@ -134,7 +134,7 @@ namespace SeedCore
 			/// [JP] キャラクターの原点は足元なので、カプセルの中心は円柱の半分と半径1つ分だけ上にある。
 			Vector3 center(0.0f, height * 0.5f + radius, 0.0f);
 
-			colliders_.push_back({ ColliderKind::Capsule, actorPosition + Vector3::Transform(center, actorRotation), actorRotation, Vector3(radius, height * 0.5f, 0.0f), characterDebugColor });
+			colliders_.push_back({ ShapeKind::Capsule, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actorPosition + Vector3::Transform(center, actorRotation), actorRotation, Vector3(radius, height * 0.5f, 0.0f), characterDebugColor });
 		}
 
 		for (EntityID id : world.GetComponents<CylinderCollider>())
@@ -158,7 +158,7 @@ namespace SeedCore
 			Float height = collider->height_ * Abs(scale->y_);
 			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->z_));
 
-			colliders_.push_back({ ColliderKind::Cylinder, actorPosition, actorRotation, Vector3(radius, height * 0.5f, 0.0f), colliderDebugColor });
+			colliders_.push_back({ ShapeKind::Cylinder, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actorPosition, actorRotation, Vector3(radius, height * 0.5f, 0.0f), colliderDebugColor });
 		}
 
 		for (EntityID id : world.GetComponents<RectCollider>())
@@ -186,7 +186,7 @@ namespace SeedCore
 			Vector2 center(collider->center_.x * scale->x_, collider->center_.y * scale->y_);
 
 			Vector3 instancePosition(100000.0f + pixelX + center.x * cosAngle - center.y * sinAngle, 100000.0f + (ScResolution::SC_CANVAS.Height - pixelY) - center.x * sinAngle - center.y * cosAngle, 100000.0f);
-			colliders_.push_back({ ColliderKind::Rect, instancePosition, Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -angle), Vector3(size.x * 0.5f, size.y * 0.5f, 0.0f), colliderDebugColor });
+			colliders_.push_back({ ShapeKind::Rect, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, instancePosition, Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -angle), Vector3(size.x * 0.5f, size.y * 0.5f, 0.0f), colliderDebugColor });
 		}
 
 		for (EntityID id : world.GetComponents<CircleCollider>())
@@ -214,7 +214,7 @@ namespace SeedCore
 			Vector2 center(collider->center_.x * scale->x_, collider->center_.y * scale->y_);
 
 			Vector3 instancePosition(100000.0f + pixelX + center.x * cosAngle - center.y * sinAngle, 100000.0f + (ScResolution::SC_CANVAS.Height - pixelY) - center.x * sinAngle - center.y * cosAngle, 100000.0f);
-			colliders_.push_back({ ColliderKind::Circle, instancePosition, Quaternion::Identity, Vector3(radius, 0.0f, 0.0f), colliderDebugColor });
+			colliders_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, instancePosition, Quaternion::Identity, Vector3(radius, 0.0f, 0.0f), colliderDebugColor });
 		}
 	}
 
@@ -227,7 +227,7 @@ namespace SeedCore
 	* [JP]
 	* 直前の Update で集めたコライダーを返す。
 	*/
-	std::span<const ColliderDesc> ColliderSystem::Colliders()const
+	std::span<const ShapeDesc> ColliderSystem::Colliders()const
 	{
 		return colliders_;
 	}

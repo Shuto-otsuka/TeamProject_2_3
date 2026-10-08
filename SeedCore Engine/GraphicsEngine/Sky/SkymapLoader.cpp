@@ -76,14 +76,6 @@ namespace SeedCore
 			pixels = sourceImage->pixels;
 		}
 
-		/// [EN] Create + upload manually rather than via DirectXTex's D3D12
-		///      helpers (CreateTextureEx / PrepareUpload): the prebuilt
-		///      DirectXTex.lib omits the D3D12 module. An equirect source is a
-		///      single 2D image (1 mip, 1 slice), so one subresource suffices.
-		/// [JP] DirectXTex の D3D12 ヘルパ（CreateTextureEx / PrepareUpload）は
-		///      配置済み prebuilt lib に含まれないため、手動で生成＋アップロード
-		///      する。equirect ソースは 2D 単一画像（1 ミップ 1 面）なのでサブ
-		///      リソースは 1 つで足りる。
 		D3D12_HEAP_PROPERTIES heapProperties{};
 		heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
 
