@@ -13,6 +13,7 @@
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
+#include <FoundationEngine/World/ECS/Component/Velocity.h>
 #include <FoundationEngine/Log/Error.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
 
@@ -160,18 +161,22 @@ namespace SeedCore
 		}
 
 		bodyID_ = actor.GetPhysics().CreateRigidbody(desc);
+
+		/// [EN] A Velocity set before play becomes the body's initial velocity.
+		/// [JP] プレイ前に設定した Velocity は、ボディの初速になる。
+		ApplyVelocity();
 	}
 
 	/**
 	* [EN]
 	* Copies the simulated pose of the body back to the actor's
-	* Position and Rotation.
+	* Position and Rotation, and its linear velocity back to Velocity.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* シミュレーション後のボディの姿勢を、Actor の Position と Rotation へ
-	* 書き戻す。
+	* シミュレーション後のボディの姿勢を、Actor の Position と Rotation へ、
+	* 速度を Velocity へ書き戻す。
 	*/
 	void Rigidbody::OnFixedTick(Float elapsedTime)
 	{
@@ -183,6 +188,29 @@ namespace SeedCore
 		Actor actor = GetActor();
 		World& world = actor.GetWorld();
 		Entity entity = actor.GetEntity();
+
+		/// [EN] The velocity after the step is copied back and remembered, so ApplyVelocity can tell a Velocity written by code from this one.
+		/// [JP] ステップ後の速度を書き戻して覚えておき、ApplyVelocity がコードから書かれた Velocity とこれを見分けられるようにする。
+		if (Velocity* velocity = world.GetComponent<Velocity>(entity))
+		{
+			Vector3 bodyVelocity = actor.GetPhysics().BodyVelocity(bodyID_);
+
+			/// [EN] Canvas bodies go back from meters per second (Y up) to pixels per second (Y down).
+			/// [JP] Canvas のボディは、メートル毎秒(Y 上向き)からピクセル毎秒(Y 下向き)へ戻す。
+			if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
+			{
+				syncedVelocity_ = Vector3(bodyVelocity.x * pixelsPerMeter_, -bodyVelocity.y * pixelsPerMeter_, 0.0f);
+			}
+			else
+			{
+				syncedVelocity_ = bodyVelocity;
+			}
+
+			velocity->x_ = syncedVelocity_.x;
+			velocity->y_ = syncedVelocity_.y;
+			velocity->z_ = syncedVelocity_.z;
+			velocity->simulated_ = true;
+		}
 
 		/// [EN] With neither Position nor Rotation there is nothing to write back.
 		/// [JP] Position も Rotation も無ければ、書き戻す先が無い。
@@ -254,6 +282,67 @@ namespace SeedCore
 		actor.GetPhysics().ReleaseShape(shapeHandle_);
 
 		bodyID_ = JPH::BodyID();
+
+		/// [EN] Without the body, Velocity goes back to moving Position through MoveSystem.
+		/// [JP] ボディが無くなれば、Velocity は再び MoveSystem を通して Position を動かす。
+		if (Velocity* velocity = GetWorld().GetComponent<Velocity>(actor.GetEntity()))
+		{
+			velocity->simulated_ = false;
+		}
+	}
+
+	/**
+	* [EN]
+	* Hands the actor's Velocity to the body when it differs from the
+	* value last copied back, so a Velocity written by code takes effect
+	* in the next step. Called before every fixed step. On a canvas body
+	* the velocity is in pixels per second with Y down, and its Z is
+	* ignored. A Static body is not affected.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Actor の Velocity が前回書き戻した値と違えばボディへ渡し、コードから
+	* 書いた Velocity が次のステップで効くようにする。固定ステップの前に
+	* 毎回呼ばれる。Canvas のボディでは速度をピクセル毎秒・Y 下向きで与え、
+	* Z は無視する。Static のボディには効かない。
+	*/
+	void Rigidbody::ApplyVelocity()
+	{
+		if (bodyID_.IsInvalid())
+		{
+			return;
+		}
+
+		Actor actor = GetActor();
+		Velocity* velocity = GetWorld().GetComponent<Velocity>(actor.GetEntity());
+		if (!velocity)
+		{
+			return;
+		}
+
+		/// [EN] From here on the body moves Position, so MoveSystem must not add Velocity on top.
+		/// [JP] ここからは Position をボディが動かすので、MoveSystem が Velocity を重ねて足してはならない。
+		velocity->simulated_ = true;
+
+		/// [EN] A Velocity equal to the last exchanged value was not touched by code, and the body keeps whatever velocity it has (including one from MoveTarget).
+		/// [JP] 最後にやり取りした値と同じ Velocity はコードが触っていないので、ボディは今の速度(MoveTarget によるものも含む)を保つ。
+		if (velocity->x_ == syncedVelocity_.x && velocity->y_ == syncedVelocity_.y && velocity->z_ == syncedVelocity_.z)
+		{
+			return;
+		}
+
+		syncedVelocity_ = Vector3(velocity->x_, velocity->y_, velocity->z_);
+
+		/// [EN] A canvas velocity goes from pixels per second (Y down) to meters per second (Y up) on the z = 0 plane.
+		/// [JP] Canvas の速度は、ピクセル毎秒(Y 下向き)から z = 0 平面上のメートル毎秒(Y 上向き)へ変換する。
+		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
+		{
+			actor.GetPhysics().BodyVelocity(bodyID_, Vector3(syncedVelocity_.x / pixelsPerMeter_, -syncedVelocity_.y / pixelsPerMeter_, 0.0f));
+			return;
+		}
+
+		actor.GetPhysics().BodyVelocity(bodyID_, syncedVelocity_);
 	}
 
 	/**
@@ -436,6 +525,9 @@ namespace SeedCore
 	* every fixed step with that step's elapsedTime. On a canvas body the
 	* position is given in pixels with Y down and its Z is ignored, and
 	* only the rotation about Z is used. Only a Kinematic body is affected.
+	* The body moves by the velocity this sets, which it keeps until the
+	* next call or until Velocity is written, so the body does not stop
+	* at the target by itself.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -444,7 +536,8 @@ namespace SeedCore
 	* いるものも一緒に運ぶ。固定ステップごとに、そのステップの elapsedTime
 	* を渡して呼ぶ。Canvas のボディでは位置をピクセル単位・Y 下向きで与えて
 	* Z は無視し、回転は Z 軸まわりだけを使う。効くのは Kinematic のボディ
-	* だけ。
+	* だけ。ボディはこれが設定した速度で動き、その速度は次の呼び出しか
+	* Velocity への書き込みまで保たれるので、目標で自然には止まらない。
 	*/
 	void Rigidbody::MoveTarget(const Vector3& targetPosition, const Quaternion& targetRotation, Float elapsedTime)
 	{

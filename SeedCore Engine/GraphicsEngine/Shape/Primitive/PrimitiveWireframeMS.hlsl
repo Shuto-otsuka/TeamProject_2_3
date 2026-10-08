@@ -1,31 +1,37 @@
-#include "Primitive.hlsli"
+#include "PrimitiveWireframe.hlsli"
+#include "../../Shader/ShaderResources.hlsli"
 
-[NumThreads(COLLIDER_LINES_PER_GROUP, 1, 1)]
+/**
+* [EN]
+* One instance spans 3 groups of 64 lines, enough for the capsule's 166
+* lines (must match the C++ groups per instance), so gid splits into
+* which instance and which slice of its line list this group covers. Each
+* line is emitted as a quad (4 vertices, 2 triangles) so it can be drawn
+* thicker than one pixel.
+*
+* ---------------------------------------------------------------------
+*
+* [JP]
+* 1つのインスタンスは 64 本ずつの 3 グループにまたがる。カプセルの
+* 166 本が入る数で、C++ 側のグループ数と一致させる。gid を「どの
+* インスタンスか」と「その線の一覧のどの部分か」に分ける。1ピクセルより
+* 太く描けるよう、各線は四角形（頂点4つ、三角形2つ）として出力する。
+*/
+[NumThreads(64, 1, 1)]
 [OutputTopology("triangle")]
-void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices ColliderLineMSOutput verts[COLLIDER_LINES_PER_GROUP * 4], out indices uint3 triangles[COLLIDER_LINES_PER_GROUP * 2])
+void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices PrimitiveWireframeMSOutput verts[64 * 4], out indices uint3 triangles[64 * 2])
 {
-	ColliderConstantBuffer wireframe = GetPrimitiveWireframeConstantBuffer();
+	StructuredBuffer<PrimitiveWireframeStructuredBuffer> instances = GetPrimitiveWireframeStructuredBuffer(shader_resource_indices.primitive_wireframe_.instance_index_);
 
-	uint groups_per_instance = wireframe.groups_per_instance_;
-	uint instance_index = gid / groups_per_instance;
-	uint sub_group_index = gid % groups_per_instance;
-	uint line_index = sub_group_index * COLLIDER_LINES_PER_GROUP + gtid;
+	uint instance_index = gid / 3;
+	uint sub_group_index = gid % 3;
+	uint line_index = sub_group_index * 64 + gtid;
 
-	uint group_line_count = 0;
-	ColliderStructuredBuffer instance = (ColliderStructuredBuffer)0;
+	PrimitiveWireframeStructuredBuffer instance = instances[instance_index];
 
-	if (instance_index < wireframe.instance_count_)
-	{
-		StructuredBuffer<ColliderStructuredBuffer> instances = GetColliderStructuredBuffer(wireframe.instance_buffer_index_);
-		instance = instances[instance_index];
-
-		uint total_lines = GetColliderLineCount(instance.shape_kind_);
-		uint sub_group_base = sub_group_index * COLLIDER_LINES_PER_GROUP;
-		if (sub_group_base < total_lines)
-		{
-			group_line_count = min(COLLIDER_LINES_PER_GROUP, total_lines - sub_group_base);
-		}
-	}
+	uint total_lines = GetPrimitiveWireframeLineCount(instance.shape_kind_);
+	uint sub_group_base = sub_group_index * 64;
+	uint group_line_count = (sub_group_base < total_lines) ? min(64, total_lines - sub_group_base) : 0;
 
 	SetMeshOutputCounts(group_line_count * 4, group_line_count * 2);
 
@@ -43,7 +49,7 @@ void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices Coll
 		float3 local_a;
 		float3 local_b;
 		bool silhouette;
-		GetColliderLine(instance.shape_kind_, instance.dimensions_, instance.head_length_, local_camera, line_index, local_a, local_b, silhouette);
+		GetPrimitiveWireframeLine(instance.shape_kind_, instance.dimensions_, instance.head_length_, local_camera, line_index, local_a, local_b, silhouette);
 
 		/// [EN] Both ends go back to world space by the instance rotation, then the instance position.
 		/// [JP] 両端をインスタンスの回転、続いて位置でワールド空間へ戻す。
@@ -54,10 +60,10 @@ void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices Coll
 		float4 clip_a = mul(float4(world_a, 1.0), scene.current_view_projection_);
 		float4 clip_b = mul(float4(world_b, 1.0), scene.current_view_projection_);
 
-		/// [EN] Silhouette lines are drawn halfway to white and thicker, so the outline stands out from the rest of the shape.
-		/// [JP] 輪郭線は白へ半分寄せた色で太く描き、形状のほかの線より目立たせる。
+		/// [EN] Silhouette lines are drawn halfway to white and 1.5 times the instance's line width, so the outline stands out from the rest of the shape.
+		/// [JP] 輪郭線は白へ半分寄せた色で、インスタンスの線の太さの 1.5 倍で描き、形状のほかの線より目立たせる。
 		float4 color = silhouette ? float4(lerp(instance.color_.rgb, float3(1.0, 1.0, 1.0), 0.5), instance.color_.a) : instance.color_;
-		float width = silhouette ? COLLIDER_SILHOUETTE_LINE_WIDTH : COLLIDER_LINE_WIDTH;
+		float width = silhouette ? instance.line_width_ * 1.5 : instance.line_width_;
 
 		/// [EN] An end behind the camera has no screen position, so the line is cut where it crosses just in front of the eye; a line entirely behind the camera is not drawn.
 		/// [JP] カメラの後ろにある端には画面上の位置が無いため、目のすぐ手前を横切る位置で線を切る。線全体がカメラの後ろにあれば描かない。

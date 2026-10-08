@@ -112,7 +112,9 @@ namespace SeedCore
 		context_.preview_.modelTransform_.active_ = false;
 		context_.preview_.modelTransform_.worldMatrix_ = Matrix::Identity;
 
-		ImGui::DockBuilderDockWindow("モデル変換", context_.graphics_.imgui_->DockSpaceID());
+		ImGuiWindow* editorViewWindow = ImGui::FindWindowByName("エディタービュー");
+		ImGuiID dockID = (editorViewWindow && editorViewWindow->DockId != 0) ? editorViewWindow->DockId : context_.graphics_.imgui_->DockSpaceID();
+		ImGui::DockBuilderDockWindow("モデル変換", dockID);
 		ImGui::SetNextWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
 
 		if (ImGui::Begin("モデル変換", &show_))

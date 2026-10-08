@@ -466,6 +466,21 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Replaces the linear velocity (m/s) of a dynamic or kinematic body
+		* and wakes it when the velocity is not zero. A kinematic body keeps
+		* the velocity until it is replaced. Has no effect on a static body.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 動的またはキネマティックのボディの速度(m/s)を置き換え、速度が 0 で
+		* なければボディを起こす。キネマティックのボディは、置き換えられるまで
+		* その速度を保つ。静的ボディには効かない。
+		*/
+		void BodyVelocity(JPH::BodyID bodyID, const Vector3& linearVelocity);
+
+		/**
+		* [EN]
 		* Reports whether a body is currently added to the simulation.
 		*
 		* ---------------------------------------------------------------------
@@ -485,6 +500,18 @@ namespace SeedCore
 		* ボディのワールド位置と回転を書き出す。
 		*/
 		void BodyTransform(JPH::BodyID bodyID, Vector3& outPosition, Quaternion& outRotation)const;
+
+		/**
+		* [EN]
+		* Returns the linear velocity (m/s) of a body; zero for a static
+		* body.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ボディの速度(m/s)を返す。静的ボディでは 0。
+		*/
+		Vector3 BodyVelocity(JPH::BodyID bodyID)const;
 
 		/**
 		* [EN]

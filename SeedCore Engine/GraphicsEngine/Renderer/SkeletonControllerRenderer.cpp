@@ -41,10 +41,9 @@ namespace SeedCore
 			modelCullingBuffer_.Create(device, bindlessHeap);
 		}
 
-		boneLineShader_.Create(shaderCache, device, DepthStencilStateType::DepthOff);
+		boneLineShader_.Create(shaderCache, device);
 
-		boneInstanceBuffer_ = MakePtr<ReadOnlyStructuredBuffer<ColliderStructuredBuffer>>(device, bindlessHeap, maxBoneInstanceCount_);
-		boneInstanceConstantsBuffer_ = MakePtr<StaticConstantBuffer<ColliderConstantBuffer>>(device, bindlessHeap);
+		boneInstanceBuffer_ = MakePtr<ReadOnlyStructuredBuffer<PrimitiveWireframeStructuredBuffer>>(device, bindlessHeap, maxBoneInstanceCount_);
 	}
 
 	void SkeletonControllerRenderer::Resize(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height)
@@ -410,12 +409,13 @@ namespace SeedCore
 				break;
 			}
 
-			ColliderStructuredBuffer sphereInstance{};
+			PrimitiveWireframeStructuredBuffer sphereInstance{};
 			sphereInstance.position_ = worldNodePositions[static_cast<Size>(jointIndex)];
 			sphereInstance.shapeKind_ = static_cast<Uint32>(ShapeKind::Sphere);
 			sphereInstance.rotation_ = Quaternion::Identity;
 			sphereInstance.dimensions_ = Vector3(nodeRadius[static_cast<Size>(jointIndex)], 0.0f, 0.0f);
 			sphereInstance.color_ = jointIndex == selectedNodeIndex ? boneGizmoSelectedColor : boneGizmoColor;
+			sphereInstance.lineWidth_ = 3.0f;
 			boneInstances_.push_back(sphereInstance);
 
 			Int parentJoint = jointParentJoint[jointIndex];
@@ -447,12 +447,13 @@ namespace SeedCore
 				coneRotation = Quaternion::CreateFromAxisAngle(axis, Acos(dot));
 			}
 
-			ColliderStructuredBuffer coneInstance{};
+			PrimitiveWireframeStructuredBuffer coneInstance{};
 			coneInstance.position_ = parentPosition + direction * (boneLength * 0.5f);
 			coneInstance.shapeKind_ = static_cast<Uint32>(ShapeKind::Cone);
 			coneInstance.rotation_ = coneRotation;
 			coneInstance.dimensions_ = Vector3(nodeRadius[static_cast<Size>(jointIndex)], boneLength * 0.5f, 0.0f);
 			coneInstance.color_ = jointIndex == selectedNodeIndex ? boneGizmoSelectedColor : boneGizmoColor;
+			coneInstance.lineWidth_ = 3.0f;
 			boneInstances_.push_back(coneInstance);
 		}
 	}
@@ -501,7 +502,7 @@ namespace SeedCore
 		sceneSystem_->Upload(scene);
 
 		constantIndices_.sceneIndex_ = sceneSystem_->GetIndex();
-		constantIndices_.colliderIndex_ = boneInstanceConstantsBuffer_->Index();
+		shaderResourceIndices_.primitiveWireframe_.instanceIndex_ = boneInstanceBuffer_->Index();
 		constantIndicesBuffer_->Update(constantIndices_);
 		shaderResourceIndicesBuffer_->Update(shaderResourceIndices_);
 
@@ -595,12 +596,6 @@ namespace SeedCore
 
 		boneInstanceBuffer_->Update(boneInstances_.data(), instanceCount);
 
-		ColliderConstantBuffer constants{};
-		constants.instanceBufferIndex_ = boneInstanceBuffer_->Index();
-		constants.instanceCount_ = instanceCount;
-		constants.groupsPerInstance_ = ColliderRenderer::groupsPerInstance_;
-		boneInstanceConstantsBuffer_->Update(constants);
-
 		auto* cmd = cmdList->Get();
 
 		D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView = frameBuffer_->RenderTargetViewHandle();
@@ -615,18 +610,19 @@ namespace SeedCore
 		ID3D12DescriptorHeap* heaps[] = { heap };
 		cmd->SetDescriptorHeaps(_countof(heaps), heaps);
 		cmd->SetGraphicsRootSignature(boneLineShader_.GetRootSignature());
+		cmd->SetGraphicsRootConstantBufferView(0, shaderResourceIndicesBuffer_->Address());
 		cmd->SetGraphicsRootConstantBufferView(2, constantIndicesBuffer_->Address());
 
-		cmd->SetPipelineState(boneLineShader_.GetPipelineState());
+		cmd->SetPipelineState(boneLineShader_.GetPipelineStatePreview());
 
 		if (D3D12Check::GetLevel() == D3D12Level::D12_2)
 		{
-			cmd->DispatchMesh(instanceCount * ColliderRenderer::groupsPerInstance_, 1, 1);
+			cmd->DispatchMesh(instanceCount * PrimitiveWireframeShader::groupsPerInstance_, 1, 1);
 		}
 		else
 		{
 			cmd->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			cmd->DrawInstanced(ColliderRenderer::groupsPerInstance_ * ColliderRenderer::threadsPerGroup_ * ColliderRenderer::verticesPerLine_, instanceCount, 0, 0);
+			cmd->DrawInstanced(PrimitiveWireframeShader::groupsPerInstance_ * PrimitiveWireframeShader::linesPerGroup_ * PrimitiveWireframeShader::verticesPerLine_, instanceCount, 0, 0);
 		}
 		ProfilerStats::AddDrawCall();
 	}

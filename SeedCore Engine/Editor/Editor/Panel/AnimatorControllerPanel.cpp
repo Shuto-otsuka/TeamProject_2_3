@@ -267,7 +267,9 @@ namespace SeedCore
 			selectedConditionIndex_ = SIZE_MAX;
 		}
 
-		ImGui::DockBuilderDockWindow("アニメーターコントローラー", context_.graphics_.imgui_->DockSpaceID());
+		ImGuiWindow* editorViewWindow = ImGui::FindWindowByName("エディタービュー");
+		ImGuiID dockID = (editorViewWindow && editorViewWindow->DockId != 0) ? editorViewWindow->DockId : context_.graphics_.imgui_->DockSpaceID();
+		ImGui::DockBuilderDockWindow("アニメーターコントローラー", dockID);
 		ImGui::SetNextWindowSize(ImVec2(1100, 650), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("アニメーターコントローラー", &show_);

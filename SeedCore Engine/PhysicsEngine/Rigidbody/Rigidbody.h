@@ -10,13 +10,16 @@ namespace SeedCore
 	* Component that gives its actor a simulated body. It borrows the
 	* shape of a collider on the same actor (a 0.5 m sphere if none) and,
 	* each fixed step, copies the body's pose back to Position/Rotation.
+	* A Velocity on the actor is kept in step with the body's linear
+	* velocity in both directions.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* Actor にシミュレーションされるボディを持たせるコンポーネント。同じ
 	* Actor のコライダーの形状を借り(無ければ半径 0.5 m の球)、固定ステップ
-	* ごとにボディの姿勢を Position/Rotation へ書き戻す。
+	* ごとにボディの姿勢を Position/Rotation へ書き戻す。Actor に Velocity
+	* があれば、ボディの速度と双方向に同期する。
 	*/
 	class SEEDCORE_API Rigidbody :public SeedScript
 	{
@@ -145,13 +148,13 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Copies the simulated pose of the body back to the actor's
-		* Position and Rotation.
+		* Position and Rotation, and its linear velocity back to Velocity.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* シミュレーション後のボディの姿勢を、Actor の Position と Rotation へ
-		* 書き戻す。
+		* シミュレーション後のボディの姿勢を、Actor の Position と Rotation へ、
+		* 速度を Velocity へ書き戻す。
 		*/
 		void OnFixedTick(Float elapsedTime);
 
@@ -165,6 +168,25 @@ namespace SeedCore
 		* ボディを破棄し、形状への参照を解放する。
 		*/
 		void OnDestroy();
+
+	public:
+		/**
+		* [EN]
+		* Hands the actor's Velocity to the body when it differs from the
+		* value last copied back, so a Velocity written by code takes effect
+		* in the next step. Called before every fixed step. On a canvas body
+		* the velocity is in pixels per second with Y down, and its Z is
+		* ignored. A Static body is not affected.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* Actor の Velocity が前回書き戻した値と違えばボディへ渡し、コードから
+		* 書いた Velocity が次のステップで効くようにする。固定ステップの前に
+		* 毎回呼ばれる。Canvas のボディでは速度をピクセル毎秒・Y 下向きで与え、
+		* Z は無視する。Static のボディには効かない。
+		*/
+		void ApplyVelocity();
 
 	public:
 		/**
@@ -236,6 +258,9 @@ namespace SeedCore
 		* every fixed step with that step's elapsedTime. On a canvas body the
 		* position is given in pixels with Y down and its Z is ignored, and
 		* only the rotation about Z is used. Only a Kinematic body is affected.
+		* The body moves by the velocity this sets, which it keeps until the
+		* next call or until Velocity is written, so the body does not stop
+		* at the target by itself.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -244,7 +269,8 @@ namespace SeedCore
 		* いるものも一緒に運ぶ。固定ステップごとに、そのステップの elapsedTime
 		* を渡して呼ぶ。Canvas のボディでは位置をピクセル単位・Y 下向きで与えて
 		* Z は無視し、回転は Z 軸まわりだけを使う。効くのは Kinematic のボディ
-		* だけ。
+		* だけ。ボディはこれが設定した速度で動き、その速度は次の呼び出しか
+		* Velocity への書き込みまで保たれるので、目標で自然には止まらない。
 		*/
 		void MoveTarget(const Vector3& targetPosition, const Quaternion& targetRotation, Float elapsedTime);
 
@@ -277,6 +303,10 @@ namespace SeedCore
 		/// [EN] This component's own reference to the pooled shape.
 		/// [JP] プールの形状に対する、このコンポーネント自身の参照。
 		Handle<JPH::Shape> shapeHandle_;
+
+		/// [EN] Velocity last exchanged with the body, in Velocity's units; a Velocity that differs from it was written by code.
+		/// [JP] 最後にボディとやり取りした速度(Velocity の単位)。これと違う Velocity は、コードから書かれたもの。
+		Vector3 syncedVelocity_ = { 0.0f, 0.0f, 0.0f };
 	};
 	REGISTER_COMPONENT(Rigidbody, "Physics");
 }

@@ -48,7 +48,9 @@ namespace SeedCore
 			return;
 		}
 
-		ImGui::DockBuilderDockWindow("スケルトンコントローラー", context_.graphics_.imgui_->DockSpaceID());
+		ImGuiWindow* editorViewWindow = ImGui::FindWindowByName("エディタービュー");
+		ImGuiID dockID = (editorViewWindow && editorViewWindow->DockId != 0) ? editorViewWindow->DockId : context_.graphics_.imgui_->DockSpaceID();
+		ImGui::DockBuilderDockWindow("スケルトンコントローラー", dockID);
 		ImGui::SetNextWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
 
 		isFocused_ = ImGui::Begin("スケルトンコントローラー", &show_);

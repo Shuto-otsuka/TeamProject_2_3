@@ -26,12 +26,7 @@ struct ConstantIndices
 	uint star_index_;
 	uint weather_particle_index_;
 	uint volumetric_light_index_;
-	uint collider_index_;
-
-	uint primitive_wireframe_index_;
 	uint constant_indices_padding_0_;
-	uint constant_indices_padding_1_;
-	uint constant_indices_padding_2_;
 };
 ConstantBuffer<ConstantIndices> constant_indices : register(b2, space1);
 

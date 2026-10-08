@@ -8,8 +8,7 @@
 #include <GraphicsEngine/Model/ModelShader.h>
 #include <GraphicsEngine/Model/Culling/ModelCullingBuffer.h>
 #include <GraphicsEngine/Model/ModelRecord.h>
-#include <GraphicsEngine/Shape/Collider/ColliderLineShader.h>
-#include <GraphicsEngine/Renderer/ColliderRenderer.h>
+#include <GraphicsEngine/Shape/Primitive/PrimitiveWireframeShader.h>
 #include <GraphicsEngine/System/SceneSystem.h>
 #include <GraphicsEngine/System/IndicesSystem.h>
 
@@ -84,10 +83,9 @@ namespace SeedCore
 		ResourcePtr<StaticConstantBuffer<ConstantIndices>> constantIndicesBuffer_;
 		ResourcePtr<StaticConstantBuffer<ShaderResourceIndices>> shaderResourceIndicesBuffer_;
 
-		ColliderLineShader boneLineShader_;
+		PrimitiveWireframeShader boneLineShader_;
 
-		DynamicArray<ColliderStructuredBuffer> boneInstances_;
-		ResourcePtr<ReadOnlyStructuredBuffer<ColliderStructuredBuffer>> boneInstanceBuffer_;
-		ResourcePtr<StaticConstantBuffer<ColliderConstantBuffer>> boneInstanceConstantsBuffer_;
+		DynamicArray<PrimitiveWireframeStructuredBuffer> boneInstances_;
+		ResourcePtr<ReadOnlyStructuredBuffer<PrimitiveWireframeStructuredBuffer>> boneInstanceBuffer_;
 	};
 }

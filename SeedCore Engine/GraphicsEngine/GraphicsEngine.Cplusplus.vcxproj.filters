@@ -118,9 +118,6 @@
     <Filter Include="Constraint">
       <UniqueIdentifier>{b194b082-4dc2-4dc5-8b98-d3589574858f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shape\Collider">
-      <UniqueIdentifier>{74d9b7a4-07c8-4ba1-b54a-335401152a08}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Environment">
       <UniqueIdentifier>{c15ca0da-c3dc-4ea6-b97f-cb704d5cd881}</UniqueIdentifier>
     </Filter>
@@ -673,12 +670,6 @@
     <ClInclude Include="System\ConstraintSystem.h">
       <Filter>System</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\ColliderRenderer.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Shape\Collider\ColliderLineShader.h">
-      <Filter>Shape\Collider</Filter>
-    </ClInclude>
     <ClInclude Include="Profiler\GpuProfiler.h">
       <Filter>Profiler</Filter>
     </ClInclude>
@@ -1017,6 +1008,9 @@
     </ClInclude>
     <ClInclude Include="Model\Cluster\Meshlet.h">
       <Filter>Model\Cluster</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Primitive\PrimitiveSolidShader.h">
+      <Filter>Shape\Primitive</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1385,12 +1379,6 @@
     <ClCompile Include="System\ConstraintSystem.cpp">
       <Filter>System</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\ColliderRenderer.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Shape\Collider\ColliderLineShader.cpp">
-      <Filter>Shape\Collider</Filter>
-    </ClCompile>
     <ClCompile Include="Profiler\GpuProfiler.cpp">
       <Filter>Profiler</Filter>
     </ClCompile>
@@ -1676,6 +1664,9 @@
     <ClCompile Include="Shape\Primitive\PrimitiveMesh.cpp">
       <Filter>Shape\Primitive</Filter>
     </ClCompile>
+    <ClCompile Include="Shape\Primitive\PrimitiveSolidShader.cpp">
+      <Filter>Shape\Primitive</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\Sampler.hlsli">
@@ -1734,9 +1725,6 @@
     </None>
     <None Include="Texture\Texture.hlsli">
       <Filter>Texture</Filter>
-    </None>
-    <None Include="Shape\Collider\ColliderLine.hlsli">
-      <Filter>Shape\Collider</Filter>
     </None>
     <None Include="Raytracing\GlobalIllumination\GlobalIllumination.hlsli">
       <Filter>Raytracing\GlobalIllumination</Filter>
@@ -1904,12 +1892,6 @@
     </Text>
     <Text Include="Raytracing\VolumetricCloudScapes\CloudNoiseDetailBakeCS.hlsl">
       <Filter>Raytracing\VolumetricCloudScapes</Filter>
-    </Text>
-    <Text Include="Shape\Collider\ColliderLineMS.hlsl">
-      <Filter>Shape\Collider</Filter>
-    </Text>
-    <Text Include="Shape\Collider\ColliderLinePS.hlsl">
-      <Filter>Shape\Collider</Filter>
     </Text>
     <Text Include="PostProcess\AutoExposureAverageCS.hlsl">
       <Filter>PostProcess</Filter>
@@ -2099,9 +2081,6 @@
     </Text>
     <Text Include="Environment\WeatherParticleVS.hlsl">
       <Filter>Environment</Filter>
-    </Text>
-    <Text Include="Shape\Collider\ColliderLineVS.hlsl">
-      <Filter>Shape\Collider</Filter>
     </Text>
     <Text Include="Model\Skin\SkinBlendCS.hlsl">
       <Filter>Model\Skin</Filter>
@@ -2302,6 +2281,21 @@
       <Filter>Shape\Primitive</Filter>
     </Text>
     <Text Include="Shape\Primitive\PrimitiveWireframeVS.hlsl">
+      <Filter>Shape\Primitive</Filter>
+    </Text>
+    <Text Include="Shape\Primitive\PrimitiveSolidAS.hlsl">
+      <Filter>Shape\Primitive</Filter>
+    </Text>
+    <Text Include="Shape\Primitive\PrimitiveSolidMS.hlsl">
+      <Filter>Shape\Primitive</Filter>
+    </Text>
+    <Text Include="Shape\Primitive\PrimitiveSolidCullingCS.hlsl">
+      <Filter>Shape\Primitive</Filter>
+    </Text>
+    <Text Include="Shape\Primitive\PrimitiveSolidPS.hlsl">
+      <Filter>Shape\Primitive</Filter>
+    </Text>
+    <Text Include="Shape\Primitive\PrimitiveSolidVS.hlsl">
       <Filter>Shape\Primitive</Filter>
     </Text>
   </ItemGroup>

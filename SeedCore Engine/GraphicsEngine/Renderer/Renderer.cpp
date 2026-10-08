@@ -32,8 +32,7 @@ namespace SeedCore
 		movieRenderer_ = MakePtr<MovieRenderer>(rootSignature_, pipelineStateObject_);
 		outlineRenderer_ = MakePtr<OutlineRenderer>(rootSignature_, pipelineStateObject_);
 		hudComposeRenderer_ = MakePtr<HUDComposeRenderer>(rootSignature_, pipelineStateObject_);
-		colliderRenderer_ = MakePtr<ColliderRenderer>(rootSignature_, pipelineStateObject_);
-		shapeRenderer_ = MakePtr<ShapeRenderer>(rootSignature_, pipelineStateObject_);
+		shapeRenderer_ =MakePtr<ShapeRenderer>(rootSignature_, pipelineStateObject_);
 		raytracingRenderer_ = MakePtr<RaytracingRenderer>(rootSignature_, pipelineStateObject_, raytracingStateObject_);
 		skyRenderer_ = MakePtr<SkyRenderer>();
 		timelineRenderer_ = MakePtr<TimelineRenderer>(rootSignature_, pipelineStateObject_);
@@ -119,8 +118,7 @@ namespace SeedCore
 		movieRenderer_->Create(device, bindlessHeap, shaderCache, *shaderResourceIndicesSystem_);
 		outlineRenderer_->Create(device, bindlessHeap, shaderCache);
 		hudComposeRenderer_->Create(device, bindlessHeap, shaderCache);
-		colliderRenderer_->Create(device, bindlessHeap, shaderCache, *constantIndicesSystem_);
-		shapeRenderer_->Create(device, bindlessHeap, shaderCache, *constantIndicesSystem_);
+		shapeRenderer_->Create(device, bindlessHeap, shaderCache, *shaderResourceIndicesSystem_);
 		raytracingRenderer_->Create(device, bindlessHeap, shaderCache, *constantIndicesSystem_, *shaderResourceIndicesSystem_, *unorderedAccessIndicesSystem_, width, height);
 		skyRenderer_->Create(device, bindlessHeap, shaderCache, rootSignature_, pipelineStateObject_);
 		timelineRenderer_->Create(device, bindlessHeap, shaderCache, width, height);
@@ -358,7 +356,6 @@ namespace SeedCore
 		D3D12_VIEWPORT debugViewport = postProcessRenderer_->Viewport(RaytracingView::Editor);
 
 		debugDepthResizeBuffer_.Dispatch(cmdList, bindlessHeap_->Heap(), geometryBuffer_, nativeWidth_, nativeHeight_, addresses);
-		colliderRenderer_->Draw3D(cmdList, debugRenderTargetView, debugDepthResizeBuffer_.DepthStencilViewHandle(), debugViewport, bindlessHeap_->Heap(), addresses);
 		shapeRenderer_->DrawEditor3D(cmdList, debugRenderTargetView, debugDepthResizeBuffer_.DepthStencilViewHandle(), debugViewport, bindlessHeap_->Heap(), addresses);
 		geometryBuffer_.BeginDepth(cmdList);
 
@@ -525,14 +522,10 @@ namespace SeedCore
 		avatarRenderer_->End(cmdList);
 	}
 
-	void Renderer::UploadColliders(std::span<const ColliderDesc> colliders)
+	void Renderer::UploadShapes(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, LoaderSystem& loaderSystem, ResourceCache& resourceCache)
 	{
-		colliderRenderer_->Upload(colliders);
-	}
-
-	void Renderer::UploadShapes(std::span<const ShapeDesc> shapes)
-	{
-		shapeRenderer_->Upload(shapes);
+		TextureResource* textureResource = resourceCache.GetResource<TextureResource>(AssetType::Texture);
+		shapeRenderer_->Upload(shapes, colliders, loaderSystem, *textureResource);
 	}
 
 	void Renderer::GatherTimelinePreview(LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
@@ -1031,7 +1024,6 @@ namespace SeedCore
 
 		outlineRenderer_->Draw(cmdList, canvasFrameBuffer_->RenderTargetViewHandle(), canvasFrameBuffer_->GetViewport(), heap, addresses);
 
-		colliderRenderer_->Draw2D(cmdList, canvasFrameBuffer_->RenderTargetViewHandle(), canvasFrameBuffer_->GetViewport(), heap, addresses);
 		shapeRenderer_->Draw2D(cmdList, canvasFrameBuffer_->RenderTargetViewHandle(), canvasFrameBuffer_->GetViewport(), heap, addresses);
 	}
 

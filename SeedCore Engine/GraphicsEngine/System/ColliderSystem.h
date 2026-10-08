@@ -1,6 +1,6 @@
 #pragma once
 #include <FoundationEngine/Prelude.h>
-#include <FoundationEngine/Interop/ColliderInstance.h>
+#include <FoundationEngine/Interop/ShapeInstance.h>
 
 namespace SeedCore
 {
@@ -8,18 +8,20 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Gathers the World's colliders into ColliderDesc entries for the
-	* collider wireframe, once per frame before rendering reads them. Knows
-	* the collider components and how each one is scaled; knows nothing
-	* about the GPU, which is ColliderRenderer's side.
+	* Gathers the World's colliders into wireframe ShapeDesc entries shown in
+	* the editor only (3D colliders in the world, 2D colliders on the
+	* canvas), once per frame before rendering reads them. Knows the
+	* collider components and how each one is scaled; knows nothing about
+	* the GPU, which is ShapeRenderer's side.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* World のコライダーを、コライダーのワイヤーフレーム用の ColliderDesc に
-	* 集める。描画が読む前に、フレームに1回行う。コライダーのコンポーネントと
+	* World のコライダーを、エディターにだけ出すワイヤーフレームの ShapeDesc
+	* に集める（3D のコライダーはワールドに、2D のコライダーは Canvas に置く）。
+	* 描画が読む前に、フレームに1回行う。コライダーのコンポーネントと
 	* それぞれの拡縮のしかたは知っているが、GPU のことは知らない（そちらは
-	* ColliderRenderer の担当）。
+	* ShapeRenderer の担当）。
 	*/
 	class ColliderSystem
 	{
@@ -49,11 +51,11 @@ namespace SeedCore
 		* [JP]
 		* 直前の Update で集めたコライダーを返す。
 		*/
-		[[nodiscard]] std::span<const ColliderDesc> Colliders()const;
+		[[nodiscard]] std::span<const ShapeDesc> Colliders()const;
 
 	private:
 		/// [EN] Colliders gathered this frame; kept between frames so the storage is reused.
 		/// [JP] このフレームに集めたコライダー。領域を使い回すため、フレームをまたいで持つ。
-		DynamicArray<ColliderDesc> colliders_;
+		DynamicArray<ShapeDesc> colliders_;
 	};
 }

@@ -551,6 +551,26 @@ namespace SeedCore
 	};
 	SC_STATIC_ASSERT_ALIGNED16(HUDShaderResourceIndices);
 
+	struct PrimitiveSolidShaderResourceIndices
+	{
+		Uint instanceIndex_ = 0;
+		Uint vertexIndex_ = 0;
+		Uint meshletIndex_ = 0;
+		Uint meshletBoundIndex_ = 0;
+
+		Uint vertexIndicesIndex_ = 0;
+		Uint primitiveIndicesIndex_ = 0;
+		Vector2 primitiveSolidShaderResourcePadding0_;
+	};
+	SC_STATIC_ASSERT(PrimitiveSolidShaderResourceIndices, 32, "Shape/Primitive/PrimitiveSolid.hlsli");
+
+	struct PrimitiveWireframeShaderResourceIndices
+	{
+		Uint instanceIndex_ = 0;
+		Vector3 primitiveWireframeShaderResourcePadding0_;
+	};
+	SC_STATIC_ASSERT(PrimitiveWireframeShaderResourceIndices, 16, "Shape/Primitive/PrimitiveWireframe.hlsli");
+
 	struct TextureShaderResourceIndices
 	{
 		Uint spriteIndex_ = 0;
@@ -807,6 +827,8 @@ namespace SeedCore
 		ReflectionAccumulationShaderResourceIndices reflectionAccumulation_;
 		PostProcessShaderResourceIndices postProcess_;
 		HUDShaderResourceIndices hud_;
+		PrimitiveSolidShaderResourceIndices primitiveSolid_;
+		PrimitiveWireframeShaderResourceIndices primitiveWireframe_;
 		TextureShaderResourceIndices texture_;
 		FontShaderResourceIndices font_;
 		MovieShaderResourceIndices movie_;
@@ -825,7 +847,7 @@ namespace SeedCore
 		WeatherParticleShaderResourceIndices weatherParticle_;
 		VolumetricLightShaderResourceIndices volumetricLight_;
 	};
-	SC_STATIC_ASSERT(ShaderResourceIndices, 752, "Shader/ShaderResources.hlsli");
+	SC_STATIC_ASSERT(ShaderResourceIndices, 800, "Shader/ShaderResources.hlsli");
 
 	struct UnorderedAccessIndices
 	{
@@ -877,14 +899,9 @@ namespace SeedCore
 		Uint starIndex_ = 0;
 		Uint weatherParticleIndex_ = 0;
 		Uint volumetricLightIndex_ = 0;
-		Uint colliderIndex_ = 0;
-
-		Uint primitiveWireframeIndex_ = 0;
 		Uint constantIndicesPadding0_ = 0;
-		Uint constantIndicesPadding1_ = 0;
-		Uint constantIndicesPadding2_ = 0;
 	};
-	SC_STATIC_ASSERT(ConstantIndices, 96, "Shader/Constants.hlsli");
+	SC_STATIC_ASSERT(ConstantIndices, 80, "Shader/Constants.hlsli");
 
 	class BindlessHeap;
 
@@ -951,16 +968,6 @@ namespace SeedCore
 
 		void SetVolumetricLightRayConstantIndex(Uint index);
 
-		void SetEditorColliderIndex(Uint index);
-
-		void SetCanvasColliderIndex(Uint index);
-
-		void SetEditorPrimitiveWireframeIndex(Uint index);
-
-		void SetGamePrimitiveWireframeIndex(Uint index);
-
-		void SetCanvasPrimitiveWireframeIndex(Uint index);
-
 	private:
 		ConstantIndices editorConstantIndices_{};
 		ConstantIndices gameConstantIndices_{};
@@ -1015,6 +1022,24 @@ namespace SeedCore
 		void SetGamePostProcessIndices(const PostProcessShaderResourceIndices& values);
 
 		void SetUIColorAlphaIndex(Uint index);
+
+		void SetPrimitiveSolidInstanceIndex(Uint index);
+
+		void SetPrimitiveSolidVertexIndex(Uint index);
+
+		void SetPrimitiveSolidMeshletIndex(Uint index);
+
+		void SetPrimitiveSolidMeshletBoundIndex(Uint index);
+
+		void SetPrimitiveSolidVertexIndicesIndex(Uint index);
+
+		void SetPrimitiveSolidPrimitiveIndicesIndex(Uint index);
+
+		void SetEditorPrimitiveWireframeIndex(Uint index);
+
+		void SetGamePrimitiveWireframeIndex(Uint index);
+
+		void SetCanvasPrimitiveWireframeIndex(Uint index);
 
 		void SetTextureSpriteIndex(Uint index);
 
