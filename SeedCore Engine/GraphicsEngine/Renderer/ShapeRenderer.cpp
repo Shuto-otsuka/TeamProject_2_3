@@ -150,24 +150,46 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Draws the solid batch and then the game wireframe batch into the
-	* game view, depth-tested against the given depth view. Must be called
-	* with the game's root addresses. Empty batches are skipped.
+	* Draws the solid batch into the game view, depth-tested against the
+	* given depth view. Filled shapes are part of the scene, so this is
+	* drawn before the hudless capture. Must be called with the game's
+	* root addresses. Does nothing if the batch is empty.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 面のバッチ、続いてゲームのワイヤーフレームのバッチを、指定した
-	* 深度ビューで深度テストしながらゲームビューへ描く。ゲームのルート
-	* アドレスで呼ぶこと。空のバッチは飛ばす。
+	* 面のバッチを、指定した深度ビューで深度テストしながらゲームビューへ
+	* 描く。面の形はシーンの一部なので、hudless の取得より前に描く。
+	* ゲームのルートアドレスで呼ぶこと。バッチが空なら何もしない。
 	*/
-	void ShapeRenderer::DrawGame3D(D3D12CommandList* cmdList, D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, D3D12_CPU_DESCRIPTOR_HANDLE depthStencilView, D3D12_VIEWPORT viewport, ID3D12DescriptorHeap* heap, const RootAddresses& addresses)
+	void ShapeRenderer::DrawGameSolid(D3D12CommandList* cmdList, D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, D3D12_CPU_DESCRIPTOR_HANDLE depthStencilView, D3D12_VIEWPORT viewport, ID3D12DescriptorHeap* heap, const RootAddresses& addresses)
 	{
 		DrawSolid(cmdList, renderTargetView, depthStencilView, viewport, heap, addresses);
-		if (!gameInstances_.empty())
+	}
+
+	/**
+	* [EN]
+	* Draws the game wireframe batch into the game view, depth-tested
+	* against the given depth view. Wireframes are a debug display, so
+	* this is drawn after the hudless capture. Must be called with the
+	* game's root addresses. Does nothing if the batch is empty.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ゲームのワイヤーフレームのバッチを、指定した深度ビューで深度テスト
+	* しながらゲームビューへ描く。ワイヤーフレームはデバッグ表示なので、
+	* hudless の取得より後に描く。ゲームのルートアドレスで呼ぶこと。
+	* バッチが空なら何もしない。
+	*/
+	void ShapeRenderer::DrawGameWireframe(D3D12CommandList* cmdList, D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, D3D12_CPU_DESCRIPTOR_HANDLE depthStencilView, D3D12_VIEWPORT viewport, ID3D12DescriptorHeap* heap, const RootAddresses& addresses)
+	{
+		if (gameInstances_.empty())
 		{
-			DrawWireframe(cmdList, renderTargetView, depthStencilView, viewport, heap, addresses, static_cast<Uint>(gameInstances_.size()));
+			return;
 		}
+
+		DrawWireframe(cmdList, renderTargetView, depthStencilView, viewport, heap, addresses, static_cast<Uint>(gameInstances_.size()));
 	}
 
 	/**
@@ -309,14 +331,14 @@ namespace SeedCore
 	* [EN]
 	* Records the draw of instanceCount world wireframe instances into the
 	* given target, with the primitive wireframe slot of the view whose
-	* root addresses are passed. Shared by DrawEditor3D and DrawGame3D.
+	* root addresses are passed. Shared by DrawEditor3D and DrawGameWireframe.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* ワールドのワイヤーフレームのインスタンス instanceCount 個を、指定した
 	* ターゲットへ描く記録をする。使う基本形状ワイヤーフレームの枠は、
-	* 渡したルートアドレスのビューのもの。DrawEditor3D と DrawGame3D で
+	* 渡したルートアドレスのビューのもの。DrawEditor3D と DrawGameWireframe で
 	* 共有する。
 	*/
 	void ShapeRenderer::DrawWireframe(D3D12CommandList* cmdList, D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView, D3D12_CPU_DESCRIPTOR_HANDLE depthStencilView, D3D12_VIEWPORT viewport, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Uint instanceCount)

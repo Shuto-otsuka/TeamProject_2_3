@@ -172,21 +172,18 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
-		* Hands the actor's Velocity to the body when it differs from the
-		* value last copied back, so a Velocity written by code takes effect
-		* in the next step. Called before every fixed step. On a canvas body
-		* the velocity is in pixels per second with Y down, and its Z is
-		* ignored. A Static body is not affected.
+		* Hands what code has changed since the last step (isTrigger_, and
+		* the actor's Velocity) to the body, so it takes effect in the next
+		* step. Called before every fixed step.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* Actor の Velocity が前回書き戻した値と違えばボディへ渡し、コードから
-		* 書いた Velocity が次のステップで効くようにする。固定ステップの前に
-		* 毎回呼ばれる。Canvas のボディでは速度をピクセル毎秒・Y 下向きで与え、
-		* Z は無視する。Static のボディには効かない。
+		* 前のステップからコードが変えたもの(isTrigger_ と Actor の Velocity)
+		* をボディへ渡し、次のステップで効くようにする。固定ステップの前に
+		* 毎回呼ばれる。
 		*/
-		void ApplyVelocity();
+		void Apply();
 
 	public:
 		/**
@@ -288,6 +285,37 @@ namespace SeedCore
 		JPH::BodyID BodyID()const;
 
 	private:
+		/**
+		* [EN]
+		* Hands the actor's Velocity to the body when it differs from the
+		* value last copied back. On a canvas body the velocity is in pixels
+		* per second with Y down, and its Z is ignored. A Static body is not
+		* affected.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* Actor の Velocity が前回書き戻した値と違えばボディへ渡す。Canvas の
+		* ボディでは速度をピクセル毎秒・Y 下向きで与え、Z は無視する。Static
+		* のボディには効かない。
+		*/
+		void ApplyVelocity();
+
+		/**
+		* [EN]
+		* Hands isTrigger_ to the body when it differs from the value the
+		* body has, so switching it from code or the inspector during play
+		* takes effect.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* isTrigger_ がボディの今の設定と違えばボディへ渡し、プレイ中にコードや
+		* インスペクタから切り替えたものが効くようにする。
+		*/
+		void ApplyTrigger();
+
+	private:
 		/// [EN] Radius of the sphere used when the actor has no collider.
 		/// [JP] Actor にコライダーが無いときに使う球の半径。
 		SC_CONST Float defaultShapeRadius_ = 0.5f;
@@ -307,6 +335,10 @@ namespace SeedCore
 		/// [EN] Velocity last exchanged with the body, in Velocity's units; a Velocity that differs from it was written by code.
 		/// [JP] 最後にボディとやり取りした速度(Velocity の単位)。これと違う Velocity は、コードから書かれたもの。
 		Vector3 syncedVelocity_ = { 0.0f, 0.0f, 0.0f };
+
+		/// [EN] Whether the body is currently a trigger; an isTrigger_ that differs from it was switched after the body was set up.
+		/// [JP] ボディが今トリガーかどうか。これと違う isTrigger_ は、ボディを設定した後に切り替えられたもの。
+		Bool syncedTrigger_ = false;
 	};
 	REGISTER_COMPONENT(Rigidbody, "Physics");
 }

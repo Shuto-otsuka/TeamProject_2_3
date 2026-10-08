@@ -332,7 +332,7 @@ namespace SeedCore
 
 					while (gameTimer_.Step())
 					{
-						PhysicsSystem::ApplyVelocity(*world_);
+						PhysicsSystem::ApplyRigidbody(*world_);
 						joltManager_->Execute(gameTimer_.FixedDeltaTime());
 						system_->Step(*world_, gameTimer_.FixedDeltaTime());
 					}

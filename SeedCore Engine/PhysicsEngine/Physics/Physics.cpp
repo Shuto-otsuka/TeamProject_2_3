@@ -557,6 +557,62 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Turns a body into a trigger or back into a solid body: switches its
+	* sensor flag, the SENSOR bit of its object layer, and for a
+	* kinematic body the flag that lets it meet static bodies, so it
+	* ends up as if it had been created that way.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディをトリガーにする、または実体のあるボディへ戻す。センサーの
+	* フラグ、オブジェクトレイヤーの SENSOR ビット、キネマティックの
+	* ボディではスタティックのボディと組になるためのフラグを切り替え、
+	* 最初からその設定で作ったのと同じ状態にする。
+	*/
+	void Physics::BodyTrigger(JPH::BodyID bodyID, Bool isTrigger)
+	{
+		if (bodyID.IsInvalid())
+		{
+			return;
+		}
+
+		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
+
+		/// [EN] The sensor flag decides whether the body pushes back; a trigger only reports overlaps.
+		/// [JP] センサーのフラグが、ボディが押し返すかを決める。トリガーは重なりを知らせるだけ。
+		bodyInterface.SetIsSensor(bodyID, isTrigger);
+
+		/// [EN] Only the SENSOR bit changes; the motion type, the actor's layer and the PLANAR bit stay as they are, and the body moves to the matching broad-phase layer.
+		/// [JP] 変えるのは SENSOR ビットだけで、運動タイプ・Actor のレイヤー・PLANAR ビットはそのまま。ボディは対応するブロードフェーズレイヤーへ移る。
+		JPH::ObjectLayer layer = bodyInterface.GetObjectLayer(bodyID);
+		if (isTrigger)
+		{
+			layer |= Layers::SENSOR;
+		}
+		else
+		{
+			layer = static_cast<JPH::ObjectLayer>(layer & ~Layers::SENSOR);
+		}
+		bodyInterface.SetObjectLayer(bodyID, layer);
+
+		/// [EN] As at creation, only a kinematic trigger needs to meet static bodies.
+		/// [JP] 生成時と同じく、スタティックのボディと組になる必要があるのはキネマティックのトリガーだけ。
+		Bool collideKinematicVsNonDynamic = bodyInterface.GetMotionType(bodyID) == JPH::EMotionType::Kinematic && isTrigger;
+
+		/// [EN] The body interface has no setter for this flag, so it is written on the locked body; the lock is taken after the calls above, which lock the body themselves.
+		/// [JP] このフラグはボディインターフェースに設定関数が無いので、ロックしたボディに書く。上の呼び出しは自分でボディをロックするので、ロックはその後で取る。
+		JPH::BodyLockWrite lock(joltManager_.PhysicsSystem().GetBodyLockInterface(), bodyID);
+		if (!lock.Succeeded())
+		{
+			return;
+		}
+
+		lock.GetBody().SetCollideKinematicVsNonDynamic(collideKinematicVsNonDynamic);
+	}
+
+	/**
+	* [EN]
 	* Removes and destroys a physics body.
 	*
 	* ---------------------------------------------------------------------

@@ -168,7 +168,7 @@ namespace SeedCore
 				vertex.cap_ = 0.0f;
 				vertices.push_back(vertex);
 			}
-			triangles.insert(triangles.end(), { baseIndex,baseIndex + 1,baseIndex + 2,baseIndex,baseIndex + 2,baseIndex + 3 });
+			triangles.insert(triangles.end(), { baseIndex + 2,baseIndex + 1,baseIndex,baseIndex + 3,baseIndex + 2,baseIndex });
 		}
 	}
 }

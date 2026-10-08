@@ -55,16 +55,17 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Hands the Velocity of every active actor with a Rigidbody to its
-		* body when code has written it. Called before every fixed step.
+		* Hands what code has changed on every active actor's Rigidbody
+		* (isTrigger_, and the actor's Velocity) to its body. Called before
+		* every fixed step.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* Rigidbody を持つ有効な全 Actor について、コードから書かれた Velocity
-		* をボディへ渡す。固定ステップの前に毎回呼ばれる。
+		* 有効な全 Actor の Rigidbody について、コードが変えたもの(isTrigger_ と
+		* Actor の Velocity)をボディへ渡す。固定ステップの前に毎回呼ばれる。
 		*/
-		static void ApplyVelocity(World& world);
+		static void ApplyRigidbody(World& world);
 
 		/**
 		* [EN]

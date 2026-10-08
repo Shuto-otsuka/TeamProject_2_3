@@ -481,6 +481,23 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Turns a body into a trigger or back into a solid body: switches its
+		* sensor flag, the SENSOR bit of its object layer, and for a
+		* kinematic body the flag that lets it meet static bodies, so it
+		* ends up as if it had been created that way.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ボディをトリガーにする、または実体のあるボディへ戻す。センサーの
+		* フラグ、オブジェクトレイヤーの SENSOR ビット、キネマティックの
+		* ボディではスタティックのボディと組になるためのフラグを切り替え、
+		* 最初からその設定で作ったのと同じ状態にする。
+		*/
+		void BodyTrigger(JPH::BodyID bodyID, Bool isTrigger);
+
+		/**
+		* [EN]
 		* Reports whether a body is currently added to the simulation.
 		*
 		* ---------------------------------------------------------------------
