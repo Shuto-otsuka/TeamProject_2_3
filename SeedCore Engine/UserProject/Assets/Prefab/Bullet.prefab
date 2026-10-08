@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "4b2c3da9-83d2-4e39-bc67-7453e079ca7f",
+			"collaborationId": "b9e3ba0f-9a98-4478-8d97-a317946d8b6e",
 			"components": [
 				{
 					"component": "Mesh",
@@ -224,7 +224,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": 0,
+							"int": 1,
 							"is_array": false,
 							"name": "動作モード",
 							"string": "",
@@ -316,7 +316,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 0.0,
+							"float": 0.5,
 							"int": 0,
 							"is_array": false,
 							"name": "空気抵抗",
@@ -680,7 +680,7 @@
 							}
 						},
 						{
-							"bool": false,
+							"bool": true,
 							"children": [],
 							"color": {
 								"a": 1.0,
@@ -786,7 +786,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 400.0,
+							"float": 3.0,
 							"int": 0,
 							"is_array": false,
 							"name": "minSpeed",
@@ -817,7 +817,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 2600.0,
+							"float": 20.0,
 							"int": 0,
 							"is_array": false,
 							"name": "maxSpeed",
@@ -910,68 +910,6 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 800.0,
-							"int": 0,
-							"is_array": false,
-							"name": "minTurnSpeed",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 7000.0,
-							"int": 0,
-							"is_array": false,
-							"name": "maxTurnSpeed",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
 							"float": 40.0,
 							"int": 0,
 							"is_array": false,
@@ -1003,10 +941,41 @@
 								"g": 0.0,
 								"r": 0.0
 							},
+							"float": 5.0,
+							"int": 0,
+							"is_array": false,
+							"name": "turnSpeed",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
 							"float": 0.0,
 							"int": 0,
 							"is_array": false,
-							"name": "turnDirection",
+							"name": "turnAxis",
 							"string": "",
 							"type": 5,
 							"vector2": {
@@ -1028,7 +997,7 @@
 					]
 				}
 			],
-			"layer": "Bullet",
+			"layer": "Default",
 			"name": "Bullet",
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
@@ -1036,14 +1005,14 @@
 			"persistentId": 28,
 			"position": {
 				"x": 0.0,
-				"y": 5.363828659057617,
-				"z": 59.10124588012695
+				"y": 0.0,
+				"z": 0.0
 			},
 			"rotation": {
 				"w": 1.0,
 				"x": -0.0,
 				"y": 0.0,
-				"z": 0.0
+				"z": -0.0
 			},
 			"scale": {
 				"x": 1.0,

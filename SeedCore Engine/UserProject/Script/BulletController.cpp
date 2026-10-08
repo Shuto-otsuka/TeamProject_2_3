@@ -4,20 +4,56 @@
 
 void BulletController::OnStart()
 {
-    playerController = GetWorld().GetActor("Player").GetComponent<PlayerController>();
-
-    //速力と回転力を加える
-    //OnStartがSetParamより後で呼ばれるためここで処理
-    rigidbody->AddImpulse(moveDirection * speed);
-    rigidbody->AddTorque(turnDirection * turnSpeed);
+    player = GetWorld().GetActor("Player");
+    SeedCore::Entity entity = GetActor().GetEntity();
+    SeedCore::Entity playerEntity = player.GetEntity();
+    playerController = GetWorld().GetComponent<PlayerController>(playerEntity);
+    velocity = GetWorld().GetComponent<SeedCore::Velocity>(entity);
 }
 
 void BulletController::OnTick(float elapsedTime)
 {
     //移動処理
-    UpdateRemove(elapsedTime);
+    Move(elapsedTime);
     //生存時間が終了したら削除
     UpdateAliveTime(elapsedTime);
+}
+
+void BulletController::OnTriggerEnter(SeedCore::Entity entity)
+{
+    //ヒットしたアクターの取得
+    SeedCore::Actor hitActor = GetWorld().GetActor(entity);
+    SeedCore::Name* hitActorName = GetWorld().GetComponent<SeedCore::Name>(entity);
+
+    //プレイヤーなら終了
+    if (hitActor == player)return;
+
+    //止められるオブジェクトじゃなければ消して終了
+    if (!hitActor.HasTag("CanStop"))
+    {
+        Remove();
+        SC_LOG_NOTICE("止められないやつに当たった");
+        return;
+    }
+
+    if (hitActor.HasTag("Bullet"))
+    {
+        //弾に当たった場合
+        SC_LOG_NOTICE("弾に当たった");
+
+        BulletController* hitBulletController = GetWorld().GetComponent<BulletController>(entity);
+        //自分の方が長く生きてたら終了
+        //後で撃ったやつが先撃ってたやつに対して効果を発動するため
+        if (aliveTimer > hitBulletController->GetAliveTimer())return;
+
+        hitBulletController->Stop();//停止
+        Remove();//自分は削除
+    }
+    else
+    {
+        //ギミック停止処理
+        SC_LOG_NOTICE("ギミックにあたった");
+    }
 }
 
 void BulletController::SetParam(const SeedCore::Vector3& startPosition,const SeedCore::Vector3& moveDirection, float chargeRate,int cost)
@@ -31,7 +67,6 @@ void BulletController::SetParam(const SeedCore::Vector3& startPosition,const See
     position = world.GetComponent<SeedCore::Position>(entity);
     rotation = world.GetComponent<SeedCore::Rotation>(entity);
     rigidbody = world.GetComponent<SeedCore::Rigidbody>(entity);
-    velocity = world.GetComponent<SeedCore::Velocity>(entity);
 
     //初期位置をセット
     this->startPosition = startPosition;
@@ -42,13 +77,12 @@ void BulletController::SetParam(const SeedCore::Vector3& startPosition,const See
     //進行方向をセット
     this->moveDirection = moveDirection;
     //回転方向をセット
-    turnDirection.Normalize();
+    turnAxis.Normalize();
  
     //チャージ率からサイズ、スピード、生存時間を計算
     size = SeedCore::Lerp(minSize, maxSize, chargeRate);//チャージされているほど大きい
     speed = SeedCore::Lerp(maxSpeed, minSpeed, chargeRate);//チャージされているほど遅い
     aliveTime = SeedCore::Lerp(minAliveTime, maxAliveTime, chargeRate);//チャージされているほど生存時間が長い
-    turnSpeed = SeedCore::Lerp(minTurnSpeed, maxTurnSpeed, chargeRate);//チャージされているほどほど速い
 
     //スケールをセット
     scale->x_ = size;
@@ -59,49 +93,18 @@ void BulletController::SetParam(const SeedCore::Vector3& startPosition,const See
     this->cost = cost;
 }
 
-void BulletController::OnCollisionEnter(SeedCore::Entity entity)
-{
-    //ヒットしたアクターの取得
-    SeedCore::Actor hitActor = GetWorld().GetActor(entity);
-
-    //止められるオブジェクトじゃなければ終了
-    if (!hitActor.HasTag("CanStop"))return;
-
-    if (hitActor.HasTag("Bullet"))
-    {
-        BulletController* hitBulletController = GetWorld().GetComponent<BulletController>(entity);
-        //自分の方が長く生きてたら終了
-        //後で撃ったやつが先撃ってたやつに対して効果を発動するため
-        if (aliveTimer > hitBulletController->GetAliveTimer())return;
-
-        float stopTime = aliveTime - aliveTimer;//当たった弾の停止時間を残りの生存時間とする
-        hitBulletController->Stop();//停止
-    }
-    else
-    {
-        //ギミック停止処理
-    }
-}
-
 void BulletController::Stop()
 {
     //停止処理
     isStop = true;
 
-    //キネマティックにする
-    rigidbody->bodyType_ = SeedCore::Rigidbody::BodyType::Kinematic;
-}
+    //速度を0にする
+    velocity->x_ = 0.0f;
+    velocity->y_ = 0.0f;
+    velocity->z_ = 0.0f;
 
-void BulletController::UpdateRemove(float elapsedTime)
-{
-    //移動・回転処理
-    if (isStop)return;
-
-    if ((SeedCore::Transform::Vector(*position) - startPosition).Length() >= removeDistance)
-    {
-        //一定距離飛んだら消す
-        Remove();
-    }
+    //現在位置に固定
+    rigidbody->MoveTarget(SeedCore::Transform::Vector(*position), SeedCore::Transform::Quat(*rotation), 0.01f);
 }
 
 void BulletController::UpdateAliveTime(float elapsedTime)
@@ -118,4 +121,32 @@ void BulletController::Remove()
 {
     playerController->SubCostGauge(cost);//自分が圧迫してた分のコストを戻す
     GetWorld().DestroyActor(GetActor());//削除
+}
+
+void BulletController::Move(float elapsedTime)
+{
+    //移動・回転処理
+
+    //停止中なら終了
+    if (isStop || !position || !rotation || !rigidbody)
+    {
+        SC_LOG_NOTICE("止まってる");
+        return;
+    }
+
+    //moveDirectionの方向に移動
+    SeedCore::Vector3 moveTarget = SeedCore::Transform::Vector(*position) + (moveDirection * speed * elapsedTime);
+
+    //turnAxisを軸に回転
+    SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(turnAxis, turnSpeed * elapsedTime);
+    quaternion = SeedCore::Transform::Quat(*rotation) * quaternion;
+
+    //キネマティック剛体を動かす
+    rigidbody->MoveTarget(moveTarget, quaternion, elapsedTime);
+
+    if ((SeedCore::Transform::Vector(*position) - startPosition).Length() >= removeDistance)
+    {
+        //一定距離飛んだら消す
+        Remove();
+    }
 }
