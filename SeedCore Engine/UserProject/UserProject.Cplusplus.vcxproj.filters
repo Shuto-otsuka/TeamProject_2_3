@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <ItemGroup>
     <Filter Include="Reflection">
@@ -55,19 +55,7 @@
     </ClCompile>
     <ClCompile Include="DLLMain.cpp" />
     <ClCompile Include="Prelude.cpp" />
-    <ClCompile Include="Script\CameraController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\PlayerController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\BulletController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\FloorMoveSystem.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-  </ItemGroup>
+    <ClCompile Include="Script\BulletController.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\CameraController.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\FloorMoveSystem.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\PlayerController.cpp"><Filter>Script</Filter></ClCompile></ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\ScTutorial.h">
       <Filter>Tutorial</Filter>
@@ -85,6 +73,9 @@
       <Filter>Script</Filter>
     </ClInclude>
     <ClInclude Include="Script\FloorMoveSystem.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\BulletColliderController.h">
       <Filter>Script</Filter>
     </ClInclude>
   </ItemGroup>

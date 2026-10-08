@@ -235,6 +235,10 @@ void PlayerController::UpdateTurn(float elapsedTime)
         SeedCore::Vector3 targetPosition;
         Uint32 layerMask = ~(1 << GetActor().Layer());//プレイヤー自身を除くレイヤーマスク
 
+        //銃口の高さを求める
+        SeedCore::Vector3 gunOffset = { 0.0f,bulletOffsetY,0.0f };
+        SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
+
         if (GetActor().GetPhysics().Raycast(ray.origin_, ray.direction_, 10000.0f, hit,layerMask))
         {
             SeedCore::Actor hitActor = GetWorld().GetActor(hit.entityID_);//ヒットしたアクターの取得
@@ -245,8 +249,6 @@ void PlayerController::UpdateTurn(float elapsedTime)
                 SeedCore::Vector3 gunOffset = { 0.0f,bulletOffsetY,0.0f };
                 SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
                 targetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f },gunPosition.y);
-
-                SC_LOG_NOTICE("当たってる");
             }
             else
             {
@@ -258,16 +260,18 @@ void PlayerController::UpdateTurn(float elapsedTime)
         {
             //なににも当たらなかった場合
             //レイと銃口の高さの平面が交わるところをターゲットにする
-            SeedCore::Vector3 gunOffset = { 0.0f,bulletOffsetY,0.0f };
-            SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
             targetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f }, gunPosition.y);
         }
 
         //ターゲットに対してのベクトルをshotDirectionとする
-        shotDirection = targetPosition - SeedCore::Transform::Vector(*position);
+        shotDirection = targetPosition - gunPosition;
         shotDirection.Normalize();
 
-        TurnFromDirection(elapsedTime,shotDirection);
+        //撃つ方向の高さを無視して見る方向として渡す
+        SeedCore::Vector3 sD = shotDirection;
+        sD.y = 0.0f;
+        sD.Normalize();
+        TurnFromDirection(elapsedTime,sD);
     }
     else
     {

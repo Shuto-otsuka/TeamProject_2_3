@@ -161,7 +161,7 @@ namespace SeedCore
 			return;
 		}
 
-		DrawWorld(cmdList, renderTargetView, depthStencilView, viewport, heap, addresses, static_cast<Uint>(worldInstances_.size()));
+		//DrawWorld(cmdList, renderTargetView, depthStencilView, viewport, heap, addresses, static_cast<Uint>(worldInstances_.size()));
 	}
 
 	/**
@@ -184,7 +184,7 @@ namespace SeedCore
 			return;
 		}
 
-		DrawWorld(cmdList, renderTargetView, depthStencilView, viewport, heap, addresses, static_cast<Uint>(gameInstances_.size()));
+		//DrawWorld(cmdList, renderTargetView, depthStencilView, viewport, heap, addresses, static_cast<Uint>(gameInstances_.size()));
 	}
 
 	/**

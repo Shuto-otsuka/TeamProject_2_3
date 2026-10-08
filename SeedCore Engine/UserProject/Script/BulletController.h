@@ -10,11 +10,13 @@ class BulletController :public SeedCore::SeedScript
 public:
 	void OnStart();
 	void OnTick(float elapsedTime);
+	void OnTriggerEnter(SeedCore::Entity entity);
+
 	void SetParam(const SeedCore::Vector3& startPosition,const SeedCore::Vector3& moveDirection, float chargeRate,int cost);
 
-	void OnCollisionEnter(SeedCore::Entity entity);
 	void Stop();
 	void Remove();
+	void Move(float elapsedTime);
 
 	bool IsStop() const { return isStop; }
 
@@ -33,13 +35,11 @@ public:
 	SC_REFLECTION_FIELD()
 		float maxAliveTime;
 	SC_REFLECTION_FIELD()
-		float minTurnSpeed;
-	SC_REFLECTION_FIELD()
-		float maxTurnSpeed;
-	SC_REFLECTION_FIELD()
 		float removeDistance;
 	SC_REFLECTION_FIELD()
-		SeedCore::Vector3 turnDirection;
+		float turnSpeed;
+	SC_REFLECTION_FIELD()
+		SeedCore::Vector3 turnAxis;
 
 private:
 	void UpdateRemove(float elapsedTime);
@@ -50,7 +50,6 @@ private:
 
 	float size;
 	float speed;
-	float turnSpeed;
 	float aliveTime;
 	float aliveTimer = 0.0f;
 
@@ -63,6 +62,8 @@ private:
 	SeedCore::Rotation* rotation;
 	SeedCore::Rigidbody* rigidbody;
 	SeedCore::Velocity* velocity;
+
+	SeedCore::Actor player;
 
 	PlayerController* playerController;
 };
