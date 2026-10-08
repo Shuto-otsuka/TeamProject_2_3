@@ -125,6 +125,7 @@ namespace SeedCore
 		desc.gravityFactor_ = useGravity_ ? gravityScale_ : 0.0f;
 		desc.allowedDOFs_ = allowedDOFs;
 		desc.isSensor_ = isTrigger_;
+		syncedTrigger_ = isTrigger_;
 
 		/// [EN] A trigger is marked in the layer as well, so the layer filters can let it meet static and kinematic bodies.
 		/// [JP] トリガーはレイヤーにも印を付け、レイヤーフィルターがスタティック・キネマティックのボディと組ませられるようにする。
@@ -293,56 +294,21 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Hands the actor's Velocity to the body when it differs from the
-	* value last copied back, so a Velocity written by code takes effect
-	* in the next step. Called before every fixed step. On a canvas body
-	* the velocity is in pixels per second with Y down, and its Z is
-	* ignored. A Static body is not affected.
+	* Hands what code has changed since the last step (isTrigger_, and
+	* the actor's Velocity) to the body, so it takes effect in the next
+	* step. Called before every fixed step.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* Actor の Velocity が前回書き戻した値と違えばボディへ渡し、コードから
-	* 書いた Velocity が次のステップで効くようにする。固定ステップの前に
-	* 毎回呼ばれる。Canvas のボディでは速度をピクセル毎秒・Y 下向きで与え、
-	* Z は無視する。Static のボディには効かない。
+	* 前のステップからコードが変えたもの(isTrigger_ と Actor の Velocity)
+	* をボディへ渡し、次のステップで効くようにする。固定ステップの前に
+	* 毎回呼ばれる。
 	*/
-	void Rigidbody::ApplyVelocity()
+	void Rigidbody::Apply()
 	{
-		if (bodyID_.IsInvalid())
-		{
-			return;
-		}
-
-		Actor actor = GetActor();
-		Velocity* velocity = GetWorld().GetComponent<Velocity>(actor.GetEntity());
-		if (!velocity)
-		{
-			return;
-		}
-
-		/// [EN] From here on the body moves Position, so MoveSystem must not add Velocity on top.
-		/// [JP] ここからは Position をボディが動かすので、MoveSystem が Velocity を重ねて足してはならない。
-		velocity->simulated_ = true;
-
-		/// [EN] A Velocity equal to the last exchanged value was not touched by code, and the body keeps whatever velocity it has (including one from MoveTarget).
-		/// [JP] 最後にやり取りした値と同じ Velocity はコードが触っていないので、ボディは今の速度(MoveTarget によるものも含む)を保つ。
-		if (velocity->x_ == syncedVelocity_.x && velocity->y_ == syncedVelocity_.y && velocity->z_ == syncedVelocity_.z)
-		{
-			return;
-		}
-
-		syncedVelocity_ = Vector3(velocity->x_, velocity->y_, velocity->z_);
-
-		/// [EN] A canvas velocity goes from pixels per second (Y down) to meters per second (Y up) on the z = 0 plane.
-		/// [JP] Canvas の速度は、ピクセル毎秒(Y 下向き)から z = 0 平面上のメートル毎秒(Y 上向き)へ変換する。
-		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
-		{
-			actor.GetPhysics().BodyVelocity(bodyID_, Vector3(syncedVelocity_.x / pixelsPerMeter_, -syncedVelocity_.y / pixelsPerMeter_, 0.0f));
-			return;
-		}
-
-		actor.GetPhysics().BodyVelocity(bodyID_, syncedVelocity_);
+		ApplyTrigger();
+		ApplyVelocity();
 	}
 
 	/**
@@ -592,5 +558,87 @@ namespace SeedCore
 	JPH::BodyID Rigidbody::BodyID()const
 	{
 		return bodyID_;
+	}
+
+	/**
+	* [EN]
+	* Hands the actor's Velocity to the body when it differs from the
+	* value last copied back. On a canvas body the velocity is in pixels
+	* per second with Y down, and its Z is ignored. A Static body is not
+	* affected.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Actor の Velocity が前回書き戻した値と違えばボディへ渡す。Canvas の
+	* ボディでは速度をピクセル毎秒・Y 下向きで与え、Z は無視する。Static
+	* のボディには効かない。
+	*/
+	void Rigidbody::ApplyVelocity()
+	{
+		if (bodyID_.IsInvalid())
+		{
+			return;
+		}
+
+		Actor actor = GetActor();
+		Velocity* velocity = GetWorld().GetComponent<Velocity>(actor.GetEntity());
+		if (!velocity)
+		{
+			return;
+		}
+
+		/// [EN] From here on the body moves Position, so MoveSystem must not add Velocity on top.
+		/// [JP] ここからは Position をボディが動かすので、MoveSystem が Velocity を重ねて足してはならない。
+		velocity->simulated_ = true;
+
+		/// [EN] A Velocity equal to the last exchanged value was not touched by code, and the body keeps whatever velocity it has (including one from MoveTarget).
+		/// [JP] 最後にやり取りした値と同じ Velocity はコードが触っていないので、ボディは今の速度(MoveTarget によるものも含む)を保つ。
+		if (velocity->x_ == syncedVelocity_.x && velocity->y_ == syncedVelocity_.y && velocity->z_ == syncedVelocity_.z)
+		{
+			return;
+		}
+
+		syncedVelocity_ = Vector3(velocity->x_, velocity->y_, velocity->z_);
+
+		/// [EN] A canvas velocity goes from pixels per second (Y down) to meters per second (Y up) on the z = 0 plane.
+		/// [JP] Canvas の速度は、ピクセル毎秒(Y 下向き)から z = 0 平面上のメートル毎秒(Y 上向き)へ変換する。
+		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
+		{
+			actor.GetPhysics().BodyVelocity(bodyID_, Vector3(syncedVelocity_.x / pixelsPerMeter_, -syncedVelocity_.y / pixelsPerMeter_, 0.0f));
+			return;
+		}
+
+		actor.GetPhysics().BodyVelocity(bodyID_, syncedVelocity_);
+	}
+
+	/**
+	* [EN]
+	* Hands isTrigger_ to the body when it differs from the value the
+	* body has, so switching it from code or the inspector during play
+	* takes effect.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* isTrigger_ がボディの今の設定と違えばボディへ渡し、プレイ中にコードや
+	* インスペクタから切り替えたものが効くようにする。
+	*/
+	void Rigidbody::ApplyTrigger()
+	{
+		if (bodyID_.IsInvalid())
+		{
+			return;
+		}
+
+		/// [EN] An unchanged isTrigger_ leaves the body as it is.
+		/// [JP] isTrigger_ が変わっていなければ、ボディはそのまま。
+		if (isTrigger_ == syncedTrigger_)
+		{
+			return;
+		}
+
+		syncedTrigger_ = isTrigger_;
+		GetActor().GetPhysics().BodyTrigger(bodyID_, syncedTrigger_);
 	}
 }

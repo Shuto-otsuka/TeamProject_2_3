@@ -409,17 +409,28 @@ namespace SeedCore
 		}
 
 		postProcessRenderer_->BeginDebugOverlay(cmdList, RaytracingView::Game);
-		postProcessRenderer_->CaptureHudless(cmdList, hudlessBuffer_, RaytracingView::Game);
 
 		D3D12_CPU_DESCRIPTOR_HANDLE gameDisplayRenderTargetView = postProcessRenderer_->OutputRenderTargetViewHandle(RaytracingView::Game);
 		D3D12_VIEWPORT gameDisplayViewport = postProcessRenderer_->Viewport(RaytracingView::Game);
 
-		/// [EN] Shapes scoped to the game, depth-tested against this frame's game depth; after the hudless capture so frame generation sees the scene without them, and only with a camera, since otherwise the game depth was not drawn this frame.
-		/// [JP] Game の形を、このフレームのゲームの深度で深度テストして描く。フレーム生成がそれを含まないシーンを見るよう hudless の取得より後に描き、カメラがないとこのフレームのゲームの深度は描かれていないので、カメラがあるときだけ描く。
+		/// [EN] Shapes are depth-tested against this frame's game depth, so they are drawn only with a camera; without one the game depth was not drawn this frame.
+		/// [JP] 形はこのフレームのゲームの深度で深度テストするので、カメラがあるときだけ描く。カメラがないと、このフレームのゲームの深度は描かれていない。
 		if (hasActiveCamera)
 		{
 			debugDepthResizeBuffer_.Dispatch(cmdList, bindlessHeap_->Heap(), geometryBuffer_, nativeWidth_, nativeHeight_, addresses);
-			shapeRenderer_->DrawGame3D(cmdList, gameDisplayRenderTargetView, debugDepthResizeBuffer_.DepthStencilViewHandle(), gameDisplayViewport, bindlessHeap_->Heap(), addresses);
+
+			/// [EN] Filled shapes are part of the scene, so they are drawn before the hudless capture and frame generation sees them.
+			/// [JP] 面の形はシーンの一部なので、hudless の取得より前に描き、フレーム生成がそれを含めて見るようにする。
+			shapeRenderer_->DrawGameSolid(cmdList, gameDisplayRenderTargetView, debugDepthResizeBuffer_.DepthStencilViewHandle(), gameDisplayViewport, bindlessHeap_->Heap(), addresses);
+		}
+
+		postProcessRenderer_->CaptureHudless(cmdList, hudlessBuffer_, RaytracingView::Game);
+
+		if (hasActiveCamera)
+		{
+			/// [EN] Wireframes are a debug display, so they are drawn after the hudless capture and frame generation sees the scene without them.
+			/// [JP] ワイヤーフレームはデバッグ表示なので、hudless の取得より後に描き、フレーム生成がそれを含まないシーンを見るようにする。
+			shapeRenderer_->DrawGameWireframe(cmdList, gameDisplayRenderTargetView, debugDepthResizeBuffer_.DepthStencilViewHandle(), gameDisplayViewport, bindlessHeap_->Heap(), addresses);
 			geometryBuffer_.BeginDepth(cmdList);
 		}
 

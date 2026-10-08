@@ -117,21 +117,22 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Hands the Velocity of every active actor with a Rigidbody to its
-	* body when code has written it. Called before every fixed step.
+	* Hands what code has changed on every active actor's Rigidbody
+	* (isTrigger_, and the actor's Velocity) to its body. Called before
+	* every fixed step.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* Rigidbody を持つ有効な全 Actor について、コードから書かれた Velocity
-	* をボディへ渡す。固定ステップの前に毎回呼ばれる。
+	* 有効な全 Actor の Rigidbody について、コードが変えたもの(isTrigger_ と
+	* Actor の Velocity)をボディへ渡す。固定ステップの前に毎回呼ばれる。
 	*/
-	void PhysicsSystem::ApplyVelocity(World& world)
+	void PhysicsSystem::ApplyRigidbody(World& world)
 	{
 		for (EntityID id : world.GetComponents<Rigidbody>())
 		{
-			/// [EN] An inactive actor's body is out of the simulation, so its Velocity waits until the actor is active again.
-			/// [JP] 無効な Actor のボディはシミュレーション外なので、その Velocity は Actor が再び有効になるまで待つ。
+			/// [EN] An inactive actor's body is out of the simulation, so its changes wait until the actor is active again.
+			/// [JP] 無効な Actor のボディはシミュレーション外なので、その変更は Actor が再び有効になるまで待つ。
 			Actor actor = world.GetActor(id);
 			if (!actor || !actor.Active())
 			{
@@ -144,7 +145,7 @@ namespace SeedCore
 				continue;
 			}
 
-			rigidbody->ApplyVelocity();
+			rigidbody->Apply();
 		}
 	}
 

@@ -6,10 +6,13 @@
 #include <GraphicsEngine/Light/DirectionalLight.h>
 #include <GraphicsEngine/Light/RectangleLight.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
+#include <GraphicsEngine/Shape/Primitive/BoxShape.h>
 #include <AudioEngine/Audio/AudioSource.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
+#include <FoundationEngine/World/ECS/Component/Active.h>
 
 namespace SeedCore
 {
@@ -310,6 +313,50 @@ namespace SeedCore
 			shapes_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, center, Quaternion::Identity, Vector3(source->minDistance_, 0.0f, 0.0f), audioColor });
 			shapes_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, center, Quaternion::Identity, Vector3(source->maxDistance_, 0.0f, 0.0f), audioColor });
 		}
+
+		auto gatherPrimitiveShapes = [&]<typename T>(std::type_identity<T>, ShapeKind kind, auto dimensions)
+		{
+			Query<Read<Active>, Read<T>> query(world);
+			query.ForEach([&](EntityID entityID, const Active& active, const T& component)
+				{
+					if (!active.active_)
+					{
+						return;
+					}
+
+					Actor actor = world.GetActor(entityID);
+					if (!actor)
+					{
+						return;
+					}
+
+					Matrix worldMatrix = actor.WorldMatrix();
+					Vector3 translation, scale;
+					Quaternion rotation;
+					worldMatrix.Decompose(scale, rotation, translation);
+
+					ShapeDesc shape{};
+					shape.kind_ = kind;
+					shape.style_ = ShapeStyle::Solid;
+					shape.space_ = ShapeSpace::World;
+					shape.scope_ = ShapeScope::Game;
+					shape.position_ = translation;
+					shape.rotation_ = rotation;
+					shape.dimensions_ = dimensions(component, scale);
+					shape.color_ = component.color_;
+					shape.textureID_ = component.textureID_;
+					shape.uvScale_ = component.uvScale_;
+					shape.uvOffset_ = component.uvOffset_;
+					shapes_.push_back(shape);
+				});
+		};
+
+		/// [EN] The unit box spans -1 to 1, so the dimensions are half the scaled size.
+		/// [JP] 単位の箱は -1 から 1 なので、大きさはスケール後のサイズの半分。
+		gatherPrimitiveShapes(std::type_identity<BoxShape>{}, ShapeKind::Box, [](const BoxShape& box, const Vector3& scale)
+			{
+				return Vector3(box.size_.x * Abs(scale.x) * 0.5f, box.size_.y * Abs(scale.y) * 0.5f, box.size_.z * Abs(scale.z) * 0.5f);
+			});
 
 #ifdef _DEBUG
 		/// [EN] Physics queries recorded since the last frame, in the colors of Unity's physics debugger: green when nothing was found, red when something was. They are read and then cleared, so each query is drawn once. 3D queries are drawn in the game view as well; 2D queries stay on the canvas.
