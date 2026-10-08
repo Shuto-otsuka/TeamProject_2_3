@@ -20,15 +20,13 @@ public:
 	SC_REFLECTION_FIELD()
 	    float turnSpeed;
 	SC_REFLECTION_FIELD()
-		float minJumpPower;
-	SC_REFLECTION_FIELD()
-		float maxJumpPower;
-	SC_REFLECTION_FIELD()
-		float maxJumpInputTime;
-	SC_REFLECTION_FIELD()
 		float jumpEnableTime;
 	SC_REFLECTION_FIELD()
 		float jumpInputBufferTime;
+	SC_REFLECTION_FIELD()
+		float maxJumpInputTime = 0.2f;
+	SC_REFLECTION_FIELD()
+		float jumpGravityScaler = 2.3f;
 	SC_REFLECTION_FIELD()
 		float coyoteTime;
 	SC_REFLECTION_FIELD()
@@ -52,7 +50,7 @@ private:
 	void UpdateUsually(float elapsedTime);
 	void UpdateHorizontalAcceleration(float elapsedTime);
 	void UpdateInputJump(float elapsedTime);
-	void Jump(float jumpPower);
+	void Jump();
 	void UpdateCoyoteTime(float elapsedTime);
 	void UpdateTurn(float elapsedTime);
 	void TurnFromDirection(float elapsedTime,const SeedCore::Vector3& direction);
@@ -76,15 +74,15 @@ private:
 
 	State state = State::USUALLY;
 
-	bool jumpReady = false;
 	bool jumpInputEnable = true;
 	bool jumpInputBuffer = false;
+	bool isJumpKeyReleaseWait = false;
 	bool beforeIsGround = true;
 	bool isCoyote = false;
 	bool shotReady = false;
 
+	float defaultGravity = 0.0f;
 	float jumpInputBufferTimer = 0.0f;
-	float inputBufferJumpPower = 0.0f;
 	float jumpInputEnableTimer = 0.0f;
 	float jumpInputTimer = 0.0f;
 	float coyoteTimer = 0.0f;
@@ -100,5 +98,6 @@ private:
 	SeedCore::Rotation* rotation = nullptr;
 	SeedCore::Scale* scale = nullptr;
 	SeedCore::CharacterController* myCharacterController = nullptr;
+	SeedCore::Velocity* velocity = nullptr;
 };
 REGISTER_COMPONENT(PlayerController);

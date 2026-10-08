@@ -88,11 +88,10 @@ namespace SeedCore
 					outInfo.push_back({ String("acceleration"), offsetof(PlayerController, acceleration), AttributeType::Float });
 					outInfo.push_back({ String("airAcceleration"), offsetof(PlayerController, airAcceleration), AttributeType::Float });
 					outInfo.push_back({ String("turnSpeed"), offsetof(PlayerController, turnSpeed), AttributeType::Float });
-					outInfo.push_back({ String("minJumpPower"), offsetof(PlayerController, minJumpPower), AttributeType::Float });
-					outInfo.push_back({ String("maxJumpPower"), offsetof(PlayerController, maxJumpPower), AttributeType::Float });
-					outInfo.push_back({ String("maxJumpInputTime"), offsetof(PlayerController, maxJumpInputTime), AttributeType::Float });
 					outInfo.push_back({ String("jumpEnableTime"), offsetof(PlayerController, jumpEnableTime), AttributeType::Float });
 					outInfo.push_back({ String("jumpInputBufferTime"), offsetof(PlayerController, jumpInputBufferTime), AttributeType::Float });
+					outInfo.push_back({ String("maxJumpInputTime"), offsetof(PlayerController, maxJumpInputTime), AttributeType::Float });
+					outInfo.push_back({ String("jumpGravityScaler"), offsetof(PlayerController, jumpGravityScaler), AttributeType::Float });
 					outInfo.push_back({ String("coyoteTime"), offsetof(PlayerController, coyoteTime), AttributeType::Float });
 					outInfo.push_back({ String("maxShotChargeTime"), offsetof(PlayerController, maxShotChargeTime), AttributeType::Float });
 					outInfo.push_back({ String("bulletOffsetY"), offsetof(PlayerController, bulletOffsetY), AttributeType::Float });

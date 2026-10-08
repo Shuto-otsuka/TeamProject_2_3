@@ -98,13 +98,8 @@ void BulletController::Stop()
     //停止処理
     isStop = true;
 
-    //速度を0にする
-    velocity->x_ = 0.0f;
-    velocity->y_ = 0.0f;
-    velocity->z_ = 0.0f;
-
-    //現在位置に固定
-    rigidbody->MoveTarget(SeedCore::Transform::Vector(*position), SeedCore::Transform::Quat(*rotation), 0.01f);
+    //衝突判定ON
+    rigidbody->isTrigger_ = false;
 }
 
 void BulletController::UpdateAliveTime(float elapsedTime)
@@ -130,6 +125,11 @@ void BulletController::Move(float elapsedTime)
     //停止中なら終了
     if (isStop || !position || !rotation || !rigidbody)
     {
+        //速度を0にする
+        velocity->x_ = 0.0f;
+        velocity->y_ = 0.0f;
+        velocity->z_ = 0.0f;
+
         SC_LOG_NOTICE("止まってる");
         return;
     }
@@ -142,7 +142,7 @@ void BulletController::Move(float elapsedTime)
     quaternion = SeedCore::Transform::Quat(*rotation) * quaternion;
 
     //キネマティック剛体を動かす
-    rigidbody->MoveTarget(moveTarget, quaternion, elapsedTime);
+    rigidbody->MoveTarget(moveTarget, quaternion, 0.02f);
 
     if ((SeedCore::Transform::Vector(*position) - startPosition).Length() >= removeDistance)
     {

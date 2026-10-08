@@ -19,7 +19,10 @@ void PlayerController::OnStart()
     position = world.GetComponent<SeedCore::Position>(entity);
     rotation = world.GetComponent<SeedCore::Rotation>(entity);
     scale = world.GetComponent<SeedCore::Scale>(entity);
+    velocity = world.GetComponent<SeedCore::Velocity>(entity);
     myCharacterController = world.GetComponent<SeedCore::CharacterController>(entity);
+
+    defaultGravity = myCharacterController->gravityScale_;
 }
 
 void PlayerController::OnTick(float elapsedTime)
@@ -106,17 +109,45 @@ void PlayerController::UpdateHorizontalAcceleration(float elapsedTime)
 
 void PlayerController::UpdateInputJump(float elapsedTime)
 {
+    if (isJumpKeyReleaseWait)
+    {
+        //上昇中
+
+        jumpInputTimer += elapsedTime;
+        if (jumpInputTimer <= maxJumpInputTime)
+        {
+            //この時間中にジャンプキーを離すと重力が大きくなる
+            //これによってジャンプキーを押している時間が長いほどジャンプ力が高くなる
+            if (!SeedCore::Input::ActionState("Jump", SeedCore::Input::IsPressed))
+            {
+                myCharacterController->gravityScale_ = defaultGravity * jumpGravityScaler;
+                isJumpKeyReleaseWait = false;//離し待ち終了
+            }
+        }
+        else
+        {
+            //時間経過で離し待ち終了
+            isJumpKeyReleaseWait = false;
+        }
+    }
+
+    //着地時に大きくした重力を元に戻す
+    if (myCharacterController->OnGround())
+        myCharacterController->gravityScale_ = defaultGravity;
+
     //ジャンプ先行入力処理
     if (jumpInputBuffer)
     {
         if (OnGroundOrCoyote())
         {
             //先行入力期間中に地面に着いたらその瞬間にジャンプ
-            myCharacterController->jumpPower_ = inputBufferJumpPower;//先行入力時の押された時間を基にジャンプ力をセット
-            myCharacterController->Jump();
+            Jump();
+            isJumpKeyReleaseWait = true;//ジャンプキー離し入力待ち
+            jumpInputTimer = 0.0f;
             jumpInputEnable = false;//ジャンプ不可時間開始
             jumpInputEnableTimer = 0.0f;
-            jumpReady = false;
+            //同時にジャンプを呼ぶのを防ぐため終了
+            return;
         }
 
         jumpInputBufferTimer += elapsedTime;
@@ -137,60 +168,27 @@ void PlayerController::UpdateInputJump(float elapsedTime)
 
     if (SeedCore::Input::ActionState("Jump", SeedCore::Input::OnPressed))
     {
-        //ジャンプキー押された瞬間にタイマーリセット
-        jumpInputTimer = 0.0f;
-        jumpReady = true;
-    }
-    else if (SeedCore::Input::ActionState("Jump", SeedCore::Input::IsPressed) && jumpReady)
-    {
-        //ジャンプキー押してる最中にタイマー経過
-        jumpInputTimer += elapsedTime;
-        if (jumpInputTimer >= maxJumpInputTime)
-        {
-            //タイマーが最大を超えたら最大ジャンプ力でジャンプ
-            if (OnGroundOrCoyote())//長押しし続けてる場合は空中で先行入力はしない
-            {
-                Jump(maxJumpPower);
-                jumpInputEnable = false;//ジャンプ不可時間開始
-                jumpInputEnableTimer = 0.0f;
-                jumpReady = false;
-            }
-            else
-            {
-                jumpReady = false;
-            }
-        }
-    }
-    else if (SeedCore::Input::ActionState("Jump", SeedCore::Input::OnReleased) && jumpReady)
-    {
-        //ジャンプキーが離されたらジャンプ
-        // 
-        //最小ジャンプ力と最大ジャンプ力、ジャンプキーが押されていた時間からジャンプ力を計算
-        //ジャンプキーが押されていた時間が長いほどジャンプ力を高くする
-        float jumpPower = SeedCore::Lerp(minJumpPower, maxJumpPower, (jumpInputTimer / maxJumpInputTime));
         if (OnGroundOrCoyote())
         {
-            //地面についていれば通常ジャンプ処理
-            Jump(jumpPower);
+            //地面に着いてる、もしくはコヨーテタイムならジャンプ
+            Jump();
+            isJumpKeyReleaseWait = true;//ジャンプキー離し入力待ち
+            jumpInputTimer = 0.0f;
             jumpInputEnable = false;//ジャンプ不可時間開始
             jumpInputEnableTimer = 0.0f;
-            jumpReady = false;
         }
         else
         {
-            //地面についていなければ先行入力として保存
+            //地面に着いていなければ先行入力として保存
             jumpInputBuffer = true;
-            inputBufferJumpPower = jumpPower;
             jumpInputBufferTimer = 0.0f;
-            jumpReady = false;
         }
     }
 }
 
-void PlayerController::Jump(float jumpPower)
+void PlayerController::Jump()
 {
     //ジャンプ
-    myCharacterController->jumpPower_ = jumpPower;//ジャンプ力をキャラクターコントローラーにセット
     myCharacterController->Jump();
 }
 
