@@ -3,11 +3,13 @@
 #include <UserProject/Script/BulletController.h>
 #include <UserProject/Script/CameraController.h>
 #include <UserProject/Script/FloorMoveSystem.h>
+#include <UserProject/Script/PendulumController.h>
 #include <UserProject/Script/PlayerController.h>
 
 extern "C" int _force_reflection_BulletController = 0;
 extern "C" int _force_reflection_CameraController = 0;
 extern "C" int _force_reflection_FloorMoveSystem = 0;
+extern "C" int _force_reflection_PendulumController = 0;
 extern "C" int _force_reflection_PlayerController = 0;
 
 namespace SeedCore
@@ -102,6 +104,19 @@ namespace SeedCore
 		};
 		static Register_FloorMoveSystem global_FloorMoveSystem_register;
 
+		// ---- UserProject/Script/PendulumController.h ----
+		struct Register_PendulumController
+		{
+			Register_PendulumController()
+			{
+				ReflectionRegistry::Register(String("PendulumController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					PendulumController& obj = *static_cast<PendulumController*>(ptr);
+					outInfo.push_back({ String("rotateSpeed"), offsetof(PendulumController, rotateSpeed), AttributeType::Float });
+				});
+			}
+		};
+		static Register_PendulumController global_PendulumController_register;
+
 		// ---- UserProject/Script/PlayerController.h ----
 		struct Register_PlayerController
 		{
@@ -112,11 +127,10 @@ namespace SeedCore
 					outInfo.push_back({ String("acceleration"), offsetof(PlayerController, acceleration), AttributeType::Float });
 					outInfo.push_back({ String("airAcceleration"), offsetof(PlayerController, airAcceleration), AttributeType::Float });
 					outInfo.push_back({ String("turnSpeed"), offsetof(PlayerController, turnSpeed), AttributeType::Float });
-					outInfo.push_back({ String("minJumpPower"), offsetof(PlayerController, minJumpPower), AttributeType::Float });
-					outInfo.push_back({ String("maxJumpPower"), offsetof(PlayerController, maxJumpPower), AttributeType::Float });
-					outInfo.push_back({ String("maxJumpInputTime"), offsetof(PlayerController, maxJumpInputTime), AttributeType::Float });
 					outInfo.push_back({ String("jumpEnableTime"), offsetof(PlayerController, jumpEnableTime), AttributeType::Float });
 					outInfo.push_back({ String("jumpInputBufferTime"), offsetof(PlayerController, jumpInputBufferTime), AttributeType::Float });
+					outInfo.push_back({ String("maxJumpInputTime"), offsetof(PlayerController, maxJumpInputTime), AttributeType::Float });
+					outInfo.push_back({ String("jumpGravityScaler"), offsetof(PlayerController, jumpGravityScaler), AttributeType::Float });
 					outInfo.push_back({ String("coyoteTime"), offsetof(PlayerController, coyoteTime), AttributeType::Float });
 					outInfo.push_back({ String("maxShotChargeTime"), offsetof(PlayerController, maxShotChargeTime), AttributeType::Float });
 					outInfo.push_back({ String("bulletOffsetY"), offsetof(PlayerController, bulletOffsetY), AttributeType::Float });

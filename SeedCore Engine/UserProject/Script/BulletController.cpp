@@ -1,5 +1,6 @@
 #include "UserProject/Script/BulletController.h"
 #include"UserProject/Script/PlayerController.h"
+#include"UserProject/Script/StopController.h"
 #include<SeedCore/ScLog.h>
 
 void BulletController::OnStart()
@@ -21,6 +22,9 @@ void BulletController::OnTick(float elapsedTime)
 
 void BulletController::OnTriggerEnter(SeedCore::Entity entity)
 {
+    //通常時じゃなければ終了
+    if (state != State::NORMAL)return;
+
     //ヒットしたアクターの取得
     SeedCore::Actor hitActor = GetWorld().GetActor(entity);
     SeedCore::Name* hitActorName = GetWorld().GetComponent<SeedCore::Name>(entity);
@@ -31,8 +35,8 @@ void BulletController::OnTriggerEnter(SeedCore::Entity entity)
     //止められるオブジェクトじゃなければ消して終了
     if (!hitActor.HasTag("CanStop"))
     {
-        Remove();
         SC_LOG_NOTICE("止められないやつに当たった");
+        Remove();
         return;
     }
 
@@ -42,17 +46,59 @@ void BulletController::OnTriggerEnter(SeedCore::Entity entity)
         SC_LOG_NOTICE("弾に当たった");
 
         BulletController* hitBulletController = GetWorld().GetComponent<BulletController>(entity);
-        //自分の方が長く生きてたら終了
-        //後で撃ったやつが先撃ってたやつに対して効果を発動するため
-        if (aliveTimer > hitBulletController->GetAliveTimer())return;
+        //相手の弾のステートによって処理を変える
+        switch (hitBulletController->GetState())
+        {
+        case State::NORMAL:
+        {
+            //自分の方が長く生きてたら終了
+            //後で撃ったやつが先撃ってたやつに対して効果を発動するため
+            if (aliveTimer > hitBulletController->GetAliveTimer())return;
 
-        hitBulletController->Stop();//停止
-        Remove();//自分は削除
+            hitBulletController->Stop();//停止
+            Remove();//自分は削除
+            break;
+        }
+        case State::STOP:
+        {
+            //既に停止中の弾に当たったら消すだけ
+            Remove();
+            break;
+        }
+        case State::STICK:
+        {
+            //当たった弾が止めている相手のギミックを止める
+            float stopTime = aliveTime - aliveTimer;
+            hitBulletController->GetNowStick()->Stop(stopTime);
+            //自分は動きを止めてギミックにくっついたという判定にする
+            state = State::STICK;
+            //止めている相手を保存
+            nowStick = hitBulletController->GetNowStick();
+            break; 
+                
+        }
+        default:
+            break;
+        }
+
+       
     }
     else
     {
         //ギミック停止処理
         SC_LOG_NOTICE("ギミックにあたった");
+
+        //停止を制御するコンポネント
+        StopController* stopController = GetWorld().GetComponent<StopController>(entity);
+        //止める時間を残りの生存時間にする
+        float stopTime = aliveTime - aliveTimer;
+        //止める
+        stopController->Stop(stopTime);
+
+        //自分は動きを止めてギミックにくっついたという判定にする
+        state = State::STICK;
+        //止めている相手を保存
+        nowStick = stopController;
     }
 }
 
@@ -96,15 +142,10 @@ void BulletController::SetParam(const SeedCore::Vector3& startPosition,const See
 void BulletController::Stop()
 {
     //停止処理
-    isStop = true;
+    state = State::STOP;
 
-    //速度を0にする
-    velocity->x_ = 0.0f;
-    velocity->y_ = 0.0f;
-    velocity->z_ = 0.0f;
-
-    //現在位置に固定
-    rigidbody->MoveTarget(SeedCore::Transform::Vector(*position), SeedCore::Transform::Quat(*rotation), 0.01f);
+    //衝突判定ON
+    rigidbody->isTrigger_ = false;
 }
 
 void BulletController::UpdateAliveTime(float elapsedTime)
@@ -128,9 +169,12 @@ void BulletController::Move(float elapsedTime)
     //移動・回転処理
 
     //停止中なら終了
-    if (isStop || !position || !rotation || !rigidbody)
+    if (state != State::NORMAL || !position || !rotation || !rigidbody)
     {
-        SC_LOG_NOTICE("止まってる");
+        //速度を0にする
+        velocity->x_ = 0.0f;
+        velocity->y_ = 0.0f;
+        velocity->z_ = 0.0f;
         return;
     }
 
@@ -142,7 +186,7 @@ void BulletController::Move(float elapsedTime)
     quaternion = SeedCore::Transform::Quat(*rotation) * quaternion;
 
     //キネマティック剛体を動かす
-    rigidbody->MoveTarget(moveTarget, quaternion, elapsedTime);
+    rigidbody->MoveTarget(moveTarget, quaternion, 0.02f);
 
     if ((SeedCore::Transform::Vector(*position) - startPosition).Length() >= removeDistance)
     {
