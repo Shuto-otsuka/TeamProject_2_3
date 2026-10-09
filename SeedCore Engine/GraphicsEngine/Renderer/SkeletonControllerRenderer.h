@@ -8,7 +8,7 @@
 #include <GraphicsEngine/Model/ModelShader.h>
 #include <GraphicsEngine/Model/Culling/ModelCullingBuffer.h>
 #include <GraphicsEngine/Model/ModelRecord.h>
-#include <GraphicsEngine/Shape/Primitive/PrimitiveWireframeShader.h>
+#include <GraphicsEngine/Shape/Primitive/Wireframe/PrimitiveWireframeShader.h>
 #include <GraphicsEngine/System/SceneSystem.h>
 #include <GraphicsEngine/System/IndicesSystem.h>
 

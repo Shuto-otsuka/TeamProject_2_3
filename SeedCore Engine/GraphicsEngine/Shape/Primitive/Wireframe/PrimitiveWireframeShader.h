@@ -38,7 +38,7 @@ namespace SeedCore
 		Float headLength_ = 0.0f;
 		Float lineWidth_ = 0.0f;
 	};
-	SC_STATIC_ASSERT(PrimitiveWireframeStructuredBuffer, 68, "Shape/Primitive/PrimitiveWireframe.hlsli");
+	SC_STATIC_ASSERT(PrimitiveWireframeStructuredBuffer, 68, "Shape/Primitive/Wireframe/PrimitiveWireframe.hlsli");
 
 	/**
 	* [EN]

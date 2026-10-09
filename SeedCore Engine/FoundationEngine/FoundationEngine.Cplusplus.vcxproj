@@ -36,6 +36,7 @@
     </ClCompile>
     <ClCompile Include="Interop\ImGuiInstance.cpp" />
     <ClCompile Include="Interop\QueryInstance.cpp" />
+    <ClCompile Include="Interop\RenderInstance.cpp" />
     <ClCompile Include="JobSystem\FlowBuilder.cpp">
     </ClCompile>
     <ClCompile Include="JobSystem\JobExecutor.cpp">
@@ -122,6 +123,7 @@
     <ClInclude Include="Interop\ImGuiInstance.h" />
     <ClInclude Include="Interop\QueryInstance.h" />
     <ClInclude Include="Interop\ShapeInstance.h" />
+    <ClInclude Include="Interop\RenderInstance.h" />
     <ClInclude Include="Log\AftermathCrashTracker.h" />
     <ClInclude Include="Log\Error.h" />
     <ClInclude Include="Log\LogSystem.h" />
@@ -221,7 +223,8 @@
     <ClInclude Include="World\ECS\Component\ComponentConcept.h" />
     <ClInclude Include="World\ECS\Component\ComponentRegistry.h" />
     <ClInclude Include="World\ECS\Component\Destroyable.h" />
-    <ClInclude Include="World\ECS\Component\FixedTick.h" />
+    <ClInclude Include="World\ECS\Component\Editable.h" />
+    <ClInclude Include="World\ECS\Component\FixedTickable.h" />
     <ClInclude Include="World\ECS\Component\InspectorDrawable.h" />
     <ClInclude Include="World\ECS\Component\LateTickable.h" />
     <ClInclude Include="World\ECS\Component\Lifetime.h" />

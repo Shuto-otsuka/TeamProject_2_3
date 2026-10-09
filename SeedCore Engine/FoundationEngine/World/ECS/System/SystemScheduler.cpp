@@ -21,8 +21,10 @@ namespace SeedCore
 	* conflict - flushes the recorded structural changes, runs the
 	* built-in TransformSystem (all before Tick/LateTick so this frame's
 	* motion and any newly spawned actor's position are in this frame's
-	* world matrix), then drives Tick/LateTick (if isPlaying). Inactive
-	* actors receive none of Awake/Start/Tick/LateTick.
+	* world matrix), then drives Tick/LateTick (if isPlaying) or
+	* EditorTick (if not). The systems, Tick and LateTick advance by
+	* gameElapsedTime; EditorTick advances by worldElapsedTime. Inactive
+	* actors receive none of Awake/Start/Tick/LateTick/EditorTick.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -34,10 +36,12 @@ namespace SeedCore
 	* 記録された構造変更を flush し、組み込みの TransformSystem を実行し
 	* （すべて Tick/LateTick より前 — 今フレームの移動や新しく生成された
 	* actor の位置が同じフレームのワールド行列に入るように）、
-	* （isPlaying であれば）Tick/LateTick を駆動する。非アクティブな
-	* actor には Awake/Start/Tick/LateTick のどれも送らない。
+	* （isPlaying であれば）Tick/LateTick を、そうでなければ EditorTick を
+	* 駆動する。システムと Tick/LateTick は gameElapsedTime で、EditorTick は
+	* worldElapsedTime で進める。非アクティブな actor には
+	* Awake/Start/Tick/LateTick/EditorTick のどれも送らない。
 	*/
-	void SystemScheduler::Run(World& world, ResourceCache& cache, JobExecutor& executor, Float elapsedTime, Bool isPlaying)
+	void SystemScheduler::Run(World& world, ResourceCache& cache, JobExecutor& executor, Float worldElapsedTime, Float gameElapsedTime, Bool isPlaying)
 	{
 		if (isPlaying)
 		{
@@ -138,17 +142,17 @@ namespace SeedCore
 			systemGraph_.Add(
 				Query<Read<Velocity>, Write<Position>>::GetReadSignature(),
 				Query<Read<Velocity>, Write<Position>>::GetWriteSignature(),
-				[this, &world, elapsedTime]()
+				[this, &world, gameElapsedTime]()
 				{
-					moveSystem_.Execute(world, elapsedTime);
+					moveSystem_.Execute(world, gameElapsedTime);
 				});
 			systemGraph_.Add(
 				Query<Read<Spawner>, Read<Lifetime>>::GetReadSignature(),
 				Query<Read<Spawner>, Read<Lifetime>>::GetWriteSignature(),
-				[this, &world, elapsedTime]()
+				[this, &world, gameElapsedTime]()
 				{
-					spawnerSystem_.Execute(commandBuffer_, world, elapsedTime);
-					lifetimeSystem_.Execute(commandBuffer_, world, elapsedTime);
+					spawnerSystem_.Execute(commandBuffer_, world, gameElapsedTime);
+					lifetimeSystem_.Execute(commandBuffer_, world, gameElapsedTime);
 				});
 			systemGraph_.Run(executor);
 		}
@@ -187,7 +191,7 @@ namespace SeedCore
 					ComponentBehaviour* component = static_cast<ComponentBehaviour*>(data);
 					if (component->tick_)
 					{
-						component->tick_(component, elapsedTime);
+						component->tick_(component, gameElapsedTime);
 					}
 
 					if (!world.GetActor(entityID))
@@ -221,7 +225,45 @@ namespace SeedCore
 					ComponentBehaviour* component = static_cast<ComponentBehaviour*>(data);
 					if (component->lateTick_)
 					{
-						component->lateTick_(component, elapsedTime);
+						component->lateTick_(component, gameElapsedTime);
+					}
+
+					if (!world.GetActor(entityID))
+					{
+						break;
+					}
+				}
+			}
+		}
+		else
+		{
+			/// [EN] While not playing, EditorTick takes Tick's place and walks the actors the same way, passing the world's elapsed time, since the game's stays 0 while not playing.
+			/// [JP] プレイしていない間は Tick の代わりに EditorTick を、同じ方法で actor を回して送る。ゲームの経過時間は 0 のままなので、ワールドの経過時間を渡す。
+			DynamicArray<Actor> editorTickActors = world.GetActors();
+			for (const Actor& listedActor : editorTickActors)
+			{
+				Actor actor = world.GetActor(listedActor.GetEntity());
+				if (!actor || !actor.Active())
+				{
+					continue;
+				}
+
+				Entity entity = actor.GetEntity();
+				EntityID entityID = entity.GetID();
+
+				for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
+				{
+					ComponentID id = actor.ComponentIDList()[componentIndex];
+					void* data = world.GetComponent(entityID, id);
+					if (!data)
+					{
+						continue;
+					}
+
+					ComponentBehaviour* component = static_cast<ComponentBehaviour*>(data);
+					if (component->editorTick_)
+					{
+						component->editorTick_(component, worldElapsedTime);
 					}
 
 					if (!world.GetActor(entityID))

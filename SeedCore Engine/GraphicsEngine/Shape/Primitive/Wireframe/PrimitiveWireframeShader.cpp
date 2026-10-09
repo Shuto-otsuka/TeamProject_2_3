@@ -1,4 +1,4 @@
-#include <GraphicsEngine/Shape/Primitive/PrimitiveWireframeShader.h>
+#include <GraphicsEngine/Shape/Primitive/Wireframe/PrimitiveWireframeShader.h>
 #include <GraphicsEngine/Shader/ShaderCache.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Check.h>
 #include <GraphicsEngine/D3D12/PipelineState/VertexShader.h>
@@ -32,7 +32,7 @@ namespace SeedCore
 	void PrimitiveWireframeShader::Create(ShaderCache& shaderCache, ID3D12Device* device)
 	{
 		rootSignatureHandle_ = rootSignature_.GetOrCreate(device);
-		pixelShader_ = shaderCache.GetOrCreatePixelShader(String("../GraphicsEngine/Shape/Primitive/PrimitiveWireframePS.hlsl"));
+		pixelShader_ = shaderCache.GetOrCreatePixelShader(String("../GraphicsEngine/Shape/Primitive/Wireframe/PrimitiveWireframePS.hlsl"));
 
 		PipelineStateKey psoKey{};
 		memset(&psoKey, 0, sizeof(psoKey));
@@ -42,13 +42,13 @@ namespace SeedCore
 		/// [JP] 各線は GPU 上で四角形に展開する。D12_2 ではメッシュシェーダ、それ未満では頂点シェーダが行う。
 		if (D3D12Check::GetLevel() == D3D12Level::D12_2)
 		{
-			meshShader_ = shaderCache.GetOrCreateMeshShader(String("../GraphicsEngine/Shape/Primitive/PrimitiveWireframeMS.hlsl"));
+			meshShader_ = shaderCache.GetOrCreateMeshShader(String("../GraphicsEngine/Shape/Primitive/Wireframe/PrimitiveWireframeMS.hlsl"));
 			psoKey.meshShader_ = shaderCache.GetMeshShader(meshShader_)->Bytecode();
 			psoKey.primitiveTopologyType_ = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
 		}
 		else
 		{
-			vertexShader_ = shaderCache.GetOrCreateVertexShader(String("../GraphicsEngine/Shape/Primitive/PrimitiveWireframeVS.hlsl"));
+			vertexShader_ = shaderCache.GetOrCreateVertexShader(String("../GraphicsEngine/Shape/Primitive/Wireframe/PrimitiveWireframeVS.hlsl"));
 			psoKey.vertexShader_ = shaderCache.GetVertexShader(vertexShader_)->Bytecode();
 			psoKey.primitiveTopologyType_ = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 		}

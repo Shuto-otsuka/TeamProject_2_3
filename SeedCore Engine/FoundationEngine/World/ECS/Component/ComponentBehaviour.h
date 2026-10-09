@@ -3,12 +3,13 @@
 #include <FoundationEngine/World/ECS/Component/Awakeable.h>
 #include <FoundationEngine/World/ECS/Component/Startable.h>
 #include <FoundationEngine/World/ECS/Component/Tickable.h>
-#include <FoundationEngine/World/ECS/Component/FixedTick.h>
+#include <FoundationEngine/World/ECS/Component/FixedTickable.h>
 #include <FoundationEngine/World/ECS/Component/LateTickable.h>
 #include <FoundationEngine/World/ECS/Component/Destroyable.h>
 #include <FoundationEngine/World/ECS/Component/InspectorDrawable.h>
 #include <FoundationEngine/World/ECS/Component/Collisionable.h>
 #include <FoundationEngine/World/ECS/Component/Triggerable.h>
+#include <FoundationEngine/World/ECS/Component/Editable.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 
 namespace SeedCore
@@ -247,6 +248,10 @@ namespace SeedCore
 		/// [EN] Type-erased pointer to the subclass's LateUpdate function, or nullptr if it doesn't implement one.
 		/// [JP] サブクラスの LateUpdate 関数への型消去されたポインタ。実装していなければ nullptr。
 		void (*lateTick_)(ComponentBehaviour*, Float) = nullptr;
+
+		/// [EN] Type-erased pointer to the subclass's EditorUpdate function, or nullptr if it doesn't implement one.
+		/// [JP] サブクラスの EditorUpdate 関数への型消去されたポインタ。実装していなければ nullptr。
+		void (*editorTick_)(ComponentBehaviour*, Float) = nullptr;
 
 		/// [EN] Type-erased pointer to the subclass's OnDestroy function, or nullptr if it doesn't implement one.
 		/// [JP] サブクラスの OnDestroy 関数への型消去されたポインタ。実装していなければ nullptr。

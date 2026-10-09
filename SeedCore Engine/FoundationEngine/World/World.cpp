@@ -898,6 +898,85 @@ namespace SeedCore
 	}
 
 	// ============================================================
+	// Debug
+	// ============================================================
+
+	/**
+	* [EN]
+	* Creates and returns a new DebugDraw resource owned by this world.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* このワールドが所有する新しい DebugDraw リソースを生成して返す。
+	*/
+	DebugDraw* World::CreateDebugDraw()
+	{
+		if (!debugDraw_)
+		{
+			debugDraw_ = MakePtr<DebugDraw>(renderInstance_);
+		}
+
+		return debugDraw_.get();
+	}
+
+	/**
+	* [EN]
+	* Returns a mutable reference to this world's DebugDraw resource.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* このワールドの DebugDraw リソースへの変更可能な参照を返す。
+	*/
+	ResourcePtr<DebugDraw>& World::GetDebugDraw()
+	{
+		return debugDraw_;
+	}
+
+	/**
+	* [EN]
+	* Const overload of GetDebugDraw().
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* GetDebugDraw() の const オーバーロード。
+	*/
+	const ResourcePtr<DebugDraw>& World::GetDebugDraw()const
+	{
+		return debugDraw_;
+	}
+
+	/**
+	* [EN]
+	* Returns the record of debug shapes requested in this world, which DebugDraw fills and the debug display reads and clears.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* このワールドで頼まれたデバッグ用の形の記録を返す。DebugDraw が書き込み、デバッグ表示が読んで空にする。
+	*/
+	RenderInstance& World::GetRenderInstance()
+	{
+		return renderInstance_;
+	}
+
+	/**
+	* [EN]
+	* Const overload of GetRenderInstance().
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* GetRenderInstance() の const オーバーロード。
+	*/
+	const RenderInstance& World::GetRenderInstance()const
+	{
+		return renderInstance_;
+	}
+
+	// ============================================================
 	// Physics
 	// ============================================================
 

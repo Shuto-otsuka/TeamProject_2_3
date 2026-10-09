@@ -1,5 +1,5 @@
 #include "PrimitiveWireframe.hlsli"
-#include "../../Shader/ShaderResources.hlsli"
+#include "../../../Shader/ShaderResources.hlsli"
 
 /// [EN] Six vertices per line draw its quad as two triangles; this maps each vertex to a quad corner (0/1 at the a end, 2/3 at the b end).
 /// [JP] 1本の線につき頂点6つで、四角形を三角形2つとして描く。各頂点を四角形の隅(a 端が 0/1、b 端が 2/3)へ対応させる。

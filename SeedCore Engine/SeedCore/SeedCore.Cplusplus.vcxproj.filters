@@ -15,5 +15,6 @@
     <ClInclude Include="ScPhysics.h" />
     <ClInclude Include="ScScreen.h" />
     <ClInclude Include="ScScript.h" />
+    <ClInclude Include="ScDebug.h" />
   </ItemGroup>
 </Project>

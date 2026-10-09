@@ -10,6 +10,25 @@ namespace SeedCore
 		std::string errorMessage;
 	};
 
+	class ShaderIncludeHandler :public IDxcIncludeHandler
+	{
+	public:
+		ShaderIncludeHandler(IDxcIncludeHandler* defaultHandler, DynamicArray<String>& dependencies);
+
+		HRESULT STDMETHODCALLTYPE LoadSource(LPCWSTR filename, IDxcBlob** includeSource)override;
+
+		HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** object)override;
+
+		ULONG STDMETHODCALLTYPE AddRef()override;
+
+		ULONG STDMETHODCALLTYPE Release()override;
+
+	private:
+		IDxcIncludeHandler* defaultHeader_;
+
+		DynamicArray<String>& dependencies_;
+	};
+
 	class ShaderCompiler
 	{
 	public:
@@ -33,6 +52,5 @@ namespace SeedCore
 
 	private:
 		static ShaderCompileResult CompileInternal(String filePath, String entryPoint, String targetProfile);
-
 	};
 }

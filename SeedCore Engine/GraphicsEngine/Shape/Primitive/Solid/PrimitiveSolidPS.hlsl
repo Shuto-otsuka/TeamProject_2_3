@@ -1,6 +1,6 @@
 #include "PrimitiveSolid.hlsli"
-#include "../../Shader/ShaderResources.hlsli"
-#include "../../Shader/Sampler.hlsli"
+#include "../../../Shader/ShaderResources.hlsli"
+#include "../../../Shader/Sampler.hlsli"
 
 /**
 * [EN]

@@ -1,7 +1,7 @@
 #ifndef __PRIMITIVE_WIREFRAME_HLSL__
 #define __PRIMITIVE_WIREFRAME_HLSL__
 
-#include "Primitive.hlsli"
+#include "../Primitive.hlsli"
 
 /**
 * [EN]

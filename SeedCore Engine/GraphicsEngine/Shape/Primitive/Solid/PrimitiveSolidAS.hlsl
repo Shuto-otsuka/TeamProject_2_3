@@ -1,6 +1,6 @@
 #include "PrimitiveSolid.hlsli"
-#include "../../Shader/ShaderResources.hlsli"
-#include "../../Shader/Culling.hlsli"
+#include "../../../Shader/ShaderResources.hlsli"
+#include "../../../Shader/Culling.hlsli"
 
 groupshared uint survived_count;
 groupshared PrimitiveSolidASPayload payload;

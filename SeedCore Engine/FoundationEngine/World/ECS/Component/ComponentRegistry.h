@@ -178,6 +178,10 @@ namespace SeedCore
 						{
 							ptr->lateTick_ = [](ComponentBehaviour* cb, Float dt) { static_cast<T*>(cb)->OnLateTick(dt); };
 						}
+						if constexpr (HasEditorTick<T>)
+						{
+							ptr->editorTick_ = [](ComponentBehaviour* cb, Float dt) { static_cast<T*>(cb)->OnEditorTick(dt); };
+						}
 						if constexpr (HasDestroy<T>)
 						{
 							ptr->destroy_ = [](ComponentBehaviour* cb) { static_cast<T*>(cb)->OnDestroy(); };

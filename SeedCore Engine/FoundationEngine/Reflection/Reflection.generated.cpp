@@ -3138,7 +3138,7 @@ namespace SeedCore
 					CapsuleCollider& obj = *static_cast<CapsuleCollider*>(ptr);
 					{
 						FieldInfo fi;
-						fi.name_ = String("高さ");
+						fi.name_ = String("円柱の高さ");
 						fi.offset_ = offsetof(CapsuleCollider, height_);
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.001f;

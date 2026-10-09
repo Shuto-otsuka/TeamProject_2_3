@@ -562,14 +562,14 @@ namespace SeedCore
 		Uint primitiveIndicesIndex_ = 0;
 		Vector2 primitiveSolidShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT(PrimitiveSolidShaderResourceIndices, 32, "Shape/Primitive/PrimitiveSolid.hlsli");
+	SC_STATIC_ASSERT(PrimitiveSolidShaderResourceIndices, 32, "Shape/Primitive/Solid/PrimitiveSolid.hlsli");
 
 	struct PrimitiveWireframeShaderResourceIndices
 	{
 		Uint instanceIndex_ = 0;
 		Vector3 primitiveWireframeShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT(PrimitiveWireframeShaderResourceIndices, 16, "Shape/Primitive/PrimitiveWireframe.hlsli");
+	SC_STATIC_ASSERT(PrimitiveWireframeShaderResourceIndices, 16, "Shape/Primitive/Wireframe/PrimitiveWireframe.hlsli");
 
 	struct TextureShaderResourceIndices
 	{

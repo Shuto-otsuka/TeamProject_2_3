@@ -8,6 +8,7 @@
 namespace SeedCore
 {
 	class World;
+	class DebugDraw;
 	class Physics;
 	class Audio;
 	class ResourceCache;
@@ -272,6 +273,17 @@ namespace SeedCore
 		* この actor を所有する World を返す。
 		*/
 		SEEDCORE_API World& GetWorld()const;
+
+		/**
+		* [EN]
+		* Returns this actor's DebugDraw resource, which draws debug shapes in debug builds only.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* この actor の DebugDraw リソースを返す。デバッグ用の形を描き、描かれるのは Debug ビルドだけ。
+		*/
+		SEEDCORE_API DebugDraw& GetDebugDraw()const;
 
 		/**
 		* [EN]

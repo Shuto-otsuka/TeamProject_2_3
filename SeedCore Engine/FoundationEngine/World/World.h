@@ -15,9 +15,11 @@
 #include <FoundationEngine/Utility/FlatMap.h>
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
 #include <FoundationEngine/Log/Warning.h>
+#include <FoundationEngine/Interop/RenderInstance.h>
 #include <FoundationEngine/Interop/QueryInstance.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <AudioEngine/Audio/Audio.h>
+#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
 
 namespace SeedCore
 {
@@ -804,6 +806,65 @@ namespace SeedCore
 		const ActorRecord& GetActorRecord(Entity entity)const;
 
 		// ============================================================
+		// Debug
+		// ============================================================
+
+		/**
+		* [EN]
+		* Creates and returns a new DebugDraw resource owned by this world.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このワールドが所有する新しい DebugDraw リソースを生成して返す。
+		*/
+		DebugDraw* CreateDebugDraw();
+
+		/**
+		* [EN]
+		* Returns a mutable reference to this world's DebugDraw resource.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このワールドの DebugDraw リソースへの変更可能な参照を返す。
+		*/
+		ResourcePtr<DebugDraw>& GetDebugDraw();
+
+		/**
+		* [EN]
+		* Const overload of GetDebugDraw().
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* GetDebugDraw() の const オーバーロード。
+		*/
+		const ResourcePtr<DebugDraw>& GetDebugDraw()const;
+
+		/**
+		* [EN]
+		* Returns the record of debug shapes requested in this world, which DebugDraw fills and the debug display reads and clears.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このワールドで頼まれたデバッグ用の形の記録を返す。DebugDraw が書き込み、デバッグ表示が読んで空にする。
+		*/
+		RenderInstance& GetRenderInstance();
+
+		/**
+		* [EN]
+		* Const overload of GetRenderInstance().
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* GetRenderInstance() の const オーバーロード。
+		*/
+		const RenderInstance& GetRenderInstance()const;
+
+		// ============================================================
 		// Physics
 		// ============================================================
 
@@ -1191,6 +1252,18 @@ namespace SeedCore
 		/// [EN] Next persistent ID to hand out from AllocatePersistentID. 0 is reserved as "unassigned", so this starts at 1.
 		/// [JP] AllocatePersistentID が次に払い出す永続ID。0 は「未割り当て」として予約されているため、1 から始まる。
 		Uint32 nextPersistentId_ = 1;
+
+		// ============================================================
+		// Debug
+		// ============================================================
+
+		/// [EN] Record of the debug shapes requested in this world; declared before debugDraw_, which holds a reference to it.
+		/// [JP] このワールドで頼まれたデバッグ用の形の記録。これへの参照を持つ debugDraw_ より先に宣言する。
+		RenderInstance renderInstance_;
+
+		/// [EN] This world's DebugDraw resource.
+		/// [JP] このワールドの DebugDraw リソース。
+		ResourcePtr<DebugDraw> debugDraw_;
 
 		// ============================================================
 		// Physics

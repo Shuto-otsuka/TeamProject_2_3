@@ -1,8 +1,8 @@
 #ifndef __PRIMITIVE_SOLID_HLSL__
 #define __PRIMITIVE_SOLID_HLSL__
 
-#include "Primitive.hlsli"
-#include "../../Shader/Dispatch.hlsli"
+#include "../Primitive.hlsli"
+#include "../../../Shader/Dispatch.hlsli"
 
 /**
 * [EN]

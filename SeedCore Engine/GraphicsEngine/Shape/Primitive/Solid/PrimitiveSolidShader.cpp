@@ -1,4 +1,4 @@
-#include <GraphicsEngine/Shape/Primitive/PrimitiveSolidShader.h>
+#include <GraphicsEngine/Shape/Primitive/Solid/PrimitiveSolidShader.h>
 #include <GraphicsEngine/Shader/ShaderCache.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Check.h>
 #include <GraphicsEngine/D3D12/PipelineState/AmplificationShader.h>
@@ -35,7 +35,7 @@ namespace SeedCore
 	void PrimitiveSolidShader::Create(ShaderCache& shaderCache, ID3D12Device* device)
 	{
 		rootSignatureHandle_ = rootSignature_.GetOrCreate(device);
-		pixelShader_ = shaderCache.GetOrCreatePixelShader(String("../GraphicsEngine/Shape/Primitive/PrimitiveSolidPS.hlsl"));
+		pixelShader_ = shaderCache.GetOrCreatePixelShader(String("../GraphicsEngine/Shape/Primitive/Solid/PrimitiveSolidPS.hlsl"));
 
 		/// [EN] Same target as the wireframe's debug overlay: the post-tonemap 8-bit output with the resized depth, here written as well as tested so the surfaces hide each other.
 		/// [JP] ワイヤーフレームのデバッグの重ね描きと同じ描画先。トーンマップ後の 8 ビット出力と、大きさを合わせた深度。面どうしが隠し合うよう、ここでは深度をテストするだけでなく書き込む。
@@ -53,8 +53,8 @@ namespace SeedCore
 		{
 			/// [EN] Fixed-function culling stays off; the mesh shader drops the back faces of single-sided shapes itself, so double-sided ones share this pipeline.
 			/// [JP] 固定機能のカリングは使わない。片面の形の裏面はメッシュシェーダーが自分で捨てるので、両面の形も同じパイプラインで描ける。
-			amplificationShader_ = shaderCache.GetOrCreateAmplificationShader(String("../GraphicsEngine/Shape/Primitive/PrimitiveSolidAS.hlsl"));
-			meshShader_ = shaderCache.GetOrCreateMeshShader(String("../GraphicsEngine/Shape/Primitive/PrimitiveSolidMS.hlsl"));
+			amplificationShader_ = shaderCache.GetOrCreateAmplificationShader(String("../GraphicsEngine/Shape/Primitive/Solid/PrimitiveSolidAS.hlsl"));
+			meshShader_ = shaderCache.GetOrCreateMeshShader(String("../GraphicsEngine/Shape/Primitive/Solid/PrimitiveSolidMS.hlsl"));
 			psoKey.amplificationShader_ = shaderCache.GetAmplificationShader(amplificationShader_)->Bytecode();
 			psoKey.meshShader_ = shaderCache.GetMeshShader(meshShader_)->Bytecode();
 			psoKey.primitiveTopologyType_ = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
@@ -65,7 +65,7 @@ namespace SeedCore
 		{
 			/// [EN] The single-sided list culls back faces in the rasterizer; the double-sided list keeps both.
 			/// [JP] 片面用の一覧はラスタライザで裏面を捨て、両面用の一覧は両面を残す。
-			vertexShader_ = shaderCache.GetOrCreateVertexShader(String("../GraphicsEngine/Shape/Primitive/PrimitiveSolidVS.hlsl"));
+			vertexShader_ = shaderCache.GetOrCreateVertexShader(String("../GraphicsEngine/Shape/Primitive/Solid/PrimitiveSolidVS.hlsl"));
 			psoKey.vertexShader_ = shaderCache.GetVertexShader(vertexShader_)->Bytecode();
 			psoKey.primitiveTopologyType_ = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 			psoKey.rasterizerDesc_ = RasterizerState::Get(RasterizerStateType::SolidBackLHS);
@@ -73,7 +73,7 @@ namespace SeedCore
 			psoKey.rasterizerDesc_ = RasterizerState::Get(RasterizerStateType::SolidNoneLHS);
 			pipelineStateDoubleSided_ = pipelineStateObject_.GetOrCreate(device, psoKey);
 
-			computeShader_ = shaderCache.GetOrCreateComputeShader(String("../GraphicsEngine/Shape/Primitive/PrimitiveSolidCullingCS.hlsl"));
+			computeShader_ = shaderCache.GetOrCreateComputeShader(String("../GraphicsEngine/Shape/Primitive/Solid/PrimitiveSolidCullingCS.hlsl"));
 			PipelineStateKey cullingKey{};
 			memset(&cullingKey, 0, sizeof(cullingKey));
 			cullingKey.rootSignature_ = rootSignature_.Get(rootSignatureHandle_)->Get();

@@ -171,4 +171,46 @@ namespace SeedCore
 			triangles.insert(triangles.end(), { baseIndex + 2,baseIndex + 1,baseIndex,baseIndex + 3,baseIndex + 2,baseIndex });
 		}
 	}
+
+	void PrimitiveMesh::CreateSphereShape(DynamicArray<PrimitiveVertex>& vertices, DynamicArray<Uint32>& triangles)
+	{
+		Uint32 baseIndex = static_cast<Uint32>(vertices.size());
+		for (Uint32 ringIndex = 0;ringIndex < 16;++ringIndex)
+		{
+			Float theta = static_cast<Float>(ringIndex) / 16.0f * Pi<Float>::Value;
+			Float sinTheta = Sin(theta);
+			Float cosTheta = Cos(theta);
+
+			for (Uint32 segmentIndex = 0;segmentIndex < 32;++segmentIndex)
+			{
+				Float phi = static_cast<Float>(segmentIndex) / 32.0f * Pi<Float>::Two;
+
+				PrimitiveVertex vertex{};
+				vertex.position_ = Vector3(sinTheta * Cos(phi), cosTheta, sinTheta * Sin(phi));
+				vertex.normal_ = vertex.position_;
+				vertex.texcoord_ = Vector2(static_cast<Float>(segmentIndex) / 32.0f, static_cast<Float>(ringIndex) / 16.0f);
+				vertex.cap_ = 0.0f;
+				vertices.push_back(vertex);
+
+				if (ringIndex == 16 || segmentIndex == 32)
+				{
+					continue;
+				}
+
+				Uint32 a = baseIndex + ringIndex * 33 + segmentIndex;
+				Uint32 b = a + 1;
+				Uint32 c = a + 33;
+				Uint32 d = c + 1;
+
+				if (ringIndex != 15)
+				{
+					triangles.insert(triangles.end(), { a,c,d });
+				}
+				if (ringIndex != 0)
+				{
+					triangles.insert(triangles.end(), { a,d,b });
+				}
+			}
+		}
+	}
 }

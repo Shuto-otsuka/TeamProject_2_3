@@ -20,6 +20,8 @@ namespace SeedCore
 
         internal Action<Single> fixedTick_;
 
+        internal Action<Single> editorTick_;
+
         internal Action destroy_;
 
         internal Action inspectorGUI_;
@@ -54,6 +56,9 @@ namespace SeedCore
                     break;
                 case ScriptHook.FixedTick:
                     fixedTick_?.Invoke(elapsedTime);
+                    break;
+                case ScriptHook.EditorTick:
+                    editorTick_?.Invoke(elapsedTime);
                     break;
                 case ScriptHook.Destroy:
                     destroy_?.Invoke();
