@@ -47,15 +47,7 @@ bool IsVisibleInFrustum(float3 pos, float radius, row_major float4x4 vp)
 // conservatively kept.
 bool IsBackFace(float4 c0, float4 c1, float4 c2)
 {
-	if (c0.w <= 0.0 || c1.w <= 0.0 || c2.w <= 0.0)
-	{
-		return false;
-	}
-	float2 p0 = c0.xy / c0.w;
-	float2 p1 = c1.xy / c1.w;
-	float2 p2 = c2.xy / c2.w;
-	float area = (p1.x - p0.x) * (p2.y - p0.y) - (p1.y - p0.y) * (p2.x - p0.x);
-	return area <= 0.0;
+	return determinant(float3x3(c0.xyw, c1.xyw, c2.xyw)) <= 0.0;
 }
 
 // Distance-based LOD selection. Cluster lodError values are cumulative and

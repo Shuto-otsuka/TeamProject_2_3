@@ -7,6 +7,51 @@
 
 namespace SeedCore
 {
+	ShaderIncludeHandler::ShaderIncludeHandler(IDxcIncludeHandler* defaultHandler, DynamicArray<String>& dependencies) :defaultHeader_(defaultHandler), dependencies_(dependencies)
+	{
+		/// No Code
+	}
+
+	HRESULT STDMETHODCALLTYPE ShaderIncludeHandler::LoadSource(LPCWSTR filename, IDxcBlob** includeSource)
+	{
+		HRESULT hr{ S_OK };
+
+		hr = defaultHeader_->LoadSource(filename, includeSource);
+		if (SUCCEEDED(hr))
+		{
+			String dependency = String(std::filesystem::path(filename).lexically_normal().wstring());
+			if (std::find(dependencies_.begin(), dependencies_.end(), dependency) == dependencies_.end())
+			{
+				dependencies_.push_back(dependency);
+			}
+		}
+		return hr;
+	}
+
+	HRESULT STDMETHODCALLTYPE ShaderIncludeHandler::QueryInterface(REFIID riid, void** object)
+	{
+		if (riid == __uuidof(IDxcIncludeHandler) || riid == __uuidof(IUnknown))
+		{
+			*object = static_cast<IDxcIncludeHandler*>(this);
+			return S_OK;
+		}
+		*object = nullptr;
+		return E_NOINTERFACE;
+	}
+
+	ULONG STDMETHODCALLTYPE ShaderIncludeHandler::AddRef()
+	{
+		return 1;
+	}
+
+	ULONG STDMETHODCALLTYPE ShaderIncludeHandler::Release()
+	{
+		return 1;
+	}
+}
+
+namespace SeedCore
+{
 	ShaderCompileResult ShaderCompiler::CompileVertexShader(const std::wstring& filePath, const std::string& entryPoint)
 	{
 		return CompileInternal(String(filePath), String(entryPoint), String("vs_6_6"));
@@ -79,31 +124,51 @@ namespace SeedCore
 			}
 		}
 
-#ifndef _DEBUG
+#ifdef _DEBUG
+		String csoPath = String("../CompiledShaderObject/Develop/" + filename.substr(0, filename.size() - 5) + ".dbg.cso");
+#else
 		String csoPath = String("../CompiledShaderObject/Application/" + filename.substr(0, filename.size() - 5) + ".dx.cso");
+#endif
 		String cacheKey = String(targetProfile.str() + ":" + entryPoint.str());
 		std::filesystem::path hlslFs(path);
 		std::filesystem::path csoFs(csoPath.str());
 		std::unordered_map<String, DynamicArray<Uint8>> cachedEntries;
+		DynamicArray<String> dependencies;
 		if (!precompiledOnly && std::filesystem::exists(csoFs))
 		{
-			Bool sourceNewer = std::filesystem::exists(hlslFs) && std::filesystem::last_write_time(hlslFs) > std::filesystem::last_write_time(csoFs);
-			if (!sourceNewer)
+			BinaryInputArchive cacheArchive;
+			if (cacheArchive.Read(csoPath))
 			{
-				BinaryInputArchive cacheArchive;
-				if (cacheArchive.Read(csoPath))
+				cacheArchive.TryField("dependencies", dependencies);
+
+				std::filesystem::file_time_type csoTime = std::filesystem::last_write_time(csoFs);
+				Bool sourceNewer = std::filesystem::exists(hlslFs) && std::filesystem::last_write_time(hlslFs) > csoTime;
+				for (const String& dependency : dependencies)
 				{
-					cacheArchive.TryField("entries", cachedEntries);
+					std::filesystem::path dependencyFs(dependency.str());
+					if (std::filesystem::exists(dependencyFs) && std::filesystem::last_write_time(dependencyFs) > csoTime)
+					{
+						sourceNewer = true;
+						break;
+					}
 				}
 
-				auto cachedEntry = cachedEntries.find(cacheKey);
-				if (cachedEntry != cachedEntries.end())
+				if (sourceNewer)
 				{
-					precompiledData = cachedEntry->second;
+					dependencies.clear();
+				}
+				else
+				{
+					cacheArchive.TryField("entries", cachedEntries);
+
+					auto cachedEntry = cachedEntries.find(cacheKey);
+					if (cachedEntry != cachedEntries.end())
+					{
+						precompiledData = cachedEntry->second;
+					}
 				}
 			}
 		}
-#endif
 
 		if (!precompiledData.empty())
 		{
@@ -149,6 +214,8 @@ namespace SeedCore
 		hr = dxcUtils->CreateDefaultIncludeHandler(&dxcIncludeHandler);
 		SC_HR_CHECK(hr, "IncludeHandlerの生成に失敗しました");
 
+		ShaderIncludeHandler includeHandle(dxcIncludeHandler.Get(), dependencies);
+
 		std::string shaderSource = FileUtility::LoadFileText(filePath);
 		if (shaderSource.empty())
 		{
@@ -192,7 +259,7 @@ namespace SeedCore
 #endif
 
 		Microsoft::WRL::ComPtr<IDxcResult> result;
-		hr = dxcCompiler->Compile(&dxcBuffer, arguments.data(), static_cast<Uint32>(arguments.size()), dxcIncludeHandler.Get(), IID_PPV_ARGS(&result));
+		hr = dxcCompiler->Compile(&dxcBuffer, arguments.data(), static_cast<Uint32>(arguments.size()), &includeHandle, IID_PPV_ARGS(&result));
 		SC_HR_CHECK(hr, "コンパイル実行中に致命的なエラーが発生しました");
 
 		ShaderCompileResult compileResult{};
@@ -206,8 +273,9 @@ namespace SeedCore
 			OutputDebugStringA(errorBlob->GetStringPointer());
 		}
 
-		hr = result->GetStatus(&hr);
-		if (FAILED(hr))
+		HRESULT status{ S_OK };
+		result->GetStatus(&status);
+		if (FAILED(status))
 		{
 			SC_LOG_ERROR("シェーダーコンパイル失敗: {} ({})", filePath.str(), targetProfile.str());
 			return compileResult;
@@ -218,19 +286,6 @@ namespace SeedCore
 
 		if (compileResult.objectBlob)
 		{
-#ifdef _DEBUG
-			std::filesystem::path debugCsoFs("../CompiledShaderObject/Develop/" + filename.substr(0, filename.size() - 5) + ".dbg.cso");
-			if (debugCsoFs.has_parent_path())
-			{
-				std::filesystem::create_directories(debugCsoFs.parent_path());
-			}
-
-			std::ofstream debugCsoStream(debugCsoFs, std::ios::binary);
-			if (debugCsoStream)
-			{
-				debugCsoStream.write(static_cast<const Byte*>(compileResult.objectBlob->GetBufferPointer()), compileResult.objectBlob->GetBufferSize());
-			}
-#else
 			if (csoFs.has_parent_path())
 			{
 				std::filesystem::create_directories(csoFs.parent_path());
@@ -241,8 +296,8 @@ namespace SeedCore
 
 			BinaryOutputArchive cacheArchive;
 			cacheArchive.Field("entries", cachedEntries);
+			cacheArchive.Field("dependencies", dependencies);
 			cacheArchive.Write(csoPath);
-#endif
 		}
 
 		return compileResult;

@@ -41,6 +41,8 @@ namespace SeedCore
 	private:
 		static void CreateBoxShape(DynamicArray<PrimitiveVertex>& vertices, DynamicArray<Uint32>& triangles);
 
+		static void CreateSphereShape(DynamicArray<PrimitiveVertex>& vertices, DynamicArray<Uint32>& triangles);
+
 	private:
 		DynamicArray<PrimitiveVertex> vertices_;
 
