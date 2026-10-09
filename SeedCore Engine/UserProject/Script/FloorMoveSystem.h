@@ -2,6 +2,8 @@
 #include <SeedCore/ScScript.h>
 #include <SeedCore/ScComponent.h>
 
+class StopController;
+
 class FloorMoveSystem :public SeedCore::SeedScript
 {
 public:
@@ -24,6 +26,9 @@ public:
 	SC_REFLECTION_FIELD_EX("端での待ち時間")
 	float waitTime_ = 0.5f;
 
+	SC_REFLECTION_FIELD_EX("デバッグアローを描画するか")
+	bool isDebugArrowDraw_ = true;
+
 public:
 	void OnStart();
 
@@ -32,6 +37,10 @@ public:
 	void OnEditorTick(float elapsedTime);
 
 private:
+	StopController* stopController_ = nullptr;
+
+	SeedCore::Vector3 currentTarget_ = { 0.0f,0.0f,0.0f };
+
 	SeedCore::Vector3 cachePosition_ = { 0.0f,0.0f,0.0f };
 
 	SeedCore::Quaternion cacheRotation_ = SeedCore::Quaternion::Identity;

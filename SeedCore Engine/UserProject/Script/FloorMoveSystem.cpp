@@ -2,11 +2,17 @@
 
 #include <SeedCore/ScDebug.h>
 
+#include "StopController.h"
+
 using namespace SeedCore;
 
 void FloorMoveSystem::OnStart()
 {
+	World& world = GetWorld();
 	Actor actor = GetActor();
+	Entity entity = actor.GetEntity();
+
+	stopController_ = world.GetComponent<StopController>(entity);
 
 	Matrix worldMatrix = actor.WorldMatrix();
 	Vector3 floorPosition, floorScale;
@@ -18,6 +24,7 @@ void FloorMoveSystem::OnStart()
 	pingPongDirection_ = 1;
 	progress_ = 0.0f;
 	waitTimer_ = 0.0f;
+	currentTarget_ = cachePosition_;
 
 	if (static_cast<int>(localPositions_.size()) < 2)
 	{
@@ -46,12 +53,19 @@ void FloorMoveSystem::OnFixedTick(float elapsedTime)
 		return;
 	}
 
+	if (stopController_ && stopController_->IsStop())
+	{
+		rigidbody->MoveTarget(currentTarget_, cacheRotation_, elapsedTime);
+		return;
+	}
+
 	Vector3 startPosition = localPositions_[startIndex_];
 	if (waitTimer_ > 0.0f)
 	{
 		waitTimer_ -= elapsedTime;
 
 		Vector3 targetPosition = cachePosition_ + startPosition;
+		currentTarget_ = targetPosition;
 		rigidbody->MoveTarget(targetPosition, cacheRotation_, elapsedTime);
 		return;
 	}
@@ -78,6 +92,7 @@ void FloorMoveSystem::OnFixedTick(float elapsedTime)
 	}
 
 	Vector3 targetPosition = cachePosition_ + Vector3::Lerp(startPosition, arrivalPosition, progress_);
+	currentTarget_ = targetPosition;
 	rigidbody->MoveTarget(targetPosition, cacheRotation_, elapsedTime);
 
 	if (progress_ >= 1.0f)
@@ -110,11 +125,14 @@ void FloorMoveSystem::OnEditorTick(float elapsedTime)
 	for (int index = 0;index < static_cast<int>(localPositions_.size());++index)
 	{
 		GetActor().GetDebugDraw().Sphere(localPositions_[index] + floorPosition, 0.1f, Color(1.0f, 0.0f, 0.0f, 1.0f));
-		if (static_cast<int>(localPositions_.size()) > index + 1)
+		if (isDebugArrowDraw_)
 		{
-			Vector3 startPosition = localPositions_[index] + floorPosition;
-			Vector3 endPosition = localPositions_[index + 1] + floorPosition;
-			GetActor().GetDebugDraw().Arrow(startPosition, endPosition, Color(0.0f, 1.0f, 1.0f, 1.0f), 0.2f);
+			if (static_cast<int>(localPositions_.size()) > index + 1)
+			{
+				Vector3 startPosition = localPositions_[index] + floorPosition;
+				Vector3 endPosition = localPositions_[index + 1] + floorPosition;
+				GetActor().GetDebugDraw().Arrow(startPosition, endPosition, Color(0.0f, 1.0f, 1.0f, 1.0f), 0.2f);
+			}
 		}
 	}
 }
