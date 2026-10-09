@@ -1,6 +1,6 @@
 #include "PrimitiveSolid.hlsli"
-#include "../../Shader/ShaderResources.hlsli"
-#include "../../Shader/Dispatch.hlsli"
+#include "../../../Shader/ShaderResources.hlsli"
+#include "../../../Shader/Dispatch.hlsli"
 
 PrimitiveSolidMSOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 {

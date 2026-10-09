@@ -72,9 +72,12 @@ namespace SeedCore
 		* structural changes, and runs the built-in TransformSystem (all
 		* before Tick/LateTick so this frame's motion and any newly
 		* spawned actor's position are in this frame's world matrix), then
-		* drives Tick/LateTick (if isPlaying). Awake/Start/Tick/LateTick
-		* are only dispatched to active actors, so an actor that starts
-		* inactive receives Awake/Start the first frame it is active.
+		* drives Tick/LateTick (if isPlaying) or EditorTick (if not). The
+		* systems, Tick and LateTick advance by gameElapsedTime; EditorTick
+		* advances by worldElapsedTime, since the game's time stays 0 while
+		* not playing. Awake/Start/Tick/LateTick/EditorTick are only
+		* dispatched to active actors, so an actor that starts inactive
+		* receives Awake/Start the first frame it is active.
 		* Shared by Runtime and Editor, so cache and executor are threaded
 		* through explicitly rather than assumed global.
 		*
@@ -87,14 +90,17 @@ namespace SeedCore
 		* 構造系ペアと並列）、記録された構造変更を flush し、組み込みの
 		* TransformSystem を実行する（すべて Tick/LateTick より前 — 今フレーム
 		* の移動や新しく生成された actor の位置が同じフレームのワールド行列に
-		* 入るように）。その後（isPlaying であれば）Tick/LateTick を駆動する。
-		* Awake/Start/Tick/LateTick はアクティブな actor にだけ送るので、
+		* 入るように）。その後（isPlaying であれば）Tick/LateTick を、そうで
+		* なければ EditorTick を駆動する。システムと Tick/LateTick は
+		* gameElapsedTime で、EditorTick は worldElapsedTime で進める（プレイして
+		* いない間はゲームの時間が 0 のままのため）。
+		* Awake/Start/Tick/LateTick/EditorTick はアクティブな actor にだけ送るので、
 		* 非アクティブで始まった actor は、アクティブになった最初の
 		* フレームで Awake/Start を受け取る。
 		* Runtime と Editor の両方から使われるため、cache と executor は
 		* グローバル前提にせず明示的に受け渡す。
 		*/
-		void Run(World& world, ResourceCache& cache, JobExecutor& executor, Float elapsedTime, Bool isPlaying = true);
+		void Run(World& world, ResourceCache& cache, JobExecutor& executor, Float worldElapsedTime, Float gameElapsedTime, Bool isPlaying = true);
 
 		/**
 		* [EN]

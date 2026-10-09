@@ -272,7 +272,7 @@ namespace SeedCore
 					system_->Step(*world_, gameTimer_.FixedDeltaTime());
 				}
 
-				system_->Run(*world_, *resource_, *executor_, gameTimer_.ScaledDeltaTime(), gameTimer_.Playing());
+				system_->Run(*world_, *resource_, *executor_, 0.0f, gameTimer_.ScaledDeltaTime(), gameTimer_.Playing());
 
 				Scene::Update(gameTimer_.ScaledDeltaTime());
 

@@ -134,7 +134,8 @@ namespace SeedCore
 				script.tick_ = Bind<Action<Single>>(scriptType, ScriptHook.Tick, script);
 				script.lateTick_ = Bind<Action<Single>>(scriptType, ScriptHook.LateTick, script);
 				script.fixedTick_ = Bind<Action<Single>>(scriptType, ScriptHook.FixedTick, script);
-				script.destroy_ = Bind<Action>(scriptType, ScriptHook.Destroy, script);
+                script.editorTick_ = Bind<Action<Single>>(scriptType, ScriptHook.EditorTick, script);
+                script.destroy_ = Bind<Action>(scriptType, ScriptHook.Destroy, script);
 				script.inspectorGUI_ = Bind<Action>(scriptType, ScriptHook.InspectorGUI, script);
 				script.collisionEnter_ = Bind<Action<Entity>>(scriptType, ScriptHook.CollisionEnter, script);
 				script.collisionStay_ = Bind<Action<Entity>>(scriptType, ScriptHook.CollisionStay, script);
@@ -261,7 +262,8 @@ namespace SeedCore
 				{
 					ScriptHook.Tick or
 					ScriptHook.LateTick or
-					ScriptHook.FixedTick => new Type[] { typeof(Single) },
+					ScriptHook.FixedTick or
+                    ScriptHook.EditorTick => new Type[] { typeof(Single) },
 
 					ScriptHook.CollisionEnter or
 					ScriptHook.CollisionStay or

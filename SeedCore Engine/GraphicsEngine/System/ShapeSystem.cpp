@@ -447,6 +447,13 @@ namespace SeedCore
 			}
 		}
 		queryInstance.Clear();
+
+		/// [EN] Debug shapes requested through DebugDraw since the last frame, already in ShapeDesc form. They are read and then cleared, so each request is drawn once.
+		/// [JP] 前のフレームから DebugDraw で頼まれたデバッグ用の形。すでに ShapeDesc の形なので、そのまま足す。読んだあと空にするので、各形は1回だけ描かれる。
+		RenderInstance& renderInstance = world.GetRenderInstance();
+		std::span<const ShapeDesc> requestedShapes = renderInstance.Shapes();
+		shapes_.insert(shapes_.end(), requestedShapes.begin(), requestedShapes.end());
+		renderInstance.Clear();
 #endif
 	}
 

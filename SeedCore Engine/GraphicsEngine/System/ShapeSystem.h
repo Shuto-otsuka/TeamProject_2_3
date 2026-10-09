@@ -13,7 +13,8 @@ namespace SeedCore
 	* per frame before rendering reads them. Today these are the wireframe
 	* debug display (camera frustums, light ranges, audio ranges) and, in
 	* debug builds, the physics queries recorded in the World's
-	* QueryInstance; shape components drawn as filled surfaces will be
+	* QueryInstance and the shapes requested through DebugDraw into its
+	* RenderInstance; shape components drawn as filled surfaces will be
 	* gathered here as well.
 	* Reads other modules' components as data only, and knows nothing about
 	* the GPU, which is ShapeRenderer's side.
@@ -24,7 +25,7 @@ namespace SeedCore
 	* コライダー以外の形を ShapeDesc に集める。描画が読む前に、フレームに
 	* 1回行う。今はワイヤーフレームのデバッグ表示（カメラの視錐台、ライトの
 	* 範囲、音の範囲）と、Debug ビルドでは World の QueryInstance に記録された
-	* 物理クエリで、面で描く形のコンポーネントもここで集める。他の
+	* 物理クエリと、DebugDraw で RenderInstance に頼まれた形で、面で描く形のコンポーネントもここで集める。他の
 	* モジュールのコンポーネントはデータとして読むだけで、GPU のことは
 	* 知らない（そちらは ShapeRenderer の担当）。
 	*/

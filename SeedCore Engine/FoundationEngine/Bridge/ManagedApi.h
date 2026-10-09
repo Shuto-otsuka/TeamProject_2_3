@@ -11,6 +11,7 @@ namespace SeedCore
 		Tick,
 		LateTick,
 		FixedTick,
+		EditorTick,
 		Destroy,
 		InspectorGUI,
 		CollisionEnter,

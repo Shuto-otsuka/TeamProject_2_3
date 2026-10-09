@@ -244,15 +244,16 @@
     <ClInclude Include="Shape\Primitive\CapsuleShape.h" />
     <ClInclude Include="Shape\Primitive\ConeShape.h" />
     <ClInclude Include="Shape\Primitive\CylinderShape.h" />
+    <ClInclude Include="Shape\Primitive\Diagnostic\DebugDraw.h" />
     <ClInclude Include="Shape\Primitive\DiscShape.h" />
     <ClInclude Include="Shape\Primitive\PlaneShape.h" />
     <ClInclude Include="Shape\Primitive\PrimitiveMesh.h" />
-    <ClInclude Include="Shape\Primitive\PrimitiveSolidShader.h" />
-    <ClInclude Include="Shape\Primitive\PrimitiveWireframeShader.h" />
     <ClInclude Include="Shape\Primitive\RampShape.h" />
     <ClInclude Include="Shape\Primitive\SegmentShape.h" />
+    <ClInclude Include="Shape\Primitive\Solid\PrimitiveSolidShader.h" />
     <ClInclude Include="Shape\Primitive\SphereShape.h" />
     <ClInclude Include="Shape\Primitive\TorusShape.h" />
+    <ClInclude Include="Shape\Primitive\Wireframe\PrimitiveWireframeShader.h" />
     <ClInclude Include="Shape\Screen\BootScreen.h" />
     <ClInclude Include="Shape\Screen\FadeScreen.h" />
     <ClInclude Include="Shape\Screen\LetterScreen.h" />
@@ -514,9 +515,10 @@
     <ClCompile Include="Shader\ShaderHotReload.cpp" />
     <ClCompile Include="Shape\HUD\HUDComposeShader.cpp" />
     <ClCompile Include="Shape\Outline\OutlineShader.cpp" />
+    <ClCompile Include="Shape\Primitive\Diagnostic\DebugDraw.cpp" />
     <ClCompile Include="Shape\Primitive\PrimitiveMesh.cpp" />
-    <ClCompile Include="Shape\Primitive\PrimitiveSolidShader.cpp" />
-    <ClCompile Include="Shape\Primitive\PrimitiveWireframeShader.cpp" />
+    <ClCompile Include="Shape\Primitive\Solid\PrimitiveSolidShader.cpp" />
+    <ClCompile Include="Shape\Primitive\Wireframe\PrimitiveWireframeShader.cpp" />
     <ClCompile Include="Shape\Screen\BootScreen.cpp" />
     <ClCompile Include="Shape\Screen\FadeScreen.cpp" />
     <ClCompile Include="Shape\Screen\LetterScreen.cpp" />
@@ -754,11 +756,11 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Shape\Primitive\PrimitiveSolid.hlsli">
+    <None Include="Shape\Primitive\Solid\PrimitiveSolid.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Shape\Primitive\PrimitiveWireframe.hlsli">
+    <None Include="Shape\Primitive\Wireframe\PrimitiveWireframe.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
@@ -1339,68 +1341,30 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Shape\Primitive\PrimitiveWireframeMS.hlsl">
+    <Text Include="Shape\Primitive\Solid\PrimitiveSolidAS.hlsl">
       <FileType>Document</FileType>
     </Text>
-    <Text Include="Shape\Primitive\PrimitiveWireframePS.hlsl">
+    <Text Include="Shape\Primitive\Solid\PrimitiveSolidCullingCS.hlsl">
       <FileType>Document</FileType>
     </Text>
-    <Text Include="Shape\Primitive\PrimitiveWireframeVS.hlsl">
+    <Text Include="Shape\Primitive\Solid\PrimitiveSolidMS.hlsl">
       <FileType>Document</FileType>
     </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Shape\Primitive\PrimitiveSolidAS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Geometry</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Geometry</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Geometry</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Geometry</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+    <Text Include="Shape\Primitive\Solid\PrimitiveSolidPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Shape\Primitive\Solid\PrimitiveSolidVS.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Shape\Primitive\PrimitiveSolidMS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Geometry</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Geometry</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Geometry</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Geometry</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+    <Text Include="Shape\Primitive\Wireframe\PrimitiveWireframeMS.hlsl">
       <FileType>Document</FileType>
     </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Shape\Primitive\PrimitiveSolidCullingCS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+    <Text Include="Shape\Primitive\Wireframe\PrimitiveWireframePS.hlsl">
       <FileType>Document</FileType>
     </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Shape\Primitive\PrimitiveSolidPS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
-      <FileType>Document</FileType>
-    </Text>
-    <Text Include="Shape\Primitive\PrimitiveSolidVS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+    <Text Include="Shape\Primitive\Wireframe\PrimitiveWireframeVS.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>

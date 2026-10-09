@@ -89,6 +89,10 @@ namespace SeedCore
 		{
 			behaviour->fixedTick_ = &Lifecycle<ScriptHook::FixedTick>;
 		}
+		if (has(ScriptHook::EditorTick))
+		{
+			behaviour->editorTick_ = &Lifecycle<ScriptHook::EditorTick>;
+		}
 		if (has(ScriptHook::Destroy))
 		{
 			behaviour->destroy_ = &Lifecycle<ScriptHook::Destroy>;

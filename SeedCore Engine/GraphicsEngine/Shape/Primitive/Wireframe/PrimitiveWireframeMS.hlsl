@@ -1,5 +1,5 @@
 #include "PrimitiveWireframe.hlsli"
-#include "../../Shader/ShaderResources.hlsli"
+#include "../../../Shader/ShaderResources.hlsli"
 
 /**
 * [EN]

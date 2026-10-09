@@ -5,8 +5,8 @@
 #include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
 #include <GraphicsEngine/Model/Culling/ModelCullingBuffer.h>
 #include <GraphicsEngine/Shape/Primitive/PrimitiveMesh.h>
-#include <GraphicsEngine/Shape/Primitive/PrimitiveWireframeShader.h>
-#include <GraphicsEngine/Shape/Primitive/PrimitiveSolidShader.h>
+#include <GraphicsEngine/Shape/Primitive/Wireframe/PrimitiveWireframeShader.h>
+#include <GraphicsEngine/Shape/Primitive/Solid/PrimitiveSolidShader.h>
 #include <GraphicsEngine/System/IndicesSystem.h>
 
 namespace SeedCore
@@ -49,7 +49,7 @@ namespace SeedCore
 		Uint32 meshletOffset_ = 0;
 		Uint32 meshletCount_ = 0;
 	};
-	SC_STATIC_ASSERT(PrimitiveSolidStructuredBuffer, 92, "Shape/Primitive/PrimitiveSolid.hlsli");
+	SC_STATIC_ASSERT(PrimitiveSolidStructuredBuffer, 92, "Shape/Primitive/Solid/PrimitiveSolid.hlsli");
 
 	/**
 	* [EN]

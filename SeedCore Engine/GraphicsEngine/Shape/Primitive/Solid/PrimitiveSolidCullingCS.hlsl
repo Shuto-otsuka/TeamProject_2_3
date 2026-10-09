@@ -1,7 +1,7 @@
 #include "PrimitiveSolid.hlsli"
-#include "../../Shader/ShaderResources.hlsli"
-#include "../../Shader/Culling.hlsli"
-#include "../../Shader/Dispatch.hlsli"
+#include "../../../Shader/ShaderResources.hlsli"
+#include "../../../Shader/Culling.hlsli"
+#include "../../../Shader/Dispatch.hlsli"
 
 [numthreads(32, 1, 1)]
 void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID)

@@ -1,6 +1,6 @@
 #include "PrimitiveSolid.hlsli"
-#include "../../Shader/ShaderResources.hlsli"
-#include "../../Shader/Culling.hlsli"
+#include "../../../Shader/ShaderResources.hlsli"
+#include "../../../Shader/Culling.hlsli"
 
 groupshared float4 clip_positions[64];
 

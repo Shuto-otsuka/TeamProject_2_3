@@ -178,6 +178,20 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Returns this actor's DebugDraw resource, which draws debug shapes in debug builds only.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* この actor の DebugDraw リソースを返す。デバッグ用の形を描き、描かれるのは Debug ビルドだけ。
+	*/
+	DebugDraw& Actor::GetDebugDraw()const
+	{
+		return *world_->CreateDebugDraw();
+	}
+
+	/**
+	* [EN]
 	* Returns this actor's Physics resource.
 	*
 	* ---------------------------------------------------------------------

@@ -17,9 +17,9 @@ namespace SeedCore
 	class SEEDCORE_API CapsuleCollider :public SeedScript
 	{
 	public:
-		/// [EN] Total height of the capsule.
-		/// [JP] カプセル全体の高さ。
-		SC_REFLECTION_CLAMPED_EX("高さ", 0.001f, 100.0f)
+		/// [EN] Height of the cylinder part between the two hemispherical caps; the whole capsule is this plus twice the radius.
+		/// [JP] 両端の半球にはさまれた円柱部分の高さ。カプセル全体の高さは、これに半径の2倍を足したもの。
+		SC_REFLECTION_CLAMPED_EX("円柱の高さ", 0.001f, 100.0f)
 		Float height_ = 2.0f;
 
 		/// [EN] Radius of the capsule.

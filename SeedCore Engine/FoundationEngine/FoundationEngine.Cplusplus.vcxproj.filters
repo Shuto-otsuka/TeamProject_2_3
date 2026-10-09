@@ -409,6 +409,9 @@
     <ClCompile Include="Interop\QueryInstance.cpp">
       <Filter>Interop</Filter>
     </ClCompile>
+    <ClCompile Include="Interop\RenderInstance.cpp">
+      <Filter>Interop</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\DxFail.h">
@@ -674,7 +677,7 @@
     <ClInclude Include="World\ECS\Component\Destroyable.h">
       <Filter>World\ECS\Component</Filter>
     </ClInclude>
-    <ClInclude Include="World\ECS\Component\FixedTick.h">
+    <ClInclude Include="World\ECS\Component\FixedTickable.h">
       <Filter>World\ECS\Component</Filter>
     </ClInclude>
     <ClInclude Include="World\ECS\Component\InspectorDrawable.h">
@@ -904,6 +907,12 @@
     </ClInclude>
     <ClInclude Include="Interop\QueryInstance.h">
       <Filter>Interop</Filter>
+    </ClInclude>
+    <ClInclude Include="Interop\RenderInstance.h">
+      <Filter>Interop</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Editable.h">
+      <Filter>World\ECS\Component</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

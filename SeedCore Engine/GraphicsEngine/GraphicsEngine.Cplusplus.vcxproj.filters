@@ -223,6 +223,15 @@
     <Filter Include="Shape\Primitive">
       <UniqueIdentifier>{66cdb5af-1f2f-4c6f-8547-350d2d86fd64}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shape\Primitive\Wireframe">
+      <UniqueIdentifier>{22e43dae-ee09-42f3-b32c-9f92c41e8e13}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shape\Primitive\Solid">
+      <UniqueIdentifier>{fa33b0a9-7302-4b8c-a659-f2fff01e6dce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shape\Primitive\Diagnostic">
+      <UniqueIdentifier>{c93e0585-8395-4a4f-be51-a0a04ea8cb9a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12\Context\D3D12Adapter.h">
@@ -970,9 +979,6 @@
     <ClInclude Include="System\ShapeSystem.h">
       <Filter>System</Filter>
     </ClInclude>
-    <ClInclude Include="Shape\Primitive\PrimitiveWireframeShader.h">
-      <Filter>Shape\Primitive</Filter>
-    </ClInclude>
     <ClInclude Include="Shape\Primitive\BoxShape.h">
       <Filter>Shape\Primitive</Filter>
     </ClInclude>
@@ -1009,8 +1015,14 @@
     <ClInclude Include="Model\Cluster\Meshlet.h">
       <Filter>Model\Cluster</Filter>
     </ClInclude>
-    <ClInclude Include="Shape\Primitive\PrimitiveSolidShader.h">
-      <Filter>Shape\Primitive</Filter>
+    <ClInclude Include="Shape\Primitive\Solid\PrimitiveSolidShader.h">
+      <Filter>Shape\Primitive\Solid</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Primitive\Wireframe\PrimitiveWireframeShader.h">
+      <Filter>Shape\Primitive\Wireframe</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\Primitive\Diagnostic\DebugDraw.h">
+      <Filter>Shape\Primitive\Diagnostic</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1655,17 +1667,20 @@
     <ClCompile Include="System\ShapeSystem.cpp">
       <Filter>System</Filter>
     </ClCompile>
-    <ClCompile Include="Shape\Primitive\PrimitiveWireframeShader.cpp">
-      <Filter>Shape\Primitive</Filter>
-    </ClCompile>
     <ClCompile Include="Model\Cluster\Meshlet.cpp">
       <Filter>Model\Cluster</Filter>
     </ClCompile>
     <ClCompile Include="Shape\Primitive\PrimitiveMesh.cpp">
       <Filter>Shape\Primitive</Filter>
     </ClCompile>
-    <ClCompile Include="Shape\Primitive\PrimitiveSolidShader.cpp">
-      <Filter>Shape\Primitive</Filter>
+    <ClCompile Include="Shape\Primitive\Solid\PrimitiveSolidShader.cpp">
+      <Filter>Shape\Primitive\Solid</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\Primitive\Wireframe\PrimitiveWireframeShader.cpp">
+      <Filter>Shape\Primitive\Wireframe</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\Primitive\Diagnostic\DebugDraw.cpp">
+      <Filter>Shape\Primitive\Diagnostic</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1840,11 +1855,11 @@
     <None Include="Shape\Primitive\Primitive.hlsli">
       <Filter>Shape\Primitive</Filter>
     </None>
-    <None Include="Shape\Primitive\PrimitiveWireframe.hlsli">
-      <Filter>Shape\Primitive</Filter>
+    <None Include="Shape\Primitive\Solid\PrimitiveSolid.hlsli">
+      <Filter>Shape\Primitive\Solid</Filter>
     </None>
-    <None Include="Shape\Primitive\PrimitiveSolid.hlsli">
-      <Filter>Shape\Primitive</Filter>
+    <None Include="Shape\Primitive\Wireframe\PrimitiveWireframe.hlsli">
+      <Filter>Shape\Primitive\Wireframe</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
@@ -2274,29 +2289,29 @@
     <Text Include="Effect\Zephyr\ParticleSystemCS.hlsl">
       <Filter>Effect\Zephyr</Filter>
     </Text>
-    <Text Include="Shape\Primitive\PrimitiveWireframeMS.hlsl">
-      <Filter>Shape\Primitive</Filter>
+    <Text Include="Shape\Primitive\Solid\PrimitiveSolidAS.hlsl">
+      <Filter>Shape\Primitive\Solid</Filter>
     </Text>
-    <Text Include="Shape\Primitive\PrimitiveWireframePS.hlsl">
-      <Filter>Shape\Primitive</Filter>
+    <Text Include="Shape\Primitive\Solid\PrimitiveSolidCullingCS.hlsl">
+      <Filter>Shape\Primitive\Solid</Filter>
     </Text>
-    <Text Include="Shape\Primitive\PrimitiveWireframeVS.hlsl">
-      <Filter>Shape\Primitive</Filter>
+    <Text Include="Shape\Primitive\Solid\PrimitiveSolidMS.hlsl">
+      <Filter>Shape\Primitive\Solid</Filter>
     </Text>
-    <Text Include="Shape\Primitive\PrimitiveSolidAS.hlsl">
-      <Filter>Shape\Primitive</Filter>
+    <Text Include="Shape\Primitive\Solid\PrimitiveSolidPS.hlsl">
+      <Filter>Shape\Primitive\Solid</Filter>
     </Text>
-    <Text Include="Shape\Primitive\PrimitiveSolidMS.hlsl">
-      <Filter>Shape\Primitive</Filter>
+    <Text Include="Shape\Primitive\Solid\PrimitiveSolidVS.hlsl">
+      <Filter>Shape\Primitive\Solid</Filter>
     </Text>
-    <Text Include="Shape\Primitive\PrimitiveSolidCullingCS.hlsl">
-      <Filter>Shape\Primitive</Filter>
+    <Text Include="Shape\Primitive\Wireframe\PrimitiveWireframeMS.hlsl">
+      <Filter>Shape\Primitive\Wireframe</Filter>
     </Text>
-    <Text Include="Shape\Primitive\PrimitiveSolidPS.hlsl">
-      <Filter>Shape\Primitive</Filter>
+    <Text Include="Shape\Primitive\Wireframe\PrimitiveWireframePS.hlsl">
+      <Filter>Shape\Primitive\Wireframe</Filter>
     </Text>
-    <Text Include="Shape\Primitive\PrimitiveSolidVS.hlsl">
-      <Filter>Shape\Primitive</Filter>
+    <Text Include="Shape\Primitive\Wireframe\PrimitiveWireframeVS.hlsl">
+      <Filter>Shape\Primitive\Wireframe</Filter>
     </Text>
   </ItemGroup>
 </Project>
