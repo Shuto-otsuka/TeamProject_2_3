@@ -20,7 +20,15 @@ void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID)
     /// [EN] Same frustum test as PrimitiveSolidAS.hlsl.
 	/// [JP] PrimitiveSolidAS.hlsl と同じ視錐台の判定。
     PrimitiveMeshletBound bound = bounds[instance.meshlet_offset_ + gtid];
-    float3 scale = instance.dimensions_;
+	float3 scale = instance.dimensions_;
+	if (instance.shape_kind_ == PRIMITIVE_SHAPE_SPHERE)
+	{
+		scale = instance.dimensions_.xxx;
+	}
+	else if (instance.shape_kind_ == PRIMITIVE_SHAPE_CYLINDER || instance.shape_kind_ == PRIMITIVE_SHAPE_CONE)
+	{
+		scale = instance.dimensions_.xyx;
+	}
     float3 local_center = bound.center_ * scale;
     float3 twist = 2.0 * cross(instance.rotation_.xyz, local_center);
     float3 world_center = local_center + instance.rotation_.w * twist + cross(instance.rotation_.xyz, twist) + instance.position_;

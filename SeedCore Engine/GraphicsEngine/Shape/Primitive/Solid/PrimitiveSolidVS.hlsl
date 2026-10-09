@@ -34,6 +34,14 @@ PrimitiveSolidMSOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_
 	/// [EN] Same transform as PrimitiveSolidMS.hlsl.
 	/// [JP] PrimitiveSolidMS.hlsl と同じ変換。
 	float3 scale = instance.dimensions_;
+	if (instance.shape_kind_ == PRIMITIVE_SHAPE_SPHERE)
+	{
+		scale = instance.dimensions_.xxx;
+	}
+	else if (instance.shape_kind_ == PRIMITIVE_SHAPE_CYLINDER || instance.shape_kind_ == PRIMITIVE_SHAPE_CONE)
+	{
+		scale = instance.dimensions_.xyx;
+	}
 	float3 local_position = vertex.position_ * scale;
 	float3 position_twist = 2.0 * cross(instance.rotation_.xyz, local_position);
 	float3 world_position = local_position + instance.rotation_.w * position_twist + cross(instance.rotation_.xyz, position_twist) + instance.position_;

@@ -6,22 +6,24 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* One independently published piece of a shared scene: one entity, the
-	* hierarchy, or the scene-wide settings. Splitting a scene this way is
-	* what lets four members work in it at once without their saves
-	* colliding.
+	* One independently published piece of a shared scene: an entity's
+	* header, its transform, one of its components, the hierarchy, or the
+	* scene-wide settings. Splitting a scene this way is what lets members
+	* edit different components of one actor without overwriting each
+	* other.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 共有 Scene を構成する、独立して Publish される断片1つ。Entity 1体、
-	* 階層、あるいは Scene 全体の設定のいずれか。Scene をこう分けることが、
-	* 4人が同時に作業しても保存がぶつからない理由になる。
+	* 共有 Scene を構成する、独立して Publish される断片1つ。Entity の本体、
+	* そのトランスフォーム、その Component の1つ、階層、あるいは Scene 全体の
+	* 設定のいずれか。Scene をこう分けることで、1つの Actor の別々の
+	* Component を編集したメンバーどうしが、互いを上書きせずに済む。
 	*/
 	struct ScenePart
 	{
-		/// [EN] Which piece this is: "entity:<UUID>", "structure" or "context".
-		/// [JP] どの断片かを表す。"entity:<UUID>"、"structure"、"context" のいずれか。
+		/// [EN] Which piece this is: "entity:<UUID>", "entity:<UUID>/transform", "entity:<UUID>/component:<Name>", "structure" or "context".
+		/// [JP] どの断片かを表す。"entity:<UUID>"、"entity:<UUID>/transform"、"entity:<UUID>/component:<名前>"、"structure"、"context" のいずれか。
 		String scope_;
 
 		/// [EN] Increases by one each time this piece alone is published.
@@ -32,8 +34,8 @@ namespace SeedCore
 		/// [JP] 断片の中身の SHA-256。本当の変更と、単なる保存し直しを見分けるために使う。
 		String hash_;
 
-		/// [EN] The piece itself, written straight into the document because an entity is normally a few kilobytes.
-		/// [JP] 断片そのもの。Entity は通常数キロバイトなので、ドキュメントへそのまま書く。
+		/// [EN] The piece itself, written straight into the document because a piece is normally a few kilobytes.
+		/// [JP] 断片そのもの。断片は通常数キロバイトなので、ドキュメントへそのまま書く。
 
 		/// [EN] Empty when the piece was too large for that, in which case it sits in Drive and driveId_ names it.
 		/// [JP] 大きすぎてそうできなかった場合は空になり、その断片は Drive にあって driveId_ が指す。
@@ -47,23 +49,23 @@ namespace SeedCore
 		/// [JP] 保存されている中身のバイト数。
 		Uint64 size_ = 0;
 
-		/// [EN] Marks an entity the team removed; the entry stays so others learn it was deleted rather than never seen.
-		/// [JP] チームが削除した Entity の印。「削除された」と「元から知らない」を区別できるよう項目は残す。
+		/// [EN] Marks an entity or component the team removed; the entry stays so others learn it was deleted rather than never seen.
+		/// [JP] チームが削除した Entity や Component の印。「削除された」と「元から知らない」を区別できるよう項目は残す。
 		Bool deleted_ = false;
 	};
 
 	/**
 	* [EN]
-	* One piece a member wants to publish, together with the revision they
-	* started from. The revision is what a member's work is checked
-	* against, exactly as an ordinary asset's is.
+	* One piece a member wants to publish, together with the revision the
+	* library showed for it just before. Nothing is checked against that
+	* revision; the publish replaces the piece either way.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* メンバーが Publish しようとしている断片1つと、その作業を始めた時点の
-	* Revision。通常のアセットと同じように、この Revision が照合の基準に
-	* なる。
+	* メンバーが Publish しようとしている断片1つと、直前にライブラリが
+	* 示していたその断片の Revision。この Revision で照合はせず、Publish
+	* はどの場合でも断片を置き換える。
 	*/
 	struct ScenePartChange
 	{
@@ -71,8 +73,8 @@ namespace SeedCore
 		/// [JP] どの断片を Publish するのか。
 		String scope_;
 
-		/// [EN] The revision this member started from; 0 means the piece is new.
-		/// [JP] このメンバーが作業を始めた時点の Revision。0 なら新しい断片。
+		/// [EN] The revision the library showed for the piece just before publishing; 0 means the piece is new.
+		/// [JP] Publish の直前にライブラリが示していた断片の Revision。0 なら新しい断片。
 		Uint64 baseRevision_ = 0;
 
 		/// [EN] SHA-256 of the new contents.
@@ -91,24 +93,24 @@ namespace SeedCore
 		/// [JP] 新しい中身のバイト数。
 		Uint64 size_ = 0;
 
-		/// [EN] Whether this publish removes the entity rather than changing it.
-		/// [JP] この Publish が、変更ではなく Entity の削除であるかどうか。
+		/// [EN] Whether this publish removes the piece rather than changing it.
+		/// [JP] この Publish が、変更ではなく断片の削除であるかどうか。
 		Bool deleted_ = false;
 	};
 
 	/**
 	* [EN]
-	* The per-scene document, holding one revision per entity rather than
-	* one for the scene as a whole. Two members editing different entities
-	* therefore never contend, while two editing the same one are caught by
-	* that entity's revision.
+	* The per-scene document, holding one revision per piece rather than
+	* one for the scene as a whole. Two members editing different
+	* components therefore never overwrite each other, while for the same
+	* component the last publish wins.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* Scene ごとのドキュメント。Scene 全体で1つではなく、Entity ごとに
-	* Revision を持つ。そのため別々の Entity を編集する2人は競合せず、同じ
-	* Entity を編集した2人はその Entity の Revision で検出される。
+	* Scene ごとのドキュメント。Scene 全体で1つではなく、断片ごとに
+	* Revision を持つ。そのため別々の Component を編集する2人は互いを
+	* 上書きせず、同じ Component では最後に Publish したものが優先される。
 	*/
 	class SEEDCORE_API SharedScene
 	{
@@ -136,33 +138,51 @@ namespace SeedCore
 		*/
 		~SharedScene();
 
-		/// [EN] Copying is disallowed because the in-memory copy tracks one document at one point in time.
-		/// [JP] メモリ上の写しは、ある時点のドキュメント1つを表すものなので、コピーは禁止する。
-		SharedScene(const SharedScene&) = delete;
-		SharedScene& operator=(const SharedScene&) = delete;
-
 		/**
 		* [EN]
-		* Re-reads the scene so the Editor sees which entities other
-		* members have moved on.
+		* Copy construction is disallowed, since the in-memory copy tracks one document at one point in time.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* Scene を読み直し、他のメンバーがどの Entity を進めたのかを Editor
-		* へ反映する。
+		* コピー構築は禁止する。メモリ上の写しは、ある時点のドキュメント1つを表すものであるため。
+		*/
+		SharedScene(const SharedScene&) = delete;
+
+		/**
+		* [EN]
+		* Copy assignment is disallowed for the same reason as copy
+		* construction.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー代入も、コピー構築と同じ理由で禁止する。
+		*/
+		SharedScene& operator=(const SharedScene&) = delete;
+
+		/**
+		* [EN]
+		* Re-reads the scene so the Editor sees which pieces other members
+		* have moved on.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* Scene を読み直し、他のメンバーがどの断片を進めたのかを Editor へ
+		* 反映する。
 		*/
 		Bool Refresh();
 
 		/**
 		* [EN]
-		* Every piece of the scene as of the last read, removed entities
+		* Every piece of the scene as of the last read, removed ones
 		* included.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 直近の読み取り時点における Scene の全断片。削除済みの Entity も
+		* 直近の読み取り時点における Scene の全断片。削除済みのものも
 		* 含む。
 		*/
 		const DynamicArray<ScenePart>& Parts()const;
@@ -181,32 +201,18 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Publishes several pieces at once, each only if it still sits at
-		* the revision its change was built on. Either all of them are
-		* recorded or none are, so the scene is never left half-updated.
+		* Publishes several pieces at once in one write, replacing whatever
+		* the library held for each: the last publish wins. Every piece
+		* moves one revision past what the library had.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 複数の断片をまとめて Publish する。各断片は、その変更の元になった
-		* Revision のままである場合にだけ記録される。全て記録されるか、
-		* 1つも記録されないかのどちらかなので、Scene が中途半端な状態で
-		* 残ることはない。
+		* 複数の断片を1回の書き込みでまとめて Publish し、ライブラリが持って
+		* いた各断片を置き換える。最後に Publish したものが優先される。各断片
+		* は、ライブラリにあった Revision の1つ先へ進む。
 		*/
 		Bool Publish(const DynamicArray<ScenePartChange>& changes);
-
-		/**
-		* [EN]
-		* Whether the last publish was refused because one of its pieces
-		* had already moved on.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 直前の Publish が、断片のいずれかが既に先へ進んでいたために拒否
-		* されたかどうか。
-		*/
-		Bool Outdated()const;
 
 		/**
 		* [EN]
@@ -257,10 +263,6 @@ namespace SeedCore
 		/// [EN] The scene's pieces as of the last read.
 		/// [JP] 直近の読み取り時点における Scene の断片。
 		DynamicArray<ScenePart> parts_;
-
-		/// [EN] Whether the last publish lost to a change that had already happened.
-		/// [JP] 直前の Publish が、既に行われていた変更に負けたかどうか。
-		Bool outdated_ = false;
 
 		/// [EN] Last failure description; empty while everything is working.
 		/// [JP] 直近の失敗の説明。問題なく動いている間は空。

@@ -1,6 +1,5 @@
 #include <Editor/Editor/Panel/GuizmoPanel2D.h>
 #include <Editor/Editor/Context/EditorContext.h>
-#include <Editor/Editor/Panel/ResourceSyncControlPanel.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Command/ComponentCommand.h>
@@ -70,11 +69,6 @@ namespace SeedCore
 		}
 
 		if (!context_.view_.canvas_.camera_)
-		{
-			return;
-		}
-
-		if (context_.application_.resourceSync_ && !ResourceSyncControlPanel::EditableSelection(context_, ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsMouseHoveringRect(ImVec2(position.x, position.y), ImVec2(position.x + size.x, position.y + size.y))))
 		{
 			return;
 		}

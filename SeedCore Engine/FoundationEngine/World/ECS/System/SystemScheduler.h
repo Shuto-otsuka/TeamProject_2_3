@@ -106,7 +106,8 @@ namespace SeedCore
 		* [EN]
 		* Advances one fixed timestep: dispatches FixedTick to every
 		* ComponentBehaviour-derived component of an active actor that
-		* implements it. The caller
+		* implements it and has already been through Start, so FixedTick
+		* always follows Awake/Start, as Tick does. The caller
 		* is expected to invoke this once per fixed timestep (e.g. from an
 		* accumulator loop, alongside stepping the physics simulation by
 		* the same fixedTime), independently of how many times Run fires
@@ -116,8 +117,9 @@ namespace SeedCore
 		*
 		* [JP]
 		* 固定タイムステップぶん1ステップ進める: アクティブな actor が持つ、
-		* FixedTick を実装している全ての ComponentBehaviour 派生コンポーネント
-		* へディスパッチする。
+		* FixedTick を実装していて既に Start を通った全ての ComponentBehaviour
+		* 派生コンポーネントへディスパッチする。そのため FixedTick は、Tick と
+		* 同じく必ず Awake/Start の後になる。
 		* 呼び出し側は、Run が1フレームに何回発火するかとは無関係に、
 		* 固定タイムステップごとに（例えばアキュムレータループの中で、
 		* 同じ fixedTime 分だけ物理シミュレーションをステップするのと

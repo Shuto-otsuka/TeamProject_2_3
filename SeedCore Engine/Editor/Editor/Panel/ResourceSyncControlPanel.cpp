@@ -1,6 +1,5 @@
 #include <Editor/Editor/Panel/ResourceSyncControlPanel.h>
 #include <Editor/Editor/Context/EditorContext.h>
-#include <FoundationEngine/World/Actor/Actor.h>
 
 namespace SeedCore
 {
@@ -26,7 +25,7 @@ namespace SeedCore
 
 		ImGui::TextUnformatted(sync.Online() ? "共有ライブラリ: 接続中" : "共有ライブラリ: 未接続");
 		ImGui::SameLine();
-		if (ImGui::SmallButton("最新を確認"))
+		if (ImGui::SmallButton("最新を取得"))
 		{
 			sync.RequestRefresh();
 		}
@@ -74,7 +73,18 @@ namespace SeedCore
 		/// [JP] ライブラリへ届いていない間は全ての項目を無効にする。どれも応答を必要とするため。
 		ImGui::BeginDisabled(!sync.Online());
 		const SharedAsset* shared = sync.GetAsset(asset.assetID_);
-		if (!shared)
+		const SharedAsset* samePath = sync.GetAsset(std::filesystem::path(asset.fullpath_.str()));
+		if (!shared && samePath)
+		{
+			/// [EN] The library holds this path under another identifier, so the only sensible step is to take its copy and .meta.
+			/// [JP] ライブラリはこの位置を別の識別子で持っている。取るべき手は、その写しと .meta を受け取ることだけ。
+			ImGui::TextDisabled("ライブラリと識別子が違います");
+			if (ImGui::MenuItem("ライブラリの版で置き換え"))
+			{
+				sync.RequestAdopt(samePath->runtimeId_);
+			}
+		}
+		else if (!shared)
 		{
 			if (ImGui::MenuItem("チームへ共有"))
 			{
@@ -89,26 +99,27 @@ namespace SeedCore
 				sync.RequestGet(asset.assetID_);
 			}
 
-			/// [EN] A scene is checked out one entity at a time, so taking the whole file would defeat working in it together.
-			/// [JP] Scene は Entity 単位で編集権を取るため、ファイル全体を取ってしまうと共同作業の意味が無くなる。
-			if (!shared->scene_ && ImGui::MenuItem("編集権を取得"))
+			/// [EN] Unlike a get, this replaces local files even when they hold unpublished work, so it is the way out of a conflict that keeps the team's side.
+			/// [JP] 取得と違い、未公開の作業があってもローカルのファイルを置き換える。チーム側を残して競合を抜ける手段。
+			if (ImGui::MenuItem("ライブラリの版で置き換え"))
 			{
-				sync.RequestEdit(asset.assetID_, String("asset"));
+				sync.RequestAdopt(asset.assetID_);
 			}
+
+			/// [EN] Publishing always goes through and replaces whatever the library held, so the last upload is what the team gets.
+			/// [JP] 公開は常に通り、ライブラリの内容を置き換える。チームに届くのは最後にアップロードしたもの。
 			if (ImGui::MenuItem("変更を公開"))
 			{
 				sync.RequestPublish(asset.assetID_);
 			}
-			if (ImGui::MenuItem("編集権を解放"))
+			/// [EN] Unsharing removes it from Drive for everyone, while every member's local copy stays where it is.
+			/// [JP] 共有の解除は Drive から全員分を取り除く。各メンバーの手元の写しはそのまま残る。
+			if (ImGui::BeginMenu("共有を解除..."))
 			{
-				sync.RequestRelease(asset.assetID_, String("asset"));
-			}
-			if (ImGui::BeginMenu("共有を終了..."))
-			{
-				ImGui::TextUnformatted("チーム全体から見えなくなります。");
+				ImGui::TextUnformatted("ドライブから削除されます。フォルダのファイルは残ります。");
 				if (ImGui::MenuItem("実行する"))
 				{
-					sync.RequestRetire(asset.assetID_);
+					sync.RequestUnshare(asset.assetID_);
 				}
 				ImGui::EndMenu();
 			}
@@ -119,14 +130,14 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Draws an asset's revision and who is currently editing it, for the
-	* details pane and the context menu.
+	* Draws an asset's revision and how this copy stands against the
+	* library, for the details pane and the context menu.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* アセットの Revision と、今それを誰が編集しているかを描く。詳細欄と
-	* 右クリックメニューで使う。
+	* アセットの Revision と、手元の写しがライブラリに対してどういう状態
+	* かを描く。詳細欄と右クリックメニューで使う。
 	*/
 	void ResourceSyncControlPanel::DrawState(EditorContext& context, const AssetRecord& asset)
 	{
@@ -145,145 +156,15 @@ namespace SeedCore
 			ImGui::TextDisabled("この PC にはまだありません");
 		}
 
-		/// [EN] The conflict is stated instead of the plain unsent-work line, since what to do about it differs.
-		/// [JP] 競合のときは単なる未送信の表示に代えてこちらを出す。取るべき対応が違うため。
+		/// [EN] Both sides having moved is stated plainly, since publishing now replaces the other member's newer copy.
+		/// [JP] 両側が動いている場合ははっきり示す。今公開すると、他のメンバーの新しい写しを置き換えることになるため。
 		if (sync.Conflicted(asset.assetID_))
 		{
-			ImGui::Text("競合: こちらとライブラリの両方が変わっています");
+			ImGui::Text("競合: 公開するとライブラリの新しい版を上書きします");
 		}
 		else if (sync.Modified(asset.assetID_))
 		{
 			ImGui::Text("未公開の変更があります");
-		}
-
-		for (const EditLease& lease : sync.GetLeases())
-		{
-			if (lease.assetId_ == shared->id_)
-			{
-				ImGui::Text("編集中: %s (%s)", lease.owner_.c_str(), lease.scope_.c_str());
-			}
-		}
-	}
-
-	/**
-	* [EN]
-	* Whether the given actor may be changed, asking for the right to
-	* edit it when request says the member is reaching for it.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* その Actor を変更してよいかどうか。request が立っていれば、メンバーが
-	* 操作しようとしているとみなして編集権を要求する。
-	*/
-	Bool ResourceSyncControlPanel::EditableActor(EditorContext& context, Actor actor, Bool request)
-	{
-		ResourceSync& sync = *context.application_.resourceSync_;
-
-		/// [EN] A scene that is not shared, or no scene at all, is nobody else's business.
-		/// [JP] 共有されていない Scene、あるいは Scene が開かれていない場合は、他の誰にも関係しない。
-		const SharedAsset* scene = sync.GetAsset(context.scene_.path_.FullPath());
-		if (!actor || !scene)
-		{
-			return true;
-		}
-
-		/// [EN] The entity's own identifier is what the lease is on, so renaming or reparenting it changes nothing here.
-		/// [JP] Lease が結び付くのは Entity 自身の識別子。リネームや親の変更をしても、ここでの扱いは変わらない。
-		String scope = String(std::format("entity:{}", actor.CollaborationID().str()));
-		if (request)
-		{
-			sync.RequestEdit(scene->runtimeId_, scope);
-		}
-		return sync.Editable(scene->runtimeId_, scope);
-	}
-
-	/**
-	* [EN]
-	* Whether the scene's own structure may be changed, which covers
-	* adding, removing and reparenting entities.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Scene の構造を変更してよいかどうか。Entity の追加・削除・親の変更が
-	* これにあたる。
-	*/
-	Bool ResourceSyncControlPanel::EditableStructure(EditorContext& context, Bool request)
-	{
-		ResourceSync& sync = *context.application_.resourceSync_;
-		const SharedAsset* scene = sync.GetAsset(context.scene_.path_.FullPath());
-		if (!scene)
-		{
-			return true;
-		}
-
-		/// [EN] One structure lease covers the whole hierarchy, because moving one entity can change another's place in it.
-		/// [JP] 構造の Lease は階層全体を対象にする。1つの Entity を動かすと、他の Entity の位置も変わり得るため。
-		if (request)
-		{
-			sync.RequestEdit(scene->runtimeId_, String("structure"));
-		}
-		return sync.Editable(scene->runtimeId_, String("structure"));
-	}
-
-	/**
-	* [EN]
-	* Whether every selected actor may be changed, which is what the
-	* gizmos ask before they move anything.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 選択中の Actor をすべて変更してよいかどうか。ギズモが何かを動かす
-	* 前に確認するのがこれ。
-	*/
-	Bool ResourceSyncControlPanel::EditableSelection(EditorContext& context, Bool request)
-	{
-		/// [EN] The loop is not cut short, so a member dragging several actors asks for all of them rather than the first.
-		/// [JP] 途中で打ち切らない。複数の Actor を掴んでいるメンバーが、先頭だけでなく全てについて要求できるようにするため。
-		Bool editable = true;
-		for (Actor actor : context.selection_.actors_)
-		{
-			editable = EditableActor(context, actor, request) && editable;
-		}
-		return editable;
-	}
-
-	/**
-	* [EN]
-	* Draws who holds an actor beside its name in the hierarchy, so the
-	* team's work in one scene is visible at a glance.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 階層で Actor の名前の横に、誰がそれを保持しているかを描く。1つの
-	* Scene 内でのチームの作業が一目で分かるようにするため。
-	*/
-	void ResourceSyncControlPanel::DrawActorState(EditorContext& context, Actor actor)
-	{
-		ResourceSync& sync = *context.application_.resourceSync_;
-		const SharedAsset* scene = sync.GetAsset(context.scene_.path_.FullPath());
-		if (!scene)
-		{
-			return;
-		}
-
-		/// [EN] A structure lease is shown on every actor, since while it is held nobody else may rearrange any of them.
-		/// [JP] 構造の Lease は全ての Actor に表示する。保持されている間は、誰も並べ替えられないため。
-		String scope = String(std::format("entity:{}", actor.CollaborationID().str()));
-		for (const EditLease& lease : sync.GetLeases())
-		{
-			if (lease.assetId_ != scene->id_ || lease.mine_)
-			{
-				continue;
-			}
-			if (lease.scope_ == scope || lease.scope_ == String("structure"))
-			{
-				ImGui::SameLine();
-				ImGui::TextDisabled("[%s]", lease.owner_.c_str());
-			}
 		}
 	}
 }

@@ -41,7 +41,17 @@ void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID)
 
         /// [EN] Move the bounding sphere like the instance; the radius follows the largest axis so the test stays conservative under non-uniform scaling.
 		/// [JP] 包囲球をインスタンスと同じく動かす。拡縮がそろっていなくても判定が甘くならないよう、半径は一番大きい軸に合わせる。
-        float3 scale = instance.dimensions_;
+		/// [EN] Same per-kind scale as PrimitiveSolidMS.hlsl.
+		/// [JP] PrimitiveSolidMS.hlsl と同じ、種類ごとの拡縮。
+		float3 scale = instance.dimensions_;
+		if (instance.shape_kind_ == PRIMITIVE_SHAPE_SPHERE)
+		{
+			scale = instance.dimensions_.xxx;
+		}
+		else if (instance.shape_kind_ == PRIMITIVE_SHAPE_CYLINDER || instance.shape_kind_ == PRIMITIVE_SHAPE_CONE)
+		{
+			scale = instance.dimensions_.xyx;
+		}
         float3 local_center = bound.center_ * scale;
         float3 twist = 2.0 * cross(instance.rotation_.xyz, local_center);
         float3 world_center = local_center + instance.rotation_.w * twist + cross(instance.rotation_.xyz, twist) + instance.position_;

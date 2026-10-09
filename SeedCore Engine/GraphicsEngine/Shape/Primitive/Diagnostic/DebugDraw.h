@@ -6,18 +6,20 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* Script-facing entry for drawing wireframe debug shapes in the world.
-	* Each call records one shape into the World's RenderInstance, drawn in
-	* both the editor and game views for one frame. Calls are recorded in
-	* debug builds only and do nothing in release builds.
+	* Script-facing entry for drawing debug shapes in the world: wireframe,
+	* except the arrow, which is drawn filled. Each call records its shapes
+	* into the World's RenderInstance, drawn in both the editor and game
+	* views for one frame. Calls are recorded in debug builds only and do
+	* nothing in release builds.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* ワールドにワイヤーフレームのデバッグ用の形を描く、スクリプト向けの
-	* 窓口。呼ぶたびに World の RenderInstance へ形を1つ記録し、エディター
-	* ビューとゲームビューの両方に1フレームだけ描かれる。記録するのは
-	* Debug ビルドだけで、Release ビルドでは何もしない。
+	* ワールドにデバッグ用の形を描く、スクリプト向けの窓口。矢印だけは面で
+	* 塗り、それ以外はワイヤーフレームで描く。呼ぶたびに World の
+	* RenderInstance へ形を記録し、エディタービューとゲームビューの両方に
+	* 1フレームだけ描かれる。記録するのは Debug ビルドだけで、Release
+	* ビルドでは何もしない。
 	*/
 	class SEEDCORE_API DebugDraw
 	{
@@ -58,15 +60,18 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Draws an arrow from start to end. headLength caps the head's length
-		* in meters; 0 leaves the head at its fixed fraction of the arrow's
-		* length.
+		* Draws a filled arrow from start to end: a cylinder shaft and a cone
+		* head. headLength caps the head's length in meters; 0 leaves the head
+		* at its fixed fraction of the arrow's length. The head's radius and
+		* the shaft's radius follow the head's length.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* start から end へ矢印を描く。headLength は矢じりの長さの上限
-		* （メートル）。0 なら矢じりは矢印の長さに対する決まった割合のまま。
+		* start から end へ、面で塗った矢印を描く。胴体は円柱、矢じりは円錐。
+		* headLength は矢じりの長さの上限（メートル）。0 なら矢じりは矢印の
+		* 長さに対する決まった割合のまま。矢じりと胴体の半径は、矢じりの
+		* 長さに合わせて決まる。
 		*/
 		void Arrow(const Vector3& start, const Vector3& end, const Color& color, Float headLength = 0.0f);
 

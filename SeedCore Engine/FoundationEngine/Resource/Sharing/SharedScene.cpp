@@ -36,14 +36,14 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Re-reads the scene so the Editor sees which entities other
-	* members have moved on.
+	* Re-reads the scene so the Editor sees which pieces other members
+	* have moved on.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* Scene を読み直し、他のメンバーがどの Entity を進めたのかを Editor
-	* へ反映する。
+	* Scene を読み直し、他のメンバーがどの断片を進めたのかを Editor へ
+	* 反映する。
 	*/
 	Bool SharedScene::Refresh()
 	{
@@ -64,13 +64,13 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Every piece of the scene as of the last read, removed entities
+	* Every piece of the scene as of the last read, removed ones
 	* included.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 直近の読み取り時点における Scene の全断片。削除済みの Entity も
+	* 直近の読み取り時点における Scene の全断片。削除済みのものも
 	* 含む。
 	*/
 	const DynamicArray<ScenePart>& SharedScene::Parts()const
@@ -90,8 +90,8 @@ namespace SeedCore
 	*/
 	const ScenePart* SharedScene::Find(const String& scope)const
 	{
-		/// [EN] A scene holds one piece per entity plus two more, so a straight scan stays cheap even for a large scene.
-		/// [JP] Scene が持つ断片は Entity 数に2つ足した程度なので、大きな Scene でも素直な走査で足りる。
+		/// [EN] A scene holds a few pieces per entity plus two more, so a straight scan stays cheap even for a large scene.
+		/// [JP] Scene が持つ断片は Entity ごとに数個と、それに2つ足した程度なので、大きな Scene でも素直な走査で足りる。
 		for (const ScenePart& part : parts_)
 		{
 			if (part.scope_ == scope)
@@ -104,56 +104,40 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Publishes several pieces at once, each only if it still sits at
-	* the revision its change was built on. Either all of them are
-	* recorded or none are, so the scene is never left half-updated.
+	* Publishes several pieces at once in one write, replacing whatever
+	* the library held for each: the last publish wins. Every piece
+	* moves one revision past what the library had.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 複数の断片をまとめて Publish する。各断片は、その変更の元になった
-	* Revision のままである場合にだけ記録される。全て記録されるか、
-	* 1つも記録されないかのどちらかなので、Scene が中途半端な状態で
-	* 残ることはない。
+	* 複数の断片を1回の書き込みでまとめて Publish し、ライブラリが持って
+	* いた各断片を置き換える。最後に Publish したものが優先される。各断片
+	* は、ライブラリにあった Revision の1つ先へ進む。
 	*/
 	Bool SharedScene::Publish(const DynamicArray<ScenePartChange>& changes)
 	{
-		outdated_ = false;
 		if (changes.empty())
 		{
-			/// [EN] Saving a scene without touching any entity is normal, and there is then nothing to tell the team.
-			/// [JP] どの Entity も触らずに Scene を保存することは普通にあり、その場合チームへ伝えることは何も無い。
+			/// [EN] Saving a scene without touching anything is normal, and there is then nothing to tell the team.
+			/// [JP] 何も触らずに Scene を保存することは普通にあり、その場合チームへ伝えることは何も無い。
 			return true;
 		}
 
 		return Modify([this, changes](nlohmann::json& scene)
 		{
-			/// [EN] Every change is checked before any is applied, which is what makes the publish all-or-nothing.
-			/// [JP] どれか1つを適用する前に全ての変更を確認する。これが「全部か、何もしないか」を成り立たせている。
 			for (const ScenePartChange& change : changes)
 			{
+				/// [EN] The revision is read from what the library holds right now, so it still moves forward when someone published in between.
+				/// [JP] Revision は今ライブラリにある値から読む。間に誰かが Publish していても、番号は前へ進む。
 				Uint64 current = 0;
 				if (scene["parts"].contains(change.scope_.str()))
 				{
 					current = scene["parts"][change.scope_.str()].value("revision", Uint64(0));
 				}
 
-				/// [EN] A piece that moved on means another member published this same entity while this one was being edited.
-				/// [JP] 断片が先へ進んでいるのは、こちらが編集している間に他のメンバーが同じ Entity を Publish したということ。
-				if (current != change.baseRevision_)
-				{
-					outdated_ = true;
-					error_ = String(std::format("\"{}\" は他のメンバーが先に公開しています。", change.scope_.str()));
-					return false;
-				}
-			}
-
-			/// [EN] Only now is anything written, so a refusal above leaves the scene exactly as it was.
-			/// [JP] 実際に書き込むのはここから。上で拒否された場合、Scene は元のままになる。
-			for (const ScenePartChange& change : changes)
-			{
 				nlohmann::json part;
-				part["revision"] = change.baseRevision_ + 1;
+				part["revision"] = current + 1;
 				part["hash"] = change.hash_.str();
 
 				/// [EN] A small piece rides inside the document, which is what makes a scene edit arrive in one read rather than two.
@@ -162,29 +146,13 @@ namespace SeedCore
 				part["driveId"] = change.driveId_.str();
 				part["size"] = change.size_;
 
-				/// [EN] A removed entity keeps its entry and its revision, so a member with an old copy learns it was deleted.
-				/// [JP] 削除された Entity も項目と Revision を保つ。古い写しを持つメンバーが、削除されたと知るために要る。
+				/// [EN] A removed piece keeps its entry and its revision, so a member with an old copy learns it was deleted.
+				/// [JP] 削除された断片も項目と Revision を保つ。古い写しを持つメンバーが、削除されたと知るために要る。
 				part["deleted"] = change.deleted_;
 				scene["parts"][change.scope_.str()] = part;
 			}
 			return true;
 		});
-	}
-
-	/**
-	* [EN]
-	* Whether the last publish was refused because one of its pieces
-	* had already moved on.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 直前の Publish が、断片のいずれかが既に先へ進んでいたために拒否
-	* されたかどうか。
-	*/
-	Bool SharedScene::Outdated()const
-	{
-		return outdated_;
 	}
 
 	/**
@@ -254,8 +222,8 @@ namespace SeedCore
 				return true;
 			}
 
-			/// [EN] Losing the document's own revision only means another entity was published at the same moment.
-			/// [JP] ドキュメント自体の版で負けたのは、同じ瞬間に別の Entity が Publish されたというだけのこと。
+			/// [EN] Losing the document's own revision only means another piece was published at the same moment.
+			/// [JP] ドキュメント自体の版で負けたのは、同じ瞬間に別の断片が Publish されたというだけのこと。
 			if (!document_.Conflicted())
 			{
 				error_ = document_.Error();
@@ -278,8 +246,8 @@ namespace SeedCore
 	*/
 	void SharedScene::Adopt(const nlohmann::json& scene)
 	{
-		/// [EN] The list is rebuilt from scratch, so an entity removed by someone else disappears from this Editor too.
-		/// [JP] 一覧は毎回作り直す。他の誰かが削除した Entity は、この Editor からも消える。
+		/// [EN] The list is rebuilt from scratch, so a piece removed by someone else disappears from this Editor too.
+		/// [JP] 一覧は毎回作り直す。他の誰かが削除した断片は、この Editor からも消える。
 		parts_.clear();
 		if (!scene.is_object() || !scene.contains("parts") || !scene["parts"].is_object())
 		{

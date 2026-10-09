@@ -26,9 +26,19 @@ void main(in payload PrimitiveSolidASPayload as_payload, uint gtid : SV_GroupThr
     {
         PrimitiveVertex vertex = mesh_vertices[vertex_indices[meshlet.vertex_offset_ + gtid]];
 
-        /// [EN] Scale the unit mesh to the instance (Box: half extents), rotate it by the instance quaternion (v + w * t + cross(xyz, t) with t = 2 * cross(xyz, v)), then move it. The normal is divided by the scale before rotating so it stays perpendicular under non-uniform scaling.
-		/// [JP] 単位メッシュをインスタンスの大きさにし（Box は半分の大きさ）、インスタンスのクォータニオンで回して（t = 2 * cross(xyz, v) として v + w * t + cross(xyz, t)）、位置へ動かす。法線は、拡縮がそろっていなくても面に垂直なままになるよう、拡縮で割ってから回す。
-        float3 scale = instance.dimensions_;
+        /// [EN] Scale the unit mesh to the instance (the shape's dimensions spread over the three axes), rotate it by the instance quaternion (v + w * t + cross(xyz, t) with t = 2 * cross(xyz, v)), then move it. The normal is divided by the scale before rotating so it stays perpendicular under non-uniform scaling.
+		/// [JP] 単位メッシュをインスタンスの大きさにし（形の大きさを 3 軸に展開したもの）、インスタンスのクォータニオンで回して（t = 2 * cross(xyz, v) として v + w * t + cross(xyz, t)）、位置へ動かす。法線は、拡縮がそろっていなくても面に垂直なままになるよう、拡縮で割ってから回す。
+		/// [EN] The dimensions follow the wireframe shapes: Box holds the half extents, Sphere the radius in X, Cylinder and Cone the radius in X and the half height in Y, so the radius is spread over X and Z.
+		/// [JP] 大きさはワイヤーフレームの形と同じ意味。Box は半分の大きさ、Sphere は X に半径、Cylinder と Cone は X に半径と Y に高さの半分なので、半径を X と Z に広げる。
+		float3 scale = instance.dimensions_;
+		if (instance.shape_kind_ == PRIMITIVE_SHAPE_SPHERE)
+		{
+			scale = instance.dimensions_.xxx;
+		}
+		else if (instance.shape_kind_ == PRIMITIVE_SHAPE_CYLINDER || instance.shape_kind_ == PRIMITIVE_SHAPE_CONE)
+		{
+			scale = instance.dimensions_.xyx;
+		}
         float3 local_position = vertex.position_ * scale;
         float3 position_twist = 2.0 * cross(instance.rotation_.xyz, local_position);
         float3 world_position = local_position + instance.rotation_.w * position_twist + cross(instance.rotation_.xyz, position_twist) + instance.position_;

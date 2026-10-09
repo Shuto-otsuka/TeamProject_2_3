@@ -76,6 +76,22 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Sends a request without a body.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディなしでリクエストを送る。
+	*/
+	HttpResponse HttpClient::Send(const String& method, const String& url, const DynamicArray<HttpHeader>& headers)
+	{
+		/// [EN] An empty body is a valid body, so this just names the common case for readability.
+		/// [JP] 空のボディも正しいボディなので、これはよくある呼び方に名前を付けているだけ。
+		return Send(method, url, headers, DynamicArray<Byte>());
+	}
+
+	/**
+	* [EN]
 	* Sends a request and writes the response body straight to
 	* destination instead of holding it in memory, so an asset of any
 	* size can be fetched. The body of the returned response is empty
@@ -103,184 +119,6 @@ namespace SeedCore
 			return response;
 		}
 		return Exchange(method, url, headers, DynamicArray<Byte>(), &stream);
-	}
-
-	/**
-	* [EN]
-	* Performs one exchange. destination, when given, receives the
-	* response body as it arrives; otherwise the body is collected in
-	* memory. Send and Download are both thin wrappers over this.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* やり取りを1回行う。destination が与えられていれば、届いた本文を
-	* そこへ書き出し、無ければメモリへ溜める。Send と Download は
-	* どちらもこれを薄く包んだもの。
-	*/
-	HttpResponse HttpClient::Exchange(const String& method, const String& url, const DynamicArray<HttpHeader>& headers, const DynamicArray<Byte>& body, std::ofstream* destination)
-	{
-		/// [EN] The result is filled in as the exchange proceeds and returned as-is at every early exit.
-		/// [JP] 結果はやり取りを進めながら埋めていき、途中で抜ける場合もそのまま返す。
-		HttpResponse response;
-		if (!session_)
-		{
-			/// [EN] status_ stays 0, which is how callers tell "never reached the server" from a real HTTP status.
-			/// [JP] status_ は 0 のまま。呼び出し側はこれで「サーバーへ届いていない」と本物のHTTPステータスを区別する。
-			response.error_ = String("WinHTTP セッションを利用できません。");
-			return response;
-		}
-
-		/// [EN] WinHTTP wants the host, the path and the query separately, so the URL is taken apart first.
-		/// [JP] WinHTTP はホスト・パス・クエリを別々に要求するため、まずURLを分解する。
-
-		/// [EN] WinHttpCrackUrl writes into buffers the caller provides, so those buffers are made up front.
-		/// [JP] WinHttpCrackUrl は呼び出し側が用意したバッファへ書き込むため、先にその領域を作っておく。
-		std::wstring wideUrl = url.w_str();
-		std::wstring host(256, L'\0');
-		std::wstring path(4096, L'\0');
-		std::wstring extra(2048, L'\0');
-
-		/// [EN] dwStructSize is how this API checks which version of the structure it was handed.
-		/// [JP] dwStructSize は、このAPIが「どの版の構造体を渡されたか」を判断するための項目。
-		URL_COMPONENTS components{};
-		components.dwStructSize = sizeof(components);
-
-		/// [EN] Each pointer plus length pair tells the call where to put that part of the URL and how much room there is.
-		/// [JP] ポインタと長さの組は、URLのその部分をどこへ、どれだけの余裕で書いてよいかを伝える。
-		components.lpszHostName = host.data();
-		components.dwHostNameLength = static_cast<DWORD>(host.size());
-		components.lpszUrlPath = path.data();
-		components.dwUrlPathLength = static_cast<DWORD>(path.size());
-		components.lpszExtraInfo = extra.data();
-		components.dwExtraInfoLength = static_cast<DWORD>(extra.size());
-
-		/// [EN] A failure here means the text was not a usable absolute URL at all.
-		/// [JP] ここで失敗するのは、そもそも使える絶対URLの文字列ではなかった場合。
-		if (!WinHttpCrackUrl(wideUrl.c_str(), static_cast<DWORD>(wideUrl.size()), 0, &components))
-		{
-			response.error_ = String(std::format("URL を解釈できませんでした: {}", url.str()));
-			return response;
-		}
-
-		/// [EN] Connecting names only the host and the port; nothing is sent yet at this point.
-		/// [JP] 接続で指定するのはホストとポートだけ。この時点ではまだ何も送っていない。
-		HINTERNET connection = WinHttpConnect(session_, components.lpszHostName, components.nPort, 0);
-		if (!connection)
-		{
-			response.error_ = String(std::format("{} へ接続できませんでした。", String(std::wstring(components.lpszHostName, components.dwHostNameLength)).str()));
-			return response;
-		}
-
-		/// [EN] The path and the query are joined back together, because the request wants them as one target string.
-		/// [JP] パスとクエリをつなぎ直す。リクエスト側は両者を1つの文字列として受け取るため。
-		std::wstring target = std::wstring(components.lpszUrlPath, components.dwUrlPathLength) + std::wstring(components.lpszExtraInfo, components.dwExtraInfoLength);
-
-		/// [EN] SECURE switches TLS on; every Google endpoint this layer talks to is https, so this is the normal path.
-		/// [JP] SECURE を付けると TLS が有効になる。この層が話す Google のエンドポイントは全て https なので常にこちら。
-		DWORD flags = components.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0;
-
-		/// [EN] Opening a request builds the message; it is still only prepared, not sent.
-		/// [JP] リクエストを開く操作はメッセージを組み立てるだけで、まだ送信はしない。
-		HINTERNET request = WinHttpOpenRequest(connection, method.w_str().c_str(), target.c_str(), nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, flags);
-		if (!request)
-		{
-			WinHttpCloseHandle(connection);
-			response.error_ = String("HTTP リクエストを作成できませんでした。");
-			return response;
-		}
-
-		/// [EN] Sending hands over the headers and the body together.
-		/// [JP] 送信ではヘッダとボディをまとめて渡す。
-
-		/// [EN] The body length appears twice because WinHTTP also supports sending a body in several pieces.
-		/// [JP] ボディの長さを2回渡すのは、WinHTTP がボディを何回かに分けて送る使い方も許しているため。
-		std::wstring headerBlock = BuildHeaders(headers);
-		Bool sent = WinHttpSendRequest(request, headerBlock.empty() ? WINHTTP_NO_ADDITIONAL_HEADERS : headerBlock.c_str(), headerBlock.empty() ? 0 : static_cast<DWORD>(headerBlock.size()), body.empty() ? nullptr : const_cast<Byte*>(body.data()), static_cast<DWORD>(body.size()), static_cast<DWORD>(body.size()), 0) != FALSE;
-
-		/// [EN] Receiving waits for the status line and the headers; the body is read afterwards.
-		/// [JP] 受信の待機で得られるのはステータス行とヘッダまで。ボディはその後に読む。
-		if (!sent || !WinHttpReceiveResponse(request, nullptr))
-		{
-			/// [EN] Reaching here means the network or TLS failed, so there is no HTTP status to report at all.
-			/// [JP] ここへ来るのは通信か TLS の失敗で、報告できるHTTPステータス自体が存在しない。
-			response.error_ = String(std::format("応答が届く前にリクエストが失敗しました (Windows エラー {})。", GetLastError()));
-			WinHttpCloseHandle(request);
-			WinHttpCloseHandle(connection);
-			return response;
-		}
-
-		/// [EN] QUERY_FLAG_NUMBER asks for the status as a number rather than as the text "200".
-		/// [JP] QUERY_FLAG_NUMBER は、ステータスを "200" という文字列ではなく数値で受け取る指定。
-		DWORD status = 0;
-		DWORD statusSize = sizeof(status);
-		WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX, &status, &statusSize, WINHTTP_NO_HEADER_INDEX);
-		response.status_ = status;
-
-		/// [EN] The server's clock is captured on every exchange; lease deadlines are expressed against it.
-		/// [JP] やり取りのたびにサーバー側の時刻を拾っておく。Lease の期限はこれを基準に表す。
-		response.serverTime_ = ReadServerTime(request);
-
-		/// [EN] Location matters only for a resumable upload, where it names the session to send the file to.
-		/// [JP] Location が意味を持つのは再開可能アップロードのときだけで、ファイルを送る先の窓口を示す。
-		response.location_ = ReadLocation(request);
-
-		/// [EN] A failed download still answers with a short JSON explanation, which is worth keeping in memory.
-		/// [JP] 失敗したダウンロードも短い JSON の説明を返すため、それはメモリへ残す価値がある。
-		Bool toFile = destination != nullptr && response.status_ == 200;
-
-		/// [EN] The body arrives in chunks of unpredictable size, so it is taken one chunk at a time.
-		/// [JP] ボディは大きさの読めない塊で届くため、塊ごとに受け取っていく。
-		DynamicArray<Byte> chunk;
-		DWORD available = 0;
-		while (WinHttpQueryDataAvailable(request, &available) && available > 0)
-		{
-			/// [EN] Room is made for the announced amount, either in the scratch chunk or at the end of the kept body.
-			/// [JP] 予告された分の場所を空ける。書き出す場合は作業用の塊に、溜める場合は本文の末尾に。
-			Size offset = toFile ? 0 : response.body_.size();
-			DynamicArray<Byte>& buffer = toFile ? chunk : response.body_;
-			buffer.resize(offset + available);
-			DWORD read = 0;
-			if (!WinHttpReadData(request, buffer.data() + offset, available, &read))
-			{
-				/// [EN] A partial body is kept rather than discarded, since it often carries the server's error message.
-				/// [JP] 途中までのボディも捨てずに残す。そこにサーバー側のエラーメッセージが入っていることが多いため。
-				response.error_ = String("応答の本文を最後まで読み取れませんでした。");
-				break;
-			}
-
-			/// [EN] A read may return less than was announced, so only what actually arrived is used.
-			/// [JP] 読み取りは予告より少なく返ることがあるため、実際に届いた分だけを使う。
-			buffer.resize(offset + read);
-			if (toFile)
-			{
-				/// [EN] Writing each chunk straight out is what keeps a multi-gigabyte asset from sitting in memory.
-				/// [JP] 塊ごとにそのまま書き出すことで、数ギガバイトのアセットをメモリに載せずに済む。
-				destination->write(buffer.data(), buffer.size());
-			}
-		}
-
-		/// [EN] Both handles are closed in the reverse order they were opened; the session itself stays alive.
-		/// [JP] 2つのハンドルを開いた順と逆に閉じる。セッション自体はそのまま生かしておく。
-		WinHttpCloseHandle(request);
-		WinHttpCloseHandle(connection);
-		return response;
-	}
-
-	/**
-	* [EN]
-	* Sends a request without a body.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ボディなしでリクエストを送る。
-	*/
-	HttpResponse HttpClient::Send(const String& method, const String& url, const DynamicArray<HttpHeader>& headers)
-	{
-		/// [EN] An empty body is a valid body, so this just names the common case for readability.
-		/// [JP] 空のボディも正しいボディなので、これはよくある呼び方に名前を付けているだけ。
-		return Send(method, url, headers, DynamicArray<Byte>());
 	}
 
 	/**
@@ -382,100 +220,185 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Returns the Location response header of request, or an empty
-	* string when it carries none.
+	* Performs one exchange. destination, when given, receives the
+	* response body as it arrives; otherwise the body is collected in
+	* memory. Send and Download are both thin wrappers over this.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* request の Location レスポンスヘッダを返す。持っていない場合は
-	* 空文字列。
+	* やり取りを1回行う。destination が与えられていれば、届いた本文を
+	* そこへ書き出し、無ければメモリへ溜める。Send と Download は
+	* どちらもこれを薄く包んだもの。
 	*/
-	String HttpClient::ReadLocation(HINTERNET request)
+	HttpResponse HttpClient::Exchange(const String& method, const String& url, const DynamicArray<HttpHeader>& headers, const DynamicArray<Byte>& body, std::ofstream* destination)
 	{
-		/// [EN] The call is made twice: the first asks how much room the value needs, the second fetches it.
-		/// [JP] 呼び出しは2回行う。1回目で値に必要な長さを尋ね、2回目で実際に受け取る。
-		DWORD size = 0;
-		WinHttpQueryHeaders(request, WINHTTP_QUERY_LOCATION, WINHTTP_HEADER_NAME_BY_INDEX, nullptr, &size, WINHTTP_NO_HEADER_INDEX);
-		if (size == 0)
+		/// [EN] The result is filled in as the exchange proceeds and returned as-is at every early exit.
+		/// [JP] 結果はやり取りを進めながら埋めていき、途中で抜ける場合もそのまま返す。
+		HttpResponse response;
+		if (!session_)
 		{
-			/// [EN] Most answers have no Location at all, so this is the ordinary path rather than a failure.
-			/// [JP] Location を持たない応答がほとんどなので、これは失敗ではなく普通の経路。
-			return String();
+			/// [EN] status_ stays 0, which is how callers tell "never reached the server" from a real HTTP status.
+			/// [JP] status_ は 0 のまま。呼び出し側はこれで「サーバーへ届いていない」と本物のHTTPステータスを区別する。
+			response.error_ = String("WinHTTP セッションを利用できません。");
+			return response;
 		}
 
-		/// [EN] The size is in bytes and includes the terminator, while the buffer counts wide characters.
-		/// [JP] 返る長さはバイト単位で終端を含む一方、バッファは文字単位で数えるため割って使う。
-		std::wstring value(size / sizeof(wchar_t), L'\0');
-		if (!WinHttpQueryHeaders(request, WINHTTP_QUERY_LOCATION, WINHTTP_HEADER_NAME_BY_INDEX, value.data(), &size, WINHTTP_NO_HEADER_INDEX))
+		/// [EN] WinHTTP wants the host, the path and the query separately, so the URL is taken apart first.
+		/// [JP] WinHTTP はホスト・パス・クエリを別々に要求するため、まずURLを分解する。
+
+		/// [EN] WinHttpCrackUrl writes into buffers the caller provides, so those buffers are made up front.
+		/// [JP] WinHttpCrackUrl は呼び出し側が用意したバッファへ書き込むため、先にその領域を作っておく。
+		std::wstring wideUrl = url.w_str();
+		std::wstring host(256, L'\0');
+		std::wstring path(4096, L'\0');
+		std::wstring extra(2048, L'\0');
+
+		/// [EN] dwStructSize is how this API checks which version of the structure it was handed.
+		/// [JP] dwStructSize は、このAPIが「どの版の構造体を渡されたか」を判断するための項目。
+		URL_COMPONENTS components{};
+		components.dwStructSize = sizeof(components);
+
+		/// [EN] Each pointer plus length pair tells the call where to put that part of the URL and how much room there is.
+		/// [JP] ポインタと長さの組は、URLのその部分をどこへ、どれだけの余裕で書いてよいかを伝える。
+		components.lpszHostName = host.data();
+		components.dwHostNameLength = static_cast<DWORD>(host.size());
+		components.lpszUrlPath = path.data();
+		components.dwUrlPathLength = static_cast<DWORD>(path.size());
+		components.lpszExtraInfo = extra.data();
+		components.dwExtraInfoLength = static_cast<DWORD>(extra.size());
+
+		/// [EN] A failure here means the text was not a usable absolute URL at all.
+		/// [JP] ここで失敗するのは、そもそも使える絶対URLの文字列ではなかった場合。
+		if (!WinHttpCrackUrl(wideUrl.c_str(), static_cast<DWORD>(wideUrl.size()), 0, &components))
 		{
-			return String();
+			response.error_ = String(std::format("URL を解釈できませんでした: {}", url.str()));
+			return response;
 		}
 
-		/// [EN] The terminator is trimmed so the value can be used as a plain URL.
-		/// [JP] 終端文字を落として、そのまま URL として使える形にする。
-		return String(std::wstring(value.c_str()));
-	}
-
-	/**
-	* [EN]
-	* Converts the Date response header of request into seconds since
-	* the Unix epoch, or 0 when the header is missing or unparsable.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* request の Date レスポンスヘッダをUnixエポックからの秒数へ変換
-	* する。ヘッダが無い、または解釈できない場合は 0。
-	*/
-	Double HttpClient::ReadServerTime(HINTERNET request)
-	{
-		/// [EN] The Date header is text such as "Tue, 23 Sep 2026 12:34:56 GMT"; the SYSTEMTIME flag has WinHTTP parse it for us.
-		/// [JP] Date ヘッダは "Tue, 23 Sep 2026 12:34:56 GMT" のような文字列。SYSTEMTIME 指定で WinHTTP に解釈させる。
-		SYSTEMTIME systemTime{};
-		DWORD size = sizeof(systemTime);
-		if (!WinHttpQueryHeaders(request, WINHTTP_QUERY_DATE | WINHTTP_QUERY_FLAG_SYSTEMTIME, WINHTTP_HEADER_NAME_BY_INDEX, &systemTime, &size, WINHTTP_NO_HEADER_INDEX))
+		/// [EN] Connecting names only the host and the port; nothing is sent yet at this point.
+		/// [JP] 接続で指定するのはホストとポートだけ。この時点ではまだ何も送っていない。
+		HINTERNET connection = WinHttpConnect(session_, components.lpszHostName, components.nPort, 0);
+		if (!connection)
 		{
-			/// [EN] Not every answer carries a Date; the caller keeps the previous reading in that case.
-			/// [JP] Date を持たない応答もある。その場合、呼び出し側は前回の値を保つ。
-			return 0.0;
+			response.error_ = String(std::format("{} へ接続できませんでした。", String(std::wstring(components.lpszHostName, components.dwHostNameLength)).str()));
+			return response;
 		}
 
-		/// [EN] SYSTEMTIME is a calendar breakdown, so it is turned into a single counter before any arithmetic.
-		/// [JP] SYSTEMTIME は年月日時分秒に分かれた形なので、計算の前に1つの通し数値へ直す。
-		FILETIME fileTime{};
-		if (!SystemTimeToFileTime(&systemTime, &fileTime))
+		/// [EN] The path and the query are joined back together, because the request wants them as one target string.
+		/// [JP] パスとクエリをつなぎ直す。リクエスト側は両者を1つの文字列として受け取るため。
+		std::wstring target = std::wstring(components.lpszUrlPath, components.dwUrlPathLength) + std::wstring(components.lpszExtraInfo, components.dwExtraInfoLength);
+
+		/// [EN] SECURE switches TLS on; every Google endpoint this layer talks to is https, so this is the normal path.
+		/// [JP] SECURE を付けると TLS が有効になる。この層が話す Google のエンドポイントは全て https なので常にこちら。
+		DWORD flags = components.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0;
+
+		/// [EN] Opening a request builds the message; it is still only prepared, not sent.
+		/// [JP] リクエストを開く操作はメッセージを組み立てるだけで、まだ送信はしない。
+		HINTERNET request = WinHttpOpenRequest(connection, method.w_str().c_str(), target.c_str(), nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, flags);
+		if (!request)
 		{
-			return 0.0;
+			WinHttpCloseHandle(connection);
+			response.error_ = String("HTTP リクエストを作成できませんでした。");
+			return response;
 		}
 
-		/// [EN] FILETIME is a 64-bit count split across two 32-bit halves, so the halves are rejoined here.
-		/// [JP] FILETIME は64ビットの値を32ビット2つに分けて持つため、ここで元の1つへ戻す。
-		Uint64 ticks = (static_cast<Uint64>(fileTime.dwHighDateTime) << 32) | fileTime.dwLowDateTime;
+		/// [EN] Sending hands over the headers and the body together.
+		/// [JP] 送信ではヘッダとボディをまとめて渡す。
 
-		/// [EN] It counts 100ns ticks from 1601-01-01, while the rest of the engine counts seconds from 1970-01-01.
-		/// [JP] FILETIME は 1601-01-01 からの100ナノ秒刻み、エンジン側は 1970-01-01 からの秒数を使う。
-		return static_cast<Double>(ticks) / 10000000.0 - 11644473600.0;
-	}
-
-	/**
-	* [EN]
-	* Builds the CRLF-separated header block WinHttpSendRequest takes.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* WinHttpSendRequest が受け取る、CRLF区切りのヘッダ列を組み立てる。
-	*/
-	std::wstring HttpClient::BuildHeaders(const DynamicArray<HttpHeader>& headers)
-	{
-		/// [EN] HTTP writes headers as "Name: value" lines, and that raw form is exactly what WinHTTP expects here.
-		/// [JP] HTTP はヘッダを "名前: 値" の行として書く。WinHTTP がここで求めるのも、その生の形そのもの。
-		std::wstring block;
+		/// [EN] HTTP writes headers as "Name: value" lines separated by CRLF, and that raw form is exactly what WinHTTP takes here.
+		/// [JP] HTTP はヘッダを CRLF 区切りの "名前: 値" の行として書く。WinHTTP がここで受け取るのも、その生の形そのもの。
+		std::wstring headerBlock;
 		for (const HttpHeader& header : headers)
 		{
-			block += header.name_.w_str() + L": " + header.value_.w_str() + L"\r\n";
+			headerBlock += header.name_.w_str() + L": " + header.value_.w_str() + L"\r\n";
 		}
-		return block;
+
+		/// [EN] The body length appears twice because WinHTTP also supports sending a body in several pieces.
+		/// [JP] ボディの長さを2回渡すのは、WinHTTP がボディを何回かに分けて送る使い方も許しているため。
+		Bool sent = WinHttpSendRequest(request, headerBlock.empty() ? WINHTTP_NO_ADDITIONAL_HEADERS : headerBlock.c_str(), headerBlock.empty() ? 0 : static_cast<DWORD>(headerBlock.size()), body.empty() ? nullptr : const_cast<Byte*>(body.data()), static_cast<DWORD>(body.size()), static_cast<DWORD>(body.size()), 0) != FALSE;
+
+		/// [EN] Receiving waits for the status line and the headers; the body is read afterwards.
+		/// [JP] 受信の待機で得られるのはステータス行とヘッダまで。ボディはその後に読む。
+		if (!sent || !WinHttpReceiveResponse(request, nullptr))
+		{
+			/// [EN] Reaching here means the network or TLS failed, so there is no HTTP status to report at all.
+			/// [JP] ここへ来るのは通信か TLS の失敗で、報告できるHTTPステータス自体が存在しない。
+			response.error_ = String(std::format("応答が届く前にリクエストが失敗しました (Windows エラー {})。", GetLastError()));
+			WinHttpCloseHandle(request);
+			WinHttpCloseHandle(connection);
+			return response;
+		}
+
+		/// [EN] QUERY_FLAG_NUMBER asks for the status as a number rather than as the text "200".
+		/// [JP] QUERY_FLAG_NUMBER は、ステータスを "200" という文字列ではなく数値で受け取る指定。
+		DWORD status = 0;
+		DWORD statusSize = sizeof(status);
+		WinHttpQueryHeaders(request, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX, &status, &statusSize, WINHTTP_NO_HEADER_INDEX);
+		response.status_ = status;
+
+		/// [EN] Location matters only for a resumable upload, where it names the session to send the file to.
+		/// [JP] Location が意味を持つのは再開可能アップロードのときだけで、ファイルを送る先の窓口を示す。
+
+		/// [EN] The header is asked for twice: the first call learns how much room the value needs, the second fetches it.
+		/// [JP] ヘッダは2回尋ねる。1回目で値に必要な長さを知り、2回目で実際に受け取る。
+
+		/// [EN] Most answers carry no Location at all, which leaves the size at 0 and the field empty.
+		/// [JP] Location を持たない応答がほとんどで、その場合は長さが 0 のまま、項目も空のままになる。
+		DWORD locationSize = 0;
+		WinHttpQueryHeaders(request, WINHTTP_QUERY_LOCATION, WINHTTP_HEADER_NAME_BY_INDEX, nullptr, &locationSize, WINHTTP_NO_HEADER_INDEX);
+		if (locationSize > 0)
+		{
+			/// [EN] The size is in bytes and includes the terminator, while the buffer counts wide characters.
+			/// [JP] 返る長さはバイト単位で終端を含む一方、バッファは文字単位で数えるため割って使う。
+			std::wstring location(locationSize / sizeof(wchar_t), L'\0');
+			if (WinHttpQueryHeaders(request, WINHTTP_QUERY_LOCATION, WINHTTP_HEADER_NAME_BY_INDEX, location.data(), &locationSize, WINHTTP_NO_HEADER_INDEX))
+			{
+				/// [EN] The terminator is trimmed so the value can be used as a plain URL.
+				/// [JP] 終端文字を落として、そのまま URL として使える形にする。
+				response.location_ = String(std::wstring(location.c_str()));
+			}
+		}
+
+		/// [EN] A failed download still answers with a short JSON explanation, which is worth keeping in memory.
+		/// [JP] 失敗したダウンロードも短い JSON の説明を返すため、それはメモリへ残す価値がある。
+		Bool toFile = destination != nullptr && response.status_ == 200;
+
+		/// [EN] The body arrives in chunks of unpredictable size, so it is taken one chunk at a time.
+		/// [JP] ボディは大きさの読めない塊で届くため、塊ごとに受け取っていく。
+		DynamicArray<Byte> chunk;
+		DWORD available = 0;
+		while (WinHttpQueryDataAvailable(request, &available) && available > 0)
+		{
+			/// [EN] Room is made for the announced amount, either in the scratch chunk or at the end of the kept body.
+			/// [JP] 予告された分の場所を空ける。書き出す場合は作業用の塊に、溜める場合は本文の末尾に。
+			Size offset = toFile ? 0 : response.body_.size();
+			DynamicArray<Byte>& buffer = toFile ? chunk : response.body_;
+			buffer.resize(offset + available);
+			DWORD read = 0;
+			if (!WinHttpReadData(request, buffer.data() + offset, available, &read))
+			{
+				/// [EN] A partial body is kept rather than discarded, since it often carries the server's error message.
+				/// [JP] 途中までのボディも捨てずに残す。そこにサーバー側のエラーメッセージが入っていることが多いため。
+				response.error_ = String("応答の本文を最後まで読み取れませんでした。");
+				break;
+			}
+
+			/// [EN] A read may return less than was announced, so only what actually arrived is used.
+			/// [JP] 読み取りは予告より少なく返ることがあるため、実際に届いた分だけを使う。
+			buffer.resize(offset + read);
+			if (toFile)
+			{
+				/// [EN] Writing each chunk straight out is what keeps a multi-gigabyte asset from sitting in memory.
+				/// [JP] 塊ごとにそのまま書き出すことで、数ギガバイトのアセットをメモリに載せずに済む。
+				destination->write(buffer.data(), buffer.size());
+			}
+		}
+
+		/// [EN] Both handles are closed in the reverse order they were opened; the session itself stays alive.
+		/// [JP] 2つのハンドルを開いた順と逆に閉じる。セッション自体はそのまま生かしておく。
+		WinHttpCloseHandle(request);
+		WinHttpCloseHandle(connection);
+		return response;
 	}
 }

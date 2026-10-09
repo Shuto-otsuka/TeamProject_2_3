@@ -48,9 +48,27 @@ namespace SeedCore
 		*/
 		~GoogleAuth();
 
-		/// [EN] Copying is disallowed because one sign-in belongs to one Editor run.
-		/// [JP] 1つのログインは1つの Editor の起動に属するものなので、コピーは禁止する。
+		/**
+		* [EN]
+		* Copy construction is disallowed, since one sign-in belongs to one Editor run.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー構築は禁止する。1つのログインは1つの Editor の起動に属するものであるため。
+		*/
 		GoogleAuth(const GoogleAuth&) = delete;
+
+		/**
+		* [EN]
+		* Copy assignment is disallowed for the same reason as copy
+		* construction.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー代入も、コピー構築と同じ理由で禁止する。
+		*/
 		GoogleAuth& operator=(const GoogleAuth&) = delete;
 
 		/**

@@ -8,8 +8,8 @@
 	.DESCRIPTION
 		The library itself is created once for the whole team. Creating it
 		signs you in, makes the library folder, the blobs and Assets
-		folders inside it and the two documents that act as the catalog and
-		the lock table, shares them with the members you name, and writes
+		folders inside it and the document that acts as the catalog,
+		shares them with the members you name, and writes
 		the configuration the Editor reads.
 
 		Every other member only needs a copy of that config.json; this
@@ -110,7 +110,7 @@ if ($Mode -eq 'Member')
 
 	# 中身の確認まではしておく。別のファイルを掴んでいると Editor 側で分かりにくく失敗する。
 	$given = Get-Content -Raw -Encoding UTF8 $Config | ConvertFrom-Json
-	foreach ($required in @('clientId', 'clientSecret', 'catalogDocumentId', 'lockDocumentId', 'blobFolderId'))
+	foreach ($required in @('clientId', 'clientSecret', 'catalogDocumentId', 'blobFolderId'))
 	{
 		if (-not $given.$required)
 		{
@@ -297,7 +297,6 @@ $libraryId = New-Folder $LibraryName $null
 $blobFolderId = New-Folder 'blobs' $libraryId
 $assetsFolderId = New-Folder 'Assets' $libraryId
 $catalogDocumentId = New-Document 'catalog' $libraryId
-$lockDocumentId = New-Document 'lock' $libraryId
 
 # --- members ------------------------------------------------------------
 foreach ($member in $Members)
@@ -312,11 +311,9 @@ $settings = [ordered]@{
 	clientId = $ClientId
 	clientSecret = $ClientSecret
 	catalogDocumentId = $catalogDocumentId
-	lockDocumentId = $lockDocumentId
 	blobFolderId = $blobFolderId
 	assetsFolderId = $assetsFolderId
 	workspace = $Workspace
-	owner = ''
 }
 
 [IO.File]::WriteAllText($path, ($settings | ConvertTo-Json), (New-Object Text.UTF8Encoding $false))
@@ -329,4 +326,3 @@ Write-Host '  1. このファイルをチームのメンバーへ配る'
 Write-Host '     (.asset は .gitignore に入っているので、リポジトリには乗りません)'
 Write-Host '  2. メンバーは同じ Startup.bat を実行して 2 を選び、もらったファイルを指定します'
 Write-Host '  3. Editor を起動すると、各自初回だけブラウザで Google ログインを求められます'
-Write-Host '  4. owner は空のままで構いません。空のときは Windows のアカウント名が使われます'

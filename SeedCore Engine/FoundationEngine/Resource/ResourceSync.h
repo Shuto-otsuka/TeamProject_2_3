@@ -5,21 +5,20 @@
 
 namespace SeedCore
 {
-	class ResourceCache;
 	class World;
 
 	/**
 	* [EN]
 	* The Editor's window onto the shared asset library. It answers what
-	* the interface needs to know - what the team has, what may be edited,
-	* who is editing what - and hands anything that takes a network round
+	* the interface needs to know - what the team has and how this copy
+	* stands against it - and hands anything that takes a network round
 	* trip to the background worker. Nothing here blocks a frame.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* Editor から見た共有アセットライブラリの窓口。画面が知りたいこと
-	* （チームが何を持っているか、何を編集してよいか、誰が何を編集中か）に
+	* （チームが何を持っているか、手元の写しがそれに対してどうか）に
 	* 答え、通信を伴うものは裏のワーカーへ渡す。ここで1フレームが止まる
 	* ことはない。
 	*/
@@ -40,20 +39,38 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Stops the worker, which releases this Editor's edit leases on the
-		* way out.
+		* Stops the worker, which saves this machine's workspace record on
+		* the way out.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* ワーカーを止める。その過程で、この Editor の編集 Lease が解放
-		* される。
+		* ワーカーを止める。その過程で、この PC のワークスペースの記録が
+		* 保存される。
 		*/
 		~ResourceSync();
 
-		/// [EN] Copying is disallowed because one Editor has one connection to the library.
-		/// [JP] 1つの Editor が持つライブラリへの接続は1つなので、コピーは禁止する。
+		/**
+		* [EN]
+		* Copy construction is disallowed, since one Editor has one connection to the library.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー構築は禁止する。1つの Editor が持つライブラリへの接続は1つであるため。
+		*/
 		ResourceSync(const ResourceSync&) = delete;
+
+		/**
+		* [EN]
+		* Copy assignment is disallowed for the same reason as copy
+		* construction.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー代入も、コピー構築と同じ理由で禁止する。
+		*/
 		ResourceSync& operator=(const ResourceSync&) = delete;
 
 		/**
@@ -89,47 +106,24 @@ namespace SeedCore
 		* [EN]
 		* Hands over the workspace paths of files the library has taken in
 		* from its Assets folder since the last call, and forgets them. The
-		* Editor scans them so they get their identity, then shares them
-		* with the team.
+		* Editor scans them so they get their identity; sharing them is
+		* left to the member.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 前回の呼び出し以降にライブラリが Assets フォルダから取り込んだ
 		* ファイルの位置を引き渡し、こちらからは忘れる。Editor はそれらを
-		* 走査して識別情報を与え、チームへ共有する。
+		* 走査して識別情報を与える。共有はメンバーに任せる。
 		*/
 		void ConsumeImportedAsset(DynamicArray<String>& paths);
-
-		/**
-		* [EN]
-		* Keeps what the engine writes out on its own - baked models, extracted
-		* materials, skeletons, clips, collision and the caches of textures,
-		* audio, movies and skies - in the library together with its .meta.
-		* One not in the library yet is shared, one changed here is published,
-		* and one whose identity or contents disagree with the library is
-		* replaced by the library's copy. Called once a frame; it acts only
-		* every few seconds.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* エンジンが自分で書き出すもの（焼いたモデル、取り出したマテリアル、
-		* スケルトン、クリップ、コリジョン、テクスチャ・オーディオ・ムービー・
-		* スカイのキャッシュ）を、.meta と一緒にライブラリへ揃えておく。まだ
-		* ライブラリに無いものは共有し、ここで変わったものは Publish し、識別子
-		* や中身がライブラリと食い違うものはライブラリの写しで置き換える。
-		* 毎フレーム呼ばれるが、動くのは数秒に1回だけ。
-		*/
-		void ShareGenerated(const ResourceCache& cache);
 
 		/**
 		* [EN]
 		* Brings down every asset the open world refers to that the team
 		* has but this machine does not: whatever an actor's asset fields
 		* name, and the prefab each actor was made from. Called once a
-		* frame; it acts only every few seconds, so actors another member
-		* adds later are covered as well.
+		* frame; it acts only once after the member asks for the latest.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -137,8 +131,7 @@ namespace SeedCore
 		* 開いている world が参照しているアセットのうち、チームは持っていて
 		* この PC には無いものを取得する。対象は、Actor のアセット参照
 		* フィールドが示すものと、各 Actor の元になった Prefab。毎フレーム
-		* 呼ばれるが動くのは数秒に1回で、後から他のメンバーが足した Actor
-		* の分も拾える。
+		* 呼ばれるが、動くのはメンバーが最新の取得を求めた後の1回だけ。
 		*/
 		void FetchReferenced(World& world);
 
@@ -197,20 +190,6 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Whether the asset belongs to the shared library, addressed either
-		* by the engine's identifier or by where it sits on disk.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* そのアセットが共有ライブラリに属しているかどうか。エンジンの
-		* 識別子でも、ディスク上の位置でも問い合わせられる。
-		*/
-		Bool Shared(Uint32 assetId)const;
-		Bool Shared(const std::filesystem::path& path)const;
-
-		/**
-		* [EN]
 		* Whether the asset is in the library but not yet on this machine.
 		* Such an asset can be shown and fetched, but not dragged into a
 		* scene.
@@ -238,29 +217,31 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Whether the asset changed here and in the library both, which no
-		* automatic step can settle and a member has to look at.
+		* Whether the asset changed here and in the library both. Publishing
+		* now would replace the other member's newer copy, and getting would
+		* discard the work here, so a member has to choose.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* そのアセットが、こちらとライブラリの両方で変わっているかどうか。
-		* 自動の処理では決められず、メンバーが見る必要がある状態。
+		* 今公開すれば他のメンバーの新しい写しを置き換え、取得すればここでの
+		* 作業を捨てることになるため、メンバーが選ぶ必要がある状態。
 		*/
 		Bool Conflicted(Uint32 assetId)const;
 
 		/**
 		* [EN]
 		* Whether a path holds shared content, in which case the Editor's
-		* own delete, rename and move must not touch it - those go through
-		* the library instead.
+		* own rename and move must not touch it, since the library knows the
+		* content by where it sits. Deleting is local only and stays allowed.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* その位置に共有された内容があるかどうか。ある場合、Editor 側の
-		* 削除・リネーム・移動で触ってはならない。それらはライブラリを
-		* 通して行う。
+		* リネーム・移動で触ってはならない。ライブラリは内容を位置で知って
+		* いるため。削除はローカルだけの操作なので許す。
 		*/
 		Bool Managed(const std::filesystem::path& path)const;
 
@@ -281,34 +262,6 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Whether this Editor may change the given scope right now. It asks
-		* only; taking the right to edit is RequestEdit's job.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* この Editor が今その範囲を変更してよいかどうか。問い合わせるだけ
-		* で、編集権を取りに行くのは RequestEdit の役目。
-		*/
-		Bool Editable(Uint32 assetId, const String& scope)const;
-
-		/**
-		* [EN]
-		* Asks for the right to edit the given scope. Called while a member
-		* is reaching for a control, so it is rate-limited and returns at
-		* once; whether it was granted shows up in Editable.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* その範囲の編集権を要求する。メンバーが操作に手をかけた時点で
-		* 呼ばれるため、回数を抑えたうえで即座に戻る。取得できたかどうかは
-		* Editable に現れる。
-		*/
-		void RequestEdit(Uint32 assetId, const String& scope);
-
-		/**
-		* [EN]
 		* Asks for the library's copy of an asset to be brought down to
 		* this machine.
 		*
@@ -318,6 +271,23 @@ namespace SeedCore
 		* ライブラリにあるアセットを、この PC へ取得するよう要求する。
 		*/
 		void RequestGet(Uint32 assetId);
+
+		/**
+		* [EN]
+		* Asks for the library's copy of an asset, .meta included, to
+		* replace this machine's even where local files differ. This is how
+		* a member settles an asset whose identifier or contents disagree
+		* with the team's.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ライブラリにあるアセットの写しで、.meta も含めてこの PC のものを
+		* 置き換えるよう要求する。ローカルのファイルが異なっていても置き換える。
+		* 識別子や中身がチームのものと食い違うアセットを、メンバーが解消する
+		* 手段。
+		*/
+		void RequestAdopt(Uint32 assetId);
 
 		/**
 		* [EN]
@@ -333,18 +303,6 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Gives up the right to edit, so another member does not have to
-		* wait for it to lapse.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 編集権を手放す。他のメンバーが失効を待たなくて済むようにする。
-		*/
-		void RequestRelease(Uint32 assetId, const String& scope);
-
-		/**
-		* [EN]
 		* Asks for a local asset to be shared with the team for the first
 		* time.
 		*
@@ -357,40 +315,61 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Asks for a shared asset to be retired, which leaves its history
-		* in place rather than erasing it.
+		* Asks for a shared asset to be removed from the library, its Drive
+		* contents included. The local files stay where they are.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 共有アセットの廃止を要求する。履歴は消さずに残す形になる。
+		* 共有アセットを、Drive 上の中身も含めてライブラリから取り除くよう
+		* 要求する。ローカルのファイルはそのまま残る。
 		*/
-		void RequestRetire(Uint32 assetId);
+		void RequestUnshare(Uint32 assetId);
 
 		/**
 		* [EN]
-		* Asks for the shared state to be re-read now instead of at the
-		* next scheduled check.
+		* Tells the library that this machine has deleted the file or folder
+		* at path, so whatever shared assets sat there stop being followed.
+		* The library keeps them; a later get brings them back on request.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 次の定期確認を待たず、今すぐ共有状態を読み直すよう要求する。
+		* この PC がその位置のファイルかフォルダを削除したことをライブラリへ
+		* 伝え、そこにあった共有アセットを追いかけないようにする。ライブラリ
+		* には残り、求めれば後から取得し直せる。
+		*/
+		void RequestForget(const std::filesystem::path& path);
+
+		/**
+		* [EN]
+		* Asks for the shared state to be re-read now and for everything
+		* the library moved ahead on to be brought down: assets this machine
+		* already has, the open scene, and whatever the open world refers to
+		* but this machine lacks. Nothing comes down except through this.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 今すぐ共有状態を読み直し、ライブラリが先へ進んだものを降ろすよう
+		* 要求する。対象は、この PC が既に持っているアセット、開いている
+		* Scene、開いている world が参照していてこの PC に無いもの。これ以外
+		* の経路で何かが降りてくることはない。
 		*/
 		void RequestRefresh();
 
 		/**
 		* [EN]
 		* Tells the library which scene the Editor now has open, so the
-		* entities other members publish in it are picked up as they
-		* appear. An empty path means no scene is open.
+		* entities other members publish in it are picked up by the next
+		* refresh. An empty path means no scene is open.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* Editor が今開いている Scene をライブラリへ伝える。その Scene で
-		* 他のメンバーが Publish した Entity を、現れ次第拾うようにするため。
-		* 空のパスは、Scene を開いていないことを表す。
+		* 他のメンバーが Publish した Entity を、次の読み直しで拾うように
+		* するため。空のパスは、Scene を開いていないことを表す。
 		*/
 		void RequestOpenScene(const std::filesystem::path& path);
 
@@ -406,20 +385,19 @@ namespace SeedCore
 		* など。チームが持っていなければ nullptr。
 		*/
 		const SharedAsset* GetAsset(Uint32 assetId)const;
-		const SharedAsset* GetAsset(const std::filesystem::path& path)const;
 
 		/**
 		* [EN]
-		* Every edit lease currently held by anyone, for showing who is
-		* working on what.
+		* The library's view of the asset that sits at the given path, or
+		* nullptr when the team does not have it.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 現在、誰かが保持している全ての編集 Lease。誰が何を作業中かを
-		* 表示するために使う。
+		* その位置にあるアセットについての、ライブラリから見た情報。チームが
+		* 持っていなければ nullptr。
 		*/
-		const DynamicArray<EditLease>& GetLeases()const;
+		const SharedAsset* GetAsset(const std::filesystem::path& path)const;
 
 		/**
 		* [EN]
@@ -478,10 +456,6 @@ namespace SeedCore
 		/// [JP] 直近の Update 時点におけるワーカーの状態。ここでの回答は全てこれに基づく。
 		SharingSnapshot snapshot_;
 
-		/// [EN] Earliest time another edit request may be sent for each asset and scope, since a member holding a slider asks every frame.
-		/// [JP] アセットと範囲ごとの、次に編集の要求を送ってよい時刻。スライダーを掴んでいるメンバーは毎フレーム要求するため。
-		std::unordered_map<String, Uint64> nextEditRequest_;
-
 		/// [EN] Extensions of source code, which is shared through git rather than through the library.
 		/// [JP] ソースコードの拡張子。ライブラリではなく git で共有するもの。
 		std::set<std::string_view> sourceExtensions_ =
@@ -489,28 +463,8 @@ namespace SeedCore
 			".h", ".cpp", ".cs", ".hlsl", ".hlsli",
 		};
 
-		/// [EN] Extensions of the files the engine writes out by itself, which are shared without a member asking.
-		/// [JP] エンジンが自分で書き出すファイルの拡張子。メンバーが頼まなくても共有する対象。
-		std::set<std::string_view> generatedExtensions_ =
-		{
-			".crister", ".material", ".skeleton", ".animation", ".collision", ".navmesh",
-			".texture", ".audio", ".movie", ".skymap",
-		};
-
-		/// [EN] Earliest time the generated assets may be walked again.
-		/// [JP] 生成アセットを次に辿ってよい時刻。
-		Uint64 nextShareGenerated_ = 0;
-
-		/// [EN] Earliest time another request may be sent for each generated asset, by its workspace path.
-		/// [JP] 生成アセットごとの、次に要求を送ってよい時刻。ワークスペース内の位置で引く。
-		std::unordered_map<String, Uint64> nextShareAttempt_;
-
-		/// [EN] Earliest time the open world's references may be walked again.
-		/// [JP] 開いている world の参照を次に辿ってよい時刻。
-		Uint64 nextFetchReferenced_ = 0;
-
-		/// [EN] Earliest time another get may be sent for each referenced asset, so one still downloading is not asked for again.
-		/// [JP] 参照されているアセットごとの、次に取得を要求してよい時刻。ダウンロード中のものを重ねて要求しないようにするため。
-		std::unordered_map<Uint32, Uint64> nextFetchAttempt_;
+		/// [EN] Whether the member asked for the latest and the open world's references have not been walked since.
+		/// [JP] メンバーが最新の取得を求め、その後まだ開いている world の参照を辿っていないかどうか。
+		Bool fetchReferencedRequested_ = false;
 	};
 }

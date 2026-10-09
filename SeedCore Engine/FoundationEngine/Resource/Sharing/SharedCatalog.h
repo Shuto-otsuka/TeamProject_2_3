@@ -83,13 +83,9 @@ namespace SeedCore
 		/// [JP] Entity 単位の編集を行うかどうか。Scene では true、それ以外では false。
 		Bool scene_ = false;
 
-		/// [EN] For a scene, the document holding its per-entity revisions; empty for every other kind of asset.
-		/// [JP] Scene の場合、Entity ごとの Revision を持つドキュメント。それ以外の種類では空。
+		/// [EN] For a scene, the document holding its per-piece revisions; empty for every other kind of asset.
+		/// [JP] Scene の場合、断片ごとの Revision を持つドキュメント。それ以外の種類では空。
 		String sceneDocumentId_;
-
-		/// [EN] Marks an asset the team has retired; the entry stays so members can tell "removed" from "never had it".
-		/// [JP] チームが廃止したアセットの印。「削除された」と「元から無い」を区別できるよう、項目自体は残す。
-		Bool deleted_ = false;
 	};
 
 	/**
@@ -134,9 +130,27 @@ namespace SeedCore
 		*/
 		~SharedCatalog();
 
-		/// [EN] Copying is disallowed because the in-memory copy tracks one document at one point in time.
-		/// [JP] メモリ上の写しは、ある時点のドキュメント1つを表すものなので、コピーは禁止する。
+		/**
+		* [EN]
+		* Copy construction is disallowed, since the in-memory copy tracks one document at one point in time.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー構築は禁止する。メモリ上の写しは、ある時点のドキュメント1つを表すものであるため。
+		*/
 		SharedCatalog(const SharedCatalog&) = delete;
+
+		/**
+		* [EN]
+		* Copy assignment is disallowed for the same reason as copy
+		* construction.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー代入も、コピー構築と同じ理由で禁止する。
+		*/
 		SharedCatalog& operator=(const SharedCatalog&) = delete;
 
 		/**
@@ -154,31 +168,51 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Every asset in the catalog as of the last read, retired ones
-		* included.
+		* Every asset in the catalog as of the last read.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 直近の読み取り時点でカタログにある全アセット。廃止済みのものも
-		* 含む。
+		* 直近の読み取り時点でカタログにある全アセット。
 		*/
 		const DynamicArray<SharedAsset>& Assets()const;
 
 		/**
 		* [EN]
-		* Looks an asset up by its shared identifier, or by the 32-bit
-		* identifier the engine uses, or by its workspace path. Returns
-		* nullptr when the catalog holds no such asset.
+		* Looks an asset up by its shared identifier. Returns nullptr when
+		* the catalog holds no such asset.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 共有識別子、エンジンが使う32ビット識別子、ワークスペース上の位置の
-		* いずれかでアセットを引く。該当が無ければ nullptr を返す。
+		* 共有識別子でアセットを引く。該当が無ければ nullptr を返す。
 		*/
 		const SharedAsset* Find(const String& assetId)const;
+
+		/**
+		* [EN]
+		* Looks an asset up by the 32-bit identifier the engine uses
+		* locally. Returns nullptr when the catalog holds no such asset.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* エンジンがローカルで使う32ビットの識別子でアセットを引く。該当が
+		* 無ければ nullptr を返す。
+		*/
 		const SharedAsset* Find(Uint32 runtimeId)const;
+
+		/**
+		* [EN]
+		* Looks an asset up by its workspace path. Returns nullptr when the
+		* catalog holds no such asset.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ワークスペース上の位置でアセットを引く。該当が無ければ nullptr を
+		* 返す。
+		*/
 		const SharedAsset* FindPath(const String& path)const;
 
 		/**
@@ -199,43 +233,32 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Records new contents for an asset and moves it to the next
-		* revision. baseRevision is the revision the member started from,
-		* and a mismatch means someone else published first.
+		* revision, replacing whatever the library held: the last publish
+		* wins. revision receives the revision that was written.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* アセットの新しい中身を記録し、次の Revision へ進める。
-		* baseRevision はそのメンバーが作業を始めた時点の Revision で、
-		* 食い違っていれば他の誰かが先に Publish したということ。
+		* アセットの新しい中身を記録し、次の Revision へ進める。ライブラリの
+		* 内容は置き換えられ、最後に Publish したものが優先される。revision
+		* には書き込んだ Revision が入る。
 		*/
-		Bool Publish(const String& assetId, Uint64 baseRevision, const DynamicArray<SharedFile>& files, const DynamicArray<String>& dependencies);
+		Bool Publish(const String& assetId, const DynamicArray<SharedFile>& files, const DynamicArray<String>& dependencies, Uint64& revision);
 
 		/**
 		* [EN]
-		* Marks an asset as retired without removing its entry, so members
-		* holding an old copy can tell it was deleted on purpose.
+		* Removes an asset's entry from the catalog altogether. Members who
+		* already hold a copy keep it as an ordinary local file; the library
+		* simply stops knowing the asset.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 項目は残したままアセットを廃止済みにする。古い写しを持っている
-		* メンバーが、意図して削除されたものだと分かるようにするため。
+		* アセットの項目をカタログから丸ごと取り除く。既に写しを持っている
+		* メンバーの手元には、普通のローカルファイルとして残る。ライブラリが
+		* そのアセットを知らなくなるだけ。
 		*/
-		Bool Retire(const String& assetId, Uint64 baseRevision);
-
-		/**
-		* [EN]
-		* Whether the last change was refused because the asset had already
-		* moved on. The caller should get the newer revision first.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 直前の変更が、アセットが既に先へ進んでいたために拒否されたか
-		* どうか。その場合、呼び出し側は先に新しい Revision を取得する。
-		*/
-		Bool Outdated()const;
+		Bool Remove(const String& assetId);
 
 		/**
 		* [EN]
@@ -286,10 +309,6 @@ namespace SeedCore
 		/// [EN] The catalog as of the last read, in the order the document lists it.
 		/// [JP] 直近の読み取り時点のカタログ。ドキュメントに並んでいる順のまま。
 		DynamicArray<SharedAsset> assets_;
-
-		/// [EN] Whether the last change lost to a publish that had already happened.
-		/// [JP] 直前の変更が、既に行われていた Publish に負けたかどうか。
-		Bool outdated_ = false;
 
 		/// [EN] Last failure description; empty while everything is working.
 		/// [JP] 直近の失敗の説明。問題なく動いている間は空。

@@ -76,7 +76,6 @@
     <ClCompile Include="Resource\Sharing\GoogleDrive.cpp" />
     <ClCompile Include="Resource\Sharing\HttpClient.cpp" />
     <ClCompile Include="Resource\Sharing\SharedCatalog.cpp" />
-    <ClCompile Include="Resource\Sharing\SharedLockTable.cpp" />
     <ClCompile Include="Resource\Sharing\SharedScene.cpp" />
     <ClCompile Include="Resource\Sharing\SharingWorker.cpp" />
     <ClCompile Include="World\Actor\Actor.cpp" />
@@ -198,7 +197,6 @@
     <ClInclude Include="Resource\Sharing\GoogleDrive.h" />
     <ClInclude Include="Resource\Sharing\HttpClient.h" />
     <ClInclude Include="Resource\Sharing\SharedCatalog.h" />
-    <ClInclude Include="Resource\Sharing\SharedLockTable.h" />
     <ClInclude Include="Resource\Sharing\SharedScene.h" />
     <ClInclude Include="Resource\Sharing\SharingWorker.h" />
     <ClInclude Include="World\Actor\Actor.h" />

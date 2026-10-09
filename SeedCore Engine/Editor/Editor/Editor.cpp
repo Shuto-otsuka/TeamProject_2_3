@@ -94,27 +94,16 @@ namespace SeedCore
 
 		/// [EN] This runs on the Editor thread between frames, which is the only safe place to swap what the renderer uses.
 		/// [JP] これは Editor のスレッドでフレームの合間に動く。レンダラが使っているものを入れ替えてよいのはそこだけ。
-		/// [EN] A file an artist dropped into the library arrives without an identity, so it is taken in and then shared from here.
-		/// [JP] アーティストがライブラリへ置いたファイルは識別情報を持たずに届くため、ここで取り込んでから共有へ回す。
+		/// [EN] A file an artist dropped into the library arrives without an identity, so it is taken in here; sharing it is left to the member.
+		/// [JP] アーティストがライブラリへ置いたファイルは識別情報を持たずに届くため、ここで取り込む。共有するかどうかはメンバーに任せる。
 		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
 		DynamicArray<String> importedAssets;
 		resourceSync_.ConsumeImportedAsset(importedAssets);
-		for (const String& imported : importedAssets)
+		if (!importedAssets.empty())
 		{
-			/// [EN] Reloading is what mints the .meta beside it, which is what gives the file the identifier the team will know it by.
-			/// [JP] 読み直しが隣に .meta を作る。それが、チームがそのファイルを識別する番号を与える処理にあたる。
+			/// [EN] One rescan takes in every file that arrived, and it is what mints the .meta beside each.
+			/// [JP] 1回の再走査で届いたファイルを全て取り込む。それぞれの隣に .meta を作るのもこの処理。
 			context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
-
-			std::filesystem::path local = context_.world_.resource_->ProjectRootPath() / "UserProject" / imported.str();
-			Uint32 importedId = context_.world_.resource_->GetAssetID(String(local.generic_string()));
-			AssetRecord* record = importedId == 0 ? nullptr : context_.world_.resource_->GetAsset(importedId);
-
-			/// [EN] Sharing it here is what puts it in the catalog, from where every other member receives it on their own.
-			/// [JP] ここで共有することでカタログに載り、そこから他の全メンバーへ自動で届くようになる。
-			if (record && !resourceSync_.Shared(importedId))
-			{
-				resourceSync_.RequestRegister(*record);
-			}
 		}
 
 		DynamicArray<Uint32> changedAssets;
@@ -183,16 +172,10 @@ namespace SeedCore
 					}
 				}
 
+				/// [EN] What arrives is the last upload, and it is applied over every actor as it stands; the latest publish wins.
+				/// [JP] 届いたのは最後にアップロードされた内容で、全ての Actor へそのまま適用する。最後に公開したものが優先される。
 				for (const BlueprintNode& node : nodes)
 				{
-					/// [EN] An entity this member holds the right to edit is being worked on right now, so what arrives is not applied over it.
-					/// [JP] このメンバーが編集権を持つ Entity は今まさに作業中なので、届いたものをその上から適用しない。
-					String scope = String(std::format("entity:{}", node.collaborationId_.str()));
-					if (resourceSync_.Editable(assetId, scope))
-					{
-						continue;
-					}
-
 					/// [EN] An actor already here is written over in place, which keeps its children, its selection and its undo history.
 					/// [JP] 既にいる Actor はその場に書き込む。子・選択状態・Undo 履歴が保たれる。
 					auto existing = live.find(node.collaborationId_);
@@ -218,17 +201,13 @@ namespace SeedCore
 				for (const std::pair<const String, Actor>& entry : live)
 				{
 					Bool present = std::ranges::any_of(nodes, [&entry](const BlueprintNode& node) { return node.collaborationId_ == entry.first; });
-					if (!present && !resourceSync_.Editable(assetId, String(std::format("entity:{}", entry.first.str()))))
+					if (!present)
 					{
 						world.DestroyActor(entry.second);
 					}
 				}
 			}
 		}
-
-		/// [EN] Whatever the engine baked or extracted is sent up with its .meta, so no member is left with an asset the others never received.
-		/// [JP] エンジンが焼いたもの・取り出したものは .meta と一緒に上げる。他のメンバーに届いていないアセットが残らないようにするため。
-		resourceSync_.ShareGenerated(*context_.world_.resource_);
 
 		/// [EN] Whatever the open scene uses but this machine lacks is fetched, so opening a shared scene does not leave its actors without models or materials.
 		/// [JP] 開いている Scene が使っていてこの PC に無いものを取得する。共有された Scene を開いたとき、Actor のモデルやマテリアルが欠けたままにならないようにするため。

@@ -1044,8 +1044,10 @@ namespace SeedCore
 					}
 					else
 					{
+						/// [EN] A generated file takes its GUID from its path alone, so the repaired identifier matches every other machine's.
+						/// [JP] 生成ファイルは位置だけから GUID を取る。修復後の識別子が、他の PC のものと一致するようにするため。
 						meta = AssetMeta{};
-						meta.guid_ = static_cast<Uint32>(std::hash<std::string>{}(asset.path_.c_str() + std::to_string(std::time(nullptr))));
+						meta.guid_ = generatedExtensions_.contains(extention) ? static_cast<Uint32>(std::hash<std::string>{}(asset.path_.c_str())) : static_cast<Uint32>(std::hash<std::string>{}(asset.path_.c_str() + std::to_string(std::time(nullptr))));
 						while (assetsMap_.count(meta.guid_))
 						{
 							meta.guid_++;
@@ -1094,7 +1096,10 @@ namespace SeedCore
 					{
 						/// [EN] Genuinely new asset (or recovery failed): mint a fresh GUID and persist a new .meta file for it.
 						/// [JP] 本当に新規のアセット（または復旧に失敗した場合）: 新しい GUID を発行し、そのための新しい .meta ファイルを永続化する。
-						meta.guid_ = static_cast<Uint32>(std::hash<std::string>{}(asset.path_.c_str() + std::to_string(std::time(nullptr))));
+
+						/// [EN] A generated file takes its GUID from its path alone, while anything a member made gets the time mixed in so a file recreated at the same place is a different asset.
+						/// [JP] 生成ファイルは位置だけから GUID を取る。メンバーが作ったものには時刻を混ぜ、同じ位置に作り直したファイルを別のアセットとして扱う。
+						meta.guid_ = generatedExtensions_.contains(extention) ? static_cast<Uint32>(std::hash<std::string>{}(asset.path_.c_str())) : static_cast<Uint32>(std::hash<std::string>{}(asset.path_.c_str() + std::to_string(std::time(nullptr))));
 						while (assetsMap_.count(meta.guid_))
 						{
 							meta.guid_++;
