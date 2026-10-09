@@ -67,7 +67,7 @@ void BulletController::OnTriggerEnter(SeedCore::Entity entity)
         }
         case State::STICK:
         {
-            //当たった弾が止めている相手のギミックの止まる時間を増やす
+            //当たった弾が止めている相手のギミックを止める
             float stopTime = aliveTime - aliveTimer;
             hitBulletController->GetNowStick()->Stop(stopTime);
             //自分は動きを止めてギミックにくっついたという判定にする

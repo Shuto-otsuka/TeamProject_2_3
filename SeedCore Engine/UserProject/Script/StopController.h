@@ -8,11 +8,13 @@ class StopController :public SeedCore::SeedScript
 public:
 	void OnStart();
 	void OnTick(float elapsedTime);
+	void OnInspectorGUI();
 
 	//このオブジェクトが今止まっているかを取得できる関数
 	bool IsStop() const { return isStop; }
 
 	void Stop(float stopTime);
+	void Move();
 
 private:
 	bool isStop = false;

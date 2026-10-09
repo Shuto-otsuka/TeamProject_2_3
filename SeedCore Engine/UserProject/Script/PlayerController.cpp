@@ -1,5 +1,6 @@
 #include "UserProject/Script/PlayerController.h"
 #include"UserProject/Script/BulletController.h"
+#include"UserProject/Script/StopController.h"
 
 #include <SeedCore/ScInput.h>
 #include<SeedCore/ScPrefab.h>
@@ -368,13 +369,21 @@ void PlayerController::UpdateAllBulletRemove(float elapsedTime)
     //アクターを走査
     for (auto& actor : GetWorld().GetActors())
     {
-        //弾じゃなければ次
-        if (!actor.HasTag("Bullet"))continue;
-
         //全ての弾を削除
-        SeedCore::Entity entity = actor.GetEntity();
-        BulletController* bulletController = GetWorld().GetComponent<BulletController>(entity);
-        bulletController->Remove();
+        if (actor.HasTag("Bullet"))
+        {
+            SeedCore::Entity entity = actor.GetEntity();
+            BulletController* bulletController = GetWorld().GetComponent<BulletController>(entity);
+            bulletController->Remove();
+        }
+
+        //全てのギミックを動かす
+        if (actor.LayerName() == "Gimmick")
+        {
+            SeedCore::Entity entity = actor.GetEntity();
+            StopController* stopController = GetWorld().GetComponent<StopController>(entity);
+            stopController->Move();
+        }
     }
 }
 
