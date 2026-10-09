@@ -4,10 +4,19 @@
 #include<SeedCore/ScComponent.h>
 
 class PlayerController;
+class StopController;
 
 class BulletController :public SeedCore::SeedScript
 {
 public:
+	//弾の状態を保存するステート
+	enum class State
+	{
+		NORMAL,//通常飛行時
+		STOP,//別の弾が当たって足場になっている状態
+		STICK//ギミックにくっついている状態
+	};
+
 	void OnStart();
 	void OnTick(float elapsedTime);
 	void OnTriggerEnter(SeedCore::Entity entity);
@@ -18,7 +27,9 @@ public:
 	void Remove();
 	void Move(float elapsedTime);
 
-	bool IsStop() const { return isStop; }
+	const State& GetState() const { return state; }
+
+	StopController* GetNowStick() { return nowStick; }
 
 	float GetAliveTimer() const { return aliveTimer; }
 
@@ -45,6 +56,8 @@ private:
 	void UpdateRemove(float elapsedTime);
 	void UpdateAliveTime(float elapsedTime);
 
+	State state = State::NORMAL;
+
 	SeedCore::Vector3 moveDirection;
 	SeedCore::Vector3 startPosition;
 
@@ -55,8 +68,6 @@ private:
 
 	int cost = 0;
 
-	bool isStop = false;
-
 	SeedCore::Scale* scale;
 	SeedCore::Position* position;
 	SeedCore::Rotation* rotation;
@@ -66,5 +77,6 @@ private:
 	SeedCore::Actor player;
 
 	PlayerController* playerController;
+	StopController* nowStick = nullptr;
 };
 REGISTER_COMPONENT(BulletController);

@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "26f48f1e-c2c1-498a-9c3a-e9e72928bd35",
+			"collaborationId": "35d33934-a088-43bb-9b77-3dc8a274de32",
 			"components": [
 				{
 					"component": "Mesh",
@@ -18,7 +18,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": 911015518,
+							"int": 1899450316,
 							"is_array": false,
 							"name": "メッシュID",
 							"string": "",
@@ -61,7 +61,7 @@
 										"r": 0.0
 									},
 									"float": 0.0,
-									"int": -1602242984,
+									"int": -992893577,
 									"is_array": false,
 									"name": "[0]",
 									"string": "",
@@ -137,8 +137,8 @@
 							},
 							"vector3": {
 								"x": 1.0,
-								"y": 1.0,
-								"z": 1.0
+								"y": 0.10000000149011612,
+								"z": 3.0
 							},
 							"vector4": {
 								"w": 0.0,
@@ -169,7 +169,7 @@
 							"vector3": {
 								"x": 0.0,
 								"y": 0.0,
-								"z": 0.0
+								"z": -1.600000023841858
 							},
 							"vector4": {
 								"w": 0.0,
@@ -285,7 +285,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 100.0,
+							"float": 1.0,
 							"int": 0,
 							"is_array": false,
 							"name": "質量",
@@ -347,7 +347,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 0.0,
+							"float": 0.5,
 							"int": 0,
 							"is_array": false,
 							"name": "角抵抗",
@@ -378,7 +378,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 0.0,
+							"float": 0.20000000298023224,
 							"int": 0,
 							"is_array": false,
 							"name": "摩擦係数",
@@ -409,7 +409,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 0.0,
+							"float": 0.5,
 							"int": 0,
 							"is_array": false,
 							"name": "反発係数",
@@ -432,7 +432,7 @@
 							}
 						},
 						{
-							"bool": false,
+							"bool": true,
 							"children": [],
 							"color": {
 								"a": 1.0,
@@ -680,7 +680,7 @@
 							}
 						},
 						{
-							"bool": true,
+							"bool": false,
 							"children": [],
 							"color": {
 								"a": 1.0,
@@ -713,7 +713,11 @@
 					]
 				},
 				{
-					"component": "BulletController",
+					"component": "StopController",
+					"fields": []
+				},
+				{
+					"component": "PendulumController",
 					"fields": [
 						{
 							"bool": false,
@@ -724,10 +728,10 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 0.3499999940395355,
+							"float": 0.5,
 							"int": 0,
 							"is_array": false,
-							"name": "minSize",
+							"name": "rotateSpeed",
 							"string": "",
 							"type": 2,
 							"vector2": {
@@ -738,254 +742,6 @@
 								"x": 0.0,
 								"y": 0.0,
 								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 1.600000023841858,
-							"int": 0,
-							"is_array": false,
-							"name": "maxSize",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 3.0,
-							"int": 0,
-							"is_array": false,
-							"name": "minSpeed",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 20.0,
-							"int": 0,
-							"is_array": false,
-							"name": "maxSpeed",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 2.0,
-							"int": 0,
-							"is_array": false,
-							"name": "minAliveTime",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 10.0,
-							"int": 0,
-							"is_array": false,
-							"name": "maxAliveTime",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 40.0,
-							"int": 0,
-							"is_array": false,
-							"name": "removeDistance",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 5.0,
-							"int": 0,
-							"is_array": false,
-							"name": "turnSpeed",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 0.0,
-							"int": 0,
-							"is_array": false,
-							"name": "turnAxis",
-							"string": "",
-							"type": 5,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 1.0,
-								"z": 1.0
 							},
 							"vector4": {
 								"w": 0.0,
@@ -997,31 +753,30 @@
 					]
 				}
 			],
-			"layer": "Bullet",
-			"name": "Bullet",
+			"layer": "Gimmick",
+			"name": "Pendulum",
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": -1,
-			"persistentId": 28,
+			"persistentId": 102,
 			"position": {
 				"x": 0.0,
-				"y": 0.0,
-				"z": 13.265039443969727
+				"y": -0.5209312438964844,
+				"z": 29.036123275756836
 			},
 			"rotation": {
-				"w": 1.0,
-				"x": -0.0,
+				"w": -0.7071067690849304,
+				"x": 0.7071067690849304,
 				"y": 0.0,
-				"z": -0.0
+				"z": 0.0
 			},
 			"scale": {
-				"x": 1.0,
-				"y": 1.0,
-				"z": 1.0
+				"x": 2.490000009536743,
+				"y": 2.4900002479553223,
+				"z": 2.4900002479553223
 			},
 			"tags": [
-				"CanStop",
-				"Bullet"
+				"CanStop"
 			]
 		}
 	]
