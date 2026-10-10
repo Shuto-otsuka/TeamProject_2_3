@@ -316,12 +316,24 @@ void PlayerController::UpdateInputShot(float elapsedTime)
     {
         //発射キー押されている間タイマー経過
         shotInputTimer += elapsedTime;
+
+        //チャージ時間からチャージ率を計算
+        float chargeTime = std::min(shotInputTimer, maxShotChargeTime);
+        shotChargeRate = chargeTime / maxShotChargeTime;
+
+        //チャージ率からコストを計算
+        costGaugeAdd = static_cast<int>(SeedCore::Lerp(static_cast<float>(minAddCostGauge), static_cast<float>(maxAddCostGauge), shotChargeRate));
     }
 
     if (SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Left, SeedCore::Input::OnReleased) && shotReady)
     {
         //発射キーが離された瞬間に発射
         Shot();
+
+        //ショットチャージ中のパラメータをリセット
+        shotChargeRate = 0.0f;
+        costGaugeAdd = 0;
+
         shotReady = false;
     }
 }
@@ -332,26 +344,21 @@ void PlayerController::Shot()
     //撃った後に元の向いていた方向に戻ってしまうのを防ぐため
     lookDirection = shotDirection;
 
-    float chargeTime = std::min(shotInputTimer, maxShotChargeTime);
-    float chargeRate = chargeTime / maxShotChargeTime;//チャージ時間からチャージ率を計算
-
-    //コストの計算
-    int addCostGauge = static_cast<int>(SeedCore::Lerp(static_cast<float>(minAddCostGauge), static_cast<float>(maxAddCostGauge), chargeRate));
     //コストが100超える場合撃たない
-    if (costGauge + addCostGauge > maxCostGauge)return;
+    if (costGauge + costGaugeAdd > maxCostGauge)return;
     //コスト増加
-    costGauge += addCostGauge;
+    costGauge += costGaugeAdd;
 
     SeedCore::Actor bullet = SeedCore::Prefab::Spawn(SeedCore::String("Bullet.prefab"));//弾生成
     BulletController* bulletController = GetWorld().GetComponent<BulletController>(bullet.GetEntity());
 
     SeedCore::Vector3 bulletOffset;
     bulletOffset.y = bulletOffsetY;
-    bulletOffset.z = SeedCore::Lerp(minBulletOffsetZ, maxBulletOffsetZ, chargeRate);//埋まり防止のため弾のサイズがでかいほどオフセットを空ける
+    bulletOffset.z = SeedCore::Lerp(minBulletOffsetZ, maxBulletOffsetZ, shotChargeRate);//埋まり防止のため弾のサイズがでかいほどオフセットを空ける
     //プレイヤー姿勢、弾のローカルオフセットから弾のワールド位置を計算
     SeedCore::Vector3 bulletPosition = SeedCore::Vector3::Transform(bulletOffset, GetActor().WorldMatrix());
 
-    bulletController->SetParam(bulletPosition,shotDirection, chargeRate,addCostGauge);//位置、見てる方向、チャージ率、増加コストを渡す
+    bulletController->SetParam(bulletPosition,shotDirection, shotChargeRate,costGaugeAdd);//位置、見てる方向、チャージ率、増加コストを渡す
 }
 
 void PlayerController::UpdateFallJudge(float elapsedTime)

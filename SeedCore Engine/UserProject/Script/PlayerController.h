@@ -13,6 +13,10 @@ public:
 
 	void SubCostGauge(int costGauge);
 
+	int GetCostGaugeUsed() const { return costGauge; }
+	int GetCostGaugeAdd() const { return costGaugeAdd; }
+	int GetCostGaugeMax() const { return maxCostGauge; }
+
 	SC_REFLECTION_FIELD()
 		float acceleration;
 	SC_REFLECTION_FIELD()
@@ -91,8 +95,10 @@ private:
 	float coyoteTimer = 0.0f;
 	float shotInputTimer = 0.0f;
 	float resetInputTimer = 0.0f;
+	float shotChargeRate = 0.0f;
 
 	int costGauge = 0;
+	int costGaugeAdd = 0;
 
 	SeedCore::Vector3 lookDirection = { 0.0f,0.0f,1.0f };
 	SeedCore::Vector3 shotDirection = { 0.0f,0.0f,1.0f };
