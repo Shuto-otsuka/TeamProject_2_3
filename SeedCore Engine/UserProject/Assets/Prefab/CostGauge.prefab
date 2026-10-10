@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "b97eb928-fcfe-45a3-a6ef-7948795babf2",
+			"collaborationId": "20343219-d002-4a12-8c6a-84b5af606112",
 			"components": [
 				{
 					"component": "Bounds",
@@ -166,6 +166,68 @@
 								"y": 0.0,
 								"z": 0.0
 							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 1925365179,
+							"is_array": false,
+							"name": "costGaugeAddSprite",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 1411871900,
+							"is_array": false,
+							"name": "costGaugeOverSprite",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
 						}
 					]
 				}
@@ -196,7 +258,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "0321a317-58bf-414b-b5e4-0552daabc285",
+			"collaborationId": "3138fcc4-25ef-4449-8415-5609078fdba2",
 			"components": [
 				{
 					"component": "Image",
@@ -543,8 +605,356 @@
 			"tags": []
 		},
 		{
+			"active": false,
+			"collaborationId": "4a94b508-96e6-4b7d-b46a-c29d6d93540e",
+			"components": [
+				{
+					"component": "Image",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "テクスチャサイズ",
+							"string": "",
+							"type": 4,
+							"vector2": {
+								"x": 606.0,
+								"y": 96.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "テクスチャ位置",
+							"string": "",
+							"type": 4,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "中心点",
+							"string": "",
+							"type": 4,
+							"vector2": {
+								"x": 303.0,
+								"y": 48.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "色",
+							"string": "",
+							"type": 8,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "表示形式",
+							"string": "",
+							"type": 9,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "カメラ正対",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "テクスチャタイプ",
+							"string": "",
+							"type": 9,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "スクロール速度",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "スクロール向き",
+							"string": "",
+							"type": 4,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": -1087639134,
+							"is_array": false,
+							"name": "テクスチャID",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Bounds",
+					"fields": []
+				}
+			],
+			"layer": "Default",
+			"name": "CostGaugeOverBase",
+			"nestedPrefabAssetID": 0,
+			"overrides": [],
+			"parentIndex": 0,
+			"persistentId": 116,
+			"position": {
+				"x": 960.0,
+				"y": 1000.0,
+				"z": 0.0
+			},
+			"rotation": {
+				"w": 1.0,
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
+			},
+			"scale": {
+				"x": 1.0,
+				"y": 1.0,
+				"z": 1.0
+			},
+			"tags": []
+		},
+		{
 			"active": true,
-			"collaborationId": "45300bad-8703-4abd-a51c-e2f9a0c59bb9",
+			"collaborationId": "18ac1e48-ffd6-4ed4-a9c6-d01d92aa67dd",
 			"components": [
 				{
 					"component": "Image",
@@ -892,7 +1302,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "0d8505f3-f98e-4f34-9420-b8095bdbbb17",
+			"collaborationId": "4c3d7219-1487-4b6e-b4cd-d34eda8a346e",
 			"components": [
 				{
 					"component": "Image",

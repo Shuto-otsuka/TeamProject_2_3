@@ -14,6 +14,7 @@ void CostGaugeController::OnStart()
     costGaugeAddImage = GetWorld().GetComponent<SeedCore::Image>(costGaugeAddEntity);
     costGaugeAddPosition = GetWorld().GetComponent<SeedCore::Position>(costGaugeAddEntity);
     playerController = GetWorld().GetComponent<PlayerController>(playerEntity);
+    costGaugeOverActive = GetWorld().GetComponent<SeedCore::Active>(GetWorld().GetActor("CostGaugeOverBase").GetEntity());
 
     costGaugeUsedImage->textureSize_.x = sizeXMin;
     costGaugeAddPosition->x_ = posXMin;
@@ -40,13 +41,30 @@ void CostGaugeController::OnTick(float elapsedTime)
     //プレイヤーから増加分のコストゲージを取得
     int add = playerController->GetCostGaugeAdd();
     int total = used + add;
+    bool over = false;
     if (total > playerController->GetCostGaugeMax())
+    {
         add -= total - playerController->GetCostGaugeMax();//限界突破対策
+        over = true;//限界突破フラグをON
+    }
 
     //増加分のコストゲージからゲージのサイズに変換
     float costGaugeAddSize = GaugeToSizeX(add);
     //サイズをターゲットにセット
     addSizeXTarget = costGaugeAddSize;
+
+    if (over)
+    {
+        //限界突破したとき用の枠線
+        costGaugeOverActive->active_ = true;
+        //限界突破したとき用のゲージ
+        costGaugeAddImage->textureID_ = costGaugeOverSprite;
+    }
+    else
+    {
+        costGaugeOverActive->active_ = false;
+        costGaugeAddImage->textureID_ = costGaugeAddSprite;
+    }
 
     MoveGauge(elapsedTime);
 }

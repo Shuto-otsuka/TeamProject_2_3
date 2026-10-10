@@ -21,6 +21,10 @@ public:
 		float sizeXMax;
 	SC_REFLECTION_FIELD()
 		float gaugeMoveSpeed;
+	SC_PAYLOAD_FIELD(Texture)
+		SeedCore::Uint32 costGaugeAddSprite;
+	SC_PAYLOAD_FIELD(Texture)
+		SeedCore::Uint32 costGaugeOverSprite;
 
 private:
 	float GaugeToPosX(int gauge);
@@ -33,6 +37,7 @@ private:
 	SeedCore::Image* costGaugeUsedImage;
 	SeedCore::Image* costGaugeAddImage;
 	SeedCore::Position* costGaugeAddPosition;
+	SeedCore::Active* costGaugeOverActive;
 
 	PlayerController* playerController = nullptr;
 
