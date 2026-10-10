@@ -45,6 +45,8 @@ public:
 		int minAddCostGauge = 10;
 	SC_REFLECTION_FIELD()
 		int maxAddCostGauge = 55;
+	SC_REFLECTION_FIELD()
+	    float resetInputTime;
 
 private:
 	void UpdateUsually(float elapsedTime);
@@ -58,6 +60,7 @@ private:
 	void Shot();
 	void UpdateFallJudge(float elapsedTime);
 	void UpdateAllBulletRemove(float elapsedTime);
+	void UpdateInputReset(float elapsedTime);
 
 	bool OnGroundOrCoyote();
 
@@ -87,6 +90,7 @@ private:
 	float jumpInputTimer = 0.0f;
 	float coyoteTimer = 0.0f;
 	float shotInputTimer = 0.0f;
+	float resetInputTimer = 0.0f;
 
 	int costGauge = 0;
 

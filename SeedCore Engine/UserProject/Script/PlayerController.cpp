@@ -70,6 +70,8 @@ void PlayerController::UpdateUsually(float elapsedTime)
     UpdateAllBulletRemove(elapsedTime);
     //落下判定処理
     UpdateFallJudge(elapsedTime);
+    //やり直し処理
+    UpdateInputReset(elapsedTime);
 }
 
 void PlayerController::UpdateHorizontalAcceleration(float elapsedTime)
@@ -384,6 +386,24 @@ void PlayerController::UpdateAllBulletRemove(float elapsedTime)
             StopController* stopController = GetWorld().GetComponent<StopController>(entity);
             stopController->Move();
         }
+    }
+}
+
+void PlayerController::UpdateInputReset(float elapsedTime)
+{
+    if (SeedCore::Input::KeyState(SeedCore::Input::Key::R, SeedCore::Input::IsPressed))
+    {
+        //Rキーが押されている間タイマー更新
+        resetInputTimer += elapsedTime;
+        //一定時間でやり直し
+        if(resetInputTimer >= resetInputTime)
+            SeedCore::Scene::Change("Sakatyan.scene");
+    }
+   
+    if (SeedCore::Input::KeyState(SeedCore::Input::Key::R, SeedCore::Input::OnReleased))
+    {
+        //タイマーリセット
+        resetInputTimer = 0.0f;
     }
 }
 

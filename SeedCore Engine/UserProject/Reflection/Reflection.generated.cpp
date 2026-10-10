@@ -116,6 +116,7 @@ namespace SeedCore
 					outInfo.push_back({ String("maxCostGauge"), offsetof(PlayerController, maxCostGauge), AttributeType::Int });
 					outInfo.push_back({ String("minAddCostGauge"), offsetof(PlayerController, minAddCostGauge), AttributeType::Int });
 					outInfo.push_back({ String("maxAddCostGauge"), offsetof(PlayerController, maxAddCostGauge), AttributeType::Int });
+					outInfo.push_back({ String("resetInputTime"), offsetof(PlayerController, resetInputTime), AttributeType::Float });
 				});
 			}
 		};

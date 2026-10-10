@@ -44,7 +44,7 @@ void PendulumController::OnTick(float elapsedTime)
     //回転率を元にSlerpでクォータニオンを作成
     SeedCore::Quaternion quaternion = SeedCore::Quaternion::Slerp(startQuaternion, endQuaternion, rotateRate);
     //キネマティック剛体を動かす
-    //rigidbody->MoveTarget(SeedCore::Transform::Vector(*position), quaternion, elapsedTime);
+    rigidbody->MoveTarget(SeedCore::Transform::Vector(*position), quaternion, elapsedTime);
 }
 
 void PendulumController::OnInspectorGUI()
