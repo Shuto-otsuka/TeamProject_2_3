@@ -49,6 +49,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Script\ChargeGaugeController.cpp" />
     <ClCompile Include="Script\CostGaugeController.cpp" />
     <ClCompile Include="Script\PendulumController.cpp" />
     <ClCompile Include="Tutorial\ScTutorial.cpp" />
@@ -60,6 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EntryPoint\EntryGame.h" />
+    <ClInclude Include="Script\ChargeGaugeController.h" />
     <ClInclude Include="Script\CostGaugeController.h" />
     <ClInclude Include="Script\PendulumController.h" />
     <ClInclude Include="Tutorial\ScTutorial.h" />

@@ -76,6 +76,9 @@
     <ClCompile Include="Script\CostGaugeController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
+    <ClCompile Include="Script\ChargeGaugeController.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\ScTutorial.h">
@@ -106,6 +109,9 @@
       <Filter>Script</Filter>
     </ClInclude>
     <ClInclude Include="Script\CostGaugeController.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\ChargeGaugeController.h">
       <Filter>Script</Filter>
     </ClInclude>
   </ItemGroup>

@@ -2,6 +2,7 @@
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
 #include <UserProject/Script/BulletController.h>
 #include <UserProject/Script/CameraController.h>
+#include <UserProject/Script/ChargeGaugeController.h>
 #include <UserProject/Script/CostGaugeController.h>
 #include <UserProject/Script/FloorMoveSystem.h>
 #include <UserProject/Script/PendulumController.h>
@@ -9,6 +10,7 @@
 
 extern "C" int _force_reflection_BulletController = 0;
 extern "C" int _force_reflection_CameraController = 0;
+extern "C" int _force_reflection_ChargeGaugeController = 0;
 extern "C" int _force_reflection_CostGaugeController = 0;
 extern "C" int _force_reflection_FloorMoveSystem = 0;
 extern "C" int _force_reflection_PendulumController = 0;
@@ -60,6 +62,22 @@ namespace SeedCore
 			}
 		};
 		static Register_CameraController global_CameraController_register;
+
+		// ---- UserProject/Script/ChargeGaugeController.h ----
+		struct Register_ChargeGaugeController
+		{
+			Register_ChargeGaugeController()
+			{
+				ReflectionRegistry::Register(String("ChargeGaugeController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					ChargeGaugeController& obj = *static_cast<ChargeGaugeController*>(ptr);
+					outInfo.push_back({ String("posXMin"), offsetof(ChargeGaugeController, posXMin), AttributeType::Float });
+					outInfo.push_back({ String("posXMax"), offsetof(ChargeGaugeController, posXMax), AttributeType::Float });
+					outInfo.push_back({ String("sizeXMin"), offsetof(ChargeGaugeController, sizeXMin), AttributeType::Float });
+					outInfo.push_back({ String("sizeXMax"), offsetof(ChargeGaugeController, sizeXMax), AttributeType::Float });
+				});
+			}
+		};
+		static Register_ChargeGaugeController global_ChargeGaugeController_register;
 
 		// ---- UserProject/Script/CostGaugeController.h ----
 		struct Register_CostGaugeController

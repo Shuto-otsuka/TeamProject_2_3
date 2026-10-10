@@ -39,6 +39,10 @@ void CostGaugeController::OnTick(float elapsedTime)
     addPosXTarget = costGaugeAddPos;
     //プレイヤーから増加分のコストゲージを取得
     int add = playerController->GetCostGaugeAdd();
+    int total = used + add;
+    if (total > playerController->GetCostGaugeMax())
+        add -= total - playerController->GetCostGaugeMax();//限界突破対策
+
     //増加分のコストゲージからゲージのサイズに変換
     float costGaugeAddSize = GaugeToSizeX(add);
     //サイズをターゲットにセット

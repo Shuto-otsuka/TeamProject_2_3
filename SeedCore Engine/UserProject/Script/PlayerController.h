@@ -16,6 +16,7 @@ public:
 	int GetCostGaugeUsed() const { return costGauge; }
 	int GetCostGaugeAdd() const { return costGaugeAdd; }
 	int GetCostGaugeMax() const { return maxCostGauge; }
+	float GetChargeRate() const { return shotChargeRate; }
 
 	SC_REFLECTION_FIELD()
 		float acceleration;
