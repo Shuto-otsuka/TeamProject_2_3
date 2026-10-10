@@ -25,14 +25,14 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* The outcome of one HTTP request: status line, body, and the server's
-	* own clock. A transport failure leaves status_ at 0 and describes
-	* itself in error_.
+	* The outcome of one HTTP request: status line, body, and the
+	* Location header. A transport failure leaves status_ at 0 and
+	* describes itself in error_.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* HTTPリクエスト1回の結果。ステータス、ボディ、サーバー側の時刻を持つ。
+	* HTTPリクエスト1回の結果。ステータス、ボディ、Location ヘッダを持つ。
 	* 通信自体に失敗した場合は status_ が 0 のままとなり、error_ に内容が
 	* 入る。
 	*/
@@ -45,10 +45,6 @@ namespace SeedCore
 		/// [EN] Response body, exactly as received.
 		/// [JP] 受信したままのレスポンスボディ。
 		DynamicArray<Byte> body_;
-
-		/// [EN] The Date header as seconds since the Unix epoch; 0 when absent.
-		/// [JP] Date ヘッダをUnixエポックからの秒数にしたもの。無ければ 0。
-		Double serverTime_ = 0.0;
 
 		/// [EN] The Location header, which a resumable upload answers with; empty when absent.
 		/// [JP] Location ヘッダ。再開可能アップロードの開始時に返ってくる。無ければ空。
@@ -99,9 +95,29 @@ namespace SeedCore
 		*/
 		~HttpClient();
 
-		/// [EN] Copying is disallowed because two objects must not close one session handle.
-		/// [JP] 1つのセッションハンドルを2つのオブジェクトが閉じることのないよう、コピーは禁止する。
+		/**
+		* [EN]
+		* Copy construction is disallowed, since two objects must not close
+		* one session handle.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー構築は禁止する。1つのセッションハンドルを2つのオブジェクトが
+		* 閉じてはならないため。
+		*/
 		HttpClient(const HttpClient&) = delete;
+
+		/**
+		* [EN]
+		* Copy assignment is disallowed for the same reason as copy
+		* construction.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー代入も、コピー構築と同じ理由で禁止する。
+		*/
 		HttpClient& operator=(const HttpClient&) = delete;
 
 		/**
@@ -200,43 +216,6 @@ namespace SeedCore
 		* どちらもこれを薄く包んだもの。
 		*/
 		HttpResponse Exchange(const String& method, const String& url, const DynamicArray<HttpHeader>& headers, const DynamicArray<Byte>& body, std::ofstream* destination);
-
-		/**
-		* [EN]
-		* Returns the Location response header of request, or an empty
-		* string when it carries none.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* request の Location レスポンスヘッダを返す。持っていない場合は
-		* 空文字列。
-		*/
-		static String ReadLocation(HINTERNET request);
-
-		/**
-		* [EN]
-		* Converts the Date response header of request into seconds since
-		* the Unix epoch, or 0 when the header is missing or unparsable.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* request の Date レスポンスヘッダをUnixエポックからの秒数へ変換
-		* する。ヘッダが無い、または解釈できない場合は 0。
-		*/
-		static Double ReadServerTime(HINTERNET request);
-
-		/**
-		* [EN]
-		* Builds the CRLF-separated header block WinHttpSendRequest takes.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* WinHttpSendRequest が受け取る、CRLF区切りのヘッダ列を組み立てる。
-		*/
-		static std::wstring BuildHeaders(const DynamicArray<HttpHeader>& headers);
 
 	private:
 		/// [EN] WinHTTP session handle, shared by every request this client sends.

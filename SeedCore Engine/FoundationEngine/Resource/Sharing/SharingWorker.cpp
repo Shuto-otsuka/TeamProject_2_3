@@ -13,26 +13,24 @@ namespace SeedCore
 	* [JP]
 	* プロジェクト用にワーカーを用意する。この時点ではまだ接続しない。
 	*/
-	SharingWorker::SharingWorker(const std::filesystem::path& projectRoot, const SharingConfig& config) : projectRoot_(projectRoot), config_(config), auth_(http_, projectRoot / ".asset" / "credentials", config.clientId_, config.clientSecret_), document_(http_, auth_), drive_(http_, auth_), catalog_(document_, config.catalogDocumentId_), locks_(document_, config.lockDocumentId_, config.owner_, String(std::format("{:08x}{:08x}", std::random_device()(), std::random_device()())))
+	SharingWorker::SharingWorker(const std::filesystem::path& projectRoot, const SharingConfig& config) : projectRoot_(projectRoot), config_(config), auth_(http_, projectRoot / ".asset" / "credentials", config.clientId_, config.clientSecret_), document_(http_, auth_), drive_(http_, auth_), catalog_(document_, config.catalogDocumentId_)
 	{
-		/// [EN] The session identity is made here and kept for the whole run, which is how this Editor's own leases are recognised.
-		/// [JP] セッションの身元はここで作り、起動中ずっと保つ。これによって、この Editor 自身の Lease を見分けられる。
 		LoadWorkspace();
 	}
 
 	/**
 	* [EN]
-	* Stops the thread and releases every lease this Editor holds.
+	* Stops the thread.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* スレッドを止め、この Editor が持つ全ての Lease を解放する。
+	* スレッドを止める。
 	*/
 	SharingWorker::~SharingWorker()
 	{
-		/// [EN] Stopping here as well as on request means an Editor torn down without warning still frees what it held.
-		/// [JP] 要求時だけでなくここでも止めることで、予告なく破棄された Editor でも保持分を解放できる。
+		/// [EN] Stopping here as well as on request means an Editor torn down without warning still saves its workspace record.
+		/// [JP] 要求時だけでなくここでも止めることで、予告なく破棄された Editor でもワークスペースの記録を保存できる。
 		Stop();
 	}
 
@@ -62,14 +60,12 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Stops the thread, releasing leases so other members do not have
-	* to wait for them to lapse.
+	* Stops the thread, letting it finish what it is doing first.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* スレッドを止める。その際に Lease を解放し、他のメンバーが失効を
-	* 待たなくて済むようにする。
+	* スレッドを止める。実行中の作業は終わらせてから止める。
 	*/
 	void SharingWorker::Stop()
 	{
@@ -78,8 +74,8 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Clearing the flag lets the loop finish what it is doing and then release on its way out.
-		/// [JP] 印を下ろすと、ループは今の作業を終えてから、抜ける際に解放を行う。
+		/// [EN] Clearing the flag lets the loop finish what it is doing and then save the workspace record on its way out.
+		/// [JP] 印を下ろすと、ループは今の作業を終えてから、抜ける際にワークスペースの記録を保存する。
 		running_ = false;
 		if (thread_.joinable())
 		{
@@ -154,15 +150,15 @@ namespace SeedCore
 	* [EN]
 	* Hands over the workspace paths of files taken in from the
 	* library's Assets folder since the last call, and forgets them.
-	* The Editor scans them so they get their identity, then shares
-	* them with the team.
+	* The Editor scans them so they get their identity; sharing them
+	* is left to the member.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 前回の呼び出し以降にライブラリの Assets フォルダから取り込んだ
 	* ファイルの位置を引き渡し、こちらからは忘れる。Editor はそれらを
-	* 走査して識別情報を与え、チームへ共有する。
+	* 走査して識別情報を与える。共有はメンバーに任せる。
 	*/
 	void SharingWorker::ConsumeImported(DynamicArray<String>& paths)
 	{
@@ -177,14 +173,14 @@ namespace SeedCore
 	/**
 	* [EN]
 	* The background thread itself: signs in, then loops between
-	* carrying out requests, renewing leases and re-reading the shared
-	* state until asked to stop.
+	* carrying out requests and re-reading the shared state until asked
+	* to stop.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 裏のスレッド本体。ログインし、その後は停止を求められるまで、要求の
-	* 実行・Lease の更新・共有状態の読み直しを繰り返す。
+	* 実行と共有状態の読み直しを繰り返す。
 	*/
 	void SharingWorker::Run()
 	{
@@ -200,14 +196,12 @@ namespace SeedCore
 		/// [EN] Timestamps rather than counters, so a slow request does not push everything after it out of step.
 		/// [JP] 回数ではなく時刻で管理する。遅いリクエストが1つあっても、以降の間隔が崩れないようにするため。
 		Double nextRefresh = 0.0;
-		Double nextRenew = 0.0;
-		Double nextMirror = 0.0;
 		while (running_)
 		{
 			Double now = std::chrono::duration<Double>(std::chrono::steady_clock::now().time_since_epoch()).count();
 
-			/// [EN] Requests come first, because a member waiting to edit should not sit behind a scheduled read.
-			/// [JP] 要求を先に処理する。編集を待っているメンバーを、定期的な読み取りの後ろに並ばせないため。
+			/// [EN] Requests come first, because a member waiting on a publish or a get should not sit behind a scheduled read.
+			/// [JP] 要求を先に処理する。公開や取得を待っているメンバーを、定期的な読み取りの後ろに並ばせないため。
 			SharingRequest request;
 			Bool hasRequest = false;
 			{
@@ -225,104 +219,19 @@ namespace SeedCore
 				continue;
 			}
 
-			/// [EN] Renewing comes before refreshing, since losing a lease costs more than seeing the catalog a second late.
-			/// [JP] 更新を読み直しより先に行う。Lease を失う方が、カタログが1秒古いことより痛いため。
-			if (now >= nextRenew)
-			{
-				nextRenew = now + 40.0;
-				locks_.Renew();
-			}
+			/// [EN] Re-reading on a timer is how another member's publish becomes visible.
+			/// [JP] 定期的な読み直しが、他のメンバーの Publish が見えるようになる仕組み。
 
-			/// [EN] Re-reading on a timer is how another member's lock and another member's publish become visible.
-			/// [JP] 定期的な読み直しが、他のメンバーの Lock や Publish が見えるようになる仕組み。
+			/// [EN] It only reads; nothing is brought down until the member asks for the latest, so files never change under them unannounced.
+			/// [JP] ここでは読むだけ。メンバーが最新の取得を求めるまで何も降ろさない。知らないうちに手元のファイルが変わらないようにするため。
 			if (now >= nextRefresh)
 			{
 				nextRefresh = now + 5.0;
-				Bool read = catalog_.Refresh() && locks_.Refresh();
+				Bool read = catalog_.Refresh();
 				{
 					std::lock_guard<std::mutex> guard(snapshotMutex_);
 					snapshot_.online_ = read;
 					snapshot_.error_ = read ? String() : catalog_.Error();
-				}
-
-				/// [EN] What another member published is pulled down on its own, so nobody has to notice an arrow and press a button.
-				/// [JP] 他のメンバーが公開したものは自動で降りてくる。矢印に気づいてボタンを押す必要が無いようにするため。
-				if (read)
-				{
-					for (const SharedAsset& asset : catalog_.Assets())
-					{
-						/// [EN] Only assets this machine already has are followed; one it has never fetched stays a deliberate choice.
-						/// [JP] 追いかけるのは既に持っているアセットだけ。一度も取得していないものを取るかどうかは、あくまで本人の判断。
-						auto record = workspace_.find(asset.id_);
-						if (asset.deleted_ || record == workspace_.end())
-						{
-							continue;
-						}
-
-						/// [EN] Holding a lease means this member is in the middle of editing it, and replacing the files under them would be wrong.
-						/// [JP] Lease を持っているのは、このメンバーが編集の最中ということ。その足元でファイルを入れ替えるのは誤り。
-						if (locks_.Held(asset.id_, String("asset")))
-						{
-							continue;
-						}
-
-						/// [EN] Size and time are compared before anything is read, so an untouched asset costs no disk work here.
-						/// [JP] 何かを読む前にサイズと時刻を比べる。無変更のアセットに、ここでのディスク作業が発生しないようにするため。
-						Bool touched = false;
-						Bool missing = false;
-						for (const WorkspaceFile& file : record->second.files_)
-						{
-							std::error_code errorCode;
-							std::filesystem::path local = Local(file.path_);
-
-							/// [EN] A file that is gone is not a local edit but a hole, and a hole is worth filling from the library.
-							/// [JP] 消えているファイルはローカルの変更ではなく欠けであり、欠けはライブラリから埋める価値がある。
-							if (!std::filesystem::exists(local))
-							{
-								missing = true;
-								continue;
-							}
-
-							Uint64 size = std::filesystem::file_size(local, errorCode);
-							Int64 stamp = std::filesystem::last_write_time(local, errorCode).time_since_epoch().count();
-							touched = touched || errorCode || size != file.size_ || stamp != file.stamp_;
-						}
-
-						/// [EN] Anything that looks touched is left for the member to resolve, and Get would refuse it anyway.
-						/// [JP] 触られたように見えるものはメンバーの判断に任せる。どのみち Get 側が断ることになる。
-						if (touched)
-						{
-							continue;
-						}
-
-						/// [EN] So an asset comes down when the library moved ahead, and also when this workspace lost the files it recorded.
-						/// [JP] つまり降りてくるのは、ライブラリが先へ進んだときと、このワークスペースが記録済みのファイルを失ったとき。
-						if (record->second.revision_ < asset.revision_ || missing)
-						{
-							Get(asset.id_);
-						}
-					}
-
-					/// [EN] The open scene is followed on the same timer, which is what makes another member's entity appear on its own.
-					/// [JP] 開いている Scene も同じ間隔で追いかける。他のメンバーの Entity が自然に現れるのは、この確認による。
-
-					/// [EN] Its own check finds nothing changed most of the time, so this costs one document read per interval.
-					/// [JP] ほとんどの回は「変化なし」で終わるため、費用は間隔ごとのドキュメント1回の読み取りで済む。
-					if (!openScene_.str().empty())
-					{
-						Get(openScene_);
-					}
-
-					/// [EN] The library's Assets tree is kept shaped like this workspace, and anything dropped into it is taken in.
-					/// [JP] ライブラリの Assets の構成をこのワークスペースと同じ形に保ち、そこへ置かれたものを取り込む。
-
-					/// [EN] It runs less often than the rest, since walking the whole tree costs one listing per folder.
-					/// [JP] 他より間隔を空けて動かす。ツリー全体を辿るには、フォルダごとに一覧を1回ずつ取ることになるため。
-					if (!config_.assetsFolderId_.str().empty() && now >= nextMirror)
-					{
-						nextMirror = now + 30.0;
-						Mirror(projectRoot_ / config_.workspace_.str() / "Assets", config_.assetsFolderId_);
-					}
 				}
 				Capture();
 			}
@@ -332,17 +241,6 @@ namespace SeedCore
 			std::this_thread::sleep_for(std::chrono::milliseconds(200));
 		}
 
-		/// [EN] On the way out every lease is handed back, so another member can edit at once rather than after two minutes.
-		/// [JP] 終了時に全ての Lease を返す。他のメンバーが2分待たずにすぐ編集できるようにするため。
-		/// [EN] Only this Editor's own leases are handed back, since each release is a write and another member's would be refused anyway.
-		/// [JP] 返すのはこの Editor 自身の Lease だけ。解放は1回ごとに書き込みになり、他のメンバーの分はどのみち拒否されるため。
-		for (const EditLease& lease : locks_.Leases())
-		{
-			if (lease.mine_)
-			{
-				locks_.Release(lease.assetId_, lease.scope_);
-			}
-		}
 		SaveWorkspace();
 	}
 
@@ -367,14 +265,6 @@ namespace SeedCore
 				snapshot_.operation_ = String("共有ライブラリを確認中");
 				break;
 
-			case SharingAction::Checkout:
-				snapshot_.operation_ = String("編集権を取得中");
-				break;
-
-			case SharingAction::Release:
-				snapshot_.operation_ = String("編集権を解放中");
-				break;
-
 			case SharingAction::Get:
 				snapshot_.operation_ = String("取得中");
 				break;
@@ -391,8 +281,11 @@ namespace SeedCore
 				snapshot_.operation_ = String("公開中");
 				break;
 
-			case SharingAction::Retire:
-				snapshot_.operation_ = String("共有を終了中");
+			case SharingAction::Unshare:
+				snapshot_.operation_ = String("共有を解除中");
+				break;
+
+			default:
 				break;
 			}
 		}
@@ -401,17 +294,13 @@ namespace SeedCore
 		switch (request.action_)
 		{
 		case SharingAction::Refresh:
-			done = catalog_.Refresh() && locks_.Refresh();
-			break;
-
-		case SharingAction::Checkout:
-			/// [EN] Taking a lease is what the Editor does the moment a member starts changing a shared asset.
-			/// [JP] Lease の取得は、メンバーが共有アセットを変更し始めた瞬間に Editor が行うこと。
-			done = locks_.Acquire(request.assetId_, request.scope_);
-			break;
-
-		case SharingAction::Release:
-			done = locks_.Release(request.assetId_, request.scope_);
+			/// [EN] A refresh the member asked for is the one moment the library's newer revisions are brought down.
+			/// [JP] メンバーが求めた読み直しだけが、ライブラリの新しい Revision を降ろす機会になる。
+			done = catalog_.Refresh();
+			if (done)
+			{
+				Pull();
+			}
 			break;
 
 		case SharingAction::Get:
@@ -430,19 +319,75 @@ namespace SeedCore
 			done = Publish(request.assetId_);
 			break;
 
-		case SharingAction::Retire:
-			/// [EN] Retiring is checked against the same revision a publish would be, so nobody removes unseen work.
-			/// [JP] 廃止も Publish と同じ Revision で照合する。見ていない成果を誰かが消してしまわないようにするため。
-			done = catalog_.Retire(request.assetId_, workspace_[request.assetId_].revision_);
+		case SharingAction::Unshare:
+			/// [EN] Unsharing is not checked against any revision, the same as a publish: the last one to act decides.
+			/// [JP] 共有の解除も Publish と同じく Revision を照合しない。最後に操作した人の判断が通る。
+			done = Unshare(request.assetId_);
+			break;
+
+		case SharingAction::Forget:
+			Forget(request.path_);
+			done = true;
 			break;
 
 		case SharingAction::OpenScene:
 			/// [EN] Only the scene in front of the member is followed, since reading one document per scene would cost a read for scenes nobody has open.
 			/// [JP] 追いかけるのはメンバーが見ている Scene だけ。Scene ごとにドキュメントを読むと、誰も開いていない Scene の分まで読むことになるため。
+
+			/// [EN] Opening only records which scene that is; its pieces come down with the next pull the member asks for.
+			/// [JP] 開いた時点ではどの Scene かを記録するだけ。断片が降りてくるのは、メンバーが次に最新の取得を求めたとき。
 			openScene_ = request.assetId_;
 			sceneRevisions_.clear();
-			done = openScene_.str().empty() || Get(openScene_);
+			done = true;
 			break;
+		}
+
+		/// [EN] A publish or an unshare leaves the previous contents unnamed, so the blobs folder is swept right after either succeeds.
+		/// [JP] 公開や共有の解除は前の中身をどこからも指されない状態にするため、どちらかが成功した直後に blobs フォルダを掃除する。
+		if (done && (request.action_ == SharingAction::Publish || request.action_ == SharingAction::Unshare) && !config_.blobFolderId_.str().empty())
+		{
+			/// [EN] Contents are stored once per hash and shared between assets, so a blob is in use as long as any entry or piece names it.
+			/// [JP] 中身はハッシュごとに1つだけ保存され、アセット間で共用される。どれか1つの項目か断片が指していれば、その blob は使用中。
+			std::set<std::string> inUse;
+			Bool readable = true;
+			for (const SharedAsset& asset : catalog_.Assets())
+			{
+				for (const SharedFile& file : asset.files_)
+				{
+					inUse.insert(file.driveId_.str());
+				}
+
+				/// [EN] A scene that cannot be read calls the whole sweep off, since its pieces would otherwise look unused and be thrown away.
+				/// [JP] 読めない Scene があれば掃除全体を取りやめる。そうしないと、その断片が未使用に見えて捨てられてしまうため。
+				if (asset.scene_ && !asset.sceneDocumentId_.str().empty())
+				{
+					SharedScene shared(document_, asset.sceneDocumentId_);
+					readable = readable && shared.Refresh();
+					for (const ScenePart& part : shared.Parts())
+					{
+						inUse.insert(part.driveId_.str());
+					}
+				}
+			}
+
+			DynamicArray<DriveEntry> blobs;
+			if (readable && drive_.List(config_.blobFolderId_, blobs))
+			{
+				/// [EN] A blob written within the last hour may belong to a publish another member has uploaded but not yet recorded, so only older ones are swept.
+				/// [JP] 直近1時間に書かれた blob は、他のメンバーがアップロード済みでまだ記録していない公開のものかもしれない。そのため、それより古いものだけを掃除する。
+				std::string cutoff = std::format("{:%FT%TZ}", std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now() - std::chrono::hours(1)));
+				for (const DriveEntry& blob : blobs)
+				{
+					if (blob.folder_ || inUse.contains(blob.id_.str()) || blob.modified_.str().empty() || blob.modified_.str() >= cutoff)
+					{
+						continue;
+					}
+
+					/// [EN] Trashing rather than deleting outright leaves a member a way back for a while if this was a mistake.
+					/// [JP] 完全に消すのではなくゴミ箱へ移すため、誤りだった場合もしばらくは戻せる。
+					drive_.Trash(blob.id_);
+				}
+			}
 		}
 
 		/// [EN] Each failure already carries its own wording, so the one that happened is simply passed along.
@@ -450,9 +395,88 @@ namespace SeedCore
 		{
 			std::lock_guard<std::mutex> guard(snapshotMutex_);
 			snapshot_.operation_ = String();
-			snapshot_.error_ = done ? String() : (catalog_.Error().str().empty() ? locks_.Error() : catalog_.Error());
+			snapshot_.error_ = done ? String() : catalog_.Error();
 		}
 		Capture();
+	}
+
+	/**
+	* [EN]
+	* Brings this workspace up to the catalog just read: every asset it
+	* already has that the library moved ahead on or that lost files, the
+	* open scene's pieces, and whatever was dropped into the library's
+	* Assets folder.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 直前に読んだカタログまで、このワークスペースを引き上げる。対象は、
+	* 既に持っているアセットのうちライブラリが先へ進んだもの・ファイルが
+	* 欠けたもの、開いている Scene の断片、ライブラリの Assets フォルダへ
+	* 置かれたもの。
+	*/
+	void SharingWorker::Pull()
+	{
+		for (const SharedAsset& asset : catalog_.Assets())
+		{
+			/// [EN] Only assets this machine already has are followed; one it has never fetched stays a deliberate choice.
+			/// [JP] 追いかけるのは既に持っているアセットだけ。一度も取得していないものを取るかどうかは、あくまで本人の判断。
+			auto record = workspace_.find(asset.id_);
+			if (record == workspace_.end())
+			{
+				continue;
+			}
+
+			/// [EN] Size and time are compared before anything is read, so an untouched asset costs no disk work here.
+			/// [JP] 何かを読む前にサイズと時刻を比べる。無変更のアセットに、ここでのディスク作業が発生しないようにするため。
+			Bool touched = false;
+			Bool missing = false;
+			for (const WorkspaceFile& file : record->second.files_)
+			{
+				std::error_code errorCode;
+				std::filesystem::path local = Local(file.path_);
+
+				/// [EN] A file that is gone is not a local edit but a hole, and a hole is worth filling from the library.
+				/// [JP] 消えているファイルはローカルの変更ではなく欠けであり、欠けはライブラリから埋める価値がある。
+				if (!std::filesystem::exists(local))
+				{
+					missing = true;
+					continue;
+				}
+
+				Uint64 size = std::filesystem::file_size(local, errorCode);
+				Int64 stamp = std::filesystem::last_write_time(local, errorCode).time_since_epoch().count();
+				touched = touched || errorCode || size != file.size_ || stamp != file.stamp_;
+			}
+
+			/// [EN] Anything that looks touched is left for the member to resolve, and Get would refuse it anyway.
+			/// [JP] 触られたように見えるものはメンバーの判断に任せる。どのみち Get 側が断ることになる。
+			if (touched)
+			{
+				continue;
+			}
+
+			/// [EN] So an asset comes down when the library moved ahead, and also when this workspace lost the files it recorded.
+			/// [JP] つまり降りてくるのは、ライブラリが先へ進んだときと、このワークスペースが記録済みのファイルを失ったとき。
+			if (record->second.revision_ < asset.revision_ || missing)
+			{
+				Get(asset.id_);
+			}
+		}
+
+		/// [EN] The open scene is rebuilt from its pieces, which is what makes another member's entity appear.
+		/// [JP] 開いている Scene を断片から組み立て直す。他のメンバーの Entity が現れるのは、これによる。
+		if (!openScene_.str().empty())
+		{
+			Get(openScene_);
+		}
+
+		/// [EN] The library's Assets tree is kept shaped like this workspace, and anything dropped into it is taken in.
+		/// [JP] ライブラリの Assets の構成をこのワークスペースと同じ形に保ち、そこへ置かれたものを取り込む。
+		if (!config_.assetsFolderId_.str().empty())
+		{
+			Mirror(projectRoot_ / config_.workspace_.str() / "Assets", config_.assetsFolderId_);
+		}
 	}
 
 	/**
@@ -473,8 +497,8 @@ namespace SeedCore
 		{
 			return false;
 		}
-		/// [EN] A scene is not fetched as a file but rebuilt from its pieces, so that one member's entity does not arrive as a whole scene.
-		/// [JP] Scene はファイルとしてではなく断片から組み立て直す。1人の Entity の変更が、Scene 丸ごととして届かないようにするため。
+		/// [EN] A scene is not fetched as a file but rebuilt from its pieces, so that one member's change to a component does not arrive as a whole scene.
+		/// [JP] Scene はファイルとしてではなく断片から組み立て直す。1人の Component の変更が、Scene 丸ごととして届かないようにするため。
 		if (asset->scene_ && !asset->sceneDocumentId_.str().empty())
 		{
 			SharedScene shared(document_, asset->sceneDocumentId_);
@@ -485,8 +509,8 @@ namespace SeedCore
 				return false;
 			}
 
-			/// [EN] This runs on a timer while a scene is open, so a scene nobody has changed must cost nothing beyond the read.
-			/// [JP] これは Scene を開いている間、定期的に動く。誰も変更していない Scene で、読み取り以上の負担が出ないようにする。
+			/// [EN] Every press of the latest fetch runs this for the open scene, so a scene nobody has changed must cost nothing beyond the read.
+			/// [JP] 最新の取得を押すたびに、開いている Scene についてこれが動く。誰も変更していない Scene で、読み取り以上の負担が出ないようにする。
 			Bool moved = shared.Parts().size() != sceneRevisions_.size();
 			for (const ScenePart& part : shared.Parts())
 			{
@@ -531,6 +555,31 @@ namespace SeedCore
 				std::filesystem::remove(staging, errorCode);
 			}
 	
+			/// [EN] An entity arrives as several pieces - its own header, its transform and one piece per component - which are gathered per entity first.
+			/// [JP] Entity は複数の断片（本体・トランスフォーム・Component ごとの断片）として届くため、先に Entity ごとにまとめる。
+			std::unordered_map<std::string, nlohmann::json> transforms;
+			std::unordered_map<std::string, std::map<std::string, nlohmann::json>> components;
+			for (const std::pair<const String, nlohmann::json>& part : parts)
+			{
+				const std::string& scope = part.first.str();
+				Size slash = scope.find('/');
+				if (scope.rfind("entity:", 0) != 0 || slash == std::string::npos)
+				{
+					continue;
+				}
+
+				std::string identifier = scope.substr(7, slash - 7);
+				std::string member = scope.substr(slash + 1);
+				if (member == "transform")
+				{
+					transforms[identifier] = part.second;
+				}
+				else if (member.rfind("component:", 0) == 0)
+				{
+					components[identifier][member.substr(10)] = part.second;
+				}
+			}
+
 			/// [EN] The pieces only become a scene once the hierarchy has put them in order, which is where a missing one shows up.
 			/// [JP] 断片が Scene になるのは、階層が順序を与えた後。足りない断片があれば、そこで判明する。
 			auto context = parts.find(String("context"));
@@ -564,6 +613,60 @@ namespace SeedCore
 				/// [EN] A parent that has not been placed yet means the hierarchy is out of order or points at something that is gone.
 				/// [JP] まだ置かれていない親を指しているのは、階層の順序が崩れているか、既に無いものを指しているということ。
 				nlohmann::json node = entity->second;
+
+				/// [EN] The transform piece, when present, wins over any transform an older header still carries.
+				/// [JP] トランスフォームの断片があれば、古い本体がまだ持っているトランスフォームより優先する。
+				auto transform = transforms.find(identifier);
+				if (transform != transforms.end() && transform->second.is_object())
+				{
+					for (auto& field : transform->second.items())
+					{
+						node[field.key()] = field.value();
+					}
+				}
+
+				/// [EN] Components are laid out in the order the header names, then any the header does not know of yet, so a component another member added survives a header written without it.
+				/// [JP] Component は本体が示す順に並べ、その後に本体がまだ知らないものを続ける。他のメンバーが足した Component が、それを知らずに書かれた本体によって消えないようにするため。
+				std::map<std::string, nlohmann::json> pieces;
+				auto found = components.find(identifier);
+				if (found != components.end())
+				{
+					pieces = found->second;
+				}
+
+				/// [EN] A header from before components were split still carries them inline, and those are kept unless a piece of the same name replaces them.
+				/// [JP] Component を分ける前の本体は、まだそれらを中に持っている。同名の断片で置き換えられない限り、それらは残す。
+				nlohmann::json list = nlohmann::json::array();
+				if (node.contains("components") && node["components"].is_array())
+				{
+					for (const nlohmann::json& inlineComponent : node["components"])
+					{
+						std::string name = inlineComponent.value("component", "");
+						if (!pieces.contains(name))
+						{
+							list.push_back(inlineComponent);
+						}
+					}
+				}
+				if (node.contains("componentOrder") && node["componentOrder"].is_array())
+				{
+					for (const nlohmann::json& name : node["componentOrder"])
+					{
+						auto piece = name.is_string() ? pieces.find(name.get<std::string>()) : pieces.end();
+						if (piece != pieces.end())
+						{
+							list.push_back(piece->second);
+							pieces.erase(piece);
+						}
+					}
+				}
+				for (const std::pair<const std::string, nlohmann::json>& piece : pieces)
+				{
+					list.push_back(piece.second);
+				}
+				node["components"] = list;
+				node.erase("componentOrder");
+
 				node["parentIndex"] = -1;
 				if (!link["parent"].is_null())
 				{
@@ -768,8 +871,8 @@ namespace SeedCore
 		{
 			return false;
 		}
-		/// [EN] A scene is published one entity at a time, so what this member touched travels without the rest of the scene.
-		/// [JP] Scene は Entity ごとに Publish する。このメンバーが触った分だけが、Scene の残りを巻き込まずに運ばれるようにするため。
+		/// [EN] A scene is published one piece at a time - an entity's header, its transform, each of its components - so what this member touched travels without the rest of the scene.
+		/// [JP] Scene は断片（Entity の本体・トランスフォーム・各 Component）ごとに Publish する。このメンバーが触った分だけが、Scene の残りを巻き込まずに運ばれるようにするため。
 		if (asset->scene_ && !asset->sceneDocumentId_.str().empty())
 		{
 			/// [EN] The scene on disk is read as the plain JSON it is, and taken apart the same way every member takes it apart.
@@ -803,8 +906,8 @@ namespace SeedCore
 			{
 				const nlohmann::json& node = scene["nodes"][index];
 	
-				/// [EN] The identifier is what a lease and a revision hang on, so an actor without one cannot be shared at all.
-				/// [JP] Lease も Revision もこの識別子にぶら下がるため、持たない Actor は共有できない。
+				/// [EN] The identifier is what a piece and its revision hang on, so an actor without one cannot be shared at all.
+				/// [JP] 断片も Revision もこの識別子にぶら下がるため、持たない Actor は共有できない。
 				std::string identifier = node.value("collaborationId", "");
 				if (identifier.empty() || parts.contains(String(std::format("entity:{}", identifier))))
 				{
@@ -821,10 +924,49 @@ namespace SeedCore
 				link["parent"] = parent >= 0 && parent < static_cast<Int32>(index) ? nlohmann::json(scene["nodes"][static_cast<Size>(parent)].value("collaborationId", "")) : nlohmann::json(nullptr);
 				structure.push_back(link);
 	
-				/// [EN] The position is dropped from the actor's own piece, because it belongs to the hierarchy and would collide there.
-				/// [JP] 位置は Actor 自身の断片から外す。それは階層に属する情報で、そこへ残すと衝突の元になるため。
+				/// [EN] The position in the hierarchy is dropped from the actor's own piece, because it belongs to the hierarchy and would collide there.
+				/// [JP] 階層内の位置は Actor 自身の断片から外す。それは階層に属する情報で、そこへ残すと衝突の元になるため。
 				nlohmann::json entity = node;
 				entity.erase("parentIndex");
+
+				/// [EN] The transform travels as its own piece, so moving an actor and renaming it are separate changes that both survive.
+				/// [JP] トランスフォームは独立した断片として運ぶ。Actor の移動とリネームが別々の変更になり、両方が残るようにするため。
+				nlohmann::json transform = nlohmann::json::object();
+				static const std::string transformKeys[] = { "position", "rotation", "scale" };
+				for (const std::string& key : transformKeys)
+				{
+					if (entity.contains(key))
+					{
+						transform[key] = entity[key];
+						entity.erase(key);
+					}
+				}
+				parts[String(std::format("entity:{}/transform", identifier))] = transform;
+
+				/// [EN] Each component travels as its own piece, so two members editing different components of one actor both keep their work.
+				/// [JP] Component はそれぞれ独立した断片として運ぶ。1つの Actor の別々の Component を2人が編集しても、両方の作業が残るようにするため。
+
+				/// [EN] The header keeps only the order of the components, which is all assembling them back needs from it.
+				/// [JP] 本体に残すのは Component の並び順だけ。組み立て直す際に本体から必要なのはそれだけであるため。
+				nlohmann::json order = nlohmann::json::array();
+				if (entity.contains("components") && entity["components"].is_array())
+				{
+					for (const nlohmann::json& component : entity["components"])
+					{
+						std::string name = component.value("component", "");
+						String scope = String(std::format("entity:{}/component:{}", identifier, name));
+						if (name.empty() || parts.contains(scope))
+						{
+							std::lock_guard<std::mutex> guard(snapshotMutex_);
+							snapshot_.error_ = String(std::format("名前の無い、あるいは重複している Component を持つ Actor があります: {}", entity.value("name", "")));
+							return false;
+						}
+						parts[scope] = component;
+						order.push_back(name);
+					}
+				}
+				entity.erase("components");
+				entity["componentOrder"] = order;
 				parts[String(std::format("entity:{}", identifier))] = entity;
 			}
 			parts[String("structure")] = structure;
@@ -852,19 +994,14 @@ namespace SeedCore
 					hash += std::format("{:02x}", static_cast<Uint8>(value));
 				}
 	
+				/// [EN] Every piece that differs from the library is sent, so the scene as it stands here becomes the one the team gets.
+				/// [JP] ライブラリと違う断片は全て送る。ここでの Scene の姿が、そのままチームに届くものになる。
 				const ScenePart* remote = shared.Find(part.first);
 				if (remote && remote->hash_ == String(hash))
 				{
 					continue;
 				}
-	
-				/// [EN] Only what this member holds the right to change is sent; the rest stays as whoever owns it left it.
-				/// [JP] 送るのは、このメンバーが変更する権利を持っている分だけ。残りは、持ち主が残したままにする。
-				if (!locks_.Held(assetId, part.first))
-				{
-					continue;
-				}
-	
+
 				ScenePartChange change;
 				change.scope_ = part.first;
 				change.baseRevision_ = remote ? remote->revision_ : 0;
@@ -904,11 +1041,11 @@ namespace SeedCore
 				changes.push_back(change);
 			}
 	
-			/// [EN] An entity the library still lists but this scene no longer has was deleted here, which is a structure change.
-			/// [JP] ライブラリにはあるがこの Scene に無い Entity は、ここで削除されたということ。これは構造の変更にあたる。
+			/// [EN] An entity the library still lists but this scene no longer has is removed from the library as well.
+			/// [JP] ライブラリにはあるがこの Scene に無い Entity は、ライブラリからも取り除く。
 			for (const ScenePart& remote : shared.Parts())
 			{
-				if (remote.deleted_ || parts.contains(remote.scope_) || !locks_.Held(assetId, String("structure")))
+				if (remote.deleted_ || parts.contains(remote.scope_))
 				{
 					continue;
 				}
@@ -933,25 +1070,9 @@ namespace SeedCore
 			{
 				sceneRevisions_[change.scope_] = change.baseRevision_ + 1;
 			}
-	
-			/// [EN] Holding on after publishing would keep everyone else out, so each piece is handed back as it lands.
-			/// [JP] 公開後も持ち続けると他の全員を締め出すことになるため、通った断片から順に返す。
-			for (const ScenePartChange& change : changes)
-			{
-				locks_.Release(assetId, change.scope_);
-			}
 			return true;
 		}
 
-
-		/// [EN] Publishing without holding the lease would be exactly the overwrite the whole design exists to prevent.
-		/// [JP] Lease を持たずに Publish することは、この設計全体が防ごうとしている上書きそのものになる。
-		if (!locks_.Held(assetId, String("asset")))
-		{
-			std::lock_guard<std::mutex> guard(snapshotMutex_);
-			snapshot_.error_ = String("編集権を取得してから公開してください。");
-			return false;
-		}
 
 		/// [EN] The file list is taken from the catalog, so a publish describes the same set of files the team already knows.
 		/// [JP] ファイル一覧はカタログから取る。Publish が、チームが既に知っているのと同じ構成を記述するようにするため。
@@ -983,20 +1104,21 @@ namespace SeedCore
 			files.push_back(stored);
 		}
 
-		/// [EN] The revision recorded at get time is what the catalog checks, and a mismatch is reported as someone else being ahead.
-		/// [JP] 取得時に記録した Revision をカタログが照合する。食い違えば「他の人が先にいる」として報告される。
-		if (!catalog_.Publish(assetId, workspace_[assetId].revision_, files, asset->dependencies_))
+		/// [EN] The publish replaces whatever the library held, even when another member published after this copy was fetched.
+		/// [JP] Publish はライブラリの内容を置き換える。この写しを取得した後に他のメンバーが公開していても同じ。
+		Uint64 revision = 0;
+		if (!catalog_.Publish(assetId, files, asset->dependencies_, revision))
 		{
 			return false;
 		}
 
-		/// [EN] The local record moves forward too, so a second publish in a row states the right starting point.
-		/// [JP] ローカルの記録も進める。続けてもう一度 Publish する際に、正しい起点を示せるようにするため。
+		/// [EN] The local record moves to the revision just written, so what was published is not seen as behind.
+		/// [JP] ローカルの記録も今書いた Revision へ進める。公開した内容が、遅れているとみなされないようにするため。
 
 		/// [EN] The hashes just uploaded become the new baseline, so what was published no longer counts as a local change.
 		/// [JP] 今アップロードしたハッシュが新しい基準になる。公開した内容が、以後ローカルの変更として数えられないようにするため。
 		WorkspaceRecord record;
-		record.revision_ = workspace_[assetId].revision_ + 1;
+		record.revision_ = revision;
 		for (const SharedFile& file : files)
 		{
 			std::error_code errorCode;
@@ -1004,10 +1126,6 @@ namespace SeedCore
 		}
 		workspace_[assetId] = record;
 		SaveWorkspace();
-
-		/// [EN] The lease is handed back on success, which is what turns "editing" back into "available" for the team.
-		/// [JP] 成功したら Lease を返す。これがチームにとって「編集中」を「空いている」に戻す操作になる。
-		locks_.Release(assetId, String("asset"));
 		return true;
 	}
 
@@ -1029,7 +1147,7 @@ namespace SeedCore
 		/// [EN] A path the library already holds was shared by someone else first, so their copy and .meta are taken instead of a second entry being made.
 		/// [JP] ライブラリが既に持っている位置は、他の誰かが先に共有したもの。2つ目の項目を作るのではなく、その写しと .meta を取る。
 		const SharedAsset* existing = catalog_.FindPath(request.path_);
-		if (existing && !existing->deleted_)
+		if (existing)
 		{
 			return Adopt(existing->id_);
 		}
@@ -1074,7 +1192,7 @@ namespace SeedCore
 			if (catalog_.Refresh())
 			{
 				const SharedAsset* winner = catalog_.FindPath(request.path_);
-				if (winner && !winner->deleted_)
+				if (winner)
 				{
 					return Adopt(winner->id_);
 				}
@@ -1096,6 +1214,121 @@ namespace SeedCore
 		return true;
 	}
 
+
+	/**
+	* [EN]
+	* Removes a shared asset from the library: its catalog entry goes,
+	* and the Drive files holding its contents are moved to the trash
+	* unless another asset still uses the same contents. The local files
+	* stay where they are.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 共有アセットをライブラリから取り除く。カタログの項目を消し、中身を
+	* 持つ Drive のファイルは、同じ中身を他のアセットが使っていない限り
+	* ゴミ箱へ移す。ローカルのファイルはそのまま残す。
+	*/
+	Bool SharingWorker::Unshare(const String& assetId)
+	{
+		const SharedAsset* found = catalog_.Find(assetId);
+		if (!found)
+		{
+			return false;
+		}
+
+		/// [EN] A copy is kept, since removing the entry below invalidates the catalog's own record of it.
+		/// [JP] 写しを取っておく。下で項目を消すと、カタログ側の記録は無効になるため。
+		SharedAsset asset = *found;
+		if (!catalog_.Remove(assetId))
+		{
+			return false;
+		}
+
+		/// [EN] A scene also has its own document, which belongs to nothing else; the pieces it kept in the blobs folder, like the asset's own contents, are left to the sweep that follows every unshare.
+		/// [JP] Scene はさらに専用のドキュメントを持ち、それは他の何にも属さない。blobs フォルダに置いていた断片は、アセット自身の中身と同じく、共有の解除の後に続く掃除に任せる。
+		if (asset.scene_ && !asset.sceneDocumentId_.str().empty())
+		{
+			drive_.Trash(asset.sceneDocumentId_);
+			if (openScene_ == assetId)
+			{
+				openScene_ = String();
+				sceneRevisions_.clear();
+			}
+		}
+
+		/// [EN] A copy sitting in the library's Assets folder goes too, so the next fetch does not hand the unshared asset back to anyone.
+		/// [JP] ライブラリの Assets フォルダにある写しも捨てる。次の取得で、共有を解除したアセットが誰かの手元へ戻ってこないようにするため。
+		for (const SharedFile& file : asset.files_)
+		{
+			/// [EN] The Drive folder stands for the workspace's Assets folder, so only paths under it can have a copy there.
+			/// [JP] Drive のフォルダはワークスペースの Assets フォルダに当たるため、その下の位置しか写しを持ち得ない。
+			std::filesystem::path logical(file.path_.w_str());
+			if (config_.assetsFolderId_.str().empty() || logical.empty() || *logical.begin() != "Assets")
+			{
+				continue;
+			}
+
+			/// [EN] Drive has no lookup by path, so the folders are walked one name at a time; every step but the last is a folder, and the last is the file itself.
+			/// [JP] Drive には位置で引く手段が無いため、名前を1つずつ辿って降りていく。最後以外はフォルダで、最後がファイルそのもの。
+			String driveId = config_.assetsFolderId_;
+			std::filesystem::path relative = logical.lexically_relative("Assets");
+			for (auto part = relative.begin(); part != relative.end() && !driveId.str().empty(); ++part)
+			{
+				/// [EN] A listing that fails leaves nothing to match, which ends the walk the same way a missing name does.
+				/// [JP] 一覧の取得に失敗した場合は照合する相手が無く、名前が見つからない場合と同じく走査が終わる。
+				DynamicArray<DriveEntry> entries;
+				if (!drive_.List(driveId, entries))
+				{
+					entries.clear();
+				}
+				Bool wantFolder = std::next(part) != relative.end();
+				auto found = std::ranges::find_if(entries, [&part, wantFolder](const DriveEntry& entry) { return entry.folder_ == wantFolder && std::filesystem::path(entry.name_.w_str()) == *part; });
+				driveId = found == entries.end() ? String() : found->id_;
+			}
+
+			if (!driveId.str().empty())
+			{
+				drive_.Trash(driveId);
+			}
+		}
+
+		/// [EN] This machine no longer follows it, so its files are now plain local files like any other.
+		/// [JP] この PC もそれを追いかけなくなる。ファイルは他と同じ、ただのローカルファイルになる。
+		workspace_.erase(assetId);
+		SaveWorkspace();
+		return true;
+	}
+
+	/**
+	* [EN]
+	* Stops following every shared asset whose files sat at or under the
+	* given workspace path, which this machine has just deleted. The
+	* library keeps them, and a later fetch brings them back only when
+	* the member asks for them.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* この PC が今削除した、指定のワークスペース内の位置（またはその下）に
+	* ファイルがあった共有アセットを、追いかけるのをやめる。ライブラリには
+	* 残り、メンバーが求めたときにだけ再び取得される。
+	*/
+	void SharingWorker::Forget(const String& logicalPath)
+	{
+		/// [EN] Without this, the next fetch would see the deleted files as holes and fill them straight back in.
+		/// [JP] これが無いと、次の取得が消したファイルを欠けとみなし、すぐに埋め戻してしまう。
+		const std::string& prefix = logicalPath.str();
+		std::erase_if(workspace_, [&prefix](const std::pair<const String, WorkspaceRecord>& record)
+		{
+			return std::ranges::any_of(record.second.files_, [&prefix](const WorkspaceFile& file)
+			{
+				const std::string& path = file.path_.str();
+				return path == prefix || path.rfind(prefix + "/", 0) == 0;
+			});
+		});
+		SaveWorkspace();
+	}
 
 	/**
 	* [EN]
@@ -1121,10 +1354,13 @@ namespace SeedCore
 
 		/// [EN] What the library already shows is noted first, so the folders created below are only the ones missing.
 		/// [JP] 先にライブラリ側にあるものを控える。下で作るフォルダが、足りないものだけになるようにするため。
-		std::unordered_map<std::string, DriveEntry> remote;
+
+		/// [EN] Names are compared as wide strings, since Drive gives UTF-8 while a narrow Windows path is in the system code page, and Japanese names would never match.
+		/// [JP] 名前はワイド文字列で比べる。Drive は UTF-8 で返し、Windows の狭い文字列のパスはシステムのコードページなので、日本語の名前が一致しなくなるため。
+		std::unordered_map<std::wstring, DriveEntry> remote;
 		for (const DriveEntry& entry : entries)
 		{
-			remote[entry.name_.str()] = entry;
+			remote[entry.name_.w_str()] = entry;
 		}
 
 		/// [EN] A file sitting in the library's Assets tree is something an artist put there, and belongs at the matching place here.
@@ -1138,14 +1374,14 @@ namespace SeedCore
 
 			/// [EN] A .meta beside it is the Editor's own bookkeeping, and is made here rather than taken from the library.
 			/// [JP] 隣の .meta は Editor 側の管理情報で、ライブラリから取るのではなくこちらで作る。
-			std::filesystem::path local = localFolder / entry.name_.str();
+			std::filesystem::path local = localFolder / entry.name_.w_str();
 			if (local.extension() == ".meta")
 			{
 				continue;
 			}
 
-			/// [EN] Comparing hashes is what keeps this from downloading the same drop on every check, and what notices a replacement.
-			/// [JP] ハッシュを比べることで、確認のたびに同じものを取り直さずに済み、差し替えにも気づける。
+			/// [EN] Comparing hashes is what keeps this from downloading the same drop on every latest fetch, and what notices a replacement.
+			/// [JP] ハッシュを比べることで、最新の取得のたびに同じものを取り直さずに済み、差し替えにも気づける。
 			DynamicArray<Byte> digest = Sha256::Hash(local);
 			std::string current;
 			for (Byte value : digest)
@@ -1178,36 +1414,30 @@ namespace SeedCore
 				continue;
 			}
 
-			String logical = String(std::filesystem::relative(local, projectRoot_ / config_.workspace_.str()).generic_string());
+			String logical = String(std::filesystem::relative(local, projectRoot_ / config_.workspace_.str()).generic_wstring());
 
-			/// [EN] A drop onto an asset the team already has is a replacement, and it is published from here so everyone receives the fix.
-			/// [JP] チームが既に持っているアセットへの投下は差し替えであり、ここから公開して修正が全員へ届くようにする。
+			/// [EN] The drop only lands on this machine; sharing or publishing it is left to the member, from the asset's context menu.
+			/// [JP] 投下されたものはこの PC に置くだけ。共有や公開は、アセットの右クリックメニューからメンバーが行う。
 
-			/// [EN] Its identity stays as it was: the .meta beside it is untouched, so every scene and prefab pointing at it keeps pointing at it.
-			/// [JP] 同一性はそのまま保つ。隣の .meta に触れないため、それを指している Scene や Prefab の参照は切れない。
-			/// [EN] Only a machine that already holds the asset can publish a replacement, since a publish states which revision it was built on.
-			/// [JP] 差し替えを公開できるのは、そのアセットを既に持っている PC だけ。公開はどの Revision を元にしたかを示すものであるため。
+			/// [EN] A drop onto an asset this machine already has is a replacement: the .meta beside it is untouched, so every scene and prefab pointing at it keeps pointing at it, and the Editor only has to reload it.
+			/// [JP] この PC が既に持っているアセットへの投下は差し替え。隣の .meta には触れないため、それを指す Scene や Prefab の参照は切れず、Editor は読み直すだけでよい。
 			const SharedAsset* existing = catalog_.FindPath(logical);
+			std::lock_guard<std::mutex> guard(snapshotMutex_);
 			if (existing && workspace_.contains(existing->id_))
 			{
-				/// [EN] Taking the lease first is what keeps this from overwriting a member who is editing that same asset right now.
-				/// [JP] 先に編集権を取ることが、今まさにそのアセットを編集しているメンバーを上書きしない条件になる。
-				if (locks_.Acquire(existing->id_, String("asset")))
-				{
-					Publish(existing->id_);
-				}
+				changed_.push_back(existing->runtimeId_);
 				continue;
 			}
 
-			/// [EN] Otherwise the Editor is told, because a file that arrived this way has no identity yet and is not in the catalog.
-			/// [JP] そうでなければ Editor へ知らせる。この経路で届いたファイルはまだ識別情報を持たず、カタログにも載っていないため。
-			std::lock_guard<std::mutex> guard(snapshotMutex_);
+			/// [EN] Otherwise the Editor is told, because a file that arrived this way has no identity yet and has to be scanned to get its .meta.
+			/// [JP] そうでなければ Editor へ知らせる。この経路で届いたファイルはまだ識別情報を持たず、走査して .meta を得る必要があるため。
 			imported_.push_back(logical);
 		}
 
 		/// [EN] Folders are walked after the files, so a drop at this level is taken in before descending.
 		/// [JP] フォルダはファイルの後に辿る。この階層に置かれたものを先に取り込むため。
-		for (const std::filesystem::directory_entry& child : std::filesystem::directory_iterator(localFolder))
+		std::error_code errorCode;
+		for (const std::filesystem::directory_entry& child : std::filesystem::directory_iterator(localFolder, errorCode))
 		{
 			if (!child.is_directory())
 			{
@@ -1216,12 +1446,33 @@ namespace SeedCore
 
 			/// [EN] A folder the library does not have yet is created, which is what keeps its tree shaped like this one.
 			/// [JP] ライブラリ側にまだ無いフォルダは作る。これがライブラリの構成をこちらと同じ形に保つ動き。
-			std::string name = child.path().filename().string();
+			std::wstring name = child.path().filename().wstring();
 			auto found = remote.find(name);
-			String childId = found == remote.end() ? drive_.CreateFolder(String(name), driveFolderId) : found->second.id_;
+			String childId = found == remote.end() ? drive_.Folder(String(name), driveFolderId) : found->second.id_;
+			if (found != remote.end())
+			{
+				remote.erase(found);
+			}
 			if (!childId.str().empty())
 			{
 				Mirror(child.path(), childId);
+			}
+		}
+
+		/// [EN] A folder that exists only in the library was made there by an artist, so it is created here and walked as well, or nothing dropped into it would ever arrive.
+		/// [JP] ライブラリにだけあるフォルダは、アーティストがそこで作ったもの。ここにも作って辿る。そうしないと、その中に置かれたものが一切届かない。
+		for (const std::pair<const std::wstring, DriveEntry>& entry : remote)
+		{
+			if (!entry.second.folder_)
+			{
+				continue;
+			}
+
+			std::filesystem::path childFolder = localFolder / entry.first;
+			std::filesystem::create_directories(childFolder, errorCode);
+			if (!errorCode)
+			{
+				Mirror(childFolder, entry.second.id_);
 			}
 		}
 	}
@@ -1351,7 +1602,7 @@ namespace SeedCore
 					continue;
 				}
 
-				String path = String(companion.generic_string());
+				String path = String(companion.generic_wstring());
 				if (!std::ranges::contains(companions, path))
 				{
 					companions.push_back(path);
@@ -1374,18 +1625,18 @@ namespace SeedCore
 	{
 		/// [EN] Shared paths are written the same way on every machine, and only this step makes them local.
 		/// [JP] 共有される位置はどの PC でも同じ書き方で、ローカルの形になるのはこの一手だけ。
-		return projectRoot_ / config_.workspace_.str() / logicalPath.str();
+		return projectRoot_ / config_.workspace_.str() / logicalPath.w_str();
 	}
 
 	/**
 	* [EN]
-	* Copies the current catalog and leases into the snapshot the
+	* Copies the current catalog and local progress into the snapshot the
 	* Editor thread reads.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 現在のカタログと Lease を、Editor のスレッドが読む写しへ写し取る。
+	* 現在のカタログとローカルの進み具合を、Editor のスレッドが読む写しへ写し取る。
 	*/
 	void SharingWorker::Capture()
 	{
@@ -1395,7 +1646,7 @@ namespace SeedCore
 		for (const std::pair<const String, WorkspaceRecord>& record : workspace_)
 		{
 			const SharedAsset* asset = catalog_.Find(record.first);
-			if (!asset || asset->deleted_)
+			if (!asset)
 			{
 				continue;
 			}
@@ -1454,13 +1705,6 @@ namespace SeedCore
 		std::lock_guard<std::mutex> guard(snapshotMutex_);
 		snapshot_.assets_ = catalog_.Assets();
 		snapshot_.progress_ = progress;
-
-		/// [EN] Leases are flattened out of the table so the Editor can show them without knowing how the table is stored.
-		/// [JP] Lease は表から平らに取り出す。Editor が、表の保持形式を知らずに表示できるようにするため。
-
-		/// [EN] Every scope is carried, entity leases included, since whether an actor may be edited is answered from this copy alone.
-		/// [JP] Entity の Lease も含め、全ての範囲を運ぶ。Actor を編集してよいかどうかは、この写しだけを見て答えるため。
-		snapshot_.leases_ = locks_.Leases();
 
 		/// [EN] Moving this number is the signal the Editor watches to know its own view has gone stale.
 		/// [JP] この番号を動かすことが、Editor が「自分の表示が古くなった」と知るための合図になる。

@@ -45,32 +45,72 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Draws an arrow from start to end. headLength caps the head's length
-	* in meters; 0 leaves the head at its fixed fraction of the arrow's
-	* length.
+	* Draws a filled arrow from start to end: a cylinder shaft and a cone
+	* head. headLength caps the head's length in meters; 0 leaves the head
+	* at its fixed fraction of the arrow's length. The head's radius and
+	* the shaft's radius follow the head's length.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* start から end へ矢印を描く。headLength は矢じりの長さの上限
-	* （メートル）。0 なら矢じりは矢印の長さに対する決まった割合のまま。
+	* start から end へ、面で塗った矢印を描く。胴体は円柱、矢じりは円錐。
+	* headLength は矢じりの長さの上限（メートル）。0 なら矢じりは矢印の
+	* 長さに対する決まった割合のまま。矢じりと胴体の半径は、矢じりの
+	* 長さに合わせて決まる。
 	*/
 	void DebugDraw::Arrow(const Vector3& start, const Vector3& end, const Color& color, Float headLength)
 	{
 #ifdef _DEBUG
-		/// [EN] Placed the same way as a segment: from the start, along the vector to the end.
-		/// [JP] 線分と同じ置き方。始点から、終点までのベクトルの向きに伸ばす。
-		ShapeDesc shape{};
-		shape.kind_ = ShapeKind::Arrow;
-		shape.style_ = ShapeStyle::Wireframe;
-		shape.space_ = ShapeSpace::World;
-		shape.scope_ = ShapeScope::Game;
-		shape.position_ = start;
-		shape.rotation_ = Quaternion::Identity;
-		shape.dimensions_ = end - start;
-		shape.color_ = color;
-		shape.headLength_ = headLength;
-		renderInstance_.Add(shape);
+		/// [EN] An arrow with no length has no direction to point in, so nothing is drawn.
+		/// [JP] 長さの無い矢印は向きを持たないので、何も描かない。
+		Vector3 direction = end - start;
+		Float length = direction.Length();
+		if (length < 1e-5f)
+		{
+			return;
+		}
+		direction /= length;
+
+		/// [EN] The same proportions as the wireframe arrow: the head is a fifth of the length, kept within headLength when one is given, and its base radius is 0.4 of its length. The shaft is a third as thick as the head's base.
+		/// [JP] ワイヤーフレームの矢印と同じ比率。矢じりは全体の長さの 5 分の 1 で、headLength があればそれ以下に収め、底面の半径は矢じりの長さの 0.4 倍。胴体の太さは矢じりの底面の 3 分の 1。
+		Float arrowHeadLength = length * 0.2f;
+		if (headLength > 0.0f)
+		{
+			arrowHeadLength = Min(arrowHeadLength, headLength);
+		}
+		Float headRadius = arrowHeadLength * 0.4f;
+		Float shaftRadius = headRadius / 3.0f;
+		Float shaftLength = length - arrowHeadLength;
+
+		/// [EN] The unit cylinder and cone run along their local Y, so both are turned from +Y onto the arrow's direction.
+		/// [JP] 単位の円柱と円錐はローカルの Y 方向に伸びるので、どちらも +Y から矢印の向きへ回す。
+		Quaternion rotation = Quaternion::FromToRotation(Vector3::UnitY, direction);
+
+		/// [EN] The shaft, centered halfway between the start and the head's base.
+		/// [JP] 胴体。始点と矢じりの底面の真ん中に置く。
+		ShapeDesc shaft{};
+		shaft.kind_ = ShapeKind::Cylinder;
+		shaft.style_ = ShapeStyle::Solid;
+		shaft.space_ = ShapeSpace::World;
+		shaft.scope_ = ShapeScope::Game;
+		shaft.position_ = start + direction * (shaftLength * 0.5f);
+		shaft.rotation_ = rotation;
+		shaft.dimensions_ = Vector3(shaftRadius, shaftLength * 0.5f, 0.0f);
+		shaft.color_ = color;
+		renderInstance_.Add(shaft);
+
+		/// [EN] The head, centered halfway along its own length so its base meets the shaft and its apex lands on the end.
+		/// [JP] 矢じり。自分の長さの真ん中に置くので、底面が胴体とつながり、頂点が終点に来る。
+		ShapeDesc head{};
+		head.kind_ = ShapeKind::Cone;
+		head.style_ = ShapeStyle::Solid;
+		head.space_ = ShapeSpace::World;
+		head.scope_ = ShapeScope::Game;
+		head.position_ = start + direction * (shaftLength + arrowHeadLength * 0.5f);
+		head.rotation_ = rotation;
+		head.dimensions_ = Vector3(headRadius, arrowHeadLength * 0.5f, 0.0f);
+		head.color_ = color;
+		renderInstance_.Add(head);
 #endif
 	}
 

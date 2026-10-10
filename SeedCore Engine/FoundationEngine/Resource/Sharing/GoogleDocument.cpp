@@ -61,7 +61,7 @@ namespace SeedCore
 		/// [EN] This identifier is what a later write hands back to prove which state it was based on.
 		/// [JP] この識別子は、後で書き込むときに「どの状態を元にしたか」を示すために渡すもの。
 		snapshot.revisionId_ = String(result.value("revisionId", ""));
-		snapshot.text_ = ExtractText(result);
+		snapshot.text_ = Extract(result);
 
 		/// [EN] A document is addressed by character positions, and each element states where it ends.
 		/// [JP] ドキュメントは文字位置で場所を指す作りで、各要素は自分の終端位置を持っている。
@@ -163,24 +163,6 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Google's own clock, in seconds since the Unix epoch, as of the
-	* last request. Lease deadlines are expressed against this rather
-	* than against each member's own clock.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 直近のリクエスト時点における Google 側の時刻（Unixエポックからの
-	* 秒数）。Lease の期限は各メンバーの時計ではなく、こちらを基準に
-	* 表す。
-	*/
-	Double GoogleDocument::ServerTime()const
-	{
-		return serverTime_;
-	}
-
-	/**
-	* [EN]
 	* The last failure, in a form that can be shown to the user.
 	*
 	* ---------------------------------------------------------------------
@@ -196,13 +178,13 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Sends one authenticated request to the Docs API and parses its
-	* JSON answer, recording the server clock and any failure.
+	* JSON answer, recording any failure.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 認証付きのリクエストを Docs API へ1回送り、JSON の応答を解釈する。
-	* サーバー側の時刻と、失敗した場合はその内容も記録する。
+	* 失敗した場合はその内容も記録する。
 	*/
 	Bool GoogleDocument::Send(const String& method, const String& url, const nlohmann::json& request, nlohmann::json& result)
 	{
@@ -238,13 +220,6 @@ namespace SeedCore
 			/// [JP] Google まで届いていないので、これはドキュメントの問題ではなく通信の問題。
 			error_ = response.error_;
 			return false;
-		}
-
-		/// [EN] Every answer carries Google's clock, so keeping it means lease deadlines never rely on the local clock being right.
-		/// [JP] どの応答にも Google 側の時刻が入っている。これを持っておけば、Lease の期限がローカルの時計に依存しなくなる。
-		if (response.serverTime_ > 0.0)
-		{
-			serverTime_ = response.serverTime_;
 		}
 
 		/// [EN] Both successes and failures answer with JSON, so the body is parsed before the status is examined.
@@ -284,7 +259,7 @@ namespace SeedCore
 	* [JP]
 	* ドキュメントの構造要素を、プレーンテキストへ平坦化する。
 	*/
-	String GoogleDocument::ExtractText(const nlohmann::json& document)
+	String GoogleDocument::Extract(const nlohmann::json& document)
 	{
 		/// [EN] A document is a list of paragraphs, and each paragraph is a list of runs of text.
 		/// [JP] ドキュメントは段落の列で、段落はさらに文字列片の列になっている。

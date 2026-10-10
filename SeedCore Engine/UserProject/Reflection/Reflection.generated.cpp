@@ -74,7 +74,32 @@ namespace SeedCore
 						fi.enum_.typeName_ = String("MoveType");
 						outInfo.push_back(std::move(fi));
 					}
+					{
+						auto& arr = obj.localPositions_;
+						FieldInfo header;
+						header.name_ = String("床からのProbeの相対位置");
+						header.offset_ = 0;
+						header.type_ = AttributeType::Vector3;
+						header.array_.size_ = arr.size();
+						header.array_.add_ = [&obj]() { obj.localPositions_.push_back({}); };
+						header.array_.remove_ = [&obj](Size idx) { if (idx < obj.localPositions_.size()) obj.localPositions_.erase(obj.localPositions_.begin() + idx); };
+						outInfo.push_back(std::move(header));
+						for (Size i = 0; i < arr.size(); ++i)
+						{
+							outInfo.push_back({ String("[" + std::to_string(i) + "]"), 0, AttributeType::Vector3, PayloadType::None, &arr[i] });
+						}
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("速度");
+						fi.offset_ = offsetof(FloorMoveSystem, scalarSpeed_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 10000.0f;
+						outInfo.push_back(std::move(fi));
+					}
 					outInfo.push_back({ String("端での待ち時間"), offsetof(FloorMoveSystem, waitTime_), AttributeType::Float });
+					outInfo.push_back({ String("デバッグアローを描画するか"), offsetof(FloorMoveSystem, isDebugArrowDraw_), AttributeType::Bool });
 				});
 			}
 		};

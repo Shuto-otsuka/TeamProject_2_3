@@ -1206,38 +1206,20 @@ namespace SeedCore
 			return 0;
 		}
 
-		/// [EN] A conflict comes first because it is the only state that no
-		///      automatic step will clear on its own.
-		/// [JP] 競合を最優先にする。自動の処理では解消されない唯一の状態だから。
+		/// [EN] A conflict comes first because publishing it would overwrite
+		///      another member's newer copy.
+		/// [JP] 競合を最優先にする。そのまま公開すると、他のメンバーの新しい写しを
+		///      上書きしてしまうため。
 		if (context_.application_.resourceSync_->Conflicted(asset.assetID_))
 		{
 			return imguiTexture_.Icon(IconType::SharedConflict);
 		}
 
-		/// [EN] Someone else's lease is next, since it is the one state that
-		///      stops this member from doing anything with the asset.
-		/// [JP] 次は他のメンバーの Lease。このメンバーがそのアセットに何もできない、
-		///      唯一の状態だから。
-		const DynamicArray<EditLease>& leaseList = context_.application_.resourceSync_->GetLeases();
-		if (std::ranges::any_of(leaseList, [shared](const EditLease& lease) { return lease.assetId_ == shared->id_ && !lease.mine_; }))
-		{
-			return imguiTexture_.Icon(IconType::Lock);
-		}
-
-		/// [EN] Unsent work outranks holding the lease, because the lease is
-		///      already visible in the panel while unsent work is not.
-		/// [JP] 未送信の作業は、Lease を持っていることより優先する。Lease はパネルに
-		///      既に出ているが、未送信の作業はどこにも出ないため。
+		/// [EN] Unsent work is next, since nothing else in the panel points it out.
+		/// [JP] 次は未送信の作業。パネルの他の場所では示されないため。
 		if (context_.application_.resourceSync_->Modified(asset.assetID_))
 		{
 			return imguiTexture_.Icon(IconType::SharedModified);
-		}
-
-		/// [EN] Any lease left at this point is this member's own.
-		/// [JP] ここまで来て残っている Lease は、このメンバー自身のもの。
-		if (std::ranges::any_of(leaseList, [shared](const EditLease& lease) { return lease.assetId_ == shared->id_; }))
-		{
-			return imguiTexture_.Icon(IconType::Unlock);
 		}
 
 		/// [EN] Remote-only means the catalog has it but this workspace does
@@ -1394,19 +1376,18 @@ namespace SeedCore
 	*/
 	void ContentsDrawerPanel::ExecuteDelete(const FilePath& targetPath)
 	{
-		/// [EN] Shared content changes only through the shared library, so local deletion is refused.
-		/// [JP] 共有コンテンツは共有ライブラリを通してしか変えないので、ローカルでの削除は断る。
-		if (context_.application_.resourceSync_ && context_.application_.resourceSync_->Managed(targetPath.FullPath()))
-		{
-			SC_LOG_WARNING("コンテンツドロワー: 共有コンテンツはローカルのファイル操作で削除・名前変更できません");
-			return;
-		}
-
 		/// [EN] Errors are ignored; a ".meta" that does not exist is simply not removed.
 		/// [JP] エラーは無視する。".meta" が無ければ単に何も消さない。
 		std::error_code errorCode;
 		std::filesystem::remove_all(targetPath.FullPath(), errorCode);
 		std::filesystem::remove(targetPath.AppendedSuffixPath(".meta"), errorCode);
+
+		/// [EN] Deleting is local only: shared content stays in the library, and is no longer followed here so the next fetch does not put it straight back.
+		/// [JP] 削除はローカルだけの操作。共有コンテンツはライブラリに残り、この PC では追いかけなくなるので、次の取得ですぐに戻ってくることはない。
+		if (context_.application_.resourceSync_)
+		{
+			context_.application_.resourceSync_->RequestForget(targetPath.FullPath());
+		}
 
 		if (clipboardState_.path_.FullPath() == targetPath.FullPath())
 		{
@@ -1429,7 +1410,7 @@ namespace SeedCore
 		/// [JP] 共有コンテンツは共有ライブラリを通してしか変えないので、ローカルでの名前変更は断る。
 		if (context_.application_.resourceSync_ && context_.application_.resourceSync_->Managed(targetPath.FullPath()))
 		{
-			SC_LOG_WARNING("コンテンツドロワー: 共有コンテンツはローカルのファイル操作で削除・名前変更できません");
+			SC_LOG_WARNING("コンテンツドロワー: 共有コンテンツはローカルのファイル操作で名前変更できません");
 			return;
 		}
 

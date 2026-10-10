@@ -7,21 +7,6 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* The shared library's file storage. Asset contents live in a Drive
-	* folder as one file per unique content hash: a file is written once
-	* and never modified, so a download can never race a change, and two
-	* revisions that share content share one file.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 共有ライブラリのファイル置き場。アセットの中身は、内容のハッシュ
-	* ごとに1ファイルとして Drive のフォルダに置く。一度書いたファイルは
-	* 変更しないので、ダウンロード中に中身が変わることがなく、内容が同じ
-	* Revision は1つのファイルを共有する。
-	*/
-	/**
-	* [EN]
 	* One child of a Drive folder, as a listing reports it.
 	*
 	* ---------------------------------------------------------------------
@@ -53,8 +38,27 @@ namespace SeedCore
 		/// [EN] Size in bytes as Drive reports it.
 		/// [JP] Drive が示すバイト数。
 		Uint64 size_ = 0;
+
+		/// [EN] When it last changed, in UTC as RFC 3339 text such as "2026-10-09T12:34:56.789Z", which orders correctly as plain text.
+		/// [JP] 最後に変わった時刻。"2026-10-09T12:34:56.789Z" のような UTC の RFC 3339 形式で、文字列のまま比べても順序が正しい。
+		String modified_;
 	};
 
+	/**
+	* [EN]
+	* The shared library's file storage. Asset contents live in a Drive
+	* folder as one file per unique content hash: a file is written once
+	* and never modified, so a download can never race a change, and two
+	* revisions that share content share one file.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 共有ライブラリのファイル置き場。アセットの中身は、内容のハッシュ
+	* ごとに1ファイルとして Drive のフォルダに置く。一度書いたファイルは
+	* 変更しないので、ダウンロード中に中身が変わることがなく、内容が同じ
+	* Revision は1つのファイルを共有する。
+	*/
 	class SEEDCORE_API GoogleDrive
 	{
 	public:
@@ -81,9 +85,29 @@ namespace SeedCore
 		*/
 		~GoogleDrive();
 
-		/// [EN] Copying is disallowed because the error and the server clock belong to one caller.
-		/// [JP] エラーとサーバー時刻は1つの呼び出し元に属するものなので、コピーは禁止する。
+		/**
+		* [EN]
+		* Copy construction is disallowed, since the last error belongs to
+		* the one caller that made the request.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー構築は禁止する。直近のエラーは、そのリクエストを出した
+		* 1つの呼び出し元に属するものであるため。
+		*/
 		GoogleDrive(const GoogleDrive&) = delete;
+
+		/**
+		* [EN]
+		* Copy assignment is disallowed for the same reason as copy
+		* construction.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー代入も、コピー構築と同じ理由で禁止する。
+		*/
 		GoogleDrive& operator=(const GoogleDrive&) = delete;
 
 		/**
@@ -101,29 +125,16 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Lists what sits directly inside parentId. Used to see what
-		* artists have dropped into the library's inbox.
+		* Lists what sits directly inside parentId. Used to walk the library's
+		* Assets folder and to sweep its blobs folder.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* parentId の直下にあるものを一覧する。アーティストがライブラリの
-		* 受け取り用フォルダへ置いたものを見るために使う。
+		* parentId の直下にあるものを一覧する。ライブラリの Assets フォルダを
+		* 辿るのと、blobs フォルダを掃除するのに使う。
 		*/
 		Bool List(const String& parentId, DynamicArray<DriveEntry>& entries);
-
-		/**
-		* [EN]
-		* Moves a file from one folder to another. Used to take an
-		* imported file out of the inbox so it is not imported twice.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ファイルをフォルダ間で移す。取り込み済みのファイルを受け取り用
-		* フォルダから出し、二度取り込まないようにするために使う。
-		*/
-		Bool Move(const String& fileId, const String& fromParentId, const String& toParentId);
 
 		/**
 		* [EN]
@@ -136,7 +147,7 @@ namespace SeedCore
 		* parentId の中に name という名前のフォルダを作り、その識別子を
 		* 返す。
 		*/
-		String CreateFolder(const String& name, const String& parentId);
+		String Folder(const String& name, const String& parentId);
 
 		/**
 		* [EN]
@@ -181,19 +192,6 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Google's own clock, in seconds since the Unix epoch, as of the
-		* last request.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 直近のリクエスト時点における Google 側の時刻（Unixエポックからの
-		* 秒数）。
-		*/
-		Double ServerTime()const;
-
-		/**
-		* [EN]
 		* The last failure, in a form that can be shown to the user.
 		*
 		* ---------------------------------------------------------------------
@@ -207,54 +205,15 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Sends one authenticated request to the Drive API and parses its
-		* JSON answer, recording the server clock and any failure.
+		* JSON answer, recording any failure.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 認証付きのリクエストを Drive API へ1回送り、JSON の応答を解釈
-		* する。サーバー側の時刻と、失敗した場合はその内容も記録する。
+		* する。失敗した場合はその内容も記録する。
 		*/
 		Bool Send(const String& method, const String& url, const nlohmann::json& request, nlohmann::json& result);
-
-		/**
-		* [EN]
-		* Opens a resumable upload session for a file of size bytes and
-		* returns the URL the contents are then sent to.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* size バイトのファイル用に再開可能アップロードの窓口を開き、中身を
-		* 送り込む先のURLを返す。
-		*/
-		String BeginUpload(const String& name, const String& parentId, Uint64 size);
-
-		/**
-		* [EN]
-		* Sends source to an upload session piece by piece and returns the
-		* identifier of the file Drive ends up with.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* source をアップロードの窓口へ少しずつ送り、最終的に Drive 側に
-		* できたファイルの識別子を返す。
-		*/
-		String SendChunks(const String& session, const std::filesystem::path& source, Uint64 size);
-
-		/**
-		* [EN]
-		* Escapes the quotes and backslashes that would otherwise break out
-		* of a string literal inside a Drive search query.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Drive の検索クエリでは、引用符と逆斜線がそのままだと文字列リテラル
-		* を抜け出してしまうため、それらを打ち消す。
-		*/
-		static String EscapeQuery(const String& value);
 
 	private:
 		/// [EN] Transport shared with the rest of the sharing layer.
@@ -264,10 +223,6 @@ namespace SeedCore
 		/// [EN] Supplies the access token every request carries.
 		/// [JP] 各リクエストに付けるアクセストークンの供給元。
 		GoogleAuth& auth_;
-
-		/// [EN] Google's clock as of the last request; 0 until one has been made.
-		/// [JP] 直近のリクエスト時点の Google 側の時刻。まだ何も送っていなければ 0。
-		Double serverTime_ = 0.0;
 
 		/// [EN] Last failure description; empty while everything is working.
 		/// [JP] 直近の失敗の説明。問題なく動いている間は空。

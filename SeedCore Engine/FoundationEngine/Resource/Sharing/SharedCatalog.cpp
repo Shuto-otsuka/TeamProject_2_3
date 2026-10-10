@@ -67,14 +67,12 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Every asset in the catalog as of the last read, retired ones
-	* included.
+	* Every asset in the catalog as of the last read.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 直近の読み取り時点でカタログにある全アセット。廃止済みのものも
-	* 含む。
+	* 直近の読み取り時点でカタログにある全アセット。
 	*/
 	const DynamicArray<SharedAsset>& SharedCatalog::Assets()const
 	{
@@ -165,7 +163,6 @@ namespace SeedCore
 	*/
 	Bool SharedCatalog::Register(const SharedAsset& asset)
 	{
-		outdated_ = false;
 		return Modify([this, asset](nlohmann::json& catalog)
 		{
 			/// [EN] Both checks run against the freshly read catalog, so a member who published a moment ago is seen here.
@@ -209,7 +206,6 @@ namespace SeedCore
 			entry["dependencies"] = dependencies;
 			entry["scene"] = asset.scene_;
 			entry["sceneDocumentId"] = asset.sceneDocumentId_.str();
-			entry["deleted"] = false;
 			catalog["assets"][asset.id_.str()] = entry;
 			return true;
 		});
@@ -218,20 +214,19 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Records new contents for an asset and moves it to the next
-	* revision. baseRevision is the revision the member started from,
-	* and a mismatch means someone else published first.
+	* revision, replacing whatever the library held: the last publish
+	* wins. revision receives the revision that was written.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* アセットの新しい中身を記録し、次の Revision へ進める。
-	* baseRevision はそのメンバーが作業を始めた時点の Revision で、
-	* 食い違っていれば他の誰かが先に Publish したということ。
+	* アセットの新しい中身を記録し、次の Revision へ進める。ライブラリの
+	* 内容は置き換えられ、最後に Publish したものが優先される。revision
+	* には書き込んだ Revision が入る。
 	*/
-	Bool SharedCatalog::Publish(const String& assetId, Uint64 baseRevision, const DynamicArray<SharedFile>& files, const DynamicArray<String>& dependencies)
+	Bool SharedCatalog::Publish(const String& assetId, const DynamicArray<SharedFile>& files, const DynamicArray<String>& dependencies, Uint64& revision)
 	{
-		outdated_ = false;
-		return Modify([this, assetId, baseRevision, files, dependencies](nlohmann::json& catalog)
+		return Modify([this, assetId, files, dependencies, &revision](nlohmann::json& catalog)
 		{
 			if (!catalog["assets"].contains(assetId.str()))
 			{
@@ -239,15 +234,6 @@ namespace SeedCore
 				return false;
 			}
 			nlohmann::json& entry = catalog["assets"][assetId.str()];
-
-			/// [EN] This comparison is the guard that keeps work built on an old copy from replacing newer work.
-			/// [JP] この比較が、古い写しを元にした作業が新しい成果を置き換えてしまうのを防ぐ関門。
-			if (entry.value("revision", Uint64(0)) != baseRevision)
-			{
-				outdated_ = true;
-				error_ = String("他のメンバーが先に公開しています。先に最新を取得してください。");
-				return false;
-			}
 
 			/// [EN] The file list is replaced rather than merged, since a publish describes the asset in full.
 			/// [JP] ファイル一覧は統合ではなく置き換えにする。Publish はアセットの全体を記述するものであるため。
@@ -267,69 +253,37 @@ namespace SeedCore
 
 			/// [EN] Moving the number forward is what tells every other member that their copy is now behind.
 			/// [JP] この番号を進めることが、他の全メンバーに「手元の写しは古くなった」と伝える手段になる。
-			entry["revision"] = baseRevision + 1;
-
-			/// [EN] Publishing over a retired asset brings it back, which is how a deletion is undone.
-			/// [JP] 廃止済みのアセットに Publish すると復活する。削除を取り消す手段がこれにあたる。
-			entry["deleted"] = false;
+			revision = entry.value("revision", Uint64(0)) + 1;
+			entry["revision"] = revision;
 			return true;
 		});
 	}
 
 	/**
 	* [EN]
-	* Marks an asset as retired without removing its entry, so members
-	* holding an old copy can tell it was deleted on purpose.
+	* Removes an asset's entry from the catalog altogether. Members who
+	* already hold a copy keep it as an ordinary local file; the library
+	* simply stops knowing the asset.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 項目は残したままアセットを廃止済みにする。古い写しを持っている
-	* メンバーが、意図して削除されたものだと分かるようにするため。
+	* アセットの項目をカタログから丸ごと取り除く。既に写しを持っている
+	* メンバーの手元には、普通のローカルファイルとして残る。ライブラリが
+	* そのアセットを知らなくなるだけ。
 	*/
-	Bool SharedCatalog::Retire(const String& assetId, Uint64 baseRevision)
+	Bool SharedCatalog::Remove(const String& assetId)
 	{
-		outdated_ = false;
-		return Modify([this, assetId, baseRevision](nlohmann::json& catalog)
+		return Modify([this, assetId](nlohmann::json& catalog)
 		{
 			if (!catalog["assets"].contains(assetId.str()))
 			{
 				error_ = String("そのアセットは共有ライブラリにありません。");
 				return false;
 			}
-			nlohmann::json& entry = catalog["assets"][assetId.str()];
-
-			/// [EN] Retiring is checked against the revision as well, so nobody deletes work they have not seen.
-			/// [JP] 廃止も Revision を確認したうえで行う。見ていない成果を誰かが削除してしまわないようにするため。
-			if (entry.value("revision", Uint64(0)) != baseRevision)
-			{
-				outdated_ = true;
-				error_ = String("他のメンバーが先に公開しています。先に最新を取得してください。");
-				return false;
-			}
-
-			/// [EN] The entry stays with its file list intact, which is what makes bringing it back possible later.
-			/// [JP] 項目はファイル一覧を保ったまま残す。これが後から復活させられる理由。
-			entry["deleted"] = true;
-			entry["revision"] = baseRevision + 1;
+			catalog["assets"].erase(assetId.str());
 			return true;
 		});
-	}
-
-	/**
-	* [EN]
-	* Whether the last change was refused because the asset had already
-	* moved on. The caller should get the newer revision first.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 直前の変更が、アセットが既に先へ進んでいたために拒否されたか
-	* どうか。その場合、呼び出し側は先に新しい Revision を取得する。
-	*/
-	Bool SharedCatalog::Outdated()const
-	{
-		return outdated_;
 	}
 
 	/**
@@ -384,6 +338,13 @@ namespace SeedCore
 				catalog["assets"] = nlohmann::json::object();
 			}
 
+			/// [EN] An entry carrying "deleted" stands for an asset the team no longer shares, so every write drops it and the path becomes free to share again.
+			/// [JP] "deleted" の付いた項目は、チームがもう共有していないアセットを表す。どの書き込みでも取り除き、その位置を再び共有できるようにする。
+			for (auto entry = catalog["assets"].begin(); entry != catalog["assets"].end();)
+			{
+				entry = entry->value("deleted", false) ? catalog["assets"].erase(entry) : std::next(entry);
+			}
+
 			/// [EN] An edit that refuses still leaves the freshly read catalog in memory, which is what the caller inspects next.
 			/// [JP] 編集が拒否された場合も、読み直したカタログはメモリに残る。呼び出し側が次に見るのはそれ。
 			if (!edit(catalog))
@@ -425,8 +386,8 @@ namespace SeedCore
 	*/
 	void SharedCatalog::Adopt(const nlohmann::json& catalog)
 	{
-		/// [EN] The list is rebuilt from scratch, so an asset retired elsewhere shows up as retired here too.
-		/// [JP] 一覧は毎回作り直す。他所で廃止されたアセットは、こちらでも廃止済みとして現れる。
+		/// [EN] The list is rebuilt from scratch, so an asset removed elsewhere disappears here too.
+		/// [JP] 一覧は毎回作り直す。他所で取り除かれたアセットは、こちらからも消える。
 		assets_.clear();
 		if (!catalog.is_object() || !catalog.contains("assets") || !catalog["assets"].is_object())
 		{
@@ -437,6 +398,13 @@ namespace SeedCore
 		/// [JP] 識別子が項目の中ではなく見出しの側にあるため、items() を使う。
 		for (auto& entry : catalog["assets"].items())
 		{
+			/// [EN] An entry carrying "deleted" is not shared any more, and is read as if it were already gone.
+			/// [JP] "deleted" の付いた項目はもう共有されていないので、既に無いものとして読む。
+			if (entry.value().value("deleted", false))
+			{
+				continue;
+			}
+
 			SharedAsset asset;
 			asset.id_ = String(entry.key());
 			asset.path_ = String(entry.value().value("path", ""));
@@ -445,7 +413,6 @@ namespace SeedCore
 			asset.revision_ = entry.value().value("revision", Uint64(0));
 			asset.scene_ = entry.value().value("scene", false);
 			asset.sceneDocumentId_ = String(entry.value().value("sceneDocumentId", ""));
-			asset.deleted_ = entry.value().value("deleted", false);
 
 			/// [EN] A missing files array would mean a damaged catalog, so the loop is written to simply produce nothing.
 			/// [JP] files が無いのはカタログが壊れている場合なので、その時は何も作らずに済む書き方にしている。

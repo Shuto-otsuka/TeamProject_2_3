@@ -596,5 +596,13 @@ namespace SeedCore
 		{
 			".h", ".cpp", ".cs", ".hlsli", ".hlsl"
 		};
+
+		/// [EN] Extensions of the files the engine writes out by itself. Their .meta is still written, but the GUID in it is derived from the project-relative path, so every machine that bakes the same file arrives at the same identifier without exchanging anything.
+		/// [JP] エンジンが自分で書き出すファイルの拡張子。.meta は書き出すが、その GUID はプロジェクト内の位置から導出する。同じファイルを焼いた PC は、何もやり取りせずに同じ識別子へ行き着く。
+		std::set<std::string_view> generatedExtensions_ =
+		{
+			".crister", ".material", ".skeleton", ".animation", ".collision", ".navmesh",
+			".texture", ".audio", ".movie", ".skymap",
+		};
 	};
 }

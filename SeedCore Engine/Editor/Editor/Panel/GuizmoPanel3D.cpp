@@ -1,6 +1,5 @@
 #include <Editor/Editor/Panel/GuizmoPanel3D.h>
 #include <Editor/Editor/Context/EditorContext.h>
-#include <Editor/Editor/Panel/ResourceSyncControlPanel.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Command/ComponentCommand.h>
@@ -61,11 +60,6 @@ namespace SeedCore
 
 		const DynamicArray<Actor>& selectedActors = context_.selection_.actors_;
 		if (selectedActors.empty())
-		{
-			return;
-		}
-
-		if (context_.application_.resourceSync_ && !ResourceSyncControlPanel::EditableSelection(context_, ImGui::IsMouseDown(ImGuiMouseButton_Left) && ImGui::IsMouseHoveringRect(ImVec2(position.x, position.y), ImVec2(position.x + size.x, position.y + size.y))))
 		{
 			return;
 		}

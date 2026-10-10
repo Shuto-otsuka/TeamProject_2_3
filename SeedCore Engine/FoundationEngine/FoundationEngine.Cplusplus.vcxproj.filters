@@ -367,9 +367,6 @@
     <ClCompile Include="Resource\Sharing\GoogleDrive.cpp">
       <Filter>Resource\Sharing</Filter>
     </ClCompile>
-    <ClCompile Include="Resource\Sharing\SharedLockTable.cpp">
-      <Filter>Resource\Sharing</Filter>
-    </ClCompile>
     <ClCompile Include="Resource\Sharing\SharedCatalog.cpp">
       <Filter>Resource\Sharing</Filter>
     </ClCompile>
@@ -852,9 +849,6 @@
       <Filter>Resource\Sharing</Filter>
     </ClInclude>
     <ClInclude Include="Resource\Sharing\GoogleDrive.h">
-      <Filter>Resource\Sharing</Filter>
-    </ClInclude>
-    <ClInclude Include="Resource\Sharing\SharedLockTable.h">
       <Filter>Resource\Sharing</Filter>
     </ClInclude>
     <ClInclude Include="Resource\Sharing\SharedCatalog.h">

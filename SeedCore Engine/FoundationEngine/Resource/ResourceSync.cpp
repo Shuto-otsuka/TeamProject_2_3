@@ -1,5 +1,4 @@
 #include <FoundationEngine/Resource/ResourceSync.h>
-#include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
@@ -33,12 +32,11 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] These four identifiers are what the team agrees on once and shares among themselves.
-		/// [JP] この4つの識別子が、チームが一度決めて共有するもの。
+		/// [EN] These identifiers are what the team agrees on once and shares among themselves.
+		/// [JP] これらの識別子が、チームが一度決めて共有するもの。
 		config_.clientId_ = String(config.value("clientId", ""));
 		config_.clientSecret_ = String(config.value("clientSecret", ""));
 		config_.catalogDocumentId_ = String(config.value("catalogDocumentId", ""));
-		config_.lockDocumentId_ = String(config.value("lockDocumentId", ""));
 		config_.blobFolderId_ = String(config.value("blobFolderId", ""));
 
 		/// [EN] Leaving this out simply turns the artist-facing folder off; everything else works the same.
@@ -49,19 +47,9 @@ namespace SeedCore
 		/// [JP] 共有するのはワークスペース以下だけ。エンジンやツールのフォルダがライブラリへ入ることはない。
 		config_.workspace_ = String(config.value("workspace", "UserProject"));
 
-		/// [EN] The name other members see; falling back to the Windows account keeps it from ever being blank.
-		/// [JP] 他のメンバーに見える名前。Windows のアカウント名を代わりに使うことで、空欄になることを避ける。
-		config_.owner_ = String(config.value("owner", ""));
-		if (config_.owner_.str().empty())
-		{
-			std::wstring account(256, L'\0');
-			DWORD length = static_cast<DWORD>(account.size());
-			config_.owner_ = GetUserNameW(account.data(), &length) ? String(std::wstring(account.c_str())) : String("unknown");
-		}
-
 		/// [EN] Everything above is settings only; the worker is what actually reaches the network, on its own thread.
 		/// [JP] ここまでは設定だけ。実際に通信を行うのはワーカーで、別スレッドで動く。
-		configured_ = !config_.catalogDocumentId_.str().empty() && !config_.lockDocumentId_.str().empty();
+		configured_ = !config_.catalogDocumentId_.str().empty();
 		if (configured_)
 		{
 			worker_ = MakePtr<SharingWorker>(projectRoot_, config_);
@@ -71,19 +59,19 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Stops the worker, which releases this Editor's edit leases on the
-	* way out.
+	* Stops the worker, which saves this machine's workspace record on
+	* the way out.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* ワーカーを止める。その過程で、この Editor の編集 Lease が解放
-	* される。
+	* ワーカーを止める。その過程で、この PC のワークスペースの記録が
+	* 保存される。
 	*/
 	ResourceSync::~ResourceSync()
 	{
-		/// [EN] Stopping waits for the worker to finish, which is how a lease release is not cut short by the Editor closing.
-		/// [JP] 停止ではワーカーの終了を待つ。Editor が閉じることで Lease の解放が途中で切れないようにするため。
+		/// [EN] Stopping waits for the worker to finish, so a publish in progress is not cut short by the Editor closing.
+		/// [JP] 停止ではワーカーの終了を待つ。Editor が閉じることで、実行中の Publish が途中で切れないようにするため。
 		if (worker_)
 		{
 			worker_->Stop();
@@ -139,15 +127,15 @@ namespace SeedCore
 	* [EN]
 	* Hands over the workspace paths of files the library has taken in
 	* from its Assets folder since the last call, and forgets them. The
-	* Editor scans them so they get their identity, then shares them
-	* with the team.
+	* Editor scans them so they get their identity; sharing them is
+	* left to the member.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 前回の呼び出し以降にライブラリが Assets フォルダから取り込んだ
 	* ファイルの位置を引き渡し、こちらからは忘れる。Editor はそれらを
-	* 走査して識別情報を与え、チームへ共有する。
+	* 走査して識別情報を与える。共有はメンバーに任せる。
 	*/
 	void ResourceSync::ConsumeImportedAsset(DynamicArray<String>& paths)
 	{
@@ -159,147 +147,10 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Keeps what the engine writes out on its own - baked models, extracted
-	* materials, skeletons, clips, collision and the caches of textures,
-	* audio, movies and skies - in the library together with its .meta.
-	* One not in the library yet is shared, one changed here is published,
-	* and one whose identity or contents disagree with the library is
-	* replaced by the library's copy. Called once a frame; it acts only
-	* every few seconds.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* エンジンが自分で書き出すもの（焼いたモデル、取り出したマテリアル、
-	* スケルトン、クリップ、コリジョン、テクスチャ・オーディオ・ムービー・
-	* スカイのキャッシュ）を、.meta と一緒にライブラリへ揃えておく。まだ
-	* ライブラリに無いものは共有し、ここで変わったものは Publish し、識別子
-	* や中身がライブラリと食い違うものはライブラリの写しで置き換える。
-	* 毎フレーム呼ばれるが、動くのは数秒に1回だけ。
-	*/
-	void ResourceSync::ShareGenerated(const ResourceCache& cache)
-	{
-		/// [EN] Nothing is decided while the library is out of reach, since every decision below compares against it.
-		/// [JP] ライブラリへ届いていない間は何も決めない。以下の判断は全て、ライブラリとの比較で行うため。
-		if (!worker_ || !snapshot_.online_)
-		{
-			return;
-		}
-
-		/// [EN] Walking every asset each frame would cost more than it finds, so the walk runs on an interval.
-		/// [JP] 毎フレーム全アセットを辿るのは見つかるものに対して高くつくため、間隔を空けて辿る。
-		Uint64 now = GetTickCount64();
-		if (now < nextShareGenerated_)
-		{
-			return;
-		}
-		nextShareGenerated_ = now + 3000;
-
-		for (const auto& [assetId, record] : cache.AssetList())
-		{
-			/// [EN] Only files the engine produces are handled here; what a member made by hand is still shared on purpose.
-			/// [JP] ここで扱うのはエンジンが作るファイルだけ。メンバーが手で作ったものは、引き続き本人の判断で共有する。
-			std::filesystem::path local(record.fullpath_.str());
-			if (!generatedExtensions_.contains(local.extension().string()))
-			{
-				continue;
-			}
-
-			String logical = Logical(local);
-			if (logical.str().empty())
-			{
-				continue;
-			}
-
-			/// [EN] A request already sent for this path is given time to land, so the queue does not fill with repeats of it.
-			/// [JP] この位置について送った要求には、届くまでの時間を与える。待ち行列が同じ要求の繰り返しで埋まらないようにするため。
-			auto attempt = nextShareAttempt_.find(logical);
-			if (attempt != nextShareAttempt_.end() && now < attempt->second)
-			{
-				continue;
-			}
-
-			const SharedAsset* shared = nullptr;
-			for (const SharedAsset& asset : snapshot_.assets_)
-			{
-				if (!asset.deleted_ && asset.path_ == logical)
-				{
-					shared = &asset;
-					break;
-				}
-			}
-
-			/// [EN] Not in the library yet: it is registered, which carries the .meta up with it.
-			/// [JP] まだライブラリに無い: 登録する。その際に .meta も一緒に上がる。
-			if (!shared)
-			{
-				RequestRegister(record);
-				nextShareAttempt_[logical] = now + 30000;
-				continue;
-			}
-
-			SharingRequest request;
-			request.assetId_ = shared->id_;
-
-			/// [EN] Every machine bakes the same file on its own and mints its own .meta, so the first one registered decides the identifier.
-			/// [JP] どの PC も同じファイルを各自で焼き、各自で .meta を作る。そのため最初に登録されたものが識別子を決める。
-
-			/// [EN] A machine whose .meta names a different identifier takes the library's copy, so scenes and prefabs resolve alike everywhere.
-			/// [JP] .meta が別の識別子を示している PC はライブラリの写しを取る。Scene や Prefab の参照が、どの PC でも同じものを指すようにするため。
-			if (shared->runtimeId_ != assetId)
-			{
-				request.action_ = SharingAction::Adopt;
-				worker_->Enqueue(request);
-				nextShareAttempt_[logical] = now + 30000;
-				continue;
-			}
-
-			/// [EN] An asset that matches the library needs nothing, and one merely behind is brought down by the worker's own follow.
-			/// [JP] ライブラリと一致しているアセットには何も要らない。単に遅れているだけのものは、ワーカー自身の追従で降りてくる。
-			const SharedProgress* progress = nullptr;
-			for (const SharedProgress& entry : snapshot_.progress_)
-			{
-				if (entry.assetId_ == shared->id_)
-				{
-					progress = &entry;
-					break;
-				}
-			}
-			if (!progress || !progress->modified_)
-			{
-				continue;
-			}
-
-			/// [EN] A generated file can always be made again, so when both sides moved the library's copy wins rather than asking anyone.
-			/// [JP] 生成されたファイルはいつでも作り直せる。そのため両側が動いた場合は、誰かに尋ねずライブラリの写しを優先する。
-			if (progress->conflicted_)
-			{
-				request.action_ = SharingAction::Adopt;
-				worker_->Enqueue(request);
-				nextShareAttempt_[logical] = now + 30000;
-				continue;
-			}
-
-			/// [EN] Changed here only: the lease is taken and the new bake published, and the publish hands the lease back on success.
-			/// [JP] ここでだけ変わっている: 編集権を取り、焼き直したものを Publish する。成功すれば Publish が編集権を返す。
-			request.action_ = SharingAction::Checkout;
-			request.scope_ = String("asset");
-			worker_->Enqueue(request);
-
-			request.action_ = SharingAction::Publish;
-			request.scope_ = String();
-			worker_->Enqueue(request);
-			nextShareAttempt_[logical] = now + 30000;
-		}
-	}
-
-	/**
-	* [EN]
 	* Brings down every asset the open world refers to that the team
 	* has but this machine does not: whatever an actor's asset fields
 	* name, and the prefab each actor was made from. Called once a
-	* frame; it acts only every few seconds, so actors another member
-	* adds later are covered as well.
+	* frame; it acts only once after the member asks for the latest.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -307,24 +158,17 @@ namespace SeedCore
 	* 開いている world が参照しているアセットのうち、チームは持っていて
 	* この PC には無いものを取得する。対象は、Actor のアセット参照
 	* フィールドが示すものと、各 Actor の元になった Prefab。毎フレーム
-	* 呼ばれるが動くのは数秒に1回で、後から他のメンバーが足した Actor
-	* の分も拾える。
+	* 呼ばれるが、動くのはメンバーが最新の取得を求めた後の1回だけ。
 	*/
 	void ResourceSync::FetchReferenced(World& world)
 	{
-		if (!worker_ || !snapshot_.online_)
+		/// [EN] The request is kept while the library is out of reach, so a press made offline still takes effect once it is back.
+		/// [JP] ライブラリへ届いていない間は要求を残しておく。オフライン中に押した分も、つながった時点で効くようにするため。
+		if (!worker_ || !snapshot_.online_ || !fetchReferencedRequested_)
 		{
 			return;
 		}
-
-		/// [EN] The world is walked on an interval rather than once on opening, since a scene may finish loading, or gain actors, after that moment.
-		/// [JP] 開いた瞬間に1度だけではなく、間隔を空けて辿る。Scene の読み込みが終わるのも、Actor が増えるのも、その後であり得るため。
-		Uint64 now = GetTickCount64();
-		if (now < nextFetchReferenced_)
-		{
-			return;
-		}
-		nextFetchReferenced_ = now + 5000;
+		fetchReferencedRequested_ = false;
 
 		/// [EN] The live world is read rather than the scene file, because it is the reflection of each live component that says which fields hold assets.
 		/// [JP] Scene のファイルではなく、生きている world を読む。どのフィールドがアセットを持つかを教えてくれるのは、生きたコンポーネントのリフレクションであるため。
@@ -370,23 +214,17 @@ namespace SeedCore
 			}
 		}
 
+		/// [EN] The same asset referenced by many actors is asked for once.
+		/// [JP] 多くの Actor が参照する同じアセットは、1回だけ要求する。
+		std::set<Uint32> requested;
 		for (Uint32 assetId : referenced)
 		{
 			/// [EN] Only what the team has and this machine lacks is fetched; an empty field or an asset nobody shared has nothing to come down.
 			/// [JP] 取得するのは、チームは持っていてこの PC に無いものだけ。空のフィールドや、誰も共有していないアセットには降りてくるものが無い。
-			if (assetId == 0 || !RemoteOnly(assetId))
+			if (assetId == 0 || !RemoteOnly(assetId) || !requested.insert(assetId).second)
 			{
 				continue;
 			}
-
-			/// [EN] A get already sent is given time to land, so the same asset referenced by many actors is asked for once.
-			/// [JP] 送った取得要求には届くまでの時間を与える。多くの Actor が参照する同じアセットを、1回だけ要求するため。
-			auto attempt = nextFetchAttempt_.find(assetId);
-			if (attempt != nextFetchAttempt_.end() && now < attempt->second)
-			{
-				continue;
-			}
-			nextFetchAttempt_[assetId] = now + 30000;
 			RequestGet(assetId);
 		}
 	}
@@ -455,16 +293,9 @@ namespace SeedCore
 	{
 		for (const SharedAsset& asset : snapshot_.assets_)
 		{
-			/// [EN] Retired assets are left out, since the team has decided they are no longer part of the project.
-			/// [JP] 廃止済みのアセットは出さない。チームが、もうプロジェクトの一部ではないと決めたものであるため。
-			if (asset.deleted_)
-			{
-				continue;
-			}
-
 			/// [EN] An asset already on disk is found by the ordinary scan, so listing it again would show it twice.
 			/// [JP] 既にディスクにあるアセットは通常の走査で見つかるため、ここで出すと二重に並んでしまう。
-			std::filesystem::path local = projectRoot_ / config_.workspace_.str() / asset.path_.str();
+			std::filesystem::path local = projectRoot_ / config_.workspace_.str() / asset.path_.w_str();
 			if (std::filesystem::exists(local))
 			{
 				continue;
@@ -475,57 +306,10 @@ namespace SeedCore
 			AssetRecord record;
 			record.assetID_ = asset.runtimeId_;
 			record.type_ = static_cast<AssetType>(asset.type_);
-			record.fullpath_ = String(local.generic_string());
+			record.fullpath_ = String(local.generic_wstring());
 			record.path_ = String(std::filesystem::path(config_.workspace_.str()).generic_string() + "/" + asset.path_.str());
 			assets.push_back(record);
 		}
-	}
-
-	/**
-	* [EN]
-	* Whether the asset belongs to the shared library, addressed by the
-	* engine's identifier.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* そのアセットが共有ライブラリに属しているかどうか。エンジンの
-	* 識別子で問い合わせる。
-	*/
-	Bool ResourceSync::Shared(Uint32 assetId)const
-	{
-		return GetAsset(assetId) != nullptr;
-	}
-
-	/**
-	* [EN]
-	* Whether the asset belongs to the shared library, addressed by
-	* where it sits on disk.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* そのアセットが共有ライブラリに属しているかどうか。ディスク上の
-	* 位置で問い合わせる。
-	*/
-	Bool ResourceSync::Shared(const std::filesystem::path& path)const
-	{
-		/// [EN] A path outside the workspace cannot be shared at all, which is answered without looking any further.
-		/// [JP] ワークスペースの外にあるものは共有され得ないので、それ以上調べずに答える。
-		String logical = Logical(path);
-		if (logical.str().empty())
-		{
-			return false;
-		}
-
-		for (const SharedAsset& asset : snapshot_.assets_)
-		{
-			if (!asset.deleted_ && asset.path_ == logical)
-			{
-				return true;
-			}
-		}
-		return false;
 	}
 
 	/**
@@ -550,7 +334,7 @@ namespace SeedCore
 
 		/// [EN] Presence on disk is what separates the two, since the catalog lists an asset either way.
 		/// [JP] 両者を分けるのはディスク上に在るかどうか。カタログはどちらの場合も載せているため。
-		return !std::filesystem::exists(projectRoot_ / config_.workspace_.str() / asset->path_.str());
+		return !std::filesystem::exists(projectRoot_ / config_.workspace_.str() / asset->path_.w_str());
 	}
 
 	/**
@@ -586,14 +370,16 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Whether the asset changed here and in the library both, which no
-	* automatic step can settle and a member has to look at.
+	* Whether the asset changed here and in the library both. Publishing
+	* now would replace the other member's newer copy, and getting would
+	* discard the work here, so a member has to choose.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* そのアセットが、こちらとライブラリの両方で変わっているかどうか。
-	* 自動の処理では決められず、メンバーが見る必要がある状態。
+	* 今公開すれば他のメンバーの新しい写しを置き換え、取得すればここでの
+	* 作業を捨てることになるため、メンバーが選ぶ必要がある状態。
 	*/
 	Bool ResourceSync::Conflicted(Uint32 assetId)const
 	{
@@ -616,15 +402,15 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Whether a path holds shared content, in which case the Editor's
-	* own delete, rename and move must not touch it - those go through
-	* the library instead.
+	* own rename and move must not touch it, since the library knows the
+	* content by where it sits. Deleting is local only and stays allowed.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* その位置に共有された内容があるかどうか。ある場合、Editor 側の
-	* 削除・リネーム・移動で触ってはならない。それらはライブラリを
-	* 通して行う。
+	* リネーム・移動で触ってはならない。ライブラリは内容を位置で知って
+	* いるため。削除はローカルだけの操作なので許す。
 	*/
 	Bool ResourceSync::Managed(const std::filesystem::path& path)const
 	{
@@ -648,10 +434,6 @@ namespace SeedCore
 
 		for (const SharedAsset& asset : snapshot_.assets_)
 		{
-			if (asset.deleted_)
-			{
-				continue;
-			}
 			for (const SharedFile& file : asset.files_)
 			{
 				/// [EN] A folder is protected when anything shared lives inside it, so deleting a folder cannot take shared content with it.
@@ -691,94 +473,6 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Whether this Editor may change the given scope right now. It asks
-	* only; taking the right to edit is RequestEdit's job.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* この Editor が今その範囲を変更してよいかどうか。問い合わせるだけ
-	* で、編集権を取りに行くのは RequestEdit の役目。
-	*/
-	Bool ResourceSync::Editable(Uint32 assetId, const String& scope)const
-	{
-		/// [EN] An asset the team does not have is nobody else's business, so it is freely editable.
-		/// [JP] チームが持っていないアセットは他の誰にも関係しないので、自由に編集してよい。
-		const SharedAsset* asset = GetAsset(assetId);
-		if (!configured_ || !asset)
-		{
-			return true;
-		}
-
-		/// [EN] Holding the lease is the only thing that grants the right; an unheld scope stays read-only until asked for.
-		/// [JP] 編集権を与えるのは Lease を持っていることだけ。誰も持っていない範囲も、要求するまでは読み取り専用のまま。
-		for (const EditLease& lease : snapshot_.leases_)
-		{
-			if (lease.assetId_ == asset->id_ && lease.scope_ == scope)
-			{
-				return lease.mine_;
-			}
-		}
-
-		/// [EN] A held structure lease stands in for every entity of the scene, the same way it does when a publish presents its token.
-		/// [JP] 保持している structure の Lease は、その Scene の全 Entity の代わりを務める。Publish でトークンを示す際と同じ扱い。
-		if (scope.str().rfind("entity:", 0) == 0)
-		{
-			for (const EditLease& lease : snapshot_.leases_)
-			{
-				if (lease.assetId_ == asset->id_ && lease.scope_ == String("structure") && lease.mine_)
-				{
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	/**
-	* [EN]
-	* Asks for the right to edit the given scope. Called while a member
-	* is reaching for a control, so it is rate-limited and returns at
-	* once; whether it was granted shows up in Editable.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* その範囲の編集権を要求する。メンバーが操作に手をかけた時点で
-	* 呼ばれるため、回数を抑えたうえで即座に戻る。取得できたかどうかは
-	* Editable に現れる。
-	*/
-	void ResourceSync::RequestEdit(Uint32 assetId, const String& scope)
-	{
-		const SharedAsset* asset = GetAsset(assetId);
-		if (!worker_ || !asset)
-		{
-			return;
-		}
-
-		/// [EN] A member dragging a gizmo asks on every frame, and each ask is a write to the shared table.
-		/// [JP] ギズモを掴んでいるメンバーは毎フレーム要求し、その1回ごとが共有表への書き込みになる。
-
-		/// [EN] The interval is kept per scope, so several actors asked for in the same frame each get through rather than only the first.
-		/// [JP] 間隔は範囲ごとに持つ。同じフレームで複数の Actor を要求しても、先頭だけでなくそれぞれが通るようにするため。
-		String key = String(std::format("{}/{}", asset->id_.str(), scope.str()));
-		Uint64 now = GetTickCount64();
-		auto next = nextEditRequest_.find(key);
-		if (next != nextEditRequest_.end() && now < next->second)
-		{
-			return;
-		}
-		nextEditRequest_[key] = now + 1500;
-
-		SharingRequest request;
-		request.action_ = SharingAction::Checkout;
-		request.assetId_ = asset->id_;
-		request.scope_ = scope;
-		worker_->Enqueue(request);
-	}
-
-	/**
-	* [EN]
 	* Asks for the library's copy of an asset to be brought down to
 	* this machine.
 	*
@@ -797,6 +491,35 @@ namespace SeedCore
 
 		SharingRequest request;
 		request.action_ = SharingAction::Get;
+		request.assetId_ = asset->id_;
+		worker_->Enqueue(request);
+	}
+
+	/**
+	* [EN]
+	* Asks for the library's copy of an asset, .meta included, to
+	* replace this machine's even where local files differ. This is how
+	* a member settles an asset whose identifier or contents disagree
+	* with the team's.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ライブラリにあるアセットの写しで、.meta も含めてこの PC のものを
+	* 置き換えるよう要求する。ローカルのファイルが異なっていても置き換える。
+	* 識別子や中身がチームのものと食い違うアセットを、メンバーが解消する
+	* 手段。
+	*/
+	void ResourceSync::RequestAdopt(Uint32 assetId)
+	{
+		const SharedAsset* asset = GetAsset(assetId);
+		if (!worker_ || !asset)
+		{
+			return;
+		}
+
+		SharingRequest request;
+		request.action_ = SharingAction::Adopt;
 		request.assetId_ = asset->id_;
 		worker_->Enqueue(request);
 	}
@@ -822,31 +545,6 @@ namespace SeedCore
 		SharingRequest request;
 		request.action_ = SharingAction::Publish;
 		request.assetId_ = asset->id_;
-		worker_->Enqueue(request);
-	}
-
-	/**
-	* [EN]
-	* Gives up the right to edit, so another member does not have to
-	* wait for it to lapse.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 編集権を手放す。他のメンバーが失効を待たなくて済むようにする。
-	*/
-	void ResourceSync::RequestRelease(Uint32 assetId, const String& scope)
-	{
-		const SharedAsset* asset = GetAsset(assetId);
-		if (!worker_ || !asset)
-		{
-			return;
-		}
-
-		SharingRequest request;
-		request.action_ = SharingAction::Release;
-		request.assetId_ = asset->id_;
-		request.scope_ = scope;
 		worker_->Enqueue(request);
 	}
 
@@ -883,15 +581,16 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Asks for a shared asset to be retired, which leaves its history
-	* in place rather than erasing it.
+	* Asks for a shared asset to be removed from the library, its Drive
+	* contents included. The local files stay where they are.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 共有アセットの廃止を要求する。履歴は消さずに残す形になる。
+	* 共有アセットを、Drive 上の中身も含めてライブラリから取り除くよう
+	* 要求する。ローカルのファイルはそのまま残る。
 	*/
-	void ResourceSync::RequestRetire(Uint32 assetId)
+	void ResourceSync::RequestUnshare(Uint32 assetId)
 	{
 		const SharedAsset* asset = GetAsset(assetId);
 		if (!worker_ || !asset)
@@ -900,20 +599,54 @@ namespace SeedCore
 		}
 
 		SharingRequest request;
-		request.action_ = SharingAction::Retire;
+		request.action_ = SharingAction::Unshare;
 		request.assetId_ = asset->id_;
 		worker_->Enqueue(request);
 	}
 
 	/**
 	* [EN]
-	* Asks for the shared state to be re-read now instead of at the
-	* next scheduled check.
+	* Tells the library that this machine has deleted the file or folder
+	* at path, so whatever shared assets sat there stop being followed.
+	* The library keeps them; a later get brings them back on request.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 次の定期確認を待たず、今すぐ共有状態を読み直すよう要求する。
+	* この PC がその位置のファイルかフォルダを削除したことをライブラリへ
+	* 伝え、そこにあった共有アセットを追いかけないようにする。ライブラリ
+	* には残り、求めれば後から取得し直せる。
+	*/
+	void ResourceSync::RequestForget(const std::filesystem::path& path)
+	{
+		/// [EN] Anything outside the workspace was never followed, so there is nothing to forget.
+		/// [JP] ワークスペースの外にあるものは元から追いかけていないので、忘れるものが無い。
+		String logical = Logical(path);
+		if (!worker_ || logical.str().empty())
+		{
+			return;
+		}
+
+		SharingRequest request;
+		request.action_ = SharingAction::Forget;
+		request.path_ = logical;
+		worker_->Enqueue(request);
+	}
+
+	/**
+	* [EN]
+	* Asks for the shared state to be re-read now and for everything
+	* the library moved ahead on to be brought down: assets this machine
+	* already has, the open scene, and whatever the open world refers to
+	* but this machine lacks. Nothing comes down except through this.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 今すぐ共有状態を読み直し、ライブラリが先へ進んだものを降ろすよう
+	* 要求する。対象は、この PC が既に持っているアセット、開いている
+	* Scene、開いている world が参照していてこの PC に無いもの。これ以外
+	* の経路で何かが降りてくることはない。
 	*/
 	void ResourceSync::RequestRefresh()
 	{
@@ -921,6 +654,7 @@ namespace SeedCore
 		{
 			return;
 		}
+		fetchReferencedRequested_ = true;
 
 		SharingRequest request;
 		request.action_ = SharingAction::Refresh;
@@ -930,15 +664,15 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Tells the library which scene the Editor now has open, so the
-	* entities other members publish in it are picked up as they
-	* appear. An empty path means no scene is open.
+	* entities other members publish in it are picked up by the next
+	* refresh. An empty path means no scene is open.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* Editor が今開いている Scene をライブラリへ伝える。その Scene で
-	* 他のメンバーが Publish した Entity を、現れ次第拾うようにするため。
-	* 空のパスは、Scene を開いていないことを表す。
+	* 他のメンバーが Publish した Entity を、次の読み直しで拾うように
+	* するため。空のパスは、Scene を開いていないことを表す。
 	*/
 	void ResourceSync::RequestOpenScene(const std::filesystem::path& path)
 	{
@@ -1014,22 +748,6 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Every edit lease currently held by anyone, for showing who is
-	* working on what.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 現在、誰かが保持している全ての編集 Lease。誰が何を作業中かを
-	* 表示するために使う。
-	*/
-	const DynamicArray<EditLease>& ResourceSync::GetLeases()const
-	{
-		return snapshot_.leases_;
-	}
-
-	/**
-	* [EN]
 	* What the library is doing right now, or empty when it is idle.
 	*
 	* ---------------------------------------------------------------------
@@ -1080,6 +798,6 @@ namespace SeedCore
 		{
 			return String();
 		}
-		return String(relative.generic_string());
+		return String(relative.generic_wstring());
 	}
 }

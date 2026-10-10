@@ -279,14 +279,14 @@ namespace SeedCore
 	* [EN]
 	* Advances one fixed timestep: dispatches FixedTick to every
 	* ComponentBehaviour-derived component of an active actor that
-	* implements it.
+	* implements it and has already been through Start.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 固定タイムステップぶん1ステップ進める: アクティブな actor が持つ、
-	* FixedTick を実装している全ての ComponentBehaviour 派生コンポーネント
-	* へディスパッチする。
+	* FixedTick を実装していて既に Start を通った全ての ComponentBehaviour
+	* 派生コンポーネントへディスパッチする。
 	*/
 	void SystemScheduler::Step(World& world, Float fixedTime)
 	{
@@ -313,8 +313,10 @@ namespace SeedCore
 					continue;
 				}
 
+				/// [EN] FixedTick reaches only a component that has been through Start, so a fixed step never sees a component before Awake has set it up (a Rigidbody's body, for one).
+				/// [JP] FixedTick は Start を通ったコンポーネントにだけ届く。固定ステップが、Awake で準備される前(Rigidbody のボディなど)のコンポーネントに触れないようにするため。
 				ComponentBehaviour* component = static_cast<ComponentBehaviour*>(data);
-				if (component->fixedTick_)
+				if (component->fixedTick_ && component->started_)
 				{
 					component->fixedTick_(component, fixedTime);
 				}

@@ -5,7 +5,6 @@
 #include <FoundationEngine/Resource/Sharing/GoogleDrive.h>
 #include <FoundationEngine/Resource/Sharing/HttpClient.h>
 #include <FoundationEngine/Resource/Sharing/SharedCatalog.h>
-#include <FoundationEngine/Resource/Sharing/SharedLockTable.h>
 
 namespace SeedCore
 {
@@ -31,10 +30,6 @@ namespace SeedCore
 		/// [JP] 共有アセットのカタログを保持しているドキュメント。
 		String catalogDocumentId_;
 
-		/// [EN] The document holding the edit leases.
-		/// [JP] 編集 Lease を保持しているドキュメント。
-		String lockDocumentId_;
-
 		/// [EN] The Drive folder that stores asset contents, one file per content hash.
 		/// [JP] アセットの中身を保存する Drive のフォルダ。中身のハッシュごとに1ファイル。
 		String blobFolderId_;
@@ -46,25 +41,20 @@ namespace SeedCore
 		/// [EN] Folder inside the project that shared content belongs to, normally "UserProject".
 		/// [JP] 共有対象の内容が属する、プロジェクト内のフォルダ。通常は "UserProject"。
 		String workspace_;
-
-		/// [EN] Name other members see beside a lock this Editor holds.
-		/// [JP] この Editor が持つ Lock の横に、他のメンバーが見る名前。
-		String owner_;
 	};
 
 	/**
 	* [EN]
-	* What this machine holds for one shared asset: which revision it was
-	* fetched or published at, and what its files hashed to at that
-	* moment. Comparing the files against these hashes is how local
-	* changes are told apart from an untouched copy.
+	* One file of a shared asset as this machine last fetched or published
+	* it. Comparing the file on disk against this is how a local change is
+	* told apart from an untouched copy.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* この PC が共有アセット1件について保持している内容。どの Revision で
-	* 取得・公開したかと、その時点でファイルがどのハッシュだったか。この
-	* ハッシュと突き合わせることで、手を加えた写しと無変更の写しを区別する。
+	* 共有アセットのファイル1つを、この PC が最後に取得・公開した時点の
+	* 姿で持つ。ディスク上のファイルをこれと突き合わせることで、手を
+	* 加えた写しと無変更の写しを区別する。
 	*/
 	struct WorkspaceFile
 	{
@@ -85,10 +75,24 @@ namespace SeedCore
 		Int64 stamp_ = 0;
 	};
 
+	/**
+	* [EN]
+	* What this machine holds for one shared asset: which revision it was
+	* fetched or published at, and every one of its files as they were at
+	* that moment. Only assets with a record are followed by the latest
+	* fetch.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* この PC が共有アセット1件について保持している内容。どの Revision で
+	* 取得・公開したかと、その時点での各ファイルの姿。記録を持つアセット
+	* だけが、最新の取得で追いかけられる。
+	*/
 	struct WorkspaceRecord
 	{
-		/// [EN] The revision this machine is based on, which a publish later states as its starting point.
-		/// [JP] この PC が元にしている Revision。後の Publish が起点として示す値。
+		/// [EN] The revision this machine last fetched or published, which tells whether the library has moved ahead since.
+		/// [JP] この PC が最後に取得・公開した Revision。その後ライブラリが先へ進んだかどうかの判断に使う。
 		Uint64 revision_ = 0;
 
 		/// [EN] Every file of the asset as this machine last saw it.
@@ -110,17 +114,9 @@ namespace SeedCore
 	*/
 	enum class SharingAction
 	{
-		/// [EN] Re-read the catalog and the lock table.
-		/// [JP] カタログと Lock 表を読み直す。
+		/// [EN] Re-read the catalog, then bring down whatever the library moved ahead on.
+		/// [JP] カタログを読み直し、ライブラリが先へ進んだものを降ろす。
 		Refresh,
-
-		/// [EN] Take the edit lease on one scope.
-		/// [JP] ある範囲の編集 Lease を取得する。
-		Checkout,
-
-		/// [EN] Give up a held lease.
-		/// [JP] 保持している Lease を手放す。
-		Release,
 
 		/// [EN] Bring the local copy up to the catalog's revision.
 		/// [JP] ローカルの写しを、カタログの Revision まで引き上げる。
@@ -134,16 +130,20 @@ namespace SeedCore
 		/// [JP] ローカルのアセットを初めて共有する。
 		Register,
 
-		/// [EN] Send local changes to the team as a new revision.
-		/// [JP] ローカルの変更を、新しい Revision としてチームへ送る。
+		/// [EN] Send local changes to the team as a new revision, replacing whatever the library held.
+		/// [JP] ローカルの変更を新しい Revision としてチームへ送り、ライブラリの内容を置き換える。
 		Publish,
 
-		/// [EN] Mark a shared asset as retired.
-		/// [JP] 共有アセットを廃止済みにする。
-		Retire,
+		/// [EN] Remove a shared asset from the library, Drive contents included, while the local files stay.
+		/// [JP] 共有アセットを、Drive 上の中身も含めてライブラリから取り除く。ローカルのファイルは残す。
+		Unshare,
 
-		/// [EN] Follow a scene from now on, so the pieces other members publish in it are picked up as they appear.
-		/// [JP] その Scene を以後追いかける。他のメンバーがその中で Publish した断片を、現れ次第拾うようにするため。
+		/// [EN] Stop following whatever this machine held at a path it has just deleted, while the library keeps it.
+		/// [JP] この PC が今削除した位置にあったものを追いかけるのをやめる。ライブラリには残す。
+		Forget,
+
+		/// [EN] Follow a scene from now on, so the pieces other members publish in it are picked up by the next refresh.
+		/// [JP] その Scene を以後追いかける。他のメンバーがその中で Publish した断片を、次の読み直しで拾うようにするため。
 		OpenScene,
 	};
 
@@ -168,12 +168,8 @@ namespace SeedCore
 		/// [JP] どの共有アセットに関するものか。単なる再読み込みでは空。
 		String assetId_;
 
-		/// [EN] Which scope of it, for a checkout or a release.
-		/// [JP] その中のどの範囲か。Checkout と Release で使う。
-		String scope_;
-
-		/// [EN] Where the asset sits locally, for a first-time share.
-		/// [JP] 初めて共有する際の、ローカルでの位置。
+		/// [EN] Where the asset sits locally, for a first-time share, or the deleted file or folder, for a forget.
+		/// [JP] 初めて共有する際の、ローカルでの位置。Forget では削除したファイルかフォルダの位置。
 		String path_;
 
 		/// [EN] The engine's 32-bit identifier and asset kind, for a first-time share.
@@ -186,14 +182,14 @@ namespace SeedCore
 	* [EN]
 	* How one shared asset stands between this workspace and the library.
 	* Only the two states the catalog cannot state by itself are kept here,
-	* since the rest is already in the catalog and the lock table.
+	* since the rest is already in the catalog.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 共有アセット1つが、このワークスペースとライブラリの間でどう立って
 	* いるか。カタログだけでは言えない2つの状態のみを持つ。残りはカタログ
-	* と Lock 表に既にあるため。
+	* に既にあるため。
 	*/
 	struct SharedProgress
 	{
@@ -205,8 +201,8 @@ namespace SeedCore
 		/// [JP] ローカルのファイルが、届いた時点と違う。つまりチームがまだ見ていない作業を抱えている。
 		Bool modified_ = false;
 
-		/// [EN] Modified locally while the library also moved ahead, which is the one state that needs a person.
-		/// [JP] ローカルで変更した上に、ライブラリも先へ進んでいる。人の判断が必要な唯一の状態。
+		/// [EN] Modified locally while the library also moved ahead, so publishing now replaces another member's newer work.
+		/// [JP] ローカルで変更した上に、ライブラリも先へ進んでいる。今公開すると、他のメンバーの新しい作業を置き換えることになる。
 		Bool conflicted_ = false;
 	};
 
@@ -239,10 +235,6 @@ namespace SeedCore
 		/// [JP] 直近に読み取った共有カタログ。
 		DynamicArray<SharedAsset> assets_;
 
-		/// [EN] Every lease currently held by anyone.
-		/// [JP] 現在、誰かが保持している全ての Lease。
-		DynamicArray<EditLease> leases_;
-
 		/// [EN] Only the assets that stand apart from the library; one that matches it is left out.
 		/// [JP] ライブラリと食い違っているアセットのみ。一致しているものは載せない。
 		DynamicArray<SharedProgress> progress_;
@@ -255,16 +247,16 @@ namespace SeedCore
 	/**
 	* [EN]
 	* The background half of asset sharing. It owns every connection to
-	* Google, carries out queued work one item at a time, keeps the edit
-	* leases alive while the Editor runs, and leaves a snapshot behind for
-	* the Editor thread to read.
+	* Google, carries out queued work one item at a time, re-reads the
+	* catalog on a timer, and leaves a snapshot behind for the Editor
+	* thread to read.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* アセット共有の裏側。Google との接続を全て所有し、待ち行列の作業を
-	* 1つずつ実行し、Editor が動いている間は編集 Lease を生かし続け、
-	* Editor のスレッドが読むための写しを残す。
+	* 1つずつ実行し、定期的にカタログを読み直し、Editor のスレッドが
+	* 読むための写しを残す。
 	*/
 	class SEEDCORE_API SharingWorker
 	{
@@ -282,18 +274,36 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Stops the thread and releases every lease this Editor holds.
+		* Stops the thread.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* スレッドを止め、この Editor が持つ全ての Lease を解放する。
+		* スレッドを止める。
 		*/
 		~SharingWorker();
 
-		/// [EN] Copying is disallowed because one worker owns one thread and one set of leases.
-		/// [JP] 1つのワーカーが1つのスレッドと1組の Lease を所有するため、コピーは禁止する。
+		/**
+		* [EN]
+		* Copy construction is disallowed, since one worker owns one thread.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー構築は禁止する。1つのワーカーが1つのスレッドを所有するため。
+		*/
 		SharingWorker(const SharingWorker&) = delete;
+
+		/**
+		* [EN]
+		* Copy assignment is disallowed for the same reason as copy
+		* construction.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー代入も、コピー構築と同じ理由で禁止する。
+		*/
 		SharingWorker& operator=(const SharingWorker&) = delete;
 
 		/**
@@ -311,14 +321,12 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Stops the thread, releasing leases so other members do not have
-		* to wait for them to lapse.
+		* Stops the thread, letting it finish what it is doing first.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* スレッドを止める。その際に Lease を解放し、他のメンバーが失効を
-		* 待たなくて済むようにする。
+		* スレッドを止める。実行中の作業は終わらせてから止める。
 		*/
 		void Stop();
 
@@ -367,15 +375,15 @@ namespace SeedCore
 		* [EN]
 		* Hands over the workspace paths of files taken in from the
 		* library's Assets folder since the last call, and forgets them.
-		* The Editor scans them so they get their identity, then shares
-		* them with the team.
+		* The Editor scans them so they get their identity; sharing them
+		* is left to the member.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 前回の呼び出し以降にライブラリの Assets フォルダから取り込んだ
 		* ファイルの位置を引き渡し、こちらからは忘れる。Editor はそれらを
-		* 走査して識別情報を与え、チームへ共有する。
+		* 走査して識別情報を与える。共有はメンバーに任せる。
 		*/
 		void ConsumeImported(DynamicArray<String>& paths);
 
@@ -383,14 +391,14 @@ namespace SeedCore
 		/**
 		* [EN]
 		* The background thread itself: signs in, then loops between
-		* carrying out requests, renewing leases and re-reading the shared
-		* state until asked to stop.
+		* carrying out requests and re-reading the shared state until asked
+		* to stop.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 裏のスレッド本体。ログインし、その後は停止を求められるまで、要求の
-		* 実行・Lease の更新・共有状態の読み直しを繰り返す。
+		* 実行と共有状態の読み直しを繰り返す。
 		*/
 		void Run();
 
@@ -404,6 +412,23 @@ namespace SeedCore
 		* 要求を1つ実行し、その結果を記録する。
 		*/
 		void Process(const SharingRequest& request);
+
+		/**
+		* [EN]
+		* Brings this workspace up to the catalog just read: every asset it
+		* already has that the library moved ahead on or that lost files, the
+		* open scene's pieces, and whatever was dropped into the library's
+		* Assets folder.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 直前に読んだカタログまで、このワークスペースを引き上げる。対象は、
+		* 既に持っているアセットのうちライブラリが先へ進んだもの・ファイルが
+		* 欠けたもの、開いている Scene の断片、ライブラリの Assets フォルダへ
+		* 置かれたもの。
+		*/
+		void Pull();
 
 		/**
 		* [EN]
@@ -462,6 +487,38 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Removes a shared asset from the library: its catalog entry goes,
+		* and the Drive files holding its contents are moved to the trash
+		* unless another asset still uses the same contents. The local files
+		* stay where they are.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 共有アセットをライブラリから取り除く。カタログの項目を消し、中身を
+		* 持つ Drive のファイルは、同じ中身を他のアセットが使っていない限り
+		* ゴミ箱へ移す。ローカルのファイルはそのまま残す。
+		*/
+		Bool Unshare(const String& assetId);
+
+		/**
+		* [EN]
+		* Stops following every shared asset whose files sat at or under the
+		* given workspace path, which this machine has just deleted. The
+		* library keeps them, and a later fetch brings them back only when
+		* the member asks for them.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* この PC が今削除した、指定のワークスペース内の位置（またはその下）に
+		* ファイルがあった共有アセットを、追いかけるのをやめる。ライブラリには
+		* 残り、メンバーが求めたときにだけ再び取得される。
+		*/
+		void Forget(const String& logicalPath);
+
+		/**
+		* [EN]
 		* Keeps the library's Assets folder shaped like the workspace's
 		* own, and takes in whatever has been dropped into it. Folders
 		* are created where they are missing; files are downloaded to the
@@ -517,13 +574,13 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Copies the current catalog and leases into the snapshot the
+		* Copies the current catalog and local progress into the snapshot the
 		* Editor thread reads.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 現在のカタログと Lease を、Editor のスレッドが読む写しへ写し取る。
+		* 現在のカタログとローカルの進み具合を、Editor のスレッドが読む写しへ写し取る。
 		*/
 		void Capture();
 
@@ -567,7 +624,6 @@ namespace SeedCore
 		GoogleDocument document_;
 		GoogleDrive drive_;
 		SharedCatalog catalog_;
-		SharedLockTable locks_;
 
 		/// [EN] The background thread and the flag that asks it to finish.
 		/// [JP] 裏のスレッドと、終了を促すための印。
@@ -581,8 +637,8 @@ namespace SeedCore
 		/// [EN] The scene the Editor currently has open, which is the only one whose pieces are followed.
 		/// [JP] Editor が今開いている Scene。断片を追いかける対象はこの1つだけ。
 
-		/// [EN] Following every scene would mean reading one document per scene on every check, for scenes nobody is looking at.
-		/// [JP] 全ての Scene を追うと、誰も見ていない Scene の分まで、確認のたびにドキュメントを1つずつ読むことになる。
+		/// [EN] Following every scene would mean reading one document per scene on every latest fetch, for scenes nobody is looking at.
+		/// [JP] 全ての Scene を追うと、誰も見ていない Scene の分まで、最新の取得のたびにドキュメントを1つずつ読むことになる。
 		String openScene_;
 
 		/// [EN] Which revision of each piece of that scene this machine last wrote out.

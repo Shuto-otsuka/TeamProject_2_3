@@ -78,9 +78,29 @@ namespace SeedCore
 		*/
 		~GoogleDocument();
 
-		/// [EN] Copying is disallowed because the conflict flag and the server clock belong to one caller.
-		/// [JP] 競合の印とサーバー時刻は1つの呼び出し元に属するものなので、コピーは禁止する。
+		/**
+		* [EN]
+		* Copy construction is disallowed, since the conflict flag and the
+		* last error belong to the one caller that made the request.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー構築は禁止する。競合の印と直近のエラーは、そのリクエストを
+		* 出した1つの呼び出し元に属するものであるため。
+		*/
 		GoogleDocument(const GoogleDocument&) = delete;
+
+		/**
+		* [EN]
+		* Copy assignment is disallowed for the same reason as copy
+		* construction.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コピー代入も、コピー構築と同じ理由で禁止する。
+		*/
 		GoogleDocument& operator=(const GoogleDocument&) = delete;
 
 		/**
@@ -123,21 +143,6 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Google's own clock, in seconds since the Unix epoch, as of the
-		* last request. Lease deadlines are expressed against this rather
-		* than against each member's own clock.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 直近のリクエスト時点における Google 側の時刻（Unixエポックからの
-		* 秒数）。Lease の期限は各メンバーの時計ではなく、こちらを基準に
-		* 表す。
-		*/
-		Double ServerTime()const;
-
-		/**
-		* [EN]
 		* The last failure, in a form that can be shown to the user.
 		*
 		* ---------------------------------------------------------------------
@@ -151,13 +156,13 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Sends one authenticated request to the Docs API and parses its
-		* JSON answer, recording the server clock and any failure.
+		* JSON answer, recording any failure.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 認証付きのリクエストを Docs API へ1回送り、JSON の応答を解釈する。
-		* サーバー側の時刻と、失敗した場合はその内容も記録する。
+		* 失敗した場合はその内容も記録する。
 		*/
 		Bool Send(const String& method, const String& url, const nlohmann::json& request, nlohmann::json& result);
 
@@ -170,7 +175,7 @@ namespace SeedCore
 		* [JP]
 		* ドキュメントの構造要素を、プレーンテキストへ平坦化する。
 		*/
-		static String ExtractText(const nlohmann::json& document);
+		static String Extract(const nlohmann::json& document);
 
 	private:
 		/// [EN] Transport shared with the rest of the sharing layer.
@@ -180,10 +185,6 @@ namespace SeedCore
 		/// [EN] Supplies the access token every request carries.
 		/// [JP] 各リクエストに付けるアクセストークンの供給元。
 		GoogleAuth& auth_;
-
-		/// [EN] Google's clock as of the last request; 0 until one has been made.
-		/// [JP] 直近のリクエスト時点の Google 側の時刻。まだ何も送っていなければ 0。
-		Double serverTime_ = 0.0;
 
 		/// [EN] Whether the last write lost the race to another member.
 		/// [JP] 直前の書き込みが、他のメンバーとの競争に負けたかどうか。

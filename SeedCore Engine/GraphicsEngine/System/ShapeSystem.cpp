@@ -7,6 +7,9 @@
 #include <GraphicsEngine/Light/RectangleLight.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
 #include <GraphicsEngine/Shape/Primitive/BoxShape.h>
+#include <GraphicsEngine/Shape/Primitive/SphereShape.h>
+#include <GraphicsEngine/Shape/Primitive/CylinderShape.h>
+#include <GraphicsEngine/Shape/Primitive/ConeShape.h>
 #include <AudioEngine/Audio/AudioSource.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
@@ -356,6 +359,27 @@ namespace SeedCore
 		gatherPrimitiveShapes(std::type_identity<BoxShape>{}, ShapeKind::Box, [](const BoxShape& box, const Vector3& scale)
 			{
 				return Vector3(box.size_.x * Abs(scale.x) * 0.5f, box.size_.y * Abs(scale.y) * 0.5f, box.size_.z * Abs(scale.z) * 0.5f);
+			});
+
+		/// [EN] A sphere stays round, so its radius follows the largest axis of the scale.
+		/// [JP] 球は丸いままにするので、半径はスケールの一番大きい軸に合わせる。
+		gatherPrimitiveShapes(std::type_identity<SphereShape>{}, ShapeKind::Sphere, [](const SphereShape& sphere, const Vector3& scale)
+			{
+				return Vector3(sphere.radius_ * Max(Max(Abs(scale.x), Abs(scale.y)), Abs(scale.z)), 0.0f, 0.0f);
+			});
+
+		/// [EN] The unit cylinder spans -1 to 1 along Y, so the dimensions are the radius, following the larger of the X and Z scales, and half the scaled height.
+		/// [JP] 単位の円柱は Y 方向に -1 から 1 なので、大きさは半径（X と Z のスケールの大きい方に合わせる）と、スケール後の高さの半分。
+		gatherPrimitiveShapes(std::type_identity<CylinderShape>{}, ShapeKind::Cylinder, [](const CylinderShape& cylinder, const Vector3& scale)
+			{
+				return Vector3(cylinder.radius_ * Max(Abs(scale.x), Abs(scale.z)), cylinder.height_ * Abs(scale.y) * 0.5f, 0.0f);
+			});
+
+		/// [EN] Same as the cylinder: the base radius and half the scaled height, with the apex toward +Y.
+		/// [JP] 円柱と同じく、底面の半径と、スケール後の高さの半分。頂点は +Y 側。
+		gatherPrimitiveShapes(std::type_identity<ConeShape>{}, ShapeKind::Cone, [](const ConeShape& cone, const Vector3& scale)
+			{
+				return Vector3(cone.radius_ * Max(Abs(scale.x), Abs(scale.z)), cone.height_ * Abs(scale.y) * 0.5f, 0.0f);
 			});
 
 #ifdef _DEBUG
