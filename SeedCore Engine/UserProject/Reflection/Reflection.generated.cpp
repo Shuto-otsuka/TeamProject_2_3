@@ -1,6 +1,7 @@
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
 #include <UserProject/Script/BulletController.h>
+#include <UserProject/Script/BulletNaviController.h>
 #include <UserProject/Script/CameraController.h>
 #include <UserProject/Script/ChargeGaugeController.h>
 #include <UserProject/Script/CostGaugeController.h>
@@ -9,6 +10,7 @@
 #include <UserProject/Script/PlayerController.h>
 
 extern "C" int _force_reflection_BulletController = 0;
+extern "C" int _force_reflection_BulletNaviController = 0;
 extern "C" int _force_reflection_CameraController = 0;
 extern "C" int _force_reflection_ChargeGaugeController = 0;
 extern "C" int _force_reflection_CostGaugeController = 0;
@@ -33,13 +35,26 @@ namespace SeedCore
 					outInfo.push_back({ String("maxSpeed"), offsetof(BulletController, maxSpeed), AttributeType::Float });
 					outInfo.push_back({ String("minAliveTime"), offsetof(BulletController, minAliveTime), AttributeType::Float });
 					outInfo.push_back({ String("maxAliveTime"), offsetof(BulletController, maxAliveTime), AttributeType::Float });
-					outInfo.push_back({ String("removeDistance"), offsetof(BulletController, removeDistance), AttributeType::Float });
 					outInfo.push_back({ String("turnSpeed"), offsetof(BulletController, turnSpeed), AttributeType::Float });
 					outInfo.push_back({ String("turnAxis"), offsetof(BulletController, turnAxis), AttributeType::Vector3 });
 				});
 			}
 		};
 		static Register_BulletController global_BulletController_register;
+
+		// ---- UserProject/Script/BulletNaviController.h ----
+		struct Register_BulletNaviController
+		{
+			Register_BulletNaviController()
+			{
+				ReflectionRegistry::Register(String("BulletNaviController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					BulletNaviController& obj = *static_cast<BulletNaviController*>(ptr);
+					outInfo.push_back({ String("minSize"), offsetof(BulletNaviController, minSize), AttributeType::Float });
+					outInfo.push_back({ String("maxSize"), offsetof(BulletNaviController, maxSize), AttributeType::Float });
+				});
+			}
+		};
+		static Register_BulletNaviController global_BulletNaviController_register;
 
 		// ---- UserProject/Script/CameraController.h ----
 		struct Register_CameraController
@@ -174,6 +189,7 @@ namespace SeedCore
 					outInfo.push_back({ String("bulletOffsetY"), offsetof(PlayerController, bulletOffsetY), AttributeType::Float });
 					outInfo.push_back({ String("minBulletOffsetZ"), offsetof(PlayerController, minBulletOffsetZ), AttributeType::Float });
 					outInfo.push_back({ String("maxBulletOffsetZ"), offsetof(PlayerController, maxBulletOffsetZ), AttributeType::Float });
+					outInfo.push_back({ String("bulletRemoveDistance"), offsetof(PlayerController, bulletRemoveDistance), AttributeType::Float });
 					outInfo.push_back({ String("deadPosY"), offsetof(PlayerController, deadPosY), AttributeType::Float });
 					outInfo.push_back({ String("maxCostGauge"), offsetof(PlayerController, maxCostGauge), AttributeType::Int });
 					outInfo.push_back({ String("minAddCostGauge"), offsetof(PlayerController, minAddCostGauge), AttributeType::Int });

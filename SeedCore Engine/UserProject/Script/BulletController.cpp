@@ -188,7 +188,7 @@ void BulletController::Move(float elapsedTime)
     //キネマティック剛体を動かす
     rigidbody->MoveTarget(moveTarget, quaternion, 0.02f);
 
-    if ((SeedCore::Transform::Vector(*position) - startPosition).Length() >= removeDistance)
+    if ((SeedCore::Transform::Vector(*position) - startPosition).Length() >= playerController->GetBulletRemoveDistance())
     {
         //一定距離飛んだら消す
         Remove();

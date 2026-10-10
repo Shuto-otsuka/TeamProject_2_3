@@ -233,7 +233,6 @@ void PlayerController::UpdateTurn(float elapsedTime)
         SeedCore::Vector2 cursorScreenPosition = SeedCore::Input::MousePoint();//カーソルのスクリーン座標
         SeedCore::Ray ray = SeedCore::ScreenSpace::ScreenToWorld(cursorScreenPosition);//レイキャスト情報
         SeedCore::RaycastHit hit;
-        SeedCore::Vector3 targetPosition;
         Uint32 layerMask = ~(1 << GetActor().Layer());//プレイヤー自身を除くレイヤーマスク
 
         //銃口の高さを求める
@@ -247,25 +246,35 @@ void PlayerController::UpdateTurn(float elapsedTime)
             {
                 //止められないオブジェクトの上面だった場合
                 //レイと銃口の高さの平面が交わるところをターゲットにする
-                SeedCore::Vector3 gunOffset = { 0.0f,bulletOffsetY,0.0f };
-                SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
-                targetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f },gunPosition.y);
+                bulletTargetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f },gunPosition.y);
+
+                //ターゲット位置を最大飛距離まで飛んだ時の位置にする
+                SeedCore::Vector3 direction = bulletTargetPosition - gunPosition;
+                direction.Normalize();
+                direction *= bulletRemoveDistance;
+                bulletTargetPosition += direction;
             }
             else
             {
                 //止められるオブジェクトもしくは壁などに当たった場合当たった場所をターゲットにする
-                targetPosition = hit.position_;
+                bulletTargetPosition = hit.position_;
             }
         }
         else
         {
             //なににも当たらなかった場合
             //レイと銃口の高さの平面が交わるところをターゲットにする
-            targetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f }, gunPosition.y);
+            bulletTargetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f }, gunPosition.y);
+
+            //ターゲット位置を最大飛距離まで飛んだ時の位置にする
+            SeedCore::Vector3 direction = bulletTargetPosition - gunPosition;
+            direction.Normalize();
+            direction *= bulletRemoveDistance;
+            bulletTargetPosition += direction;
         }
 
         //ターゲットに対してのベクトルをshotDirectionとする
-        shotDirection = targetPosition - gunPosition;
+        shotDirection = bulletTargetPosition - gunPosition;
         shotDirection.Normalize();
 
         //撃つ方向の高さを無視して見る方向として渡す
@@ -323,6 +332,12 @@ void PlayerController::UpdateInputShot(float elapsedTime)
 
         //チャージ率からコストを計算
         costGaugeAdd = static_cast<int>(SeedCore::Lerp(static_cast<float>(minAddCostGauge), static_cast<float>(maxAddCostGauge), shotChargeRate));
+
+        SeedCore::Vector3 bulletOffset;
+        bulletOffset.y = bulletOffsetY;
+        bulletOffset.z = SeedCore::Lerp(minBulletOffsetZ, maxBulletOffsetZ, shotChargeRate);//埋まり防止のため弾のサイズがでかいほどオフセットを空ける
+        //プレイヤー姿勢、弾のローカルオフセットから弾のワールド位置を計算
+        bulletPosition = SeedCore::Vector3::Transform(bulletOffset, GetActor().WorldMatrix());
     }
 
     if (SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Left, SeedCore::Input::OnReleased) && shotReady)
@@ -351,12 +366,6 @@ void PlayerController::Shot()
 
     SeedCore::Actor bullet = SeedCore::Prefab::Spawn(SeedCore::String("Bullet.prefab"));//弾生成
     BulletController* bulletController = GetWorld().GetComponent<BulletController>(bullet.GetEntity());
-
-    SeedCore::Vector3 bulletOffset;
-    bulletOffset.y = bulletOffsetY;
-    bulletOffset.z = SeedCore::Lerp(minBulletOffsetZ, maxBulletOffsetZ, shotChargeRate);//埋まり防止のため弾のサイズがでかいほどオフセットを空ける
-    //プレイヤー姿勢、弾のローカルオフセットから弾のワールド位置を計算
-    SeedCore::Vector3 bulletPosition = SeedCore::Vector3::Transform(bulletOffset, GetActor().WorldMatrix());
 
     bulletController->SetParam(bulletPosition,shotDirection, shotChargeRate,costGaugeAdd);//位置、見てる方向、チャージ率、増加コストを渡す
 }

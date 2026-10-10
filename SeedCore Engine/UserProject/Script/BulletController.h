@@ -46,8 +46,6 @@ public:
 	SC_REFLECTION_FIELD()
 		float maxAliveTime;
 	SC_REFLECTION_FIELD()
-		float removeDistance;
-	SC_REFLECTION_FIELD()
 		float turnSpeed;
 	SC_REFLECTION_FIELD()
 		SeedCore::Vector3 turnAxis;

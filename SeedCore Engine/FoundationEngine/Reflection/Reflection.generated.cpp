@@ -53,7 +53,8 @@
 #include <PhysicsEngine/Joint/SpringJoint.h>
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
-#include <Runtime/enc_temp_folder/cc51051d841f79c66e1b66922ae7c7/PlayerController.h>
+#include <Runtime/enc_temp_folder/144310caa6416a2ceed8d93f4e6a38/BulletController.h>
+#include <Runtime/enc_temp_folder/229f2f8496b8ca0d46d23a7115c38d1/PlayerController.h>
 
 extern "C" int _force_reflection_AudioListener = 0;
 extern "C" int _force_reflection_AudioSource = 0;
@@ -129,6 +130,7 @@ extern "C" int _force_reflection_SliderJoint = 0;
 extern "C" int _force_reflection_SpringJoint = 0;
 extern "C" int _force_reflection_Rigidbody = 0;
 extern "C" int _force_reflection_Softbody = 0;
+extern "C" int _force_reflection_BulletController = 0;
 extern "C" int _force_reflection_PlayerController = 0;
 
 namespace SeedCore
@@ -3628,7 +3630,28 @@ namespace SeedCore
 		};
 		static Register_Softbody global_Softbody_register;
 
-		// ---- Runtime/enc_temp_folder/cc51051d841f79c66e1b66922ae7c7/PlayerController.h ----
+		// ---- Runtime/enc_temp_folder/144310caa6416a2ceed8d93f4e6a38/BulletController.h ----
+		struct Register_BulletController
+		{
+			Register_BulletController()
+			{
+				ReflectionRegistry::Register(String("BulletController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					BulletController& obj = *static_cast<BulletController*>(ptr);
+					outInfo.push_back({ String("minSize"), offsetof(BulletController, minSize), AttributeType::Float });
+					outInfo.push_back({ String("maxSize"), offsetof(BulletController, maxSize), AttributeType::Float });
+					outInfo.push_back({ String("minSpeed"), offsetof(BulletController, minSpeed), AttributeType::Float });
+					outInfo.push_back({ String("maxSpeed"), offsetof(BulletController, maxSpeed), AttributeType::Float });
+					outInfo.push_back({ String("minAliveTime"), offsetof(BulletController, minAliveTime), AttributeType::Float });
+					outInfo.push_back({ String("maxAliveTime"), offsetof(BulletController, maxAliveTime), AttributeType::Float });
+					outInfo.push_back({ String("removeDistance"), offsetof(BulletController, removeDistance), AttributeType::Float });
+					outInfo.push_back({ String("turnSpeed"), offsetof(BulletController, turnSpeed), AttributeType::Float });
+					outInfo.push_back({ String("turnAxis"), offsetof(BulletController, turnAxis), AttributeType::Vector3 });
+				});
+			}
+		};
+		static Register_BulletController global_BulletController_register;
+
+		// ---- Runtime/enc_temp_folder/229f2f8496b8ca0d46d23a7115c38d1/PlayerController.h ----
 		struct Register_PlayerController
 		{
 			Register_PlayerController()

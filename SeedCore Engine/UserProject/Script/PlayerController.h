@@ -17,6 +17,9 @@ public:
 	int GetCostGaugeAdd() const { return costGaugeAdd; }
 	int GetCostGaugeMax() const { return maxCostGauge; }
 	float GetChargeRate() const { return shotChargeRate; }
+	float GetBulletRemoveDistance() const { return bulletRemoveDistance; }
+	const SeedCore::Vector3& GetBulletPosition() const { return bulletPosition; }
+	const SeedCore::Vector3& GetBulletTargetPosition() const { return bulletTargetPosition; }
 
 	SC_REFLECTION_FIELD()
 		float acceleration;
@@ -42,6 +45,8 @@ public:
 		float minBulletOffsetZ = 10.0f;
 	SC_REFLECTION_FIELD()
 		float maxBulletOffsetZ = 80.0f;
+	SC_REFLECTION_FIELD()
+		float bulletRemoveDistance;
 	SC_REFLECTION_FIELD()
 		float deadPosY = -15.0f;
 	SC_REFLECTION_FIELD()
@@ -103,6 +108,8 @@ private:
 
 	SeedCore::Vector3 lookDirection = { 0.0f,0.0f,1.0f };
 	SeedCore::Vector3 shotDirection = { 0.0f,0.0f,1.0f };
+	SeedCore::Vector3 bulletPosition;
+	SeedCore::Vector3 bulletTargetPosition;
 
 	SeedCore::Actor cameraBrain;
 	SeedCore::Position* position = nullptr;
