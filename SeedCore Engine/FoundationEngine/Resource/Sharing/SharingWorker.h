@@ -102,6 +102,48 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* One piece of a shared scene as this machine last fetched or
+	* published it.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 共有 Scene の断片1つを、この PC が最後に取得・公開した時点の姿で持つ。
+	*/
+	struct ScenePartBase
+	{
+		/// [EN] The piece's revision at that moment, which tells whether another member has moved it on since.
+		/// [JP] その時点での断片の Revision。その後に他のメンバーが進めたかどうかの判断に使う。
+		Uint64 revision_ = 0;
+
+		/// [EN] What the piece's text hashed to at that moment, which tells whether this member has changed it since.
+		/// [JP] その時点で断片の本文がどのハッシュだったか。その後にこのメンバーが変えたかどうかの判断に使う。
+		String hash_;
+	};
+
+	/**
+	* [EN]
+	* What this machine last had of one shared scene: every piece as it
+	* was last fetched or published. A publish sends only the pieces the
+	* scene file has changed from this, and a get refuses to overwrite a
+	* scene file holding such changes.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* この PC が共有 Scene 1つについて最後に持っていた内容。最後に取得・
+	* 公開した時点の各断片。Publish は Scene ファイルがここから変えた断片
+	* だけを送り、取得はそうした変更を持つ Scene ファイルを上書きしない。
+	*/
+	struct SceneBase
+	{
+		/// [EN] Every piece of the scene at that moment, by scope.
+		/// [JP] その時点の Scene の各断片。範囲ごとに持つ。
+		std::unordered_map<String, ScenePartBase> parts_;
+	};
+
+	/**
+	* [EN]
 	* What the worker wants done. Requests are handed over from the Editor
 	* thread and carried out in the background, since each one is a
 	* network round trip that must not stall drawing.
@@ -472,6 +514,26 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Takes a scene file's contents apart into the pieces a shared scene
+		* is made of - the context, the hierarchy, and per entity its
+		* header, its transform and each of its components - keyed by
+		* scope. Every member splits a scene the same way, so a piece that
+		* did not change hashes the same everywhere. When the scene cannot
+		* be split, error says why in a form that can be shown to the user.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* Scene ファイルの中身を、共有 Scene を構成する断片（Scene の設定・
+		* 階層・Entity ごとの本体・トランスフォーム・各 Component）に分け、
+		* 範囲をキーにして返す。どのメンバーも同じ手順で分けるため、変わって
+		* いない断片はどこでも同じハッシュになる。分けられない場合は、その
+		* 理由をユーザーへそのまま表示できる形で error に入れる。
+		*/
+		Bool Split(const nlohmann::json& scene, std::unordered_map<String, nlohmann::json>& parts, String& error)const;
+
+		/**
+		* [EN]
 		* Shares a local asset for the first time, together with the .meta
 		* and any files it reads from beside itself. When the library
 		* already holds the same path, the library's copy is taken instead.
@@ -641,9 +703,9 @@ namespace SeedCore
 		/// [JP] 全ての Scene を追うと、誰も見ていない Scene の分まで、最新の取得のたびにドキュメントを1つずつ読むことになる。
 		String openScene_;
 
-		/// [EN] Which revision of each piece of that scene this machine last wrote out.
-		/// [JP] その Scene の各断片について、この PC が最後に書き出した Revision。
-		std::unordered_map<String, Uint64> sceneRevisions_;
+		/// [EN] What this machine last had of each shared scene it has fetched or published, by asset.
+		/// [JP] この PC が取得・公開したことのある各共有 Scene について、最後に持っていた内容。アセットごとに持つ。
+		std::unordered_map<String, SceneBase> sceneBases_;
 
 		/// [EN] Work waiting to be carried out, oldest first.
 		/// [JP] 実行を待っている作業。古いものから順に並ぶ。

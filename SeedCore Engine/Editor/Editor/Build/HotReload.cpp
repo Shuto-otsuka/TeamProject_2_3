@@ -417,9 +417,18 @@ namespace SeedCore
 			}
 		}
 
-		if (cplusplusBuild_.reloadRequested_)
+		if (cplusplusBuild_.reloadRequested_ && world.Timer().Playing())
+		{
+			if (!cplusplusReloadDeferred_)
+			{
+				SC_LOG_NOTICE("HotReload: 再生中のため、UserProject のリロードは再生を止めたときに行います。");
+				cplusplusReloadDeferred_ = true;
+			}
+		}
+		else if (cplusplusBuild_.reloadRequested_)
 		{
 			cplusplusBuild_.reloadRequested_ = false;
+			cplusplusReloadDeferred_ = false;
 
 			/// [EN] The plugin may not have been present at Initialize (e.g. UserProject.Cplusplus.dll built for the first time during this session) — pick it up now that a build has produced it.
 			/// [JP] Initialize 時点ではプラグインが存在しなかった可能性がある(例: このセッション中に UserProject.Cplusplus.dll が初めてビルドされた) — ビルドが生成した今、拾い直す。

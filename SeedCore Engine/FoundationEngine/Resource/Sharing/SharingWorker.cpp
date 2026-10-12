@@ -259,6 +259,10 @@ namespace SeedCore
 		/// [JP] 実行中はその内容を表示する。アップロードには時間がかかることがあり、無言だと固まって見えるため。
 		{
 			std::lock_guard<std::mutex> guard(snapshotMutex_);
+
+			/// [EN] The previous request's message is cleared first, so what is shown afterwards belongs to this request alone.
+			/// [JP] 先に直前の依頼の文言を消す。後に表示されるものが、この依頼だけのものになるようにするため。
+			snapshot_.error_ = String();
 			switch (request.action_)
 			{
 			case SharingAction::Refresh:
@@ -337,7 +341,6 @@ namespace SeedCore
 			/// [EN] Opening only records which scene that is; its pieces come down with the next pull the member asks for.
 			/// [JP] 開いた時点ではどの Scene かを記録するだけ。断片が降りてくるのは、メンバーが次に最新の取得を求めたとき。
 			openScene_ = request.assetId_;
-			sceneRevisions_.clear();
 			done = true;
 			break;
 		}
@@ -395,7 +398,13 @@ namespace SeedCore
 		{
 			std::lock_guard<std::mutex> guard(snapshotMutex_);
 			snapshot_.operation_ = String();
-			snapshot_.error_ = done ? String() : catalog_.Error();
+
+			/// [EN] A message set while the work ran - such as a scene left alone because it holds unpublished changes - is kept even when the request as a whole went through.
+			/// [JP] 作業中に設定された文言（未公開の変更があるため Scene を取得しなかった、など）は、依頼全体が通った場合でも残す。
+			if (!done && snapshot_.error_.str().empty())
+			{
+				snapshot_.error_ = catalog_.Error();
+			}
 		}
 		Capture();
 	}
@@ -509,17 +518,88 @@ namespace SeedCore
 				return false;
 			}
 
+			/// [EN] A scene that has never been published has no pieces to build from, and the file on disk stays as it is.
+			/// [JP] 一度も Publish されていない Scene には組み立てる断片が無く、ディスク上のファイルはそのまま残す。
+			if (shared.Parts().empty())
+			{
+				return true;
+			}
+
 			/// [EN] Every press of the latest fetch runs this for the open scene, so a scene nobody has changed must cost nothing beyond the read.
 			/// [JP] 最新の取得を押すたびに、開いている Scene についてこれが動く。誰も変更していない Scene で、読み取り以上の負担が出ないようにする。
-			Bool moved = shared.Parts().size() != sceneRevisions_.size();
-			for (const ScenePart& part : shared.Parts())
+			auto base = sceneBases_.find(assetId);
+			Bool based = base != sceneBases_.end();
+			Bool moved = !based || shared.Parts().size() != base->second.parts_.size();
+			if (based)
 			{
-				auto known = sceneRevisions_.find(part.scope_);
-				moved = moved || known == sceneRevisions_.end() || known->second != part.revision_;
+				for (const ScenePart& part : shared.Parts())
+				{
+					auto known = base->second.parts_.find(part.scope_);
+					moved = moved || known == base->second.parts_.end() || known->second.revision_ != part.revision_;
+				}
 			}
 			if (!moved)
 			{
 				return true;
+			}
+
+			/// [EN] The scene file is about to be replaced, so any piece this member changed and has not published would be lost; the file is taken apart and each piece compared against what this machine last had.
+			/// [JP] Scene ファイルをこれから置き換えるため、このメンバーが変えてまだ公開していない断片があれば失われてしまう。ファイルを分け、各断片をこの PC が最後に持っていたものと比べる。
+			std::filesystem::path current = Local(asset->path_);
+			if (std::filesystem::exists(current))
+			{
+				std::ifstream reader(current);
+				nlohmann::json local = nlohmann::json::parse(reader, nullptr, false);
+				reader.close();
+
+				/// [EN] A file that cannot be taken apart holds nothing a piece could carry, so it is simply replaced.
+				/// [JP] 分けられないファイルには断片として運べるものが無いため、そのまま置き換える。
+				std::unordered_map<String, nlohmann::json> localParts;
+				String unreadable;
+				if (Split(local, localParts, unreadable))
+				{
+					Bool edited = false;
+					for (const std::pair<const String, nlohmann::json>& part : localParts)
+					{
+						std::string text = part.second.dump();
+						DynamicArray<Byte> digest = Sha256::Hash(reinterpret_cast<const Byte*>(text.data()), text.size());
+						std::string hash;
+						for (Byte value : digest)
+						{
+							hash += std::format("{:02x}", static_cast<Uint8>(value));
+						}
+
+						/// [EN] Without a record of what this machine last had, the library itself is the reference: only a piece that differs from it is work that would be lost.
+						/// [JP] この PC が最後に持っていた記録が無い場合は、ライブラリそのものを基準にする。それと違う断片だけが、失われる作業になる。
+						if (based)
+						{
+							auto known = base->second.parts_.find(part.first);
+							edited = edited || known == base->second.parts_.end() || known->second.hash_ != String(hash);
+						}
+						else
+						{
+							const ScenePart* remote = shared.Find(part.first);
+							edited = edited || !remote || remote->deleted_ || remote->hash_ != String(hash);
+						}
+					}
+
+					/// [EN] A piece this machine had and the file no longer holds was removed here, which is a change as well.
+					/// [JP] この PC が持っていて、ファイルにはもう無い断片は、ここで削除されたもの。それも変更にあたる。
+					if (based)
+					{
+						for (const std::pair<const String, ScenePartBase>& known : base->second.parts_)
+						{
+							edited = edited || (!known.second.hash_.str().empty() && !localParts.contains(known.first));
+						}
+					}
+
+					if (edited)
+					{
+						std::lock_guard<std::mutex> guard(snapshotMutex_);
+						snapshot_.error_ = String(std::format("\"{}\" に公開していない変更があるため取得しませんでした。先に「変更を公開」するか、手元の変更を捨てるなら「ライブラリの版で置き換え」を選んでください。", asset->path_.str()));
+						return false;
+					}
+				}
 			}
 
 			std::unordered_map<String, nlohmann::json> parts;
@@ -703,12 +783,16 @@ namespace SeedCore
 	
 			/// [EN] What was written is now what this machine has, and the Editor is told so it can pick the scene up.
 			/// [JP] 書き出した内容が、この PC の持っている状態になる。Editor にも知らせて、Scene を拾えるようにする。
-			sceneRevisions_.clear();
+			SceneBase written;
 			for (const ScenePart& part : shared.Parts())
 			{
-				sceneRevisions_[part.scope_] = part.revision_;
+				/// [EN] A removed piece is kept with an empty hash, so its revision still tells a later get whether it has moved on.
+				/// [JP] 削除された断片も空のハッシュで残す。その Revision から、後の取得が先へ進んだかどうかを判断できるようにするため。
+				written.parts_[part.scope_] = ScenePartBase{ part.revision_, part.deleted_ ? String() : part.hash_ };
 			}
-	
+			sceneBases_[assetId] = written;
+			SaveWorkspace();
+
 			std::lock_guard<std::mutex> guard(snapshotMutex_);
 			changed_.push_back(asset->runtimeId_);
 			return true;
@@ -850,6 +934,37 @@ namespace SeedCore
 		/// [EN] The .meta comes down with the rest, so this machine ends up knowing the asset by the same identifier as the team.
 		/// [JP] .meta も一緒に降りてくるため、この PC もチームと同じ識別子でそのアセットを知ることになる。
 		workspace_.erase(assetId);
+
+		/// [EN] A scene is protected piece by piece rather than by file, so its local pieces are recorded as what this machine last had at revision 0; the get then counts none of them as unpublished work and every piece comes down.
+		/// [JP] Scene はファイル単位ではなく断片単位で守っている。そのため手元の断片を、この PC が最後に持っていたものとして Revision 0 で記録する。これで取得はどれも未公開の作業とみなさず、全ての断片が降りてくる。
+		const SharedAsset* asset = catalog_.Find(assetId);
+		if (asset && asset->scene_)
+		{
+			sceneBases_.erase(assetId);
+
+			std::ifstream reader(Local(asset->path_));
+			nlohmann::json local = nlohmann::json::parse(reader, nullptr, false);
+			reader.close();
+
+			std::unordered_map<String, nlohmann::json> localParts;
+			String unreadable;
+			if (Split(local, localParts, unreadable))
+			{
+				SceneBase replaced;
+				for (const std::pair<const String, nlohmann::json>& part : localParts)
+				{
+					std::string text = part.second.dump();
+					DynamicArray<Byte> digest = Sha256::Hash(reinterpret_cast<const Byte*>(text.data()), text.size());
+					std::string hash;
+					for (Byte value : digest)
+					{
+						hash += std::format("{:02x}", static_cast<Uint8>(value));
+					}
+					replaced.parts_[part.first] = ScenePartBase{ 0, String(hash) };
+				}
+				sceneBases_[assetId] = replaced;
+			}
+		}
 		return Get(assetId);
 	}
 
@@ -879,98 +994,17 @@ namespace SeedCore
 			/// [JP] ディスク上の Scene を、そのままの JSON として読む。分け方はどのメンバーでも同じ手順になる。
 			std::ifstream stream(Local(asset->path_));
 			nlohmann::json scene = nlohmann::json::parse(stream, nullptr, false);
-			if (!scene.is_object() || !scene.contains("nodes") || !scene["nodes"].is_array())
+			stream.close();
+
+			std::unordered_map<String, nlohmann::json> parts;
+			String unsplittable;
+			if (!Split(scene, parts, unsplittable))
 			{
 				std::lock_guard<std::mutex> guard(snapshotMutex_);
-				snapshot_.error_ = String("Scene の形が想定と違うため分割できませんでした。");
+				snapshot_.error_ = unsplittable;
 				return false;
 			}
-	
-			/// [EN] Everything that is not the actor list travels together, since it describes the scene rather than anyone's actor.
-			/// [JP] Actor の一覧以外はまとめて1つに運ぶ。それらは誰かの Actor ではなく、Scene 自体を記述するものであるため。
-			std::unordered_map<String, nlohmann::json> parts;
-			nlohmann::json context = nlohmann::json::object();
-			for (auto& entry : scene.items())
-			{
-				if (entry.key() != "nodes")
-				{
-					context[entry.key()] = entry.value();
-				}
-			}
-			parts[String("context")] = context;
-	
-			/// [EN] The hierarchy is kept as its own piece, so moving an actor is one change rather than a rewrite of two actors.
-			/// [JP] 階層は独立した断片として持つ。Actor の移動が、2つの Actor の書き換えではなく1つの変更で済むようにするため。
-			nlohmann::json structure = nlohmann::json::array();
-			for (Size index = 0; index < scene["nodes"].size(); ++index)
-			{
-				const nlohmann::json& node = scene["nodes"][index];
-	
-				/// [EN] The identifier is what a piece and its revision hang on, so an actor without one cannot be shared at all.
-				/// [JP] 断片も Revision もこの識別子にぶら下がるため、持たない Actor は共有できない。
-				std::string identifier = node.value("collaborationId", "");
-				if (identifier.empty() || parts.contains(String(std::format("entity:{}", identifier))))
-				{
-					std::lock_guard<std::mutex> guard(snapshotMutex_);
-					snapshot_.error_ = String("共同編集用のIDを持たない、あるいは重複している Actor があります。");
-					return false;
-				}
-	
-				/// [EN] The hierarchy names parents by identifier rather than by position, so it survives actors being added or removed.
-				/// [JP] 階層は親を位置ではなく識別子で指す。Actor が増減しても壊れないようにするため。
-				Int32 parent = node.value("parentIndex", Int32(-1));
-				nlohmann::json link;
-				link["id"] = identifier;
-				link["parent"] = parent >= 0 && parent < static_cast<Int32>(index) ? nlohmann::json(scene["nodes"][static_cast<Size>(parent)].value("collaborationId", "")) : nlohmann::json(nullptr);
-				structure.push_back(link);
-	
-				/// [EN] The position in the hierarchy is dropped from the actor's own piece, because it belongs to the hierarchy and would collide there.
-				/// [JP] 階層内の位置は Actor 自身の断片から外す。それは階層に属する情報で、そこへ残すと衝突の元になるため。
-				nlohmann::json entity = node;
-				entity.erase("parentIndex");
 
-				/// [EN] The transform travels as its own piece, so moving an actor and renaming it are separate changes that both survive.
-				/// [JP] トランスフォームは独立した断片として運ぶ。Actor の移動とリネームが別々の変更になり、両方が残るようにするため。
-				nlohmann::json transform = nlohmann::json::object();
-				static const std::string transformKeys[] = { "position", "rotation", "scale" };
-				for (const std::string& key : transformKeys)
-				{
-					if (entity.contains(key))
-					{
-						transform[key] = entity[key];
-						entity.erase(key);
-					}
-				}
-				parts[String(std::format("entity:{}/transform", identifier))] = transform;
-
-				/// [EN] Each component travels as its own piece, so two members editing different components of one actor both keep their work.
-				/// [JP] Component はそれぞれ独立した断片として運ぶ。1つの Actor の別々の Component を2人が編集しても、両方の作業が残るようにするため。
-
-				/// [EN] The header keeps only the order of the components, which is all assembling them back needs from it.
-				/// [JP] 本体に残すのは Component の並び順だけ。組み立て直す際に本体から必要なのはそれだけであるため。
-				nlohmann::json order = nlohmann::json::array();
-				if (entity.contains("components") && entity["components"].is_array())
-				{
-					for (const nlohmann::json& component : entity["components"])
-					{
-						std::string name = component.value("component", "");
-						String scope = String(std::format("entity:{}/component:{}", identifier, name));
-						if (name.empty() || parts.contains(scope))
-						{
-							std::lock_guard<std::mutex> guard(snapshotMutex_);
-							snapshot_.error_ = String(std::format("名前の無い、あるいは重複している Component を持つ Actor があります: {}", entity.value("name", "")));
-							return false;
-						}
-						parts[scope] = component;
-						order.push_back(name);
-					}
-				}
-				entity.erase("components");
-				entity["componentOrder"] = order;
-				parts[String(std::format("entity:{}", identifier))] = entity;
-			}
-			parts[String("structure")] = structure;
-	
 			/// [EN] The library's view of the same scene says which pieces have moved on since this member last saw them.
 			/// [JP] 同じ Scene についてのライブラリ側の見え方が、このメンバーが最後に見てから進んだ断片を教えてくれる。
 			SharedScene shared(document_, asset->sceneDocumentId_);
@@ -980,8 +1014,18 @@ namespace SeedCore
 				snapshot_.error_ = shared.Error();
 				return false;
 			}
-	
+
+			/// [EN] What this machine last had decides which pieces are this member's work. A scene never fetched or published here has nothing to compare against, so every piece that differs from the library is sent and nothing is removed.
+			/// [JP] この PC が最後に持っていた内容が、どの断片がこのメンバーの作業かを決める。ここで一度も取得・公開していない Scene には比べる相手が無いため、ライブラリと違う断片を全て送り、何も削除しない。
+			auto base = sceneBases_.find(assetId);
+			Bool based = base != sceneBases_.end();
+
 			DynamicArray<ScenePartChange> changes;
+			DynamicArray<String> conflicts;
+
+			/// [EN] Pieces that already match the library, which this machine now holds at the library's revision.
+			/// [JP] 既にライブラリと一致している断片。この PC は以後、それをライブラリの Revision で持っていることになる。
+			std::unordered_map<String, ScenePartBase> matched;
 			for (const std::pair<const String, nlohmann::json>& part : parts)
 			{
 				/// [EN] The hash is taken over the same text that will be stored, so an unchanged piece is recognised as unchanged.
@@ -993,12 +1037,32 @@ namespace SeedCore
 				{
 					hash += std::format("{:02x}", static_cast<Uint8>(value));
 				}
-	
-				/// [EN] Every piece that differs from the library is sent, so the scene as it stands here becomes the one the team gets.
-				/// [JP] ライブラリと違う断片は全て送る。ここでの Scene の姿が、そのままチームに届くものになる。
+
 				const ScenePart* remote = shared.Find(part.first);
-				if (remote && remote->hash_ == String(hash))
+				if (remote && !remote->deleted_ && remote->hash_ == String(hash))
 				{
+					matched[part.first] = ScenePartBase{ remote->revision_, remote->hash_ };
+					continue;
+				}
+
+				/// [EN] A piece this member has not touched since it was last fetched is not sent, so a newer version another member published is never pushed back over with this machine's older copy.
+				/// [JP] 最後に取得してからこのメンバーが触っていない断片は送らない。他のメンバーが公開した新しい版を、この PC の古い写しで押し戻さないようにするため。
+				const ScenePartBase* known = nullptr;
+				if (based)
+				{
+					auto found = base->second.parts_.find(part.first);
+					known = found == base->second.parts_.end() ? nullptr : &found->second;
+				}
+				if (known && known->hash_ == String(hash))
+				{
+					continue;
+				}
+
+				/// [EN] A piece changed here that another member has also moved on since is a conflict, and neither version may silently replace the other.
+				/// [JP] ここで変えた断片を、他のメンバーもその後に進めていれば競合。どちらの版も、黙ってもう一方を置き換えてはならない。
+				if (based && remote && remote->revision_ > (known ? known->revision_ : 0))
+				{
+					conflicts.push_back(part.first);
 					continue;
 				}
 
@@ -1007,7 +1071,7 @@ namespace SeedCore
 				change.baseRevision_ = remote ? remote->revision_ : 0;
 				change.hash_ = String(hash);
 				change.size_ = text.size();
-	
+
 				/// [EN] A piece small enough travels inside the document, which is what lets it arrive without a second round trip.
 				/// [JP] 十分小さい断片はドキュメントの中を運ばれる。2回目の往復なしで届くのはこのため。
 				if (text.size() <= 64 * 1024)
@@ -1024,7 +1088,7 @@ namespace SeedCore
 					std::ofstream writer(staging, std::ios::binary);
 					writer << text;
 					writer.close();
-	
+
 					change.driveId_ = drive_.Find(change.hash_, config_.blobFolderId_);
 					if (change.driveId_.str().empty())
 					{
@@ -1040,36 +1104,68 @@ namespace SeedCore
 				}
 				changes.push_back(change);
 			}
-	
-			/// [EN] An entity the library still lists but this scene no longer has is removed from the library as well.
-			/// [JP] ライブラリにはあるがこの Scene に無い Entity は、ライブラリからも取り除く。
-			for (const ScenePart& remote : shared.Parts())
+
+			/// [EN] Only a piece this machine had and the scene no longer holds was removed by this member; a piece the library has that this machine never saw was added by someone else and stays.
+			/// [JP] この PC が持っていて Scene にもう無い断片だけが、このメンバーによる削除。この PC が見たことの無いライブラリの断片は他の誰かが足したもので、残す。
+			if (based)
 			{
-				if (remote.deleted_ || parts.contains(remote.scope_))
+				for (const std::pair<const String, ScenePartBase>& known : base->second.parts_)
 				{
-					continue;
+					if (parts.contains(known.first))
+					{
+						continue;
+					}
+
+					const ScenePart* remote = shared.Find(known.first);
+					if (!remote || remote->deleted_)
+					{
+						continue;
+					}
+
+					/// [EN] Removing a piece another member has edited since would throw their edit away, so that is a conflict too.
+					/// [JP] 他のメンバーがその後に編集した断片を削除すると、その編集を捨てることになる。これも競合。
+					if (remote->revision_ > known.second.revision_)
+					{
+						conflicts.push_back(known.first);
+						continue;
+					}
+
+					ScenePartChange change;
+					change.scope_ = remote->scope_;
+					change.baseRevision_ = remote->revision_;
+					change.deleted_ = true;
+					changes.push_back(change);
 				}
-	
-				ScenePartChange change;
-				change.scope_ = remote.scope_;
-				change.baseRevision_ = remote.revision_;
-				change.deleted_ = true;
-				changes.push_back(change);
 			}
-	
+
+			/// [EN] Nothing is sent while any piece conflicts, so the library never ends up holding half of this member's change.
+			/// [JP] 競合する断片が1つでもあれば何も送らない。このメンバーの変更が半分だけライブラリに載ることのないようにするため。
+			if (!conflicts.empty())
+			{
+				std::lock_guard<std::mutex> guard(snapshotMutex_);
+				snapshot_.error_ = String(std::format("他のメンバーが先に変更した部分と、手元の変更がぶつかっているため公開しませんでした（{} 件、例: {}）。手元の変更を捨ててライブラリの版を取るなら「ライブラリの版で置き換え」を選んでください。", conflicts.size(), conflicts.front().str()));
+				return false;
+			}
+
 			if (!shared.Publish(changes))
 			{
 				std::lock_guard<std::mutex> guard(snapshotMutex_);
 				snapshot_.error_ = shared.Error();
 				return false;
 			}
-	
-			/// [EN] The pieces just sent are what this machine now has, so the next check does not see them as newly arrived.
-			/// [JP] 今送った断片が、この PC の持っている状態になる。次の確認で「新しく届いた」と見えないようにするため。
+
+			/// [EN] The pieces just sent and the ones that already matched are what this machine now has; every other piece keeps its older record, so the next get still brings down what others moved on.
+			/// [JP] 今送った断片と既に一致していた断片が、この PC の持っている状態になる。それ以外の断片は古い記録のままにし、他のメンバーが進めた分を次の取得で降ろせるようにする。
+			SceneBase& updated = sceneBases_[assetId];
 			for (const ScenePartChange& change : changes)
 			{
-				sceneRevisions_[change.scope_] = change.baseRevision_ + 1;
+				updated.parts_[change.scope_] = ScenePartBase{ change.baseRevision_ + 1, change.deleted_ ? String() : change.hash_ };
 			}
+			for (const std::pair<const String, ScenePartBase>& entry : matched)
+			{
+				updated.parts_[entry.first] = entry.second;
+			}
+			SaveWorkspace();
 			return true;
 		}
 
@@ -1126,6 +1222,116 @@ namespace SeedCore
 		}
 		workspace_[assetId] = record;
 		SaveWorkspace();
+		return true;
+	}
+
+	/**
+	* [EN]
+	* Takes a scene file's contents apart into the pieces a shared scene
+	* is made of - the context, the hierarchy, and per entity its
+	* header, its transform and each of its components - keyed by
+	* scope. Every member splits a scene the same way, so a piece that
+	* did not change hashes the same everywhere. When the scene cannot
+	* be split, error says why in a form that can be shown to the user.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Scene ファイルの中身を、共有 Scene を構成する断片（Scene の設定・
+	* 階層・Entity ごとの本体・トランスフォーム・各 Component）に分け、
+	* 範囲をキーにして返す。どのメンバーも同じ手順で分けるため、変わって
+	* いない断片はどこでも同じハッシュになる。分けられない場合は、その
+	* 理由をユーザーへそのまま表示できる形で error に入れる。
+	*/
+	Bool SharingWorker::Split(const nlohmann::json& scene, std::unordered_map<String, nlohmann::json>& parts, String& error)const
+	{
+		if (!scene.is_object() || !scene.contains("nodes") || !scene["nodes"].is_array())
+		{
+			error = String("Scene の形が想定と違うため分割できませんでした。");
+			return false;
+		}
+
+		/// [EN] Everything that is not the actor list travels together, since it describes the scene rather than anyone's actor.
+		/// [JP] Actor の一覧以外はまとめて1つに運ぶ。それらは誰かの Actor ではなく、Scene 自体を記述するものであるため。
+		nlohmann::json context = nlohmann::json::object();
+		for (auto& entry : scene.items())
+		{
+			if (entry.key() != "nodes")
+			{
+				context[entry.key()] = entry.value();
+			}
+		}
+		parts[String("context")] = context;
+
+		/// [EN] The hierarchy is kept as its own piece, so moving an actor is one change rather than a rewrite of two actors.
+		/// [JP] 階層は独立した断片として持つ。Actor の移動が、2つの Actor の書き換えではなく1つの変更で済むようにするため。
+		nlohmann::json structure = nlohmann::json::array();
+		for (Size index = 0; index < scene["nodes"].size(); ++index)
+		{
+			const nlohmann::json& node = scene["nodes"][index];
+
+			/// [EN] The identifier is what a piece and its revision hang on, so an actor without one cannot be shared at all.
+			/// [JP] 断片も Revision もこの識別子にぶら下がるため、持たない Actor は共有できない。
+			std::string identifier = node.value("collaborationId", "");
+			if (identifier.empty() || parts.contains(String(std::format("entity:{}", identifier))))
+			{
+				error = String("共同編集用のIDを持たない、あるいは重複している Actor があります。");
+				return false;
+			}
+
+			/// [EN] The hierarchy names parents by identifier rather than by position, so it survives actors being added or removed.
+			/// [JP] 階層は親を位置ではなく識別子で指す。Actor が増減しても壊れないようにするため。
+			Int32 parent = node.value("parentIndex", Int32(-1));
+			nlohmann::json link;
+			link["id"] = identifier;
+			link["parent"] = parent >= 0 && parent < static_cast<Int32>(index) ? nlohmann::json(scene["nodes"][static_cast<Size>(parent)].value("collaborationId", "")) : nlohmann::json(nullptr);
+			structure.push_back(link);
+
+			/// [EN] The position in the hierarchy is dropped from the actor's own piece, because it belongs to the hierarchy and would collide there.
+			/// [JP] 階層内の位置は Actor 自身の断片から外す。それは階層に属する情報で、そこへ残すと衝突の元になるため。
+			nlohmann::json entity = node;
+			entity.erase("parentIndex");
+
+			/// [EN] The transform travels as its own piece, so moving an actor and renaming it are separate changes that both survive.
+			/// [JP] トランスフォームは独立した断片として運ぶ。Actor の移動とリネームが別々の変更になり、両方が残るようにするため。
+			nlohmann::json transform = nlohmann::json::object();
+			static const std::string transformKeys[] = { "position", "rotation", "scale" };
+			for (const std::string& key : transformKeys)
+			{
+				if (entity.contains(key))
+				{
+					transform[key] = entity[key];
+					entity.erase(key);
+				}
+			}
+			parts[String(std::format("entity:{}/transform", identifier))] = transform;
+
+			/// [EN] Each component travels as its own piece, so two members editing different components of one actor both keep their work.
+			/// [JP] Component はそれぞれ独立した断片として運ぶ。1つの Actor の別々の Component を2人が編集しても、両方の作業が残るようにするため。
+
+			/// [EN] The header keeps only the order of the components, which is all assembling them back needs from it.
+			/// [JP] 本体に残すのは Component の並び順だけ。組み立て直す際に本体から必要なのはそれだけであるため。
+			nlohmann::json order = nlohmann::json::array();
+			if (entity.contains("components") && entity["components"].is_array())
+			{
+				for (const nlohmann::json& component : entity["components"])
+				{
+					std::string name = component.value("component", "");
+					String scope = String(std::format("entity:{}/component:{}", identifier, name));
+					if (name.empty() || parts.contains(scope))
+					{
+						error = String(std::format("名前の無い、あるいは重複している Component を持つ Actor があります: {}", entity.value("name", "")));
+						return false;
+					}
+					parts[scope] = component;
+					order.push_back(name);
+				}
+			}
+			entity.erase("components");
+			entity["componentOrder"] = order;
+			parts[String(std::format("entity:{}", identifier))] = entity;
+		}
+		parts[String("structure")] = structure;
 		return true;
 	}
 
@@ -1253,8 +1459,8 @@ namespace SeedCore
 			if (openScene_ == assetId)
 			{
 				openScene_ = String();
-				sceneRevisions_.clear();
 			}
+			sceneBases_.erase(assetId);
 		}
 
 		/// [EN] A copy sitting in the library's Assets folder goes too, so the next fetch does not hand the unshared asset back to anyone.
@@ -1756,6 +1962,22 @@ namespace SeedCore
 			}
 			workspace_[String(entry.key())] = record;
 		}
+
+		/// [EN] A record written before scenes were tracked has no such entry, which only means each scene is compared against the library on its next get.
+		/// [JP] Scene を記録する前に書かれた記録にはこの項目が無い。その場合は各 Scene が、次の取得でライブラリと比べられるだけで済む。
+		if (!workspace.contains("scenes") || !workspace["scenes"].is_object())
+		{
+			return;
+		}
+		for (auto& entry : workspace["scenes"].items())
+		{
+			SceneBase base;
+			for (auto& part : entry.value().items())
+			{
+				base.parts_[String(part.key())] = ScenePartBase{ part.value().value("revision", Uint64(0)), String(part.value().value("hash", "")) };
+			}
+			sceneBases_[String(entry.key())] = base;
+		}
 	}
 
 	/**
@@ -1780,6 +2002,19 @@ namespace SeedCore
 				files.push_back({ { "path", file.path_.str() }, { "hash", file.hash_.str() }, { "size", file.size_ }, { "stamp", file.stamp_ } });
 			}
 			workspace["assets"][entry.first.str()] = { { "revision", entry.second.revision_ }, { "files", files } };
+		}
+
+		/// [EN] Each shared scene's pieces as this machine last had them, which a publish compares against to send only this member's changes.
+		/// [JP] 各共有 Scene の断片を、この PC が最後に持っていた姿で書く。Publish はこれと比べて、このメンバーの変更だけを送る。
+		workspace["scenes"] = nlohmann::json::object();
+		for (const std::pair<const String, SceneBase>& entry : sceneBases_)
+		{
+			nlohmann::json parts = nlohmann::json::object();
+			for (const std::pair<const String, ScenePartBase>& part : entry.second.parts_)
+			{
+				parts[part.first.str()] = { { "revision", part.second.revision_ }, { "hash", part.second.hash_.str() } };
+			}
+			workspace["scenes"][entry.first.str()] = parts;
 		}
 
 		/// [EN] The folder may not exist before the first get, so it is created rather than assumed.

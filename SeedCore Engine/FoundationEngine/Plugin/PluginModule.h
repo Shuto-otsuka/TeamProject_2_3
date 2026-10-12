@@ -114,6 +114,25 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Hands every component captured by Unload back to its Actor as an
+		* unknown component, then clears the captures. Used when no Load
+		* follows to restore them - the reload failed or the source DLL is
+		* gone - so the Actor still carries its scripts and saving the
+		* scene keeps them; a later Load turns them back into real ones.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* Unload で取得した全コンポーネントを、型の分からないコンポーネント
+		* として元の Actor へ戻し、取得内容をクリアする。それらを復元する
+		* Load が続かない場合（リロードの失敗、元 DLL の消失）に使う。Actor
+		* がスクリプトを持ち続けるため、Scene を保存しても失われず、後の
+		* Load で本来のコンポーネントへ戻る。
+		*/
+		void Keep();
+
+		/**
+		* [EN]
 		* Returns whether the source DLL's last-write time differs from the
 		* one seen at the last Load - i.e. it was rebuilt.
 		*

@@ -188,17 +188,57 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Unload followed by Load (component captures carry across).
+	* Unload followed by Load (component captures carry across). When
+	* the Load fails, the captured components are kept on their Actors
+	* as unknown components instead.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* Unload の後に Load を行う（コンポーネントの取得内容は引き継がれる）。
+	* Load に失敗した場合は、取得したコンポーネントを型の分からない
+	* コンポーネントとして元の Actor に保持させる。
 	*/
 	Bool PluginModule::Reload(World& world, ImGuiContext* imguiContext)
 	{
 		Unload(world);
-		return Load(world, imguiContext);
+		if (Load(world, imguiContext))
+		{
+			return true;
+		}
+
+		/// [EN] The scripts were already taken off every Actor by Unload, so without this they would live only in memory and the next scene save would drop them.
+		/// [JP] スクリプトは Unload で全 Actor から外れている。これが無いとメモリ上にしか残らず、次に Scene を保存した時点で失われる。
+		Keep();
+		return false;
+	}
+
+	/**
+	* [EN]
+	* Hands every component captured by Unload back to its Actor as an
+	* unknown component, then clears the captures. Used when no Load
+	* follows to restore them - the reload failed or the source DLL is
+	* gone - so the Actor still carries its scripts and saving the
+	* scene keeps them; a later Load turns them back into real ones.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Unload で取得した全コンポーネントを、型の分からないコンポーネント
+	* として元の Actor へ戻し、取得内容をクリアする。それらを復元する
+	* Load が続かない場合（リロードの失敗、元 DLL の消失）に使う。Actor
+	* がスクリプトを持ち続けるため、Scene を保存しても失われず、後の
+	* Load で本来のコンポーネントへ戻る。
+	*/
+	void PluginModule::Keep()
+	{
+		for (const std::pair<Actor, BlueprintComponent>& captured : capturedComponents_)
+		{
+			/// [EN] An Actor destroyed since the capture has nothing to hold its script, and UnknownComponent::Keep skips it.
+			/// [JP] 取得後に破棄された Actor にはスクリプトを持たせる先が無く、UnknownComponent::Keep が飛ばす。
+			UnknownComponent::Keep(captured.first, captured.second);
+		}
+		capturedComponents_.clear();
 	}
 
 	/**

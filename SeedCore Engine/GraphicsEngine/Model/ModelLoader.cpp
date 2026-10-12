@@ -1429,6 +1429,14 @@ namespace SeedCore
 						}
 					}
 
+					/// [EN] In FBX a texture connected to the diffuse/base color slot replaces the slot's color value rather than multiplying it, so the factor becomes white.
+					/// [JP] FBX ではディフューズ/ベースカラーのスロットに接続されたテクスチャはスロットのカラー値を置き換える（乗算しない）ため、係数は白にする。
+					material.baseColorTextureIndex_ = resolveTexture(diffuseProperty);
+					if (material.baseColorTextureIndex_ != 0xFFFFFFFF)
+					{
+						material.baseColor_ = Color(1.0f, 1.0f, 1.0f, 1.0f);
+					}
+
 					FbxProperty emissiveProperty = fbxMaterial->FindProperty(FbxSurfaceMaterial::sEmissive);
 					if (emissiveProperty.IsValid())
 					{
@@ -1461,7 +1469,6 @@ namespace SeedCore
 						}
 					}
 
-					material.baseColorTextureIndex_ = resolveTexture(diffuseProperty);
 					material.normalTextureIndex_ = resolveTexture(fbxMaterial->FindProperty(FbxSurfaceMaterial::sNormalMap));
 					material.emissiveTextureIndex_ = resolveTexture(emissiveProperty);
 				}
