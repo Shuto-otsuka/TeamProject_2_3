@@ -3,6 +3,8 @@
 #include <FoundationEngine/SeedScript.h>
 #include<SeedCore/ScComponent.h>
 
+class BulletNaviStartController;
+
 class PlayerController :public SeedCore::SeedScript
 {
 public:
@@ -112,10 +114,12 @@ private:
 	SeedCore::Vector3 bulletTargetPosition;
 
 	SeedCore::Actor cameraBrain;
+	SeedCore::Actor bulletNaviStart;
 	SeedCore::Position* position = nullptr;
 	SeedCore::Rotation* rotation = nullptr;
 	SeedCore::Scale* scale = nullptr;
 	SeedCore::CharacterController* myCharacterController = nullptr;
 	SeedCore::Velocity* velocity = nullptr;
+	BulletNaviStartController* bulletNaviStartController = nullptr;
 };
 REGISTER_COMPONENT(PlayerController);

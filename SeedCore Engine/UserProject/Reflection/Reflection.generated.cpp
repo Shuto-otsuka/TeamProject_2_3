@@ -51,6 +51,8 @@ namespace SeedCore
 					BulletNaviController& obj = *static_cast<BulletNaviController*>(ptr);
 					outInfo.push_back({ String("minSize"), offsetof(BulletNaviController, minSize), AttributeType::Float });
 					outInfo.push_back({ String("maxSize"), offsetof(BulletNaviController, maxSize), AttributeType::Float });
+					outInfo.push_back({ String("interval"), offsetof(BulletNaviController, interval), AttributeType::Float });
+					outInfo.push_back({ String("scrollSpeed"), offsetof(BulletNaviController, scrollSpeed), AttributeType::Float });
 				});
 			}
 		};
