@@ -1,5 +1,6 @@
 #include <FoundationEngine/Plugin/PluginHost.h>
 #include <FoundationEngine/Log/Notice.h>
+#include <FoundationEngine/World/World.h>
 #include <Windows.h>
 #include <algorithm>
 
@@ -90,6 +91,12 @@ namespace SeedCore
 
 			if (writeTime == entry.pendingWriteTime_)
 			{
+				/// [EN] A reload re-registers every script type under new identifiers while the play snapshot still holds the old ones, so it waits until play stops.
+				/// [JP] リロードは全スクリプトの型を新しい識別子で登録し直すが、再生用のスナップショットは古い識別子を持ったままになる。そのため再生が止まるまで待つ。
+				if (world.Timer().Playing())
+				{
+					continue;
+				}
 				if (nowTick - entry.pendingStableSinceTick_ >= stableWindowMilliseconds_)
 				{
 					entry.module_->Reload(world, imguiContext_);
@@ -119,6 +126,10 @@ namespace SeedCore
 				return false;
 			}
 			entry.module_->Unload(world);
+
+			/// [EN] The module is dropped here and never loads again to restore what Unload took off, so its scripts stay on their Actors as unknown components until the DLL comes back.
+			/// [JP] このモジュールはここで捨てられ、Unload が外したものを復元する Load はもう来ない。そのため、DLL が戻るまでスクリプトを型の分からないコンポーネントとして Actor に残す。
+			entry.module_->Keep();
 			return true;
 		});
 

@@ -106,8 +106,13 @@ namespace SeedCore
 			context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 		}
 
+		/// [EN] While playing, the world is the play-mode copy that Stop rolls back, so an arriving scene applied now would be thrown away; it is left queued until play stops.
+		/// [JP] 再生中の world は Stop で巻き戻される再生用の状態なので、今届いた Scene を適用しても捨てられてしまう。再生が止まるまで待たせておく。
 		DynamicArray<Uint32> changedAssets;
-		resourceSync_.ConsumeChangedAsset(changedAssets);
+		if (!context_.world_.timer_->Playing())
+		{
+			resourceSync_.ConsumeChangedAsset(changedAssets);
+		}
 		if (!changedAssets.empty())
 		{
 			/// [EN] An asset whose .meta was replaced by the library's is known here under the old identifier, so that record is dropped before the rescan.

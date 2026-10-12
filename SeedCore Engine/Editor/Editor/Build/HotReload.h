@@ -142,6 +142,8 @@ namespace SeedCore
 
 		BuildTask csharpBuild_;
 
+		Bool cplusplusReloadDeferred_ = false;
+
 		Bool csharpReloadDeferred_ = false;
 
 		/// [EN] Launches an async MSBuild.exe build of UserProject.Cplusplus.vcxproj. No-op if MSBuild couldn't be resolved.
