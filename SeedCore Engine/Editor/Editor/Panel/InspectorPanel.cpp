@@ -586,7 +586,8 @@ namespace SeedCore
 		static const String positionString("Position");
 		static const String rotationString("Rotation");
 		static const String scaleString("Scale");
-		static const String velocityString("Velocity");
+		static const String linearVelocityString("LinearVelocity");
+		static const String angularVelocityString("AngularVelocity");
 		static const String activeString("Active");
 		static const String boundsString("Bounds");
 		static const String meshString("Mesh");
@@ -659,7 +660,7 @@ namespace SeedCore
 		{
 			String componentName = ComponentRegistry::Name(componentID);
 
-			if (componentName == nameString || componentName == positionString || componentName == rotationString || componentName == scaleString || componentName == velocityString || componentName == activeString || componentName == boundsString || componentName == meshString)
+			if (componentName == nameString || componentName == positionString || componentName == rotationString || componentName == scaleString || componentName == linearVelocityString || componentName == angularVelocityString || componentName == activeString || componentName == boundsString || componentName == meshString)
 			{
 				continue;
 			}
@@ -1611,6 +1612,8 @@ namespace SeedCore
 			return "ASSET_SKY";
 		case PayloadType::Prefab:
 			return "ASSET_PREFAB";
+		case PayloadType::Scene:
+			return "ASSET_SCENE";
 		case PayloadType::Actor:
 			return "HIERARCHY_ACTOR";
 		default:

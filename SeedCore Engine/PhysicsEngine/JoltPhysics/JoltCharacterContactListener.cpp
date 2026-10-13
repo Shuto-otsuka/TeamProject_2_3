@@ -1,6 +1,7 @@
 #include <PhysicsEngine/JoltPhysics/JoltCharacterContactListener.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <PhysicsEngine/Physics/PhysicsSystem.h>
+#include <PhysicsEngine/CharacterController/CharacterController.h>
 #include <FoundationEngine/World/World.h>
 
 namespace SeedCore
@@ -41,17 +42,26 @@ namespace SeedCore
 	* [EN]
 	* Dispatches an enter event when the first sub-shape of a body is
 	* touched, and a stay event when another one of a body already in
-	* contact is touched.
+	* contact is touched. Dynamic bodies and sensors are ignored, as
+	* the inner body reports them.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* ボディの最初のサブシェイプに触れたときに Enter イベントを、既に接触中の
 	* ボディの別のサブシェイプに触れたときに Stay イベントを通知する。
+	* 動的ボディとセンサーは内側ボディが知らせるので無視する。
 	*/
 	void JoltCharacterContactListener::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::CharacterContact& contact, JPH::CharacterContactSettings& settings)
 	{
 		if (!world_ || contact.mBodyB.IsInvalid())
+		{
+			return;
+		}
+
+		/// [EN] Dynamic bodies and sensors always pair with the kinematic inner body, so the world's contact listener reports them; handling them here too would notify twice.
+		/// [JP] 動的ボディとセンサーはキネマティックな内側ボディと必ず組になり、ワールドの接触リスナーが知らせる。ここでも扱うと二重に通知される。
+		if (contact.mIsSensorB || contact.mMotionTypeB == JPH::EMotionType::Dynamic)
 		{
 			return;
 		}
@@ -61,27 +71,25 @@ namespace SeedCore
 		auto it = contactBodies_.find(contact.mBodyB);
 		if (it == contactBodies_.end())
 		{
-			/// [EN] Resolve the contacted body to an entity; the entity and sensor flag are kept for the removal callback, which only gives the body ID.
-			/// [JP] 接触先ボディをエンティティへ解決する。削除コールバックはボディ ID しか渡さないので、エンティティとセンサーの区分はここで保持する。
+			/// [EN] Resolve the contacted body to an entity; the entity and whether it is a character are kept for the removal callback, which only gives the body ID.
+			/// [JP] 接触先ボディをエンティティへ解決する。削除コールバックはボディ ID しか渡さないので、エンティティとキャラクターかどうかはここで保持する。
 			EntityID otherEntityID = world_->CreatePhysics()->BodyEntityID(contact.mBodyB);
 			if (otherEntityID == EntityID{})
 			{
 				return;
 			}
 
-			contactBodies_[contact.mBodyB] = ContactBody{ otherEntityID, contact.mIsSensorB, 1 };
+			/// [EN] A body owned by a CharacterController entity is another character's inner body.
+			/// [JP] CharacterController を持つエンティティのボディは、他のキャラクターの内側ボディ。
+			Bool isCharacter = world_->HasComponent<CharacterController>(otherEntityID);
+			contactBodies_[contact.mBodyB] = ContactBody{ otherEntityID,isCharacter,1 };
 			notifiedBodies_.insert(contact.mBodyB);
 
-			/// [EN] Notify both entities with the event type selected by the contacted body.
-			/// [JP] 接触先ボディの種別に応じたイベントを両方のエンティティへ通知する。
-			if (contact.mIsSensorB)
+			/// [EN] The owning entity is always notified; another character also detects this contact in its own update and notifies itself, so only a non-character is notified from here.
+			/// [JP] 所有エンティティには常に通知する。他のキャラクターは自分の更新でこの接触を検出して自分へ通知するので、ここから相手へ通知するのはキャラクターでないときだけ。
+			PhysicsSystem::DispatchCollisionEnter(*world_, entityID_, otherEntityID);
+			if (!isCharacter)
 			{
-				PhysicsSystem::DispatchTriggerEnter(*world_, entityID_, otherEntityID);
-				PhysicsSystem::DispatchTriggerEnter(*world_, otherEntityID, entityID_);
-			}
-			else
-			{
-				PhysicsSystem::DispatchCollisionEnter(*world_, entityID_, otherEntityID);
 				PhysicsSystem::DispatchCollisionEnter(*world_, otherEntityID, entityID_);
 			}
 
@@ -97,14 +105,11 @@ namespace SeedCore
 			return;
 		}
 
-		if (body.isSensor_)
+		/// [EN] Notified the same way as the enter event: another character notifies itself.
+		/// [JP] Enter と同じく通知する。他のキャラクターへは、そのキャラクター自身が通知する。
+		PhysicsSystem::DispatchCollisionStay(*world_, entityID_, body.entityID_);
+		if (!body.isCharacter_)
 		{
-			PhysicsSystem::DispatchTriggerStay(*world_, entityID_, body.entityID_);
-			PhysicsSystem::DispatchTriggerStay(*world_, body.entityID_, entityID_);
-		}
-		else
-		{
-			PhysicsSystem::DispatchCollisionStay(*world_, entityID_, body.entityID_);
 			PhysicsSystem::DispatchCollisionStay(*world_, body.entityID_, entityID_);
 		}
 	}
@@ -140,15 +145,12 @@ namespace SeedCore
 			return;
 		}
 
+		/// [EN] Notified the same way as the enter event: another character notifies itself.
+		/// [JP] Enter と同じく通知する。他のキャラクターへは、そのキャラクター自身が通知する。
 		const ContactBody& body = it->second;
-		if (body.isSensor_)
+		PhysicsSystem::DispatchCollisionStay(*world_, entityID_, body.entityID_);
+		if (!body.isCharacter_)
 		{
-			PhysicsSystem::DispatchTriggerStay(*world_, entityID_, body.entityID_);
-			PhysicsSystem::DispatchTriggerStay(*world_, body.entityID_, entityID_);
-		}
-		else
-		{
-			PhysicsSystem::DispatchCollisionStay(*world_, entityID_, body.entityID_);
 			PhysicsSystem::DispatchCollisionStay(*world_, body.entityID_, entityID_);
 		}
 	}
@@ -184,7 +186,7 @@ namespace SeedCore
 		/// [EN] The entity kept at enter is used, so the exit still reaches the character when the body has been destroyed.
 		/// [JP] Enter 時に保持したエンティティを使うので、ボディが破棄されていても Exit はキャラクターへ届く。
 		EntityID otherEntityID = body.entityID_;
-		Bool isSensor = body.isSensor_;
+		Bool isCharacter = body.isCharacter_;
 		contactBodies_.erase(it);
 
 		if (!world_)
@@ -192,14 +194,11 @@ namespace SeedCore
 			return;
 		}
 
-		if (isSensor)
+		/// [EN] Notified the same way as the enter event: another character notifies itself.
+		/// [JP] Enter と同じく通知する。他のキャラクターへは、そのキャラクター自身が通知する。
+		PhysicsSystem::DispatchCollisionExit(*world_, entityID_, otherEntityID);
+		if (!isCharacter)
 		{
-			PhysicsSystem::DispatchTriggerExit(*world_, entityID_, otherEntityID);
-			PhysicsSystem::DispatchTriggerExit(*world_, otherEntityID, entityID_);
-		}
-		else
-		{
-			PhysicsSystem::DispatchCollisionExit(*world_, entityID_, otherEntityID);
 			PhysicsSystem::DispatchCollisionExit(*world_, otherEntityID, entityID_);
 		}
 	}

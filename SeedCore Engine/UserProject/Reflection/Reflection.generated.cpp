@@ -6,6 +6,7 @@
 #include <UserProject/Script/ChargeGaugeController.h>
 #include <UserProject/Script/CostGaugeController.h>
 #include <UserProject/Script/FloorMoveSystem.h>
+#include <UserProject/Script/GoalSystem.h>
 #include <UserProject/Script/PendulumController.h>
 #include <UserProject/Script/PlayerController.h>
 
@@ -15,6 +16,7 @@ extern "C" int _force_reflection_CameraController = 0;
 extern "C" int _force_reflection_ChargeGaugeController = 0;
 extern "C" int _force_reflection_CostGaugeController = 0;
 extern "C" int _force_reflection_FloorMoveSystem = 0;
+extern "C" int _force_reflection_GoalSystem = 0;
 extern "C" int _force_reflection_PendulumController = 0;
 extern "C" int _force_reflection_PlayerController = 0;
 
@@ -156,6 +158,27 @@ namespace SeedCore
 			}
 		};
 		static Register_FloorMoveSystem global_FloorMoveSystem_register;
+
+		// ---- UserProject/Script/GoalSystem.h ----
+		struct Register_GoalSystem
+		{
+			Register_GoalSystem()
+			{
+				ReflectionRegistry::Register(String("GoalSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					GoalSystem& obj = *static_cast<GoalSystem*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("範囲");
+						fi.offset_ = offsetof(GoalSystem, range_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 10000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_GoalSystem global_GoalSystem_register;
 
 		// ---- UserProject/Script/PendulumController.h ----
 		struct Register_PendulumController

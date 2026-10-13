@@ -20,7 +20,7 @@ void PlayerController::OnStart()
     position = world.GetComponent<SeedCore::Position>(entity);
     rotation = world.GetComponent<SeedCore::Rotation>(entity);
     scale = world.GetComponent<SeedCore::Scale>(entity);
-    velocity = world.GetComponent<SeedCore::Velocity>(entity);
+    velocity = world.GetComponent<SeedCore::LinearVelocity>(entity);
     myCharacterController = world.GetComponent<SeedCore::CharacterController>(entity);
 
     defaultGravity = myCharacterController->gravityScale_;

@@ -52,6 +52,7 @@
     <ClCompile Include="Script\BulletNaviController.cpp" />
     <ClCompile Include="Script\ChargeGaugeController.cpp" />
     <ClCompile Include="Script\CostGaugeController.cpp" />
+    <ClCompile Include="Script\GoalSystem.cpp" />
     <ClCompile Include="Script\PendulumController.cpp" />
     <ClCompile Include="Tutorial\ScTutorial.cpp" />
     <ClCompile Include="Script\BulletController.cpp" />
@@ -65,6 +66,7 @@
     <ClInclude Include="Script\BulletNaviController.h" />
     <ClInclude Include="Script\ChargeGaugeController.h" />
     <ClInclude Include="Script\CostGaugeController.h" />
+    <ClInclude Include="Script\GoalSystem.h" />
     <ClInclude Include="Script\PendulumController.h" />
     <ClInclude Include="Tutorial\ScTutorial.h" />
     <ClInclude Include="Script\BulletColliderController.h" />

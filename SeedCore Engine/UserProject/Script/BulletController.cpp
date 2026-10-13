@@ -9,7 +9,7 @@ void BulletController::OnStart()
     SeedCore::Entity entity = GetActor().GetEntity();
     SeedCore::Entity playerEntity = player.GetEntity();
     playerController = GetWorld().GetComponent<PlayerController>(playerEntity);
-    velocity = GetWorld().GetComponent<SeedCore::Velocity>(entity);
+    velocity = GetWorld().GetComponent<SeedCore::LinearVelocity>(entity);
 }
 
 void BulletController::OnTick(float elapsedTime)

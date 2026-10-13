@@ -63,7 +63,8 @@ extern "C" int _force_reflection_Position = 0;
 extern "C" int _force_reflection_Rotation = 0;
 extern "C" int _force_reflection_Scale = 0;
 extern "C" int _force_reflection_Spawner = 0;
-extern "C" int _force_reflection_Velocity = 0;
+extern "C" int _force_reflection_LinearVelocity = 0;
+extern "C" int _force_reflection_AngularVelocity = 0;
 extern "C" int _force_reflection_Camera = 0;
 extern "C" int _force_reflection_CameraBrain = 0;
 extern "C" int _force_reflection_AttachmentConstraint = 0;
@@ -426,16 +427,16 @@ namespace SeedCore
 		static Register_Spawner global_Spawner_register;
 
 		// ---- FoundationEngine/World/ECS/Component/Velocity.h ----
-		struct Register_Velocity
+		struct Register_LinearVelocity
 		{
-			Register_Velocity()
+			Register_LinearVelocity()
 			{
-				ReflectionRegistry::Register(String("Velocity"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
-					Velocity& obj = *static_cast<Velocity*>(ptr);
+				ReflectionRegistry::Register(String("LinearVelocity"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					LinearVelocity& obj = *static_cast<LinearVelocity*>(ptr);
 					{
 						FieldInfo fi;
 						fi.name_ = String("x_");
-						fi.offset_ = offsetof(Velocity, x_);
+						fi.offset_ = offsetof(LinearVelocity, x_);
 						fi.type_ = AttributeType::Float;
 						fi.editorVisible_ = false;
 						outInfo.push_back(std::move(fi));
@@ -443,7 +444,7 @@ namespace SeedCore
 					{
 						FieldInfo fi;
 						fi.name_ = String("y_");
-						fi.offset_ = offsetof(Velocity, y_);
+						fi.offset_ = offsetof(LinearVelocity, y_);
 						fi.type_ = AttributeType::Float;
 						fi.editorVisible_ = false;
 						outInfo.push_back(std::move(fi));
@@ -451,7 +452,7 @@ namespace SeedCore
 					{
 						FieldInfo fi;
 						fi.name_ = String("z_");
-						fi.offset_ = offsetof(Velocity, z_);
+						fi.offset_ = offsetof(LinearVelocity, z_);
 						fi.type_ = AttributeType::Float;
 						fi.editorVisible_ = false;
 						outInfo.push_back(std::move(fi));
@@ -459,7 +460,42 @@ namespace SeedCore
 				});
 			}
 		};
-		static Register_Velocity global_Velocity_register;
+		static Register_LinearVelocity global_LinearVelocity_register;
+
+		struct Register_AngularVelocity
+		{
+			Register_AngularVelocity()
+			{
+				ReflectionRegistry::Register(String("AngularVelocity"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					AngularVelocity& obj = *static_cast<AngularVelocity*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("x_");
+						fi.offset_ = offsetof(AngularVelocity, x_);
+						fi.type_ = AttributeType::Float;
+						fi.editorVisible_ = false;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("y_");
+						fi.offset_ = offsetof(AngularVelocity, y_);
+						fi.type_ = AttributeType::Float;
+						fi.editorVisible_ = false;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("z_");
+						fi.offset_ = offsetof(AngularVelocity, z_);
+						fi.type_ = AttributeType::Float;
+						fi.editorVisible_ = false;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_AngularVelocity global_AngularVelocity_register;
 
 		// ---- GraphicsEngine/Camera/Camera.h ----
 		struct Register_Camera

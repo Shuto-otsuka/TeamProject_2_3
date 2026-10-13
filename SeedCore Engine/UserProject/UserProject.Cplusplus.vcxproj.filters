@@ -82,6 +82,9 @@
     <ClCompile Include="Script\BulletNaviController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
+    <ClCompile Include="Script\GoalSystem.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\ScTutorial.h">
@@ -118,6 +121,9 @@
       <Filter>Script</Filter>
     </ClInclude>
     <ClInclude Include="Script\BulletNaviController.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\GoalSystem.h">
       <Filter>Script</Filter>
     </ClInclude>
   </ItemGroup>

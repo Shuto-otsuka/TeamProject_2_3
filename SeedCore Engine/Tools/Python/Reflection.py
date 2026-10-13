@@ -908,7 +908,7 @@ def run_auto_scan():
     if userproject_changed:
         delete_stale_objs(project_root, 'UserProject.Cplusplus')
 
-    registry_cpp = os.path.join(project_root, 'FoundationEngine', 'ECS', 'ReflectionRegistry.cpp')
+    registry_cpp = os.path.join(project_root, 'FoundationEngine', 'Reflection', 'ReflectionRegistry.cpp')
     if os.path.exists(registry_cpp):
         update_registry_cpp(registry_cpp, foundation_bucket['struct_names'])
 

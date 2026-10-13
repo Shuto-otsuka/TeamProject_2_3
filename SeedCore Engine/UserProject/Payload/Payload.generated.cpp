@@ -1,8 +1,10 @@
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Payload/PayloadRegistry.h>
 #include <UserProject/Script/CostGaugeController.h>
+#include <UserProject/Script/GoalSystem.h>
 
 extern "C" int _force_payload_CostGaugeController = 0;
+extern "C" int _force_payload_GoalSystem = 0;
 
 namespace SeedCore
 {
@@ -21,6 +23,19 @@ namespace SeedCore
 			}
 		};
 		static Register_CostGaugeController global_CostGaugeController_register;
+
+		// ---- UserProject/Script/GoalSystem.h ----
+		struct Register_GoalSystem
+		{
+			Register_GoalSystem()
+			{
+				PayloadRegistry::Register(String("GoalSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					GoalSystem& obj = *static_cast<GoalSystem*>(ptr);
+					outInfo.push_back({ String("遷移先シーン"), offsetof(GoalSystem, translationSceneID_), AttributeType::Int, PayloadType::Scene });
+				});
+			}
+		};
+		static Register_GoalSystem global_GoalSystem_register;
 
 	}
 }

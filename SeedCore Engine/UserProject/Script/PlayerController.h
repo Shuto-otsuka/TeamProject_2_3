@@ -116,6 +116,6 @@ private:
 	SeedCore::Rotation* rotation = nullptr;
 	SeedCore::Scale* scale = nullptr;
 	SeedCore::CharacterController* myCharacterController = nullptr;
-	SeedCore::Velocity* velocity = nullptr;
+	SeedCore::LinearVelocity* velocity = nullptr;
 };
 REGISTER_COMPONENT(PlayerController);
