@@ -1,61 +1,78 @@
 #include <GraphicsEngine/Movie/MovieResource.h>
-#include <GraphicsEngine/Movie/MovieLoader.h>
+#include <GraphicsEngine/Movie/Video.h>
+#include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 
 namespace SeedCore
 {
-	void MovieResource::Load(const AssetContext& context, Uint32 assetId)
+	MovieResource::MovieResource(GraphicsLoaderSystem& loaders) :loaders_(loaders)
 	{
-		Load(context.loader_, context.cache_, assetId);
+		/// No Code
 	}
 
-	void MovieResource::Unload(const AssetContext& context, Uint32 assetId)
+	void MovieResource::Load(const AssetContext& context, Uint32 assetID)
 	{
-		Unload(context.loader_, assetId);
+		Load(context.cache_, assetID);
 	}
 
-	void MovieResource::Clear(const AssetContext& context)
+	Handle<Video> MovieResource::Load(ResourceCache& cache, Uint32 assetID)
 	{
-		Clear(context.loader_);
-	}
-
-	Handle<Video> MovieResource::Load(LoaderSystem& loader, ResourceCache& cache, Uint32 assetId)
-	{
-		if (assetHandleMap_.contains(assetId))
+		if (assetHandleMap_.contains(assetID))
 		{
-			return assetHandleMap_.at(assetId);
+			return assetHandleMap_.at(assetID);
 		}
 
-		AssetRecord* asset = cache.GetAsset(assetId);
+		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
 			return Handle<Video>::null();
 		}
 
-		Handle<Video> handle = loader.movieLoader_->Load(asset->fullpath_);
+		Handle<Video> handle = loaders_.movieLoader_->Load(asset->fullpath_);
 		if (handle.empty())
 		{
 			return Handle<Video>::null();
 		}
 
-		assetHandleMap_.insert({ assetId, handle });
+		assetHandleMap_.insert({ assetID, handle });
 		return handle;
 	}
 
-	Handle<Video> MovieResource::GetHandle(Uint32 assetId)const
+	void MovieResource::Unload(Uint32 assetID)
 	{
-		if (!assetHandleMap_.contains(assetId))
+		if (!assetHandleMap_.contains(assetID))
+		{
+			return;
+		}
+
+		Handle<Video> handle = assetHandleMap_.at(assetID);
+		loaders_.movieLoader_->Clear(handle);
+		assetHandleMap_.erase(assetID);
+	}
+
+	void MovieResource::Clear()
+	{
+		for (Handle<Video>& handle : assetHandleMap_ | std::ranges::views::values)
+		{
+			loaders_.movieLoader_->Clear(handle);
+		}
+
+		assetHandleMap_.clear();
+	}
+
+	Handle<Video> MovieResource::GetHandle(Uint32 assetID)const
+	{
+		if (!assetHandleMap_.contains(assetID))
 		{
 			return Handle<Video>::null();
 		}
 
-		return assetHandleMap_.at(assetId);
+		return assetHandleMap_.at(assetID);
 	}
 
-	Video* MovieResource::Resolve(LoaderSystem& loader, const Handle<Video>& handle)
+	Video* MovieResource::Resolve(const Handle<Video>& handle)
 	{
-		return loader.movieLoader_->Get(handle);
+		return loaders_.movieLoader_->Get(handle);
 	}
 
 	Bool MovieResource::Contains(Uint32 assetId)const
@@ -63,23 +80,11 @@ namespace SeedCore
 		return assetHandleMap_.contains(assetId);
 	}
 
-	void MovieResource::Unload(LoaderSystem& loader, Uint32 assetId)
-	{
-		if (!assetHandleMap_.contains(assetId))
-		{
-			return;
-		}
-
-		Handle<Video> handle = assetHandleMap_.at(assetId);
-		loader.movieLoader_->Clear(handle);
-		assetHandleMap_.erase(assetId);
-	}
-
-	void MovieResource::Update(LoaderSystem& loader, ID3D12Device* device, ID3D12GraphicsCommandList6* cmdList, BindlessHeap* bindlessHeap)
+	void MovieResource::Update(ID3D12Device* device, ID3D12GraphicsCommandList6* cmdList, BindlessHeap* bindlessHeap)
 	{
 		for (const Handle<Video>& handle : assetHandleMap_ | std::ranges::views::values)
 		{
-			Video* video = loader.movieLoader_->Get(handle);
+			Video* video = loaders_.movieLoader_->Get(handle);
 			if (!video)
 			{
 				continue;
@@ -88,16 +93,4 @@ namespace SeedCore
 			video->UploadFrame(device, cmdList, bindlessHeap);
 		}
 	}
-
-	void MovieResource::Clear(LoaderSystem& loader)
-	{
-		for (Handle<Video>& handle : assetHandleMap_ | std::ranges::views::values)
-		{
-			loader.movieLoader_->Clear(handle);
-		}
-
-		assetHandleMap_.clear();
-	}
-
-	REGISTER_ASSET(AssetType::Movie, MovieResource);
 }

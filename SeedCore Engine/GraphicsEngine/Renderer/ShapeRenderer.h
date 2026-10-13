@@ -11,7 +11,6 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
 
 	class ShaderCache;
 	class BindlessHeap;
@@ -110,7 +109,7 @@ namespace SeedCore
 		* 基本形状の面の枠に登録する。面の形のテクスチャは、ここで bindless の
 		* 番号に直す。
 		*/
-		void Upload(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, LoaderSystem& loader, TextureResource& textureResource);
+		void Upload(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, TextureResource& textureResource);
 
 		/**
 		* [EN]
@@ -191,7 +190,7 @@ namespace SeedCore
 		* 形は面のバッチへ、ワイヤーフレームの形は Canvas のバッチか
 		* ワールドのバッチ（Game のものはゲームのバッチにも）へ入れる。
 		*/
-		void AppendShape(const ShapeDesc& shape, LoaderSystem& loader, TextureResource& textureResource);
+		void AppendShape(const ShapeDesc& shape, TextureResource& textureResource);
 
 		/**
 		* [EN]

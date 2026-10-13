@@ -8,8 +8,6 @@
 #include <GraphicsEngine/Sky/Skymap.h>
 #include <GraphicsEngine/Sky/SkymapResource.h>
 #include <GraphicsEngine/Light/SkyLight.h>
-#include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/ECS/Component/Active.h>
 #include <FoundationEngine/Log/DxFail.h>
@@ -177,17 +175,11 @@ namespace SeedCore
 		}
 	}
 
-	void SkyRenderer::Gather(LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world)
+	void SkyRenderer::Gather(SkymapResource& skymapResource, World& world)
 	{
 		hasSkymap_ = false;
 		sourceShaderResourceViewIndex_ = SC_INVALID;
 		intensity_ = 1.0f;
-
-		SkymapResource* skymapResource = resourceCache.GetResource<SkymapResource>(AssetType::Skymap);
-		if (!skymapResource)
-		{
-			return;
-		}
 
 		Bool found = false;
 		Query<Read<Active>, Read<SkyLight>> query(world);
@@ -203,13 +195,13 @@ namespace SeedCore
 					return;
 				}
 
-				Handle<Skymap> handle = skymapResource->GetHandle(skyLight.skymapID_);
+				Handle<Skymap> handle = skymapResource.GetHandle(skyLight.skymapID_);
 				if (handle.empty())
 				{
 					return;
 				}
 
-				Skymap* skymap = skymapResource->Resolve(loaderSystem, handle);
+				Skymap* skymap = skymapResource.Resolve(handle);
 				if (!skymap || !skymap->Valid())
 				{
 					return;

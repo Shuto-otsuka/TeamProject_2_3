@@ -7,8 +7,10 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
+	struct GraphicsLoaderSystem;
+
 	class ResourceCache;
+	class Material;
 
 	/**
 	* [EN]
@@ -30,22 +32,18 @@ namespace SeedCore
 	class SEEDCORE_API MaterialResource :public Asset, public NonCopyable
 	{
 	public:
-		MaterialResource() = default;
+		MaterialResource(GraphicsLoaderSystem& loaders);
 		~MaterialResource() = default;
 
-		void Load(const AssetContext& context, Uint32 assetId)override;
+		void Load(const AssetContext& context, Uint32 assetID)override;
 
-		void Unload(const AssetContext& context, Uint32 assetId)override;
+		Handle<Surface> Load(ResourceCache& cache, Uint32 assetID);
 
-		Handle<Surface> Load(LoaderSystem& loader, ResourceCache& cache, Uint32 assetId);
+		void Unload(Uint32 assetID)override;
 
-		Handle<Surface> GetHandle(Uint32 assetId)const;
+		Handle<Surface> GetHandle(Uint32 assetID)const;
 
-		Surface* Resolve(LoaderSystem& loader, const Handle<Surface>& handle);
-
-		Bool Contains(Uint32 assetId)const;
-
-		void Unload(LoaderSystem& loader, Uint32 assetId);
+		Surface* Resolve(const Handle<Surface>& handle);
 
 		/**
 		* [EN]
@@ -60,9 +58,13 @@ namespace SeedCore
 		* そのスロットの全て（テクスチャ含む）。未割り当てのスロットは
 		* Crister 内蔵のシード Surface へフォールバックする。
 		*/
-		Surface Resolve(LoaderSystem& loader, const Crister& crister, Uint32 slot, const DynamicArray<Uint32>& materialIDs);
+		Surface Resolve(const Crister& crister, Uint32 slot, const Material* material);
+
+		Bool Contains(Uint32 assetID)const;
 
 	private:
+		GraphicsLoaderSystem& loaders_;
+
 		FlatMap<Uint32, Handle<Surface>> assetHandleMap_;
 	};
 }

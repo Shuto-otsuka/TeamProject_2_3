@@ -8,14 +8,7 @@
 #include <GraphicsEngine/System/SceneSystem.h>
 #include <GraphicsEngine/System/WeatherSystem.h>
 #include <FoundationEngine/Resource/Gateway.h>
-#include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
-#include <GraphicsEngine/Movie/MovieResource.h>
-#include <GraphicsEngine/Texture/TextureResource.h>
-#include <GraphicsEngine/Model/ModelResource.h>
-#include <GraphicsEngine/Model/Animation/AnimationResource.h>
-#include <GraphicsEngine/Model/Material/MaterialResource.h>
-#include <GraphicsEngine/Font/FontResource.h>
+#include <GraphicsEngine/Resource/GraphicsResourceSystem.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
@@ -206,7 +199,7 @@ namespace SeedCore
 		return gpuProfiler_;
 	}
 
-	void Renderer::PrepareFrame(D3D12CommandList* cmdList, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world, const SceneConstantBuffer& scene, Float deltaTime, std::span<const Entity> selectedEntities)
+	void Renderer::PrepareFrame(D3D12CommandList* cmdList, GraphicsResourceSystem& resources, World& world, const SceneConstantBuffer& scene, Float deltaTime, std::span<const Entity> selectedEntities)
 	{
 		ProfilerStats::Reset();
 
@@ -215,31 +208,22 @@ namespace SeedCore
 		///      resolve を積む場所になる。
 		gpuProfiler_.Advance(cmdList);
 
-		ModelResource* modelResource = resourceCache.GetResource<ModelResource>(AssetType::Model);
-		MaterialResource* materialResource = resourceCache.GetResource<MaterialResource>(AssetType::Material);
-		AnimationResource* animationResource = resourceCache.GetResource<AnimationResource>(AssetType::Animation);
-
 		constraintSystem_.Execute(world);
-		animationSystem_.Execute(world, loaderSystem, *animationResource, *modelResource);
+		animationSystem_.Execute(world, *resources.animationResource_, *resources.modelResource_);
 		constraintSystem_.Execute(world);
 
-		modelRenderer_->Gather(loaderSystem, *modelResource, *materialResource, *animationResource, world, scene, selectedEntities);
-		raytracingRenderer_->Gather(loaderSystem, *modelResource, world, *modelRenderer_);
+		modelRenderer_->Gather(resources, world, scene, selectedEntities);
+		raytracingRenderer_->Gather(*resources.modelResource_, world, *modelRenderer_);
 
-		TextureResource* textureResource = resourceCache.GetResource<TextureResource>(AssetType::Texture);
 		Vector2 gameDisplaySize = PostProcessOutputSize();
-		textureRenderer_->Gather(loaderSystem, *textureResource, world, gameDisplaySize, selectedEntities);
-
-		FontResource* fontResource = resourceCache.GetResource<FontResource>(AssetType::Font);
-		fontRenderer_->Gather(loaderSystem, *fontResource, world, gameDisplaySize, selectedEntities);
-
-		MovieResource* movieResource = resourceCache.GetResource<MovieResource>(AssetType::Movie);
-		movieRenderer_->Gather(loaderSystem, *movieResource, world, gameDisplaySize, selectedEntities);
+		textureRenderer_->Gather(*resources.textureResource_, world, gameDisplaySize, selectedEntities);
+		fontRenderer_->Gather(*resources.fontResource_, world, gameDisplaySize, selectedEntities);
+		movieRenderer_->Gather(*resources.movieResource_, world, gameDisplaySize, selectedEntities);
 
 		celestialResult_ = CelestialSystem::Compute(daySystem_, sunLight_, moonLight_);
 		Bool sunOverride = daySystemEnabled_ && sunLightEnabled_;
 		weatherState_ = WeatherSystem::ReadGpuState(world);
-		lightSystem_->Gather(loaderSystem, *modelResource, world, sunOverride ? &celestialResult_ : nullptr);
+		lightSystem_->Gather(*resources.modelResource_, world, sunOverride ? &celestialResult_ : nullptr);
 
 		WeatherConstantBuffer weatherConstantBuffer{};
 		weatherConstantBuffer.wetness_ = weatherState_.wetness_;
@@ -251,7 +235,7 @@ namespace SeedCore
 
 		lastCameraPosition_ = Vector3(scene.cameraPosition_.x, scene.cameraPosition_.y, scene.cameraPosition_.z);
 
-		skyRenderer_->Gather(loaderSystem, resourceCache, world);
+		skyRenderer_->Gather(*resources.skymapResource_, world);
 
 		postProcessRenderer_->Gather(world);
 
@@ -533,38 +517,29 @@ namespace SeedCore
 		avatarRenderer_->End(cmdList);
 	}
 
-	void Renderer::UploadShapes(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, LoaderSystem& loaderSystem, ResourceCache& resourceCache)
+	void Renderer::UploadShapes(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, TextureResource& textureResource)
 	{
-		TextureResource* textureResource = resourceCache.GetResource<TextureResource>(AssetType::Texture);
-		shapeRenderer_->Upload(shapes, colliders, loaderSystem, *textureResource);
+		shapeRenderer_->Upload(shapes, colliders, textureResource);
 	}
 
-	void Renderer::GatherTimelinePreview(LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
+	void Renderer::GatherTimelinePreview(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
 	{
-		ModelResource* modelResource = resourceCache.GetResource<ModelResource>(AssetType::Model);
-		AnimationResource* animationResource = resourceCache.GetResource<AnimationResource>(AssetType::Animation);
-		timelineRenderer_->Gather(loaderSystem, *modelResource, *animationResource, meshAssetId, animationAssetId, time, worldMatrix);
+		timelineRenderer_->Gather(resources, meshAssetId, animationAssetId, time, worldMatrix);
 	}
 
-	void Renderer::GatherModelTransformPreview(LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
+	void Renderer::GatherModelTransformPreview(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
 	{
-		ModelResource* modelResource = resourceCache.GetResource<ModelResource>(AssetType::Model);
-		AnimationResource* animationResource = resourceCache.GetResource<AnimationResource>(AssetType::Animation);
-		modelTransformRenderer_->Gather(loaderSystem, *modelResource, *animationResource, meshAssetId, animationAssetId, time, worldMatrix);
+		modelTransformRenderer_->Gather(resources, meshAssetId, animationAssetId, time, worldMatrix);
 	}
 
-	void Renderer::GatherMaterialPreview(LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 surfaceAssetId, const Matrix& worldMatrix)
+	void Renderer::GatherMaterialPreview(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 surfaceAssetId, const Matrix& worldMatrix)
 	{
-		ModelResource* modelResource = resourceCache.GetResource<ModelResource>(AssetType::Model);
-		MaterialResource* materialResource = resourceCache.GetResource<MaterialResource>(AssetType::Material);
-		materialRenderer_->Gather(loaderSystem, *modelResource, *materialResource, meshAssetId, surfaceAssetId, worldMatrix);
+		materialRenderer_->Gather(resources, meshAssetId, surfaceAssetId, worldMatrix);
 	}
 
-	void Renderer::GatherSkeletonControllerPreview(LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix, Int selectedNodeIndex)
+	void Renderer::GatherSkeletonControllerPreview(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix, Int selectedNodeIndex)
 	{
-		ModelResource* modelResource = resourceCache.GetResource<ModelResource>(AssetType::Model);
-		AnimationResource* animationResource = resourceCache.GetResource<AnimationResource>(AssetType::Animation);
-		skeletonControllerRenderer_->Gather(loaderSystem, *modelResource, *animationResource, meshAssetId, animationAssetId, time, worldMatrix, selectedNodeIndex);
+		skeletonControllerRenderer_->Gather(resources, meshAssetId, animationAssetId, time, worldMatrix, selectedNodeIndex);
 	}
 
 	void Renderer::GatherAvatarPreview(const AvatarMesh& mesh, Uint32 boneCount, const Matrix& worldMatrix, std::span<const Uint32> regionTextureIndices)

@@ -4,8 +4,7 @@
 namespace SeedCore
 {
 	class World;
-	class ResourceCache;
-	struct LoaderSystem;
+	class AudioResource;
 
 	/**
 	* [EN]
@@ -30,7 +29,7 @@ namespace SeedCore
 		* [JP]
 		* アセット ID が変わった音源へ、読み込み済み Sound を割り当てる。
 		*/
-		static void ResolveSound(LoaderSystem& loader, ResourceCache& cache, World& world);
+		static void ResolveSound(AudioResource& audioResource, World& world);
 
 		/**
 		* [EN]

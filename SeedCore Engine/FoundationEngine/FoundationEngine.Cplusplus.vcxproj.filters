@@ -193,9 +193,6 @@
     <ClCompile Include="Input\InputSystem.cpp">
       <Filter>Input</Filter>
     </ClCompile>
-    <ClCompile Include="Resource\LoaderSystem.cpp">
-      <Filter>Resource</Filter>
-    </ClCompile>
     <ClCompile Include="Log\LogSystem.cpp">
       <Filter>Log</Filter>
     </ClCompile>
@@ -583,9 +580,6 @@
     </ClInclude>
     <ClInclude Include="Input\InputSystem.h">
       <Filter>Input</Filter>
-    </ClInclude>
-    <ClInclude Include="Resource\LoaderSystem.h">
-      <Filter>Resource</Filter>
     </ClInclude>
     <ClInclude Include="Log\Error.h">
       <Filter>Log</Filter>

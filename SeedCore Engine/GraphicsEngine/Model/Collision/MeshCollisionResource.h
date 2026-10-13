@@ -7,30 +7,31 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
+	struct GraphicsLoaderSystem;
+
 	class ResourceCache;
 
 	class SEEDCORE_API MeshCollisionResource :public Asset, public NonCopyable
 	{
 	public:
-		MeshCollisionResource() = default;
+		MeshCollisionResource(GraphicsLoaderSystem& loaders);
 		~MeshCollisionResource() = default;
 
-		void Load(const AssetContext& context, Uint32 assetId)override;
+		void Load(const AssetContext& context, Uint32 assetID)override;
 
-		void Unload(const AssetContext& context, Uint32 assetId)override;
+		void Unload(Uint32 assetID)override;
 
-		Handle<MeshCollision> Load(LoaderSystem& loader, ResourceCache& cache, Uint32 assetId);
+		Handle<MeshCollision> Load(ResourceCache& cache, Uint32 assetID);
 
-		Handle<MeshCollision> GetHandle(Uint32 assetId)const;
+		Handle<MeshCollision> GetHandle(Uint32 assetID)const;
 
-		MeshCollision* Resolve(LoaderSystem& loader, const Handle<MeshCollision>& handle);
+		MeshCollision* Resolve(const Handle<MeshCollision>& handle);
 
-		Bool Contains(Uint32 assetId)const;
-
-		void Unload(LoaderSystem& loader, Uint32 assetId);
+		Bool Contains(Uint32 assetID)const;
 
 	private:
+		GraphicsLoaderSystem& loaders_;
+
 		FlatMap<Uint32, Handle<MeshCollision>> assetHandleMap_;
 	};
 }

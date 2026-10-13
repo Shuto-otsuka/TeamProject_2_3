@@ -6,7 +6,7 @@
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Adapter.h>
 #include <GraphicsEngine/Graphics.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
+#include <GraphicsEngine/Resource/GraphicsModule.h>
 
 namespace SeedCore
 {

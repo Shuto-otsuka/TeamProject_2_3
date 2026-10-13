@@ -9,7 +9,6 @@
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
-#include <FoundationEngine/Resource/ResourceCache.h>
 #include <GraphicsEngine/Model/Collision/MeshCollisionResource.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Model/Crister.h>
@@ -434,16 +433,8 @@ namespace SeedCore
 	* 衝突メッシュを待っている MeshCollider を、アセットの読み込みが
 	* 終わったものから構築する。毎フレーム呼ばれる。
 	*/
-	void PhysicsSystem::ResolveMeshCollider(LoaderSystem& loader, ResourceCache& cache, World& world)
+	void PhysicsSystem::ResolveMeshCollider(MeshCollisionResource& meshCollisionResource, World& world)
 	{
-		/// [EN] Without the collision-mesh manager nothing can be resolved yet.
-		/// [JP] 衝突メッシュの管理機構が無ければ、まだ何も解決できない。
-		MeshCollisionResource* meshCollisionResource = cache.GetResource<MeshCollisionResource>(AssetType::MeshCollision);
-		if (!meshCollisionResource)
-		{
-			return;
-		}
-
 		for (EntityID id : world.GetComponents<MeshCollider>())
 		{
 			Actor actor = world.GetActor(id);
@@ -462,7 +453,7 @@ namespace SeedCore
 
 			/// [EN] An asset ID that is not registered yields no handle.
 			/// [JP] 登録されていないアセット ID ではハンドルが得られない。
-			Handle<MeshCollision> handle = meshCollisionResource->GetHandle(collider->meshID_);
+			Handle<MeshCollision> handle = meshCollisionResource.GetHandle(collider->meshID_);
 			if (handle.empty())
 			{
 				continue;
@@ -470,7 +461,7 @@ namespace SeedCore
 
 			/// [EN] Null while the asset is still loading; the collider stays pending and is tried again next frame.
 			/// [JP] 読み込み中は null。コライダーは待ちのまま残り、次のフレームで再び試す。
-			MeshCollision* meshCollision = meshCollisionResource->Resolve(loader, handle);
+			MeshCollision* meshCollision = meshCollisionResource.Resolve(handle);
 			if (!meshCollision)
 			{
 				continue;
@@ -491,16 +482,8 @@ namespace SeedCore
 	* Actor の Mesh のモデルを待っている Softbody を、モデルの読み込みが
 	* 終わったものから構築する。毎フレーム呼ばれる。
 	*/
-	void PhysicsSystem::ResolveSoftbody(LoaderSystem& loader, ResourceCache& cache, World& world)
+	void PhysicsSystem::ResolveSoftbody(ModelResource& modelResource, World& world)
 	{
-		/// [EN] Without the model manager nothing can be resolved yet.
-		/// [JP] モデルの管理機構が無ければ、まだ何も解決できない。
-		ModelResource* modelResource = cache.GetResource<ModelResource>(AssetType::Model);
-		if (!modelResource)
-		{
-			return;
-		}
-
 		for (EntityID id : world.GetComponents<Softbody>())
 		{
 			Actor actor = world.GetActor(id);
@@ -527,7 +510,7 @@ namespace SeedCore
 
 			/// [EN] An asset ID that is not registered yields no handle.
 			/// [JP] 登録されていないアセット ID ではハンドルが得られない。
-			Handle<Crister> handle = modelResource->GetHandle(mesh->meshID_);
+			Handle<Crister> handle = modelResource.GetHandle(mesh->meshID_);
 			if (handle.empty())
 			{
 				continue;
@@ -535,7 +518,7 @@ namespace SeedCore
 
 			/// [EN] Null while the model is still loading; the soft body stays pending and is tried again next frame.
 			/// [JP] 読み込み中は null。ソフトボディは待ちのまま残り、次のフレームで再び試す。
-			Crister* crister = modelResource->Resolve(loader, handle);
+			Crister* crister = modelResource.Resolve(handle);
 			if (!crister)
 			{
 				continue;

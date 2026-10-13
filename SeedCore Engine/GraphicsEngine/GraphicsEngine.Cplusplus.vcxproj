@@ -234,6 +234,9 @@
     <ClInclude Include="Renderer\VolumetricLightRenderer.h" />
     <ClInclude Include="Renderer\VolumetricStarRenderer.h" />
     <ClInclude Include="Renderer\WeatherParticleRenderer.h" />
+    <ClInclude Include="Resource\GraphicsLoaderSystem.h" />
+    <ClInclude Include="Resource\GraphicsModule.h" />
+    <ClInclude Include="Resource\GraphicsResourceSystem.h" />
     <ClInclude Include="ScreenSpace\ScreenSpaceContext.h" />
     <ClInclude Include="Shader\ShaderCache.h" />
     <ClInclude Include="Shader\ShaderCompiler.h" />
@@ -508,6 +511,9 @@
     <ClCompile Include="Renderer\VolumetricLightRenderer.cpp" />
     <ClCompile Include="Renderer\VolumetricStarRenderer.cpp" />
     <ClCompile Include="Renderer\WeatherParticleRenderer.cpp" />
+    <ClCompile Include="Resource\GraphicsLoaderSystem.cpp" />
+    <ClCompile Include="Resource\GraphicsModule.cpp" />
+    <ClCompile Include="Resource\GraphicsResourceSystem.cpp" />
     <ClCompile Include="Shader\ShaderCache.cpp">
     </ClCompile>
     <ClCompile Include="Shader\ShaderCompiler.cpp">

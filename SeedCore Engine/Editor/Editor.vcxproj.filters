@@ -16,6 +16,9 @@
     <Filter Include="Editor\Context">
       <UniqueIdentifier>{b8349d89-4c4a-41f5-bcf8-a7204b8df60a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Editor\Interaction">
+      <UniqueIdentifier>{cf1cfb02-be56-49c3-bab1-308d9d601d1e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Editor\ImGui\ImGuiRenderer.cpp">
@@ -124,9 +127,6 @@
     <ClCompile Include="Editor\Panel\LayerSettingsPanel.cpp">
       <Filter>Editor\Panel</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\ViewportPicking.cpp">
-      <Filter>Editor</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\Panel\MaterialViewerPanel.cpp">
       <Filter>Editor\Panel</Filter>
     </ClCompile>
@@ -156,6 +156,12 @@
     </ClCompile>
     <ClCompile Include="Editor\Context\SelectionContext.cpp">
       <Filter>Editor\Context</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Interaction\ViewportPicking.cpp">
+      <Filter>Editor\Interaction</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Interaction\ActorEditing.cpp">
+      <Filter>Editor\Interaction</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -264,9 +270,6 @@
     <ClInclude Include="Editor\Panel\LayerSettingsPanel.h">
       <Filter>Editor\Panel</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\ViewportPicking.h">
-      <Filter>Editor</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\Panel\MaterialViewerPanel.h">
       <Filter>Editor\Panel</Filter>
     </ClInclude>
@@ -329,6 +332,12 @@
     </ClInclude>
     <ClInclude Include="Editor\Context\PanelContext.h">
       <Filter>Editor\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Interaction\ViewportPicking.h">
+      <Filter>Editor\Interaction</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Interaction\ActorEditing.h">
+      <Filter>Editor\Interaction</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

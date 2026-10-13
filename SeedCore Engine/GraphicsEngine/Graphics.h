@@ -9,6 +9,7 @@
 #include <GraphicsEngine/Quality/Upscale.h>
 #include <GraphicsEngine/Renderer/Renderer.h>
 #include <GraphicsEngine/Renderer/ViewMode.h>
+#include <GraphicsEngine/Resource/GraphicsModule.h>
 #include <GraphicsEngine/Shader/ShaderCache.h>
 #include <GraphicsEngine/Shader/ShaderHotReload.h>
 #include <GraphicsEngine/Shape/Screen/BootScreen.h>
@@ -24,7 +25,6 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
 	struct RaytracingContext;
 	struct SceneConstantBuffer;
 
@@ -36,7 +36,6 @@ namespace SeedCore
 	class GameTimer;
 	class GpuProfiler;
 	class PreviewCamera;
-	class ResourceCache;
 	class SplashSystem;
 	class World;
 	class WorldTimer;
@@ -202,7 +201,7 @@ namespace SeedCore
 		* editorCamera を用いてエディタービューを描画し、必要に応じて選択中の
 		* エンティティをハイライトする。
 		*/
-		void EditorRender(WorldTimer& timer, const EditorCamera& editorCamera, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world, ViewMode viewMode, std::span<const Entity> selectedEntities = {});
+		void EditorRender(WorldTimer& timer, const EditorCamera& editorCamera, World& world, ViewMode viewMode, std::span<const Entity> selectedEntities = {});
 
 		/**
 		* [EN]
@@ -213,7 +212,7 @@ namespace SeedCore
 		* [JP]
 		* cameraSystem が管理するアクティブカメラからゲームビューを描画する。
 		*/
-		void GameRender(GameTimer& timer, CameraSystem& cameraSystem, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world);
+		void GameRender(GameTimer& timer, CameraSystem& cameraSystem, World& world);
 
 		/**
 		* [EN]
@@ -224,7 +223,7 @@ namespace SeedCore
 		* [JP]
 		* 専用のスクリーンスペースカメラを用いてキャンバスビューを描画する。
 		*/
-		void CanvasRender(WorldTimer& timer, const CanvasCamera& canvasCamera, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world);
+		void CanvasRender(WorldTimer& timer, const CanvasCamera& canvasCamera, World& world);
 
 		/**
 		* [EN]
@@ -235,7 +234,7 @@ namespace SeedCore
 		* [JP]
 		* 選択中のメッシュおよびアニメーションアセットのタイムラインプレビューを描画する。
 		*/
-		void TimelineRender(WorldTimer& timer, const PreviewCamera& timelineCamera, LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix);
+		void TimelineRender(WorldTimer& timer, const PreviewCamera& timelineCamera, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix);
 
 		/**
 		* [EN]
@@ -246,7 +245,7 @@ namespace SeedCore
 		* [JP]
 		* 選択中のメッシュおよびアニメーションアセットのモデル変形プレビューを描画する。
 		*/
-		void ModelTransformRender(WorldTimer& timer, const PreviewCamera& modelTransformCamera, LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix);
+		void ModelTransformRender(WorldTimer& timer, const PreviewCamera& modelTransformCamera, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix);
 
 		/**
 		* [EN]
@@ -257,7 +256,7 @@ namespace SeedCore
 		* [JP]
 		* 選択中のメッシュおよびサーフェスアセットのマテリアルプレビューを描画する。
 		*/
-		void MaterialRender(WorldTimer& timer, const PreviewCamera& materialCamera, LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 surfaceAssetId, const Matrix& worldMatrix);
+		void MaterialRender(WorldTimer& timer, const PreviewCamera& materialCamera, Uint32 meshAssetId, Uint32 surfaceAssetId, const Matrix& worldMatrix);
 
 		/**
 		* [EN]
@@ -268,7 +267,7 @@ namespace SeedCore
 		* [JP]
 		* スケルトンコントローラープレビューと、選択中ノードの状態を描画する。
 		*/
-		void SkeletonControllerRender(WorldTimer& timer, const PreviewCamera& skeletonControllerCamera, LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix, Int selectedNodeIndex);
+		void SkeletonControllerRender(WorldTimer& timer, const PreviewCamera& skeletonControllerCamera, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix, Int selectedNodeIndex);
 
 		/**
 		* [EN]
@@ -439,6 +438,23 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Returns GraphicsEngine's asset module: its loaders and resources.
+		* The application registers its resources with ResourceCache through
+		* GraphicsModule::Install, and GraphicsEngine code reaches the
+		* resources by type through GraphicsModule::Resources.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* GraphicsEngine のアセットモジュール（ローダーとリソース）を返す。
+		* アプリケーションは GraphicsModule::Install でそのリソースを
+		* ResourceCache へ登録し、GraphicsEngine のコードは
+		* GraphicsModule::Resources で型付きでリソースへ届く。
+		*/
+		[[nodiscard]] GraphicsModule& GetGraphicsModule()const;
+
+		/**
+		* [EN]
 		* Returns the texture-streaming BC7 compression pass.
 		*
 		* ---------------------------------------------------------------------
@@ -564,7 +580,7 @@ namespace SeedCore
 		* 最初のビューを描画する前に、フレーム共通のリソース更新を行う。
 		* prepared_ により、後続ビューでの処理重複を防ぐ。
 		*/
-		void Prepare(Float deltaTime, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world, std::span<const Entity> selectedEntities, const SceneConstantBuffer& streamingScene);
+		void Prepare(Float deltaTime, World& world, std::span<const Entity> selectedEntities, const SceneConstantBuffer& streamingScene);
 
 	private:
 		/// [EN] Current swap chain output width in pixels.
@@ -614,6 +630,10 @@ namespace SeedCore
 		/// [EN] Owns bindless descriptors and their deferred reuse schedule.
 		/// [JP] bindless ディスクリプタと、その遅延再利用スケジュールを所有する。
 		ResourcePtr<BindlessHeap> bindlessHeap_;
+
+		/// [EN] GraphicsEngine's loaders and resources; built after bindlessHeap_ and released before it, since its texture, model and skymap resources return descriptors to that heap.
+		/// [JP] GraphicsEngine のローダーとリソース。テクスチャ・モデル・スカイマップのリソースが bindlessHeap_ へディスクリプタを返すため、そのヒープの後に生成し、前に解放する。
+		ResourcePtr<GraphicsModule> graphicsModule_;
 
 		/// [EN] Owns DLSS, Reflex, and frame-generation integration state.
 		/// [JP] DLSS、Reflex、フレーム生成との統合状態を所有する。

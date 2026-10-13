@@ -1,73 +1,70 @@
 #include <GraphicsEngine/Model/Collision/MeshCollisionResource.h>
-#include <GraphicsEngine/Model/Collision/MeshCollisionLoader.h>
+#include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 
 namespace SeedCore
 {
-	void MeshCollisionResource::Load(const AssetContext& context, Uint32 assetId)
+	MeshCollisionResource::MeshCollisionResource(GraphicsLoaderSystem& loaders) :loaders_(loaders)
 	{
-		Load(context.loader_, context.cache_, assetId);
+		/// No Code
 	}
 
-	void MeshCollisionResource::Unload(const AssetContext& context, Uint32 assetId)
+	void MeshCollisionResource::Load(const AssetContext& context, Uint32 assetID)
 	{
-		Unload(context.loader_, assetId);
+		Load(context.cache_, assetID);
 	}
 
-	Handle<MeshCollision> MeshCollisionResource::Load(LoaderSystem& loader, ResourceCache& cache, Uint32 assetId)
+	Handle<MeshCollision> MeshCollisionResource::Load(ResourceCache& cache, Uint32 assetID)
 	{
-		if (assetHandleMap_.contains(assetId))
+		if (assetHandleMap_.contains(assetID))
 		{
-			return assetHandleMap_.at(assetId);
+			return assetHandleMap_.at(assetID);
 		}
 
-		AssetRecord* asset = cache.GetAsset(assetId);
+		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
 			return Handle<MeshCollision>::null();
 		}
 
-		Handle<MeshCollision> handle = loader.meshCollisionLoader_->Load(loader, asset->fullpath_);
+		Handle<MeshCollision> handle = loaders_.meshCollisionLoader_->Load(asset->fullpath_);
 		if (handle.empty())
 		{
 			return Handle<MeshCollision>::null();
 		}
 
-		assetHandleMap_.insert({ assetId, handle });
+		assetHandleMap_.insert({ assetID, handle });
 		return handle;
 	}
 
-	Handle<MeshCollision> MeshCollisionResource::GetHandle(Uint32 assetId)const
+	void MeshCollisionResource::Unload(Uint32 assetID)
 	{
-		if (!assetHandleMap_.contains(assetId))
-		{
-			return Handle<MeshCollision>::null();
-		}
-		return assetHandleMap_.at(assetId);
-	}
-
-	MeshCollision* MeshCollisionResource::Resolve(LoaderSystem& loader, const Handle<MeshCollision>& handle)
-	{
-		return loader.meshCollisionLoader_->Get(handle);
-	}
-
-	Bool MeshCollisionResource::Contains(Uint32 assetId)const
-	{
-		return assetHandleMap_.contains(assetId);
-	}
-
-	void MeshCollisionResource::Unload(LoaderSystem& loader, Uint32 assetId)
-	{
-		if (!assetHandleMap_.contains(assetId))
+		if (!assetHandleMap_.contains(assetID))
 		{
 			return;
 		}
 
-		Handle<MeshCollision> handle = assetHandleMap_.at(assetId);
-		loader.meshCollisionLoader_->Clear(handle);
-		assetHandleMap_.erase(assetId);
+		Handle<MeshCollision> handle = assetHandleMap_.at(assetID);
+		loaders_.meshCollisionLoader_->Clear(handle);
+		assetHandleMap_.erase(assetID);
 	}
 
-	REGISTER_ASSET(AssetType::MeshCollision, MeshCollisionResource);
+	Handle<MeshCollision> MeshCollisionResource::GetHandle(Uint32 assetID)const
+	{
+		if (!assetHandleMap_.contains(assetID))
+		{
+			return Handle<MeshCollision>::null();
+		}
+		return assetHandleMap_.at(assetID);
+	}
+
+	MeshCollision* MeshCollisionResource::Resolve(const Handle<MeshCollision>& handle)
+	{
+		return loaders_.meshCollisionLoader_->Get(handle);
+	}
+
+	Bool MeshCollisionResource::Contains(Uint32 assetID)const
+	{
+		return assetHandleMap_.contains(assetID);
+	}
 }

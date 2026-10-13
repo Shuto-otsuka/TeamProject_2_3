@@ -10,8 +10,6 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
-	class BindlessHeap;
 	class D3D12CommandQueue;
 	class BC7CompressShader;
 	class FontManager;
@@ -42,16 +40,16 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
-		* Constructs the cache, creating each resource manager and
-		* resolving the project root path.
+		* Constructs an empty cache and resolves the project root path.
+		* Resource managers are added afterwards through Register().
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* キャッシュを構築し、各リソースマネージャを生成し、プロジェクト
-		* ルートパスを解決する。
+		* 空のキャッシュを構築し、プロジェクトルートパスを解決する。
+		* リソースマネージャは後から Register() で追加する。
 		*/
-		ResourceCache(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap);
+		ResourceCache();
 
 		/**
 		* [EN]
@@ -75,7 +73,7 @@ namespace SeedCore
 		* プロジェクトのアセット変更を同期的に再スキャンし、まだ読み込まれて
 		* いない全アセットを一括で読み込む。
 		*/
-		void Reload(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
+		void Reload(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
 
 		/**
 		* [EN]
@@ -91,7 +89,7 @@ namespace SeedCore
 		* のものを解放し、新しい中身をその場所へ読み込む。Editor の実行中に
 		* 共有ライブラリが新しい Revision を持ってきた場合に使う。
 		*/
-		void Reload(Uint32 assetID, LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
+		void Reload(Uint32 assetID, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
 
 		/**
 		* [EN]
@@ -136,7 +134,7 @@ namespace SeedCore
 		* アセットを読み込む。この呼び出しでアセットを処理したかどうかを
 		* 返す（キューが尽きた、または Async が呼ばれていない場合は false）。
 		*/
-		Bool Step(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader);
+		Bool Step(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
 
 		/**
 		* [EN]
@@ -153,7 +151,7 @@ namespace SeedCore
 		* 呼び出しは監視を始めるだけなので、毎フレーム呼ぶホスト（Editor）
 		* だけがその負担を持つ。
 		*/
-		void Watch(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
+		void Watch(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
 
 		/**
 		* [EN]
@@ -177,7 +175,7 @@ namespace SeedCore
 		* ジョブの完了を待ってから解放処理に入るので、読み込み中に破棄しても
 		* 常に安全。
 		*/
-		void StepAsync(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader);
+		void StepAsync(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
 
 		/**
 		* [EN]
@@ -335,10 +333,12 @@ namespace SeedCore
 		*/
 		void WriteAssetMeta(Uint32 assetId, const Matrix& transform);
 
+		void Register(AssetType type, Asset& resource);
+
 		/**
 		* [EN]
 		* Returns the resource manager registered for type, or nullptr if
-		* no manager registered itself for it (e.g. Prefab/Scene, which the
+		* no manager was registered for it (e.g. Prefab/Scene, which the
 		* pools handle instead).
 		*
 		* ---------------------------------------------------------------------
@@ -348,25 +348,6 @@ namespace SeedCore
 		* nullptr を返す（例: Prefab/Scene は代わりにプールが扱う）。
 		*/
 		Asset* GetResource(AssetType type)const;
-
-		/**
-		* [EN]
-		* Returns the resource manager registered for type, downcast to its
-		* concrete manager class. The caller states which class it expects
-		* for that type; passing a mismatched pair is undefined.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* type に登録されているリソースマネージャを、その具体クラスへ
-		* ダウンキャストして返す。その type に対してどのクラスを期待するかは
-		* 呼び出し側が指定する。対応しない組み合わせを渡した場合は未定義。
-		*/
-		template<typename T>
-		T* GetResource(AssetType type)const
-		{
-			return static_cast<T*>(GetResource(type));
-		}
 
 		/**
 		* [EN]
@@ -412,17 +393,6 @@ namespace SeedCore
 		*/
 		const std::filesystem::path& ProjectRootPath()const;
 
-		/**
-		* [EN]
-		* Returns the bindless descriptor heap used for GPU resource views.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* GPU リソースビュー用のバインドレスディスクリプタヒープを返す。
-		*/
-		BindlessHeap* Heap()const;
-
 	private:
 		/**
 		* [EN]
@@ -435,7 +405,7 @@ namespace SeedCore
 		* 現在読み込まれている全アセットを、それぞれの所有元リソース
 		* マネージャから解放し、アセット/検索マップをクリアする。
 		*/
-		void Unload(LoaderSystem& loader, BindlessHeap* heap);
+		void Unload();
 
 		/**
 		* [EN]
@@ -482,17 +452,9 @@ namespace SeedCore
 		/// [JP] 解決済みの、プロジェクトルートの絶対パス。
 		std::filesystem::path projectRootPath_;
 
-		/// [EN] The loader system used to perform actual asset I/O.
-		/// [JP] 実際のアセット I/O を実行するために使用されるローダーシステム。
-		LoaderSystem& loader_;
-
-		/// [EN] Bindless descriptor heap used when loading GPU-visible resources.
-		/// [JP] GPU から参照可能なリソースを読み込む際に使用される、バインドレスディスクリプタヒープ。
-		BindlessHeap* heap_ = nullptr;
-
-		/// [EN] Resource manager per asset type, built from AssetRegistry's self-registered factories, so a new asset type needs no change here.
-		/// [JP] アセット種別ごとのリソースマネージャ。AssetRegistry へ自己登録されたファクトリから構築されるため、新しいアセット種別を追加してもここには変更が要らない。
-		FlatMap<AssetType, ResourcePtr<Asset>> resourceMap_;
+		/// [EN] Resource manager per asset type, registered by each engine module through Register(); not owned, so a new asset type needs no change here.
+		/// [JP] アセット種別ごとのリソースマネージャ。各エンジンのモジュールが Register() で登録する。所有はしないので、新しいアセット種別を追加してもここには変更が要らない。
+		FlatMap<AssetType, Asset*> resourceMap_;
 
 		/// [EN] Pool of loaded Prefab assets.
 		/// [JP] 読み込み済みの Prefab アセットのプール。

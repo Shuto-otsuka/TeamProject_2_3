@@ -1,10 +1,9 @@
 #include <GraphicsEngine/Model/Skeleton/SkeletonLoader.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
 namespace SeedCore
 {
-	Handle<SkeletonRig> SkeletonLoader::Load(LoaderSystem& loader, String filePath)
+	Handle<SkeletonRig> SkeletonLoader::Load(String filePath)
 	{
 		std::filesystem::path path(filePath.c_str());
 		if (path.extension() != ".skeleton" || !std::filesystem::exists(path))

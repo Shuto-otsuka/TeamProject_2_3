@@ -62,10 +62,10 @@ namespace SeedCore
 			return;
 		}
 
-		ID3D12Device* device = graphics_->GetContext().GetDevice();
-
-		loaderSystem_ = MakePtr<LoaderSystem>(device);
-		resource_ = MakePtr<ResourceCache>(*loaderSystem_, device, graphics_->GetContext().GetDirectQueue(), &graphics_->GetBindlessHeap());
+		audioModule_ = MakePtr<AudioModule>();
+		resource_ = MakePtr<ResourceCache>();
+		graphics_->GetGraphicsModule().Install(*resource_);
+		audioModule_->Install(*resource_);
 		resource_->Async();
 
 		Scene::Initialize(*world_, *resource_, *executor_);
@@ -73,7 +73,6 @@ namespace SeedCore
 
 		editorContext_.world_.world_ = world_.get();
 		editorContext_.world_.resource_ = resource_.get();
-		editorContext_.world_.loader_ = loaderSystem_.get();
 		editorContext_.world_.timer_ = &gameTimer_;
 		editorContext_.world_.system_ = system_.get();
 		editorContext_.view_.editor_.camera_ = &editorCamera_;
@@ -216,10 +215,10 @@ namespace SeedCore
 			imgui_ = nullptr;
 		}
 
-		if (loaderSystem_)
+		if (audioModule_)
 		{
-			loaderSystem_.reset();
-			loaderSystem_ = nullptr;
+			audioModule_.reset();
+			audioModule_ = nullptr;
 		}
 		
 		if (fontManager_)
@@ -306,14 +305,14 @@ namespace SeedCore
 				splashSystem_.Update(*resource_);
 				if (!splashSystem_.Complete())
 				{
-					resource_->StepAsync(*loaderSystem_, graphics_->GetContext().GetDevice(), graphics_->GetContext().GetDirectQueue(), &graphics_->GetBindlessHeap(), graphics_->GetBC7CompressShader());
+					resource_->StepAsync(graphics_->GetContext().GetDevice(), graphics_->GetContext().GetDirectQueue(), graphics_->GetBC7CompressShader());
 					graphics_->DrawSplashScreen(splashSystem_);
 					continue;
 				}
 
 				graphics_->Begin();
 
-				AudioSystem::ResolveSound(*loaderSystem_, *resource_, *world_);
+				AudioSystem::ResolveSound(audioModule_->Resource(), *world_);
 
 				if (gameTimer_.Playing())
 				{
@@ -324,8 +323,8 @@ namespace SeedCore
 						CoroutineSystem::Update(gameTimer_.ScaledDeltaTime());
 					}
 
-					PhysicsSystem::ResolveMeshCollider(*loaderSystem_, *resource_, *world_);
-					PhysicsSystem::ResolveSoftbody(*loaderSystem_, *resource_, *world_);
+					PhysicsSystem::ResolveMeshCollider(*graphics_->GetGraphicsModule().Resources().meshCollisionResource_, *world_);
+					PhysicsSystem::ResolveSoftbody(*graphics_->GetGraphicsModule().Resources().modelResource_, *world_);
 					PhysicsSystem::ApplyActive(*world_);
 
 					joltManager_->ActiveWorld(world_.get());
@@ -392,30 +391,30 @@ namespace SeedCore
 				graphics_->VerticalSync(gameConfig_.vsync_);
 				graphics_->ShapeVisible(editorContext_.view_.editor_.shapeVisible_);
 
-				graphics_->EditorRender(worldTimer_, editorCamera_, *loaderSystem_, *resource_, *world_, editorContext_.view_.editor_.viewMode_, editor_->GetSelectedEntities());
-				graphics_->GameRender(gameTimer_, cameraSystem_, *loaderSystem_, *resource_, *world_);
-				graphics_->CanvasRender(worldTimer_, canvasCamera_, *loaderSystem_, *resource_, *world_);
+				graphics_->EditorRender(worldTimer_, editorCamera_, *world_, editorContext_.view_.editor_.viewMode_, editor_->GetSelectedEntities());
+				graphics_->GameRender(gameTimer_, cameraSystem_, *world_);
+				graphics_->CanvasRender(worldTimer_, canvasCamera_, *world_);
 
 				const PreviewContext& preview = editorContext_.preview_;
 
 				if (preview.timeline_.active_)
 				{
-					graphics_->TimelineRender(worldTimer_, timelineCamera_, *loaderSystem_, *resource_, preview.timeline_.meshAssetID_, preview.timeline_.animationAssetID_, preview.timeline_.time_, Matrix::Identity);
+					graphics_->TimelineRender(worldTimer_, timelineCamera_, preview.timeline_.meshAssetID_, preview.timeline_.animationAssetID_, preview.timeline_.time_, Matrix::Identity);
 				}
 
 				if (preview.modelTransform_.active_)
 				{
-					graphics_->ModelTransformRender(worldTimer_, modelTransformCamera_, *loaderSystem_, *resource_, preview.modelTransform_.meshAssetID_, 0, 0.0f, preview.modelTransform_.worldMatrix_);
+					graphics_->ModelTransformRender(worldTimer_, modelTransformCamera_, preview.modelTransform_.meshAssetID_, 0, 0.0f, preview.modelTransform_.worldMatrix_);
 				}
 
 				if (preview.material_.active_)
 				{
-					graphics_->MaterialRender(worldTimer_, materialCamera_, *loaderSystem_, *resource_, preview.material_.meshAssetID_, preview.material_.surfaceAssetID_, Matrix::Identity);
+					graphics_->MaterialRender(worldTimer_, materialCamera_, preview.material_.meshAssetID_, preview.material_.surfaceAssetID_, Matrix::Identity);
 				}
 
 				if (preview.skeletonController_.active_)
 				{
-					graphics_->SkeletonControllerRender(worldTimer_, skeletonControllerCamera_, *loaderSystem_, *resource_, preview.skeletonController_.meshAssetID_, 0, 0.0f, Matrix::Identity, preview.skeletonController_.nodeIndex_);
+					graphics_->SkeletonControllerRender(worldTimer_, skeletonControllerCamera_, preview.skeletonController_.meshAssetID_, 0, 0.0f, Matrix::Identity, preview.skeletonController_.nodeIndex_);
 				}
 
 				if (preview.avatar_.active_ && preview.avatar_.mesh_)

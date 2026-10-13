@@ -41,7 +41,7 @@ namespace SeedCore
 		animatorControllerPanel_ = MakePtr<AnimatorControllerPanel>(context_, imguiTexture_);
 		timelinePanel_ = MakePtr<TimelinePanel>(context_);
 		skeletonControllerPanel_ = MakePtr<SkeletonControllerPanel>(context_);
-		materialViewerPanel_ = MakePtr<MaterialViewerPanel>(context_);
+		materialViewerPanel_ = MakePtr<MaterialViewerPanel>(context_, imguiTexture_);
 		modelTransformPanel_ = MakePtr<ModelTransformPanel>(context_);
 		avatarPanel_ = MakePtr<AvatarPanel>(context_);
 		bootScreenPanel_ = MakePtr<BootScreenPanel>(context_);
@@ -103,7 +103,7 @@ namespace SeedCore
 		{
 			/// [EN] One rescan takes in every file that arrived, and it is what mints the .meta beside each.
 			/// [JP] 1回の再走査で届いたファイルを全て取り込む。それぞれの隣に .meta を作るのもこの処理。
-			context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+			context_.world_.resource_->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 		}
 
 		/// [EN] While playing, the world is the play-mode copy that Stop rolls back, so an arriving scene applied now would be thrown away; it is left queued until play stops.
@@ -138,11 +138,11 @@ namespace SeedCore
 
 			/// [EN] An asset arriving for the first time is not in the cache yet, so the whole project is taken in before anything is swapped.
 			/// [JP] 初めて届いたアセットはまだキャッシュに無いため、入れ替えの前にプロジェクト全体を取り込む。
-			context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+			context_.world_.resource_->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 
 			for (Uint32 assetId : changedAssets)
 			{
-				context_.world_.resource_->Reload(assetId, *context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+				context_.world_.resource_->Reload(assetId, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 
 				/// [EN] Reloading the scene asset is not enough, because what the member is looking at is the world, not the file.
 				/// [JP] Scene アセットを読み直すだけでは足りない。メンバーが見ているのはファイルではなく world であるため。
@@ -276,26 +276,9 @@ namespace SeedCore
 	{
 		timelinePanel_->SetPreviewHandle(timelinePreviewFrameBufferHandle);
 		modelTransformPanel_->SetPreviewHandle(modelTransformPreviewFrameBufferHandle);
-		materialViewerPanel_->SetPreviewHandle(materialPreviewFrameBufferHandle);
 		skeletonControllerPanel_->SetPreviewHandle(skeletonControllerPreviewFrameBufferHandle);
 		avatarPanel_->SetPreviewHandle(avatarPreviewFrameBufferHandle);
 
-		/// [EN] Must run after DockSpaceBegin() (called by Engine before this
-		///      function) so ImGui::DockSpace() has already created/refreshed
-		///      this frame's dock node — DockBuilderDockWindow() inside these
-		///      panels' Draw() would otherwise target a node ImGui hasn't
-		///      registered as active yet this frame and silently drop the
-		///      request (this was the actual reason forced docking never
-		///      took effect when these were called from DrawToolbar(),
-		///      which runs before DockSpaceBegin()).
-		/// [JP] (Engineがこの関数より前に呼ぶ)DockSpaceBegin()の後に実行する
-		///      必要がある — ImGui::DockSpace()が今フレームのドックノードを
-		///      生成/更新済みである前提のため。これらのパネルのDraw()内の
-		///      DockBuilderDockWindow()は、そうしないとImGuiが今フレームまだ
-		///      アクティブと認識していないノードを対象にリクエストしてしまい、
-		///      黙って無視されていた(DockSpaceBegin()より前に実行される
-		///      DrawToolbar()から呼んでいた際、強制ドッキングが一切効かなかった
-		///      本当の原因)。
 		animatorControllerPanel_->Draw();
 		timelinePanel_->Draw();
 		skeletonControllerPanel_->Draw();

@@ -3,8 +3,6 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
-
 	class GameTimer;
 	class ResourceCache;
 	class SystemScheduler;
@@ -30,10 +28,6 @@ namespace SeedCore
 		/// [EN] Asset registry and resource caches.
 		/// [JP] アセットの登録簿とリソースのキャッシュ。
 		ResourceCache* resource_ = nullptr;
-
-		/// [EN] Asset loader that turns files into resources.
-		/// [JP] ファイルをリソースへ読み込むローダー。
-		LoaderSystem* loader_ = nullptr;
 
 		/// [EN] Game clock driving Play, Pause and Stop.
 		/// [JP] Play・一時停止・停止を駆動するゲームの時計。

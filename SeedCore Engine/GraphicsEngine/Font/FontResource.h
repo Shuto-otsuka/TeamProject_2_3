@@ -6,38 +6,37 @@
 
 namespace SeedCore
 {
+	struct GraphicsLoaderSystem;
+
 	class Font;
 	class BindlessHeap;
-	struct LoaderSystem;
 	class ResourceCache;
 
 	class FontResource :public Asset, public NonCopyable
 	{
 	public:
-		FontResource() = default;
+		FontResource(GraphicsLoaderSystem& loaders);
 		~FontResource() = default;
 
-		void Load(const AssetContext& context, Uint32 assetId)override;
+		void Load(const AssetContext& context, Uint32 assetID)override;
 
-		void Unload(const AssetContext& context, Uint32 assetId)override;
+		Handle<Font> Load(ResourceCache& cache, Uint32 assetID, Float fontSize);
 
-		void Clear(const AssetContext& context)override;
+		void Unload(Uint32 assetID)override;
 
-		Handle<Font> Load(LoaderSystem& loader, ResourceCache& cache, Uint32 assetId, Float fontSize);
+		void Clear()override;
 
-		Handle<Font> GetHandle(Uint32 assetId)const;
+		Handle<Font> GetHandle(Uint32 assetID)const;
 
-		Font* Resolve(LoaderSystem& loader, const Handle<Font>& handle);
+		Font* Resolve(const Handle<Font>& handle);
 
-		Bool Contains(Uint32 assetId)const;
+		Bool Contains(Uint32 assetID)const;
 
-		void Unload(LoaderSystem& loader, Uint32 assetId);
-
-		void Update(LoaderSystem& loader, ID3D12Device* device, ID3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap);
-
-		void Clear(LoaderSystem& loader);
+		void Update(ID3D12Device* device, ID3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap);
 
 	private:
+		GraphicsLoaderSystem& loaders_;
+
 		FlatMap<Uint32, Handle<Font>> assetHandleMap_;
 	};
 }

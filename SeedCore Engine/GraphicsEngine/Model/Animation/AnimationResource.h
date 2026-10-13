@@ -7,30 +7,31 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
+	struct GraphicsLoaderSystem;
+
 	class ResourceCache;
 
 	class SEEDCORE_API AnimationResource :public Asset, public NonCopyable
 	{
 	public:
-		AnimationResource() = default;
+		AnimationResource(GraphicsLoaderSystem& loaders);
 		~AnimationResource() = default;
 
-		void Load(const AssetContext& context, Uint32 assetId)override;
+		void Load(const AssetContext& context, Uint32 assetID)override;
 
-		void Unload(const AssetContext& context, Uint32 assetId)override;
+		Handle<Animation> Load(ResourceCache& cache, Uint32 assetID);
 
-		Handle<Animation> Load(LoaderSystem& loader, ResourceCache& cache, Uint32 assetId);
+		void Unload(Uint32 assetID)override;
 
-		Handle<Animation> GetHandle(Uint32 assetId)const;
+		Handle<Animation> GetHandle(Uint32 assetID)const;
 
-		Animation* Resolve(LoaderSystem& loader, const Handle<Animation>& handle);
+		Animation* Resolve(const Handle<Animation>& handle);
 
-		Bool Contains(Uint32 assetId)const;
-
-		void Unload(LoaderSystem& loader, Uint32 assetId);
+		Bool Contains(Uint32 assetID)const;
 
 	private:
+		GraphicsLoaderSystem& loaders_;
+
 		FlatMap<Uint32, Handle<Animation>> assetHandleMap_;
 	};
 }

@@ -175,7 +175,7 @@ namespace SeedCore
 		}
 	}
 
-	void LightSystem::Gather(LoaderSystem& loaderSystem, ModelResource& modelResource, World& world, const CelestialResult* celestial)
+	void LightSystem::Gather(ModelResource& modelResource, World& world, const CelestialResult* celestial)
 	{
 		pointLights_.clear();
 		spotLights_.clear();
@@ -354,21 +354,6 @@ namespace SeedCore
 				rectLights_.push_back(rectLightData);
 			});
 
-		/// [EN] Pull KHR_lights_punctual point/spot lights embedded in loaded
-		///      glTF models, transformed by the owning Actor's world matrix
-		///      (TransformSystem's Actor::WorldMatrix(), same source of
-		///      truth as ModelRenderer). Directional KHR lights are never
-		///      stored in Crister::lights_ (see ModelLoader::FetchLights),
-		///      so only point/spot show up here - matching the cluster-only
-		///      scope; this engine's directional light stays scene-authored.
-		/// [JP] ロード済み glTF モデルに埋め込まれた KHR_lights_punctual の
-		///      ポイント/スポットライトを、所有 Actor のワールド行列
-		///      （TransformSystem の Actor::WorldMatrix()、ModelRenderer と
-		///      同じ情報源）で変換して取り込む。ディレクショナルの KHR ライトは
-		///      Crister::lights_ に格納されない（ModelLoader::FetchLights 参照）
-		///      ため、ここに出てくるのはポイント/スポットのみ＝クラスター限定の
-		///      意図と一致する。このエンジンのディレクショナルライトは
-		///      引き続きシーン単位で設定する。
 		Query<Read<Active>, Read<Mesh>> modelLightQuery(world);
 		modelLightQuery.ForEach([&](EntityID entityID, const Active& active, const Mesh& mesh)
 			{
@@ -383,7 +368,7 @@ namespace SeedCore
 					return;
 				}
 
-				Crister* crister = modelResource.Resolve(loaderSystem, cristerHandle);
+				Crister* crister = modelResource.Resolve(cristerHandle);
 				if (!crister || crister->Lights().empty())
 				{
 					return;

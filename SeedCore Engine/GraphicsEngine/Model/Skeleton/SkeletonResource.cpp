@@ -1,73 +1,70 @@
 #include <GraphicsEngine/Model/Skeleton/SkeletonResource.h>
-#include <GraphicsEngine/Model/Skeleton/SkeletonLoader.h>
+#include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 
 namespace SeedCore
 {
-	void SkeletonResource::Load(const AssetContext& context, Uint32 assetId)
+	SkeletonResource::SkeletonResource(GraphicsLoaderSystem& loaders) :loaders_(loaders)
 	{
-		Load(context.loader_, context.cache_, assetId);
+		/// No Code
 	}
 
-	void SkeletonResource::Unload(const AssetContext& context, Uint32 assetId)
+	void SkeletonResource::Load(const AssetContext& context, Uint32 assetID)
 	{
-		Unload(context.loader_, assetId);
+		Load(context.cache_, assetID);
 	}
 
-	Handle<SkeletonRig> SkeletonResource::Load(LoaderSystem& loader, ResourceCache& cache, Uint32 assetId)
+	Handle<SkeletonRig> SkeletonResource::Load(ResourceCache& cache, Uint32 assetID)
 	{
-		if (assetHandleMap_.contains(assetId))
+		if (assetHandleMap_.contains(assetID))
 		{
-			return assetHandleMap_.at(assetId);
+			return assetHandleMap_.at(assetID);
 		}
 
-		AssetRecord* asset = cache.GetAsset(assetId);
+		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
 			return Handle<SkeletonRig>::null();
 		}
 
-		Handle<SkeletonRig> handle = loader.skeletonLoader_->Load(loader, asset->fullpath_);
+		Handle<SkeletonRig> handle = loaders_.skeletonLoader_->Load(asset->fullpath_);
 		if (handle.empty())
 		{
 			return Handle<SkeletonRig>::null();
 		}
 
-		assetHandleMap_.insert({ assetId, handle });
+		assetHandleMap_.insert({ assetID, handle });
 		return handle;
 	}
 
-	Handle<SkeletonRig> SkeletonResource::GetHandle(Uint32 assetId)const
+	void SkeletonResource::Unload(Uint32 assetID)
 	{
-		if (!assetHandleMap_.contains(assetId))
-		{
-			return Handle<SkeletonRig>::null();
-		}
-		return assetHandleMap_.at(assetId);
-	}
-
-	SkeletonRig* SkeletonResource::Resolve(LoaderSystem& loader, const Handle<SkeletonRig>& handle)
-	{
-		return loader.skeletonLoader_->Get(handle);
-	}
-
-	Bool SkeletonResource::Contains(Uint32 assetId)const
-	{
-		return assetHandleMap_.contains(assetId);
-	}
-
-	void SkeletonResource::Unload(LoaderSystem& loader, Uint32 assetId)
-	{
-		if (!assetHandleMap_.contains(assetId))
+		if (!assetHandleMap_.contains(assetID))
 		{
 			return;
 		}
 
-		Handle<SkeletonRig> handle = assetHandleMap_.at(assetId);
-		loader.skeletonLoader_->Clear(handle);
-		assetHandleMap_.erase(assetId);
+		Handle<SkeletonRig> handle = assetHandleMap_.at(assetID);
+		loaders_.skeletonLoader_->Clear(handle);
+		assetHandleMap_.erase(assetID);
 	}
 
-	REGISTER_ASSET(AssetType::Skeleton, SkeletonResource);
+	Handle<SkeletonRig> SkeletonResource::GetHandle(Uint32 assetID)const
+	{
+		if (!assetHandleMap_.contains(assetID))
+		{
+			return Handle<SkeletonRig>::null();
+		}
+		return assetHandleMap_.at(assetID);
+	}
+
+	SkeletonRig* SkeletonResource::Resolve(const Handle<SkeletonRig>& handle)
+	{
+		return loaders_.skeletonLoader_->Get(handle);
+	}
+
+	Bool SkeletonResource::Contains(Uint32 assetID)const
+	{
+		return assetHandleMap_.contains(assetID);
+	}
 }

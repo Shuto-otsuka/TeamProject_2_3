@@ -1,85 +1,89 @@
 #include <GraphicsEngine/Font/FontResource.h>
-#include <GraphicsEngine/Font/FontLoader.h>
+#include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 
 namespace SeedCore
 {
-	void FontResource::Load(const AssetContext& context, Uint32 assetId)
+	FontResource::FontResource(GraphicsLoaderSystem& loaders) :loaders_(loaders)
 	{
-		Load(context.loader_, context.cache_, assetId, 48.0f);
+		/// No Code
 	}
 
-	void FontResource::Unload(const AssetContext& context, Uint32 assetId)
+	void FontResource::Load(const AssetContext& context, Uint32 assetID)
 	{
-		Unload(context.loader_, assetId);
+		Load(context.cache_, assetID, 48.0f);
 	}
 
-	void FontResource::Clear(const AssetContext& context)
+	Handle<Font> FontResource::Load(ResourceCache& cache, Uint32 assetID, Float fontSize)
 	{
-		Clear(context.loader_);
-	}
-
-	Handle<Font> FontResource::Load(LoaderSystem& loader, ResourceCache& cache, Uint32 assetId, Float fontSize)
-	{
-		if (assetHandleMap_.contains(assetId))
+		if (assetHandleMap_.contains(assetID))
 		{
-			return assetHandleMap_.at(assetId);
+			return assetHandleMap_.at(assetID);
 		}
 
-		AssetRecord* asset = cache.GetAsset(assetId);
+		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
 			return Handle<Font>::null();
 		}
 
-		Handle<Font> handle = loader.fontLoader_->Load(asset->fullpath_, fontSize);
+		Handle<Font> handle = loaders_.fontLoader_->Load(asset->fullpath_, fontSize);
 		if (handle.empty())
 		{
 			return Handle<Font>::null();
 		}
 
-		assetHandleMap_.insert({ assetId, handle });
+		assetHandleMap_.insert({ assetID, handle });
 		return handle;
 	}
 
-	Handle<Font> FontResource::GetHandle(Uint32 assetId)const
+	void FontResource::Unload(Uint32 assetID)
 	{
-		if (!assetHandleMap_.contains(assetId))
-		{
-			return Handle<Font>::null();
-		}
-
-		return assetHandleMap_.at(assetId);
-	}
-
-	Font* FontResource::Resolve(LoaderSystem& loader, const Handle<Font>& handle)
-	{
-		return loader.fontLoader_->Get(handle);
-	}
-
-	Bool FontResource::Contains(Uint32 assetId)const
-	{
-		return assetHandleMap_.contains(assetId);
-	}
-
-	void FontResource::Unload(LoaderSystem& loader, Uint32 assetId)
-	{
-		if (!assetHandleMap_.contains(assetId))
+		if (!assetHandleMap_.contains(assetID))
 		{
 			return;
 		}
 
-		Handle<Font> handle = assetHandleMap_.at(assetId);
-		loader.fontLoader_->Clear(handle);
-		assetHandleMap_.erase(assetId);
+		Handle<Font> handle = assetHandleMap_.at(assetID);
+		loaders_.fontLoader_->Clear(handle);
+		assetHandleMap_.erase(assetID);
 	}
 
-	void FontResource::Update(LoaderSystem& loader, ID3D12Device* device, ID3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap)
+	void FontResource::Clear()
+	{
+		for (Handle<Font>& handle : assetHandleMap_ | std::ranges::views::values)
+		{
+			loaders_.fontLoader_->Clear(handle);
+		}
+
+		assetHandleMap_.clear();
+	}
+
+	Handle<Font> FontResource::GetHandle(Uint32 assetID)const
+	{
+		if (!assetHandleMap_.contains(assetID))
+		{
+			return Handle<Font>::null();
+		}
+
+		return assetHandleMap_.at(assetID);
+	}
+
+	Font* FontResource::Resolve(const Handle<Font>& handle)
+	{
+		return loaders_.fontLoader_->Get(handle);
+	}
+
+	Bool FontResource::Contains(Uint32 assetID)const
+	{
+		return assetHandleMap_.contains(assetID);
+	}
+
+	void FontResource::Update(ID3D12Device* device, ID3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap)
 	{
 		for (const Handle<Font>& handle : assetHandleMap_ | std::ranges::views::values)
 		{
-			Font* font = loader.fontLoader_->Get(handle);
+			Font* font = loaders_.fontLoader_->Get(handle);
 			if (!font)
 			{
 				continue;
@@ -89,16 +93,4 @@ namespace SeedCore
 			font->UploadAtlas(device, cmdQueue, bindlessHeap);
 		}
 	}
-
-	void FontResource::Clear(LoaderSystem& loader)
-	{
-		for (Handle<Font>& handle : assetHandleMap_ | std::ranges::views::values)
-		{
-			loader.fontLoader_->Clear(handle);
-		}
-
-		assetHandleMap_.clear();
-	}
-
-	REGISTER_ASSET(AssetType::Font, FontResource);
 }

@@ -7,7 +7,6 @@
 namespace SeedCore
 {
 	struct RootAddresses;
-	struct LoaderSystem;
 	class TextureResource;
 	class World;
 	class BindlessHeap;
@@ -62,7 +61,7 @@ namespace SeedCore
 
 		void Create(ID3D12Device* device, BindlessHeap* bindlessHeap, ShaderCache& shaderCache, ShaderResourceIndicesSystem& shaderResourceIndicesSystem);
 
-		void Gather(LoaderSystem& loader, TextureResource& resource, World& world, Vector2 nativeScreenSize, std::span<const Entity> selectedEntities = {});
+		void Gather(TextureResource& resource, World& world, Vector2 nativeScreenSize, std::span<const Entity> selectedEntities = {});
 
 		void Upload();
 

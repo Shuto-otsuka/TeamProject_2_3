@@ -50,12 +50,6 @@ namespace SeedCore
 		{
 			if (texture->resource_)
 			{
-				/// [EN] pool_.Destroy below runs the Texture's destructor right
-				///      here, so the resource must be handed to the deferred
-				///      ring first - the frames still in flight are sampling it.
-				/// [JP] 下の pool_.Destroy はこの場で Texture のデストラクタを
-				///      走らせるため、先にリソースを遅延回収リングへ渡す必要が
-				///      ある — インフライトのフレームがまだサンプリングしている。
 				heap->Release(std::move(texture->resource_), texture->textureIndex_);
 				totalResidentBytes_ -= texture->sizeBytes_;
 			}

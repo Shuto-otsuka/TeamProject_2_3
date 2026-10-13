@@ -122,7 +122,7 @@ namespace SeedCore
 	* 未キャッシュのメッシュを積み、消えたメッシュやエンティティの
 	* キャッシュを刈る。GPU の処理は記録しない。
 	*/
-	void RaytracingRenderer::Gather(LoaderSystem& loaderSystem, ModelResource& modelResource, World& world, const ModelRenderer& modelRenderer)
+	void RaytracingRenderer::Gather(ModelResource& modelResource, World& world, const ModelRenderer& modelRenderer)
 	{
 		pendingInstances_.clear();
 		pendingBlasBuilds_.clear();
@@ -148,7 +148,7 @@ namespace SeedCore
 					return;
 				}
 
-				Crister* crister = modelResource.Resolve(loaderSystem, cristerHandle);
+				Crister* crister = modelResource.Resolve(cristerHandle);
 				if (!crister || crister->IndexCount() == 0)
 				{
 					return;

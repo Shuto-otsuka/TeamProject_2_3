@@ -3,7 +3,6 @@
 #include <GraphicsEngine/Movie/Movie.h>
 #include <GraphicsEngine/Movie/MovieResource.h>
 #include <GraphicsEngine/Movie/Video.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Check.h>
@@ -39,7 +38,7 @@ namespace SeedCore
 		shaderResourceIndicesSystem.SetMovieFullscreenIndex(fullscreenBuffer_->Index());
 	}
 
-	void MovieRenderer::Gather(LoaderSystem& loader, MovieResource& movieResource, World& world, Vector2 nativeScreenSize, std::span<const Entity> selectedEntities)
+	void MovieRenderer::Gather(MovieResource& movieResource, World& world, Vector2 nativeScreenSize, std::span<const Entity> selectedEntities)
 	{
 		spriteInstances_.clear();
 		billboardInstances_.clear();
@@ -61,7 +60,7 @@ namespace SeedCore
 					return;
 				}
 
-				Video* video = movieResource.Resolve(loader, movieResource.GetHandle(movie.movieID_));
+				Video* video = movieResource.Resolve(movieResource.GetHandle(movie.movieID_));
 				if (movie.movieID_ == 0 || !video || !video->HasTexture())
 				{
 					return;

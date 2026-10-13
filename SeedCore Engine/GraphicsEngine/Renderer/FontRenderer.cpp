@@ -41,7 +41,7 @@ namespace SeedCore
 
 	}
 
-	void FontRenderer::Gather(LoaderSystem& loader, FontResource& fontResource, World& world, Vector2 nativeScreenSize, std::span<const Entity> selectedEntities)
+	void FontRenderer::Gather(FontResource& fontResource, World& world, Vector2 nativeScreenSize, std::span<const Entity> selectedEntities)
 	{
 		spriteInstances_.clear();
 		billboardInstances_.clear();
@@ -94,7 +94,7 @@ namespace SeedCore
 
 				Uint selected = std::ranges::find(selectedEntities, actor.GetEntity()) != selectedEntities.end() ? 1 : 0;
 
-				Font* font = fontResource.Resolve(loader, fontResource.GetHandle(text.fontID_));
+				Font* font = fontResource.Resolve(fontResource.GetHandle(text.fontID_));
 				if (!font)
 				{
 					return;

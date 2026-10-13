@@ -1,58 +1,55 @@
 #include <GraphicsEngine/Model/ModelResource.h>
-#include <GraphicsEngine/Model/ModelLoader.h>
 #include <GraphicsEngine/Model/ModelExporter.h>
-#include <GraphicsEngine/Model/Material/MaterialLoader.h>
-#include <GraphicsEngine/Model/Skeleton/SkeletonLoader.h>
+#include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 
 namespace SeedCore
 {
-	void ModelResource::Load(const AssetContext& context, Uint32 assetId)
+	ModelResource::ModelResource(GraphicsLoaderSystem& loaders, BindlessHeap& heap) :loaders_(loaders), heap_(heap)
+	{
+		/// No Code
+	}
+
+	void ModelResource::Load(const AssetContext& context, Uint32 assetID)
 	{
 		if (!context.bc7Shader_)
 		{
 			return;
 		}
 
-		Load(context.loader_, context.device_, context.cmdQueue_, context.heap_, *context.bc7Shader_, context.cache_, assetId);
+		Load(context.device_, context.cmdQueue_, *context.bc7Shader_, context.cache_, assetID);
 
-		AssetRecord* asset = context.cache_.GetAsset(assetId);
+		AssetRecord* asset = context.cache_.GetAsset(assetID);
 		if (asset)
 		{
-			context.loader_.animationLoader_->SplitClips(asset->fullpath_);
+			loaders_.animationLoader_->SplitClips(asset->fullpath_);
 		}
 	}
 
-	void ModelResource::Unload(const AssetContext& context, Uint32 assetId)
+	Handle<Crister> ModelResource::Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetID)
 	{
-		Unload(context.loader_, assetId, context.heap_);
-	}
-
-	Handle<Crister> ModelResource::Load(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetId)
-	{
-		if (assetHandleMap_.contains(assetId))
+		if (assetHandleMap_.contains(assetID))
 		{
-			return assetHandleMap_.at(assetId);
+			return assetHandleMap_.at(assetID);
 		}
 
-		AssetRecord* asset = cache.GetAsset(assetId);
+		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
 			return Handle<Crister>::null();
 		}
 
-		AxisConvention axisConvention = cache.ReadAxisConvention(assetId);
-		Handle<Crister> handle = loader.modelLoader_->Load(loader, device, cmdQueue, heap, bc7Shader, asset->fullpath_, axisConvention);
+		AxisConvention axisConvention = cache.ReadAxisConvention(assetID);
+		Handle<Crister> handle = loaders_.modelLoader_->Load(device, cmdQueue, &heap_, bc7Shader, asset->fullpath_, axisConvention);
 		if (handle.empty())
 		{
 			return Handle<Crister>::null();
 		}
 
-		assetHandleMap_.insert({ assetId, handle });
+		assetHandleMap_.insert({ assetID, handle });
 
-		if (Crister* crister = loader.modelLoader_->Get(handle))
+		if (Crister* crister = loaders_.modelLoader_->Get(handle))
 		{
 			const DynamicArray<Surface>& materials = crister->Surfaces();
 			std::filesystem::path modelPath(asset->fullpath_.c_str());
@@ -84,7 +81,7 @@ namespace SeedCore
 				{
 					continue;
 				}
-				loader.materialLoader_->Save(material, String(filePath.string()));
+				loaders_.materialLoader_->Save(material, String(filePath.string()));
 			}
 
 			if (!crister->Skins().empty())
@@ -93,8 +90,8 @@ namespace SeedCore
 				if (!std::filesystem::exists(skeletonPath))
 				{
 					SkeletonRig rig;
-					loader.skeletonLoader_->Populate(rig, assetId);
-					loader.skeletonLoader_->Save(rig, String(skeletonPath.string()));
+					loaders_.skeletonLoader_->Populate(rig, assetID);
+					loaders_.skeletonLoader_->Save(rig, String(skeletonPath.string()));
 				}
 			}
 		}
@@ -102,7 +99,19 @@ namespace SeedCore
 		return handle;
 	}
 
-	Bool ModelResource::Export(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetId, ExportPreset preset, String outputPath)
+	void ModelResource::Unload(Uint32 assetID)
+	{
+		if (!assetHandleMap_.contains(assetID))
+		{
+			return;
+		}
+
+		Handle<Crister> handle = assetHandleMap_.at(assetID);
+		loaders_.modelLoader_->Clear(handle);
+		assetHandleMap_.erase(assetID);
+	}
+
+	Bool ModelResource::Export(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetId, ExportPreset preset, String outputPath)
 	{
 		AssetRecord* asset = cache.GetAsset(assetId);
 		if (!asset)
@@ -118,8 +127,8 @@ namespace SeedCore
 		}
 
 		AxisConvention axisConvention = cache.ReadAxisConvention(assetId);
-		Handle<Crister> handle = loader.modelLoader_->Load(loader, device, cmdQueue, heap, bc7Shader, asset->fullpath_, axisConvention, true);
-		Crister* crister = loader.modelLoader_->Get(handle);
+		Handle<Crister> handle = loaders_.modelLoader_->Load(device, cmdQueue, &heap_, bc7Shader, asset->fullpath_, axisConvention, true);
+		Crister* crister = loaders_.modelLoader_->Get(handle);
 		if (!crister)
 		{
 			return false;
@@ -128,13 +137,13 @@ namespace SeedCore
 		ModelExporter exporter;
 		Bool result = exporter.Export(*crister, ModelExporter::Preset(preset), outputPath);
 
-		loader.modelLoader_->Clear(handle, heap);
+		loaders_.modelLoader_->Clear(handle);
 		return result;
 	}
 
-	Bool ModelResource::GenerateCollision(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetId, MeshCollisionDetail detail)
+	Bool ModelResource::GenerateCollision(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetID, MeshCollisionDetail detail)
 	{
-		AssetRecord* asset = cache.GetAsset(assetId);
+		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
 			return false;
@@ -142,8 +151,8 @@ namespace SeedCore
 
 		/// [EN] The bake reads CPU-resident cluster data off the Crister, so the model has to be loaded first - Load() is a no-op when it already is.
 		/// [JP] ベイクは Crister の CPU 常駐クラスタデータを読むため、先にモデルをロードしておく必要がある - 既にロード済みなら Load() は何もしない。
-		Handle<Crister> handle = Load(loader, device, cmdQueue, heap, bc7Shader, cache, assetId);
-		Crister* crister = loader.modelLoader_->Get(handle);
+		Handle<Crister> handle = Load(device, cmdQueue, bc7Shader, cache, assetID);
+		Crister* crister = loaders_.modelLoader_->Get(handle);
 		if (!crister)
 		{
 			return false;
@@ -152,19 +161,19 @@ namespace SeedCore
 		std::filesystem::path modelPath(asset->fullpath_.c_str());
 		std::filesystem::path collisionPath = modelPath.parent_path() / (modelPath.stem().string() + ((detail == MeshCollisionDetail::Exact) ? ".exact.collision" : ".proxy.collision"));
 
-		return loader.meshCollisionLoader_->Bake(*crister, detail, String(collisionPath.string()));
+		return loaders_.meshCollisionLoader_->Bake(*crister, detail, String(collisionPath.string()));
 	}
 
-	Bool ModelResource::GenerateMaterial(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetId, Bool overwrite)
+	Bool ModelResource::GenerateMaterial(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetID, Bool overwrite)
 	{
-		AssetRecord* asset = cache.GetAsset(assetId);
+		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
 			return false;
 		}
 
-		Handle<Crister> handle = Load(loader, device, cmdQueue, heap, bc7Shader, cache, assetId);
-		Crister* crister = loader.modelLoader_->Get(handle);
+		Handle<Crister> handle = Load(device, cmdQueue, bc7Shader, cache, assetID);
+		Crister* crister = loaders_.modelLoader_->Get(handle);
 		if (!crister)
 		{
 			return false;
@@ -206,7 +215,7 @@ namespace SeedCore
 			{
 				continue;
 			}
-			if (!loader.materialLoader_->Save(material, String(filePath.string())))
+			if (!loaders_.materialLoader_->Save(material, String(filePath.string())))
 			{
 				allWritten = false;
 			}
@@ -215,16 +224,16 @@ namespace SeedCore
 		return allWritten;
 	}
 
-	Bool ModelResource::GenerateSkeleton(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetId, Bool overwrite)
+	Bool ModelResource::GenerateSkeleton(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetID, Bool overwrite)
 	{
-		AssetRecord* asset = cache.GetAsset(assetId);
+		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
 			return false;
 		}
 
-		Handle<Crister> handle = Load(loader, device, cmdQueue, heap, bc7Shader, cache, assetId);
-		Crister* crister = loader.modelLoader_->Get(handle);
+		Handle<Crister> handle = Load(device, cmdQueue, bc7Shader, cache, assetID);
+		Crister* crister = loaders_.modelLoader_->Get(handle);
 		if (!crister || crister->Skins().empty())
 		{
 			return false;
@@ -238,40 +247,26 @@ namespace SeedCore
 		}
 
 		SkeletonRig rig;
-		loader.skeletonLoader_->Populate(rig, assetId);
-		return loader.skeletonLoader_->Save(rig, String(skeletonPath.string()));
+		loaders_.skeletonLoader_->Populate(rig, assetID);
+		return loaders_.skeletonLoader_->Save(rig, String(skeletonPath.string()));
 	}
 
-	Handle<Crister> ModelResource::GetHandle(Uint32 assetId)const
+	Handle<Crister> ModelResource::GetHandle(Uint32 assetID)const
 	{
-		if (!assetHandleMap_.contains(assetId))
+		if (!assetHandleMap_.contains(assetID))
 		{
 			return Handle<Crister>::null();
 		}
-		return assetHandleMap_.at(assetId);
+		return assetHandleMap_.at(assetID);
 	}
 
-	Crister* ModelResource::Resolve(LoaderSystem& loader, const Handle<Crister>& handle)
+	Crister* ModelResource::Resolve(const Handle<Crister>& handle)
 	{
-		return loader.modelLoader_->Get(handle);
+		return loaders_.modelLoader_->Get(handle);
 	}
 
-	Bool ModelResource::Contains(Uint32 assetId)const
+	Bool ModelResource::Contains(Uint32 assetID)const
 	{
-		return assetHandleMap_.contains(assetId);
+		return assetHandleMap_.contains(assetID);
 	}
-
-	void ModelResource::Unload(LoaderSystem& loader, Uint32 assetId, BindlessHeap* heap)
-	{
-		if (!assetHandleMap_.contains(assetId))
-		{
-			return;
-		}
-
-		Handle<Crister> handle = assetHandleMap_.at(assetId);
-		loader.modelLoader_->Clear(handle, heap);
-		assetHandleMap_.erase(assetId);
-	}
-
-	REGISTER_ASSET(AssetType::Model, ModelResource);
 }

@@ -1,10 +1,9 @@
 #include <GraphicsEngine/Model/Material/MaterialLoader.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
 namespace SeedCore
 {
-	Handle<Surface> MaterialLoader::Load(LoaderSystem& loader, String filePath)
+	Handle<Surface> MaterialLoader::Load(String filePath)
 	{
 		std::filesystem::path path(filePath.c_str());
 		if (path.extension() != ".material" || !std::filesystem::exists(path))

@@ -1,10 +1,9 @@
 #include <GraphicsEngine/Model/Animation/AnimationLoader.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
 namespace SeedCore
 {
-	Handle<Animation> AnimationLoader::Load(LoaderSystem& loader, String filePath)
+	Handle<Animation> AnimationLoader::Load(String filePath)
 	{
 		std::filesystem::path path(filePath.c_str());
 		if (path.extension() != ".animation" || !std::filesystem::exists(path))

@@ -6,8 +6,9 @@
 
 namespace SeedCore
 {
+	struct AudioLoaderSystem;
+
 	class Sound;
-	struct LoaderSystem;
 	class ResourceCache;
 
 	/**
@@ -26,14 +27,18 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
-		* Creates an empty audio-resource map.
+		* Binds the resource to the loader bundle it draws its audio loader
+		* from, starting with no asset loaded. loaders must outlive this
+		* resource.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 空の音声リソースマップを生成する。
+		* 音声のローダーを引くためのローダーのまとまりに、このリソースを
+		* 結び付ける。読み込み済みのアセットが無い状態から始まる。loaders は
+		* このリソースより長く生存している必要がある。
 		*/
-		AudioResource() = default;
+		AudioResource(AudioLoaderSystem& loaders);
 
 		/**
 		* [EN]
@@ -55,18 +60,7 @@ namespace SeedCore
 		* [JP]
 		* 汎用アセットコンテキストを通じて音声アセットを読み込む。
 		*/
-		void Load(const AssetContext& context, Uint32 assetId)override;
-
-		/**
-		* [EN]
-		* Unloads an audio asset through the generic asset context.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 汎用アセットコンテキストを通じて音声アセットを解放する。
-		*/
-		void Unload(const AssetContext& context, Uint32 assetId)override;
+		void Load(const AssetContext& context, Uint32 assetID)override;
 
 		/**
 		* [EN]
@@ -77,7 +71,20 @@ namespace SeedCore
 		* [JP]
 		* 必要に応じて音声アセットを読み込み、キャッシュ済みの Sound ハンドルを返す。
 		*/
-		Handle<Sound> Load(LoaderSystem& loader, ResourceCache& cache, Uint32 assetId);
+		Handle<Sound> Load(ResourceCache& cache, Uint32 assetID);
+
+		/**
+		* [EN]
+		* Releases the Sound loaded for an asset ID and removes the mapping.
+		* Does nothing when the asset is not loaded.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* アセット ID に対して読み込まれた Sound を解放し、対応を削除する。
+		* 読み込まれていなければ何もしない。
+		*/
+		void Unload(Uint32 assetID)override;
 
 		/**
 		* [EN]
@@ -88,7 +95,7 @@ namespace SeedCore
 		* [JP]
 		* アセット ID に対応する読み込み済み Sound ハンドルを返す。
 		*/
-		Handle<Sound> GetHandle(Uint32 assetId)const;
+		Handle<Sound> GetHandle(Uint32 assetID)const;
 
 		/**
 		* [EN]
@@ -99,7 +106,7 @@ namespace SeedCore
 		* [JP]
 		* オーディオローダーを通じて Sound ハンドルを解決する。
 		*/
-		Sound* Resolve(LoaderSystem& loader, const Handle<Sound>& handle);
+		Sound* Resolve(const Handle<Sound>& handle);
 
 		/**
 		* [EN]
@@ -110,20 +117,13 @@ namespace SeedCore
 		* [JP]
 		* アセット ID に読み込み済み Sound ハンドルがあるかを返す。
 		*/
-		Bool Contains(Uint32 assetId)const;
-
-		/**
-		* [EN]
-		* Releases and removes the Sound associated with an asset ID.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* アセット ID に対応する Sound を解放し、対応関係を削除する。
-		*/
-		void Unload(LoaderSystem& loader, Uint32 assetId);
+		Bool Contains(Uint32 assetID)const;
 
 	private:
+		/// [EN] Loader bundle owned by AudioModule; this resource only uses it.
+		/// [JP] AudioModule が所有するローダーのまとまり。このリソースは使うだけ。
+		AudioLoaderSystem& loaders_;
+
 		/// [EN] Loaded Sound handle indexed by audio asset ID.
 		/// [JP] 音声アセット ID をキーとする読み込み済み Sound ハンドル。
 		FlatMap<Uint32, Handle<Sound>> assetHandleMap_;

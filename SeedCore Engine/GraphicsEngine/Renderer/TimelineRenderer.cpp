@@ -1,8 +1,7 @@
 #include <GraphicsEngine/Renderer/TimelineRenderer.h>
 #include <GraphicsEngine/Profiler/ProfilerStats.h>
 #include <GraphicsEngine/Model/Crister.h>
-#include <GraphicsEngine/Model/ModelResource.h>
-#include <GraphicsEngine/Model/Animation/AnimationResource.h>
+#include <GraphicsEngine/Resource/GraphicsResourceSystem.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Check.h>
@@ -59,8 +58,11 @@ namespace SeedCore
 		frameBuffer_->Resize(device, bindlessHeap, width, height);
 	}
 
-	void TimelineRenderer::Gather(LoaderSystem& loaderSystem, ModelResource& modelResource, AnimationResource& animationResource, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
+	void TimelineRenderer::Gather(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
 	{
+		ModelResource& modelResource = *resources.modelResource_;
+		AnimationResource& animationResource = *resources.animationResource_;
+
 		opaqueInstances_.clear();
 		transparentInstances_.clear();
 		boneMatrices_.clear();
@@ -73,7 +75,7 @@ namespace SeedCore
 			return;
 		}
 
-		Crister* crister = modelResource.Resolve(loaderSystem, cristerHandle);
+		Crister* crister = modelResource.Resolve(cristerHandle);
 		if (!crister)
 		{
 			return;
@@ -91,7 +93,7 @@ namespace SeedCore
 		if (!skins.empty() && animationAssetId != 0)
 		{
 			Handle<Animation> animationHandle = animationResource.GetHandle(animationAssetId);
-			Animation* animation = animationHandle.empty() ? nullptr : animationResource.Resolve(loaderSystem, animationHandle);
+			Animation* animation = animationHandle.empty() ? nullptr : animationResource.Resolve(animationHandle);
 
 			if (animation)
 			{

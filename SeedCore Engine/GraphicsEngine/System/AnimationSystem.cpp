@@ -7,7 +7,6 @@
 #include <GraphicsEngine/Model/IK/FullBodyIK.h>
 #include <GraphicsEngine/Model/IK/IKPose.h>
 #include <GraphicsEngine/Constraint/IKConstraint.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
@@ -20,7 +19,7 @@
 
 namespace SeedCore
 {
-	void AnimationSystem::Execute(World& world, LoaderSystem& loaderSystem, AnimationResource& animationResource, ModelResource& modelResource)
+	void AnimationSystem::Execute(World& world, AnimationResource& animationResource, ModelResource& modelResource)
 	{
 		Query<Read<Active>, Read<Mesh>> query(world);
 		query.ForEach([&](EntityID entityID, const Active& active, const Mesh& mesh)
@@ -36,7 +35,7 @@ namespace SeedCore
 					return;
 				}
 
-				Crister* crister = modelResource.Resolve(loaderSystem, cristerHandle);
+				Crister* crister = modelResource.Resolve(cristerHandle);
 				if (!crister)
 				{
 					return;
@@ -125,7 +124,7 @@ namespace SeedCore
 						if (animationAssetId != 0)
 						{
 							Handle<Animation> animationHandle = animationResource.GetHandle(animationAssetId);
-							Animation* animation = animationHandle.empty() ? nullptr : animationResource.Resolve(loaderSystem, animationHandle);
+							Animation* animation = animationHandle.empty() ? nullptr : animationResource.Resolve(animationHandle);
 
 							if (animation)
 							{
@@ -149,7 +148,7 @@ namespace SeedCore
 									const AnimationState& previousAnimatorState = animator->states_[previousStateIndex];
 									Uint32 previousAnimationAssetId = static_cast<Uint32>(previousAnimatorState.animationID_);
 									Handle<Animation> previousAnimationHandle = animationResource.GetHandle(previousAnimationAssetId);
-									Animation* previousAnimation = previousAnimationAssetId != 0 && !previousAnimationHandle.empty() ? animationResource.Resolve(loaderSystem, previousAnimationHandle) : nullptr;
+									Animation* previousAnimation = previousAnimationAssetId != 0 && !previousAnimationHandle.empty() ? animationResource.Resolve(previousAnimationHandle) : nullptr;
 
 									if (previousAnimation)
 									{

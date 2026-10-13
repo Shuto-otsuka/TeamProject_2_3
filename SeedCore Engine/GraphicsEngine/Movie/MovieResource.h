@@ -6,38 +6,37 @@
 
 namespace SeedCore
 {
+	struct GraphicsLoaderSystem;
+
 	class Video;
 	class BindlessHeap;
-	struct LoaderSystem;
 	class ResourceCache;
 
 	class MovieResource :public Asset, public NonCopyable
 	{
 	public:
-		MovieResource() = default;
+		MovieResource(GraphicsLoaderSystem& loaders);
 		~MovieResource() = default;
 
-		void Load(const AssetContext& context, Uint32 assetId)override;
+		void Load(const AssetContext& context, Uint32 assetID)override;
 
-		void Unload(const AssetContext& context, Uint32 assetId)override;
+		Handle<Video> Load(ResourceCache& cache, Uint32 assetID);
 
-		void Clear(const AssetContext& context)override;
+		void Unload(Uint32 assetID)override;
 
-		Handle<Video> Load(LoaderSystem& loader, ResourceCache& cache, Uint32 assetId);
+		void Clear();
 
-		Handle<Video> GetHandle(Uint32 assetId)const;
+		Handle<Video> GetHandle(Uint32 assetID)const;
 
-		Video* Resolve(LoaderSystem& loader, const Handle<Video>& handle);
+		Video* Resolve(const Handle<Video>& handle);
 
-		Bool Contains(Uint32 assetId)const;
+		Bool Contains(Uint32 assetID)const;
 
-		void Unload(LoaderSystem& loader, Uint32 assetId);
-
-		void Update(LoaderSystem& loader, ID3D12Device* device, ID3D12GraphicsCommandList6* cmdList, BindlessHeap* bindlessHeap);
-
-		void Clear(LoaderSystem& loader);
+		void Update(ID3D12Device* device, ID3D12GraphicsCommandList6* cmdList, BindlessHeap* bindlessHeap);
 
 	private:
+		GraphicsLoaderSystem& loaders_;
+
 		FlatMap<Uint32, Handle<Video>> assetHandleMap_;
 	};
 }

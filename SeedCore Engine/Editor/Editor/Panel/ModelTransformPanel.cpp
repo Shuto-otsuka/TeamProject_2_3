@@ -11,7 +11,7 @@
 #include <GraphicsEngine/Camera/PreviewCameraController.h>
 #include <FoundationEngine/Input/InputSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
+#include <GraphicsEngine/Resource/GraphicsModule.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
 
@@ -136,9 +136,9 @@ namespace SeedCore
 			}
 			else
 			{
-				ModelResource* modelResource = context_.world_.resource_->GetResource<ModelResource>(AssetType::Model);
+				ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
 				Handle<Crister> handle = modelResource->GetHandle(targetMeshAssetId_);
-				Crister* crister = handle.empty() ? nullptr : modelResource->Resolve(*context_.world_.loader_, handle);
+				Crister* crister = handle.empty() ? nullptr : modelResource->Resolve(handle);
 
 				if (!crister)
 				{
@@ -360,8 +360,7 @@ namespace SeedCore
 		std::filesystem::path path(asset->fullpath_.c_str());
 		Bool isSourceAsset = (path.extension() == ".gltf" || path.extension() == ".glb");
 
-		ModelResource* modelResource = context_.world_.resource_->GetResource<ModelResource>(AssetType::Model);
-		BindlessHeap* heap = context_.world_.resource_->Heap();
+		ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
 
 		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
 		BC7CompressShader& bc7Shader = context_.graphics_.graphics_->GetBC7CompressShader();
@@ -369,8 +368,8 @@ namespace SeedCore
 		if (isSourceAsset)
 		{
 			context_.world_.resource_->WriteAssetMeta(assetId, editConvention_);
-			modelResource->Unload(*context_.world_.loader_, assetId, heap);
-			modelResource->Load(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), heap, bc7Shader, *context_.world_.resource_, assetId);
+			modelResource->Unload(assetId);
+			modelResource->Load(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bc7Shader, *context_.world_.resource_, assetId);
 		}
 		else
 		{
@@ -380,15 +379,15 @@ namespace SeedCore
 			Matrix deltaBasis = oldResolved.basis_.Transpose() * newResolved.basis_;
 
 			Handle<Crister> handle = modelResource->GetHandle(assetId);
-			Crister* crister = handle.empty() ? nullptr : modelResource->Resolve(*context_.world_.loader_, handle);
+			Crister* crister = handle.empty() ? nullptr : modelResource->Resolve(handle);
 			if (!crister || !crister->ApplyAxisConversion(deltaBasis, newResolved.flipWinding_, path))
 			{
 				return;
 			}
 
 			context_.world_.resource_->WriteAssetMeta(assetId, editConvention_);
-			modelResource->Unload(*context_.world_.loader_, assetId, heap);
-			modelResource->Load(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), heap, bc7Shader, *context_.world_.resource_, assetId);
+			modelResource->Unload(assetId);
+			modelResource->Load(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bc7Shader, *context_.world_.resource_, assetId);
 		}
 	}
 
@@ -453,9 +452,9 @@ namespace SeedCore
 			return;
 		}
 
-		ModelResource* modelResource = context_.world_.resource_->GetResource<ModelResource>(AssetType::Model);
+		ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
 		Handle<Crister> handle = modelResource->GetHandle(assetId);
-		Crister* crister = handle.empty() ? nullptr : modelResource->Resolve(*context_.world_.loader_, handle);
+		Crister* crister = handle.empty() ? nullptr : modelResource->Resolve(handle);
 		if (!crister || !crister->ApplyTransformConversion(baseTransformPosition_, baseTransformRotation_, baseTransformScale_, baseTransformPivot_, path))
 		{
 			return;
@@ -470,9 +469,8 @@ namespace SeedCore
 		baseTransformScale_ = Vector3(1.0f, 1.0f, 1.0f);
 		baseTransformPivot_ = Vector3(0.0f, 0.0f, 0.0f);
 
-		BindlessHeap* heap = context_.world_.resource_->Heap();
 		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		modelResource->Unload(*context_.world_.loader_, assetId, heap);
-		modelResource->Load(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), heap, context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, assetId);
+		modelResource->Unload(assetId);
+		modelResource->Load(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, assetId);
 	}
 }

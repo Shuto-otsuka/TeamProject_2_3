@@ -65,7 +65,7 @@ namespace SeedCore
 	* 最新の .audio キャッシュから Sound を読み込み、必要なら素材ファイル
 	* からキャッシュを作成する。失敗時は null ハンドルを返す。
 	*/
-	Handle<Sound> AudioLoader::Load(LoaderSystem& loader, String filePath)
+	Handle<Sound> AudioLoader::Load(String filePath)
 	{
 		/// [EN] Resolve the source and cache paths, rebuilding stale caches before loading.
 		/// [JP] 素材とキャッシュのパスを解決し、古いキャッシュは読み込み前に再作成する。

@@ -6,8 +6,8 @@ namespace SeedCore
 {
 	class Actor;
 	class World;
-	class ResourceCache;
-	struct LoaderSystem;
+	class MeshCollisionResource;
+	class ModelResource;
 
 	/**
 	* [EN]
@@ -185,7 +185,7 @@ namespace SeedCore
 		* 衝突メッシュを待っている MeshCollider を、アセットの読み込みが
 		* 終わったものから構築する。毎フレーム呼ばれる。
 		*/
-		static void ResolveMeshCollider(LoaderSystem& loader, ResourceCache& cache, World& world);
+		static void ResolveMeshCollider(MeshCollisionResource& meshCollisionResource, World& world);
 
 		/**
 		* [EN]
@@ -198,6 +198,6 @@ namespace SeedCore
 		* Actor の Mesh のモデルを待っている Softbody を、モデルの読み込みが
 		* 終わったものから構築する。毎フレーム呼ばれる。
 		*/
-		static void ResolveSoftbody(LoaderSystem& loader, ResourceCache& cache, World& world);
+		static void ResolveSoftbody(ModelResource& modelResource, World& world);
 	};
 }

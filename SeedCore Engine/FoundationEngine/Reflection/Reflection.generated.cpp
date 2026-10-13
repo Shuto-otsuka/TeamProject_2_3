@@ -26,6 +26,7 @@
 #include <GraphicsEngine/Light/SkyLight.h>
 #include <GraphicsEngine/Light/SpotLight.h>
 #include <GraphicsEngine/Model/Animation/Animator.h>
+#include <GraphicsEngine/Model/Material/Material.h>
 #include <GraphicsEngine/Movie/Movie.h>
 #include <GraphicsEngine/PostProcess/PostProcess.h>
 #include <GraphicsEngine/Shape/Primitive/BoxShape.h>
@@ -87,6 +88,7 @@ extern "C" int _force_reflection_AnimationCondition = 0;
 extern "C" int _force_reflection_AnimationState = 0;
 extern "C" int _force_reflection_AnimationTransition = 0;
 extern "C" int _force_reflection_Animator = 0;
+extern "C" int _force_reflection_Material = 0;
 extern "C" int _force_reflection_Movie = 0;
 extern "C" int _force_reflection_DepthOfFieldSettings = 0;
 extern "C" int _force_reflection_BokehSettings = 0;
@@ -1586,6 +1588,54 @@ namespace SeedCore
 			}
 		};
 		static Register_Animator global_Animator_register;
+
+		// ---- GraphicsEngine/Model/Material/Material.h ----
+		struct Register_Material
+		{
+			Register_Material()
+			{
+				ReflectionRegistry::Register(String("Material"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					Material& obj = *static_cast<Material*>(ptr);
+					{
+						auto& arr = obj.slotMaterialIDs_;
+						FieldInfo header;
+						header.name_ = String("slotMaterialIDs_");
+						header.offset_ = 0;
+						header.type_ = AttributeType::Int;
+						header.array_.size_ = arr.size();
+						header.array_.add_ = [&obj]() { obj.slotMaterialIDs_.push_back({}); };
+						header.array_.remove_ = [&obj](Size idx) { if (idx < obj.slotMaterialIDs_.size()) obj.slotMaterialIDs_.erase(obj.slotMaterialIDs_.begin() + idx); };
+						header.editorVisible_ = false;
+						outInfo.push_back(std::move(header));
+						for (Size i = 0; i < arr.size(); ++i)
+						{
+							FieldInfo elementInfo{ String("[" + std::to_string(i) + "]"), 0, AttributeType::Int, PayloadType::None, &arr[i] };
+							elementInfo.editorVisible_ = false;
+							outInfo.push_back(std::move(elementInfo));
+						}
+					}
+					{
+						auto& arr = obj.slotNames_;
+						FieldInfo header;
+						header.name_ = String("slotNames_");
+						header.offset_ = 0;
+						header.type_ = AttributeType::String;
+						header.array_.size_ = arr.size();
+						header.array_.add_ = [&obj]() { obj.slotNames_.push_back({}); };
+						header.array_.remove_ = [&obj](Size idx) { if (idx < obj.slotNames_.size()) obj.slotNames_.erase(obj.slotNames_.begin() + idx); };
+						header.editorVisible_ = false;
+						outInfo.push_back(std::move(header));
+						for (Size i = 0; i < arr.size(); ++i)
+						{
+							FieldInfo elementInfo{ String("[" + std::to_string(i) + "]"), 0, AttributeType::String, PayloadType::None, &arr[i] };
+							elementInfo.editorVisible_ = false;
+							outInfo.push_back(std::move(elementInfo));
+						}
+					}
+				});
+			}
+		};
+		static Register_Material global_Material_register;
 
 		// ---- GraphicsEngine/Movie/Movie.h ----
 		struct Register_Movie

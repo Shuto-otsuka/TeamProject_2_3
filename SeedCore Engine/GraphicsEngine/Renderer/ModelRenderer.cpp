@@ -1,8 +1,7 @@
 #include <GraphicsEngine/Renderer/ModelRenderer.h>
 #include <GraphicsEngine/Profiler/ProfilerStats.h>
 #include <GraphicsEngine/Model/Crister.h>
-#include <GraphicsEngine/Model/ModelResource.h>
-#include <GraphicsEngine/Model/Material/MaterialResource.h>
+#include <GraphicsEngine/Resource/GraphicsResourceSystem.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
@@ -19,13 +18,11 @@
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
 #include <GraphicsEngine/Model/Animation/Animator.h>
 #include <GraphicsEngine/Model/Skeleton/Skeleton.h>
-#include <GraphicsEngine/Model/Animation/AnimationResource.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
-#include <cfloat>
 
 namespace SeedCore
 {
@@ -46,10 +43,6 @@ namespace SeedCore
 
 		modelShader_.Create(shaderCache, device);
 
-		/// [EN] Frame-ring buffers: the current SRV index changes every frame,
-		///      so Upload re-registers them into the index systems each frame.
-		/// [JP] フレームリングバッファ: 現在の SRV インデックスは毎フレーム
-		///      変わるため、Upload が毎フレーム 各インデックスシステムに再登録する。
 		instanceBuffer_ = MakePtr<ReadOnlyStructuredBuffer<ModelStructuredBuffer>>(device, bindlessHeap, maxInstanceCount_);
 		shaderResourceIndicesSystem.SetModelInstanceIndex(instanceBuffer_->Index());
 
@@ -81,8 +74,12 @@ namespace SeedCore
 		oitBuffer_.Resize(device, bindlessHeap, constantIndicesSystem, unorderedAccessIndicesSystem, width, height);
 	}
 
-	void ModelRenderer::Gather(LoaderSystem& loaderSystem, ModelResource& modelResource, MaterialResource& materialResource, AnimationResource& animationResource, World& world, const SceneConstantBuffer& scene, std::span<const Entity> selectedEntities)
+	void ModelRenderer::Gather(GraphicsResourceSystem& resources, World& world, const SceneConstantBuffer& scene, std::span<const Entity> selectedEntities)
 	{
+		ModelResource& modelResource = *resources.modelResource_;
+		MaterialResource& materialResource = *resources.materialResource_;
+		AnimationResource& animationResource = *resources.animationResource_;
+
 		streamingFrame_++;
 		geometryStreamingRequests_.clear();
 
@@ -106,20 +103,8 @@ namespace SeedCore
 		hasSelectedSkinned_ = false;
 		uploaded_ = false;
 
-		/// [EN] Bone palette base offset per Crister — palettes are bind-pose
-		///      (no animation system yet), so instances sharing a Crister can
-		///      share one palette within this frame.
-		/// [JP] Crister ごとのボーンパレット先頭オフセット。パレットはバインドポーズ
-		///      （アニメーションシステム未実装）なので、同じ Crister を共有する
-		///      インスタンスはこのフレーム内で 1 つのパレットを共有できる。
 		std::unordered_map<const Crister*, Uint> cristerBoneBase;
 
-		/// [EN] Cached once per Gather() rather than looked up per instance —
-		///      see the Bounds sync below (right after resolving each
-		///      Mesh actor's Crister).
-		/// [JP] Gather() ごとに一度だけキャッシュする — インスタンスごとに
-		///      引かない（下の Bounds 同期処理参照。各 Mesh アクターの
-		///      Crister 解決直後で使う）。
 		ComponentID boundsComponentID = ComponentRegistry::GetComponentID<Bounds>();
 
 		Query<Read<Active>, Read<Mesh>> query(world);
@@ -136,31 +121,18 @@ namespace SeedCore
 					return;
 				}
 
-				Crister* crister = modelResource.Resolve(loaderSystem, cristerHandle);
+				Crister* crister = modelResource.Resolve(cristerHandle);
 				if (!crister)
 				{
 					return;
 				}
 
-				/// [EN] Use the world matrix TransformSystem already computed
-				///      (local * parent chain), not a re-derived local-only
-				///      matrix - otherwise child actors ignore their parent.
-				/// [JP] TransformSystem が既に計算したワールド行列(親子チェーン込み)
-				///      を使う。ローカルだけで再構築すると子が親を無視してしまう。
 				Actor actor = world.GetActor(entityID);
 				if (!actor)
 				{
 					return;
 				}
 
-				/// [EN] Overwrite this actor's Bounds (every actor already
-				///      has one — see Bounds's class comment, added in
-				///      Actor::Actor) with the resolved Crister's
-				///      local-space AABB.
-				/// [JP] このアクターの Bounds（全 actor が構築時から既に
-				///      持っている — Bounds のクラスコメント、Actor::Actor
-				///      参照）を、解決済み Crister のローカル空間 AABB で
-				///      上書きする。
 				if (boundsComponentID)
 				{
 					void* boundsRaw = world.GetComponent(entityID, boundsComponentID);
@@ -173,28 +145,6 @@ namespace SeedCore
 					}
 				}
 
-				/// [EN] Softbody-bearing actors with a live Jolt body are
-				///      drawn entirely through the dedicated Softbody block
-				///      below (their own SoftbodyMesh, not this Crister's
-				///      cluster/LOD streaming path) - skip the normal path
-				///      here so they don't draw twice. A Softbody with no
-				///      body yet (not Playing, or not yet built) falls
-				///      through to the normal path instead, so the actor
-				///      renders its bind pose rather than nothing - and so
-				///      stopping Play (which destroys the body) doesn't
-				///      leave the last simulated frame's deformed shape
-				///      stuck on screen forever (see Softbody::BodyID).
-				/// [JP] 生きた Jolt ボディを持つ Softbody アクターは、下の
-				///      Softbody 専用ブロックで完全に描画される（この
-				///      Crister のクラスタ/LOD ストリーミング経路ではなく
-				///      自身の SoftbodyMesh）— 二重描画にならないようここでは
-				///      通常経路をスキップする。まだボディが無い Softbody
-				///      （Play中でない、またはまだビルドされていない）は
-				///      通常経路へフォールバックする — アクターが何も
-				///      描かれないのではなくバインドポーズで描かれるように
-				///      するため。これにより Play を止めて（ボディが破棄
-				///      されて）も、最後にシミュレートしたフレームの変形
-				///      形状が画面に残り続けない（Softbody::BodyID 参照）。
 				Softbody* softbody = actor.GetComponent<Softbody>();
 				if (softbody && !softbody->BodyID().IsInvalid())
 				{
@@ -203,10 +153,6 @@ namespace SeedCore
 
 				Matrix worldMatrix = actor.WorldMatrix();
 
-				/// [JP] 前フレームのワールド行列(速度計算用、StaticModelMS.hlsl/
-				///      SkeletalModelMS.hlsl 参照)。今フレームの値で上書きする前に
-				///      読み、この Gather() の最後で書き戻す。初出のエンティティは
-				///      今フレームの worldMatrix にフォールバック(出現時は速度ゼロ)。
 				auto previousWorldIt = previousWorldMatrices_.find(entityID);
 				Matrix previousWorldMatrix = previousWorldIt != previousWorldMatrices_.end() ? previousWorldIt->second : worldMatrix;
 				previousWorldMatrices_[entityID] = worldMatrix;
@@ -216,9 +162,7 @@ namespace SeedCore
 				const auto& skins = crister->Skins();
 				const auto& nodes = crister->Nodes();
 
-				static const DynamicArray<Uint32> noMaterialIDs;
 				const Material* materialComponent = actor.GetComponent<Material>();
-				const DynamicArray<Uint32>& materialIDs = materialComponent ? materialComponent->materialIDs_ : noMaterialIDs;
 
 				const Skeleton* skeleton = actor.GetComponent<Skeleton>();
 				const Bool hasPose = skeleton && skeleton->Animated() && skeleton->GlobalTransforms().size() == nodes.size();
@@ -255,7 +199,7 @@ namespace SeedCore
 							if (animationAssetId != 0)
 							{
 								Handle<Animation> animationHandle = animationResource.GetHandle(animationAssetId);
-								Animation* animation = animationHandle.empty() ? nullptr : animationResource.Resolve(loaderSystem, animationHandle);
+								Animation* animation = animationHandle.empty() ? nullptr : animationResource.Resolve(animationHandle);
 								if (animation)
 								{
 									Float duration = animation->Duration();
@@ -272,19 +216,6 @@ namespace SeedCore
 					}
 				}
 
-				/// [EN] Build (or reuse) this Crister's bone palette. Palette layout:
-				///      all skins appended contiguously in skin order. Each entry is
-				///      inverseBindMatrix × jointGlobalTransform (row-vector order),
-				///      which is identity in bind pose. Animated instances (hasPose)
-				///      always get their own fresh palette, never shared/cached —
-				///      each Actor can be at a different point in its animation.
-				/// [JP] この Crister のボーンパレットを構築（または再利用）する。
-				///      レイアウト: 全スキンをスキン順に連続で並べる。各要素は
-				///      逆バインド行列 × ジョイントのグローバルトランスフォーム
-				///      （行ベクトル規約の順）で、バインドポーズでは単位行列になる。
-				///      アニメーション中のインスタンス(hasPose)は共有/キャッシュせず
-				///      毎回専用のパレットを作る — Actorごとにアニメーションの
-				///      進行度が異なりうるため。
 				Uint boneBase = 0;
 				Bool boneOverflow = false;
 				if (!skins.empty())
@@ -391,14 +322,8 @@ namespace SeedCore
 				{
 					const SubMesh& subMesh = subMeshes[subMeshIndex];
 
-					Surface material = materialResource.Resolve(loaderSystem, *crister, subMesh.surfaceIndex_, materialIDs);
+					Surface material = materialResource.Resolve(*crister, subMesh.surfaceIndex_, materialComponent);
 
-					/// [EN] Whether this SubMesh renders through the skeletal path.
-					///      Skinned SubMeshes stay on LOD 0: the QEM-generated LOD
-					///      vertices carry unreliable joint/weight copies.
-					/// [JP] この SubMesh がスケルタルパスで描画されるかどうか。
-					///      スキンド SubMesh は LOD 0 固定: QEM 生成の LOD 頂点は
-					///      ジョイント/ウェイトのコピーが信頼できないため。
 					Bool skinned = subMesh.skinIndex_ >= 0 && subMesh.skinIndex_ < static_cast<Int>(skins.size()) && !boneOverflow;
 
 					if (subMesh.clusterCount_ == 0)
@@ -406,50 +331,12 @@ namespace SeedCore
 						continue;
 					}
 
-					/// [EN] Geometry streaming + LOD selection: mirror the AS's
-					///      IsLodSelected metric on the CPU to find the cluster the
-					///      camera actually wants (the coarsest whose screen-space
-					///      error fits 1px), request it if not yet resident, and emit
-					///      ONLY that one cluster. Previously every resident cluster of
-					///      every LOD was emitted and the AS discarded all but one on
-					///      the GPU, so the instance buffer filled up with entries that
-					///      never drew — a detailed model could push the total past the
-					///      dispatch cap. The coarsest cluster is pinned at load, so
-					///      there is always a resident fallback and never a hole.
-					/// [JP] ジオメトリストリーミング + LOD 選択: AS の IsLodSelected と
-					///      同じ式を CPU で再現してカメラが本当に必要とするクラスタ
-					///      （スクリーン誤差が 1px に収まる最も粗いもの）を求め、
-					///      未常駐なら要求し、その 1 つだけを発行する。以前は全 LOD の
-					///      常駐クラスタを発行して AS が GPU 側で 1 つを残し他を捨てて
-					///      いたため、インスタンスバッファが描画されないエントリで
-					///      埋まっていた — 詳細なモデルでは合計がディスパッチ上限を
-					///      超えうる。最粗クラスタはロード時にピン留めされるため、
-					///      常駐のフォールバックが必ず存在し穴は開かない。
 					Matrix lodWorldMatrix = crister->SubMeshPlacement(subMeshIndex).front() * worldMatrix;
 					Float worldScale = Max(Max(Vector3(lodWorldMatrix._11, lodWorldMatrix._12, lodWorldMatrix._13).Length(), Vector3(lodWorldMatrix._21, lodWorldMatrix._22, lodWorldMatrix._23).Length()), Vector3(lodWorldMatrix._31, lodWorldMatrix._32, lodWorldMatrix._33).Length());
 					Vector3 instancePosition(lodWorldMatrix._41, lodWorldMatrix._42, lodWorldMatrix._43);
 					Float viewDistance = Max((instancePosition - Vector3(scene.cameraPosition_.x, scene.cameraPosition_.y, scene.cameraPosition_.z)).Length(), 0.0001f);
 					Float pixelsPerUnit = scene.projection_._22 * scene.screenSize_.y * 0.5f / viewDistance;
 
-					/// [EN] Texture streaming, per material texture slot
-					///      (Crister::TextureDesiredMip): the SubMesh's baked texel
-					///      density against screen pixels per world unit. Unlike
-					///      cluster LOD, the distance is measured to the NEAR side of
-					///      the model's bounding sphere rather than to its origin -
-					///      the closest surface is what needs the sharpest mip. The
-					///      request carries the desired mip and MakeTextureMipResident
-					///      jumps straight to it in one upload (not one level per
-					///      frame); TextureBindlessIndex always resolves to whatever
-					///      is currently resident, so there is never a missing SRV.
-					/// [JP] テクスチャストリーミング: マテリアルの各テクスチャスロット
-					///      ごとに(Crister::TextureDesiredMip)、SubMesh に焼いた
-					///      テクセル密度と 1 ワールド単位あたりの画面ピクセル数を比べる。
-					///      クラスタ LOD と違い、距離はモデル原点ではなくバウンディング
-					///      スフィアの手前側まで測る — 最も鮮明なミップが要るのは一番
-					///      近い面だから。要求には目標ミップを持たせ、
-					///      MakeTextureMipResident が1回のアップロードで直接そこへ到達
-					///      する(1フレーム1段ずつではない)。TextureBindlessIndex は常に
-					///      そのとき常駐しているものへ解決するため、SRV が欠けることはない。
 					Vector3 boundsCenter = Vector3::Transform(crister->PositionMin() + crister->PositionExtent() * 0.5f, lodWorldMatrix);
 					Float boundsRadius = crister->PositionExtent().Length() * 0.5f * worldScale;
 					Float textureViewDistance = Max((boundsCenter - Vector3(scene.cameraPosition_.x, scene.cameraPosition_.y, scene.cameraPosition_.z)).Length() - boundsRadius, Max(scene.nearPlane_, 0.0001f));
@@ -494,16 +381,6 @@ namespace SeedCore
 							geometryStreamingRequests_.push_back({ crister, subMesh.clusterOffset_ + desired });
 						}
 
-						/// [EN] Same bracket the AS used to apply, resolved here instead:
-						///      clusters are walked coarsest-error-ascending, so the last
-						///      resident one still within 1px wins. If none fit (only
-						///      coarse clusters are resident yet), the first resident —
-						///      the finest available — is kept as the fallback.
-						/// [JP] AS が行っていたのと同じ判定をここで解決する: クラスタは
-						///      誤差の昇順に並ぶため、1px に収まる最後の常駐クラスタが
-						///      選ばれる。どれも収まらない場合（まだ粗いクラスタしか
-						///      常駐していない場合）は、最初の常駐クラスタ＝利用可能な
-						///      中で最も細かいものをフォールバックとして残す。
 						for (Uint32 c = 0; c < subMesh.clusterCount_; ++c)
 						{
 							Uint32 clusterIndex = subMesh.clusterOffset_ + c;
@@ -523,29 +400,6 @@ namespace SeedCore
 						continue;
 					}
 
-					/// [EN] Raster morph blend (see the model mesh shaders and
-					///      Model/Material/MaterialResolveCS.hlsl/
-					///      Model/Transparent/ModelTransparentPS.hlsl):
-					///      only valid when the selected cluster references
-					///      the shared LOD 0 pool (Crister::StandaloneVertices'
-					///      comment) — an own-page (streamed-in coarser) LOD
-					///      just renders its frozen bind-pose shape instead,
-					///      by leaving morphTargetCount 0. Routes this
-					///      SubMesh's weights the same way RaytracingRenderer
-					///      does: SubMesh::meshIndex_ -> the owning Node ->
-					///      animatedMorphWeights_[entityID][nodeIndex].
-					/// [JP] ラスタのモーフブレンド(モデル用メッシュシェーダーと
-					///      Model/Material/MaterialResolveCS.hlsl/
-					///      Model/Transparent/ModelTransparentPS.hlsl 参照):
-					///      選択クラスタが共有 LOD 0
-					///      プールを参照する場合のみ有効(Crister::
-					///      StandaloneVertices のコメント参照) — 自前ページ
-					///      (ストリームイン済みのより粗い)LOD は
-					///      morphTargetCount を 0 のままにして、代わりに
-					///      凍結されたバインドポーズ形状を描画する。この
-					///      SubMesh のウェイトは RaytracingRenderer と同じ
-					///      経路で解決する: SubMesh::meshIndex_ → 所有 Node
-					///      → animatedMorphWeights_[entityID][nodeIndex]。
 					Uint32 morphDeltaBufferIndex = 0xFFFFFFFF;
 					Uint32 vertexMorphSourceBufferIndex = 0xFFFFFFFF;
 					Uint32 morphDeltaOffset = 0;
@@ -601,20 +455,6 @@ namespace SeedCore
 						}
 					}
 
-					/// [EN] Keep every RESIDENT cluster of this chain warm, not just the
-					///      selected one. Only the selected cluster is emitted as an
-					///      instance (that is the dispatch-count win), but touching only
-					///      it would let the neighbouring LODs age out and be evicted -
-					///      and then any Scale/camera change that reselects one of them
-					///      forces a re-upload whose MakeClusterResident does a blocking
-					///      GPU wait, thrashing upload/evict every frame.
-					/// [JP] このチェーンの「常駐」クラスタは、選択したものだけでなく全て
-					///      warm に保つ。インスタンスとして発行するのは選択した 1 つだけ
-					///      (ディスパッチ数削減の本体はそこ)だが、選択分だけを touch すると
-					///      隣接 LOD が期限切れで追い出され、その後 Scale やカメラの変化で
-					///      それらが再選択されるたびに再アップロードが必要になる —
-					///      MakeClusterResident は GPU をブロッキング待ちするため、
-					///      毎フレーム アップロード/追い出しのスラッシングになる。
 					if (skinned)
 					{
 						crister->TouchCluster(subMesh.clusterOffset_, streamingFrame_);
@@ -635,17 +475,6 @@ namespace SeedCore
 						Uint32 clusterIndex = selectedCluster;
 						const Cluster& cluster = clusters[clusterIndex];
 
-						/// [EN] The CPU already picked this cluster, so the AS's
-						///      IsLodSelected must pass unconditionally: a zero error
-						///      always fits the 1px threshold and an infinite next error
-						///      always exceeds it. Feeding the real error back instead
-						///      would risk CPU/GPU float divergence rejecting the one
-						///      cluster that was emitted, leaving the mesh invisible.
-						/// [JP] このクラスタは CPU が既に選び終えているため、AS の
-						///      IsLodSelected は無条件で通す必要がある: 誤差 0 は必ず
-						///      1px 閾値に収まり、次の誤差が無限大なら必ず閾値を超える。
-						///      実際の誤差を渡すと CPU と GPU の浮動小数の差で、唯一
-						///      発行したクラスタが棄却されメッシュが消える恐れがある。
 						Float lodErrorNext = FLT_MAX;
 
 						constexpr Uint32 maxMeshletsPerDispatch = 32;
@@ -671,10 +500,6 @@ namespace SeedCore
 								instanceData.texture_.baseColor_ = material.baseColor_;
 								instanceData.texture_.metallic_ = material.metallic_;
 								instanceData.texture_.roughness_ = material.roughness_;
-								/// [EN] MASK clips at the glTF alphaCutoff, BLEND at a tiny epsilon.
-								///      OPAQUE must be 0 - glTF ignores the alpha channel entirely there.
-								/// [JP] MASK は glTF の alphaCutoff、BLEND は微小値でクリップ。
-								///      OPAQUE は 0 — glTF ではアルファを完全に無視する規定のため。
 								instanceData.texture_.alphaCutoff_ = material.alphaMode_ == 1 ? material.alphaCutoff_ : (material.alphaMode_ == 2 ? 0.01f : 0.0f);
 								instanceData.texture_.emissive_ = Vector3(material.emissiveFactor_[0], material.emissiveFactor_[1], material.emissiveFactor_[2]);
 
@@ -723,12 +548,6 @@ namespace SeedCore
 								instanceData.shading_.furDensity_ = material.furDensity_;
 								instanceData.shading_.furShellCount_ = static_cast<Uint>(material.furShellCount_);
 
-								/// [EN] All geometry SRVs come from the cluster's resident
-								///      page; meshletOffset_ is page-local (the page's
-								///      meshlets were rebased at upload).
-								/// [JP] ジオメトリ SRV はすべてクラスタの常駐ページから取る。
-								///      meshletOffset_ はページローカル（ページの meshlet は
-								///      アップロード時にリベース済み）。
 								instanceData.geometry_.vertexBufferIndex_ = crister->ClusterVertexBufferIndex(clusterIndex);
 								instanceData.skining_.skinVertexBufferIndex_ = crister->SkinVertexBufferIndex();
 								instanceData.streaming_.positionMin_ = crister->PositionMin();
@@ -755,10 +574,6 @@ namespace SeedCore
 								instanceData.streaming_.lodError_ = 0.0f;
 								instanceData.streaming_.lodErrorNext_ = lodErrorNext;
 
-								/// [EN] Skinned SubMesh: point at this Crister's palette slice.
-								///      On palette overflow fall back to static rendering.
-								/// [JP] スキンド SubMesh: この Crister のパレット領域を指す。
-								///      パレットあふれ時は静的描画にフォールバックする。
 								if (skinned)
 								{
 									Uint skinBoneOffset = boneBase;
@@ -785,12 +600,6 @@ namespace SeedCore
 									hasSelectedSkinned_ = hasSelectedSkinned_ || skinned;
 								}
 
-								/// [EN] OPAQUE(0) and MASK(1) both go through the opaque G-Buffer path
-								///      (MASK is a cutout handled by clip() in the PS). Only BLEND(2)
-								///      needs the OIT transparent path.
-								/// [JP] OPAQUE(0) と MASK(1) は両方とも不透明 G-Buffer パスで描く
-								///      (MASK は PS の clip() で処理するカットアウト)。OIT 透過パスが
-								///      必要なのは BLEND(2) のみ。
 								if (material.alphaMode_ != 2)
 								{
 									opaqueInstances_.push_back(instanceData);
@@ -814,20 +623,6 @@ namespace SeedCore
 				}
 			});
 
-		/// [EN] Softbody actors: each gets exactly one ModelStructuredBuffer
-		///      sourced from its own SoftbodyMesh (built/re-quantised below),
-		///      not from Crister's cluster/LOD streaming path — see
-		///      SoftbodyMesh's class comment for why. Walked via
-		///      World::GetComponents (SparseSet component, same as
-		///      PhysicsSystem::ResolveSoftbody), not Query<>, since Softbody
-		///      is a SeedScript component like Animator/Rigidbody.
-		/// [JP] Softbody アクター: それぞれ自身の SoftbodyMesh（下で構築/
-		///      再量子化）から作った ModelStructuredBuffer を1つだけ持つ —
-		///      Crister のクラスタ/LOD ストリーミング経路は使わない
-		///      （理由は SoftbodyMesh のクラスコメント参照）。SparseSet
-		///      コンポーネントのため Query<> ではなく World::GetComponents
-		///      で走査する（PhysicsSystem::ResolveSoftbody と同じ —
-		///      Softbody は Animator/Rigidbody と同じ SeedScript コンポーネント）。
 		for (EntityID entityID : world.GetComponents<Softbody>())
 		{
 			Actor actor = world.GetActor(entityID);
@@ -860,7 +655,7 @@ namespace SeedCore
 				continue;
 			}
 
-			Crister* crister = modelResource.Resolve(loaderSystem, cristerHandle);
+			Crister* crister = modelResource.Resolve(cristerHandle);
 			if (!crister)
 			{
 				continue;
@@ -886,9 +681,8 @@ namespace SeedCore
 			Matrix previousWorldMatrix = previousWorldIt != previousWorldMatrices_.end() ? previousWorldIt->second : worldMatrix;
 			previousWorldMatrices_[entityID] = worldMatrix;
 
-			static const DynamicArray<Uint32> noMaterialIDs;
 			const Material* materialComponent = actor.GetComponent<Material>();
-			Surface material = materialResource.Resolve(loaderSystem, *crister, 0, materialComponent ? materialComponent->materialIDs_ : noMaterialIDs);
+			Surface material = materialResource.Resolve(*crister, 0, materialComponent);
 
 			constexpr Uint32 maxMeshletsPerDispatch = 32;
 			Uint32 remaining = softbodyMesh->MeshletCount();

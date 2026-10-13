@@ -3,7 +3,6 @@
 #include <FoundationEngine/Log/AftermathCrashTracker.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Resource/Gateway.h>
-#include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/Resource/Scene/Scene.h>
 #include <FoundationEngine/Time/GameTimer.h>
 #include <FoundationEngine/Time/WorldTimer.h>
@@ -89,6 +88,10 @@ namespace SeedCore
 		{
 			return false;
 		}
+
+		/// [EN] The asset module needs the finished bindless heap, which its texture, model and skymap resources allocate descriptors from.
+		/// [JP] アセットモジュールは完成した bindless ヒープを必要とする。テクスチャ・モデル・スカイマップのリソースがそこからディスクリプタを確保するため。
+		graphicsModule_ = MakePtr<GraphicsModule>(*bindlessHeap_);
 
 		/// [EN] DLSS features are created against the finished device.
 		/// [JP] DLSS の機能は、生成済みのデバイスに対して作成する。
@@ -194,6 +197,14 @@ namespace SeedCore
 		splashScreen_.Finalize();
 
 		bootScreen_.Finalize();
+
+		/// [EN] The asset module returns its resources' descriptors to the bindless heap, so it goes before that heap.
+		/// [JP] アセットモジュールはリソースのディスクリプタを bindless ヒープへ返すため、そのヒープより先に解放する。
+		if (graphicsModule_)
+		{
+			graphicsModule_.reset();
+			graphicsModule_ = nullptr;
+		}
 
 		/// [EN] The bindless heap goes after every owner of its descriptor indices has freed them.
 		/// [JP] bindless ヒープは、ディスクリプタインデックスを持つ全所有者が解放した後に破棄する。
@@ -405,7 +416,7 @@ namespace SeedCore
 	* [JP]
 	* エディターカメラ定数を構築し、共有データを準備してエディタービューを描画する。
 	*/
-	void Graphics::EditorRender(WorldTimer& timer, const EditorCamera& editorCamera, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world, ViewMode viewMode, std::span<const Entity> selectedEntities)
+	void Graphics::EditorRender(WorldTimer& timer, const EditorCamera& editorCamera, World& world, ViewMode viewMode, std::span<const Entity> selectedEntities)
 	{
 		/// [EN] This buffer is the complete camera and viewport contract consumed by editor render passes.
 		/// [JP] このバッファは、エディターレンダーパスが消費する完全なカメラおよびビューポート契約である。
@@ -439,7 +450,7 @@ namespace SeedCore
 
 		/// [EN] Preparation (streaming, and gathering and uploading the shapes and colliders) precedes every editor pass.
 		/// [JP] 準備（ストリーミングと、形とコライダーの収集とアップロード）は、全エディターパスより先に行う。
-		Prepare(timer.DeltaTime(), loaderSystem, resourceCache, world, selectedEntities, editorSceneConstantBuffer);
+		Prepare(timer.DeltaTime(), world, selectedEntities, editorSceneConstantBuffer);
 
 		/// [EN] Upload the view-specific constants before the renderer records editor commands.
 		/// [JP] Renderer がエディターコマンドを記録する前に、ビュー固有の定数をアップロードする。
@@ -461,11 +472,11 @@ namespace SeedCore
 	* [JP]
 	* ゲームカメラを更新し、そのアクティブカメラ状態でゲームビューを描画する。
 	*/
-	void Graphics::GameRender(GameTimer& timer, CameraSystem& cameraSystem, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world)
+	void Graphics::GameRender(GameTimer& timer, CameraSystem& cameraSystem, World& world)
 	{
 		/// [EN] Prepare shared assets using the camera state available at the frame's entry.
 		/// [JP] フレーム開始時点で利用可能なカメラ状態を用いて、共有アセットを準備する。
-		Prepare(timer.ScaledDeltaTime(), loaderSystem, resourceCache, world, {}, cameraSystem.GetSceneConstantBuffer());
+		Prepare(timer.ScaledDeltaTime(), world, {}, cameraSystem.GetSceneConstantBuffer());
 
 		/// [EN] CameraSystem resolves the active game camera for the current world and render extent.
 		/// [JP] CameraSystem は、現在のワールドとレンダーサイズに対するアクティブゲームカメラを解決する。
@@ -504,7 +515,7 @@ namespace SeedCore
 	* [JP]
 	* キャンバスカメラ定数を構築し、キャンバス専用ビューを描画する。
 	*/
-	void Graphics::CanvasRender(WorldTimer& timer, const CanvasCamera& canvasCamera, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world)
+	void Graphics::CanvasRender(WorldTimer& timer, const CanvasCamera& canvasCamera, World& world)
 	{
 		/// [EN] Canvas rendering uses a complete independent scene-constant buffer.
 		/// [JP] キャンバス描画では、完全に独立したシーン定数バッファを使用する。
@@ -538,7 +549,7 @@ namespace SeedCore
 
 		/// [EN] Shared preparation runs here only when no earlier view in this frame has done it.
 		/// [JP] 共有準備は、このフレームでまだ他のビューが行っていない場合にのみここで実行される。
-		Prepare(timer.DeltaTime(), loaderSystem, resourceCache, world, {}, canvasSceneConstantBuffer);
+		Prepare(timer.DeltaTime(), world, {}, canvasSceneConstantBuffer);
 
 		canvasSceneSystem_->Upload(canvasSceneConstantBuffer);
 
@@ -558,11 +569,11 @@ namespace SeedCore
 	* [JP]
 	* タイムラインプレビュー用アセットを収集し、プレビューカメラで描画する。
 	*/
-	void Graphics::TimelineRender(WorldTimer& timer, const PreviewCamera& timelineCamera, LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
+	void Graphics::TimelineRender(WorldTimer& timer, const PreviewCamera& timelineCamera, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
 	{
 		/// [EN] Resolve the mesh pose at the requested timeline time before recording the preview pass.
 		/// [JP] プレビューパスを記録する前に、指定タイムライン時刻のメッシュ姿勢を解決する。
-		renderer_->GatherTimelinePreview(loaderSystem, resourceCache, meshAssetId, animationAssetId, time, worldMatrix);
+		renderer_->GatherTimelinePreview(graphicsModule_->Resources(), meshAssetId, animationAssetId, time, worldMatrix);
 
 		/// [EN] The preview camera supplies a self-contained scene-constant buffer for this offscreen view.
 		/// [JP] プレビューカメラは、このオフスクリーンビュー専用の自己完結したシーン定数バッファを渡す。
@@ -610,11 +621,11 @@ namespace SeedCore
 	* [JP]
 	* モデル変形プレビュー用アセットを収集し、プレビューカメラで描画する。
 	*/
-	void Graphics::ModelTransformRender(WorldTimer& timer, const PreviewCamera& modelTransformCamera, LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
+	void Graphics::ModelTransformRender(WorldTimer& timer, const PreviewCamera& modelTransformCamera, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
 	{
 		/// [EN] Gather the evaluated model pose used by the transform-editing preview.
 		/// [JP] 変形編集プレビューで使用する、評価済みモデル姿勢を収集する。
-		renderer_->GatherModelTransformPreview(loaderSystem, resourceCache, meshAssetId, animationAssetId, time, worldMatrix);
+		renderer_->GatherModelTransformPreview(graphicsModule_->Resources(), meshAssetId, animationAssetId, time, worldMatrix);
 
 		/// [EN] Keep this preview's camera state separate from editor and game scene constants.
 		/// [JP] このプレビューのカメラ状態は、エディターおよびゲームのシーン定数から分離して保持する。
@@ -662,11 +673,11 @@ namespace SeedCore
 	* [JP]
 	* マテリアルプレビュー用アセットを収集し、プレビューカメラで描画する。
 	*/
-	void Graphics::MaterialRender(WorldTimer& timer, const PreviewCamera& materialCamera, LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 surfaceAssetId, const Matrix& worldMatrix)
+	void Graphics::MaterialRender(WorldTimer& timer, const PreviewCamera& materialCamera, Uint32 meshAssetId, Uint32 surfaceAssetId, const Matrix& worldMatrix)
 	{
 		/// [EN] Gather the selected mesh and surface before the material inspection pass.
 		/// [JP] マテリアル検査パスの前に、選択中のメッシュとサーフェスを収集する。
-		renderer_->GatherMaterialPreview(loaderSystem, resourceCache, meshAssetId, surfaceAssetId, worldMatrix);
+		renderer_->GatherMaterialPreview(graphicsModule_->Resources(), meshAssetId, surfaceAssetId, worldMatrix);
 
 		/// [EN] Material inspection has its own camera constants and output dimensions.
 		/// [JP] マテリアル検査は、専用のカメラ定数と出力サイズを持つ。
@@ -714,11 +725,11 @@ namespace SeedCore
 	* [JP]
 	* スケルトンコントローラープレビュー用アセットを収集し、選択ノードのビューを描画する。
 	*/
-	void Graphics::SkeletonControllerRender(WorldTimer& timer, const PreviewCamera& skeletonControllerCamera, LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix, Int selectedNodeIndex)
+	void Graphics::SkeletonControllerRender(WorldTimer& timer, const PreviewCamera& skeletonControllerCamera, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix, Int selectedNodeIndex)
 	{
 		/// [EN] Gather the evaluated skeleton and retain the selected node for controller visualization.
 		/// [JP] 評価済みスケルトンを収集し、コントローラー可視化用に選択ノードを保持する。
-		renderer_->GatherSkeletonControllerPreview(loaderSystem, resourceCache, meshAssetId, animationAssetId, time, worldMatrix, selectedNodeIndex);
+		renderer_->GatherSkeletonControllerPreview(graphicsModule_->Resources(), meshAssetId, animationAssetId, time, worldMatrix, selectedNodeIndex);
 
 		/// [EN] Skeleton editing uses a dedicated preview camera and scene constants.
 		/// [JP] スケルトン編集では、専用のプレビューカメラとシーン定数を使用する。
@@ -1040,6 +1051,20 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Returns GraphicsEngine's asset module: its loaders and resources.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* GraphicsEngine のアセットモジュール（ローダーとリソース）を返す。
+	*/
+	GraphicsModule& Graphics::GetGraphicsModule()const
+	{
+		return *graphicsModule_;
+	}
+
+	/**
+	* [EN]
 	* Returns the GPU BC7 compression service.
 	*
 	* ---------------------------------------------------------------------
@@ -1187,7 +1212,7 @@ namespace SeedCore
 	* [JP]
 	* 共有ストリーミングリソースを更新し、現在のフレームに対する Renderer 準備を一度だけ行う。
 	*/
-	void Graphics::Prepare(Float deltaTime, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world, std::span<const Entity> selectedEntities, const SceneConstantBuffer& streamingScene)
+	void Graphics::Prepare(Float deltaTime, World& world, std::span<const Entity> selectedEntities, const SceneConstantBuffer& streamingScene)
 	{
 		/// [EN] Editor, game, and canvas rendering can share one frame; repeated preparation would update streamed resources twice.
 		/// [JP] エディター、ゲーム、キャンバス描画は一つのフレームを共有できるため、準備を繰り返すとストリーミングリソースを二重に更新してしまう。
@@ -1197,14 +1222,16 @@ namespace SeedCore
 		}
 		prepared_ = true;
 
+		GraphicsResourceSystem& resources = graphicsModule_->Resources();
+
 		/// [EN] Resource updates precede Renderer::PrepareFrame so every pass observes the same current asset state.
 		/// [JP] 全パスが同じ最新アセット状態を参照できるよう、リソース更新を Renderer::PrepareFrame より先に行う。
-		resourceCache.GetResource<FontResource>(AssetType::Font)->Update(loaderSystem, context_->GetDevice(), context_->GetDirectQueue()->GetCommandQueue(), bindlessHeap_.get());
+		resources.fontResource_->Update(context_->GetDevice(), context_->GetDirectQueue()->GetCommandQueue(), bindlessHeap_.get());
 
 		/// [EN] Movies advance before their GPU texture is consumed by renderer passes.
 		/// [JP] ムービーは GPU テクスチャが Renderer パスで消費される前に進める。
-		movieSystem_.Update(loaderSystem, world, resourceCache);
-		resourceCache.GetResource<MovieResource>(AssetType::Movie)->Update(loaderSystem, context_->GetDevice(), context_->GetDirectList()->Get(), bindlessHeap_.get());
+		movieSystem_.Update(*resources.movieResource_, world);
+		resources.movieResource_->Update(context_->GetDevice(), context_->GetDirectList()->Get(), bindlessHeap_.get());
 
 		/// [EN] Effects advance before Renderer::PrepareFrame so the renderer uploads this frame's age and spawn count.
 		/// [JP] Renderer が今フレームの経過時間と発生数を送れるよう、エフェクトは Renderer::PrepareFrame より先に進める。
@@ -1220,10 +1247,10 @@ namespace SeedCore
 
 		/// [EN] Shapes and colliders are uploaded together here rather than by one view, since the editor, game and canvas views each draw their own batch of them.
 		/// [JP] 形とコライダーはエディター、ゲーム、Canvas の各ビューがそれぞれのバッチを描くので、どれか1つのビューではなくここでまとめてアップロードする。
-		renderer_->UploadShapes(shapeSystem_.Shapes(), colliderSystem_.Colliders(), loaderSystem, resourceCache);
+		renderer_->UploadShapes(shapeSystem_.Shapes(), colliderSystem_.Colliders(), *resources.textureResource_);
 
 		/// [EN] Renderer receives the selected view's scene constants and entity selection after shared assets are current.
 		/// [JP] 共有アセットが最新化された後、Renderer は選択されたビューのシーン定数とエンティティ選択を受け取る。
-		renderer_->PrepareFrame(context_->GetDirectList(), loaderSystem, resourceCache, world, streamingScene, deltaTime, selectedEntities);
+		renderer_->PrepareFrame(context_->GetDirectList(), resources, world, streamingScene, deltaTime, selectedEntities);
 	}
 }

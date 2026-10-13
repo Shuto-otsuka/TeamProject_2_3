@@ -7,9 +7,10 @@
 #include <GraphicsEngine/Model/Mesh.h>
 #include <GraphicsEngine/Camera/PreviewCamera.h>
 #include <GraphicsEngine/Camera/PreviewCameraController.h>
+#include <GraphicsEngine/Resource/GraphicsModule.h>
+#include <GraphicsEngine/Graphics.h>
 #include <FoundationEngine/Input/InputSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/File/FileDialog.h>
@@ -388,9 +389,9 @@ namespace SeedCore
 
 				if (selectedAnimationIndex_ != SIZE_MAX)
 				{
-					AnimationResource* animationResource = context_.world_.resource_->GetResource<AnimationResource>(AssetType::Animation);
-					Handle<Animation> handle = animationResource->Load(*context_.world_.loader_, *context_.world_.resource_, assetId);
-					animation = animationResource->Resolve(*context_.world_.loader_, handle);
+					AnimationResource* animationResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().animationResource_.get();
+					Handle<Animation> handle = animationResource->Load(*context_.world_.resource_, assetId);
+					animation = animationResource->Resolve(handle);
 
 					duration = animation ? animation->Duration() : 0.0f;
 
@@ -490,9 +491,9 @@ namespace SeedCore
 		}
 
 		Uint32 assetId = target_->animationIDs_[selectedAnimationIndex_];
-		AnimationResource* animationResource = context_.world_.resource_->GetResource<AnimationResource>(AssetType::Animation);
-		Handle<Animation> handle = animationResource->Load(*context_.world_.loader_, *context_.world_.resource_, assetId);
-		Animation* animation = animationResource->Resolve(*context_.world_.loader_, handle);
+		AnimationResource* animationResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().animationResource_.get();
+		Handle<Animation> handle = animationResource->Load(*context_.world_.resource_, assetId);
+		Animation* animation = animationResource->Resolve(handle);
 		if (!animation)
 		{
 			ImGui::TextDisabled("アニメーションを選択してください");
@@ -554,7 +555,7 @@ namespace SeedCore
 		if (ImGui::Button("上書き保存") && asset)
 		{
 			std::filesystem::path overwritePath(asset->fullpath_.c_str());
-			if (context_.world_.loader_->animationLoader_->Save(*animation, overwritePath))
+			if (context_.graphics_.graphics_->GetGraphicsModule().Loaders().animationLoader_->Save(*animation, overwritePath))
 			{
 				SC_LOG_NOTICE("アニメーションを上書き保存しました: {}", overwritePath.string());
 			}
@@ -571,7 +572,7 @@ namespace SeedCore
 			std::filesystem::path savePath;
 			if (FileDialog::SaveFile(savePath, initialDir, L"Animation Files (*.animation)", L"*.animation", L"animation"))
 			{
-				if (context_.world_.loader_->animationLoader_->Save(*animation, savePath))
+				if (context_.graphics_.graphics_->GetGraphicsModule().Loaders().animationLoader_->Save(*animation, savePath))
 				{
 					SC_LOG_NOTICE("アニメーションを保存しました: {}", savePath.string());
 				}

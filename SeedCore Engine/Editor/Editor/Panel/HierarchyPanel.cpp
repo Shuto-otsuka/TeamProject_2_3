@@ -2,6 +2,7 @@
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
+#include <Editor/Editor/Interaction/ActorEditing.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/Name.h>
@@ -206,11 +207,12 @@ namespace SeedCore
 				ImGuiIO& io = ImGui::GetIO();
 				if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_D, false))
 				{
-					DuplicateSelection();
+					ActorEditing::DuplicationSelection(context_);
+					rangeAnchor_ = context_.selection_.Primary();
 				}
 				if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
 				{
-					DeleteSelection();
+					ActorEditing::DeleteSelection(context_);
 				}
 			}
 
@@ -381,17 +383,18 @@ namespace SeedCore
 				{
 					HandleNodeSelection(actor, false, false);
 				}
-				DuplicateSelection();
+				ActorEditing::DuplicationSelection(context_);
+				rangeAnchor_ = context_.selection_.Primary();
 			}
 			if (ImGui::MenuItem("Actorを削除"))
 			{
 				if (Selected(actor))
 				{
-					DeleteSelection();
+					ActorEditing::DeleteSelection(context_);
 				}
 				else
 				{
-					DeleteActor(actor);
+					ActorEditing::DeleteActor(context_, actor);
 				}
 				ImGui::EndPopup();
 				if (opened)
@@ -465,7 +468,7 @@ namespace SeedCore
 		}
 
 		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+		context_.world_.resource_->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 
 		std::string relative = std::filesystem::relative(savedPath, context_.world_.resource_->ProjectRootPath()).string();
 		std::ranges::replace(relative, '\\', '/');
@@ -548,104 +551,6 @@ namespace SeedCore
 			context_.selection_.Select(actor);
 			rangeAnchor_ = actor;
 		}
-	}
-
-	void HierarchyPanel::DeleteActor(Actor actor, CompoundCommand* group)
-	{
-		SeedCore::erase_if(context_.selection_.actors_, [actor](Actor selected) { return selected == actor; });
-
-		/// [EN] The command must be built (it captures the actor's subtree) before DestroyActor runs. When part of a multi-delete it goes into group instead of the history, so one Ctrl+Z reverts the whole selection.
-		/// [JP] コマンドは actor のサブツリーを取得するため DestroyActor より前に構築する。複数削除の一部なら履歴ではなく group へ入れ、Ctrl+Z 一回で選択全体を戻せるようにする。
-		ResourcePtr<Command> command = MakePtr<ActorDeleteCommand>(*context_.world_.world_, *context_.world_.resource_, actor);
-		if (group)
-		{
-			group->Add(std::move(command));
-		}
-		else
-		{
-			context_.scene_.history_.Push(std::move(command));
-		}
-
-		context_.world_.world_->DestroyActor(actor);
-	}
-
-	void HierarchyPanel::DeleteSelection()
-	{
-		DynamicArray<Actor> toDelete = context_.selection_.actors_;
-
-		ResourcePtr<CompoundCommand> group = MakePtr<CompoundCommand>();
-		for (Actor actor : toDelete)
-		{
-			DeleteActor(actor, group.get());
-		}
-
-		if (!group->Empty())
-		{
-			context_.scene_.history_.Push(std::move(group));
-		}
-	}
-
-	void HierarchyPanel::DuplicateSelection()
-	{
-		if (context_.selection_.actors_.empty())
-		{
-			return;
-		}
-
-		DynamicArray<Actor> toDuplicate = context_.selection_.actors_;
-		DynamicArray<Actor> newSelection;
-
-		ResourcePtr<CompoundCommand> group = MakePtr<CompoundCommand>();
-
-		for (Actor actor : toDuplicate)
-		{
-			/// [EN] Skip Actors whose ancestor is also selected - they'll already be
-			///      duplicated as part of that ancestor's subtree.
-			/// [JP] 祖先も選択されている Actor はスキップする — その祖先のサブツリーの
-			///      一部として既に複製されるため。
-			Bool ancestorSelected = std::ranges::any_of(toDuplicate, [&](Actor other) { return other != actor && actor.Descendant(other); });
-			if (ancestorSelected)
-			{
-				continue;
-			}
-
-			Prefab prefab;
-			prefab.Capture(actor);
-
-			Actor duplicate = prefab.Instantiate(*context_.world_.world_, *context_.world_.resource_, actor.Parent(), actor.PrefabID());
-			if (!duplicate)
-			{
-				continue;
-			}
-
-			DynamicArray<BlueprintNode> nodes;
-			CaptureActorNode(duplicate, -1, nodes);
-			Actor duplicateParent = duplicate.Parent();
-			group->Add(MakePtr<ActorCreateCommand>(*context_.world_.world_, *context_.world_.resource_, nodes, duplicateParent ? duplicateParent.PersistentID() : 0, actor.PersistentID()));
-
-			MoveAfter(duplicate, actor);
-			newSelection.push_back(duplicate);
-		}
-
-		if (!group->Empty())
-		{
-			context_.scene_.history_.Push(std::move(group));
-		}
-
-		context_.selection_.actors_ = newSelection;
-		rangeAnchor_ = context_.selection_.Primary();
-	}
-
-	void HierarchyPanel::MoveAfter(Actor actor, Actor after)
-	{
-		Actor parent = actor.Parent();
-		if (parent)
-		{
-			parent.MoveChild(actor, after);
-			return;
-		}
-
-		context_.world_.world_->MoveActor(actor, after);
 	}
 
 	Uint32 HierarchyPanel::PrevSiblingPersistentId(Actor actor)const

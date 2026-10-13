@@ -54,7 +54,7 @@ namespace SeedCore
 		font->ascender_ = static_cast<Float>(metrics.ascenderY * font->geometryScale_);
 		font->descender_ = static_cast<Float>(metrics.descenderY * font->geometryScale_);
 
-		font->atlas_ = Font::Atlas(Font::AtlasGenerator(256, 256));
+		font->atlas_ = Font::Atlas(256);
 		font->atlas_.atlasGenerator().setThreadCount(static_cast<Int>(Max<Uint>(1u, std::thread::hardware_concurrency() / 2)));
 
 		return handle;
@@ -71,6 +71,7 @@ namespace SeedCore
 		if (font)
 		{
 			font->glyphs_.clear();
+			font->glyphGeometries_.clear();
 			font->pendingGlyphs_.clear();
 
 			font->atlasTexture_.Reset();

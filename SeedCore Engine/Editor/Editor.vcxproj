@@ -175,6 +175,8 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClCompile Include="Editor\Build\RuntimeBuilder.cpp" />
     <ClCompile Include="Editor\Build\VisualStudioAutomation.cpp" />
     <ClCompile Include="Editor\Context\SelectionContext.cpp" />
+    <ClCompile Include="Editor\Interaction\ActorEditing.cpp" />
+    <ClCompile Include="Editor\Interaction\ViewportPicking.cpp" />
     <ClCompile Include="Editor\Panel\AnimatorControllerPanel.cpp" />
     <ClCompile Include="Editor\Panel\AvatarPanel.cpp" />
     <ClCompile Include="Editor\Panel\BootScreenPanel.cpp" />
@@ -197,7 +199,6 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClCompile Include="Editor\Panel\TimelinePanel.cpp" />
     <ClCompile Include="Editor\Panel\TodoListPanel.cpp" />
     <ClCompile Include="Editor\Panel\VersionPanel.cpp" />
-    <ClCompile Include="Editor\ViewportPicking.cpp" />
     <ClCompile Include="Prelude.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -276,6 +277,8 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClInclude Include="Editor\ImGui\ImGuiCommon.h" />
     <ClInclude Include="Editor\ImGui\ImGuiRenderer.h" />
     <ClInclude Include="Editor\ImGui\ImGuiTexture.h" />
+    <ClInclude Include="Editor\Interaction\ActorEditing.h" />
+    <ClInclude Include="Editor\Interaction\ViewportPicking.h" />
     <ClInclude Include="Editor\Panel\AddComponentPanel.h" />
     <ClInclude Include="Editor\Panel\AnimatorControllerPanel.h" />
     <ClInclude Include="Editor\Panel\AvatarPanel.h" />
@@ -309,7 +312,6 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClInclude Include="Editor\Panel\TimelinePanel.h" />
     <ClInclude Include="Editor\Panel\TodoListPanel.h" />
     <ClInclude Include="Editor\Panel\VersionPanel.h" />
-    <ClInclude Include="Editor\ViewportPicking.h" />
     <ClInclude Include="Editor\Window.h" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">

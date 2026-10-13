@@ -6,9 +6,7 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
 	class ResourceCache;
-	class BindlessHeap;
 	class D3D12CommandQueue;
 	class BC7CompressShader;
 
@@ -181,10 +179,6 @@ namespace SeedCore
 	*/
 	struct AssetContext
 	{
-		/// [EN] Loader system performing the actual asset I/O.
-		/// [JP] 実際のアセット I/O を行うローダーシステム。
-		LoaderSystem& loader_;
-
 		/// [EN] Cache owning the asset table, for looking up the record behind an asset ID.
 		/// [JP] アセットテーブルを所有するキャッシュ。アセット ID に対応するレコードを引くために使う。
 		ResourceCache& cache_;
@@ -196,10 +190,6 @@ namespace SeedCore
 		/// [EN] Queue used to submit upload work. Null on paths that submit none.
 		/// [JP] アップロード処理を提出するためのキュー。提出を行わない経路では null。
 		D3D12CommandQueue* cmdQueue_ = nullptr;
-
-		/// [EN] Bindless descriptor heap the asset's GPU-visible views are allocated from and returned to.
-		/// [JP] アセットの GPU 可視ビューを確保・返却するバインドレスディスクリプタヒープ。
-		BindlessHeap* heap_ = nullptr;
 
 		/// [EN] BC7 compression shader used when importing textures. Null on paths that import none.
 		/// [JP] テクスチャのインポート時に使う BC7 圧縮シェーダ。インポートを行わない経路では null。
@@ -248,7 +238,7 @@ namespace SeedCore
 		* [JP]
 		* assetId に登録されているアセットを、このマネージャへ読み込む。
 		*/
-		virtual void Load(const AssetContext& context, Uint32 assetId) = 0;
+		virtual void Load(const AssetContext& context, Uint32 assetID) = 0;
 
 		/**
 		* [EN]
@@ -259,7 +249,7 @@ namespace SeedCore
 		* [JP]
 		* assetId に登録されているアセットを、このマネージャから解放する。
 		*/
-		virtual void Unload(const AssetContext& context, Uint32 assetId) = 0;
+		virtual void Unload(Uint32 assetID) = 0;
 
 		/**
 		* [EN]
@@ -274,87 +264,6 @@ namespace SeedCore
 		* いるものを解放する。既定では何もしない（Unload の時点で何も
 		* 残らないマネージャ向け）。
 		*/
-		virtual void Clear(const AssetContext& context);
-	};
-
-	/**
-	* [EN]
-	* The table of asset-type to resource-manager factories. Each
-	* manager registers itself (via REGISTER_ASSET) at static
-	* initialization, and ResourceCache instantiates whatever it finds
-	* here - so adding an asset type never edits ResourceCache.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* アセット種別からリソースマネージャのファクトリへの対応表。各
-	* マネージャは静的初期化時に（REGISTER_ASSET 経由で）自己登録し、
-	* ResourceCache はここにあるものを全て生成する。そのため、アセット
-	* 種別を追加しても ResourceCache を編集することはない。
-	*/
-	class SEEDCORE_API AssetRegistry
-	{
-	public:
-		/// [EN] Creates one resource manager instance, owned through the Asset interface.
-		/// [JP] リソースマネージャのインスタンスを1つ生成し、Asset インターフェース経由で所有する。
-		using Factory = ResourcePtr<Asset>(*)();
-
-		/**
-		* [EN]
-		* Registers factory as the manager for type. Ignores a null
-		* factory, and keeps the first registration if type is already
-		* taken.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* factory を type のマネージャとして登録する。null の factory は
-		* 無視し、type が既に登録済みであれば最初の登録を維持する。
-		*/
-		static void Register(AssetType type, Factory factory);
-
-		/**
-		* [EN]
-		* Returns every registered factory, keyed by asset type.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 登録済みの全ファクトリを、アセット種別をキーとして返す。
-		*/
-		static const FlatMap<AssetType, Factory>& GetRegistry();
-
-	private:
-		/**
-		* [EN]
-		* Returns the mutable registry, held as a function-local static
-		* so registration from any translation unit reaches one instance
-		* regardless of static initialization order.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 可変なレジストリを返す。関数ローカル static として保持することで、
-		* どの翻訳単位からの登録も、静的初期化順に関わらず単一のインスタンス
-		* へ届く。
-		*/
-		static FlatMap<AssetType, Factory>& Registry();
+		virtual void Clear();
 	};
 }
-
-/**
-* [EN]
-* Registers Type as the resource manager for AssetTypeValue. Placed at
-* namespace scope in the manager's .cpp, next to its definitions.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Type を AssetTypeValue のリソースマネージャとして登録する。マネージャの
-* .cpp の、その定義の並びの隣、名前空間スコープに置く。
-*/
-#define REGISTER_ASSET(AssetTypeValue, Type) \
-	static const SeedCore::Bool Type##_assetRegistered = []() { \
-		SeedCore::AssetRegistry::Register(AssetTypeValue, []() -> SeedCore::ResourcePtr<SeedCore::Asset> { return SeedCore::MakePtr<Type>(); }); \
-		return true; \
-	}()

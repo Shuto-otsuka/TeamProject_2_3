@@ -1,35 +1,28 @@
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 #include <FoundationEngine/JobSystem/JobExecutor.h>
 #include <FoundationEngine/JobSystem/JobTaskflow.h>
-#include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 
 namespace SeedCore
 {
 	/**
 	* [EN]
-	* Constructs the cache, creating each resource manager and resolving
-	* the project root path.
+	* Constructs an empty cache and resolves the project root path.
+	* Resource managers are added afterwards through Register().
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* キャッシュを構築し、各リソースマネージャを生成し、プロジェクト
-	* ルートパスを解決する。
+	* 空のキャッシュを構築し、プロジェクトルートパスを解決する。
+	* リソースマネージャは後から Register() で追加する。
 	*/
-	ResourceCache::ResourceCache(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap) : loader_(loader), heap_(heap)
+	ResourceCache::ResourceCache()
 	{
 		/// [EN] The project root is one level above the executable's working directory.
 		/// [JP] プロジェクトルートは、実行ファイルの作業ディレクトリの1つ上にある。
 		projectRootPath_ = std::filesystem::current_path().parent_path();
-
-		for (const std::pair<AssetType, AssetRegistry::Factory>& entry : AssetRegistry::GetRegistry())
-		{
-			resourceMap_.insert({ entry.first, entry.second() });
-		}
 	}
 
 	/**
@@ -54,7 +47,7 @@ namespace SeedCore
 			FindCloseChangeNotification(watchHandle_);
 		}
 
-		Unload(loader_, heap_);
+		Unload();
 	}
 
 	/**
@@ -128,7 +121,7 @@ namespace SeedCore
 	* アセットを読み込む。この呼び出しでアセットを処理したかどうかを
 	* 返す（キューが尽きた、または Async が呼ばれていない場合は false）。
 	*/
-	Bool ResourceCache::Step(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader)
+	Bool ResourceCache::Step(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
 	{
 		if (!scanComplete_.load(std::memory_order_acquire))
 		{
@@ -152,7 +145,7 @@ namespace SeedCore
 			Asset* resource = GetResource(asset->type_);
 			if (resource)
 			{
-				AssetContext context{ loader, *this, device, cmdQueue, heap, &bc7Shader };
+				AssetContext context{ *this, device, cmdQueue, &bc7Shader };
 				resource->Load(context, asset->assetID_);
 			}
 
@@ -174,7 +167,7 @@ namespace SeedCore
 	* 最初の呼び出しでフォルダの監視を始め、以降の呼び出しでは変更が通知されて
 	* いれば Reload() を実行する。
 	*/
-	void ResourceCache::Watch(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
+	void ResourceCache::Watch(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
 	{
 		/// [EN] Gameplay assets live under UserProject; watching the whole root would also catch build output and Visual Studio's own files.
 		/// [JP] ゲームのアセットは UserProject 以下にある。ルート全体を監視すると、ビルド出力や Visual Studio 自身のファイルまで拾ってしまう。
@@ -193,7 +186,7 @@ namespace SeedCore
 		/// [JP] タイムアウト 0 は通知の有無を見るだけなので、何も変わっていないフレームがここで待つことはない。
 		if (WaitForSingleObject(watchHandle_, 0) == WAIT_OBJECT_0)
 		{
-			Reload(loader, device, cmdQueue, bc7Shader);
+			Reload(device, cmdQueue, bc7Shader);
 		}
 	}
 
@@ -210,7 +203,7 @@ namespace SeedCore
 	* ワーカースレッド上でキューが尽きるまで Step() を繰り返し呼ぶ。
 	* 完全な契約についてはヘッダのドキュメントコメント参照。
 	*/
-	void ResourceCache::StepAsync(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader)
+	void ResourceCache::StepAsync(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
 	{
 		Bool expected = false;
 		if (!loadStarted_.compare_exchange_strong(expected, true, std::memory_order_acq_rel))
@@ -226,9 +219,9 @@ namespace SeedCore
 		/// [EN] Clear the member taskflow first, since a rescan (Unload() resetting loadStarted_) would otherwise re-run it with the previous pass's finished task still inside.
 		/// [JP] 先にメンバーの taskflow を空にする。再スキャン(Unload() が loadStarted_ を戻した場合)で、前回の完了済みタスクが残ったまま再実行しないため。
 		loadTaskflow_.Clear();
-		loadTaskflow_.emplace([this, &loader, device, cmdQueue, heap, &bc7Shader]()
+		loadTaskflow_.emplace([this, device, cmdQueue, &bc7Shader]()
 		{
-			while (Step(loader, device, cmdQueue, heap, bc7Shader))
+			while (Step(device, cmdQueue, bc7Shader))
 			{
 				/// No Code
 			}
@@ -586,11 +579,11 @@ namespace SeedCore
 	* プロジェクトのアセット変更を同期的に再スキャンし、まだ読み込まれて
 	* いない全アセットを一括で読み込む。
 	*/
-	void ResourceCache::Reload(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
+	void ResourceCache::Reload(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
 	{
 		Rescan();
 
-		AssetContext context{ loader, *this, device, cmdQueue, heap_, &bc7Shader };
+		AssetContext context{ *this, device, cmdQueue, &bc7Shader };
 
 		for (auto& asset : assetsMap_ | std::ranges::views::values)
 		{
@@ -634,7 +627,7 @@ namespace SeedCore
 	* のものを解放し、新しい中身をその場所へ読み込む。Editor の実行中に
 	* 共有ライブラリが新しい Revision を持ってきた場合に使う。
 	*/
-	void ResourceCache::Reload(Uint32 assetID, LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
+	void ResourceCache::Reload(Uint32 assetID, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
 	{
 		/// [EN] An asset this cache has never seen has nothing to release, and its file is picked up by the next scan instead.
 		/// [JP] このキャッシュが知らないアセットには解放するものが無く、そのファイルは次の走査で拾われる。
@@ -652,10 +645,10 @@ namespace SeedCore
 
 		/// [EN] The identifier survives the swap, so every reference held elsewhere keeps pointing at this asset.
 		/// [JP] 識別子は入れ替えをまたいで変わらないため、他所が持っている参照はこのアセットを指したままになる。
-		AssetContext context{ loader, *this, device, cmdQueue, heap_, &bc7Shader };
+		AssetContext context{ *this, device, cmdQueue, &bc7Shader };
 		if (it->second.isLoaded_)
 		{
-			resource->Unload(context, assetID);
+			resource->Unload(assetID);
 			it->second.isLoaded_ = false;
 		}
 
@@ -691,8 +684,7 @@ namespace SeedCore
 			Asset* resource = GetResource(it->second.type_);
 			if (resource)
 			{
-				AssetContext context{ loader_, *this, nullptr, nullptr, heap_, nullptr };
-				resource->Unload(context, assetID);
+				resource->Unload(assetID);
 			}
 		}
 
@@ -712,10 +704,8 @@ namespace SeedCore
 	* 現在読み込まれている全アセットを、それぞれの所有元リソース
 	* マネージャから解放し、アセット/検索マップをクリアする。
 	*/
-	void ResourceCache::Unload(LoaderSystem& loader, BindlessHeap* heap)
+	void ResourceCache::Unload()
 	{
-		AssetContext context{ loader, *this, nullptr, nullptr, heap, nullptr };
-
 		for (auto& asset : assetsMap_ | std::ranges::views::values)
 		{
 			if (!asset.isLoaded_ || asset.type_ == AssetType::Unknown)
@@ -726,25 +716,30 @@ namespace SeedCore
 			Asset* resource = GetResource(asset.type_);
 			if (resource)
 			{
-				resource->Unload(context, asset.assetID_);
+				resource->Unload(asset.assetID_);
 			}
 
 			asset.isLoaded_ = false;
 		}
 
-		for (const ResourcePtr<Asset>& resource : resourceMap_ | std::ranges::views::values)
+		for (Asset* resource : resourceMap_ | std::ranges::views::values)
 		{
-			resource->Clear(context);
+			resource->Clear();
 		}
 
 		assetsMap_.clear();
 		searchMap_.clear();
 	}
 
+	void ResourceCache::Register(AssetType type, Asset& resource)
+	{
+		resourceMap_.insert({ type, &resource });
+	}
+
 	/**
 	* [EN]
 	* Returns the resource manager registered for type, or nullptr if no
-	* manager registered itself for it.
+	* manager was registered for it.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -759,7 +754,7 @@ namespace SeedCore
 			return nullptr;
 		}
 
-		return resourceMap_.at(type).get();
+		return resourceMap_.at(type);
 	}
 
 	/**
@@ -816,20 +811,6 @@ namespace SeedCore
 	const std::filesystem::path& ResourceCache::ProjectRootPath()const
 	{
 		return projectRootPath_;
-	}
-
-	/**
-	* [EN]
-	* Returns the bindless descriptor heap used for GPU resource views.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* GPU リソースビュー用のバインドレスディスクリプタヒープを返す。
-	*/
-	BindlessHeap* ResourceCache::Heap()const
-	{
-		return heap_;
 	}
 
 	/**
@@ -1146,8 +1127,7 @@ namespace SeedCore
 					Asset* resource = GetResource(it->second.type_);
 					if (resource)
 					{
-						AssetContext context{ loader_, *this, nullptr, nullptr, heap_, nullptr };
-						resource->Unload(context, it->second.assetID_);
+						resource->Unload(it->second.assetID_);
 					}
 				}
 				it = assetsMap_.erase(it);

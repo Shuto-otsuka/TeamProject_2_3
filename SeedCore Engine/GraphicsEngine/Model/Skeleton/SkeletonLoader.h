@@ -6,8 +6,6 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
-
 	/**
 	* [EN]
 	* Loads and saves standalone ".skeleton" assets - one serialized
@@ -31,7 +29,7 @@ namespace SeedCore
 		SkeletonLoader() = default;
 		~SkeletonLoader() = default;
 
-		Handle<SkeletonRig> Load(LoaderSystem& loader, String filePath);
+		Handle<SkeletonRig> Load(String filePath);
 
 		/**
 		* [EN]

@@ -4,8 +4,9 @@
 namespace SeedCore
 {
 	struct EditorContext;
-	class Material;
 	struct Surface;
+
+	class ImGuiTexture;
 
 	/**
 	* [EN]
@@ -28,33 +29,35 @@ namespace SeedCore
 	class MaterialViewerPanel
 	{
 	public:
-		MaterialViewerPanel(EditorContext& context);
+		MaterialViewerPanel(EditorContext& context, ImGuiTexture& imguiTexture);
 		~MaterialViewerPanel();
 
 		void Draw();
 
 		void Open();
 
-		void SetPreviewHandle(D3D12_GPU_DESCRIPTOR_HANDLE previewHandle);
-
 		void DrawDetails();
 
-		[[nodiscard]] Bool Focused()const;
+		[[nodiscard]] Bool Visible()const;
 
 	private:
-		void EnsureEditingSurface();
+		struct EditingState
+		{
+			Uint32 assetID_ = 0;
+			ResourcePtr<Surface> surface_;
+		};
 
+	private:
 		EditorContext& context_;
 
+		ImGuiTexture& imguiTexture_;
+
+		EditingState editingState_;
+
 		Bool show_ = false;
-		Bool isFocused_ = false;
-		Material* target_ = nullptr;
-		Size selectedSlot_ = 0;
 
-		ResourcePtr<Surface> editingSurface_;
-		Uint32 editingSurfaceAssetId_ = 0;
-		std::string surfaceNewNameBuffer_;
+		Bool visible_ = false;
 
-		D3D12_GPU_DESCRIPTOR_HANDLE previewHandle_{};
+		Size selected_ = 0;
 	};
 }

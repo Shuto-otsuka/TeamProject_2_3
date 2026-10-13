@@ -4,12 +4,12 @@
 #include <FoundationEngine/World/ECS/System/SystemScheduler.h>
 #include <FoundationEngine/JobSystem/JobExecutor.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/Resource/Config/GameConfig.h>
 #include <FoundationEngine/Time/GameTimer.h>
 #include <FoundationEngine/Bridge/CsharpHost.h>
 #include <FoundationEngine/Plugin/PluginHost.h>
 #include <AudioEngine/CRI/CriManager.h>
+#include <AudioEngine/Resource/AudioModule.h>
 #include <PhysicsEngine/JoltPhysics/JoltManager.h>
 #include <GraphicsEngine/Font/FontManager.h>
 #include <GraphicsEngine/Graphics.h>
@@ -58,7 +58,7 @@ namespace SeedCore
 
 		ResourcePtr<Graphics> graphics_;
 
-		ResourcePtr<LoaderSystem> loaderSystem_;
+		ResourcePtr<AudioModule> audioModule_;
 
 		CsharpHost csharpHost_;
 
