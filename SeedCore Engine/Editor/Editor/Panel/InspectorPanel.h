@@ -32,15 +32,6 @@
 
 		void DrawComponents(Actor actor);
 
-		/// [EN] Shared header/popup/fields block for one component - see the
-		///      .cpp definition for why it exists (archetype-layout and
-		///      sparse-set components are discovered two different ways but
-		///      drawn identically). Returns true if the component was removed
-		///      this frame.
-		/// [JP] 1コンポーネントぶんのヘッダー/ポップアップ/フィールドの共有
-		///      ブロック。存在理由は .cpp の定義コメント参照(アーキタイプ一覧と
-		///      スパースセットは見つけ方が違うが描画は同一)。このフレームで
-		///      削除されたら true。
 		Bool DrawComponentEntry(Actor actor, ComponentID componentID, const String& componentName, void* componentData);
 
 		/**

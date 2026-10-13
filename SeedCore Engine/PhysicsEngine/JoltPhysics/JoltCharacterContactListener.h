@@ -9,20 +9,28 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Bridges Jolt virtual-character contacts to SeedCore collision and trigger
-	* events for the owning entity and the contacted entity. Jolt reports
-	* contacts per sub-shape of the contacted body; they are merged per
-	* body, so each contacted entity gets one enter, at most one stay per
-	* character update, and one exit.
+	* Bridges Jolt virtual-character contacts to SeedCore collision events
+	* for the owning entity and the contacted entity. Only static and
+	* kinematic solid bodies are handled here: dynamic bodies and sensors
+	* already meet the character's kinematic inner body, so their events
+	* come from the world's contact listener instead. Another character is
+	* notified by its own listener, so a contact with one is dispatched to
+	* the owning entity only. Jolt reports contacts per sub-shape of the
+	* contacted body; they are merged per body, so each contacted entity
+	* gets one enter, at most one stay per character update, and one exit.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* Jolt 仮想キャラクターの接触を、所有エンティティと接触先エンティティの
-	* SeedCore 衝突・トリガーイベントへ橋渡しする。Jolt は接触を接触先ボディの
-	* サブシェイプごとに報告するが、ここではボディごとにまとめ、接触先の
-	* エンティティごとに Enter を1回、Stay をキャラクターの更新1回につき最大1回、
-	* Exit を1回通知する。
+	* SeedCore 衝突イベントへ橋渡しする。ここで扱うのはスタティックと
+	* キネマティックの実体のあるボディだけ。動的ボディとセンサーはキャラクターの
+	* キネマティックな内側ボディと接触するので、それらのイベントはワールドの
+	* 接触リスナーから届く。他のキャラクターへはそのキャラクター自身のリスナーが
+	* 通知するので、キャラクターとの接触は所有エンティティにだけ通知する。
+	* Jolt は接触を接触先ボディのサブシェイプごとに報告するが、ここではボディ
+	* ごとにまとめ、接触先のエンティティごとに Enter を1回、Stay を
+	* キャラクターの更新1回につき最大1回、Exit を1回通知する。
 	*/
 	class JoltCharacterContactListener final :public JPH::CharacterContactListener, public JPH::RefTarget<JoltCharacterContactListener>
 	{
@@ -60,13 +68,15 @@ namespace SeedCore
 		* [EN]
 		* Dispatches an enter event when the first sub-shape of a body is
 		* touched, and a stay event when another one of a body already in
-		* contact is touched.
+		* contact is touched. Dynamic bodies and sensors are ignored, as
+		* the inner body reports them.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* ボディの最初のサブシェイプに触れたときに Enter イベントを、既に接触中の
 		* ボディの別のサブシェイプに触れたときに Stay イベントを通知する。
+		* 動的ボディとセンサーは内側ボディが知らせるので無視する。
 		*/
 		void OnContactAdded(const JPH::CharacterVirtual* character, const JPH::CharacterContact& contact, JPH::CharacterContactSettings& settings)override;
 
@@ -114,9 +124,9 @@ namespace SeedCore
 			/// [JP] 接触先ボディが表すエンティティ。
 			EntityID entityID_;
 
-			/// [EN] Whether the contacted body is a sensor.
-			/// [JP] 接触先ボディがセンサーか。
-			Bool isSensor_ = false;
+			/// [EN] Whether the contacted body is another character's inner body.
+			/// [JP] 接触先ボディが他のキャラクターの内側ボディか。
+			Bool isCharacter_ = false;
 
 			/// [EN] Number of the body's sub-shapes currently touched.
 			/// [JP] 現在触れている、そのボディのサブシェイプ数。

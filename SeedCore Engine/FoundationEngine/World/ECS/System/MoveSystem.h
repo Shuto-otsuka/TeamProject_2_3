@@ -7,32 +7,32 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Built-in system integrating every Velocity-holding actor's Position
-	* by deltaTime each frame (Position += Velocity * deltaTime).
+	* Built-in system integrating every actor's Position by LinearVelocity
+	* and Rotation by AngularVelocity, by deltaTime each frame.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* Velocity を持つ全 actor の Position を、毎フレーム deltaTime 分だけ
-	* 積分する組み込みシステム(Position += Velocity * deltaTime)。
+	* 全 actor の Position を LinearVelocity で、Rotation を AngularVelocity
+	* で、毎フレーム deltaTime 分だけ積分する組み込みシステム。
 	*/
 	class MoveSystem
 	{
 	public:
 		/**
 		* [EN]
-		* Advances every active actor with both Position and Velocity by
-		* deltaTime, adding Velocity's components onto Position's. Inactive
-		* actors, and actors whose Velocity is owned by a physics body, keep
-		* their Position unchanged.
+		* Advances every active actor by deltaTime: LinearVelocity is added
+		* onto Position, and AngularVelocity turns Rotation about its axis.
+		* Inactive actors, and actors whose velocity is owned by a physics
+		* body, keep their Position and Rotation unchanged.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* Position と Velocity の両方を持つアクティブな全 actor を deltaTime
-		* 分だけ進める。Velocity の各成分を Position へ加算する。非アクティブ
-		* な actor と、Velocity を物理ボディが管理している actor の Position
-		* は変えない。
+		* アクティブな全 actor を deltaTime 分だけ進める。LinearVelocity は
+		* Position へ加算し、AngularVelocity はその軸まわりに Rotation を回す。
+		* 非アクティブな actor と、速度を物理ボディが管理している actor の
+		* Position と Rotation は変えない。
 		*/
 		void Execute(World& world, Float deltaTime);
 	};

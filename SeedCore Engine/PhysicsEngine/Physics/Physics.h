@@ -189,6 +189,48 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Kind of shape an overlap query places to find what stands inside it.
+	* Sphere, Box, Capsule and Cylinder are for Physics::Overlap; Circle and
+	* Rect are for Physics::Overlap2D. What each component of the query's
+	* dimensions means is noted on each kind.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Overlap クエリが置き、その中に何があるかを調べる形の種類。
+	* Sphere・Box・Capsule・Cylinder は Physics::Overlap 用、Circle と Rect
+	* は Physics::Overlap2D 用。クエリの dimensions の各成分の意味は、
+	* それぞれの種類に記す。
+	*/
+	enum class OverlapShapeKind :Uint32
+	{
+		/// [EN] 3D sphere; dimensions.x is the radius.
+		/// [JP] 3D の球。dimensions.x が半径。
+		Sphere,
+
+		/// [EN] 3D box; dimensions holds the half extents on each axis.
+		/// [JP] 3D の箱。dimensions が各軸の半分の大きさ。
+		Box,
+
+		/// [EN] 3D capsule standing along Y; dimensions.x is the radius, dimensions.y the half height of its cylinder part.
+		/// [JP] Y 軸に沿って立つ 3D のカプセル。dimensions.x が半径、dimensions.y が円柱部分の高さの半分。
+		Capsule,
+
+		/// [EN] 3D cylinder standing along Y; dimensions.x is the radius, dimensions.y the half height.
+		/// [JP] Y 軸に沿って立つ 3D の円柱。dimensions.x が半径、dimensions.y が高さの半分。
+		Cylinder,
+
+		/// [EN] Canvas circle; dimensions.x is the radius in pixels.
+		/// [JP] Canvas 上の円。dimensions.x がピクセル単位の半径。
+		Circle,
+
+		/// [EN] Canvas rectangle; dimensions holds the half width and half height in pixels.
+		/// [JP] Canvas 上の矩形。dimensions がピクセル単位の幅の半分と高さの半分。
+		Rect,
+	};
+
+	/**
+	* [EN]
 	* Provides engine-facing creation, control, and query operations for Jolt physics.
 	*
 	* ---------------------------------------------------------------------
@@ -331,12 +373,14 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
-		* Creates a virtual character from the supplied description.
+		* Creates a virtual character from the supplied description, together
+		* with a kinematic inner body that represents it in the physics world.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 指定した情報から仮想キャラクターを生成する。
+		* 指定した情報から仮想キャラクターを生成し、物理ワールドでその代わりと
+		* なるキネマティックな内側ボディも合わせて生成する。
 		*/
 		JPH::Ref<JPH::CharacterVirtual> CreateCharacter(const CharacterDesc& desc);
 
@@ -375,12 +419,15 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Replaces the character shape using the specified height and radius.
+		* Replaces the character shape and its inner body's shape using the
+		* specified height and radius. Returns false and leaves both unchanged
+		* if the new shape does not fit.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 指定した高さと半径でキャラクター形状を置き換える。
+		* 指定した高さと半径で、キャラクターとその内側ボディの形状を置き換える。
+		* 新しい形状が収まらない場合は、どちらも変えずに false を返す。
 		*/
 		Bool CharacterHeight(JPH::CharacterVirtual* character, Float height, Float radius);
 
@@ -477,7 +524,23 @@ namespace SeedCore
 		* なければボディを起こす。キネマティックのボディは、置き換えられるまで
 		* その速度を保つ。静的ボディには効かない。
 		*/
-		void BodyVelocity(JPH::BodyID bodyID, const Vector3& linearVelocity);
+		void BodyLinearVelocity(JPH::BodyID bodyID, const Vector3& linearVelocity);
+
+		/**
+		* [EN]
+		* Replaces the world-space angular velocity (rad/s) of a dynamic or
+		* kinematic body and wakes it when the angular velocity is not zero.
+		* A kinematic body keeps the angular velocity until it is replaced.
+		* Has no effect on a static body.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 動的またはキネマティックのボディのワールド空間の角速度(rad/s)を
+		* 置き換え、角速度が 0 でなければボディを起こす。キネマティックの
+		* ボディは、置き換えられるまでその角速度を保つ。静的ボディには効かない。
+		*/
+		void BodyAngularVelocity(JPH::BodyID bodyID, const Vector3& angularVelocity);
 
 		/**
 		* [EN]
@@ -528,7 +591,19 @@ namespace SeedCore
 		* [JP]
 		* ボディの速度(m/s)を返す。静的ボディでは 0。
 		*/
-		Vector3 BodyVelocity(JPH::BodyID bodyID)const;
+		Vector3 BodyLinearVelocity(JPH::BodyID bodyID)const;
+
+		/**
+		* [EN]
+		* Returns the world-space angular velocity (rad/s) of a body; zero
+		* for a static body.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ボディのワールド空間の角速度(rad/s)を返す。静的ボディでは 0。
+		*/
+		Vector3 BodyAngularVelocity(JPH::BodyID bodyID)const;
 
 		/**
 		* [EN]
@@ -731,14 +806,18 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Returns entities overlapping a 3D query shape.
+		* Returns entities overlapping a 3D query shape of the given kind and
+		* size, placed at the given pose. Only Sphere, Box, Capsule and
+		* Cylinder are 3D kinds; any other kind overlaps nothing.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 3Dクエリ形状と重なるエンティティを返す。
+		* 指定した種類と大きさの 3D クエリ形状を指定の姿勢に置き、重なる
+		* エンティティを返す。3D の種類は Sphere・Box・Capsule・Cylinder
+		* だけで、それ以外の種類は何とも重ならない。
 		*/
-		DynamicArray<EntityID> Overlap(Handle<JPH::Shape> shape, const Vector3& position, const Quaternion& rotation, Uint32 layerMask = 0xFFFFFFFF)const;
+		DynamicArray<EntityID> Overlap(OverlapShapeKind kind, const Vector3& dimensions, const Vector3& position, const Quaternion& rotation, Uint32 layerMask = 0xFFFFFFFF)const;
 
 		/**
 		* [EN]
@@ -764,14 +843,20 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Returns entities overlapping a 2D query shape.
+		* Returns entities overlapping a canvas query shape of the given kind
+		* and size, placed at the given canvas position (pixels, Y down) and
+		* rotation (degrees). Only Circle and Rect are canvas kinds; any other
+		* kind overlaps nothing.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 2Dクエリ形状と重なるエンティティを返す。
+		* 指定した種類と大きさの Canvas クエリ形状を、指定の Canvas 上の位置
+		* （ピクセル、Y 下向き）と回転（度）に置き、重なるエンティティを返す。
+		* Canvas の種類は Circle と Rect だけで、それ以外の種類は何とも
+		* 重ならない。
 		*/
-		DynamicArray<EntityID> Overlap2D(Handle<JPH::Shape> shape, const Vector2& position, Float rotation, Uint32 layerMask = 0xFFFFFFFF)const;
+		DynamicArray<EntityID> Overlap2D(OverlapShapeKind kind, const Vector2& dimensions, const Vector2& position, Float rotation, Uint32 layerMask = 0xFFFFFFFF)const;
 
 	private:
 		/**

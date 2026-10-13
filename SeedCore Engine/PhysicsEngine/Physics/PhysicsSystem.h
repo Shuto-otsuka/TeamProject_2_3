@@ -56,14 +56,15 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Hands what code has changed on every active actor's Rigidbody
-		* (isTrigger_, and the actor's Velocity) to its body. Called before
-		* every fixed step.
+		* (isTrigger_, and the actor's LinearVelocity and AngularVelocity) to
+		* its body. Called before every fixed step.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 有効な全 Actor の Rigidbody について、コードが変えたもの(isTrigger_ と
-		* Actor の Velocity)をボディへ渡す。固定ステップの前に毎回呼ばれる。
+		* 有効な全 Actor の Rigidbody について、コードが変えたもの(isTrigger_ と、
+		* Actor の LinearVelocity と AngularVelocity)をボディへ渡す。固定ステップ
+		* の前に毎回呼ばれる。
 		*/
 		static void ApplyRigidbody(World& world);
 
