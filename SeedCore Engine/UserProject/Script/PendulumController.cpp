@@ -9,6 +9,8 @@ void PendulumController::OnStart()
     rotation = GetWorld().GetComponent<SeedCore::Rotation>(entity);
     rigidbody = GetWorld().GetComponent<SeedCore::Rigidbody>(entity);
     position = GetWorld().GetComponent<SeedCore::Position>(entity);
+    angularVelocity = GetWorld().GetComponent<SeedCore::AngularVelocity>(entity);
+    linearVelocity = GetWorld().GetComponent<SeedCore::LinearVelocity>(entity);
 
     //最初のクォータニオンと最後のクォータニオンをそれぞれセット
     startQuaternion = SeedCore::Transform::Quat(*rotation);
@@ -19,7 +21,19 @@ void PendulumController::OnStart()
 void PendulumController::OnTick(float elapsedTime)
 {
     //弾によってギミック停止中であれば終了
-    if (myStopController->IsStop())return;
+    if (myStopController->IsStop())
+    {
+        //速度を0にする
+        linearVelocity->x_ = 0.0f;
+        linearVelocity->y_ = 0.0f;
+        linearVelocity->z_ = 0.0f;
+
+        //回転速度を0にする
+        angularVelocity->x_ = 0.0f;
+        angularVelocity->y_ = 0.0f;
+        angularVelocity->z_ = 0.0f;
+        return;
+    }
 
     //回転率を計算
     if (isFowardRotate)

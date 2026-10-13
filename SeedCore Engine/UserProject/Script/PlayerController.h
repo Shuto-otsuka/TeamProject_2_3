@@ -112,6 +112,7 @@ private:
 	SeedCore::Vector3 shotDirection = { 0.0f,0.0f,1.0f };
 	SeedCore::Vector3 bulletPosition;
 	SeedCore::Vector3 bulletTargetPosition;
+	SeedCore::Vector3 checkPointPosition;
 
 	SeedCore::Actor cameraBrain;
 	SeedCore::Actor bulletNaviStart;

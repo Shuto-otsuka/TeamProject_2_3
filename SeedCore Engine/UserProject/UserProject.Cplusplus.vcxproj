@@ -51,6 +51,7 @@
     </ClCompile>
     <ClCompile Include="Script\BulletNaviController.cpp" />
     <ClCompile Include="Script\BulletNaviStartController.cpp" />
+    <ClCompile Include="Script\Button.cpp" />
     <ClCompile Include="Script\ChargeGaugeController.cpp" />
     <ClCompile Include="Script\CostGaugeController.cpp" />
     <ClCompile Include="Script\GoalSystem.cpp" />
@@ -67,6 +68,7 @@
     <ClInclude Include="EntryPoint\EntryGame.h" />
     <ClInclude Include="Script\BulletNaviController.h" />
     <ClInclude Include="Script\BulletNaviStartController.h" />
+    <ClInclude Include="Script\Button.h" />
     <ClInclude Include="Script\ChargeGaugeController.h" />
     <ClInclude Include="Script\CostGaugeController.h" />
     <ClInclude Include="Script\GoalSystem.h" />

@@ -70,7 +70,8 @@ private:
 	SeedCore::Position* position;
 	SeedCore::Rotation* rotation;
 	SeedCore::Rigidbody* rigidbody;
-	SeedCore::LinearVelocity* velocity;
+	SeedCore::LinearVelocity* linearVelocity;
+	SeedCore::AngularVelocity* angularVelocity;
 
 	SeedCore::Actor player;
 

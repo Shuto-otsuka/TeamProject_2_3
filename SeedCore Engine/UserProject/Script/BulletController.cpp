@@ -9,7 +9,8 @@ void BulletController::OnStart()
     SeedCore::Entity entity = GetActor().GetEntity();
     SeedCore::Entity playerEntity = player.GetEntity();
     playerController = GetWorld().GetComponent<PlayerController>(playerEntity);
-    velocity = GetWorld().GetComponent<SeedCore::LinearVelocity>(entity);
+    linearVelocity = GetWorld().GetComponent<SeedCore::LinearVelocity>(entity);
+    angularVelocity = GetWorld().GetComponent<SeedCore::AngularVelocity>(entity);
 }
 
 void BulletController::OnTick(float elapsedTime)
@@ -144,6 +145,13 @@ void BulletController::Stop()
     //停止処理
     state = State::STOP;
 
+    //回転を0にして足場にする
+    SeedCore::Quaternion quat = SeedCore::Quaternion::Identity;
+    rotation->x_ = quat.x;
+    rotation->y_ = quat.y;
+    rotation->z_ = quat.z;
+    rotation->w_ = quat.w;
+    
     //衝突判定ON
     rigidbody->isTrigger_ = false;
 }
@@ -172,9 +180,14 @@ void BulletController::Move(float elapsedTime)
     if (state != State::NORMAL || !position || !rotation || !rigidbody)
     {
         //速度を0にする
-        velocity->x_ = 0.0f;
-        velocity->y_ = 0.0f;
-        velocity->z_ = 0.0f;
+        linearVelocity->x_ = 0.0f;
+        linearVelocity->y_ = 0.0f;
+        linearVelocity->z_ = 0.0f;
+        //回転速度を0にする
+        angularVelocity->x_ = 0.0f;
+        angularVelocity->y_ = 0.0f;
+        angularVelocity->z_ = 0.0f;
+
         return;
     }
 
