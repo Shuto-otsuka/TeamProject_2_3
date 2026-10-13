@@ -5,7 +5,6 @@
 
 class PlayerController;
 
-
 class ChargeGaugeController :public SeedCore::SeedScript
 {
 public:

@@ -76,7 +76,7 @@ private:
 
 	bool OnGroundOrCoyote();
 
-	const SeedCore::Vector3& RayToPlaneHitPosition(const SeedCore::Vector3& rayOrigin,
+	const SeedCore::Vector3 RayToPlaneHitPosition(const SeedCore::Vector3& rayOrigin,
 		const SeedCore::Vector3& rayDirection,
 	    const SeedCore::Vector3& planeNormal,
 		float planeDistance

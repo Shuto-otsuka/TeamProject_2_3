@@ -451,7 +451,7 @@ bool PlayerController::OnGroundOrCoyote()
     return myCharacterController->OnGround() || isCoyote;
 }
 
-const SeedCore::Vector3& PlayerController::RayToPlaneHitPosition(const SeedCore::Vector3& rayOrigin, const SeedCore::Vector3& rayDirection, const SeedCore::Vector3& planeNormal, float planeDistance)
+const SeedCore::Vector3 PlayerController::RayToPlaneHitPosition(const SeedCore::Vector3& rayOrigin, const SeedCore::Vector3& rayDirection, const SeedCore::Vector3& planeNormal, float planeDistance)
 {
     //レイと平面の交点を求める関数
     float dot1 = rayDirection.Dot(planeNormal);
