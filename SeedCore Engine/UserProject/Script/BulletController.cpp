@@ -143,17 +143,21 @@ void BulletController::SetParam(const SeedCore::Vector3& startPosition,const See
 void BulletController::Stop()
 {
     //停止処理
-    state = State::STOP;
 
-    //回転を0にして足場にする
-    SeedCore::Quaternion quat = SeedCore::Quaternion::Identity;
-    rotation->x_ = quat.x;
-    rotation->y_ = quat.y;
-    rotation->z_ = quat.z;
-    rotation->w_ = quat.w;
+    //停止ステートにする
+    state = State::STOP;
     
     //衝突判定ON
     rigidbody->isTrigger_ = false;
+
+    //速度を0にする
+    linearVelocity->x_ = 0.0f;
+    linearVelocity->y_ = 0.0f;
+    linearVelocity->z_ = 0.0f;
+    //回転速度を0にする
+    angularVelocity->x_ = 0.0f;
+    angularVelocity->y_ = 0.0f;
+    angularVelocity->z_ = 0.0f;
 }
 
 void BulletController::UpdateAliveTime(float elapsedTime)
@@ -179,15 +183,9 @@ void BulletController::Move(float elapsedTime)
     //停止中なら終了
     if (state != State::NORMAL || !position || !rotation || !rigidbody)
     {
-        //速度を0にする
-        linearVelocity->x_ = 0.0f;
-        linearVelocity->y_ = 0.0f;
-        linearVelocity->z_ = 0.0f;
-        //回転速度を0にする
-        angularVelocity->x_ = 0.0f;
-        angularVelocity->y_ = 0.0f;
-        angularVelocity->z_ = 0.0f;
-
+        //常に回転0
+        if(rigidbody)
+            rigidbody->MoveTarget({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, elapsedTime);
         return;
     }
 

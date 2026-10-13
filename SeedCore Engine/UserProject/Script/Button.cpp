@@ -16,7 +16,7 @@ void Button::OnStart()
 
 void Button::OnTick(float elapsedTime)
 {
-    cursorPosition = SeedCore::Input::MousePoint();
+    SeedCore::Vector2 cursorPosition = SeedCore::Input::MousePoint();
     if (cursorPosition.x < minOffset.x || cursorPosition.x > maxOffset.x || cursorPosition.y < minOffset.y || cursorPosition.y > maxOffset.y)
     {
         //カーソルがボタンの範囲外ならフラグオフにして終了
@@ -36,5 +36,4 @@ void Button::OnInspectorGUI()
 {
     ImGui::Checkbox("isOnCursor", &isOnCursor);
     ImGui::Checkbox("isClick", &isClick);
-    ImGui::InputFloat2("cursorPosition", &cursorPosition.x);
 }

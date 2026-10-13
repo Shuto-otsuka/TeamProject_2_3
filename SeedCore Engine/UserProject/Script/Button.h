@@ -20,7 +20,6 @@ private:
 
 	SeedCore::Vector2 minOffset;
 	SeedCore::Vector2 maxOffset;
-	SeedCore::Vector2 cursorPosition;
 
 	bool isClick = false;
 	bool isOnCursor = false;
