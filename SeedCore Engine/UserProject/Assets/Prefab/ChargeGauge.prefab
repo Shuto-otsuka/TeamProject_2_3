@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "c0efe89d-44f2-4779-a525-449a834792ea",
+			"collaborationId": "1b6cc41a-8ce3-4d1e-a352-bb191239c4b6",
 			"components": [
 				{
 					"component": "Bounds",
@@ -165,7 +165,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "7255bdc5-64f7-465e-b4d6-bca27ef9204b",
+			"collaborationId": "5933576e-e94c-465b-9a47-22360e137817",
 			"components": [
 				{
 					"component": "Image",
@@ -495,7 +495,7 @@
 			"persistentId": 109,
 			"position": {
 				"x": 960.0,
-				"y": 891.8182373046875,
+				"y": 881.724853515625,
 				"z": 0.0
 			},
 			"rotation": {
@@ -513,7 +513,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "78d5cd6f-2bc0-438f-ae02-31a7c928c675",
+			"collaborationId": "db366e57-cd85-42da-9483-6ceb269b1928",
 			"components": [
 				{
 					"component": "Image",
@@ -843,7 +843,7 @@
 			"persistentId": 110,
 			"position": {
 				"x": 685.0,
-				"y": 891.8182373046875,
+				"y": 881.724853515625,
 				"z": 0.0
 			},
 			"rotation": {
@@ -861,7 +861,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "ba2dcbed-2569-43a9-accd-b087c5b2f380",
+			"collaborationId": "3adbaf1a-66ce-4789-b79d-c428200ecbc1",
 			"components": [
 				{
 					"component": "Image",
@@ -1191,7 +1191,7 @@
 			"persistentId": 111,
 			"position": {
 				"x": 685.0,
-				"y": 891.8182373046875,
+				"y": 881.724853515625,
 				"z": 0.0
 			},
 			"rotation": {

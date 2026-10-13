@@ -941,7 +941,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 1.0499999523162842,
+							"float": 1.5,
 							"int": 0,
 							"is_array": false,
 							"name": "bulletOffsetY",
@@ -1003,7 +1003,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 2.0,
+							"float": 1.7999999523162842,
 							"int": 0,
 							"is_array": false,
 							"name": "maxBulletOffsetZ",
@@ -1034,7 +1034,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 100.0,
+							"float": 45.0,
 							"int": 0,
 							"is_array": false,
 							"name": "bulletRemoveDistance",

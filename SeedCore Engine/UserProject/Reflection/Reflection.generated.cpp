@@ -6,6 +6,7 @@
 #include <UserProject/Script/ChargeGaugeController.h>
 #include <UserProject/Script/CostGaugeController.h>
 #include <UserProject/Script/FloorMoveSystem.h>
+#include <UserProject/Script/LaserController.h>
 #include <UserProject/Script/PendulumController.h>
 #include <UserProject/Script/PlayerController.h>
 
@@ -15,6 +16,7 @@ extern "C" int _force_reflection_CameraController = 0;
 extern "C" int _force_reflection_ChargeGaugeController = 0;
 extern "C" int _force_reflection_CostGaugeController = 0;
 extern "C" int _force_reflection_FloorMoveSystem = 0;
+extern "C" int _force_reflection_LaserController = 0;
 extern "C" int _force_reflection_PendulumController = 0;
 extern "C" int _force_reflection_PlayerController = 0;
 
@@ -158,6 +160,22 @@ namespace SeedCore
 			}
 		};
 		static Register_FloorMoveSystem global_FloorMoveSystem_register;
+
+		// ---- UserProject/Script/LaserController.h ----
+		struct Register_LaserController
+		{
+			Register_LaserController()
+			{
+				ReflectionRegistry::Register(String("LaserController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					LaserController& obj = *static_cast<LaserController*>(ptr);
+					outInfo.push_back({ String("centerOffset"), offsetof(LaserController, centerOffset), AttributeType::Vector3 });
+					outInfo.push_back({ String("deltaOffset"), offsetof(LaserController, deltaOffset), AttributeType::Vector3 });
+					outInfo.push_back({ String("length"), offsetof(LaserController, length), AttributeType::Float });
+					outInfo.push_back({ String("tickness"), offsetof(LaserController, tickness), AttributeType::Float });
+				});
+			}
+		};
+		static Register_LaserController global_LaserController_register;
 
 		// ---- UserProject/Script/PendulumController.h ----
 		struct Register_PendulumController

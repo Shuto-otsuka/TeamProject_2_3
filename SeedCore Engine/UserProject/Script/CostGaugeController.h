@@ -34,10 +34,12 @@ private:
 
 	SeedCore::Actor costGaugeUsed;
 	SeedCore::Actor costGaugeAdd;
+	SeedCore::Actor costText;
 	SeedCore::Image* costGaugeUsedImage;
 	SeedCore::Image* costGaugeAddImage;
 	SeedCore::Position* costGaugeAddPosition;
 	SeedCore::Active* costGaugeOverActive;
+	SeedCore::Text* costT;
 
 	PlayerController* playerController = nullptr;
 

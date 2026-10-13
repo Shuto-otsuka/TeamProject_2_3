@@ -5,16 +5,19 @@ void CostGaugeController::OnStart()
 {
     costGaugeUsed = GetWorld().GetActor("CostGaugeUsed");
     costGaugeAdd = GetWorld().GetActor("CostGaugeAdd");
+    costText = GetWorld().GetActor("CostText");
 
     SeedCore::Entity costGaugeUsedEntity = costGaugeUsed.GetEntity();
     SeedCore::Entity costGaugeAddEntity = costGaugeAdd.GetEntity();
     SeedCore::Entity playerEntity = GetWorld().GetActor("Player").GetEntity();
+    SeedCore::Entity chargeTextEntity = costText.GetEntity();
 
     costGaugeUsedImage = GetWorld().GetComponent<SeedCore::Image>(costGaugeUsedEntity);
     costGaugeAddImage = GetWorld().GetComponent<SeedCore::Image>(costGaugeAddEntity);
     costGaugeAddPosition = GetWorld().GetComponent<SeedCore::Position>(costGaugeAddEntity);
     playerController = GetWorld().GetComponent<PlayerController>(playerEntity);
     costGaugeOverActive = GetWorld().GetComponent<SeedCore::Active>(GetWorld().GetActor("CostGaugeOverBase").GetEntity());
+    costT = GetWorld().GetComponent<SeedCore::Text>(chargeTextEntity);
 
     costGaugeUsedImage->textureSize_.x = sizeXMin;
     costGaugeAddPosition->x_ = posXMin;
@@ -33,6 +36,23 @@ void CostGaugeController::OnTick(float elapsedTime)
     float costGaugeUsedSize = GaugeToSizeX(used);
     //サイズをターゲットにセット
     usedSizeXTarget = costGaugeUsedSize;
+
+    //使った分のコストを○○/100みたいな感じでテキストで表示する
+    std::string usedStr = std::to_string(used);
+    //テキストを右揃えにしたいため、桁数が少ない場合左にスペースを空ける
+    int space = 2;
+    if (used > 0)
+    {
+        int digit = std::log10(used) + 1;
+        space = 3 - digit;
+    }
+    for (int i = 0; i < space; i++)
+    {
+        usedStr = " " + usedStr;
+    }
+    //テキストセット
+    std::string resultStr = usedStr + " / 100";
+    costT->text_ = SeedCore::String(resultStr);
 
     //使った分のコストゲージから追加ゲージのX座標に変換
     float costGaugeAddPos = GaugeToPosX(used);
