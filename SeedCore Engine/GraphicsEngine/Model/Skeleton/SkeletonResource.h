@@ -7,7 +7,8 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
+	struct GraphicsLoaderSystem;
+
 	class ResourceCache;
 
 	/**
@@ -26,24 +27,24 @@ namespace SeedCore
 	class SEEDCORE_API SkeletonResource :public Asset, public NonCopyable
 	{
 	public:
-		SkeletonResource() = default;
+		SkeletonResource(GraphicsLoaderSystem& loaders);
 		~SkeletonResource() = default;
 
-		void Load(const AssetContext& context, Uint32 assetId)override;
+		void Load(const AssetContext& context, Uint32 assetID)override;
 
-		void Unload(const AssetContext& context, Uint32 assetId)override;
+		Handle<SkeletonRig> Load(ResourceCache& cache, Uint32 assetID);
 
-		Handle<SkeletonRig> Load(LoaderSystem& loader, ResourceCache& cache, Uint32 assetId);
+		void Unload(Uint32 assetID)override;
 
-		Handle<SkeletonRig> GetHandle(Uint32 assetId)const;
+		Handle<SkeletonRig> GetHandle(Uint32 assetID)const;
 
-		SkeletonRig* Resolve(LoaderSystem& loader, const Handle<SkeletonRig>& handle);
+		SkeletonRig* Resolve(const Handle<SkeletonRig>& handle);
 
-		Bool Contains(Uint32 assetId)const;
-
-		void Unload(LoaderSystem& loader, Uint32 assetId);
+		Bool Contains(Uint32 assetID)const;
 
 	private:
+		GraphicsLoaderSystem& loaders_;
+
 		FlatMap<Uint32, Handle<SkeletonRig>> assetHandleMap_;
 	};
 }

@@ -1,73 +1,70 @@
 #include <GraphicsEngine/Effect/Effekseer/EffekseerResource.h>
-#include <GraphicsEngine/Effect/Effekseer/EffekseerLoader.h>
+#include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 
 namespace SeedCore
 {
-	void EffekseerResource::Load(const AssetContext& context, Uint32 assetId)
+	EffekseerResource::EffekseerResource(GraphicsLoaderSystem& loaders) :loaders_(loaders)
 	{
-		Load(context.loader_, context.cache_, assetId);
+		/// No Code
 	}
 
-	void EffekseerResource::Unload(const AssetContext& context, Uint32 assetId)
+	void EffekseerResource::Load(const AssetContext& context, Uint32 assetID)
 	{
-		Unload(context.loader_, assetId);
+		Load(context.cache_, assetID);
 	}
 
-	Handle<EffekseerEffect> EffekseerResource::Load(LoaderSystem& loader, ResourceCache& cache, Uint32 assetId)
+	Handle<EffekseerEffect> EffekseerResource::Load(ResourceCache& cache, Uint32 assetID)
 	{
-		if (assetHandleMap_.contains(assetId))
+		if (assetHandleMap_.contains(assetID))
 		{
-			return assetHandleMap_.at(assetId);
+			return assetHandleMap_.at(assetID);
 		}
 
-		AssetRecord* asset = cache.GetAsset(assetId);
+		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
 			return Handle<EffekseerEffect>::null();
 		}
 
-		Handle<EffekseerEffect> handle = loader.effekseerLoader_->Load(asset->fullpath_);
+		Handle<EffekseerEffect> handle = loaders_.effekseerLoader_->Load(asset->fullpath_);
 		if (handle.empty())
 		{
 			return Handle<EffekseerEffect>::null();
 		}
 
-		assetHandleMap_.insert({ assetId, handle });
+		assetHandleMap_.insert({ assetID, handle });
 		return handle;
 	}
 
-	Handle<EffekseerEffect> EffekseerResource::GetHandle(Uint32 assetId)const
+	void EffekseerResource::Unload(Uint32 assetID)
 	{
-		if (!assetHandleMap_.contains(assetId))
-		{
-			return Handle<EffekseerEffect>::null();
-		}
-		return assetHandleMap_.at(assetId);
-	}
-
-	EffekseerEffect* EffekseerResource::Resolve(LoaderSystem& loader, const Handle<EffekseerEffect>& handle)
-	{
-		return loader.effekseerLoader_->Get(handle);
-	}
-
-	Bool EffekseerResource::Contains(Uint32 assetId)const
-	{
-		return assetHandleMap_.contains(assetId);
-	}
-
-	void EffekseerResource::Unload(LoaderSystem& loader, Uint32 assetId)
-	{
-		if (!assetHandleMap_.contains(assetId))
+		if (!assetHandleMap_.contains(assetID))
 		{
 			return;
 		}
 
-		Handle<EffekseerEffect> handle = assetHandleMap_.at(assetId);
-		loader.effekseerLoader_->Clear(handle);
-		assetHandleMap_.erase(assetId);
+		Handle<EffekseerEffect> handle = assetHandleMap_.at(assetID);
+		loaders_.effekseerLoader_->Clear(handle);
+		assetHandleMap_.erase(assetID);
 	}
 
-	REGISTER_ASSET(AssetType::Effect, EffekseerResource);
+	Handle<EffekseerEffect> EffekseerResource::GetHandle(Uint32 assetID)const
+	{
+		if (!assetHandleMap_.contains(assetID))
+		{
+			return Handle<EffekseerEffect>::null();
+		}
+		return assetHandleMap_.at(assetID);
+	}
+
+	EffekseerEffect* EffekseerResource::Resolve(const Handle<EffekseerEffect>& handle)
+	{
+		return loaders_.effekseerLoader_->Get(handle);
+	}
+
+	Bool EffekseerResource::Contains(Uint32 assetID)const
+	{
+		return assetHandleMap_.contains(assetID);
+	}
 }

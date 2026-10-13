@@ -69,8 +69,6 @@ namespace SeedCore
 		Uint32 resizedHeight = 0;
 		window_->ConsumeResized(resizedWidth, resizedHeight);
 
-		ID3D12Device* device = graphics_->GetContext().GetDevice();
-
 		criManager_ = MakePtr<CriManager>();
 		if (!criManager_->Initialize())
 		{
@@ -85,8 +83,10 @@ namespace SeedCore
 		}
 		Gateway::BindFontManager(fontManager_.get());
 
-		loaderSystem_ = MakePtr<LoaderSystem>(device);
-		resource_ = MakePtr<ResourceCache>(*loaderSystem_, device, graphics_->GetContext().GetDirectQueue(), &graphics_->GetBindlessHeap());
+		audioModule_ = MakePtr<AudioModule>();
+		resource_ = MakePtr<ResourceCache>();
+		graphics_->GetGraphicsModule().Install(*resource_);
+		audioModule_->Install(*resource_);
 		resource_->Async();
 
 		Scene::Initialize(*world_, *resource_, *executor_);
@@ -147,10 +147,10 @@ namespace SeedCore
 			resource_ = nullptr;
 		}
 
-		if (loaderSystem_)
+		if (audioModule_)
 		{
-			loaderSystem_.reset();
-			loaderSystem_ = nullptr;
+			audioModule_.reset();
+			audioModule_ = nullptr;
 		}
 
 		if (fontManager_)
@@ -237,7 +237,7 @@ namespace SeedCore
 				splashSystem_.Update(*resource_);
 				if (!splashSystem_.Complete())
 				{
-					resource_->StepAsync(*loaderSystem_, graphics_->GetContext().GetDevice(), graphics_->GetContext().GetDirectQueue(), &graphics_->GetBindlessHeap(), graphics_->GetBC7CompressShader());
+					resource_->StepAsync(graphics_->GetContext().GetDevice(), graphics_->GetContext().GetDirectQueue(), graphics_->GetBC7CompressShader());
 
 					graphics_->DrawSplashScreen(splashSystem_);
 					continue;
@@ -250,7 +250,7 @@ namespace SeedCore
 					gameTimer_.Play();
 				}
 
-				AudioSystem::ResolveSound(*loaderSystem_, *resource_, *world_);
+				AudioSystem::ResolveSound(audioModule_->Resource(), *world_);
 
 				/// [EN] Coroutines resume before physics and the script ticks, with this frame's input already read; they do not advance while paused, so frame waits do not count down.
 				/// [JP] コルーチンは物理とスクリプトの Tick より前に、今フレームの入力を読んだ後で再開する。ポーズ中は進めないので、フレーム待ちも減らない。
@@ -259,8 +259,8 @@ namespace SeedCore
 					CoroutineSystem::Update(gameTimer_.ScaledDeltaTime());
 				}
 
-				PhysicsSystem::ResolveMeshCollider(*loaderSystem_, *resource_, *world_);
-				PhysicsSystem::ResolveSoftbody(*loaderSystem_, *resource_, *world_);
+				PhysicsSystem::ResolveMeshCollider(*graphics_->GetGraphicsModule().Resources().meshCollisionResource_, *world_);
+				PhysicsSystem::ResolveSoftbody(*graphics_->GetGraphicsModule().Resources().modelResource_, *world_);
 				PhysicsSystem::ApplyActive(*world_);
 
 				joltManager_->ActiveWorld(world_.get());
@@ -305,7 +305,7 @@ namespace SeedCore
 				graphics_->Upscale(gameConfig_.useDlss_, gameConfig_.upscaleMode_);
 				graphics_->VerticalSync(gameConfig_.vsync_);
 
-				graphics_->GameRender(gameTimer_, cameraSystem_, *loaderSystem_, *resource_, *world_);
+				graphics_->GameRender(gameTimer_, cameraSystem_, *world_);
 
 				graphics_->DrawLetterScreen();
 

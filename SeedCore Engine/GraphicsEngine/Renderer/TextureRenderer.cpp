@@ -36,7 +36,7 @@ namespace SeedCore
 		shaderResourceIndicesSystem.SetTextureBillboardIndex(billboardBuffer_->Index());
 	}
 
-	void TextureRenderer::Gather(LoaderSystem& loader, TextureResource& resource, World& world, Vector2 nativeScreenSize, std::span<const Entity> selectedEntities)
+	void TextureRenderer::Gather(TextureResource& resource, World& world, Vector2 nativeScreenSize, std::span<const Entity> selectedEntities)
 	{
 		spriteInstances_.clear();
 		billboardInstances_.clear();
@@ -82,7 +82,7 @@ namespace SeedCore
 					return;
 				}
 
-				Texture* texture = resource.Resolve(loader, bindlessHeap_, textureHandle, streamingFrame_);
+				Texture* texture = resource.Resolve(textureHandle, streamingFrame_);
 				if (!texture)
 				{
 					return;
@@ -177,7 +177,7 @@ namespace SeedCore
 				}
 			});
 
-		resource.EvictBudget(loader, bindlessHeap_, streamingFrame_);
+		resource.EvictBudget(streamingFrame_);
 		streamingFrame_++;
 	}
 

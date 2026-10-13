@@ -6,8 +6,6 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
-
 	/**
 	* [EN]
 	* Loads encrypted audio caches into stable Sound storage and converts
@@ -55,7 +53,7 @@ namespace SeedCore
 		* 最新の .audio キャッシュから Sound を読み込み、必要なら素材ファイル
 		* からキャッシュを作成する。失敗時は null ハンドルを返す。
 		*/
-		Handle<Sound> Load(LoaderSystem& loader, String filePath);
+		Handle<Sound> Load(String filePath);
 
 		/**
 		* [EN]

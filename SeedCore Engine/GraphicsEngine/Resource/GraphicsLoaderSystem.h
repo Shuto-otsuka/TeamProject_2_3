@@ -11,25 +11,10 @@
 #include <GraphicsEngine/Movie/MovieLoader.h>
 #include <GraphicsEngine/Sky/SkymapLoader.h>
 #include <GraphicsEngine/Effect/Effekseer/EffekseerLoader.h>
-#include <AudioEngine/Audio/AudioLoader.h>
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Bundles the low-level, format-specific loader objects (texture,
-	* sprite, model, animation, skymap) that ResourceCache's resource
-	* managers delegate actual file-format parsing/GPU-upload work to.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ResourceCache のリソースマネージャが、実際のファイルフォーマット
-	* 解析/GPU アップロード処理を委譲する、低水準でフォーマット固有の
-	* ローダーオブジェクト（テクスチャ、スプライト、モデル、
-	* アニメーション、スカイマップ）をまとめて保持する。
-	*/
-	struct SEEDCORE_API LoaderSystem
+	struct SEEDCORE_API GraphicsLoaderSystem
 	{
 		/// [EN] Loads texture assets from disk and uploads them to the GPU.
 		/// [JP] ディスクからテクスチャアセットを読み込み、GPU へアップロードする。
@@ -71,10 +56,6 @@ namespace SeedCore
 		/// [JP] Effekseerエフェクト(.efkefc)アセットを読み込む。
 		ResourcePtr<EffekseerLoader> effekseerLoader_;
 
-		/// [EN] Loads ".audio" assets (cue sheet or waveform).
-		/// [JP] ".audio" アセット（キューシートまたは波形）を読み込む。
-		ResourcePtr<AudioLoader> audioLoader_;
-
 		/**
 		* [EN]
 		* Constructs the loader system, creating each format-specific loader.
@@ -84,6 +65,6 @@ namespace SeedCore
 		* [JP]
 		* ローダーシステムを構築し、各フォーマット固有のローダーを生成する。
 		*/
-		LoaderSystem(ID3D12Device* device);
+		GraphicsLoaderSystem();
 	};
 }

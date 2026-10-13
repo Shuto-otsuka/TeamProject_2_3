@@ -3,7 +3,6 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
 
 	class World;
 	class AnimationResource;
@@ -33,6 +32,6 @@ namespace SeedCore
 	class AnimationSystem
 	{
 	public:
-		void Execute(World& world, LoaderSystem& loaderSystem, AnimationResource& animationResource, ModelResource& modelResource);
+		void Execute(World& world, AnimationResource& animationResource, ModelResource& modelResource);
 	};
 }

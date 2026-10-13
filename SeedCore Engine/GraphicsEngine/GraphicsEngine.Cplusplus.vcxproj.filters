@@ -232,6 +232,9 @@
     <Filter Include="Shape\Primitive\Diagnostic">
       <UniqueIdentifier>{c93e0585-8395-4a4f-be51-a0a04ea8cb9a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource">
+      <UniqueIdentifier>{29198ae3-b918-49d5-b4f5-d64f1e0f8637}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12\Context\D3D12Adapter.h">
@@ -1024,6 +1027,15 @@
     <ClInclude Include="Shape\Primitive\Diagnostic\DebugDraw.h">
       <Filter>Shape\Primitive\Diagnostic</Filter>
     </ClInclude>
+    <ClInclude Include="Resource\GraphicsLoaderSystem.h">
+      <Filter>Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\GraphicsResourceSystem.h">
+      <Filter>Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\GraphicsModule.h">
+      <Filter>Resource</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">
@@ -1681,6 +1693,15 @@
     </ClCompile>
     <ClCompile Include="Shape\Primitive\Diagnostic\DebugDraw.cpp">
       <Filter>Shape\Primitive\Diagnostic</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\GraphicsLoaderSystem.cpp">
+      <Filter>Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\GraphicsResourceSystem.cpp">
+      <Filter>Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\GraphicsModule.cpp">
+      <Filter>Resource</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

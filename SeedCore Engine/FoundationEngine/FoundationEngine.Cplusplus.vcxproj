@@ -153,8 +153,6 @@
     </ClCompile>
     <ClCompile Include="Reflection\ReflectionRegistry.cpp" />
     <ClCompile Include="Resource\Gateway.cpp" />
-    <ClCompile Include="Resource\LoaderSystem.cpp">
-    </ClCompile>
     <ClCompile Include="Resource\ResourceCache.cpp">
     </ClCompile>
     <ClCompile Include="Serialization\Binary\BinaryArchive.cpp" />
@@ -294,7 +292,6 @@
     <ClInclude Include="Prelude.h" />
     <ClInclude Include="Reflection\ReflectionRegistry.h" />
     <ClInclude Include="Resource\Gateway.h" />
-    <ClInclude Include="Resource\LoaderSystem.h" />
     <ClInclude Include="Resource\ResourceCache.h" />
     <ClInclude Include="SeedScript.h" />
     <ClInclude Include="Serialization\Binary\BinaryArchive.h" />

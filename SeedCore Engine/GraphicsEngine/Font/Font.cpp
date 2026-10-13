@@ -10,9 +10,7 @@ namespace SeedCore
 			return false;
 		}
 
-		DynamicArray<msdf_atlas::GlyphGeometry> geometries;
-		geometries.reserve(pendingGlyphs_.size());
-
+		const Size startIndex = glyphGeometries_.size();
 		for (Uint32 glyphIndex : pendingGlyphs_)
 		{
 			msdf_atlas::GlyphGeometry geometry;
@@ -24,19 +22,30 @@ namespace SeedCore
 			geometry.edgeColoring(&msdfgen::edgeColoringInkTrap, 3.0, 0);
 			geometry.wrapBox(1.0, pixelRange_, 1.0);
 
-			geometries.emplace_back(std::move(geometry));
+			glyphGeometries_.emplace_back(std::move(geometry));
 		}
 		pendingGlyphs_.clear();
 
-		if (geometries.empty())
+		const Size addedCount = glyphGeometries_.size() - startIndex;
+		if (addedCount == 0)
 		{
 			return false;
 		}
 
-		atlas_.add(geometries.data(), static_cast<Int>(geometries.size()), false);
-
-		for (const msdf_atlas::GlyphGeometry& geometry : geometries)
+		Size updateStartIndex = startIndex;
+		const Atlas::ChangeFlags changeFlags = atlas_.add(glyphGeometries_.data() + startIndex, static_cast<Int>(addedCount), true);
+		if (changeFlags & Atlas::REARRANGED)
 		{
+			atlas_ = Atlas(256);
+			atlas_.atlasGenerator().setThreadCount(static_cast<Int>(Max<Uint>(1u, std::thread::hardware_concurrency() / 2)));
+			atlas_.add(glyphGeometries_.data(), static_cast<Int>(glyphGeometries_.size()), true);
+			updateStartIndex = 0;
+		}
+
+		for (Size index = updateStartIndex; index < glyphGeometries_.size(); ++index)
+		{
+			const msdf_atlas::GlyphGeometry& geometry = glyphGeometries_[index];
+
 			GlyphAtlasEntry entry = {};
 			entry.isWhitespace_ = geometry.isWhitespace();
 

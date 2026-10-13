@@ -1,10 +1,25 @@
 #include <AudioEngine/Audio/AudioResource.h>
-#include <AudioEngine/Audio/AudioLoader.h>
+#include <AudioEngine/Resource/AudioLoaderSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 
 namespace SeedCore
 {
+	/**
+	* [EN]
+	* Binds the resource to the loader bundle it draws its audio loader
+	* from, starting with no asset loaded.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 音声のローダーを引くためのローダーのまとまりに、このリソースを
+	* 結び付ける。読み込み済みのアセットが無い状態から始まる。
+	*/
+	AudioResource::AudioResource(AudioLoaderSystem& loaders) :loaders_(loaders)
+	{
+		/// No Code
+	}
+
 	/**
 	* [EN]
 	* Loads an audio asset through the generic asset context.
@@ -14,24 +29,11 @@ namespace SeedCore
 	* [JP]
 	* 汎用アセットコンテキストを通じて音声アセットを読み込む。
 	*/
-	void AudioResource::Load(const AssetContext& context, Uint32 assetId)
+	void AudioResource::Load(const AssetContext& context, Uint32 assetID)
 	{
-		Load(context.loader_, context.cache_, assetId);
+		Load(context.cache_, assetID);
 	}
 
-	/**
-	* [EN]
-	* Unloads an audio asset through the generic asset context.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 汎用アセットコンテキストを通じて音声アセットを解放する。
-	*/
-	void AudioResource::Unload(const AssetContext& context, Uint32 assetId)
-	{
-		Unload(context.loader_, assetId);
-	}
 
 	/**
 	* [EN]
@@ -42,31 +44,54 @@ namespace SeedCore
 	* [JP]
 	* 必要に応じて音声アセットを読み込み、キャッシュ済みの Sound ハンドルを返す。
 	*/
-	Handle<Sound> AudioResource::Load(LoaderSystem& loader, ResourceCache& cache, Uint32 assetId)
+	Handle<Sound> AudioResource::Load(ResourceCache& cache, Uint32 assetID)
 	{
 		/// [EN] Reuse the existing handle when this asset is already loaded.
 		/// [JP] このアセットが読み込み済みなら、既存のハンドルを再利用する。
-		if (assetHandleMap_.contains(assetId))
+		if (assetHandleMap_.contains(assetID))
 		{
-			return assetHandleMap_.at(assetId);
+			return assetHandleMap_.at(assetID);
 		}
 
 		/// [EN] Resolve the asset path and load its Sound into AudioLoader storage.
 		/// [JP] アセットのパスを解決し、Sound を AudioLoader のストレージへ読み込む。
-		AssetRecord* asset = cache.GetAsset(assetId);
+		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
 			return Handle<Sound>::null();
 		}
 
-		Handle<Sound> handle = loader.audioLoader_->Load(loader, asset->fullpath_);
+		Handle<Sound> handle = loaders_.audioLoader_->Load(asset->fullpath_);
 		if (handle.empty())
 		{
 			return Handle<Sound>::null();
 		}
 
-		assetHandleMap_.insert({ assetId, handle });
+		assetHandleMap_.insert({ assetID, handle });
 		return handle;
+	}
+
+	/**
+	* [EN]
+	* Releases and removes the Sound associated with an asset ID.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* アセット ID に対応する Sound を解放し、対応関係を削除する。
+	*/
+	void AudioResource::Unload(Uint32 assetID)
+	{
+		if (!assetHandleMap_.contains(assetID))
+		{
+			return;
+		}
+
+		/// [EN] Release the pooled Sound before removing its asset-to-handle mapping.
+		/// [JP] アセットとハンドルの対応を削除する前に、プール内の Sound を解放する。
+		Handle<Sound> handle = assetHandleMap_.at(assetID);
+		loaders_.audioLoader_->Clear(handle);
+		assetHandleMap_.erase(assetID);
 	}
 
 	/**
@@ -97,9 +122,9 @@ namespace SeedCore
 	* [JP]
 	* オーディオローダーを通じて Sound ハンドルを解決する。
 	*/
-	Sound* AudioResource::Resolve(LoaderSystem& loader, const Handle<Sound>& handle)
+	Sound* AudioResource::Resolve(const Handle<Sound>& handle)
 	{
-		return loader.audioLoader_->Get(handle);
+		return loaders_.audioLoader_->Get(handle);
 	}
 
 	/**
@@ -115,29 +140,4 @@ namespace SeedCore
 	{
 		return assetHandleMap_.contains(assetId);
 	}
-
-	/**
-	* [EN]
-	* Releases and removes the Sound associated with an asset ID.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* アセット ID に対応する Sound を解放し、対応関係を削除する。
-	*/
-	void AudioResource::Unload(LoaderSystem& loader, Uint32 assetId)
-	{
-		if (!assetHandleMap_.contains(assetId))
-		{
-			return;
-		}
-
-		/// [EN] Release the pooled Sound before removing its asset-to-handle mapping.
-		/// [JP] アセットとハンドルの対応を削除する前に、プール内の Sound を解放する。
-		Handle<Sound> handle = assetHandleMap_.at(assetId);
-		loader.audioLoader_->Clear(handle);
-		assetHandleMap_.erase(assetId);
-	}
-
-	REGISTER_ASSET(AssetType::Audio, AudioResource);
 }

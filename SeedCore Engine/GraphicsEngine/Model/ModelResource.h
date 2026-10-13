@@ -6,12 +6,14 @@
 
 namespace SeedCore
 {
+	struct GraphicsLoaderSystem;
+
 	class Crister;
-	struct LoaderSystem;
 	class ResourceCache;
 	class BindlessHeap;
 	class BC7CompressShader;
 	class D3D12CommandQueue;
+
 	enum class MeshCollisionDetail;
 	enum class ModelFormat;
 	enum class ExportPreset;
@@ -32,12 +34,10 @@ namespace SeedCore
 	class SEEDCORE_API ModelResource :public Asset, public NonCopyable
 	{
 	public:
-		ModelResource() = default;
+		ModelResource(GraphicsLoaderSystem& loaders, BindlessHeap& heap);
 		~ModelResource() = default;
 
-		void Load(const AssetContext& context, Uint32 assetId)override;
-
-		void Unload(const AssetContext& context, Uint32 assetId)override;
+		void Load(const AssetContext& context, Uint32 assetID)override;
 
 		/**
 		* [EN]
@@ -48,9 +48,11 @@ namespace SeedCore
 		* [JP]
 		* アセット ID でモデルをロードする。既にロード済みなら既存のハンドルを返す。
 		*/
-		Handle<Crister> Load(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetId);
+		Handle<Crister> Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetID);
 
-		Bool Export(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetId, ExportPreset preset, String outputPath);
+		void Unload(Uint32 assetID)override;
+
+		Bool Export(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetID, ExportPreset preset, String outputPath);
 
 		/**
 		* [EN]
@@ -75,7 +77,7 @@ namespace SeedCore
 		* 「コリジョン生成」アセットアクションから呼ばれる。モデルは
 		* ロード時に衝突を自動生成しなくなった。
 		*/
-		Bool GenerateCollision(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetId, MeshCollisionDetail detail);
+		Bool GenerateCollision(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetID, MeshCollisionDetail detail);
 
 		/**
 		* [EN]
@@ -102,7 +104,7 @@ namespace SeedCore
 		* スキャンで AssetType::Material アセットになる。モデルにマテリアルが
 		* 無い、または書き込みに失敗した場合は false を返す。
 		*/
-		Bool GenerateMaterial(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetId, Bool overwrite);
+		Bool GenerateMaterial(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetID, Bool overwrite);
 
 		/**
 		* [EN]
@@ -129,7 +131,7 @@ namespace SeedCore
 		* AssetType::Skeleton アセットになる。モデルにスキンが無い、または
 		* 書き込みに失敗した場合は false を返す。
 		*/
-		Bool GenerateSkeleton(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetId, Bool overwrite);
+		Bool GenerateSkeleton(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetID, Bool overwrite);
 
 		/**
 		* [EN]
@@ -140,7 +142,7 @@ namespace SeedCore
 		* [JP]
 		* アセット ID に関連付けられたハンドルを返す。未ロードなら null。
 		*/
-		Handle<Crister> GetHandle(Uint32 assetId)const;
+		Handle<Crister> GetHandle(Uint32 assetID)const;
 
 		/**
 		* [EN]
@@ -151,7 +153,7 @@ namespace SeedCore
 		* [JP]
 		* ハンドルを Crister ポインタに解決する。
 		*/
-		Crister* Resolve(LoaderSystem& loader, const Handle<Crister>& handle);
+		Crister* Resolve(const Handle<Crister>& handle);
 
 		/**
 		* [EN]
@@ -162,20 +164,13 @@ namespace SeedCore
 		* [JP]
 		* 指定されたアセット ID のモデルがロード済みなら true を返す。
 		*/
-		Bool Contains(Uint32 assetId)const;
-
-		/**
-		* [EN]
-		* Unloads a model by asset ID and removes it from the map.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* アセット ID でモデルをアンロードし、マップから削除する。
-		*/
-		void Unload(LoaderSystem& loader, Uint32 assetId, BindlessHeap* heap);
+		Bool Contains(Uint32 assetID)const;
 
 	private:
+		GraphicsLoaderSystem& loaders_;
+
+		BindlessHeap& heap_;
+
 		FlatMap<Uint32, Handle<Crister>> assetHandleMap_;
 	};
 }

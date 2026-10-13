@@ -6,8 +6,6 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
-
 	/**
 	* [EN]
 	* Loads and saves standalone ".material" assets - one serialized
@@ -31,7 +29,7 @@ namespace SeedCore
 		MaterialLoader() = default;
 		~MaterialLoader() = default;
 
-		Handle<Surface> Load(LoaderSystem& loader, String filePath);
+		Handle<Surface> Load(String filePath);
 
 		Surface* Get(const Handle<Surface>& handle);
 

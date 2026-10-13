@@ -1,40 +1,28 @@
 #include <Editor/Editor/Panel/MaterialViewerPanel.h>
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
+#include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <GraphicsEngine/Model/Material/Material.h>
 #include <GraphicsEngine/Model/Material/MaterialLoader.h>
 #include <GraphicsEngine/Model/Material/MaterialResource.h>
 #include <GraphicsEngine/Model/Crister.h>
 #include <GraphicsEngine/Model/Mesh.h>
+#include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Graphics.h>
 #include <GraphicsEngine/Camera/PreviewCamera.h>
 #include <GraphicsEngine/Camera/PreviewCameraController.h>
 #include <FoundationEngine/Input/InputSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
+#include <GraphicsEngine/Resource/GraphicsModule.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
 
 namespace SeedCore
 {
-	namespace
+	MaterialViewerPanel::MaterialViewerPanel(EditorContext& context, ImGuiTexture& imguiTexture) : context_(context), imguiTexture_(imguiTexture)
 	{
-		std::string SlotLabel(ResourceCache* resource, Uint32 assetId, Size slot)
-		{
-			if (assetId == 0)
-			{
-				return "[" + std::to_string(slot) + "] (未割り当て)";
-			}
-			AssetRecord* asset = resource->GetAsset(assetId);
-			std::string name = asset ? std::filesystem::path(asset->path_.c_str()).stem().string() : std::to_string(assetId);
-			return "[" + std::to_string(slot) + "] " + name;
-		}
-	}
-
-	MaterialViewerPanel::MaterialViewerPanel(EditorContext& context) : context_(context)
-	{
-		surfaceNewNameBuffer_.resize(128);
+		/// No Code
 	}
 
 	MaterialViewerPanel::~MaterialViewerPanel() = default;
@@ -45,94 +33,94 @@ namespace SeedCore
 		ImGui::SetWindowFocus("マテリアルビューア");
 	}
 
-	void MaterialViewerPanel::SetPreviewHandle(D3D12_GPU_DESCRIPTOR_HANDLE previewHandle)
+	Bool MaterialViewerPanel::Visible()const
 	{
-		previewHandle_ = previewHandle;
-	}
-
-	Bool MaterialViewerPanel::Focused()const
-	{
-		return isFocused_;
-	}
-
-	void MaterialViewerPanel::EnsureEditingSurface()
-	{
-		Uint32 surfaceAssetId = context_.preview_.material_.surfaceAssetID_;
-		if (surfaceAssetId == 0 || editingSurfaceAssetId_ == surfaceAssetId)
-		{
-			return;
-		}
-
-		LoaderSystem* loader = context_.world_.loader_;
-		ResourceCache* cache = context_.world_.resource_;
-		MaterialResource* materialResource = cache->GetResource<MaterialResource>(AssetType::Material);
-
-		Handle<Surface> handle = materialResource->GetHandle(surfaceAssetId);
-		if (handle.empty())
-		{
-			handle = materialResource->Load(*loader, *cache, surfaceAssetId);
-		}
-		Surface* loaded = loader->materialLoader_->Get(handle);
-		if (!loaded)
-		{
-			return;
-		}
-
-		editingSurface_ = MakePtr<Surface>(*loaded);
-		editingSurfaceAssetId_ = surfaceAssetId;
-
-		AssetRecord* asset = cache->GetAsset(surfaceAssetId);
-		surfaceNewNameBuffer_ = asset ? std::filesystem::path(asset->fullpath_.c_str()).stem().string() : std::string();
-		surfaceNewNameBuffer_.resize(128);
+		return visible_;
 	}
 
 	void MaterialViewerPanel::Draw()
 	{
 		context_.preview_.material_.active_ = false;
 		context_.preview_.material_.surfaceAssetID_ = 0;
-		isFocused_ = false;
+		visible_ = false;
 
 		if (!show_)
 		{
 			return;
 		}
 
+		ResourceCache* resource = context_.world_.resource_;
+		auto slotLabel = [resource](const std::string& slotName, Uint32 assetID, Size slot) -> std::string
+		{
+			std::string_view slotText = slotName.empty() ? std::string_view("(名前なし)") : std::string_view(slotName);
+			if (assetID == 0)
+			{
+				return std::format("[{}] {} : (モデル内蔵)", slot, slotText);
+			}
+			AssetRecord* asset = resource->GetAsset(assetID);
+			std::string name = asset ? std::filesystem::path(asset->path_.c_str()).stem().string() : std::to_string(assetID);
+			return std::format("[{}] {} : {}", slot, slotText, name);
+		};
+
 		Actor actor = context_.selection_.Primary();
-		target_ = actor ? context_.world_.world_->GetComponent<Material>(actor.GetEntity()) : nullptr;
+		Material* material = actor ? context_.world_.world_->GetComponent<Material>(actor.GetEntity()) : nullptr;
 
 		ImGuiWindow* editorViewWindow = ImGui::FindWindowByName("エディタービュー");
 		ImGuiID dockID = (editorViewWindow && editorViewWindow->DockId != 0) ? editorViewWindow->DockId : context_.graphics_.imgui_->DockSpaceID();
 		ImGui::DockBuilderDockWindow("マテリアルビューア", dockID);
 		ImGui::SetNextWindowSize(ImVec2(960, 720), ImGuiCond_FirstUseEver);
 
-		isFocused_ = ImGui::Begin("マテリアルビューア", &show_);
-		if (isFocused_)
+		visible_ = ImGui::Begin("マテリアルビューア", &show_);
+		if (visible_)
 		{
 			const Mesh* mesh = actor ? context_.world_.world_->GetComponent<Mesh>(actor.GetEntity()) : nullptr;
+			ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
+			Crister* crister = (mesh && mesh->meshID_ != 0) ? modelResource->Resolve(modelResource->GetHandle(mesh->meshID_)) : nullptr;
 
-			if (!target_ || !mesh || mesh->meshID_ == 0)
+			if (!material || !mesh || mesh->meshID_ == 0)
 			{
 				ImGui::TextDisabled("Material コンポーネントとメッシュを持つアクターを選択してください");
 			}
-			else if (target_->materialIDs_.empty())
+			else if (!crister || crister->Surfaces().empty())
 			{
 				ImGui::TextDisabled("マテリアルスロットがありません");
 			}
 			else
 			{
-				if (selectedSlot_ >= target_->materialIDs_.size())
+				const DynamicArray<Surface>& surfaces = crister->Surfaces();
+				if (selected_ >= surfaces.size())
 				{
-					selectedSlot_ = 0;
+					selected_ = 0;
+				}
+
+				material->slotMaterialIDs_.resize(material->slotNames_.size(), 0);
+
+				DynamicArray<Uint32> slotAssetIDs(surfaces.size(), 0);
+				for (Size slot = 0; slot < surfaces.size(); slot++)
+				{
+					if (surfaces[slot].name_.empty())
+					{
+						continue;
+					}
+					for (Size index = 0; index < material->slotNames_.size(); index++)
+					{
+						if (material->slotNames_[index].str() == surfaces[slot].name_)
+						{
+							Uint32 assignedID = material->slotMaterialIDs_[index];
+							slotAssetIDs[slot] = std::ranges::contains(material->materialIDs_, assignedID) ? assignedID : 0;
+							break;
+						}
+					}
 				}
 
 				ImGui::SetNextItemWidth(240.0f);
-				if (ImGui::BeginCombo("マテリアル", SlotLabel(context_.world_.resource_, target_->materialIDs_[selectedSlot_], selectedSlot_).c_str()))
+				if (ImGui::BeginCombo("メッシュ", slotLabel(surfaces[selected_].name_, slotAssetIDs[selected_], selected_).c_str()))
 				{
-					for (Size slot = 0; slot < target_->materialIDs_.size(); slot++)
+					for (Size slot = 0; slot < surfaces.size(); slot++)
 					{
-						if (ImGui::Selectable(SlotLabel(context_.world_.resource_, target_->materialIDs_[slot], slot).c_str(), selectedSlot_ == slot))
+						if (ImGui::Selectable(slotLabel(surfaces[slot].name_, slotAssetIDs[slot], slot).c_str(), selected_ == slot))
 						{
-							selectedSlot_ = slot;
+							selected_ = slot;
 						}
 					}
 					ImGui::EndCombo();
@@ -140,7 +128,7 @@ namespace SeedCore
 
 				context_.preview_.material_.active_ = true;
 				context_.preview_.material_.meshAssetID_ = mesh->meshID_;
-				context_.preview_.material_.surfaceAssetID_ = target_->materialIDs_[selectedSlot_];
+				context_.preview_.material_.surfaceAssetID_ = slotAssetIDs[selected_];
 
 				ImGui::Spacing();
 
@@ -152,7 +140,7 @@ namespace SeedCore
 					context_.preview_.material_.camera_->Resize(previewSize.x, previewSize.y);
 				}
 
-				ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
+				ImGui::Image(ImTextureID(context_.graphics_.graphics_->MaterialDisplayGPUHandle().ptr), previewSize);
 
 				Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
 				Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
@@ -177,54 +165,143 @@ namespace SeedCore
 
 	void MaterialViewerPanel::DrawDetails()
 	{
-		if (!target_ || target_->materialIDs_.empty() || selectedSlot_ >= target_->materialIDs_.size())
-		{
-			ImGui::TextDisabled("マテリアルビューアでスロットを選択してください");
-			return;
-		}
+		Actor actor = context_.selection_.Primary();
+		Material* material = actor ? context_.world_.world_->GetComponent<Material>(actor.GetEntity()) : nullptr;
+		const Mesh* mesh = actor ? context_.world_.world_->GetComponent<Mesh>(actor.GetEntity()) : nullptr;
 
-		Uint32 surfaceAssetId = target_->materialIDs_[selectedSlot_];
-		if (surfaceAssetId == 0)
-		{
-			ImGui::TextDisabled("このスロットは未割り当てです（Crister 内蔵を使用）");
-			return;
-		}
-
-		EnsureEditingSurface();
-		if (!editingSurface_)
-		{
-			ImGui::TextDisabled("マテリアルを読み込めません");
-			return;
-		}
-
-		LoaderSystem* loader = context_.world_.loader_;
+		GraphicsModule& graphicsModule = context_.graphics_.graphics_->GetGraphicsModule();
 		ResourceCache* cache = context_.world_.resource_;
-		MaterialResource* materialResource = cache->GetResource<MaterialResource>(AssetType::Material);
-		Surface& surface = *editingSurface_;
+		ModelResource* modelResource = graphicsModule.Resources().modelResource_.get();
+		MaterialResource* materialResource = graphicsModule.Resources().materialResource_.get();
+		Crister* crister = (mesh && mesh->meshID_ != 0) ? modelResource->Resolve(modelResource->GetHandle(mesh->meshID_)) : nullptr;
+
+		if (!material || !crister || selected_ >= crister->Surfaces().size())
+		{
+			ImGui::TextDisabled("マテリアルビューアでメッシュを選択してください");
+			return;
+		}
+
+		const std::string& slotName = crister->Surfaces()[selected_].name_;
+		Uint32 surfaceAssetID = context_.preview_.material_.surfaceAssetID_;
+
+		AssetRecord* assignedAsset = surfaceAssetID != 0 ? cache->GetAsset(surfaceAssetID) : nullptr;
+		std::string preview = assignedAsset ? std::filesystem::path(assignedAsset->path_.c_str()).stem().string() : std::string("(内蔵マテリアル)");
+		Uint32 newID = surfaceAssetID;
+
+		ImGui::BeginDisabled(slotName.empty());
+		if (ImGui::BeginCombo("マテリアル", preview.c_str()))
+		{
+			if (ImGui::Selectable("(モデル内蔵)", surfaceAssetID == 0))
+			{
+				newID = 0;
+			}
+			for (Size paletteIndex = 0; paletteIndex < material->materialIDs_.size(); paletteIndex++)
+			{
+				Uint32 paletteID = material->materialIDs_[paletteIndex];
+				AssetRecord* paletteAsset = paletteID != 0 ? cache->GetAsset(paletteID) : nullptr;
+				if (!paletteAsset)
+				{
+					continue;
+				}
+				ImGui::PushID(static_cast<Int>(paletteIndex));
+				newID = paletteID;
+				if (ImGui::Selectable(std::filesystem::path(paletteAsset->path_.c_str()).stem().string().c_str(), paletteID == surfaceAssetID))
+				{
+				}
+				ImGui::PopID();
+			}
+			ImGui::EndCombo();
+		}
+		ImGui::EndDisabled();
+
+		if (newID != surfaceAssetID)
+		{
+			Size assignmentIndex = material->slotNames_.size();
+			for (Size index = 0; index < material->slotNames_.size(); index++)
+			{
+				if (material->slotNames_[index].str() == slotName)
+				{
+					assignmentIndex = index;
+					break;
+				}
+			}
+
+			if (newID == 0)
+			{
+				if (assignmentIndex < material->slotNames_.size())
+				{
+					material->slotNames_.erase(material->slotNames_.begin() + assignmentIndex);
+					material->slotMaterialIDs_.erase(material->slotMaterialIDs_.begin() + assignmentIndex);
+				}
+			}
+			else
+			{
+				if (assignmentIndex < material->slotNames_.size())
+				{
+					material->slotMaterialIDs_[assignmentIndex] = newID;
+				}
+				else
+				{
+					material->slotNames_.push_back(String(slotName));
+					material->slotMaterialIDs_.push_back(newID);
+				}
+				materialResource->Load(*cache, newID);
+			}
+
+			surfaceAssetID = newID;
+			context_.preview_.material_.surfaceAssetID_ = newID;
+		}
+
+		ImGui::Separator();
+
+		if (surfaceAssetID == 0)
+		{
+			ImGui::TextDisabled("内蔵マテリアルを使用中");
+			return;
+		}
+
+		if (editingState_.assetID_ != surfaceAssetID)
+		{
+			Handle<Surface> handle = materialResource->GetHandle(surfaceAssetID);
+			if (handle.empty())
+			{
+				handle = materialResource->Load(*cache, surfaceAssetID);
+			}
+			Surface* loaded = graphicsModule.Loaders().materialLoader_->Get(handle);
+			if (!loaded)
+			{
+				ImGui::TextDisabled("マテリアルを読み込めません");
+				return;
+			}
+			editingState_.surface_ = MakePtr<Surface>(*loaded);
+			editingState_.assetID_ = surfaceAssetID;
+		}
+
+		Surface& surface = *editingState_.surface_;
 
 		if (ImGui::Button("上書き保存"))
 		{
-			if (AssetRecord* asset = cache->GetAsset(surfaceAssetId))
+			if (AssetRecord* asset = cache->GetAsset(surfaceAssetID))
 			{
-				loader->materialLoader_->Save(surface, asset->fullpath_);
-				materialResource->Unload(*loader, surfaceAssetId);
-				materialResource->Load(*loader, *cache, surfaceAssetId);
+				graphicsModule.Loaders().materialLoader_->Save(surface, asset->fullpath_);
+				materialResource->Unload(surfaceAssetID);
+				materialResource->Load(*cache, surfaceAssetID);
 			}
 		}
 		ImGui::SameLine();
-		ImGui::SetNextItemWidth(150.0f);
-		ImGui::InputText("##surfaceNewName", surfaceNewNameBuffer_.data(), surfaceNewNameBuffer_.capacity());
-		ImGui::SameLine();
-		if (ImGui::Button("新規保存"))
+		if (ImGui::Button("複製して保存"))
 		{
-			std::string name(surfaceNewNameBuffer_.c_str());
-			AssetRecord* asset = cache->GetAsset(surfaceAssetId);
-			if (asset && !name.empty())
+			if (AssetRecord* asset = cache->GetAsset(surfaceAssetID))
 			{
-				std::filesystem::path newPath = std::filesystem::path(asset->fullpath_.c_str()).parent_path() / (name + ".material");
-				loader->materialLoader_->Save(surface, String(newPath.string()));
+				std::filesystem::path sourcePath(asset->fullpath_.c_str());
+				std::filesystem::path newPath = sourcePath;
+				for (Int copyIndex = 2; std::filesystem::exists(newPath); copyIndex++)
+				{
+					newPath = sourcePath.parent_path() / (sourcePath.stem().string() + " (" + std::to_string(copyIndex) + ")" + sourcePath.extension().string());
+				}
+				graphicsModule.Loaders().materialLoader_->Save(surface, String(newPath.string()));
 				D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-				cache->Reload(*loader, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+				cache->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 			}
 		}
 

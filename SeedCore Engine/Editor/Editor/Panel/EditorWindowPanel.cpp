@@ -2,7 +2,8 @@
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
-#include <Editor/Editor/ViewportPicking.h>
+#include <Editor/Editor/Interaction/ActorEditing.h>
+#include <Editor/Editor/Interaction/ViewportPicking.h>
 #include <GraphicsEngine/Camera/EditorCamera.h>
 #include <GraphicsEngine/Camera/EditorCameraController.h>
 #include <GraphicsEngine/Camera/Camera.h>
@@ -94,6 +95,19 @@ namespace SeedCore
 
 			UpdateSnap();
 			UpdateCamera();
+
+			if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && !ImGuizmo::IsUsing())
+			{
+				ImGuiIO& io = ImGui::GetIO();
+				if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_D, false))
+				{
+					ActorEditing::DuplicationSelection(context_);
+				}
+				if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
+				{
+					ActorEditing::DeleteSelection(context_);
+				}
+			}
 		}
 
 		ImGui::End();

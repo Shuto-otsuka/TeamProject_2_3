@@ -1,74 +1,72 @@
 #include <GraphicsEngine/Sky/SkymapResource.h>
 #include <GraphicsEngine/Sky/SkymapLoader.h>
+#include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 
 namespace SeedCore
 {
-	void SkymapResource::Load(const AssetContext& context, Uint32 assetId)
+	SkymapResource::SkymapResource(GraphicsLoaderSystem& loaders, BindlessHeap& heap) :loaders_(loaders), heap_(heap)
 	{
-		Load(context.loader_, context.device_, context.cmdQueue_, context.heap_, context.cache_, assetId);
+		/// No Code
 	}
 
-	void SkymapResource::Unload(const AssetContext& context, Uint32 assetId)
+	void SkymapResource::Load(const AssetContext& context, Uint32 assetID)
 	{
-		Unload(context.loader_, assetId, context.heap_);
+		Load(context.device_, context.cmdQueue_, context.cache_, assetID);
 	}
 
-	Handle<Skymap> SkymapResource::Load(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, ResourceCache& cache, Uint32 assetId)
+	Handle<Skymap> SkymapResource::Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, ResourceCache& cache, Uint32 assetID)
 	{
-		if (assetHandleMap_.contains(assetId))
+		if (assetHandleMap_.contains(assetID))
 		{
-			return assetHandleMap_.at(assetId);
+			return assetHandleMap_.at(assetID);
 		}
 
-		AssetRecord* asset = cache.GetAsset(assetId);
+		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
 			return Handle<Skymap>::null();
 		}
 
-		Handle<Skymap> handle = loader.skymapLoader_->Load(device, cmdQueue, heap, asset->fullpath_);
+		Handle<Skymap> handle = loaders_.skymapLoader_->Load(device, cmdQueue, &heap_, asset->fullpath_);
 		if (handle.empty())
 		{
 			return Handle<Skymap>::null();
 		}
 
-		assetHandleMap_.insert({ assetId, handle });
+		assetHandleMap_.insert({ assetID, handle });
 		return handle;
 	}
 
-	Handle<Skymap> SkymapResource::GetHandle(Uint32 assetId)const
+	void SkymapResource::Unload(Uint32 assetID)
 	{
-		if (!assetHandleMap_.contains(assetId))
+		if (!assetHandleMap_.contains(assetID))
+		{
+			return;
+		}
+
+		Handle<Skymap> handle = assetHandleMap_.at(assetID);
+		loaders_.skymapLoader_->Clear(handle, &heap_);
+		assetHandleMap_.erase(assetID);
+	}
+
+	Handle<Skymap> SkymapResource::GetHandle(Uint32 assetID)const
+	{
+		if (!assetHandleMap_.contains(assetID))
 		{
 			return Handle<Skymap>::null();
 		}
-		return assetHandleMap_.at(assetId);
+		return assetHandleMap_.at(assetID);
 	}
 
-	Skymap* SkymapResource::Resolve(LoaderSystem& loader, const Handle<Skymap>& handle)
+	Skymap* SkymapResource::Resolve(const Handle<Skymap>& handle)
 	{
-		return loader.skymapLoader_->Get(handle);
+		return loaders_.skymapLoader_->Get(handle);
 	}
 
 	Bool SkymapResource::Contains(Uint32 assetId)const
 	{
 		return assetHandleMap_.contains(assetId);
 	}
-
-	void SkymapResource::Unload(LoaderSystem& loader, Uint32 assetId, BindlessHeap* heap)
-	{
-		if (!assetHandleMap_.contains(assetId))
-		{
-			return;
-		}
-
-		Handle<Skymap> handle = assetHandleMap_.at(assetId);
-		loader.skymapLoader_->Clear(handle, heap);
-		assetHandleMap_.erase(assetId);
-	}
-
-	REGISTER_ASSET(AssetType::Skymap, SkymapResource);
 }

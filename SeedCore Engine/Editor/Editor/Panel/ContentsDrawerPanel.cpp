@@ -57,7 +57,7 @@ namespace SeedCore
 		/// [JP] UserProject 以下のファイル変更で ResourceCache に読み直させる。読み直すと revision が進む。
 		ResourceCache* resource = context_.world_.resource_;
 		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		resource->Watch(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+		resource->Watch(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 
 		/// [EN] Rebuild here, before anything is drawn, because the menus below hold references into the tree.
 		/// [JP] 下のメニューはツリーの中を参照するので、何かを描く前のここで作り直す。
@@ -255,7 +255,7 @@ namespace SeedCore
 						{
 							/// [EN] Reload at once rather than waiting for the watch, because the new Prefab's ID is needed right now.
 							/// [JP] 新しい Prefab の ID がすぐ要るので、監視を待たずにここで読み直す。
-							resource->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+							resource->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 							if (Uint32 newAssetID = resource->GetAssetID(String(savedPath.RelativeText())))
 							{
 								dropped.PrefabID(newAssetID);
@@ -606,8 +606,8 @@ namespace SeedCore
 		/// [JP] テクスチャのピクセルサイズ。GPU リソースから読む。
 		if (preview)
 		{
-			TextureResource* textureResource = context_.world_.resource_->GetResource<TextureResource>(AssetType::Texture);
-			Texture* texture = textureResource->Resolve(*context_.world_.loader_, &context_.graphics_.graphics_->GetBindlessHeap(), textureResource->GetHandle(asset.assetID_), context_.application_.uiFrame_);
+			TextureResource* textureResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().textureResource_.get();
+			Texture* texture = textureResource->Resolve(textureResource->GetHandle(asset.assetID_), context_.application_.uiFrame_);
 			if (texture && texture->Resource())
 			{
 				D3D12_RESOURCE_DESC desc = texture->Resource()->GetDesc();
@@ -1147,8 +1147,8 @@ namespace SeedCore
 			}
 
 			BindlessHeap& bindlessHeap = context_.graphics_.graphics_->GetBindlessHeap();
-			TextureResource* textureResource = context_.world_.resource_->GetResource<TextureResource>(AssetType::Texture);
-			Texture* texture = textureResource->Resolve(*context_.world_.loader_, &bindlessHeap, textureResource->GetHandle(asset.assetID_), context_.application_.uiFrame_);
+			TextureResource* textureResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().textureResource_.get();
+			Texture* texture = textureResource->Resolve(textureResource->GetHandle(asset.assetID_), context_.application_.uiFrame_);
 			if (texture && texture->Resource())
 			{
 				/// [EN] Pin the texture so streaming never evicts the resource the thumbnail views.
@@ -1305,7 +1305,7 @@ namespace SeedCore
 	void ContentsDrawerPanel::GenerateMeshCollision(const AssetRecord& asset, MeshCollisionDetail detail)
 	{
 		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		if (!context_.world_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateCollision(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphics_.graphics_->GetBindlessHeap(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, detail))
+		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->GenerateCollision(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, detail))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: コリジョン生成に失敗しました: {}", asset.path_.c_str());
 			return;
@@ -1313,7 +1313,7 @@ namespace SeedCore
 
 		/// [EN] Rescan so the just-written ".collision" sibling is picked up as its own asset.
 		/// [JP] 書き出した ".collision" 兄弟を個別アセットとして拾えるよう再スキャンする。
-		context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+		context_.world_.resource_->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 		SC_LOG_NOTICE("コンテンツドロワー: コリジョンを生成しました: {}", asset.path_.c_str());
 	}
 
@@ -1329,7 +1329,7 @@ namespace SeedCore
 	void ContentsDrawerPanel::GenerateMaterial(const AssetRecord& asset)
 	{
 		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		if (!context_.world_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateMaterial(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphics_.graphics_->GetBindlessHeap(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, true))
+		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->GenerateMaterial(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, true))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: マテリアル生成に失敗しました: {}", asset.path_.c_str());
 			return;
@@ -1337,7 +1337,7 @@ namespace SeedCore
 
 		/// [EN] Rescan so the just-written ".material" siblings are picked up as their own assets.
 		/// [JP] 書き出した ".material" 兄弟を個別アセットとして拾えるよう再スキャンする。
-		context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+		context_.world_.resource_->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 		SC_LOG_NOTICE("コンテンツドロワー: マテリアルを生成しました: {}", asset.path_.c_str());
 	}
 
@@ -1353,7 +1353,7 @@ namespace SeedCore
 	void ContentsDrawerPanel::GenerateSkeleton(const AssetRecord& asset)
 	{
 		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		if (!context_.world_.resource_->GetResource<ModelResource>(AssetType::Model)->GenerateSkeleton(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphics_.graphics_->GetBindlessHeap(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, false))
+		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->GenerateSkeleton(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, false))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: スケルトン生成に失敗しました（スキン無し？）: {}", asset.path_.c_str());
 			return;
@@ -1361,7 +1361,7 @@ namespace SeedCore
 
 		/// [EN] Rescan so the just-written ".skeleton" sibling is picked up as its own asset.
 		/// [JP] 書き出した ".skeleton" 兄弟を個別アセットとして拾えるよう再スキャンする。
-		context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+		context_.world_.resource_->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 		SC_LOG_NOTICE("コンテンツドロワー: スケルトンを生成しました: {}", asset.path_.c_str());
 	}
 
@@ -1724,7 +1724,7 @@ namespace SeedCore
 		}
 
 		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		if (!context_.world_.resource_->GetResource<ModelResource>(AssetType::Model)->Export(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), &context_.graphics_.graphics_->GetBindlessHeap(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, preset, String(outputPath.string())))
+		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->Export(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, preset, String(outputPath.string())))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: モデルのエクスポートに失敗しました: {}", asset.path_.c_str());
 			return;
@@ -1732,7 +1732,7 @@ namespace SeedCore
 
 		/// [EN] Reload so an export written inside the project shows up as an asset.
 		/// [JP] プロジェクト内へ書き出した場合にアセットとして出てくるよう、読み直す。
-		context_.world_.resource_->Reload(*context_.world_.loader_, d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+		context_.world_.resource_->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 		SC_LOG_NOTICE("コンテンツドロワー: モデルをエクスポートしました: {}", asset.path_.c_str());
 	}
 }

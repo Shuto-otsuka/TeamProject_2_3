@@ -24,7 +24,6 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
 	struct RootAddresses;
 
 	class BindlessHeap;
@@ -135,7 +134,7 @@ namespace SeedCore
 		* 未キャッシュのメッシュを積み、消えたメッシュやエンティティの
 		* キャッシュを刈る。GPU の処理は記録しない。
 		*/
-		void Gather(LoaderSystem& loaderSystem, ModelResource& modelResource, World& world, const ModelRenderer& modelRenderer);
+		void Gather(ModelResource& modelResource, World& world, const ModelRenderer& modelRenderer);
 
 		/**
 		* [EN]

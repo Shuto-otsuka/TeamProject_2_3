@@ -35,6 +35,8 @@
     <ClInclude Include="Audio\Sound.h" />
     <ClInclude Include="CRI\CriAllocator.h" />
     <ClInclude Include="CRI\CriManager.h" />
+    <ClInclude Include="Resource\AudioLoaderSystem.h" />
+    <ClInclude Include="Resource\AudioModule.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Audio\Audio.cpp" />
@@ -54,6 +56,8 @@
     </ClCompile>
     <ClCompile Include="CRI\CriManager.cpp">
     </ClCompile>
+    <ClCompile Include="Resource\AudioLoaderSystem.cpp" />
+    <ClCompile Include="Resource\AudioModule.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

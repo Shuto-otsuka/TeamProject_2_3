@@ -25,9 +25,9 @@
 #include <FoundationEngine/World/Tag/TagRegistry.h>
 #include <FoundationEngine/World/Layer/LayerRegistry.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/Resource/Prefab/Prefab.h>
 #include <FoundationEngine/Time/GameTimer.h>
+#include <GraphicsEngine/Resource/GraphicsModule.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Model/Material/Material.h>
@@ -36,6 +36,7 @@
 #include <GraphicsEngine/Texture/Image.h>
 #include <GraphicsEngine/Font/Text.h>
 #include <GraphicsEngine/Movie/Movie.h>
+#include <GraphicsEngine/Graphics.h>
 #include <PhysicsEngine/Collider/RectCollider.h>
 #include <PhysicsEngine/Collider/CircleCollider.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
@@ -74,7 +75,7 @@ namespace SeedCore
 				return;
 			}
 
-			if (context_.panel_.materialViewer_ && context_.panel_.materialViewer_->Focused())
+			if (context_.panel_.materialViewer_ && context_.panel_.materialViewer_->Visible())
 			{
 				context_.panel_.materialViewer_->DrawDetails();
 				ImGui::End();
@@ -548,8 +549,8 @@ namespace SeedCore
 			Skeleton* skeletonComponent = actor.GetComponent<Skeleton>();
 			if (!skeletonComponent || skeletonComponent->skeletonID_ == 0)
 			{
-				ModelResource* modelResource = context_.world_.resource_->GetResource<ModelResource>(AssetType::Model);
-				Crister* crister = modelResource->Resolve(*context_.world_.loader_, modelResource->GetHandle(mesh->meshID_));
+				ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
+				Crister* crister = modelResource->Resolve(modelResource->GetHandle(mesh->meshID_));
 				AssetRecord* modelAsset = context_.world_.resource_->GetAsset(mesh->meshID_);
 				if (crister && modelAsset && !crister->Skins().empty())
 				{
@@ -576,30 +577,7 @@ namespace SeedCore
 
 		if (const Mesh* mesh = actor.GetComponent<Mesh>(); mesh && mesh->meshID_ != 0 && !actor.GetComponent<Material>())
 		{
-			Material* materialComponent = actor.AddComponent<Material>();
-			ModelResource* modelResource = context_.world_.resource_->GetResource<ModelResource>(AssetType::Model);
-			Crister* crister = modelResource->Resolve(*context_.world_.loader_, modelResource->GetHandle(mesh->meshID_));
-			AssetRecord* modelAsset = context_.world_.resource_->GetAsset(mesh->meshID_);
-			if (materialComponent && crister && modelAsset)
-			{
-				std::filesystem::path modelPath(modelAsset->fullpath_.c_str());
-				std::filesystem::path directory = modelPath.parent_path() / (modelPath.stem().string() + ".Materials");
-				const DynamicArray<Surface>& surfaces = crister->Surfaces();
-				materialComponent->materialIDs_.resize(surfaces.size(), 0);
-				for (Size slot = 0; slot < surfaces.size(); slot++)
-				{
-					std::string target = (directory / (surfaces[slot].name_ + ".material")).string();
-					std::ranges::replace(target, '\\', '/');
-					for (const auto& [assetId, asset] : context_.world_.resource_->AssetList())
-					{
-						if (asset.type_ == AssetType::Material && asset.fullpath_.str() == target)
-						{
-							materialComponent->materialIDs_[slot] = assetId;
-							break;
-						}
-					}
-				}
-			}
+			actor.AddComponent<Material>();
 		}
 
 		const DynamicArray<ComponentID>& layout = context_.world_.world_->GetLayout(entity);

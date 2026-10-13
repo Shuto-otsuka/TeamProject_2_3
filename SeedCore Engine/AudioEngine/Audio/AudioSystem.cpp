@@ -4,8 +4,6 @@
 #include <AudioEngine/Audio/AudioResource.h>
 #include <AudioEngine/Audio/Sound.h>
 #include <FoundationEngine/World/World.h>
-#include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 
 namespace SeedCore
 {
@@ -18,14 +16,8 @@ namespace SeedCore
 	* [JP]
 	* アセット ID が変わった音源へ、読み込み済み Sound を割り当てる。
 	*/
-	void AudioSystem::ResolveSound(LoaderSystem& loader, ResourceCache& cache, World& world)
+	void AudioSystem::ResolveSound(AudioResource& audioResource, World& world)
 	{
-		AudioResource* audioResource = cache.GetResource<AudioResource>(AssetType::Audio);
-		if (!audioResource)
-		{
-			return;
-		}
-
 		/// [EN] Resolve only sources whose requested asset differs from their current Sound.
 		/// [JP] 要求中のアセットと現在の Sound が異なる音源だけを解決する。
 		for (EntityID id : world.GetComponents<AudioSource>())
@@ -48,13 +40,13 @@ namespace SeedCore
 				continue;
 			}
 
-			Handle<Sound> handle = audioResource->GetHandle(audioSource->soundID_);
+			Handle<Sound> handle = audioResource.GetHandle(audioSource->soundID_);
 			if (handle.empty())
 			{
 				continue;
 			}
 
-			Sound* sound = audioResource->Resolve(loader, handle);
+			Sound* sound = audioResource.Resolve(handle);
 			if (!sound)
 			{
 				continue;

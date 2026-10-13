@@ -45,8 +45,8 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
-	class ResourceCache;
+	struct GraphicsResourceSystem;
+	class TextureResource;
 	class BindlessHeap;
 	class D3D12CommandList;
 	class World;
@@ -65,7 +65,7 @@ namespace SeedCore
 		void Resize(ID3D12Device* device, BindlessHeap* bindlessHeap, ShaderCache& shaderCache, ShaderHotReload& shaderHotReload, Uint32 nativeWidth, Uint32 nativeHeight, Uint32 outputWidth, Uint32 outputHeight);
 
 	public:
-		void PrepareFrame(D3D12CommandList* cmdList, LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world, const SceneConstantBuffer& scene, Float deltaTime, std::span<const Entity> selectedEntities);
+		void PrepareFrame(D3D12CommandList* cmdList, GraphicsResourceSystem& resources, World& world, const SceneConstantBuffer& scene, Float deltaTime, std::span<const Entity> selectedEntities);
 
 		void BeginEditorFrame(D3D12CommandList* cmdList);
 
@@ -100,15 +100,15 @@ namespace SeedCore
 		void EndAvatarFrame(D3D12CommandList* cmdList);
 
 	public:
-		void UploadShapes(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, LoaderSystem& loaderSystem, ResourceCache& resourceCache);
+		void UploadShapes(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, TextureResource& textureResource);
 
-		void GatherTimelinePreview(LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix);
+		void GatherTimelinePreview(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix);
 
-		void GatherModelTransformPreview(LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix);
+		void GatherModelTransformPreview(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix);
 
-		void GatherMaterialPreview(LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 surfaceAssetId, const Matrix& worldMatrix);
+		void GatherMaterialPreview(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 surfaceAssetId, const Matrix& worldMatrix);
 
-		void GatherSkeletonControllerPreview(LoaderSystem& loaderSystem, ResourceCache& resourceCache, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix, Int selectedNodeIndex);
+		void GatherSkeletonControllerPreview(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix, Int selectedNodeIndex);
 
 		void GatherAvatarPreview(const AvatarMesh& mesh, Uint32 boneCount, const Matrix& worldMatrix, std::span<const Uint32> regionTextureIndices);
 

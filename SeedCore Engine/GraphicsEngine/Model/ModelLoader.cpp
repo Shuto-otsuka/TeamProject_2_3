@@ -1,7 +1,6 @@
 #include <GraphicsEngine/Model/ModelLoader.h>
 #include <GraphicsEngine/Model/Cluster/QuadricErrorMetrics.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
 namespace SeedCore
@@ -35,7 +34,7 @@ namespace SeedCore
 	*      シリアライズして次回のロードに備える。
 	*   3. Crister::Upload で GPU リソースをアップロードする。
 	*/
-	Handle<Crister> ModelLoader::Load(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, String filePath, const AxisConvention& axisConvention, Bool forExport)
+	Handle<Crister> ModelLoader::Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, String filePath, const AxisConvention& axisConvention, Bool forExport)
 	{
 		Handle<Crister> handle = pool_.Create();
 		Crister* crister = pool_.Get(handle);
@@ -48,16 +47,6 @@ namespace SeedCore
 		std::filesystem::path cristerPath = path;
 		cristerPath.replace_extension(".crister");
 
-		/// [EN] Source-preferred: only read the binary cache when the assigned
-		///      asset IS the ".crister" itself. Assigning the source glTF/GLB
-		///      always re-parses it (source of truth) and re-bakes the sibling
-		///      ".crister". A cache written by an older serialisation layout
-		///      fails to parse — treat it as a cache miss.
-		/// [JP] ソース優先: 割り当てられたアセットが ".crister" 自身の時だけ
-		///      バイナリキャッシュを読む。ソース glTF/GLB を割り当てた時は常に
-		///      再解析し（source of truth）隣の ".crister" を再ベイクする。古い
-		///      シリアライズレイアウトのキャッシュは解析に失敗するため、
-		///      キャッシュミス扱いにする。
 		Bool loadedFromCache = false;
 		if (path.extension() == ".crister" && std::filesystem::exists(cristerPath))
 		{
@@ -178,12 +167,6 @@ namespace SeedCore
 
 			ConvertAxisConvention(*crister, axisConvention);
 
-			/// [EN] Resolves KHR_lights_punctual nodes to world-space light data.
-			///      Must run after ConvertAxisConvention so Node::globalTransform_
-			///      is already in engine (LH) space.
-			/// [JP] KHR_lights_punctual ノードをワールド空間のライトデータに解決する。
-			///      Node::globalTransform_ が既にエンジン（左手系）空間になっている
-			///      必要があるため ConvertAxisConvention の後に実行する。
 			FetchLights(source, *crister);
 
 			if (fbxManager)
@@ -245,7 +228,7 @@ namespace SeedCore
 		return pool_.Get(handle);
 	}
 
-	void ModelLoader::Clear(Handle<Crister>& handle, BindlessHeap* heap)noexcept
+	void ModelLoader::Clear(Handle<Crister>& handle)noexcept
 	{
 		pool_.Destroy(handle);
 	}

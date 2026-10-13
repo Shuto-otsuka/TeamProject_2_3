@@ -74,6 +74,7 @@ namespace SeedCore
 	private:
 		void RequestGlyph(Uint32 glyphIndex);
 
+	private:
 		FT_Face ftFace_ = nullptr;
 
 		hb_font_t* hbFont_ = nullptr;
@@ -83,6 +84,8 @@ namespace SeedCore
 		Atlas atlas_;
 
 		std::unordered_map<Uint32, GlyphAtlasEntry> glyphs_;
+
+		DynamicArray<msdf_atlas::GlyphGeometry> glyphGeometries_;
 
 		DynamicArray<Uint32> pendingGlyphs_;
 

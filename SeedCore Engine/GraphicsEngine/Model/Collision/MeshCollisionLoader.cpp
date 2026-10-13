@@ -1,11 +1,10 @@
 #include <GraphicsEngine/Model/Collision/MeshCollisionLoader.h>
 #include <GraphicsEngine/Model/Crister.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
 namespace SeedCore
 {
-	Handle<MeshCollision> MeshCollisionLoader::Load(LoaderSystem& loader, String filePath)
+	Handle<MeshCollision> MeshCollisionLoader::Load(String filePath)
 	{
 		std::filesystem::path path(filePath.c_str());
 		if (path.extension() != ".collision" || !std::filesystem::exists(path))

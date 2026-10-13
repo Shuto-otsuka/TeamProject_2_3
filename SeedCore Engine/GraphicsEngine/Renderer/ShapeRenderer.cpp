@@ -69,7 +69,7 @@ namespace SeedCore
 	* 基本形状の面の枠に登録する。面の形のテクスチャは、ここで bindless の
 	* 番号に直す。
 	*/
-	void ShapeRenderer::Upload(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, LoaderSystem& loader, TextureResource& textureResource)
+	void ShapeRenderer::Upload(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, TextureResource& textureResource)
 	{
 		worldInstances_.clear();
 		gameInstances_.clear();
@@ -78,11 +78,11 @@ namespace SeedCore
 
 		for (const ShapeDesc& shape : shapes)
 		{
-			AppendShape(shape, loader, textureResource);
+			AppendShape(shape, textureResource);
 		}
 		for (const ShapeDesc& collider : colliders)
 		{
-			AppendShape(collider, loader, textureResource);
+			AppendShape(collider, textureResource);
 		}
 		streamingFrame_++;
 
@@ -254,7 +254,7 @@ namespace SeedCore
 	* 形は面のバッチへ、ワイヤーフレームの形は Canvas のバッチか
 	* ワールドのバッチ（Game のものはゲームのバッチにも）へ入れる。
 	*/
-	void ShapeRenderer::AppendShape(const ShapeDesc& shape, LoaderSystem& loader, TextureResource& textureResource)
+	void ShapeRenderer::AppendShape(const ShapeDesc& shape, TextureResource& textureResource)
 	{
 		if (shape.style_ == ShapeStyle::Solid)
 		{
@@ -285,7 +285,7 @@ namespace SeedCore
 				Handle<Texture> textureHandle = textureResource.GetHandle(shape.textureID_);
 				if (!textureHandle.empty())
 				{
-					Texture* texture = textureResource.Resolve(loader, bindlessHeap_, textureHandle, streamingFrame_);
+					Texture* texture = textureResource.Resolve(textureHandle, streamingFrame_);
 					if (texture)
 					{
 						instance.textureIndex_ = texture->ShaderResourceViewIndex();

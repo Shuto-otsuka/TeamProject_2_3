@@ -28,25 +28,6 @@ namespace SeedCore
 
 		Bool Selected(Actor actor)const;
 
-		void DeleteActor(Actor actor, CompoundCommand* group = nullptr);
-
-		void DeleteSelection();
-
-		void DuplicateSelection();
-
-		/**
-		* [EN]
-		* Repositions `actor` immediately after `after` among its siblings
-		* (or among root Actors if both are parentless).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* `actor` を、その兄弟の中で `after` の直後に再配置する
-		* （両者が親を持たない場合はルート Actor の中で）。
-		*/
-		void MoveAfter(Actor actor, Actor after);
-
 		/**
 		* [EN]
 		* Returns the persistent ID of the sibling directly before `actor`

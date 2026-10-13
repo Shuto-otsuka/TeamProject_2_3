@@ -14,9 +14,7 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
-	class ModelResource;
-	class AnimationResource;
+	struct GraphicsResourceSystem;
 	class Crister;
 	class BindlessHeap;
 	class ShaderCache;
@@ -34,7 +32,7 @@ namespace SeedCore
 
 		void Resize(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height);
 
-		void Gather(LoaderSystem& loaderSystem, ModelResource& modelResource, AnimationResource& animationResource, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix, Int selectedNodeIndex);
+		void Gather(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix, Int selectedNodeIndex);
 
 		void Upload();
 

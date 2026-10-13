@@ -1,4 +1,4 @@
-#include <FoundationEngine/Resource/LoaderSystem.h>
+#include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 
 namespace SeedCore
 {
@@ -11,7 +11,7 @@ namespace SeedCore
 	* [JP]
 	* ローダーシステムを構築し、各フォーマット固有のローダーを生成する。
 	*/
-	LoaderSystem::LoaderSystem(ID3D12Device* device)
+	GraphicsLoaderSystem::GraphicsLoaderSystem()
 	{
 		textureLoader_ = MakePtr<TextureLoader>();
 		modelLoader_ = MakePtr<ModelLoader>();
@@ -23,6 +23,5 @@ namespace SeedCore
 		movieLoader_ = MakePtr<MovieLoader>();
 		skymapLoader_ = MakePtr<SkymapLoader>();
 		effekseerLoader_ = MakePtr<EffekseerLoader>();
-		audioLoader_ = MakePtr<AudioLoader>();
 	}
 }

@@ -7,9 +7,10 @@
 #include <GraphicsEngine/Model/Mesh.h>
 #include <GraphicsEngine/Camera/PreviewCamera.h>
 #include <GraphicsEngine/Camera/PreviewCameraController.h>
+#include <GraphicsEngine/Resource/GraphicsModule.h>
+#include <GraphicsEngine/Graphics.h>
 #include <FoundationEngine/Input/InputSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
 
@@ -64,9 +65,9 @@ namespace SeedCore
 			}
 			else
 			{
-				ModelResource* modelResource = context_.world_.resource_->GetResource<ModelResource>(AssetType::Model);
+				ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
 				Handle<Crister> handle = modelResource->GetHandle(mesh->meshID_);
-				currentCrister_ = handle.empty() ? nullptr : modelResource->Resolve(*context_.world_.loader_, handle);
+				currentCrister_ = handle.empty() ? nullptr : modelResource->Resolve(handle);
 
 				if (!currentCrister_)
 				{

@@ -232,105 +232,25 @@ namespace SeedCore
 		///      この SubMesh のメッシュを参照する glTF ノードから解決される。
 		Int skinIndex_ = -1;
 
-		/// [EN] Index into the source glTF model's meshes array this SubMesh
-		///      came from (Node::mesh_ matches this same index space). Since
-		///      FetchMeshes iterates gltfMesh then its primitives in order,
-		///      every SubMesh sharing a meshIndex_ is a contiguous run in
-		///      Crister::subMeshes_. Used to route a Node's animated morph
-		///      weights (Animation::weights_, keyed by target node index) to
-		///      the SubMeshes that node's mesh produced.
-		/// [JP] この SubMesh の出所である、元 glTF モデルの meshes 配列への
-		///      インデックス(Node::mesh_ と同じインデックス空間)。
-		///      FetchMeshes は gltfMesh とそのプリミティブを順番に走査する
-		///      ため、同じ meshIndex_ を持つ SubMesh は Crister::subMeshes_
-		///      内で連続する。ノードのアニメーションモーフウェイト
-		///      (Animation::weights_、対象ノード番号がキー)を、その
-		///      ノードのメッシュが生成した SubMesh 群へ振り分けるのに使う。
 		Int meshIndex_ = -1;
 
 		/// [EN] Empty for a SubMesh with no glTF morph targets.
 		/// [JP] glTF モーフターゲットを持たない SubMesh では空。
 		DynamicArray<Morph> morphs_;
 
-		/// [EN] This SubMesh's vertex range in Crister::vertices_ as of
-		///      FetchMeshes — [vertexOffset_, vertexOffset_ + vertexCount_).
-		///      LOD-duplicated copies BuildMeshlets appends afterwards fall
-		///      outside this range. Exists solely to resolve a global vertex
-		///      index back to a local index into Morph::positionDeltas_ (see
-		///      Morph's own comment) when baking the RT morph delta buffer.
-		/// [JP] FetchMeshes 時点での、この SubMesh の Crister::vertices_
-		///      における頂点範囲 — [vertexOffset_, vertexOffset_ +
-		///      vertexCount_)。BuildMeshlets が後から追加する LOD 複製
-		///      コピーはこの範囲外。RT 用モーフデルタバッファを焼き込む際、
-		///      グローバル頂点インデックスを Morph::positionDeltas_ への
-		///      ローカルインデックスへ逆引きする(Morph 自身のコメント参照)
-		///      用途のみに存在する。
 		Uint32 vertexOffset_ = 0;
 		Uint32 vertexCount_ = 0;
 
-		/// [EN] RT proxy's compact vertex range for this SubMesh —
-		///      [raytracingVertexOffset_, raytracingVertexOffset_ + raytracingVertexCount_) into
-		///      Crister::positionResource_/raytracingMorphDeltaResource_. Runtime-only,
-		///      rebuilt every load by Crister::Upload's RT proxy pass — not
-		///      serialized.
-		/// [JP] この SubMesh の RT プロキシにおけるコンパクト頂点範囲 —
-		///      Crister::positionResource_/raytracingMorphDeltaResource_ 内の
-		///      [raytracingVertexOffset_, raytracingVertexOffset_ + raytracingVertexCount_)。実行時
-		///      のみで、Crister::Upload の RT プロキシ構築パスで毎回再構築
-		///      される — シリアライズしない。
 		Uint32 raytracingVertexOffset_ = 0;
 		Uint32 raytracingVertexCount_ = 0;
 
 		Uint32 raytracingTriangleOffset_ = 0;
 		Uint32 raytracingTriangleCount_ = 0;
 
-		/// [EN] Offset (in units of float3) into Crister::raytracingMorphDeltaResource_
-		///      where this SubMesh's target-major delta block starts
-		///      ([target][local rt vertex], raytracingVertexCount_ deltas per
-		///      target, morphs_.size() targets), or 0xFFFFFFFF when morphs_
-		///      is empty. Runtime-only, rebuilt every load — not serialized.
-		/// [JP] Crister::raytracingMorphDeltaResource_ 内で、この SubMesh の
-		///      ターゲット主順デルタブロック([ターゲット][RT ローカル頂点]、
-		///      ターゲットごとに raytracingVertexCount_ 個、morphs_.size() ターゲット分)
-		///      が始まるオフセット(float3 単位)。morphs_ が空なら
-		///      0xFFFFFFFF。実行時のみで、シリアライズしない。
 		Uint32 raytracingMorphDeltaOffset_ = SC_INVALID;
 
-		/// [EN] Offset (in units of float3) into Crister::morphDeltaResource_
-		///      where this SubMesh's target-major delta block starts
-		///      ([target][local vertex, i.e. Morph::positionDeltas_'s own
-		///      index], vertexCount_ deltas per target, morphs_.size()
-		///      targets), or 0xFFFFFFFF when morphs_ is empty. Unlike
-		///      raytracingMorphDeltaOffset_ above, this is baked straight from
-		///      Morph::positionDeltas_ with no RT-proxy compaction — the
-		///      raster path (SkeletalModelMS.hlsl/StaticModelMS.hlsl) reads
-		///      it via Crister::vertexMorphSource_'s per-vertex remap
-		///      instead, since raster streams every LOD (see
-		///      vertexMorphSource_'s comment). Runtime-only, rebuilt every
-		///      load — not serialized.
-		/// [JP] Crister::morphDeltaResource_ 内で、この SubMesh の
-		///      ターゲット主順デルタブロック([ターゲット][ローカル頂点、
-		///      すなわち Morph::positionDeltas_ 自身のインデックス]、
-		///      ターゲットごとに vertexCount_ 個、morphs_.size() ターゲット分)
-		///      が始まるオフセット(float3単位)。morphs_ が空なら
-		///      0xFFFFFFFF。上の raytracingMorphDeltaOffset_ と違い、RT プロキシの
-		///      圧縮を経ず Morph::positionDeltas_ からそのまま焼き込む —
-		///      ラスタ経路(SkeletalModelMS.hlsl/StaticModelMS.hlsl)は
-		///      Crister::vertexMorphSource_ の頂点ごとの逆引きを介して読む
-		///      (ラスタは全 LOD をストリームするため、vertexMorphSource_
-		///      のコメント参照)。実行時のみで、シリアライズしない。
 		Uint32 morphDeltaOffset_ = SC_INVALID;
 
-		/// [EN] Texel-density metric for texture streaming: UV units per
-		///      mesh-local world unit, sqrt(total UV area / total world area)
-		///      over this SubMesh's LOD 0 triangles. Baked by BuildMeshlets.
-		///      0 = no usable UVs (degenerate/absent) - the streaming side
-		///      then falls back to the whole-model estimate.
-		/// [JP] テクスチャストリーミング用のテクセル密度: メッシュローカルの
-		///      1 ワールド単位あたりの UV 量。この SubMesh の LOD 0 三角形全体の
-		///      sqrt(UV 面積合計 / ワールド面積合計)。BuildMeshlets が焼き込む。
-		///      0 は使える UV が無い(縮退/欠落) — その場合ストリーミング側は
-		///      モデル全体からの見積もりにフォールバックする。
 		Float texcoordDensity_ = 0.0f;
 
 		template<class Archive>
@@ -740,25 +660,10 @@ namespace SeedCore
 		Float alphaCutoff_ = 0.5f;
 		Int doubleSided_ = 0;
 
-		/// [EN] Overridden to ShadingModel::Unlit at Gather time when
-		///      khr_.unlit_.unlit_ is set (see ModelRenderer::Gather) - the
-		///      glTF extension always wins over whatever is authored here.
-		/// [JP] khr_.unlit_.unlit_ が立っている場合、Gather時にShadingModel::Unlit
-		///      へ上書きされる(ModelRenderer::Gather参照) - glTF拡張が、
-		///      ここで設定された値より常に優先される。
 		ShadingModel shadingModel_ = ShadingModel::Pbr;
 
-		/// [JP] KHR_materials_* 拡張。拡張が無ければ各デフォルト（中立値）のまま。
 		KHR khr_;
 
-		/// [EN] Shell-fur parameters, only consulted when shadingModel_ == Fur:
-		///      the outermost shell sits furLength_ metres above the surface,
-		///      furShellCount_ layers are drawn between, and furDensity_ scales
-		///      the per-strand hash-noise threshold (higher = denser coat).
-		/// [JP] シェルファーのパラメータ。shadingModel_ == Fur のときのみ参照:
-		///      最外殻は面から furLength_ メートル、その間に furShellCount_ 層を
-		///      描画し、furDensity_ が毛1本ごとのハッシュノイズ閾値をスケールする
-		///      (大きいほど密).
 		Float furLength_ = 0.03f;
 		Float furDensity_ = 1.0f;
 		Int furShellCount_ = 16;
@@ -769,13 +674,13 @@ namespace SeedCore
 		Uint32 occlusionTextureIndex_ = SC_INVALID;
 		Uint32 emissiveTextureIndex_ = SC_INVALID;
 
+		Uint32 baseColorTextureAssetID_ = 0;
+		Uint32 normalTextureAssetID_ = 0;
+		Uint32 metallicRoughnessTextureAssetID_ = 0;
+		Uint32 occlusionTextureAssetID_ = 0;
+		Uint32 emissiveTextureAssetID_ = 0;
+
 		template<class Archive>
-		/// [EN] Material fields (Surface + KHR extensions) all use TryField: the
-		///      material set keeps growing, and an older .material simply keeps
-		///      the C++ default for any key it does not carry - no warning spam.
-		/// [JP] マテリアルのフィールド(Surface + KHR拡張)は全て TryField: マテリアル
-		///      は増え続けるため、古い .material は持っていないキーを C++ の
-		///      デフォルトのままにする - 警告ログも出ない。
 		void Serialize(Archive& archive)
 		{
 			archive.TryField("name", name_);
@@ -796,6 +701,11 @@ namespace SeedCore
 			archive.TryField("metallic_roughness_texture_index", metallicRoughnessTextureIndex_);
 			archive.TryField("occlusion_texture_index", occlusionTextureIndex_);
 			archive.TryField("emissive_texture_index", emissiveTextureIndex_);
+			archive.TryField("base_color_texture_asset_id", baseColorTextureAssetID_);
+			archive.TryField("normal_texture_asset_id", normalTextureAssetID_);
+			archive.TryField("metallic_roughness_texture_asset_id", metallicRoughnessTextureAssetID_);
+			archive.TryField("occlusion_texture_asset_id", occlusionTextureAssetID_);
+			archive.TryField("emissive_texture_asset_id", emissiveTextureAssetID_);
 		}
 	};
 
@@ -827,14 +737,6 @@ namespace SeedCore
 		Int light_ = -1;
 		DynamicArray<Int> children_;
 
-		/// [EN] Index into Crister::nodes_ of this node's parent, -1 for a
-		///      root node. Fully derivable from every node's children_, so
-		///      not serialized — ModelLoader::FetchNodes recomputes it every
-		///      load in a pass over the already-populated children_ arrays.
-		/// [JP] この Node の親への Crister::nodes_ インデックス、ルートなら
-		///      -1。全ノードの children_ から完全に導出できるためシリアライズ
-		///      しない — ModelLoader::FetchNodes が、埋め終わった children_
-		///      配列を走査して毎ロード再計算する。
 		Int parentIndex_ = -1;
 
 		Quaternion rotation_ = { 0,0,0,1 };

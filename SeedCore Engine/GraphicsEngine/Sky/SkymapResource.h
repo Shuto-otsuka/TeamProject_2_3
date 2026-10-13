@@ -6,8 +6,9 @@
 
 namespace SeedCore
 {
+	struct GraphicsLoaderSystem;
+
 	class Skymap;
-	struct LoaderSystem;
 	class ResourceCache;
 	class BindlessHeap;
 	class D3D12CommandQueue;
@@ -28,24 +29,26 @@ namespace SeedCore
 	class SkymapResource :public Asset, public NonCopyable
 	{
 	public:
-		SkymapResource() = default;
+		SkymapResource(GraphicsLoaderSystem& loaders, BindlessHeap& heap);
 		~SkymapResource() = default;
 
-		void Load(const AssetContext& context, Uint32 assetId)override;
+		void Load(const AssetContext& context, Uint32 assetID)override;
 
-		void Unload(const AssetContext& context, Uint32 assetId)override;
+		Handle<Skymap> Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, ResourceCache& cache, Uint32 assetID);
 
-		Handle<Skymap> Load(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, ResourceCache& cache, Uint32 assetId);
+		void Unload(Uint32 assetID)override;
 
-		Handle<Skymap> GetHandle(Uint32 assetId)const;
+		Handle<Skymap> GetHandle(Uint32 assetID)const;
 
-		Skymap* Resolve(LoaderSystem& loader, const Handle<Skymap>& handle);
+		Skymap* Resolve(const Handle<Skymap>& handle);
 
-		Bool Contains(Uint32 assetId)const;
-
-		void Unload(LoaderSystem& loader, Uint32 assetId, BindlessHeap* heap);
+		Bool Contains(Uint32 assetID)const;
 
 	private:
+		GraphicsLoaderSystem& loaders_;
+
+		BindlessHeap& heap_;
+
 		FlatMap<Uint32, Handle<Skymap>> assetHandleMap_;
 	};
 }

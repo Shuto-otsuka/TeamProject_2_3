@@ -5,10 +5,10 @@
 #include <FoundationEngine/JobSystem/JobExecutor.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/Resource/Scene/Scene.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 #include <FoundationEngine/Time/WorldTimer.h>
 #include <FoundationEngine/Time/GameTimer.h>
 #include <AudioEngine/CRI/CriManager.h>
+#include <AudioEngine/Resource/AudioModule.h>
 #include <PhysicsEngine/JoltPhysics/JoltManager.h>
 #include <GraphicsEngine/Font/FontManager.h>
 #include <GraphicsEngine/Graphics.h>
@@ -79,7 +79,7 @@ namespace SeedCore
 
 		ResourcePtr<ImGuiRenderer> imgui_;
 
-		ResourcePtr<LoaderSystem> loaderSystem_;
+		ResourcePtr<AudioModule> audioModule_;
 
 		CsharpHost csharpHost_;
 

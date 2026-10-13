@@ -1,96 +1,111 @@
 #include <GraphicsEngine/Texture/TextureResource.h>
 #include <GraphicsEngine/Texture/Texture.h>
+#include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 
 namespace SeedCore
 {
-	void TextureResource::Load(const AssetContext& context, Uint32 assetId)
+	TextureResource::TextureResource(GraphicsLoaderSystem& loaders, BindlessHeap& heap) :loaders_(loaders), heap_(heap)
 	{
-		Load(context.loader_, context.device_, context.cmdQueue_, context.heap_, context.cache_, assetId);
+		/// No Code
 	}
 
-	void TextureResource::Unload(const AssetContext& context, Uint32 assetId)
+	void TextureResource::Load(const AssetContext& context, Uint32 assetID)
 	{
-		Unload(context.loader_, assetId, context.heap_);
+		Load(context.device_, context.cmdQueue_, context.cache_, assetID);
 	}
 
-	Handle<Texture> TextureResource::Load(LoaderSystem& loader, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, ResourceCache& cache, Uint32 assetId)
+	Handle<Texture> TextureResource::Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, ResourceCache& cache, Uint32 assetID)
 	{
-		if (assetHandleMap_.contains(assetId))
+		if (assetHandleMap_.contains(assetID))
 		{
-			return assetHandleMap_.at(assetId);
+			return assetHandleMap_.at(assetID);
 		}
 
-		AssetRecord* asset = cache.GetAsset(assetId);
+		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
 			return Handle<Texture>::null();
 		}
 
-		Handle<Texture> handle = loader.textureLoader_->Load(device, cmdQueue, heap, asset->fullpath_);
+		Handle<Texture> handle = loaders_.textureLoader_->Load(device, cmdQueue, &heap_, asset->fullpath_);
 		if (handle.empty())
 		{
 			return Handle<Texture>::null();
 		}
 
-		assetHandleMap_.insert({ assetId, handle });
+		assetHandleMap_.insert({ assetID, handle });
 		return handle;
 	}
 
-	Handle<Texture> TextureResource::GetHandle(Uint32 assetId)const
+	void TextureResource::Unload(Uint32 assetID)
 	{
-		if (!assetHandleMap_.contains(assetId))
+		if (!assetHandleMap_.contains(assetID))
+		{
+			return;
+		}
+
+		Handle<Texture> handle = assetHandleMap_.at(assetID);
+		loaders_.textureLoader_->Clear(handle, &heap_);
+		assetHandleMap_.erase(assetID);
+	}
+
+	Handle<Texture> TextureResource::GetHandle(Uint32 assetID)const
+	{
+		if (!assetHandleMap_.contains(assetID))
 		{
 			return Handle<Texture>::null();
 		}
-		return assetHandleMap_.at(assetId);
+		return assetHandleMap_.at(assetID);
 	}
 
-	Uint32 TextureResource::GetID(LoaderSystem& loader, Uint32 assetId)const
+	Uint32 TextureResource::GetID(Uint32 assetID)const
 	{
-		Handle<Texture> handle = GetHandle(assetId);
+		Handle<Texture> handle = GetHandle(assetID);
 		if (handle.empty())
 		{
-			return UINT32_MAX;
+			return SC_INVALID;
 		}
 
-		Texture* texture = loader.textureLoader_->Get(handle);
+		Texture* texture = loaders_.textureLoader_->Get(handle);
 		if (!texture)
 		{
-			return UINT32_MAX;
+			return SC_INVALID;
 		}
 
 		return texture->ShaderResourceViewIndex();
 	}
 
-	Texture* TextureResource::Resolve(LoaderSystem& loader, BindlessHeap* heap, const Handle<Texture>& handle, Uint64 frame)
+	Uint32 TextureResource::GetID(Uint32 assetID, Uint64 frame)
 	{
-		return loader.textureLoader_->Resolve(heap, handle, frame);
-	}
-
-	Bool TextureResource::Contains(Uint32 assetId)const
-	{
-		return assetHandleMap_.contains(assetId);
-	}
-
-	void TextureResource::Unload(LoaderSystem& loader, Uint32 assetId, BindlessHeap* heap)
-	{
-		if (!assetHandleMap_.contains(assetId))
+		Handle<Texture> handle = GetHandle(assetID);
+		if (handle.empty())
 		{
-			return;
+			return SC_INVALID;
 		}
 
-		Handle<Texture> handle = assetHandleMap_.at(assetId);
-		loader.textureLoader_->Clear(handle, heap);
-		assetHandleMap_.erase(assetId);
+		Texture* texture = Resolve(handle, frame);
+		if (!texture || !texture->Resource())
+		{
+			return SC_INVALID;
+		}
+
+		return texture->ShaderResourceViewIndex();
 	}
 
-	void TextureResource::EvictBudget(LoaderSystem& loader, BindlessHeap* heap, Uint64 currentFrame)
+	Texture* TextureResource::Resolve(const Handle<Texture>& handle, Uint64 frame)
 	{
-		loader.textureLoader_->EvictBudget(heap, currentFrame);
+		return loaders_.textureLoader_->Resolve(&heap_, handle, frame);
 	}
 
-	REGISTER_ASSET(AssetType::Texture, TextureResource);
+	Bool TextureResource::Contains(Uint32 assetID)const
+	{
+		return assetHandleMap_.contains(assetID);
+	}
+
+	void TextureResource::EvictBudget(Uint64 currentFrame)
+	{
+		loaders_.textureLoader_->EvictBudget(&heap_, currentFrame);
+	}
 }

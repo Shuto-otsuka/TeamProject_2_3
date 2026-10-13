@@ -7,6 +7,9 @@
     <Filter Include="Audio">
       <UniqueIdentifier>{8ef409ea-cb9c-4204-b3d9-214ad38edda9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource">
+      <UniqueIdentifier>{1c042121-17e2-4709-904b-f9d7384a2bc2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CRI\CriManager.h">
@@ -42,6 +45,12 @@
     <ClInclude Include="Audio\MixerSystem.h">
       <Filter>Audio</Filter>
     </ClInclude>
+    <ClInclude Include="Resource\AudioLoaderSystem.h">
+      <Filter>Resource</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\AudioModule.h">
+      <Filter>Resource</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CRI\CriManager.cpp">
@@ -74,6 +83,12 @@
     </ClCompile>
     <ClCompile Include="Audio\MixerSystem.cpp">
       <Filter>Audio</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\AudioLoaderSystem.cpp">
+      <Filter>Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\AudioModule.cpp">
+      <Filter>Resource</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

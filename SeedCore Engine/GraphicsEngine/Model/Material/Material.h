@@ -10,6 +10,12 @@ namespace SeedCore
 		SC_PAYLOAD_FIELD_EX("マテリアル", Material)
 		DynamicArray<Uint32> materialIDs_;
 
+		SC_SERIALIZE_FIELD()
+		DynamicArray<Uint32> slotMaterialIDs_;
+
+		SC_SERIALIZE_FIELD()
+		DynamicArray<String> slotNames_;
+
 	public:
 		void OnInspectorGUI();
 

@@ -1,87 +1,98 @@
 #include <GraphicsEngine/Model/Material/MaterialResource.h>
-#include <GraphicsEngine/Model/Material/MaterialLoader.h>
+#include <GraphicsEngine/Model/Material/Material.h>
+#include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/LoaderSystem.h>
 
 namespace SeedCore
 {
-	void MaterialResource::Load(const AssetContext& context, Uint32 assetId)
+	MaterialResource::MaterialResource(GraphicsLoaderSystem& loaders) : loaders_(loaders)
 	{
-		Load(context.loader_, context.cache_, assetId);
+		/// No Code
 	}
 
-	void MaterialResource::Unload(const AssetContext& context, Uint32 assetId)
+	void MaterialResource::Load(const AssetContext& context, Uint32 assetID)
 	{
-		Unload(context.loader_, assetId);
+		Load(context.cache_, assetID);
 	}
 
-	Handle<Surface> MaterialResource::Load(LoaderSystem& loader, ResourceCache& cache, Uint32 assetId)
+	Handle<Surface> MaterialResource::Load(ResourceCache& cache, Uint32 assetID)
 	{
-		if (assetHandleMap_.contains(assetId))
+		if (assetHandleMap_.contains(assetID))
 		{
-			return assetHandleMap_.at(assetId);
+			return assetHandleMap_.at(assetID);
 		}
 
-		AssetRecord* asset = cache.GetAsset(assetId);
+		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
 			return Handle<Surface>::null();
 		}
 
-		Handle<Surface> handle = loader.materialLoader_->Load(loader, asset->fullpath_);
+		Handle<Surface> handle = loaders_.materialLoader_->Load(asset->fullpath_);
 		if (handle.empty())
 		{
 			return Handle<Surface>::null();
 		}
 
-		assetHandleMap_.insert({ assetId, handle });
+		assetHandleMap_.insert({ assetID, handle });
 		return handle;
 	}
 
-	Handle<Surface> MaterialResource::GetHandle(Uint32 assetId)const
+	void MaterialResource::Unload(Uint32 assetID)
 	{
-		if (!assetHandleMap_.contains(assetId))
-		{
-			return Handle<Surface>::null();
-		}
-		return assetHandleMap_.at(assetId);
-	}
-
-	Surface* MaterialResource::Resolve(LoaderSystem& loader, const Handle<Surface>& handle)
-	{
-		return loader.materialLoader_->Get(handle);
-	}
-
-	Bool MaterialResource::Contains(Uint32 assetId)const
-	{
-		return assetHandleMap_.contains(assetId);
-	}
-
-	void MaterialResource::Unload(LoaderSystem& loader, Uint32 assetId)
-	{
-		if (!assetHandleMap_.contains(assetId))
+		if (!assetHandleMap_.contains(assetID))
 		{
 			return;
 		}
 
-		Handle<Surface> handle = assetHandleMap_.at(assetId);
-		loader.materialLoader_->Clear(handle);
-		assetHandleMap_.erase(assetId);
+		Handle<Surface> handle = assetHandleMap_.at(assetID);
+		loaders_.materialLoader_->Clear(handle);
+		assetHandleMap_.erase(assetID);
 	}
 
-	Surface MaterialResource::Resolve(LoaderSystem& loader, const Crister& crister, Uint32 slot, const DynamicArray<Uint32>& materialIDs)
+	Handle<Surface> MaterialResource::GetHandle(Uint32 assetID)const
 	{
-		if (slot < materialIDs.size() && materialIDs[slot] != 0)
+		if (!assetHandleMap_.contains(assetID))
 		{
-			if (Surface* assigned = Resolve(loader, GetHandle(materialIDs[slot])))
+			return Handle<Surface>::null();
+		}
+		return assetHandleMap_.at(assetID);
+	}
+
+	Surface* MaterialResource::Resolve(const Handle<Surface>& handle)
+	{
+		return loaders_.materialLoader_->Get(handle);
+	}
+
+	Bool MaterialResource::Contains(Uint32 assetID)const
+	{
+		return assetHandleMap_.contains(assetID);
+	}
+
+	Surface MaterialResource::Resolve(const Crister& crister, Uint32 slot, const Material* material)
+	{
+		const DynamicArray<Surface>& seed = crister.Surfaces();
+		if (slot >= seed.size())
+		{
+			return Surface{};
+		}
+
+		if (material && !seed[slot].name_.empty())
+		{
+			Size count = Min(material->slotNames_.size(), material->slotMaterialIDs_.size());
+			for (Size index = 0; index < count; index++)
 			{
-				return *assigned;
+				if (material->slotNames_[index].str() == seed[slot].name_ && material->slotMaterialIDs_[index] != 0 && std::ranges::contains(material->materialIDs_, material->slotMaterialIDs_[index]))
+				{
+					if (Surface* assigned = Resolve(GetHandle(material->slotMaterialIDs_[index])))
+					{
+						return *assigned;
+					}
+					break;
+				}
 			}
 		}
 
-		const DynamicArray<Surface>& seed = crister.Surfaces();
-		return slot < seed.size() ? seed[slot] : Surface{};
+		return seed[slot];
 	}
-
-	REGISTER_ASSET(AssetType::Material, MaterialResource);
 }

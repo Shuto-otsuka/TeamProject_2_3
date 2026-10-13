@@ -16,8 +16,7 @@ namespace SeedCore
 	class PipelineStateObject;
 	class ComputeShader;
 	class D3D12CommandList;
-	class ResourceCache;
-	struct LoaderSystem;
+	class SkymapResource;
 
 	/**
 	* [EN]
@@ -97,7 +96,7 @@ namespace SeedCore
 
 		void Create(ID3D12Device* device, BindlessHeap* bindlessHeap, ShaderCache& shaderCache, RootSignature& rootSignature, PipelineStateObject& pipelineStateObject);
 
-		void Gather(LoaderSystem& loaderSystem, ResourceCache& resourceCache, World& world);
+		void Gather(SkymapResource& skymapResource, World& world);
 
 		void SetIndices(ConstantIndicesSystem& constantIndicesSystem, ShaderResourceIndicesSystem& shaderResourceIndicesSystem, Float directionalIntensity);
 

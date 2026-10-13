@@ -12,9 +12,7 @@
 
 namespace SeedCore
 {
-	struct LoaderSystem;
-	class ModelResource;
-	class AnimationResource;
+	struct GraphicsResourceSystem;
 	class Crister;
 	class BindlessHeap;
 	class ShaderCache;
@@ -79,7 +77,7 @@ namespace SeedCore
 		///      animationAssetIdのポーズをtime時点でmeshAssetIdのCristerへ
 		///      サンプリングし、このレンダラー専有のinstance/bone配列を
 		///      再構築する。
-		void Gather(LoaderSystem& loaderSystem, ModelResource& modelResource, AnimationResource& animationResource, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix);
+		void Gather(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix);
 
 		void Upload();
 

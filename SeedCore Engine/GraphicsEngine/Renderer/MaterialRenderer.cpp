@@ -1,8 +1,7 @@
 #include <GraphicsEngine/Renderer/MaterialRenderer.h>
 #include <GraphicsEngine/Profiler/ProfilerStats.h>
 #include <GraphicsEngine/Model/Crister.h>
-#include <GraphicsEngine/Model/ModelResource.h>
-#include <GraphicsEngine/Model/Material/MaterialResource.h>
+#include <GraphicsEngine/Resource/GraphicsResourceSystem.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Check.h>
@@ -49,8 +48,11 @@ namespace SeedCore
 		frameBuffer_->Resize(device, bindlessHeap, width, height);
 	}
 
-	void MaterialRenderer::Gather(LoaderSystem& loaderSystem, ModelResource& modelResource, MaterialResource& materialResource, Uint32 meshAssetId, Uint32 surfaceAssetId, const Matrix& worldMatrix)
+	void MaterialRenderer::Gather(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 surfaceAssetId, const Matrix& worldMatrix)
 	{
+		ModelResource& modelResource = *resources.modelResource_;
+		MaterialResource& materialResource = *resources.materialResource_;
+
 		opaqueInstances_.clear();
 		transparentInstances_.clear();
 		boneMatrices_.clear();
@@ -63,7 +65,7 @@ namespace SeedCore
 			return;
 		}
 
-		Crister* crister = modelResource.Resolve(loaderSystem, cristerHandle);
+		Crister* crister = modelResource.Resolve(cristerHandle);
 		if (!crister)
 		{
 			return;
@@ -75,13 +77,7 @@ namespace SeedCore
 		const auto& skins = crister->Skins();
 		const auto& nodes = crister->Nodes();
 
-		/// [EN] The one Surface the viewer selected, applied to every submesh.
-		///      Null when surfaceAssetId is 0 (or not loaded) - each submesh
-		///      then falls back to the mesh's own embedded surface.
-		/// [JP] ビューアが選択した1つの Surface。全 submesh へ適用する。
-		///      surfaceAssetId が 0(または未ロード)なら null - 各 submesh は
-		///      メッシュ内蔵の Surface へフォールバックする。
-		Surface* previewSurface = surfaceAssetId != 0 ? materialResource.Resolve(loaderSystem, materialResource.GetHandle(surfaceAssetId)) : nullptr;
+		Surface* previewSurface = surfaceAssetId != 0 ? materialResource.Resolve(materialResource.GetHandle(surfaceAssetId)) : nullptr;
 
 		Uint boneBase = 0;
 		Bool boneOverflow = false;
