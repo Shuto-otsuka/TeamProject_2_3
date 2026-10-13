@@ -573,7 +573,8 @@ namespace SeedCore
 		AddComponent(entity, Position{ 0.0f,0.0f,0.0f });
 		AddComponent(entity, Rotation{ 0.0f,0.0f,0.0f,1.0f });
 		AddComponent(entity, Scale{ 1.0f,1.0f,1.0f });
-		AddComponent(entity, Velocity{ 0.0f,0.0f,0.0f });
+		AddComponent(entity, LinearVelocity{ 0.0f,0.0f,0.0f });
+		AddComponent(entity, AngularVelocity{ 0.0f,0.0f,0.0f });
 		AddComponent(entity, Active{ true });
 		AddComponent(entity, Bounds{ Vector3(0.0f, 0.0f, 0.0f), Vector3(0.5f, 0.5f, 0.5f) });
 

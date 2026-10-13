@@ -20,7 +20,7 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Returns whether name is one of the built-in components
-		* (Name/Position/Rotation/Scale/Velocity/Active) that every actor
+		* (Name/Position/Rotation/Scale/LinearVelocity/AngularVelocity/Active) that every actor
 		* gets automatically and that are captured as dedicated
 		* BlueprintNode fields instead of as a generic BlueprintComponent.
 		*
@@ -30,7 +30,7 @@ namespace SeedCore
 		* name が、全ての actor に自動的に付与され、汎用的な
 		* BlueprintComponent としてではなく専用の BlueprintNode
 		* フィールドとして取得される組み込みコンポーネント
-		* （Name/Position/Rotation/Scale/Velocity/Active）のいずれかで
+		* （Name/Position/Rotation/Scale/LinearVelocity/AngularVelocity/Active）のいずれかで
 		* あるかどうかを返す。
 		*/
 		Bool BuiltinComponent(const String& name)
@@ -41,7 +41,8 @@ namespace SeedCore
 				String("Position"),
 				String("Rotation"),
 				String("Scale"),
-				String("Velocity"),
+				String("LinearVelocity"),
+				String("AngularVelocity"),
 				String("Active"),
 			};
 

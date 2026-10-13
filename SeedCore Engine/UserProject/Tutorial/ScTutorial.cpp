@@ -32,7 +32,8 @@ void ScTutorial::OnStart()
 	//SeedCore::Position* position = world.GetComponent<SeedCore::Position>(entity);
 	//SeedCore::Rotation* rotation = world.GetComponent<SeedCore::Rotation>(entity);
 	//SeedCore::Scale* scale = world.GetComponent<SeedCore::Scale>(entity);
-	//SeedCore::Velocity* velocity = world.GetComponent<SeedCore::Velocity>(entity);
+	//SeedCore::LinearVelocity* linearVelocity = world.GetComponent<SeedCore::LinearVelocity>(entity);
+	//SeedCore::AngularVelocity* angularVelocity = world.GetComponent<SeedCore::AngularVelocity>(entity);
 	//
 	// 例: 開始位置を(0, 1, 0)にセットする
 	//position->x = 0;

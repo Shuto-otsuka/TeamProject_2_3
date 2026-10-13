@@ -17,6 +17,7 @@ namespace SeedCore
 		Skeleton,
 		Sky,
 		Prefab,
+		Scene,
 		Actor,
 	}
 

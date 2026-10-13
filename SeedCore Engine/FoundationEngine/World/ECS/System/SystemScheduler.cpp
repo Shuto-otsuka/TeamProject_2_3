@@ -6,6 +6,7 @@
 #include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/ECS/Component/ComponentBehaviour.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
+#include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Velocity.h>
 #include <FoundationEngine/World/ECS/Component/Spawner.h>
 #include <FoundationEngine/World/ECS/Component/Lifetime.h>
@@ -136,12 +137,12 @@ namespace SeedCore
 		///      Rigidbody::OnAwake はボディを Position ではなくワールド行列から配置するため。
 		if (isPlaying)
 		{
-			/// [EN] MoveSystem (reads Velocity, writes Position) has no component-access conflict with the structural systems, so SystemGraph runs them in parallel on the executor. SpawnerSystem and LifetimeSystem share one CommandBuffer, so they are registered as a single serial task rather than two.
-			/// [JP] MoveSystem(Velocity を読み Position を書く)は構造系システムとコンポーネントアクセスが衝突しないため、SystemGraph が executor 上で並列に走らせる。SpawnerSystem と LifetimeSystem は1つの CommandBuffer を共有するので、2つではなく1つの直列タスクとして登録する。
+			/// [EN] MoveSystem (reads LinearVelocity and AngularVelocity, writes Position and Rotation) has no component-access conflict with the structural systems, so SystemGraph runs them in parallel on the executor. SpawnerSystem and LifetimeSystem share one CommandBuffer, so they are registered as a single serial task rather than two.
+			/// [JP] MoveSystem(LinearVelocity と AngularVelocity を読み、Position と Rotation を書く)は構造系システムとコンポーネントアクセスが衝突しないため、SystemGraph が executor 上で並列に走らせる。SpawnerSystem と LifetimeSystem は1つの CommandBuffer を共有するので、2つではなく1つの直列タスクとして登録する。
 			systemGraph_.Clear();
 			systemGraph_.Add(
-				Query<Read<Velocity>, Write<Position>>::GetReadSignature(),
-				Query<Read<Velocity>, Write<Position>>::GetWriteSignature(),
+				Query<Read<LinearVelocity>, Read<AngularVelocity>, Write<Position>, Write<Rotation>>::GetReadSignature(),
+				Query<Read<LinearVelocity>, Read<AngularVelocity>, Write<Position>, Write<Rotation>>::GetWriteSignature(),
 				[this, &world, gameElapsedTime]()
 				{
 					moveSystem_.Execute(world, gameElapsedTime);

@@ -150,8 +150,8 @@ namespace SeedCore
 		/// [JP] ローカルトランスフォームと親階層から、ワールド空間変換行列を再計算する組み込みシステム。
 		TransformSystem transformSystem_;
 
-		/// [EN] Built-in system that integrates every Velocity-holding actor's Position each frame.
-		/// [JP] 毎フレーム、Velocity を持つ全 actor の Position を積分する組み込みシステム。
+		/// [EN] Built-in system that integrates every actor's Position by LinearVelocity and Rotation by AngularVelocity each frame.
+		/// [JP] 毎フレーム、全 actor の Position を LinearVelocity で、Rotation を AngularVelocity で積分する組み込みシステム。
 		MoveSystem moveSystem_;
 
 		/// [EN] Built-in system that drives every Spawner component's periodic prefab instantiation.

@@ -161,12 +161,14 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Creates a virtual character from the supplied description.
+	* Creates a virtual character from the supplied description, together
+	* with a kinematic inner body that represents it in the physics world.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 指定した情報から仮想キャラクターを生成する。
+	* 指定した情報から仮想キャラクターを生成し、物理ワールドでその代わりと
+	* なるキネマティックな内側ボディも合わせて生成する。
 	*/
 	JPH::Ref<JPH::CharacterVirtual> Physics::CreateCharacter(const CharacterDesc& desc)
 	{
@@ -186,8 +188,17 @@ namespace SeedCore
 		settings.mMass = desc.mass_;
 		settings.mMaxStrength = desc.maxStrength_;
 
-		/// [EN] The EntityID is stored bit for bit as the character's user data.
-		/// [JP] EntityID はビットのままキャラクターのユーザーデータに格納する。
+		/// [EN] The character itself is not a body in the physics world, so a kinematic inner body with the same shape follows it and stands in for it in queries and in contacts with other bodies. It keeps the actor's layer but is classified as KINEMATIC, the motion type it actually has.
+		/// [JP] キャラクター自体は物理ワールドのボディではないため、同じ形状のキネマティックな内側ボディを追従させ、クエリや他のボディとの接触でキャラクターの代わりにする。アクターのレイヤーはそのままに、実際の運動タイプである KINEMATIC として分類する。
+		settings.mInnerBodyShape = settings.mShape;
+		settings.mInnerBodyLayer = Layers::Pack(Layers::KINEMATIC, Layers::UnpackUserLayer(desc.layer_));
+
+		/// [EN] Removes contacts with the internal edges between adjacent triangles, so the character slides smoothly over seams in a mesh.
+		/// [JP] 隣り合う三角形の間にある内部エッジとの接触を取り除き、メッシュの継ぎ目をなめらかに移動できるようにする。
+		settings.mEnhancedInternalEdgeRemoval = true;
+
+		/// [EN] The EntityID is stored bit for bit as the character's user data; Jolt copies it to the inner body as well, so a query or contact that hits the inner body resolves to this character's entity.
+		/// [JP] EntityID はビットのままキャラクターのユーザーデータに格納する。Jolt が内側ボディにも同じ値を写すので、内側ボディに当たったクエリや接触はこのキャラクターのエンティティへ解決される。
 		return new JPH::CharacterVirtual(&settings, JPH::RVec3(desc.position_.x, desc.position_.y, desc.position_.z), JPH::Quat(desc.rotation_.x, desc.rotation_.y, desc.rotation_.z, desc.rotation_.w), std::bit_cast<JPH::uint64>(desc.userData_), &joltManager_.PhysicsSystem());
 	}
 
@@ -264,12 +275,15 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Replaces the character shape using the specified height and radius.
+	* Replaces the character shape and its inner body's shape using the
+	* specified height and radius. Returns false and leaves both unchanged
+	* if the new shape does not fit.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 指定した高さと半径でキャラクター形状を置き換える。
+	* 指定した高さと半径で、キャラクターとその内側ボディの形状を置き換える。
+	* 新しい形状が収まらない場合は、どちらも変えずに false を返す。
 	*/
 	Bool Physics::CharacterHeight(JPH::CharacterVirtual* character, Float height, Float radius)
 	{
@@ -287,7 +301,15 @@ namespace SeedCore
 
 		/// [EN] Refused (false) if the new shape would penetrate the surroundings deeper than 0.05 m.
 		/// [JP] 新しい形状が周囲へ 0.05 m より深くめり込む場合は、置き換えずに false を返す。
-		return character->SetShape(shape, 0.05f, physicsSystem.GetDefaultBroadPhaseLayerFilter(Layers::DYNAMIC), physicsSystem.GetDefaultLayerFilter(Layers::DYNAMIC), { }, { }, joltManager_.PhysicsAllocator());
+		if (!character->SetShape(shape, 0.05f, physicsSystem.GetDefaultBroadPhaseLayerFilter(Layers::DYNAMIC), physicsSystem.GetDefaultLayerFilter(Layers::DYNAMIC), { }, { }, joltManager_.PhysicsAllocator()))
+		{
+			return false;
+		}
+
+		/// [EN] The inner body takes the new shape too, so queries and other bodies see the same height as the character.
+		/// [JP] 内側ボディにも新しい形状を与え、クエリや他のボディからもキャラクターと同じ高さに見えるようにする。
+		character->SetInnerBodyShape(shape);
+		return true;
 	}
 
 
@@ -543,7 +565,7 @@ namespace SeedCore
 	* なければボディを起こす。キネマティックのボディは、置き換えられるまで
 	* その速度を保つ。静的ボディには効かない。
 	*/
-	void Physics::BodyVelocity(JPH::BodyID bodyID, const Vector3& linearVelocity)
+	void Physics::BodyLinearVelocity(JPH::BodyID bodyID, const Vector3& linearVelocity)
 	{
 		if (bodyID.IsInvalid())
 		{
@@ -553,6 +575,32 @@ namespace SeedCore
 		/// [EN] The velocity is clamped to the body's maximum speed, and frozen axes stay at zero.
 		/// [JP] 速度はボディの最大速度に収められ、固定した軸は 0 のまま。
 		joltManager_.BodyInterface().SetLinearVelocity(bodyID, JPH::Vec3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+	}
+
+	/**
+	* [EN]
+	* Replaces the world-space angular velocity (rad/s) of a dynamic or
+	* kinematic body and wakes it when the angular velocity is not zero.
+	* A kinematic body keeps the angular velocity until it is replaced.
+	* Has no effect on a static body.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 動的またはキネマティックのボディのワールド空間の角速度(rad/s)を
+	* 置き換え、角速度が 0 でなければボディを起こす。キネマティックの
+	* ボディは、置き換えられるまでその角速度を保つ。静的ボディには効かない。
+	*/
+	void Physics::BodyAngularVelocity(JPH::BodyID bodyID, const Vector3& angularVelocity)
+	{
+		if (bodyID.IsInvalid())
+		{
+			return;
+		}
+
+		/// [EN] The angular velocity is clamped to the body's maximum angular speed, and frozen rotation axes stay at zero.
+		/// [JP] 角速度はボディの最大角速度に収められ、固定した回転軸は 0 のまま。
+		joltManager_.BodyInterface().SetAngularVelocity(bodyID, JPH::Vec3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
 	}
 
 	/**
@@ -694,7 +742,7 @@ namespace SeedCore
 	* [JP]
 	* ボディの速度(m/s)を返す。静的ボディでは 0。
 	*/
-	Vector3 Physics::BodyVelocity(JPH::BodyID bodyID)const
+	Vector3 Physics::BodyLinearVelocity(JPH::BodyID bodyID)const
 	{
 		if (bodyID.IsInvalid())
 		{
@@ -703,6 +751,27 @@ namespace SeedCore
 
 		JPH::Vec3 linearVelocity = joltManager_.BodyInterface().GetLinearVelocity(bodyID);
 		return Vector3(linearVelocity.GetX(), linearVelocity.GetY(), linearVelocity.GetZ());
+	}
+
+	/**
+	* [EN]
+	* Returns the world-space angular velocity (rad/s) of a body; zero
+	* for a static body.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディのワールド空間の角速度(rad/s)を返す。静的ボディでは 0。
+	*/
+	Vector3 Physics::BodyAngularVelocity(JPH::BodyID bodyID)const
+	{
+		if (bodyID.IsInvalid())
+		{
+			return { 0.0f, 0.0f, 0.0f };
+		}
+
+		JPH::Vec3 angularVelocity = joltManager_.BodyInterface().GetAngularVelocity(bodyID);
+		return Vector3(angularVelocity.GetX(), angularVelocity.GetY(), angularVelocity.GetZ());
 	}
 
 	/**
@@ -1522,73 +1591,83 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Returns entities overlapping a 3D query shape.
+	* Returns entities overlapping a 3D query shape of the given kind and
+	* size, placed at the given pose. Only Sphere, Box, Capsule and
+	* Cylinder are 3D kinds; any other kind overlaps nothing.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 3Dクエリ形状と重なるエンティティを返す。
+	* 指定した種類と大きさの 3D クエリ形状を指定の姿勢に置き、重なる
+	* エンティティを返す。3D の種類は Sphere・Box・Capsule・Cylinder
+	* だけで、それ以外の種類は何とも重ならない。
 	*/
-	DynamicArray<EntityID> Physics::Overlap(Handle<JPH::Shape> shape, const Vector3& position, const Quaternion& rotation, Uint32 layerMask)const
+	DynamicArray<EntityID> Physics::Overlap(OverlapShapeKind kind, const Vector3& dimensions, const Vector3& position, const Quaternion& rotation, Uint32 layerMask)const
 	{
 		DynamicArray<EntityID> result;
 
-		/// [EN] A handle that no longer points at a pooled shape overlaps nothing.
-		/// [JP] プールの形状を指さなくなったハンドルなら、何とも重ならない。
-		JPH::ShapeRefC queryShape = joltManager_.ShapePool().Get(shape);
-		if (!queryShape)
+#ifdef _DEBUG
+		/// [EN] Every query is recorded for the debug display; the kind and size come straight from the arguments, in the same layout as ColliderDesc::dimensions_.
+		/// [JP] クエリはすべてデバッグ表示のために記録する。種類と大きさは引数そのままで、並びは ColliderDesc::dimensions_ と同じ。
+		QueryDesc query;
+		query.kind_ = QueryKind::Overlap;
+		query.origin_ = position;
+		query.rotation_ = rotation;
+		query.dimensions_ = dimensions;
+#endif
+
+		/// [EN] The query shape lives only for this call and is freed by its reference count on return; it is never registered in the shape pool, so the caller has nothing to release.
+		/// [JP] クエリ形状はこの呼び出しの間だけ存在し、戻るときに参照カウントで解放される。形状プールには登録しないので、呼び出し側が解放するものは無い。
+		JPH::ShapeRefC queryShape;
+		switch (kind)
 		{
+		case OverlapShapeKind::Sphere:
+		{
+			queryShape = new JPH::SphereShape(dimensions.x);
+#ifdef _DEBUG
+			query.shape_ = ColliderKind::Sphere;
+#endif
+			break;
+		}
+		case OverlapShapeKind::Box:
+		{
+			/// [EN] A zero convex radius keeps the box exactly the given size and lets a side be thinner than Jolt's default convex radius.
+			/// [JP] 凸半径を 0 にすると、箱は指定の大きさちょうどになり、Jolt の既定の凸半径より薄い辺も持てる。
+			queryShape = new JPH::BoxShape(JPH::Vec3(dimensions.x, dimensions.y, dimensions.z), 0.0f);
+#ifdef _DEBUG
+			query.shape_ = ColliderKind::Box;
+#endif
+			break;
+		}
+		case OverlapShapeKind::Capsule:
+		{
+			queryShape = new JPH::CapsuleShape(dimensions.y, dimensions.x);
+#ifdef _DEBUG
+			query.shape_ = ColliderKind::Capsule;
+#endif
+			break;
+		}
+		case OverlapShapeKind::Cylinder:
+		{
+			/// [EN] A zero convex radius, for the same reason as Box.
+			/// [JP] 凸半径を 0 にする。理由は Box と同じ。
+			queryShape = new JPH::CylinderShape(dimensions.y, dimensions.x, 0.0f);
+#ifdef _DEBUG
+			query.shape_ = ColliderKind::Cylinder;
+#endif
+			break;
+		}
+		default:
+		{
+			/// [EN] Canvas kinds have no 3D shape, so they overlap nothing.
+			/// [JP] Canvas の種類には 3D の形が無いので、何とも重ならない。
 			return result;
+		}
 		}
 
 		/// [EN] Places the query shape at the given pose.
 		/// [JP] クエリ形状を指定の姿勢に置く。
 		JPH::RMat44 transform = JPH::RMat44::sRotationTranslation(JPH::Quat(rotation.x, rotation.y, rotation.z, rotation.w), JPH::RVec3(position.x, position.y, position.z));
-
-#ifdef _DEBUG
-		/// [EN] Every query is recorded for the debug display. The shape is read back from Jolt: a center offset is a RotatedTranslatedShape around the actual shape, moved by the query pose; only box, sphere, capsule and cylinder have a matching ColliderKind, so other shapes are not recorded.
-		/// [JP] クエリはすべてデバッグ表示のために記録する。形は Jolt から読み戻す。中心のずれは実際の形を包む RotatedTranslatedShape で、クエリの姿勢で動かす。対応する ColliderKind があるのは箱・球・カプセル・円柱だけなので、それ以外の形は記録しない。
-		QueryDesc query;
-		query.kind_ = QueryKind::Overlap;
-		query.rotation_ = rotation;
-		Bool recordable = true;
-		const JPH::Shape* innerShape = queryShape.GetPtr();
-		Vector3 offset = { 0.0f, 0.0f, 0.0f };
-		if (innerShape->GetSubType() == JPH::EShapeSubType::RotatedTranslated)
-		{
-			const JPH::RotatedTranslatedShape* rotatedTranslated = static_cast<const JPH::RotatedTranslatedShape*>(innerShape);
-			offset = Vector3(rotatedTranslated->GetPosition().GetX(), rotatedTranslated->GetPosition().GetY(), rotatedTranslated->GetPosition().GetZ());
-			innerShape = rotatedTranslated->GetInnerShape();
-		}
-		query.origin_ = position + Vector3::Transform(offset, rotation);
-		if (innerShape->GetSubType() == JPH::EShapeSubType::Box)
-		{
-			JPH::Vec3 halfExtent = static_cast<const JPH::BoxShape*>(innerShape)->GetHalfExtent();
-			query.shape_ = ColliderKind::Box;
-			query.dimensions_ = Vector3(halfExtent.GetX(), halfExtent.GetY(), halfExtent.GetZ());
-		}
-		else if (innerShape->GetSubType() == JPH::EShapeSubType::Sphere)
-		{
-			query.shape_ = ColliderKind::Sphere;
-			query.dimensions_ = Vector3(static_cast<const JPH::SphereShape*>(innerShape)->GetRadius(), 0.0f, 0.0f);
-		}
-		else if (innerShape->GetSubType() == JPH::EShapeSubType::Capsule)
-		{
-			const JPH::CapsuleShape* capsule = static_cast<const JPH::CapsuleShape*>(innerShape);
-			query.shape_ = ColliderKind::Capsule;
-			query.dimensions_ = Vector3(capsule->GetRadius(), capsule->GetHalfHeightOfCylinder(), 0.0f);
-		}
-		else if (innerShape->GetSubType() == JPH::EShapeSubType::Cylinder)
-		{
-			const JPH::CylinderShape* cylinder = static_cast<const JPH::CylinderShape*>(innerShape);
-			query.shape_ = ColliderKind::Cylinder;
-			query.dimensions_ = Vector3(cylinder->GetRadius(), cylinder->GetHalfHeight(), 0.0f);
-		}
-		else
-		{
-			recordable = false;
-		}
-#endif
 
 		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
 
@@ -1625,11 +1704,8 @@ namespace SeedCore
 		}
 
 #ifdef _DEBUG
-		if (recordable)
-		{
-			query.hit_ = !result.empty();
-			queryInstance_.Add(query);
-		}
+		query.hit_ = !result.empty();
+		queryInstance_.Add(query);
 #endif
 
 		return result;
@@ -1857,62 +1933,69 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Returns entities overlapping a 2D query shape.
+	* Returns entities overlapping a canvas query shape of the given kind
+	* and size, placed at the given canvas position (pixels, Y down) and
+	* rotation (degrees). Only Circle and Rect are canvas kinds; any other
+	* kind overlaps nothing.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 2Dクエリ形状と重なるエンティティを返す。
+	* 指定した種類と大きさの Canvas クエリ形状を、指定の Canvas 上の位置
+	* （ピクセル、Y 下向き）と回転（度）に置き、重なるエンティティを返す。
+	* Canvas の種類は Circle と Rect だけで、それ以外の種類は何とも
+	* 重ならない。
 	*/
-	DynamicArray<EntityID> Physics::Overlap2D(Handle<JPH::Shape> shape, const Vector2& position, Float rotation, Uint32 layerMask)const
+	DynamicArray<EntityID> Physics::Overlap2D(OverlapShapeKind kind, const Vector2& dimensions, const Vector2& position, Float rotation, Uint32 layerMask)const
 	{
 		DynamicArray<EntityID> result;
 
-		/// [EN] A handle that no longer points at a pooled shape overlaps nothing.
-		/// [JP] プールの形状を指さなくなったハンドルなら、何とも重ならない。
-		JPH::ShapeRefC queryShape = joltManager_.ShapePool().Get(shape);
-		if (!queryShape)
+#ifdef _DEBUG
+		/// [EN] Every query is recorded for the debug display in canvas pixels with Y down, the rotation turning about Z by the canvas angle; the size comes straight from the arguments.
+		/// [JP] クエリはすべてデバッグ表示のために、Y 下向きの Canvas ピクセルで記録し、回転は Canvas の角度だけ Z 軸まわりに回す。大きさは引数そのまま。
+		QueryDesc query;
+		query.kind_ = QueryKind::Overlap2D;
+		query.origin_ = Vector3(position.x, position.y, 0.0f);
+		query.rotation_ = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, ToRadians(rotation));
+		query.dimensions_ = Vector3(dimensions.x, dimensions.y, 0.0f);
+#endif
+
+		/// [EN] The query shape lives only for this call and is freed by its reference count on return; it is never registered in the shape pool, so the caller has nothing to release. Its size goes from pixels to meters.
+		/// [JP] クエリ形状はこの呼び出しの間だけ存在し、戻るときに参照カウントで解放される。形状プールには登録しないので、呼び出し側が解放するものは無い。大きさはピクセルからメートルへ変換する。
+		JPH::ShapeRefC queryShape;
+		switch (kind)
 		{
+		case OverlapShapeKind::Circle:
+		{
+			/// [EN] A circle is a sphere centered on the canvas plane, so its cross-section there is the circle itself.
+			/// [JP] 円は Canvas の平面上に中心を置いた球なので、その平面での断面がそのまま円になる。
+			queryShape = new JPH::SphereShape(dimensions.x / pixelsPerMeter_);
+#ifdef _DEBUG
+			query.shape_ = ColliderKind::Circle;
+#endif
+			break;
+		}
+		case OverlapShapeKind::Rect:
+		{
+			/// [EN] A rectangle is a box with the same half thickness as canvas bodies, and a zero convex radius so it is exactly the given size.
+			/// [JP] 矩形は Canvas のボディと同じ厚みの半分を持つ箱で、凸半径を 0 にして指定の大きさちょうどにする。
+			queryShape = new JPH::BoxShape(JPH::Vec3(dimensions.x / pixelsPerMeter_, dimensions.y / pixelsPerMeter_, 0.5f), 0.0f);
+#ifdef _DEBUG
+			query.shape_ = ColliderKind::Rect;
+#endif
+			break;
+		}
+		default:
+		{
+			/// [EN] 3D kinds have no canvas shape, so they overlap nothing.
+			/// [JP] 3D の種類には Canvas の形が無いので、何とも重ならない。
 			return result;
+		}
 		}
 
 		/// [EN] Rotation is in degrees about Z and negated with the flipped Y; position goes from pixels to meters.
 		/// [JP] 回転は Z 軸まわりの度で、Y の反転に合わせて符号を反転する。位置はピクセルからメートルへ変換する。
 		JPH::RMat44 transform = JPH::RMat44::sRotationTranslation(JPH::Quat::sRotation(JPH::Vec3::sAxisZ(), -ToRadians(rotation)), JPH::RVec3(position.x / pixelsPerMeter_, -position.y / pixelsPerMeter_, 0.0f));
-
-#ifdef _DEBUG
-		/// [EN] Every query is recorded for the debug display, in canvas pixels with Y down and the rotation turning about Z by the canvas angle. The shape is read back from Jolt in meters: a center offset is a RotatedTranslatedShape around the actual shape (physics Y up), turned by the canvas angle; only box and sphere are canvas shapes (Rect and Circle), so other shapes are not recorded.
-		/// [JP] クエリはすべてデバッグ表示のために、Y 下向きの Canvas ピクセルで記録し、回転は Canvas の角度だけ Z 軸まわりに回す。形はメートルで Jolt から読み戻す。中心のずれは実際の形を包む RotatedTranslatedShape（物理の Y は上向き）で、Canvas の角度で回す。Canvas の形は箱と球（Rect と Circle）だけなので、それ以外の形は記録しない。
-		QueryDesc query;
-		query.kind_ = QueryKind::Overlap2D;
-		Float angle = ToRadians(rotation);
-		query.rotation_ = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, angle);
-		Bool recordable = true;
-		const JPH::Shape* innerShape = queryShape.GetPtr();
-		Vector2 offset = { 0.0f, 0.0f };
-		if (innerShape->GetSubType() == JPH::EShapeSubType::RotatedTranslated)
-		{
-			const JPH::RotatedTranslatedShape* rotatedTranslated = static_cast<const JPH::RotatedTranslatedShape*>(innerShape);
-			offset = Vector2(rotatedTranslated->GetPosition().GetX() * pixelsPerMeter_, -rotatedTranslated->GetPosition().GetY() * pixelsPerMeter_);
-			innerShape = rotatedTranslated->GetInnerShape();
-		}
-		query.origin_ = Vector3(position.x + offset.x * Cos(angle) - offset.y * Sin(angle), position.y + offset.x * Sin(angle) + offset.y * Cos(angle), 0.0f);
-		if (innerShape->GetSubType() == JPH::EShapeSubType::Box)
-		{
-			JPH::Vec3 halfExtent = static_cast<const JPH::BoxShape*>(innerShape)->GetHalfExtent();
-			query.shape_ = ColliderKind::Rect;
-			query.dimensions_ = Vector3(halfExtent.GetX() * pixelsPerMeter_, halfExtent.GetY() * pixelsPerMeter_, 0.0f);
-		}
-		else if (innerShape->GetSubType() == JPH::EShapeSubType::Sphere)
-		{
-			query.shape_ = ColliderKind::Circle;
-			query.dimensions_ = Vector3(static_cast<const JPH::SphereShape*>(innerShape)->GetRadius() * pixelsPerMeter_, 0.0f, 0.0f);
-		}
-		else
-		{
-			recordable = false;
-		}
-#endif
 
 		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
 
@@ -1949,11 +2032,8 @@ namespace SeedCore
 		}
 
 #ifdef _DEBUG
-		if (recordable)
-		{
-			query.hit_ = !result.empty();
-			queryInstance_.Add(query);
-		}
+		query.hit_ = !result.empty();
+		queryInstance_.Add(query);
 #endif
 
 		return result;
