@@ -24,20 +24,35 @@ void LaserController::OnTick(float elapsedTime)
     SeedCore::Vector3 startPositions[9];
     for (int i = 0; i < 9; i++)
     {
+        float len = length;
         //レーザーの始点のオフセットをワールド位置に変換
         startPositions[i] = SeedCore::Vector3::Transform(startOffsets[i], GetActor().WorldMatrix());
+
+        //レイキャストをして弾に当たった場合そこをレーザーの終点とする
+        SeedCore::RaycastHit hit;
+        if (GetActor().GetPhysics().Raycast(startPositions[i], direction, length, hit))
+        {
+            SeedCore::Actor hitActor = GetWorld().GetActor(hit.entityID_);
+            if (hitActor.HasTag("Bullet"))
+            {
+                //シリンダーの長さを始点からレイがヒットした場所までの長さにする
+                SeedCore::Vector3 startToHit = hit.position_ - startPositions[i];
+                len = startToHit.Length();
+            }
+        }
+
         //レーザーの中心位置を算出
-        SeedCore::Vector3 center = startPositions[i] + (direction * (length / 2));
+        SeedCore::Vector3 center = startPositions[i] + (direction * (len / 2));
         //レーザーのの回転を算出
-        SeedCore::Quaternion quaternion = SeedCore::Quaternion::LookRotation(direction, GetActor().WorldMatrix().Up());
+        SeedCore::Quaternion quaternion = SeedCore::Quaternion::LookRotation(GetActor().WorldMatrix().Down(), GetActor().WorldMatrix().Up());
         //シリンダーを描画
         SeedCore::RenderInstance& renderInstance = GetWorld().GetRenderInstance();
         SeedCore::DebugDraw debugDraw(renderInstance);
-        debugDraw.Cylinder(center, quaternion, tickness, length, { 1.0f,0.0f,0.0f,1.0f });
+        debugDraw.Cylinder(center, quaternion, tickness, len, { 1.0f,0.0f,0.0f,1.0f });
     }
 }
 
 void LaserController::OnEditorTick(float elapsedTime)
 {
-    
+   
 }
