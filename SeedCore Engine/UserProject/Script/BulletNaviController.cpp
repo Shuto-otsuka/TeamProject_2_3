@@ -1,10 +1,13 @@
 #include "UserProject/Script/BulletNaviController.h"
 #include"UserProject/Script/PlayerController.h"
 
+#include<SeedCore/ScPrefab.h>
+
 void BulletNaviController::OnStart()
 {
     bulletStart = GetWorld().GetActor("BulletStart");
     bulletEnd = GetWorld().GetActor("BulletEnd");
+    line = GetWorld().GetActor("Line");
 
     SeedCore::Entity bulletStartEntity = bulletStart.GetEntity();
     SeedCore::Entity bulletEndEntity = bulletEnd.GetEntity();
@@ -28,6 +31,16 @@ void BulletNaviController::OnTick(float elapsedTime)
         //チャージ中じゃなければナビを全て削除
         bulletStartActive->active_ = false;
         bulletEndActive->active_ = false;
+
+        for (auto& cube : line.Children())
+        {
+            SeedCore::Entity cubeEntity = cube.GetEntity();
+            SeedCore::Active* cubeActive = GetWorld().GetComponent<SeedCore::Active>(cubeEntity);
+            cubeActive->active_ = false;
+        }
+
+        //点線の初期位置の変化をリセット
+        cubeStartInterval = 0.0f;
     }
     else
     {
@@ -58,5 +71,48 @@ void BulletNaviController::OnTick(float elapsedTime)
         bulletEndScale->x_ = size;
         bulletEndScale->y_ = size;
         bulletEndScale->z_ = size;
+
+        //点線のスタート位置を移動(スクロール)
+        cubeStartInterval += scrollSpeed * elapsedTime;
+        if (cubeStartInterval >= interval)
+            cubeStartInterval = 0.0f;
+
+        //いったんキューブを全て非表示
+        for (auto& cube : line.Children())
+        {
+            SeedCore::Entity cubeEntity = cube.GetEntity();
+            SeedCore::Active* cubeActive = GetWorld().GetComponent<SeedCore::Active>(cubeEntity);
+            cubeActive->active_ = false;
+        }
+
+        //始点から終点までのベクトルを算出
+        SeedCore::Vector3 direction = eP - sP;
+        direction.Normalize();
+
+        //点線の初期位置をセット
+        SeedCore::Vector3 point = sP + (direction * cubeStartInterval);
+  
+        for(auto& cube : line.Children())
+        {
+            SeedCore::Entity cubeEntity = cube.GetEntity();
+            SeedCore::Active* cubeActive = GetWorld().GetComponent<SeedCore::Active>(cubeEntity);
+
+            //pointを間隔空けて更新
+            point += direction * interval;
+
+            //pointが終点を過ぎている場合終了
+            if ((point - sP).Length() > (eP - sP).Length())
+            {
+                cubeActive->active_ = false;
+                continue;
+            }
+
+            //point位置にキューブを配置
+            cubeActive->active_ = true;
+            SeedCore::Position* position = GetWorld().GetComponent<SeedCore::Position>(cubeEntity);
+            position->x_ = point.x;
+            position->y_ = point.y;
+            position->z_ = point.z;
+        }
     }
 }

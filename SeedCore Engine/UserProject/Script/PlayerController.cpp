@@ -1,6 +1,7 @@
 #include "UserProject/Script/PlayerController.h"
 #include"UserProject/Script/BulletController.h"
 #include"UserProject/Script/StopController.h"
+#include"UserProject/Script/BulletNaviStartController.h"
 
 #include <SeedCore/ScInput.h>
 #include<SeedCore/ScPrefab.h>
@@ -14,6 +15,7 @@ void PlayerController::OnStart()
     SeedCore::World& world = GetWorld();
 
     cameraBrain = world.GetActor("CameraBrain");
+    bulletNaviStart = world.GetActor("BulletStart");
 
     SeedCore::Entity entity = GetActor().GetEntity();
 
@@ -22,6 +24,12 @@ void PlayerController::OnStart()
     scale = world.GetComponent<SeedCore::Scale>(entity);
     velocity = world.GetComponent<SeedCore::Velocity>(entity);
     myCharacterController = world.GetComponent<SeedCore::CharacterController>(entity);
+
+    if (bulletNaviStart)
+    {
+        SeedCore::Entity bulletNaviStartEntity = bulletNaviStart.GetEntity();
+        bulletNaviStartController = GetWorld().GetComponent<BulletNaviStartController>(bulletNaviStartEntity);
+    }
 
     defaultGravity = myCharacterController->gravityScale_;
 }
@@ -344,6 +352,21 @@ void PlayerController::UpdateInputShot(float elapsedTime)
     {
         //発射キーが離された瞬間に発射
         Shot();
+
+        //ショットチャージ中のパラメータをリセット
+        shotChargeRate = 0.0f;
+        costGaugeAdd = 0;
+
+        shotReady = false;
+    }
+
+    //弾のナビがなければ以下の処理を行わない
+    if (!bulletNaviStartController)return;
+
+    if (bulletNaviStartController->IsTouch())
+    {
+        //弾のナビの始点が何かに当たれば発射キャンセル
+        //何かにめり込んだ状態で発射されるのを防ぐため
 
         //ショットチャージ中のパラメータをリセット
         shotChargeRate = 0.0f;
