@@ -43,7 +43,7 @@ void CostGaugeController::OnTick(float elapsedTime)
     int space = 2;
     if (used > 0)
     {
-        int digit = std::log10(used) + 1;
+        int digit = static_cast<int>(std::log10(used)) + 1;
         space = 3 - digit;
     }
     for (int i = 0; i < space; i++)
