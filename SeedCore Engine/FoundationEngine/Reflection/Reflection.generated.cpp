@@ -54,7 +54,7 @@
 #include <PhysicsEngine/Joint/SpringJoint.h>
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
-#include <Runtime/enc_temp_folder/6d5caa76496227feb3f1b2b2c8341dfc/BulletController.h>
+#include <Runtime/enc_temp_folder/1793738ea189908e154fe2c8568b3d5/StageSelectButtonController.h>
 
 extern "C" int _force_reflection_AudioListener = 0;
 extern "C" int _force_reflection_AudioSource = 0;
@@ -132,7 +132,7 @@ extern "C" int _force_reflection_SliderJoint = 0;
 extern "C" int _force_reflection_SpringJoint = 0;
 extern "C" int _force_reflection_Rigidbody = 0;
 extern "C" int _force_reflection_Softbody = 0;
-extern "C" int _force_reflection_BulletController = 0;
+extern "C" int _force_reflection_StageSelectButtonController = 0;
 
 namespace SeedCore
 {
@@ -3714,25 +3714,20 @@ namespace SeedCore
 		};
 		static Register_Softbody global_Softbody_register;
 
-		// ---- Runtime/enc_temp_folder/6d5caa76496227feb3f1b2b2c8341dfc/BulletController.h ----
-		struct Register_BulletController
+		// ---- Runtime/enc_temp_folder/1793738ea189908e154fe2c8568b3d5/StageSelectButtonController.h ----
+		struct Register_StageSelectButtonController
 		{
-			Register_BulletController()
+			Register_StageSelectButtonController()
 			{
-				ReflectionRegistry::Register(String("BulletController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
-					BulletController& obj = *static_cast<BulletController*>(ptr);
-					outInfo.push_back({ String("minSize"), offsetof(BulletController, minSize), AttributeType::Float });
-					outInfo.push_back({ String("maxSize"), offsetof(BulletController, maxSize), AttributeType::Float });
-					outInfo.push_back({ String("minSpeed"), offsetof(BulletController, minSpeed), AttributeType::Float });
-					outInfo.push_back({ String("maxSpeed"), offsetof(BulletController, maxSpeed), AttributeType::Float });
-					outInfo.push_back({ String("minAliveTime"), offsetof(BulletController, minAliveTime), AttributeType::Float });
-					outInfo.push_back({ String("maxAliveTime"), offsetof(BulletController, maxAliveTime), AttributeType::Float });
-					outInfo.push_back({ String("turnSpeed"), offsetof(BulletController, turnSpeed), AttributeType::Float });
-					outInfo.push_back({ String("turnAxis"), offsetof(BulletController, turnAxis), AttributeType::Vector3 });
+				ReflectionRegistry::Register(String("StageSelectButtonController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					StageSelectButtonController& obj = *static_cast<StageSelectButtonController*>(ptr);
+					outInfo.push_back({ String("stageNumber"), offsetof(StageSelectButtonController, stageNumber), AttributeType::Int });
+					outInfo.push_back({ String("onCursorColor"), offsetof(StageSelectButtonController, onCursorColor), AttributeType::Color });
+					outInfo.push_back({ String("colorChangeSpeed"), offsetof(StageSelectButtonController, colorChangeSpeed), AttributeType::Float });
 				});
 			}
 		};
-		static Register_BulletController global_BulletController_register;
+		static Register_StageSelectButtonController global_StageSelectButtonController_register;
 
 		struct RegisterEnum_AnimationConditionComparison
 		{

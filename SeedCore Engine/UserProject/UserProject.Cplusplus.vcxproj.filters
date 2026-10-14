@@ -94,6 +94,9 @@
     <ClCompile Include="Script\Button.cpp">
       <Filter>Script</Filter>
     </ClCompile>
+    <ClCompile Include="Script\StageSelectButtonController.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\ScTutorial.h">
@@ -142,6 +145,9 @@
       <Filter>Script</Filter>
     </ClInclude>
     <ClInclude Include="Script\Button.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\StageSelectButtonController.h">
       <Filter>Script</Filter>
     </ClInclude>
   </ItemGroup>

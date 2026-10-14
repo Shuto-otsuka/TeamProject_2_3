@@ -57,6 +57,7 @@
     <ClCompile Include="Script\GoalSystem.cpp" />
     <ClCompile Include="Script\LaserController.cpp" />
     <ClCompile Include="Script\PendulumController.cpp" />
+    <ClCompile Include="Script\StageSelectButtonController.cpp" />
     <ClCompile Include="Tutorial\ScTutorial.cpp" />
     <ClCompile Include="Script\BulletController.cpp" />
     <ClCompile Include="Script\CameraController.cpp" />
@@ -74,6 +75,7 @@
     <ClInclude Include="Script\GoalSystem.h" />
     <ClInclude Include="Script\LaserController.h" />
     <ClInclude Include="Script\PendulumController.h" />
+    <ClInclude Include="Script\StageSelectButtonController.h" />
     <ClInclude Include="Tutorial\ScTutorial.h" />
     <ClInclude Include="Script\BulletColliderController.h" />
     <ClInclude Include="Script\BulletController.h" />
