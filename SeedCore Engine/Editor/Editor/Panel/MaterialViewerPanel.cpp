@@ -55,7 +55,7 @@ namespace SeedCore
 			std::string_view slotText = slotName.empty() ? std::string_view("(名前なし)") : std::string_view(slotName);
 			if (assetID == 0)
 			{
-				return std::format("[{}] {} : (モデル内蔵)", slot, slotText);
+				return std::format("[{}] {} : (内蔵マテリアル)", slot, slotText);
 			}
 			AssetRecord* asset = resource->GetAsset(assetID);
 			std::string name = asset ? std::filesystem::path(asset->path_.c_str()).stem().string() : std::to_string(assetID);
@@ -191,7 +191,7 @@ namespace SeedCore
 		ImGui::BeginDisabled(slotName.empty());
 		if (ImGui::BeginCombo("マテリアル", preview.c_str()))
 		{
-			if (ImGui::Selectable("(モデル内蔵)", surfaceAssetID == 0))
+			if (ImGui::Selectable("(内蔵マテリアル)", surfaceAssetID == 0))
 			{
 				newID = 0;
 			}
@@ -204,9 +204,9 @@ namespace SeedCore
 					continue;
 				}
 				ImGui::PushID(static_cast<Int>(paletteIndex));
-				newID = paletteID;
 				if (ImGui::Selectable(std::filesystem::path(paletteAsset->path_.c_str()).stem().string().c_str(), paletteID == surfaceAssetID))
 				{
+					newID = paletteID;
 				}
 				ImGui::PopID();
 			}
@@ -339,48 +339,123 @@ namespace SeedCore
 		ImGui::SliderFloat("ラフネス", &surface.roughness_, 0.0f, 1.0f);
 		ImGui::ColorEdit3("エミッシブ", surface.emissiveFactor_);
 
-		if (ImGui::CollapsingHeader("KHR_materials"))
+		auto textureSlot = [cache](const Char* label, Uint32& assetID, Uint32 embeddedIndex)
+			{
+				AssetRecord* asset = assetID != 0 ? cache->GetAsset(assetID) : nullptr;
+				std::string text = asset ? std::filesystem::path(asset->path_.c_str()).stem().string() : (embeddedIndex != SC_INVALID ? std::format("内蔵 #{}", embeddedIndex) : std::string("なし"));
+
+				ImGui::PushID(label);
+				ImGui::Button(text.c_str(), ImVec2(200.0f, 0.0f));
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_TEXTURE"))
+					{
+						assetID = static_cast<Uint32>(*static_cast<const Int*>(payload->Data));
+					}
+					ImGui::EndDragDropTarget();
+				}
+				ImGui::SameLine();
+				ImGui::BeginDisabled(assetID == 0);
+				if (ImGui::Button("クリア"))
+				{
+					assetID = 0;
+				}
+				ImGui::EndDisabled();
+				ImGui::SameLine();
+				ImGui::TextUnformatted(label);
+				ImGui::PopID();
+			};
+
+		ImGui::SeparatorText("テクスチャ");
+		textureSlot("ベースカラー", surface.baseColorTextureAssetID_, surface.baseColorTextureIndex_);
+		textureSlot("ノーマル", surface.normalTextureAssetID_, surface.normalTextureIndex_);
+		textureSlot("メタリック/ラフネス", surface.metallicRoughnessTextureAssetID_, surface.metallicRoughnessTextureIndex_);
+		textureSlot("オクルージョン", surface.occlusionTextureAssetID_, surface.occlusionTextureIndex_);
+		textureSlot("エミッシブ", surface.emissiveTextureAssetID_, surface.emissiveTextureIndex_);
+
+		if (ImGui::CollapsingHeader("拡張マテリアル", ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			KHR& khr = surface.khr_;
 
-			ImGui::DragFloat("emissive_strength", &khr.emissiveStrength_.emissiveStrength_, 0.01f, 0.0f, 100.0f);
-			ImGui::DragFloat("ior", &khr.ior_.ior_, 0.01f, 1.0f, 3.0f);
-
-			ImGui::SeparatorText("specular");
-			ImGui::SliderFloat("specular_factor", &khr.specular_.specularFactor_, 0.0f, 1.0f);
-			ImGui::ColorEdit3("specular_color", khr.specular_.specularColorFactor_);
-
-			ImGui::SeparatorText("clearcoat");
-			ImGui::SliderFloat("clearcoat_factor", &khr.clearCoat_.clearCoatFactor_, 0.0f, 1.0f);
-			ImGui::SliderFloat("clearcoat_roughness", &khr.clearCoat_.clearCoatRoughnessFactor_, 0.0f, 1.0f);
-
-			ImGui::SeparatorText("transmission");
-			ImGui::SliderFloat("transmission_factor", &khr.transmission_.transmissionFactor_, 0.0f, 1.0f);
-
-			ImGui::SeparatorText("volume");
-			ImGui::DragFloat("thickness_factor", &khr.volume_.thicknessFactor_, 0.001f, 0.0f, 10.0f);
-			ImGui::DragFloat("attenuation_distance", &khr.volume_.attenuationDistance_, 0.01f, 0.0f, FLT_MAX);
-			ImGui::ColorEdit3("attenuation_color", khr.volume_.attenuationColor_);
-
-			ImGui::SeparatorText("sheen");
-			ImGui::ColorEdit3("sheen_color", khr.sheen_.sheenColorFactor_);
-			ImGui::SliderFloat("sheen_roughness", &khr.sheen_.sheenRoughnessFactor_, 0.0f, 1.0f);
-
-			ImGui::SeparatorText("iridescence");
-			ImGui::SliderFloat("iridescence_factor", &khr.iridescence_.iridescenceFactor_, 0.0f, 1.0f);
-			ImGui::DragFloat("iridescence_ior", &khr.iridescence_.iridescenceIor_, 0.01f, 1.0f, 3.0f);
-			ImGui::DragFloat("iridescence_thickness_min", &khr.iridescence_.iridescenceThicknessMinimum_, 1.0f, 0.0f, 2000.0f);
-			ImGui::DragFloat("iridescence_thickness_max", &khr.iridescence_.iridescenceThicknessMaximum_, 1.0f, 0.0f, 2000.0f);
-
-			ImGui::SeparatorText("anisotropy");
-			ImGui::SliderFloat("anisotropy_strength", &khr.anisotropy_.anisotropyStrength_, 0.0f, 1.0f);
-			ImGui::SliderAngle("anisotropy_rotation", &khr.anisotropy_.anisotropyRotation_);
-
-			ImGui::SeparatorText("unlit");
-			Bool unlit = khr.unlit_.unlit_ != 0;
-			if (ImGui::Checkbox("unlit", &unlit))
+			if (ImGui::TreeNodeEx("発光", ImGuiTreeNodeFlags_DefaultOpen))
 			{
-				khr.unlit_.unlit_ = unlit ? 1 : 0;
+				ImGui::DragFloat("強さ", &khr.emissiveStrength_.emissiveStrength_, 0.01f, 0.0f, 100.0f);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("屈折率", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::DragFloat("屈折率", &khr.ior_.ior_, 0.01f, 1.0f, 3.0f);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("鏡面反射", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::SliderFloat("強さ", &khr.specular_.specularFactor_, 0.0f, 1.0f);
+				ImGui::ColorEdit3("色", khr.specular_.specularColorFactor_);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("クリアコート", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::SliderFloat("強さ", &khr.clearCoat_.clearCoatFactor_, 0.0f, 1.0f);
+				ImGui::SliderFloat("ラフネス", &khr.clearCoat_.clearCoatRoughnessFactor_, 0.0f, 1.0f);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("透過", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::SliderFloat("透過率", &khr.transmission_.transmissionFactor_, 0.0f, 1.0f);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("体積", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::DragFloat("厚み", &khr.volume_.thicknessFactor_, 0.001f, 0.0f, 10.0f);
+				Bool noAbsorption = khr.volume_.attenuationDistance_ >= FLT_MAX;
+				if (ImGui::Checkbox("吸収しない", &noAbsorption))
+				{
+					khr.volume_.attenuationDistance_ = noAbsorption ? FLT_MAX : 1.0f;
+				}
+				if (!noAbsorption)
+				{
+					ImGui::DragFloat("減衰距離", &khr.volume_.attenuationDistance_, 0.01f, 0.001f, 1000.0f, "%.3f m");
+				}
+				ImGui::ColorEdit3("減衰色", khr.volume_.attenuationColor_);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("布の光沢", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::ColorEdit3("色", khr.sheen_.sheenColorFactor_);
+				ImGui::SliderFloat("ラフネス", &khr.sheen_.sheenRoughnessFactor_, 0.0f, 1.0f);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("虹色の薄膜", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::SliderFloat("強さ", &khr.iridescence_.iridescenceFactor_, 0.0f, 1.0f);
+				ImGui::DragFloat("屈折率", &khr.iridescence_.iridescenceIor_, 0.01f, 1.0f, 3.0f);
+				ImGui::DragFloat("最小の厚み", &khr.iridescence_.iridescenceThicknessMinimum_, 1.0f, 0.0f, 2000.0f, "%.0f nm");
+				ImGui::DragFloat("最大の厚み", &khr.iridescence_.iridescenceThicknessMaximum_, 1.0f, 0.0f, 2000.0f, "%.0f nm");
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("異方性", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::SliderFloat("強さ", &khr.anisotropy_.anisotropyStrength_, 0.0f, 1.0f);
+				ImGui::SliderAngle("向き", &khr.anisotropy_.anisotropyRotation_);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("ライティング", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				Bool unlit = khr.unlit_.unlit_ != 0;
+				if (ImGui::Checkbox("ライティングしない", &unlit))
+				{
+					khr.unlit_.unlit_ = unlit ? 1 : 0;
+				}
+				ImGui::TreePop();
 			}
 		}
 	}

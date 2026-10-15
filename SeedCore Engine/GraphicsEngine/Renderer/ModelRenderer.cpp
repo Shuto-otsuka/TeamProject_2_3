@@ -79,6 +79,7 @@ namespace SeedCore
 		ModelResource& modelResource = *resources.modelResource_;
 		MaterialResource& materialResource = *resources.materialResource_;
 		AnimationResource& animationResource = *resources.animationResource_;
+		TextureResource& textureResource = *resources.textureResource_;
 
 		streamingFrame_++;
 		geometryStreamingRequests_.clear();
@@ -355,10 +356,10 @@ namespace SeedCore
 						}
 						crister->TouchTexture(materialTextureIndex, streamingFrame_);
 					};
-					requestTextureMip(material.baseColorTextureIndex_);
-					requestTextureMip(material.normalTextureIndex_);
-					requestTextureMip(material.metallicRoughnessTextureIndex_);
-					requestTextureMip(material.emissiveTextureIndex_);
+					requestTextureMip(material.baseColorTextureAssetID_ != 0 ? SC_INVALID : material.baseColorTextureIndex_);
+					requestTextureMip(material.normalTextureAssetID_ != 0 ? SC_INVALID : material.normalTextureIndex_);
+					requestTextureMip(material.metallicRoughnessTextureAssetID_ != 0 ? SC_INVALID : material.metallicRoughnessTextureIndex_);
+					requestTextureMip(material.emissiveTextureAssetID_ != 0 ? SC_INVALID : material.emissiveTextureIndex_);
 
 					Uint32 selectedCluster = 0xFFFFFFFF;
 					if (skinned)
@@ -526,11 +527,11 @@ namespace SeedCore
 
 								/// [EN] Material stores glTF image indices — resolve to bindless heap indices.
 								/// [JP] Material には glTF の image インデックスが入っているため、bindless ヒープインデックスに解決する。
-								instanceData.texture_.baseColorTextureIndex_ = crister->TextureBindlessIndex(material.baseColorTextureIndex_);
-								instanceData.texture_.normalTextureIndex_ = crister->TextureBindlessIndex(material.normalTextureIndex_);
-								instanceData.texture_.metallicRoughnessTextureIndex_ = crister->TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
-								instanceData.texture_.emissiveTextureIndex_ = crister->TextureBindlessIndex(material.emissiveTextureIndex_);
-								instanceData.texture_.occlusionTextureIndex_ = crister->TextureBindlessIndex(material.occlusionTextureIndex_);
+								instanceData.texture_.baseColorTextureIndex_ = material.baseColorTextureAssetID_ != 0 ? textureResource.GetID(material.baseColorTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.baseColorTextureIndex_);
+								instanceData.texture_.normalTextureIndex_ = material.normalTextureAssetID_ != 0 ? textureResource.GetID(material.normalTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.normalTextureIndex_);
+								instanceData.texture_.metallicRoughnessTextureIndex_ = material.metallicRoughnessTextureAssetID_ != 0 ? textureResource.GetID(material.metallicRoughnessTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
+								instanceData.texture_.emissiveTextureIndex_ = material.emissiveTextureAssetID_ != 0 ? textureResource.GetID(material.emissiveTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.emissiveTextureIndex_);
+								instanceData.texture_.occlusionTextureIndex_ = material.occlusionTextureAssetID_ != 0 ? textureResource.GetID(material.occlusionTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.occlusionTextureIndex_);
 								instanceData.extension_.specularTextureIndex_ = crister->TextureBindlessIndex(material.khr_.specular_.specularTextureIndex_);
 								instanceData.extension_.specularColorTextureIndex_ = crister->TextureBindlessIndex(material.khr_.specular_.specularColorTextureIndex_);
 								instanceData.extension_.clearCoatTextureIndex_ = crister->TextureBindlessIndex(material.khr_.clearCoat_.clearCoatTextureIndex_);
@@ -722,11 +723,11 @@ namespace SeedCore
 				instanceData.extension_.unlit_ = material.khr_.unlit_.unlit_ != 0 ? 1.0f : 0.0f;
 				instanceData.shading_.shadingModel_ = material.khr_.unlit_.unlit_ != 0 ? static_cast<Uint>(ShadingModel::Unlit) : static_cast<Uint>(material.shadingModel_);
 
-				instanceData.texture_.baseColorTextureIndex_ = crister->TextureBindlessIndex(material.baseColorTextureIndex_);
-				instanceData.texture_.normalTextureIndex_ = crister->TextureBindlessIndex(material.normalTextureIndex_);
-				instanceData.texture_.metallicRoughnessTextureIndex_ = crister->TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
-				instanceData.texture_.emissiveTextureIndex_ = crister->TextureBindlessIndex(material.emissiveTextureIndex_);
-				instanceData.texture_.occlusionTextureIndex_ = crister->TextureBindlessIndex(material.occlusionTextureIndex_);
+				instanceData.texture_.baseColorTextureIndex_ = material.baseColorTextureAssetID_ != 0 ? textureResource.GetID(material.baseColorTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.baseColorTextureIndex_);
+				instanceData.texture_.normalTextureIndex_ = material.normalTextureAssetID_ != 0 ? textureResource.GetID(material.normalTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.normalTextureIndex_);
+				instanceData.texture_.metallicRoughnessTextureIndex_ = material.metallicRoughnessTextureAssetID_ != 0 ? textureResource.GetID(material.metallicRoughnessTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
+				instanceData.texture_.emissiveTextureIndex_ = material.emissiveTextureAssetID_ != 0 ? textureResource.GetID(material.emissiveTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.emissiveTextureIndex_);
+				instanceData.texture_.occlusionTextureIndex_ = material.occlusionTextureAssetID_ != 0 ? textureResource.GetID(material.occlusionTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.occlusionTextureIndex_);
 				instanceData.extension_.specularTextureIndex_ = crister->TextureBindlessIndex(material.khr_.specular_.specularTextureIndex_);
 				instanceData.extension_.specularColorTextureIndex_ = crister->TextureBindlessIndex(material.khr_.specular_.specularColorTextureIndex_);
 				instanceData.extension_.clearCoatTextureIndex_ = crister->TextureBindlessIndex(material.khr_.clearCoat_.clearCoatTextureIndex_);
@@ -796,16 +797,6 @@ namespace SeedCore
 			}
 		}
 
-		/// [EN] Streaming upkeep: bring in this frame's requested pages (capped
-		///      per frame so a camera cut doesn't stall a frame on uploads),
-		///      then evict cold pages until the VRAM budget is met. Requested
-		///      pages become visible next Gather — until then the coarser
-		///      resident cluster keeps rendering, so there is never a hole.
-		/// [JP] ストリーミング処理: 今フレームの要求ページをアップロードし
-		///      （カメラカットでアップロード詰まりしないようフレームあたり上限）、
-		///      VRAM 予算に収まるまでコールドなページを追い出す。要求ページは
-		///      次の Gather から使われ、それまでは粗い常駐クラスタが描画を
-		///      続けるため穴は開かない。
 		constexpr Uint maxUploadsPerFrame = 4;
 		Uint uploads = 0;
 		for (const auto& request : geometryStreamingRequests_)

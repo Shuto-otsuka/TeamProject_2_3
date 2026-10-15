@@ -3,7 +3,7 @@
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
-#include <GraphicsEngine/System/SceneSystem.h>
+#include <GraphicsEngine/System/SceneConstantSystem.h>
 #include <GraphicsEngine/System/IndicesSystem.h>
 
 namespace SeedCore

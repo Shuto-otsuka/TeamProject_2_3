@@ -1,6 +1,6 @@
 #pragma once
 #include <FoundationEngine/Prelude.h>
-#include <GraphicsEngine/System/SceneSystem.h>
+#include <GraphicsEngine/System/SceneConstantSystem.h>
 
 namespace SeedCore
 {

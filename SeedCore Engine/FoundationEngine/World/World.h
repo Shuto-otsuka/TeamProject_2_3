@@ -199,6 +199,19 @@ namespace SeedCore
 		*/
 		const GameTimer& Timer()const;
 
+		/**
+		* [EN]
+		* Returns the game timer, so gameplay code can read values such as
+		* the unscaled delta time that Tick does not receive.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ゲームタイマーを返す。Tick には渡らないタイムスケール未適用の
+		* デルタタイムなどを、ゲームプレイのコードから読めるようにする。
+		*/
+		GameTimer& Timer();
+
 		// ============================================================
 		// Entity
 		// ============================================================

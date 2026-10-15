@@ -40,7 +40,7 @@ namespace SeedCore
 		///      しデバッグレイヤーの警告が出る。
 		frameBuffer_ = MakePtr<FrameBuffer>(device, &renderTargetViewHeap_, bindlessHeap, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, &depthStencilViewHeap_, 0.45f, 0.65f, 0.9f, 1.0f);
 
-		sceneSystem_ = MakePtr<SceneSystem>(device, bindlessHeap);
+		sceneSystem_ = MakePtr<SceneConstantSystem>(device, bindlessHeap);
 
 		constantIndicesBuffer_ = MakePtr<StaticConstantBuffer<ConstantIndices>>(device, bindlessHeap);
 		shaderResourceIndicesBuffer_ = MakePtr<StaticConstantBuffer<ShaderResourceIndices>>(device, bindlessHeap);

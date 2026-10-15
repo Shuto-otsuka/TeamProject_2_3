@@ -4,7 +4,7 @@
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/Resource/Prefab/PrefabPool.h>
-#include <FoundationEngine/Resource/Prefab/Prefab.h>
+#include <FoundationEngine/Resource/Prefab/PrefabBlueprint.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
 
@@ -179,8 +179,8 @@ namespace SeedCore
 
 				Actor parent = (parentID != EntityID{}) ? world.GetActor(parentID) : Actor();
 
-				Handle<Prefab> handle = cache.GetPrefabPool().Load(command.assetID_, cache);
-				Prefab* prefab = cache.GetPrefabPool().Get(handle);
+				Handle<PrefabBlueprint> handle = cache.GetPrefabPool().Load(command.assetID_, cache);
+				PrefabBlueprint* prefab = cache.GetPrefabPool().Get(handle);
 				if (prefab == nullptr)
 				{
 					break;

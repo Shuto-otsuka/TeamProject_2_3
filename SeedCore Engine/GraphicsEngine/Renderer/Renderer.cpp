@@ -5,7 +5,7 @@
 #include <GraphicsEngine/D3D12/PipelineState/RasterizerState.h>
 #include <GraphicsEngine/D3D12/PipelineState/BlendState.h>
 #include <GraphicsEngine/D3D12/PipelineState/DepthStencilState.h>
-#include <GraphicsEngine/System/SceneSystem.h>
+#include <GraphicsEngine/System/SceneConstantSystem.h>
 #include <GraphicsEngine/System/WeatherSystem.h>
 #include <FoundationEngine/Resource/Gateway.h>
 #include <GraphicsEngine/Resource/GraphicsResourceSystem.h>
@@ -582,7 +582,7 @@ namespace SeedCore
 		upscaleMode_ = upscaleMode;
 	}
 
-	void Renderer::EditorFlush(D3D12CommandList* cmdList, SceneSystem* sceneSystem, ViewMode viewMode)
+	void Renderer::EditorFlush(D3D12CommandList* cmdList, SceneConstantSystem* sceneSystem, ViewMode viewMode)
 	{
 		ID3D12DescriptorHeap* heap = bindlessHeap_->Heap();
 
@@ -817,7 +817,7 @@ namespace SeedCore
 		movieRenderer_->DrawBillboard(cmdList->Get(), heap, addresses);
 	}
 
-	void Renderer::GameFlush(D3D12CommandList* cmdList, SceneSystem* sceneSystem, Float deltaTime, Bool hasActiveCamera)
+	void Renderer::GameFlush(D3D12CommandList* cmdList, SceneConstantSystem* sceneSystem, Float deltaTime, Bool hasActiveCamera)
 	{
 		/// [JP] indexの更新だけは、カメラが無いフレームでも必ずやる - EndGameFrame
 		///      はカメラの有無に関わらず毎フレームGameView用のTAAU/PostProcess
@@ -984,7 +984,7 @@ namespace SeedCore
 		effekseerRenderer_->Draw(cmdList, *effekseerManager_);
 	}
 
-	void Renderer::CanvasFlush(D3D12CommandList* cmdList, SceneSystem* sceneSystem)
+	void Renderer::CanvasFlush(D3D12CommandList* cmdList, SceneConstantSystem* sceneSystem)
 	{
 		ID3D12DescriptorHeap* heap = bindlessHeap_->Heap();
 		RootAddresses addresses{ shaderResourceIndicesSystem_->CanvasAddress(), unorderedAccessIndicesSystem_->CanvasAddress(), constantIndicesSystem_->CanvasConstantAddress() };

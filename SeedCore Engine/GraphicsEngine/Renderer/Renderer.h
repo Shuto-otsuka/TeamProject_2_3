@@ -52,7 +52,7 @@ namespace SeedCore
 	class World;
 	class ShaderCache;
 	class ShaderHotReload;
-	class SceneSystem;
+	class SceneConstantSystem;
 
 	class Renderer :public NonCopyable
 	{
@@ -120,11 +120,11 @@ namespace SeedCore
 		[[nodiscard]] Vector2 PostProcessOutputSize()const;
 
 	public:
-		void EditorFlush(D3D12CommandList* cmdList, SceneSystem* sceneSystem, ViewMode viewMode);
+		void EditorFlush(D3D12CommandList* cmdList, SceneConstantSystem* sceneSystem, ViewMode viewMode);
 
-		void GameFlush(D3D12CommandList* cmdList, SceneSystem* sceneSystem, Float deltaTime, Bool hasActiveCamera);
+		void GameFlush(D3D12CommandList* cmdList, SceneConstantSystem* sceneSystem, Float deltaTime, Bool hasActiveCamera);
 
-		void CanvasFlush(D3D12CommandList* cmdList, SceneSystem* sceneSystem);
+		void CanvasFlush(D3D12CommandList* cmdList, SceneConstantSystem* sceneSystem);
 
 		void TimelineFlush(D3D12CommandList* cmdList, const SceneConstantBuffer& scene);
 

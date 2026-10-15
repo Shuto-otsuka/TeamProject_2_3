@@ -41,11 +41,11 @@ namespace SeedCore
 
 	class BindlessHeap;
 
-	class SEEDCORE_API SceneSystem
+	class SEEDCORE_API SceneConstantSystem
 	{
 	public:
-		SceneSystem(ID3D12Device* device, BindlessHeap* bindlessHeap);
-		~SceneSystem();
+		SceneConstantSystem(ID3D12Device* device, BindlessHeap* bindlessHeap);
+		~SceneConstantSystem();
 
 		void Upload(SceneConstantBuffer buffer);
 

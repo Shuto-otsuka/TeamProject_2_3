@@ -4,7 +4,8 @@
 #include <FoundationEngine/World/ECS/System/SystemScheduler.h>
 #include <FoundationEngine/JobSystem/JobExecutor.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/Scene/Scene.h>
+#include <FoundationEngine/Resource/Scene/SceneSystem.h>
+#include <FoundationEngine/Resource/Prefab/PrefabSystem.h>
 #include <FoundationEngine/Time/WorldTimer.h>
 #include <FoundationEngine/Time/GameTimer.h>
 #include <AudioEngine/CRI/CriManager.h>
@@ -66,6 +67,10 @@ namespace SeedCore
 		ResourcePtr<JobExecutor> executor_;
 
 		ResourcePtr<ResourceCache> resource_;
+
+		ResourcePtr<SceneSystem> sceneSystem_;
+
+		ResourcePtr<PrefabSystem> prefabSystem_;
 
 		ResourcePtr<CriManager> criManager_;
 

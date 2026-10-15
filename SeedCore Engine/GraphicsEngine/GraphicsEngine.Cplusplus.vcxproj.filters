@@ -361,9 +361,6 @@
     <ClInclude Include="System\LightSystem.h">
       <Filter>System</Filter>
     </ClInclude>
-    <ClInclude Include="System\SceneSystem.h">
-      <Filter>System</Filter>
-    </ClInclude>
     <ClInclude Include="Camera\Camera.h">
       <Filter>Camera</Filter>
     </ClInclude>
@@ -1036,6 +1033,9 @@
     <ClInclude Include="Resource\GraphicsModule.h">
       <Filter>Resource</Filter>
     </ClInclude>
+    <ClInclude Include="System\SceneConstantSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">
@@ -1139,9 +1139,6 @@
       <Filter>D3D12\Buffer</Filter>
     </ClCompile>
     <ClCompile Include="System\LightSystem.cpp">
-      <Filter>System</Filter>
-    </ClCompile>
-    <ClCompile Include="System\SceneSystem.cpp">
       <Filter>System</Filter>
     </ClCompile>
     <ClCompile Include="Camera\EditorCamera.cpp">
@@ -1702,6 +1699,9 @@
     </ClCompile>
     <ClCompile Include="Resource\GraphicsModule.cpp">
       <Filter>Resource</Filter>
+    </ClCompile>
+    <ClCompile Include="System\SceneConstantSystem.cpp">
+      <Filter>System</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -1,6 +1,6 @@
 #pragma once
 #include <FoundationEngine/Prelude.h>
-#include <FoundationEngine/Resource/Scene/Scene.h>
+#include <FoundationEngine/Resource/Scene/SceneBlueprint.h>
 #include <FoundationEngine/Pool/StablePool.h>
 #include <FoundationEngine/Utility/FlatMap.h>
 
@@ -41,7 +41,7 @@ namespace SeedCore
 		* 読み込み・解析する。アセットが不明であるか解析に失敗した場合は
 		* null ハンドルを返す。
 		*/
-		Handle<Scene> Load(Uint32 assetID, ResourceCache& cache);
+		Handle<SceneBlueprint> Load(Uint32 assetID, ResourceCache& cache);
 
 		/**
 		* [EN]
@@ -54,7 +54,7 @@ namespace SeedCore
 		* handle が識別する Scene へのポインタを返す。handle が無効/
 		* 失効していれば nullptr を返す。
 		*/
-		Scene* Get(Handle<Scene> handle);
+		SceneBlueprint* Get(Handle<SceneBlueprint> handle);
 
 		/**
 		* [EN]
@@ -67,19 +67,19 @@ namespace SeedCore
 		* 重複排除されたプールの外で一時的に使用するための、プール専用の
 		* 単一の作業用 Scene を返す。
 		*/
-		Scene& GetScratch();
+		SceneBlueprint& GetScratch();
 
 	private:
 		/// [EN] Stable-pooled storage of every loaded Scene, providing generation-checked handles.
 		/// [JP] 読み込み済みの全 Scene の安定プール格納。世代チェック付きのハンドルを提供する。
-		StablePool<Scene> pool_;
+		StablePool<SceneBlueprint> pool_;
 
 		/// [EN] Maps an asset ID to its already-loaded Scene's handle, for deduplication.
 		/// [JP] アセット ID を、既に読み込み済みの Scene のハンドルへ対応付ける。重複排除のために使う。
-		FlatMap<Uint32, Handle<Scene>> loaded_;
+		FlatMap<Uint32, Handle<SceneBlueprint>> loaded_;
 
 		/// [EN] Single reusable Scene instance for temporary, pool-independent use (see GetScratch).
 		/// [JP] 一時的でプールに依存しない用途のための、再利用可能な単一の Scene インスタンス（GetScratch を参照）。
-		Scene scratch_;
+		SceneBlueprint scratch_;
 	};
 }

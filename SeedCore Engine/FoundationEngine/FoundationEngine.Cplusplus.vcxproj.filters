@@ -406,6 +406,18 @@
     <ClCompile Include="Interop\RenderInstance.cpp">
       <Filter>Interop</Filter>
     </ClCompile>
+    <ClCompile Include="Resource\Scene\SceneBlueprint.cpp">
+      <Filter>Resource\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Scene\SceneSystem.cpp">
+      <Filter>Resource\Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Prefab\PrefabBlueprint.cpp">
+      <Filter>Resource\Prefab</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Prefab\PrefabSystem.cpp">
+      <Filter>Resource\Prefab</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\DxFail.h">
@@ -901,6 +913,18 @@
     </ClInclude>
     <ClInclude Include="World\ECS\Component\Editable.h">
       <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Scene\SceneBlueprint.h">
+      <Filter>Resource\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Scene\SceneSystem.h">
+      <Filter>Resource\Scene</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Prefab\PrefabBlueprint.h">
+      <Filter>Resource\Prefab</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Prefab\PrefabSystem.h">
+      <Filter>Resource\Prefab</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

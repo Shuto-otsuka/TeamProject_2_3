@@ -274,7 +274,7 @@
     <ClInclude Include="System\IndicesSystem.h" />
     <ClInclude Include="System\LightSystem.h" />
     <ClInclude Include="System\MovieSystem.h" />
-    <ClInclude Include="System\SceneSystem.h" />
+    <ClInclude Include="System\SceneConstantSystem.h" />
     <ClInclude Include="System\ShapeSystem.h" />
     <ClInclude Include="System\SplashSystem.h" />
     <ClInclude Include="System\WeatherSystem.h" />
@@ -544,8 +544,7 @@
     <ClCompile Include="System\LightSystem.cpp">
     </ClCompile>
     <ClCompile Include="System\MovieSystem.cpp" />
-    <ClCompile Include="System\SceneSystem.cpp">
-    </ClCompile>
+    <ClCompile Include="System\SceneConstantSystem.cpp" />
     <ClCompile Include="System\ShapeSystem.cpp" />
     <ClCompile Include="System\SplashSystem.cpp" />
     <ClCompile Include="System\WeatherSystem.cpp" />

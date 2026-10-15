@@ -5,7 +5,7 @@
 #include <FoundationEngine/World/ECS/System/SystemScheduler.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
-#include <FoundationEngine/Resource/Scene/Scene.h>
+#include <FoundationEngine/Resource/Scene/SceneSystem.h>
 #include <FoundationEngine/Input/InputSystem.h>
 #include <AudioEngine/Audio/MixerSystem.h>
 
@@ -66,7 +66,7 @@ namespace SeedCore
 
 			if (!isPlaying && ImGui::IsKeyPressed(ImGuiKey_F5))
 			{
-				playModeScene_.Capture(*context_.world_.world_);
+				context_.world_.sceneSystem_->Capture(playModeScene_);
 				playModeRaytracing_ = context_.sceneVisual_.raytracing_;
 				playModeScreenSpace_ = context_.sceneVisual_.screenSpace_;
 				playModeRasterization_ = context_.sceneVisual_.rasterization_;
@@ -84,9 +84,9 @@ namespace SeedCore
 			if (isPlaying && (ImGui::IsKeyPressed(ImGuiKey_F7) || quitRequested))
 			{
 				context_.world_.timer_->Stop();
-				Scene::Reset();
+				context_.world_.sceneSystem_->Reset();
 				context_.world_.world_->DestroyActors();
-				playModeScene_.Instantiate(*context_.world_.world_, *context_.world_.resource_);
+				context_.world_.sceneSystem_->Restore(playModeScene_);
 				playModeScene_.Clear();
 				context_.world_.system_->Reset();
 				context_.selection_.Clear();
@@ -140,7 +140,7 @@ namespace SeedCore
 			{
 				if (ImGui::ImageButton("##Play", imguiTexture_.Icon(IconType::Play), buttonSize))
 				{
-					playModeScene_.Capture(*context_.world_.world_);
+					context_.world_.sceneSystem_->Capture(playModeScene_);
 					playModeRaytracing_ = context_.sceneVisual_.raytracing_;
 					playModeScreenSpace_ = context_.sceneVisual_.screenSpace_;
 					playModeRasterization_ = context_.sceneVisual_.rasterization_;
@@ -194,9 +194,9 @@ namespace SeedCore
 				if (ImGui::ImageButton("##Stop", imguiTexture_.Icon(IconType::Stop), buttonSize))
 				{
 					context_.world_.timer_->Stop();
-					Scene::Reset();
+					context_.world_.sceneSystem_->Reset();
 					context_.world_.world_->DestroyActors();
-					playModeScene_.Instantiate(*context_.world_.world_, *context_.world_.resource_);
+					context_.world_.sceneSystem_->Restore(playModeScene_);
 					playModeScene_.Clear();
 					context_.world_.system_->Reset();
 					context_.selection_.Clear();

@@ -6,8 +6,6 @@
 #include <PhysicsEngine/Physics/PhysicsSystem.h>
 #include <AudioEngine/Audio/AudioSystem.h>
 #include <FoundationEngine/Resource/Gateway.h>
-#include <FoundationEngine/Resource/Scene/Scene.h>
-#include <FoundationEngine/Resource/Prefab/Prefab.h>
 #include <FoundationEngine/World/Layer/LayerRegistry.h>
 #include <FoundationEngine/Log/Error.h>
 
@@ -89,8 +87,8 @@ namespace SeedCore
 		audioModule_->Install(*resource_);
 		resource_->Async();
 
-		Scene::Initialize(*world_, *resource_, *executor_);
-		Prefab::Initialize(*world_, *resource_);
+		sceneSystem_ = MakePtr<SceneSystem>(*world_, *resource_, *executor_);
+		prefabSystem_ = MakePtr<PrefabSystem>(*world_, *resource_);
 
 		InputSystem::Initialize();
 		LayerRegistry::Load();
@@ -115,9 +113,17 @@ namespace SeedCore
 		{
 			SC_LOG_ERROR("起動シーンが設定されていません。GameConfig の初回シーンを設定してください");
 		}
-		else if (!Scene::Change(std::filesystem::path(gameConfig_.initialScenePath_.str())))
+		else
 		{
-			SC_LOG_ERROR("起動シーンの読み込みに失敗しました: {}", gameConfig_.initialScenePath_.str());
+			SceneVisual visual;
+			if (sceneSystem_->Load(std::filesystem::path(gameConfig_.initialScenePath_.str()), &visual))
+			{
+				raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
+			}
+			else
+			{
+				SC_LOG_ERROR("起動シーンの読み込みに失敗しました: {}", gameConfig_.initialScenePath_.str());
+			}
 		}
 	}
 
@@ -140,6 +146,18 @@ namespace SeedCore
 		}
 
 		InputSystem::Finalize();
+
+		if (sceneSystem_)
+		{
+			sceneSystem_.reset();
+			sceneSystem_ = nullptr;
+		}
+
+		if (prefabSystem_)
+		{
+			prefabSystem_.reset();
+			prefabSystem_ = nullptr;
+		}
 
 		if (resource_)
 		{
@@ -274,9 +292,9 @@ namespace SeedCore
 
 				system_->Run(*world_, *resource_, *executor_, 0.0f, gameTimer_.ScaledDeltaTime(), gameTimer_.Playing());
 
-				Scene::Update(gameTimer_.ScaledDeltaTime());
+				sceneSystem_->Update(gameTimer_.ScaledDeltaTime());
 
-				if (const Scene* switchedScene = Scene::ConsumeSwitchedScene())
+				if (const SceneBlueprint* switchedScene = sceneSystem_->ConsumeSwitchedScene())
 				{
 					raytracing_ = DeserializeRaytracingContext(switchedScene->Visual().raytracing_);
 				}

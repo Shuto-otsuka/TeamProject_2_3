@@ -1,6 +1,6 @@
 #pragma once
 #include <FoundationEngine/Prelude.h>
-#include <FoundationEngine/Resource/Prefab/Prefab.h>
+#include <FoundationEngine/Resource/Prefab/PrefabBlueprint.h>
 #include <FoundationEngine/Pool/StablePool.h>
 #include <FoundationEngine/Utility/FlatMap.h>
 
@@ -36,7 +36,7 @@ namespace SeedCore
 		* 読み込み・解析する。アセットが不明であるか解析に失敗した場合は
 		* null ハンドルを返す。
 		*/
-		Handle<Prefab> Load(Uint32 assetID, ResourceCache& cache);
+		Handle<PrefabBlueprint> Load(Uint32 assetID, ResourceCache& cache);
 
 		/**
 		* [EN]
@@ -49,15 +49,15 @@ namespace SeedCore
 		* handle が識別する Prefab へのポインタを返す。handle が無効/
 		* 失効していれば nullptr を返す。
 		*/
-		Prefab* Get(Handle<Prefab> handle);
+		PrefabBlueprint* Get(Handle<PrefabBlueprint> handle);
 
 	private:
 		/// [EN] Stable-pooled storage of every loaded Prefab, providing generation-checked handles.
 		/// [JP] 読み込み済みの全 Prefab の安定プール格納。世代チェック付きのハンドルを提供する。
-		StablePool<Prefab> pool_;
+		StablePool<PrefabBlueprint> pool_;
 
 		/// [EN] Maps an asset ID to its already-loaded Prefab's handle, for deduplication.
 		/// [JP] アセット ID を、既に読み込み済みの Prefab のハンドルへ対応付ける。重複排除のために使う。
-		FlatMap<Uint32, Handle<Prefab>> loaded_;
+		FlatMap<Uint32, Handle<PrefabBlueprint>> loaded_;
 	};
 }

@@ -3,7 +3,7 @@
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/Command/History.h>
-#include <FoundationEngine/Resource/Scene/Scene.h>
+#include <FoundationEngine/Resource/Scene/SceneSystem.h>
 #include <Editor/Editor/Context/ApplicationContext.h>
 #include <Editor/Editor/Context/WorldContext.h>
 #include <Editor/Editor/Context/GraphicsContext.h>
