@@ -4,6 +4,7 @@
 #include <UserProject/Script/BulletNaviController.h>
 #include <UserProject/Script/CameraController.h>
 #include <UserProject/Script/ChargeGaugeController.h>
+#include <UserProject/Script/CheckPointAreaController.h>
 #include <UserProject/Script/CostGaugeController.h>
 #include <UserProject/Script/FloorMoveSystem.h>
 #include <UserProject/Script/GoalSystem.h>
@@ -16,6 +17,7 @@ extern "C" int _force_reflection_BulletController = 0;
 extern "C" int _force_reflection_BulletNaviController = 0;
 extern "C" int _force_reflection_CameraController = 0;
 extern "C" int _force_reflection_ChargeGaugeController = 0;
+extern "C" int _force_reflection_CheckPointAreaController = 0;
 extern "C" int _force_reflection_CostGaugeController = 0;
 extern "C" int _force_reflection_FloorMoveSystem = 0;
 extern "C" int _force_reflection_GoalSystem = 0;
@@ -101,6 +103,20 @@ namespace SeedCore
 			}
 		};
 		static Register_ChargeGaugeController global_ChargeGaugeController_register;
+
+		// ---- UserProject/Script/CheckPointAreaController.h ----
+		struct Register_CheckPointAreaController
+		{
+			Register_CheckPointAreaController()
+			{
+				ReflectionRegistry::Register(String("CheckPointAreaController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					CheckPointAreaController& obj = *static_cast<CheckPointAreaController*>(ptr);
+					outInfo.push_back({ String("何個目のチェックポイントか"), offsetof(CheckPointAreaController, step), AttributeType::Int });
+					outInfo.push_back({ String("firstPerson"), offsetof(CheckPointAreaController, firstPerson), AttributeType::Bool });
+				});
+			}
+		};
+		static Register_CheckPointAreaController global_CheckPointAreaController_register;
 
 		// ---- UserProject/Script/CostGaugeController.h ----
 		struct Register_CostGaugeController

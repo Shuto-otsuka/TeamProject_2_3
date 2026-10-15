@@ -1,0 +1,138 @@
+{
+	"basePrefabAssetID": 0,
+	"nodes": [
+		{
+			"active": true,
+			"collaborationId": "ee2a9c74-8987-4457-aa41-4a8475633c55",
+			"components": [
+				{
+					"component": "Bounds",
+					"fields": []
+				},
+				{
+					"component": "BoxCollider",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "サイズ",
+							"string": "",
+							"type": 5,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 1.0,
+								"y": 1.0,
+								"z": 1.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "中心オフセット",
+							"string": "",
+							"type": 5,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": true,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "トリガー",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				}
+			],
+			"layer": "Area",
+			"name": "GravityArea",
+			"nestedPrefabAssetID": 0,
+			"overrides": [],
+			"parentIndex": -1,
+			"persistentId": 7316,
+			"position": {
+				"x": 0.0,
+				"y": 0.3277437686920166,
+				"z": 30.902881622314453
+			},
+			"rotation": {
+				"w": 1.0,
+				"x": -0.0,
+				"y": 0.0,
+				"z": -0.0
+			},
+			"scale": {
+				"x": 2.0199999809265137,
+				"y": 2.0199999809265137,
+				"z": 2.0199999809265137
+			},
+			"tags": [
+				"GravityArea"
+			]
+		}
+	]
+}
