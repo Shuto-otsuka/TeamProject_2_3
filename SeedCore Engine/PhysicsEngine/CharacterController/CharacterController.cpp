@@ -25,17 +25,20 @@ namespace SeedCore
 		Actor actor = GetActor();
 
 		const Position* position = actor.GetComponent<Position>();
-		const Pivot* pivot = actor.GetComponent<Pivot>();
 		const Rotation* rotation = actor.GetComponent<Rotation>();
-		const Scale* scale = actor.GetComponent<Scale>();
 
-		/// [EN] Position places the pivot point, while the character is built around the actor's own origin, so it starts at Position minus the pivot point scaled and rotated the same way TransformSystem does.
-		/// [JP] Position は基準点を配置するが、キャラクターは Actor 自身の原点まわりに作られるので、Position から TransformSystem と同じく拡縮・回転した基準点を引いた位置から始める。
-		Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), (scale ? Matrix::CreateScale(Transform::Vector(*scale)) : Matrix::Identity) * Matrix::CreateFromQuaternion(rotation ? Transform::Quat(*rotation) : Quaternion::Identity)) : Vector3::Zero;
+		/// [EN] Position and Rotation are relative to the parent, so the character starts at their world pose; a root actor's parent space is the world itself.
+		/// [JP] Position と Rotation は親から見た値なので、キャラクターはそのワールドでの姿勢から始める。ルートの Actor にとって、親の空間はワールドそのもの。
+		Actor parentActor = actor.Parent();
+		Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
+		Vector3 parentScale;
+		Quaternion parentRotation;
+		Vector3 parentTranslation;
+		parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
 
 		CharacterDesc desc;
-		desc.position_ = (position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f)) - pivotOffset;
-		desc.rotation_ = rotation ? Transform::Quat(*rotation) : Quaternion::Identity;
+		desc.position_ = Vector3::Transform(position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f), parentMatrix);
+		desc.rotation_ = (rotation ? Transform::Quat(*rotation) : Quaternion::Identity) * parentRotation;
 		desc.radius_ = radius_;
 		desc.height_ = height_;
 		desc.maxSlopeAngle_ = ToRadians(maxSlopeAngle_);
@@ -270,27 +273,28 @@ namespace SeedCore
 		World& world = actor.GetWorld();
 		Entity entity = actor.GetEntity();
 
-		/// [EN] The character sits at the actor's own origin, so Position, which places the pivot point, is the character position plus the pivot point scaled and rotated by the character's new rotation.
-		/// [JP] キャラクターは Actor 自身の原点にあるので、基準点を配置する Position は、キャラクターの位置に、キャラクターの新しい回転で拡縮・回転した基準点を足したものになる。
-		const Pivot* pivot = world.GetComponent<Pivot>(entity);
-		const Scale* scale = world.GetComponent<Scale>(entity);
-		Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), (scale ? Matrix::CreateScale(Transform::Vector(*scale)) : Matrix::Identity) * Matrix::CreateFromQuaternion(Quaternion(outRotation.GetX(), outRotation.GetY(), outRotation.GetZ(), outRotation.GetW()))) : Vector3::Zero;
+		/// [EN] The character pose is in world space, while Position and Rotation are relative to the parent, so it is carried back by the inverse of the parent's world matrix.
+		/// [JP] キャラクターの姿勢はワールド空間にあり、Position と Rotation は親から見た値なので、親のワールド行列の逆で戻す。
+		Actor parentActor = actor.Parent();
+		Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
+		Vector3 parentScale;
+		Quaternion parentRotation;
+		Vector3 parentTranslation;
+		parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+
+		Quaternion inverseParentRotation;
+		parentRotation.Inverse(inverseParentRotation);
 
 		Position* position = world.GetComponent<Position>(entity);
 		if (position)
 		{
-			position->x_ = static_cast<Float>(outPosition.GetX()) + pivotOffset.x;
-			position->y_ = static_cast<Float>(outPosition.GetY()) + pivotOffset.y;
-			position->z_ = static_cast<Float>(outPosition.GetZ()) + pivotOffset.z;
+			Transform::Vector(*position, Vector3::Transform(Vector3(static_cast<Float>(outPosition.GetX()), static_cast<Float>(outPosition.GetY()), static_cast<Float>(outPosition.GetZ())), parentMatrix.Invert()));
 		}
 
 		Rotation* rotation = world.GetComponent<Rotation>(entity);
 		if (rotation)
 		{
-			rotation->x_ = outRotation.GetX();
-			rotation->y_ = outRotation.GetY();
-			rotation->z_ = outRotation.GetZ();
-			rotation->w_ = outRotation.GetW();
+			Transform::Quat(*rotation, Quaternion(outRotation.GetX(), outRotation.GetY(), outRotation.GetZ(), outRotation.GetW()) * inverseParentRotation);
 		}
 	}
 
@@ -407,15 +411,11 @@ namespace SeedCore
 		World& world = actor.GetWorld();
 		Entity entity = actor.GetEntity();
 
-		/// [EN] position is a Position, which places the pivot point; the character goes to the actor's own origin, that point moved back by the pivot point scaled and rotated by the current rotation.
-		/// [JP] position は基準点を配置する Position。キャラクターは Actor 自身の原点、つまりその点から、今の回転で拡縮・回転した基準点の分だけ戻した位置へ移す。
-		const Pivot* pivot = world.GetComponent<Pivot>(entity);
-		const Scale* scale = world.GetComponent<Scale>(entity);
-		JPH::Quat currentRotation = character_->GetRotation();
-		Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), (scale ? Matrix::CreateScale(Transform::Vector(*scale)) : Matrix::Identity) * Matrix::CreateFromQuaternion(Quaternion(currentRotation.GetX(), currentRotation.GetY(), currentRotation.GetZ(), currentRotation.GetW()))) : Vector3::Zero;
-		Vector3 origin = position - pivotOffset;
-
-		character_->SetPosition(JPH::RVec3(origin.x, origin.y, origin.z));
+		/// [EN] position is a Position, relative to the parent, so the character goes to that point in world space.
+		/// [JP] position は親から見た Position なので、キャラクターはその点のワールドでの位置へ移す。
+		Actor parentActor = actor.Parent();
+		Vector3 worldPosition = parentActor ? Vector3::Transform(position, parentActor.WorldMatrix()) : position;
+		character_->SetPosition(JPH::RVec3(worldPosition.x, worldPosition.y, worldPosition.z));
 
 		/// [EN] A teleport leaves the foothold behind, so neither its record nor its velocity carries over.
 		/// [JP] テレポートすると足場から離れるため、足場の記録も速度も引き継がない。

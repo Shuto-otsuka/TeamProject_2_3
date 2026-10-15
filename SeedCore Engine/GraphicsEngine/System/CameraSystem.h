@@ -102,9 +102,9 @@ namespace SeedCore
 		* Sets where the game image is displayed on the desktop, in desktop
 		* pixels (x = left, y = top, z = width, w = height). Called once per
 		* frame by whoever presents the game image (the Editor's
-		* GameWindowPanel, the Runtime's Engine); Update() forwards it to
-		* ScreenSpace so the camera frustum maps onto exactly this rectangle.
-		* A degenerate size is ignored.
+		* GameWindowPanel, the Runtime's Engine); the Engine hands it to
+		* InputSystem::Update() so the cursor is mapped from this rectangle
+		* onto the 1920x1080 game screen. A degenerate size is ignored.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -112,9 +112,9 @@ namespace SeedCore
 		* ゲーム画像がデスクトップ上のどこに表示されているかを、
 		* デスクトップのピクセル座標(x = 左、y = 上、z = 幅、w = 高さ)で
 		* 設定する。ゲーム画像を表示する側(Editor の GameWindowPanel、
-		* Runtime の Engine)が毎フレーム呼び出し、Update() がそれを
-		* ScreenSpace へ渡すので、カメラの視錐台がちょうどこの矩形に対応する。
-		* 大きさが0以下のものは無視する。
+		* Runtime の Engine)が毎フレーム呼び出し、Engine がそれを
+		* InputSystem::Update() へ渡すので、カーソルはこの矩形から 1920x1080
+		* のゲーム画面へ写される。大きさが0以下のものは無視する。
 		*/
 		void Rect(const Vector4& rect);
 

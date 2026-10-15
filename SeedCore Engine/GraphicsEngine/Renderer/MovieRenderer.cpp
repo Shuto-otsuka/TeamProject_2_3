@@ -42,7 +42,10 @@ namespace SeedCore
 	{
 		spriteInstances_.clear();
 		billboardInstances_.clear();
+		canvasInstances_.clear();
 		fullscreenInstances_.clear();
+		spriteBatches_.clear();
+		orderedEntities_.clear();
 		hasSelectedSpriteInstance_ = false;
 		hasSelectedBillboardInstance_ = false;
 
@@ -60,111 +63,150 @@ namespace SeedCore
 					return;
 				}
 
-				Video* video = movieResource.Resolve(movieResource.GetHandle(movie.movieID_));
-				if (movie.movieID_ == 0 || !video || !video->HasTexture())
+				orderedEntities_.push_back({ movie.order_, entityID });
+			});
+
+		std::ranges::stable_sort(orderedEntities_, [](const OrderedEntity& a, const OrderedEntity& b) { return a.order_ < b.order_; });
+
+		++batchSerial_;
+		Uint worldBatch = batchSerial_;
+
+		for (const OrderedEntity& orderedEntity : orderedEntities_)
+		{
+			EntityID entityID = orderedEntity.entityID_;
+
+			Actor actor = world.GetActor(entityID);
+			if (!actor)
+			{
+				continue;
+			}
+
+			const Movie* movieComponent = actor.GetComponent<Movie>();
+			if (!movieComponent)
+			{
+				continue;
+			}
+			const Movie& movie = *movieComponent;
+
+			Video* video = movieResource.Resolve(movieResource.GetHandle(movie.movieID_));
+			if (movie.movieID_ == 0 || !video || !video->HasTexture())
+			{
+				continue;
+			}
+
+			Uint textureIndex = video->GetTextureIndex();
+			Int nativeWidth = video->GetWidth();
+			Int nativeHeight = video->GetHeight();
+
+			if (movie.displayMode_ == Movie::DisplayMode::Fullscreen)
+			{
+				if (nativeWidth <= 0 || nativeHeight <= 0)
 				{
-					return;
+					continue;
 				}
 
-				Uint textureIndex = video->GetTextureIndex();
-				Int nativeWidth = video->GetWidth();
-				Int nativeHeight = video->GetHeight();
+				MovieFullscreenStructuredBuffer instance{};
+				instance.color_ = movie.color_;
+				instance.textureIndex_ = textureIndex;
+				instance.textureAspect_ = static_cast<Float>(nativeWidth) / static_cast<Float>(nativeHeight);
+				fullscreenInstances_.push_back(instance);
+				continue;
+			}
 
-				if (movie.displayMode_ == Movie::DisplayMode::Fullscreen)
+			Matrix worldMatrix = actor.WorldMatrix();
+			Vector3 worldScale;
+			Quaternion worldRotation;
+			Vector3 worldTranslation;
+			worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
+
+			Vector2 size = movie.size_;
+			if (size.x <= 0.0f && size.y <= 0.0f)
+			{
+				size = Vector2(static_cast<Float>(nativeWidth), static_cast<Float>(nativeHeight));
+			}
+
+			Uint selected = std::ranges::find(selectedEntities, actor.GetEntity()) != selectedEntities.end() ? 1 : 0;
+
+			if (movie.displayMode_ == Movie::DisplayMode::Sprite)
+			{
+				hasSelectedSpriteInstance_ = hasSelectedSpriteInstance_ || selected != 0;
+
+				Bool newBatch = spriteBatches_.empty() || spriteBatches_.back().order_ != movie.order_;
+				Uint batch = newBatch ? batchSerial_ + 1 : batchSerial_;
+
+				MovieSpriteStructuredBuffer instance{};
+				instance.position_ = Vector2(worldTranslation.x, worldTranslation.y) * spriteReferenceScale;
+				instance.rotation_ = worldRotation.ToEuler().z;
+				instance.scale_ = Vector2(worldScale.x, worldScale.y) * spriteReferenceScale;
+				instance.batch_ = batch;
+				instance.size_ = size;
+				instance.pivot_ = movie.pivot_;
+				instance.color_ = movie.color_;
+				instance.textureIndex_ = textureIndex;
+				instance.selected_ = selected;
+				spriteInstances_.push_back(instance);
+
+				hasSelectedBillboardInstance_ = hasSelectedBillboardInstance_ || selected != 0;
+
+				MovieBillboardStructuredBuffer canvasInstance{};
+				canvasInstance.position_ = Vector3(100000.0f + worldTranslation.x, 100000.0f + (ScResolution::SC_CANVAS.Height - worldTranslation.y), 100000.0f);
+				canvasInstance.rotation_ = Vector3::Zero;
+				canvasInstance.scale_ = Vector2(worldScale.x * size.x, worldScale.y * size.y);
+				canvasInstance.size_ = size;
+				canvasInstance.pivot_ = movie.pivot_;
+				canvasInstance.color_ = movie.color_;
+				canvasInstance.textureIndex_ = textureIndex;
+				canvasInstance.faceCamera_ = 1;
+				canvasInstance.selected_ = selected;
+				canvasInstance.batch_ = batch;
+				canvasInstances_.push_back(canvasInstance);
+
+				if (newBatch)
 				{
-					if (nativeWidth <= 0 || nativeHeight <= 0)
-					{
-						return;
-					}
-
-					MovieFullscreenStructuredBuffer instance{};
-					instance.color_ = movie.color_;
-					instance.textureIndex_ = textureIndex;
-					instance.textureAspect_ = static_cast<Float>(nativeWidth) / static_cast<Float>(nativeHeight);
-					fullscreenInstances_.push_back(instance);
-					return;
-				}
-
-				Actor actor = world.GetActor(entityID);
-				if (!actor)
-				{
-					return;
-				}
-
-				Matrix worldMatrix = actor.WorldMatrix();
-				Vector3 worldScale;
-				Quaternion worldRotation;
-				Vector3 worldTranslation;
-				worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
-
-				Vector2 size = movie.size_;
-				if (size.x <= 0.0f && size.y <= 0.0f)
-				{
-					size = Vector2(static_cast<Float>(nativeWidth), static_cast<Float>(nativeHeight));
-				}
-
-				Uint selected = std::ranges::find(selectedEntities, actor.GetEntity()) != selectedEntities.end() ? 1 : 0;
-
-				if (movie.displayMode_ == Movie::DisplayMode::Sprite)
-				{
-					hasSelectedSpriteInstance_ = hasSelectedSpriteInstance_ || selected != 0;
-
-					MovieSpriteStructuredBuffer instance{};
-					instance.position_ = Vector2(worldTranslation.x, worldTranslation.y) * spriteReferenceScale;
-					instance.rotation_ = worldRotation.ToEuler().z;
-					instance.scale_ = Vector2(worldScale.x, worldScale.y) * spriteReferenceScale;
-					instance.size_ = size;
-					instance.pivot_ = movie.pivot_;
-					instance.color_ = movie.color_;
-					instance.textureIndex_ = textureIndex;
-					instance.selected_ = selected;
-					spriteInstances_.push_back(instance);
-
-					hasSelectedBillboardInstance_ = hasSelectedBillboardInstance_ || selected != 0;
-
-					MovieBillboardStructuredBuffer canvasInstance{};
-					canvasInstance.position_ = Vector3(100000.0f + worldTranslation.x, 100000.0f + (ScResolution::SC_CANVAS.Height - worldTranslation.y), 100000.0f);
-					canvasInstance.rotation_ = Vector3::Zero;
-					canvasInstance.scale_ = Vector2(worldScale.x * size.x, worldScale.y * size.y);
-					canvasInstance.size_ = size;
-					canvasInstance.pivot_ = movie.pivot_;
-					canvasInstance.color_ = movie.color_;
-					canvasInstance.textureIndex_ = textureIndex;
-					canvasInstance.faceCamera_ = 1;
-					canvasInstance.selected_ = selected;
-					billboardInstances_.push_back(canvasInstance);
-
-					/// [EN] Sync this actor's Bounds (every actor has one) to the canvas movie's local-space rect: half-extents = size/2, centre shifted by the pivot the same way MovieBillboardMS.hlsl shifts the quad (0.5 - pivotNorm on X, pivotNorm - 0.5 on Y). Unscaled - the picker applies the actor's world scale.
-					/// [JP] このアクターの Bounds(全アクターが持つ)をキャンバス動画のローカル空間矩形へ同期する: 半径 = size/2、中心は MovieBillboardMS.hlsl がクアッドをずらすのと同じ形(X は 0.5 - pivotNorm、Y は pivotNorm - 0.5)で pivot ぶんずらす。未スケール - ピッカーがアクターのワールドスケールを掛ける。
-					if (boundsComponentID)
-					{
-						void* boundsRaw = world.GetComponent(entityID, boundsComponentID);
-						if (boundsRaw)
-						{
-							Vector2 pivotNorm = (size.x > 0.0f && size.y > 0.0f) ? Vector2(movie.pivot_.x / size.x, movie.pivot_.y / size.y) : Vector2(0.5f, 0.5f);
-							Bounds* bounds = static_cast<Bounds*>(boundsRaw);
-							bounds->center_ = Vector3((0.5f - pivotNorm.x) * size.x, (pivotNorm.y - 0.5f) * size.y, 0.0f);
-							bounds->extent_ = Vector3(size.x * 0.5f, size.y * 0.5f, 1.0f);
-						}
-					}
+					++batchSerial_;
+					spriteBatches_.push_back({ movie.order_, static_cast<Uint>(spriteInstances_.size()) - 1, 1, static_cast<Uint>(canvasInstances_.size()) - 1, 1 });
 				}
 				else
 				{
-					hasSelectedBillboardInstance_ = hasSelectedBillboardInstance_ || selected != 0;
-
-					MovieBillboardStructuredBuffer instance{};
-					instance.position_ = worldTranslation;
-					instance.rotation_ = worldRotation.ToEuler();
-					instance.scale_ = Vector2(worldScale.x, worldScale.y);
-					instance.size_ = size;
-					instance.pivot_ = movie.pivot_;
-					instance.color_ = movie.color_;
-					instance.textureIndex_ = textureIndex;
-					instance.faceCamera_ = movie.faceCamera_ ? 1 : 0;
-					instance.selected_ = selected;
-					billboardInstances_.push_back(instance);
+					++spriteBatches_.back().spriteCount_;
+					++spriteBatches_.back().canvasCount_;
 				}
-			});
+
+				/// [EN] Sync this actor's Bounds (every actor has one) to the canvas movie's local-space rect: half-extents = size/2, centre shifted by the pivot the same way MovieBillboardMS.hlsl shifts the quad (0.5 - pivotNorm on X, pivotNorm - 0.5 on Y). Unscaled - the picker applies the actor's world scale.
+				/// [JP] このアクターの Bounds(全アクターが持つ)をキャンバス動画のローカル空間矩形へ同期する: 半径 = size/2、中心は MovieBillboardMS.hlsl がクアッドをずらすのと同じ形(X は 0.5 - pivotNorm、Y は pivotNorm - 0.5)で pivot ぶんずらす。未スケール - ピッカーがアクターのワールドスケールを掛ける。
+				if (boundsComponentID)
+				{
+					void* boundsRaw = world.GetComponent(entityID, boundsComponentID);
+					if (boundsRaw)
+					{
+						Vector2 pivotNorm = (size.x > 0.0f && size.y > 0.0f) ? Vector2(movie.pivot_.x / size.x, movie.pivot_.y / size.y) : Vector2(0.5f, 0.5f);
+						Bounds* bounds = static_cast<Bounds*>(boundsRaw);
+						bounds->center_ = Vector3((0.5f - pivotNorm.x) * size.x, (pivotNorm.y - 0.5f) * size.y, 0.0f);
+						bounds->extent_ = Vector3(size.x * 0.5f, size.y * 0.5f, 1.0f);
+					}
+				}
+			}
+			else
+			{
+				hasSelectedBillboardInstance_ = hasSelectedBillboardInstance_ || selected != 0;
+
+				MovieBillboardStructuredBuffer instance{};
+				instance.position_ = worldTranslation;
+				instance.rotation_ = worldRotation.ToEuler();
+				instance.scale_ = Vector2(worldScale.x, worldScale.y);
+				instance.size_ = size;
+				instance.pivot_ = movie.pivot_;
+				instance.color_ = movie.color_;
+				instance.textureIndex_ = textureIndex;
+				instance.faceCamera_ = movie.faceCamera_ ? 1 : 0;
+				instance.selected_ = selected;
+				instance.batch_ = worldBatch;
+				billboardInstances_.push_back(instance);
+			}
+		}
+
+		worldBillboardCount_ = static_cast<Uint>(billboardInstances_.size());
+		billboardInstances_.insert(billboardInstances_.end(), canvasInstances_.begin(), canvasInstances_.end());
 	}
 
 	void MovieRenderer::Upload()
@@ -187,6 +229,16 @@ namespace SeedCore
 		{
 			fullscreenBuffer_->Update(fullscreenInstances_.data(), static_cast<Uint>(fullscreenInstances_.size()));
 		}
+	}
+
+	Size MovieRenderer::GetSpriteBatchCount()const
+	{
+		return spriteBatches_.size();
+	}
+
+	Int MovieRenderer::GetSpriteBatchOrder(Size index)const
+	{
+		return spriteBatches_[index].order_;
 	}
 
 	void MovieRenderer::DrawFullscreen(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses)
@@ -217,60 +269,24 @@ namespace SeedCore
 		ProfilerStats::AddDrawCall();
 	}
 
-	void MovieRenderer::DrawSprite(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses)
+	void MovieRenderer::DrawSpriteBatch(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Size index)
 	{
-		if (spriteInstances_.empty())
-		{
-			return;
-		}
+		DrawSpriteRange(cmdList, heap, addresses, spriteBatches_[index].spriteStart_, spriteBatches_[index].spriteCount_);
+	}
 
-		ID3D12DescriptorHeap* heaps[] = { heap };
-		cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
-		cmdList->SetGraphicsRootSignature(movieShader_.GetRootSignature());
+	void MovieRenderer::DrawCanvasBatch(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Size index)
+	{
+		DrawBillboardRange(cmdList, heap, addresses, worldBillboardCount_ + spriteBatches_[index].canvasStart_, spriteBatches_[index].canvasCount_);
+	}
 
-		RootSignature::BindGraphics(cmdList, addresses);
-
-		cmdList->SetPipelineState(movieShader_.GetPipelineStateSprite());
-
-		if (D3D12Check::GetLevel() == D3D12Level::D12_2)
-		{
-			Uint groupCount = (static_cast<Uint>(spriteInstances_.size()) + 31) / 32;
-			cmdList->DispatchMesh(groupCount, 1, 1);
-		}
-		else
-		{
-			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			cmdList->DrawInstanced(6, static_cast<Uint>(spriteInstances_.size()), 0, 0);
-		}
-		ProfilerStats::AddDrawCall();
+	void MovieRenderer::DrawWorldBillboard(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses)
+	{
+		DrawBillboardRange(cmdList, heap, addresses, 0, worldBillboardCount_);
 	}
 
 	void MovieRenderer::DrawBillboard(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses)
 	{
-		if (billboardInstances_.empty())
-		{
-			return;
-		}
-
-		ID3D12DescriptorHeap* heaps[] = { heap };
-		cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
-		cmdList->SetGraphicsRootSignature(movieShader_.GetRootSignature());
-
-		RootSignature::BindGraphics(cmdList, addresses);
-
-		cmdList->SetPipelineState(movieShader_.GetPipelineStateBillboard());
-
-		if (D3D12Check::GetLevel() == D3D12Level::D12_2)
-		{
-			Uint groupCount = (static_cast<Uint>(billboardInstances_.size()) + 31) / 32;
-			cmdList->DispatchMesh(groupCount, 1, 1);
-		}
-		else
-		{
-			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			cmdList->DrawInstanced(6, static_cast<Uint>(billboardInstances_.size()), 0, 0);
-		}
-		ProfilerStats::AddDrawCall();
+		DrawBillboardRange(cmdList, heap, addresses, 0xFFFFFFFFu, static_cast<Uint>(billboardInstances_.size()));
 	}
 
 	void MovieRenderer::DrawSilhouetteSprite(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses)
@@ -284,6 +300,9 @@ namespace SeedCore
 		cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 		cmdList->SetGraphicsRootSignature(movieShader_.GetRootSignature());
 		RootSignature::BindGraphics(cmdList, addresses);
+
+		Uint fullRange = 0xFFFFFFFFu;
+		cmdList->SetGraphicsRoot32BitConstants(3, 1, &fullRange, 0);
 
 		cmdList->SetPipelineState(movieShader_.GetPipelineStateSilhouetteSprite());
 
@@ -312,6 +331,9 @@ namespace SeedCore
 		cmdList->SetGraphicsRootSignature(movieShader_.GetRootSignature());
 		RootSignature::BindGraphics(cmdList, addresses);
 
+		Uint fullRange = 0xFFFFFFFFu;
+		cmdList->SetGraphicsRoot32BitConstants(3, 1, &fullRange, 0);
+
 		cmdList->SetPipelineState(movieShader_.GetPipelineStateSilhouetteBillboard());
 
 		if (D3D12Check::GetLevel() == D3D12Level::D12_2)
@@ -323,6 +345,64 @@ namespace SeedCore
 		{
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			cmdList->DrawInstanced(6, static_cast<Uint>(billboardInstances_.size()), 0, 0);
+		}
+		ProfilerStats::AddDrawCall();
+	}
+
+	void MovieRenderer::DrawSpriteRange(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Uint start, Uint count)
+	{
+		if (count == 0)
+		{
+			return;
+		}
+
+		ID3D12DescriptorHeap* heaps[] = { heap };
+		cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
+		cmdList->SetGraphicsRootSignature(movieShader_.GetRootSignature());
+
+		RootSignature::BindGraphics(cmdList, addresses);
+		cmdList->SetGraphicsRoot32BitConstants(3, 1, &start, 0);
+
+		cmdList->SetPipelineState(movieShader_.GetPipelineStateSprite());
+
+		if (D3D12Check::GetLevel() == D3D12Level::D12_2)
+		{
+			Uint groupCount = (count + 31) / 32;
+			cmdList->DispatchMesh(groupCount, 1, 1);
+		}
+		else
+		{
+			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			cmdList->DrawInstanced(6, count, 0, 0);
+		}
+		ProfilerStats::AddDrawCall();
+	}
+
+	void MovieRenderer::DrawBillboardRange(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Uint start, Uint count)
+	{
+		if (count == 0)
+		{
+			return;
+		}
+
+		ID3D12DescriptorHeap* heaps[] = { heap };
+		cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
+		cmdList->SetGraphicsRootSignature(movieShader_.GetRootSignature());
+
+		RootSignature::BindGraphics(cmdList, addresses);
+		cmdList->SetGraphicsRoot32BitConstants(3, 1, &start, 0);
+
+		cmdList->SetPipelineState(movieShader_.GetPipelineStateBillboard());
+
+		if (D3D12Check::GetLevel() == D3D12Level::D12_2)
+		{
+			Uint groupCount = (count + 31) / 32;
+			cmdList->DispatchMesh(groupCount, 1, 1);
+		}
+		else
+		{
+			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			cmdList->DrawInstanced(6, count, 0, 0);
 		}
 		ProfilerStats::AddDrawCall();
 	}

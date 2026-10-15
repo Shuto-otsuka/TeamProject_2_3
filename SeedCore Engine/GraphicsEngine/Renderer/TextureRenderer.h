@@ -22,7 +22,7 @@ namespace SeedCore
 			Vector2 position_;
 			Float rotation_;
 			Vector2 scale_;
-			Float padding0_;
+			Uint batch_;
 			Vector2 textureSize_;
 			Vector2 texturePosition_;
 			Vector2 pivot_;
@@ -52,7 +52,23 @@ namespace SeedCore
 			Uint motionType_;
 			Uint faceCamera_;
 			Uint selected_;
-			Vector2 padding1_;
+			Uint batch_;
+			Float padding1_;
+		};
+
+		struct SpriteBatch
+		{
+			Int order_;
+			Uint spriteStart_;
+			Uint spriteCount_;
+			Uint canvasStart_;
+			Uint canvasCount_;
+		};
+
+		struct OrderedEntity
+		{
+			Int order_;
+			EntityID entityID_;
 		};
 
 	public:
@@ -65,7 +81,15 @@ namespace SeedCore
 
 		void Upload();
 
-		void DrawSprite(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
+		[[nodiscard]] Size GetSpriteBatchCount()const;
+
+		[[nodiscard]] Int GetSpriteBatchOrder(Size index)const;
+
+		void DrawSpriteBatch(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Size index);
+
+		void DrawCanvasBatch(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Size index);
+
+		void DrawWorldBillboard(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
 
 		void DrawBillboard(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
 
@@ -74,8 +98,20 @@ namespace SeedCore
 		void DrawSilhouetteBillboard(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
 
 	private:
+		void DrawSpriteRange(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Uint start, Uint count);
+
+		void DrawBillboardRange(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Uint start, Uint count);
+
+	private:
 		DynamicArray<TextureSpriteStructuredBuffer> spriteInstances_;
 		DynamicArray<TextureBillboardStructuredBuffer> billboardInstances_;
+		DynamicArray<TextureBillboardStructuredBuffer> canvasInstances_;
+
+		DynamicArray<SpriteBatch> spriteBatches_;
+		DynamicArray<OrderedEntity> orderedEntities_;
+
+		Uint worldBillboardCount_ = 0;
+		Uint batchSerial_ = 0;
 
 		ResourcePtr<ReadOnlyStructuredBuffer<TextureSpriteStructuredBuffer>> spriteBuffer_;
 		ResourcePtr<ReadOnlyStructuredBuffer<TextureBillboardStructuredBuffer>> billboardBuffer_;

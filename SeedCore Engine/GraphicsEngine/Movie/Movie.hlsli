@@ -28,7 +28,7 @@ struct MovieSpriteStructuredBuffer
 	float2 position_;
 	float rotation_;
 	float2 scale_;
-	float movie_sprite_structured_buffer_padding_0_;
+	uint batch_;
 	float2 size_;
 	float2 movie_sprite_structured_buffer_padding_1_;
 	float2 pivot_;
@@ -57,7 +57,7 @@ struct MovieBillboardStructuredBuffer
 	uint texture_index_;
 	uint face_camera_;
 	uint selected_;
-	float movie_billboard_structured_buffer_padding_2_;
+	uint batch_;
 };
 
 StructuredBuffer<MovieBillboardStructuredBuffer> GetMovieBillboardStructuredBuffer(uint index)

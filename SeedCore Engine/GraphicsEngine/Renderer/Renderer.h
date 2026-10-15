@@ -165,6 +165,9 @@ namespace SeedCore
 		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE AvatarDisplayGPUHandle()const;
 
 	private:
+		void DrawOrderedSprites(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Bool canvas);
+
+	private:
 		RootSignature rootSignature_;
 		PipelineStateObject pipelineStateObject_;
 		RaytracingStateObject raytracingStateObject_;

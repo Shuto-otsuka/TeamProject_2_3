@@ -381,113 +381,128 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Applies the editor's look: compact paddings and spacings, rounded
-	* corners, and a dark theme with purple accents.
+	* Applies dark graphite and midnight-blue surfaces, indigo highlights,
+	* and clearly bordered controls for the editor's lunar interface.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* エディタの見た目を適用する: 詰めた余白と間隔、角丸、紫をアクセントに
-	* したダークテーマ。
+	* 暗い黒鉛色と夜空の濃紺、鮮やかな青の選択表示、明瞭な境界線で、
+	* 月面設備をイメージしたエディタスタイルを適用する。
 	*/
 	void ImGuiRenderer::StyleConfig()
 	{
 		ImGuiStyle& style = ImGui::GetStyle();
-		ImVec4* colors = style.Colors;
 
-		/// [EN] Paddings, spacings and sizes, in pixels - kept tight so dense panels fit more rows.
-		/// [JP] 余白、間隔、大きさ(ピクセル単位)。密なパネルに多くの行が収まるよう詰めてある。
-		style.WindowPadding = ImVec2(5, 5);
-		style.FramePadding = ImVec2(7, 5);
-		style.CellPadding = ImVec2(4, 2);
-		style.ItemSpacing = ImVec2(7, 5);
-		style.ItemInnerSpacing = ImVec2(4, 4);
-		style.TouchExtraPadding = ImVec2(0, 0);
-		style.IndentSpacing = 11;
-		style.ScrollbarSize = 13;
-		style.GrabMinSize = 9;
+		style.Alpha = 1.0f;
+		style.DisabledAlpha = 0.6f;
+		style.WindowPadding = ImVec2(10.0f, 10.0f);
+		style.FramePadding = ImVec2(8.0f, 5.0f);
+		style.CellPadding = ImVec2(6.0f, 4.0f);
+		style.ItemSpacing = ImVec2(8.0f, 6.0f);
+		style.ItemInnerSpacing = ImVec2(6.0f, 4.0f);
+		style.TouchExtraPadding = ImVec2(0.0f, 0.0f);
+		style.IndentSpacing = 18.0f;
+		style.ScrollbarSize = 11.0f;
+		style.ScrollbarPadding = 3.0f;
+		style.GrabMinSize = 10.0f;
 
-		/// [EN] Borders only on windows, child windows and popups; widgets and tabs stay flat.
-		/// [JP] 枠線はウィンドウ、子ウィンドウ、ポップアップにだけ付け、ウィジェットとタブは平らにする。
+		style.WindowRounding = 0.0f;
+		style.ChildRounding = 2.0f;
+		style.FrameRounding = 2.0f;
+		style.PopupRounding = 3.0f;
+		style.ScrollbarRounding = 2.0f;
+		style.GrabRounding = 1.0f;
+		style.TabRounding = 2.0f;
+		style.ImageRounding = 0.0f;
+		style.MenuItemRounding = 1.0f;
+		style.SelectableRounding = 0.0f;
+
 		style.WindowBorderSize = 1.0f;
 		style.ChildBorderSize = 1.0f;
 		style.PopupBorderSize = 1.0f;
-		style.FrameBorderSize = 0.0f;
-		style.TabBorderSize = 0.0f;
+		style.FrameBorderSize = 1.0f;
+		style.TabBorderSize = 1.0f;
+		style.TabBarBorderSize = 1.0f;
+		style.TabBarOverlineSize = 2.0f;
+		style.DockingSeparatorSize = 4.0f;
+		style.SeparatorSize = 1.0f;
+		style.SeparatorTextBorderSize = 1.0f;
+		style.SeparatorTextPadding = ImVec2(8.0f, 5.0f);
+		style.WindowTitleAlign = ImVec2(0.0f, 0.5f);
+		style.ButtonTextAlign = ImVec2(0.5f, 0.5f);
+		style.InputTextCursorSize = 1.0f;
+		style.DragDropTargetBorderSize = 1.0f;
+		style.DragDropTargetRounding = 2.0f;
 
-		/// [EN] Corner rounding radii, in pixels.
-		/// [JP] 角丸の半径(ピクセル単位)。
-		style.WindowRounding = 7.0f;
-		style.ChildRounding = 5.0f;
-		style.FrameRounding = 5.0f;
-		style.PopupRounding = 5.0f;
-		style.ScrollbarRounding = 8.0f;
-		style.GrabRounding = 2.0f;
-		style.TabRounding = 5.0f;
+		const auto color = [](Uint rgb, Float alpha = 1.0f) -> ImVec4
+		{
+			return ImVec4(static_cast<Float>((rgb >> 16) & 0xFF) / 255.0f, static_cast<Float>((rgb >> 8) & 0xFF) / 255.0f, static_cast<Float>(rgb & 0xFF) / 255.0f, alpha);
+		};
 
-		/// [EN] Text and backgrounds: near-white text on dark blue-grey; child windows are transparent so they take their parent's background.
-		/// [JP] 文字と背景: 暗い青灰色の上に白に近い文字。子ウィンドウは透明にして親の背景をそのまま使う。
-		colors[ImGuiCol_Text] = ImVec4(0.95f, 0.95f, 0.95f, 1.00f);
-		colors[ImGuiCol_TextDisabled] = ImVec4(0.55f, 0.55f, 0.55f, 1.00f);
-		colors[ImGuiCol_WindowBg] = ImVec4(0.10f, 0.10f, 0.12f, 1.00f);
-		colors[ImGuiCol_ChildBg] = ImVec4(0.22f, 0.22f, 0.24f, 0.00f);
-		colors[ImGuiCol_PopupBg] = ImVec4(0.18f, 0.18f, 0.20f, 0.98f);
-
-		/// [EN] Borders: half-transparent purple, no shadow.
-		/// [JP] 枠線: 半透明の紫。影は付けない。
-		colors[ImGuiCol_Border] = ImVec4(0.50f, 0.40f, 0.70f, 0.50f);
-		colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 0.00f);
-
-		/// [EN] Title and menu bars: dark, with the focused window's title in purple.
-		/// [JP] タイトルバーとメニューバー: 暗めにし、フォーカス中のウィンドウのタイトルだけ紫にする。
-		colors[ImGuiCol_TitleBg] = ImVec4(0.15f, 0.15f, 0.17f, 1.00f);
-		colors[ImGuiCol_TitleBgActive] = ImVec4(0.35f, 0.25f, 0.55f, 1.00f);
-		colors[ImGuiCol_TitleBgCollapsed] = ImVec4(0.15f, 0.15f, 0.17f, 0.80f);
-		colors[ImGuiCol_MenuBarBg] = ImVec4(0.18f, 0.18f, 0.20f, 1.00f);
-
-		/// [EN] Input fields and other framed widgets: grey at rest, tinted purple when hovered or active.
-		/// [JP] 入力欄などの枠付きウィジェット: 通常は灰色、ホバー中や操作中は紫がかる。
-		colors[ImGuiCol_FrameBg] = ImVec4(0.28f, 0.28f, 0.32f, 1.00f);
-		colors[ImGuiCol_FrameBgHovered] = ImVec4(0.45f, 0.35f, 0.65f, 0.45f);
-		colors[ImGuiCol_FrameBgActive] = ImVec4(0.45f, 0.35f, 0.65f, 0.60f);
-
-		/// [EN] Tabs: muted purple, brighter when hovered or selected, dimmer when their dock node is unfocused.
-		/// [JP] タブ: くすんだ紫。ホバー中や選択中は明るく、ドックノードにフォーカスが無いときは暗くする。
-		colors[ImGuiCol_Tab] = ImVec4(0.25f, 0.22f, 0.32f, 0.80f);
-		colors[ImGuiCol_TabHovered] = ImVec4(0.60f, 0.45f, 0.90f, 0.85f);
-		colors[ImGuiCol_TabActive] = ImVec4(0.50f, 0.35f, 0.75f, 1.00f);
-		colors[ImGuiCol_TabUnfocused] = ImVec4(0.20f, 0.18f, 0.24f, 0.98f);
-		colors[ImGuiCol_TabUnfocusedActive] = ImVec4(0.30f, 0.25f, 0.40f, 1.00f);
-
-		/// [EN] Buttons: neutral grey at rest, the accent purple when hovered or pressed.
-		/// [JP] ボタン: 通常は中間の灰色、ホバー中や押下中はアクセントの紫。
-		colors[ImGuiCol_Button] = ImVec4(0.30f, 0.30f, 0.30f, 1.00f);
-		colors[ImGuiCol_ButtonHovered] = ImVec4(0.44f, 0.24f, 0.66f, 0.80f);
-		colors[ImGuiCol_ButtonActive] = ImVec4(0.44f, 0.24f, 0.66f, 1.00f);
-
-		/// [EN] Headers (collapsing headers, selectables, tree nodes): the accent purple, more opaque as the state intensifies.
-		/// [JP] ヘッダー(折りたたみヘッダー、選択項目、ツリーノード): アクセントの紫。状態が強まるほど不透明にする。
-		colors[ImGuiCol_Header] = ImVec4(0.44f, 0.24f, 0.66f, 0.40f);
-		colors[ImGuiCol_HeaderHovered] = ImVec4(0.44f, 0.24f, 0.66f, 0.70f);
-		colors[ImGuiCol_HeaderActive] = ImVec4(0.44f, 0.24f, 0.66f, 1.00f);
-
-		/// [EN] Separators and dock splitters: dim purple, brightening while hovered or dragged.
-		/// [JP] 区切り線とドックの分割線: 暗い紫。ホバー中やドラッグ中は明るくなる。
-		colors[ImGuiCol_Separator] = ImVec4(0.35f, 0.22f, 0.55f, 0.50f);
-		colors[ImGuiCol_SeparatorHovered] = ImVec4(0.55f, 0.35f, 0.85f, 0.78f);
-		colors[ImGuiCol_SeparatorActive] = ImVec4(0.55f, 0.35f, 0.85f, 1.00f);
-
-		/// [EN] Check marks and slider grabs: bright purple so the value stands out.
-		/// [JP] チェックマークとスライダーのつまみ: 値が目立つよう明るい紫にする。
-		colors[ImGuiCol_CheckMark] = ImVec4(0.66f, 0.44f, 0.99f, 1.00f);
-		colors[ImGuiCol_SliderGrab] = ImVec4(0.44f, 0.24f, 0.66f, 0.80f);
-		colors[ImGuiCol_SliderGrabActive] = ImVec4(0.66f, 0.44f, 0.99f, 1.00f);
-
-		/// [EN] Docking preview and resize grips: the accent purple, faint until interacted with.
-		/// [JP] ドッキングのプレビューとリサイズのつまみ: アクセントの紫。操作するまでは薄くする。
-		colors[ImGuiCol_DockingPreview] = ImVec4(0.44f, 0.24f, 0.66f, 0.70f);
-		colors[ImGuiCol_ResizeGrip] = ImVec4(0.44f, 0.24f, 0.66f, 0.20f);
-		colors[ImGuiCol_ResizeGripHovered] = ImVec4(0.44f, 0.24f, 0.66f, 0.67f);
-		colors[ImGuiCol_ResizeGripActive] = ImVec4(0.44f, 0.24f, 0.66f, 0.95f);
+		ImVec4* colors = style.Colors;
+		colors[ImGuiCol_Text] = color(0xE4ECFA);
+		colors[ImGuiCol_TextDisabled] = color(0x8392AD);
+		colors[ImGuiCol_WindowBg] = color(0x131A27);
+		colors[ImGuiCol_ChildBg] = color(0x131A27, 0.0f);
+		colors[ImGuiCol_PopupBg] = color(0x1A2438);
+		colors[ImGuiCol_Border] = color(0x5C7295);
+		colors[ImGuiCol_BorderShadow] = color(0x000000, 0.0f);
+		colors[ImGuiCol_FrameBg] = color(0x0D1422);
+		colors[ImGuiCol_FrameBgHovered] = color(0x1F2D4B);
+		colors[ImGuiCol_FrameBgActive] = color(0x263B71);
+		colors[ImGuiCol_TitleBg] = color(0x0D1420);
+		colors[ImGuiCol_TitleBgActive] = color(0x1D2A48);
+		colors[ImGuiCol_TitleBgCollapsed] = color(0x0D1420);
+		colors[ImGuiCol_MenuBarBg] = color(0x141D2E);
+		colors[ImGuiCol_ScrollbarBg] = color(0x0D1420);
+		colors[ImGuiCol_ScrollbarGrab] = color(0x3B5077);
+		colors[ImGuiCol_ScrollbarGrabHovered] = color(0x5773AD);
+		colors[ImGuiCol_ScrollbarGrabActive] = color(0x657EFF);
+		colors[ImGuiCol_CheckMark] = color(0xA7BCFF);
+		colors[ImGuiCol_CheckboxSelectedBg] = color(0x26386B);
+		colors[ImGuiCol_SliderGrab] = color(0x657EFF);
+		colors[ImGuiCol_SliderGrabActive] = color(0xA7BCFF);
+		colors[ImGuiCol_Button] = color(0x1D2941);
+		colors[ImGuiCol_ButtonHovered] = color(0x2D4184);
+		colors[ImGuiCol_ButtonActive] = color(0x3E52AF);
+		colors[ImGuiCol_Header] = color(0x293D78);
+		colors[ImGuiCol_HeaderHovered] = color(0x304989);
+		colors[ImGuiCol_HeaderActive] = color(0x3E52AF);
+		colors[ImGuiCol_Separator] = color(0x4A5E80);
+		colors[ImGuiCol_SeparatorHovered] = color(0x657EFF);
+		colors[ImGuiCol_SeparatorActive] = color(0xA7BCFF);
+		colors[ImGuiCol_ResizeGrip] = color(0x657EFF, 0.25f);
+		colors[ImGuiCol_ResizeGripHovered] = color(0x657EFF, 0.70f);
+		colors[ImGuiCol_ResizeGripActive] = color(0xA7BCFF);
+		colors[ImGuiCol_InputTextCursor] = color(0xA7BCFF);
+		colors[ImGuiCol_TabHovered] = color(0x2D4184);
+		colors[ImGuiCol_Tab] = color(0x121B2D);
+		colors[ImGuiCol_TabSelected] = color(0x293D78);
+		colors[ImGuiCol_TabSelectedOverline] = color(0x8FA7FF);
+		colors[ImGuiCol_TabDimmed] = color(0x101725);
+		colors[ImGuiCol_TabDimmedSelected] = color(0x1D2A45);
+		colors[ImGuiCol_TabDimmedSelectedOverline] = color(0x5773AD);
+		colors[ImGuiCol_DockingPreview] = color(0x657EFF, 0.32f);
+		colors[ImGuiCol_DockingEmptyBg] = color(0x080E17);
+		colors[ImGuiCol_PlotLines] = color(0x7FA8FF);
+		colors[ImGuiCol_PlotLinesHovered] = color(0xB4C9FF);
+		colors[ImGuiCol_PlotHistogram] = color(0x657EFF);
+		colors[ImGuiCol_PlotHistogramHovered] = color(0xA7BCFF);
+		colors[ImGuiCol_TableHeaderBg] = color(0x1C2940);
+		colors[ImGuiCol_TableBorderStrong] = color(0x5C7295);
+		colors[ImGuiCol_TableBorderLight] = color(0x354765);
+		colors[ImGuiCol_TableRowBg] = color(0x131A27, 0.0f);
+		colors[ImGuiCol_TableRowBgAlt] = color(0xD5E3FF, 0.025f);
+		colors[ImGuiCol_TextLink] = color(0x94B4FF);
+		colors[ImGuiCol_TextSelectedBg] = color(0x5A72FF, 0.35f);
+		colors[ImGuiCol_TreeLines] = color(0x4A5E80);
+		colors[ImGuiCol_DragDropTarget] = color(0xA7BCFF);
+		colors[ImGuiCol_DragDropTargetBg] = color(0x657EFF, 0.14f);
+		colors[ImGuiCol_UnsavedMarker] = color(0x8FA7FF);
+		colors[ImGuiCol_NavCursor] = color(0xA7BCFF);
+		colors[ImGuiCol_NavWindowingHighlight] = color(0x94B4FF, 0.80f);
+		colors[ImGuiCol_NavWindowingDimBg] = color(0x060A12, 0.55f);
+		colors[ImGuiCol_ModalWindowDimBg] = color(0x060A12, 0.72f);
 	}
 }

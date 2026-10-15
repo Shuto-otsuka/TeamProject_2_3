@@ -1,6 +1,7 @@
 #include "../Texture.hlsli"
 #include "../../Shader/ShaderResources.hlsli"
 #include "../../Shader/Culling.hlsli"
+#include "../../Shader/Dispatch.hlsli"
 
 groupshared uint survived_count;
 groupshared uint local_indices[32];
@@ -19,32 +20,34 @@ void main(uint3 gtid : SV_GroupThreadID, uint3 dtid : SV_DispatchThreadID)
 	GroupMemoryBarrierWithGroupSync();
 
 	bool is_visible = false;
-	uint sprite_id = dtid.x;
+	bool is_ranged = dispatch_buffer_index_ != 0xFFFFFFFFu;
+	uint range_start = is_ranged ? dispatch_buffer_index_ : 0u;
+	uint range_batch = texture_sprite[range_start].batch_;
+	uint sprite_id = range_start + dtid.x;
 
 	if (sprite_id < 32768)
 	{
 		TextureSpriteStructuredBuffer sprite = texture_sprite[sprite_id];
 
-		if (sprite.scale_.x > 0.0 && sprite.scale_.y > 0.0)
+		if ((!is_ranged || sprite.batch_ == range_batch) && sprite.scale_.x > 0.0 && sprite.scale_.y > 0.0)
 		{
 			is_visible = IsVisibleInScreen(sprite.position_, sprite.texture_size_ * sprite.scale_, scene_constant.display_size_);
 		}
 	}
 
-	if (is_visible)
-	{
-		uint slot;
-		InterlockedAdd(survived_count, 1, slot);
-		local_indices[slot] = sprite_id;
-	}
+	local_indices[gtid.x] = is_visible ? sprite_id : 0xFFFFFFFFu;
 
 	GroupMemoryBarrierWithGroupSync();
 
 	if (gtid.x == 0)
 	{
-		for (uint index = 0; index < survived_count; ++index)
+		for (uint index = 0; index < 32; ++index)
 		{
-			payload.texture_indices[index] = local_indices[index];
+			if (local_indices[index] != 0xFFFFFFFFu)
+			{
+				payload.texture_indices[survived_count] = local_indices[index];
+				++survived_count;
+			}
 		}
 	}
 

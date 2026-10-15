@@ -45,6 +45,9 @@ namespace SeedCore
 	{
 		spriteInstances_.clear();
 		billboardInstances_.clear();
+		canvasInstances_.clear();
+		spriteBatches_.clear();
+		orderedEntities_.clear();
 
 		Float spriteReferenceScale = (ScResolution::SC_CANVAS.Height > 0.0f) ? (nativeScreenSize.y / ScResolution::SC_CANVAS.Height) : 1.0f;
 
@@ -65,218 +68,264 @@ namespace SeedCore
 					return;
 				}
 
-				/// [EN] Read the parent-composed world transform from
-				///      TransformSystem (Actor::WorldMatrix()), same as
-				///      TextureRenderer, so parented text follows its parent.
-				///      rotationEuler here is TransformSystem's own
-				///      yaw/pitch/roll decomposition of the composed
-				///      rotation, matching CreateFromYawPitchRoll's axes.
-				/// [JP] TextureRenderer と同様、アクター自身のローカル値ではなく
-				///      TransformSystem(Actor::WorldMatrix())の親合成済み
-				///      ワールド変換を読む。rotationEuler は合成後回転を
-				///      CreateFromYawPitchRoll と同じ軸(yaw/pitch/roll)で
-				///      分解したもの。
-				Actor actor = world.GetActor(entityID);
-				if (!actor)
-				{
-					return;
-				}
-
-				Matrix worldMatrix = actor.WorldMatrix();
-				Vector3 worldScale;
-				Quaternion worldRotation;
-				Vector3 worldTranslation;
-				worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
-
-				Vector3 position = worldTranslation;
-				Vector2 scale = Vector2(worldScale.x, worldScale.y);
-				Vector3 rotationEuler = worldRotation.ToEuler(); // (pitch, yaw, roll)
-
-				Uint selected = std::ranges::find(selectedEntities, actor.GetEntity()) != selectedEntities.end() ? 1 : 0;
-
-				Font* font = fontResource.Resolve(fontResource.GetHandle(text.fontID_));
-				if (!font)
-				{
-					return;
-				}
-
-				font->Shape(text.text_.str());
-
-				if (!font->HasAtlasTexture())
-				{
-					return;
-				}
-
-				msdfgen::BitmapConstRef<msdf_atlas::byte, 4> bitmap = font->GetAtlasBitmap();
-				if (bitmap.width <= 0 || bitmap.height <= 0)
-				{
-					return;
-				}
-
-				const Float scaleFactor = text.fontSize_ / font->GetFontSize();
-				const Float lineAdvance = font->GetLineHeight() * scaleFactor * text.lineSpacing_;
-				const Vector2 unitRange = Vector2(font->GetPixelRange() / static_cast<Float>(bitmap.width), font->GetPixelRange() / static_cast<Float>(bitmap.height));
-				const Float inverseWidth = 1.0f / static_cast<Float>(bitmap.width);
-				const Float inverseHeight = 1.0f / static_cast<Float>(bitmap.height);
-
-				const Bool isSprite = (text.viewType_ == Text::ViewType::Sprite);
-
-				/// [EN] Canvas text box in unscaled glyph space, relative to the pivot, accumulated over every drawn glyph (same convention as TextureRenderer's Bounds: the actor's world scale is applied by the picker, not stored). Stays inverted (min > max) when the text draws nothing.
-				/// [JP] pivot 基準・未スケールのグリフ空間でのキャンバステキストボックス。描画される全グリフにわたって蓄積する(TextureRenderer の Bounds と同じ規約: アクターのワールドスケールはピッカー側で掛ける、保存しない)。何も描画しないときは反転(min > max)のまま。
-				Float textBoxMinX = FLT_MAX;
-				Float textBoxMaxX = -FLT_MAX;
-				Float textBoxMinY = FLT_MAX;
-				Float textBoxMaxY = -FLT_MAX;
-
-				Float lineTop = 0.0f;
-				std::istringstream stream(text.text_.str());
-				std::string line;
-				while (std::getline(stream, line))
-				{
-					const Float baseline = lineTop + font->GetAscender() * scaleFactor;
-
-					if (!line.empty())
-					{
-						Vector2 pen = { 0.0f, 0.0f };
-						for (const ShapedGlyph& shaped : font->Shape(line))
-						{
-							const GlyphAtlasEntry* entry = font->FindGlyph(shaped.glyphIndex_);
-							if (entry && !entry->isWhitespace_)
-							{
-								const Float glyphLeft = pen.x + shaped.offset_.x * scaleFactor + entry->planeLeft_ * scaleFactor;
-								const Float glyphTop = baseline - shaped.offset_.y * scaleFactor - entry->planeTop_ * scaleFactor;
-								const Float glyphWidth = (entry->planeRight_ - entry->planeLeft_) * scaleFactor;
-								const Float glyphHeight = (entry->planeTop_ - entry->planeBottom_) * scaleFactor;
-
-								const Vector2 uvMin = Vector2(entry->atlasLeft_ * inverseWidth, entry->atlasTop_ * inverseHeight);
-								const Vector2 uvMax = Vector2(entry->atlasRight_ * inverseWidth, entry->atlasBottom_ * inverseHeight);
-
-								if (isSprite)
-								{
-									/// [EN] Grow the canvas text box by this glyph (unscaled, pivot-relative - matches canvasInstance.localPosition_/localSize_ divided by scale).
-									/// [JP] このグリフぶんキャンバステキストボックスを広げる(未スケール・pivot 基準 - canvasInstance.localPosition_/localSize_ をスケールで割ったものと一致)。
-									textBoxMinX = Min(textBoxMinX, glyphLeft - text.pivot_.x);
-									textBoxMaxX = Max(textBoxMaxX, glyphLeft - text.pivot_.x + glyphWidth);
-									textBoxMinY = Min(textBoxMinY, text.pivot_.y - glyphTop - glyphHeight);
-									textBoxMaxY = Max(textBoxMaxY, text.pivot_.y - glyphTop);
-
-									FontSpriteStructuredBuffer instance{};
-									instance.size_ = Vector2(glyphWidth * scale.x * spriteReferenceScale, glyphHeight * scale.y * spriteReferenceScale);
-									instance.uvMin_ = uvMin;
-									instance.uvMax_ = uvMax;
-									instance.color_ = text.color_;
-									instance.outlineColor_ = text.outlineColor_;
-									instance.glowColor_ = text.glowColor_;
-									instance.textureIndex_ = font->GetAtlasTextureIndex();
-									instance.outlineWidth_ = text.outlineWidth_;
-									instance.glowPower_ = text.glowPower_;
-									instance.unitRange_ = unitRange;
-
-									const Vector2 basePosition = Vector2((position.x + (glyphLeft - text.pivot_.x) * scale.x) * spriteReferenceScale, (position.y + (glyphTop - text.pivot_.y) * scale.y) * spriteReferenceScale);
-
-									if (text.shadowEnable_)
-									{
-										FontSpriteStructuredBuffer shadow = instance;
-										shadow.position_ = basePosition + Vector2(text.shadowOffset_.x * scale.x * spriteReferenceScale, text.shadowOffset_.y * scale.y * spriteReferenceScale);
-										shadow.color_ = text.shadowColor_;
-										shadow.outlineColor_ = text.shadowColor_;
-										shadow.glowPower_ = 0.0f;
-										shadow.selected_ = selected;
-										spriteInstances_.push_back(shadow);
-									}
-
-									instance.position_ = basePosition;
-									instance.selected_ = selected;
-									spriteInstances_.push_back(instance);
-
-									FontBillboardStructuredBuffer canvasInstance{};
-									canvasInstance.position_ = Vector3(100000.0f + position.x, 100000.0f + (ScResolution::SC_CANVAS.Height - position.y), 100000.0f);
-									canvasInstance.rotation_ = Vector3::Zero;
-									canvasInstance.localPosition_ = Vector2((glyphLeft - text.pivot_.x) * scale.x, (text.pivot_.y - glyphTop - glyphHeight) * scale.y);
-									canvasInstance.localSize_ = Vector2(glyphWidth * scale.x, glyphHeight * scale.y);
-									canvasInstance.uvMin_ = uvMin;
-									canvasInstance.uvMax_ = uvMax;
-									canvasInstance.color_ = text.color_;
-									canvasInstance.outlineColor_ = text.outlineColor_;
-									canvasInstance.glowColor_ = text.glowColor_;
-									canvasInstance.textureIndex_ = font->GetAtlasTextureIndex();
-									canvasInstance.outlineWidth_ = text.outlineWidth_;
-									canvasInstance.glowPower_ = text.glowPower_;
-									canvasInstance.unitRange_ = unitRange;
-									canvasInstance.faceCamera_ = 1;
-									canvasInstance.selected_ = selected;
-									billboardInstances_.push_back(canvasInstance);
-								}
-								else
-								{
-									FontBillboardStructuredBuffer instance{};
-									instance.position_ = position;
-									instance.rotation_ = rotationEuler;
-									instance.uvMin_ = uvMin;
-									instance.uvMax_ = uvMax;
-									instance.color_ = text.color_;
-									instance.outlineColor_ = text.outlineColor_;
-									instance.glowColor_ = text.glowColor_;
-									instance.textureIndex_ = font->GetAtlasTextureIndex();
-									instance.outlineWidth_ = text.outlineWidth_;
-									instance.glowPower_ = text.glowPower_;
-									instance.unitRange_ = unitRange;
-									instance.faceCamera_ = text.faceCamera_ ? 1 : 0;
-
-									const Float pixelToUnitX = 0.01f * scale.x;
-									const Float pixelToUnitY = 0.01f * scale.y;
-									const Vector2 baseLocal = Vector2((glyphLeft - text.pivot_.x) * pixelToUnitX, (text.pivot_.y - glyphTop - glyphHeight) * pixelToUnitY);
-									instance.localSize_ = Vector2(glyphWidth * pixelToUnitX, glyphHeight * pixelToUnitY);
-
-									if (text.shadowEnable_)
-									{
-										FontBillboardStructuredBuffer shadow = instance;
-										shadow.localPosition_ = baseLocal + Vector2(text.shadowOffset_.x * pixelToUnitX, -text.shadowOffset_.y * pixelToUnitY);
-										shadow.color_ = text.shadowColor_;
-										shadow.outlineColor_ = text.shadowColor_;
-										shadow.glowPower_ = 0.0f;
-
-										const Float rx = instance.rotation_.x;
-										const Float ry = instance.rotation_.y;
-										const Float rz = instance.rotation_.z;
-										const Vector3 normal = Vector3(
-											std::cos(rx) * std::sin(ry) * std::cos(rz) + std::sin(rx) * std::sin(rz),
-											std::cos(rx) * std::sin(ry) * std::sin(rz) - std::sin(rx) * std::cos(rz),
-											std::cos(rx) * std::cos(ry)
-										);
-										shadow.position_ = instance.position_ + normal * 0.001f;
-										shadow.selected_ = selected;
-
-										billboardInstances_.push_back(shadow);
-									}
-
-									instance.localPosition_ = baseLocal;
-									instance.selected_ = selected;
-									billboardInstances_.push_back(instance);
-								}
-							}
-
-							pen.x += shaped.advance_.x * scaleFactor + text.letterSpacing_;
-							pen.y += shaped.advance_.y * scaleFactor;
-						}
-					}
-
-					lineTop += lineAdvance;
-				}
-
-				/// [EN] Sync this actor's Bounds (every actor has one) to the measured canvas text box: half-extents = box size / 2, centre = box midpoint offset from the text origin. The picker applies the actor's world scale/rotation, so CanvasViewPanel gets a correct box for the drawn text.
-				/// [JP] このアクターの Bounds(全アクターが持つ)を計測したキャンバステキストボックスへ同期する: 半径 = ボックスサイズ / 2、中心 = テキスト原点からのボックス中点オフセット。ピッカーがアクターのワールドスケール/回転を掛けるので、CanvasViewPanel は描画済みテキストの正しいボックスを得る。
-				if (isSprite && boundsComponentID && textBoxMinX <= textBoxMaxX)
-				{
-					void* boundsRaw = world.GetComponent(entityID, boundsComponentID);
-					if (boundsRaw)
-					{
-						Bounds* bounds = static_cast<Bounds*>(boundsRaw);
-						bounds->center_ = Vector3((textBoxMinX + textBoxMaxX) * 0.5f, (textBoxMinY + textBoxMaxY) * 0.5f, 0.0f);
-						bounds->extent_ = Vector3((textBoxMaxX - textBoxMinX) * 0.5f, (textBoxMaxY - textBoxMinY) * 0.5f, 1.0f);
-					}
-				}
+				orderedEntities_.push_back({ text.order_, entityID });
 			});
+
+		std::ranges::stable_sort(orderedEntities_, [](const OrderedEntity& a, const OrderedEntity& b) { return a.order_ < b.order_; });
+
+		++batchSerial_;
+		Uint worldBatch = batchSerial_;
+
+		for (const OrderedEntity& orderedEntity : orderedEntities_)
+		{
+			EntityID entityID = orderedEntity.entityID_;
+
+			/// [EN] Read the parent-composed world transform from
+			///      TransformSystem (Actor::WorldMatrix()), same as
+			///      TextureRenderer, so parented text follows its parent.
+			///      rotationEuler here is TransformSystem's own
+			///      yaw/pitch/roll decomposition of the composed
+			///      rotation, matching CreateFromYawPitchRoll's axes.
+			/// [JP] TextureRenderer と同様、アクター自身のローカル値ではなく
+			///      TransformSystem(Actor::WorldMatrix())の親合成済み
+			///      ワールド変換を読む。rotationEuler は合成後回転を
+			///      CreateFromYawPitchRoll と同じ軸(yaw/pitch/roll)で
+			///      分解したもの。
+			Actor actor = world.GetActor(entityID);
+			if (!actor)
+			{
+				continue;
+			}
+
+			const Text* textComponent = actor.GetComponent<Text>();
+			if (!textComponent)
+			{
+				continue;
+			}
+			const Text& text = *textComponent;
+
+			Matrix worldMatrix = actor.WorldMatrix();
+			Vector3 worldScale;
+			Quaternion worldRotation;
+			Vector3 worldTranslation;
+			worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
+
+			Vector3 position = worldTranslation;
+			Vector2 scale = Vector2(worldScale.x, worldScale.y);
+			Vector3 rotationEuler = worldRotation.ToEuler(); // (pitch, yaw, roll)
+
+			Uint selected = std::ranges::find(selectedEntities, actor.GetEntity()) != selectedEntities.end() ? 1 : 0;
+
+			Font* font = fontResource.Resolve(fontResource.GetHandle(text.fontID_));
+			if (!font)
+			{
+				continue;
+			}
+
+			font->Shape(text.text_.str());
+
+			if (!font->HasAtlasTexture())
+			{
+				continue;
+			}
+
+			msdfgen::BitmapConstRef<msdf_atlas::byte, 4> bitmap = font->GetAtlasBitmap();
+			if (bitmap.width <= 0 || bitmap.height <= 0)
+			{
+				continue;
+			}
+
+			const Float scaleFactor = text.fontSize_ / font->GetFontSize();
+			const Float lineAdvance = font->GetLineHeight() * scaleFactor * text.lineSpacing_;
+			const Vector2 unitRange = Vector2(font->GetPixelRange() / static_cast<Float>(bitmap.width), font->GetPixelRange() / static_cast<Float>(bitmap.height));
+			const Float inverseWidth = 1.0f / static_cast<Float>(bitmap.width);
+			const Float inverseHeight = 1.0f / static_cast<Float>(bitmap.height);
+
+			const Bool isSprite = (text.viewType_ == Text::ViewType::Sprite);
+
+			Bool newBatch = spriteBatches_.empty() || spriteBatches_.back().order_ != text.order_;
+			Uint batch = newBatch ? batchSerial_ + 1 : batchSerial_;
+			Uint spriteStart = static_cast<Uint>(spriteInstances_.size());
+			Uint canvasStart = static_cast<Uint>(canvasInstances_.size());
+
+			/// [EN] Canvas text box in unscaled glyph space, relative to the pivot, accumulated over every drawn glyph (same convention as TextureRenderer's Bounds: the actor's world scale is applied by the picker, not stored). Stays inverted (min > max) when the text draws nothing.
+			/// [JP] pivot 基準・未スケールのグリフ空間でのキャンバステキストボックス。描画される全グリフにわたって蓄積する(TextureRenderer の Bounds と同じ規約: アクターのワールドスケールはピッカー側で掛ける、保存しない)。何も描画しないときは反転(min > max)のまま。
+			Float textBoxMinX = FLT_MAX;
+			Float textBoxMaxX = -FLT_MAX;
+			Float textBoxMinY = FLT_MAX;
+			Float textBoxMaxY = -FLT_MAX;
+
+			Float lineTop = 0.0f;
+			std::istringstream stream(text.text_.str());
+			std::string line;
+			while (std::getline(stream, line))
+			{
+				const Float baseline = lineTop + font->GetAscender() * scaleFactor;
+
+				if (!line.empty())
+				{
+					Vector2 pen = { 0.0f, 0.0f };
+					for (const ShapedGlyph& shaped : font->Shape(line))
+					{
+						const GlyphAtlasEntry* entry = font->FindGlyph(shaped.glyphIndex_);
+						if (entry && !entry->isWhitespace_)
+						{
+							const Float glyphLeft = pen.x + shaped.offset_.x * scaleFactor + entry->planeLeft_ * scaleFactor;
+							const Float glyphTop = baseline - shaped.offset_.y * scaleFactor - entry->planeTop_ * scaleFactor;
+							const Float glyphWidth = (entry->planeRight_ - entry->planeLeft_) * scaleFactor;
+							const Float glyphHeight = (entry->planeTop_ - entry->planeBottom_) * scaleFactor;
+
+							const Vector2 uvMin = Vector2(entry->atlasLeft_ * inverseWidth, entry->atlasTop_ * inverseHeight);
+							const Vector2 uvMax = Vector2(entry->atlasRight_ * inverseWidth, entry->atlasBottom_ * inverseHeight);
+
+							if (isSprite)
+							{
+								/// [EN] Grow the canvas text box by this glyph (unscaled, pivot-relative - matches canvasInstance.localPosition_/localSize_ divided by scale).
+								/// [JP] このグリフぶんキャンバステキストボックスを広げる(未スケール・pivot 基準 - canvasInstance.localPosition_/localSize_ をスケールで割ったものと一致)。
+								textBoxMinX = Min(textBoxMinX, glyphLeft - text.pivot_.x);
+								textBoxMaxX = Max(textBoxMaxX, glyphLeft - text.pivot_.x + glyphWidth);
+								textBoxMinY = Min(textBoxMinY, text.pivot_.y - glyphTop - glyphHeight);
+								textBoxMaxY = Max(textBoxMaxY, text.pivot_.y - glyphTop);
+
+								FontSpriteStructuredBuffer instance{};
+								instance.size_ = Vector2(glyphWidth * scale.x * spriteReferenceScale, glyphHeight * scale.y * spriteReferenceScale);
+								instance.uvMin_ = uvMin;
+								instance.uvMax_ = uvMax;
+								instance.color_ = text.color_;
+								instance.outlineColor_ = text.outlineColor_;
+								instance.glowColor_ = text.glowColor_;
+								instance.textureIndex_ = font->GetAtlasTextureIndex();
+								instance.outlineWidth_ = text.outlineWidth_;
+								instance.glowPower_ = text.glowPower_;
+								instance.unitRange_ = unitRange;
+								instance.batch_ = batch;
+
+								const Vector2 basePosition = Vector2((position.x + (glyphLeft - text.pivot_.x) * scale.x) * spriteReferenceScale, (position.y + (glyphTop - text.pivot_.y) * scale.y) * spriteReferenceScale);
+
+								if (text.shadowEnable_)
+								{
+									FontSpriteStructuredBuffer shadow = instance;
+									shadow.position_ = basePosition + Vector2(text.shadowOffset_.x * scale.x * spriteReferenceScale, text.shadowOffset_.y * scale.y * spriteReferenceScale);
+									shadow.color_ = text.shadowColor_;
+									shadow.outlineColor_ = text.shadowColor_;
+									shadow.glowPower_ = 0.0f;
+									shadow.selected_ = selected;
+									spriteInstances_.push_back(shadow);
+								}
+
+								instance.position_ = basePosition;
+								instance.selected_ = selected;
+								spriteInstances_.push_back(instance);
+
+								FontBillboardStructuredBuffer canvasInstance{};
+								canvasInstance.position_ = Vector3(100000.0f + position.x, 100000.0f + (ScResolution::SC_CANVAS.Height - position.y), 100000.0f);
+								canvasInstance.rotation_ = Vector3::Zero;
+								canvasInstance.localPosition_ = Vector2((glyphLeft - text.pivot_.x) * scale.x, (text.pivot_.y - glyphTop - glyphHeight) * scale.y);
+								canvasInstance.localSize_ = Vector2(glyphWidth * scale.x, glyphHeight * scale.y);
+								canvasInstance.uvMin_ = uvMin;
+								canvasInstance.uvMax_ = uvMax;
+								canvasInstance.color_ = text.color_;
+								canvasInstance.outlineColor_ = text.outlineColor_;
+								canvasInstance.glowColor_ = text.glowColor_;
+								canvasInstance.textureIndex_ = font->GetAtlasTextureIndex();
+								canvasInstance.outlineWidth_ = text.outlineWidth_;
+								canvasInstance.glowPower_ = text.glowPower_;
+								canvasInstance.batch_ = batch;
+								canvasInstance.unitRange_ = unitRange;
+								canvasInstance.faceCamera_ = 1;
+								canvasInstance.selected_ = selected;
+								canvasInstances_.push_back(canvasInstance);
+							}
+							else
+							{
+								FontBillboardStructuredBuffer instance{};
+								instance.position_ = position;
+								instance.rotation_ = rotationEuler;
+								instance.uvMin_ = uvMin;
+								instance.uvMax_ = uvMax;
+								instance.color_ = text.color_;
+								instance.outlineColor_ = text.outlineColor_;
+								instance.glowColor_ = text.glowColor_;
+								instance.textureIndex_ = font->GetAtlasTextureIndex();
+								instance.outlineWidth_ = text.outlineWidth_;
+								instance.glowPower_ = text.glowPower_;
+								instance.batch_ = worldBatch;
+								instance.unitRange_ = unitRange;
+								instance.faceCamera_ = text.faceCamera_ ? 1 : 0;
+
+								const Float pixelToUnitX = 0.01f * scale.x;
+								const Float pixelToUnitY = 0.01f * scale.y;
+								const Vector2 baseLocal = Vector2((glyphLeft - text.pivot_.x) * pixelToUnitX, (text.pivot_.y - glyphTop - glyphHeight) * pixelToUnitY);
+								instance.localSize_ = Vector2(glyphWidth * pixelToUnitX, glyphHeight * pixelToUnitY);
+
+								if (text.shadowEnable_)
+								{
+									FontBillboardStructuredBuffer shadow = instance;
+									shadow.localPosition_ = baseLocal + Vector2(text.shadowOffset_.x * pixelToUnitX, -text.shadowOffset_.y * pixelToUnitY);
+									shadow.color_ = text.shadowColor_;
+									shadow.outlineColor_ = text.shadowColor_;
+									shadow.glowPower_ = 0.0f;
+
+									const Float rx = instance.rotation_.x;
+									const Float ry = instance.rotation_.y;
+									const Float rz = instance.rotation_.z;
+									const Vector3 normal = Vector3(
+										std::cos(rx) * std::sin(ry) * std::cos(rz) + std::sin(rx) * std::sin(rz),
+										std::cos(rx) * std::sin(ry) * std::sin(rz) - std::sin(rx) * std::cos(rz),
+										std::cos(rx) * std::cos(ry)
+									);
+									shadow.position_ = instance.position_ + normal * 0.001f;
+									shadow.selected_ = selected;
+
+									billboardInstances_.push_back(shadow);
+								}
+
+								instance.localPosition_ = baseLocal;
+								instance.selected_ = selected;
+								billboardInstances_.push_back(instance);
+							}
+						}
+
+						pen.x += shaped.advance_.x * scaleFactor + text.letterSpacing_;
+						pen.y += shaped.advance_.y * scaleFactor;
+					}
+				}
+
+				lineTop += lineAdvance;
+			}
+
+			Uint spriteCount = static_cast<Uint>(spriteInstances_.size()) - spriteStart;
+			Uint canvasCount = static_cast<Uint>(canvasInstances_.size()) - canvasStart;
+			if (spriteCount > 0)
+			{
+				if (newBatch)
+				{
+					++batchSerial_;
+					spriteBatches_.push_back({ text.order_, spriteStart, spriteCount, canvasStart, canvasCount });
+				}
+				else
+				{
+					spriteBatches_.back().spriteCount_ += spriteCount;
+					spriteBatches_.back().canvasCount_ += canvasCount;
+				}
+			}
+
+			/// [EN] Sync this actor's Bounds (every actor has one) to the measured canvas text box: half-extents = box size / 2, centre = box midpoint offset from the text origin. The picker applies the actor's world scale/rotation, so CanvasViewPanel gets a correct box for the drawn text.
+			/// [JP] このアクターの Bounds(全アクターが持つ)を計測したキャンバステキストボックスへ同期する: 半径 = ボックスサイズ / 2、中心 = テキスト原点からのボックス中点オフセット。ピッカーがアクターのワールドスケール/回転を掛けるので、CanvasViewPanel は描画済みテキストの正しいボックスを得る。
+			if (isSprite && boundsComponentID && textBoxMinX <= textBoxMaxX)
+			{
+				void* boundsRaw = world.GetComponent(entityID, boundsComponentID);
+				if (boundsRaw)
+				{
+					Bounds* bounds = static_cast<Bounds*>(boundsRaw);
+					bounds->center_ = Vector3((textBoxMinX + textBoxMaxX) * 0.5f, (textBoxMinY + textBoxMaxY) * 0.5f, 0.0f);
+					bounds->extent_ = Vector3((textBoxMaxX - textBoxMinX) * 0.5f, (textBoxMaxY - textBoxMinY) * 0.5f, 1.0f);
+				}
+			}
+		}
+
+		worldBillboardCount_ = static_cast<Uint>(billboardInstances_.size());
+		billboardInstances_.insert(billboardInstances_.end(), canvasInstances_.begin(), canvasInstances_.end());
 	}
 
 	void FontRenderer::Upload()
@@ -295,60 +344,34 @@ namespace SeedCore
 		}
 	}
 
-	void FontRenderer::DrawSprite(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses)
+	Size FontRenderer::GetSpriteBatchCount()const
 	{
-		if (spriteInstances_.empty())
-		{
-			return;
-		}
+		return spriteBatches_.size();
+	}
 
-		ID3D12DescriptorHeap* heaps[] = { heap };
-		cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
-		cmdList->SetGraphicsRootSignature(fontShader_.GetRootSignature());
+	Int FontRenderer::GetSpriteBatchOrder(Size index)const
+	{
+		return spriteBatches_[index].order_;
+	}
 
-		RootSignature::BindGraphics(cmdList, addresses);
+	void FontRenderer::DrawSpriteBatch(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Size index)
+	{
+		DrawSpriteRange(cmdList, heap, addresses, spriteBatches_[index].spriteStart_, spriteBatches_[index].spriteCount_);
+	}
 
-		cmdList->SetPipelineState(fontShader_.GetPipelineStateSprite());
+	void FontRenderer::DrawCanvasBatch(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Size index)
+	{
+		DrawBillboardRange(cmdList, heap, addresses, worldBillboardCount_ + spriteBatches_[index].canvasStart_, spriteBatches_[index].canvasCount_);
+	}
 
-		if (D3D12Check::GetLevel() == D3D12Level::D12_2)
-		{
-			Uint groupCount = (static_cast<Uint>(spriteInstances_.size()) + 31) / 32;
-			cmdList->DispatchMesh(groupCount, 1, 1);
-		}
-		else
-		{
-			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			cmdList->DrawInstanced(6, static_cast<Uint>(spriteInstances_.size()), 0, 0);
-		}
-		ProfilerStats::AddDrawCall();
+	void FontRenderer::DrawWorldBillboard(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses)
+	{
+		DrawBillboardRange(cmdList, heap, addresses, 0, worldBillboardCount_);
 	}
 
 	void FontRenderer::DrawBillboard(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses)
 	{
-		if (billboardInstances_.empty())
-		{
-			return;
-		}
-
-		ID3D12DescriptorHeap* heaps[] = { heap };
-		cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
-		cmdList->SetGraphicsRootSignature(fontShader_.GetRootSignature());
-
-		RootSignature::BindGraphics(cmdList, addresses);
-
-		cmdList->SetPipelineState(fontShader_.GetPipelineStateBillboard());
-
-		if (D3D12Check::GetLevel() == D3D12Level::D12_2)
-		{
-			Uint groupCount = (static_cast<Uint>(billboardInstances_.size()) + 31) / 32;
-			cmdList->DispatchMesh(groupCount, 1, 1);
-		}
-		else
-		{
-			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			cmdList->DrawInstanced(6, static_cast<Uint>(billboardInstances_.size()), 0, 0);
-		}
-		ProfilerStats::AddDrawCall();
+		DrawBillboardRange(cmdList, heap, addresses, 0xFFFFFFFFu, static_cast<Uint>(billboardInstances_.size()));
 	}
 
 	void FontRenderer::DrawSilhouetteSprite(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses)
@@ -362,6 +385,9 @@ namespace SeedCore
 		cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
 		cmdList->SetGraphicsRootSignature(fontShader_.GetRootSignature());
 		RootSignature::BindGraphics(cmdList, addresses);
+
+		Uint fullRange = 0xFFFFFFFFu;
+		cmdList->SetGraphicsRoot32BitConstants(3, 1, &fullRange, 0);
 
 		cmdList->SetPipelineState(fontShader_.GetPipelineStateSilhouetteSprite());
 
@@ -390,6 +416,9 @@ namespace SeedCore
 		cmdList->SetGraphicsRootSignature(fontShader_.GetRootSignature());
 		RootSignature::BindGraphics(cmdList, addresses);
 
+		Uint fullRange = 0xFFFFFFFFu;
+		cmdList->SetGraphicsRoot32BitConstants(3, 1, &fullRange, 0);
+
 		cmdList->SetPipelineState(fontShader_.GetPipelineStateSilhouetteBillboard());
 
 		if (D3D12Check::GetLevel() == D3D12Level::D12_2)
@@ -401,6 +430,64 @@ namespace SeedCore
 		{
 			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			cmdList->DrawInstanced(6, static_cast<Uint>(billboardInstances_.size()), 0, 0);
+		}
+		ProfilerStats::AddDrawCall();
+	}
+
+	void FontRenderer::DrawSpriteRange(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Uint start, Uint count)
+	{
+		if (count == 0)
+		{
+			return;
+		}
+
+		ID3D12DescriptorHeap* heaps[] = { heap };
+		cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
+		cmdList->SetGraphicsRootSignature(fontShader_.GetRootSignature());
+
+		RootSignature::BindGraphics(cmdList, addresses);
+		cmdList->SetGraphicsRoot32BitConstants(3, 1, &start, 0);
+
+		cmdList->SetPipelineState(fontShader_.GetPipelineStateSprite());
+
+		if (D3D12Check::GetLevel() == D3D12Level::D12_2)
+		{
+			Uint groupCount = (count + 31) / 32;
+			cmdList->DispatchMesh(groupCount, 1, 1);
+		}
+		else
+		{
+			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			cmdList->DrawInstanced(6, count, 0, 0);
+		}
+		ProfilerStats::AddDrawCall();
+	}
+
+	void FontRenderer::DrawBillboardRange(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Uint start, Uint count)
+	{
+		if (count == 0)
+		{
+			return;
+		}
+
+		ID3D12DescriptorHeap* heaps[] = { heap };
+		cmdList->SetDescriptorHeaps(_countof(heaps), heaps);
+		cmdList->SetGraphicsRootSignature(fontShader_.GetRootSignature());
+
+		RootSignature::BindGraphics(cmdList, addresses);
+		cmdList->SetGraphicsRoot32BitConstants(3, 1, &start, 0);
+
+		cmdList->SetPipelineState(fontShader_.GetPipelineStateBillboard());
+
+		if (D3D12Check::GetLevel() == D3D12Level::D12_2)
+		{
+			Uint groupCount = (count + 31) / 32;
+			cmdList->DispatchMesh(groupCount, 1, 1);
+		}
+		else
+		{
+			cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			cmdList->DrawInstanced(6, count, 0, 0);
 		}
 		ProfilerStats::AddDrawCall();
 	}

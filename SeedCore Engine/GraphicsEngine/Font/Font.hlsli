@@ -34,7 +34,7 @@ struct FontSpriteStructuredBuffer
 	float font_sprite_structured_buffer_padding_1_;
 	float2 unit_range_;
 	uint selected_;
-	float font_sprite_structured_buffer_padding_2_;
+	uint batch_;
 };
 
 StructuredBuffer<FontSpriteStructuredBuffer> GetFontSpriteStructuredBuffer(uint index)
@@ -58,7 +58,7 @@ struct FontBillboardStructuredBuffer
 	uint texture_index_;
 	float outline_width_;
 	float glow_power_;
-	float font_billboard_structured_buffer_padding_2_;
+	uint batch_;
 	float2 unit_range_;
 	uint face_camera_;
 	uint selected_;

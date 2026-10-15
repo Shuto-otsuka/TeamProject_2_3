@@ -67,10 +67,20 @@ namespace SeedCore
 
 			/// [EN] Without a collider the body still needs a shape, so a small sphere stands in.
 			/// [JP] コライダーが無くてもボディには形状が要るので、小さな球で代用する。
-			/// [EN] Like SphereCollider, the radius follows the largest axis of the actor's own Scale; the parent's scale is not included.
-			/// [JP] SphereCollider と同じく、半径は Actor 自身の Scale の最も大きい軸に合わせる。親のスケールは含めない。
+			/// [EN] Like SphereCollider, the radius follows the largest axis of the actor's own Scale combined with its parent's scale.
+			/// [JP] SphereCollider と同じく、半径は Actor 自身の Scale と親のスケールを掛けたものの最も大きい軸に合わせる。
 			const Scale* scale = actor.GetComponent<Scale>();
-			return actor.GetPhysics().CreateSphereShape(defaultShapeRadius_ * Max(Abs(scale->x_), Abs(scale->y_), Abs(scale->z_)));
+			Actor parentActor = actor.Parent();
+			Vector3 parentScale = Vector3::One;
+			Quaternion parentRotation;
+			Vector3 parentTranslation;
+			if (parentActor)
+			{
+				Matrix parentMatrix = parentActor.WorldMatrix();
+				parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+			}
+			Vector3 worldScale = Vector3(scale->x_, scale->y_, scale->z_) * parentScale;
+			return actor.GetPhysics().CreateSphereShape(defaultShapeRadius_ * Max(Abs(worldScale.x), Abs(worldScale.y), Abs(worldScale.z)));
 		}();
 
 		/// [EN] Starts with every axis free and removes each frozen one.
@@ -251,11 +261,18 @@ namespace SeedCore
 		Quaternion outRotation;
 		actor.GetPhysics().BodyTransform(bodyID_, outPosition, outRotation);
 
-		/// [EN] The body sits at the actor's own origin (see PhysicsSystem::ApplyTransform), so Position, which places the pivot point, is the body position plus the pivot point scaled and rotated by the body's new rotation.
-		/// [JP] ボディは Actor 自身の原点にある(PhysicsSystem::ApplyTransform 参照)ので、基準点を配置する Position は、ボディの位置に、ボディの新しい回転で拡縮・回転した基準点を足したものになる。
-		const Pivot* pivot = world.GetComponent<Pivot>(entity);
-		const Scale* scale = world.GetComponent<Scale>(entity);
-		Matrix scaleMatrix = scale ? Matrix::CreateScale(Transform::Vector(*scale)) : Matrix::Identity;
+		/// [EN] The body pose is in world space, while Position and Rotation are relative to the parent, so it is carried back by the inverse of the parent's world matrix; a root actor's parent space is the world itself.
+		/// [JP] ボディの姿勢はワールド空間にあり、Position と Rotation は親から見た値なので、親のワールド行列の逆で戻す。ルートの Actor にとって、親の空間はワールドそのもの。
+		Actor parentActor = actor.Parent();
+		Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
+		Vector3 parentScale;
+		Quaternion parentRotation;
+		Vector3 parentTranslation;
+		parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+
+		Matrix inverseParentMatrix = parentMatrix.Invert();
+		Quaternion inverseParentRotation;
+		parentRotation.Inverse(inverseParentRotation);
 
 		/// [EN] Canvas bodies go back from meters (Y up) to pixels (Y down).
 		/// [JP] Canvas のボディは、メートル(Y 上向き)からピクセル(Y 下向き)へ戻す。
@@ -267,14 +284,14 @@ namespace SeedCore
 
 			if (position)
 			{
-				Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), scaleMatrix * Matrix::CreateFromQuaternion(canvasRotation)) : Vector3::Zero;
-				position->x_ = outPosition.x * pixelsPerMeter_ + pivotOffset.x;
-				position->y_ = -outPosition.y * pixelsPerMeter_ + pivotOffset.y;
+				Vector3 localPosition = Vector3::Transform(Vector3(outPosition.x * pixelsPerMeter_, -outPosition.y * pixelsPerMeter_, 0.0f), inverseParentMatrix);
+				position->x_ = localPosition.x;
+				position->y_ = localPosition.y;
 			}
 
 			if (rotation)
 			{
-				Transform::Quat(*rotation, canvasRotation);
+				Transform::Quat(*rotation, canvasRotation * inverseParentRotation);
 			}
 
 			return;
@@ -282,15 +299,14 @@ namespace SeedCore
 
 		if (position)
 		{
-			Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), scaleMatrix * Matrix::CreateFromQuaternion(outRotation)) : Vector3::Zero;
-			Transform::Vector(*position, outPosition + pivotOffset);
+			Transform::Vector(*position, Vector3::Transform(outPosition, inverseParentMatrix));
 		}
 
 		/// [EN] Rotation is stored as a normalized quaternion.
 		/// [JP] Rotation は正規化済みクォータニオンで持つ。
 		if (rotation)
 		{
-			Transform::Quat(*rotation, outRotation);
+			Transform::Quat(*rotation, outRotation * inverseParentRotation);
 		}
 	}
 
@@ -573,13 +589,6 @@ namespace SeedCore
 
 		Actor actor = GetActor();
 
-		/// [EN] The target is given as a Position, which places the pivot point, while the body sits at the actor's own origin; the target origin is the target position minus the pivot point scaled and rotated by the target rotation.
-		/// [JP] 目標は基準点を配置する Position として与えられるが、ボディは Actor 自身の原点にある。目標の原点は、目標位置から、目標の回転で拡縮・回転した基準点を引いた位置。
-		const Pivot* pivot = actor.GetComponent<Pivot>();
-		const Scale* scale = actor.GetComponent<Scale>();
-		Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), (scale ? Matrix::CreateScale(Transform::Vector(*scale)) : Matrix::Identity) * Matrix::CreateFromQuaternion(targetRotation)) : Vector3::Zero;
-		Vector3 targetOrigin = targetPosition - pivotOffset;
-
 		/// [EN] A canvas body goes from pixels (Y down) to meters (Y up) on the z = 0 plane.
 		/// [JP] Canvas のボディは、ピクセル(Y 下向き)から z = 0 平面上のメートル(Y 上向き)へ変換する。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
@@ -587,11 +596,11 @@ namespace SeedCore
 			/// [EN] The canvas angle is 2·atan2(z, w); it is negated with the flipped Y and rebuilt as a pure rotation about Z.
 			/// [JP] Canvas の角度は 2·atan2(z, w)。Y の反転に合わせて符号を反転し、Z 軸まわりだけの回転として作り直す。
 			Quaternion physicsRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -2.0f * std::atan2(targetRotation.z, targetRotation.w));
-			actor.GetPhysics().MoveTarget(bodyID_, Vector3(targetOrigin.x / pixelsPerMeter_, -targetOrigin.y / pixelsPerMeter_, 0.0f), physicsRotation, elapsedTime);
+			actor.GetPhysics().MoveTarget(bodyID_, Vector3(targetPosition.x / pixelsPerMeter_, -targetPosition.y / pixelsPerMeter_, 0.0f), physicsRotation, elapsedTime);
 			return;
 		}
 
-		actor.GetPhysics().MoveTarget(bodyID_, targetOrigin, targetRotation, elapsedTime);
+		actor.GetPhysics().MoveTarget(bodyID_, targetPosition, targetRotation, elapsedTime);
 	}
 
 	/**

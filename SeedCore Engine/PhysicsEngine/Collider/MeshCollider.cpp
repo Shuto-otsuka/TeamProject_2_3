@@ -78,10 +78,19 @@ namespace SeedCore
 			convex = true;
 		}
 
-		/// [EN] The baked vertices are in model space, so the actor's own Scale is applied to match the rendered mesh; the parent's scale is not included.
-		/// [JP] 焼いた頂点はモデル空間なので、描画されるメッシュに合わせて Actor 自身の Scale を掛ける。親のスケールは含めない。
+		/// [EN] The baked vertices are in model space, so the actor's own Scale, multiplied per axis by the parent's accumulated scale from its world matrix, is applied to match the rendered mesh; a root actor's parent scale is 1.
+		/// [JP] 焼いた頂点はモデル空間なので、描画されるメッシュに合わせて、Actor 自身の Scale に親のワールド行列から取り出した累積スケールを軸ごとに掛けたものを掛ける。ルートの Actor の親スケールは 1。
 		const Scale* scale = actor.GetComponent<Scale>();
-		Vector3 scaleVector = Transform::Vector(*scale);
+		Actor parentActor = actor.Parent();
+		Vector3 parentScale = Vector3::One;
+		Quaternion parentRotation;
+		Vector3 parentTranslation;
+		if (parentActor)
+		{
+			Matrix parentMatrix = parentActor.WorldMatrix();
+			parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+		}
+		Vector3 scaleVector = Transform::Vector(*scale) * parentScale;
 
 		/// [EN] Build either a convex hull or triangle mesh from the resolved asset data.
 		/// [JP] 解決済みアセットデータから凸包または三角形メッシュを構築する。

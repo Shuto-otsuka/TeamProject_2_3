@@ -6,7 +6,6 @@
 #include <FoundationEngine/World/Command/CompoundCommand.h>
 #include <GraphicsEngine/Camera/EditorCamera.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
-#include <FoundationEngine/World/ECS/Component/Pivot.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
 
@@ -444,10 +443,7 @@ namespace SeedCore
 							Entity entity = actor.GetEntity();
 							dragEntities_.push_back(entity);
 
-							/// [EN] The pivot point's frame (the world matrix without the Pivot shift), so its translation is where Position places the pivot point.
-							/// [JP] 基準点のフレーム（ワールド行列から Pivot のずらしを除いたもの）。平行移動が Position の置く基準点の位置になる。
-							const Pivot* actorPivot = actor.GetComponent<Pivot>();
-							dragStartWorldMatrices_.push_back(actorPivot ? Matrix::CreateTranslation(Transform::Vector(*actorPivot)) * actor.WorldMatrix() : actor.WorldMatrix());
+							dragStartWorldMatrices_.push_back(actor.WorldMatrix());
 
 							Float* positionData = static_cast<Float*>(world.GetComponent(entity, positionID));
 							Float* scaleData = static_cast<Float*>(world.GetComponent(entity, scaleID));
@@ -514,18 +510,16 @@ namespace SeedCore
 			Bool isDragging = ImGuizmo::IsUsing();
 
 			/// [EN] With a single actor selected, the gizmo matrix is that actor's own
-			///      pivot frame - its world matrix without the Pivot shift, so the
-			///      gizmo sits on the Pivot point and rotates/scales around it. With
-			///      multiple actors selected, the gizmo instead sits at the unrotated
-			///      average of their pivot points (Unreal-style multi-select pivot) -
-			///      every selected actor is then moved by whatever delta transform the
-			///      pivot itself underwent (see Move()). Only rebuilt from the live
-			///      selection while not dragging - see pivotMatrix_'s header comment
-			///      for why.
-			/// [JP] 単一選択時はギズモ行列をその actor 自身の基準点のフレーム
-			///      （ワールド行列から Pivot のずらしを除いたもの）にする。ギズモは
-			///      Pivot の点に置かれ、回転/スケールはその点を中心に行う。複数選択時
-			///      は代わりに、それらの基準点の（無回転の）平均位置にギズモを置く
+			///      world matrix, so the gizmo sits on its origin and rotates/scales
+			///      around it. With multiple actors selected, the gizmo instead sits
+			///      at the unrotated average of their origins (Unreal-style
+			///      multi-select pivot) - every selected actor is then moved by
+			///      whatever delta transform the pivot itself underwent (see Move()).
+			///      Only rebuilt from the live selection while not dragging - see
+			///      pivotMatrix_'s header comment for why.
+			/// [JP] 単一選択時はギズモ行列をその actor 自身のワールド行列にする。
+			///      ギズモは原点に置かれ、回転/スケールはその点を中心に行う。複数選択時
+			///      は代わりに、それらの原点の（無回転の）平均位置にギズモを置く
 			///      （Unreal 風の複数選択ピボット） - 選択中の各 actor は、ピボット
 			///      自身が受けたデルタ変換で移動する（Move() 参照）。ドラッグ中でない
 			///      間だけ現在の選択から作り直す — 理由は pivotMatrix_ のヘッダの
@@ -534,16 +528,14 @@ namespace SeedCore
 			{
 				if (selectedActors.size() == 1)
 				{
-					const Pivot* actorPivot = selectedActors[0].GetComponent<Pivot>();
-					pivotMatrix_ = actorPivot ? Matrix::CreateTranslation(Transform::Vector(*actorPivot)) * selectedActors[0].WorldMatrix() : selectedActors[0].WorldMatrix();
+					pivotMatrix_ = selectedActors[0].WorldMatrix();
 				}
 				else
 				{
 					Vector3 averagePosition = Vector3::Zero;
 					for (Actor actor : selectedActors)
 					{
-						const Pivot* actorPivot = actor.GetComponent<Pivot>();
-						averagePosition += actorPivot ? Vector3::Transform(Transform::Vector(*actorPivot), actor.WorldMatrix()) : actor.WorldMatrix().Translation();
+						averagePosition += actor.WorldMatrix().Translation();
 					}
 					averagePosition /= static_cast<Float>(selectedActors.size());
 					pivotMatrix_ = Matrix::CreateTranslation(averagePosition);
@@ -570,12 +562,10 @@ namespace SeedCore
 			}
 
 			static const String positionString("Position");
-			static const String pivotString("Pivot");
 			static const String rotationString("Rotation");
 			static const String scaleString("Scale");
 
 			ComponentID positionID = ComponentRegistry::GetComponentID(positionString);
-			ComponentID pivotID = ComponentRegistry::GetComponentID(pivotString);
 			ComponentID rotationID = ComponentRegistry::GetComponentID(rotationString);
 			ComponentID scaleID = ComponentRegistry::GetComponentID(scaleString);
 
@@ -584,7 +574,6 @@ namespace SeedCore
 				dragEntities_.clear();
 				dragStartWorldMatrices_.clear();
 				dragStartPositions_.clear();
-				dragStartPivots_.clear();
 				dragStartRotations_.clear();
 				dragStartScales_.clear();
 				dragStartPivotMatrix_ = pivotMatrix_;
@@ -600,25 +589,40 @@ namespace SeedCore
 
 					Entity entity = actor.GetEntity();
 					dragEntities_.push_back(entity);
-
-					/// [EN] The pivot point's frame, matching pivotMatrix_; Move() decomposes it back into Position/Rotation without any Pivot correction.
-					/// [JP] pivotMatrix_ と同じ基準点のフレーム。Move() は Pivot の補正なしにこれを Position/Rotation へ分解し直せる。
-					const Pivot* actorPivot = actor.GetComponent<Pivot>();
-					dragStartWorldMatrices_.push_back(actorPivot ? Matrix::CreateTranslation(Transform::Vector(*actorPivot)) * actor.WorldMatrix() : actor.WorldMatrix());
+					dragStartWorldMatrices_.push_back(actor.WorldMatrix());
 
 					Float* positionData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, positionID));
 					Rotation* rotationData = static_cast<Rotation*>(context_.world_.world_->GetComponent(entity, rotationID));
 					Float* scaleData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, scaleID));
 
 					dragStartPositions_.push_back(positionData ? Vector3(positionData[0], positionData[1], positionData[2]) : Vector3::Zero);
-					dragStartPivots_.push_back(actorPivot ? Transform::Vector(*actorPivot) : Vector3::Zero);
 					dragStartRotations_.push_back(rotationData ? Transform::Quat(*rotationData) : Quaternion::Identity);
 					dragStartScales_.push_back(scaleData ? Vector3(scaleData[0], scaleData[1], scaleData[2]) : Vector3::One);
+
+					/// [EN] Moving the origin with the pivot tool must leave the direct children where they are, so they are captured too; Move() works their Positions back from the new origin.
+					/// [JP] 基準点ツールで原点を動かしても直下の子はその場に残す必要があるので、子も捕捉する。Move() が新しい原点から子の Position を逆算する。
+					if (context_.guizmo_.pivotEdit_)
+					{
+						for (Actor child : actor.Children())
+						{
+							Entity childEntity = child.GetEntity();
+							dragEntities_.push_back(childEntity);
+							dragStartWorldMatrices_.push_back(child.WorldMatrix());
+
+							Float* childPositionData = static_cast<Float*>(context_.world_.world_->GetComponent(childEntity, positionID));
+							Rotation* childRotationData = static_cast<Rotation*>(context_.world_.world_->GetComponent(childEntity, rotationID));
+							Float* childScaleData = static_cast<Float*>(context_.world_.world_->GetComponent(childEntity, scaleID));
+
+							dragStartPositions_.push_back(childPositionData ? Vector3(childPositionData[0], childPositionData[1], childPositionData[2]) : Vector3::Zero);
+							dragStartRotations_.push_back(childRotationData ? Transform::Quat(*childRotationData) : Quaternion::Identity);
+							dragStartScales_.push_back(childScaleData ? Vector3(childScaleData[0], childScaleData[1], childScaleData[2]) : Vector3::One);
+						}
+					}
 				}
 			}
 
-			/// [EN] Pivot editing only moves the pivot point, so the gizmo shows the move handles whatever operation is selected.
-			/// [JP] 基準点の編集は基準点を動かすだけなので、選択中の操作に関係なくギズモは移動ハンドルを出す。
+			/// [EN] The pivot tool only moves the origin, so the gizmo shows the move handles whatever operation is selected.
+			/// [JP] 基準点ツールは原点を動かすだけなので、選択中の操作に関係なくギズモは移動ハンドルを出す。
 			ImGuizmo::OPERATION operation = context_.guizmo_.pivotEdit_ ? ImGuizmo::TRANSLATE : context_.guizmo_.operation_;
 			if (context_.guizmo_.pivotEdit_ && ctrlPressed)
 			{
@@ -638,7 +642,6 @@ namespace SeedCore
 					Entity entity = dragEntities_[index];
 
 					Float* positionData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, positionID));
-					Float* pivotData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, pivotID));
 					Rotation* rotationData = static_cast<Rotation*>(context_.world_.world_->GetComponent(entity, rotationID));
 					Float* scaleData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, scaleID));
 
@@ -648,14 +651,6 @@ namespace SeedCore
 						if (newPosition != dragStartPositions_[index])
 						{
 							dragCommand->Add(MakePtr<ComponentCommand<Vector3>>(*context_.world_.world_, entity, positionID, 0, dragStartPositions_[index], newPosition));
-						}
-					}
-					if (pivotData)
-					{
-						Vector3 newPivot(pivotData[0], pivotData[1], pivotData[2]);
-						if (newPivot != dragStartPivots_[index])
-						{
-							dragCommand->Add(MakePtr<ComponentCommand<Vector3>>(*context_.world_.world_, entity, pivotID, 0, dragStartPivots_[index], newPivot));
 						}
 					}
 					if (rotationData)
@@ -704,42 +699,38 @@ namespace SeedCore
 			Matrix pivotDelta = dragStartPivotMatrix_.Invert() * pivot;
 
 			static const String positionString("Position");
-			static const String pivotString("Pivot");
 			static const String rotationString("Rotation");
 			static const String scaleString("Scale");
 
 			ComponentID positionID = ComponentRegistry::GetComponentID(positionString);
-			ComponentID pivotID = ComponentRegistry::GetComponentID(pivotString);
 			ComponentID rotationID = ComponentRegistry::GetComponentID(rotationString);
 			ComponentID scaleID = ComponentRegistry::GetComponentID(scaleString);
 
-			/// [EN] Pivot editing moves only the pivot point and leaves the actor where it is on screen: the new pivot point is expressed in the actor's own
-			///      drag-start local space (its world matrix with the drag-start Pivot shift, which does not change while Pivot and Position move together),
-			///      and Position becomes that same point in the parent's space. Children see an unchanged world matrix, so they stay put as well.
-			/// [JP] 基準点の編集は基準点だけを動かし、actor の画面上の見た目はそのままにする: 新しい基準点を actor 自身のドラッグ開始時のローカル空間
-			///      （ドラッグ開始時の Pivot のずらしを含むワールド行列。Pivot と Position を一緒に動かす間は変わらない）で表し、Position を同じ点の
-			///      親の空間での位置にする。子から見たワールド行列も変わらないので、子もその場に留まる。
+			/// [EN] The pivot tool moves the dragged actor's origin by the gizmo's delta while its direct children keep their drag-start world position:
+			///      each entry's world position (moved for the dragged actor, unchanged for a child) is expressed in its parent's space, using the
+			///      parent's moved drag-start matrix when the parent is itself being dragged. Only the parent translates, so the children's Rotation
+			///      and Scale stay as they are.
+			/// [JP] 基準点ツールは、ドラッグ対象 actor の原点をギズモのデルタだけ動かし、直下の子はドラッグ開始時のワールド位置に残す:
+			///      各エントリのワールド位置（ドラッグ対象は動かした位置、子は元の位置）を親の空間で表す。親自身もドラッグ中なら、親は
+			///      ドラッグ開始時の行列を動かしたものを使う。動くのは親の平行移動だけなので、子の Rotation と Scale はそのまま。
 			if (context_.guizmo_.pivotEdit_)
 			{
 				for (Size index = 0; index < dragEntities_.size(); ++index)
 				{
 					Entity entity = dragEntities_[index];
 					Actor actor = context_.world_.world_->GetActor(entity);
-
-					Vector3 newPivotWorld = (dragStartWorldMatrices_[index] * pivotDelta).Translation();
-					Matrix startWorldMatrix = Matrix::CreateTranslation(-dragStartPivots_[index]) * dragStartWorldMatrices_[index];
-
 					Actor parentActor = actor ? actor.Parent() : Actor();
-					Vector3 newPivot = Vector3::Transform(newPivotWorld, startWorldMatrix.Invert());
-					Vector3 newPosition = parentActor ? Vector3::Transform(newPivotWorld, parentActor.WorldMatrix().Invert()) : newPivotWorld;
 
-					Float* pivotData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, pivotID));
+					auto parentIt = parentActor ? std::ranges::find(dragEntities_, parentActor.GetEntity()) : dragEntities_.end();
+					Bool isChild = parentIt != dragEntities_.end();
+
+					Vector3 newWorldPosition = isChild ? dragStartWorldMatrices_[index].Translation() : (dragStartWorldMatrices_[index] * pivotDelta).Translation();
+					Matrix parentMatrix = isChild ? dragStartWorldMatrices_[parentIt - dragEntities_.begin()] * pivotDelta : (parentActor ? parentActor.WorldMatrix() : Matrix::Identity);
+					Vector3 newPosition = Vector3::Transform(newWorldPosition, parentMatrix.Invert());
+
 					Float* positionData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, positionID));
-					if (pivotData && positionData)
+					if (positionData)
 					{
-						pivotData[0] = newPivot.x;
-						pivotData[1] = newPivot.y;
-						pivotData[2] = newPivot.z;
 						positionData[0] = newPosition.x;
 						positionData[1] = newPosition.y;
 						positionData[2] = newPosition.z;
@@ -755,14 +746,14 @@ namespace SeedCore
 			///      the pivot as they scale), each actor's own Scale is multiplied by
 			///      the pivot's scale delta in place - Position/Rotation are left
 			///      untouched, so every selected actor scales individually around its
-			///      own pivot point instead of the group scaling as a block.
+			///      own origin instead of the group scaling as a block.
 			/// [JP] Scale は Translate/Rotate とは別扱いにする: 各 actor のワールド
 			///      行列全体を共有ピボット中心に組み直す（スケールに伴って actor が
 			///      ピボットから離れる/近づく）のではなく、ピボットのスケール
 			///      デルタをその場で各 actor 自身の Scale に掛け合わせる。
 			///      Position/Rotation はそのままにするので、グループ全体が1つの
 			///      ブロックとして拡縮されるのではなく、選択中の各 actor がそれぞれ
-			///      自分自身の基準点を中心に個別に拡縮される。
+			///      自分自身の原点を中心に個別に拡縮される。
 			if (operation == ImGuizmo::SCALE)
 			{
 				Vector3 deltaScale;

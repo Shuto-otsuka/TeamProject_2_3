@@ -76,12 +76,12 @@ void ScTutorial::OnTick(float elapsedTime)
 	// 振動は RumbleBody(本体の低周波, 高周波, ミリ秒) と RumbleTrigger(左トリガー, 右トリガー, ミリ秒)。強さは0〜65535
 	//SeedCore::Input::RumbleBody(30000, 10000, 200);
 
-	// マウスの位置/移動量/ホイールは MousePoint(画面ピクセルのVector2) / MouseMotion(前フレームからの移動量のVector2) / MouseWheel(ノッチ数、奥へ回すと正)
+	// マウスの位置/移動量/ホイールは MousePoint(1920x1080のゲーム画面上のピクセル座標のVector2。Canvasと同じ座標なのでUIの当たり判定にそのまま使える) / MouseMotion(前フレームからの移動量のVector2。デスクトップのピクセル単位) / MouseWheel(ノッチ数、奥へ回すと正)
 	//SeedCore::Vector2 mouseMove = SeedCore::Input::MouseMotion();
 	//SeedCore::Float wheel = SeedCore::Input::MouseWheel();
 
 	// FPS/TPSの視点操作のようにカーソルを動かさず移動量だけ使いたいときは、LockCursorで固定してHideCursorで隠す
-	// 固定中もMouseMotionはマウスを動かした量を返し続ける。引数にVector2を渡すと、その画面座標に固定できる
+	// 固定中もMouseMotionはマウスを動かした量を返し続ける。引数にVector2を渡すと、そのゲーム画面座標(MousePointと同じ座標。中央なら(960, 540))に固定できる
 	// （エディターではゲームビュー上にある間だけ固定され、プレイを止めると固定も非表示も必ず元に戻る）
 	//SeedCore::Input::LockCursor();
 	//SeedCore::Input::HideCursor();
@@ -121,7 +121,7 @@ void ScTutorial::OnInspectorGUI()
 //SeedCore::Rigidbody* rigidbody = GetWorld().GetComponent<SeedCore::Rigidbody>(GetActor().GetEntity());
 
 // マウスでクリックしたところにある物を拾いたい（マウスピッキング）ときは、
-// ScreenSpace::ScreenToWorld でスクリーン座標をワールド空間のRayに変換してからRaycastする。
+// ScreenSpace::ScreenToWorld でゲーム画面座標(MousePointと同じ座標)をワールド空間のRayに変換してからRaycastする。
 // ScreenToWorldは常にゲーム自身のアクティブなCameraを基準にするので、エディターのゲームビューでも
 // 単体で実行したRuntimeでも同じコードで動く（渡す引数もInput::MousePoint()だけで、view/projection等は不要）。
 //SeedCore::Ray mouseRay = SeedCore::ScreenSpace::ScreenToWorld(SeedCore::Input::MousePoint());

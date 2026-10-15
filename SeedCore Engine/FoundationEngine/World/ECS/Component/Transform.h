@@ -1,6 +1,5 @@
 #pragma once
 #include <FoundationEngine/Prelude.h>
-#include <FoundationEngine/World/ECS/Component/Pivot.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
@@ -9,7 +8,7 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* Reads and writes the Position, Pivot, Rotation and Scale components as math
+	* Reads and writes the Position, Rotation and Scale components as math
 	* types. The components stay plain data stored in archetype chunks; the
 	* conversions live here instead. Passing only the component reads it,
 	* passing a value as well writes it.
@@ -17,7 +16,7 @@ namespace SeedCore
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* Position・Pivot・Rotation・Scale の各コンポーネントを、数学の型として読み書き
+	* Position・Rotation・Scale の各コンポーネントを、数学の型として読み書き
 	* する。コンポーネントはアーキタイプのチャンクに置くただのデータのまま
 	* にし、変換はここに置く。コンポーネントだけを渡すと読み出し、値も渡すと
 	* 書き込みになる。
@@ -46,28 +45,6 @@ namespace SeedCore
 		* value を位置に書き込む。
 		*/
 		static void Vector(Position& position, const Vector3& value);
-
-		/**
-		* [EN]
-		* Returns the pivot point as a Vector3.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 基準点を Vector3 で返す。
-		*/
-		[[nodiscard]] static Vector3 Vector(const Pivot& pivot);
-
-		/**
-		* [EN]
-		* Writes value into the pivot point.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* value を基準点に書き込む。
-		*/
-		static void Vector(Pivot& pivot, const Vector3& value);
 
 		/**
 		* [EN]

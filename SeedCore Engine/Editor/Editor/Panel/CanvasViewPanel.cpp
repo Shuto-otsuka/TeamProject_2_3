@@ -80,8 +80,8 @@ namespace SeedCore
 
 		ImGui::SameLine();
 
-		/// [EN] Selects the pivot tool, which edits the pivot point instead of the actor; like the other tools it stays filled with the active color while selected.
-		/// [JP] actor ではなく基準点を編集する基準点ツールを選ぶ。他のツールと同じく、選択中は地をアクティブ色で塗る。
+		/// [EN] Selects the pivot tool, which moves the actor's origin while its children stay in place; like the other tools it stays filled with the active color while selected.
+		/// [JP] 子をその場に残したまま actor の原点を動かす基準点ツールを選ぶ。他のツールと同じく、選択中は地をアクティブ色で塗る。
 		ImGui::PushStyleColor(ImGuiCol_Button, context_.guizmo_.pivotEdit_ ? activeColor : transparent);
 		if (ImGui::ImageButton("##Pivot", imguiTexture_.Icon(IconType::Pivot), iconSize))
 		{
@@ -361,12 +361,13 @@ namespace SeedCore
 		}
 		else if (mouseInImage)
 		{
-			/// [EN] Click pick: mouse point against each Image's canvas-space quad, rebuilt exactly as TextureRenderer/TextureBillboardMS.hlsl draws it. Bounds (synced by TextureRenderer) supplies textureSize/2 in extent_ and the pivot shift in center_. The last hit in query order wins - that is the sprite drawn on top.
-			/// [JP] クリックピック: マウス点を各 Image のキャンバス空間クアッドに対して判定する。クアッドは TextureRenderer/TextureBillboardMS.hlsl の描画と全く同じに再構成する。Bounds(TextureRenderer が同期)が extent_ に textureSize/2、center_ に pivot ずれを供給する。クエリ順で最後に当たったものが勝つ = 最前面に描かれたスプライト。
+			/// [EN] Click pick: mouse point against each Image's canvas-space quad, rebuilt exactly as TextureRenderer/TextureBillboardMS.hlsl draws it. Bounds (synced by TextureRenderer) supplies textureSize/2 in extent_ and the pivot shift in center_. The hit with the highest order_ wins, the last one in query order among equal order_ - that is the sprite drawn on top.
+			/// [JP] クリックピック: マウス点を各 Image のキャンバス空間クアッドに対して判定する。クアッドは TextureRenderer/TextureBillboardMS.hlsl の描画と全く同じに再構成する。Bounds(TextureRenderer が同期)が extent_ に textureSize/2、center_ に pivot ずれを供給する。order_ が最も大きいものが勝ち、order_ が等しければクエリ順で最後に当たったものが勝つ = 最前面に描かれたスプライト。
 			Float mouseWorldX = focus.x + (mouse.x - centerScreenX) * worldPerPixel;
 			Float mouseWorldY = focus.y - (mouse.y - centerScreenY) * worldPerPixel;
 
 			Actor hit;
+			Int hitOrder = 0;
 			Query<Read<Active>, Read<Image>, Read<Bounds>> query(world);
 			query.ForEach([&](EntityID entityID, const Active& active, const Image& image, const Bounds& bounds)
 				{
@@ -403,9 +404,10 @@ namespace SeedCore
 					Float pivotX = bounds.center_.x * worldScale.x;
 					Float pivotY = bounds.center_.y * worldScale.y;
 
-					if (std::abs(localX - pivotX) <= halfWidth && std::abs(localY - pivotY) <= halfHeight)
+					if (std::abs(localX - pivotX) <= halfWidth && std::abs(localY - pivotY) <= halfHeight && (!hit || image.order_ >= hitOrder))
 					{
 						hit = actor;
+						hitOrder = image.order_;
 					}
 				});
 
@@ -434,9 +436,10 @@ namespace SeedCore
 					Float localX = mouseWorldX - (100000.0f + worldTranslation.x) - bounds.center_.x * worldScale.x;
 					Float localY = mouseWorldY - (100000.0f + ScResolution::SC_CANVAS.Height - worldTranslation.y) - bounds.center_.y * worldScale.y;
 
-					if (std::abs(localX) <= bounds.extent_.x * worldScale.x && std::abs(localY) <= bounds.extent_.y * worldScale.y)
+					if (std::abs(localX) <= bounds.extent_.x * worldScale.x && std::abs(localY) <= bounds.extent_.y * worldScale.y && (!hit || text.order_ >= hitOrder))
 					{
 						hit = actor;
+						hitOrder = text.order_;
 					}
 				});
 
@@ -465,9 +468,10 @@ namespace SeedCore
 					Float localX = mouseWorldX - (100000.0f + worldTranslation.x) - bounds.center_.x * worldScale.x;
 					Float localY = mouseWorldY - (100000.0f + ScResolution::SC_CANVAS.Height - worldTranslation.y) - bounds.center_.y * worldScale.y;
 
-					if (std::abs(localX) <= bounds.extent_.x * worldScale.x && std::abs(localY) <= bounds.extent_.y * worldScale.y)
+					if (std::abs(localX) <= bounds.extent_.x * worldScale.x && std::abs(localY) <= bounds.extent_.y * worldScale.y && (!hit || movie.order_ >= hitOrder))
 					{
 						hit = actor;
+						hitOrder = movie.order_;
 					}
 				});
 

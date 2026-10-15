@@ -1,12 +1,13 @@
 #include "../Texture.hlsli"
 #include "../../Shader/ShaderResources.hlsli"
 #include "../../Shader/Culling.hlsli"
+#include "../../Shader/Dispatch.hlsli"
 
 TextureMSOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 {
 	StructuredBuffer<TextureSpriteStructuredBuffer> texture_sprite = GetTextureSpriteStructuredBuffer(shader_resource_indices.texture_.sprite_index_);
 	SceneConstantBuffer scene_constant = GetSceneConstantBuffer();
-	TextureSpriteStructuredBuffer sprite = texture_sprite[instance_id];
+	TextureSpriteStructuredBuffer sprite = texture_sprite[(dispatch_buffer_index_ != 0xFFFFFFFFu ? dispatch_buffer_index_ : 0u) + instance_id];
 
 	TextureMSOutput output = (TextureMSOutput)0;
 	output.position = float4(2.0f, 2.0f, 2.0f, 1.0f);

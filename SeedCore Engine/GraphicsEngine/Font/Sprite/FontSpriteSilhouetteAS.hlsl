@@ -1,6 +1,7 @@
 #include "../Font.hlsli"
 #include "../../Shader/ShaderResources.hlsli"
 #include "../../Shader/Culling.hlsli"
+#include "../../Shader/Dispatch.hlsli"
 
 groupshared uint survived_count;
 groupshared uint local_indices[32];
@@ -25,32 +26,34 @@ void main(uint3 gtid : SV_GroupThreadID, uint3 dtid : SV_DispatchThreadID)
 	GroupMemoryBarrierWithGroupSync();
 
 	bool is_visible = false;
-	uint glyph_id = dtid.x;
+	bool is_ranged = dispatch_buffer_index_ != 0xFFFFFFFFu;
+	uint range_start = is_ranged ? dispatch_buffer_index_ : 0u;
+	uint range_batch = font_sprite[range_start].batch_;
+	uint glyph_id = range_start + dtid.x;
 
 	if (glyph_id < 65536)
 	{
 		FontSpriteStructuredBuffer glyph = font_sprite[glyph_id];
 
-		if (glyph.selected_ != 0 && glyph.size_.x > 0.0 && glyph.size_.y > 0.0)
+		if ((!is_ranged || glyph.batch_ == range_batch) && glyph.selected_ != 0 && glyph.size_.x > 0.0 && glyph.size_.y > 0.0)
 		{
 			is_visible = IsVisibleInScreen(glyph.position_, glyph.size_, scene_constant.display_size_);
 		}
 	}
 
-	if (is_visible)
-	{
-		uint slot;
-		InterlockedAdd(survived_count, 1, slot);
-		local_indices[slot] = glyph_id;
-	}
+	local_indices[gtid.x] = is_visible ? glyph_id : 0xFFFFFFFFu;
 
 	GroupMemoryBarrierWithGroupSync();
 
 	if (gtid.x == 0)
 	{
-		for (uint index = 0; index < survived_count; ++index)
+		for (uint index = 0; index < 32; ++index)
 		{
-			payload.glyph_indices[index] = local_indices[index];
+			if (local_indices[index] != 0xFFFFFFFFu)
+			{
+				payload.glyph_indices[survived_count] = local_indices[index];
+				++survived_count;
+			}
 		}
 	}
 

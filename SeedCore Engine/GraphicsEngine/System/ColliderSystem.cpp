@@ -52,18 +52,24 @@ namespace SeedCore
 			const Rotation* rotation = actor.GetComponent<Rotation>();
 			const Scale* scale = actor.GetComponent<Scale>();
 
-			Quaternion actorRotation = rotation ? Transform::Quat(*rotation) : Quaternion::Identity;
+			/// [EN] Same world pose as PhysicsSystem::ApplyTransform: Position and Rotation carried out of the parent's space.
+			/// [JP] PhysicsSystem::ApplyTransform と同じワールドでの姿勢: Position と Rotation を親の空間から出したもの。
+			Actor parentActor = actor.Parent();
+			Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
+			Vector3 parentScale;
+			Quaternion parentRotation;
+			Vector3 parentTranslation;
+			parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+			Vector3 worldScale = Vector3(scale->x_, scale->y_, scale->z_) * parentScale;
 
-			/// [EN] The body sits at the actor's own origin (see PhysicsSystem::ApplyTransform): Position minus the pivot point scaled and rotated.
-			/// [JP] ボディは Actor 自身の原点にある(PhysicsSystem::ApplyTransform 参照): Position から、拡縮・回転した基準点を引いた位置。
-			const Pivot* pivot = actor.GetComponent<Pivot>();
-			Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), Matrix::CreateScale(Transform::Vector(*scale)) * Matrix::CreateFromQuaternion(actorRotation)) : Vector3::Zero;
-			Vector3 actorPosition = (position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f)) - pivotOffset;
+			Quaternion actorRotation = (rotation ? Transform::Quat(*rotation) : Quaternion::Identity) * parentRotation;
+
+			Vector3 actorPosition = Vector3::Transform(position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f), parentMatrix);
 
 			/// [EN] Same scaling as BoxCollider::GetShapeHandle: the size by the absolute scale per axis, the offset by the signed scale.
 			/// [JP] BoxCollider::GetShapeHandle と同じ拡縮。サイズは軸ごとのスケールの絶対値、オフセットは符号付きのスケールで掛ける。
-			Vector3 size(collider->size_.x * Abs(scale->x_), collider->size_.y * Abs(scale->y_), collider->size_.z * Abs(scale->z_));
-			Vector3 center(collider->center_.x * scale->x_, collider->center_.y * scale->y_, collider->center_.z * scale->z_);
+			Vector3 size(collider->size_.x * Abs(worldScale.x), collider->size_.y * Abs(worldScale.y), collider->size_.z * Abs(worldScale.z));
+			Vector3 center(collider->center_.x * worldScale.x, collider->center_.y * worldScale.y, collider->center_.z * worldScale.z);
 
 			colliders_.push_back({ ShapeKind::Box, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actorPosition + Vector3::Transform(center, actorRotation), actorRotation, size * 0.5f, colliderDebugColor });
 		}
@@ -81,17 +87,23 @@ namespace SeedCore
 			const Rotation* rotation = actor.GetComponent<Rotation>();
 			const Scale* scale = actor.GetComponent<Scale>();
 
-			Quaternion actorRotation = rotation ? Transform::Quat(*rotation) : Quaternion::Identity;
+			/// [EN] Same world pose as PhysicsSystem::ApplyTransform: Position and Rotation carried out of the parent's space.
+			/// [JP] PhysicsSystem::ApplyTransform と同じワールドでの姿勢: Position と Rotation を親の空間から出したもの。
+			Actor parentActor = actor.Parent();
+			Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
+			Vector3 parentScale;
+			Quaternion parentRotation;
+			Vector3 parentTranslation;
+			parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+			Vector3 worldScale = Vector3(scale->x_, scale->y_, scale->z_) * parentScale;
 
-			/// [EN] The body sits at the actor's own origin (see PhysicsSystem::ApplyTransform): Position minus the pivot point scaled and rotated.
-			/// [JP] ボディは Actor 自身の原点にある(PhysicsSystem::ApplyTransform 参照): Position から、拡縮・回転した基準点を引いた位置。
-			const Pivot* pivot = actor.GetComponent<Pivot>();
-			Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), Matrix::CreateScale(Transform::Vector(*scale)) * Matrix::CreateFromQuaternion(actorRotation)) : Vector3::Zero;
-			Vector3 actorPosition = (position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f)) - pivotOffset;
+			Quaternion actorRotation = (rotation ? Transform::Quat(*rotation) : Quaternion::Identity) * parentRotation;
+
+			Vector3 actorPosition = Vector3::Transform(position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f), parentMatrix);
 
 			/// [EN] Same scaling as SphereCollider::GetShapeHandle: the radius follows the largest axis.
 			/// [JP] SphereCollider::GetShapeHandle と同じ拡縮。半径は最も大きい軸に合わせる。
-			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->y_), Abs(scale->z_));
+			Float radius = collider->radius_ * Max(Abs(worldScale.x), Abs(worldScale.y), Abs(worldScale.z));
 
 			colliders_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actorPosition, actorRotation, Vector3(radius, 0.0f, 0.0f), colliderDebugColor });
 		}
@@ -109,18 +121,24 @@ namespace SeedCore
 			const Rotation* rotation = actor.GetComponent<Rotation>();
 			const Scale* scale = actor.GetComponent<Scale>();
 
-			Quaternion actorRotation = rotation ? Transform::Quat(*rotation) : Quaternion::Identity;
+			/// [EN] Same world pose as PhysicsSystem::ApplyTransform: Position and Rotation carried out of the parent's space.
+			/// [JP] PhysicsSystem::ApplyTransform と同じワールドでの姿勢: Position と Rotation を親の空間から出したもの。
+			Actor parentActor = actor.Parent();
+			Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
+			Vector3 parentScale;
+			Quaternion parentRotation;
+			Vector3 parentTranslation;
+			parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+			Vector3 worldScale = Vector3(scale->x_, scale->y_, scale->z_) * parentScale;
 
-			/// [EN] The body sits at the actor's own origin (see PhysicsSystem::ApplyTransform): Position minus the pivot point scaled and rotated.
-			/// [JP] ボディは Actor 自身の原点にある(PhysicsSystem::ApplyTransform 参照): Position から、拡縮・回転した基準点を引いた位置。
-			const Pivot* pivot = actor.GetComponent<Pivot>();
-			Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), Matrix::CreateScale(Transform::Vector(*scale)) * Matrix::CreateFromQuaternion(actorRotation)) : Vector3::Zero;
-			Vector3 actorPosition = (position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f)) - pivotOffset;
+			Quaternion actorRotation = (rotation ? Transform::Quat(*rotation) : Quaternion::Identity) * parentRotation;
+
+			Vector3 actorPosition = Vector3::Transform(position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f), parentMatrix);
 
 			/// [EN] Same scaling as CapsuleCollider::GetShapeHandle: the height follows Y, the radius the larger of X and Z.
 			/// [JP] CapsuleCollider::GetShapeHandle と同じ拡縮。高さは Y に、半径は X と Z の大きい方に合わせる。
-			Float height = collider->height_ * Abs(scale->y_);
-			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->z_));
+			Float height = collider->height_ * Abs(worldScale.y);
+			Float radius = collider->radius_ * Max(Abs(worldScale.x), Abs(worldScale.z));
 
 			colliders_.push_back({ ShapeKind::Capsule, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actorPosition, actorRotation, Vector3(radius, height * 0.5f, 0.0f), colliderDebugColor });
 		}
@@ -136,15 +154,19 @@ namespace SeedCore
 			CharacterController* controller = actor.GetComponent<CharacterController>();
 			const Position* position = actor.GetComponent<Position>();
 			const Rotation* rotation = actor.GetComponent<Rotation>();
-			const Scale* scale = actor.GetComponent<Scale>();
 
-			Quaternion actorRotation = rotation ? Transform::Quat(*rotation) : Quaternion::Identity;
+			/// [EN] Same world pose as PhysicsSystem::ApplyTransform: Position and Rotation carried out of the parent's space.
+			/// [JP] PhysicsSystem::ApplyTransform と同じワールドでの姿勢: Position と Rotation を親の空間から出したもの。
+			Actor parentActor = actor.Parent();
+			Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
+			Vector3 parentScale;
+			Quaternion parentRotation;
+			Vector3 parentTranslation;
+			parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
 
-			/// [EN] The body sits at the actor's own origin (see PhysicsSystem::ApplyTransform): Position minus the pivot point scaled and rotated.
-			/// [JP] ボディは Actor 自身の原点にある(PhysicsSystem::ApplyTransform 参照): Position から、拡縮・回転した基準点を引いた位置。
-			const Pivot* pivot = actor.GetComponent<Pivot>();
-			Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), Matrix::CreateScale(Transform::Vector(*scale)) * Matrix::CreateFromQuaternion(actorRotation)) : Vector3::Zero;
-			Vector3 actorPosition = (position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f)) - pivotOffset;
+			Quaternion actorRotation = (rotation ? Transform::Quat(*rotation) : Quaternion::Identity) * parentRotation;
+
+			Vector3 actorPosition = Vector3::Transform(position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f), parentMatrix);
 
 			/// [EN] Same capsule as Physics::CreateCharacter: the height is the cylinder part, switched to the crouch height while crouched, and Scale is not applied.
 			/// [JP] Physics::CreateCharacter と同じカプセル。高さは円柱部分で、しゃがみ中はしゃがみ時の高さに切り替わり、Scale は掛けない。
@@ -171,18 +193,24 @@ namespace SeedCore
 			const Rotation* rotation = actor.GetComponent<Rotation>();
 			const Scale* scale = actor.GetComponent<Scale>();
 
-			Quaternion actorRotation = rotation ? Transform::Quat(*rotation) : Quaternion::Identity;
+			/// [EN] Same world pose as PhysicsSystem::ApplyTransform: Position and Rotation carried out of the parent's space.
+			/// [JP] PhysicsSystem::ApplyTransform と同じワールドでの姿勢: Position と Rotation を親の空間から出したもの。
+			Actor parentActor = actor.Parent();
+			Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
+			Vector3 parentScale;
+			Quaternion parentRotation;
+			Vector3 parentTranslation;
+			parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+			Vector3 worldScale = Vector3(scale->x_, scale->y_, scale->z_) * parentScale;
 
-			/// [EN] The body sits at the actor's own origin (see PhysicsSystem::ApplyTransform): Position minus the pivot point scaled and rotated.
-			/// [JP] ボディは Actor 自身の原点にある(PhysicsSystem::ApplyTransform 参照): Position から、拡縮・回転した基準点を引いた位置。
-			const Pivot* pivot = actor.GetComponent<Pivot>();
-			Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), Matrix::CreateScale(Transform::Vector(*scale)) * Matrix::CreateFromQuaternion(actorRotation)) : Vector3::Zero;
-			Vector3 actorPosition = (position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f)) - pivotOffset;
+			Quaternion actorRotation = (rotation ? Transform::Quat(*rotation) : Quaternion::Identity) * parentRotation;
+
+			Vector3 actorPosition = Vector3::Transform(position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f), parentMatrix);
 
 			/// [EN] Same scaling as CylinderCollider::GetShapeHandle: the height follows Y, the radius the larger of X and Z.
 			/// [JP] CylinderCollider::GetShapeHandle と同じ拡縮。高さは Y に、半径は X と Z の大きい方に合わせる。
-			Float height = collider->height_ * Abs(scale->y_);
-			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->z_));
+			Float height = collider->height_ * Abs(worldScale.y);
+			Float radius = collider->radius_ * Max(Abs(worldScale.x), Abs(worldScale.z));
 
 			colliders_.push_back({ ShapeKind::Cylinder, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actorPosition, actorRotation, Vector3(radius, height * 0.5f, 0.0f), colliderDebugColor });
 		}
@@ -200,20 +228,27 @@ namespace SeedCore
 			const Rotation* rotation = actor.GetComponent<Rotation>();
 			const Scale* scale = actor.GetComponent<Scale>();
 
-			/// [EN] The body sits at the actor's own origin (see PhysicsSystem::ApplyTransform): Position minus the pivot point scaled and rotated, in canvas pixels.
-			/// [JP] ボディは Actor 自身の原点にある(PhysicsSystem::ApplyTransform 参照): Position から、拡縮・回転した基準点を引いた位置。Canvas のピクセル単位。
-			const Pivot* pivot = actor.GetComponent<Pivot>();
-			Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), Matrix::CreateScale(Transform::Vector(*scale)) * Matrix::CreateFromQuaternion(rotation ? Transform::Quat(*rotation) : Quaternion::Identity)) : Vector3::Zero;
-			Float pixelX = (position ? position->x_ : 0.0f) - pivotOffset.x;
-			Float pixelY = (position ? position->y_ : 0.0f) - pivotOffset.y;
-			Float angle = rotation ? Transform::Euler(*rotation).z : 0.0f;
+			/// [EN] Same world pose as PhysicsSystem::ApplyTransform: Position and Rotation carried out of the parent's space, in canvas pixels.
+			/// [JP] PhysicsSystem::ApplyTransform と同じワールドでの姿勢: Position と Rotation を親の空間から出したもの。Canvas のピクセル単位。
+			Actor parentActor = actor.Parent();
+			Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
+			Vector3 parentScale;
+			Quaternion parentRotation;
+			Vector3 parentTranslation;
+			parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+			Vector3 worldScale = Vector3(scale->x_, scale->y_, scale->z_) * parentScale;
+
+			Vector3 pixelPosition = Vector3::Transform(position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f), parentMatrix);
+			Float pixelX = pixelPosition.x;
+			Float pixelY = pixelPosition.y;
+			Float angle = ((rotation ? Transform::Quat(*rotation) : Quaternion::Identity) * parentRotation).ToEuler().z;
 			Float cosAngle = std::cos(angle);
 			Float sinAngle = std::sin(angle);
 
 			/// [EN] Same scaling as RectCollider::GetShapeHandle: only X and Y apply, the size by their absolute values, the offset by the signed ones.
 			/// [JP] RectCollider::GetShapeHandle と同じ拡縮。効くのは X と Y だけで、サイズは絶対値、オフセットは符号付きで掛ける。
-			Vector2 size(collider->size_.x * Abs(scale->x_), collider->size_.y * Abs(scale->y_));
-			Vector2 center(collider->center_.x * scale->x_, collider->center_.y * scale->y_);
+			Vector2 size(collider->size_.x * Abs(worldScale.x), collider->size_.y * Abs(worldScale.y));
+			Vector2 center(collider->center_.x * worldScale.x, collider->center_.y * worldScale.y);
 
 			Vector3 instancePosition(100000.0f + pixelX + center.x * cosAngle - center.y * sinAngle, 100000.0f + (ScResolution::SC_CANVAS.Height - pixelY) - center.x * sinAngle - center.y * cosAngle, 100000.0f);
 			colliders_.push_back({ ShapeKind::Rect, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, instancePosition, Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -angle), Vector3(size.x * 0.5f, size.y * 0.5f, 0.0f), colliderDebugColor });
@@ -232,20 +267,27 @@ namespace SeedCore
 			const Rotation* rotation = actor.GetComponent<Rotation>();
 			const Scale* scale = actor.GetComponent<Scale>();
 
-			/// [EN] The body sits at the actor's own origin (see PhysicsSystem::ApplyTransform): Position minus the pivot point scaled and rotated, in canvas pixels.
-			/// [JP] ボディは Actor 自身の原点にある(PhysicsSystem::ApplyTransform 参照): Position から、拡縮・回転した基準点を引いた位置。Canvas のピクセル単位。
-			const Pivot* pivot = actor.GetComponent<Pivot>();
-			Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), Matrix::CreateScale(Transform::Vector(*scale)) * Matrix::CreateFromQuaternion(rotation ? Transform::Quat(*rotation) : Quaternion::Identity)) : Vector3::Zero;
-			Float pixelX = (position ? position->x_ : 0.0f) - pivotOffset.x;
-			Float pixelY = (position ? position->y_ : 0.0f) - pivotOffset.y;
-			Float angle = rotation ? Transform::Euler(*rotation).z : 0.0f;
+			/// [EN] Same world pose as PhysicsSystem::ApplyTransform: Position and Rotation carried out of the parent's space, in canvas pixels.
+			/// [JP] PhysicsSystem::ApplyTransform と同じワールドでの姿勢: Position と Rotation を親の空間から出したもの。Canvas のピクセル単位。
+			Actor parentActor = actor.Parent();
+			Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
+			Vector3 parentScale;
+			Quaternion parentRotation;
+			Vector3 parentTranslation;
+			parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+			Vector3 worldScale = Vector3(scale->x_, scale->y_, scale->z_) * parentScale;
+
+			Vector3 pixelPosition = Vector3::Transform(position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f), parentMatrix);
+			Float pixelX = pixelPosition.x;
+			Float pixelY = pixelPosition.y;
+			Float angle = ((rotation ? Transform::Quat(*rotation) : Quaternion::Identity) * parentRotation).ToEuler().z;
 			Float cosAngle = Cos(angle);
 			Float sinAngle = Sin(angle);
 
 			/// [EN] Same scaling as CircleCollider::GetShapeHandle: the radius follows the larger of X and Y, the offset the signed scale.
 			/// [JP] CircleCollider::GetShapeHandle と同じ拡縮。半径は X と Y の大きい方に、オフセットは符号付きのスケールに合わせる。
-			Float radius = collider->radius_ * Max(Abs(scale->x_), Abs(scale->y_));
-			Vector2 center(collider->center_.x * scale->x_, collider->center_.y * scale->y_);
+			Float radius = collider->radius_ * Max(Abs(worldScale.x), Abs(worldScale.y));
+			Vector2 center(collider->center_.x * worldScale.x, collider->center_.y * worldScale.y);
 
 			Vector3 instancePosition(100000.0f + pixelX + center.x * cosAngle - center.y * sinAngle, 100000.0f + (ScResolution::SC_CANVAS.Height - pixelY) - center.x * sinAngle - center.y * cosAngle, 100000.0f);
 			colliders_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, instancePosition, Quaternion::Identity, Vector3(radius, 0.0f, 0.0f), colliderDebugColor });

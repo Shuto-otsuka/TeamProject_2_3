@@ -34,36 +34,6 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Returns the pivot point as a Vector3.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 基準点を Vector3 で返す。
-	*/
-	Vector3 Transform::Vector(const Pivot& pivot)
-	{
-		return Vector3(pivot.x_, pivot.y_, pivot.z_);
-	}
-
-	/**
-	* [EN]
-	* Writes value into the pivot point.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* value を基準点に書き込む。
-	*/
-	void Transform::Vector(Pivot& pivot, const Vector3& value)
-	{
-		pivot.x_ = value.x;
-		pivot.y_ = value.y;
-		pivot.z_ = value.z;
-	}
-
-	/**
-	* [EN]
 	* Returns the scale as a Vector3.
 	*
 	* ---------------------------------------------------------------------

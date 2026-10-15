@@ -4,7 +4,6 @@
 #include <AudioEngine/Audio/AudioSource.h>
 #include <FoundationEngine/World/ECS/Component/Lifetime.h>
 #include <FoundationEngine/World/ECS/Component/Name.h>
-#include <FoundationEngine/World/ECS/Component/Pivot.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
@@ -60,7 +59,6 @@ extern "C" int _force_reflection_AudioListener = 0;
 extern "C" int _force_reflection_AudioSource = 0;
 extern "C" int _force_reflection_Lifetime = 0;
 extern "C" int _force_reflection_Name = 0;
-extern "C" int _force_reflection_Pivot = 0;
 extern "C" int _force_reflection_Position = 0;
 extern "C" int _force_reflection_Rotation = 0;
 extern "C" int _force_reflection_Scale = 0;
@@ -260,42 +258,6 @@ namespace SeedCore
 			}
 		};
 		static Register_Name global_Name_register;
-
-		// ---- FoundationEngine/World/ECS/Component/Pivot.h ----
-		struct Register_Pivot
-		{
-			Register_Pivot()
-			{
-				ReflectionRegistry::Register(String("Pivot"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
-					Pivot& obj = *static_cast<Pivot*>(ptr);
-					{
-						FieldInfo fi;
-						fi.name_ = String("x_");
-						fi.offset_ = offsetof(Pivot, x_);
-						fi.type_ = AttributeType::Float;
-						fi.editorVisible_ = false;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("y_");
-						fi.offset_ = offsetof(Pivot, y_);
-						fi.type_ = AttributeType::Float;
-						fi.editorVisible_ = false;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("z_");
-						fi.offset_ = offsetof(Pivot, z_);
-						fi.type_ = AttributeType::Float;
-						fi.editorVisible_ = false;
-						outInfo.push_back(std::move(fi));
-					}
-				});
-			}
-		};
-		static Register_Pivot global_Pivot_register;
 
 		// ---- FoundationEngine/World/ECS/Component/Position.h ----
 		struct Register_Position
@@ -1075,6 +1037,14 @@ namespace SeedCore
 					}
 					{
 						FieldInfo fi;
+						fi.name_ = String("描画順");
+						fi.offset_ = offsetof(Text, order_);
+						fi.type_ = AttributeType::Int;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Text*>(p); return o.viewType_ == Text::ViewType::Sprite; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
 						fi.name_ = String("カメラ正対");
 						fi.offset_ = offsetof(Text, faceCamera_);
 						fi.type_ = AttributeType::Bool;
@@ -1743,6 +1713,14 @@ namespace SeedCore
 						fi.offset_ = offsetof(Movie, pivot_);
 						fi.type_ = AttributeType::Vector2;
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Movie*>(p); return o.displayMode_ != Movie::DisplayMode::Fullscreen; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("描画順");
+						fi.offset_ = offsetof(Movie, order_);
+						fi.type_ = AttributeType::Int;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Movie*>(p); return o.displayMode_ == Movie::DisplayMode::Sprite; };
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3057,6 +3035,14 @@ namespace SeedCore
 						fi.offset_ = offsetof(Image, viewType_);
 						fi.type_ = AttributeType::Enum;
 						fi.enum_.typeName_ = String("ViewType");
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("描画順");
+						fi.offset_ = offsetof(Image, order_);
+						fi.type_ = AttributeType::Int;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Image*>(p); return o.viewType_ == Image::ViewType::Sprite; };
 						outInfo.push_back(std::move(fi));
 					}
 					{

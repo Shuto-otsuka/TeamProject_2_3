@@ -262,8 +262,10 @@ namespace SeedCore
 		* the previous-frame snapshot forward. Call once per frame.
 		* gameInput says whether this frame's keyboard/mouse input belongs
 		* to the game (Input reports nothing for them otherwise); gamepad
-		* input always does. While the application is not the active one,
-		* everything is polled as released and still.
+		* input always does. gameRect is where the game image sits on the
+		* desktop (x, y, width, height); the cursor position is mapped
+		* through it onto the 1920x1080 game screen. While the application
+		* is not the active one, everything is polled as released and still.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -272,10 +274,12 @@ namespace SeedCore
 		* 前フレームのスナップショットを繰り越す。毎フレーム1回呼び出す。
 		* gameInput は、このフレームのキーボード/マウス入力をゲームに渡すか
 		* を表す（渡さない場合、Input はそれらを何も無いものとして返す）。
-		* ゲームパッドの入力は常に渡す。アプリがアクティブでない間は、
+		* ゲームパッドの入力は常に渡す。gameRect はゲーム画像のデスクトップ
+		* 上の位置（x, y, 幅, 高さ）で、カーソル位置はこれを通して 1920x1080
+		* のゲーム画面上の位置へ写す。アプリがアクティブでない間は、
 		* 全て押されていない・動いていないものとして取り込む。
 		*/
-		static void Update(Bool gameInput);
+		static void Update(Bool gameInput, const Vector4& gameRect);
 
 		/**
 		* [EN]
@@ -321,13 +325,13 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Returns the cursor's movement since last frame, in screen pixels.
+		* Returns the cursor's movement since last frame, in desktop pixels.
 		* Unfiltered.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 前フレームからのカーソルの移動量を、画面ピクセル単位で返す。
+		* 前フレームからのカーソルの移動量を、デスクトップのピクセル単位で返す。
 		* 絞り込みはしない。
 		*/
 		static Vector2 MouseMotion();
@@ -421,16 +425,16 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Same as LockCursor(), but holds the cursor at point (screen
-		* pixels, the same space as Input::MousePoint()) instead of where
-		* it happens to be. Calling it again moves the lock to the new
-		* point.
+		* Same as LockCursor(), but holds the cursor at point (1920x1080
+		* game screen pixels, the same space as Input::MousePoint())
+		* instead of where it happens to be. Calling it again moves the lock
+		* to the new point.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* LockCursor() と同じだが、たまたまある位置ではなく point（画面
-		* ピクセル。Input::MousePoint() と同じ座標）にカーソルを留める。
+		* LockCursor() と同じだが、たまたまある位置ではなく point（1920x1080
+		* のゲーム画面のピクセル。Input::MousePoint() と同じ座標）にカーソルを留める。
 		* もう一度呼ぶと、固定する位置が新しい point に移る。
 		*/
 		static void LockCursor(Vector2 point);
@@ -777,12 +781,16 @@ namespace SeedCore
 		/// [JP] 前フレームのマウスボタン状態。currentMouseState_ と比べてエッジを検出する。
 		static Bool previousMouseState_[MOUSE_BUTTON_COUNT];
 
-		/// [EN] Cursor's current position, in screen pixels (see Input::MousePoint()).
-		/// [JP] カーソルの現在の位置。画面ピクセル単位（Input::MousePoint() 参照）。
-		static Vector2 mousePoint_;
+		/// [EN] Cursor's current position on the 1920x1080 game screen (see Input::MousePoint()).
+		/// [JP] カーソルの現在の位置。1920x1080 のゲーム画面上のピクセル単位（Input::MousePoint() 参照）。
+		static Vector2 gameMousePoint_;
 
-		/// [EN] Cursor's movement since last frame, in screen pixels (see MouseMotion()).
-		/// [JP] 前フレームからのカーソルの移動量。画面ピクセル単位（MouseMotion() 参照）。
+		/// [EN] Cursor's current position on the desktop, as GetCursorPos() reports it; mouseMotion_ is measured from it.
+		/// [JP] カーソルの現在のデスクトップ上の位置。GetCursorPos() が返すまま。mouseMotion_ はこれから測る。
+		static Vector2 desktopMousePoint_;
+
+		/// [EN] Cursor's movement since last frame, in desktop pixels (see MouseMotion()).
+		/// [JP] 前フレームからのカーソルの移動量。デスクトップのピクセル単位（MouseMotion() 参照）。
 		static Vector2 mouseMotion_;
 
 		/// [EN] Mouse wheel rotation during the last completed frame, in notches (see MouseWheel()).
@@ -809,8 +817,8 @@ namespace SeedCore
 		/// [JP] ゲームがカーソルの固定を求めているか（LockCursor() 参照）。
 		static Bool cursorLocked_;
 
-		/// [EN] Where the locked cursor is put back every frame, in screen pixels: the point given to LockCursor(Vector2), or else the cursor position on the frame the lock took effect.
-		/// [JP] ロック中のカーソルを毎フレーム戻す位置（画面ピクセル）。LockCursor(Vector2) に渡された位置か、そうでなければロックが効き始めたフレームのカーソル位置。
+		/// [EN] Where the locked cursor is put back every frame, in 1920x1080 game screen pixels: the point given to LockCursor(Vector2), or else the cursor position on the frame the lock took effect.
+		/// [JP] ロック中のカーソルを毎フレーム戻す位置（1920x1080 のゲーム画面のピクセル）。LockCursor(Vector2) に渡された位置か、そうでなければロックが効き始めたフレームのカーソル位置。
 		static Vector2 cursorLockPoint_;
 
 		/// [EN] Whether cursorLockPoint_ was given by LockCursor(Vector2) and so stays fixed, rather than being taken from the cursor.

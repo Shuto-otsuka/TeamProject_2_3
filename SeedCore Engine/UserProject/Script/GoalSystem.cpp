@@ -53,4 +53,4 @@ void GoalSystem::OnEditorTick(float elapsedTime)
 {
 	Position* position = GetWorld().GetComponent<Position>(GetActor().GetEntity());
 	GetActor().GetDebugDraw().Sphere(Transform::Vector(*position), 0.5f, Color(1.0f, 0.0f, 0.0f, 0.5f));
-}
+} 

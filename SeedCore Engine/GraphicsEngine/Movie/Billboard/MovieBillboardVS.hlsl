@@ -1,12 +1,13 @@
 #include "../Movie.hlsli"
 #include "../../Shader/ShaderResources.hlsli"
 #include "../../Shader/Culling.hlsli"
+#include "../../Shader/Dispatch.hlsli"
 
 MovieMSOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 {
 	StructuredBuffer<MovieBillboardStructuredBuffer> movie_billboard = GetMovieBillboardStructuredBuffer(shader_resource_indices.movie_.billboard_index_);
 	SceneConstantBuffer scene_constant = GetSceneConstantBuffer();
-	MovieBillboardStructuredBuffer instance = movie_billboard[instance_id];
+	MovieBillboardStructuredBuffer instance = movie_billboard[(dispatch_buffer_index_ != 0xFFFFFFFFu ? dispatch_buffer_index_ : 0u) + instance_id];
 
 	MovieMSOutput output = (MovieMSOutput)0;
 	output.position = float4(2.0f, 2.0f, 2.0f, 1.0f);

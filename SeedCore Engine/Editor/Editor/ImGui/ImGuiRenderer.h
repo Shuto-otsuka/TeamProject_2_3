@@ -258,14 +258,14 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Applies the editor's look: compact paddings and spacings, rounded
-		* corners, and a dark theme with purple accents.
+		* Applies dark graphite and midnight-blue surfaces, indigo highlights,
+		* and clearly bordered controls for the editor's lunar interface.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* エディタの見た目を適用する: 詰めた余白と間隔、角丸、紫をアクセントに
-		* したダークテーマ。
+		* 暗い黒鉛色と夜空の濃紺、鮮やかな青の選択表示、明瞭な境界線で、
+		* 月面設備をイメージしたエディタスタイルを適用する。
 		*/
 		void StyleConfig();
 
