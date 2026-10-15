@@ -2,6 +2,7 @@
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/Name.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
+#include <FoundationEngine/World/ECS/Component/Pivot.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
 #include <FoundationEngine/World/ECS/Component/Velocity.h>
@@ -584,10 +585,11 @@ namespace SeedCore
 		Size index = actors_.size() - 1;
 		actorIndex_[entityID] = index;
 
-		/// [EN] Every actor gets the same baseline set of components: a display name, an identity transform, zero velocity, active-by-default, and a small default-sized bounding box so it is viewport-pickable even without a renderable component.
-		/// [JP] 全ての actor に共通するベースラインのコンポーネント一式を付与する: 表示名、単位トランスフォーム、ゼロ速度、デフォルトでアクティブ、そして小さいデフォルトサイズの境界ボックス。
+		/// [EN] Every actor gets the same baseline set of components: a display name, an identity transform with its pivot at the origin, zero velocity, active-by-default, and a small default-sized bounding box so it is viewport-pickable even without a renderable component.
+		/// [JP] 全ての actor に共通するベースラインのコンポーネント一式を付与する: 表示名、基準点が原点の単位トランスフォーム、ゼロ速度、デフォルトでアクティブ、そして小さいデフォルトサイズの境界ボックス。
 		AddComponent(entity, Name{ name });
 		AddComponent(entity, Position{ 0.0f,0.0f,0.0f });
+		AddComponent(entity, Pivot{ 0.0f,0.0f,0.0f });
 		AddComponent(entity, Rotation{ 0.0f,0.0f,0.0f,1.0f });
 		AddComponent(entity, Scale{ 1.0f,1.0f,1.0f });
 		AddComponent(entity, LinearVelocity{ 0.0f,0.0f,0.0f });

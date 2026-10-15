@@ -11,7 +11,10 @@ public:
 	SC_PAYLOAD_FIELD_EX("タイトルシーン", Scene)
 	Uint32 titleSceneID_ = 0;
 
-	SC_REFLECTION_CLAMPED_EX("範囲", 0.0f, 10000.0f)
+	SC_PAYLOAD_FIELD_EX("リトライ先シーン", Scene)
+	Uint32 retrySceneID_ = 0;
+
+	SC_REFLECTION_CLAMPED_EX("範囲 𰻞", 0.0f, 10000.0f)
 	float range_ = 1.0f;
 
 public:

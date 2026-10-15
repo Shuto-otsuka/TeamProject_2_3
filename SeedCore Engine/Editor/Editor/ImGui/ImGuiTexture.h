@@ -54,6 +54,7 @@ namespace SeedCore
 		Rotate,
 		Scale,
 		Rect,
+		Pivot,
 		ShowIcon,
 		ShowShape,
 		Camera,

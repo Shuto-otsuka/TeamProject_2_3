@@ -3,6 +3,7 @@
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/Command/CommandBuffer.h>
 #include <FoundationEngine/World/ECS/Component/Spawner.h>
+#include <FoundationEngine/World/ECS/Component/Transform.h>
 
 namespace SeedCore
 {
@@ -104,7 +105,10 @@ namespace SeedCore
 
 			/// [EN] Spawn as a root-level actor (no parent): PhysicsSystem places a Rigidbody's JPH body from the actor's local Position directly (PhysicsSystem::ApplyTransform), ignoring any parent transform, so a parented spawn would render correctly via TransformSystem but get its collider placed as if the local offset were a world position.
 			/// [JP] ルートレベルの actor(親無し)として生成する: PhysicsSystem は Rigidbody の JPH ボディを actor のローカル Position からそのまま配置し(PhysicsSystem::ApplyTransform)、親の変換を考慮しないため、親付きで生成すると見た目は TransformSystem 経由で正しくてもコライダーがローカルオフセットをワールド位置と誤認して配置される。
-			Vector3 spawnPosition = actor.WorldMatrix().Translation();
+			/// [EN] The spawned root's Position places its pivot point, so it goes to the spawner's own pivot point rather than its origin.
+			/// [JP] 生成されたルートの Position は基準点を配置するので、スポナーの原点ではなく、スポナー自身の基準点の位置に置く。
+			const Pivot* spawnerPivot = actor.GetComponent<Pivot>();
+			Vector3 spawnPosition = spawnerPivot ? Vector3::Transform(Transform::Vector(*spawnerPivot), actor.WorldMatrix()) : actor.WorldMatrix().Translation();
 			if (spawner->randomSpawn_)
 			{
 				std::uniform_real_distribution<Float> jitter(-spawner->randomRadius_, spawner->randomRadius_);

@@ -251,21 +251,29 @@ namespace SeedCore
 		Quaternion outRotation;
 		actor.GetPhysics().BodyTransform(bodyID_, outPosition, outRotation);
 
+		/// [EN] The body sits at the actor's own origin (see PhysicsSystem::ApplyTransform), so Position, which places the pivot point, is the body position plus the pivot point scaled and rotated by the body's new rotation.
+		/// [JP] ボディは Actor 自身の原点にある(PhysicsSystem::ApplyTransform 参照)ので、基準点を配置する Position は、ボディの位置に、ボディの新しい回転で拡縮・回転した基準点を足したものになる。
+		const Pivot* pivot = world.GetComponent<Pivot>(entity);
+		const Scale* scale = world.GetComponent<Scale>(entity);
+		Matrix scaleMatrix = scale ? Matrix::CreateScale(Transform::Vector(*scale)) : Matrix::Identity;
+
 		/// [EN] Canvas bodies go back from meters (Y up) to pixels (Y down).
 		/// [JP] Canvas のボディは、メートル(Y 上向き)からピクセル(Y 下向き)へ戻す。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			if (position)
-			{
-				position->x_ = outPosition.x * pixelsPerMeter_;
-				position->y_ = -outPosition.y * pixelsPerMeter_;
-			}
-
 			/// [EN] The body only turns about Z, so the angle is 2·atan2(z, w), negated with the flipped Y and stored as a rotation about Z.
 			/// [JP] ボディは Z 軸まわりにしか回らないので、角度は 2·atan2(z, w)。Y の反転に合わせて符号を反転し、Z 軸まわりの回転として格納する。
+			Quaternion canvasRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -2.0f * std::atan2(outRotation.z, outRotation.w));
+
+			if (position)
+			{
+				Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), scaleMatrix * Matrix::CreateFromQuaternion(canvasRotation)) : Vector3::Zero;
+				position->x_ = outPosition.x * pixelsPerMeter_ + pivotOffset.x;
+				position->y_ = -outPosition.y * pixelsPerMeter_ + pivotOffset.y;
+			}
+
 			if (rotation)
 			{
-				Quaternion canvasRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -2.0f * std::atan2(outRotation.z, outRotation.w));
 				Transform::Quat(*rotation, canvasRotation);
 			}
 
@@ -274,7 +282,8 @@ namespace SeedCore
 
 		if (position)
 		{
-			Transform::Vector(*position, outPosition);
+			Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), scaleMatrix * Matrix::CreateFromQuaternion(outRotation)) : Vector3::Zero;
+			Transform::Vector(*position, outPosition + pivotOffset);
 		}
 
 		/// [EN] Rotation is stored as a normalized quaternion.
@@ -564,6 +573,13 @@ namespace SeedCore
 
 		Actor actor = GetActor();
 
+		/// [EN] The target is given as a Position, which places the pivot point, while the body sits at the actor's own origin; the target origin is the target position minus the pivot point scaled and rotated by the target rotation.
+		/// [JP] 目標は基準点を配置する Position として与えられるが、ボディは Actor 自身の原点にある。目標の原点は、目標位置から、目標の回転で拡縮・回転した基準点を引いた位置。
+		const Pivot* pivot = actor.GetComponent<Pivot>();
+		const Scale* scale = actor.GetComponent<Scale>();
+		Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), (scale ? Matrix::CreateScale(Transform::Vector(*scale)) : Matrix::Identity) * Matrix::CreateFromQuaternion(targetRotation)) : Vector3::Zero;
+		Vector3 targetOrigin = targetPosition - pivotOffset;
+
 		/// [EN] A canvas body goes from pixels (Y down) to meters (Y up) on the z = 0 plane.
 		/// [JP] Canvas のボディは、ピクセル(Y 下向き)から z = 0 平面上のメートル(Y 上向き)へ変換する。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
@@ -571,11 +587,11 @@ namespace SeedCore
 			/// [EN] The canvas angle is 2·atan2(z, w); it is negated with the flipped Y and rebuilt as a pure rotation about Z.
 			/// [JP] Canvas の角度は 2·atan2(z, w)。Y の反転に合わせて符号を反転し、Z 軸まわりだけの回転として作り直す。
 			Quaternion physicsRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -2.0f * std::atan2(targetRotation.z, targetRotation.w));
-			actor.GetPhysics().MoveTarget(bodyID_, Vector3(targetPosition.x / pixelsPerMeter_, -targetPosition.y / pixelsPerMeter_, 0.0f), physicsRotation, elapsedTime);
+			actor.GetPhysics().MoveTarget(bodyID_, Vector3(targetOrigin.x / pixelsPerMeter_, -targetOrigin.y / pixelsPerMeter_, 0.0f), physicsRotation, elapsedTime);
 			return;
 		}
 
-		actor.GetPhysics().MoveTarget(bodyID_, targetPosition, targetRotation, elapsedTime);
+		actor.GetPhysics().MoveTarget(bodyID_, targetOrigin, targetRotation, elapsedTime);
 	}
 
 	/**

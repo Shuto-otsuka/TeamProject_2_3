@@ -48,6 +48,10 @@ namespace SeedCore
 		SC_REFLECTION_FIELD_EX("表示形式")
 		ViewType viewType_ = ViewType::Sprite;
 
+		SC_REFLECTION_FIELD_CONDITION(viewType_ == ViewType::Sprite)
+		SC_REFLECTION_FIELD_EX("描画順")
+		Int order_ = 0;
+
 		SC_REFLECTION_FIELD_CONDITION(viewType_ == ViewType::Billboard)
 		SC_REFLECTION_FIELD_EX("カメラ正対")
 		Bool faceCamera_ = false;

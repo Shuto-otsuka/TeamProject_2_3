@@ -77,10 +77,12 @@
 		Bool positionLinked_ = false;
 		Bool rotationLinked_ = false;
 		Bool scaleLinked_ = false;
+		Bool pivotLinked_ = false;
 
 		Float previousPosition_[3] = {};
 		Float previousRotation_[3] = {};
 		Float previousScale_[3] = {};
+		Float previousPivot_[3] = {};
 
 		Bool locked_ = false;
 		Actor lockedActor_;

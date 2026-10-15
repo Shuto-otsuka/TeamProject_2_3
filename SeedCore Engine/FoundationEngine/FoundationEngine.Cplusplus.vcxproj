@@ -234,6 +234,7 @@
     <ClInclude Include="World\ECS\Component\Lifetime.h" />
     <ClInclude Include="World\ECS\Component\Motion.h" />
     <ClInclude Include="World\ECS\Component\Name.h" />
+    <ClInclude Include="World\ECS\Component\Pivot.h" />
     <ClInclude Include="World\ECS\Component\Position.h" />
     <ClInclude Include="World\ECS\Component\Rotation.h" />
     <ClInclude Include="World\ECS\Component\Scale.h" />

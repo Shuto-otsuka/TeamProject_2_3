@@ -217,8 +217,14 @@ namespace SeedCore
 		/// [EN] Rotation holds a normalized quaternion, passed to the body as is.
 		/// [JP] Rotation は正規化済みクォータニオンを持つので、そのままボディへ渡す。
 		const Position* position = actor.GetComponent<Position>();
+		const Pivot* pivot = actor.GetComponent<Pivot>();
 		const Rotation* rotation = actor.GetComponent<Rotation>();
-		desc.position_ = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
+		const Scale* scale = actor.GetComponent<Scale>();
+
+		/// [EN] Position places the pivot point, while the vertices are in the actor's own space around its origin, so the body starts at Position minus the pivot point scaled and rotated the same way TransformSystem does.
+		/// [JP] Position は基準点を配置するが、頂点は Actor 自身の原点まわりの空間にあるので、ボディは Position から TransformSystem と同じく拡縮・回転した基準点を引いた位置から始める。
+		Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), (scale ? Matrix::CreateScale(Transform::Vector(*scale)) : Matrix::Identity) * Matrix::CreateFromQuaternion(rotation ? Transform::Quat(*rotation) : Quaternion::Identity)) : Vector3::Zero;
+		desc.position_ = (position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f)) - pivotOffset;
 		desc.rotation_ = rotation ? Transform::Quat(*rotation) : Quaternion::Identity;
 
 		/// [EN] On failure the soft body stays pending and is tried again next frame.

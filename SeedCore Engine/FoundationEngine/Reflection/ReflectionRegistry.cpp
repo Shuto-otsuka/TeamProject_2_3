@@ -5,6 +5,7 @@
 #pragma comment(linker, "/include:_force_reflection_AudioSource")
 #pragma comment(linker, "/include:_force_reflection_Lifetime")
 #pragma comment(linker, "/include:_force_reflection_Name")
+#pragma comment(linker, "/include:_force_reflection_Pivot")
 #pragma comment(linker, "/include:_force_reflection_Position")
 #pragma comment(linker, "/include:_force_reflection_Rotation")
 #pragma comment(linker, "/include:_force_reflection_Scale")
@@ -77,7 +78,6 @@
 #pragma comment(linker, "/include:_force_reflection_SpringJoint")
 #pragma comment(linker, "/include:_force_reflection_Rigidbody")
 #pragma comment(linker, "/include:_force_reflection_Softbody")
-#pragma comment(linker, "/include:_force_reflection_PlayerController")
 // [REFLECTION_AUTO_END]
 
 namespace SeedCore

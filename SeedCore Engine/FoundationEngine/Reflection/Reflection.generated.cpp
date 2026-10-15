@@ -4,6 +4,7 @@
 #include <AudioEngine/Audio/AudioSource.h>
 #include <FoundationEngine/World/ECS/Component/Lifetime.h>
 #include <FoundationEngine/World/ECS/Component/Name.h>
+#include <FoundationEngine/World/ECS/Component/Pivot.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
@@ -54,12 +55,12 @@
 #include <PhysicsEngine/Joint/SpringJoint.h>
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
-#include <Runtime/enc_temp_folder/dd2e7c13fcafed7d87e8fed1948b865/PlayerController.h>
 
 extern "C" int _force_reflection_AudioListener = 0;
 extern "C" int _force_reflection_AudioSource = 0;
 extern "C" int _force_reflection_Lifetime = 0;
 extern "C" int _force_reflection_Name = 0;
+extern "C" int _force_reflection_Pivot = 0;
 extern "C" int _force_reflection_Position = 0;
 extern "C" int _force_reflection_Rotation = 0;
 extern "C" int _force_reflection_Scale = 0;
@@ -132,7 +133,6 @@ extern "C" int _force_reflection_SliderJoint = 0;
 extern "C" int _force_reflection_SpringJoint = 0;
 extern "C" int _force_reflection_Rigidbody = 0;
 extern "C" int _force_reflection_Softbody = 0;
-extern "C" int _force_reflection_PlayerController = 0;
 
 namespace SeedCore
 {
@@ -260,6 +260,42 @@ namespace SeedCore
 			}
 		};
 		static Register_Name global_Name_register;
+
+		// ---- FoundationEngine/World/ECS/Component/Pivot.h ----
+		struct Register_Pivot
+		{
+			Register_Pivot()
+			{
+				ReflectionRegistry::Register(String("Pivot"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					Pivot& obj = *static_cast<Pivot*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("x_");
+						fi.offset_ = offsetof(Pivot, x_);
+						fi.type_ = AttributeType::Float;
+						fi.editorVisible_ = false;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("y_");
+						fi.offset_ = offsetof(Pivot, y_);
+						fi.type_ = AttributeType::Float;
+						fi.editorVisible_ = false;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("z_");
+						fi.offset_ = offsetof(Pivot, z_);
+						fi.type_ = AttributeType::Float;
+						fi.editorVisible_ = false;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_Pivot global_Pivot_register;
 
 		// ---- FoundationEngine/World/ECS/Component/Position.h ----
 		struct Register_Position
@@ -3713,36 +3749,6 @@ namespace SeedCore
 			}
 		};
 		static Register_Softbody global_Softbody_register;
-
-		// ---- Runtime/enc_temp_folder/dd2e7c13fcafed7d87e8fed1948b865/PlayerController.h ----
-		struct Register_PlayerController
-		{
-			Register_PlayerController()
-			{
-				ReflectionRegistry::Register(String("PlayerController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
-					PlayerController& obj = *static_cast<PlayerController*>(ptr);
-					outInfo.push_back({ String("acceleration"), offsetof(PlayerController, acceleration), AttributeType::Float });
-					outInfo.push_back({ String("airAcceleration"), offsetof(PlayerController, airAcceleration), AttributeType::Float });
-					outInfo.push_back({ String("turnSpeed"), offsetof(PlayerController, turnSpeed), AttributeType::Float });
-					outInfo.push_back({ String("jumpEnableTime"), offsetof(PlayerController, jumpEnableTime), AttributeType::Float });
-					outInfo.push_back({ String("jumpInputBufferTime"), offsetof(PlayerController, jumpInputBufferTime), AttributeType::Float });
-					outInfo.push_back({ String("maxJumpInputTime"), offsetof(PlayerController, maxJumpInputTime), AttributeType::Float });
-					outInfo.push_back({ String("jumpGravityScaler"), offsetof(PlayerController, jumpGravityScaler), AttributeType::Float });
-					outInfo.push_back({ String("coyoteTime"), offsetof(PlayerController, coyoteTime), AttributeType::Float });
-					outInfo.push_back({ String("maxShotChargeTime"), offsetof(PlayerController, maxShotChargeTime), AttributeType::Float });
-					outInfo.push_back({ String("bulletOffsetY"), offsetof(PlayerController, bulletOffsetY), AttributeType::Float });
-					outInfo.push_back({ String("minBulletOffsetZ"), offsetof(PlayerController, minBulletOffsetZ), AttributeType::Float });
-					outInfo.push_back({ String("maxBulletOffsetZ"), offsetof(PlayerController, maxBulletOffsetZ), AttributeType::Float });
-					outInfo.push_back({ String("bulletRemoveDistance"), offsetof(PlayerController, bulletRemoveDistance), AttributeType::Float });
-					outInfo.push_back({ String("deadPosY"), offsetof(PlayerController, deadPosY), AttributeType::Float });
-					outInfo.push_back({ String("maxCostGauge"), offsetof(PlayerController, maxCostGauge), AttributeType::Int });
-					outInfo.push_back({ String("minAddCostGauge"), offsetof(PlayerController, minAddCostGauge), AttributeType::Int });
-					outInfo.push_back({ String("maxAddCostGauge"), offsetof(PlayerController, maxAddCostGauge), AttributeType::Int });
-					outInfo.push_back({ String("resetInputTime"), offsetof(PlayerController, resetInputTime), AttributeType::Float });
-				});
-			}
-		};
-		static Register_PlayerController global_PlayerController_register;
 
 		struct RegisterEnum_AnimationConditionComparison
 		{

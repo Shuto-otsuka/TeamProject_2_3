@@ -21,21 +21,32 @@ namespace SeedCore
 	* [EN]
 	* Writes the actor's pose and EntityID into desc. Canvas actors (with
 	* a Rect/CircleCollider) are converted from pixels to meters on the
-	* z = 0 plane; others use their Position/Rotation as is.
+	* z = 0 plane; others use their Position/Rotation as is. The body is
+	* placed at the actor's own origin, so Position is moved back by the
+	* scaled and rotated Pivot first.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* Actor の姿勢と EntityID を desc に書き込む。Canvas の Actor
 	* (Rect/CircleCollider 付き)はピクセルからメートルへ変換して z = 0 の
-	* 平面に置き、それ以外は Position/Rotation をそのまま使う。
+	* 平面に置き、それ以外は Position/Rotation をそのまま使う。ボディは
+	* Actor 自身の原点に置くので、先に Position を拡縮・回転した Pivot の分
+	* だけ戻す。
 	*/
 	void PhysicsSystem::ApplyTransform(Actor actor, RigidbodyDesc& desc)
 	{
 		/// [EN] An actor without Position or Rotation is placed at the origin with no rotation.
 		/// [JP] Position や Rotation を持たない Actor は、原点に回転無しで置く。
 		const Position* position = actor.GetComponent<Position>();
+		const Pivot* pivot = actor.GetComponent<Pivot>();
 		const Rotation* rotation = actor.GetComponent<Rotation>();
+		const Scale* scale = actor.GetComponent<Scale>();
+
+		/// [EN] Position places the pivot point, while colliders are built around the actor's own origin, so the body goes to the origin: Position minus the pivot point scaled and rotated the same way TransformSystem does.
+		/// [JP] Position は基準点を配置するが、コライダーは Actor 自身の原点まわりに作られるので、ボディは原点に置く: Position から、TransformSystem と同じく拡縮・回転した基準点を引いた位置。
+		Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), (scale ? Matrix::CreateScale(Transform::Vector(*scale)) : Matrix::Identity) * Matrix::CreateFromQuaternion(rotation ? Transform::Quat(*rotation) : Quaternion::Identity)) : Vector3::Zero;
+		Vector3 origin = (position ? Transform::Vector(*position) : Vector3::Zero) - pivotOffset;
 
 		/// [EN] A Rect or Circle collider marks the actor as a 2D canvas actor.
 		/// [JP] Rect か Circle のコライダーがあれば、2D Canvas の Actor として扱う。
@@ -47,14 +58,14 @@ namespace SeedCore
 
 			/// [EN] Canvas Y points down and physics Y up, so Y and the canvas angle (the rotation about Z) are negated.
 			/// [JP] Canvas の Y は下向き、物理の Y は上向きなので、Y と Canvas の角度(Z 軸まわりの回転)の符号を反転する。
-			desc.position_ = position ? Vector3{ position->x_ / pixelsPerMeter, -position->y_ / pixelsPerMeter, 0.0f } : Vector3{ 0.0f, 0.0f, 0.0f };
+			desc.position_ = Vector3{ origin.x / pixelsPerMeter, -origin.y / pixelsPerMeter, 0.0f };
 			desc.rotation_ = rotation ? Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -Transform::Euler(*rotation).z) : Quaternion::Identity;
 		}
 		else
 		{
 			/// [EN] Rotation holds a normalized quaternion, passed to the body as is.
 			/// [JP] Rotation は正規化済みクォータニオンを持つので、そのままボディへ渡す。
-			desc.position_ = position ? Vector3{ position->x_, position->y_, position->z_ } : Vector3{ 0.0f, 0.0f, 0.0f };
+			desc.position_ = origin;
 			desc.rotation_ = rotation ? Transform::Quat(*rotation) : Quaternion::Identity;
 		}
 
