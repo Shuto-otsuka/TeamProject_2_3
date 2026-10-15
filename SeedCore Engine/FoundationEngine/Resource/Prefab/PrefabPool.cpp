@@ -17,7 +17,7 @@ namespace SeedCore
 	* 読み込み・解析する。アセットが不明であるか解析に失敗した場合は
 	* null ハンドルを返す。
 	*/
-	Handle<Prefab> PrefabPool::Load(Uint32 assetID, ResourceCache& cache)
+	Handle<PrefabBlueprint> PrefabPool::Load(Uint32 assetID, ResourceCache& cache)
 	{
 		auto it = loaded_.find(assetID);
 		if (it != loaded_.end())
@@ -28,14 +28,14 @@ namespace SeedCore
 		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
-			return Handle<Prefab>::null();
+			return Handle<PrefabBlueprint>::null();
 		}
 
-		Handle<Prefab> handle = pool_.Create();
-		Prefab* prefab = pool_.Get(handle);
+		Handle<PrefabBlueprint> handle = pool_.Create();
+		PrefabBlueprint* prefab = pool_.Get(handle);
 		if (!prefab)
 		{
-			return Handle<Prefab>::null();
+			return Handle<PrefabBlueprint>::null();
 		}
 
 		/// [EN] Parsing can throw (malformed JSON); treat any failure as "load failed" rather than propagating the exception.
@@ -45,13 +45,13 @@ namespace SeedCore
 			if (!prefab->Read(asset->fullpath_.c_str()))
 			{
 				SC_LOG_ERROR("Prefabファイルを開けませんでした: {}", asset->fullpath_.str());
-				return Handle<Prefab>::null();
+				return Handle<PrefabBlueprint>::null();
 			}
 		}
 		catch (...)
 		{
 			SC_LOG_ERROR("Prefabファイルの読み込みに失敗しました: {}", asset->fullpath_.str());
-			return Handle<Prefab>::null();
+			return Handle<PrefabBlueprint>::null();
 		}
 
 		loaded_[assetID] = handle;
@@ -69,7 +69,7 @@ namespace SeedCore
 	* handle が識別する Prefab へのポインタを返す。handle が無効/失効
 	* していれば nullptr を返す。
 	*/
-	Prefab* PrefabPool::Get(Handle<Prefab> handle)
+	PrefabBlueprint* PrefabPool::Get(Handle<PrefabBlueprint> handle)
 	{
 		return pool_.Get(handle);
 	}

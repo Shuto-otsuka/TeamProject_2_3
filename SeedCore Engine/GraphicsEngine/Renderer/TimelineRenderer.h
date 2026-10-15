@@ -7,7 +7,7 @@
 #include <GraphicsEngine/Model/ModelShader.h>
 #include <GraphicsEngine/Model/Culling/ModelCullingBuffer.h>
 #include <GraphicsEngine/Model/ModelRecord.h>
-#include <GraphicsEngine/System/SceneSystem.h>
+#include <GraphicsEngine/System/SceneConstantSystem.h>
 #include <GraphicsEngine/System/IndicesSystem.h>
 
 namespace SeedCore
@@ -25,7 +25,7 @@ namespace SeedCore
 	* Fully self-contained single-model preview renderer for the Timeline
 	* panel's 3D viewport. Deliberately shares NOTHING with ModelRenderer,
 	* IndicesSystem, or ModelTransformRenderer — its own instance/bone
-	* StructuredBuffers, its own FrameBuffer, its own SceneSystem, and its own
+	* StructuredBuffers, its own FrameBuffer, its own SceneConstantSystem, and its own
 	* ConstantIndices/ShaderResourceIndices constant buffers. This is not an
 	* optimization choice: those buffers are frame-ring (one physical slot
 	* per frame, re-written by every Update() call that frame), and the GPU
@@ -46,7 +46,7 @@ namespace SeedCore
 	* Timelineパネルの3Dビューポート用、完全に自己完結した単体モデル
 	* プレビューレンダラー。ModelRenderer、IndicesSystem、
 	* ModelTransformRendererとは意図的に何も共有しない —
-	* instance/boneのStructuredBuffer、FrameBuffer、SceneSystem、
+	* instance/boneのStructuredBuffer、FrameBuffer、SceneConstantSystem、
 	* ConstantIndices/ShaderResourceIndices定数バッファ、すべて専有する。これは
 	* 最適化上の選択ではない: これらのバッファはフレームリング(フレームあたり
 	* 物理スロット1つで、そのフレーム中のUpdate()呼び出しのたびに上書きされる)
@@ -115,7 +115,7 @@ namespace SeedCore
 		DescriptorHeap depthStencilViewHeap_;
 		ResourcePtr<FrameBuffer> frameBuffer_;
 
-		ResourcePtr<SceneSystem> sceneSystem_;
+		ResourcePtr<SceneConstantSystem> sceneSystem_;
 
 		ConstantIndices constantIndices_{};
 		ShaderResourceIndices shaderResourceIndices_{};

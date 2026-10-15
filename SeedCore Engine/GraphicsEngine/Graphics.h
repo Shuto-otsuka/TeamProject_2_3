@@ -20,7 +20,7 @@
 #include <GraphicsEngine/System/EffectSystem.h>
 #include <GraphicsEngine/System/ColliderSystem.h>
 #include <GraphicsEngine/System/ShapeSystem.h>
-#include <GraphicsEngine/System/SceneSystem.h>
+#include <GraphicsEngine/System/SceneConstantSystem.h>
 #include <GraphicsEngine/Texture/Compression/BC7CompressShader.h>
 
 namespace SeedCore
@@ -645,15 +645,15 @@ namespace SeedCore
 
 		/// [EN] Maintains the scene constants and GPU data for the editor view.
 		/// [JP] エディタービュー用のシーン定数と GPU データを管理する。
-		ResourcePtr<SceneSystem> editorSceneSystem_;
+		ResourcePtr<SceneConstantSystem> editorSceneSystem_;
 
 		/// [EN] Maintains the scene constants and GPU data for the game view.
 		/// [JP] ゲームビュー用のシーン定数と GPU データを管理する。
-		ResourcePtr<SceneSystem> gameSceneSystem_;
+		ResourcePtr<SceneConstantSystem> gameSceneSystem_;
 
 		/// [EN] Maintains the scene constants and GPU data for the canvas view.
 		/// [JP] キャンバスビュー用のシーン定数と GPU データを管理する。
-		ResourcePtr<SceneSystem> canvasSceneSystem_;
+		ResourcePtr<SceneConstantSystem> canvasSceneSystem_;
 
 		/// [EN] Updates movie resources before rendering consumes their current frame.
 		/// [JP] 描画が現在フレームを消費する前に、ムービーリソースを更新する。

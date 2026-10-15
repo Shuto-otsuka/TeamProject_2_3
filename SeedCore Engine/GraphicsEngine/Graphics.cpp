@@ -112,9 +112,9 @@ namespace SeedCore
 
 		/// [EN] Each independently rendered view owns separate scene constant-buffer state.
 		/// [JP] 独立して描画される各ビューは、個別のシーン定数バッファ状態を所有する。
-		editorSceneSystem_ = MakePtr<SceneSystem>(context_->GetDevice(), bindlessHeap_.get());
-		gameSceneSystem_ = MakePtr<SceneSystem>(context_->GetDevice(), bindlessHeap_.get());
-		canvasSceneSystem_ = MakePtr<SceneSystem>(context_->GetDevice(), bindlessHeap_.get());
+		editorSceneSystem_ = MakePtr<SceneConstantSystem>(context_->GetDevice(), bindlessHeap_.get());
+		gameSceneSystem_ = MakePtr<SceneConstantSystem>(context_->GetDevice(), bindlessHeap_.get());
+		canvasSceneSystem_ = MakePtr<SceneConstantSystem>(context_->GetDevice(), bindlessHeap_.get());
 
 		/// [EN] Screen overlays load their pipelines and fixed images up front; the boot screen's images come from bootConfig.
 		/// [JP] 画面オーバーレイはパイプラインと固定画像を先に読み込む。ブート画面の画像は bootConfig から与える。

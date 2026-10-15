@@ -25,7 +25,7 @@
 #include <FoundationEngine/World/Tag/TagRegistry.h>
 #include <FoundationEngine/World/Layer/LayerRegistry.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/Prefab/Prefab.h>
+#include <FoundationEngine/Resource/Prefab/PrefabBlueprint.h>
 #include <FoundationEngine/Time/GameTimer.h>
 #include <GraphicsEngine/Resource/GraphicsModule.h>
 #include <GraphicsEngine/Model/Mesh.h>
@@ -459,8 +459,8 @@ namespace SeedCore
 
 		if (ImGui::Button("Prefab に適用"))
 		{
-			Handle<Prefab> handle = context_.world_.resource_->GetPrefabPool().Load(assetID, *context_.world_.resource_);
-			Prefab* prefab = context_.world_.resource_->GetPrefabPool().Get(handle);
+			Handle<PrefabBlueprint> handle = context_.world_.resource_->GetPrefabPool().Load(assetID, *context_.world_.resource_);
+			PrefabBlueprint* prefab = context_.world_.resource_->GetPrefabPool().Get(handle);
 			if (prefab)
 			{
 				prefab->Capture(actor);

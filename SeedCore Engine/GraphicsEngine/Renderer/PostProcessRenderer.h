@@ -223,13 +223,13 @@ namespace SeedCore
 			/// [EN] This view's PostProcessConstantBuffer (tuning scalars only,
 			///      no resource indices - see PostProcess/PostProcess.hlsli).
 			///      constantIndicesSystem's postProcessIndex_ points at this
-			///      buffer, same pattern as SceneSystem/WeatherSystem's own
+			///      buffer, same pattern as SceneConstantSystem/WeatherSystem's own
 			///      independently-reached constant buffers.
 			/// [JP] このビューの PostProcessConstantBuffer(チューニング用
 			///      スカラーのみ、リソースインデックスは含まない -
 			///      PostProcess/PostProcess.hlsli 参照)。constantIndicesSystem の
 			///      postProcessIndex_ がこのバッファを指す -
-			///      SceneSystem/WeatherSystem 自前の独立到達型定数バッファと
+			///      SceneConstantSystem/WeatherSystem 自前の独立到達型定数バッファと
 			///      同じ形。
 			ResourcePtr<StaticConstantBuffer<PostProcessConstantBuffer>> constantBuffer_;
 

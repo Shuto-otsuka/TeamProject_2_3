@@ -91,6 +91,23 @@ namespace SeedCore
 		return *gameTimer_;
 	}
 
+	/**
+	* [EN]
+	* Returns the game timer set by the host.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ホストが設定したゲームタイマーを返す。
+	*/
+	GameTimer& World::Timer()
+	{
+		/// [EN] Reading the timer before the host has set it is a setup mistake, so it is caught here.
+		/// [JP] ホストが設定する前にタイマーを読むのは初期化の誤りなので、ここで捕まえる。
+		SC_ASSERT(gameTimer_ != nullptr, "World にゲームタイマーが設定されていません。");
+		return *gameTimer_;
+	}
+
 	// ============================================================
 	// Entity
 	// ============================================================

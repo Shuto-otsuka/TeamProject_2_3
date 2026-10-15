@@ -9,7 +9,7 @@
 #include <GraphicsEngine/Model/Culling/ModelCullingBuffer.h>
 #include <GraphicsEngine/Model/ModelRecord.h>
 #include <GraphicsEngine/Model/SoftbodyMesh.h>
-#include <GraphicsEngine/System/SceneSystem.h>
+#include <GraphicsEngine/System/SceneConstantSystem.h>
 
 namespace SeedCore
 {

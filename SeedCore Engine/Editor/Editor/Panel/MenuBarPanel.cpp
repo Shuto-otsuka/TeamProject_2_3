@@ -20,7 +20,7 @@
 #include <GraphicsEngine/Model/Animation/Animator.h>
 #include <FoundationEngine/Log/Notice.h>
 #include <FoundationEngine/Log/Warning.h>
-#include <FoundationEngine/Resource/Scene/Scene.h>
+#include <FoundationEngine/Resource/Scene/SceneSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/Time/GameTimer.h>
@@ -349,7 +349,7 @@ namespace SeedCore
 		case PendingSceneOp::OpenPath:
 		{
 			SceneVisual visual;
-			if (!Scene::Load(*context_.world_.world_, *context_.world_.resource_, path, &visual))
+			if (!context_.world_.sceneSystem_->Load(path, &visual))
 			{
 				SC_LOG_WARNING("シーンの読み込みに失敗しました: {}", path.string());
 				break;
@@ -367,7 +367,7 @@ namespace SeedCore
 		case PendingSceneOp::OpenAsset:
 		{
 			SceneVisual visual;
-			if (!Scene::Load(*context_.world_.world_, *context_.world_.resource_, assetID, &visual))
+			if (!context_.world_.sceneSystem_->Load(assetID, &visual))
 			{
 				SC_LOG_WARNING("シーンの読み込みに失敗しました(assetID: {})", assetID);
 				break;
@@ -426,7 +426,7 @@ namespace SeedCore
 			return;
 		}
 
-		if (!Scene::Save(*context_.world_.world_, *context_.world_.resource_, savePath, SceneVisual{ SerializeRaytracingContext(context_.sceneVisual_.raytracing_), SerializeScreenSpaceContext(context_.sceneVisual_.screenSpace_), SerializeRasterizationContext(context_.sceneVisual_.rasterization_) }))
+		if (!context_.world_.sceneSystem_->Save(savePath, SceneVisual{ SerializeRaytracingContext(context_.sceneVisual_.raytracing_), SerializeScreenSpaceContext(context_.sceneVisual_.screenSpace_), SerializeRasterizationContext(context_.sceneVisual_.rasterization_) }))
 		{
 			SC_LOG_WARNING("シーンの保存に失敗しました: {}", savePath.string());
 			return;
@@ -445,7 +445,7 @@ namespace SeedCore
 			return;
 		}
 
-		if (!Scene::Save(*context_.world_.world_, *context_.world_.resource_, context_.scene_.path_.FullPath(), SceneVisual{ SerializeRaytracingContext(context_.sceneVisual_.raytracing_), SerializeScreenSpaceContext(context_.sceneVisual_.screenSpace_), SerializeRasterizationContext(context_.sceneVisual_.rasterization_) }))
+		if (!context_.world_.sceneSystem_->Save(context_.scene_.path_.FullPath(), SceneVisual{ SerializeRaytracingContext(context_.sceneVisual_.raytracing_), SerializeScreenSpaceContext(context_.sceneVisual_.screenSpace_), SerializeRasterizationContext(context_.sceneVisual_.rasterization_) }))
 		{
 			SC_LOG_WARNING("シーンの上書き保存に失敗しました: {}", context_.scene_.path_.FullPath().string());
 			return;

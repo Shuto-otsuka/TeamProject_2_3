@@ -83,7 +83,27 @@ namespace SeedCore
 	*/
 	void SceneTransitionSystem::LoadScene(World& world, ResourceCache& cache, JobExecutor& executor, const std::filesystem::path& targetScene, const std::filesystem::path& loadingScene)
 	{
-		Scene::Load(world, cache, loadingScene);
+		/// [EN] Resolve loadingScene as an asset name first (a bare "Foo.scene" is fine), falling back to the literal path.
+		/// [JP] loadingScene をまずアセット名として解決し("Foo.scene" のような単なるファイル名でもよい)、見つからなければ文字通りのパスを使う。
+		std::filesystem::path resolvedLoadingScene = loadingScene;
+		Uint32 loadingSceneAssetID = cache.GetAssetID(String(loadingScene.string()));
+		if (loadingSceneAssetID != 0)
+		{
+			AssetRecord* loadingSceneAsset = cache.GetAsset(loadingSceneAssetID);
+			if (loadingSceneAsset)
+			{
+				resolvedLoadingScene = std::filesystem::path(loadingSceneAsset->fullpath_.c_str());
+			}
+		}
+
+		/// [EN] The loading scene replaces the current one outright and is itself replaced once the target finishes loading.
+		/// [JP] ローディングシーンは現在のシーンをそのまま置き換え、ターゲットの読み込みが終わればそれ自身も置き換えられる。
+		SceneBlueprint loadingSceneBlueprint;
+		if (loadingSceneBlueprint.Read(resolvedLoadingScene))
+		{
+			world.DestroyActors();
+			loadingSceneBlueprint.Instantiate(world, cache);
+		}
 
 		BackgroundLoad(cache, executor, targetScene);
 		state_ = State::WaitingBackground;
@@ -197,11 +217,11 @@ namespace SeedCore
 			}
 		}
 
-		Scene loadingSceneObj;
+		SceneBlueprint loadingSceneBlueprint;
 		loadingSceneActors_.clear();
-		if (loadingSceneObj.Read(resolvedLoadingScene))
+		if (loadingSceneBlueprint.Read(resolvedLoadingScene))
 		{
-			loadingSceneActors_ = loadingSceneObj.Instantiate(world, cache);
+			loadingSceneActors_ = loadingSceneBlueprint.Instantiate(world, cache);
 		}
 
 		BackgroundLoad(cache, executor, targetScene);
@@ -399,7 +419,7 @@ namespace SeedCore
 	* いればそのシーンを、そうでなければ nullptr を返し、同時にその状態を
 	* 取り下げる。これにより各切り替えはちょうど1回だけ観測される。
 	*/
-	const Scene* SceneTransitionSystem::ConsumeSwitchedScene()
+	const SceneBlueprint* SceneTransitionSystem::ConsumeSwitchedScene()
 	{
 		if (!sceneSwitched_)
 		{

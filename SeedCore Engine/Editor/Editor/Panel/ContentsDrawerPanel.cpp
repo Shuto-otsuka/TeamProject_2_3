@@ -11,7 +11,7 @@
 #include <FoundationEngine/File/FileDialog.h>
 #include <FoundationEngine/Log/Notice.h>
 #include <FoundationEngine/Log/Warning.h>
-#include <FoundationEngine/Resource/Prefab/Prefab.h>
+#include <FoundationEngine/Resource/Prefab/PrefabSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/Resource/ResourceSync.h>
 #include <FoundationEngine/World/Actor/Actor.h>
@@ -250,7 +250,7 @@ namespace SeedCore
 					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("HIERARCHY_ACTOR"))
 					{
 						Actor dropped = *static_cast<const Actor*>(payload->Data);
-						const FilePath savedPath(Prefab::SaveToDirectory(dropped, SelectedDirectory().FullPath()), SelectedDirectory().RootPath());
+						const FilePath savedPath(PrefabSystem::SaveToDirectory(dropped, SelectedDirectory().FullPath()), SelectedDirectory().RootPath());
 						if (!savedPath.Empty())
 						{
 							/// [EN] Reload at once rather than waiting for the watch, because the new Prefab's ID is needed right now.

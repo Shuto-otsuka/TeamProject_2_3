@@ -9,7 +9,8 @@
 #include <FoundationEngine/World/Command/ActorCommand.h>
 #include <FoundationEngine/World/Command/CompoundCommand.h>
 #include <FoundationEngine/World/Actor/Blueprint.h>
-#include <FoundationEngine/Resource/Prefab/Prefab.h>
+#include <FoundationEngine/Resource/Prefab/PrefabBlueprint.h>
+#include <FoundationEngine/Resource/Prefab/PrefabSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/File/FileDialog.h>
 #include <GraphicsEngine/Camera/EditorCamera.h>
@@ -88,8 +89,8 @@ namespace SeedCore
 				if (const ImGuiPayload* prefabPayload = ImGui::AcceptDragDropPayload("ASSET_PREFAB"))
 				{
 					Uint32 assetID = *static_cast<const Uint32*>(prefabPayload->Data);
-					Handle<Prefab> handle = context_.world_.resource_->GetPrefabPool().Load(assetID, *context_.world_.resource_);
-					Prefab* prefab = context_.world_.resource_->GetPrefabPool().Get(handle);
+					Handle<PrefabBlueprint> handle = context_.world_.resource_->GetPrefabPool().Load(assetID, *context_.world_.resource_);
+					PrefabBlueprint* prefab = context_.world_.resource_->GetPrefabPool().Get(handle);
 					if (prefab)
 					{
 						prefab->Instantiate(*context_.world_.world_, *context_.world_.resource_, Actor(), assetID);
@@ -360,8 +361,8 @@ namespace SeedCore
 			if (const ImGuiPayload* prefabPayload = ImGui::AcceptDragDropPayload("ASSET_PREFAB"))
 			{
 				Uint32 assetID = *static_cast<const Uint32*>(prefabPayload->Data);
-				Handle<Prefab> handle = context_.world_.resource_->GetPrefabPool().Load(assetID, *context_.world_.resource_);
-				Prefab* prefab = context_.world_.resource_->GetPrefabPool().Get(handle);
+				Handle<PrefabBlueprint> handle = context_.world_.resource_->GetPrefabPool().Load(assetID, *context_.world_.resource_);
+				PrefabBlueprint* prefab = context_.world_.resource_->GetPrefabPool().Get(handle);
 				if (prefab)
 				{
 					prefab->Instantiate(*context_.world_.world_, *context_.world_.resource_, actor, assetID);
@@ -462,7 +463,7 @@ namespace SeedCore
 			return;
 		}
 
-		if (!Prefab::Save(actor, savedPath))
+		if (!PrefabSystem::Save(actor, savedPath))
 		{
 			return;
 		}

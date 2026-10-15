@@ -4,7 +4,7 @@
 #include <FoundationEngine/World/Command/ActorCommand.h>
 #include <FoundationEngine/World/Command/CompoundCommand.h>
 #include <FoundationEngine/World/Actor/Blueprint.h>
-#include <FoundationEngine/Resource/Prefab/Prefab.h>
+#include <FoundationEngine/Resource/Prefab/PrefabBlueprint.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 
 namespace SeedCore
@@ -62,7 +62,7 @@ namespace SeedCore
 				continue;
 			}
 
-			Prefab prefab;
+			PrefabBlueprint prefab;
 			prefab.Capture(actor);
 
 			Actor duplicate = prefab.Instantiate(*context.world_.world_, *context.world_.resource_, actor.Parent(), actor.PrefabID());

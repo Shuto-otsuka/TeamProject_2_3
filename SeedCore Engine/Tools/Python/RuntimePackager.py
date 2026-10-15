@@ -23,11 +23,11 @@ NO_META_EXTENSIONS = {".h", ".cpp", ".hlsli", ".hlsl"}
 # Scene::Change の第2引数はローディングシーン版ではパス/ID、フェード版では秒数なので、
 # 解決できなかった場合も警告しない。
 ASSET_ENTRY_ARGUMENTS = {
-    "Scene::GetAsset": (0,),
+    "Scene::AssetID": (0,),
     "Prefab::Spawn": (0,),
     "Scene::Change": (0, 1),
 }
-ASSET_ENTRY_CALL_PATTERN = re.compile(r'\b(Scene::GetAsset|Scene::Change|Prefab::Spawn)\s*\(')
+ASSET_ENTRY_CALL_PATTERN = re.compile(r'\b(Scene::AssetID|Scene::Change|Prefab::Spawn)\s*\(')
 
 # 引数が文字列リテラル1つ、またはそれを String(...) / String::intern(...) /
 # std::filesystem::path(...) のような変換で包んだだけのものかを判定するパターン。
@@ -286,7 +286,7 @@ def strip_comments(content):
     """
     C++ の // 行コメント / * ブロックコメントだけを除去する
     （文字列/文字リテラルの中身はそのまま残す）。コメント中に書かれた
-    Asset パス文字列が Scene::GetAsset(...) 呼び出しとして誤検出される
+    Asset パス文字列が Scene::AssetID(...) 呼び出しとして誤検出される
     のを防ぐための前処理。行番号がずれないよう、コメントも改行だけは
     残して除去する。
     """
@@ -437,7 +437,7 @@ def split_call_arguments(content, open_index):
 def scan_source_for_asset_references(user_project_root, relpath_to_guid, filename_to_guids, guid_to_path):
     """
     UserProject 以下の .cpp/.h を走査し、ASSET_ENTRY_ARGUMENTS の入口
-    (Scene::GetAsset / Scene::Change / Prefab::Spawn) に渡される Asset 引数を
+    (Scene::AssetID / Scene::Change / Prefab::Spawn) に渡される Asset 引数を
     静的に解決する。引数は括弧の対応を取って切り出し、次の形を解決できる:
       - 文字列リテラル（String(...) 等の変換で包まれていてもよい）
       - 文字列リテラルで初期化/代入される変数・メンバ・定数、#define 定数
@@ -533,7 +533,7 @@ def collect_referenced_asset_ids(scene_paths, payload_map, guid_to_path, relpath
       - ネストされたプレハブ (nestedPrefabAssetID) と派生元プレハブ (basePrefabAssetID)
       - インスペクタで設定された String フィールドのうち、既知 Asset の
         パス/ファイル名に一致する値（スクリプトが Scene::Change / Prefab::Spawn /
-        Scene::GetAsset へ渡す名前をインスペクタで持つ使い方）
+        Scene::AssetID へ渡す名前をインスペクタで持つ使い方）
     集めた ID のうち .scene/.prefab のものは、Spawner 経由でもコード経由でも
     同様に中身まで辿り、新たな参照が出なくなるまで繰り返す。
     Asset ID は Uint32 だが、シーン JSON の "int" は符号付きで保存されるため

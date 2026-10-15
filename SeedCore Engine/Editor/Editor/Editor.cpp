@@ -157,7 +157,7 @@ namespace SeedCore
 
 				/// [EN] It is not the pool's scratch, because a transition may be using that one at the same moment.
 				/// [JP] プールの作業用インスタンスは使わない。同じ瞬間に遷移処理がそれを使っていることがあるため。
-				Scene arriving;
+				SceneBlueprint arriving;
 				if (!arriving.Read(followedScenePath_.FullPath()))
 				{
 					continue;

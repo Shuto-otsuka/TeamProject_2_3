@@ -6,7 +6,6 @@
 #include <PhysicsEngine/Physics/PhysicsSystem.h>
 #include <AudioEngine/Audio/AudioSystem.h>
 #include <FoundationEngine/Resource/Gateway.h>
-#include <FoundationEngine/Resource/Prefab/Prefab.h>
 #include <FoundationEngine/World/Layer/LayerRegistry.h>
 
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
@@ -68,11 +67,12 @@ namespace SeedCore
 		audioModule_->Install(*resource_);
 		resource_->Async();
 
-		Scene::Initialize(*world_, *resource_, *executor_);
-		Prefab::Initialize(*world_, *resource_);
+		sceneSystem_ = MakePtr<SceneSystem>(*world_, *resource_, *executor_);
+		prefabSystem_ = MakePtr<PrefabSystem>(*world_, *resource_);
 
 		editorContext_.world_.world_ = world_.get();
 		editorContext_.world_.resource_ = resource_.get();
+		editorContext_.world_.sceneSystem_ = sceneSystem_.get();
 		editorContext_.world_.timer_ = &gameTimer_;
 		editorContext_.world_.system_ = system_.get();
 		editorContext_.view_.editor_.camera_ = &editorCamera_;
@@ -143,7 +143,7 @@ namespace SeedCore
 		{
 			std::filesystem::path lastScenePath = editorConfig_.lastScenePath_.str();
 			SceneVisual visual;
-			if (Scene::Load(*world_, *resource_, lastScenePath, &visual))
+			if (sceneSystem_->Load(lastScenePath, &visual))
 			{
 				editorContext_.sceneVisual_.raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
 				editorContext_.sceneVisual_.screenSpace_ = DeserializeScreenSpaceContext(visual.screenSpace_);
@@ -200,6 +200,18 @@ namespace SeedCore
 		{
 			editor_.reset();
 			editor_ = nullptr;
+		}
+
+		if (sceneSystem_)
+		{
+			sceneSystem_.reset();
+			sceneSystem_ = nullptr;
+		}
+
+		if (prefabSystem_)
+		{
+			prefabSystem_.reset();
+			prefabSystem_ = nullptr;
 		}
 
 		if (resource_)
@@ -341,9 +353,9 @@ namespace SeedCore
 
 				if (gameTimer_.Playing())
 				{
-					Scene::Update(gameTimer_.ScaledDeltaTime());
+					sceneSystem_->Update(gameTimer_.ScaledDeltaTime());
 
-					if (const Scene* switchedScene = Scene::ConsumeSwitchedScene())
+					if (const SceneBlueprint* switchedScene = sceneSystem_->ConsumeSwitchedScene())
 					{
 						editorContext_.sceneVisual_.raytracing_ = DeserializeRaytracingContext(switchedScene->Visual().raytracing_);
 						editorContext_.sceneVisual_.screenSpace_ = DeserializeScreenSpaceContext(switchedScene->Visual().screenSpace_);

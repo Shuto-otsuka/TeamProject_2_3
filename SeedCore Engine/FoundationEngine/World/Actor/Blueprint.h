@@ -281,14 +281,14 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Recursively captures actor and every descendant into outNodes as
-	* a flat, parent-index-linked array (used by both Scene::Capture
-	* and Prefab::Capture). Returns actor's own index within outNodes.
+	* a flat, parent-index-linked array (used by both SceneBlueprint::Capture
+	* and PrefabBlueprint::Capture). Returns actor's own index within outNodes.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* actor とその全子孫を、フラットな親インデックス連結配列として
-	* outNodes へ再帰的に取得する（Scene::Capture と Prefab::Capture の
+	* outNodes へ再帰的に取得する（SceneBlueprint::Capture と PrefabBlueprint::Capture の
 	* 両方から使われる）。actor 自身の outNodes 内でのインデックスを返す。
 	*/
 	SEEDCORE_API Int CaptureActorNode(Actor actor, Int parentIndex, DynamicArray<BlueprintNode>& outNodes);
@@ -296,7 +296,7 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Recreates a single captured node as a live Actor in world (used by
-	* both Scene::Instantiate and Prefab::Instantiate): either by
+	* both SceneBlueprint::Instantiate and PrefabBlueprint::Instantiate): either by
 	* instantiating a referenced nested prefab, or by creating a fresh
 	* actor and restoring its component fields. Applies the node's
 	* transform/active/tags and reparents under parentActor. Returns the
@@ -306,7 +306,7 @@ namespace SeedCore
 	*
 	* [JP]
 	* 取得済みの単一ノードを world 内の生きた Actor として再生成する
-	* （Scene::Instantiate と Prefab::Instantiate の両方から使われる）:
+	* （SceneBlueprint::Instantiate と PrefabBlueprint::Instantiate の両方から使われる）:
 	* 参照されているネストされたプレハブをインスタンス化するか、新しい
 	* actor を生成してそのコンポーネントフィールドを復元する。ノードの
 	* トランスフォーム/アクティブ状態/タグを適用し、parentActor の下へ

@@ -1,6 +1,6 @@
 #pragma once
 #include <FoundationEngine/Prelude.h>
-#include <FoundationEngine/Resource/Scene/Scene.h>
+#include <FoundationEngine/Resource/Scene/SceneBlueprint.h>
 #include <FoundationEngine/JobSystem/JobTaskflow.h>
 
 namespace SeedCore
@@ -234,7 +234,7 @@ namespace SeedCore
 		* 覆いであり、切り替え先のシーンではないため。返したシーンは次の
 		* 遷移が始まるまで有効。
 		*/
-		[[nodiscard]] const Scene* ConsumeSwitchedScene();
+		[[nodiscard]] const SceneBlueprint* ConsumeSwitchedScene();
 
 	private:
 		/**
@@ -313,7 +313,7 @@ namespace SeedCore
 
 		/// [EN] The target scene's data - read in the background for asynchronous transitions, or directly for synchronous ones - and, once instantiated, the scene ConsumeSwitchedScene reports.
 		/// [JP] ターゲットシーンのデータ - 非同期遷移ではバックグラウンドで、同期遷移では直接読み込まれる - で、インスタンス化後は ConsumeSwitchedScene が報告するシーン。
-		Scene pendingScene_;
+		SceneBlueprint pendingScene_;
 
 		/// [EN] The small taskflow that performs the background scene load.
 		/// [JP] バックグラウンドでのシーン読み込みを実行する、小さなタスクフロー。

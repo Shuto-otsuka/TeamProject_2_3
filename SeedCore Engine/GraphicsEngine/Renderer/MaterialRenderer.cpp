@@ -30,7 +30,7 @@ namespace SeedCore
 		depthStencilViewHeap_.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1);
 		frameBuffer_ = MakePtr<FrameBuffer>(device, &renderTargetViewHeap_, bindlessHeap, width, height, DXGI_FORMAT_R16G16B16A16_FLOAT, &depthStencilViewHeap_, 0.45f, 0.65f, 0.9f, 1.0f);
 
-		sceneSystem_ = MakePtr<SceneSystem>(device, bindlessHeap);
+		sceneSystem_ = MakePtr<SceneConstantSystem>(device, bindlessHeap);
 
 		constantIndicesBuffer_ = MakePtr<StaticConstantBuffer<ConstantIndices>>(device, bindlessHeap);
 		shaderResourceIndicesBuffer_ = MakePtr<StaticConstantBuffer<ShaderResourceIndices>>(device, bindlessHeap);
@@ -52,6 +52,7 @@ namespace SeedCore
 	{
 		ModelResource& modelResource = *resources.modelResource_;
 		MaterialResource& materialResource = *resources.materialResource_;
+		TextureResource& textureResource = *resources.textureResource_;
 
 		opaqueInstances_.clear();
 		transparentInstances_.clear();
@@ -204,11 +205,11 @@ namespace SeedCore
 						instanceData.extension_.unlit_ = material.khr_.unlit_.unlit_ != 0 ? 1.0f : 0.0f;
 						instanceData.shading_.shadingModel_ = material.khr_.unlit_.unlit_ != 0 ? static_cast<Uint>(ShadingModel::Unlit) : static_cast<Uint>(material.shadingModel_);
 
-						instanceData.texture_.baseColorTextureIndex_ = crister->TextureBindlessIndex(material.baseColorTextureIndex_);
-						instanceData.texture_.normalTextureIndex_ = crister->TextureBindlessIndex(material.normalTextureIndex_);
-						instanceData.texture_.metallicRoughnessTextureIndex_ = crister->TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
-						instanceData.texture_.emissiveTextureIndex_ = crister->TextureBindlessIndex(material.emissiveTextureIndex_);
-						instanceData.texture_.occlusionTextureIndex_ = crister->TextureBindlessIndex(material.occlusionTextureIndex_);
+						instanceData.texture_.baseColorTextureIndex_ = material.baseColorTextureAssetID_ != 0 ? textureResource.GetID(material.baseColorTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.baseColorTextureIndex_);
+						instanceData.texture_.normalTextureIndex_ = material.normalTextureAssetID_ != 0 ? textureResource.GetID(material.normalTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.normalTextureIndex_);
+						instanceData.texture_.metallicRoughnessTextureIndex_ = material.metallicRoughnessTextureAssetID_ != 0 ? textureResource.GetID(material.metallicRoughnessTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
+						instanceData.texture_.emissiveTextureIndex_ = material.emissiveTextureAssetID_ != 0 ? textureResource.GetID(material.emissiveTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.emissiveTextureIndex_);
+						instanceData.texture_.occlusionTextureIndex_ = material.occlusionTextureAssetID_ != 0 ? textureResource.GetID(material.occlusionTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.occlusionTextureIndex_);
 						instanceData.extension_.specularTextureIndex_ = crister->TextureBindlessIndex(material.khr_.specular_.specularTextureIndex_);
 						instanceData.extension_.specularColorTextureIndex_ = crister->TextureBindlessIndex(material.khr_.specular_.specularColorTextureIndex_);
 						instanceData.extension_.clearCoatTextureIndex_ = crister->TextureBindlessIndex(material.khr_.clearCoat_.clearCoatTextureIndex_);

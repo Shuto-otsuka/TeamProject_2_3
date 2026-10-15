@@ -7,7 +7,7 @@
 #include <GraphicsEngine/Model/ModelShader.h>
 #include <GraphicsEngine/Model/Culling/ModelCullingBuffer.h>
 #include <GraphicsEngine/Model/ModelRecord.h>
-#include <GraphicsEngine/System/SceneSystem.h>
+#include <GraphicsEngine/System/SceneConstantSystem.h>
 #include <GraphicsEngine/System/IndicesSystem.h>
 
 namespace SeedCore
@@ -25,7 +25,7 @@ namespace SeedCore
 	* Self-contained single-model material preview renderer for the Material
 	* Viewer panel's 3D viewport. Same isolation model as
 	* ModelTransformRenderer (own instance/bone StructuredBuffers, FrameBuffer,
-	* SceneSystem, constant buffers - see that class's comment for why the
+	* SceneConstantSystem, constant buffers - see that class's comment for why the
 	* frame-ring buffers can't be shared). Renders meshAssetId's mesh with one
 	* Surface (the ".material" surfaceAssetId, or the mesh's own embedded
 	* surface per submesh when 0) applied, at bind pose, via the unlit
@@ -36,7 +36,7 @@ namespace SeedCore
 	* [JP]
 	* マテリアルビューアパネルの3Dビューポート用、自己完結した単体モデル
 	* マテリアルプレビューレンダラー。ModelTransformRenderer と同じ隔離
-	* モデル(instance/bone の StructuredBuffer、FrameBuffer、SceneSystem、
+	* モデル(instance/bone の StructuredBuffer、FrameBuffer、SceneConstantSystem、
 	* 定数バッファをすべて専有 - フレームリングバッファを共有できない理由は
 	* そのクラスのコメント参照)。meshAssetId のメッシュを、1つの Surface
 	* (".material" の surfaceAssetId、0 なら submesh ごとにメッシュ内蔵の
@@ -91,7 +91,7 @@ namespace SeedCore
 		DescriptorHeap depthStencilViewHeap_;
 		ResourcePtr<FrameBuffer> frameBuffer_;
 
-		ResourcePtr<SceneSystem> sceneSystem_;
+		ResourcePtr<SceneConstantSystem> sceneSystem_;
 
 		ConstantIndices constantIndices_{};
 		ShaderResourceIndices shaderResourceIndices_{};

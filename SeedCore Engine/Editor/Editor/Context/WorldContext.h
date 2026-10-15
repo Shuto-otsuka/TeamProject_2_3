@@ -5,6 +5,7 @@ namespace SeedCore
 {
 	class GameTimer;
 	class ResourceCache;
+	class SceneSystem;
 	class SystemScheduler;
 	class World;
 
@@ -28,6 +29,10 @@ namespace SeedCore
 		/// [EN] Asset registry and resource caches.
 		/// [JP] アセットの登録簿とリソースのキャッシュ。
 		ResourceCache* resource_ = nullptr;
+
+		/// [EN] Loads, saves and switches the scenes of the world being edited.
+		/// [JP] 編集中のワールドのシーンを読み込み、保存し、切り替える。
+		SceneSystem* sceneSystem_ = nullptr;
 
 		/// [EN] Game clock driving Play, Pause and Stop.
 		/// [JP] Play・一時停止・停止を駆動するゲームの時計。
