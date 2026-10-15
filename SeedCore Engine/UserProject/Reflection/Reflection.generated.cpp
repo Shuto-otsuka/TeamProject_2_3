@@ -10,6 +10,7 @@
 #include <UserProject/Script/LaserController.h>
 #include <UserProject/Script/PendulumController.h>
 #include <UserProject/Script/PlayerController.h>
+#include <UserProject/Script/StageSelectButtonController.h>
 
 extern "C" int _force_reflection_BulletController = 0;
 extern "C" int _force_reflection_BulletNaviController = 0;
@@ -21,6 +22,7 @@ extern "C" int _force_reflection_GoalSystem = 0;
 extern "C" int _force_reflection_LaserController = 0;
 extern "C" int _force_reflection_PendulumController = 0;
 extern "C" int _force_reflection_PlayerController = 0;
+extern "C" int _force_reflection_StageSelectButtonController = 0;
 
 namespace SeedCore
 {
@@ -242,6 +244,26 @@ namespace SeedCore
 			}
 		};
 		static Register_PlayerController global_PlayerController_register;
+
+		// ---- UserProject/Script/StageSelectButtonController.h ----
+		struct Register_StageSelectButtonController
+		{
+			Register_StageSelectButtonController()
+			{
+				ReflectionRegistry::Register(String("StageSelectButtonController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					StageSelectButtonController& obj = *static_cast<StageSelectButtonController*>(ptr);
+					outInfo.push_back({ String("stageNumber"), offsetof(StageSelectButtonController, stageNumber), AttributeType::Int });
+					outInfo.push_back({ String("onCursorColor"), offsetof(StageSelectButtonController, onCursorColor), AttributeType::Color });
+					outInfo.push_back({ String("clickedColor"), offsetof(StageSelectButtonController, clickedColor), AttributeType::Color });
+					outInfo.push_back({ String("colorChangeSpeed"), offsetof(StageSelectButtonController, colorChangeSpeed), AttributeType::Float });
+					outInfo.push_back({ String("clickedSize"), offsetof(StageSelectButtonController, clickedSize), AttributeType::Float });
+					outInfo.push_back({ String("onCursorSize"), offsetof(StageSelectButtonController, onCursorSize), AttributeType::Float });
+					outInfo.push_back({ String("sizeChangeSpeed"), offsetof(StageSelectButtonController, sizeChangeSpeed), AttributeType::Float });
+					outInfo.push_back({ String("sceneChangeWaitTime"), offsetof(StageSelectButtonController, sceneChangeWaitTime), AttributeType::Float });
+				});
+			}
+		};
+		static Register_StageSelectButtonController global_StageSelectButtonController_register;
 
 		struct RegisterEnum_MoveType
 		{

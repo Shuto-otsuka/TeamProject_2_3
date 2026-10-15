@@ -20,6 +20,8 @@ private:
 	SeedCore::Rotation* rotation;
 	SeedCore::Rigidbody* rigidbody;
 	SeedCore::Position* position;
+	SeedCore::AngularVelocity* angularVelocity;
+	SeedCore::LinearVelocity* linearVelocity;
 
 	bool isFowardRotate = true;
 

@@ -32,6 +32,8 @@ void PlayerController::OnStart()
     }
 
     defaultGravity = myCharacterController->gravityScale_;
+    //最初はチェックポイントの位置をスタート地点にする
+    checkPointPosition = SeedCore::Transform::Vector(*position);
 }
 
 void PlayerController::OnTick(float elapsedTime)
@@ -397,9 +399,8 @@ void PlayerController::UpdateFallJudge(float elapsedTime)
 {
     if (position->y_ < deadPosY)
     {
-        //落下のため死亡
-        //とりあえずシーン読み込みなおすだけ
-        SeedCore::Scene::Change("Sakatyan.scene");
+        //落下のためチェックポイントから再開
+        myCharacterController->Teleport(checkPointPosition);
     }
 }
 
@@ -436,7 +437,7 @@ void PlayerController::UpdateInputReset(float elapsedTime)
         resetInputTimer += elapsedTime;
         //一定時間でやり直し
         if(resetInputTimer >= resetInputTime)
-            SeedCore::Scene::Change("Sakatyan.scene");
+            SeedCore::Scene::Change("Sakatyan.scene");//今のシーン名取得する方法分からんからいったんサンプルシーン
     }
    
     if (SeedCore::Input::KeyState(SeedCore::Input::Key::R, SeedCore::Input::OnReleased))

@@ -54,6 +54,7 @@
 #include <PhysicsEngine/Joint/SpringJoint.h>
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
+#include <Runtime/enc_temp_folder/1793738ea189908e154fe2c8568b3d5/StageSelectButtonController.h>
 
 extern "C" int _force_reflection_AudioListener = 0;
 extern "C" int _force_reflection_AudioSource = 0;
@@ -131,6 +132,7 @@ extern "C" int _force_reflection_SliderJoint = 0;
 extern "C" int _force_reflection_SpringJoint = 0;
 extern "C" int _force_reflection_Rigidbody = 0;
 extern "C" int _force_reflection_Softbody = 0;
+extern "C" int _force_reflection_StageSelectButtonController = 0;
 
 namespace SeedCore
 {
@@ -3711,6 +3713,21 @@ namespace SeedCore
 			}
 		};
 		static Register_Softbody global_Softbody_register;
+
+		// ---- Runtime/enc_temp_folder/1793738ea189908e154fe2c8568b3d5/StageSelectButtonController.h ----
+		struct Register_StageSelectButtonController
+		{
+			Register_StageSelectButtonController()
+			{
+				ReflectionRegistry::Register(String("StageSelectButtonController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					StageSelectButtonController& obj = *static_cast<StageSelectButtonController*>(ptr);
+					outInfo.push_back({ String("stageNumber"), offsetof(StageSelectButtonController, stageNumber), AttributeType::Int });
+					outInfo.push_back({ String("onCursorColor"), offsetof(StageSelectButtonController, onCursorColor), AttributeType::Color });
+					outInfo.push_back({ String("colorChangeSpeed"), offsetof(StageSelectButtonController, colorChangeSpeed), AttributeType::Float });
+				});
+			}
+		};
+		static Register_StageSelectButtonController global_StageSelectButtonController_register;
 
 		struct RegisterEnum_AnimationConditionComparison
 		{
