@@ -36,6 +36,10 @@ namespace SeedCore
 		SC_REFLECTION_FIELD_EX("中心点")
 		Vector2 pivot_ = { 0,0 };
 
+		SC_REFLECTION_FIELD_CONDITION(displayMode_ == DisplayMode::Sprite)
+		SC_REFLECTION_FIELD_EX("描画順")
+		Int order_ = 0;
+
 		SC_REFLECTION_FIELD_CONDITION(displayMode_ == DisplayMode::Billboard)
 		SC_REFLECTION_FIELD_EX("カメラ正対")
 		Bool faceCamera_ = false;

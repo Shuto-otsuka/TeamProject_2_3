@@ -51,9 +51,8 @@ namespace SeedCore
 		/// [JP] デバッグレイヤーと Aftermath は有効化後に作成されたデバイスしか監視しないため、どちらも Context より先に有効化する。
 #ifdef _DEBUG
 		D3D12DebugLayer::Enable();
-#endif
-
 		AftermathCrashTracker::Enable();
+#endif
 
 		/// [EN] The context creates the device and queues required by every following GPU resource.
 		/// [JP] Context は、以降のすべての GPU リソースに必要なデバイスとキューを作成する。

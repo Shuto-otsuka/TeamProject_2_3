@@ -73,6 +73,7 @@ namespace SeedCore
 		load(IconType::Rotate,      "Viewport", "Rotate");
 		load(IconType::Scale,       "Viewport", "Scale");
 		load(IconType::Rect,        "Viewport", "Rect");
+		load(IconType::Pivot,       "Viewport", "Pivot");
 		load(IconType::ShowIcon,    "Viewport", "ShowIcon");
 		load(IconType::ShowShape,   "Viewport", "ShowShape");
 		load(IconType::Camera,      "Viewport", "Camera");

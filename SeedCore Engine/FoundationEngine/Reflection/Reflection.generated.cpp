@@ -4,6 +4,7 @@
 #include <AudioEngine/Audio/AudioSource.h>
 #include <FoundationEngine/World/ECS/Component/Lifetime.h>
 #include <FoundationEngine/World/ECS/Component/Name.h>
+#include <FoundationEngine/World/ECS/Component/Pivot.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
@@ -54,12 +55,12 @@
 #include <PhysicsEngine/Joint/SpringJoint.h>
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
-#include <Runtime/enc_temp_folder/1793738ea189908e154fe2c8568b3d5/StageSelectButtonController.h>
 
 extern "C" int _force_reflection_AudioListener = 0;
 extern "C" int _force_reflection_AudioSource = 0;
 extern "C" int _force_reflection_Lifetime = 0;
 extern "C" int _force_reflection_Name = 0;
+extern "C" int _force_reflection_Pivot = 0;
 extern "C" int _force_reflection_Position = 0;
 extern "C" int _force_reflection_Rotation = 0;
 extern "C" int _force_reflection_Scale = 0;
@@ -132,7 +133,6 @@ extern "C" int _force_reflection_SliderJoint = 0;
 extern "C" int _force_reflection_SpringJoint = 0;
 extern "C" int _force_reflection_Rigidbody = 0;
 extern "C" int _force_reflection_Softbody = 0;
-extern "C" int _force_reflection_StageSelectButtonController = 0;
 
 namespace SeedCore
 {
@@ -260,6 +260,42 @@ namespace SeedCore
 			}
 		};
 		static Register_Name global_Name_register;
+
+		// ---- FoundationEngine/World/ECS/Component/Pivot.h ----
+		struct Register_Pivot
+		{
+			Register_Pivot()
+			{
+				ReflectionRegistry::Register(String("Pivot"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					Pivot& obj = *static_cast<Pivot*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("x_");
+						fi.offset_ = offsetof(Pivot, x_);
+						fi.type_ = AttributeType::Float;
+						fi.editorVisible_ = false;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("y_");
+						fi.offset_ = offsetof(Pivot, y_);
+						fi.type_ = AttributeType::Float;
+						fi.editorVisible_ = false;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("z_");
+						fi.offset_ = offsetof(Pivot, z_);
+						fi.type_ = AttributeType::Float;
+						fi.editorVisible_ = false;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_Pivot global_Pivot_register;
 
 		// ---- FoundationEngine/World/ECS/Component/Position.h ----
 		struct Register_Position
@@ -3713,21 +3749,6 @@ namespace SeedCore
 			}
 		};
 		static Register_Softbody global_Softbody_register;
-
-		// ---- Runtime/enc_temp_folder/1793738ea189908e154fe2c8568b3d5/StageSelectButtonController.h ----
-		struct Register_StageSelectButtonController
-		{
-			Register_StageSelectButtonController()
-			{
-				ReflectionRegistry::Register(String("StageSelectButtonController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
-					StageSelectButtonController& obj = *static_cast<StageSelectButtonController*>(ptr);
-					outInfo.push_back({ String("stageNumber"), offsetof(StageSelectButtonController, stageNumber), AttributeType::Int });
-					outInfo.push_back({ String("onCursorColor"), offsetof(StageSelectButtonController, onCursorColor), AttributeType::Color });
-					outInfo.push_back({ String("colorChangeSpeed"), offsetof(StageSelectButtonController, colorChangeSpeed), AttributeType::Float });
-				});
-			}
-		};
-		static Register_StageSelectButtonController global_StageSelectButtonController_register;
 
 		struct RegisterEnum_AnimationConditionComparison
 		{

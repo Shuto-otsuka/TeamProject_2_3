@@ -25,10 +25,16 @@ namespace SeedCore
 		Actor actor = GetActor();
 
 		const Position* position = actor.GetComponent<Position>();
+		const Pivot* pivot = actor.GetComponent<Pivot>();
 		const Rotation* rotation = actor.GetComponent<Rotation>();
+		const Scale* scale = actor.GetComponent<Scale>();
+
+		/// [EN] Position places the pivot point, while the character is built around the actor's own origin, so it starts at Position minus the pivot point scaled and rotated the same way TransformSystem does.
+		/// [JP] Position は基準点を配置するが、キャラクターは Actor 自身の原点まわりに作られるので、Position から TransformSystem と同じく拡縮・回転した基準点を引いた位置から始める。
+		Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), (scale ? Matrix::CreateScale(Transform::Vector(*scale)) : Matrix::Identity) * Matrix::CreateFromQuaternion(rotation ? Transform::Quat(*rotation) : Quaternion::Identity)) : Vector3::Zero;
 
 		CharacterDesc desc;
-		desc.position_ = position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f);
+		desc.position_ = (position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f)) - pivotOffset;
 		desc.rotation_ = rotation ? Transform::Quat(*rotation) : Quaternion::Identity;
 		desc.radius_ = radius_;
 		desc.height_ = height_;
@@ -264,12 +270,18 @@ namespace SeedCore
 		World& world = actor.GetWorld();
 		Entity entity = actor.GetEntity();
 
+		/// [EN] The character sits at the actor's own origin, so Position, which places the pivot point, is the character position plus the pivot point scaled and rotated by the character's new rotation.
+		/// [JP] キャラクターは Actor 自身の原点にあるので、基準点を配置する Position は、キャラクターの位置に、キャラクターの新しい回転で拡縮・回転した基準点を足したものになる。
+		const Pivot* pivot = world.GetComponent<Pivot>(entity);
+		const Scale* scale = world.GetComponent<Scale>(entity);
+		Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), (scale ? Matrix::CreateScale(Transform::Vector(*scale)) : Matrix::Identity) * Matrix::CreateFromQuaternion(Quaternion(outRotation.GetX(), outRotation.GetY(), outRotation.GetZ(), outRotation.GetW()))) : Vector3::Zero;
+
 		Position* position = world.GetComponent<Position>(entity);
 		if (position)
 		{
-			position->x_ = static_cast<Float>(outPosition.GetX());
-			position->y_ = static_cast<Float>(outPosition.GetY());
-			position->z_ = static_cast<Float>(outPosition.GetZ());
+			position->x_ = static_cast<Float>(outPosition.GetX()) + pivotOffset.x;
+			position->y_ = static_cast<Float>(outPosition.GetY()) + pivotOffset.y;
+			position->z_ = static_cast<Float>(outPosition.GetZ()) + pivotOffset.z;
 		}
 
 		Rotation* rotation = world.GetComponent<Rotation>(entity);
@@ -391,18 +403,26 @@ namespace SeedCore
 			return;
 		}
 
-		character_->SetPosition(JPH::RVec3(position.x, position.y, position.z));
+		Actor actor = GetActor();
+		World& world = actor.GetWorld();
+		Entity entity = actor.GetEntity();
+
+		/// [EN] position is a Position, which places the pivot point; the character goes to the actor's own origin, that point moved back by the pivot point scaled and rotated by the current rotation.
+		/// [JP] position は基準点を配置する Position。キャラクターは Actor 自身の原点、つまりその点から、今の回転で拡縮・回転した基準点の分だけ戻した位置へ移す。
+		const Pivot* pivot = world.GetComponent<Pivot>(entity);
+		const Scale* scale = world.GetComponent<Scale>(entity);
+		JPH::Quat currentRotation = character_->GetRotation();
+		Vector3 pivotOffset = pivot ? Vector3::TransformNormal(Transform::Vector(*pivot), (scale ? Matrix::CreateScale(Transform::Vector(*scale)) : Matrix::Identity) * Matrix::CreateFromQuaternion(Quaternion(currentRotation.GetX(), currentRotation.GetY(), currentRotation.GetZ(), currentRotation.GetW()))) : Vector3::Zero;
+		Vector3 origin = position - pivotOffset;
+
+		character_->SetPosition(JPH::RVec3(origin.x, origin.y, origin.z));
 
 		/// [EN] A teleport leaves the foothold behind, so neither its record nor its velocity carries over.
 		/// [JP] テレポートすると足場から離れるため、足場の記録も速度も引き継がない。
 		foothold_.bodyID_ = JPH::BodyID();
 		inheritedVelocity_ = Vector3(0.0f, 0.0f, 0.0f);
 
-		Actor actor = GetActor();
 		actor.GetPhysics().RefreshCharacter(character_.GetPtr());
-
-		World& world = actor.GetWorld();
-		Entity entity = actor.GetEntity();
 
 		Position* positionComponent = world.GetComponent<Position>(entity);
 		if (positionComponent)

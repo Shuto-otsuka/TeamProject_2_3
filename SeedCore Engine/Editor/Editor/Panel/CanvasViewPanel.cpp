@@ -37,40 +37,61 @@ namespace SeedCore
 		{
 			context_.guizmo_.visible_ = !context_.guizmo_.visible_;
 			context_.guizmo_.rectTool_ = false;
+			context_.guizmo_.pivotEdit_ = false;
 			op = (ImGuizmo::OPERATION)0;
 		}
 		ImGui::PopStyleColor();
 
 		ImGui::SameLine();
 
-		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && op == ImGuizmo::TRANSLATE) ? activeColor : transparent);
+		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && !context_.guizmo_.pivotEdit_ && op == ImGuizmo::TRANSLATE) ? activeColor : transparent);
 		if (ImGui::ImageButton("##Translate", imguiTexture_.Icon(IconType::Translate), iconSize))
 		{
 			context_.guizmo_.visible_ = true;
 			context_.guizmo_.rectTool_ = false;
+			context_.guizmo_.pivotEdit_ = false;
 			op = ImGuizmo::TRANSLATE;
 		}
 		ImGui::PopStyleColor();
 
 		ImGui::SameLine();
 
-		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && op == ImGuizmo::ROTATE) ? activeColor : transparent);
+		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && !context_.guizmo_.pivotEdit_ && op == ImGuizmo::ROTATE) ? activeColor : transparent);
 		if (ImGui::ImageButton("##Rotate", imguiTexture_.Icon(IconType::Rotate), iconSize))
 		{
 			context_.guizmo_.visible_ = true;
 			context_.guizmo_.rectTool_ = false;
+			context_.guizmo_.pivotEdit_ = false;
 			op = ImGuizmo::ROTATE;
 		}
 		ImGui::PopStyleColor();
 
 		ImGui::SameLine();
 
-		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && op == ImGuizmo::SCALE) ? activeColor : transparent);
+		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && !context_.guizmo_.pivotEdit_ && op == ImGuizmo::SCALE) ? activeColor : transparent);
 		if (ImGui::ImageButton("##Scale", imguiTexture_.Icon(IconType::Scale), iconSize))
 		{
 			context_.guizmo_.visible_ = true;
 			context_.guizmo_.rectTool_ = false;
+			context_.guizmo_.pivotEdit_ = false;
 			op = ImGuizmo::SCALE;
+		}
+		ImGui::PopStyleColor();
+
+		ImGui::SameLine();
+
+		/// [EN] Selects the pivot tool, which edits the pivot point instead of the actor; like the other tools it stays filled with the active color while selected.
+		/// [JP] actor ではなく基準点を編集する基準点ツールを選ぶ。他のツールと同じく、選択中は地をアクティブ色で塗る。
+		ImGui::PushStyleColor(ImGuiCol_Button, context_.guizmo_.pivotEdit_ ? activeColor : transparent);
+		if (ImGui::ImageButton("##Pivot", imguiTexture_.Icon(IconType::Pivot), iconSize))
+		{
+			context_.guizmo_.visible_ = true;
+			context_.guizmo_.rectTool_ = false;
+			context_.guizmo_.pivotEdit_ = true;
+		}
+		if (ImGui::IsItemHovered())
+		{
+			ImGui::SetTooltip("基準点を編集");
 		}
 		ImGui::PopStyleColor();
 
@@ -81,6 +102,7 @@ namespace SeedCore
 		{
 			context_.guizmo_.visible_ = true;
 			context_.guizmo_.rectTool_ = true;
+			context_.guizmo_.pivotEdit_ = false;
 		}
 		ImGui::PopStyleColor();
 

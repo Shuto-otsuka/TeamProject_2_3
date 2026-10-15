@@ -6,6 +6,7 @@
 #include <FoundationEngine/World/ECS/Component/Lifetime.h>
 #include <FoundationEngine/World/ECS/Component/Motion.h>
 #include <FoundationEngine/World/ECS/Component/Name.h>
+#include <FoundationEngine/World/ECS/Component/Pivot.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>

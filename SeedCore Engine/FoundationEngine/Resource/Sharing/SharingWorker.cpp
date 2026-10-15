@@ -1295,7 +1295,7 @@ namespace SeedCore
 			/// [EN] The transform travels as its own piece, so moving an actor and renaming it are separate changes that both survive.
 			/// [JP] トランスフォームは独立した断片として運ぶ。Actor の移動とリネームが別々の変更になり、両方が残るようにするため。
 			nlohmann::json transform = nlohmann::json::object();
-			static const std::string transformKeys[] = { "position", "rotation", "scale" };
+			static const std::string transformKeys[] = { "position", "pivot", "rotation", "scale" };
 			for (const std::string& key : transformKeys)
 			{
 				if (entity.contains(key))

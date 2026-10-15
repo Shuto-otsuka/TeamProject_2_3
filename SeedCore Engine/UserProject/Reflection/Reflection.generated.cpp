@@ -174,7 +174,7 @@ namespace SeedCore
 					GoalSystem& obj = *static_cast<GoalSystem*>(ptr);
 					{
 						FieldInfo fi;
-						fi.name_ = String("範囲");
+						fi.name_ = String("範囲 𰻞");
 						fi.offset_ = offsetof(GoalSystem, range_);
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
