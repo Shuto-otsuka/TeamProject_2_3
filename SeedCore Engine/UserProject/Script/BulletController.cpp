@@ -30,8 +30,8 @@ void BulletController::OnTriggerEnter(SeedCore::Entity entity)
     SeedCore::Actor hitActor = GetWorld().GetActor(entity);
     SeedCore::Name* hitActorName = GetWorld().GetComponent<SeedCore::Name>(entity);
 
-    //プレイヤーなら終了
-    if (hitActor == player)return;
+    //プレイヤー、もしくはエリア(トリガー)なら終了
+    if (hitActor.LayerName() == "Player" || hitActor.LayerName() == "Area")return;
 
     //止められるオブジェクトじゃなければ消して終了
     if (!hitActor.HasTag("CanStop"))

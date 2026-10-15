@@ -53,6 +53,7 @@
     <ClCompile Include="Script\BulletNaviStartController.cpp" />
     <ClCompile Include="Script\Button.cpp" />
     <ClCompile Include="Script\ChargeGaugeController.cpp" />
+    <ClCompile Include="Script\CheckPointAreaController.cpp" />
     <ClCompile Include="Script\CostGaugeController.cpp" />
     <ClCompile Include="Script\GoalSystem.cpp" />
     <ClCompile Include="Script\LaserController.cpp" />
@@ -71,6 +72,7 @@
     <ClInclude Include="Script\BulletNaviStartController.h" />
     <ClInclude Include="Script\Button.h" />
     <ClInclude Include="Script\ChargeGaugeController.h" />
+    <ClInclude Include="Script\CheckPointAreaController.h" />
     <ClInclude Include="Script\CostGaugeController.h" />
     <ClInclude Include="Script\GoalSystem.h" />
     <ClInclude Include="Script\LaserController.h" />

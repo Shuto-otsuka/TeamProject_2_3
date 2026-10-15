@@ -2,6 +2,7 @@
 #include"UserProject/Script/BulletController.h"
 #include"UserProject/Script/StopController.h"
 #include"UserProject/Script/BulletNaviStartController.h"
+#include"UserProject/Script/CheckPointAreaController.h"
 
 #include <SeedCore/ScInput.h>
 #include<SeedCore/ScPrefab.h>
@@ -24,6 +25,7 @@ void PlayerController::OnStart()
     scale = world.GetComponent<SeedCore::Scale>(entity);
     velocity = world.GetComponent<SeedCore::LinearVelocity>(entity);
     myCharacterController = world.GetComponent<SeedCore::CharacterController>(entity);
+    firstPersonCameraBrain = world.GetComponent<SeedCore::CameraBrain>(world.GetActor("FirstPersonCameraBrain").GetEntity());
 
     if (bulletNaviStart)
     {
@@ -54,6 +56,54 @@ void PlayerController::OnInspectorGUI()
 {
     ImGui::Checkbox("isCoyote", &isCoyote);
     ImGui::InputInt("costGauge", &costGauge);
+}
+
+void PlayerController::OnTriggerEnter(SeedCore::Entity entity)
+{
+    SeedCore::Actor hitActor = GetWorld().GetActor(entity);
+    if(hitActor.HasTag("CheckPoint"))
+    {
+        //当たったのがチェックポイントだったら
+
+        CheckPointAreaController* checkPointAreaController = GetWorld().GetComponent<CheckPointAreaController>(entity);
+
+        if (checkPointAreaController->GetStep() > beforeCheckPointStep)
+        {
+            //前回踏んだチェックポイントより先のチェックポイントだったら更新
+            SeedCore::Position* hitActorPosition = GetWorld().GetComponent<SeedCore::Position>(entity);
+            checkPointPosition = { hitActorPosition->x_,hitActorPosition->y_,hitActorPosition->z_ };
+            beforeCheckPointStep = checkPointAreaController->GetStep();
+
+            /*
+            if (checkPointAreaController->GetFirstPerson())
+            {
+                //一人称切り替えフラグがONだったらカメラ切り替え
+                firstPersonCameraBrain->weight_ = 11;
+            }
+            else
+            {
+                firstPersonCameraBrain->weight_ = 9;
+            }
+            */
+        }
+    }
+
+    if (hitActor.HasTag("GravityArea"))
+    {
+        //当たったのが重力エリアならフラグをON
+        isGravityArea = true;
+    }
+}
+
+void PlayerController::OnTriggerExit(SeedCore::Entity entity)
+{
+    SeedCore::Actor hitActor = GetWorld().GetActor(entity);
+
+    if (hitActor.HasTag("GravityArea"))
+    {
+        //離れたのが重力エリアならフラグをOFF
+        isGravityArea = false;
+    }
 }
 
 void PlayerController::SubCostGauge(int costGauge)
@@ -243,7 +293,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
         SeedCore::Vector2 cursorScreenPosition = SeedCore::Input::MousePoint();//カーソルのスクリーン座標
         SeedCore::Ray ray = SeedCore::ScreenSpace::ScreenToWorld(cursorScreenPosition);//レイキャスト情報
         SeedCore::RaycastHit hit;
-        Uint32 layerMask = ~(1 << GetActor().Layer());//プレイヤー自身を除くレイヤーマスク
+        Uint32 layerMask = ~(1 << GetActor().Layer()) & ~(1 << 4);//プレイヤー自身と、エリア(トリガー)を除くレイヤーマスク
 
         //銃口の高さを求める
         SeedCore::Vector3 gunOffset = { 0.0f,bulletOffsetY,0.0f };
@@ -254,15 +304,23 @@ void PlayerController::UpdateTurn(float elapsedTime)
             SeedCore::Actor hitActor = GetWorld().GetActor(hit.entityID_);//ヒットしたアクターの取得
             if (!hitActor.HasTag("CanStop") && hit.normal_.y > 0.99f)
             {
-                //止められないオブジェクトの上面だった場合
-                //レイと銃口の高さの平面が交わるところをターゲットにする
-                bulletTargetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f },gunPosition.y);
+                if (isGravityArea)
+                {
+                    //重力エリアなら床にも撃てる
+                    bulletTargetPosition = hit.position_;
+                }
+                else
+                {
+                    //止められないオブジェクトの上面だった場合
+                    //レイと銃口の高さの平面が交わるところをターゲットにする
+                    bulletTargetPosition = RayToPlaneHitPosition(ray.origin_, ray.direction_, SeedCore::Vector3{ 0.0f,1.0f,0.0f }, gunPosition.y);
 
-                //ターゲット位置を最大飛距離まで飛んだ時の位置にする
-                SeedCore::Vector3 direction = bulletTargetPosition - gunPosition;
-                direction.Normalize();
-                direction *= bulletRemoveDistance;
-                bulletTargetPosition += direction;
+                    //ターゲット位置を最大飛距離まで飛んだ時の位置にする
+                    SeedCore::Vector3 direction = bulletTargetPosition - gunPosition;
+                    direction.Normalize();
+                    direction *= bulletRemoveDistance;
+                    bulletTargetPosition += direction; 
+                }
             }
             else
             {
@@ -436,8 +494,12 @@ void PlayerController::UpdateInputReset(float elapsedTime)
         //Rキーが押されている間タイマー更新
         resetInputTimer += elapsedTime;
         //一定時間でやり直し
-        if(resetInputTimer >= resetInputTime)
-            SeedCore::Scene::Change("Sakatyan.scene");//今のシーン名取得する方法分からんからいったんサンプルシーン
+        if (resetInputTimer >= resetInputTime)
+        {
+            //現在のシーンに遷移
+            std::string currentScene = std::string(SeedCore::Scene::CurrentName()) + ".scene";
+            SeedCore::Scene::Change(currentScene);
+        }
     }
    
     if (SeedCore::Input::KeyState(SeedCore::Input::Key::R, SeedCore::Input::OnReleased))

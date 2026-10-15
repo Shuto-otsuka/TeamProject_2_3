@@ -12,6 +12,8 @@ public:
 
 	void OnTick(float elapsedTime); // 更新処理
 	void OnInspectorGUI();
+	void OnTriggerEnter(SeedCore::Entity entity);
+	void OnTriggerExit(SeedCore::Entity entity);
 
 	void SubCostGauge(int costGauge);
 
@@ -95,6 +97,7 @@ private:
 	bool beforeIsGround = true;
 	bool isCoyote = false;
 	bool shotReady = false;
+	bool isGravityArea = false;
 
 	float defaultGravity = 0.0f;
 	float jumpInputBufferTimer = 0.0f;
@@ -107,6 +110,7 @@ private:
 
 	int costGauge = 0;
 	int costGaugeAdd = 0;
+	int beforeCheckPointStep = -1;
 
 	SeedCore::Vector3 lookDirection = { 0.0f,0.0f,1.0f };
 	SeedCore::Vector3 shotDirection = { 0.0f,0.0f,1.0f };
@@ -121,6 +125,7 @@ private:
 	SeedCore::Scale* scale = nullptr;
 	SeedCore::CharacterController* myCharacterController = nullptr;
 	SeedCore::LinearVelocity* velocity = nullptr;
+	SeedCore::CameraBrain* firstPersonCameraBrain;
 	BulletNaviStartController* bulletNaviStartController = nullptr;
 };
 REGISTER_COMPONENT(PlayerController);
