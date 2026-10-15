@@ -27,7 +27,7 @@ public:
 private:
 	bool isGoal_ = false;
 
-	bool isDecieded_ = false;
+	bool isDecided_ = false;
 
 	SeedCore::Actor resultActor_;
 };
