@@ -24,7 +24,7 @@ void CircuitSystem::OnStart()
 		}
 		else
 		{
-			SC_LOG_WARNING("[{}] 入力 ID{} のアクターが見つかりません。無効なActorです。配線は有効ですか？", name ? name->name_ : "名前なし", inputActorID);
+			SC_LOG_WARNING("[{}] 入力 ID{} のアクターが見つかりません。無効なActorです。配線は有効ですか？", name ? name->name_.c_str() : "名前なし", inputActorID);
 		}
 	}
 }
