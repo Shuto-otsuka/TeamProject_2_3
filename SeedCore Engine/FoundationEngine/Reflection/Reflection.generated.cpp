@@ -1075,6 +1075,14 @@ namespace SeedCore
 					}
 					{
 						FieldInfo fi;
+						fi.name_ = String("描画順");
+						fi.offset_ = offsetof(Text, order_);
+						fi.type_ = AttributeType::Int;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Text*>(p); return o.viewType_ == Text::ViewType::Sprite; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
 						fi.name_ = String("カメラ正対");
 						fi.offset_ = offsetof(Text, faceCamera_);
 						fi.type_ = AttributeType::Bool;
@@ -1743,6 +1751,14 @@ namespace SeedCore
 						fi.offset_ = offsetof(Movie, pivot_);
 						fi.type_ = AttributeType::Vector2;
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Movie*>(p); return o.displayMode_ != Movie::DisplayMode::Fullscreen; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("描画順");
+						fi.offset_ = offsetof(Movie, order_);
+						fi.type_ = AttributeType::Int;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Movie*>(p); return o.displayMode_ == Movie::DisplayMode::Sprite; };
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3057,6 +3073,14 @@ namespace SeedCore
 						fi.offset_ = offsetof(Image, viewType_);
 						fi.type_ = AttributeType::Enum;
 						fi.enum_.typeName_ = String("ViewType");
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("描画順");
+						fi.offset_ = offsetof(Image, order_);
+						fi.type_ = AttributeType::Int;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Image*>(p); return o.viewType_ == Image::ViewType::Sprite; };
 						outInfo.push_back(std::move(fi));
 					}
 					{

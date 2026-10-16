@@ -74,7 +74,6 @@ void PlayerController::OnTriggerEnter(SeedCore::Entity entity)
             checkPointPosition = { hitActorPosition->x_,hitActorPosition->y_,hitActorPosition->z_ };
             beforeCheckPointStep = checkPointAreaController->GetStep();
 
-            /*
             if (checkPointAreaController->GetFirstPerson())
             {
                 //一人称切り替えフラグがONだったらカメラ切り替え
@@ -84,7 +83,6 @@ void PlayerController::OnTriggerEnter(SeedCore::Entity entity)
             {
                 firstPersonCameraBrain->weight_ = 9;
             }
-            */
         }
     }
 

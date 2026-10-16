@@ -30,14 +30,32 @@ void BulletController::OnTriggerEnter(SeedCore::Entity entity)
     SeedCore::Actor hitActor = GetWorld().GetActor(entity);
     SeedCore::Name* hitActorName = GetWorld().GetComponent<SeedCore::Name>(entity);
 
+    if (hitActor.HasTag("GravityArea"))
+    {
+        //重力エリアならフラグONにして終了
+        isGravityArea = true;
+        return;
+    }
+
     //プレイヤー、もしくはエリア(トリガー)なら終了
     if (hitActor.LayerName() == "Player" || hitActor.LayerName() == "Area")return;
 
-    //止められるオブジェクトじゃなければ消して終了
     if (!hitActor.HasTag("CanStop"))
     {
+        //止められるオブジェクトじゃない
         SC_LOG_NOTICE("止められないやつに当たった");
-        Remove();
+
+        if (isGravityArea)
+        {
+            //重力エリアであればRigidbodyをDynamicにして停止
+            rigidbody->bodyType_ = SeedCore::Rigidbody::BodyType::Dynamic;
+            Stop();
+        }
+        else
+        {
+            //重力エリアじゃなければ消して終了
+            Remove();
+        }
         return;
     }
 
@@ -62,27 +80,42 @@ void BulletController::OnTriggerEnter(SeedCore::Entity entity)
         }
         case State::STOP:
         {
-            //既に停止中の弾に当たったら消すだけ
-            Remove();
+            //既に停止中の弾に当たった
+
+            if (isGravityArea)
+            {
+                //重力エリアであればRigidbodyをDynamicにして停止
+                Stop();
+            }
+            else
+            {
+                //重力エリアじゃなければ消して終了
+                Remove();
+            }
             break;
         }
         case State::STICK:
         {
-            //当たった弾が止めている相手のギミックを止める
-            float stopTime = aliveTime - aliveTimer;
-            hitBulletController->GetNowStick()->Stop(stopTime);
-            //自分は動きを止めてギミックにくっついたという判定にする
-            state = State::STICK;
-            //止めている相手を保存
-            nowStick = hitBulletController->GetNowStick();
+            if (isGravityArea)
+            {
+                //重力エリアであればRigidbodyをDynamicにして停止
+                Stop();
+            }
+            else
+            {
+                //当たった弾が止めている相手のギミックを止める
+                float stopTime = aliveTime - aliveTimer;
+                hitBulletController->GetNowStick()->Stop(stopTime);
+                //自分は動きを止めてギミックにくっついたという判定にする
+                state = State::STICK;
+                //止めている相手を保存
+                nowStick = hitBulletController->GetNowStick();
+            }
             break; 
-                
         }
         default:
             break;
         }
-
-       
     }
     else
     {
@@ -100,6 +133,18 @@ void BulletController::OnTriggerEnter(SeedCore::Entity entity)
         state = State::STICK;
         //止めている相手を保存
         nowStick = stopController;
+    }
+}
+
+void BulletController::OnTriggerExit(SeedCore::Entity entity)
+{
+    //ヒットしたアクターの取得
+    SeedCore::Actor hitActor = GetWorld().GetActor(entity);
+
+    if (hitActor.HasTag("GravityArea"))
+    {
+        //重力エリアならフラグOFF
+        isGravityArea = false;
     }
 }
 
@@ -143,9 +188,13 @@ void BulletController::SetParam(const SeedCore::Vector3& startPosition,const See
 void BulletController::Stop()
 {
     //停止処理
-
+   
     //停止ステートにする
     state = State::STOP;
+
+    //重力エリアであればRigidbodyをDynamicをする
+    if (isGravityArea)
+        rigidbody->bodyType_ = SeedCore::Rigidbody::BodyType::Dynamic;
     
     //衝突判定ON
     rigidbody->isTrigger_ = false;
@@ -184,7 +233,7 @@ void BulletController::Move(float elapsedTime)
     if (state != State::NORMAL || !position || !rotation || !rigidbody)
     {
         //常に回転0
-        if(rigidbody)
+        if(rigidbody && rigidbody->bodyType_ == SeedCore::Rigidbody::BodyType::Kinematic)
             rigidbody->MoveTarget({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, elapsedTime);
         return;
     }

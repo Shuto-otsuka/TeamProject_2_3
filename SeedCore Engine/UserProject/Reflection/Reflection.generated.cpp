@@ -6,6 +6,7 @@
 #include <UserProject/Script/ChargeGaugeController.h>
 #include <UserProject/Script/CheckPointAreaController.h>
 #include <UserProject/Script/CostGaugeController.h>
+#include <UserProject/Script/FirstPersonCameraController.h>
 #include <UserProject/Script/FloorMoveSystem.h>
 #include <UserProject/Script/GoalSystem.h>
 #include <UserProject/Script/LaserController.h>
@@ -19,6 +20,7 @@ extern "C" int _force_reflection_CameraController = 0;
 extern "C" int _force_reflection_ChargeGaugeController = 0;
 extern "C" int _force_reflection_CheckPointAreaController = 0;
 extern "C" int _force_reflection_CostGaugeController = 0;
+extern "C" int _force_reflection_FirstPersonCameraController = 0;
 extern "C" int _force_reflection_FloorMoveSystem = 0;
 extern "C" int _force_reflection_GoalSystem = 0;
 extern "C" int _force_reflection_LaserController = 0;
@@ -134,6 +136,19 @@ namespace SeedCore
 			}
 		};
 		static Register_CostGaugeController global_CostGaugeController_register;
+
+		// ---- UserProject/Script/FirstPersonCameraController.h ----
+		struct Register_FirstPersonCameraController
+		{
+			Register_FirstPersonCameraController()
+			{
+				ReflectionRegistry::Register(String("FirstPersonCameraController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					FirstPersonCameraController& obj = *static_cast<FirstPersonCameraController*>(ptr);
+					outInfo.push_back({ String("offset"), offsetof(FirstPersonCameraController, offset), AttributeType::Vector3 });
+				});
+			}
+		};
+		static Register_FirstPersonCameraController global_FirstPersonCameraController_register;
 
 		// ---- UserProject/Script/FloorMoveSystem.h ----
 		struct Register_FloorMoveSystem
