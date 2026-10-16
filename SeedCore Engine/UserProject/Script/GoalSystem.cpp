@@ -48,11 +48,10 @@ void GoalSystem::OnTick(float elapsedTime)
 	if (!isGoal_)
 	{
 		Physics& physics = actor.GetPhysics();
-		Position* position = world.GetComponent<Position>(entity);
-		Rotation* rotation = world.GetComponent<Rotation>(entity);
+		Vector3 center = actor.WorldMatrix().Translation();
 
 		// リフレクションで出す範囲を使って、近くの範囲内のEntityを検出する
-		DynamicArray<EntityID> entityIDs = physics.Overlap(OverlapShapeKind::Sphere, Vector3(range_, 0.0f, 0.0f), Transform::Vector(*position), Transform::Quat(*rotation));
+		DynamicArray<EntityID> entityIDs = physics.Overlap(OverlapShapeKind::Sphere, Vector3(range_, 0.0f, 0.0f), center, Quaternion::Identity);
 
 		for (EntityID entityID : entityIDs)
 		{
@@ -141,6 +140,6 @@ void GoalSystem::OnTick(float elapsedTime)
 void GoalSystem::OnEditorTick(float elapsedTime)
 {
 	// 場所がわかりやすいように球を表示する
-	Position* position = GetWorld().GetComponent<Position>(GetActor().GetEntity());
-	GetActor().GetDebugDraw().Sphere(Transform::Vector(*position), 0.5f, Color(1.0f, 0.0f, 0.0f, 0.5f));
+	Vector3 center = GetActor().WorldMatrix().Translation();
+	GetActor().GetDebugDraw().Sphere(center, 0.5f, Color(1.0f, 0.0f, 0.0f, 0.5f));
 }
