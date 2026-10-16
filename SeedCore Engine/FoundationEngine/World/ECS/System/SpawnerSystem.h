@@ -16,9 +16,8 @@ namespace SeedCore
 	* and, once due, instantiates its referenced prefab as a root-level
 	* actor at the Spawner's own world position (optionally jittered
 	* within randomRadius_ when randomSpawn_ is set) - not parented under
-	* the Spawner's own actor, since PhysicsSystem places a Rigidbody's
-	* JPH body from local Position directly, ignoring any parent
-	* transform. Every spawned instance is destroyed after lifeTime_
+	* the Spawner's own actor, so it moves independently of the Spawner.
+	* Every spawned instance is destroyed after lifeTime_
 	* seconds, freeing its slot so spawning can resume up to maxCount_
 	* again. Execute must be called every frame to advance each Spawner's
 	* timers. Runtime progress (elapsed time, live instances) is tracked
@@ -34,8 +33,7 @@ namespace SeedCore
 	* 来たら参照先のプレハブを、Spawner 自身のワールド位置
 	* (randomSpawn_ が有効なら randomRadius_ 内でランダムにずらす)へ、
 	* ルートレベルの actor として生成する - Spawner 自身の actor の子には
-	* しない。PhysicsSystem は Rigidbody の JPH ボディをローカル Position
-	* からそのまま配置し、親の変換を考慮しないため。生成された各
+	* しないので、Spawner とは独立して動く。生成された各
 	* インスタンスは lifeTime_ 秒後に破棄され、その枠が空いて再び
 	* maxCount_ まで生成できるようになる。各 Spawner の
 	* タイマーを進めるには、Update を毎フレーム呼び出す必要がある。

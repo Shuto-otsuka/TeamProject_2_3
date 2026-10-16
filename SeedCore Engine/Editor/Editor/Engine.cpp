@@ -289,7 +289,9 @@ namespace SeedCore
 				worldTimer_.Tick(window_->GetTimer().Delta());
 				gameTimer_.Tick(window_->GetTimer().Delta());
 
-				InputSystem::Update(editor_->GameViewImageHovered());
+				/// [EN] The game rect is the one the game view published last frame; it only changes when the view is resized or moved.
+				/// [JP] ゲームの矩形は、ゲームビューが前のフレームに公開したもの。変わるのはビューの大きさや位置を変えたときだけ。
+				InputSystem::Update(editor_->GameViewImageHovered(), cameraSystem_.Rect());
 
 				hotReload_.Tick(*world_);
 				pluginHost_.Tick(*world_);

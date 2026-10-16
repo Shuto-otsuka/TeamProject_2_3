@@ -584,7 +584,6 @@ namespace SeedCore
 
 		static const String nameString("Name");
 		static const String positionString("Position");
-		static const String pivotString("Pivot");
 		static const String rotationString("Rotation");
 		static const String scaleString("Scale");
 		static const String linearVelocityString("LinearVelocity");
@@ -633,13 +632,6 @@ namespace SeedCore
 				{
 					DrawTransform(scaleData, "拡大縮小", scaleLinked_, previousScale_, entity, scaleID);
 				}
-
-				ComponentID pivotID = ComponentRegistry::GetComponentID(pivotString);
-				Float* pivotData = pivotID ? static_cast<Float*>(context_.world_.world_->GetComponent(entity, pivotID)) : nullptr;
-				if (pivotData)
-				{
-					DrawTransform(pivotData, "基準点", pivotLinked_, previousPivot_, entity, pivotID);
-				}
 			}
 		}
 
@@ -668,7 +660,7 @@ namespace SeedCore
 		{
 			String componentName = ComponentRegistry::Name(componentID);
 
-			if (componentName == nameString || componentName == positionString || componentName == pivotString || componentName == rotationString || componentName == scaleString || componentName == linearVelocityString || componentName == angularVelocityString || componentName == activeString || componentName == boundsString || componentName == meshString)
+			if (componentName == nameString || componentName == positionString || componentName == rotationString || componentName == scaleString || componentName == linearVelocityString || componentName == angularVelocityString || componentName == activeString || componentName == boundsString || componentName == meshString)
 			{
 				continue;
 			}

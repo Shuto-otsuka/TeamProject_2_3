@@ -14,7 +14,7 @@ public:
 	SC_PAYLOAD_FIELD_EX("リトライ先シーン", Scene)
 	Uint32 retrySceneID_ = 0;
 
-	SC_REFLECTION_CLAMPED_EX("範囲 𰻞", 0.0f, 10000.0f)
+	SC_REFLECTION_CLAMPED_EX("範囲", 0.0f, 10000.0f)
 	float range_ = 1.0f;
 
 public:
@@ -27,7 +27,7 @@ public:
 private:
 	bool isGoal_ = false;
 
-	bool isDecieded_ = false;
+	bool isDecided_ = false;
 
 	SeedCore::Actor resultActor_;
 };

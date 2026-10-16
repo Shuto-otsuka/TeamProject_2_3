@@ -69,7 +69,8 @@ namespace SeedCore
 	Bool InputSystem::previousKeyState_[KEY_COUNT] = {};
 	Bool InputSystem::currentMouseState_[MOUSE_BUTTON_COUNT] = {};
 	Bool InputSystem::previousMouseState_[MOUSE_BUTTON_COUNT] = {};
-	Vector2 InputSystem::mousePoint_ = Vector2(0.0f, 0.0f);
+	Vector2 InputSystem::gameMousePoint_ = Vector2(0.0f, 0.0f);
+	Vector2 InputSystem::desktopMousePoint_ = Vector2(0.0f, 0.0f);
 	Vector2 InputSystem::mouseMotion_ = Vector2(0.0f, 0.0f);
 	Float InputSystem::currentMouseWheel_ = 0.0f;
 	Float InputSystem::pendingMouseWheel_ = 0.0f;
@@ -124,7 +125,7 @@ namespace SeedCore
 	* マウス入力をゲームに渡すかを記録する。アプリがアクティブでない間は、
 	* 全て押されていない・動いていないものとして取り込む。
 	*/
-	void InputSystem::Update(Bool gameInput)
+	void InputSystem::Update(Bool gameInput, const Vector4& gameRect)
 	{
 		gameInput_ = gameInput;
 
@@ -176,13 +177,18 @@ namespace SeedCore
 			currentKeyState_[index] = (keyboardState[index] & 0x80) != 0;
 		}
 
-		/// [EN] Compute this frame's mouse movement from the raw screen-space cursor position before mousePoint_ gets overwritten.
-		/// [JP] mousePoint_ が上書きされる前に、生のスクリーン空間でのカーソル位置から、このフレームのマウスの移動量を計算する。
+		/// [EN] Compute this frame's mouse movement from the desktop cursor position before desktopMousePoint_ gets overwritten.
+		/// [JP] desktopMousePoint_ が上書きされる前に、デスクトップ上のカーソル位置から、このフレームのマウスの移動量を計算する。
 		POINT point;
 		GetCursorPos(&point);
 		Vector2 cursor = Vector2(static_cast<Float>(point.x), static_cast<Float>(point.y));
-		mouseMotion_ = Vector2(cursor.x - mousePoint_.x, cursor.y - mousePoint_.y);
-		mousePoint_ = cursor;
+		mouseMotion_ = Vector2(cursor.x - desktopMousePoint_.x, cursor.y - desktopMousePoint_.y);
+		desktopMousePoint_ = cursor;
+
+		/// [EN] The game only sees the cursor on its own 1920x1080 screen: the desktop position is taken relative to where the game image sits and stretched from its displayed size.
+		/// [JP] ゲームから見えるのは自身の 1920x1080 の画面上のカーソルだけ。デスクトップ上の位置を、ゲーム画像の置かれた位置からの相対にし、表示サイズから引き伸ばす。
+		gameMousePoint_.x = (cursor.x - gameRect.x) / gameRect.z * 1920.0f;
+		gameMousePoint_.y = (cursor.y - gameRect.y) / gameRect.w * 1080.0f;
 
 		/// [EN] While inactive the cursor is moving over another application: the position is still tracked, so there is no jump on return, but no movement is reported.
 		/// [JP] 非アクティブの間、カーソルは別のアプリの上を動いている。戻ったときに飛ばないよう位置は追い続けるが、移動量は報告しない。
@@ -198,7 +204,7 @@ namespace SeedCore
 		if (mouseCaptured_ && active)
 		{
 			SetCursorPos(static_cast<Int>(mouseCaptureAnchor_.x), static_cast<Int>(mouseCaptureAnchor_.y));
-			mousePoint_ = mouseCaptureAnchor_;
+			desktopMousePoint_ = mouseCaptureAnchor_;
 		}
 
 		/// [EN] The game's cursor lock (see LockCursor) only holds while the app is active, the input goes to the game (so in the editor the cursor is free once it leaves the game view), and no capture is using the cursor.
@@ -211,15 +217,18 @@ namespace SeedCore
 			{
 				if (!cursorLockPointFixed_)
 				{
-					cursorLockPoint_ = mousePoint_;
+					cursorLockPoint_ = gameMousePoint_;
 				}
 				cursorLockAnchored_ = true;
 			}
 
-			/// [EN] Put back every frame, like capture: this frame's movement was already measured above from the previous lock point.
-			/// [JP] キャプチャと同じく毎フレーム戻す。このフレームの移動量は、上で前回の固定位置から既に測ってある。
-			SetCursorPos(static_cast<Int>(cursorLockPoint_.x), static_cast<Int>(cursorLockPoint_.y));
-			mousePoint_ = cursorLockPoint_;
+			/// [EN] Put back every frame, like capture: this frame's movement was already measured above from the previous lock point. The lock point is on the game screen, so it is mapped back onto the desktop for SetCursorPos().
+			/// [JP] キャプチャと同じく毎フレーム戻す。このフレームの移動量は、上で前回の固定位置から既に測ってある。固定位置はゲーム画面上のものなので、SetCursorPos() のためにデスクトップ上へ写し戻す。
+			Float desktopX = gameRect.x + cursorLockPoint_.x / 1920.0f * gameRect.z;
+			Float desktopY = gameRect.y + cursorLockPoint_.y / 1080.0f * gameRect.w;
+			SetCursorPos(static_cast<Int>(desktopX), static_cast<Int>(desktopY));
+			desktopMousePoint_ = Vector2(desktopX, desktopY);
+			gameMousePoint_ = cursorLockPoint_;
 		}
 		else
 		{
@@ -352,13 +361,13 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Returns the cursor's movement since last frame, in screen pixels.
+	* Returns the cursor's movement since last frame, in desktop pixels.
 	* Unfiltered.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 前フレームからのカーソルの移動量を、画面ピクセル単位で返す。
+	* 前フレームからのカーソルの移動量を、デスクトップのピクセル単位で返す。
 	* 絞り込みはしない。
 	*/
 	Vector2 InputSystem::MouseMotion()
@@ -458,7 +467,7 @@ namespace SeedCore
 
 		ShowCursor(TRUE);
 		SetCursorPos(static_cast<Int>(mouseCaptureReturn_.x), static_cast<Int>(mouseCaptureReturn_.y));
-		mousePoint_ = mouseCaptureReturn_;
+		desktopMousePoint_ = mouseCaptureReturn_;
 	}
 
 	/**
@@ -487,14 +496,14 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Locks the cursor at point (screen pixels); Update() holds it there
+	* Locks the cursor at point (1920x1080 game screen pixels); Update() holds it there
 	* from the next frame on. Calling it again moves the lock to the new
 	* point.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* カーソルを point（画面ピクセル）に固定する。次のフレームから
+	* カーソルを point（1920x1080 のゲーム画面のピクセル）に固定する。次のフレームから
 	* Update() がそこに留める。もう一度呼ぶと、固定する位置が新しい
 	* point に移る。
 	*/

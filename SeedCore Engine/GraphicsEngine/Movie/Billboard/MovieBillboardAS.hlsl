@@ -1,6 +1,7 @@
 #include "../Movie.hlsli"
 #include "../../Shader/ShaderResources.hlsli"
 #include "../../Shader/Culling.hlsli"
+#include "../../Shader/Dispatch.hlsli"
 
 groupshared uint survived_count;
 groupshared uint local_indices[32];
@@ -19,33 +20,35 @@ void main(uint3 gtid : SV_GroupThreadID, uint3 dtid : SV_DispatchThreadID)
 	GroupMemoryBarrierWithGroupSync();
 
 	bool is_visible = false;
-	uint instance_id = dtid.x;
+	bool is_ranged = dispatch_buffer_index_ != 0xFFFFFFFFu;
+	uint range_start = is_ranged ? dispatch_buffer_index_ : 0u;
+	uint range_batch = movie_billboard[range_start].batch_;
+	uint instance_id = range_start + dtid.x;
 
 	if (instance_id < 1024)
 	{
 		MovieBillboardStructuredBuffer instance = movie_billboard[instance_id];
 
-		if (instance.scale_.x > 0.0 && instance.scale_.y > 0.0)
+		if ((!is_ranged || instance.batch_ == range_batch) && instance.scale_.x > 0.0 && instance.scale_.y > 0.0)
 		{
 			float radius = max(instance.scale_.x, instance.scale_.y) * 0.5f;
 			is_visible = IsVisibleInFrustum(instance.position_, radius, scene_constant.current_view_projection_);
 		}
 	}
 
-	if (is_visible)
-	{
-		uint slot;
-		InterlockedAdd(survived_count, 1, slot);
-		local_indices[slot] = instance_id;
-	}
+	local_indices[gtid.x] = is_visible ? instance_id : 0xFFFFFFFFu;
 
 	GroupMemoryBarrierWithGroupSync();
 
 	if (gtid.x == 0)
 	{
-		for (uint index = 0; index < survived_count; ++index)
+		for (uint index = 0; index < 32; ++index)
 		{
-			payload.instance_indices[index] = local_indices[index];
+			if (local_indices[index] != 0xFFFFFFFFu)
+			{
+				payload.instance_indices[survived_count] = local_indices[index];
+				++survived_count;
+			}
 		}
 	}
 

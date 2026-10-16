@@ -428,14 +428,12 @@ namespace SeedCore
 		D3D12_RECT uiColorAlphaScissorRect = { 0, 0, static_cast<LONG>(uiColorAlphaViewport.Width), static_cast<LONG>(uiColorAlphaViewport.Height) };
 		cmdList->Get()->RSSetScissorRects(1, &uiColorAlphaScissorRect);
 
-		textureRenderer_->DrawSprite(cmdList->Get(), spriteHeap, addresses);
 		textureRenderer_->DrawBillboard(cmdList->Get(), spriteHeap, addresses);
-
-		fontRenderer_->DrawSprite(cmdList->Get(), spriteHeap, addresses);
 		fontRenderer_->DrawBillboard(cmdList->Get(), spriteHeap, addresses);
-
 		movieRenderer_->DrawBillboard(cmdList->Get(), spriteHeap, addresses);
-		movieRenderer_->DrawSprite(cmdList->Get(), spriteHeap, addresses);
+
+		DrawOrderedSprites(cmdList->Get(), spriteHeap, addresses, false);
+
 		movieRenderer_->DrawFullscreen(cmdList->Get(), spriteHeap, addresses);
 
 		uiColorAlphaFrameBuffer_->End(cmdList);
@@ -994,11 +992,12 @@ namespace SeedCore
 		shaderResourceIndicesSystem_->UploadCanvas();
 		unorderedAccessIndicesSystem_->UploadCanvas();
 
-		textureRenderer_->DrawBillboard(cmdList->Get(), heap, addresses);
+		textureRenderer_->DrawWorldBillboard(cmdList->Get(), heap, addresses);
+		fontRenderer_->DrawWorldBillboard(cmdList->Get(), heap, addresses);
+		movieRenderer_->DrawWorldBillboard(cmdList->Get(), heap, addresses);
 
-		fontRenderer_->DrawBillboard(cmdList->Get(), heap, addresses);
+		DrawOrderedSprites(cmdList->Get(), heap, addresses, true);
 
-		movieRenderer_->DrawBillboard(cmdList->Get(), heap, addresses);
 		movieRenderer_->DrawFullscreen(cmdList->Get(), heap, addresses);
 
 		silhouetteFrameBuffer_->Begin(cmdList);
@@ -1112,5 +1111,64 @@ namespace SeedCore
 	D3D12_GPU_DESCRIPTOR_HANDLE Renderer::AvatarDisplayGPUHandle()const
 	{
 		return avatarRenderer_->DisplayGPUHandle();
+	}
+
+	void Renderer::DrawOrderedSprites(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Bool canvas)
+	{
+		Size textureCount = textureRenderer_->GetSpriteBatchCount();
+		Size fontCount = fontRenderer_->GetSpriteBatchCount();
+		Size movieCount = movieRenderer_->GetSpriteBatchCount();
+
+		Size textureIndex = 0;
+		Size fontIndex = 0;
+		Size movieIndex = 0;
+
+		while (textureIndex < textureCount || fontIndex < fontCount || movieIndex < movieCount)
+		{
+			Bool hasTexture = textureIndex < textureCount;
+			Bool hasFont = fontIndex < fontCount;
+			Bool hasMovie = movieIndex < movieCount;
+
+			Int textureOrder = hasTexture ? textureRenderer_->GetSpriteBatchOrder(textureIndex) : 0;
+			Int fontOrder = hasFont ? fontRenderer_->GetSpriteBatchOrder(fontIndex) : 0;
+			Int movieOrder = hasMovie ? movieRenderer_->GetSpriteBatchOrder(movieIndex) : 0;
+
+			if (hasTexture && (!hasFont || textureOrder <= fontOrder) && (!hasMovie || textureOrder <= movieOrder))
+			{
+				if (canvas)
+				{
+					textureRenderer_->DrawCanvasBatch(cmdList, heap, addresses, textureIndex);
+				}
+				else
+				{
+					textureRenderer_->DrawSpriteBatch(cmdList, heap, addresses, textureIndex);
+				}
+				++textureIndex;
+			}
+			else if (hasFont && (!hasMovie || fontOrder <= movieOrder))
+			{
+				if (canvas)
+				{
+					fontRenderer_->DrawCanvasBatch(cmdList, heap, addresses, fontIndex);
+				}
+				else
+				{
+					fontRenderer_->DrawSpriteBatch(cmdList, heap, addresses, fontIndex);
+				}
+				++fontIndex;
+			}
+			else
+			{
+				if (canvas)
+				{
+					movieRenderer_->DrawCanvasBatch(cmdList, heap, addresses, movieIndex);
+				}
+				else
+				{
+					movieRenderer_->DrawSpriteBatch(cmdList, heap, addresses, movieIndex);
+				}
+				++movieIndex;
+			}
+		}
 	}
 }

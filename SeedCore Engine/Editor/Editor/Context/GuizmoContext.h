@@ -24,8 +24,8 @@ namespace SeedCore
 		/// [JP] ギズモが出すハンドル。移動・回転・拡大縮小のどれか。
 		ImGuizmo::OPERATION operation_ = ImGuizmo::TRANSLATE;
 
-		/// [EN] Whether the pivot tool is selected: its move handles edit the pivot point instead of the actor, so the actor stays where it is on screen while its Pivot and Position move together.
-		/// [JP] 基準点ツールを選んでいるか。移動ハンドルで actor ではなく基準点を編集し、actor は画面上でその場に留まったまま Pivot と Position が一緒に動く。
+		/// [EN] Whether the pivot tool is selected: its move handles move the actor's origin (its Position) while its children stay where they are in the world, their Positions worked back from the new origin.
+		/// [JP] 基準点ツールを選んでいるか。移動ハンドルで actor の原点（Position）を動かし、子はワールド上でその場に留まるよう、新しい原点から子の Position を逆算する。
 		Bool pivotEdit_ = false;
 
 		/// [EN] Whether the rect tool is selected, replacing the move/rotate/scale handles.

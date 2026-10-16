@@ -5,7 +5,6 @@
 #pragma comment(linker, "/include:_force_reflection_AudioSource")
 #pragma comment(linker, "/include:_force_reflection_Lifetime")
 #pragma comment(linker, "/include:_force_reflection_Name")
-#pragma comment(linker, "/include:_force_reflection_Pivot")
 #pragma comment(linker, "/include:_force_reflection_Position")
 #pragma comment(linker, "/include:_force_reflection_Rotation")
 #pragma comment(linker, "/include:_force_reflection_Scale")

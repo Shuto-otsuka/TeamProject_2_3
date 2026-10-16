@@ -8,7 +8,6 @@
 #include <FoundationEngine/Payload/PayloadRegistry.h>
 #include <FoundationEngine/World/ECS/Component/Name.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
-#include <FoundationEngine/World/ECS/Component/Pivot.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
 #include <FoundationEngine/World/ECS/Component/UnknownComponent.h>
@@ -21,7 +20,7 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Returns whether name is one of the built-in components
-		* (Name/Position/Pivot/Rotation/Scale/LinearVelocity/AngularVelocity/Active) that every actor
+		* (Name/Position/Rotation/Scale/LinearVelocity/AngularVelocity/Active) that every actor
 		* gets automatically and that are captured as dedicated
 		* BlueprintNode fields instead of as a generic BlueprintComponent.
 		*
@@ -31,7 +30,7 @@ namespace SeedCore
 		* name が、全ての actor に自動的に付与され、汎用的な
 		* BlueprintComponent としてではなく専用の BlueprintNode
 		* フィールドとして取得される組み込みコンポーネント
-		* （Name/Position/Pivot/Rotation/Scale/LinearVelocity/AngularVelocity/Active）のいずれかで
+		* （Name/Position/Rotation/Scale/LinearVelocity/AngularVelocity/Active）のいずれかで
 		* あるかどうかを返す。
 		*/
 		Bool BuiltinComponent(const String& name)
@@ -40,7 +39,6 @@ namespace SeedCore
 			{
 				String("Name"),
 				String("Position"),
-				String("Pivot"),
 				String("Rotation"),
 				String("Scale"),
 				String("LinearVelocity"),
@@ -404,12 +402,6 @@ namespace SeedCore
 			node.position_ = Vector3(position->x_, position->y_, position->z_);
 		}
 
-		const Pivot* pivot = actor.GetComponent<Pivot>();
-		if (pivot)
-		{
-			node.pivot_ = Transform::Vector(*pivot);
-		}
-
 		const Rotation* rotation = actor.GetComponent<Rotation>();
 		if (rotation)
 		{
@@ -622,12 +614,6 @@ namespace SeedCore
 			Transform::Vector(*position, node.position_);
 		}
 
-		Pivot* pivot = const_cast<Pivot*>(actor.GetComponent<Pivot>());
-		if (pivot)
-		{
-			Transform::Vector(*pivot, node.pivot_);
-		}
-
 		Rotation* rotation = const_cast<Rotation*>(actor.GetComponent<Rotation>());
 		if (rotation)
 		{
@@ -731,12 +717,6 @@ namespace SeedCore
 		if (position)
 		{
 			Transform::Vector(*position, node.position_);
-		}
-
-		Pivot* pivot = const_cast<Pivot*>(actor.GetComponent<Pivot>());
-		if (pivot)
-		{
-			Transform::Vector(*pivot, node.pivot_);
 		}
 
 		Rotation* rotation = const_cast<Rotation*>(actor.GetComponent<Rotation>());

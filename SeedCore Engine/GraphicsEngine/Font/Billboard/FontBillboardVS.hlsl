@@ -1,12 +1,13 @@
 #include "../Font.hlsli"
 #include "../../Shader/ShaderResources.hlsli"
 #include "../../Shader/Culling.hlsli"
+#include "../../Shader/Dispatch.hlsli"
 
 FontMSOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 {
 	StructuredBuffer<FontBillboardStructuredBuffer> font_billboard = GetFontBillboardStructuredBuffer(shader_resource_indices.font_.billboard_index_);
 	SceneConstantBuffer scene_constant = GetSceneConstantBuffer();
-	FontBillboardStructuredBuffer glyph = font_billboard[instance_id];
+	FontBillboardStructuredBuffer glyph = font_billboard[(dispatch_buffer_index_ != 0xFFFFFFFFu ? dispatch_buffer_index_ : 0u) + instance_id];
 
 	FontMSOutput output = (FontMSOutput)0;
 	output.position = float4(2.0f, 2.0f, 2.0f, 1.0f);

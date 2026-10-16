@@ -1,7 +1,6 @@
 #include <FoundationEngine/World/ECS/System/TransformSystem.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
-#include <FoundationEngine/World/ECS/Component/Pivot.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
@@ -33,15 +32,15 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Computes actor's local transform (from its Pivot/Position/Rotation/
-	* Scale components, if present) combined with parentMatrix, stores it as
+	* Computes actor's local transform (from its Position/Rotation/Scale
+	* components, if present) combined with parentMatrix, stores it as
 	* actor's world matrix, then recurses into actor's children.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* actor のローカルトランスフォーム（存在すれば Pivot/Position/
-	* Rotation/Scale コンポーネントから）を parentMatrix と組み合わせて計算し、
+	* actor のローカルトランスフォーム（存在すれば Position/Rotation/
+	* Scale コンポーネントから）を parentMatrix と組み合わせて計算し、
 	* actor のワールド行列として保存した後、actor の子へ再帰する。
 	*/
 	void TransformSystem::UpdateActor(Actor actor, const Matrix& parentMatrix, World& world)
@@ -51,16 +50,8 @@ namespace SeedCore
 		Position* position = world.GetComponent<Position>(entity);
 		Rotation* rotation = world.GetComponent<Rotation>(entity);
 		Scale* scale = world.GetComponent<Scale>(entity);
-		Pivot* pivot = world.GetComponent<Pivot>(entity);
 
 		Matrix local = Matrix::Identity;
-
-		/// [EN] Move the pivot point to the origin first so Scale and Rotation are applied around it; Position then places that point.
-		/// [JP] 先に基準点を原点へ移し、Scale と Rotation がその点を中心にかかるようにする。その後 Position がその点を配置する。
-		if (pivot)
-		{
-			local *= Matrix::CreateTranslation(-Transform::Vector(*pivot));
-		}
 
 		if (scale)
 		{

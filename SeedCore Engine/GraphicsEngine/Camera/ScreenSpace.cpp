@@ -1,32 +1,32 @@
 #include <GraphicsEngine/Camera/ScreenSpace.h>
+#include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
 
 namespace SeedCore
 {
 	Matrix ScreenSpace::view_ = Matrix::Identity;
 	Matrix ScreenSpace::projection_ = Matrix::Identity;
-	Vector4 ScreenSpace::rect_ = Vector4(0.0f, 0.0f, 1.0f, 1.0f);
 
 	/**
 	* [EN]
-	* Converts pixelPosition (desktop pixels, the same space as
-	* Input::MousePoint()) into a world-space Ray from the current
-	* camera's near plane through pixelPosition, suitable for passing
-	* straight into Physics::Raycast()/Spherecast().
+	* Converts pixelPosition (1920x1080 game screen pixels, the same
+	* space as Input::MousePoint()) into a world-space Ray from the
+	* current camera's near plane through pixelPosition, suitable for
+	* passing straight into Physics::Raycast()/Spherecast().
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* pixelPosition(デスクトップのピクセル座標。Input::MousePoint() と
-	* 同じ座標系)を、現在のカメラの近平面から pixelPosition を通る
+	* pixelPosition(1920x1080 のゲーム画面のピクセル座標。
+	* Input::MousePoint() と同じ座標系)を、現在のカメラの近平面から pixelPosition を通る
 	* ワールド空間の Ray へ変換する。
 	* Physics::Raycast()/Spherecast() にそのまま渡せる。
 	*/
 	Ray ScreenSpace::ScreenToWorld(const Vector2& pixelPosition)
 	{
-		/// [EN] Desktop pixel -> position inside the displayed game image, normalized to [0, 1].
-		/// [JP] デスクトップのピクセル座標→表示中のゲーム画像内の位置を[0, 1]に正規化したもの。
-		Float normalizedX = (pixelPosition.x - rect_.x) / rect_.z;
-		Float normalizedY = (pixelPosition.y - rect_.y) / rect_.w;
+		/// [EN] Game screen pixel -> position on the game screen, normalized to [0, 1].
+		/// [JP] ゲーム画面のピクセル座標→ゲーム画面上の位置を[0, 1]に正規化したもの。
+		Float normalizedX = pixelPosition.x / ScResolution::SC_CANVAS.Width;
+		Float normalizedY = pixelPosition.y / ScResolution::SC_CANVAS.Height;
 
 		/// [EN] Normalized -> NDC: X maps [0, 1] to [-1, 1], Y maps [0, 1]
 		///      to [1, -1] (screen Y grows downward, NDC Y grows upward).
@@ -61,23 +61,23 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Converts worldPosition into desktop pixels (the same space as
-	* Input::MousePoint()) under the current camera.
+	* Converts worldPosition into 1920x1080 game screen pixels (the
+	* same space as Input::MousePoint()) under the current camera.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* worldPosition を、現在のカメラでのデスクトップのピクセル座標
+	* worldPosition を、現在のカメラでの 1920x1080 のゲーム画面のピクセル座標
 	* (Input::MousePoint() と同じ座標系)へ変換する。
 	*/
 	Vector2 ScreenSpace::WorldToScreen(const Vector3& worldPosition)
 	{
 		Vector3 clipPosition = Vector3::Transform(worldPosition, view_ * projection_);
 
-		/// [EN] NDC -> position inside the displayed game image, then offset by where that image sits on the desktop.
-		/// [JP] NDC→表示中のゲーム画像内の位置に変換し、その画像のデスクトップ上の位置を足す。
-		Float pixelX = rect_.x + (clipPosition.x * 0.5f + 0.5f) * rect_.z;
-		Float pixelY = rect_.y + (1.0f - (clipPosition.y * 0.5f + 0.5f)) * rect_.w;
+		/// [EN] NDC -> position on the game screen, in its pixels.
+		/// [JP] NDC→ゲーム画面上の位置を、そのピクセル単位で表したもの。
+		Float pixelX = (clipPosition.x * 0.5f + 0.5f) * ScResolution::SC_CANVAS.Width;
+		Float pixelY = (1.0f - (clipPosition.y * 0.5f + 0.5f)) * ScResolution::SC_CANVAS.Height;
 		return Vector2(pixelX, pixelY);
 	}
 
@@ -85,23 +85,20 @@ namespace SeedCore
 	* [EN]
 	* Called by CameraSystem once per frame (after computing the game's
 	* active Camera's view/projection) to publish the values
-	* ScreenToWorld()/WorldToScreen() use, including where the game image
-	* is displayed on the desktop - not meant to be called from gameplay
-	* code.
+	* ScreenToWorld()/WorldToScreen() use - not meant to be called from
+	* gameplay code.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* CameraSystem が毎フレーム(ゲームのアクティブな Camera の
 	* view/projection を計算した後に)呼び出し、
-	* ScreenToWorld()/WorldToScreen() が使う値(ゲーム画像のデスクトップ
-	* 上の表示位置を含む)を公開する - ゲームプレイコードから呼ぶことは
-	* 想定していない。
+	* ScreenToWorld()/WorldToScreen() が使う値を公開する - ゲームプレイ
+	* コードから呼ぶことは想定していない。
 	*/
-	void ScreenSpace::SetCurrentView(const Matrix& view, const Matrix& projection, const Vector4& rect)
+	void ScreenSpace::SetCurrentView(const Matrix& view, const Matrix& projection)
 	{
 		view_ = view;
 		projection_ = projection;
-		rect_ = rect;
 	}
 }

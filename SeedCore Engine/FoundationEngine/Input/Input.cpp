@@ -106,29 +106,29 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Returns the cursor's current position, in screen pixels.
+	* Returns the cursor's current position on the 1920x1080 game screen, in pixels.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* カーソルの現在の位置を、画面ピクセル単位で返す。
+	* カーソルの現在の位置を、1920x1080 のゲーム画面上のピクセル単位で返す。
 	*/
 	Vector2 Input::MousePoint()
 	{
 		/// [EN] Where the cursor is stays meaningful even on frames not handed to the game, so the position is never filtered.
 		/// [JP] カーソルがどこにあるかはゲームに渡さないフレームでも意味があるので、位置は絞り込まない。
-		return InputSystem::mousePoint_;
+		return InputSystem::gameMousePoint_;
 	}
 
 	/**
 	* [EN]
-	* Returns the cursor's movement since last frame, in screen pixels.
+	* Returns the cursor's movement since last frame, in desktop pixels.
 	* Zero on frames not handed to the game.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 前フレームからのカーソルの移動量を、画面ピクセル単位で返す。
+	* 前フレームからのカーソルの移動量を、デスクトップのピクセル単位で返す。
 	* ゲームに渡さないフレームでは 0。
 	*/
 	Vector2 Input::MouseMotion()
@@ -308,13 +308,13 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Locks the cursor at point (screen pixels); see
+	* Locks the cursor at point (1920x1080 game screen pixels); see
 	* InputSystem::LockCursor(Vector2).
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* カーソルを point（画面ピクセル）に固定する。
+	* カーソルを point（1920x1080 のゲーム画面のピクセル）に固定する。
 	* InputSystem::LockCursor(Vector2) を参照。
 	*/
 	void Input::LockCursor(Vector2 point)

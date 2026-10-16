@@ -926,8 +926,5 @@
     <ClInclude Include="Resource\Prefab\PrefabSystem.h">
       <Filter>Resource\Prefab</Filter>
     </ClInclude>
-    <ClInclude Include="World\ECS\Component\Pivot.h">
-      <Filter>World\ECS\Component</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

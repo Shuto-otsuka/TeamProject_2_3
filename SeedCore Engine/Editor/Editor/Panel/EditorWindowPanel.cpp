@@ -174,8 +174,8 @@ namespace SeedCore
 
 		ImGui::SameLine();
 
-		/// [EN] Selects the pivot tool, which edits the pivot point instead of the actor; like the other tools it stays filled with the active color while selected.
-		/// [JP] actor ではなく基準点を編集する基準点ツールを選ぶ。他のツールと同じく、選択中は地をアクティブ色で塗る。
+		/// [EN] Selects the pivot tool, which moves the actor's origin while its children stay in place; like the other tools it stays filled with the active color while selected.
+		/// [JP] 子をその場に残したまま actor の原点を動かす基準点ツールを選ぶ。他のツールと同じく、選択中は地をアクティブ色で塗る。
 		ImGui::PushStyleColor(ImGuiCol_Button, context_.guizmo_.pivotEdit_ ? activeColor : transparent);
 		if (ImGui::ImageButton("##Pivot", imguiTexture_.Icon(IconType::Pivot), iconSize))
 		{

@@ -28,23 +28,22 @@ namespace SeedCore
 		/// [JP] 前フレーム時点でギズモのドラッグ(ImGuizmo::IsUsing())が進行中だったかどうか — ドラッグ開始/終了のエッジを検出し、フレーム毎ではなくドラッグ全体で1つのundo Commandを積むために使う。
 		Bool wasDragging_ = false;
 
-		/// [EN] The actors being dragged, captured at drag-start so drag-end can push commands against the same entities even if selection changed mid-drag. Index-parallel with dragStartWorldMatrices_/dragStartPositions_/dragStartRotations_/dragStartScales_.
-		/// [JP] ドラッグ開始時点で捕捉した操作対象actor群。ドラッグ中に選択が変わってもドラッグ終了時に同じentity群へコマンドを積めるようにする。dragStartWorldMatrices_/dragStartPositions_/dragStartRotations_/dragStartScales_とインデックスが対応する。
+		/// [EN] The actors being dragged, captured at drag-start so drag-end can push commands against the same entities even if selection changed mid-drag; with the pivot tool, their direct children follow them. Index-parallel with dragStartWorldMatrices_/dragStartPositions_/dragStartRotations_/dragStartScales_.
+		/// [JP] ドラッグ開始時点で捕捉した操作対象actor群。ドラッグ中に選択が変わってもドラッグ終了時に同じentity群へコマンドを積めるようにする。基準点ツールでは、その直下の子も続けて入る。dragStartWorldMatrices_/dragStartPositions_/dragStartRotations_/dragStartScales_とインデックスが対応する。
 		DynamicArray<Entity> dragEntities_;
 
-		/// [EN] Each dragged actor's pivot frame at drag-start (its world matrix without the Pivot shift) - combined with the pivot's delta transform every frame to compute that actor's new pivot frame, whose parent-relative decomposition is Position/Rotation directly.
-		/// [JP] 各ドラッグ対象actorのドラッグ開始時点の基準点のフレーム（ワールド行列から Pivot のずらしを除いたもの） — 毎フレーム、ピボットのデルタ変換と組み合わせてそのactorの新しい基準点のフレームを求める。親から見た分解がそのまま Position/Rotation になる。
+		/// [EN] Each dragged actor's world matrix at drag-start - combined with the pivot's delta transform every frame to compute that actor's new world matrix, whose parent-relative decomposition is Position/Rotation directly.
+		/// [JP] 各ドラッグ対象actorのドラッグ開始時点のワールド行列 — 毎フレーム、ピボットのデルタ変換と組み合わせてそのactorの新しいワールド行列を求める。親から見た分解がそのまま Position/Rotation になる。
 		DynamicArray<Matrix> dragStartWorldMatrices_;
 
-		/// [EN] Position/Pivot/Rotation/Scale values captured at drag-start, diffed against the current values at drag-end to build undo Commands.
-		/// [JP] ドラッグ開始時点で捕捉したPosition/Pivot/Rotation/Scale値。ドラッグ終了時点の現在値と比較し、undo Commandを組み立てる。
+		/// [EN] Position/Rotation/Scale values captured at drag-start, diffed against the current values at drag-end to build undo Commands.
+		/// [JP] ドラッグ開始時点で捕捉したPosition/Rotation/Scale値。ドラッグ終了時点の現在値と比較し、undo Commandを組み立てる。
 		DynamicArray<Vector3> dragStartPositions_;
-		DynamicArray<Vector3> dragStartPivots_;
 		DynamicArray<Quaternion> dragStartRotations_;
 		DynamicArray<Vector3> dragStartScales_;
 
-		/// [EN] The gizmo's own matrix at drag-start. With a single actor selected this equals that actor's pivot frame; with multiple actors selected it's the unrotated average of their pivot points (see Draw()). Move() computes each frame's pivot delta as dragStartPivotMatrix_.Invert() * (current gizmo matrix) and applies it to every dragged actor's dragStartWorldMatrices_ entry.
-		/// [JP] ドラッグ開始時点のギズモ自身の行列。単一選択時はそのactorの基準点のフレームと等しく、複数選択時はそれらの基準点の（無回転の）平均位置になる（Draw()参照）。Move()は毎フレーム、dragStartPivotMatrix_.Invert() * (現在のギズモ行列) としてピボットのデルタを求め、各ドラッグ対象actorのdragStartWorldMatrices_へ適用する。
+		/// [EN] The gizmo's own matrix at drag-start. With a single actor selected this equals that actor's world matrix; with multiple actors selected it's the unrotated average of their origins (see Draw()). Move() computes each frame's pivot delta as dragStartPivotMatrix_.Invert() * (current gizmo matrix) and applies it to every dragged actor's dragStartWorldMatrices_ entry.
+		/// [JP] ドラッグ開始時点のギズモ自身の行列。単一選択時はそのactorのワールド行列と等しく、複数選択時はそれらの原点の（無回転の）平均位置になる（Draw()参照）。Move()は毎フレーム、dragStartPivotMatrix_.Invert() * (現在のギズモ行列) としてピボットのデルタを求め、各ドラッグ対象actorのdragStartWorldMatrices_へ適用する。
 		Matrix dragStartPivotMatrix_ = Matrix::Identity;
 
 		/// [EN] The gizmo's displayed matrix, persisted across frames. Only rebuilt from the live selection while NOT dragging (ImGuizmo::IsUsing() false) - while a drag is in progress it is left alone here and instead mutated in-place by ImGuizmo::Manipulate() inside Move(), so a multi-select pivot's accumulated rotation/scale from earlier frames of the same drag isn't discarded (recomputing it fresh every frame from actor positions would collapse it back to an unrotated translate-only matrix mid-drag).

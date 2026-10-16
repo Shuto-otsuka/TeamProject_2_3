@@ -7,7 +7,6 @@
 #include <GraphicsEngine/Model/Skeleton/Skeleton.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
-#include <FoundationEngine/World/ECS/Component/Pivot.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
@@ -225,14 +224,6 @@ namespace SeedCore
 		}
 
 		worldMatrix = Matrix::CreateScale(finalScale) * Matrix::CreateFromQuaternion(finalRotation) * Matrix::CreateTranslation(finalTranslation);
-
-		/// [EN] The constraints above work on the pivot point's frame (same as TransformSystem without the pivot shift), so the shift is put back in front last; the constrained translation is then where the pivot point lands.
-		/// [JP] ここまでの拘束は基準点のフレーム（TransformSystem から基準点のずらしを除いたもの）に対して働くので、最後にずらしを前に戻す。拘束後の平行移動は基準点が置かれる位置になる。
-		Pivot* pivot = world.GetComponent<Pivot>(entity);
-		if (pivot)
-		{
-			worldMatrix = Matrix::CreateTranslation(-Transform::Vector(*pivot)) * worldMatrix;
-		}
 
 		actor.WorldMatrix(worldMatrix);
 

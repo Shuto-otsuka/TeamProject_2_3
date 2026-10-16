@@ -19,7 +19,7 @@ struct TextureSpriteStructuredBuffer
 	float2 position_;
 	float rotation_;
 	float2 scale_;
-	float texture_sprite_structured_buffer_padding_0_;
+	uint batch_;
 	float2 texture_size_;
 	float2 texture_position_;
 	float2 pivot_;
@@ -54,7 +54,8 @@ struct TextureBillboardStructuredBuffer
 	uint motion_type_;
 	uint face_camera_;
 	uint selected_;
-	float2 texture_billboard_structured_buffer_padding_1_;
+	uint batch_;
+	float texture_billboard_structured_buffer_padding_1_;
 };
 
 StructuredBuffer<TextureBillboardStructuredBuffer> GetTextureBillboardStructuredBuffer(uint index)

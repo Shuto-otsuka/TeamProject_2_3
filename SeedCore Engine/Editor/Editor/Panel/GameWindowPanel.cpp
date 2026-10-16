@@ -110,8 +110,8 @@ namespace SeedCore
 
 				ImGui::SetCursorPos(ImVec2(offsetX, offsetY));
 
-				/// [EN] Publish where the game image sits on the desktop, so gameplay ScreenToWorld()/WorldToScreen() line up with it.
-				/// [JP] ゲーム画像のデスクトップ上の位置を公開し、ゲームプレイの ScreenToWorld()/WorldToScreen() と一致させる。
+				/// [EN] Publish where the game image sits on the desktop, so the cursor can be mapped from it onto the 1920x1080 game screen.
+				/// [JP] ゲーム画像のデスクトップ上の位置を公開し、カーソルをそこから 1920x1080 のゲーム画面へ写せるようにする。
 				ImVec2 imageScreenPos = ImGui::GetCursorScreenPos();
 				cameraSystem_.Rect(Vector4(imageScreenPos.x, imageScreenPos.y, imageWidth, imageHeight));
 
@@ -176,8 +176,8 @@ namespace SeedCore
 				screenPos.y = IM_ROUND(screenPos.y);
 				ImGui::SetCursorScreenPos(screenPos);
 
-				/// [EN] Publish where the game image sits on the desktop, so gameplay ScreenToWorld()/WorldToScreen() line up with it.
-				/// [JP] ゲーム画像のデスクトップ上の位置を公開し、ゲームプレイの ScreenToWorld()/WorldToScreen() と一致させる。
+				/// [EN] Publish where the game image sits on the desktop, so the cursor can be mapped from it onto the 1920x1080 game screen.
+				/// [JP] ゲーム画像のデスクトップ上の位置を公開し、カーソルをそこから 1920x1080 のゲーム画面へ写せるようにする。
 				cameraSystem_.Rect(Vector4(screenPos.x, screenPos.y, imageWidth, imageHeight));
 
 				ImGui::PushStyleVar(ImGuiStyleVar_ImageBorderSize, 0.0f);

@@ -186,10 +186,6 @@ namespace SeedCore
 		/// [JP] 取得時点でのローカル位置。
 		Vector3 position_;
 
-		/// [EN] Pivot point in the actor's local space at capture time.
-		/// [JP] 取得時点での、actor のローカル空間における基準点。
-		Vector3 pivot_ = Vector3(0.0f, 0.0f, 0.0f);
-
 		/// [EN] Local rotation at capture time, as a normalized quaternion.
 		/// [JP] 取得時点でのローカル回転。正規化済みクォータニオン。
 		Quaternion rotation_ = Quaternion::Identity;
@@ -236,7 +232,6 @@ namespace SeedCore
 			archive.Field("layer", layerName_);
 			archive.Field("active", active_);
 			archive.Field("position", position_);
-			archive.Field("pivot", pivot_);
 			archive.Field("rotation", rotation_);
 			archive.Field("scale", scale_);
 			archive.Field("components", components_);
@@ -272,7 +267,6 @@ namespace SeedCore
 			archive.TryField("layer", layerName_);
 			archive.TryField("active", active_);
 			archive.TryField("position", position_);
-			archive.TryField("pivot", pivot_);
 			archive.TryField("rotation", rotation_);
 			archive.TryField("scale", scale_);
 			archive.TryField("components", components_);

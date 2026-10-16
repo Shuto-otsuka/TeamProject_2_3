@@ -128,24 +128,24 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Returns the cursor's current position, in screen pixels.
+		* Returns the cursor's current position on the 1920x1080 game screen, in pixels.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* カーソルの現在の位置を、画面ピクセル単位で返す。
+		* カーソルの現在の位置を、1920x1080 のゲーム画面上のピクセル単位で返す。
 		*/
 		static Vector2 MousePoint();
 
 		/**
 		* [EN]
-		* Returns the cursor's movement since last frame, in screen pixels.
+		* Returns the cursor's movement since last frame, in desktop pixels.
 		* Zero on frames not handed to the game.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 前フレームからのカーソルの移動量を、画面ピクセル単位で返す。
+		* 前フレームからのカーソルの移動量を、デスクトップのピクセル単位で返す。
 		* ゲームに渡さないフレームでは 0。
 		*/
 		static Vector2 MouseMotion();
@@ -262,15 +262,15 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Same as LockCursor(), but holds the cursor at point (screen
-		* pixels, the same space as MousePoint()), e.g. the centre of the
-		* window. Calling it again moves the lock to the new point.
+		* Same as LockCursor(), but holds the cursor at point (1920x1080
+		* game screen pixels, the same space as MousePoint()), e.g. the
+		* centre of the screen. Calling it again moves the lock to the new point.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* LockCursor() と同じだが、point（画面ピクセル。MousePoint() と
-		* 同じ座標）にカーソルを留める。例: ウィンドウの中央。もう一度
+		* LockCursor() と同じだが、point（1920x1080 のゲーム画面のピクセル。
+		* MousePoint() と同じ座標）にカーソルを留める。例: 画面の中央。もう一度
 		* 呼ぶと、固定する位置が新しい point に移る。
 		*/
 		static void LockCursor(Vector2 point);

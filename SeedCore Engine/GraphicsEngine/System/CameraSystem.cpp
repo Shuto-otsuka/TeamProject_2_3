@@ -82,14 +82,14 @@ namespace SeedCore
 	* [EN]
 	* Sets where the game image is displayed on the desktop, in desktop
 	* pixels (x = left, y = top, z = width, w = height). A degenerate size
-	* is ignored so the divisions in ScreenSpace stay finite.
+	* is ignored so the divisions in InputSystem::Update() stay finite.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* ゲーム画像がデスクトップ上のどこに表示されているかを、
 	* デスクトップのピクセル座標(x = 左、y = 上、z = 幅、w = 高さ)で
-	* 設定する。ScreenSpace の除算が有限に収まるよう、大きさが0以下の
+	* 設定する。InputSystem::Update() の除算が有限に収まるよう、大きさが0以下の
 	* ものは無視する。
 	*/
 	void CameraSystem::Rect(const Vector4& rect)
@@ -463,6 +463,6 @@ namespace SeedCore
 		///      を使う - ゲームプレイのスクリーン⇔ワールド変換は、
 		///      描画専用のサブピクセルジッターオフセットではなく
 		///      カメラ本来のprojectionを使うべきなため。
-		ScreenSpace::SetCurrentView(view, nonJitterProjection, rect_);
+		ScreenSpace::SetCurrentView(view, nonJitterProjection);
 	}
 }

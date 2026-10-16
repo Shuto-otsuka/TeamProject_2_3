@@ -225,7 +225,9 @@ namespace SeedCore
 				window_->GetTimer().Tick();
 				gameTimer_.Tick(window_->GetTimer().Delta());
 
-				InputSystem::Update(true);
+				/// [EN] The game rect is the one published last frame below; it only changes when the window is resized or moved.
+				/// [JP] ゲームの矩形は、下で前のフレームに公開したもの。変わるのはウィンドウの大きさや位置を変えたときだけ。
+				InputSystem::Update(true, cameraSystem_.Rect());
 
 				Uint32 resizedWidth = 0;
 				Uint32 resizedHeight = 0;
@@ -234,8 +236,8 @@ namespace SeedCore
 					graphics_->ResizeSwapChain(resizedWidth, resizedHeight);
 				}
 
-				/// [EN] Publish where the letterboxed game image sits on the desktop (same fit as LetterScreen), so gameplay ScreenToWorld()/WorldToScreen() line up with it.
-				/// [JP] レターボックス表示されたゲーム画像のデスクトップ上の位置を(LetterScreen と同じ収め方で)公開し、ゲームプレイの ScreenToWorld()/WorldToScreen() と一致させる。
+				/// [EN] Publish where the letterboxed game image sits on the desktop (same fit as LetterScreen), so the cursor can be mapped from it onto the 1920x1080 game screen.
+				/// [JP] レターボックス表示されたゲーム画像のデスクトップ上の位置を(LetterScreen と同じ収め方で)公開し、カーソルをそこから 1920x1080 のゲーム画面へ写せるようにする。
 				RECT clientRect{};
 				GetClientRect(hwnd_, &clientRect);
 				POINT clientOrigin{};

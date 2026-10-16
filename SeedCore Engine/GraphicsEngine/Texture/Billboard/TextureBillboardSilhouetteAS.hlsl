@@ -1,6 +1,7 @@
 #include "../Texture.hlsli"
 #include "../../Shader/ShaderResources.hlsli"
 #include "../../Shader/Culling.hlsli"
+#include "../../Shader/Dispatch.hlsli"
 
 groupshared uint survived_count;
 groupshared uint local_indices[32];
@@ -19,33 +20,35 @@ void main(uint3 gtid : SV_GroupThreadID, uint3 dtid : SV_DispatchThreadID)
 	GroupMemoryBarrierWithGroupSync();
 
 	bool is_visible = false;
-	uint billboard_id = dtid.x;
+	bool is_ranged = dispatch_buffer_index_ != 0xFFFFFFFFu;
+	uint range_start = is_ranged ? dispatch_buffer_index_ : 0u;
+	uint range_batch = texture_billboard[range_start].batch_;
+	uint billboard_id = range_start + dtid.x;
 
 	if (billboard_id < 32768)
 	{
 		TextureBillboardStructuredBuffer billboard = texture_billboard[billboard_id];
 
-		if (billboard.selected_ != 0 && billboard.scale_.x > 0.0 && billboard.scale_.y > 0.0)
+		if ((!is_ranged || billboard.batch_ == range_batch) && billboard.selected_ != 0 && billboard.scale_.x > 0.0 && billboard.scale_.y > 0.0)
 		{
 			float radius = max(billboard.scale_.x, billboard.scale_.y) * 0.5f;
 			is_visible = IsVisibleInFrustum(billboard.position_, radius, scene_constant.current_view_projection_);
 		}
 	}
 
-	if (is_visible)
-	{
-		uint slot;
-		InterlockedAdd(survived_count, 1, slot);
-		local_indices[slot] = billboard_id;
-	}
+	local_indices[gtid.x] = is_visible ? billboard_id : 0xFFFFFFFFu;
 
 	GroupMemoryBarrierWithGroupSync();
 
 	if (gtid.x == 0)
 	{
-		for (uint index = 0; index < survived_count; ++index)
+		for (uint index = 0; index < 32; ++index)
 		{
-			payload.texture_indices[index] = local_indices[index];
+			if (local_indices[index] != 0xFFFFFFFFu)
+			{
+				payload.texture_indices[survived_count] = local_indices[index];
+				++survived_count;
+			}
 		}
 	}
 

@@ -22,7 +22,7 @@ namespace SeedCore
 			Vector2 position_;
 			Float rotation_;
 			Vector2 scale_;
-			Float padding0_;
+			Uint batch_;
 			Vector2 size_;
 			Vector2 padding1_;
 			Vector2 pivot_;
@@ -46,7 +46,7 @@ namespace SeedCore
 			Uint textureIndex_;
 			Uint faceCamera_;
 			Uint selected_;
-			Float padding2_;
+			Uint batch_;
 		};
 
 		struct MovieFullscreenStructuredBuffer
@@ -55,6 +55,21 @@ namespace SeedCore
 			Uint textureIndex_;
 			Float textureAspect_;
 			Vector2 padding0_;
+		};
+
+		struct SpriteBatch
+		{
+			Int order_;
+			Uint spriteStart_;
+			Uint spriteCount_;
+			Uint canvasStart_;
+			Uint canvasCount_;
+		};
+
+		struct OrderedEntity
+		{
+			Int order_;
+			EntityID entityID_;
 		};
 
 	public:
@@ -68,9 +83,17 @@ namespace SeedCore
 
 		void Upload();
 
+		[[nodiscard]] Size GetSpriteBatchCount()const;
+
+		[[nodiscard]] Int GetSpriteBatchOrder(Size index)const;
+
 		void DrawFullscreen(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
 
-		void DrawSprite(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
+		void DrawSpriteBatch(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Size index);
+
+		void DrawCanvasBatch(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Size index);
+
+		void DrawWorldBillboard(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
 
 		void DrawBillboard(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
 
@@ -79,11 +102,26 @@ namespace SeedCore
 		void DrawSilhouetteBillboard(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
 
 	private:
+		void DrawSpriteRange(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Uint start, Uint count);
+
+		void DrawBillboardRange(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Uint start, Uint count);
+
+	private:
 		DynamicArray<MovieSpriteStructuredBuffer> spriteInstances_;
 
 		DynamicArray<MovieBillboardStructuredBuffer> billboardInstances_;
 
+		DynamicArray<MovieBillboardStructuredBuffer> canvasInstances_;
+
 		DynamicArray<MovieFullscreenStructuredBuffer> fullscreenInstances_;
+
+		DynamicArray<SpriteBatch> spriteBatches_;
+
+		DynamicArray<OrderedEntity> orderedEntities_;
+
+		Uint worldBillboardCount_ = 0;
+
+		Uint batchSerial_ = 0;
 
 		ResourcePtr<ReadOnlyStructuredBuffer<MovieSpriteStructuredBuffer>> spriteBuffer_;
 
