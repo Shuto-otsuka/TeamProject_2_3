@@ -224,10 +224,10 @@ namespace SeedCore
 
 			/// [EN] Put back every frame, like capture: this frame's movement was already measured above from the previous lock point. The lock point is on the game screen, so it is mapped back onto the desktop for SetCursorPos().
 			/// [JP] キャプチャと同じく毎フレーム戻す。このフレームの移動量は、上で前回の固定位置から既に測ってある。固定位置はゲーム画面上のものなので、SetCursorPos() のためにデスクトップ上へ写し戻す。
-			Float desktopX = gameRect.x + cursorLockPoint_.x / 1920.0f * gameRect.z;
-			Float desktopY = gameRect.y + cursorLockPoint_.y / 1080.0f * gameRect.w;
-			SetCursorPos(static_cast<Int>(desktopX), static_cast<Int>(desktopY));
-			desktopMousePoint_ = Vector2(desktopX, desktopY);
+			Int desktopX = static_cast<Int>(gameRect.x + cursorLockPoint_.x / 1920.0f * gameRect.z);
+			Int desktopY = static_cast<Int>(gameRect.y + cursorLockPoint_.y / 1080.0f * gameRect.w);
+			SetCursorPos(desktopX, desktopY);
+			desktopMousePoint_ = Vector2(static_cast<Float>(desktopX), static_cast<Float>(desktopY));
 			gameMousePoint_ = cursorLockPoint_;
 		}
 		else

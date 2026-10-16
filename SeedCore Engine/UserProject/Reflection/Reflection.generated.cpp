@@ -5,6 +5,7 @@
 #include <UserProject/Script/CameraController.h>
 #include <UserProject/Script/ChargeGaugeController.h>
 #include <UserProject/Script/CheckPointAreaController.h>
+#include <UserProject/Script/CircuitSystem.h>
 #include <UserProject/Script/CostGaugeController.h>
 #include <UserProject/Script/FloorMoveSystem.h>
 #include <UserProject/Script/GoalSystem.h>
@@ -18,6 +19,7 @@ extern "C" int _force_reflection_BulletNaviController = 0;
 extern "C" int _force_reflection_CameraController = 0;
 extern "C" int _force_reflection_ChargeGaugeController = 0;
 extern "C" int _force_reflection_CheckPointAreaController = 0;
+extern "C" int _force_reflection_CircuitSystem = 0;
 extern "C" int _force_reflection_CostGaugeController = 0;
 extern "C" int _force_reflection_FloorMoveSystem = 0;
 extern "C" int _force_reflection_GoalSystem = 0;
@@ -117,6 +119,37 @@ namespace SeedCore
 			}
 		};
 		static Register_CheckPointAreaController global_CheckPointAreaController_register;
+
+		// ---- UserProject/Script/CircuitSystem.h ----
+		struct Register_CircuitSystem
+		{
+			Register_CircuitSystem()
+			{
+				ReflectionRegistry::Register(String("CircuitSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					CircuitSystem& obj = *static_cast<CircuitSystem*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("論理");
+						fi.offset_ = offsetof(CircuitSystem, logic_);
+						fi.type_ = AttributeType::Enum;
+						fi.enum_.typeName_ = String("Logic");
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("起動最低数");
+						fi.offset_ = offsetof(CircuitSystem, guaranteeCount_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 0;
+						fi.clampMax_ = 100000;
+						outInfo.push_back(std::move(fi));
+					}
+					outInfo.push_back({ String("結果を反転"), offsetof(CircuitSystem, flipResult_), AttributeType::Bool });
+					outInfo.push_back({ String("結果を保持"), offsetof(CircuitSystem, keepResult_), AttributeType::Bool });
+				});
+			}
+		};
+		static Register_CircuitSystem global_CircuitSystem_register;
 
 		// ---- UserProject/Script/CostGaugeController.h ----
 		struct Register_CostGaugeController
@@ -280,6 +313,19 @@ namespace SeedCore
 			}
 		};
 		static Register_StageSelectButtonController global_StageSelectButtonController_register;
+
+		struct RegisterEnum_Logic
+		{
+			RegisterEnum_Logic()
+			{
+				EnumRegistry::Register(String("Logic"), {
+					{ static_cast<Int>(CircuitSystem::Logic::And), String("And") },
+					{ static_cast<Int>(CircuitSystem::Logic::Or), String("Or") },
+					{ static_cast<Int>(CircuitSystem::Logic::Count), String("Count") },
+				});
+			}
+		};
+		static RegisterEnum_Logic global_Logic_enum_register;
 
 		struct RegisterEnum_MoveType
 		{
