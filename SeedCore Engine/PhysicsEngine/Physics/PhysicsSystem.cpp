@@ -3,6 +3,10 @@
 #include <PhysicsEngine/JoltPhysics/JoltLayerdef.h>
 #include <PhysicsEngine/Collider/RectCollider.h>
 #include <PhysicsEngine/Collider/CircleCollider.h>
+#include <PhysicsEngine/Collider/BoxCollider.h>
+#include <PhysicsEngine/Collider/SphereCollider.h>
+#include <PhysicsEngine/Collider/CapsuleCollider.h>
+#include <PhysicsEngine/Collider/CylinderCollider.h>
 #include <PhysicsEngine/Collider/MeshCollider.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
 #include <FoundationEngine/World/World.h>
@@ -129,6 +133,131 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Brings the body of every active actor's lone collider in line with
+	* the actor: moves it to the actor's current pose and rebuilds its
+	* shape when the actor's world scale has changed, so the collider
+	* follows an actor that moves or scales after it was created.
+	* MeshCollider is left out, since rebuilding a mesh shape is too
+	* costly to do whenever the scale changes. Called every frame.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 有効な全 Actor の単独のコライダーについて、ボディを Actor に合わせる。
+	* Actor の今の姿勢へボディを移し、Actor のワールドスケールが変わって
+	* いれば形状を作り直す。これにより、生成後に動いたり拡大縮小したり
+	* する Actor にコライダーが追従する。メッシュ形状の作り直しはスケールが
+	* 変わるたびに行うには重いため、MeshCollider は対象外。毎フレーム呼ばれる。
+	*/
+	void PhysicsSystem::ApplyCollider(World& world)
+	{
+		/// [EN] An inactive actor's body is out of the simulation, so it is brought in line once the actor is active again.
+		/// [JP] 無効な Actor のボディはシミュレーション外なので、Actor が再び有効になってから合わせる。
+		for (EntityID id : world.GetComponents<RectCollider>())
+		{
+			Actor actor = world.GetActor(id);
+			if (!actor || !actor.Active())
+			{
+				continue;
+			}
+
+			RectCollider* collider = actor.GetComponent<RectCollider>();
+			if (!collider)
+			{
+				continue;
+			}
+
+			collider->Refresh();
+		}
+
+		for (EntityID id : world.GetComponents<CircleCollider>())
+		{
+			Actor actor = world.GetActor(id);
+			if (!actor || !actor.Active())
+			{
+				continue;
+			}
+
+			CircleCollider* collider = actor.GetComponent<CircleCollider>();
+			if (!collider)
+			{
+				continue;
+			}
+
+			collider->Refresh();
+		}
+
+		for (EntityID id : world.GetComponents<BoxCollider>())
+		{
+			Actor actor = world.GetActor(id);
+			if (!actor || !actor.Active())
+			{
+				continue;
+			}
+
+			BoxCollider* collider = actor.GetComponent<BoxCollider>();
+			if (!collider)
+			{
+				continue;
+			}
+
+			collider->Refresh();
+		}
+
+		for (EntityID id : world.GetComponents<SphereCollider>())
+		{
+			Actor actor = world.GetActor(id);
+			if (!actor || !actor.Active())
+			{
+				continue;
+			}
+
+			SphereCollider* collider = actor.GetComponent<SphereCollider>();
+			if (!collider)
+			{
+				continue;
+			}
+
+			collider->Refresh();
+		}
+
+		for (EntityID id : world.GetComponents<CapsuleCollider>())
+		{
+			Actor actor = world.GetActor(id);
+			if (!actor || !actor.Active())
+			{
+				continue;
+			}
+
+			CapsuleCollider* collider = actor.GetComponent<CapsuleCollider>();
+			if (!collider)
+			{
+				continue;
+			}
+
+			collider->Refresh();
+		}
+
+		for (EntityID id : world.GetComponents<CylinderCollider>())
+		{
+			Actor actor = world.GetActor(id);
+			if (!actor || !actor.Active())
+			{
+				continue;
+			}
+
+			CylinderCollider* collider = actor.GetComponent<CylinderCollider>();
+			if (!collider)
+			{
+				continue;
+			}
+
+			collider->Refresh();
+		}
+	}
+
+	/**
+	* [EN]
 	* Hands what code has changed on every active actor's Rigidbody
 	* (isTrigger_, and the actor's LinearVelocity and AngularVelocity) to
 	* its body. Called before every fixed step.
@@ -184,8 +313,8 @@ namespace SeedCore
 			return JPH::BodyID();
 		}
 
-		/// [EN] A lone collider never moves, so it is a static body on the actor's layer.
-		/// [JP] 単独のコライダーは動かないので、Actor のレイヤー上の静的ボディにする。
+		/// [EN] A lone collider is not simulated, so it is a static body on the actor's layer; every collider but MeshCollider is moved along with its actor by ApplyCollider.
+		/// [JP] 単独のコライダーはシミュレーションされないので、Actor のレイヤー上の静的ボディにする。MeshCollider 以外のコライダーは ApplyCollider が Actor に合わせて動かす。
 		RigidbodyDesc desc;
 		desc.shape_ = shape;
 		desc.motionType_ = JPH::EMotionType::Static;

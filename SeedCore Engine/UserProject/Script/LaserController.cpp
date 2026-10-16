@@ -10,14 +10,14 @@ void LaserController::OnTick(float elapsedTime)
     //全てのレーザーの始点のオフセット
     SeedCore::Vector3 startOffsets[9];
     startOffsets[0] = centerOffset;
-    startOffsets[1] = { centerOffset.x + deltaOffset.x,centerOffset.y + deltaOffset.y,centerOffset.z};
-    startOffsets[2] = { centerOffset.x - deltaOffset.x,centerOffset.y + deltaOffset.y,centerOffset.z };
-    startOffsets[3] = { centerOffset.x + deltaOffset.x,centerOffset.y - deltaOffset.y,centerOffset.z };
-    startOffsets[4] = { centerOffset.x - deltaOffset.x,centerOffset.y - deltaOffset.y,centerOffset.z };
-    startOffsets[5] = { centerOffset.x,centerOffset.y + deltaOffset.y,centerOffset.z };
-    startOffsets[6] = { centerOffset.x,centerOffset.y - deltaOffset.y,centerOffset.z };
-    startOffsets[7] = { centerOffset.x + deltaOffset.x,centerOffset.y,centerOffset.z };
-    startOffsets[8] = { centerOffset.x - deltaOffset.x,centerOffset.y,centerOffset.z };
+    startOffsets[1] = SeedCore::Vector3(centerOffset.x + deltaOffset.x, centerOffset.y + deltaOffset.y, centerOffset.z);
+    startOffsets[2] = SeedCore::Vector3(centerOffset.x - deltaOffset.x, centerOffset.y + deltaOffset.y, centerOffset.z);
+    startOffsets[3] = SeedCore::Vector3(centerOffset.x + deltaOffset.x, centerOffset.y - deltaOffset.y, centerOffset.z);
+    startOffsets[4] = SeedCore::Vector3(centerOffset.x - deltaOffset.x, centerOffset.y - deltaOffset.y, centerOffset.z);
+    startOffsets[5] = SeedCore::Vector3(centerOffset.x, centerOffset.y + deltaOffset.y, centerOffset.z);
+    startOffsets[6] = SeedCore::Vector3(centerOffset.x, centerOffset.y - deltaOffset.y, centerOffset.z);
+    startOffsets[7] = SeedCore::Vector3(centerOffset.x + deltaOffset.x, centerOffset.y, centerOffset.z);
+    startOffsets[8] = SeedCore::Vector3(centerOffset.x - deltaOffset.x, centerOffset.y, centerOffset.z);
     
     //レーザーの方向は前方向
     SeedCore::Vector3 direction = GetActor().WorldMatrix().Forward();

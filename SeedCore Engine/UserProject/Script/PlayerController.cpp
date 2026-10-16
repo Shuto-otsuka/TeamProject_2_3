@@ -71,7 +71,7 @@ void PlayerController::OnTriggerEnter(SeedCore::Entity entity)
         {
             //前回踏んだチェックポイントより先のチェックポイントだったら更新
             SeedCore::Position* hitActorPosition = GetWorld().GetComponent<SeedCore::Position>(entity);
-            checkPointPosition = { hitActorPosition->x_,hitActorPosition->y_,hitActorPosition->z_ };
+            checkPointPosition = SeedCore::Vector3(hitActorPosition->x_, hitActorPosition->y_, hitActorPosition->z_);
             beforeCheckPointStep = checkPointAreaController->GetStep();
 
             /*
@@ -296,7 +296,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
         Uint32 layerMask = ~(1 << GetActor().Layer()) & ~(1 << 4);//プレイヤー自身と、エリア(トリガー)を除くレイヤーマスク
 
         //銃口の高さを求める
-        SeedCore::Vector3 gunOffset = { 0.0f,bulletOffsetY,0.0f };
+        SeedCore::Vector3 gunOffset = SeedCore::Vector3(0.0f, bulletOffsetY, 0.0f);
         SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
 
         if (GetActor().GetPhysics().Raycast(ray.origin_, ray.direction_, 10000.0f, hit,layerMask))

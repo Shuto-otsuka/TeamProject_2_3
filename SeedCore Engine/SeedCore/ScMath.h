@@ -6,3 +6,4 @@
 #include <FoundationEngine/Math/MathCommon.h>
 #include <FoundationEngine/Math/Ray.h>
 #include <FoundationEngine/Math/Random/Xorshift.h>
+#include <FoundationEngine/Math/Easing/Easing.h>

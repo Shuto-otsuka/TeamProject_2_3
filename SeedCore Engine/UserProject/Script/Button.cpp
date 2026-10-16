@@ -10,8 +10,8 @@ void Button::OnStart()
     scale = GetWorld().GetComponent<SeedCore::Scale>(entity);
 
     //ポジション、スケール、イメージテクスチャからボタンの当たり判定の範囲を取得
-    minOffset = { position->x_ - myImage->pivot_.x,position->y_ - myImage->pivot_.y };
-    maxOffset = { minOffset.x + myImage->textureSize_.x * scale->x_,minOffset.y + myImage->textureSize_.y * scale->y_ };
+    minOffset = SeedCore::Vector2(position->x_ - myImage->pivot_.x, position->y_ - myImage->pivot_.y);
+    maxOffset = SeedCore::Vector2(minOffset.x + myImage->textureSize_.x * scale->x_, minOffset.y + myImage->textureSize_.y * scale->y_);
 }
 
 void Button::OnTick(float elapsedTime)

@@ -312,7 +312,6 @@ namespace SeedCore
 		return true;
 	}
 
-
 	/**
 	* [EN]
 	* Returns the gravity vector used by the physics world.
@@ -491,6 +490,82 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Removes a body from simulation without destroying it.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディを破棄せずシミュレーションから外す。
+	*/
+	void Physics::SuspendBody(JPH::BodyID bodyID)
+	{
+		if (bodyID.IsInvalid())
+		{
+			return;
+		}
+
+		/// [EN] Removing keeps the body and its state; it only stops simulating and colliding.
+		/// [JP] 外してもボディと状態は残り、シミュレーションと衝突だけが止まる。
+		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
+		if (bodyInterface.IsAdded(bodyID))
+		{
+			bodyInterface.RemoveBody(bodyID);
+		}
+	}
+
+	/**
+	* [EN]
+	* Adds a suspended body back to simulation.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 停止中のボディをシミュレーションへ戻す。
+	*/
+	void Physics::ResumeBody(JPH::BodyID bodyID)
+	{
+		if (bodyID.IsInvalid())
+		{
+			return;
+		}
+
+		/// [EN] Re-adds the body awake; a body already in the simulation is left alone.
+		/// [JP] ボディを起きた状態で戻す。既にシミュレーション中のボディはそのままにする。
+		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
+		if (!bodyInterface.IsAdded(bodyID))
+		{
+			bodyInterface.AddBody(bodyID, JPH::EActivation::Activate);
+		}
+	}
+
+	/**
+	* [EN]
+	* Removes and destroys a physics body.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 物理ボディを削除して破棄する。
+	*/
+	void Physics::DestroyBody(JPH::BodyID bodyID)
+	{
+		if (bodyID.IsInvalid())
+		{
+			return;
+		}
+
+		/// [EN] A suspended body is already out of the simulation; only an added one needs removing.
+		/// [JP] 停止中のボディは既にシミュレーション外なので、追加済みのものだけ外す。
+		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
+		if (bodyInterface.IsAdded(bodyID))
+		{
+			bodyInterface.RemoveBody(bodyID);
+		}
+		bodyInterface.DestroyBody(bodyID);
+	}
+
+	/**
+	* [EN]
 	* Replaces the collision shape assigned to a body. A dynamic body
 	* keeps its mass; only its inertia follows the new shape.
 	*
@@ -554,6 +629,83 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Returns the world transform of a body: its rotation followed by its
+	* translation, with no scale. Read the position with Translation()
+	* and the rotation with Quaternion::CreateFromRotationMatrix().
+	* Returns the identity for an invalid ID.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディのワールド変換を返す。回転の後に平行移動を行う行列で、スケールは
+	* 含まない。位置は Translation()、回転は
+	* Quaternion::CreateFromRotationMatrix() で取り出す。無効な ID では
+	* 単位行列を返す。
+	*/
+	Matrix Physics::BodyTransform(JPH::BodyID bodyID)const
+	{
+		if (bodyID.IsInvalid())
+		{
+			return Matrix::Identity;
+		}
+
+		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
+		JPH::RVec3 position = bodyInterface.GetPosition(bodyID);
+		JPH::Quat rotation = bodyInterface.GetRotation(bodyID);
+
+		/// [EN] Built from Jolt's position and quaternion in the engine's row-vector order, rotation first and translation second, rather than by transposing Jolt's column-major matrix.
+		/// [JP] Jolt の行列を転置するのではなく、Jolt の位置とクォータニオンから、エンジンの行ベクトルの順（先に回転、後に平行移動）で組み立てる。
+		return Matrix::CreateFromQuaternion(Quaternion(rotation.GetX(), rotation.GetY(), rotation.GetZ(), rotation.GetW())) * Matrix::CreateTranslation(Vector3(position.GetX(), position.GetY(), position.GetZ()));
+	}
+
+	/**
+	* [EN]
+	* Moves a body to a world position and rotation directly, without
+	* simulating the motion in between, and without waking it. Does
+	* nothing when the body is already there.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディを、間の動きをシミュレーションせずにワールドの位置と回転へ直接
+	* 移す。ボディは起こさない。既にその位置と回転にあれば何もしない。
+	*/
+	void Physics::BodyTransform(JPH::BodyID bodyID, const Vector3& position, const Quaternion& rotation)
+	{
+		if (bodyID.IsInvalid())
+		{
+			return;
+		}
+
+		/// [EN] The "when changed" variant skips the broad-phase update for a body that has not moved, so calling this every frame for still bodies costs almost nothing.
+		/// [JP] 「変わったときだけ」版は、動いていないボディのブロードフェーズ更新を省くため、止まっているボディに毎フレーム呼んでもほとんどコストがかからない。
+		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
+		bodyInterface.SetPositionAndRotationWhenChanged(bodyID, JPH::RVec3(position.x, position.y, position.z), JPH::Quat(rotation.x, rotation.y, rotation.z, rotation.w).Normalized(), JPH::EActivation::DontActivate);
+	}
+
+	/**
+	* [EN]
+	* Returns the linear velocity (m/s) of a body; zero for a static
+	* body.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディの速度(m/s)を返す。静的ボディでは 0。
+	*/
+	Vector3 Physics::BodyLinearVelocity(JPH::BodyID bodyID)const
+	{
+		if (bodyID.IsInvalid())
+		{
+			return { 0.0f, 0.0f, 0.0f };
+		}
+
+		JPH::Vec3 linearVelocity = joltManager_.BodyInterface().GetLinearVelocity(bodyID);
+		return Vector3(linearVelocity.GetX(), linearVelocity.GetY(), linearVelocity.GetZ());
+	}
+
+	/**
+	* [EN]
 	* Replaces the linear velocity (m/s) of a dynamic or kinematic body
 	* and wakes it when the velocity is not zero. A kinematic body keeps
 	* the velocity until it is replaced. Has no effect on a static body.
@@ -575,6 +727,27 @@ namespace SeedCore
 		/// [EN] The velocity is clamped to the body's maximum speed, and frozen axes stay at zero.
 		/// [JP] 速度はボディの最大速度に収められ、固定した軸は 0 のまま。
 		joltManager_.BodyInterface().SetLinearVelocity(bodyID, JPH::Vec3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+	}
+
+	/**
+	* [EN]
+	* Returns the world-space angular velocity (rad/s) of a body; zero
+	* for a static body.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディのワールド空間の角速度(rad/s)を返す。静的ボディでは 0。
+	*/
+	Vector3 Physics::BodyAngularVelocity(JPH::BodyID bodyID)const
+	{
+		if (bodyID.IsInvalid())
+		{
+			return { 0.0f, 0.0f, 0.0f };
+		}
+
+		JPH::Vec3 angularVelocity = joltManager_.BodyInterface().GetAngularVelocity(bodyID);
+		return Vector3(angularVelocity.GetX(), angularVelocity.GetY(), angularVelocity.GetZ());
 	}
 
 	/**
@@ -661,32 +834,6 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Removes and destroys a physics body.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 物理ボディを削除して破棄する。
-	*/
-	void Physics::DestroyBody(JPH::BodyID bodyID)
-	{
-		if (bodyID.IsInvalid())
-		{
-			return;
-		}
-
-		/// [EN] A suspended body is already out of the simulation; only an added one needs removing.
-		/// [JP] 停止中のボディは既にシミュレーション外なので、追加済みのものだけ外す。
-		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
-		if (bodyInterface.IsAdded(bodyID))
-		{
-			bodyInterface.RemoveBody(bodyID);
-		}
-		bodyInterface.DestroyBody(bodyID);
-	}
-
-	/**
-	* [EN]
 	* Reports whether a body is currently added to the simulation.
 	*
 	* ---------------------------------------------------------------------
@@ -704,74 +851,6 @@ namespace SeedCore
 		/// [EN] Destroyed and suspended bodies are both outside the simulation and report false.
 		/// [JP] 破棄済みのボディも停止中のボディもシミュレーション外なので false を返す。
 		return joltManager_.BodyInterface().IsAdded(bodyID);
-	}
-
-	/**
-	* [EN]
-	* Writes the world position and rotation of a body.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ボディのワールド位置と回転を書き出す。
-	*/
-	void Physics::BodyTransform(JPH::BodyID bodyID, Vector3& outPosition, Quaternion& outRotation)const
-	{
-		if (bodyID.IsInvalid())
-		{
-			return;
-		}
-
-		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
-		JPH::RVec3 position = bodyInterface.GetPosition(bodyID);
-		JPH::Quat rotation = bodyInterface.GetRotation(bodyID);
-
-		/// [EN] Converts Jolt's vector and quaternion to the engine's types.
-		/// [JP] Jolt のベクトルとクォータニオンをエンジンの型へ変換する。
-		outPosition = Vector3(position.GetX(), position.GetY(), position.GetZ());
-		outRotation = Quaternion(rotation.GetX(), rotation.GetY(), rotation.GetZ(), rotation.GetW());
-	}
-
-	/**
-	* [EN]
-	* Returns the linear velocity (m/s) of a body; zero for a static
-	* body.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ボディの速度(m/s)を返す。静的ボディでは 0。
-	*/
-	Vector3 Physics::BodyLinearVelocity(JPH::BodyID bodyID)const
-	{
-		if (bodyID.IsInvalid())
-		{
-			return { 0.0f, 0.0f, 0.0f };
-		}
-
-		JPH::Vec3 linearVelocity = joltManager_.BodyInterface().GetLinearVelocity(bodyID);
-		return Vector3(linearVelocity.GetX(), linearVelocity.GetY(), linearVelocity.GetZ());
-	}
-
-	/**
-	* [EN]
-	* Returns the world-space angular velocity (rad/s) of a body; zero
-	* for a static body.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ボディのワールド空間の角速度(rad/s)を返す。静的ボディでは 0。
-	*/
-	Vector3 Physics::BodyAngularVelocity(JPH::BodyID bodyID)const
-	{
-		if (bodyID.IsInvalid())
-		{
-			return { 0.0f, 0.0f, 0.0f };
-		}
-
-		JPH::Vec3 angularVelocity = joltManager_.BodyInterface().GetAngularVelocity(bodyID);
-		return Vector3(angularVelocity.GetX(), angularVelocity.GetY(), angularVelocity.GetZ());
 	}
 
 	/**
@@ -1069,56 +1148,6 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Removes a body from simulation without destroying it.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ボディを破棄せずシミュレーションから外す。
-	*/
-	void Physics::SuspendBody(JPH::BodyID bodyID)
-	{
-		if (bodyID.IsInvalid())
-		{
-			return;
-		}
-
-		/// [EN] Removing keeps the body and its state; it only stops simulating and colliding.
-		/// [JP] 外してもボディと状態は残り、シミュレーションと衝突だけが止まる。
-		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
-		if (bodyInterface.IsAdded(bodyID))
-		{
-			bodyInterface.RemoveBody(bodyID);
-		}
-	}
-
-	/**
-	* [EN]
-	* Adds a suspended body back to simulation.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 停止中のボディをシミュレーションへ戻す。
-	*/
-	void Physics::ResumeBody(JPH::BodyID bodyID)
-	{
-		if (bodyID.IsInvalid())
-		{
-			return;
-		}
-
-		/// [EN] Re-adds the body awake; a body already in the simulation is left alone.
-		/// [JP] ボディを起きた状態で戻す。既にシミュレーション中のボディはそのままにする。
-		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
-		if (!bodyInterface.IsAdded(bodyID))
-		{
-			bodyInterface.AddBody(bodyID, JPH::EActivation::Activate);
-		}
-	}
-
-	/**
-	* [EN]
 	* Creates a hinge constraint between two bodies.
 	*
 	* ---------------------------------------------------------------------
@@ -1307,65 +1336,6 @@ namespace SeedCore
 		/// [EN] A world-attached end always counts as present.
 		/// [JP] ワールドに繋がった端は、常に存在するものとして扱う。
 		joltManager_.ConstraintPool().Refresh();
-	}
-
-	/**
-	* [EN]
-	* Creates and registers a two-body constraint.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 2ボディ拘束を生成して登録する。
-	*/
-	Handle<JPH::Constraint> Physics::CreateConstraint(JPH::BodyID bodyA, JPH::BodyID bodyB, const JPH::TwoBodyConstraintSettings& settings)
-	{
-		/// [EN] bodyA, the joint's owner, is required; bodyB is optional.
-		/// [JP] ジョイントの持ち主である bodyA は必須、bodyB は省略できる。
-		if (bodyA.IsInvalid())
-		{
-			return Handle<JPH::Constraint>::null();
-		}
-
-		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
-		const JPH::BodyLockInterface& lockInterface = physicsSystem.GetBodyLockInterface();
-
-		JPH::Constraint* constraint = nullptr;
-
-		/// [EN] Without bodyB the joint attaches bodyA to the world, which takes the body1 slot.
-		/// [JP] bodyB が無ければ、bodyA をワールドへ繋ぐ。ワールドが body1 の位置に入る。
-		if (bodyB.IsInvalid())
-		{
-			JPH::BodyLockWrite lock(lockInterface, bodyA);
-			if (!lock.Succeeded())
-			{
-				return Handle<JPH::Constraint>::null();
-			}
-			constraint = settings.Create(JPH::Body::sFixedToWorld, lock.GetBody());
-		}
-		else
-		{
-			/// [EN] bodyB is body1 and bodyA is body2, the same order in both cases.
-			/// [JP] bodyB を body1、bodyA を body2 とし、どちらの場合も順番を揃える。
-			JPH::BodyID bodyIDs[2] = { bodyB, bodyA };
-			JPH::BodyLockMultiWrite lock(lockInterface, bodyIDs, 2);
-			JPH::Body* body1 = lock.GetBody(0);
-			JPH::Body* body2 = lock.GetBody(1);
-			if (body1 == nullptr || body2 == nullptr)
-			{
-				return Handle<JPH::Constraint>::null();
-			}
-			constraint = settings.Create(*body1, *body2);
-		}
-
-		if (constraint == nullptr)
-		{
-			return Handle<JPH::Constraint>::null();
-		}
-
-		/// [EN] The pool adds the constraint to the simulation and hands back a generation-checked handle.
-		/// [JP] プールが拘束をシミュレーションへ加え、世代付きのハンドルを返す。
-		return joltManager_.ConstraintPool().Add(physicsSystem, constraint);
 	}
 
 	/**
@@ -2037,6 +2007,65 @@ namespace SeedCore
 #endif
 
 		return result;
+	}
+
+	/**
+	* [EN]
+	* Creates and registers a two-body constraint.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 2ボディ拘束を生成して登録する。
+	*/
+	Handle<JPH::Constraint> Physics::CreateConstraint(JPH::BodyID bodyA, JPH::BodyID bodyB, const JPH::TwoBodyConstraintSettings& settings)
+	{
+		/// [EN] bodyA, the joint's owner, is required; bodyB is optional.
+		/// [JP] ジョイントの持ち主である bodyA は必須、bodyB は省略できる。
+		if (bodyA.IsInvalid())
+		{
+			return Handle<JPH::Constraint>::null();
+		}
+
+		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
+		const JPH::BodyLockInterface& lockInterface = physicsSystem.GetBodyLockInterface();
+
+		JPH::Constraint* constraint = nullptr;
+
+		/// [EN] Without bodyB the joint attaches bodyA to the world, which takes the body1 slot.
+		/// [JP] bodyB が無ければ、bodyA をワールドへ繋ぐ。ワールドが body1 の位置に入る。
+		if (bodyB.IsInvalid())
+		{
+			JPH::BodyLockWrite lock(lockInterface, bodyA);
+			if (!lock.Succeeded())
+			{
+				return Handle<JPH::Constraint>::null();
+			}
+			constraint = settings.Create(JPH::Body::sFixedToWorld, lock.GetBody());
+		}
+		else
+		{
+			/// [EN] bodyB is body1 and bodyA is body2, the same order in both cases.
+			/// [JP] bodyB を body1、bodyA を body2 とし、どちらの場合も順番を揃える。
+			JPH::BodyID bodyIDs[2] = { bodyB, bodyA };
+			JPH::BodyLockMultiWrite lock(lockInterface, bodyIDs, 2);
+			JPH::Body* body1 = lock.GetBody(0);
+			JPH::Body* body2 = lock.GetBody(1);
+			if (body1 == nullptr || body2 == nullptr)
+			{
+				return Handle<JPH::Constraint>::null();
+			}
+			constraint = settings.Create(*body1, *body2);
+		}
+
+		if (constraint == nullptr)
+		{
+			return Handle<JPH::Constraint>::null();
+		}
+
+		/// [EN] The pool adds the constraint to the simulation and hands back a generation-checked handle.
+		/// [JP] プールが拘束をシミュレーションへ加え、世代付きのハンドルを返す。
+		return joltManager_.ConstraintPool().Add(physicsSystem, constraint);
 	}
 
 }

@@ -513,6 +513,49 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Returns the world transform of a body: its rotation followed by its
+		* translation, with no scale. Read the position with Translation()
+		* and the rotation with Quaternion::CreateFromRotationMatrix().
+		* Returns the identity for an invalid ID.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ボディのワールド変換を返す。回転の後に平行移動を行う行列で、スケールは
+		* 含まない。位置は Translation()、回転は
+		* Quaternion::CreateFromRotationMatrix() で取り出す。無効な ID では
+		* 単位行列を返す。
+		*/
+		Matrix BodyTransform(JPH::BodyID bodyID)const;
+
+		/**
+		* [EN]
+		* Moves a body to a world position and rotation directly, without
+		* simulating the motion in between, and without waking it. Does
+		* nothing when the body is already there.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ボディを、間の動きをシミュレーションせずにワールドの位置と回転へ直接
+		* 移す。ボディは起こさない。既にその位置と回転にあれば何もしない。
+		*/
+		void BodyTransform(JPH::BodyID bodyID, const Vector3& position, const Quaternion& rotation);
+
+		/**
+		* [EN]
+		* Returns the linear velocity (m/s) of a body; zero for a static
+		* body.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ボディの速度(m/s)を返す。静的ボディでは 0。
+		*/
+		Vector3 BodyLinearVelocity(JPH::BodyID bodyID)const;
+
+		/**
+		* [EN]
 		* Replaces the linear velocity (m/s) of a dynamic or kinematic body
 		* and wakes it when the velocity is not zero. A kinematic body keeps
 		* the velocity until it is replaced. Has no effect on a static body.
@@ -525,6 +568,18 @@ namespace SeedCore
 		* その速度を保つ。静的ボディには効かない。
 		*/
 		void BodyLinearVelocity(JPH::BodyID bodyID, const Vector3& linearVelocity);
+
+		/**
+		* [EN]
+		* Returns the world-space angular velocity (rad/s) of a body; zero
+		* for a static body.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ボディのワールド空間の角速度(rad/s)を返す。静的ボディでは 0。
+		*/
+		Vector3 BodyAngularVelocity(JPH::BodyID bodyID)const;
 
 		/**
 		* [EN]
@@ -569,41 +624,6 @@ namespace SeedCore
 		* ボディが現在シミュレーションに追加されているかを返す。
 		*/
 		Bool BodyExists(JPH::BodyID bodyID)const;
-
-		/**
-		* [EN]
-		* Writes the world position and rotation of a body.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ボディのワールド位置と回転を書き出す。
-		*/
-		void BodyTransform(JPH::BodyID bodyID, Vector3& outPosition, Quaternion& outRotation)const;
-
-		/**
-		* [EN]
-		* Returns the linear velocity (m/s) of a body; zero for a static
-		* body.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ボディの速度(m/s)を返す。静的ボディでは 0。
-		*/
-		Vector3 BodyLinearVelocity(JPH::BodyID bodyID)const;
-
-		/**
-		* [EN]
-		* Returns the world-space angular velocity (rad/s) of a body; zero
-		* for a static body.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ボディのワールド空間の角速度(rad/s)を返す。静的ボディでは 0。
-		*/
-		Vector3 BodyAngularVelocity(JPH::BodyID bodyID)const;
 
 		/**
 		* [EN]

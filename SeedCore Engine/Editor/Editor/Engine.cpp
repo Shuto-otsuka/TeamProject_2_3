@@ -240,16 +240,20 @@ namespace SeedCore
 			fontManager_ = nullptr;
 		}
 
+		/// [EN] The world is torn down while the physics world still exists, since components such as CharacterController release Jolt objects that reach back into it; its audio module is already gone, so the world's pointer to it is cleared first.
+		/// [JP] CharacterController などのコンポーネントは解放時に物理ワールドへ触れる Jolt のオブジェクトを手放すため、World は物理ワールドがまだある間に破棄する。オーディオモジュールは既に無いので、World が持つそのポインタを先に消す。
+		if (world_)
+		{
+			world_->GetAudio() = nullptr;
+			world_.reset();
+			world_ = nullptr;
+		}
+
 		if (joltManager_)
 		{
 			joltManager_->Finalize();
 			joltManager_.reset();
 			joltManager_ = nullptr;
-		}
-
-		if (world_)
-		{
-			world_->GetAudio() = nullptr;
 		}
 
 		if (criManager_)
@@ -340,6 +344,7 @@ namespace SeedCore
 					PhysicsSystem::ResolveMeshCollider(*graphics_->GetGraphicsModule().Resources().meshCollisionResource_, *world_);
 					PhysicsSystem::ResolveSoftbody(*graphics_->GetGraphicsModule().Resources().modelResource_, *world_);
 					PhysicsSystem::ApplyActive(*world_);
+					PhysicsSystem::ApplyCollider(*world_);
 
 					joltManager_->ActiveWorld(world_.get());
 

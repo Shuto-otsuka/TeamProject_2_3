@@ -257,9 +257,9 @@ namespace SeedCore
 			return;
 		}
 
-		Vector3 outPosition;
-		Quaternion outRotation;
-		actor.GetPhysics().BodyTransform(bodyID_, outPosition, outRotation);
+		Matrix bodyMatrix = actor.GetPhysics().BodyTransform(bodyID_);
+		Vector3 outPosition = bodyMatrix.Translation();
+		Quaternion outRotation = Quaternion::CreateFromRotationMatrix(bodyMatrix);
 
 		/// [EN] The body pose is in world space, while Position and Rotation are relative to the parent, so it is carried back by the inverse of the parent's world matrix; a root actor's parent space is the world itself.
 		/// [JP] ボディの姿勢はワールド空間にあり、Position と Rotation は親から見た値なので、親のワールド行列の逆で戻す。ルートの Actor にとって、親の空間はワールドそのもの。

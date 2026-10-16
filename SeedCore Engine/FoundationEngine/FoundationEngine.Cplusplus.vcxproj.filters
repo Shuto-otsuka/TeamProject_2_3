@@ -115,6 +115,9 @@
     <Filter Include="Bridge">
       <UniqueIdentifier>{43162e6c-2152-4fd7-8be1-07caebc000dd}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Math\Easing">
+      <UniqueIdentifier>{ae668a5f-c4c8-4b02-a8f2-d1f3cdfa6bf5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JobSystem\FlowBuilder.cpp">
@@ -925,6 +928,9 @@
     </ClInclude>
     <ClInclude Include="Resource\Prefab\PrefabSystem.h">
       <Filter>Resource\Prefab</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Easing\Easing.h">
+      <Filter>Math\Easing</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
