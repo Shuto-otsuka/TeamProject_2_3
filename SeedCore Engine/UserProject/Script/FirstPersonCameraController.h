@@ -10,6 +10,7 @@ public:
 	void OnTick(float elapsedTime);
 
 	void FollowPlayer(float elapsedTime);
+	void Rotate(float elapsedTime);
 
 	SC_REFLECTION_FIELD()
 		SeedCore::Vector3 offset;

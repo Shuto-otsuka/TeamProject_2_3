@@ -16,6 +16,7 @@ void PlayerController::OnStart()
     SeedCore::World& world = GetWorld();
 
     cameraBrain = world.GetActor("CameraBrain");
+    firstPersonCameraBrain = world.GetActor("FirstPersonCameraBrain");
     bulletNaviStart = world.GetActor("BulletStart");
 
     SeedCore::Entity entity = GetActor().GetEntity();
@@ -25,7 +26,8 @@ void PlayerController::OnStart()
     scale = world.GetComponent<SeedCore::Scale>(entity);
     velocity = world.GetComponent<SeedCore::LinearVelocity>(entity);
     myCharacterController = world.GetComponent<SeedCore::CharacterController>(entity);
-    firstPersonCameraBrain = world.GetComponent<SeedCore::CameraBrain>(world.GetActor("FirstPersonCameraBrain").GetEntity());
+    firstPersonCameraBrainComp = world.GetComponent<SeedCore::CameraBrain>(firstPersonCameraBrain.GetEntity());
+    firstPersonCameraBrainRotate = world.GetComponent<SeedCore::Rotation>(firstPersonCameraBrain.GetEntity());
 
     if (bulletNaviStart)
     {
@@ -56,6 +58,7 @@ void PlayerController::OnInspectorGUI()
 {
     ImGui::Checkbox("isCoyote", &isCoyote);
     ImGui::InputInt("costGauge", &costGauge);
+    ImGui::InputFloat2("cursorMove", &cursorMove.x);
 }
 
 void PlayerController::OnTriggerEnter(SeedCore::Entity entity)
@@ -77,11 +80,18 @@ void PlayerController::OnTriggerEnter(SeedCore::Entity entity)
             if (checkPointAreaController->GetFirstPerson())
             {
                 //一人称切り替えフラグがONだったらカメラ切り替え
-                firstPersonCameraBrain->weight_ = 11;
+                isFirstPerson = true;
+                firstPersonCameraBrainComp->weight_ = 11;
+                SeedCore::Input::LockCursor(SeedCore::Vector2(960, 540));
+                SeedCore::Input::HideCursor();
             }
             else
             {
-                firstPersonCameraBrain->weight_ = 9;
+                isFirstPerson = false;
+                firstPersonCameraBrainComp->weight_ = 9;
+                //カーソル固定解除
+                SeedCore::Input::UnlockCursor();
+                SeedCore::Input::RevealCursor();
             }
         }
     }
@@ -147,12 +157,27 @@ void PlayerController::UpdateHorizontalAcceleration(float elapsedTime)
     //カメラの前方向、右方向ベクトルを取得
     SeedCore::Vector3 cameraFront;
     SeedCore::Vector3 cameraRight;
-    cameraFront = cameraBrain.WorldMatrix().Backward();//右手系;
-    cameraFront.y = 0.0f;//Y軸は必要ない
-    cameraFront.Normalize();
-    cameraRight = cameraBrain.WorldMatrix().Left();//右手系;
-    cameraRight.y = 0.0f;
-    cameraRight.Normalize();
+    if (isFirstPerson)
+    {
+        //1人称カメラ
+        cameraFront = firstPersonCameraBrain.WorldMatrix().Backward();//右手系;
+        cameraFront.y = 0.0f;//Y軸は必要ない
+        cameraFront.Normalize();
+        cameraRight = firstPersonCameraBrain.WorldMatrix().Left();//右手系;
+        cameraRight.y = 0.0f;
+        cameraRight.Normalize();
+    }
+    else
+    {
+        //3人称カメラ
+        cameraFront = cameraBrain.WorldMatrix().Backward();//右手系;
+        cameraFront.y = 0.0f;//Y軸は必要ない
+        cameraFront.Normalize();
+        cameraRight = cameraBrain.WorldMatrix().Left();//右手系;
+        cameraRight.y = 0.0f;
+        cameraRight.Normalize();
+    }
+   
     //入力情報から移動方向を算出
     SeedCore::Vector3 moveDirection;
     moveDirection.x = cameraRight.x * inputDirection.x + cameraFront.x * inputDirection.y;
@@ -284,7 +309,30 @@ void PlayerController::UpdateTurn(float elapsedTime)
 {
     //旋回処理
      
-    if (shotReady)
+    if (isFirstPerson)
+    {
+        //一人称カメラのとき
+
+        //カーソルの横の動きからプレイヤーのyawをクォータニオンで回転させる
+        SeedCore::Vector3 front = GetActor().WorldMatrix().Forward();
+        cursorMove = SeedCore::Input::MouseMotion();
+        SeedCore::Vector3 axis = SeedCore::Vector3(0.0f,1.0f,0.0f);
+        float angle = cursorMove.x * firstPersonSensitivity;
+        SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(axis, angle);
+        front = SeedCore::Vector3::Transform(front, quaternion);
+        myCharacterController->ForwardDirection(front);
+        
+        //カーソルの縦の動きからカメラのpitchをクォータニオンで回転させる
+        axis = firstPersonCameraBrain.WorldMatrix().Right();
+        angle = -cursorMove.y * firstPersonSensitivity;
+        quaternion = SeedCore::Quaternion::CreateFromAxisAngle(axis, angle);
+        quaternion = SeedCore::Transform::Quat(*firstPersonCameraBrainRotate) * quaternion;
+        firstPersonCameraBrainRotate->x_ = quaternion.x;
+        firstPersonCameraBrainRotate->y_ = quaternion.y;
+        firstPersonCameraBrainRotate->z_ = quaternion.z;
+        firstPersonCameraBrainRotate->w_ = quaternion.w;
+    }
+    else if (shotReady)
     {
         //ショットチャージ時 照準方向(shotDirection)を向く
 
@@ -294,7 +342,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
         Uint32 layerMask = ~(1 << GetActor().Layer()) & ~(1 << 4);//プレイヤー自身と、エリア(トリガー)を除くレイヤーマスク
 
         //銃口の高さを求める
-        SeedCore::Vector3 gunOffset = { 0.0f,bulletOffsetY,0.0f };
+        SeedCore::Vector3 gunOffset = SeedCore::Vector3(0.0f,bulletOffsetY,0.0f);
         SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
 
         if (GetActor().GetPhysics().Raycast(ray.origin_, ray.direction_, 10000.0f, hit,layerMask))

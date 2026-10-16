@@ -1,4 +1,5 @@
 #include "UserProject/Script/CameraController.h"
+#include"UserProject/Script/PlayerController.h"
 #include <SeedCore/ScInput.h>    
 
 void CameraController::OnStart()
@@ -8,6 +9,7 @@ void CameraController::OnStart()
     position = world.GetComponent<SeedCore::Position>(GetActor().GetEntity());
     rotation = world.GetComponent<SeedCore::Rotation>(GetActor().GetEntity());
     playerPosition = world.GetComponent<SeedCore::Position>(player.GetEntity());
+    playerController = world.GetComponent<PlayerController>(player.GetEntity());
 
     //注視点をプレイヤーの位置に設定
     smoothFocusPoint = SeedCore::Transform::Vector(*playerPosition);
@@ -53,6 +55,9 @@ void CameraController::LookPlayer()
 
 void CameraController::Rotate()
 {
+    //一人称カメラを使っている場合回転処理しない
+    if (playerController->IsFirstPerson())return;
+
     //右クリックでカーソル固定、解除切り替え
     if (SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Right, SeedCore::Input::OnPressed) ||
         SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Right, SeedCore::Input::OnReleased))
