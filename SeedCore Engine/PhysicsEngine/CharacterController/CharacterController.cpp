@@ -153,11 +153,11 @@ namespace SeedCore
 			/// [JP] 立っている間は足場が上下の動きを担うため、キャラクター自身の上下速度は静止から計算し直す。
 			verticalVelocity = 0.0f;
 
-			Vector3 footholdPosition;
-			Quaternion footholdRotation;
 			if (!foothold_.bodyID_.IsInvalid() && actor.GetPhysics().BodyExists(foothold_.bodyID_) && elapsedTime > 0.0f)
 			{
-				actor.GetPhysics().BodyTransform(foothold_.bodyID_, footholdPosition, footholdRotation);
+				Matrix footholdMatrix = actor.GetPhysics().BodyTransform(foothold_.bodyID_);
+				Vector3 footholdPosition = footholdMatrix.Translation();
+				Quaternion footholdRotation = Quaternion::CreateFromRotationMatrix(footholdMatrix);
 
 				/// [EN] Carry the recorded local position along with the body's current transform; the exact displacement over this step becomes the inherited velocity, so no drift accumulates.
 				/// [JP] 記録したローカル位置をボディの現在の変換で運ぶ。このステップでの正確な移動量を引き継ぐ速度にするため、ずれが蓄積しない。
@@ -249,9 +249,9 @@ namespace SeedCore
 		JPH::BodyID groundBodyID = character_->GetGroundBodyID();
 		if (character_->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround && actor.GetPhysics().BodyExists(groundBodyID))
 		{
-			Vector3 footholdPosition;
-			Quaternion footholdRotation;
-			actor.GetPhysics().BodyTransform(groundBodyID, footholdPosition, footholdRotation);
+			Matrix footholdMatrix = actor.GetPhysics().BodyTransform(groundBodyID);
+			Vector3 footholdPosition = footholdMatrix.Translation();
+			Quaternion footholdRotation = Quaternion::CreateFromRotationMatrix(footholdMatrix);
 
 			Quaternion inverseRotation;
 			footholdRotation.Inverse(inverseRotation);

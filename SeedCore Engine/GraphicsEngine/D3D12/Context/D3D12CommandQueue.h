@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Fence.h>
 #include <GraphicsEngine/D3D12/D3D12Types.h>
 #include <GraphicsEngine/D3D12/D3D12Common.h>

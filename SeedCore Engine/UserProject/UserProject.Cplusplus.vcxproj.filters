@@ -100,7 +100,7 @@
     <ClCompile Include="Script\CheckPointAreaController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
-    <ClCompile Include="Script\FirstPersonCameraController.cpp">
+    <ClCompile Include="Script\CircuitSystem.cpp">
       <Filter>Script</Filter>
     </ClCompile>
   </ItemGroup>
@@ -159,7 +159,7 @@
     <ClInclude Include="Script\CheckPointAreaController.h">
       <Filter>Script</Filter>
     </ClInclude>
-    <ClInclude Include="Script\FirstPersonCameraController.h">
+    <ClInclude Include="Script\CircuitSystem.h">
       <Filter>Script</Filter>
     </ClInclude>
   </ItemGroup>

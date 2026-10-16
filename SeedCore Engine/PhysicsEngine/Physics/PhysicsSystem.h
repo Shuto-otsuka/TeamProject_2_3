@@ -55,6 +55,26 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Brings the body of every active actor's lone collider in line with
+		* the actor: moves it to the actor's current pose and rebuilds its
+		* shape when the actor's world scale has changed, so the collider
+		* follows an actor that moves or scales after it was created.
+		* MeshCollider is left out, since rebuilding a mesh shape is too
+		* costly to do whenever the scale changes. Called every frame.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 有効な全 Actor の単独のコライダーについて、ボディを Actor に合わせる。
+		* Actor の今の姿勢へボディを移し、Actor のワールドスケールが変わって
+		* いれば形状を作り直す。これにより、生成後に動いたり拡大縮小したり
+		* する Actor にコライダーが追従する。メッシュ形状の作り直しはスケールが
+		* 変わるたびに行うには重いため、MeshCollider は対象外。毎フレーム呼ばれる。
+		*/
+		static void ApplyCollider(World& world);
+
+		/**
+		* [EN]
 		* Hands what code has changed on every active actor's Rigidbody
 		* (isTrigger_, and the actor's LinearVelocity and AngularVelocity) to
 		* its body. Called before every fixed step.

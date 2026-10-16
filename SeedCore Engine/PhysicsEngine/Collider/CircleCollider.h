@@ -16,6 +16,9 @@ namespace SeedCore
 	*/
 	class SEEDCORE_API CircleCollider :public SeedScript
 	{
+	private:
+		friend class PhysicsSystem;
+
 	public:
 		/// [EN] Radius of the circle.
 		/// [JP] 円の半径。
@@ -59,16 +62,34 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Creates and returns a circle shape from the current settings, scaled
-		* by the X and Y of the actor's own Scale; the parent's scale is not
-		* included. The radius follows the larger of X and Y.
+		* by the X and Y of the actor's own Scale combined with its parent's
+		* scale. The radius follows the larger of X and Y.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 現在の設定に Actor 自身の Scale の X と Y を掛けた円形状を生成して
-		* 返す。親のスケールは含めない。半径は X と Y の大きい方に合わせる。
+		* 現在の設定に Actor 自身の Scale と親のスケールの X と Y を掛けた円形状を
+		* 生成して返す。半径は X と Y の大きい方に合わせる。
 		*/
 		Handle<JPH::Shape> GetShapeHandle()const;
+
+	private:
+		/**
+		* [EN]
+		* Moves the collider's own body to the actor's current pose, and
+		* rebuilds its shape when the actor's world scale has changed since
+		* the shape was made. Does nothing when a Rigidbody owns the body.
+		* Called every frame by PhysicsSystem::ApplyCollider.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コライダー自身のボディを Actor の今の姿勢へ移し、形状を作ってから
+		* Actor のワールドスケールが変わっていれば形状を作り直す。ボディを
+		* Rigidbody が持っている場合は何もしない。
+		* PhysicsSystem::ApplyCollider から毎フレーム呼ばれる。
+		*/
+		void Refresh();
 
 	private:
 		/// [EN] Jolt body identifier of the generated collider body.
@@ -78,6 +99,10 @@ namespace SeedCore
 		/// [EN] Pool handle of the attached shape.
 		/// [JP] 取り付けた形状のプールハンドル。
 		Handle<JPH::Shape> shapeHandle_;
+
+		/// [EN] World scale of the actor when the current shape was made; a different scale means the shape no longer matches how the actor is drawn.
+		/// [JP] 今の形状を作ったときの Actor のワールドスケール。これと異なれば、形状は描画される Actor と合わなくなっている。
+		Vector3 shapeScale_ = { 0.0f, 0.0f, 0.0f };
 	};
 	REGISTER_COMPONENT(CircleCollider, "Collider");
 }

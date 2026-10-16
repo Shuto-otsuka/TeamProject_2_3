@@ -54,6 +54,7 @@
     <ClCompile Include="Script\Button.cpp" />
     <ClCompile Include="Script\ChargeGaugeController.cpp" />
     <ClCompile Include="Script\CheckPointAreaController.cpp" />
+    <ClCompile Include="Script\CircuitSystem.cpp" />
     <ClCompile Include="Script\CostGaugeController.cpp" />
     <ClCompile Include="Script\FirstPersonCameraController.cpp" />
     <ClCompile Include="Script\GoalSystem.cpp" />
@@ -74,6 +75,7 @@
     <ClInclude Include="Script\Button.h" />
     <ClInclude Include="Script\ChargeGaugeController.h" />
     <ClInclude Include="Script\CheckPointAreaController.h" />
+    <ClInclude Include="Script\CircuitSystem.h" />
     <ClInclude Include="Script\CostGaugeController.h" />
     <ClInclude Include="Script\FirstPersonCameraController.h" />
     <ClInclude Include="Script\GoalSystem.h" />

@@ -6,7 +6,7 @@ class GoalSystem :public SeedCore::SeedScript
 {
 public:
 	SC_PAYLOAD_FIELD_EX("遷移先シーン", Scene)
-	Uint32 translationSceneID_ = 0;
+	Uint32 nextSceneID_ = 0;
 
 	SC_PAYLOAD_FIELD_EX("タイトルシーン", Scene)
 	Uint32 titleSceneID_ = 0;
@@ -25,10 +25,17 @@ public:
 	void OnEditorTick(float elapsedTime);
 
 private:
+	SC_CONST float directionTime_ = 0.4f;
+
 	bool isGoal_ = false;
 
 	bool isDecided_ = false;
 
+	float resultTimer_ = 0.0f;
+
 	SeedCore::Actor resultActor_;
+	SeedCore::Actor toNextSceneActor_;
+	SeedCore::Actor toTitleSceneActor_;
+	SeedCore::Actor toRetrySceneActor_;
 };
 REGISTER_COMPONENT(GoalSystem);

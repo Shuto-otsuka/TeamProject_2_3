@@ -1,6 +1,7 @@
 #include <PhysicsEngine/Collider/CapsuleCollider.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <PhysicsEngine/Physics/PhysicsSystem.h>
+#include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
 
@@ -19,6 +20,13 @@ namespace SeedCore
 	{
 		shapeHandle_ = GetShapeHandle();
 		bodyID_ = PhysicsSystem::CreateColliderBody(GetActor(), shapeHandle_, isTrigger_);
+
+		/// [EN] Remembers the world scale the shape was made for, so Refresh only rebuilds it once the scale actually changes.
+		/// [JP] 形状を作ったときのワールドスケールを覚え、Refresh が実際にスケールが変わったときだけ作り直すようにする。
+		Matrix worldMatrix = GetActor().WorldMatrix();
+		Quaternion worldRotation;
+		Vector3 worldTranslation;
+		worldMatrix.Decompose(shapeScale_, worldRotation, worldTranslation);
 	}
 
 	/**
@@ -74,5 +82,59 @@ namespace SeedCore
 		Float radius = radius_ * Max(Abs(worldScale.x), Abs(worldScale.z));
 
 		return actor.GetPhysics().CreateCapsuleShape(height, radius);
+	}
+
+	/**
+	* [EN]
+	* Moves the collider's own body to the actor's current pose, and
+	* rebuilds its shape when the actor's world scale has changed since
+	* the shape was made. Does nothing when a Rigidbody owns the body.
+	* Called every frame by PhysicsSystem::ApplyCollider.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* コライダー自身のボディを Actor の今の姿勢へ移し、形状を作ってから
+	* Actor のワールドスケールが変わっていれば形状を作り直す。ボディを
+	* Rigidbody が持っている場合は何もしない。
+	* PhysicsSystem::ApplyCollider から毎フレーム呼ばれる。
+	*/
+	void CapsuleCollider::Refresh()
+	{
+		/// [EN] With a Rigidbody present, the body and its pose belong to the Rigidbody.
+		/// [JP] Rigidbody があれば、ボディとその姿勢は Rigidbody のもの。
+		if (bodyID_.IsInvalid())
+		{
+			return;
+		}
+
+		Actor actor = GetActor();
+		Physics& physics = actor.GetPhysics();
+
+		/// [EN] The pose is worked out the same way as at creation; the body does not move when the pose is unchanged.
+		/// [JP] 姿勢は生成時と同じ方法で求める。姿勢が変わっていなければボディは動かない。
+		RigidbodyDesc desc;
+		PhysicsSystem::ApplyTransform(actor, desc);
+		physics.BodyTransform(bodyID_, desc.position_, desc.rotation_);
+
+		/// [EN] The actor's world matrix carries its own scale combined with every ancestor's.
+		/// [JP] Actor のワールド行列には、自身のスケールと全ての祖先のスケールを合わせたものが入っている。
+		Matrix worldMatrix = actor.WorldMatrix();
+		Vector3 worldScale;
+		Quaternion worldRotation;
+		Vector3 worldTranslation;
+		worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
+		if (worldScale == shapeScale_)
+		{
+			return;
+		}
+
+		/// [EN] The new shape is attached before the old one is released, so the body never points at a freed shape.
+		/// [JP] 古い形状を解放する前に新しい形状を取り付け、ボディが解放済みの形状を指すことが無いようにする。
+		Handle<JPH::Shape> shapeHandle = GetShapeHandle();
+		physics.BodyShape(bodyID_, shapeHandle);
+		physics.ReleaseShape(shapeHandle_);
+		shapeHandle_ = shapeHandle;
+		shapeScale_ = worldScale;
 	}
 }

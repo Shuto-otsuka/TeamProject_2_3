@@ -24,7 +24,7 @@ namespace SeedCore
 
 		void Unload(Uint32 assetID)override;
 
-		void Clear();
+		void Clear()override;
 
 		Handle<Video> GetHandle(Uint32 assetID)const;
 
