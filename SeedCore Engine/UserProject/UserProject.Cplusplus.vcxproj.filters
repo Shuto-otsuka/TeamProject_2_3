@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
   <ItemGroup>
     <Filter Include="Reflection">
@@ -55,55 +55,7 @@
     </ClCompile>
     <ClCompile Include="DLLMain.cpp" />
     <ClCompile Include="Prelude.cpp" />
-    <ClCompile Include="Script\BulletController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\CameraController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\FloorMoveSystem.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\PlayerController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\StopController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\PendulumController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\CostGaugeController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\ChargeGaugeController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\BulletNaviController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\BulletNaviStartController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\GoalSystem.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\LaserController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\Button.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\StageSelectButtonController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\CheckPointAreaController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\CircuitSystem.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-  </ItemGroup>
+    <ClCompile Include="Script\BulletController.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\BulletNaviController.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\BulletNaviStartController.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\Button.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\CameraController.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\ChargeGaugeController.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\CheckPointAreaController.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\CircuitSystem.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\CostGaugeController.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\FirstPersonCameraController.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\FloorMoveSystem.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\GoalSystem.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\LaserController.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\PendulumController.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\PlayerController.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\StageSelectButtonController.cpp"><Filter>Script</Filter></ClCompile><ClCompile Include="Script\StopController.cpp"><Filter>Script</Filter></ClCompile></ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\ScTutorial.h">
       <Filter>Tutorial</Filter>
@@ -111,56 +63,5 @@
     <ClInclude Include="EntryPoint\EntryGame.h">
       <Filter>EntryPoint</Filter>
     </ClInclude>
-    <ClInclude Include="Script\BulletColliderController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\BulletController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\CameraController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\FloorMoveSystem.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\PlayerController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\StopController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\PendulumController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\CostGaugeController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\ChargeGaugeController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\BulletNaviController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\BulletNaviStartController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\GoalSystem.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\LaserController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\Button.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\StageSelectButtonController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\CheckPointAreaController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\CircuitSystem.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-  </ItemGroup>
+    <ClInclude Include="Script\BulletColliderController.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\BulletController.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\BulletNaviController.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\BulletNaviStartController.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\Button.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\CameraController.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\ChargeGaugeController.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\CheckPointAreaController.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\CircuitSystem.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\CostGaugeController.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\FirstPersonCameraController.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\FloorMoveSystem.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\GoalSystem.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\LaserController.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\PendulumController.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\PlayerController.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\StageSelectButtonController.h"><Filter>Script</Filter></ClInclude><ClInclude Include="Script\StopController.h"><Filter>Script</Filter></ClInclude></ItemGroup>
 </Project>

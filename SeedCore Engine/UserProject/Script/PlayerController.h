@@ -57,13 +57,17 @@ public:
 	SC_REFLECTION_FIELD()
 		float firstPersonSensitivity;
 	SC_REFLECTION_FIELD()
+		float firstPersonMinPitch;
+	SC_REFLECTION_FIELD()
+		float firstPersonMaxPitch;
+	SC_REFLECTION_FIELD()
+		float resetInputTime;
+	SC_REFLECTION_FIELD()
 		int maxCostGauge = 100;
 	SC_REFLECTION_FIELD()
 		int minAddCostGauge = 10;
 	SC_REFLECTION_FIELD()
 		int maxAddCostGauge = 55;
-	SC_REFLECTION_FIELD()
-	    float resetInputTime;
 
 private:
 	void UpdateUsually(float elapsedTime);

@@ -29,7 +29,7 @@ void FirstPersonCameraController::Rotate(float elapsedTime)
 {
     //カメラのyawだけプレイヤーに合わせる
     //pitchはプレイヤー側から制御される
-    float playerYaw = SeedCore::Transform::Euler(*playerRotation).y;
+    float playerYaw = SeedCore::Transform::Euler(*playerRotation).y + DirectX::XM_PI;
     float cameraYaw = SeedCore::Transform::Euler(*rotation).y;
     float angle = playerYaw - cameraYaw;
     SeedCore::Vector3 axis = SeedCore::Vector3(0.0f, 1.0f, 0.0f);

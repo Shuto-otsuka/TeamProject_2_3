@@ -301,10 +301,12 @@ namespace SeedCore
 					outInfo.push_back({ String("bulletRemoveDistance"), offsetof(PlayerController, bulletRemoveDistance), AttributeType::Float });
 					outInfo.push_back({ String("deadPosY"), offsetof(PlayerController, deadPosY), AttributeType::Float });
 					outInfo.push_back({ String("firstPersonSensitivity"), offsetof(PlayerController, firstPersonSensitivity), AttributeType::Float });
+					outInfo.push_back({ String("firstPersonMinPitch"), offsetof(PlayerController, firstPersonMinPitch), AttributeType::Float });
+					outInfo.push_back({ String("firstPersonMaxPitch"), offsetof(PlayerController, firstPersonMaxPitch), AttributeType::Float });
+					outInfo.push_back({ String("resetInputTime"), offsetof(PlayerController, resetInputTime), AttributeType::Float });
 					outInfo.push_back({ String("maxCostGauge"), offsetof(PlayerController, maxCostGauge), AttributeType::Int });
 					outInfo.push_back({ String("minAddCostGauge"), offsetof(PlayerController, minAddCostGauge), AttributeType::Int });
 					outInfo.push_back({ String("maxAddCostGauge"), offsetof(PlayerController, maxAddCostGauge), AttributeType::Int });
-					outInfo.push_back({ String("resetInputTime"), offsetof(PlayerController, resetInputTime), AttributeType::Float });
 				});
 			}
 		};
