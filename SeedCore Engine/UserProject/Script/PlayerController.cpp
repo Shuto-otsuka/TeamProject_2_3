@@ -355,48 +355,17 @@ void PlayerController::UpdateTurn(float elapsedTime)
             //銃口の高さを求める
             SeedCore::Vector3 gunOffset = SeedCore::Vector3(0.0f, bulletOffsetY, 0.0f);
             SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
-            SeedCore::Vector3 front = firstPersonCameraBrain.WorldMatrix().Forward();
+            SeedCore::Vector3 front = firstPersonCameraBrain.WorldMatrix().Backward();
 
             if (GetActor().GetPhysics().Raycast(gunPosition, front, 10000.0f, hit, layerMask))
             {
-                SeedCore::Actor hitActor = GetWorld().GetActor(hit.entityID_);//ヒットしたアクターの取得
-                if (!hitActor.HasTag("CanStop") && hit.normal_.y > 0.99f)
-                {
-                    if (isGravityArea)
-                    {
-                        //重力エリアなら床にも撃てる
-                        bulletTargetPosition = hit.position_;
-                    }
-                    else
-                    {
-                        //止められないオブジェクトの上面だった場合
-                        //レイと銃口の高さの平面が交わるところをターゲットにする
-                        bulletTargetPosition = RayToPlaneHitPosition(gunPosition, front, SeedCore::Vector3{ 0.0f,1.0f,0.0f }, gunPosition.y);
-
-                        //ターゲット位置を最大飛距離まで飛んだ時の位置にする
-                        SeedCore::Vector3 direction = bulletTargetPosition - gunPosition;
-                        direction.Normalize();
-                        direction *= bulletRemoveDistance;
-                        bulletTargetPosition += direction;
-                    }
-                }
-                else
-                {
-                    //止められるオブジェクトもしくは壁などに当たった場合当たった場所をターゲットにする
-                    bulletTargetPosition = hit.position_;
-                }
+                //当たったところをターゲットにする
+                bulletTargetPosition = hit.position_;
             }
             else
             {
-                //なににも当たらなかった場合
-                //レイと銃口の高さの平面が交わるところをターゲットにする
-                bulletTargetPosition = RayToPlaneHitPosition(gunPosition, front, SeedCore::Vector3{ 0.0f,1.0f,0.0f }, gunPosition.y);
-
                 //ターゲット位置を最大飛距離まで飛んだ時の位置にする
-                SeedCore::Vector3 direction = bulletTargetPosition - gunPosition;
-                direction.Normalize();
-                direction *= bulletRemoveDistance;
-                bulletTargetPosition += direction;
+                bulletTargetPosition = gunPosition + (front * bulletRemoveDistance);
             }
 
             //ターゲットに対してのベクトルをshotDirectionとする
