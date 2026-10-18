@@ -27,6 +27,8 @@ private:
 
 	float rotateRate = 0.0f;
 
+	SeedCore::Vector3 startPosition;
+
 	SeedCore::Quaternion startQuaternion;
 	SeedCore::Quaternion endQuaternion;
 };
