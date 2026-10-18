@@ -14,6 +14,7 @@
 #include <UserProject/Script/PendulumController.h>
 #include <UserProject/Script/PlayerController.h>
 #include <UserProject/Script/StageSelectButtonController.h>
+#include <UserProject/Script/StopController.h>
 #include <UserProject/Script/TitleLogoController.h>
 
 extern "C" int _force_reflection_BulletController = 0;
@@ -30,6 +31,7 @@ extern "C" int _force_reflection_LaserController = 0;
 extern "C" int _force_reflection_PendulumController = 0;
 extern "C" int _force_reflection_PlayerController = 0;
 extern "C" int _force_reflection_StageSelectButtonController = 0;
+extern "C" int _force_reflection_StopController = 0;
 extern "C" int _force_reflection_TitleLogoController = 0;
 
 namespace SeedCore
@@ -333,6 +335,19 @@ namespace SeedCore
 			}
 		};
 		static Register_StageSelectButtonController global_StageSelectButtonController_register;
+
+		// ---- UserProject/Script/StopController.h ----
+		struct Register_StopController
+		{
+			Register_StopController()
+			{
+				ReflectionRegistry::Register(String("StopController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					StopController& obj = *static_cast<StopController*>(ptr);
+					outInfo.push_back({ String("stopTimerOffset"), offsetof(StopController, stopTimerOffset), AttributeType::Vector3 });
+				});
+			}
+		};
+		static Register_StopController global_StopController_register;
 
 		// ---- UserProject/Script/TitleLogoController.h ----
 		struct Register_TitleLogoController
