@@ -58,31 +58,34 @@
     <ClCompile Include="Script\BulletController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
+    <ClCompile Include="Script\BulletNaviController.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\BulletNaviStartController.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\Button.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
     <ClCompile Include="Script\CameraController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\FloorMoveSystem.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\PlayerController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\StopController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\PendulumController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
-    <ClCompile Include="Script\CostGaugeController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
     <ClCompile Include="Script\ChargeGaugeController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
-    <ClCompile Include="Script\BulletNaviController.cpp">
+    <ClCompile Include="Script\CheckPointAreaController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
-    <ClCompile Include="Script\BulletNaviStartController.cpp">
+    <ClCompile Include="Script\CircuitSystem.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\CostGaugeController.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\FirstPersonCameraController.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\FloorMoveSystem.cpp">
       <Filter>Script</Filter>
     </ClCompile>
     <ClCompile Include="Script\GoalSystem.cpp">
@@ -91,16 +94,19 @@
     <ClCompile Include="Script\LaserController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
-    <ClCompile Include="Script\Button.cpp">
+    <ClCompile Include="Script\PendulumController.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\PlayerController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
     <ClCompile Include="Script\StageSelectButtonController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
-    <ClCompile Include="Script\CheckPointAreaController.cpp">
+    <ClCompile Include="Script\StopController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
-    <ClCompile Include="Script\CircuitSystem.cpp">
+    <ClCompile Include="Script\TitleLogoController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
   </ItemGroup>
@@ -117,31 +123,34 @@
     <ClInclude Include="Script\BulletController.h">
       <Filter>Script</Filter>
     </ClInclude>
+    <ClInclude Include="Script\BulletNaviController.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\BulletNaviStartController.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\Button.h">
+      <Filter>Script</Filter>
+    </ClInclude>
     <ClInclude Include="Script\CameraController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\FloorMoveSystem.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\PlayerController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\StopController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\PendulumController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
-    <ClInclude Include="Script\CostGaugeController.h">
       <Filter>Script</Filter>
     </ClInclude>
     <ClInclude Include="Script\ChargeGaugeController.h">
       <Filter>Script</Filter>
     </ClInclude>
-    <ClInclude Include="Script\BulletNaviController.h">
+    <ClInclude Include="Script\CheckPointAreaController.h">
       <Filter>Script</Filter>
     </ClInclude>
-    <ClInclude Include="Script\BulletNaviStartController.h">
+    <ClInclude Include="Script\CircuitSystem.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\CostGaugeController.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\FirstPersonCameraController.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\FloorMoveSystem.h">
       <Filter>Script</Filter>
     </ClInclude>
     <ClInclude Include="Script\GoalSystem.h">
@@ -150,16 +159,19 @@
     <ClInclude Include="Script\LaserController.h">
       <Filter>Script</Filter>
     </ClInclude>
-    <ClInclude Include="Script\Button.h">
+    <ClInclude Include="Script\PendulumController.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\PlayerController.h">
       <Filter>Script</Filter>
     </ClInclude>
     <ClInclude Include="Script\StageSelectButtonController.h">
       <Filter>Script</Filter>
     </ClInclude>
-    <ClInclude Include="Script\CheckPointAreaController.h">
+    <ClInclude Include="Script\StopController.h">
       <Filter>Script</Filter>
     </ClInclude>
-    <ClInclude Include="Script\CircuitSystem.h">
+    <ClInclude Include="Script\TitleLogoController.h">
       <Filter>Script</Filter>
     </ClInclude>
   </ItemGroup>

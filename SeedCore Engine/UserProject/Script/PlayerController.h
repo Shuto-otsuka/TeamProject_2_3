@@ -22,6 +22,7 @@ public:
 	int GetCostGaugeMax() const { return maxCostGauge; }
 	float GetChargeRate() const { return shotChargeRate; }
 	float GetBulletRemoveDistance() const { return bulletRemoveDistance; }
+	bool IsFirstPerson() const { return isFirstPerson; }
 	const SeedCore::Vector3& GetBulletPosition() const { return bulletPosition; }
 	const SeedCore::Vector3& GetBulletTargetPosition() const { return bulletTargetPosition; }
 
@@ -54,13 +55,19 @@ public:
 	SC_REFLECTION_FIELD()
 		float deadPosY = -15.0f;
 	SC_REFLECTION_FIELD()
+		float firstPersonSensitivity;
+	SC_REFLECTION_FIELD()
+		float firstPersonMinPitch;
+	SC_REFLECTION_FIELD()
+		float firstPersonMaxPitch;
+	SC_REFLECTION_FIELD()
+		float resetInputTime;
+	SC_REFLECTION_FIELD()
 		int maxCostGauge = 100;
 	SC_REFLECTION_FIELD()
 		int minAddCostGauge = 10;
 	SC_REFLECTION_FIELD()
 		int maxAddCostGauge = 55;
-	SC_REFLECTION_FIELD()
-	    float resetInputTime;
 
 private:
 	void UpdateUsually(float elapsedTime);
@@ -98,6 +105,7 @@ private:
 	bool isCoyote = false;
 	bool shotReady = false;
 	bool isGravityArea = false;
+	bool isFirstPerson = false;
 
 	float defaultGravity = 0.0f;
 	float jumpInputBufferTimer = 0.0f;
@@ -117,15 +125,18 @@ private:
 	SeedCore::Vector3 bulletPosition;
 	SeedCore::Vector3 bulletTargetPosition;
 	SeedCore::Vector3 checkPointPosition;
+	SeedCore::Vector2 cursorMove;
 
 	SeedCore::Actor cameraBrain;
+	SeedCore::Actor firstPersonCameraBrain;
 	SeedCore::Actor bulletNaviStart;
 	SeedCore::Position* position = nullptr;
 	SeedCore::Rotation* rotation = nullptr;
+	SeedCore::Rotation* firstPersonCameraBrainRotate;
 	SeedCore::Scale* scale = nullptr;
 	SeedCore::CharacterController* myCharacterController = nullptr;
 	SeedCore::LinearVelocity* velocity = nullptr;
-	SeedCore::CameraBrain* firstPersonCameraBrain;
+	SeedCore::CameraBrain* firstPersonCameraBrainComp;
 	BulletNaviStartController* bulletNaviStartController = nullptr;
 };
 REGISTER_COMPONENT(PlayerController);

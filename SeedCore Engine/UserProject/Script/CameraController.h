@@ -3,6 +3,8 @@
 #include <FoundationEngine/SeedScript.h>
 #include<SeedCore/ScComponent.h>
 
+class PlayerController;
+
 class CameraController :public SeedCore::SeedScript
 {
 public:
@@ -50,5 +52,6 @@ private:
 	SeedCore::Position* position;
 	SeedCore::Position* playerPosition;
 	SeedCore::Rotation* rotation;
+	PlayerController* playerController;
 };
 REGISTER_COMPONENT(CameraController);

@@ -18,7 +18,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": 652996525,
+							"int": 466362741,
 							"is_array": false,
 							"name": "メッシュID",
 							"string": "",
@@ -50,6 +50,68 @@
 					"fields": [
 						{
 							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotMaterialIDs_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotNames_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
 							"children": [
 								{
 									"bool": false,
@@ -61,7 +123,7 @@
 										"r": 0.0
 									},
 									"float": 0.0,
-									"int": -458296856,
+									"int": 249555248,
 									"is_array": false,
 									"name": "[0]",
 									"string": "",
@@ -848,7 +910,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 2.299999952316284,
+							"float": 1.5,
 							"int": 0,
 							"is_array": false,
 							"name": "jumpGravityScaler",
@@ -941,7 +1003,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 1.5,
+							"float": 1.399999976158142,
 							"int": 0,
 							"is_array": false,
 							"name": "bulletOffsetY",
@@ -1003,7 +1065,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 1.7999999523162842,
+							"float": 2.0,
 							"int": 0,
 							"is_array": false,
 							"name": "maxBulletOffsetZ",
@@ -1069,6 +1131,130 @@
 							"int": 0,
 							"is_array": false,
 							"name": "deadPosY",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0010000000474974513,
+							"int": 0,
+							"is_array": false,
+							"name": "firstPersonSensitivity",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": -60.0,
+							"int": 0,
+							"is_array": false,
+							"name": "firstPersonMinPitch",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 50.0,
+							"int": 0,
+							"is_array": false,
+							"name": "firstPersonMaxPitch",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 2.5,
+							"int": 0,
+							"is_array": false,
+							"name": "resetInputTime",
 							"string": "",
 							"type": 2,
 							"vector2": {
@@ -1164,37 +1350,6 @@
 							"name": "maxAddCostGauge",
 							"string": "",
 							"type": 1,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 2.5,
-							"int": 0,
-							"is_array": false,
-							"name": "resetInputTime",
-							"string": "",
-							"type": 2,
 							"vector2": {
 								"x": 0.0,
 								"y": 0.0

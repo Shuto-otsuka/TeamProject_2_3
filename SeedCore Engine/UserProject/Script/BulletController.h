@@ -20,6 +20,7 @@ public:
 	void OnStart();
 	void OnTick(float elapsedTime);
 	void OnTriggerEnter(SeedCore::Entity entity);
+	void OnTriggerExit(SeedCore::Entity entity);
 
 	void SetParam(const SeedCore::Vector3& startPosition,const SeedCore::Vector3& moveDirection, float chargeRate,int cost);
 
@@ -65,6 +66,8 @@ private:
 	float aliveTimer = 0.0f;
 
 	int cost = 0;
+
+	bool isGravityArea = false;
 
 	SeedCore::Scale* scale;
 	SeedCore::Position* position;

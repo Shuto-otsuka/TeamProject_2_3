@@ -7,12 +7,15 @@
 #include <UserProject/Script/CheckPointAreaController.h>
 #include <UserProject/Script/CircuitSystem.h>
 #include <UserProject/Script/CostGaugeController.h>
+#include <UserProject/Script/FirstPersonCameraController.h>
 #include <UserProject/Script/FloorMoveSystem.h>
 #include <UserProject/Script/GoalSystem.h>
 #include <UserProject/Script/LaserController.h>
 #include <UserProject/Script/PendulumController.h>
 #include <UserProject/Script/PlayerController.h>
 #include <UserProject/Script/StageSelectButtonController.h>
+#include <UserProject/Script/StopController.h>
+#include <UserProject/Script/TitleLogoController.h>
 
 extern "C" int _force_reflection_BulletController = 0;
 extern "C" int _force_reflection_BulletNaviController = 0;
@@ -21,12 +24,15 @@ extern "C" int _force_reflection_ChargeGaugeController = 0;
 extern "C" int _force_reflection_CheckPointAreaController = 0;
 extern "C" int _force_reflection_CircuitSystem = 0;
 extern "C" int _force_reflection_CostGaugeController = 0;
+extern "C" int _force_reflection_FirstPersonCameraController = 0;
 extern "C" int _force_reflection_FloorMoveSystem = 0;
 extern "C" int _force_reflection_GoalSystem = 0;
 extern "C" int _force_reflection_LaserController = 0;
 extern "C" int _force_reflection_PendulumController = 0;
 extern "C" int _force_reflection_PlayerController = 0;
 extern "C" int _force_reflection_StageSelectButtonController = 0;
+extern "C" int _force_reflection_StopController = 0;
+extern "C" int _force_reflection_TitleLogoController = 0;
 
 namespace SeedCore
 {
@@ -168,6 +174,19 @@ namespace SeedCore
 		};
 		static Register_CostGaugeController global_CostGaugeController_register;
 
+		// ---- UserProject/Script/FirstPersonCameraController.h ----
+		struct Register_FirstPersonCameraController
+		{
+			Register_FirstPersonCameraController()
+			{
+				ReflectionRegistry::Register(String("FirstPersonCameraController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					FirstPersonCameraController& obj = *static_cast<FirstPersonCameraController*>(ptr);
+					outInfo.push_back({ String("offset"), offsetof(FirstPersonCameraController, offset), AttributeType::Vector3 });
+				});
+			}
+		};
+		static Register_FirstPersonCameraController global_FirstPersonCameraController_register;
+
 		// ---- UserProject/Script/FloorMoveSystem.h ----
 		struct Register_FloorMoveSystem
 		{
@@ -285,10 +304,13 @@ namespace SeedCore
 					outInfo.push_back({ String("maxBulletOffsetZ"), offsetof(PlayerController, maxBulletOffsetZ), AttributeType::Float });
 					outInfo.push_back({ String("bulletRemoveDistance"), offsetof(PlayerController, bulletRemoveDistance), AttributeType::Float });
 					outInfo.push_back({ String("deadPosY"), offsetof(PlayerController, deadPosY), AttributeType::Float });
+					outInfo.push_back({ String("firstPersonSensitivity"), offsetof(PlayerController, firstPersonSensitivity), AttributeType::Float });
+					outInfo.push_back({ String("firstPersonMinPitch"), offsetof(PlayerController, firstPersonMinPitch), AttributeType::Float });
+					outInfo.push_back({ String("firstPersonMaxPitch"), offsetof(PlayerController, firstPersonMaxPitch), AttributeType::Float });
+					outInfo.push_back({ String("resetInputTime"), offsetof(PlayerController, resetInputTime), AttributeType::Float });
 					outInfo.push_back({ String("maxCostGauge"), offsetof(PlayerController, maxCostGauge), AttributeType::Int });
 					outInfo.push_back({ String("minAddCostGauge"), offsetof(PlayerController, minAddCostGauge), AttributeType::Int });
 					outInfo.push_back({ String("maxAddCostGauge"), offsetof(PlayerController, maxAddCostGauge), AttributeType::Int });
-					outInfo.push_back({ String("resetInputTime"), offsetof(PlayerController, resetInputTime), AttributeType::Float });
 				});
 			}
 		};
@@ -313,6 +335,34 @@ namespace SeedCore
 			}
 		};
 		static Register_StageSelectButtonController global_StageSelectButtonController_register;
+
+		// ---- UserProject/Script/StopController.h ----
+		struct Register_StopController
+		{
+			Register_StopController()
+			{
+				ReflectionRegistry::Register(String("StopController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					StopController& obj = *static_cast<StopController*>(ptr);
+					outInfo.push_back({ String("stopTimerOffset"), offsetof(StopController, stopTimerOffset), AttributeType::Vector3 });
+				});
+			}
+		};
+		static Register_StopController global_StopController_register;
+
+		// ---- UserProject/Script/TitleLogoController.h ----
+		struct Register_TitleLogoController
+		{
+			Register_TitleLogoController()
+			{
+				ReflectionRegistry::Register(String("TitleLogoController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					TitleLogoController& obj = *static_cast<TitleLogoController*>(ptr);
+					outInfo.push_back({ String("moveTime"), offsetof(TitleLogoController, moveTime), AttributeType::Float });
+					outInfo.push_back({ String("minPosY"), offsetof(TitleLogoController, minPosY), AttributeType::Float });
+					outInfo.push_back({ String("maxPosY"), offsetof(TitleLogoController, maxPosY), AttributeType::Float });
+				});
+			}
+		};
+		static Register_TitleLogoController global_TitleLogoController_register;
 
 		struct RegisterEnum_Logic
 		{

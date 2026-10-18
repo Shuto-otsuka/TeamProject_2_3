@@ -1,7 +1,12 @@
 #include "UserProject/Script/StopController.h"
 
+#include<SeedCore/ScPrefab.h>
+#include<SeedCore/ScScreen.h>
+#include <format>
+
 void StopController::OnStart()
 {
+    position = GetWorld().GetComponent<SeedCore::Position>(GetActor().GetEntity());
 }
 
 void StopController::OnTick(float elapsedTime)
@@ -14,6 +19,28 @@ void StopController::OnTick(float elapsedTime)
         //一定時間経つと動き出す
         Move();
     }
+
+    //タイマーがなければ以下の処理を行わない
+    if (!stopTimer)return;
+
+    //タイマーの更新
+
+    //小数点第一以下を切り捨て
+    float stopTimeSca10 = stopTime * 10.0f;
+    int stopTimeInt = static_cast<int>(stopTimeSca10);
+    float stopTimeDisplay = static_cast<float>(stopTimeInt) / 10.0f;
+    //テキスト反映
+    std::string stopTimeStr = std::format("Stop {:.1f}", stopTimeDisplay);
+    stopTimerText->text_ = SeedCore::String(stopTimeStr);
+
+    //スクリーン座標変換&オフセットを適応
+    SeedCore::Vector3 worldPosition;
+    worldPosition.x = position->x_ + stopTimerOffset.x;
+    worldPosition.y = position->y_ + stopTimerOffset.y;
+    worldPosition.z = position->z_ + stopTimerOffset.z;
+    SeedCore::Vector2 screenPosition = SeedCore::ScreenSpace::WorldToScreen(worldPosition);
+    stopTimerPosition->x_ = screenPosition.x;
+    stopTimerPosition->y_ = screenPosition.y;
 }
 
 void StopController::OnInspectorGUI()
@@ -23,6 +50,23 @@ void StopController::OnInspectorGUI()
 
 void StopController::Stop(float stopTime)
 {
+    if (!isStop)
+    {
+        //ストップタイマーを出現させる
+        stopTimer = SeedCore::Prefab::Spawn(SeedCore::String("StopTimerText.prefab"));
+        stopTimerText = GetWorld().GetComponent<SeedCore::Text>(stopTimer.GetEntity());
+        //スクリーン座標変換&オフセットを適応
+        //ただのテキスト表示なため回転を考慮しない
+        stopTimerPosition = GetWorld().GetComponent<SeedCore::Position>(stopTimer.GetEntity());
+        SeedCore::Vector3 worldPosition;
+        worldPosition.x = position->x_ + stopTimerOffset.x;
+        worldPosition.y = position->y_ + stopTimerOffset.y;
+        worldPosition.z = position->z_ + stopTimerOffset.z;
+        SeedCore::Vector2 screenPosition = SeedCore::ScreenSpace::WorldToScreen(worldPosition);
+        stopTimerPosition->x_ = screenPosition.x;
+        stopTimerPosition->y_ = screenPosition.y;
+    }
+
     isStop = true;
     //今当たった弾の方が長く残るのであれば止まる時間を更新
     this->stopTime = std::max(this->stopTime, stopTime);
@@ -30,6 +74,14 @@ void StopController::Stop(float stopTime)
 
 void StopController::Move()
 {
+    if (isStop)
+    {
+        //ストップタイマーを削除
+        GetWorld().DestroyActor(stopTimer);
+        stopTimerText = nullptr;
+        stopTimerPosition = nullptr;
+    }
+
     //動かす
     isStop = false;
     stopTime = 0.0f;

@@ -12,6 +12,8 @@ void PendulumController::OnStart()
     angularVelocity = GetWorld().GetComponent<SeedCore::AngularVelocity>(entity);
     linearVelocity = GetWorld().GetComponent<SeedCore::LinearVelocity>(entity);
 
+    startPosition = SeedCore::Transform::Vector(*position);
+
     //最初のクォータニオンと最後のクォータニオンをそれぞれセット
     startQuaternion = SeedCore::Transform::Quat(*rotation);
     SeedCore::Quaternion rotateQuaternion = SeedCore::Quaternion::CreateFromAxisAngle(SeedCore::Vector3::Right, DirectX::XM_PIDIV2);//90度回転
@@ -58,7 +60,7 @@ void PendulumController::OnTick(float elapsedTime)
     //回転率を元にSlerpでクォータニオンを作成
     SeedCore::Quaternion quaternion = SeedCore::Quaternion::Slerp(startQuaternion, endQuaternion, rotateRate);
     //キネマティック剛体を動かす
-    rigidbody->MoveTarget(SeedCore::Transform::Vector(*position), quaternion, elapsedTime);
+    rigidbody->MoveTarget(startPosition, quaternion, elapsedTime);
 }
 
 void PendulumController::OnInspectorGUI()
