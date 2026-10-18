@@ -910,7 +910,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 2.299999952316284,
+							"float": 1.5,
 							"int": 0,
 							"is_array": false,
 							"name": "jumpGravityScaler",

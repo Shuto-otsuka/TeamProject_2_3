@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "26f48f1e-c2c1-498a-9c3a-e9e72928bd35",
+			"collaborationId": "6ac500a9-f4ae-4343-b0ea-31794e79abad",
 			"components": [
 				{
 					"component": "Mesh",
@@ -48,6 +48,68 @@
 				{
 					"component": "Material",
 					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotMaterialIDs_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotNames_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
 						{
 							"bool": false,
 							"children": [
@@ -432,7 +494,7 @@
 							}
 						},
 						{
-							"bool": false,
+							"bool": true,
 							"children": [],
 							"color": {
 								"a": 1.0,
@@ -883,37 +945,6 @@
 							"int": 0,
 							"is_array": false,
 							"name": "maxAliveTime",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 40.0,
-							"int": 0,
-							"is_array": false,
-							"name": "removeDistance",
 							"string": "",
 							"type": 2,
 							"vector2": {

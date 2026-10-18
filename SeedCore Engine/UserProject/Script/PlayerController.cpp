@@ -232,6 +232,7 @@ void PlayerController::UpdateInputJump(float elapsedTime)
         {
             //先行入力期間中に地面に着いたらその瞬間にジャンプ
             Jump();
+            jumpInputBuffer = false;
             isJumpKeyReleaseWait = true;//ジャンプキー離し入力待ち
             jumpInputTimer = 0.0f;
             jumpInputEnable = false;//ジャンプ不可時間開始

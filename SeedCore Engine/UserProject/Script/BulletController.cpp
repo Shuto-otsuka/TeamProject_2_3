@@ -47,9 +47,9 @@ void BulletController::OnTriggerEnter(SeedCore::Entity entity)
 
         if (isGravityArea)
         {
-            //重力エリアであればRigidbodyをDynamicにして停止
-            rigidbody->bodyType_ = SeedCore::Rigidbody::BodyType::Dynamic;
+            //重力エリアであれば停止
             Stop();
+            SC_LOG_NOTICE("うあああああ");
         }
         else
         {

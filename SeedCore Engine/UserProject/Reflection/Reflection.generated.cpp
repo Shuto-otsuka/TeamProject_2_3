@@ -14,6 +14,7 @@
 #include <UserProject/Script/PendulumController.h>
 #include <UserProject/Script/PlayerController.h>
 #include <UserProject/Script/StageSelectButtonController.h>
+#include <UserProject/Script/TitleLogoController.h>
 
 extern "C" int _force_reflection_BulletController = 0;
 extern "C" int _force_reflection_BulletNaviController = 0;
@@ -29,6 +30,7 @@ extern "C" int _force_reflection_LaserController = 0;
 extern "C" int _force_reflection_PendulumController = 0;
 extern "C" int _force_reflection_PlayerController = 0;
 extern "C" int _force_reflection_StageSelectButtonController = 0;
+extern "C" int _force_reflection_TitleLogoController = 0;
 
 namespace SeedCore
 {
@@ -331,6 +333,21 @@ namespace SeedCore
 			}
 		};
 		static Register_StageSelectButtonController global_StageSelectButtonController_register;
+
+		// ---- UserProject/Script/TitleLogoController.h ----
+		struct Register_TitleLogoController
+		{
+			Register_TitleLogoController()
+			{
+				ReflectionRegistry::Register(String("TitleLogoController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					TitleLogoController& obj = *static_cast<TitleLogoController*>(ptr);
+					outInfo.push_back({ String("moveTime"), offsetof(TitleLogoController, moveTime), AttributeType::Float });
+					outInfo.push_back({ String("minPosY"), offsetof(TitleLogoController, minPosY), AttributeType::Float });
+					outInfo.push_back({ String("maxPosY"), offsetof(TitleLogoController, maxPosY), AttributeType::Float });
+				});
+			}
+		};
+		static Register_TitleLogoController global_TitleLogoController_register;
 
 		struct RegisterEnum_Logic
 		{
