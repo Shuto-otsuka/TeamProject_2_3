@@ -45,6 +45,7 @@ namespace SeedCore
 		Vector3 position_ = { 0.0f, 0.0f, 0.0f };
 		Quaternion rotation_ = Quaternion::Identity;
 		JPH::EMotionType motionType_ = JPH::EMotionType::Dynamic;
+		Bool allowMotionTypeChange_ = false;
 		Bool continuousCollision_ = false;
 		JPH::ObjectLayer layer_ = 0;
 		Float mass_ = 1.0f;
@@ -568,6 +569,29 @@ namespace SeedCore
 		* その速度を保つ。静的ボディには効かない。
 		*/
 		void BodyLinearVelocity(JPH::BodyID bodyID, const Vector3& linearVelocity);
+
+		/**
+		* [EN]
+		* Switches a rigid body between Dynamic, Kinematic and Static: changes
+		* its motion type, the motion-type bits of its object layer, whether
+		* it may sleep, and for a kinematic trigger the flag that lets it
+		* meet static bodies, so it ends up as if it had been created that
+		* way. A body becoming kinematic starts at rest. Leaving Static needs
+		* a body created with allowMotionTypeChange_; soft bodies are left
+		* as they are.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 剛体を Dynamic・Kinematic・Static の間で切り替える。運動タイプ、
+		* オブジェクトレイヤーの運動タイプのビット、眠れるかどうか、キネマ
+		* ティックのトリガーではスタティックのボディと組になるためのフラグを
+		* 変え、最初からその設定で作ったのと同じ状態にする。キネマティックに
+		* なるボディは静止した状態から始める。Static から抜けるには
+		* allowMotionTypeChange_ を付けて作ったボディが要る。ソフトボディは
+		* そのまま。
+		*/
+		void BodyMotionType(JPH::BodyID bodyID, JPH::EMotionType motionType);
 
 		/**
 		* [EN]

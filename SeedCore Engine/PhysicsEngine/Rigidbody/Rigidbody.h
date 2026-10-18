@@ -24,6 +24,9 @@ namespace SeedCore
 	*/
 	class SEEDCORE_API Rigidbody :public SeedScript
 	{
+	private:
+		friend class PhysicsSystem;
+
 	public:
 		/**
 		* [EN]
@@ -174,22 +177,6 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
-		* Hands what code has changed since the last step (isTrigger_, and
-		* the actor's LinearVelocity and AngularVelocity) to the body, so it
-		* takes effect in the next step. Called before every fixed step.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 前のステップからコードが変えたもの(isTrigger_ と、Actor の
-		* LinearVelocity と AngularVelocity)をボディへ渡し、次のステップで効く
-		* ようにする。固定ステップの前に毎回呼ばれる。
-		*/
-		void Apply();
-
-	public:
-		/**
-		* [EN]
 		* Adds a force (N) at the center of mass for the next fixed step.
 		* On a canvas body the force is given in pixels with Y down, and
 		* its Z is ignored. Only a Dynamic body is affected.
@@ -291,6 +278,50 @@ namespace SeedCore
 	private:
 		/**
 		* [EN]
+		* Hands what code has changed since the last step (bodyType_,
+		* isTrigger_, and the actor's LinearVelocity and AngularVelocity) to
+		* the body, so it takes effect in the next step. Called by
+		* PhysicsSystem before every fixed step.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 前のステップからコードが変えたもの(bodyType_ と isTrigger_ と、Actor の
+		* LinearVelocity と AngularVelocity)をボディへ渡し、次のステップで効く
+		* ようにする。固定ステップの前に PhysicsSystem から毎回呼ばれる。
+		*/
+		void Apply();
+
+		/**
+		* [EN]
+		* Hands bodyType_ to the body when it differs from the motion type
+		* the body has, so switching it from code or the inspector during
+		* play takes effect.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* bodyType_ がボディの今の運動タイプと違えばボディへ渡し、プレイ中に
+		* コードやインスペクタから切り替えたものが効くようにする。
+		*/
+		void ApplyBodyType();
+
+		/**
+		* [EN]
+		* Hands isTrigger_ to the body when it differs from the value the
+		* body has, so switching it from code or the inspector during play
+		* takes effect.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* isTrigger_ がボディの今の設定と違えばボディへ渡し、プレイ中にコードや
+		* インスペクタから切り替えたものが効くようにする。
+		*/
+		void ApplyTrigger();
+
+		/**
+		* [EN]
 		* Hands the actor's LinearVelocity to the body when it differs from
 		* the value last copied back. On a canvas body the velocity is in
 		* pixels per second with Y down, and its Z is ignored. A Static body
@@ -321,20 +352,6 @@ namespace SeedCore
 		*/
 		void ApplyAngularVelocity();
 
-		/**
-		* [EN]
-		* Hands isTrigger_ to the body when it differs from the value the
-		* body has, so switching it from code or the inspector during play
-		* takes effect.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* isTrigger_ がボディの今の設定と違えばボディへ渡し、プレイ中にコードや
-		* インスペクタから切り替えたものが効くようにする。
-		*/
-		void ApplyTrigger();
-
 	private:
 		/// [EN] Radius of the sphere used when the actor has no collider.
 		/// [JP] Actor にコライダーが無いときに使う球の半径。
@@ -359,6 +376,10 @@ namespace SeedCore
 		/// [EN] Angular velocity last exchanged with the body, in AngularVelocity's units; an AngularVelocity that differs from it was written by code.
 		/// [JP] 最後にボディとやり取りした角速度(AngularVelocity の単位)。これと違う AngularVelocity は、コードから書かれたもの。
 		Vector3 syncedAngularVelocity_ = { 0.0f, 0.0f, 0.0f };
+
+		/// [EN] Body type the body currently has; a bodyType_ that differs from it was switched after the body was set up.
+		/// [JP] ボディが今持っている動作モード。これと違う bodyType_ は、ボディを設定した後に切り替えられたもの。
+		BodyType syncedBodyType_ = BodyType::Dynamic;
 
 		/// [EN] Whether the body is currently a trigger; an isTrigger_ that differs from it was switched after the body was set up.
 		/// [JP] ボディが今トリガーかどうか。これと違う isTrigger_ は、ボディを設定した後に切り替えられたもの。

@@ -122,8 +122,10 @@ namespace SeedCore
 		desc.shape_ = shapeHandle_;
 		PhysicsSystem::ApplyTransform(actor, desc);
 		desc.motionType_ = ToMotionType(bodyType_);
+		desc.allowMotionTypeChange_ = true;
 		desc.continuousCollision_ = continuousCollision_;
 		desc.layer_ = ToObjectLayer(bodyType_, actor.Layer());
+		syncedBodyType_ = bodyType_;
 
 		/// [EN] Material and motion settings; gravity off is a gravity factor of 0.
 		/// [JP] 材質と運動の設定。重力を切るのは、重力の倍率を 0 にすることと同じ。
@@ -345,26 +347,6 @@ namespace SeedCore
 		{
 			velocity->simulated_ = false;
 		}
-	}
-
-	/**
-	* [EN]
-	* Hands what code has changed since the last step (isTrigger_, and
-	* the actor's LinearVelocity and AngularVelocity) to the body, so it
-	* takes effect in the next step. Called before every fixed step.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 前のステップからコードが変えたもの(isTrigger_ と、Actor の
-	* LinearVelocity と AngularVelocity)をボディへ渡し、次のステップで効く
-	* ようにする。固定ステップの前に毎回呼ばれる。
-	*/
-	void Rigidbody::Apply()
-	{
-		ApplyTrigger();
-		ApplyLinearVelocity();
-		ApplyAngularVelocity();
 	}
 
 	/**
@@ -620,6 +602,86 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Hands what code has changed since the last step (bodyType_,
+	* isTrigger_, and the actor's LinearVelocity and AngularVelocity) to
+	* the body, so it takes effect in the next step. Called by
+	* PhysicsSystem before every fixed step.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 前のステップからコードが変えたもの(bodyType_ と isTrigger_ と、Actor の
+	* LinearVelocity と AngularVelocity)をボディへ渡し、次のステップで効く
+	* ようにする。固定ステップの前に PhysicsSystem から毎回呼ばれる。
+	*/
+	void Rigidbody::Apply()
+	{
+		ApplyBodyType();
+		ApplyTrigger();
+		ApplyLinearVelocity();
+		ApplyAngularVelocity();
+	}
+
+	/**
+	* [EN]
+	* Hands bodyType_ to the body when it differs from the motion type
+	* the body has, so switching it from code or the inspector during
+	* play takes effect.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* bodyType_ がボディの今の運動タイプと違えばボディへ渡し、プレイ中に
+	* コードやインスペクタから切り替えたものが効くようにする。
+	*/
+	void Rigidbody::ApplyBodyType()
+	{
+		if (bodyID_.IsInvalid())
+		{
+			return;
+		}
+
+		if (bodyType_ == syncedBodyType_)
+		{
+			return;
+		}
+
+		syncedBodyType_ = bodyType_;
+		GetActor().GetPhysics().BodyMotionType(bodyID_, ToMotionType(syncedBodyType_));
+	}
+
+	/**
+	* [EN]
+	* Hands isTrigger_ to the body when it differs from the value the
+	* body has, so switching it from code or the inspector during play
+	* takes effect.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* isTrigger_ がボディの今の設定と違えばボディへ渡し、プレイ中にコードや
+	* インスペクタから切り替えたものが効くようにする。
+	*/
+	void Rigidbody::ApplyTrigger()
+	{
+		if (bodyID_.IsInvalid())
+		{
+			return;
+		}
+
+		/// [EN] An unchanged isTrigger_ leaves the body as it is.
+		/// [JP] isTrigger_ が変わっていなければ、ボディはそのまま。
+		if (isTrigger_ == syncedTrigger_)
+		{
+			return;
+		}
+
+		syncedTrigger_ = isTrigger_;
+		GetActor().GetPhysics().BodyTrigger(bodyID_, syncedTrigger_);
+	}
+
+	/**
+	* [EN]
 	* Hands the actor's LinearVelocity to the body when it differs from
 	* the value last copied back. On a canvas body the velocity is in
 	* pixels per second with Y down, and its Z is ignored. A Static body
@@ -720,35 +782,5 @@ namespace SeedCore
 		}
 
 		actor.GetPhysics().BodyAngularVelocity(bodyID_, syncedAngularVelocity_);
-	}
-
-	/**
-	* [EN]
-	* Hands isTrigger_ to the body when it differs from the value the
-	* body has, so switching it from code or the inspector during play
-	* takes effect.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* isTrigger_ がボディの今の設定と違えばボディへ渡し、プレイ中にコードや
-	* インスペクタから切り替えたものが効くようにする。
-	*/
-	void Rigidbody::ApplyTrigger()
-	{
-		if (bodyID_.IsInvalid())
-		{
-			return;
-		}
-
-		/// [EN] An unchanged isTrigger_ leaves the body as it is.
-		/// [JP] isTrigger_ が変わっていなければ、ボディはそのまま。
-		if (isTrigger_ == syncedTrigger_)
-		{
-			return;
-		}
-
-		syncedTrigger_ = isTrigger_;
-		GetActor().GetPhysics().BodyTrigger(bodyID_, syncedTrigger_);
 	}
 }

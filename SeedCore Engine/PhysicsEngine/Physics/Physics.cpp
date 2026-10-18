@@ -363,6 +363,10 @@ namespace SeedCore
 		settings.mUserData = std::bit_cast<JPH::uint64>(desc.userData_);
 		settings.mIsSensor = desc.isSensor_;
 
+		/// [EN] Jolt allocates motion properties only at creation, so a body whose motion type may change keeps them even while static.
+		/// [JP] Jolt は運動特性を生成時にしか確保しないので、運動タイプが変わりうるボディはスタティックの間も持たせておく。
+		settings.mAllowDynamicOrKinematic = desc.allowMotionTypeChange_;
+
 		/// [EN] A kinematic trigger needs this to detect static bodies; other kinematic pairs have no simulation effect, so the flag stays off for them.
 		/// [JP] キネマティックのトリガーがスタティックのボディを検知するのに必要。それ以外のキネマティックの組はシミュレーションに影響しないので立てない。
 		settings.mCollideKinematicVsNonDynamic = desc.motionType_ == JPH::EMotionType::Kinematic && desc.isSensor_;
@@ -371,9 +375,9 @@ namespace SeedCore
 		/// [JP] 眠ったキネマティックのボディは接触をすべて失い、止まっているトリガーから出たことになってしまう。キネマティックのボディは数が少ないので、起こしたままでも負荷は小さい。
 		settings.mAllowSleeping = desc.motionType_ != JPH::EMotionType::Kinematic;
 
-		/// [EN] Static bodies have no mass or motion quality.
-		/// [JP] 静的ボディは質量も運動品質も持たない。
-		if (desc.motionType_ != JPH::EMotionType::Static)
+		/// [EN] Static bodies have no mass or motion quality, unless they may later become dynamic or kinematic.
+		/// [JP] 静的ボディは質量も運動品質も持たない。後から動的・キネマティックになりうる場合は別。
+		if (desc.motionType_ != JPH::EMotionType::Static || desc.allowMotionTypeChange_)
 		{
 			/// [EN] The mass is given; the inertia is derived from the shape scaled to that mass.
 			/// [JP] 質量は指定値を使い、慣性はその質量に合わせて形状から求める。
@@ -603,18 +607,18 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Only dynamic bodies use mass; static and kinematic ones keep what they have.
-		/// [JP] 質量を使うのは動的ボディだけ。静的・キネマティックはそのままにする。
+		/// [EN] Every body with motion properties keeps its mass up to date, so one that becomes dynamic later already has the right inertia.
+		/// [JP] 運動特性を持つボディは全て質量を最新に保ち、後から動的になったときに正しい慣性を持っているようにする。
 		JPH::Body& body = lock.GetBody();
-		if (!body.IsDynamic())
+		JPH::MotionProperties* motionProperties = body.GetMotionPropertiesUnchecked();
+		if (!motionProperties)
 		{
 			return;
 		}
 
 		/// [EN] With every translation axis locked the inverse mass is 0 and the mass cannot be read back.
 		/// [JP] 移動軸が全て固定されていると逆質量は 0 になり、質量を読み戻せない。
-		JPH::MotionProperties* motionProperties = body.GetMotionProperties();
-		Float inverseMass = motionProperties->GetInverseMass();
+		Float inverseMass = motionProperties->GetInverseMassUnchecked();
 		if (inverseMass <= 0.0f)
 		{
 			return;
@@ -727,6 +731,109 @@ namespace SeedCore
 		/// [EN] The velocity is clamped to the body's maximum speed, and frozen axes stay at zero.
 		/// [JP] 速度はボディの最大速度に収められ、固定した軸は 0 のまま。
 		joltManager_.BodyInterface().SetLinearVelocity(bodyID, JPH::Vec3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+	}
+
+	/**
+	* [EN]
+	* Switches a rigid body between Dynamic, Kinematic and Static: changes
+	* its motion type, the motion-type bits of its object layer, whether
+	* it may sleep, and for a kinematic trigger the flag that lets it
+	* meet static bodies, so it ends up as if it had been created that
+	* way. A body becoming kinematic starts at rest. Leaving Static needs
+	* a body created with allowMotionTypeChange_; soft bodies are left
+	* as they are.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 剛体を Dynamic・Kinematic・Static の間で切り替える。運動タイプ、
+	* オブジェクトレイヤーの運動タイプのビット、眠れるかどうか、キネマ
+	* ティックのトリガーではスタティックのボディと組になるためのフラグを
+	* 変え、最初からその設定で作ったのと同じ状態にする。キネマティックに
+	* なるボディは静止した状態から始める。Static から抜けるには
+	* allowMotionTypeChange_ を付けて作ったボディが要る。ソフトボディは
+	* そのまま。
+	*/
+	void Physics::BodyMotionType(JPH::BodyID bodyID, JPH::EMotionType motionType)
+	{
+		if (bodyID.IsInvalid())
+		{
+			return;
+		}
+
+		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
+
+		/// [EN] A soft body is always dynamic, and a body without motion properties can never leave Static.
+		/// [JP] ソフトボディは常に動的で、運動特性の無いボディは Static から抜けられない。
+		/// [EN] The scope releases the read lock before the calls below, which lock the body themselves.
+		/// [JP] 下の呼び出しは自分でボディをロックするので、その前にこのスコープで読み込みロックを外す。
+		{
+			JPH::BodyLockRead lock(joltManager_.PhysicsSystem().GetBodyLockInterface(), bodyID);
+			if (!lock.Succeeded())
+			{
+				return;
+			}
+
+			const JPH::Body& body = lock.GetBody();
+			if (body.IsSoftBody())
+			{
+				return;
+			}
+
+			if (motionType != JPH::EMotionType::Static && !body.GetMotionPropertiesUnchecked())
+			{
+				SC_LOG_WARNING("Physics::BodyMotionType: Static で生成されたボディは Dynamic/Kinematic に切り替えられません (allowMotionTypeChange_ が必要です)");
+				return;
+			}
+		}
+
+		/// [EN] Jolt deactivates a body that becomes static and wakes one that starts moving.
+		/// [JP] Jolt はスタティックになるボディを止め、動き出すボディを起こす。
+		bodyInterface.SetMotionType(bodyID, motionType, JPH::EActivation::Activate);
+
+		/// [EN] A kinematic body keeps moving at its velocity, so it starts at rest as one created that way would.
+		/// [JP] キネマティックのボディは自分の速度で動き続けるので、最初からそう作ったときと同じく静止から始める。
+		if (motionType == JPH::EMotionType::Kinematic)
+		{
+			bodyInterface.SetLinearAndAngularVelocity(bodyID, JPH::Vec3::sZero(), JPH::Vec3::sZero());
+		}
+
+		/// [EN] Only the motion-type bits change; the actor's layer and the SENSOR and PLANAR bits stay, and the body moves to the matching broad-phase layer.
+		/// [JP] 変えるのは運動タイプのビットだけで、Actor のレイヤーと SENSOR・PLANAR ビットはそのまま。ボディは対応するブロードフェーズレイヤーへ移る。
+		JPH::ObjectLayer motionLayer = Layers::DYNAMIC;
+		switch (motionType)
+		{
+		case JPH::EMotionType::Kinematic:
+			motionLayer = Layers::KINEMATIC;
+			break;
+		case JPH::EMotionType::Static:
+			motionLayer = Layers::STATIC;
+			break;
+		default:
+			break;
+		}
+
+		JPH::ObjectLayer layer = bodyInterface.GetObjectLayer(bodyID);
+		layer = static_cast<JPH::ObjectLayer>((layer & ~((1u << Layers::MOTION_TYPE_BITS) - 1u)) | motionLayer);
+		bodyInterface.SetObjectLayer(bodyID, layer);
+
+		/// [EN] The flags decided at creation follow the new motion type; the body interface has no setters for them, so they are written on the locked body.
+		/// [JP] 生成時に決めたフラグを新しい運動タイプに合わせる。ボディインターフェースに設定関数が無いので、ロックしたボディに書く。
+		JPH::BodyLockWrite lock(joltManager_.PhysicsSystem().GetBodyLockInterface(), bodyID);
+		if (!lock.Succeeded())
+		{
+			return;
+		}
+
+		JPH::Body& body = lock.GetBody();
+		body.SetCollideKinematicVsNonDynamic(motionType == JPH::EMotionType::Kinematic && body.IsSensor());
+
+		/// [EN] As at creation, a kinematic body stays awake so it does not leave the triggers it rests in.
+		/// [JP] 生成時と同じく、キネマティックのボディは止まっているトリガーから出たことにならないよう起こしたままにする。
+		if (body.GetMotionPropertiesUnchecked())
+		{
+			body.SetAllowSleeping(motionType != JPH::EMotionType::Kinematic);
+		}
 	}
 
 	/**
