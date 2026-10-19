@@ -1701,6 +1701,24 @@ namespace SeedCore
 	void InspectorPanel::DrawPayloadArrayRow(const FieldInfo& field, void* pointer)
 	{
 		Int* value = static_cast<Int*>(pointer);
+
+		/// [EN] An Actor element holds a persistent ID resolved through World::FindActor, so its label is the actor's name rather than an asset file name.
+		/// [JP] Actor の要素は World::FindActor で解決する永続IDを持つため、ラベルはアセットのファイル名ではなく actor の名前になる。
+		if (field.assetType_ == PayloadType::Actor)
+		{
+			Uint32 targetId = static_cast<Uint32>(*value);
+			Actor target = (targetId != 0) ? context_.world_.world_->FindActor(targetId) : Actor();
+
+			std::string actorLabel = "(空)";
+			if (target)
+			{
+				Name* nameComponent = static_cast<Name*>(context_.world_.world_->GetComponent(target.GetEntity(), ComponentRegistry::GetComponentID<Name>()));
+				actorLabel = nameComponent ? nameComponent->name_.str() : "(名前なし)";
+			}
+			ImGui::Selectable(actorLabel.c_str());
+			return;
+		}
+
 		Uint32 assetId = static_cast<Uint32>(*value);
 		AssetRecord* asset = (assetId != 0) ? context_.world_.resource_->GetAsset(assetId) : nullptr;
 
@@ -1722,7 +1740,18 @@ namespace SeedCore
 		{
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(dropType))
 			{
-				Int droppedValue = *static_cast<const Int*>(payload->Data);
+				/// [EN] A hierarchy drop carries the Actor itself, not an asset ID -- store its persistent ID, same as the single-field path in DrawPayloadField.
+				/// [JP] ヒエラルキーからのドロップはアセットIDではなく Actor そのものを運ぶ -- DrawPayloadField の単体欄と同じく、その永続IDを格納する。
+				Int droppedValue = 0;
+				if (field.assetType_ == PayloadType::Actor)
+				{
+					Actor droppedActor = *static_cast<const Actor*>(payload->Data);
+					droppedValue = static_cast<Int>(droppedActor.PersistentID());
+				}
+				else
+				{
+					droppedValue = *static_cast<const Int*>(payload->Data);
+				}
 				Bool alreadyExists = std::ranges::contains(existingValues, droppedValue);
 				if (!alreadyExists)
 				{

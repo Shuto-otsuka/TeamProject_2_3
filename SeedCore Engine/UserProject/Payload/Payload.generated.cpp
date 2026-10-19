@@ -1,11 +1,15 @@
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Payload/PayloadRegistry.h>
 #include <UserProject/Script/CircuitSystem.h>
+#include <UserProject/Script/CircuitTestSystem.h>
 #include <UserProject/Script/CostGaugeController.h>
+#include <UserProject/Script/DoorSystem.h>
 #include <UserProject/Script/GoalSystem.h>
 
 extern "C" int _force_payload_CircuitSystem = 0;
+extern "C" int _force_payload_CircuitTestSystem = 0;
 extern "C" int _force_payload_CostGaugeController = 0;
+extern "C" int _force_payload_DoorSystem = 0;
 extern "C" int _force_payload_GoalSystem = 0;
 
 namespace SeedCore
@@ -41,6 +45,19 @@ namespace SeedCore
 		};
 		static Register_CircuitSystem global_CircuitSystem_register;
 
+		// ---- UserProject/Script/CircuitTestSystem.h ----
+		struct Register_CircuitTestSystem
+		{
+			Register_CircuitTestSystem()
+			{
+				PayloadRegistry::Register(String("CircuitTestSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					CircuitTestSystem& obj = *static_cast<CircuitTestSystem*>(ptr);
+					outInfo.push_back({ String("確認する回路"), offsetof(CircuitTestSystem, circuitActorID_), AttributeType::Int, PayloadType::Actor });
+				});
+			}
+		};
+		static Register_CircuitTestSystem global_CircuitTestSystem_register;
+
 		// ---- UserProject/Script/CostGaugeController.h ----
 		struct Register_CostGaugeController
 		{
@@ -54,6 +71,19 @@ namespace SeedCore
 			}
 		};
 		static Register_CostGaugeController global_CostGaugeController_register;
+
+		// ---- UserProject/Script/DoorSystem.h ----
+		struct Register_DoorSystem
+		{
+			Register_DoorSystem()
+			{
+				PayloadRegistry::Register(String("DoorSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					DoorSystem& obj = *static_cast<DoorSystem*>(ptr);
+					outInfo.push_back({ String("起動元回路"), offsetof(DoorSystem, circuitActorID_), AttributeType::Int, PayloadType::Actor });
+				});
+			}
+		};
+		static Register_DoorSystem global_DoorSystem_register;
 
 		// ---- UserProject/Script/GoalSystem.h ----
 		struct Register_GoalSystem

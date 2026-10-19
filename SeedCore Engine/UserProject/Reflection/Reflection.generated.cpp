@@ -6,7 +6,9 @@
 #include <UserProject/Script/ChargeGaugeController.h>
 #include <UserProject/Script/CheckPointAreaController.h>
 #include <UserProject/Script/CircuitSystem.h>
+#include <UserProject/Script/CircuitTestSystem.h>
 #include <UserProject/Script/CostGaugeController.h>
+#include <UserProject/Script/DoorSystem.h>
 #include <UserProject/Script/FirstPersonCameraController.h>
 #include <UserProject/Script/FloorMoveSystem.h>
 #include <UserProject/Script/GoalSystem.h>
@@ -15,6 +17,7 @@
 #include <UserProject/Script/PlayerController.h>
 #include <UserProject/Script/StageSelectButtonController.h>
 #include <UserProject/Script/StopController.h>
+#include <UserProject/Script/SwitchSystem.h>
 #include <UserProject/Script/TitleLogoController.h>
 
 extern "C" int _force_reflection_BulletController = 0;
@@ -23,7 +26,9 @@ extern "C" int _force_reflection_CameraController = 0;
 extern "C" int _force_reflection_ChargeGaugeController = 0;
 extern "C" int _force_reflection_CheckPointAreaController = 0;
 extern "C" int _force_reflection_CircuitSystem = 0;
+extern "C" int _force_reflection_CircuitTestSystem = 0;
 extern "C" int _force_reflection_CostGaugeController = 0;
+extern "C" int _force_reflection_DoorSystem = 0;
 extern "C" int _force_reflection_FirstPersonCameraController = 0;
 extern "C" int _force_reflection_FloorMoveSystem = 0;
 extern "C" int _force_reflection_GoalSystem = 0;
@@ -32,6 +37,7 @@ extern "C" int _force_reflection_PendulumController = 0;
 extern "C" int _force_reflection_PlayerController = 0;
 extern "C" int _force_reflection_StageSelectButtonController = 0;
 extern "C" int _force_reflection_StopController = 0;
+extern "C" int _force_reflection_SwitchSystem = 0;
 extern "C" int _force_reflection_TitleLogoController = 0;
 
 namespace SeedCore
@@ -157,6 +163,38 @@ namespace SeedCore
 		};
 		static Register_CircuitSystem global_CircuitSystem_register;
 
+		// ---- UserProject/Script/CircuitTestSystem.h ----
+		struct Register_CircuitTestSystem
+		{
+			Register_CircuitTestSystem()
+			{
+				ReflectionRegistry::Register(String("CircuitTestSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					CircuitTestSystem& obj = *static_cast<CircuitTestSystem*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("浮く高さ");
+						fi.offset_ = offsetof(CircuitTestSystem, floatHeight_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 10000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("浮き沈みにかかる時間");
+						fi.offset_ = offsetof(CircuitTestSystem, moveTime_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 10000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					outInfo.push_back({ String("通電中の回転速度(度/秒)"), offsetof(CircuitTestSystem, rotateSpeed_), AttributeType::Float });
+					outInfo.push_back({ String("変化をログに出すか"), offsetof(CircuitTestSystem, isLogOutput_), AttributeType::Bool });
+				});
+			}
+		};
+		static Register_CircuitTestSystem global_CircuitTestSystem_register;
+
 		// ---- UserProject/Script/CostGaugeController.h ----
 		struct Register_CostGaugeController
 		{
@@ -173,6 +211,45 @@ namespace SeedCore
 			}
 		};
 		static Register_CostGaugeController global_CostGaugeController_register;
+
+		// ---- UserProject/Script/DoorSystem.h ----
+		struct Register_DoorSystem
+		{
+			Register_DoorSystem()
+			{
+				ReflectionRegistry::Register(String("DoorSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					DoorSystem& obj = *static_cast<DoorSystem*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("沈む距離");
+						fi.offset_ = offsetof(DoorSystem, sinkDistance_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 10000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("開くまでの時間");
+						fi.offset_ = offsetof(DoorSystem, openTime_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 10000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("閉まるまでの時間");
+						fi.offset_ = offsetof(DoorSystem, closeTime_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 10000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_DoorSystem global_DoorSystem_register;
 
 		// ---- UserProject/Script/FirstPersonCameraController.h ----
 		struct Register_FirstPersonCameraController
@@ -349,6 +426,61 @@ namespace SeedCore
 		};
 		static Register_StopController global_StopController_register;
 
+		// ---- UserProject/Script/SwitchSystem.h ----
+		struct Register_SwitchSystem
+		{
+			Register_SwitchSystem()
+			{
+				ReflectionRegistry::Register(String("SwitchSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					SwitchSystem& obj = *static_cast<SwitchSystem*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("動作");
+						fi.offset_ = offsetof(SwitchSystem, mode_);
+						fi.type_ = AttributeType::Enum;
+						fi.enum_.typeName_ = String("Mode");
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("判定の形");
+						fi.offset_ = offsetof(SwitchSystem, shape_);
+						fi.type_ = AttributeType::Enum;
+						fi.enum_.typeName_ = String("Shape");
+						outInfo.push_back(std::move(fi));
+					}
+					outInfo.push_back({ String("判定サイズ"), offsetof(SwitchSystem, detectSize_), AttributeType::Vector3 });
+					outInfo.push_back({ String("判定オフセット"), offsetof(SwitchSystem, detectOffset_), AttributeType::Vector3 });
+					{
+						auto& arr = obj.targetTags_;
+						FieldInfo header;
+						header.name_ = String("対象タグ");
+						header.offset_ = 0;
+						header.type_ = AttributeType::String;
+						header.array_.size_ = arr.size();
+						header.array_.add_ = [&obj]() { obj.targetTags_.push_back({}); };
+						header.array_.remove_ = [&obj](Size idx) { if (idx < obj.targetTags_.size()) obj.targetTags_.erase(obj.targetTags_.begin() + idx); };
+						outInfo.push_back(std::move(header));
+						for (Size i = 0; i < arr.size(); ++i)
+						{
+							outInfo.push_back({ String("[" + std::to_string(i) + "]"), 0, AttributeType::String, PayloadType::None, &arr[i] });
+						}
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("クールタイム");
+						fi.offset_ = offsetof(SwitchSystem, cooltime_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 10000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					outInfo.push_back({ String("判定範囲を描画するか"), offsetof(SwitchSystem, isDebugAreaDraw_), AttributeType::Bool });
+				});
+			}
+		};
+		static Register_SwitchSystem global_SwitchSystem_register;
+
 		// ---- UserProject/Script/TitleLogoController.h ----
 		struct Register_TitleLogoController
 		{
@@ -377,6 +509,19 @@ namespace SeedCore
 		};
 		static RegisterEnum_Logic global_Logic_enum_register;
 
+		struct RegisterEnum_Mode
+		{
+			RegisterEnum_Mode()
+			{
+				EnumRegistry::Register(String("Mode"), {
+					{ static_cast<Int>(SwitchSystem::Mode::Momentary), String("Momentary") },
+					{ static_cast<Int>(SwitchSystem::Mode::Toggle), String("Toggle") },
+					{ static_cast<Int>(SwitchSystem::Mode::Latch), String("Latch") },
+				});
+			}
+		};
+		static RegisterEnum_Mode global_Mode_enum_register;
+
 		struct RegisterEnum_MoveType
 		{
 			RegisterEnum_MoveType()
@@ -388,6 +533,18 @@ namespace SeedCore
 			}
 		};
 		static RegisterEnum_MoveType global_MoveType_enum_register;
+
+		struct RegisterEnum_Shape
+		{
+			RegisterEnum_Shape()
+			{
+				EnumRegistry::Register(String("Shape"), {
+					{ static_cast<Int>(SwitchSystem::Shape::Sphere), String("Sphere") },
+					{ static_cast<Int>(SwitchSystem::Shape::Box), String("Box") },
+				});
+			}
+		};
+		static RegisterEnum_Shape global_Shape_enum_register;
 
 	}
 }
