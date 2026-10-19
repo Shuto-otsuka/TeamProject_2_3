@@ -170,11 +170,25 @@ void BulletController::SetParam(const SeedCore::Vector3& startPosition,const See
     this->moveDirection = moveDirection;
     //回転方向をセット
     turnAxis.Normalize();
- 
+
     //チャージ率からサイズ、スピード、生存時間を計算
     size = SeedCore::Lerp(minSize, maxSize, chargeRate);//チャージされているほど大きい
     speed = SeedCore::Lerp(maxSpeed, minSpeed, chargeRate);//チャージされているほど遅い
     aliveTime = SeedCore::Lerp(minAliveTime, maxAliveTime, chargeRate);//チャージされているほど生存時間が長い
+
+    //chargeRateによってサイズが分かるようにタグを追加
+    if (chargeRate <= 0.33f)
+    {
+        GetActor().AddTag("BulletSmall");
+    }
+    else if (chargeRate <= 0.66f)
+    {
+        GetActor().AddTag("BulletMedium");
+    }
+    else
+    {
+        GetActor().AddTag("BulletBig");
+    }
 
     //スケールをセット
     scale->x_ = size;
