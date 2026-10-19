@@ -109,6 +109,15 @@
     <ClCompile Include="Script\TitleLogoController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
+    <ClCompile Include="Script\SwitchSystem.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\CircuitTestSystem.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\DoorSystem.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\ScTutorial.h">
@@ -172,6 +181,15 @@
       <Filter>Script</Filter>
     </ClInclude>
     <ClInclude Include="Script\TitleLogoController.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\SwitchSystem.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\CircuitTestSystem.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\DoorSystem.h">
       <Filter>Script</Filter>
     </ClInclude>
   </ItemGroup>

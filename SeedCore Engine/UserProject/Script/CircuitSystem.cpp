@@ -1,4 +1,5 @@
 #include "CircuitSystem.h"
+#include "SwitchSystem.h"
 
 #include <SeedCore/ScComponent.h>
 #include <SeedCore/ScLog.h>
@@ -38,7 +39,42 @@ void CircuitSystem::OnLateTick(float elapsedTime)
 		result = true;
 	}
 
-	// TODO ループで回しボタンからOnかどうかをとる
+	int onCount = 0;
+	for (const Actor& actor : cacheActors_)
+	{
+		SwitchSystem* switchSystem = actor.GetComponent<SwitchSystem>();
+		if (!switchSystem || !actor.Active())
+		{
+			continue;
+		}
+
+		if (switchSystem->IsOn())
+		{
+			onCount++;
+		}
+	}
+
+	switch (logic_)
+	{
+	case Logic::And:
+		if (onCount > 0 && onCount == static_cast<int>(cacheActors_.size()))
+		{
+			result = true;
+		}
+		break;
+	case Logic::Or:
+		if (onCount >= 1)
+		{
+			result = true;
+		}
+		break;
+	case Logic::Count:
+		if (onCount >= guaranteeCount_)
+		{
+			result = true;
+		}
+		break;
+	}
 
 	if (keepResult_ && result)
 	{
