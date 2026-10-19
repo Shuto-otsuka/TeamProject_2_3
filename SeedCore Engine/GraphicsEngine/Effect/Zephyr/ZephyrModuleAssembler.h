@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/DynamicArray.h>
 #include <FoundationEngine/Utility/FlatMap.h>
 #include <FoundationEngine/Utility/Handle.h>
@@ -22,7 +21,7 @@ namespace SeedCore
 		ZephyrModuleAssembler() = default;
 		~ZephyrModuleAssembler() = default;
 
-		[[nodiscard]] ZephyrGeneratedShader GetOrCreate(const DynamicArray<String>& moduleNames, ShaderHotReload& shaderHotReload);
+		NODISCARD ZephyrGeneratedShader GetOrCreate(const DynamicArray<String>& moduleNames, ShaderHotReload& shaderHotReload);
 
 	private:
 		FlatMap<Uint64, ZephyrGeneratedShader> generatedCache_;

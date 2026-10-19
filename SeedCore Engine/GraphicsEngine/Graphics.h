@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Resource/Config/BootConfig.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Context.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
@@ -412,7 +411,7 @@ namespace SeedCore
 		* D3D12 デバイスおよびコマンドキューのコンテキストを返す。以下の
 		* サービス取得関数と同様に、参照は Finalize まで有効である。
 		*/
-		[[nodiscard]] D3D12Context& GetContext()const;
+		NODISCARD D3D12Context& GetContext()const;
 
 		/**
 		* [EN]
@@ -423,7 +422,7 @@ namespace SeedCore
 		* [JP]
 		* 表示用スワップチェインを返す。
 		*/
-		[[nodiscard]] SwapChain& GetSwapChain()const;
+		NODISCARD SwapChain& GetSwapChain()const;
 
 		/**
 		* [EN]
@@ -434,7 +433,7 @@ namespace SeedCore
 		* [JP]
 		* 共有 bindless ディスクリプタアロケーターを返す。
 		*/
-		[[nodiscard]] BindlessHeap& GetBindlessHeap()const;
+		NODISCARD BindlessHeap& GetBindlessHeap()const;
 
 		/**
 		* [EN]
@@ -451,7 +450,7 @@ namespace SeedCore
 		* ResourceCache へ登録し、GraphicsEngine のコードは
 		* GraphicsModule::Resources で型付きでリソースへ届く。
 		*/
-		[[nodiscard]] GraphicsModule& GetGraphicsModule()const;
+		NODISCARD GraphicsModule& GetGraphicsModule()const;
 
 		/**
 		* [EN]
@@ -462,7 +461,7 @@ namespace SeedCore
 		* [JP]
 		* テクスチャストリーミング用 BC7 圧縮パスを返す。
 		*/
-		[[nodiscard]] BC7CompressShader& GetBC7CompressShader()const;
+		NODISCARD BC7CompressShader& GetBC7CompressShader()const;
 
 		/**
 		* [EN]
@@ -473,7 +472,7 @@ namespace SeedCore
 		* [JP]
 		* Renderer が所有する GPU タイミングデータを返す。
 		*/
-		[[nodiscard]] const GpuProfiler& GetGpuProfiler()const;
+		NODISCARD const GpuProfiler& GetGpuProfiler()const;
 
 	public:
 		/**
@@ -489,7 +488,7 @@ namespace SeedCore
 		* これと以下の表示ハンドルは bindless ヒープ上のハンドルで、
 		* エディター UI が画像として描画する。
 		*/
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE EditorDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE EditorDisplayGPUHandle()const;
 
 		/**
 		* [EN]
@@ -500,7 +499,7 @@ namespace SeedCore
 		* [JP]
 		* ゲームビュー表示テクスチャを返す。
 		*/
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE GameDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE GameDisplayGPUHandle()const;
 
 		/**
 		* [EN]
@@ -511,7 +510,7 @@ namespace SeedCore
 		* [JP]
 		* キャンバスビュー表示テクスチャを返す。
 		*/
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE CanvasDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE CanvasDisplayGPUHandle()const;
 
 		/**
 		* [EN]
@@ -522,7 +521,7 @@ namespace SeedCore
 		* [JP]
 		* タイムラインプレビュー表示テクスチャを返す。
 		*/
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE TimelineDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE TimelineDisplayGPUHandle()const;
 
 		/**
 		* [EN]
@@ -533,7 +532,7 @@ namespace SeedCore
 		* [JP]
 		* モデル変形プレビュー表示テクスチャを返す。
 		*/
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE ModelTransformDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE ModelTransformDisplayGPUHandle()const;
 
 		/**
 		* [EN]
@@ -544,7 +543,7 @@ namespace SeedCore
 		* [JP]
 		* マテリアルプレビュー表示テクスチャを返す。
 		*/
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE MaterialDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE MaterialDisplayGPUHandle()const;
 
 		/**
 		* [EN]
@@ -555,7 +554,7 @@ namespace SeedCore
 		* [JP]
 		* スケルトンコントローラープレビュー表示テクスチャを返す。
 		*/
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE SkeletonControllerDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE SkeletonControllerDisplayGPUHandle()const;
 
 		/**
 		* [EN]
@@ -566,7 +565,7 @@ namespace SeedCore
 		* [JP]
 		* アバタープレビュー表示テクスチャを返す。
 		*/
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE AvatarDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE AvatarDisplayGPUHandle()const;
 
 	private:
 		/**

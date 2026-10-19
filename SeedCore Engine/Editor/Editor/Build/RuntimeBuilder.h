@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -10,9 +9,9 @@ namespace SeedCore
 
 		void BuildAsync(const std::filesystem::path& projectRoot);
 
-		[[nodiscard]] Bool IsBuilding()const;
+		NODISCARD Bool IsBuilding()const;
 
-		[[nodiscard]] Float GetProgress()const;
+		NODISCARD Float GetProgress()const;
 
 		Bool ConsumeResult(Bool& outSuccess, std::string& outLog);
 

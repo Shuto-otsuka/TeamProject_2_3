@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Log/Assert.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/System/LightSystem.h>
@@ -917,11 +916,11 @@ namespace SeedCore
 
 		void UploadCanvas();
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS EditorConstantAddress()const;
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS EditorConstantAddress()const;
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GameConstantAddress()const;
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS GameConstantAddress()const;
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS CanvasConstantAddress()const;
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS CanvasConstantAddress()const;
 
 	public:
 		void SetEditorSceneIndex(Uint index);
@@ -990,11 +989,11 @@ namespace SeedCore
 
 		void UploadCanvas();
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS EditorAddress()const;
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS EditorAddress()const;
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GameAddress()const;
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS GameAddress()const;
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS CanvasAddress()const;
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS CanvasAddress()const;
 
 	public:
 		void SetLightIndices(const LightShaderResourceIndices& values);
@@ -1145,11 +1144,11 @@ namespace SeedCore
 
 		void UploadCanvas();
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS EditorAddress()const;
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS EditorAddress()const;
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GameAddress()const;
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS GameAddress()const;
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS CanvasAddress()const;
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS CanvasAddress()const;
 
 	public:
 		void SetClusterAssignIndices(const ClusterAssignUnorderedAccessIndices& values);

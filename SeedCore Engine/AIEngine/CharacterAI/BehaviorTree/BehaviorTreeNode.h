@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <AIEngine/CharacterAI/BehaviorTree/BehaviorTreeData.h>
 
 namespace SeedCore

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/SeedScript.h>
 #include <PhysicsEngine/JoltPhysics/JoltCharacterContactListener.h>
 
@@ -393,7 +392,7 @@ namespace SeedCore
 	private:
 		/// [EN] Absolute vertical-normal dot value below which a contact is treated as a wall.
 		/// [JP] 接触を壁として扱う垂直法線内積の絶対値上限。
-		SC_CONST Float wallNormalDotLimit_ = 0.5f;
+		SC_CONSTEX Float wallNormalDotLimit_ = 0.5f;
 
 		/// [EN] Requested horizontal movement direction and magnitude.
 		/// [JP] 要求中の水平移動方向と大きさ。

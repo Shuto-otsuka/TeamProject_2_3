@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -27,21 +26,21 @@ namespace SeedCore
 
 		void Resize(ID3D12Device* device, BindlessHeap* shaderResourceViewHeap, Uint32 width, Uint32 height);
 
-		[[nodiscard]] D3D12_VIEWPORT GetViewport()const;
+		NODISCARD D3D12_VIEWPORT GetViewport()const;
 
-		[[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE RenderTargetViewHandle()const;
+		NODISCARD D3D12_CPU_DESCRIPTOR_HANDLE RenderTargetViewHandle()const;
 
-		[[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilViewHandle()const;
+		NODISCARD D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilViewHandle()const;
 
-		[[nodiscard]] Uint32 ColorShaderResourceViewIndex()const;
+		NODISCARD Uint32 ColorShaderResourceViewIndex()const;
 
-		[[nodiscard]] Uint32 DepthShaderResourceViewIndex()const;
+		NODISCARD Uint32 DepthShaderResourceViewIndex()const;
 
-		[[nodiscard]] Bool HasDepthStencil()const;
+		NODISCARD Bool HasDepthStencil()const;
 
-		[[nodiscard]] ID3D12Resource* ColorResource()const;
+		NODISCARD ID3D12Resource* ColorResource()const;
 
-		[[nodiscard]] ID3D12Resource* DepthResource()const;
+		NODISCARD ID3D12Resource* DepthResource()const;
 
 	private:
 		void CreateResources(ID3D12Device* device, BindlessHeap* shaderResourceViewHeap, Uint32 width, Uint32 height);

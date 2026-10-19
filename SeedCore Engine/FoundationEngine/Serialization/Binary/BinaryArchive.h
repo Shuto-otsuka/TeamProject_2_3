@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Serialization/SerializeSupport.h>
 

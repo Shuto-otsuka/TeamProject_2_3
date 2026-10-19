@@ -19,7 +19,7 @@ namespace SeedCore
 		case D3D12CommandType::Copy:
 			return D3D12_COMMAND_LIST_TYPE_COPY;
 		case D3D12CommandType::Direct:
-			[[fallthrough]];
+			FALLTHROUGH;
 		default:
 			return D3D12_COMMAND_LIST_TYPE_DIRECT;
 		}

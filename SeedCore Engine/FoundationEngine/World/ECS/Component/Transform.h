@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
@@ -33,7 +32,7 @@ namespace SeedCore
 		* [JP]
 		* 位置を Vector3 で返す。
 		*/
-		[[nodiscard]] static Vector3 Vector(const Position& position);
+		NODISCARD static Vector3 Vector(const Position& position);
 
 		/**
 		* [EN]
@@ -55,7 +54,7 @@ namespace SeedCore
 		* [JP]
 		* 拡大縮小を Vector3 で返す。
 		*/
-		[[nodiscard]] static Vector3 Vector(const Scale& scale);
+		NODISCARD static Vector3 Vector(const Scale& scale);
 
 		/**
 		* [EN]
@@ -77,7 +76,7 @@ namespace SeedCore
 		* [JP]
 		* 回転を Quaternion で返す。
 		*/
-		[[nodiscard]] static Quaternion Quat(const Rotation& rotation);
+		NODISCARD static Quaternion Quat(const Rotation& rotation);
 
 		/**
 		* [EN]
@@ -99,7 +98,7 @@ namespace SeedCore
 		* [JP]
 		* 回転をオイラー角（ラジアン）で返す。
 		*/
-		[[nodiscard]] static Vector3 Euler(const Rotation& rotation);
+		NODISCARD static Vector3 Euler(const Rotation& rotation);
 
 		/**
 		* [EN]
@@ -110,6 +109,6 @@ namespace SeedCore
 		* [JP]
 		* 回転をオイラー角（度）で返す。
 		*/
-		[[nodiscard]] static Vector3 Degree(const Rotation& rotation);
+		NODISCARD static Vector3 Degree(const Rotation& rotation);
 	};
 }

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -38,7 +37,7 @@ namespace SeedCore
 
 		void DrawDetails();
 
-		[[nodiscard]] Bool Visible()const;
+		NODISCARD Bool Visible()const;
 
 	private:
 		struct EditingState

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
 #include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
@@ -39,16 +38,16 @@ namespace SeedCore
 
 		void Create(ShaderCache& shaderCache, ID3D12Device* device);
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineState()const;
+		NODISCARD ID3D12PipelineState* GetPipelineState()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetFilterMomentsPipelineState()const;
+		NODISCARD ID3D12PipelineState* GetFilterMomentsPipelineState()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetATrousPipelineState(Uint32 passIndex)const;
+		NODISCARD ID3D12PipelineState* GetATrousPipelineState(Uint32 passIndex)const;
 
-		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
+		NODISCARD ID3D12RootSignature* GetRootSignature()const;
 
 	private:
-		SC_CONST Uint32 atrousPassCount = 3;
+		SC_CONSTEX Uint32 atrousPassCount = 3;
 
 		Handle<ComputeShader> computeShader_;
 		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectHandle_;

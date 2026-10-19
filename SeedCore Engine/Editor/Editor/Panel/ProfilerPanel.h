@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/Profiler/GpuProfiler.h>
 
 namespace SeedCore
@@ -31,7 +30,7 @@ namespace SeedCore
 		Float gpuDisplay_[static_cast<Uint32>(GpuProfileView::Count)][static_cast<Uint32>(GpuProfileScope::Count)] = {};
 		Float gpuRefreshTimer_ = 0.0f;
 
-		SC_CONST Int historySize_ = 240;
+		SC_CONSTEX Int historySize_ = 240;
 		Float fpsHistory_[historySize_] = {};
 		Float frameTimeHistory_[historySize_] = {};
 		Int historyOffset_ = 0;
@@ -39,6 +38,6 @@ namespace SeedCore
 		Float displayFPS_ = 0.0f;
 		Float displayFrameTime_ = 0.0f;
 		Float refreshTimer_ = 0.0f;
-		SC_CONST Float refreshInterval_ = 0.5f;
+		SC_CONSTEX Float refreshInterval_ = 0.5f;
 	};
 }

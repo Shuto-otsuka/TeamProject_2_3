@@ -35,7 +35,7 @@ namespace SeedCore
 
 			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&bucketBuffer_));
 			SC_HR_CHECK(hr, "マテリアルソート Bucket バッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 			bucketBuffer_->SetName(L"MaterialSortBuffer_Bucket");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(bucketBuffer_.Get());
 #endif
@@ -75,7 +75,7 @@ namespace SeedCore
 
 			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&sortedPixelListBuffer_));
 			SC_HR_CHECK(hr, "マテリアルソート SortedPixelList バッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 			sortedPixelListBuffer_->SetName(L"MaterialSortBuffer_SortedPixelList");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(sortedPixelListBuffer_.Get());
 #endif

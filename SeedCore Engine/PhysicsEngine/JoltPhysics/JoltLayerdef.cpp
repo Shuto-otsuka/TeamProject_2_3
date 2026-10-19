@@ -85,7 +85,7 @@ namespace SeedCore
 		switch (Layers::UnpackMotionType(inLayer))
 		{
 		case Layers::STATIC:
-			[[fallthrough]];
+			FALLTHROUGH;
 		case Layers::KINEMATIC:
 			return BPLayers::STATIC;
 		case Layers::DYNAMIC:

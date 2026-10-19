@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -17,7 +16,7 @@ namespace SeedCore
 
 		void Capture(D3D12CommandList* cmdList, ID3D12Resource* source);
 
-		[[nodiscard]] ID3D12Resource* ColorResource()const;
+		NODISCARD ID3D12Resource* ColorResource()const;
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D12Resource> colorResource_;

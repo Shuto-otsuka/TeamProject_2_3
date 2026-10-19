@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Interop/ShapeInstance.h>
 
 namespace SeedCore
@@ -41,7 +40,7 @@ namespace SeedCore
 		* [JP]
 		* 前回の Clear から記録した形を返す。
 		*/
-		[[nodiscard]] std::span<const ShapeDesc> Shapes()const;
+		NODISCARD std::span<const ShapeDesc> Shapes()const;
 
 		/**
 		* [EN]

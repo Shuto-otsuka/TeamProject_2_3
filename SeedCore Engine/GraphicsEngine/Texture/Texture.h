@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 
 namespace SeedCore
@@ -19,13 +18,13 @@ namespace SeedCore
 		void Pin();
 
 	public:
-		[[nodiscard]] Uint ShaderResourceViewIndex()const;
+		NODISCARD Uint ShaderResourceViewIndex()const;
 
-		[[nodiscard]] ID3D12Resource* Resource()const;
+		NODISCARD ID3D12Resource* Resource()const;
 
-		[[nodiscard]] const String& FilePath()const;
+		NODISCARD const String& FilePath()const;
 
-		[[nodiscard]] Handle<Texture> GetHandle()const;
+		NODISCARD Handle<Texture> GetHandle()const;
 
 	private:
 		Handle<Texture> handle_;

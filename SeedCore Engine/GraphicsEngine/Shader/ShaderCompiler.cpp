@@ -124,7 +124,7 @@ namespace SeedCore
 			}
 		}
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		String csoPath = String("../CompiledShaderObject/Develop/" + filename.substr(0, filename.size() - 5) + ".dbg.cso");
 #else
 		String csoPath = String("../CompiledShaderObject/Application/" + filename.substr(0, filename.size() - 5) + ".dx.cso");
@@ -232,7 +232,7 @@ namespace SeedCore
 		std::wstring wideEntry = entryPoint.w_str();
 		std::wstring wideProfile = targetProfile.w_str();
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		DynamicArray<LPCWSTR> arguments =
 		{
 			widePath.c_str(),

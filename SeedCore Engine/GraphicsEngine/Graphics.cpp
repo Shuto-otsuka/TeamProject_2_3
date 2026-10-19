@@ -49,7 +49,7 @@ namespace SeedCore
 
 		/// [EN] The debug layer and Aftermath only observe devices created after they are enabled, so both come before the context.
 		/// [JP] デバッグレイヤーと Aftermath は有効化後に作成されたデバイスしか監視しないため、どちらも Context より先に有効化する。
-#ifdef _DEBUG
+#if SC_DEBUG
 		D3D12DebugLayer::Enable();
 		AftermathCrashTracker::Enable();
 #endif
@@ -249,7 +249,7 @@ namespace SeedCore
 
 		/// [EN] With the device gone, the debug layer reports any D3D12 object still alive.
 		/// [JP] デバイス破棄後、デバッグレイヤーがまだ生存している D3D12 オブジェクトを報告する。
-#ifdef _DEBUG
+#if SC_DEBUG
 		D3D12DebugLayer::Report();
 #endif
 	}

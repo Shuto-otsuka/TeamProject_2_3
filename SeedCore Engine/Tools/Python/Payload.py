@@ -1,19 +1,22 @@
 import re
 import os
-import hashlib
+import glob
 import xml.etree.ElementTree as ET
 
-STRUCT_START = re.compile(r'(struct|class)\s+(?:SEEDCORE_API\s+)?(\w+)')
+from FieldType import PAYLOAD_FIELD_TYPES
+from FieldType.Field import EmitContext, FieldDecl
 
-FIELD_PATTERN = re.compile(
+STRUCT_PATTERN = re.compile(r'(struct|class)\s+(?:SEEDCORE_API\s+)?(\w+)')
+
+PAYLOAD_FIELD_PATTERN = re.compile(
     r'SC_PAYLOAD_FIELD\(\s*(\w+)\s*\)\s*([\w:<>\s]+)\s+(\w+)\s*(?:=[^;]*)?\s*;'
 )
 
-FIELD_EX_PATTERN = re.compile(
+PAYLOAD_FIELD_EX_PATTERN = re.compile(
     r'SC_PAYLOAD_FIELD_EX\(\s*"([^"]+)"\s*,\s*(\w+)\s*\)\s*([\w:<>\s]+)\s+(\w+)\s*(?:=[^;]*)?\s*;'
 )
 
-CONDITION_PATTERN = re.compile(
+REFLECTION_FIELD_CONDITION_PATTERN = re.compile(
     r'SC_REFLECTION_FIELD_CONDITION\((.+?)\)\s*'
 )
 
@@ -23,267 +26,224 @@ ENUM_CLASS_PATTERN = re.compile(
 
 ENGINE_NAMESPACE_PATTERN = re.compile(r'(?:::)?\bSeedCore::')
 
-def strip_engine_namespace(type_text):
-    return ENGINE_NAMESPACE_PATTERN.sub('', type_text).strip()
-
 DYNAMIC_ARRAY_PREFIXES = ['std::vector', 'DynamicArray']
 
-def parse_array_info(type_str):
-    """
-    Payload fields are never fixed-size C arrays, so only DynamicArray/
-    std::vector need detecting here. Returns the element type string, or
-    None if type_str isn't a dynamic array.
-    """
-    type_str = type_str.strip()
+REGISTRY_BEGIN_MARKER = '// [PAYLOAD_AUTO_BEGIN]'
 
-    for prefix in DYNAMIC_ARRAY_PREFIXES:
-        if type_str.startswith(prefix + '<'):
-            depth = 0
-            start = type_str.index('<')
-            for i in range(start, len(type_str)):
-                if type_str[i] == '<': depth += 1
-                elif type_str[i] == '>': depth -= 1
-                if depth == 0:
-                    return type_str[start + 1:i].strip()
+REGISTRY_END_MARKER = '// [PAYLOAD_AUTO_END]'
 
-    return None
+REGISTRY_HEADER = 'PayloadRegistry.h'
 
-TYPE_MAP = {
-    "Int": "AttributeType::Int",
-    "int": "AttributeType::Int",
-    "Uint": "AttributeType::Int",
-    "unsigned int": "AttributeType::Int",
+SKIP_DIRECTORIES = {'External', 'Package', 'CompiledShaderObject', 'Build', 'Intermediate', '.git', '.vs'}
 
-    "Int8": "AttributeType::Int",
-    "int8_t": "AttributeType::Int",
-    "Uint8": "AttributeType::Int",
-    "uint8_t": "AttributeType::Int",
+MSBUILD_NAMESPACE = 'http://schemas.microsoft.com/developer/msbuild/2003'
 
-    "Int16": "AttributeType::Int",
-    "int16_t": "AttributeType::Int",
-    "Uint16": "AttributeType::Int",
-    "uint16_t": "AttributeType::Int",
+FILTER_NAME = 'Payload'
 
-    "Int32": "AttributeType::Int",
-    "int32_t": "AttributeType::Int",
-    "Uint32": "AttributeType::Int",
-    "uint32_t": "AttributeType::Int",
-
-    "Int64": "AttributeType::Int",
-    "int64_t": "AttributeType::Int",
-    "Uint64": "AttributeType::Int",
-    "uint64_t": "AttributeType::Int",
-
-    "Short": "AttributeType::Int",
-    "short": "AttributeType::Int",
-    "Long": "AttributeType::Int",
-    "long": "AttributeType::Int",
-
-    "Float": "AttributeType::Float",
-    "float": "AttributeType::Float",
-    "Double": "AttributeType::Float",
-    "double": "AttributeType::Float",
-
-    "Bool": "AttributeType::Bool",
-    "bool": "AttributeType::Bool",
-
-    "Vector2": "AttributeType::Vector2",
-
-    "Vector3": "AttributeType::Vector3",
-    "Vector4": "AttributeType::Vector4",
-
-    "String": "AttributeType::String",
-
-    "Color": "AttributeType::Color",
-}
 
 # ---------------------------
-# コメント・文字列除去
+# 解析 (parse_)
 # ---------------------------
-def remove_comments_and_strings(code):
+def parse_code(code):
     result = []
-    i = 0
-    n = len(code)
+    index = 0
+    length = len(code)
 
     in_string = False
     in_char = False
     in_line_comment = False
     in_block_comment = False
 
-    while i < n:
-        c = code[i]
-        next_c = code[i + 1] if i + 1 < n else ''
+    while index < length:
+        character = code[index]
+        next_character = code[index + 1] if index + 1 < length else ''
 
         if not in_string and not in_char and not in_block_comment:
-            if c == '/' and next_c == '/':
+            if character == '/' and next_character == '/':
                 in_line_comment = True
-                i += 2
+                index += 2
                 continue
 
         if not in_string and not in_char and not in_line_comment:
-            if c == '/' and next_c == '*':
+            if character == '/' and next_character == '*':
                 in_block_comment = True
-                i += 2
+                index += 2
                 continue
 
         if in_block_comment:
-            if c == '*' and next_c == '/':
+            if character == '*' and next_character == '/':
                 in_block_comment = False
-                i += 2
+                index += 2
                 continue
-            i += 1
+            index += 1
             continue
 
         if in_line_comment:
-            if c == '\n':
+            if character == '\n':
                 in_line_comment = False
-                result.append(c)
-            i += 1
+                result.append(character)
+            index += 1
             continue
 
-        if not in_char and c == '"':
+        if not in_char and character == '"':
             if not in_string:
                 prefix = ''.join(result)
                 if prefix.rstrip().endswith('SC_PAYLOAD_FIELD_EX('):
-                    end_quote = code.find('"', i + 1)
+                    end_quote = code.find('"', index + 1)
                     if end_quote != -1:
-                        result.append(code[i:end_quote + 1])
-                        i = end_quote + 1
+                        result.append(code[index:end_quote + 1])
+                        index = end_quote + 1
                         continue
             in_string = not in_string
             result.append(' ')
-            i += 1
+            index += 1
             continue
 
-        if not in_string and c == '\'':
+        if not in_string and character == '\'':
             in_char = not in_char
             result.append(' ')
-            i += 1
+            index += 1
             continue
 
-        result.append(c)
-        i += 1
+        result.append(character)
+        index += 1
 
     return ''.join(result)
 
 
-# ---------------------------
-# {} ブロック抽出
-# ---------------------------
-def extract_block(content, start):
+def parse_block(content, start):
     depth = 0
 
-    for i in range(start, len(content)):
-        c = content[i]
+    for index in range(start, len(content)):
+        character = content[index]
 
-        if c == '{':
+        if character == '{':
             depth += 1
-        elif c == '}':
+        elif character == '}':
             depth -= 1
             if depth == 0:
-                return content[start:i]
+                return content[start:index]
 
     return None
 
 
-def is_forward_declaration(content, match_end, brace_pos):
+def parse_type_name(type_text):
+    return ENGINE_NAMESPACE_PATTERN.sub('', type_text).strip()
+
+
+def parse_array_type(type_text):
     """
-    STRUCT_START が拾った struct/class 名が前方宣言(本体を持たない
-    `struct X;`)かどうかを判定する。match_end から brace_pos までの間に
-    ';' があれば、brace_pos の '{' はこの宣言の本体ではなく、後方にある
-    無関係な別の struct/class/namespace の開き括弧を誤って拾っている
-    (例: 前方宣言の直後に別のクラス本体が続く場合)。
+    Payload fields are never fixed-size C arrays, so only DynamicArray/
+    std::vector need detecting here. Returns the element type string, or
+    None if type_text isn't a dynamic array.
     """
-    semi_pos = content.find(';', match_end)
-    return semi_pos != -1 and semi_pos < brace_pos
+    type_text = type_text.strip()
+
+    for prefix in DYNAMIC_ARRAY_PREFIXES:
+        if type_text.startswith(prefix + '<'):
+            depth = 0
+            start = type_text.index('<')
+            for index in range(start, len(type_text)):
+                if type_text[index] == '<': depth += 1
+                elif type_text[index] == '>': depth -= 1
+                if depth == 0:
+                    return type_text[start + 1:index].strip()
+
+    return None
 
 
-# ---------------------------
-# Condition (enableIf_) 対応
-# ---------------------------
-def parse_enum_names(text):
-    return [match.group(1) for match in ENUM_CLASS_PATTERN.finditer(text)]
+def parse_enums(content):
+    enums = {}
+    for enum_match in ENUM_CLASS_PATTERN.finditer(content):
+        enum_name = enum_match.group(1)
+        body = enum_match.group(2)
+        entries = []
+        for entry in body.split(','):
+            entry = entry.strip()
+            if not entry:
+                continue
+            name = entry.split('=')[0].strip()
+            if name:
+                entries.append(name)
+        if entries:
+            enums[enum_name] = entries
+    return enums
 
 
-def build_enum_owners(content):
-    """ネストされた enum class を所有する struct/class 名にマップする。"""
-    owners = {}
-    for match in STRUCT_START.finditer(content):
-        struct_name = match.group(2)
-        brace_pos = content.find('{', match.end())
-        if brace_pos == -1:
-            continue
-        if is_forward_declaration(content, match.end(), brace_pos):
-            continue
-        body = extract_block(content, brace_pos)
-        if not body:
-            continue
-        for enum_name in parse_enum_names(body):
-            owners[enum_name] = struct_name
-    return owners
+def parse_enum_type(type_name, struct_name, enums, enum_headers, header_path):
+    """
+    struct_name のメンバとして書かれた型名 type_name を、collect_enums のキー(所有者付きの名前)に解決する。
+    enum でなければ None を返す。C++ の名前探索と同じく、所有者付きで書かれていればその名前、
+    次に struct_name 自身の中の enum、次に名前空間直下の enum の順に探す。
+    どれにも無いとき(基底クラスの enum など)は同じ名前の enum を探し、
+    複数あれば header_path と同じヘッダで宣言されたものを優先する。
+    """
+    if '::' in type_name:
+        return type_name if type_name in enums else None
+
+    own_enum_type = f'{struct_name}::{type_name}'
+    if own_enum_type in enums:
+        return own_enum_type
+    if type_name in enums:
+        return type_name
+
+    candidates = [enum_type for enum_type in enums if enum_type.endswith('::' + type_name)]
+    if not candidates:
+        return None
+    same_header_candidates = [enum_type for enum_type in candidates if enum_headers[enum_type] == header_path]
+    return (same_header_candidates or candidates)[-1]
 
 
-def qualify_condition(condition, enum_owners):
-    result = re.sub(r'\b(\w+_)\b', r'o.\1', condition)
-    for enum_name, owner in enum_owners.items():
-        if owner:
-            result = re.sub(r'\b' + enum_name + r'::', f'{owner}::{enum_name}::', result)
-    return result
-
-
-# ---------------------------
-# struct/field 解析（コード生成から独立した純粋関数）
-# ---------------------------
-def parse_payload_structs(content):
+def parse_structs(content):
     """
     コメント・文字列除去済みの content から、SC_PAYLOAD_FIELD(_EX) が
-    付与された struct/class ごとに [(f_type, f_name, display_name,
-    asset_type, condition), ...] を集めて返す。
-    [(struct_name, fields), ...] の形。process_file() のコード生成部分と
+    付与された struct/class ごとの FieldDecl を集め、[(struct_name, fields), ...] を返す。
+    condition_ はまだ解決前の式のまま。emit_header() と
     collect_payload_field_names() の両方から使われる。
     """
     results = []
 
-    enum_owners = build_enum_owners(content)
+    for struct_match in STRUCT_PATTERN.finditer(content):
+        struct_name = struct_match.group(2)
 
-    for match in STRUCT_START.finditer(content):
-        struct_name = match.group(2)
-
-        brace_pos = content.find('{', match.end())
-        if brace_pos == -1:
+        brace_position = content.find('{', struct_match.end())
+        if brace_position == -1:
             continue
-        if is_forward_declaration(content, match.end(), brace_pos):
+        if is_forward_declaration(content, struct_match.end(), brace_position):
             continue
 
-        body = extract_block(content, brace_pos)
+        body = parse_block(content, brace_position)
         if not body:
             continue
 
         conditions = {}
-        for cond_match in CONDITION_PATTERN.finditer(body):
-            conditions[cond_match.end()] = cond_match.group(1).strip()
+        for condition_match in REFLECTION_FIELD_CONDITION_PATTERN.finditer(body):
+            conditions[condition_match.end()] = condition_match.group(1).strip()
 
         fields = []
-        for match in FIELD_PATTERN.finditer(body):
-            fields.append((match.start(), match.group(2), match.group(3), match.group(3), match.group(1)))
-        for match in FIELD_EX_PATTERN.finditer(body):
-            fields.append((match.start(), match.group(3), match.group(4), match.group(1), match.group(2)))
+        for field_match in PAYLOAD_FIELD_PATTERN.finditer(body):
+            fields.append((field_match.start(), field_match.group(2), field_match.group(3), field_match.group(3), field_match.group(1)))
+        for field_match in PAYLOAD_FIELD_EX_PATTERN.finditer(body):
+            fields.append((field_match.start(), field_match.group(3), field_match.group(4), field_match.group(1), field_match.group(2)))
         fields.sort(key=lambda entry: entry[0])
 
         resolved_fields = []
         used_conditions = set()
-        for pos, f_type, f_name, display_name, asset_type in fields:
+        for position, field_type_text, field_name, display_name, asset_type in fields:
             condition = None
-            for cond_end, cond_expr in conditions.items():
-                if cond_end in used_conditions:
+            for condition_end, condition_text in conditions.items():
+                if condition_end in used_conditions:
                     continue
-                if cond_end <= pos and pos - cond_end < 200:
-                    between = body[cond_end:pos].strip()
+                if condition_end <= position and position - condition_end < 200:
+                    between = body[condition_end:position].strip()
                     if between == '' or between.startswith('SC_'):
-                        condition = cond_expr
-                        used_conditions.add(cond_end)
+                        condition = condition_text
+                        used_conditions.add(condition_end)
                         break
-            resolved_fields.append((strip_engine_namespace(f_type), f_name, display_name, asset_type, condition))
+            field_type = parse_type_name(field_type_text)
+            element_type = parse_array_type(field_type)
+            array_type = (element_type, None, True) if element_type is not None else None
+            resolved_fields.append(FieldDecl(field_type, field_name, display_name, None, array_type, None, condition, None, None, False, asset_type))
         fields = resolved_fields
         if fields:
             results.append((struct_name, fields))
@@ -291,75 +251,156 @@ def parse_payload_structs(content):
     return results
 
 
+# ---------------------------
+# 判定 (is_)
+# ---------------------------
+def is_forward_declaration(content, match_end, brace_position):
+    """
+    STRUCT_PATTERN が拾った struct/class 名が前方宣言(本体を持たない
+    `struct X;`)かどうかを判定する。match_end から brace_position までの間に
+    ';' があれば、brace_position の '{' はこの宣言の本体ではなく、後方にある
+    無関係な別の struct/class/namespace の開き括弧を誤って拾っている
+    (例: 前方宣言の直後に別のクラス本体が続く場合)。
+    """
+    semicolon_position = content.find(';', match_end)
+    return semicolon_position != -1 and semicolon_position < brace_position
+
+
+def is_user_project_file(full_path, project_root):
+    """
+    full_path が UserProject/ 配下にあるかどうかを判定する。
+    UserProject で定義された型の Payload コードは UserProject.Cplusplus.dll 側の
+    出力ファイルへ、それ以外(エンジン側)は FoundationEngine 側の出力ファイル
+    へ振り分けるために使う — UserProject.Cplusplus.dll だけを再ビルドしてもPayload
+    フィールドのオフセットが古いまま SeedCore.Cplusplus.dll に取り残される事故を防ぐ。
+    """
+    relative_path = os.path.relpath(full_path, project_root)
+    return relative_path.split(os.sep)[0].split('/')[0] == 'UserProject'
+
+
+# ---------------------------
+# 走査 (collect_)
+# ---------------------------
+def collect_directories(directories):
+    """
+    走査対象から外すディレクトリを directories から取り除く
+    (詳細は Reflection.py の同名関数のコメントを参照)。
+    """
+    directories[:] = [directory for directory in directories if directory not in SKIP_DIRECTORIES]
+
+
+def collect_enums(project_root):
+    """
+    プロジェクト全体の enum class を、所有者付きの名前をキーにして集める。
+    struct/class の中で宣言された enum は "Owner::Name"、名前空間直下の enum は "Name" になる。
+    struct/class が入れ子になっているときは、一番内側の struct/class を所有者とする。
+    (キー -> 値の一覧, キー -> 宣言されているヘッダの相対パス) を返す。
+    """
+    enums = {}
+    enum_headers = {}
+    for root, directories, files in os.walk(project_root):
+        collect_directories(directories)
+        for file in files:
+            if not file.endswith(".h"):
+                continue
+            full_path = os.path.join(root, file)
+            try:
+                with open(full_path, 'r', encoding='utf-8', errors='ignore') as file_handle:
+                    content = file_handle.read()
+                code = parse_code(content)
+                relative_path = os.path.relpath(full_path, start=project_root).replace('\\', '/')
+
+                struct_ranges = []
+                for struct_match in STRUCT_PATTERN.finditer(code):
+                    brace_position = code.find('{', struct_match.end())
+                    if brace_position == -1:
+                        continue
+                    if is_forward_declaration(code, struct_match.end(), brace_position):
+                        continue
+                    body = parse_block(code, brace_position)
+                    if not body:
+                        continue
+                    struct_ranges.append((brace_position, brace_position + len(body), struct_match.group(2)))
+
+                for enum_match in ENUM_CLASS_PATTERN.finditer(code):
+                    owner_ranges = [struct_range for struct_range in struct_ranges if struct_range[0] < enum_match.start() < struct_range[1]]
+                    owner_name = max(owner_ranges, key=lambda struct_range: struct_range[0])[2] if owner_ranges else None
+                    for enum_name, entries in parse_enums(enum_match.group(0)).items():
+                        enum_type = f'{owner_name}::{enum_name}' if owner_name else enum_name
+                        if owner_name is None and enum_type in enums:
+                            continue
+                        enums[enum_type] = entries
+                        enum_headers[enum_type] = relative_path
+            except Exception:
+                continue
+    return enums, enum_headers
+
+
 def collect_payload_field_names(project_root):
     """
     project_root 以下の全 .h を走査し、payload フィールドを持つ struct/class
     ごとの表示名一覧を {struct_name: set(display_name)} で返す。
-    run_auto_scan() と同じ走査対象（"payload" を含むファイル名は除外）。
+    main() と同じ走査対象（PayloadRegistry.h は除外）。
     RuntimePackager.py がシーン/プレハブの参照 Asset を解決するために使う。
     """
     field_names = {}
 
-    for root, dirs, files in os.walk(project_root):
-        prune_directories(dirs)
+    for root, directories, files in os.walk(project_root):
+        collect_directories(directories)
         for file in files:
             if not file.endswith(".h"):
                 continue
-            if "payload" in file.lower():
+            if file == REGISTRY_HEADER:
                 continue
 
             full_path = os.path.join(root, file)
             try:
-                with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    content = f.read()
+                with open(full_path, 'r', encoding='utf-8', errors='ignore') as file_handle:
+                    content = file_handle.read()
             except Exception:
                 continue
 
-            content = remove_comments_and_strings(content)
+            content = parse_code(content)
 
-            for struct_name, fields in parse_payload_structs(content):
+            results = parse_structs(content)
+            for struct_name, fields in results:
                 names = field_names.setdefault(struct_name, set())
-                for _f_type, _f_name, display_name, _asset_type, _condition in fields:
-                    names.add(display_name)
+                for field in fields:
+                    names.add(field.display_name_)
 
     return field_names
 
 
 # ---------------------------
-# メイン処理
+# コード生成 (emit_)
 # ---------------------------
-def process_file(file_path, project_root):
-    if "payload" in file_path.lower():
-        return None
+def emit_condition(condition, struct_name, enums, enum_headers, header_path):
+    """
+    condition の式を enableIf_ のラムダ内で使える形にする。
+    メンバ (末尾が _ の名前) には o. を付け、Name:: の形で書かれた enum は parse_enum_type で所有者付きの名前にする。
+    """
+    result = re.sub(r'\b(\w+_)\b', r'o.\1', condition)
+    for type_name in sorted(set(re.findall(r'(?<!::)\b(\w+)::', result))):
+        enum_type = parse_enum_type(type_name, struct_name, enums, enum_headers, header_path)
+        if enum_type and enum_type != type_name:
+            result = re.sub(r'(?<!::)\b' + type_name + r'::', f'{enum_type}::', result)
+    return result
 
+
+def emit_header(file_path, project_root, enums, enum_headers):
     try:
-        with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-            content = f.read()
+        with open(file_path, 'r', encoding='utf-8', errors='ignore') as file_handle:
+            content = file_handle.read()
     except Exception:
         return None
 
-    content = remove_comments_and_strings(content)
-
-    # -----------------------
-    # キャッシュ
-    # -----------------------
-    file_hash = hashlib.md5(
-        content.encode('utf-8', errors='ignore')
-    ).hexdigest()
-
-    cache = getattr(process_file, "cache", {})
-
-    if file_path in cache and cache[file_path] == file_hash:
-        return None
-
-    cache[file_path] = file_hash
-    process_file.cache = cache
+    content = parse_code(content)
+    relative_path = os.path.relpath(file_path, start=project_root).replace('\\', '/')
 
     # -----------------------
     # 解析
     # -----------------------
-    enum_owners = build_enum_owners(content)
-    results = parse_payload_structs(content)
+    results = parse_structs(content)
 
     if not results:
         return None
@@ -367,17 +408,14 @@ def process_file(file_path, project_root):
     # -----------------------
     # 出力生成
     # -----------------------
-    rel_path = os.path.relpath(file_path, start=project_root)
-    normalized_path = rel_path.replace('\\', '/')
-
-    includes = [normalized_path]
+    includes = [relative_path]
 
     force_lines = []
     for struct_name, fields in results:
         force_lines.append(f'extern "C" int _force_payload_{struct_name} = 0;')
 
     lines = []
-    lines.append(f'\t\t// ---- {normalized_path} ----')
+    lines.append(f'\t\t// ---- {relative_path} ----')
 
     for struct_name, fields in results:
         lines.append(f'\t\tstruct Register_{struct_name}')
@@ -392,55 +430,14 @@ def process_file(file_path, project_root):
 
         lines.append(f'\t\t\t\t\t{struct_name}& obj = *static_cast<{struct_name}*>(ptr);')
 
-        for f_type, f_name, display_name, asset_type, condition in fields:
-            elem_type = parse_array_info(f_type)
-
-            if elem_type is not None:
-                attr_type = TYPE_MAP.get(elem_type.strip(), "AttributeType::Unknown")
-                lines.append('\t\t\t\t\t{')
-                lines.append(f'\t\t\t\t\t\tauto& arr = obj.{f_name};')
-                lines.append('\t\t\t\t\t\tFieldInfo header;')
-                lines.append(f'\t\t\t\t\t\theader.name_ = String("{display_name}");')
-                lines.append('\t\t\t\t\t\theader.offset_ = 0;')
-                lines.append(f'\t\t\t\t\t\theader.type_ = {attr_type};')
-                lines.append(f'\t\t\t\t\t\theader.assetType_ = PayloadType::{asset_type};')
-                lines.append('\t\t\t\t\t\theader.array_.size_ = arr.size();')
-                lines.append(f'\t\t\t\t\t\theader.array_.add_ = [&obj]() {{ obj.{f_name}.push_back({{}}); }};')
-                lines.append(f'\t\t\t\t\t\theader.array_.remove_ = [&obj](Size idx) {{ if (idx < obj.{f_name}.size()) obj.{f_name}.erase(obj.{f_name}.begin() + idx); }};')
-                lines.append(f'\t\t\t\t\t\theader.array_.lastPtr_ = [&obj]() -> void* {{ return &obj.{f_name}.back(); }};')
-                lines.append('\t\t\t\t\t\toutInfo.push_back(std::move(header));')
-                lines.append('\t\t\t\t\t\tfor (Size i = 0; i < arr.size(); ++i)')
-                lines.append('\t\t\t\t\t\t{')
-                lines.append(
-                    f'\t\t\t\t\t\t\toutInfo.push_back({{ '
-                    f'String("[" + std::to_string(i) + "]"), 0, {attr_type}, '
-                    f'PayloadType::{asset_type}, &arr[i] '
-                    f'}});'
-                )
-                lines.append('\t\t\t\t\t\t}')
-                lines.append('\t\t\t\t\t}')
-                continue
-
-            attr_type = TYPE_MAP.get(f_type.strip(), "AttributeType::Unknown")
-            if condition:
-                lines.append('\t\t\t\t\t{')
-                lines.append('\t\t\t\t\t\tFieldInfo fi;')
-                lines.append(f'\t\t\t\t\t\tfi.name_ = String("{display_name}");')
-                lines.append(f'\t\t\t\t\t\tfi.offset_ = offsetof({struct_name}, {f_name});')
-                lines.append(f'\t\t\t\t\t\tfi.type_ = {attr_type};')
-                lines.append(f'\t\t\t\t\t\tfi.assetType_ = PayloadType::{asset_type};')
-                lines.append(f'\t\t\t\t\t\tfi.enableIf_ = [](void* p) -> Bool {{ auto& o = *static_cast<{struct_name}*>(p); return {qualify_condition(condition, enum_owners)}; }};')
-                lines.append('\t\t\t\t\t\toutInfo.push_back(std::move(fi));')
-                lines.append('\t\t\t\t\t}')
-            else:
-                lines.append(
-                    f'\t\t\t\t\toutInfo.push_back({{ '
-                    f'String("{display_name}"), '
-                    f'offsetof({struct_name}, {f_name}), '
-                    f'{attr_type}, '
-                    f'PayloadType::{asset_type} '
-                    f'}});'
-                )
+        context = EmitContext(struct_name, {}, set())
+        for field in fields:
+            if field.condition_:
+                field.condition_ = emit_condition(field.condition_, struct_name, enums, enum_headers, relative_path)
+            for field_type in PAYLOAD_FIELD_TYPES:
+                if field_type.matches(field, context):
+                    field_type.emit(field, context, lines)
+                    break
 
         lines.append('\t\t\t\t});')
         lines.append('\t\t\t}')
@@ -448,54 +445,15 @@ def process_file(file_path, project_root):
         lines.append(f'\t\tstatic Register_{struct_name} global_{struct_name}_register;')
         lines.append('')
 
-    struct_names = [s for s, _ in results]
+    struct_names = [struct_name for struct_name, _ in results]
     return includes, force_lines, lines, struct_names
 
 
-# ---------------------------
-# スキャン
-# ---------------------------
-BEGIN_MARKER = '// [PAYLOAD_AUTO_BEGIN]'
-END_MARKER = '// [PAYLOAD_AUTO_END]'
-
-def update_registry_cpp(registry_cpp_path, all_struct_names):
-    with open(registry_cpp_path, 'r', encoding='utf-8', newline='') as f:
-        content = f.read()
-
-    pragma_lines = []
-    for name in all_struct_names:
-        pragma_lines.append(f'#pragma comment(linker, "/include:_force_payload_{name}")')
-
-    new_block = BEGIN_MARKER + '\r\n' + '\r\n'.join(pragma_lines) + '\r\n' + END_MARKER
-
-    if BEGIN_MARKER in content and END_MARKER in content:
-        start = content.index(BEGIN_MARKER)
-        end = content.index(END_MARKER) + len(END_MARKER)
-        updated = content[:start] + new_block + content[end:]
-    else:
-        include_end = content.rfind('#include')
-        insert_pos = content.index('\r\n', include_end) + 2
-        updated = content[:insert_pos] + '\r\n' + new_block + '\r\n' + content[insert_pos:]
-
-    if updated != content:
-        with open(registry_cpp_path, 'w', encoding='utf-8', newline='') as f:
-            f.write(updated)
-        print(f"更新完了: {os.path.basename(registry_cpp_path)}")
-
-
-def is_userproject_file(full_path, project_root):
+def emit_source(includes, force_lines, body_lines):
     """
-    full_path が UserProject/ 配下にあるかどうかを判定する。
-    UserProject で定義された型の Payload コードは UserProject.Cplusplus.dll 側の
-    出力ファイルへ、それ以外(エンジン側)は FoundationEngine 側の出力ファイル
-    へ振り分けるために使う — UserProject.Cplusplus.dll だけを再ビルドしてもPayload
-    フィールドのオフセットが古いまま SeedCore.Cplusplus.dll に取り残される事故を防ぐ。
+    1モジュール分の includes/force_lines/body_lines から、
+    Payload.generated.cpp の完全なソースコード文字列を組み立てる。
     """
-    rel = os.path.relpath(full_path, project_root)
-    return rel.split(os.sep)[0].split('/')[0] == 'UserProject'
-
-
-def build_payload_source(includes, force_lines, body_lines):
     lines = []
     lines.append('#include <FoundationEngine/Prelude.h>')
     lines.append('#include <FoundationEngine/Payload/PayloadRegistry.h>')
@@ -515,22 +473,163 @@ def build_payload_source(includes, force_lines, body_lines):
     return '\r\n'.join(lines)
 
 
-def write_generated_file(output_path, code, label):
+# ---------------------------
+# ファイル更新 (update_)
+# ---------------------------
+def update_source(output_path, code, label):
+    """
+    code が output_path の現在の中身と異なる場合のみ書き込み、変化したかどうかを返す。
+    """
     old_code = None
     if os.path.exists(output_path):
-        with open(output_path, 'r', encoding='utf-8', newline='') as f:
-            old_code = f.read()
+        with open(output_path, 'r', encoding='utf-8', newline='') as file_handle:
+            old_code = file_handle.read()
 
     if old_code == code:
         return False
 
-    with open(output_path, 'w', encoding='utf-8', newline='') as f:
-        f.write(code)
+    with open(output_path, 'w', encoding='utf-8', newline='') as file_handle:
+        file_handle.write(code)
     print(f"生成完了: {label}")
     return True
 
 
-def run_auto_scan():
+def update_objects(project_root, module_name):
+    """
+    生成ファイルが書き換わったときに、対応する obj を消しておく
+    (詳細は Reflection.py の同名関数のコメントを参照)。
+    """
+    object_root = os.path.join(project_root, 'Runtime', 'Intermediate', module_name)
+    for object_path in glob.glob(os.path.join(object_root, '**', 'Payload.generated.obj'), recursive=True):
+        try:
+            os.remove(object_path)
+            print(f"obj削除: {object_path}")
+        except Exception:
+            pass
+
+
+def update_registry(registry_cpp_path, struct_names):
+    with open(registry_cpp_path, 'r', encoding='utf-8', newline='') as file_handle:
+        content = file_handle.read()
+
+    pragma_lines = []
+    for struct_name in struct_names:
+        pragma_lines.append(f'#pragma comment(linker, "/include:_force_payload_{struct_name}")')
+
+    new_block = REGISTRY_BEGIN_MARKER + '\r\n' + '\r\n'.join(pragma_lines) + '\r\n' + REGISTRY_END_MARKER
+
+    if REGISTRY_BEGIN_MARKER in content and REGISTRY_END_MARKER in content:
+        start = content.index(REGISTRY_BEGIN_MARKER)
+        end = content.index(REGISTRY_END_MARKER) + len(REGISTRY_END_MARKER)
+        updated = content[:start] + new_block + content[end:]
+    else:
+        include_end = content.rfind('#include')
+        insert_position = content.index('\r\n', include_end) + 2
+        updated = content[:insert_position] + '\r\n' + new_block + '\r\n' + content[insert_position:]
+
+    if updated != content:
+        with open(registry_cpp_path, 'w', encoding='utf-8', newline='') as file_handle:
+            file_handle.write(updated)
+        print(f"更新完了: {os.path.basename(registry_cpp_path)}")
+
+
+def update_vcxproj(vcxproj_path, cpp_paths):
+    ET.register_namespace('', MSBUILD_NAMESPACE)
+    tree = ET.parse(vcxproj_path)
+    root = tree.getroot()
+
+    project_directory = os.path.dirname(vcxproj_path)
+
+    existing = set()
+    for item in root.iter(f'{{{MSBUILD_NAMESPACE}}}ClCompile'):
+        include = item.get('Include', '')
+        existing.add(os.path.normpath(include).lower())
+
+    changed = False
+
+    for cpp_path in cpp_paths:
+        relative_path = os.path.relpath(cpp_path, project_directory)
+        if os.path.normpath(relative_path).lower() in existing:
+            continue
+
+        item_groups = [item_group for item_group in root.iter(f'{{{MSBUILD_NAMESPACE}}}ItemGroup') if item_group.find(f'{{{MSBUILD_NAMESPACE}}}ClCompile') is not None]
+        if not item_groups:
+            continue
+        item_group = item_groups[0]
+
+        compile_element = ET.SubElement(item_group, f'{{{MSBUILD_NAMESPACE}}}ClCompile')
+        compile_element.set('Include', relative_path)
+        debug_precompiled_header = ET.SubElement(compile_element, f'{{{MSBUILD_NAMESPACE}}}PrecompiledHeader')
+        debug_precompiled_header.set('Condition', "'$(Configuration)|$(Platform)'=='Debug|x64'")
+        debug_precompiled_header.text = 'NotUsing'
+        release_precompiled_header = ET.SubElement(compile_element, f'{{{MSBUILD_NAMESPACE}}}PrecompiledHeader')
+        release_precompiled_header.set('Condition', "'$(Configuration)|$(Platform)'=='Release|x64'")
+        release_precompiled_header.text = 'NotUsing'
+
+        print(f"vcxproj追加: {relative_path}")
+        changed = True
+
+    if changed:
+        tree.write(vcxproj_path, xml_declaration=True, encoding='utf-8')
+
+    filters_path = vcxproj_path + '.filters'
+    if os.path.exists(filters_path):
+        update_filters(filters_path, cpp_paths, project_directory)
+
+
+def update_filters(filters_path, cpp_paths, project_directory):
+    ET.register_namespace('', MSBUILD_NAMESPACE)
+    tree = ET.parse(filters_path)
+    root = tree.getroot()
+
+    filter_exists = False
+    for filter_node in root.iter(f'{{{MSBUILD_NAMESPACE}}}Filter'):
+        if filter_node.get('Include', '') == FILTER_NAME:
+            filter_exists = True
+            break
+
+    if not filter_exists:
+        filter_groups = [item_group for item_group in root.iter(f'{{{MSBUILD_NAMESPACE}}}ItemGroup') if item_group.find(f'{{{MSBUILD_NAMESPACE}}}Filter') is not None]
+        if filter_groups:
+            filter_group = filter_groups[0]
+            filter_element = ET.SubElement(filter_group, f'{{{MSBUILD_NAMESPACE}}}Filter')
+            filter_element.set('Include', FILTER_NAME)
+            unique_identifier = ET.SubElement(filter_element, f'{{{MSBUILD_NAMESPACE}}}UniqueIdentifier')
+            unique_identifier.text = '{a1b2c3d4-payl-0000-0000-000000000001}'
+
+    existing = set()
+    for item in root.iter(f'{{{MSBUILD_NAMESPACE}}}ClCompile'):
+        include = item.get('Include', '')
+        existing.add(os.path.normpath(include).lower())
+
+    changed = False
+
+    for cpp_path in cpp_paths:
+        relative_path = os.path.relpath(cpp_path, project_directory)
+        if os.path.normpath(relative_path).lower() in existing:
+            continue
+
+        compile_groups = [item_group for item_group in root.iter(f'{{{MSBUILD_NAMESPACE}}}ItemGroup') if item_group.find(f'{{{MSBUILD_NAMESPACE}}}ClCompile') is not None]
+        if not compile_groups:
+            continue
+        item_group = compile_groups[0]
+
+        compile_element = ET.SubElement(item_group, f'{{{MSBUILD_NAMESPACE}}}ClCompile')
+        compile_element.set('Include', relative_path)
+        filter_child = ET.SubElement(compile_element, f'{{{MSBUILD_NAMESPACE}}}Filter')
+        filter_child.text = FILTER_NAME
+
+        print(f"filters追加: {relative_path} -> {FILTER_NAME}")
+        changed = True
+
+    if changed:
+        tree.write(filters_path, xml_declaration=True, encoding='utf-8')
+
+
+# ---------------------------
+# エントリポイント
+# ---------------------------
+def main():
     """
     ヘッダーごとに新しい.payload.cppを作る方式はやめて、既にvcxprojに登録
     済みの1ファイル(Payload.generated.cpp)の中身だけを毎回まるごと書き換える。
@@ -541,205 +640,70 @@ def run_auto_scan():
     混ぜず、UserProject/Payload/Payload.generated.cpp という別ファイルへ
     出力し UserProject.Cplusplus.vcxproj 側でコンパイルする(Reflection.py と同じ理由)。
     """
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(os.path.dirname(script_dir))
+    script_directory = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(os.path.dirname(script_directory))
 
-    foundation_output_dir = os.path.join(project_root, 'FoundationEngine', 'Payload')
-    os.makedirs(foundation_output_dir, exist_ok=True)
-    foundation_output_path = os.path.join(foundation_output_dir, 'Payload.generated.cpp')
+    foundation_output_directory = os.path.join(project_root, 'FoundationEngine', 'Payload')
+    os.makedirs(foundation_output_directory, exist_ok=True)
+    foundation_output_path = os.path.join(foundation_output_directory, 'Payload.generated.cpp')
 
-    userproject_output_dir = os.path.join(project_root, 'UserProject', 'Payload')
-    os.makedirs(userproject_output_dir, exist_ok=True)
-    userproject_output_path = os.path.join(userproject_output_dir, 'Payload.generated.cpp')
+    user_project_output_directory = os.path.join(project_root, 'UserProject', 'Payload')
+    os.makedirs(user_project_output_directory, exist_ok=True)
+    user_project_output_path = os.path.join(user_project_output_directory, 'Payload.generated.cpp')
+
+    enums, enum_headers = collect_enums(project_root)
 
     buckets = {
         'foundation': {'struct_names': [], 'includes': [], 'force_lines': [], 'body_lines': []},
-        'userproject': {'struct_names': [], 'includes': [], 'force_lines': [], 'body_lines': []},
+        'user_project': {'struct_names': [], 'includes': [], 'force_lines': [], 'body_lines': []},
     }
 
-    for root, dirs, files in os.walk(project_root):
-        prune_directories(dirs)
+    for root, directories, files in os.walk(project_root):
+        collect_directories(directories)
         for file in files:
             if not file.endswith(".h"):
                 continue
 
-            if "payload" in file.lower():
+            if file == REGISTRY_HEADER:
                 continue
 
             full_path = os.path.join(root, file)
-            result = process_file(full_path, project_root)
+            result = emit_header(full_path, project_root, enums, enum_headers)
 
             if result:
                 includes, force_lines, body_lines, struct_names = result
-                bucket = buckets['userproject'] if is_userproject_file(full_path, project_root) else buckets['foundation']
+                bucket = buckets['user_project'] if is_user_project_file(full_path, project_root) else buckets['foundation']
                 bucket['includes'].extend(includes)
                 bucket['force_lines'].extend(force_lines)
                 bucket['body_lines'].extend(body_lines)
                 bucket['struct_names'].extend(struct_names)
 
     foundation_bucket = buckets['foundation']
-    userproject_bucket = buckets['userproject']
+    user_project_bucket = buckets['user_project']
 
-    foundation_code = build_payload_source(foundation_bucket['includes'], foundation_bucket['force_lines'], foundation_bucket['body_lines'])
-    userproject_code = build_payload_source(userproject_bucket['includes'], userproject_bucket['force_lines'], userproject_bucket['body_lines'])
+    foundation_code = emit_source(foundation_bucket['includes'], foundation_bucket['force_lines'], foundation_bucket['body_lines'])
+    user_project_code = emit_source(user_project_bucket['includes'], user_project_bucket['force_lines'], user_project_bucket['body_lines'])
 
-    foundation_changed = write_generated_file(foundation_output_path, foundation_code, 'Payload.generated.cpp (FoundationEngine)')
-    userproject_changed = write_generated_file(userproject_output_path, userproject_code, 'Payload.generated.cpp (UserProject)')
+    foundation_changed = update_source(foundation_output_path, foundation_code, 'Payload.generated.cpp (FoundationEngine)')
+    user_project_changed = update_source(user_project_output_path, user_project_code, 'Payload.generated.cpp (UserProject)')
 
     if foundation_changed:
-        delete_stale_objs(project_root, 'FoundationEngine.Cplusplus')
-    if userproject_changed:
-        delete_stale_objs(project_root, 'UserProject.Cplusplus')
+        update_objects(project_root, 'FoundationEngine.Cplusplus')
+    if user_project_changed:
+        update_objects(project_root, 'UserProject.Cplusplus')
 
     registry_cpp = os.path.join(project_root, 'FoundationEngine', 'ECS', 'PayloadRegistry.cpp')
     if os.path.exists(registry_cpp):
-        update_registry_cpp(registry_cpp, foundation_bucket['struct_names'])
+        update_registry(registry_cpp, foundation_bucket['struct_names'])
 
+    foundation_vcxproj = os.path.join(project_root, 'FoundationEngine', 'FoundationEngine.Cplusplus.vcxproj')
+    if os.path.exists(foundation_vcxproj):
+        update_vcxproj(foundation_vcxproj, [foundation_output_path])
 
-SKIP_DIRECTORIES = {'External', 'Package', 'CompiledShaderObject', 'Build', 'Intermediate', '.git', '.vs'}
-
-
-def prune_directories(dirs):
-    """
-    走査対象から外すディレクトリを dirs から取り除く
-    (詳細は Reflection.py の同名関数のコメントを参照)。
-    """
-    dirs[:] = [directory for directory in dirs if directory not in SKIP_DIRECTORIES]
-
-
-def delete_stale_objs(project_root, module_name):
-    """
-    生成ファイルが書き換わったときに、対応する obj を消しておく。
-    以前ここで行っていた .tlog 削除は、ヘッダごとに .payload.cpp を
-    生成していた頃の名残なので廃止した
-    (詳細は Reflection.py の同名関数のコメントを参照)。
-    """
-    import glob as globmod
-    obj_root = os.path.join(project_root, 'Runtime', 'Intermediate', module_name)
-    for obj in globmod.glob(os.path.join(obj_root, '**', 'Payload.generated.obj'), recursive=True):
-        try:
-            os.remove(obj)
-            print(f"obj削除: {obj}")
-        except Exception:
-            pass
-
-
-NS = 'http://schemas.microsoft.com/developer/msbuild/2003'
-
-FILTER_NAME = 'Payload'
-
-def sync_vcxproj(vcxproj_path, payload_cpps):
-    ET.register_namespace('', NS)
-    tree = ET.parse(vcxproj_path)
-    root = tree.getroot()
-
-    proj_dir = os.path.dirname(vcxproj_path)
-
-    existing = set()
-    for item in root.iter(f'{{{NS}}}ClCompile'):
-        inc = item.get('Include', '')
-        existing.add(os.path.normpath(inc).lower())
-
-    added = False
-
-    for cpp_path in payload_cpps:
-        rel = os.path.relpath(cpp_path, proj_dir)
-        if os.path.normpath(rel).lower() in existing:
-            continue
-
-        item_groups = [ig for ig in root.iter(f'{{{NS}}}ItemGroup') if ig.find(f'{{{NS}}}ClCompile') is not None]
-        if not item_groups:
-            continue
-        ig = item_groups[0]
-
-        elem = ET.SubElement(ig, f'{{{NS}}}ClCompile')
-        elem.set('Include', rel)
-        pch_debug = ET.SubElement(elem, f'{{{NS}}}PrecompiledHeader')
-        pch_debug.set('Condition', "'$(Configuration)|$(Platform)'=='Debug|x64'")
-        pch_debug.text = 'NotUsing'
-        pch_release = ET.SubElement(elem, f'{{{NS}}}PrecompiledHeader')
-        pch_release.set('Condition', "'$(Configuration)|$(Platform)'=='Release|x64'")
-        pch_release.text = 'NotUsing'
-
-        print(f"vcxproj追加: {rel}")
-        added = True
-
-    if added:
-        tree.write(vcxproj_path, xml_declaration=True, encoding='utf-8')
-
-    filters_path = vcxproj_path + '.filters'
-    if os.path.exists(filters_path):
-        sync_filters(filters_path, payload_cpps, proj_dir)
-
-
-def sync_filters(filters_path, cpp_files, proj_dir):
-    ET.register_namespace('', NS)
-    tree = ET.parse(filters_path)
-    root = tree.getroot()
-
-    filter_exists = False
-    for f in root.iter(f'{{{NS}}}Filter'):
-        if f.get('Include', '') == FILTER_NAME:
-            filter_exists = True
-            break
-
-    if not filter_exists:
-        filter_groups = [ig for ig in root.iter(f'{{{NS}}}ItemGroup') if ig.find(f'{{{NS}}}Filter') is not None]
-        if filter_groups:
-            fg = filter_groups[0]
-            filt = ET.SubElement(fg, f'{{{NS}}}Filter')
-            filt.set('Include', FILTER_NAME)
-            uid = ET.SubElement(filt, f'{{{NS}}}UniqueIdentifier')
-            uid.text = '{a1b2c3d4-payl-0000-0000-000000000001}'
-
-    existing = set()
-    for item in root.iter(f'{{{NS}}}ClCompile'):
-        inc = item.get('Include', '')
-        existing.add(os.path.normpath(inc).lower())
-
-    added = False
-
-    for cpp_path in cpp_files:
-        rel = os.path.relpath(cpp_path, proj_dir)
-        if os.path.normpath(rel).lower() in existing:
-            continue
-
-        compile_groups = [ig for ig in root.iter(f'{{{NS}}}ItemGroup') if ig.find(f'{{{NS}}}ClCompile') is not None]
-        if not compile_groups:
-            continue
-        ig = compile_groups[0]
-
-        elem = ET.SubElement(ig, f'{{{NS}}}ClCompile')
-        elem.set('Include', rel)
-        filt_elem = ET.SubElement(elem, f'{{{NS}}}Filter')
-        filt_elem.text = FILTER_NAME
-
-        print(f"filters追加: {rel} -> {FILTER_NAME}")
-        added = True
-
-    if added:
-        tree.write(filters_path, xml_declaration=True, encoding='utf-8')
-
+    user_project_vcxproj = os.path.join(project_root, 'UserProject', 'UserProject.Cplusplus.vcxproj')
+    if os.path.exists(user_project_vcxproj):
+        update_vcxproj(user_project_vcxproj, [user_project_output_path])
 
 
 if __name__ == "__main__":
-    run_auto_scan()
-
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    project_root = os.path.dirname(os.path.dirname(script_dir))
-
-    output_dir = os.path.join(project_root, 'FoundationEngine', 'Payload')
-    foundation_vcxproj = os.path.join(project_root, 'FoundationEngine', 'FoundationEngine.Cplusplus.vcxproj')
-
-    payload_cpps = [os.path.join(output_dir, 'Payload.generated.cpp')]
-
-    if os.path.exists(foundation_vcxproj):
-        sync_vcxproj(foundation_vcxproj, payload_cpps)
-
-    userproject_output_dir = os.path.join(project_root, 'UserProject', 'Payload')
-    userproject_vcxproj = os.path.join(project_root, 'UserProject', 'UserProject.Cplusplus.vcxproj')
-
-    userproject_payload_cpps = [os.path.join(userproject_output_dir, 'Payload.generated.cpp')]
-
-    if os.path.exists(userproject_vcxproj):
-        sync_vcxproj(userproject_vcxproj, userproject_payload_cpps)
+    main()

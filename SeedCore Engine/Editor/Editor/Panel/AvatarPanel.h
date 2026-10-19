@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/Avatar/Human/HumanCharacterModel.h>
 #include <GraphicsEngine/Avatar/Human/HumanCharacterEvaluator.h>
 #include <GraphicsEngine/Avatar/Animal/AnimalCharacterModel.h>
@@ -32,10 +31,10 @@ namespace SeedCore
 
 		void SetPreviewHandle(D3D12_GPU_DESCRIPTOR_HANDLE previewHandle);
 
-		[[nodiscard]] Bool Focused()const;
+		NODISCARD Bool Focused()const;
 
 	private:
-		SC_CONST Uint32 regionSlotCount_ = 4;
+		SC_CONSTEX Uint32 regionSlotCount_ = 4;
 
 		void EnsureLoaded();
 
@@ -47,9 +46,9 @@ namespace SeedCore
 
 		void ExportUvLayout();
 
-		[[nodiscard]] Uint32 ActiveRegionCount()const;
+		NODISCARD Uint32 ActiveRegionCount()const;
 
-		[[nodiscard]] std::span<const Char* const> ActiveRegionLabels()const;
+		NODISCARD std::span<const Char* const> ActiveRegionLabels()const;
 
 		EditorContext& context_;
 

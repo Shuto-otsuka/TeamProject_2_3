@@ -27,12 +27,6 @@
 #define SC_ENCRYPTION_KEY_SEED "8e5d9cac-4c56-4513-813c-09a0f1168a83"
 #endif
 
-#define SC_RENDER_DOC_USAGE 0
-
-#ifndef SC_INVALID
-#define SC_INVALID 0xFFFFFFFF
-#endif
-
 #ifndef _CRT_SECURE_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -79,14 +73,6 @@
 #define SC_SERIALIZE_FIELD()
 
 #define SC_FUNCTION()
-
-#define SC_CONST static constexpr
-
-#ifdef FOUNDATIONENGINE_EXPORTS
-#define SEEDCORE_API __declspec(dllexport)
-#else
-#define SEEDCORE_API __declspec(dllimport)
-#endif
 
 #pragma warning(disable: 4251)
 #pragma warning(disable: 4273)
@@ -147,10 +133,8 @@
 #pragma clang diagnostic ignored "-Wint-in-bool-context"
 #endif
 
-#ifdef _DEBUG
-#if !SC_RENDER_DOC_USAGE
+#if _DEBUG
 #pragma comment(lib, "../External/DLSS/Lib/sl.interposer.lib" )
-#endif
 #pragma comment(lib, "../External/SDL3/Lib/SDL3.lib")
 #pragma comment(lib, "../External/DirectXTK/Lib/Debug/DirectXTK12.lib")
 #pragma comment(lib, "../External/DirectXTex/Lib/Debug/DirectXTex.lib")
@@ -172,9 +156,7 @@
 #pragma comment(lib, "../External/NsightAftermath/Lib/GFSDK_Aftermath_Lib.x64.lib")
 #pragma comment(lib, "../External/FBXSDK/Lib/Debug/libfbxsdk.lib")
 #else
-#if !SC_RENDER_DOC_USAGE
 #pragma comment(lib, "../External/DLSS/Lib/sl.interposer.lib" )
-#endif
 #pragma comment(lib, "../External/SDL3/Lib/SDL3.lib")
 #pragma comment(lib, "../External/DirectXTK/Lib/Release/DirectXTK12.lib")
 #pragma comment(lib, "../External/DirectXTex/Lib/Release/DirectXTex.lib")
@@ -215,8 +197,8 @@
 #include <oleauto.h>
 #include <crtdbg.h>
 #include <psapi.h>
+#include <intrin.h>
 
-#if !SC_RENDER_DOC_USAGE
 #pragma push_macro("free")
 #undef free
 #include <External/DLSS/Include/sl.h>
@@ -224,7 +206,6 @@
 #include <External/DLSS/Include/sl_dlss.h>
 #include <External/DLSS/Include/sl_deepdvc.h>
 #pragma pop_macro("free")
-#endif
 
 #include <External/ImGui/Include/imgui.h>
 #include <External/ImGui/Include/imgui_internal.h>
@@ -335,6 +316,7 @@
 #include <FoundationEngine/Math/Quaternion.h>
 #include <FoundationEngine/Math/Matrix.h>
 
+#include <FoundationEngine/Utility/Keyword.h>
 #include <FoundationEngine/Utility/Types.h>
 #include <FoundationEngine/Utility/String.h>
 #include <FoundationEngine/Utility/Array.h>
@@ -348,7 +330,3 @@
 #include <FoundationEngine/Utility/Delegate.h>
 
 #include <GraphicsEngine/D3D12/D3D12Common.h>
-
-#define in    _In_
-#define out   _Out_
-#define inout _Inout_

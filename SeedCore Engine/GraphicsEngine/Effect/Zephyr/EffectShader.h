@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/Effect/Zephyr/ZephyrModuleAssembler.h>
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
@@ -24,16 +23,16 @@ namespace SeedCore
 
 		void Create(ShaderHotReload& shaderHotReload, ID3D12Device* device);
 
-		[[nodiscard]] EffectPipelineState Create(ShaderHotReload& shaderHotReload, ID3D12Device* device, const DynamicArray<String>& moduleNames);
+		NODISCARD EffectPipelineState Create(ShaderHotReload& shaderHotReload, ID3D12Device* device, const DynamicArray<String>& moduleNames);
 
 	public:
-		[[nodiscard]] ID3D12PipelineState* GetInitializePipelineStateObject()const;
+		NODISCARD ID3D12PipelineState* GetInitializePipelineStateObject()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPreparePipelineStateObject()const;
+		NODISCARD ID3D12PipelineState* GetPreparePipelineStateObject()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetGeneratedPipelineStateObject(const Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>>& handle)const;
+		NODISCARD ID3D12PipelineState* GetGeneratedPipelineStateObject(const Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>>& handle)const;
 
-		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
+		NODISCARD ID3D12RootSignature* GetRootSignature()const;
 
 	private:
 		Handle<ComputeShader> initializeShader_;

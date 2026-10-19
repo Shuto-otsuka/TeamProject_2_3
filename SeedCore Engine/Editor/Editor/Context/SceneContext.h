@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/Command/History.h>
 #include <FoundationEngine/File/FilePath.h>
 

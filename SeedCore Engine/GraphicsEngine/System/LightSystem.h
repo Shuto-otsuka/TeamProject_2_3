@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <FoundationEngine/Log/Assert.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
@@ -153,33 +152,33 @@ namespace SeedCore
 
 		void DispatchCluster(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
 
-		[[nodiscard]] Uint GetIndex()const;
+		NODISCARD Uint GetIndex()const;
 
-		[[nodiscard]] Uint GetDirectionalLightIndex()const;
+		NODISCARD Uint GetDirectionalLightIndex()const;
 
-		[[nodiscard]] Uint GetClusterAssignIndex()const;
+		NODISCARD Uint GetClusterAssignIndex()const;
 
-		[[nodiscard]] LightShaderResourceIndices GetLightShaderResourceIndices()const;
+		NODISCARD LightShaderResourceIndices GetLightShaderResourceIndices()const;
 
-		[[nodiscard]] ClusterAssignShaderResourceIndices GetClusterAssignShaderResourceIndices()const;
+		NODISCARD ClusterAssignShaderResourceIndices GetClusterAssignShaderResourceIndices()const;
 
-		[[nodiscard]] ClusterAssignUnorderedAccessIndices GetClusterAssignUnorderedAccessIndices()const;
+		NODISCARD ClusterAssignUnorderedAccessIndices GetClusterAssignUnorderedAccessIndices()const;
 
-		[[nodiscard]] Float GetDirectionalIntensity()const;
+		NODISCARD Float GetDirectionalIntensity()const;
 
 	private:
 		void CreateClusterResources(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height);
 
 	private:
-		SC_CONST Uint maxPointLights_ = 65536;
-		SC_CONST Uint maxSpotLights_ = 65536;
-		SC_CONST Uint maxRectLights_ = 4096;
-		SC_CONST Uint clusterTileSize_ = 64;
-		SC_CONST Uint clusterDepthSlices_ = 16;
-		SC_CONST Uint clusterMaxPointLights_ = 64;
-		SC_CONST Uint clusterMaxSpotLights_ = 64;
-		SC_CONST Uint clusterMaxRectLights_ = 64;
-		SC_CONST Uint clusterStride_ = clusterMaxPointLights_ + clusterMaxSpotLights_ + clusterMaxRectLights_;
+		SC_CONSTEX Uint maxPointLights_ = 65536;
+		SC_CONSTEX Uint maxSpotLights_ = 65536;
+		SC_CONSTEX Uint maxRectLights_ = 4096;
+		SC_CONSTEX Uint clusterTileSize_ = 64;
+		SC_CONSTEX Uint clusterDepthSlices_ = 16;
+		SC_CONSTEX Uint clusterMaxPointLights_ = 64;
+		SC_CONSTEX Uint clusterMaxSpotLights_ = 64;
+		SC_CONSTEX Uint clusterMaxRectLights_ = 64;
+		SC_CONSTEX Uint clusterStride_ = clusterMaxPointLights_ + clusterMaxSpotLights_ + clusterMaxRectLights_;
 
 		LightConstantBuffer lightConstantData_;
 		DirectionalLightConstantBuffer directionalLightConstantData_;

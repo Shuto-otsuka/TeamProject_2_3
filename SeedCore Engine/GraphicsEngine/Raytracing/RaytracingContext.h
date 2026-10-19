@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Serialization/Json/JsonArchive.h>
 #include <GraphicsEngine/Quality/Upscale.h>
 #include <GraphicsEngine/Renderer/ShadowRenderer.h>

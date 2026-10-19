@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 #include <GraphicsEngine/Raytracing/AmbientOcclusion/AmbientOcclusionDenoiseShader.h>
@@ -225,11 +224,11 @@ namespace SeedCore
 	private:
 		/// [EN] Accumulation slots per view: one written this frame, one holding the previous frame as history.
 		/// [JP] ビューごとの蓄積スロットの数。今フレームに書き込む 1 つと、前フレームを履歴として持つ 1 つ。
-		SC_CONST Uint32 accumulationSlotCount_ = 2;
+		SC_CONSTEX Uint32 accumulationSlotCount_ = 2;
 
 		/// [EN] Number of views that keep their own accumulation (editor and game).
 		/// [JP] 独自の蓄積を持つビューの数（エディターとゲーム）。
-		SC_CONST Uint32 viewCount_ = 2;
+		SC_CONSTEX Uint32 viewCount_ = 2;
 
 		/// [EN] Compute shader and pipeline of AmbientOcclusionRT.hlsl.
 		/// [JP] AmbientOcclusionRT.hlsl のコンピュートシェーダーとパイプライン。

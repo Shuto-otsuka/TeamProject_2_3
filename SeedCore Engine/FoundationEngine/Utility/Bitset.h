@@ -1,4 +1,5 @@
 #pragma once
+#include <FoundationEngine/Utility/Keyword.h>
 #include <FoundationEngine/Utility/Types.h>
 #include <FoundationEngine/Utility/Array.h>
 
@@ -31,7 +32,7 @@ namespace SeedCore
 
 		/// [EN] Number of bits held per Block.
 		/// [JP] 1つの Block が保持するビット数。
-		static constexpr Size BitsPerBlock = sizeof(Block) * 8;
+		SC_CONSTEX Size BitsPerBlock = sizeof(Block) * 8;
 
 	public:
 		/**
@@ -435,7 +436,7 @@ namespace SeedCore
 	public:
 		/// [EN] Sentinel returned by find_first_set/find_next_set when no bit is set.
 		/// [JP] 立っているビットがない場合に find_first_set/find_next_set が返す番兵値。
-		static constexpr Size InvalidIndex = static_cast<Size>(-1);
+		SC_CONSTEX Size InvalidIndex = static_cast<Size>(-1);
 
 	private:
 		/**

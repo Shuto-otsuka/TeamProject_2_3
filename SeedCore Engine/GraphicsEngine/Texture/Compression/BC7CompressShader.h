@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -34,9 +33,9 @@ namespace SeedCore
 
 		void Create(ShaderCache& shaderCache, ID3D12Device* device);
 
-		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
+		NODISCARD ID3D12RootSignature* GetRootSignature()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineState()const;
+		NODISCARD ID3D12PipelineState* GetPipelineState()const;
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;

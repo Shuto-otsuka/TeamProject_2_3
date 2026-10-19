@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -76,11 +75,11 @@ namespace SeedCore
 
 		/// [EN] Initial bucket count for a default-constructed map.
 		/// [JP] デフォルト構築されたマップの初期バケット数。
-		SC_CONST size_type DefaultCapacity = 16;
+		SC_CONSTEX size_type DefaultCapacity = 16;
 
 		/// [EN] Occupancy ratio above which the table is grown (see ensure_capacity).
 		/// [JP] これを超えるとテーブルを拡張する占有率のしきい値（ensure_capacity を参照）。
-		SC_CONST Float MaxLoadFactor = 0.75f;
+		SC_CONSTEX Float MaxLoadFactor = 0.75f;
 
 		/// [EN] Backing bucket array; size is always a power of two.
 		/// [JP] バケット配列本体。サイズは常に2の冪。
@@ -169,7 +168,7 @@ namespace SeedCore
 				/// [EN] An Empty slot ends the chain: the key is not in the table.
 				/// [JP] Empty のスロットで連なりは終わる。キーは表に無い。
 				case SlotState::Empty:
-					[[fallthrough]];
+					FALLTHROUGH;
 				default:
 					return { (firstDeleted != capacity) ? firstDeleted : index,false };
 					break;

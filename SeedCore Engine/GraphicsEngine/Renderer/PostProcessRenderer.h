@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 #include <GraphicsEngine/D3D12/Buffer/HudlessBuffer.h>
 #include <GraphicsEngine/PostProcess/PostEffect/AutoExposure.h>
@@ -164,15 +163,15 @@ namespace SeedCore
 		///      テクスチャ。editor/game のビューが ImGui に、生の HDR
 		///      FrameBuffer ではなくこちらを表示する。そのビューの直近の
 		///      PrepareView() が選んだ方のチェーン(SD/UHD)を返す。
-		[[nodiscard]] ID3D12Resource* OutputResource(RaytracingView view)const;
+		NODISCARD ID3D12Resource* OutputResource(RaytracingView view)const;
 
 		/// [EN] Bindless SRV index of the same resource OutputResource() returns, for showing the view in ImGui.
 		/// [JP] OutputResource() が返すのと同じリソースのバインドレス SRV インデックス。ビューを ImGui に表示するために使う。
-		[[nodiscard]] Uint32 OutputShaderResourceViewIndex(RaytracingView view)const;
+		NODISCARD Uint32 OutputShaderResourceViewIndex(RaytracingView view)const;
 
 		/// [EN] outputWidth_/outputHeight_ (the DLSS-RR-upscaled chain's resolution), unconditionally - not gated by whether that chain is the currently active one. Lets a caller that runs before this frame's PrepareView() (e.g. Graphics::EditorRender building the scene constant buffer) know what resolution the debug overlay will end up drawing at later this same frame if DLSS-RR is active.
 		/// [JP] outputWidth_/outputHeight_(DLSS-RRアップスケール後チェーンの解像度)を無条件に返す - そのチェーンが現在アクティブかどうかには関係しない。この関数を、今フレームのPrepareView()より前に実行される呼び出し側(例えばシーン定数バッファを組み立てるGraphics::EditorRender)が、DLSS-RR有効時にデバッグオーバーレイが今フレーム後で実際に描画することになる解像度を知るために使う。
-		[[nodiscard]] Vector2 OutputSize()const;
+		NODISCARD Vector2 OutputSize()const;
 
 		/// [EN] RTV onto whichever chain (SD/UHD) that view's most recent
 		///      PrepareView() selected - same resource OutputResource()
@@ -182,7 +181,7 @@ namespace SeedCore
 		///      へのRTV — OutputResource() が返すのと同じリソース。
 		///      そのリソースが RENDER_TARGET 状態の間のみバインド可能
 		///      (BeginDebugOverlay/EndDebugOverlay 参照)。
-		[[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE OutputRenderTargetViewHandle(RaytracingView view)const;
+		NODISCARD D3D12_CPU_DESCRIPTOR_HANDLE OutputRenderTargetViewHandle(RaytracingView view)const;
 
 		/// [EN] Viewport matching whichever chain (SD/UHD) that view's most
 		///      recent PrepareView() selected - width_/height_ for the native
@@ -190,7 +189,7 @@ namespace SeedCore
 		/// [JP] そのビューの直近の PrepareView() が選んだ方のチェーン(SD/UHD)に
 		///      合わせたビューポート - ネイティブチェーンなら width_/height_、
 		///      DLSS-RRアップスケール版なら outputWidth_/outputHeight_。
-		[[nodiscard]] D3D12_VIEWPORT Viewport(RaytracingView view)const;
+		NODISCARD D3D12_VIEWPORT Viewport(RaytracingView view)const;
 
 		/// [EN] Transitions view's active output chain from Dispatch()'s exit
 		///      state (PIXEL_SHADER_RESOURCE) to RENDER_TARGET, so a
@@ -589,7 +588,7 @@ namespace SeedCore
 
 		void UnorderedAccessBarrier(D3D12CommandList* cmdList, ID3D12Resource* resource);
 
-		[[nodiscard]] View& ViewFor(RaytracingView view);
+		NODISCARD View& ViewFor(RaytracingView view);
 
 		/// [EN] Placeholder resolution: today just the first gathered volume
 		///      (or PostProcess{} defaults if none). The one place to replace
@@ -597,7 +596,7 @@ namespace SeedCore
 		/// [JP] 暫定的な解決: 今は最初に見つかったボリューム(無ければ
 		///      PostProcess{} の既定値)をそのまま返すだけ。volumes_ に対する
 		///      優先度/空間ブレンドを実装する時に差し替える唯一の場所。
-		[[nodiscard]] const PostProcess& ResolveSettings()const;
+		NODISCARD const PostProcess& ResolveSettings()const;
 
 		AutoExposure autoExposureShader_;
 		ToneMapping toneMappingShader_;

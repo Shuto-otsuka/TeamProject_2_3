@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/FrameRing.h>
 
 namespace SeedCore
@@ -44,9 +43,9 @@ namespace SeedCore
 
 		Bool Build(ID3D12Device5* device, ID3D12GraphicsCommandList4* commandList, const TopLevelInstanceDesc* instances, Uint32 instanceCount);
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS Address()const noexcept;
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS Address()const noexcept;
 
-		[[nodiscard]] ID3D12Resource* Resource()const noexcept;
+		NODISCARD ID3D12Resource* Resource()const noexcept;
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D12Resource> result_[FrameRing::frameCount];

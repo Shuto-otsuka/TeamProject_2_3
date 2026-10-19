@@ -1,4 +1,5 @@
 #pragma once
+#include <FoundationEngine/Utility/Keyword.h>
 #include <algorithm>
 #include <cmath>
 #include <concepts>
@@ -27,35 +28,35 @@ namespace SeedCore
 	{
 		/// [EN] The value of pi.
 		/// [JP] 円周率の値。
-		static constexpr T Value = std::numbers::pi_v<T>;
+		SC_CONSTEX T Value = std::numbers::pi_v<T>;
 
 		/// [EN] Two times pi (a full turn in radians).
 		/// [JP] 円周率の2倍（ラジアンでの1回転）。
-		static constexpr T Two = Value * T(2);
+		SC_CONSTEX T Two = Value * T(2);
 
 		/// [EN] Four times pi.
 		/// [JP] 円周率の4倍。
-		static constexpr T Four = Value * T(4);
+		SC_CONSTEX T Four = Value * T(4);
 
 		/// [EN] Half of pi (a quarter turn in radians).
 		/// [JP] 円周率の半分（ラジアンでの4分の1回転）。
-		static constexpr T Half = Value * T(0.5);
+		SC_CONSTEX T Half = Value * T(0.5);
 
 		/// [EN] A quarter of pi.
 		/// [JP] 円周率の4分の1。
-		static constexpr T Quarter = Value * T(0.25);
+		SC_CONSTEX T Quarter = Value * T(0.25);
 
 		/// [EN] The reciprocal of pi.
 		/// [JP] 円周率の逆数。
-		static constexpr T Inverse = T(1) / Value;
+		SC_CONSTEX T Inverse = T(1) / Value;
 
 		/// [EN] Multiplier converting degrees to radians.
 		/// [JP] 度をラジアンへ変換する際に乗じる係数。
-		static constexpr T ToRadian = Value / T(180);
+		SC_CONSTEX T ToRadian = Value / T(180);
 
 		/// [EN] Multiplier converting radians to degrees.
 		/// [JP] ラジアンを度へ変換する際に乗じる係数。
-		static constexpr T ToDegree = T(180) / Value;
+		SC_CONSTEX T ToDegree = T(180) / Value;
 	};
 }
 
@@ -72,7 +73,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::totally_ordered<T>
-	[[nodiscard]] constexpr const T& Max(const T& a, const T& b)noexcept
+	NODISCARD constexpr const T& Max(const T& a, const T& b)noexcept
 	{
 		return (a < b) ? b : a;
 	}
@@ -89,7 +90,7 @@ namespace SeedCore
 	*/
 	template<typename T, typename... Args>
 		requires std::totally_ordered<T>
-	[[nodiscard]] constexpr std::common_type_t<T, Args...> Max(T first, Args... args)noexcept
+	NODISCARD constexpr std::common_type_t<T, Args...> Max(T first, Args... args)noexcept
 	{
 		/// [EN] Fold every argument into one common type and call the two-argument overload with it explicitly;
 		///      with mixed types its deduction would fail and the call would recurse into this overload forever.
@@ -118,7 +119,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::totally_ordered<T>
-	[[nodiscard]] constexpr const T& Min(const T& a, const T& b)noexcept
+	NODISCARD constexpr const T& Min(const T& a, const T& b)noexcept
 	{
 		return (b < a) ? b : a;
 	}
@@ -135,7 +136,7 @@ namespace SeedCore
 	*/
 	template<typename T, typename... Args>
 		requires std::totally_ordered<T>
-	[[nodiscard]] constexpr std::common_type_t<T, Args...> Min(T first, Args... args) noexcept
+	NODISCARD constexpr std::common_type_t<T, Args...> Min(T first, Args... args) noexcept
 	{
 		/// [EN] Fold every argument into one common type and call the two-argument overload with it explicitly;
 		///      with mixed types its deduction would fail and the call would recurse into this overload forever.
@@ -168,7 +169,7 @@ namespace SeedCore
 	*/
 	template<typename T, typename U>
 		requires std::totally_ordered<T>
-	[[nodiscard]] constexpr T Clamp(const U& value, const T& min, const T& max)noexcept
+	NODISCARD constexpr T Clamp(const U& value, const T& min, const T& max)noexcept
 	{
 		using ReturnType = std::common_type_t<T, U>;
 		return Max(static_cast<ReturnType>(min), Min(static_cast<ReturnType>(value), static_cast<ReturnType>(max)));
@@ -188,7 +189,7 @@ namespace SeedCore
 	*/
 	template<typename T, typename U>
 		requires std::totally_ordered<T>&& std::floating_point<T>
-	[[nodiscard]] constexpr T Wrap(U value, T min, T max)noexcept
+	NODISCARD constexpr T Wrap(U value, T min, T max)noexcept
 	{
 		const T range = max - min;
 		if (range <= 0) [[unlikely]]
@@ -217,7 +218,7 @@ namespace SeedCore
 	*/
 	template<typename T, typename U>
 		requires std::totally_ordered<T>&& std::integral<T>
-	[[nodiscard]] constexpr T Wrap(U value, T min, T max)noexcept
+	NODISCARD constexpr T Wrap(U value, T min, T max)noexcept
 	{
 		const T range = max - min;
 		if (range <= 0) [[unlikely]]
@@ -246,7 +247,7 @@ namespace SeedCore
 	*/
 	template<typename T, typename U>
 		requires std::totally_ordered<T>&& std::floating_point<T>
-	[[nodiscard]] constexpr T Pingpong(U value, T min, T max)noexcept
+	NODISCARD constexpr T Pingpong(U value, T min, T max)noexcept
 	{
 		const T range = max - min;
 		if (range <= 0) [[unlikely]]
@@ -276,7 +277,7 @@ namespace SeedCore
 	*/
 	template<typename T, typename U>
 		requires std::totally_ordered<T>&& std::integral<T>
-	[[nodiscard]] constexpr T Pingpong(U value, T min, T max)noexcept
+	NODISCARD constexpr T Pingpong(U value, T min, T max)noexcept
 	{
 		const T range = max - min;
 		if (range <= 0) [[unlikely]]
@@ -307,7 +308,7 @@ namespace SeedCore
 	*/
 	template<typename T, typename U>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Lerp(T min, T max, U t)noexcept
+	NODISCARD constexpr T Lerp(T min, T max, U t)noexcept
 	{
 		if (t <= 0) [[unlikely]]
 		{
@@ -333,7 +334,7 @@ namespace SeedCore
 	*/
 	template<typename T, typename U>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Unlerp(T min, T max, U value)noexcept
+	NODISCARD constexpr T Unlerp(T min, T max, U value)noexcept
 	{
 		const T range = max - min;
 		if (range == 0) [[unlikely]]
@@ -357,7 +358,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Abs(T value)noexcept
+	NODISCARD constexpr T Abs(T value)noexcept
 	{
 		return (value < 0) ? -value : value;
 	}
@@ -373,7 +374,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::integral<T>
-	[[nodiscard]] constexpr T Abs(T value)noexcept
+	NODISCARD constexpr T Abs(T value)noexcept
 	{
 		return (value < 0) ? -value : value;
 	}
@@ -392,7 +393,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T ToRadians(T degrees)noexcept
+	NODISCARD constexpr T ToRadians(T degrees)noexcept
 	{
 		return degrees * Pi<T>::ToRadian;
 	}
@@ -408,7 +409,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T ToDegrees(T radians)noexcept
+	NODISCARD constexpr T ToDegrees(T radians)noexcept
 	{
 		return radians * Pi<T>::ToDegree;
 	}
@@ -424,7 +425,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Sin(T radian)noexcept
+	NODISCARD constexpr T Sin(T radian)noexcept
 	{
 		return std::sin(radian);
 	}
@@ -440,7 +441,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Cos(T radian)noexcept
+	NODISCARD constexpr T Cos(T radian)noexcept
 	{
 		return std::cos(radian);
 	}
@@ -456,7 +457,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Tan(T radian)noexcept
+	NODISCARD constexpr T Tan(T radian)noexcept
 	{
 		return std::tan(radian);
 	}
@@ -472,7 +473,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Asin(T value)noexcept
+	NODISCARD constexpr T Asin(T value)noexcept
 	{
 		return std::asin(value);
 	}
@@ -488,7 +489,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Acos(T value)noexcept
+	NODISCARD constexpr T Acos(T value)noexcept
 	{
 		return std::acos(value);
 	}
@@ -504,7 +505,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Atan(T value)noexcept
+	NODISCARD constexpr T Atan(T value)noexcept
 	{
 		return std::atan(value);
 	}
@@ -522,7 +523,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Atan2(T y, T x)noexcept
+	NODISCARD constexpr T Atan2(T y, T x)noexcept
 	{
 		return std::atan2(y, x);
 	}
@@ -544,7 +545,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Trunc(T value)noexcept
+	NODISCARD constexpr T Trunc(T value)noexcept
 	{
 		/// [EN] NaN is the only value that compares unequal to itself; it has no integer part and cannot be converted to an integer type.
 		/// [JP] NaN は自分自身と等しくならない唯一の値。整数部を持たず、整数型へ変換できない。
@@ -579,7 +580,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Floor(T value)noexcept
+	NODISCARD constexpr T Floor(T value)noexcept
 	{
 		/// [EN] value rounded toward zero; equals Floor for non-negative values and integers.
 		/// [JP] 0 方向へ丸めた value。非負の値と整数では Floor と一致する。
@@ -607,7 +608,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Ceil(T value)noexcept
+	NODISCARD constexpr T Ceil(T value)noexcept
 	{
 		/// [EN] value rounded toward zero; equals Ceil for non-positive values and integers.
 		/// [JP] 0 方向へ丸めた value。非正の値と整数では Ceil と一致する。
@@ -635,7 +636,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Round(T value)noexcept
+	NODISCARD constexpr T Round(T value)noexcept
 	{
 		/// [EN] value rounded toward zero; value - truncated is the signed fractional part that was discarded.
 		/// [JP] 0 方向へ丸めた value。value - truncated が捨てられた符号付きの小数部になる。
@@ -663,7 +664,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Frac(T value)noexcept
+	NODISCARD constexpr T Frac(T value)noexcept
 	{
 		return value - Floor(value);
 	}
@@ -686,7 +687,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Exp2(T value)noexcept;
+	NODISCARD constexpr T Exp2(T value)noexcept;
 
 	/**
 	* [EN]
@@ -700,7 +701,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Log2(T value)noexcept;
+	NODISCARD constexpr T Log2(T value)noexcept;
 
 	/**
 	* [EN]
@@ -719,7 +720,7 @@ namespace SeedCore
 	*/
 	template<typename T, typename U>
 		requires std::floating_point<T>&& std::integral<U>
-	[[nodiscard]] constexpr T Pow(T base, U exponent)noexcept
+	NODISCARD constexpr T Pow(T base, U exponent)noexcept
 	{
 		/// [EN] Whether the exponent is negative, in which case the reciprocal of base is raised to |exponent|.
 		/// [JP] 指数が負かどうか。負なら base の逆数を |exponent| 乗する。
@@ -771,7 +772,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Pow(T base, T exponent)noexcept
+	NODISCARD constexpr T Pow(T base, T exponent)noexcept
 	{
 		/// [EN] NaN in either operand propagates.
 		/// [JP] どちらかの引数が NaN なら NaN を伝播する。
@@ -820,7 +821,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Sqrt(T value)noexcept
+	NODISCARD constexpr T Sqrt(T value)noexcept
 	{
 		/// [EN] NaN, zero and infinity are their own square roots.
 		/// [JP] NaN・0・無限大は、それ自身が平方根になる。
@@ -869,7 +870,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Exp2(T value)noexcept
+	NODISCARD constexpr T Exp2(T value)noexcept
 	{
 		/// [EN] NaN propagates.
 		/// [JP] NaN は NaN を伝播する。
@@ -942,7 +943,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Exp(T value)noexcept
+	NODISCARD constexpr T Exp(T value)noexcept
 	{
 		return Exp2(value * std::numbers::log2e_v<T>);
 	}
@@ -966,7 +967,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Log(T value)noexcept
+	NODISCARD constexpr T Log(T value)noexcept
 	{
 		/// [EN] NaN propagates and ln(infinity) is infinity.
 		/// [JP] NaN は NaN を伝播し、ln(無限大) は無限大になる。
@@ -1062,7 +1063,7 @@ namespace SeedCore
 	*/
 	template<typename T>
 		requires std::floating_point<T>
-	[[nodiscard]] constexpr T Log2(T value)noexcept
+	NODISCARD constexpr T Log2(T value)noexcept
 	{
 		return Log(value) * std::numbers::log2e_v<T>;
 	}

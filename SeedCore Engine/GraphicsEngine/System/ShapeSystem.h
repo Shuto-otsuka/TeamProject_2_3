@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Interop/ShapeInstance.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 
@@ -58,48 +57,48 @@ namespace SeedCore
 		* [JP]
 		* 直前の Update で集めた形を返す。
 		*/
-		[[nodiscard]] std::span<const ShapeDesc> Shapes()const;
+		NODISCARD std::span<const ShapeDesc> Shapes()const;
 
 	private:
 		/// [EN] How far a camera frustum is drawn at most, so a far plane of hundreds of meters does not fill the view.
 		/// [JP] カメラの視錐台を描く奥行きの上限。数百 m 先の far 面で画面が埋まらないようにする。
-		SC_CONST Float frustumLength_ = 10.0f;
+		SC_CONSTEX Float frustumLength_ = 10.0f;
 
 		/// [EN] Radius of the ring a directional light's rays start from.
 		/// [JP] 平行光源の光線が出る円の半径。
-		SC_CONST Float directionalRadius_ = 0.5f;
+		SC_CONSTEX Float directionalRadius_ = 0.5f;
 
 		/// [EN] Length of each parallel ray of a directional light.
 		/// [JP] 平行光源の平行な光線1本の長さ。
-		SC_CONST Float directionalRayLength_ = 2.0f;
+		SC_CONSTEX Float directionalRayLength_ = 2.0f;
 
 		/// [EN] Number of parallel rays spaced evenly around the ring.
 		/// [JP] 円周上に等間隔に並べる平行な光線の本数。
-		SC_CONST Uint directionalRayCount_ = 8;
+		SC_CONSTEX Uint directionalRayCount_ = 8;
 
 		/// [EN] Upper bound of an arrowhead's length in the world, in meters, so a long arrow (such as a ray that reaches far) keeps a small head.
 		/// [JP] ワールドでの矢じりの長さの上限（メートル）。遠くまで届くレイのような長い矢印でも、矢じりが大きくなりすぎないようにする。
-		SC_CONST Float worldArrowHeadLength_ = 0.3f;
+		SC_CONSTEX Float worldArrowHeadLength_ = 0.3f;
 
 		/// [EN] Upper bound of an arrowhead's length on the canvas, in pixels.
 		/// [JP] Canvas での矢じりの長さの上限（ピクセル）。
-		SC_CONST Float canvasArrowHeadLength_ = 15.0f;
+		SC_CONSTEX Float canvasArrowHeadLength_ = 15.0f;
 
 		/// [EN] Radius of the marker at a 3D query's hit point, in meters.
 		/// [JP] 3D のクエリが当たった点の目印の半径（メートル）。
-		SC_CONST Float queryHitRadius_ = 0.05f;
+		SC_CONSTEX Float queryHitRadius_ = 0.05f;
 
 		/// [EN] Length of the surface normal drawn at a 3D query's hit point, in meters.
 		/// [JP] 3D のクエリが当たった点に描く面の法線の長さ（メートル）。
-		SC_CONST Float queryNormalLength_ = 0.3f;
+		SC_CONSTEX Float queryNormalLength_ = 0.3f;
 
 		/// [EN] Radius of the marker at a 2D query's hit point, in canvas pixels.
 		/// [JP] 2D のクエリが当たった点の目印の半径（Canvas のピクセル）。
-		SC_CONST Float queryHitPixels_ = 5.0f;
+		SC_CONSTEX Float queryHitPixels_ = 5.0f;
 
 		/// [EN] Length of the surface normal drawn at a 2D query's hit point, in canvas pixels.
 		/// [JP] 2D のクエリが当たった点に描く面の法線の長さ（Canvas のピクセル）。
-		SC_CONST Float queryNormalPixels_ = 30.0f;
+		SC_CONSTEX Float queryNormalPixels_ = 30.0f;
 
 		/// [EN] Shapes gathered this frame; kept between frames so the storage is reused.
 		/// [JP] このフレームに集めた形。領域を使い回すため、フレームをまたいで持つ。

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -132,7 +131,7 @@ namespace SeedCore
 		ImGuiTexture(EditorContext& context);
 		~ImGuiTexture() = default;
 
-		[[nodiscard]] ImTextureID Icon(IconType type)const;
+		NODISCARD ImTextureID Icon(IconType type)const;
 
 		/// [EN] Maps a component's registered name to its Inspector/Add
 		///      Component header icon (Unity-style). Falls back to
@@ -148,7 +147,7 @@ namespace SeedCore
 		///      コンポーネントをカバーする。static（インスタンス状態不要）
 		///      にすることで、InspectorPanel と AddComponentPanel が
 		///      それぞれ別の対応表を持たず、1つを共有できる。
-		[[nodiscard]] static IconType ComponentIconType(const String& componentName);
+		NODISCARD static IconType ComponentIconType(const String& componentName);
 
 	private:
 		ImTextureID icons_[static_cast<Uint>(IconType::Count)] = {};

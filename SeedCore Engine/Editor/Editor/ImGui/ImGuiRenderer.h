@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 struct ImGui_ImplDX12_InitInfo;
 
@@ -163,7 +162,7 @@ namespace SeedCore
 		* 計算したときだけ実際のドックスペースノードの ID になる ――
 		* メインドックスペースへドックするパネルはすべてここから取得する。
 		*/
-		[[nodiscard]] ImGuiID DockSpaceID()const;
+		NODISCARD ImGuiID DockSpaceID()const;
 
 	public:
 		/**

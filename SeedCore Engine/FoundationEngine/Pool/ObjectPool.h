@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -101,9 +100,9 @@ namespace SeedCore
 		using PointerType = std::uintptr_t;
 		using TagType     = Uint16;
 
-		SC_CONST Int PTR_BITS = PtrBits;
-		SC_CONST Int TAG_BITS = 64 - PtrBits;
-		SC_CONST PointerType PTR_MASK = (PointerType{ 1 } << PTR_BITS) - 1;
+		SC_CONSTEX Int PTR_BITS = PtrBits;
+		SC_CONSTEX Int TAG_BITS = 64 - PtrBits;
+		SC_CONSTEX PointerType PTR_MASK = (PointerType{ 1 } << PTR_BITS) - 1;
 
 		/// [EN] Packed pointer (low PTR_BITS bits) and tag (remaining bits).
 		/// [JP] 詰め込まれたポインタ（下位 PTR_BITS ビット）とタグ（残りのビット）。
@@ -237,7 +236,7 @@ namespace SeedCore
 	private:
 		using Block = ObjectBlock<T>;
 
-		SC_CONST Size NumberPools = 1u << LogSize;
+		SC_CONSTEX Size NumberPools = 1u << LogSize;
 
 		/**
 		* [EN]
@@ -391,7 +390,7 @@ namespace SeedCore
 		* Recycle に渡す必要がある。
 		*/
 		template<typename... Args>
-		[[nodiscard]] T* Create(Args&&... args)
+		NODISCARD T* Create(Args&&... args)
 		{
 			auto sid = Next();
 			auto& shard = shards_[sid];

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -27,7 +26,7 @@ namespace SeedCore
 		EffekseerEffect& operator=(EffekseerEffect&& other)noexcept;
 
 	public:
-		[[nodiscard]] Effekseer::EffectRef& Effect();
+		NODISCARD Effekseer::EffectRef& Effect();
 
 	private:
 		Effekseer::EffectRef effect_;

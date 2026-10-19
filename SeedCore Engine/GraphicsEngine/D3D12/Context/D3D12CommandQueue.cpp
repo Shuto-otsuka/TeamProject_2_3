@@ -32,7 +32,7 @@ namespace SeedCore
 		}
 		break;
 		case D3D12CommandType::Direct:
-			[[fallthrough]];
+			FALLTHROUGH;
 		default:
 		{
 			D3D12_COMMAND_QUEUE_DESC cmdQueueDesc{};

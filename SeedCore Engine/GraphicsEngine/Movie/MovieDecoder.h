@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -18,17 +17,17 @@ namespace SeedCore
 
 		Bool Seek(Double timeSeconds);
 
-		[[nodiscard]] const Byte* GetPixelData()const;
+		NODISCARD const Byte* GetPixelData()const;
 
-		[[nodiscard]] Int GetWidth()const;
+		NODISCARD Int GetWidth()const;
 
-		[[nodiscard]] Int GetHeight()const;
+		NODISCARD Int GetHeight()const;
 
-		[[nodiscard]] Longlong GetRowPitch()const;
+		NODISCARD Longlong GetRowPitch()const;
 
-		[[nodiscard]] Double GetDuration()const;
+		NODISCARD Double GetDuration()const;
 
-		[[nodiscard]] Bool EndOfStream()const;
+		NODISCARD Bool EndOfStream()const;
 
 	private:
 		Microsoft::WRL::ComPtr<IMFSourceReader> sourceReader_;

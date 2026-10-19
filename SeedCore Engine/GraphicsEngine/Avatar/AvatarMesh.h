@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/Model/Crister.h>
 #include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
 
@@ -21,30 +20,30 @@ namespace SeedCore
 
 		Bool Create(ID3D12Device* device, BindlessHeap* bindlessHeap, std::span<const Uint32> triangles, std::span<const Uint32> skinIndices, std::span<const Float> skinWeights, std::span<const Vector2> texcoords, std::span<const Vector3> neutralPositions, Uint32 bodyVertexCount, std::span<const Uint32> regionTriangleRanges);
 
-		[[nodiscard]] const RegionMeshletRange& MeshletRangeForRegion(Uint32 regionIndex)const;
+		NODISCARD const RegionMeshletRange& MeshletRangeForRegion(Uint32 regionIndex)const;
 
-		[[nodiscard]] Uint32 RegionCount()const;
+		NODISCARD Uint32 RegionCount()const;
 
 		void Update(std::span<const Vector3> positions, std::span<const Vector3> normals);
 
-		[[nodiscard]] Bool Created()const;
+		NODISCARD Bool Created()const;
 
-		[[nodiscard]] Uint VertexBufferIndex()const;
-		[[nodiscard]] Uint SkinVertexBufferIndex()const;
-		[[nodiscard]] Uint MeshletBufferIndex()const;
-		[[nodiscard]] Uint MeshletBoundBufferIndex()const;
-		[[nodiscard]] Uint VertexIndicesBufferIndex()const;
-		[[nodiscard]] Uint PrimitiveIndicesBufferIndex()const;
+		NODISCARD Uint VertexBufferIndex()const;
+		NODISCARD Uint SkinVertexBufferIndex()const;
+		NODISCARD Uint MeshletBufferIndex()const;
+		NODISCARD Uint MeshletBoundBufferIndex()const;
+		NODISCARD Uint VertexIndicesBufferIndex()const;
+		NODISCARD Uint PrimitiveIndicesBufferIndex()const;
 
-		[[nodiscard]] Uint32 MeshletCount()const;
-		[[nodiscard]] Uint32 BodyVertexCount()const;
-		[[nodiscard]] Vector3 PositionMin()const;
-		[[nodiscard]] Vector3 PositionExtent()const;
-		[[nodiscard]] Vector2 TexcoordMin()const;
-		[[nodiscard]] Vector2 TexcoordExtent()const;
+		NODISCARD Uint32 MeshletCount()const;
+		NODISCARD Uint32 BodyVertexCount()const;
+		NODISCARD Vector3 PositionMin()const;
+		NODISCARD Vector3 PositionExtent()const;
+		NODISCARD Vector2 TexcoordMin()const;
+		NODISCARD Vector2 TexcoordExtent()const;
 
 	private:
-		SC_CONST Uint32 maxRegionCount_ = 4;
+		SC_CONSTEX Uint32 maxRegionCount_ = 4;
 
 		Uint32 bodyVertexCount_ = 0;
 		Uint32 regionCount_ = 0;

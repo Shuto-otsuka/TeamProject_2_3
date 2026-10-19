@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 #include <FoundationEngine/World/ECS/Component/Component.h>
 #include <FoundationEngine/World/ECS/Component/ComponentConcept.h>
@@ -169,7 +168,7 @@ namespace SeedCore
 		* 同時に要求を取り下げる。これにより各要求はちょうど1回だけ観測
 		* される。メインループを所有するホストが毎フレーム1回呼び出す。
 		*/
-		[[nodiscard]] Bool ConsumeQuit();
+		NODISCARD Bool ConsumeQuit();
 
 		/**
 		* [EN]

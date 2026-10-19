@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Pool/InternPool.h>
 
 /**
@@ -17,9 +16,6 @@
 
 namespace SeedCore
 {
-	/// [EN] Streamline is left out of builds made for RenderDoc capture, so its error helpers are too.
-	/// [JP] RenderDoc でキャプチャするためのビルドでは Streamline を外すので、そのエラー処理も外す。
-#if !SC_RENDER_DOC_USAGE
 	/**
 	* [EN]
 	* Converts an sl::Result to its enumerator name for display in error messages.
@@ -111,5 +107,4 @@ namespace SeedCore
 		/// [JP] メッセージを読んだ後、失敗した呼び出しの位置でデバッガを止める。
 		__debugbreak();
 	}
-#endif
 }

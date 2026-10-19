@@ -118,6 +118,9 @@
     <Filter Include="Math\Easing">
       <UniqueIdentifier>{ae668a5f-c4c8-4b02-a8f2-d1f3cdfa6bf5}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Benchmark">
+      <UniqueIdentifier>{acb43558-4635-4e7c-9b0a-e0384f7e5247}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JobSystem\FlowBuilder.cpp">
@@ -420,6 +423,18 @@
     </ClCompile>
     <ClCompile Include="Resource\Prefab\PrefabSystem.cpp">
       <Filter>Resource\Prefab</Filter>
+    </ClCompile>
+    <ClCompile Include="Benchmark\BenchmarkSuite.cpp">
+      <Filter>Benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="Benchmark\BenchmarkThread.cpp">
+      <Filter>Benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="Benchmark\Benchmark.cpp">
+      <Filter>Benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="Benchmark\BenchmarkSystem.cpp">
+      <Filter>Benchmark</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -931,6 +946,21 @@
     </ClInclude>
     <ClInclude Include="Math\Easing\Easing.h">
       <Filter>Math\Easing</Filter>
+    </ClInclude>
+    <ClInclude Include="Benchmark\BenchmarkSuite.h">
+      <Filter>Benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="Benchmark\BenchmarkThread.h">
+      <Filter>Benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="Benchmark\Benchmark.h">
+      <Filter>Benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="Benchmark\BenchmarkSystem.h">
+      <Filter>Benchmark</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Keyword.h">
+      <Filter>Utility</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

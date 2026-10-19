@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
@@ -238,7 +237,7 @@ namespace SeedCore
 	private:
 		/// [EN] Maximum number of instances put into the TLAS. Must equal ReflectionRenderer's instance-table capacity, since the ray-traced passes look up that table with InstanceID().
 		/// [JP] TLAS に入れるインスタンスの最大数。レイトレーシングのパスは InstanceID() で ReflectionRenderer のインスタンステーブルを引くため、そのテーブルの容量と等しくする。
-		SC_CONST Uint32 maxInstances_ = 4096;
+		SC_CONSTEX Uint32 maxInstances_ = 4096;
 
 		/**
 		* [EN]

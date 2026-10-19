@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/Environment/WeatherParticleShader.h>
 #include <GraphicsEngine/Environment/Weather.h>
@@ -140,8 +139,8 @@ namespace SeedCore
 		void CreateParticleBuffer(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 capacity, Microsoft::WRL::ComPtr<ID3D12Resource>& outResource, Uint32& outUnorderedAccessViewIndex, Uint32& outShaderResourceViewIndex);
 
 	private:
-		SC_CONST Uint32 rainCapacity_ = 10000;
-		SC_CONST Uint32 snowCapacity_ = 6000;
+		SC_CONSTEX Uint32 rainCapacity_ = 10000;
+		SC_CONSTEX Uint32 snowCapacity_ = 6000;
 
 		WeatherParticleShader particleShader_;
 

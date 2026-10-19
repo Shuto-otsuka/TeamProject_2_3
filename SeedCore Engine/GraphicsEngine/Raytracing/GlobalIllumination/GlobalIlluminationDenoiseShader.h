@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
 #include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
@@ -50,11 +49,11 @@ namespace SeedCore
 
 		void Create(ShaderCache& shaderCache, ID3D12Device* device);
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineState()const;
+		NODISCARD ID3D12PipelineState* GetPipelineState()const;
 
 		/// [EN] passIndex is 0/1/2 for ATrousPass1/2/3 respectively.
 		/// [JP] passIndex は 0/1/2 でそれぞれ ATrousPass1/2/3 に対応する。
-		[[nodiscard]] ID3D12PipelineState* GetATrousPipelineState(Uint32 passIndex)const;
+		NODISCARD ID3D12PipelineState* GetATrousPipelineState(Uint32 passIndex)const;
 
 		/// [EN] PSO for GlobalIlluminationReservoirSpatialCS.hlsl's ReSTIR
 		///      spatial-reuse pass - a separate file (StructuredBuffer<Reservoir>
@@ -66,12 +65,12 @@ namespace SeedCore
 		///      float テクスチャチェーンと違い StructuredBuffer<Reservoir> を
 		///      読む別ファイルだが、共有ルートシグネチャは同じなので、新しい
 		///      シェーダクラスを作らずここに置く。
-		[[nodiscard]] ID3D12PipelineState* GetSpatialReusePipelineState()const;
+		NODISCARD ID3D12PipelineState* GetSpatialReusePipelineState()const;
 
-		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
+		NODISCARD ID3D12RootSignature* GetRootSignature()const;
 
 	private:
-		SC_CONST Uint32 atrousPassCount = 3;
+		SC_CONSTEX Uint32 atrousPassCount = 3;
 
 		Handle<ComputeShader> computeShader_;
 		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectHandle_;

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/Quality/GraphicsQuality.h>
 
 namespace SeedCore

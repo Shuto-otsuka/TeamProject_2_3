@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/NonTransferable.h>
 
 namespace SeedCore
@@ -164,20 +163,20 @@ namespace SeedCore
 
 		static Bool Settled(BuildTask& task, Uint64 writeTime, Uint64 nowTick);
 
-		[[nodiscard]] static std::filesystem::path UserProjectSourceDirectory();
+		NODISCARD static std::filesystem::path UserProjectSourceDirectory();
 
-		[[nodiscard]] static std::filesystem::path UserProjectVcxprojPath();
+		NODISCARD static std::filesystem::path UserProjectVcxprojPath();
 
-		[[nodiscard]] static std::filesystem::path UserProjectCsprojPath();
+		NODISCARD static std::filesystem::path UserProjectCsprojPath();
 
-		[[nodiscard]] static Uint64 GetLastWriteTime(const std::filesystem::path& path);
+		NODISCARD static Uint64 GetLastWriteTime(const std::filesystem::path& path);
 
 		/// [EN] Recursively finds the newest last-write time among UserProject's source files (.cs when csharp is true, .h/.cpp otherwise). Returns 0 if the directory can't be scanned.
 		/// [JP] UserProject 配下のソースファイル（csharp が true なら .cs、そうでなければ .h/.cpp）のうち、最も新しい最終更新時刻を再帰的に探す。ディレクトリをスキャンできない場合は 0 を返す。
-		[[nodiscard]] static Uint64 ScanSourceLastWriteTime(Bool csharp);
+		NODISCARD static Uint64 ScanSourceLastWriteTime(Bool csharp);
 
 		/// [EN] Resolves MSBuild.exe's path via vswhere.exe (a synchronous, one-time call).
 		/// [JP] vswhere.exe 経由で MSBuild.exe のパスを解決する（同期・一度きりの呼び出し）。
-		[[nodiscard]] static std::filesystem::path FindMSBuild();
+		NODISCARD static std::filesystem::path FindMSBuild();
 	};
 }

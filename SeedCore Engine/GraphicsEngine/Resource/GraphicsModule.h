@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 #include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 #include <GraphicsEngine/Resource/GraphicsResourceSystem.h>
@@ -16,9 +15,9 @@ namespace SeedCore
 
 		void Install(ResourceCache& cache);
 
-		[[nodiscard]] GraphicsLoaderSystem& Loaders();
+		NODISCARD GraphicsLoaderSystem& Loaders();
 
-		[[nodiscard]] GraphicsResourceSystem& Resources();
+		NODISCARD GraphicsResourceSystem& Resources();
 
 	private:
 		GraphicsLoaderSystem loaders_;

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -141,11 +140,11 @@ namespace SeedCore
 
 		Int FindRootMotionNode()const;
 
-		[[nodiscard]] DynamicArray<AnimationSpeedKeyframe>& SpeedCurve();
-		[[nodiscard]] const DynamicArray<AnimationSpeedKeyframe>& SpeedCurve()const;
+		NODISCARD DynamicArray<AnimationSpeedKeyframe>& SpeedCurve();
+		NODISCARD const DynamicArray<AnimationSpeedKeyframe>& SpeedCurve()const;
 
-		[[nodiscard]] DynamicArray<AnimationNotifyEvent>& NotifyEvents();
-		[[nodiscard]] const DynamicArray<AnimationNotifyEvent>& NotifyEvents()const;
+		NODISCARD DynamicArray<AnimationNotifyEvent>& NotifyEvents();
+		NODISCARD const DynamicArray<AnimationNotifyEvent>& NotifyEvents()const;
 
 		template<class Archive>
 		void Serialize(Archive& archive)

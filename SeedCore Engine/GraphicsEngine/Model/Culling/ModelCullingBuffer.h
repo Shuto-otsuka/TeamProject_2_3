@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Log/Assert.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 
@@ -41,15 +40,15 @@ namespace SeedCore
 
 		void End(ID3D12GraphicsCommandList* cmdList)const;
 
-		[[nodiscard]] Uint GetConstantBufferIndex()const;
+		NODISCARD Uint GetConstantBufferIndex()const;
 
-		[[nodiscard]] Uint GetSingleSidedShaderResourceViewIndex()const;
+		NODISCARD Uint GetSingleSidedShaderResourceViewIndex()const;
 
-		[[nodiscard]] Uint GetDoubleSidedShaderResourceViewIndex()const;
+		NODISCARD Uint GetDoubleSidedShaderResourceViewIndex()const;
 
-		[[nodiscard]] ID3D12CommandSignature* GetCommandSignature()const;
+		NODISCARD ID3D12CommandSignature* GetCommandSignature()const;
 
-		[[nodiscard]] ID3D12Resource* GetArgumentBuffer()const;
+		NODISCARD ID3D12Resource* GetArgumentBuffer()const;
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D12Resource> singleSidedBuffer_;

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Component/Component.h>
 #include <FoundationEngine/World/ECS/SparseSet/SparseSet.h>
 #include <FoundationEngine/World/ECS/Component/ComponentBehaviour.h>
@@ -505,7 +504,7 @@ namespace SeedCore
 */
 #define SEED_TRAITS_SPEC(Type, ...) \
 	__VA_OPT__(template<> struct ComponentTraits<Type> { \
-		SC_CONST ComponentStorage storage = __VA_ARGS__; \
+		SC_CONSTEX ComponentStorage storage = __VA_ARGS__; \
 	};)
 
 /**

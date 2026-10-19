@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/ArtMap.h>
 #include <FoundationEngine/Utility/FlatMap.h>
 #include <FoundationEngine/Utility/Handle.h>
@@ -31,45 +30,45 @@ namespace SeedCore
 		ShaderHotReload() = default;
 		~ShaderHotReload() = default;
 
-		[[nodiscard]] Handle<VertexShader> GetOrCreateVertexShader(String filePath, String entryPoint = String("main"));
+		NODISCARD Handle<VertexShader> GetOrCreateVertexShader(String filePath, String entryPoint = String("main"));
 
-		[[nodiscard]] VertexShader* GetVertexShader(const Handle<VertexShader>& handle)noexcept;
+		NODISCARD VertexShader* GetVertexShader(const Handle<VertexShader>& handle)noexcept;
 
-		[[nodiscard]] Handle<HullShader> GetOrCreateHullShader(String filePath, String entryPoint = String("main"));
+		NODISCARD Handle<HullShader> GetOrCreateHullShader(String filePath, String entryPoint = String("main"));
 
-		[[nodiscard]] HullShader* GetHullShader(const Handle<HullShader>& handle)noexcept;
+		NODISCARD HullShader* GetHullShader(const Handle<HullShader>& handle)noexcept;
 
-		[[nodiscard]] Handle<DomainShader> GetOrCreateDomainShader(String filePath, String entryPoint = String("main"));
+		NODISCARD Handle<DomainShader> GetOrCreateDomainShader(String filePath, String entryPoint = String("main"));
 
-		[[nodiscard]] DomainShader* GetDomainShader(const Handle<DomainShader>& handle)noexcept;
+		NODISCARD DomainShader* GetDomainShader(const Handle<DomainShader>& handle)noexcept;
 
-		[[nodiscard]] Handle<GeometryShader> GetOrCreateGeometryShader(String filePath, String entryPoint = String("main"));
+		NODISCARD Handle<GeometryShader> GetOrCreateGeometryShader(String filePath, String entryPoint = String("main"));
 
-		[[nodiscard]] GeometryShader* GetGeometryShader(const Handle<GeometryShader>& handle)noexcept;
+		NODISCARD GeometryShader* GetGeometryShader(const Handle<GeometryShader>& handle)noexcept;
 
-		[[nodiscard]] Handle<PixelShader> GetOrCreatePixelShader(String filePath, String entryPoint = String("main"));
+		NODISCARD Handle<PixelShader> GetOrCreatePixelShader(String filePath, String entryPoint = String("main"));
 
-		[[nodiscard]] PixelShader* GetPixelShader(const Handle<PixelShader>& handle)noexcept;
+		NODISCARD PixelShader* GetPixelShader(const Handle<PixelShader>& handle)noexcept;
 
-		[[nodiscard]] Handle<AmplificationShader> GetOrCreateAmplificationShader(String filePath, String entryPoint = String("main"));
+		NODISCARD Handle<AmplificationShader> GetOrCreateAmplificationShader(String filePath, String entryPoint = String("main"));
 
-		[[nodiscard]] AmplificationShader* GetAmplificationShader(const Handle<AmplificationShader>& handle)noexcept;
+		NODISCARD AmplificationShader* GetAmplificationShader(const Handle<AmplificationShader>& handle)noexcept;
 
-		[[nodiscard]] Handle<MeshShader> GetOrCreateMeshShader(String filePath, String entryPoint = String("main"));
+		NODISCARD Handle<MeshShader> GetOrCreateMeshShader(String filePath, String entryPoint = String("main"));
 
-		[[nodiscard]] MeshShader* GetMeshShader(const Handle<MeshShader>& handle)noexcept;
+		NODISCARD MeshShader* GetMeshShader(const Handle<MeshShader>& handle)noexcept;
 
-		[[nodiscard]] Handle<RaytracingShader> GetOrCreateRaytracingShader(String filePath);
+		NODISCARD Handle<RaytracingShader> GetOrCreateRaytracingShader(String filePath);
 
-		[[nodiscard]] RaytracingShader* GetRaytracingShader(const Handle<RaytracingShader>& handle)noexcept;
+		NODISCARD RaytracingShader* GetRaytracingShader(const Handle<RaytracingShader>& handle)noexcept;
 
-		[[nodiscard]] Handle<ComputeShader> GetOrCreateComputeShader(String filePath, String entryPoint = String("main"));
+		NODISCARD Handle<ComputeShader> GetOrCreateComputeShader(String filePath, String entryPoint = String("main"));
 
-		[[nodiscard]] ComputeShader* GetComputeShader(const Handle<ComputeShader>& handle)noexcept;
+		NODISCARD ComputeShader* GetComputeShader(const Handle<ComputeShader>& handle)noexcept;
 
 		void Reload(String filePath);
 
-		[[nodiscard]] const std::string& GetErrorMessage(String filePath)const;
+		NODISCARD const std::string& GetErrorMessage(String filePath)const;
 
 		void Clear()noexcept;
 

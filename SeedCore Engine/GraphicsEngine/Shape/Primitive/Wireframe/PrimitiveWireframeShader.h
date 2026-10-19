@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Log/Assert.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
@@ -67,15 +66,15 @@ namespace SeedCore
 	public:
 		/// [EN] Lines handled by one mesh shader group. Must match PrimitiveWireframeMS.hlsl.
 		/// [JP] メッシュシェーダーの1グループが受け持つ線の数。PrimitiveWireframeMS.hlsl と一致させる。
-		SC_CONST Uint linesPerGroup_ = 64;
+		SC_CONSTEX Uint linesPerGroup_ = 64;
 
 		/// [EN] Groups one instance spans, enough for the capsule's 166 lines. Must match PrimitiveWireframeMS.hlsl.
 		/// [JP] インスタンス1つがまたがるグループの数。カプセルの 166 本が入る数で、PrimitiveWireframeMS.hlsl と一致させる。
-		SC_CONST Uint groupsPerInstance_ = 3;
+		SC_CONSTEX Uint groupsPerInstance_ = 3;
 
 		/// [EN] Vertices per line in the vertex shader path: a quad drawn as two triangles.
 		/// [JP] 頂点シェーダーの経路での、線1本の頂点数。四角形を三角形2つで描く。
-		SC_CONST Uint verticesPerLine_ = 6;
+		SC_CONSTEX Uint verticesPerLine_ = 6;
 
 	public:
 		PrimitiveWireframeShader(RootSignature& rootSignature, PipelineStateObject& pipelineStateObject);
@@ -108,7 +107,7 @@ namespace SeedCore
 		* エディターとゲームのビューのデバッグの重ね描き用のパイプライン
 		* ステートを返す。
 		*/
-		[[nodiscard]] ID3D12PipelineState* GetPipelineState()const;
+		NODISCARD ID3D12PipelineState* GetPipelineState()const;
 
 		/**
 		* [EN]
@@ -119,7 +118,7 @@ namespace SeedCore
 		* [JP]
 		* Canvas ビュー用のパイプラインステートを返す。
 		*/
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateCanvas()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateCanvas()const;
 
 		/**
 		* [EN]
@@ -131,7 +130,7 @@ namespace SeedCore
 		* [JP]
 		* すべての上に描く、プレビューのビュー用のパイプラインステートを返す。
 		*/
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStatePreview()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStatePreview()const;
 
 		/**
 		* [EN]
@@ -142,7 +141,7 @@ namespace SeedCore
 		* [JP]
 		* ルートシグネチャを返す。
 		*/
-		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
+		NODISCARD ID3D12RootSignature* GetRootSignature()const;
 
 	private:
 		/// [EN] Vertex shader, used below D12_2.

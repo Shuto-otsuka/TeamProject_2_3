@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
@@ -117,7 +116,7 @@ namespace SeedCore
 
 		void Upscale(Bool dlssRayReconstructionEnabled, UpscaleMode upscaleMode);
 
-		[[nodiscard]] Vector2 PostProcessOutputSize()const;
+		NODISCARD Vector2 PostProcessOutputSize()const;
 
 	public:
 		void EditorFlush(D3D12CommandList* cmdList, SceneConstantSystem* sceneSystem, ViewMode viewMode);
@@ -137,32 +136,32 @@ namespace SeedCore
 		void AvatarFlush(D3D12CommandList* cmdList, const SceneConstantBuffer& scene);
 
 	public:
-		[[nodiscard]] const GpuProfiler& GetGpuProfiler()const;
+		NODISCARD const GpuProfiler& GetGpuProfiler()const;
 
-		[[nodiscard]] FrameBuffer* GetEditorFrameBuffer()const;
+		NODISCARD FrameBuffer* GetEditorFrameBuffer()const;
 
-		[[nodiscard]] FrameBuffer* GetGameFrameBuffer()const;
+		NODISCARD FrameBuffer* GetGameFrameBuffer()const;
 
-		[[nodiscard]] FrameBuffer* GetCanvasFrameBuffer()const;
+		NODISCARD FrameBuffer* GetCanvasFrameBuffer()const;
 
-		[[nodiscard]] ID3D12Resource* GameDisplayResource()const;
+		NODISCARD ID3D12Resource* GameDisplayResource()const;
 
 	public:
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE EditorDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE EditorDisplayGPUHandle()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE GameDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE GameDisplayGPUHandle()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE CanvasDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE CanvasDisplayGPUHandle()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE TimelineDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE TimelineDisplayGPUHandle()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE ModelTransformDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE ModelTransformDisplayGPUHandle()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE MaterialDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE MaterialDisplayGPUHandle()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE SkeletonControllerDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE SkeletonControllerDisplayGPUHandle()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE AvatarDisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE AvatarDisplayGPUHandle()const;
 
 	private:
 		void DrawOrderedSprites(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Bool canvas);

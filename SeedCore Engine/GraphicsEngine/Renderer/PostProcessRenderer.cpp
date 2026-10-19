@@ -112,7 +112,7 @@ namespace SeedCore
 
 		hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &outputDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.outputResource_));
 		SC_HR_CHECK(hr, "ポストプロセス表示テクスチャの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 		view.outputResource_->SetName(L"PostProcess_Output");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(view.outputResource_.Get());
 #endif
@@ -161,7 +161,7 @@ namespace SeedCore
 
 		hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &outputDescUpscaled, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.outputResourceUpscaled_));
 		SC_HR_CHECK(hr, "ポストプロセス表示テクスチャ(UHD)の生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 		view.outputResourceUpscaled_->SetName(L"PostProcess_OutputUpscaled");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(view.outputResourceUpscaled_.Get());
 #endif
@@ -179,7 +179,7 @@ namespace SeedCore
 		// ---- シャープネス出力(新・最終表示チェーン、SD/UHD) ----
 		hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &outputDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.sharpenResource_));
 		SC_HR_CHECK(hr, "シャープネス表示テクスチャの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 		view.sharpenResource_->SetName(L"PostProcess_Sharpen");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(view.sharpenResource_.Get());
 #endif
@@ -196,7 +196,7 @@ namespace SeedCore
 
 		hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &outputDescUpscaled, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.sharpenResourceUpscaled_));
 		SC_HR_CHECK(hr, "シャープネス表示テクスチャ(UHD)の生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 		view.sharpenResourceUpscaled_->SetName(L"PostProcess_SharpenUpscaled");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(view.sharpenResourceUpscaled_.Get());
 #endif
@@ -226,7 +226,7 @@ namespace SeedCore
 
 			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.histogramResource_));
 			SC_HR_CHECK(hr, "露出ヒストグラムバッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 			view.histogramResource_->SetName(L"PostProcess_Histogram");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(view.histogramResource_.Get());
 #endif
@@ -268,7 +268,7 @@ namespace SeedCore
 
 			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.exposureResource_));
 			SC_HR_CHECK(hr, "永続露出バッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 			view.exposureResource_->SetName(L"PostProcess_Exposure");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(view.exposureResource_.Get());
 #endif
@@ -312,7 +312,7 @@ namespace SeedCore
 
 			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &lensFlareDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.lensFlareResource_));
 			SC_HR_CHECK(hr, "レンズフレアバッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 			view.lensFlareResource_->SetName(L"PostProcess_LensFlare");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(view.lensFlareResource_.Get());
 #endif
@@ -341,7 +341,7 @@ namespace SeedCore
 				{
 					hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &lensFlareDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.lensFlareStreakResource_[axis][slot]));
 					SC_HR_CHECK(hr, "レンズフレアストリークバッファの生成に失敗しました");
-	#ifdef _DEBUG
+	#if SC_DEBUG
 					view.lensFlareStreakResource_[axis][slot]->SetName(L"PostProcess_LensFlareStreak");
 					GFSDK_Aftermath_DX12_UpdateResourceInfo(view.lensFlareStreakResource_[axis][slot].Get());
 #endif
@@ -358,7 +358,7 @@ namespace SeedCore
 			// ---- レンズフレア共有ブライトパスバッファ(Downsample の出力) ----
 			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &lensFlareDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.lensFlareBrightResource_));
 			SC_HR_CHECK(hr, "レンズフレアブライトパスバッファの生成に失敗しました");
-	#ifdef _DEBUG
+	#if SC_DEBUG
 			view.lensFlareBrightResource_->SetName(L"PostProcess_LensFlareBright");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(view.lensFlareBrightResource_.Get());
 #endif
@@ -399,7 +399,7 @@ namespace SeedCore
 
 				hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &bloomDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.bloomResource_[level]));
 				SC_HR_CHECK(hr, "ブルームバッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 				view.bloomResource_[level]->SetName(L"PostProcess_Bloom");
 				GFSDK_Aftermath_DX12_UpdateResourceInfo(view.bloomResource_[level].Get());
 #endif
@@ -439,7 +439,7 @@ namespace SeedCore
 			{
 				hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &anamorphicDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.anamorphicFlareResource_[slot]));
 				SC_HR_CHECK(hr, "アナモルフィックフレア作業バッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 				view.anamorphicFlareResource_[slot]->SetName(L"PostProcess_AnamorphicFlare");
 				GFSDK_Aftermath_DX12_UpdateResourceInfo(view.anamorphicFlareResource_[slot].Get());
 #endif
@@ -457,7 +457,7 @@ namespace SeedCore
 
 			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &anamorphicOutputDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.anamorphicFlareOutputResource_));
 			SC_HR_CHECK(hr, "アナモルフィックフレア出力バッファの生成に失敗しました");
-	#ifdef _DEBUG
+	#if SC_DEBUG
 			view.anamorphicFlareOutputResource_->SetName(L"PostProcess_AnamorphicFlareOutput");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(view.anamorphicFlareOutputResource_.Get());
 #endif
@@ -476,7 +476,7 @@ namespace SeedCore
 
 			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &colorGradingDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.colorGradingResource_));
 			SC_HR_CHECK(hr, "カラーグレーディングバッファの生成に失敗しました");
-	#ifdef _DEBUG
+	#if SC_DEBUG
 			view.colorGradingResource_->SetName(L"PostProcess_ColorGrading");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(view.colorGradingResource_.Get());
 #endif
@@ -497,7 +497,7 @@ namespace SeedCore
 			{
 				hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &lensStageDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.lensStageResource_[slot]));
 				SC_HR_CHECK(hr, "レンズ段バッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 				view.lensStageResource_[slot]->SetName(L"PostProcess_LensStage");
 				GFSDK_Aftermath_DX12_UpdateResourceInfo(view.lensStageResource_[slot].Get());
 #endif
@@ -525,7 +525,7 @@ namespace SeedCore
 
 			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &depthOfFieldDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&view.depthOfFieldResource_));
 			SC_HR_CHECK(hr, "被写界深度バッファの生成に失敗しました");
-	#ifdef _DEBUG
+	#if SC_DEBUG
 			view.depthOfFieldResource_->SetName(L"PostProcess_DepthOfField");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(view.depthOfFieldResource_.Get());
 #endif

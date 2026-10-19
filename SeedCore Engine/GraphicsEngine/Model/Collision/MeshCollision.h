@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -18,8 +17,8 @@ namespace SeedCore
 		MeshCollision(MeshCollision&&)noexcept = default;
 		MeshCollision& operator=(MeshCollision&&)noexcept = default;
 
-		[[nodiscard]] const DynamicArray<Vector3>& Positions()const;
-		[[nodiscard]] const DynamicArray<Uint32>& Indices()const;
+		NODISCARD const DynamicArray<Vector3>& Positions()const;
+		NODISCARD const DynamicArray<Uint32>& Indices()const;
 
 		template<class Archive>
 		void Serialize(Archive& archive)

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -122,29 +121,29 @@ namespace SeedCore
 		/// [JP] スコープのミリ秒。読み戻したフレームで走っていなければ 0
 		///      (無効なパスは何も記録しないので、古いスロットの残骸を時間として
 		///      報告してはいけない)。
-		[[nodiscard]] Float GetMilliseconds(GpuProfileView view, GpuProfileScope scope)const;
+		NODISCARD Float GetMilliseconds(GpuProfileView view, GpuProfileScope scope)const;
 
 		/// [EN] Sum of every scope recorded for the view. Not the view's total
 		///      frame time — only the passes that are actually wrapped.
 		/// [JP] そのビューで記録された全スコープの合計。ビューのフレーム時間
 		///      そのものではなく、Begin/End で囲んだパスの合計。
-		[[nodiscard]] Float GetViewMilliseconds(GpuProfileView view)const;
+		NODISCARD Float GetViewMilliseconds(GpuProfileView view)const;
 
-		[[nodiscard]] Bool Available()const;
+		NODISCARD Bool Available()const;
 
-		[[nodiscard]] static const Char* ScopeName(GpuProfileScope scope);
+		NODISCARD static const Char* ScopeName(GpuProfileScope scope);
 
-		[[nodiscard]] static const Char* ViewName(GpuProfileView view);
+		NODISCARD static const Char* ViewName(GpuProfileView view);
 
 	private:
-		SC_CONST Uint32 viewCount_ = static_cast<Uint32>(GpuProfileView::Count);
-		SC_CONST Uint32 scopeCount_ = static_cast<Uint32>(GpuProfileScope::Count);
+		SC_CONSTEX Uint32 viewCount_ = static_cast<Uint32>(GpuProfileView::Count);
+		SC_CONSTEX Uint32 scopeCount_ = static_cast<Uint32>(GpuProfileScope::Count);
 
 		/// [EN] Two timestamps (begin/end) per view-scope pair.
 		/// [JP] ビュー×スコープ 1組につきタイムスタンプ2つ(開始/終了)。
-		SC_CONST Uint32 slotCount_ = viewCount_ * scopeCount_ * 2;
+		SC_CONSTEX Uint32 slotCount_ = viewCount_ * scopeCount_ * 2;
 
-		SC_CONST Uint32 maxFrameCount_ = 4;
+		SC_CONSTEX Uint32 maxFrameCount_ = 4;
 
 		/// [EN] recorded_ is a bitmask over scopes, so the scope count must fit
 		///      in a Uint32.
@@ -152,7 +151,7 @@ namespace SeedCore
 		///      収まる必要がある。
 		static_assert(scopeCount_ <= 32, "GpuProfileScope が 32 を超えたので recorded_ のビット幅を広げてください");
 
-		[[nodiscard]] Uint32 BeginSlot(GpuProfileView view, GpuProfileScope scope)const;
+		NODISCARD Uint32 BeginSlot(GpuProfileView view, GpuProfileScope scope)const;
 
 		Microsoft::WRL::ComPtr<ID3D12QueryHeap> queryHeap_;
 		Microsoft::WRL::ComPtr<ID3D12Resource> readbackResource_;

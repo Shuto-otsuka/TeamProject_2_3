@@ -73,7 +73,7 @@ namespace SeedCore
 
 		hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, nullptr, IID_PPV_ARGS(&brdfLookupTableResource_));
 		SC_HR_CHECK(hr, "BRDF ルックアップテーブルの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 		brdfLookupTableResource_->SetName(L"Sky_BrdfLookupTable");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(brdfLookupTableResource_.Get());
 #endif
@@ -130,7 +130,7 @@ namespace SeedCore
 
 		hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, initialState, nullptr, IID_PPV_ARGS(&resource));
 		SC_HR_CHECK(hr, "スカイマップのキューブリソース生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 		resource->SetName(L"Sky_Cubemap");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(resource.Get());
 #endif

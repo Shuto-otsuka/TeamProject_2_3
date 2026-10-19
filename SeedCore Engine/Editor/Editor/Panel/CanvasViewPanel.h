@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <Editor/Editor/Panel/GuizmoPanel2D.h>
 
 namespace SeedCore

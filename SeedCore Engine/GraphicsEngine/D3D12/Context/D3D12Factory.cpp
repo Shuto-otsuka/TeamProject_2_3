@@ -7,7 +7,7 @@ namespace SeedCore
 	{
 		HRESULT hr{ S_OK };
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		hr = CreateDXGIFactory2(DXGI_CREATE_FACTORY_DEBUG, IID_PPV_ARGS(&factory_));
 		SC_HR_CHECK(hr, "DXGIFactoryの生成に失敗しました");
 #else

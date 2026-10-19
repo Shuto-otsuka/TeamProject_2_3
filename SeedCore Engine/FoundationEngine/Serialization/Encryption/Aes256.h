@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -90,7 +89,7 @@ namespace SeedCore
 	private:
 		/// [EN] Buffers at or above this size use BCrypt (EncryptHardware/DecryptUnpaddedHardware), where AES-NI throughput matters more than having no dependency.
 		/// [JP] この大きさ以上のバッファは BCrypt(EncryptHardware/DecryptUnpaddedHardware)を使う。この規模では依存が無いことより AES-NI の速さが重要になる。
-		SC_CONST Size hardwareThreshold_ = 1024 * 1024;
+		SC_CONSTEX Size hardwareThreshold_ = 1024 * 1024;
 
 		/**
 		* [EN]

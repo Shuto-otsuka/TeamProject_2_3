@@ -3,13 +3,12 @@
 #include <FoundationEngine/File/FileDirectory.h>
 #include <FoundationEngine/Log/Warning.h>
 
-#ifndef _DEBUG
+#if SC_RELEASE
 #include <External/DLSS/Include/sl_security.h>
 #endif
 
 namespace SeedCore
 {
-#if !SC_RENDER_DOC_USAGE
 	namespace
 	{
 		sl::float4x4 ToSlMatrix(const Matrix& m)
@@ -40,16 +39,14 @@ namespace SeedCore
 			return sl::DLSSMode::eBalanced;
 		}
 	}
-#endif
 
 	Bool DlssManager::Initialize()
 	{
-#if !SC_RENDER_DOC_USAGE
 		sl::Result sr{ sl::Result::eOk };
 
 		/// [EN] sl.interposer.dll intercepts every D3D12/Vulkan call the engine makes, so verify it is the genuine NVIDIA-signed binary before slInit loads it - a replaced module at this location could hijack the entire graphics pipeline. Skipped in Debug, since development/self-built SL DLLs are unsigned per the Streamline security guide.
 		/// [JP] sl.interposer.dllはエンジンが行う全てのD3D12/Vulkan呼び出しを横取りするため、slInitで読み込む前に本物のNVIDIA署名付きバイナリか検証する - ここが差し替えられるとグラフィックスパイプライン全体を乗っ取られかねない。開発版/自前ビルドのSL DLLは署名が無いため(Streamlineセキュリティガイド)、Debugではスキップする。
-#ifndef _DEBUG
+#if SC_RELEASE
 		std::wstring interposerPath = (FileDirectory::ExecutableDirectory() / L"sl.interposer.dll").wstring();
 		if (!sl::security::verifyEmbeddedSignature(interposerPath.c_str()))
 		{
@@ -70,7 +67,7 @@ namespace SeedCore
 		sl::Preferences preference{};
 		preference.showConsole = false;
 		//preference.showConsole = true;
-#ifdef _DEBUG
+#if SC_DEBUG
 		//preference.logLevel = sl::LogLevel::eDefault;
 		preference.logLevel = sl::LogLevel::eVerbose;
 #else
@@ -105,13 +102,11 @@ namespace SeedCore
 
 		sr = slIsFeatureLoaded(sl::kFeatureDLSS_RR, loadResult_.isDlssRR_);
 		SC_SL_CHECK(sr, "DLSS RR機能のロード状態を確認できませんでした。");
-#endif
 		return true;
 	}
 
 	void DlssManager::Finalize()
 	{
-#if !SC_RENDER_DOC_USAGE
 		sl::Result sr{ sl::Result::eOk };
 
 		/// [EN] sl.deepdvc (Streamline SDK 2.12.0) does not export a freeResources callback, so this call is a no-op until NVIDIA implements it.
@@ -133,12 +128,10 @@ namespace SeedCore
 
 		sr = slShutdown();
 		SC_SL_CHECK(sr, "Streamlineのシャットダウン中にエラーが発生しました。");
-#endif
 	}
 
 	Bool DlssManager::Prepare(ID3D12Device* device)
 	{
-#if !SC_RENDER_DOC_USAGE
 		sl::Result sr{ sl::Result::eOk };
 
 		sr = slSetD3DDevice(device);
@@ -165,21 +158,17 @@ namespace SeedCore
 
 		sr = slIsFeatureSupported(sl::kFeatureDLSS_RR, dlssData);
 		SC_SL_CHECK(sr, "DLSS RR機能が現在のGPUでサポートされているか確認できませんでした。");
-#endif
 		return true;
 	}
 
 	void DlssManager::BeginFrame()
 	{
-#if !SC_RENDER_DOC_USAGE
 		sl::Result sr = slGetNewFrameToken(currentToken_);
 		SC_SL_CHECK(sr, "フレームトークンの取得に失敗しました");
-#endif
 	}
 
 	void DlssManager::RayReconstructionTag(DlssBufferTag tags, ID3D12CommandList* cmdList, ID3D12Resource* outPutBuffer, Uint32 viewportIndex, Uint32 outputWidth, Uint32 outputHeight)
 	{
-#if !SC_RENDER_DOC_USAGE
 		if (!currentToken_)
 		{
 			return;
@@ -222,12 +211,10 @@ namespace SeedCore
 
 		sr = slSetTagForFrame(*currentToken_, viewport, tags_, static_cast<Uint32>(std::size(tags_)), cmdList);
 		SC_SL_CHECK(sr, "フレームへのタグ設定に失敗しました");
-#endif
 	}
 
 	void DlssManager::FrameGenerationTag(DlssBufferTag tags, ID3D12CommandList* cmdList, ID3D12Resource* hudlessResource, ID3D12Resource* uiColorAlphaResource, Uint32 viewportIndex, Uint32 outputWidth, Uint32 outputHeight)
 	{
-#if !SC_RENDER_DOC_USAGE
 		if (!currentToken_)
 		{
 			return;
@@ -262,12 +249,10 @@ namespace SeedCore
 
 		sl::Result sr = slSetTagForFrame(*currentToken_, viewport, frameGenerationTags, static_cast<Uint32>(std::size(frameGenerationTags)), cmdList);
 		SC_SL_CHECK(sr, "DLSS-G用リソースタグの設定に失敗しました");
-#endif
 	}
 
 	void DlssManager::Constants(const SceneConstantBuffer& scene, Uint32 viewportIndex, Bool reset)
 	{
-#if !SC_RENDER_DOC_USAGE
 		if (!currentToken_)
 		{
 			return;
@@ -314,7 +299,6 @@ namespace SeedCore
 
 		sl::Result sr = slSetConstants(constants, *currentToken_, viewport);
 		SC_SL_CHECK(sr, "DLSS共通カメラ定数(sl::Constants)の設定に失敗しました");
-#endif
 	}
 
 	void DlssManager::ReflexEnable(Bool enable)
@@ -341,10 +325,8 @@ namespace SeedCore
 	{
 		frameGenerationEnabled_ = enable;
 
-#if !SC_RENDER_DOC_USAGE
 		sl::Result sr = slSetFeatureLoaded(sl::kFeatureDLSS_G, enable);
 		SC_SL_CHECK(sr, "DLSS-Gのロード状態切り替えに失敗しました");
-#endif
 	}
 
 	Bool DlssManager::FrameGenerationEnable()const
@@ -385,7 +367,6 @@ namespace SeedCore
 
 	void DlssManager::EvaluateReflex()
 	{
-#if !SC_RENDER_DOC_USAGE
 		if (!currentToken_)
 		{
 			return;
@@ -399,12 +380,10 @@ namespace SeedCore
 
 		sr = slReflexSleep(*currentToken_);
 		SC_SL_CHECK(sr, "Reflexのスリープに失敗しました");
-#endif
 	}
 
 	void DlssManager::EvaluateDeepDVC(ID3D12CommandList* cmdList, ID3D12Resource* colorBuffer, Uint32 viewportIndex, Uint32 width, Uint32 height)
 	{
-#if !SC_RENDER_DOC_USAGE
 		if (!currentToken_ || !deepDVCEnabled_ || !loadResult_.isDeepDVC_)
 		{
 			return;
@@ -444,12 +423,10 @@ namespace SeedCore
 
 		sr = slEvaluateFeature(sl::kFeatureDeepDVC, *currentToken_, inputs, static_cast<Uint32>(std::size(inputs)), cmdList);
 		SC_SL_CHECK(sr, "DeepDVCの実行に失敗しました");
-#endif
 	}
 
 	void DlssManager::EvaluateFrameGeneration(Uint32 viewportIndex)
 	{
-#if !SC_RENDER_DOC_USAGE
 		if (!currentToken_ || !loadResult_.isDlssFG_)
 		{
 			return;
@@ -470,12 +447,10 @@ namespace SeedCore
 		{
 			frameGenerationVSyncSupported_ = (state.bIsVsyncSupportAvailable == sl::Boolean::eTrue);
 		}
-#endif
 	}
 
 	void DlssManager::EvaluateRayReconstruction(ID3D12CommandList* cmdList, const SceneConstantBuffer& scene, Uint32 viewportIndex, Uint32 outputWidth, Uint32 outputHeight, UpscaleMode mode)
 	{
-#if !SC_RENDER_DOC_USAGE
 		if (!currentToken_)
 		{
 			return;
@@ -507,12 +482,10 @@ namespace SeedCore
 
 		sr = slEvaluateFeature(sl::kFeatureDLSS_RR, *currentToken_, inputs, static_cast<Uint32>(std::size(inputs)), cmdList);
 		SC_SL_CHECK(sr, "DLSS-RRの実行に失敗しました");
-#endif
 	}
 
 	void DlssManager::EvaluateDlss(ID3D12CommandList* cmdList, Uint32 viewportIndex, Uint32 outputWidth, Uint32 outputHeight, UpscaleMode mode)
 	{
-#if !SC_RENDER_DOC_USAGE
 		if (!currentToken_)
 		{
 			return;
@@ -538,6 +511,5 @@ namespace SeedCore
 
 		sr = slEvaluateFeature(sl::kFeatureDLSS, *currentToken_, inputs, static_cast<Uint32>(std::size(inputs)), cmdList);
 		SC_SL_CHECK(sr, "DLSSの実行に失敗しました");
-#endif
 	}
 }

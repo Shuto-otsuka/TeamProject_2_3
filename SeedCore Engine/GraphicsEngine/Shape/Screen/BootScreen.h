@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Resource/Config/BootConfig.h>
 
 namespace SeedCore
@@ -45,21 +44,21 @@ namespace SeedCore
 
 		void Draw(ID3D12GraphicsCommandList6* cmdList, D3D12_CPU_DESCRIPTOR_HANDLE renderTargetViewHandle, const BootConfig& config, Float screenWidth, Float screenHeight, Float progress, Float time, Float alpha);
 
-		[[nodiscard]] Bool Initialized()const;
+		NODISCARD Bool Initialized()const;
 
-		[[nodiscard]] Float BarAspect()const;
+		NODISCARD Float BarAspect()const;
 
-		[[nodiscard]] static Vector4 BarRect(const BootConfig& config, Float screenWidth, Float screenHeight, Float barAspect);
+		NODISCARD static Vector4 BarRect(const BootConfig& config, Float screenWidth, Float screenHeight, Float barAspect);
 
 	private:
 		void ReplaceImage(const DynamicArray<Byte>& image, const Char* defaultName, Uint& textureIndex, Microsoft::WRL::ComPtr<ID3D12Resource>& resource);
 
 		void ReleaseImage(Uint& textureIndex, Microsoft::WRL::ComPtr<ID3D12Resource>& resource);
 
-		[[nodiscard]] static Float ImageAspect(const Microsoft::WRL::ComPtr<ID3D12Resource>& resource);
+		NODISCARD static Float ImageAspect(const Microsoft::WRL::ComPtr<ID3D12Resource>& resource);
 
 	private:
-		SC_CONST Uint invalidIndex_ = 0xFFFFFFFF;
+		SC_CONSTEX Uint invalidIndex_ = 0xFFFFFFFF;
 
 		Microsoft::WRL::ComPtr<ID3D12Resource> backgroundResource_;
 		Microsoft::WRL::ComPtr<ID3D12Resource> barResource_;

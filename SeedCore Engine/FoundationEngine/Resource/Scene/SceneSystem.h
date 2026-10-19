@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Resource/Scene/SceneBlueprint.h>
 #include <FoundationEngine/Resource/Scene/SceneTransitionSystem.h>
 #include <FoundationEngine/Utility/NonTransferable.h>
@@ -327,7 +326,7 @@ namespace SeedCore
 		* ローディングシーンは返さない。返したシーンは次の遷移が始まるまで
 		* 有効。
 		*/
-		[[nodiscard]] const SceneBlueprint* ConsumeSwitchedScene();
+		NODISCARD const SceneBlueprint* ConsumeSwitchedScene();
 
 		/**
 		* [EN]
@@ -360,7 +359,7 @@ namespace SeedCore
 		* ローディングシーンは数えないため、ターゲットが現れるまでは前の
 		* シーンの名前のまま。まだシーンが読み込まれていなければ空。
 		*/
-		[[nodiscard]] const String& CurrentName()const;
+		NODISCARD const String& CurrentName()const;
 
 	private:
 		/**

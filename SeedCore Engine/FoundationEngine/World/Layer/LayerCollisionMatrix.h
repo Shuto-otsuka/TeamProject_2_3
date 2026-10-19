@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/Layer/LayerRegistry.h>
 
 namespace SeedCore

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/JobSystem/JobCommon.h>
 #include <FoundationEngine/JobSystem/JobNodeBase.h>
 #include <FoundationEngine/JobSystem/JobGraph.h>
@@ -359,39 +358,39 @@ namespace SeedCore
 	public:
 		/// [EN] Index of Placeholder within NodeHandle; these constants are compared against handle_.index() to tell the node kind.
 		/// [JP] NodeHandle 内における Placeholder のインデックス。これらの定数を handle_.index() と比べてノードの種類を判定する。
-		SC_CONST auto PLACEHOLDER = GetIndexValue<Placeholder, NodeHandle>;
+		SC_CONSTEX auto PLACEHOLDER = GetIndexValue<Placeholder, NodeHandle>;
 		
 		/// [EN] Index of Static within NodeHandle.
 		/// [JP] NodeHandle 内における Static のインデックス。
-		SC_CONST auto STATIC = GetIndexValue<Static, NodeHandle>;
+		SC_CONSTEX auto STATIC = GetIndexValue<Static, NodeHandle>;
 		
 		/// [EN] Index of PreemptiveRuntime within NodeHandle.
 		/// [JP] NodeHandle 内における PreemptiveRuntime のインデックス。
-		SC_CONST auto PREEMPTIVE_RUNTIME = GetIndexValue<PreemptiveRuntime, NodeHandle>;
+		SC_CONSTEX auto PREEMPTIVE_RUNTIME = GetIndexValue<PreemptiveRuntime, NodeHandle>;
 		
 		/// [EN] Index of NonpreemptiveRuntime within NodeHandle.
 		/// [JP] NodeHandle 内における NonpreemptiveRuntime のインデックス。
-		SC_CONST auto NONPREEMPTIVE_RUNTIME = GetIndexValue<NonpreemptiveRuntime, NodeHandle>;
+		SC_CONSTEX auto NONPREEMPTIVE_RUNTIME = GetIndexValue<NonpreemptiveRuntime, NodeHandle>;
 		
 		/// [EN] Index of Subflow within NodeHandle.
 		/// [JP] NodeHandle 内における Subflow のインデックス。
-		SC_CONST auto SUBFLOW = GetIndexValue<Subflow, NodeHandle>;
+		SC_CONSTEX auto SUBFLOW = GetIndexValue<Subflow, NodeHandle>;
 		
 		/// [EN] Index of SingleCondition within NodeHandle.
 		/// [JP] NodeHandle 内における SingleCondition のインデックス。
-		SC_CONST auto SINGLE_CONDITION = GetIndexValue<SingleCondition, NodeHandle>;
+		SC_CONSTEX auto SINGLE_CONDITION = GetIndexValue<SingleCondition, NodeHandle>;
 		
 		/// [EN] Index of MultiCondition within NodeHandle.
 		/// [JP] NodeHandle 内における MultiCondition のインデックス。
-		SC_CONST auto MULTI_CONDITION = GetIndexValue<MultiCondition, NodeHandle>;
+		SC_CONSTEX auto MULTI_CONDITION = GetIndexValue<MultiCondition, NodeHandle>;
 		
 		/// [EN] Index of OwnedModule within NodeHandle.
 		/// [JP] NodeHandle 内における OwnedModule のインデックス。
-		SC_CONST auto OWNED_MODULE = GetIndexValue<OwnedModule, NodeHandle>;
+		SC_CONSTEX auto OWNED_MODULE = GetIndexValue<OwnedModule, NodeHandle>;
 		
 		/// [EN] Index of AdoptedModule within NodeHandle.
 		/// [JP] NodeHandle 内における AdoptedModule のインデックス。
-		SC_CONST auto ADOPTED_MODULE = GetIndexValue<AdoptedModule, NodeHandle>;
+		SC_CONSTEX auto ADOPTED_MODULE = GetIndexValue<AdoptedModule, NodeHandle>;
 
 		/**
 		* [EN]

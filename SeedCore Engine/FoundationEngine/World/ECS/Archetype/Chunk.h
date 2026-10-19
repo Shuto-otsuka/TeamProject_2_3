@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 
 namespace SeedCore
@@ -164,15 +163,15 @@ namespace SeedCore
 	private:
 		/// [EN] Total byte size of the raw storage buffer.
 		/// [JP] 生ストレージバッファの総バイトサイズ。
-		SC_CONST Size chunkSize_ = 16 * 1024;
+		SC_CONSTEX Size chunkSize_ = 16 * 1024;
 
 		/// [EN] Hard cap on the number of entities a single chunk can ever hold.
 		/// [JP] 単一チャンクが保持できるエンティティ数の絶対上限。
-		SC_CONST Size maxEntitiesPerChunk_ = 1024;
+		SC_CONSTEX Size maxEntitiesPerChunk_ = 1024;
 
 		/// [EN] Hard cap on the number of distinct component types a single archetype/chunk can hold.
 		/// [JP] 単一のアーキタイプ/チャンクが保持できる、異なるコンポーネント型数の絶対上限。
-		SC_CONST Size maxComponentsPerArchetype_ = 32;
+		SC_CONSTEX Size maxComponentsPerArchetype_ = 32;
 
 	private:
 		/// [EN] The archetype this chunk's layout was derived from.

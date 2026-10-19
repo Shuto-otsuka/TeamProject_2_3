@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Interop/ShapeInstance.h>
 
 namespace SeedCore
@@ -51,7 +50,7 @@ namespace SeedCore
 		* [JP]
 		* 直前の Update で集めたコライダーを返す。
 		*/
-		[[nodiscard]] std::span<const ShapeDesc> Colliders()const;
+		NODISCARD std::span<const ShapeDesc> Colliders()const;
 
 	private:
 		/// [EN] Colliders gathered this frame; kept between frames so the storage is reused.

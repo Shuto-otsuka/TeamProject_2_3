@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 namespace SeedCore
 {
 	constexpr Uint32 animalCharacterMagic = 0x43415353;
@@ -56,57 +55,57 @@ namespace SeedCore
 
 		Bool Load(String filePath);
 
-		[[nodiscard]] Bool Loaded()const;
+		NODISCARD Bool Loaded()const;
 
-		[[nodiscard]] Uint32 GroupCount()const;
+		NODISCARD Uint32 GroupCount()const;
 
 		void SetGroup(Uint32 groupIndex);
 
-		[[nodiscard]] Uint32 ActiveGroup()const;
+		NODISCARD Uint32 ActiveGroup()const;
 
-		[[nodiscard]] Uint32 BlendAxisCount()const;
+		NODISCARD Uint32 BlendAxisCount()const;
 
-		[[nodiscard]] Uint32 VertexCount()const;
+		NODISCARD Uint32 VertexCount()const;
 
-		[[nodiscard]] Uint32 BodyVertexCount()const;
+		NODISCARD Uint32 BodyVertexCount()const;
 
-		[[nodiscard]] Uint32 TriangleCount()const;
+		NODISCARD Uint32 TriangleCount()const;
 
-		[[nodiscard]] Uint32 AxisCount()const;
+		NODISCARD Uint32 AxisCount()const;
 
-		[[nodiscard]] Uint32 BoneCount()const;
+		NODISCARD Uint32 BoneCount()const;
 
-		[[nodiscard]] std::span<const Vector3> Positions()const;
+		NODISCARD std::span<const Vector3> Positions()const;
 
-		[[nodiscard]] std::span<const Vector3> Normals()const;
+		NODISCARD std::span<const Vector3> Normals()const;
 
-		[[nodiscard]] std::span<const Vector2> Texcoords()const;
+		NODISCARD std::span<const Vector2> Texcoords()const;
 
-		[[nodiscard]] std::span<const Uint32> Triangles()const;
+		NODISCARD std::span<const Uint32> Triangles()const;
 
-		[[nodiscard]] std::span<const Uint8> Regions()const;
+		NODISCARD std::span<const Uint8> Regions()const;
 
-		[[nodiscard]] std::span<const Float> SkinWeights()const;
+		NODISCARD std::span<const Float> SkinWeights()const;
 
-		[[nodiscard]] std::span<const Uint32> SkinIndices()const;
+		NODISCARD std::span<const Uint32> SkinIndices()const;
 
-		[[nodiscard]] const AnimalCharacterAxis& Axis(Uint32 index)const;
+		NODISCARD const AnimalCharacterAxis& Axis(Uint32 index)const;
 
-		[[nodiscard]] const AnimalCharacterBone& Bone(Uint32 index)const;
+		NODISCARD const AnimalCharacterBone& Bone(Uint32 index)const;
 
-		[[nodiscard]] std::span<const Uint32> JointGroup(Uint32 boneIndex)const;
+		NODISCARD std::span<const Uint32> JointGroup(Uint32 boneIndex)const;
 
-		[[nodiscard]] const AnimalCharacterRegionRange& RegionTriangleRange(Uint32 regionIndex)const;
+		NODISCARD const AnimalCharacterRegionRange& RegionTriangleRange(Uint32 regionIndex)const;
 
-		[[nodiscard]] static std::span<const Char* const> GroupNames();
+		NODISCARD static std::span<const Char* const> GroupNames();
 
-		[[nodiscard]] static std::span<const Char* const> RegionNames();
+		NODISCARD static std::span<const Char* const> RegionNames();
 
-		[[nodiscard]] static std::span<const Char* const> RegionLabels();
+		NODISCARD static std::span<const Char* const> RegionLabels();
 
-		[[nodiscard]] static std::span<const Char* const> AxisLabels(Uint32 groupIndex);
+		NODISCARD static std::span<const Char* const> AxisLabels(Uint32 groupIndex);
 
-		[[nodiscard]] static std::span<const Char* const> BoneNames();
+		NODISCARD static std::span<const Char* const> BoneNames();
 
 	private:
 		struct GroupHeader

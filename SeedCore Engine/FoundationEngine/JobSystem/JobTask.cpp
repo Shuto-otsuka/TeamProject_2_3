@@ -315,17 +315,17 @@ namespace SeedCore
 		case JobNode::STATIC:
 			return JobTaskType::STATIC;
 		case JobNode::PREEMPTIVE_RUNTIME:
-			[[fallthrough]];
+			FALLTHROUGH;
 		case JobNode::NONPREEMPTIVE_RUNTIME:
 			return JobTaskType::RUNTIME;
 		case JobNode::SUBFLOW:
 			return JobTaskType::SUBFLOW;
 		case JobNode::SINGLE_CONDITION:
-			[[fallthrough]];
+			FALLTHROUGH;
 		case JobNode::MULTI_CONDITION:
 			return JobTaskType::CONDITION;
 		case JobNode::OWNED_MODULE:
-			[[fallthrough]];
+			FALLTHROUGH;
 		case JobNode::ADOPTED_MODULE:
 			return JobTaskType::MODULE;
 		default:
@@ -532,17 +532,17 @@ namespace SeedCore
 		case JobNode::STATIC:
 			return JobTaskType::STATIC;
 		case JobNode::PREEMPTIVE_RUNTIME:
-			[[fallthrough]];
+			FALLTHROUGH;
 		case JobNode::NONPREEMPTIVE_RUNTIME:
 			return JobTaskType::RUNTIME;
 		case JobNode::SUBFLOW:
 			return JobTaskType::SUBFLOW;
 		case JobNode::SINGLE_CONDITION:
-			[[fallthrough]];
+			FALLTHROUGH;
 		case JobNode::MULTI_CONDITION:
 			return JobTaskType::CONDITION;
 		case JobNode::OWNED_MODULE:
-			[[fallthrough]];
+			FALLTHROUGH;
 		case JobNode::ADOPTED_MODULE:
 			return JobTaskType::MODULE;
 		default:

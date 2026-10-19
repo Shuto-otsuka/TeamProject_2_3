@@ -371,7 +371,7 @@ namespace SeedCore
 			SC_HR_CHECK(hr, "オープンネステクスチャの生成に失敗しました");
 			/// [EN] In debug builds, name it so it can be identified in PIX and crash dumps.
 			/// [JP] デバッグビルドでは、PIX やクラッシュダンプで見分けられるよう名前を付ける。
-#ifdef _DEBUG
+#if SC_DEBUG
 			resource->SetName(L"AmbientOcclusion_Openness");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(resource.Get());
 #endif

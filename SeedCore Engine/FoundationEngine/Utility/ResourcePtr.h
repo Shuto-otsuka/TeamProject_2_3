@@ -423,7 +423,7 @@ namespace SeedCore
 	* ので、新しい ResourcePtr はこれで得るのが基本。
 	*/
 	template <typename T, typename... Args>
-	[[nodiscard]] ResourcePtr<T> MakePtr(Args&&... args)
+	NODISCARD ResourcePtr<T> MakePtr(Args&&... args)
 	{
 		/// [EN] The raw pointer goes straight into the ResourcePtr, so nothing else can hold it.
 		/// [JP] 生ポインタはそのまま ResourcePtr へ渡るので、他の誰もそれを持てない。
@@ -448,7 +448,7 @@ namespace SeedCore
 	* 生きていなければならない。
 	*/
 	template <typename T, typename H, Size LogSize, typename... Args>
-	[[nodiscard]] ResourcePtr<T> MakePtr(ObjectPool<T, H, LogSize>& pool, Args&&... args)
+	NODISCARD ResourcePtr<T> MakePtr(ObjectPool<T, H, LogSize>& pool, Args&&... args)
 	{
 		return ResourcePtr<T>(pool.Create(std::forward<Args>(args)...), &pool, [](void* owner, void* object) { static_cast<ObjectPool<T, H, LogSize>*>(owner)->Recycle(static_cast<T*>(object)); });
 	}

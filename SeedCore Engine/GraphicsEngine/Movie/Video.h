@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/Movie/MovieDecoder.h>
 
@@ -47,23 +46,23 @@ namespace SeedCore
 		void MarkAutoPlayStarted();
 
 	public:
-		[[nodiscard]] Bool Loop()const;
+		NODISCARD Bool Loop()const;
 
-		[[nodiscard]] Bool Playing()const;
+		NODISCARD Bool Playing()const;
 
-		[[nodiscard]] Bool HasAutoPlayStarted()const;
+		NODISCARD Bool HasAutoPlayStarted()const;
 
-		[[nodiscard]] Uint GetTextureIndex()const;
+		NODISCARD Uint GetTextureIndex()const;
 
-		[[nodiscard]] Bool HasTexture()const;
+		NODISCARD Bool HasTexture()const;
 
-		[[nodiscard]] Int GetWidth()const;
+		NODISCARD Int GetWidth()const;
 
-		[[nodiscard]] Int GetHeight()const;
+		NODISCARD Int GetHeight()const;
 
-		[[nodiscard]] Double GetDuration()const;
+		NODISCARD Double GetDuration()const;
 
-		[[nodiscard]] Double GetPlaybackTime()const;
+		NODISCARD Double GetPlaybackTime()const;
 
 	private:
 		MovieDecoder decoder_;

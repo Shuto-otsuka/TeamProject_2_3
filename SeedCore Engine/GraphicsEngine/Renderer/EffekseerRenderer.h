@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/System/SceneConstantSystem.h>
 
 namespace SeedCore
@@ -19,7 +18,7 @@ namespace SeedCore
 
 		void Draw(D3D12CommandList* cmdList, EffekseerManager& manager);
 
-		[[nodiscard]] ::EffekseerRenderer::RendererRef GetRenderer()const;
+		NODISCARD ::EffekseerRenderer::RendererRef GetRenderer()const;
 
 	private:
 		Effekseer::Backend::GraphicsDeviceRef graphicsDevice_;

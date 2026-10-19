@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -15,7 +14,7 @@ namespace SeedCore
 	public:
 		static void SetLevel(D3D12Level level);
 
-		[[nodiscard]] static D3D12Level GetLevel();
+		NODISCARD static D3D12Level GetLevel();
 
 	private:
 		static D3D12Level level_;

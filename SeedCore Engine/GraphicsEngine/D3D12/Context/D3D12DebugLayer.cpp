@@ -4,7 +4,7 @@ namespace SeedCore
 {
 	void D3D12DebugLayer::Enable()
 	{
-#ifdef _DEBUG
+#if SC_DEBUG
 		Microsoft::WRL::ComPtr<ID3D12Debug> debugController;
 		if (SUCCEEDED(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController))))
 		{
@@ -31,7 +31,7 @@ namespace SeedCore
 
 	void D3D12DebugLayer::Report()
 	{
-#ifdef _DEBUG
+#if SC_DEBUG
 		Microsoft::WRL::ComPtr<IDXGIDebug1> dxgiDebug;
 		if (SUCCEEDED(DXGIGetDebugInterface1(0, IID_PPV_ARGS(&dxgiDebug))))
 		{

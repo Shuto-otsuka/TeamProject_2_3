@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 
 namespace SeedCore
@@ -21,7 +20,7 @@ namespace SeedCore
 
 		RootSignature* Get(const Handle<RootSignature>& handle);
 
-		[[nodiscard]] ID3D12RootSignature* Get()const noexcept;
+		NODISCARD ID3D12RootSignature* Get()const noexcept;
 
 		static void ClearCache();
 

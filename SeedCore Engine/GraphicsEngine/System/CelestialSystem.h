@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -164,6 +163,6 @@ namespace SeedCore
 	public:
 		static void Advance(Float deltaTime, DaySystemConstantBuffer& day);
 
-		[[nodiscard]] static CelestialResult Compute(const DaySystemConstantBuffer& day, const SunLightSettings& sun, const MoonLightSettings& moon);
+		NODISCARD static CelestialResult Compute(const DaySystemConstantBuffer& day, const SunLightSettings& sun, const MoonLightSettings& moon);
 	};
 }

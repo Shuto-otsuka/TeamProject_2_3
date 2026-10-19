@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Component/Component.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 #include <FoundationEngine/World/Actor/Actor.h>
@@ -67,7 +66,7 @@
 
 		const Char* GetPayloadDropType(PayloadType assetType)const;
 
-		[[nodiscard]] ImTextureID GetComponentIcon(const String& componentName)const;
+		NODISCARD ImTextureID GetComponentIcon(const String& componentName)const;
 
 	private:
 		EditorContext& context_;

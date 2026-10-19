@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/ArtMap.h>
 #include <FoundationEngine/Utility/FlatMap.h>
 #include <FoundationEngine/Resource/Prefab/PrefabPool.h>

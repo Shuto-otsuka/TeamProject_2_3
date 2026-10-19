@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Bridge/NativeApi.h>
 #include <FoundationEngine/Bridge/ManagedApi.h>
 #include <FoundationEngine/Bridge/CsharpBehaviour.h>

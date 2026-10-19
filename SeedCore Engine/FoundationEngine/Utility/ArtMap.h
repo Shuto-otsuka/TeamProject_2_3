@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -202,7 +201,7 @@ namespace SeedCore
 
 		/// [EN] Maximum inline path-compressed prefix length stored per node.
 		/// [JP] ノードごとに格納される、パス圧縮された接頭辞のインライン最大長。
-		SC_CONST Size MAX_PREFIX = 8;
+		SC_CONSTEX Size MAX_PREFIX = 8;
 
 		/// [EN] Discriminates the concrete type behind a NodePtr.
 		/// [JP] NodePtr の背後にある実際の型を判別する。
@@ -2200,7 +2199,7 @@ namespace SeedCore
 		* [JP]
 		* 格納されている要素数を返す。
 		*/
-		[[nodiscard]] Size size()const noexcept
+		NODISCARD Size size()const noexcept
 		{
 			return size_;
 		}
@@ -2214,7 +2213,7 @@ namespace SeedCore
 		* [JP]
 		* マップに要素が1つもないかを返す。
 		*/
-		[[nodiscard]] Bool empty()const noexcept
+		NODISCARD Bool empty()const noexcept
 		{
 			return size_ == 0;
 		}

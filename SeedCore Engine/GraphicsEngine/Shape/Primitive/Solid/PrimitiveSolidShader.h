@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
 #include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
@@ -68,7 +67,7 @@ namespace SeedCore
 		* Amplification Shader とメッシュシェーダーのパイプラインステートを
 		* 返す（D12_2）。
 		*/
-		[[nodiscard]] ID3D12PipelineState* GetPipelineState()const;
+		NODISCARD ID3D12PipelineState* GetPipelineState()const;
 
 		/**
 		* [EN]
@@ -79,7 +78,7 @@ namespace SeedCore
 		* [JP]
 		* カリングの Compute Shader のパイプラインステートを返す（D12_2 未満）。
 		*/
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateCulling()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateCulling()const;
 
 		/**
 		* [EN]
@@ -92,7 +91,7 @@ namespace SeedCore
 		* 裏面を捨てる頂点シェーダーのパイプラインステートを返す。片面用の
 		* 一覧に使う（D12_2 未満）。
 		*/
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateSingleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateSingleSided()const;
 
 		/**
 		* [EN]
@@ -105,7 +104,7 @@ namespace SeedCore
 		* 両面を残す頂点シェーダーのパイプラインステートを返す。両面用の
 		* 一覧に使う（D12_2 未満）。
 		*/
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateDoubleSided()const;
 
 		/**
 		* [EN]
@@ -116,7 +115,7 @@ namespace SeedCore
 		* [JP]
 		* ルートシグネチャを返す。
 		*/
-		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
+		NODISCARD ID3D12RootSignature* GetRootSignature()const;
 
 	private:
 		/// [EN] Amplification shader, used on D12_2.

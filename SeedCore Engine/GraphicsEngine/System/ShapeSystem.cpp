@@ -382,7 +382,7 @@ namespace SeedCore
 				return Vector3(cone.radius_ * Max(Abs(scale.x), Abs(scale.z)), cone.height_ * Abs(scale.y) * 0.5f, 0.0f);
 			});
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		/// [EN] Physics queries recorded since the last frame, in the colors of Unity's physics debugger: green when nothing was found, red when something was. They are read and then cleared, so each query is drawn once. 3D queries are drawn in the game view as well; 2D queries stay on the canvas.
 		/// [JP] 前のフレームから記録された物理クエリ。Unity の物理デバッガーと同じく、何にも当たらなければ緑、当たれば赤で描く。読んだあと空にするので、各クエリは1回だけ描かれる。3D のクエリはゲームビューにも描き、2D のクエリは Canvas にだけ描く。
 		const Color missColor(0.30f, 0.90f, 0.30f, 1.0f);

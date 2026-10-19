@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Log/Assert.h>
 #include <GraphicsEngine/Renderer/VolumetricCloudScapesRenderer.h>
 #include <GraphicsEngine/Environment/Weather.h>
@@ -81,18 +80,18 @@ namespace SeedCore
 		///      (all zero) if the scene has none.
 		/// [JP] GPU向けの読み取り専用スナップショット - シーンの Weather
 		///      コンポーネントを何も変更せず読む。無ければ既定値(全0)を返す。
-		[[nodiscard]] static WeatherGpuState ReadGpuState(World& world);
+		NODISCARD static WeatherGpuState ReadGpuState(World& world);
 
 		void Upload(ID3D12Device* device, BindlessHeap* bindlessHeap, const WeatherConstantBuffer& buffer);
 
-		[[nodiscard]] Uint GetIndex()const;
+		NODISCARD Uint GetIndex()const;
 
 	private:
 		static void GetTarget(WeatherType type, VolumetricCloudScapesRayConstantBuffer& target);
 
-		[[nodiscard]] WeatherType PickRandomType(Uint32 monthOfYear, const Weather& weather);
+		NODISCARD WeatherType PickRandomType(Uint32 monthOfYear, const Weather& weather);
 
-		[[nodiscard]] Float RandomRange(Float minValue, Float maxValue);
+		NODISCARD Float RandomRange(Float minValue, Float maxValue);
 
 		std::mt19937 randomEngine_ = std::mt19937(std::random_device{}());
 

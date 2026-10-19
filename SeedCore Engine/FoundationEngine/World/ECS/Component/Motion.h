@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Component/Velocity.h>
 
 namespace SeedCore
@@ -31,7 +30,7 @@ namespace SeedCore
 		* [JP]
 		* 速度を Vector3 で返す。
 		*/
-		[[nodiscard]] static Vector3 Vector(const LinearVelocity& velocity);
+		NODISCARD static Vector3 Vector(const LinearVelocity& velocity);
 
 		/**
 		* [EN]
@@ -54,7 +53,7 @@ namespace SeedCore
 		* [JP]
 		* 角速度を Vector3 で返す。向きが回転軸、長さが回転の速さ。
 		*/
-		[[nodiscard]] static Vector3 Vector(const AngularVelocity& velocity);
+		NODISCARD static Vector3 Vector(const AngularVelocity& velocity);
 
 		/**
 		* [EN]

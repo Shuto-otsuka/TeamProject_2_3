@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Log/Assert.h>
 #include <FoundationEngine/Interop/ShapeInstance.h>
 #include <GraphicsEngine/Model/Cluster/Meshlet.h>
@@ -23,20 +22,20 @@ namespace SeedCore
 	public:
 		/// [EN] Most meshlets one shape may have: one amplification shader group of 32 threads tests one instance's meshlets.
 		/// [JP] 形1つが持てるメッシュレットの最大数。32 スレッドの Amplification Shader の 1 グループが、1 インスタンスのメッシュレットを調べる。
-		SC_CONST Uint32 maxMeshletsPerShape_ = 32;
+		SC_CONSTEX Uint32 maxMeshletsPerShape_ = 32;
 
 	public:
-		[[nodiscard]] std::span<const PrimitiveVertex> Vertices()const;
+		NODISCARD std::span<const PrimitiveVertex> Vertices()const;
 
-		[[nodiscard]] std::span<const MeshletDesc> Meshlets()const;
+		NODISCARD std::span<const MeshletDesc> Meshlets()const;
 
-		[[nodiscard]] std::span<const MeshletBound> MeshletBounds()const;
+		NODISCARD std::span<const MeshletBound> MeshletBounds()const;
 
-		[[nodiscard]] std::span<const Meshlet::MeshletRange> MeshletRanges()const;
+		NODISCARD std::span<const Meshlet::MeshletRange> MeshletRanges()const;
 
-		[[nodiscard]] std::span<const Uint32> VertexIndices()const;
+		NODISCARD std::span<const Uint32> VertexIndices()const;
 
-		[[nodiscard]] std::span<const Uint8> PrimitiveIndices()const;
+		NODISCARD std::span<const Uint8> PrimitiveIndices()const;
 
 	private:
 		static void CreateBoxShape(DynamicArray<PrimitiveVertex>& vertices, DynamicArray<Uint32>& triangles);

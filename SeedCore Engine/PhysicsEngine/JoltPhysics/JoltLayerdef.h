@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/Layer/LayerRegistry.h>
 #include <FoundationEngine/World/Layer/LayerCollisionMatrix.h>
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
@@ -67,25 +66,25 @@ namespace SeedCore
 	 */
 	namespace Layers
 	{
-		SC_CONST JPH::ObjectLayer STATIC    = 0;
-		SC_CONST JPH::ObjectLayer KINEMATIC = 1;
-		SC_CONST JPH::ObjectLayer DYNAMIC   = 2;
+		SC_CONSTEX JPH::ObjectLayer STATIC    = 0;
+		SC_CONSTEX JPH::ObjectLayer KINEMATIC = 1;
+		SC_CONSTEX JPH::ObjectLayer DYNAMIC   = 2;
 
 		/// [EN] Number of low bits a packed ObjectLayer reserves for the motion type; the remaining high bits hold the Actor's LayerRegistry slot index.
 		/// [JP] パックされた ObjectLayer が運動タイプ用に確保する下位ビット数。残りの上位ビットは Actor の LayerRegistry スロットインデックスを保持する。
-		SC_CONST JPH::uint MOTION_TYPE_BITS = 2;
+		SC_CONSTEX JPH::uint MOTION_TYPE_BITS = 2;
 
 		/// [EN] ObjectLayer bit set on trigger bodies. OR'd onto a Pack result; it lets kinematic bodies report overlaps with static and kinematic bodies through the trigger.
 		/// [JP] トリガーのボディに立てる ObjectLayer のビット。Pack の結果に OR して使い、トリガーを介してキネマティックのボディがスタティック・キネマティックのボディとの重なりを知らせられるようにする。
-		SC_CONST JPH::ObjectLayer SENSOR = static_cast<JPH::ObjectLayer>(1u << 14);
+		SC_CONSTEX JPH::ObjectLayer SENSOR = static_cast<JPH::ObjectLayer>(1u << 14);
 
 		/// [EN] Topmost ObjectLayer bit, set on bodies simulated on the 2D canvas (Rect/CircleCollider). OR'd onto a Pack result; bodies with and without it never collide.
 		/// [JP] ObjectLayer の最上位ビット。2D Canvas 上でシミュレートされるボディ（Rect/CircleCollider）に立てる。Pack の結果に OR して使い、このビットの有無が異なるボディ同士は衝突しない。
-		SC_CONST JPH::ObjectLayer PLANAR = static_cast<JPH::ObjectLayer>(1u << 15);
+		SC_CONSTEX JPH::ObjectLayer PLANAR = static_cast<JPH::ObjectLayer>(1u << 15);
 
 		/// [EN] Distinct packed ObjectLayer values below the SENSOR bit: one motion-type slot per LayerRegistry slot. A trigger or 2D body's layer is one of these with SENSOR and/or PLANAR added.
 		/// [JP] SENSOR ビットより下の、パック済み ObjectLayer の総数: LayerRegistry の各スロットにつき1つの運動タイプスロット。トリガーや 2D ボディのレイヤーは、このいずれかに SENSOR や PLANAR を加えたもの。
-		SC_CONST JPH::uint COUNT = static_cast<JPH::uint>(LayerRegistry::LayerCount) << MOTION_TYPE_BITS;
+		SC_CONSTEX JPH::uint COUNT = static_cast<JPH::uint>(LayerRegistry::LayerCount) << MOTION_TYPE_BITS;
 
 		/**
 		* [EN]
@@ -148,10 +147,10 @@ namespace SeedCore
 	*/
 	namespace BPLayers
 	{
-		SC_CONST JPH::BroadPhaseLayer STATIC{ 0 };
-		SC_CONST JPH::BroadPhaseLayer DYNAMIC{ 1 };
-		SC_CONST JPH::BroadPhaseLayer SENSOR{ 2 };
-		SC_CONST JPH::uint            COUNT{ 3 };
+		SC_CONSTEX JPH::BroadPhaseLayer STATIC{ 0 };
+		SC_CONSTEX JPH::BroadPhaseLayer DYNAMIC{ 1 };
+		SC_CONSTEX JPH::BroadPhaseLayer SENSOR{ 2 };
+		SC_CONSTEX JPH::uint            COUNT{ 3 };
 	}
 
 	/**

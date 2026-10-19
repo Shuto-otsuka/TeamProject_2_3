@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/Effect/Zephyr/ZephyParticler.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
@@ -44,9 +43,9 @@ namespace SeedCore
 	public:
 		void Swap();
 
-		[[nodiscard]] Uint32 DispatchIndex()const;
+		NODISCARD Uint32 DispatchIndex()const;
 
-		[[nodiscard]] Uint32 Capacity()const;
+		NODISCARD Uint32 Capacity()const;
 
 	private:
 		ResourcePtr<ReadWriteStructuredBuffer<ParticleSeed>> seeds_;

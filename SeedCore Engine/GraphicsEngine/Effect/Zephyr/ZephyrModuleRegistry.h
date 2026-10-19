@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/DynamicArray.h>
 
 namespace SeedCore
@@ -16,8 +15,8 @@ namespace SeedCore
 	class ZephyrModuleRegistry
 	{
 	public:
-		[[nodiscard]] static const DynamicArray<ZephyrModuleDescriptor>& GetModules();
+		NODISCARD static const DynamicArray<ZephyrModuleDescriptor>& GetModules();
 
-		[[nodiscard]] static const ZephyrModuleDescriptor* Find(const String& name);
+		NODISCARD static const ZephyrModuleDescriptor* Find(const String& name);
 	};
 }

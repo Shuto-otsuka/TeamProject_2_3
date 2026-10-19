@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/Renderer/ViewMode.h>
 #include <Editor/Editor/Panel/RaytracingPanel.h>
 #include <Editor/Editor/Panel/ScreenSpacePanel.h>

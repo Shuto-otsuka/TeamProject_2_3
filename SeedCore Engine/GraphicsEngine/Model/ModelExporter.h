@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/String.h>
 #include <GraphicsEngine/Model/ModelLoader.h>
 
@@ -39,7 +38,7 @@ namespace SeedCore
 		ModelExporter() = default;
 		~ModelExporter() = default;
 
-		[[nodiscard]] static ExportProfile Preset(ExportPreset preset);
+		NODISCARD static ExportProfile Preset(ExportPreset preset);
 
 		Bool Export(const Crister& crister, const ExportProfile& profile, String filePath);
 

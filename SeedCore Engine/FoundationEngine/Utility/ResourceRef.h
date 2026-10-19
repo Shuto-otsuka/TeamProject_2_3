@@ -29,7 +29,7 @@ namespace SeedCore
 	* ヒープ確保にまとめられる。
 	*/
 	template <typename T, typename... Args>
-	[[nodiscard]] ResourceRef<T> MakeRef(Args&&... args);
+	NODISCARD ResourceRef<T> MakeRef(Args&&... args);
 
 	/**
 	* [EN]
@@ -58,7 +58,7 @@ namespace SeedCore
 	* ことを想定している。
 	*/
 	template <typename T>
-	[[nodiscard]] ResourceRef<T> MakeObserve(const ResourceRef<T>& owner)noexcept;
+	NODISCARD ResourceRef<T> MakeObserve(const ResourceRef<T>& owner)noexcept;
 
 	/// [EN] Whether a ResourceRef keeps its pointee alive (Owning) or merely observes it without affecting its lifetime (Observing).
 	/// [JP] ResourceRef が対象の生存期間を握っている（Owning）か、生存期間には関与せず観測するだけ（Observing）かを表す。
@@ -790,7 +790,7 @@ namespace SeedCore
 	* 最初の所有側の ResourceRef を返す。
 	*/
 	template <typename T, typename... Args>
-	[[nodiscard]] ResourceRef<T> MakeRef(Args&&... args)
+	NODISCARD ResourceRef<T> MakeRef(Args&&... args)
 	{
 		/// [EN] The block starts with one strong and one observer count, which the returned ResourceRef takes over.
 		/// [JP] ブロックは strong と observer のカウントを1つずつ持った状態で始まり、返す ResourceRef がそれを引き継ぐ。
@@ -821,7 +821,7 @@ namespace SeedCore
 	* owner からは空の観測側ができる。
 	*/
 	template <typename T>
-	[[nodiscard]] ResourceRef<T> MakeObserve(const ResourceRef<T>& owner)noexcept
+	NODISCARD ResourceRef<T> MakeObserve(const ResourceRef<T>& owner)noexcept
 	{
 		/// [EN] The private constructor adds no count, so the observer count is added explicitly.
 		/// [JP] private なコンストラクタはカウントを増やさないので、observer のカウントは明示的に足す。
