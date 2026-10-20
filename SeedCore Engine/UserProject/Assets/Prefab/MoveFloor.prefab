@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "11a38d6f-336c-4fe7-bc02-fa3ca6306dc1",
+			"collaborationId": "37058977-34d1-43e9-82e4-5e4e0a3d2a56",
 			"components": [
 				{
 					"component": "Mesh",
@@ -174,233 +174,6 @@
 							}
 						}
 					]
-				},
-				{
-					"component": "FloorMoveSystem",
-					"fields": [
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 0.0,
-							"int": 0,
-							"is_array": false,
-							"name": "動き方",
-							"string": "",
-							"type": 9,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [
-								{
-									"bool": false,
-									"children": [],
-									"color": {
-										"a": 1.0,
-										"b": 0.0,
-										"g": 0.0,
-										"r": 0.0
-									},
-									"float": 0.0,
-									"int": 0,
-									"is_array": false,
-									"name": "[0]",
-									"string": "",
-									"type": 5,
-									"vector2": {
-										"x": 0.0,
-										"y": 0.0
-									},
-									"vector3": {
-										"x": 4.0,
-										"y": 0.0,
-										"z": 0.0
-									},
-									"vector4": {
-										"w": 0.0,
-										"x": 0.0,
-										"y": 0.0,
-										"z": 0.0
-									}
-								},
-								{
-									"bool": false,
-									"children": [],
-									"color": {
-										"a": 1.0,
-										"b": 0.0,
-										"g": 0.0,
-										"r": 0.0
-									},
-									"float": 0.0,
-									"int": 0,
-									"is_array": false,
-									"name": "[1]",
-									"string": "",
-									"type": 5,
-									"vector2": {
-										"x": 0.0,
-										"y": 0.0
-									},
-									"vector3": {
-										"x": -4.0,
-										"y": 0.0,
-										"z": 0.0
-									},
-									"vector4": {
-										"w": 0.0,
-										"x": 0.0,
-										"y": 0.0,
-										"z": 0.0
-									}
-								}
-							],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 0.0,
-							"int": 0,
-							"is_array": true,
-							"name": "床からのProbeの相対位置",
-							"string": "",
-							"type": 0,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 1.5,
-							"int": 0,
-							"is_array": false,
-							"name": "速度",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 0.5,
-							"int": 0,
-							"is_array": false,
-							"name": "端での待ち時間",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": true,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
-							},
-							"float": 0.0,
-							"int": 0,
-							"is_array": false,
-							"name": "デバッグアローを描画するか",
-							"string": "",
-							"type": 3,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						}
-					]
-				},
-				{
-					"component": "StopController",
-					"fields": []
 				},
 				{
 					"component": "Rigidbody",
@@ -902,6 +675,363 @@
 							}
 						}
 					]
+				},
+				{
+					"component": "FloorMoveSystem",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "動き方",
+							"string": "",
+							"type": 9,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 0.0,
+										"g": 0.0,
+										"r": 0.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 5,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 8.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 0.0,
+										"g": 0.0,
+										"r": 0.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[1]",
+									"string": "",
+									"type": 5,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": -8.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "床からのProbeの相対位置",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 8.0,
+							"int": 0,
+							"is_array": false,
+							"name": "速度",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "端での待ち時間",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": true,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "デバッグアローを描画するか",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "StopController",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "stopTimerOffset",
+							"string": "",
+							"type": 5,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "BoxCollider",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "サイズ",
+							"string": "",
+							"type": 5,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 1.0,
+								"y": 0.5,
+								"z": 1.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "中心オフセット",
+							"string": "",
+							"type": 5,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "トリガー",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
 				}
 			],
 			"layer": "Gimmick",
@@ -911,9 +1041,9 @@
 			"parentIndex": -1,
 			"persistentId": 86,
 			"position": {
-				"x": 0.4594244658946991,
-				"y": 0.0,
-				"z": 38.5703125
+				"x": -1.0,
+				"y": 5.171828269958496,
+				"z": 118.58628845214844
 			},
 			"rotation": {
 				"w": 1.0,
@@ -922,9 +1052,9 @@
 				"z": -0.0
 			},
 			"scale": {
-				"x": 2.0,
-				"y": 2.0,
-				"z": 2.0
+				"x": 3.0,
+				"y": 3.0,
+				"z": 3.0
 			},
 			"tags": [
 				"CanStop"
