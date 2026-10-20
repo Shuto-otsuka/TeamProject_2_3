@@ -69,6 +69,7 @@ private:
 	int cost = 0;
 
 	bool isGravityArea = false;
+	bool isNoScaffoldArea = false;
 	bool isDynamicWait = false;
 
 	SeedCore::Scale* scale;

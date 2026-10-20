@@ -37,6 +37,13 @@ void BulletController::OnTriggerEnter(SeedCore::Entity entity)
         return;
     }
 
+    if (hitActor.HasTag("NoScaffoldArea"))
+    {
+        //足場作れないエリアならフラグONにして終了
+        isNoScaffoldArea = true;
+        return;
+    }
+
     //プレイヤー、もしくはエリア(トリガー)なら終了
     if (hitActor.LayerName() == "Player" || hitActor.LayerName() == "Area")return;
 
@@ -70,12 +77,21 @@ void BulletController::OnTriggerEnter(SeedCore::Entity entity)
         {
         case State::NORMAL:
         {
-            //自分の方が長く生きてたら終了
-            //後で撃ったやつが先撃ってたやつに対して効果を発動するため
-            if (aliveTimer > hitBulletController->GetAliveTimer())return;
+            if (isNoScaffoldArea)
+            {
+                //足場作れないエリアならどちらも消す
+                Remove();
+                hitBulletController->Remove();
+            }
+            else
+            {
+                //自分の方が長く生きてたら終了
+                //後で撃ったやつが先撃ってたやつに対して効果を発動するため
+                if (aliveTimer > hitBulletController->GetAliveTimer())return;
 
-            hitBulletController->Stop();//停止
-            Remove();//自分は削除
+                hitBulletController->Stop();//停止
+                Remove();//自分は削除
+            }
             break;
         }
         case State::STOP:
@@ -145,6 +161,14 @@ void BulletController::OnTriggerExit(SeedCore::Entity entity)
     {
         //重力エリアならフラグOFF
         isGravityArea = false;
+        return;
+    }
+
+    if (hitActor.HasTag("NoScaffoldArea"))
+    {
+        //足場作れないエリアならフラグOFF
+        isNoScaffoldArea = false;
+        return;
     }
 }
 
@@ -206,7 +230,7 @@ void BulletController::Stop()
     //停止ステートにする
     state = State::STOP;
 
-    //重力エリアであればRigidbodyをDynamicにするフラグを立てる
+    //重力エリアであればRigidbodyをDynamicをする
     if (isGravityArea)
     {
         isDynamicWait = true;
@@ -249,26 +273,28 @@ void BulletController::Move(float elapsedTime)
     if (state != State::NORMAL || !position || !rotation || !rigidbody)
     {
         //常に回転0
-        if(rigidbody && rigidbody->bodyType_ == SeedCore::Rigidbody::BodyType::Kinematic)
+        if (rigidbody && rigidbody->bodyType_ == SeedCore::Rigidbody::BodyType::Kinematic)
+        {
             rigidbody->MoveTarget({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, elapsedTime);
 
-        if (isDynamicWait)
-        {
-            //一定時間でRigidbodyをDynamicにする
-            //一定時間待つのはkinematicの状態で回転が0になるまで待ちたいから
-            dynamicWaitTimer -= elapsedTime;
-            if (dynamicWaitTimer <= 0.0f)
+            if (isDynamicWait)
             {
-                isDynamicWait = false;
-                rigidbody->bodyType_ = SeedCore::Rigidbody::BodyType::Dynamic;
-                rigidbody->freezeRotationX_ = true;
-                rigidbody->freezeRotationY_ = true;
-                rigidbody->freezeRotationZ_ = true;
+                dynamicWaitTimer -= elapsedTime;
+                if (dynamicWaitTimer <= 0.0f)
+                {
+                    isDynamicWait = false;
+                    rigidbody->bodyType_ = SeedCore::Rigidbody::BodyType::Dynamic;
+                    rigidbody->freezeRotationX_ = true;
+                    rigidbody->freezeRotationY_ = true;
+                    rigidbody->freezeRotationZ_ = true;
+                }
             }
         }
 
         return;
     }
+
+    
 
     //moveDirectionの方向に移動
     SeedCore::Vector3 moveTarget = SeedCore::Transform::Vector(*position) + (moveDirection * speed * elapsedTime);

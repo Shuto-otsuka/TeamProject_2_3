@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "c03849cd-598e-46ea-b310-b4349051b0b9",
+			"collaborationId": "31741ba5-cc3f-4f5a-94f0-7173250e67ad",
 			"components": [
 				{
 					"component": "Mesh",
@@ -347,7 +347,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 100.0,
+							"float": 150.0,
 							"int": 0,
 							"is_array": false,
 							"name": "質量",
@@ -440,7 +440,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 10.0,
+							"float": 5.0,
 							"int": 0,
 							"is_array": false,
 							"name": "摩擦係数",

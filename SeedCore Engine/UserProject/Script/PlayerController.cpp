@@ -1,7 +1,7 @@
 #include "UserProject/Script/PlayerController.h"
 #include"UserProject/Script/BulletController.h"
 #include"UserProject/Script/StopController.h"
-#include"UserProject/Script/BulletNaviStartController.h"
+#include"UserProject/Script/BulletStartController.h"
 #include"UserProject/Script/CheckPointAreaController.h"
 
 #include <SeedCore/ScInput.h>
@@ -31,8 +31,8 @@ void PlayerController::OnStart()
 
     if (bulletNaviStart)
     {
-        SeedCore::Entity bulletNaviStartEntity = bulletNaviStart.GetEntity();
-        bulletNaviStartController = GetWorld().GetComponent<BulletNaviStartController>(bulletNaviStartEntity);
+        SeedCore::Entity bulletStartEntity = bulletNaviStart.GetEntity();
+        bulletStartController = GetWorld().GetComponent<BulletStartController>(bulletStartEntity);
     }
 
     defaultGravity = myCharacterController->gravityScale_;
@@ -508,10 +508,11 @@ void PlayerController::UpdateInputShot(float elapsedTime)
         shotReady = false;
     }
 
+    /*
     //弾のナビがなければ以下の処理を行わない
-    if (!bulletNaviStartController)return;
+    if (!bulletStartController)return;
 
-    if (bulletNaviStartController->IsTouch())
+    if (bulletStartController->IsTouch())
     {
         //弾のナビの始点が何かに当たれば発射キャンセル
         //何かにめり込んだ状態で発射されるのを防ぐため
@@ -522,6 +523,7 @@ void PlayerController::UpdateInputShot(float elapsedTime)
 
         shotReady = false;
     }
+    */
 }
 
 void PlayerController::Shot()
