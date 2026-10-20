@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/Model/Cluster/Meshlet.h>
 
 /**
@@ -1149,7 +1148,7 @@ namespace SeedCore
 		* 位置はシェーダデコードと同じ計算で逆量子化する。抽出対象が
 		* 無ければ false を返す。
 		*/
-		[[nodiscard]] Bool BakeCollision(MeshCollisionDetail detail, DynamicArray<Vector3>& outPositions, DynamicArray<Uint32>& outIndices)const;
+		NODISCARD Bool BakeCollision(MeshCollisionDetail detail, DynamicArray<Vector3>& outPositions, DynamicArray<Uint32>& outIndices)const;
 
 		/**
 		* [EN]
@@ -1216,7 +1215,7 @@ namespace SeedCore
 		* 不要）。BakeCollision と同じく CPU 常駐配列のみを読む。抽出対象が
 		* 無ければ false を返す。
 		*/
-		[[nodiscard]] Bool SoftbodyFinestVertices(DynamicArray<Vertex>& outVertices, DynamicArray<Uint32>& outIndices)const;
+		NODISCARD Bool SoftbodyFinestVertices(DynamicArray<Vertex>& outVertices, DynamicArray<Uint32>& outIndices)const;
 
 		/**
 		* [EN]
@@ -1255,7 +1254,7 @@ namespace SeedCore
 		* なく、ロード済みの Crister に対してその都度呼び出す。抽出対象が
 		* 無ければ false を返す。
 		*/
-		[[nodiscard]] Bool SoftbodyCoarsestVertices(DynamicArray<Vertex>& outVertices, DynamicArray<Uint32>& outIndices)const;
+		NODISCARD Bool SoftbodyCoarsestVertices(DynamicArray<Vertex>& outVertices, DynamicArray<Uint32>& outIndices)const;
 
 		/**
 		* [EN]
@@ -1280,7 +1279,7 @@ namespace SeedCore
 		* できるようにする — BakeMesh() と同様、Model.hlsli の
 		* DecodeModelVertex と同期を保つこと。
 		*/
-		[[nodiscard]] static CompressedVertex EncodeVertex(const Vertex& vertex, const Vector3& positionMin, const Vector3& positionExtent, const Vector2& texcoordMin, const Vector2& texcoordExtent);
+		NODISCARD static CompressedVertex EncodeVertex(const Vertex& vertex, const Vector3& positionMin, const Vector3& positionExtent, const Vector2& texcoordMin, const Vector2& texcoordExtent);
 
 		/**
 		* [EN]
@@ -1299,7 +1298,7 @@ namespace SeedCore
 		* static ではない — どの呼び出し元もこの Crister 自身の
 		* compressedVertices_ をデコードするため。
 		*/
-		[[nodiscard]] Vertex DecodeVertex(const CompressedVertex& compressed)const;
+		NODISCARD Vertex DecodeVertex(const CompressedVertex& compressed)const;
 
 		/**
 		* [EN]
@@ -1316,7 +1315,7 @@ namespace SeedCore
 		* と同じ理由で static — SoftbodyMesh が EncodeVertex 経由で、この
 		* Crister とは別の自身の境界を使って間接的に呼ぶため。
 		*/
-		[[nodiscard]] static Uint32 EncodeOctahedralNormal(Vector3 direction);
+		NODISCARD static Uint32 EncodeOctahedralNormal(Vector3 direction);
 
 		/**
 		* [EN]
@@ -1329,7 +1328,7 @@ namespace SeedCore
 		* EncodeOctahedralNormal の逆（Shader/Normal.hlsli::OctNormalDecode の
 		* CPU 側対応）。DecodeVertex と同じく static ではない。
 		*/
-		[[nodiscard]] Vector3 DecodeOctahedralNormal(Uint32 packed)const;
+		NODISCARD Vector3 DecodeOctahedralNormal(Uint32 packed)const;
 
 		/**
 		* [EN]
@@ -1447,7 +1446,7 @@ namespace SeedCore
 		* ソース glTF の scenes から解析された、全 Stage（ルートノード一覧 +
 		* 名前）を返す。
 		*/
-		[[nodiscard]] const DynamicArray<Stage>& Stages()const;
+		NODISCARD const DynamicArray<Stage>& Stages()const;
 
 		/**
 		* [EN]
@@ -1460,7 +1459,7 @@ namespace SeedCore
 		* 平坦化されたノード階層の全 Node を返す。各ノードのローカル
 		* S/R/T と、累積済みの globalTransform_ を含む。
 		*/
-		[[nodiscard]] const DynamicArray<Node>& Nodes()const;
+		NODISCARD const DynamicArray<Node>& Nodes()const;
 
 		/**
 		* [EN]
@@ -1473,7 +1472,7 @@ namespace SeedCore
 		* ソース glTF から解決された、全 KHR_lights_punctual
 		* ポイント/スポットライトをワールド空間で返す。
 		*/
-		[[nodiscard]] const DynamicArray<PunctualLight>& Lights()const;
+		NODISCARD const DynamicArray<PunctualLight>& Lights()const;
 
 		/**
 		* [EN]
@@ -1486,7 +1485,7 @@ namespace SeedCore
 		* この Crister が分割されている全 SubMesh（マテリアル + クラスタ
 		* 範囲 + 任意のスキンインデックス）を返す。
 		*/
-		[[nodiscard]] const DynamicArray<SubMesh>& SubMeshes()const;
+		NODISCARD const DynamicArray<SubMesh>& SubMeshes()const;
 
 		/**
 		* [EN]
@@ -1499,7 +1498,7 @@ namespace SeedCore
 		* ソース glTF から解析された、全 Surface（PBR ファクタ +
 		* KHR_materials_* 拡張 + テクスチャインデックス）を返す。
 		*/
-		[[nodiscard]] const DynamicArray<Surface>& Surfaces()const;
+		NODISCARD const DynamicArray<Surface>& Surfaces()const;
 
 		/**
 		* [EN]
@@ -1512,7 +1511,7 @@ namespace SeedCore
 		* ソース glTF から解析された、全 Skin（ジョイント一覧 + 逆バインド
 		* 行列）を返す。
 		*/
-		[[nodiscard]] const DynamicArray<Skin>& Skins()const;
+		NODISCARD const DynamicArray<Skin>& Skins()const;
 
 		/**
 		* [EN]
@@ -1525,7 +1524,7 @@ namespace SeedCore
 		* 全 SubMesh を通した、全 Cluster（SubMesh 内の1 LOD レベルぶんの
 		* meshlet 範囲）を返す。
 		*/
-		[[nodiscard]] const DynamicArray<Cluster>& Clusters()const;
+		NODISCARD const DynamicArray<Cluster>& Clusters()const;
 
 		/**
 		* [EN]
@@ -1538,7 +1537,7 @@ namespace SeedCore
 		* 明示的にステージが選択されていない時にデフォルトで描画される、
 		* Stages() 内のインデックスを返す。
 		*/
-		[[nodiscard]] Int DefaultStage()const;
+		NODISCARD Int DefaultStage()const;
 
 		/**
 		* [EN]
@@ -1553,7 +1552,7 @@ namespace SeedCore
 		* glTF のノード名は一意性が保証されないため、nodes_ の順で最初に
 		* 見つかったものを返す。
 		*/
-		[[nodiscard]] Int FindNodeIndex(const std::string& name)const;
+		NODISCARD Int FindNodeIndex(const std::string& name)const;
 
 		/**
 		* [EN]
@@ -1567,7 +1566,7 @@ namespace SeedCore
 		* CompressedVertex 位置の逆量子化 AABB の最小コーナー（構造体コメント
 		* 参照）。ModelStructuredBuffer 経由でシェーダに渡す。
 		*/
-		[[nodiscard]] Vector3 PositionMin()const;
+		NODISCARD Vector3 PositionMin()const;
 
 		/**
 		* [EN]
@@ -1580,11 +1579,11 @@ namespace SeedCore
 		* CompressedVertex 位置の逆量子化 AABB の大きさ（max - min）。
 		* ModelStructuredBuffer 経由でシェーダに渡す。
 		*/
-		[[nodiscard]] Vector3 PositionExtent()const;
+		NODISCARD Vector3 PositionExtent()const;
 
-		[[nodiscard]] Vector3 PlacedPositionMin()const;
+		NODISCARD Vector3 PlacedPositionMin()const;
 
-		[[nodiscard]] Vector3 PlacedPositionExtent()const;
+		NODISCARD Vector3 PlacedPositionExtent()const;
 
 		/**
 		* [EN]
@@ -1597,7 +1596,7 @@ namespace SeedCore
 		* CompressedVertex テクスチャ座標の逆量子化 AABB の最小コーナー。
 		* ModelStructuredBuffer 経由でシェーダに渡す。
 		*/
-		[[nodiscard]] Vector2 TexcoordMin()const;
+		NODISCARD Vector2 TexcoordMin()const;
 
 		/**
 		* [EN]
@@ -1610,7 +1609,7 @@ namespace SeedCore
 		* CompressedVertex テクスチャ座標の逆量子化 AABB の大きさ
 		* （max - min）。ModelStructuredBuffer 経由でシェーダに渡す。
 		*/
-		[[nodiscard]] Vector2 TexcoordExtent()const;
+		NODISCARD Vector2 TexcoordExtent()const;
 
 		/**
 		* [EN]
@@ -1627,7 +1626,7 @@ namespace SeedCore
 		* CompressedVertex からメッシュシェーダと同じ計算で CPU デコード
 		* するため、BLAS の位置はラスタライズ結果と一致する。
 		*/
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS PositionBufferAddress()const;
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS PositionBufferAddress()const;
 
 		/**
 		* [EN]
@@ -1640,7 +1639,7 @@ namespace SeedCore
 		* 同じ float3 位置バッファの bindless SRV。モーフとスキンのブレンド
 		* パスがベース位置として読む。
 		*/
-		[[nodiscard]] Uint PositionBufferIndex()const;
+		NODISCARD Uint PositionBufferIndex()const;
 
 		/**
 		* [EN]
@@ -1656,7 +1655,7 @@ namespace SeedCore
 		* 頂点バッファ(positionResource_/vertexResource_)の頂点数。
 		* モーフブレンド用の一時位置バッファを確保すべきサイズでもある。
 		*/
-		[[nodiscard]] Uint32 VertexCount()const;
+		NODISCARD Uint32 VertexCount()const;
 
 		/**
 		* [EN]
@@ -1675,7 +1674,7 @@ namespace SeedCore
 		* — BLAS のジオメトリはラスタライズされるジオメトリと完全に一致する
 		* （巻き順を再導出しない）。
 		*/
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS IndexBufferAddress()const;
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS IndexBufferAddress()const;
 
 		/**
 		* [EN]
@@ -1686,7 +1685,7 @@ namespace SeedCore
 		* [JP]
 		* IndexBufferAddress() が指すフラットインデックスバッファの三角形数。
 		*/
-		[[nodiscard]] Uint32 IndexCount()const;
+		NODISCARD Uint32 IndexCount()const;
 
 
 		/**
@@ -1702,7 +1701,7 @@ namespace SeedCore
 		* アップロード済み GPU テクスチャの bindless ヒープインデックスに
 		* 変換する。無ければ 0xFFFFFFFF。
 		*/
-		[[nodiscard]] Uint TextureBindlessIndex(Uint32 textureIndex)const;
+		NODISCARD Uint TextureBindlessIndex(Uint32 textureIndex)const;
 
 		/**
 		* [EN]
@@ -1721,7 +1720,7 @@ namespace SeedCore
 		* 反射/GI マテリアルテーブル(構築時に TextureBindlessIndex() を
 		* 焼き込んでいる)を再構築すべきか判断する。
 		*/
-		[[nodiscard]] Bool MaterialsDirty()const;
+		NODISCARD Bool MaterialsDirty()const;
 
 		/**
 		* [EN]
@@ -1749,7 +1748,7 @@ namespace SeedCore
 		* 最粗クラスタから構築 — 反射は低ポリプロキシに対してトレースする
 		* ため、フル詳細ジオメトリを常駐させる必要がない）。
 		*/
-		[[nodiscard]] Uint VertexBufferIndex()const;
+		NODISCARD Uint VertexBufferIndex()const;
 
 		/**
 		* [EN]
@@ -1764,7 +1763,7 @@ namespace SeedCore
 		* レイトレの closesthit がヒット三角形の頂点を引き直すのに使う
 		* (PrimitiveIndex() * 3 + 0/1/2 → 頂点インデックス)。
 		*/
-		[[nodiscard]] Uint IndexBufferIndex()const;
+		NODISCARD Uint IndexBufferIndex()const;
 
 		/**
 		* [EN]
@@ -1777,7 +1776,7 @@ namespace SeedCore
 		* CompressedSkinVertex バッファの bindless SRV。スキンが無い
 		* Crister では 0xFFFFFFFF。
 		*/
-		[[nodiscard]] Uint SkinVertexBufferIndex()const;
+		NODISCARD Uint SkinVertexBufferIndex()const;
 
 		/**
 		* [EN]
@@ -1794,7 +1793,7 @@ namespace SeedCore
 		* 参照)の bindless SRV。どの SubMesh も morphs_ を持たなければ
 		* 0xFFFFFFFF。
 		*/
-		[[nodiscard]] Uint MorphDeltaBufferIndex()const;
+		NODISCARD Uint MorphDeltaBufferIndex()const;
 
 		/**
 		* [EN]
@@ -1811,7 +1810,7 @@ namespace SeedCore
 		* コメント参照)の bindless SRV。どの SubMesh も morphs_ を持たなければ
 		* 0xFFFFFFFF。
 		*/
-		[[nodiscard]] Uint VertexMorphSourceBufferIndex()const;
+		NODISCARD Uint VertexMorphSourceBufferIndex()const;
 
 		/**
 		* [EN]
@@ -1827,7 +1826,7 @@ namespace SeedCore
 		* skins_ が空でなく、RT プロキシ構築時にスキンド SubMesh を
 		* 1つ以上見つけた場合に true。
 		*/
-		[[nodiscard]] Bool ProxySkinned()const;
+		NODISCARD Bool ProxySkinned()const;
 
 		/**
 		* [EN]
@@ -1841,7 +1840,7 @@ namespace SeedCore
 		* RT プロキシのスキン頂点プール (raytracingSkinVertexResource_) の
 		* bindless SRV。ProxySkinned が false なら SC_INVALID。
 		*/
-		[[nodiscard]] Uint ProxySkinVertexBufferIndex()const;
+		NODISCARD Uint ProxySkinVertexBufferIndex()const;
 
 		/**
 		* [EN]
@@ -1855,7 +1854,7 @@ namespace SeedCore
 		* RT プロキシのモーフデルタプール (raytracingMorphDeltaResource_) の
 		* bindless SRV。どの SubMesh も morphs_ を持たなければ SC_INVALID。
 		*/
-		[[nodiscard]] Uint ProxyMorphDeltaBufferIndex()const;
+		NODISCARD Uint ProxyMorphDeltaBufferIndex()const;
 
 		/**
 		* [EN]
@@ -1878,7 +1877,7 @@ namespace SeedCore
 		* 1つを返す。レンダラーは各 SubMesh を 配置 * アクターワールド で
 		* 描く。
 		*/
-		[[nodiscard]] const DynamicArray<Matrix>& SubMeshPlacement(Size subMeshIndex)const;
+		NODISCARD const DynamicArray<Matrix>& SubMeshPlacement(Size subMeshIndex)const;
 
 		/**
 		* [EN]
@@ -2069,7 +2068,7 @@ namespace SeedCore
 		* [JP]
 		* クラスタのページが現在 GPU に常駐しているか。
 		*/
-		[[nodiscard]] Bool ClusterResident(Uint32 clusterIndex)const;
+		NODISCARD Bool ClusterResident(Uint32 clusterIndex)const;
 
 		/**
 		* [EN]
@@ -2080,7 +2079,7 @@ namespace SeedCore
 		* [JP]
 		* テクスチャがミップ 0（最も細かい）まで完全にストリームインしているか。
 		*/
-		[[nodiscard]] Bool TextureResident(Uint32 textureIndex)const;
+		NODISCARD Bool TextureResident(Uint32 textureIndex)const;
 
 		/**
 		* [EN]
@@ -2127,7 +2126,7 @@ namespace SeedCore
 		* クラスタページの頂点バッファの bindless SRV — 頂点を自前で持てば
 		* 自身のページ、そうでなければ共有 LOD 0 プール。
 		*/
-		[[nodiscard]] Uint ClusterVertexBufferIndex(Uint32 clusterIndex)const;
+		NODISCARD Uint ClusterVertexBufferIndex(Uint32 clusterIndex)const;
 
 		/**
 		* [EN]
@@ -2138,7 +2137,7 @@ namespace SeedCore
 		* [JP]
 		* クラスタページの meshlet バッファの bindless SRV。
 		*/
-		[[nodiscard]] Uint ClusterMeshletBufferIndex(Uint32 clusterIndex)const;
+		NODISCARD Uint ClusterMeshletBufferIndex(Uint32 clusterIndex)const;
 
 		/**
 		* [EN]
@@ -2149,7 +2148,7 @@ namespace SeedCore
 		* [JP]
 		* クラスタページの meshlet バウンドバッファの bindless SRV。
 		*/
-		[[nodiscard]] Uint ClusterMeshletBoundBufferIndex(Uint32 clusterIndex)const;
+		NODISCARD Uint ClusterMeshletBoundBufferIndex(Uint32 clusterIndex)const;
 
 		/**
 		* [EN]
@@ -2160,7 +2159,7 @@ namespace SeedCore
 		* [JP]
 		* クラスタページの頂点インデックスバッファの bindless SRV。
 		*/
-		[[nodiscard]] Uint ClusterVertexIndicesBufferIndex(Uint32 clusterIndex)const;
+		NODISCARD Uint ClusterVertexIndicesBufferIndex(Uint32 clusterIndex)const;
 
 		/**
 		* [EN]
@@ -2171,7 +2170,7 @@ namespace SeedCore
 		* [JP]
 		* クラスタページのプリミティブインデックスバッファの bindless SRV。
 		*/
-		[[nodiscard]] Uint ClusterPrimitiveIndicesBufferIndex(Uint32 clusterIndex)const;
+		NODISCARD Uint ClusterPrimitiveIndicesBufferIndex(Uint32 clusterIndex)const;
 
 		/**
 		* [EN]
@@ -2200,7 +2199,7 @@ namespace SeedCore
 		* モーフフィールドをゼロのまま
 		* (ModelStructuredBuffer::morphTargetCount_ == 0)にすること。
 		*/
-		[[nodiscard]] Bool StandaloneVertices(Uint32 clusterIndex)const;
+		NODISCARD Bool StandaloneVertices(Uint32 clusterIndex)const;
 
 		/**
 		* [EN]
@@ -2213,7 +2212,7 @@ namespace SeedCore
 		* 現在 GPU に常駐している最も細かいミップ段。textureIndex が範囲外
 		* なら 0。
 		*/
-		[[nodiscard]] Uint32 TextureFinestMip(Uint32 textureIndex)const;
+		NODISCARD Uint32 TextureFinestMip(Uint32 textureIndex)const;
 
 		/**
 		* [EN]
@@ -2232,7 +2231,7 @@ namespace SeedCore
 		* pixelsPerUnit)を比べる。texcoordDensity が 0 のときはテクスチャが
 		* モデル全体に 1 回貼られている前提にフォールバックする。
 		*/
-		[[nodiscard]] Uint32 TextureDesiredMip(Uint32 textureIndex, Float texcoordDensity, Float worldScale, Float pixelsPerUnit)const;
+		NODISCARD Uint32 TextureDesiredMip(Uint32 textureIndex, Float texcoordDensity, Float worldScale, Float pixelsPerUnit)const;
 
 	private:
 		/**
@@ -2328,7 +2327,7 @@ namespace SeedCore
 		* （position で重複排除する、position だけのバッファを作る）ため —
 		* そうしないと使わない normal/tangent/texcoord のデコードまで払うことになる。
 		*/
-		[[nodiscard]] Vector3 DecodePosition(const CompressedVertex& compressed)const;
+		NODISCARD Vector3 DecodePosition(const CompressedVertex& compressed)const;
 
 		/**
 		* [EN]
@@ -2341,7 +2340,7 @@ namespace SeedCore
 		* CompressedVertex の texcoord フィールドだけを、この Crister 自身の
 		* texcoordMin_/texcoordExtent_ に対して逆量子化する。
 		*/
-		[[nodiscard]] Vector2 DecodeTexcoord(const CompressedVertex& compressed)const;
+		NODISCARD Vector2 DecodeTexcoord(const CompressedVertex& compressed)const;
 
 		/**
 		* [EN]
@@ -2354,7 +2353,7 @@ namespace SeedCore
 		* CompressedVertex の tangent フィールド（xyz 方向 + .w の利き手符号）
 		* だけを逆量子化する。
 		*/
-		[[nodiscard]] Vector4 DecodeTangent(const CompressedVertex& compressed)const;
+		NODISCARD Vector4 DecodeTangent(const CompressedVertex& compressed)const;
 
 		/**
 		* [EN]
@@ -2427,7 +2426,7 @@ namespace SeedCore
 		* クランプする。EncodeVertex（position/texcoord）と
 		* EncodeOctahedralNormal が共有する。
 		*/
-		[[nodiscard]] static Uint32 QuantizeUnorm16(Float value01);
+		NODISCARD static Uint32 QuantizeUnorm16(Float value01);
 
 		/**
 		* [EN]
@@ -2440,7 +2439,7 @@ namespace SeedCore
 		* [0,1] の float を 8bit UNORM へ量子化する。範囲外の入力は先に
 		* クランプする。BakeMesh がスキンウェイトに使う。
 		*/
-		[[nodiscard]] static Uint32 QuantizeUnorm8(Float value01);
+		NODISCARD static Uint32 QuantizeUnorm8(Float value01);
 
 		/**
 		* [EN]
@@ -2702,6 +2701,6 @@ namespace SeedCore
 		static inline Uint64 geometryBudgetBytes_ = 512ull * 1024 * 1024;
 		static inline Uint64 textureBudgetBytes_ = 256ull * 1024 * 1024;
 
-		SC_CONST Uint64 evictAgeFrames_ = 8;
+		SC_CONSTEX Uint64 evictAgeFrames_ = 8;
 	};
 }

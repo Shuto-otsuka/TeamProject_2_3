@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
@@ -112,7 +111,7 @@ namespace SeedCore
 		*/
 		void Dispatch(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, GeometryBuffer& geometryBuffer, Uint32 sourceWidth, Uint32 sourceHeight, const RootAddresses& addresses);
 
-		[[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilViewHandle()const;
+		NODISCARD D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilViewHandle()const;
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D12Resource> depthResource_;

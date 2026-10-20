@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -117,6 +116,6 @@ namespace SeedCore
 		/// [JP] 三角形のインデックス順を入れ替えるべきか。Autoは常にfalseに解決する。
 		Bool flipWinding_ = false;
 
-		[[nodiscard]] static ResolvedAxisConvention Resolve(const AxisConvention& convention);
+		NODISCARD static ResolvedAxisConvention Resolve(const AxisConvention& convention);
 	};
 }

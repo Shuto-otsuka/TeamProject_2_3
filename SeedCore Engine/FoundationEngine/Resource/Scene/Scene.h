@@ -194,7 +194,7 @@ namespace SeedCore
 		* シーンは数えない。まだシーンが読み込まれていないか、SceneSystem が
 		* 束縛されていなければ空。
 		*/
-		[[nodiscard]] static const String& CurrentName();
+		NODISCARD static const String& CurrentName();
 
 	private:
 		/// [EN] SceneSystem binds itself as system_ when constructed and on every Update, and unbinds when destroyed.

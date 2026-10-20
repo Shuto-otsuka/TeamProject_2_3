@@ -25,7 +25,7 @@ public:
 	void OnEditorTick(float elapsedTime);
 
 private:
-	SC_CONST float directionTime_ = 0.4f;
+	SC_CONSTEX float directionTime_ = 0.4f;
 
 	bool isGoal_ = false;
 

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 #include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
 #include <GraphicsEngine/Texture/TextureShader.h>
@@ -81,9 +80,9 @@ namespace SeedCore
 
 		void Upload();
 
-		[[nodiscard]] Size GetSpriteBatchCount()const;
+		NODISCARD Size GetSpriteBatchCount()const;
 
-		[[nodiscard]] Int GetSpriteBatchOrder(Size index)const;
+		NODISCARD Int GetSpriteBatchOrder(Size index)const;
 
 		void DrawSpriteBatch(ID3D12GraphicsCommandList6* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, Size index);
 

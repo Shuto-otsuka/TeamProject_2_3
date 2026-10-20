@@ -88,7 +88,7 @@ namespace SeedCore
 			SC_HR_CHECK(hr, "ノイズテクスチャの生成に失敗しました");
 			/// [EN] In debug builds, name it so it can be identified in PIX and crash dumps.
 			/// [JP] デバッグビルドでは、PIX やクラッシュダンプで見分けられるよう名前を付ける。
-#ifdef _DEBUG
+#if SC_DEBUG
 			resource->SetName(L"VolumetricCloudScapes_Noise");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(resource.Get());
 #endif
@@ -335,7 +335,7 @@ namespace SeedCore
 		SC_HR_CHECK(hr, "クラウドリソースの生成に失敗しました");
 		/// [EN] In debug builds, name it so it can be identified in PIX and crash dumps.
 		/// [JP] デバッグビルドでは、PIX やクラッシュダンプで見分けられるよう名前を付ける。
-#ifdef _DEBUG
+#if SC_DEBUG
 		cloudResource_->SetName(L"VolumetricCloudScapes_Cloud");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(cloudResource_.Get());
 #endif

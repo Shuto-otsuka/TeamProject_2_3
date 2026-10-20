@@ -311,7 +311,7 @@ namespace SeedCore
 		SC_HR_CHECK(hr, "スターリソースの生成に失敗しました");
 		/// [EN] In debug builds, name it so it can be identified in PIX and crash dumps.
 		/// [JP] デバッグビルドでは、PIX やクラッシュダンプで見分けられるよう名前を付ける。
-#ifdef _DEBUG
+#if SC_DEBUG
 		starResource_->SetName(L"VolumetricStar");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(starResource_.Get());
 #endif

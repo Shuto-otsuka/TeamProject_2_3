@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 #include <GraphicsEngine/DLSS/DlssManager.h>
 #include <GraphicsEngine/DLSS/DlssNormalRoughnessShader.h>
@@ -104,13 +103,13 @@ namespace SeedCore
 		/// [JP] このビューの3840x2160デノイズ+アップスケール済みリニアHDR出力 —
 		///      DLSS-RR有効時に Renderer が PostProcessRenderer::Dispatch の
 		///      sourceColorResource として渡す対象。
-		[[nodiscard]] ID3D12Resource* OutputResource(RaytracingView view)const;
+		NODISCARD ID3D12Resource* OutputResource(RaytracingView view)const;
 
 		/// [EN] Bindless SRV index of the same resource, for
 		///      PostProcessRenderer::PrepareView's sourceColorIndex.
 		/// [JP] 同リソースの bindless SRV インデックス。
 		///      PostProcessRenderer::PrepareView の sourceColorIndex に渡す。
-		[[nodiscard]] Uint32 OutputShaderResourceViewIndex(RaytracingView view)const;
+		NODISCARD Uint32 OutputShaderResourceViewIndex(RaytracingView view)const;
 
 	private:
 		struct View
@@ -143,7 +142,7 @@ namespace SeedCore
 		View editorView_;
 		View gameView_;
 
-		[[nodiscard]] View& ViewFor(RaytracingView view);
+		NODISCARD View& ViewFor(RaytracingView view);
 
 		void CreateViewResources(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height, Uint32 outputWidth, Uint32 outputHeight);
 

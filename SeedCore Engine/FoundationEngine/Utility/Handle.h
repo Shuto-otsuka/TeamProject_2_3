@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -39,7 +38,7 @@ namespace SeedCore
 		* [JP]
 		* null（存在しない）ハンドルを返す。
 		*/
-		SC_CONST Handle null()noexcept
+		SC_CONSTEX Handle null()noexcept
 		{
 			/// [EN] The member defaults already describe the null handle.
 			/// [JP] メンバーの既定値が、そのまま null ハンドルを表している。

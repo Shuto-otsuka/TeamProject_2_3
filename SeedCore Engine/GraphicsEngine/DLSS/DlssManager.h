@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
 #include <GraphicsEngine/Quality/Upscale.h>
 #include <GraphicsEngine/System/SceneConstantSystem.h>
@@ -109,14 +108,11 @@ namespace SeedCore
 
 		Bool rayReconstructionEnabled_ = false;
 
-#if !SC_RENDER_DOC_USAGE
 		sl::ResourceTag tags_[7]{};
 		sl::Constants constants_{};
 		sl::FrameToken* currentToken_{ nullptr };
-#endif
 	};
 
-#if !SC_RENDER_DOC_USAGE
 	inline void ScDlssErrorCallback(sl::LogType type, const Char* message)
 	{
 		if (type != sl::LogType::eError)
@@ -128,5 +124,4 @@ namespace SeedCore
 		wsprintfA(buffer, "[DLSS Error]: %s\n", message);
 		OutputDebugStringA(buffer);
 	}
-#endif
 }

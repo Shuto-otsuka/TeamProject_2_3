@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 #include <GraphicsEngine/Raytracing/VolumetricStar/VolumetricStarShader.h>
@@ -49,7 +48,7 @@ namespace SeedCore
 
 	/// [EN] Number of shooting-star slots; at most this many streaks are in the sky at once.
 	/// [JP] 流れ星のスロット数。同時に空に出る筋はこの数まで。
-	SC_CONST Uint32 volumetricStarMaxShootingStars_ = 4;
+	SC_CONSTEX Uint32 volumetricStarMaxShootingStars_ = 4;
 
 	/**
 	* [EN]

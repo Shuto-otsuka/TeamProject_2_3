@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/SeedScript.h>
 
 namespace SeedCore
@@ -41,13 +40,13 @@ namespace SeedCore
 		SkeletonRig(SkeletonRig&&)noexcept = default;
 		SkeletonRig& operator=(SkeletonRig&&)noexcept = default;
 
-		[[nodiscard]] Uint32 SourceModelID()const;
+		NODISCARD Uint32 SourceModelID()const;
 
-		[[nodiscard]] const std::string& RootBoneName()const;
+		NODISCARD const std::string& RootBoneName()const;
 
-		[[nodiscard]] const DynamicArray<SkeletonSocket>& Sockets()const;
+		NODISCARD const DynamicArray<SkeletonSocket>& Sockets()const;
 
-		[[nodiscard]] const SkeletonSocket* FindSocket(const std::string& name)const;
+		NODISCARD const SkeletonSocket* FindSocket(const std::string& name)const;
 
 		template<class Archive>
 		void Serialize(Archive& archive)
@@ -68,19 +67,19 @@ namespace SeedCore
 		void OnInspectorGUI();
 
 	public:
-		[[nodiscard]] const DynamicArray<String>& BoneNames()const;
+		NODISCARD const DynamicArray<String>& BoneNames()const;
 
-		[[nodiscard]] const DynamicArray<Matrix>& GlobalTransforms()const;
+		NODISCARD const DynamicArray<Matrix>& GlobalTransforms()const;
 
-		[[nodiscard]] Bool Valid()const;
+		NODISCARD Bool Valid()const;
 
-		[[nodiscard]] Bool Animated()const;
+		NODISCARD Bool Animated()const;
 
-		[[nodiscard]] Bool HasBone(const String& boneName)const;
+		NODISCARD Bool HasBone(const String& boneName)const;
 
-		[[nodiscard]] Matrix BoneLocalMatrix(const String& boneName)const;
+		NODISCARD Matrix BoneLocalMatrix(const String& boneName)const;
 
-		[[nodiscard]] Matrix BoneWorldMatrix(const String& boneName)const;
+		NODISCARD Matrix BoneWorldMatrix(const String& boneName)const;
 
 	private:
 		friend class AnimationSystem;

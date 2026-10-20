@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Log/Assert.h>
 
 namespace SeedCore
@@ -94,21 +93,21 @@ namespace SeedCore
 		Meshlet(std::span<const Uint32> triangles, std::span<const TriangleRange> triangleRanges);
 
 	public:
-		[[nodiscard]] std::span<const MeshletDesc> Meshlets()const;
+		NODISCARD std::span<const MeshletDesc> Meshlets()const;
 
-		[[nodiscard]] std::span<const MeshletRange> MeshletRanges()const;
+		NODISCARD std::span<const MeshletRange> MeshletRanges()const;
 
-		[[nodiscard]] std::span<const Uint32> VertexIndices()const;
+		NODISCARD std::span<const Uint32> VertexIndices()const;
 
-		[[nodiscard]] std::span<const Uint8> PrimitiveIndices()const;
+		NODISCARD std::span<const Uint8> PrimitiveIndices()const;
 
 	private:
 		void Pack(std::span<const Uint32> triangles, std::span<const TriangleRange> triangleRanges);
 
 	public:
-		SC_CONST Uint32 maxVerticesPerMeshlet_ = 64;
+		SC_CONSTEX Uint32 maxVerticesPerMeshlet_ = 64;
 
-		SC_CONST Uint32 maxTrianglesPerMeshlet_ = 124;
+		SC_CONSTEX Uint32 maxTrianglesPerMeshlet_ = 124;
 
 	private:
 		DynamicArray<MeshletDesc> meshlets_;

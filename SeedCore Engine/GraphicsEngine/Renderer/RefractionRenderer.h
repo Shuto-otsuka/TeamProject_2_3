@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 #include <GraphicsEngine/Raytracing/Refraction/RefractionShader.h>
@@ -241,7 +240,7 @@ namespace SeedCore
 
 		/// [EN] Size of one shader-table record: the 32-byte shader identifier rounded up to the 64-byte record alignment.
 		/// [JP] シェーダーテーブルのレコード 1 つのサイズ。32 バイトのシェーダー識別子を 64 バイトのレコードアライメントへ切り上げたもの。
-		SC_CONST Uint32 shaderTableRecordSize_ = 64;
+		SC_CONSTEX Uint32 shaderTableRecordSize_ = 64;
 
 		/// [EN] Non-shader-visible heap holding the CPU-side write view that ClearUnorderedAccessViewFloat requires alongside the shader-visible one.
 		/// [JP] ClearUnorderedAccessViewFloat がシェーダー可視のビューと併せて要求する、CPU 側の書き込み用ビューを置く非シェーダー可視ヒープ。

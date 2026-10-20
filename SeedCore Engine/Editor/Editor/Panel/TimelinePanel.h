@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -19,7 +18,7 @@ namespace SeedCore
 
 		void DrawDetails();
 
-		[[nodiscard]] Bool Focused()const { return isFocused_; }
+		NODISCARD Bool Focused()const { return isFocused_; }
 
 	private:
 		EditorContext& context_;

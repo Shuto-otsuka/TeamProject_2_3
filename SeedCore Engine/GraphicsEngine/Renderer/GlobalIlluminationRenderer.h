@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 #include <GraphicsEngine/Raytracing/GlobalIllumination/GlobalIlluminationDenoiseShader.h>
@@ -250,19 +249,19 @@ namespace SeedCore
 	private:
 		/// [EN] History slots per view: one written this frame, one holding the previous frame.
 		/// [JP] ビューごとの履歴のスロットの数。今フレームに書き込む 1 つと、前フレームを持つ 1 つ。
-		SC_CONST Uint32 accumulationSlotCount_ = 2;
+		SC_CONSTEX Uint32 accumulationSlotCount_ = 2;
 
 		/// [EN] Number of views that keep their own history (editor and game).
 		/// [JP] 独自の履歴を持つビューの数（エディターとゲーム）。
-		SC_CONST Uint32 viewCount_ = 2;
+		SC_CONSTEX Uint32 viewCount_ = 2;
 
 		/// [EN] Size in bytes of one reservoir element; must match GlobalIlluminationReservoir in GlobalIllumination.hlsli.
 		/// [JP] reservoir の要素 1 つのバイト数。GlobalIllumination.hlsli の GlobalIlluminationReservoir と一致させる。
-		SC_CONST Uint32 reservoirElementSizeInBytes_ = 64;
+		SC_CONSTEX Uint32 reservoirElementSizeInBytes_ = 64;
 
 		/// [EN] Size of one shader-table record: the 32-byte shader identifier rounded up to the 64-byte table alignment.
 		/// [JP] シェーダーテーブルのレコード 1 つのサイズ。32 バイトのシェーダー識別子を 64 バイトのテーブルアライメントへ切り上げたもの。
-		SC_CONST Uint32 shaderTableRecordSize_ = 64;
+		SC_CONSTEX Uint32 shaderTableRecordSize_ = 64;
 
 		/// [EN] Raytracing pipeline of GlobalIlluminationRT.hlsl.
 		/// [JP] GlobalIlluminationRT.hlsl のレイトレーシングパイプライン。

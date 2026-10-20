@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Plugin/PluginModule.h>
 
 namespace SeedCore
@@ -119,7 +118,7 @@ namespace SeedCore
 		* 元 DLL のファイル名 stem が stem（例: "UserProject.Cplusplus"）に一致する
 		* ロード済みプラグインを返す。無ければ nullptr。
 		*/
-		[[nodiscard]] PluginModule* Find(const std::filesystem::path& stem)const;
+		NODISCARD PluginModule* Find(const std::filesystem::path& stem)const;
 
 		/**
 		* [EN]
@@ -159,11 +158,11 @@ namespace SeedCore
 	private:
 		/// [EN] How long a plugin DLL's write time must stay unchanged before a reload fires - MSBuild can touch a file's write time more than once while writing it.
 		/// [JP] リロードが発火するまでに、プラグイン DLL の更新時刻が変化なしで安定していなければならない時間 - MSBuild は書き込み中に最終更新時刻を複数回更新することがある。
-		SC_CONST Uint64 stableWindowMilliseconds_ = 500;
+		SC_CONSTEX Uint64 stableWindowMilliseconds_ = 500;
 
 		/// [EN] How often the plugin directory is rescanned for added / removed DLLs.
 		/// [JP] プラグインディレクトリの DLL 追加/削除を再スキャンする間隔。
-		SC_CONST Uint64 rescanIntervalMilliseconds_ = 500;
+		SC_CONSTEX Uint64 rescanIntervalMilliseconds_ = 500;
 
 		/**
 		* [EN]

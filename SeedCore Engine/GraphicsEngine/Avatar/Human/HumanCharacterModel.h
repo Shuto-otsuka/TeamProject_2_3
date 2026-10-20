@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 namespace SeedCore
 {
 	constexpr Uint32 humanCharacterMagic = 0x43485353;
@@ -38,49 +37,49 @@ namespace SeedCore
 
 		Bool Load(String filePath);
 
-		[[nodiscard]] Bool Loaded()const;
+		NODISCARD Bool Loaded()const;
 
-		[[nodiscard]] Uint32 VertexCount()const;
+		NODISCARD Uint32 VertexCount()const;
 
-		[[nodiscard]] Uint32 BodyVertexCount()const;
+		NODISCARD Uint32 BodyVertexCount()const;
 
-		[[nodiscard]] Uint32 TriangleCount()const;
+		NODISCARD Uint32 TriangleCount()const;
 
-		[[nodiscard]] Uint32 AxisCount()const;
+		NODISCARD Uint32 AxisCount()const;
 
-		[[nodiscard]] Uint32 BoneCount()const;
+		NODISCARD Uint32 BoneCount()const;
 
-		[[nodiscard]] std::span<const Vector3> Positions()const;
+		NODISCARD std::span<const Vector3> Positions()const;
 
-		[[nodiscard]] std::span<const Vector3> Normals()const;
+		NODISCARD std::span<const Vector3> Normals()const;
 
-		[[nodiscard]] std::span<const Vector2> Texcoords()const;
+		NODISCARD std::span<const Vector2> Texcoords()const;
 
-		[[nodiscard]] std::span<const Uint32> Triangles()const;
+		NODISCARD std::span<const Uint32> Triangles()const;
 
-		[[nodiscard]] std::span<const Uint8> Regions()const;
+		NODISCARD std::span<const Uint8> Regions()const;
 
-		[[nodiscard]] std::span<const Float> SkinWeights()const;
+		NODISCARD std::span<const Float> SkinWeights()const;
 
-		[[nodiscard]] std::span<const Uint32> SkinIndices()const;
+		NODISCARD std::span<const Uint32> SkinIndices()const;
 
-		[[nodiscard]] const HumanCharacterAxis& Axis(Uint32 index)const;
+		NODISCARD const HumanCharacterAxis& Axis(Uint32 index)const;
 
-		[[nodiscard]] const HumanCharacterBone& Bone(Uint32 index)const;
+		NODISCARD const HumanCharacterBone& Bone(Uint32 index)const;
 
-		[[nodiscard]] std::span<const Uint32> JointGroup(Uint32 boneIndex)const;
+		NODISCARD std::span<const Uint32> JointGroup(Uint32 boneIndex)const;
 
-		[[nodiscard]] const HumanCharacterRegionRange& RegionTriangleRange(Uint32 regionIndex)const;
+		NODISCARD const HumanCharacterRegionRange& RegionTriangleRange(Uint32 regionIndex)const;
 
-		[[nodiscard]] static std::span<const Char* const> RegionNames();
+		NODISCARD static std::span<const Char* const> RegionNames();
 
-		[[nodiscard]] static std::span<const Char* const> RegionLabels();
+		NODISCARD static std::span<const Char* const> RegionLabels();
 
-		[[nodiscard]] static std::span<const Char* const> AxisNames();
+		NODISCARD static std::span<const Char* const> AxisNames();
 
-		[[nodiscard]] static std::span<const Char* const> AxisLabels();
+		NODISCARD static std::span<const Char* const> AxisLabels();
 
-		[[nodiscard]] static std::span<const Char* const> BoneNames();
+		NODISCARD static std::span<const Char* const> BoneNames();
 
 	private:
 		DynamicArray<Byte> blob_;

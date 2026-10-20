@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -94,7 +93,7 @@ namespace SeedCore
 		* [JP]
 		* 保持しているサウンド形式を返す。
 		*/
-		[[nodiscard]] SoundType Type()const;
+		NODISCARD SoundType Type()const;
 
 		/**
 		* [EN]
@@ -105,7 +104,7 @@ namespace SeedCore
 		* [JP]
 		* キューシート用に読み込まれた ACB ハンドルを返す。
 		*/
-		[[nodiscard]] CriAtomExAcbHn AcbHandle()const;
+		NODISCARD CriAtomExAcbHn AcbHandle()const;
 
 		/**
 		* [EN]
@@ -116,7 +115,7 @@ namespace SeedCore
 		* [JP]
 		* メモリ上の音声バイト列へ書き込み可能なポインターを返す。
 		*/
-		[[nodiscard]] void* Data();
+		NODISCARD void* Data();
 
 		/**
 		* [EN]
@@ -127,7 +126,7 @@ namespace SeedCore
 		* [JP]
 		* メモリ上の音声データのバイト数を返す。
 		*/
-		[[nodiscard]] Size DataSize()const;
+		NODISCARD Size DataSize()const;
 
 		/**
 		* [EN]
@@ -138,7 +137,7 @@ namespace SeedCore
 		* [JP]
 		* 関連する AWB データのストリームに使う仮想パスを返す。
 		*/
-		[[nodiscard]] const String& AwbPath()const;
+		NODISCARD const String& AwbPath()const;
 
 	private:
 		/// [EN] Representation of the loaded audio data.

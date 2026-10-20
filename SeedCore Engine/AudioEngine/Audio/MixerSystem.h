@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -71,7 +70,7 @@ namespace SeedCore
 		* [JP]
 		* 現在のマスター音量倍率を返す。
 		*/
-		[[nodiscard]] static Float MasterVolume();
+		NODISCARD static Float MasterVolume();
 
 		/**
 		* [EN]
@@ -82,7 +81,7 @@ namespace SeedCore
 		* [JP]
 		* 指定したカテゴリの現在の音量倍率を返す。
 		*/
-		[[nodiscard]] static Float CategoryVolume(const String& category);
+		NODISCARD static Float CategoryVolume(const String& category);
 
 		/**
 		* [EN]
@@ -93,6 +92,6 @@ namespace SeedCore
 		* [JP]
 		* 利用可能なミキサーカテゴリ名を返す。
 		*/
-		[[nodiscard]] static const DynamicArray<String>& CategoryNameList();
+		NODISCARD static const DynamicArray<String>& CategoryNameList();
 	};
 }

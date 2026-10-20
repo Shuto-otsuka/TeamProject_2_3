@@ -62,7 +62,7 @@ namespace SeedCore
 		{
 			/// [EN] Number of canvas pixels in one physics meter.
 			/// [JP] 物理の1メートルに当たる Canvas のピクセル数。
-			SC_CONST Float pixelsPerMeter = 100.0f;
+			SC_CONSTEX Float pixelsPerMeter = 100.0f;
 
 			/// [EN] Canvas Y points down and physics Y up, so Y and the canvas angle (the rotation about Z) are negated.
 			/// [JP] Canvas の Y は下向き、物理の Y は上向きなので、Y と Canvas の角度(Z 軸まわりの回転)の符号を反転する。

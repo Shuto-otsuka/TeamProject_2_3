@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Resource/Config/BootConfig.h>
 
 namespace SeedCore

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Component/Component.h>
 #include <FoundationEngine/World/ECS/Component/ComponentBehaviour.h>
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
@@ -52,7 +51,7 @@ namespace SeedCore
 	class SEEDCORE_API CsharpBehaviour :public ComponentBehaviour
 	{
 	public:
-		SC_CONST Size blockCapacity_ = 256;
+		SC_CONSTEX Size blockCapacity_ = 256;
 
 		CsharpBehaviour() = default;
 

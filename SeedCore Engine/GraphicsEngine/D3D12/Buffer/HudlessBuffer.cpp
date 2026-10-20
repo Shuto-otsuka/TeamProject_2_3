@@ -23,7 +23,7 @@ namespace SeedCore
 
 		HRESULT hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&colorResource_));
 		SC_HR_CHECK(hr, "Hudlessバッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 		colorResource_->SetName(L"HudlessBuffer");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(colorResource_.Get());
 #endif

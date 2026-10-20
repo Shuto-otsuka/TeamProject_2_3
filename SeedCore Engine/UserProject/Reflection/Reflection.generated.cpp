@@ -144,7 +144,7 @@ namespace SeedCore
 						fi.name_ = String("論理");
 						fi.offset_ = offsetof(CircuitSystem, logic_);
 						fi.type_ = AttributeType::Enum;
-						fi.enum_.typeName_ = String("Logic");
+						fi.enum_.typeName_ = String("CircuitSystem::Logic");
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -276,7 +276,7 @@ namespace SeedCore
 						fi.name_ = String("動き方");
 						fi.offset_ = offsetof(FloorMoveSystem, moveType_);
 						fi.type_ = AttributeType::Enum;
-						fi.enum_.typeName_ = String("MoveType");
+						fi.enum_.typeName_ = String("FloorMoveSystem::MoveType");
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -438,7 +438,7 @@ namespace SeedCore
 						fi.name_ = String("動作");
 						fi.offset_ = offsetof(SwitchSystem, mode_);
 						fi.type_ = AttributeType::Enum;
-						fi.enum_.typeName_ = String("Mode");
+						fi.enum_.typeName_ = String("SwitchSystem::Mode");
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -446,7 +446,7 @@ namespace SeedCore
 						fi.name_ = String("判定の形");
 						fi.offset_ = offsetof(SwitchSystem, shape_);
 						fi.type_ = AttributeType::Enum;
-						fi.enum_.typeName_ = String("Shape");
+						fi.enum_.typeName_ = String("SwitchSystem::Shape");
 						outInfo.push_back(std::move(fi));
 					}
 					outInfo.push_back({ String("判定サイズ"), offsetof(SwitchSystem, detectSize_), AttributeType::Vector3 });
@@ -496,55 +496,55 @@ namespace SeedCore
 		};
 		static Register_TitleLogoController global_TitleLogoController_register;
 
-		struct RegisterEnum_Logic
+		struct RegisterEnum_CircuitSystem_Logic
 		{
-			RegisterEnum_Logic()
+			RegisterEnum_CircuitSystem_Logic()
 			{
-				EnumRegistry::Register(String("Logic"), {
+				EnumRegistry::Register(String("CircuitSystem::Logic"), {
 					{ static_cast<Int>(CircuitSystem::Logic::And), String("And") },
 					{ static_cast<Int>(CircuitSystem::Logic::Or), String("Or") },
 					{ static_cast<Int>(CircuitSystem::Logic::Count), String("Count") },
 				});
 			}
 		};
-		static RegisterEnum_Logic global_Logic_enum_register;
+		static RegisterEnum_CircuitSystem_Logic global_CircuitSystem_Logic_enum_register;
 
-		struct RegisterEnum_Mode
+		struct RegisterEnum_FloorMoveSystem_MoveType
 		{
-			RegisterEnum_Mode()
+			RegisterEnum_FloorMoveSystem_MoveType()
 			{
-				EnumRegistry::Register(String("Mode"), {
+				EnumRegistry::Register(String("FloorMoveSystem::MoveType"), {
+					{ static_cast<Int>(FloorMoveSystem::MoveType::PingPong), String("PingPong") },
+					{ static_cast<Int>(FloorMoveSystem::MoveType::Repeat), String("Repeat") },
+				});
+			}
+		};
+		static RegisterEnum_FloorMoveSystem_MoveType global_FloorMoveSystem_MoveType_enum_register;
+
+		struct RegisterEnum_SwitchSystem_Mode
+		{
+			RegisterEnum_SwitchSystem_Mode()
+			{
+				EnumRegistry::Register(String("SwitchSystem::Mode"), {
 					{ static_cast<Int>(SwitchSystem::Mode::Momentary), String("Momentary") },
 					{ static_cast<Int>(SwitchSystem::Mode::Toggle), String("Toggle") },
 					{ static_cast<Int>(SwitchSystem::Mode::Latch), String("Latch") },
 				});
 			}
 		};
-		static RegisterEnum_Mode global_Mode_enum_register;
+		static RegisterEnum_SwitchSystem_Mode global_SwitchSystem_Mode_enum_register;
 
-		struct RegisterEnum_MoveType
+		struct RegisterEnum_SwitchSystem_Shape
 		{
-			RegisterEnum_MoveType()
+			RegisterEnum_SwitchSystem_Shape()
 			{
-				EnumRegistry::Register(String("MoveType"), {
-					{ static_cast<Int>(FloorMoveSystem::MoveType::PingPong), String("PingPong") },
-					{ static_cast<Int>(FloorMoveSystem::MoveType::Repeat), String("Repeat") },
-				});
-			}
-		};
-		static RegisterEnum_MoveType global_MoveType_enum_register;
-
-		struct RegisterEnum_Shape
-		{
-			RegisterEnum_Shape()
-			{
-				EnumRegistry::Register(String("Shape"), {
+				EnumRegistry::Register(String("SwitchSystem::Shape"), {
 					{ static_cast<Int>(SwitchSystem::Shape::Sphere), String("Sphere") },
 					{ static_cast<Int>(SwitchSystem::Shape::Box), String("Box") },
 				});
 			}
 		};
-		static RegisterEnum_Shape global_Shape_enum_register;
+		static RegisterEnum_SwitchSystem_Shape global_SwitchSystem_Shape_enum_register;
 
 	}
 }

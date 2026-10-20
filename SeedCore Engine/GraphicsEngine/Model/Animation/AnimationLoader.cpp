@@ -46,9 +46,135 @@ namespace SeedCore
 		pool_.Destroy(handle);
 	}
 
-	void AnimationLoader::SplitClips(String filePath)
+	/**
+	* [EN]
+	* Splits every clip embedded in a model source file into its own
+	* "<model dir>/<model stem>.Animations/<clip name>.animation" file.
+	* glTF/GLB writes one file per glTF animation; FBX writes one file per
+	* animation stack (take). axisConvention is the model asset's own
+	* convention from its .meta, so FBX clips land in the same space as the
+	* Crister nodes they drive. Other extensions write nothing.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* モデルのソースファイルに埋め込まれた全クリップを、それぞれ
+	* "<モデルのディレクトリ>/<モデル名>.Animations/<クリップ名>.animation"
+	* へ個別に書き出す。glTF/GLB は glTF アニメーション1つにつき1ファイル、
+	* FBX はアニメーションスタック（テイク）1つにつき1ファイル。
+	* axisConvention はモデルアセット自身の .meta の座標系規約で、FBX の
+	* クリップを、それが動かす Crister のノードと同じ空間に揃えるために使う。
+	* それ以外の拡張子は何も書き出さない。
+	*/
+	void AnimationLoader::SplitClips(String filePath, const AxisConvention& axisConvention)
 	{
 		std::filesystem::path path(filePath.c_str());
+
+		if (path.extension() == ".fbx")
+		{
+			/// [EN] Import with the same settings ModelLoader uses, so the scene graph matches the one the Crister was built from.
+			/// [JP] ModelLoader と同じ設定でインポートし、Crister の元になったシーングラフと一致させる。
+			FbxManager* fbxManager = FbxManager::Create();
+			fbxManager->SetIOSettings(FbxIOSettings::Create(fbxManager, IOSROOT));
+			FbxScene* fbxScene = FbxScene::Create(fbxManager, "");
+
+			FbxImporter* importer = FbxImporter::Create(fbxManager, "");
+			Bool imported = importer->Initialize(path.string().c_str(), -1, fbxManager->GetIOSettings());
+			if (imported)
+			{
+				imported = importer->Import(fbxScene);
+			}
+			importer->Destroy();
+
+			Int stackCount = imported ? fbxScene->GetSrcObjectCount<FbxAnimStack>() : 0;
+			if (stackCount == 0)
+			{
+				fbxManager->Destroy();
+				return;
+			}
+
+			/// [EN] Source unit to meters, read before the axis conversion exactly as ModelLoader does (centimeters are the FBX base unit).
+			/// [JP] ソースの単位からメートルへの倍率。ModelLoader と同じく軸変換の前に読む（FBX の基準単位はセンチメートル）。
+			Float unitScale = static_cast<Float>(fbxScene->GetGlobalSettings().GetSystemUnit().GetScaleFactor()) / 100.0f;
+
+			/// [EN] Same deep conversion to the glTF axis system (+Y up, right-handed) as ModelLoader::ConvertSceneConvention. It rewrites transforms and animation curves throughout the hierarchy, so the sampled local transforms are in the space the Crister's rest pose was read in. Triangulation is skipped: it only replaces mesh attributes and never changes the node hierarchy.
+			/// [JP] ModelLoader::ConvertSceneConvention と同じ、glTF の軸系（+Y 上、右手系）への深い変換。階層全体のトランスフォームとアニメーションカーブを書き換えるため、サンプリングしたローカルトランスフォームは Crister のレストポーズを読んだのと同じ空間になる。三角形化はメッシュ属性を置き換えるだけでノード階層を変えないため省略する。
+			FbxAxisSystem gltfAxisSystem(FbxAxisSystem::eYAxis, FbxAxisSystem::eParityOdd, FbxAxisSystem::eRightHanded);
+			gltfAxisSystem.DeepConvertScene(fbxScene);
+
+			/// [EN] Depth-first, children in declaration order - the same walk as ModelLoader::ConvertFlatConvention, so position N here is Crister node N.
+			/// [JP] 深さ優先で子は宣言順 - ModelLoader::ConvertFlatConvention と同じ走査なので、ここでの N 番目が Crister のノード N になる。
+			DynamicArray<FbxNode*> nodeTable;
+			DynamicArray<FbxNode*> nodeStack;
+			FbxNode* fbxRoot = fbxScene->GetRootNode();
+			for (Int childIndex = fbxRoot->GetChildCount() - 1; childIndex >= 0; childIndex--)
+			{
+				nodeStack.push_back(fbxRoot->GetChild(childIndex));
+			}
+			while (!nodeStack.empty())
+			{
+				FbxNode* fbxNode = nodeStack.back();
+				nodeStack.pop_back();
+				nodeTable.push_back(fbxNode);
+
+				for (Int childIndex = fbxNode->GetChildCount() - 1; childIndex >= 0; childIndex--)
+				{
+					nodeStack.push_back(fbxNode->GetChild(childIndex));
+				}
+			}
+
+			/// [EN] The asset's axis convention, resolved with the same invalid-pick fallback as ModelLoader::ConvertAxisConvention.
+			/// [JP] アセットの座標系規約。ModelLoader::ConvertAxisConvention と同じく、無効な選択なら既定値へフォールバックして解決する。
+			ResolvedAxisConvention resolved = ResolvedAxisConvention::Resolve(axisConvention);
+			if (!resolved.valid_)
+			{
+				resolved = ResolvedAxisConvention::Resolve(AxisConvention{});
+			}
+
+			/// [EN] Sample at the scene's own frame rate so every authored key lands on a sample; 30 fps when the file does not state one.
+			/// [JP] シーン自身のフレームレートでサンプリングし、作成されたキーがすべてサンプル点に乗るようにする。ファイルに記載が無ければ 30fps。
+			FbxTime::EMode timeMode = fbxScene->GetGlobalSettings().GetTimeMode();
+			Double frameRate = (timeMode == FbxTime::eCustom) ? fbxScene->GetGlobalSettings().GetCustomFrameRate() : FbxTime::GetFrameRate(timeMode);
+			if (frameRate <= 0.0)
+			{
+				frameRate = 30.0;
+			}
+
+			std::filesystem::path directory = path.parent_path() / (path.stem().string() + ".Animations");
+
+			for (Int stackIndex = 0; stackIndex < stackCount; stackIndex++)
+			{
+				FbxAnimStack* fbxStack = fbxScene->GetSrcObject<FbxAnimStack>(stackIndex);
+
+				/// [EN] EvaluateLocalTransform evaluates the scene's current stack; switching it also resets the evaluator's cache.
+				/// [JP] EvaluateLocalTransform はシーンの現在のスタックを評価する。切り替えると評価器のキャッシュもリセットされる。
+				fbxScene->SetCurrentAnimationStack(fbxStack);
+
+				Animation animation;
+				FetchAnimationClip(fbxStack, nodeTable, unitScale, resolved, frameRate, animation);
+				if (animation.timelines_.empty())
+				{
+					continue;
+				}
+
+				std::string clipName = animation.name_.empty() ? ("Animation" + std::to_string(stackIndex)) : animation.name_;
+				for (Char& c : clipName)
+				{
+					if (c == '<' || c == '>' || c == ':' || c == '"' || c == '/' || c == '\\' || c == '|' || c == '?' || c == '*')
+					{
+						c = '_';
+					}
+				}
+
+				std::error_code directoryError;
+				std::filesystem::create_directories(directory, directoryError);
+
+				Save(animation, directory / (clipName + ".animation"));
+			}
+
+			fbxManager->Destroy();
+			return;
+		}
 
 		if (path.extension() != ".gltf" && path.extension() != ".glb")
 		{
@@ -279,5 +405,185 @@ namespace SeedCore
 			}
 		}
 		animation.duration_ = duration;
+	}
+
+	/**
+	* [EN]
+	* Bakes one FBX animation stack into animation by sampling every
+	* animated node's local transform once per frame at frameRate.
+	* nodeTable is the depth-first node order ModelLoader uses for the
+	* Crister's nodes_, so each channel is keyed by the same node index the
+	* Crister uses. Only the T/R/S channels that actually carry keys in one
+	* of the stack's layers are written; the rest fall back to the rest
+	* pose at playback. The stack must already be the scene's current one.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* FBX のアニメーションスタック1つを、アニメーションするノードの
+	* ローカルトランスフォームを frameRate で1フレームごとにサンプリング
+	* して animation へ焼き込む。nodeTable は ModelLoader が Crister の
+	* nodes_ に使うのと同じ深さ優先のノード順で、各チャンネルは Crister と
+	* 同じノード番号をキーにする。スタックのいずれかのレイヤーで実際に
+	* キーを持つ T/R/S チャンネルだけを書き出し、それ以外は再生時に
+	* レストポーズへフォールバックする。スタックは事前にシーンの現在の
+	* スタックにしておくこと。
+	*/
+	void AnimationLoader::FetchAnimationClip(FbxAnimStack* fbxStack, const DynamicArray<FbxNode*>& nodeTable, Float unitScale, const ResolvedAxisConvention& resolved, Double frameRate, Animation& animation)
+	{
+		animation.name_ = fbxStack->GetName();
+
+		/// [EN] Per node, whether its Lcl Translation / Lcl Rotation / Lcl Scaling carries keys in this stack. A curve node with no keyed curve (exporters often leave empty ones behind) does not count.
+		/// [JP] ノードごとに、Lcl Translation / Lcl Rotation / Lcl Scaling がこのスタックでキーを持つか。キー付きカーブを持たないカーブノード（エクスポーターが空のまま残すことが多い）は数えない。
+		DynamicArray<Bool> translationAnimated(nodeTable.size(), false);
+		DynamicArray<Bool> rotationAnimated(nodeTable.size(), false);
+		DynamicArray<Bool> scaleAnimated(nodeTable.size(), false);
+
+		/// [EN] Earliest and latest key over every keyed curve found, the clip range used when the stack carries no time span of its own.
+		/// [JP] 見つかったキー付きカーブ全体での最初と最後のキー。スタック自身が時間範囲を持たない場合のクリップ範囲になる。
+		FbxTime keyStart = FBXSDK_TIME_INFINITE;
+		FbxTime keyStop = FBXSDK_TIME_MINUS_INFINITE;
+		Bool anyAnimated = false;
+
+		Int layerCount = fbxStack->GetMemberCount<FbxAnimLayer>();
+		for (Size nodeIndex = 0; nodeIndex < nodeTable.size(); nodeIndex++)
+		{
+			FbxNode* fbxNode = nodeTable[nodeIndex];
+			FbxProperty* properties[3] = { &fbxNode->LclTranslation, &fbxNode->LclRotation, &fbxNode->LclScaling };
+			DynamicArray<Bool>* animatedFlags[3] = { &translationAnimated, &rotationAnimated, &scaleAnimated };
+
+			for (Size propertyIndex = 0; propertyIndex < 3; propertyIndex++)
+			{
+				for (Int layerIndex = 0; layerIndex < layerCount; layerIndex++)
+				{
+					FbxAnimCurveNode* curveNode = properties[propertyIndex]->GetCurveNode(fbxStack->GetMember<FbxAnimLayer>(layerIndex));
+					if (!curveNode)
+					{
+						continue;
+					}
+
+					for (Uint32 channelIndex = 0; channelIndex < curveNode->GetChannelsCount(); channelIndex++)
+					{
+						for (Int curveIndex = 0; curveIndex < curveNode->GetCurveCount(channelIndex); curveIndex++)
+						{
+							FbxAnimCurve* curve = curveNode->GetCurve(channelIndex, static_cast<Uint32>(curveIndex));
+							Int keyCount = curve ? curve->KeyGetCount() : 0;
+							if (keyCount == 0)
+							{
+								continue;
+							}
+
+							(*animatedFlags[propertyIndex])[nodeIndex] = true;
+							anyAnimated = true;
+
+							FbxTime firstKeyTime = curve->KeyGetTime(0);
+							FbxTime lastKeyTime = curve->KeyGetTime(keyCount - 1);
+							if (firstKeyTime < keyStart)
+							{
+								keyStart = firstKeyTime;
+							}
+							if (lastKeyTime > keyStop)
+							{
+								keyStop = lastKeyTime;
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if (!anyAnimated)
+		{
+			return;
+		}
+
+		/// [EN] The stack's local time span is the take's authored playback range; files that leave it empty fall back to the key range.
+		/// [JP] スタックのローカル時間範囲は、テイクとして作成された再生範囲。それを空のままにしているファイルはキーの範囲へフォールバックする。
+		FbxTimeSpan timeSpan = fbxStack->GetLocalTimeSpan();
+		FbxTime start = timeSpan.GetStart();
+		FbxTime stop = timeSpan.GetStop();
+		if (stop <= start)
+		{
+			start = keyStart;
+			stop = keyStop;
+		}
+
+		/// [EN] Clip times are rebased so the range start is time 0; the last sample sits exactly on the range end.
+		/// [JP] クリップの時刻は範囲の開始が 0 になるようにリベースする。最後のサンプルはちょうど範囲の終わりに置く。
+		Double startSeconds = start.GetSecondDouble();
+		Double durationSeconds = Max(0.0, stop.GetSecondDouble() - startSeconds);
+		Size frameCount = static_cast<Size>(std::ceil(durationSeconds * frameRate - 1e-6)) + 1;
+
+		DynamicArray<Float> times;
+		times.reserve(frameCount);
+		for (Size frameIndex = 0; frameIndex < frameCount; frameIndex++)
+		{
+			times.push_back(static_cast<Float>(Min(static_cast<Double>(frameIndex) / frameRate, durationSeconds)));
+		}
+
+		for (Size frameIndex = 0; frameIndex < frameCount; frameIndex++)
+		{
+			FbxTime sampleTime;
+			sampleTime.SetSecondDouble(startSeconds + static_cast<Double>(times[frameIndex]));
+
+			for (Size nodeIndex = 0; nodeIndex < nodeTable.size(); nodeIndex++)
+			{
+				if (!translationAnimated[nodeIndex] && !rotationAnimated[nodeIndex] && !scaleAnimated[nodeIndex])
+				{
+					continue;
+				}
+
+				Int key = static_cast<Int>(nodeIndex);
+				if (frameIndex == 0)
+				{
+					animation.timelines_[key] = times;
+				}
+
+				/// [EN] Decomposed exactly like the rest pose in ModelLoader::FetchNodes (pivots and pre/post rotation folded in), so an unanimated frame reproduces the rest pose.
+				/// [JP] ModelLoader::FetchNodes のレストポーズと全く同じ方法で分解する（ピボットやプレ/ポスト回転も含む）。そのためアニメーションしていないフレームはレストポーズと一致する。
+				FbxAMatrix localTransform = nodeTable[nodeIndex]->EvaluateLocalTransform(sampleTime);
+
+				if (translationAnimated[nodeIndex])
+				{
+					FbxVector4 localTranslation = localTransform.GetT();
+					Vector3 translation = Vector3(static_cast<Float>(localTranslation[0]), static_cast<Float>(localTranslation[1]), static_cast<Float>(localTranslation[2])) * unitScale;
+
+					/// [EN] Same change of basis ModelLoader::ConvertAxisConvention applies to Node::translation_.
+					/// [JP] ModelLoader::ConvertAxisConvention が Node::translation_ に適用するのと同じ基底変換。
+					translation = Vector3::Transform(translation, resolved.basis_);
+					animation.translations_[key].push_back(translation);
+				}
+
+				if (rotationAnimated[nodeIndex])
+				{
+					FbxQuaternion localRotation = localTransform.GetQ();
+					Quaternion rotation = Quaternion(static_cast<Float>(localRotation[0]), static_cast<Float>(localRotation[1]), static_cast<Float>(localRotation[2]), static_cast<Float>(localRotation[3]));
+
+					/// [EN] Same conjugation by the basis (R' = basis^T * R * basis) ModelLoader::ConvertAxisConvention applies to Node::rotation_.
+					/// [JP] ModelLoader::ConvertAxisConvention が Node::rotation_ に適用するのと同じ、基底による共役変換 (R' = basis^T * R * basis)。
+					Matrix converted = resolved.basis_.Transpose() * Matrix::CreateFromQuaternion(rotation) * resolved.basis_;
+					rotation = Quaternion::CreateFromRotationMatrix(converted);
+
+					/// [EN] q and -q are the same rotation; keep each key in the same hemisphere as the previous one so neighbouring keys interpolate along the short arc.
+					/// [JP] q と -q は同じ回転。各キーを直前のキーと同じ半球に揃え、隣り合うキー同士が短い弧で補間されるようにする。
+					DynamicArray<Quaternion>& rotations = animation.rotations_[key];
+					if (!rotations.empty() && rotations.back().Dot(rotation) < 0.0f)
+					{
+						rotation = Quaternion(-rotation.x, -rotation.y, -rotation.z, -rotation.w);
+					}
+					rotations.push_back(rotation);
+				}
+
+				if (scaleAnimated[nodeIndex])
+				{
+					/// [EN] Scale is left in source axes, matching Node::scale_ in ModelLoader::ConvertAxisConvention.
+					/// [JP] スケールはソースの軸のままにする。ModelLoader::ConvertAxisConvention での Node::scale_ と同じ扱い。
+					FbxVector4 localScale = localTransform.GetS();
+					animation.scales_[key].push_back(Vector3(static_cast<Float>(localScale[0]), static_cast<Float>(localScale[1]), static_cast<Float>(localScale[2])));
+				}
+			}
+		}
+
+		animation.duration_ = static_cast<Float>(durationSeconds);
 	}
 }

@@ -21,7 +21,7 @@ namespace SeedCore
 
 		HRESULT hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&outResource));
 		SC_HR_CHECK(hr, "ReSTIR Reservoir バッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 		outResource->SetName(L"Reservoir");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(outResource.Get());
 #endif

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 
 namespace SeedCore
@@ -14,7 +13,7 @@ namespace SeedCore
 
 		void Draw(const Vector2& position, const Vector2& size);
 
-		[[nodiscard]] Bool RectToolActive()const;
+		NODISCARD Bool RectToolActive()const;
 
 	private:
 		void Move(Matrix& view, Matrix& projection, Matrix& pivot, ImGuizmo::OPERATION operation, const Float* snap);

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
 #include <GraphicsEngine/D3D12/PipelineState/RaytracingStateObject.h>
@@ -44,16 +43,16 @@ namespace SeedCore
 
 		void Create(ShaderCache& shaderCache, ID3D12Device5* device);
 
-		[[nodiscard]] ID3D12StateObject* GetStateObject()const;
+		NODISCARD ID3D12StateObject* GetStateObject()const;
 
-		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
+		NODISCARD ID3D12RootSignature* GetRootSignature()const;
 
 	public:
-		SC_CONST const Char* rayGenExportName = "GlobalIlluminationRayGeneration";
-		SC_CONST const Char* missExportName = "GlobalIlluminationMiss";
-		SC_CONST const Char* closestHitExportName = "GlobalIlluminationClosestHit";
-		SC_CONST const Char* anyHitExportName = "GlobalIlluminationAnyHit";
-		SC_CONST const Char* hitGroupName = "GlobalIlluminationHitGroup";
+		SC_CONSTEX const Char* rayGenExportName = "GlobalIlluminationRayGeneration";
+		SC_CONSTEX const Char* missExportName = "GlobalIlluminationMiss";
+		SC_CONSTEX const Char* closestHitExportName = "GlobalIlluminationClosestHit";
+		SC_CONSTEX const Char* anyHitExportName = "GlobalIlluminationAnyHit";
+		SC_CONSTEX const Char* hitGroupName = "GlobalIlluminationHitGroup";
 
 	private:
 		Handle<RaytracingShader> libraryShader_;

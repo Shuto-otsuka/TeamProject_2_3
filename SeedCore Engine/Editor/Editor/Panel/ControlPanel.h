@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Resource/Scene/SceneBlueprint.h>
 #include <GraphicsEngine/Raytracing/RaytracingContext.h>
 #include <GraphicsEngine/ScreenSpace/ScreenSpaceContext.h>

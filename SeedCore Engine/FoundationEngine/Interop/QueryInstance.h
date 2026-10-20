@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Interop/ColliderInstance.h>
 
 namespace SeedCore
@@ -134,7 +133,7 @@ namespace SeedCore
 		* [JP]
 		* 前回の Clear から記録したクエリを返す。
 		*/
-		[[nodiscard]] std::span<const QueryDesc> Queries()const;
+		NODISCARD std::span<const QueryDesc> Queries()const;
 
 		/**
 		* [EN]

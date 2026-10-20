@@ -97,7 +97,7 @@ namespace SeedCore
 			pool_.Destroy(handle);
 			return Handle<Skymap>::null();
 		}
-#ifdef _DEBUG
+#if SC_DEBUG
 		skymap->resource_->SetName(L"Skymap_Equirect");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(skymap->resource_.Get());
 #endif

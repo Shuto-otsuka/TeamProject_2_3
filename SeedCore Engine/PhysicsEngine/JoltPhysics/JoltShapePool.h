@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 
 namespace SeedCore
@@ -205,7 +204,7 @@ namespace SeedCore
 	private:
 		/// [EN] Half thickness assigned to flat two-dimensional shapes.
 		/// [JP] 平面形状に与える厚みの半分。
-		SC_CONST Float flatShapeHalfThickness_ = 0.5f;
+		SC_CONSTEX Float flatShapeHalfThickness_ = 0.5f;
 
 		/**
 		* [EN]

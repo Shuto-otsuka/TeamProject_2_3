@@ -23,7 +23,7 @@ namespace SeedCore
 		AssetRecord* asset = context.cache_.GetAsset(assetID);
 		if (asset)
 		{
-			loaders_.animationLoader_->SplitClips(asset->fullpath_);
+			loaders_.animationLoader_->SplitClips(asset->fullpath_, context.cache_.ReadAxisConvention(assetID));
 		}
 	}
 

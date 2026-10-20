@@ -19,6 +19,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Benchmark\Benchmark.cpp" />
+    <ClCompile Include="Benchmark\BenchmarkSuite.cpp" />
+    <ClCompile Include="Benchmark\BenchmarkSystem.cpp" />
+    <ClCompile Include="Benchmark\BenchmarkThread.cpp" />
     <ClCompile Include="Bridge\CsharpBehaviour.cpp" />
     <ClCompile Include="Bridge\CsharpHost.cpp" />
     <ClCompile Include="Coroutine\Coroutine.cpp" />
@@ -111,6 +115,10 @@
     <ClCompile Include="World\Tag\TagRegistry.cpp" />
     <ClCompile Include="World\World.cpp" />
     <ClCompile Include="World\WorldSnapshot.cpp" />
+    <ClInclude Include="Benchmark\Benchmark.h" />
+    <ClInclude Include="Benchmark\BenchmarkSuite.h" />
+    <ClInclude Include="Benchmark\BenchmarkSystem.h" />
+    <ClInclude Include="Benchmark\BenchmarkThread.h" />
     <ClInclude Include="Bridge\CsharpBehaviour.h" />
     <ClInclude Include="Bridge\CsharpHost.h" />
     <ClInclude Include="Bridge\ManagedApi.h" />
@@ -206,6 +214,7 @@
     <ClInclude Include="Resource\Sharing\SharedCatalog.h" />
     <ClInclude Include="Resource\Sharing\SharedScene.h" />
     <ClInclude Include="Resource\Sharing\SharingWorker.h" />
+    <ClInclude Include="Utility\Keyword.h" />
     <ClInclude Include="World\Actor\Actor.h" />
     <ClInclude Include="World\Actor\Blueprint.h" />
     <ClInclude Include="World\Command\ActorCommand.h" />

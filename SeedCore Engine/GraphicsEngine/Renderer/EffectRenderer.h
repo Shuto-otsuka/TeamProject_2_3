@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/Effect/Zephyr/EffectShader.h>
 #include <GraphicsEngine/Effect/Zephyr/ZephyrParticleStorage.h>
 

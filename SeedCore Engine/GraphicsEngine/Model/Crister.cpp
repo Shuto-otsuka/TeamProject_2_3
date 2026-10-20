@@ -419,7 +419,7 @@ namespace SeedCore
 			Microsoft::WRL::ComPtr<ID3D12Resource> inputBuffer;
 			hr = device->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &inputDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(inputBuffer.GetAddressOf()));
 			SC_HR_CHECK(hr, "入力バッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 			inputBuffer->SetName(L"Crister_CompressInput");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(inputBuffer.Get());
 #endif
@@ -448,7 +448,7 @@ namespace SeedCore
 			Microsoft::WRL::ComPtr<ID3D12Resource> outputBuffer;
 			hr = device->CreateCommittedResource(&defaultHeapProperties, D3D12_HEAP_FLAG_NONE, &outputDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(outputBuffer.GetAddressOf()));
 			SC_HR_CHECK(hr, "出力バッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 			outputBuffer->SetName(L"Crister_CompressOutput");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(outputBuffer.Get());
 #endif
@@ -462,7 +462,7 @@ namespace SeedCore
 			Microsoft::WRL::ComPtr<ID3D12Resource> readbackBuffer;
 			hr = device->CreateCommittedResource(&readbackHeapProperties, D3D12_HEAP_FLAG_NONE, &readbackDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(readbackBuffer.GetAddressOf()));
 			SC_HR_CHECK(hr, "リードバックバッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 			readbackBuffer->SetName(L"Crister_CompressReadback");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(readbackBuffer.Get());
 #endif
@@ -2689,7 +2689,7 @@ namespace SeedCore
 			SC_LOG_WARNING("テクスチャ {} のミップ {} のアップロードに失敗しました(HRESULT=0x{:08X}, {}x{})。このミップ抜きで続行します。", textureIndex, mipIndex, static_cast<Uint32>(hr), mipWidth, mipHeight);
 			return;
 		}
-#ifdef _DEBUG
+#if SC_DEBUG
 		newResource->SetName(L"Crister_TextureMip");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(newResource.Get());
 #endif
@@ -3420,7 +3420,7 @@ namespace SeedCore
 		{
 			return hr;
 		}
-#ifdef _DEBUG
+#if SC_DEBUG
 		resource->SetName(L"Crister_StaticBufferUnbounded");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(resource.Get());
 #endif

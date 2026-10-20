@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 
 namespace SeedCore
@@ -129,7 +128,7 @@ namespace SeedCore
 	{
 		/// [EN] The storage strategy T uses (overridden per type via SEED_TRAITS_SPEC, emitted by REGISTER_COMPONENT).
 		/// [JP] T が使用するストレージ戦略（REGISTER_COMPONENT が生成する SEED_TRAITS_SPEC 経由で、型ごとに上書きされる）。
-		SC_CONST ComponentStorage storage = ComponentStorage::SparseSet;
+		SC_CONSTEX ComponentStorage storage = ComponentStorage::SparseSet;
 	};
 
 	/**
@@ -158,7 +157,7 @@ namespace SeedCore
 		* [JP]
 		* T のコンパイル時に登録されたストレージ戦略を返す。
 		*/
-		SC_CONST ComponentStorage Storage()
+		SC_CONSTEX ComponentStorage Storage()
 		{
 			return ComponentTraits<T>::storage;
 		}
@@ -173,7 +172,7 @@ namespace SeedCore
 		* 指定されたストレージ種別でタグ付けされた、T の ComponentMetadata
 		* を構築する。
 		*/
-		SC_CONST ComponentMetadata Metadata(ComponentStorage storage)
+		SC_CONSTEX ComponentMetadata Metadata(ComponentStorage storage)
 		{
 			return {
 				sizeof(T), alignof(T), storage,
@@ -196,7 +195,7 @@ namespace SeedCore
 		* （ComponentTraits<T>::storage）を使用して、T の
 		* ComponentMetadata を構築する。
 		*/
-		SC_CONST ComponentMetadata Metadata()
+		SC_CONSTEX ComponentMetadata Metadata()
 		{
 			return Metadata(ComponentTraits<T>::storage);
 		}

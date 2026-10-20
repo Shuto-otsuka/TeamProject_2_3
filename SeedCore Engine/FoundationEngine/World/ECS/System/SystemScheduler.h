@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/System/TransformSystem.h>
 #include <FoundationEngine/World/ECS/System/MoveSystem.h>
 #include <FoundationEngine/World/ECS/System/SpawnerSystem.h>

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 #include <GraphicsEngine/Raytracing/RaytracingDispatch.h>
@@ -218,17 +217,17 @@ namespace SeedCore
 	private:
 		/// [EN] Size of the froxel grid: 160 x 90 screen tiles, 128 depth slices.
 		/// [JP] froxel グリッドのサイズ。画面を 160 x 90 のタイルに分け、奥行きを 128 スライスに分ける。
-		SC_CONST Uint32 froxelDimensionX_ = 160;
-		SC_CONST Uint32 froxelDimensionY_ = 90;
-		SC_CONST Uint32 froxelDimensionZ_ = 128;
+		SC_CONSTEX Uint32 froxelDimensionX_ = 160;
+		SC_CONSTEX Uint32 froxelDimensionY_ = 90;
+		SC_CONSTEX Uint32 froxelDimensionZ_ = 128;
 
 		/// [EN] Number of scattering volumes per view: one written this frame, one holding the previous frame as history.
 		/// [JP] ビューごとの散乱ボリュームの数。今フレームに書き込む 1 つと、前フレームを履歴として持つ 1 つ。
-		SC_CONST Uint32 scatteringSlotCount_ = 2;
+		SC_CONSTEX Uint32 scatteringSlotCount_ = 2;
 
 		/// [EN] Length of the Halton sequence used to jitter the froxel sample positions.
 		/// [JP] froxel のサンプル位置をずらす Halton 列の長さ。
-		SC_CONST Uint32 froxelJitterSequenceLength_ = 16;
+		SC_CONSTEX Uint32 froxelJitterSequenceLength_ = 16;
 
 		/**
 		* [EN]

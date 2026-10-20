@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Math/Halton.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 #include <GraphicsEngine/System/SceneConstantSystem.h>

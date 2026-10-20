@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -25,12 +24,12 @@ namespace SeedCore
 	class FrameRing
 	{
 	public:
-		[[nodiscard]] static Uint Index();
+		NODISCARD static Uint Index();
 
 		static void Advance();
 
 	public:
-		SC_CONST Uint frameCount = 2;
+		SC_CONSTEX Uint frameCount = 2;
 
 	private:
 		static inline Uint index_ = 0;

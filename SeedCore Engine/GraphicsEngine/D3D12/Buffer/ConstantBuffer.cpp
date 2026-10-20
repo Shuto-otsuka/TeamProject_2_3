@@ -78,7 +78,7 @@ namespace SeedCore
 		{
 			HRESULT hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resources_[frame]));
 			SC_HR_CHECK(hr, "定数バッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 			resources_[frame]->SetName(L"DynamicConstantBuffer");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(resources_[frame].Get());
 #endif

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace ax
 {
@@ -27,7 +26,7 @@ namespace SeedCore
 
 		void DrawDetails();
 
-		[[nodiscard]] Bool Focused()const;
+		NODISCARD Bool Focused()const;
 
 	private:
 		void DrawNodeEditor();

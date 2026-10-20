@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/SeedScript.h>
 #include <FoundationEngine/Utility/Handle.h>
 
@@ -355,11 +354,11 @@ namespace SeedCore
 	private:
 		/// [EN] Radius of the sphere used when the actor has no collider.
 		/// [JP] Actor にコライダーが無いときに使う球の半径。
-		SC_CONST Float defaultShapeRadius_ = 0.5f;
+		SC_CONSTEX Float defaultShapeRadius_ = 0.5f;
 
 		/// [EN] Number of canvas pixels in one physics meter.
 		/// [JP] 物理の1メートルに当たる Canvas のピクセル数。
-		SC_CONST Float pixelsPerMeter_ = 100.0f;
+		SC_CONSTEX Float pixelsPerMeter_ = 100.0f;
 
 		/// [EN] Jolt ID of the body.
 		/// [JP] ボディの Jolt ID。

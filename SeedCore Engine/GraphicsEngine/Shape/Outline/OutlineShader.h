@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
 #include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
@@ -44,11 +43,11 @@ namespace SeedCore
 
 		void Create(ShaderCache& shaderCache, ID3D12Device* device);
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateComposite()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateComposite()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateCompositeDebugOverlay()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateCompositeDebugOverlay()const;
 
-		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
+		NODISCARD ID3D12RootSignature* GetRootSignature()const;
 
 	private:
 		Handle<VertexShader> compositeVertexShader_;

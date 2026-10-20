@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/System/CameraSystem.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 

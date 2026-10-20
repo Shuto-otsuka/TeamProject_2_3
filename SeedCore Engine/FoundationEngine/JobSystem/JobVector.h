@@ -1,4 +1,5 @@
 #pragma once
+#include <FoundationEngine/Utility/Keyword.h>
 #include <FoundationEngine/Utility/Types.h>
 
 #include <cstddef>
@@ -201,7 +202,7 @@ namespace SeedCore
 		{
 			/// [EN] Buffer size: at least one byte, or sizeof(X) if larger.
 			/// [JP] バッファサイズ: 最低1バイト、X が大きければ sizeof(X)。
-			static constexpr Size maxSize = (sizeof(std::byte) > sizeof(X)) ? sizeof(std::byte) : sizeof(X);
+			SC_CONSTEX Size maxSize = (sizeof(std::byte) > sizeof(X)) ? sizeof(std::byte) : sizeof(X);
 
 			/// [EN] The raw, T-aligned byte storage.
 			/// [JP] 生の、T にアラインされたバイトストレージ。

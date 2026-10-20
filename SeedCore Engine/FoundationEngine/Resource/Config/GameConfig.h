@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/Quality/Upscale.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
 

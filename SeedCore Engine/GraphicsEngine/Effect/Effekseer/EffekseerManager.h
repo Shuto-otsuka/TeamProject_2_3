@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/Effect/Effekseer/EffekseerFileInterface.h>
 
 namespace SeedCore
@@ -16,15 +15,15 @@ namespace SeedCore
 
 		void Update(Float deltaTime);
 
-		[[nodiscard]] Effekseer::ManagerRef GetManager()const;
+		NODISCARD Effekseer::ManagerRef GetManager()const;
 
-		[[nodiscard]] Float GetTotalTime()const;
+		NODISCARD Float GetTotalTime()const;
 
 		/// [EN] Shared file interface used by the texture/model/material loaders;
 		///      EffekseerLoader registers ".effekseer" cache dependencies into it.
 		/// [JP] テクスチャ/モデル/マテリアルローダーが共有するファイルインターフェース。
 		///      EffekseerLoaderが".effekseer"キャッシュの依存関係をここに登録する。
-		[[nodiscard]] EffekseerFileInterface& GetFileInterface();
+		NODISCARD EffekseerFileInterface& GetFileInterface();
 
 	private:
 		Effekseer::ManagerRef manager_;

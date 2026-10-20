@@ -1468,7 +1468,7 @@ namespace SeedCore
 		/// [JP] Jolt のレイは、始点と、長さが届く距離になるベクトルで表す。
 		JPH::RRayCast ray(JPH::RVec3(origin.x, origin.y, origin.z), dir * maxDistance);
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		/// [EN] Every query is recorded for the debug display: what was asked now, what was found just before returning.
 		/// [JP] クエリはすべてデバッグ表示のために記録する。問い合わせた内容はここで、結果は返す直前に入れる。
 		QueryDesc query;
@@ -1487,7 +1487,7 @@ namespace SeedCore
 
 		if (!collector.HadHit())
 		{
-#ifdef _DEBUG
+#if SC_DEBUG
 			queryInstance_.Add(query);
 #endif
 			return false;
@@ -1543,7 +1543,7 @@ namespace SeedCore
 			outHit.distance_ = hit.mFraction * maxDistance;
 			outHit.entityID_ = BodyEntityID(hit.mBodyID);
 
-#ifdef _DEBUG
+#if SC_DEBUG
 			query.hit_ = true;
 			query.hitPoint_ = outHit.position_;
 			query.hitNormal_ = outHit.normal_;
@@ -1553,7 +1553,7 @@ namespace SeedCore
 			return true;
 		}
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		queryInstance_.Add(query);
 #endif
 		return false;
@@ -1583,7 +1583,7 @@ namespace SeedCore
 		JPH::SphereShape sphereShape(radius);
 		JPH::RShapeCast shapeCast(&sphereShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(JPH::RVec3(origin.x, origin.y, origin.z)), dir * maxDistance);
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		/// [EN] Every query is recorded for the debug display: what was asked now, what was found just before returning.
 		/// [JP] クエリはすべてデバッグ表示のために記録する。問い合わせた内容はここで、結果は返す直前に入れる。
 		QueryDesc query;
@@ -1605,7 +1605,7 @@ namespace SeedCore
 
 		if (!collector.HadHit())
 		{
-#ifdef _DEBUG
+#if SC_DEBUG
 			queryInstance_.Add(query);
 #endif
 			return false;
@@ -1650,7 +1650,7 @@ namespace SeedCore
 			outHit.distance_ = hit.mFraction * maxDistance;
 			outHit.entityID_ = BodyEntityID(hit.mBodyID2);
 
-#ifdef _DEBUG
+#if SC_DEBUG
 			query.hit_ = true;
 			query.hitPoint_ = outHit.position_;
 			query.hitNormal_ = outHit.normal_;
@@ -1660,7 +1660,7 @@ namespace SeedCore
 			return true;
 		}
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		queryInstance_.Add(query);
 #endif
 		return false;
@@ -1683,7 +1683,7 @@ namespace SeedCore
 	{
 		DynamicArray<EntityID> result;
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		/// [EN] Every query is recorded for the debug display; the kind and size come straight from the arguments, in the same layout as ColliderDesc::dimensions_.
 		/// [JP] クエリはすべてデバッグ表示のために記録する。種類と大きさは引数そのままで、並びは ColliderDesc::dimensions_ と同じ。
 		QueryDesc query;
@@ -1701,7 +1701,7 @@ namespace SeedCore
 		case OverlapShapeKind::Sphere:
 		{
 			queryShape = new JPH::SphereShape(dimensions.x);
-#ifdef _DEBUG
+#if SC_DEBUG
 			query.shape_ = ColliderKind::Sphere;
 #endif
 			break;
@@ -1711,7 +1711,7 @@ namespace SeedCore
 			/// [EN] A zero convex radius keeps the box exactly the given size and lets a side be thinner than Jolt's default convex radius.
 			/// [JP] 凸半径を 0 にすると、箱は指定の大きさちょうどになり、Jolt の既定の凸半径より薄い辺も持てる。
 			queryShape = new JPH::BoxShape(JPH::Vec3(dimensions.x, dimensions.y, dimensions.z), 0.0f);
-#ifdef _DEBUG
+#if SC_DEBUG
 			query.shape_ = ColliderKind::Box;
 #endif
 			break;
@@ -1719,7 +1719,7 @@ namespace SeedCore
 		case OverlapShapeKind::Capsule:
 		{
 			queryShape = new JPH::CapsuleShape(dimensions.y, dimensions.x);
-#ifdef _DEBUG
+#if SC_DEBUG
 			query.shape_ = ColliderKind::Capsule;
 #endif
 			break;
@@ -1729,7 +1729,7 @@ namespace SeedCore
 			/// [EN] A zero convex radius, for the same reason as Box.
 			/// [JP] 凸半径を 0 にする。理由は Box と同じ。
 			queryShape = new JPH::CylinderShape(dimensions.y, dimensions.x, 0.0f);
-#ifdef _DEBUG
+#if SC_DEBUG
 			query.shape_ = ColliderKind::Cylinder;
 #endif
 			break;
@@ -1780,7 +1780,7 @@ namespace SeedCore
 			result.push_back(BodyEntityID(hit.mBodyID2));
 		}
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		query.hit_ = !result.empty();
 		queryInstance_.Add(query);
 #endif
@@ -1811,7 +1811,7 @@ namespace SeedCore
 		/// [JP] 始点と届く距離をピクセルからメートルへ変換する。
 		JPH::RRayCast ray(JPH::RVec3(origin.x / pixelsPerMeter_, -origin.y / pixelsPerMeter_, 0.0f), dir * (maxDistance / pixelsPerMeter_));
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		/// [EN] Every query is recorded for the debug display, in canvas pixels with Y down: what was asked now, what was found just before returning.
 		/// [JP] クエリはすべてデバッグ表示のために、Y 下向きの Canvas ピクセルで記録する。問い合わせた内容はここで、結果は返す直前に入れる。
 		QueryDesc query;
@@ -1830,7 +1830,7 @@ namespace SeedCore
 
 		if (!collector.HadHit())
 		{
-#ifdef _DEBUG
+#if SC_DEBUG
 			queryInstance_.Add(query);
 #endif
 			return false;
@@ -1886,7 +1886,7 @@ namespace SeedCore
 			outHit.distance_ = hit.mFraction * maxDistance;
 			outHit.entityID_ = BodyEntityID(hit.mBodyID);
 
-#ifdef _DEBUG
+#if SC_DEBUG
 			query.hit_ = true;
 			query.hitPoint_ = Vector3(outHit.position_.x, outHit.position_.y, 0.0f);
 			query.hitNormal_ = Vector3(outHit.normal_.x, outHit.normal_.y, 0.0f);
@@ -1896,7 +1896,7 @@ namespace SeedCore
 			return true;
 		}
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		queryInstance_.Add(query);
 #endif
 		return false;
@@ -1926,7 +1926,7 @@ namespace SeedCore
 		JPH::SphereShape sphereShape(radius / pixelsPerMeter_);
 		JPH::RShapeCast shapeCast(&sphereShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sTranslation(JPH::RVec3(origin.x / pixelsPerMeter_, -origin.y / pixelsPerMeter_, 0.0f)), dir * (maxDistance / pixelsPerMeter_));
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		/// [EN] Every query is recorded for the debug display, in canvas pixels with Y down: what was asked now, what was found just before returning.
 		/// [JP] クエリはすべてデバッグ表示のために、Y 下向きの Canvas ピクセルで記録する。問い合わせた内容はここで、結果は返す直前に入れる。
 		QueryDesc query;
@@ -1947,7 +1947,7 @@ namespace SeedCore
 
 		if (!collector.HadHit())
 		{
-#ifdef _DEBUG
+#if SC_DEBUG
 			queryInstance_.Add(query);
 #endif
 			return false;
@@ -1992,7 +1992,7 @@ namespace SeedCore
 			outHit.distance_ = hit.mFraction * maxDistance;
 			outHit.entityID_ = BodyEntityID(hit.mBodyID2);
 
-#ifdef _DEBUG
+#if SC_DEBUG
 			query.hit_ = true;
 			query.hitPoint_ = Vector3(outHit.position_.x, outHit.position_.y, 0.0f);
 			query.hitNormal_ = Vector3(outHit.normal_.x, outHit.normal_.y, 0.0f);
@@ -2002,7 +2002,7 @@ namespace SeedCore
 			return true;
 		}
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		queryInstance_.Add(query);
 #endif
 		return false;
@@ -2027,7 +2027,7 @@ namespace SeedCore
 	{
 		DynamicArray<EntityID> result;
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		/// [EN] Every query is recorded for the debug display in canvas pixels with Y down, the rotation turning about Z by the canvas angle; the size comes straight from the arguments.
 		/// [JP] クエリはすべてデバッグ表示のために、Y 下向きの Canvas ピクセルで記録し、回転は Canvas の角度だけ Z 軸まわりに回す。大きさは引数そのまま。
 		QueryDesc query;
@@ -2047,7 +2047,7 @@ namespace SeedCore
 			/// [EN] A circle is a sphere centered on the canvas plane, so its cross-section there is the circle itself.
 			/// [JP] 円は Canvas の平面上に中心を置いた球なので、その平面での断面がそのまま円になる。
 			queryShape = new JPH::SphereShape(dimensions.x / pixelsPerMeter_);
-#ifdef _DEBUG
+#if SC_DEBUG
 			query.shape_ = ColliderKind::Circle;
 #endif
 			break;
@@ -2057,7 +2057,7 @@ namespace SeedCore
 			/// [EN] A rectangle is a box with the same half thickness as canvas bodies, and a zero convex radius so it is exactly the given size.
 			/// [JP] 矩形は Canvas のボディと同じ厚みの半分を持つ箱で、凸半径を 0 にして指定の大きさちょうどにする。
 			queryShape = new JPH::BoxShape(JPH::Vec3(dimensions.x / pixelsPerMeter_, dimensions.y / pixelsPerMeter_, 0.5f), 0.0f);
-#ifdef _DEBUG
+#if SC_DEBUG
 			query.shape_ = ColliderKind::Rect;
 #endif
 			break;
@@ -2108,7 +2108,7 @@ namespace SeedCore
 			result.push_back(BodyEntityID(hit.mBodyID2));
 		}
 
-#ifdef _DEBUG
+#if SC_DEBUG
 		query.hit_ = !result.empty();
 		queryInstance_.Add(query);
 #endif

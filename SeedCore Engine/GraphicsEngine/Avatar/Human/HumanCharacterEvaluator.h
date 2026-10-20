@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -17,15 +16,15 @@ namespace SeedCore
 
 		void ResetAxisWeights();
 
-		[[nodiscard]] Float AxisWeight(Uint32 axisIndex)const;
+		NODISCARD Float AxisWeight(Uint32 axisIndex)const;
 
 		void Evaluate();
 
-		[[nodiscard]] std::span<const Vector3> Positions()const;
+		NODISCARD std::span<const Vector3> Positions()const;
 
-		[[nodiscard]] std::span<const Vector3> Normals()const;
+		NODISCARD std::span<const Vector3> Normals()const;
 
-		[[nodiscard]] std::span<const Vector3> JointHeads()const;
+		NODISCARD std::span<const Vector3> JointHeads()const;
 
 	private:
 		const HumanCharacterModel* model_ = nullptr;

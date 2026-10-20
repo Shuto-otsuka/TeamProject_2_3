@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <PhysicsEngine/JoltPhysics/JoltExecutorBridge.h>
 #include <PhysicsEngine/JoltPhysics/JoltShapePool.h>
 #include <PhysicsEngine/JoltPhysics/JoltConstraintPool.h>

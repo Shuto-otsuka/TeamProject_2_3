@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 #include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
@@ -81,14 +80,14 @@ namespace SeedCore
 
 		void DrawSilhouette(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses);
 
-		[[nodiscard]] Uint BoneMatrixBufferIndex()const;
+		NODISCARD Uint BoneMatrixBufferIndex()const;
 
-		[[nodiscard]] Bool TryGetAnimatedBoneOffset(EntityID entityID, Uint32& outBoneOffset)const;
+		NODISCARD Bool TryGetAnimatedBoneOffset(EntityID entityID, Uint32& outBoneOffset)const;
 
-		[[nodiscard]] Bool TryGetAnimatedMorphWeights(EntityID entityID, Int nodeIndex, DynamicArray<Float>& outWeights)const;
+		NODISCARD Bool TryGetAnimatedMorphWeights(EntityID entityID, Int nodeIndex, DynamicArray<Float>& outWeights)const;
 
 	private:
-		SC_CONST Uint32 furShellMax_ = 32;
+		SC_CONSTEX Uint32 furShellMax_ = 32;
 
 		DynamicArray<ModelStructuredBuffer> opaqueInstances_;
 		DynamicArray<ModelStructuredBuffer> transparentInstances_;

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/FlatMap.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Log/Error.h>
@@ -176,7 +175,7 @@ namespace SeedCore
 		* [JP]
 		* 現在のマスター音量を返す。
 		*/
-		[[nodiscard]] Float MasterVolume()const;
+		NODISCARD Float MasterVolume()const;
 
 		/**
 		* [EN]
@@ -187,7 +186,7 @@ namespace SeedCore
 		* [JP]
 		* ResetVolume で戻す先のマスター音量を返す。
 		*/
-		[[nodiscard]] Float DefaultMasterVolume()const;
+		NODISCARD Float DefaultMasterVolume()const;
 
 		/**
 		* [EN]
@@ -200,7 +199,7 @@ namespace SeedCore
 		* カテゴリの音量を返す。ユーザーが設定した値、無ければ ACF の値、
 		* それも無ければ 1。
 		*/
-		[[nodiscard]] Float CategoryVolume(const String& category)const;
+		NODISCARD Float CategoryVolume(const String& category)const;
 
 		/**
 		* [EN]
@@ -211,7 +210,7 @@ namespace SeedCore
 		* [JP]
 		* 登録した ACF に定義されたカテゴリ名の一覧を返す。
 		*/
-		[[nodiscard]] const DynamicArray<String>& CategoryNameList()const;
+		NODISCARD const DynamicArray<String>& CategoryNameList()const;
 
 	private:
 		/// [EN] Voices for uncompressed Wave (PCM) data.

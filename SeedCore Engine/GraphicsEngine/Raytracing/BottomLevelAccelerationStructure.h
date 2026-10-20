@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -45,9 +44,9 @@ namespace SeedCore
 
 		Bool Build(ID3D12Device5* device, ID3D12GraphicsCommandList4* commandList, const BottomLevelGeometryDesc* geometries, Uint32 geometryCount);
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS Address()const noexcept;
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS Address()const noexcept;
 
-		[[nodiscard]] ID3D12Resource* Resource()const noexcept;
+		NODISCARD ID3D12Resource* Resource()const noexcept;
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D12Resource> result_;

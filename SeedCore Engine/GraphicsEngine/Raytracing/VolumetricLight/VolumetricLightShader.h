@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
 #include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
@@ -34,13 +33,13 @@ namespace SeedCore
 
 		void Create(ShaderCache& shaderCache, ID3D12Device* device);
 
-		[[nodiscard]] ID3D12PipelineState* GetInjectionPipelineState()const;
+		NODISCARD ID3D12PipelineState* GetInjectionPipelineState()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetScatteringPipelineState()const;
+		NODISCARD ID3D12PipelineState* GetScatteringPipelineState()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetIntegrationPipelineState()const;
+		NODISCARD ID3D12PipelineState* GetIntegrationPipelineState()const;
 
-		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
+		NODISCARD ID3D12RootSignature* GetRootSignature()const;
 
 	private:
 		Handle<ComputeShader> injectionShader_;

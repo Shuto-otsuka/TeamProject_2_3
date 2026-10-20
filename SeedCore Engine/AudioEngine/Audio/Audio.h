@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -303,7 +302,7 @@ namespace SeedCore
 		* 上は再生中の扱いなので true を返す。区別するには Paused() を使う。
 		* プレイヤーが null なら false。
 		*/
-		[[nodiscard]] Bool Playing(CriAtomExPlayerHn player)const;
+		NODISCARD Bool Playing(CriAtomExPlayerHn player)const;
 
 		/**
 		* [EN]
@@ -314,7 +313,7 @@ namespace SeedCore
 		* [JP]
 		* プレイヤーが一時停止中かどうかを返す。プレイヤーが null なら false。
 		*/
-		[[nodiscard]] Bool Paused(CriAtomExPlayerHn player)const;
+		NODISCARD Bool Paused(CriAtomExPlayerHn player)const;
 
 	private:
 		/// [EN] The CRI library owner, bound through Gateway at construction.

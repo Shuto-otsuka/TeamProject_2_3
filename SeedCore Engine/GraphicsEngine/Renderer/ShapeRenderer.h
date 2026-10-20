@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Log/Assert.h>
 #include <FoundationEngine/Interop/ShapeInstance.h>
 #include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
@@ -229,11 +228,11 @@ namespace SeedCore
 	private:
 		/// [EN] Most wireframe shapes uploaded per batch in one frame; colliders share these batches.
 		/// [JP] 1フレームに1つのバッチへアップロードするワイヤーフレームの形の最大数。コライダーも同じバッチに入る。
-		SC_CONST Uint maxWireframeInstanceCount_ = 16384;
+		SC_CONSTEX Uint maxWireframeInstanceCount_ = 16384;
 
 		/// [EN] Most solid shapes uploaded in one frame.
 		/// [JP] 1フレームにアップロードする面の形の最大数。
-		SC_CONST Uint maxSolidInstanceCount_ = 8192;
+		SC_CONSTEX Uint maxSolidInstanceCount_ = 8192;
 
 		/// [EN] Pipelines that draw the wireframe batches.
 		/// [JP] ワイヤーフレームのバッチを描くパイプライン。

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -15,9 +14,9 @@ namespace SeedCore
 
 		Uint AllocateIndex();
 
-		[[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE CPUHandle(Uint index)const;
+		NODISCARD D3D12_CPU_DESCRIPTOR_HANDLE CPUHandle(Uint index)const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE GPUHandle(Uint index)const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE GPUHandle(Uint index)const;
 
 		Size IncrementSize()const;
 

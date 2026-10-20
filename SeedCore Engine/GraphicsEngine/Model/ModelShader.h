@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
 #include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
@@ -53,43 +52,43 @@ namespace SeedCore
 
 		void Create(ShaderCache& shaderCache, ID3D12Device* device);
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateModelCulling()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateModelCulling()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateGeometryBufferCulling()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateGeometryBufferCulling()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateModelTransparentCulling()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateModelTransparentCulling()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateModelSilhouetteCulling()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateModelSilhouetteCulling()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateFurShellCulling()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateFurShellCulling()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateDepthPrepass()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateDepthPrepass()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateDepthPrepassDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateDepthPrepassDoubleSided()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateStatic()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateStatic()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateStaticDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateStaticDoubleSided()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateSkeletal()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateSkeletal()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateSkeletalDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateSkeletalDoubleSided()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateStaticTransparent()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateStaticTransparent()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateStaticTransparentDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateStaticTransparentDoubleSided()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateSkeletalTransparent()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateSkeletalTransparent()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateSkeletalTransparentDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateSkeletalTransparentDoubleSided()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateFurShell()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateFurShell()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateFurShellDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateFurShellDoubleSided()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateResolve()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateResolve()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateComposite()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateComposite()const;
 
 		/// [EN] Unlit preview PSOs for the Timeline panel's 3D model preview:
 		///      ModelAS + Static/Skeletal MS + ModelPreviewPS (base color +
@@ -103,17 +102,17 @@ namespace SeedCore
 		///      あり、reverse-Z。あえて専用PSにすることでプレビューが
 		///      constant_indices.light_index_ や共有ライティング状態を
 		///      一切読まないようにする。
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStatePreviewStatic()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStatePreviewStatic()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStatePreviewStaticDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStatePreviewStaticDoubleSided()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStatePreviewSkeletal()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStatePreviewSkeletal()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStatePreviewSkeletalDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStatePreviewSkeletalDoubleSided()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateAvatarPreview()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateAvatarPreview()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateAvatarPreviewDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateAvatarPreviewDoubleSided()const;
 
 		/// [EN] Wireframe debug PSOs: Static/Skeletal MS + WireframePS, wireframe
 		///      rasterizer, single R16G16B16A16_FLOAT RT, depth read (no write) so
@@ -122,23 +121,23 @@ namespace SeedCore
 		///      ワイヤーフレームラスタライザ、単一 R16G16B16A16_FLOAT RT、深度は
 		///      読み取りのみ（書き込みなし）でシーン深度に遮蔽される。エディタの
 		///      表示モード専用。
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateWireframeStatic()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateWireframeStatic()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateWireframeStaticDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateWireframeStaticDoubleSided()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateWireframeSkeletal()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateWireframeSkeletal()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateWireframeSkeletalDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateWireframeSkeletalDoubleSided()const;
 
 		/// [EN] Meshlet visualization PSOs: flat color per meshlet (solid fill).
 		/// [JP] メッシュレット可視化 PSO: メッシュレットごとに単色（ソリッド塗り）。
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateMeshletStatic()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateMeshletStatic()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateMeshletStaticDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateMeshletStaticDoubleSided()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateMeshletSkeletal()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateMeshletSkeletal()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateMeshletSkeletalDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateMeshletSkeletalDoubleSided()const;
 
 		/// [EN] Silhouette PSOs: Static/Skeletal MS + ModelSilhouettePS,
 		///      single R8_UNORM RT, depth off. The fullscreen edge-detect composite
@@ -148,15 +147,15 @@ namespace SeedCore
 		///      単一 R8_UNORM RT、深度オフ。このマスクを読むフルスクリーンのエッジ
 		///      検出合成は Model 固有ではないため Renderer 側が持ち、選択され得る
 		///      全アクター種別で共有する。
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateSilhouetteStatic()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateSilhouetteStatic()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateSilhouetteStaticDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateSilhouetteStaticDoubleSided()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateSilhouetteSkeletal()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateSilhouetteSkeletal()const;
 
-		[[nodiscard]] ID3D12PipelineState* GetPipelineStateSilhouetteSkeletalDoubleSided()const;
+		NODISCARD ID3D12PipelineState* GetPipelineStateSilhouetteSkeletalDoubleSided()const;
 
-		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
+		NODISCARD ID3D12RootSignature* GetRootSignature()const;
 
 	private:
 		Handle<AmplificationShader> amplificationShader_;

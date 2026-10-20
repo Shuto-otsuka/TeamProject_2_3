@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/File/FilePath.h>
 #include <FoundationEngine/Resource/Asset/Asset.h>
 #include <FoundationEngine/Utility/ArtMap.h>

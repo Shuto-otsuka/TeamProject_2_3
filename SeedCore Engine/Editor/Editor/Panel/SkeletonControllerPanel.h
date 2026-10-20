@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -19,7 +18,7 @@ namespace SeedCore
 
 		void DrawDetails();
 
-		[[nodiscard]] Bool Focused()const;
+		NODISCARD Bool Focused()const;
 
 	private:
 		void DrawBoneList(const Crister& crister);
@@ -27,7 +26,7 @@ namespace SeedCore
 		void DrawPreview();
 
 	private:
-		SC_CONST Float boneTreeColumnWidthRatio_ = 0.2f;
+		SC_CONSTEX Float boneTreeColumnWidthRatio_ = 0.2f;
 
 		EditorContext& context_;
 

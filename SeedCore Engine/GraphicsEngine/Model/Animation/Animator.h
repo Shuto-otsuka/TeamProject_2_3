@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/SeedScript.h>
 
 namespace SeedCore
@@ -191,9 +190,9 @@ namespace SeedCore
 
 		void SetIKPole(const std::string& effectorBoneName, const Vector3& poleVector);
 
-		[[nodiscard]] const std::unordered_map<std::string, IKTarget>& GetIKTarget()const;
+		NODISCARD const std::unordered_map<std::string, IKTarget>& GetIKTarget()const;
 
-		[[nodiscard]] const std::unordered_map<std::string, JointConstraint>& GetJointConstraint()const;
+		NODISCARD const std::unordered_map<std::string, JointConstraint>& GetJointConstraint()const;
 
 	private:
 		AnimationParameter* FindParameter(const String& name);
@@ -219,9 +218,9 @@ namespace SeedCore
 		void SetJointConstraint(const std::string& boneName, const Vector3& axis, const Vector3& swingAxis, Float swingAngle1, Float swingAngle2);
 
 	private:
-		SC_CONST Int ExitState = -2;
+		SC_CONSTEX Int ExitState = -2;
 
-		SC_CONST Int AnyState = -3;
+		SC_CONSTEX Int AnyState = -3;
 
 		SC_SERIALIZE_FIELD()
 		DynamicArray<AnimationParameter> parameters_;

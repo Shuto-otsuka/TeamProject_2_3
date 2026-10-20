@@ -123,7 +123,7 @@ namespace SeedCore
 		SC_HR_CHECK(hr, "GI シェーダーテーブルリソースの生成に失敗しました");
 		/// [EN] In debug builds, name it so it can be identified in PIX and crash dumps.
 		/// [JP] デバッグビルドでは、PIX やクラッシュダンプで見分けられるよう名前を付ける。
-#ifdef _DEBUG
+#if SC_DEBUG
 		shaderTableResource_->SetName(L"GlobalIllumination_ShaderTable");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(shaderTableResource_.Get());
 #endif
@@ -583,7 +583,7 @@ namespace SeedCore
 			SC_HR_CHECK(hr, "GI テクスチャの生成に失敗しました");
 			/// [EN] In debug builds, name it so it can be identified in PIX and crash dumps.
 			/// [JP] デバッグビルドでは、PIX やクラッシュダンプで見分けられるよう名前を付ける。
-#ifdef _DEBUG
+#if SC_DEBUG
 			resource->SetName(name);
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(resource.Get());
 #endif

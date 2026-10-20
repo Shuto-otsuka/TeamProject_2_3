@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 
 namespace SeedCore
@@ -32,11 +31,11 @@ namespace SeedCore
 		Skymap& operator=(Skymap&&)noexcept = default;
 
 	public:
-		[[nodiscard]] Uint ShaderResourceViewIndex()const;
+		NODISCARD Uint ShaderResourceViewIndex()const;
 
-		[[nodiscard]] Bool Valid()const;
+		NODISCARD Bool Valid()const;
 
-		[[nodiscard]] Handle<Skymap> GetHandle()const;
+		NODISCARD Handle<Skymap> GetHandle()const;
 
 	private:
 		Handle<Skymap> handle_;

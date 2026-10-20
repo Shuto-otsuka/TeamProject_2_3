@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Resource/Config/BootConfig.h>
 #include <GraphicsEngine/Renderer/BootScreenRenderer.h>
 
@@ -19,7 +18,7 @@ namespace SeedCore
 
 		void Open();
 
-		[[nodiscard]] Bool Focused()const;
+		NODISCARD Bool Focused()const;
 
 	private:
 		void DrawCanvas();

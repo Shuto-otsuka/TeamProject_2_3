@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/Actor/Blueprint.h>
 
 namespace SeedCore
@@ -145,7 +144,7 @@ namespace SeedCore
 		* （FoundationEngine は GraphicsEngine に依存できない）ため、作るのも
 		* 読み戻すのもレンダラ側になる。
 		*/
-		[[nodiscard]] const SceneVisual& Visual()const;
+		NODISCARD const SceneVisual& Visual()const;
 
 		/**
 		* [EN]
@@ -161,7 +160,7 @@ namespace SeedCore
 		* 返す。他のメンバーから届いた Scene を、新規にインスタンス化する
 		* のではなく、既に world にいる actor と突き合わせる際に使う。
 		*/
-		[[nodiscard]] const DynamicArray<BlueprintNode>& Nodes()const;
+		NODISCARD const DynamicArray<BlueprintNode>& Nodes()const;
 
 		/**
 		* [EN]
@@ -175,7 +174,7 @@ namespace SeedCore
 		* このシーンの名前を返す。読み込み元の拡張子を除いたファイル名か、
 		* SceneSystem が world を取得した際に付けた名前。どちらも無ければ空。
 		*/
-		[[nodiscard]] const String& Name()const;
+		NODISCARD const String& Name()const;
 
 	public:
 		/**

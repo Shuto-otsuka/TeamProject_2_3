@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
 #include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
@@ -38,18 +37,18 @@ namespace SeedCore
 
 		void Create(ShaderCache& shaderCache, ID3D12Device* device);
 
-		[[nodiscard]] ID3D12PipelineState* GetPrefilterPipelineState()const;
+		NODISCARD ID3D12PipelineState* GetPrefilterPipelineState()const;
 
 		/// [EN] passIndex is 0-3 for BlurPass1..4 respectively.
 		/// [JP] passIndex は 0-3 でそれぞれ BlurPass1..4 に対応する。
-		[[nodiscard]] ID3D12PipelineState* GetBlurPipelineState(Uint32 passIndex)const;
+		NODISCARD ID3D12PipelineState* GetBlurPipelineState(Uint32 passIndex)const;
 
-		[[nodiscard]] ID3D12PipelineState* GetComposePipelineState()const;
+		NODISCARD ID3D12PipelineState* GetComposePipelineState()const;
 
-		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
+		NODISCARD ID3D12RootSignature* GetRootSignature()const;
 
 	private:
-		SC_CONST Uint32 blurPassCount = 4;
+		SC_CONSTEX Uint32 blurPassCount = 4;
 
 		Handle<ComputeShader> prefilterComputeShader_;
 		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> prefilterPipelineStateHandle_;

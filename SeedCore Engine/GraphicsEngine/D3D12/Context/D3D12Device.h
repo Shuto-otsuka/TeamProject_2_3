@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/D3D12Common.h>
 
 namespace SeedCore
@@ -11,13 +10,13 @@ namespace SeedCore
 
 		ID3D12Device5* Get()const;
 
-		[[nodiscard]] D3D_FEATURE_LEVEL FeatureLevel()const noexcept;
+		NODISCARD D3D_FEATURE_LEVEL FeatureLevel()const noexcept;
 
-		[[nodiscard]] D3D12_RAYTRACING_TIER RaytracingTier()const noexcept;
+		NODISCARD D3D12_RAYTRACING_TIER RaytracingTier()const noexcept;
 
-		[[nodiscard]] Bool RaytracingSupported()const noexcept;
+		NODISCARD Bool RaytracingSupported()const noexcept;
 
-		[[nodiscard]] Bool InlineRaytracingSupported()const noexcept;
+		NODISCARD Bool InlineRaytracingSupported()const noexcept;
 
 	private:
 		void QueryRaytracingSupport();

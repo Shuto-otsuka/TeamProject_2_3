@@ -41,7 +41,7 @@ namespace SeedCore
 			clearValue.Color[3] = 0.0f;
 			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, &clearValue, IID_PPV_ARGS(&colorResources_[bufferIndex]));
 			SC_HR_CHECK(hr, "カラーバッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 			colorResources_[bufferIndex]->SetName(L"GeometryBuffer_Color");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(colorResources_[bufferIndex].Get());
 #endif
@@ -88,7 +88,7 @@ namespace SeedCore
 		depthClearValue.DepthStencil.Stencil = 0;
 		hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &depthDesc, D3D12_RESOURCE_STATE_COMMON, &depthClearValue, IID_PPV_ARGS(&depthResource_));
 		SC_HR_CHECK(hr, "深度バッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 		depthResource_->SetName(L"GeometryBuffer_Depth");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(depthResource_.Get());
 #endif

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/Actor/Blueprint.h>
 
 namespace SeedCore
@@ -142,7 +141,7 @@ namespace SeedCore
 		* 元 DLL の最終更新時刻が直近の Load 時点と異なるか
 		* — つまりリビルドされたか — を返す。
 		*/
-		[[nodiscard]] Bool SourceChanged()const;
+		NODISCARD Bool SourceChanged()const;
 
 		/**
 		* [EN]
@@ -153,7 +152,7 @@ namespace SeedCore
 		* [JP]
 		* このモジュールが紐づく、ディスク上の実 DLL パス。
 		*/
-		[[nodiscard]] const std::filesystem::path& SourcePath()const;
+		NODISCARD const std::filesystem::path& SourcePath()const;
 
 		/**
 		* [EN]
@@ -164,7 +163,7 @@ namespace SeedCore
 		* [JP]
 		* モジュールが現在ロードされているか。
 		*/
-		[[nodiscard]] Bool Loaded()const;
+		NODISCARD Bool Loaded()const;
 
 		/**
 		* [EN]
@@ -193,7 +192,7 @@ namespace SeedCore
 		* [JP]
 		* 元 DLL の現在の最終更新時刻を返す（読み取れない場合は 0）。
 		*/
-		[[nodiscard]] static Uint64 GetLastWriteTime(const std::filesystem::path& path);
+		NODISCARD static Uint64 GetLastWriteTime(const std::filesystem::path& path);
 
 	private:
 		/**

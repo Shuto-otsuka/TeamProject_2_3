@@ -1032,7 +1032,7 @@ namespace SeedCore
 						fi.name_ = String("表示形式");
 						fi.offset_ = offsetof(Text, viewType_);
 						fi.type_ = AttributeType::Enum;
-						fi.enum_.typeName_ = String("ViewType");
+						fi.enum_.typeName_ = String("Text::ViewType");
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -1693,7 +1693,7 @@ namespace SeedCore
 						fi.name_ = String("表示形式");
 						fi.offset_ = offsetof(Movie, displayMode_);
 						fi.type_ = AttributeType::Enum;
-						fi.enum_.typeName_ = String("DisplayMode");
+						fi.enum_.typeName_ = String("Movie::DisplayMode");
 						outInfo.push_back(std::move(fi));
 					}
 					outInfo.push_back({ String("自動再生"), offsetof(Movie, autoPlay_), AttributeType::Bool });
@@ -2395,7 +2395,7 @@ namespace SeedCore
 						fi.name_ = String("方式");
 						fi.offset_ = offsetof(ToneMappingSettings, mode_);
 						fi.type_ = AttributeType::Enum;
-						fi.enum_.typeName_ = String("ToneCurve");
+						fi.enum_.typeName_ = String("ToneMappingSettings::ToneCurve");
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<ToneMappingSettings*>(p); return o.enabled_; };
 						outInfo.push_back(std::move(fi));
 					}
@@ -3034,7 +3034,7 @@ namespace SeedCore
 						fi.name_ = String("表示形式");
 						fi.offset_ = offsetof(Image, viewType_);
 						fi.type_ = AttributeType::Enum;
-						fi.enum_.typeName_ = String("ViewType");
+						fi.enum_.typeName_ = String("Image::ViewType");
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3058,7 +3058,7 @@ namespace SeedCore
 						fi.name_ = String("テクスチャタイプ");
 						fi.offset_ = offsetof(Image, motionType_);
 						fi.type_ = AttributeType::Enum;
-						fi.enum_.typeName_ = String("MotionType");
+						fi.enum_.typeName_ = String("Image::MotionType");
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3521,7 +3521,7 @@ namespace SeedCore
 						fi.name_ = String("動作モード");
 						fi.offset_ = offsetof(Rigidbody, bodyType_);
 						fi.type_ = AttributeType::Enum;
-						fi.enum_.typeName_ = String("BodyType");
+						fi.enum_.typeName_ = String("Rigidbody::BodyType");
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3766,19 +3766,6 @@ namespace SeedCore
 		};
 		static RegisterEnum_AnimationParameterType global_AnimationParameterType_enum_register;
 
-		struct RegisterEnum_BodyType
-		{
-			RegisterEnum_BodyType()
-			{
-				EnumRegistry::Register(String("BodyType"), {
-					{ static_cast<Int>(Rigidbody::BodyType::Dynamic), String("Dynamic") },
-					{ static_cast<Int>(Rigidbody::BodyType::Kinematic), String("Kinematic") },
-					{ static_cast<Int>(Rigidbody::BodyType::Static), String("Static") },
-				});
-			}
-		};
-		static RegisterEnum_BodyType global_BodyType_enum_register;
-
 		struct RegisterEnum_CameraBrainMode
 		{
 			RegisterEnum_CameraBrainMode()
@@ -3795,36 +3782,73 @@ namespace SeedCore
 		};
 		static RegisterEnum_CameraBrainMode global_CameraBrainMode_enum_register;
 
-		struct RegisterEnum_DisplayMode
+		struct RegisterEnum_Image_MotionType
 		{
-			RegisterEnum_DisplayMode()
+			RegisterEnum_Image_MotionType()
 			{
-				EnumRegistry::Register(String("DisplayMode"), {
+				EnumRegistry::Register(String("Image::MotionType"), {
+					{ static_cast<Int>(Image::MotionType::Static), String("Static") },
+					{ static_cast<Int>(Image::MotionType::Dynamic), String("Dynamic") },
+				});
+			}
+		};
+		static RegisterEnum_Image_MotionType global_Image_MotionType_enum_register;
+
+		struct RegisterEnum_Image_ViewType
+		{
+			RegisterEnum_Image_ViewType()
+			{
+				EnumRegistry::Register(String("Image::ViewType"), {
+					{ static_cast<Int>(Image::ViewType::Sprite), String("Sprite") },
+					{ static_cast<Int>(Image::ViewType::Billboard), String("Billboard") },
+				});
+			}
+		};
+		static RegisterEnum_Image_ViewType global_Image_ViewType_enum_register;
+
+		struct RegisterEnum_Movie_DisplayMode
+		{
+			RegisterEnum_Movie_DisplayMode()
+			{
+				EnumRegistry::Register(String("Movie::DisplayMode"), {
 					{ static_cast<Int>(Movie::DisplayMode::Fullscreen), String("Fullscreen") },
 					{ static_cast<Int>(Movie::DisplayMode::Sprite), String("Sprite") },
 					{ static_cast<Int>(Movie::DisplayMode::Billboard), String("Billboard") },
 				});
 			}
 		};
-		static RegisterEnum_DisplayMode global_DisplayMode_enum_register;
+		static RegisterEnum_Movie_DisplayMode global_Movie_DisplayMode_enum_register;
 
-		struct RegisterEnum_MotionType
+		struct RegisterEnum_Rigidbody_BodyType
 		{
-			RegisterEnum_MotionType()
+			RegisterEnum_Rigidbody_BodyType()
 			{
-				EnumRegistry::Register(String("MotionType"), {
-					{ static_cast<Int>(Image::MotionType::Static), String("Static") },
-					{ static_cast<Int>(Image::MotionType::Dynamic), String("Dynamic") },
+				EnumRegistry::Register(String("Rigidbody::BodyType"), {
+					{ static_cast<Int>(Rigidbody::BodyType::Dynamic), String("Dynamic") },
+					{ static_cast<Int>(Rigidbody::BodyType::Kinematic), String("Kinematic") },
+					{ static_cast<Int>(Rigidbody::BodyType::Static), String("Static") },
 				});
 			}
 		};
-		static RegisterEnum_MotionType global_MotionType_enum_register;
+		static RegisterEnum_Rigidbody_BodyType global_Rigidbody_BodyType_enum_register;
 
-		struct RegisterEnum_ToneCurve
+		struct RegisterEnum_Text_ViewType
 		{
-			RegisterEnum_ToneCurve()
+			RegisterEnum_Text_ViewType()
 			{
-				EnumRegistry::Register(String("ToneCurve"), {
+				EnumRegistry::Register(String("Text::ViewType"), {
+					{ static_cast<Int>(Text::ViewType::Sprite), String("Sprite") },
+					{ static_cast<Int>(Text::ViewType::Billboard), String("Billboard") },
+				});
+			}
+		};
+		static RegisterEnum_Text_ViewType global_Text_ViewType_enum_register;
+
+		struct RegisterEnum_ToneMappingSettings_ToneCurve
+		{
+			RegisterEnum_ToneMappingSettings_ToneCurve()
+			{
+				EnumRegistry::Register(String("ToneMappingSettings::ToneCurve"), {
 					{ static_cast<Int>(ToneMappingSettings::ToneCurve::None), String("None") },
 					{ static_cast<Int>(ToneMappingSettings::ToneCurve::Reinhard), String("Reinhard") },
 					{ static_cast<Int>(ToneMappingSettings::ToneCurve::AcesFilmic), String("AcesFilmic") },
@@ -3832,19 +3856,7 @@ namespace SeedCore
 				});
 			}
 		};
-		static RegisterEnum_ToneCurve global_ToneCurve_enum_register;
-
-		struct RegisterEnum_ViewType
-		{
-			RegisterEnum_ViewType()
-			{
-				EnumRegistry::Register(String("ViewType"), {
-					{ static_cast<Int>(Image::ViewType::Sprite), String("Sprite") },
-					{ static_cast<Int>(Image::ViewType::Billboard), String("Billboard") },
-				});
-			}
-		};
-		static RegisterEnum_ViewType global_ViewType_enum_register;
+		static RegisterEnum_ToneMappingSettings_ToneCurve global_ToneMappingSettings_ToneCurve_enum_register;
 
 		struct RegisterEnum_WeatherType
 		{

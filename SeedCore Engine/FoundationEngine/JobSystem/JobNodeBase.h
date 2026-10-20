@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 namespace SeedCore
 {
@@ -23,27 +22,27 @@ namespace SeedCore
 
 		/// [EN] No flags set; initial default state.
 		/// [JP] フラグなし：初期デフォルト状態。
-		SC_CONST NodeStateType NONE = 0x00000000;
+		SC_CONSTEX NodeStateType NONE = 0x00000000;
 
 		/// [EN] Set while a runtime task's callable runs; exceptions thrown by tasks it spawned are stored on this node.
 		/// [JP] ランタイムタスクの処理の実行中に立つ。そこで生成したタスクが投げた例外は、このノードに格納される。
-		SC_CONST NodeStateType IMPLICITLY_ANCHORED = 0x10000000;
+		SC_CONSTEX NodeStateType IMPLICITLY_ANCHORED = 0x10000000;
 		
 		/// [EN] Node suspended itself to wait for child work, and is run again by the last child to finish.
 		/// [JP] ノードが子の処理を待つために自分を中断している。最後に終わった子によって再び実行される。
-		SC_CONST NodeStateType PREEMPTED = 0x20000000;
+		SC_CONSTEX NodeStateType PREEMPTED = 0x20000000;
 		
 		/// [EN] Keeps the subflow's graph after the node finishes instead of clearing it.
 		/// [JP] ノードが終わった後も、サブフローのグラフを消さずに残す。
-		SC_CONST NodeStateType RETAIN_SUBFLOW = 0x40000000;
+		SC_CONSTEX NodeStateType RETAIN_SUBFLOW = 0x40000000;
 		
 		/// [EN] The subflow was already joined inside the callable, so it is not scheduled again afterwards.
 		/// [JP] サブフローは処理の中で既に合流済みなので、その後に改めてスケジュールしない。
-		SC_CONST NodeStateType JOINED_SUBFLOW = 0x80000000;
+		SC_CONSTEX NodeStateType JOINED_SUBFLOW = 0x80000000;
 
 		/// [EN] Bitmask to extract the strong dependency counter from the state value (lower 28 bits).
 		/// [JP] 状態値から強依存関係カウンタを取り出すためのビットマスク（下位28ビット）。
-		SC_CONST NodeStateType STRONG_DEPENDENCIES_MASK = 0x0FFFFFFF;
+		SC_CONSTEX NodeStateType STRONG_DEPENDENCIES_MASK = 0x0FFFFFFF;
 	};
 
 	/// [EN] Convenient alias for the node state type.
@@ -71,35 +70,35 @@ namespace SeedCore
 
 		/// [EN] No exception has occurred; initial default state.
 		/// [JP] 例外なし：初期デフォルト状態。
-		SC_CONST ExceptionStateType NONE = 0x00000000;
+		SC_CONSTEX ExceptionStateType NONE = 0x00000000;
 
 		/// [EN] An exception was thrown by this node or a descendant; remaining work under it is skipped.
 		/// [JP] このノードか子孫が例外を投げた。その下の残りの処理は飛ばされる。
-		SC_CONST ExceptionStateType EXCEPTION = 0x10000000;
+		SC_CONSTEX ExceptionStateType EXCEPTION = 0x10000000;
 
 		/// [EN] This node already stores an exception, so later ones are not stored here.
 		/// [JP] このノードは既に例外を格納しているので、後から来たものはここに格納しない。
-		SC_CONST ExceptionStateType CAUGHT = 0x20000000;
+		SC_CONSTEX ExceptionStateType CAUGHT = 0x20000000;
 
 		/// [EN] The run was cancelled; nodes not yet started are skipped.
 		/// [JP] 実行がキャンセルされた。まだ始まっていないノードは飛ばされる。
-		SC_CONST ExceptionStateType CANCELLED = 0x40000000;
+		SC_CONSTEX ExceptionStateType CANCELLED = 0x40000000;
 
 		/// [EN] A caller is blocked on this node (corun/join, or a topology's future), so exceptions from below are stored here.
 		/// [JP] 呼び出し側がこのノードで待っている（corun/join、あるいはトポロジーの future）ので、下から来た例外はここに格納する。
-		SC_CONST ExceptionStateType EXPLICITLY_ANCHORED = 0x80000000;
+		SC_CONSTEX ExceptionStateType EXPLICITLY_ANCHORED = 0x80000000;
 
 		/// [EN] Reserved flag; nothing in the job system sets or reads it.
 		/// [JP] 予約済みのフラグ。ジョブシステムの中で立てたり読んだりしている箇所は無い。
-		SC_CONST ExceptionStateType LOCKED = 0x01000000;
+		SC_CONSTEX ExceptionStateType LOCKED = 0x01000000;
 
 		/// [EN] Reserved flag; nothing in the job system sets or reads it.
 		/// [JP] 予約済みのフラグ。ジョブシステムの中で立てたり読んだりしている箇所は無い。
-		SC_CONST ExceptionStateType FINISHED = 0x02000000;
+		SC_CONSTEX ExceptionStateType FINISHED = 0x02000000;
 
 		/// [EN] Bitmask covering all exception state flag bits (upper byte).
 		/// [JP] 例外状態フラグビット全体を覆うビットマスク（上位バイト）。
-		SC_CONST ExceptionStateType MASK = 0xFF000000;
+		SC_CONSTEX ExceptionStateType MASK = 0xFF000000;
 	};
 
 	/// [EN] Convenient alias for the exception state type.

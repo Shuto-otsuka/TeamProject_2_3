@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
@@ -39,12 +38,12 @@ namespace SeedCore
 
 		void End(D3D12CommandList* cmdList);
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE DisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE DisplayGPUHandle()const;
 
 	private:
-		SC_CONST Uint32 maxMeshletsPerDispatch_ = 32;
-		SC_CONST Uint32 maxInstanceCount_ = 4096;
-		SC_CONST Uint32 maxBoneCount_ = 2048;
+		SC_CONSTEX Uint32 maxMeshletsPerDispatch_ = 32;
+		SC_CONSTEX Uint32 maxInstanceCount_ = 4096;
+		SC_CONSTEX Uint32 maxBoneCount_ = 2048;
 
 		ModelShader modelShader_;
 		ModelCullingBuffer modelCullingBuffer_;

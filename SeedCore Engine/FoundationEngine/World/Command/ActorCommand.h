@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/Command/Command.h>
 #include <FoundationEngine/World/Actor/Blueprint.h>
 

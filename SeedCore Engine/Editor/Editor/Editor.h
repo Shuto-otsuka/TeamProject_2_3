@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 
@@ -44,11 +43,11 @@ namespace SeedCore
 		///      ことをシグネチャに出しておく。
 		void Draw(D3D12_GPU_DESCRIPTOR_HANDLE editorFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE gameFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE canvasFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE timelinePreviewFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE modelTransformPreviewFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE materialPreviewFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE skeletonControllerPreviewFrameBufferHandle, D3D12_GPU_DESCRIPTOR_HANDLE avatarPreviewFrameBufferHandle, const GpuProfiler& gpuProfiler);
 
-		[[nodiscard]] DynamicArray<Entity> GetSelectedEntities()const;
+		NODISCARD DynamicArray<Entity> GetSelectedEntities()const;
 
-		[[nodiscard]] const RaytracingContext& GetRaytracingSettings()const;
+		NODISCARD const RaytracingContext& GetRaytracingSettings()const;
 
-		[[nodiscard]] Bool GameViewImageHovered()const { return gameWindowPanel_->ImageHovered(); }
+		NODISCARD Bool GameViewImageHovered()const { return gameWindowPanel_->ImageHovered(); }
 
 	private:
 		void PruneDeadSelection();

@@ -46,7 +46,7 @@ namespace SeedCore
 
 			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&argumentBuffer_));
 			SC_HR_CHECK(hr, "モデルカリングの引数バッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 			argumentBuffer_->SetName(L"ModelCullingBuffer_Argument");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(argumentBuffer_.Get());
 #endif
@@ -81,7 +81,7 @@ namespace SeedCore
 
 			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&argumentResetBuffer_));
 			SC_HR_CHECK(hr, "モデルカリングの引数リセットバッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 			argumentResetBuffer_->SetName(L"ModelCullingBuffer_ArgumentReset");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(argumentResetBuffer_.Get());
 #endif
@@ -164,7 +164,7 @@ namespace SeedCore
 
 		hr = device_->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&singleSidedBuffer_));
 		SC_HR_CHECK(hr, "モデルカリングの片面リストバッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 		singleSidedBuffer_->SetName(L"ModelCullingBuffer_SingleSided");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(singleSidedBuffer_.Get());
 #endif
@@ -177,7 +177,7 @@ namespace SeedCore
 
 		hr = device_->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&doubleSidedBuffer_));
 		SC_HR_CHECK(hr, "モデルカリングの両面リストバッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 		doubleSidedBuffer_->SetName(L"ModelCullingBuffer_DoubleSided");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(doubleSidedBuffer_.Get());
 #endif

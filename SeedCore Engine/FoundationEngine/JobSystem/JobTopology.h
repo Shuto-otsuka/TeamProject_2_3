@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/JobSystem/JobNodeBase.h>
 
 namespace SeedCore

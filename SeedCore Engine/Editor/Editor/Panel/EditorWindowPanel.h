@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <Editor/Editor/Panel/GuizmoPanel3D.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
@@ -44,7 +43,7 @@ namespace SeedCore
 		};
 
 	private:
-		SC_CONST Float iconSize_ = 28.0f;
+		SC_CONSTEX Float iconSize_ = 28.0f;
 
 		EditorContext& context_;
 

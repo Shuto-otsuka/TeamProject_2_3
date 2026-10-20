@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Resource/Scene/SceneBlueprint.h>
 #include <FoundationEngine/JobSystem/JobTaskflow.h>
 
@@ -234,7 +233,7 @@ namespace SeedCore
 		* 覆いであり、切り替え先のシーンではないため。返したシーンは次の
 		* 遷移が始まるまで有効。
 		*/
-		[[nodiscard]] const SceneBlueprint* ConsumeSwitchedScene();
+		NODISCARD const SceneBlueprint* ConsumeSwitchedScene();
 
 	private:
 		/**

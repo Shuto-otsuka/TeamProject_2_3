@@ -117,7 +117,7 @@ namespace SeedCore
 		SC_HR_CHECK(hr, "屈折シェーダーテーブルリソースの生成に失敗しました");
 		/// [EN] In debug builds, name it so it can be identified in PIX and crash dumps.
 		/// [JP] デバッグビルドでは、PIX やクラッシュダンプで見分けられるよう名前を付ける。
-#ifdef _DEBUG
+#if SC_DEBUG
 		shaderTableResource_->SetName(L"Refraction_ShaderTable");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(shaderTableResource_.Get());
 #endif
@@ -305,7 +305,7 @@ namespace SeedCore
 		SC_HR_CHECK(hr, "屈折放射輝度テクスチャの生成に失敗しました");
 		/// [EN] In debug builds, name it so it can be identified in PIX and crash dumps.
 		/// [JP] デバッグビルドでは、PIX やクラッシュダンプで見分けられるよう名前を付ける。
-#ifdef _DEBUG
+#if SC_DEBUG
 		outputResource_->SetName(L"Refraction_Output");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(outputResource_.Get());
 #endif

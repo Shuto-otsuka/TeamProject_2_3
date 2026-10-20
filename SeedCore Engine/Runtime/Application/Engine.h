@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/ECS/System/SystemScheduler.h>
 #include <FoundationEngine/JobSystem/JobExecutor.h>

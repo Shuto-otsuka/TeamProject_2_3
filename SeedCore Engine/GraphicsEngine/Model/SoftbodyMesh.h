@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/Model/Crister.h>
 #include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
 
@@ -70,7 +69,7 @@ namespace SeedCore
 	public:
 		/// [EN] How many nearest proxy vertices each render vertex binds to.
 		/// [JP] 各描画頂点が束縛する、最も近いプロキシ頂点の個数。
-		SC_CONST Uint32 bindMaxWeights_ = 4;
+		SC_CONSTEX Uint32 bindMaxWeights_ = 4;
 
 		SoftbodyMesh() = default;
 		~SoftbodyMesh() = default;
@@ -125,17 +124,17 @@ namespace SeedCore
 		*/
 		void Update(const DynamicArray<Vector3>& simulatedProxyPositions);
 
-		[[nodiscard]] Uint VertexBufferIndex()const;
-		[[nodiscard]] Uint MeshletBufferIndex()const;
-		[[nodiscard]] Uint MeshletBoundBufferIndex()const;
-		[[nodiscard]] Uint VertexIndicesBufferIndex()const;
-		[[nodiscard]] Uint PrimitiveIndicesBufferIndex()const;
+		NODISCARD Uint VertexBufferIndex()const;
+		NODISCARD Uint MeshletBufferIndex()const;
+		NODISCARD Uint MeshletBoundBufferIndex()const;
+		NODISCARD Uint VertexIndicesBufferIndex()const;
+		NODISCARD Uint PrimitiveIndicesBufferIndex()const;
 
-		[[nodiscard]] Uint32 MeshletCount()const;
-		[[nodiscard]] Vector3 PositionMin()const;
-		[[nodiscard]] Vector3 PositionExtent()const;
-		[[nodiscard]] Vector2 TexcoordMin()const;
-		[[nodiscard]] Vector2 TexcoordExtent()const;
+		NODISCARD Uint32 MeshletCount()const;
+		NODISCARD Vector3 PositionMin()const;
+		NODISCARD Vector3 PositionExtent()const;
+		NODISCARD Vector2 TexcoordMin()const;
+		NODISCARD Vector2 TexcoordExtent()const;
 
 	private:
 		/// [EN] One render vertex's binding to bindMaxWeights_ proxy

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
 #include <GraphicsEngine/D3D12/PipelineState/RaytracingStateObject.h>
@@ -42,12 +41,12 @@ namespace SeedCore
 
 		void Create(ShaderCache& shaderCache, ID3D12Device5* device);
 
-		[[nodiscard]] ID3D12StateObject* GetStateObject()const;
+		NODISCARD ID3D12StateObject* GetStateObject()const;
 
-		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
+		NODISCARD ID3D12RootSignature* GetRootSignature()const;
 
 	public:
-		SC_CONST const Char* rayGenExportName = "RefractionRayGeneration";
+		SC_CONSTEX const Char* rayGenExportName = "RefractionRayGeneration";
 
 		/// [EN] Enter + exit a single convex refractive shell is 2 bounces; a
 		///      few extra allow for a second nested/adjacent surface (e.g. a
@@ -59,7 +58,7 @@ namespace SeedCore
 		///      よう、少し余裕を持たせる。RefractionRT.hlsl のインライン
 		///      RayQuery ループ回数の上限であり(maxTraceRecursionDepth_ とは
 		///      もう無関係、そちらは 1 のまま)。
-		SC_CONST Uint32 maxBounces_ = 4;
+		SC_CONSTEX Uint32 maxBounces_ = 4;
 
 	private:
 		Handle<RaytracingShader> libraryShader_;

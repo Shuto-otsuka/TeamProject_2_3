@@ -39,7 +39,7 @@ namespace SeedCore
 
 		hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &depthDesc, D3D12_RESOURCE_STATE_COMMON, &depthClearValue, IID_PPV_ARGS(&depthResource_));
 		SC_HR_CHECK(hr, "深度リサイズバッファ(深度ビュー)の生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 		depthResource_->SetName(L"DepthResizeBuffer_Depth");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(depthResource_.Get());
 #endif
@@ -66,7 +66,7 @@ namespace SeedCore
 
 		hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &uavDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&uavResource_));
 		SC_HR_CHECK(hr, "深度リサイズバッファ(UAVビュー)の生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 		uavResource_->SetName(L"DepthResizeBuffer_UAV");
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(uavResource_.Get());
 #endif

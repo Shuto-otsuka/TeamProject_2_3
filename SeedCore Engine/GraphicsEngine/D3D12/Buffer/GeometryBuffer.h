@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 
 namespace SeedCore
@@ -10,7 +9,7 @@ namespace SeedCore
 	class GeometryBuffer
 	{
 	private:
-		SC_CONST Int bufferCount_ = 5;
+		SC_CONSTEX Int bufferCount_ = 5;
 
 		const DXGI_FORMAT formats_[bufferCount_] =
 		{
@@ -65,11 +64,11 @@ namespace SeedCore
 
 		void End(D3D12CommandList* cmdList);
 
-		[[nodiscard]] Uint32 ColorShaderResourceViewIndex(Int index)const;
+		NODISCARD Uint32 ColorShaderResourceViewIndex(Int index)const;
 
-		[[nodiscard]] Uint32 DepthShaderResourceViewIndex()const;
+		NODISCARD Uint32 DepthShaderResourceViewIndex()const;
 
-		[[nodiscard]] D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilViewHandle()const;
+		NODISCARD D3D12_CPU_DESCRIPTOR_HANDLE DepthStencilViewHandle()const;
 
 		/// [EN] Raw resource pointer, for callers that need the native
 		///      ID3D12Resource* directly instead of a bindless index - e.g.
@@ -79,9 +78,9 @@ namespace SeedCore
 		///      する呼び出し側向け — 例えば DlssBufferTag(DLSS/DlssManager.h)は
 		///      NVIDIA Streamline がこのエンジンの bindless ヒープではなく
 		///      ネイティブポインタでタグ付けする。
-		[[nodiscard]] ID3D12Resource* ColorResource(Int index)const;
+		NODISCARD ID3D12Resource* ColorResource(Int index)const;
 
-		[[nodiscard]] ID3D12Resource* DepthResource()const;
+		NODISCARD ID3D12Resource* DepthResource()const;
 
 		/// [EN] Bindless UAV index onto RT0/1/2/3 (everything except RT4, the
 		///      VisibilityBuffer id, which is written once by the raster
@@ -101,7 +100,7 @@ namespace SeedCore
 		///      DLSS/DlssBackgroundVelocityCS.hlsl がパッチし、RT0/1/3 は
 		///      VisibilityBuffer マテリアル解決パス(Model/Material/MaterialResolveCS.hlsl)が
 		///      丸ごとパッチする。
-		[[nodiscard]] Uint32 ColorUnorderedAccessViewIndex(Int index)const;
+		NODISCARD Uint32 ColorUnorderedAccessViewIndex(Int index)const;
 
 		/// [EN] Thin alias for ColorUnorderedAccessViewIndex(2), kept so existing
 		///      DLSS-RR callers (DlssRayReconstructionRenderer) do not need to
@@ -109,7 +108,7 @@ namespace SeedCore
 		/// [JP] ColorUnorderedAccessViewIndex(2) の薄いエイリアス。既存の
 		///      DLSS-RR 呼び出し側(DlssRayReconstructionRenderer)が RT の
 		///      インデックスを知らなくて済むように残している。
-		[[nodiscard]] Uint32 VelocityUnorderedAccessViewIndex()const;
+		NODISCARD Uint32 VelocityUnorderedAccessViewIndex()const;
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D12Resource> colorResources_[bufferCount_];

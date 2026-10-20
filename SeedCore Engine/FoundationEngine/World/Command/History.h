@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/Command/Command.h>
 
 namespace SeedCore
@@ -93,7 +92,7 @@ namespace SeedCore
 	private:
 		/// [EN] Maximum number of undo entries retained before the oldest is dropped.
 		/// [JP] 保持するUndoエントリの最大数。超えると最古のものから破棄する。
-		SC_CONST Size maxDepth_ = 100;
+		SC_CONSTEX Size maxDepth_ = 100;
 
 		/// [EN] Commands applied so far, most recent last.
 		/// [JP] これまでに適用されたコマンド。最新のものが末尾。

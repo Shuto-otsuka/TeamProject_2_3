@@ -146,7 +146,7 @@ namespace SeedCore
 
 			scratch_ = scratch;
 			scratchCapacity_ = prebuildInfo.ScratchDataSizeInBytes;
-#ifdef _DEBUG
+#if SC_DEBUG
 			scratch_->SetName(L"BottomLevelAccelerationStructure_Scratch");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(scratch_.Get());
 #endif
@@ -162,7 +162,7 @@ namespace SeedCore
 
 			result_ = result;
 			resultCapacity_ = prebuildInfo.ResultDataMaxSizeInBytes;
-#ifdef _DEBUG
+#if SC_DEBUG
 			result_->SetName(L"BottomLevelAccelerationStructure_Result");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(result_.Get());
 #endif

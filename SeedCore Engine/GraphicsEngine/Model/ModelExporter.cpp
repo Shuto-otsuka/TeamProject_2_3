@@ -721,7 +721,7 @@ namespace SeedCore
 				break;
 			}
 			case ExportAxis::EngineNativeDirectX:
-				[[fallthrough]];
+				FALLTHROUGH;
 			case ExportAxis::GltfRightHandedYUp:
 			{
 				break;

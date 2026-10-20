@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Resource/Config/BootConfig.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 #include <GraphicsEngine/D3D12/Buffer/FrameBuffer.h>
@@ -25,15 +24,15 @@ namespace SeedCore
 
 		void Render(D3D12CommandList* cmdList, const BootConfig& config, Float progress, Float time);
 
-		[[nodiscard]] Bool Created()const;
+		NODISCARD Bool Created()const;
 
-		[[nodiscard]] Uint32 Width()const;
+		NODISCARD Uint32 Width()const;
 
-		[[nodiscard]] Uint32 Height()const;
+		NODISCARD Uint32 Height()const;
 
-		[[nodiscard]] Float BarAspect()const;
+		NODISCARD Float BarAspect()const;
 
-		[[nodiscard]] D3D12_GPU_DESCRIPTOR_HANDLE DisplayGPUHandle()const;
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE DisplayGPUHandle()const;
 
 	private:
 		BootScreen bootScreen_;

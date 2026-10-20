@@ -340,7 +340,7 @@ namespace SeedCore
 					resourceDesc.Flags = flags;
 
 					SC_HR_CHECK(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, state, nullptr, IID_PPV_ARGS(resource.ReleaseAndGetAddressOf())), "レイトレーシング用バッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 					resource->SetName(name);
 					GFSDK_Aftermath_DX12_UpdateResourceInfo(resource.Get());
 #endif

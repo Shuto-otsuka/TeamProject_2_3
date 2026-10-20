@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <FoundationEngine/Interop/QueryInstance.h>
@@ -917,7 +916,7 @@ namespace SeedCore
 	private:
 		/// [EN] Number of screen pixels represented by one physics meter.
 		/// [JP] 物理空間の1メートルに対応する画面上のピクセル数。
-		SC_CONST Float pixelsPerMeter_ = 100.0f;
+		SC_CONSTEX Float pixelsPerMeter_ = 100.0f;
 
 		/// [EN] Jolt services and pooled physics resources used by this facade.
 		/// [JP] このファサードが使用するJoltサービスと物理リソースプール。

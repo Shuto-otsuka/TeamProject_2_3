@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
@@ -163,19 +162,19 @@ namespace SeedCore
 		void UnorderedAccessBarrier(D3D12CommandList* cmdList, ID3D12Resource* resource);
 
 	private:
-		SC_CONST Uint environmentSize_ = 512;
-		SC_CONST Uint environmentMipLevels_ = 10;
-		SC_CONST Uint irradianceSize_ = 32;
-		SC_CONST Uint prefilterSize_ = 128;
-		SC_CONST Uint prefilterMipLevels_ = 5;
+		SC_CONSTEX Uint environmentSize_ = 512;
+		SC_CONSTEX Uint environmentMipLevels_ = 10;
+		SC_CONSTEX Uint irradianceSize_ = 32;
+		SC_CONSTEX Uint prefilterSize_ = 128;
+		SC_CONSTEX Uint prefilterMipLevels_ = 5;
 
-		SC_CONST DXGI_FORMAT cubeFormat_ = DXGI_FORMAT_R16G16B16A16_FLOAT;
+		SC_CONSTEX DXGI_FORMAT cubeFormat_ = DXGI_FORMAT_R16G16B16A16_FLOAT;
 
-		SC_CONST Uint brdfLookupTableSize_ = 512;
-		SC_CONST Uint brdfSampleCount_ = 1024;
-		SC_CONST Uint prefilterSampleCount_ = 256;
-		SC_CONST Uint maxGenerateDispatches_ = 16;
-		SC_CONST DXGI_FORMAT brdfLookupTableFormat_ = DXGI_FORMAT_R16G16_FLOAT;
+		SC_CONSTEX Uint brdfLookupTableSize_ = 512;
+		SC_CONSTEX Uint brdfSampleCount_ = 1024;
+		SC_CONSTEX Uint prefilterSampleCount_ = 256;
+		SC_CONSTEX Uint maxGenerateDispatches_ = 16;
+		SC_CONSTEX DXGI_FORMAT brdfLookupTableFormat_ = DXGI_FORMAT_R16G16_FLOAT;
 
 		ID3D12Device* device_ = nullptr;
 		BindlessHeap* bindlessHeap_ = nullptr;
@@ -235,6 +234,6 @@ namespace SeedCore
 		Uint32 generatedProceduralSkyHash_ = 0;
 		Bool proceduralSkyGenerated_ = false;
 		Uint proceduralSkyRefreshCounter_ = 0;
-		SC_CONST Uint proceduralSkyRefreshInterval_ = 120;
+		SC_CONSTEX Uint proceduralSkyRefreshInterval_ = 120;
 	};
 }

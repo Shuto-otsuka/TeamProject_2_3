@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
 #include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
@@ -39,25 +38,25 @@ namespace SeedCore
 
 		void Create(ShaderCache& shaderCache, ID3D12Device* device);
 
-		[[nodiscard]] ID3D12PipelineState* GetPrefilterPipelineState()const;
+		NODISCARD ID3D12PipelineState* GetPrefilterPipelineState()const;
 
 		/// [EN] levelIndex is 0-4 for Downsample1..5 respectively - the pass
 		///      that writes bloom level levelIndex+1.
 		/// [JP] levelIndex は 0-4 でそれぞれ Downsample1..5 に対応する
 		///      (ブルームのレベル levelIndex+1 へ書くパス)。
-		[[nodiscard]] ID3D12PipelineState* GetDownsamplePipelineState(Uint32 levelIndex)const;
+		NODISCARD ID3D12PipelineState* GetDownsamplePipelineState(Uint32 levelIndex)const;
 
 		/// [EN] levelIndex is 0-4 for Upsample0..4 respectively - the pass
 		///      that additively accumulates into bloom level levelIndex.
 		/// [JP] levelIndex は 0-4 でそれぞれ Upsample0..4 に対応する
 		///      (ブルームのレベル levelIndex へ加算で積むパス)。
-		[[nodiscard]] ID3D12PipelineState* GetUpsamplePipelineState(Uint32 levelIndex)const;
+		NODISCARD ID3D12PipelineState* GetUpsamplePipelineState(Uint32 levelIndex)const;
 
-		[[nodiscard]] ID3D12RootSignature* GetRootSignature()const;
+		NODISCARD ID3D12RootSignature* GetRootSignature()const;
 
 	private:
-		SC_CONST Uint32 levelCount = 6;
-		SC_CONST Uint32 chainPassCount = levelCount - 1;
+		SC_CONSTEX Uint32 levelCount = 6;
+		SC_CONSTEX Uint32 chainPassCount = levelCount - 1;
 
 		Handle<ComputeShader> prefilterComputeShader_;
 		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> prefilterPipelineStateHandle_;

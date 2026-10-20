@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 
 namespace SeedCore
@@ -53,7 +52,7 @@ namespace SeedCore
 	class MaterialSortBuffer
 	{
 	public:
-		SC_CONST Uint bucketCount_ = 1024;
+		SC_CONSTEX Uint bucketCount_ = 1024;
 
 		MaterialSortBuffer() = default;
 		~MaterialSortBuffer() = default;

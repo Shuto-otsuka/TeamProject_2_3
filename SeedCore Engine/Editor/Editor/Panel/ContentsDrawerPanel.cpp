@@ -1121,7 +1121,7 @@ namespace SeedCore
 		case AssetType::Scene:
 			return imguiTexture_.Icon(IconType::Scene);
 		case AssetType::Texture:
-			[[fallthrough]];
+			FALLTHROUGH;
 		default:
 			return imguiTexture_.Icon(IconType::Text);
 		}

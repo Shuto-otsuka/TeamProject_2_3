@@ -171,7 +171,7 @@ namespace SeedCore
 			{
 				return;
 			}
-#ifdef _DEBUG
+#if SC_DEBUG
 			atlasTexture_->SetName(L"Font_Atlas");
 			GFSDK_Aftermath_DX12_UpdateResourceInfo(atlasTexture_.Get());
 #endif

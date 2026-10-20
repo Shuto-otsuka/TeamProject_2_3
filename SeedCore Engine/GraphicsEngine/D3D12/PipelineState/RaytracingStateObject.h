@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Pool/StablePool.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <FoundationEngine/Utility/FlatMap.h>
@@ -53,7 +52,7 @@ namespace SeedCore
 
 		Handle<Microsoft::WRL::ComPtr<ID3D12StateObject>> GetOrCreate(ID3D12Device5* device, const RaytracingStateKey& key);
 
-		[[nodiscard]] ID3D12StateObject* Get(const Handle<Microsoft::WRL::ComPtr<ID3D12StateObject>>& handle);
+		NODISCARD ID3D12StateObject* Get(const Handle<Microsoft::WRL::ComPtr<ID3D12StateObject>>& handle);
 
 	private:
 		FlatMap<RaytracingStateKey, Handle<Microsoft::WRL::ComPtr<ID3D12StateObject>>, RaytracingStateKeyHash, RaytracingStateKeyEqual> raytracingState_;

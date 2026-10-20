@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <Editor/Editor/Panel/ConsolePanel.h>
 #include <Editor/Editor/Panel/ProfilerPanel.h>
 

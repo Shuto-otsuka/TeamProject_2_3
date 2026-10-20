@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/TAAU/TaauResolveShader.h>
@@ -29,12 +28,12 @@ namespace SeedCore
 
 		void Dispatch(D3D12CommandList* cmdList, ID3D12DescriptorHeap* heap, const RootAddresses& addresses, RaytracingView view, ID3D12Resource* velocityResource, Uint32 colorShaderResourceViewIndex, Uint32 depthShaderResourceViewIndex, Uint32 velocityShaderResourceViewIndex, Uint32 sourceWidth, Uint32 sourceHeight);
 
-		[[nodiscard]] ID3D12Resource* OutputResource(RaytracingView view)const;
+		NODISCARD ID3D12Resource* OutputResource(RaytracingView view)const;
 
-		[[nodiscard]] Uint32 OutputShaderResourceViewIndex(RaytracingView view)const;
+		NODISCARD Uint32 OutputShaderResourceViewIndex(RaytracingView view)const;
 
 	private:
-		SC_CONST Uint32 accumulationSlotCount_ = 2;
+		SC_CONSTEX Uint32 accumulationSlotCount_ = 2;
 
 		struct TaauResolveConstantBuffer
 		{
@@ -71,7 +70,7 @@ namespace SeedCore
 		View editorView_;
 		View gameView_;
 
-		[[nodiscard]] View& ViewFor(RaytracingView view);
+		NODISCARD View& ViewFor(RaytracingView view);
 
 		void CreateViewResources(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 outputWidth, Uint32 outputHeight);
 

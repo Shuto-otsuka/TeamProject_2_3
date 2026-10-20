@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Log/DxFail.h>
 #include <GraphicsEngine/D3D12/FrameRing.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
@@ -54,7 +53,7 @@ namespace SeedCore
 			{
 				HRESULT hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resources_[frame]));
 				SC_HR_CHECK(hr, "定数バッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 				resources_[frame]->SetName(L"StaticConstantBuffer");
 				GFSDK_Aftermath_DX12_UpdateResourceInfo(resources_[frame].Get());
 #endif
@@ -93,12 +92,12 @@ namespace SeedCore
 			memcpy(mappedPtrs_[FrameRing::Index()], &data, sizeof(T));
 		}
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS Address()const
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS Address()const
 		{
 			return resources_[FrameRing::Index()]->GetGPUVirtualAddress();
 		}
 
-		[[nodiscard]] Uint Index()const
+		NODISCARD Uint Index()const
 		{
 			return indices_[FrameRing::Index()];
 		}
@@ -126,9 +125,9 @@ namespace SeedCore
 			Update(device, data.data(), static_cast<Uint>(sizeof(T) * data.size()));
 		}
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS Address()const;
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS Address()const;
 
-		[[nodiscard]] Uint Index()const;
+		NODISCARD Uint Index()const;
 
 	private:
 		void Allocate(ID3D12Device* device, Uint byteSize);

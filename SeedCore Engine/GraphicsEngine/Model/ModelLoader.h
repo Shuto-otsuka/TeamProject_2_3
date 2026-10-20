@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <FoundationEngine/Pool/StablePool.h>
 #include <FoundationEngine/Resource/Asset/AxisConvention.h>

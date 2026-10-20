@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 #include <AudioEngine/Resource/AudioLoaderSystem.h>
 #include <AudioEngine/Audio/AudioResource.h>
@@ -60,7 +59,7 @@ namespace SeedCore
 		* [JP]
 		* ローダーのまとまりを返す。
 		*/
-		[[nodiscard]] AudioLoaderSystem& Loaders();
+		NODISCARD AudioLoaderSystem& Loaders();
 
 		/**
 		* [EN]
@@ -74,7 +73,7 @@ namespace SeedCore
 		* 音声リソースを返す。AudioEngine のコードから型付きで使うため。
 		* AudioEngine のリソースは1種類なので、まとまりを介さず直接返す。
 		*/
-		[[nodiscard]] AudioResource& Resource();
+		NODISCARD AudioResource& Resource();
 
 	private:
 		/// [EN] Loaders; declared before resource_ so they are built first and destroyed last.

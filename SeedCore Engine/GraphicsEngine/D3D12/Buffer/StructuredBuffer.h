@@ -50,7 +50,7 @@ namespace SeedCore
 			{
 				HRESULT hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resources_[frame]));
 				SC_HR_CHECK(hr, "構造化バッファの生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 				resources_[frame]->SetName(L"StructuredBuffer");
 				GFSDK_Aftermath_DX12_UpdateResourceInfo(resources_[frame].Get());
 #endif
@@ -97,12 +97,12 @@ namespace SeedCore
 			lastCounts_[frame] = count;
 		}
 
-		[[nodiscard]] Uint Index()const
+		NODISCARD Uint Index()const
 		{
 			return indices_[FrameRing::Index()];
 		}
 
-		[[nodiscard]] D3D12_GPU_VIRTUAL_ADDRESS GPUVirtualAddress()const
+		NODISCARD D3D12_GPU_VIRTUAL_ADDRESS GPUVirtualAddress()const
 		{
 			return resources_[FrameRing::Index()]->GetGPUVirtualAddress();
 		}
@@ -165,7 +165,7 @@ namespace SeedCore
 			{
 				HRESULT hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resources_[frame]));
 				SC_HR_CHECK(hr, "ByteAddressBuffer の生成に失敗しました");
-#ifdef _DEBUG
+#if SC_DEBUG
 				resources_[frame]->SetName(L"ByteAddressBuffer");
 				GFSDK_Aftermath_DX12_UpdateResourceInfo(resources_[frame].Get());
 #endif
@@ -212,7 +212,7 @@ namespace SeedCore
 			lastByteSizes_[frame] = byteSize;
 		}
 
-		[[nodiscard]] Uint Index()const
+		NODISCARD Uint Index()const
 		{
 			return indices_[FrameRing::Index()];
 		}
@@ -273,17 +273,17 @@ namespace SeedCore
 			return unorderedAccessViewDesc;
 		}
 
-		[[nodiscard]] Uint UnorderedAccessViewIndex()const
+		NODISCARD Uint UnorderedAccessViewIndex()const
 		{
 			return unorderedAccessViewIndex_;
 		}
 
-		[[nodiscard]] Uint ShaderResourceViewIndex()const
+		NODISCARD Uint ShaderResourceViewIndex()const
 		{
 			return shaderResourceViewIndex_;
 		}
 
-		[[nodiscard]] Uint ElementCount()const
+		NODISCARD Uint ElementCount()const
 		{
 			return elementCount_;
 		}

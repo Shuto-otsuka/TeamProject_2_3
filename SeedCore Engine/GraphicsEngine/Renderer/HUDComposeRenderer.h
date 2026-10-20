@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <GraphicsEngine/Shape/HUD/HUDComposeShader.h>
 
 namespace SeedCore

@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <FoundationEngine/Pool/StablePool.h>
 #include <GraphicsEngine/Texture/Texture.h>
@@ -26,9 +25,9 @@ namespace SeedCore
 		void EvictBudget(BindlessHeap* heap, Uint64 currentFrame);
 
 	public:
-		static void CreateTexturePath(in ID3D12Device* device, in D3D12CommandQueue* cmdQueue, in ID3D12DescriptorHeap* heap, in String filePath, inout Microsoft::WRL::ComPtr<ID3D12Resource>& resource, in Uint textureIndex);
+		static void CreateTexturePath(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* cmdQueue, SC_IN ID3D12DescriptorHeap* heap, SC_IN String filePath, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex);
 
-		static void CreateTextureMemory(in ID3D12Device* device, in D3D12CommandQueue* cmdQueue, in ID3D12DescriptorHeap* heap, in const DynamicArray<Byte>& data, inout Microsoft::WRL::ComPtr<ID3D12Resource>& resource, in Uint textureIndex);
+		static void CreateTextureMemory(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* cmdQueue, SC_IN ID3D12DescriptorHeap* heap, SC_IN const DynamicArray<Byte>& data, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex);
 
 	private:
 		StablePool<Texture> pool_;
@@ -39,6 +38,6 @@ namespace SeedCore
 
 		Uint64 totalResidentBytes_ = 0;
 		Uint64 budgetBytes_ = 128ull * 1024 * 1024;
-		SC_CONST Uint64 evictAgeFrames_ = 8;
+		SC_CONSTEX Uint64 evictAgeFrames_ = 8;
 	};
 }

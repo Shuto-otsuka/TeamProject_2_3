@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Prelude.h>
 
 #include <GraphicsEngine/Texture/TextureLoader.h>
 #include <GraphicsEngine/Model/ModelLoader.h>
