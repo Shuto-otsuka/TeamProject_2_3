@@ -64,10 +64,12 @@ private:
 	float speed;
 	float aliveTime;
 	float aliveTimer = 0.0f;
+	float dynamicWaitTimer = 0.01f;
 
 	int cost = 0;
 
 	bool isGravityArea = false;
+	bool isDynamicWait = false;
 
 	SeedCore::Scale* scale;
 	SeedCore::Position* position;

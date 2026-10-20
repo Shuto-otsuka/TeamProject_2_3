@@ -206,9 +206,11 @@ void BulletController::Stop()
     //停止ステートにする
     state = State::STOP;
 
-    //重力エリアであればRigidbodyをDynamicをする
+    //重力エリアであればRigidbodyをDynamicにするフラグを立てる
     if (isGravityArea)
-        rigidbody->bodyType_ = SeedCore::Rigidbody::BodyType::Dynamic;
+    {
+        isDynamicWait = true;
+    }
     
     //衝突判定ON
     rigidbody->isTrigger_ = false;
@@ -249,6 +251,22 @@ void BulletController::Move(float elapsedTime)
         //常に回転0
         if(rigidbody && rigidbody->bodyType_ == SeedCore::Rigidbody::BodyType::Kinematic)
             rigidbody->MoveTarget({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, elapsedTime);
+
+        if (isDynamicWait)
+        {
+            //一定時間でRigidbodyをDynamicにする
+            //一定時間待つのはkinematicの状態で回転が0になるまで待ちたいから
+            dynamicWaitTimer -= elapsedTime;
+            if (dynamicWaitTimer <= 0.0f)
+            {
+                isDynamicWait = false;
+                rigidbody->bodyType_ = SeedCore::Rigidbody::BodyType::Dynamic;
+                rigidbody->freezeRotationX_ = true;
+                rigidbody->freezeRotationY_ = true;
+                rigidbody->freezeRotationZ_ = true;
+            }
+        }
+
         return;
     }
 
