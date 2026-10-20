@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "31741ba5-cc3f-4f5a-94f0-7173250e67ad",
+			"collaborationId": "1af2708d-324d-4865-8cf8-9861fe1e543a",
 			"components": [
 				{
 					"component": "Mesh",
@@ -50,7 +50,39 @@
 					"fields": [
 						{
 							"bool": false,
-							"children": [],
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 0.0,
+										"g": 0.0,
+										"r": 0.0
+									},
+									"float": 0.0,
+									"int": -2084196240,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
 							"color": {
 								"a": 1.0,
 								"b": 0.0,
@@ -81,7 +113,39 @@
 						},
 						{
 							"bool": false,
-							"children": [],
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 0.0,
+										"g": 0.0,
+										"r": 0.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[0]",
+									"string": "bullet_M",
+									"type": 7,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
 							"color": {
 								"a": 1.0,
 								"b": 0.0,
@@ -123,7 +187,7 @@
 										"r": 0.0
 									},
 									"float": 0.0,
-									"int": -1602242984,
+									"int": -2084196240,
 									"is_array": false,
 									"name": "[0]",
 									"string": "",
