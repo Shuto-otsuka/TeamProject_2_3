@@ -6,15 +6,17 @@ namespace SeedCore
 	/**
 	* [EN]
 	* One file belonging to a shared asset: where it sits in the workspace,
-	* what its contents hash to, and which stored blob holds them. An asset
-	* is usually its own file plus the .meta beside it.
+	* what its contents hash to, and which Drive file holds them - the one
+	* at the same path in the library's Assets folder, or a blob for a
+	* .meta. An asset is usually its own file plus the .meta beside it.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 共有アセットに属するファイル1つ。ワークスペース上の位置、中身の
-	* ハッシュ、そしてその中身を保持している blob を表す。アセットは通常、
-	* 本体と隣の .meta の2つで構成される。
+	* ハッシュ、そしてその中身を保持している Drive のファイル（ライブラリ
+	* の Assets フォルダの同じ位置にあるもの、.meta なら blob）を表す。
+	* アセットは通常、本体と隣の .meta の2つで構成される。
 	*/
 	struct SharedFile
 	{
@@ -22,8 +24,8 @@ namespace SeedCore
 		/// [JP] ワークスペース内での位置。区切りは斜線で書く。
 		String path_;
 
-		/// [EN] SHA-256 of the contents, which is also the name the blob is stored under.
-		/// [JP] 中身の SHA-256。blob を保存するときの名前でもある。
+		/// [EN] SHA-256 of the contents, which is also the name a blob is stored under.
+		/// [JP] 中身の SHA-256。blob として保存する場合は、その名前にもなる。
 		String hash_;
 
 		/// [EN] Identifier of the Drive file holding those contents.
@@ -232,17 +234,20 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Records new contents for an asset and moves it to the next
-		* revision, replacing whatever the library held: the last publish
-		* wins. revision receives the revision that was written.
+		* revision, as long as the entry is still at baseRevision: the first
+		* publish made on a revision is the one that stands, and a later one
+		* made on the same revision is refused. revision receives the
+		* revision that was written.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* アセットの新しい中身を記録し、次の Revision へ進める。ライブラリの
-		* 内容は置き換えられ、最後に Publish したものが優先される。revision
-		* には書き込んだ Revision が入る。
+		* アセットの新しい中身を記録し、次の Revision へ進める。ただし項目が
+		* まだ baseRevision にある場合に限る。ある Revision を元にした公開は
+		* 先の1つが残り、同じ Revision を元にした後からの公開は断られる。
+		* revision には書き込んだ Revision が入る。
 		*/
-		Bool Publish(const String& assetId, const DynamicArray<SharedFile>& files, const DynamicArray<String>& dependencies, Uint64& revision);
+		Bool Publish(const String& assetId, const DynamicArray<SharedFile>& files, const DynamicArray<String>& dependencies, Uint64 baseRevision, Uint64& revision);
 
 		/**
 		* [EN]

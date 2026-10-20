@@ -279,6 +279,12 @@ namespace SeedCore
 			/// [EN] True when at least one entry of morphWeights_ is non-empty; gates the whole morph path for this instance.
 			/// [JP] morphWeights_ に空でない要素が 1 つでもあれば true。このインスタンスのモーフ経路全体の条件になる。
 			Bool hasMorphWeights_ = false;
+
+			Bool ownMaterials_ = false;
+
+			Uint64 materialSignature_ = 0;
+
+			DynamicArray<ReflectionMaterialData> materials_;
 		};
 
 		/**
@@ -382,9 +388,22 @@ namespace SeedCore
 			Uint32 triangleMaterialIndexShaderResourceViewIndex_ = 0;
 		};
 
+		struct EntityMaterialTable
+		{
+			Microsoft::WRL::ComPtr<ID3D12Resource> materialsResource_;
+
+			Uint32 materialsShaderResourceViewIndex_ = 0;
+
+			const Crister* crister_ = nullptr;
+
+			Uint64 signature_ = 0;
+		};
+
 		/// [EN] Material tables per unique mesh, kept as long as the mesh's static BLAS.
 		/// [JP] ユニークなメッシュごとのマテリアルテーブル。メッシュの静的 BLAS と同じ期間保持する。
 		std::unordered_map<const Crister*, MaterialTable> materialTableCache_;
+
+		std::unordered_map<EntityID, EntityMaterialTable> entityMaterialTables_;
 
 		/// [EN] Bind-pose BLAS per unique mesh, shared by every frame-ring slot.
 		/// [JP] ユニークなメッシュごとのバインドポーズの BLAS。全フレームリングスロットで共有する。

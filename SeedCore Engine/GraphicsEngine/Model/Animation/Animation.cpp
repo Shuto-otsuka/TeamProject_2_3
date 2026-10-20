@@ -7,16 +7,6 @@ namespace SeedCore
 		return duration_;
 	}
 
-	Bool Animation::HasTranslationChannel(Int nodeIndex)const
-	{
-		return translations_.contains(nodeIndex);
-	}
-
-	Int Animation::FindRootMotionNode()const
-	{
-		return translations_.empty() ? -1 : translations_.begin()->first;
-	}
-
 	void Animation::SamplePose(Float time, std::unordered_map<Int, Vector3>& outTranslations, std::unordered_map<Int, Quaternion>& outRotations, std::unordered_map<Int, Vector3>& outScales)const
 	{
 		auto findSegment = [](const DynamicArray<Float>& times, Float sampleTime, Float& outT) -> Size

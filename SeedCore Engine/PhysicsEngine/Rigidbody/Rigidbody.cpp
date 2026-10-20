@@ -587,6 +587,73 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Moves the body to the target position and rotation over duration
+	* seconds and stops it there, carrying along whatever stands on it.
+	* Call it once; each fixed step then advances the body by its share
+	* of the remaining distance, and the step after arrival sets the
+	* velocity and angular velocity back to zero. Calling it again while
+	* moving replaces the target. On a canvas body the position is given
+	* in pixels with Y down and its Z is ignored, and only the rotation
+	* about Z is used. Only a Kinematic body is affected.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* duration 秒かけて目標の位置と回転までボディを動かして止め、上に乗って
+	* いるものも一緒に運ぶ。呼ぶのは一度だけでよく、以降は固定ステップごとに
+	* 残りの距離のうちそのステップの分だけ進み、着いた次のステップで速度と
+	* 角速度を 0 に戻す。移動中にもう一度呼ぶと目標を置き換える。Canvas の
+	* ボディでは位置をピクセル単位・Y 下向きで与えて Z は無視し、回転は Z 軸
+	* まわりだけを使う。効くのは Kinematic のボディだけ。
+	*/
+	void Rigidbody::MoveTo(const Vector3& targetPosition, const Quaternion& targetRotation, Float duration)
+	{
+		/// [EN] The body exists only between OnAwake and OnDestroy, and only a Kinematic body follows a target.
+		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、目標に従うのは Kinematic のボディだけ。
+		if (bodyID_.IsInvalid())
+		{
+			SC_LOG_ERROR("Rigidbody::MoveTo を適用できません: ボディが生成されていません。");
+			return;
+		}
+
+		if (bodyType_ != BodyType::Kinematic)
+		{
+			SC_LOG_ERROR("Rigidbody::MoveTo を適用できません: Kinematic のボディにしか効きません。");
+			return;
+		}
+
+		/// [EN] Each step's velocity is the remaining distance divided by the remaining time, so the move must have a positive length.
+		/// [JP] 各ステップの速度は残りの距離を残り時間で割ったものなので、移動時間は正でなければならない。
+		if (duration <= 0.0f)
+		{
+			SC_LOG_ERROR("Rigidbody::MoveTo を適用できません: duration は正の値が必要です (現在: {})。", duration);
+			return;
+		}
+
+		Actor actor = GetActor();
+
+		/// [EN] The target is kept in physics space, so every step works on the body's own pose without converting again.
+		/// [JP] 目標は物理空間で持っておき、各ステップは変換し直さずにボディ自身の姿勢と比べる。
+		/// [EN] A canvas body goes from pixels (Y down) to meters (Y up) on the z = 0 plane, and its angle 2·atan2(z, w) is negated with the flipped Y.
+		/// [JP] Canvas のボディは、ピクセル(Y 下向き)から z = 0 平面上のメートル(Y 上向き)へ変換し、角度 2·atan2(z, w) は Y の反転に合わせて符号を反転する。
+		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
+		{
+			moveTargetPosition_ = Vector3(targetPosition.x / pixelsPerMeter_, -targetPosition.y / pixelsPerMeter_, 0.0f);
+			moveTargetRotation_ = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -2.0f * std::atan2(targetRotation.z, targetRotation.w));
+		}
+		else
+		{
+			moveTargetPosition_ = targetPosition;
+			moveTargetRotation_ = targetRotation;
+		}
+
+		moveTargetRotation_.Normalize();
+		moveRemainingTime_ = duration;
+		moving_ = true;
+	}
+
+	/**
+	* [EN]
 	* Returns the Jolt ID of the body; invalid before OnAwake and after
 	* OnDestroy.
 	*
@@ -604,22 +671,28 @@ namespace SeedCore
 	* [EN]
 	* Hands what code has changed since the last step (bodyType_,
 	* isTrigger_, and the actor's LinearVelocity and AngularVelocity) to
-	* the body, so it takes effect in the next step. Called by
+	* the body, so it takes effect in the next step, and advances a move
+	* started by MoveTo by one step of elapsedTime. Called by
 	* PhysicsSystem before every fixed step.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 前のステップからコードが変えたもの(bodyType_ と isTrigger_ と、Actor の
-	* LinearVelocity と AngularVelocity)をボディへ渡し、次のステップで効く
-	* ようにする。固定ステップの前に PhysicsSystem から毎回呼ばれる。
+	* LinearVelocity と AngularVelocity)をボディへ渡して次のステップで効く
+	* ようにし、MoveTo で始めた移動を elapsedTime の1ステップ分進める。
+	* 固定ステップの前に PhysicsSystem から毎回呼ばれる。
 	*/
-	void Rigidbody::Apply()
+	void Rigidbody::Apply(Float elapsedTime)
 	{
 		ApplyBodyType();
 		ApplyTrigger();
 		ApplyLinearVelocity();
 		ApplyAngularVelocity();
+
+		/// [EN] The move comes last, so while it is in progress its velocity wins over a LinearVelocity or AngularVelocity written by code.
+		/// [JP] 移動は最後に行い、移動中はコードから書かれた LinearVelocity・AngularVelocity よりも移動の速度を優先する。
+		ApplyMove(elapsedTime);
 	}
 
 	/**
@@ -782,5 +855,66 @@ namespace SeedCore
 		}
 
 		actor.GetPhysics().BodyAngularVelocity(bodyID_, syncedAngularVelocity_);
+	}
+
+	/**
+	* [EN]
+	* Advances a move started by MoveTo by one step of elapsedTime:
+	* targets the point that splits the remaining distance by this
+	* step's share of the remaining time, and once the time is used up,
+	* sets the velocity and angular velocity back to zero so the body
+	* stays at the target.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* MoveTo で始めた移動を elapsedTime の1ステップ分進める。残りの距離を、
+	* 残り時間に占めるこのステップの割合で分けた点を目標にし、時間を使い
+	* 切ったら速度と角速度を 0 に戻してボディを目標に留める。
+	*/
+	void Rigidbody::ApplyMove(Float elapsedTime)
+	{
+		if (bodyID_.IsInvalid())
+		{
+			return;
+		}
+
+		if (!moving_)
+		{
+			return;
+		}
+
+		/// [EN] A body switched away from Kinematic during the move no longer follows a target, so the move ends there.
+		/// [JP] 移動中に Kinematic 以外へ切り替えられたボディは目標に従わないので、移動はそこで終わる。
+		if (bodyType_ != BodyType::Kinematic)
+		{
+			moving_ = false;
+			return;
+		}
+
+		Physics& physics = GetActor().GetPhysics();
+
+		/// [EN] The body reached the target in the last step; a kinematic body keeps its velocity until it is overwritten, so it is set back to zero here.
+		/// [JP] ボディは直前のステップで目標に着いている。Kinematic のボディは上書きされるまで速度を保つので、ここで 0 に戻す。
+		if (moveRemainingTime_ <= 0.0f)
+		{
+			physics.BodyLinearVelocity(bodyID_, Vector3::Zero);
+			physics.BodyAngularVelocity(bodyID_, Vector3::Zero);
+			moving_ = false;
+			return;
+		}
+
+		Matrix bodyMatrix = physics.BodyTransform(bodyID_);
+		Vector3 currentPosition = bodyMatrix.Translation();
+		Quaternion currentRotation = Quaternion::CreateFromRotationMatrix(bodyMatrix);
+
+		/// [EN] This step covers elapsedTime out of the remaining time, so it goes that share of the way from the current pose; the last step's share is 1 and lands exactly on the target.
+		/// [JP] このステップは残り時間のうち elapsedTime の分を受け持つので、今の姿勢からその割合だけ進む。最後のステップは割合が 1 になり、ちょうど目標に着く。
+		Float ratio = std::min(elapsedTime / moveRemainingTime_, 1.0f);
+		Vector3 stepPosition = Vector3::Lerp(currentPosition, moveTargetPosition_, ratio);
+		Quaternion stepRotation = Quaternion::Slerp(currentRotation, moveTargetRotation_, ratio);
+
+		physics.MoveTarget(bodyID_, stepPosition, stepRotation, elapsedTime);
+		moveRemainingTime_ -= elapsedTime;
 	}
 }

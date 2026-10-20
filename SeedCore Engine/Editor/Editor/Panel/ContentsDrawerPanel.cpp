@@ -1206,10 +1206,10 @@ namespace SeedCore
 			return 0;
 		}
 
-		/// [EN] A conflict comes first because publishing it would overwrite
-		///      another member's newer copy.
-		/// [JP] 競合を最優先にする。そのまま公開すると、他のメンバーの新しい写しを
-		///      上書きしてしまうため。
+		/// [EN] A conflict comes first because the local change can no longer
+		///      be published and the next latest fetch replaces it.
+		/// [JP] 競合を最優先にする。手元の変更はもう公開できず、次の最新の
+		///      取得で置き換わってしまうため。
 		if (context_.application_.resourceSync_->Conflicted(asset.assetID_))
 		{
 			return imguiTexture_.Icon(IconType::SharedConflict);
@@ -1381,13 +1381,6 @@ namespace SeedCore
 		std::error_code errorCode;
 		std::filesystem::remove_all(targetPath.FullPath(), errorCode);
 		std::filesystem::remove(targetPath.AppendedSuffixPath(".meta"), errorCode);
-
-		/// [EN] Deleting is local only: shared content stays in the library, and is no longer followed here so the next fetch does not put it straight back.
-		/// [JP] 削除はローカルだけの操作。共有コンテンツはライブラリに残り、この PC では追いかけなくなるので、次の取得ですぐに戻ってくることはない。
-		if (context_.application_.resourceSync_)
-		{
-			context_.application_.resourceSync_->RequestForget(targetPath.FullPath());
-		}
 
 		if (clipboardState_.path_.FullPath() == targetPath.FullPath())
 		{

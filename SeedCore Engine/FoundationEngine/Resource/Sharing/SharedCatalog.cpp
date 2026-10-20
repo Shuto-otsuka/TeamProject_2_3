@@ -214,19 +214,22 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Records new contents for an asset and moves it to the next
-	* revision, replacing whatever the library held: the last publish
-	* wins. revision receives the revision that was written.
+	* revision, as long as the entry is still at baseRevision: the first
+	* publish made on a revision is the one that stands, and a later one
+	* made on the same revision is refused. revision receives the
+	* revision that was written.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* アセットの新しい中身を記録し、次の Revision へ進める。ライブラリの
-	* 内容は置き換えられ、最後に Publish したものが優先される。revision
-	* には書き込んだ Revision が入る。
+	* アセットの新しい中身を記録し、次の Revision へ進める。ただし項目が
+	* まだ baseRevision にある場合に限る。ある Revision を元にした公開は
+	* 先の1つが残り、同じ Revision を元にした後からの公開は断られる。
+	* revision には書き込んだ Revision が入る。
 	*/
-	Bool SharedCatalog::Publish(const String& assetId, const DynamicArray<SharedFile>& files, const DynamicArray<String>& dependencies, Uint64& revision)
+	Bool SharedCatalog::Publish(const String& assetId, const DynamicArray<SharedFile>& files, const DynamicArray<String>& dependencies, Uint64 baseRevision, Uint64& revision)
 	{
-		return Modify([this, assetId, files, dependencies, &revision](nlohmann::json& catalog)
+		return Modify([this, assetId, files, dependencies, baseRevision, &revision](nlohmann::json& catalog)
 		{
 			if (!catalog["assets"].contains(assetId.str()))
 			{
@@ -234,6 +237,14 @@ namespace SeedCore
 				return false;
 			}
 			nlohmann::json& entry = catalog["assets"][assetId.str()];
+
+			/// [EN] The check runs against the freshly read catalog, so a member who published a moment ago is seen here.
+			/// [JP] 確認は読み直したカタログに対して行うため、直前に公開したメンバーの分もここで見える。
+			if (entry.value("revision", Uint64(0)) != baseRevision)
+			{
+				error_ = String("他のメンバーが先に公開しているため公開しませんでした。「最新を取得」で取り込んでから編集し直してください。");
+				return false;
+			}
 
 			/// [EN] The file list is replaced rather than merged, since a publish describes the asset in full.
 			/// [JP] ファイル一覧は統合ではなく置き換えにする。Publish はアセットの全体を記述するものであるため。

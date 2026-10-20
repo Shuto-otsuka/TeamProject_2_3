@@ -261,6 +261,29 @@ namespace SeedCore
 		*/
 		void MoveTarget(const Vector3& targetPosition, const Quaternion& targetRotation, Float elapsedTime);
 
+		/**
+		* [EN]
+		* Moves the body to the target position and rotation over duration
+		* seconds and stops it there, carrying along whatever stands on it.
+		* Call it once; each fixed step then advances the body by its share
+		* of the remaining distance, and the step after arrival sets the
+		* velocity and angular velocity back to zero. Calling it again while
+		* moving replaces the target. On a canvas body the position is given
+		* in pixels with Y down and its Z is ignored, and only the rotation
+		* about Z is used. Only a Kinematic body is affected.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* duration 秒かけて目標の位置と回転までボディを動かして止め、上に乗って
+		* いるものも一緒に運ぶ。呼ぶのは一度だけでよく、以降は固定ステップごとに
+		* 残りの距離のうちそのステップの分だけ進み、着いた次のステップで速度と
+		* 角速度を 0 に戻す。移動中にもう一度呼ぶと目標を置き換える。Canvas の
+		* ボディでは位置をピクセル単位・Y 下向きで与えて Z は無視し、回転は Z 軸
+		* まわりだけを使う。効くのは Kinematic のボディだけ。
+		*/
+		void MoveTo(const Vector3& targetPosition, const Quaternion& targetRotation, Float duration);
+
 	public:
 		/**
 		* [EN]
@@ -279,17 +302,19 @@ namespace SeedCore
 		* [EN]
 		* Hands what code has changed since the last step (bodyType_,
 		* isTrigger_, and the actor's LinearVelocity and AngularVelocity) to
-		* the body, so it takes effect in the next step. Called by
+		* the body, so it takes effect in the next step, and advances a move
+		* started by MoveTo by one step of elapsedTime. Called by
 		* PhysicsSystem before every fixed step.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 前のステップからコードが変えたもの(bodyType_ と isTrigger_ と、Actor の
-		* LinearVelocity と AngularVelocity)をボディへ渡し、次のステップで効く
-		* ようにする。固定ステップの前に PhysicsSystem から毎回呼ばれる。
+		* LinearVelocity と AngularVelocity)をボディへ渡して次のステップで効く
+		* ようにし、MoveTo で始めた移動を elapsedTime の1ステップ分進める。
+		* 固定ステップの前に PhysicsSystem から毎回呼ばれる。
 		*/
-		void Apply();
+		void Apply(Float elapsedTime);
 
 		/**
 		* [EN]
@@ -351,6 +376,23 @@ namespace SeedCore
 		*/
 		void ApplyAngularVelocity();
 
+		/**
+		* [EN]
+		* Advances a move started by MoveTo by one step of elapsedTime:
+		* targets the point that splits the remaining distance by this
+		* step's share of the remaining time, and once the time is used up,
+		* sets the velocity and angular velocity back to zero so the body
+		* stays at the target.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* MoveTo で始めた移動を elapsedTime の1ステップ分進める。残りの距離を、
+		* 残り時間に占めるこのステップの割合で分けた点を目標にし、時間を使い
+		* 切ったら速度と角速度を 0 に戻してボディを目標に留める。
+		*/
+		void ApplyMove(Float elapsedTime);
+
 	private:
 		/// [EN] Radius of the sphere used when the actor has no collider.
 		/// [JP] Actor にコライダーが無いときに使う球の半径。
@@ -383,6 +425,22 @@ namespace SeedCore
 		/// [EN] Whether the body is currently a trigger; an isTrigger_ that differs from it was switched after the body was set up.
 		/// [JP] ボディが今トリガーかどうか。これと違う isTrigger_ は、ボディを設定した後に切り替えられたもの。
 		Bool syncedTrigger_ = false;
+
+		/// [EN] Whether a move started by MoveTo is in progress, including the step after arrival that stops the body.
+		/// [JP] MoveTo で始めた移動の途中かどうか。着いた後にボディを止めるステップも含む。
+		Bool moving_ = false;
+
+		/// [EN] Target position of the move, already in physics space (meters, Y up).
+		/// [JP] 移動の目標位置。物理空間(メートル・Y 上向き)へ変換済み。
+		Vector3 moveTargetPosition_ = { 0.0f, 0.0f, 0.0f };
+
+		/// [EN] Target rotation of the move, already in physics space.
+		/// [JP] 移動の目標回転。物理空間へ変換済み。
+		Quaternion moveTargetRotation_ = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+		/// [EN] Seconds left until the body reaches the target; zero or less means it arrived in the last step.
+		/// [JP] ボディが目標に着くまでの残り秒数。0 以下なら直前のステップで着いている。
+		Float moveRemainingTime_ = 0.0f;
 	};
 	REGISTER_COMPONENT(Rigidbody, "Physics");
 }

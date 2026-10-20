@@ -124,15 +124,16 @@ namespace SeedCore
 	* [EN]
 	* What this machine last had of one shared scene: every piece as it
 	* was last fetched or published. A publish sends only the pieces the
-	* scene file has changed from this, and a get refuses to overwrite a
-	* scene file holding such changes.
+	* scene file has changed from this, and a get keeps such a changed
+	* piece unless another member published that piece first.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* この PC が共有 Scene 1つについて最後に持っていた内容。最後に取得・
 	* 公開した時点の各断片。Publish は Scene ファイルがここから変えた断片
-	* だけを送り、取得はそうした変更を持つ Scene ファイルを上書きしない。
+	* だけを送り、取得はそうした断片を、他のメンバーが先にその断片を公開
+	* していない限り残す。
 	*/
 	struct SceneBase
 	{
@@ -171,17 +172,13 @@ namespace SeedCore
 		/// [JP] ローカルのアセットを初めて共有する。
 		Register,
 
-		/// [EN] Send local changes to the team as a new revision, replacing whatever the library held.
-		/// [JP] ローカルの変更を新しい Revision としてチームへ送り、ライブラリの内容を置き換える。
+		/// [EN] Send local changes to the team as a new revision, refused when another member published first.
+		/// [JP] ローカルの変更を新しい Revision としてチームへ送る。他のメンバーが先に公開していれば断られる。
 		Publish,
 
 		/// [EN] Remove a shared asset from the library, Drive contents included, while the local files stay.
 		/// [JP] 共有アセットを、Drive 上の中身も含めてライブラリから取り除く。ローカルのファイルは残す。
 		Unshare,
-
-		/// [EN] Stop following whatever this machine held at a path it has just deleted, while the library keeps it.
-		/// [JP] この PC が今削除した位置にあったものを追いかけるのをやめる。ライブラリには残す。
-		Forget,
 
 		/// [EN] Follow a scene from now on, so the pieces other members publish in it are picked up by the next refresh.
 		/// [JP] その Scene を以後追いかける。他のメンバーがその中で Publish した断片を、次の読み直しで拾うようにするため。
@@ -209,8 +206,8 @@ namespace SeedCore
 		/// [JP] どの共有アセットに関するものか。単なる再読み込みでは空。
 		String assetId_;
 
-		/// [EN] Where the asset sits locally, for a first-time share, or the deleted file or folder, for a forget.
-		/// [JP] 初めて共有する際の、ローカルでの位置。Forget では削除したファイルかフォルダの位置。
+		/// [EN] Where the asset sits locally, for a first-time share.
+		/// [JP] 初めて共有する際の、ローカルでの位置。
 		String path_;
 
 		/// [EN] The engine's 32-bit identifier and asset kind, for a first-time share.
@@ -242,8 +239,8 @@ namespace SeedCore
 		/// [JP] ローカルのファイルが、届いた時点と違う。つまりチームがまだ見ていない作業を抱えている。
 		Bool modified_ = false;
 
-		/// [EN] Modified locally while the library also moved ahead, so publishing now replaces another member's newer work.
-		/// [JP] ローカルで変更した上に、ライブラリも先へ進んでいる。今公開すると、他のメンバーの新しい作業を置き換えることになる。
+		/// [EN] Modified locally while the library also moved ahead, so the change cannot be published and the next latest fetch replaces it.
+		/// [JP] ローカルで変更した上に、ライブラリも先へ進んでいる。その変更は公開できず、次の最新の取得で置き換わる。
 		Bool conflicted_ = false;
 	};
 
@@ -416,15 +413,17 @@ namespace SeedCore
 		* [EN]
 		* Hands over the workspace paths of files taken in from the
 		* library's Assets folder since the last call, and forgets them.
-		* The Editor scans them so they get their identity; sharing them
-		* is left to the member.
+		* The Editor scans them so they get their identity, then shares
+		* them, since whatever sits in the library's Assets folder belongs
+		* to the team.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 前回の呼び出し以降にライブラリの Assets フォルダから取り込んだ
 		* ファイルの位置を引き渡し、こちらからは忘れる。Editor はそれらを
-		* 走査して識別情報を与える。共有はメンバーに任せる。
+		* 走査して識別情報を与え、そのまま共有する。ライブラリの Assets
+		* フォルダにあるものはチームのものであるため。
 		*/
 		void ConsumeImported(DynamicArray<String>& paths);
 
@@ -456,20 +455,69 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Brings this workspace up to the catalog just read: every asset it
-		* already has that the library moved ahead on or that lost files, the
-		* open scene's pieces, and whatever was dropped into the library's
-		* Assets folder.
+		* Brings this workspace up to the library: the Assets folder's tree
+		* and whatever was dropped into it, then the catalog matched to that
+		* folder, then every shared asset in the library's version - local
+		* changes nobody has published included, since the first publish is
+		* the one the team keeps - and the open scene's pieces.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 直前に読んだカタログまで、このワークスペースを引き上げる。対象は、
-		* 既に持っているアセットのうちライブラリが先へ進んだもの・ファイルが
-		* 欠けたもの、開いている Scene の断片、ライブラリの Assets フォルダへ
-		* 置かれたもの。
+		* このワークスペースをライブラリまで引き上げる。まず Assets フォルダの
+		* 構成とそこへ置かれたもの、次にそのフォルダに合わせたカタログ、
+		* そして全ての共有アセットをライブラリの版に（誰も公開していない手元
+		* の変更も含めて。チームが残すのは先に公開された版であるため）、
+		* 最後に開いている Scene の断片。
 		*/
 		void Pull();
+
+		/**
+		* [EN]
+		* Points every shared asset's own files at what sits at their paths
+		* in the library's Assets folder: a different Drive file there
+		* becomes the asset's file, and different contents become its
+		* contents as the next revision. placed holds what the Assets walk
+		* has just found, by workspace path.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 各共有アセットのファイルを、ライブラリの Assets フォルダの同じ位置に
+		* あるものへ向ける。そこに別の Drive のファイルがあればそれをアセット
+		* のファイルにし、中身が違えばそれを次の Revision の中身にする。
+		* placed は Assets の走査が直前に見つけたもので、ワークスペース内の
+		* 位置をキーにしている。
+		*/
+		void Follow(const std::unordered_map<std::string, DriveEntry>& placed);
+
+		/**
+		* [EN]
+		* Drops from the catalog every asset that is no longer in the
+		* library: one any of whose files Drive reports deleted or trashed,
+		* one whose own file under Assets is still kept in the blobs folder
+		* with nothing at its path in the library's Assets folder, or a scene
+		* whose document is gone. Deleting an asset in the library's Assets
+		* folder is how the team stops sharing it. A path is only taken as
+		* empty when complete says every folder could be listed, and a
+		* request that gets no answer leaves the asset alone. placed holds
+		* what the Assets walk has just found, by workspace path.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* もうライブラリに無いアセットを、カタログから取り除く。対象は、
+		* ファイルのどれかを Drive が削除済み・ゴミ箱入りと答えたもの、
+		* Assets 以下にある自身のファイルがまだ blobs フォルダにあり、
+		* ライブラリの Assets フォルダの同じ位置に何も無いもの、ドキュメント
+		* が無くなった Scene。ライブラリの Assets フォルダでアセットを消す
+		* ことが、チームとして共有をやめる操作になる。位置が空だとみなすのは、
+		* 全てのフォルダを一覧できたと complete が示すときだけで、答えの
+		* 得られない問い合わせがあればそのアセットには手を出さない。placed は
+		* Assets の走査が直前に見つけたもので、ワークスペース内の位置をキーに
+		* している。
+		*/
+		void Prune(const std::unordered_map<std::string, DriveEntry>& placed, Bool complete);
 
 		/**
 		* [EN]
@@ -501,13 +549,16 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Uploads whichever of an asset's files changed and records them as
-		* the next revision.
+		* the next revision. Refused when another member published past the
+		* version this change was made on, since the first publish is the one
+		* the team keeps.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* アセットのファイルのうち変更されたものをアップロードし、次の
-		* Revision として記録する。
+		* Revision として記録する。この変更の元の版より先に他のメンバーが
+		* 公開していれば断る。チームが残すのは先に公開された版であるため。
 		*/
 		Bool Publish(const String& assetId);
 
@@ -564,48 +615,56 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Stops following every shared asset whose files sat at or under the
-		* given workspace path, which this machine has just deleted. The
-		* library keeps them, and a later fetch brings them back only when
-		* the member asks for them.
+		* Brings the library's Assets folder down into the workspace: every
+		* folder it has is created here, and every file it holds that no
+		* shared asset names - something an artist dropped there, or a file
+		* every member already has but nobody has shared - is downloaded
+		* where needed and handed to the Editor to be taken in and shared.
+		* Files of shared assets are left to Get. Nothing goes the other
+		* way, so a folder deleted in Drive is not made again from this
+		* machine. Every Drive file met on the way is recorded in placed by
+		* its workspace path. Returns whether every folder could be listed,
+		* since only a complete walk can say that something is not there.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* この PC が今削除した、指定のワークスペース内の位置（またはその下）に
-		* ファイルがあった共有アセットを、追いかけるのをやめる。ライブラリには
-		* 残り、メンバーが求めたときにだけ再び取得される。
+		* ライブラリの Assets フォルダをワークスペースへ降ろす。そこにある
+		* フォルダは全てこちらにも作り、どの共有アセットも指していない
+		* ファイル（アーティストが置いたものや、全員が持っているのに誰も
+		* 共有していないもの）は必要ならダウンロードして、取り込みと共有を
+		* Editor に任せる。共有アセットのファイルは Get に任せる。逆向きには
+		* 何も送らないため、Drive で消したフォルダがこの PC から作り直される
+		* ことはない。途中で出会った Drive のファイルは全て、ワークスペース
+		* 内の位置をキーにして placed に記録する。全てのフォルダを一覧できた
+		* かどうかを返す。「そこに無い」と言えるのは、走査が完全な場合だけ
+		* であるため。
 		*/
-		void Forget(const String& logicalPath);
-
-		/**
-		* [EN]
-		* Keeps the library's Assets folder shaped like the workspace's
-		* own, and takes in whatever has been dropped into it. Folders
-		* are created where they are missing; files are downloaded to the
-		* matching place and moved aside so they arrive only once.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ライブラリの Assets フォルダを、ワークスペース側と同じ形に保ち、
-		* そこへ置かれたものを取り込む。足りないフォルダは作り、この PC が
-		* まだ持っていない中身のファイルをダウンロードする。
-		*/
-		void Mirror(const std::filesystem::path& localFolder, const String& driveFolderId);
+		Bool Mirror(const std::filesystem::path& localFolder, const String& driveFolderId, const std::set<std::string>& sharedPaths, const std::set<std::string>& sharedIds, std::unordered_map<std::string, DriveEntry>& placed);
 
 		/**
 		* [EN]
 		* Uploads one local file unless its contents are already stored,
-		* and describes where they ended up.
+		* and describes where they ended up. A file under Assets is placed
+		* at the same path in the library's Assets folder, as a new file
+		* beside any older one there: the new file is added to uploaded and
+		* the older one to replaced, so the caller can trash whichever lost
+		* once its catalog write is known. A .meta, or anything when that
+		* folder is not set up, goes to the blobs folder under its hash.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* ローカルのファイル1つを、中身がまだ保存されていない場合に限り
-		* アップロードし、その置き場所を返す。
+		* アップロードし、その置き場所を返す。Assets 以下のファイルは、
+		* ライブラリの Assets フォルダの同じ位置へ、そこにある古いファイルの
+		* 隣に新しいファイルとして置く。新しいファイルは uploaded に、古い
+		* ファイルは replaced に加え、カタログへの書き込みの結果が分かった
+		* 時点で、呼び出し側が負けた方をゴミ箱へ移せるようにする。.meta と、
+		* そのフォルダが設定されていない場合は、ハッシュを名前にして blobs
+		* フォルダへ置く。
 		*/
-		Bool Store(const String& logicalPath, SharedFile& stored);
+		Bool Store(const String& logicalPath, SharedFile& stored, DynamicArray<String>& uploaded, DynamicArray<String>& replaced);
 
 		/**
 		* [EN]

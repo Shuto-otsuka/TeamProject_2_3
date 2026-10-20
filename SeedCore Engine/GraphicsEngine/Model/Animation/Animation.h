@@ -136,10 +136,6 @@ namespace SeedCore
 
 		void SampleMorphWeights(Float time, std::unordered_map<Int, DynamicArray<Float>>& outWeights)const;
 
-		Bool HasTranslationChannel(Int nodeIndex)const;
-
-		Int FindRootMotionNode()const;
-
 		NODISCARD DynamicArray<AnimationSpeedKeyframe>& SpeedCurve();
 		NODISCARD const DynamicArray<AnimationSpeedKeyframe>& SpeedCurve()const;
 

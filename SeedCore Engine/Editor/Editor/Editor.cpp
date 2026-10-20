@@ -94,16 +94,38 @@ namespace SeedCore
 
 		/// [EN] This runs on the Editor thread between frames, which is the only safe place to swap what the renderer uses.
 		/// [JP] これは Editor のスレッドでフレームの合間に動く。レンダラが使っているものを入れ替えてよいのはそこだけ。
-		/// [EN] A file an artist dropped into the library arrives without an identity, so it is taken in here; sharing it is left to the member.
-		/// [JP] アーティストがライブラリへ置いたファイルは識別情報を持たずに届くため、ここで取り込む。共有するかどうかはメンバーに任せる。
+		/// [EN] A file an artist dropped into the library arrives without an identity, so it is taken in here and then shared, since it already sits in the team's library.
+		/// [JP] アーティストがライブラリへ置いたファイルは識別情報を持たずに届くため、ここで取り込み、そのまま共有する。既にチームのライブラリに置かれているものであるため。
 		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
 		DynamicArray<String> importedAssets;
 		resourceSync_.ConsumeImportedAsset(importedAssets);
 		if (!importedAssets.empty())
 		{
-			/// [EN] One rescan takes in every file that arrived, and it is what mints the .meta beside each.
-			/// [JP] 1回の再走査で届いたファイルを全て取り込む。それぞれの隣に .meta を作るのもこの処理。
-			context_.world_.resource_->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+			/// [EN] One rescan takes in every file that arrived, and it is what mints the .meta beside each; a file already known needs none.
+			/// [JP] 1回の再走査で届いたファイルを全て取り込む。それぞれの隣に .meta を作るのもこの処理。既に知っているファイルだけなら要らない。
+			Bool unknown = false;
+			for (const String& imported : importedAssets)
+			{
+				String path = String((std::filesystem::path("UserProject") / imported.w_str()).generic_wstring());
+				Uint32 assetId = context_.world_.resource_->GetAssetID(path);
+				AssetRecord* record = assetId == 0 ? nullptr : context_.world_.resource_->GetAsset(assetId);
+				unknown = unknown || !record || record->path_ != path;
+			}
+			if (unknown)
+			{
+				context_.world_.resource_->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+			}
+
+			for (const String& imported : importedAssets)
+			{
+				String path = String((std::filesystem::path("UserProject") / imported.w_str()).generic_wstring());
+				Uint32 assetId = context_.world_.resource_->GetAssetID(path);
+				AssetRecord* record = assetId == 0 ? nullptr : context_.world_.resource_->GetAsset(assetId);
+				if (record && record->path_ == path)
+				{
+					resourceSync_.RequestRegister(*record);
+				}
+			}
 		}
 
 		/// [EN] While playing, the world is the play-mode copy that Stop rolls back, so an arriving scene applied now would be thrown away; it is left queued until play stops.

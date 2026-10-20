@@ -12,6 +12,7 @@
 #include <GraphicsEngine/System/WeatherSystem.h>
 #include <GraphicsEngine/System/AnimationSystem.h>
 #include <GraphicsEngine/System/ConstraintSystem.h>
+#include <GraphicsEngine/System/MaterialSystem.h>
 
 #include <GraphicsEngine/D3D12/Buffer/GeometryBuffer.h>
 #include <GraphicsEngine/D3D12/Buffer/HiZBuffer.h>
@@ -182,6 +183,8 @@ namespace SeedCore
 		AnimationSystem animationSystem_;
 
 		ConstraintSystem constraintSystem_;
+
+		MaterialSystem materialSystem_;
 
 	private:
 		ResourcePtr<TextureRenderer> textureRenderer_;

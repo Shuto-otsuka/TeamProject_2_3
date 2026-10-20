@@ -104,15 +104,18 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Publishes several pieces at once in one write, replacing whatever
-	* the library held for each: the last publish wins. Every piece
-	* moves one revision past what the library had.
+	* Publishes several pieces at once in one write, as long as every
+	* piece is still at the revision its change was made on: the first
+	* publish of a piece is the one that stands, and when any piece has
+	* moved on nothing is written. Every piece moves one revision past
+	* what the library had.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 複数の断片を1回の書き込みでまとめて Publish し、ライブラリが持って
-	* いた各断片を置き換える。最後に Publish したものが優先される。各断片
+	* 複数の断片を1回の書き込みでまとめて Publish する。ただし全ての断片が、
+	* その変更の元にした Revision のままである場合に限る。断片は先に公開
+	* されたものが残り、1つでも先へ進んだ断片があれば何も書かない。各断片
 	* は、ライブラリにあった Revision の1つ先へ進む。
 	*/
 	Bool SharedScene::Publish(const DynamicArray<ScenePartChange>& changes)
@@ -126,15 +129,25 @@ namespace SeedCore
 
 		return Modify([this, changes](nlohmann::json& scene)
 		{
+			/// [EN] Every piece is checked before any is written, so the library never ends up holding half of one member's change.
+			/// [JP] どれかを書く前に全ての断片を確かめる。1人の変更が半分だけライブラリに載ることのないようにするため。
 			for (const ScenePartChange& change : changes)
 			{
-				/// [EN] The revision is read from what the library holds right now, so it still moves forward when someone published in between.
-				/// [JP] Revision は今ライブラリにある値から読む。間に誰かが Publish していても、番号は前へ進む。
 				Uint64 current = 0;
 				if (scene["parts"].contains(change.scope_.str()))
 				{
 					current = scene["parts"][change.scope_.str()].value("revision", Uint64(0));
 				}
+				if (current != change.baseRevision_)
+				{
+					error_ = String(std::format("他のメンバーが先に公開した部分があるため公開しませんでした（例: {}）。「最新を取得」すると、その部分はライブラリの版になります。", change.scope_.str()));
+					return false;
+				}
+			}
+
+			for (const ScenePartChange& change : changes)
+			{
+				Uint64 current = change.baseRevision_;
 
 				nlohmann::json part;
 				part["revision"] = current + 1;

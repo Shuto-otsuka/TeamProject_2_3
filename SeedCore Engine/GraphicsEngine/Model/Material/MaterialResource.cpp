@@ -1,5 +1,4 @@
 #include <GraphicsEngine/Model/Material/MaterialResource.h>
-#include <GraphicsEngine/Model/Material/Material.h>
 #include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 
@@ -35,6 +34,7 @@ namespace SeedCore
 		}
 
 		assetHandleMap_.insert({ assetID, handle });
+		revision_++;
 		return handle;
 	}
 
@@ -48,6 +48,7 @@ namespace SeedCore
 		Handle<Surface> handle = assetHandleMap_.at(assetID);
 		loaders_.materialLoader_->Clear(handle);
 		assetHandleMap_.erase(assetID);
+		revision_++;
 	}
 
 	Handle<Surface> MaterialResource::GetHandle(Uint32 assetID)const
@@ -69,30 +70,8 @@ namespace SeedCore
 		return assetHandleMap_.contains(assetID);
 	}
 
-	Surface MaterialResource::Resolve(const Crister& crister, Uint32 slot, const Material* material)
+	Uint32 MaterialResource::Revision()const
 	{
-		const DynamicArray<Surface>& seed = crister.Surfaces();
-		if (slot >= seed.size())
-		{
-			return Surface{};
-		}
-
-		if (material && !seed[slot].name_.empty())
-		{
-			Size count = Min(material->slotNames_.size(), material->slotMaterialIDs_.size());
-			for (Size index = 0; index < count; index++)
-			{
-				if (material->slotNames_[index].str() == seed[slot].name_ && material->slotMaterialIDs_[index] != 0 && std::ranges::contains(material->materialIDs_, material->slotMaterialIDs_[index]))
-				{
-					if (Surface* assigned = Resolve(GetHandle(material->slotMaterialIDs_[index])))
-					{
-						return *assigned;
-					}
-					break;
-				}
-			}
-		}
-
-		return seed[slot];
+		return revision_;
 	}
 }

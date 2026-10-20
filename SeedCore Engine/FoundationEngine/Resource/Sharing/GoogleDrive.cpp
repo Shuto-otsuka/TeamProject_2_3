@@ -95,6 +95,68 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Asks Drive whether the file named by fileId still exists outside
+	* the trash, and writes the answer to exists. Returns false only
+	* when no answer could be had, so a caller can tell a file that is
+	* gone from a request that failed.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* fileId のファイルが、ゴミ箱の外にまだ在るかを Drive に問い合わせ、
+	* 答えを exists に書く。false を返すのは答えが得られなかったときだけ。
+	* 呼び出し側が、ファイルが無いことと問い合わせの失敗を区別できる。
+	*/
+	Bool GoogleDrive::Exists(const String& fileId, Bool& exists)
+	{
+		String token = auth_.AccessToken();
+		if (token.str().empty())
+		{
+			error_ = auth_.Error();
+			return false;
+		}
+
+		/// [EN] The request goes out directly rather than through Send, because a 404 here is an answer, not a failure, and Send does not pass the status on.
+		/// [JP] Send を通さず直接送る。ここでの 404 は失敗ではなく答えであり、Send はステータスを呼び出し側へ渡さないため。
+
+		/// [EN] Only the trashed flag is asked for, which is all the decision needs.
+		/// [JP] 求めるのは trashed の値だけ。判断に要るのはそれだけであるため。
+		DynamicArray<HttpHeader> headers;
+		headers.push_back(HttpHeader{ String("Authorization"), String(std::format("Bearer {}", token.str())) });
+		HttpResponse response = http_.Send(String("GET"), String(std::format("https://www.googleapis.com/drive/v3/files/{}?fields=trashed", fileId.str())), headers);
+
+		/// [EN] 404 means the file was deleted outright, or emptied from the trash.
+		/// [JP] 404 は、ファイルが完全に削除されたか、ゴミ箱から消されたということ。
+		if (response.status_ == 404)
+		{
+			error_ = String();
+			exists = false;
+			return true;
+		}
+
+		/// [EN] A file that is still found but sits in the trash counts as gone, since nothing here reads from the trash.
+		/// [JP] まだ見つかってもゴミ箱に入っているファイルは、無いものとみなす。ここではゴミ箱から読むことが無いため。
+		if (response.status_ == 200)
+		{
+			nlohmann::json result = nlohmann::json::parse(response.body_.begin(), response.body_.end(), nullptr, false);
+			if (!result.is_object())
+			{
+				error_ = String("Drive の応答を解釈できませんでした。");
+				return false;
+			}
+			error_ = String();
+			exists = !result.value("trashed", false);
+			return true;
+		}
+
+		/// [EN] Anything else - no connection, no permission, a server error - says nothing about the file, so no answer is given.
+		/// [JP] それ以外（接続できない・権限が無い・サーバーの異常）はファイルについて何も語らないので、答えを出さない。
+		error_ = response.status_ == 0 ? response.error_ : String(std::format("Drive へのアクセスに失敗しました ({})。", response.status_));
+		return false;
+	}
+
+	/**
+	* [EN]
 	* Lists what sits directly inside parentId. Used to walk the library's
 	* Assets folder and to sweep its blobs folder.
 	*

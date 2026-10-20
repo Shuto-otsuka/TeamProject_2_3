@@ -211,6 +211,7 @@ namespace SeedCore
 		constraintSystem_.Execute(world);
 		animationSystem_.Execute(world, *resources.animationResource_, *resources.modelResource_);
 		constraintSystem_.Execute(world);
+		materialSystem_.Execute(world, *resources.materialResource_, *resources.modelResource_);
 
 		modelRenderer_->Gather(resources, world, scene, selectedEntities);
 		raytracingRenderer_->Gather(*resources.modelResource_, world, *modelRenderer_);

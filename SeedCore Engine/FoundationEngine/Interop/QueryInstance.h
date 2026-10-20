@@ -15,6 +15,8 @@ namespace SeedCore
 		/// [JP] 3D の移動する球。
 		Spherecast,
 
+		Boxcast,
+
 		/// [EN] A 3D shape tested for overlaps where it stands.
 		/// [JP] その場で重なりを調べる 3D の形。
 		Overlap,
@@ -26,6 +28,8 @@ namespace SeedCore
 		/// [EN] A swept circle on the canvas.
 		/// [JP] Canvas 上の移動する円。
 		Circlecast2D,
+
+		Boxcast2D,
 
 		/// [EN] A canvas shape tested for overlaps where it stands.
 		/// [JP] その場で重なりを調べる Canvas 上の形。

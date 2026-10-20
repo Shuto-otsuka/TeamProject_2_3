@@ -1666,6 +1666,106 @@ namespace SeedCore
 		return false;
 	}
 
+	Bool Physics::Boxcast(const Vector3& origin, const Vector3& halfExtents, const Quaternion& rotation, const Vector3& direction, Float maxDistance, RaycastHit& outHit, Uint32 layerMask)const
+	{
+		/// [EN] Only the direction matters; a zero vector is left as is and sweeps nowhere.
+		/// [JP] 使うのは向きだけ。ゼロベクトルはそのままにし、どこへも掃引しない。
+		JPH::Vec3 dir(direction.x, direction.y, direction.z);
+		if (dir.LengthSq() > 0.0f)
+		{
+			dir = dir.Normalized();
+		}
+
+		/// [EN] A temporary box at origin with the given rotation, swept along dir for maxDistance at unit scale; a zero convex radius keeps it exactly the given size.
+		/// [JP] origin に指定の回転で置いた一時的な箱を、等倍のまま dir 方向へ maxDistance だけ掃引する。凸半径を 0 にして指定の大きさちょうどにする。
+		JPH::BoxShape boxShape(JPH::Vec3(halfExtents.x, halfExtents.y, halfExtents.z), 0.0f);
+		JPH::RShapeCast shapeCast(&boxShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(JPH::Quat(rotation.x, rotation.y, rotation.z, rotation.w), JPH::RVec3(origin.x, origin.y, origin.z)), dir * maxDistance);
+
+#if SC_DEBUG
+		/// [EN] Every query is recorded for the debug display: what was asked now, what was found just before returning.
+		/// [JP] クエリはすべてデバッグ表示のために記録する。問い合わせた内容はここで、結果は返す直前に入れる。
+		QueryDesc query;
+		query.kind_ = QueryKind::Boxcast;
+		query.origin_ = origin;
+		query.direction_ = Vector3(dir.GetX(), dir.GetY(), dir.GetZ());
+		query.distance_ = maxDistance;
+		query.shape_ = ColliderKind::Box;
+		query.dimensions_ = halfExtents;
+		query.rotation_ = rotation;
+#endif
+
+		JPH::ShapeCastSettings settings;
+
+		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
+
+		/// [EN] Collects every hit, since the nearest one may be filtered out below.
+		/// [JP] 最も近いヒットが下で除外されることもあるので、全てのヒットを集める。
+		JPH::AllHitCollisionCollector<JPH::CastShapeCollector> collector;
+		physicsSystem.GetNarrowPhaseQuery().CastShape(shapeCast, settings, JPH::RVec3::sZero(), collector);
+
+		if (!collector.HadHit())
+		{
+#if SC_DEBUG
+			queryInstance_.Add(query);
+#endif
+			return false;
+		}
+
+		/// [EN] Nearest first, so the first hit that passes the filters is the answer.
+		/// [JP] 近い順に並べ、フィルタを通った最初のヒットを答えにする。
+		collector.Sort();
+
+		for (const JPH::ShapeCastResult& hit : collector.mHits)
+		{
+			/// [EN] 2D canvas bodies share the Jolt world but are not part of 3D queries.
+			/// [JP] 2D Canvas のボディは Jolt ワールドを共有するが、3D のクエリには含めない。
+			if (physicsSystem.GetBodyInterface().GetObjectLayer(hit.mBodyID2) & Layers::PLANAR)
+			{
+				continue;
+			}
+
+			/// [EN] Skips bodies whose actor's layer bit is not in layerMask; all bits set means no filter.
+			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
+			if (layerMask != 0xFFFFFFFF)
+			{
+				World* world = joltManager_.ActiveWorld();
+				if (world)
+				{
+					Actor actor = world->GetActor(BodyEntityID(hit.mBodyID2));
+					if (actor && (layerMask & (1u << actor.Layer())) == 0)
+					{
+						continue;
+					}
+				}
+			}
+
+			/// [EN] The penetration axis points from the box into the hit body, so its negation is the surface normal.
+			/// [JP] めり込み軸は箱から相手のボディへ向くので、その逆向きが面の法線になる。
+			JPH::Vec3 normal = -hit.mPenetrationAxis.Normalized();
+
+			/// [EN] The contact point is taken on the hit body's surface.
+			/// [JP] 接触点は、当たったボディの表面上の点を使う。
+			outHit.position_ = Vector3(hit.mContactPointOn2.GetX(), hit.mContactPointOn2.GetY(), hit.mContactPointOn2.GetZ());
+			outHit.normal_ = Vector3(normal.GetX(), normal.GetY(), normal.GetZ());
+			outHit.distance_ = hit.mFraction * maxDistance;
+			outHit.entityID_ = BodyEntityID(hit.mBodyID2);
+
+#if SC_DEBUG
+			query.hit_ = true;
+			query.hitPoint_ = outHit.position_;
+			query.hitNormal_ = outHit.normal_;
+			query.hitDistance_ = outHit.distance_;
+			queryInstance_.Add(query);
+#endif
+			return true;
+		}
+
+#if SC_DEBUG
+		queryInstance_.Add(query);
+#endif
+		return false;
+	}
+
 	/**
 	* [EN]
 	* Returns entities overlapping a 3D query shape of the given kind and
@@ -1987,6 +2087,87 @@ namespace SeedCore
 
 			/// [EN] Results go back to canvas pixels with Y down; the distance scales maxDistance, already in pixels.
 			/// [JP] 結果は Y 下向きの Canvas ピクセルへ戻す。距離はピクセル単位の maxDistance に割合を掛ける。
+			outHit.position_ = Vector2(hit.mContactPointOn2.GetX() * pixelsPerMeter_, -hit.mContactPointOn2.GetY() * pixelsPerMeter_);
+			outHit.normal_ = Vector2(normal.GetX(), -normal.GetY());
+			outHit.distance_ = hit.mFraction * maxDistance;
+			outHit.entityID_ = BodyEntityID(hit.mBodyID2);
+
+#if SC_DEBUG
+			query.hit_ = true;
+			query.hitPoint_ = Vector3(outHit.position_.x, outHit.position_.y, 0.0f);
+			query.hitNormal_ = Vector3(outHit.normal_.x, outHit.normal_.y, 0.0f);
+			query.hitDistance_ = outHit.distance_;
+			queryInstance_.Add(query);
+#endif
+			return true;
+		}
+
+#if SC_DEBUG
+		queryInstance_.Add(query);
+#endif
+		return false;
+	}
+
+	Bool Physics::Boxcast2D(const Vector2& origin, const Vector2& halfExtents, Float rotation, const Vector2& direction, Float maxDistance, RaycastHit2D& outHit, Uint32 layerMask)const
+	{
+		JPH::Vec3 dir(direction.x, -direction.y, 0.0f);
+		if (dir.LengthSq() > 0.0f)
+		{
+			dir = dir.Normalized();
+		}
+
+		JPH::BoxShape boxShape(JPH::Vec3(halfExtents.x / pixelsPerMeter_, halfExtents.y / pixelsPerMeter_, 0.5f), 0.0f);
+		JPH::RShapeCast shapeCast(&boxShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(JPH::Quat::sRotation(JPH::Vec3::sAxisZ(), -ToRadians(rotation)), JPH::RVec3(origin.x / pixelsPerMeter_, -origin.y / pixelsPerMeter_, 0.0f)), dir * (maxDistance / pixelsPerMeter_));
+
+#if SC_DEBUG
+		QueryDesc query;
+		query.kind_ = QueryKind::Boxcast2D;
+		query.origin_ = Vector3(origin.x, origin.y, 0.0f);
+		query.direction_ = Vector3(dir.GetX(), -dir.GetY(), 0.0f);
+		query.distance_ = maxDistance;
+		query.shape_ = ColliderKind::Rect;
+		query.dimensions_ = Vector3(halfExtents.x, halfExtents.y, 0.0f);
+		query.rotation_ = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, ToRadians(rotation));
+#endif
+
+		JPH::ShapeCastSettings settings;
+		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
+
+		JPH::AllHitCollisionCollector<JPH::CastShapeCollector> collector;
+		physicsSystem.GetNarrowPhaseQuery().CastShape(shapeCast, settings, JPH::RVec3::sZero(), collector);
+
+		if (!collector.HadHit())
+		{
+#if SC_DEBUG
+			queryInstance_.Add(query);
+#endif
+			return false;
+		}
+
+		collector.Sort();
+
+		for (const JPH::ShapeCastResult& hit : collector.mHits)
+		{
+			if (!(physicsSystem.GetBodyInterface().GetObjectLayer(hit.mBodyID2) & Layers::PLANAR))
+			{
+				continue;
+			}
+
+			if (layerMask != 0xFFFFFFFF)
+			{
+				World* world = joltManager_.ActiveWorld();
+				if (world)
+				{
+					Actor actor = world->GetActor(BodyEntityID(hit.mBodyID2));
+					if (actor && (layerMask & (1u << actor.Layer())) == 0)
+					{
+						continue;
+					}
+				}
+			}
+
+			JPH::Vec3 normal = -hit.mPenetrationAxis.Normalized();
+
 			outHit.position_ = Vector2(hit.mContactPointOn2.GetX() * pixelsPerMeter_, -hit.mContactPointOn2.GetY() * pixelsPerMeter_);
 			outHit.normal_ = Vector2(normal.GetX(), -normal.GetY());
 			outHit.distance_ = hit.mFraction * maxDistance;

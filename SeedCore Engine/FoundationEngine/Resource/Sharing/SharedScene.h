@@ -102,14 +102,14 @@ namespace SeedCore
 	* The per-scene document, holding one revision per piece rather than
 	* one for the scene as a whole. Two members editing different
 	* components therefore never overwrite each other, while for the same
-	* component the last publish wins.
+	* component the first publish stands.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* Scene ごとのドキュメント。Scene 全体で1つではなく、断片ごとに
 	* Revision を持つ。そのため別々の Component を編集する2人は互いを
-	* 上書きせず、同じ Component では最後に Publish したものが優先される。
+	* 上書きせず、同じ Component では先に Publish したものが残る。
 	*/
 	class SEEDCORE_API SharedScene
 	{
@@ -200,15 +200,18 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Publishes several pieces at once in one write, replacing whatever
-		* the library held for each: the last publish wins. Every piece
-		* moves one revision past what the library had.
+		* Publishes several pieces at once in one write, as long as every
+		* piece is still at the revision its change was made on: the first
+		* publish of a piece is the one that stands, and when any piece has
+		* moved on nothing is written. Every piece moves one revision past
+		* what the library had.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 複数の断片を1回の書き込みでまとめて Publish し、ライブラリが持って
-		* いた各断片を置き換える。最後に Publish したものが優先される。各断片
+		* 複数の断片を1回の書き込みでまとめて Publish する。ただし全ての断片が、
+		* その変更の元にした Revision のままである場合に限る。断片は先に公開
+		* されたものが残り、1つでも先へ進んだ断片があれば何も書かない。各断片
 		* は、ライブラリにあった Revision の1つ先へ進む。
 		*/
 		Bool Publish(const DynamicArray<ScenePartChange>& changes);

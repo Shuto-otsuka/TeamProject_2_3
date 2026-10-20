@@ -847,6 +847,8 @@ namespace SeedCore
 		*/
 		Bool Spherecast(const Vector3& origin, Float radius, const Vector3& direction, Float maxDistance, RaycastHit& outHit, Uint32 layerMask = 0xFFFFFFFF)const;
 
+		Bool Boxcast(const Vector3& origin, const Vector3& halfExtents, const Quaternion& rotation, const Vector3& direction, Float maxDistance, RaycastHit& outHit, Uint32 layerMask = 0xFFFFFFFF)const;
+
 		/**
 		* [EN]
 		* Returns entities overlapping a 3D query shape of the given kind and
@@ -883,6 +885,8 @@ namespace SeedCore
 		* 移動する円と交差する最も近い平面ボディを検索する。
 		*/
 		Bool Circlecast2D(const Vector2& origin, Float radius, const Vector2& direction, Float maxDistance, RaycastHit2D& outHit, Uint32 layerMask = 0xFFFFFFFF)const;
+
+		Bool Boxcast2D(const Vector2& origin, const Vector2& halfExtents, Float rotation, const Vector2& direction, Float maxDistance, RaycastHit2D& outHit, Uint32 layerMask = 0xFFFFFFFF)const;
 
 		/**
 		* [EN]

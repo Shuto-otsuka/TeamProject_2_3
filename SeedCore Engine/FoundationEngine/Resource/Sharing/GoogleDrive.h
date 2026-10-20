@@ -45,18 +45,16 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* The shared library's file storage. Asset contents live in a Drive
-	* folder as one file per unique content hash: a file is written once
-	* and never modified, so a download can never race a change, and two
-	* revisions that share content share one file.
+	* The shared library's file storage: the Assets folder members see,
+	* and the blobs folder that holds .meta files and large scene pieces
+	* as one file per unique content hash.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 共有ライブラリのファイル置き場。アセットの中身は、内容のハッシュ
-	* ごとに1ファイルとして Drive のフォルダに置く。一度書いたファイルは
-	* 変更しないので、ダウンロード中に中身が変わることがなく、内容が同じ
-	* Revision は1つのファイルを共有する。
+	* 共有ライブラリのファイル置き場。メンバーが目にする Assets フォルダ
+	* と、.meta や大きな Scene の断片を内容のハッシュごとに1ファイルと
+	* して持つ blobs フォルダからなる。
 	*/
 	class SEEDCORE_API GoogleDrive
 	{
@@ -121,6 +119,22 @@ namespace SeedCore
 		* 子が無ければ空文字列を返す。
 		*/
 		String Find(const String& name, const String& parentId);
+
+		/**
+		* [EN]
+		* Asks Drive whether the file named by fileId still exists outside
+		* the trash, and writes the answer to exists. Returns false only
+		* when no answer could be had, so a caller can tell a file that is
+		* gone from a request that failed.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* fileId のファイルが、ゴミ箱の外にまだ在るかを Drive に問い合わせ、
+		* 答えを exists に書く。false を返すのは答えが得られなかったときだけ。
+		* 呼び出し側が、ファイルが無いことと問い合わせの失敗を区別できる。
+		*/
+		Bool Exists(const String& fileId, Bool& exists);
 
 		/**
 		* [EN]

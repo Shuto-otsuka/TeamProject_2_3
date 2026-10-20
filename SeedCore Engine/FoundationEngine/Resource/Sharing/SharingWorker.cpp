@@ -150,15 +150,17 @@ namespace SeedCore
 	* [EN]
 	* Hands over the workspace paths of files taken in from the
 	* library's Assets folder since the last call, and forgets them.
-	* The Editor scans them so they get their identity; sharing them
-	* is left to the member.
+	* The Editor scans them so they get their identity, then shares
+	* them, since whatever sits in the library's Assets folder belongs
+	* to the team.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 前回の呼び出し以降にライブラリの Assets フォルダから取り込んだ
 	* ファイルの位置を引き渡し、こちらからは忘れる。Editor はそれらを
-	* 走査して識別情報を与える。共有はメンバーに任せる。
+	* 走査して識別情報を与え、そのまま共有する。ライブラリの Assets
+	* フォルダにあるものはチームのものであるため。
 	*/
 	void SharingWorker::ConsumeImported(DynamicArray<String>& paths)
 	{
@@ -324,14 +326,9 @@ namespace SeedCore
 			break;
 
 		case SharingAction::Unshare:
-			/// [EN] Unsharing is not checked against any revision, the same as a publish: the last one to act decides.
-			/// [JP] 共有の解除も Publish と同じく Revision を照合しない。最後に操作した人の判断が通る。
+			/// [EN] Unsharing is not checked against any revision: whoever unshares decides for the team.
+			/// [JP] 共有の解除は Revision を照合しない。解除した人の判断がチームに通る。
 			done = Unshare(request.assetId_);
-			break;
-
-		case SharingAction::Forget:
-			Forget(request.path_);
-			done = true;
 			break;
 
 		case SharingAction::OpenScene:
@@ -399,8 +396,8 @@ namespace SeedCore
 			std::lock_guard<std::mutex> guard(snapshotMutex_);
 			snapshot_.operation_ = String();
 
-			/// [EN] A message set while the work ran - such as a scene left alone because it holds unpublished changes - is kept even when the request as a whole went through.
-			/// [JP] 作業中に設定された文言（未公開の変更があるため Scene を取得しなかった、など）は、依頼全体が通った場合でも残す。
+			/// [EN] A message set while the work ran - such as a file whose Drive contents did not match the catalog - is kept even when the request as a whole went through.
+			/// [JP] 作業中に設定された文言（Drive 上の中身がカタログと一致しないファイルがあった、など）は、依頼全体が通った場合でも残す。
 			if (!done && snapshot_.error_.str().empty())
 			{
 				snapshot_.error_ = catalog_.Error();
@@ -411,63 +408,82 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Brings this workspace up to the catalog just read: every asset it
-	* already has that the library moved ahead on or that lost files, the
-	* open scene's pieces, and whatever was dropped into the library's
-	* Assets folder.
+	* Brings this workspace up to the library: the Assets folder's tree
+	* and whatever was dropped into it, then the catalog matched to that
+	* folder, then every shared asset in the library's version - local
+	* changes nobody has published included, since the first publish is
+	* the one the team keeps - and the open scene's pieces.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 直前に読んだカタログまで、このワークスペースを引き上げる。対象は、
-	* 既に持っているアセットのうちライブラリが先へ進んだもの・ファイルが
-	* 欠けたもの、開いている Scene の断片、ライブラリの Assets フォルダへ
-	* 置かれたもの。
+	* このワークスペースをライブラリまで引き上げる。まず Assets フォルダの
+	* 構成とそこへ置かれたもの、次にそのフォルダに合わせたカタログ、
+	* そして全ての共有アセットをライブラリの版に（誰も公開していない手元
+	* の変更も含めて。チームが残すのは先に公開された版であるため）、
+	* 最後に開いている Scene の断片。
 	*/
 	void SharingWorker::Pull()
 	{
+		std::unordered_map<std::string, DriveEntry> placed;
+		Bool complete = false;
+		if (!config_.assetsFolderId_.str().empty())
+		{
+			std::set<std::string> sharedPaths;
+			std::set<std::string> sharedIds;
+			for (const SharedAsset& asset : catalog_.Assets())
+			{
+				for (const SharedFile& file : asset.files_)
+				{
+					sharedPaths.insert(file.path_.str());
+					sharedIds.insert(file.driveId_.str());
+				}
+			}
+			complete = Mirror(projectRoot_ / config_.workspace_.str() / "Assets", config_.assetsFolderId_, sharedPaths, sharedIds, placed);
+			Follow(placed);
+		}
+		Prune(placed, complete);
+
+		Size recorded = workspace_.size() + sceneBases_.size();
+		std::erase_if(workspace_, [this](const std::pair<const String, WorkspaceRecord>& record) { return !catalog_.Find(record.first); });
+		std::erase_if(sceneBases_, [this](const std::pair<const String, SceneBase>& record) { return !catalog_.Find(record.first); });
+		if (!openScene_.str().empty() && !catalog_.Find(openScene_))
+		{
+			openScene_ = String();
+		}
+		if (recorded != workspace_.size() + sceneBases_.size())
+		{
+			SaveWorkspace();
+		}
+
 		for (const SharedAsset& asset : catalog_.Assets())
 		{
-			/// [EN] Only assets this machine already has are followed; one it has never fetched stays a deliberate choice.
-			/// [JP] 追いかけるのは既に持っているアセットだけ。一度も取得していないものを取るかどうかは、あくまで本人の判断。
-			auto record = workspace_.find(asset.id_);
-			if (record == workspace_.end())
+			/// [EN] A scene is rebuilt from its document, which costs a read, so only one missing here or the open one below comes down.
+			/// [JP] Scene はドキュメントから組み立て直すため読み取りがかかる。降ろすのは、ここに無いものと、下で扱う開いているものだけ。
+			if (asset.scene_)
 			{
-				continue;
-			}
-
-			/// [EN] Size and time are compared before anything is read, so an untouched asset costs no disk work here.
-			/// [JP] 何かを読む前にサイズと時刻を比べる。無変更のアセットに、ここでのディスク作業が発生しないようにするため。
-			Bool touched = false;
-			Bool missing = false;
-			for (const WorkspaceFile& file : record->second.files_)
-			{
-				std::error_code errorCode;
-				std::filesystem::path local = Local(file.path_);
-
-				/// [EN] A file that is gone is not a local edit but a hole, and a hole is worth filling from the library.
-				/// [JP] 消えているファイルはローカルの変更ではなく欠けであり、欠けはライブラリから埋める価値がある。
-				if (!std::filesystem::exists(local))
+				if (!std::filesystem::exists(Local(asset.path_)))
 				{
-					missing = true;
-					continue;
+					Get(asset.id_);
 				}
-
-				Uint64 size = std::filesystem::file_size(local, errorCode);
-				Int64 stamp = std::filesystem::last_write_time(local, errorCode).time_since_epoch().count();
-				touched = touched || errorCode || size != file.size_ || stamp != file.stamp_;
-			}
-
-			/// [EN] Anything that looks touched is left for the member to resolve, and Get would refuse it anyway.
-			/// [JP] 触られたように見えるものはメンバーの判断に任せる。どのみち Get 側が断ることになる。
-			if (touched)
-			{
 				continue;
 			}
 
-			/// [EN] So an asset comes down when the library moved ahead, and also when this workspace lost the files it recorded.
-			/// [JP] つまり降りてくるのは、ライブラリが先へ進んだときと、このワークスペースが記録済みのファイルを失ったとき。
-			if (record->second.revision_ < asset.revision_ || missing)
+			/// [EN] Changes of this member's own are kept while nobody has published past the version they were made on, since they are what the member may publish next.
+			/// [JP] このメンバー自身の変更は、それを作った元の版より先に誰も公開していない間は残す。次に公開するかもしれないものであるため。
+			auto record = workspace_.find(asset.id_);
+			Bool current = record != workspace_.end() && record->second.revision_ >= asset.revision_;
+			if (current)
+			{
+				for (const SharedFile& file : asset.files_)
+				{
+					current = current && std::filesystem::exists(Local(file.path_));
+				}
+			}
+
+			/// [EN] Anything this machine lacks, lost files of, or is behind on comes down in the library's version, over any change of this member's that was made on an older one.
+			/// [JP] この PC に無いもの、ファイルが欠けたもの、遅れているものは、ライブラリの版で降ろす。古い版を元にしたこのメンバーの変更があっても上書きする。
+			if (!current)
 			{
 				Get(asset.id_);
 			}
@@ -479,12 +495,201 @@ namespace SeedCore
 		{
 			Get(openScene_);
 		}
+	}
 
-		/// [EN] The library's Assets tree is kept shaped like this workspace, and anything dropped into it is taken in.
-		/// [JP] ライブラリの Assets の構成をこのワークスペースと同じ形に保ち、そこへ置かれたものを取り込む。
-		if (!config_.assetsFolderId_.str().empty())
+	/**
+	* [EN]
+	* Points every shared asset's own files at what sits at their paths
+	* in the library's Assets folder: a different Drive file there
+	* becomes the asset's file, and different contents become its
+	* contents as the next revision. placed holds what the Assets walk
+	* has just found, by workspace path.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 各共有アセットのファイルを、ライブラリの Assets フォルダの同じ位置に
+	* あるものへ向ける。そこに別の Drive のファイルがあればそれをアセット
+	* のファイルにし、中身が違えばそれを次の Revision の中身にする。
+	* placed は Assets の走査が直前に見つけたもので、ワークスペース内の
+	* 位置をキーにしている。
+	*/
+	void SharingWorker::Follow(const std::unordered_map<std::string, DriveEntry>& placed)
+	{
+		DynamicArray<SharedAsset> followed;
+		for (const SharedAsset& asset : catalog_.Assets())
 		{
-			Mirror(projectRoot_ / config_.workspace_.str() / "Assets", config_.assetsFolderId_);
+			SharedAsset updated = asset;
+			Bool changed = false;
+			for (SharedFile& file : updated.files_)
+			{
+				std::filesystem::path logical(file.path_.w_str());
+				if (logical.extension() == ".meta" || logical.empty() || *logical.begin() != "Assets")
+				{
+					continue;
+				}
+
+				/// [EN] Drive hashes a file a moment after it lands, and until then there is nothing to compare against.
+				/// [JP] Drive がファイルをハッシュするのは置かれた少し後で、それまでは比べる相手が無い。
+				auto found = placed.find(file.path_.str());
+				if (found == placed.end() || found->second.hash_.str().empty())
+				{
+					continue;
+				}
+
+				/// [EN] A scene's contents travel as its pieces, so only which Drive file it is matters for its own file.
+				/// [JP] Scene の中身は断片として運ばれるため、Scene 自身のファイルについて意味があるのは、どの Drive のファイルかだけ。
+				Bool moved = found->second.id_ != file.driveId_;
+				Bool replaced = !asset.scene_ && found->second.hash_ != file.hash_;
+				if (!moved && !replaced)
+				{
+					continue;
+				}
+				file.driveId_ = found->second.id_;
+				if (replaced)
+				{
+					file.hash_ = found->second.hash_;
+					file.size_ = found->second.size_;
+				}
+				changed = true;
+			}
+			if (changed)
+			{
+				followed.push_back(updated);
+			}
+		}
+
+		/// [EN] Each write rebuilds the catalog's list, so the changes are gathered first and written afterwards.
+		/// [JP] 書き込むたびにカタログの一覧が作り直されるため、変更を先に集めてから書き込む。
+		for (const SharedAsset& asset : followed)
+		{
+			Uint64 revision = 0;
+			catalog_.Publish(asset.id_, asset.files_, asset.dependencies_, asset.revision_, revision);
+		}
+	}
+
+	/**
+	* [EN]
+	* Drops from the catalog every asset that is no longer in the
+	* library: one any of whose files Drive reports deleted or trashed,
+	* one whose own file under Assets is still kept in the blobs folder
+	* with nothing at its path in the library's Assets folder, or a scene
+	* whose document is gone. Deleting an asset in the library's Assets
+	* folder is how the team stops sharing it. A path is only taken as
+	* empty when complete says every folder could be listed, and a
+	* request that gets no answer leaves the asset alone. placed holds
+	* what the Assets walk has just found, by workspace path.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* もうライブラリに無いアセットを、カタログから取り除く。対象は、
+	* ファイルのどれかを Drive が削除済み・ゴミ箱入りと答えたもの、
+	* Assets 以下にある自身のファイルがまだ blobs フォルダにあり、
+	* ライブラリの Assets フォルダの同じ位置に何も無いもの、ドキュメント
+	* が無くなった Scene。ライブラリの Assets フォルダでアセットを消す
+	* ことが、チームとして共有をやめる操作になる。位置が空だとみなすのは、
+	* 全てのフォルダを一覧できたと complete が示すときだけで、答えの
+	* 得られない問い合わせがあればそのアセットには手を出さない。placed は
+	* Assets の走査が直前に見つけたもので、ワークスペース内の位置をキーに
+	* している。
+	*/
+	void SharingWorker::Prune(const std::unordered_map<std::string, DriveEntry>& placed, Bool complete)
+	{
+		/// [EN] Identifiers of the files the listings showed, which are taken as alive without asking again.
+		/// [JP] 一覧に出たファイルの識別子。改めて問い合わせず、残っているものとみなす。
+		std::set<std::string> alive;
+
+		/// [EN] Identifiers of the files in the blobs folder, which is where an asset's own file sat before the Assets folder held it.
+		/// [JP] blobs フォルダにあるファイルの識別子。Assets フォルダが持つようになる前は、アセット自身のファイルもここにあった。
+		std::set<std::string> stored;
+		for (const std::pair<const std::string, DriveEntry>& entry : placed)
+		{
+			alive.insert(entry.second.id_.str());
+		}
+
+		/// [EN] One listing of the blobs folder rules out every file that is plainly still there, so only the rest cost a request each.
+		/// [JP] blobs フォルダを1回一覧するだけで、明らかに残っているファイルは全て除外できる。1件ずつ問い合わせるのは残りだけで済む。
+		if (!config_.blobFolderId_.str().empty())
+		{
+			DynamicArray<DriveEntry> blobs;
+			if (!drive_.List(config_.blobFolderId_, blobs))
+			{
+				return;
+			}
+			for (const DriveEntry& blob : blobs)
+			{
+				alive.insert(blob.id_.str());
+				stored.insert(blob.id_.str());
+			}
+		}
+
+		/// [EN] Assets are collected first and removed afterwards, because each removal rebuilds the catalog's list being walked here.
+		/// [JP] 先に集めてから後で取り除く。取り除くたびに、ここで辿っているカタログの一覧が作り直されるため。
+		DynamicArray<String> gone;
+		for (const SharedAsset& asset : catalog_.Assets())
+		{
+			Bool missing = false;
+
+			/// [EN] The Drive files this asset cannot do without, and that the listings could not vouch for.
+			/// [JP] このアセットに欠かせない Drive のファイルのうち、一覧で残っていると確かめられなかったもの。
+			DynamicArray<String> suspects;
+			for (const SharedFile& file : asset.files_)
+			{
+				/// [EN] An asset's own file under Assets belongs at its path in the library's Assets folder. One still kept in the blobs folder would have been pointed at a file there by Follow, so with nothing there it means the team deleted it.
+				/// [JP] Assets 以下のアセット自身のファイルは、ライブラリの Assets フォルダの同じ位置に属する。まだ blobs フォルダにあるものは、そこにファイルがあれば Follow で向け直されているはずなので、何も無いのはチームが消したということ。
+
+				/// [EN] A file kept in the Assets folder is left to the request below instead, since one another member uploaded moments ago may not be listed yet.
+				/// [JP] Assets フォルダにあるファイルは下の問い合わせに任せる。他のメンバーが直前にアップロードしたものは、まだ一覧に出ないことがあるため。
+				std::filesystem::path logical(file.path_.w_str());
+				if (complete && stored.contains(file.driveId_.str()) && logical.extension() != ".meta" && !logical.empty() && *logical.begin() == "Assets" && !placed.contains(file.path_.str()))
+				{
+					missing = true;
+				}
+
+				if (!file.driveId_.str().empty() && !alive.contains(file.driveId_.str()))
+				{
+					suspects.push_back(file.driveId_);
+				}
+			}
+
+			/// [EN] A scene's document lives outside both folders, so it is always asked about directly.
+			/// [JP] Scene のドキュメントはどちらのフォルダの外にもあるため、常に直接問い合わせる。
+			if (asset.scene_ && !asset.sceneDocumentId_.str().empty())
+			{
+				suspects.push_back(asset.sceneDocumentId_);
+			}
+
+			/// [EN] A file missing from the listings may just be one uploaded moments ago that Drive has not indexed yet, so each is confirmed one by one.
+			/// [JP] 一覧に無いファイルも、直前にアップロードされて Drive がまだ索引に載せていないだけかもしれない。そのため1件ずつ確かめる。
+			for (const String& suspect : suspects)
+			{
+				if (missing)
+				{
+					break;
+				}
+
+				Bool exists = true;
+				if (!drive_.Exists(suspect, exists))
+				{
+					/// [EN] A failed request is not proof of anything, so the asset is kept until an answer can be had.
+					/// [JP] 失敗した問い合わせは何の証拠にもならない。答えが得られるまでアセットは残す。
+					break;
+				}
+				missing = !exists;
+			}
+
+			if (missing)
+			{
+				gone.push_back(asset.id_);
+			}
+		}
+
+		/// [EN] Another member may have removed one a moment earlier, which refuses that removal but leaves the asset out of the catalog all the same.
+		/// [JP] 直前に他のメンバーが取り除いていることもある。その場合ここでの削除は断られるが、カタログに無いことに変わりはない。
+		for (const String& assetId : gone)
+		{
+			catalog_.Remove(assetId);
 		}
 	}
 
@@ -543,65 +748,6 @@ namespace SeedCore
 				return true;
 			}
 
-			/// [EN] The scene file is about to be replaced, so any piece this member changed and has not published would be lost; the file is taken apart and each piece compared against what this machine last had.
-			/// [JP] Scene ファイルをこれから置き換えるため、このメンバーが変えてまだ公開していない断片があれば失われてしまう。ファイルを分け、各断片をこの PC が最後に持っていたものと比べる。
-			std::filesystem::path current = Local(asset->path_);
-			if (std::filesystem::exists(current))
-			{
-				std::ifstream reader(current);
-				nlohmann::json local = nlohmann::json::parse(reader, nullptr, false);
-				reader.close();
-
-				/// [EN] A file that cannot be taken apart holds nothing a piece could carry, so it is simply replaced.
-				/// [JP] 分けられないファイルには断片として運べるものが無いため、そのまま置き換える。
-				std::unordered_map<String, nlohmann::json> localParts;
-				String unreadable;
-				if (Split(local, localParts, unreadable))
-				{
-					Bool edited = false;
-					for (const std::pair<const String, nlohmann::json>& part : localParts)
-					{
-						std::string text = part.second.dump();
-						DynamicArray<Byte> digest = Sha256::Hash(reinterpret_cast<const Byte*>(text.data()), text.size());
-						std::string hash;
-						for (Byte value : digest)
-						{
-							hash += std::format("{:02x}", static_cast<Uint8>(value));
-						}
-
-						/// [EN] Without a record of what this machine last had, the library itself is the reference: only a piece that differs from it is work that would be lost.
-						/// [JP] この PC が最後に持っていた記録が無い場合は、ライブラリそのものを基準にする。それと違う断片だけが、失われる作業になる。
-						if (based)
-						{
-							auto known = base->second.parts_.find(part.first);
-							edited = edited || known == base->second.parts_.end() || known->second.hash_ != String(hash);
-						}
-						else
-						{
-							const ScenePart* remote = shared.Find(part.first);
-							edited = edited || !remote || remote->deleted_ || remote->hash_ != String(hash);
-						}
-					}
-
-					/// [EN] A piece this machine had and the file no longer holds was removed here, which is a change as well.
-					/// [JP] この PC が持っていて、ファイルにはもう無い断片は、ここで削除されたもの。それも変更にあたる。
-					if (based)
-					{
-						for (const std::pair<const String, ScenePartBase>& known : base->second.parts_)
-						{
-							edited = edited || (!known.second.hash_.str().empty() && !localParts.contains(known.first));
-						}
-					}
-
-					if (edited)
-					{
-						std::lock_guard<std::mutex> guard(snapshotMutex_);
-						snapshot_.error_ = String(std::format("\"{}\" に公開していない変更があるため取得しませんでした。先に「変更を公開」するか、手元の変更を捨てるなら「ライブラリの版で置き換え」を選んでください。", asset->path_.str()));
-						return false;
-					}
-				}
-			}
-
 			std::unordered_map<String, nlohmann::json> parts;
 			for (const ScenePart& part : shared.Parts())
 			{
@@ -634,7 +780,53 @@ namespace SeedCore
 				std::error_code errorCode;
 				std::filesystem::remove(staging, errorCode);
 			}
-	
+
+			/// [EN] A piece this member changed stays as they have it while nobody published past the version they changed; only a piece someone else published first is replaced.
+			/// [JP] このメンバーが変えた断片は、その元の版より先に誰も公開していない間は手元のまま残す。置き換えるのは、他の誰かが先に公開した断片だけ。
+			std::filesystem::path current = Local(asset->path_);
+			if (based && std::filesystem::exists(current))
+			{
+				std::ifstream reader(current);
+				nlohmann::json local = nlohmann::json::parse(reader, nullptr, false);
+				reader.close();
+
+				std::unordered_map<String, nlohmann::json> localParts;
+				String unreadable;
+				if (Split(local, localParts, unreadable))
+				{
+					for (const std::pair<const String, nlohmann::json>& part : localParts)
+					{
+						std::string text = part.second.dump();
+						DynamicArray<Byte> digest = Sha256::Hash(reinterpret_cast<const Byte*>(text.data()), text.size());
+						std::string hash;
+						for (Byte value : digest)
+						{
+							hash += std::format("{:02x}", static_cast<Uint8>(value));
+						}
+
+						auto known = base->second.parts_.find(part.first);
+						const ScenePart* remote = shared.Find(part.first);
+						Bool edited = known == base->second.parts_.end() || known->second.hash_ != String(hash);
+						Bool overtaken = remote && (known == base->second.parts_.end() || remote->revision_ != known->second.revision_);
+						if (edited && !overtaken)
+						{
+							parts[part.first] = part.second;
+						}
+					}
+
+					/// [EN] A piece this member removed stays removed on the same terms.
+					/// [JP] このメンバーが取り除いた断片も、同じ条件で取り除いたままにする。
+					for (const std::pair<const String, ScenePartBase>& known : base->second.parts_)
+					{
+						const ScenePart* remote = shared.Find(known.first);
+						if (!known.second.hash_.str().empty() && !localParts.contains(known.first) && (!remote || remote->revision_ == known.second.revision_))
+						{
+							parts.erase(known.first);
+						}
+					}
+				}
+			}
+
 			/// [EN] An entity arrives as several pieces - its own header, its transform and one piece per component - which are gathered per entity first.
 			/// [JP] Entity は複数の断片（本体・トランスフォーム・Component ごとの断片）として届くため、先に Entity ごとにまとめる。
 			std::unordered_map<std::string, nlohmann::json> transforms;
@@ -799,51 +991,6 @@ namespace SeedCore
 		}
 
 
-		/// [EN] Work this machine has not published would be overwritten by the incoming files, so it stops the get instead.
-		/// [JP] この PC の未公開の作業は、届くファイルで上書きされてしまうため、取得の方を止める。
-		auto previous = workspace_.find(assetId);
-		if (previous != workspace_.end())
-		{
-			for (const WorkspaceFile& file : previous->second.files_)
-			{
-				/// [EN] Size and time are read first, and a file that still matches both is taken as untouched without being read.
-				/// [JP] 先にサイズと時刻を見る。両方とも一致するファイルは、中身を読まずに無変更とみなす。
-				std::error_code errorCode;
-				std::filesystem::path local = Local(file.path_);
-				Uint64 size = std::filesystem::file_size(local, errorCode);
-				Int64 stamp = std::filesystem::last_write_time(local, errorCode).time_since_epoch().count();
-				if (!errorCode && size == file.size_ && stamp == file.stamp_)
-				{
-					continue;
-				}
-
-				/// [EN] A file that is gone holds no work to protect, so it is fetched again rather than treated as an edit.
-				/// [JP] 消えているファイルには守るべき作業が無いため、変更とみなさず取得し直す。
-				if (!std::filesystem::exists(local))
-				{
-					continue;
-				}
-
-				/// [EN] Otherwise the contents decide, since re-saving a file changes its time without changing what is in it.
-				/// [JP] そうでなければ中身で判断する。保存し直しただけでも時刻は変わるが、中身は変わらないため。
-				DynamicArray<Byte> digest = Sha256::Hash(local);
-				std::string current;
-				for (Byte value : digest)
-				{
-					current += std::format("{:02x}", static_cast<Uint8>(value));
-				}
-
-				/// [EN] The comparison is against what the file hashed to when it arrived, not against the library's newest.
-				/// [JP] 比べる相手は、そのファイルが届いた時点のハッシュであって、ライブラリの最新ではない。
-				if (current != file.hash_.str())
-				{
-					std::lock_guard<std::mutex> guard(snapshotMutex_);
-					snapshot_.error_ = String(std::format("\"{}\" にローカルの変更があるため取得しませんでした。", asset->path_.str()));
-					return false;
-				}
-			}
-		}
-
 		/// [EN] Dependencies come first, so a scene is never opened before the models and materials it refers to exist.
 		/// [JP] 依存を先に取得する。Scene が、参照するモデルやマテリアルより先に開かれることのないようにするため。
 		for (const String& dependency : asset->dependencies_)
@@ -876,6 +1023,21 @@ namespace SeedCore
 			{
 				std::lock_guard<std::mutex> guard(snapshotMutex_);
 				snapshot_.error_ = drive_.Error();
+				return false;
+			}
+
+			DynamicArray<Byte> arrived = Sha256::Hash(staging);
+			std::string received;
+			for (Byte value : arrived)
+			{
+				received += std::format("{:02x}", static_cast<Uint8>(value));
+			}
+			if (received != file.hash_.str())
+			{
+				std::error_code errorCode;
+				std::filesystem::remove(staging, errorCode);
+				std::lock_guard<std::mutex> guard(snapshotMutex_);
+				snapshot_.error_ = String(std::format("\"{}\" の Drive 上の中身がカタログと一致しないため取得しませんでした。公開の途中であれば、少し待ってからもう一度「最新を取得」してください。", file.path_.str()));
 				return false;
 			}
 
@@ -928,15 +1090,15 @@ namespace SeedCore
 	*/
 	Bool SharingWorker::Adopt(const String& assetId)
 	{
-		/// [EN] Forgetting what this machine recorded is what lets Get replace local files it would otherwise protect as unpublished work.
-		/// [JP] この PC の記録を忘れることで、未公開の作業として守るはずのローカルファイルも Get が置き換えられるようになる。
+		/// [EN] Forgetting what this machine recorded makes Get bring every file down in the library's version, whatever this machine holds.
+		/// [JP] この PC の記録を忘れることで、手元に何があっても、Get が全てのファイルをライブラリの版で降ろす。
 
 		/// [EN] The .meta comes down with the rest, so this machine ends up knowing the asset by the same identifier as the team.
 		/// [JP] .meta も一緒に降りてくるため、この PC もチームと同じ識別子でそのアセットを知ることになる。
 		workspace_.erase(assetId);
 
-		/// [EN] A scene is protected piece by piece rather than by file, so its local pieces are recorded as what this machine last had at revision 0; the get then counts none of them as unpublished work and every piece comes down.
-		/// [JP] Scene はファイル単位ではなく断片単位で守っている。そのため手元の断片を、この PC が最後に持っていたものとして Revision 0 で記録する。これで取得はどれも未公開の作業とみなさず、全ての断片が降りてくる。
+		/// [EN] A get keeps a scene's changed pieces rather than its file, so its local pieces are recorded as what this machine last had at revision 0; the get then counts none of them as this member's changes and every piece comes down.
+		/// [JP] 取得が残すのはファイルではなく Scene の変えた断片なので、手元の断片を、この PC が最後に持っていたものとして Revision 0 で記録する。これで取得はどれもこのメンバーの変更とみなさず、全ての断片が降りてくる。
 		const SharedAsset* asset = catalog_.Find(assetId);
 		if (asset && asset->scene_)
 		{
@@ -971,19 +1133,30 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Uploads whichever of an asset's files changed and records them as
-	* the next revision.
+	* the next revision. Refused when another member published past the
+	* version this change was made on, since the first publish is the one
+	* the team keeps.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* アセットのファイルのうち変更されたものをアップロードし、次の
-	* Revision として記録する。
+	* Revision として記録する。この変更の元の版より先に他のメンバーが
+	* 公開していれば断る。チームが残すのは先に公開された版であるため。
 	*/
 	Bool SharingWorker::Publish(const String& assetId)
 	{
+		/// [EN] The catalog is read again first, so a publish is never built on an entry that was removed or moved on a moment ago.
+		/// [JP] 先にカタログを読み直す。直前に取り除かれた、あるいは先へ進んだ項目を元に公開してしまわないようにするため。
+		if (!catalog_.Refresh())
+		{
+			return false;
+		}
 		const SharedAsset* asset = catalog_.Find(assetId);
 		if (!asset)
 		{
+			std::lock_guard<std::mutex> guard(snapshotMutex_);
+			snapshot_.error_ = String("そのアセットはもう共有ライブラリにありません。");
 			return false;
 		}
 		/// [EN] A scene is published one piece at a time - an entity's header, its transform, each of its components - so what this member touched travels without the rest of the scene.
@@ -1015,10 +1188,16 @@ namespace SeedCore
 				return false;
 			}
 
-			/// [EN] What this machine last had decides which pieces are this member's work. A scene never fetched or published here has nothing to compare against, so every piece that differs from the library is sent and nothing is removed.
-			/// [JP] この PC が最後に持っていた内容が、どの断片がこのメンバーの作業かを決める。ここで一度も取得・公開していない Scene には比べる相手が無いため、ライブラリと違う断片を全て送り、何も削除しない。
+			/// [EN] What this machine last had decides which pieces are this member's work. A scene never fetched or published here can only be published while the library holds none of its pieces, since every piece it sent would otherwise go over one another member published first.
+			/// [JP] この PC が最後に持っていた内容が、どの断片がこのメンバーの作業かを決める。ここで一度も取得・公開していない Scene を公開できるのは、ライブラリにまだ断片が1つも無いときだけ。そうでなければ、送る断片が他のメンバーの先に公開した断片を上書きしてしまうため。
 			auto base = sceneBases_.find(assetId);
 			Bool based = base != sceneBases_.end();
+			if (!based && !shared.Parts().empty())
+			{
+				std::lock_guard<std::mutex> guard(snapshotMutex_);
+				snapshot_.error_ = String(std::format("\"{}\" はこの PC でまだ取得していないため公開しませんでした。「最新を取得」してから編集し直してください。", asset->path_.str()));
+				return false;
+			}
 
 			DynamicArray<ScenePartChange> changes;
 			DynamicArray<String> conflicts;
@@ -1143,7 +1322,7 @@ namespace SeedCore
 			if (!conflicts.empty())
 			{
 				std::lock_guard<std::mutex> guard(snapshotMutex_);
-				snapshot_.error_ = String(std::format("他のメンバーが先に変更した部分と、手元の変更がぶつかっているため公開しませんでした（{} 件、例: {}）。手元の変更を捨ててライブラリの版を取るなら「ライブラリの版で置き換え」を選んでください。", conflicts.size(), conflicts.front().str()));
+				snapshot_.error_ = String(std::format("他のメンバーが先に公開した部分と、手元の変更がぶつかっているため公開しませんでした（{} 件、例: {}）。「最新を取得」すると、その部分はライブラリの版になります。", conflicts.size(), conflicts.front().str()));
 				return false;
 			}
 
@@ -1170,14 +1349,34 @@ namespace SeedCore
 		}
 
 
+		/// [EN] The version first published is the one the team keeps, so a change made on an older one is refused; the next latest fetch replaces it with the library's.
+		/// [JP] チームが残すのは先に公開された版なので、古い版を元にした変更は断る。次の最新の取得で、ライブラリの版に置き換わる。
+		auto previous = workspace_.find(assetId);
+		if (previous == workspace_.end() || previous->second.revision_ < asset->revision_)
+		{
+			std::lock_guard<std::mutex> guard(snapshotMutex_);
+			snapshot_.error_ = String(std::format("\"{}\" は他のメンバーが先に公開しているため公開しませんでした。「最新を取得」で取り込んでから編集し直してください。", asset->path_.str()));
+			return false;
+		}
+		Uint64 baseRevision = asset->revision_;
+
+		/// [EN] Files uploaded by this publish, which go to the trash if it does not go through, and the files they replace, which go once it does.
+		/// [JP] この公開でアップロードしたファイルと、それが置き換えるファイル。前者は公開が通らなければ、後者は通ればゴミ箱へ移す。
+		DynamicArray<String> uploaded;
+		DynamicArray<String> replaced;
+
 		/// [EN] The file list is taken from the catalog, so a publish describes the same set of files the team already knows.
 		/// [JP] ファイル一覧はカタログから取る。Publish が、チームが既に知っているのと同じ構成を記述するようにするため。
 		DynamicArray<SharedFile> files;
 		for (const SharedFile& file : asset->files_)
 		{
 			SharedFile stored;
-			if (!Store(file.path_, stored))
+			if (!Store(file.path_, stored, uploaded, replaced))
 			{
+				for (const String& fileId : uploaded)
+				{
+					drive_.Trash(fileId);
+				}
 				return false;
 			}
 			files.push_back(stored);
@@ -1193,19 +1392,34 @@ namespace SeedCore
 			}
 
 			SharedFile stored;
-			if (!Store(companion, stored))
+			if (!Store(companion, stored, uploaded, replaced))
 			{
+				for (const String& fileId : uploaded)
+				{
+					drive_.Trash(fileId);
+				}
 				return false;
 			}
 			files.push_back(stored);
 		}
 
-		/// [EN] The publish replaces whatever the library held, even when another member published after this copy was fetched.
-		/// [JP] Publish はライブラリの内容を置き換える。この写しを取得した後に他のメンバーが公開していても同じ。
+		/// [EN] The catalog takes the write only while the entry is still at the revision this change was made on, so of two members publishing at once the first one stands.
+		/// [JP] カタログが書き込みを受けるのは、項目がまだこの変更の元の Revision にある間だけ。2人が同時に公開しても、先の1人が残る。
+
+		/// [EN] A publish that does not go through takes its uploads back to the trash, so nothing it sent stays in the library's Assets folder - an asset deleted in Drive meanwhile does not come back.
+		/// [JP] 通らなかった公開は、アップロードした分をゴミ箱へ戻す。送ったものがライブラリの Assets フォルダに残らないようにするため。その間に Drive で消されたアセットが戻ってくることもない。
 		Uint64 revision = 0;
-		if (!catalog_.Publish(assetId, files, asset->dependencies_, revision))
+		if (!catalog_.Publish(assetId, files, asset->dependencies_, baseRevision, revision))
 		{
+			for (const String& fileId : uploaded)
+			{
+				drive_.Trash(fileId);
+			}
 			return false;
+		}
+		for (const String& fileId : replaced)
+		{
+			drive_.Trash(fileId);
 		}
 
 		/// [EN] The local record moves to the revision just written, so what was published is not seen as behind.
@@ -1370,10 +1584,16 @@ namespace SeedCore
 
 		/// [EN] The asset and its .meta travel together, because the .meta is what carries the identity the engine loads it by.
 		/// [JP] アセットと .meta は一緒に運ぶ。エンジンが読み込む際の識別情報を持っているのは .meta の側であるため。
+		DynamicArray<String> uploaded;
+		DynamicArray<String> replaced;
 		SharedFile main;
 		SharedFile meta;
-		if (!Store(request.path_, main) || !Store(String(std::format("{}.meta", request.path_.str())), meta))
+		if (!Store(request.path_, main, uploaded, replaced) || !Store(String(std::format("{}.meta", request.path_.str())), meta, uploaded, replaced))
 		{
+			for (const String& fileId : uploaded)
+			{
+				drive_.Trash(fileId);
+			}
 			return false;
 		}
 		asset.files_.push_back(main);
@@ -1384,8 +1604,12 @@ namespace SeedCore
 		for (const String& companion : Companions(request.path_))
 		{
 			SharedFile stored;
-			if (!Store(companion, stored))
+			if (!Store(companion, stored, uploaded, replaced))
 			{
+				for (const String& fileId : uploaded)
+				{
+					drive_.Trash(fileId);
+				}
 				return false;
 			}
 			asset.files_.push_back(stored);
@@ -1393,6 +1617,11 @@ namespace SeedCore
 
 		if (!catalog_.Register(asset))
 		{
+			for (const String& fileId : uploaded)
+			{
+				drive_.Trash(fileId);
+			}
+
 			/// [EN] Another member can register the same path in the moment between the check above and this write, and then this machine takes theirs.
 			/// [JP] 上の確認からこの書き込みまでの間に、他のメンバーが同じ位置を登録することがある。その場合はこの PC がそちらを取る。
 			if (catalog_.Refresh())
@@ -1404,6 +1633,11 @@ namespace SeedCore
 				}
 			}
 			return false;
+		}
+
+		for (const String& fileId : replaced)
+		{
+			drive_.Trash(fileId);
 		}
 
 		/// [EN] A freshly registered asset starts at revision 1, which is also what this machine now has.
@@ -1463,8 +1697,8 @@ namespace SeedCore
 			sceneBases_.erase(assetId);
 		}
 
-		/// [EN] A copy sitting in the library's Assets folder goes too, so the next fetch does not hand the unshared asset back to anyone.
-		/// [JP] ライブラリの Assets フォルダにある写しも捨てる。次の取得で、共有を解除したアセットが誰かの手元へ戻ってこないようにするため。
+		/// [EN] The file in the library's Assets folder goes too, so the next fetch does not hand the unshared asset back to anyone.
+		/// [JP] ライブラリの Assets フォルダにあるファイルも捨てる。次の取得で、共有を解除したアセットが誰かの手元へ戻ってこないようにするため。
 		for (const SharedFile& file : asset.files_)
 		{
 			/// [EN] The Drive folder stands for the workspace's Assets folder, so only paths under it can have a copy there.
@@ -1478,19 +1712,13 @@ namespace SeedCore
 			/// [EN] Drive has no lookup by path, so the folders are walked one name at a time; every step but the last is a folder, and the last is the file itself.
 			/// [JP] Drive には位置で引く手段が無いため、名前を1つずつ辿って降りていく。最後以外はフォルダで、最後がファイルそのもの。
 			String driveId = config_.assetsFolderId_;
-			std::filesystem::path relative = logical.lexically_relative("Assets");
-			for (auto part = relative.begin(); part != relative.end() && !driveId.str().empty(); ++part)
+			for (const std::filesystem::path& segment : logical.lexically_relative("Assets"))
 			{
-				/// [EN] A listing that fails leaves nothing to match, which ends the walk the same way a missing name does.
-				/// [JP] 一覧の取得に失敗した場合は照合する相手が無く、名前が見つからない場合と同じく走査が終わる。
-				DynamicArray<DriveEntry> entries;
-				if (!drive_.List(driveId, entries))
+				driveId = drive_.Find(String(segment.generic_wstring()), driveId);
+				if (driveId.str().empty())
 				{
-					entries.clear();
+					break;
 				}
-				Bool wantFolder = std::next(part) != relative.end();
-				auto found = std::ranges::find_if(entries, [&part, wantFolder](const DriveEntry& entry) { return entry.folder_ == wantFolder && std::filesystem::path(entry.name_.w_str()) == *part; });
-				driveId = found == entries.end() ? String() : found->id_;
 			}
 
 			if (!driveId.str().empty())
@@ -1508,193 +1736,139 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Stops following every shared asset whose files sat at or under the
-	* given workspace path, which this machine has just deleted. The
-	* library keeps them, and a later fetch brings them back only when
-	* the member asks for them.
+	* Brings the library's Assets folder down into the workspace: every
+	* folder it has is created here, and every file it holds that no
+	* shared asset names - something an artist dropped there, or a file
+	* every member already has but nobody has shared - is downloaded
+	* where needed and handed to the Editor to be taken in and shared.
+	* Files of shared assets are left to Get. Nothing goes the other
+	* way, so a folder deleted in Drive is not made again from this
+	* machine. Every Drive file met on the way is recorded in placed by
+	* its workspace path. Returns whether every folder could be listed,
+	* since only a complete walk can say that something is not there.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* この PC が今削除した、指定のワークスペース内の位置（またはその下）に
-	* ファイルがあった共有アセットを、追いかけるのをやめる。ライブラリには
-	* 残り、メンバーが求めたときにだけ再び取得される。
+	* ライブラリの Assets フォルダをワークスペースへ降ろす。そこにある
+	* フォルダは全てこちらにも作り、どの共有アセットも指していない
+	* ファイル（アーティストが置いたものや、全員が持っているのに誰も
+	* 共有していないもの）は必要ならダウンロードして、取り込みと共有を
+	* Editor に任せる。共有アセットのファイルは Get に任せる。逆向きには
+	* 何も送らないため、Drive で消したフォルダがこの PC から作り直される
+	* ことはない。途中で出会った Drive のファイルは全て、ワークスペース
+	* 内の位置をキーにして placed に記録する。全てのフォルダを一覧できた
+	* かどうかを返す。「そこに無い」と言えるのは、走査が完全な場合だけ
+	* であるため。
 	*/
-	void SharingWorker::Forget(const String& logicalPath)
-	{
-		/// [EN] Without this, the next fetch would see the deleted files as holes and fill them straight back in.
-		/// [JP] これが無いと、次の取得が消したファイルを欠けとみなし、すぐに埋め戻してしまう。
-		const std::string& prefix = logicalPath.str();
-		std::erase_if(workspace_, [&prefix](const std::pair<const String, WorkspaceRecord>& record)
-		{
-			return std::ranges::any_of(record.second.files_, [&prefix](const WorkspaceFile& file)
-			{
-				const std::string& path = file.path_.str();
-				return path == prefix || path.rfind(prefix + "/", 0) == 0;
-			});
-		});
-		SaveWorkspace();
-	}
-
-	/**
-	* [EN]
-	* Keeps the library's Assets folder shaped like the workspace's
-	* own, and takes in whatever has been dropped into it. Folders are
-	* created where they are missing, and a file whose contents this
-	* machine does not already have is downloaded.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ライブラリの Assets フォルダを、ワークスペース側と同じ形に保ち、
-	* そこへ置かれたものを取り込む。足りないフォルダは作り、この PC が
-	* まだ持っていない中身のファイルをダウンロードする。
-	*/
-	void SharingWorker::Mirror(const std::filesystem::path& localFolder, const String& driveFolderId)
+	Bool SharingWorker::Mirror(const std::filesystem::path& localFolder, const String& driveFolderId, const std::set<std::string>& sharedPaths, const std::set<std::string>& sharedIds, std::unordered_map<std::string, DriveEntry>& placed)
 	{
 		DynamicArray<DriveEntry> entries;
 		if (!drive_.List(driveFolderId, entries))
 		{
-			return;
+			return false;
 		}
 
-		/// [EN] What the library already shows is noted first, so the folders created below are only the ones missing.
-		/// [JP] 先にライブラリ側にあるものを控える。下で作るフォルダが、足りないものだけになるようにするため。
-
-		/// [EN] Names are compared as wide strings, since Drive gives UTF-8 while a narrow Windows path is in the system code page, and Japanese names would never match.
-		/// [JP] 名前はワイド文字列で比べる。Drive は UTF-8 で返し、Windows の狭い文字列のパスはシステムのコードページなので、日本語の名前が一致しなくなるため。
-		std::unordered_map<std::wstring, DriveEntry> remote;
+		Bool complete = true;
 		for (const DriveEntry& entry : entries)
 		{
-			remote[entry.name_.w_str()] = entry;
-		}
-
-		/// [EN] A file sitting in the library's Assets tree is something an artist put there, and belongs at the matching place here.
-		/// [JP] ライブラリの Assets の中にあるファイルは、アーティストが置いたもので、こちら側の対応する位置に属する。
-		for (const DriveEntry& entry : entries)
-		{
+			/// [EN] Names are turned into paths as wide strings, since Drive gives UTF-8 while a narrow Windows path is in the system code page, and Japanese names would never match.
+			/// [JP] 名前はワイド文字列としてパスにする。Drive は UTF-8 で返し、Windows の狭い文字列のパスはシステムのコードページなので、日本語の名前が一致しなくなるため。
+			std::filesystem::path local = localFolder / entry.name_.w_str();
 			if (entry.folder_)
 			{
+				std::error_code errorCode;
+				std::filesystem::create_directories(local, errorCode);
+				complete = !errorCode && Mirror(local, entry.id_, sharedPaths, sharedIds, placed) && complete;
 				continue;
+			}
+
+			String logical = String(local.lexically_relative(projectRoot_ / config_.workspace_.str()).generic_wstring());
+
+			/// [EN] Drive lets two files share a name, and when they do the one the catalog names is the one that stands at that path.
+			/// [JP] Drive では同じ名前のファイルが2つ並ぶことがある。その場合、その位置に立つのはカタログが指している方。
+			auto known = placed.find(logical.str());
+			if (known == placed.end() || !sharedIds.contains(known->second.id_.str()))
+			{
+				placed[logical.str()] = entry;
 			}
 
 			/// [EN] A .meta beside it is the Editor's own bookkeeping, and is made here rather than taken from the library.
 			/// [JP] 隣の .meta は Editor 側の管理情報で、ライブラリから取るのではなくこちらで作る。
-			std::filesystem::path local = localFolder / entry.name_.w_str();
-			if (local.extension() == ".meta")
+			if (local.extension() == ".meta" || sharedPaths.contains(logical.str()) || sharedIds.contains(entry.id_.str()))
 			{
 				continue;
 			}
 
-			/// [EN] Comparing hashes is what keeps this from downloading the same drop on every latest fetch, and what notices a replacement.
-			/// [JP] ハッシュを比べることで、最新の取得のたびに同じものを取り直さずに済み、差し替えにも気づける。
+			/// [EN] Comparing hashes is what keeps this from downloading the same drop on every latest fetch.
+			/// [JP] ハッシュを比べることで、最新の取得のたびに同じものを取り直さずに済む。
 			DynamicArray<Byte> digest = Sha256::Hash(local);
 			std::string current;
 			for (Byte value : digest)
 			{
 				current += std::format("{:02x}", static_cast<Uint8>(value));
 			}
-			if (!entry.hash_.str().empty() && current == entry.hash_.str())
-			{
-				continue;
-			}
 
 			/// [EN] Drive does not hash every file, and a size that already matches is taken as the same contents.
 			/// [JP] Drive は全てのファイルにハッシュを持つわけではない。サイズが既に一致するものは同じ中身とみなす。
 			std::error_code errorCode;
-			if (entry.hash_.str().empty() && std::filesystem::file_size(local, errorCode) == entry.size_ && !errorCode)
+			Bool held = entry.hash_.str().empty() ? std::filesystem::file_size(local, errorCode) == entry.size_ && !errorCode : current == entry.hash_.str();
+
+			/// [EN] A file already here that has no .meta beside it is not one the engine takes in, so there is nothing for the Editor to share.
+			/// [JP] 既にここにあって隣に .meta が無いファイルは、エンジンが取り込む種類ではないため、Editor が共有するものが無い。
+			std::filesystem::path meta = local;
+			meta += ".meta";
+			if (held && !std::filesystem::exists(meta))
 			{
 				continue;
 			}
-
-			std::filesystem::path staging = local;
-			staging += ".download";
-			if (!drive_.Fetch(entry.id_, staging))
+			if (!held)
 			{
-				continue;
+				std::filesystem::path staging = local;
+				staging += ".download";
+				if (!drive_.Fetch(entry.id_, staging))
+				{
+					continue;
+				}
+				std::filesystem::rename(staging, local, errorCode);
+				if (errorCode)
+				{
+					std::filesystem::remove(staging, errorCode);
+					continue;
+				}
 			}
-			std::filesystem::rename(staging, local, errorCode);
-			if (errorCode)
-			{
-				std::filesystem::remove(staging, errorCode);
-				continue;
-			}
 
-			String logical = String(std::filesystem::relative(local, projectRoot_ / config_.workspace_.str()).generic_wstring());
-
-			/// [EN] The drop only lands on this machine; sharing or publishing it is left to the member, from the asset's context menu.
-			/// [JP] 投下されたものはこの PC に置くだけ。共有や公開は、アセットの右クリックメニューからメンバーが行う。
-
-			/// [EN] A drop onto an asset this machine already has is a replacement: the .meta beside it is untouched, so every scene and prefab pointing at it keeps pointing at it, and the Editor only has to reload it.
-			/// [JP] この PC が既に持っているアセットへの投下は差し替え。隣の .meta には触れないため、それを指す Scene や Prefab の参照は切れず、Editor は読み直すだけでよい。
-			const SharedAsset* existing = catalog_.FindPath(logical);
+			/// [EN] The Editor is told, because a file that arrived this way may have no identity yet and has to be scanned to get its .meta.
+			/// [JP] Editor へ知らせる。この経路で届いたファイルはまだ識別情報を持たないことがあり、走査して .meta を得る必要があるため。
 			std::lock_guard<std::mutex> guard(snapshotMutex_);
-			if (existing && workspace_.contains(existing->id_))
-			{
-				changed_.push_back(existing->runtimeId_);
-				continue;
-			}
-
-			/// [EN] Otherwise the Editor is told, because a file that arrived this way has no identity yet and has to be scanned to get its .meta.
-			/// [JP] そうでなければ Editor へ知らせる。この経路で届いたファイルはまだ識別情報を持たず、走査して .meta を得る必要があるため。
 			imported_.push_back(logical);
 		}
-
-		/// [EN] Folders are walked after the files, so a drop at this level is taken in before descending.
-		/// [JP] フォルダはファイルの後に辿る。この階層に置かれたものを先に取り込むため。
-		std::error_code errorCode;
-		for (const std::filesystem::directory_entry& child : std::filesystem::directory_iterator(localFolder, errorCode))
-		{
-			if (!child.is_directory())
-			{
-				continue;
-			}
-
-			/// [EN] A folder the library does not have yet is created, which is what keeps its tree shaped like this one.
-			/// [JP] ライブラリ側にまだ無いフォルダは作る。これがライブラリの構成をこちらと同じ形に保つ動き。
-			std::wstring name = child.path().filename().wstring();
-			auto found = remote.find(name);
-			String childId = found == remote.end() ? drive_.Folder(String(name), driveFolderId) : found->second.id_;
-			if (found != remote.end())
-			{
-				remote.erase(found);
-			}
-			if (!childId.str().empty())
-			{
-				Mirror(child.path(), childId);
-			}
-		}
-
-		/// [EN] A folder that exists only in the library was made there by an artist, so it is created here and walked as well, or nothing dropped into it would ever arrive.
-		/// [JP] ライブラリにだけあるフォルダは、アーティストがそこで作ったもの。ここにも作って辿る。そうしないと、その中に置かれたものが一切届かない。
-		for (const std::pair<const std::wstring, DriveEntry>& entry : remote)
-		{
-			if (!entry.second.folder_)
-			{
-				continue;
-			}
-
-			std::filesystem::path childFolder = localFolder / entry.first;
-			std::filesystem::create_directories(childFolder, errorCode);
-			if (!errorCode)
-			{
-				Mirror(childFolder, entry.second.id_);
-			}
-		}
+		return complete;
 	}
 
 	/**
 	* [EN]
 	* Uploads one local file unless its contents are already stored,
-	* and describes where they ended up.
+	* and describes where they ended up. A file under Assets is placed
+	* at the same path in the library's Assets folder, as a new file
+	* beside any older one there: the new file is added to uploaded and
+	* the older one to replaced, so the caller can trash whichever lost
+	* once its catalog write is known. A .meta, or anything when that
+	* folder is not set up, goes to the blobs folder under its hash.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* ローカルのファイル1つを、中身がまだ保存されていない場合に限り
-	* アップロードし、その置き場所を返す。
+	* アップロードし、その置き場所を返す。Assets 以下のファイルは、
+	* ライブラリの Assets フォルダの同じ位置へ、そこにある古いファイルの
+	* 隣に新しいファイルとして置く。新しいファイルは uploaded に、古い
+	* ファイルは replaced に加え、カタログへの書き込みの結果が分かった
+	* 時点で、呼び出し側が負けた方をゴミ箱へ移せるようにする。.meta と、
+	* そのフォルダが設定されていない場合は、ハッシュを名前にして blobs
+	* フォルダへ置く。
 	*/
-	Bool SharingWorker::Store(const String& logicalPath, SharedFile& stored)
+	Bool SharingWorker::Store(const String& logicalPath, SharedFile& stored, DynamicArray<String>& uploaded, DynamicArray<String>& replaced)
 	{
 		std::filesystem::path local = Local(logicalPath);
 
@@ -1718,6 +1892,65 @@ namespace SeedCore
 		stored.path_ = logicalPath;
 		stored.hash_ = String(hash);
 		stored.size_ = std::filesystem::file_size(local, errorCode);
+
+		std::filesystem::path logical(logicalPath.w_str());
+		if (!config_.assetsFolderId_.str().empty() && logical.extension() != ".meta" && !logical.empty() && *logical.begin() == "Assets")
+		{
+			String folderId = config_.assetsFolderId_;
+			for (const std::filesystem::path& segment : logical.parent_path().lexically_relative("Assets"))
+			{
+				if (segment == ".")
+				{
+					continue;
+				}
+
+				String name = String(segment.generic_wstring());
+				String childId = drive_.Find(name, folderId);
+				if (childId.str().empty())
+				{
+					childId = drive_.Folder(name, folderId);
+				}
+				if (childId.str().empty())
+				{
+					std::lock_guard<std::mutex> guard(snapshotMutex_);
+					snapshot_.error_ = drive_.Error();
+					return false;
+				}
+				folderId = childId;
+			}
+
+			DynamicArray<DriveEntry> entries;
+			if (!drive_.List(folderId, entries))
+			{
+				std::lock_guard<std::mutex> guard(snapshotMutex_);
+				snapshot_.error_ = drive_.Error();
+				return false;
+			}
+
+			std::wstring fileName = logical.filename().wstring();
+			auto found = std::ranges::find_if(entries, [&fileName](const DriveEntry& entry) { return !entry.folder_ && entry.name_.w_str() == fileName; });
+			if (found != entries.end() && found->hash_ == stored.hash_)
+			{
+				stored.driveId_ = found->id_;
+				return true;
+			}
+
+			/// [EN] New contents go up as a new file beside the old one rather than over it, so the old one stays what the catalog names until the caller's write goes through.
+			/// [JP] 新しい中身は古いファイルに上書きせず、新しいファイルとして隣に上げる。呼び出し側の書き込みが通るまで、カタログが指すのは古い方のままにするため。
+			stored.driveId_ = drive_.Upload(local, String(fileName), folderId);
+			if (stored.driveId_.str().empty())
+			{
+				std::lock_guard<std::mutex> guard(snapshotMutex_);
+				snapshot_.error_ = drive_.Error();
+				return false;
+			}
+			uploaded.push_back(stored.driveId_);
+			if (found != entries.end())
+			{
+				replaced.push_back(found->id_);
+			}
+			return true;
+		}
 
 		/// [EN] Contents already in the library are reused rather than sent again, so an unchanged file costs nothing to publish.
 		/// [JP] 既にライブラリにある中身は送り直さず再利用する。変更のないファイルの Publish に費用がかからないのはこのため。

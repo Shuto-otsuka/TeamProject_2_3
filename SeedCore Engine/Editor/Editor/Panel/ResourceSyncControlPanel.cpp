@@ -99,15 +99,15 @@ namespace SeedCore
 				sync.RequestGet(asset.assetID_);
 			}
 
-			/// [EN] Unlike a get, this replaces local files even when they hold unpublished work, so it is the way out of a conflict that keeps the team's side.
-			/// [JP] 取得と違い、未公開の作業があってもローカルのファイルを置き換える。チーム側を残して競合を抜ける手段。
+			/// [EN] This replaces local files and .meta with the library's at once, without waiting for the next latest fetch.
+			/// [JP] 次の最新の取得を待たずに、ローカルのファイルと .meta をその場でライブラリのもので置き換える。
 			if (ImGui::MenuItem("ライブラリの版で置き換え"))
 			{
 				sync.RequestAdopt(asset.assetID_);
 			}
 
-			/// [EN] Publishing always goes through and replaces whatever the library held, so the last upload is what the team gets.
-			/// [JP] 公開は常に通り、ライブラリの内容を置き換える。チームに届くのは最後にアップロードしたもの。
+			/// [EN] Publishing goes through only while nobody has published past the version this change was made on, so the first publish is what the team gets.
+			/// [JP] 公開が通るのは、この変更の元の版より先に誰も公開していない間だけ。チームに届くのは先に公開されたもの。
 			if (ImGui::MenuItem("変更を公開"))
 			{
 				sync.RequestPublish(asset.assetID_);
@@ -156,11 +156,11 @@ namespace SeedCore
 			ImGui::TextDisabled("この PC にはまだありません");
 		}
 
-		/// [EN] Both sides having moved is stated plainly, since publishing now replaces the other member's newer copy.
-		/// [JP] 両側が動いている場合ははっきり示す。今公開すると、他のメンバーの新しい写しを置き換えることになるため。
+		/// [EN] Both sides having moved is stated plainly, since the local change can no longer be published and the next latest fetch replaces it.
+		/// [JP] 両側が動いている場合ははっきり示す。手元の変更はもう公開できず、次の最新の取得で置き換わるため。
 		if (sync.Conflicted(asset.assetID_))
 		{
-			ImGui::Text("競合: 公開するとライブラリの新しい版を上書きします");
+			ImGui::Text("競合: 他のメンバーが先に公開しました。最新を取得すると手元の変更は上書きされます");
 		}
 		else if (sync.Modified(asset.assetID_))
 		{

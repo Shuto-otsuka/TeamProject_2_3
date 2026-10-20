@@ -417,6 +417,19 @@ namespace SeedCore
 					shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, query.hitPoint_, Quaternion::Identity, query.hitNormal_ * queryNormalLength_, color, worldArrowHeadLength_ });
 				}
 			}
+			else if (query.kind_ == QueryKind::Boxcast)
+			{
+				Float length = query.hit_ ? query.hitDistance_ : query.distance_;
+				Vector3 end = query.origin_ + query.direction_ * length;
+				shapes_.push_back({ ShapeKind::Box, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, query.origin_, query.rotation_, query.dimensions_, color });
+				shapes_.push_back({ ShapeKind::Box, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, end, query.rotation_, query.dimensions_, color });
+				shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, query.origin_, Quaternion::Identity, end - query.origin_, color });
+				if (query.hit_)
+				{
+					shapes_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, query.hitPoint_, Quaternion::Identity, Vector3(queryHitRadius_, 0.0f, 0.0f), color });
+					shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, query.hitPoint_, Quaternion::Identity, query.hitNormal_ * queryNormalLength_, color, worldArrowHeadLength_ });
+				}
+			}
 			else if (query.kind_ == QueryKind::Overlap)
 			{
 				/// [EN] The tested shape where it stood; ColliderKind and ShapeKind share their numbers, so the kind carries over as is.
@@ -455,6 +468,20 @@ namespace SeedCore
 					shapes_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, end, Quaternion::Identity, Vector3(query.radius_, 0.0f, 0.0f), color });
 					shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, origin + edge, Quaternion::Identity, end - origin, color });
 					shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, origin - edge, Quaternion::Identity, end - origin, color });
+					if (query.hit_)
+					{
+						shapes_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, hitPoint, Quaternion::Identity, Vector3(queryHitPixels_, 0.0f, 0.0f), color });
+						shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, hitPoint, Quaternion::Identity, hitNormal * queryNormalPixels_, color, canvasArrowHeadLength_ });
+					}
+				}
+				else if (query.kind_ == QueryKind::Boxcast2D)
+				{
+					Float length = query.hit_ ? query.hitDistance_ : query.distance_;
+					Vector3 end = origin + direction * length;
+					Quaternion rotation(-query.rotation_.x, -query.rotation_.y, -query.rotation_.z, query.rotation_.w);
+					shapes_.push_back({ ShapeKind::Rect, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, origin, rotation, query.dimensions_, color });
+					shapes_.push_back({ ShapeKind::Rect, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, end, rotation, query.dimensions_, color });
+					shapes_.push_back({ ShapeKind::Segment, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, origin, Quaternion::Identity, end - origin, color });
 					if (query.hit_)
 					{
 						shapes_.push_back({ ShapeKind::Circle, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, hitPoint, Quaternion::Identity, Vector3(queryHitPixels_, 0.0f, 0.0f), color });

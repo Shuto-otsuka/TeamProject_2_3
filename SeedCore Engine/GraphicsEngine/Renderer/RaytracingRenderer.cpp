@@ -12,6 +12,7 @@
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/Model/Animation/Animator.h>
 #include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Material/Material.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Renderer/ModelRenderer.h>
@@ -131,6 +132,8 @@ namespace SeedCore
 		/// [JP] 今フレーム見えたメッシュとエンティティ。Crister* や EntityID をキーとするキャッシュはこれで刈る。解放されたアドレスや ID は無関係な新しいオブジェクトに再利用され得るため、残しておくと古い BLAS やマテリアルテーブルを拾ってしまう。
 		std::unordered_set<const Crister*> liveCristers;
 		std::unordered_set<EntityID> liveEntities;
+		std::unordered_set<EntityID> ownMaterialEntities;
+		std::unordered_set<const Crister*> seedMaterialCristers;
 
 		Query<Read<Active>, Read<Mesh>> query(world);
 		query.ForEach([&](EntityID entityID, const Active& active, const Mesh& mesh)
@@ -164,6 +167,56 @@ namespace SeedCore
 				instance.crister_ = crister;
 				instance.worldMatrix_ = actor.WorldMatrix();
 				instance.entityID_ = entityID;
+
+				const DynamicArray<Surface>* materialSurfaces = nullptr;
+				const Material* material = actor.GetComponent<Material>();
+				if (material && !material->resolvedSurfaces_.empty() && material->resolvedSurfaces_.size() == crister->Surfaces().size())
+				{
+					instance.ownMaterials_ = true;
+					instance.materialSignature_ = material->resolvedSignature_;
+					ownMaterialEntities.insert(entityID);
+
+					auto tableIt = entityMaterialTables_.find(entityID);
+					if (tableIt == entityMaterialTables_.end() || tableIt->second.crister_ != crister || tableIt->second.signature_ != material->resolvedSignature_ || crister->MaterialsDirty())
+					{
+						materialSurfaces = &material->resolvedSurfaces_;
+					}
+				}
+				else if (seedMaterialCristers.insert(crister).second)
+				{
+					auto tableIt = materialTableCache_.find(crister);
+					if (tableIt == materialTableCache_.end() || !tableIt->second.materialsResource_ || crister->MaterialsDirty())
+					{
+						materialSurfaces = &crister->Surfaces();
+					}
+				}
+
+				/// [EN] The subset of each glTF material the ray-traced passes shade with: base color, transmission/volume for refraction, and the alpha mode for alpha testing. A mesh without materials gets one default (white) material.
+				/// [JP] レイトレーシングのパスがシェーディングに使う glTF マテリアルの一部。ベースカラー、屈折用の透過/ボリューム、アルファテスト用のアルファモード。マテリアルの無いメッシュにはデフォルト(白)のマテリアルを 1 つ与える。
+				if (materialSurfaces)
+				{
+					instance.materials_.resize(Max(materialSurfaces->size(), static_cast<Size>(1)));
+					for (Size materialIndex = 0; materialIndex < materialSurfaces->size(); materialIndex++)
+					{
+						const Surface& surface = (*materialSurfaces)[materialIndex];
+						ReflectionMaterialData& materialData = instance.materials_[materialIndex];
+						materialData.baseColor_[0] = surface.baseColor_.R();
+						materialData.baseColor_[1] = surface.baseColor_.G();
+						materialData.baseColor_[2] = surface.baseColor_.B();
+						materialData.baseColorAlpha_ = surface.baseColor_.A();
+						materialData.baseColorTextureIndex_ = static_cast<Uint32>(crister->TextureBindlessIndex(surface.baseColorTextureIndex_));
+						materialData.ior_ = surface.khr_.ior_.ior_;
+						materialData.transmissionFactor_ = surface.khr_.transmission_.transmissionFactor_;
+						materialData.volumeAttenuationColor_[0] = surface.khr_.volume_.attenuationColor_[0];
+						materialData.volumeAttenuationColor_[1] = surface.khr_.volume_.attenuationColor_[1];
+						materialData.volumeAttenuationColor_[2] = surface.khr_.volume_.attenuationColor_[2];
+						materialData.volumeAttenuationDistance_ = surface.khr_.volume_.attenuationDistance_;
+						materialData.thicknessFactor_ = surface.khr_.volume_.thicknessFactor_;
+						materialData.thicknessTextureIndex_ = static_cast<Uint32>(crister->TextureBindlessIndex(surface.khr_.volume_.thicknessTextureIndex_));
+						materialData.alphaMode_ = static_cast<Uint32>(surface.alphaMode_);
+						materialData.alphaCutoff_ = surface.alphaCutoff_;
+					}
+				}
 
 				/// [EN] A skinned mesh with a pose written by ModelRenderer this frame takes the skinned-BLAS path.
 				/// [JP] 今フレーム ModelRenderer がポーズを書いたスキンメッシュは、スキン済み BLAS の経路を通る。
@@ -275,6 +328,16 @@ namespace SeedCore
 		releaseStalePositions(morphedPositionBuffers_[frameIndex]);
 		std::erase_if(skinBlendDispatchBuffers_, isStale);
 		std::erase_if(morphBlendBuffers_, isStale);
+
+		std::erase_if(entityMaterialTables_, [&](const auto& entry)
+			{
+				if (ownMaterialEntities.contains(entry.first))
+				{
+					return false;
+				}
+				bindlessHeap_->Release(entry.second.materialsResource_, entry.second.materialsShaderResourceViewIndex_);
+				return true;
+			});
 	}
 
 	/**
@@ -459,53 +522,55 @@ namespace SeedCore
 			for (const PendingInstance& pending : pendingInstances_)
 			{
 				const Crister* crister = pending.crister_;
-				if (!visitedCristers.insert(crister).second || (materialTableCache_.contains(crister) && !crister->MaterialsDirty()))
+				if (visitedCristers.insert(crister).second && !materialTableCache_.contains(crister))
+				{
+					/// [EN] Each SubMesh writes its surfaceIndex_ over its triangle range in the RT proxy, which already covers every node placement of that SubMesh. A triangle no SubMesh covers stays on material 0.
+					/// [JP] 各 SubMesh は RT プロキシ内の自分の三角形範囲へ surfaceIndex_ を書き込む。この範囲はその SubMesh の全ノード配置を含む。どの SubMesh にも属さない三角形はマテリアル 0 のまま。
+					Uint32 triangleCount = Max(crister->IndexCount() / 3, 1u);
+					DynamicArray<Uint32> triangleMaterialIndices(triangleCount, 0);
+					for (const SubMesh& subMesh : crister->SubMeshes())
+					{
+						Uint32 triangleEnd = Min(subMesh.raytracingTriangleOffset_ + subMesh.raytracingTriangleCount_, triangleCount);
+						for (Uint32 triangleIndex = subMesh.raytracingTriangleOffset_; triangleIndex < triangleEnd; triangleIndex++)
+						{
+							triangleMaterialIndices[triangleIndex] = subMesh.surfaceIndex_;
+						}
+					}
+
+					MaterialTable& table = materialTableCache_[crister];
+					upload(triangleMaterialIndices.data(), triangleCount, sizeof(Uint32), table.triangleMaterialIndexResource_, table.triangleMaterialIndexShaderResourceViewIndex_, L"Raytracing_TriangleMaterialIndexTable");
+				}
+
+				if (pending.materials_.empty())
 				{
 					continue;
 				}
-				crister->ClearMaterialsDirty();
 
-				/// [EN] The subset of each glTF material the ray-traced passes shade with: base color, transmission/volume for refraction, and the alpha mode for alpha testing. A mesh without materials gets one default (white) material.
-				/// [JP] レイトレーシングのパスがシェーディングに使う glTF マテリアルの一部。ベースカラー、屈折用の透過/ボリューム、アルファテスト用のアルファモード。マテリアルの無いメッシュにはデフォルト(白)のマテリアルを 1 つ与える。
-				const DynamicArray<Surface>& surfaces = crister->Surfaces();
-				DynamicArray<ReflectionMaterialData> materials(Max(surfaces.size(), static_cast<Size>(1)));
-				for (Size materialIndex = 0; materialIndex < surfaces.size(); materialIndex++)
+				if (pending.ownMaterials_)
 				{
-					const Surface& surface = surfaces[materialIndex];
-					ReflectionMaterialData& material = materials[materialIndex];
-					material.baseColor_[0] = surface.baseColor_.R();
-					material.baseColor_[1] = surface.baseColor_.G();
-					material.baseColor_[2] = surface.baseColor_.B();
-					material.baseColorAlpha_ = surface.baseColor_.A();
-					material.baseColorTextureIndex_ = static_cast<Uint32>(crister->TextureBindlessIndex(surface.baseColorTextureIndex_));
-					material.ior_ = surface.khr_.ior_.ior_;
-					material.transmissionFactor_ = surface.khr_.transmission_.transmissionFactor_;
-					material.volumeAttenuationColor_[0] = surface.khr_.volume_.attenuationColor_[0];
-					material.volumeAttenuationColor_[1] = surface.khr_.volume_.attenuationColor_[1];
-					material.volumeAttenuationColor_[2] = surface.khr_.volume_.attenuationColor_[2];
-					material.volumeAttenuationDistance_ = surface.khr_.volume_.attenuationDistance_;
-					material.thicknessFactor_ = surface.khr_.volume_.thicknessFactor_;
-					material.thicknessTextureIndex_ = static_cast<Uint32>(crister->TextureBindlessIndex(surface.khr_.volume_.thicknessTextureIndex_));
-					material.alphaMode_ = static_cast<Uint32>(surface.alphaMode_);
-					material.alphaCutoff_ = surface.alphaCutoff_;
-				}
-
-				/// [EN] Each SubMesh writes its surfaceIndex_ over its triangle range in the RT proxy, which already covers every node placement of that SubMesh. A triangle no SubMesh covers stays on material 0.
-				/// [JP] 各 SubMesh は RT プロキシ内の自分の三角形範囲へ surfaceIndex_ を書き込む。この範囲はその SubMesh の全ノード配置を含む。どの SubMesh にも属さない三角形はマテリアル 0 のまま。
-				Uint32 triangleCount = Max(crister->IndexCount() / 3, 1u);
-				DynamicArray<Uint32> triangleMaterialIndices(triangleCount, 0);
-				for (const SubMesh& subMesh : crister->SubMeshes())
-				{
-					Uint32 triangleEnd = Min(subMesh.raytracingTriangleOffset_ + subMesh.raytracingTriangleCount_, triangleCount);
-					for (Uint32 triangleIndex = subMesh.raytracingTriangleOffset_; triangleIndex < triangleEnd; triangleIndex++)
+					EntityMaterialTable& table = entityMaterialTables_[pending.entityID_];
+					if (table.materialsResource_)
 					{
-						triangleMaterialIndices[triangleIndex] = subMesh.surfaceIndex_;
+						bindlessHeap_->Release(table.materialsResource_, table.materialsShaderResourceViewIndex_);
 					}
+					upload(pending.materials_.data(), static_cast<Uint32>(pending.materials_.size()), sizeof(ReflectionMaterialData), table.materialsResource_, table.materialsShaderResourceViewIndex_, L"Raytracing_EntityMaterialsTable");
+					table.crister_ = crister;
+					table.signature_ = pending.materialSignature_;
 				}
+				else
+				{
+					MaterialTable& table = materialTableCache_[crister];
+					if (table.materialsResource_)
+					{
+						bindlessHeap_->Release(table.materialsResource_, table.materialsShaderResourceViewIndex_);
+					}
+					upload(pending.materials_.data(), static_cast<Uint32>(pending.materials_.size()), sizeof(ReflectionMaterialData), table.materialsResource_, table.materialsShaderResourceViewIndex_, L"Raytracing_MaterialsTable");
+				}
+			}
 
-				MaterialTable& table = materialTableCache_[crister];
-				upload(materials.data(), static_cast<Uint32>(materials.size()), sizeof(ReflectionMaterialData), table.materialsResource_, table.materialsShaderResourceViewIndex_, L"Raytracing_MaterialsTable");
-				upload(triangleMaterialIndices.data(), triangleCount, sizeof(Uint32), table.triangleMaterialIndexResource_, table.triangleMaterialIndexShaderResourceViewIndex_, L"Raytracing_TriangleMaterialIndexTable");
+			for (const Crister* crister : visitedCristers)
+			{
+				crister->ClearMaterialsDirty();
 			}
 
 			/// [EN] The morph and skin blend passes run on the shared root signature like every other pass. Each dispatch only swaps the pipeline and the per-dispatch root constant (root parameter 3, the bindless index of its DispatchBuffer).
@@ -740,7 +805,7 @@ namespace SeedCore
 				reflectionInstance.indexBufferIndex_ = pending.crister_->IndexBufferIndex();
 
 				const MaterialTable& materialTable = materialTableCache_.at(pending.crister_);
-				reflectionInstance.materialDataIndex_ = materialTable.materialsShaderResourceViewIndex_;
+				reflectionInstance.materialDataIndex_ = pending.ownMaterials_ ? entityMaterialTables_.at(pending.entityID_).materialsShaderResourceViewIndex_ : materialTable.materialsShaderResourceViewIndex_;
 				reflectionInstance.triangleMaterialIndexBufferIndex_ = materialTable.triangleMaterialIndexShaderResourceViewIndex_;
 
 				Vector2 texcoordMin = pending.crister_->TexcoordMin();

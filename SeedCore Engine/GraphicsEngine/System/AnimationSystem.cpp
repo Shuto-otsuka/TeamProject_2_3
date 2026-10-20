@@ -216,20 +216,13 @@ namespace SeedCore
 									}
 								}
 
-								if (!skins[0].joints_.empty())
+								/// [EN] The root is always the skin's first joint. Root motion is extracted only when the pose actually moves that joint; a clip that leaves it untranslated keeps every node's own translation, so a rig that only slides a child bone (e.g. a button pushing in) plays as authored.
+								/// [JP] ルートは常にスキンの最初のジョイント。ルートモーションは、ポーズがそのジョイントを実際に動かすときだけ取り出す。そのジョイントを移動させないクリップでは全ノードが自身の移動量を保つため、子のボーンだけをスライドさせるリグ（例: 押し込まれるボタン）も作成どおりに再生される。
+								Int rootNodeIndex = skins[0].joints_.empty() ? -1 : skins[0].joints_[0];
+								auto rootTranslationIt = (rootNodeIndex >= 0 && static_cast<Size>(rootNodeIndex) < nodes.size()) ? translationOverrides.find(rootNodeIndex) : translationOverrides.end();
+								if (rootTranslationIt != translationOverrides.end())
 								{
-									Int rootNodeIndex = skins[0].joints_[0];
-									if (!animation->HasTranslationChannel(rootNodeIndex))
-									{
-										Int discovered = animation->FindRootMotionNode();
-										if (discovered >= 0 && static_cast<Size>(discovered) < nodes.size())
-										{
-											rootNodeIndex = discovered;
-										}
-									}
-
-									auto rootTranslationIt = translationOverrides.find(rootNodeIndex);
-									Vector3 currentRootTranslation = (rootTranslationIt != translationOverrides.end()) ? rootTranslationIt->second : nodes[rootNodeIndex].translation_;
+									Vector3 currentRootTranslation = rootTranslationIt->second;
 
 									if (animatorState.useRootMotion_)
 									{

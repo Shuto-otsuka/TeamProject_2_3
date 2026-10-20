@@ -1036,6 +1036,9 @@
     <ClInclude Include="System\SceneConstantSystem.h">
       <Filter>System</Filter>
     </ClInclude>
+    <ClInclude Include="System\MaterialSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">
@@ -1701,6 +1704,9 @@
       <Filter>Resource</Filter>
     </ClCompile>
     <ClCompile Include="System\SceneConstantSystem.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\MaterialSystem.cpp">
       <Filter>System</Filter>
     </ClCompile>
   </ItemGroup>

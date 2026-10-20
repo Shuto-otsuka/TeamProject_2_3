@@ -105,15 +105,17 @@ namespace SeedCore
 		* [EN]
 		* Hands over the workspace paths of files the library has taken in
 		* from its Assets folder since the last call, and forgets them. The
-		* Editor scans them so they get their identity; sharing them is
-		* left to the member.
+		* Editor scans them so they get their identity, then shares them,
+		* since whatever sits in the library's Assets folder belongs to the
+		* team.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 前回の呼び出し以降にライブラリが Assets フォルダから取り込んだ
 		* ファイルの位置を引き渡し、こちらからは忘れる。Editor はそれらを
-		* 走査して識別情報を与える。共有はメンバーに任せる。
+		* 走査して識別情報を与え、そのまま共有する。ライブラリの Assets
+		* フォルダにあるものはチームのものであるため。
 		*/
 		void ConsumeImportedAsset(DynamicArray<String>& paths);
 
@@ -327,33 +329,20 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Tells the library that this machine has deleted the file or folder
-		* at path, so whatever shared assets sat there stop being followed.
-		* The library keeps them; a later get brings them back on request.
+		* Asks for the shared state to be re-read now and for this machine
+		* to be brought up to the library: every shared asset it lacks or is
+		* behind on, the open scene, and whatever was dropped into the
+		* library's Assets folder; assets deleted there leave the catalog.
+		* Nothing comes down except through this.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* この PC がその位置のファイルかフォルダを削除したことをライブラリへ
-		* 伝え、そこにあった共有アセットを追いかけないようにする。ライブラリ
-		* には残り、求めれば後から取得し直せる。
-		*/
-		void RequestForget(const std::filesystem::path& path);
-
-		/**
-		* [EN]
-		* Asks for the shared state to be re-read now and for everything
-		* the library moved ahead on to be brought down: assets this machine
-		* already has, the open scene, and whatever the open world refers to
-		* but this machine lacks. Nothing comes down except through this.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 今すぐ共有状態を読み直し、ライブラリが先へ進んだものを降ろすよう
-		* 要求する。対象は、この PC が既に持っているアセット、開いている
-		* Scene、開いている world が参照していてこの PC に無いもの。これ以外
-		* の経路で何かが降りてくることはない。
+		* 今すぐ共有状態を読み直し、この PC をライブラリまで引き上げるよう
+		* 要求する。対象は、この PC に無い・遅れている共有アセット、開いて
+		* いる Scene、ライブラリの Assets フォルダへ置かれたもの。そこで
+		* 消されたアセットはカタログから外れる。これ以外の経路で何かが降りて
+		* くることはない。
 		*/
 		void RequestRefresh();
 

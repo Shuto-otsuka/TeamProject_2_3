@@ -77,7 +77,6 @@ namespace SeedCore
 	void ModelRenderer::Gather(GraphicsResourceSystem& resources, World& world, const SceneConstantBuffer& scene, std::span<const Entity> selectedEntities)
 	{
 		ModelResource& modelResource = *resources.modelResource_;
-		MaterialResource& materialResource = *resources.materialResource_;
 		AnimationResource& animationResource = *resources.animationResource_;
 		TextureResource& textureResource = *resources.textureResource_;
 
@@ -105,6 +104,8 @@ namespace SeedCore
 		uploaded_ = false;
 
 		std::unordered_map<const Crister*, Uint> cristerBoneBase;
+
+		const Surface emptySurface{};
 
 		ComponentID boundsComponentID = ComponentRegistry::GetComponentID<Bounds>();
 
@@ -164,6 +165,7 @@ namespace SeedCore
 				const auto& nodes = crister->Nodes();
 
 				const Material* materialComponent = actor.GetComponent<Material>();
+				const DynamicArray<Surface>& surfaces = (materialComponent && materialComponent->resolvedSurfaces_.size() == crister->Surfaces().size()) ? materialComponent->resolvedSurfaces_ : crister->Surfaces();
 
 				const Skeleton* skeleton = actor.GetComponent<Skeleton>();
 				const Bool hasPose = skeleton && skeleton->Animated() && skeleton->GlobalTransforms().size() == nodes.size();
@@ -323,7 +325,7 @@ namespace SeedCore
 				{
 					const SubMesh& subMesh = subMeshes[subMeshIndex];
 
-					Surface material = materialResource.Resolve(*crister, subMesh.surfaceIndex_, materialComponent);
+					const Surface& material = subMesh.surfaceIndex_ < surfaces.size() ? surfaces[subMesh.surfaceIndex_] : emptySurface;
 
 					Bool skinned = subMesh.skinIndex_ >= 0 && subMesh.skinIndex_ < static_cast<Int>(skins.size()) && !boneOverflow;
 
@@ -683,7 +685,8 @@ namespace SeedCore
 			previousWorldMatrices_[entityID] = worldMatrix;
 
 			const Material* materialComponent = actor.GetComponent<Material>();
-			Surface material = materialResource.Resolve(*crister, 0, materialComponent);
+			const DynamicArray<Surface>& surfaces = (materialComponent && materialComponent->resolvedSurfaces_.size() == crister->Surfaces().size()) ? materialComponent->resolvedSurfaces_ : crister->Surfaces();
+			const Surface& material = !surfaces.empty() ? surfaces[0] : emptySurface;
 
 			constexpr Uint32 maxMeshletsPerDispatch = 32;
 			Uint32 remaining = softbodyMesh->MeshletCount();
