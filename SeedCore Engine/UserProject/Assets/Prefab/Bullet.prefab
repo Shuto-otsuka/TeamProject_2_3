@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "51666fa2-f225-459f-8e83-7cad17106f14",
+			"collaborationId": "31741ba5-cc3f-4f5a-94f0-7173250e67ad",
 			"components": [
 				{
 					"component": "Mesh",
@@ -347,7 +347,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 100.0,
+							"float": 150.0,
 							"int": 0,
 							"is_array": false,
 							"name": "質量",
@@ -378,7 +378,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 0.5,
+							"float": 10.0,
 							"int": 0,
 							"is_array": false,
 							"name": "空気抵抗",
@@ -409,7 +409,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 0.0,
+							"float": 10.0,
 							"int": 0,
 							"is_array": false,
 							"name": "角抵抗",
@@ -440,7 +440,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 0.0,
+							"float": 5.0,
 							"int": 0,
 							"is_array": false,
 							"name": "摩擦係数",
