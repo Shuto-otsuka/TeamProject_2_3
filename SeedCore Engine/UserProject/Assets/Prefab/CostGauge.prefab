@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "a97d8bfb-d94f-417e-8109-af76439c77f5",
+			"collaborationId": "25b07cff-cded-4b82-897c-c799a8fb42c7",
 			"components": [
 				{
 					"component": "Bounds",
@@ -177,7 +177,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": 1925365179,
+							"int": -205471665,
 							"is_array": false,
 							"name": "costGaugeAddSprite",
 							"string": "",
@@ -208,7 +208,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": 1411871900,
+							"int": -1197473444,
 							"is_array": false,
 							"name": "costGaugeOverSprite",
 							"string": "",
@@ -237,7 +237,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": -1,
-			"persistentId": 107,
+			"persistentId": 9049,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
@@ -258,7 +258,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "3cda95b2-e3a9-4204-bbef-6a3c51e0b01b",
+			"collaborationId": "8e4ebd68-c5f6-48e4-bab9-cf8d906ca3f2",
 			"components": [
 				{
 					"component": "Image",
@@ -430,6 +430,37 @@
 							"float": 0.0,
 							"int": 0,
 							"is_array": false,
+							"name": "描画順",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
 							"name": "カメラ正対",
 							"string": "",
 							"type": 3,
@@ -552,7 +583,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": -1914449937,
+							"int": -1795293772,
 							"is_array": false,
 							"name": "テクスチャID",
 							"string": "",
@@ -585,7 +616,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 103,
+			"persistentId": 9050,
 			"position": {
 				"x": 960.0,
 				"y": 1000.0,
@@ -606,7 +637,7 @@
 		},
 		{
 			"active": false,
-			"collaborationId": "1a8d0229-f4a6-4646-9c90-144dc2533117",
+			"collaborationId": "e982ecfd-8266-4a74-a88e-715a82069ff8",
 			"components": [
 				{
 					"component": "Image",
@@ -778,6 +809,37 @@
 							"float": 0.0,
 							"int": 0,
 							"is_array": false,
+							"name": "描画順",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
 							"name": "カメラ正対",
 							"string": "",
 							"type": 3,
@@ -900,7 +962,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": -1087639134,
+							"int": -1197473444,
 							"is_array": false,
 							"name": "テクスチャID",
 							"string": "",
@@ -933,7 +995,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 116,
+			"persistentId": 9051,
 			"position": {
 				"x": 960.0,
 				"y": 1000.0,
@@ -954,7 +1016,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "85f33062-becb-41d1-90a9-93c43e782ec6",
+			"collaborationId": "77f0aca9-01fd-4a33-b089-50a851a617e1",
 			"components": [
 				{
 					"component": "Image",
@@ -1126,6 +1188,37 @@
 							"float": 0.0,
 							"int": 0,
 							"is_array": false,
+							"name": "描画順",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
 							"name": "カメラ正対",
 							"string": "",
 							"type": 3,
@@ -1248,7 +1341,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": 1925365179,
+							"int": -205471665,
 							"is_array": false,
 							"name": "テクスチャID",
 							"string": "",
@@ -1281,7 +1374,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 105,
+			"persistentId": 9052,
 			"position": {
 				"x": 685.0,
 				"y": 1000.0,
@@ -1302,7 +1395,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "56cc9b9e-8026-452b-8513-f0c3784a8707",
+			"collaborationId": "604b24a3-f8b0-4759-8765-91d56da491a5",
 			"components": [
 				{
 					"component": "Image",
@@ -1474,6 +1567,37 @@
 							"float": 0.0,
 							"int": 0,
 							"is_array": false,
+							"name": "描画順",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
 							"name": "カメラ正対",
 							"string": "",
 							"type": 3,
@@ -1596,7 +1720,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": 678934159,
+							"int": 1323562145,
 							"is_array": false,
 							"name": "テクスチャID",
 							"string": "",
@@ -1629,7 +1753,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 106,
+			"persistentId": 9053,
 			"position": {
 				"x": 685.0,
 				"y": 1000.0,
@@ -1650,7 +1774,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "48007767-d4e3-413c-8bbd-c9c7e336302a",
+			"collaborationId": "31597ede-37de-47f2-84f1-58cb0e592300",
 			"components": [
 				{
 					"component": "Text",
@@ -2008,6 +2132,37 @@
 							"float": 0.0,
 							"int": 0,
 							"is_array": false,
+							"name": "描画順",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
 							"name": "カメラ正対",
 							"string": "",
 							"type": 3,
@@ -2130,7 +2285,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": -673929175,
+							"int": -1961241298,
 							"is_array": false,
 							"name": "フォントID",
 							"string": "",
@@ -2163,7 +2318,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 7276,
+			"persistentId": 9054,
 			"position": {
 				"x": 1114.4500732421875,
 				"y": 958.8785400390625,
