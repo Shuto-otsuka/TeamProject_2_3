@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "b5a4a22a-fa3c-46bd-91be-99ab2c461dd9",
+			"collaborationId": "0aaaea59-11c1-4d0a-9a55-fb272df66c51",
 			"components": [
 				{
 					"component": "Mesh",
@@ -18,7 +18,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": 466362741,
+							"int": 652996525,
 							"is_array": false,
 							"name": "メッシュID",
 							"string": "",
@@ -1376,9 +1376,9 @@
 			"parentIndex": -1,
 			"persistentId": 6,
 			"position": {
-				"x": 0.35670244693756104,
-				"y": -0.5000001788139343,
-				"z": 33.50596618652344
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
 			},
 			"rotation": {
 				"w": 0.023628830909729004,

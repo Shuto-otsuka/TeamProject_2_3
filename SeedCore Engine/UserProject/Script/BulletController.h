@@ -49,10 +49,13 @@ public:
 		float turnSpeed;
 	SC_REFLECTION_FIELD()
 		SeedCore::Vector3 turnAxis;
+	SC_REFLECTION_FIELD()
+		SeedCore::Vector3 stopTimerOffset;
 
 private:
 	void UpdateRemove(float elapsedTime);
 	void UpdateAliveTime(float elapsedTime);
+	void UpdateStopTimer(float elapsedTime);
 
 	State state = State::NORMAL;
 
@@ -77,6 +80,9 @@ private:
 	SeedCore::Rigidbody* rigidbody;
 	SeedCore::LinearVelocity* linearVelocity;
 	SeedCore::AngularVelocity* angularVelocity;
+	SeedCore::Actor stopTimer;
+	SeedCore::Text* stopTimerText;
+	SeedCore::Position* stopTimerPosition;
 
 	SeedCore::Actor player;
 
