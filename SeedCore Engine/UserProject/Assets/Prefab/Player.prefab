@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "0aaaea59-11c1-4d0a-9a55-fb272df66c51",
+			"collaborationId": "67373fca-e353-4e96-af0c-d1d21d912725",
 			"components": [
 				{
 					"component": "Mesh",
@@ -18,7 +18,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": 652996525,
+							"int": 1228845887,
 							"is_array": false,
 							"name": "メッシュID",
 							"string": "",
@@ -280,7 +280,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 400.0,
+							"float": 10000.0,
 							"int": 0,
 							"is_array": false,
 							"name": "押し出し力",
@@ -1381,17 +1381,19 @@
 				"z": 0.0
 			},
 			"rotation": {
-				"w": 0.023628830909729004,
-				"x": 0.0,
-				"y": -0.9997207522392273,
-				"z": 0.0
+				"w": 1.0,
+				"x": -0.0,
+				"y": -1.8067657947540283e-07,
+				"z": -0.0
 			},
 			"scale": {
 				"x": 1.0,
 				"y": 1.0,
 				"z": 1.0
 			},
-			"tags": []
+			"tags": [
+				"Player"
+			]
 		}
 	]
 }
