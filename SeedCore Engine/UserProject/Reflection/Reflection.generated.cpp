@@ -70,8 +70,6 @@ namespace SeedCore
 			{
 				ReflectionRegistry::Register(String("BulletNaviController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					BulletNaviController& obj = *static_cast<BulletNaviController*>(ptr);
-					outInfo.push_back({ String("minSize"), offsetof(BulletNaviController, minSize), AttributeType::Float });
-					outInfo.push_back({ String("maxSize"), offsetof(BulletNaviController, maxSize), AttributeType::Float });
 					outInfo.push_back({ String("interval"), offsetof(BulletNaviController, interval), AttributeType::Float });
 					outInfo.push_back({ String("scrollSpeed"), offsetof(BulletNaviController, scrollSpeed), AttributeType::Float });
 				});
@@ -352,6 +350,8 @@ namespace SeedCore
 					outInfo.push_back({ String("firstPersonMinPitch"), offsetof(PlayerController, firstPersonMinPitch), AttributeType::Float });
 					outInfo.push_back({ String("firstPersonMaxPitch"), offsetof(PlayerController, firstPersonMaxPitch), AttributeType::Float });
 					outInfo.push_back({ String("resetInputTime"), offsetof(PlayerController, resetInputTime), AttributeType::Float });
+					outInfo.push_back({ String("bulletMinSize"), offsetof(PlayerController, bulletMinSize), AttributeType::Float });
+					outInfo.push_back({ String("bulletMaxSize"), offsetof(PlayerController, bulletMaxSize), AttributeType::Float });
 					outInfo.push_back({ String("maxCostGauge"), offsetof(PlayerController, maxCostGauge), AttributeType::Int });
 					outInfo.push_back({ String("minAddCostGauge"), offsetof(PlayerController, minAddCostGauge), AttributeType::Int });
 					outInfo.push_back({ String("maxAddCostGauge"), offsetof(PlayerController, maxAddCostGauge), AttributeType::Int });

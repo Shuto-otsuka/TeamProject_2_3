@@ -11,10 +11,6 @@ public:
 	void OnTick(float elapsedTime);
 
 	SC_REFLECTION_FIELD()
-		float minSize;
-	SC_REFLECTION_FIELD()
-		float maxSize;
-	SC_REFLECTION_FIELD()
 		float interval;
 	SC_REFLECTION_FIELD()
 		float scrollSpeed;
@@ -36,5 +32,7 @@ private:
 	PlayerController* playerController;
 
 	float cubeStartInterval = 0.0f;
+	float minSize;
+	float maxSize;
 };
 REGISTER_COMPONENT(BulletNaviController);

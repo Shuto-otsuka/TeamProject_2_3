@@ -62,6 +62,10 @@ public:
 	SC_REFLECTION_FIELD()
 		float resetInputTime;
 	SC_REFLECTION_FIELD()
+		float bulletMinSize;
+	SC_REFLECTION_FIELD()
+		float bulletMaxSize;
+	SC_REFLECTION_FIELD()
 		int maxCostGauge = 100;
 	SC_REFLECTION_FIELD()
 		int minAddCostGauge = 10;

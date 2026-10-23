@@ -9,7 +9,6 @@ void BulletNaviController::OnStart()
     bulletEnd = GetWorld().GetActor("BulletEnd");
     line = GetWorld().GetActor("Line");
 
-
     bulletStartPosition = bulletStart.GetComponent<SeedCore::Position>();
     bulletEndPosition = bulletEnd.GetComponent<SeedCore::Position>();
     bulletStartScale = bulletStart.GetComponent<SeedCore::Scale>();
@@ -17,6 +16,9 @@ void BulletNaviController::OnStart()
     bulletStartActive = bulletStart.GetComponent<SeedCore::Active>();
     bulletEndActive = bulletEnd.GetComponent<SeedCore::Active>();
     playerController = GetWorld().GetActor("Player").GetComponent<PlayerController>();
+
+    minSize = playerController->bulletMinSize;
+    maxSize = playerController->bulletMaxSize;
 }
 
 void BulletNaviController::OnTick(float elapsedTime)
