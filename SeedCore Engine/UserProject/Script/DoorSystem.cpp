@@ -2,7 +2,6 @@
 #include "CircuitSystem.h"
 
 #include <SeedCore/ScLog.h>
-#include <FoundationEngine/World/WorldAccessor.h>
 #include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
 
 using namespace SeedCore;
@@ -24,7 +23,7 @@ void DoorSystem::OnStart()
 
 	// 回路のActorを探す
 	// IDはリフレクションで入れられる値
-	circuitActor_ = SeedCore::WorldAccessor::Find(world, circuitActorID_);
+	circuitActor_ = world.GetActor(circuitActorID_);
 	const Name* name = GetActor().GetComponent<Name>();
 	if (!circuitActor_)
 	{

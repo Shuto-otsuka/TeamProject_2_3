@@ -251,10 +251,10 @@ void BulletController::Stop()
 
     //ストップタイマーを出現させる
     stopTimer = SeedCore::Prefab::Spawn(SeedCore::String("StopTimerText.prefab"));
-    stopTimerText = GetWorld().GetComponent<SeedCore::Text>(stopTimer.GetEntity());
+    stopTimerText = stopTimer.GetComponent<SeedCore::Text>();
     //スクリーン座標変換&オフセットを適応
     //ただのテキスト表示なため回転を考慮しない
-    stopTimerPosition = GetWorld().GetComponent<SeedCore::Position>(stopTimer.GetEntity());
+    stopTimerPosition = stopTimer.GetComponent<SeedCore::Position>();
     SeedCore::Vector3 worldPosition;
     worldPosition.x = position->x_ + stopTimerOffset.x;
     worldPosition.y = position->y_ + stopTimerOffset.y;

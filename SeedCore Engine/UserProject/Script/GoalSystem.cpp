@@ -5,7 +5,6 @@
 #include <SeedCore/ScMath.h>
 #include <SeedCore/ScInput.h>
 #include <SeedCore/ScScene.h>
-#include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/Time/GameTimer.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
@@ -57,7 +56,7 @@ void GoalSystem::OnTick(float elapsedTime)
 
 		for (EntityID entityID : entityIDs)
 		{
-			Actor other = SeedCore::WorldAccessor::Make(world, entityID);
+			Actor other = world.GetActor(entityID);
 
 			// 範囲内にいるActorの内、Playerタグを持つActorを探し出す
 			if (other.HasTag("Player"))
@@ -95,7 +94,7 @@ void GoalSystem::OnTick(float elapsedTime)
 		Actor hoveredButton;
 		for (EntityID hitEntityID : hitEntityIDs)
 		{
-			Actor hitActor = SeedCore::WorldAccessor::Make(world, hitEntityID);
+			Actor hitActor = world.GetActor(hitEntityID);
 			// ホバーされているかを判定する
 			if (hitActor == toNextSceneActor_ || hitActor == toTitleSceneActor_ || hitActor == toRetrySceneActor_)
 			{
