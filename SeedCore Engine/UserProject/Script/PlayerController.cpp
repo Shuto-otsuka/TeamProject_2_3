@@ -3,6 +3,7 @@
 #include"UserProject/Script/StopController.h"
 #include"UserProject/Script/BulletStartController.h"
 #include"UserProject/Script/CheckPointAreaController.h"
+#include"UserProject/Script/BulletNaviController.h"
 
 #include <SeedCore/ScInput.h>
 #include<SeedCore/ScPrefab.h>
@@ -356,7 +357,9 @@ void PlayerController::UpdateTurn(float elapsedTime)
             SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
             SeedCore::Vector3 front = firstPersonCameraBrain.WorldMatrix().Backward();
 
-            if (GetActor().GetService<SeedCore::Physics>()->Raycast(gunPosition, front, 10000.0f, hit, layerMask))
+            float bulletHalfSize = SeedCore::Lerp(bulletMinSize, bulletMaxSize, shotChargeRate) / 2.0f;
+
+            if(GetActor().GetService<SeedCore::Physics>()->Boxcast(gunPosition,SeedCore::Vector3(bulletHalfSize,bulletHalfSize,bulletHalfSize),SeedCore::Quaternion::Identity,front,bulletRemoveDistance,hit,layerMask))
             {
                 //当たったところをターゲットにする
                 bulletTargetPosition = hit.position_;
@@ -385,7 +388,9 @@ void PlayerController::UpdateTurn(float elapsedTime)
         SeedCore::Vector3 gunOffset = SeedCore::Vector3(0.0f,bulletOffsetY,0.0f);
         SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
 
-        if (GetActor().GetService<SeedCore::Physics>()->Raycast(ray.origin_, ray.direction_, 10000.0f, hit,layerMask))
+        float bulletHalfSize = SeedCore::Lerp(bulletMinSize, bulletMaxSize, shotChargeRate) / 2.0f;
+
+        if (GetActor().GetService<SeedCore::Physics>()->Boxcast(ray.origin_, SeedCore::Vector3(bulletHalfSize, bulletHalfSize, bulletHalfSize), SeedCore::Quaternion::Identity, ray.direction_, bulletRemoveDistance, hit, layerMask))
         {
             SeedCore::Actor hitActor = GetWorld().GetActor(hit.entityID_);//ヒットしたアクターの取得
             if (!hitActor.HasTag("CanStop") && hit.normal_.y > 0.99f)

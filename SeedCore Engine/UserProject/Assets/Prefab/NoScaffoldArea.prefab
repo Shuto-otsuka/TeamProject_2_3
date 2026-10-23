@@ -3,11 +3,43 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "4f16a9d2-5818-47f6-8717-cda776f05f91",
+			"collaborationId": "fd02bca4-1f5b-4721-bc24-f68b66fbb1c4",
 			"components": [
 				{
-					"component": "Bounds",
-					"fields": []
+					"component": "Mesh",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 778445802,
+							"is_array": false,
+							"name": "メッシュID",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
 				},
 				{
 					"component": "BoxCollider",
@@ -17,9 +49,9 @@
 							"children": [],
 							"color": {
 								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
 							},
 							"float": 0.0,
 							"int": 0,
@@ -48,9 +80,9 @@
 							"children": [],
 							"color": {
 								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
 							},
 							"float": 0.0,
 							"int": 0,
@@ -79,9 +111,9 @@
 							"children": [],
 							"color": {
 								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
 							},
 							"float": 0.0,
 							"int": 0,
@@ -89,6 +121,200 @@
 							"name": "トリガー",
 							"string": "",
 							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Material",
+					"fields": [
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": -1188986142,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotMaterialIDs_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[0]",
+									"string": "bullet_M",
+									"type": 7,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotNames_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": -1188986142,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "マテリアル",
+							"string": "",
+							"type": 0,
 							"vector2": {
 								"x": 0.0,
 								"y": 0.0
@@ -116,8 +342,8 @@
 			"persistentId": 7316,
 			"position": {
 				"x": 0.0,
-				"y": 0.3277438282966614,
-				"z": 32.09255599975586
+				"y": 4.526480197906494,
+				"z": 42.5
 			},
 			"rotation": {
 				"w": 1.0,
@@ -126,9 +352,9 @@
 				"z": -0.0
 			},
 			"scale": {
-				"x": 4.948999404907227,
-				"y": 4.948999404907227,
-				"z": 4.948999404907227
+				"x": 7.8511152267456055,
+				"y": 8.089071273803711,
+				"z": 7.419558525085449
 			},
 			"tags": [
 				"NoScaffoldArea"
