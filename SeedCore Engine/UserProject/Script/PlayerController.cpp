@@ -9,8 +9,7 @@
 #include <SeedCore/ScScreen.h>
 #include <SeedCore/ScPhysics.h>
 #include<SeedCore/ScLog.h>
-#include <SeedCore/ScScene.h> 
-#include <FoundationEngine/World/WorldAccessor.h>
+#include <SeedCore/ScScene.h>
 #include <PhysicsEngine/Physics/Physics.h>
 
 void PlayerController::OnStart()
@@ -388,7 +387,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
 
         if (GetActor().GetService<SeedCore::Physics>()->Raycast(ray.origin_, ray.direction_, 10000.0f, hit,layerMask))
         {
-            SeedCore::Actor hitActor = SeedCore::WorldAccessor::Make(GetWorld(), hit.entityID_);//ヒットしたアクターの取得
+            SeedCore::Actor hitActor = GetWorld().GetActor(hit.entityID_);//ヒットしたアクターの取得
             if (!hitActor.HasTag("CanStop") && hit.normal_.y > 0.99f)
             {
                 if (isGravityArea)
@@ -556,11 +555,8 @@ void PlayerController::UpdateAllBulletRemove(float elapsedTime)
     if (!SeedCore::Input::KeyState(SeedCore::Input::Key::R, SeedCore::Input::OnPressed))return;//Rキー押された瞬間じゃなければ終了
 
     //アクターを走査
-    SeedCore::ActorRegistry& actorRegistry = SeedCore::WorldAccessor::Actors(GetWorld());
-    for (SeedCore::EntityID actorID = actorRegistry.Root(); actorID != SeedCore::EntityID{}; actorID = actorRegistry.Next(actorID))
+    for (SeedCore::Actor actor : GetWorld().Actors())
     {
-        SeedCore::Actor actor = SeedCore::WorldAccessor::Make(GetWorld(), actorID);
-
         //全ての弾を削除
         if (actor.HasTag("Bullet"))
         {

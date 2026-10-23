@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -50,11 +50,52 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Tutorial\ScTutorial.cpp" />
-    <ClCompile Include="Script\BulletController.cpp" /><ClCompile Include="Script\BulletNaviController.cpp" /><ClCompile Include="Script\BulletStartController.cpp" /><ClCompile Include="Script\Button.cpp" /><ClCompile Include="Script\CameraController.cpp" /><ClCompile Include="Script\ChargeGaugeController.cpp" /><ClCompile Include="Script\CheckPointAreaController.cpp" /><ClCompile Include="Script\CircuitSystem.cpp" /><ClCompile Include="Script\CircuitTestSystem.cpp" /><ClCompile Include="Script\CostGaugeController.cpp" /><ClCompile Include="Script\DoorSystem.cpp" /><ClCompile Include="Script\FirstPersonCameraController.cpp" /><ClCompile Include="Script\FloorMoveSystem.cpp" /><ClCompile Include="Script\GoalSystem.cpp" /><ClCompile Include="Script\LaserController.cpp" /><ClCompile Include="Script\PendulumController.cpp" /><ClCompile Include="Script\PlayerController.cpp" /><ClCompile Include="Script\StageSelectButtonController.cpp" /><ClCompile Include="Script\StopController.cpp" /><ClCompile Include="Script\SwitchSystem.cpp" /><ClCompile Include="Script\TitleLogoController.cpp" /></ItemGroup>
+    <ClCompile Include="Script\BulletController.cpp" />
+    <ClCompile Include="Script\BulletNaviController.cpp" />
+    <ClCompile Include="Script\BulletStartController.cpp" />
+    <ClCompile Include="Script\Button.cpp" />
+    <ClCompile Include="Script\CameraController.cpp" />
+    <ClCompile Include="Script\ChargeGaugeController.cpp" />
+    <ClCompile Include="Script\CheckPointAreaController.cpp" />
+    <ClCompile Include="Script\CircuitSystem.cpp" />
+    <ClCompile Include="Script\CostGaugeController.cpp" />
+    <ClCompile Include="Script\DoorSystem.cpp" />
+    <ClCompile Include="Script\FirstPersonCameraController.cpp" />
+    <ClCompile Include="Script\FloorMoveSystem.cpp" />
+    <ClCompile Include="Script\GoalSystem.cpp" />
+    <ClCompile Include="Script\LaserController.cpp" />
+    <ClCompile Include="Script\PendulumController.cpp" />
+    <ClCompile Include="Script\PlayerController.cpp" />
+    <ClCompile Include="Script\StageSelectButtonController.cpp" />
+    <ClCompile Include="Script\StopController.cpp" />
+    <ClCompile Include="Script\SwitchSystem.cpp" />
+    <ClCompile Include="Script\TitleLogoController.cpp" />
+  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EntryPoint\EntryGame.h" />
     <ClInclude Include="Tutorial\ScTutorial.h" />
-    <ClInclude Include="Script\BulletColliderController.h" /><ClInclude Include="Script\BulletController.h" /><ClInclude Include="Script\BulletNaviController.h" /><ClInclude Include="Script\BulletStartController.h" /><ClInclude Include="Script\Button.h" /><ClInclude Include="Script\CameraController.h" /><ClInclude Include="Script\ChargeGaugeController.h" /><ClInclude Include="Script\CheckPointAreaController.h" /><ClInclude Include="Script\CircuitSystem.h" /><ClInclude Include="Script\CircuitTestSystem.h" /><ClInclude Include="Script\CostGaugeController.h" /><ClInclude Include="Script\DoorSystem.h" /><ClInclude Include="Script\FirstPersonCameraController.h" /><ClInclude Include="Script\FloorMoveSystem.h" /><ClInclude Include="Script\GoalSystem.h" /><ClInclude Include="Script\LaserController.h" /><ClInclude Include="Script\PendulumController.h" /><ClInclude Include="Script\PlayerController.h" /><ClInclude Include="Script\StageSelectButtonController.h" /><ClInclude Include="Script\StopController.h" /><ClInclude Include="Script\SwitchSystem.h" /><ClInclude Include="Script\TitleLogoController.h" /></ItemGroup>
+    <ClInclude Include="Script\BulletColliderController.h" />
+    <ClInclude Include="Script\BulletController.h" />
+    <ClInclude Include="Script\BulletNaviController.h" />
+    <ClInclude Include="Script\BulletStartController.h" />
+    <ClInclude Include="Script\Button.h" />
+    <ClInclude Include="Script\CameraController.h" />
+    <ClInclude Include="Script\ChargeGaugeController.h" />
+    <ClInclude Include="Script\CheckPointAreaController.h" />
+    <ClInclude Include="Script\CircuitSystem.h" />
+    <ClInclude Include="Script\CostGaugeController.h" />
+    <ClInclude Include="Script\DoorSystem.h" />
+    <ClInclude Include="Script\FirstPersonCameraController.h" />
+    <ClInclude Include="Script\FloorMoveSystem.h" />
+    <ClInclude Include="Script\GoalSystem.h" />
+    <ClInclude Include="Script\LaserController.h" />
+    <ClInclude Include="Script\PendulumController.h" />
+    <ClInclude Include="Script\PlayerController.h" />
+    <ClInclude Include="Script\StageSelectButtonController.h" />
+    <ClInclude Include="Script\StopController.h" />
+    <ClInclude Include="Script\SwitchSystem.h" />
+    <ClInclude Include="Script\TitleLogoController.h" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>

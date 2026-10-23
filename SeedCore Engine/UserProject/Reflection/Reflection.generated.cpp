@@ -6,7 +6,6 @@
 #include <UserProject/Script/ChargeGaugeController.h>
 #include <UserProject/Script/CheckPointAreaController.h>
 #include <UserProject/Script/CircuitSystem.h>
-#include <UserProject/Script/CircuitTestSystem.h>
 #include <UserProject/Script/CostGaugeController.h>
 #include <UserProject/Script/DoorSystem.h>
 #include <UserProject/Script/FirstPersonCameraController.h>
@@ -26,7 +25,6 @@ extern "C" int _force_reflection_CameraController = 0;
 extern "C" int _force_reflection_ChargeGaugeController = 0;
 extern "C" int _force_reflection_CheckPointAreaController = 0;
 extern "C" int _force_reflection_CircuitSystem = 0;
-extern "C" int _force_reflection_CircuitTestSystem = 0;
 extern "C" int _force_reflection_CostGaugeController = 0;
 extern "C" int _force_reflection_DoorSystem = 0;
 extern "C" int _force_reflection_FirstPersonCameraController = 0;
@@ -163,38 +161,6 @@ namespace SeedCore
 			}
 		};
 		static Register_CircuitSystem global_CircuitSystem_register;
-
-		// ---- UserProject/Script/CircuitTestSystem.h ----
-		struct Register_CircuitTestSystem
-		{
-			Register_CircuitTestSystem()
-			{
-				ReflectionRegistry::Register(String("CircuitTestSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
-					CircuitTestSystem& obj = *static_cast<CircuitTestSystem*>(ptr);
-					{
-						FieldInfo fi;
-						fi.name_ = String("浮く高さ");
-						fi.offset_ = offsetof(CircuitTestSystem, floatHeight_);
-						fi.type_ = AttributeType::Float;
-						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 10000.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("浮き沈みにかかる時間");
-						fi.offset_ = offsetof(CircuitTestSystem, moveTime_);
-						fi.type_ = AttributeType::Float;
-						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 10000.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					outInfo.push_back({ String("通電中の回転速度(度/秒)"), offsetof(CircuitTestSystem, rotateSpeed_), AttributeType::Float });
-					outInfo.push_back({ String("変化をログに出すか"), offsetof(CircuitTestSystem, isLogOutput_), AttributeType::Bool });
-				});
-			}
-		};
-		static Register_CircuitTestSystem global_CircuitTestSystem_register;
 
 		// ---- UserProject/Script/CostGaugeController.h ----
 		struct Register_CostGaugeController

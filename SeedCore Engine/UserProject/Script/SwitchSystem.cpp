@@ -2,7 +2,6 @@
 
 #include <SeedCore/ScComponent.h>
 #include <SeedCore/ScPhysics.h>
-#include <FoundationEngine/World/WorldAccessor.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
 
@@ -63,7 +62,7 @@ void SwitchSystem::OnTick(float elapsedTime)
 	// ループで取り出す、基本はFloorMoveと同じ
 	for (EntityID entityID : entityIDs)
 	{
-		Actor other = SeedCore::WorldAccessor::Make(world, entityID);
+		Actor other = world.GetActor(entityID);
 		if (!other)
 		{
 			continue;

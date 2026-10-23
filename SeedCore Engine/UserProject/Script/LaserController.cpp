@@ -1,6 +1,5 @@
 #include "UserProject/Script/LaserController.h"
 #include<SeedCore/ScDebug.h>
-#include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/Interop/RenderInstance.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
@@ -36,7 +35,7 @@ void LaserController::OnTick(float elapsedTime)
         SeedCore::RaycastHit hit;
         if (GetActor().GetService<SeedCore::Physics>()->Raycast(startPositions[i], direction, length, hit))
         {
-            SeedCore::Actor hitActor = SeedCore::WorldAccessor::Make(GetWorld(), hit.entityID_);
+            SeedCore::Actor hitActor = GetWorld().GetActor(hit.entityID_);
             if (hitActor.HasTag("Bullet"))
             {
                 //シリンダーの長さを始点からレイがヒットした場所までの長さにする
