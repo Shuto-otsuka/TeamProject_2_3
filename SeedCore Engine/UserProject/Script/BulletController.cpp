@@ -324,7 +324,7 @@ void BulletController::Move(float elapsedTime)
         //常に回転0
         if (rigidbody && rigidbody->bodyType_ == SeedCore::Rigidbody::BodyType::Kinematic)
         {
-            rigidbody->MoveTarget({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, elapsedTime);
+            if(position)rigidbody->MoveTarget({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, elapsedTime);
 
             if (isDynamicWait)
             {
