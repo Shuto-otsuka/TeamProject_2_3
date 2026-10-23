@@ -25,5 +25,5 @@ namespace SeedCore
 		SC_REFLECTION_FIELD_EX("両面表示")
 		Bool doubleSided_ = false;
 	};
-	REGISTER_COMPONENT(PlaneShape, "Geometry", ComponentStorage::Archetype);
+	REGISTER_COMPONENT(PlaneShape, "Geometry/Shape", ComponentStorage::Archetype);
 }

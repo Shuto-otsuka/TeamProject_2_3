@@ -811,6 +811,8 @@ def copy_preserving_relative(src_path, src_root, dst_root):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
     if len(sys.argv) < 3:
         print("使用法: RuntimePackager.py <projectRoot> <outputDir>")
         return 1
@@ -844,17 +846,32 @@ def main():
     os.makedirs(plugins_dir, exist_ok=True)
     shutil.copy2(exe_path, os.path.join(plugins_dir, "Runtime.exe"))
     for file in os.listdir(build_dir):
-        if not file.lower().endswith(".dll"):
-            continue
-        # PluginModule のシャドウコピー（Foo_<数字>.dll）は出荷しない。
-        if re.search(r'_\d+\.dll$', file, re.IGNORECASE):
+        if not file.lower().endswith(".cplusplus.dll"):
             continue
         shutil.copy2(os.path.join(build_dir, file), os.path.join(plugins_dir, file))
 
     if not os.path.exists(os.path.join(plugins_dir, "UserProject.Cplusplus.dll")):
         print(f"UserProject.Cplusplus.dll が見つかりません: {os.path.join(build_dir, 'UserProject.Cplusplus.dll')}")
         return 1
-    print(f"Plugins コピー完了: {plugins_dir}")
+
+    external_dir = os.path.join(project_root, "External")
+    external_dll_count = 0
+    for library in sorted(os.listdir(external_dir)):
+        dll_dir = os.path.join(external_dir, library, "Dll")
+        if not os.path.isdir(dll_dir):
+            continue
+        release_dll_dir = os.path.join(dll_dir, "Release")
+        if os.path.isdir(release_dll_dir):
+            dll_dir = release_dll_dir
+        for file in os.listdir(dll_dir):
+            if not file.lower().endswith(".dll"):
+                continue
+            shutil.copy2(os.path.join(dll_dir, file), os.path.join(plugins_dir, file))
+            external_dll_count += 1
+    if external_dll_count == 0:
+        print(f"サードパーティ DLL が見つかりません: {external_dir}")
+        return 1
+    print(f"Plugins コピー完了: {plugins_dir} (サードパーティ DLL {external_dll_count} 件)")
 
     # --- アプリケーションアイコン: プレイヤーが起動するランチャー exe と、実行中にタスクバーへ出る Runtime.exe の両方へ埋め込む ---
     icon, icon_source = read_application_icon(project_root)

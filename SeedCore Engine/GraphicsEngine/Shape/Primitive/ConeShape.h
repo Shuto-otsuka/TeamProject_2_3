@@ -25,5 +25,5 @@ namespace SeedCore
 		SC_REFLECTION_CLAMPED_EX("半径", 0.001f, 10000.0f)
 		Float radius_ = 0.5f;
 	};
-	REGISTER_COMPONENT(ConeShape, "Geometry", ComponentStorage::Archetype);
+	REGISTER_COMPONENT(ConeShape, "Geometry/Shape", ComponentStorage::Archetype);
 }
