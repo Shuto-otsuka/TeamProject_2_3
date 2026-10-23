@@ -2,6 +2,12 @@
 
 namespace SeedCore
 {
+	enum class RuntimeBuildStage
+	{
+		Build,
+		Package,
+	};
+
 	class RuntimeBuilder
 	{
 	public:
@@ -11,7 +17,13 @@ namespace SeedCore
 
 		NODISCARD Bool IsBuilding()const;
 
+		NODISCARD RuntimeBuildStage GetStage()const;
+
 		NODISCARD Float GetProgress()const;
+
+		NODISCARD std::string GetStatusText()const;
+
+		NODISCARD std::string GetDetailText()const;
 
 		Bool ConsumeResult(Bool& outSuccess, std::string& outLog);
 
@@ -33,7 +45,11 @@ namespace SeedCore
 		Bool lastSuccess_ = false;
 		std::string lastLog_;
 
-		DynamicArray<Bool> projectSeen_;
-		std::atomic<Uint32> completedProjects_{ 0 };
+		std::atomic<RuntimeBuildStage> stage_{ RuntimeBuildStage::Build };
+		std::atomic<Float> progress_{ 0.0f };
+
+		mutable std::mutex statusMutex_;
+		std::string statusText_;
+		std::string detailText_;
 	};
 }

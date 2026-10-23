@@ -21,7 +21,7 @@ namespace SeedCore
 		JPH::Factory::sInstance = new JPH::Factory();
 		JPH::RegisterTypes();
 
-		constexpr JPH::uint tempAllocatorSize = 10 * 1024 * 1024;
+		constexpr JPH::uint tempAllocatorSize = 100 * 1024 * 1024;
 		tempAllocator_ = MakePtr<JPH::TempAllocatorImpl>(tempAllocatorSize);
 
 		executor_ = MakePtr<JoltExecutorBridge>(executor);
