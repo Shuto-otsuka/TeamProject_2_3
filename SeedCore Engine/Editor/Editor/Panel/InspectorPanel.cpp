@@ -1122,6 +1122,7 @@ namespace SeedCore
 				ImGui::SameLine();
 				ImGui::Text("%s [%zu]", field.name_.c_str(), skipCount);
 
+				Bool addClicked = false;
 				if (field.array_.add_)
 				{
 					Float iconHeight = ImGui::GetTextLineHeight();
@@ -1129,12 +1130,8 @@ namespace SeedCore
 					Float addButtonWidth = iconSize.x + ImGui::GetStyle().FramePadding.x * 2.0f;
 					ImGui::SameLine(ImGui::GetContentRegionMax().x - addButtonWidth);
 					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-					Bool addClicked = ImGui::ImageButton("##add", imguiTexture_.Icon(IconType::Add), iconSize);
+					addClicked = ImGui::ImageButton("##add", imguiTexture_.Icon(IconType::Add), iconSize);
 					ImGui::PopStyleColor();
-					if (addClicked)
-					{
-						field.array_.add_();
-					}
 				}
 
 				if (arrayOpened)
@@ -1209,6 +1206,11 @@ namespace SeedCore
 					}
 
 					ImGui::TreePop();
+				}
+
+				if (addClicked)
+				{
+					field.array_.add_();
 				}
 
 				ImGui::PopID();
@@ -1286,6 +1288,7 @@ namespace SeedCore
 					ImGui::SameLine();
 					ImGui::Text("%s [%zu]", field.name_.c_str(), count);
 
+					Bool addClicked = false;
 					if (field.array_.add_)
 					{
 						Float iconHeight = ImGui::GetTextLineHeight();
@@ -1293,13 +1296,8 @@ namespace SeedCore
 						Float addButtonWidth = iconSize.x + ImGui::GetStyle().FramePadding.x * 2.0f;
 						ImGui::SameLine(ImGui::GetContentRegionMax().x - addButtonWidth);
 						ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-						Bool addClicked = ImGui::ImageButton("##add", imguiTexture_.Icon(IconType::Add), iconSize);
+						addClicked = ImGui::ImageButton("##add", imguiTexture_.Icon(IconType::Add), iconSize);
 						ImGui::PopStyleColor();
-						if (addClicked)
-						{
-							context_.scene_.history_.Push(MakePtr<ArrayAppendCommand>(*context_.world_.world_, entity, componentID, field.name_, count));
-							field.array_.add_();
-						}
 					}
 
 					if (opened)
@@ -1349,6 +1347,12 @@ namespace SeedCore
 						}
 
 						ImGui::TreePop();
+					}
+
+					if (addClicked)
+					{
+						context_.scene_.history_.Push(MakePtr<ArrayAppendCommand>(*context_.world_.world_, entity, componentID, field.name_, count));
+						field.array_.add_();
 					}
 				}
 

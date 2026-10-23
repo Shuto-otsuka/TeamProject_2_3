@@ -472,6 +472,9 @@
     <ClCompile Include="Application\Application.cpp">
       <Filter>Application</Filter>
     </ClCompile>
+    <ClCompile Include="File\FileLocator.cpp">
+      <Filter>File</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\DxFail.h">
@@ -1039,6 +1042,9 @@
     </ClInclude>
     <ClInclude Include="Application\Application.h">
       <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="File\FileLocator.h">
+      <Filter>File</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

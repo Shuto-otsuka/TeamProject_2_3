@@ -1,6 +1,7 @@
 #include <GraphicsEngine/Shader/ShaderCompiler.h>
-#include <FoundationEngine/Log/DxFail.h>
 #include <FoundationEngine/File/FileUtility.h>
+#include <FoundationEngine/File/FileLocator.h>
+#include <FoundationEngine/Log/DxFail.h>
 #include <FoundationEngine/Log/Error.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
@@ -125,9 +126,9 @@ namespace SeedCore
 		}
 
 #if SC_DEBUG
-		String csoPath = String("../CompiledShaderObject/Develop/" + filename.substr(0, filename.size() - 5) + ".dbg.cso");
+		String csoPath = String((FileLocator::EngineRoot() / "CompiledShaderObject" "Develop" / (filename.substr(0, filename.size() - 5) + ".dbg.cso")).string());
 #else
-		String csoPath = String("../CompiledShaderObject/Application/" + filename.substr(0, filename.size() - 5) + ".dx.cso");
+		String csoPath = String((FileLocator::EngineRoot() / "CompiledShaderObject" "Application" / (filename.substr(0, filename.size() - 5) + ".dx.cso")).string());
 #endif
 		String cacheKey = String(targetProfile.str() + ":" + entryPoint.str());
 		std::filesystem::path hlslFs(path);
@@ -232,6 +233,9 @@ namespace SeedCore
 		std::wstring wideEntry = entryPoint.w_str();
 		std::wstring wideProfile = targetProfile.w_str();
 
+		std::wstring engineRoot = FileLocator::EngineRoot();
+		std::wstring projectRoot = FileLocator::ProjectRoot();
+
 #if SC_DEBUG
 		DynamicArray<LPCWSTR> arguments =
 		{
@@ -243,6 +247,12 @@ namespace SeedCore
 			L"-Zi",
 			L"-Qembed_debug",
 			L"-Od",
+			L"-HV",
+			L"2021",
+			L"-I",
+			engineRoot.c_str(),
+			L"-I",
+			projectRoot.c_str(),
 		};
 #else
 		DynamicArray<LPCWSTR> arguments =
@@ -255,6 +265,12 @@ namespace SeedCore
 			L"-Zi",
 			L"-Qstrip_debug",
 			L"-O3",
+			L"-HV",
+			L"2021",
+			L"-I",
+			engineRoot.c_str(),
+			L"-I",
+			projectRoot.c_str(),
 		};
 #endif
 

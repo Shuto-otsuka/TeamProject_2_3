@@ -44,6 +44,11 @@ namespace SeedCore
 			return nullptr;
 		}
 
+		if (ResolveModule(metadata) != ResolveModule(reinterpret_cast<const void*>(&ComponentRegistry::ResolveModule)) && category != String("Custum") && !category.str().starts_with("Custum/"))
+		{
+			category = String("Custum/" + category.str());
+		}
+
 		/// [EN] A behaviour must stay at one address while it exists, which archetype rows do not guarantee; types registered without T (C# scripts) are checked here.
 		/// [JP] ビヘイビアは存在する間ずっと同じアドレスにいる必要があり、Archetype の行はそれを保証しない。T を伴わずに登録される型（C# のスクリプト）はここで確かめる。
 		if (hooks && hooks->upcast_ && metadata && metadata->storage_ == ComponentStorage::Archetype)

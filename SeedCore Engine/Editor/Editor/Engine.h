@@ -7,6 +7,10 @@
 #include <FoundationEngine/Resource/Prefab/PrefabSystem.h>
 #include <FoundationEngine/Time/WorldTimer.h>
 #include <FoundationEngine/Time/GameTimer.h>
+#include <FoundationEngine/Resource/Config/GameConfig.h>
+#include <FoundationEngine/Resource/Config/EditorConfig.h>
+#include <FoundationEngine/Bridge/CsharpHost.h>
+#include <FoundationEngine/Plugin/PluginHost.h>
 #include <AudioEngine/CRI/CriManager.h>
 #include <AudioEngine/Resource/AudioModule.h>
 #include <PhysicsEngine/JoltPhysics/JoltManager.h>
@@ -26,10 +30,6 @@
 #include <Editor/Editor/Editor.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/Build/HotReload.h>
-#include <FoundationEngine/Resource/Config/GameConfig.h>
-#include <FoundationEngine/Resource/Config/EditorConfig.h>
-#include <FoundationEngine/Bridge/CsharpHost.h>
-#include <FoundationEngine/Plugin/PluginHost.h>
 
 namespace SeedCore
 {

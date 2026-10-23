@@ -32,6 +32,7 @@
     </ClCompile>
     <ClCompile Include="File\FileDirectory.cpp">
     </ClCompile>
+    <ClCompile Include="File\FileLocator.cpp" />
     <ClCompile Include="File\FilePath.cpp" />
     <ClCompile Include="File\FileUtility.cpp">
     </ClCompile>
@@ -138,6 +139,7 @@
     <ClInclude Include="Coroutine\CoroutineSystem.h" />
     <ClInclude Include="File\FileDialog.h" />
     <ClInclude Include="File\FileDirectory.h" />
+    <ClInclude Include="File\FileLocator.h" />
     <ClInclude Include="File\FilePath.h" />
     <ClInclude Include="Input\Input.h" />
     <ClInclude Include="Input\InputSystem.h" />

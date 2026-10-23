@@ -57,7 +57,7 @@ SHADER_PROFILE_BY_SUFFIX = {
     "MS": "ms_6_6",
     "CS": "cs_6_6",
 }
-SHADER_COMPILE_OPTIONS = ["-Zi", "-Qstrip_debug", "-O3"]
+SHADER_COMPILE_OPTIONS = ["-HV", "2021", "-Zi", "-Qstrip_debug", "-O3"]
 SHADER_LIBRARY_PATTERN = re.compile(r'\[\s*shader\s*\(\s*"', re.IGNORECASE)
 SHADER_NUMTHREADS_PATTERN = re.compile(r'\[\s*numthreads', re.IGNORECASE)
 
@@ -647,7 +647,8 @@ def precompile_shaders(project_root, output_dir):
     def compile_job(job_index):
         path, profile, entry = jobs[job_index]
         object_path = os.path.join(temp_dir, f"{job_index}.cso")
-        arguments = [dxc_path, "-T", profile] + ([] if profile == "lib_6_6" else ["-E", entry]) + SHADER_COMPILE_OPTIONS + [path, "-Fo", object_path]
+        include_options = ["-I", project_root, "-I", os.path.join(project_root, "UserProject")]
+        arguments = [dxc_path, "-T", profile] + ([] if profile == "lib_6_6" else ["-E", entry]) + SHADER_COMPILE_OPTIONS + include_options + [path, "-Fo", object_path]
         result = subprocess.run(arguments, capture_output=True)
         if result.returncode != 0 or not os.path.exists(object_path):
             return job_index, None, result.stderr.decode("utf-8", "replace") + result.stdout.decode("utf-8", "replace")
