@@ -129,7 +129,7 @@ void ScTutorial::OnInspectorGUI()
 //if (GetActor().GetService<SeedCore::Physics>()->Raycast(mouseRay.origin_, mouseRay.direction_, 1000.0f, hit))
 //{
 //	// hitには当たった位置(position_)、法線(normal_)、距離(distance_)、相手(entityID_)が入る
-//	SeedCore::Actor pickedActor = SeedCore::WorldAccessor::Make(GetWorld(), hit.entityID_); // FoundationEngine/World/WorldAccessor.h が要る
+//	SeedCore::Actor pickedActor = GetWorld().GetActor(hit.entityID_);
 //}
 
 // --- コライダーコールバック ---

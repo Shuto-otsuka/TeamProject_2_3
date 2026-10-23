@@ -194,6 +194,64 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Returns the actor identified by entityID, such as an ID a raycast or
+	* an overlap reported, or an invalid Actor if entityID is stale.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* entityID が識別する actor を返す。レイキャストやオーバーラップが
+	* 返した ID などに使う。entityID が古ければ無効な Actor。
+	*/
+	Actor World::GetActor(EntityID entityID)
+	{
+		return WorldAccessor::Make(*this, entityID);
+	}
+
+	/**
+	* [EN]
+	* Returns the actor holding persistentID, the ID an actor reference
+	* field keeps through save and load, or an invalid Actor if none does.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* persistentID を持つ actor を返す。persistentID は、actor を参照する
+	* フィールドがセーブとロードを通して持つ ID。誰も持っていなければ
+	* 無効な Actor。
+	*/
+	Actor World::GetActor(Uint32 persistentID)
+	{
+		return WorldAccessor::Find(*this, persistentID);
+	}
+
+	/**
+	* [EN]
+	* Returns every actor, in hierarchy order (each actor before its
+	* children, siblings in order). The array is a copy taken at the call,
+	* so destroying actors while walking it does not cut the walk short.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 全ての actor を、ヒエラルキーの順（親が子より先、兄弟は並び順）で
+	* 返す。配列は呼んだ時点の写しなので、たどっている途中で actor を
+	* 破棄しても走査が途中で切れない。
+	*/
+	DynamicArray<Actor> World::Actors()
+	{
+		/// [EN] Root and Next walk the hierarchy depth-first; every actor is collected before the caller sees any, so the caller may change the hierarchy freely.
+		/// [JP] Root と Next はヒエラルキーを深さ優先でたどる。呼び出し側に渡す前に全ての actor を集め終えるので、呼び出し側は階層を自由に変えてよい。
+		DynamicArray<Actor> actors;
+		for (EntityID entityID = actors_.Root();entityID != EntityID{};entityID = actors_.Next(entityID))
+		{
+			actors.push_back(GetActor(entityID));
+		}
+		return actors;
+	}
+
+	/**
+	* [EN]
 	* Default-constructs component id for entity in the storage its
 	* metadata selects and returns it; returns the existing one if entity
 	* already has it, or nullptr if entity is stale or id is unregistered.
