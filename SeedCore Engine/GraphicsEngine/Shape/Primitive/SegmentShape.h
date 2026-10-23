@@ -25,5 +25,5 @@ namespace SeedCore
 		SC_REFLECTION_CLAMPED_EX("幅", 0.001f, 10000.0f)
 		Float width_ = 0.05f;
 	};
-	REGISTER_COMPONENT(SegmentShape, "Geometry", ComponentStorage::Archetype);
+	REGISTER_COMPONENT(SegmentShape, "Geometry/Shape", ComponentStorage::Archetype);
 }

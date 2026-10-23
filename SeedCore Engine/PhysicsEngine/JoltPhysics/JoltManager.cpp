@@ -30,7 +30,7 @@ namespace SeedCore
 		static ObjVsBPFilterImplementation objVsBPFilter;
 		static ObjLayerPairFilterImplementation objLayerPairFilter;
 
-		physicsSystem_.Init(1024, 0, 65536, 1024, bpLayerInterface, objVsBPFilter, objLayerPairFilter);
+		physicsSystem_.Init(65536, 0, 65536, 65536, bpLayerInterface, objVsBPFilter, objLayerPairFilter);
 		physicsSystem_.SetContactListener(&contactListener_);
 
 		physicsSystem_.SetSimCollideBodyVsBody([](const JPH::Body& body1, const JPH::Body& body2, JPH::Mat44Arg centerOfMassTransform1, JPH::Mat44Arg centerOfMassTransform2, JPH::CollideShapeSettings& collideShapeSettings, JPH::CollideShapeCollector& collector, const JPH::ShapeFilter& shapeFilter)

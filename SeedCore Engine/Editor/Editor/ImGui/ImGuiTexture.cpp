@@ -129,6 +129,16 @@ namespace SeedCore
 		load(IconType::ComponentMaterial,             "Component", "Material");
 		load(IconType::ComponentSkeleton,             "Component", "Skeleton");
 		load(IconType::ComponentAnimator,             "Component", "Animator");
+		load(IconType::ComponentBoxShape,             "Component", "BoxShape");
+		load(IconType::ComponentSphereShape,          "Component", "SphereShape");
+		load(IconType::ComponentCapsuleShape,         "Component", "CapsuleShape");
+		load(IconType::ComponentCylinderShape,        "Component", "CylinderShape");
+		load(IconType::ComponentConeShape,			  "Component", "ConeShape");
+		load(IconType::ComponentRampShape,            "Component", "RampShape");
+		load(IconType::ComponentDiscShape,            "Component", "DiscShape");
+		load(IconType::ComponentTorusShape,           "Component", "TorusShape");
+		load(IconType::ComponentPlaneShape,           "Component", "PlaneShape");
+		load(IconType::ComponentSegmentShape,         "Component", "SegmentShape");
 		load(IconType::ComponentPositionConstraint,   "Component", "PositionConstraint");
 		load(IconType::ComponentRotationConstraint,   "Component", "RotationConstraint");
 		load(IconType::ComponentLookAtConstraint,     "Component", "LookAtConstraint");
@@ -182,6 +192,16 @@ namespace SeedCore
 			{ "Material", IconType::ComponentMaterial },
 			{ "Skeleton", IconType::ComponentSkeleton },
 			{ "Animator", IconType::ComponentAnimator },
+			{ "BoxShape", IconType::ComponentBoxShape },
+			{ "SphereShape", IconType::ComponentSphereShape },
+			{ "CapsuleShape", IconType::ComponentCapsuleShape },
+			{ "CylinderShape", IconType::ComponentCylinderShape },
+			{ "ConeShape", IconType::ComponentConeShape },
+			{ "RampShape", IconType::ComponentRampShape },
+			{ "DiscShape", IconType::ComponentDiscShape },
+			{ "TorusShape", IconType::ComponentTorusShape },
+			{ "PlaneShape", IconType::ComponentPlaneShape },
+			{ "SegmentShape", IconType::ComponentSegmentShape },
 			{ "PositionConstraint", IconType::ComponentPositionConstraint },
 			{ "RotationConstraint", IconType::ComponentRotationConstraint },
 			{ "LookAtConstraint", IconType::ComponentLookAtConstraint },

@@ -97,5 +97,5 @@ namespace SeedCore
 		/// [JP] メッシュデータの解決と構築が必要か。
 		Bool pending_ = true;
 	};
-	REGISTER_COMPONENT(MeshCollider, "Collider");
+	REGISTER_COMPONENT(MeshCollider, "Physics/Collider");
 }

@@ -109,6 +109,16 @@ namespace SeedCore
 		ComponentMaterial,
 		ComponentSkeleton,
 		ComponentAnimator,
+		ComponentBoxShape,
+		ComponentSphereShape,
+		ComponentCapsuleShape,
+		ComponentCylinderShape,
+		ComponentConeShape,
+		ComponentRampShape,
+		ComponentDiscShape,
+		ComponentTorusShape,
+		ComponentPlaneShape,
+		ComponentSegmentShape,
 		ComponentPositionConstraint,
 		ComponentRotationConstraint,
 		ComponentLookAtConstraint,
@@ -133,20 +143,6 @@ namespace SeedCore
 
 		NODISCARD ImTextureID Icon(IconType type)const;
 
-		/// [EN] Maps a component's registered name to its Inspector/Add
-		///      Component header icon (Unity-style). Falls back to
-		///      IconType::ComponentCustom for anything not explicitly
-		///      listed — covers UserProject scripts and any built-in
-		///      component without a dedicated icon. Static (no instance
-		///      state needed) so both InspectorPanel and AddComponentPanel
-		///      can share one lookup table instead of each keeping their own.
-		/// [JP] コンポーネントの登録名を Inspector/Add Component ヘッダー用
-		///      アイコン（Unity 風）へ対応付ける。明示的に列挙されていない
-		///      ものは IconType::ComponentCustom にフォールバックする —
-		///      UserProject のスクリプトや、専用アイコンを持たない組み込み
-		///      コンポーネントをカバーする。static（インスタンス状態不要）
-		///      にすることで、InspectorPanel と AddComponentPanel が
-		///      それぞれ別の対応表を持たず、1つを共有できる。
 		NODISCARD static IconType ComponentIconType(const String& componentName);
 
 	private:

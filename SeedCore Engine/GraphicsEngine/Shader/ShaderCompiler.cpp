@@ -126,9 +126,9 @@ namespace SeedCore
 		}
 
 #if SC_DEBUG
-		String csoPath = String((FileLocator::EngineRoot() / "CompiledShaderObject" "Develop" / (filename.substr(0, filename.size() - 5) + ".dbg.cso")).string());
+		String csoPath = String((FileLocator::EngineRoot() / "CompiledShaderObject" / "Develop" / (filename.substr(0, filename.size() - 5) + ".dbg.cso")).string());
 #else
-		String csoPath = String((FileLocator::EngineRoot() / "CompiledShaderObject" "Application" / (filename.substr(0, filename.size() - 5) + ".dx.cso")).string());
+		String csoPath = String((FileLocator::EngineRoot() / "CompiledShaderObject" / "Application" / (filename.substr(0, filename.size() - 5) + ".dx.cso")).string());
 #endif
 		String cacheKey = String(targetProfile.str() + ":" + entryPoint.str());
 		std::filesystem::path hlslFs(path);

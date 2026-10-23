@@ -25,5 +25,5 @@ namespace SeedCore
 		SC_REFLECTION_CLAMPED_EX("太さの半径", 0.001f, 10000.0f)
 		Float thickness_ = 0.1f;
 	};
-	REGISTER_COMPONENT(TorusShape, "Geometry", ComponentStorage::Archetype);
+	REGISTER_COMPONENT(TorusShape, "Geometry/Shape", ComponentStorage::Archetype);
 }

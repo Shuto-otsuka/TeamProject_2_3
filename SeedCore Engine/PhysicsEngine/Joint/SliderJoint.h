@@ -76,5 +76,5 @@ namespace SeedCore
 		/// [JP] 生成した Jolt 拘束のプールハンドル。
 		Handle<JPH::Constraint> handle_;
 	};
-	REGISTER_COMPONENT(SliderJoint, "Physics");
+	REGISTER_COMPONENT(SliderJoint, "Physics/Joint");
 }

@@ -22,5 +22,5 @@ namespace SeedCore
 		SC_REFLECTION_CLAMPED_EX("サイズ", 0.001f, 10000.0f)
 		Vector3 size_ = { 1.0f,1.0f,1.0f };
 	};
-	REGISTER_COMPONENT(BoxShape, "Geometry", ComponentStorage::Archetype);
+	REGISTER_COMPONENT(BoxShape, "Geometry/Shape", ComponentStorage::Archetype);
 }
