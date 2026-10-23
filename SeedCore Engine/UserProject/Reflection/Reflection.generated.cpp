@@ -59,6 +59,7 @@ namespace SeedCore
 					outInfo.push_back({ String("maxAliveTime"), offsetof(BulletController, maxAliveTime), AttributeType::Float });
 					outInfo.push_back({ String("turnSpeed"), offsetof(BulletController, turnSpeed), AttributeType::Float });
 					outInfo.push_back({ String("turnAxis"), offsetof(BulletController, turnAxis), AttributeType::Vector3 });
+					outInfo.push_back({ String("stopTimerOffset"), offsetof(BulletController, stopTimerOffset), AttributeType::Vector3 });
 				});
 			}
 		};

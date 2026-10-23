@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "1b6cc41a-8ce3-4d1e-a352-bb191239c4b6",
+			"collaborationId": "792c2334-c575-4093-964c-38399705683f",
 			"components": [
 				{
 					"component": "Bounds",
@@ -21,7 +21,7 @@
 								"g": 0.0,
 								"r": 0.0
 							},
-							"float": 686.0,
+							"float": 685.0,
 							"int": 0,
 							"is_array": false,
 							"name": "posXMin",
@@ -165,7 +165,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "5933576e-e94c-465b-9a47-22360e137817",
+			"collaborationId": "913478f5-d22f-4e7e-bed7-a3a9ae4d8516",
 			"components": [
 				{
 					"component": "Image",
@@ -337,6 +337,37 @@
 							"float": 0.0,
 							"int": 0,
 							"is_array": false,
+							"name": "描画順",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
 							"name": "カメラ正対",
 							"string": "",
 							"type": 3,
@@ -459,7 +490,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": 1915228045,
+							"int": -865341543,
 							"is_array": false,
 							"name": "テクスチャID",
 							"string": "",
@@ -513,7 +544,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "db366e57-cd85-42da-9483-6ceb269b1928",
+			"collaborationId": "46be17ad-8062-4b61-95f5-72b84fe246dd",
 			"components": [
 				{
 					"component": "Image",
@@ -685,6 +716,37 @@
 							"float": 0.0,
 							"int": 0,
 							"is_array": false,
+							"name": "描画順",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
 							"name": "カメラ正対",
 							"string": "",
 							"type": 3,
@@ -807,7 +869,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": -1592271219,
+							"int": 1486581675,
 							"is_array": false,
 							"name": "テクスチャID",
 							"string": "",
@@ -861,7 +923,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "3adbaf1a-66ce-4789-b79d-c428200ecbc1",
+			"collaborationId": "e50c72b4-7894-480b-b619-6bcb107a3c89",
 			"components": [
 				{
 					"component": "Image",
@@ -1033,6 +1095,37 @@
 							"float": 0.0,
 							"int": 0,
 							"is_array": false,
+							"name": "描画順",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
 							"name": "カメラ正対",
 							"string": "",
 							"type": 3,
@@ -1155,7 +1248,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": 2067437352,
+							"int": 399398557,
 							"is_array": false,
 							"name": "テクスチャID",
 							"string": "",

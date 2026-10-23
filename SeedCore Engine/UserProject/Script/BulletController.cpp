@@ -2,6 +2,8 @@
 #include"UserProject/Script/PlayerController.h"
 #include"UserProject/Script/StopController.h"
 #include<SeedCore/ScLog.h>
+#include<SeedCore/ScPrefab.h>
+#include<SeedCore/ScScreen.h>
 
 void BulletController::OnStart()
 {
@@ -17,6 +19,8 @@ void BulletController::OnTick(float elapsedTime)
     Move(elapsedTime);
     //生存時間が終了したら削除
     UpdateAliveTime(elapsedTime);
+    //ストップタイマー更新処理
+    UpdateStopTimer(elapsedTime);
 }
 
 void BulletController::OnTriggerEnter(SeedCore::Actor other)
@@ -244,6 +248,20 @@ void BulletController::Stop()
     angularVelocity->x_ = 0.0f;
     angularVelocity->y_ = 0.0f;
     angularVelocity->z_ = 0.0f;
+
+    //ストップタイマーを出現させる
+    stopTimer = SeedCore::Prefab::Spawn(SeedCore::String("StopTimerText.prefab"));
+    stopTimerText = GetWorld().GetComponent<SeedCore::Text>(stopTimer.GetEntity());
+    //スクリーン座標変換&オフセットを適応
+    //ただのテキスト表示なため回転を考慮しない
+    stopTimerPosition = GetWorld().GetComponent<SeedCore::Position>(stopTimer.GetEntity());
+    SeedCore::Vector3 worldPosition;
+    worldPosition.x = position->x_ + stopTimerOffset.x;
+    worldPosition.y = position->y_ + stopTimerOffset.y;
+    worldPosition.z = position->z_ + stopTimerOffset.z;
+    SeedCore::Vector2 screenPosition = SeedCore::ScreenSpace::WorldToScreen(worldPosition);
+    stopTimerPosition->x_ = screenPosition.x;
+    stopTimerPosition->y_ = screenPosition.y;
 }
 
 void BulletController::UpdateAliveTime(float elapsedTime)
@@ -256,10 +274,44 @@ void BulletController::UpdateAliveTime(float elapsedTime)
     }
 }
 
+void BulletController::UpdateStopTimer(float elapsedTime)
+{
+    //タイマーがなければ以下の処理を行わない
+    if (!stopTimer)return;
+
+    //タイマーの更新
+
+    //残りの生存時間を停止時間とする
+    float stopTime = aliveTime - aliveTimer;
+    //小数点第一以下を切り捨て
+    float stopTimeSca10 = stopTime * 10.0f;
+    int stopTimeInt = static_cast<int>(stopTimeSca10);
+    float stopTimeDisplay = static_cast<float>(stopTimeInt) / 10.0f;
+    //テキスト反映
+    std::string stopTimeStr = std::format("Stop {:.1f}", stopTimeDisplay);
+    stopTimerText->text_ = SeedCore::String(stopTimeStr);
+
+    //スクリーン座標変換&オフセットを適応
+    SeedCore::Vector3 worldPosition;
+    worldPosition.x = position->x_ + stopTimerOffset.x;
+    worldPosition.y = position->y_ + stopTimerOffset.y;
+    worldPosition.z = position->z_ + stopTimerOffset.z;
+    SeedCore::Vector2 screenPosition = SeedCore::ScreenSpace::WorldToScreen(worldPosition);
+    stopTimerPosition->x_ = screenPosition.x;
+    stopTimerPosition->y_ = screenPosition.y;
+}
+
 void BulletController::Remove()
 {
     playerController->SubCostGauge(cost);//自分が圧迫してた分のコストを戻す
     GetWorld().DestroyActor(GetActor());//削除
+
+    if (state != State::STOP)return;//停止中じゃなければ以下の処理を行わない
+
+    //ストップタイマーを削除
+    GetWorld().DestroyActor(stopTimer);
+    stopTimerText = nullptr;
+    stopTimerPosition = nullptr;
 }
 
 void BulletController::Move(float elapsedTime)
@@ -281,9 +333,9 @@ void BulletController::Move(float elapsedTime)
                 {
                     isDynamicWait = false;
                     rigidbody->bodyType_ = SeedCore::Rigidbody::BodyType::Dynamic;
-                    rigidbody->freezeRotationX_ = true;
-                    rigidbody->freezeRotationY_ = true;
-                    rigidbody->freezeRotationZ_ = true;
+                    rigidbody->freezePositionX_ = true;
+                    rigidbody->freezePositionY_ = true;
+                    rigidbody->freezePositionZ_ = true;
                 }
             }
         }

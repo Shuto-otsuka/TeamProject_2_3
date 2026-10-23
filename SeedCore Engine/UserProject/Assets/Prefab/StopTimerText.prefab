@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "dc33e795-2b0a-4e71-a778-6581c1bbfd28",
+			"collaborationId": "066292cd-1054-4357-a729-afafffdf5b1c",
 			"components": [
 				{
 					"component": "Text",
@@ -514,7 +514,7 @@
 								"r": 0.0
 							},
 							"float": 0.0,
-							"int": 1249995245,
+							"int": -1961241298,
 							"is_array": false,
 							"name": "フォントID",
 							"string": "",
