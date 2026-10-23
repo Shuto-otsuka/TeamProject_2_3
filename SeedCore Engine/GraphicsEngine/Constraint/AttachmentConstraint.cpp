@@ -2,6 +2,7 @@
 #include <GraphicsEngine/Model/Skeleton/Skeleton.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 
 namespace SeedCore
 {
@@ -13,7 +14,7 @@ namespace SeedCore
 			return;
 		}
 
-		Actor targetActor = GetWorld().FindActor(target_);
+		Actor targetActor = WorldAccessor::Find(GetWorld(), target_);
 		Skeleton* skeleton = targetActor ? targetActor.GetComponent<Skeleton>() : nullptr;
 		if (!skeleton || skeleton->BoneNames().empty())
 		{

@@ -11,6 +11,9 @@
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
+#include <FoundationEngine/World/ECS/Query/Query.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 
 namespace SeedCore
 {
@@ -18,26 +21,11 @@ namespace SeedCore
 	{
 		DynamicArray<EntityID> constrainedEntities;
 
-		for (EntityID id : world.GetComponents<PositionConstraint>())
-		{
-			constrainedEntities.push_back(id);
-		}
-		for (EntityID id : world.GetComponents<RotationConstraint>())
-		{
-			constrainedEntities.push_back(id);
-		}
-		for (EntityID id : world.GetComponents<ParentConstraint>())
-		{
-			constrainedEntities.push_back(id);
-		}
-		for (EntityID id : world.GetComponents<AttachmentConstraint>())
-		{
-			constrainedEntities.push_back(id);
-		}
-		for (EntityID id : world.GetComponents<LookAtConstraint>())
-		{
-			constrainedEntities.push_back(id);
-		}
+		Query<Read<PositionConstraint>>(world).ForEach([&](EntityID id, const PositionConstraint&) { constrainedEntities.push_back(id); });
+		Query<Read<RotationConstraint>>(world).ForEach([&](EntityID id, const RotationConstraint&) { constrainedEntities.push_back(id); });
+		Query<Read<ParentConstraint>>(world).ForEach([&](EntityID id, const ParentConstraint&) { constrainedEntities.push_back(id); });
+		Query<Read<AttachmentConstraint>>(world).ForEach([&](EntityID id, const AttachmentConstraint&) { constrainedEntities.push_back(id); });
+		Query<Read<LookAtConstraint>>(world).ForEach([&](EntityID id, const LookAtConstraint&) { constrainedEntities.push_back(id); });
 
 		if (constrainedEntities.empty())
 		{
@@ -49,7 +37,7 @@ namespace SeedCore
 		std::unordered_set<EntityID> dirty;
 		for (EntityID id : constrainedEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (actor && actor.Active())
 			{
 				MarkDirtySubtree(actor, dirty);
@@ -60,9 +48,9 @@ namespace SeedCore
 		/// [JP] dirtyな actor のうち、実際の親が dirty でないものだけを起点に再計算し、その親の TransformSystem 計算済みワールド行列をベースとして再利用する。
 		for (EntityID id : dirty)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			Actor parent = actor.Parent();
-			if (!parent || !dirty.contains(parent.GetEntity().GetID()))
+			if (!parent || !dirty.contains(ActorAccessor::GetEntity(parent).GetID()))
 			{
 				Matrix parentMatrix = parent ? parent.WorldMatrix() : Matrix::Identity;
 				UpdateActor(actor, parentMatrix, world, dirty);
@@ -72,7 +60,7 @@ namespace SeedCore
 
 	void ConstraintSystem::MarkDirtySubtree(Actor actor, std::unordered_set<EntityID>& dirty)
 	{
-		if (!dirty.insert(actor.GetEntity().GetID()).second)
+		if (!dirty.insert(ActorAccessor::GetEntity(actor).GetID()).second)
 		{
 			return;
 		}
@@ -85,7 +73,7 @@ namespace SeedCore
 
 	void ConstraintSystem::UpdateActor(Actor actor, const Matrix& parentMatrix, World& world, const std::unordered_set<EntityID>& dirty)
 	{
-		Entity entity = actor.GetEntity();
+		Entity entity = ActorAccessor::GetEntity(actor);
 
 		Position* position = world.GetComponent<Position>(entity);
 		Rotation* rotation = world.GetComponent<Rotation>(entity);
@@ -124,7 +112,7 @@ namespace SeedCore
 		const Char* attachmentBoneName = attachmentConstraint ? attachmentConstraint->boneName_.c_str() : nullptr;
 		if (attachmentConstraint && attachmentConstraint->enabled_ && attachmentConstraint->target_ != 0 && attachmentBoneName && *attachmentBoneName != '\0')
 		{
-			Actor target = world.FindActor(attachmentConstraint->target_);
+			Actor target = WorldAccessor::Find(world, attachmentConstraint->target_);
 			Skeleton* targetSkeleton = target ? target.GetComponent<Skeleton>() : nullptr;
 			if (targetSkeleton && targetSkeleton->HasBone(attachmentConstraint->boneName_))
 			{
@@ -146,7 +134,7 @@ namespace SeedCore
 		}
 		else if (parentConstraint && parentConstraint->enabled_)
 		{
-			Actor target = (parentConstraint->target_ != 0) ? world.FindActor(parentConstraint->target_) : Actor();
+			Actor target = (parentConstraint->target_ != 0) ? WorldAccessor::Find(world, parentConstraint->target_) : Actor();
 			if (target)
 			{
 				Matrix offsetRotationMatrix = Matrix::CreateFromYawPitchRoll(ToRadians(parentConstraint->rotationOffset_.y), ToRadians(parentConstraint->rotationOffset_.x), ToRadians(parentConstraint->rotationOffset_.z));
@@ -167,7 +155,7 @@ namespace SeedCore
 		{
 			if (positionConstraint && positionConstraint->enabled_)
 			{
-				Actor target = (positionConstraint->target_ != 0) ? world.FindActor(positionConstraint->target_) : Actor();
+				Actor target = (positionConstraint->target_ != 0) ? WorldAccessor::Find(world, positionConstraint->target_) : Actor();
 				if (target)
 				{
 					Matrix targetWorldMatrix = target.WorldMatrix();
@@ -183,7 +171,7 @@ namespace SeedCore
 
 			if (rotationConstraint && rotationConstraint->enabled_)
 			{
-				Actor target = (rotationConstraint->target_ != 0) ? world.FindActor(rotationConstraint->target_) : Actor();
+				Actor target = (rotationConstraint->target_ != 0) ? WorldAccessor::Find(world, rotationConstraint->target_) : Actor();
 				if (target)
 				{
 					Matrix targetWorldMatrix = target.WorldMatrix();
@@ -202,7 +190,7 @@ namespace SeedCore
 
 		if (lookAtConstraint && lookAtConstraint->enabled_)
 		{
-			Actor target = (lookAtConstraint->target_ != 0) ? world.FindActor(lookAtConstraint->target_) : Actor();
+			Actor target = (lookAtConstraint->target_ != 0) ? WorldAccessor::Find(world, lookAtConstraint->target_) : Actor();
 			if (target)
 			{
 				Matrix targetWorldMatrix = target.WorldMatrix();
@@ -229,7 +217,7 @@ namespace SeedCore
 
 		for (Actor child : actor.Children())
 		{
-			if (dirty.contains(child.GetEntity().GetID()))
+			if (dirty.contains(ActorAccessor::GetEntity(child).GetID()))
 			{
 				UpdateActor(child, worldMatrix, world, dirty);
 			}

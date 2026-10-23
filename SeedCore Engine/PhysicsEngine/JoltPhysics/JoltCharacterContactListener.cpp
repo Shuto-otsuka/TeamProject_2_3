@@ -3,6 +3,7 @@
 #include <PhysicsEngine/Physics/PhysicsSystem.h>
 #include <PhysicsEngine/CharacterController/CharacterController.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 
 namespace SeedCore
 {
@@ -73,7 +74,7 @@ namespace SeedCore
 		{
 			/// [EN] Resolve the contacted body to an entity; the entity and whether it is a character are kept for the removal callback, which only gives the body ID.
 			/// [JP] 接触先ボディをエンティティへ解決する。削除コールバックはボディ ID しか渡さないので、エンティティとキャラクターかどうかはここで保持する。
-			EntityID otherEntityID = world_->CreatePhysics()->BodyEntityID(contact.mBodyB);
+			EntityID otherEntityID = world_->GetService<Physics>()->BodyEntityID(contact.mBodyB);
 			if (otherEntityID == EntityID{})
 			{
 				return;
@@ -81,7 +82,7 @@ namespace SeedCore
 
 			/// [EN] A body owned by a CharacterController entity is another character's inner body.
 			/// [JP] CharacterController を持つエンティティのボディは、他のキャラクターの内側ボディ。
-			Bool isCharacter = world_->HasComponent<CharacterController>(otherEntityID);
+			Bool isCharacter = WorldAccessor::Make(*world_, otherEntityID).GetComponent<CharacterController>() != nullptr;
 			contactBodies_[contact.mBodyB] = ContactBody{ otherEntityID,isCharacter,1 };
 			notifiedBodies_.insert(contact.mBodyB);
 

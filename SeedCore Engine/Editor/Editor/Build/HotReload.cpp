@@ -417,7 +417,7 @@ namespace SeedCore
 			}
 		}
 
-		if (cplusplusBuild_.reloadRequested_ && world.Timer().Playing())
+		if (cplusplusBuild_.reloadRequested_ && world.GetService<GameTimer>()->Playing())
 		{
 			if (!cplusplusReloadDeferred_)
 			{
@@ -445,7 +445,7 @@ namespace SeedCore
 
 		if (csharpBuild_.reloadRequested_)
 		{
-			if (world.Timer().Playing())
+			if (world.GetService<GameTimer>()->Playing())
 			{
 				if (!csharpReloadDeferred_)
 				{

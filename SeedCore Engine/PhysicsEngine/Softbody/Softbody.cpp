@@ -8,6 +8,7 @@
 #include <GraphicsEngine/Model/Crister.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 
 namespace SeedCore
 {
@@ -48,7 +49,7 @@ namespace SeedCore
 
 		/// [EN] Jolt returns world positions.
 		/// [JP] Jolt はワールド位置を返す。
-		GetActor().GetPhysics().BodyVertex(bodyID_, vertexPositions_);
+		GetActor().GetService<Physics>()->BodyVertex(bodyID_, vertexPositions_);
 
 		/// [EN] The render mesh is drawn with the actor's world matrix, so the positions are taken back to local space.
 		/// [JP] 描画メッシュは Actor のワールド行列で描かれるので、位置をローカル空間へ戻す。
@@ -77,7 +78,7 @@ namespace SeedCore
 			return;
 		}
 
-		GetActor().GetPhysics().DestroyBody(bodyID_);
+		GetActor().GetService<Physics>()->DestroyBody(bodyID_);
 
 		/// [EN] An invalid ID and empty positions make the renderer fall back to the bind pose.
 		/// [JP] 無効な ID と空の頂点位置で、描画はバインドポーズへ戻る。
@@ -105,7 +106,7 @@ namespace SeedCore
 	{
 		/// [EN] An invalid ID while the body is still pending is ignored by Physics.
 		/// [JP] 構築待ちの間の無効な ID は、Physics 側で無視される。
-		GetActor().GetPhysics().AddForce(bodyID_, force);
+		GetActor().GetService<Physics>()->AddForce(bodyID_, force);
 	}
 
 	/**
@@ -123,7 +124,7 @@ namespace SeedCore
 	{
 		/// [EN] An invalid ID while the body is still pending is ignored by Physics.
 		/// [JP] 構築待ちの間の無効な ID は、Physics 側で無視される。
-		GetActor().GetPhysics().AddImpulse(bodyID_, impulse);
+		GetActor().GetService<Physics>()->AddImpulse(bodyID_, impulse);
 	}
 
 	/**
@@ -212,7 +213,7 @@ namespace SeedCore
 
 		/// [EN] Lets physics queries and contacts find their way back to the actor.
 		/// [JP] 物理クエリや接触から Actor へたどり着けるようにする。
-		desc.userData_ = actor.GetEntity().GetID();
+		desc.userData_ = ActorAccessor::GetEntity(actor).GetID();
 
 		/// [EN] Rotation holds a normalized quaternion, passed to the body as is.
 		/// [JP] Rotation は正規化済みクォータニオンを持つので、そのままボディへ渡す。
@@ -233,7 +234,7 @@ namespace SeedCore
 
 		/// [EN] On failure the soft body stays pending and is tried again next frame.
 		/// [JP] 失敗したら構築待ちのまま残り、次のフレームで再び試す。
-		bodyID_ = actor.GetPhysics().CreateSoftbody(desc);
+		bodyID_ = actor.GetService<Physics>()->CreateSoftbody(desc);
 		if (bodyID_.IsInvalid())
 		{
 			return;

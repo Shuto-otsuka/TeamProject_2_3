@@ -8,6 +8,8 @@
 #include <FoundationEngine/Resource/Scene/SceneSystem.h>
 #include <FoundationEngine/Input/InputSystem.h>
 #include <AudioEngine/Audio/MixerSystem.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/Application/Application.h>
 
 namespace SeedCore
 {
@@ -62,7 +64,7 @@ namespace SeedCore
 		{
 			Bool isPlaying = context_.world_.timer_->Playing();
 			Bool isPaused = context_.world_.timer_->Paused();
-			Bool quitRequested = context_.world_.world_->ConsumeQuit();
+			Bool quitRequested = context_.world_.world_->GetService<Application>()->ConsumeQuit();
 
 			if (!isPlaying && ImGui::IsKeyPressed(ImGuiKey_F5))
 			{
@@ -85,7 +87,7 @@ namespace SeedCore
 			{
 				context_.world_.timer_->Stop();
 				context_.world_.sceneSystem_->Reset();
-				context_.world_.world_->DestroyActors();
+				WorldAccessor::Clear(*context_.world_.world_);
 				context_.world_.sceneSystem_->Restore(playModeScene_);
 				playModeScene_.Clear();
 				context_.world_.system_->Reset();
@@ -195,7 +197,7 @@ namespace SeedCore
 				{
 					context_.world_.timer_->Stop();
 					context_.world_.sceneSystem_->Reset();
-					context_.world_.world_->DestroyActors();
+					WorldAccessor::Clear(*context_.world_.world_);
 					context_.world_.sceneSystem_->Restore(playModeScene_);
 					playModeScene_.Clear();
 					context_.world_.system_->Reset();

@@ -1,14 +1,17 @@
 #pragma once
+#include <FoundationEngine/World/ECS/Component/Attachable.h>
+#include <FoundationEngine/World/ECS/Component/Detachable.h>
 #include <FoundationEngine/World/ECS/Component/Awakeable.h>
 #include <FoundationEngine/World/ECS/Component/Startable.h>
 #include <FoundationEngine/World/ECS/Component/Tickable.h>
 #include <FoundationEngine/World/ECS/Component/FixedTickable.h>
 #include <FoundationEngine/World/ECS/Component/LateTickable.h>
+#include <FoundationEngine/World/ECS/Component/Editable.h>
 #include <FoundationEngine/World/ECS/Component/Destroyable.h>
 #include <FoundationEngine/World/ECS/Component/InspectorDrawable.h>
 #include <FoundationEngine/World/ECS/Component/Collisionable.h>
 #include <FoundationEngine/World/ECS/Component/Triggerable.h>
-#include <FoundationEngine/World/ECS/Component/Editable.h>
+#include <FoundationEngine/World/ECS/Component/Component.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 
 namespace SeedCore
@@ -32,6 +35,13 @@ namespace SeedCore
 	*/
 	class SEEDCORE_API ComponentBehaviour
 	{
+	private:
+		friend class Actor;
+		friend class CsharpBehaviour;
+		friend class SystemScheduler;
+		friend class World;
+		friend class WorldSnapshot;
+
 	public:
 		/// [EN] Marker tag type used by concepts/traits to detect that a type derives from ComponentBehaviour.
 		/// [JP] ある型が ComponentBehaviour から派生していることをコンセプト/トレイトが検出するために使う、マーカータグ型。
@@ -50,12 +60,14 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Returns a handle to the Actor this component is attached to.
+		* Returns a handle to the Actor this component is attached to, or an
+		* invalid Actor if the component has not been attached yet.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* このコンポーネントがアタッチされている Actor へのハンドルを返す。
+		* まだアタッチされていなければ無効な Actor。
 		*/
 		Actor GetActor()const;
 
@@ -72,14 +84,121 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Returns this component's display/type name.
+		* Returns the name this component's type is registered under, read
+		* from its ComponentRecord.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* このコンポーネントの表示名/型名を返す。
+		* このコンポーネントの型が登録されている名前を返す。ComponentRecord
+		* から読む。
 		*/
 		const String& GetName()const;
+
+		/**
+		* [EN]
+		* Dispatches the OnAttach event, run once the moment this component
+		* is added to its actor, to this component's implementation, if any.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このコンポーネントが actor に追加された瞬間に1回だけ走る OnAttach
+		* イベントを、このコンポーネントの実装（存在する場合）へディスパッチ
+		* する。
+		*/
+		void DispatchAttach();
+
+		/**
+		* [EN]
+		* Dispatches the OnDetach event, run the moment this component is
+		* removed from its actor, to this component's implementation, if any.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このコンポーネントが actor から外される瞬間に走る OnDetach イベント
+		* を、このコンポーネントの実装（存在する場合）へディスパッチする。
+		*/
+		void DispatchDetach();
+
+		/**
+		* [EN]
+		* Dispatches the OnAwake lifecycle event to this component's
+		* implementation, if any.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* OnAwake ライフサイクルイベントを、このコンポーネントの実装
+		* （存在する場合）へディスパッチする。
+		*/
+		void DispatchAwake();
+
+		/**
+		* [EN]
+		* Dispatches the OnStart lifecycle event to this component's
+		* implementation, if any.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* OnStart ライフサイクルイベントを、このコンポーネントの実装
+		* （存在する場合）へディスパッチする。
+		*/
+		void DispatchStart();
+
+		/**
+		* [EN]
+		* Dispatches the OnTick lifecycle event, with the frame's elapsed
+		* time, to this component's implementation, if any.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* OnTick ライフサイクルイベントを、フレームの経過時間とともに、
+		* このコンポーネントの実装（存在する場合）へディスパッチする。
+		*/
+		void DispatchTick(Float elapsedTime);
+
+		/**
+		* [EN]
+		* Dispatches the OnFixedTick lifecycle event, with the fixed step's
+		* length, to this component's implementation, if any.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* OnFixedTick ライフサイクルイベントを、固定ステップの長さとともに、
+		* このコンポーネントの実装（存在する場合）へディスパッチする。
+		*/
+		void DispatchFixedTick(Float elapsedTime);
+
+		/**
+		* [EN]
+		* Dispatches the OnLateTick lifecycle event, with the frame's
+		* elapsed time, to this component's implementation, if any.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* OnLateTick ライフサイクルイベントを、フレームの経過時間とともに、
+		* このコンポーネントの実装（存在する場合）へディスパッチする。
+		*/
+		void DispatchLateTick(Float elapsedTime);
+
+		/**
+		* [EN]
+		* Dispatches the OnEditorTick lifecycle event, with the editor's
+		* elapsed time, to this component's implementation, if any.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* OnEditorTick ライフサイクルイベントを、エディタの経過時間とともに、
+		* このコンポーネントの実装（存在する場合）へディスパッチする。
+		*/
+		void DispatchEditorTick(Float elapsedTime);
 
 		/**
 		* [EN]
@@ -118,7 +237,7 @@ namespace SeedCore
 		* other との衝突開始イベントを、このコンポーネントの実装
 		* （存在する場合）へディスパッチする。
 		*/
-		void DispatchCollisionEnter(Entity other);
+		void DispatchCollisionEnter(const Actor& other);
 
 		/**
 		* [EN]
@@ -131,7 +250,7 @@ namespace SeedCore
 		* other との衝突継続イベントを、このコンポーネントの実装
 		* （存在する場合）へディスパッチする。
 		*/
-		void DispatchCollisionStay(Entity other);
+		void DispatchCollisionStay(const Actor& other);
 
 		/**
 		* [EN]
@@ -144,7 +263,7 @@ namespace SeedCore
 		* other との衝突終了イベントを、このコンポーネントの実装
 		* （存在する場合）へディスパッチする。
 		*/
-		void DispatchCollisionExit(Entity other);
+		void DispatchCollisionExit(const Actor& other);
 
 		/**
 		* [EN]
@@ -157,7 +276,7 @@ namespace SeedCore
 		* other とのトリガー開始イベントを、このコンポーネントの実装
 		* （存在する場合）へディスパッチする。
 		*/
-		void DispatchTriggerEnter(Entity other);
+		void DispatchTriggerEnter(const Actor& other);
 
 		/**
 		* [EN]
@@ -170,7 +289,7 @@ namespace SeedCore
 		* other とのトリガー継続イベントを、このコンポーネントの実装
 		* （存在する場合）へディスパッチする。
 		*/
-		void DispatchTriggerStay(Entity other);
+		void DispatchTriggerStay(const Actor& other);
 
 		/**
 		* [EN]
@@ -183,16 +302,9 @@ namespace SeedCore
 		* other とのトリガー終了イベントを、このコンポーネントの実装
 		* （存在する場合）へディスパッチする。
 		*/
-		void DispatchTriggerExit(Entity other);
+		void DispatchTriggerExit(const Actor& other);
 
 	private:
-		friend class Actor;
-		friend class ComponentRegistry;
-		friend class CsharpBehaviour;
-		friend class SystemScheduler;
-		friend class World;
-		friend class WorldSnapshot;
-
 		/**
 		* [EN]
 		* Resets the awoken_/started_ flags, allowing Awake/Start to fire
@@ -207,18 +319,17 @@ namespace SeedCore
 		void ResetLifecycle();
 
 	private:
-
-		/// [EN] The World that owns the actor this component is attached to; set when the component is registered.
-		/// [JP] このコンポーネントがアタッチされている actor を所有する World。コンポーネント登録時に設定される。
+		/// [EN] The World that owns the actor this component is attached to; set when the component is attached.
+		/// [JP] このコンポーネントがアタッチされている actor を所有する World。アタッチ時に設定される。
 		World* world_ = nullptr;
 
-		/// [EN] The entity of the actor this component is attached to; set when the component is registered.
-		/// [JP] このコンポーネントがアタッチされている actor のエンティティ。コンポーネント登録時に設定される。
+		/// [EN] The entity of the actor this component is attached to; set when the component is attached.
+		/// [JP] このコンポーネントがアタッチされている actor のエンティティ。アタッチ時に設定される。
 		Entity entity_;
 
-		/// [EN] This component's display/type name.
-		/// [JP] このコンポーネントの表示名/型名。
-		String componentName_;
+		/// [EN] The registration of this component's type, set when the component is attached; its name and hook table are read through it, so the instance keeps no copies of either.
+		/// [JP] このコンポーネントの型の登録。アタッチ時に設定される。名前とフックの表はここを通して読むので、インスタンスはどちらの写しも持たない。
+		ComponentID id_ = nullptr;
 
 		/// [EN] Whether this component's Awake lifecycle function has already fired.
 		/// [JP] このコンポーネントの Awake ライフサイクル関数が既に発火済みかどうか。
@@ -227,61 +338,5 @@ namespace SeedCore
 		/// [EN] Whether this component's Start lifecycle function has already fired.
 		/// [JP] このコンポーネントの Start ライフサイクル関数が既に発火済みかどうか。
 		Bool started_ = false;
-
-		/// [EN] Type-erased pointer to the subclass's Awake function, or nullptr if it doesn't implement one.
-		/// [JP] サブクラスの Awake 関数への型消去されたポインタ。実装していなければ nullptr。
-		void (*awake_)(ComponentBehaviour*) = nullptr;
-
-		/// [EN] Type-erased pointer to the subclass's Start function, or nullptr if it doesn't implement one.
-		/// [JP] サブクラスの Start 関数への型消去されたポインタ。実装していなければ nullptr。
-		void (*start_)(ComponentBehaviour*) = nullptr;
-
-		/// [EN] Type-erased pointer to the subclass's Update (tick) function, or nullptr if it doesn't implement one.
-		/// [JP] サブクラスの Update（tick）関数への型消去されたポインタ。実装していなければ nullptr。
-		void (*tick_)(ComponentBehaviour*, Float) = nullptr;
-
-		/// [EN] Type-erased pointer to the subclass's FixedUpdate function, or nullptr if it doesn't implement one.
-		/// [JP] サブクラスの FixedUpdate 関数への型消去されたポインタ。実装していなければ nullptr。
-		void (*fixedTick_)(ComponentBehaviour*, Float) = nullptr;
-
-		/// [EN] Type-erased pointer to the subclass's LateUpdate function, or nullptr if it doesn't implement one.
-		/// [JP] サブクラスの LateUpdate 関数への型消去されたポインタ。実装していなければ nullptr。
-		void (*lateTick_)(ComponentBehaviour*, Float) = nullptr;
-
-		/// [EN] Type-erased pointer to the subclass's EditorUpdate function, or nullptr if it doesn't implement one.
-		/// [JP] サブクラスの EditorUpdate 関数への型消去されたポインタ。実装していなければ nullptr。
-		void (*editorTick_)(ComponentBehaviour*, Float) = nullptr;
-
-		/// [EN] Type-erased pointer to the subclass's OnDestroy function, or nullptr if it doesn't implement one.
-		/// [JP] サブクラスの OnDestroy 関数への型消去されたポインタ。実装していなければ nullptr。
-		void (*destroy_)(ComponentBehaviour*) = nullptr;
-
-		/// [EN] Type-erased pointer to the subclass's inspector-GUI function, or nullptr if it doesn't implement one.
-		/// [JP] サブクラスのインスペクタ GUI 関数への型消去されたポインタ。実装していなければ nullptr。
-		void (*inspectorGUI_)(ComponentBehaviour*) = nullptr;
-
-		/// [EN] Type-erased pointer to the subclass's OnCollisionEnter function, or nullptr if it doesn't implement one.
-		/// [JP] サブクラスの OnCollisionEnter 関数への型消去されたポインタ。実装していなければ nullptr。
-		void (*collisionEnter_)(ComponentBehaviour*, Entity) = nullptr;
-
-		/// [EN] Type-erased pointer to the subclass's OnCollisionStay function, or nullptr if it doesn't implement one.
-		/// [JP] サブクラスの OnCollisionStay 関数への型消去されたポインタ。実装していなければ nullptr。
-		void (*collisionStay_)(ComponentBehaviour*, Entity) = nullptr;
-
-		/// [EN] Type-erased pointer to the subclass's OnCollisionExit function, or nullptr if it doesn't implement one.
-		/// [JP] サブクラスの OnCollisionExit 関数への型消去されたポインタ。実装していなければ nullptr。
-		void (*collisionExit_)(ComponentBehaviour*, Entity) = nullptr;
-
-		/// [EN] Type-erased pointer to the subclass's OnTriggerEnter function, or nullptr if it doesn't implement one.
-		/// [JP] サブクラスの OnTriggerEnter 関数への型消去されたポインタ。実装していなければ nullptr。
-		void (*triggerEnter_)(ComponentBehaviour*, Entity) = nullptr;
-
-		/// [EN] Type-erased pointer to the subclass's OnTriggerStay function, or nullptr if it doesn't implement one.
-		/// [JP] サブクラスの OnTriggerStay 関数への型消去されたポインタ。実装していなければ nullptr。
-		void (*triggerStay_)(ComponentBehaviour*, Entity) = nullptr;
-
-		/// [EN] Type-erased pointer to the subclass's OnTriggerExit function, or nullptr if it doesn't implement one.
-		/// [JP] サブクラスの OnTriggerExit 関数への型消去されたポインタ。実装していなければ nullptr。
-		void (*triggerExit_)(ComponentBehaviour*, Entity) = nullptr;
 	};
 }

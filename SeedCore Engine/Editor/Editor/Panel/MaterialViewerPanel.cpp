@@ -17,6 +17,7 @@
 #include <GraphicsEngine/Resource/GraphicsModule.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 
 namespace SeedCore
 {
@@ -63,7 +64,7 @@ namespace SeedCore
 		};
 
 		Actor actor = context_.selection_.Primary();
-		Material* material = actor ? context_.world_.world_->GetComponent<Material>(actor.GetEntity()) : nullptr;
+		Material* material = actor ? context_.world_.world_->GetComponent<Material>(ActorAccessor::GetEntity(actor)) : nullptr;
 
 		ImGuiWindow* editorViewWindow = ImGui::FindWindowByName("エディタービュー");
 		ImGuiID dockID = (editorViewWindow && editorViewWindow->DockId != 0) ? editorViewWindow->DockId : context_.graphics_.imgui_->DockSpaceID();
@@ -73,7 +74,7 @@ namespace SeedCore
 		visible_ = ImGui::Begin("マテリアルビューア", &show_);
 		if (visible_)
 		{
-			const Mesh* mesh = actor ? context_.world_.world_->GetComponent<Mesh>(actor.GetEntity()) : nullptr;
+			const Mesh* mesh = actor ? context_.world_.world_->GetComponent<Mesh>(ActorAccessor::GetEntity(actor)) : nullptr;
 			ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
 			Crister* crister = (mesh && mesh->meshID_ != 0) ? modelResource->Resolve(modelResource->GetHandle(mesh->meshID_)) : nullptr;
 
@@ -166,8 +167,8 @@ namespace SeedCore
 	void MaterialViewerPanel::DrawDetails()
 	{
 		Actor actor = context_.selection_.Primary();
-		Material* material = actor ? context_.world_.world_->GetComponent<Material>(actor.GetEntity()) : nullptr;
-		const Mesh* mesh = actor ? context_.world_.world_->GetComponent<Mesh>(actor.GetEntity()) : nullptr;
+		Material* material = actor ? context_.world_.world_->GetComponent<Material>(ActorAccessor::GetEntity(actor)) : nullptr;
+		const Mesh* mesh = actor ? context_.world_.world_->GetComponent<Mesh>(ActorAccessor::GetEntity(actor)) : nullptr;
 
 		GraphicsModule& graphicsModule = context_.graphics_.graphics_->GetGraphicsModule();
 		ResourceCache* cache = context_.world_.resource_;

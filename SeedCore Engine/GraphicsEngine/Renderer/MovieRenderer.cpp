@@ -12,6 +12,8 @@
 #include <FoundationEngine/World/ECS/Component/Active.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 
 namespace SeedCore
 {
@@ -75,7 +77,7 @@ namespace SeedCore
 		{
 			EntityID entityID = orderedEntity.entityID_;
 
-			Actor actor = world.GetActor(entityID);
+			Actor actor = WorldAccessor::Make(world, entityID);
 			if (!actor)
 			{
 				continue;
@@ -125,7 +127,7 @@ namespace SeedCore
 				size = Vector2(static_cast<Float>(nativeWidth), static_cast<Float>(nativeHeight));
 			}
 
-			Uint selected = std::ranges::find(selectedEntities, actor.GetEntity()) != selectedEntities.end() ? 1 : 0;
+			Uint selected = std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) != selectedEntities.end() ? 1 : 0;
 
 			if (movie.displayMode_ == Movie::DisplayMode::Sprite)
 			{
@@ -176,7 +178,7 @@ namespace SeedCore
 				/// [JP] このアクターの Bounds(全アクターが持つ)をキャンバス動画のローカル空間矩形へ同期する: 半径 = size/2、中心は MovieBillboardMS.hlsl がクアッドをずらすのと同じ形(X は 0.5 - pivotNorm、Y は pivotNorm - 0.5)で pivot ぶんずらす。未スケール - ピッカーがアクターのワールドスケールを掛ける。
 				if (boundsComponentID)
 				{
-					void* boundsRaw = world.GetComponent(entityID, boundsComponentID);
+					void* boundsRaw = WorldAccessor::Make(world, entityID).GetComponent(boundsComponentID);
 					if (boundsRaw)
 					{
 						Vector2 pivotNorm = (size.x > 0.0f && size.y > 0.0f) ? Vector2(movie.pivot_.x / size.x, movie.pivot_.y / size.y) : Vector2(0.5f, 0.5f);

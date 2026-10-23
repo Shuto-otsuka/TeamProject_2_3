@@ -1,5 +1,7 @@
 #include <FoundationEngine/World/ECS/System/LifetimeSystem.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/Command/CommandBuffer.h>
 #include <FoundationEngine/World/ECS/Component/Lifetime.h>
@@ -24,35 +26,30 @@ namespace SeedCore
 	*/
 	void LifetimeSystem::Execute(CommandBuffer& cmd, World& world, Float deltaTime)
 	{
-		for (EntityID entityID : world.GetComponents<Lifetime>())
-		{
-			Actor actor = world.GetActor(entityID);
-			if (!actor || !actor.Active())
+		Query<Read<Lifetime>> query(world);
+		query.ForEach([&](EntityID entityID, const Lifetime& lifetime)
 			{
-				continue;
-			}
+				Actor actor = WorldAccessor::Make(world, entityID);
+				if (!actor || !actor.Active())
+				{
+					return;
+				}
 
-			Lifetime* lifetime = world.GetComponent<Lifetime>(actor.GetEntity());
-			if (lifetime == nullptr)
-			{
-				continue;
-			}
+				/// [EN] First time this entity is seen: seed its countdown from the configured duration.
+				/// [JP] このエンティティを初めて見たとき: 設定された生存時間からカウントダウンを開始する。
+				if (!remaining_.contains(entityID))
+				{
+					remaining_[entityID] = lifetime.duration_;
+				}
 
-			/// [EN] First time this entity is seen: seed its countdown from the configured duration.
-			/// [JP] このエンティティを初めて見たとき: 設定された生存時間からカウントダウンを開始する。
-			if (!remaining_.contains(entityID))
-			{
-				remaining_[entityID] = lifetime->duration_;
-			}
-
-			Float& remaining = remaining_[entityID];
-			remaining -= deltaTime;
-			if (remaining <= 0.0f)
-			{
-				cmd.DestroyEntity(entityID);
-				remaining_.erase(entityID);
-			}
-		}
+				Float& remaining = remaining_[entityID];
+				remaining -= deltaTime;
+				if (remaining <= 0.0f)
+				{
+					cmd.DestroyEntity(entityID);
+					remaining_.erase(entityID);
+				}
+			});
 	}
 
 	/**

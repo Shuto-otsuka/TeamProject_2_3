@@ -1,5 +1,7 @@
 #include <FoundationEngine/Resource/ResourceSync.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/Resource/Prefab/PrefabRegistry.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
 #include <FoundationEngine/Payload/PayloadRegistry.h>
@@ -175,18 +177,22 @@ namespace SeedCore
 		/// [EN] The live world is read rather than the scene file, because it is the reflection of each live component that says which fields hold assets.
 		/// [JP] Scene のファイルではなく、生きている world を読む。どのフィールドがアセットを持つかを教えてくれるのは、生きたコンポーネントのリフレクションであるため。
 		DynamicArray<Uint32> referenced;
-		for (const Actor& actor : world.GetActors())
+		ActorRegistry& actors = WorldAccessor::Actors(world);
+		const PrefabRegistry* prefabs = WorldAccessor::Services(world).Get<PrefabRegistry>();
+		for (EntityID current = actors.Root(); current != EntityID{}; current = actors.Next(current))
 		{
+			Actor actor = WorldAccessor::Make(world, current);
+
 			/// [EN] An actor made from a prefab needs the prefab itself as well, since the scene re-instantiates it from there.
 			/// [JP] Prefab から作られた Actor には Prefab 自体も要る。Scene はそこから作り直すため。
-			if (actor.PrefabID() != 0)
+			const PrefabRecord* prefab = prefabs ? prefabs->Record(current) : nullptr;
+			if (prefab && prefab->assetID_ != 0)
 			{
-				referenced.push_back(actor.PrefabID());
+				referenced.push_back(prefab->assetID_);
 			}
 
 			/// [EN] Only the component types that carry asset fields are asked about, which is a short list next to every registered component.
 			/// [JP] 問い合わせるのは、アセット参照フィールドを持つコンポーネントの型だけ。登録済みの全コンポーネントに比べれば短い一覧で済む。
-			Entity entity = actor.GetEntity();
 			for (const auto& [typeName, payload] : PayloadRegistry::GetRegistry())
 			{
 				ComponentID id = ComponentRegistry::GetComponentID(typeName);
@@ -194,7 +200,7 @@ namespace SeedCore
 				{
 					continue;
 				}
-				void* data = world.GetComponent(entity, id);
+				void* data = actor.GetComponent(id);
 				if (!data)
 				{
 					continue;

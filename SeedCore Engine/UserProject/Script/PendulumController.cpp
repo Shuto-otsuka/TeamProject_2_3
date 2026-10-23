@@ -4,13 +4,12 @@
 
 void PendulumController::OnStart()
 {
-    SeedCore::Entity entity = GetActor().GetEntity();
-    myStopController = GetWorld().GetComponent<StopController>(entity);
-    rotation = GetWorld().GetComponent<SeedCore::Rotation>(entity);
-    rigidbody = GetWorld().GetComponent<SeedCore::Rigidbody>(entity);
-    position = GetWorld().GetComponent<SeedCore::Position>(entity);
-    angularVelocity = GetWorld().GetComponent<SeedCore::AngularVelocity>(entity);
-    linearVelocity = GetWorld().GetComponent<SeedCore::LinearVelocity>(entity);
+    myStopController = GetActor().GetComponent<StopController>();
+    rotation = GetActor().GetComponent<SeedCore::Rotation>();
+    rigidbody = GetActor().GetComponent<SeedCore::Rigidbody>();
+    position = GetActor().GetComponent<SeedCore::Position>();
+    angularVelocity = GetActor().GetComponent<SeedCore::AngularVelocity>();
+    linearVelocity = GetActor().GetComponent<SeedCore::LinearVelocity>();
 
     startPosition = SeedCore::Transform::Vector(*position);
 

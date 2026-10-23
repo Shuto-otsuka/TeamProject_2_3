@@ -4,10 +4,9 @@
 
 void Button::OnStart()
 {
-    SeedCore::Entity entity = GetActor().GetEntity();
-    myImage = GetWorld().GetComponent<SeedCore::Image>(entity);
-    position = GetWorld().GetComponent<SeedCore::Position>(entity);
-    scale = GetWorld().GetComponent<SeedCore::Scale>(entity);
+    myImage = GetActor().GetComponent<SeedCore::Image>();
+    position = GetActor().GetComponent<SeedCore::Position>();
+    scale = GetActor().GetComponent<SeedCore::Scale>();
 
     //ポジション、スケール、イメージテクスチャからボタンの当たり判定の範囲を取得
     minOffset = SeedCore::Vector2(position->x_ - myImage->pivot_.x, position->y_ - myImage->pivot_.y);

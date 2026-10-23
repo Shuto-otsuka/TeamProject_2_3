@@ -1,10 +1,10 @@
 #pragma once
 #include <FoundationEngine/World/ECS/System/TransformSystem.h>
-#include <FoundationEngine/World/ECS/System/MoveSystem.h>
 #include <FoundationEngine/World/ECS/System/SpawnerSystem.h>
 #include <FoundationEngine/World/ECS/System/LifetimeSystem.h>
 #include <FoundationEngine/World/ECS/System/SystemGraph.h>
 #include <FoundationEngine/World/Command/CommandBuffer.h>
+#include <FoundationEngine/World/ECS/Entity/Entity.h>
 
 namespace SeedCore
 {
@@ -16,26 +16,28 @@ namespace SeedCore
 	* [EN]
 	* Drives the built-in per-frame simulation step: dispatches the
 	* ComponentBehaviour lifecycle callbacks (Awake/Start via Run, Tick/
-	* LateTick via Run, FixedTick via Step) and runs the built-in
-	* MoveSystem plus the structural systems (Spawner, Lifetime) through
-	* a SystemGraph - so non-conflicting ones run in parallel on a
-	* JobExecutor - then the built-in TransformSystem. FixedTick is
-	* dispatched separately, through Step, since it
-	* runs at a fixed timestep and may fire zero or several times per
-	* rendered frame rather than exactly once like Run.
+	* LateTick via Run, FixedTick via Step) and runs the structural
+	* systems (Spawner, Lifetime) through a SystemGraph - so
+	* non-conflicting ones run in parallel on a JobExecutor - then the
+	* built-in TransformSystem. Callbacks are dispatched behaviour type by
+	* behaviour type, walking each type's sparse set, so the cost follows
+	* how many behaviours exist rather than how many actors do. FixedTick
+	* is dispatched separately, through Step, since it runs at a fixed
+	* timestep and may fire zero or several times per rendered frame
+	* rather than exactly once like Run.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 組み込みの毎フレームシミュレーションステップを駆動するクラス:
 	* ComponentBehaviour のライフサイクルコールバック（Awake/Start は Run、
-	* Tick/LateTick も Run、FixedTick は Step）をディスパッチし、組み込みの
-	* MoveSystem と構造系システム（Spawner、Lifetime）を SystemGraph 経由で
-	* 実行し（衝突しないものは JobExecutor 上で並列に走る）、続けて
-	* 組み込みの TransformSystem を実行する。FixedTick は固定タイムステップで
-	* 動作し、Run のように
-	* 毎フレーム必ず1回ではなく0回や複数回発火し得るため、Step として
-	* 別に配線する。
+	* Tick/LateTick も Run、FixedTick は Step）をディスパッチし、構造系
+	* システム（Spawner、Lifetime）を SystemGraph 経由で実行し（衝突しない
+	* ものは JobExecutor 上で並列に走る）、続けて組み込みの TransformSystem
+	* を実行する。コールバックはビヘイビアの型ごとに、その型のスパース
+	* セットを回して送るので、費用は actor の数ではなくビヘイビアの数に
+	* 比例する。FixedTick は固定タイムステップで動作し、Run のように毎フレーム
+	* 必ず1回ではなく0回や複数回発火し得るため、Step として別に配線する。
 	*/
 	class SEEDCORE_API SystemScheduler
 	{
@@ -65,12 +67,11 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Runs one frame: drives Awake/Start (if isPlaying), then (if
-		* isPlaying) runs MoveSystem and the structural systems (Spawner +
-		* Lifetime) through a SystemGraph on executor - MoveSystem in
-		* parallel with the structural pair - flushes the recorded
+		* isPlaying) runs the structural systems (Spawner + Lifetime)
+		* through a SystemGraph on executor, flushes the recorded
 		* structural changes, and runs the built-in TransformSystem (all
-		* before Tick/LateTick so this frame's motion and any newly
-		* spawned actor's position are in this frame's world matrix), then
+		* before Tick/LateTick so any newly spawned actor's position is in
+		* this frame's world matrix), then
 		* drives Tick/LateTick (if isPlaying) or EditorTick (if not). The
 		* systems, Tick and LateTick advance by gameElapsedTime; EditorTick
 		* advances by worldElapsedTime, since the game's time stays 0 while
@@ -84,11 +85,10 @@ namespace SeedCore
 		*
 		* [JP]
 		* 1フレーム分を実行する: （isPlaying であれば）Awake/Start を駆動し、
-		* （isPlaying であれば）MoveSystem と構造系システム（Spawner +
-		* Lifetime）を SystemGraph 経由で executor 上で実行し（MoveSystem は
-		* 構造系ペアと並列）、記録された構造変更を flush し、組み込みの
-		* TransformSystem を実行する（すべて Tick/LateTick より前 — 今フレーム
-		* の移動や新しく生成された actor の位置が同じフレームのワールド行列に
+		* （isPlaying であれば）構造系システム（Spawner + Lifetime）を
+		* SystemGraph 経由で executor 上で実行し、記録された構造変更を flush
+		* し、組み込みの TransformSystem を実行する（すべて Tick/LateTick より
+		* 前 — 新しく生成された actor の位置が同じフレームのワールド行列に
 		* 入るように）。その後（isPlaying であれば）Tick/LateTick を、そうで
 		* なければ EditorTick を駆動する。システムと Tick/LateTick は
 		* gameElapsedTime で、EditorTick は worldElapsedTime で進める（プレイして
@@ -145,13 +145,29 @@ namespace SeedCore
 		void Reset();
 
 	private:
+		/**
+		* [EN]
+		* Walks every behaviour type for which has(hooks) is true and calls
+		* call on each of its instances whose actor is active. Each type's
+		* entities are copied before its walk, so an instance added during
+		* the walk waits for the next one, and each instance is looked up
+		* again before the call, so one removed during the walk is skipped.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* has(hooks) が真になる全てのビヘイビアの型を回し、その型のインスタンス
+		* のうち、actor がアクティブなものに call を呼ぶ。各型のエンティティは
+		* 回す前に写すので、途中で追加されたインスタンスは次の走査を待ち、
+		* 各インスタンスは呼ぶ前に引き直すので、途中で外されたものは飛ばす。
+		*/
+		template<typename Has, typename Call>
+		void Dispatch(World& world, Has has, Call call);
+
+	private:
 		/// [EN] Built-in system that recomputes world-space transform matrices from local transforms and the parent hierarchy.
 		/// [JP] ローカルトランスフォームと親階層から、ワールド空間変換行列を再計算する組み込みシステム。
 		TransformSystem transformSystem_;
-
-		/// [EN] Built-in system that integrates every actor's Position by LinearVelocity and Rotation by AngularVelocity each frame.
-		/// [JP] 毎フレーム、全 actor の Position を LinearVelocity で、Rotation を AngularVelocity で積分する組み込みシステム。
-		MoveSystem moveSystem_;
 
 		/// [EN] Built-in system that drives every Spawner component's periodic prefab instantiation.
 		/// [JP] 全 Spawner コンポーネントの周期的なプレハブ生成を駆動する組み込みシステム。
@@ -168,5 +184,9 @@ namespace SeedCore
 		/// [EN] Schedules the pre-TransformSystem systems by their component access, running non-conflicting ones in parallel on the frame's JobExecutor; rebuilt each Run.
 		/// [JP] TransformSystem 前のシステムをコンポーネントアクセスに基づいてスケジュールし、衝突しないものをそのフレームの JobExecutor 上で並列に走らせる。Run ごとに再構築する。
 		SystemGraph systemGraph_;
+
+		/// [EN] The entities of the behaviour type being dispatched, copied before its walk; kept between walks so its memory is reused.
+		/// [JP] ディスパッチ中のビヘイビアの型のエンティティ。回す前に写す。走査をまたいで持ち、メモリを使い回す。
+		DynamicArray<EntityID> entities_;
 	};
 }

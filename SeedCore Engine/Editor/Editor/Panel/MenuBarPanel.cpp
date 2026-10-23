@@ -24,6 +24,7 @@
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/Time/GameTimer.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 
 namespace SeedCore
 {
@@ -325,7 +326,7 @@ namespace SeedCore
 		pendingScenePath_ = path;
 		pendingSceneAssetID_ = assetID;
 
-		if (context_.world_.world_->GetActors().empty())
+		if ((WorldAccessor::Actors(*context_.world_.world_).Root() == EntityID{}))
 		{
 			ExecutePendingSceneOp();
 		}
@@ -392,7 +393,7 @@ namespace SeedCore
 
 	void MenuBarPanel::NewScene()
 	{
-		context_.world_.world_->DestroyActors();
+		WorldAccessor::Clear(*context_.world_.world_);
 
 		context_.scene_.path_ = FilePath();
 		context_.selection_.Clear();

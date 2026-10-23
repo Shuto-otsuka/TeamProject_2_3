@@ -1,5 +1,6 @@
 #include <FoundationEngine/World/ECS/System/TransformSystem.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
@@ -21,12 +22,10 @@ namespace SeedCore
 	*/
 	void TransformSystem::Execute(World& world)
 	{
-		for (Actor actor : world.GetActors())
+		ActorRegistry& actors = WorldAccessor::Actors(world);
+		for (EntityID root = actors.Root(); root != EntityID{}; root = actors.Record(root)->nextSibling_)
 		{
-			if (!actor.Parent())
-			{
-				UpdateActor(actor, Matrix::Identity, world);
-			}
+			UpdateActor(WorldAccessor::Make(world, root), Matrix::Identity, world);
 		}
 	}
 
@@ -45,11 +44,9 @@ namespace SeedCore
 	*/
 	void TransformSystem::UpdateActor(Actor actor, const Matrix& parentMatrix, World& world)
 	{
-		Entity entity = actor.GetEntity();
-
-		Position* position = world.GetComponent<Position>(entity);
-		Rotation* rotation = world.GetComponent<Rotation>(entity);
-		Scale* scale = world.GetComponent<Scale>(entity);
+		Position* position = actor.GetComponent<Position>();
+		Rotation* rotation = actor.GetComponent<Rotation>();
+		Scale* scale = actor.GetComponent<Scale>();
 
 		Matrix local = Matrix::Identity;
 

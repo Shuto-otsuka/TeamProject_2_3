@@ -5,6 +5,8 @@
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/Interop/QueryInstance.h>
 
 namespace SeedCore
 {
@@ -1513,7 +1515,7 @@ namespace SeedCore
 				World* world = joltManager_.ActiveWorld();
 				if (world)
 				{
-					Actor actor = world->GetActor(BodyEntityID(hit.mBodyID));
+					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID));
 					if (actor && (layerMask & (1u << actor.Layer())) == 0)
 					{
 						continue;
@@ -1631,7 +1633,7 @@ namespace SeedCore
 				World* world = joltManager_.ActiveWorld();
 				if (world)
 				{
-					Actor actor = world->GetActor(BodyEntityID(hit.mBodyID2));
+					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
 					if (actor && (layerMask & (1u << actor.Layer())) == 0)
 					{
 						continue;
@@ -1731,7 +1733,7 @@ namespace SeedCore
 				World* world = joltManager_.ActiveWorld();
 				if (world)
 				{
-					Actor actor = world->GetActor(BodyEntityID(hit.mBodyID2));
+					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
 					if (actor && (layerMask & (1u << actor.Layer())) == 0)
 					{
 						continue;
@@ -1869,7 +1871,7 @@ namespace SeedCore
 				World* world = joltManager_.ActiveWorld();
 				if (world)
 				{
-					Actor actor = world->GetActor(BodyEntityID(hit.mBodyID2));
+					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
 					if (actor && (layerMask & (1u << actor.Layer())) == 0)
 					{
 						continue;
@@ -1956,7 +1958,7 @@ namespace SeedCore
 				World* world = joltManager_.ActiveWorld();
 				if (world)
 				{
-					Actor actor = world->GetActor(BodyEntityID(hit.mBodyID));
+					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID));
 					if (actor && (layerMask & (1u << actor.Layer())) == 0)
 					{
 						continue;
@@ -2073,7 +2075,7 @@ namespace SeedCore
 				World* world = joltManager_.ActiveWorld();
 				if (world)
 				{
-					Actor actor = world->GetActor(BodyEntityID(hit.mBodyID2));
+					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
 					if (actor && (layerMask & (1u << actor.Layer())) == 0)
 					{
 						continue;
@@ -2158,7 +2160,7 @@ namespace SeedCore
 				World* world = joltManager_.ActiveWorld();
 				if (world)
 				{
-					Actor actor = world->GetActor(BodyEntityID(hit.mBodyID2));
+					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
 					if (actor && (layerMask & (1u << actor.Layer())) == 0)
 					{
 						continue;
@@ -2278,7 +2280,7 @@ namespace SeedCore
 				World* world = joltManager_.ActiveWorld();
 				if (world)
 				{
-					Actor actor = world->GetActor(BodyEntityID(hit.mBodyID2));
+					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
 					if (actor && (layerMask & (1u << actor.Layer())) == 0)
 					{
 						continue;

@@ -7,17 +7,13 @@ void CostGaugeController::OnStart()
     costGaugeAdd = GetWorld().GetActor("CostGaugeAdd");
     costText = GetWorld().GetActor("CostText");
 
-    SeedCore::Entity costGaugeUsedEntity = costGaugeUsed.GetEntity();
-    SeedCore::Entity costGaugeAddEntity = costGaugeAdd.GetEntity();
-    SeedCore::Entity playerEntity = GetWorld().GetActor("Player").GetEntity();
-    SeedCore::Entity chargeTextEntity = costText.GetEntity();
 
-    costGaugeUsedImage = GetWorld().GetComponent<SeedCore::Image>(costGaugeUsedEntity);
-    costGaugeAddImage = GetWorld().GetComponent<SeedCore::Image>(costGaugeAddEntity);
-    costGaugeAddPosition = GetWorld().GetComponent<SeedCore::Position>(costGaugeAddEntity);
-    playerController = GetWorld().GetComponent<PlayerController>(playerEntity);
-    costGaugeOverActive = GetWorld().GetComponent<SeedCore::Active>(GetWorld().GetActor("CostGaugeOverBase").GetEntity());
-    costT = GetWorld().GetComponent<SeedCore::Text>(chargeTextEntity);
+    costGaugeUsedImage = costGaugeUsed.GetComponent<SeedCore::Image>();
+    costGaugeAddImage = costGaugeAdd.GetComponent<SeedCore::Image>();
+    costGaugeAddPosition = costGaugeAdd.GetComponent<SeedCore::Position>();
+    playerController = GetWorld().GetActor("Player").GetComponent<PlayerController>();
+    costGaugeOverActive = GetWorld().GetActor("CostGaugeOverBase").GetComponent<SeedCore::Active>();
+    costT = costText.GetComponent<SeedCore::Text>();
 
     costGaugeUsedImage->textureSize_.x = sizeXMin;
     costGaugeAddPosition->x_ = posXMin;

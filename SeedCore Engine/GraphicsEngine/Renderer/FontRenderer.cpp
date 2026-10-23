@@ -12,6 +12,8 @@
 #include <FoundationEngine/World/ECS/Component/Active.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 
 namespace SeedCore
 {
@@ -91,7 +93,7 @@ namespace SeedCore
 			///      ワールド変換を読む。rotationEuler は合成後回転を
 			///      CreateFromYawPitchRoll と同じ軸(yaw/pitch/roll)で
 			///      分解したもの。
-			Actor actor = world.GetActor(entityID);
+			Actor actor = WorldAccessor::Make(world, entityID);
 			if (!actor)
 			{
 				continue;
@@ -114,7 +116,7 @@ namespace SeedCore
 			Vector2 scale = Vector2(worldScale.x, worldScale.y);
 			Vector3 rotationEuler = worldRotation.ToEuler(); // (pitch, yaw, roll)
 
-			Uint selected = std::ranges::find(selectedEntities, actor.GetEntity()) != selectedEntities.end() ? 1 : 0;
+			Uint selected = std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) != selectedEntities.end() ? 1 : 0;
 
 			Font* font = fontResource.Resolve(fontResource.GetHandle(text.fontID_));
 			if (!font)
@@ -314,7 +316,7 @@ namespace SeedCore
 			/// [JP] このアクターの Bounds(全アクターが持つ)を計測したキャンバステキストボックスへ同期する: 半径 = ボックスサイズ / 2、中心 = テキスト原点からのボックス中点オフセット。ピッカーがアクターのワールドスケール/回転を掛けるので、CanvasViewPanel は描画済みテキストの正しいボックスを得る。
 			if (isSprite && boundsComponentID && textBoxMinX <= textBoxMaxX)
 			{
-				void* boundsRaw = world.GetComponent(entityID, boundsComponentID);
+				void* boundsRaw = WorldAccessor::Make(world, entityID).GetComponent(boundsComponentID);
 				if (boundsRaw)
 				{
 					Bounds* bounds = static_cast<Bounds*>(boundsRaw);

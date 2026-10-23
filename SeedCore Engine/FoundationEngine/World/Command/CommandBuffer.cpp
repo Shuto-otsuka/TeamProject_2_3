@@ -1,5 +1,7 @@
 #include <FoundationEngine/World/Command/CommandBuffer.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
@@ -10,29 +12,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Records the creation of a bare (componentless) entity and returns a
-	* provisional EntityID standing in for it until Flush.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* コンポーネントを持たないエンティティの生成を記録し、Flush まで
-	* それを代理する暫定 EntityID を返す。
-	*/
-	EntityID CommandBuffer::CreateEntity()
-	{
-		EntityID provisional = EntityID{ provisionalCount_++, ProvisionalGeneration };
-
-		Command command;
-		command.kind_ = Kind::CreateEntity;
-		command.target_ = provisional;
-		commands_.push_back(command);
-
-		return provisional;
-	}
-
 	/**
 	* [EN]
 	* Records a deferred prefab instantiation at position and returns a
@@ -162,12 +141,6 @@ namespace SeedCore
 
 			switch (command.kind_)
 			{
-			case Kind::CreateEntity:
-			{
-				Entity entity = world.CreateEntity();
-				resolved_[command.target_.index_] = entity.GetID();
-				break;
-			}
 			case Kind::SpawnPrefab:
 			{
 				EntityID parentID = command.parent_;
@@ -177,7 +150,7 @@ namespace SeedCore
 					parentID = (it != resolved_.end()) ? it->second : EntityID{};
 				}
 
-				Actor parent = (parentID != EntityID{}) ? world.GetActor(parentID) : Actor();
+				Actor parent = (parentID != EntityID{}) ? WorldAccessor::Make(world, parentID) : Actor();
 
 				Handle<PrefabBlueprint> handle = cache.GetPrefabPool().Load(command.assetID_, cache);
 				PrefabBlueprint* prefab = cache.GetPrefabPool().Get(handle);
@@ -192,9 +165,9 @@ namespace SeedCore
 					break;
 				}
 
-				resolved_[command.target_.index_] = spawned.GetEntity().GetID();
+				resolved_[command.target_.index_] = ActorAccessor::GetEntity(spawned).GetID();
 
-				Position* position = world.GetComponent<Position>(spawned.GetEntity());
+				Position* position = spawned.GetComponent<Position>();
 				if (position != nullptr)
 				{
 					Transform::Vector(*position, command.position_);
@@ -208,14 +181,10 @@ namespace SeedCore
 					break;
 				}
 
-				Actor actor = world.GetActor(target);
+				Actor actor = WorldAccessor::Make(world, target);
 				if (actor)
 				{
 					world.DestroyActor(actor);
-				}
-				else
-				{
-					world.DestroyEntity(Entity(Handle<Entity>{ target.index_, target.generation_ }));
 				}
 				break;
 			}
@@ -231,7 +200,7 @@ namespace SeedCore
 
 				world.AddComponent(entity, command.componentID_);
 
-				void* destination = world.GetComponent(target, command.componentID_);
+				void* destination = world.GetComponent(entity, command.componentID_);
 				if (destination != nullptr)
 				{
 					void* recorded = blob_.data() + command.dataOffset_;

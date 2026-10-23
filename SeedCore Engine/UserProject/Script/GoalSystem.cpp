@@ -5,6 +5,10 @@
 #include <SeedCore/ScMath.h>
 #include <SeedCore/ScInput.h>
 #include <SeedCore/ScScene.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/Time/GameTimer.h>
+#include <PhysicsEngine/Physics/Physics.h>
+#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
 
 using namespace SeedCore;
 
@@ -17,15 +21,14 @@ void GoalSystem::OnStart()
 	World& world = GetWorld();
 
 	// 後段処理でスケールを0にするのでここで一応1に戻す
-	world.Timer().TimeScale(1.0f);
+	world.GetService<GameTimer>()->TimeScale(1.0f);
 
 	// 今回はどのステージでもResultUIを親として子供にそれぞれのUIの構成にする
 	// ゴールするまでは表示したくないのでActiveはfalseに
 	resultActor_ = world.GetActor("ResultUI");
 	resultActor_.Active(false);
 
-	Entity resultEntity = resultActor_.GetEntity();
-	Scale* resultScale = world.GetComponent<Scale>(resultEntity);
+	Scale* resultScale = resultActor_.GetComponent<Scale>();
 	if (resultScale)
 	{
 		// 拡大演出のため初期値を0.05fに、親なので子も追従する
@@ -43,11 +46,10 @@ void GoalSystem::OnTick(float elapsedTime)
 {
 	World& world = GetWorld();
 	Actor actor = GetActor();
-	Entity entity = actor.GetEntity();
 
 	if (!isGoal_)
 	{
-		Physics& physics = actor.GetPhysics();
+		Physics& physics = *actor.GetService<Physics>();
 		Vector3 center = actor.WorldMatrix().Translation();
 
 		// リフレクションで出す範囲を使って、近くの範囲内のEntityを検出する
@@ -55,7 +57,7 @@ void GoalSystem::OnTick(float elapsedTime)
 
 		for (EntityID entityID : entityIDs)
 		{
-			Actor other = world.GetActor(entityID);
+			Actor other = SeedCore::WorldAccessor::Make(world, entityID);
 
 			// 範囲内にいるActorの内、Playerタグを持つActorを探し出す
 			if (other.HasTag("Player"))
@@ -70,12 +72,12 @@ void GoalSystem::OnTick(float elapsedTime)
 	{
 		// リザルト時はゲームは止まってほしいのでタイムスケール0
 		// これより先はタイムスケールに関係ないタイマーを使う
-		world.Timer().TimeScale(0.0f);
-		resultTimer_ += world.Timer().UnscaledDeltaTime();
+		world.GetService<GameTimer>()->TimeScale(0.0f);
+		resultTimer_ += world.GetService<GameTimer>()->UnscaledDeltaTime();
 
 		// 上がってちょっと超えて下がる感じの動き
 		float scale = Easing::OutBack(0.05f, 1.0f, resultTimer_ / directionTime_, 2.68f);
-		Scale* resultScale = world.GetComponent<Scale>(resultActor_.GetEntity());
+		Scale* resultScale = resultActor_.GetComponent<Scale>();
 		if (resultScale)
 		{
 			// スケールを上げていく
@@ -89,11 +91,11 @@ void GoalSystem::OnTick(float elapsedTime)
 		}
 
 		// Gameビュー上でカーソルの位置から矩形範囲内の全アクターのIDを返す
-		DynamicArray<EntityID> hitEntityIDs = actor.GetPhysics().Overlap2D(OverlapShapeKind::Rect, Vector2(0.5f, 0.5f), Input::MousePoint(), 0.0f);
+		DynamicArray<EntityID> hitEntityIDs = actor.GetService<Physics>()->Overlap2D(OverlapShapeKind::Rect, Vector2(0.5f, 0.5f), Input::MousePoint(), 0.0f);
 		Actor hoveredButton;
 		for (EntityID hitEntityID : hitEntityIDs)
 		{
-			Actor hitActor = world.GetActor(hitEntityID);
+			Actor hitActor = SeedCore::WorldAccessor::Make(world, hitEntityID);
 			// ホバーされているかを判定する
 			if (hitActor == toNextSceneActor_ || hitActor == toTitleSceneActor_ || hitActor == toRetrySceneActor_)
 			{
@@ -102,11 +104,11 @@ void GoalSystem::OnTick(float elapsedTime)
 			}
 		}
 
-		float deltaTime = world.Timer().UnscaledDeltaTime();
+		float deltaTime = world.GetService<GameTimer>()->UnscaledDeltaTime();
 		// それぞれで倍率を常に掛けるためにループを回す
 		for (Actor actor : {toNextSceneActor_, toTitleSceneActor_, toRetrySceneActor_})
 		{
-			Scale* buttonScale = world.GetComponent<Scale>(actor.GetEntity());
+			Scale* buttonScale = actor.GetComponent<Scale>();
 			float target = (actor == hoveredButton) ? 1.1f : 1.0f;
 			float scale = buttonScale->x_ + (target - buttonScale->x_) * Min(1.0f, deltaTime * 15.0f);
 			Transform::Vector(*buttonScale, Vector3(scale, scale, scale));
@@ -129,7 +131,7 @@ void GoalSystem::OnTick(float elapsedTime)
 			isDecided_ = true;
 
 			// タイムスケールを戻す
-			world.Timer().TimeScale(1.0f);
+			world.GetService<GameTimer>()->TimeScale(1.0f);
 
 			// シーンを遷移する
 			Scene::Change(targetScene);
@@ -141,5 +143,5 @@ void GoalSystem::OnEditorTick(float elapsedTime)
 {
 	// 場所がわかりやすいように球を表示する
 	Vector3 center = GetActor().WorldMatrix().Translation();
-	GetActor().GetDebugDraw().Sphere(center, 0.5f, Color(1.0f, 0.0f, 0.0f, 0.5f));
+	GetActor().GetService<DebugDraw>()->Sphere(center, 0.5f, Color(1.0f, 0.0f, 0.0f, 0.5f));
 }

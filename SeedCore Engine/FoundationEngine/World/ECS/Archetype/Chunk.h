@@ -3,6 +3,8 @@
 
 namespace SeedCore
 {
+	struct ArchetypeEdge;
+
 	class Archetype;
 
 	/**
@@ -13,7 +15,7 @@ namespace SeedCore
 	* sub-array within buffer_, sized for capacity_ entities (computed
 	* once in the constructor from the archetype's component
 	* sizes/alignments). Removal is swap-remove: the moved entity's ID
-	* is returned so callers can fix up its EntityRecord.
+	* is returned so callers can fix up its location.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -25,7 +27,7 @@ namespace SeedCore
 	* サブ配列を持つ（コンストラクタでアーキタイプのコンポーネント
 	* サイズ/アラインメントから一度だけ計算される）。削除は
 	* swap-remove 方式であり、移動したエンティティの ID を返すため、
-	* 呼び出し側はその EntityRecord を修正できる。
+	* 呼び出し側はその場所を修正できる。
 	*/
 	class SEEDCORE_API Chunk
 	{
@@ -57,40 +59,81 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Appends a new row for entityID, default-constructing each
-		* component's storage slot. Returns false if the chunk is already full.
+		* Appends a row for entityID, default-constructing each component,
+		* and returns the new row. The chunk must not be full.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* entityID 用の新しい行を追加し、各コンポーネントのストレージ
-		* スロットをデフォルト構築する。チャンクが既に満杯であれば
-		* false を返す。
+		* entityID 用の行を末尾に追加して各コンポーネントをデフォルト構築し、
+		* 新しい行を返す。チャンクは満杯であってはならない。
 		*/
-		Bool Add(EntityID entityID);
+		Uint32 Add(EntityID entityID);
 
 		/**
 		* [EN]
-		* Removes the row belonging to entityID via swap-remove:
-		* destructs its component slots, then (unless it was the last
-		* row) moves the last row's components into the vacated slot.
-		* Returns the entityID of whichever entity was moved into the
-		* removed row's position (so its EntityRecord can be updated),
-		* or a default (invalid) EntityID if none was moved (entityID not
-		* found, or it was already the last row).
+		* Destructs every component at row, then releases the row. Returns the
+		* entity whose row changed, or a default (invalid) EntityID if row was
+		* the last one.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* entityID に属する行を swap-remove 方式で削除する: そのコンポーネント
-		* スロットを破棄し、（それが最後の行でない限り）最後の行の
-		* コンポーネントを空いたスロットへ移動する。削除された行の位置へ
-		* 移動されたエンティティの entityID を返す（呼び出し側がその
-		* EntityRecord を更新できるように）。何も移動されなかった場合
-		* （entityID が見つからない、またはそれが既に最後の行だった場合）は
-		* デフォルト（無効）の EntityID を返す。
+		* row の全コンポーネントを破棄してから、その行を解放する。行が
+		* 変わったエンティティを返す。row が最後の行だった場合はデフォルト
+		* （無効）の EntityID を返す。
 		*/
-		EntityID Remove(EntityID entityID);
+		EntityID Remove(Uint32 row);
+
+		/**
+		* [EN]
+		* Fills row, whose components are already gone, by relocating the last
+		* row into it. Returns the entity whose row changed, or a default
+		* (invalid) EntityID if row was the last one.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コンポーネントが既に無い row を、最後の行を移設して埋める。行が
+		* 変わったエンティティを返す。row が最後の行だった場合はデフォルト
+		* （無効）の EntityID を返す。
+		*/
+		EntityID Release(Uint32 row);
+
+		/**
+		* [EN]
+		* Takes over row sourceRow of source, a chunk of the same archetype, as
+		* a new row of this chunk by relocating every column, leaving source's
+		* row empty for Release. Returns the new row. The chunk must not be
+		* full.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 同じアーキタイプのチャンク source の sourceRow 行目を、全列を移設して
+		* このチャンクの新しい行として引き取る。source の行は空になり Release
+		* できる状態になる。新しい行を返す。チャンクは満杯であってはならない。
+		*/
+		Uint32 Adopt(Chunk& source, Uint32 sourceRow);
+
+		/**
+		* [EN]
+		* Takes over row sourceRow of source as a new row of this chunk, using
+		* edge's column mapping: shared components are relocated, components
+		* only here are constructed, and components only in source are
+		* destructed, leaving source's row empty for Release. Returns the new
+		* row. The chunk must not be full.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* edge の列の対応を使って、source の sourceRow 行目をこのチャンクの新しい
+		* 行として引き取る。共通のコンポーネントは移設し、ここにしか無いものは
+		* 構築し、source にしか無いものは破棄するので、source の行は空になり
+		* Release できる状態になる。新しい行を返す。チャンクは満杯であっては
+		* ならない。
+		*/
+		Uint32 Adopt(Chunk& source, Uint32 sourceRow, const ArchetypeEdge& edge);
 
 		/**
 		* [EN]
@@ -173,7 +216,6 @@ namespace SeedCore
 		/// [JP] 単一のアーキタイプ/チャンクが保持できる、異なるコンポーネント型数の絶対上限。
 		SC_CONSTEX Size maxComponentsPerArchetype_ = 32;
 
-	private:
 		/// [EN] The archetype this chunk's layout was derived from.
 		/// [JP] このチャンクのレイアウトの導出元となったアーキタイプ。
 		Archetype* archetype_;

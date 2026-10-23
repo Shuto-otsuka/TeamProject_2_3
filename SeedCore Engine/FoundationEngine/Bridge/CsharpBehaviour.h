@@ -33,7 +33,7 @@ namespace SeedCore
 		PayloadType assetType_ = PayloadType::None;
 	};
 
-	struct CsharpScriptType
+	struct CsharpScriptType :public ComponentHooks
 	{
 		ComponentID id_ = nullptr;
 
@@ -46,6 +46,8 @@ namespace SeedCore
 		DynamicArray<CsharpField> fields_;
 
 		ManagedApi* managedApi_ = nullptr;
+
+		ComponentMetadata metadata_;
 	};
 
 	class SEEDCORE_API CsharpBehaviour :public ComponentBehaviour
@@ -64,11 +66,13 @@ namespace SeedCore
 		CsharpBehaviour& operator=(const CsharpBehaviour&) = delete;
 		CsharpBehaviour& operator=(CsharpBehaviour&&) = delete;
 
-		static void Setup(void* component, void* world, Entity entity, ComponentID id);
+		static void Bind(CsharpScriptType& scriptType);
 
 		static void Reflect(void* component, DynamicArray<FieldInfo>& fields);
 
 	private:
+		static void Attach(ComponentBehaviour* component);
+
 		template<ScriptHook Hook>
 		static void Lifecycle(ComponentBehaviour* component);
 
@@ -76,7 +80,7 @@ namespace SeedCore
 		static void Lifecycle(ComponentBehaviour* component, Float elapsedTime);
 
 		template<ScriptHook Hook>
-		static void Contact(ComponentBehaviour* component, Entity other);
+		static void Contact(ComponentBehaviour* component, const Actor& other);
 
 		void Synchronize(Bool pull);
 

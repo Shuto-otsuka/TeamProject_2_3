@@ -16,7 +16,7 @@ namespace SeedCore
 	*/
 	void AudioSource::OnAwake()
 	{
-		Audio& audio = GetActor().GetAudio();
+		Audio& audio = *GetActor().GetService<Audio>();
 
 		/// [EN] Create the CRI handles and apply the initial playback settings.
 		/// [JP] CRI ハンドルを生成し、初期の再生設定を反映する。
@@ -47,7 +47,7 @@ namespace SeedCore
 	*/
 	void AudioSource::OnDestroy()
 	{
-		Audio& audio = GetActor().GetAudio();
+		Audio& audio = *GetActor().GetService<Audio>();
 
 		audio.DestroyPlayer(player_);
 		audio.DestroySource(source_);
@@ -146,7 +146,7 @@ namespace SeedCore
 			return;
 		}
 
-		Audio& audio = GetActor().GetAudio();
+		Audio& audio = *GetActor().GetService<Audio>();
 
 		/// [EN] Select cue-sheet or wave playback according to the resolved sound type.
 		/// [JP] 解決済みサウンドの種類に応じて、キューシート再生か波形再生を選ぶ。
@@ -186,7 +186,7 @@ namespace SeedCore
 	*/
 	void AudioSource::Stop()
 	{
-		GetActor().GetAudio().Stop(player_);
+		GetActor().GetService<Audio>()->Stop(player_);
 	}
 
 	/**
@@ -200,7 +200,7 @@ namespace SeedCore
 	*/
 	void AudioSource::Pause()
 	{
-		GetActor().GetAudio().Pause(player_);
+		GetActor().GetService<Audio>()->Pause(player_);
 	}
 
 	/**
@@ -214,7 +214,7 @@ namespace SeedCore
 	*/
 	void AudioSource::Resume()
 	{
-		GetActor().GetAudio().Resume(player_);
+		GetActor().GetService<Audio>()->Resume(player_);
 	}
 
 	/**
@@ -228,7 +228,7 @@ namespace SeedCore
 	*/
 	Bool AudioSource::Playing()const
 	{
-		return GetActor().GetAudio().Playing(player_);
+		return GetActor().GetService<Audio>()->Playing(player_);
 	}
 
 	/**
@@ -246,7 +246,7 @@ namespace SeedCore
 		/// [JP] 置き換え後の自動再生を一度開始できるよう、以前のサウンドを停止する。
 		if (player_ && sound_ != sound)
 		{
-			GetActor().GetAudio().Stop(player_);
+			GetActor().GetService<Audio>()->Stop(player_);
 			autoPlayStarted_ = false;
 		}
 
@@ -265,7 +265,7 @@ namespace SeedCore
 	*/
 	void AudioSource::Apply(Float deltaTime)
 	{
-		Audio& audio = GetActor().GetAudio();
+		Audio& audio = *GetActor().GetService<Audio>();
 
 		/// [EN] Calculate the source position and velocity from the actor's world transform.
 		/// [JP] アクターのワールド変換から、音源の位置と速度を求める。

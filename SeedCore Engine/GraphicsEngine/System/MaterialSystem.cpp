@@ -4,21 +4,26 @@
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <FoundationEngine/World/ECS/Query/Query.h>
 
 namespace SeedCore
 {
 	void MaterialSystem::Execute(World& world, MaterialResource& materialResource, ModelResource& modelResource)
 	{
-		for (EntityID id : world.GetComponents<Material>())
+		DynamicArray<EntityID> materialEntities;
+		Query<Read<Material>>(world).ForEach([&](EntityID entityID, const Material&) { materialEntities.push_back(entityID); });
+		for (EntityID id : materialEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
 			}
 
-			Material* material = world.GetComponent<Material>(actor.GetEntity());
-			const Mesh* mesh = world.GetComponent<Mesh>(actor.GetEntity());
+			Material* material = world.GetComponent<Material>(ActorAccessor::GetEntity(actor));
+			const Mesh* mesh = world.GetComponent<Mesh>(ActorAccessor::GetEntity(actor));
 			if (!material || !mesh || mesh->meshID_ == 0)
 			{
 				continue;

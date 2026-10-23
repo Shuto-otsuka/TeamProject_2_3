@@ -71,7 +71,7 @@ namespace SeedCore
 
 		GameConfig gameConfig_;
 
-		GameTimer gameTimer_;
+		GameTimer* gameTimer_ = nullptr;
 
 		RaytracingContext raytracing_;
 

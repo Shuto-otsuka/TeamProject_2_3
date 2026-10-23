@@ -40,6 +40,9 @@
 #include <PhysicsEngine/Collider/RectCollider.h>
 #include <PhysicsEngine/Collider/CircleCollider.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <FoundationEngine/Resource/Prefab/PrefabRegistry.h>
 
 namespace SeedCore
 {
@@ -111,7 +114,7 @@ namespace SeedCore
 
 			Actor actor = locked_ ? lockedActor_ : context_.selection_.Primary();
 
-			if (actor && actor.GetEntity().Exists())
+			if (actor && ActorAccessor::GetEntity(actor).Exists())
 			{
 				ImGui::BeginChild("##InspectorContent", ImVec2(0, 0), ImGuiChildFlags_None, ImGuiWindowFlags_HorizontalScrollbar);
 				DrawName(actor);
@@ -171,7 +174,7 @@ namespace SeedCore
 
 		ImGui::SameLine();
 
-		Name* nameComponent = static_cast<Name*>(context_.world_.world_->GetComponent(actor.GetEntity(), ComponentRegistry::GetComponentID<Name>()));
+		Name* nameComponent = static_cast<Name*>(context_.world_.world_->GetComponent(ActorAccessor::GetEntity(actor), ComponentRegistry::GetComponentID<Name>()));
 		if (!nameComponent)
 		{
 			return;
@@ -184,7 +187,7 @@ namespace SeedCore
 		{
 			String oldValue = nameComponent->name_;
 			nameComponent->name_ = String(std::string_view(nameBuffer.c_str()));
-			context_.scene_.history_.Push(MakePtr<ComponentCommand<String>>(*context_.world_.world_, actor.GetEntity(), ComponentRegistry::GetComponentID<Name>(), 0, oldValue, nameComponent->name_));
+			context_.scene_.history_.Push(MakePtr<ComponentCommand<String>>(*context_.world_.world_, ActorAccessor::GetEntity(actor), ComponentRegistry::GetComponentID<Name>(), 0, oldValue, nameComponent->name_));
 		}
 
 		ImGui::SameLine();
@@ -199,7 +202,11 @@ namespace SeedCore
 
 	void InspectorPanel::DrawTags(Actor actor)
 	{
-		DynamicArray<String> currentTags = actor.TagList();
+		DynamicArray<String> currentTags;
+		TagRegistry::ForEach(*WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(actor).GetID()), [&currentTags](const String& tag)
+			{
+				currentTags.push_back(tag);
+			});
 
 		std::string previewLabel;
 		for (Size index = 0; index < currentTags.size(); ++index)
@@ -281,7 +288,7 @@ namespace SeedCore
 
 		if (hasRemoveTag)
 		{
-			context_.scene_.history_.Push(MakePtr<ActorTagCommand>(*context_.world_.world_, actor.PersistentID(), removeTag, false));
+			context_.scene_.history_.Push(MakePtr<ActorTagCommand>(*context_.world_.world_, WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(actor).GetID())->persistentID_, removeTag, false));
 			actor.RemoveTag(removeTag);
 		}
 		if (hasDeleteTag)
@@ -303,16 +310,16 @@ namespace SeedCore
 			if (!text.empty())
 			{
 				String newTag = String(std::string_view(text));
-				context_.scene_.history_.Push(MakePtr<ActorTagCommand>(*context_.world_.world_, actor.PersistentID(), newTag, true));
+				context_.scene_.history_.Push(MakePtr<ActorTagCommand>(*context_.world_.world_, WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(actor).GetID())->persistentID_, newTag, true));
 				actor.AddTag(newTag);
 			}
 			std::ranges::fill(newTagBuffer_, '\0');
 			ImGui::SetKeyboardFocusHere(-1);
 		}
 
-		const DynamicArray<String>& allNames = TagRegistry::GetNames();
+		std::span<const String> allNames = TagRegistry::Names();
 
-		Bool hasActiveTag = std::ranges::any_of(std::views::iota(Size{ 0 }, allNames.size()), [](Size index) { return !TagRegistry::Removed(index); });
+		Bool hasActiveTag = std::ranges::any_of(allNames, [](const String& name) { return name != String{}; });
 
 		if (hasActiveTag)
 		{
@@ -322,7 +329,7 @@ namespace SeedCore
 
 			for (Size index = 0; index < allNames.size(); ++index)
 			{
-				if (TagRegistry::Removed(index))
+				if (allNames[index] == String{})
 				{
 					continue;
 				}
@@ -334,7 +341,7 @@ namespace SeedCore
 				Bool hasTag = actor.HasTag(tag);
 				if (ImGui::Checkbox(tag.c_str(), &hasTag))
 				{
-					context_.scene_.history_.Push(MakePtr<ActorTagCommand>(*context_.world_.world_, actor.PersistentID(), tag, hasTag));
+					context_.scene_.history_.Push(MakePtr<ActorTagCommand>(*context_.world_.world_, WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(actor).GetID())->persistentID_, tag, hasTag));
 					if (hasTag)
 					{
 						actor.AddTag(tag);
@@ -364,7 +371,7 @@ namespace SeedCore
 
 	void InspectorPanel::DrawLayer(Actor actor)
 	{
-		const DynamicArray<String>& layerNames = LayerRegistry::GetNames();
+		std::span<const String> layerNames = LayerRegistry::Names();
 		if (layerNames.empty())
 		{
 			return;
@@ -400,7 +407,7 @@ namespace SeedCore
 				{
 					String oldLayerName = actor.LayerName();
 					String newLayerName = layerNames[index];
-					context_.scene_.history_.Push(MakePtr<ActorLayerCommand>(*context_.world_.world_, actor.PersistentID(), oldLayerName, newLayerName));
+					context_.scene_.history_.Push(MakePtr<ActorLayerCommand>(*context_.world_.world_, WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(actor).GetID())->persistentID_, oldLayerName, newLayerName));
 					actor.Layer(index);
 				}
 
@@ -415,7 +422,7 @@ namespace SeedCore
 				}
 				else if (ImGui::InputText("##Name", layerNameBuffers_[index].data(), layerNameBuffers_[index].capacity()))
 				{
-					LayerRegistry::SetName(index, String(std::string_view(layerNameBuffers_[index].c_str())));
+					LayerRegistry::Name(index, String(std::string_view(layerNameBuffers_[index].c_str())));
 					LayerRegistry::Save();
 				}
 
@@ -437,7 +444,9 @@ namespace SeedCore
 
 	void InspectorPanel::DrawPrefabControls(Actor actor)
 	{
-		Uint32 assetID = actor.PrefabID();
+		const PrefabRegistry* prefabs = context_.world_.world_->GetService<PrefabRegistry>();
+		const PrefabRecord* prefabRecord = prefabs ? prefabs->Record(ActorAccessor::GetEntity(actor).GetID()) : nullptr;
+		Uint32 assetID = prefabRecord ? prefabRecord->assetID_ : 0;
 		if (assetID == 0)
 		{
 			return;
@@ -509,7 +518,7 @@ namespace SeedCore
 		{
 			if (ImGui::MenuItem("コンポーネントを削除"))
 			{
-				context_.scene_.history_.Push(MakePtr<ComponentRemoveCommand>(*context_.world_.world_, actor.PersistentID(), componentID, componentName, componentData));
+				context_.scene_.history_.Push(MakePtr<ComponentRemoveCommand>(*context_.world_.world_, WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(actor).GetID())->persistentID_, componentID, componentName, componentData));
 				actor.RemoveComponent(componentID);
 				removed = true;
 			}
@@ -534,7 +543,7 @@ namespace SeedCore
 
 		if (isHeaderOpen)
 		{
-			DrawReflectedFields(componentName, componentData, componentID, actor.GetEntity());
+			DrawReflectedFields(componentName, componentData, componentID, ActorAccessor::GetEntity(actor));
 		}
 
 		return false;
@@ -542,7 +551,7 @@ namespace SeedCore
 
 	void InspectorPanel::DrawComponents(Actor actor)
 	{
-		Entity entity = actor.GetEntity();
+		Entity entity = ActorAccessor::GetEntity(actor);
 
 		if (const Mesh* mesh = actor.GetComponent<Mesh>(); mesh && mesh->meshID_ != 0)
 		{
@@ -580,7 +589,7 @@ namespace SeedCore
 			actor.AddComponent<Material>();
 		}
 
-		const DynamicArray<ComponentID>& layout = context_.world_.world_->GetLayout(entity);
+		const DynamicArray<ComponentID>& layout = WorldAccessor::Archetypes(*context_.world_.world_).Layout(entity.GetID());
 
 		static const String nameString("Name");
 		static const String positionString("Position");
@@ -588,6 +597,7 @@ namespace SeedCore
 		static const String scaleString("Scale");
 		static const String linearVelocityString("LinearVelocity");
 		static const String angularVelocityString("AngularVelocity");
+		static const String worldMatrixString("WorldMatrix");
 		static const String activeString("Active");
 		static const String boundsString("Bounds");
 		static const String meshString("Mesh");
@@ -660,7 +670,16 @@ namespace SeedCore
 		{
 			String componentName = ComponentRegistry::Name(componentID);
 
-			if (componentName == nameString || componentName == positionString || componentName == rotationString || componentName == scaleString || componentName == linearVelocityString || componentName == angularVelocityString || componentName == activeString || componentName == boundsString || componentName == meshString)
+			if (
+				componentName == nameString ||
+				componentName == positionString ||
+				componentName == rotationString ||
+				componentName == scaleString || 
+				componentName == worldMatrixString ||
+				componentName == activeString || 
+				componentName == boundsString || 
+				componentName == meshString
+				)
 			{
 				continue;
 			}
@@ -678,9 +697,15 @@ namespace SeedCore
 		}
 
 		ComponentID unknownID = ComponentRegistry::GetComponentID<UnknownComponent>();
-		for (const auto& [componentID, metadata] : ComponentRegistry::Registry())
+		for (ComponentID componentID : ComponentRegistry::Registry())
 		{
-			if (metadata.storage_ != ComponentStorage::SparseSet || metadata.isComponentBehaviour_ || componentID == unknownID)
+			if (componentID->metadata_->storage_ != ComponentStorage::SparseSet || (componentID->hooks_ && componentID->hooks_->upcast_) || componentID == unknownID)
+			{
+				continue;
+			}
+
+			String componentName = ComponentRegistry::Name(componentID);
+			if (componentName == linearVelocityString || componentName == angularVelocityString)
 			{
 				continue;
 			}
@@ -691,15 +716,21 @@ namespace SeedCore
 				continue;
 			}
 
-			String componentName = ComponentRegistry::Name(componentID);
-
 			if (DrawComponentEntry(actor, componentID, componentName, componentData))
 			{
 				break;
 			}
 		}
 
-		for (ComponentID componentBaseID : actor.ComponentIDList())
+		DynamicArray<ComponentID> behaviourIDs;
+		for (const SparseSetLocation& location : WorldAccessor::Entities(*context_.world_.world_).Record(entity.GetID())->sparseSet_)
+		{
+			if (location.id_->hooks_ && location.id_->hooks_->upcast_)
+			{
+				behaviourIDs.push_back(location.id_);
+			}
+		}
+		for (ComponentID componentBaseID : behaviourIDs)
 		{
 			String componentName = ComponentRegistry::Name(componentBaseID);
 
@@ -708,8 +739,7 @@ namespace SeedCore
 				continue;
 			}
 
-			EntityID entityID = entity.GetID();
-			void* componentData = context_.world_.world_->GetComponent(entityID, componentBaseID);
+			void* componentData = context_.world_.world_->GetComponent(entity, componentBaseID);
 			if (!componentData)
 			{
 				continue;
@@ -723,7 +753,7 @@ namespace SeedCore
 			{
 				if (ImGui::MenuItem("コンポーネントを削除"))
 				{
-					context_.scene_.history_.Push(MakePtr<ComponentRemoveCommand>(*context_.world_.world_, actor.PersistentID(), componentBaseID, componentName, componentData));
+					context_.scene_.history_.Push(MakePtr<ComponentRemoveCommand>(*context_.world_.world_, WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(actor).GetID())->persistentID_, componentBaseID, componentName, componentData));
 					actor.RemoveComponent(componentBaseID);
 					removed = true;
 				}
@@ -800,7 +830,7 @@ namespace SeedCore
 		{
 			return;
 		}
-		UnknownComponent* unknown = static_cast<UnknownComponent*>(context_.world_.world_->GetComponent(actor.GetEntity(), unknownID));
+		UnknownComponent* unknown = static_cast<UnknownComponent*>(context_.world_.world_->GetComponent(ActorAccessor::GetEntity(actor), unknownID));
 		if (!unknown)
 		{
 			return;
@@ -885,9 +915,9 @@ namespace SeedCore
 		std::ranges::stable_sort(fields, [](const FieldInfo& a, const FieldInfo& b) { return a.offset_ < b.offset_; });
 		DrawFieldList(fields, componentData, entity, componentID, 0);
 
-		if (ComponentRegistry::Get(componentID).isComponentBehaviour_)
+		if (componentID->hooks_ && componentID->hooks_->upcast_)
 		{
-			static_cast<ComponentBehaviour*>(componentData)->DispatchInspectorGUI();
+			componentID->hooks_->upcast_(componentData)->DispatchInspectorGUI();
 		}
 
 		ImGui::PopID();
@@ -1637,12 +1667,12 @@ namespace SeedCore
 		if (field.assetType_ == PayloadType::Actor)
 		{
 			Uint32 targetId = static_cast<Uint32>(*value);
-			Actor target = (targetId != 0) ? context_.world_.world_->FindActor(targetId) : Actor();
+			Actor target = (targetId != 0) ? WorldAccessor::Find(*context_.world_.world_, targetId) : Actor();
 
 			std::string buttonLabel = "ここにドロップ";
 			if (target)
 			{
-				Name* nameComponent = static_cast<Name*>(context_.world_.world_->GetComponent(target.GetEntity(), ComponentRegistry::GetComponentID<Name>()));
+				Name* nameComponent = static_cast<Name*>(context_.world_.world_->GetComponent(ActorAccessor::GetEntity(target), ComponentRegistry::GetComponentID<Name>()));
 				buttonLabel = nameComponent ? nameComponent->name_.str() : "(名前なし)";
 			}
 
@@ -1655,7 +1685,7 @@ namespace SeedCore
 				{
 					Actor droppedActor = *static_cast<const Actor*>(payload->Data);
 					Int oldValue = *value;
-					*value = static_cast<Int>(droppedActor.PersistentID());
+					*value = static_cast<Int>(WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(droppedActor).GetID())->persistentID_);
 					if (field.directPtr_)
 					{
 						context_.scene_.history_.Push(MakePtr<PointerCommand<Int>>(value, oldValue, *value));
@@ -1707,12 +1737,12 @@ namespace SeedCore
 		if (field.assetType_ == PayloadType::Actor)
 		{
 			Uint32 targetId = static_cast<Uint32>(*value);
-			Actor target = (targetId != 0) ? context_.world_.world_->FindActor(targetId) : Actor();
+			Actor target = (targetId != 0) ? WorldAccessor::Find(*context_.world_.world_, targetId) : Actor();
 
 			std::string actorLabel = "(空)";
 			if (target)
 			{
-				Name* nameComponent = static_cast<Name*>(context_.world_.world_->GetComponent(target.GetEntity(), ComponentRegistry::GetComponentID<Name>()));
+				Name* nameComponent = static_cast<Name*>(context_.world_.world_->GetComponent(ActorAccessor::GetEntity(target), ComponentRegistry::GetComponentID<Name>()));
 				actorLabel = nameComponent ? nameComponent->name_.str() : "(名前なし)";
 			}
 			ImGui::Selectable(actorLabel.c_str());
@@ -1746,7 +1776,7 @@ namespace SeedCore
 				if (field.assetType_ == PayloadType::Actor)
 				{
 					Actor droppedActor = *static_cast<const Actor*>(payload->Data);
-					droppedValue = static_cast<Int>(droppedActor.PersistentID());
+					droppedValue = static_cast<Int>(WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(droppedActor).GetID())->persistentID_);
 				}
 				else
 				{

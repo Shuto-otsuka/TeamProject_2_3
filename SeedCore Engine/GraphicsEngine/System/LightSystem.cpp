@@ -17,6 +17,7 @@
 #include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/ECS/Component/Active.h>
 #include <FoundationEngine/Log/DxFail.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 
 namespace SeedCore
 {
@@ -244,7 +245,7 @@ namespace SeedCore
 				hasDirectional = true;
 
 				Vector3 direction = light.direction_;
-				Actor actor = world.GetActor(entityID);
+				Actor actor = WorldAccessor::Make(world, entityID);
 				if (actor && !celestial)
 				{
 					direction = Vector3::TransformNormal(direction, actor.WorldMatrix());
@@ -264,7 +265,7 @@ namespace SeedCore
 					return;
 				}
 
-				Actor actor = world.GetActor(entityID);
+				Actor actor = WorldAccessor::Make(world, entityID);
 				if (!actor)
 				{
 					return;
@@ -286,7 +287,7 @@ namespace SeedCore
 					return;
 				}
 
-				Actor actor = world.GetActor(entityID);
+				Actor actor = WorldAccessor::Make(world, entityID);
 				if (!actor)
 				{
 					return;
@@ -315,7 +316,7 @@ namespace SeedCore
 					return;
 				}
 
-				Actor actor = world.GetActor(entityID);
+				Actor actor = WorldAccessor::Make(world, entityID);
 				if (!actor)
 				{
 					return;
@@ -374,7 +375,7 @@ namespace SeedCore
 					return;
 				}
 
-				Actor actor = world.GetActor(entityID);
+				Actor actor = WorldAccessor::Make(world, entityID);
 				if (!actor)
 				{
 					return;

@@ -1,4 +1,5 @@
 #include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
+#include <FoundationEngine/Interop/RenderInstance.h>
 
 namespace SeedCore
 {

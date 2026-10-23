@@ -81,7 +81,7 @@ namespace SeedCore
 		/// [JP] 断面は円のままでなければならないので、半径には X と Z の大きい方のスケールを使う。
 		Float radius = radius_ * Max(Abs(worldScale.x), Abs(worldScale.z));
 
-		return actor.GetPhysics().CreateCylinderShape(height, radius);
+		return actor.GetService<Physics>()->CreateCylinderShape(height, radius);
 	}
 
 	/**
@@ -109,7 +109,7 @@ namespace SeedCore
 		}
 
 		Actor actor = GetActor();
-		Physics& physics = actor.GetPhysics();
+		Physics& physics = *actor.GetService<Physics>();
 
 		/// [EN] The pose is worked out the same way as at creation; the body does not move when the pose is unchanged.
 		/// [JP] 姿勢は生成時と同じ方法で求める。姿勢が変わっていなければボディは動かない。

@@ -4,6 +4,9 @@
 #include <AudioEngine/Audio/AudioResource.h>
 #include <AudioEngine/Audio/Sound.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <FoundationEngine/World/ECS/Query/Query.h>
 
 namespace SeedCore
 {
@@ -20,15 +23,17 @@ namespace SeedCore
 	{
 		/// [EN] Resolve only sources whose requested asset differs from their current Sound.
 		/// [JP] 要求中のアセットと現在の Sound が異なる音源だけを解決する。
-		for (EntityID id : world.GetComponents<AudioSource>())
+		DynamicArray<EntityID> audioSourceEntities;
+		Query<Read<AudioSource>>(world).ForEach([&](EntityID entityID, const AudioSource&) { audioSourceEntities.push_back(entityID); });
+		for (EntityID id : audioSourceEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor)
 			{
 				continue;
 			}
 
-			AudioSource* audioSource = world.GetComponent<AudioSource>(actor.GetEntity());
+			AudioSource* audioSource = world.GetComponent<AudioSource>(ActorAccessor::GetEntity(actor));
 			if (!audioSource || !audioSource->Pending())
 			{
 				continue;
@@ -69,15 +74,17 @@ namespace SeedCore
 	{
 		/// [EN] Apply every active listener to the shared audio context.
 		/// [JP] アクティブな各リスナーを共有の音響環境へ反映する。
-		for (EntityID id : world.GetComponents<AudioListener>())
+		DynamicArray<EntityID> audioListenerEntities;
+		Query<Read<AudioListener>>(world).ForEach([&](EntityID entityID, const AudioListener&) { audioListenerEntities.push_back(entityID); });
+		for (EntityID id : audioListenerEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
 			}
 
-			AudioListener* audioListener = world.GetComponent<AudioListener>(actor.GetEntity());
+			AudioListener* audioListener = world.GetComponent<AudioListener>(ActorAccessor::GetEntity(actor));
 			if (!audioListener)
 			{
 				continue;
@@ -88,15 +95,17 @@ namespace SeedCore
 
 		/// [EN] Stop inactive sources and apply runtime settings to active sources.
 		/// [JP] 非アクティブな音源を停止し、アクティブな音源へ実行時設定を反映する。
-		for (EntityID id : world.GetComponents<AudioSource>())
+		DynamicArray<EntityID> audioSourceEntities;
+		Query<Read<AudioSource>>(world).ForEach([&](EntityID entityID, const AudioSource&) { audioSourceEntities.push_back(entityID); });
+		for (EntityID id : audioSourceEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor)
 			{
 				continue;
 			}
 
-			AudioSource* audioSource = world.GetComponent<AudioSource>(actor.GetEntity());
+			AudioSource* audioSource = world.GetComponent<AudioSource>(ActorAccessor::GetEntity(actor));
 			if (!audioSource)
 			{
 				continue;

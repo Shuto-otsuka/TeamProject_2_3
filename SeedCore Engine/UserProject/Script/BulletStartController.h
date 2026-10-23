@@ -6,8 +6,8 @@ class BulletStartController :public SeedCore::SeedScript
 public:
 	void OnStart();
 	void OnTick(float elapsedTime);
-	void OnTriggerEnter(SeedCore::Entity entity);
-	void OnTriggerExit(SeedCore::Entity entity);
+	void OnTriggerEnter(SeedCore::Actor other);
+	void OnTriggerExit(SeedCore::Actor other);
 
 	bool IsTouch() const { return isTouch; }
 

@@ -4,6 +4,7 @@
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/Log/Warning.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 
 namespace SeedCore
 {
@@ -37,7 +38,7 @@ namespace SeedCore
 		JPH::BodyID connectedBodyID;
 		if (connectedActor_ != 0)
 		{
-			Actor connected = actor.GetWorld().FindActor(connectedActor_);
+			Actor connected = WorldAccessor::Find(GetWorld(), connectedActor_);
 			Rigidbody* connectedBody = connected ? connected.GetComponent<Rigidbody>() : nullptr;
 			if (connectedBody)
 			{
@@ -51,7 +52,7 @@ namespace SeedCore
 		desc.minDistance_ = minDistance_;
 		desc.maxDistance_ = maxDistance_;
 
-		handle_ = actor.GetPhysics().CreateSliderJoint(selfBody->BodyID(), connectedBodyID, desc);
+		handle_ = actor.GetService<Physics>()->CreateSliderJoint(selfBody->BodyID(), connectedBodyID, desc);
 	}
 
 	/**
@@ -67,7 +68,7 @@ namespace SeedCore
 	{
 		if (handle_.exists())
 		{
-			GetActor().GetPhysics().DestroyJoint(handle_);
+			GetActor().GetService<Physics>()->DestroyJoint(handle_);
 			handle_ = Handle<JPH::Constraint>::null();
 		}
 	}

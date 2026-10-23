@@ -11,6 +11,8 @@
 #include <PhysicsEngine/Softbody/Softbody.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <GraphicsEngine/Model/Collision/MeshCollisionResource.h>
@@ -18,6 +20,8 @@
 #include <GraphicsEngine/Model/Crister.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
+#include <FoundationEngine/World/ECS/Query/Query.h>
+#include <PhysicsEngine/Physics/Physics.h>
 
 namespace SeedCore
 {
@@ -77,7 +81,7 @@ namespace SeedCore
 
 		/// [EN] Lets physics queries and contacts find their way back to the actor.
 		/// [JP] 物理クエリや接触から Actor へたどり着けるようにする。
-		desc.userData_ = actor.GetEntity().GetID();
+		desc.userData_ = ActorAccessor::GetEntity(actor).GetID();
 	}
 
 	/**
@@ -95,12 +99,12 @@ namespace SeedCore
 	{
 		/// [EN] A world without a physics facade has no bodies to update.
 		/// [JP] 物理ファサードを持たないワールドには、更新するボディが無い。
-		if (!world.GetPhysics())
+		if (!world.GetService<Physics>())
 		{
 			return;
 		}
 
-		Physics& physics = *world.GetPhysics();
+		Physics& physics = *world.GetService<Physics>();
 
 		/// [EN] Walks every body, suspended ones included, so a reactivated actor gets its body back.
 		/// [JP] 停止中も含めた全ボディを回り、再び有効になった Actor にボディを戻す。
@@ -108,7 +112,7 @@ namespace SeedCore
 		{
 			/// [EN] Bodies with no living actor behind them are left alone.
 			/// [JP] 生きている Actor が背後にいないボディには触れない。
-			Actor actor = world.GetActor(physics.BodyEntityID(bodyID));
+			Actor actor = WorldAccessor::Make(world, physics.BodyEntityID(bodyID));
 			if (!actor)
 			{
 				continue;
@@ -153,9 +157,11 @@ namespace SeedCore
 	{
 		/// [EN] An inactive actor's body is out of the simulation, so it is brought in line once the actor is active again.
 		/// [JP] 無効な Actor のボディはシミュレーション外なので、Actor が再び有効になってから合わせる。
-		for (EntityID id : world.GetComponents<RectCollider>())
+		DynamicArray<EntityID> rectColliderEntities;
+		Query<Read<RectCollider>>(world).ForEach([&](EntityID entityID, const RectCollider&) { rectColliderEntities.push_back(entityID); });
+		for (EntityID id : rectColliderEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
@@ -170,9 +176,11 @@ namespace SeedCore
 			collider->Refresh();
 		}
 
-		for (EntityID id : world.GetComponents<CircleCollider>())
+		DynamicArray<EntityID> circleColliderEntities;
+		Query<Read<CircleCollider>>(world).ForEach([&](EntityID entityID, const CircleCollider&) { circleColliderEntities.push_back(entityID); });
+		for (EntityID id : circleColliderEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
@@ -187,9 +195,11 @@ namespace SeedCore
 			collider->Refresh();
 		}
 
-		for (EntityID id : world.GetComponents<BoxCollider>())
+		DynamicArray<EntityID> boxColliderEntities;
+		Query<Read<BoxCollider>>(world).ForEach([&](EntityID entityID, const BoxCollider&) { boxColliderEntities.push_back(entityID); });
+		for (EntityID id : boxColliderEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
@@ -204,9 +214,11 @@ namespace SeedCore
 			collider->Refresh();
 		}
 
-		for (EntityID id : world.GetComponents<SphereCollider>())
+		DynamicArray<EntityID> sphereColliderEntities;
+		Query<Read<SphereCollider>>(world).ForEach([&](EntityID entityID, const SphereCollider&) { sphereColliderEntities.push_back(entityID); });
+		for (EntityID id : sphereColliderEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
@@ -221,9 +233,11 @@ namespace SeedCore
 			collider->Refresh();
 		}
 
-		for (EntityID id : world.GetComponents<CapsuleCollider>())
+		DynamicArray<EntityID> capsuleColliderEntities;
+		Query<Read<CapsuleCollider>>(world).ForEach([&](EntityID entityID, const CapsuleCollider&) { capsuleColliderEntities.push_back(entityID); });
+		for (EntityID id : capsuleColliderEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
@@ -238,9 +252,11 @@ namespace SeedCore
 			collider->Refresh();
 		}
 
-		for (EntityID id : world.GetComponents<CylinderCollider>())
+		DynamicArray<EntityID> cylinderColliderEntities;
+		Query<Read<CylinderCollider>>(world).ForEach([&](EntityID entityID, const CylinderCollider&) { cylinderColliderEntities.push_back(entityID); });
+		for (EntityID id : cylinderColliderEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
@@ -273,11 +289,13 @@ namespace SeedCore
 	*/
 	void PhysicsSystem::ApplyRigidbody(World& world, Float elapsedTime)
 	{
-		for (EntityID id : world.GetComponents<Rigidbody>())
+		DynamicArray<EntityID> rigidbodyEntities;
+		Query<Read<Rigidbody>>(world).ForEach([&](EntityID entityID, const Rigidbody&) { rigidbodyEntities.push_back(entityID); });
+		for (EntityID id : rigidbodyEntities)
 		{
 			/// [EN] An inactive actor's body is out of the simulation, so its changes wait until the actor is active again.
 			/// [JP] 無効な Actor のボディはシミュレーション外なので、その変更は Actor が再び有効になるまで待つ。
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
@@ -342,7 +360,7 @@ namespace SeedCore
 
 		ApplyTransform(actor, desc);
 
-		return actor.GetPhysics().CreateRigidbody(desc);
+		return actor.GetService<Physics>()->CreateRigidbody(desc);
 	}
 
 	/**
@@ -361,12 +379,12 @@ namespace SeedCore
 		/// [JP] Rigidbody の下にあるコライダーは、自分のボディを持たない。
 		if (!bodyID.IsInvalid())
 		{
-			actor.GetPhysics().DestroyBody(bodyID);
+			actor.GetService<Physics>()->DestroyBody(bodyID);
 		}
 
 		/// [EN] The shape is released either way, since the collider holds its own reference.
 		/// [JP] コライダーは自分の参照を持っているので、形状はどちらの場合も解放する。
-		actor.GetPhysics().ReleaseShape(shape);
+		actor.GetService<Physics>()->ReleaseShape(shape);
 	}
 
 	/**
@@ -384,21 +402,30 @@ namespace SeedCore
 	{
 		/// [EN] Either actor may have been destroyed between the contact and its delivery.
 		/// [JP] 接触から配送までの間に、どちらかの Actor が破棄されていることがある。
-		Actor actor = world.GetActor(entityID);
-		Actor otherActor = world.GetActor(otherEntityID);
+		Actor actor = WorldAccessor::Make(world, entityID);
+		Actor otherActor = WorldAccessor::Make(world, otherEntityID);
 		if (!actor || !otherActor)
 		{
 			return;
 		}
 
-		/// [EN] Every ComponentBehaviour-derived component on the entity receives the event with the other entity.
-		/// [JP] エンティティの、ComponentBehaviour を継承した全コンポーネントが、相手のエンティティと一緒にイベントを受け取る。
-		Entity otherEntity = otherActor.GetEntity();
-		for (ComponentID id : actor.ComponentIDList())
+		/// [EN] Behaviours live in sparse sets, so the entity's sparse locations list them. Only their IDs are copied, and each is looked up again before the call, since a handler may add or remove components.
+		/// [JP] ビヘイビアはスパースセットにあるので、エンティティのスパースの場所が一覧になる。受け取った側がコンポーネントを付け外ししうるので、ID だけを写し、呼ぶ前にそれぞれ引き直す。
+		DynamicArray<ComponentID> behaviours;
+		for (const SparseSetLocation& location : WorldAccessor::Entities(world).Record(entityID)->sparseSet_)
 		{
-			if (ComponentBehaviour* component = reinterpret_cast<ComponentBehaviour*>(world.GetComponent(entityID, id)))
+			if (location.id_->hooks_ && location.id_->hooks_->upcast_)
 			{
-				component->DispatchCollisionEnter(otherEntity);
+				behaviours.push_back(location.id_);
+			}
+		}
+
+		Entity entity = ActorAccessor::GetEntity(actor);
+		for (ComponentID id : behaviours)
+		{
+			if (void* data = world.GetComponent(entity, id))
+			{
+				id->hooks_->upcast_(data)->DispatchCollisionEnter(otherActor);
 			}
 		}
 	}
@@ -417,21 +444,30 @@ namespace SeedCore
 	{
 		/// [EN] Either actor may have been destroyed between the contact and its delivery.
 		/// [JP] 接触から配送までの間に、どちらかの Actor が破棄されていることがある。
-		Actor actor = world.GetActor(entityID);
-		Actor otherActor = world.GetActor(otherEntityID);
+		Actor actor = WorldAccessor::Make(world, entityID);
+		Actor otherActor = WorldAccessor::Make(world, otherEntityID);
 		if (!actor || !otherActor)
 		{
 			return;
 		}
 
-		/// [EN] Every ComponentBehaviour-derived component on the entity receives the event with the other entity.
-		/// [JP] エンティティの、ComponentBehaviour を継承した全コンポーネントが、相手のエンティティと一緒にイベントを受け取る。
-		Entity otherEntity = otherActor.GetEntity();
-		for (ComponentID id : actor.ComponentIDList())
+		/// [EN] Behaviours live in sparse sets, so the entity's sparse locations list them. Only their IDs are copied, and each is looked up again before the call, since a handler may add or remove components.
+		/// [JP] ビヘイビアはスパースセットにあるので、エンティティのスパースの場所が一覧になる。受け取った側がコンポーネントを付け外ししうるので、ID だけを写し、呼ぶ前にそれぞれ引き直す。
+		DynamicArray<ComponentID> behaviours;
+		for (const SparseSetLocation& location : WorldAccessor::Entities(world).Record(entityID)->sparseSet_)
 		{
-			if (ComponentBehaviour* component = reinterpret_cast<ComponentBehaviour*>(world.GetComponent(entityID, id)))
+			if (location.id_->hooks_ && location.id_->hooks_->upcast_)
 			{
-				component->DispatchCollisionStay(otherEntity);
+				behaviours.push_back(location.id_);
+			}
+		}
+
+		Entity entity = ActorAccessor::GetEntity(actor);
+		for (ComponentID id : behaviours)
+		{
+			if (void* data = world.GetComponent(entity, id))
+			{
+				id->hooks_->upcast_(data)->DispatchCollisionStay(otherActor);
 			}
 		}
 	}
@@ -450,21 +486,30 @@ namespace SeedCore
 	{
 		/// [EN] Either actor may have been destroyed between the contact and its delivery.
 		/// [JP] 接触から配送までの間に、どちらかの Actor が破棄されていることがある。
-		Actor actor = world.GetActor(entityID);
-		Actor otherActor = world.GetActor(otherEntityID);
+		Actor actor = WorldAccessor::Make(world, entityID);
+		Actor otherActor = WorldAccessor::Make(world, otherEntityID);
 		if (!actor || !otherActor)
 		{
 			return;
 		}
 
-		/// [EN] Every ComponentBehaviour-derived component on the entity receives the event with the other entity.
-		/// [JP] エンティティの、ComponentBehaviour を継承した全コンポーネントが、相手のエンティティと一緒にイベントを受け取る。
-		Entity otherEntity = otherActor.GetEntity();
-		for (ComponentID id : actor.ComponentIDList())
+		/// [EN] Behaviours live in sparse sets, so the entity's sparse locations list them. Only their IDs are copied, and each is looked up again before the call, since a handler may add or remove components.
+		/// [JP] ビヘイビアはスパースセットにあるので、エンティティのスパースの場所が一覧になる。受け取った側がコンポーネントを付け外ししうるので、ID だけを写し、呼ぶ前にそれぞれ引き直す。
+		DynamicArray<ComponentID> behaviours;
+		for (const SparseSetLocation& location : WorldAccessor::Entities(world).Record(entityID)->sparseSet_)
 		{
-			if (ComponentBehaviour* component = reinterpret_cast<ComponentBehaviour*>(world.GetComponent(entityID, id)))
+			if (location.id_->hooks_ && location.id_->hooks_->upcast_)
 			{
-				component->DispatchCollisionExit(otherEntity);
+				behaviours.push_back(location.id_);
+			}
+		}
+
+		Entity entity = ActorAccessor::GetEntity(actor);
+		for (ComponentID id : behaviours)
+		{
+			if (void* data = world.GetComponent(entity, id))
+			{
+				id->hooks_->upcast_(data)->DispatchCollisionExit(otherActor);
 			}
 		}
 	}
@@ -483,21 +528,30 @@ namespace SeedCore
 	{
 		/// [EN] Either actor may have been destroyed between the contact and its delivery.
 		/// [JP] 接触から配送までの間に、どちらかの Actor が破棄されていることがある。
-		Actor actor = world.GetActor(entityID);
-		Actor otherActor = world.GetActor(otherEntityID);
+		Actor actor = WorldAccessor::Make(world, entityID);
+		Actor otherActor = WorldAccessor::Make(world, otherEntityID);
 		if (!actor || !otherActor)
 		{
 			return;
 		}
 
-		/// [EN] Every ComponentBehaviour-derived component on the entity receives the event with the other entity.
-		/// [JP] エンティティの、ComponentBehaviour を継承した全コンポーネントが、相手のエンティティと一緒にイベントを受け取る。
-		Entity otherEntity = otherActor.GetEntity();
-		for (ComponentID id : actor.ComponentIDList())
+		/// [EN] Behaviours live in sparse sets, so the entity's sparse locations list them. Only their IDs are copied, and each is looked up again before the call, since a handler may add or remove components.
+		/// [JP] ビヘイビアはスパースセットにあるので、エンティティのスパースの場所が一覧になる。受け取った側がコンポーネントを付け外ししうるので、ID だけを写し、呼ぶ前にそれぞれ引き直す。
+		DynamicArray<ComponentID> behaviours;
+		for (const SparseSetLocation& location : WorldAccessor::Entities(world).Record(entityID)->sparseSet_)
 		{
-			if (ComponentBehaviour* component = reinterpret_cast<ComponentBehaviour*>(world.GetComponent(entityID, id)))
+			if (location.id_->hooks_ && location.id_->hooks_->upcast_)
 			{
-				component->DispatchTriggerEnter(otherEntity);
+				behaviours.push_back(location.id_);
+			}
+		}
+
+		Entity entity = ActorAccessor::GetEntity(actor);
+		for (ComponentID id : behaviours)
+		{
+			if (void* data = world.GetComponent(entity, id))
+			{
+				id->hooks_->upcast_(data)->DispatchTriggerEnter(otherActor);
 			}
 		}
 	}
@@ -516,21 +570,30 @@ namespace SeedCore
 	{
 		/// [EN] Either actor may have been destroyed between the contact and its delivery.
 		/// [JP] 接触から配送までの間に、どちらかの Actor が破棄されていることがある。
-		Actor actor = world.GetActor(entityID);
-		Actor otherActor = world.GetActor(otherEntityID);
+		Actor actor = WorldAccessor::Make(world, entityID);
+		Actor otherActor = WorldAccessor::Make(world, otherEntityID);
 		if (!actor || !otherActor)
 		{
 			return;
 		}
 
-		/// [EN] Every ComponentBehaviour-derived component on the entity receives the event with the other entity.
-		/// [JP] エンティティの、ComponentBehaviour を継承した全コンポーネントが、相手のエンティティと一緒にイベントを受け取る。
-		Entity otherEntity = otherActor.GetEntity();
-		for (ComponentID id : actor.ComponentIDList())
+		/// [EN] Behaviours live in sparse sets, so the entity's sparse locations list them. Only their IDs are copied, and each is looked up again before the call, since a handler may add or remove components.
+		/// [JP] ビヘイビアはスパースセットにあるので、エンティティのスパースの場所が一覧になる。受け取った側がコンポーネントを付け外ししうるので、ID だけを写し、呼ぶ前にそれぞれ引き直す。
+		DynamicArray<ComponentID> behaviours;
+		for (const SparseSetLocation& location : WorldAccessor::Entities(world).Record(entityID)->sparseSet_)
 		{
-			if (ComponentBehaviour* component = reinterpret_cast<ComponentBehaviour*>(world.GetComponent(entityID, id)))
+			if (location.id_->hooks_ && location.id_->hooks_->upcast_)
 			{
-				component->DispatchTriggerStay(otherEntity);
+				behaviours.push_back(location.id_);
+			}
+		}
+
+		Entity entity = ActorAccessor::GetEntity(actor);
+		for (ComponentID id : behaviours)
+		{
+			if (void* data = world.GetComponent(entity, id))
+			{
+				id->hooks_->upcast_(data)->DispatchTriggerStay(otherActor);
 			}
 		}
 	}
@@ -549,21 +612,30 @@ namespace SeedCore
 	{
 		/// [EN] Either actor may have been destroyed between the contact and its delivery.
 		/// [JP] 接触から配送までの間に、どちらかの Actor が破棄されていることがある。
-		Actor actor = world.GetActor(entityID);
-		Actor otherActor = world.GetActor(otherEntityID);
+		Actor actor = WorldAccessor::Make(world, entityID);
+		Actor otherActor = WorldAccessor::Make(world, otherEntityID);
 		if (!actor || !otherActor)
 		{
 			return;
 		}
 
-		/// [EN] Every ComponentBehaviour-derived component on the entity receives the event with the other entity.
-		/// [JP] エンティティの、ComponentBehaviour を継承した全コンポーネントが、相手のエンティティと一緒にイベントを受け取る。
-		Entity otherEntity = otherActor.GetEntity();
-		for (ComponentID id : actor.ComponentIDList())
+		/// [EN] Behaviours live in sparse sets, so the entity's sparse locations list them. Only their IDs are copied, and each is looked up again before the call, since a handler may add or remove components.
+		/// [JP] ビヘイビアはスパースセットにあるので、エンティティのスパースの場所が一覧になる。受け取った側がコンポーネントを付け外ししうるので、ID だけを写し、呼ぶ前にそれぞれ引き直す。
+		DynamicArray<ComponentID> behaviours;
+		for (const SparseSetLocation& location : WorldAccessor::Entities(world).Record(entityID)->sparseSet_)
 		{
-			if (ComponentBehaviour* component = reinterpret_cast<ComponentBehaviour*>(world.GetComponent(entityID, id)))
+			if (location.id_->hooks_ && location.id_->hooks_->upcast_)
 			{
-				component->DispatchTriggerExit(otherEntity);
+				behaviours.push_back(location.id_);
+			}
+		}
+
+		Entity entity = ActorAccessor::GetEntity(actor);
+		for (ComponentID id : behaviours)
+		{
+			if (void* data = world.GetComponent(entity, id))
+			{
+				id->hooks_->upcast_(data)->DispatchTriggerExit(otherActor);
 			}
 		}
 	}
@@ -580,9 +652,11 @@ namespace SeedCore
 	*/
 	void PhysicsSystem::ResolveMeshCollider(MeshCollisionResource& meshCollisionResource, World& world)
 	{
-		for (EntityID id : world.GetComponents<MeshCollider>())
+		DynamicArray<EntityID> meshColliderEntities;
+		Query<Read<MeshCollider>>(world).ForEach([&](EntityID entityID, const MeshCollider&) { meshColliderEntities.push_back(entityID); });
+		for (EntityID id : meshColliderEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor)
 			{
 				continue;
@@ -629,9 +703,11 @@ namespace SeedCore
 	*/
 	void PhysicsSystem::ResolveSoftbody(ModelResource& modelResource, World& world)
 	{
-		for (EntityID id : world.GetComponents<Softbody>())
+		DynamicArray<EntityID> softbodyEntities;
+		Query<Read<Softbody>>(world).ForEach([&](EntityID entityID, const Softbody&) { softbodyEntities.push_back(entityID); });
+		for (EntityID id : softbodyEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor)
 			{
 				continue;

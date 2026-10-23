@@ -2,6 +2,8 @@
 #include "CircuitSystem.h"
 
 #include <SeedCore/ScLog.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
 
 using namespace SeedCore;
 
@@ -22,7 +24,7 @@ void DoorSystem::OnStart()
 
 	// 回路のActorを探す
 	// IDはリフレクションで入れられる値
-	circuitActor_ = world.FindActor(circuitActorID_);
+	circuitActor_ = SeedCore::WorldAccessor::Find(world, circuitActorID_);
 	const Name* name = GetActor().GetComponent<Name>();
 	if (!circuitActor_)
 	{
@@ -82,5 +84,5 @@ void DoorSystem::OnEditorTick(float elapsedTime)
 
 	// 矢印を描画
 	// Play中はEditorTickはアップデートされないので一緒には沈まない
-	GetActor().GetDebugDraw().Arrow(startPosition, endPosition, Color(0.5f, 0.5f, 0.0f, 1.0f), 0.2f);
+	GetActor().GetService<DebugDraw>()->Arrow(startPosition, endPosition, Color(0.5f, 0.5f, 0.0f, 1.0f), 0.2f);
 }

@@ -21,6 +21,48 @@ namespace SeedCore
 {
 	/**
 	* [EN]
+	* Adds LinearVelocity and AngularVelocity to the actor the moment
+	* this component is added, so the velocities the body is kept in step
+	* with exist before any script's OnAwake or OnStart reads them. A
+	* velocity the actor already has is kept as it is.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* このコンポーネントが追加された瞬間に、actor へ LinearVelocity と
+	* AngularVelocity を追加する。ボディと同期させる速度が、どの
+	* スクリプトの OnAwake・OnStart が読むより前に存在するようにする
+	* ため。actor が既に持っている速度はそのまま残す。
+	*/
+	void Rigidbody::OnAttach()
+	{
+		/// [EN] AddComponent returns the existing instance when the actor already has one, so a velocity set before this component was added is not reset.
+		/// [JP] actor が既に持っていれば AddComponent は既存のものを返すので、このコンポーネントより先に設定された速度は初期化されない。
+		Actor actor = GetActor();
+		actor.AddComponent<LinearVelocity>();
+		actor.AddComponent<AngularVelocity>();
+	}
+
+	/**
+	* [EN]
+	* Removes LinearVelocity and AngularVelocity from the actor the moment
+	* this component is removed, undoing OnAttach.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* このコンポーネントが外される瞬間に、actor から LinearVelocity と
+	* AngularVelocity を外し、OnAttach を元に戻す。
+	*/
+	void Rigidbody::OnDetach()
+	{
+		Actor actor = GetActor();
+		actor.RemoveComponent<LinearVelocity>();
+		actor.RemoveComponent<AngularVelocity>();
+	}
+
+	/**
+	* [EN]
 	* Creates the body from the actor's collider shape, pose and this
 	* component's settings, and adds it to the simulation.
 	*
@@ -80,7 +122,7 @@ namespace SeedCore
 				parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
 			}
 			Vector3 worldScale = Vector3(scale->x_, scale->y_, scale->z_) * parentScale;
-			return actor.GetPhysics().CreateSphereShape(defaultShapeRadius_ * Max(Abs(worldScale.x), Abs(worldScale.y), Abs(worldScale.z)));
+			return actor.GetService<Physics>()->CreateSphereShape(defaultShapeRadius_ * Max(Abs(worldScale.x), Abs(worldScale.y), Abs(worldScale.z)));
 		}();
 
 		/// [EN] Starts with every axis free and removes each frozen one.
@@ -173,7 +215,7 @@ namespace SeedCore
 			}
 		}
 
-		bodyID_ = actor.GetPhysics().CreateRigidbody(desc);
+		bodyID_ = actor.GetService<Physics>()->CreateRigidbody(desc);
 
 		/// [EN] A LinearVelocity and AngularVelocity set before play become the body's initial velocity and angular velocity.
 		/// [JP] プレイ前に設定した LinearVelocity と AngularVelocity は、ボディの初速と初期の角速度になる。
@@ -201,14 +243,12 @@ namespace SeedCore
 		}
 
 		Actor actor = GetActor();
-		World& world = actor.GetWorld();
-		Entity entity = actor.GetEntity();
 
 		/// [EN] The velocity after the step is copied back and remembered, so ApplyLinearVelocity can tell a LinearVelocity written by code from this one.
 		/// [JP] ステップ後の速度を書き戻して覚えておき、ApplyLinearVelocity がコードから書かれた LinearVelocity とこれを見分けられるようにする。
-		if (LinearVelocity* velocity = world.GetComponent<LinearVelocity>(entity))
+		if (LinearVelocity* velocity = actor.GetComponent<LinearVelocity>())
 		{
-			Vector3 bodyVelocity = actor.GetPhysics().BodyLinearVelocity(bodyID_);
+			Vector3 bodyVelocity = actor.GetService<Physics>()->BodyLinearVelocity(bodyID_);
 
 			/// [EN] Canvas bodies go back from meters per second (Y up) to pixels per second (Y down).
 			/// [JP] Canvas のボディは、メートル毎秒(Y 上向き)からピクセル毎秒(Y 下向き)へ戻す。
@@ -224,14 +264,13 @@ namespace SeedCore
 			velocity->x_ = syncedLinearVelocity_.x;
 			velocity->y_ = syncedLinearVelocity_.y;
 			velocity->z_ = syncedLinearVelocity_.z;
-			velocity->simulated_ = true;
 		}
 
 		/// [EN] The angular velocity after the step is copied back and remembered the same way, for ApplyAngularVelocity.
 		/// [JP] ステップ後の角速度も同じように書き戻して覚えておき、ApplyAngularVelocity が見分けられるようにする。
-		if (AngularVelocity* velocity = world.GetComponent<AngularVelocity>(entity))
+		if (AngularVelocity* velocity = actor.GetComponent<AngularVelocity>())
 		{
-			Vector3 bodyAngularVelocity = actor.GetPhysics().BodyAngularVelocity(bodyID_);
+			Vector3 bodyAngularVelocity = actor.GetService<Physics>()->BodyAngularVelocity(bodyID_);
 
 			/// [EN] A canvas body only turns about Z; the flipped Y reverses the direction of the turn, and an angle needs no pixel conversion.
 			/// [JP] Canvas のボディは Z 軸まわりにしか回らない。Y の反転で回る向きが逆になり、角度にはピクセルへの換算は要らない。
@@ -247,19 +286,18 @@ namespace SeedCore
 			velocity->x_ = syncedAngularVelocity_.x;
 			velocity->y_ = syncedAngularVelocity_.y;
 			velocity->z_ = syncedAngularVelocity_.z;
-			velocity->simulated_ = true;
 		}
 
 		/// [EN] With neither Position nor Rotation there is nothing to write back.
 		/// [JP] Position も Rotation も無ければ、書き戻す先が無い。
-		Position* position = world.GetComponent<Position>(entity);
-		Rotation* rotation = world.GetComponent<Rotation>(entity);
+		Position* position = actor.GetComponent<Position>();
+		Rotation* rotation = actor.GetComponent<Rotation>();
 		if (!position && !rotation)
 		{
 			return;
 		}
 
-		Matrix bodyMatrix = actor.GetPhysics().BodyTransform(bodyID_);
+		Matrix bodyMatrix = actor.GetService<Physics>()->BodyTransform(bodyID_);
 		Vector3 outPosition = bodyMatrix.Translation();
 		Quaternion outRotation = Quaternion::CreateFromRotationMatrix(bodyMatrix);
 
@@ -331,22 +369,10 @@ namespace SeedCore
 		/// [EN] Only this component's reference is released; the collider keeps its own.
 		/// [JP] 解放するのはこのコンポーネントの参照だけで、コライダーは自分の参照を持ち続ける。
 		Actor actor = GetActor();
-		actor.GetPhysics().DestroyBody(bodyID_);
-		actor.GetPhysics().ReleaseShape(shapeHandle_);
+		actor.GetService<Physics>()->DestroyBody(bodyID_);
+		actor.GetService<Physics>()->ReleaseShape(shapeHandle_);
 
 		bodyID_ = JPH::BodyID();
-
-		/// [EN] Without the body, LinearVelocity and AngularVelocity go back to moving Position and Rotation through MoveSystem.
-		/// [JP] ボディが無くなれば、LinearVelocity と AngularVelocity は再び MoveSystem を通して Position と Rotation を動かす。
-		if (LinearVelocity* velocity = GetWorld().GetComponent<LinearVelocity>(actor.GetEntity()))
-		{
-			velocity->simulated_ = false;
-		}
-
-		if (AngularVelocity* velocity = GetWorld().GetComponent<AngularVelocity>(actor.GetEntity()))
-		{
-			velocity->simulated_ = false;
-		}
 	}
 
 	/**
@@ -384,11 +410,11 @@ namespace SeedCore
 		/// [JP] Canvas のボディは、ピクセル(Y 下向き)からメートル(Y 上向き)へ直す。ボディは z = 0 の平面上に留まる。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			actor.GetPhysics().AddForce(bodyID_, Vector3(force.x / pixelsPerMeter_, -force.y / pixelsPerMeter_, 0.0f));
+			actor.GetService<Physics>()->AddForce(bodyID_, Vector3(force.x / pixelsPerMeter_, -force.y / pixelsPerMeter_, 0.0f));
 			return;
 		}
 
-		actor.GetPhysics().AddForce(bodyID_, force);
+		actor.GetService<Physics>()->AddForce(bodyID_, force);
 	}
 
 	/**
@@ -426,11 +452,11 @@ namespace SeedCore
 		/// [JP] Canvas のボディは、ピクセル(Y 下向き)からメートル(Y 上向き)へ直す。ボディは z = 0 の平面上に留まる。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			actor.GetPhysics().AddImpulse(bodyID_, Vector3(impulse.x / pixelsPerMeter_, -impulse.y / pixelsPerMeter_, 0.0f));
+			actor.GetService<Physics>()->AddImpulse(bodyID_, Vector3(impulse.x / pixelsPerMeter_, -impulse.y / pixelsPerMeter_, 0.0f));
 			return;
 		}
 
-		actor.GetPhysics().AddImpulse(bodyID_, impulse);
+		actor.GetService<Physics>()->AddImpulse(bodyID_, impulse);
 	}
 
 	/**
@@ -470,11 +496,11 @@ namespace SeedCore
 		/// [JP] トルクは長さの2乗(kg·m²/s²)を含むので、ピクセルからメートルへは2回割って戻す。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			actor.GetPhysics().AddTorque(bodyID_, Vector3(0.0f, 0.0f, -torque.z / (pixelsPerMeter_ * pixelsPerMeter_)));
+			actor.GetService<Physics>()->AddTorque(bodyID_, Vector3(0.0f, 0.0f, -torque.z / (pixelsPerMeter_ * pixelsPerMeter_)));
 			return;
 		}
 
-		actor.GetPhysics().AddTorque(bodyID_, torque);
+		actor.GetService<Physics>()->AddTorque(bodyID_, torque);
 	}
 
 	/**
@@ -515,11 +541,11 @@ namespace SeedCore
 		/// [JP] 角力積は長さの2乗(kg·m²/s)を含むので、ピクセルからメートルへは2回割って戻す。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			actor.GetPhysics().AddSpin(bodyID_, Vector3(0.0f, 0.0f, -angularImpulse.z / (pixelsPerMeter_ * pixelsPerMeter_)));
+			actor.GetService<Physics>()->AddSpin(bodyID_, Vector3(0.0f, 0.0f, -angularImpulse.z / (pixelsPerMeter_ * pixelsPerMeter_)));
 			return;
 		}
 
-		actor.GetPhysics().AddSpin(bodyID_, angularImpulse);
+		actor.GetService<Physics>()->AddSpin(bodyID_, angularImpulse);
 	}
 
 	/**
@@ -578,11 +604,11 @@ namespace SeedCore
 			/// [EN] The canvas angle is 2·atan2(z, w); it is negated with the flipped Y and rebuilt as a pure rotation about Z.
 			/// [JP] Canvas の角度は 2·atan2(z, w)。Y の反転に合わせて符号を反転し、Z 軸まわりだけの回転として作り直す。
 			Quaternion physicsRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -2.0f * std::atan2(targetRotation.z, targetRotation.w));
-			actor.GetPhysics().MoveTarget(bodyID_, Vector3(targetPosition.x / pixelsPerMeter_, -targetPosition.y / pixelsPerMeter_, 0.0f), physicsRotation, elapsedTime);
+			actor.GetService<Physics>()->MoveTarget(bodyID_, Vector3(targetPosition.x / pixelsPerMeter_, -targetPosition.y / pixelsPerMeter_, 0.0f), physicsRotation, elapsedTime);
 			return;
 		}
 
-		actor.GetPhysics().MoveTarget(bodyID_, targetPosition, targetRotation, elapsedTime);
+		actor.GetService<Physics>()->MoveTarget(bodyID_, targetPosition, targetRotation, elapsedTime);
 	}
 
 	/**
@@ -720,7 +746,7 @@ namespace SeedCore
 		}
 
 		syncedBodyType_ = bodyType_;
-		GetActor().GetPhysics().BodyMotionType(bodyID_, ToMotionType(syncedBodyType_));
+		GetActor().GetService<Physics>()->BodyMotionType(bodyID_, ToMotionType(syncedBodyType_));
 	}
 
 	/**
@@ -750,7 +776,7 @@ namespace SeedCore
 		}
 
 		syncedTrigger_ = isTrigger_;
-		GetActor().GetPhysics().BodyTrigger(bodyID_, syncedTrigger_);
+		GetActor().GetService<Physics>()->BodyTrigger(bodyID_, syncedTrigger_);
 	}
 
 	/**
@@ -775,15 +801,11 @@ namespace SeedCore
 		}
 
 		Actor actor = GetActor();
-		LinearVelocity* velocity = GetWorld().GetComponent<LinearVelocity>(actor.GetEntity());
+		LinearVelocity* velocity = actor.GetComponent<LinearVelocity>();
 		if (!velocity)
 		{
 			return;
 		}
-
-		/// [EN] From here on the body moves Position, so MoveSystem must not add LinearVelocity on top.
-		/// [JP] ここからは Position をボディが動かすので、MoveSystem が LinearVelocity を重ねて足してはならない。
-		velocity->simulated_ = true;
 
 		/// [EN] A LinearVelocity equal to the last exchanged value was not touched by code, and the body keeps whatever velocity it has (including one from MoveTarget).
 		/// [JP] 最後にやり取りした値と同じ LinearVelocity はコードが触っていないので、ボディは今の速度(MoveTarget によるものも含む)を保つ。
@@ -798,11 +820,11 @@ namespace SeedCore
 		/// [JP] Canvas の速度は、ピクセル毎秒(Y 下向き)から z = 0 平面上のメートル毎秒(Y 上向き)へ変換する。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			actor.GetPhysics().BodyLinearVelocity(bodyID_, Vector3(syncedLinearVelocity_.x / pixelsPerMeter_, -syncedLinearVelocity_.y / pixelsPerMeter_, 0.0f));
+			actor.GetService<Physics>()->BodyLinearVelocity(bodyID_, Vector3(syncedLinearVelocity_.x / pixelsPerMeter_, -syncedLinearVelocity_.y / pixelsPerMeter_, 0.0f));
 			return;
 		}
 
-		actor.GetPhysics().BodyLinearVelocity(bodyID_, syncedLinearVelocity_);
+		actor.GetService<Physics>()->BodyLinearVelocity(bodyID_, syncedLinearVelocity_);
 	}
 
 	/**
@@ -827,15 +849,11 @@ namespace SeedCore
 		}
 
 		Actor actor = GetActor();
-		AngularVelocity* velocity = GetWorld().GetComponent<AngularVelocity>(actor.GetEntity());
+		AngularVelocity* velocity = actor.GetComponent<AngularVelocity>();
 		if (!velocity)
 		{
 			return;
 		}
-
-		/// [EN] From here on the body turns Rotation, so MoveSystem must not add AngularVelocity on top.
-		/// [JP] ここからは Rotation をボディが回すので、MoveSystem が AngularVelocity を重ねて足してはならない。
-		velocity->simulated_ = true;
 
 		/// [EN] An AngularVelocity equal to the last exchanged value was not touched by code, and the body keeps whatever angular velocity it has (including one from MoveTarget).
 		/// [JP] 最後にやり取りした値と同じ AngularVelocity はコードが触っていないので、ボディは今の角速度(MoveTarget によるものも含む)を保つ。
@@ -850,11 +868,11 @@ namespace SeedCore
 		/// [JP] Canvas のボディは Z 軸まわりにしか回らない。Y の反転で回る向きが逆になり、角度にはピクセルへの換算は要らない。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			actor.GetPhysics().BodyAngularVelocity(bodyID_, Vector3(0.0f, 0.0f, -syncedAngularVelocity_.z));
+			actor.GetService<Physics>()->BodyAngularVelocity(bodyID_, Vector3(0.0f, 0.0f, -syncedAngularVelocity_.z));
 			return;
 		}
 
-		actor.GetPhysics().BodyAngularVelocity(bodyID_, syncedAngularVelocity_);
+		actor.GetService<Physics>()->BodyAngularVelocity(bodyID_, syncedAngularVelocity_);
 	}
 
 	/**
@@ -892,7 +910,7 @@ namespace SeedCore
 			return;
 		}
 
-		Physics& physics = GetActor().GetPhysics();
+		Physics& physics = *GetActor().GetService<Physics>();
 
 		/// [EN] The body reached the target in the last step; a kinematic body keeps its velocity until it is overwritten, so it is set back to zero here.
 		/// [JP] ボディは直前のステップで目標に着いている。Kinematic のボディは上書きされるまで速度を保つので、ここで 0 に戻す。

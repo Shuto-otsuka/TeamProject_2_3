@@ -2,7 +2,7 @@
 #include <FoundationEngine/Log/Notice.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/World/Actor/Actor.h>
-#include <FoundationEngine/World/Actor/Blueprint.h>
+#include <FoundationEngine/Resource/Blueprint/BlueprintNode.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/Time/GameTimer.h>
 #include <GraphicsEngine/Model/Animation/Animator.h>
@@ -17,6 +17,9 @@
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
 #include <GraphicsEngine/Graphics.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/Resource/Sharing/CollaborationRegistry.h>
 
 namespace SeedCore
 {
@@ -191,11 +194,14 @@ namespace SeedCore
 				/// [EN] Actors are matched by the identifier each one keeps, so a rename or a move does not look like a different actor.
 				/// [JP] Actor は、各自が持ち続ける識別子で突き合わせる。リネームや移動が別の Actor に見えないようにするため。
 				std::unordered_map<String, Actor> live;
-				for (Actor actor : world.GetActors())
+				ActorRegistry& actorRegistry = WorldAccessor::Actors(world);
+				const CollaborationRegistry* collaborations = world.GetService<CollaborationRegistry>();
+				for (EntityID actorID = actorRegistry.Root(); actorID != EntityID{}; actorID = actorRegistry.Next(actorID))
 				{
-					if (!actor.CollaborationID().str().empty())
+					const CollaborationRecord* collaboration = collaborations ? collaborations->Record(actorID) : nullptr;
+					if (collaboration && !collaboration->id_.str().empty())
 					{
-						live[actor.CollaborationID()] = actor;
+						live[collaboration->id_] = WorldAccessor::Make(world, actorID);
 					}
 				}
 
@@ -208,7 +214,7 @@ namespace SeedCore
 					auto existing = live.find(node.collaborationId_);
 					if (existing != live.end())
 					{
-						ApplyActorNode(world, *context_.world_.resource_, node, existing->second);
+						node.Apply(existing->second);
 						continue;
 					}
 
@@ -220,7 +226,7 @@ namespace SeedCore
 						auto found = live.find(nodes[static_cast<Size>(node.parentIndex_)].collaborationId_);
 						parent = found == live.end() ? Actor() : found->second;
 					}
-					live[node.collaborationId_] = InstantiateActorNode(world, *context_.world_.resource_, node, parent, false);
+					live[node.collaborationId_] = node.Instantiate(world, *context_.world_.resource_, parent, false);
 				}
 
 				/// [EN] An actor the arriving scene no longer lists was deleted by another member, so it goes here as well.
@@ -400,7 +406,7 @@ namespace SeedCore
 		{
 			if (actor)
 			{
-				selectedEntities.push_back(actor.GetEntity());
+				selectedEntities.push_back(ActorAccessor::GetEntity(actor));
 			}
 		}
 		return selectedEntities;

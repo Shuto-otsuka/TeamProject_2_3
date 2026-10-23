@@ -79,7 +79,7 @@ namespace SeedCore
 		/// [JP] 球は軸ごとには伸ばせないので、半径には最も大きいスケールを使う。反転した軸は大きさで数える。
 		Float radius = radius_ * Max(Abs(worldScale.x), Abs(worldScale.y), Abs(worldScale.z));
 
-		return actor.GetPhysics().CreateSphereShape(radius);
+		return actor.GetService<Physics>()->CreateSphereShape(radius);
 	}
 
 	/**
@@ -107,7 +107,7 @@ namespace SeedCore
 		}
 
 		Actor actor = GetActor();
-		Physics& physics = actor.GetPhysics();
+		Physics& physics = *actor.GetService<Physics>();
 
 		/// [EN] The pose is worked out the same way as at creation; the body does not move when the pose is unchanged.
 		/// [JP] 姿勢は生成時と同じ方法で求める。姿勢が変わっていなければボディは動かない。

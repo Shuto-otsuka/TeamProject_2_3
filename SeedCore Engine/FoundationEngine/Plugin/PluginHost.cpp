@@ -3,6 +3,7 @@
 #include <FoundationEngine/World/World.h>
 #include <Windows.h>
 #include <algorithm>
+#include <FoundationEngine/Time/GameTimer.h>
 
 namespace SeedCore
 {
@@ -93,7 +94,7 @@ namespace SeedCore
 			{
 				/// [EN] A reload re-registers every script type under new identifiers while the play snapshot still holds the old ones, so it waits until play stops.
 				/// [JP] リロードは全スクリプトの型を新しい識別子で登録し直すが、再生用のスナップショットは古い識別子を持ったままになる。そのため再生が止まるまで待つ。
-				if (world.Timer().Playing())
+				if (world.GetService<GameTimer>()->Playing())
 				{
 					continue;
 				}

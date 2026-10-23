@@ -99,7 +99,7 @@ namespace SeedCore
 
 		WorldTimer worldTimer_;
 
-		GameTimer gameTimer_;
+		GameTimer* gameTimer_ = nullptr;
 
 		EditorCamera editorCamera_;
 

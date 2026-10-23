@@ -11,8 +11,8 @@ public:
 
 	void OnTick(float elapsedTime); // 更新処理
 	void OnInspectorGUI();
-	void OnTriggerEnter(SeedCore::Entity entity);
-	void OnTriggerExit(SeedCore::Entity entity);
+	void OnTriggerEnter(SeedCore::Actor other);
+	void OnTriggerExit(SeedCore::Actor other);
 
 	void SubCostGauge(int costGauge);
 

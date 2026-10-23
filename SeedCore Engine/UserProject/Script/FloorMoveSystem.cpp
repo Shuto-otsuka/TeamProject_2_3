@@ -3,6 +3,7 @@
 #include <SeedCore/ScDebug.h>
 
 #include "StopController.h"
+#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
 
 using namespace SeedCore;
 
@@ -10,10 +11,9 @@ void FloorMoveSystem::OnStart()
 {
 	World& world = GetWorld();
 	Actor actor = GetActor();
-	Entity entity = actor.GetEntity();
 
 	// これがないと止められない
-	stopController_ = world.GetComponent<StopController>(entity);
+	stopController_ = actor.GetComponent<StopController>();
 
 	// 行列を分解して要素を取り出す、Startのみなので重くない
 	// MoveTargetで今の自分の位置で固定にすると徐々にずれるので、ここで初期値のPositionとRotationをキャッシュする
@@ -55,9 +55,8 @@ void FloorMoveSystem::OnFixedTick(float elapsedTime)
 
 	World& world = GetWorld();
 	Actor actor = GetActor();
-	Entity entity = actor.GetEntity();
 
-	Rigidbody* rigidbody = world.GetComponent<Rigidbody>(entity);
+	Rigidbody* rigidbody = actor.GetComponent<Rigidbody>();
 	if (!rigidbody)
 	{
 		return;
@@ -156,7 +155,7 @@ void FloorMoveSystem::OnEditorTick(float elapsedTime)
 	for (int index = 0;index < static_cast<int>(localPositions_.size());++index)
 	{
 		// Probeの位置がわかりやすいように球を描画
-		GetActor().GetDebugDraw().Sphere(localPositions_[index] + floorPosition, 0.1f, Color(1.0f, 0.0f, 0.0f, 1.0f));
+		GetActor().GetService<DebugDraw>()->Sphere(localPositions_[index] + floorPosition, 0.1f, Color(1.0f, 0.0f, 0.0f, 1.0f));
 		if (isDebugArrowDraw_)
 		{
 			if (static_cast<int>(localPositions_.size()) > index + 1)
@@ -164,7 +163,7 @@ void FloorMoveSystem::OnEditorTick(float elapsedTime)
 				// 移動する向きの矢印を描画
 				Vector3 startPosition = localPositions_[index] + floorPosition;
 				Vector3 endPosition = localPositions_[index + 1] + floorPosition;
-				GetActor().GetDebugDraw().Arrow(startPosition, endPosition, Color(0.0f, 1.0f, 1.0f, 1.0f), 0.2f);
+				GetActor().GetService<DebugDraw>()->Arrow(startPosition, endPosition, Color(0.0f, 1.0f, 1.0f, 1.0f), 0.2f);
 			}
 		}
 	}

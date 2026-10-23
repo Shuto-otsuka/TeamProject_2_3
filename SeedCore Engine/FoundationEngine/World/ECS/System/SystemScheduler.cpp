@@ -1,13 +1,12 @@
 #include <FoundationEngine/World/ECS/System/SystemScheduler.h>
 #include <FoundationEngine/World/ECS/System/TransformSystem.h>
-#include <FoundationEngine/World/ECS/System/MoveSystem.h>
+
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/ECS/Component/ComponentBehaviour.h>
-#include <FoundationEngine/World/ECS/Component/Position.h>
-#include <FoundationEngine/World/ECS/Component/Rotation.h>
-#include <FoundationEngine/World/ECS/Component/Velocity.h>
+#include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
 #include <FoundationEngine/World/ECS/Component/Spawner.h>
 #include <FoundationEngine/World/ECS/Component/Lifetime.h>
 
@@ -15,28 +14,84 @@ namespace SeedCore
 {
 	/**
 	* [EN]
+	* Walks every behaviour type for which has(hooks) is true and calls
+	* call on each of its instances whose actor is active. Each type's
+	* entities are copied before its walk, so an instance added during the
+	* walk waits for the next one, and each instance is looked up again
+	* before the call, so one removed during the walk is skipped.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* has(hooks) が真になる全てのビヘイビアの型を回し、その型のインスタンスの
+	* うち、actor がアクティブなものに call を呼ぶ。各型のエンティティは回す
+	* 前に写すので、途中で追加されたインスタンスは次の走査を待ち、各
+	* インスタンスは呼ぶ前に引き直すので、途中で外されたものは飛ばす。
+	*/
+	template<typename Has, typename Call>
+	void SystemScheduler::Dispatch(World& world, Has has, Call call)
+	{
+		SparseSetStorage& sparseSets = WorldAccessor::SparseSets(world);
+
+		/// [EN] Behaviours always live in sparse sets, so walking the behaviour types' sets reaches every behaviour and nothing else.
+		/// [JP] ビヘイビアは必ずスパースセットにあるので、ビヘイビアの型のセットを回せば、全てのビヘイビアに、そしてそれだけに届く。
+		for (ComponentID id : ComponentRegistry::Registry())
+		{
+			if (!id->hooks_ || !id->hooks_->upcast_ || !has(*id->hooks_))
+			{
+				continue;
+			}
+
+			SparseSet* set = sparseSets.Set(id);
+			if (!set || set->EntityCount() == 0)
+			{
+				continue;
+			}
+
+			entities_.clear();
+			for (Uint32 row = 0; row < set->EntityCount(); ++row)
+			{
+				entities_.push_back(set->EntityAt(row));
+			}
+
+			for (EntityID entity : entities_)
+			{
+				void* data = sparseSets.Data(entity, id);
+				if (!data)
+				{
+					continue;
+				}
+
+				if (!WorldAccessor::Make(world, entity).Active())
+				{
+					continue;
+				}
+
+				call(id->hooks_->upcast_(data));
+			}
+		}
+	}
+
+	/**
+	* [EN]
 	* Runs one frame: drives Awake/Start (if isPlaying), then (if
-	* isPlaying) runs MoveSystem and the structural systems (Spawner +
-	* Lifetime) through SystemGraph on executor - MoveSystem in parallel
-	* with the structural pair since their component accesses do not
-	* conflict - flushes the recorded structural changes, runs the
-	* built-in TransformSystem (all before Tick/LateTick so this frame's
-	* motion and any newly spawned actor's position are in this frame's
-	* world matrix), then drives Tick/LateTick (if isPlaying) or
-	* EditorTick (if not). The systems, Tick and LateTick advance by
-	* gameElapsedTime; EditorTick advances by worldElapsedTime. Inactive
-	* actors receive none of Awake/Start/Tick/LateTick/EditorTick.
+	* isPlaying) runs the structural systems (Spawner + Lifetime) through
+	* SystemGraph on executor, flushes the recorded structural changes,
+	* runs the built-in TransformSystem (all before Tick/LateTick so any
+	* newly spawned actor's position is in this frame's world matrix), then
+	* drives Tick/LateTick (if isPlaying) or EditorTick (if not). The
+	* systems, Tick and LateTick advance by gameElapsedTime; EditorTick
+	* advances by worldElapsedTime. Inactive actors receive none of
+	* Awake/Start/Tick/LateTick/EditorTick.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 1フレーム分を実行する: （isPlaying であれば）Awake/Start を駆動し、
-	* （isPlaying であれば）MoveSystem と構造系システム（Spawner +
-	* Lifetime）を SystemGraph 経由で executor 上で実行する - MoveSystem は
-	* コンポーネントアクセスが衝突しないため構造系ペアと並列に走る -
-	* 記録された構造変更を flush し、組み込みの TransformSystem を実行し
-	* （すべて Tick/LateTick より前 — 今フレームの移動や新しく生成された
-	* actor の位置が同じフレームのワールド行列に入るように）、
+	* （isPlaying であれば）構造系システム（Spawner + Lifetime）を
+	* SystemGraph 経由で executor 上で実行し、記録された構造変更を flush し、
+	* 組み込みの TransformSystem を実行し（すべて Tick/LateTick より前 —
+	* 新しく生成された actor の位置が同じフレームのワールド行列に入るように）、
 	* （isPlaying であれば）Tick/LateTick を、そうでなければ EditorTick を
 	* 駆動する。システムと Tick/LateTick は gameElapsedTime で、EditorTick は
 	* worldElapsedTime で進める。非アクティブな actor には
@@ -46,89 +101,27 @@ namespace SeedCore
 	{
 		if (isPlaying)
 		{
-			/// [EN] Each pass walks the actors that existed when it began; actors spawned during a pass are first processed in the next frame.
-			/// [JP] 各パスは、開始時点で存在していた actor を回す。パス中に生成された actor は次のフレームから処理される。
-			DynamicArray<Actor> awakeActors = world.GetActors();
-			for (const Actor& listedActor : awakeActors)
-			{
-				/// [EN] An actor destroyed earlier in the pass is skipped.
-				/// [JP] パスの途中で破棄された actor は飛ばす。
-				Actor actor = world.GetActor(listedActor.GetEntity());
-				if (!actor || !actor.Active())
+			/// [EN] Every behaviour is visited, with or without an OnAwake, since awoken_ must be set on all of them.
+			/// [JP] OnAwake の有無に関係なく全ビヘイビアを回す。awoken_ は全てに立てる必要があるため。
+			Dispatch(world, [](const ComponentHooks&) { return true; }, [](ComponentBehaviour* component)
 				{
-					continue;
-				}
-
-				Entity entity = actor.GetEntity();
-				EntityID entityID = entity.GetID();
-
-				/// [EN] The component list is read by index on every step, so it always reflects the actor's current components.
-				/// [JP] コンポーネント一覧は毎回インデックスで読み、常にその actor の現在のコンポーネントを反映させる。
-				for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
-				{
-					ComponentID id = actor.ComponentIDList()[componentIndex];
-					void* data = world.GetComponent(entityID, id);
-					if (!data)
-					{
-						continue;
-					}
-
-					ComponentBehaviour* component = static_cast<ComponentBehaviour*>(data);
 					if (!component->awoken_)
 					{
 						component->awoken_ = true;
-						if (component->awake_)
-						{
-							component->awake_(component);
-						}
+						component->DispatchAwake();
 					}
+				});
 
-					/// [EN] Processing of an actor ends once it no longer exists.
-					/// [JP] actor が存在しなくなった時点で、その actor の処理を終える。
-					if (!world.GetActor(entityID))
-					{
-						break;
-					}
-				}
-			}
-
-			DynamicArray<Actor> startActors = world.GetActors();
-			for (const Actor& listedActor : startActors)
-			{
-				Actor actor = world.GetActor(listedActor.GetEntity());
-				if (!actor || !actor.Active())
+			/// [EN] The same holds for started_, which FixedTick checks.
+			/// [JP] FixedTick が確かめる started_ も同じ。
+			Dispatch(world, [](const ComponentHooks&) { return true; }, [](ComponentBehaviour* component)
 				{
-					continue;
-				}
-
-				Entity entity = actor.GetEntity();
-				EntityID entityID = entity.GetID();
-
-				for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
-				{
-					ComponentID id = actor.ComponentIDList()[componentIndex];
-					void* data = world.GetComponent(entityID, id);
-					if (!data)
-					{
-						continue;
-					}
-
-					ComponentBehaviour* component = static_cast<ComponentBehaviour*>(data);
 					if (!component->started_)
 					{
 						component->started_ = true;
-						if (component->start_)
-						{
-							component->start_(component);
-						}
+						component->DispatchStart();
 					}
-
-					if (!world.GetActor(entityID))
-					{
-						break;
-					}
-				}
-			}
+				});
 		}
 
 		/// [EN] Spawn before TransformSystem::Execute so a new actor's world matrix is built from its spawn Position this frame;
@@ -137,20 +130,10 @@ namespace SeedCore
 		///      Rigidbody::OnAwake はボディを Position ではなくワールド行列から配置するため。
 		if (isPlaying)
 		{
-			/// [EN] MoveSystem (reads LinearVelocity and AngularVelocity, writes Position and Rotation) has no component-access conflict with the structural systems, so SystemGraph runs them in parallel on the executor. SpawnerSystem and LifetimeSystem share one CommandBuffer, so they are registered as a single serial task rather than two.
-			/// [JP] MoveSystem(LinearVelocity と AngularVelocity を読み、Position と Rotation を書く)は構造系システムとコンポーネントアクセスが衝突しないため、SystemGraph が executor 上で並列に走らせる。SpawnerSystem と LifetimeSystem は1つの CommandBuffer を共有するので、2つではなく1つの直列タスクとして登録する。
+			/// [EN] SpawnerSystem and LifetimeSystem share one CommandBuffer, so they are registered as a single serial task rather than two.
+			/// [JP] SpawnerSystem と LifetimeSystem は1つの CommandBuffer を共有するので、2つではなく1つの直列タスクとして登録する。
 			systemGraph_.Clear();
-			systemGraph_.Add(
-				Query<Read<LinearVelocity>, Read<AngularVelocity>, Write<Position>, Write<Rotation>>::GetReadSignature(),
-				Query<Read<LinearVelocity>, Read<AngularVelocity>, Write<Position>, Write<Rotation>>::GetWriteSignature(),
-				[this, &world, gameElapsedTime]()
-				{
-					moveSystem_.Execute(world, gameElapsedTime);
-				});
-			systemGraph_.Add(
-				Query<Read<Spawner>, Read<Lifetime>>::GetReadSignature(),
-				Query<Read<Spawner>, Read<Lifetime>>::GetWriteSignature(),
-				[this, &world, gameElapsedTime]()
+			systemGraph_.Add(Query<Read<Spawner>, Read<Lifetime>>::ReadSignature(), Query<Read<Spawner>, Read<Lifetime>>::WriteSignature(), [this, &world, gameElapsedTime]()
 				{
 					spawnerSystem_.Execute(commandBuffer_, world, gameElapsedTime);
 					lifetimeSystem_.Execute(commandBuffer_, world, gameElapsedTime);
@@ -166,113 +149,24 @@ namespace SeedCore
 
 		if (isPlaying)
 		{
-			/// [EN] Tick and LateTick walk the actors the same way as Awake/Start above.
-			/// [JP] Tick と LateTick も、上の Awake/Start と同じ方法で actor を回す。
-			DynamicArray<Actor> tickActors = world.GetActors();
-			for (const Actor& listedActor : tickActors)
-			{
-				Actor actor = world.GetActor(listedActor.GetEntity());
-				if (!actor || !actor.Active())
+			Dispatch(world, [](const ComponentHooks& hooks) { return hooks.tick_ != nullptr; }, [gameElapsedTime](ComponentBehaviour* component)
 				{
-					continue;
-				}
+					component->DispatchTick(gameElapsedTime);
+				});
 
-				Entity entity = actor.GetEntity();
-				EntityID entityID = entity.GetID();
-
-				for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
+			Dispatch(world, [](const ComponentHooks& hooks) { return hooks.lateTick_ != nullptr; }, [gameElapsedTime](ComponentBehaviour* component)
 				{
-					ComponentID id = actor.ComponentIDList()[componentIndex];
-					void* data = world.GetComponent(entityID, id);
-					if (!data)
-					{
-						continue;
-					}
-
-					ComponentBehaviour* component = static_cast<ComponentBehaviour*>(data);
-					if (component->tick_)
-					{
-						component->tick_(component, gameElapsedTime);
-					}
-
-					if (!world.GetActor(entityID))
-					{
-						break;
-					}
-				}
-			}
-
-			DynamicArray<Actor> lateTickActors = world.GetActors();
-			for (const Actor& listedActor : lateTickActors)
-			{
-				Actor actor = world.GetActor(listedActor.GetEntity());
-				if (!actor || !actor.Active())
-				{
-					continue;
-				}
-
-				Entity entity = actor.GetEntity();
-				EntityID entityID = entity.GetID();
-
-				for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
-				{
-					ComponentID id = actor.ComponentIDList()[componentIndex];
-					void* data = world.GetComponent(entityID, id);
-					if (!data)
-					{
-						continue;
-					}
-
-					ComponentBehaviour* component = static_cast<ComponentBehaviour*>(data);
-					if (component->lateTick_)
-					{
-						component->lateTick_(component, gameElapsedTime);
-					}
-
-					if (!world.GetActor(entityID))
-					{
-						break;
-					}
-				}
-			}
+					component->DispatchLateTick(gameElapsedTime);
+				});
 		}
 		else
 		{
-			/// [EN] While not playing, EditorTick takes Tick's place and walks the actors the same way, passing the world's elapsed time, since the game's stays 0 while not playing.
-			/// [JP] プレイしていない間は Tick の代わりに EditorTick を、同じ方法で actor を回して送る。ゲームの経過時間は 0 のままなので、ワールドの経過時間を渡す。
-			DynamicArray<Actor> editorTickActors = world.GetActors();
-			for (const Actor& listedActor : editorTickActors)
-			{
-				Actor actor = world.GetActor(listedActor.GetEntity());
-				if (!actor || !actor.Active())
+			/// [EN] While not playing, EditorTick takes Tick's place, passing the world's elapsed time, since the game's stays 0 while not playing.
+			/// [JP] プレイしていない間は Tick の代わりに EditorTick を送る。ゲームの経過時間は 0 のままなので、ワールドの経過時間を渡す。
+			Dispatch(world, [](const ComponentHooks& hooks) { return hooks.editorTick_ != nullptr; }, [worldElapsedTime](ComponentBehaviour* component)
 				{
-					continue;
-				}
-
-				Entity entity = actor.GetEntity();
-				EntityID entityID = entity.GetID();
-
-				for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
-				{
-					ComponentID id = actor.ComponentIDList()[componentIndex];
-					void* data = world.GetComponent(entityID, id);
-					if (!data)
-					{
-						continue;
-					}
-
-					ComponentBehaviour* component = static_cast<ComponentBehaviour*>(data);
-					if (component->editorTick_)
-					{
-						component->editorTick_(component, worldElapsedTime);
-					}
-
-					if (!world.GetActor(entityID))
-					{
-						break;
-					}
-				}
-			}
+					component->DispatchEditorTick(worldElapsedTime);
+				});
 		}
 	}
 
@@ -291,43 +185,15 @@ namespace SeedCore
 	*/
 	void SystemScheduler::Step(World& world, Float fixedTime)
 	{
-		/// [EN] FixedTick walks the actors the same way as Run: those that existed when the step began, skipping any destroyed along the way.
-		/// [JP] FixedTick も Run と同じ方法で actor を回す。ステップ開始時点で存在していたものを、途中で破棄されたものを飛ばしながら処理する。
-		DynamicArray<Actor> fixedTickActors = world.GetActors();
-		for (const Actor& listedActor : fixedTickActors)
-		{
-			Actor actor = world.GetActor(listedActor.GetEntity());
-			if (!actor || !actor.Active())
+		/// [EN] FixedTick reaches only a component that has been through Start, so a fixed step never sees a component before Awake has set it up (a Rigidbody's body, for one).
+		/// [JP] FixedTick は Start を通ったコンポーネントにだけ届く。固定ステップが、Awake で準備される前(Rigidbody のボディなど)のコンポーネントに触れないようにするため。
+		Dispatch(world, [](const ComponentHooks& hooks) { return hooks.fixedTick_ != nullptr; }, [fixedTime](ComponentBehaviour* component)
 			{
-				continue;
-			}
-
-			Entity entity = actor.GetEntity();
-			EntityID entityID = entity.GetID();
-
-			for (Size componentIndex = 0; componentIndex < actor.ComponentIDList().size(); ++componentIndex)
-			{
-				ComponentID id = actor.ComponentIDList()[componentIndex];
-				void* data = world.GetComponent(entityID, id);
-				if (!data)
+				if (component->started_)
 				{
-					continue;
+					component->DispatchFixedTick(fixedTime);
 				}
-
-				/// [EN] FixedTick reaches only a component that has been through Start, so a fixed step never sees a component before Awake has set it up (a Rigidbody's body, for one).
-				/// [JP] FixedTick は Start を通ったコンポーネントにだけ届く。固定ステップが、Awake で準備される前(Rigidbody のボディなど)のコンポーネントに触れないようにするため。
-				ComponentBehaviour* component = static_cast<ComponentBehaviour*>(data);
-				if (component->fixedTick_ && component->started_)
-				{
-					component->fixedTick_(component, fixedTime);
-				}
-
-				if (!world.GetActor(entityID))
-				{
-					break;
-				}
-			}
-		}
+			});
 	}
 
 	/**

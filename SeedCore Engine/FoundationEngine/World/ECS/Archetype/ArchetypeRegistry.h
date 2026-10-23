@@ -39,12 +39,12 @@ namespace SeedCore
 		{
 			/**
 			* [EN]
-			* Deletes every Archetype currently held in registry_.
+			* Deletes every Archetype held in archetypes_.
 			*
 			* ---------------------------------------------------------------------
 			*
 			* [JP]
-			* registry_ に現在保持されている全ての Archetype を削除する。
+			* archetypes_ に保持されている全ての Archetype を削除する。
 			*/
 			~RegistryCleaner();
 		};
@@ -63,13 +63,30 @@ namespace SeedCore
 		*/
 		static Archetype* GetOrCreate(const DynamicArray<ComponentID>& layout);
 
-	private:
-		/// [EN] Maps a layout hash to its Archetype instance.
-		/// [JP] レイアウトハッシュを、その Archetype インスタンスへ対応付ける。
-		static inline FlatMap<Size, Archetype*> registry_;
+		/**
+		* [EN]
+		* Returns every archetype created so far, in creation order; an
+		* archetype's position here is its Index().
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* これまでに作った全アーキタイプを作った順に返す。ここでの位置が
+		* そのアーキタイプの Index() になる。
+		*/
+		static std::span<Archetype* const> Archetypes();
 
-		/// [EN] Static instance whose destructor frees every registered Archetype at program exit.
-		/// [JP] プログラム終了時にデストラクタが登録済みの全 Archetype を解放する、静的インスタンス。
+	private:
+		/// [EN] Every archetype ever created, in creation order; an archetype's position here is its index, and this array owns them.
+		/// [JP] これまでに作った全アーキタイプを作った順に持つ。ここでの位置がそのアーキタイプの番号で、この配列が所有する。
+		static inline DynamicArray<Archetype*> archetypes_;
+
+		/// [EN] Maps a layout hash to every archetype with that hash; different layouts can share a hash, so each entry is a list.
+		/// [JP] レイアウトのハッシュを、そのハッシュを持つ全アーキタイプへ対応付ける。違うレイアウトが同じハッシュになりうるので、各項目は一覧。
+		static inline FlatMap<Size, DynamicArray<Archetype*>> registry_;
+
+		/// [EN] Static instance whose destructor frees every archetype at program exit; declared last so it is destroyed while archetypes_ is still alive.
+		/// [JP] プログラム終了時にデストラクタが全アーキタイプを解放する静的インスタンス。最後に宣言し、archetypes_ がまだ生きている間に破棄されるようにする。
 		static inline RegistryCleaner cleaner_;
 	};
 }

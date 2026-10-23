@@ -4,6 +4,8 @@
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 
 namespace SeedCore
 {
@@ -31,14 +33,14 @@ namespace SeedCore
 			return;
 		}
 
-		Position* position = GetWorld().GetComponent<Position>(GetActor().GetEntity());
+		Position* position = GetWorld().GetComponent<Position>(ActorAccessor::GetEntity(GetActor()));
 		if (!position)
 		{
 			return;
 		}
 		Vector3 eye(position->x_, position->y_, position->z_);
 
-		Actor mainTarget = (mainTarget_ != 0) ? GetWorld().FindActor(mainTarget_) : Actor();
+		Actor mainTarget = (mainTarget_ != 0) ? WorldAccessor::Find(GetWorld(), mainTarget_) : Actor();
 		Vector3 mainCenter = Vector3::Zero;
 		Float mainRadius = 0.0f;
 		if (mainTarget)
@@ -49,7 +51,7 @@ namespace SeedCore
 			mainRadius = bounds ? Vector3::TransformNormal(bounds->extent_, worldMatrix).Length() : 0.0f;
 		}
 
-		Actor subTarget = (subTarget_ != 0) ? GetWorld().FindActor(subTarget_) : Actor();
+		Actor subTarget = (subTarget_ != 0) ? WorldAccessor::Find(GetWorld(), subTarget_) : Actor();
 		Vector3 subCenter = Vector3::Zero;
 		Float subRadius = 0.0f;
 		if (subTarget)
@@ -192,7 +194,7 @@ namespace SeedCore
 			return;
 		}
 
-		Position* position = GetWorld().GetComponent<Position>(GetActor().GetEntity());
+		Position* position = GetWorld().GetComponent<Position>(ActorAccessor::GetEntity(GetActor()));
 		if (!position)
 		{
 			return;
@@ -225,7 +227,7 @@ namespace SeedCore
 
 	void CameraBrain::Teleport(const Vector3& position, const Vector3& direction)
 	{
-		Position* current = GetWorld().GetComponent<Position>(GetActor().GetEntity());
+		Position* current = GetWorld().GetComponent<Position>(ActorAccessor::GetEntity(GetActor()));
 		if (current)
 		{
 			Transform::Vector(*current, position);

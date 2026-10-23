@@ -1,6 +1,7 @@
 #include <FoundationEngine/Resource/Scene/SceneTransitionSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/JobSystem/JobExecutor.h>
 #include <FoundationEngine/Math/Algorithm.h>
 
@@ -39,7 +40,7 @@ namespace SeedCore
 			return false;
 		}
 
-		world.DestroyActors();
+		WorldAccessor::Clear(world);
 		pendingScene_.Instantiate(world, cache);
 		sceneSwitched_ = true;
 
@@ -101,7 +102,7 @@ namespace SeedCore
 		SceneBlueprint loadingSceneBlueprint;
 		if (loadingSceneBlueprint.Read(resolvedLoadingScene))
 		{
-			world.DestroyActors();
+			WorldAccessor::Clear(world);
 			loadingSceneBlueprint.Instantiate(world, cache);
 		}
 
@@ -204,7 +205,12 @@ namespace SeedCore
 
 		/// [EN] Snapshot the current scene's actors so they can be destroyed once the cover phase finishes (not immediately, to avoid a visible pop).
 		/// [JP] 現在のシーンの actor をスナップショットしておく。覆い隠しフェーズが完了した時点で破棄できるようにするため（見た目の飛びを避けるため即座には破棄しない）。
-		previousActors_ = world.GetActors();
+		previousActors_.clear();
+		ActorRegistry& actors = WorldAccessor::Actors(world);
+		for (EntityID current = actors.Root(); current != EntityID{}; current = actors.Next(current))
+		{
+			previousActors_.push_back(WorldAccessor::Make(world, current));
+		}
 
 		std::filesystem::path resolvedLoadingScene = loadingScene;
 		Uint32 loadingSceneAssetID = cache.GetAssetID(String(loadingScene.string()));
@@ -486,7 +492,7 @@ namespace SeedCore
 			return;
 		}
 
-		world.DestroyActors();
+		WorldAccessor::Clear(world);
 		pendingScene_.Instantiate(world, cache);
 		sceneSwitched_ = true;
 	}

@@ -13,6 +13,8 @@
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/ECS/Query/Query.h>
 
 namespace SeedCore
 {
@@ -39,9 +41,11 @@ namespace SeedCore
 		/// [JP] キャラクターのカプセルが緑のコライダーの中で目立つよう、彩度最大のマゼンタにする。
 		const Color characterDebugColor(1.0f, 0.0f, 1.0f, 1.0f);
 
-		for (EntityID id : world.GetComponents<BoxCollider>())
+		DynamicArray<EntityID> boxColliderEntities;
+		Query<Read<BoxCollider>>(world).ForEach([&](EntityID entityID, const BoxCollider&) { boxColliderEntities.push_back(entityID); });
+		for (EntityID id : boxColliderEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
@@ -74,9 +78,11 @@ namespace SeedCore
 			colliders_.push_back({ ShapeKind::Box, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actorPosition + Vector3::Transform(center, actorRotation), actorRotation, size * 0.5f, colliderDebugColor });
 		}
 
-		for (EntityID id : world.GetComponents<SphereCollider>())
+		DynamicArray<EntityID> sphereColliderEntities;
+		Query<Read<SphereCollider>>(world).ForEach([&](EntityID entityID, const SphereCollider&) { sphereColliderEntities.push_back(entityID); });
+		for (EntityID id : sphereColliderEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
@@ -108,9 +114,11 @@ namespace SeedCore
 			colliders_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actorPosition, actorRotation, Vector3(radius, 0.0f, 0.0f), colliderDebugColor });
 		}
 
-		for (EntityID id : world.GetComponents<CapsuleCollider>())
+		DynamicArray<EntityID> capsuleColliderEntities;
+		Query<Read<CapsuleCollider>>(world).ForEach([&](EntityID entityID, const CapsuleCollider&) { capsuleColliderEntities.push_back(entityID); });
+		for (EntityID id : capsuleColliderEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
@@ -143,9 +151,11 @@ namespace SeedCore
 			colliders_.push_back({ ShapeKind::Capsule, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actorPosition, actorRotation, Vector3(radius, height * 0.5f, 0.0f), colliderDebugColor });
 		}
 
-		for (EntityID id : world.GetComponents<CharacterController>())
+		DynamicArray<EntityID> characterControllerEntities;
+		Query<Read<CharacterController>>(world).ForEach([&](EntityID entityID, const CharacterController&) { characterControllerEntities.push_back(entityID); });
+		for (EntityID id : characterControllerEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
@@ -180,9 +190,11 @@ namespace SeedCore
 			colliders_.push_back({ ShapeKind::Capsule, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actorPosition + Vector3::Transform(center, actorRotation), actorRotation, Vector3(radius, height * 0.5f, 0.0f), characterDebugColor });
 		}
 
-		for (EntityID id : world.GetComponents<CylinderCollider>())
+		DynamicArray<EntityID> cylinderColliderEntities;
+		Query<Read<CylinderCollider>>(world).ForEach([&](EntityID entityID, const CylinderCollider&) { cylinderColliderEntities.push_back(entityID); });
+		for (EntityID id : cylinderColliderEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
@@ -215,9 +227,11 @@ namespace SeedCore
 			colliders_.push_back({ ShapeKind::Cylinder, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actorPosition, actorRotation, Vector3(radius, height * 0.5f, 0.0f), colliderDebugColor });
 		}
 
-		for (EntityID id : world.GetComponents<RectCollider>())
+		DynamicArray<EntityID> rectColliderEntities;
+		Query<Read<RectCollider>>(world).ForEach([&](EntityID entityID, const RectCollider&) { rectColliderEntities.push_back(entityID); });
+		for (EntityID id : rectColliderEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
@@ -254,9 +268,11 @@ namespace SeedCore
 			colliders_.push_back({ ShapeKind::Rect, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, instancePosition, Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -angle), Vector3(size.x * 0.5f, size.y * 0.5f, 0.0f), colliderDebugColor });
 		}
 
-		for (EntityID id : world.GetComponents<CircleCollider>())
+		DynamicArray<EntityID> circleColliderEntities;
+		Query<Read<CircleCollider>>(world).ForEach([&](EntityID entityID, const CircleCollider&) { circleColliderEntities.push_back(entityID); });
+		for (EntityID id : circleColliderEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;

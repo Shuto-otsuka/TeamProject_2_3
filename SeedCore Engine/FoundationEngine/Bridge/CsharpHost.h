@@ -3,7 +3,7 @@
 #include <FoundationEngine/Bridge/ManagedApi.h>
 #include <FoundationEngine/Bridge/CsharpBehaviour.h>
 #include <FoundationEngine/World/Actor/Actor.h>
-#include <FoundationEngine/World/Actor/Blueprint.h>
+#include <FoundationEngine/Resource/Blueprint/BlueprintComponent.h>
 
 namespace SeedCore
 {

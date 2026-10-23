@@ -129,7 +129,9 @@ namespace SeedCore
 				SeedScript script = (SeedScript)Activator.CreateInstance(scriptType.type_);
 				script.entity_ = entity;
 				script.schema_ = scriptType.schema_;
-				script.awake_ = Bind<Action>(scriptType, ScriptHook.Awake, script);
+                script.attach_ = Bind<Action>(scriptType, ScriptHook.Attach, script);
+                script.detach_ = Bind<Action>(scriptType, ScriptHook.Detach, script);
+                script.awake_ = Bind<Action>(scriptType, ScriptHook.Awake, script);
 				script.start_ = Bind<Action>(scriptType, ScriptHook.Start, script);
 				script.tick_ = Bind<Action<Single>>(scriptType, ScriptHook.Tick, script);
 				script.lateTick_ = Bind<Action<Single>>(scriptType, ScriptHook.LateTick, script);

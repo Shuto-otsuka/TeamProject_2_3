@@ -1,8 +1,6 @@
 #pragma once
 #include <FoundationEngine/World/ECS/Component/Component.h>
-#include <FoundationEngine/World/ECS/SparseSet/SparseSet.h>
 #include <FoundationEngine/World/ECS/Component/ComponentBehaviour.h>
-#include <FoundationEngine/Utility/FlatMap.h>
 
 namespace SeedCore
 {
@@ -37,335 +35,365 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Process-wide registry of every component type known to the ECS:
-	* maps each ComponentID to its ComponentMetadata (size/alignment/
-	* construct/destruct/move functions, storage kind), and back and
-	* forth between component names and IDs. Also wires up
-	* ComponentBehaviour-derived types' lifecycle function pointers
-	* (Awake/Start/Tick/... ) at registration time via the concepts
-	* defined alongside each lifecycle mixin.
+	* Per-type statics for component type T: the cached ComponentID, and the
+	* two tables a ComponentRecord points at. Each module that names T gets
+	* its own copy, and the tables live inside that module's image, so the
+	* address of a table also tells which module registered it. Both tables
+	* are constant-initialized, so they are ready before any static
+	* registration runs.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* コンポーネント型 T ごとの静的なもの: キャッシュした ComponentID と、
+	* ComponentRecord が指す2つの表。T を使う各モジュールがそれぞれ自分の
+	* 写しを持ち、表はそのモジュールのイメージの中に置かれるので、表の
+	* アドレスからどのモジュールが登録したかも分かる。2つの表は定数初期化
+	* されるので、どの静的登録が走るより前に用意できている。
+	*/
+	template<typename T>
+	struct ComponentType
+	{
+		/// [EN] T's ComponentID in this module, filled when Register<T> runs here; nullptr until then. T's header always carries REGISTER_COMPONENT, so every module that uses T fills it during static initialization.
+		/// [JP] このモジュールでの T の ComponentID。ここで Register<T> が走ったときに入り、それまでは nullptr。T のヘッダには必ず REGISTER_COMPONENT があるので、T を使うモジュールはどれも静的初期化の間に埋める。
+		static inline ComponentID id_ = nullptr;
+
+		/// [EN] How T's data is laid out and handled.
+		/// [JP] T のデータの並び方と扱い方。
+		SC_CONSTEX ComponentMetadata metadata_ = Component<T>::Metadata();
+
+		/// [EN] How T behaves; filled only for ComponentBehaviour-derived T (for any other T every entry stays nullptr and Register<T> does not point at it), and each hook is bound only when T implements it.
+		/// [JP] T の振る舞い。ComponentBehaviour 派生の T でだけ中身が埋まる（それ以外の T では全項目が nullptr のままで、Register<T> もこれを指さない）。各フックは T が実装しているときだけ束縛する。
+		SC_CONSTEX ComponentHooks hooks_ = []()
+			{
+				ComponentHooks hooks;
+
+				/// [EN] Every cast below goes from ComponentBehaviour to T, which only compiles when T derives from it.
+				/// [JP] 以下の変換はどれも ComponentBehaviour から T へのもので、T がその派生であるときにしかコンパイルできない。
+				if constexpr (HasComponentBehaviourTag<T>::value)
+				{
+					/// [EN] The cast goes through T, so it lands on the ComponentBehaviour base wherever it sits inside T.
+					/// [JP] T を経由して変換するので、ComponentBehaviour 基底が T の中のどこにあっても正しく指す。
+					hooks.upcast_ = [](void* component) -> ComponentBehaviour* { return static_cast<T*>(component); };
+
+					if constexpr (HasAttach<T>)
+					{
+						hooks.attach_ = [](ComponentBehaviour* component)
+							{
+								static_cast<T*>(component)->OnAttach();
+							};
+					}
+					if constexpr (HasDetach<T>)
+					{
+						hooks.detach_ = [](ComponentBehaviour* component)
+							{
+								static_cast<T*>(component)->OnDetach();
+							};
+					}
+					if constexpr (HasAwake<T>)
+					{
+						hooks.awake_ = [](ComponentBehaviour* component)
+							{
+								static_cast<T*>(component)->OnAwake();
+							};
+					}
+					if constexpr (HasStart<T>)
+					{
+						hooks.start_ = [](ComponentBehaviour* component)
+							{
+								static_cast<T*>(component)->OnStart();
+							};
+					}
+					if constexpr (HasTick<T>)
+					{
+						hooks.tick_ = [](ComponentBehaviour* component, Float elapsedTime)
+							{
+								static_cast<T*>(component)->OnTick(elapsedTime);
+							};
+					}
+					if constexpr (HasFixedTick<T>)
+					{
+						hooks.fixedTick_ = [](ComponentBehaviour* component, Float elapsedTime)
+							{
+								static_cast<T*>(component)->OnFixedTick(elapsedTime);
+							};
+					}
+					if constexpr (HasLateTick<T>)
+					{
+						hooks.lateTick_ = [](ComponentBehaviour* component, Float elapsedTime)
+							{
+								static_cast<T*>(component)->OnLateTick(elapsedTime);
+							};
+					}
+					if constexpr (HasEditorTick<T>)
+					{
+						hooks.editorTick_ = [](ComponentBehaviour* component, Float elapsedTime)
+							{
+								static_cast<T*>(component)->OnEditorTick(elapsedTime);
+							};
+					}
+					if constexpr (HasDestroy<T>)
+					{
+						hooks.destroy_ = [](ComponentBehaviour* component)
+							{
+								static_cast<T*>(component)->OnDestroy();
+							};
+					}
+					if constexpr (HasInspectorGUI<T>)
+					{
+						hooks.inspectorGUI_ = [](ComponentBehaviour* component)
+							{
+								static_cast<T*>(component)->OnInspectorGUI();
+							};
+					}
+					if constexpr (HasCollisionEnter<T>)
+					{
+						hooks.collisionEnter_ = [](ComponentBehaviour* component, const Actor& other)
+							{
+								static_cast<T*>(component)->OnCollisionEnter(other);
+							};
+					}
+					if constexpr (HasCollisionStay<T>)
+					{
+						hooks.collisionStay_ = [](ComponentBehaviour* component, const Actor& other)
+							{
+								static_cast<T*>(component)->OnCollisionStay(other);
+							};
+					}
+					if constexpr (HasCollisionExit<T>)
+					{
+						hooks.collisionExit_ = [](ComponentBehaviour* component, const Actor& other)
+							{
+								static_cast<T*>(component)->OnCollisionExit(other);
+							};
+					}
+					if constexpr (HasTriggerEnter<T>)
+					{
+						hooks.triggerEnter_ = [](ComponentBehaviour* component, const Actor& other)
+							{
+								static_cast<T*>(component)->OnTriggerEnter(other);
+							};
+					}
+					if constexpr (HasTriggerStay<T>)
+					{
+						hooks.triggerStay_ = [](ComponentBehaviour* component, const Actor& other)
+							{
+								static_cast<T*>(component)->OnTriggerStay(other);
+							};
+					}
+					if constexpr (HasTriggerExit<T>)
+					{
+						hooks.triggerExit_ = [](ComponentBehaviour* component, const Actor& other)
+							{
+								static_cast<T*>(component)->OnTriggerExit(other);
+							};
+					}
+				}
+				return hooks;
+			}();
+	};
+
+	/**
+	* [EN]
+	* Process-wide registry of every component type known to the ECS. Each
+	* type has one ComponentRecord, found by name, which is created on first
+	* registration and never freed: unregistering only clears its tables, so
+	* the ComponentID and the dense index survive a hot reload unchanged.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* ECS が認識する全コンポーネント型の、プロセス全体で共有される
-	* レジストリ。各 ComponentID をその ComponentMetadata（サイズ/
-	* アラインメント/構築・破棄・移動関数、ストレージ種別）へ対応付け、
-	* コンポーネント名と ID の相互変換も行う。また、登録時に、各
-	* ライフサイクルミックスインと共に定義されたコンセプトを通じて、
-	* ComponentBehaviour 派生型のライフサイクル関数ポインタ
-	* （Awake/Start/Tick/...）を配線する。
+	* レジストリ。各型は名前で引ける ComponentRecord を1つ持ち、それは
+	* 最初の登録で作られ、解放されない。登録の解除は表を空にするだけ
+	* なので、ComponentID と密な添字はホットリロードをまたいでも変わらない。
 	*/
 	class SEEDCORE_API ComponentRegistry
 	{
 	public:
 		/**
 		* [EN]
-		* Registers T as a component: builds its ComponentMetadata (via
-		* Component<T>::Metadata), wires up a sparse-set storage factory
-		* if storage is SparseSet, and (if T derives from ComponentBehaviour)
-		* installs a setupLifecycle_ callback that binds each lifecycle
-		* function pointer (awake_/start_/tick_/... ) T actually
-		* implements. The finished metadata is recorded through the
-		* metadata overload of Register, and T's type_index is then mapped
-		* to the resulting ComponentID - a mapping only this typed overload
-		* can provide.
-		*
-		* callerAnchor is any address inside the module issuing the
-		* registration (REGISTER_COMPONENT passes the stringized type
-		* name). It is used to skip the call entirely when a different,
-		* still-loaded module already owns this component - so the same
-		* component header compiled into a downstream DLL (e.g. UserProject
-		* via ScComponent.h) never replaces the engine's function pointers
-		* with ones that dangle when that DLL hot-reloads. A null anchor
-		* disables the guard.
+		* Registers T under name and category, pointing its record at
+		* ComponentType<T>'s tables (the hook table only when T derives from
+		* ComponentBehaviour). T's storage strategy is ComponentTraits<T>'s.
+		* Caches the resulting ID for this module, which only this typed
+		* overload can do.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* T をコンポーネントとして登録する: Component<T>::Metadata 経由で
-		* その ComponentMetadata を構築し、storage が SparseSet であれば
-		* スパースセットストレージのファクトリを配線する。T が
-		* ComponentBehaviour から派生していれば、T が実際に実装している各
-		* ライフサイクル関数ポインタ（awake_/start_/tick_/...）を束縛する
-		* setupLifecycle_ コールバックを設定する。完成したメタデータは
-		* Register のメタデータ版を通じて記録し、その後 T の type_index を
-		* 結果として得られる ComponentID へ対応付ける - この対応付けは
-		* 型を知っているこの版にしかできない。
-		*
-		* callerAnchor は登録を発行したモジュール内の任意のアドレス
-		* （REGISTER_COMPONENT は型名の文字列を渡す）。別の、まだロード
-		* されているモジュールが既にこのコンポーネントを所有している場合に
-		* 呼び出しを丸ごとスキップするために使う - 同じコンポーネント
-		* ヘッダが下流の DLL（例: ScComponent.h 経由の UserProject）で
-		* コンパイルされても、エンジンの関数ポインタを、その DLL の
-		* ホットリロードで宙に浮くものへ置き換えないようにするため。
-		* anchor が null の場合はガードを無効にする。
+		* T を name と category で登録し、そのレコードを ComponentType<T> の
+		* 表へ向ける（フックの表は T が ComponentBehaviour 派生のときだけ）。
+		* T の格納方式は ComponentTraits<T> のもの。得られた ID をこの
+		* モジュールでキャッシュする。これは型を知っているこの版にしか
+		* できない。
 		*/
 		template<typename T>
-		static void Register(String name, String category = String::intern("Custom"), ComponentStorage storage = ComponentStorage::SparseSet, const void* callerAnchor = nullptr)
+		static void Register(String name, String category = String::intern("Custom"))
 		{
-			ComponentID id = name.view().data();
+			/// [EN] A behaviour must stay at one address while it exists (coroutines hold its this), which archetype rows do not guarantee, so declaring one Archetype is refused at compile time.
+			/// [JP] ビヘイビアは存在する間ずっと同じアドレスにいる必要があり（コルーチンが this を持つ）、Archetype の行はそれを保証しないので、Archetype と宣言したらコンパイル時に止める。
+			static_assert(!(HasComponentBehaviourTag<T>::value && ComponentTraits<T>::storage == ComponentStorage::Archetype), "ComponentBehaviour は Archetype に格納できません。SparseSet にしてください。");
 
-			/// [EN] Resolves the module (HMODULE, as an opaque pointer) that contains an address, or nullptr - GetModuleHandleEx with FROM_ADDRESS. Doubles as an "is this module still loaded?" probe: pass a previously-resolved HMODULE (its base address) back in.
-			/// [JP] アドレスを含むモジュール（HMODULE を不透明ポインタとして）を解決する。無ければ nullptr - GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS 付きの GetModuleHandleEx。「このモジュールはまだロードされているか?」の判定も兼ねる: 以前解決した HMODULE（そのベースアドレス）を渡す。
-			auto moduleOf = [](const void* address) -> void*
-				{
-					HMODULE module = nullptr;
-					if (address != nullptr)
-					{
-						GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS | GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, reinterpret_cast<LPCWSTR>(address), &module);
-					}
-					return module;
-				};
-
-			/// [EN] Skip if a still-loaded module other than the caller already owns this component: the same header compiled into a downstream DLL (e.g. UserProject via ScComponent.h) must not replace the owner's function pointers, which would dangle when that DLL hot-reloads. Re-registration is allowed when the entry is new, the caller already owns it (its own hot reload), or the old owner is no longer loaded. callerAnchor is any address inside the calling module - REGISTER_COMPONENT passes the stringized type name literal.
-			/// [JP] 呼び出し元以外の、まだロードされているモジュールが既にこのコンポーネントを所有しているならスキップする: 同じヘッダが下流の DLL（例: ScComponent.h 経由の UserProject）でコンパイルされても、所有者の関数ポインタを差し替えてはならない。その DLL がホットリロード時に宙に浮くため。エントリが新規、呼び出し元が既に所有（自身のホットリロード）、または旧所有者が既にアンロード済みの場合は再登録を許可する。callerAnchor は呼び出し元モジュール内の任意のアドレス - REGISTER_COMPONENT は型名の文字列リテラルを渡す。
-			void* callerModule = moduleOf(callerAnchor);
-			auto existing = MetadataMap().find(id);
-			if (existing != MetadataMap().end())
-			{
-				void* owner = existing->second.module_;
-				if (owner != nullptr && owner != callerModule && moduleOf(owner) != nullptr)
-				{
-					return;
-				}
-			}
-
-			ComponentMetadata meta = Component<T>::Metadata(storage);
-			meta.module_ = callerModule;
-
-			/// [EN] Sparse-set-stored components need a factory that can construct their SparseSetStorage<T> lazily, the first time an instance is actually added.
-			/// [JP] スパースセット格納コンポーネントには、実際にインスタンスが追加される最初のタイミングで SparseSetStorage<T> を遅延構築できるファクトリが必要になる。
-			if (storage == ComponentStorage::SparseSet)
-			{
-				meta.createSparseStorage_ = []() -> ResourcePtr<InterfaceSparseSetStorage>
-				{
-					return MakePtr<SparseSetStorage<T>>();
-				};
-			}
-
+			/// [EN] Plain-data types have no hook table, so their record's hooks_ stays nullptr.
+			/// [JP] ただのデータの型にはフックの表が無いので、そのレコードの hooks_ は nullptr のまま。
+			const ComponentHooks* hooks = nullptr;
 			if constexpr (HasComponentBehaviourTag<T>::value)
 			{
-				meta.isComponentBehaviour_ = true;
-
-				meta.setupLifecycle_ = [](void* component, void* world, Entity entity, ComponentID)
-					{
-						T* ptr = static_cast<T*>(component);
-						ptr->world_ = static_cast<World*>(world);
-						ptr->entity_ = entity;
-
-					    /// [EN] Each HasXxx<T> concept check below binds the corresponding type-erased function pointer only if T actually implements that lifecycle mixin, otherwise the pointer stays nullptr and ComponentBehaviour::DispatchXxx becomes a no-op for that hook.
-					    /// [JP] 以下の各 HasXxx<T> コンセプトチェックは、T が実際にそのライフサイクルミックスインを実装している場合にのみ、対応する型消去された関数ポインタを束縛する。実装していなければポインタは nullptr のままとなり、そのフックに対する ComponentBehaviour::DispatchXxx は無操作になる。
-						if constexpr (HasAwake<T>)
-						{
-							ptr->awake_ = [](ComponentBehaviour* cb) { static_cast<T*>(cb)->OnAwake(); };
-						}
-						if constexpr (HasStart<T>)
-						{
-							ptr->start_ = [](ComponentBehaviour* cb) { static_cast<T*>(cb)->OnStart(); };
-						}
-						if constexpr (HasTick<T>)
-						{
-							ptr->tick_ = [](ComponentBehaviour* cb, Float dt) { static_cast<T*>(cb)->OnTick(dt); };
-						}
-						if constexpr (HasFixedTick<T>)
-						{
-							ptr->fixedTick_ = [](ComponentBehaviour* cb, Float dt) { static_cast<T*>(cb)->OnFixedTick(dt); };
-						}
-						if constexpr (HasLateTick<T>)
-						{
-							ptr->lateTick_ = [](ComponentBehaviour* cb, Float dt) { static_cast<T*>(cb)->OnLateTick(dt); };
-						}
-						if constexpr (HasEditorTick<T>)
-						{
-							ptr->editorTick_ = [](ComponentBehaviour* cb, Float dt) { static_cast<T*>(cb)->OnEditorTick(dt); };
-						}
-						if constexpr (HasDestroy<T>)
-						{
-							ptr->destroy_ = [](ComponentBehaviour* cb) { static_cast<T*>(cb)->OnDestroy(); };
-						}
-						if constexpr (HasInspectorGUI<T>)
-						{
-							ptr->inspectorGUI_ = [](ComponentBehaviour* cb) { static_cast<T*>(cb)->OnInspectorGUI(); };
-						}
-						if constexpr (HasCollisionEnter<T>)
-						{
-							ptr->collisionEnter_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnCollisionEnter(other); };
-						}
-						if constexpr (HasCollisionStay<T>)
-						{
-							ptr->collisionStay_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnCollisionStay(other); };
-						}
-						if constexpr (HasCollisionExit<T>)
-						{
-							ptr->collisionExit_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnCollisionExit(other); };
-						}
-						if constexpr (HasTriggerEnter<T>)
-						{
-							ptr->triggerEnter_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnTriggerEnter(other); };
-						}
-						if constexpr (HasTriggerStay<T>)
-						{
-							ptr->triggerStay_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnTriggerStay(other); };
-						}
-						if constexpr (HasTriggerExit<T>)
-						{
-							ptr->triggerExit_ = [](ComponentBehaviour* cb, Entity other) { static_cast<T*>(cb)->OnTriggerExit(other); };
-						}
-					};
+				hooks = &ComponentType<T>::hooks_;
 			}
 
-			/// [EN] The metadata overload records the ComponentID and name cross-references shared by every registration; the type_index mapping is added here because only this overload knows T. Together they keep every lookup path (by ComponentID, by type_index, by name) in sync.
-			/// [JP] ComponentID と名前の相互参照は全ての登録に共通する処理として Register のメタデータ版が記録し、type_index の対応だけは T を知っているこの版でここに追加する。両方が揃うことで、全ての検索経路（ComponentID による、type_index による、名前による）が同期した状態を保つ。
-			Register(name, category, meta);
-			TypeIndex()[std::type_index(typeid(T))] = id;
+			/// [EN] A name clash leaves nothing to cache; any other outcome, including another module already owning T, hands back T's record.
+			/// [JP] 名前がぶつかった場合はキャッシュするものが無い。それ以外は、別のモジュールが既に T を持っている場合も含めて、T のレコードが返る。
+			ComponentID id = Register(name, category, &ComponentType<T>::metadata_, hooks);
+			if (!id)
+			{
+				return;
+			}
+
+			ComponentType<T>::id_ = id;
 		}
 
 		/**
 		* [EN]
-		* Registers a component from an already-built ComponentMetadata
-		* under name and category, recording the ComponentID-to-metadata
-		* and ComponentID-to-name cross-references. It takes no type, so it
-		* never touches TypeIndex(): a component registered only through
-		* this overload (e.g. a C# script, where many components share a
-		* single native type) is looked up by ComponentID or by name.
+		* Registers a component under name and category, pointing its record
+		* at the given tables, and returns its ComponentID. Takes no type, so
+		* it is also how C# scripts register: they share one metadata table
+		* and each brings its own hook table.
 		*
-		* The caller fills in every metadata field the component needs -
-		* createSparseStorage_ for SparseSet storage, isComponentBehaviour_
-		* and setupLifecycle_ for ComponentBehaviour-derived components.
-		* name must be interned, because the ComponentID is the address of
-		* its character data.
+		* The module that owns a registration is the one whose image holds
+		* its metadata table. If a different module that is still loaded
+		* already owns name, the call changes nothing and returns that
+		* record - the same header compiled into a downstream DLL must not
+		* take over the engine's entry. If the same module registers a
+		* different pair of tables under a name it already holds, that is
+		* two types sharing one name: it is reported and nullptr returned.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 構築済みの ComponentMetadata から、name と category でコンポーネント
-		* を登録し、ComponentID とメタデータ、ComponentID と名前の相互参照を
-		* 記録する。型を受け取らないため TypeIndex() には一切触れない:
-		* この版だけで登録されたコンポーネント（例: 多数のコンポーネントが
-		* 単一のネイティブ型を共有する C# スクリプト）は、ComponentID か
-		* 名前で検索される。
+		* コンポーネントを name と category で登録し、そのレコードを渡された
+		* 表へ向けて、ComponentID を返す。型を受け取らないので、C# の
+		* スクリプトもこれで登録する: メタデータの表を共有し、フックの表を
+		* それぞれが持ち込む。
 		*
-		* コンポーネントに必要なメタデータのフィールドは呼び出し側が全て
-		* 設定する - SparseSet 格納なら createSparseStorage_、
-		* ComponentBehaviour 派生なら isComponentBehaviour_ と
-		* setupLifecycle_。ComponentID はその文字データのアドレスなので、
-		* name は intern 済みでなければならない。
+		* 登録を所有するのは、メタデータの表をイメージ内に持つモジュール。
+		* まだロードされている別のモジュールが既に name を所有していれば、
+		* 何も変えずにそのレコードを返す - 下流の DLL に同じヘッダが入っても、
+		* エンジンの登録を乗っ取ってはならないため。同じモジュールが、既に
+		* 持っている名前で別の表の組を登録したら、それは1つの名前を2つの型が
+		* 使っているということ: 報告して nullptr を返す。
 		*/
-		static void Register(String name, String category, const ComponentMetadata& metadata);
+		static ComponentID Register(String name, String category, const ComponentMetadata* metadata, const ComponentHooks* hooks);
 
 		/**
 		* [EN]
-		* Removes id's entry from every cross-reference map (MetadataMap(),
-		* InternalID(), TypeIndex(), NameMap(), NameIndex()), whichever
-		* Register overload created it. Used by hot reload to purge a component before the
-		* module owning its construct_/destruct_ function pointers — and,
-		* more importantly, T's std::type_info — is unloaded. Left undone,
-		* a stale std::type_index entry would remain in TypeIndex() after
-		* FreeLibrary(), pointing at a type_info living in freed memory;
-		* the next Register<T>() call anywhere that happens to probe the
-		* same slot would compare/hash against it and crash.
+		* Clears id's tables and advances its epoch, and removes it from the
+		* registered list, so nothing points into the owning module once it
+		* is unloaded. The record itself, its name and its dense index are
+		* kept, so registering the same name again brings back the same
+		* ComponentID.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* id のエントリを、どちらの Register で登録されたかに関わらず、
-		* 全ての相互参照マップ(MetadataMap()、InternalID()、TypeIndex()、
-		* NameMap()、NameIndex())から削除する。ホットリロードが、construct_/destruct_ 関数
-		* ポインタ — そしてより重要な T の std::type_info — を所有する
-		* モジュールがアンロードされる前に、コンポーネントを消し去るために
-		* 使う。これを怠ると、FreeLibrary() 後も TypeIndex() に古い
-		* std::type_index エントリが残り続け、解放済みメモリ上の
-		* type_info を指したままになる。以後どこかで行われる
-		* Register<T>() 呼び出しが同じスロットを探査した際、それと
-		* 比較/ハッシュしてクラッシュする。
+		* id の表を空にして epoch を進め、登録中の一覧から外す。これで、
+		* 所有モジュールがアンロードされた後に、その中を指すものが残らない。
+		* レコード自体と、その名前と密な添字は残すので、同じ名前で登録し
+		* 直すと同じ ComponentID が戻る。
 		*/
 		static void Unregister(ComponentID id);
 
 		/**
 		* [EN]
-		* Returns the ComponentID that T was registered under, or
-		* nullptr if T has not been registered.
+		* Returns T's ComponentID, or nullptr if T is not registered. The ID
+		* is the one cached when REGISTER_COMPONENT registered T in this
+		* module; since records are never freed, the cache never dangles, and
+		* the registration is checked on every call.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* T が登録された際の ComponentID を返す。T が未登録であれば
-		* nullptr を返す。
+		* T の ComponentID を返す。T が未登録であれば nullptr を返す。ID は、
+		* このモジュールで REGISTER_COMPONENT が T を登録したときにキャッシュ
+		* されたもの。レコードは解放されないのでキャッシュが宙に浮くことは
+		* なく、登録中かどうかは毎回確かめる。
 		*/
 		template<typename T>
 		static ComponentID GetComponentID()
 		{
-			auto it = TypeIndex().find(std::type_index(typeid(T)));
-			if (it == TypeIndex().end())
+			/// [EN] Not yet registered in this module, or unregistered since; either way T has no live registration to hand out.
+			/// [JP] このモジュールでまだ登録されていないか、その後に登録が解除された。どちらも、渡せる登録が T に無い。
+			if (!ComponentType<T>::id_ || !ComponentType<T>::id_->metadata_)
 			{
 				return nullptr;
 			}
-			return it->second;
+			return ComponentType<T>::id_;
 		}
 
 		/**
 		* [EN]
 		* Returns the ComponentID registered under name, or nullptr if
-		* no component was registered with that name.
+		* no component is currently registered with that name.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* name で登録された ComponentID を返す。その名前で登録された
+		* name で登録された ComponentID を返す。その名前で今登録されている
 		* コンポーネントが無ければ nullptr を返す。
 		*/
 		static ComponentID GetComponentID(String name);
 
 		/**
 		* [EN]
-		* Returns the display name id was registered under, or an empty
-		* string if id is unregistered.
+		* Returns the name id was registered under, or an empty string if id
+		* is null.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* id が登録された際の表示名を返す。id が未登録であれば空文字列を
-		* 返す。
+		* id が登録された名前を返す。id が null であれば空文字列を返す。
 		*/
 		static String Name(ComponentID id);
 
 		/**
 		* [EN]
-		* Returns the full registry mapping every registered ComponentID
-		* to its ComponentMetadata.
+		* Returns every currently registered ComponentID. Unregister removes
+		* from this very list, so callers that unregister while walking it
+		* must collect first.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 登録済みの全 ComponentID をその ComponentMetadata へ対応付ける、
-		* 完全なレジストリを返す。
+		* 今登録されている全ての ComponentID を返す。Unregister はまさに
+		* この一覧から消すので、走査しながら登録を解除する呼び出し側は、
+		* 先に集めておく必要がある。
 		*/
-		static const FlatMap<ComponentID, ComponentMetadata>& Registry();
+		static std::span<const ComponentID> Registry();
 
 		/**
 		* [EN]
-		* Returns the ComponentMetadata registered for id.
+		* Returns the ComponentMetadata id's record points at; id must be
+		* registered.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* id に対して登録されている ComponentMetadata を返す。
+		* id のレコードが指す ComponentMetadata を返す。id は登録中でなければ
+		* ならない。
 		*/
 		static const ComponentMetadata& Get(ComponentID id);
 
 		/**
 		* [EN]
-		* Returns id's dense internal index, assigning a new one on
-		* first request (used e.g. to index into Archetype signature bitsets).
+		* Returns id's dense index, assigned at first registration and never
+		* changed (used e.g. to index into Archetype signature bitsets).
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* id の密な内部インデックスを返す。初回リクエスト時には新しい
-		* インデックスを割り当てる（例えば Archetype のシグネチャ
-		* ビットセットへのインデックス付けに使われる）。
+		* id の密な添字を返す。最初の登録で振られ、以後変わらない（例えば
+		* Archetype のシグネチャビットセットへのインデックス付けに使われる）。
 		*/
 		static Size GetID(ComponentID id);
 
@@ -392,127 +420,75 @@ namespace SeedCore
 		*/
 		static Size ComponentAlignment(ComponentID id);
 
-		/**
-		* [EN]
-		* Returns the full mapping from registered component names to
-		* their ComponentID.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 登録済みのコンポーネント名からその ComponentID への、完全な
-		* マッピングを返す。
-		*/
-		static const FlatMap<String, ComponentID>& ComponentList();
-
 	private:
 		/**
 		* [EN]
-		* The static initializer the REGISTER_COMPONENT macro emits can
-		* call Register<T>() before a namespace-scope member is
-		* constructed, since initialization order across translation units
-		* is unspecified (Static Initialization Order Fiasco). Every
-		* registry map is therefore routed through a function-local static
-		* (Meyer's singleton), guaranteed constructed on first access.
+		* Returns the record named name, or nullptr if none has been created.
+		* Records sit in pages_ in creation order and every created record has
+		* a name, so the walk stops at the first unnamed slot. Names are
+		* interned, so each step is a single pointer comparison.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* REGISTER_COMPONENT マクロが生成する静的初期化子は、TU 間の
-		* 初期化順序が未規定であるため(Static Initialization Order
-		* Fiasco)、名前空間スコープのメンバが構築される前に Register<T>()
-		* を呼び得る。そのため各レジストリマップを関数ローカル static
-		* (Meyer のシングルトン)経由にして初回アクセス時に確実に構築させる。
+		* name という名前のレコードを返す。まだ作られていなければ nullptr。
+		* レコードは pages_ に作った順に並び、作ったレコードには必ず名前が
+		* あるので、名前の無い最初の枠で探索を止める。名前は intern 済み
+		* なので、1歩ごとの比較はポインタ1回で済む。
 		*/
-		static FlatMap<ComponentID, ComponentMetadata>& MetadataMap();
+		static ComponentRecord* ResolveRecord(String name);
 
 		/**
 		* [EN]
-		* Returns the ComponentID-to-name map backing Name(); see the
-		* comment above MetadataMap() for the initialization-order rationale.
+		* Returns the module (HMODULE as an opaque pointer) whose image
+		* contains address, or nullptr when no loaded module does.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* Name() の裏付けとなる、ComponentID から名前へのマップを
-		* 返す。初期化順序の根拠については MetadataMap() 上のコメントを参照。
+		* address をイメージ内に持つモジュール（HMODULE を不透明なポインタで）
+		* を返す。ロード中のどのモジュールも持っていなければ nullptr。
 		*/
-		static FlatMap<ComponentID, String>& NameMap();
-
-		/**
-		* [EN]
-		* Returns the type_index-to-ComponentID map used by the
-		* templated GetComponentID<T>() overload; see the comment above
-		* MetadataMap() for the initialization-order rationale.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* テンプレート版 GetComponentID<T>() オーバーロードが使用する、
-		* type_index から ComponentID へのマップを返す。
-		* 初期化順序の根拠については MetadataMap() 上のコメントを参照。
-		*/
-		static FlatMap<std::type_index, ComponentID>& TypeIndex();
-
-		/**
-		* [EN]
-		* Returns the name-to-ComponentID map backing GetComponentID(String)
-		* and ComponentList(); see the comment above MetadataMap() for
-		* the initialization-order rationale.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* GetComponentID(String) と ComponentList() の裏付けとなる、
-		* 名前から ComponentID へのマップを返す。
-		* 初期化順序の根拠については MetadataMap() 上のコメントを参照。
-		*/
-		static FlatMap<String, ComponentID>& NameIndex();
-
-		/**
-		* [EN]
-		* Returns the id-to-dense-index map backing GetID(); see the
-		* comment above MetadataMap() for the initialization-order rationale.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* GetID() の裏付けとなる、ID から密インデックスへのマップを返す。
-		* 初期化順序の根拠については MetadataMap() 上のコメントを参照。
-		*/
-		static FlatMap<ComponentID, Size>& InternalID();
+		static void* ResolveModule(const void* address);
 
 	private:
-		/// [EN] Next dense internal index to hand out from GetID().
-		/// [JP] GetID() から次に払い出される密な内部インデックス。
-		static inline Size nextID_ = 0;
+		/// [EN] Every record ever created, in creation order, 64 to a page so a record's address never moves as more are added; a record's position is its dense index, and unused slots have an empty name. DynamicArray's default state needs no allocation, so it is constant-initialized and ready before any static registration runs.
+		/// [JP] これまでに作った全レコード。作った順に並び、1ページ 64 個で持つので、レコードを足しても既存の番地は動かない。レコードの位置がそのまま密な添字で、未使用の枠は名前が空。DynamicArray の初期状態は確保を伴わないので定数初期化され、どの静的登録より前に使える状態になっている。
+		static inline DynamicArray<ResourcePtr<StaticArray<ComponentRecord, 64>>> pages_;
+
+		/// [EN] IDs currently registered, in registration order, backing Registry(); constant-initialized for the same reason as pages_.
+		/// [JP] 今登録されている ID を登録順に並べたもの。Registry() の裏付け。pages_ と同じ理由で定数初期化される。
+		static inline DynamicArray<ComponentID> records_;
 	};
 }
 
 /**
 * [EN]
-* Emits a ComponentTraits<Type> specialization fixing its storage kind at
-* compile time, when Storage is provided (via __VA_ARGS__); otherwise
-* expands to nothing.
+* When Storage is provided (via __VA_ARGS__), declares
+* DeclaredComponentStorage(Type*) beside Type, in Type's own namespace,
+* where ComponentTraits finds it by ADL; otherwise expands to nothing. Being
+* constexpr, the function is implicitly inline, so the header may be
+* included from any number of translation units.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* Storage が指定されている場合（__VA_ARGS__ 経由）、そのストレージ種別を
-* コンパイル時に固定する ComponentTraits<Type> 特殊化を生成する。指定が
-* 無ければ何も生成しない。
+* Storage が指定されている場合（__VA_ARGS__ 経由）、Type の隣、つまり
+* Type 自身の名前空間に DeclaredComponentStorage(Type*) を宣言する。
+* ComponentTraits はそれを ADL で見つける。指定が無ければ何も生成しない。
+* constexpr なので関数は暗黙に inline で、ヘッダをいくつの翻訳単位から
+* 取り込んでもよい。
 */
-#define SEED_TRAITS_SPEC(Type, ...) \
-	__VA_OPT__(template<> struct ComponentTraits<Type> { \
-		SC_CONSTEX ComponentStorage storage = __VA_ARGS__; \
-	};)
+#define SEED_STORAGE_SPEC(Type, ...) \
+	__VA_OPT__(constexpr SeedCore::ComponentStorage DeclaredComponentStorage(Type*) { return __VA_ARGS__; })
 
 /**
 * [EN]
 * Category is the grouping label for the Add Component panel (e.g.
 * "Light" so PointLight/SpotLight/... show under one header). Both
 * Category and Storage are optional, defaulting to "Custom" and
-* SparseSet when omitted (same defaults as ComponentRegistry::Register).
+* SparseSet when omitted. Storage only feeds ComponentTraits through
+* SEED_STORAGE_SPEC; Register<T> reads it from there.
 * REGISTER_COMPONENT(Type)
 * REGISTER_COMPONENT(Type, "Category")
 * REGISTER_COMPONENT(Type, "Category", ComponentStorage::Archetype)
@@ -522,25 +498,26 @@ namespace SeedCore
 * [JP]
 * Category は Add Component パネルのグルーピングラベル（例: "Light" で
 * PointLight/SpotLight/... を1つの見出しの下にまとめる）。Category も
-* Storage も省略可能で、省略時はそれぞれ "Custom" / SparseSet になる
-* （ComponentRegistry::Register のデフォルトと同じ）。
+* Storage も省略可能で、省略時はそれぞれ "Custom" / SparseSet になる。
+* Storage は SEED_STORAGE_SPEC を通して ComponentTraits に渡すだけで、
+* Register<T> はそこから読む。
 */
 #define REGISTER_COMPONENT_1(Type) \
 	static const SeedCore::Bool Type##_registered = []() { \
-		SeedCore::ComponentRegistry::Register<Type>(SeedCore::String::intern(#Type), SeedCore::String::intern("Custom"), SeedCore::ComponentStorage::SparseSet, #Type); \
+		SeedCore::ComponentRegistry::Register<Type>(SeedCore::String::intern(#Type)); \
 		return true; \
 	}()
 
 #define REGISTER_COMPONENT_2(Type, Category) \
 	static const SeedCore::Bool Type##_registered = []() { \
-		SeedCore::ComponentRegistry::Register<Type>(SeedCore::String::intern(#Type), SeedCore::String(Category), SeedCore::ComponentStorage::SparseSet, #Type); \
+		SeedCore::ComponentRegistry::Register<Type>(SeedCore::String::intern(#Type), SeedCore::String(Category)); \
 		return true; \
 	}()
 
 #define REGISTER_COMPONENT_3(Type, Category, Storage) \
-	SEED_TRAITS_SPEC(Type, Storage) \
+	SEED_STORAGE_SPEC(Type, Storage) \
 	static const SeedCore::Bool Type##_registered = []() { \
-		SeedCore::ComponentRegistry::Register<Type>(SeedCore::String::intern(#Type), SeedCore::String(Category), Storage, #Type); \
+		SeedCore::ComponentRegistry::Register<Type>(SeedCore::String::intern(#Type), SeedCore::String(Category)); \
 		return true; \
 	}()
 

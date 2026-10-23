@@ -2,6 +2,9 @@
 
 #include <SeedCore/ScComponent.h>
 #include <SeedCore/ScPhysics.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <PhysicsEngine/Physics/Physics.h>
+#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
 
 using namespace SeedCore;
 
@@ -34,7 +37,7 @@ void SwitchSystem::OnTick(float elapsedTime)
 	// 中心算出
 	Vector3 center = position + Vector3::Transform(detectOffset_, rotation);
 
-	Physics& physics = actor.GetPhysics();
+	Physics& physics = *actor.GetService<Physics>();
 	DynamicArray<EntityID> entityIDs;
 	// 種類で処理を切り替える
 	// インスペクタで出す値を全体サイズとするので、ここはハーフサイズにする
@@ -60,7 +63,7 @@ void SwitchSystem::OnTick(float elapsedTime)
 	// ループで取り出す、基本はFloorMoveと同じ
 	for (EntityID entityID : entityIDs)
 	{
-		Actor other = world.GetActor(entityID);
+		Actor other = SeedCore::WorldAccessor::Make(world, entityID);
 		if (!other)
 		{
 			continue;
@@ -146,11 +149,11 @@ void SwitchSystem::OnEditorTick(float elapsedTime)
 		case Shape::Sphere:
 		{
 			float radius = Max(detectSize_.x * 0.5f, Max(detectSize_.y * 0.5f, detectSize_.z * 0.5f));
-			actor.GetDebugDraw().Sphere(center, radius, Color(0.5f, 0.5f, 0.0f, 1.0f));
+			actor.GetService<DebugDraw>()->Sphere(center, radius, Color(0.5f, 0.5f, 0.0f, 1.0f));
 			break;
 		}
 		case Shape::Box:
-			actor.GetDebugDraw().Box(center, rotation, detectSize_, Color(0.5f, 0.5f, 0.0f, 1.0f));
+			actor.GetService<DebugDraw>()->Box(center, rotation, detectSize_, Color(0.5f, 0.5f, 0.0f, 1.0f));
 			break;
 		}
 	}

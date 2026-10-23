@@ -1,4 +1,5 @@
 #include <FoundationEngine/Resource/Scene/SceneBlueprint.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/Log/Error.h>
@@ -21,14 +22,12 @@ namespace SeedCore
 	{
 		nodes_.clear();
 
-		/// [EN] Only root actors are enumerated here; CaptureActorNode recurses into each root's descendants on its own.
-		/// [JP] ここで列挙するのはルート actor のみ。各ルートの子孫への再帰は CaptureActorNode 自身が行う。
-		for (Actor actor : world.GetActors())
+		/// [EN] Only the scene roots are walked here, through their sibling links; BlueprintNode::Capture recurses into each root's descendants on its own.
+		/// [JP] ここで回すのはシーンのルートだけで、兄弟のつながりでたどる。各ルートの子孫への再帰は BlueprintNode::Capture 自身が行う。
+		ActorRegistry& actors = WorldAccessor::Actors(world);
+		for (EntityID root = actors.Root(); root != EntityID{}; root = actors.Record(root)->nextSibling_)
 		{
-			if (!actor.Parent())
-			{
-				CaptureActorNode(actor, -1, nodes_);
-			}
+			BlueprintNode::Capture(WorldAccessor::Make(world, root), nodes_);
 		}
 	}
 
@@ -60,26 +59,7 @@ namespace SeedCore
 	*/
 	DynamicArray<Actor> SceneBlueprint::Instantiate(World& world, ResourceCache& cache)const
 	{
-		DynamicArray<Actor> instantiated;
-		instantiated.reserve(nodes_.size());
-
-		/// [EN] Nodes are stored in capture order, so each node's parent (identified by an earlier index) has always already been instantiated by the time we reach it.
-		/// [JP] ノードは取得順に格納されているため、各ノードの親（それより前のインデックスで識別される）は、そこに到達する時点で既にインスタンス化済みである。
-		for (Size index = 0; index < nodes_.size(); ++index)
-		{
-			const BlueprintNode& node = nodes_[index];
-
-			Actor parentActor;
-			if (node.parentIndex_ >= 0 && static_cast<Size>(node.parentIndex_) < instantiated.size())
-			{
-				parentActor = instantiated[node.parentIndex_];
-			}
-
-			Actor actor = InstantiateActorNode(world, cache, node, parentActor, false);
-			instantiated.push_back(actor);
-		}
-
-		return instantiated;
+		return BlueprintNode::Instantiate(world, cache, nodes_, Actor(), false);
 	}
 
 	/**

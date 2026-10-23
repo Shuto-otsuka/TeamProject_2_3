@@ -16,6 +16,8 @@
 #include <FoundationEngine/World/ECS/Component/Scale.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 
 namespace SeedCore
 {
@@ -47,7 +49,7 @@ namespace SeedCore
 					return;
 				}
 
-				Actor actor = world.GetActor(entityID);
+				Actor actor = WorldAccessor::Make(world, entityID);
 				if (!actor)
 				{
 					return;
@@ -96,13 +98,13 @@ namespace SeedCore
 								continue;
 							}
 
-							Actor targetActor = (ik->enabled_ && entry.target_ != 0 && entry.weight_ > 0.0f) ? world.FindActor(entry.target_) : Actor();
+							Actor targetActor = (ik->enabled_ && entry.target_ != 0 && entry.weight_ > 0.0f) ? WorldAccessor::Find(world, entry.target_) : Actor();
 							if (targetActor)
 							{
 								Vector3 targetModelPosition = Vector3::Transform(targetActor.WorldMatrix().Translation(), worldToModel);
 								animator->SetIKTarget(entry.effectorBoneName_.str(), targetModelPosition, entry.weight_);
 
-								Actor poleActor = (entry.pole_ != 0) ? world.FindActor(entry.pole_) : Actor();
+								Actor poleActor = (entry.pole_ != 0) ? WorldAccessor::Find(world, entry.pole_) : Actor();
 								if (poleActor)
 								{
 									Vector3 poleModelPosition = Vector3::Transform(poleActor.WorldMatrix().Translation(), worldToModel);
@@ -252,7 +254,7 @@ namespace SeedCore
 
 											if (delta.x != 0.0f || delta.y != 0.0f || delta.z != 0.0f)
 											{
-												Entity entity = actor.GetEntity();
+												Entity entity = ActorAccessor::GetEntity(actor);
 												Rotation* rotationComponent = world.GetComponent<Rotation>(entity);
 												Scale* scaleComponent = world.GetComponent<Scale>(entity);
 

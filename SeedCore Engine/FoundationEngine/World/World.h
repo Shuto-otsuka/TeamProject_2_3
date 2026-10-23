@@ -1,1505 +1,347 @@
 #pragma once
-#include <FoundationEngine/World/ECS/Entity/Entity.h>
-#include <FoundationEngine/World/ECS/Component/Component.h>
-#include <FoundationEngine/World/ECS/Component/ComponentConcept.h>
-#include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
-#include <FoundationEngine/World/ECS/Entity/EntityRecord.h>
-#include <FoundationEngine/World/ECS/Archetype/Archetype.h>
-#include <FoundationEngine/World/ECS/Archetype/ArchetypeRegistry.h>
-#include <FoundationEngine/World/ECS/SparseSet/SparseSet.h>
-#include <FoundationEngine/World/ECS/Archetype/Chunk.h>
 #include <FoundationEngine/World/Actor/Actor.h>
-#include <FoundationEngine/Pool/StablePool.h>
-#include <FoundationEngine/Time/GameTimer.h>
-#include <FoundationEngine/Utility/FlatMap.h>
-#include <FoundationEngine/Reflection/ReflectionRegistry.h>
-#include <FoundationEngine/Log/Warning.h>
-#include <FoundationEngine/Interop/RenderInstance.h>
-#include <FoundationEngine/Interop/QueryInstance.h>
-#include <PhysicsEngine/Physics/Physics.h>
-#include <AudioEngine/Audio/Audio.h>
-#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
+#include <FoundationEngine/World/Actor/ActorRegistry.h>
+
+#include <FoundationEngine/World/ECS/Component/Component.h>
+#include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
+
+#include <FoundationEngine/World/ECS/Entity/Entity.h>
+#include <FoundationEngine/World/ECS/Entity/EntityRegistry.h>
+
+#include <FoundationEngine/World/ECS/Archetype/ArchetypeStorage.h>
+#include <FoundationEngine/World/ECS/SparseSet/SparseSetStorage.h>
+
+#include <FoundationEngine/World/Service.h>
 
 namespace SeedCore
 {
 	/**
 	* [EN]
-	* The data behind one Actor: its scene-graph hierarchy, active state,
-	* tag/layer membership, cached world matrix, prefab-instance
-	* bookkeeping, and the list of ComponentBehaviour-derived components it
-	* carries. Lives in World (keyed by EntityID); the Actor value handle
-	* only holds a {World*, Entity} pair and forwards here.
+	* The entry point of one scene: creates and destroys Actors, adds and
+	* removes their components, and holds the services each module
+	* installs. Storage itself is left to the registries and storages it
+	* owns.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 1つの Actor の裏にあるデータ: シーングラフの階層、アクティブ状態、
-	* タグ/レイヤー所属、キャッシュされたワールド行列、プレハブ
-	* インスタンスの管理情報、および持っている ComponentBehaviour 派生
-	* コンポーネント一覧。World 内に（EntityID をキーに）存在する。
-	* Actor 値ハンドルは {World*, Entity} のペアだけを持ち、ここへ転送する。
-	*/
-	struct ActorRecord
-	{
-		/// [EN] The entity this record's actor wraps.
-		/// [JP] このレコードの actor が包むエンティティ。
-		Entity entity_;
-
-		/// [EN] This actor's current parent, or a null Entity if it is a scene root.
-		/// [JP] この actor の現在の親。シーンのルートなら null Entity。
-		Entity parent_;
-
-		/// [EN] This actor's direct children, in display order.
-		/// [JP] この actor の直接の子一覧。表示順で保持される。
-		DynamicArray<Entity> children_;
-
-		/// [EN] IDs of every ComponentBehaviour-derived component currently attached to this actor.
-		/// [JP] この actor に現在アタッチされている、全ての ComponentBehaviour 派生コンポーネントの ID 一覧。
-		DynamicArray<ComponentID> componentBaseIDs_;
-
-		/// [EN] Cached world-space transform matrix.
-		/// [JP] キャッシュされたワールド空間変換行列。
-		Matrix worldMatrix_ = Matrix::Identity;
-
-		/// [EN] Cached active flag, used when this actor has no Active component.
-		/// [JP] キャッシュされたアクティブフラグ。この actor が Active コンポーネントを持たない場合に使われる。
-		Bool active_ = true;
-
-		/// [EN] Bitset of tag membership, indexed by TagRegistry bit index.
-		/// [JP] タグ所属を表すビットセット。TagRegistry のビットインデックスでアクセスする。
-		Bitset tags_;
-
-		/// [EN] This actor's current layer, a LayerRegistry slot index.
-		/// [JP] この actor の現在のレイヤー。LayerRegistry のスロットインデックス。
-		Size layer_ = 0;
-
-		/// [EN] Whether this actor was instantiated from a prefab.
-		/// [JP] この actor がプレハブからインスタンス化されたかどうか。
-		Bool fromPrefab_ = false;
-
-		/// [EN] Only set on the root Actor of a Prefab instance; the .prefab asset ID "Prefab に適用" overwrites. 0 = not an instance root.
-		/// [JP] Prefab インスタンスのルート Actor にのみ設定される。「Prefab に適用」が上書きする .prefab アセット ID。0 はインスタンスルートでないことを示す。
-		Uint32 sourcePrefabAssetID_ = 0;
-
-		/// [EN] World-wide unique identifier assigned by World::CreateActor, round-tripped through Scene/Prefab save/load. 0 = unassigned.
-		/// [JP] World::CreateActor が割り当てる World 全体で一意な識別子。Scene/Prefab のセーブ/ロードを往復する。0 は未割り当て。
-		Uint32 persistentId_ = 0;
-		String collaborationId_;
-	};
-
-	/**
-	* [EN]
-	* Central owner of a scene's ECS state: entities, archetype-chunked
-	* and sparse-set component storage, physics resources, and the
-	* higher-level Actor wrappers built on top of raw entities. All
-	* entity/component operations (create/destroy, add/remove/get
-	* components, chunk lookup) are routed through this class.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* シーンの ECS 状態を統括するクラス: エンティティ、アーキタイプ・
-	* チャンク構造化ストレージとスパースセットストレージ、物理リソース、
-	* および生のエンティティの上に構築されるより高水準な Actor
-	* ラッパーを保持する。全てのエンティティ/コンポーネント操作
-	* （生成・破棄、コンポーネントの追加・削除・取得、チャンク検索）は
-	* このクラスを経由する。
+	* 1つのシーンの入口。Actor の生成・破棄、コンポーネントの追加・削除を
+	* 行い、各モジュールが組み込むサービスを保持する。格納そのものは
+	* 自身が持つレジストリとストレージに任せる。
 	*/
 	class SEEDCORE_API World
 	{
+	private:
+		friend class WorldAccessor;
+
 	public:
-		// ============================================================
-		// Lifecycle
-		// ============================================================
-
 		/**
 		* [EN]
-		* Default constructor: starts with an empty scene.
+		* Destroys every actor, so their behaviours receive OnDestroy while the
+		* services they may use still exist.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* デフォルトコンストラクタ: 空のシーンから開始する。
+		* 全 actor を破棄する。ビヘイビアは、使うかもしれないサービスがまだ
+		* 存在する間に OnDestroy を受け取る。
 		*/
-		World() = default;
+		~World();
 
+	private:
 		/**
 		* [EN]
-		* Destructor; uses the compiler-generated default.
+		* Creates an actor named name with persistentID, or with a new ID when
+		* persistentID is 0; CreateActor(name) and loaded scenes both come here.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* デストラクタ。コンパイラ生成のデフォルトを使用する。
+		* name という名前の actor を persistentID で作る。persistentID が 0 なら
+		* 新しい ID を使う。CreateActor(name) も、読み込んだシーンもここを通る。
 		*/
-		~World() = default;
+		Actor CreateActor(String name, Uint32 persistentID);
 
+	public:
 		/**
 		* [EN]
-		* Records a request to quit the game. The world only holds the
-		* request; what quitting means is decided by the host that owns the
-		* main loop - the runtime ends the application, while the editor
-		* stops Play mode instead. Callable from gameplay code at any time;
-		* repeated calls before the host consumes the request collapse into
-		* one.
+		* Creates an actor named name as the last scene root, with the
+		* components every actor has: Name, Position, Rotation, Scale,
+		* WorldMatrix, Active and Bounds.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* ゲーム終了の要求を記録する。ワールドは要求を保持するだけで、終了が
-		* 何を意味するかはメインループを所有するホストが決める - ランタイム
-		* ではアプリケーションを終了し、エディタでは代わりに Play モードを
-		* 停止する。ゲームプレイコードからいつでも呼び出せ、ホストが要求を
-		* 消費する前に複数回呼ばれても1回分にまとまる。
+		* name という名前の actor をシーンのルートの末尾に作り、全 actor が持つ
+		* コンポーネント（Name、Position、Rotation、Scale、WorldMatrix、Active、
+		* Bounds）を付ける。
 		*/
-		void RequestQuit();
+		Actor CreateActor(String name);
 
 		/**
 		* [EN]
-		* Returns whether a quit has been requested via RequestQuit since
-		* the last call, clearing the request in the same step so each
-		* request is observed exactly once. Called once per frame by the
-		* host that owns the main loop.
+		* Destroys actor: its children move to the scene roots, its behaviours
+		* receive OnDestroy, and its components and entity are released.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 前回の呼び出し以降に RequestQuit で終了が要求されたかどうかを返し、
-		* 同時に要求を取り下げる。これにより各要求はちょうど1回だけ観測
-		* される。メインループを所有するホストが毎フレーム1回呼び出す。
-		*/
-		NODISCARD Bool ConsumeQuit();
-
-		/**
-		* [EN]
-		* Sets the game timer this world runs on. The host that owns the
-		* timer (Engine) calls this once after creating the world; the
-		* world only refers to it and does not own it.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このワールドが使うゲームタイマーを設定する。タイマーを持つホスト
-		* （Engine）が、ワールドを作った直後に1回呼ぶ。ワールドは参照する
-		* だけで、所有はしない。
-		*/
-		void Timer(GameTimer& gameTimer);
-
-		/**
-		* [EN]
-		* Returns the game timer, so gameplay code can read values such as
-		* the unscaled delta time that Tick does not receive.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ゲームタイマーを返す。Tick には渡らないタイムスケール未適用の
-		* デルタタイムなどを、ゲームプレイのコードから読めるようにする。
-		*/
-		const GameTimer& Timer()const;
-
-		/**
-		* [EN]
-		* Returns the game timer, so gameplay code can read values such as
-		* the unscaled delta time that Tick does not receive.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ゲームタイマーを返す。Tick には渡らないタイムスケール未適用の
-		* デルタタイムなどを、ゲームプレイのコードから読めるようにする。
-		*/
-		GameTimer& Timer();
-
-		// ============================================================
-		// Entity
-		// ============================================================
-
-		/**
-		* [EN]
-		* Creates a new, componentless entity and returns a handle to it.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* コンポーネントを持たない新しいエンティティを生成し、そのハンドルを
-		* 返す。
-		*/
-		Entity CreateEntity();
-
-		/**
-		* [EN]
-		* Marks the start of a Query::ForEach traversal. While a traversal
-		* is in progress, structural changes (CreateEntity / DestroyEntity /
-		* archetype migration) assert, since they can reallocate the chunks
-		* being iterated - defer such changes past the ForEach or route
-		* them through a command buffer.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Query::ForEach の走査開始を記録する。走査中は構造変更
-		* （CreateEntity / DestroyEntity / アーキタイプ移行）がアサートする。
-		* 反復中のチャンクを再確保し得るため - そうした変更は ForEach の後へ
-		* 遅延させるか、コマンドバッファ経由にすること。
-		*/
-		void BeginQueryIteration();
-
-		/**
-		* [EN]
-		* Marks the end of a Query::ForEach traversal (pairs with BeginQueryIteration).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Query::ForEach の走査終了を記録する（BeginQueryIteration と対になる）。
-		*/
-		void EndQueryIteration();
-
-		/**
-		* [EN]
-		* Destroys entity, removing its record, components, and (if
-		* archetype-stored) its chunk row.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* entity を破棄し、そのレコード、コンポーネント、（アーキタイプ
-		* 格納であれば）チャンク行を削除する。
-		*/
-		void DestroyEntity(Entity entity);
-
-		/**
-		* [EN]
-		* Moves entityID's archetype-stored components from
-		* sourceChunk (of sourceArcketype) into a chunk of destArcketype,
-		* updating its EntityRecord.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* entityID のアーキタイプ格納コンポーネントを、sourceArcketype の
-		* sourceChunk から destArcketype のチャンクへ移動し、その
-		* EntityRecord を更新する。
-		*/
-		void MoveEntity(EntityID entityID, Archetype* sourceArcketype, Chunk* sourceChunk, Archetype* destArcketype);
-
-		/**
-		* [EN]
-		* Returns the ordered list of component types making up entity's
-		* archetype (empty if entity is sparse-set-only or componentless).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* entity のアーキタイプを構成する、順序付きのコンポーネント型
-		* 一覧を返す（entity がスパースセットのみ、またはコンポーネントを
-		* 持たない場合は空になる）。
-		*/
-		const DynamicArray<ComponentID>& GetLayout(Entity entity)const;
-
-		// ============================================================
-		// Component
-		// ============================================================
-
-		/**
-		* [EN]
-		* Adds a copy of value as entity's T component, routing to
-		* sparse-set or archetype storage based on T's registered
-		* ComponentStorage.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* value のコピーを entity の T コンポーネントとして追加する。
-		* T の登録済み ComponentStorage に応じて、スパースセットまたは
-		* アーキタイプストレージへルーティングする。
-		*/
-		template<typename T>
-			requires(IsComponent<T> || std::derived_from<T, ComponentBehaviour>)
-		void AddComponent(Entity entity, const T& value)
-		{
-			ComponentID id = ComponentRegistry::GetComponentID<T>();
-			EntityID entityID = entity.GetID();
-
-			const ComponentMetadata& meta = ComponentRegistry::Get(id);
-
-			if (meta.storage_ == ComponentStorage::SparseSet)
-			{
-				AddComponentSparse<T>(entityID, value);
-			}
-			else
-			{
-				AddComponentArchetype(entity, entityID, id, &value, sizeof(T));
-			}
-		}
-
-		/**
-		* [EN]
-		* Type-erased overload of AddComponent: adds a default-constructed
-		* instance of the component registered under id to entity.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* AddComponent の型消去版: id に登録されているコンポーネントの
-		* デフォルト構築されたインスタンスを entity へ追加する。
-		*/
-		void AddComponent(Entity entity, ComponentID id);
-
-		/**
-		* [EN]
-		* Returns a mutable pointer to entity's T component, or nullptr
-		* if entity doesn't have one, routing to sparse-set or archetype
-		* storage based on T's registered ComponentStorage.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* entity の T コンポーネントへの変更可能なポインタを返す。持って
-		* いなければ nullptr を返す。T の登録済み ComponentStorage に
-		* 応じて、スパースセットまたはアーキタイプストレージへ
-		* ルーティングする。
-		*/
-		template<typename T>
-			requires(IsComponent<T> || std::derived_from<T, ComponentBehaviour>)
-		T* GetComponent(Entity entity)
-		{
-			ComponentID id = ComponentRegistry::GetComponentID<T>();
-			EntityID entityID = entity.GetID();
-
-			const ComponentMetadata& meta = ComponentRegistry::Get(id);
-
-			if (meta.storage_ == ComponentStorage::SparseSet)
-			{
-				return reinterpret_cast<T*>(GetComponentSparse<T>(entityID));
-			}
-			else
-			{
-				return reinterpret_cast<T*>(GetComponentArchetype(entityID, id));
-			}
-		}
-
-		/**
-		* [EN]
-		* Const overload of GetComponent<T>(Entity), forwarding through a const_cast.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* GetComponent<T>(Entity) の const オーバーロード。const_cast
-		* 経由で転送する。
-		*/
-		template<typename T>
-		const T* GetComponent(Entity entity)const
-		{
-			return const_cast<World*>(this)->GetComponent<T>(entity);
-		}
-
-		/**
-		* [EN]
-		* Type-erased overload of GetComponent: returns a pointer to
-		* entity's component registered under id, or nullptr if absent.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* GetComponent の型消去版: id に登録されている entity の
-		* コンポーネントへのポインタを返す。無ければ nullptr を返す。
-		*/
-		void* GetComponent(Entity entity, ComponentID id);
-
-		/**
-		* [EN]
-		* Overload of the type-erased GetComponent taking a raw EntityID
-		* directly instead of an Entity handle.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Entity ハンドルの代わりに生の EntityID を直接受け取る、型消去版
-		* GetComponent のオーバーロード。
-		*/
-		void* GetComponent(EntityID entityID, ComponentID id);
-
-		/**
-		* [EN]
-		* Returns whether entity currently has a T component.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* entity が現在 T コンポーネントを持っているかどうかを返す。
-		*/
-		template<typename T>
-		Bool HasComponent(Entity entity)const
-		{
-			EntityID entityID = entity.GetID();
-			return HasComponent<T>(entityID);
-		}
-
-		/**
-		* [EN]
-		* Overload of HasComponent<T> taking a raw EntityID directly:
-		* checks the sparse set for sparse-set-stored components, or
-		* scans the owning archetype's layout for archetype-stored ones.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 生の EntityID を直接受け取る HasComponent<T> のオーバーロード:
-		* スパースセット格納コンポーネントであればスパースセットを
-		* チェックし、アーキタイプ格納であれば所有元アーキタイプの
-		* レイアウトを走査する。
-		*/
-		template<typename T>
-		Bool HasComponent(EntityID entityID)const
-		{
-			ComponentID id = ComponentRegistry::GetComponentID<T>();
-			const ComponentMetadata& meta = ComponentRegistry::Get(id);
-
-			if (meta.storage_ == ComponentStorage::SparseSet)
-			{
-				auto* sparseSet = const_cast<World*>(this)->FindSparseSet<T>();
-				return sparseSet && sparseSet->Contains(entityID);
-			}
-			else
-			{
-				auto it = records_.find(entityID);
-				if (it == records_.end())
-				{
-					return false;
-				}
-
-				for (const ComponentID& cid : it->second.archetype_->Layout())
-				{
-					if (cid == id)
-					{
-						return true;
-					}
-				}
-				return false;
-			}
-		}
-
-		/**
-		* [EN]
-		* Type-erased overload of HasComponent: returns whether entity
-		* has the component registered under id.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* HasComponent の型消去版: entity が id に登録されている
-		* コンポーネントを持っているかどうかを返す。
-		*/
-		Bool HasComponent(Entity entity, ComponentID id)const;
-
-		/**
-		* [EN]
-		* Returns how many entities currently have a T component.
-		* Sparse-set-stored T resolves in O(1) without walking every actor
-		* -- lets callers cheaply check "does any entity have this
-		* component at all" (e.g. to skip a whole system when its
-		* component is unused this frame); returns 0 if T's storage hasn't
-		* been created yet. Archetype-stored T has no such index, so this
-		* instead walks every actor and counts the ones that have T (same
-		* O(N) trade-off as GetComponents<T>()).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 現在 T コンポーネントを持つエンティティ数を返す。スパースセット
-		* 格納の T は全 actor を走査せず O(1) で解決する — 「このコンポーネント
-		* を持つエンティティが1つでもあるか」を安価に確認できる(例: 今フレーム
-		* 未使用のシステム全体をスキップする)。T のストレージがまだ作られて
-		* いなければ 0 を返す。アーキタイプ格納の T にはそのようなインデックス
-		* が無いため、代わりに全 actor を走査し T を持つものを数える
-		* （GetComponents<T>() と同じ O(N) のトレードオフ）。
-		*/
-		template<typename T>
-		Uint32 GetComponentCount()const
-		{
-			ComponentID id = ComponentRegistry::GetComponentID<T>();
-			const ComponentMetadata& meta = ComponentRegistry::Get(id);
-
-			if (meta.storage_ == ComponentStorage::SparseSet)
-			{
-				auto it = sparseSet_.find(id);
-				if (it == sparseSet_.end())
-				{
-					return 0;
-				}
-
-				return static_cast<SparseSetStorage<T>*>(it->second.get())->data_.Length();
-			}
-
-			return static_cast<Uint32>(std::ranges::count_if(GetActors(), [id](const Actor& actor) { return actor.HasComponent(id); }));
-		}
-
-		/**
-		* [EN]
-		* Returns the EntityID of every entity currently holding a T
-		* component. Sparse-set-stored T resolves in O(1) via its dense
-		* array (returns empty if T's storage hasn't been created yet).
-		* Archetype-stored T has no such index, so this instead walks every
-		* actor and keeps the ones that have T (see the in-body comment) —
-		* fine for editor-scale actor counts; a hot per-frame path over
-		* thousands of actors should use Query<Read<T>> instead, which
-		* chunk-iterates archetypes directly.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 現在 T コンポーネントを持つ全エンティティの EntityID を返す。
-		* スパースセット格納の T は密配列経由で O(1) 解決する（T のストレージ
-		* がまだ作られていなければ空を返す）。アーキタイプ格納の T にはそのような
-		* インデックスが無いため、代わりに全 actor を走査し T を持つものだけ
-		* 残す（本体内コメント参照）— エディタ規模の actor 数なら十分。数千
-		* actor 規模の毎フレームホットパスでは、アーキタイプを直接チャンク
-		* 走査する Query<Read<T>> を使うこと。
-		*/
-		template<typename T>
-		DynamicArray<EntityID> GetComponents()const
-		{
-			DynamicArray<EntityID> result;
-
-			ComponentID id = ComponentRegistry::GetComponentID<T>();
-			const ComponentMetadata& meta = ComponentRegistry::Get(id);
-
-			if (meta.storage_ == ComponentStorage::SparseSet)
-			{
-				auto it = sparseSet_.find(id);
-				if (it == sparseSet_.end())
-				{
-					return result;
-				}
-
-				const SparseSet<T>& sparseSet = static_cast<SparseSetStorage<T>*>(it->second.get())->data_;
-				result.reserve(sparseSet.Length());
-				for (const auto& element : sparseSet.Dense())
-				{
-					result.push_back(element.id_);
-				}
-			}
-			else
-			{
-				/// [EN] Archetype storage has no O(1) index of every entity with T, so walk all actors and keep those that have it.
-				/// [JP] アーキタイプ格納には「T を持つ全エンティティ」の O(1) の索引が無いので、全 actor を回って T を持つものだけ残す。
-				for (const Actor& actor : GetActors())
-				{
-					if (actor.HasComponent(id))
-					{
-						result.push_back(actor.GetEntity().GetID());
-					}
-				}
-			}
-
-			return result;
-		}
-
-		/**
-		* [EN]
-		* Removes entity's component registered under id, if present.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* entity の、id に登録されているコンポーネントを、存在すれば
-		* 削除する。
-		*/
-		void RemoveComponent(Entity entity, ComponentID id);
-
-		/**
-		* [EN]
-		* Erases id's sparse-set storage container entirely (not just its
-		* entries), destroying it and any component data it still holds.
-		* Callers should remove every entity's component data first (e.g.
-		* via RemoveComponent per actor) so ComponentBehaviour::OnDestroy still
-		* runs — this just drops the container itself. Intended for
-		* tearing down a component type whose code lives in a DLL that is
-		* about to be unloaded, since the storage container's own vtable
-		* would otherwise dangle. No-op if id has no sparse-set storage.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* id のスパースセットストレージコンテナ自体を(単なるエントリではなく)
-		* 消去し、破棄する。まだ保持しているコンポーネントデータもろとも破棄する。
-		* ComponentBehaviour::OnDestroy を確実に発火させるため、呼び出し側は先に
-		* actor単位の RemoveComponent 等で各エンティティのコンポーネントデータを
-		* 削除しておくべき — これはコンテナ自体を落とすだけ。これからアンロード
-		* される DLL 内にコードがあるコンポーネント型を解体する用途を想定している
-		* — そうしないとストレージコンテナ自身の仮想関数テーブルが宙に浮いてしまう
-		* ため。id にスパースセットストレージが無い場合は何もしない。
-		*/
-		void UnregisterSparseSetStorage(ComponentID id);
-
-		/**
-		* [EN]
-		* Returns the mapping from every live Archetype to its list of Chunks.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 現在有効な全 Archetype を、そのチャンク一覧へ対応付けるマップを
-		* 返す。
-		*/
-		const FlatMap<Archetype*, DynamicArray<Chunk*>>& GetChunk()const;
-
-		// ============================================================
-		// Actor
-		// ============================================================
-
-		/**
-		* [EN]
-		* Creates a new entity wrapped in an Actor with the given display
-		* name, and returns a pointer to it. If persistentId is nonzero
-		* and not already taken, the new actor is assigned that ID
-		* (restoring a Scene/Prefab-captured actor's identity); otherwise
-		* (persistentId is 0, or already in use by another live actor) a
-		* fresh ID is auto-allocated instead.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 指定された表示名を持つ Actor で包まれた新しいエンティティを生成
-		* し、そのポインタを返す。persistentId が非ゼロかつ未使用であれば、
-		* 新しい actor にその ID を割り当てる（Scene/Prefab から取得済みの
-		* actor の識別情報を復元する）。そうでなければ（persistentId が
-		* 0、または他の生存中の actor が既に使用中であれば）代わりに
-		* 新規IDを自動割り当てする。
-		*/
-		Actor CreateActor(String name, Uint32 persistentId = 0);
-
-		/**
-		* [EN]
-		* Destroys actor's underlying entity and removes it from this world.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* actor の内部エンティティを破棄し、このワールドから削除する。
+		* actor を破棄する。子はシーンのルートへ移り、ビヘイビアは OnDestroy を
+		* 受け取り、コンポーネントとエンティティは解放される。
 		*/
 		void DestroyActor(Actor actor);
 
 		/**
 		* [EN]
-		* Destroys every Actor currently owned by this world.
+		* Returns the first actor, in storage order, whose Name is name, or an
+		* invalid Actor if there is none.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* このワールドが現在所有している全ての Actor を破棄する。
+		* 格納の順で最初に見つかった、Name が name の actor を返す。無ければ
+		* 無効な Actor。
 		*/
-		void DestroyActors();
+		Actor GetActor(const String& name);
+
+	public:
+		/**
+		* [EN]
+		* Default-constructs component id for entity in the storage its
+		* metadata selects and returns it; returns the existing one if entity
+		* already has it, or nullptr if entity is stale or id is unregistered.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* metadata が選ぶストレージで、entity にコンポーネント id をデフォルト
+		* 構築して返す。既に持っていればそれを返し、entity が古いか id が
+		* 登録解除済みなら nullptr。
+		*/
+		void* AddComponent(Entity entity, ComponentID id);
 
 		/**
 		* [EN]
-		* Returns the list of Actor handles owned by this world, in
-		* creation order.
+		* Default-constructs a T for entity and returns it; the storage is
+		* chosen at compile time from T's declared storage.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* このワールドが所有する Actor ハンドル一覧を、生成順で返す。
-		*/
-		const DynamicArray<Actor>& GetActors()const;
-
-		/**
-		* [EN]
-		* Reorders a parentless actor so it sits immediately after `after` in
-		* GetActors() order (or last, when `after` is invalid). Actors with a
-		* parent order themselves through Actor::MoveChild instead.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 親を持たない actor を GetActors() の並び順で `after` の直後（`after`
-		* が無効なときは末尾）へ移動する。親を持つ actor の並び替えは
-		* Actor::MoveChild を使う。
-		*/
-		void MoveActor(Actor actor, Actor after);
-
-		/**
-		* [EN]
-		* Returns a handle to the actor wrapping entityID, or an invalid
-		* Actor if entityID has no actor (or is stale).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* entityID を包む actor へのハンドルを返す。entityID に actor が
-		* 無い（または古い）場合は無効な Actor を返す。
-		*/
-		Actor GetActor(EntityID entityID)const;
-
-		/**
-		* [EN]
-		* Returns a handle to the actor wrapping entity, or an invalid
-		* Actor if entity has no actor (or is stale).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* entity を包む actor へのハンドルを返す。entity に actor が無い
-		* （または古い）場合は無効な Actor を返す。
-		*/
-		Actor GetActor(Entity entity)const;
-
-		/**
-		* [EN]
-		* Returns a handle to the first actor whose Name component's name_
-		* equals name, or an invalid Actor if none match. O(actor count) -
-		* there is no name index - so prefer caching the result (or an
-		* EntityID/persistent ID) over calling this every frame.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Name コンポーネントの name_ が name と一致する最初の actor への
-		* ハンドルを返す。一致するものが無ければ無効な Actor。名前用の
-		* 索引は無いため O(actor数) - 毎フレーム呼ぶより、結果(または
-		* EntityID/永続ID)をキャッシュしておくことを推奨する。
-		*/
-		Actor GetActor(const String& name)const;
-
-		/**
-		* [EN]
-		* Returns a handle to the actor whose persistent ID is
-		* persistentId, or an invalid Actor if no live actor currently
-		* holds it.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 永続IDが persistentId である actor へのハンドルを返す。現在それを
-		* 保持している生存中の actor が無ければ無効な Actor。
-		*/
-		Actor FindActor(Uint32 persistentId)const;
-
-		/**
-		* [EN]
-		* Returns whether entity currently identifies a live actor in this
-		* world. A stale entity (its slot recycled) returns false.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* entity がこのワールドの生存中の actor を指しているかどうかを返す。
-		* 古い entity（スロットが再利用された）は false を返す。
-		*/
-		Bool HasActor(Entity entity)const;
-
-		/**
-		* [EN]
-		* Returns a mutable reference to entity's ActorRecord, or to a
-		* shared default record if entity has no actor (so reads on an
-		* invalid actor yield defaults and writes are harmlessly discarded).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* entity の ActorRecord への変更可能な参照を返す。entity に actor
-		* が無ければ共有のデフォルトレコードを返す（無効な actor への
-		* 読み取りはデフォルト値を返し、書き込みは無害に破棄される）。
-		*/
-		ActorRecord& GetActorRecord(Entity entity);
-
-		/**
-		* [EN]
-		* Const overload of GetActorRecord.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* GetActorRecord の const オーバーロード。
-		*/
-		const ActorRecord& GetActorRecord(Entity entity)const;
-
-		// ============================================================
-		// Debug
-		// ============================================================
-
-		/**
-		* [EN]
-		* Creates and returns a new DebugDraw resource owned by this world.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このワールドが所有する新しい DebugDraw リソースを生成して返す。
-		*/
-		DebugDraw* CreateDebugDraw();
-
-		/**
-		* [EN]
-		* Returns a mutable reference to this world's DebugDraw resource.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このワールドの DebugDraw リソースへの変更可能な参照を返す。
-		*/
-		ResourcePtr<DebugDraw>& GetDebugDraw();
-
-		/**
-		* [EN]
-		* Const overload of GetDebugDraw().
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* GetDebugDraw() の const オーバーロード。
-		*/
-		const ResourcePtr<DebugDraw>& GetDebugDraw()const;
-
-		/**
-		* [EN]
-		* Returns the record of debug shapes requested in this world, which DebugDraw fills and the debug display reads and clears.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このワールドで頼まれたデバッグ用の形の記録を返す。DebugDraw が書き込み、デバッグ表示が読んで空にする。
-		*/
-		RenderInstance& GetRenderInstance();
-
-		/**
-		* [EN]
-		* Const overload of GetRenderInstance().
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* GetRenderInstance() の const オーバーロード。
-		*/
-		const RenderInstance& GetRenderInstance()const;
-
-		// ============================================================
-		// Physics
-		// ============================================================
-
-		/**
-		* [EN]
-		* Creates and returns a new Physics resource owned by this world.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このワールドが所有する新しい Physics リソースを生成して返す。
-		*/
-		Physics* CreatePhysics();
-
-		/**
-		* [EN]
-		* Returns a mutable reference to this world's Physics resource.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このワールドの Physics リソースへの変更可能な参照を返す。
-		*/
-		ResourcePtr<Physics>& GetPhysics();
-
-		/**
-		* [EN]
-		* Const overload of GetPhysics().
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* GetPhysics() の const オーバーロード。
-		*/
-		const ResourcePtr<Physics>& GetPhysics()const;
-
-		/**
-		* [EN]
-		* Returns the record of physics queries asked in this world, which Physics fills and the debug display reads and clears.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このワールドで行われた物理クエリの記録を返す。Physics が書き込み、デバッグ表示が読んで空にする。
-		*/
-		QueryInstance& GetQueryInstance();
-
-		/**
-		* [EN]
-		* Const overload of GetQueryInstance().
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* GetQueryInstance() の const オーバーロード。
-		*/
-		const QueryInstance& GetQueryInstance()const;
-
-		// ============================================================
-		// Audio
-		// ============================================================
-
-		/**
-		* [EN]
-		* Creates and returns a new Audio resource owned by this world.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このワールドが所有する新しい Audio リソースを生成して返す。
-		*/
-		Audio* CreateAudio();
-
-		/**
-		* [EN]
-		* Returns a mutable reference to this world's Audio resource.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このワールドの Audio リソースへの変更可能な参照を返す。
-		*/
-		ResourcePtr<Audio>& GetAudio();
-
-		/**
-		* [EN]
-		* Const overload of GetAudio().
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* GetAudio() の const オーバーロード。
-		*/
-		const ResourcePtr<Audio>& GetAudio()const;
-
-	private:
-		// ============================================================
-		// Component (sparse-set storage helpers)
-		// ============================================================
-
-		/**
-		* [EN]
-		* Returns a mutable reference to the SparseSet<T>, creating its
-		* backing storage if it doesn't exist yet.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* SparseSet<T> への変更可能な参照を返す。まだ裏付けストレージが
-		* 存在しなければ作成する。
+		* entity に T をデフォルト構築して返す。ストレージは T が宣言した格納
+		* 種別からコンパイル時に選ぶ。
 		*/
 		template<typename T>
-		SparseSet<T>& GetSparseSet()
-		{
-			if (auto* sparseSet = FindSparseSet<T>())
-			{
-				return *sparseSet;
-			}
-
-			ComponentID id = ComponentRegistry::GetComponentID<T>();
-
-			auto storage = MakePtr<SparseSetStorage<T>>();
-			auto* ptr = storage.get();
-
-			sparseSet_.emplace(id, std::move(storage));
-
-			return ptr->data_;
-		}
-
-		/**
-		* [EN]
-		* Returns a pointer to the existing SparseSet<T>, or nullptr if T
-		* has no sparse-set storage yet.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 既存の SparseSet<T> へのポインタを返す。T にまだスパースセット
-		* ストレージが存在しなければ nullptr を返す。
-		*/
-		template<typename T>
-		SparseSet<T>* FindSparseSet()
+		T* AddComponent(Entity entity)
 		{
 			ComponentID id = ComponentRegistry::GetComponentID<T>();
-
-			auto it = sparseSet_.find(id);
-
-			if (it == sparseSet_.end())
+			if constexpr (ComponentTraits<T>::storage == ComponentStorage::Archetype)
 			{
-				return nullptr;
-			}
-
-			return &static_cast<SparseSetStorage<T>*>(it->second.get())->data_;
-		}
-
-		/**
-		* [EN]
-		* Adds a copy of value as entityID's T component in its sparse set.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* value のコピーを、entityID のスパースセット内の T コンポーネント
-		* として追加する。
-		*/
-		template<typename T>
-		void AddComponentSparse(EntityID entityID, const T& value)
-		{
-			auto& sparseSet = GetSparseSet<T>();
-
-			sparseSet.Add(entityID);
-			sparseSet.Get(entityID) = value;
-		}
-
-		/**
-		* [EN]
-		* Returns a pointer to entityID's T component in its sparse set,
-		* or nullptr if it has none.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* entityID のスパースセット内の T コンポーネントへのポインタを
-		* 返す。無ければ nullptr を返す。
-		*/
-		template<typename T>
-		T* GetComponentSparse(EntityID entityID)
-		{
-			auto* sparseSet = FindSparseSet<T>();
-
-			if (!sparseSet)
-			{
-				return nullptr;
-			}
-
-			if (!sparseSet->Contains(entityID))
-			{
-				return nullptr;
-			}
-
-			return &sparseSet->Get(entityID);
-		}
-
-		/**
-		* [EN]
-		* Type-erased removal from sparse-set storage: removes
-		* entityID's entry from the sparse set registered under id, if present.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* スパースセットストレージからの型消去された削除: id に
-		* 登録されているスパースセットから entityID のエントリを、
-		* 存在すれば削除する。
-		*/
-		void RemoveComponentSparse(EntityID entityID, ComponentID id);
-
-		/**
-		* [EN]
-		* Type-erased addition to sparse-set storage: adds a
-		* default-constructed entry for entityID to the sparse set
-		* registered under id.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* スパースセットストレージへの型消去された追加: id に登録されて
-		* いるスパースセットへ、entityID 用のデフォルト構築されたエントリを
-		* 追加する。
-		*/
-		void AddComponentSparse(EntityID entityID, ComponentID id);
-
-		// ============================================================
-		// Component (archetype/chunk storage helpers)
-		// ============================================================
-
-		/**
-		* [EN]
-		* Adds the component registered under id to entity's archetype
-		* storage, copying size bytes from source and migrating entity
-		* to the new (component-extended) archetype.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* id に登録されているコンポーネントを entity のアーキタイプ
-		* ストレージへ追加する。source から size バイトをコピーし、
-		* entity を新しい（コンポーネントが拡張された）アーキタイプへ
-		* 移行する。
-		*/
-		void AddComponentArchetype(Entity entity, EntityID entityID, ComponentID id, const void* source, Size size);
-
-		/**
-		* [EN]
-		* Overload of AddComponentArchetype that default-constructs the
-		* new component instead of copying from a source buffer.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ソースバッファからコピーする代わりに、新しいコンポーネントを
-		* デフォルト構築する AddComponentArchetype のオーバーロード。
-		*/
-		void AddComponentArchetype(Entity entity, EntityID entityID, ComponentID id);
-
-		/**
-		* [EN]
-		* Removes the component registered under id from entity's
-		* archetype storage, migrating entity to the new
-		* (component-reduced) archetype.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* id に登録されているコンポーネントを entity のアーキタイプ
-		* ストレージから削除し、entity を新しい（コンポーネントが
-		* 減った）アーキタイプへ移行する。
-		*/
-		void RemoveComponentArchetype(Entity entity, EntityID entityID, ComponentID id);
-
-		/**
-		* [EN]
-		* Returns a pointer to entityID's archetype-stored component
-		* registered under id, or nullptr if entityID's archetype
-		* doesn't include it.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* entityID のアーキタイプ格納コンポーネント（id に登録されて
-		* いるもの）へのポインタを返す。entityID のアーキタイプがそれを
-		* 含んでいなければ nullptr を返す。
-		*/
-		Uint8* GetComponentArchetype(EntityID entityID, ComponentID id);
-
-		/**
-		* [EN]
-		* Returns a non-full chunk of arcketype, creating a new one if
-		* every existing chunk is full.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* arcketype の満杯でないチャンクを返す。既存の全チャンクが満杯で
-		* あれば新しいチャンクを作成する。
-		*/
-		Chunk* GetOrCreateChunk(Archetype* arcketype);
-
-		// ============================================================
-		// Actor (persistent ID helpers)
-		// ============================================================
-
-		/**
-		* [EN]
-		* Returns the next unused persistent ID and advances the counter.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 次の未使用の永続IDを返し、カウンタを進める。
-		*/
-		Uint32 AllocatePersistentID();
-
-	private:
-		// ============================================================
-		// Lifecycle
-		// ============================================================
-
-		/// [EN] Whether RequestQuit has been called and not yet observed by ConsumeQuit.
-		/// [JP] RequestQuit が呼ばれ、まだ ConsumeQuit に観測されていないかどうか。
-		Bool quitRequested_ = false;
-
-		/// [EN] The game timer set by the host; not owned by the world.
-		/// [JP] ホストが設定したゲームタイマー。ワールドは所有しない。
-		GameTimer* gameTimer_ = nullptr;
-
-		// ============================================================
-		// Entity
-		// ============================================================
-
-		/// [EN] Stable-pooled storage of Entity handles, providing generation-checked recycling of entity slots.
-		/// [JP] Entity ハンドルの安定プール格納。世代チェック付きのエンティティスロット再利用を提供する。
-		StablePool<Entity> entityPool_;
-
-		/// [EN] Maps an EntityID to its archetype/chunk/row location.
-		/// [JP] EntityID をそのアーキタイプ/チャンク/行の位置へ対応付ける。
-		FlatMap<EntityID, EntityRecord> records_;
-
-		/// [EN] Nesting depth of in-progress Query::ForEach traversals; nonzero means a structural change would invalidate a live chunk iteration.
-		/// [JP] 進行中の Query::ForEach 走査のネスト深度。0以外なら、構造変更が反復中のチャンクを無効化することを意味する。
-		Uint32 queryIterationDepth_ = 0;
-
-		// ============================================================
-		// Component
-		// ============================================================
-
-		/// [EN] Maps each live Archetype to its list of Chunks.
-		/// [JP] 現在有効な各 Archetype を、そのチャンク一覧へ対応付ける。
-		FlatMap<Archetype*, DynamicArray<Chunk*>> chunks_;
-
-		/// [EN] Maps each sparse-set-stored component's ComponentID to its type-erased storage.
-		/// [JP] スパースセット格納の各コンポーネントの ComponentID を、その型消去されたストレージへ対応付ける。
-		FlatMap<ComponentID, ResourcePtr<InterfaceSparseSetStorage>> sparseSet_;
-
-		// ============================================================
-		// Actor
-		// ============================================================
-
-		/// [EN] Handle for every actor currently owned by this world, in creation order; parallel to actorRecords_.
-		/// [JP] このワールドが現在所有している全 actor のハンドル。生成順で保持され、actorRecords_ と並行。
-		DynamicArray<Actor> actors_;
-
-		/// [EN] Per-actor data, parallel to actors_ (same index).
-		/// [JP] actor ごとのデータ。actors_ と並行（同じインデックス）。
-		DynamicArray<ActorRecord> actorRecords_;
-
-		/// [EN] Maps an EntityID to its index in actors_/actorRecords_, for fast GetActor lookups.
-		/// [JP] EntityID を actors_/actorRecords_ 内のインデックスへ対応付ける。GetActor の高速な検索に使う。
-		FlatMap<EntityID, Size> actorIndex_;
-
-		/// [EN] Maps a persistent ID to the index in actors_/actorRecords_ of the actor currently holding it, for FindActor lookups.
-		/// [JP] 永続IDを、それを現在保持している actor の actors_/actorRecords_ 内インデックスへ対応付ける。FindActor の検索に使う。
-		FlatMap<Uint32, Size> persistentIdIndex_;
-
-		/// [EN] Next persistent ID to hand out from AllocatePersistentID. 0 is reserved as "unassigned", so this starts at 1.
-		/// [JP] AllocatePersistentID が次に払い出す永続ID。0 は「未割り当て」として予約されているため、1 から始まる。
-		Uint32 nextPersistentId_ = 1;
-
-		// ============================================================
-		// Debug
-		// ============================================================
-
-		/// [EN] Record of the debug shapes requested in this world; declared before debugDraw_, which holds a reference to it.
-		/// [JP] このワールドで頼まれたデバッグ用の形の記録。これへの参照を持つ debugDraw_ より先に宣言する。
-		RenderInstance renderInstance_;
-
-		/// [EN] This world's DebugDraw resource.
-		/// [JP] このワールドの DebugDraw リソース。
-		ResourcePtr<DebugDraw> debugDraw_;
-
-		// ============================================================
-		// Physics
-		// ============================================================
-
-		/// [EN] Record of the physics queries asked in this world; declared before physics_, which holds a reference to it.
-		/// [JP] このワールドで行われた物理クエリの記録。これへの参照を持つ physics_ より先に宣言する。
-		QueryInstance queryInstance_;
-
-		/// [EN] This world's Physics resource.
-		/// [JP] このワールドの Physics リソース。
-		ResourcePtr<Physics> physics_;
-
-		// ============================================================
-		// Audio
-		// ============================================================
-
-		/// [EN] This world's Audio resource, owning the players and the 3D listener the world's sounds play through.
-		/// [JP] このワールドの Audio リソース。このワールドの音が鳴るためのプレーヤーと 3D リスナーを所有する。
-		ResourcePtr<Audio> audio_;
-	};
-
-	/**
-	* [EN]
-	* Adds a copy of value as this actor's T component (T not deriving
-	* from ComponentBehaviour), by delegating to World::AddComponent.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* value のコピーをこの actor の T コンポーネント（T は ComponentBehaviour
-	* から派生しない）として追加する。World::AddComponent へ委譲する。
-	*/
-	template<typename T>
-		requires(!std::derived_from<T, ComponentBehaviour>)
-	void Actor::AddComponent(const T& value)
-	{
-		if (world_)
-		{
-			world_->AddComponent(entity_, value);
-		}
-	}
-
-	/**
-	* [EN]
-	* Default-constructs and adds a T component (T deriving from
-	* ComponentBehaviour) to this actor via the type-erased AddComponent
-	* (which tracks it and wires its lifecycle). Returns a pointer to the
-	* new component, or nullptr on failure.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* T コンポーネント（T は ComponentBehaviour から派生する）をデフォルト
-	* 構築して、型消去版 AddComponent 経由でこの actor へ追加する
-	* （記録とライフサイクル配線もそこで行う）。新しいコンポーネントへの
-	* ポインタを返す。失敗時は nullptr を返す。
-	*/
-	template<typename T>
-		requires std::derived_from<T, ComponentBehaviour>
-	T* Actor::AddComponent()
-	{
-		if (!world_)
-		{
-			return nullptr;
-		}
-
-		AddComponent(ComponentRegistry::GetComponentID<T>());
-		return world_->GetComponent<T>(entity_);
-	}
-
-	/**
-	* [EN]
-	* Returns a const pointer to this actor's T component (T not
-	* deriving from ComponentBehaviour), or nullptr if absent / invalid.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* この actor の T コンポーネント（T は ComponentBehaviour から派生しない）
-	* への const ポインタを返す。無い / 無効なら nullptr。
-	*/
-	template<typename T>
-		requires(!std::derived_from<T, ComponentBehaviour>)
-	const T* Actor::GetComponent()const
-	{
-		return world_ ? world_->GetComponent<T>(entity_) : nullptr;
-	}
-
-	/**
-	* [EN]
-	* Returns a mutable pointer to this actor's T component (T deriving
-	* from ComponentBehaviour), or nullptr if absent / invalid.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* この actor の T コンポーネント（T は ComponentBehaviour から派生する）
-	* への変更可能なポインタを返す。無い / 無効なら nullptr。
-	*/
-	template<typename T>
-		requires std::derived_from<T, ComponentBehaviour>
-	T* Actor::GetComponent()const
-	{
-		return world_ ? world_->GetComponent<T>(entity_) : nullptr;
-	}
-
-	/**
-	* [EN]
-	* Looks up this actor's component named componentName and, through
-	* its ReflectionRegistry entry, the field whose display name is
-	* fieldName and whose AttributeType matches T, and returns a
-	* reference to it. Going through ReflectionRegistry makes C++ and C#
-	* components look the same here: a C# script's entry synchronizes its
-	* values into its field block before reporting the fields. On a miss,
-	* logs a warning and returns a per-T dummy reset to T{}.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* この actor の componentName という名前のコンポーネントを探し、その
-	* ReflectionRegistry のエントリを通して、表示名が fieldName で
-	* AttributeType が T と一致するフィールドを探し、その参照を返す。
-	* ReflectionRegistry を通すことで、ここでは C++ と C# のコンポーネント
-	* が同じに見える: C# スクリプトのエントリは、フィールドを返す前に値を
-	* フィールドブロックへ同期する。見つからなければ警告ログを出し、T{} に
-	* 戻した T ごとのダミーを返す。
-	*/
-	template<typename T>
-	T& Actor::Field(const String& componentName, const String& fieldName)const
-	{
-		/// [EN] Returned on a miss so the caller always gets a valid reference; reset each call so a write to it never leaks into the next miss.
-		/// [JP] 見つからなかったときに返し、呼び出し側が常に有効な参照を受け取れるようにする。書き込まれた値が次に見つからなかったときへ持ち越されないよう、呼ぶたびに初期値へ戻す。
-		static T fallback{};
-		fallback = T{};
-
-		/// [EN] Resolve the component instance and the function that lists its reflected fields.
-		/// [JP] コンポーネントの実体と、そのリフレクション対象フィールドを列挙する関数を解決する。
-		ComponentID id = ComponentRegistry::GetComponentID(componentName);
-		void* data = (world_ && id) ? world_->GetComponent(entity_, id) : nullptr;
-		auto reflection = ReflectionRegistry::GetRegistry().find(componentName);
-		if (data == nullptr || reflection == ReflectionRegistry::GetRegistry().end())
-		{
-			SC_LOG_WARNING("Field: この actor は {} を持っていません", componentName.str());
-			return fallback;
-		}
-
-		/// [EN] Match on both the display name and the value kind, so a reference of the wrong type is never handed out.
-		/// [JP] 表示名と値種別の両方で照合し、型の違う参照を渡すことがないようにする。
-		DynamicArray<FieldInfo> fields;
-		reflection->second(data, fields);
-		for (const FieldInfo& field : fields)
-		{
-			if (field.name_ == fieldName && field.type_ == AttributeTraits<T>::type)
-			{
-				return *static_cast<T*>(field.directPtr_ ? field.directPtr_ : static_cast<Uint8*>(data) + field.offset_);
-			}
-		}
-
-		SC_LOG_WARNING("Field: {} に {} という名前でこの型のフィールドはありません", componentName.str(), fieldName.str());
-		return fallback;
-	}
-
-	/**
-	* [EN]
-	* Looks up this actor's component named componentName and its
-	* FunctionRegistry entry named functionName, checks that the entry's
-	* parameter and result kinds match Arguments and Result, then calls it
-	* with the address of each argument and the address of the local
-	* result. On any miss or mismatch, logs a warning and returns a
-	* default-initialized Result without calling anything.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* この actor の componentName という名前のコンポーネントと、その
-	* FunctionRegistry にある functionName という名前のエントリを探し、
-	* エントリの引数と戻り値の値種別が Arguments と Result に一致するかを
-	* 確かめてから、各引数のアドレスとローカルの戻り値のアドレスを渡して
-	* 呼ぶ。見つからないか一致しなければ、警告ログを出し、何も呼ばずに
-	* デフォルト初期化した Result を返す。
-	*/
-	template<typename Result, typename... Arguments>
-	Result Actor::Function(const String& componentName, const String& functionName, const Arguments&... arguments)const
-	{
-		/// [EN] Storage the invoker writes the result into; a function returning nothing gets an unused Int so the code below stays the same for both cases.
-		/// [JP] 呼び出し処理が戻り値を書き込む先。戻り値の無い関数では使われない Int にして、以下の処理を両方の場合で共通にする。
-		std::conditional_t<std::is_void_v<Result>, Int, Result> result{};
-
-		/// [EN] Resolve the component instance and the functions registered for its type.
-		/// [JP] コンポーネントの実体と、その型に登録されている関数の一覧を解決する。
-		ComponentID id = ComponentRegistry::GetComponentID(componentName);
-		void* data = (world_ && id) ? world_->GetComponent(entity_, id) : nullptr;
-		auto functions = FunctionRegistry::GetRegistry().find(componentName);
-		if (data == nullptr || functions == FunctionRegistry::GetRegistry().end())
-		{
-			SC_LOG_WARNING("Function: この actor は {} を持っていないか、{} に呼べる関数がありません", componentName.str(), componentName.str());
-		}
-		else
-		{
-			/// [EN] The value kinds of the arguments as passed, compared against the registered parameters, since the invoker trusts that they match.
-			/// [JP] 渡された引数の値種別。呼び出し処理は一致している前提で読むので、登録されている引数と照らし合わせる。
-			std::array<AttributeType, sizeof...(Arguments)> parameters{ AttributeTraits<Arguments>::type... };
-			auto function = std::ranges::find_if(functions->second, [&functionName](const FunctionInfo& info) { return info.name_ == functionName; });
-			if (function == functions->second.end())
-			{
-				SC_LOG_WARNING("Function: {} に {} という関数はありません", componentName.str(), functionName.str());
-			}
-			else if (function->result_ != AttributeTraits<Result>::type || !std::ranges::equal(function->parameters_, parameters))
-			{
-				SC_LOG_WARNING("Function: {}.{} の引数か戻り値の型が合いません", componentName.str(), functionName.str());
+				return static_cast<T*>(archetypes_.Add(entity.GetID(), id));
 			}
 			else
 			{
-				/// [EN] The address of each argument, in order. One extra slot keeps the array valid for a function that takes no arguments.
-				/// [JP] 各引数のアドレスを順に並べたもの。引数の無い関数でも配列が成り立つよう、1 つ余分に確保する。
-				void* pointers[sizeof...(Arguments) + 1]{ const_cast<void*>(static_cast<const void*>(&arguments))... };
-				function->invoke_(data, pointers, std::is_void_v<Result> ? nullptr : &result);
+				return static_cast<T*>(sparseSets_.Add(entity.GetID(), id));
 			}
 		}
 
-		if constexpr (!std::is_void_v<Result>)
+		/**
+		* [EN]
+		* Adds a T for entity and assigns value to it, then returns it; if
+		* entity already has a T, value overwrites it.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* entity に T を追加して value を代入し、それを返す。既に T を
+		* 持っていれば value で上書きする。
+		*/
+		template<typename T>
+			requires(std::is_copy_assignable_v<T>)
+		T* AddComponent(Entity entity, const T& value)
 		{
-			return result;
+			T* component = AddComponent<T>(entity);
+			if (component)
+			{
+				*component = value;
+			}
+			return component;
 		}
-	}
+
+		/**
+		* [EN]
+		* Returns entity's component id, or nullptr if it has none.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* entity のコンポーネント id を返す。持っていなければ nullptr。
+		*/
+		void* GetComponent(Entity entity, ComponentID id)const;
+
+		/**
+		* [EN]
+		* Returns entity's T, or nullptr if it has none; the storage is chosen
+		* at compile time.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* entity の T を返す。持っていなければ nullptr。ストレージは
+		* コンパイル時に選ぶ。
+		*/
+		template<typename T>
+		T* GetComponent(Entity entity)const
+		{
+			ComponentID id = ComponentRegistry::GetComponentID<T>();
+			if constexpr (ComponentTraits<T>::storage == ComponentStorage::Archetype)
+			{
+				return static_cast<T*>(archetypes_.Data(entity.GetID(), id));
+			}
+			else
+			{
+				return static_cast<T*>(sparseSets_.Data(entity.GetID(), id));
+			}
+		}
+
+		/**
+		* [EN]
+		* Returns whether entity has component id.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* entity がコンポーネント id を持っているかどうかを返す。
+		*/
+		Bool HasComponent(Entity entity, ComponentID id)const;
+
+		/**
+		* [EN]
+		* Returns whether entity has a T; the storage is chosen at compile
+		* time.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* entity が T を持っているかどうかを返す。ストレージはコンパイル時に
+		* 選ぶ。
+		*/
+		template<typename T>
+		Bool HasComponent(Entity entity)const
+		{
+			ComponentID id = ComponentRegistry::GetComponentID<T>();
+			if constexpr (ComponentTraits<T>::storage == ComponentStorage::Archetype)
+			{
+				return archetypes_.Has(entity.GetID(), id);
+			}
+			else
+			{
+				return sparseSets_.Has(entity.GetID(), id);
+			}
+		}
+
+		/**
+		* [EN]
+		* Destroys entity's component id, if it has one.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* entity がコンポーネント id を持っていれば破棄する。
+		*/
+		void RemoveComponent(Entity entity, ComponentID id);
+
+		/**
+		* [EN]
+		* Destroys entity's T, if it has one; the storage is chosen at compile
+		* time.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* entity が T を持っていれば破棄する。ストレージはコンパイル時に選ぶ。
+		*/
+		template<typename T>
+		void RemoveComponent(Entity entity)
+		{
+			ComponentID id = ComponentRegistry::GetComponentID<T>();
+			if constexpr (ComponentTraits<T>::storage == ComponentStorage::Archetype)
+			{
+				archetypes_.Remove(entity.GetID(), id);
+			}
+			else
+			{
+				sparseSets_.Remove(entity.GetID(), id);
+			}
+		}
+
+	public:
+		/**
+		* [EN]
+		* Constructs a T service from arguments and adds it to this world,
+		* or returns the existing one if T is already added.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* arguments から T サービスを構築してこのワールドに追加する。
+		* T が追加済みならその既存のものを返す。
+		*/
+		template<typename T,typename... Arguments>
+		T* AddService(Arguments&&... arguments)
+		{
+			return service_.Add<T>(std::forward<Arguments>(arguments)...);
+		}
+
+		/**
+		* [EN]
+		* Returns this world's T service, or nullptr if it has not been added.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このワールドの T サービスを返す。追加されていなければ nullptr。
+		*/
+		template<typename T>
+		T* GetService()const
+		{
+			return service_.Get<T>();
+		}
+
+		/**
+		* [EN]
+		* Destroys and removes this world's T service; does nothing if absent.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このワールドの T サービスを破棄して取り除く。無ければ何もしない。
+		*/
+		template<typename T>
+		void RemoveService()
+		{
+			service_.Remove<T>();
+		}
+
+	private:
+		/// [EN] Entity slots and where each entity's components are; declared first so both storages, which refer to it, are destroyed before it.
+		/// [JP] エンティティのスロットと、各エンティティのコンポーネントの場所。両ストレージがこれを参照するので、先に宣言してそれらより後に破棄されるようにする。
+		EntityRegistry entities_;
+
+		/// [EN] Every actor's record and the hierarchy; refers to entities_, so declared after it.
+		/// [JP] 全 actor のレコードと階層。entities_ を参照するので、その後に宣言する。
+		ActorRegistry actors_ = ActorRegistry(entities_);
+
+		/// [EN] This world's archetype-stored components.
+		/// [JP] このワールドのアーキタイプ格納コンポーネント。
+		ArchetypeStorage archetypes_ = ArchetypeStorage(entities_);
+
+		/// [EN] This world's sparse-stored components.
+		/// [JP] このワールドのスパース格納コンポーネント。
+		SparseSetStorage sparseSets_ = SparseSetStorage(entities_);
+
+		/// [EN] Services each module installs into this world; destroyed in reverse order of addition.
+		/// [JP] 各モジュールがこのワールドに組み込むサービス。追加の逆順で破棄される。
+		Service service_;
+	};
 }

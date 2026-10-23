@@ -3,6 +3,7 @@
 
 #include <SeedCore/ScComponent.h>
 #include <SeedCore/ScLog.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 
 using namespace SeedCore;
 
@@ -18,7 +19,7 @@ void CircuitSystem::OnStart()
 	const Name* name = GetActor().GetComponent<Name>();
 	for (Uint32 inputActorID : inputActorIDs_)
 	{
-		Actor findedActor = world.FindActor(inputActorID);
+		Actor findedActor = SeedCore::WorldAccessor::Find(world, inputActorID);
 		if (findedActor)
 		{
 			cacheActors_.push_back(findedActor);

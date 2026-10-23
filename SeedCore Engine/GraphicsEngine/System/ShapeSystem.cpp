@@ -16,6 +16,10 @@
 #include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
 #include <FoundationEngine/World/ECS/Component/Active.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <FoundationEngine/Interop/QueryInstance.h>
+#include <FoundationEngine/Interop/RenderInstance.h>
 
 namespace SeedCore
 {
@@ -43,14 +47,16 @@ namespace SeedCore
 		const Color lightColor(1.00f, 0.82f, 0.35f, 1.0f);
 		const Color audioColor(0.44f, 0.88f, 0.71f, 1.0f);
 
-		for (EntityID id : world.GetComponents<Camera>())
+		DynamicArray<EntityID> cameraEntities;
+		Query<Read<Camera>>(world).ForEach([&](EntityID entityID, const Camera&) { cameraEntities.push_back(entityID); });
+		for (EntityID id : cameraEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
 			}
-			if (!visible && std::ranges::find(selectedEntities, actor.GetEntity()) == selectedEntities.end())
+			if (!visible && std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) == selectedEntities.end())
 			{
 				continue;
 			}
@@ -90,9 +96,9 @@ namespace SeedCore
 		/// [EN] A brain renders with the lens of the first active Camera and the render aspect ratio (see CameraSystem::SyncCameraBrains), so its frustum is built from the same values here rather than from the brain's own state.
 		/// [JP] ブレインは、最初に見つかったアクティブな Camera のレンズと描画の縦横比で描く（CameraSystem::SyncCameraBrains 参照）。そのため視錐台は、ブレイン自身の状態ではなく、ここで同じ値を求めて作る。
 		Float brainFieldOfView = 60.0f;
-		for (EntityID id : world.GetComponents<Camera>())
+		for (EntityID id : cameraEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			const Camera* camera = actor ? actor.GetComponent<Camera>() : nullptr;
 			if (camera && actor.Active() && camera->isActive_)
 			{
@@ -101,14 +107,16 @@ namespace SeedCore
 			}
 		}
 
-		for (EntityID id : world.GetComponents<CameraBrain>())
+		DynamicArray<EntityID> cameraBrainEntities;
+		Query<Read<CameraBrain>>(world).ForEach([&](EntityID entityID, const CameraBrain&) { cameraBrainEntities.push_back(entityID); });
+		for (EntityID id : cameraBrainEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active() || actor.GetComponent<Camera>())
 			{
 				continue;
 			}
-			if (!visible && std::ranges::find(selectedEntities, actor.GetEntity()) == selectedEntities.end())
+			if (!visible && std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) == selectedEntities.end())
 			{
 				continue;
 			}
@@ -140,14 +148,16 @@ namespace SeedCore
 			}
 		}
 
-		for (EntityID id : world.GetComponents<PointLight>())
+		DynamicArray<EntityID> pointLightEntities;
+		Query<Read<PointLight>>(world).ForEach([&](EntityID entityID, const PointLight&) { pointLightEntities.push_back(entityID); });
+		for (EntityID id : pointLightEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
 			}
-			if (!visible && std::ranges::find(selectedEntities, actor.GetEntity()) == selectedEntities.end())
+			if (!visible && std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) == selectedEntities.end())
 			{
 				continue;
 			}
@@ -159,14 +169,16 @@ namespace SeedCore
 			shapes_.push_back({ ShapeKind::Sphere, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, actor.WorldMatrix().Translation(), Quaternion::Identity, Vector3(light->range_, 0.0f, 0.0f), lightColor });
 		}
 
-		for (EntityID id : world.GetComponents<SpotLight>())
+		DynamicArray<EntityID> spotLightEntities;
+		Query<Read<SpotLight>>(world).ForEach([&](EntityID entityID, const SpotLight&) { spotLightEntities.push_back(entityID); });
+		for (EntityID id : spotLightEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
 			}
-			if (!visible && std::ranges::find(selectedEntities, actor.GetEntity()) == selectedEntities.end())
+			if (!visible && std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) == selectedEntities.end())
 			{
 				continue;
 			}
@@ -203,14 +215,16 @@ namespace SeedCore
 			}
 		}
 
-		for (EntityID id : world.GetComponents<DirectionalLight>())
+		DynamicArray<EntityID> directionalLightEntities;
+		Query<Read<DirectionalLight>>(world).ForEach([&](EntityID entityID, const DirectionalLight&) { directionalLightEntities.push_back(entityID); });
+		for (EntityID id : directionalLightEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
 			}
-			if (!visible && std::ranges::find(selectedEntities, actor.GetEntity()) == selectedEntities.end())
+			if (!visible && std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) == selectedEntities.end())
 			{
 				continue;
 			}
@@ -239,14 +253,16 @@ namespace SeedCore
 			}
 		}
 
-		for (EntityID id : world.GetComponents<RectangleLight>())
+		DynamicArray<EntityID> rectangleLightEntities;
+		Query<Read<RectangleLight>>(world).ForEach([&](EntityID entityID, const RectangleLight&) { rectangleLightEntities.push_back(entityID); });
+		for (EntityID id : rectangleLightEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
 			}
-			if (!visible && std::ranges::find(selectedEntities, actor.GetEntity()) == selectedEntities.end())
+			if (!visible && std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) == selectedEntities.end())
 			{
 				continue;
 			}
@@ -289,14 +305,16 @@ namespace SeedCore
 			shapes_.push_back({ ShapeKind::Arrow, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Editor, center, Quaternion::Identity, normal * light->range_, lightColor, worldArrowHeadLength_ });
 		}
 
-		for (EntityID id : world.GetComponents<AudioSource>())
+		DynamicArray<EntityID> audioSourceEntities;
+		Query<Read<AudioSource>>(world).ForEach([&](EntityID entityID, const AudioSource&) { audioSourceEntities.push_back(entityID); });
+		for (EntityID id : audioSourceEntities)
 		{
-			Actor actor = world.GetActor(id);
+			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
 				continue;
 			}
-			if (!visible && std::ranges::find(selectedEntities, actor.GetEntity()) == selectedEntities.end())
+			if (!visible && std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) == selectedEntities.end())
 			{
 				continue;
 			}
@@ -327,7 +345,7 @@ namespace SeedCore
 						return;
 					}
 
-					Actor actor = world.GetActor(entityID);
+					Actor actor = WorldAccessor::Make(world, entityID);
 					if (!actor)
 					{
 						return;
@@ -387,7 +405,7 @@ namespace SeedCore
 		/// [JP] 前のフレームから記録された物理クエリ。Unity の物理デバッガーと同じく、何にも当たらなければ緑、当たれば赤で描く。読んだあと空にするので、各クエリは1回だけ描かれる。3D のクエリはゲームビューにも描き、2D のクエリは Canvas にだけ描く。
 		const Color missColor(0.30f, 0.90f, 0.30f, 1.0f);
 		const Color hitColor(1.00f, 0.30f, 0.30f, 1.0f);
-		QueryInstance& queryInstance = world.GetQueryInstance();
+		QueryInstance& queryInstance = *world.GetService<QueryInstance>();
 		for (const QueryDesc& query : queryInstance.Queries())
 		{
 			const Color& color = query.hit_ ? hitColor : missColor;
@@ -501,7 +519,7 @@ namespace SeedCore
 
 		/// [EN] Debug shapes requested through DebugDraw since the last frame, already in ShapeDesc form. They are read and then cleared, so each request is drawn once.
 		/// [JP] 前のフレームから DebugDraw で頼まれたデバッグ用の形。すでに ShapeDesc の形なので、そのまま足す。読んだあと空にするので、各形は1回だけ描かれる。
-		RenderInstance& renderInstance = world.GetRenderInstance();
+		RenderInstance& renderInstance = *world.GetService<RenderInstance>();
 		std::span<const ShapeDesc> requestedShapes = renderInstance.Shapes();
 		shapes_.insert(shapes_.end(), requestedShapes.begin(), requestedShapes.end());
 		renderInstance.Clear();

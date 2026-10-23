@@ -4,6 +4,8 @@ namespace SeedCore
 {
     public enum ScriptHook : Byte
     {
+        Attach,
+        Detach,
         Awake,
         Start,
         Tick,

@@ -1,5 +1,6 @@
 #pragma once
 #include <FoundationEngine/World/ECS/Component/Component.h>
+#include <FoundationEngine/World/ECS/Entity/Entity.h>
 
 namespace SeedCore
 {
@@ -27,28 +28,28 @@ namespace SeedCore
 		* [EN]
 		* Clears any existing snapshot, then captures a copy of every
 		* Actor's component data currently in world — both archetype-stored
-		* (via each actor's layout) and sparse-set-stored (Rigidbody,
-		* Softbody, Weather, ...; walked via the full component registry,
-		* since sparse-set storage has no per-entity layout list).
+		* (via its archetype's layout) and sparse-set-stored (Rigidbody,
+		* Softbody, Weather, ...; via the entity's own list of sparse
+		* locations).
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 既存のスナップショットをクリアし、world 内の現在の全 Actor の
 		* コンポーネントデータのコピーを取得する — アーキタイプ格納
-		* （各 actor のレイアウト経由）とスパースセット格納
-		* （Rigidbody、Softbody、Weather 等; スパースセット格納には
-		* エンティティごとのレイアウト一覧が無いため、コンポーネント
-		* レジストリ全体を走査する）の両方。
+		* （そのアーキタイプのレイアウト経由）とスパースセット格納
+		* （Rigidbody、Softbody、Weather 等。エンティティ自身が持つスパースの
+		* 場所の一覧経由）の両方。
 		*/
 		void Capture(World& world);
 
 		/**
 		* [EN]
 		* If a snapshot has been captured, copies its component data
-		* back onto world's actors (matched by index) and resets each
-		* ComponentBehaviour's lifecycle state, destroys any actor beyond the
-		* captured count (i.e. created after the snapshot, such as by
+		* back onto world's actors (matched by EntityID, so reordering or
+		* reparenting during Play does not mix them up) and resets each
+		* ComponentBehaviour's lifecycle state, destroys every actor the
+		* snapshot does not know (i.e. created after it, such as by
 		* SpawnerSystem during Play), then clears the snapshot. Does
 		* nothing if no snapshot exists.
 		*
@@ -56,11 +57,12 @@ namespace SeedCore
 		*
 		* [JP]
 		* スナップショットが取得済みであれば、そのコンポーネントデータを
-		* （インデックスで対応付けた）world の actor 群へコピーし戻し、各
-		* ComponentBehaviour のライフサイクル状態をリセットし、取得済み数を
-		* 超える actor（スナップショット後に生成されたもの、例えば Play
-		* 中の SpawnerSystem による生成）を破棄した上で、スナップショットを
-		* クリアする。スナップショットが存在しなければ何もしない。
+		* world の actor 群へコピーし戻し（EntityID で対応付けるので、Play 中の
+		* 並べ替えや親の付け替えで取り違えない）、各 ComponentBehaviour の
+		* ライフサイクル状態をリセットし、スナップショットが知らない actor
+		* （それより後に生成されたもの、例えば Play 中の SpawnerSystem による
+		* 生成）を全て破棄した上で、スナップショットをクリアする。
+		* スナップショットが存在しなければ何もしない。
 		*/
 		void Restore(World& world);
 
@@ -109,21 +111,21 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* A single captured Actor's data: its name, every component's
+		* A single captured Actor's data: its entity, every component's
 		* captured bytes, and which of them derive from ComponentBehaviour.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 取得済みの単一 Actor のデータ: その名前、全コンポーネントの
+		* 取得済みの単一 Actor のデータ: そのエンティティ、全コンポーネントの
 		* 取得済みバイト列、およびそのうちどれが ComponentBehaviour から
 		* 派生しているか。
 		*/
 		struct ActorData
 		{
-			/// [EN] The actor's display name at capture time.
-			/// [JP] 取得時点での actor の表示名。
-			String name_;
+			/// [EN] The actor's entity at capture time, which Restore matches the live actor by.
+			/// [JP] 取得時点での actor のエンティティ。Restore はこれで生きている actor と対応付ける。
+			EntityID entity_;
 
 			/// [EN] Captured byte data for every component the actor had.
 			/// [JP] actor が持っていた全コンポーネントの、取得済みバイトデータ。
@@ -132,10 +134,6 @@ namespace SeedCore
 			/// [EN] IDs of the components that derive from ComponentBehaviour, for resetting lifecycle state on restore.
 			/// [JP] ComponentBehaviour から派生するコンポーネントの ID 一覧。復元時にライフサイクル状態をリセットするために使う。
 			DynamicArray<ComponentID> componentBaseIDs_;
-
-			/// [EN] Index of the actor's parent within actors_ at capture time, or -1 if it had none.
-			/// [JP] 取得時点における、actors_ 内でのその actor の親のインデックス。親が無ければ -1。
-			Int parentIndex_ = -1;
 		};
 
 		/// [EN] Every captured actor's data.

@@ -1,6 +1,7 @@
 #include <FoundationEngine/World/ECS/Component/UnknownComponent.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
 
 namespace SeedCore
@@ -31,9 +32,7 @@ namespace SeedCore
 			actor.AddComponent(id);
 		}
 
-		/// [EN] The holder is reached through the world because the actor only hands out read-only access to a plain component.
-		/// [JP] 保持用のコンポーネントには world を通して触れる。actor が素のコンポーネントに渡すのは読み取り専用のアクセスだけであるため。
-		UnknownComponent* unknown = static_cast<UnknownComponent*>(actor.GetWorld().GetComponent(actor.GetEntity(), id));
+		UnknownComponent* unknown = static_cast<UnknownComponent*>(actor.GetComponent(id));
 		if (!unknown)
 		{
 			return;
@@ -63,9 +62,11 @@ namespace SeedCore
 			return;
 		}
 
-		for (Actor actor : world.GetActors())
+		ActorRegistry& actors = WorldAccessor::Actors(world);
+		for (EntityID current = actors.Root(); current != EntityID{}; current = actors.Next(current))
 		{
-			UnknownComponent* unknown = static_cast<UnknownComponent*>(world.GetComponent(actor.GetEntity(), id));
+			Actor actor = WorldAccessor::Make(world, current);
+			UnknownComponent* unknown = static_cast<UnknownComponent*>(actor.GetComponent(id));
 			if (!unknown)
 			{
 				continue;
@@ -88,10 +89,10 @@ namespace SeedCore
 				{
 					actor.AddComponent(resolved);
 				}
-				void* data = world.GetComponent(actor.GetEntity(), resolved);
+				void* data = actor.GetComponent(resolved);
 				if (data)
 				{
-					ApplyComponent(component, data);
+					component.Apply(data);
 				}
 			}
 
@@ -107,7 +108,7 @@ namespace SeedCore
 				continue;
 			}
 
-			unknown = static_cast<UnknownComponent*>(world.GetComponent(actor.GetEntity(), id));
+			unknown = static_cast<UnknownComponent*>(actor.GetComponent(id));
 			if (unknown)
 			{
 				unknown->components_ = remaining;

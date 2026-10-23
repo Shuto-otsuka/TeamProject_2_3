@@ -5,6 +5,11 @@
 #include <FoundationEngine/File/FileDirectory.h>
 #include <PhysicsEngine/Physics/PhysicsSystem.h>
 #include <AudioEngine/Audio/AudioSystem.h>
+#include <AudioEngine/Audio/Audio.h>
+#include <PhysicsEngine/Physics/Physics.h>
+#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
+#include <FoundationEngine/Interop/QueryInstance.h>
+#include <FoundationEngine/Interop/RenderInstance.h>
 #include <FoundationEngine/Resource/Gateway.h>
 #include <FoundationEngine/World/Layer/LayerRegistry.h>
 
@@ -15,6 +20,7 @@
 #include <GraphicsEngine/D3D12/Context/D3D12Adapter.h>
 
 #include <Editor/Editor/Build/AtomCraft.h>
+#include <FoundationEngine/Application/Application.h>
 
 
 namespace SeedCore
@@ -27,7 +33,7 @@ namespace SeedCore
 		}
 
 		world_ = MakePtr<World>();
-		world_->Timer(gameTimer_);
+		gameTimer_ = world_->AddService<GameTimer>();
 
 		system_ = MakePtr<SystemScheduler>();
 
@@ -67,13 +73,20 @@ namespace SeedCore
 		audioModule_->Install(*resource_);
 		resource_->Async();
 
+		QueryInstance* queryInstance = world_->AddService<QueryInstance>();
+		RenderInstance* renderInstance = world_->AddService<RenderInstance>();
+		world_->AddService<Physics>(*queryInstance);
+		world_->AddService<DebugDraw>(*renderInstance);
+		world_->AddService<Audio>();
+		world_->AddService<Application>();
+
 		sceneSystem_ = MakePtr<SceneSystem>(*world_, *resource_, *executor_);
 		prefabSystem_ = MakePtr<PrefabSystem>(*world_, *resource_);
 
 		editorContext_.world_.world_ = world_.get();
 		editorContext_.world_.resource_ = resource_.get();
 		editorContext_.world_.sceneSystem_ = sceneSystem_.get();
-		editorContext_.world_.timer_ = &gameTimer_;
+		editorContext_.world_.timer_ = gameTimer_;
 		editorContext_.world_.system_ = system_.get();
 		editorContext_.view_.editor_.camera_ = &editorCamera_;
 		editorContext_.view_.editor_.cameraController_ = &editorCameraController_;
@@ -240,11 +253,11 @@ namespace SeedCore
 			fontManager_ = nullptr;
 		}
 
-		/// [EN] The world is torn down while the physics world still exists, since components such as CharacterController release Jolt objects that reach back into it; its audio module is already gone, so the world's pointer to it is cleared first.
-		/// [JP] CharacterController などのコンポーネントは解放時に物理ワールドへ触れる Jolt のオブジェクトを手放すため、World は物理ワールドがまだある間に破棄する。オーディオモジュールは既に無いので、World が持つそのポインタを先に消す。
+		/// [EN] The world is torn down while the physics world still exists, since components such as CharacterController release Jolt objects that reach back into it; its audio module is already gone, so the world's audio service is destroyed first.
+		/// [JP] CharacterController などのコンポーネントは解放時に物理ワールドへ触れる Jolt のオブジェクトを手放すため、World は物理ワールドがまだある間に破棄する。オーディオモジュールは既に無いので、World のオーディオのサービスを先に壊す。
 		if (world_)
 		{
-			world_->GetAudio() = nullptr;
+			world_->RemoveService<Audio>();
 			world_.reset();
 			world_ = nullptr;
 		}
@@ -291,7 +304,7 @@ namespace SeedCore
 				window_->CalculateFrameStats();
 				window_->GetTimer().Tick();
 				worldTimer_.Tick(window_->GetTimer().Delta());
-				gameTimer_.Tick(window_->GetTimer().Delta());
+				gameTimer_->Tick(window_->GetTimer().Delta());
 
 				/// [EN] The game rect is the one the game view published last frame; it only changes when the view is resized or moved.
 				/// [JP] ゲームの矩形は、ゲームビューが前のフレームに公開したもの。変わるのはビューの大きさや位置を変えたときだけ。
@@ -332,13 +345,13 @@ namespace SeedCore
 
 				AudioSystem::ResolveSound(audioModule_->Resource(), *world_);
 
-				if (gameTimer_.Playing())
+				if (gameTimer_->Playing())
 				{
 					/// [EN] Coroutines resume before physics and the script ticks, with this frame's input already read; they do not advance while paused, so frame waits do not count down.
 					/// [JP] コルーチンは物理とスクリプトの Tick より前に、今フレームの入力を読んだ後で再開する。ポーズ中は進めないので、フレーム待ちも減らない。
-					if (!gameTimer_.Paused())
+					if (!gameTimer_->Paused())
 					{
-						CoroutineSystem::Update(gameTimer_.ScaledDeltaTime());
+						CoroutineSystem::Update(gameTimer_->ScaledDeltaTime());
 					}
 
 					PhysicsSystem::ResolveMeshCollider(*graphics_->GetGraphicsModule().Resources().meshCollisionResource_, *world_);
@@ -348,19 +361,19 @@ namespace SeedCore
 
 					joltManager_->ActiveWorld(world_.get());
 
-					while (gameTimer_.Step())
+					while (gameTimer_->Step())
 					{
-						PhysicsSystem::ApplyRigidbody(*world_, gameTimer_.FixedDeltaTime());
-						joltManager_->Execute(gameTimer_.FixedDeltaTime());
-						system_->Step(*world_, gameTimer_.FixedDeltaTime());
+						PhysicsSystem::ApplyRigidbody(*world_, gameTimer_->FixedDeltaTime());
+						joltManager_->Execute(gameTimer_->FixedDeltaTime());
+						system_->Step(*world_, gameTimer_->FixedDeltaTime());
 					}
 				}
 
-				system_->Run(*world_, *resource_, *executor_, worldTimer_.DeltaTime(), gameTimer_.ScaledDeltaTime(), gameTimer_.Playing());
+				system_->Run(*world_, *resource_, *executor_, worldTimer_.DeltaTime(), gameTimer_->ScaledDeltaTime(), gameTimer_->Playing());
 
-				if (gameTimer_.Playing())
+				if (gameTimer_->Playing())
 				{
-					sceneSystem_->Update(gameTimer_.ScaledDeltaTime());
+					sceneSystem_->Update(gameTimer_->ScaledDeltaTime());
 
 					if (const SceneBlueprint* switchedScene = sceneSystem_->ConsumeSwitchedScene())
 					{
@@ -370,9 +383,9 @@ namespace SeedCore
 					}
 				}
 
-				if (gameTimer_.Playing())
+				if (gameTimer_->Playing())
 				{
-					AudioSystem::Update(*world_, gameTimer_.ScaledDeltaTime());
+					AudioSystem::Update(*world_, gameTimer_->ScaledDeltaTime());
 				}
 
 				criManager_->Execute();
@@ -391,7 +404,7 @@ namespace SeedCore
 
 				if (editorContext_.sceneVisual_.raytracing_.daySystemEnabled_)
 				{
-					CelestialSystem::Advance(gameTimer_.ScaledDeltaTime(), editorContext_.sceneVisual_.raytracing_.daySystem_);
+					CelestialSystem::Advance(gameTimer_->ScaledDeltaTime(), editorContext_.sceneVisual_.raytracing_.daySystem_);
 
 					if (editorContext_.sceneVisual_.raytracing_.sunLightEnabled_)
 					{
@@ -403,7 +416,7 @@ namespace SeedCore
 						}
 					}
 				}
-				weatherSystem_.Execute(*world_, gameTimer_.ScaledDeltaTime(), editorContext_.sceneVisual_.raytracing_.daySystem_.monthOfYear_, editorContext_.sceneVisual_.raytracing_.volumetricCloudScapes_);
+				weatherSystem_.Execute(*world_, gameTimer_->ScaledDeltaTime(), editorContext_.sceneVisual_.raytracing_.daySystem_.monthOfYear_, editorContext_.sceneVisual_.raytracing_.volumetricCloudScapes_);
 
 				graphics_->Raytracing(editor_->GetRaytracingSettings());
 				graphics_->Upscale(gameConfig_.useDlss_, gameConfig_.upscaleMode_);
@@ -411,7 +424,7 @@ namespace SeedCore
 				graphics_->ShapeVisible(editorContext_.view_.editor_.shapeVisible_);
 
 				graphics_->EditorRender(worldTimer_, editorCamera_, *world_, editorContext_.view_.editor_.viewMode_, editor_->GetSelectedEntities());
-				graphics_->GameRender(gameTimer_, cameraSystem_, *world_);
+				graphics_->GameRender(*gameTimer_, cameraSystem_, *world_);
 				graphics_->CanvasRender(worldTimer_, canvasCamera_, *world_);
 
 				const PreviewContext& preview = editorContext_.preview_;

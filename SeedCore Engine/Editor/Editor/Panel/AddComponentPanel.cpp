@@ -2,6 +2,8 @@
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
 #include <FoundationEngine/World/Command/ComponentLifecycleCommand.h>
 
@@ -24,19 +26,6 @@ namespace SeedCore
 			ImGui::OpenPopup("AddComponentPopup");
 		}
 
-		/// [EN] Anchor below the button by default (predictable position,
-		///      like a combo box), but flip to open upward when there isn't
-		///      reasonable room below - same flip behavior ImGui's own combo
-		///      boxes use, applied manually since a plain SetNextWindowPos
-		///      would otherwise always force it downward even off-screen.
-		///      Nested BeginMenu flyouts are unaffected and keep ImGui's own
-		///      automatic edge avoidance.
-		/// [JP] 既定はボタン直下（コンボボックスと同じ予測しやすい位置）。
-		///      ただし下に十分な余白が無いときは上向きに開く（ImGui の
-		///      コンボボックス自身が使う反転と同じ挙動を手動で再現）。
-		///      単純な SetNextWindowPos だと画面外でも常に下向きに固定
-		///      されてしまうため。ネストされた BeginMenu フライアウトは
-		///      影響を受けず、ImGui 本来の自動画面端回避のまま。
 		ImVec2 buttonMin = ImGui::GetItemRectMin();
 		ImVec2 buttonMax = ImGui::GetItemRectMax();
 		Float buttonCenterX = (buttonMin.x + buttonMax.x) * 0.5f;
@@ -45,19 +34,6 @@ namespace SeedCore
 		Float spaceBelow = (viewport->WorkPos.y + viewport->WorkSize.y) - buttonMax.y;
 		Float spaceAbove = buttonMin.y - viewport->WorkPos.y;
 
-		/// [EN] Cap the popup's height to whichever space it actually opens
-		///      into (with a small margin so it never touches the viewport
-		///      edge) - without this, a long category list simply grows past
-		///      the bottom of the screen and the lower entries become
-		///      unreachable, since AlwaysAutoResize by itself has no notion of
-		///      the viewport bound. Once height is constrained, ImGui's popup
-		///      window adds its own scrollbar automatically for the overflow.
-		/// [JP] ポップアップの高さを、実際に開く側の余白に収まるよう上限を
-		///      掛ける(端に張り付かないよう少し余裕を持たせる) - これが無いと
-		///      カテゴリ一覧が長い時に画面下へそのまま伸び続け、下の方の項目に
-		///      届かなくなる(AlwaysAutoResize 単体はビューポート境界を知らない
-		///      ため)。高さを制限すれば、はみ出た分は ImGui のポップアップ
-		///      ウィンドウが自動でスクロールバーを付ける。
 		constexpr Float minReasonableSpace = 150.0f;
 		constexpr Float viewportEdgeMargin = 16.0f;
 		Bool opensDownward = spaceBelow >= minReasonableSpace || spaceBelow >= spaceAbove;
@@ -107,7 +83,6 @@ namespace SeedCore
 
 	void AddComponentPanel::DrawComponentList(Actor actor, ImGuiTexture& imguiTexture)
 	{
-		auto& componentList = ComponentRegistry::ComponentList();
 		std::string filterText = state_.searchBuffer.str();
 
 		/// [EN] Group by ComponentMetadata::category_ (e.g. "Light"). std::map
@@ -116,8 +91,9 @@ namespace SeedCore
 		///      std::map によってカテゴリはそのままアルファベット順になる。
 		std::map<std::string, DynamicArray<std::pair<String, ComponentID>>> grouped;
 
-		for (auto& [componentName, componentID] : componentList)
+		for (ComponentID componentID : ComponentRegistry::Registry())
 		{
+			const String& componentName = componentID->name_;
 			if (CheckBuiltinComponent(componentName))
 			{
 				continue;
@@ -127,7 +103,7 @@ namespace SeedCore
 				continue;
 			}
 
-			std::string category = ComponentRegistry::Get(componentID).category_.str();
+			std::string category = componentID->category_.str();
 			grouped[category].emplace_back(componentName, componentID);
 		}
 
@@ -137,25 +113,8 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] While searching, show a flat list of matches (no submenu
-		///      hierarchy to open) - faster to scan than hunting through
-		///      category flyouts. With no search text, show the VS-style
-		///      category flyout submenus (BeginMenu).
-		/// [JP] 検索中はフラットな一致リストを表示する（サブメニューを開く
-		///      手間を無くす）。検索文字が無いときは VS 風のカテゴリ
-		///      フライアウトサブメニュー（BeginMenu）を表示する。
 		Bool searching = !filterText.empty();
 
-		/// [EN] "Custom" (ComponentRegistry::Register's default category, for
-		///      components registered with no explicit one) is drawn last,
-		///      after a separator, instead of wherever it lands alphabetically
-		///      - it is a catch-all bucket rather than a real category, so
-		///      mixing it in with the named ones makes the list harder to scan.
-		/// [JP] "Custom"(ComponentRegistry::Register のデフォルトカテゴリ —
-		///      明示的なカテゴリを指定せず登録したコンポーネント向け)は、
-		///      アルファベット順の位置ではなく区切り線の後、一番下に描く —
-		///      これは本物のカテゴリではなく雑多な受け皿なので、名前付きの
-		///      カテゴリと混ぜると一覧が見づらくなる。
 		static const std::string customCategory = "Custom";
 
 		auto drawCategory = [&](const std::string& category, DynamicArray<std::pair<String, ComponentID>>& entries)
@@ -215,7 +174,7 @@ namespace SeedCore
 
 		if (ImGui::Selectable(componentName.c_str(), false, ImGuiSelectableFlags_NoAutoClosePopups))
 		{
-			context_.scene_.history_.Push(MakePtr<ComponentAddCommand>(*context_.world_.world_, actor.PersistentID(), componentID));
+			context_.scene_.history_.Push(MakePtr<ComponentAddCommand>(*context_.world_.world_, WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(actor).GetID())->persistentID_, componentID));
 			actor.AddComponent(componentID);
 			ImGui::CloseCurrentPopup();
 		}
@@ -234,6 +193,7 @@ namespace SeedCore
 			String("Position"),
 			String("Rotation"),
 			String("Scale"),
+			String("WorldMatrix"),
 			String("LinearVelocity"),
 			String("AngularVelocity"),
 			String("Active"),

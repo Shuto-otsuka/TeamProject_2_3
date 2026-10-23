@@ -95,12 +95,12 @@ namespace SeedCore
 		/// [JP] buffer_ は生のバイト列なので、有効な各コンポーネントは登録済みのデストラクタで明示的に破棄する。
 		for (Uint32 entityIndex = 0; entityIndex < entityCount_; ++entityIndex)
 		{
-			for (Size compIndex = 0; compIndex < componentCount_; ++compIndex)
+			for (Size componentIndex = 0; componentIndex < componentCount_; ++componentIndex)
 			{
 				/// [EN] Element entityIndex of a sub-array sits at its start plus entityIndex elements.
 				/// [JP] サブ配列の entityIndex 番目の要素は、先頭から entityIndex 要素分進んだ位置にある。
-				const ComponentMetadata& meta = ComponentRegistry::Get(archetype_->Layout()[compIndex]);
-				Uint8* slot = componentDataPointers_[compIndex] + (componentSizes_[compIndex] * entityIndex);
+				const ComponentMetadata& meta = ComponentRegistry::Get(archetype_->Layout()[componentIndex]);
+				Uint8* slot = componentDataPointers_[componentIndex] + (componentSizes_[componentIndex] * entityIndex);
 				meta.destruct_(slot);
 			}
 		}
@@ -108,124 +108,199 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Appends a new row for entityID, default-constructing each
-	* component's storage slot. Returns false if the chunk is already full.
+	* Appends a row for entityID, default-constructing each component,
+	* and returns the new row. The chunk must not be full.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* entityID 用の新しい行を追加し、各コンポーネントのストレージ
-	* スロットをデフォルト構築する。チャンクが既に満杯であれば
-	* false を返す。
+	* entityID 用の行を末尾に追加して各コンポーネントをデフォルト構築し、
+	* 新しい行を返す。チャンクは満杯であってはならない。
 	*/
-	Bool Chunk::Add(EntityID entityID)
+	Uint32 Chunk::Add(EntityID entityID)
 	{
-		/// [EN] A full chunk refuses the row; the archetype then opens a new chunk.
-		/// [JP] 満杯のチャンクは行を受け付けない。その場合はアーキタイプが新しいチャンクを用意する。
-		if (entityCount_ >= capacity_)
-		{
-			return false;
-		}
+		SC_ASSERT(entityCount_ < capacity_, "満杯のチャンクに Add されました。呼び出し側で Full() を確認してチャンクを用意してください。");
 
 		/// [EN] The new row goes at the end: record its entity, then default-construct each component in place.
 		/// [JP] 新しい行は末尾に置く。エンティティを記録してから、各コンポーネントをその場でデフォルト構築する。
-		entityIDs_[entityCount_] = entityID;
+		Uint32 row = entityCount_;
+		entityIDs_[row] = entityID;
 
-		for (Size index = 0; index < componentCount_; ++index)
+		for (Size index = 0;index < componentCount_;++index)
 		{
-			Uint8* slot = componentDataPointers_[index] + (componentSizes_[index] * entityCount_);
+			Uint8* slot = componentDataPointers_[index] + (componentSizes_[index] * row);
 			const ComponentMetadata& meta = ComponentRegistry::Get(archetype_->Layout()[index]);
 			meta.construct_(slot);
 		}
 
-		entityCount_++;
-		return true;
+		++entityCount_;
+		return row;
 	}
 
 	/**
 	* [EN]
-	* Removes the row belonging to entityID via swap-remove: destructs
-	* its component slots, then (unless it was the last row) moves the
-	* last row's components into the vacated slot. Returns the entityID
-	* of whichever entity was moved into the removed row's position, or
-	* a default (invalid) EntityID if none was moved.
+	* Destructs every component at row, then releases the row. Returns the
+	* entity whose row changed, or a default (invalid) EntityID if row was
+	* the last one.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* entityID に属する行を swap-remove 方式で削除する: そのコンポーネント
-	* スロットを破棄し、（それが最後の行でない限り）最後の行の
-	* コンポーネントを空いたスロットへ移動する。削除された行の位置へ
-	* 移動されたエンティティの entityID を返す。何も移動されなかった
-	* 場合はデフォルト（無効）の EntityID を返す。
+	* row の全コンポーネントを破棄してから、その行を解放する。行が
+	* 変わったエンティティを返す。row が最後の行だった場合はデフォルト
+	* （無効）の EntityID を返す。
 	*/
-	EntityID Chunk::Remove(EntityID entityID)
+	EntityID Chunk::Remove(Uint32 row)
 	{
-		if (entityCount_ == 0)
+		if (row >= entityCount_)
 		{
 			return EntityID{};
 		}
 
-		/// [EN] Find the entity's row by a linear scan; UINT32_MAX means it is not in this chunk.
-		/// [JP] エンティティの行を線形探索で探す。UINT32_MAX はこのチャンクに居ないことを表す。
-		Uint32 removeIndex = UINT32_MAX;
-
-		for (Uint32 index = 0; index < entityCount_; ++index)
-		{
-			if (entityIDs_[index] == entityID)
-			{
-				removeIndex = index;
-				break;
-			}
-		}
-
-		if (removeIndex == UINT32_MAX)
-		{
-			return EntityID{};
-		}
-
-		Uint32 lastIndex = entityCount_ - 1;
-
-		/// [EN] Destroy the removed row's components first.
-		/// [JP] まず、削除する行のコンポーネントを破棄する。
-		for (Size index = 0; index < componentCount_; ++index)
+		for (Size index = 0;index < componentCount_;++index)
 		{
 			const ComponentMetadata& meta = ComponentRegistry::Get(archetype_->Layout()[index]);
-			Uint8* slot = componentDataPointers_[index] + (componentSizes_[index] * removeIndex);
+			Uint8* slot = componentDataPointers_[index] + (componentSizes_[index] * row);
 			meta.destruct_(slot);
 		}
 
-		/// [EN] Removing the last row leaves no gap, so nothing moves.
-		/// [JP] 最後の行を消した場合は穴が空かないので、何も移動しない。
-		if (removeIndex == lastIndex)
-		{
-			entityCount_--;
+		return Release(row);
+	}
 
-			/// [EN] An invalid EntityID tells the caller that no other entity changed rows.
-			/// [JP] 無効な EntityID は、行が変わったエンティティが他に無いことを呼び出し側に伝える。
+	/**
+	* [EN]
+	* Fills row, whose components are already gone, by relocating the last
+	* row into it. Returns the entity whose row changed, or a default
+	* (invalid) EntityID if row was the last one.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* コンポーネントが既に無い row を、最後の行を移設して埋める。行が
+	* 変わったエンティティを返す。row が最後の行だった場合はデフォルト
+	* （無効）の EntityID を返す。
+	*/
+	EntityID Chunk::Release(Uint32 row)
+	{
+		if (row >= entityCount_)
+		{
 			return EntityID{};
 		}
 
-		/// [EN] Swap-remove: move the last row into the gap so the rows stay packed.
-		/// [JP] swap-remove: 最後の行を空いた位置へ移し、行を詰めたままにする。
-		for (Size index = 0; index < componentCount_; ++index)
+		/// [EN] Releasing the last row leaves no gap, so nothing moves.
+		/// [JP] 最後の行を解放した場合は穴が空かないので、何も移動しない。
+		Uint32 lastRow = entityCount_ - 1;
+		if (row == lastRow)
 		{
-			const ComponentMetadata& meta = ComponentRegistry::Get(archetype_->Layout()[index]);
-			Uint8* dest = componentDataPointers_[index] + (componentSizes_[index] * removeIndex);
-			Uint8* source = componentDataPointers_[index] + (componentSizes_[index] * lastIndex);
-
-			/// [EN] move_ leaves the source slot moved-from; it is past the new end, so it is simply forgotten.
-			/// [JP] move_ の後、移動元の枠は新しい末尾より後ろになるので、そのまま使われなくなる。
-			meta.move_(dest, source);
+			--entityCount_;
+			return EntityID{};
 		}
 
-		/// [EN] The moved entity now lives at removeIndex; returned so the caller can update its EntityRecord.
-		/// [JP] 移されたエンティティは removeIndex に居る。呼び出し側がその EntityRecord を直せるよう返す。
-		EntityID movedEntityID = entityIDs_[lastIndex];
-		entityIDs_[removeIndex] = movedEntityID;
-		entityCount_--;
+		/// [EN] relocate_ leaves the last row empty, so it can simply fall past the new end.
+		/// [JP] relocate_ は最後の行を空にするので、そのまま新しい末尾の外に出してよい。
+		for (Size index = 0;index < componentCount_;++index)
+		{
+			const ComponentMetadata& meta = ComponentRegistry::Get(archetype_->Layout()[index]);
+			Uint8* dest = componentDataPointers_[index] + (componentSizes_[index] * row);
+			Uint8* source = componentDataPointers_[index] + (componentSizes_[index] * lastRow);
+			meta.relocate_(dest, source);
+		}
 
+		EntityID movedEntityID = entityIDs_[lastRow];
+		entityIDs_[row] = movedEntityID;
+		--entityCount_;
 		return movedEntityID;
+	}
+
+	/**
+	* [EN]
+	* Takes over row sourceRow of source, a chunk of the same archetype, as
+	* a new row of this chunk by relocating every column, leaving source's
+	* row empty for Release. Returns the new row. The chunk must not be
+	* full.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 同じアーキタイプのチャンク source の sourceRow 行目を、全列を移設して
+	* このチャンクの新しい行として引き取る。source の行は空になり Release
+	* できる状態になる。新しい行を返す。チャンクは満杯であってはならない。
+	*/
+	Uint32 Chunk::Adopt(Chunk& source, Uint32 sourceRow)
+	{
+		SC_ASSERT(entityCount_ < capacity_, "満杯のチャンクに Adopt されました。呼び出し側で Full() を確認して新しいチャンクを用意してください。");
+		SC_ASSERT(source.archetype_ == archetype_, "edge 無しの Adopt は同じアーキタイプのチャンク同士でしか使えません。");
+
+		Uint32 row = entityCount_;
+		entityIDs_[row] = source.entityIDs_[sourceRow];
+
+		/// [EN] Both chunks share one layout, so every column maps to the same column.
+		/// [JP] 両方のチャンクは同じレイアウトなので、各列は同じ列に対応する。
+		for (Size index = 0;index < componentCount_;++index)
+		{
+			const ComponentMetadata& meta = ComponentRegistry::Get(archetype_->Layout()[index]);
+			Uint8* dest = componentDataPointers_[index] + (componentSizes_[index] * row);
+			Uint8* sourceSlot = source.componentDataPointers_[index] + (source.componentSizes_[index] * sourceRow);
+			meta.relocate_(dest, sourceSlot);
+		}
+
+		++entityCount_;
+		return row;
+	}
+
+	/**
+	* [EN]
+	* Takes over row sourceRow of source as a new row of this chunk, using
+	* edge's column mapping: shared components are relocated, components
+	* only here are constructed, and components only in source are
+	* destructed, leaving source's row empty for Release. Returns the new
+	* row. The chunk must not be full.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* edge の列の対応を使って、source の sourceRow 行目をこのチャンクの新しい
+	* 行として引き取る。共通のコンポーネントは移設し、ここにしか無いものは
+	* 構築し、source にしか無いものは破棄するので、source の行は空になり
+	* Release できる状態になる。新しい行を返す。チャンクは満杯であっては
+	* ならない。
+	*/
+	Uint32 Chunk::Adopt(Chunk& source, Uint32 sourceRow, const ArchetypeEdge& edge)
+	{
+		SC_ASSERT(entityCount_ < capacity_, "満杯のチャンクに Adopt されました。呼び出し側で Full() を確認して新しいチャンクを用意してください。");
+
+		Uint32 row = entityCount_;
+		entityIDs_[row] = source.entityIDs_[sourceRow];
+
+		/// [EN] Every column here either comes from a source column, or is new and is constructed.
+		/// [JP] ここの各列は、source のどれかの列から来るか、新しく構築するかのどちらか。
+		for (Size index = 0;index < componentCount_;++index)
+		{
+			const ComponentMetadata& meta = ComponentRegistry::Get(archetype_->Layout()[index]);
+			Uint8* dest = componentDataPointers_[index] + (componentSizes_[index] * row);
+			Uint32 sourceColumn = edge.sourceColumns_[index];
+			if (sourceColumn == UINT32_MAX)
+			{
+				meta.construct_(dest);
+			}
+			else
+			{
+				Uint8* sourceSlot = source.componentDataPointers_[sourceColumn] + (source.componentSizes_[sourceColumn] * sourceRow);
+				meta.relocate_(dest, sourceSlot);
+			}
+		}
+
+		/// [EN] The removed component has no place here, so it is destroyed and the whole source row ends up empty.
+		/// [JP] 引いたコンポーネントはここに行き先が無いので破棄し、source の行は全て空になる。
+		if (edge.removedColumn_ != UINT32_MAX)
+		{
+			const ComponentMetadata& meta = ComponentRegistry::Get(source.archetype_->Layout()[edge.removedColumn_]);
+			Uint8* sourceSlot = source.componentDataPointers_[edge.removedColumn_] + (source.componentSizes_[edge.removedColumn_] * sourceRow);
+			meta.destruct_(sourceSlot);
+		}
+
+		++entityCount_;
+		return row;
 	}
 
 	/**

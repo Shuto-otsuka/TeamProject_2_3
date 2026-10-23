@@ -10,7 +10,7 @@ namespace SeedCore
 	* [EN]
 	* Schedules a set of systems for one frame by their declared
 	* component access: each is added with its read and write signatures
-	* (as produced by Query::GetReadSignature / GetWriteSignature) and a
+	* (as produced by Query::ReadSignature / WriteSignature) and a
 	* task to run. Run builds a JobGraph in which two systems get a
 	* dependency edge - forcing them to run in registration order - only
 	* when their accesses conflict (write/write, write/read or
@@ -22,7 +22,7 @@ namespace SeedCore
 	* [JP]
 	* 1フレーム分のシステム群を、宣言されたコンポーネントアクセスに
 	* 基づいてスケジュールする: 各システムは read/write シグネチャ
-	* （Query::GetReadSignature / GetWriteSignature が生成するもの）と
+	* （Query::ReadSignature / WriteSignature が生成するもの）と
 	* 実行タスクとともに追加する。Run は JobGraph を構築し、2つの
 	* システムのアクセスが衝突する場合（同じコンポーネントへの
 	* write/write、write/read、read/write）に限り、登録順で走らせる

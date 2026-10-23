@@ -6,6 +6,7 @@
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 
 namespace SeedCore
 {
@@ -45,9 +46,9 @@ namespace SeedCore
 		desc.mass_ = mass_;
 		desc.maxStrength_ = pushForce_;
 		desc.layer_ = Layers::Pack(Layers::DYNAMIC, actor.Layer());
-		desc.userData_ = actor.GetEntity().GetID();
+		desc.userData_ = ActorAccessor::GetEntity(actor).GetID();
 
-		character_ = actor.GetPhysics().CreateCharacter(desc);
+		character_ = actor.GetService<Physics>()->CreateCharacter(desc);
 
 		/// [EN] Forward character contacts to the owning entity in this World.
 		/// [JP] キャラクターの接触を、この World 内の所有エンティティへ転送する。
@@ -91,11 +92,11 @@ namespace SeedCore
 		/// [JP] 要求されたしゃがみ状態が変わったときだけカプセル高を変更する。
 		if (crouch_ && !isCrouched_)
 		{
-			isCrouched_ = actor.GetPhysics().CharacterHeight(character_.GetPtr(), crouchHeight_, radius_);
+			isCrouched_ = actor.GetService<Physics>()->CharacterHeight(character_.GetPtr(), crouchHeight_, radius_);
 		}
 		else if (!crouch_ && isCrouched_)
 		{
-			isCrouched_ = !actor.GetPhysics().CharacterHeight(character_.GetPtr(), height_, radius_);
+			isCrouched_ = !actor.GetService<Physics>()->CharacterHeight(character_.GetPtr(), height_, radius_);
 		}
 
 		/// [EN] Work in velocity relative to the foothold so input acceleration never acts on the carried velocity.
@@ -153,9 +154,9 @@ namespace SeedCore
 			/// [JP] 立っている間は足場が上下の動きを担うため、キャラクター自身の上下速度は静止から計算し直す。
 			verticalVelocity = 0.0f;
 
-			if (!foothold_.bodyID_.IsInvalid() && actor.GetPhysics().BodyExists(foothold_.bodyID_) && elapsedTime > 0.0f)
+			if (!foothold_.bodyID_.IsInvalid() && actor.GetService<Physics>()->BodyExists(foothold_.bodyID_) && elapsedTime > 0.0f)
 			{
-				Matrix footholdMatrix = actor.GetPhysics().BodyTransform(foothold_.bodyID_);
+				Matrix footholdMatrix = actor.GetService<Physics>()->BodyTransform(foothold_.bodyID_);
 				Vector3 footholdPosition = footholdMatrix.Translation();
 				Quaternion footholdRotation = Quaternion::CreateFromRotationMatrix(footholdMatrix);
 
@@ -208,7 +209,7 @@ namespace SeedCore
 			inheritedVelocity_.y = 0.0f;
 		}
 
-		Vector3 gravity = actor.GetPhysics().Gravity();
+		Vector3 gravity = actor.GetService<Physics>()->Gravity();
 		verticalVelocity += gravity.y * gravityScale_ * elapsedTime;
 		verticalVelocity = Max(verticalVelocity, -maxFallSpeed_);
 
@@ -239,7 +240,7 @@ namespace SeedCore
 		/// [EN] Each contacted body dispatches at most one enter or stay per update.
 		/// [JP] 接触先ボディごとの Enter か Stay は、更新1回につき最大1回。
 		characterContactListener_->Begin();
-		actor.GetPhysics().UpdateCharacter(character_.GetPtr(), elapsedTime, ToRadians(maxSlopeAngle_), maxStepHeight_);
+		actor.GetService<Physics>()->UpdateCharacter(character_.GetPtr(), elapsedTime, ToRadians(maxSlopeAngle_), maxStepHeight_);
 
 		JPH::RVec3 outPosition = character_->GetPosition();
 		JPH::Quat outRotation = character_->GetRotation();
@@ -247,9 +248,9 @@ namespace SeedCore
 		/// [EN] Record where the character now stands on its foothold, in the foothold's local space, for the next step to carry it from.
 		/// [JP] 次のステップで運ぶ基準として、キャラクターが今足場のどこに立っているかを足場のローカル空間で記録する。
 		JPH::BodyID groundBodyID = character_->GetGroundBodyID();
-		if (character_->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround && actor.GetPhysics().BodyExists(groundBodyID))
+		if (character_->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround && actor.GetService<Physics>()->BodyExists(groundBodyID))
 		{
-			Matrix footholdMatrix = actor.GetPhysics().BodyTransform(groundBodyID);
+			Matrix footholdMatrix = actor.GetService<Physics>()->BodyTransform(groundBodyID);
 			Vector3 footholdPosition = footholdMatrix.Translation();
 			Quaternion footholdRotation = Quaternion::CreateFromRotationMatrix(footholdMatrix);
 
@@ -271,7 +272,7 @@ namespace SeedCore
 		/// [JP] シミュレーション後のキャラクター姿勢をアクターの変換コンポーネントへ同期する。
 
 		World& world = actor.GetWorld();
-		Entity entity = actor.GetEntity();
+		Entity entity = ActorAccessor::GetEntity(actor);
 
 		/// [EN] The character pose is in world space, while Position and Rotation are relative to the parent, so it is carried back by the inverse of the parent's world matrix.
 		/// [JP] キャラクターの姿勢はワールド空間にあり、Position と Rotation は親から見た値なので、親のワールド行列の逆で戻す。
@@ -309,7 +310,7 @@ namespace SeedCore
 	*/
 	void CharacterController::OnDestroy()
 	{
-		GetActor().GetPhysics().DestroyCharacter(character_);
+		GetActor().GetService<Physics>()->DestroyCharacter(character_);
 		characterContactListener_ = nullptr;
 	}
 
@@ -409,7 +410,7 @@ namespace SeedCore
 
 		Actor actor = GetActor();
 		World& world = actor.GetWorld();
-		Entity entity = actor.GetEntity();
+		Entity entity = ActorAccessor::GetEntity(actor);
 
 		/// [EN] position is a Position, relative to the parent, so the character goes to that point in world space.
 		/// [JP] position は親から見た Position なので、キャラクターはその点のワールドでの位置へ移す。
@@ -422,7 +423,7 @@ namespace SeedCore
 		foothold_.bodyID_ = JPH::BodyID();
 		inheritedVelocity_ = Vector3(0.0f, 0.0f, 0.0f);
 
-		actor.GetPhysics().RefreshCharacter(character_.GetPtr());
+		actor.GetService<Physics>()->RefreshCharacter(character_.GetPtr());
 
 		Position* positionComponent = world.GetComponent<Position>(entity);
 		if (positionComponent)

@@ -2,12 +2,13 @@
 #include <GraphicsEngine/Model/Skeleton/Skeleton.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 
 namespace SeedCore
 {
 	void IKConstraint::OnInspectorGUI()
 	{
-		Skeleton* skeleton = GetWorld().GetComponent<Skeleton>(GetActor().GetEntity());
+		Skeleton* skeleton = GetWorld().GetComponent<Skeleton>(ActorAccessor::GetEntity(GetActor()));
 		if (!skeleton || skeleton->BoneNames().empty())
 		{
 			ImGui::TextDisabled("スケルタル未取得（このアクターに Skeleton が必要）");

@@ -79,7 +79,7 @@ namespace SeedCore
 		/// [JP] オフセットはローカル空間なので、符号も含めてスケールに合わせて動く。
 		Vector3 center(center_.x * worldScale.x, center_.y * worldScale.y, center_.z * worldScale.z);
 
-		return actor.GetPhysics().CreateBoxShape(size, center);
+		return actor.GetService<Physics>()->CreateBoxShape(size, center);
 	}
 
 	/**
@@ -107,7 +107,7 @@ namespace SeedCore
 		}
 
 		Actor actor = GetActor();
-		Physics& physics = actor.GetPhysics();
+		Physics& physics = *actor.GetService<Physics>();
 
 		/// [EN] The pose is worked out the same way as at creation; the body does not move when the pose is unchanged.
 		/// [JP] 姿勢は生成時と同じ方法で求める。姿勢が変わっていなければボディは動かない。

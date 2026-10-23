@@ -1,4 +1,7 @@
 #include <FoundationEngine/Resource/Prefab/PrefabBlueprint.h>
+#include <FoundationEngine/Resource/Prefab/PrefabRegistry.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/Log/Error.h>
@@ -20,7 +23,7 @@ namespace SeedCore
 	void PrefabBlueprint::Capture(Actor root)
 	{
 		nodes_.clear();
-		CaptureActorNode(root, -1, nodes_);
+		BlueprintNode::Capture(root, nodes_);
 	}
 
 	/**
@@ -43,38 +46,16 @@ namespace SeedCore
 	*/
 	Actor PrefabBlueprint::Instantiate(World& world, ResourceCache& cache, Actor parent, Uint32 sourceAssetID)const
 	{
-		DynamicArray<Actor> instantiated;
-		instantiated.reserve(nodes_.size());
-
-		/// [EN] Nodes are stored in capture order, so each node's parent (identified by an earlier index) has always already been instantiated by the time we reach it.
-		/// [JP] ノードは取得順に格納されているため、各ノードの親（それより前のインデックスで識別される）は、そこに到達する時点で既にインスタンス化済みである。
-		for (Size index = 0; index < nodes_.size(); ++index)
+		DynamicArray<Actor> instantiated = BlueprintNode::Instantiate(world, cache, nodes_, parent, true);
+		if (instantiated.empty() || !instantiated[0])
 		{
-			const PrefabNode& node = nodes_[index];
-
-			Actor parentActor;
-			if (node.parentIndex_ >= 0 && static_cast<Size>(node.parentIndex_) < instantiated.size())
-			{
-				parentActor = instantiated[node.parentIndex_];
-			}
-			else if (index == 0)
-			{
-				/// [EN] The root node has no in-subtree parent: attach it to the caller-supplied parent instead.
-				/// [JP] ルートノードはサブツリー内に親を持たない: 代わりに呼び出し側が指定した parent へアタッチする。
-				parentActor = parent;
-			}
-
-			Actor actor = InstantiateActorNode(world, cache, node, parentActor, true);
-
-			if (actor && index == 0)
-			{
-				actor.PrefabID(sourceAssetID);
-			}
-
-			instantiated.push_back(actor);
+			return Actor();
 		}
 
-		return instantiated.empty() ? Actor() : instantiated[0];
+		/// [EN] Only the root is linked to the asset; the rest are already recorded as prefab-built by the instantiation.
+		/// [JP] アセットに結ぶのはルートだけ。残りはインスタンス化の時点でプレハブ由来として記録済み。
+		WorldAccessor::Services(world).Add<PrefabRegistry>()->Add(ActorAccessor::GetEntity(instantiated[0]).GetID(), sourceAssetID, true);
+		return instantiated[0];
 	}
 
 	/**

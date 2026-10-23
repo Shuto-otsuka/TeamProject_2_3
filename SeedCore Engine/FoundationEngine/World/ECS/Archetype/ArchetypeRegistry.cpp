@@ -5,20 +5,20 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* Deletes every Archetype currently held in registry_.
+	* Deletes every Archetype held in archetypes_.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* registry_ に現在保持されている全ての Archetype を削除する。
+	* archetypes_ に保持されている全ての Archetype を削除する。
 	*/
 	ArchetypeRegistry::RegistryCleaner::~RegistryCleaner()
 	{
-		/// [EN] Archetypes are allocated with new in GetOrCreate and owned by registry_ for the whole process.
-		/// [JP] アーキタイプは GetOrCreate で new され、プロセスの終わりまで registry_ が所有する。
-		for (auto& pair : registry_)
+		/// [EN] Archetypes are allocated with new in GetOrCreate and owned by archetypes_ for the whole process.
+		/// [JP] アーキタイプは GetOrCreate で new され、プロセスの終わりまで archetypes_ が所有する。
+		for (Archetype* archetype : archetypes_)
 		{
-			delete pair.second;
+			delete archetype;
 		}
 	}
 }
@@ -53,24 +53,40 @@ namespace SeedCore
 			hash ^= reinterpret_cast<uintptr_t>(id) + 0x9e3779b9 + (hash << 6) + (hash >> 2);
 		}
 
-		/// [EN] A hash hit is confirmed by comparing the actual layout, since different sets can share a hash.
-		/// [JP] 異なる集合が同じハッシュになりうるので、ハッシュが一致したら実際のレイアウトも比べて確かめる。
-		if (registry_.contains(hash))
+		/// [EN] Every archetype sharing the hash is compared by its actual layout, since different sets can share a hash.
+		/// [JP] 異なる集合が同じハッシュになりうるので、同じハッシュの全アーキタイプを実際のレイアウトで比べる。
+		DynamicArray<Archetype*>& bucket = registry_[hash];
+		for (Archetype* existing : bucket)
 		{
 			/// [EN] The stored layout is sorted too, so a plain element-wise comparison decides it.
 			/// [JP] 登録済みのレイアウトもソート済みなので、要素ごとの単純な比較で判定できる。
-			Archetype* existing = registry_.at(hash);
 			if (existing->Layout() == sortedLayout)
 			{
 				return existing;
 			}
 		}
 
-		/// [EN] No match yet: create the archetype and register it under the hash.
-		/// [JP] まだ無いので、アーキタイプを作ってハッシュで登録する。
-		Archetype* newArchetype = new Archetype(sortedLayout);
-		registry_.insert({ hash, newArchetype });
-
+		/// [EN] No match yet: the new archetype takes the next index and joins the hash's list.
+		/// [JP] まだ無いので、新しいアーキタイプに次の番号を振り、ハッシュの一覧に加える。
+		Archetype* newArchetype = new Archetype(sortedLayout, static_cast<Uint32>(archetypes_.size()));
+		archetypes_.push_back(newArchetype);
+		bucket.push_back(newArchetype);
 		return newArchetype;
+	}
+
+	/**
+	* [EN]
+	* Returns every archetype created so far, in creation order; an
+	* archetype's position here is its Index().
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* これまでに作った全アーキタイプを作った順に返す。ここでの位置が
+	* そのアーキタイプの Index() になる。
+	*/
+	std::span<Archetype* const> ArchetypeRegistry::Archetypes()
+	{
+		return std::span<Archetype* const>(archetypes_.data(), archetypes_.size());
 	}
 }

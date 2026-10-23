@@ -94,7 +94,7 @@ namespace SeedCore
 
 		/// [EN] Build either a convex hull or triangle mesh from the resolved asset data.
 		/// [JP] 解決済みアセットデータから凸包または三角形メッシュを構築する。
-		shapeHandle_ = convex ? actor.GetPhysics().CreateConvexShape(meshID_, meshCollision.Positions(), scaleVector) : actor.GetPhysics().CreateMeshShape(meshID_, meshCollision.Positions(), meshCollision.Indices(), scaleVector);
+		shapeHandle_ = convex ? actor.GetService<Physics>()->CreateConvexShape(meshID_, meshCollision.Positions(), scaleVector) : actor.GetService<Physics>()->CreateMeshShape(meshID_, meshCollision.Positions(), meshCollision.Indices(), scaleVector);
 
 		if (shapeHandle_.empty())
 		{
@@ -107,7 +107,7 @@ namespace SeedCore
 		/// [JP] 既存の Rigidbody 形状を置き換え、なければ単独のコライダーボディを生成する。
 		if (rigidbody)
 		{
-			actor.GetPhysics().BodyShape(rigidbody->BodyID(), shapeHandle_);
+			actor.GetService<Physics>()->BodyShape(rigidbody->BodyID(), shapeHandle_);
 			return;
 		}
 

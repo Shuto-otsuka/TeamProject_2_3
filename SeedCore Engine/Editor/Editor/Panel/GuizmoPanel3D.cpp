@@ -8,6 +8,7 @@
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 
 namespace SeedCore
 {
@@ -272,7 +273,7 @@ namespace SeedCore
 					for (Size index = 0; index < dragEntities_.size(); ++index)
 					{
 						Entity entity = dragEntities_[index];
-						Actor actor = world.GetActor(entity);
+						Actor actor = ActorAccessor::Make(world, entity);
 						const Matrix& startWorldMatrix = dragStartWorldMatrices_[index];
 
 						Vector3 startTranslation = startWorldMatrix.Translation();
@@ -435,12 +436,17 @@ namespace SeedCore
 						{
 							/// [EN] An actor whose ancestor is also selected already follows that ancestor through the hierarchy, so it is left out of the drag.
 							/// [JP] 祖先も選択されている actor は、階層を通じてその祖先に既に追従するので、ドラッグの対象から外す。
-							if (std::ranges::any_of(selectedActors, [&](Actor other) { return other != actor && actor.Descendant(other); }))
+							Bool ancestorSelected = false;
+							for (Actor ancestor = actor.Parent(); ancestor && !ancestorSelected; ancestor = ancestor.Parent())
+							{
+								ancestorSelected = std::ranges::contains(selectedActors, ancestor);
+							}
+							if (ancestorSelected)
 							{
 								continue;
 							}
 
-							Entity entity = actor.GetEntity();
+							Entity entity = ActorAccessor::GetEntity(actor);
 							dragEntities_.push_back(entity);
 
 							dragStartWorldMatrices_.push_back(actor.WorldMatrix());
@@ -582,12 +588,17 @@ namespace SeedCore
 				{
 					/// [EN] An actor whose ancestor is also selected already follows that ancestor through the hierarchy, so it is left out of the drag; applying the delta to it as well would move it twice.
 					/// [JP] 祖先も選択されている actor は、階層を通じてその祖先に既に追従するので、ドラッグの対象から外す。デルタを自身にもかけると二重に動いてしまう。
-					if (std::ranges::any_of(selectedActors, [&](Actor other) { return other != actor && actor.Descendant(other); }))
+					Bool ancestorSelected = false;
+					for (Actor ancestor = actor.Parent(); ancestor && !ancestorSelected; ancestor = ancestor.Parent())
+					{
+						ancestorSelected = std::ranges::contains(selectedActors, ancestor);
+					}
+					if (ancestorSelected)
 					{
 						continue;
 					}
 
-					Entity entity = actor.GetEntity();
+					Entity entity = ActorAccessor::GetEntity(actor);
 					dragEntities_.push_back(entity);
 					dragStartWorldMatrices_.push_back(actor.WorldMatrix());
 
@@ -605,7 +616,7 @@ namespace SeedCore
 					{
 						for (Actor child : actor.Children())
 						{
-							Entity childEntity = child.GetEntity();
+							Entity childEntity = ActorAccessor::GetEntity(child);
 							dragEntities_.push_back(childEntity);
 							dragStartWorldMatrices_.push_back(child.WorldMatrix());
 
@@ -718,10 +729,10 @@ namespace SeedCore
 				for (Size index = 0; index < dragEntities_.size(); ++index)
 				{
 					Entity entity = dragEntities_[index];
-					Actor actor = context_.world_.world_->GetActor(entity);
+					Actor actor = ActorAccessor::Make(*context_.world_.world_, entity);
 					Actor parentActor = actor ? actor.Parent() : Actor();
 
-					auto parentIt = parentActor ? std::ranges::find(dragEntities_, parentActor.GetEntity()) : dragEntities_.end();
+					auto parentIt = parentActor ? std::ranges::find(dragEntities_, ActorAccessor::GetEntity(parentActor)) : dragEntities_.end();
 					Bool isChild = parentIt != dragEntities_.end();
 
 					Vector3 newWorldPosition = isChild ? dragStartWorldMatrices_[index].Translation() : (dragStartWorldMatrices_[index] * pivotDelta).Translation();
@@ -779,7 +790,7 @@ namespace SeedCore
 			for (Size index = 0; index < dragEntities_.size(); ++index)
 			{
 				Entity entity = dragEntities_[index];
-				Actor actor = context_.world_.world_->GetActor(entity);
+				Actor actor = ActorAccessor::Make(*context_.world_.world_, entity);
 
 				Matrix newWorldMatrix = dragStartWorldMatrices_[index] * pivotDelta;
 

@@ -15,6 +15,9 @@
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/Resource/ResourceSync.h>
 #include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <FoundationEngine/World/World.h>
+#include <FoundationEngine/Resource/Prefab/PrefabRegistry.h>
 
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/Graphics.h>
@@ -258,7 +261,10 @@ namespace SeedCore
 							resource->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
 							if (Uint32 newAssetID = resource->GetAssetID(String(savedPath.RelativeText())))
 							{
-								dropped.PrefabID(newAssetID);
+								PrefabRegistry* prefabs = dropped.GetWorld().AddService<PrefabRegistry>();
+								EntityID droppedID = ActorAccessor::GetEntity(dropped).GetID();
+								const PrefabRecord* prefabRecord = prefabs->Record(droppedID);
+								prefabs->Add(droppedID, newAssetID, prefabRecord ? prefabRecord->fromPrefab_ : false);
 							}
 						}
 					}

@@ -5,6 +5,8 @@ namespace SeedCore
 {
 	enum class ScriptHook :Uint8
 	{
+		Attach,
+		Detach,
 		Awake,
 		Start,
 		Tick,

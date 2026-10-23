@@ -1,5 +1,6 @@
 #include <FoundationEngine/Bridge/CsharpHost.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
 #include <FoundationEngine/World/ECS/Component/UnknownComponent.h>
@@ -155,10 +156,10 @@ namespace SeedCore
 			Actor restored = actor;
 			restored.AddComponent(id);
 
-			void* data = world.GetComponent(restored.GetEntity(), id);
+			void* data = restored.GetComponent(id);
 			if (data)
 			{
-				ApplyComponent(component, data);
+				component.Apply(data);
 			}
 		}
 
@@ -184,17 +185,19 @@ namespace SeedCore
 	DynamicArray<std::pair<Actor, BlueprintComponent>> CsharpHost::Detach(World& world)
 	{
 		DynamicArray<std::pair<Actor, BlueprintComponent>> captured;
-		for (Actor actor : world.GetActors())
+		ActorRegistry& actors = WorldAccessor::Actors(world);
+		for (EntityID current = actors.Root(); current != EntityID{}; current = actors.Next(current))
 		{
+			Actor actor = WorldAccessor::Make(world, current);
 			for (const ResourcePtr<CsharpScriptType>& scriptType : scriptTypes_)
 			{
-				void* data = world.GetComponent(actor.GetEntity(), scriptType->id_);
+				void* data = actor.GetComponent(scriptType->id_);
 				if (!data)
 				{
 					continue;
 				}
 
-				captured.emplace_back(actor, CaptureComponent(ComponentRegistry::Name(scriptType->id_), data));
+				captured.emplace_back(actor, BlueprintComponent::Capture(ComponentRegistry::Name(scriptType->id_), data));
 				actor.RemoveComponent(scriptType->id_);
 			}
 		}
@@ -202,7 +205,6 @@ namespace SeedCore
 		for (const ResourcePtr<CsharpScriptType>& scriptType : scriptTypes_)
 		{
 			ReflectionRegistry::GetRegistry().erase(ComponentRegistry::Name(scriptType->id_));
-			world.UnregisterSparseSetStorage(scriptType->id_);
 			ComponentRegistry::Unregister(scriptType->id_);
 		}
 
@@ -240,18 +242,11 @@ namespace SeedCore
 		scriptType->blockSize_ = blockSize;
 		scriptType->managedApi_ = &host->managedApi_;
 
-		ComponentMetadata metadata = Component<CsharpBehaviour>::Metadata(ComponentStorage::SparseSet);
-		metadata.createSparseStorage_ = []()->ResourcePtr<InterfaceSparseSetStorage>
-			{
-				return MakePtr<SparseSetStorage<CsharpBehaviour>>();
-			};
-		metadata.isComponentBehaviour_ = true;
-		metadata.setupLifecycle_ = &CsharpBehaviour::Setup;
-		metadata.context_ = scriptType.get();
+		scriptType->metadata_ = Component<CsharpBehaviour>::Metadata(ComponentStorage::SparseSet);
+		CsharpBehaviour::Bind(*scriptType);
 
-		ComponentRegistry::Register(String::intern(scriptName), String::intern(scriptCategory), metadata);
+		scriptType->id_ = ComponentRegistry::Register(String::intern(scriptName), String::intern(scriptCategory), &scriptType->metadata_, scriptType.get());
 		ReflectionRegistry::Register(String::intern(scriptName), &CsharpBehaviour::Reflect);
-		scriptType->id_ = ComponentRegistry::GetComponentID(String::intern(scriptName));
 		host->scriptTypes_.push_back(std::move(scriptType));
 
 		SC_LOG_NOTICE("C# スクリプトを登録しました: {}（カテゴリ {}、typeIndex {}、フック {:#06x}、フィールド {} バイト）", scriptName, scriptCategory, typeIndex, hookMask, blockSize);
@@ -305,7 +300,7 @@ namespace SeedCore
 			return nullptr;
 		}
 
-		Actor actor = host->world_->GetActor(entity);
+		Actor actor = WorldAccessor::Make(*host->world_, entity);
 		String componentName = String::intern(std::string_view(reinterpret_cast<const Char*>(component), static_cast<Size>(componentLength)));
 		String fieldName = String::intern(std::string_view(reinterpret_cast<const Char*>(field), static_cast<Size>(fieldLength)));
 

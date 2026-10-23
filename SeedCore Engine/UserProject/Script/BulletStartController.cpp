@@ -9,9 +9,9 @@ void BulletStartController::OnTick(float elapsedTime)
 {
 }
 
-void BulletStartController::OnTriggerEnter(SeedCore::Entity entity)
+void BulletStartController::OnTriggerEnter(SeedCore::Actor other)
 {
-    SeedCore::Actor hitActor = GetWorld().GetActor(entity);
+    SeedCore::Actor hitActor = other;
 
     //プレイヤー、もしくはエリア(トリガー)なら終了
     if (hitActor.LayerName() == "Player" || hitActor.LayerName() == "Area")return;
@@ -19,9 +19,9 @@ void BulletStartController::OnTriggerEnter(SeedCore::Entity entity)
     isTouch = true;
 }
 
-void BulletStartController::OnTriggerExit(SeedCore::Entity entity)
+void BulletStartController::OnTriggerExit(SeedCore::Actor other)
 {
-    SeedCore::Actor hitActor = GetWorld().GetActor(entity);
+    SeedCore::Actor hitActor = other;
 
     //プレイヤー、もしくはエリア(トリガー)なら終了
     if (hitActor.LayerName() == "Player" || hitActor.LayerName() == "Area")return;

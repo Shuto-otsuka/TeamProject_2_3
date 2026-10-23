@@ -1,6 +1,6 @@
 #pragma once
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
-#include <FoundationEngine/World/Actor/Blueprint.h>
+#include <FoundationEngine/Resource/Blueprint/BlueprintNode.h>
 
 namespace SeedCore
 {

@@ -3,6 +3,8 @@
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/ECS/Query/Query.h>
 
 namespace SeedCore
 {
@@ -36,9 +38,11 @@ namespace SeedCore
 		Actor closestActor;
 		Float closestDistance = FLT_MAX;
 
-		for (EntityID entityID : world.GetComponents<Bounds>())
+		DynamicArray<EntityID> boundsEntities;
+		Query<Read<Bounds>>(world).ForEach([&](EntityID entityID, const Bounds&) { boundsEntities.push_back(entityID); });
+		for (EntityID entityID : boundsEntities)
 		{
-			Actor actor = world.GetActor(entityID);
+			Actor actor = WorldAccessor::Make(world, entityID);
 			if (!actor || !actor.Active())
 			{
 				continue;

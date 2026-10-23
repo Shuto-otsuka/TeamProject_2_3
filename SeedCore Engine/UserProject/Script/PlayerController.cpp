@@ -10,6 +10,8 @@
 #include <SeedCore/ScPhysics.h>
 #include<SeedCore/ScLog.h>
 #include <SeedCore/ScScene.h> 
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <PhysicsEngine/Physics/Physics.h>
 
 void PlayerController::OnStart()
 {
@@ -19,20 +21,17 @@ void PlayerController::OnStart()
     firstPersonCameraBrain = world.GetActor("FirstPersonCameraBrain");
     bulletNaviStart = world.GetActor("BulletStart");
 
-    SeedCore::Entity entity = GetActor().GetEntity();
-
-    position = world.GetComponent<SeedCore::Position>(entity);
-    rotation = world.GetComponent<SeedCore::Rotation>(entity);
-    scale = world.GetComponent<SeedCore::Scale>(entity);
-    velocity = world.GetComponent<SeedCore::LinearVelocity>(entity);
-    myCharacterController = world.GetComponent<SeedCore::CharacterController>(entity);
-    firstPersonCameraBrainComp = world.GetComponent<SeedCore::CameraBrain>(firstPersonCameraBrain.GetEntity());
-    firstPersonCameraBrainRotate = world.GetComponent<SeedCore::Rotation>(firstPersonCameraBrain.GetEntity());
+    position = GetActor().GetComponent<SeedCore::Position>();
+    rotation = GetActor().GetComponent<SeedCore::Rotation>();
+    scale = GetActor().GetComponent<SeedCore::Scale>();
+    velocity = GetActor().GetComponent<SeedCore::LinearVelocity>();
+    myCharacterController = GetActor().GetComponent<SeedCore::CharacterController>();
+    firstPersonCameraBrainComp = firstPersonCameraBrain.GetComponent<SeedCore::CameraBrain>();
+    firstPersonCameraBrainRotate = firstPersonCameraBrain.GetComponent<SeedCore::Rotation>();
 
     if (bulletNaviStart)
     {
-        SeedCore::Entity bulletStartEntity = bulletNaviStart.GetEntity();
-        bulletStartController = GetWorld().GetComponent<BulletStartController>(bulletStartEntity);
+        bulletStartController = bulletNaviStart.GetComponent<BulletStartController>();
     }
 
     defaultGravity = myCharacterController->gravityScale_;
@@ -65,19 +64,19 @@ void PlayerController::OnInspectorGUI()
     }
 }
 
-void PlayerController::OnTriggerEnter(SeedCore::Entity entity)
+void PlayerController::OnTriggerEnter(SeedCore::Actor other)
 {
-    SeedCore::Actor hitActor = GetWorld().GetActor(entity);
+    SeedCore::Actor hitActor = other;
     if(hitActor.HasTag("CheckPoint"))
     {
         //当たったのがチェックポイントだったら
 
-        CheckPointAreaController* checkPointAreaController = GetWorld().GetComponent<CheckPointAreaController>(entity);
+        CheckPointAreaController* checkPointAreaController = other.GetComponent<CheckPointAreaController>();
 
         if (checkPointAreaController->GetStep() > beforeCheckPointStep)
         {
             //前回踏んだチェックポイントより先のチェックポイントだったら更新
-            SeedCore::Position* hitActorPosition = GetWorld().GetComponent<SeedCore::Position>(entity);
+            SeedCore::Position* hitActorPosition = other.GetComponent<SeedCore::Position>();
             checkPointPosition = { hitActorPosition->x_,hitActorPosition->y_,hitActorPosition->z_ };
             beforeCheckPointStep = checkPointAreaController->GetStep();
 
@@ -107,9 +106,9 @@ void PlayerController::OnTriggerEnter(SeedCore::Entity entity)
     }
 }
 
-void PlayerController::OnTriggerExit(SeedCore::Entity entity)
+void PlayerController::OnTriggerExit(SeedCore::Actor other)
 {
-    SeedCore::Actor hitActor = GetWorld().GetActor(entity);
+    SeedCore::Actor hitActor = other;
 
     if (hitActor.HasTag("GravityArea"))
     {
@@ -358,7 +357,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
             SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
             SeedCore::Vector3 front = firstPersonCameraBrain.WorldMatrix().Backward();
 
-            if (GetActor().GetPhysics().Raycast(gunPosition, front, 10000.0f, hit, layerMask))
+            if (GetActor().GetService<SeedCore::Physics>()->Raycast(gunPosition, front, 10000.0f, hit, layerMask))
             {
                 //当たったところをターゲットにする
                 bulletTargetPosition = hit.position_;
@@ -387,9 +386,9 @@ void PlayerController::UpdateTurn(float elapsedTime)
         SeedCore::Vector3 gunOffset = SeedCore::Vector3(0.0f,bulletOffsetY,0.0f);
         SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
 
-        if (GetActor().GetPhysics().Raycast(ray.origin_, ray.direction_, 10000.0f, hit,layerMask))
+        if (GetActor().GetService<SeedCore::Physics>()->Raycast(ray.origin_, ray.direction_, 10000.0f, hit,layerMask))
         {
-            SeedCore::Actor hitActor = GetWorld().GetActor(hit.entityID_);//ヒットしたアクターの取得
+            SeedCore::Actor hitActor = SeedCore::WorldAccessor::Make(GetWorld(), hit.entityID_);//ヒットしたアクターの取得
             if (!hitActor.HasTag("CanStop") && hit.normal_.y > 0.99f)
             {
                 if (isGravityArea)
@@ -538,7 +537,7 @@ void PlayerController::Shot()
     costGauge += costGaugeAdd;
 
     SeedCore::Actor bullet = SeedCore::Prefab::Spawn(SeedCore::String("Bullet.prefab"));//弾生成
-    BulletController* bulletController = GetWorld().GetComponent<BulletController>(bullet.GetEntity());
+    BulletController* bulletController = bullet.GetComponent<BulletController>();
 
     bulletController->SetParam(bulletPosition,shotDirection, shotChargeRate,costGaugeAdd);//位置、見てる方向、チャージ率、増加コストを渡す
 }
@@ -557,21 +556,22 @@ void PlayerController::UpdateAllBulletRemove(float elapsedTime)
     if (!SeedCore::Input::KeyState(SeedCore::Input::Key::R, SeedCore::Input::OnPressed))return;//Rキー押された瞬間じゃなければ終了
 
     //アクターを走査
-    for (auto& actor : GetWorld().GetActors())
+    SeedCore::ActorRegistry& actorRegistry = SeedCore::WorldAccessor::Actors(GetWorld());
+    for (SeedCore::EntityID actorID = actorRegistry.Root(); actorID != SeedCore::EntityID{}; actorID = actorRegistry.Next(actorID))
     {
+        SeedCore::Actor actor = SeedCore::WorldAccessor::Make(GetWorld(), actorID);
+
         //全ての弾を削除
         if (actor.HasTag("Bullet"))
         {
-            SeedCore::Entity entity = actor.GetEntity();
-            BulletController* bulletController = GetWorld().GetComponent<BulletController>(entity);
+            BulletController* bulletController = actor.GetComponent<BulletController>();
             bulletController->Remove();
         }
 
         //全てのギミックを動かす
         if (actor.LayerName() == "Gimmick")
         {
-            SeedCore::Entity entity = actor.GetEntity();
-            StopController* stopController = GetWorld().GetComponent<StopController>(entity);
+            StopController* stopController = actor.GetComponent<StopController>();
             stopController->Move();
         }
     }

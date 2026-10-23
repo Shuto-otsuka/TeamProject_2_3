@@ -62,17 +62,17 @@ public:
 
 	//=== Physics ===//
 
-	void OnCollisionEnter(SeedCore::Entity entity); // Entity に衝突した瞬間の処理（非トリガーのCollider/Rigidbodyが必要）
+	void OnCollisionEnter(SeedCore::Actor other); // Actor に衝突した瞬間の処理（非トリガーのCollider/Rigidbodyが必要）
 
-	void OnCollisionStay(SeedCore::Entity entity); // Entity に衝突している間、毎フレームの処理
+	void OnCollisionStay(SeedCore::Actor other); // Actor に衝突している間、毎フレームの処理
 
-	void OnCollisionExit(SeedCore::Entity entity); // Entity との衝突が終わった瞬間の処理
+	void OnCollisionExit(SeedCore::Actor other); // Actor との衝突が終わった瞬間の処理
 
-	void OnTriggerEnter(SeedCore::Entity entity); // Entity のコライダー範囲内に入った瞬間の処理（トリガー用Collider/Rigidbodyが必要）
+	void OnTriggerEnter(SeedCore::Actor other); // Actor のコライダー範囲内に入った瞬間の処理（トリガー用Collider/Rigidbodyが必要）
 
-	void OnTriggerStay(SeedCore::Entity entity); // Entity のコライダー範囲内にいる間、毎フレームの処理
+	void OnTriggerStay(SeedCore::Actor other); // Actor のコライダー範囲内にいる間、毎フレームの処理
 
-	void OnTriggerExit(SeedCore::Entity entity); // Entity のコライダー範囲内から出た瞬間の処理
+	void OnTriggerExit(SeedCore::Actor other); // Actor のコライダー範囲内から出た瞬間の処理
 };
 //REGISTER_COMPONENT(ScTutorial); // コンポーネントを登録。これがないと「コンポーネントを追加」の一覧に出てこない。
 //REGISTER_COMPONENT(ScTutorial, "カテゴリ名"); // 一覧内のカテゴリ名を指定したい場合はこちら（省略時は"Custom"）

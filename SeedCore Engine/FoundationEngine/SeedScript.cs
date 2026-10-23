@@ -10,6 +10,10 @@ namespace SeedCore
 
         internal String[] strings_;
 
+        internal Action attach_;
+
+        internal Action detach_;
+
         internal Action awake_;
 
         internal Action start_;
@@ -42,6 +46,12 @@ namespace SeedCore
         {
             switch(hook)
             {
+                case ScriptHook.Attach:
+                    attach_?.Invoke();
+                    break;
+                case ScriptHook.Detach:
+                    detach_?.Invoke();
+                    break;
                 case ScriptHook.Awake:
                     awake_?.Invoke();
                     break;

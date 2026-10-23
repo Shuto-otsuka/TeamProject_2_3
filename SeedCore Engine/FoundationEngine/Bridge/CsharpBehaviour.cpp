@@ -1,5 +1,6 @@
 #include <FoundationEngine/Bridge/CsharpBehaviour.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 
 namespace SeedCore
 {
@@ -33,97 +34,75 @@ namespace SeedCore
 		other.handle_ = nullptr;
 	}
 
-	void CsharpBehaviour::Setup(void* component, void* world, Entity entity, ComponentID id)
+	void CsharpBehaviour::Bind(CsharpScriptType& scriptType)
 	{
-		CsharpBehaviour* behaviour = static_cast<CsharpBehaviour*>(component);
-		behaviour->world_ = static_cast<World*>(world);
-		behaviour->entity_ = entity;
-		behaviour->scriptType_ = static_cast<const CsharpScriptType*>(ComponentRegistry::Get(id).context_);
+		auto has = [&scriptType](ScriptHook hook)
+			{
+				return (scriptType.hookMask_ & (1u << static_cast<Uint32>(hook))) != 0;
+			};
 
-		const CsharpScriptType* scriptType = behaviour->scriptType_;
-		ManagedApi* managedApi = scriptType->managedApi_;
-		Bool copied = behaviour->handle_ != nullptr;
-		if (copied)
+		scriptType.upcast_ = [](void* component) -> ComponentBehaviour* { return static_cast<CsharpBehaviour*>(component); };
+		scriptType.attach_ = &Attach;
+
+		if (has(ScriptHook::Detach))
 		{
-			managedApi->free_(behaviour->handle_);
+			scriptType.detach_ = &Lifecycle<ScriptHook::Detach>;
 		}
-
-		behaviour->handle_ = managedApi->create_(scriptType->typeIndex_, entity.GetID());
-		if (behaviour->handle_ == nullptr)
-		{
-			return;
-		}
-
-		if (copied)
-		{
-			managedApi->push_(behaviour->handle_, behaviour->currentBlock_);
-		}
-		else
-		{
-			managedApi->pull_(behaviour->handle_, behaviour->currentBlock_);
-		}
-		std::memcpy(behaviour->syncedBlock_, behaviour->currentBlock_, blockCapacity_);
-
-		auto has = [scriptType](ScriptHook hook)
-		{
-			return (scriptType->hookMask_ & (1u << static_cast<Uint32>(hook))) != 0;
-		};
-
 		if (has(ScriptHook::Awake))
 		{
-			behaviour->awake_ = &Lifecycle<ScriptHook::Awake>;
+			scriptType.awake_ = &Lifecycle<ScriptHook::Awake>;
 		}
 		if (has(ScriptHook::Start))
 		{
-			behaviour->start_ = &Lifecycle<ScriptHook::Start>;
+			scriptType.start_ = &Lifecycle<ScriptHook::Start>;
 		}
 		if (has(ScriptHook::Tick))
 		{
-			behaviour->tick_ = &Lifecycle<ScriptHook::Tick>;
+			scriptType.tick_ = &Lifecycle<ScriptHook::Tick>;
 		}
 		if (has(ScriptHook::LateTick))
 		{
-			behaviour->lateTick_ = &Lifecycle<ScriptHook::LateTick>;
+			scriptType.lateTick_ = &Lifecycle<ScriptHook::LateTick>;
 		}
 		if (has(ScriptHook::FixedTick))
 		{
-			behaviour->fixedTick_ = &Lifecycle<ScriptHook::FixedTick>;
+			scriptType.fixedTick_ = &Lifecycle<ScriptHook::FixedTick>;
 		}
 		if (has(ScriptHook::EditorTick))
 		{
-			behaviour->editorTick_ = &Lifecycle<ScriptHook::EditorTick>;
+			scriptType.editorTick_ = &Lifecycle<ScriptHook::EditorTick>;
 		}
 		if (has(ScriptHook::Destroy))
 		{
-			behaviour->destroy_ = &Lifecycle<ScriptHook::Destroy>;
+			scriptType.destroy_ = &Lifecycle<ScriptHook::Destroy>;
 		}
 		if (has(ScriptHook::InspectorGUI))
 		{
-			behaviour->inspectorGUI_ = &Lifecycle<ScriptHook::InspectorGUI>;
+			scriptType.inspectorGUI_ = &Lifecycle<ScriptHook::InspectorGUI>;
 		}
 		if (has(ScriptHook::CollisionEnter))
 		{
-			behaviour->collisionEnter_ = &Contact<ScriptHook::CollisionEnter>;
+			scriptType.collisionEnter_ = &Contact<ScriptHook::CollisionEnter>;
 		}
 		if (has(ScriptHook::CollisionStay))
 		{
-			behaviour->collisionStay_ = &Contact<ScriptHook::CollisionStay>;
+			scriptType.collisionStay_ = &Contact<ScriptHook::CollisionStay>;
 		}
 		if (has(ScriptHook::CollisionExit))
 		{
-			behaviour->collisionExit_ = &Contact<ScriptHook::CollisionExit>;
+			scriptType.collisionExit_ = &Contact<ScriptHook::CollisionExit>;
 		}
 		if (has(ScriptHook::TriggerEnter))
 		{
-			behaviour->triggerEnter_ = &Contact<ScriptHook::TriggerEnter>;
+			scriptType.triggerEnter_ = &Contact<ScriptHook::TriggerEnter>;
 		}
 		if (has(ScriptHook::TriggerStay))
 		{
-			behaviour->triggerStay_ = &Contact<ScriptHook::TriggerStay>;
+			scriptType.triggerStay_ = &Contact<ScriptHook::TriggerStay>;
 		}
 		if (has(ScriptHook::TriggerExit))
 		{
-			behaviour->triggerExit_ = &Contact<ScriptHook::TriggerExit>;
+			scriptType.triggerExit_ = &Contact<ScriptHook::TriggerExit>;
 		}
 	}
 
@@ -182,6 +161,27 @@ namespace SeedCore
 		}
 	}
 
+	void CsharpBehaviour::Attach(ComponentBehaviour* component)
+	{
+		CsharpBehaviour* behaviour = static_cast<CsharpBehaviour*>(component);
+		behaviour->scriptType_ = static_cast<const CsharpScriptType*>(behaviour->id_->hooks_);
+
+		const CsharpScriptType* scriptType = behaviour->scriptType_;
+		behaviour->handle_ = scriptType->managedApi_->create_(scriptType->typeIndex_, behaviour->entity_.GetID());
+		if (behaviour->handle_ == nullptr)
+		{
+			return;
+		}
+
+		scriptType->managedApi_->pull_(behaviour->handle_, behaviour->currentBlock_);
+		std::memcpy(behaviour->syncedBlock_, behaviour->currentBlock_, blockCapacity_);
+
+		if ((scriptType->hookMask_ & (1u << static_cast<Uint32>(ScriptHook::Attach))) != 0)
+		{
+			Lifecycle<ScriptHook::Attach>(behaviour);
+		}
+	}
+
 	template<ScriptHook Hook>
 	void CsharpBehaviour::Lifecycle(ComponentBehaviour* component)
 	{
@@ -207,7 +207,7 @@ namespace SeedCore
 	}
 
 	template<ScriptHook Hook>
-	void CsharpBehaviour::Contact(ComponentBehaviour* component, Entity other)
+	void CsharpBehaviour::Contact(ComponentBehaviour* component, const Actor& other)
 	{
 		CsharpBehaviour* behaviour = static_cast<CsharpBehaviour*>(component);
 		if (behaviour->handle_ == nullptr)
@@ -215,7 +215,7 @@ namespace SeedCore
 			return;
 		}
 		behaviour->Synchronize(false);
-		behaviour->scriptType_->managedApi_->invokeContact_(behaviour->handle_, Hook, other.GetID());
+		behaviour->scriptType_->managedApi_->invokeContact_(behaviour->handle_, Hook, ActorAccessor::GetEntity(other).GetID());
 	}
 
 	void CsharpBehaviour::Synchronize(Bool pull)

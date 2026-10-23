@@ -11,12 +11,12 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Records structural World changes (entity create/destroy, prefab
-	* spawn, component add/remove) as a list to be replayed later, in
-	* record order, by Flush. Systems issue changes here instead of
-	* mutating the World directly so structural edits never happen while
-	* a Query::ForEach is walking chunks - the engine flushes the buffer
-	* at fixed points between systems. Create/SpawnPrefab hand back a
+	* Records structural World changes (prefab spawn, actor destroy,
+	* component add/remove) as a list to be replayed later, in record
+	* order, by Flush. Systems issue changes here instead of mutating the
+	* World directly so structural edits never happen while a
+	* Query::ForEach is walking chunks - the engine flushes the buffer at
+	* fixed points between systems. SpawnPrefab hands back a
 	* provisional EntityID; after Flush, Resolved maps it to the real
 	* EntityID so a system can keep tracking what it spawned across
 	* frames. The design is per-worker + merge, but a single buffer is
@@ -25,12 +25,12 @@ namespace SeedCore
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* World への構造変更（エンティティの生成/破棄、プレハブ生成、
-	* コンポーネントの追加/削除）を、後で Flush が記録順に再生する
-	* リストとして記録する。システムは World を直接変更する代わりに
-	* ここへ変更を積むことで、Query::ForEach がチャンクを走査している
-	* 最中に構造編集が起きないようにする - エンジンがシステムの合間の
-	* 決まった地点でバッファを flush する。Create / SpawnPrefab は
+	* World への構造変更（プレハブ生成、actor の破棄、コンポーネントの
+	* 追加/削除）を、後で Flush が記録順に再生するリストとして記録する。
+	* システムは World を直接変更する代わりにここへ変更を積むことで、
+	* Query::ForEach がチャンクを走査している最中に構造編集が起きない
+	* ようにする - エンジンがシステムの合間の決まった地点でバッファを
+	* flush する。SpawnPrefab は
 	* 暫定 EntityID を返す。Flush 後、Resolved がそれを実際の EntityID へ
 	* 対応付けるため、システムは生成したものをフレームをまたいで追跡
 	* できる。設計はワーカーごと + マージだが、組み込みシステムが直列に
@@ -63,23 +63,6 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Records the creation of a bare (componentless) entity and
-		* returns a provisional EntityID that stands in for it until
-		* Flush; pass that ID to this buffer's AddComponent/DestroyEntity
-		* to target the not-yet-created entity.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* コンポーネントを持たないエンティティの生成を記録し、Flush まで
-		* それを代理する暫定 EntityID を返す。まだ生成されていない
-		* エンティティを対象にするには、その ID をこのバッファの
-		* AddComponent / DestroyEntity へ渡す。
-		*/
-		EntityID CreateEntity();
-
-		/**
-		* [EN]
 		* Records a deferred prefab instantiation as a root actor (or a
 		* child of parent when valid), placing its root Position at
 		* position. Returns a provisional EntityID for the root; use
@@ -97,15 +80,13 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Records the destruction of id (an actor is destroyed through
-		* World::DestroyActor, a bare entity through World::DestroyEntity).
+		* Records the destruction of id's actor, through World::DestroyActor.
 		* id may be a provisional ID from this buffer.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* id の破棄を記録する（actor は World::DestroyActor、素の
-		* エンティティは World::DestroyEntity 経由で破棄される）。id は
+		* id の actor の破棄を記録する（World::DestroyActor 経由）。id は
 		* このバッファの暫定 ID でもよい。
 		*/
 		void DestroyEntity(EntityID id);
@@ -222,7 +203,6 @@ namespace SeedCore
 		/// [JP] 記録された Command が何をするかを区別する。
 		enum class Kind : Uint8
 		{
-			CreateEntity,
 			SpawnPrefab,
 			DestroyEntity,
 			AddComponent,
@@ -235,10 +215,10 @@ namespace SeedCore
 		{
 			/// [EN] What this command does.
 			/// [JP] このコマンドが行う操作。
-			Kind kind_ = Kind::CreateEntity;
+			Kind kind_ = Kind::SpawnPrefab;
 
-			/// [EN] Target entity (real or provisional); the created/spawned entity for CreateEntity/SpawnPrefab.
-			/// [JP] 対象エンティティ（実際または暫定）。CreateEntity/SpawnPrefab では生成されるエンティティ。
+			/// [EN] Target entity (real or provisional); the spawned root for SpawnPrefab.
+			/// [JP] 対象エンティティ（実際または暫定）。SpawnPrefab では生成されるルート。
 			EntityID target_;
 
 			/// [EN] SpawnPrefab: parent entity, or invalid for a root spawn.
@@ -277,8 +257,8 @@ namespace SeedCore
 		/// [JP] AddComponent のコンポーネントコピーの格納領域。Command::dataOffset_ が参照する。
 		DynamicArray<BlobCell> blob_;
 
-		/// [EN] Next provisional slot index handed out by CreateEntity / SpawnPrefab.
-		/// [JP] CreateEntity / SpawnPrefab が次に発行する暫定スロットインデックス。
+		/// [EN] Next provisional slot index handed out by SpawnPrefab.
+		/// [JP] SpawnPrefab が次に発行する暫定スロットインデックス。
 		Uint32 provisionalCount_ = 0;
 
 		/// [EN] Provisional slot index to the real EntityID it became in the last Flush.

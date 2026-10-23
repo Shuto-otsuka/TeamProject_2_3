@@ -2,9 +2,8 @@
 
 void TitleLogoController::OnStart()
 {
-    SeedCore::Entity entity = GetActor().GetEntity();
 
-    position = GetWorld().GetComponent<SeedCore::Position>(entity);
+    position = GetActor().GetComponent<SeedCore::Position>();
 }
 
 void TitleLogoController::OnTick(float elapsedTime)

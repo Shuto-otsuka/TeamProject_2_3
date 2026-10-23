@@ -1,5 +1,5 @@
 #pragma once
-#include <FoundationEngine/World/Actor/Blueprint.h>
+#include <FoundationEngine/Resource/Blueprint/BlueprintComponent.h>
 
 namespace SeedCore
 {

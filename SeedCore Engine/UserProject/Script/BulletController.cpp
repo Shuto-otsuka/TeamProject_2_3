@@ -6,11 +6,9 @@
 void BulletController::OnStart()
 {
     player = GetWorld().GetActor("Player");
-    SeedCore::Entity entity = GetActor().GetEntity();
-    SeedCore::Entity playerEntity = player.GetEntity();
-    playerController = GetWorld().GetComponent<PlayerController>(playerEntity);
-    linearVelocity = GetWorld().GetComponent<SeedCore::LinearVelocity>(entity);
-    angularVelocity = GetWorld().GetComponent<SeedCore::AngularVelocity>(entity);
+    playerController = player.GetComponent<PlayerController>();
+    linearVelocity = GetActor().GetComponent<SeedCore::LinearVelocity>();
+    angularVelocity = GetActor().GetComponent<SeedCore::AngularVelocity>();
 }
 
 void BulletController::OnTick(float elapsedTime)
@@ -21,14 +19,14 @@ void BulletController::OnTick(float elapsedTime)
     UpdateAliveTime(elapsedTime);
 }
 
-void BulletController::OnTriggerEnter(SeedCore::Entity entity)
+void BulletController::OnTriggerEnter(SeedCore::Actor other)
 {
     //通常時じゃなければ終了
     if (state != State::NORMAL)return;
 
     //ヒットしたアクターの取得
-    SeedCore::Actor hitActor = GetWorld().GetActor(entity);
-    SeedCore::Name* hitActorName = GetWorld().GetComponent<SeedCore::Name>(entity);
+    SeedCore::Actor hitActor = other;
+    SeedCore::Name* hitActorName = other.GetComponent<SeedCore::Name>();
 
     if (hitActor.HasTag("GravityArea"))
     {
@@ -71,7 +69,7 @@ void BulletController::OnTriggerEnter(SeedCore::Entity entity)
         //弾に当たった場合
         SC_LOG_NOTICE("弾に当たった");
 
-        BulletController* hitBulletController = GetWorld().GetComponent<BulletController>(entity);
+        BulletController* hitBulletController = other.GetComponent<BulletController>();
         //相手の弾のステートによって処理を変える
         switch (hitBulletController->GetState())
         {
@@ -139,7 +137,7 @@ void BulletController::OnTriggerEnter(SeedCore::Entity entity)
         SC_LOG_NOTICE("ギミックにあたった");
 
         //停止を制御するコンポネント
-        StopController* stopController = GetWorld().GetComponent<StopController>(entity);
+        StopController* stopController = other.GetComponent<StopController>();
         //止める時間を残りの生存時間にする
         float stopTime = aliveTime - aliveTimer;
         //止める
@@ -152,10 +150,10 @@ void BulletController::OnTriggerEnter(SeedCore::Entity entity)
     }
 }
 
-void BulletController::OnTriggerExit(SeedCore::Entity entity)
+void BulletController::OnTriggerExit(SeedCore::Actor other)
 {
     //ヒットしたアクターの取得
-    SeedCore::Actor hitActor = GetWorld().GetActor(entity);
+    SeedCore::Actor hitActor = other;
 
     if (hitActor.HasTag("GravityArea"))
     {
@@ -177,12 +175,11 @@ void BulletController::SetParam(const SeedCore::Vector3& startPosition,const See
     //発射されたタイミングでパラメータをセット
 
     SeedCore::World& world = GetWorld();
-    SeedCore::Entity entity = GetActor().GetEntity();
 
-    scale = world.GetComponent<SeedCore::Scale>(entity);
-    position = world.GetComponent<SeedCore::Position>(entity);
-    rotation = world.GetComponent<SeedCore::Rotation>(entity);
-    rigidbody = world.GetComponent<SeedCore::Rigidbody>(entity);
+    scale = GetActor().GetComponent<SeedCore::Scale>();
+    position = GetActor().GetComponent<SeedCore::Position>();
+    rotation = GetActor().GetComponent<SeedCore::Rotation>();
+    rigidbody = GetActor().GetComponent<SeedCore::Rigidbody>();
 
     //初期位置をセット
     this->startPosition = startPosition;

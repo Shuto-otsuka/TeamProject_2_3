@@ -3,6 +3,7 @@
 #include <FoundationEngine/Log/Notice.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
 #include <FoundationEngine/World/ECS/Component/UnknownComponent.h>
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
@@ -432,40 +433,43 @@ namespace SeedCore
 
 		capturedComponents_.clear();
 
-		for (Actor actor : world.GetActors())
+		ActorRegistry& actors = WorldAccessor::Actors(world);
+		EntityRegistry& entities = WorldAccessor::Entities(world);
+		for (EntityID current = actors.Root(); current != EntityID{}; current = actors.Next(current))
 		{
+			Actor actor = WorldAccessor::Make(world, current);
+
 			DynamicArray<ComponentID> ownedIDs;
-			std::ranges::copy_if(actor.ComponentIDList(), std::back_inserter(ownedIDs), isOwnedByLoadedModule);
+			for (const SparseSetLocation& location : entities.Record(current)->sparseSet_)
+			{
+				if (location.id_->hooks_ && location.id_->hooks_->upcast_ && isOwnedByLoadedModule(location.id_))
+				{
+					ownedIDs.push_back(location.id_);
+				}
+			}
 
 			for (ComponentID id : ownedIDs)
 			{
-				void* data = world.GetComponent(actor.GetEntity(), id);
+				void* data = actor.GetComponent(id);
 				if (data)
 				{
 					String name = ComponentRegistry::Name(id);
-					capturedComponents_.emplace_back(actor, CaptureComponent(name, data));
+					capturedComponents_.emplace_back(actor, BlueprintComponent::Capture(name, data));
 				}
 
 				actor.RemoveComponent(id);
 			}
 		}
 
-		/// [EN] Collected during a read-only pass over GetRegistry() and unregistered afterwards - ComponentRegistry::Unregister() erases from the very map GetRegistry() returns a reference to, so mutating it mid-iteration would be unsafe.
-		/// [JP] GetRegistry() を読み取り専用で走査する間に集めておき、走査後にまとめて登録解除する - ComponentRegistry::Unregister() は GetRegistry() が参照を返しているまさにそのマップから削除するため、走査中に変更するのは安全ではない。
+		/// [EN] Collected during a read-only pass over Registry() and unregistered afterwards - ComponentRegistry::Unregister() erases from the very list Registry() views, so mutating it mid-iteration would be unsafe.
+		/// [JP] Registry() を読み取り専用で走査する間に集めておき、走査後にまとめて登録解除する - ComponentRegistry::Unregister() は Registry() が見ているまさにその一覧から削除するため、走査中に変更するのは安全ではない。
 		DynamicArray<ComponentID> ownedComponentIDs;
-		for (const auto& [id, metadata] : ComponentRegistry::Registry())
+		for (ComponentID id : ComponentRegistry::Registry())
 		{
-			if (!isOwnedByLoadedModule(id))
+			if (isOwnedByLoadedModule(id))
 			{
-				continue;
+				ownedComponentIDs.push_back(id);
 			}
-
-			if (metadata.storage_ == ComponentStorage::SparseSet)
-			{
-				world.UnregisterSparseSetStorage(id);
-			}
-
-			ownedComponentIDs.push_back(id);
 		}
 
 		/// [EN] Must happen before FreeLibrary() unloads the module - otherwise a stale std::type_index left behind in ComponentRegistry::TypeIndex() would point at a type_info living in freed memory, crashing the next Register<T>() call that happens to probe the same slot.
@@ -506,10 +510,10 @@ namespace SeedCore
 
 			actor.AddComponent(id);
 
-			void* data = world.GetComponent(actor.GetEntity(), id);
+			void* data = actor.GetComponent(id);
 			if (data)
 			{
-				ApplyComponent(component, data);
+				component.Apply(data);
 			}
 		}
 

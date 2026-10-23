@@ -40,7 +40,7 @@ namespace SeedCore
 
 		/// [EN] Apply the Doppler scale and listener state to the World's audio context.
 		/// [JP] ドップラー倍率とリスナー状態を World の音響環境へ反映する。
-		Audio& audio = GetActor().GetAudio();
+		Audio& audio = *GetActor().GetService<Audio>();
 		audio.DopplerMultiplier(dopplerMultiplier_);
 		audio.UpdateListener(position, front, up, velocity);
 	}

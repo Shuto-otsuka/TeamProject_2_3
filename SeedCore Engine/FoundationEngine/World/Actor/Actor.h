@@ -2,27 +2,32 @@
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 #include <FoundationEngine/World/ECS/Component/Component.h>
 #include <FoundationEngine/World/ECS/Component/ComponentBehaviour.h>
-#include <FoundationEngine/Utility/Bitset.h>
+#include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
+#include <FoundationEngine/World/Service.h>
+#include <FoundationEngine/Reflection/ReflectionRegistry.h>
+#include <FoundationEngine/Log/Warning.h>
 
 namespace SeedCore
 {
 	class World;
-	class DebugDraw;
-	class Physics;
-	class Audio;
-	class ResourceCache;
-	struct BlueprintNode;
 
 	/**
 	* [EN]
-	* Lightweight value handle to a GameObject-style actor: pairs the
-	* owning World with a generation-checked Entity, and forwards every
-	* operation (hierarchy, active state, tags, layers, components,
-	* prefab bookkeeping) to World, where the actor's data actually
-	* lives. Copy it freely; it is 16 bytes and never dangles - a call
-	* on an actor whose entity has been destroyed resolves to nothing
-	* (nullptr / default) rather than aliasing a recycled slot. A
+	* Lightweight value handle to a GameObject-style actor, and the face of
+	* an actor that scripts see: it pairs the owning World with a
+	* generation-checked Entity, and forwards every operation (components,
+	* services, hierarchy, transform, active state, tags, layers) to World,
+	* where the actor's data actually lives. Only what scripts use is here;
+	* bookkeeping that only the engine and the editor need (prefab links,
+	* persistent IDs, per-actor component lists) is kept by the systems that
+	* own it. Copy it freely; it is 16 bytes and never dangles - a call on
+	* an actor whose entity has been destroyed resolves to nothing (nullptr
+	* / default) rather than aliasing a recycled slot. A
 	* default-constructed Actor is invalid (converts to false).
+	*
+	* Every template member is a thin wrapper that turns T into its
+	* registered ID (or its service name) and calls a type-erased member
+	* defined in Actor.cpp, so this header never needs World's definition.
 	*
 	* Individual non-template members carry SEEDCORE_API rather than the
 	* class itself, because a class-level dllexport/dllimport propagates
@@ -31,19 +36,47 @@ namespace SeedCore
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* GameObject 風の actor への軽量な値ハンドル: 所有元 World と世代
-	* チェック付き Entity のペアで、全操作（階層、アクティブ状態、タグ、
-	* レイヤー、コンポーネント、プレハブ管理）を、actor のデータが実際に
-	* 存在する World へ転送する。自由にコピーしてよい。16 バイトで、
-	* ダングリングしない - エンティティが破棄された actor への呼び出しは、
-	* 再利用スロットにエイリアスするのではなく、何も無い結果
-	* （nullptr / デフォルト）に解決される。デフォルト構築された Actor は
-	* 無効（false に変換される）。
+	* GameObject 風の actor への軽量な値ハンドルで、スクリプトから見える
+	* actor の面。所有元 World と世代チェック付き Entity のペアで、全操作
+	* （コンポーネント、サービス、階層、トランスフォーム、アクティブ状態、
+	* タグ、レイヤー）を、actor のデータが実際に存在する World へ転送する。
+	* ここに置くのはスクリプトが使うものだけで、エンジンとエディタだけが
+	* 要る管理情報（プレハブとのつながり、永続ID、actor ごとの
+	* コンポーネント一覧）は、それを持つ仕組みの側が抱える。自由にコピー
+	* してよい。16 バイトで、ダングリングしない - エンティティが破棄された
+	* actor への呼び出しは、再利用スロットにエイリアスするのではなく、
+	* 何も無い結果（nullptr / デフォルト）に解決される。デフォルト構築
+	* された Actor は無効（false に変換される）。
+	*
+	* テンプレートのメンバーはどれも、T を登録済みの ID（またはサービスの
+	* 名前）に変えて、Actor.cpp にある型消去版を呼ぶだけの薄い包みなので、
+	* このヘッダは World の定義を必要としない。
+	*
+	* テンプレートでないメンバーには、クラス全体ではなく個別に
+	* SEEDCORE_API を付ける。Clang では（MSVC と違い）クラス単位の
+	* dllexport/dllimport がメンバー関数テンプレートにまで伝わるため。
 	*/
 	class Actor
 	{
 	private:
-		friend SEEDCORE_API Actor InstantiateActorNode(World& world, ResourceCache& cache, const BlueprintNode& node, Actor parentActor, Bool fromPrefab);
+		friend class ActorAccessor;
+
+		/**
+		* [EN]
+		* Constructs a handle to the actor identified by entity within world.
+		* Private, because scripts never build an Actor from an entity: they
+		* receive actors from World or from their own component. Inside the
+		* engine, ActorAccessor is the one place that builds them.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* world 内で entity が識別する actor へのハンドルを構築する。
+		* スクリプトがエンティティから Actor を作ることは無く、World か自分の
+		* コンポーネントから受け取るので private にする。エンジンの中では、
+		* ActorAccessor が作る唯一の場所になる。
+		*/
+		SEEDCORE_API Actor(World& world, Entity entity);
 
 	public:
 		/**
@@ -59,19 +92,6 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Constructs a handle to the actor identified by entity within
-		* world. Does not create anything - use World::CreateActor for that.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* world 内で entity が識別する actor へのハンドルを構築する。何も
-		* 生成しない - 生成には World::CreateActor を使う。
-		*/
-		SEEDCORE_API Actor(World& world, Entity entity);
-
-		/**
-		* [EN]
 		* Returns whether this handle refers to a live actor, letting an
 		* Actor be used directly in a boolean context (if, &&, ?:).
 		*
@@ -83,122 +103,175 @@ namespace SeedCore
 		*/
 		SEEDCORE_API explicit operator Bool()const;
 
+		/**
+		* [EN]
+		* Returns whether this and other are handles to the same actor:
+		* they refer to the same World and the same Entity.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* this と other が同じ actor へのハンドルかどうかを返す: 同じ
+		* World と同じ Entity を指しているか。
+		*/
+		SEEDCORE_API Bool operator==(const Actor& other)const;
+
 	public:
 		/**
 		* [EN]
-		* Adds a copy of value as this actor's T component (T not deriving
-		* from ComponentBehaviour).
+		* Default-constructs and adds a T component to this actor and returns
+		* a pointer to it, or nullptr if the actor is invalid or T is not
+		* registered. A ComponentBehaviour-derived T is also wired to this
+		* actor (see the type-erased overload).
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* value のコピーをこの actor の T コンポーネント（T は ComponentBehaviour
-		* から派生しない）として追加する。
+		* T コンポーネントをデフォルト構築してこの actor へ追加し、その
+		* ポインタを返す。actor が無効か T が未登録なら nullptr。
+		* ComponentBehaviour 派生の T は、この actor への配線も行う（型消去版を
+		* 参照）。
 		*/
 		template<typename T>
-			requires(!std::derived_from<T, ComponentBehaviour>)
-		void AddComponent(const T& value);
+		T* AddComponent()
+		{
+			return static_cast<T*>(AddComponent(ComponentRegistry::GetComponentID<T>()));
+		}
 
 		/**
 		* [EN]
-		* Default-constructs and adds a T component (T deriving from
-		* ComponentBehaviour) to this actor, wiring up its lifecycle function
-		* pointers. Returns a pointer to the new component.
+		* Adds a copy of value as this actor's T component and returns a
+		* pointer to it. Only for plain-data T: a ComponentBehaviour is wired
+		* to its actor when added, which a copied value cannot carry.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* T コンポーネント（T は ComponentBehaviour から派生する）をデフォルト
-		* 構築してこの actor へ追加し、そのライフサイクル関数ポインタを
-		* 配線する。新しいコンポーネントへのポインタを返す。
+		* value のコピーをこの actor の T コンポーネントとして追加し、その
+		* ポインタを返す。ただのデータの T に限る: ComponentBehaviour は追加
+		* されたときに actor へ配線されるもので、コピーした値ではそれを
+		* 持ち込めないため。
 		*/
 		template<typename T>
-			requires std::derived_from<T, ComponentBehaviour>
-		T* AddComponent();
+			requires (!std::derived_from<T, ComponentBehaviour>)
+		T* AddComponent(const T& value)
+		{
+			T* component = AddComponent<T>();
+			if (component)
+			{
+				*component = value;
+			}
+			return component;
+		}
 
 		/**
 		* [EN]
 		* Type-erased overload of AddComponent: adds a default-constructed
-		* instance of the component registered under id, wiring up its
-		* lifecycle if it derives from ComponentBehaviour.
+		* instance of the component registered under id and returns its
+		* address, or returns the existing one if this actor already has it.
+		* If the type has a hook table (it derives from ComponentBehaviour),
+		* a newly added instance is wired to this actor's world, entity and
+		* registration, and then handed to the type's attach_.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* AddComponent の型消去版: id に登録されているコンポーネントの
-		* デフォルト構築されたインスタンスを追加する。ComponentBehaviour から
-		* 派生していれば、そのライフサイクルを配線する。
+		* デフォルト構築されたインスタンスを追加し、そのアドレスを返す。この
+		* actor が既に持っていれば、既存のものを返す。型がフックの表を持つ
+		* （ComponentBehaviour から派生している）なら、新しく追加した
+		* インスタンスをこの actor の World・エンティティ・登録へ結び付けて
+		* から、型の attach_ に渡す。
 		*/
-		SEEDCORE_API void AddComponent(ComponentID id);
+		SEEDCORE_API void* AddComponent(ComponentID id);
 
 		/**
 		* [EN]
-		* Returns a const pointer to this actor's T component (T not
-		* deriving from ComponentBehaviour), or nullptr if absent.
+		* Returns this actor's T component, or nullptr if absent.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* この actor の T コンポーネント（T は ComponentBehaviour から派生
-		* しない）への const ポインタを返す。無ければ nullptr を返す。
-		*/
-		template<typename T>
-			requires(!std::derived_from<T, ComponentBehaviour>)
-		const T* GetComponent()const;
-
-		/**
-		* [EN]
-		* Returns a mutable pointer to this actor's T component (T deriving
-		* from ComponentBehaviour), or nullptr if absent.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* この actor の T コンポーネント（T は ComponentBehaviour から派生
-		* する）への変更可能なポインタを返す。無ければ nullptr を返す。
+		* この actor の T コンポーネントを返す。無ければ nullptr を返す。
 		*/
 		template<typename T>
-			requires std::derived_from<T, ComponentBehaviour>
-		T* GetComponent()const;
+		T* GetComponent()const
+		{
+			return static_cast<T*>(GetComponent(ComponentRegistry::GetComponentID<T>()));
+		}
 
 		/**
 		* [EN]
-		* Removes this actor's component registered under id, invoking its
-		* OnDestroy first if it derives from ComponentBehaviour.
+		* Type-erased overload of GetComponent: returns the address of this
+		* actor's component registered under id, or nullptr if absent.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* この actor の、id に登録されているコンポーネントを削除する。
-		* ComponentBehaviour から派生していれば、先に OnDestroy を呼び出す。
+		* GetComponent の型消去版: この actor の、id に登録されている
+		* コンポーネントのアドレスを返す。無ければ nullptr を返す。
 		*/
-		SEEDCORE_API void RemoveComponent(ComponentID id);
+		SEEDCORE_API void* GetComponent(ComponentID id)const;
 
 		/**
 		* [EN]
-		* Returns whether this actor currently has the component
-		* registered under id.
+		* Returns whether this actor currently has a T component.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* この actor が現在、id に登録されているコンポーネントを持って
-		* いるかどうかを返す。
+		* この actor が現在 T コンポーネントを持っているかどうかを返す。
+		*/
+		template<typename T>
+		Bool HasComponent()const
+		{
+			return HasComponent(ComponentRegistry::GetComponentID<T>());
+		}
+
+		/**
+		* [EN]
+		* Type-erased overload of HasComponent: returns whether this actor
+		* currently has the component registered under id.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* HasComponent の型消去版: この actor が現在、id に登録されている
+		* コンポーネントを持っているかどうかを返す。
 		*/
 		SEEDCORE_API Bool HasComponent(ComponentID id)const;
 
 		/**
 		* [EN]
-		* Returns the IDs of every ComponentBehaviour-derived component
-		* currently attached to this actor.
+		* Removes this actor's T component, invoking its OnDestroy and then its OnDetach first if
+		* it derives from ComponentBehaviour.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* この actor に現在アタッチされている、全ての ComponentBehaviour 派生
-		* コンポーネントの ID 一覧を返す。
+		* この actor の T コンポーネントを削除する。ComponentBehaviour から
+		* 派生していれば、先に OnDestroy、続いて OnDetach を呼び出す。
 		*/
-		SEEDCORE_API const DynamicArray<ComponentID>& ComponentIDList()const;
+		template<typename T>
+		void RemoveComponent()
+		{
+			RemoveComponent(ComponentRegistry::GetComponentID<T>());
+		}
+
+		/**
+		* [EN]
+		* Type-erased overload of RemoveComponent: removes this actor's
+		* component registered under id, invoking its OnDestroy and then its OnDetach first if it
+		* derives from ComponentBehaviour.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* RemoveComponent の型消去版: この actor の、id に登録されている
+		* コンポーネントを削除する。ComponentBehaviour から派生していれば、
+		* 先に OnDestroy、続いて OnDetach を呼び出す。
+		*/
+		SEEDCORE_API void RemoveComponent(ComponentID id);
 
 		/**
 		* [EN]
@@ -223,7 +296,39 @@ namespace SeedCore
 		* デフォルト初期化したダミーへの参照を返す。
 		*/
 		template<typename T>
-		T& Field(const String& componentName, const String& fieldName)const;
+		T& Field(const String& componentName, const String& fieldName)const
+		{
+			/// [EN] Returned on a miss so the caller always gets a valid reference; reset each call so a write to it never leaks into the next miss.
+			/// [JP] 見つからなかったときに返し、呼び出し側が常に有効な参照を受け取れるようにする。書き込まれた値が次に見つからなかったときへ持ち越されないよう、呼ぶたびに初期値へ戻す。
+			static T fallback{};
+			fallback = T{};
+
+			/// [EN] Resolve the component instance and the function that lists its reflected fields.
+			/// [JP] コンポーネントの実体と、そのリフレクション対象フィールドを列挙する関数を解決する。
+			ComponentID id = ComponentRegistry::GetComponentID(componentName);
+			void* data = id ? GetComponent(id) : nullptr;
+			auto reflection = ReflectionRegistry::GetRegistry().find(componentName);
+			if (data == nullptr || reflection == ReflectionRegistry::GetRegistry().end())
+			{
+				SC_LOG_WARNING("Field: この actor は {} を持っていません", componentName.str());
+				return fallback;
+			}
+
+			/// [EN] Match on both the display name and the value kind, so a reference of the wrong type is never handed out.
+			/// [JP] 表示名と値種別の両方で照合し、型の違う参照を渡すことがないようにする。
+			DynamicArray<FieldInfo> fields;
+			reflection->second(data, fields);
+			for (const FieldInfo& field : fields)
+			{
+				if (field.name_ == fieldName && field.type_ == AttributeTraits<T>::type)
+				{
+					return *static_cast<T*>(field.directPtr_ ? field.directPtr_ : static_cast<Uint8*>(data) + field.offset_);
+				}
+			}
+
+			SC_LOG_WARNING("Field: {} に {} という名前でこの型のフィールドはありません", componentName.str(), fieldName.str());
+			return fallback;
+		}
 
 		/**
 		* [EN]
@@ -248,20 +353,51 @@ namespace SeedCore
 		* 警告ログを出して何も呼ばず、デフォルト初期化した Result を返す。
 		*/
 		template<typename Result = void, typename... Arguments>
-		Result Function(const String& componentName, const String& functionName, const Arguments&... arguments)const;
+		Result Function(const String& componentName, const String& functionName, const Arguments&... arguments)const
+		{
+			/// [EN] Storage the invoker writes the result into; a function returning nothing gets an unused Int so the code below stays the same for both cases.
+			/// [JP] 呼び出し処理が戻り値を書き込む先。戻り値の無い関数では使われない Int にして、以下の処理を両方の場合で共通にする。
+			std::conditional_t<std::is_void_v<Result>, Int, Result> result{};
+
+			/// [EN] Resolve the component instance and the functions registered for its type.
+			/// [JP] コンポーネントの実体と、その型に登録されている関数の一覧を解決する。
+			ComponentID id = ComponentRegistry::GetComponentID(componentName);
+			void* data = id ? GetComponent(id) : nullptr;
+			auto functions = FunctionRegistry::GetRegistry().find(componentName);
+			if (data == nullptr || functions == FunctionRegistry::GetRegistry().end())
+			{
+				SC_LOG_WARNING("Function: この actor は {} を持っていないか、{} に呼べる関数がありません", componentName.str(), componentName.str());
+			}
+			else
+			{
+				/// [EN] The value kinds of the arguments as passed, compared against the registered parameters, since the invoker trusts that they match.
+				/// [JP] 渡された引数の値種別。呼び出し処理は一致している前提で読むので、登録されている引数と照らし合わせる。
+				StaticArray<AttributeType, sizeof...(Arguments)> parameters{ AttributeTraits<Arguments>::type... };
+				auto function = std::ranges::find_if(functions->second, [&functionName](const FunctionInfo& info) { return info.name_ == functionName; });
+				if (function == functions->second.end())
+				{
+					SC_LOG_WARNING("Function: {} に {} という関数はありません", componentName.str(), functionName.str());
+				}
+				else if (function->result_ != AttributeTraits<Result>::type || !std::ranges::equal(function->parameters_, parameters))
+				{
+					SC_LOG_WARNING("Function: {}.{} の引数か戻り値の型が合いません", componentName.str(), functionName.str());
+				}
+				else
+				{
+					/// [EN] The address of each argument, in order. One extra slot keeps the array valid for a function that takes no arguments.
+					/// [JP] 各引数のアドレスを順に並べたもの。引数の無い関数でも配列が成り立つよう、1 つ余分に確保する。
+					void* pointers[sizeof...(Arguments) + 1]{ const_cast<void*>(static_cast<const void*>(&arguments))... };
+					function->invoke_(data, pointers, std::is_void_v<Result> ? nullptr : &result);
+				}
+			}
+
+			if constexpr (!std::is_void_v<Result>)
+			{
+				return result;
+			}
+		}
 
 	public:
-		/**
-		* [EN]
-		* Returns this actor's underlying entity handle.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* この actor の内部エンティティハンドルを返す。
-		*/
-		SEEDCORE_API Entity GetEntity()const;
-
 		/**
 		* [EN]
 		* Returns the World that owns this actor.
@@ -275,50 +411,40 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Returns this actor's DebugDraw resource, which draws debug shapes in debug builds only.
+		* Returns the T service of the World that owns this actor (for
+		* example Physics, Audio or DebugDraw), or nullptr if that World does
+		* not provide one. Services are reached the same way as components,
+		* only per World rather than per actor.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* この actor の DebugDraw リソースを返す。デバッグ用の形を描き、描かれるのは Debug ビルドだけ。
+		* この actor を所有する World の T サービス（例えば Physics、Audio、
+		* DebugDraw）を返す。その World が持っていなければ nullptr。
+		* サービスはコンポーネントと同じ形で引き、actor ごとではなく World
+		* ごとにあるという点だけが違う。
 		*/
-		SEEDCORE_API DebugDraw& GetDebugDraw()const;
-
-		/**
-		* [EN]
-		* Returns this actor's Physics resource.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* この actor の Physics リソースを返す。
-		*/
-		SEEDCORE_API Physics& GetPhysics()const;
-
-		/**
-		* [EN]
-		* Returns this actor's Audio resource.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* この actor の Audio リソースを返す。
-		*/
-		SEEDCORE_API Audio& GetAudio()const;
+		template<typename T>
+		T* GetService()const
+		{
+			return static_cast<T*>(GetService(ServiceType<T>::name_));
+		}
 
 	public:
 		/**
 		* [EN]
 		* Reparents this actor under parent (or to the scene root if parent
-		* is an invalid Actor), updating both the old and new parent's
-		* children lists, and inheriting the new parent's active state.
+		* is an invalid Actor) as its last child. An inactive new parent makes
+		* this actor inactive; moving to the scene root makes it active again.
+		* Does nothing if parent is this actor or one of its descendants.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* この actor を parent の下へ付け替える（parent が無効な Actor で
-		* あればシーンのルートへ）。旧・新それぞれの親の子リストを更新し、
-		* 新しい親のアクティブ状態を継承する。
+		* この actor を parent の末尾の子として付け替える（parent が無効な
+		* Actor であればシーンのルートへ）。新しい親が非アクティブならこの
+		* actor も非アクティブになり、シーンのルートへ移るとアクティブに
+		* 戻る。parent がこの actor 自身かその子孫なら何もしない。
 		*/
 		SEEDCORE_API void Parent(Actor parent);
 
@@ -347,82 +473,70 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Repositions child (must already be a child of this Actor) so it
-		* comes immediately after after in the children order. An invalid
-		* after moves child to the front; an after that isn't among the
-		* children appends it to the end.
+		* Moves this actor right after after among its siblings (the children
+		* of its parent, or the scene roots), or to the front if after is
+		* invalid. Does nothing if after is not one of its siblings.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* child（既にこの Actor の子であること）を、子の並び順で after の
-		* 直後に来るよう再配置する。after が無効なら先頭へ、after が子の
-		* 中に見つからない場合は末尾に移動する。
+		* 兄弟（親の子の並び、またはシーンのルート群）の中で、この actor を
+		* after の直後へ移す。after が無効なら先頭へ移す。after が兄弟で
+		* なければ何もしない。
 		*/
-		SEEDCORE_API void MoveChild(Actor child, Actor after);
-
-		/**
-		* [EN]
-		* Returns whether ancestor is somewhere in this actor's parent chain.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ancestor がこの actor の親チェーンのどこかに存在するかどうかを
-		* 返す。
-		*/
-		SEEDCORE_API Bool Descendant(Actor ancestor)const;
+		SEEDCORE_API void Move(Actor after);
 
 	public:
 		/**
 		* [EN]
-		* Returns this actor's cached world-space transform matrix.
+		* Returns this actor's world-space transform matrix, read from its
+		* WorldMatrix component.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* この actor の、キャッシュされたワールド空間変換行列を返す。
+		* この actor のワールド空間変換行列を、WorldMatrix コンポーネントから
+		* 読んで返す。
 		*/
 		SEEDCORE_API const Matrix& WorldMatrix()const;
 
 		/**
 		* [EN]
-		* Sets this actor's cached world-space transform matrix.
+		* Sets this actor's world-space transform matrix in its WorldMatrix
+		* component.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* この actor の、キャッシュされたワールド空間変換行列を設定する。
+		* この actor のワールド空間変換行列を、WorldMatrix コンポーネントに
+		* 設定する。
 		*/
 		SEEDCORE_API void WorldMatrix(const Matrix& matrix);
 
 	public:
 		/**
 		* [EN]
-		* Returns whether this actor is currently active (preferring its
-		* Active component's value if present, otherwise the cached flag).
+		* Returns whether this actor is currently active, read from its
+		* Active component.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* この actor が現在アクティブかどうかを返す（Active コンポーネント
-		* が存在すればその値を優先し、無ければキャッシュされたフラグを
-		* 使う）。
+		* この actor が現在アクティブかどうかを、Active コンポーネントから
+		* 読んで返す。
 		*/
 		SEEDCORE_API Bool Active()const;
 
 		/**
 		* [EN]
-		* Sets this actor's active state (updating both the cached flag and
-		* its Active component if present), and propagates the same state
-		* to every descendant.
+		* Sets this actor's active state in its Active component, and
+		* propagates the same state to every descendant.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* この actor のアクティブ状態を設定する（キャッシュされたフラグと、
-		* 存在すれば Active コンポーネントの両方を更新する）。同じ状態を
-		* 全ての子孫へ伝播する。
+		* この actor のアクティブ状態を Active コンポーネントに設定し、同じ
+		* 状態を全ての子孫へ伝播する。
 		*/
 		SEEDCORE_API void Active(Bool active);
 
@@ -430,26 +544,15 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Adds tag to this actor's tag set, registering it in TagRegistry
-		* if it's new.
+		* if it's new. An empty tag is ignored.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* tag をこの actor のタグ集合へ追加する。新規のタグであれば
-		* TagRegistry へ登録する。
+		* TagRegistry へ登録する。空の tag は無視する。
 		*/
 		SEEDCORE_API void AddTag(String tag);
-
-		/**
-		* [EN]
-		* Removes tag from this actor's tag set, if present.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* tag をこの actor のタグ集合から、存在すれば削除する。
-		*/
-		SEEDCORE_API void RemoveTag(String tag);
 
 		/**
 		* [EN]
@@ -464,14 +567,14 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Returns the names of every tag currently set on this actor.
+		* Removes tag from this actor's tag set, if present.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* この actor に現在設定されている全タグの名前一覧を返す。
+		* tag をこの actor のタグ集合から、存在すれば削除する。
 		*/
-		SEEDCORE_API DynamicArray<String> TagList()const;
+		SEEDCORE_API void RemoveTag(String tag);
 
 	public:
 		/**
@@ -489,15 +592,14 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Sets this actor's layer by name via LayerRegistry::Find, falling
-		* back to LayerRegistry::DefaultLayer if name isn't registered.
+		* Sets this actor's layer by name via LayerRegistry::Find, which
+		* gives LayerRegistry::DefaultLayer if name isn't registered.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* LayerRegistry::Find 経由で、名前でこの actor のレイヤーを設定
-		* する。name が未登録であれば LayerRegistry::DefaultLayer に
-		* フォールバックする。
+		* する。name が未登録であれば LayerRegistry::DefaultLayer になる。
 		*/
 		SEEDCORE_API void Layer(const String& name);
 
@@ -515,97 +617,30 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Returns this actor's current layer's name, via LayerRegistry::GetName.
+		* Returns this actor's current layer's name, via LayerRegistry::Name.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* LayerRegistry::GetName 経由で、この actor の現在のレイヤー名を
+		* LayerRegistry::Name 経由で、この actor の現在のレイヤー名を
 		* 返す。
 		*/
 		SEEDCORE_API const String& LayerName()const;
 
-	public:
-		/**
-		* [EN]
-		* Returns whether this actor was instantiated from a prefab.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* この actor がプレハブからインスタンス化されたかどうかを返す。
-		*/
-		SEEDCORE_API Bool FromPrefab()const;
-
-		/**
-		* [EN]
-		* Sets the asset ID of the source prefab this actor's instance was
-		* created from (root actor only).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* この actor のインスタンスが生成された元のプレハブの、アセット ID
-		* を設定する（ルート actor のみ）。
-		*/
-		SEEDCORE_API void PrefabID(Uint32 assetID);
-
-		/**
-		* [EN]
-		* Returns the asset ID of the source prefab this actor's instance
-		* was created from, or 0 if it's not an instance root.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* この actor のインスタンスが生成された元のプレハブの、アセット ID
-		* を返す。インスタンスルートでなければ 0 を返す。
-		*/
-		SEEDCORE_API Uint32 PrefabID()const;
-
-	public:
-		/**
-		* [EN]
-		* Returns this actor's persistent ID: a World-wide unique
-		* identifier that round-trips through Scene/Prefab serialization.
-		* 0 means unassigned.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* この actor の永続IDを返す: World 全体で一意な識別子であり、
-		* Scene/Prefab のシリアライズを往復する。0 は未割り当てを意味する。
-		*/
-		SEEDCORE_API Uint32 PersistentID()const;
-		SEEDCORE_API String CollaborationID()const;
-		SEEDCORE_API void CollaborationID(const String& value);
-
-	public:
-		/**
-		* [EN]
-		* Returns whether this and other are handles to the same actor:
-		* they refer to the same World and the same Entity.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* this と other が同じ actor へのハンドルかどうかを返す: 同じ
-		* World と同じ Entity を指しているか。
-		*/
-		SEEDCORE_API Bool operator==(const Actor& other)const;
-
 	private:
 		/**
 		* [EN]
-		* Marks whether this actor was instantiated from a prefab.
+		* Type-erased overload of GetService: returns the service of this
+		* actor's World whose type's name is type (a ServiceType<T>::name_),
+		* or nullptr if there is none.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* この actor がプレハブからインスタンス化されたかどうかを
-		* マークする。
+		* GetService の型消去版: この actor の World で、型の名前が type
+		* （ServiceType<T>::name_）であるサービスを返す。無ければ nullptr。
 		*/
-		SEEDCORE_API void FromPrefab(Bool value);
+		SEEDCORE_API void* GetService(const String& type)const;
 
 	private:
 		/// [EN] The World that owns this actor's data; nullptr for a default-constructed (invalid) Actor.

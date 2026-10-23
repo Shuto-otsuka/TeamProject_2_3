@@ -8,7 +8,7 @@
 #include <FoundationEngine/World/ECS/Component/Name.h>
 #include <FoundationEngine/World/Command/ActorCommand.h>
 #include <FoundationEngine/World/Command/CompoundCommand.h>
-#include <FoundationEngine/World/Actor/Blueprint.h>
+#include <FoundationEngine/Resource/Blueprint/BlueprintNode.h>
 #include <FoundationEngine/Resource/Prefab/PrefabBlueprint.h>
 #include <FoundationEngine/Resource/Prefab/PrefabSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
@@ -22,6 +22,9 @@
 #include <GraphicsEngine/Model/Animation/Animator.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/Resource/Prefab/PrefabRegistry.h>
 
 namespace SeedCore
 {
@@ -40,13 +43,15 @@ namespace SeedCore
 			rows_.clear();
 			pendingClickActor_ = Actor();
 
-			const auto& actors = context_.world_.world_->GetActors();
-			for (Size index = 0; index < actors.size(); ++index)
+			DynamicArray<Actor> roots;
+			ActorRegistry& actorRegistry = WorldAccessor::Actors(*context_.world_.world_);
+			for (EntityID root = actorRegistry.Root(); root != EntityID{}; root = actorRegistry.Record(root)->nextSibling_)
 			{
-				if (!actors[index].Parent())
-				{
-					DrawActorNode(actors[index]);
-				}
+				roots.push_back(WorldAccessor::Make(*context_.world_.world_, root));
+			}
+			for (Actor root : roots)
+			{
+				DrawActorNode(root);
 			}
 
 			/// [EN] +20 covers the separator block above the button (Dummy 8 +
@@ -79,10 +84,10 @@ namespace SeedCore
 					{
 						Actor dropped = *static_cast<const Actor*>(preview->Data);
 						Actor oldParent = dropped.Parent();
-						Uint32 oldParentId = oldParent ? oldParent.PersistentID() : 0;
+						Uint32 oldParentId = oldParent ? WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(oldParent).GetID())->persistentID_ : 0;
 						Uint32 oldPrevSiblingId = PrevSiblingPersistentId(dropped);
 						dropped.Parent(Actor());
-						context_.scene_.history_.Push(MakePtr<ActorReparentCommand>(*context_.world_.world_, dropped.PersistentID(), oldParentId, oldPrevSiblingId, 0));
+						context_.scene_.history_.Push(MakePtr<ActorReparentCommand>(*context_.world_.world_, WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(dropped).GetID())->persistentID_, oldParentId, oldPrevSiblingId, 0));
 					}
 				}
 
@@ -197,7 +202,7 @@ namespace SeedCore
 					String uniqueName = GetUniqueName();
 					Actor actor = context_.world_.world_->CreateActor(uniqueName);
 					DynamicArray<BlueprintNode> nodes;
-					CaptureActorNode(actor, -1, nodes);
+					BlueprintNode::Capture(actor, nodes);
 					context_.scene_.history_.Push(MakePtr<ActorCreateCommand>(*context_.world_.world_, *context_.world_.resource_, nodes));
 				}
 				ImGui::EndPopup();
@@ -230,7 +235,7 @@ namespace SeedCore
 				String uniqueName = GetUniqueName();
 				Actor actor = context_.world_.world_->CreateActor(uniqueName);
 				DynamicArray<BlueprintNode> nodes;
-				CaptureActorNode(actor, -1, nodes);
+				BlueprintNode::Capture(actor, nodes);
 				context_.scene_.history_.Push(MakePtr<ActorCreateCommand>(*context_.world_.world_, *context_.world_.resource_, nodes));
 			}
 
@@ -262,10 +267,12 @@ namespace SeedCore
 			flags |= ImGuiTreeNodeFlags_Leaf;
 		}
 
-		ImGui::PushID(static_cast<Int>(actor.GetEntity().GetID().index_));
+		ImGui::PushID(static_cast<Int>(ActorAccessor::GetEntity(actor).GetID().index_));
 
 		ImTextureID icon;
-		if (actor.FromPrefab())
+		const PrefabRegistry* prefabs = context_.world_.world_->GetService<PrefabRegistry>();
+		const PrefabRecord* prefabRecord = prefabs ? prefabs->Record(ActorAccessor::GetEntity(actor).GetID()) : nullptr;
+		if (prefabRecord && prefabRecord->fromPrefab_)
 		{
 			icon = isChild ? imguiTexture_.Icon(IconType::PrefabChild) : imguiTexture_.Icon(IconType::Prefab);
 		}
@@ -333,7 +340,11 @@ namespace SeedCore
 			if (const ImGuiPayload* preview = ImGui::AcceptDragDropPayload("HIERARCHY_ACTOR", ImGuiDragDropFlags_AcceptPeekOnly))
 			{
 				Actor dropped = *static_cast<const Actor*>(preview->Data);
-				Bool canDrop = (dropped != actor && !actor.Descendant(dropped));
+				Bool canDrop = dropped != actor;
+				for (Actor ancestor = actor.Parent(); ancestor && canDrop; ancestor = ancestor.Parent())
+				{
+					canDrop = ancestor != dropped;
+				}
 
 				ImVec2 min = ImGui::GetItemRectMin();
 				ImVec2 max = ImGui::GetItemRectMax();
@@ -350,10 +361,10 @@ namespace SeedCore
 					if (preview->IsDelivery())
 					{
 						Actor oldParent = dropped.Parent();
-						Uint32 oldParentId = oldParent ? oldParent.PersistentID() : 0;
+						Uint32 oldParentId = oldParent ? WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(oldParent).GetID())->persistentID_ : 0;
 						Uint32 oldPrevSiblingId = PrevSiblingPersistentId(dropped);
 						dropped.Parent(actor);
-						context_.scene_.history_.Push(MakePtr<ActorReparentCommand>(*context_.world_.world_, dropped.PersistentID(), oldParentId, oldPrevSiblingId, actor.PersistentID()));
+						context_.scene_.history_.Push(MakePtr<ActorReparentCommand>(*context_.world_.world_, WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(dropped).GetID())->persistentID_, oldParentId, oldPrevSiblingId, WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(actor).GetID())->persistentID_));
 					}
 				}
 			}
@@ -476,7 +487,10 @@ namespace SeedCore
 		Uint32 newAssetID = context_.world_.resource_->GetAssetID(String(relative));
 		if (newAssetID != 0)
 		{
-			actor.PrefabID(newAssetID);
+			PrefabRegistry* prefabs = context_.world_.world_->AddService<PrefabRegistry>();
+			EntityID actorID = ActorAccessor::GetEntity(actor).GetID();
+			const PrefabRecord* prefabRecord = prefabs->Record(actorID);
+			prefabs->Add(actorID, newAssetID, prefabRecord ? prefabRecord->fromPrefab_ : false);
 		}
 	}
 
@@ -489,11 +503,13 @@ namespace SeedCore
 
 		while (true)
 		{
-			Bool exists = std::ranges::any_of(context_.world_.world_->GetActors(), [&](const auto& actor)
+			Bool exists = false;
+			ActorRegistry& actorRegistry = WorldAccessor::Actors(*context_.world_.world_);
+			for (EntityID actorID = actorRegistry.Root(); actorID != EntityID{} && !exists; actorID = actorRegistry.Next(actorID))
 			{
-				const Name* name = actor.GetComponent<Name>();
-				return name && name->name_ == uniqueName;
-			});
+				const Name* name = WorldAccessor::Make(*context_.world_.world_, actorID).GetComponent<Name>();
+				exists = name && name->name_ == uniqueName;
+			}
 
 			if (!exists)
 			{
@@ -569,6 +585,6 @@ namespace SeedCore
 			return 0;
 		}
 
-		return (*(it - 1)).PersistentID();
+		return WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(*(it - 1)).GetID())->persistentID_;
 	}
 }

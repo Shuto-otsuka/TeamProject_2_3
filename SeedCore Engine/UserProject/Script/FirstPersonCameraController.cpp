@@ -4,10 +4,10 @@ void FirstPersonCameraController::OnStart()
 {
     player = GetWorld().GetActor("Player");
 
-    position = GetWorld().GetComponent<SeedCore::Position>(GetActor().GetEntity());
-    rotation = GetWorld().GetComponent<SeedCore::Rotation>(GetActor().GetEntity());
-    playerPosition = GetWorld().GetComponent<SeedCore::Position>(player.GetEntity());
-    playerRotation = GetWorld().GetComponent<SeedCore::Rotation>(player.GetEntity());
+    position = GetActor().GetComponent<SeedCore::Position>();
+    rotation = GetActor().GetComponent<SeedCore::Rotation>();
+    playerPosition = player.GetComponent<SeedCore::Position>();
+    playerRotation = player.GetComponent<SeedCore::Rotation>();
 }
 
 void FirstPersonCameraController::OnTick(float elapsedTime)

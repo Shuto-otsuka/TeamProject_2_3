@@ -1,6 +1,7 @@
 #pragma once
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 #include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
 
 #define SC_COROUTINE(x) co_await (x)
@@ -95,7 +96,7 @@ namespace SeedCore
 			template<typename T, typename... Args>
 			promise_type(T& component, Args&...)
 			{
-				manage_.entityID_ = component.GetActor().GetEntity().GetID();
+				manage_.entityID_ = ActorAccessor::GetEntity(component.GetActor()).GetID();
 				manage_.componentID_ = ComponentRegistry::GetComponentID<std::remove_cv_t<std::remove_reference_t<T>>>();
 			}
 

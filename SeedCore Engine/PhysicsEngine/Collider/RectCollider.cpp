@@ -81,7 +81,7 @@ namespace SeedCore
 		/// [JP] オフセットはローカル空間なので、符号も含めてスケールに合わせて動く。
 		Vector2 center(center_.x * worldScale.x, center_.y * worldScale.y);
 
-		return actor.GetPhysics().CreateRectShape(size, center);
+		return actor.GetService<Physics>()->CreateRectShape(size, center);
 	}
 
 	/**
@@ -109,7 +109,7 @@ namespace SeedCore
 		}
 
 		Actor actor = GetActor();
-		Physics& physics = actor.GetPhysics();
+		Physics& physics = *actor.GetService<Physics>();
 
 		/// [EN] The pose is converted to the canvas body's space the same way as at creation; the body does not move when the pose is unchanged.
 		/// [JP] 姿勢は生成時と同じ方法で Canvas のボディの空間へ変換する。姿勢が変わっていなければボディは動かない。

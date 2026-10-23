@@ -1,5 +1,9 @@
 #include "UserProject/Script/LaserController.h"
 #include<SeedCore/ScDebug.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/Interop/RenderInstance.h>
+#include <PhysicsEngine/Physics/Physics.h>
+#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
 
 void LaserController::OnStart()
 {
@@ -30,9 +34,9 @@ void LaserController::OnTick(float elapsedTime)
 
         //レイキャストをして弾に当たった場合そこをレーザーの終点とする
         SeedCore::RaycastHit hit;
-        if (GetActor().GetPhysics().Raycast(startPositions[i], direction, length, hit))
+        if (GetActor().GetService<SeedCore::Physics>()->Raycast(startPositions[i], direction, length, hit))
         {
-            SeedCore::Actor hitActor = GetWorld().GetActor(hit.entityID_);
+            SeedCore::Actor hitActor = SeedCore::WorldAccessor::Make(GetWorld(), hit.entityID_);
             if (hitActor.HasTag("Bullet"))
             {
                 //シリンダーの長さを始点からレイがヒットした場所までの長さにする
@@ -46,7 +50,7 @@ void LaserController::OnTick(float elapsedTime)
         //レーザーのの回転を算出
         SeedCore::Quaternion quaternion = SeedCore::Quaternion::LookRotation(GetActor().WorldMatrix().Down(), GetActor().WorldMatrix().Up());
         //シリンダーを描画
-        SeedCore::RenderInstance& renderInstance = GetWorld().GetRenderInstance();
+        SeedCore::RenderInstance& renderInstance = *GetWorld().GetService<SeedCore::RenderInstance>();
         SeedCore::DebugDraw debugDraw(renderInstance);
         debugDraw.Cylinder(center, quaternion, tickness, len, { 1.0f,0.0f,0.0f,1.0f });
     }

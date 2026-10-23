@@ -24,7 +24,7 @@ namespace SeedCore
 		DynamicArray<Size> usedLayers;
 		for (Size index = 0; index < LayerRegistry::LayerCount; ++index)
 		{
-			if (LayerRegistry::Used(index))
+			if (!LayerRegistry::Name(index).view().empty())
 			{
 				usedLayers.push_back(index);
 			}
@@ -36,7 +36,7 @@ namespace SeedCore
 			return;
 		}
 
-		const DynamicArray<String>& names = LayerRegistry::GetNames();
+		std::span<const String> names = LayerRegistry::Names();
 
 		/// [EN] Column header rotation angle - see the header-row drawing
 		///      code inside BeginTable() below for the full rationale.

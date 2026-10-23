@@ -1,9 +1,12 @@
 #include <Editor/Editor/Interaction/ActorEditing.h>
 #include <Editor/Editor/Context/EditorContext.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <FoundationEngine/Resource/Prefab/PrefabRegistry.h>
 #include <FoundationEngine/World/Command/ActorCommand.h>
 #include <FoundationEngine/World/Command/CompoundCommand.h>
-#include <FoundationEngine/World/Actor/Blueprint.h>
+#include <FoundationEngine/Resource/Blueprint/BlueprintNode.h>
 #include <FoundationEngine/Resource/Prefab/PrefabBlueprint.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 
@@ -56,7 +59,17 @@ namespace SeedCore
 
 		for (Actor actor : toDuplicate)
 		{
-			Bool ancestorSelected = std::ranges::any_of(toDuplicate, [&](Actor other) { return other != actor && actor.Descendant(other); });
+			Bool ancestorSelected = std::ranges::any_of(toDuplicate, [&](Actor other)
+				{
+					for (Actor ancestor = actor.Parent(); ancestor; ancestor = ancestor.Parent())
+					{
+						if (ancestor == other)
+						{
+							return true;
+						}
+					}
+					return false;
+				});
 			if (ancestorSelected)
 			{
 				continue;
@@ -65,26 +78,23 @@ namespace SeedCore
 			PrefabBlueprint prefab;
 			prefab.Capture(actor);
 
-			Actor duplicate = prefab.Instantiate(*context.world_.world_, *context.world_.resource_, actor.Parent(), actor.PrefabID());
+			const PrefabRegistry* prefabs = context.world_.world_->GetService<PrefabRegistry>();
+			const PrefabRecord* prefabRecord = prefabs ? prefabs->Record(ActorAccessor::GetEntity(actor).GetID()) : nullptr;
+			Actor duplicate = prefab.Instantiate(*context.world_.world_, *context.world_.resource_, actor.Parent(), prefabRecord ? prefabRecord->assetID_ : 0);
 			if (!duplicate)
 			{
 				continue;
 			}
 
 			DynamicArray<BlueprintNode> nodes;
-			CaptureActorNode(duplicate, -1, nodes);
+			BlueprintNode::Capture(duplicate, nodes);
 			Actor duplicateParent = duplicate.Parent();
-			group->Add(MakePtr<ActorCreateCommand>(*context.world_.world_, *context.world_.resource_, nodes, duplicateParent ? duplicateParent.PersistentID() : 0, actor.PersistentID()));
+			ActorRegistry& actors = WorldAccessor::Actors(*context.world_.world_);
+			Uint32 duplicateParentPersistentID = duplicateParent ? actors.Record(ActorAccessor::GetEntity(duplicateParent).GetID())->persistentID_ : 0;
+			Uint32 actorPersistentID = actors.Record(ActorAccessor::GetEntity(actor).GetID())->persistentID_;
+			group->Add(MakePtr<ActorCreateCommand>(*context.world_.world_, *context.world_.resource_, nodes, duplicateParentPersistentID, actorPersistentID));
 
-			Actor parent = actor.Parent();
-			if (parent)
-			{
-				parent.MoveChild(duplicate, actor);
-			}
-			else
-			{
-				context.world_.world_->MoveActor(duplicate, actor);
-			}
+			duplicate.Move(actor);
 
 			newSelection.push_back(duplicate);
 		}

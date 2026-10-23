@@ -12,6 +12,7 @@
 #include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/ECS/Component/Active.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 
 namespace SeedCore
 {
@@ -231,7 +232,7 @@ namespace SeedCore
 						return;
 					}
 
-					Actor actor = world.GetActor(entityID);
+					Actor actor = WorldAccessor::Make(world, entityID);
 					if (!actor)
 					{
 						return;
@@ -291,7 +292,7 @@ namespace SeedCore
 						return;
 					}
 
-					Actor actor = world.GetActor(entityID);
+					Actor actor = WorldAccessor::Make(world, entityID);
 					if (!actor)
 					{
 						return;
@@ -324,7 +325,7 @@ namespace SeedCore
 						return;
 					}
 
-					Actor actor = world.GetActor(entityID);
+					Actor actor = WorldAccessor::Make(world, entityID);
 					if (!actor)
 					{
 						return;
@@ -376,7 +377,7 @@ namespace SeedCore
 						return;
 					}
 
-					Actor actor = world.GetActor(entityID);
+					Actor actor = WorldAccessor::Make(world, entityID);
 					if (!actor)
 					{
 						return;
@@ -421,7 +422,7 @@ namespace SeedCore
 						return;
 					}
 
-					Actor actor = world.GetActor(entityID);
+					Actor actor = WorldAccessor::Make(world, entityID);
 					if (!actor)
 					{
 						return;
@@ -453,7 +454,7 @@ namespace SeedCore
 						return;
 					}
 
-					Actor actor = world.GetActor(entityID);
+					Actor actor = WorldAccessor::Make(world, entityID);
 					if (!actor)
 					{
 						return;

@@ -6,10 +6,10 @@ void CameraController::OnStart()
 {
     SeedCore::World& world = GetWorld();
     player = world.GetActor("Player");
-    position = world.GetComponent<SeedCore::Position>(GetActor().GetEntity());
-    rotation = world.GetComponent<SeedCore::Rotation>(GetActor().GetEntity());
-    playerPosition = world.GetComponent<SeedCore::Position>(player.GetEntity());
-    playerController = world.GetComponent<PlayerController>(player.GetEntity());
+    position = GetActor().GetComponent<SeedCore::Position>();
+    rotation = GetActor().GetComponent<SeedCore::Rotation>();
+    playerPosition = player.GetComponent<SeedCore::Position>();
+    playerController = player.GetComponent<PlayerController>();
 
     //注視点をプレイヤーの位置に設定
     smoothFocusPoint = SeedCore::Transform::Vector(*playerPosition);

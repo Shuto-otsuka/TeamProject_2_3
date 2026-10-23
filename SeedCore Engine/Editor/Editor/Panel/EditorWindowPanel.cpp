@@ -23,6 +23,7 @@
 #include <FoundationEngine/Input/InputSystem.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 
 namespace SeedCore
 {
@@ -470,8 +471,10 @@ namespace SeedCore
 
 		Matrix viewProjection = context_.view_.editor_.camera_->NonJitterViewProjection();
 
-		for (const Actor& actor : context_.world_.world_->GetActors())
+		ActorRegistry& actorRegistry = WorldAccessor::Actors(*context_.world_.world_);
+		for (EntityID actorID = actorRegistry.Root(); actorID != EntityID{}; actorID = actorRegistry.Next(actorID))
 		{
+			Actor actor = WorldAccessor::Make(*context_.world_.world_, actorID);
 			if (!actor.Active())
 			{
 				continue;

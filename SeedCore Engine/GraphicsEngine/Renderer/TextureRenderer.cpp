@@ -12,6 +12,8 @@
 #include <FoundationEngine/World/ECS/Component/Active.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 
 namespace SeedCore
 {
@@ -79,7 +81,7 @@ namespace SeedCore
 			/// [JP] アクター自身のローカル Position/Rotation/Scale ではなく
 			///      TransformSystem(Actor::WorldMatrix())が計算した
 			///      親合成済みのワールド変換を読む。
-			Actor actor = world.GetActor(entityID);
+			Actor actor = WorldAccessor::Make(world, entityID);
 			if (!actor)
 			{
 				continue;
@@ -123,7 +125,7 @@ namespace SeedCore
 			/// [JP] このアクターの Bounds(全アクターが持つ)をスプライトのローカル空間矩形へ同期する: 半径 = textureSize/2、中心は TextureBillboardMS.hlsl がクアッドをずらすのと同じ形(X は 0.5 - pivotNorm、Y は pivotNorm - 0.5)で pivot ぶんずらす。アクターのワールド行列がこれを回転/スケールするので、ViewportPicking は描画済みスプライトの正しい OBB を得る。
 			if (boundsComponentID)
 			{
-				void* boundsRaw = world.GetComponent(entityID, boundsComponentID);
+				void* boundsRaw = WorldAccessor::Make(world, entityID).GetComponent(boundsComponentID);
 				if (boundsRaw)
 				{
 					Vector2 pivotNorm = (textureSize.x > 0.0f && textureSize.y > 0.0f) ? Vector2(image.pivot_.x / textureSize.x, image.pivot_.y / textureSize.y) : Vector2(0.5f, 0.5f);
@@ -133,7 +135,7 @@ namespace SeedCore
 				}
 			}
 
-			Uint selected = std::ranges::find(selectedEntities, actor.GetEntity()) != selectedEntities.end() ? 1 : 0;
+			Uint selected = std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) != selectedEntities.end() ? 1 : 0;
 			Uint motionType = static_cast<Uint>(image.motionType_);
 
 			if (image.viewType_ == Image::ViewType::Sprite)

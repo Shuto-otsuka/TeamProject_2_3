@@ -17,6 +17,7 @@
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Renderer/ModelRenderer.h>
 #include <GraphicsEngine/System/IndicesSystem.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 
 namespace SeedCore
 {
@@ -157,7 +158,7 @@ namespace SeedCore
 					return;
 				}
 
-				Actor actor = world.GetActor(entityID);
+				Actor actor = WorldAccessor::Make(world, entityID);
 				if (!actor)
 				{
 					return;

@@ -9,17 +9,14 @@ void BulletNaviController::OnStart()
     bulletEnd = GetWorld().GetActor("BulletEnd");
     line = GetWorld().GetActor("Line");
 
-    SeedCore::Entity bulletStartEntity = bulletStart.GetEntity();
-    SeedCore::Entity bulletEndEntity = bulletEnd.GetEntity();
-    SeedCore::Entity playerEntity = GetWorld().GetActor("Player").GetEntity();
 
-    bulletStartPosition = GetWorld().GetComponent<SeedCore::Position>(bulletStartEntity);
-    bulletEndPosition = GetWorld().GetComponent<SeedCore::Position>(bulletEndEntity);
-    bulletStartScale = GetWorld().GetComponent<SeedCore::Scale>(bulletStartEntity);
-    bulletEndScale = GetWorld().GetComponent<SeedCore::Scale>(bulletEndEntity);
-    bulletStartActive = GetWorld().GetComponent<SeedCore::Active>(bulletStartEntity);
-    bulletEndActive = GetWorld().GetComponent<SeedCore::Active>(bulletEndEntity);
-    playerController = GetWorld().GetComponent<PlayerController>(playerEntity);
+    bulletStartPosition = bulletStart.GetComponent<SeedCore::Position>();
+    bulletEndPosition = bulletEnd.GetComponent<SeedCore::Position>();
+    bulletStartScale = bulletStart.GetComponent<SeedCore::Scale>();
+    bulletEndScale = bulletEnd.GetComponent<SeedCore::Scale>();
+    bulletStartActive = bulletStart.GetComponent<SeedCore::Active>();
+    bulletEndActive = bulletEnd.GetComponent<SeedCore::Active>();
+    playerController = GetWorld().GetActor("Player").GetComponent<PlayerController>();
 }
 
 void BulletNaviController::OnTick(float elapsedTime)
@@ -34,8 +31,7 @@ void BulletNaviController::OnTick(float elapsedTime)
 
         for (auto& cube : line.Children())
         {
-            SeedCore::Entity cubeEntity = cube.GetEntity();
-            SeedCore::Active* cubeActive = GetWorld().GetComponent<SeedCore::Active>(cubeEntity);
+            SeedCore::Active* cubeActive = cube.GetComponent<SeedCore::Active>();
             cubeActive->active_ = false;
         }
 
@@ -80,8 +76,7 @@ void BulletNaviController::OnTick(float elapsedTime)
         //いったんキューブを全て非表示
         for (auto& cube : line.Children())
         {
-            SeedCore::Entity cubeEntity = cube.GetEntity();
-            SeedCore::Active* cubeActive = GetWorld().GetComponent<SeedCore::Active>(cubeEntity);
+            SeedCore::Active* cubeActive = cube.GetComponent<SeedCore::Active>();
             cubeActive->active_ = false;
         }
 
@@ -94,8 +89,7 @@ void BulletNaviController::OnTick(float elapsedTime)
   
         for(auto& cube : line.Children())
         {
-            SeedCore::Entity cubeEntity = cube.GetEntity();
-            SeedCore::Active* cubeActive = GetWorld().GetComponent<SeedCore::Active>(cubeEntity);
+            SeedCore::Active* cubeActive = cube.GetComponent<SeedCore::Active>();
 
             //pointを間隔空けて更新
             point += direction * interval;
@@ -109,7 +103,7 @@ void BulletNaviController::OnTick(float elapsedTime)
 
             //point位置にキューブを配置
             cubeActive->active_ = true;
-            SeedCore::Position* position = GetWorld().GetComponent<SeedCore::Position>(cubeEntity);
+            SeedCore::Position* position = cube.GetComponent<SeedCore::Position>();
             position->x_ = point.x;
             position->y_ = point.y;
             position->z_ = point.z;

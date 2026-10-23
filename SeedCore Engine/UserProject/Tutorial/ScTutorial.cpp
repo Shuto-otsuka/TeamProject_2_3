@@ -2,7 +2,7 @@
 
 // SeedCoreプロジェクト直下の Sc○○.h は、正確な内部パスを覚えなくても使えるまとめヘッダーです。
 // 必要なものだけコメントを外してください（ScAll.h だけは全部入りなので、迷ったときや試作向け）。
-//#include <SeedCore/ScComponent.h>  // Position/Rotation/Rigidbody/Camera... コンポーネント全部 + Actor/World/Query
+#include <SeedCore/ScComponent.h>  // Position/Rotation/Rigidbody/Camera... コンポーネント全部 + Actor/World/Query
 //#include <SeedCore/ScInput.h>      // キーボード/マウス/ゲームパッド
 //#include <SeedCore/ScMath.h>       // Vector/Matrix/Quaternion/Ray/乱数
 //#include <SeedCore/ScPhysics.h>    // Raycast などの物理問い合わせ
@@ -26,21 +26,21 @@ void ScTutorial::OnStart()
 {
 	// GetWorld()/GetActor()はSeedScript(ComponentBase)が持っている関数で、自分がアタッチされているWorld/Actorが取れる
 	//SeedCore::World& world = GetWorld();
-	//SeedCore::Entity entity = GetActor().GetEntity();
+	//SeedCore::Actor actor = GetActor();
 
-	// World::GetComponent<T>(entity)で、同じActorが持つ他のコンポーネントへのポインタが取れる（無ければnullptr）
-	//SeedCore::Position* position = world.GetComponent<SeedCore::Position>(entity);
-	//SeedCore::Rotation* rotation = world.GetComponent<SeedCore::Rotation>(entity);
-	//SeedCore::Scale* scale = world.GetComponent<SeedCore::Scale>(entity);
-	//SeedCore::LinearVelocity* linearVelocity = world.GetComponent<SeedCore::LinearVelocity>(entity);
-	//SeedCore::AngularVelocity* angularVelocity = world.GetComponent<SeedCore::AngularVelocity>(entity);
+	// Actor::GetComponent<T>()で、同じActorが持つ他のコンポーネントへのポインタが取れる（無ければnullptr）
+	//SeedCore::Position* position = actor.GetComponent<SeedCore::Position>();
+	//SeedCore::Rotation* rotation = actor.GetComponent<SeedCore::Rotation>();
+	//SeedCore::Scale* scale = actor.GetComponent<SeedCore::Scale>();
+	//SeedCore::LinearVelocity* linearVelocity = actor.GetComponent<SeedCore::LinearVelocity>(); // 速度は Rigidbody を付けた Actor だけが持つ
+	//SeedCore::AngularVelocity* angularVelocity = actor.GetComponent<SeedCore::AngularVelocity>();
 	//
 	// 例: 開始位置を(0, 1, 0)にセットする
 	//position->x = 0;
 	//position->y = 1;
 	//position->z = 0;
 
-	// 名前でActorを探したいときはWorld::GetActor(名前)。ただしEntityID/永続ID版と違って索引が無くO(actor数)なので、
+	// 名前でActorを探したいときはWorld::GetActor(名前)。ただし名前の索引は無くO(actor数)なので、
 	// 毎フレーム呼ぶよりOnStart等で一度だけ探しておくのがおすすめ。
 	// Actorは参照ではなく値（World内のEntityを指す軽い手形）なので、そのまま自分のメンバーに持っておける
 	//SeedCore::Actor targetActor = world.GetActor(SeedCore::String("Player"));
@@ -118,7 +118,7 @@ void ScTutorial::OnInspectorGUI()
 // --- 移動/ピッキング（下のコライダーコールバックとは別の話、OnTick等から使う想定） ---
 
 // 物理的に動かしたいときは、Positionを直接書き換えるのではなくRigidbodyを使う（Rigidbodyが毎フレーム物理演算の結果をPositionへ書き戻す）
-//SeedCore::Rigidbody* rigidbody = GetWorld().GetComponent<SeedCore::Rigidbody>(GetActor().GetEntity());
+//SeedCore::Rigidbody* rigidbody = GetActor().GetComponent<SeedCore::Rigidbody>();
 
 // マウスでクリックしたところにある物を拾いたい（マウスピッキング）ときは、
 // ScreenSpace::ScreenToWorld でゲーム画面座標(MousePointと同じ座標)をワールド空間のRayに変換してからRaycastする。
@@ -126,49 +126,48 @@ void ScTutorial::OnInspectorGUI()
 // 単体で実行したRuntimeでも同じコードで動く（渡す引数もInput::MousePoint()だけで、view/projection等は不要）。
 //SeedCore::Ray mouseRay = SeedCore::ScreenSpace::ScreenToWorld(SeedCore::Input::MousePoint());
 //SeedCore::RaycastHit hit;
-//if (GetActor().GetPhysics().Raycast(mouseRay.origin_, mouseRay.direction_, 1000.0f, hit))
+//if (GetActor().GetService<SeedCore::Physics>()->Raycast(mouseRay.origin_, mouseRay.direction_, 1000.0f, hit))
 //{
 //	// hitには当たった位置(position_)、法線(normal_)、距離(distance_)、相手(entityID_)が入る
-//	SeedCore::Actor pickedActor = GetWorld().GetActor(hit.entityID_);
+//	SeedCore::Actor pickedActor = SeedCore::WorldAccessor::Make(GetWorld(), hit.entityID_); // FoundationEngine/World/WorldAccessor.h が要る
 //}
 
 // --- コライダーコールバック ---
 
-void ScTutorial::OnCollisionEnter(SeedCore::Entity entity)
+void ScTutorial::OnCollisionEnter(SeedCore::Actor other)
 {
-	// entity は衝突してきた相手のEntity。GetWorld().GetActor(entity)で相手のActorが取れる
-	//SeedCore::Actor otherActor = GetWorld().GetActor(entity);
+	// other は衝突してきた相手のActor。そのまま HasTag や GetComponent<T>() が使える
 
 	// 相手が何なのかを判定したいときは、名前で分岐するよりタグ/レイヤーで判定するのがおすすめ
 	// タグ=1つのActorに複数付けられる、ゆるいカテゴリ分け用（"Enemy"かつ"Flying"のように重ねられる）
 	// レイヤー=1つのActorに1つだけ、主に物理の衝突フィルタ（LayerSettingsPanelの衝突マトリクス）用
 	// どちらもインスペクターで設定する
-	//if (otherActor.HasTag(SeedCore::String("Enemy")))
+	//if (other.HasTag(SeedCore::String("Enemy")))
 	//{
 	//}
 }
 
-void ScTutorial::OnCollisionStay(SeedCore::Entity entity)
+void ScTutorial::OnCollisionStay(SeedCore::Actor other)
 {
 
 }
 
-void ScTutorial::OnCollisionExit(SeedCore::Entity entity)
+void ScTutorial::OnCollisionExit(SeedCore::Actor other)
 {
 
 }
 
-void ScTutorial::OnTriggerEnter(SeedCore::Entity entity)
+void ScTutorial::OnTriggerEnter(SeedCore::Actor other)
 {
 
 }
 
-void ScTutorial::OnTriggerStay(SeedCore::Entity entity)
+void ScTutorial::OnTriggerStay(SeedCore::Actor other)
 {
 
 }
 
-void ScTutorial::OnTriggerExit(SeedCore::Entity entity)
+void ScTutorial::OnTriggerExit(SeedCore::Actor other)
 {
 
 }
@@ -195,7 +194,7 @@ void ScTutorial::OnTriggerExit(SeedCore::Entity entity)
 
 // 音はAudioSourceコンポーネントに.audioアセットを設定して、キュー名で鳴らす。
 // AudioSource自体もSeedScriptなので、他のコンポーネントと同じようにWorldから取れる
-//SeedCore::AudioSource* audio = GetWorld().GetComponent<SeedCore::AudioSource>(GetActor().GetEntity());
+//SeedCore::AudioSource* audio = GetActor().GetComponent<SeedCore::AudioSource>();
 //if (audio)
 //{
 //	audio->Play(SeedCore::String("Shot"));   // インスペクターで選んだキューとは別のキューを鳴らす場合

@@ -10,7 +10,9 @@ namespace SeedCore
 	* shape of a collider on the same actor (a 0.5 m sphere if none) and,
 	* each fixed step, copies the body's pose back to Position/Rotation.
 	* The actor's LinearVelocity and AngularVelocity are kept in step with
-	* the body's velocity and angular velocity in both directions.
+	* the body's velocity and angular velocity in both directions; this
+	* component adds them when it is added and removes them when it is
+	* removed, so only actors with a body carry velocities.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -19,7 +21,8 @@ namespace SeedCore
 	* Actor のコライダーの形状を借り(無ければ半径 0.5 m の球)、固定ステップ
 	* ごとにボディの姿勢を Position/Rotation へ書き戻す。Actor の
 	* LinearVelocity と AngularVelocity は、ボディの速度・角速度と双方向に
-	* 同期する。
+	* 同期する。このコンポーネントは追加されたときにそれらを追加し、外された
+	* ときに外すので、速度を持つのはボディを持つ actor だけになる。
 	*/
 	class SEEDCORE_API Rigidbody :public SeedScript
 	{
@@ -135,6 +138,40 @@ namespace SeedCore
 		Bool isTrigger_ = false;
 
 	public:
+		/**
+		* [EN]
+		* Adds LinearVelocity and AngularVelocity to the actor the moment
+		* this component is added, so the velocities the body is kept in
+		* step with exist before any script's OnAwake or OnStart reads them,
+		* in the editor as well as during play. A velocity the actor already
+		* has is kept as it is.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このコンポーネントが追加された瞬間に、actor へ LinearVelocity と
+		* AngularVelocity を追加する。ボディと同期させる速度が、どの
+		* スクリプトの OnAwake・OnStart が読むより前に、プレイ中だけでなく
+		* エディタでも存在するようにするため。actor が既に持っている速度は
+		* そのまま残す。
+		*/
+		void OnAttach();
+
+		/**
+		* [EN]
+		* Removes LinearVelocity and AngularVelocity from the actor the
+		* moment this component is removed, undoing OnAttach. Destroying the
+		* whole actor does not come through here; the velocities go with it.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このコンポーネントが外される瞬間に、actor から LinearVelocity と
+		* AngularVelocity を外し、OnAttach を元に戻す。actor ごと破棄する
+		* ときはここを通らず、速度は actor と一緒に消える。
+		*/
+		void OnDetach();
+
 		/**
 		* [EN]
 		* Creates the body from the actor's collider shape, pose and this

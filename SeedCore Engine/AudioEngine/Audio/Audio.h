@@ -8,7 +8,7 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Thin wrapper over the CRI ADX2 player / 3D-positioning API, owned by
-	* the World and reached from components through Actor::GetAudio(). It
+	* the World and reached from components through Actor::GetService<Audio>(). It
 	* creates and tracks every player (one playback voice controller) and
 	* 3D source (one positional emitter) so that they can all be released
 	* together when the World goes away, and holds the single 3D listener
@@ -21,7 +21,7 @@ namespace SeedCore
 	*
 	* [JP]
 	* CRI ADX2 のプレイヤー / 3D ポジショニング API の薄いラッパー。World が
-	* 所有し、コンポーネントからは Actor::GetAudio() で取得する。プレイヤー
+	* 所有し、コンポーネントからは Actor::GetService<Audio>() で取得する。プレイヤー
 	* (1つの再生ボイスを制御する単位)と 3D ソース(1つの位置を持つ発音源)
 	* を生成・追跡し、World の破棄時にまとめて解放できるようにする。また、
 	* 全ての 3D ソースを聞き取る唯一の 3D リスナーを持つ。ハンドルを受け

@@ -1,5 +1,7 @@
 #include <FoundationEngine/World/Command/ActorCommand.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/Active.h>
 #include <FoundationEngine/World/ECS/Component/ComponentRegistry.h>
@@ -9,7 +11,7 @@ namespace SeedCore
 	/**
 	* [EN]
 	* world/cache (re)instantiate and destroy the actors. nodes is the
-	* captured subtree (see CaptureActorNode), already carrying the
+	* captured subtree (see BlueprintNode::Capture), already carrying the
 	* persistent IDs it was created with. parentPersistentId is 0 for a
 	* root-level subtree. prevSiblingPersistentId is the sibling the new
 	* root should sit directly after under that parent (0 = append / no
@@ -19,7 +21,7 @@ namespace SeedCore
 	*
 	* [JP]
 	* world/cache が actor 群の(再)インスタンス化と破棄を行う。nodes は
-	* 取得済みのサブツリー(CaptureActorNode 参照)で、作成時に割り当て
+	* 取得済みのサブツリー(BlueprintNode::Capture 参照)で、作成時に割り当て
 	* られた永続 ID を既に持っている。parentPersistentId はルートレベルの
 	* サブツリーであれば 0。prevSiblingPersistentId は、その親の下で新しい
 	* ルートを直後に置くべき兄弟(0 = 末尾へ追加 / 復元すべき並び順なし)。
@@ -44,34 +46,15 @@ namespace SeedCore
 	*/
 	void ActorCreateCommand::Redo()
 	{
-		Actor rootParent = parentPersistentId_ ? world_.FindActor(parentPersistentId_) : Actor();
+		Actor rootParent = parentPersistentId_ ? WorldAccessor::Find(world_, parentPersistentId_) : Actor();
 
-		DynamicArray<Actor> instantiated;
-		instantiated.reserve(nodes_.size());
-
-		for (Size index = 0; index < nodes_.size(); ++index)
-		{
-			const BlueprintNode& node = nodes_[index];
-
-			Actor parent;
-			if (index == 0)
-			{
-				parent = rootParent;
-			}
-			else if (node.parentIndex_ >= 0 && static_cast<Size>(node.parentIndex_) < instantiated.size())
-			{
-				parent = instantiated[node.parentIndex_];
-			}
-
-			Actor actor = InstantiateActorNode(world_, cache_, node, parent, false);
-			instantiated.push_back(actor);
-		}
+		DynamicArray<Actor> instantiated = BlueprintNode::Instantiate(world_, cache_, nodes_, rootParent, false);
 
 		/// [EN] The root was just appended to rootParent's children; move it back next to the sibling it originally followed (null -> front). Only meaningful under a parent - root order is not tracked.
 		/// [JP] ルートは今 rootParent の子リスト末尾へ追加されたところ。元々続いていた兄弟の隣へ(null なら先頭へ)戻す。親がある場合のみ意味を持つ - ルートの並び順は追跡していない。
 		if (rootParent && !instantiated.empty() && instantiated[0])
 		{
-			rootParent.MoveChild(instantiated[0], world_.FindActor(prevSiblingPersistentId_));
+			instantiated[0].Move(WorldAccessor::Find(world_, prevSiblingPersistentId_));
 		}
 	}
 
@@ -90,7 +73,7 @@ namespace SeedCore
 	{
 		for (Size index = nodes_.size(); index > 0; --index)
 		{
-			Actor actor = world_.FindActor(nodes_[index - 1].persistentId_);
+			Actor actor = WorldAccessor::Find(world_, nodes_[index - 1].persistentId_);
 			if (actor)
 			{
 				world_.DestroyActor(actor);
@@ -113,15 +96,16 @@ namespace SeedCore
 	ActorDeleteCommand::ActorDeleteCommand(World& world, ResourceCache& cache, Actor actor) : world_(world), cache_(cache)
 	{
 		DynamicArray<BlueprintNode> nodes;
-		CaptureActorNode(actor, -1, nodes);
+		BlueprintNode::Capture(actor, nodes);
 		node_ = nodes[0];
 
-		persistentId_ = actor.PersistentID();
+		ActorRegistry& actors = WorldAccessor::Actors(world_);
+		persistentId_ = actors.Record(ActorAccessor::GetEntity(actor).GetID())->persistentID_;
 
 		Actor parent = actor.Parent();
-		parentPersistentId_ = parent ? parent.PersistentID() : 0;
+		parentPersistentId_ = parent ? actors.Record(ActorAccessor::GetEntity(parent).GetID())->persistentID_ : 0;
 
-		std::ranges::transform(actor.Children(), std::back_inserter(childPersistentIds_), [](const Actor& child) { return child.PersistentID(); });
+		std::ranges::transform(actor.Children(), std::back_inserter(childPersistentIds_), [&actors](const Actor& child) { return actors.Record(ActorAccessor::GetEntity(child).GetID())->persistentID_; });
 	}
 
 	/**
@@ -135,7 +119,7 @@ namespace SeedCore
 	*/
 	void ActorDeleteCommand::Redo()
 	{
-		Actor actor = world_.FindActor(persistentId_);
+		Actor actor = WorldAccessor::Find(world_, persistentId_);
 		if (actor)
 		{
 			world_.DestroyActor(actor);
@@ -159,9 +143,9 @@ namespace SeedCore
 	*/
 	void ActorDeleteCommand::Undo()
 	{
-		Actor parent = parentPersistentId_ ? world_.FindActor(parentPersistentId_) : Actor();
+		Actor parent = parentPersistentId_ ? WorldAccessor::Find(world_, parentPersistentId_) : Actor();
 
-		Actor actor = InstantiateActorNode(world_, cache_, node_, parent, false);
+		Actor actor = node_.Instantiate(world_, cache_, parent, false);
 		if (!actor)
 		{
 			return;
@@ -169,7 +153,7 @@ namespace SeedCore
 
 		for (Uint32 childPersistentId : childPersistentIds_)
 		{
-			Actor child = world_.FindActor(childPersistentId);
+			Actor child = WorldAccessor::Find(world_, childPersistentId);
 			if (child)
 			{
 				child.Parent(actor);
@@ -206,13 +190,13 @@ namespace SeedCore
 	*/
 	void ActorReparentCommand::Redo()
 	{
-		Actor actor = world_.FindActor(actorPersistentId_);
+		Actor actor = WorldAccessor::Find(world_, actorPersistentId_);
 		if (!actor)
 		{
 			return;
 		}
 
-		Actor newParent = newParentPersistentId_ ? world_.FindActor(newParentPersistentId_) : Actor();
+		Actor newParent = newParentPersistentId_ ? WorldAccessor::Find(world_, newParentPersistentId_) : Actor();
 		actor.Parent(newParent);
 	}
 
@@ -231,20 +215,20 @@ namespace SeedCore
 	*/
 	void ActorReparentCommand::Undo()
 	{
-		Actor actor = world_.FindActor(actorPersistentId_);
+		Actor actor = WorldAccessor::Find(world_, actorPersistentId_);
 		if (!actor)
 		{
 			return;
 		}
 
-		Actor oldParent = oldParentPersistentId_ ? world_.FindActor(oldParentPersistentId_) : Actor();
+		Actor oldParent = oldParentPersistentId_ ? WorldAccessor::Find(world_, oldParentPersistentId_) : Actor();
 		actor.Parent(oldParent);
 
 		/// [EN] Parent appends to the end of the new sibling list; restore the original slot by moving actor back after whichever sibling preceded it (null -> front). Root order is not tracked, so this only applies under an old parent.
 		/// [JP] Parent は新しい兄弟リストの末尾へ追加する。元の位置を復元するため、直前にあった兄弟の後ろへ(null なら先頭へ)戻す。ルートの並び順は追跡していないので、旧親がある場合のみ行う。
 		if (oldParent)
 		{
-			oldParent.MoveChild(actor, world_.FindActor(oldPrevSiblingPersistentId_));
+			actor.Move(WorldAccessor::Find(world_, oldPrevSiblingPersistentId_));
 		}
 	}
 
@@ -277,7 +261,7 @@ namespace SeedCore
 	*/
 	void ActorTagCommand::Redo()
 	{
-		Actor actor = world_.FindActor(actorPersistentId_);
+		Actor actor = WorldAccessor::Find(world_, actorPersistentId_);
 		if (!actor)
 		{
 			return;
@@ -304,7 +288,7 @@ namespace SeedCore
 	*/
 	void ActorTagCommand::Undo()
 	{
-		Actor actor = world_.FindActor(actorPersistentId_);
+		Actor actor = WorldAccessor::Find(world_, actorPersistentId_);
 		if (!actor)
 		{
 			return;
@@ -347,7 +331,7 @@ namespace SeedCore
 	*/
 	void ActorLayerCommand::Redo()
 	{
-		Actor actor = world_.FindActor(actorPersistentId_);
+		Actor actor = WorldAccessor::Find(world_, actorPersistentId_);
 		if (!actor)
 		{
 			return;
@@ -367,7 +351,7 @@ namespace SeedCore
 	*/
 	void ActorLayerCommand::Undo()
 	{
-		Actor actor = world_.FindActor(actorPersistentId_);
+		Actor actor = WorldAccessor::Find(world_, actorPersistentId_);
 		if (!actor)
 		{
 			return;
@@ -387,8 +371,10 @@ namespace SeedCore
 	* actorと全子孫の現在のアクティブ状態を再帰的に取得する -
 	* Actor::Active(newActive)が実際に実行される前に呼ぶこと。
 	*/
-	ActorActiveCommand::ActorActiveCommand(World& world, Actor actor, Bool newActive) : world_(world), rootPersistentId_(actor.PersistentID()), newActive_(newActive)
+	ActorActiveCommand::ActorActiveCommand(World& world, Actor actor, Bool newActive) : world_(world), rootPersistentId_(WorldAccessor::Actors(world).Record(ActorAccessor::GetEntity(actor).GetID())->persistentID_), newActive_(newActive)
 	{
+		ActorRegistry& actors = WorldAccessor::Actors(world_);
+
 		DynamicArray<Actor> pending;
 		pending.push_back(actor);
 
@@ -398,7 +384,7 @@ namespace SeedCore
 			pending.pop_back();
 
 			Entry entry;
-			entry.persistentId_ = current.PersistentID();
+			entry.persistentId_ = actors.Record(ActorAccessor::GetEntity(current).GetID())->persistentID_;
 			entry.oldActive_ = current.Active();
 			entries_.push_back(entry);
 
@@ -419,7 +405,7 @@ namespace SeedCore
 	*/
 	void ActorActiveCommand::Redo()
 	{
-		Actor actor = world_.FindActor(rootPersistentId_);
+		Actor actor = WorldAccessor::Find(world_, rootPersistentId_);
 		if (actor)
 		{
 			actor.Active(newActive_);
@@ -446,13 +432,13 @@ namespace SeedCore
 
 		for (const Entry& entry : entries_)
 		{
-			Actor actor = world_.FindActor(entry.persistentId_);
+			Actor actor = WorldAccessor::Find(world_, entry.persistentId_);
 			if (!actor)
 			{
 				continue;
 			}
 
-			Active* component = static_cast<Active*>(world_.GetComponent(actor.GetEntity(), activeID));
+			Active* component = static_cast<Active*>(actor.GetComponent(activeID));
 			if (component)
 			{
 				component->active_ = entry.oldActive_;

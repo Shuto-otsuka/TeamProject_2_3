@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Application\Application.cpp" />
     <ClCompile Include="Benchmark\Benchmark.cpp" />
     <ClCompile Include="Benchmark\BenchmarkSuite.cpp" />
     <ClCompile Include="Benchmark\BenchmarkSystem.cpp" />
@@ -65,6 +66,8 @@
     </ClCompile>
     <ClCompile Include="Resource\Asset\Asset.cpp" />
     <ClCompile Include="Resource\Asset\AxisConvention.cpp" />
+    <ClCompile Include="Resource\Blueprint\BlueprintComponent.cpp" />
+    <ClCompile Include="Resource\Blueprint\BlueprintNode.cpp" />
     <ClCompile Include="Resource\Config\BootConfig.cpp" />
     <ClCompile Include="Resource\Config\EditorConfig.cpp" />
     <ClCompile Include="Resource\Config\GameConfig.cpp" />
@@ -72,6 +75,7 @@
     <ClCompile Include="Resource\Prefab\Prefab.cpp" />
     <ClCompile Include="Resource\Prefab\PrefabBlueprint.cpp" />
     <ClCompile Include="Resource\Prefab\PrefabPool.cpp" />
+    <ClCompile Include="Resource\Prefab\PrefabRegistry.cpp" />
     <ClCompile Include="Resource\Prefab\PrefabSystem.cpp" />
     <ClCompile Include="Resource\ResourceSync.cpp" />
     <ClCompile Include="Resource\Scene\Scene.cpp" />
@@ -79,6 +83,7 @@
     <ClCompile Include="Resource\Scene\ScenePool.cpp" />
     <ClCompile Include="Resource\Scene\SceneSystem.cpp" />
     <ClCompile Include="Resource\Scene\SceneTransitionSystem.cpp" />
+    <ClCompile Include="Resource\Sharing\CollaborationRegistry.cpp" />
     <ClCompile Include="Resource\Sharing\GoogleAuth.cpp" />
     <ClCompile Include="Resource\Sharing\GoogleDocument.cpp" />
     <ClCompile Include="Resource\Sharing\GoogleDrive.cpp" />
@@ -87,7 +92,8 @@
     <ClCompile Include="Resource\Sharing\SharedScene.cpp" />
     <ClCompile Include="Resource\Sharing\SharingWorker.cpp" />
     <ClCompile Include="World\Actor\Actor.cpp" />
-    <ClCompile Include="World\Actor\Blueprint.cpp" />
+    <ClCompile Include="World\Actor\ActorAccessor.cpp" />
+    <ClCompile Include="World\Actor\ActorRegistry.cpp" />
     <ClCompile Include="World\Command\ActorCommand.cpp" />
     <ClCompile Include="World\Command\ArrayFieldCommand.cpp" />
     <ClCompile Include="World\Command\CommandBuffer.cpp" />
@@ -96,6 +102,7 @@
     <ClCompile Include="World\Command\History.cpp" />
     <ClCompile Include="World\ECS\Archetype\Archetype.cpp" />
     <ClCompile Include="World\ECS\Archetype\ArchetypeRegistry.cpp" />
+    <ClCompile Include="World\ECS\Archetype\ArchetypeStorage.cpp" />
     <ClCompile Include="World\ECS\Archetype\Chunk.cpp" />
     <ClCompile Include="World\ECS\Component\ComponentBehaviour.cpp" />
     <ClCompile Include="World\ECS\Component\ComponentRegistry.cpp" />
@@ -103,18 +110,22 @@
     <ClCompile Include="World\ECS\Component\Transform.cpp" />
     <ClCompile Include="World\ECS\Component\UnknownComponent.cpp" />
     <ClCompile Include="World\ECS\Entity\Entity.cpp" />
-    <ClCompile Include="World\ECS\Entity\EntityRecord.cpp" />
+    <ClCompile Include="World\ECS\Entity\EntityRegistry.cpp" />
+    <ClCompile Include="World\ECS\SparseSet\SparseSet.cpp" />
+    <ClCompile Include="World\ECS\SparseSet\SparseSetStorage.cpp" />
     <ClCompile Include="World\ECS\System\LifetimeSystem.cpp" />
-    <ClCompile Include="World\ECS\System\MoveSystem.cpp" />
     <ClCompile Include="World\ECS\System\SpawnerSystem.cpp" />
     <ClCompile Include="World\ECS\System\SystemGraph.cpp" />
     <ClCompile Include="World\ECS\System\SystemScheduler.cpp" />
     <ClCompile Include="World\ECS\System\TransformSystem.cpp" />
     <ClCompile Include="World\Layer\LayerCollisionMatrix.cpp" />
     <ClCompile Include="World\Layer\LayerRegistry.cpp" />
+    <ClCompile Include="World\Service.cpp" />
     <ClCompile Include="World\Tag\TagRegistry.cpp" />
     <ClCompile Include="World\World.cpp" />
+    <ClCompile Include="World\WorldAccessor.cpp" />
     <ClCompile Include="World\WorldSnapshot.cpp" />
+    <ClInclude Include="Application\Application.h" />
     <ClInclude Include="Benchmark\Benchmark.h" />
     <ClInclude Include="Benchmark\BenchmarkSuite.h" />
     <ClInclude Include="Benchmark\BenchmarkSystem.h" />
@@ -193,6 +204,8 @@
     </ClCompile>
     <ClInclude Include="Resource\Asset\Asset.h" />
     <ClInclude Include="Resource\Asset\AxisConvention.h" />
+    <ClInclude Include="Resource\Blueprint\BlueprintComponent.h" />
+    <ClInclude Include="Resource\Blueprint\BlueprintNode.h" />
     <ClInclude Include="Resource\Config\BootConfig.h" />
     <ClInclude Include="Resource\Config\EditorConfig.h" />
     <ClInclude Include="Resource\Config\GameConfig.h" />
@@ -200,6 +213,7 @@
     <ClInclude Include="Resource\Prefab\Prefab.h" />
     <ClInclude Include="Resource\Prefab\PrefabBlueprint.h" />
     <ClInclude Include="Resource\Prefab\PrefabPool.h" />
+    <ClInclude Include="Resource\Prefab\PrefabRegistry.h" />
     <ClInclude Include="Resource\Prefab\PrefabSystem.h" />
     <ClInclude Include="Resource\ResourceSync.h" />
     <ClInclude Include="Resource\Scene\Scene.h" />
@@ -207,6 +221,7 @@
     <ClInclude Include="Resource\Scene\ScenePool.h" />
     <ClInclude Include="Resource\Scene\SceneSystem.h" />
     <ClInclude Include="Resource\Scene\SceneTransitionSystem.h" />
+    <ClInclude Include="Resource\Sharing\CollaborationRegistry.h" />
     <ClInclude Include="Resource\Sharing\GoogleAuth.h" />
     <ClInclude Include="Resource\Sharing\GoogleDocument.h" />
     <ClInclude Include="Resource\Sharing\GoogleDrive.h" />
@@ -216,7 +231,8 @@
     <ClInclude Include="Resource\Sharing\SharingWorker.h" />
     <ClInclude Include="Utility\Keyword.h" />
     <ClInclude Include="World\Actor\Actor.h" />
-    <ClInclude Include="World\Actor\Blueprint.h" />
+    <ClInclude Include="World\Actor\ActorAccessor.h" />
+    <ClInclude Include="World\Actor\ActorRegistry.h" />
     <ClInclude Include="World\Command\ActorCommand.h" />
     <ClInclude Include="World\Command\ArrayFieldCommand.h" />
     <ClInclude Include="World\Command\Command.h" />
@@ -226,9 +242,12 @@
     <ClInclude Include="World\Command\CompoundCommand.h" />
     <ClInclude Include="World\Command\History.h" />
     <ClInclude Include="World\ECS\Archetype\Archetype.h" />
+    <ClInclude Include="World\ECS\Archetype\ArchetypeLocation.h" />
     <ClInclude Include="World\ECS\Archetype\ArchetypeRegistry.h" />
+    <ClInclude Include="World\ECS\Archetype\ArchetypeStorage.h" />
     <ClInclude Include="World\ECS\Archetype\Chunk.h" />
     <ClInclude Include="World\ECS\Component\Active.h" />
+    <ClInclude Include="World\ECS\Component\Attachable.h" />
     <ClInclude Include="World\ECS\Component\Awakeable.h" />
     <ClInclude Include="World\ECS\Component\Bounds.h" />
     <ClInclude Include="World\ECS\Component\Collisionable.h" />
@@ -237,6 +256,7 @@
     <ClInclude Include="World\ECS\Component\ComponentConcept.h" />
     <ClInclude Include="World\ECS\Component\ComponentRegistry.h" />
     <ClInclude Include="World\ECS\Component\Destroyable.h" />
+    <ClInclude Include="World\ECS\Component\Detachable.h" />
     <ClInclude Include="World\ECS\Component\Editable.h" />
     <ClInclude Include="World\ECS\Component\FixedTickable.h" />
     <ClInclude Include="World\ECS\Component\InspectorDrawable.h" />
@@ -254,20 +274,24 @@
     <ClInclude Include="World\ECS\Component\Triggerable.h" />
     <ClInclude Include="World\ECS\Component\UnknownComponent.h" />
     <ClInclude Include="World\ECS\Component\Velocity.h" />
+    <ClInclude Include="World\ECS\Component\WorldMatrix.h" />
     <ClInclude Include="World\ECS\Entity\Entity.h" />
-    <ClInclude Include="World\ECS\Entity\EntityRecord.h" />
+    <ClInclude Include="World\ECS\Entity\EntityRegistry.h" />
     <ClInclude Include="World\ECS\Query\Query.h" />
     <ClInclude Include="World\ECS\SparseSet\SparseSet.h" />
+    <ClInclude Include="World\ECS\SparseSet\SparseSetLocation.h" />
+    <ClInclude Include="World\ECS\SparseSet\SparseSetStorage.h" />
     <ClInclude Include="World\ECS\System\LifetimeSystem.h" />
-    <ClInclude Include="World\ECS\System\MoveSystem.h" />
     <ClInclude Include="World\ECS\System\SpawnerSystem.h" />
     <ClInclude Include="World\ECS\System\SystemGraph.h" />
     <ClInclude Include="World\ECS\System\SystemScheduler.h" />
     <ClInclude Include="World\ECS\System\TransformSystem.h" />
     <ClInclude Include="World\Layer\LayerCollisionMatrix.h" />
     <ClInclude Include="World\Layer\LayerRegistry.h" />
+    <ClInclude Include="World\Service.h" />
     <ClInclude Include="World\Tag\TagRegistry.h" />
     <ClInclude Include="World\World.h" />
+    <ClInclude Include="World\WorldAccessor.h" />
     <ClInclude Include="World\WorldSnapshot.h" />
   </ItemGroup>
   <ItemGroup>

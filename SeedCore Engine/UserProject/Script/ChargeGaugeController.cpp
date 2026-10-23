@@ -7,17 +7,13 @@ void ChargeGaugeController::OnStart()
     chargeGaugeKnob = GetWorld().GetActor("ChargeGaugeKnob");
     chargeGaugeBase = GetWorld().GetActor("ChargeGaugeBase");
 
-    SeedCore::Entity chargeGaugeNowEntity = chargeGaugeNow.GetEntity();
-    SeedCore::Entity chargeGaugeKnobEntity = chargeGaugeKnob.GetEntity();
-    SeedCore::Entity chargeGaugeBaseEntity = chargeGaugeBase.GetEntity();
-    SeedCore::Entity playerEntity = GetWorld().GetActor("Player").GetEntity();
 
-    chargeGaugeNowImage = GetWorld().GetComponent<SeedCore::Image>(chargeGaugeNowEntity);
-    chargeGaugeKnobPosition = GetWorld().GetComponent<SeedCore::Position>(chargeGaugeKnobEntity);
-    chargeGaugeBaseActive = GetWorld().GetComponent<SeedCore::Active>(chargeGaugeBaseEntity);
-    chargeGaugeKnobActive = GetWorld().GetComponent<SeedCore::Active>(chargeGaugeKnobEntity);
-    chargeGaugeNowActive = GetWorld().GetComponent<SeedCore::Active>(chargeGaugeNowEntity);
-    playerController = GetWorld().GetComponent<PlayerController>(playerEntity);
+    chargeGaugeNowImage = chargeGaugeNow.GetComponent<SeedCore::Image>();
+    chargeGaugeKnobPosition = chargeGaugeKnob.GetComponent<SeedCore::Position>();
+    chargeGaugeBaseActive = chargeGaugeBase.GetComponent<SeedCore::Active>();
+    chargeGaugeKnobActive = chargeGaugeKnob.GetComponent<SeedCore::Active>();
+    chargeGaugeNowActive = chargeGaugeNow.GetComponent<SeedCore::Active>();
+    playerController = GetWorld().GetActor("Player").GetComponent<PlayerController>();
 }
 
 void ChargeGaugeController::OnTick(float elapsedTime)

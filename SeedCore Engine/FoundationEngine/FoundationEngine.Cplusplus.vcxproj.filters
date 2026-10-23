@@ -121,6 +121,12 @@
     <Filter Include="Benchmark">
       <UniqueIdentifier>{acb43558-4635-4e7c-9b0a-e0384f7e5247}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource\Blueprint">
+      <UniqueIdentifier>{280e9b37-aabd-4cb1-b118-7f28cbe69254}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Application">
+      <UniqueIdentifier>{82c64b8a-1b12-4e4b-ad7c-d922e1cdd60d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JobSystem\FlowBuilder.cpp">
@@ -250,9 +256,6 @@
     <ClCompile Include="World\ECS\Entity\Entity.cpp">
       <Filter>World\ECS\Entity</Filter>
     </ClCompile>
-    <ClCompile Include="World\ECS\Entity\EntityRecord.cpp">
-      <Filter>World\ECS\Entity</Filter>
-    </ClCompile>
     <ClCompile Include="World\ECS\Archetype\Archetype.cpp">
       <Filter>World\ECS\Archetype</Filter>
     </ClCompile>
@@ -263,9 +266,6 @@
       <Filter>World\ECS\Archetype</Filter>
     </ClCompile>
     <ClCompile Include="World\ECS\System\LifetimeSystem.cpp">
-      <Filter>World\ECS\System</Filter>
-    </ClCompile>
-    <ClCompile Include="World\ECS\System\MoveSystem.cpp">
       <Filter>World\ECS\System</Filter>
     </ClCompile>
     <ClCompile Include="World\ECS\System\SpawnerSystem.cpp">
@@ -318,9 +318,6 @@
     </ClCompile>
     <ClCompile Include="Resource\Scene\SceneTransitionSystem.cpp">
       <Filter>Resource\Scene</Filter>
-    </ClCompile>
-    <ClCompile Include="World\Actor\Blueprint.cpp">
-      <Filter>World\Actor</Filter>
     </ClCompile>
     <ClCompile Include="Resource\Config\BootConfig.cpp">
       <Filter>Resource\Config</Filter>
@@ -435,6 +432,45 @@
     </ClCompile>
     <ClCompile Include="Benchmark\BenchmarkSystem.cpp">
       <Filter>Benchmark</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Actor\ActorAccessor.cpp">
+      <Filter>World\Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Service.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\Entity\EntityRegistry.cpp">
+      <Filter>World\ECS\Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\SparseSet\SparseSet.cpp">
+      <Filter>World\ECS\SparseSet</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\SparseSet\SparseSetStorage.cpp">
+      <Filter>World\ECS\SparseSet</Filter>
+    </ClCompile>
+    <ClCompile Include="World\ECS\Archetype\ArchetypeStorage.cpp">
+      <Filter>World\ECS\Archetype</Filter>
+    </ClCompile>
+    <ClCompile Include="World\Actor\ActorRegistry.cpp">
+      <Filter>World\Actor</Filter>
+    </ClCompile>
+    <ClCompile Include="World\WorldAccessor.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Prefab\PrefabRegistry.cpp">
+      <Filter>Resource\Prefab</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Sharing\CollaborationRegistry.cpp">
+      <Filter>Resource\Sharing</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Blueprint\BlueprintNode.cpp">
+      <Filter>Resource\Blueprint</Filter>
+    </ClCompile>
+    <ClCompile Include="Resource\Blueprint\BlueprintComponent.cpp">
+      <Filter>Resource\Blueprint</Filter>
+    </ClCompile>
+    <ClCompile Include="Application\Application.cpp">
+      <Filter>Application</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -740,9 +776,6 @@
     <ClInclude Include="World\ECS\Entity\Entity.h">
       <Filter>World\ECS\Entity</Filter>
     </ClInclude>
-    <ClInclude Include="World\ECS\Entity\EntityRecord.h">
-      <Filter>World\ECS\Entity</Filter>
-    </ClInclude>
     <ClInclude Include="World\ECS\Archetype\Archetype.h">
       <Filter>World\ECS\Archetype</Filter>
     </ClInclude>
@@ -759,9 +792,6 @@
       <Filter>World\ECS\SparseSet</Filter>
     </ClInclude>
     <ClInclude Include="World\ECS\System\LifetimeSystem.h">
-      <Filter>World\ECS\System</Filter>
-    </ClInclude>
-    <ClInclude Include="World\ECS\System\MoveSystem.h">
       <Filter>World\ECS\System</Filter>
     </ClInclude>
     <ClInclude Include="World\ECS\System\SpawnerSystem.h">
@@ -820,9 +850,6 @@
     </ClInclude>
     <ClInclude Include="Resource\Scene\SceneTransitionSystem.h">
       <Filter>Resource\Scene</Filter>
-    </ClInclude>
-    <ClInclude Include="World\Actor\Blueprint.h">
-      <Filter>World\Actor</Filter>
     </ClInclude>
     <ClInclude Include="Resource\Config\BootConfig.h">
       <Filter>Resource\Config</Filter>
@@ -961,6 +988,57 @@
     </ClInclude>
     <ClInclude Include="Utility\Keyword.h">
       <Filter>Utility</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Actor\ActorAccessor.h">
+      <Filter>World\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Service.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Entity\EntityRegistry.h">
+      <Filter>World\ECS\Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\SparseSet\SparseSetLocation.h">
+      <Filter>World\ECS\SparseSet</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Archetype\ArchetypeLocation.h">
+      <Filter>World\ECS\Archetype</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\SparseSet\SparseSetStorage.h">
+      <Filter>World\ECS\SparseSet</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Archetype\ArchetypeStorage.h">
+      <Filter>World\ECS\Archetype</Filter>
+    </ClInclude>
+    <ClInclude Include="World\Actor\ActorRegistry.h">
+      <Filter>World\Actor</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\WorldMatrix.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\WorldAccessor.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Prefab\PrefabRegistry.h">
+      <Filter>Resource\Prefab</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Sharing\CollaborationRegistry.h">
+      <Filter>Resource\Sharing</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Blueprint\BlueprintNode.h">
+      <Filter>Resource\Blueprint</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Blueprint\BlueprintComponent.h">
+      <Filter>Resource\Blueprint</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Attachable.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="World\ECS\Component\Detachable.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Application.h">
+      <Filter>Application</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

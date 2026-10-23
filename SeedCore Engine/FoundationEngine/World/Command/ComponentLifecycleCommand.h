@@ -1,7 +1,7 @@
 #pragma once
 #include <FoundationEngine/World/Command/Command.h>
 #include <FoundationEngine/World/ECS/Component/Component.h>
-#include <FoundationEngine/World/Actor/Blueprint.h>
+#include <FoundationEngine/Resource/Blueprint/BlueprintComponent.h>
 
 namespace SeedCore
 {

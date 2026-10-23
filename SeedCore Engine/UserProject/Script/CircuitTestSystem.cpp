@@ -2,6 +2,7 @@
 #include "CircuitSystem.h"
 
 #include <SeedCore/ScLog.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 
 using namespace SeedCore;
 
@@ -9,19 +10,18 @@ void CircuitTestSystem::OnStart()
 {
 	World& world = GetWorld();
 	Actor actor = GetActor();
-	Entity entity = actor.GetEntity();
 
 	// 回路が未設定なら自分自身のCircuitSystemを見る
-	circuitActor_ = (circuitActorID_ != 0) ? world.FindActor(circuitActorID_) : actor;
+	circuitActor_ = (circuitActorID_ != 0) ? SeedCore::WorldAccessor::Find(world, circuitActorID_) : actor;
 	if (!circuitActor_ || !circuitActor_.GetComponent<CircuitSystem>())
 	{
-		const Name* name = world.GetComponent<Name>(entity);
+		const Name* name = actor.GetComponent<Name>();
 		SC_LOG_WARNING("[{}] 確認する回路にCircuitSystemがありません", name ? name->name_.c_str() : "名前なし");
 	}
 
 	// 動かす前の位置と回転を基準として保存
-	Position* position = world.GetComponent<Position>(entity);
-	Rotation* rotation = world.GetComponent<Rotation>(entity);
+	Position* position = actor.GetComponent<Position>();
+	Rotation* rotation = actor.GetComponent<Rotation>();
 	if (position)
 	{
 		cachePosition_ = Transform::Vector(*position);
@@ -39,7 +39,7 @@ void CircuitTestSystem::OnStart()
 void CircuitTestSystem::OnTick(float elapsedTime)
 {
 	World& world = GetWorld();
-	Entity entity = GetActor().GetEntity();
+	Actor actor = GetActor();
 
 	CircuitSystem* circuit = circuitActor_ ? circuitActor_.GetComponent<CircuitSystem>() : nullptr;
 	bool powered = circuit && circuit->IsPowered();
@@ -47,7 +47,7 @@ void CircuitTestSystem::OnTick(float elapsedTime)
 	// 通電状態が変わった瞬間だけログを出す
 	if (isLogOutput_ && powered != wasPowered_)
 	{
-		const Name* name = world.GetComponent<Name>(entity);
+		const Name* name = actor.GetComponent<Name>();
 		SC_LOG_NOTICE("[{}] 回路 {} → {}", name ? name->name_.c_str() : "名前なし", wasPowered_ ? "ON" : "OFF", powered ? "ON" : "OFF");
 	}
 	wasPowered_ = powered;
@@ -75,8 +75,8 @@ void CircuitTestSystem::OnTick(float elapsedTime)
 	// 行き過ぎて戻るイージングでぴょこっと浮かせる
 	float height = Easing::OutBack(0.0f, floatHeight_, progress_);
 
-	Position* position = world.GetComponent<Position>(entity);
-	Rotation* rotation = world.GetComponent<Rotation>(entity);
+	Position* position = actor.GetComponent<Position>();
+	Rotation* rotation = actor.GetComponent<Rotation>();
 	if (position)
 	{
 		Transform::Vector(*position, cachePosition_ + Vector3(0.0f, height, 0.0f));

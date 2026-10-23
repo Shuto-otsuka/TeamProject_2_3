@@ -1,5 +1,6 @@
 #include <FoundationEngine/World/Command/ComponentLifecycleCommand.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 
 namespace SeedCore
@@ -23,7 +24,7 @@ namespace SeedCore
 	*/
 	void ComponentAddCommand::Redo()
 	{
-		Actor actor = world_.FindActor(actorPersistentId_);
+		Actor actor = WorldAccessor::Find(world_, actorPersistentId_);
 		if (actor)
 		{
 			actor.AddComponent(componentID_);
@@ -42,7 +43,7 @@ namespace SeedCore
 	*/
 	void ComponentAddCommand::Undo()
 	{
-		Actor actor = world_.FindActor(actorPersistentId_);
+		Actor actor = WorldAccessor::Find(world_, actorPersistentId_);
 		if (actor)
 		{
 			actor.RemoveComponent(componentID_);
@@ -61,7 +62,7 @@ namespace SeedCore
 	* Actor::RemoveComponent(componentID)が実際に実行される前に呼ぶこと。
 	*/
 	ComponentRemoveCommand::ComponentRemoveCommand(World& world, Uint32 actorPersistentId, ComponentID componentID, const String& componentName, void* componentData)
-		: world_(world), actorPersistentId_(actorPersistentId), componentID_(componentID), captured_(CaptureComponent(componentName, componentData))
+		: world_(world), actorPersistentId_(actorPersistentId), componentID_(componentID), captured_(BlueprintComponent::Capture(componentName, componentData))
 	{
 		/// No Code
 	}
@@ -78,7 +79,7 @@ namespace SeedCore
 	*/
 	void ComponentRemoveCommand::Redo()
 	{
-		Actor actor = world_.FindActor(actorPersistentId_);
+		Actor actor = WorldAccessor::Find(world_, actorPersistentId_);
 		if (actor)
 		{
 			actor.RemoveComponent(componentID_);
@@ -98,7 +99,7 @@ namespace SeedCore
 	*/
 	void ComponentRemoveCommand::Undo()
 	{
-		Actor actor = world_.FindActor(actorPersistentId_);
+		Actor actor = WorldAccessor::Find(world_, actorPersistentId_);
 		if (!actor)
 		{
 			return;
@@ -106,10 +107,10 @@ namespace SeedCore
 
 		actor.AddComponent(componentID_);
 
-		void* componentData = world_.GetComponent(actor.GetEntity(), componentID_);
+		void* componentData = actor.GetComponent(componentID_);
 		if (componentData)
 		{
-			ApplyComponent(captured_, componentData);
+			captured_.Apply(componentData);
 		}
 	}
 }

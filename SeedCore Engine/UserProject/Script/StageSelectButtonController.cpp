@@ -5,10 +5,9 @@
 
 void StageSelectButtonController::OnStart()
 {
-    SeedCore::Entity entity = GetActor().GetEntity();
-    myButton = GetWorld().GetComponent<Button>(entity);
-    myImage = GetWorld().GetComponent<SeedCore::Image>(entity);
-    scale = GetWorld().GetComponent<SeedCore::Scale>(entity);
+    myButton = GetActor().GetComponent<Button>();
+    myImage = GetActor().GetComponent<SeedCore::Image>();
+    scale = GetActor().GetComponent<SeedCore::Scale>();
 
     defaultColor = myImage->color_;
     targetColor = defaultColor;

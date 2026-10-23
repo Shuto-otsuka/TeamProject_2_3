@@ -1,6 +1,6 @@
 #pragma once
 #include <FoundationEngine/World/Command/Command.h>
-#include <FoundationEngine/World/Actor/Blueprint.h>
+#include <FoundationEngine/Resource/Blueprint/BlueprintNode.h>
 
 namespace SeedCore
 {
@@ -14,7 +14,7 @@ namespace SeedCore
 	* (the Hierarchy panel's "空のActorを作成"/"空のActorを追加") or a
 	* whole captured hierarchy (the Hierarchy panel's "複製", which
 	* clones an Actor and every descendant). nodes_ is the flat,
-	* parent-index-linked capture (see CaptureActorNode) with nodes_[0]
+	* parent-index-linked capture (see BlueprintNode::Capture) with nodes_[0]
 	* as the root; Redo replays it exactly like Scene::Instantiate does,
 	* parenting the root under whatever actor currently holds
 	* parentPersistentId_ (or as a root Actor if 0/gone). Undo destroys
@@ -28,7 +28,7 @@ namespace SeedCore
 	* (Hierarchyパネルの「空のActorを作成」/「空のActorを追加」)、または
 	* 取得済みの階層まるごと(Hierarchyパネルの「複製」— Actorとその全子孫を
 	* 複製する)のいずれか。nodes_はフラットな親インデックス連結の取得結果
-	* (CaptureActorNode参照)で、nodes_[0]がルート。RedoはScene::Instantiate
+	* (BlueprintNode::Capture参照)で、nodes_[0]がルート。RedoはScene::Instantiate
 	* と全く同じ手順で再生し、ルートをparentPersistentId_を現在保持している
 	* actorの下へ親付けする(0/存在しなければルートActorとして)。Undoは
 	* インスタンス化した全actorを破棄する - Redoのたびに新しいActor
@@ -40,7 +40,7 @@ namespace SeedCore
 		/**
 		* [EN]
 		* world/cache (re)instantiate and destroy the actors. nodes is the
-		* captured subtree (see CaptureActorNode), already carrying the
+		* captured subtree (see BlueprintNode::Capture), already carrying the
 		* persistent IDs it was created with. parentPersistentId is 0 for a
 		* root-level subtree. prevSiblingPersistentId is the sibling the new
 		* root should sit directly after under that parent (0 = append at
@@ -51,7 +51,7 @@ namespace SeedCore
 		*
 		* [JP]
 		* world/cache が actor 群の(再)インスタンス化と破棄を行う。nodes は
-		* 取得済みのサブツリー(CaptureActorNode 参照)で、作成時に割り当て
+		* 取得済みのサブツリー(BlueprintNode::Capture 参照)で、作成時に割り当て
 		* られた永続 ID を既に持っている。parentPersistentId はルート
 		* レベルのサブツリーであれば 0。prevSiblingPersistentId は、その親の
 		* 下で新しいルートを直後に置くべき兄弟(0 = 末尾へ追加 / 復元すべき
