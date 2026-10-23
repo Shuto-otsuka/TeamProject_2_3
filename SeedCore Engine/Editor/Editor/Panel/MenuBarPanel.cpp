@@ -283,8 +283,26 @@ namespace SeedCore
 
 		if (ImGui::BeginPopupModal("Runtimeビルド中", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
 		{
-			ImGui::Text("Runtimeをビルドしています...");
+			if (runtimeBuilder_.GetStage() == RuntimeBuildStage::Build)
+			{
+				ImGui::Text("ビルド中 (1/2)");
+			}
+			else
+			{
+				ImGui::Text("パッケージ化中 (2/2)");
+			}
 			ImGui::ProgressBar(runtimeBuilder_.GetProgress(), ImVec2(300, 0));
+
+			std::string statusText = runtimeBuilder_.GetStatusText();
+			ImGui::TextUnformatted(statusText.c_str());
+
+			std::string detailText = runtimeBuilder_.GetDetailText();
+			ImVec2 detailPosition = ImGui::GetCursorScreenPos();
+			Float detailHeight = ImGui::GetTextLineHeight();
+			ImGui::Dummy(ImVec2(300, detailHeight));
+			ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+			ImGui::RenderTextEllipsis(ImGui::GetWindowDrawList(), detailPosition, ImVec2(detailPosition.x + 300, detailPosition.y + detailHeight), detailPosition.x + 300, detailText.c_str(), detailText.c_str() + detailText.size(), nullptr);
+			ImGui::PopStyleColor();
 
 			if (!runtimeBuilder_.IsBuilding())
 			{

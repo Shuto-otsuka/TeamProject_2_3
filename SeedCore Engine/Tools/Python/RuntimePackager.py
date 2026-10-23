@@ -660,8 +660,11 @@ def precompile_shaders(project_root, output_dir):
     entries_by_file = {}
     failed = False
     with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
-        for job_index, data, message in executor.map(compile_job, range(len(jobs))):
+        futures = [executor.submit(compile_job, job_index) for job_index in range(len(jobs))]
+        for completed_count, future in enumerate(concurrent.futures.as_completed(futures)):
+            job_index, data, message = future.result()
             path, profile, entry = jobs[job_index]
+            print(f"@@detail {completed_count + 1} {len(jobs)} {os.path.basename(path)} ({profile}:{entry})")
             if data is None:
                 print(f"シェーダのコンパイルに失敗しました: {os.path.relpath(path, project_root)} ({profile}:{entry})\n{message}")
                 failed = True
@@ -811,7 +814,7 @@ def copy_preserving_relative(src_path, src_root, dst_root):
 
 
 def main():
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
 
     if len(sys.argv) < 3:
         print("使用法: RuntimePackager.py <projectRoot> <outputDir>")
@@ -826,31 +829,27 @@ def main():
     build_dir = os.path.join(project_root, "Runtime", "Build", "x64", "Release", "Cplusplus")
 
     # --- Launcher.exe: パッケージルートに置く、プレイヤーが起動する薄い exe。GameConfig の実行ファイル名で置く ---
+    print("@@progress 1 10 Launcher コピー")
     launcher_path = os.path.join(build_dir, "Launcher.exe")
     if not os.path.exists(launcher_path):
         print(f"Launcher.exe が見つかりません: {launcher_path}")
         return 1
     launcher_output_path = os.path.join(output_dir, f"{read_executable_name(project_root)}.exe")
     shutil.copy2(launcher_path, launcher_output_path)
+    print(f"@@detail 1 1 {os.path.basename(launcher_output_path)}")
     print(f"Launcher コピー完了: {launcher_output_path}")
 
     # --- Plugins: Runtime.exe + エンジン / サードパーティ DLL + UserProject.Cplusplus.dll(プラグイン) ---
     # ランチャーが Plugins\Runtime.exe を作業ディレクトリ Plugins\ で起動するので、
     # SeedCore.Cplusplus.dll 等が隣で解決され、PluginHost は UserProject.Cplusplus.dll をこのフォルダから拾う。
+    print("@@progress 2 10 Plugins コピー")
     exe_path = os.path.join(build_dir, "Runtime.exe")
     if not os.path.exists(exe_path):
         print(f"Runtime.exe が見つかりません: {exe_path}")
         return 1
 
-    plugins_dir = os.path.join(output_dir, "Plugins")
-    os.makedirs(plugins_dir, exist_ok=True)
-    shutil.copy2(exe_path, os.path.join(plugins_dir, "Runtime.exe"))
-    for file in os.listdir(build_dir):
-        if not file.lower().endswith(".cplusplus.dll"):
-            continue
-        shutil.copy2(os.path.join(build_dir, file), os.path.join(plugins_dir, file))
-
-    if not os.path.exists(os.path.join(plugins_dir, "UserProject.Cplusplus.dll")):
+    plugin_sources = [exe_path] + [os.path.join(build_dir, file) for file in os.listdir(build_dir) if file.lower().endswith(".cplusplus.dll")]
+    if not any(os.path.basename(path) == "UserProject.Cplusplus.dll" for path in plugin_sources):
         print(f"UserProject.Cplusplus.dll が見つかりません: {os.path.join(build_dir, 'UserProject.Cplusplus.dll')}")
         return 1
 
@@ -866,54 +865,67 @@ def main():
         for file in os.listdir(dll_dir):
             if not file.lower().endswith(".dll"):
                 continue
-            shutil.copy2(os.path.join(dll_dir, file), os.path.join(plugins_dir, file))
+            plugin_sources.append(os.path.join(dll_dir, file))
             external_dll_count += 1
     if external_dll_count == 0:
         print(f"サードパーティ DLL が見つかりません: {external_dir}")
         return 1
+
+    plugins_dir = os.path.join(output_dir, "Plugins")
+    os.makedirs(plugins_dir, exist_ok=True)
+    for index, path in enumerate(plugin_sources):
+        shutil.copy2(path, os.path.join(plugins_dir, os.path.basename(path)))
+        print(f"@@detail {index + 1} {len(plugin_sources)} {os.path.basename(path)}")
     print(f"Plugins コピー完了: {plugins_dir} (サードパーティ DLL {external_dll_count} 件)")
 
     # --- アプリケーションアイコン: プレイヤーが起動するランチャー exe と、実行中にタスクバーへ出る Runtime.exe の両方へ埋め込む ---
+    print("@@progress 3 10 アイコン埋め込み")
     icon, icon_source = read_application_icon(project_root)
-    for exe in (launcher_output_path, os.path.join(plugins_dir, "Runtime.exe")):
+    icon_targets = (launcher_output_path, os.path.join(plugins_dir, "Runtime.exe"))
+    for index, exe in enumerate(icon_targets):
         if not embed_application_icon(exe, icon):
             return 1
+        print(f"@@detail {index + 1} {len(icon_targets)} {os.path.basename(exe)}")
     print(f"アイコン埋め込み完了: {icon_source}")
 
     # --- スプラッシュのロゴ: Runtime.exe は Plugins\ から ../Runtime/Logo/*.logo を読むので、パッケージ直下の Runtime\Logo へ置く ---
     # SeedCore.ico は exe へ埋め込み済みなので同梱しない。
+    print("@@progress 4 10 ロゴ コピー")
     logo_dir = os.path.join(project_root, "Runtime", "Logo")
-    logo_count = 0
-    if os.path.isdir(logo_dir):
-        for file in os.listdir(logo_dir):
-            if not file.lower().endswith(".logo"):
-                continue
-            copy_preserving_relative(os.path.join(logo_dir, file), project_root, output_dir)
-            logo_count += 1
-    if logo_count == 0:
+    logo_files = [file for file in os.listdir(logo_dir) if file.lower().endswith(".logo")] if os.path.isdir(logo_dir) else []
+    if not logo_files:
         print(f"ロゴ (.logo) が見つかりません: {logo_dir}")
         return 1
-    print(f"ロゴ コピー完了 ({logo_count} 件)")
+    for index, file in enumerate(logo_files):
+        copy_preserving_relative(os.path.join(logo_dir, file), project_root, output_dir)
+        print(f"@@detail {index + 1} {len(logo_files)} {file}")
+    print(f"ロゴ コピー完了 ({len(logo_files)} 件)")
 
     # --- DXC はビルド出力の版に関係なく External/DXC の版を同梱する（事前コンパイルと同じ版） ---
-    for file in ("dxcompiler.dll", "dxil.dll"):
+    print("@@progress 5 10 DXC コピー")
+    dxc_files = ("dxcompiler.dll", "dxil.dll")
+    for index, file in enumerate(dxc_files):
         dxc_dll = os.path.join(project_root, "External", "DXC", file)
         if not os.path.exists(dxc_dll):
             print(f"{file} が見つかりません: {dxc_dll}")
             return 1
         shutil.copy2(dxc_dll, os.path.join(plugins_dir, file))
+        print(f"@@detail {index + 1} {len(dxc_files)} {file}")
 
     # --- VC++ ランタイムは Platform/VCRuntime の版を Runtime.exe の隣へ同梱する（プレイヤー側に再頒布パッケージが無くても起動できるように） ---
+    print("@@progress 6 10 VC++ ランタイム コピー")
     vc_runtime_dir = os.path.join(project_root, "Platform", "VCRuntime")
     vc_runtime_dlls = [file for file in os.listdir(vc_runtime_dir) if file.lower().endswith(".dll")] if os.path.isdir(vc_runtime_dir) else []
     if not vc_runtime_dlls:
         print(f"VC++ ランタイムが見つかりません: {vc_runtime_dir}")
         return 1
-    for file in vc_runtime_dlls:
+    for index, file in enumerate(vc_runtime_dlls):
         shutil.copy2(os.path.join(vc_runtime_dir, file), os.path.join(plugins_dir, file))
+        print(f"@@detail {index + 1} {len(vc_runtime_dlls)} {file}")
     print(f"VC++ ランタイム コピー完了 ({len(vc_runtime_dlls)} 件)")
 
     # --- シェーダは毎回全て事前コンパイルし、ソース(.hlsl)無しで動くキャッシュとして同梱する ---
+    print("@@progress 7 10 シェーダ事前コンパイル")
     shader_count = precompile_shaders(project_root, output_dir)
     if shader_count is None:
         print("シェーダの事前コンパイルに失敗したため、パッケージを中断しました")
@@ -921,6 +933,8 @@ def main():
     print(f"シェーダ事前コンパイル完了 ({shader_count} 件)")
 
     # --- Scene / Prefab は丸ごとコピー（フィルタしない） ---
+    print("@@progress 8 10 Scene/Prefab コピー")
+    scene_prefab_paths = []
     scene_paths = []
     for sub_dir in ("Scene", "Prefab"):
         src_dir = os.path.join(user_project_root, "Assets", sub_dir)
@@ -929,25 +943,32 @@ def main():
         for root, _, files in os.walk(src_dir):
             for file in files:
                 src_path = os.path.join(root, file)
-                copy_preserving_relative(src_path, user_project_root, os.path.join(output_dir, "UserProject"))
+                scene_prefab_paths.append(src_path)
                 if sub_dir == "Scene" and file.endswith(".scene"):
                     scene_paths.append(src_path)
+    for index, src_path in enumerate(scene_prefab_paths):
+        copy_preserving_relative(src_path, user_project_root, os.path.join(output_dir, "UserProject"))
+        print(f"@@detail {index + 1} {len(scene_prefab_paths)} {os.path.basename(src_path)}")
     print(f"Scene/Prefab コピー完了 ({len(scene_paths)} 件のシーン)")
 
     # --- Config の .scg（GameConfig / AudioBindings / InputBindings / LayerBindings 等）はそのままコピー ---
     # IconBindings.scg は書き出し時に exe へ埋め込むための入力で、ゲームは exe のリソースから読むので同梱しない。
-    config_count = 0
+    print("@@progress 9 10 Config コピー")
+    config_paths = []
     config_dir = os.path.join(user_project_root, "Assets", "Config")
     if os.path.isdir(config_dir):
         for root, _, files in os.walk(config_dir):
             for file in files:
                 if not file.lower().endswith(".scg") or file.lower() == "iconbindings.scg":
                     continue
-                copy_preserving_relative(os.path.join(root, file), user_project_root, os.path.join(output_dir, "UserProject"))
-                config_count += 1
-    print(f"Config コピー完了 ({config_count} 件)")
+                config_paths.append(os.path.join(root, file))
+    for index, config_path in enumerate(config_paths):
+        copy_preserving_relative(config_path, user_project_root, os.path.join(output_dir, "UserProject"))
+        print(f"@@detail {index + 1} {len(config_paths)} {os.path.basename(config_path)}")
+    print(f"Config コピー完了 ({len(config_paths)} 件)")
 
     # --- 参照されている Asset のみコピー ---
+    print("@@progress 10 10 参照 Asset コピー")
     guid_to_path, relpath_to_guid = build_guid_map(project_root, user_project_root)
     filename_to_guids = build_filename_index(relpath_to_guid)
     payload_map = Payload.collect_payload_field_names(project_root)
@@ -957,21 +978,17 @@ def main():
 
     referenced_ids = collect_referenced_asset_ids(scene_paths, payload_map, guid_to_path, relpath_to_guid, filename_to_guids, code_referenced_ids)
 
-    copied_count = 0
-    for asset_id in referenced_ids:
-        asset_path = guid_to_path.get(asset_id)
-        if not asset_path:
-            continue
-
+    asset_paths = [guid_to_path[asset_id] for asset_id in referenced_ids if guid_to_path.get(asset_id)]
+    for index, asset_path in enumerate(asset_paths):
         copy_preserving_relative(asset_path, user_project_root, os.path.join(output_dir, "UserProject"))
 
         meta_path = asset_path + ".meta"
         if os.path.exists(meta_path):
             copy_preserving_relative(meta_path, user_project_root, os.path.join(output_dir, "UserProject"))
 
-        copied_count += 1
+        print(f"@@detail {index + 1} {len(asset_paths)} {os.path.basename(asset_path)}")
 
-    print(f"参照 Asset コピー完了 ({copied_count} 件)")
+    print(f"参照 Asset コピー完了 ({len(asset_paths)} 件)")
     print(f"パッケージ完了: {output_dir}")
     return 0
 

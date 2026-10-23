@@ -38,6 +38,14 @@ namespace SeedCore
 			thread_.join();
 		}
 
+		stage_ = RuntimeBuildStage::Build;
+		progress_ = 0.0f;
+		{
+			std::lock_guard<std::mutex> lock(statusMutex_);
+			statusText_.clear();
+			detailText_.clear();
+		}
+
 		building_ = true;
 
 		thread_ = std::thread([this, projectRoot]()
@@ -61,9 +69,26 @@ namespace SeedCore
 		return building_;
 	}
 
+	RuntimeBuildStage RuntimeBuilder::GetStage()const
+	{
+		return stage_;
+	}
+
 	Float RuntimeBuilder::GetProgress()const
 	{
-		return static_cast<Float>(completedProjects_) / static_cast<Float>(projectNames.size());
+		return progress_;
+	}
+
+	std::string RuntimeBuilder::GetStatusText()const
+	{
+		std::lock_guard<std::mutex> lock(statusMutex_);
+		return statusText_;
+	}
+
+	std::string RuntimeBuilder::GetDetailText()const
+	{
+		std::lock_guard<std::mutex> lock(statusMutex_);
+		return detailText_;
 	}
 
 	Bool RuntimeBuilder::ConsumeResult(Bool& outSuccess, std::string& outLog)
@@ -258,17 +283,74 @@ namespace SeedCore
 			L"-t:Rebuild -p:Configuration=Release -p:Platform=x64 -m "
 			L"\"-p:SolutionDir=" + solutionDirArgument + L"\"";
 
-		projectSeen_.assign(projectNames.size(), false);
-		completedProjects_ = 0;
-
-		auto onChunk = [this](const std::string& accumulated)
+		DynamicArray<Bool> projectCompleted(projectNames.size(), false);
+		Uint32 completedProjects = 0;
+		Size parsedLength = 0;
 		{
-			for (Size index = 0; index < projectNames.size(); ++index)
+			std::lock_guard<std::mutex> lock(statusMutex_);
+			statusText_ = std::format("プロジェクト 0 / {}", projectNames.size());
+		}
+
+		auto onChunk = [this, &projectCompleted, &completedProjects, &parsedLength](const std::string& accumulated)
+		{
+			Size lineEnd = accumulated.find('\n', parsedLength);
+			while (lineEnd != std::string::npos)
 			{
-				if (!projectSeen_[index] && accumulated.contains(projectNames[index]))
+				std::string_view line(accumulated.data() + parsedLength, lineEnd - parsedLength);
+				parsedLength = lineEnd + 1;
+				lineEnd = accumulated.find('\n', parsedLength);
+				if (!line.empty() && line.back() == '\r')
 				{
-					projectSeen_[index] = true;
-					++completedProjects_;
+					line.remove_suffix(1);
+				}
+
+				for (Size index = 0; index < projectNames.size(); ++index)
+				{
+					if (!projectCompleted[index] && line.contains(projectNames[index] + " -> "))
+					{
+						projectCompleted[index] = true;
+						++completedProjects;
+						progress_ = static_cast<Float>(completedProjects) / static_cast<Float>(projectNames.size());
+						std::lock_guard<std::mutex> lock(statusMutex_);
+						statusText_ = std::format("プロジェクト {} / {}", completedProjects, projectNames.size());
+					}
+				}
+
+				Size compileFlagPosition = line.rfind("/utf-8");
+				Size outputPosition = line.find("/OUT:\"");
+				if (line.contains("clang-cl.exe") && compileFlagPosition != std::string_view::npos)
+				{
+					std::string_view sourceFiles = line.substr(compileFlagPosition + 6);
+					Size sourceBegin = sourceFiles.find_first_not_of(" \"");
+					if (sourceBegin == std::string_view::npos)
+					{
+						continue;
+					}
+					Size sourceEnd = sourceFiles.find_last_not_of(" \"");
+					std::string_view sourceFile = sourceFiles.substr(sourceBegin, sourceEnd - sourceBegin + 1);
+
+					std::string_view projectName;
+					Size intermediatePosition = line.find("\\Intermediate\\");
+					if (intermediatePosition != std::string_view::npos)
+					{
+						Size nameBegin = intermediatePosition + 14;
+						Size nameEnd = line.find('\\', nameBegin);
+						projectName = line.substr(nameBegin, nameEnd - nameBegin);
+					}
+
+					std::lock_guard<std::mutex> lock(statusMutex_);
+					detailText_ = projectName.empty() ? std::format("コンパイル中: {}", sourceFile) : std::format("コンパイル中: {} ({})", sourceFile, projectName);
+				}
+				else if (outputPosition != std::string_view::npos && (line.contains("lld-link.exe") || line.contains("llvm-lib.exe")))
+				{
+					Size pathBegin = outputPosition + 6;
+					Size pathEnd = line.find('"', pathBegin);
+					std::string_view outputPath = line.substr(pathBegin, pathEnd - pathBegin);
+					Size fileNameBegin = outputPath.find_last_of("\\/");
+					std::string_view outputFile = fileNameBegin == std::string_view::npos ? outputPath : outputPath.substr(fileNameBegin + 1);
+
+					std::lock_guard<std::mutex> lock(statusMutex_);
+					detailText_ = std::format("リンク中: {}", outputFile);
 				}
 			}
 		};
@@ -286,6 +368,14 @@ namespace SeedCore
 		std::strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", &localTime);
 
 		std::filesystem::path outputDir = projectRoot / "Package" / (std::string("Build_") + timestamp);
+
+		stage_ = RuntimeBuildStage::Package;
+		progress_ = 0.0f;
+		{
+			std::lock_guard<std::mutex> lock(statusMutex_);
+			statusText_.clear();
+			detailText_.clear();
+		}
 
 		std::string packageLog;
 		Bool packageSuccess = Package(projectRoot, outputDir, packageLog);
@@ -305,6 +395,93 @@ namespace SeedCore
 			L"\"" + projectRoot.wstring() + L"\" "
 			L"\"" + outputDir.wstring() + L"\"";
 
-		return RunProcessCaptureOutput(commandLine, outLog);
+		Size parsedLength = 0;
+		Uint32 stepIndex = 0;
+		Uint32 stepCount = 1;
+		std::string stepName;
+
+		auto onChunk = [this, &parsedLength, &stepIndex, &stepCount, &stepName](const std::string& accumulated)
+		{
+			Size lineEnd = accumulated.find('\n', parsedLength);
+			while (lineEnd != std::string::npos)
+			{
+				std::string_view line(accumulated.data() + parsedLength, lineEnd - parsedLength);
+				parsedLength = lineEnd + 1;
+				lineEnd = accumulated.find('\n', parsedLength);
+				if (!line.empty() && line.back() == '\r')
+				{
+					line.remove_suffix(1);
+				}
+
+				if (line.starts_with("@@progress "))
+				{
+					std::string_view arguments = line.substr(11);
+					const Char* argumentsEnd = arguments.data() + arguments.size();
+					Uint32 index = 0;
+					Uint32 count = 0;
+					std::from_chars_result indexResult = std::from_chars(arguments.data(), argumentsEnd, index);
+					if (indexResult.ec != std::errc() || indexResult.ptr == argumentsEnd)
+					{
+						continue;
+					}
+					std::from_chars_result countResult = std::from_chars(indexResult.ptr + 1, argumentsEnd, count);
+					if (countResult.ec != std::errc() || count == 0 || index == 0)
+					{
+						continue;
+					}
+
+					stepIndex = index;
+					stepCount = count;
+					stepName = countResult.ptr == argumentsEnd ? std::string() : std::string(countResult.ptr + 1, argumentsEnd);
+					progress_ = static_cast<Float>(stepIndex - 1) / static_cast<Float>(stepCount);
+
+					std::lock_guard<std::mutex> lock(statusMutex_);
+					statusText_ = stepName;
+					detailText_.clear();
+				}
+				else if (line.starts_with("@@detail ") && stepIndex > 0)
+				{
+					std::string_view arguments = line.substr(9);
+					const Char* argumentsEnd = arguments.data() + arguments.size();
+					Uint32 done = 0;
+					Uint32 total = 0;
+					std::from_chars_result doneResult = std::from_chars(arguments.data(), argumentsEnd, done);
+					if (doneResult.ec != std::errc() || doneResult.ptr == argumentsEnd)
+					{
+						continue;
+					}
+					std::from_chars_result totalResult = std::from_chars(doneResult.ptr + 1, argumentsEnd, total);
+					if (totalResult.ec != std::errc() || total == 0)
+					{
+						continue;
+					}
+
+					progress_ = (static_cast<Float>(stepIndex - 1) + static_cast<Float>(done) / static_cast<Float>(total)) / static_cast<Float>(stepCount);
+
+					std::lock_guard<std::mutex> lock(statusMutex_);
+					statusText_ = std::format("{}  {} / {}", stepName, done, total);
+					detailText_ = totalResult.ptr == argumentsEnd ? std::string() : std::string(totalResult.ptr + 1, argumentsEnd);
+				}
+			}
+		};
+
+		Bool success = RunProcessCaptureOutput(commandLine, outLog, onChunk);
+
+		std::string filteredLog;
+		filteredLog.reserve(outLog.size());
+		Size lineBegin = 0;
+		while (lineBegin < outLog.size())
+		{
+			Size lineEnd = outLog.find('\n', lineBegin);
+			Size nextLineBegin = lineEnd == std::string::npos ? outLog.size() : lineEnd + 1;
+			if (outLog.compare(lineBegin, 2, "@@") != 0)
+			{
+				filteredLog.append(outLog, lineBegin, nextLineBegin - lineBegin);
+			}
+			lineBegin = nextLineBegin;
+		}
+		outLog = std::move(filteredLog);
+
+		return success;
 	}
 }
