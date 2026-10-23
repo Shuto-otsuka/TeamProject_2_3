@@ -101,5 +101,5 @@ namespace SeedCore
 		/// [JP] 今の形状を作ったときの Actor のワールドスケール。これと異なれば、形状は描画される Actor と合わなくなっている。
 		Vector3 shapeScale_ = { 0.0f, 0.0f, 0.0f };
 	};
-	REGISTER_COMPONENT(BoxCollider, "Collider");
+	REGISTER_COMPONENT(BoxCollider, "Physics/Collider");
 }

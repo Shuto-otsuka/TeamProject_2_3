@@ -7,7 +7,7 @@ namespace SeedCore
 	BenchmarkSystem::BenchmarkSystem()
 	{
 		Int registers[4]{};
-		__cpuid(registers, static_cast<Int>(0x80000007));
+		__cpuidex(registers, static_cast<Int>(0x80000007), 0);
 		if ((registers[3] & (1 << 8)) == 0)
 		{
 			SC_LOG_WARNING("ベンチマーク: この CPU のカウンタはコアごとに進み方が違う可能性があります。計測値が不正確になることがあります。");

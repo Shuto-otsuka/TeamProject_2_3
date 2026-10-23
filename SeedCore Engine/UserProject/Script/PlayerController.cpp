@@ -76,7 +76,7 @@ void PlayerController::OnTriggerEnter(SeedCore::Actor other)
         {
             //前回踏んだチェックポイントより先のチェックポイントだったら更新
             SeedCore::Position* hitActorPosition = other.GetComponent<SeedCore::Position>();
-            checkPointPosition = { hitActorPosition->x_,hitActorPosition->y_,hitActorPosition->z_ };
+            checkPointPosition = SeedCore::Vector3(hitActorPosition->x_, hitActorPosition->y_, hitActorPosition->z_);
             beforeCheckPointStep = checkPointAreaController->GetStep();
 
             if (checkPointAreaController->GetFirstPerson())
@@ -607,8 +607,8 @@ const SeedCore::Vector3 PlayerController::RayToPlaneHitPosition(const SeedCore::
     float dot2 = rayOrigin.Dot(planeNormal);
     float sub = planeDistance - dot2;
     float t = sub / dot1;
-    SeedCore::Vector3 hitPosition = { rayOrigin.x + rayDirection.x * t,
-                       rayOrigin.y + rayDirection.y * t,
-                        rayOrigin.z + rayDirection.z * t };
+    SeedCore::Vector3 hitPosition = SeedCore::Vector3(rayOrigin.x + rayDirection.x * t,
+                          rayOrigin.y + rayDirection.y * t,
+                          rayOrigin.z + rayDirection.z * t);
     return hitPosition;
 }

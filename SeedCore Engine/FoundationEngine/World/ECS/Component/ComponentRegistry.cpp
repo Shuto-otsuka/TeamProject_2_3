@@ -44,9 +44,9 @@ namespace SeedCore
 			return nullptr;
 		}
 
-		if (ResolveModule(metadata) != ResolveModule(reinterpret_cast<const void*>(&ComponentRegistry::ResolveModule)) && category != String("Custum") && !category.str().starts_with("Custum/"))
+		if (ResolveModule(metadata) != ResolveModule(reinterpret_cast<const void*>(&ComponentRegistry::ResolveModule)) && category != String("Custom") && !category.str().starts_with("Custom/"))
 		{
-			category = String("Custum/" + category.str());
+			category = String("Custom/" + category.str());
 		}
 
 		/// [EN] A behaviour must stay at one address while it exists, which archetype rows do not guarantee; types registered without T (C# scripts) are checked here.
