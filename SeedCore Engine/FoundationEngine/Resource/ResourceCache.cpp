@@ -3,6 +3,7 @@
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 #include <FoundationEngine/JobSystem/JobExecutor.h>
 #include <FoundationEngine/JobSystem/JobTaskflow.h>
+#include <FoundationEngine/File/FileLocator.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 
 namespace SeedCore
@@ -22,7 +23,7 @@ namespace SeedCore
 	{
 		/// [EN] The project root is one level above the executable's working directory.
 		/// [JP] プロジェクトルートは、実行ファイルの作業ディレクトリの1つ上にある。
-		projectRootPath_ = std::filesystem::current_path().parent_path();
+		projectRootPath_ = FileLocator::EngineRoot();
 	}
 
 	/**

@@ -1,5 +1,6 @@
 #include <Editor/Editor/Build/HotReload.h>
 #include <FoundationEngine/File/FileDirectory.h>
+#include <FoundationEngine/File/FileLocator.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Log/Notice.h>
 #include <FoundationEngine/Plugin/PluginHost.h>
@@ -52,11 +53,7 @@ namespace SeedCore
 
 	std::filesystem::path HotReload::UserProjectSourceDirectory()
 	{
-		/// [EN] exeDirectory is Runtime\Build\x64\Debug\Cplusplus (or Release\Cplusplus); the repo root is one level above Runtime\.
-		/// [JP] exeDirectory は Runtime\Build\x64\Debug\Cplusplus(またはRelease\Cplusplus); リポジトリルートは Runtime\ からさらに1つ上。
-		std::filesystem::path exeDirectory = FileDirectory::ExecutableDirectory();
-		std::filesystem::path repositoryRoot = exeDirectory.parent_path().parent_path().parent_path().parent_path().parent_path();
-		return repositoryRoot / "UserProject";
+		return FileLocator::ProjectRoot();
 	}
 
 	std::filesystem::path HotReload::UserProjectVcxprojPath()
