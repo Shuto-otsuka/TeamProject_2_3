@@ -1,5 +1,6 @@
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
+#include <UserProject/Script/BombController.h>
 #include <UserProject/Script/BulletController.h>
 #include <UserProject/Script/BulletNaviController.h>
 #include <UserProject/Script/CameraController.h>
@@ -19,6 +20,7 @@
 #include <UserProject/Script/SwitchSystem.h>
 #include <UserProject/Script/TitleLogoController.h>
 
+extern "C" int _force_reflection_BombController = 0;
 extern "C" int _force_reflection_BulletController = 0;
 extern "C" int _force_reflection_BulletNaviController = 0;
 extern "C" int _force_reflection_CameraController = 0;
@@ -42,6 +44,23 @@ namespace SeedCore
 {
 	 namespace ScReflection
 	 {
+		// ---- UserProject/Script/BombController.h ----
+		struct Register_BombController
+		{
+			Register_BombController()
+			{
+				ReflectionRegistry::Register(String("BombController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					BombController& obj = *static_cast<BombController*>(ptr);
+					outInfo.push_back({ String("moveX"), offsetof(BombController, moveX), AttributeType::Float });
+					outInfo.push_back({ String("moveZ"), offsetof(BombController, moveZ), AttributeType::Float });
+					outInfo.push_back({ String("moveSpeed"), offsetof(BombController, moveSpeed), AttributeType::Float });
+					outInfo.push_back({ String("turnSpeed"), offsetof(BombController, turnSpeed), AttributeType::Float });
+					outInfo.push_back({ String("startX"), offsetof(BombController, startX), AttributeType::Bool });
+				});
+			}
+		};
+		static Register_BombController global_BombController_register;
+
 		// ---- UserProject/Script/BulletController.h ----
 		struct Register_BulletController
 		{
