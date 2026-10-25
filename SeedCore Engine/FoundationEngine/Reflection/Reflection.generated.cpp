@@ -54,7 +54,6 @@
 #include <PhysicsEngine/Joint/SpringJoint.h>
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
-#include <Runtime/enc_temp_folder/fdc1ee67ce7e3e3f5221d45c5a8b1/BombController.h>
 
 extern "C" int _force_reflection_AudioListener = 0;
 extern "C" int _force_reflection_AudioSource = 0;
@@ -132,7 +131,6 @@ extern "C" int _force_reflection_SliderJoint = 0;
 extern "C" int _force_reflection_SpringJoint = 0;
 extern "C" int _force_reflection_Rigidbody = 0;
 extern "C" int _force_reflection_Softbody = 0;
-extern "C" int _force_reflection_BombController = 0;
 
 namespace SeedCore
 {
@@ -3737,21 +3735,6 @@ namespace SeedCore
 			}
 		};
 		static Register_Softbody global_Softbody_register;
-
-		// ---- Runtime/enc_temp_folder/fdc1ee67ce7e3e3f5221d45c5a8b1/BombController.h ----
-		struct Register_BombController
-		{
-			Register_BombController()
-			{
-				ReflectionRegistry::Register(String("BombController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
-					BombController& obj = *static_cast<BombController*>(ptr);
-					outInfo.push_back({ String("moveX"), offsetof(BombController, moveX), AttributeType::Float });
-					outInfo.push_back({ String("moveZ"), offsetof(BombController, moveZ), AttributeType::Float });
-					outInfo.push_back({ String("startX"), offsetof(BombController, startX), AttributeType::Bool });
-				});
-			}
-		};
-		static Register_BombController global_BombController_register;
 
 		struct RegisterEnum_AnimationConditionComparison
 		{

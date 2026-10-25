@@ -55,7 +55,10 @@ namespace SeedCore
 					outInfo.push_back({ String("moveZ"), offsetof(BombController, moveZ), AttributeType::Float });
 					outInfo.push_back({ String("moveSpeed"), offsetof(BombController, moveSpeed), AttributeType::Float });
 					outInfo.push_back({ String("turnSpeed"), offsetof(BombController, turnSpeed), AttributeType::Float });
+					outInfo.push_back({ String("explosionInterval"), offsetof(BombController, explosionInterval), AttributeType::Float });
+					outInfo.push_back({ String("explosionRadius"), offsetof(BombController, explosionRadius), AttributeType::Float });
 					outInfo.push_back({ String("startX"), offsetof(BombController, startX), AttributeType::Bool });
+					outInfo.push_back({ String("timerOffset"), offsetof(BombController, timerOffset), AttributeType::Vector3 });
 				});
 			}
 		};

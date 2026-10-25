@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "67373fca-e353-4e96-af0c-d1d21d912725",
+			"collaborationId": "",
 			"components": [
 				{
 					"component": "Mesh",
@@ -1435,7 +1435,7 @@
 			"persistentId": 6,
 			"position": {
 				"x": -1.0,
-				"y": 0.787398636341095,
+				"y": -0.5327600240707397,
 				"z": 32.0
 			},
 			"rotation": {
@@ -1449,7 +1449,9 @@
 				"y": 1.0,
 				"z": 1.0
 			},
-			"tags": []
+			"tags": [
+				"Player"
+			]
 		}
 	]
 }

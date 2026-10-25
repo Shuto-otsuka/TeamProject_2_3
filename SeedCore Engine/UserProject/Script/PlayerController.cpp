@@ -125,6 +125,12 @@ void PlayerController::SubCostGauge(int costGauge)
     if (this->costGauge < 0)this->costGauge = 0;
 }
 
+void PlayerController::Reset()
+{
+    //チェックポイントから再開
+    myCharacterController->Teleport(checkPointPosition);
+}
+
 void PlayerController::UpdateUsually(float elapsedTime)
 {
     //水平加速処理
@@ -551,7 +557,7 @@ void PlayerController::UpdateFallJudge(float elapsedTime)
     if (position->y_ < deadPosY)
     {
         //落下のためチェックポイントから再開
-        myCharacterController->Teleport(checkPointPosition);
+        Reset();
     }
 }
 

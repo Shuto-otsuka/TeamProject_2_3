@@ -24,13 +24,7 @@ void StopController::OnTick(float elapsedTime)
     if (!stopTimer)return;
 
     //タイマーの更新
-
-    //小数点第一以下を切り捨て
-    float stopTimeSca10 = stopTime * 10.0f;
-    int stopTimeInt = static_cast<int>(stopTimeSca10);
-    float stopTimeDisplay = static_cast<float>(stopTimeInt) / 10.0f;
-    //テキスト反映
-    std::string stopTimeStr = std::format("Stop {:.1f}", stopTimeDisplay);
+    std::string stopTimeStr = std::format("Stop {:.1f}", stopTime);//小数点第一以下の非表示
     stopTimerText->text_ = SeedCore::String(stopTimeStr);
 
     //スクリーン座標変換&オフセットを適応

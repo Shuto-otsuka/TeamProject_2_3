@@ -24,6 +24,7 @@ public:
 	bool IsFirstPerson() const { return isFirstPerson; }
 	const SeedCore::Vector3& GetBulletPosition() const { return bulletPosition; }
 	const SeedCore::Vector3& GetBulletTargetPosition() const { return bulletTargetPosition; }
+	void Reset();
 
 	SC_REFLECTION_FIELD()
 		float acceleration;
