@@ -56,16 +56,24 @@ void BombController::OnTick(float elapsedTime)
 
         //進行ベクトルから回転の軸を算出し、ターゲットクォータニオンを作成
         SeedCore::Vector3 v1 = targetPosition - position;
-        v1.Normalize();
-        SeedCore::Vector3 v2 = SeedCore::Vector3::Up;
-        SeedCore::Vector3 axis = v2.Cross(v1);
-        float angle = turnSpeed * elapsedTime;
-        SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(axis, angle);
-        quaternion = SeedCore::Transform::Quat(*rotation) * quaternion;
+        if (v1.Length() <= 0.0001f)
+        {
+            //進行ベクトルがなければ次のターゲットに移行
+            change = true;
+        }
+        else
+        {
+            v1.Normalize();
+            SeedCore::Vector3 v2 = SeedCore::Vector3::Up;
+            SeedCore::Vector3 axis = v2.Cross(v1);
+            float angle = turnSpeed * elapsedTime;
+            SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(axis, angle);
+            quaternion = SeedCore::Transform::Quat(*rotation) * quaternion;
 
-        //キネマティック剛体を動かす
-        myRigid->MoveTarget(targetPosition, quaternion, elapsedTime);
-
+            //キネマティック剛体を動かす
+            myRigid->MoveTarget(targetPosition, quaternion, elapsedTime);
+        }
+        
         if (change)
         {
             //方向転換
