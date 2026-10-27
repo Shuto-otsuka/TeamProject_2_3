@@ -1,6 +1,7 @@
 #include "UserProject/Script/BombController.h"
 #include"UserProject/Script/StopController.h"
 #include"UserProject/Script/PlayerController.h"
+#include"BombExplosionController.h"
 #include<SeedCore/ScDebug.h>
 #include<SeedCore/ScPrefab.h>
 #include<SeedCore/ScScreen.h>
@@ -116,6 +117,11 @@ void BombController::OnTick(float elapsedTime)
                     GetWorld().DestroyActor(hitActor);
                 }
             }
+
+            //爆発エフェクト表示
+            SeedCore::Actor bombExplosion = SeedCore::Prefab::Spawn("BombExplosion.prefab");
+            BombExplosionController* bombExplosionController = bombExplosion.GetComponent<BombExplosionController>();
+            bombExplosionController->SetParam(position, explosionRadius * 2.0f);
         }
 
         //爆発までの残り時間

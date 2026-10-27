@@ -118,6 +118,9 @@
     <ClCompile Include="Script\BombController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
+    <ClCompile Include="Script\BombExplosionController.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\ScTutorial.h">
@@ -190,6 +193,9 @@
       <Filter>Script</Filter>
     </ClInclude>
     <ClInclude Include="Script\BombController.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\BombExplosionController.h">
       <Filter>Script</Filter>
     </ClInclude>
   </ItemGroup>

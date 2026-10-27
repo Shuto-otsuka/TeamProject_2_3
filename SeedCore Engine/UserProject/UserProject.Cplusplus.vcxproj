@@ -50,6 +50,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Script\BombController.cpp" />
+    <ClCompile Include="Script\BombExplosionController.cpp" />
     <ClCompile Include="Tutorial\ScTutorial.cpp" />
     <ClCompile Include="Script\BulletController.cpp" />
     <ClCompile Include="Script\BulletNaviController.cpp" />
@@ -75,6 +76,7 @@
   <ItemGroup>
     <ClInclude Include="EntryPoint\EntryGame.h" />
     <ClInclude Include="Script\BombController.h" />
+    <ClInclude Include="Script\BombExplosionController.h" />
     <ClInclude Include="Tutorial\ScTutorial.h" />
     <ClInclude Include="Script\BulletColliderController.h" />
     <ClInclude Include="Script\BulletController.h" />

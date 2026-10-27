@@ -1,6 +1,7 @@
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
 #include <UserProject/Script/BombController.h>
+#include <UserProject/Script/BombExplosionController.h>
 #include <UserProject/Script/BulletController.h>
 #include <UserProject/Script/BulletNaviController.h>
 #include <UserProject/Script/CameraController.h>
@@ -21,6 +22,7 @@
 #include <UserProject/Script/TitleLogoController.h>
 
 extern "C" int _force_reflection_BombController = 0;
+extern "C" int _force_reflection_BombExplosionController = 0;
 extern "C" int _force_reflection_BulletController = 0;
 extern "C" int _force_reflection_BulletNaviController = 0;
 extern "C" int _force_reflection_CameraController = 0;
@@ -63,6 +65,21 @@ namespace SeedCore
 			}
 		};
 		static Register_BombController global_BombController_register;
+
+		// ---- UserProject/Script/BombExplosionController.h ----
+		struct Register_BombExplosionController
+		{
+			Register_BombExplosionController()
+			{
+				ReflectionRegistry::Register(String("BombExplosionController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					BombExplosionController& obj = *static_cast<BombExplosionController*>(ptr);
+					outInfo.push_back({ String("scaleUpTime"), offsetof(BombExplosionController, scaleUpTime), AttributeType::Float });
+					outInfo.push_back({ String("scaleDownTime"), offsetof(BombExplosionController, scaleDownTime), AttributeType::Float });
+					outInfo.push_back({ String("waitTime"), offsetof(BombExplosionController, waitTime), AttributeType::Float });
+				});
+			}
+		};
+		static Register_BombExplosionController global_BombExplosionController_register;
 
 		// ---- UserProject/Script/BulletController.h ----
 		struct Register_BulletController
