@@ -108,7 +108,7 @@ namespace SeedCore
 
 		/// [EN] Walks every body, suspended ones included, so a reactivated actor gets its body back.
 		/// [JP] 停止中も含めた全ボディを回り、再び有効になった Actor にボディを戻す。
-		for (JPH::BodyID bodyID : physics.BodyList())
+		for (ScBodyID bodyID : physics.BodyList())
 		{
 			/// [EN] Bodies with no living actor behind them are left alone.
 			/// [JP] 生きている Actor が背後にいないボディには触れない。
@@ -324,20 +324,20 @@ namespace SeedCore
 	* ID を返す。その場合はボディを Rigidbody が1つだけ持ち、コライダーの
 	* 形状を借りる。
 	*/
-	JPH::BodyID PhysicsSystem::CreateColliderBody(Actor actor, Handle<JPH::Shape> shape, Bool isTrigger)
+	ScBodyID PhysicsSystem::CreateColliderBody(Actor actor, ScShapeHandle shape, Bool isTrigger)
 	{
 		/// [EN] One actor gets one body; with a Rigidbody present, that body is the Rigidbody's.
 		/// [JP] 1つの Actor にボディは1つ。Rigidbody があれば、そのボディは Rigidbody のもの。
 		if (actor.GetComponent<Rigidbody>())
 		{
-			return JPH::BodyID();
+			return ScInvalidBodyID;
 		}
 
 		/// [EN] A lone collider is not simulated, so it is a static body on the actor's layer; every collider but MeshCollider is moved along with its actor by ApplyCollider.
 		/// [JP] 単独のコライダーはシミュレーションされないので、Actor のレイヤー上の静的ボディにする。MeshCollider 以外のコライダーは ApplyCollider が Actor に合わせて動かす。
 		RigidbodyDesc desc;
 		desc.shape_ = shape;
-		desc.motionType_ = JPH::EMotionType::Static;
+		desc.motionType_ = ScMotionType::Static;
 		desc.layer_ = Layers::Pack(Layers::STATIC, actor.Layer());
 
 		/// [EN] Canvas colliders only collide with other canvas bodies.
@@ -373,11 +373,11 @@ namespace SeedCore
 	* [JP]
 	* コライダー自身のボディがあれば破棄し、形状への参照を解放する。
 	*/
-	void PhysicsSystem::DestroyColliderBody(Actor actor, JPH::BodyID bodyID, Handle<JPH::Shape> shape)
+	void PhysicsSystem::DestroyColliderBody(Actor actor, ScBodyID bodyID, ScShapeHandle shape)
 	{
 		/// [EN] A collider under a Rigidbody has no body of its own.
 		/// [JP] Rigidbody の下にあるコライダーは、自分のボディを持たない。
-		if (!bodyID.IsInvalid())
+		if (bodyID != ScInvalidBodyID)
 		{
 			actor.GetService<Physics>()->DestroyBody(bodyID);
 		}

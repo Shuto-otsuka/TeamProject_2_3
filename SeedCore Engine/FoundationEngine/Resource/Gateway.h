@@ -7,7 +7,6 @@ namespace SeedCore
 	class FontManager;
 	class EffekseerManager;
 	class DlssManager;
-	class SwapChain;
 
 	/**
 	* [EN]

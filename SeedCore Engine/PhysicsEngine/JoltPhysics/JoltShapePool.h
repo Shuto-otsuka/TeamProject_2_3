@@ -1,5 +1,11 @@
 #pragma once
+#include <PhysicsEngine/Physics/PhysicsTypes.h>
 #include <FoundationEngine/Utility/Handle.h>
+
+namespace JPH
+{
+	class Shape;
+}
 
 namespace SeedCore
 {
@@ -43,7 +49,7 @@ namespace SeedCore
 		* [JP]
 		* 形状プールを破棄する。
 		*/
-		~JoltShapePool() = default;
+		~JoltShapePool();
 
 		JoltShapePool(const JoltShapePool&) = delete;
 		JoltShapePool& operator=(const JoltShapePool&) = delete;
@@ -57,7 +63,7 @@ namespace SeedCore
 		* [JP]
 		* 指定したサイズと中心を持つボックス形状を生成または再利用する。
 		*/
-		Handle<JPH::Shape> CreateBoxShape(const Vector3& size, const Vector3& center);
+		ScShapeHandle CreateBoxShape(const Vector3& size, const Vector3& center);
 
 		/**
 		* [EN]
@@ -68,7 +74,7 @@ namespace SeedCore
 		* [JP]
 		* 指定した半径を持つ球形状を生成または再利用する。
 		*/
-		Handle<JPH::Shape> CreateSphereShape(Float radius);
+		ScShapeHandle CreateSphereShape(Float radius);
 
 		/**
 		* [EN]
@@ -79,7 +85,7 @@ namespace SeedCore
 		* [JP]
 		* 指定した高さと半径を持つカプセル形状を生成または再利用する。
 		*/
-		Handle<JPH::Shape> CreateCapsuleShape(Float height, Float radius);
+		ScShapeHandle CreateCapsuleShape(Float height, Float radius);
 
 		/**
 		* [EN]
@@ -90,7 +96,7 @@ namespace SeedCore
 		* [JP]
 		* 指定した高さと半径を持つ円柱形状を生成または再利用する。
 		*/
-		Handle<JPH::Shape> CreateCylinderShape(Float height, Float radius);
+		ScShapeHandle CreateCylinderShape(Float height, Float radius);
 
 		/**
 		* [EN]
@@ -101,7 +107,7 @@ namespace SeedCore
 		* [JP]
 		* XY平面上の矩形形状を生成または再利用する。
 		*/
-		Handle<JPH::Shape> CreateRectShape(const Vector2& size, const Vector2& center);
+		ScShapeHandle CreateRectShape(const Vector2& size, const Vector2& center);
 
 		/**
 		* [EN]
@@ -112,7 +118,7 @@ namespace SeedCore
 		* [JP]
 		* XY平面上の円形状を生成または再利用する。
 		*/
-		Handle<JPH::Shape> CreateCircleShape(Float radius, const Vector2& center);
+		ScShapeHandle CreateCircleShape(Float radius, const Vector2& center);
 
 		/**
 		* [EN]
@@ -126,7 +132,7 @@ namespace SeedCore
 		* 指定したアセットの頂点を軸ごとに拡縮した三角形メッシュ形状を生成
 		* または再利用する。アセットとスケールの組ごとに別の形状になる。
 		*/
-		Handle<JPH::Shape> CreateMeshShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const DynamicArray<Uint32>& indices, const Vector3& scale);
+		ScShapeHandle CreateMeshShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const DynamicArray<Uint32>& indices, const Vector3& scale);
 
 		/**
 		* [EN]
@@ -140,7 +146,7 @@ namespace SeedCore
 		* 指定したアセットの点を軸ごとに拡縮した凸包形状を生成または再利用
 		* する。アセットとスケールの組ごとに別の形状になる。
 		*/
-		Handle<JPH::Shape> CreateConvexShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const Vector3& scale);
+		ScShapeHandle CreateConvexShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const Vector3& scale);
 
 		/**
 		* [EN]
@@ -151,7 +157,7 @@ namespace SeedCore
 		* [JP]
 		* 有効なハンドルが参照する形状を返す。
 		*/
-		JPH::ShapeRefC Get(Handle<JPH::Shape> handle)const;
+		const JPH::Shape* Get(ScShapeHandle handle)const;
 
 		/**
 		* [EN]
@@ -164,7 +170,7 @@ namespace SeedCore
 		* 参照カウントを1増やす。同じ形状を複数のColliderが共有する際、
 		* 所有側でハンドルを保持する前に呼ぶ。
 		*/
-		void AddRef(Handle<JPH::Shape> handle);
+		void AddRef(ScShapeHandle handle);
 
 		/**
 		* [EN]
@@ -176,7 +182,7 @@ namespace SeedCore
 		* [JP]
 		* 参照カウントを1減らし、0になったら実際に解放する。
 		*/
-		void Release(Handle<JPH::Shape> handle);
+		void Release(ScShapeHandle handle);
 
 		/**
 		* [EN]
@@ -199,7 +205,7 @@ namespace SeedCore
 		* [JP]
 		* 形状を格納し、キャッシュキーを新しいハンドルへ関連付ける。
 		*/
-		Handle<JPH::Shape> Register(JPH::ShapeRefC shape, Uint64 cacheKey);
+		ScShapeHandle Register(const JPH::Shape* shape, Uint64 cacheKey);
 
 	private:
 		/// [EN] Half thickness assigned to flat two-dimensional shapes.
@@ -240,7 +246,7 @@ namespace SeedCore
 		{
 			/// [EN] Shape owned by this slot.
 			/// [JP] このスロットが所有する形状。
-			JPH::ShapeRefC shape_;
+			const JPH::Shape* shape_ = nullptr;
 
 			/// [EN] Generation used to reject stale handles.
 			/// [JP] 古いハンドルを無効化するための世代番号。
@@ -265,6 +271,6 @@ namespace SeedCore
 
 		/// [EN] Maps shape parameters to their pooled handles.
 		/// [JP] 形状パラメータをプール内ハンドルへ対応付けるキャッシュ。
-		std::unordered_map<Uint64, Handle<JPH::Shape>> cache_;
+		std::unordered_map<Uint64, ScShapeHandle> cache_;
 	};
 }

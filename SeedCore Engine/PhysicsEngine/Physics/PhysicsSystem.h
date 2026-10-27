@@ -1,4 +1,5 @@
 #pragma once
+#include <PhysicsEngine/Physics/PhysicsTypes.h>
 #include <PhysicsEngine/Physics/Physics.h>
 
 namespace SeedCore
@@ -102,7 +103,7 @@ namespace SeedCore
 		* ID を返す。その場合はボディを Rigidbody が1つだけ持ち、コライダーの
 		* 形状を借りる。
 		*/
-		static JPH::BodyID CreateColliderBody(Actor actor, Handle<JPH::Shape> shape, Bool isTrigger = false);
+		static ScBodyID CreateColliderBody(Actor actor, ScShapeHandle shape, Bool isTrigger = false);
 
 		/**
 		* [EN]
@@ -114,7 +115,7 @@ namespace SeedCore
 		* [JP]
 		* コライダー自身のボディがあれば破棄し、形状への参照を解放する。
 		*/
-		static void DestroyColliderBody(Actor actor, JPH::BodyID bodyID, Handle<JPH::Shape> shape);
+		static void DestroyColliderBody(Actor actor, ScBodyID bodyID, ScShapeHandle shape);
 
 	public:
 		/**

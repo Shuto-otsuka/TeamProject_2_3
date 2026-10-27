@@ -93,6 +93,9 @@
     <ClInclude Include="JoltPhysics\JoltConstraintPool.h">
       <Filter>JoltPhysics</Filter>
     </ClInclude>
+    <ClInclude Include="Physics\PhysicsTypes.h">
+      <Filter>Physics</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JoltPhysics\JoltManager.cpp">

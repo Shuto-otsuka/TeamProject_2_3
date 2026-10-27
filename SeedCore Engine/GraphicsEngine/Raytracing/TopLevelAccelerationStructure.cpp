@@ -1,3 +1,4 @@
+#include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
 #include <GraphicsEngine/Raytracing/TopLevelAccelerationStructure.h>
 #include <FoundationEngine/Log/DxFail.h>
 
@@ -26,16 +27,6 @@ namespace SeedCore
 			resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 			resourceDesc.Flags = (heapType == D3D12_HEAP_TYPE_DEFAULT) ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
 
-			/// [EN] Soft failure: a null return makes Build() bail out and leave the
-			///      TLAS unbuilt, so the published TLAS index stays 0xFFFFFFFF and every
-			///      RT effect takes its existing "no TLAS" neutral path. Hard-failing
-			///      here (modal box + __debugbreak) would instead fire once per
-			///      allocation while a removed device fails every call in a row.
-			/// [JP] ソフトフェイル: null を返すと Build() が中断して TLAS が未構築の
-			///      ままになり、公開される TLAS インデックスは 0xFFFFFFFF のままなので、各 RT
-			///      エフェクトが既存の「TLAS なし」中立経路へ倒れる。ここでハード
-			///      フェイル(モーダル + __debugbreak)すると、デバイス削除で全呼び出しが
-			///      連続して失敗する状況では確保のたびに発火してしまう。
 			Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 			HRESULT hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, state, nullptr, IID_PPV_ARGS(&resource));
 			if (FAILED(hr))
@@ -70,18 +61,8 @@ namespace SeedCore
 			return false;
 		}
 
-		/// [EN] Frame-ring slot: Build() is called once per frame, so writing into
-		///      the slot for the CURRENT frame never touches the slot the GPU may
-		///      still be reading (previous frame's ray queries) for frameCount-1
-		///      more frames.
-		/// [JP] フレームリングスロット: Build() は毎フレーム 1 回呼ばれるため、
-		///      現在フレームのスロットへ書き込んでも、GPU がまだ読んでいる
-		///      可能性のある（前フレームのレイクエリの）スロットには
-		///      frameCount-1 フレームの間触れない。
 		Uint frame = FrameRing::Index();
 
-		/// [EN] Upload heap holding the per-instance descriptors the build consumes.
-		/// [JP] 構築が読む per-instance ディスクリプタを保持するアップロードバッファ。
 		const Uint64 instanceBufferSize = sizeof(D3D12_RAYTRACING_INSTANCE_DESC) * static_cast<Uint64>(instanceCount);
 		if (instanceCapacity_[frame] < instanceBufferSize)
 		{
@@ -131,12 +112,6 @@ namespace SeedCore
 
 		if (!scratch_[frame] || !result_[frame])
 		{
-			/// [EN] Drop the half-built slot so Address()/Resource() cannot hand out
-			///      a stale buffer from an earlier frame that no longer matches this
-			///      frame's instance list.
-			/// [JP] 中途半端に構築されたスロットは捨てる。Address()/Resource() が、
-			///      今フレームのインスタンス一覧と一致しない過去フレームの
-			///      バッファを返してしまわないようにするため。
 			scratch_[frame].Reset();
 			result_[frame].Reset();
 			scratchCapacity_[frame] = 0;
@@ -151,8 +126,6 @@ namespace SeedCore
 
 		commandList->BuildRaytracingAccelerationStructure(&buildDesc, 0, nullptr);
 
-		/// [EN] Ray queries reading this TLAS must wait for the build to finish.
-		/// [JP] この TLAS を読むレイクエリは構築完了を待つ必要がある。
 		D3D12_RESOURCE_BARRIER barrier{};
 		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
 		barrier.UAV.pResource = result_[frame].Get();

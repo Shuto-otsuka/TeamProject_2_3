@@ -1,7 +1,10 @@
 #pragma once
+#include <External/JoltPhysics/Jolt/Jolt.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/BroadPhase/BroadPhaseLayer.h>
+#include <PhysicsEngine/Physics/PhysicsTypes.h>
+#include <PhysicsEngine/Rigidbody/Rigidbody.h>
 #include <FoundationEngine/World/Layer/LayerRegistry.h>
 #include <FoundationEngine/World/Layer/LayerCollisionMatrix.h>
-#include <PhysicsEngine/Rigidbody/Rigidbody.h>
 
 namespace SeedCore
 {
@@ -72,7 +75,7 @@ namespace SeedCore
 
 		/// [EN] Number of low bits a packed ObjectLayer reserves for the motion type; the remaining high bits hold the Actor's LayerRegistry slot index.
 		/// [JP] パックされた ObjectLayer が運動タイプ用に確保する下位ビット数。残りの上位ビットは Actor の LayerRegistry スロットインデックスを保持する。
-		SC_CONSTEX JPH::uint MOTION_TYPE_BITS = 2;
+		SC_CONSTEX Uint MOTION_TYPE_BITS = 2;
 
 		/// [EN] ObjectLayer bit set on trigger bodies. OR'd onto a Pack result; it lets kinematic bodies report overlaps with static and kinematic bodies through the trigger.
 		/// [JP] トリガーのボディに立てる ObjectLayer のビット。Pack の結果に OR して使い、トリガーを介してキネマティックのボディがスタティック・キネマティックのボディとの重なりを知らせられるようにする。
@@ -84,7 +87,7 @@ namespace SeedCore
 
 		/// [EN] Distinct packed ObjectLayer values below the SENSOR bit: one motion-type slot per LayerRegistry slot. A trigger or 2D body's layer is one of these with SENSOR and/or PLANAR added.
 		/// [JP] SENSOR ビットより下の、パック済み ObjectLayer の総数: LayerRegistry の各スロットにつき1つの運動タイプスロット。トリガーや 2D ボディのレイヤーは、このいずれかに SENSOR や PLANAR を加えたもの。
-		SC_CONSTEX JPH::uint COUNT = static_cast<JPH::uint>(LayerRegistry::LayerCount) << MOTION_TYPE_BITS;
+		SC_CONSTEX Uint COUNT = static_cast<Uint>(LayerRegistry::LayerCount) << MOTION_TYPE_BITS;
 
 		/**
 		* [EN]
@@ -294,7 +297,7 @@ namespace SeedCore
 	* [JP]
 	* Rigidbody の種類を対応する Jolt 運動タイプへ変換する。
 	*/
-	JPH::EMotionType ToMotionType(Rigidbody::BodyType bodyType);
+	ScMotionType ToMotionType(Rigidbody::BodyType bodyType);
 
 	/**
 	* [EN]

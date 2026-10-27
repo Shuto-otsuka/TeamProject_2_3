@@ -66,7 +66,7 @@ namespace SeedCore
 	* 現在の設定に Actor 自身の Scale と親のスケールを掛けた円柱形状を生成して返す。
 	* 高さは Y に、半径は X と Z の大きい方に合わせる。
 	*/
-	Handle<JPH::Shape> CylinderCollider::GetShapeHandle()const
+	ScShapeHandle CylinderCollider::GetShapeHandle()const
 	{
 		Actor actor = GetActor();
 		const Scale* scale = actor.GetComponent<Scale>();
@@ -114,7 +114,7 @@ namespace SeedCore
 	{
 		/// [EN] With a Rigidbody present, the body and its pose belong to the Rigidbody.
 		/// [JP] Rigidbody があれば、ボディとその姿勢は Rigidbody のもの。
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			return;
 		}
@@ -142,7 +142,7 @@ namespace SeedCore
 
 		/// [EN] The new shape is attached before the old one is released, so the body never points at a freed shape.
 		/// [JP] 古い形状を解放する前に新しい形状を取り付け、ボディが解放済みの形状を指すことが無いようにする。
-		Handle<JPH::Shape> shapeHandle = GetShapeHandle();
+		ScShapeHandle shapeHandle = GetShapeHandle();
 		physics.BodyShape(bodyID_, shapeHandle);
 		physics.ReleaseShape(shapeHandle_);
 		shapeHandle_ = shapeHandle;

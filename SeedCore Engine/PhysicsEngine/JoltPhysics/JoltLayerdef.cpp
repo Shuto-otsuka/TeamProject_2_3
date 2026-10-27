@@ -221,18 +221,18 @@ namespace SeedCore
 	* [JP]
 	* Rigidbody の種類を対応する Jolt 運動タイプへ変換する。
 	*/
-	JPH::EMotionType ToMotionType(Rigidbody::BodyType bodyType)
+	ScMotionType ToMotionType(Rigidbody::BodyType bodyType)
 	{
 		switch (bodyType)
 		{
 		case Rigidbody::BodyType::Dynamic:
-			return JPH::EMotionType::Dynamic;
+			return ScMotionType::Dynamic;
 		case Rigidbody::BodyType::Kinematic:
-			return JPH::EMotionType::Kinematic;
+			return ScMotionType::Kinematic;
 		case Rigidbody::BodyType::Static:
-			return JPH::EMotionType::Static;
+			return ScMotionType::Static;
 		default:
-			return JPH::EMotionType::Dynamic;
+			return ScMotionType::Dynamic;
 		}
 	}
 

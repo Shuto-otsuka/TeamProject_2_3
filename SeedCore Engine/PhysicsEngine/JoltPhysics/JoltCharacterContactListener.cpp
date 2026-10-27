@@ -1,5 +1,8 @@
+#include <External/JoltPhysics/Jolt/Jolt.h>
+#include <External/JoltPhysics/Jolt/Physics/Character/CharacterVirtual.h>
 #include <PhysicsEngine/JoltPhysics/JoltCharacterContactListener.h>
 #include <PhysicsEngine/Physics/Physics.h>
+#include <PhysicsEngine/Physics/PhysicsTypes.h>
 #include <PhysicsEngine/Physics/PhysicsSystem.h>
 #include <PhysicsEngine/CharacterController/CharacterController.h>
 #include <FoundationEngine/World/World.h>
@@ -7,6 +10,121 @@
 
 namespace SeedCore
 {
+	class JoltCharacterContactListener::Impl final : public JPH::CharacterContactListener
+	{
+	public:
+		/**
+		* [EN]
+		* Sets the World and entity that receive this listener's contact events.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このリスナーの接触イベントを受け取る World とエンティティを設定する。
+		*/
+		void SetTarget(World* world, EntityID entityID);
+
+		/**
+		* [EN]
+		* Starts a new character update. Each contacted body dispatches at
+		* most one enter or stay until the next call. Call it right before
+		* the character's update.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* キャラクターの新しい更新を始める。次に呼ぶまで、接触先ボディごとの
+		* Enter か Stay は最大1回になる。キャラクターの更新の直前に呼ぶ。
+		*/
+		void Begin();
+
+	public:
+		/**
+		* [EN]
+		* Dispatches an enter event when the first sub-shape of a body is
+		* touched, and a stay event when another one of a body already in
+		* contact is touched. Dynamic bodies and sensors are ignored, as
+		* the inner body reports them.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ボディの最初のサブシェイプに触れたときに Enter イベントを、既に接触中の
+		* ボディの別のサブシェイプに触れたときに Stay イベントを通知する。
+		* 動的ボディとセンサーは内側ボディが知らせるので無視する。
+		*/
+		void OnContactAdded(const JPH::CharacterVirtual* character, const JPH::CharacterContact& contact, JPH::CharacterContactSettings& settings)override;
+
+		/**
+		* [EN]
+		* Dispatches a stay event for a body still in contact, at most once
+		* per character update.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 接触が続いているボディの Stay イベントを、キャラクターの更新1回につき
+		* 最大1回通知する。
+		*/
+		void OnContactPersisted(const JPH::CharacterVirtual* character, const JPH::CharacterContact& contact, JPH::CharacterContactSettings& settings)override;
+
+		/**
+		* [EN]
+		* Dispatches an exit event when the last touched sub-shape of a body
+		* is released, even if the body has been destroyed since.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ボディで最後に触れていたサブシェイプが離れたときに Exit イベントを
+		* 通知する。ボディがその間に破棄されていても通知する。
+		*/
+		void OnContactRemoved(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2)override;
+
+	private:
+		/**
+		* [EN]
+		* Contact state of one contacted body. Jolt reports contacts per
+		* sub-shape, so one body can hold several at once.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 接触先ボディ1つの接触状態。Jolt は接触をサブシェイプごとに報告する
+		* ので、1つのボディが同時に複数の接触を持つことがある。
+		*/
+		struct ContactBody
+		{
+			/// [EN] Entity represented by the contacted body.
+			/// [JP] 接触先ボディが表すエンティティ。
+			EntityID entityID_;
+
+			/// [EN] Whether the contacted body is another character's inner body.
+			/// [JP] 接触先ボディが他のキャラクターの内側ボディか。
+			Bool isCharacter_ = false;
+
+			/// [EN] Number of the body's sub-shapes currently touched.
+			/// [JP] 現在触れている、そのボディのサブシェイプ数。
+			Uint32 contactCount_ = 0;
+		};
+
+		/// [EN] World that owns the character entity receiving contact events.
+		/// [JP] 接触イベントを受け取るキャラクターエンティティを所有する World。
+		World* world_ = nullptr;
+
+		/// [EN] Entity represented by the virtual character.
+		/// [JP] 仮想キャラクターが表すエンティティ。
+		EntityID entityID_;
+
+		/// [EN] Bodies in contact with the character. The entity is kept here because the removal callback only gives the body ID, and the body may already be destroyed.
+		/// [JP] キャラクターと接触中のボディ。削除コールバックはボディ ID しか渡さず、ボディが破棄済みのこともあるので、エンティティはここで保持する。
+		std::unordered_map<JPH::BodyID, ContactBody> contactBodies_;
+
+		/// [EN] Bodies that already dispatched an enter or stay event during the current character update.
+		/// [JP] 現在のキャラクターの更新で既に Enter か Stay のイベントを通知したボディ。
+		std::unordered_set<JPH::BodyID> notifiedBodies_;
+	};
+
 	/**
 	* [EN]
 	* Sets the World and entity that receive this listener's contact events.
@@ -16,7 +134,7 @@ namespace SeedCore
 	* [JP]
 	* このリスナーの接触イベントを受け取る World とエンティティを設定する。
 	*/
-	void JoltCharacterContactListener::SetTarget(World* world, EntityID entityID)
+	void JoltCharacterContactListener::Impl::SetTarget(World* world, EntityID entityID)
 	{
 		world_ = world;
 		entityID_ = entityID;
@@ -34,7 +152,7 @@ namespace SeedCore
 	* キャラクターの新しい更新を始める。次に呼ぶまで、接触先ボディごとの
 	* Enter か Stay は最大1回になる。キャラクターの更新の直前に呼ぶ。
 	*/
-	void JoltCharacterContactListener::Begin()
+	void JoltCharacterContactListener::Impl::Begin()
 	{
 		notifiedBodies_.clear();
 	}
@@ -53,7 +171,7 @@ namespace SeedCore
 	* ボディの別のサブシェイプに触れたときに Stay イベントを通知する。
 	* 動的ボディとセンサーは内側ボディが知らせるので無視する。
 	*/
-	void JoltCharacterContactListener::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::CharacterContact& contact, JPH::CharacterContactSettings& settings)
+	void JoltCharacterContactListener::Impl::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::CharacterContact& contact, JPH::CharacterContactSettings& settings)
 	{
 		if (!world_ || contact.mBodyB.IsInvalid())
 		{
@@ -74,7 +192,7 @@ namespace SeedCore
 		{
 			/// [EN] Resolve the contacted body to an entity; the entity and whether it is a character are kept for the removal callback, which only gives the body ID.
 			/// [JP] 接触先ボディをエンティティへ解決する。削除コールバックはボディ ID しか渡さないので、エンティティとキャラクターかどうかはここで保持する。
-			EntityID otherEntityID = world_->GetService<Physics>()->BodyEntityID(contact.mBodyB);
+			EntityID otherEntityID = world_->GetService<Physics>()->BodyEntityID(contact.mBodyB.GetIndexAndSequenceNumber());
 			if (otherEntityID == EntityID{})
 			{
 				return;
@@ -126,7 +244,7 @@ namespace SeedCore
 	* 接触が続いているボディの Stay イベントを、キャラクターの更新1回につき
 	* 最大1回通知する。
 	*/
-	void JoltCharacterContactListener::OnContactPersisted(const JPH::CharacterVirtual* character, const JPH::CharacterContact& contact, JPH::CharacterContactSettings& settings)
+	void JoltCharacterContactListener::Impl::OnContactPersisted(const JPH::CharacterVirtual* character, const JPH::CharacterContact& contact, JPH::CharacterContactSettings& settings)
 	{
 		if (!world_ || contact.mBodyB.IsInvalid())
 		{
@@ -167,7 +285,7 @@ namespace SeedCore
 	* ボディで最後に触れていたサブシェイプが離れたときに Exit イベントを
 	* 通知する。ボディがその間に破棄されていても通知する。
 	*/
-	void JoltCharacterContactListener::OnContactRemoved(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2)
+	void JoltCharacterContactListener::Impl::OnContactRemoved(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2)
 	{
 		auto it = contactBodies_.find(bodyID2);
 		if (it == contactBodies_.end())
@@ -202,5 +320,22 @@ namespace SeedCore
 		{
 			PhysicsSystem::DispatchCollisionExit(*world_, otherEntityID, entityID_);
 		}
+	}
+
+	JoltCharacterContactListener::JoltCharacterContactListener() :impl_(MakePtr<Impl>())
+	{
+		/// No Code
+	}
+
+	JoltCharacterContactListener::~JoltCharacterContactListener() = default;
+
+	void JoltCharacterContactListener::SetTarget(World* world, EntityID entityID)
+	{
+		impl_->SetTarget(world, entityID);
+	}
+
+	void JoltCharacterContactListener::Begin()
+	{
+		impl_->Begin();
 	}
 }

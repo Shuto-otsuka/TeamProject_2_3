@@ -58,7 +58,7 @@ namespace SeedCore
 	* ゲームパッドボタン button が mode を満たすかを返す。button が
 	* 範囲外なら false。
 	*/
-	Bool Input::GamepadState(SDL_GamepadButton button, TriggerMode mode)
+	Bool Input::GamepadState(ScGamepadButton button, TriggerMode mode)
 	{
 		/// [EN] The gamepad is not tied to where the cursor is, so it is never filtered by gameInput_.
 		/// [JP] ゲームパッドはカーソルの位置と関係ないので、gameInput_ では絞り込まない。
@@ -101,7 +101,7 @@ namespace SeedCore
 
 		/// [EN] Going through this class's KeyState keeps the keys filtered on frames not handed to the game, while the buttons still count.
 		/// [JP] このクラスの KeyState を通すので、ゲームに渡さないフレームではキーは絞り込まれ、ボタンはそのまま数える。
-		return std::ranges::any_of(iterator->second.keyList_, [&](Key key) { return KeyState(key, mode); }) || std::ranges::any_of(iterator->second.gamepadList_, [&](SDL_GamepadButton button) { return GamepadState(button, mode); });
+		return std::ranges::any_of(iterator->second.keyList_, [&](Key key) { return KeyState(key, mode); }) || std::ranges::any_of(iterator->second.gamepadList_, [&](ScGamepadButton button) { return GamepadState(button, mode); });
 	}
 
 	/**

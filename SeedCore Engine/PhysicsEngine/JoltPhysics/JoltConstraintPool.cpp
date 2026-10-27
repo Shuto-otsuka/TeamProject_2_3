@@ -1,7 +1,22 @@
+#include <External/JoltPhysics/Jolt/Jolt.h>
+#include <External/JoltPhysics/Jolt/Physics/PhysicsSystem.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/Constraint.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/TwoBodyConstraint.h>
 #include <PhysicsEngine/JoltPhysics/JoltConstraintPool.h>
 
 namespace SeedCore
 {
+	JoltConstraintPool::~JoltConstraintPool()
+	{
+		for (Slot& slot : slots_)
+		{
+			if (slot.constraint_)
+			{
+				slot.constraint_->Release();
+			}
+		}
+	}
+
 	/**
 	* [EN]
 	* Registers a constraint and returns its generational handle.
@@ -11,11 +26,11 @@ namespace SeedCore
 	* [JP]
 	* 拘束を登録し、その世代付きハンドルを返す。
 	*/
-	Handle<JPH::Constraint> JoltConstraintPool::Add(JPH::PhysicsSystem& system, JPH::Constraint* constraint)
+	ScConstraintHandle JoltConstraintPool::Add(JPH::PhysicsSystem& system, JPH::Constraint* constraint)
 	{
 		if (!constraint)
 		{
-			return Handle<JPH::Constraint>::null();
+			return ScConstraintHandle::null();
 		}
 
 		system.AddConstraint(constraint);
@@ -35,9 +50,10 @@ namespace SeedCore
 		}
 
 		Slot& slot = slots_[index];
+		constraint->AddRef();
 		slot.constraint_ = constraint;
 
-		Handle<JPH::Constraint> handle{};
+		ScConstraintHandle handle{};
 		handle.index_ = index;
 		handle.generation_ = slot.generation_;
 		return handle;
@@ -52,7 +68,7 @@ namespace SeedCore
 	* [JP]
 	* 有効なハンドルが参照する拘束を削除して解放する。
 	*/
-	void JoltConstraintPool::Release(JPH::PhysicsSystem& system, Handle<JPH::Constraint> handle)
+	void JoltConstraintPool::Release(JPH::PhysicsSystem& system, ScConstraintHandle handle)
 	{
 		if (handle.empty() || handle.index_ >= slots_.size())
 		{
@@ -68,6 +84,7 @@ namespace SeedCore
 		}
 
 		system.RemoveConstraint(slot.constraint_);
+		slot.constraint_->Release();
 		slot.constraint_ = nullptr;
 		++slot.generation_;
 		freeIndices_.push_back(handle.index_);
@@ -89,6 +106,7 @@ namespace SeedCore
 			if (slot.constraint_ != nullptr)
 			{
 				system.RemoveConstraint(slot.constraint_);
+				slot.constraint_->Release();
 				slot.constraint_ = nullptr;
 			}
 			++slot.generation_;
@@ -117,7 +135,7 @@ namespace SeedCore
 				continue;
 			}
 
-			JPH::TwoBodyConstraint* constraint = static_cast<JPH::TwoBodyConstraint*>(slot.constraint_.GetPtr());
+			JPH::TwoBodyConstraint* constraint = static_cast<JPH::TwoBodyConstraint*>(slot.constraint_);
 			const JPH::Body* body1 = constraint->GetBody1();
 			const JPH::Body* body2 = constraint->GetBody2();
 

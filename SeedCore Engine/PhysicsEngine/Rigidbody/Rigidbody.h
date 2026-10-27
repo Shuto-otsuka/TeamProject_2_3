@@ -1,4 +1,5 @@
 #pragma once
+#include <PhysicsEngine/Physics/PhysicsTypes.h>
 #include <FoundationEngine/SeedScript.h>
 #include <FoundationEngine/Utility/Handle.h>
 
@@ -353,7 +354,7 @@ namespace SeedCore
 		* [JP]
 		* ボディの Jolt ID を返す。OnAwake 前と OnDestroy 後は無効な ID。
 		*/
-		JPH::BodyID BodyID()const;
+		ScBodyID BodyID()const;
 
 	private:
 		/**
@@ -434,11 +435,11 @@ namespace SeedCore
 
 		/// [EN] Jolt ID of the body.
 		/// [JP] ボディの Jolt ID。
-		JPH::BodyID bodyID_;
+		ScBodyID bodyID_ = ScInvalidBodyID;
 
 		/// [EN] This component's own reference to the pooled shape.
 		/// [JP] プールの形状に対する、このコンポーネント自身の参照。
-		Handle<JPH::Shape> shapeHandle_;
+		ScShapeHandle shapeHandle_;
 
 		/// [EN] Velocity last exchanged with the body, in LinearVelocity's units; a LinearVelocity that differs from it was written by code.
 		/// [JP] 最後にボディとやり取りした速度(LinearVelocity の単位)。これと違う LinearVelocity は、コードから書かれたもの。

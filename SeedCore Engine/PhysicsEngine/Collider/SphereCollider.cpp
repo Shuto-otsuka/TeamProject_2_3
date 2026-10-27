@@ -68,7 +68,7 @@ namespace SeedCore
 	* 半径は最も大きい軸に合わせるので、球は
 	* 拡縮後の形を包む。
 	*/
-	Handle<JPH::Shape> SphereCollider::GetShapeHandle()const
+	ScShapeHandle SphereCollider::GetShapeHandle()const
 	{
 		Actor actor = GetActor();
 		const Scale* scale = actor.GetComponent<Scale>();
@@ -112,7 +112,7 @@ namespace SeedCore
 	{
 		/// [EN] With a Rigidbody present, the body and its pose belong to the Rigidbody.
 		/// [JP] Rigidbody があれば、ボディとその姿勢は Rigidbody のもの。
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			return;
 		}
@@ -140,7 +140,7 @@ namespace SeedCore
 
 		/// [EN] The new shape is attached before the old one is released, so the body never points at a freed shape.
 		/// [JP] 古い形状を解放する前に新しい形状を取り付け、ボディが解放済みの形状を指すことが無いようにする。
-		Handle<JPH::Shape> shapeHandle = GetShapeHandle();
+		ScShapeHandle shapeHandle = GetShapeHandle();
 		physics.BodyShape(bodyID_, shapeHandle);
 		physics.ReleaseShape(shapeHandle_);
 		shapeHandle_ = shapeHandle;

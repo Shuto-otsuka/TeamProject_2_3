@@ -219,11 +219,20 @@ namespace SeedCore
 		ImGuiRenderer& imgui = *context_.graphics_.imgui_;
 		World& world = *context_.world_.world_;
 		GameTimer& gameTimer = *context_.world_.timer_;
+		DynamicArray<Entity> selectedEntities;
+		selectedEntities.reserve(context_.selection_.actors_.size());
+		for (Actor actor : context_.selection_.actors_)
+		{
+			if (actor)
+			{
+				selectedEntities.push_back(ActorAccessor::GetEntity(actor));
+			}
+		}
 
 		graphics.Upscale(context_.config_.game_->useDlss_, context_.config_.game_->upscaleMode_);
 		graphics.VerticalSync(context_.config_.game_->vsync_);
 		graphics.ShapeVisible(context_.view_.editor_.shapeVisible_);
-		graphics.EditorRender(worldTimer_, *context_.view_.editor_.camera_, world, context_.view_.editor_.viewMode_);
+		graphics.EditorRender(worldTimer_, *context_.view_.editor_.camera_, world, context_.view_.editor_.viewMode_, selectedEntities);
 		graphics.GameRender(gameTimer, *context_.view_.game_.cameraSystem_, world);
 		graphics.CanvasRender(worldTimer_, *context_.view_.canvas_.camera_, world);
 

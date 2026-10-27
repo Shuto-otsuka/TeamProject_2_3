@@ -1,6 +1,11 @@
 #include <FoundationEngine/Input/InputSystem.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
+#include <External/SDL3/Include/SDL3/SDL.h>
+#include <External/SDL3/Include/SDL3/SDL_gamepad.h>
+
+#pragma comment(lib, "../External/SDL3/Lib/SDL3.lib")
+
 namespace SeedCore
 {
 	namespace
@@ -86,7 +91,7 @@ namespace SeedCore
 	Bool InputSystem::previousGamepadState_[GAMEPAD_BUTTON_COUNT] = {};
 	Vector2 InputSystem::gamepadStickAxis_[2] = { Vector2(0.0f, 0.0f), Vector2(0.0f, 0.0f) };
 	Float InputSystem::gamepadTriggerAxis_[2] = {};
-	SDL_Gamepad* InputSystem::gamepad_ = nullptr;
+	void* InputSystem::gamepad_ = nullptr;
 	FlatMap<String, InputSystem::ActionBinding> InputSystem::actionBindings_;
 	DynamicArray<String> InputSystem::actionNameList_;
 
@@ -152,7 +157,7 @@ namespace SeedCore
 			case SDL_EVENT_GAMEPAD_REMOVED:
 				if (gamepad_)
 				{
-					SDL_CloseGamepad(gamepad_);
+					SDL_CloseGamepad(static_cast<SDL_Gamepad*>(gamepad_));
 					gamepad_ = nullptr;
 				}
 				break;
@@ -260,7 +265,7 @@ namespace SeedCore
 			for (Int index = 0; index < GAMEPAD_BUTTON_COUNT; ++index)
 			{
 				previousGamepadState_[index] = currentGamepadState_[index];
-				currentGamepadState_[index] = active && SDL_GetGamepadButton(gamepad_, static_cast<SDL_GamepadButton>(index));
+				currentGamepadState_[index] = active && SDL_GetGamepadButton(static_cast<SDL_Gamepad*>(gamepad_), static_cast<SDL_GamepadButton>(index));
 			}
 			/// [EN] SDL axes span the Sint16 range; dividing by 32768 maps them to [-1, 1], and the clamp keeps the one extra negative step (-32768) from going past -1.
 			/// [JP] SDL の軸は Sint16 の範囲をとる。32768 で割ると [-1, 1] になり、負側に1つ多い値(-32768)が -1 を越えないよう Clamp で抑える。
@@ -268,13 +273,13 @@ namespace SeedCore
 			/// [JP] SDL はスティックの下方向を +Y で返すので、ここで Y を反転し、方向キー組と同じく上を +Y として保存する。
 			Vector2& leftStick = gamepadStickAxis_[static_cast<Int>(GamepadStick::Left)];
 			Vector2& rightStick = gamepadStickAxis_[static_cast<Int>(GamepadStick::Right)];
-			leftStick = active ? Vector2(Clamp(static_cast<Float>(SDL_GetGamepadAxis(gamepad_, SDL_GAMEPAD_AXIS_LEFTX)) / 32768.0f, -1.0f, 1.0f), -Clamp(static_cast<Float>(SDL_GetGamepadAxis(gamepad_, SDL_GAMEPAD_AXIS_LEFTY)) / 32768.0f, -1.0f, 1.0f)) : Vector2(0.0f, 0.0f);
-			rightStick = active ? Vector2(Clamp(static_cast<Float>(SDL_GetGamepadAxis(gamepad_, SDL_GAMEPAD_AXIS_RIGHTX)) / 32768.0f, -1.0f, 1.0f), -Clamp(static_cast<Float>(SDL_GetGamepadAxis(gamepad_, SDL_GAMEPAD_AXIS_RIGHTY)) / 32768.0f, -1.0f, 1.0f)) : Vector2(0.0f, 0.0f);
+			leftStick = active ? Vector2(Clamp(static_cast<Float>(SDL_GetGamepadAxis(static_cast<SDL_Gamepad*>(gamepad_), SDL_GAMEPAD_AXIS_LEFTX)) / 32768.0f, -1.0f, 1.0f), -Clamp(static_cast<Float>(SDL_GetGamepadAxis(static_cast<SDL_Gamepad*>(gamepad_), SDL_GAMEPAD_AXIS_LEFTY)) / 32768.0f, -1.0f, 1.0f)) : Vector2(0.0f, 0.0f);
+			rightStick = active ? Vector2(Clamp(static_cast<Float>(SDL_GetGamepadAxis(static_cast<SDL_Gamepad*>(gamepad_), SDL_GAMEPAD_AXIS_RIGHTX)) / 32768.0f, -1.0f, 1.0f), -Clamp(static_cast<Float>(SDL_GetGamepadAxis(static_cast<SDL_Gamepad*>(gamepad_), SDL_GAMEPAD_AXIS_RIGHTY)) / 32768.0f, -1.0f, 1.0f)) : Vector2(0.0f, 0.0f);
 
 			/// [EN] SDL reports the triggers as axes rather than buttons, running from 0 (released) to 32767 (fully pulled), so the same mapping lands them in [0, 1].
 			/// [JP] SDL はトリガーをボタンではなく軸として返し、0（離している）から 32767（引き切り）をとるので、同じ変換で [0, 1] に収まる。
-			gamepadTriggerAxis_[static_cast<Int>(GamepadTrigger::Left)] = active ? Clamp(static_cast<Float>(SDL_GetGamepadAxis(gamepad_, SDL_GAMEPAD_AXIS_LEFT_TRIGGER)) / 32768.0f, 0.0f, 1.0f) : 0.0f;
-			gamepadTriggerAxis_[static_cast<Int>(GamepadTrigger::Right)] = active ? Clamp(static_cast<Float>(SDL_GetGamepadAxis(gamepad_, SDL_GAMEPAD_AXIS_RIGHT_TRIGGER)) / 32768.0f, 0.0f, 1.0f) : 0.0f;
+			gamepadTriggerAxis_[static_cast<Int>(GamepadTrigger::Left)] = active ? Clamp(static_cast<Float>(SDL_GetGamepadAxis(static_cast<SDL_Gamepad*>(gamepad_), SDL_GAMEPAD_AXIS_LEFT_TRIGGER)) / 32768.0f, 0.0f, 1.0f) : 0.0f;
+			gamepadTriggerAxis_[static_cast<Int>(GamepadTrigger::Right)] = active ? Clamp(static_cast<Float>(SDL_GetGamepadAxis(static_cast<SDL_Gamepad*>(gamepad_), SDL_GAMEPAD_AXIS_RIGHT_TRIGGER)) / 32768.0f, 0.0f, 1.0f) : 0.0f;
 		}
 	}
 
@@ -293,7 +298,7 @@ namespace SeedCore
 	{
 		if (gamepad_)
 		{
-			SDL_CloseGamepad(gamepad_);
+			SDL_CloseGamepad(static_cast<SDL_Gamepad*>(gamepad_));
 			gamepad_ = nullptr;
 		}
 		SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
@@ -597,7 +602,7 @@ namespace SeedCore
 	{
 		if (gamepad_)
 		{
-			SDL_RumbleGamepad(gamepad_, lowFrequency, highFrequency, durationMs);
+			SDL_RumbleGamepad(static_cast<SDL_Gamepad*>(gamepad_), lowFrequency, highFrequency, durationMs);
 		}
 	}
 
@@ -618,7 +623,7 @@ namespace SeedCore
 	{
 		if (gamepad_)
 		{
-			SDL_RumbleGamepadTriggers(gamepad_, left, right, durationMs);
+			SDL_RumbleGamepadTriggers(static_cast<SDL_Gamepad*>(gamepad_), left, right, durationMs);
 		}
 	}
 
@@ -734,7 +739,7 @@ namespace SeedCore
 	* action のゲームパッドボタンバインドに button を追加する。既に
 	* 紐づいていれば何もしない。
 	*/
-	void InputSystem::BindGamepad(String action, SDL_GamepadButton button)
+	void InputSystem::BindGamepad(String action, ScGamepadButton button)
 	{
 		/// [EN] Binding to an unknown action registers it first, appending it to actionNameList_ so ActionNameList() keeps first-registered order.
 		/// [JP] 未知のアクションへの割り当ては先にそのアクションを登録し、actionNameList_ に追加して ActionNameList() が最初に登録された順を保つようにする。
@@ -758,7 +763,7 @@ namespace SeedCore
 	* [JP]
 	* action のゲームパッドボタンバインドから button を取り除く（存在すれば）。
 	*/
-	void InputSystem::UnbindGamepad(String action, SDL_GamepadButton button)
+	void InputSystem::UnbindGamepad(String action, ScGamepadButton button)
 	{
 		auto iterator = actionBindings_.find(action);
 		if (iterator == actionBindings_.end())
@@ -766,7 +771,7 @@ namespace SeedCore
 			return;
 		}
 
-		DynamicArray<SDL_GamepadButton>& gamepadList = iterator->second.gamepadList_;
+		DynamicArray<ScGamepadButton>& gamepadList = iterator->second.gamepadList_;
 		SeedCore::erase(gamepadList, button);
 	}
 
@@ -780,9 +785,9 @@ namespace SeedCore
 	* action に現在紐づいているゲームパッドボタンの一覧を返す。action が
 	* 未知なら空。
 	*/
-	const DynamicArray<SDL_GamepadButton>& InputSystem::BoundGamepad(String action)
+	const DynamicArray<InputSystem::ScGamepadButton>& InputSystem::BoundGamepad(String action)
 	{
-		static const DynamicArray<SDL_GamepadButton> empty;
+		static const DynamicArray<ScGamepadButton> empty;
 		auto iterator = actionBindings_.find(action);
 		return iterator != actionBindings_.end() ? iterator->second.gamepadList_ : empty;
 	}
@@ -972,7 +977,7 @@ namespace SeedCore
 			ActionBinding& binding = actionBindings_[record.action_];
 
 			std::ranges::transform(record.keyList_, std::back_inserter(binding.keyList_), [](Int32 key) { return static_cast<Key>(key); });
-			std::ranges::transform(record.gamepadList_, std::back_inserter(binding.gamepadList_), [](Int32 button) { return static_cast<SDL_GamepadButton>(button); });
+			std::ranges::transform(record.gamepadList_, std::back_inserter(binding.gamepadList_), [](Int32 button) { return static_cast<ScGamepadButton>(button); });
 
 			for (const AxisKeyRecord& axisKeyRecord : record.axisKeyList_)
 			{
@@ -1015,7 +1020,7 @@ namespace SeedCore
 			record.action_ = action;
 
 			std::ranges::transform(binding.keyList_, std::back_inserter(record.keyList_), [](Key key) { return static_cast<Int32>(key); });
-			std::ranges::transform(binding.gamepadList_, std::back_inserter(record.gamepadList_), [](SDL_GamepadButton button) { return static_cast<Int32>(button); });
+			std::ranges::transform(binding.gamepadList_, std::back_inserter(record.gamepadList_), [](ScGamepadButton button) { return static_cast<Int32>(button); });
 
 			for (const DirectionalKey& axisKey : binding.axisKeyList_)
 			{

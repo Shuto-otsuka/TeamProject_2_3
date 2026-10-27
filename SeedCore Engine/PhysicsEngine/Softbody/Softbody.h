@@ -1,4 +1,5 @@
 #pragma once
+#include <PhysicsEngine/Physics/PhysicsTypes.h>
 #include <FoundationEngine/SeedScript.h>
 
 namespace SeedCore
@@ -198,7 +199,7 @@ namespace SeedCore
 		* [JP]
 		* ボディの Jolt ID を返す。Build が成功するまでと OnDestroy 後は無効な ID。
 		*/
-		JPH::BodyID BodyID()const;
+		ScBodyID BodyID()const;
 
 		/**
 		* [EN]
@@ -243,7 +244,7 @@ namespace SeedCore
 	private:
 		/// [EN] Jolt ID of the body.
 		/// [JP] ボディの Jolt ID。
-		JPH::BodyID bodyID_;
+		ScBodyID bodyID_ = ScInvalidBodyID;
 
 		/// [EN] Simulated proxy vertex positions in the actor's local space, refreshed every fixed step.
 		/// [JP] Actor のローカル空間での、シミュレート済みプロキシ頂点位置。固定ステップごとに更新する。

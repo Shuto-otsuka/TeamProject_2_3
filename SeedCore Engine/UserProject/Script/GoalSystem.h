@@ -6,13 +6,13 @@ class GoalSystem :public SeedCore::SeedScript
 {
 public:
 	SC_PAYLOAD_FIELD_EX("遷移先シーン", Scene)
-	Uint32 nextSceneID_ = 0;
+	SeedCore::Uint32 nextSceneID_ = 0;
 
 	SC_PAYLOAD_FIELD_EX("タイトルシーン", Scene)
-	Uint32 titleSceneID_ = 0;
+	SeedCore::Uint32 titleSceneID_ = 0;
 
 	SC_PAYLOAD_FIELD_EX("リトライ先シーン", Scene)
-	Uint32 retrySceneID_ = 0;
+	SeedCore::Uint32 retrySceneID_ = 0;
 
 	SC_REFLECTION_CLAMPED_EX("範囲", 0.0f, 10000.0f)
 	float range_ = 1.0f;

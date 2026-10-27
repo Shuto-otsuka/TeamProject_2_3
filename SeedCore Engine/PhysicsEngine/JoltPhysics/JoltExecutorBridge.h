@@ -1,4 +1,6 @@
 #pragma once
+#include <External/JoltPhysics/Jolt/Jolt.h>
+#include <External/JoltPhysics/Jolt/Core/JobSystemWithBarrier.h>
 
 namespace SeedCore
 {

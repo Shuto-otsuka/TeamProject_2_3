@@ -1,4 +1,5 @@
 #pragma once
+#include <PhysicsEngine/Physics/PhysicsTypes.h>
 #include <FoundationEngine/SeedScript.h>
 #include <FoundationEngine/Utility/Handle.h>
 
@@ -78,7 +79,7 @@ namespace SeedCore
 		* 現在の設定に Actor 自身の Scale と親のスケールを掛けたカプセル形状を生成して返す。
 		* 高さは Y に、半径は X と Z の大きい方に合わせる。
 		*/
-		Handle<JPH::Shape> GetShapeHandle()const;
+		ScShapeHandle GetShapeHandle()const;
 
 	private:
 		/**
@@ -101,11 +102,11 @@ namespace SeedCore
 	private:
 		/// [EN] Jolt body identifier of the generated collider body.
 		/// [JP] 生成したコライダーボディの Jolt ボディ ID。
-		JPH::BodyID bodyID_;
+		ScBodyID bodyID_ = ScInvalidBodyID;
 
 		/// [EN] Pool handle of the shape attached to the collider body.
 		/// [JP] コライダーボディへ取り付けた形状のプールハンドル。
-		Handle<JPH::Shape> shapeHandle_;
+		ScShapeHandle shapeHandle_;
 
 		/// [EN] World scale of the actor when the current shape was made; a different scale means the shape no longer matches how the actor is drawn.
 		/// [JP] 今の形状を作ったときの Actor のワールドスケール。これと異なれば、形状は描画される Actor と合わなくなっている。

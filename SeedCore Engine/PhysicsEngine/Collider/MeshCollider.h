@@ -1,4 +1,5 @@
 #pragma once
+#include <PhysicsEngine/Physics/PhysicsTypes.h>
 #include <FoundationEngine/SeedScript.h>
 #include <FoundationEngine/Utility/Handle.h>
 
@@ -94,11 +95,11 @@ namespace SeedCore
 	private:
 		/// [EN] Jolt body identifier used when this collider owns a standalone body.
 		/// [JP] このコライダーが単独ボディを所有するときに使う Jolt ボディ ID。
-		JPH::BodyID bodyID_;
+		ScBodyID bodyID_ = ScInvalidBodyID;
 
 		/// [EN] Pool handle of the built collision shape.
 		/// [JP] 構築した衝突形状のプールハンドル。
-		Handle<JPH::Shape> shapeHandle_;
+		ScShapeHandle shapeHandle_;
 
 		/// [EN] Whether mesh data must be resolved and built.
 		/// [JP] メッシュデータの解決と構築が必要か。

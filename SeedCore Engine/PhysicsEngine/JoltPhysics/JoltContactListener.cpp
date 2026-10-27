@@ -1,4 +1,6 @@
 #include <PhysicsEngine/JoltPhysics/JoltContactListener.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/Body.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/BodyInterface.h>
 #include <PhysicsEngine/Physics/PhysicsSystem.h>
 
 namespace SeedCore

@@ -10,8 +10,6 @@
 #include <FoundationEngine/Bridge/CsharpHost.h>
 #include <FoundationEngine/Plugin/PluginHost.h>
 
-#include <PhysicsEngine/JoltPhysics/JoltManager.h>
-
 #include <AudioEngine/CRI/CriManager.h>
 #include <AudioEngine/Resource/AudioModule.h>
 
@@ -23,6 +21,7 @@
 namespace SeedCore
 {
 	struct Bootstrap;
+	class JoltManager;
 	struct GameConfig;
 	struct EditorConfig;
 
@@ -128,6 +127,8 @@ namespace SeedCore
 	private:
 		ResourcePtr<World> world_;
 
+		ResourcePtr<JoltManager> joltManager_;
+
 		Window window_;
 
 		JobExecutor executor_;
@@ -135,8 +136,6 @@ namespace SeedCore
 		SystemScheduler system_;
 
 		ResourceCache resource_;
-
-		JoltManager joltManager_;
 
 		CriManager criManager_;
 

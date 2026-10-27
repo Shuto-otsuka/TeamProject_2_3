@@ -42,7 +42,7 @@ namespace SeedCore
 	*/
 	void Softbody::OnFixedTick(Float elapsedTime)
 	{
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			return;
 		}
@@ -73,7 +73,7 @@ namespace SeedCore
 	*/
 	void Softbody::OnDestroy()
 	{
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			return;
 		}
@@ -82,7 +82,7 @@ namespace SeedCore
 
 		/// [EN] An invalid ID and empty positions make the renderer fall back to the bind pose.
 		/// [JP] 無効な ID と空の頂点位置で、描画はバインドポーズへ戻る。
-		bodyID_ = JPH::BodyID();
+		bodyID_ = ScInvalidBodyID;
 		vertexPositions_.clear();
 
 		/// [EN] Same condition as OnAwake.
@@ -148,7 +148,7 @@ namespace SeedCore
 	* [JP]
 	* ボディの Jolt ID を返す。Build が成功するまでと OnDestroy 後は無効な ID。
 	*/
-	JPH::BodyID Softbody::BodyID()const
+	ScBodyID Softbody::BodyID()const
 	{
 		return bodyID_;
 	}
@@ -246,7 +246,7 @@ namespace SeedCore
 		/// [EN] On failure the soft body stays pending and is tried again next frame.
 		/// [JP] 失敗したら構築待ちのまま残り、次のフレームで再び試す。
 		bodyID_ = actor.GetService<Physics>()->CreateSoftbody(desc);
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			return;
 		}

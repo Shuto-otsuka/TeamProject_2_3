@@ -1,5 +1,6 @@
 #include <PhysicsEngine/CharacterController/CharacterController.h>
 #include <PhysicsEngine/Physics/Physics.h>
+#include <PhysicsEngine/JoltPhysics/JoltCharacterContactListener.h>
 #include <PhysicsEngine/JoltPhysics/JoltLayerdef.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
@@ -52,9 +53,11 @@ namespace SeedCore
 
 		/// [EN] Forward character contacts to the owning entity in this World.
 		/// [JP] キャラクターの接触を、この World 内の所有エンティティへ転送する。
-		characterContactListener_ = new JoltCharacterContactListener();
-		characterContactListener_->SetTarget(&actor.GetWorld(), desc.userData_);
-		character_->SetListener(characterContactListener_.GetPtr());
+		JoltCharacterContactListener* listener = new JoltCharacterContactListener();
+		listener->AddRef();
+		listener->SetTarget(&actor.GetWorld(), desc.userData_);
+		characterContactListener_ = listener;
+		static_cast<JPH::CharacterVirtual*>(character_)->SetListener(listener);
 	}
 
 	/**
@@ -79,7 +82,7 @@ namespace SeedCore
 		{
 			/// [EN] The custom callback owns the velocity, so foothold tracking restarts once it is unbound.
 			/// [JP] 速度はカスタムコールバックが管理するため、解除後は足場の追従を最初からやり直す。
-			foothold_.bodyID_ = JPH::BodyID();
+			foothold_.bodyID_ = ScInvalidBodyID;
 			inheritedVelocity_ = Vector3(0.0f, 0.0f, 0.0f);
 
 			onCustomMove_.Execute(elapsedTime);
@@ -92,16 +95,16 @@ namespace SeedCore
 		/// [JP] 要求されたしゃがみ状態が変わったときだけカプセル高を変更する。
 		if (crouch_ && !isCrouched_)
 		{
-			isCrouched_ = actor.GetService<Physics>()->CharacterHeight(character_.GetPtr(), crouchHeight_, radius_);
+			isCrouched_ = actor.GetService<Physics>()->CharacterHeight(character_, crouchHeight_, radius_);
 		}
 		else if (!crouch_ && isCrouched_)
 		{
-			isCrouched_ = !actor.GetService<Physics>()->CharacterHeight(character_.GetPtr(), height_, radius_);
+			isCrouched_ = !actor.GetService<Physics>()->CharacterHeight(character_, height_, radius_);
 		}
 
 		/// [EN] Work in velocity relative to the foothold so input acceleration never acts on the carried velocity.
 		/// [JP] 入力による加減速が引き継いだ速度にかからないよう、足場に対する相対速度で計算する。
-		JPH::Vec3 currentVelocity = character_->GetLinearVelocity();
+		JPH::Vec3 currentVelocity = static_cast<JPH::CharacterVirtual*>(character_)->GetLinearVelocity();
 		Vector3 horizontalVelocity(currentVelocity.GetX() - inheritedVelocity_.x, 0.0f, currentVelocity.GetZ() - inheritedVelocity_.z);
 		Float verticalVelocity = currentVelocity.GetY() - inheritedVelocity_.y;
 
@@ -136,7 +139,7 @@ namespace SeedCore
 			horizontalVelocity = targetHorizontalVelocity;
 		}
 
-		Bool grounded = character_->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround;
+		Bool grounded = static_cast<JPH::CharacterVirtual*>(character_)->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround;
 
 		/// [EN] Air damping slows both the character's own motion and the inertia carried from the foothold.
 		/// [JP] 空気抵抗は、キャラクター自身の動きと足場から引き継いだ慣性の両方を減速させる。
@@ -154,7 +157,7 @@ namespace SeedCore
 			/// [JP] 立っている間は足場が上下の動きを担うため、キャラクター自身の上下速度は静止から計算し直す。
 			verticalVelocity = 0.0f;
 
-			if (!foothold_.bodyID_.IsInvalid() && actor.GetService<Physics>()->BodyExists(foothold_.bodyID_) && elapsedTime > 0.0f)
+			if (foothold_.bodyID_ != ScInvalidBodyID && actor.GetService<Physics>()->BodyExists(foothold_.bodyID_) && elapsedTime > 0.0f)
 			{
 				Matrix footholdMatrix = actor.GetService<Physics>()->BodyTransform(foothold_.bodyID_);
 				Vector3 footholdPosition = footholdMatrix.Translation();
@@ -162,7 +165,7 @@ namespace SeedCore
 
 				/// [EN] Carry the recorded local position along with the body's current transform; the exact displacement over this step becomes the inherited velocity, so no drift accumulates.
 				/// [JP] 記録したローカル位置をボディの現在の変換で運ぶ。このステップでの正確な移動量を引き継ぐ速度にするため、ずれが蓄積しない。
-				JPH::RVec3 characterPosition = character_->GetPosition();
+				JPH::RVec3 characterPosition = static_cast<JPH::CharacterVirtual*>(character_)->GetPosition();
 				Vector3 carriedPosition = Vector3::Transform(foothold_.position_, footholdRotation) + footholdPosition;
 				Vector3 displacement = carriedPosition - Vector3(static_cast<Float>(characterPosition.GetX()), static_cast<Float>(characterPosition.GetY()), static_cast<Float>(characterPosition.GetZ()));
 				inheritedVelocity_ = displacement / elapsedTime;
@@ -185,9 +188,9 @@ namespace SeedCore
 				Float yawDelta = 2.0f * Atan2(deltaRotation.y, deltaRotation.w);
 				Quaternion yawRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitY, yawDelta);
 
-				JPH::Quat currentJoltRotation = character_->GetRotation();
+				JPH::Quat currentJoltRotation = static_cast<JPH::CharacterVirtual*>(character_)->GetRotation();
 				Quaternion turnedRotation = Quaternion(currentJoltRotation.GetX(), currentJoltRotation.GetY(), currentJoltRotation.GetZ(), currentJoltRotation.GetW()) * yawRotation;
-				character_->SetRotation(JPH::Quat(turnedRotation.x, turnedRotation.y, turnedRotation.z, turnedRotation.w));
+				static_cast<JPH::CharacterVirtual*>(character_)->SetRotation(JPH::Quat(turnedRotation.x, turnedRotation.y, turnedRotation.z, turnedRotation.w));
 
 				/// [EN] Turn the requested facing too, so the rotation step below does not undo the foothold's turn.
 				/// [JP] 下の回転処理が足場の回転を打ち消さないよう、要求中の正面方向も一緒に回す。
@@ -197,7 +200,7 @@ namespace SeedCore
 			{
 				/// [EN] On the first step on a new foothold there is no record yet, so its contact-point velocity stands in.
 				/// [JP] 新しい足場に乗った最初のステップは記録がないため、接地点の速度で代用する。
-				JPH::Vec3 groundVelocity = character_->GetGroundVelocity();
+				JPH::Vec3 groundVelocity = static_cast<JPH::CharacterVirtual*>(character_)->GetGroundVelocity();
 				inheritedVelocity_ = Vector3(groundVelocity.GetX(), groundVelocity.GetY(), groundVelocity.GetZ());
 			}
 		}
@@ -213,7 +216,7 @@ namespace SeedCore
 		verticalVelocity += gravity.y * gravityScale_ * elapsedTime;
 		verticalVelocity = Max(verticalVelocity, -maxFallSpeed_);
 
-		character_->SetLinearVelocity(JPH::Vec3(horizontalVelocity.x + inheritedVelocity_.x, verticalVelocity + inheritedVelocity_.y, horizontalVelocity.z + inheritedVelocity_.z));
+		static_cast<JPH::CharacterVirtual*>(character_)->SetLinearVelocity(JPH::Vec3(horizontalVelocity.x + inheritedVelocity_.x, verticalVelocity + inheritedVelocity_.y, horizontalVelocity.z + inheritedVelocity_.z));
 
 		/// [EN] Rotate toward the requested horizontal facing direction at a limited angular speed.
 		/// [JP] 角速度を制限しながら、要求された水平方向へ回転する。
@@ -225,7 +228,7 @@ namespace SeedCore
 
 			Quaternion targetRotation = Quaternion::CreateFromYawPitchRoll(Atan2(forwardXZ.x, forwardXZ.z), 0.0f, 0.0f);
 
-			JPH::Quat currentJoltRotation = character_->GetRotation();
+			JPH::Quat currentJoltRotation = static_cast<JPH::CharacterVirtual*>(character_)->GetRotation();
 			Quaternion currentRotation(currentJoltRotation.GetX(), currentJoltRotation.GetY(), currentJoltRotation.GetZ(), currentJoltRotation.GetW());
 
 			Float dot = Clamp(Abs(currentRotation.Dot(targetRotation)), -1.0f, 1.0f);
@@ -234,21 +237,21 @@ namespace SeedCore
 
 			Quaternion newRotation = (angleBetween <= maxAngle) ? targetRotation : Quaternion::Slerp(currentRotation, targetRotation, maxAngle / angleBetween);
 
-			character_->SetRotation(JPH::Quat(newRotation.x, newRotation.y, newRotation.z, newRotation.w));
+			static_cast<JPH::CharacterVirtual*>(character_)->SetRotation(JPH::Quat(newRotation.x, newRotation.y, newRotation.z, newRotation.w));
 		}
 
 		/// [EN] Each contacted body dispatches at most one enter or stay per update.
 		/// [JP] 接触先ボディごとの Enter か Stay は、更新1回につき最大1回。
-		characterContactListener_->Begin();
-		actor.GetService<Physics>()->UpdateCharacter(character_.GetPtr(), elapsedTime, ToRadians(maxSlopeAngle_), maxStepHeight_);
+		static_cast<JoltCharacterContactListener*>(characterContactListener_)->Begin();
+		actor.GetService<Physics>()->UpdateCharacter(character_, elapsedTime, ToRadians(maxSlopeAngle_), maxStepHeight_);
 
-		JPH::RVec3 outPosition = character_->GetPosition();
-		JPH::Quat outRotation = character_->GetRotation();
+		JPH::RVec3 outPosition = static_cast<JPH::CharacterVirtual*>(character_)->GetPosition();
+		JPH::Quat outRotation = static_cast<JPH::CharacterVirtual*>(character_)->GetRotation();
 
 		/// [EN] Record where the character now stands on its foothold, in the foothold's local space, for the next step to carry it from.
 		/// [JP] 次のステップで運ぶ基準として、キャラクターが今足場のどこに立っているかを足場のローカル空間で記録する。
-		JPH::BodyID groundBodyID = character_->GetGroundBodyID();
-		if (character_->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround && actor.GetService<Physics>()->BodyExists(groundBodyID))
+		ScBodyID groundBodyID = static_cast<JPH::CharacterVirtual*>(character_)->GetGroundBodyID().GetIndexAndSequenceNumber();
+		if (static_cast<JPH::CharacterVirtual*>(character_)->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround && actor.GetService<Physics>()->BodyExists(groundBodyID))
 		{
 			Matrix footholdMatrix = actor.GetService<Physics>()->BodyTransform(groundBodyID);
 			Vector3 footholdPosition = footholdMatrix.Translation();
@@ -265,7 +268,7 @@ namespace SeedCore
 		}
 		else
 		{
-			foothold_.bodyID_ = JPH::BodyID();
+			foothold_.bodyID_ = ScInvalidBodyID;
 		}
 
 		/// [EN] Synchronize the actor transform components with the simulated character pose.
@@ -311,7 +314,11 @@ namespace SeedCore
 	void CharacterController::OnDestroy()
 	{
 		GetActor().GetService<Physics>()->DestroyCharacter(character_);
-		characterContactListener_ = nullptr;
+		if (characterContactListener_)
+		{
+			static_cast<JoltCharacterContactListener*>(characterContactListener_)->Release();
+			characterContactListener_ = nullptr;
+		}
 	}
 
 	void CharacterController::OnRevision()
@@ -404,8 +411,8 @@ namespace SeedCore
 
 		/// [EN] The jump power is relative to the foothold, so jumping from a rising foothold goes higher.
 		/// [JP] ジャンプ力は足場に対する相対値なので、上昇中の足場から跳ぶとその分高く跳ぶ。
-		JPH::Vec3 velocity = character_->GetLinearVelocity();
-		character_->SetLinearVelocity(JPH::Vec3(velocity.GetX(), inheritedVelocity_.y + jumpPower_, velocity.GetZ()));
+		JPH::Vec3 velocity = static_cast<JPH::CharacterVirtual*>(character_)->GetLinearVelocity();
+		static_cast<JPH::CharacterVirtual*>(character_)->SetLinearVelocity(JPH::Vec3(velocity.GetX(), inheritedVelocity_.y + jumpPower_, velocity.GetZ()));
 	}
 
 	/**
@@ -432,14 +439,14 @@ namespace SeedCore
 		/// [JP] position は親から見た Position なので、キャラクターはその点のワールドでの位置へ移す。
 		Actor parentActor = actor.Parent();
 		Vector3 worldPosition = parentActor ? Vector3::Transform(position, parentActor.WorldMatrix()) : position;
-		character_->SetPosition(JPH::RVec3(worldPosition.x, worldPosition.y, worldPosition.z));
+		static_cast<JPH::CharacterVirtual*>(character_)->SetPosition(JPH::RVec3(worldPosition.x, worldPosition.y, worldPosition.z));
 
 		/// [EN] A teleport leaves the foothold behind, so neither its record nor its velocity carries over.
 		/// [JP] テレポートすると足場から離れるため、足場の記録も速度も引き継がない。
-		foothold_.bodyID_ = JPH::BodyID();
+		foothold_.bodyID_ = ScInvalidBodyID;
 		inheritedVelocity_ = Vector3(0.0f, 0.0f, 0.0f);
 
-		actor.GetService<Physics>()->RefreshCharacter(character_.GetPtr());
+		actor.GetService<Physics>()->RefreshCharacter(character_);
 
 		Position* positionComponent = world.GetComponent<Position>(entity);
 		if (positionComponent)
@@ -464,7 +471,7 @@ namespace SeedCore
 			return false;
 		}
 
-		return character_->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround;
+		return static_cast<JPH::CharacterVirtual*>(character_)->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround;
 	}
 
 	/**
@@ -483,7 +490,7 @@ namespace SeedCore
 			return false;
 		}
 
-		for (const JPH::CharacterContact& contact : character_->GetActiveContacts())
+		for (const JPH::CharacterContact& contact : static_cast<JPH::CharacterVirtual*>(character_)->GetActiveContacts())
 		{
 			if (contact.mHadCollision && Abs(contact.mContactNormal.Dot(JPH::Vec3::sAxisY())) < wallNormalDotLimit_)
 			{
@@ -510,7 +517,7 @@ namespace SeedCore
 			return false;
 		}
 
-		for (const JPH::CharacterContact& contact : character_->GetActiveContacts())
+		for (const JPH::CharacterContact& contact : static_cast<JPH::CharacterVirtual*>(character_)->GetActiveContacts())
 		{
 			if (contact.mHadCollision && contact.mContactNormal.Dot(JPH::Vec3::sAxisY()) < -wallNormalDotLimit_)
 			{
@@ -532,12 +539,12 @@ namespace SeedCore
 	*/
 	Bool CharacterController::OnSlope()const
 	{
-		if (!character_ || character_->GetGroundState() != JPH::CharacterBase::EGroundState::OnGround)
+		if (!character_ || static_cast<JPH::CharacterVirtual*>(character_)->GetGroundState() != JPH::CharacterBase::EGroundState::OnGround)
 		{
 			return false;
 		}
 
-		return character_->GetGroundNormal().Dot(JPH::Vec3::sAxisY()) < 0.999f;
+		return static_cast<JPH::CharacterVirtual*>(character_)->GetGroundNormal().Dot(JPH::Vec3::sAxisY()) < 0.999f;
 	}
 
 	/**
@@ -556,7 +563,7 @@ namespace SeedCore
 			return Vector3(0.0f, 1.0f, 0.0f);
 		}
 
-		JPH::Vec3 normal = character_->GetGroundNormal();
+		JPH::Vec3 normal = static_cast<JPH::CharacterVirtual*>(character_)->GetGroundNormal();
 		return Vector3(normal.GetX(), normal.GetY(), normal.GetZ());
 	}
 
@@ -573,7 +580,7 @@ namespace SeedCore
 	{
 		if (character_)
 		{
-			for (const JPH::CharacterContact& contact : character_->GetActiveContacts())
+			for (const JPH::CharacterContact& contact : static_cast<JPH::CharacterVirtual*>(character_)->GetActiveContacts())
 			{
 				if (contact.mHadCollision && Abs(contact.mContactNormal.Dot(JPH::Vec3::sAxisY())) < wallNormalDotLimit_)
 				{
@@ -598,7 +605,7 @@ namespace SeedCore
 	{
 		if (character_)
 		{
-			for (const JPH::CharacterContact& contact : character_->GetActiveContacts())
+			for (const JPH::CharacterContact& contact : static_cast<JPH::CharacterVirtual*>(character_)->GetActiveContacts())
 			{
 				if (contact.mHadCollision && contact.mContactNormal.Dot(JPH::Vec3::sAxisY()) < -wallNormalDotLimit_)
 				{
@@ -635,12 +642,12 @@ namespace SeedCore
 	*/
 	Bool CharacterController::Falling()const
 	{
-		if (!character_ || character_->IsSupported())
+		if (!character_ || static_cast<JPH::CharacterVirtual*>(character_)->IsSupported())
 		{
 			return false;
 		}
 
-		return character_->GetLinearVelocity().GetY() < 0.0f;
+		return static_cast<JPH::CharacterVirtual*>(character_)->GetLinearVelocity().GetY() < 0.0f;
 	}
 
 	/**
@@ -659,7 +666,7 @@ namespace SeedCore
 			return false;
 		}
 
-		return character_->GetGroundState() == JPH::CharacterBase::EGroundState::InAir;
+		return static_cast<JPH::CharacterVirtual*>(character_)->GetGroundState() == JPH::CharacterBase::EGroundState::InAir;
 	}
 
 	/**
@@ -678,7 +685,7 @@ namespace SeedCore
 			return false;
 		}
 
-		return character_->IsSupported();
+		return static_cast<JPH::CharacterVirtual*>(character_)->IsSupported();
 	}
 
 	/**
@@ -692,12 +699,12 @@ namespace SeedCore
 	*/
 	Bool CharacterController::Jumping()const
 	{
-		if (!character_ || character_->IsSupported())
+		if (!character_ || static_cast<JPH::CharacterVirtual*>(character_)->IsSupported())
 		{
 			return false;
 		}
 
-		return character_->GetLinearVelocity().GetY() > 0.0f;
+		return static_cast<JPH::CharacterVirtual*>(character_)->GetLinearVelocity().GetY() > 0.0f;
 	}
 
 	/**
@@ -711,12 +718,12 @@ namespace SeedCore
 	*/
 	Bool CharacterController::Running()const
 	{
-		if (!character_ || !character_->IsSupported())
+		if (!character_ || !static_cast<JPH::CharacterVirtual*>(character_)->IsSupported())
 		{
 			return false;
 		}
 
-		JPH::Vec3 velocity = character_->GetLinearVelocity();
+		JPH::Vec3 velocity = static_cast<JPH::CharacterVirtual*>(character_)->GetLinearVelocity();
 		Float horizontalSpeedSquared = velocity.GetX() * velocity.GetX() + velocity.GetZ() * velocity.GetZ();
 		return horizontalSpeedSquared > 0.0001f;
 	}
@@ -732,12 +739,12 @@ namespace SeedCore
 	*/
 	Bool CharacterController::Stopped()const
 	{
-		if (!character_ || !character_->IsSupported())
+		if (!character_ || !static_cast<JPH::CharacterVirtual*>(character_)->IsSupported())
 		{
 			return false;
 		}
 
-		JPH::Vec3 velocity = character_->GetLinearVelocity();
+		JPH::Vec3 velocity = static_cast<JPH::CharacterVirtual*>(character_)->GetLinearVelocity();
 		Float horizontalSpeedSquared = velocity.GetX() * velocity.GetX() + velocity.GetZ() * velocity.GetZ();
 		return horizontalSpeedSquared <= 0.0001f;
 	}

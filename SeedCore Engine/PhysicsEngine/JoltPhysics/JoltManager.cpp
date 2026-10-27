@@ -1,7 +1,23 @@
+#include <External/JoltPhysics/Jolt/Jolt.h>
+#include <External/JoltPhysics/Jolt/RegisterTypes.h>
+#include <External/JoltPhysics/Jolt/Core/Factory.h>
+#include <External/JoltPhysics/Jolt/Core/TempAllocator.h>
+#include <External/JoltPhysics/Jolt/Core/JobSystemWithBarrier.h>
+#include <External/JoltPhysics/Jolt/Physics/PhysicsSystem.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/CollideShape.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/Shape.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/Constraint.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/ContactListener.h>
 #include <PhysicsEngine/JoltPhysics/JoltManager.h>
 #include <PhysicsEngine/JoltPhysics/JoltLayerdef.h>
 #include <FoundationEngine/JobSystem/JobExecutor.h>
 #include <FoundationEngine/Resource/Gateway.h>
+
+#if SC_DEBUG
+#pragma comment(lib, "../External/JoltPhysics/Lib/Debug/Jolt.lib")
+#else
+#pragma comment(lib, "../External/JoltPhysics/Lib/Release/Jolt.lib")
+#endif
 
 namespace SeedCore
 {

@@ -475,8 +475,12 @@
     <ClCompile Include="File\FileLocator.cpp">
       <Filter>File</Filter>
     </ClCompile>
-    <ClCompile Include="Application\Window.cpp" />
-    <ClCompile Include="JobSystem\JobScheduler.cpp" />
+    <ClCompile Include="Application\Window.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
+    <ClCompile Include="JobSystem\JobScheduler.cpp">
+      <Filter>JobSystem</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\DxFail.h">
@@ -1048,10 +1052,14 @@
     <ClInclude Include="File\FileLocator.h">
       <Filter>File</Filter>
     </ClInclude>
-    <ClInclude Include="Application\Window.h" />
-    <ClInclude Include="JobSystem\JobScheduler.h" />
     <ClInclude Include="World\ECS\Component\Revisionable.h">
       <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Window.h">
+      <Filter>Application</Filter>
+    </ClInclude>
+    <ClInclude Include="JobSystem\JobScheduler.h">
+      <Filter>JobSystem</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

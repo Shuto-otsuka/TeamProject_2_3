@@ -1,5 +1,12 @@
 #pragma once
+#include <External/JoltPhysics/Jolt/Jolt.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/ContactListener.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
+
+namespace JPH
+{
+	class BodyInterface;
+}
 
 namespace SeedCore
 {

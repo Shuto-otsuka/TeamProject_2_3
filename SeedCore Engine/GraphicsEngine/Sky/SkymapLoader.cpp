@@ -1,3 +1,4 @@
+#include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
 #include <GraphicsEngine/Sky/SkymapLoader.h>
 #include <GraphicsEngine/Sky/SkymapCache.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>

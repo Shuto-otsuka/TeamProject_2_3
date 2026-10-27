@@ -1,11 +1,5 @@
 #include <FoundationEngine/Resource/Gateway.h>
 
-#include <PhysicsEngine/JoltPhysics/JoltManager.h>
-#include <AudioEngine/CRI/CriManager.h>
-#include <GraphicsEngine/Font/FontManager.h>
-#include <GraphicsEngine/Effect/Effekseer/EffekseerManager.h>
-#include <GraphicsEngine/DLSS/DlssManager.h>
-
 namespace SeedCore
 {
 	JoltManager* Gateway::joltManager_ = nullptr;
