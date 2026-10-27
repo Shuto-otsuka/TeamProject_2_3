@@ -1,5 +1,6 @@
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
+#include <UserProject/Script/BallController.h>
 #include <UserProject/Script/BombController.h>
 #include <UserProject/Script/BombExplosionController.h>
 #include <UserProject/Script/BulletController.h>
@@ -21,6 +22,7 @@
 #include <UserProject/Script/SwitchSystem.h>
 #include <UserProject/Script/TitleLogoController.h>
 
+extern "C" int _force_reflection_BallController = 0;
 extern "C" int _force_reflection_BombController = 0;
 extern "C" int _force_reflection_BombExplosionController = 0;
 extern "C" int _force_reflection_BulletController = 0;
@@ -46,6 +48,19 @@ namespace SeedCore
 {
 	 namespace ScReflection
 	 {
+		// ---- UserProject/Script/BallController.h ----
+		struct Register_BallController
+		{
+			Register_BallController()
+			{
+				ReflectionRegistry::Register(String("BallController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					BallController& obj = *static_cast<BallController*>(ptr);
+					outInfo.push_back({ String("respawnHeight"), offsetof(BallController, respawnHeight), AttributeType::Float });
+				});
+			}
+		};
+		static Register_BallController global_BallController_register;
+
 		// ---- UserProject/Script/BombController.h ----
 		struct Register_BombController
 		{
