@@ -1,8 +1,8 @@
 #pragma once
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
-#include <GraphicsEngine/Raytracing/GlobalIllumination/GlobalIlluminationDenoiseShader.h>
-#include <GraphicsEngine/Raytracing/GlobalIllumination/GlobalIlluminationShader.h>
+#include <GraphicsEngine/Illumination/GlobalIllumination/GlobalIlluminationDenoiseShader.h>
+#include <GraphicsEngine/Illumination/GlobalIllumination/GlobalIlluminationShader.h>
 #include <GraphicsEngine/Raytracing/RaytracingDispatch.h>
 
 namespace SeedCore
@@ -19,9 +19,9 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Tuning values of the global illumination pass. Mirrors
-	* GlobalIlluminationRayConstantBuffer in
-	* Raytracing/GlobalIllumination/GlobalIllumination.hlsli, which both
-	* GlobalIlluminationRT.hlsl and DeferredLightingPS.hlsl read through
+	* RaytracingGlobalIlluminationConstantBuffer in
+	* Illumination/GlobalIllumination/Raytracing/RaytracingGlobalIllumination.hlsli, which both
+	* RaytracingGlobalIlluminationRT.hlsl and DeferredLightingPS.hlsl read through
 	* constant_indices.global_illumination_index_, so the layout must match
 	* the HLSL side byte for byte.
 	*
@@ -29,13 +29,13 @@ namespace SeedCore
 	*
 	* [JP]
 	* グローバルイルミネーションのパスの調整値。
-	* Raytracing/GlobalIllumination/GlobalIllumination.hlsli の
-	* GlobalIlluminationRayConstantBuffer と対応する。
-	* GlobalIlluminationRT.hlsl と DeferredLightingPS.hlsl の両方が
+	* Illumination/GlobalIllumination/Raytracing/RaytracingGlobalIllumination.hlsli の
+	* RaytracingGlobalIlluminationConstantBuffer と対応する。
+	* RaytracingGlobalIlluminationRT.hlsl と DeferredLightingPS.hlsl の両方が
 	* constant_indices.global_illumination_index_ 経由で読むため、レイアウトは
 	* HLSL 側とバイト単位で一致させる。
 	*/
-	struct GlobalIlluminationRayConstantBuffer
+	struct RaytracingGlobalIlluminationConstantBuffer
 	{
 		/// [EN] How far an indirect ray travels before it counts as reaching the sky. Too short and interiors lose their bounce light; too long and every ray pays for a full-scene traversal.
 		/// [JP] 間接レイが空に届いたとみなすまでの距離。短すぎると室内のバウンス光が消え、長すぎるとすべてのレイがシーン全体の走査コストを払う。
@@ -57,9 +57,13 @@ namespace SeedCore
 		/// [JP] reservoir がフレームをまたいで履歴を再利用する間 1。DLSS Ray Reconstruction が時間方向のデノイズを担うときは Prepare が 0 を書く。
 		Uint32 temporalReuseEnabled_ = 1;
 
+		Uint32 rayCount_ = 1;
+
+		Uint32 bounceCount_ = 1;
+
 		/// [EN] Pads the structure to two full 16-byte registers.
 		/// [JP] 構造体を 16 バイトのレジスタ 2 つ分に揃える詰め物。
-		Vector3 globalIlluminationRayPadding_ = { 0.0f, 0.0f, 0.0f };
+		Float globalIlluminationRayPadding_ = 0.0f;
 
 		/**
 		* [EN]
@@ -84,16 +88,16 @@ namespace SeedCore
 
 	/// [EN] The HLSL side is two 16-byte rows (8 scalars); the size is asserted here because nothing checks the layout at runtime.
 	/// [JP] HLSL 側は 16 バイトの行が 2 行（8 スカラー）。実行時にはレイアウトを検証できないため、ここでサイズを静的に検証する。
-	static_assert(sizeof(GlobalIlluminationRayConstantBuffer) == 8 * sizeof(Float), "GlobalIlluminationRayConstantBuffer が GlobalIllumination.hlsli とバイト単位で一致していません");
+	static_assert(sizeof(RaytracingGlobalIlluminationConstantBuffer) == 8 * sizeof(Float), "RaytracingGlobalIlluminationConstantBuffer が RaytracingGlobalIllumination.hlsli とバイト単位で一致していません");
 
 	/**
 	* [EN]
 	* Runs the ray-traced one-bounce diffuse global illumination.
-	* GlobalIlluminationRT.hlsl (ray generation, miss and closest hit through
+	* RaytracingGlobalIlluminationRT.hlsl (ray generation, miss and closest hit through
 	* DispatchRays) resamples a ReSTIR reservoir and writes a raw RGBA16F
 	* radiance texture (rgb is incoming indirect radiance, a is 1 when valid);
 	* a spatial reuse pass refines it together with a confidence texture; and,
-	* unless DLSS Ray Reconstruction is on, GlobalIlluminationDenoiseCS.hlsl
+	* unless DLSS Ray Reconstruction is on, RaytracingGlobalIlluminationDenoiseCS.hlsl
 	* blends it over time and runs three A-Trous iterations into an
 	* accumulation texture that alternates between two slots per view. The
 	* result is left in shader-resource state for DeferredLightingPS.hlsl,
@@ -106,11 +110,11 @@ namespace SeedCore
 	*
 	* [JP]
 	* レイトレーシングによる 1 バウンスの拡散グローバルイルミネーションを
-	* 実行する。GlobalIlluminationRT.hlsl（DispatchRays によるレイ生成、
+	* 実行する。RaytracingGlobalIlluminationRT.hlsl（DispatchRays によるレイ生成、
 	* ミス、最近接ヒット）が ReSTIR の reservoir をリサンプルして生の RGBA16F
 	* 放射輝度テクスチャ（rgb は入射する間接放射輝度、a は有効なら 1）を書き、
 	* 空間的リユースのパスがそれを信頼度テクスチャと共に整える。DLSS Ray
-	* Reconstruction が無効なら、さらに GlobalIlluminationDenoiseCS.hlsl が
+	* Reconstruction が無効なら、さらに RaytracingGlobalIlluminationDenoiseCS.hlsl が
 	* 時間方向にブレンドし、A-Trous を 3 反復して、ビューごとに 2 つの
 	* スロットを交互に使う蓄積テクスチャへ書く。結果は
 	* DeferredLightingPS.hlsl のためにシェーダーリソース状態で残し、受け側の
@@ -195,7 +199,7 @@ namespace SeedCore
 		* 公開する。GPU 処理は記録せず、各インデックスシステムが今フレームの
 		* インデックスをアップロードする前に呼び出す。
 		*/
-		void Prepare(const GlobalIlluminationRayConstantBuffer& settings, Bool enabled);
+		void Prepare(const RaytracingGlobalIlluminationConstantBuffer& settings, Bool enabled);
 
 		/**
 		* [EN]
@@ -255,25 +259,25 @@ namespace SeedCore
 		/// [JP] 独自の履歴を持つビューの数（エディターとゲーム）。
 		SC_CONSTEX Uint32 viewCount_ = 2;
 
-		/// [EN] Size in bytes of one reservoir element; must match GlobalIlluminationReservoir in GlobalIllumination.hlsli.
-		/// [JP] reservoir の要素 1 つのバイト数。GlobalIllumination.hlsli の GlobalIlluminationReservoir と一致させる。
+		/// [EN] Size in bytes of one reservoir element; must match RaytracingGlobalIlluminationReservoir in RaytracingGlobalIllumination.hlsli.
+		/// [JP] reservoir の要素 1 つのバイト数。RaytracingGlobalIllumination.hlsli の RaytracingGlobalIlluminationReservoir と一致させる。
 		SC_CONSTEX Uint32 reservoirElementSizeInBytes_ = 64;
 
 		/// [EN] Size of one shader-table record: the 32-byte shader identifier rounded up to the 64-byte table alignment.
 		/// [JP] シェーダーテーブルのレコード 1 つのサイズ。32 バイトのシェーダー識別子を 64 バイトのテーブルアライメントへ切り上げたもの。
 		SC_CONSTEX Uint32 shaderTableRecordSize_ = 64;
 
-		/// [EN] Raytracing pipeline of GlobalIlluminationRT.hlsl.
-		/// [JP] GlobalIlluminationRT.hlsl のレイトレーシングパイプライン。
+		/// [EN] Raytracing pipeline of RaytracingGlobalIlluminationRT.hlsl.
+		/// [JP] RaytracingGlobalIlluminationRT.hlsl のレイトレーシングパイプライン。
 		GlobalIlluminationShader globalIlluminationShader_;
 
-		/// [EN] Spatial reuse, temporal denoise and A-Trous compute pipelines of GlobalIlluminationDenoiseCS.hlsl.
-		/// [JP] GlobalIlluminationDenoiseCS.hlsl の空間的リユース、時間方向のデノイズ、A-Trous のコンピュートパイプライン。
+		/// [EN] Spatial reuse, temporal denoise and A-Trous compute pipelines of RaytracingGlobalIlluminationDenoiseCS.hlsl.
+		/// [JP] RaytracingGlobalIlluminationDenoiseCS.hlsl の空間的リユース、時間方向のデノイズ、A-Trous のコンピュートパイプライン。
 		GlobalIlluminationDenoiseShader denoiseShader_;
 
 		/// [EN] GPU copy of the tuning values, read through its bindless index.
 		/// [JP] 調整値の GPU 側コピー。bindless インデックス経由で読まれる。
-		ResourcePtr<StaticConstantBuffer<GlobalIlluminationRayConstantBuffer>> tuningBuffer_;
+		ResourcePtr<StaticConstantBuffer<RaytracingGlobalIlluminationConstantBuffer>> tuningBuffer_;
 
 		/// [EN] Raw RGBA16F radiance from the ray pass, refined in place by the spatial reuse. A single texture is enough, since the denoiser consumes it in the same flush.
 		/// [JP] レイのパスが書き、空間的リユースがその場で整える生の RGBA16F 放射輝度。デノイザが同じ Flush 内で消費するため、1 枚で足りる。

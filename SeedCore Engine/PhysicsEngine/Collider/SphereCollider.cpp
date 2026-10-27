@@ -43,6 +43,17 @@ namespace SeedCore
 		PhysicsSystem::DestroyColliderBody(GetActor(), bodyID_, shapeHandle_);
 	}
 
+	void SphereCollider::OnRevision()
+	{
+		OnDestroy();
+		OnAwake();
+	}
+
+	void SphereCollider::Dispatch()
+	{
+		OnRevision();
+	}
+
 	/**
 	* [EN]
 	* Creates and returns a sphere shape from the current settings, scaled

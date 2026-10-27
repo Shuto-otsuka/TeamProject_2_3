@@ -21,16 +21,19 @@ namespace SeedCore
 	public:
 		/// [EN] Height of the cylinder part between the two hemispherical caps; the whole capsule is this plus twice the radius.
 		/// [JP] 両端の半球にはさまれた円柱部分の高さ。カプセル全体の高さは、これに半径の2倍を足したもの。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("円柱の高さ", 0.001f, 100.0f)
 		Float height_ = 2.0f;
 
 		/// [EN] Radius of the capsule.
 		/// [JP] カプセルの半径。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("半径", 0.001f, 100.0f)
 		Float radius_ = 0.5f;
 
 		/// [EN] Whether the collider reports overlaps without physical response.
 		/// [JP] 物理応答を行わず重なりを通知するトリガーとして扱うか。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("トリガー")
 		Bool isTrigger_ = false;
 
@@ -56,6 +59,11 @@ namespace SeedCore
 		* コライダーボディを破棄し、形状を解放する。
 		*/
 		void OnDestroy();
+
+		void OnRevision();
+
+	public:
+		void Dispatch();
 
 	public:
 		/**

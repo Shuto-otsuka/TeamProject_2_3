@@ -110,26 +110,6 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Returns how this scene wants to be rendered, as captured by the
-	* last Read(). SceneBlueprint itself knows nothing about what these
-	* strings hold - FoundationEngine cannot depend on GraphicsEngine -
-	* so the renderer is what produces and reads them back.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* この Scene をどう描くかを、直近の Read() で取得した内容として
-	* 返す。SceneBlueprint 自体はこの文字列の中身を知らない
-	* （FoundationEngine は GraphicsEngine に依存できない）ため、作るのも
-	* 読み戻すのもレンダラ側になる。
-	*/
-	const SceneVisual& SceneBlueprint::Visual()const
-	{
-		return visual_;
-	}
-
-	/**
-	* [EN]
 	* Returns the captured actors of the last Read()/Capture(), in the
 	* order they were laid out. Used when a scene that arrived from
 	* another member has to be matched against the actors already live

@@ -69,9 +69,6 @@ namespace SeedCore
 			if (!isPlaying && ImGui::IsKeyPressed(ImGuiKey_F5))
 			{
 				context_.world_.sceneSystem_->Capture(playModeScene_);
-				playModeRaytracing_ = context_.sceneVisual_.raytracing_;
-				playModeScreenSpace_ = context_.sceneVisual_.screenSpace_;
-				playModeRasterization_ = context_.sceneVisual_.rasterization_;
 				playModeMasterVolume_ = MixerSystem::MasterVolume();
 				playModeCategoryVolumes_.clear();
 				for (const String& category : MixerSystem::CategoryNameList())
@@ -93,9 +90,6 @@ namespace SeedCore
 				context_.world_.system_->Reset();
 				context_.selection_.Clear();
 				context_.scene_.history_.Clear();
-				context_.sceneVisual_.raytracing_ = playModeRaytracing_;
-				context_.sceneVisual_.screenSpace_ = playModeScreenSpace_;
-				context_.sceneVisual_.rasterization_ = playModeRasterization_;
 				MixerSystem::MasterVolume(playModeMasterVolume_);
 				const DynamicArray<String>& categoryNames = MixerSystem::CategoryNameList();
 				for (Size categoryIndex = 0; categoryIndex < categoryNames.size() && categoryIndex < playModeCategoryVolumes_.size(); ++categoryIndex)
@@ -143,9 +137,6 @@ namespace SeedCore
 				if (ImGui::ImageButton("##Play", imguiTexture_.Icon(IconType::Play), buttonSize))
 				{
 					context_.world_.sceneSystem_->Capture(playModeScene_);
-					playModeRaytracing_ = context_.sceneVisual_.raytracing_;
-					playModeScreenSpace_ = context_.sceneVisual_.screenSpace_;
-					playModeRasterization_ = context_.sceneVisual_.rasterization_;
 					playModeMasterVolume_ = MixerSystem::MasterVolume();
 					playModeCategoryVolumes_.clear();
 					for (const String& category : MixerSystem::CategoryNameList())
@@ -203,9 +194,6 @@ namespace SeedCore
 					context_.world_.system_->Reset();
 					context_.selection_.Clear();
 					context_.scene_.history_.Clear();
-					context_.sceneVisual_.raytracing_ = playModeRaytracing_;
-					context_.sceneVisual_.screenSpace_ = playModeScreenSpace_;
-					context_.sceneVisual_.rasterization_ = playModeRasterization_;
 					MixerSystem::MasterVolume(playModeMasterVolume_);
 					const DynamicArray<String>& categoryNames = MixerSystem::CategoryNameList();
 					for (Size categoryIndex = 0; categoryIndex < categoryNames.size() && categoryIndex < playModeCategoryVolumes_.size(); ++categoryIndex)

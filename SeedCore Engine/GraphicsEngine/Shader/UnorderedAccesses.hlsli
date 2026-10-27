@@ -8,24 +8,24 @@
 #include "../DLSS/Dlss.hlsli"
 #include "../Light/Cluster.hlsli"
 #include "../Model/Model.hlsli"
-#include "../Raytracing/Shadow/Shadow.hlsli"
-#include "../Raytracing/AmbientOcclusion/AmbientOcclusion.hlsli"
-#include "../Raytracing/SubsurfaceScattering/SubsurfaceScattering.hlsli"
-#include "../Raytracing/Reflection/ReflectionReSTIR.hlsli"
-#include "../Raytracing/Refraction/Refraction.hlsli"
-#include "../Raytracing/GlobalIllumination/GlobalIlluminationReSTIR.hlsli"
-#include "../Raytracing/VolumetricCloudScapes/VolumetricCloudScapes.hlsli"
-#include "../Raytracing/VolumetricStar/VolumetricStar.hlsli"
+#include "../Illumination/Shadow/Raytracing/RaytracingShadow.hlsli"
+#include "../Illumination/AmbientOcclusion/Raytracing/RaytracingAmbientOcclusion.hlsli"
+#include "../Illumination/SubsurfaceScattering/SubsurfaceScattering.hlsli"
+#include "../Illumination/Reflection/Raytracing/RaytracingReflectionReSTIR.hlsli"
+#include "../Illumination/Refraction/Refraction.hlsli"
+#include "../Illumination/GlobalIllumination/Raytracing/RaytracingGlobalIlluminationReSTIR.hlsli"
+#include "../Environment/VolumetricCloud/VolumetricCloudScapes.hlsli"
+#include "../Environment/VolumetricStar/VolumetricStar.hlsli"
 #include "../Environment/WeatherParticle.hlsli"
-#include "../Raytracing/VolumetricLight/VolumetricLight.hlsli"
+#include "../Illumination/VolumetricLight/VolumetricLight.hlsli"
 
 struct UnorderedAccessIndices
 {
 	ClusterAssignUnorderedAccessIndices cluster_assign_;
-	ShadowAccumulationUnorderedAccessIndices shadow_accumulation_;
-	AmbientOcclusionAccumulationUnorderedAccessIndices ambient_occlusion_accumulation_;
-	GlobalIlluminationAccumulationUnorderedAccessIndices global_illumination_accumulation_;
-	ReflectionAccumulationUnorderedAccessIndices reflection_accumulation_;
+	RaytracingShadowAccumulationUnorderedAccessIndices shadow_accumulation_;
+	RaytracingAmbientOcclusionAccumulationUnorderedAccessIndices ambient_occlusion_accumulation_;
+	RaytracingGlobalIlluminationAccumulationUnorderedAccessIndices global_illumination_accumulation_;
+	RaytracingReflectionAccumulationUnorderedAccessIndices reflection_accumulation_;
 	DlssUnorderedAccessIndices dlss_;
 
 	PostProcessUnorderedAccessIndices post_process_;
@@ -33,12 +33,12 @@ struct UnorderedAccessIndices
 	OitUnorderedAccessIndices oit_;
 	GeometryBufferUnorderedAccessIndices geometry_buffer_;
 	MaterialSortUnorderedAccessIndices material_sort_;
-	ShadowUnorderedAccessIndices shadow_;
-	AmbientOcclusionUnorderedAccessIndices ambient_occlusion_;
+	RaytracingShadowUnorderedAccessIndices shadow_;
+	RaytracingAmbientOcclusionUnorderedAccessIndices ambient_occlusion_;
 	SubsurfaceScatteringUnorderedAccessIndices subsurface_scattering_;
-	ReflectionUnorderedAccessIndices reflection_;
+	RaytracingReflectionUnorderedAccessIndices reflection_;
 	RefractionUnorderedAccessIndices refraction_;
-	GlobalIlluminationUnorderedAccessIndices global_illumination_;
+	RaytracingGlobalIlluminationUnorderedAccessIndices global_illumination_;
 	CloudUnorderedAccessIndices cloud_;
 	StarUnorderedAccessIndices star_;
 	WeatherParticleUnorderedAccessIndices weather_particle_;

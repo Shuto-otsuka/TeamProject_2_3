@@ -2,28 +2,12 @@
 #include <AudioEngine/CRI/CriAllocator.h>
 #include <AudioEngine/Audio/AudioByteStream.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
+#include <FoundationEngine/Resource/Gateway.h>
+#include <FoundationEngine/Resource/Config/GameConfig.h>
+#include <FoundationEngine/Resource/Config/EditorConfig.h>
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Constructs an uninitialized manager; Initialize does the work.
-	* masterPath is the .acf file that Atom Craft writes, which the
-	* editor passes so a rebuilt ACF is picked up; the runtime leaves it
-	* empty.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 未初期化の管理機構を作る。実際の準備は Initialize が行う。
-	* masterPath は Atom Craft が出力する .acf ファイルで、エディタは
-	* ビルドし直した ACF を取り込むために渡し、ランタイムは空のままにする。
-	*/
-	CriManager::CriManager(const String& masterPath) :masterPath_(masterPath)
-	{
-		/// No Code
-	}
-
 	/**
 	* [EN]
 	* Initializes CRI, loads the saved bindings, registers the ACF and
@@ -37,8 +21,44 @@ namespace SeedCore
 	* 反映したあと、ボイスプールとストリーミング帯域の管理を確保する。
 	* どこかで失敗したら false を返す。
 	*/
-	Bool CriManager::Initialize()
+	Bool CriManager::Initialize(const GameConfig& gameConfig)
 	{
+		return Initialize(String());
+	}
+
+	/**
+	* [EN]
+	* Same as the GameConfig version, but also takes the .acf file that
+	* Atom Craft writes (editorConfig's acfPath_), so a rebuilt ACF
+	* replaces the saved copy.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* GameConfig 版と同じだが、Atom Craft が出力する .acf ファイル
+	* (editorConfig の acfPath_)も使い、ビルドし直した ACF で保存済みの
+	* ものを置き換える。
+	*/
+	Bool CriManager::Initialize(const EditorConfig& editorConfig)
+	{
+		return Initialize(editorConfig.acfPath_);
+	}
+
+	/**
+	* [EN]
+	* The shared body of both Initialize overloads. masterPath is the .acf
+	* file that Atom Craft writes; empty in the runtime.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 2 つの Initialize に共通する本体。masterPath は Atom Craft が出力する
+	* .acf ファイルで、ランタイムでは空。
+	*/
+	Bool CriManager::Initialize(const String& masterPath)
+	{
+		masterPath_ = masterPath;
+
 		/// [EN] Hooks set before initialization: error log, memory from the process heap, and file I/O that can read encrypted .audio caches.
 		/// [JP] 初期化の前に登録するフック: エラーログ、プロセスのヒープからのメモリ確保、暗号化された .audio キャッシュを読めるファイル I/O。
 		criErr_SetCallback(ScCriErrorCallback);
@@ -206,6 +226,7 @@ namespace SeedCore
 			return false;
 		}
 
+		Gateway::BindCriManager(this);
 		return true;
 	}
 

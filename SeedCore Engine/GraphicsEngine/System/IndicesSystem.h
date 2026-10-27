@@ -7,7 +7,7 @@ namespace SeedCore
 {
 	inline constexpr Uint32 lensFlareMaxAxisCount = 7;
 
-	struct ShadowAccumulationShaderResourceIndices
+	struct RaytracingShadowAccumulationShaderResourceIndices
 	{
 		Uint directionalHistoryIndex_ = 0;
 		Uint directionalAccumulatedIndex_ = 0;
@@ -33,9 +33,9 @@ namespace SeedCore
 		Uint depthNormalIndex_ = 0;
 		Vector2 shadowAccumulationShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT(ShadowAccumulationShaderResourceIndices, 80, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(RaytracingShadowAccumulationShaderResourceIndices, 80, "Shader/Denoiser.hlsli");
 
-	struct ShadowAccumulationUnorderedAccessIndices
+	struct RaytracingShadowAccumulationUnorderedAccessIndices
 	{
 		Uint directionalAccumulatedIndex_ = 0;
 		Uint directionalMomentsIndex_ = 0;
@@ -52,24 +52,24 @@ namespace SeedCore
 		Uint historyLengthIndex_ = 0;
 		Uint depthNormalIndex_ = 0;
 	};
-	SC_STATIC_ASSERT(ShadowAccumulationUnorderedAccessIndices, 48, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(RaytracingShadowAccumulationUnorderedAccessIndices, 48, "Shader/Denoiser.hlsli");
 
-	struct AmbientOcclusionAccumulationShaderResourceIndices
+	struct RaytracingAmbientOcclusionAccumulationShaderResourceIndices
 	{
 		Uint historyIndex_ = 0;
 		Uint opennessIndex_ = 0;
 		Vector2 ambientOcclusionAccumulationShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT(AmbientOcclusionAccumulationShaderResourceIndices, 16, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(RaytracingAmbientOcclusionAccumulationShaderResourceIndices, 16, "Shader/Denoiser.hlsli");
 
-	struct AmbientOcclusionAccumulationUnorderedAccessIndices
+	struct RaytracingAmbientOcclusionAccumulationUnorderedAccessIndices
 	{
 		Uint accumulatedIndex_ = 0;
 		Vector3 ambientOcclusionAccumulationUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT(AmbientOcclusionAccumulationUnorderedAccessIndices, 16, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(RaytracingAmbientOcclusionAccumulationUnorderedAccessIndices, 16, "Shader/Denoiser.hlsli");
 
-	struct GlobalIlluminationAccumulationShaderResourceIndices
+	struct RaytracingGlobalIlluminationAccumulationShaderResourceIndices
 	{
 		Uint historyIndex_ = 0;
 		Uint radianceIndex_ = 0;
@@ -80,18 +80,18 @@ namespace SeedCore
 		Uint reservoirWriteIndex_ = 0;
 		Vector2 globalIlluminationAccumulationShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT(GlobalIlluminationAccumulationShaderResourceIndices, 32, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(RaytracingGlobalIlluminationAccumulationShaderResourceIndices, 32, "Shader/Denoiser.hlsli");
 
-	struct GlobalIlluminationAccumulationUnorderedAccessIndices
+	struct RaytracingGlobalIlluminationAccumulationUnorderedAccessIndices
 	{
 		Uint accumulatedIndex_ = 0;
 		Uint atrousScratch0Index_ = 0;
 		Uint atrousScratch1Index_ = 0;
 		Uint reservoirIndex_ = 0;
 	};
-	SC_STATIC_ASSERT(GlobalIlluminationAccumulationUnorderedAccessIndices, 16, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(RaytracingGlobalIlluminationAccumulationUnorderedAccessIndices, 16, "Shader/Denoiser.hlsli");
 
-	struct ReflectionAccumulationShaderResourceIndices
+	struct RaytracingReflectionAccumulationShaderResourceIndices
 	{
 		Uint historyIndex_ = 0;
 		Uint accumulatedIndex_ = 0;
@@ -111,9 +111,9 @@ namespace SeedCore
 		Uint reservoirWriteIndex_ = 0;
 		Vector3 reflectionAccumulationShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT(ReflectionAccumulationShaderResourceIndices, 64, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(RaytracingReflectionAccumulationShaderResourceIndices, 64, "Shader/Denoiser.hlsli");
 
-	struct ReflectionAccumulationUnorderedAccessIndices
+	struct RaytracingReflectionAccumulationUnorderedAccessIndices
 	{
 		Uint accumulatedIndex_ = 0;
 		Uint atrousScratch0Index_ = 0;
@@ -125,7 +125,7 @@ namespace SeedCore
 		Uint denoisedIndex_ = 0;
 		Uint reservoirIndex_ = 0;
 	};
-	SC_STATIC_ASSERT(ReflectionAccumulationUnorderedAccessIndices, 32, "Shader/Denoiser.hlsli");
+	SC_STATIC_ASSERT(RaytracingReflectionAccumulationUnorderedAccessIndices, 32, "Shader/Denoiser.hlsli");
 
 	struct DlssUnorderedAccessIndices
 	{
@@ -665,93 +665,93 @@ namespace SeedCore
 	};
 	SC_STATIC_ASSERT(RaytracingShaderResourceIndices, 16, "Raytracing/Raytracing.hlsli");
 
-	struct ShadowShaderResourceIndices
+	struct RaytracingShadowShaderResourceIndices
 	{
 		Uint rawVisibilityIndex_ = 0;
 		Vector3 shadowShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT(ShadowShaderResourceIndices, 16, "Raytracing/Shadow/Shadow.hlsli");
+	SC_STATIC_ASSERT(RaytracingShadowShaderResourceIndices, 16, "Illumination/Shadow/Raytracing/RaytracingShadow.hlsli");
 
-	struct ShadowUnorderedAccessIndices
+	struct RaytracingShadowUnorderedAccessIndices
 	{
 		Uint rawVisibilityIndex_ = 0;
 		Vector3 shadowUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT(ShadowUnorderedAccessIndices, 16, "Raytracing/Shadow/Shadow.hlsli");
+	SC_STATIC_ASSERT(RaytracingShadowUnorderedAccessIndices, 16, "Illumination/Shadow/Raytracing/RaytracingShadow.hlsli");
 
-	struct AmbientOcclusionShaderResourceIndices
+	struct RaytracingAmbientOcclusionShaderResourceIndices
 	{
 		Uint rawIndex_ = 0;
 		Vector3 ambientOcclusionShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT(AmbientOcclusionShaderResourceIndices, 16, "Raytracing/AmbientOcclusion/AmbientOcclusion.hlsli");
+	SC_STATIC_ASSERT(RaytracingAmbientOcclusionShaderResourceIndices, 16, "Illumination/AmbientOcclusion/Raytracing/RaytracingAmbientOcclusion.hlsli");
 
-	struct AmbientOcclusionUnorderedAccessIndices
+	struct RaytracingAmbientOcclusionUnorderedAccessIndices
 	{
 		Uint rawIndex_ = 0;
 		Vector3 ambientOcclusionUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT(AmbientOcclusionUnorderedAccessIndices, 16, "Raytracing/AmbientOcclusion/AmbientOcclusion.hlsli");
+	SC_STATIC_ASSERT(RaytracingAmbientOcclusionUnorderedAccessIndices, 16, "Illumination/AmbientOcclusion/Raytracing/RaytracingAmbientOcclusion.hlsli");
 
 	struct SubsurfaceScatteringShaderResourceIndices
 	{
 		Uint transmittanceIndex_ = 0;
 		Vector3 subsurfaceScatteringShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT(SubsurfaceScatteringShaderResourceIndices, 16, "Raytracing/SubsurfaceScattering/SubsurfaceScattering.hlsli");
+	SC_STATIC_ASSERT(SubsurfaceScatteringShaderResourceIndices, 16, "Illumination/SubsurfaceScattering/SubsurfaceScattering.hlsli");
 
 	struct SubsurfaceScatteringUnorderedAccessIndices
 	{
 		Uint transmittanceIndex_ = 0;
 		Vector3 subsurfaceScatteringUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT(SubsurfaceScatteringUnorderedAccessIndices, 16, "Raytracing/SubsurfaceScattering/SubsurfaceScattering.hlsli");
+	SC_STATIC_ASSERT(SubsurfaceScatteringUnorderedAccessIndices, 16, "Illumination/SubsurfaceScattering/SubsurfaceScattering.hlsli");
 
-	struct ReflectionShaderResourceIndices
+	struct RaytracingReflectionShaderResourceIndices
 	{
 		Uint outputIndex_ = 0;
 		Uint confidenceIndex_ = 0;
 		Vector2 reflectionShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT(ReflectionShaderResourceIndices, 16, "Raytracing/Reflection/ReflectionReSTIR.hlsli");
+	SC_STATIC_ASSERT(RaytracingReflectionShaderResourceIndices, 16, "Illumination/Reflection/Raytracing/RaytracingReflectionReSTIR.hlsli");
 
-	struct ReflectionUnorderedAccessIndices
+	struct RaytracingReflectionUnorderedAccessIndices
 	{
 		Uint outputIndex_ = 0;
 		Uint confidenceIndex_ = 0;
 		Vector2 reflectionUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT(ReflectionUnorderedAccessIndices, 16, "Raytracing/Reflection/ReflectionReSTIR.hlsli");
+	SC_STATIC_ASSERT(RaytracingReflectionUnorderedAccessIndices, 16, "Illumination/Reflection/Raytracing/RaytracingReflectionReSTIR.hlsli");
 
 	struct RefractionShaderResourceIndices
 	{
 		Uint outputIndex_ = 0;
 		Vector3 refractionShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT(RefractionShaderResourceIndices, 16, "Raytracing/Refraction/Refraction.hlsli");
+	SC_STATIC_ASSERT(RefractionShaderResourceIndices, 16, "Illumination/Refraction/Refraction.hlsli");
 
 	struct RefractionUnorderedAccessIndices
 	{
 		Uint outputIndex_ = 0;
 		Vector3 refractionUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT(RefractionUnorderedAccessIndices, 16, "Raytracing/Refraction/Refraction.hlsli");
+	SC_STATIC_ASSERT(RefractionUnorderedAccessIndices, 16, "Illumination/Refraction/Refraction.hlsli");
 
-	struct GlobalIlluminationShaderResourceIndices
+	struct RaytracingGlobalIlluminationShaderResourceIndices
 	{
 		Uint outputIndex_ = 0;
 		Uint confidenceIndex_ = 0;
 		Vector2 globalIlluminationShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT(GlobalIlluminationShaderResourceIndices, 16, "Raytracing/GlobalIllumination/GlobalIlluminationReSTIR.hlsli");
+	SC_STATIC_ASSERT(RaytracingGlobalIlluminationShaderResourceIndices, 16, "Illumination/GlobalIllumination/Raytracing/RaytracingGlobalIlluminationReSTIR.hlsli");
 
-	struct GlobalIlluminationUnorderedAccessIndices
+	struct RaytracingGlobalIlluminationUnorderedAccessIndices
 	{
 		Uint outputIndex_ = 0;
 		Uint confidenceIndex_ = 0;
 		Vector2 globalIlluminationUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT(GlobalIlluminationUnorderedAccessIndices, 16, "Raytracing/GlobalIllumination/GlobalIlluminationReSTIR.hlsli");
+	SC_STATIC_ASSERT(RaytracingGlobalIlluminationUnorderedAccessIndices, 16, "Illumination/GlobalIllumination/Raytracing/RaytracingGlobalIlluminationReSTIR.hlsli");
 
 	struct CloudShaderResourceIndices
 	{
@@ -760,7 +760,7 @@ namespace SeedCore
 		Uint detailNoiseIndex_ = 0;
 		Uint cloudShaderResourcePadding0_ = 0;
 	};
-	SC_STATIC_ASSERT(CloudShaderResourceIndices, 16, "Raytracing/VolumetricCloudScapes/VolumetricCloudScapes.hlsli");
+	SC_STATIC_ASSERT(CloudShaderResourceIndices, 16, "Environment/VolumetricCloud/VolumetricCloudScapes.hlsli");
 
 	struct CloudUnorderedAccessIndices
 	{
@@ -769,21 +769,21 @@ namespace SeedCore
 		Uint detailNoiseIndex_ = 0;
 		Uint cloudUnorderedAccessPadding0_ = 0;
 	};
-	SC_STATIC_ASSERT(CloudUnorderedAccessIndices, 16, "Raytracing/VolumetricCloudScapes/VolumetricCloudScapes.hlsli");
+	SC_STATIC_ASSERT(CloudUnorderedAccessIndices, 16, "Environment/VolumetricCloud/VolumetricCloudScapes.hlsli");
 
 	struct StarShaderResourceIndices
 	{
 		Uint outputIndex_ = 0;
 		Vector3 starShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT(StarShaderResourceIndices, 16, "Raytracing/VolumetricStar/VolumetricStar.hlsli");
+	SC_STATIC_ASSERT(StarShaderResourceIndices, 16, "Environment/VolumetricStar/VolumetricStar.hlsli");
 
 	struct StarUnorderedAccessIndices
 	{
 		Uint outputIndex_ = 0;
 		Vector3 starUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT(StarUnorderedAccessIndices, 16, "Raytracing/VolumetricStar/VolumetricStar.hlsli");
+	SC_STATIC_ASSERT(StarUnorderedAccessIndices, 16, "Environment/VolumetricStar/VolumetricStar.hlsli");
 
 	struct WeatherParticleShaderResourceIndices
 	{
@@ -806,7 +806,7 @@ namespace SeedCore
 		Uint integrationIndex_ = 0;
 		Vector3 volumetricLightShaderResourcePadding0_;
 	};
-	SC_STATIC_ASSERT(VolumetricLightShaderResourceIndices, 16, "Raytracing/VolumetricLight/VolumetricLight.hlsli");
+	SC_STATIC_ASSERT(VolumetricLightShaderResourceIndices, 16, "Illumination/VolumetricLight/VolumetricLight.hlsli");
 
 	struct VolumetricLightUnorderedAccessIndices
 	{
@@ -814,16 +814,16 @@ namespace SeedCore
 		Uint integrationIndex_ = 0;
 		Vector2 volumetricLightUnorderedAccessPadding0_;
 	};
-	SC_STATIC_ASSERT(VolumetricLightUnorderedAccessIndices, 16, "Raytracing/VolumetricLight/VolumetricLight.hlsli");
+	SC_STATIC_ASSERT(VolumetricLightUnorderedAccessIndices, 16, "Illumination/VolumetricLight/VolumetricLight.hlsli");
 
 	struct ShaderResourceIndices
 	{
 		LightShaderResourceIndices light_;
 		ClusterAssignShaderResourceIndices clusterAssign_;
-		ShadowAccumulationShaderResourceIndices shadowAccumulation_;
-		AmbientOcclusionAccumulationShaderResourceIndices ambientOcclusionAccumulation_;
-		GlobalIlluminationAccumulationShaderResourceIndices globalIlluminationAccumulation_;
-		ReflectionAccumulationShaderResourceIndices reflectionAccumulation_;
+		RaytracingShadowAccumulationShaderResourceIndices shadowAccumulation_;
+		RaytracingAmbientOcclusionAccumulationShaderResourceIndices ambientOcclusionAccumulation_;
+		RaytracingGlobalIlluminationAccumulationShaderResourceIndices globalIlluminationAccumulation_;
+		RaytracingReflectionAccumulationShaderResourceIndices reflectionAccumulation_;
 		PostProcessShaderResourceIndices postProcess_;
 		HUDShaderResourceIndices hud_;
 		PrimitiveSolidShaderResourceIndices primitiveSolid_;
@@ -835,12 +835,12 @@ namespace SeedCore
 		GeometryBufferShaderResourceIndices geometryBuffer_;
 		SkyShaderResourceIndices sky_;
 		RaytracingShaderResourceIndices raytracing_;
-		ShadowShaderResourceIndices shadow_;
-		AmbientOcclusionShaderResourceIndices ambientOcclusion_;
+		RaytracingShadowShaderResourceIndices shadow_;
+		RaytracingAmbientOcclusionShaderResourceIndices ambientOcclusion_;
 		SubsurfaceScatteringShaderResourceIndices subsurfaceScattering_;
-		ReflectionShaderResourceIndices reflection_;
+		RaytracingReflectionShaderResourceIndices reflection_;
 		RefractionShaderResourceIndices refraction_;
-		GlobalIlluminationShaderResourceIndices globalIllumination_;
+		RaytracingGlobalIlluminationShaderResourceIndices globalIllumination_;
 		CloudShaderResourceIndices cloud_;
 		StarShaderResourceIndices star_;
 		WeatherParticleShaderResourceIndices weatherParticle_;
@@ -851,21 +851,21 @@ namespace SeedCore
 	struct UnorderedAccessIndices
 	{
 		ClusterAssignUnorderedAccessIndices clusterAssign_;
-		ShadowAccumulationUnorderedAccessIndices shadowAccumulation_;
-		AmbientOcclusionAccumulationUnorderedAccessIndices ambientOcclusionAccumulation_;
-		GlobalIlluminationAccumulationUnorderedAccessIndices globalIlluminationAccumulation_;
-		ReflectionAccumulationUnorderedAccessIndices reflectionAccumulation_;
+		RaytracingShadowAccumulationUnorderedAccessIndices shadowAccumulation_;
+		RaytracingAmbientOcclusionAccumulationUnorderedAccessIndices ambientOcclusionAccumulation_;
+		RaytracingGlobalIlluminationAccumulationUnorderedAccessIndices globalIlluminationAccumulation_;
+		RaytracingReflectionAccumulationUnorderedAccessIndices reflectionAccumulation_;
 		DlssUnorderedAccessIndices dlss_;
 		PostProcessUnorderedAccessIndices postProcess_;
 		OitUnorderedAccessIndices oit_;
 		GeometryBufferUnorderedAccessIndices geometryBuffer_;
 		MaterialSortUnorderedAccessIndices materialSort_;
-		ShadowUnorderedAccessIndices shadow_;
-		AmbientOcclusionUnorderedAccessIndices ambientOcclusion_;
+		RaytracingShadowUnorderedAccessIndices shadow_;
+		RaytracingAmbientOcclusionUnorderedAccessIndices ambientOcclusion_;
 		SubsurfaceScatteringUnorderedAccessIndices subsurfaceScattering_;
-		ReflectionUnorderedAccessIndices reflection_;
+		RaytracingReflectionUnorderedAccessIndices reflection_;
 		RefractionUnorderedAccessIndices refraction_;
-		GlobalIlluminationUnorderedAccessIndices globalIllumination_;
+		RaytracingGlobalIlluminationUnorderedAccessIndices globalIllumination_;
 		CloudUnorderedAccessIndices cloud_;
 		StarUnorderedAccessIndices star_;
 		WeatherParticleUnorderedAccessIndices weatherParticle_;
@@ -1000,21 +1000,21 @@ namespace SeedCore
 
 		void SetClusterAssignIndices(const ClusterAssignShaderResourceIndices& values);
 
-		void SetEditorShadowAccumulationIndices(const ShadowAccumulationShaderResourceIndices& values);
+		void SetEditorShadowAccumulationIndices(const RaytracingShadowAccumulationShaderResourceIndices& values);
 
-		void SetGameShadowAccumulationIndices(const ShadowAccumulationShaderResourceIndices& values);
+		void SetGameShadowAccumulationIndices(const RaytracingShadowAccumulationShaderResourceIndices& values);
 
-		void SetEditorAmbientOcclusionAccumulationIndices(const AmbientOcclusionAccumulationShaderResourceIndices& values);
+		void SetEditorAmbientOcclusionAccumulationIndices(const RaytracingAmbientOcclusionAccumulationShaderResourceIndices& values);
 
-		void SetGameAmbientOcclusionAccumulationIndices(const AmbientOcclusionAccumulationShaderResourceIndices& values);
+		void SetGameAmbientOcclusionAccumulationIndices(const RaytracingAmbientOcclusionAccumulationShaderResourceIndices& values);
 
-		void SetEditorGlobalIlluminationAccumulationIndices(const GlobalIlluminationAccumulationShaderResourceIndices& values);
+		void SetEditorGlobalIlluminationAccumulationIndices(const RaytracingGlobalIlluminationAccumulationShaderResourceIndices& values);
 
-		void SetGameGlobalIlluminationAccumulationIndices(const GlobalIlluminationAccumulationShaderResourceIndices& values);
+		void SetGameGlobalIlluminationAccumulationIndices(const RaytracingGlobalIlluminationAccumulationShaderResourceIndices& values);
 
-		void SetEditorReflectionAccumulationIndices(const ReflectionAccumulationShaderResourceIndices& values);
+		void SetEditorReflectionAccumulationIndices(const RaytracingReflectionAccumulationShaderResourceIndices& values);
 
-		void SetGameReflectionAccumulationIndices(const ReflectionAccumulationShaderResourceIndices& values);
+		void SetGameReflectionAccumulationIndices(const RaytracingReflectionAccumulationShaderResourceIndices& values);
 
 		void SetEditorPostProcessIndices(const PostProcessShaderResourceIndices& values);
 
@@ -1153,21 +1153,21 @@ namespace SeedCore
 	public:
 		void SetClusterAssignIndices(const ClusterAssignUnorderedAccessIndices& values);
 
-		void SetEditorShadowAccumulationIndices(const ShadowAccumulationUnorderedAccessIndices& values);
+		void SetEditorShadowAccumulationIndices(const RaytracingShadowAccumulationUnorderedAccessIndices& values);
 
-		void SetGameShadowAccumulationIndices(const ShadowAccumulationUnorderedAccessIndices& values);
+		void SetGameShadowAccumulationIndices(const RaytracingShadowAccumulationUnorderedAccessIndices& values);
 
-		void SetEditorAmbientOcclusionAccumulationIndices(const AmbientOcclusionAccumulationUnorderedAccessIndices& values);
+		void SetEditorAmbientOcclusionAccumulationIndices(const RaytracingAmbientOcclusionAccumulationUnorderedAccessIndices& values);
 
-		void SetGameAmbientOcclusionAccumulationIndices(const AmbientOcclusionAccumulationUnorderedAccessIndices& values);
+		void SetGameAmbientOcclusionAccumulationIndices(const RaytracingAmbientOcclusionAccumulationUnorderedAccessIndices& values);
 
-		void SetEditorGlobalIlluminationAccumulationIndices(const GlobalIlluminationAccumulationUnorderedAccessIndices& values);
+		void SetEditorGlobalIlluminationAccumulationIndices(const RaytracingGlobalIlluminationAccumulationUnorderedAccessIndices& values);
 
-		void SetGameGlobalIlluminationAccumulationIndices(const GlobalIlluminationAccumulationUnorderedAccessIndices& values);
+		void SetGameGlobalIlluminationAccumulationIndices(const RaytracingGlobalIlluminationAccumulationUnorderedAccessIndices& values);
 
-		void SetEditorReflectionAccumulationIndices(const ReflectionAccumulationUnorderedAccessIndices& values);
+		void SetEditorReflectionAccumulationIndices(const RaytracingReflectionAccumulationUnorderedAccessIndices& values);
 
-		void SetGameReflectionAccumulationIndices(const ReflectionAccumulationUnorderedAccessIndices& values);
+		void SetGameReflectionAccumulationIndices(const RaytracingReflectionAccumulationUnorderedAccessIndices& values);
 
 		void SetEditorDlssNormalRoughnessUnorderedAccessViewIndex(Uint index);
 

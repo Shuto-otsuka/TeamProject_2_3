@@ -24,8 +24,8 @@
 
 namespace SeedCore
 {
-	struct RaytracingContext;
 	struct SceneConstantBuffer;
+	struct GameConfig;
 
 	class AvatarMesh;
 	class CameraSystem;
@@ -36,6 +36,7 @@ namespace SeedCore
 	class GpuProfiler;
 	class PreviewCamera;
 	class SplashSystem;
+	class Window;
 	class World;
 	class WorldTimer;
 
@@ -84,19 +85,24 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Initializes the device, swap chain, renderer, screen overlays, and
-		* DLSS services for hwnd and its initial output size. bootConfig
-		* supplies the boot screen's images, which are uploaded once here.
-		* Returns false if any required service fails to initialize.
+		* DLSS services for window and its current client size. The splash
+		* system's boot config supplies the boot screen's images, which are
+		* uploaded once here. gameConfig then sets the output resolution,
+		* upscale mode, Reflex, DeepDVC and frame generation. Returns false if
+		* any required service fails to initialize.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* hwnd と初期出力サイズに対して、デバイス、スワップチェイン、
-		* Renderer、画面オーバーレイ、および DLSS サービスを初期化する。
-		* bootConfig はブート画面の画像を与え、ここで一度だけアップロードする。
-		* 必要なサービスのいずれかの初期化に失敗した場合は false を返す。
+		* window と現在のクライアントサイズに対して、デバイス、スワップ
+		* チェイン、Renderer、画面オーバーレイ、および DLSS サービスを
+		* 初期化する。スプラッシュシステムのブート設定がブート画面の画像を
+		* 与え、ここで一度だけアップロードする。その後 gameConfig から出力
+		* 解像度、アップスケールモード、Reflex、DeepDVC、フレーム生成を
+		* 設定する。必要なサービスのいずれかの初期化に失敗した場合は false を
+		* 返す。
 		*/
-		Bool Initialize(HWND hwnd, Uint32 width, Uint32 height, const BootConfig& bootConfig);
+		Bool Initialize(const Window& window, const SplashSystem& splashSystem, const GameConfig& gameConfig);
 
 		/**
 		* [EN]
@@ -311,17 +317,6 @@ namespace SeedCore
 		void DrawLetterScreen();
 
 	public:
-		/**
-		* [EN]
-		* Applies raytracing settings to the renderer.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* レイトレーシング設定を Renderer へ適用する。
-		*/
-		void Raytracing(const RaytracingContext& settings);
-
 		/**
 		* [EN]
 		* Selects the renderer's upscaling path and DLSS ray-reconstruction mode.

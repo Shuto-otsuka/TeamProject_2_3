@@ -91,6 +91,17 @@ namespace SeedCore
 		pending_ = mesh != nullptr && mesh->meshID_ != 0;
 	}
 
+	void Softbody::OnRevision()
+	{
+		OnDestroy();
+		OnAwake();
+	}
+
+	void Softbody::Dispatch()
+	{
+		OnRevision();
+	}
+
 	/**
 	* [EN]
 	* Adds a force (N) for the next fixed step, spread evenly over the

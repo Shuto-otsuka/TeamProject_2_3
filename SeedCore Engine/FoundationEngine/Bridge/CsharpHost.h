@@ -15,7 +15,7 @@ namespace SeedCore
 		CsharpHost() = default;
 		~CsharpHost() = default;
 
-		Bool Initialize(const std::filesystem::path& executableDirectory);
+		Bool Initialize(World& world);
 
 		void Load(World& world);
 
@@ -24,6 +24,8 @@ namespace SeedCore
 		void Unload(World& world);
 
 	private:
+		Bool Initialize(const std::filesystem::path& executableDirectory);
+
 		DynamicArray<std::pair<Actor, BlueprintComponent>> Detach(World& world);
 
 		static void Log(Uint8 level, const Uint8* text, Int32 length);

@@ -9,6 +9,7 @@ class FieldDecl:
     array_type_ は (要素の型, 個数 or None, 可変長かどうか) で、配列でなければ None。
     enum_type_ は Reflection.parse_enum_type で解決した所有者付きの enum 名で、enum でなければ None。
     asset_type_ は SC_PAYLOAD_FIELD に書いた PayloadType の名前で、Payload のフィールドでなければ None。
+    revision_ は SC_REFLECTION_FIELD_REVISION が付いた field だけ True になり、生成する FieldInfo に渡す。
     """
     type_: str
     name_: str
@@ -21,6 +22,7 @@ class FieldDecl:
     clamp_max_: str
     serialize_only_: bool
     asset_type_: str = None
+    revision_: bool = False
 
 
 @dataclass

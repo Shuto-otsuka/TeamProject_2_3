@@ -43,6 +43,17 @@ namespace SeedCore
 		PhysicsSystem::DestroyColliderBody(GetActor(), bodyID_, shapeHandle_);
 	}
 
+	void RectCollider::OnRevision()
+	{
+		OnDestroy();
+		OnAwake();
+	}
+
+	void RectCollider::Dispatch()
+	{
+		OnRevision();
+	}
+
 	/**
 	* [EN]
 	* Creates and returns a rectangle shape from the current settings,

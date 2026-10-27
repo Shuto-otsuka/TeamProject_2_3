@@ -102,6 +102,9 @@
     <ClInclude Include="Effect\Zephyr\ZephyrModuleAssembler.h" />
     <ClInclude Include="Effect\Zephyr\ZephyrModuleRegistry.h" />
     <ClInclude Include="Effect\Zephyr\ZephyrParticleStorage.h" />
+    <ClInclude Include="Environment\Celestial\Celestial.h" />
+    <ClInclude Include="Environment\VolumetricCloud\VolumetricCloudScapes.h" />
+    <ClInclude Include="Environment\VolumetricStar\VolumetricStar.h" />
     <ClInclude Include="Environment\Weather.h" />
     <ClInclude Include="Environment\WeatherParticleShader.h" />
     <ClInclude Include="Font\Font.h" />
@@ -112,6 +115,14 @@
     <ClInclude Include="Font\ShapedText.h" />
     <ClInclude Include="Font\Text.h" />
     <ClInclude Include="Graphics.h" />
+    <ClInclude Include="Illumination\AmbientOcclusion\AmbientOcclusion.h" />
+    <ClInclude Include="Illumination\Caustics\Caustics.h" />
+    <ClInclude Include="Illumination\GlobalIllumination\GlobalIllumination.h" />
+    <ClInclude Include="Illumination\Reflection\Reflection.h" />
+    <ClInclude Include="Illumination\Refraction\Refraction.h" />
+    <ClInclude Include="Illumination\Shadow\Shadow.h" />
+    <ClInclude Include="Illumination\SubsurfaceScattering\SubsurfaceScattering.h" />
+    <ClInclude Include="Illumination\VolumetricLight\VolumetricLight.h" />
     <ClInclude Include="Light\DirectionalLight.h" />
     <ClInclude Include="Light\PointLight.h" />
     <ClInclude Include="Light\RectangleLight.h" />
@@ -181,26 +192,23 @@
     <ClInclude Include="PostProcess\PostProcess.h" />
     <ClInclude Include="Profiler\GpuProfiler.h" />
     <ClInclude Include="Profiler\ProfilerStats.h" />
-    <ClInclude Include="Quality\GraphicsQuality.h" />
     <ClInclude Include="Quality\Upscale.h" />
-    <ClInclude Include="Rasterization\RasterizationContext.h" />
-    <ClInclude Include="Raytracing\AmbientOcclusion\AmbientOcclusionDenoiseShader.h" />
-    <ClInclude Include="Raytracing\AmbientOcclusion\AmbientOcclusionShader.h" />
+    <ClInclude Include="Illumination\AmbientOcclusion\AmbientOcclusionDenoiseShader.h" />
+    <ClInclude Include="Illumination\AmbientOcclusion\AmbientOcclusionShader.h" />
     <ClInclude Include="Raytracing\BottomLevelAccelerationStructure.h" />
-    <ClInclude Include="Raytracing\GlobalIllumination\GlobalIlluminationDenoiseShader.h" />
-    <ClInclude Include="Raytracing\GlobalIllumination\GlobalIlluminationShader.h" />
-    <ClInclude Include="Raytracing\RaytracingContext.h" />
+    <ClInclude Include="Illumination\GlobalIllumination\GlobalIlluminationDenoiseShader.h" />
+    <ClInclude Include="Illumination\GlobalIllumination\GlobalIlluminationShader.h" />
     <ClInclude Include="Raytracing\RaytracingDispatch.h" />
-    <ClInclude Include="Raytracing\Reflection\ReflectionDenoiseShader.h" />
-    <ClInclude Include="Raytracing\Reflection\ReflectionShader.h" />
-    <ClInclude Include="Raytracing\Refraction\RefractionShader.h" />
-    <ClInclude Include="Raytracing\Shadow\ShadowDenoiseShader.h" />
-    <ClInclude Include="Raytracing\Shadow\ShadowShader.h" />
-    <ClInclude Include="Raytracing\SubsurfaceScattering\SubsurfaceScatteringShader.h" />
+    <ClInclude Include="Illumination\Reflection\ReflectionDenoiseShader.h" />
+    <ClInclude Include="Illumination\Reflection\ReflectionShader.h" />
+    <ClInclude Include="Illumination\Refraction\RefractionShader.h" />
+    <ClInclude Include="Illumination\Shadow\ShadowDenoiseShader.h" />
+    <ClInclude Include="Illumination\Shadow\ShadowShader.h" />
+    <ClInclude Include="Illumination\SubsurfaceScattering\SubsurfaceScatteringShader.h" />
     <ClInclude Include="Raytracing\TopLevelAccelerationStructure.h" />
-    <ClInclude Include="Raytracing\VolumetricCloudScapes\VolumetricCloudScapesShader.h" />
-    <ClInclude Include="Raytracing\VolumetricLight\VolumetricLightShader.h" />
-    <ClInclude Include="Raytracing\VolumetricStar\VolumetricStarShader.h" />
+    <ClInclude Include="Environment\VolumetricCloud\VolumetricCloudScapesShader.h" />
+    <ClInclude Include="Illumination\VolumetricLight\VolumetricLightShader.h" />
+    <ClInclude Include="Environment\VolumetricStar\VolumetricStarShader.h" />
     <ClInclude Include="Renderer\AmbientOcclusionRenderer.h" />
     <ClInclude Include="Renderer\AvatarRenderer.h" />
     <ClInclude Include="Renderer\BootScreenRenderer.h" />
@@ -237,7 +245,6 @@
     <ClInclude Include="Resource\GraphicsLoaderSystem.h" />
     <ClInclude Include="Resource\GraphicsModule.h" />
     <ClInclude Include="Resource\GraphicsResourceSystem.h" />
-    <ClInclude Include="ScreenSpace\ScreenSpaceContext.h" />
     <ClInclude Include="Shader\ShaderCache.h" />
     <ClInclude Include="Shader\ShaderCompiler.h" />
     <ClInclude Include="Shader\ShaderHotReload.h" />
@@ -265,19 +272,28 @@
     <ClInclude Include="Sky\SkymapCache.h" />
     <ClInclude Include="Sky\SkymapLoader.h" />
     <ClInclude Include="Sky\SkymapResource.h" />
+    <ClInclude Include="System\AmbientOcclusionSystem.h" />
     <ClInclude Include="System\AnimationSystem.h" />
     <ClInclude Include="System\CameraSystem.h" />
     <ClInclude Include="System\CelestialSystem.h" />
     <ClInclude Include="System\ColliderSystem.h" />
     <ClInclude Include="System\ConstraintSystem.h" />
     <ClInclude Include="System\EffectSystem.h" />
+    <ClInclude Include="System\GlobalIlluminationSystem.h" />
     <ClInclude Include="System\IndicesSystem.h" />
     <ClInclude Include="System\LightSystem.h" />
     <ClInclude Include="System\MaterialSystem.h" />
     <ClInclude Include="System\MovieSystem.h" />
+    <ClInclude Include="System\ReflectionSystem.h" />
+    <ClInclude Include="System\RefractionSystem.h" />
     <ClInclude Include="System\SceneConstantSystem.h" />
+    <ClInclude Include="System\ShadowSystem.h" />
     <ClInclude Include="System\ShapeSystem.h" />
     <ClInclude Include="System\SplashSystem.h" />
+    <ClInclude Include="System\SubsurfaceScatteringSystem.h" />
+    <ClInclude Include="System\VolumetricCloudScapesSystem.h" />
+    <ClInclude Include="System\VolumetricLightSystem.h" />
+    <ClInclude Include="System\VolumetricStarSystem.h" />
     <ClInclude Include="System\WeatherSystem.h" />
     <ClInclude Include="TAAU\TaauResolveShader.h" />
     <ClInclude Include="Texture\Compression\BC7CompressShader.h" />
@@ -464,22 +480,21 @@
     <ClCompile Include="Graphics.cpp">
     </ClCompile>
     <ClCompile Include="Profiler\GpuProfiler.cpp" />
-    <ClCompile Include="Quality\GraphicsQuality.cpp" />
-    <ClCompile Include="Raytracing\AmbientOcclusion\AmbientOcclusionDenoiseShader.cpp" />
-    <ClCompile Include="Raytracing\AmbientOcclusion\AmbientOcclusionShader.cpp" />
+    <ClCompile Include="Illumination\AmbientOcclusion\AmbientOcclusionDenoiseShader.cpp" />
+    <ClCompile Include="Illumination\AmbientOcclusion\AmbientOcclusionShader.cpp" />
     <ClCompile Include="Raytracing\BottomLevelAccelerationStructure.cpp" />
-    <ClCompile Include="Raytracing\GlobalIllumination\GlobalIlluminationDenoiseShader.cpp" />
-    <ClCompile Include="Raytracing\GlobalIllumination\GlobalIlluminationShader.cpp" />
-    <ClCompile Include="Raytracing\Reflection\ReflectionDenoiseShader.cpp" />
-    <ClCompile Include="Raytracing\Reflection\ReflectionShader.cpp" />
-    <ClCompile Include="Raytracing\Refraction\RefractionShader.cpp" />
-    <ClCompile Include="Raytracing\Shadow\ShadowDenoiseShader.cpp" />
-    <ClCompile Include="Raytracing\Shadow\ShadowShader.cpp" />
-    <ClCompile Include="Raytracing\SubsurfaceScattering\SubsurfaceScatteringShader.cpp" />
+    <ClCompile Include="Illumination\GlobalIllumination\GlobalIlluminationDenoiseShader.cpp" />
+    <ClCompile Include="Illumination\GlobalIllumination\GlobalIlluminationShader.cpp" />
+    <ClCompile Include="Illumination\Reflection\ReflectionDenoiseShader.cpp" />
+    <ClCompile Include="Illumination\Reflection\ReflectionShader.cpp" />
+    <ClCompile Include="Illumination\Refraction\RefractionShader.cpp" />
+    <ClCompile Include="Illumination\Shadow\ShadowDenoiseShader.cpp" />
+    <ClCompile Include="Illumination\Shadow\ShadowShader.cpp" />
+    <ClCompile Include="Illumination\SubsurfaceScattering\SubsurfaceScatteringShader.cpp" />
     <ClCompile Include="Raytracing\TopLevelAccelerationStructure.cpp" />
-    <ClCompile Include="Raytracing\VolumetricCloudScapes\VolumetricCloudScapesShader.cpp" />
-    <ClCompile Include="Raytracing\VolumetricLight\VolumetricLightShader.cpp" />
-    <ClCompile Include="Raytracing\VolumetricStar\VolumetricStarShader.cpp" />
+    <ClCompile Include="Environment\VolumetricCloud\VolumetricCloudScapesShader.cpp" />
+    <ClCompile Include="Illumination\VolumetricLight\VolumetricLightShader.cpp" />
+    <ClCompile Include="Environment\VolumetricStar\VolumetricStarShader.cpp" />
     <ClCompile Include="Renderer\AmbientOcclusionRenderer.cpp" />
     <ClCompile Include="Renderer\AvatarRenderer.cpp" />
     <ClCompile Include="Renderer\BootScreenRenderer.cpp" />
@@ -534,21 +549,30 @@
     <ClCompile Include="Sky\SkymapCache.cpp" />
     <ClCompile Include="Sky\SkymapLoader.cpp" />
     <ClCompile Include="Sky\SkymapResource.cpp" />
+    <ClCompile Include="System\AmbientOcclusionSystem.cpp" />
     <ClCompile Include="System\AnimationSystem.cpp" />
     <ClCompile Include="System\CameraSystem.cpp" />
     <ClCompile Include="System\CelestialSystem.cpp" />
     <ClCompile Include="System\ColliderSystem.cpp" />
     <ClCompile Include="System\ConstraintSystem.cpp" />
     <ClCompile Include="System\EffectSystem.cpp" />
+    <ClCompile Include="System\GlobalIlluminationSystem.cpp" />
     <ClCompile Include="System\IndicesSystem.cpp">
     </ClCompile>
     <ClCompile Include="System\LightSystem.cpp">
     </ClCompile>
     <ClCompile Include="System\MaterialSystem.cpp" />
     <ClCompile Include="System\MovieSystem.cpp" />
+    <ClCompile Include="System\ReflectionSystem.cpp" />
+    <ClCompile Include="System\RefractionSystem.cpp" />
     <ClCompile Include="System\SceneConstantSystem.cpp" />
+    <ClCompile Include="System\ShadowSystem.cpp" />
     <ClCompile Include="System\ShapeSystem.cpp" />
     <ClCompile Include="System\SplashSystem.cpp" />
+    <ClCompile Include="System\SubsurfaceScatteringSystem.cpp" />
+    <ClCompile Include="System\VolumetricCloudScapesSystem.cpp" />
+    <ClCompile Include="System\VolumetricLightSystem.cpp" />
+    <ClCompile Include="System\VolumetricStarSystem.cpp" />
     <ClCompile Include="System\WeatherSystem.cpp" />
     <ClCompile Include="TAAU\TaauResolveShader.cpp" />
     <ClCompile Include="Texture\Compression\BC7CompressShader.cpp" />
@@ -646,19 +670,19 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Raytracing\AmbientOcclusion\AmbientOcclusion.hlsli">
+    <None Include="Illumination\AmbientOcclusion\Raytracing\RaytracingAmbientOcclusion.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Raytracing\Froxel\Froxel.hlsli">
+    <None Include="Illumination\VolumetricLight\Froxel.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Raytracing\GlobalIllumination\GlobalIllumination.hlsli">
+    <None Include="Illumination\GlobalIllumination\Raytracing\RaytracingGlobalIllumination.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Raytracing\GlobalIllumination\GlobalIlluminationReSTIR.hlsli">
+    <None Include="Illumination\GlobalIllumination\Raytracing\RaytracingGlobalIlluminationReSTIR.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
@@ -666,36 +690,36 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Raytracing\Reflection\Reflection.hlsli" />
-    <None Include="Raytracing\Reflection\ReflectionReSTIR.hlsli">
+    <None Include="Illumination\Reflection\Raytracing\RaytracingReflection.hlsli" />
+    <None Include="Illumination\Reflection\Raytracing\RaytracingReflectionReSTIR.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Raytracing\Refraction\Refraction.hlsli">
+    <None Include="Illumination\Refraction\Refraction.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Raytracing\Shadow\Shadow.hlsli">
+    <None Include="Illumination\Shadow\Raytracing\RaytracingShadow.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Raytracing\SubsurfaceScattering\SubsurfaceScattering.hlsli">
+    <None Include="Illumination\SubsurfaceScattering\SubsurfaceScattering.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Raytracing\VolumetricCloudScapes\CloudNoiseBake.hlsli">
+    <None Include="Environment\VolumetricCloud\CloudNoiseBake.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Raytracing\VolumetricCloudScapes\VolumetricCloudScapes.hlsli">
+    <None Include="Environment\VolumetricCloud\VolumetricCloudScapes.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Raytracing\VolumetricLight\VolumetricLight.hlsli">
+    <None Include="Illumination\VolumetricLight\VolumetricLight.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Raytracing\VolumetricStar\VolumetricStar.hlsli">
+    <None Include="Environment\VolumetricStar\VolumetricStar.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
@@ -791,58 +815,58 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Raytracing\Shadow\ShadowRT.hlsl">
+    <Text Include="Illumination\Shadow\Raytracing\RaytracingShadowRT.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Raytracing\GlobalIllumination\GlobalIlluminationRT.hlsl">
+    <Text Include="Illumination\GlobalIllumination\Raytracing\RaytracingGlobalIlluminationRT.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Raytracing\AmbientOcclusion\AmbientOcclusionRT.hlsl">
+    <Text Include="Illumination\AmbientOcclusion\Raytracing\RaytracingAmbientOcclusionRT.hlsl">
       <FileType>Document</FileType>
     </Text>
-    <Text Include="Raytracing\Fog\FogInjectionCS.hlsl">
+    <Text Include="Illumination\VolumetricLight\FogInjectionCS.hlsl">
       <FileType>Document</FileType>
     </Text>
-    <Text Include="Raytracing\Froxel\FroxelIntegrationCS.hlsl">
+    <Text Include="Illumination\VolumetricLight\FroxelIntegrationCS.hlsl">
       <FileType>Document</FileType>
     </Text>
-    <Text Include="Raytracing\Reflection\ReflectionRT.hlsl">
+    <Text Include="Illumination\Reflection\Raytracing\RaytracingReflectionRT.hlsl">
       <FileType>Document</FileType>
     </Text>
-    <Text Include="Raytracing\Refraction\RefractionRT.hlsl">
+    <Text Include="Illumination\Refraction\RefractionRT.hlsl">
       <FileType>Document</FileType>
     </Text>
-    <Text Include="Raytracing\SubsurfaceScattering\SubsurfaceScatteringRT.hlsl">
+    <Text Include="Illumination\SubsurfaceScattering\SubsurfaceScatteringRT.hlsl">
       <FileType>Document</FileType>
     </Text>
-    <Text Include="Raytracing\VolumetricCloudScapes\VolumetricCloudScapesRT.hlsl">
+    <Text Include="Environment\VolumetricCloud\VolumetricCloudScapesCS.hlsl">
       <FileType>Document</FileType>
     </Text>
-    <Text Include="Raytracing\VolumetricLight\VolumetricLightScatteringRT.hlsl">
-      <FileType>Document</FileType>
-    </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Raytracing\Shadow\ShadowDenoiseCS.hlsl">
+    <Text Include="Illumination\VolumetricLight\VolumetricLightScatteringRT.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Raytracing\AmbientOcclusion\AmbientOcclusionDenoiseCS.hlsl">
+    <Text Include="Illumination\Shadow\Raytracing\RaytracingShadowDenoiseCS.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Raytracing\VolumetricCloudScapes\CloudNoiseShapeBakeCS.hlsl">
+    <Text Include="Illumination\AmbientOcclusion\Raytracing\RaytracingAmbientOcclusionDenoiseCS.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Raytracing\VolumetricCloudScapes\CloudNoiseDetailBakeCS.hlsl">
+    <Text Include="Environment\VolumetricCloud\CloudNoiseShapeBakeCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Environment\VolumetricCloud\CloudNoiseDetailBakeCS.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
@@ -858,7 +882,7 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Raytracing\GlobalIllumination\GlobalIlluminationDenoiseCS.hlsl">
+    <Text Include="Illumination\GlobalIllumination\Raytracing\RaytracingGlobalIlluminationDenoiseCS.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
@@ -888,7 +912,7 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Raytracing\VolumetricStar\VolumetricStarRT.hlsl">
+    <Text Include="Environment\VolumetricStar\VolumetricStarCS.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
@@ -913,7 +937,7 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Raytracing\Reflection\ReflectionDenoiseCS.hlsl">
+    <Text Include="Illumination\Reflection\Raytracing\RaytracingReflectionDenoiseCS.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
@@ -1025,12 +1049,12 @@
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Raytracing\GlobalIllumination\GlobalIlluminationReservoirSpatialCS.hlsl">
+    <Text Include="Illumination\GlobalIllumination\Raytracing\RaytracingGlobalIlluminationReservoirSpatialCS.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Raytracing\Reflection\ReflectionReservoirSpatialCS.hlsl">
+    <Text Include="Illumination\Reflection\Raytracing\RaytracingReflectionReservoirSpatialCS.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
@@ -1476,7 +1500,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions);FOUNDATIONENGINE_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions);SEEDCORE_EXPORTS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>FoundationEngine/Prelude.h</PrecompiledHeaderFile>
@@ -1505,7 +1529,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions);FOUNDATIONENGINE_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions);SEEDCORE_EXPORTS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>FoundationEngine/Prelude.h</PrecompiledHeaderFile>

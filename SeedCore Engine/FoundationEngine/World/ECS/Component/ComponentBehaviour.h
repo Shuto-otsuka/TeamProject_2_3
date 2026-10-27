@@ -11,6 +11,7 @@
 #include <FoundationEngine/World/ECS/Component/InspectorDrawable.h>
 #include <FoundationEngine/World/ECS/Component/Collisionable.h>
 #include <FoundationEngine/World/ECS/Component/Triggerable.h>
+#include <FoundationEngine/World/ECS/Component/Revisionable.h>
 #include <FoundationEngine/World/ECS/Component/Component.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 
@@ -303,6 +304,8 @@ namespace SeedCore
 		* （存在する場合）へディスパッチする。
 		*/
 		void DispatchTriggerExit(const Actor& other);
+
+		void DispatchRevision();
 
 	private:
 		/**

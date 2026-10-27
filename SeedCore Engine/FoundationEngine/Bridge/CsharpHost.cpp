@@ -8,9 +8,19 @@
 #include <FoundationEngine/Log/Notice.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Log/Error.h>
+#include <FoundationEngine/File/FileDirectory.h>
 
 namespace SeedCore
 {
+	Bool CsharpHost::Initialize(World& world)
+	{
+		if (Initialize(FileDirectory::ExecutableDirectory()))
+		{
+			Load(world);
+		}
+		return true;
+	}
+
 	Bool CsharpHost::Initialize(const std::filesystem::path& executableDirectory)
 	{
 		std::filesystem::path buildDirectory = executableDirectory.parent_path();

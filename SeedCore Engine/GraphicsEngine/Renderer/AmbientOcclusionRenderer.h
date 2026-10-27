@@ -1,8 +1,8 @@
 #pragma once
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
-#include <GraphicsEngine/Raytracing/AmbientOcclusion/AmbientOcclusionDenoiseShader.h>
-#include <GraphicsEngine/Raytracing/AmbientOcclusion/AmbientOcclusionShader.h>
+#include <GraphicsEngine/Illumination/AmbientOcclusion/AmbientOcclusionDenoiseShader.h>
+#include <GraphicsEngine/Illumination/AmbientOcclusion/AmbientOcclusionShader.h>
 #include <GraphicsEngine/Raytracing/RaytracingDispatch.h>
 
 namespace SeedCore
@@ -19,9 +19,9 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Tuning values of the ambient occlusion pass. Mirrors
-	* AmbientOcclusionRayConstantBuffer in
-	* Raytracing/AmbientOcclusion/AmbientOcclusion.hlsli, which both
-	* AmbientOcclusionRT.hlsl and DeferredLightingPS.hlsl read through
+	* RaytracingAmbientOcclusionConstantBuffer in
+	* Illumination/AmbientOcclusion/Raytracing/RaytracingAmbientOcclusion.hlsli, which both
+	* RaytracingAmbientOcclusionRT.hlsl and DeferredLightingPS.hlsl read through
 	* constant_indices.ambient_occlusion_index_, so the layout must match the
 	* HLSL side byte for byte.
 	*
@@ -29,12 +29,12 @@ namespace SeedCore
 	*
 	* [JP]
 	* アンビエントオクルージョンのパスの調整値。
-	* Raytracing/AmbientOcclusion/AmbientOcclusion.hlsli の
-	* AmbientOcclusionRayConstantBuffer と対応する。AmbientOcclusionRT.hlsl と
+	* Illumination/AmbientOcclusion/Raytracing/RaytracingAmbientOcclusion.hlsli の
+	* RaytracingAmbientOcclusionConstantBuffer と対応する。RaytracingAmbientOcclusionRT.hlsl と
 	* DeferredLightingPS.hlsl の両方が constant_indices.ambient_occlusion_index_
 	* 経由で読むため、レイアウトは HLSL 側とバイト単位で一致させる。
 	*/
-	struct AmbientOcclusionRayConstantBuffer
+	struct RaytracingAmbientOcclusionConstantBuffer
 	{
 		/// [EN] World-space occlusion radius; occluders farther away than this do not darken the surface.
 		/// [JP] ワールド空間の遮蔽半径。これより遠い遮蔽物は表面を暗くしない。
@@ -51,6 +51,10 @@ namespace SeedCore
 		/// [EN] Frame counter written by AmbientOcclusionRenderer::Prepare, not by the editor UI. It seeds the per-pixel random numbers, so the random ray directions change every frame.
 		/// [JP] エディターの UI ではなく AmbientOcclusionRenderer::Prepare が書き込むフレームカウンター。ピクセルごとの乱数の種になり、ランダムなレイの方向を毎フレーム変える。
 		Uint32 frameIndex_ = 0;
+
+		Uint32 rayCount_ = 1;
+
+		Vector3 ambientOcclusionRayPadding_ = { 0.0f, 0.0f, 0.0f };
 
 		/**
 		* [EN]
@@ -74,9 +78,9 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Runs the ray-traced ambient occlusion: AmbientOcclusionRT.hlsl writes a
+	* Runs the ray-traced ambient occlusion: RaytracingAmbientOcclusionRT.hlsl writes a
 	* raw, noisy single-channel openness texture, and
-	* AmbientOcclusionDenoiseCS.hlsl denoises it by reprojecting and blending
+	* RaytracingAmbientOcclusionDenoiseCS.hlsl denoises it by reprojecting and blending
 	* against an accumulation texture that alternates between two slots per
 	* view. The result is left in shader-resource state for
 	* DeferredLightingPS.hlsl. When DLSS Ray Reconstruction is on, it denoises
@@ -89,8 +93,8 @@ namespace SeedCore
 	*
 	* [JP]
 	* レイトレーシングによるアンビエントオクルージョンを実行する。
-	* AmbientOcclusionRT.hlsl が生のノイズを含む 1 チャンネルの開放度
-	* テクスチャを書き、AmbientOcclusionDenoiseCS.hlsl がビューごとに 2 つの
+	* RaytracingAmbientOcclusionRT.hlsl が生のノイズを含む 1 チャンネルの開放度
+	* テクスチャを書き、RaytracingAmbientOcclusionDenoiseCS.hlsl がビューごとに 2 つの
 	* スロットを交互に使う蓄積テクスチャとのリプロジェクションとブレンドで
 	* それをデノイズする。結果は DeferredLightingPS.hlsl のためにシェーダー
 	* リソース状態で残す。DLSS Ray Reconstruction が有効な間はそれがフレーム
@@ -172,7 +176,7 @@ namespace SeedCore
 		* 記録せず、各インデックスシステムが今フレームのインデックスを
 		* アップロードする前、つまり G-Buffer ができる前に呼び出す。
 		*/
-		void Prepare(const AmbientOcclusionRayConstantBuffer& settings, Bool enabled);
+		void Prepare(const RaytracingAmbientOcclusionConstantBuffer& settings, Bool enabled);
 
 		/**
 		* [EN]
@@ -230,20 +234,20 @@ namespace SeedCore
 		/// [JP] 独自の蓄積を持つビューの数（エディターとゲーム）。
 		SC_CONSTEX Uint32 viewCount_ = 2;
 
-		/// [EN] Compute shader and pipeline of AmbientOcclusionRT.hlsl.
-		/// [JP] AmbientOcclusionRT.hlsl のコンピュートシェーダーとパイプライン。
+		/// [EN] Compute shader and pipeline of RaytracingAmbientOcclusionRT.hlsl.
+		/// [JP] RaytracingAmbientOcclusionRT.hlsl のコンピュートシェーダーとパイプライン。
 		AmbientOcclusionShader ambientOcclusionShader_;
 
-		/// [EN] Compute shader and pipeline of AmbientOcclusionDenoiseCS.hlsl.
-		/// [JP] AmbientOcclusionDenoiseCS.hlsl のコンピュートシェーダーとパイプライン。
+		/// [EN] Compute shader and pipeline of RaytracingAmbientOcclusionDenoiseCS.hlsl.
+		/// [JP] RaytracingAmbientOcclusionDenoiseCS.hlsl のコンピュートシェーダーとパイプライン。
 		AmbientOcclusionDenoiseShader denoiseShader_;
 
 		/// [EN] GPU copy of the tuning values, read through its bindless index.
 		/// [JP] 調整値の GPU 側コピー。bindless インデックス経由で読まれる。
-		ResourcePtr<StaticConstantBuffer<AmbientOcclusionRayConstantBuffer>> tuningBuffer_;
+		ResourcePtr<StaticConstantBuffer<RaytracingAmbientOcclusionConstantBuffer>> tuningBuffer_;
 
-		/// [EN] Raw, noisy single-channel openness written by AmbientOcclusionRT.hlsl. A single texture is enough, since the denoiser consumes it in the same flush.
-		/// [JP] AmbientOcclusionRT.hlsl が書く、生のノイズを含む 1 チャンネルの開放度。デノイザが同じ Flush 内で消費するため、1 枚で足りる。
+		/// [EN] Raw, noisy single-channel openness written by RaytracingAmbientOcclusionRT.hlsl. A single texture is enough, since the denoiser consumes it in the same flush.
+		/// [JP] RaytracingAmbientOcclusionRT.hlsl が書く、生のノイズを含む 1 チャンネルの開放度。デノイザが同じ Flush 内で消費するため、1 枚で足りる。
 		Microsoft::WRL::ComPtr<ID3D12Resource> rawOpennessResource_;
 
 		/// [EN] Resource state the raw texture is currently in.

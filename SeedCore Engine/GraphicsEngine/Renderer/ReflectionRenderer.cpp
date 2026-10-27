@@ -69,7 +69,7 @@ namespace SeedCore
 
 		/// [EN] The tuning values live in a constant buffer the shaders find through its bindless index.
 		/// [JP] 調整値は、シェーダーが bindless インデックスで見つける定数バッファに置く。
-		tuningBuffer_ = MakePtr<StaticConstantBuffer<ReflectionRayConstantBuffer>>(device, bindlessHeap);
+		tuningBuffer_ = MakePtr<StaticConstantBuffer<RaytracingReflectionConstantBuffer>>(device, bindlessHeap);
 		instanceTable_ = MakePtr<ReadOnlyStructuredBuffer<ReflectionInstanceData>>(device, bindlessHeap, maxInstances_);
 
 		/// [EN] Create the size-dependent resources at the current size.
@@ -197,7 +197,7 @@ namespace SeedCore
 	* 保存して、各ビューのパスとディファードライティングが読むインデックスを
 	* 公開する。
 	*/
-	void ReflectionRenderer::Prepare(const ReflectionRayConstantBuffer& settings, Bool enabled)
+	void ReflectionRenderer::Prepare(const RaytracingReflectionConstantBuffer& settings, Bool enabled)
 	{
 		/// [EN] Remember whether the pass runs this frame; Dispatch reads it.
 		/// [JP] 今フレームにパスを実行するかを覚えておく。Dispatch が読む。
@@ -215,7 +215,7 @@ namespace SeedCore
 
 		/// [EN] The upload copy carries the frame counter and turns off the reservoir's temporal reuse when DLSS Ray Reconstruction handles the temporal side.
 		/// [JP] アップロード用のコピーにはフレームカウンターを載せ、DLSS Ray Reconstruction が時間方向を担うときは reservoir の時間方向の再利用を切る。
-		ReflectionRayConstantBuffer uploadSettings = settings;
+		RaytracingReflectionConstantBuffer uploadSettings = settings;
 		uploadSettings.frameIndex_ = frameIndex_;
 		uploadSettings.temporalReuseEnabled_ = useDlssRayReconstruction_ ? 0 : 1;
 		/// [EN] Advance the counter for the next frame.
@@ -247,7 +247,7 @@ namespace SeedCore
 		/// [JP] フレームをまたぐ状態を持つバッファは、すべて履歴のスロットを読んでもう一方へ書く。1 組のスロットが放射輝度、モーメント、履歴長、深度法線コピーをまとめて動かすため、幾何の判定とブレンドする放射輝度は常に同じフレームのものになる。
 		auto buildShaderResourceIndices = [&](Uint32 viewIndex)
 		{
-			ReflectionAccumulationShaderResourceIndices values{};
+			RaytracingReflectionAccumulationShaderResourceIndices values{};
 
 			values.historyIndex_ = accumulatedShaderResourceViewIndex_[viewIndex][historySlot_];
 			values.accumulatedIndex_ = accumulatedShaderResourceViewIndex_[viewIndex][writeSlot];
@@ -280,7 +280,7 @@ namespace SeedCore
 		/// [JP] 1 つのビューの、各パスの書き込み先。
 		auto buildUnorderedAccessIndices = [&](Uint32 viewIndex)
 		{
-			ReflectionAccumulationUnorderedAccessIndices values{};
+			RaytracingReflectionAccumulationUnorderedAccessIndices values{};
 
 			values.accumulatedIndex_ = accumulatedUnorderedAccessViewIndex_[viewIndex][writeSlot];
 			values.atrousScratch0Index_ = atrousScratchUnorderedAccessViewIndex_[viewIndex][0];

@@ -8,7 +8,7 @@
 #include "../../Light/Light.hlsli"
 #include "../../Light/Cluster.hlsli"
 #include "../../Light/BidirectionalReflectanceDistributionFunction.hlsli"
-#include "../../Raytracing/Reflection/Reflection.hlsli"
+#include "../../Illumination/Reflection/Raytracing/RaytracingReflection.hlsli"
 #include "../../Sky/SkyGenerate.hlsli"
 #include "OitShading.hlsli"
 
@@ -398,7 +398,7 @@ void main(ModelMSOutput input, ModelMSPrimitiveOutput primitive)
 		}
 
 		/// [JP] Point/Spot/Rect。DeferredLightingPS.hlsl と同じクラスタ走査 +
-		///      同じ BRDF。Reflection.hlsli の ComputeClusteredPunctualLighting は
+		///      同じ BRDF。RaytracingReflection.hlsli の ComputeClusteredPunctualLighting は
 		///      BRDF を通さない放射照度を返す仕様なので使わない。
 		{
 			float4 view_position = mul(float4(surface.world_position_, 1.0), scene.view_);

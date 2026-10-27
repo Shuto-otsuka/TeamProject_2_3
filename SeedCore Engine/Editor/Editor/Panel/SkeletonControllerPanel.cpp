@@ -136,10 +136,7 @@ namespace SeedCore
 		ImVec2 previewSize = ImGui::GetContentRegionAvail();
 		previewSize.y = Max(previewSize.y, 100.0f);
 
-		if (context_.preview_.skeletonController_.camera_)
-		{
-			context_.preview_.skeletonController_.camera_->Resize(previewSize.x, previewSize.y);
-		}
+		context_.preview_.skeletonController_.camera_.Resize(previewSize.x, previewSize.y);
 
 		ImVec2 imagePosition = ImGui::GetCursorScreenPos();
 		ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
@@ -153,14 +150,14 @@ namespace SeedCore
 		Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
 		Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
 
-		if (ImGui::IsItemHovered() && context_.preview_.skeletonController_.camera_ && context_.preview_.skeletonController_.cameraController_)
+		if (ImGui::IsItemHovered())
 		{
 			if (orbitHeld || panHeld)
 			{
 				InputSystem::BeginMouseCapture();
 			}
 
-			context_.preview_.skeletonController_.cameraController_->Update(*context_.preview_.skeletonController_.camera_, ImGui::GetIO().DeltaTime);
+			context_.preview_.skeletonController_.cameraController_.Update(context_.preview_.skeletonController_.camera_, ImGui::GetIO().DeltaTime);
 		}
 
 		if (!orbitHeld && !panHeld)
@@ -177,17 +174,17 @@ namespace SeedCore
 		///      閾値を超えないただのクリックの場合のみ、プレビューカメラの
 		///      逆ビュープロジェクションで任意のNDC深度からマウス位置を
 		///      ワールド空間へ逆射影し、そのレイに最も近いジョイントを選択する。
-		if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !ImGui::IsMouseDragging(ImGuiMouseButton_Left, 4.0f) && context_.preview_.skeletonController_.camera_ && currentCrister_)
+		if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !ImGui::IsMouseDragging(ImGuiMouseButton_Left, 4.0f) && currentCrister_)
 		{
 			Vector2 mousePosInImage(ImGui::GetMousePos().x - imagePosition.x, ImGui::GetMousePos().y - imagePosition.y);
 			Float ndcX = (mousePosInImage.x / previewSize.x) * 2.0f - 1.0f;
 			Float ndcY = 1.0f - (mousePosInImage.y / previewSize.y) * 2.0f;
 
-			Matrix inverseViewProjection = context_.preview_.skeletonController_.camera_->InverseViewProjection();
+			Matrix inverseViewProjection = context_.preview_.skeletonController_.camera_.InverseViewProjection();
 			Vector4 unprojected = Vector4::Transform(Vector4(ndcX, ndcY, 0.5f, 1.0f), inverseViewProjection);
 			Vector3 worldPoint = Vector3(unprojected.x, unprojected.y, unprojected.z) / unprojected.w;
 
-			Vector3 rayOrigin = context_.preview_.skeletonController_.camera_->Eye();
+			Vector3 rayOrigin = context_.preview_.skeletonController_.camera_.Eye();
 			Vector3 rayDirection = worldPoint - rayOrigin;
 			rayDirection.Normalize();
 

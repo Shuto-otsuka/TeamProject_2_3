@@ -43,6 +43,17 @@ namespace SeedCore
 		PhysicsSystem::DestroyColliderBody(GetActor(), bodyID_, shapeHandle_);
 	}
 
+	void CapsuleCollider::OnRevision()
+	{
+		OnDestroy();
+		OnAwake();
+	}
+
+	void CapsuleCollider::Dispatch()
+	{
+		OnRevision();
+	}
+
 	/**
 	* [EN]
 	* Creates and returns a capsule shape from the current settings, scaled

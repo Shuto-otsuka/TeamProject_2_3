@@ -30,6 +30,8 @@ def emit_struct_elements(field, element_type, count, context, lines):
     lines.append(f'\t\t\t\t\t\theader.array_.size_ = {count};')
     if field.serialize_only_:
         lines.append(f'\t\t\t\t\t\theader.editorVisible_ = false;')
+    if field.revision_:
+        lines.append(f'\t\t\t\t\t\theader.revision_ = true;')
     lines.append(f'\t\t\t\t\t\toutInfo.push_back(std::move(header));')
     lines.append(f'\t\t\t\t\t\tfor (Size i = 0; i < {count}; ++i)')
     lines.append(f'\t\t\t\t\t\t{{')
@@ -39,6 +41,8 @@ def emit_struct_elements(field, element_type, count, context, lines):
     lines.append(f'\t\t\t\t\t\t\telementInfo.nestedTypeName_ = String("{element_type}");')
     if field.serialize_only_:
         lines.append(f'\t\t\t\t\t\t\telementInfo.editorVisible_ = false;')
+    if field.revision_:
+        lines.append(f'\t\t\t\t\t\t\telementInfo.revision_ = true;')
     lines.append(f'\t\t\t\t\t\t\toutInfo.push_back(std::move(elementInfo));')
     lines.append(f'\t\t\t\t\t\t}}')
     lines.append(f'\t\t\t\t\t}}')
@@ -55,10 +59,15 @@ def emit_scalar_elements(field, element_type, count, context, lines):
     lines.append(f'\t\t\t\t\t\theader.array_.size_ = {count};')
     if field.serialize_only_:
         lines.append(f'\t\t\t\t\t\theader.editorVisible_ = false;')
+    if field.revision_:
+        lines.append(f'\t\t\t\t\t\theader.revision_ = true;')
     lines.append(f'\t\t\t\t\t\toutInfo.push_back(std::move(header));')
     for element_index in range(count):
         if field.serialize_only_:
-            lines.append(f'\t\t\t\t\t\t{{ FieldInfo elem{{ String("[{element_index}]"), offsetof({context.struct_name_}, {field.name_}) + {element_index} * sizeof({element_type}), {attribute_type} }}; elem.editorVisible_ = false; outInfo.push_back(std::move(elem)); }}')
+            revision_line = ' elem.revision_ = true;' if field.revision_ else ''
+            lines.append(f'\t\t\t\t\t\t{{ FieldInfo elem{{ String("[{element_index}]"), offsetof({context.struct_name_}, {field.name_}) + {element_index} * sizeof({element_type}), {attribute_type} }}; elem.editorVisible_ = false;{revision_line} outInfo.push_back(std::move(elem)); }}')
+        elif field.revision_:
+            lines.append(f'\t\t\t\t\t\t{{ FieldInfo elem{{ String("[{element_index}]"), offsetof({context.struct_name_}, {field.name_}) + {element_index} * sizeof({element_type}), {attribute_type} }}; elem.revision_ = true; outInfo.push_back(std::move(elem)); }}')
         else:
             lines.append(
                 f'\t\t\t\t\t\toutInfo.push_back({{ '

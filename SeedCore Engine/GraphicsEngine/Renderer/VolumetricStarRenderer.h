@@ -1,7 +1,7 @@
 #pragma once
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
-#include <GraphicsEngine/Raytracing/VolumetricStar/VolumetricStarShader.h>
+#include <GraphicsEngine/Environment/VolumetricStar/VolumetricStarShader.h>
 
 namespace SeedCore
 {
@@ -18,13 +18,13 @@ namespace SeedCore
 	* [EN]
 	* One shooting-star slot, simulated on the CPU and uploaded inside the
 	* tuning buffer. Mirrors ShootingStarInstance in
-	* Raytracing/VolumetricStar/VolumetricStar.hlsli byte for byte.
+	* Environment/VolumetricStar/VolumetricStar.hlsli byte for byte.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 流れ星のスロット 1 つ分。CPU でシミュレーションし、調整値のバッファに
-	* 入れてアップロードする。Raytracing/VolumetricStar/VolumetricStar.hlsli の
+	* 入れてアップロードする。Environment/VolumetricStar/VolumetricStar.hlsli の
 	* ShootingStarInstance とバイト単位で一致させる。
 	*/
 	struct ShootingStarInstance
@@ -53,8 +53,8 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Tuning values of the star pass. Mirrors VolumetricStarRayConstantBuffer
-	* in Raytracing/VolumetricStar/VolumetricStar.hlsli, which both
-	* VolumetricStarRT.hlsl and DeferredLightingPS.hlsl read through
+	* in Environment/VolumetricStar/VolumetricStar.hlsli, which both
+	* VolumetricStarCS.hlsl and DeferredLightingPS.hlsl read through
 	* constant_indices.star_index_. The fields are laid out in rows of four
 	* scalars (16 bytes), and the layout must match the HLSL side byte for
 	* byte.
@@ -62,8 +62,8 @@ namespace SeedCore
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 星パスの調整値。Raytracing/VolumetricStar/VolumetricStar.hlsli の
-	* VolumetricStarRayConstantBuffer と対応する。VolumetricStarRT.hlsl と
+	* 星パスの調整値。Environment/VolumetricStar/VolumetricStar.hlsli の
+	* VolumetricStarRayConstantBuffer と対応する。VolumetricStarCS.hlsl と
 	* DeferredLightingPS.hlsl の両方が constant_indices.star_index_ 経由で読む。
 	* フィールドは 4 スカラー（16 バイト）単位の行で並べ、レイアウトは HLSL 側と
 	* バイト単位で一致させる。
@@ -165,7 +165,7 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Runs the star pass (VolumetricStarRT.hlsl, screen space, sky pixels
+	* Runs the star pass (VolumetricStarCS.hlsl, screen space, sky pixels
 	* only) into an RGBA16F texture - rgb is premultiplied color, a is
 	* coverage - and leaves it in shader-resource state for
 	* DeferredLightingPS.hlsl to composite over the sky, the same way the
@@ -177,7 +177,7 @@ namespace SeedCore
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 星パス（VolumetricStarRT.hlsl、スクリーン空間、空のピクセルのみ）を
+	* 星パス（VolumetricStarCS.hlsl、スクリーン空間、空のピクセルのみ）を
 	* RGBA16F テクスチャ（rgb は事前乗算済みの色、a はカバレッジ）へ
 	* ディスパッチし、DeferredLightingPS.hlsl が雲と同じ方法で空の上に合成
 	* できるよう、シェーダーリソース状態にしておく。流れ星の CPU 側の
@@ -301,8 +301,8 @@ namespace SeedCore
 		void Release();
 
 	private:
-		/// [EN] Compute shader and pipeline of VolumetricStarRT.hlsl.
-		/// [JP] VolumetricStarRT.hlsl のコンピュートシェーダーとパイプライン。
+		/// [EN] Compute shader and pipeline of VolumetricStarCS.hlsl.
+		/// [JP] VolumetricStarCS.hlsl のコンピュートシェーダーとパイプライン。
 		VolumetricStarShader starShader_;
 
 		/// [EN] Random source for shooting-star spawning and placement.

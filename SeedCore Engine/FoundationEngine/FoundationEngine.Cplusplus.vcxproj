@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application\Application.cpp" />
+    <ClCompile Include="Application\Window.cpp" />
     <ClCompile Include="Benchmark\Benchmark.cpp" />
     <ClCompile Include="Benchmark\BenchmarkSuite.cpp" />
     <ClCompile Include="Benchmark\BenchmarkSystem.cpp" />
@@ -55,6 +56,7 @@
     </ClCompile>
     <ClCompile Include="JobSystem\JobRuntime.cpp">
     </ClCompile>
+    <ClCompile Include="JobSystem\JobScheduler.cpp" />
     <ClCompile Include="JobSystem\JobTask.cpp">
     </ClCompile>
     <ClCompile Include="JobSystem\JobTaskflow.cpp">
@@ -127,6 +129,7 @@
     <ClCompile Include="World\WorldAccessor.cpp" />
     <ClCompile Include="World\WorldSnapshot.cpp" />
     <ClInclude Include="Application\Application.h" />
+    <ClInclude Include="Application\Window.h" />
     <ClInclude Include="Benchmark\Benchmark.h" />
     <ClInclude Include="Benchmark\BenchmarkSuite.h" />
     <ClInclude Include="Benchmark\BenchmarkSystem.h" />
@@ -148,6 +151,7 @@
     <ClInclude Include="Interop\QueryInstance.h" />
     <ClInclude Include="Interop\ShapeInstance.h" />
     <ClInclude Include="Interop\RenderInstance.h" />
+    <ClInclude Include="JobSystem\JobScheduler.h" />
     <ClInclude Include="Log\AftermathCrashTracker.h" />
     <ClInclude Include="Log\Error.h" />
     <ClInclude Include="Log\LogSystem.h" />
@@ -267,6 +271,7 @@
     <ClInclude Include="World\ECS\Component\Motion.h" />
     <ClInclude Include="World\ECS\Component\Name.h" />
     <ClInclude Include="World\ECS\Component\Position.h" />
+    <ClInclude Include="World\ECS\Component\Revisionable.h" />
     <ClInclude Include="World\ECS\Component\Rotation.h" />
     <ClInclude Include="World\ECS\Component\Scale.h" />
     <ClInclude Include="World\ECS\Component\Spawner.h" />
@@ -467,7 +472,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions);FOUNDATIONENGINE_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions);SEEDCORE_EXPORTS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>FoundationEngine/Prelude.h</PrecompiledHeaderFile>
@@ -493,7 +498,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions);FOUNDATIONENGINE_EXPORTS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions);SEEDCORE_EXPORTS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>FoundationEngine/Prelude.h</PrecompiledHeaderFile>

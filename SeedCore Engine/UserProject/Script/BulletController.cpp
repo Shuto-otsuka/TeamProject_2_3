@@ -239,6 +239,7 @@ void BulletController::Stop()
     
     //衝突判定ON
     rigidbody->isTrigger_ = false;
+    rigidbody->Dispatch();
 
     //速度を0にする
     linearVelocity->x_ = 0.0f;
@@ -336,6 +337,7 @@ void BulletController::Move(float elapsedTime)
                     rigidbody->freezePositionX_ = true;
                     rigidbody->freezePositionY_ = true;
                     rigidbody->freezePositionZ_ = true;
+                    rigidbody->Dispatch();
                 }
             }
         }

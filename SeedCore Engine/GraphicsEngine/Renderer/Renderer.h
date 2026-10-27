@@ -13,6 +13,15 @@
 #include <GraphicsEngine/System/AnimationSystem.h>
 #include <GraphicsEngine/System/ConstraintSystem.h>
 #include <GraphicsEngine/System/MaterialSystem.h>
+#include <GraphicsEngine/System/ShadowSystem.h>
+#include <GraphicsEngine/System/AmbientOcclusionSystem.h>
+#include <GraphicsEngine/System/ReflectionSystem.h>
+#include <GraphicsEngine/System/GlobalIlluminationSystem.h>
+#include <GraphicsEngine/System/RefractionSystem.h>
+#include <GraphicsEngine/System/SubsurfaceScatteringSystem.h>
+#include <GraphicsEngine/System/VolumetricLightSystem.h>
+#include <GraphicsEngine/System/VolumetricCloudScapesSystem.h>
+#include <GraphicsEngine/System/VolumetricStarSystem.h>
 
 #include <GraphicsEngine/D3D12/Buffer/GeometryBuffer.h>
 #include <GraphicsEngine/D3D12/Buffer/HiZBuffer.h>
@@ -113,8 +122,6 @@ namespace SeedCore
 		void GatherAvatarPreview(const AvatarMesh& mesh, Uint32 boneCount, const Matrix& worldMatrix, std::span<const Uint32> regionTextureIndices);
 
 	public:
-		void Raytracing(const RaytracingContext& settings);
-
 		void Upscale(Bool dlssRayReconstructionEnabled, UpscaleMode upscaleMode);
 
 		NODISCARD Vector2 PostProcessOutputSize()const;
@@ -186,6 +193,24 @@ namespace SeedCore
 
 		MaterialSystem materialSystem_;
 
+		ShadowSystem shadowSystem_;
+
+		AmbientOcclusionSystem ambientOcclusionSystem_;
+
+		ReflectionSystem reflectionSystem_;
+
+		GlobalIlluminationSystem globalIlluminationSystem_;
+
+		RefractionSystem refractionSystem_;
+
+		SubsurfaceScatteringSystem subsurfaceScatteringSystem_;
+
+		VolumetricLightSystem volumetricLightSystem_;
+
+		VolumetricCloudScapesSystem volumetricCloudScapesSystem_;
+
+		VolumetricStarSystem volumetricStarSystem_;
+
 	private:
 		ResourcePtr<TextureRenderer> textureRenderer_;
 
@@ -230,16 +255,7 @@ namespace SeedCore
 
 		Float skyTotalTime_ = 0.0f;
 
-		Bool daySystemEnabled_ = false;
-		DaySystemConstantBuffer daySystem_;
-
-		Bool sunLightEnabled_ = false;
-		SunLightSettings sunLight_;
-
-		Bool moonLightEnabled_ = false;
-		MoonLightSettings moonLight_;
-
-		CelestialResult celestialResult_;
+		CelestialSystem celestialSystem_;
 
 		WeatherGpuState weatherState_;
 

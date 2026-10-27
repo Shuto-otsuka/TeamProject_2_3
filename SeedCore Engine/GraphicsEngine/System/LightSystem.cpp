@@ -176,7 +176,7 @@ namespace SeedCore
 		}
 	}
 
-	void LightSystem::Gather(ModelResource& modelResource, World& world, const CelestialResult* celestial)
+	void LightSystem::Gather(ModelResource& modelResource, World& world, const CelestialSystem* celestial)
 	{
 		pointLights_.clear();
 		spotLights_.clear();
@@ -191,32 +191,30 @@ namespace SeedCore
 		directionalLightConstantData_.moonPhase_ = 0.0f;
 		lightConstantData_.nightFactor_ = 0.0f;
 
+		Bool hasDirectional = false;
+
 		if (celestial)
 		{
-			Bool sunWritten = false;
-			Query<Read<Active>, Write<DirectionalLight>> sunQuery(world);
-			sunQuery.ForEach([&](const Active& active, DirectionalLight& light)
-				{
-					if (!active.active_ || sunWritten)
-					{
-						return;
-					}
+			const CelestialResult& result = celestial->Result();
 
-					light.direction_ = celestial->sunDirection_;
-					light.color_ = celestial->sunColor_;
-					light.intensity_ = celestial->sunIntensity_;
-					sunWritten = true;
-				});
+			if (celestial->SunLightDriven())
+			{
+				directionalLightConstantData_.direction_ = result.sunDirection_;
+				directionalLightConstantData_.sunIntensity_ = result.sunIntensity_;
+				directionalLightConstantData_.sunColor_ = result.sunColor_;
+				hasDirectional = true;
+			}
 
-			directionalLightConstantData_.direction_ = celestial->sunDirection_;
-			directionalLightConstantData_.moonIntensity_ = celestial->moonIntensity_;
-			directionalLightConstantData_.moonColor_ = celestial->moonColor_;
-			directionalLightConstantData_.moonPhase_ = celestial->moonPhase_;
-			directionalLightConstantData_.moonAngularRadius_ = celestial->moonAngularRadius_;
-			lightConstantData_.nightFactor_ = celestial->nightFactor_;
+			if (celestial->MoonEnabled())
+			{
+				directionalLightConstantData_.moonIntensity_ = result.moonIntensity_;
+				directionalLightConstantData_.moonColor_ = result.moonColor_;
+				directionalLightConstantData_.moonPhase_ = result.moonPhase_;
+				directionalLightConstantData_.moonAngularRadius_ = result.moonAngularRadius_;
+			}
+
+			lightConstantData_.nightFactor_ = result.nightFactor_;
 		}
-
-		Bool hasDirectional = false;
 
 		/// [EN] All four queries below read the parent-composed world
 		///      transform from TransformSystem (Actor::WorldMatrix()),
@@ -246,7 +244,7 @@ namespace SeedCore
 
 				Vector3 direction = light.direction_;
 				Actor actor = WorldAccessor::Make(world, entityID);
-				if (actor && !celestial)
+				if (actor)
 				{
 					direction = Vector3::TransformNormal(direction, actor.WorldMatrix());
 				}

@@ -3,6 +3,12 @@
 
 namespace SeedCore
 {
+	Bool EditorConfig::Initialize()
+	{
+		Load();
+		return true;
+	}
+
 	void EditorConfig::Load(const std::filesystem::path& path)
 	{
 		JsonInputArchive archive;

@@ -278,7 +278,7 @@ namespace SeedCore
 		* のゲーム画面上の位置へ写す。アプリがアクティブでない間は、
 		* 全て押されていない・動いていないものとして取り込む。
 		*/
-		static void Update(Bool gameInput, const Vector4& gameRect);
+		static void Update(const Vector4& gameRect);
 
 		/**
 		* [EN]

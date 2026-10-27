@@ -3,8 +3,8 @@
 #include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 #include <GraphicsEngine/Raytracing/RaytracingDispatch.h>
-#include <GraphicsEngine/Raytracing/Reflection/ReflectionDenoiseShader.h>
-#include <GraphicsEngine/Raytracing/Reflection/ReflectionShader.h>
+#include <GraphicsEngine/Illumination/Reflection/ReflectionDenoiseShader.h>
+#include <GraphicsEngine/Illumination/Reflection/ReflectionShader.h>
 
 namespace SeedCore
 {
@@ -19,20 +19,20 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Tuning values of the reflection pass. Mirrors ReflectionRayConstantBuffer
-	* in Raytracing/Reflection/Reflection.hlsli, which both ReflectionRT.hlsl
+	* Tuning values of the reflection pass. Mirrors RaytracingReflectionConstantBuffer
+	* in Illumination/Reflection/Raytracing/RaytracingReflection.hlsli, which both RaytracingReflectionRT.hlsl
 	* and DeferredLightingPS.hlsl read through constant_indices.reflection_index_,
 	* so the layout must match the HLSL side byte for byte.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 反射のパスの調整値。Raytracing/Reflection/Reflection.hlsli の
-	* ReflectionRayConstantBuffer と対応する。ReflectionRT.hlsl と
+	* 反射のパスの調整値。Illumination/Reflection/Raytracing/RaytracingReflection.hlsli の
+	* RaytracingReflectionConstantBuffer と対応する。RaytracingReflectionRT.hlsl と
 	* DeferredLightingPS.hlsl の両方が constant_indices.reflection_index_ 経由で
 	* 読むため、レイアウトは HLSL 側とバイト単位で一致させる。
 	*/
-	struct ReflectionRayConstantBuffer
+	struct RaytracingReflectionConstantBuffer
 	{
 		/// [EN] Maximum distance a reflection ray travels before it counts as a miss.
 		/// [JP] 反射レイがミスとして扱われるまでに進む最大距離。
@@ -54,9 +54,11 @@ namespace SeedCore
 		/// [JP] reservoir がフレームをまたいで履歴を再利用する間 1。DLSS Ray Reconstruction が時間方向のデノイズを担うときは Prepare が 0 を書く。
 		Uint32 temporalReuseEnabled_ = 1;
 
-		/// [EN] Pads the structure to two full 16-byte registers.
-		/// [JP] 構造体を 16 バイトのレジスタ 2 つ分に揃える詰め物。
-		Vector3 reflectionRayPadding_ = { 0.0f, 0.0f, 0.0f };
+		Uint32 rayCount_ = 1;
+
+		Uint32 bounceCount_ = 1;
+
+		Float bounceRoughnessThreshold_ = 0.3f;
 
 		/**
 		* [EN]
@@ -85,7 +87,7 @@ namespace SeedCore
 	/**
 	* [EN]
 	* One material slot of a mesh's Crister::Surfaces() list, as read by the
-	* ray-traced passes. Mirrors ReflectionMaterialData in Reflection.hlsli
+	* ray-traced passes. Mirrors ReflectionMaterialData in RaytracingReflection.hlsli
 	* and is uploaded once per unique Crister
 	* (RaytracingRenderer::BuildReflectionMaterialTable).
 	*
@@ -93,7 +95,7 @@ namespace SeedCore
 	*
 	* [JP]
 	* レイトレーシングのパスが読む、メッシュの Crister::Surfaces() 一覧の
-	* マテリアル 1 枠。Reflection.hlsli の ReflectionMaterialData と対応し、
+	* マテリアル 1 枠。RaytracingReflection.hlsli の ReflectionMaterialData と対応し、
 	* ユニークな Crister ごとに 1 度だけアップロードする
 	* （RaytracingRenderer::BuildReflectionMaterialTable）。
 	*/
@@ -152,7 +154,7 @@ namespace SeedCore
 	* [EN]
 	* One TLAS instance as seen by the ray-traced passes, in the same order as
 	* the TLAS and looked up by InstanceID() in the closest-hit shader.
-	* Mirrors ReflectionInstanceData in Reflection.hlsli; it lives in a
+	* Mirrors ReflectionInstanceData in RaytracingReflection.hlsli; it lives in a
 	* structured buffer, so it is tightly packed.
 	*
 	* ---------------------------------------------------------------------
@@ -160,7 +162,7 @@ namespace SeedCore
 	* [JP]
 	* レイトレーシングのパスから見た TLAS のインスタンス 1 つ。TLAS と同じ
 	* 順序で並び、最近接ヒットシェーダーが InstanceID() で引く。
-	* Reflection.hlsli の ReflectionInstanceData と対応し、構造化バッファに
+	* RaytracingReflection.hlsli の ReflectionInstanceData と対応し、構造化バッファに
 	* 入るため詰めて配置する。
 	*/
 	struct ReflectionInstanceData
@@ -173,8 +175,8 @@ namespace SeedCore
 		/// [JP] インスタンスのインデックスバッファの bindless インデックス。
 		Uint32 indexBufferIndex_ = 0;
 
-		/// [EN] Bindless read view of StructuredBuffer<ReflectionMaterialData>: the mesh's whole material list, resolved per hit triangle through triangleMaterialIndexBufferIndex_ (see ResolveReflectionMaterial in Reflection.hlsli).
-		/// [JP] StructuredBuffer<ReflectionMaterialData> の bindless 読み取りビュー。メッシュの全マテリアル一覧で、triangleMaterialIndexBufferIndex_ を通してヒットした三角形ごとに解決する（Reflection.hlsli の ResolveReflectionMaterial 参照）。
+		/// [EN] Bindless read view of StructuredBuffer<ReflectionMaterialData>: the mesh's whole material list, resolved per hit triangle through triangleMaterialIndexBufferIndex_ (see ResolveReflectionMaterial in RaytracingReflection.hlsli).
+		/// [JP] StructuredBuffer<ReflectionMaterialData> の bindless 読み取りビュー。メッシュの全マテリアル一覧で、triangleMaterialIndexBufferIndex_ を通してヒットした三角形ごとに解決する（RaytracingReflection.hlsli の ResolveReflectionMaterial 参照）。
 		Uint32 materialDataIndex_ = 0;
 
 		/// [EN] Bindless read view of StructuredBuffer<uint> with one entry per triangle, mapping PrimitiveIndex() to an entry of the material list. It lets a multi-material mesh resolve the exact material of the triangle a ray hit rather than one material for the whole instance.
@@ -192,12 +194,12 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Runs the ray-traced glossy reflections. ReflectionRT.hlsl (ray
+	* Runs the ray-traced glossy reflections. RaytracingReflectionRT.hlsl (ray
 	* generation, miss and closest hit through DispatchRays) GGX-samples a
 	* ReSTIR reservoir and writes a raw RGBA16F radiance texture (rgb is
 	* incoming reflected radiance, a the averaged hit distance in world
 	* units); a spatial reuse pass refines it together with a confidence
-	* texture; and, unless DLSS Ray Reconstruction is on, ReflectionDenoiseCS.hlsl
+	* texture; and, unless DLSS Ray Reconstruction is on, RaytracingReflectionDenoiseCS.hlsl
 	* runs a five-pass SVGF chain: dual-reprojection temporal accumulation
 	* with moments, a spatial variance estimate for short histories, and three
 	* variance-guided A-Trous iterations, one chain per view. At roughness 0
@@ -211,12 +213,12 @@ namespace SeedCore
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* レイトレーシングによる光沢反射を実行する。ReflectionRT.hlsl（DispatchRays
+	* レイトレーシングによる光沢反射を実行する。RaytracingReflectionRT.hlsl（DispatchRays
 	* によるレイ生成、ミス、最近接ヒット）が GGX で ReSTIR の reservoir を
 	* サンプルし、生の RGBA16F 放射輝度テクスチャ（rgb は入射する反射の
 	* 放射輝度、a はワールド単位の平均ヒット距離）を書き、空間的リユースの
 	* パスがそれを信頼度テクスチャと共に整える。DLSS Ray Reconstruction が
-	* 無効なら、さらに ReflectionDenoiseCS.hlsl が 5 パスの SVGF チェーン
+	* 無効なら、さらに RaytracingReflectionDenoiseCS.hlsl が 5 パスの SVGF チェーン
 	* （モーメントを伴う二重リプロジェクションの時間方向の蓄積、履歴の短い
 	* ピクセル向けの空間的な分散の推定、分散に導かれる A-Trous の 3 反復。
 	* ビューごとに 1 チェーン）を実行する。roughness 0 では GGX のサンプルが
@@ -319,7 +321,7 @@ namespace SeedCore
 		* システムへ公開する。GPU 処理は記録せず、各インデックスシステムが
 		* 今フレームのインデックスをアップロードする前に呼び出す。
 		*/
-		void Prepare(const ReflectionRayConstantBuffer& settings, Bool enabled);
+		void Prepare(const RaytracingReflectionConstantBuffer& settings, Bool enabled);
 
 		/**
 		* [EN]
@@ -392,25 +394,25 @@ namespace SeedCore
 		/// [JP] インスタンステーブルが保持できるインスタンスの数。InstanceID() が常にテーブルの範囲内に収まるよう、RaytracingRenderer の TLAS のインスタンス上限と等しくする。
 		SC_CONSTEX Uint32 maxInstances_ = 4096;
 
-		/// [EN] Size in bytes of one reservoir element; must match ReflectionReservoir in ReflectionReSTIR.hlsli.
-		/// [JP] reservoir の要素 1 つのバイト数。ReflectionReSTIR.hlsli の ReflectionReservoir と一致させる。
+		/// [EN] Size in bytes of one reservoir element; must match RaytracingReflectionReservoir in RaytracingReflectionReSTIR.hlsli.
+		/// [JP] reservoir の要素 1 つのバイト数。RaytracingReflectionReSTIR.hlsli の RaytracingReflectionReservoir と一致させる。
 		SC_CONSTEX Uint32 reservoirElementSizeInBytes_ = 64;
 
 		/// [EN] Size of one shader-table record: the 32-byte shader identifier rounded up to the 64-byte table alignment.
 		/// [JP] シェーダーテーブルのレコード 1 つのサイズ。32 バイトのシェーダー識別子を 64 バイトのテーブルアライメントへ切り上げたもの。
 		SC_CONSTEX Uint32 shaderTableRecordSize_ = 64;
 
-		/// [EN] Raytracing pipeline of ReflectionRT.hlsl.
-		/// [JP] ReflectionRT.hlsl のレイトレーシングパイプライン。
+		/// [EN] Raytracing pipeline of RaytracingReflectionRT.hlsl.
+		/// [JP] RaytracingReflectionRT.hlsl のレイトレーシングパイプライン。
 		ReflectionShader reflectionShader_;
 
-		/// [EN] Spatial reuse and SVGF compute pipelines of ReflectionDenoiseCS.hlsl.
-		/// [JP] ReflectionDenoiseCS.hlsl の空間的リユースと SVGF のコンピュートパイプライン。
+		/// [EN] Spatial reuse and SVGF compute pipelines of RaytracingReflectionDenoiseCS.hlsl.
+		/// [JP] RaytracingReflectionDenoiseCS.hlsl の空間的リユースと SVGF のコンピュートパイプライン。
 		ReflectionDenoiseShader denoiseShader_;
 
 		/// [EN] GPU copy of the tuning values, read through its bindless index.
 		/// [JP] 調整値の GPU 側コピー。bindless インデックス経由で読まれる。
-		ResourcePtr<StaticConstantBuffer<ReflectionRayConstantBuffer>> tuningBuffer_;
+		ResourcePtr<StaticConstantBuffer<RaytracingReflectionConstantBuffer>> tuningBuffer_;
 
 		/// [EN] Per-frame instance table (InstanceID() to vertex, index and material data), shared with Refraction and GlobalIllumination.
 		/// [JP] フレームごとのインスタンステーブル（InstanceID() から頂点、インデックス、マテリアルのデータへ）。Refraction と GlobalIllumination も共有する。

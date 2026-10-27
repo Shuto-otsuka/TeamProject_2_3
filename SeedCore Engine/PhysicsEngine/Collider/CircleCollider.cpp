@@ -43,6 +43,17 @@ namespace SeedCore
 		PhysicsSystem::DestroyColliderBody(GetActor(), bodyID_, shapeHandle_);
 	}
 
+	void CircleCollider::OnRevision()
+	{
+		OnDestroy();
+		OnAwake();
+	}
+
+	void CircleCollider::Dispatch()
+	{
+		OnRevision();
+	}
+
 	/**
 	* [EN]
 	* Creates and returns a circle shape from the current settings, scaled

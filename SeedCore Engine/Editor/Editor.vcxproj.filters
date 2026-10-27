@@ -97,9 +97,6 @@
     <ClCompile Include="Editor\Panel\GraphicsMenuPanel.cpp">
       <Filter>Editor\Panel</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\Panel\RaytracingPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\Build\RuntimeBuilder.cpp">
       <Filter>Editor\Build</Filter>
     </ClCompile>
@@ -121,19 +118,10 @@
     <ClCompile Include="Editor\Panel\ConfigPanel.cpp">
       <Filter>Editor\Panel</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\Panel\EnvironmentMenuPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\Panel\LayerSettingsPanel.cpp">
       <Filter>Editor\Panel</Filter>
     </ClCompile>
     <ClCompile Include="Editor\Panel\MaterialViewerPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\ScreenSpacePanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\RasterizationPanel.cpp">
       <Filter>Editor\Panel</Filter>
     </ClCompile>
     <ClCompile Include="Editor\Panel\SkeletonControllerPanel.cpp">
@@ -240,9 +228,6 @@
     <ClInclude Include="Editor\Panel\GraphicsMenuPanel.h">
       <Filter>Editor\Panel</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\Panel\RaytracingPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\Build\RuntimeBuilder.h">
       <Filter>Editor\Build</Filter>
     </ClInclude>
@@ -264,19 +249,10 @@
     <ClInclude Include="Editor\Panel\ConfigPanel.h">
       <Filter>Editor\Panel</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\Panel\EnvironmentMenuPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\Panel\LayerSettingsPanel.h">
       <Filter>Editor\Panel</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Panel\MaterialViewerPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\ScreenSpacePanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\RasterizationPanel.h">
       <Filter>Editor\Panel</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Panel\SkeletonControllerPanel.h">
@@ -313,9 +289,6 @@
       <Filter>Editor\Context</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Context\SceneContext.h">
-      <Filter>Editor\Context</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Context\SceneVisualContext.h">
       <Filter>Editor\Context</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Context\SelectionContext.h">

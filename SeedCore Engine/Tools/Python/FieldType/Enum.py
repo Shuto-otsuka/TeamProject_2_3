@@ -18,6 +18,8 @@ def emit(field, context, lines):
     if field.clamp_min_ is not None:
         lines.append(f'\t\t\t\t\t\tfi.clampMin_ = {field.clamp_min_};')
         lines.append(f'\t\t\t\t\t\tfi.clampMax_ = {field.clamp_max_};')
+    if field.revision_:
+        lines.append(f'\t\t\t\t\t\tfi.revision_ = true;')
     lines.append(f'\t\t\t\t\t\toutInfo.push_back(std::move(fi));')
     lines.append(f'\t\t\t\t\t}}')
 

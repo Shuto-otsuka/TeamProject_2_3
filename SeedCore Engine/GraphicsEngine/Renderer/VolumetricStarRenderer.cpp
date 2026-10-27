@@ -232,7 +232,7 @@ namespace SeedCore
 		ID3D12PipelineState* pipelineState = starShader_.GetPipelineState();
 		if (!pipelineState && !pipelineStateMissingLogged_)
 		{
-			SC_LOG_WARNING("VolumetricStarRT のコンピュート PSO 作成に失敗しています。星は常に無し(0)として扱われます。");
+			SC_LOG_WARNING("VolumetricStarCS のコンピュート PSO 作成に失敗しています。星は常に無し(0)として扱われます。");
 			pipelineStateMissingLogged_ = true;
 		}
 

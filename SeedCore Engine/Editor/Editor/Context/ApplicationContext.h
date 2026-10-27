@@ -24,8 +24,8 @@ namespace SeedCore
 		/// [JP] これまでに描いた UI のフレーム数。Engine が毎フレーム1つ進める。
 		Uint64 uiFrame_ = 0;
 
-		/// [EN] Set when the editor should quit (window close or the menu); Engine ends its loop on it.
-		/// [JP] エディタを終了すべきとき（ウィンドウを閉じた、またはメニュー）に立つ。Engine はこれでループを終える。
+		/// [EN] Set when the editor receives a close request; MenuBarPanel turns it into the save-confirmation flow.
+		/// [JP] エディタが終了要求を受けたときに立つ。MenuBarPanel が保存確認のフローへ渡す。
 		Bool exitRequested_ = false;
 	};
 }

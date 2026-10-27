@@ -12,6 +12,7 @@
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/Time/GameTimer.h>
 
 namespace SeedCore
 {
@@ -213,6 +214,29 @@ namespace SeedCore
 		constraintSystem_.Execute(world);
 		materialSystem_.Execute(world, *resources.materialResource_, *resources.modelResource_);
 
+		GameTimer* gameTimer = world.GetService<GameTimer>();
+		Float gameDeltaTime = gameTimer ? gameTimer->ScaledDeltaTime() : 0.0f;
+		celestialSystem_.Execute(world, gameDeltaTime);
+		weatherSystem_.Execute(world, gameDeltaTime, celestialSystem_.MonthOfYear());
+		volumetricCloudScapesSystem_.Execute(world, celestialSystem_);
+		volumetricStarSystem_.Execute(world);
+		shadowSystem_.Execute(world);
+		ambientOcclusionSystem_.Execute(world);
+		reflectionSystem_.Execute(world);
+		globalIlluminationSystem_.Execute(world);
+		refractionSystem_.Execute(world);
+		subsurfaceScatteringSystem_.Execute(world);
+		volumetricLightSystem_.Execute(world);
+		raytracingRenderer_->SetRaytracingSettings(shadowSystem_, ambientOcclusionSystem_, reflectionSystem_, globalIlluminationSystem_, refractionSystem_, subsurfaceScatteringSystem_, volumetricLightSystem_, volumetricCloudScapesSystem_, volumetricStarSystem_);
+
+		const Uint8* cloudBytes = reinterpret_cast<const Uint8*>(&volumetricCloudScapesSystem_.ConstantBuffer());
+		Uint32 cloudHash = 2166136261u;
+		for (Size byteIndex = 0; byteIndex < sizeof(VolumetricCloudScapesRayConstantBuffer); byteIndex++)
+		{
+			cloudHash = (cloudHash ^ cloudBytes[byteIndex]) * 16777619u;
+		}
+		skyRenderer_->SetProceduralSky(volumetricCloudScapesSystem_.Enabled(), cloudHash, lightSystem_ ? lightSystem_->GetIndex() : 0, skyTotalTime_);
+
 		modelRenderer_->Gather(resources, world, scene, selectedEntities);
 		raytracingRenderer_->Gather(*resources.modelResource_, world, *modelRenderer_);
 
@@ -221,10 +245,8 @@ namespace SeedCore
 		fontRenderer_->Gather(*resources.fontResource_, world, gameDisplaySize, selectedEntities);
 		movieRenderer_->Gather(*resources.movieResource_, world, gameDisplaySize, selectedEntities);
 
-		celestialResult_ = CelestialSystem::Compute(daySystem_, sunLight_, moonLight_);
-		Bool sunOverride = daySystemEnabled_ && sunLightEnabled_;
 		weatherState_ = WeatherSystem::ReadGpuState(world);
-		lightSystem_->Gather(*resources.modelResource_, world, sunOverride ? &celestialResult_ : nullptr);
+		lightSystem_->Gather(*resources.modelResource_, world, celestialSystem_.Enabled() ? &celestialSystem_ : nullptr);
 
 		WeatherConstantBuffer weatherConstantBuffer{};
 		weatherConstantBuffer.wetness_ = weatherState_.wetness_;
@@ -274,7 +296,7 @@ namespace SeedCore
 		ID3D12DescriptorHeap* heap = bindlessHeap_->Heap();
 		RootAddresses addresses{ shaderResourceIndicesSystem_->GameAddress(), unorderedAccessIndicesSystem_->GameAddress(), constantIndicesSystem_->GameConstantAddress() };
 
-		raytracingRenderer_->Build(cmdList, heap, addresses, device_, *modelRenderer_, deltaTime, celestialResult_.nightFactor_, lastCameraPosition_, skyTotalTime_, weatherState_);
+		raytracingRenderer_->Build(cmdList, heap, addresses, device_, *modelRenderer_, deltaTime, celestialSystem_.Result().nightFactor_, lastCameraPosition_, skyTotalTime_, weatherState_);
 
 		/// [JP] 天候パーティクルのシミュレートは共有のワールド空間状態を進める
 		///      だけなので、フレームに1回(ここのみ)実行する。描画はビューごとに
@@ -544,35 +566,6 @@ namespace SeedCore
 	void Renderer::GatherAvatarPreview(const AvatarMesh& mesh, Uint32 boneCount, const Matrix& worldMatrix, std::span<const Uint32> regionTextureIndices)
 	{
 		avatarRenderer_->Gather(mesh, boneCount, worldMatrix, regionTextureIndices);
-	}
-
-	void Renderer::Raytracing(const RaytracingContext& settings)
-	{
-		raytracingRenderer_->SetRaytracingSettings(settings);
-
-		daySystemEnabled_ = settings.daySystemEnabled_;
-		daySystem_ = settings.daySystem_;
-		sunLightEnabled_ = settings.sunLightEnabled_;
-		sunLight_ = settings.sunLight_;
-		moonLightEnabled_ = settings.moonLightEnabled_;
-		moonLight_ = settings.moonLight_;
-
-		/// [JP] プロシージャル空(雲機能)が有効な間、SkyRenderer にも伝えて
-		///      スカイマップ無効時の IBL を解析的な空から生成させる。ハッシュは
-		///      空/雲設定のバイト列の FNV-1a — 変化した時だけ再畳み込みが走る
-		///      (太陽の回転はハッシュ外なので SkyRenderer 側の定期リフレッシュが
-		///      拾う)。lightIndex は SetIndices と同じ LightSystem の定数
-		///      インデックス。
-		const Uint8* bytes = reinterpret_cast<const Uint8*>(&settings.volumetricCloudScapes_);
-		Uint32 hash = 2166136261u;
-		for (Size byteIndex = 0; byteIndex < sizeof(settings.volumetricCloudScapes_); byteIndex++)
-		{
-			hash = (hash ^ bytes[byteIndex]) * 16777619u;
-		}
-
-		/// [JP] 時刻(風スクロール)は PrepareFrame で蓄積した skyTotalTime_ を渡す
-		///      (1フレーム遅れだが定期リフレッシュ間隔からすれば誤差)。
-		skyRenderer_->SetProceduralSky(settings.volumetricCloudScapesEnabled_, hash, lightSystem_ ? lightSystem_->GetIndex() : 0, skyTotalTime_);
 	}
 
 	void Renderer::Upscale(Bool dlssRayReconstructionEnabled, UpscaleMode upscaleMode)

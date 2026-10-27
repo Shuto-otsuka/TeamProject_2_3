@@ -314,6 +314,22 @@ namespace SeedCore
 		characterContactListener_ = nullptr;
 	}
 
+	void CharacterController::OnRevision()
+	{
+		if (!character_)
+		{
+			return;
+		}
+
+		OnDestroy();
+		OnAwake();
+	}
+
+	void CharacterController::Dispatch()
+	{
+		OnRevision();
+	}
+
 	/**
 	* [EN]
 	* Sets the requested horizontal movement direction and magnitude.

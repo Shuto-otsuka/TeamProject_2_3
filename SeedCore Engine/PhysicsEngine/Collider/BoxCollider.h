@@ -21,16 +21,19 @@ namespace SeedCore
 	public:
 		/// [EN] Full dimensions of the box along each local axis.
 		/// [JP] 各ローカル軸に沿った箱の全寸法。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("サイズ")
 		Vector3 size_ = { 1.0f, 1.0f, 1.0f };
 
 		/// [EN] Local offset of the box center from the actor origin.
 		/// [JP] アクター原点から見た箱の中心のローカルオフセット。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("中心オフセット")
 		Vector3 center_ = { 0.0f, 0.0f, 0.0f };
 
 		/// [EN] Whether the collider reports overlaps without physical response.
 		/// [JP] 物理応答を行わず重なりを通知するトリガーとして扱うか。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("トリガー")
 		Bool isTrigger_ = false;
 
@@ -56,6 +59,11 @@ namespace SeedCore
 		* コライダーボディを破棄し、形状を解放する。
 		*/
 		void OnDestroy();
+
+		void OnRevision();
+
+	public:
+		void Dispatch();
 
 	public:
 		/**

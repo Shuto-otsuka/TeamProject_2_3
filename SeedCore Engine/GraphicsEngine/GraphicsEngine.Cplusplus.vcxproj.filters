@@ -1,6 +1,48 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Environment\VolumetricCloud">
+      <UniqueIdentifier>{ea333d12-860f-4685-9b6d-998b9a2acb38}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Environment\VolumetricStar">
+      <UniqueIdentifier>{0f43e027-2572-42c4-882d-2deca124c223}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination">
+      <UniqueIdentifier>{08d55a95-a436-4fd7-b006-55785b6add9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination\AmbientOcclusion">
+      <UniqueIdentifier>{7e2bbc73-4068-40e5-9183-34f85d0679b2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination\AmbientOcclusion\Raytracing">
+      <UniqueIdentifier>{81985010-53c3-4f15-8273-771a00943ca3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination\GlobalIllumination">
+      <UniqueIdentifier>{b93274e0-65de-488f-b4eb-9b2b639674e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination\GlobalIllumination\Raytracing">
+      <UniqueIdentifier>{c4eede63-a596-4e0c-80b9-a530970a3e0a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination\Reflection">
+      <UniqueIdentifier>{5123d644-428f-4069-9797-468e88a44793}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination\Reflection\Raytracing">
+      <UniqueIdentifier>{4d4a14f6-59f4-4a04-893c-ffa292ee0ff2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination\Refraction">
+      <UniqueIdentifier>{074d1fa5-2188-4b39-9f5e-08e9fb6048c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination\Shadow">
+      <UniqueIdentifier>{87c7ac2f-ca11-45b6-8392-f4d2735ca271}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination\Shadow\Raytracing">
+      <UniqueIdentifier>{b341f05b-ffc8-4f75-9ef6-0d1a897df68a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination\SubsurfaceScattering">
+      <UniqueIdentifier>{78183319-cfb1-4a18-a6ad-90c9792911e8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination\VolumetricLight">
+      <UniqueIdentifier>{258c22da-e16c-4bfa-bffc-ceea8806a764}</UniqueIdentifier>
+    </Filter>
     <Filter Include="D3D12">
       <UniqueIdentifier>{c98f3453-0013-419b-972f-80b971f1259f}</UniqueIdentifier>
     </Filter>
@@ -58,38 +100,8 @@
     <Filter Include="Shape">
       <UniqueIdentifier>{b92e419f-aba5-4f11-83f5-1d462549061e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Raytracing\VolumetricCloudScapes">
-      <UniqueIdentifier>{3f0567de-5c33-464f-aba6-cc226367ae74}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Raytracing\Shadow">
-      <UniqueIdentifier>{3a91c082-4abb-4c5a-8351-2a7606cae916}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Raytracing\GlobalIllumination">
-      <UniqueIdentifier>{80eef06e-3343-413b-b614-fefcb93cdea8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Raytracing\Reflection">
-      <UniqueIdentifier>{73fe5681-4fbd-4e46-ad8b-ad02df49d3e3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Raytracing\Refraction">
-      <UniqueIdentifier>{c84e554d-297b-476d-99c7-6dde3985a017}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Raytracing\AmbientOcclusion">
-      <UniqueIdentifier>{5cea8ec5-9f48-4beb-84b1-19acd03eddfa}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Raytracing\SubsurfaceScattering">
-      <UniqueIdentifier>{8b84af3c-c7c1-4663-8cbf-7505a3f336a3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Raytracing\Fog">
-      <UniqueIdentifier>{69f74f15-c623-446a-bf42-536402bf005e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Raytracing\VolumetricLight">
-      <UniqueIdentifier>{26c52dd5-896d-4c66-ac36-111e97b47c3a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Sky">
       <UniqueIdentifier>{aec87ce4-b590-4daa-882b-565e42f5da95}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Raytracing\Froxel">
-      <UniqueIdentifier>{79b85352-ce37-4e49-b95e-05063a546702}</UniqueIdentifier>
     </Filter>
     <Filter Include="Shape\Outline">
       <UniqueIdentifier>{c7946744-9824-4c45-98b6-665ad836df23}</UniqueIdentifier>
@@ -121,12 +133,6 @@
     <Filter Include="Environment">
       <UniqueIdentifier>{c15ca0da-c3dc-4ea6-b97f-cb704d5cd881}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Raytracing\VolumetricStar">
-      <UniqueIdentifier>{ec32b70b-0234-4157-9ce0-e83c3232bb6c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Raytracing\Caustics">
-      <UniqueIdentifier>{ace9bc0a-a565-44b5-894d-857f060e12fe}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Model\Collision">
       <UniqueIdentifier>{0b6e0942-763b-4c4a-af40-2b64ad4da33b}</UniqueIdentifier>
     </Filter>
@@ -150,12 +156,6 @@
     </Filter>
     <Filter Include="Shape\HUD">
       <UniqueIdentifier>{d40a24a7-28f0-4777-85f4-33efe3b4c038}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Rasterization">
-      <UniqueIdentifier>{f3f08c5b-f7a2-425b-b88a-9e68b02d79d3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="ScreenSpace">
-      <UniqueIdentifier>{a7815dd2-4cff-4bac-b1a5-2b15b8645af9}</UniqueIdentifier>
     </Filter>
     <Filter Include="Quality">
       <UniqueIdentifier>{8cd259f6-400e-482b-a014-13c3c222b703}</UniqueIdentifier>
@@ -234,6 +234,12 @@
     </Filter>
     <Filter Include="Resource">
       <UniqueIdentifier>{29198ae3-b918-49d5-b4f5-d64f1e0f8637}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination\Caustics">
+      <UniqueIdentifier>{947ab019-53b3-4954-a26d-ebe9e7e324c9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Environment\Celestial">
+      <UniqueIdentifier>{84da79a0-c715-43d7-9e65-50b125b2d72d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -472,47 +478,44 @@
     <ClInclude Include="Renderer\OutlineRenderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Raytracing\Shadow\ShadowShader.h">
-      <Filter>Raytracing\Shadow</Filter>
+    <ClInclude Include="Illumination\Shadow\ShadowShader.h">
+      <Filter>Illumination\Shadow</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\ShadowRenderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Raytracing\Shadow\ShadowDenoiseShader.h">
-      <Filter>Raytracing\Shadow</Filter>
+    <ClInclude Include="Illumination\Shadow\ShadowDenoiseShader.h">
+      <Filter>Illumination\Shadow</Filter>
     </ClInclude>
-    <ClInclude Include="Raytracing\RaytracingContext.h">
-      <Filter>Raytracing</Filter>
+    <ClInclude Include="Illumination\AmbientOcclusion\AmbientOcclusionShader.h">
+      <Filter>Illumination\AmbientOcclusion</Filter>
     </ClInclude>
-    <ClInclude Include="Raytracing\AmbientOcclusion\AmbientOcclusionShader.h">
-      <Filter>Raytracing\AmbientOcclusion</Filter>
-    </ClInclude>
-    <ClInclude Include="Raytracing\AmbientOcclusion\AmbientOcclusionDenoiseShader.h">
-      <Filter>Raytracing\AmbientOcclusion</Filter>
+    <ClInclude Include="Illumination\AmbientOcclusion\AmbientOcclusionDenoiseShader.h">
+      <Filter>Illumination\AmbientOcclusion</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\AmbientOcclusionRenderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Raytracing\SubsurfaceScattering\SubsurfaceScatteringShader.h">
-      <Filter>Raytracing\SubsurfaceScattering</Filter>
+    <ClInclude Include="Illumination\SubsurfaceScattering\SubsurfaceScatteringShader.h">
+      <Filter>Illumination\SubsurfaceScattering</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\SubsurfaceScatteringRenderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Raytracing\Reflection\ReflectionShader.h">
-      <Filter>Raytracing\Reflection</Filter>
+    <ClInclude Include="Illumination\Reflection\ReflectionShader.h">
+      <Filter>Illumination\Reflection</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\ReflectionRenderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Raytracing\VolumetricCloudScapes\VolumetricCloudScapesShader.h">
-      <Filter>Raytracing\VolumetricCloudScapes</Filter>
+    <ClInclude Include="Environment\VolumetricCloud\VolumetricCloudScapesShader.h">
+      <Filter>Environment\VolumetricCloud</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\VolumetricCloudScapesRenderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Raytracing\VolumetricLight\VolumetricLightShader.h">
-      <Filter>Raytracing\VolumetricLight</Filter>
+    <ClInclude Include="Illumination\VolumetricLight\VolumetricLightShader.h">
+      <Filter>Illumination\VolumetricLight</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\VolumetricLightRenderer.h">
       <Filter>Renderer</Filter>
@@ -682,14 +685,14 @@
     <ClInclude Include="Profiler\GpuProfiler.h">
       <Filter>Profiler</Filter>
     </ClInclude>
-    <ClInclude Include="Raytracing\GlobalIllumination\GlobalIlluminationShader.h">
-      <Filter>Raytracing\GlobalIllumination</Filter>
+    <ClInclude Include="Illumination\GlobalIllumination\GlobalIlluminationShader.h">
+      <Filter>Illumination\GlobalIllumination</Filter>
     </ClInclude>
     <ClInclude Include="PostProcess\PostProcess.h">
       <Filter>PostProcess</Filter>
     </ClInclude>
-    <ClInclude Include="Raytracing\GlobalIllumination\GlobalIlluminationDenoiseShader.h">
-      <Filter>Raytracing\GlobalIllumination</Filter>
+    <ClInclude Include="Illumination\GlobalIllumination\GlobalIlluminationDenoiseShader.h">
+      <Filter>Illumination\GlobalIllumination</Filter>
     </ClInclude>
     <ClInclude Include="DLSS\DlssNormalRoughnessShader.h">
       <Filter>DLSS</Filter>
@@ -703,8 +706,8 @@
     <ClInclude Include="Environment\Weather.h">
       <Filter>Environment</Filter>
     </ClInclude>
-    <ClInclude Include="Raytracing\VolumetricStar\VolumetricStarShader.h">
-      <Filter>Raytracing\VolumetricStar</Filter>
+    <ClInclude Include="Environment\VolumetricStar\VolumetricStarShader.h">
+      <Filter>Environment\VolumetricStar</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\VolumetricStarRenderer.h">
       <Filter>Renderer</Filter>
@@ -721,14 +724,14 @@
     <ClInclude Include="Renderer\WeatherParticleRenderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="Raytracing\Reflection\ReflectionDenoiseShader.h">
-      <Filter>Raytracing\Reflection</Filter>
+    <ClInclude Include="Illumination\Reflection\ReflectionDenoiseShader.h">
+      <Filter>Illumination\Reflection</Filter>
     </ClInclude>
     <ClInclude Include="D3D12\Buffer\DepthResizeBuffer.h">
       <Filter>D3D12\Buffer</Filter>
     </ClInclude>
-    <ClInclude Include="Raytracing\Refraction\RefractionShader.h">
-      <Filter>Raytracing\Refraction</Filter>
+    <ClInclude Include="Illumination\Refraction\RefractionShader.h">
+      <Filter>Illumination\Refraction</Filter>
     </ClInclude>
     <ClInclude Include="Model\Collision\MeshCollision.h">
       <Filter>Model\Collision</Filter>
@@ -835,16 +838,7 @@
     <ClInclude Include="Renderer\MaterialRenderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="ScreenSpace\ScreenSpaceContext.h">
-      <Filter>ScreenSpace</Filter>
-    </ClInclude>
-    <ClInclude Include="Rasterization\RasterizationContext.h">
-      <Filter>Rasterization</Filter>
-    </ClInclude>
     <ClInclude Include="Quality\Upscale.h">
-      <Filter>Quality</Filter>
-    </ClInclude>
-    <ClInclude Include="Quality\GraphicsQuality.h">
       <Filter>Quality</Filter>
     </ClInclude>
     <ClInclude Include="Constraint\AttachmentConstraint.h">
@@ -1039,6 +1033,66 @@
     <ClInclude Include="System\MaterialSystem.h">
       <Filter>System</Filter>
     </ClInclude>
+    <ClInclude Include="Illumination\Shadow\Shadow.h">
+      <Filter>Illumination\Shadow</Filter>
+    </ClInclude>
+    <ClInclude Include="Illumination\AmbientOcclusion\AmbientOcclusion.h">
+      <Filter>Illumination\AmbientOcclusion</Filter>
+    </ClInclude>
+    <ClInclude Include="Illumination\Reflection\Reflection.h">
+      <Filter>Illumination\Reflection</Filter>
+    </ClInclude>
+    <ClInclude Include="Illumination\GlobalIllumination\GlobalIllumination.h">
+      <Filter>Illumination\GlobalIllumination</Filter>
+    </ClInclude>
+    <ClInclude Include="Illumination\Refraction\Refraction.h">
+      <Filter>Illumination\Refraction</Filter>
+    </ClInclude>
+    <ClInclude Include="Illumination\SubsurfaceScattering\SubsurfaceScattering.h">
+      <Filter>Illumination\SubsurfaceScattering</Filter>
+    </ClInclude>
+    <ClInclude Include="Illumination\Caustics\Caustics.h">
+      <Filter>Illumination\Caustics</Filter>
+    </ClInclude>
+    <ClInclude Include="Illumination\VolumetricLight\VolumetricLight.h">
+      <Filter>Illumination\VolumetricLight</Filter>
+    </ClInclude>
+    <ClInclude Include="Environment\VolumetricStar\VolumetricStar.h">
+      <Filter>Environment\VolumetricStar</Filter>
+    </ClInclude>
+    <ClInclude Include="Environment\VolumetricCloud\VolumetricCloudScapes.h">
+      <Filter>Environment\VolumetricCloud</Filter>
+    </ClInclude>
+    <ClInclude Include="Environment\Celestial\Celestial.h">
+      <Filter>Environment\Celestial</Filter>
+    </ClInclude>
+    <ClInclude Include="System\AmbientOcclusionSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\GlobalIlluminationSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\ReflectionSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\RefractionSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\ShadowSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\SubsurfaceScatteringSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\VolumetricCloudScapesSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\VolumetricLightSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="System\VolumetricStarSystem.h">
+      <Filter>System</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">
@@ -1229,44 +1283,44 @@
     <ClCompile Include="Renderer\OutlineRenderer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Raytracing\Shadow\ShadowShader.cpp">
-      <Filter>Raytracing\Shadow</Filter>
+    <ClCompile Include="Illumination\Shadow\ShadowShader.cpp">
+      <Filter>Illumination\Shadow</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\ShadowRenderer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Raytracing\Shadow\ShadowDenoiseShader.cpp">
-      <Filter>Raytracing\Shadow</Filter>
+    <ClCompile Include="Illumination\Shadow\ShadowDenoiseShader.cpp">
+      <Filter>Illumination\Shadow</Filter>
     </ClCompile>
-    <ClCompile Include="Raytracing\AmbientOcclusion\AmbientOcclusionShader.cpp">
-      <Filter>Raytracing\AmbientOcclusion</Filter>
+    <ClCompile Include="Illumination\AmbientOcclusion\AmbientOcclusionShader.cpp">
+      <Filter>Illumination\AmbientOcclusion</Filter>
     </ClCompile>
-    <ClCompile Include="Raytracing\AmbientOcclusion\AmbientOcclusionDenoiseShader.cpp">
-      <Filter>Raytracing\AmbientOcclusion</Filter>
+    <ClCompile Include="Illumination\AmbientOcclusion\AmbientOcclusionDenoiseShader.cpp">
+      <Filter>Illumination\AmbientOcclusion</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\AmbientOcclusionRenderer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Raytracing\SubsurfaceScattering\SubsurfaceScatteringShader.cpp">
-      <Filter>Raytracing\SubsurfaceScattering</Filter>
+    <ClCompile Include="Illumination\SubsurfaceScattering\SubsurfaceScatteringShader.cpp">
+      <Filter>Illumination\SubsurfaceScattering</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\SubsurfaceScatteringRenderer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Raytracing\Reflection\ReflectionShader.cpp">
-      <Filter>Raytracing\Reflection</Filter>
+    <ClCompile Include="Illumination\Reflection\ReflectionShader.cpp">
+      <Filter>Illumination\Reflection</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\ReflectionRenderer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Raytracing\VolumetricCloudScapes\VolumetricCloudScapesShader.cpp">
-      <Filter>Raytracing\VolumetricCloudScapes</Filter>
+    <ClCompile Include="Environment\VolumetricCloud\VolumetricCloudScapesShader.cpp">
+      <Filter>Environment\VolumetricCloud</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\VolumetricCloudScapesRenderer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Raytracing\VolumetricLight\VolumetricLightShader.cpp">
-      <Filter>Raytracing\VolumetricLight</Filter>
+    <ClCompile Include="Illumination\VolumetricLight\VolumetricLightShader.cpp">
+      <Filter>Illumination\VolumetricLight</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\VolumetricLightRenderer.cpp">
       <Filter>Renderer</Filter>
@@ -1406,11 +1460,11 @@
     <ClCompile Include="Profiler\GpuProfiler.cpp">
       <Filter>Profiler</Filter>
     </ClCompile>
-    <ClCompile Include="Raytracing\GlobalIllumination\GlobalIlluminationShader.cpp">
-      <Filter>Raytracing\GlobalIllumination</Filter>
+    <ClCompile Include="Illumination\GlobalIllumination\GlobalIlluminationShader.cpp">
+      <Filter>Illumination\GlobalIllumination</Filter>
     </ClCompile>
-    <ClCompile Include="Raytracing\GlobalIllumination\GlobalIlluminationDenoiseShader.cpp">
-      <Filter>Raytracing\GlobalIllumination</Filter>
+    <ClCompile Include="Illumination\GlobalIllumination\GlobalIlluminationDenoiseShader.cpp">
+      <Filter>Illumination\GlobalIllumination</Filter>
     </ClCompile>
     <ClCompile Include="DLSS\DlssNormalRoughnessShader.cpp">
       <Filter>DLSS</Filter>
@@ -1421,8 +1475,8 @@
     <ClCompile Include="DLSS\DlssBackgroundVelocityShader.cpp">
       <Filter>DLSS</Filter>
     </ClCompile>
-    <ClCompile Include="Raytracing\VolumetricStar\VolumetricStarShader.cpp">
-      <Filter>Raytracing\VolumetricStar</Filter>
+    <ClCompile Include="Environment\VolumetricStar\VolumetricStarShader.cpp">
+      <Filter>Environment\VolumetricStar</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\VolumetricStarRenderer.cpp">
       <Filter>Renderer</Filter>
@@ -1439,14 +1493,14 @@
     <ClCompile Include="Renderer\WeatherParticleRenderer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Raytracing\Reflection\ReflectionDenoiseShader.cpp">
-      <Filter>Raytracing\Reflection</Filter>
+    <ClCompile Include="Illumination\Reflection\ReflectionDenoiseShader.cpp">
+      <Filter>Illumination\Reflection</Filter>
     </ClCompile>
     <ClCompile Include="D3D12\Buffer\DepthResizeBuffer.cpp">
       <Filter>D3D12\Buffer</Filter>
     </ClCompile>
-    <ClCompile Include="Raytracing\Refraction\RefractionShader.cpp">
-      <Filter>Raytracing\Refraction</Filter>
+    <ClCompile Include="Illumination\Refraction\RefractionShader.cpp">
+      <Filter>Illumination\Refraction</Filter>
     </ClCompile>
     <ClCompile Include="Model\Collision\MeshCollision.cpp">
       <Filter>Model\Collision</Filter>
@@ -1549,9 +1603,6 @@
     </ClCompile>
     <ClCompile Include="Model\Material\Material.cpp">
       <Filter>Model\Material</Filter>
-    </ClCompile>
-    <ClCompile Include="Quality\GraphicsQuality.cpp">
-      <Filter>Quality</Filter>
     </ClCompile>
     <ClCompile Include="Constraint\AttachmentConstraint.cpp">
       <Filter>Constraint</Filter>
@@ -1709,6 +1760,33 @@
     <ClCompile Include="System\MaterialSystem.cpp">
       <Filter>System</Filter>
     </ClCompile>
+    <ClCompile Include="System\AmbientOcclusionSystem.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\GlobalIlluminationSystem.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\ReflectionSystem.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\RefractionSystem.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\ShadowSystem.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\SubsurfaceScatteringSystem.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\VolumetricCloudScapesSystem.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\VolumetricLightSystem.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="System\VolumetricStarSystem.cpp">
+      <Filter>System</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\Sampler.hlsli">
@@ -1735,32 +1813,32 @@
     <None Include="Sky\SkyGenerate.hlsli">
       <Filter>Sky</Filter>
     </None>
-    <None Include="Raytracing\Froxel\Froxel.hlsli">
-      <Filter>Raytracing\Froxel</Filter>
+    <None Include="Illumination\VolumetricLight\Froxel.hlsli">
+      <Filter>Illumination\VolumetricLight</Filter>
     </None>
     <None Include="Shader\Noise.hlsli">
       <Filter>Shader</Filter>
     </None>
-    <None Include="Raytracing\Shadow\Shadow.hlsli">
-      <Filter>Raytracing\Shadow</Filter>
+    <None Include="Illumination\Shadow\Raytracing\RaytracingShadow.hlsli">
+      <Filter>Illumination\Shadow\Raytracing</Filter>
     </None>
-    <None Include="Raytracing\AmbientOcclusion\AmbientOcclusion.hlsli">
-      <Filter>Raytracing\AmbientOcclusion</Filter>
+    <None Include="Illumination\AmbientOcclusion\Raytracing\RaytracingAmbientOcclusion.hlsli">
+      <Filter>Illumination\AmbientOcclusion\Raytracing</Filter>
     </None>
-    <None Include="Raytracing\SubsurfaceScattering\SubsurfaceScattering.hlsli">
-      <Filter>Raytracing\SubsurfaceScattering</Filter>
+    <None Include="Illumination\SubsurfaceScattering\SubsurfaceScattering.hlsli">
+      <Filter>Illumination\SubsurfaceScattering</Filter>
     </None>
-    <None Include="Raytracing\Reflection\Reflection.hlsli">
-      <Filter>Raytracing\Reflection</Filter>
+    <None Include="Illumination\Reflection\Raytracing\RaytracingReflection.hlsli">
+      <Filter>Illumination\Reflection\Raytracing</Filter>
     </None>
-    <None Include="Raytracing\VolumetricCloudScapes\VolumetricCloudScapes.hlsli">
-      <Filter>Raytracing\VolumetricCloudScapes</Filter>
+    <None Include="Environment\VolumetricCloud\VolumetricCloudScapes.hlsli">
+      <Filter>Environment\VolumetricCloud</Filter>
     </None>
-    <None Include="Raytracing\VolumetricCloudScapes\CloudNoiseBake.hlsli">
-      <Filter>Raytracing\VolumetricCloudScapes</Filter>
+    <None Include="Environment\VolumetricCloud\CloudNoiseBake.hlsli">
+      <Filter>Environment\VolumetricCloud</Filter>
     </None>
-    <None Include="Raytracing\VolumetricLight\VolumetricLight.hlsli">
-      <Filter>Raytracing\VolumetricLight</Filter>
+    <None Include="Illumination\VolumetricLight\VolumetricLight.hlsli">
+      <Filter>Illumination\VolumetricLight</Filter>
     </None>
     <None Include="Movie\Movie.hlsli">
       <Filter>Movie</Filter>
@@ -1768,14 +1846,14 @@
     <None Include="Texture\Texture.hlsli">
       <Filter>Texture</Filter>
     </None>
-    <None Include="Raytracing\GlobalIllumination\GlobalIllumination.hlsli">
-      <Filter>Raytracing\GlobalIllumination</Filter>
+    <None Include="Illumination\GlobalIllumination\Raytracing\RaytracingGlobalIllumination.hlsli">
+      <Filter>Illumination\GlobalIllumination\Raytracing</Filter>
     </None>
     <None Include="PostProcess\ToneMappingCurves.hlsli">
       <Filter>PostProcess</Filter>
     </None>
-    <None Include="Raytracing\VolumetricStar\VolumetricStar.hlsli">
-      <Filter>Raytracing\VolumetricStar</Filter>
+    <None Include="Environment\VolumetricStar\VolumetricStar.hlsli">
+      <Filter>Environment\VolumetricStar</Filter>
     </None>
     <None Include="Environment\WeatherParticle.hlsli">
       <Filter>Environment</Filter>
@@ -1786,8 +1864,8 @@
     <None Include="Shader\Denoiser.hlsli">
       <Filter>Shader</Filter>
     </None>
-    <None Include="Raytracing\Refraction\Refraction.hlsli">
-      <Filter>Raytracing\Refraction</Filter>
+    <None Include="Illumination\Refraction\Refraction.hlsli">
+      <Filter>Illumination\Refraction</Filter>
     </None>
     <None Include="Model\Model.hlsli">
       <Filter>Model</Filter>
@@ -1801,14 +1879,14 @@
     <None Include="Model\Opaque\ToonShading.hlsli">
       <Filter>Model\Opaque</Filter>
     </None>
-    <None Include="Raytracing\GlobalIllumination\GlobalIlluminationReSTIR.hlsli">
-      <Filter>Raytracing\GlobalIllumination</Filter>
+    <None Include="Illumination\GlobalIllumination\Raytracing\RaytracingGlobalIlluminationReSTIR.hlsli">
+      <Filter>Illumination\GlobalIllumination\Raytracing</Filter>
     </None>
     <None Include="Shader\Material.hlsli">
       <Filter>Shader</Filter>
     </None>
-    <None Include="Raytracing\Reflection\ReflectionReSTIR.hlsli">
-      <Filter>Raytracing\Reflection</Filter>
+    <None Include="Illumination\Reflection\Raytracing\RaytracingReflectionReSTIR.hlsli">
+      <Filter>Illumination\Reflection\Raytracing</Filter>
     </None>
     <None Include="Shader\Dispatch.hlsli">
       <Filter>Shader</Filter>
@@ -1893,47 +1971,47 @@
     <Text Include="Light\ClusterAssignCS.hlsl">
       <Filter>Light</Filter>
     </Text>
-    <Text Include="Raytracing\Shadow\ShadowRT.hlsl">
-      <Filter>Raytracing\Shadow</Filter>
+    <Text Include="Illumination\Shadow\Raytracing\RaytracingShadowRT.hlsl">
+      <Filter>Illumination\Shadow\Raytracing</Filter>
     </Text>
-    <Text Include="Raytracing\GlobalIllumination\GlobalIlluminationRT.hlsl">
-      <Filter>Raytracing\GlobalIllumination</Filter>
+    <Text Include="Illumination\GlobalIllumination\Raytracing\RaytracingGlobalIlluminationRT.hlsl">
+      <Filter>Illumination\GlobalIllumination\Raytracing</Filter>
     </Text>
-    <Text Include="Raytracing\VolumetricLight\VolumetricLightScatteringRT.hlsl">
-      <Filter>Raytracing\VolumetricLight</Filter>
+    <Text Include="Illumination\VolumetricLight\VolumetricLightScatteringRT.hlsl">
+      <Filter>Illumination\VolumetricLight</Filter>
     </Text>
-    <Text Include="Raytracing\VolumetricCloudScapes\VolumetricCloudScapesRT.hlsl">
-      <Filter>Raytracing\VolumetricCloudScapes</Filter>
+    <Text Include="Environment\VolumetricCloud\VolumetricCloudScapesCS.hlsl">
+      <Filter>Environment\VolumetricCloud</Filter>
     </Text>
-    <Text Include="Raytracing\SubsurfaceScattering\SubsurfaceScatteringRT.hlsl">
-      <Filter>Raytracing\SubsurfaceScattering</Filter>
+    <Text Include="Illumination\SubsurfaceScattering\SubsurfaceScatteringRT.hlsl">
+      <Filter>Illumination\SubsurfaceScattering</Filter>
     </Text>
-    <Text Include="Raytracing\Refraction\RefractionRT.hlsl">
-      <Filter>Raytracing\Refraction</Filter>
+    <Text Include="Illumination\Refraction\RefractionRT.hlsl">
+      <Filter>Illumination\Refraction</Filter>
     </Text>
-    <Text Include="Raytracing\Reflection\ReflectionRT.hlsl">
-      <Filter>Raytracing\Reflection</Filter>
+    <Text Include="Illumination\Reflection\Raytracing\RaytracingReflectionRT.hlsl">
+      <Filter>Illumination\Reflection\Raytracing</Filter>
     </Text>
-    <Text Include="Raytracing\Froxel\FroxelIntegrationCS.hlsl">
-      <Filter>Raytracing\Froxel</Filter>
+    <Text Include="Illumination\VolumetricLight\FroxelIntegrationCS.hlsl">
+      <Filter>Illumination\VolumetricLight</Filter>
     </Text>
-    <Text Include="Raytracing\Fog\FogInjectionCS.hlsl">
-      <Filter>Raytracing\Fog</Filter>
+    <Text Include="Illumination\VolumetricLight\FogInjectionCS.hlsl">
+      <Filter>Illumination\VolumetricLight</Filter>
     </Text>
-    <Text Include="Raytracing\AmbientOcclusion\AmbientOcclusionRT.hlsl">
-      <Filter>Raytracing\AmbientOcclusion</Filter>
+    <Text Include="Illumination\AmbientOcclusion\Raytracing\RaytracingAmbientOcclusionRT.hlsl">
+      <Filter>Illumination\AmbientOcclusion\Raytracing</Filter>
     </Text>
-    <Text Include="Raytracing\Shadow\ShadowDenoiseCS.hlsl">
-      <Filter>Raytracing\Shadow</Filter>
+    <Text Include="Illumination\Shadow\Raytracing\RaytracingShadowDenoiseCS.hlsl">
+      <Filter>Illumination\Shadow\Raytracing</Filter>
     </Text>
-    <Text Include="Raytracing\AmbientOcclusion\AmbientOcclusionDenoiseCS.hlsl">
-      <Filter>Raytracing\AmbientOcclusion</Filter>
+    <Text Include="Illumination\AmbientOcclusion\Raytracing\RaytracingAmbientOcclusionDenoiseCS.hlsl">
+      <Filter>Illumination\AmbientOcclusion\Raytracing</Filter>
     </Text>
-    <Text Include="Raytracing\VolumetricCloudScapes\CloudNoiseShapeBakeCS.hlsl">
-      <Filter>Raytracing\VolumetricCloudScapes</Filter>
+    <Text Include="Environment\VolumetricCloud\CloudNoiseShapeBakeCS.hlsl">
+      <Filter>Environment\VolumetricCloud</Filter>
     </Text>
-    <Text Include="Raytracing\VolumetricCloudScapes\CloudNoiseDetailBakeCS.hlsl">
-      <Filter>Raytracing\VolumetricCloudScapes</Filter>
+    <Text Include="Environment\VolumetricCloud\CloudNoiseDetailBakeCS.hlsl">
+      <Filter>Environment\VolumetricCloud</Filter>
     </Text>
     <Text Include="PostProcess\AutoExposureAverageCS.hlsl">
       <Filter>PostProcess</Filter>
@@ -1944,8 +2022,8 @@
     <Text Include="PostProcess\ToneMappingCS.hlsl">
       <Filter>PostProcess</Filter>
     </Text>
-    <Text Include="Raytracing\GlobalIllumination\GlobalIlluminationDenoiseCS.hlsl">
-      <Filter>Raytracing\GlobalIllumination</Filter>
+    <Text Include="Illumination\GlobalIllumination\Raytracing\RaytracingGlobalIlluminationDenoiseCS.hlsl">
+      <Filter>Illumination\GlobalIllumination\Raytracing</Filter>
     </Text>
     <Text Include="DLSS\DlssNormalRoughnessCS.hlsl">
       <Filter>DLSS</Filter>
@@ -1962,8 +2040,8 @@
     <Text Include="PostProcess\BokehCS.hlsl">
       <Filter>PostProcess</Filter>
     </Text>
-    <Text Include="Raytracing\VolumetricStar\VolumetricStarRT.hlsl">
-      <Filter>Raytracing\VolumetricStar</Filter>
+    <Text Include="Environment\VolumetricStar\VolumetricStarCS.hlsl">
+      <Filter>Environment\VolumetricStar</Filter>
     </Text>
     <Text Include="Environment\WeatherParticleSimulateCS.hlsl">
       <Filter>Environment</Filter>
@@ -1977,8 +2055,8 @@
     <Text Include="Environment\WeatherParticlePS.hlsl">
       <Filter>Environment</Filter>
     </Text>
-    <Text Include="Raytracing\Reflection\ReflectionDenoiseCS.hlsl">
-      <Filter>Raytracing\Reflection</Filter>
+    <Text Include="Illumination\Reflection\Raytracing\RaytracingReflectionDenoiseCS.hlsl">
+      <Filter>Illumination\Reflection\Raytracing</Filter>
     </Text>
     <Text Include="TAAU\TaauResolveCS.hlsl">
       <Filter>TAAU</Filter>
@@ -2061,11 +2139,11 @@
     <Text Include="Model\Transparent\ModelTransparentPS.hlsl">
       <Filter>Model\Transparent</Filter>
     </Text>
-    <Text Include="Raytracing\GlobalIllumination\GlobalIlluminationReservoirSpatialCS.hlsl">
-      <Filter>Raytracing\GlobalIllumination</Filter>
+    <Text Include="Illumination\GlobalIllumination\Raytracing\RaytracingGlobalIlluminationReservoirSpatialCS.hlsl">
+      <Filter>Illumination\GlobalIllumination\Raytracing</Filter>
     </Text>
-    <Text Include="Raytracing\Reflection\ReflectionReservoirSpatialCS.hlsl">
-      <Filter>Raytracing\Reflection</Filter>
+    <Text Include="Illumination\Reflection\Raytracing\RaytracingReflectionReservoirSpatialCS.hlsl">
+      <Filter>Illumination\Reflection\Raytracing</Filter>
     </Text>
     <Text Include="Shape\HUD\HUDComposeMS.hlsl">
       <Filter>Shape\HUD</Filter>

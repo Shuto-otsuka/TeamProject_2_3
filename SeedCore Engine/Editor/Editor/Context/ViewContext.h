@@ -6,6 +6,7 @@ namespace SeedCore
 	class EditorCamera;
 	class EditorCameraController;
 	class CanvasCamera;
+	class CameraSystem;
 
 	/**
 	* [EN]
@@ -40,6 +41,11 @@ namespace SeedCore
 		Bool shapeVisible_ = false;
 	};
 
+	struct GameViewContext
+	{
+		CameraSystem* cameraSystem_ = nullptr;
+	};
+
 	/**
 	* [EN]
 	* The 2D canvas view where UI is laid out.
@@ -71,6 +77,10 @@ namespace SeedCore
 		/// [EN] The 3D editor view.
 		/// [JP] 3D のエディタービュー。
 		EditorViewContext editor_;
+
+		/// [EN] The 3D game view.
+		/// [JP] 3D のゲームービュー。
+		GameViewContext game_;
 
 		/// [EN] The 2D canvas view.
 		/// [JP] 2D の Canvas ビュー。

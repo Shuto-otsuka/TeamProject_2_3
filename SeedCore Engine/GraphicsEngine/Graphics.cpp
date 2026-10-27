@@ -1,8 +1,10 @@
 #include <GraphicsEngine/Graphics.h>
 
+#include <FoundationEngine/Application/Window.h>
 #include <FoundationEngine/Log/AftermathCrashTracker.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Resource/Gateway.h>
+#include <FoundationEngine/Resource/Config/GameConfig.h>
 #include <FoundationEngine/Resource/Scene/Scene.h>
 #include <FoundationEngine/Time/GameTimer.h>
 #include <FoundationEngine/Time/WorldTimer.h>
@@ -32,8 +34,15 @@ namespace SeedCore
 	* [JP]
 	* グラフィックスサービスと、全ビューで共有するリソースを初期化する。
 	*/
-	Bool Graphics::Initialize(HWND hwnd, Uint32 width, Uint32 height, const BootConfig& bootConfig)
+	Bool Graphics::Initialize(const Window& window, const SplashSystem& splashSystem, const GameConfig& gameConfig)
 	{
+		HWND hwnd = window.Handle();
+
+		RECT clientRect{};
+		GetClientRect(hwnd, &clientRect);
+		Uint32 width = static_cast<Uint32>(clientRect.right - clientRect.left);
+		Uint32 height = static_cast<Uint32>(clientRect.bottom - clientRect.top);
+
 		/// [EN] Keep the presentation extent separately from the renderer's scaled internal extent.
 		/// [JP] 表示用のサイズは、Renderer の倍率適用後の内部サイズとは別に保持する。
 		width_ = width;
@@ -120,11 +129,18 @@ namespace SeedCore
 		splashScreen_.Initialize(context_->GetDevice(), context_->GetDirectQueue(), bindlessHeap_.get());
 
 		bootScreen_.Initialize(context_->GetDevice(), context_->GetDirectQueue(), bindlessHeap_.get(), DXGI_FORMAT_R8G8B8A8_UNORM);
-		bootScreen_.LoadImages(bootConfig);
+		bootScreen_.LoadImages(splashSystem.Config());
 
 		fadeScreen_.Initialize(context_->GetDevice());
 
 		letterScreen_.Initialize(context_->GetDevice(), bindlessHeap_.get());
+
+		ScResolution::ResSize outputSize = ToResSize(gameConfig.resolution_);
+		ResizeRenderTarget(static_cast<Uint32>(outputSize.Width), static_cast<Uint32>(outputSize.Height), gameConfig.upscaleMode_);
+
+		Reflex(gameConfig.useReflex_, false);
+		DeepDVC(gameConfig.useDeepDVC_, 0.5f, 0.25f);
+		FrameGeneration(gameConfig.useFrameGeneration_);
 
 		return true;
 	}
@@ -871,20 +887,6 @@ namespace SeedCore
 		/// [EN] The game image is fitted into the swap chain extent, keeping its aspect ratio.
 		/// [JP] ゲーム画像を、アスペクト比を保ったままスワップチェインのサイズへ収める。
 		letterScreen_.Draw(context_->GetDirectList()->Get(), renderer_->GameDisplayResource(), swapChain_->Handle(), static_cast<Float>(width_), static_cast<Float>(height_));
-	}
-
-	/**
-	* [EN]
-	* Forwards the complete raytracing configuration to Renderer.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 完全なレイトレーシング設定を Renderer へ転送する。
-	*/
-	void Graphics::Raytracing(const RaytracingContext& settings)
-	{
-		renderer_->Raytracing(settings);
 	}
 
 	/**

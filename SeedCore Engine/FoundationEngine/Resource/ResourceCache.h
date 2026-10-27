@@ -61,6 +61,8 @@ namespace SeedCore
 		*/
 		~ResourceCache();
 
+		void Finalize();
+
 		/**
 		* [EN]
 		* Synchronously rescans the project for asset changes and loads

@@ -20,6 +20,7 @@ namespace SeedCore
         TriggerEnter,
         TriggerStay,
         TriggerExit,
+        Revision,
     }
 
     public unsafe struct ManagedApi

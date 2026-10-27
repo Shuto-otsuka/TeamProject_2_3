@@ -37,7 +37,7 @@ namespace SeedCore
 		}
 	}
 
-	void HotReload::Initialize(PluginHost& pluginHost, CsharpHost& csharpHost)
+	Bool HotReload::Initialize(PluginHost& pluginHost, CsharpHost& csharpHost)
 	{
 		pluginHost_ = &pluginHost;
 		userProjectPlugin_ = pluginHost.Find("UserProject.Cplusplus");
@@ -49,6 +49,7 @@ namespace SeedCore
 		{
 			csharpBuild_.lastTriggeredWriteTime_ = csharpSourceWriteTime;
 		}
+		return true;
 	}
 
 	std::filesystem::path HotReload::UserProjectSourceDirectory()

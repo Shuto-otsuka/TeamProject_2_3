@@ -160,7 +160,7 @@ WeatherMaterial ResolveWeatherMaterial(float3 base_color, float roughness, float
 // clearcoat, anisotropy, sheen) already folded in. Produced by
 // ResolveGBufferMaterial below - shared by Model/Opaque/DeferredLightingPS.hlsl
 // (the primary G-Buffer surface) and any raytraced pass that needs the same
-// surface's material (e.g. Raytracing/Shadow/ShadowRT.hlsl's ReSTIR DI), so
+// surface's material (e.g. Illumination/Shadow/Raytracing/RaytracingShadowRT.hlsl's ReSTIR DI), so
 // a punctual light's specular response matches between the two.
 struct GBufferMaterial
 {

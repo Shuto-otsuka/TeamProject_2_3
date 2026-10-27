@@ -8,6 +8,8 @@ namespace SeedCore
 	class World;
 	class ResourceCache;
 	class JobExecutor;
+	struct GameConfig;
+	struct EditorConfig;
 
 	/**
 	* [EN]
@@ -19,8 +21,8 @@ namespace SeedCore
 	* script asking for a switch mid-update never has the world emptied
 	* under it; the first request wins and later ones are ignored while
 	* it is pending or its transition is running. Gameplay code reaches
-	* this through Scene, which forwards to the SceneSystem bound on
-	* construction and on every Update.
+	* this through Scene, which forwards to the SceneSystem bound by
+	* Initialize and on every Update.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -32,7 +34,7 @@ namespace SeedCore
 	* 実行するため、更新の途中で切り替えを求めたスクリプトの足元で world
 	* が空になることは無い。先に来た要求が勝ち、それが保留中か遷移が
 	* 進行中の間に来た要求は無視する。ゲームプレイコードは Scene 経由で
-	* ここに届く。Scene は、構築時と毎回の Update で束縛された
+	* ここに届く。Scene は、Initialize と毎回の Update で束縛された
 	* SceneSystem へ転送する。
 	*/
 	class SEEDCORE_API SceneSystem :public NonTransferable
@@ -40,72 +42,91 @@ namespace SeedCore
 	public:
 		/**
 		* [EN]
-		* Binds the world/cache/executor this system loads scenes into and
-		* runs transitions with, and binds this system as the one Scene
-		* forwards to.
+		* Constructs an unbound system; Initialize binds it.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* シーンの読み込み先と遷移の実行に使う world/cache/executor を
-		* 束縛し、このシステムを Scene の転送先として束縛する。
+		* 未束縛のシステムを作る。束縛は Initialize が行う。
 		*/
-		SceneSystem(World& world, ResourceCache& cache, JobExecutor& executor);
+		SceneSystem() = default;
 
 		/**
 		* [EN]
 		* Waits out any background load still running, and unbinds this
 		* system from Scene if it is the bound one. The JobExecutor given
-		* on construction must still be alive.
+		* to Initialize must still be alive.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 実行中のバックグラウンド読み込みを待ち切り、このシステムが Scene に
-		* 束縛されていれば束縛を外す。構築時に渡した JobExecutor はまだ
+		* 束縛されていれば束縛を外す。Initialize で渡した JobExecutor はまだ
 		* 生きている必要がある。
 		*/
 		~SceneSystem();
+
+		/**
+		* [EN]
+		* Binds the world/cache/executor this system loads scenes into and
+		* runs transitions with, binds this system as the one Scene forwards
+		* to, and opens gameConfig's initial scene. A missing or unloadable
+		* initial scene is logged, not treated as a failure.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* シーンの読み込み先と遷移の実行に使う world/cache/executor を束縛し、
+		* このシステムを Scene の転送先として束縛して、gameConfig の起動シーンを
+		* 開く。起動シーンが未設定、または読み込めない場合はログを出すだけで、
+		* 失敗とは扱わない。
+		*/
+		Bool Initialize(World& world, ResourceCache& cache, JobExecutor& executor, const GameConfig& gameConfig);
+
+		/**
+		* [EN]
+		* Same binding as the GameConfig version, then reopens the scene the
+		* editor last had open (editorConfig's lastScenePath_), if any.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* GameConfig 版と同じく束縛し、エディタが前回開いていたシーン
+		* (editorConfig の lastScenePath_)があれば開き直す。
+		*/
+		Bool Initialize(World& world, ResourceCache& cache, JobExecutor& executor, const EditorConfig& editorConfig);
 
 	public:
 		/**
 		* [EN]
 		* Captures the world's current state into a scratch SceneBlueprint
-		* and writes it to path, together with how the caller wants it
-		* rendered. Leaving visual out saves a scene that carries nothing
-		* of its own. On success the saved file's name becomes the current
-		* scene's name. Returns whether saving succeeded.
+		* and writes it to path. On success the saved file's name becomes
+		* the current scene's name. Returns whether saving succeeded.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* world の現在の状態を作業用 SceneBlueprint へ取得し、呼び出し側が
-		* 指定する描き方と共に path へ書き込む。visual を省いた場合、その
-		* Scene は描き方を持たないものとして保存される。成功すると、保存した
-		* ファイルの名前が現在のシーン名になる。保存に成功したかどうかを
-		* 返す。
+		* world の現在の状態を作業用 SceneBlueprint へ取得し、path へ書き込む。
+		* 成功すると、保存したファイルの名前が現在のシーン名になる。保存に
+		* 成功したかどうかを返す。
 		*/
-		Bool Save(const std::filesystem::path& path, const SceneVisual& visual = SceneVisual());
+		Bool Save(const std::filesystem::path& path);
 
 		/**
 		* [EN]
 		* Immediately reads a scene from path into a scratch
 		* SceneBlueprint, destroys every actor currently in the world, and
-		* instantiates the loaded scene, bypassing the request queue. When
-		* outVisual is given, how the scene wants to be rendered is written
-		* there; parts a scene never carried come back empty. Returns
-		* whether loading succeeded.
+		* instantiates the loaded scene, bypassing the request queue.
+		* Returns whether loading succeeded.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 要求の受け付けを通さず、path からシーンを作業用 SceneBlueprint へ
 		* 即座に読み込み、world 内の現在の全 actor を破棄した上で、読み込んだ
-		* シーンをインスタンス化する。outVisual を渡した場合、その Scene を
-		* どう描くかをそこへ書き込む。その Scene が元から持っていない項目は
-		* 空で返る。読み込みに成功したかどうかを返す。
+		* シーンをインスタンス化する。読み込みに成功したかどうかを返す。
 		*/
-		Bool Load(const std::filesystem::path& path, SceneVisual* outVisual = nullptr);
+		Bool Load(const std::filesystem::path& path);
 
 		/**
 		* [EN]
@@ -116,7 +137,7 @@ namespace SeedCore
 		* [JP]
 		* アセット ID からシーンのパスを解決する Load のオーバーロード。
 		*/
-		Bool Load(Uint32 assetID, SceneVisual* outVisual = nullptr);
+		Bool Load(Uint32 assetID);
 
 		/**
 		* [EN]
@@ -437,15 +458,15 @@ namespace SeedCore
 	private:
 		/// [EN] World scenes are loaded into and switched in.
 		/// [JP] シーンの読み込み先、かつ切り替え先の World。
-		World& world_;
+		World* world_ = nullptr;
 
 		/// [EN] ResourceCache used to resolve scene names/IDs to files.
 		/// [JP] シーン名/ID をファイルへ解決するのに使う ResourceCache。
-		ResourceCache& resource_;
+		ResourceCache* resource_ = nullptr;
 
 		/// [EN] JobExecutor that background-loaded transitions run on.
 		/// [JP] バックグラウンド読み込みを伴う遷移を実行する JobExecutor。
-		JobExecutor& executor_;
+		JobExecutor* executor_ = nullptr;
 
 		/// [EN] Scene transition state machine carrying out the requests.
 		/// [JP] 要求を実行するシーン遷移の状態機械。

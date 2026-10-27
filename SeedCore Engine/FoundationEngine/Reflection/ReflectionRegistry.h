@@ -257,6 +257,8 @@ namespace SeedCore
 		/// [EN] Whether this field should currently be shown in the inspector.
 		/// [JP] このフィールドを現在インスペクタに表示すべきかどうか。
 		Bool editorVisible_ = true;
+
+		Bool revision_ = false;
 	};
 
 	/**

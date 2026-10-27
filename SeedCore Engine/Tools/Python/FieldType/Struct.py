@@ -15,5 +15,7 @@ def emit(field, context, lines):
         lines.append(f'\t\t\t\t\t\tfi.editorVisible_ = false;')
     if field.condition_:
         lines.append(f'\t\t\t\t\t\tfi.enableIf_ = [](void* p) -> Bool {{ auto& o = *static_cast<{context.struct_name_}*>(p); return {field.condition_}; }};')
+    if field.revision_:
+        lines.append(f'\t\t\t\t\t\tfi.revision_ = true;')
     lines.append(f'\t\t\t\t\t\toutInfo.push_back(std::move(fi));')
     lines.append(f'\t\t\t\t\t}}')

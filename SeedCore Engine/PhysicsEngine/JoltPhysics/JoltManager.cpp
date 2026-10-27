@@ -1,6 +1,7 @@
 #include <PhysicsEngine/JoltPhysics/JoltManager.h>
 #include <PhysicsEngine/JoltPhysics/JoltLayerdef.h>
 #include <FoundationEngine/JobSystem/JobExecutor.h>
+#include <FoundationEngine/Resource/Gateway.h>
 
 namespace SeedCore
 {
@@ -39,6 +40,7 @@ namespace SeedCore
 			JPH::PhysicsSystem::sDefaultSimCollideBodyVsBody(body1, body2, centerOfMassTransform1, centerOfMassTransform2, collideShapeSettings, collector, shapeFilter);
 		});
 
+		Gateway::BindJoltManager(this);
 		return true;
 	}
 

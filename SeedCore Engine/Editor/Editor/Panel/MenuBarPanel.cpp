@@ -367,16 +367,11 @@ namespace SeedCore
 			break;
 		case PendingSceneOp::OpenPath:
 		{
-			SceneVisual visual;
-			if (!context_.world_.sceneSystem_->Load(path, &visual))
+			if (!context_.world_.sceneSystem_->Load(path))
 			{
 				SC_LOG_WARNING("シーンの読み込みに失敗しました: {}", path.string());
 				break;
 			}
-			context_.sceneVisual_.raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
-			context_.sceneVisual_.screenSpace_ = DeserializeScreenSpaceContext(visual.screenSpace_);
-			context_.sceneVisual_.rasterization_ = DeserializeRasterizationContext(visual.rasterization_);
-			context_.sceneVisual_.qualityPreset_ = GraphicsQualityPreset::Custom;
 			context_.scene_.path_ = FilePath(path, context_.world_.resource_->ProjectRootPath());
 			context_.selection_.Clear();
 			context_.scene_.history_.Clear();
@@ -385,16 +380,11 @@ namespace SeedCore
 		}
 		case PendingSceneOp::OpenAsset:
 		{
-			SceneVisual visual;
-			if (!context_.world_.sceneSystem_->Load(assetID, &visual))
+			if (!context_.world_.sceneSystem_->Load(assetID))
 			{
 				SC_LOG_WARNING("シーンの読み込みに失敗しました(assetID: {})", assetID);
 				break;
 			}
-			context_.sceneVisual_.raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
-			context_.sceneVisual_.screenSpace_ = DeserializeScreenSpaceContext(visual.screenSpace_);
-			context_.sceneVisual_.rasterization_ = DeserializeRasterizationContext(visual.rasterization_);
-			context_.sceneVisual_.qualityPreset_ = GraphicsQualityPreset::Custom;
 			context_.scene_.path_ = FilePath(context_.world_.resource_->GetAsset(assetID)->fullpath_.c_str(), context_.world_.resource_->ProjectRootPath());
 			context_.selection_.Clear();
 			context_.scene_.history_.Clear();
@@ -445,7 +435,7 @@ namespace SeedCore
 			return;
 		}
 
-		if (!context_.world_.sceneSystem_->Save(savePath, SceneVisual{ SerializeRaytracingContext(context_.sceneVisual_.raytracing_), SerializeScreenSpaceContext(context_.sceneVisual_.screenSpace_), SerializeRasterizationContext(context_.sceneVisual_.rasterization_) }))
+		if (!context_.world_.sceneSystem_->Save(savePath))
 		{
 			SC_LOG_WARNING("シーンの保存に失敗しました: {}", savePath.string());
 			return;
@@ -464,7 +454,7 @@ namespace SeedCore
 			return;
 		}
 
-		if (!context_.world_.sceneSystem_->Save(context_.scene_.path_.FullPath(), SceneVisual{ SerializeRaytracingContext(context_.sceneVisual_.raytracing_), SerializeScreenSpaceContext(context_.sceneVisual_.screenSpace_), SerializeRasterizationContext(context_.sceneVisual_.rasterization_) }))
+		if (!context_.world_.sceneSystem_->Save(context_.scene_.path_.FullPath()))
 		{
 			SC_LOG_WARNING("シーンの上書き保存に失敗しました: {}", context_.scene_.path_.FullPath().string());
 			return;

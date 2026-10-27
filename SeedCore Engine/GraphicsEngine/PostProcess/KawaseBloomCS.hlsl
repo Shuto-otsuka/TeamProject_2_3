@@ -22,7 +22,7 @@
 * and adds into the HDR color before exposure. Each pass's source and
 * destination level are baked in at HLSL compile time (one entry point per
 * pass, the same "one file, many entry points" pattern LensFlareCS.hlsl and
-* GlobalIlluminationDenoiseCS.hlsl use) rather than coming from a
+* RaytracingGlobalIlluminationDenoiseCS.hlsl use) rather than coming from a
 * per-dispatch constant buffer - a ConstantBuffer<T> updated more than once
 * per frame would race, because every Update() in a frame writes the same
 * physical address and the CPU records all passes before the GPU runs any of
@@ -49,7 +49,7 @@
 * 最終結果は level0 に入る — ToneMappingCS.hlsl がそれをサンプルして
 * 露出適用前のHDRカラーへ加算する。各パスの読み書き先のレベルは
 * HLSLのコンパイル時に焼き込む(パスごとに1エントリポイント。
-* LensFlareCS.hlsl や GlobalIlluminationDenoiseCS.hlsl と同じ
+* LensFlareCS.hlsl や RaytracingGlobalIlluminationDenoiseCS.hlsl と同じ
 * 「1ファイル複数エントリポイント」パターン)。ディスパッチごとの
 * 定数バッファにしないのは、1フレーム内で複数回 Update() する
 * ConstantBuffer<T> が競合するため — フレーム内の Update() は全て同じ

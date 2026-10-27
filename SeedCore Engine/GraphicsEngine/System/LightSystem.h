@@ -16,7 +16,7 @@ namespace SeedCore
 	class ComputeShader;
 	class D3D12CommandList;
 	class ModelResource;
-	struct CelestialResult;
+	class CelestialSystem;
 
 	struct DirectionalLightConstantBuffer
 	{
@@ -146,7 +146,7 @@ namespace SeedCore
 
 		void Resize(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height);
 
-		void Gather(ModelResource& modelResource, World& world, const CelestialResult* celestial = nullptr);
+		void Gather(ModelResource& modelResource, World& world, const CelestialSystem* celestial = nullptr);
 
 		void Upload();
 

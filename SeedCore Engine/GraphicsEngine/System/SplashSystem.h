@@ -4,6 +4,8 @@
 namespace SeedCore
 {
 	class ResourceCache;
+	struct GameConfig;
+	struct EditorConfig;
 
 	enum class SplashPhase
 	{
@@ -18,7 +20,9 @@ namespace SeedCore
 	class SEEDCORE_API SplashSystem
 	{
 	public:
-		void Initialize(Bool showWarning, Bool showFiction);
+		Bool Initialize(const GameConfig& gameConfig);
+
+		Bool Initialize(const EditorConfig& editorConfig);
 
 		void Update(const ResourceCache& resourceCache);
 

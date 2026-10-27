@@ -65,7 +65,7 @@ struct ClusterAssignUnorderedAccessIndices
 * [EN]
 * Read views of the point/spot/rect light arrays and the cluster-assignment
 * output (ClusterAssignUnorderedAccessIndices' write side) that
-* DeferredLightingPS.hlsl/ShadowRT.hlsl bin per-pixel lighting against.
+* DeferredLightingPS.hlsl/RaytracingShadowRT.hlsl bin per-pixel lighting against.
 */
 struct LightShaderResourceIndices
 {

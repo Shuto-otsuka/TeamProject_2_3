@@ -2,7 +2,7 @@
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 #include <GraphicsEngine/Raytracing/RaytracingDispatch.h>
-#include <GraphicsEngine/Raytracing/VolumetricLight/VolumetricLightShader.h>
+#include <GraphicsEngine/Illumination/VolumetricLight/VolumetricLightShader.h>
 
 namespace SeedCore
 {
@@ -19,7 +19,7 @@ namespace SeedCore
 	* [EN]
 	* Tuning values of the fog and volumetric-light pass. Mirrors
 	* VolumetricLightRayConstantBuffer in
-	* Raytracing/VolumetricLight/VolumetricLight.hlsli, which the three froxel
+	* Illumination/VolumetricLight/VolumetricLight.hlsli, which the three froxel
 	* passes and DeferredLightingPS.hlsl read through
 	* constant_indices.volumetric_light_index_, so the layout must match the
 	* HLSL side byte for byte.
@@ -28,7 +28,7 @@ namespace SeedCore
 	*
 	* [JP]
 	* フォグとボリューメトリックライトのパスの調整値。
-	* Raytracing/VolumetricLight/VolumetricLight.hlsli の
+	* Illumination/VolumetricLight/VolumetricLight.hlsli の
 	* VolumetricLightRayConstantBuffer と対応する。froxel の 3 パスと
 	* DeferredLightingPS.hlsl が constant_indices.volumetric_light_index_ 経由で
 	* 読むため、レイアウトは HLSL 側とバイト単位で一致させる。

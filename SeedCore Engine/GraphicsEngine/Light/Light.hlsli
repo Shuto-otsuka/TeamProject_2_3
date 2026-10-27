@@ -16,7 +16,7 @@
 * moon_-prefixed fields are populated only when DaySystem drives this frame
 * (see LightSystem::Gather's celestial parameter); zero otherwise.
 * moon_phase_/moon_angular_radius_ are sky-disc rendering parameters
-* (VolumetricStarRT.hlsl's MoonDiscColor), not lighting terms.
+* (VolumetricStarCS.hlsl's MoonDiscColor), not lighting terms.
 */
 struct DirectionalLightConstantBuffer
 {
@@ -91,7 +91,7 @@ StructuredBuffer<RectLightStructuredBuffer> GetRectLightStructuredBuffer(uint in
 struct LightConstantBuffer
 {
 	// 0 = full day, 1 = full night. Drives star visibility/shooting-star
-	// chance in VolumetricStarRT.hlsl. Zero when DaySystem is not driving.
+	// chance in VolumetricStarCS.hlsl. Zero when DaySystem is not driving.
 	float night_factor_;
 	uint point_light_count_;
 	uint spot_light_count_;
@@ -104,7 +104,7 @@ struct LightConstantBuffer
 
 // Picks the per-shading-model direct light response for one light. Shared by
 // Model/Opaque/DeferredLightingPS.hlsl (the primary G-Buffer surface, looping
-// over every deterministic light) and Raytracing/Shadow/ShadowRT.hlsl (the
+// over every deterministic light) and Illumination/Shadow/Raytracing/RaytracingShadowRT.hlsl (the
 // ReSTIR-picked punctual light's stochastic full-BRDF estimate) so a punctual
 // light's specular response is identical between the two - IBL/shadow/AO/
 // reflection/GI/fog/weather stay each caller's own concern; only "how to shade

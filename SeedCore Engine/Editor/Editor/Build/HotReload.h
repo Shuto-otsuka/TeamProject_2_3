@@ -55,7 +55,7 @@ namespace SeedCore
 		* Binds the PluginHost and CsharpHost this class drives and caches
 		* the already-loaded UserProject plugin (nullptr if
 		* UserProject.Cplusplus.dll was not among the loaded plugins). Call
-		* once after PluginHost::Load and CsharpHost::Load.
+		* once after PluginHost::Initialize and CsharpHost::Initialize.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -63,9 +63,10 @@ namespace SeedCore
 		* このクラスが駆動する PluginHost と CsharpHost を束縛し、そこで
 		* ロード済みの UserProject プラグインをキャッシュする
 		* （UserProject.Cplusplus.dll がロード済みプラグインに無ければ
-		* nullptr）。PluginHost::Load と CsharpHost::Load の後に一度呼ぶこと。
+		* nullptr）。PluginHost::Initialize と CsharpHost::Initialize の後に
+		* 一度呼ぶこと。
 		*/
-		void Initialize(PluginHost& pluginHost, CsharpHost& csharpHost);
+		Bool Initialize(PluginHost& pluginHost, CsharpHost& csharpHost);
 
 		/**
 		* [EN]

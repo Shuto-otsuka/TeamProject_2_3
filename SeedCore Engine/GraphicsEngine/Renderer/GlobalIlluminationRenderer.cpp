@@ -69,7 +69,7 @@ namespace SeedCore
 
 		/// [EN] The tuning values live in a constant buffer the shaders find through its bindless index.
 		/// [JP] 調整値は、シェーダーが bindless インデックスで見つける定数バッファに置く。
-		tuningBuffer_ = MakePtr<StaticConstantBuffer<GlobalIlluminationRayConstantBuffer>>(device, bindlessHeap);
+		tuningBuffer_ = MakePtr<StaticConstantBuffer<RaytracingGlobalIlluminationConstantBuffer>>(device, bindlessHeap);
 
 		/// [EN] Create the size-dependent resources at the current size.
 		/// [JP] サイズに依存するリソースを現在のサイズで作る。
@@ -180,7 +180,7 @@ namespace SeedCore
 	* 保存して、各ビューのパスとディファードライティングが読むインデックスを
 	* 公開する。
 	*/
-	void GlobalIlluminationRenderer::Prepare(const GlobalIlluminationRayConstantBuffer& settings, Bool enabled)
+	void GlobalIlluminationRenderer::Prepare(const RaytracingGlobalIlluminationConstantBuffer& settings, Bool enabled)
 	{
 		/// [EN] Remember whether the pass runs this frame; Dispatch reads it.
 		/// [JP] 今フレームにパスを実行するかを覚えておく。Dispatch が読む。
@@ -198,7 +198,7 @@ namespace SeedCore
 
 		/// [EN] The upload copy carries the frame counter and turns off the reservoir's temporal reuse when DLSS Ray Reconstruction handles the temporal side.
 		/// [JP] アップロード用のコピーにはフレームカウンターを載せ、DLSS Ray Reconstruction が時間方向を担うときは reservoir の時間方向の再利用を切る。
-		GlobalIlluminationRayConstantBuffer uploadSettings = settings;
+		RaytracingGlobalIlluminationConstantBuffer uploadSettings = settings;
 		uploadSettings.frameIndex_ = frameIndex_;
 		uploadSettings.temporalReuseEnabled_ = useDlssRayReconstruction_ ? 0 : 1;
 		/// [EN] Advance the counter for the next frame.
@@ -226,7 +226,7 @@ namespace SeedCore
 		/// [JP] 1 つのビューの読み取り側。履歴と最終の放射輝度、A-Trous のスクラッチ 2 枚、reservoir の両スロット。
 		auto buildShaderResourceIndices = [&](Uint32 viewIndex)
 		{
-			GlobalIlluminationAccumulationShaderResourceIndices values{};
+			RaytracingGlobalIlluminationAccumulationShaderResourceIndices values{};
 
 			if (useDlssRayReconstruction_)
 			{
@@ -256,7 +256,7 @@ namespace SeedCore
 		/// [JP] 1 つのビューの書き込み側。今フレームの蓄積スロット、A-Trous のスクラッチ 2 枚、今フレームの reservoir のスロット。
 		auto buildUnorderedAccessIndices = [&](Uint32 viewIndex)
 		{
-			GlobalIlluminationAccumulationUnorderedAccessIndices values{};
+			RaytracingGlobalIlluminationAccumulationUnorderedAccessIndices values{};
 
 			values.accumulatedIndex_ = accumulatedUnorderedAccessViewIndex_[viewIndex][writeSlot];
 			values.atrousScratch0Index_ = atrousScratchUnorderedAccessViewIndex_[viewIndex][0];

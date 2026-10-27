@@ -421,10 +421,7 @@ namespace SeedCore
 					ImVec2 previewSize = ImGui::GetContentRegionAvail();
 					previewSize.y = Max(previewSize.y - reservedHeight, 100.0f);
 
-					if (context_.preview_.timeline_.camera_)
-					{
-						context_.preview_.timeline_.camera_->Resize(previewSize.x, previewSize.y);
-					}
+					context_.preview_.timeline_.camera_.Resize(previewSize.x, previewSize.y);
 
 					ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
 
@@ -439,14 +436,14 @@ namespace SeedCore
 					Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
 					Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
 
-					if (ImGui::IsItemHovered() && context_.preview_.timeline_.camera_ && context_.preview_.timeline_.cameraController_)
+					if (ImGui::IsItemHovered())
 					{
 						if (orbitHeld || panHeld)
 						{
 							InputSystem::BeginMouseCapture();
 						}
 
-						context_.preview_.timeline_.cameraController_->Update(*context_.preview_.timeline_.camera_, ImGui::GetIO().DeltaTime);
+						context_.preview_.timeline_.cameraController_.Update(context_.preview_.timeline_.camera_, ImGui::GetIO().DeltaTime);
 					}
 
 					if (!orbitHeld && !panHeld)

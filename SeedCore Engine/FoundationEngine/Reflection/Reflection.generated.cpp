@@ -18,8 +18,19 @@
 #include <GraphicsEngine/Constraint/PositionConstraint.h>
 #include <GraphicsEngine/Constraint/RotationConstraint.h>
 #include <GraphicsEngine/Effect/Zephyr/Effect.h>
+#include <GraphicsEngine/Environment/Celestial/Celestial.h>
+#include <GraphicsEngine/Environment/VolumetricCloud/VolumetricCloudScapes.h>
+#include <GraphicsEngine/Environment/VolumetricStar/VolumetricStar.h>
 #include <GraphicsEngine/Environment/Weather.h>
 #include <GraphicsEngine/Font/Text.h>
+#include <GraphicsEngine/Illumination/AmbientOcclusion/AmbientOcclusion.h>
+#include <GraphicsEngine/Illumination/Caustics/Caustics.h>
+#include <GraphicsEngine/Illumination/GlobalIllumination/GlobalIllumination.h>
+#include <GraphicsEngine/Illumination/Reflection/Reflection.h>
+#include <GraphicsEngine/Illumination/Refraction/Refraction.h>
+#include <GraphicsEngine/Illumination/Shadow/Shadow.h>
+#include <GraphicsEngine/Illumination/SubsurfaceScattering/SubsurfaceScattering.h>
+#include <GraphicsEngine/Illumination/VolumetricLight/VolumetricLight.h>
 #include <GraphicsEngine/Light/DirectionalLight.h>
 #include <GraphicsEngine/Light/PointLight.h>
 #include <GraphicsEngine/Light/RectangleLight.h>
@@ -54,8 +65,6 @@
 #include <PhysicsEngine/Joint/SpringJoint.h>
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
-#include <Runtime/enc_temp_folder/327cfae53be5ad4aed13267202dd9/PlayerController.h>
-#include <Runtime/enc_temp_folder/345acb2cb528e94addcdd561ad0/BulletNaviController.h>
 
 extern "C" int _force_reflection_AudioListener = 0;
 extern "C" int _force_reflection_AudioSource = 0;
@@ -80,7 +89,36 @@ extern "C" int _force_reflection_Effect = 0;
 extern "C" int _force_reflection_Rain = 0;
 extern "C" int _force_reflection_Snow = 0;
 extern "C" int _force_reflection_Weather = 0;
+extern "C" int _force_reflection_SunSettings = 0;
+extern "C" int _force_reflection_MoonSettings = 0;
+extern "C" int _force_reflection_Celestial = 0;
+extern "C" int _force_reflection_VolumetricCloudScapes = 0;
+extern "C" int _force_reflection_VolumetricStar = 0;
 extern "C" int _force_reflection_Text = 0;
+extern "C" int _force_reflection_RaytracingAmbientOcclusionSettings = 0;
+extern "C" int _force_reflection_GroundTruthAmbientOcclusionSettings = 0;
+extern "C" int _force_reflection_ScreenSpaceAmbientOcclusionSettings = 0;
+extern "C" int _force_reflection_AmbientOcclusion = 0;
+extern "C" int _force_reflection_Caustics = 0;
+extern "C" int _force_reflection_RaytracingGlobalIlluminationSettings = 0;
+extern "C" int _force_reflection_DynamicDiffuseGlobalIlluminationSettings = 0;
+extern "C" int _force_reflection_LightPropagationVolumesSettings = 0;
+extern "C" int _force_reflection_ScreenSpaceGlobalIlluminationSettings = 0;
+extern "C" int _force_reflection_GlobalIllumination = 0;
+extern "C" int _force_reflection_RaytracingReflectionSettings = 0;
+extern "C" int _force_reflection_SignedDistanceFieldReflectionSettings = 0;
+extern "C" int _force_reflection_ScreenSpaceReflectionSettings = 0;
+extern "C" int _force_reflection_Reflection = 0;
+extern "C" int _force_reflection_RaytracingRefractionSettings = 0;
+extern "C" int _force_reflection_Refraction = 0;
+extern "C" int _force_reflection_RaytracingShadowSettings = 0;
+extern "C" int _force_reflection_VirtualShadowMapSettings = 0;
+extern "C" int _force_reflection_CascadedShadowMapSettings = 0;
+extern "C" int _force_reflection_Shadow = 0;
+extern "C" int _force_reflection_RaytracingSubsurfaceScatteringSettings = 0;
+extern "C" int _force_reflection_SubsurfaceScattering = 0;
+extern "C" int _force_reflection_RaytracingVolumetricLightSettings = 0;
+extern "C" int _force_reflection_VolumetricLight = 0;
 extern "C" int _force_reflection_DirectionalLight = 0;
 extern "C" int _force_reflection_PointLight = 0;
 extern "C" int _force_reflection_RectangleLight = 0;
@@ -133,8 +171,6 @@ extern "C" int _force_reflection_SliderJoint = 0;
 extern "C" int _force_reflection_SpringJoint = 0;
 extern "C" int _force_reflection_Rigidbody = 0;
 extern "C" int _force_reflection_Softbody = 0;
-extern "C" int _force_reflection_PlayerController = 0;
-extern "C" int _force_reflection_BulletNaviController = 0;
 
 namespace SeedCore
 {
@@ -998,6 +1034,709 @@ namespace SeedCore
 		};
 		static Register_Weather global_Weather_register;
 
+		// ---- GraphicsEngine/Environment/Celestial/Celestial.h ----
+		struct Register_SunSettings
+		{
+			Register_SunSettings()
+			{
+				ReflectionRegistry::Register(String("SunSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					SunSettings& obj = *static_cast<SunSettings*>(ptr);
+					outInfo.push_back({ String("有効"), offsetof(SunSettings, enable_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("地平線の色");
+						fi.offset_ = offsetof(SunSettings, horizonColor_);
+						fi.type_ = AttributeType::Color;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SunSettings*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("天頂の色");
+						fi.offset_ = offsetof(SunSettings, zenithColor_);
+						fi.type_ = AttributeType::Color;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SunSettings*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("最大の強さ");
+						fi.offset_ = offsetof(SunSettings, maxIntensity_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SunSettings*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 20.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("光が消える仰角（度）");
+						fi.offset_ = offsetof(SunSettings, minElevationDegrees_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SunSettings*>(p); return o.enable_; };
+						fi.clampMin_ = -20.0f;
+						fi.clampMax_ = 10.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("角半径");
+						fi.offset_ = offsetof(SunSettings, angularRadius_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SunSettings*>(p); return o.enable_; };
+						fi.clampMin_ = 0.005f;
+						fi.clampMax_ = 0.2f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_SunSettings global_SunSettings_register;
+
+		struct Register_MoonSettings
+		{
+			Register_MoonSettings()
+			{
+				ReflectionRegistry::Register(String("MoonSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					MoonSettings& obj = *static_cast<MoonSettings*>(ptr);
+					outInfo.push_back({ String("有効"), offsetof(MoonSettings, enable_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("色");
+						fi.offset_ = offsetof(MoonSettings, color_);
+						fi.type_ = AttributeType::Color;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<MoonSettings*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("最大の強さ");
+						fi.offset_ = offsetof(MoonSettings, maxIntensity_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<MoonSettings*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 2.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("角半径");
+						fi.offset_ = offsetof(MoonSettings, angularRadius_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<MoonSettings*>(p); return o.enable_; };
+						fi.clampMin_ = 0.005f;
+						fi.clampMax_ = 0.2f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_MoonSettings global_MoonSettings_register;
+
+		struct Register_Celestial
+		{
+			Register_Celestial()
+			{
+				ReflectionRegistry::Register(String("Celestial"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					Celestial& obj = *static_cast<Celestial*>(ptr);
+					outInfo.push_back({ String("有効"), offsetof(Celestial, enable_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("時刻");
+						fi.offset_ = offsetof(Celestial, hourOfDay_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Celestial*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 24.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("日");
+						fi.offset_ = offsetof(Celestial, dayOfMonth_);
+						fi.type_ = AttributeType::Int;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Celestial*>(p); return o.enable_; };
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 365;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("1 か月の日数");
+						fi.offset_ = offsetof(Celestial, daysPerMonth_);
+						fi.type_ = AttributeType::Int;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Celestial*>(p); return o.enable_; };
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 365;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("月");
+						fi.offset_ = offsetof(Celestial, monthOfYear_);
+						fi.type_ = AttributeType::Int;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Celestial*>(p); return o.enable_; };
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 12;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("1 日の長さ（分）");
+						fi.offset_ = offsetof(Celestial, dayLengthMinutes_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Celestial*>(p); return o.enable_; };
+						fi.clampMin_ = 0.1f;
+						fi.clampMax_ = 1440.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("時間の倍率");
+						fi.offset_ = offsetof(Celestial, timeScale_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Celestial*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 100.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("一時停止");
+						fi.offset_ = offsetof(Celestial, paused_);
+						fi.type_ = AttributeType::Bool;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Celestial*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("太陽");
+						fi.offset_ = offsetof(Celestial, sun_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("SunSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Celestial*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("月");
+						fi.offset_ = offsetof(Celestial, moon_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("MoonSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Celestial*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_Celestial global_Celestial_register;
+
+		// ---- GraphicsEngine/Environment/VolumetricCloud/VolumetricCloudScapes.h ----
+		struct Register_VolumetricCloudScapes
+		{
+			Register_VolumetricCloudScapes()
+			{
+				ReflectionRegistry::Register(String("VolumetricCloudScapes"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					VolumetricCloudScapes& obj = *static_cast<VolumetricCloudScapes*>(ptr);
+					outInfo.push_back({ String("有効"), offsetof(VolumetricCloudScapes, enable_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("雲層の下端");
+						fi.offset_ = offsetof(VolumetricCloudScapes, cloudBottom_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 5000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("雲層の上端");
+						fi.offset_ = offsetof(VolumetricCloudScapes, cloudTop_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 100.0f;
+						fi.clampMax_ = 10000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("惑星の半径");
+						fi.offset_ = offsetof(VolumetricCloudScapes, planetRadius_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 100000.0f;
+						fi.clampMax_ = 40000000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("雲量");
+						fi.offset_ = offsetof(VolumetricCloudScapes, coverage_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("密度");
+						fi.offset_ = offsetof(VolumetricCloudScapes, densityScale_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0001f;
+						fi.clampMax_ = 0.5f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("雲の形（層雲〜積雲）");
+						fi.offset_ = offsetof(VolumetricCloudScapes, cloudType_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("雨雲の度合い");
+						fi.offset_ = offsetof(VolumetricCloudScapes, rain_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("形状ノイズのスケール");
+						fi.offset_ = offsetof(VolumetricCloudScapes, noiseScale_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0001f;
+						fi.clampMax_ = 0.01f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("ディテールのスケール");
+						fi.offset_ = offsetof(VolumetricCloudScapes, detailScale_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 1.0f;
+						fi.clampMax_ = 16.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("ディテールの強さ");
+						fi.offset_ = offsetof(VolumetricCloudScapes, detailStrength_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("天候フィールドの周波数");
+						fi.offset_ = offsetof(VolumetricCloudScapes, weatherScale_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.005f;
+						fi.clampMax_ = 0.5f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("天候フィールドの影響");
+						fi.offset_ = offsetof(VolumetricCloudScapes, weatherAmount_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("風の速さ");
+						fi.offset_ = offsetof(VolumetricCloudScapes, windSpeed_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 0.5f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("ディテールの風の速さ");
+						fi.offset_ = offsetof(VolumetricCloudScapes, detailWindSpeed_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 2.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("雲の散乱色");
+						fi.offset_ = offsetof(VolumetricCloudScapes, cloudAlbedo_);
+						fi.type_ = AttributeType::Color;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("前方散乱の異方性");
+						fi.offset_ = offsetof(VolumetricCloudScapes, scatteringG_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = -0.9f;
+						fi.clampMax_ = 0.9f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("後方散乱の異方性");
+						fi.offset_ = offsetof(VolumetricCloudScapes, phaseBackward_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 0.9f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("前方・後方のブレンド");
+						fi.offset_ = offsetof(VolumetricCloudScapes, phaseBlend_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("パウダー効果の強さ");
+						fi.offset_ = offsetof(VolumetricCloudScapes, powderStrength_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("環境光の強さ");
+						fi.offset_ = offsetof(VolumetricCloudScapes, ambientStrength_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 2.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("IBL の強さ");
+						fi.offset_ = offsetof(VolumetricCloudScapes, iblIntensity_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 4.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("多重散乱のオクターブ数");
+						fi.offset_ = offsetof(VolumetricCloudScapes, multiScatterOctaves_);
+						fi.type_ = AttributeType::Int;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 8;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("多重散乱の消散の減衰");
+						fi.offset_ = offsetof(VolumetricCloudScapes, multiScatterAttenuation_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.1f;
+						fi.clampMax_ = 0.95f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("多重散乱の寄与の減衰");
+						fi.offset_ = offsetof(VolumetricCloudScapes, multiScatterContribution_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.1f;
+						fi.clampMax_ = 0.95f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("多重散乱の偏心の減衰");
+						fi.offset_ = offsetof(VolumetricCloudScapes, multiScatterEccentricity_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.1f;
+						fi.clampMax_ = 0.95f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("視線のステップ数");
+						fi.offset_ = offsetof(VolumetricCloudScapes, stepCount_);
+						fi.type_ = AttributeType::Int;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 8;
+						fi.clampMax_ = 256;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("ライトマーチのステップ数");
+						fi.offset_ = offsetof(VolumetricCloudScapes, lightStepCount_);
+						fi.type_ = AttributeType::Int;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 16;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("マーチの最大距離");
+						fi.offset_ = offsetof(VolumetricCloudScapes, maxMarchDistance_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 20000.0f;
+						fi.clampMax_ = 400000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("LOD の開始距離");
+						fi.offset_ = offsetof(VolumetricCloudScapes, lodDistance_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 2000.0f;
+						fi.clampMax_ = 100000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("時間方向のジッター");
+						fi.offset_ = offsetof(VolumetricCloudScapes, temporalJitter_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("天頂の色");
+						fi.offset_ = offsetof(VolumetricCloudScapes, skyZenithColor_);
+						fi.type_ = AttributeType::Color;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("地平線の色");
+						fi.offset_ = offsetof(VolumetricCloudScapes, skyHorizonColor_);
+						fi.type_ = AttributeType::Color;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("空の明るさ");
+						fi.offset_ = offsetof(VolumetricCloudScapes, skyBrightness_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 4.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("太陽の視半径");
+						fi.offset_ = offsetof(VolumetricCloudScapes, sunSize_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.005f;
+						fi.clampMax_ = 0.2f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("地面の色");
+						fi.offset_ = offsetof(VolumetricCloudScapes, groundColor_);
+						fi.type_ = AttributeType::Color;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("空気遠近の密度");
+						fi.offset_ = offsetof(VolumetricCloudScapes, aerialDensity_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 0.0002f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_VolumetricCloudScapes global_VolumetricCloudScapes_register;
+
+		// ---- GraphicsEngine/Environment/VolumetricStar/VolumetricStar.h ----
+		struct Register_VolumetricStar
+		{
+			Register_VolumetricStar()
+			{
+				ReflectionRegistry::Register(String("VolumetricStar"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					VolumetricStar& obj = *static_cast<VolumetricStar*>(ptr);
+					outInfo.push_back({ String("有効"), offsetof(VolumetricStar, enable_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("セルのサイズ");
+						fi.offset_ = offsetof(VolumetricStar, cellSize_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricStar*>(p); return o.enable_; };
+						fi.clampMin_ = 0.02f;
+						fi.clampMax_ = 0.5f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("星の密度");
+						fi.offset_ = offsetof(VolumetricStar, density_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricStar*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("明るさ");
+						fi.offset_ = offsetof(VolumetricStar, brightness_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricStar*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 5.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("IBL の強さ");
+						fi.offset_ = offsetof(VolumetricStar, iblIntensity_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricStar*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 4.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("またたく速さ");
+						fi.offset_ = offsetof(VolumetricStar, twinkleSpeed_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricStar*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 10.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("星の色");
+						fi.offset_ = offsetof(VolumetricStar, color_);
+						fi.type_ = AttributeType::Color;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricStar*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("最小サイズ");
+						fi.offset_ = offsetof(VolumetricStar, sizeMin_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricStar*>(p); return o.enable_; };
+						fi.clampMin_ = 0.005f;
+						fi.clampMax_ = 0.2f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("最大サイズ");
+						fi.offset_ = offsetof(VolumetricStar, sizeMax_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricStar*>(p); return o.enable_; };
+						fi.clampMin_ = 0.005f;
+						fi.clampMax_ = 0.2f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("グローの強さ");
+						fi.offset_ = offsetof(VolumetricStar, glowIntensity_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricStar*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 3.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("グローの減衰");
+						fi.offset_ = offsetof(VolumetricStar, glowFalloff_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricStar*>(p); return o.enable_; };
+						fi.clampMin_ = 10.0f;
+						fi.clampMax_ = 400.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("流れ星の出現確率（毎秒）");
+						fi.offset_ = offsetof(VolumetricStar, shootingStarChancePerSecond_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricStar*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("流れ星の明るさ");
+						fi.offset_ = offsetof(VolumetricStar, shootingStarBrightness_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricStar*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 10.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("流れ星の幅");
+						fi.offset_ = offsetof(VolumetricStar, shootingStarWidth_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricStar*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0002f;
+						fi.clampMax_ = 0.02f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_VolumetricStar global_VolumetricStar_register;
+
 		// ---- GraphicsEngine/Font/Text.h ----
 		struct Register_Text
 		{
@@ -1076,6 +1815,1212 @@ namespace SeedCore
 			}
 		};
 		static Register_Text global_Text_register;
+
+		// ---- GraphicsEngine/Illumination/AmbientOcclusion/AmbientOcclusion.h ----
+		struct Register_RaytracingAmbientOcclusionSettings
+		{
+			Register_RaytracingAmbientOcclusionSettings()
+			{
+				ReflectionRegistry::Register(String("RaytracingAmbientOcclusionSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					RaytracingAmbientOcclusionSettings& obj = *static_cast<RaytracingAmbientOcclusionSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイの本数");
+						fi.offset_ = offsetof(RaytracingAmbientOcclusionSettings, rayCount_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 32;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("法線方向のオフセット");
+						fi.offset_ = offsetof(RaytracingAmbientOcclusionSettings, normalBias_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0001f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_RaytracingAmbientOcclusionSettings global_RaytracingAmbientOcclusionSettings_register;
+
+		struct Register_GroundTruthAmbientOcclusionSettings
+		{
+			Register_GroundTruthAmbientOcclusionSettings()
+			{
+				ReflectionRegistry::Register(String("GroundTruthAmbientOcclusionSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					GroundTruthAmbientOcclusionSettings& obj = *static_cast<GroundTruthAmbientOcclusionSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("減衰の範囲");
+						fi.offset_ = offsetof(GroundTruthAmbientOcclusionSettings, falloffRange_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("スライス数");
+						fi.offset_ = offsetof(GroundTruthAmbientOcclusionSettings, sliceCount_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 8;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("スライスあたりのステップ数");
+						fi.offset_ = offsetof(GroundTruthAmbientOcclusionSettings, stepsPerSlice_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 8;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_GroundTruthAmbientOcclusionSettings global_GroundTruthAmbientOcclusionSettings_register;
+
+		struct Register_ScreenSpaceAmbientOcclusionSettings
+		{
+			Register_ScreenSpaceAmbientOcclusionSettings()
+			{
+				ReflectionRegistry::Register(String("ScreenSpaceAmbientOcclusionSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					ScreenSpaceAmbientOcclusionSettings& obj = *static_cast<ScreenSpaceAmbientOcclusionSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("バイアス");
+						fi.offset_ = offsetof(ScreenSpaceAmbientOcclusionSettings, bias_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 0.2f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("強さ");
+						fi.offset_ = offsetof(ScreenSpaceAmbientOcclusionSettings, intensity_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 4.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("サンプル数");
+						fi.offset_ = offsetof(ScreenSpaceAmbientOcclusionSettings, sampleCount_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 4;
+						fi.clampMax_ = 128;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_ScreenSpaceAmbientOcclusionSettings global_ScreenSpaceAmbientOcclusionSettings_register;
+
+		struct Register_AmbientOcclusion
+		{
+			Register_AmbientOcclusion()
+			{
+				ReflectionRegistry::Register(String("AmbientOcclusion"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					AmbientOcclusion& obj = *static_cast<AmbientOcclusion*>(ptr);
+					outInfo.push_back({ String("有効"), offsetof(AmbientOcclusion, enable_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("手法");
+						fi.offset_ = offsetof(AmbientOcclusion, technique_);
+						fi.type_ = AttributeType::Enum;
+						fi.enum_.typeName_ = String("AmbientOcclusionTechnique");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<AmbientOcclusion*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("遮蔽の半径");
+						fi.offset_ = offsetof(AmbientOcclusion, radius_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<AmbientOcclusion*>(p); return o.enable_; };
+						fi.clampMin_ = 0.05f;
+						fi.clampMax_ = 10.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("コントラスト");
+						fi.offset_ = offsetof(AmbientOcclusion, power_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<AmbientOcclusion*>(p); return o.enable_; };
+						fi.clampMin_ = 0.25f;
+						fi.clampMax_ = 5.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイトレーシングAO");
+						fi.offset_ = offsetof(AmbientOcclusion, raytracing_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("RaytracingAmbientOcclusionSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<AmbientOcclusion*>(p); return o.enable_&& o.technique_ == AmbientOcclusionTechnique::Raytracing; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("グラウンドトゥルースAO（SSAO）");
+						fi.offset_ = offsetof(AmbientOcclusion, groundTruth_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("GroundTruthAmbientOcclusionSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<AmbientOcclusion*>(p); return o.enable_&& o.technique_ == AmbientOcclusionTechnique::GroundTruth; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("スクリーンスペースAO（SSAO）");
+						fi.offset_ = offsetof(AmbientOcclusion, screenSpace_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("ScreenSpaceAmbientOcclusionSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<AmbientOcclusion*>(p); return o.enable_&& o.technique_ == AmbientOcclusionTechnique::ScreenSpace; };
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_AmbientOcclusion global_AmbientOcclusion_register;
+
+		// ---- GraphicsEngine/Illumination/Caustics/Caustics.h ----
+		struct Register_Caustics
+		{
+			Register_Caustics()
+			{
+				ReflectionRegistry::Register(String("Caustics"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					Caustics& obj = *static_cast<Caustics*>(ptr);
+					outInfo.push_back({ String("有効"), offsetof(Caustics, enable_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("手法");
+						fi.offset_ = offsetof(Caustics, technique_);
+						fi.type_ = AttributeType::Enum;
+						fi.enum_.typeName_ = String("CausticsTechnique");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Caustics*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイトレーシングコースティクス");
+						fi.offset_ = offsetof(Caustics, raytracing_);
+						fi.type_ = AttributeType::Unknown;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Caustics*>(p); return o.enable_&& o.technique_ == CausticsTechnique::Raytracing; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("スクリーンスペースコースティクス");
+						fi.offset_ = offsetof(Caustics, screenSpace_);
+						fi.type_ = AttributeType::Unknown;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Caustics*>(p); return o.enable_&& o.technique_ == CausticsTechnique::ScreenSpace; };
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_Caustics global_Caustics_register;
+
+		// ---- GraphicsEngine/Illumination/GlobalIllumination/GlobalIllumination.h ----
+		struct Register_RaytracingGlobalIlluminationSettings
+		{
+			Register_RaytracingGlobalIlluminationSettings()
+			{
+				ReflectionRegistry::Register(String("RaytracingGlobalIlluminationSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					RaytracingGlobalIlluminationSettings& obj = *static_cast<RaytracingGlobalIlluminationSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイの本数");
+						fi.offset_ = offsetof(RaytracingGlobalIlluminationSettings, rayCount_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 16;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("バウンス数");
+						fi.offset_ = offsetof(RaytracingGlobalIlluminationSettings, bounceCount_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 4;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイの最大長");
+						fi.offset_ = offsetof(RaytracingGlobalIlluminationSettings, rayTMax_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 50.0f;
+						fi.clampMax_ = 20000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("法線方向のオフセット");
+						fi.offset_ = offsetof(RaytracingGlobalIlluminationSettings, normalBias_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_RaytracingGlobalIlluminationSettings global_RaytracingGlobalIlluminationSettings_register;
+
+		struct Register_DynamicDiffuseGlobalIlluminationSettings
+		{
+			Register_DynamicDiffuseGlobalIlluminationSettings()
+			{
+				ReflectionRegistry::Register(String("DynamicDiffuseGlobalIlluminationSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					DynamicDiffuseGlobalIlluminationSettings& obj = *static_cast<DynamicDiffuseGlobalIlluminationSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("プローブあたりのレイ数");
+						fi.offset_ = offsetof(DynamicDiffuseGlobalIlluminationSettings, raysPerProbe_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 32;
+						fi.clampMax_ = 512;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("プローブの間隔");
+						fi.offset_ = offsetof(DynamicDiffuseGlobalIlluminationSettings, probeSpacing_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.25f;
+						fi.clampMax_ = 20.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("履歴の重み");
+						fi.offset_ = offsetof(DynamicDiffuseGlobalIlluminationSettings, hysteresis_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.5f;
+						fi.clampMax_ = 0.999f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("法線方向のオフセット");
+						fi.offset_ = offsetof(DynamicDiffuseGlobalIlluminationSettings, normalBias_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_DynamicDiffuseGlobalIlluminationSettings global_DynamicDiffuseGlobalIlluminationSettings_register;
+
+		struct Register_LightPropagationVolumesSettings
+		{
+			Register_LightPropagationVolumesSettings()
+			{
+				ReflectionRegistry::Register(String("LightPropagationVolumesSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					LightPropagationVolumesSettings& obj = *static_cast<LightPropagationVolumesSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("格子の解像度");
+						fi.offset_ = offsetof(LightPropagationVolumesSettings, gridResolution_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 16;
+						fi.clampMax_ = 64;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("ボリュームの大きさ");
+						fi.offset_ = offsetof(LightPropagationVolumesSettings, volumeSize_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 8.0f;
+						fi.clampMax_ = 512.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("カスケードの数");
+						fi.offset_ = offsetof(LightPropagationVolumesSettings, cascadeCount_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 4;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("伝播の回数");
+						fi.offset_ = offsetof(LightPropagationVolumesSettings, propagationIterations_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 32;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("RSM（反射シャドウマップ）の解像度");
+						fi.offset_ = offsetof(LightPropagationVolumesSettings, reflectiveShadowMapResolution_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 128;
+						fi.clampMax_ = 2048;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("注入のオフセット");
+						fi.offset_ = offsetof(LightPropagationVolumesSettings, injectionBias_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 2.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					outInfo.push_back({ String("遮蔽"), offsetof(LightPropagationVolumesSettings, occlusionEnabled_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("遮蔽の強さ");
+						fi.offset_ = offsetof(LightPropagationVolumesSettings, occlusionStrength_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<LightPropagationVolumesSettings*>(p); return o.occlusionEnabled_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 2.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_LightPropagationVolumesSettings global_LightPropagationVolumesSettings_register;
+
+		struct Register_ScreenSpaceGlobalIlluminationSettings
+		{
+			Register_ScreenSpaceGlobalIlluminationSettings()
+			{
+				ReflectionRegistry::Register(String("ScreenSpaceGlobalIlluminationSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					ScreenSpaceGlobalIlluminationSettings& obj = *static_cast<ScreenSpaceGlobalIlluminationSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイの長さ");
+						fi.offset_ = offsetof(ScreenSpaceGlobalIlluminationSettings, rayLength_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.1f;
+						fi.clampMax_ = 20.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("厚み");
+						fi.offset_ = offsetof(ScreenSpaceGlobalIlluminationSettings, thickness_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.01f;
+						fi.clampMax_ = 2.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("サンプル数");
+						fi.offset_ = offsetof(ScreenSpaceGlobalIlluminationSettings, sampleCount_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 2;
+						fi.clampMax_ = 64;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_ScreenSpaceGlobalIlluminationSettings global_ScreenSpaceGlobalIlluminationSettings_register;
+
+		struct Register_GlobalIllumination
+		{
+			Register_GlobalIllumination()
+			{
+				ReflectionRegistry::Register(String("GlobalIllumination"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					GlobalIllumination& obj = *static_cast<GlobalIllumination*>(ptr);
+					outInfo.push_back({ String("有効"), offsetof(GlobalIllumination, enable_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("手法");
+						fi.offset_ = offsetof(GlobalIllumination, technique_);
+						fi.type_ = AttributeType::Enum;
+						fi.enum_.typeName_ = String("GlobalIlluminationTechnique");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<GlobalIllumination*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("間接光の強さ");
+						fi.offset_ = offsetof(GlobalIllumination, intensity_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<GlobalIllumination*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 5.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイトレーシングGI");
+						fi.offset_ = offsetof(GlobalIllumination, raytracing_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("RaytracingGlobalIlluminationSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<GlobalIllumination*>(p); return o.enable_&& o.technique_ == GlobalIlluminationTechnique::Raytracing; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("動的ディフューズGI（DDGI）");
+						fi.offset_ = offsetof(GlobalIllumination, dynamicDiffuse_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("DynamicDiffuseGlobalIlluminationSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<GlobalIllumination*>(p); return o.enable_&& o.technique_ == GlobalIlluminationTechnique::DynamicDiffuse; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("ライト・プロパゲーション・ボリューム（LPV）");
+						fi.offset_ = offsetof(GlobalIllumination, lightPropagationVolumes_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("LightPropagationVolumesSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<GlobalIllumination*>(p); return o.enable_&& o.technique_ == GlobalIlluminationTechnique::LightPropagationVolumes; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("スクリーンスペースGI（SSGI）");
+						fi.offset_ = offsetof(GlobalIllumination, screenSpace_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("ScreenSpaceGlobalIlluminationSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<GlobalIllumination*>(p); return o.enable_&& o.technique_ == GlobalIlluminationTechnique::ScreenSpace; };
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_GlobalIllumination global_GlobalIllumination_register;
+
+		// ---- GraphicsEngine/Illumination/Reflection/Reflection.h ----
+		struct Register_RaytracingReflectionSettings
+		{
+			Register_RaytracingReflectionSettings()
+			{
+				ReflectionRegistry::Register(String("RaytracingReflectionSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					RaytracingReflectionSettings& obj = *static_cast<RaytracingReflectionSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイの本数");
+						fi.offset_ = offsetof(RaytracingReflectionSettings, rayCount_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 32;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("バウンス数");
+						fi.offset_ = offsetof(RaytracingReflectionSettings, bounceCount_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 4;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("バウンス後の最大の粗さ");
+						fi.offset_ = offsetof(RaytracingReflectionSettings, bounceRoughnessThreshold_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイの最大長");
+						fi.offset_ = offsetof(RaytracingReflectionSettings, rayTMax_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 1.0f;
+						fi.clampMax_ = 5000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("法線方向のオフセット");
+						fi.offset_ = offsetof(RaytracingReflectionSettings, normalBias_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0001f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_RaytracingReflectionSettings global_RaytracingReflectionSettings_register;
+
+		struct Register_SignedDistanceFieldReflectionSettings
+		{
+			Register_SignedDistanceFieldReflectionSettings()
+			{
+				ReflectionRegistry::Register(String("SignedDistanceFieldReflectionSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					SignedDistanceFieldReflectionSettings& obj = *static_cast<SignedDistanceFieldReflectionSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("最大距離");
+						fi.offset_ = offsetof(SignedDistanceFieldReflectionSettings, maxDistance_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 1.0f;
+						fi.clampMax_ = 5000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("コーンの角度");
+						fi.offset_ = offsetof(SignedDistanceFieldReflectionSettings, coneAngle_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 0.5f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("法線方向のオフセット");
+						fi.offset_ = offsetof(SignedDistanceFieldReflectionSettings, normalBias_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0001f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_SignedDistanceFieldReflectionSettings global_SignedDistanceFieldReflectionSettings_register;
+
+		struct Register_ScreenSpaceReflectionSettings
+		{
+			Register_ScreenSpaceReflectionSettings()
+			{
+				ReflectionRegistry::Register(String("ScreenSpaceReflectionSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					ScreenSpaceReflectionSettings& obj = *static_cast<ScreenSpaceReflectionSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("反射する最大の粗さ");
+						fi.offset_ = offsetof(ScreenSpaceReflectionSettings, maxRoughness_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("厚み");
+						fi.offset_ = offsetof(ScreenSpaceReflectionSettings, thickness_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.01f;
+						fi.clampMax_ = 2.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("最大ステップ数");
+						fi.offset_ = offsetof(ScreenSpaceReflectionSettings, maxStepCount_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 8;
+						fi.clampMax_ = 256;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_ScreenSpaceReflectionSettings global_ScreenSpaceReflectionSettings_register;
+
+		struct Register_Reflection
+		{
+			Register_Reflection()
+			{
+				ReflectionRegistry::Register(String("Reflection"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					Reflection& obj = *static_cast<Reflection*>(ptr);
+					outInfo.push_back({ String("有効"), offsetof(Reflection, enable_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("手法");
+						fi.offset_ = offsetof(Reflection, technique_);
+						fi.type_ = AttributeType::Enum;
+						fi.enum_.typeName_ = String("ReflectionTechnique");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Reflection*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("反射の強さ");
+						fi.offset_ = offsetof(Reflection, strength_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Reflection*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 5.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイトレーシング反射");
+						fi.offset_ = offsetof(Reflection, raytracing_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("RaytracingReflectionSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Reflection*>(p); return o.enable_&& o.technique_ == ReflectionTechnique::Raytracing; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("距離フィールド反射（SDFR）");
+						fi.offset_ = offsetof(Reflection, signedDistanceField_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("SignedDistanceFieldReflectionSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Reflection*>(p); return o.enable_&& o.technique_ == ReflectionTechnique::SignedDistanceField; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("スクリーンスペース反射（SSR）");
+						fi.offset_ = offsetof(Reflection, screenSpace_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("ScreenSpaceReflectionSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Reflection*>(p); return o.enable_&& o.technique_ == ReflectionTechnique::ScreenSpace; };
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_Reflection global_Reflection_register;
+
+		// ---- GraphicsEngine/Illumination/Refraction/Refraction.h ----
+		struct Register_RaytracingRefractionSettings
+		{
+			Register_RaytracingRefractionSettings()
+			{
+				ReflectionRegistry::Register(String("RaytracingRefractionSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					RaytracingRefractionSettings& obj = *static_cast<RaytracingRefractionSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイの最大長");
+						fi.offset_ = offsetof(RaytracingRefractionSettings, rayTMax_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 1.0f;
+						fi.clampMax_ = 5000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("法線方向のオフセット");
+						fi.offset_ = offsetof(RaytracingRefractionSettings, normalBias_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0001f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_RaytracingRefractionSettings global_RaytracingRefractionSettings_register;
+
+		struct Register_Refraction
+		{
+			Register_Refraction()
+			{
+				ReflectionRegistry::Register(String("Refraction"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					Refraction& obj = *static_cast<Refraction*>(ptr);
+					outInfo.push_back({ String("有効"), offsetof(Refraction, enable_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("手法");
+						fi.offset_ = offsetof(Refraction, technique_);
+						fi.type_ = AttributeType::Enum;
+						fi.enum_.typeName_ = String("RefractionTechnique");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Refraction*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("屈折の強さ");
+						fi.offset_ = offsetof(Refraction, strength_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Refraction*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイトレーシング屈折");
+						fi.offset_ = offsetof(Refraction, raytracing_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("RaytracingRefractionSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Refraction*>(p); return o.enable_&& o.technique_ == RefractionTechnique::Raytracing; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("スクリーンスペース屈折");
+						fi.offset_ = offsetof(Refraction, screenSpace_);
+						fi.type_ = AttributeType::Unknown;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Refraction*>(p); return o.enable_&& o.technique_ == RefractionTechnique::ScreenSpace; };
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_Refraction global_Refraction_register;
+
+		// ---- GraphicsEngine/Illumination/Shadow/Shadow.h ----
+		struct Register_RaytracingShadowSettings
+		{
+			Register_RaytracingShadowSettings()
+			{
+				ReflectionRegistry::Register(String("RaytracingShadowSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					RaytracingShadowSettings& obj = *static_cast<RaytracingShadowSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイの本数");
+						fi.offset_ = offsetof(RaytracingShadowSettings, rayCount_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 32;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイの最大長");
+						fi.offset_ = offsetof(RaytracingShadowSettings, rayTMax_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 1.0f;
+						fi.clampMax_ = 5000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("法線方向のオフセット");
+						fi.offset_ = offsetof(RaytracingShadowSettings, normalBias_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0001f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("影の濃さ");
+						fi.offset_ = offsetof(RaytracingShadowSettings, shadowStrength_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 2.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("太陽の角半径");
+						fi.offset_ = offsetof(RaytracingShadowSettings, sunAngularRadius_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 0.2f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("点光源の半径");
+						fi.offset_ = offsetof(RaytracingShadowSettings, punctualLightRadius_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 2.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_RaytracingShadowSettings global_RaytracingShadowSettings_register;
+
+		struct Register_VirtualShadowMapSettings
+		{
+			Register_VirtualShadowMapSettings()
+			{
+				ReflectionRegistry::Register(String("VirtualShadowMapSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					VirtualShadowMapSettings& obj = *static_cast<VirtualShadowMapSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("仮想解像度（2の累乗）");
+						fi.offset_ = offsetof(VirtualShadowMapSettings, virtualResolutionLog2_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 11;
+						fi.clampMax_ = 16;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("ページプールのサイズ（MiB）");
+						fi.offset_ = offsetof(VirtualShadowMapSettings, pagePoolSizeMib_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 16;
+						fi.clampMax_ = 512;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("クリップマップの段数");
+						fi.offset_ = offsetof(VirtualShadowMapSettings, clipmapLevelCount_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 12;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("柔らかさの半径");
+						fi.offset_ = offsetof(VirtualShadowMapSettings, softnessRadius_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 4.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("深度バイアス");
+						fi.offset_ = offsetof(VirtualShadowMapSettings, depthBias_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0001f;
+						fi.clampMax_ = 0.05f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_VirtualShadowMapSettings global_VirtualShadowMapSettings_register;
+
+		struct Register_CascadedShadowMapSettings
+		{
+			Register_CascadedShadowMapSettings()
+			{
+				ReflectionRegistry::Register(String("CascadedShadowMapSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					CascadedShadowMapSettings& obj = *static_cast<CascadedShadowMapSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("カスケードの数");
+						fi.offset_ = offsetof(CascadedShadowMapSettings, cascadeCount_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 4;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("分割の比率");
+						fi.offset_ = offsetof(CascadedShadowMapSettings, splitLambda_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("PCFのカーネルサイズ");
+						fi.offset_ = offsetof(CascadedShadowMapSettings, pcfKernelSize_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 9;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("カスケード境界のブレンド幅");
+						fi.offset_ = offsetof(CascadedShadowMapSettings, cascadeBlendWidth_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 0.5f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("深度バイアス");
+						fi.offset_ = offsetof(CascadedShadowMapSettings, depthBias_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0001f;
+						fi.clampMax_ = 0.05f;
+						outInfo.push_back(std::move(fi));
+					}
+					outInfo.push_back({ String("ちらつき防止"), offsetof(CascadedShadowMapSettings, stabilize_), AttributeType::Bool });
+				});
+			}
+		};
+		static Register_CascadedShadowMapSettings global_CascadedShadowMapSettings_register;
+
+		struct Register_Shadow
+		{
+			Register_Shadow()
+			{
+				ReflectionRegistry::Register(String("Shadow"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					Shadow& obj = *static_cast<Shadow*>(ptr);
+					outInfo.push_back({ String("有効"), offsetof(Shadow, enable_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("手法");
+						fi.offset_ = offsetof(Shadow, technique_);
+						fi.type_ = AttributeType::Enum;
+						fi.enum_.typeName_ = String("ShadowTechnique");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Shadow*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイトレーシング影");
+						fi.offset_ = offsetof(Shadow, raytracing_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("RaytracingShadowSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Shadow*>(p); return o.enable_ && o.technique_ == ShadowTechnique::Raytracing; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("バーチャルシャドウマップ（VSM）");
+						fi.offset_ = offsetof(Shadow, virtualShadowMap_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("VirtualShadowMapSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Shadow*>(p); return o.enable_ && o.technique_ == ShadowTechnique::VirtualShadowMap; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("カスケードシャドウマップ（CSM）");
+						fi.offset_ = offsetof(Shadow, cascadedShadowMap_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("CascadedShadowMapSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Shadow*>(p); return o.enable_ && o.technique_ == ShadowTechnique::CascadedShadowMap; };
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_Shadow global_Shadow_register;
+
+		// ---- GraphicsEngine/Illumination/SubsurfaceScattering/SubsurfaceScattering.h ----
+		struct Register_RaytracingSubsurfaceScatteringSettings
+		{
+			Register_RaytracingSubsurfaceScatteringSettings()
+			{
+				ReflectionRegistry::Register(String("RaytracingSubsurfaceScatteringSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					RaytracingSubsurfaceScatteringSettings& obj = *static_cast<RaytracingSubsurfaceScatteringSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("最大の厚み");
+						fi.offset_ = offsetof(RaytracingSubsurfaceScatteringSettings, rayTMax_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.1f;
+						fi.clampMax_ = 50.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("厚み計算のオフセット");
+						fi.offset_ = offsetof(RaytracingSubsurfaceScatteringSettings, thicknessBias_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0001f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_RaytracingSubsurfaceScatteringSettings global_RaytracingSubsurfaceScatteringSettings_register;
+
+		struct Register_SubsurfaceScattering
+		{
+			Register_SubsurfaceScattering()
+			{
+				ReflectionRegistry::Register(String("SubsurfaceScattering"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					SubsurfaceScattering& obj = *static_cast<SubsurfaceScattering*>(ptr);
+					outInfo.push_back({ String("有効"), offsetof(SubsurfaceScattering, enable_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("手法");
+						fi.offset_ = offsetof(SubsurfaceScattering, technique_);
+						fi.type_ = AttributeType::Enum;
+						fi.enum_.typeName_ = String("SubsurfaceScatteringTechnique");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SubsurfaceScattering*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("散乱距離");
+						fi.offset_ = offsetof(SubsurfaceScattering, scatteringDistance_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SubsurfaceScattering*>(p); return o.enable_; };
+						fi.clampMin_ = 0.01f;
+						fi.clampMax_ = 5.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("透光の強さ");
+						fi.offset_ = offsetof(SubsurfaceScattering, strength_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SubsurfaceScattering*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 4.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("透けた光の色");
+						fi.offset_ = offsetof(SubsurfaceScattering, subsurfaceColor_);
+						fi.type_ = AttributeType::Color;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SubsurfaceScattering*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイトレーシングサブサーフェススキャターリング");
+						fi.offset_ = offsetof(SubsurfaceScattering, raytracing_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("RaytracingSubsurfaceScatteringSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SubsurfaceScattering*>(p); return o.enable_&& o.technique_ == SubsurfaceScatteringTechnique::Raytracing; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("スクリーンスペースサブサーフェススキャターリング");
+						fi.offset_ = offsetof(SubsurfaceScattering, screenSpace_);
+						fi.type_ = AttributeType::Unknown;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<SubsurfaceScattering*>(p); return o.enable_&& o.technique_ == SubsurfaceScatteringTechnique::ScreenSpace; };
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_SubsurfaceScattering global_SubsurfaceScattering_register;
+
+		// ---- GraphicsEngine/Illumination/VolumetricLight/VolumetricLight.h ----
+		struct Register_RaytracingVolumetricLightSettings
+		{
+			Register_RaytracingVolumetricLightSettings()
+			{
+				ReflectionRegistry::Register(String("RaytracingVolumetricLightSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					RaytracingVolumetricLightSettings& obj = *static_cast<RaytracingVolumetricLightSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("散乱の異方性");
+						fi.offset_ = offsetof(RaytracingVolumetricLightSettings, scatteringG_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 0.95f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("シャドウレイの最大長");
+						fi.offset_ = offsetof(RaytracingVolumetricLightSettings, rayTMax_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 10.0f;
+						fi.clampMax_ = 10000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("ゴッドレイの強さ");
+						fi.offset_ = offsetof(RaytracingVolumetricLightSettings, godrayStrength_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 8.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					outInfo.push_back({ String("雲の影"), offsetof(RaytracingVolumetricLightSettings, cloudShadowEnabled_), AttributeType::Bool });
+				});
+			}
+		};
+		static Register_RaytracingVolumetricLightSettings global_RaytracingVolumetricLightSettings_register;
+
+		struct Register_VolumetricLight
+		{
+			Register_VolumetricLight()
+			{
+				ReflectionRegistry::Register(String("VolumetricLight"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					VolumetricLight& obj = *static_cast<VolumetricLight*>(ptr);
+					outInfo.push_back({ String("有効"), offsetof(VolumetricLight, enable_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("手法");
+						fi.offset_ = offsetof(VolumetricLight, technique_);
+						fi.type_ = AttributeType::Enum;
+						fi.enum_.typeName_ = String("VolumetricLightTechnique");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricLight*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("フォグの密度");
+						fi.offset_ = offsetof(VolumetricLight, density_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricLight*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0001f;
+						fi.clampMax_ = 0.5f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("吸収");
+						fi.offset_ = offsetof(VolumetricLight, absorption_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricLight*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 0.2f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("高さによる減衰");
+						fi.offset_ = offsetof(VolumetricLight, heightFalloff_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricLight*>(p); return o.enable_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 0.5f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("基準の高さ");
+						fi.offset_ = offsetof(VolumetricLight, heightReference_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricLight*>(p); return o.enable_; };
+						fi.clampMin_ = -100.0f;
+						fi.clampMax_ = 500.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("フォグの散乱色");
+						fi.offset_ = offsetof(VolumetricLight, fogAlbedo_);
+						fi.type_ = AttributeType::Color;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricLight*>(p); return o.enable_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("レイトレーシングボリュームライト");
+						fi.offset_ = offsetof(VolumetricLight, raytracing_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("RaytracingVolumetricLightSettings");
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricLight*>(p); return o.enable_&& o.technique_ == VolumetricLightTechnique::Raytracing; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("高さフォグ");
+						fi.offset_ = offsetof(VolumetricLight, heightFog_);
+						fi.type_ = AttributeType::Unknown;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricLight*>(p); return o.enable_&& o.technique_ == VolumetricLightTechnique::HeightFog; };
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_VolumetricLight global_VolumetricLight_register;
 
 		// ---- GraphicsEngine/Light/DirectionalLight.h ----
 		struct Register_DirectionalLight
@@ -3102,6 +5047,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.001f;
 						fi.clampMax_ = 100.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3111,6 +5057,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.001f;
 						fi.clampMax_ = 100.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3120,6 +5067,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.001f;
 						fi.clampMax_ = 1000.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3129,6 +5077,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 10000.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3138,6 +5087,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 100.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3147,6 +5097,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 1000.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3156,6 +5107,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 1000.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3165,6 +5117,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 1000.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3174,6 +5127,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 10.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3183,6 +5137,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 89.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3192,9 +5147,17 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 10.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
-					outInfo.push_back({ String("重力倍率"), offsetof(CharacterController, gravityScale_), AttributeType::Float });
+					{
+						FieldInfo fi;
+						fi.name_ = String("重力倍率");
+						fi.offset_ = offsetof(CharacterController, gravityScale_);
+						fi.type_ = AttributeType::Float;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
 					{
 						FieldInfo fi;
 						fi.name_ = String("最大落下速度");
@@ -3202,6 +5165,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 1000.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3211,9 +5175,17 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 1000.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
-					outInfo.push_back({ String("しゃがみ"), offsetof(CharacterController, crouch_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("しゃがみ");
+						fi.offset_ = offsetof(CharacterController, crouch_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
 					{
 						FieldInfo fi;
 						fi.name_ = String("しゃがみ時の高さ");
@@ -3221,6 +5193,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.001f;
 						fi.clampMax_ = 100.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 				});
@@ -3235,9 +5208,30 @@ namespace SeedCore
 			{
 				ReflectionRegistry::Register(String("BoxCollider"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					BoxCollider& obj = *static_cast<BoxCollider*>(ptr);
-					outInfo.push_back({ String("サイズ"), offsetof(BoxCollider, size_), AttributeType::Vector3 });
-					outInfo.push_back({ String("中心オフセット"), offsetof(BoxCollider, center_), AttributeType::Vector3 });
-					outInfo.push_back({ String("トリガー"), offsetof(BoxCollider, isTrigger_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("サイズ");
+						fi.offset_ = offsetof(BoxCollider, size_);
+						fi.type_ = AttributeType::Vector3;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("中心オフセット");
+						fi.offset_ = offsetof(BoxCollider, center_);
+						fi.type_ = AttributeType::Vector3;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("トリガー");
+						fi.offset_ = offsetof(BoxCollider, isTrigger_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
 				});
 			}
 		};
@@ -3257,6 +5251,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.001f;
 						fi.clampMax_ = 100.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3266,9 +5261,17 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.001f;
 						fi.clampMax_ = 100.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
-					outInfo.push_back({ String("トリガー"), offsetof(CapsuleCollider, isTrigger_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("トリガー");
+						fi.offset_ = offsetof(CapsuleCollider, isTrigger_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
 				});
 			}
 		};
@@ -3288,10 +5291,25 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 1.0f;
 						fi.clampMax_ = 10000.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
-					outInfo.push_back({ String("中心オフセット"), offsetof(CircleCollider, center_), AttributeType::Vector2 });
-					outInfo.push_back({ String("トリガー"), offsetof(CircleCollider, isTrigger_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("中心オフセット");
+						fi.offset_ = offsetof(CircleCollider, center_);
+						fi.type_ = AttributeType::Vector2;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("トリガー");
+						fi.offset_ = offsetof(CircleCollider, isTrigger_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
 				});
 			}
 		};
@@ -3311,6 +5329,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.001f;
 						fi.clampMax_ = 100.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3320,9 +5339,17 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.001f;
 						fi.clampMax_ = 100.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
-					outInfo.push_back({ String("トリガー"), offsetof(CylinderCollider, isTrigger_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("トリガー");
+						fi.offset_ = offsetof(CylinderCollider, isTrigger_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
 				});
 			}
 		};
@@ -3335,8 +5362,22 @@ namespace SeedCore
 			{
 				ReflectionRegistry::Register(String("MeshCollider"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					MeshCollider& obj = *static_cast<MeshCollider*>(ptr);
-					outInfo.push_back({ String("凸包にする"), offsetof(MeshCollider, convex_), AttributeType::Bool });
-					outInfo.push_back({ String("トリガー"), offsetof(MeshCollider, isTrigger_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("凸包にする");
+						fi.offset_ = offsetof(MeshCollider, convex_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("トリガー");
+						fi.offset_ = offsetof(MeshCollider, isTrigger_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
 				});
 			}
 		};
@@ -3349,9 +5390,30 @@ namespace SeedCore
 			{
 				ReflectionRegistry::Register(String("RectCollider"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					RectCollider& obj = *static_cast<RectCollider*>(ptr);
-					outInfo.push_back({ String("サイズ"), offsetof(RectCollider, size_), AttributeType::Vector2 });
-					outInfo.push_back({ String("中心オフセット"), offsetof(RectCollider, center_), AttributeType::Vector2 });
-					outInfo.push_back({ String("トリガー"), offsetof(RectCollider, isTrigger_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("サイズ");
+						fi.offset_ = offsetof(RectCollider, size_);
+						fi.type_ = AttributeType::Vector2;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("中心オフセット");
+						fi.offset_ = offsetof(RectCollider, center_);
+						fi.type_ = AttributeType::Vector2;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("トリガー");
+						fi.offset_ = offsetof(RectCollider, isTrigger_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
 				});
 			}
 		};
@@ -3371,9 +5433,17 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.001f;
 						fi.clampMax_ = 100.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
-					outInfo.push_back({ String("トリガー"), offsetof(SphereCollider, isTrigger_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("トリガー");
+						fi.offset_ = offsetof(SphereCollider, isTrigger_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
 				});
 			}
 		};
@@ -3526,6 +5596,7 @@ namespace SeedCore
 						fi.offset_ = offsetof(Rigidbody, bodyType_);
 						fi.type_ = AttributeType::Enum;
 						fi.enum_.typeName_ = String("Rigidbody::BodyType");
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3534,6 +5605,7 @@ namespace SeedCore
 						fi.offset_ = offsetof(Rigidbody, continuousCollision_);
 						fi.type_ = AttributeType::Bool;
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Rigidbody*>(p); return o.bodyType_ == Rigidbody::BodyType::Dynamic; };
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3543,6 +5615,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.001f;
 						fi.clampMax_ = 100.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3552,6 +5625,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 10.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3561,6 +5635,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 10.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3570,6 +5645,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 1.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3579,24 +5655,82 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 1.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
-					outInfo.push_back({ String("重力"), offsetof(Rigidbody, useGravity_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("重力");
+						fi.offset_ = offsetof(Rigidbody, useGravity_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
 					{
 						FieldInfo fi;
 						fi.name_ = String("重力倍率");
 						fi.offset_ = offsetof(Rigidbody, gravityScale_);
 						fi.type_ = AttributeType::Float;
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Rigidbody*>(p); return o.useGravity_; };
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
-					outInfo.push_back({ String("位置X軸固定"), offsetof(Rigidbody, freezePositionX_), AttributeType::Bool });
-					outInfo.push_back({ String("位置Y軸固定"), offsetof(Rigidbody, freezePositionY_), AttributeType::Bool });
-					outInfo.push_back({ String("位置Z軸固定"), offsetof(Rigidbody, freezePositionZ_), AttributeType::Bool });
-					outInfo.push_back({ String("回転X軸固定"), offsetof(Rigidbody, freezeRotationX_), AttributeType::Bool });
-					outInfo.push_back({ String("回転Y軸固定"), offsetof(Rigidbody, freezeRotationY_), AttributeType::Bool });
-					outInfo.push_back({ String("回転Z軸固定"), offsetof(Rigidbody, freezeRotationZ_), AttributeType::Bool });
-					outInfo.push_back({ String("トリガー"), offsetof(Rigidbody, isTrigger_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("位置X軸固定");
+						fi.offset_ = offsetof(Rigidbody, freezePositionX_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("位置Y軸固定");
+						fi.offset_ = offsetof(Rigidbody, freezePositionY_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("位置Z軸固定");
+						fi.offset_ = offsetof(Rigidbody, freezePositionZ_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("回転X軸固定");
+						fi.offset_ = offsetof(Rigidbody, freezeRotationX_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("回転Y軸固定");
+						fi.offset_ = offsetof(Rigidbody, freezeRotationY_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("回転Z軸固定");
+						fi.offset_ = offsetof(Rigidbody, freezeRotationZ_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("トリガー");
+						fi.offset_ = offsetof(Rigidbody, isTrigger_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
 				});
 			}
 		};
@@ -3616,6 +5750,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.001f;
 						fi.clampMax_ = 100.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3625,6 +5760,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 1.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3634,6 +5770,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 1.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3643,6 +5780,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 1.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3652,6 +5790,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 0.5f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3661,6 +5800,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 10.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3670,6 +5810,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 1.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3679,6 +5820,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 1.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3688,6 +5830,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = -10.0f;
 						fi.clampMax_ = 10.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3697,6 +5840,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 1.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3706,15 +5850,24 @@ namespace SeedCore
 						fi.type_ = AttributeType::Float;
 						fi.clampMin_ = 0.0f;
 						fi.clampMax_ = 1.0f;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
-					outInfo.push_back({ String("重力"), offsetof(Softbody, useGravity_), AttributeType::Bool });
+					{
+						FieldInfo fi;
+						fi.name_ = String("重力");
+						fi.offset_ = offsetof(Softbody, useGravity_);
+						fi.type_ = AttributeType::Bool;
+						fi.revision_ = true;
+						outInfo.push_back(std::move(fi));
+					}
 					{
 						FieldInfo fi;
 						fi.name_ = String("重力倍率");
 						fi.offset_ = offsetof(Softbody, gravityScale_);
 						fi.type_ = AttributeType::Float;
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Softbody*>(p); return o.useGravity_; };
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3724,6 +5877,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Int;
 						fi.clampMin_ = 1;
 						fi.clampMax_ = 20;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 					{
@@ -3733,6 +5887,7 @@ namespace SeedCore
 						fi.type_ = AttributeType::Int;
 						fi.clampMin_ = 1;
 						fi.clampMax_ = 10;
+						fi.revision_ = true;
 						outInfo.push_back(std::move(fi));
 					}
 				});
@@ -3740,54 +5895,18 @@ namespace SeedCore
 		};
 		static Register_Softbody global_Softbody_register;
 
-		// ---- Runtime/enc_temp_folder/327cfae53be5ad4aed13267202dd9/PlayerController.h ----
-		struct Register_PlayerController
+		struct RegisterEnum_AmbientOcclusionTechnique
 		{
-			Register_PlayerController()
+			RegisterEnum_AmbientOcclusionTechnique()
 			{
-				ReflectionRegistry::Register(String("PlayerController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
-					PlayerController& obj = *static_cast<PlayerController*>(ptr);
-					outInfo.push_back({ String("acceleration"), offsetof(PlayerController, acceleration), AttributeType::Float });
-					outInfo.push_back({ String("airAcceleration"), offsetof(PlayerController, airAcceleration), AttributeType::Float });
-					outInfo.push_back({ String("turnSpeed"), offsetof(PlayerController, turnSpeed), AttributeType::Float });
-					outInfo.push_back({ String("jumpEnableTime"), offsetof(PlayerController, jumpEnableTime), AttributeType::Float });
-					outInfo.push_back({ String("jumpInputBufferTime"), offsetof(PlayerController, jumpInputBufferTime), AttributeType::Float });
-					outInfo.push_back({ String("maxJumpInputTime"), offsetof(PlayerController, maxJumpInputTime), AttributeType::Float });
-					outInfo.push_back({ String("jumpGravityScaler"), offsetof(PlayerController, jumpGravityScaler), AttributeType::Float });
-					outInfo.push_back({ String("coyoteTime"), offsetof(PlayerController, coyoteTime), AttributeType::Float });
-					outInfo.push_back({ String("maxShotChargeTime"), offsetof(PlayerController, maxShotChargeTime), AttributeType::Float });
-					outInfo.push_back({ String("bulletOffsetY"), offsetof(PlayerController, bulletOffsetY), AttributeType::Float });
-					outInfo.push_back({ String("minBulletOffsetZ"), offsetof(PlayerController, minBulletOffsetZ), AttributeType::Float });
-					outInfo.push_back({ String("maxBulletOffsetZ"), offsetof(PlayerController, maxBulletOffsetZ), AttributeType::Float });
-					outInfo.push_back({ String("bulletRemoveDistance"), offsetof(PlayerController, bulletRemoveDistance), AttributeType::Float });
-					outInfo.push_back({ String("deadPosY"), offsetof(PlayerController, deadPosY), AttributeType::Float });
-					outInfo.push_back({ String("firstPersonSensitivity"), offsetof(PlayerController, firstPersonSensitivity), AttributeType::Float });
-					outInfo.push_back({ String("firstPersonMinPitch"), offsetof(PlayerController, firstPersonMinPitch), AttributeType::Float });
-					outInfo.push_back({ String("firstPersonMaxPitch"), offsetof(PlayerController, firstPersonMaxPitch), AttributeType::Float });
-					outInfo.push_back({ String("resetInputTime"), offsetof(PlayerController, resetInputTime), AttributeType::Float });
-					outInfo.push_back({ String("maxCostGauge"), offsetof(PlayerController, maxCostGauge), AttributeType::Int });
-					outInfo.push_back({ String("minAddCostGauge"), offsetof(PlayerController, minAddCostGauge), AttributeType::Int });
-					outInfo.push_back({ String("maxAddCostGauge"), offsetof(PlayerController, maxAddCostGauge), AttributeType::Int });
+				EnumRegistry::Register(String("AmbientOcclusionTechnique"), {
+					{ static_cast<Int>(AmbientOcclusionTechnique::Raytracing), String("Raytracing") },
+					{ static_cast<Int>(AmbientOcclusionTechnique::GroundTruth), String("GroundTruth") },
+					{ static_cast<Int>(AmbientOcclusionTechnique::ScreenSpace), String("ScreenSpace") },
 				});
 			}
 		};
-		static Register_PlayerController global_PlayerController_register;
-
-		// ---- Runtime/enc_temp_folder/345acb2cb528e94addcdd561ad0/BulletNaviController.h ----
-		struct Register_BulletNaviController
-		{
-			Register_BulletNaviController()
-			{
-				ReflectionRegistry::Register(String("BulletNaviController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
-					BulletNaviController& obj = *static_cast<BulletNaviController*>(ptr);
-					outInfo.push_back({ String("minSize"), offsetof(BulletNaviController, minSize), AttributeType::Float });
-					outInfo.push_back({ String("maxSize"), offsetof(BulletNaviController, maxSize), AttributeType::Float });
-					outInfo.push_back({ String("interval"), offsetof(BulletNaviController, interval), AttributeType::Float });
-					outInfo.push_back({ String("scrollSpeed"), offsetof(BulletNaviController, scrollSpeed), AttributeType::Float });
-				});
-			}
-		};
-		static Register_BulletNaviController global_BulletNaviController_register;
+		static RegisterEnum_AmbientOcclusionTechnique global_AmbientOcclusionTechnique_enum_register;
 
 		struct RegisterEnum_AnimationConditionComparison
 		{
@@ -3835,6 +5954,32 @@ namespace SeedCore
 		};
 		static RegisterEnum_CameraBrainMode global_CameraBrainMode_enum_register;
 
+		struct RegisterEnum_CausticsTechnique
+		{
+			RegisterEnum_CausticsTechnique()
+			{
+				EnumRegistry::Register(String("CausticsTechnique"), {
+					{ static_cast<Int>(CausticsTechnique::Raytracing), String("Raytracing") },
+					{ static_cast<Int>(CausticsTechnique::ScreenSpace), String("ScreenSpace") },
+				});
+			}
+		};
+		static RegisterEnum_CausticsTechnique global_CausticsTechnique_enum_register;
+
+		struct RegisterEnum_GlobalIlluminationTechnique
+		{
+			RegisterEnum_GlobalIlluminationTechnique()
+			{
+				EnumRegistry::Register(String("GlobalIlluminationTechnique"), {
+					{ static_cast<Int>(GlobalIlluminationTechnique::Raytracing), String("Raytracing") },
+					{ static_cast<Int>(GlobalIlluminationTechnique::DynamicDiffuse), String("DynamicDiffuse") },
+					{ static_cast<Int>(GlobalIlluminationTechnique::LightPropagationVolumes), String("LightPropagationVolumes") },
+					{ static_cast<Int>(GlobalIlluminationTechnique::ScreenSpace), String("ScreenSpace") },
+				});
+			}
+		};
+		static RegisterEnum_GlobalIlluminationTechnique global_GlobalIlluminationTechnique_enum_register;
+
 		struct RegisterEnum_Image_MotionType
 		{
 			RegisterEnum_Image_MotionType()
@@ -3872,6 +6017,31 @@ namespace SeedCore
 		};
 		static RegisterEnum_Movie_DisplayMode global_Movie_DisplayMode_enum_register;
 
+		struct RegisterEnum_ReflectionTechnique
+		{
+			RegisterEnum_ReflectionTechnique()
+			{
+				EnumRegistry::Register(String("ReflectionTechnique"), {
+					{ static_cast<Int>(ReflectionTechnique::Raytracing), String("Raytracing") },
+					{ static_cast<Int>(ReflectionTechnique::SignedDistanceField), String("SignedDistanceField") },
+					{ static_cast<Int>(ReflectionTechnique::ScreenSpace), String("ScreenSpace") },
+				});
+			}
+		};
+		static RegisterEnum_ReflectionTechnique global_ReflectionTechnique_enum_register;
+
+		struct RegisterEnum_RefractionTechnique
+		{
+			RegisterEnum_RefractionTechnique()
+			{
+				EnumRegistry::Register(String("RefractionTechnique"), {
+					{ static_cast<Int>(RefractionTechnique::Raytracing), String("Raytracing") },
+					{ static_cast<Int>(RefractionTechnique::ScreenSpace), String("ScreenSpace") },
+				});
+			}
+		};
+		static RegisterEnum_RefractionTechnique global_RefractionTechnique_enum_register;
+
 		struct RegisterEnum_Rigidbody_BodyType
 		{
 			RegisterEnum_Rigidbody_BodyType()
@@ -3884,6 +6054,31 @@ namespace SeedCore
 			}
 		};
 		static RegisterEnum_Rigidbody_BodyType global_Rigidbody_BodyType_enum_register;
+
+		struct RegisterEnum_ShadowTechnique
+		{
+			RegisterEnum_ShadowTechnique()
+			{
+				EnumRegistry::Register(String("ShadowTechnique"), {
+					{ static_cast<Int>(ShadowTechnique::Raytracing), String("Raytracing") },
+					{ static_cast<Int>(ShadowTechnique::VirtualShadowMap), String("VirtualShadowMap") },
+					{ static_cast<Int>(ShadowTechnique::CascadedShadowMap), String("CascadedShadowMap") },
+				});
+			}
+		};
+		static RegisterEnum_ShadowTechnique global_ShadowTechnique_enum_register;
+
+		struct RegisterEnum_SubsurfaceScatteringTechnique
+		{
+			RegisterEnum_SubsurfaceScatteringTechnique()
+			{
+				EnumRegistry::Register(String("SubsurfaceScatteringTechnique"), {
+					{ static_cast<Int>(SubsurfaceScatteringTechnique::Raytracing), String("Raytracing") },
+					{ static_cast<Int>(SubsurfaceScatteringTechnique::ScreenSpace), String("ScreenSpace") },
+				});
+			}
+		};
+		static RegisterEnum_SubsurfaceScatteringTechnique global_SubsurfaceScatteringTechnique_enum_register;
 
 		struct RegisterEnum_Text_ViewType
 		{
@@ -3910,6 +6105,18 @@ namespace SeedCore
 			}
 		};
 		static RegisterEnum_ToneMappingSettings_ToneCurve global_ToneMappingSettings_ToneCurve_enum_register;
+
+		struct RegisterEnum_VolumetricLightTechnique
+		{
+			RegisterEnum_VolumetricLightTechnique()
+			{
+				EnumRegistry::Register(String("VolumetricLightTechnique"), {
+					{ static_cast<Int>(VolumetricLightTechnique::Raytracing), String("Raytracing") },
+					{ static_cast<Int>(VolumetricLightTechnique::HeightFog), String("HeightFog") },
+				});
+			}
+		};
+		static RegisterEnum_VolumetricLightTechnique global_VolumetricLightTechnique_enum_register;
 
 		struct RegisterEnum_WeatherType
 		{

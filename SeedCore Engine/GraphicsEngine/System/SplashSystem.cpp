@@ -1,14 +1,26 @@
 #include <GraphicsEngine/System/SplashSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
+#include <FoundationEngine/Resource/Config/GameConfig.h>
+#include <FoundationEngine/Resource/Config/EditorConfig.h>
 
 namespace SeedCore
 {
-	void SplashSystem::Initialize(Bool showWarning, Bool showFiction)
+	Bool SplashSystem::Initialize(const GameConfig& gameConfig)
 	{
-		showWarning_ = showWarning;
-		showFiction_ = showFiction;
+		showWarning_ = gameConfig.showSplashWarning_;
+		showFiction_ = gameConfig.showSplashFiction_;
 
 		config_.Load();
+		return true;
+	}
+
+	Bool SplashSystem::Initialize(const EditorConfig& editorConfig)
+	{
+		showWarning_ = false;
+		showFiction_ = false;
+
+		config_.Load();
+		return true;
 	}
 
 	void SplashSystem::Update(const ResourceCache& resourceCache)

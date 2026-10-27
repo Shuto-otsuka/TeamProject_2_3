@@ -4,7 +4,11 @@ namespace SeedCore
 {
 	/// [EN] Definition of the shared log buffer declared in LogSystem.h.
 	/// [JP] LogSystem.h で宣言した、共有のログバッファの定義。
-	DynamicArray<LogEntry> LogSystem::logs_;
+	DynamicArray<LogEntry> LogSystem::committedLogs_;
+
+	DynamicArray<LogEntry> LogSystem::pendingLogs_;
+
+	std::mutex LogSystem::mutex_;
 
 	/**
 	* [EN]
@@ -21,7 +25,10 @@ namespace SeedCore
 	{
 		/// [EN] __FILE__ is a full build path; only the file name is kept, which is what the Console shows.
 		/// [JP] __FILE__ はビルド時の完全なパスなので、Console に表示するファイル名だけを残す。
-		logs_.push_back({ level, String(message), String(std::filesystem::path(file).filename().string()), line });
+		LogEntry entry = { level, String(message), String(std::filesystem::path(file).filename().string()), line };
+
+		std::lock_guard<std::mutex> lock(mutex_);
+		pendingLogs_.push_back(std::move(entry));
 	}
 
 	/**
@@ -35,7 +42,13 @@ namespace SeedCore
 	*/
 	const DynamicArray<LogEntry>& LogSystem::GetLogs()
 	{
-		return logs_;
+		std::lock_guard<std::mutex> lock(mutex_);
+		for (LogEntry& entry : pendingLogs_)
+		{
+			committedLogs_.push_back(std::move(entry));
+		}
+		pendingLogs_.clear();
+		return committedLogs_;
 	}
 
 	/**
@@ -49,6 +62,8 @@ namespace SeedCore
 	*/
 	void LogSystem::Clear()
 	{
-		logs_.clear();
+		std::lock_guard<std::mutex> lock(mutex_);
+		pendingLogs_.clear();
+		committedLogs_.clear();
 	}
 }

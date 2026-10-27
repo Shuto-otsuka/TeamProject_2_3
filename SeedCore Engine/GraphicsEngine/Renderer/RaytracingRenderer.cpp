@@ -17,6 +17,15 @@
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Renderer/ModelRenderer.h>
 #include <GraphicsEngine/System/IndicesSystem.h>
+#include <GraphicsEngine/System/ShadowSystem.h>
+#include <GraphicsEngine/System/AmbientOcclusionSystem.h>
+#include <GraphicsEngine/System/ReflectionSystem.h>
+#include <GraphicsEngine/System/GlobalIlluminationSystem.h>
+#include <GraphicsEngine/System/RefractionSystem.h>
+#include <GraphicsEngine/System/SubsurfaceScatteringSystem.h>
+#include <GraphicsEngine/System/VolumetricLightSystem.h>
+#include <GraphicsEngine/System/VolumetricCloudScapesSystem.h>
+#include <GraphicsEngine/System/VolumetricStarSystem.h>
 #include <FoundationEngine/World/WorldAccessor.h>
 
 namespace SeedCore
@@ -960,41 +969,34 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Copies each pass's tuning values and on/off switch. When the sun light
-	* is on, its angular radius also sizes the sun disc of the procedural sky,
-	* so the disc matches the light that casts the shadows.
+	* Copies each pass's tuning values and on/off switch from the system that
+	* resolved them from the world's components this frame.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 各パスの調整値とオン/オフを写す。太陽光が有効なときは、その視半径で
-	* プロシージャル空の太陽ディスクの大きさも決め、ディスクと影を落とす
-	* 光を一致させる。
+	* 各パスの調整値とオン/オフを、今フレームにワールドのコンポーネントから
+	* それを決めたシステムから写す。
 	*/
-	void RaytracingRenderer::SetRaytracingSettings(const RaytracingContext& settings)
+	void RaytracingRenderer::SetRaytracingSettings(const ShadowSystem& shadow, const AmbientOcclusionSystem& ambientOcclusion, const ReflectionSystem& reflection, const GlobalIlluminationSystem& globalIllumination, const RefractionSystem& refraction, const SubsurfaceScatteringSystem& subsurfaceScattering, const VolumetricLightSystem& volumetricLight, const VolumetricCloudScapesSystem& volumetricCloudScapes, const VolumetricStarSystem& volumetricStar)
 	{
-		shadowSettings_ = settings.shadow_;
-		shadowEnabled_ = settings.shadowEnabled_;
-		ambientOcclusionSettings_ = settings.ambientOcclusion_;
-		ambientOcclusionEnabled_ = settings.ambientOcclusionEnabled_;
-		subsurfaceScatteringSettings_ = settings.subsurfaceScattering_;
-		subsurfaceScatteringEnabled_ = settings.subsurfaceScatteringEnabled_;
-		reflectionSettings_ = settings.reflection_;
-		reflectionEnabled_ = settings.reflectionEnabled_;
-		refractionSettings_ = settings.refraction_;
-		refractionEnabled_ = settings.refractionEnabled_;
-		globalIlluminationSettings_ = settings.globalIllumination_;
-		globalIlluminationEnabled_ = settings.globalIlluminationEnabled_;
-		volumetricCloudScapesSettings_ = settings.volumetricCloudScapes_;
-		volumetricCloudScapesEnabled_ = settings.volumetricCloudScapesEnabled_;
-		volumetricStarSettings_ = settings.volumetricStar_;
-		volumetricStarEnabled_ = settings.volumetricStarEnabled_;
-		volumetricLightSettings_ = settings.volumetricLight_;
-		volumetricLightEnabled_ = settings.volumetricLightEnabled_;
-
-		if (settings.sunLightEnabled_)
-		{
-			volumetricCloudScapesSettings_.sunSize_ = settings.sunLight_.angularRadius_;
-		}
+		shadowSettings_ = shadow.ConstantBuffer();
+		shadowEnabled_ = shadow.Enabled();
+		ambientOcclusionSettings_ = ambientOcclusion.ConstantBuffer();
+		ambientOcclusionEnabled_ = ambientOcclusion.Enabled();
+		subsurfaceScatteringSettings_ = subsurfaceScattering.ConstantBuffer();
+		subsurfaceScatteringEnabled_ = subsurfaceScattering.Enabled();
+		reflectionSettings_ = reflection.ConstantBuffer();
+		reflectionEnabled_ = reflection.Enabled();
+		refractionSettings_ = refraction.ConstantBuffer();
+		refractionEnabled_ = refraction.Enabled();
+		globalIlluminationSettings_ = globalIllumination.ConstantBuffer();
+		globalIlluminationEnabled_ = globalIllumination.Enabled();
+		volumetricCloudScapesSettings_ = volumetricCloudScapes.ConstantBuffer();
+		volumetricCloudScapesEnabled_ = volumetricCloudScapes.Enabled();
+		volumetricStarSettings_ = volumetricStar.ConstantBuffer();
+		volumetricStarEnabled_ = volumetricStar.Enabled();
+		volumetricLightSettings_ = volumetricLight.ConstantBuffer();
+		volumetricLightEnabled_ = volumetricLight.Enabled();
 	}
 }

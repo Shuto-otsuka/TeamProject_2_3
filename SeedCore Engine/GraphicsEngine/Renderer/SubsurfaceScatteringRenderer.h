@@ -1,7 +1,7 @@
 #pragma once
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
-#include <GraphicsEngine/Raytracing/SubsurfaceScattering/SubsurfaceScatteringShader.h>
+#include <GraphicsEngine/Illumination/SubsurfaceScattering/SubsurfaceScatteringShader.h>
 
 namespace SeedCore
 {
@@ -18,7 +18,7 @@ namespace SeedCore
 	* [EN]
 	* Tuning values of the subsurface scattering pass. Mirrors
 	* SubsurfaceScatteringRayConstantBuffer in
-	* Raytracing/SubsurfaceScattering/SubsurfaceScattering.hlsli, which both
+	* Illumination/SubsurfaceScattering/SubsurfaceScattering.hlsli, which both
 	* SubsurfaceScatteringRT.hlsl and DeferredLightingPS.hlsl read through
 	* constant_indices.subsurface_scattering_index_, so the layout must match
 	* the HLSL side byte for byte.
@@ -27,7 +27,7 @@ namespace SeedCore
 	*
 	* [JP]
 	* 表面下散乱パスの調整値。
-	* Raytracing/SubsurfaceScattering/SubsurfaceScattering.hlsli の
+	* Illumination/SubsurfaceScattering/SubsurfaceScattering.hlsli の
 	* SubsurfaceScatteringRayConstantBuffer と対応する。
 	* SubsurfaceScatteringRT.hlsl と DeferredLightingPS.hlsl の両方が
 	* constant_indices.subsurface_scattering_index_ 経由で読むため、

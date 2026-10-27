@@ -12,6 +12,10 @@ REFLECTION_FIELD_CONDITION_PATTERN = re.compile(
     r'SC_REFLECTION_FIELD_CONDITION\((.+?)\)\s*'
 )
 
+REFLECTION_FIELD_REVISION_PATTERN = re.compile(
+    r'SC_REFLECTION_FIELD_REVISION\(\)\s*'
+)
+
 REFLECTION_FIELD_PATTERN = re.compile(
     r'SC_REFLECTION_FIELD\(\)\s*([\w:<>,\s]+)\s+(\w+)\s*(\[\d+\])?\s*(?:=[^;]*)?\s*;'
 )
@@ -447,6 +451,10 @@ def emit_header(file_path, project_root, enums, enum_headers, known_structs=None
         for condition_match in REFLECTION_FIELD_CONDITION_PATTERN.finditer(body):
             conditions[condition_match.end()] = condition_match.group(1).strip()
 
+        revisions = {}
+        for revision_match in REFLECTION_FIELD_REVISION_PATTERN.finditer(body):
+            revisions[revision_match.end()] = True
+
         fields = []
         for field_match in REFLECTION_FIELD_PATTERN.finditer(body):
             fields.append((field_match.start(), field_match.group(1), field_match.group(2), field_match.group(2), field_match.group(3), None, None, False))
@@ -462,6 +470,7 @@ def emit_header(file_path, project_root, enums, enum_headers, known_structs=None
 
         resolved_fields = []
         used_conditions = set()
+        used_revisions = set()
         for position, field_type_text, field_name, display_name, bracket, clamp_min, clamp_max, serialize_only in fields:
             condition = None
             for condition_end, condition_text in conditions.items():
@@ -473,10 +482,21 @@ def emit_header(file_path, project_root, enums, enum_headers, known_structs=None
                         condition = condition_text
                         used_conditions.add(condition_end)
                         break
+
+            revision = False
+            for revision_end in revisions:
+                if revision_end in used_revisions:
+                    continue
+                if revision_end <= position and position - revision_end < 200:
+                    between = body[revision_end:position].strip()
+                    if between == '' or between.startswith('SC_REFLECTION'):
+                        revision = True
+                        used_revisions.add(revision_end)
+                        break
             field_type = parse_type_name(field_type_text)
             array_type = parse_array_type(field_type, bracket)
             enum_type = parse_enum_type(field_type, struct_name, enums, enum_headers, relative_path) if array_type is None else None
-            resolved_fields.append(FieldDecl(field_type, field_name, display_name, bracket, array_type, enum_type, condition, clamp_min, clamp_max, serialize_only))
+            resolved_fields.append(FieldDecl(field_type, field_name, display_name, bracket, array_type, enum_type, condition, clamp_min, clamp_max, serialize_only, revision_=revision))
         fields = resolved_fields
 
         functions = []

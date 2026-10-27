@@ -125,10 +125,8 @@ namespace SeedCore
 	* マウス入力をゲームに渡すかを記録する。アプリがアクティブでない間は、
 	* 全て押されていない・動いていないものとして取り込む。
 	*/
-	void InputSystem::Update(Bool gameInput, const Vector4& gameRect)
+	void InputSystem::Update(const Vector4& gameRect)
 	{
-		gameInput_ = gameInput;
-
 		/// [EN] GetActiveWindow() only returns a window of this thread, so nullptr means the user is working in another application; the key table and the cursor are system-wide and would otherwise keep reporting what happens there.
 		/// [JP] GetActiveWindow() はこのスレッドのウィンドウしか返さないので、nullptr ならユーザーは別のアプリを操作している。キー表もカーソルもシステム全体のものなので、そうしないと向こうでの操作を拾い続けてしまう。
 		Bool active = GetActiveWindow() != nullptr;
@@ -185,10 +183,16 @@ namespace SeedCore
 		mouseMotion_ = Vector2(cursor.x - desktopMousePoint_.x, cursor.y - desktopMousePoint_.y);
 		desktopMousePoint_ = cursor;
 
+		Bool validGameRect = gameRect.z > 0.0f && gameRect.w > 0.0f;
+		gameInput_ = active && validGameRect && cursor.x >= gameRect.x && cursor.x < gameRect.x + gameRect.z && cursor.y >= gameRect.y && cursor.y < gameRect.y + gameRect.w;
+
 		/// [EN] The game only sees the cursor on its own 1920x1080 screen: the desktop position is taken relative to where the game image sits and stretched from its displayed size.
 		/// [JP] ゲームから見えるのは自身の 1920x1080 の画面上のカーソルだけ。デスクトップ上の位置を、ゲーム画像の置かれた位置からの相対にし、表示サイズから引き伸ばす。
-		gameMousePoint_.x = (cursor.x - gameRect.x) / gameRect.z * 1920.0f;
-		gameMousePoint_.y = (cursor.y - gameRect.y) / gameRect.w * 1080.0f;
+		if (validGameRect)
+		{
+			gameMousePoint_.x = (cursor.x - gameRect.x) / gameRect.z * 1920.0f;
+			gameMousePoint_.y = (cursor.y - gameRect.y) / gameRect.w * 1080.0f;
+		}
 
 		/// [EN] While inactive the cursor is moving over another application: the position is still tracked, so there is no jump on return, but no movement is reported.
 		/// [JP] 非アクティブの間、カーソルは別のアプリの上を動いている。戻ったときに飛ばないよう位置は追い続けるが、移動量は報告しない。

@@ -21,16 +21,19 @@ namespace SeedCore
 	public:
 		/// [EN] Full width and height of the rectangle.
 		/// [JP] 矩形の幅と高さ。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("サイズ")
 		Vector2 size_ = { 100.0f, 100.0f };
 
 		/// [EN] Local offset of the rectangle center.
 		/// [JP] 矩形中心のローカルオフセット。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("中心オフセット")
 		Vector2 center_ = { 0.0f, 0.0f };
 
 		/// [EN] Whether this collider acts as a trigger.
 		/// [JP] このコライダーをトリガーとして扱うか。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("トリガー")
 		Bool isTrigger_ = false;
 
@@ -56,6 +59,11 @@ namespace SeedCore
 		* コライダーボディを破棄し、形状を解放する。
 		*/
 		void OnDestroy();
+
+		void OnRevision();
+
+	public:
+		void Dispatch();
 
 	public:
 		/**

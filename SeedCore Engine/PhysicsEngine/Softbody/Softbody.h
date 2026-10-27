@@ -28,77 +28,92 @@ namespace SeedCore
 	public:
 		/// [EN] Mass in kilograms; not passed to the simulation yet.
 		/// [JP] 質量(kg)。まだシミュレーションには渡していない。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("質量", 0.001f, 100.0f)
 		Float mass_ = 1.0f;
 
 		/// [EN] Resistance to shearing of each face: 1 is rigid, 0 the softest.
 		/// [JP] 各面のせん断に対する硬さ。1 で硬く、0 で最も柔らかい。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("面積弾性力", 0.0f, 1.0f)
 		Float areaStiffness_ = 0.5f;
 
 		/// [EN] Resistance to volume change; not passed to the simulation yet.
 		/// [JP] 体積変化に対する硬さ。まだシミュレーションには渡していない。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("体積弾性力", 0.0f, 1.0f)
 		Float volumeStiffness_ = 0.5f;
 
 		/// [EN] Damping that slows the vertices' velocity over time.
 		/// [JP] 頂点の速度を時間とともに弱める減衰。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("抵抗力", 0.0f, 1.0f)
 		Float damping_ = 0.5f;
 
 		/// [EN] Poisson's ratio of the material; not passed to the simulation yet.
 		/// [JP] 材質のポアソン比。まだシミュレーションには渡していない。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("ポアソン比", 0.0f, 0.5f)
 		Float poissonRatio_ = 0.3f;
 
 		/// [EN] How far a vertex may drift from its bind pose; not passed to the simulation yet.
 		/// [JP] 頂点がバインドポーズから離れてよい距離。まだシミュレーションには渡していない。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("最大許容距離", 0.0f, 10.0f)
 		Float maxDistance_ = 0.0f;
 
 		/// [EN] Resistance to stretching along each edge: 1 is rigid, 0 the softest.
 		/// [JP] 各辺の伸びに対する硬さ。1 で硬く、0 で最も柔らかい。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("辺補強係数", 0.0f, 1.0f)
 		Float edgeStiffness_ = 0.5f;
 
 		/// [EN] Resistance to bending between neighbouring faces: 1 is rigid, 0 the softest.
 		/// [JP] 隣り合う面の間の曲げに対する硬さ。1 で硬く、0 で最も柔らかい。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("曲耐性", 0.0f, 1.0f)
 		Float bendStiffness_ = 0.5f;
 
 		/// [EN] Pressure inside a closed mesh; positive inflates it, negative deflates it.
 		/// [JP] 閉じたメッシュの内部圧力。正で膨らみ、負でしぼむ。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("内部圧力", -10.0f, 10.0f)
 		Float pressure_ = 0.0f;
 
 		/// [EN] Friction coefficient: 0 slides freely, 1 grips strongly.
 		/// [JP] 摩擦係数。0 で滑り、1 で強く止まる。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("摩擦係数", 0.0f, 1.0f)
 		Float friction_ = 0.2f;
 
 		/// [EN] Restitution: 0 does not bounce, 1 bounces back with full speed.
 		/// [JP] 反発係数。0 で跳ねず、1 で速さを保って跳ね返る。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("反発係数", 0.0f, 1.0f)
 		Float restitution_ = 0.5f;
 
 		/// [EN] Whether world gravity acts on the body.
 		/// [JP] ワールドの重力をボディに働かせるか。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("重力")
 		Bool useGravity_ = true;
 
 		/// [EN] Multiplier on world gravity.
 		/// [JP] ワールドの重力に掛ける倍率。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_CONDITION(useGravity_)
 		SC_REFLECTION_FIELD_EX("重力倍率")
 		Float gravityScale_ = 1.0f;
 
 		/// [EN] Number of substeps per physics step; not passed to the simulation yet.
 		/// [JP] 物理ステップ1回あたりのサブステップ数。まだシミュレーションには渡していない。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("サブステップ数", 1, 20)
 		Int subSteps_ = 4;
 
 		/// [EN] Solver iterations per step; more iterations hold the constraints more firmly.
 		/// [JP] ステップごとのソルバの反復回数。多いほど拘束がしっかり保たれる。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("反復回数", 1, 10)
 		Int iterationCount_ = 4;
 
@@ -139,6 +154,11 @@ namespace SeedCore
 		* ソフトボディはもう一度構築される。
 		*/
 		void OnDestroy();
+
+		void OnRevision();
+
+	public:
+		void Dispatch();
 
 	public:
 		/**

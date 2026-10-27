@@ -188,6 +188,13 @@ namespace SeedCore
 								static_cast<T*>(component)->OnTriggerExit(other);
 							};
 					}
+					if constexpr (HasRevision<T>)
+					{
+						hooks.revision_ = [](ComponentBehaviour* component)
+							{
+								static_cast<T*>(component)->OnRevision();
+							};
+					}
 				}
 				return hooks;
 			}();

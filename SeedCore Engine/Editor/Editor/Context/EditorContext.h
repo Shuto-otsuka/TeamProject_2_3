@@ -8,17 +8,12 @@
 #include <Editor/Editor/Context/GraphicsContext.h>
 #include <Editor/Editor/Context/GuizmoContext.h>
 #include <Editor/Editor/Context/SceneContext.h>
-#include <Editor/Editor/Context/SceneVisualContext.h>
 #include <Editor/Editor/Context/SelectionContext.h>
 #include <Editor/Editor/Context/ViewContext.h>
 #include <Editor/Editor/Context/ConfigContext.h>
 #include <Editor/Editor/Context/PreviewContext.h>
 #include <Editor/Editor/Context/PanelContext.h>
 #include <GraphicsEngine/Renderer/ViewMode.h>
-#include <GraphicsEngine/Raytracing/RaytracingContext.h>
-#include <GraphicsEngine/ScreenSpace/ScreenSpaceContext.h>
-#include <GraphicsEngine/Rasterization/RasterizationContext.h>
-#include <GraphicsEngine/Quality/GraphicsQuality.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
 
 namespace SeedCore
@@ -57,10 +52,6 @@ namespace SeedCore
 		/// [EN] The scene being edited: its file, a request to open another, and the undo/redo history.
 		/// [JP] 編集中のシーン。ファイル、別のシーンを開く依頼、元に戻す・やり直しの履歴。
 		SceneContext scene_;
-
-		/// [EN] Rendering settings saved with the scene, until they become components.
-		/// [JP] シーンと一緒に保存する描画の設定。コンポーネントになるまでのつなぎ。
-		SceneVisualContext sceneVisual_;
 
 		/// [EN] Selected actors; the last one is the primary selection.
 		/// [JP] 選択中のアクター。最後の1つが主な選択。

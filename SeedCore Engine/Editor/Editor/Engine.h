@@ -1,31 +1,11 @@
 #pragma once
-#include <FoundationEngine/World/World.h>
-#include <FoundationEngine/World/ECS/System/SystemScheduler.h>
-#include <FoundationEngine/JobSystem/JobExecutor.h>
-#include <FoundationEngine/Resource/ResourceCache.h>
-#include <FoundationEngine/Resource/Scene/SceneSystem.h>
-#include <FoundationEngine/Resource/Prefab/PrefabSystem.h>
-#include <FoundationEngine/Time/WorldTimer.h>
-#include <FoundationEngine/Time/GameTimer.h>
+#include <SeedCore/Engine/EngineCore.h>
+
 #include <FoundationEngine/Resource/Config/GameConfig.h>
 #include <FoundationEngine/Resource/Config/EditorConfig.h>
-#include <FoundationEngine/Bridge/CsharpHost.h>
-#include <FoundationEngine/Plugin/PluginHost.h>
-#include <AudioEngine/CRI/CriManager.h>
-#include <AudioEngine/Resource/AudioModule.h>
-#include <PhysicsEngine/JoltPhysics/JoltManager.h>
-#include <GraphicsEngine/Font/FontManager.h>
-#include <GraphicsEngine/Graphics.h>
 #include <GraphicsEngine/Camera/EditorCamera.h>
 #include <GraphicsEngine/Camera/EditorCameraController.h>
 #include <GraphicsEngine/Camera/CanvasCamera.h>
-#include <GraphicsEngine/Camera/PreviewCamera.h>
-#include <GraphicsEngine/Camera/PreviewCameraController.h>
-#include <GraphicsEngine/System/CelestialSystem.h>
-#include <GraphicsEngine/System/CameraSystem.h>
-#include <GraphicsEngine/System/WeatherSystem.h>
-#include <GraphicsEngine/System/SplashSystem.h>
-#include <Editor/Editor/Window.h>
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/Editor.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
@@ -41,101 +21,31 @@ namespace SeedCore
 		Engine() = default;
 		~Engine() = default;
 
-		void Boot(const Bootstrap& boot);
+		Bool Boot(const Bootstrap& bootstrap);
+
+		void Run();
+
 		void Shutdown();
-		void MainLoop();
 
 	private:
-		Bool BootWindow(const Bootstrap& boot);
-		Bool BootPhysics();
-		Bool BootGraphics();
-		Bool BootAudio();
-		Bool BootFont();
-		Bool BootImGui();
-
-	private:
-		HWND hwnd_;
-
-	private:
-		ResourcePtr<Window> window_;
-
-		ResourcePtr<World> world_;
-
-		ResourcePtr<SystemScheduler> system_;
-
-		ResourcePtr<JobExecutor> executor_;
-
-		ResourcePtr<ResourceCache> resource_;
-
-		ResourcePtr<SceneSystem> sceneSystem_;
-
-		ResourcePtr<PrefabSystem> prefabSystem_;
-
-		ResourcePtr<CriManager> criManager_;
-
-		ResourcePtr<JoltManager> joltManager_;
-
-		ResourcePtr<FontManager> fontManager_;
-
-		ResourcePtr<Graphics> graphics_;
-
-		ResourcePtr<Editor> editor_;
-
-		ResourcePtr<ImGuiRenderer> imgui_;
-
-		ResourcePtr<AudioModule> audioModule_;
-
-		CsharpHost csharpHost_;
-
-		PluginHost pluginHost_;
-
-		HotReload hotReload_;
+		EngineCore core_;
 
 		EditorConfig editorConfig_;
 
 		GameConfig gameConfig_;
 
+		ResourcePtr<Editor> editor_;
+
+		ResourcePtr<ImGuiRenderer> imgui_;
+
+		HotReload hotReload_;
+
 		EditorContext editorContext_;
-
-		WorldTimer worldTimer_;
-
-		GameTimer* gameTimer_ = nullptr;
 
 		EditorCamera editorCamera_;
 
 		EditorCameraController editorCameraController_;
 
 		CanvasCamera canvasCamera_;
-
-		PreviewCamera timelineCamera_;
-		PreviewCamera modelTransformCamera_;
-		PreviewCamera materialCamera_;
-		PreviewCamera skeletonControllerCamera_;
-		PreviewCamera avatarCamera_;
-		PreviewCameraController timelineCameraController_;
-		PreviewCameraController modelTransformCameraController_;
-		PreviewCameraController materialCameraController_;
-		PreviewCameraController skeletonControllerCameraController_;
-		PreviewCameraController avatarCameraController_;
-
-		CameraSystem cameraSystem_;
-
-		WeatherSystem weatherSystem_;
-
-		SplashSystem splashSystem_;
-	};
-
-	class JobScheduler : public JobWorkerInterface
-	{
-	public:
-		void SchedulerPrologue(SeedCore::JobWorker& worker) override
-		{
-			/// No Code
-		}
-
-		void SchedulerEpilogue(SeedCore::JobWorker& worker, std::exception_ptr ptr) override
-		{
-			/// No Code
-		}
 	};
 }

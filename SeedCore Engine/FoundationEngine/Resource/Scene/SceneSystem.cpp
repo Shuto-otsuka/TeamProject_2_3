@@ -5,26 +5,72 @@
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/Resource/Config/GameConfig.h>
+#include <FoundationEngine/Resource/Config/EditorConfig.h>
+#include <FoundationEngine/Log/Error.h>
 
 namespace SeedCore
 {
 	/**
 	* [EN]
 	* Binds the world/cache/executor this system loads scenes into and
-	* runs transitions with, and binds this system as the one Scene
-	* forwards to.
+	* runs transitions with, binds this system as the one Scene forwards
+	* to, and opens gameConfig's initial scene. A missing or unloadable
+	* initial scene is logged, not treated as a failure.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* シーンの読み込み先と遷移の実行に使う world/cache/executor を束縛し、
-	* このシステムを Scene の転送先として束縛する。
+	* このシステムを Scene の転送先として束縛して、gameConfig の起動シーンを
+	* 開く。起動シーンが未設定、または読み込めない場合はログを出すだけで、
+	* 失敗とは扱わない。
 	*/
-	SceneSystem::SceneSystem(World& world, ResourceCache& cache, JobExecutor& executor) :world_(world), resource_(cache), executor_(executor)
+	Bool SceneSystem::Initialize(World& world, ResourceCache& cache, JobExecutor& executor, const GameConfig& gameConfig)
 	{
+		world_ = &world;
+		resource_ = &cache;
+		executor_ = &executor;
+
 		/// [EN] Bind right away so scripts running before the first Update (e.g. on the first Play frame) can already reach this system.
 		/// [JP] 最初の Update より前に動くスクリプト（例: Play の最初のフレーム）からも届くよう、すぐに束縛する。
 		Scene::system_ = this;
+
+		if (gameConfig.initialScenePath_.view().empty())
+		{
+			SC_LOG_ERROR("起動シーンが設定されていません。GameConfig の初回シーンを設定してください");
+		}
+		else if (!Load(std::filesystem::path(gameConfig.initialScenePath_.str())))
+		{
+			SC_LOG_ERROR("起動シーンの読み込みに失敗しました: {}", gameConfig.initialScenePath_.str());
+		}
+		return true;
+	}
+
+	/**
+	* [EN]
+	* Same binding as the GameConfig version, then reopens the scene the
+	* editor last had open (editorConfig's lastScenePath_), if any.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* GameConfig 版と同じく束縛し、エディタが前回開いていたシーン
+	* (editorConfig の lastScenePath_)があれば開き直す。
+	*/
+	Bool SceneSystem::Initialize(World& world, ResourceCache& cache, JobExecutor& executor, const EditorConfig& editorConfig)
+	{
+		world_ = &world;
+		resource_ = &cache;
+		executor_ = &executor;
+
+		Scene::system_ = this;
+
+		if (!editorConfig.lastScenePath_.view().empty())
+		{
+			Load(std::filesystem::path(editorConfig.lastScenePath_.str()));
+		}
+		return true;
 	}
 
 	/**
@@ -51,24 +97,22 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Captures the world's current state into a scratch SceneBlueprint and
-	* writes it to path, together with how the caller wants it rendered.
-	* On success the saved file's name becomes the current scene's name.
-	* Returns whether saving succeeded.
+	* writes it to path. On success the saved file's name becomes the
+	* current scene's name. Returns whether saving succeeded.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* world の現在の状態を作業用 SceneBlueprint へ取得し、呼び出し側が
-	* 指定する描き方と共に path へ書き込む。成功すると、保存したファイルの
-	* 名前が現在のシーン名になる。保存に成功したかどうかを返す。
+	* world の現在の状態を作業用 SceneBlueprint へ取得し、path へ書き込む。
+	* 成功すると、保存したファイルの名前が現在のシーン名になる。保存に
+	* 成功したかどうかを返す。
 	*/
-	Bool SceneSystem::Save(const std::filesystem::path& path, const SceneVisual& visual)
+	Bool SceneSystem::Save(const std::filesystem::path& path)
 	{
 		/// [EN] Use the pool's shared scratch instance instead of allocating a new blueprint, since this is a one-shot operation with no need for pooled/deduplicated storage.
 		/// [JP] 新しい設計図を確保する代わりに、プールの共有作業用インスタンスを使用する。これは使い捨ての操作であり、プール化/重複排除されたストレージは不要なため。
-		SceneBlueprint& scene = resource_.GetScenePool().GetScratch();
-		scene.Capture(world_);
-		scene.visual_ = visual;
+		SceneBlueprint& scene = resource_->GetScenePool().GetScratch();
+		scene.Capture(*world_);
 
 		if (path.has_parent_path())
 		{
@@ -96,8 +140,7 @@ namespace SeedCore
 	* ResourceCache::GetAssetID) and, if found, that asset's real
 	* filesystem path is used instead; only if no matching asset exists
 	* is path opened literally (relative to the current working
-	* directory). When outVisual is given, how the scene wants to be
-	* rendered is written there. Returns whether loading succeeded.
+	* directory). Returns whether loading succeeded.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -108,38 +151,32 @@ namespace SeedCore
 	* ("Foo.scene" のような単なるファイル名でもよい - ResourceCache::
 	* GetAssetID 参照)、見つかればそのアセットの実際のファイルシステム
 	* パスを代わりに使う。一致するアセットが無い場合のみ、path を文字通り
-	* (カレントディレクトリからの相対で)開く。outVisual を渡した場合、
-	* その Scene をどう描くかをそこへ書き込む。読み込みに成功したか
+	* (カレントディレクトリからの相対で)開く。読み込みに成功したか
 	* どうかを返す。
 	*/
-	Bool SceneSystem::Load(const std::filesystem::path& path, SceneVisual* outVisual)
+	Bool SceneSystem::Load(const std::filesystem::path& path)
 	{
 		std::filesystem::path resolvedPath = path;
-		Uint32 assetID = resource_.GetAssetID(String(path.string()));
+		Uint32 assetID = resource_->GetAssetID(String(path.string()));
 		if (assetID != 0)
 		{
-			AssetRecord* asset = resource_.GetAsset(assetID);
+			AssetRecord* asset = resource_->GetAsset(assetID);
 			if (asset)
 			{
 				resolvedPath = std::filesystem::path(asset->fullpath_.c_str());
 			}
 		}
 
-		SceneBlueprint& scene = resource_.GetScenePool().GetScratch();
+		SceneBlueprint& scene = resource_->GetScenePool().GetScratch();
 		if (!scene.Read(resolvedPath))
 		{
 			return false;
 		}
 
-		WorldAccessor::Clear(world_);
+		WorldAccessor::Clear(*world_);
 
-		scene.Instantiate(world_, resource_);
+		scene.Instantiate(*world_, *resource_);
 		currentName_ = scene.Name();
-
-		if (outVisual)
-		{
-			*outVisual = scene.Visual();
-		}
 
 		return true;
 	}
@@ -153,15 +190,15 @@ namespace SeedCore
 	* [JP]
 	* アセット ID からシーンのパスを解決する Load のオーバーロード。
 	*/
-	Bool SceneSystem::Load(Uint32 assetID, SceneVisual* outVisual)
+	Bool SceneSystem::Load(Uint32 assetID)
 	{
-		AssetRecord* asset = resource_.GetAsset(assetID);
+		AssetRecord* asset = resource_->GetAsset(assetID);
 		if (!asset)
 		{
 			return false;
 		}
 
-		return Load(std::filesystem::path(asset->fullpath_.c_str()), outVisual);
+		return Load(std::filesystem::path(asset->fullpath_.c_str()));
 	}
 
 	/**
@@ -176,7 +213,7 @@ namespace SeedCore
 	*/
 	void SceneSystem::Capture(SceneBlueprint& blueprint)
 	{
-		blueprint.Capture(world_);
+		blueprint.Capture(*world_);
 		blueprint.name_ = currentName_;
 	}
 
@@ -193,7 +230,7 @@ namespace SeedCore
 	*/
 	void SceneSystem::Restore(const SceneBlueprint& blueprint)
 	{
-		blueprint.Instantiate(world_, resource_);
+		blueprint.Instantiate(*world_, *resource_);
 		currentName_ = blueprint.Name();
 	}
 
@@ -218,23 +255,23 @@ namespace SeedCore
 		switch (request_.kind_)
 		{
 		case ChangeKind::Immediate:
-			transitionSystem_.LoadScene(world_, resource_, request_.targetScene_);
+			transitionSystem_.LoadScene(*world_, *resource_, request_.targetScene_);
 			break;
 		case ChangeKind::Loading:
-			transitionSystem_.LoadScene(world_, resource_, executor_, request_.targetScene_, request_.loadingScene_);
+			transitionSystem_.LoadScene(*world_, *resource_, *executor_, request_.targetScene_, request_.loadingScene_);
 			break;
 		case ChangeKind::Fade:
-			transitionSystem_.LoadScene(world_, resource_, executor_, request_.targetScene_, request_.fadeOutDuration_, request_.fadeInDuration_);
+			transitionSystem_.LoadScene(*world_, *resource_, *executor_, request_.targetScene_, request_.fadeOutDuration_, request_.fadeInDuration_);
 			break;
 		case ChangeKind::Cover:
-			transitionSystem_.LoadScene(world_, resource_, executor_, request_.targetScene_, request_.loadingScene_, request_.coverDuration_, request_.revealDuration_);
+			transitionSystem_.LoadScene(*world_, *resource_, *executor_, request_.targetScene_, request_.loadingScene_, request_.coverDuration_, request_.revealDuration_);
 			break;
 		default:
 			break;
 		}
 		request_ = ChangeRequest();
 
-		transitionSystem_.Update(world_, resource_, deltaTime);
+		transitionSystem_.Update(*world_, *resource_, deltaTime);
 
 		/// [EN] Picked up here rather than by the host directly, so the current name follows every switch whether or not the host consumes it.
 		/// [JP] ホストが直接受け取るのではなくここで拾う。ホストが受け取るかどうかに関わらず、現在のシーン名があらゆる切り替えに追従するようにするため。
@@ -299,7 +336,7 @@ namespace SeedCore
 	*/
 	void SceneSystem::Change(Uint32 targetScene)
 	{
-		AssetRecord* targetAsset = resource_.GetAsset(targetScene);
+		AssetRecord* targetAsset = resource_->GetAsset(targetScene);
 		if (!targetAsset)
 		{
 			return;
@@ -347,8 +384,8 @@ namespace SeedCore
 	*/
 	void SceneSystem::Change(Uint32 targetScene, Uint32 loadingScene)
 	{
-		AssetRecord* targetAsset = resource_.GetAsset(targetScene);
-		AssetRecord* loadingAsset = resource_.GetAsset(loadingScene);
+		AssetRecord* targetAsset = resource_->GetAsset(targetScene);
+		AssetRecord* loadingAsset = resource_->GetAsset(loadingScene);
 		if (!targetAsset || !loadingAsset)
 		{
 			return;
@@ -396,7 +433,7 @@ namespace SeedCore
 	*/
 	void SceneSystem::Change(Uint32 targetScene, Float fadeOutDuration, Float fadeInDuration)
 	{
-		AssetRecord* targetAsset = resource_.GetAsset(targetScene);
+		AssetRecord* targetAsset = resource_->GetAsset(targetScene);
 		if (!targetAsset)
 		{
 			return;
@@ -447,8 +484,8 @@ namespace SeedCore
 	*/
 	void SceneSystem::Change(Uint32 targetScene, Uint32 loadingScene, Float coverDuration, Float revealDuration)
 	{
-		AssetRecord* targetAsset = resource_.GetAsset(targetScene);
-		AssetRecord* loadingAsset = resource_.GetAsset(loadingScene);
+		AssetRecord* targetAsset = resource_->GetAsset(targetScene);
+		AssetRecord* loadingAsset = resource_->GetAsset(loadingScene);
 		if (!targetAsset || !loadingAsset)
 		{
 			return;
@@ -504,7 +541,7 @@ namespace SeedCore
 	*/
 	Uint32 SceneSystem::AssetID(const String& path)const
 	{
-		return resource_.GetAssetID(path);
+		return resource_->GetAssetID(path);
 	}
 
 	/**

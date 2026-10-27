@@ -7,14 +7,14 @@
 #include "../../Shader/Material.hlsli"
 #include "../../Light/Cluster.hlsli"
 #include "../../Sky/IBL/ImageBasedLighting.hlsli"
-#include "../../Raytracing/Shadow/Shadow.hlsli"
-#include "../../Raytracing/AmbientOcclusion/AmbientOcclusion.hlsli"
-#include "../../Raytracing/SubsurfaceScattering/SubsurfaceScattering.hlsli"
-#include "../../Raytracing/Reflection/Reflection.hlsli"
-#include "../../Raytracing/Refraction/Refraction.hlsli"
-#include "../../Raytracing/VolumetricCloudScapes/VolumetricCloudScapes.hlsli"
-#include "../../Raytracing/Froxel/Froxel.hlsli"
-#include "../../Raytracing/VolumetricLight/VolumetricLight.hlsli"
+#include "../../Illumination/Shadow/Raytracing/RaytracingShadow.hlsli"
+#include "../../Illumination/AmbientOcclusion/Raytracing/RaytracingAmbientOcclusion.hlsli"
+#include "../../Illumination/SubsurfaceScattering/SubsurfaceScattering.hlsli"
+#include "../../Illumination/Reflection/Raytracing/RaytracingReflection.hlsli"
+#include "../../Illumination/Refraction/Refraction.hlsli"
+#include "../../Environment/VolumetricCloud/VolumetricCloudScapes.hlsli"
+#include "../../Illumination/VolumetricLight/Froxel.hlsli"
+#include "../../Illumination/VolumetricLight/VolumetricLight.hlsli"
 #include "../../Shader/Noise.hlsli"
 #include "../../Shader/Precipitation.hlsli"
 #include "../../Sky/SkyGenerate.hlsli"
@@ -268,7 +268,7 @@ float4 main(CompositeOutput input) : SV_Target0
 	float3 view = normalize(scene.camera_position_.xyz - world_position);
 
 	/// [JP] 天候補正+KHR拡張のマテリアル解決は Shader/Material.hlsli の
-	///      ResolveGBufferMaterial に共通化した(Raytracing/Shadow/ShadowRT.hlsl
+	///      ResolveGBufferMaterial に共通化した(Illumination/Shadow/Raytracing/RaytracingShadowRT.hlsl
 	///      の ReSTIR DI からも同じ関数を呼び、鏡面ハイライトが主要視点と
 	///      一致するようにするため)。モデル UV は VisibilityBuffer(RT4.zw)
 	///      から復元する — このパスはフルスクリーン矩形なので input.texcoord
@@ -287,7 +287,7 @@ float4 main(CompositeOutput input) : SV_Target0
 	float3 anisotropy_bitangent = gbuffer_material.anisotropy_bitangent_;
 	float anisotropy_strength = gbuffer_material.anisotropy_strength_;
 
-	/// [JP] ShadowRT.hlsl(+ShadowDenoiseCS.hlsl で時間+空間積分済み)が書いた
+	/// [JP] RaytracingShadowRT.hlsl(+RaytracingShadowDenoiseCS.hlsl で時間+空間積分済み)が書いた
 	///      ディレクショナル可視性。ビューごとの蓄積チェーンなので
 	///      constant_indices 側から取る。shadow_strength_ は影の濃さで、
 	///      0〜1 はディレクショナルの項だけを 0(常に照射扱い)〜1(可視性を
@@ -298,11 +298,11 @@ float4 main(CompositeOutput input) : SV_Target0
 	///      間接光の削りには saturate(N・L) を掛け、太陽に背いた面は環境光で
 	///      見えたままにする。パンクチュアル側は既にBRDF評価済みのRGB放射輝度
 	///      なので同じ掛け方はできない — shadow_strength_ の適用は
-	///      ShadowRT.hlsl 側で完結させている(下の punctual_direct_lighting 参照)。
+	///      RaytracingShadowRT.hlsl 側で完結させている(下の punctual_direct_lighting 参照)。
 	Texture2D<float> directional_visibility_texture = ResourceDescriptorHeap[shader_resource_indices.shadow_accumulation_.directional_visibility_index_];
 	float directional_visibility = directional_visibility_texture.Load(int3(pixel, 0));
 
-	ConstantBuffer<ShadowRayConstantBuffer> shadow_tuning = ResourceDescriptorHeap[constant_indices.shadow_index_];
+	ConstantBuffer<RaytracingShadowConstantBuffer> shadow_tuning = ResourceDescriptorHeap[constant_indices.shadow_index_];
 	float directional_shadow_factor = saturate(lerp(1.0, directional_visibility, saturate(shadow_tuning.shadow_strength_)));
 
 	float sun_facing = GetDirectionalLightConstantBuffer().sun_intensity_ > 0.0 ? saturate(dot(normal, normalize(-GetDirectionalLightConstantBuffer().direction_))) : 0.0;
@@ -312,9 +312,9 @@ float4 main(CompositeOutput input) : SV_Target0
 	///      (irradiance index != 0), otherwise the flat fallback ambient.
 	/// [JP] 環境光項: スカイマップがバインドされていれば（irradiance インデックス
 	///      != 0）IBL、なければ従来のフラットな環境光にフォールバック。
-	/// [JP] レイトレ反射(ReflectionDenoiseCS.hlsl がビューごとに SVGF で
+	/// [JP] レイトレ反射(RaytracingReflectionDenoiseCS.hlsl がビューごとに SVGF で
 	///      デノイズした後の放射輝度)。GGX重点サンプリング
-	///      (ReflectionRT.hlsl)は roughness に応じて自然にボケる(roughness 0
+	///      (RaytracingReflectionRT.hlsl)は roughness に応じて自然にボケる(roughness 0
 	///      は厳密ミラーへ縮退)ので、以前のように (1-roughness) で重みを
 	///      落として粗い面だけプリフィルタ済みIBLへ逃がす必要はない —
 	///      トレース結果をそのまま信頼してよい。ここで読むのは
@@ -327,7 +327,7 @@ float4 main(CompositeOutput input) : SV_Target0
 	Texture2D<float4> reflection_texture = ResourceDescriptorHeap[shader_resource_indices.reflection_accumulation_.radiance_index_];
 	float4 traced_reflection = reflection_texture.Load(int3(pixel, 0));
 
-	ConstantBuffer<ReflectionRayConstantBuffer> reflection_tuning = ResourceDescriptorHeap[constant_indices.reflection_index_];
+	ConstantBuffer<RaytracingReflectionConstantBuffer> reflection_tuning = ResourceDescriptorHeap[constant_indices.reflection_index_];
 	float reflection_weight = (traced_reflection.a > 0.0 ? 1.0 : 0.0) * max(reflection_tuning.strength_, 0.0);
 
 	/// [JP] レイトレGI(1バウンス拡散)。書かれているのは【入射放射輝度】で、
@@ -335,19 +335,19 @@ float4 main(CompositeOutput input) : SV_Target0
 	///      pdf(cos/PI)が BRDF の albedo/PI と cos を約分するため。a=1 が有効。
 	///      無効時はレンダラーが a=0 でクリアするので常に読んでよい。ここで
 	///      読むのは global_illumination_ 側の生1sppではなく、
-	///      GlobalIlluminationDenoiseCS.hlsl がビューごとに空間+時間デノイズ
+	///      RaytracingGlobalIlluminationDenoiseCS.hlsl がビューごとに空間+時間デノイズ
 	///      した後の global_illumination_accumulation_ 側の結果。
 	Texture2D<float4> global_illumination_texture = ResourceDescriptorHeap[shader_resource_indices.global_illumination_accumulation_.radiance_index_];
 	float4 traced_global_illumination = global_illumination_texture.Load(int3(pixel, 0));
 	float global_illumination_weight = saturate(traced_global_illumination.a);
 
-	/// [JP] レイトレAO(AmbientOcclusionRT.hlsl + 時間積分済み)。AO は
+	/// [JP] レイトレAO(RaytracingAmbientOcclusionRT.hlsl + 時間積分済み)。AO は
 	///      「環境光がどれだけ届くか」の近似なので環境光項だけに掛ける
 	///      (直接光には掛けない — そちらの遮蔽はレイトレ影が担当)。
 	///      power_ でコントラストを調整(1=そのまま)。無効時はレンダラー側が
 	///      バッファを 1.0 でクリアするので、ここは常に読んでよい。
 	Texture2D<float> ao_openness = ResourceDescriptorHeap[shader_resource_indices.ambient_occlusion_accumulation_.openness_index_];
-	ConstantBuffer<AmbientOcclusionRayConstantBuffer> ao_tuning = ResourceDescriptorHeap[constant_indices.ambient_occlusion_index_];
+	ConstantBuffer<RaytracingAmbientOcclusionConstantBuffer> ao_tuning = ResourceDescriptorHeap[constant_indices.ambient_occlusion_index_];
 	float ao = pow(saturate(ao_openness.Load(int3(pixel, 0))), max(ao_tuning.power_, 0.0001));
 
 	/// [JP] glTF コアの occlusionTexture(.r)。レイトレAOと同じ「環境光がどれだけ
@@ -377,7 +377,7 @@ float4 main(CompositeOutput input) : SV_Target0
 
 		/// [JP] トレース反射で「プリフィルタ環境の代わりにシーンの実radiance」
 		///      を使ったスペキュラを作り、reflection_weight で IBL スペキュラと
-		///      置き換える。ReflectionRT.hlsl は VNDF サンプリングなので、
+		///      置き換える。RaytracingReflectionRT.hlsl は VNDF サンプリングなので、
 		///      トレース済み放射輝度には既に Smith の G2/G1 が掛かっている —
 		///      残る係数は Fresnel だけで、split-sum の BRDF LUT(F*A+B)を
 		///      ここで掛けると G を二重に適用することになる。
@@ -457,20 +457,117 @@ float4 main(CompositeOutput input) : SV_Target0
 	}
 
 	/// [JP] Point/Spot/Rect の直接光は、決定論的なクラスタループではなく
-	///      Raytracing/Shadow/ShadowRT.hlsl の ReSTIR DI(このピクセルのクラスタで
+	///      Illumination/Shadow/Raytracing/RaytracingShadowRT.hlsl の ReSTIR DI(このピクセルのクラスタで
 	///      重み付きリザーバーサンプリングにより毎フレーム1灯だけ確率的に選び、
 	///      ResolveGBufferMaterial + EvalDirectLightDispatch でフルBRDF評価した
 	///      RGB放射輝度を選択pdfで割って影レイの可視性を掛けたもの)を
-	///      ShadowDenoiseCS.hlsl が時間+空間積分した結果を直接加算する。
+	///      RaytracingShadowDenoiseCS.hlsl が時間+空間積分した結果を直接加算する。
 	///      光ごとに個別の影/鏡面ハイライトが立つため、複数の Point/Spot/Rect が
 	///      同一ピクセルへ及ぶ場面で「全灯の可視性を1つの確率的スカラーへ平均化
 	///      して共有する」という以前の破綻(ある灯が遮蔽されていても他の灯と
 	///      混ざって中途半端に暗くなる)が起きない。
-	Texture2D<float4> punctual_direct_lighting_texture = ResourceDescriptorHeap[shader_resource_indices.shadow_accumulation_.punctual_radiance_index_];
-	lighting += punctual_direct_lighting_texture.Load(int3(pixel, 0)).rgb;
-
+	///      影パスが無効なフレーム(shadow_tuning.enabled_ == 0)はその結果が
+	///      0 でクリアされているので、代わりにこのピクセルのクラスタの全灯を
+	///      影なしでフルBRDF評価して足す。
 	float4 view_position = mul(float4(world_position, 1.0), scene.view_);
 	float linear_depth = view_position.z;
+
+	if (shadow_tuning.enabled_ != 0)
+	{
+		Texture2D<float4> punctual_direct_lighting_texture = ResourceDescriptorHeap[shader_resource_indices.shadow_accumulation_.punctual_radiance_index_];
+		lighting += punctual_direct_lighting_texture.Load(int3(pixel, 0)).rgb;
+	}
+	else
+	{
+		uint3 cluster_count = ComputeClusterCount(scene.screen_size_);
+		uint tile_x = min(pixel.x / CLUSTER_TILE_SIZE, cluster_count.x - 1);
+		uint tile_y = min(pixel.y / CLUSTER_TILE_SIZE, cluster_count.y - 1);
+		uint slice = ComputeDepthSlice(linear_depth, scene.near_plane_, scene.far_plane_);
+		uint cluster_index = ClusterIndex(uint3(tile_x, tile_y, slice), cluster_count);
+
+		StructuredBuffer<ClusterInstance> cluster_data = ResourceDescriptorHeap[shader_resource_indices.light_.cluster_data_index_];
+		ClusterInstance cluster = cluster_data[cluster_index];
+
+		uint point_count = min(cluster.point_count_, CLUSTER_MAX_POINT_LIGHTS);
+		uint spot_count = min(cluster.spot_count_, CLUSTER_MAX_SPOT_LIGHTS);
+		uint rect_count = min(cluster.rect_count_, CLUSTER_MAX_RECT_LIGHTS);
+		uint total_punctual = point_count + spot_count + rect_count;
+
+		ByteAddressBuffer light_list = ResourceDescriptorHeap[shader_resource_indices.light_.cluster_light_list_index_];
+		uint base = cluster_index * CLUSTER_STRIDE;
+
+		StructuredBuffer<PointLightStructuredBuffer> point_lights = GetPointLightStructuredBuffer(shader_resource_indices.light_.point_light_index_);
+		StructuredBuffer<SpotLightStructuredBuffer> spot_lights = GetSpotLightStructuredBuffer(shader_resource_indices.light_.spot_light_index_);
+		StructuredBuffer<RectLightStructuredBuffer> rect_lights = GetRectLightStructuredBuffer(shader_resource_indices.light_.rect_light_index_);
+
+		for (uint index = 0; index < total_punctual; index++)
+		{
+			float3 light_direction = float3(0, 0, 0);
+			float3 light_radiance = float3(0, 0, 0);
+
+			if (index < point_count)
+			{
+				uint light_index = light_list.Load((base + index) * 4);
+				PointLightStructuredBuffer point_light = point_lights[light_index];
+
+				float3 to_light = point_light.position_ - world_position;
+				float distance_to_light = length(to_light);
+				light_direction = to_light / max(distance_to_light, 0.0001);
+
+				float attenuation_ratio = saturate(distance_to_light / point_light.range_);
+				float attenuation_ratio2 = attenuation_ratio * attenuation_ratio;
+				float attenuation = saturate(1.0 - attenuation_ratio2 * attenuation_ratio2);
+				attenuation = attenuation * attenuation / max(distance_to_light * distance_to_light, 0.0001);
+				light_radiance = point_light.color_.rgb * point_light.intensity_ * attenuation;
+			}
+			else if (index < point_count + spot_count)
+			{
+				uint local_index = index - point_count;
+				uint light_index = light_list.Load((base + CLUSTER_MAX_POINT_LIGHTS + local_index) * 4);
+				SpotLightStructuredBuffer spot_light = spot_lights[light_index];
+
+				float3 to_light = spot_light.position_ - world_position;
+				float distance_to_light = length(to_light);
+				light_direction = to_light / max(distance_to_light, 0.0001);
+
+				float cos_angle = dot(-light_direction, spot_light.direction_);
+				float spot_fade = saturate((cos_angle - spot_light.cos_half_angle_) / max(spot_light.softness_ * (1.0 - spot_light.cos_half_angle_), 0.0001));
+				float attenuation_ratio = saturate(distance_to_light / spot_light.range_);
+				float attenuation_ratio2 = attenuation_ratio * attenuation_ratio;
+				float attenuation = saturate(1.0 - attenuation_ratio2 * attenuation_ratio2);
+				attenuation = attenuation * attenuation / max(distance_to_light * distance_to_light, 0.0001);
+				light_radiance = spot_light.color_.rgb * spot_light.intensity_ * attenuation * spot_fade;
+			}
+			else
+			{
+				uint local_index = index - point_count - spot_count;
+				uint light_index = light_list.Load((base + CLUSTER_MAX_POINT_LIGHTS + CLUSTER_MAX_SPOT_LIGHTS + local_index) * 4);
+				RectLightStructuredBuffer rect_light = rect_lights[light_index];
+
+				if (dot(world_position - rect_light.position_, rect_light.normal_) > 0.0)
+				{
+					float3 rect_delta = world_position - rect_light.position_;
+					float rect_local_x = clamp(dot(rect_delta, rect_light.right_), -rect_light.half_width_, rect_light.half_width_);
+					float rect_local_y = clamp(dot(rect_delta, rect_light.up_), -rect_light.half_height_, rect_light.half_height_);
+					float3 representative_point = rect_light.position_ + rect_light.right_ * rect_local_x + rect_light.up_ * rect_local_y;
+					float3 to_light = representative_point - world_position;
+					float distance_to_light = length(to_light);
+					light_direction = to_light / max(distance_to_light, 0.0001);
+
+					float attenuation_ratio = saturate(distance_to_light / rect_light.range_);
+					float attenuation_ratio2 = attenuation_ratio * attenuation_ratio;
+					float attenuation = saturate(1.0 - attenuation_ratio2 * attenuation_ratio2);
+					attenuation = attenuation * attenuation / max(distance_to_light * distance_to_light, 0.0001);
+					light_radiance = rect_light.color_.rgb * rect_light.intensity_ * attenuation;
+				}
+			}
+
+			if (any(light_radiance > 0.0) && dot(normal, light_direction) > 0.0)
+			{
+				lighting += EvalDirectLightDispatch(material_instance.shading_.shading_model_, normal, view, light_direction, diffuse_color, f0, roughness, clearcoat_factor, clearcoat_roughness, clearcoat_normal, sheen_color, sheen_roughness, anisotropy_tangent, anisotropy_bitangent, anisotropy_strength) * light_radiance;
+			}
+		}
+	}
 
 	/// [JP] 雷の閃光: シーン全体を一瞬明るく染める簡易表現(実際の稲妻ジオメトリは
 	///      描かない)。

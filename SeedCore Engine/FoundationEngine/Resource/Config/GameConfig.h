@@ -40,6 +40,8 @@ namespace SeedCore
 		/// [JP] 書き出したパッケージで、プレイヤーが起動するランチャー実行ファイルに付けるファイル名（".exe" なし）。言語は問わない。空なら "Launcher"。
 		String executableName_;
 
+		Bool Initialize();
+
 		void Load(const std::filesystem::path& path = "../UserProject/Assets/Config/GameConfig.scg");
 
 		void Save(const std::filesystem::path& path = "../UserProject/Assets/Config/GameConfig.scg")const;

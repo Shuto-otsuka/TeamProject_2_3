@@ -1,4 +1,6 @@
 #pragma once
+#include <GraphicsEngine/Camera/PreviewCamera.h>
+#include <GraphicsEngine/Camera/PreviewCameraController.h>
 
 namespace SeedCore
 {
@@ -6,8 +8,18 @@ namespace SeedCore
 
 	class AvatarMesh;
 	class BootScreenRenderer;
-	class PreviewCamera;
-	class PreviewCameraController;
+
+	struct PreviewViewContext
+	{
+		PreviewCamera camera_;
+
+		PreviewCameraController cameraController_;
+
+		void Tick(Float deltaTime)
+		{
+			camera_.Tick(deltaTime);
+		}
+	};
 
 	/**
 	* [EN]
@@ -20,7 +32,7 @@ namespace SeedCore
 	* タイムラインのプレビュー。選択中のアクターのメッシュを、選んだアニメーションの
 	* 再生位置で見せる。
 	*/
-	struct TimelinePreviewContext
+	struct TimelinePreviewContext : PreviewViewContext
 	{
 		/// [EN] Whether Engine renders this preview this frame; the panel clears it every frame and sets it only while there is something to show.
 		/// [JP] このフレームに Engine がこのプレビューを描くか。パネルが毎フレーム下ろし、見せるものがあるときだけ立てる。
@@ -38,13 +50,6 @@ namespace SeedCore
 		/// [JP] アニメーションの速度カーブを通したあとの再生位置（秒）。
 		Float time_ = 0.0f;
 
-		/// [EN] Camera this preview is rendered from, owned by Engine.
-		/// [JP] このプレビューを描くカメラ。Engine が所有する。
-		PreviewCamera* camera_ = nullptr;
-
-		/// [EN] Orbit, pan and dolly control of the camera, owned by Engine.
-		/// [JP] カメラの回り込み・パン・前後移動の操作。Engine が所有する。
-		PreviewCameraController* cameraController_ = nullptr;
 	};
 
 	/**
@@ -58,7 +63,7 @@ namespace SeedCore
 	* モデル変換のプレビュー。編集中の軸と基準のトランスフォームを、適用したときと
 	* 同じ結果でモデルに掛けて見せる。
 	*/
-	struct ModelTransformPreviewContext
+	struct ModelTransformPreviewContext : PreviewViewContext
 	{
 		/// [EN] Whether Engine renders this preview this frame; the panel clears it every frame and sets it only while the model is loaded.
 		/// [JP] このフレームに Engine がこのプレビューを描くか。パネルが毎フレーム下ろし、モデルを読み込み済みのときだけ立てる。
@@ -72,13 +77,6 @@ namespace SeedCore
 		/// [JP] 編集中のピボット・位置・回転・拡縮をまとめた行列。
 		Matrix worldMatrix_ = Matrix::Identity;
 
-		/// [EN] Camera this preview is rendered from, owned by Engine.
-		/// [JP] このプレビューを描くカメラ。Engine が所有する。
-		PreviewCamera* camera_ = nullptr;
-
-		/// [EN] Orbit, pan and dolly control of the camera, owned by Engine.
-		/// [JP] カメラの回り込み・パン・前後移動の操作。Engine が所有する。
-		PreviewCameraController* cameraController_ = nullptr;
 	};
 
 	/**
@@ -92,7 +90,7 @@ namespace SeedCore
 	* マテリアルビューアのプレビュー。選択中のアクターのメッシュを、選んだ
 	* マテリアルスロットで描く。
 	*/
-	struct MaterialPreviewContext
+	struct MaterialPreviewContext : PreviewViewContext
 	{
 		/// [EN] Whether Engine renders this preview this frame; the panel clears it every frame and sets it only while an actor with a material and a mesh is selected.
 		/// [JP] このフレームに Engine がこのプレビューを描くか。パネルが毎フレーム下ろし、マテリアルとメッシュを持つアクターを選んでいるときだけ立てる。
@@ -106,13 +104,6 @@ namespace SeedCore
 		/// [JP] 選んだスロットのマテリアル。パネルも編集するマテリアルを決めるために読み返す。
 		Uint32 surfaceAssetID_ = 0;
 
-		/// [EN] Camera this preview is rendered from, owned by Engine.
-		/// [JP] このプレビューを描くカメラ。Engine が所有する。
-		PreviewCamera* camera_ = nullptr;
-
-		/// [EN] Orbit, pan and dolly control of the camera, owned by Engine.
-		/// [JP] カメラの回り込み・パン・前後移動の操作。Engine が所有する。
-		PreviewCameraController* cameraController_ = nullptr;
 	};
 
 	/**
@@ -126,7 +117,7 @@ namespace SeedCore
 	* スケルトンコントローラーのプレビュー。選択中のアクターのスケルタルメッシュを、
 	* 選んだジョイントを強調して見せる。
 	*/
-	struct SkeletonControllerPreviewContext
+	struct SkeletonControllerPreviewContext : PreviewViewContext
 	{
 		/// [EN] Whether Engine renders this preview this frame; the panel clears it every frame and sets it only while the model is loaded.
 		/// [JP] このフレームに Engine がこのプレビューを描くか。パネルが毎フレーム下ろし、モデルを読み込み済みのときだけ立てる。
@@ -140,13 +131,6 @@ namespace SeedCore
 		/// [JP] 選んだジョイントのノード番号。-1 ならリグ全体。
 		Int nodeIndex_ = -1;
 
-		/// [EN] Camera this preview is rendered from and joints are picked through, owned by Engine.
-		/// [JP] このプレビューを描き、ジョイントを選ぶレイを飛ばすカメラ。Engine が所有する。
-		PreviewCamera* camera_ = nullptr;
-
-		/// [EN] Orbit, pan and dolly control of the camera, owned by Engine.
-		/// [JP] カメラの回り込み・パン・前後移動の操作。Engine が所有する。
-		PreviewCameraController* cameraController_ = nullptr;
 	};
 
 	/**
@@ -160,7 +144,7 @@ namespace SeedCore
 	* アバター生成のプレビュー。生成した人間か動物の体を、今の形と部位ごとの
 	* テクスチャで見せる。
 	*/
-	struct AvatarPreviewContext
+	struct AvatarPreviewContext : PreviewViewContext
 	{
 		/// [EN] Whether Engine renders this preview this frame; the panel clears it every frame and sets it only once the mesh is created.
 		/// [JP] このフレームに Engine がこのプレビューを描くか。パネルが毎フレーム下ろし、メッシュを作成済みのときだけ立てる。
@@ -190,13 +174,6 @@ namespace SeedCore
 		/// [JP] 今のモデルが使う部位の数。
 		Uint32 regionCount_ = 0;
 
-		/// [EN] Camera this preview is rendered from, owned by Engine.
-		/// [JP] このプレビューを描くカメラ。Engine が所有する。
-		PreviewCamera* camera_ = nullptr;
-
-		/// [EN] Orbit, pan and dolly control of the camera, owned by Engine.
-		/// [JP] カメラの回り込み・パン・前後移動の操作。Engine が所有する。
-		PreviewCameraController* cameraController_ = nullptr;
 	};
 
 	/**
@@ -243,6 +220,15 @@ namespace SeedCore
 	*/
 	struct PreviewContext
 	{
+		void Tick(Float deltaTime)
+		{
+			timeline_.Tick(deltaTime);
+			modelTransform_.Tick(deltaTime);
+			material_.Tick(deltaTime);
+			skeletonController_.Tick(deltaTime);
+			avatar_.Tick(deltaTime);
+		}
+
 		/// [EN] Timeline preview.
 		/// [JP] タイムラインのプレビュー。
 		TimelinePreviewContext timeline_;

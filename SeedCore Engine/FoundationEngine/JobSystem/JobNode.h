@@ -26,7 +26,7 @@ namespace SeedCore
 	* 条件分岐、モジュールなど）を行うかを表す NodeHandle バリアントを
 	* 保持する。
 	*/
-	class JobNode :public JobNodeBase
+	class SEEDCORE_API JobNode :public JobNodeBase
 	{
 	private:
 		/// [EN] Everything that builds, inspects or runs graphs works on the node's private state directly.

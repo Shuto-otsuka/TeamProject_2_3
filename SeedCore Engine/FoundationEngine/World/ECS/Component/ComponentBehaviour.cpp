@@ -368,6 +368,14 @@ namespace SeedCore
 		}
 	}
 
+	void ComponentBehaviour::DispatchRevision()
+	{
+		if (id_ && id_->hooks_ && id_->hooks_->revision_)
+		{
+			id_->hooks_->revision_(this);
+		}
+	}
+
 	/**
 	* [EN]
 	* Resets the awoken_/started_ flags, allowing Awake/Start to fire

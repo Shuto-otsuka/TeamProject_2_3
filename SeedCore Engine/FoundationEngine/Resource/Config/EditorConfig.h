@@ -30,6 +30,8 @@ namespace SeedCore
 
 		String acfPath_;
 
+		Bool Initialize();
+
 		void Load(const std::filesystem::path& path = "../Editor/Config/EditorConfig.sc");
 
 		void Save(const std::filesystem::path& path = "../Editor/Config/EditorConfig.sc")const;

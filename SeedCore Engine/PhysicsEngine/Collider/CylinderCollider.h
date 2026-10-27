@@ -21,16 +21,19 @@ namespace SeedCore
 	public:
 		/// [EN] Total height of the cylinder.
 		/// [JP] 円柱全体の高さ。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("高さ", 0.001f, 100.0f)
 		Float height_ = 2.0f;
 
 		/// [EN] Radius of the cylinder.
 		/// [JP] 円柱の半径。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("半径", 0.001f, 100.0f)
 		Float radius_ = 0.5f;
 
 		/// [EN] Whether this collider acts as a trigger.
 		/// [JP] このコライダーをトリガーとして扱うか。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("トリガー")
 		Bool isTrigger_ = false;
 
@@ -56,6 +59,11 @@ namespace SeedCore
 		* コライダーボディを破棄し、形状を解放する。
 		*/
 		void OnDestroy();
+
+		void OnRevision();
+
+	public:
+		void Dispatch();
 
 	public:
 		/**

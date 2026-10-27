@@ -30,11 +30,13 @@ namespace SeedCore
 
 		/// [EN] Whether the mesh is converted to a convex hull.
 		/// [JP] メッシュを凸包へ変換するか。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("凸包にする")
 		Bool convex_ = false;
 
 		/// [EN] Whether a standalone collider body acts as a trigger.
 		/// [JP] 単独のコライダーボディをトリガーとして扱うか。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("トリガー")
 		Bool isTrigger_ = false;
 
@@ -60,6 +62,11 @@ namespace SeedCore
 		* 単独のコライダーボディを破棄し、形状を解放する。
 		*/
 		void OnDestroy();
+
+		void OnRevision();
+
+	public:
+		void Dispatch();
 
 	private:
 		/**

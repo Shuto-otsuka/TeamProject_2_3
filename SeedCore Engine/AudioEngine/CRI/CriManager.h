@@ -5,6 +5,9 @@
 
 namespace SeedCore
 {
+	struct GameConfig;
+	struct EditorConfig;
+
 	/**
 	* [EN]
 	* Owns the CRI ADX runtime: initializes the library, registers the ACF
@@ -28,18 +31,13 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Constructs an uninitialized manager; Initialize does the work.
-		* masterPath is the .acf file that Atom Craft writes, which the
-		* editor passes so a rebuilt ACF is picked up; the runtime leaves it
-		* empty.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 未初期化の管理機構を作る。実際の準備は Initialize が行う。
-		* masterPath は Atom Craft が出力する .acf ファイルで、エディタは
-		* ビルドし直した ACF を取り込むために渡し、ランタイムは空のままにする。
 		*/
-		explicit CriManager(const String& masterPath = String());
+		CriManager() = default;
 
 		/**
 		* [EN]
@@ -65,7 +63,22 @@ namespace SeedCore
 		* 反映したあと、ボイスプールとストリーミング帯域の管理を確保する。
 		* どこかで失敗したら false を返す。
 		*/
-		Bool Initialize();
+		Bool Initialize(const GameConfig& gameConfig);
+
+		/**
+		* [EN]
+		* Same as the GameConfig version, but also takes the .acf file that
+		* Atom Craft writes (editorConfig's acfPath_), so a rebuilt ACF
+		* replaces the saved copy.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* GameConfig 版と同じだが、Atom Craft が出力する .acf ファイル
+		* (editorConfig の acfPath_)も使い、ビルドし直した ACF で保存済みの
+		* ものを置き換える。
+		*/
+		Bool Initialize(const EditorConfig& editorConfig);
 
 		/**
 		* [EN]
@@ -211,6 +224,9 @@ namespace SeedCore
 		* 登録した ACF に定義されたカテゴリ名の一覧を返す。
 		*/
 		NODISCARD const DynamicArray<String>& CategoryNameList()const;
+
+	private:
+		Bool Initialize(const String& masterPath);
 
 	private:
 		/// [EN] Voices for uncompressed Wave (PCM) data.

@@ -226,7 +226,7 @@ namespace SeedCore
 		ID3D12PipelineState* pipelineState = cloudShader_.GetPipelineState();
 		if (!pipelineState && !pipelineStateMissingLogged_)
 		{
-			SC_LOG_WARNING("VolumetricCloudScapesRT のコンピュート PSO 作成に失敗しています。雲は常に無し(0)として扱われます。");
+			SC_LOG_WARNING("VolumetricCloudScapesCS のコンピュート PSO 作成に失敗しています。雲は常に無し(0)として扱われます。");
 			pipelineStateMissingLogged_ = true;
 		}
 

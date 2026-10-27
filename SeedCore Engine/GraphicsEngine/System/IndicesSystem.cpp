@@ -235,46 +235,46 @@ namespace SeedCore
 		canvasIndices_.clusterAssign_ = values;
 	}
 
-	void ShaderResourceIndicesSystem::SetEditorShadowAccumulationIndices(const ShadowAccumulationShaderResourceIndices& values)
+	void ShaderResourceIndicesSystem::SetEditorShadowAccumulationIndices(const RaytracingShadowAccumulationShaderResourceIndices& values)
 	{
 		editorIndices_.shadowAccumulation_ = values;
 		canvasIndices_.shadowAccumulation_ = values;
 	}
 
-	void ShaderResourceIndicesSystem::SetGameShadowAccumulationIndices(const ShadowAccumulationShaderResourceIndices& values)
+	void ShaderResourceIndicesSystem::SetGameShadowAccumulationIndices(const RaytracingShadowAccumulationShaderResourceIndices& values)
 	{
 		gameIndices_.shadowAccumulation_ = values;
 	}
 
-	void ShaderResourceIndicesSystem::SetEditorAmbientOcclusionAccumulationIndices(const AmbientOcclusionAccumulationShaderResourceIndices& values)
+	void ShaderResourceIndicesSystem::SetEditorAmbientOcclusionAccumulationIndices(const RaytracingAmbientOcclusionAccumulationShaderResourceIndices& values)
 	{
 		editorIndices_.ambientOcclusionAccumulation_ = values;
 		canvasIndices_.ambientOcclusionAccumulation_ = values;
 	}
 
-	void ShaderResourceIndicesSystem::SetGameAmbientOcclusionAccumulationIndices(const AmbientOcclusionAccumulationShaderResourceIndices& values)
+	void ShaderResourceIndicesSystem::SetGameAmbientOcclusionAccumulationIndices(const RaytracingAmbientOcclusionAccumulationShaderResourceIndices& values)
 	{
 		gameIndices_.ambientOcclusionAccumulation_ = values;
 	}
 
-	void ShaderResourceIndicesSystem::SetEditorGlobalIlluminationAccumulationIndices(const GlobalIlluminationAccumulationShaderResourceIndices& values)
+	void ShaderResourceIndicesSystem::SetEditorGlobalIlluminationAccumulationIndices(const RaytracingGlobalIlluminationAccumulationShaderResourceIndices& values)
 	{
 		editorIndices_.globalIlluminationAccumulation_ = values;
 		canvasIndices_.globalIlluminationAccumulation_ = values;
 	}
 
-	void ShaderResourceIndicesSystem::SetGameGlobalIlluminationAccumulationIndices(const GlobalIlluminationAccumulationShaderResourceIndices& values)
+	void ShaderResourceIndicesSystem::SetGameGlobalIlluminationAccumulationIndices(const RaytracingGlobalIlluminationAccumulationShaderResourceIndices& values)
 	{
 		gameIndices_.globalIlluminationAccumulation_ = values;
 	}
 
-	void ShaderResourceIndicesSystem::SetEditorReflectionAccumulationIndices(const ReflectionAccumulationShaderResourceIndices& values)
+	void ShaderResourceIndicesSystem::SetEditorReflectionAccumulationIndices(const RaytracingReflectionAccumulationShaderResourceIndices& values)
 	{
 		editorIndices_.reflectionAccumulation_ = values;
 		canvasIndices_.reflectionAccumulation_ = values;
 	}
 
-	void ShaderResourceIndicesSystem::SetGameReflectionAccumulationIndices(const ReflectionAccumulationShaderResourceIndices& values)
+	void ShaderResourceIndicesSystem::SetGameReflectionAccumulationIndices(const RaytracingReflectionAccumulationShaderResourceIndices& values)
 	{
 		gameIndices_.reflectionAccumulation_ = values;
 	}
@@ -684,46 +684,46 @@ namespace SeedCore
 		canvasIndices_.clusterAssign_ = values;
 	}
 
-	void UnorderedAccessIndicesSystem::SetEditorShadowAccumulationIndices(const ShadowAccumulationUnorderedAccessIndices& values)
+	void UnorderedAccessIndicesSystem::SetEditorShadowAccumulationIndices(const RaytracingShadowAccumulationUnorderedAccessIndices& values)
 	{
 		editorIndices_.shadowAccumulation_ = values;
 		canvasIndices_.shadowAccumulation_ = values;
 	}
 
-	void UnorderedAccessIndicesSystem::SetGameShadowAccumulationIndices(const ShadowAccumulationUnorderedAccessIndices& values)
+	void UnorderedAccessIndicesSystem::SetGameShadowAccumulationIndices(const RaytracingShadowAccumulationUnorderedAccessIndices& values)
 	{
 		gameIndices_.shadowAccumulation_ = values;
 	}
 
-	void UnorderedAccessIndicesSystem::SetEditorAmbientOcclusionAccumulationIndices(const AmbientOcclusionAccumulationUnorderedAccessIndices& values)
+	void UnorderedAccessIndicesSystem::SetEditorAmbientOcclusionAccumulationIndices(const RaytracingAmbientOcclusionAccumulationUnorderedAccessIndices& values)
 	{
 		editorIndices_.ambientOcclusionAccumulation_ = values;
 		canvasIndices_.ambientOcclusionAccumulation_ = values;
 	}
 
-	void UnorderedAccessIndicesSystem::SetGameAmbientOcclusionAccumulationIndices(const AmbientOcclusionAccumulationUnorderedAccessIndices& values)
+	void UnorderedAccessIndicesSystem::SetGameAmbientOcclusionAccumulationIndices(const RaytracingAmbientOcclusionAccumulationUnorderedAccessIndices& values)
 	{
 		gameIndices_.ambientOcclusionAccumulation_ = values;
 	}
 
-	void UnorderedAccessIndicesSystem::SetEditorGlobalIlluminationAccumulationIndices(const GlobalIlluminationAccumulationUnorderedAccessIndices& values)
+	void UnorderedAccessIndicesSystem::SetEditorGlobalIlluminationAccumulationIndices(const RaytracingGlobalIlluminationAccumulationUnorderedAccessIndices& values)
 	{
 		editorIndices_.globalIlluminationAccumulation_ = values;
 		canvasIndices_.globalIlluminationAccumulation_ = values;
 	}
 
-	void UnorderedAccessIndicesSystem::SetGameGlobalIlluminationAccumulationIndices(const GlobalIlluminationAccumulationUnorderedAccessIndices& values)
+	void UnorderedAccessIndicesSystem::SetGameGlobalIlluminationAccumulationIndices(const RaytracingGlobalIlluminationAccumulationUnorderedAccessIndices& values)
 	{
 		gameIndices_.globalIlluminationAccumulation_ = values;
 	}
 
-	void UnorderedAccessIndicesSystem::SetEditorReflectionAccumulationIndices(const ReflectionAccumulationUnorderedAccessIndices& values)
+	void UnorderedAccessIndicesSystem::SetEditorReflectionAccumulationIndices(const RaytracingReflectionAccumulationUnorderedAccessIndices& values)
 	{
 		editorIndices_.reflectionAccumulation_ = values;
 		canvasIndices_.reflectionAccumulation_ = values;
 	}
 
-	void UnorderedAccessIndicesSystem::SetGameReflectionAccumulationIndices(const ReflectionAccumulationUnorderedAccessIndices& values)
+	void UnorderedAccessIndicesSystem::SetGameReflectionAccumulationIndices(const RaytracingReflectionAccumulationUnorderedAccessIndices& values)
 	{
 		gameIndices_.reflectionAccumulation_ = values;
 	}

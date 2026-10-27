@@ -54,9 +54,9 @@ def matches(field, context):
 
 
 def emit(field, context, lines):
-    """condition / clamp / serialize_only のどれかがあれば FieldInfo ブロック、無ければ1行で出力する。"""
+    """condition / clamp / serialize_only / revision のどれかがあれば FieldInfo ブロック、無ければ1行で出力する。"""
     attribute_type = ATTRIBUTE_TYPE_MAP.get(field.type_, "AttributeType::Unknown")
-    if field.condition_ or field.clamp_min_ is not None or field.serialize_only_:
+    if field.condition_ or field.clamp_min_ is not None or field.serialize_only_ or field.revision_:
         emit_detailed(field, context, attribute_type, lines)
     else:
         emit_inline(field, context, attribute_type, lines)
@@ -89,5 +89,7 @@ def emit_detailed(field, context, attribute_type, lines):
         lines.append(f'\t\t\t\t\t\tfi.clampMax_ = {field.clamp_max_};')
     if field.serialize_only_:
         lines.append(f'\t\t\t\t\t\tfi.editorVisible_ = false;')
+    if field.revision_:
+        lines.append(f'\t\t\t\t\t\tfi.revision_ = true;')
     lines.append(f'\t\t\t\t\t\toutInfo.push_back(std::move(fi));')
     lines.append(f'\t\t\t\t\t}}')

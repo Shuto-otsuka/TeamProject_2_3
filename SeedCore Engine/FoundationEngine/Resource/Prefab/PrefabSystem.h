@@ -10,34 +10,33 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Host-side prefab API, owned by the host that runs the main loop.
-	* Spawns prefabs into the World it was constructed with, and saves
-	* actor subtrees as .prefab files for the editor. Gameplay code
-	* reaches the spawning through Prefab, which forwards to the
-	* PrefabSystem bound on construction.
+	* Spawns prefabs into the World given to Initialize, and saves actor
+	* subtrees as .prefab files for the editor. Gameplay code reaches the
+	* spawning through Prefab, which forwards to the PrefabSystem bound by
+	* Initialize.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* ホスト向けのプレハブAPI。メインループを回すホストが所有する。構築時に
-	* 渡された World へプレハブを生成し、エディタ向けに actor のサブツリーを
-	* .prefab ファイルとして保存する。ゲームプレイコードは Prefab 経由で
-	* 生成に届く。Prefab は、構築時に束縛された PrefabSystem へ転送する。
+	* ホスト向けのプレハブAPI。メインループを回すホストが所有する。
+	* Initialize で渡された World へプレハブを生成し、エディタ向けに actor の
+	* サブツリーを .prefab ファイルとして保存する。ゲームプレイコードは
+	* Prefab 経由で生成に届く。Prefab は、Initialize で束縛された
+	* PrefabSystem へ転送する。
 	*/
 	class SEEDCORE_API PrefabSystem :public NonTransferable
 	{
 	public:
 		/**
 		* [EN]
-		* Binds the World/ResourceCache prefabs are spawned into and
-		* loaded from, and binds this system as the one Prefab forwards to.
+		* Constructs an unbound system; Initialize binds it.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* プレハブの生成先となる World と読み込み元となる ResourceCache を
-		* 束縛し、このシステムを Prefab の転送先として束縛する。
+		* 未束縛のシステムを作る。束縛は Initialize が行う。
 		*/
-		PrefabSystem(World& world, ResourceCache& cache);
+		PrefabSystem() = default;
 
 		/**
 		* [EN]
@@ -49,6 +48,19 @@ namespace SeedCore
 		* このシステムが Prefab に束縛されていれば束縛を外す。
 		*/
 		~PrefabSystem();
+
+		/**
+		* [EN]
+		* Binds the World/ResourceCache prefabs are spawned into and
+		* loaded from, and binds this system as the one Prefab forwards to.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* プレハブの生成先となる World と読み込み元となる ResourceCache を
+		* 束縛し、このシステムを Prefab の転送先として束縛する。
+		*/
+		Bool Initialize(World& world, ResourceCache& cache);
 
 	public:
 		/**
@@ -132,10 +144,10 @@ namespace SeedCore
 	private:
 		/// [EN] World prefabs are spawned into.
 		/// [JP] プレハブの生成先となる World。
-		World& world_;
+		World* world_ = nullptr;
 
 		/// [EN] ResourceCache used to resolve prefab names/IDs and load prefab assets.
 		/// [JP] プレハブ名/ID の解決とプレハブアセットの読み込みに使う ResourceCache。
-		ResourceCache& resource_;
+		ResourceCache* resource_ = nullptr;
 	};
 }

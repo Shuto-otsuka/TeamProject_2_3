@@ -20,81 +20,97 @@ namespace SeedCore
 	public:
 		/// [EN] Radius of the character capsule.
 		/// [JP] キャラクターカプセルの半径。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("半径", 0.001f, 100.0f)
 		Float radius_ = 0.3f;
 
 		/// [EN] Standing height of the character capsule.
 		/// [JP] 立っているときのキャラクターカプセルの高さ。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("高さ", 0.001f, 100.0f)
 		Float height_ = 1.8f;
 
 		/// [EN] Mass used by the virtual character.
 		/// [JP] 仮想キャラクターに使う質量。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("質量", 0.001f, 1000.0f)
 		Float mass_ = 70.0f;
 
 		/// [EN] Maximum force applied when pushing contacted bodies.
 		/// [JP] 接触したボディを押すときに加える最大の力。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("押し出し力", 0.0f, 10000.0f)
 		Float pushForce_ = 100.0f;
 
 		/// [EN] Maximum horizontal movement speed.
 		/// [JP] 水平方向の最大移動速度。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("最大移動速度", 0.0f, 100.0f)
 		Float maxMoveSpeed_ = 5.0f;
 
 		/// [EN] Rate used to approach the requested movement speed.
 		/// [JP] 要求された移動速度へ近づける加速度。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("加速度", 0.0f, 1000.0f)
 		Float acceleration_ = 20.0f;
 
 		/// [EN] Rate used to stop horizontal movement without input.
 		/// [JP] 入力がないときに水平移動を止める減速度。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("減速度", 0.0f, 1000.0f)
 		Float deceleration_ = 20.0f;
 
 		/// [EN] Maximum rotation speed in degrees per second.
 		/// [JP] 1秒あたりの最大回転角度。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("回転速度", 0.0f, 1000.0f)
 		Float turnSpeed_ = 10.0f;
 
 		/// [EN] Horizontal damping applied while unsupported.
 		/// [JP] 支持されていない間に適用する水平方向の減衰。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("空気抵抗", 0.0f, 10.0f)
 		Float airDrag_ = 0.0f;
 
 		/// [EN] Steepest walkable slope angle in degrees.
 		/// [JP] 歩行可能な最大斜面角度。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("最大斜面角度", 0.0f, 89.0f)
 		Float maxSlopeAngle_ = 50.0f;
 
 		/// [EN] Highest step the character can climb automatically.
 		/// [JP] キャラクターが自動で上れる最大段差高。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("最大許容段差高", 0.0f, 10.0f)
 		Float maxStepHeight_ = 0.4f;
 
 		/// [EN] Multiplier applied to the world's vertical gravity.
 		/// [JP] ワールドの垂直重力へ適用する倍率。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("重力倍率")
 		Float gravityScale_ = 1.0f;
 
 		/// [EN] Downward speed limit applied after gravity.
 		/// [JP] 重力適用後の下向き速度の上限。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("最大落下速度", 0.0f, 1000.0f)
 		Float maxFallSpeed_ = 50.0f;
 
 		/// [EN] Upward velocity assigned when jumping.
 		/// [JP] ジャンプ時に設定する上向き速度。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("ジャンプ力", 0.0f, 1000.0f)
 		Float jumpPower_ = 5.0f;
 
 		/// [EN] Whether the controller requests the crouched capsule height.
 		/// [JP] しゃがみ用のカプセル高を要求するか。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("しゃがみ")
 		Bool crouch_ = false;
 
 		/// [EN] Capsule height used while crouching.
 		/// [JP] しゃがみ中に使うカプセルの高さ。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("しゃがみ時の高さ", 0.001f, 100.0f)
 		Float crouchHeight_ = 1.0f;
 
@@ -131,6 +147,11 @@ namespace SeedCore
 		* 仮想キャラクターを破棄し、接触リスナーを解放する。
 		*/
 		void OnDestroy();
+
+		void OnRevision();
+
+	public:
+		void Dispatch();
 
 	public:
 		/**

@@ -1,15 +1,14 @@
 #pragma once
-#include <GraphicsEngine/System/CameraSystem.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 
 namespace SeedCore
 {
-	class ImGuiRenderer;
+	struct EditorContext;
 
 	class GameWindowPanel
 	{
 	public:
-		GameWindowPanel(CameraSystem& cameraSystem, ImGuiRenderer& imgui, ImGuiTexture& imguiTexture);
+		GameWindowPanel(EditorContext& context, ImGuiTexture& imguiTexture);
 		~GameWindowPanel() = default;
 
 		void Draw(D3D12_GPU_DESCRIPTOR_HANDLE frameBufferHandle, Float toolbarHeight);
@@ -19,8 +18,7 @@ namespace SeedCore
 		Bool ImageHovered()const { return imageHovered_; }
 
 	private:
-		CameraSystem& cameraSystem_;
-		ImGuiRenderer& imgui_;
+		EditorContext& context_;
 		ImGuiTexture& imguiTexture_;
 		Bool fullscreen_ = false;
 		Bool imageHovered_ = false;

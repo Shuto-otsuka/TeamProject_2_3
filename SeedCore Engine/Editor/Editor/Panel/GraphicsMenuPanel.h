@@ -1,9 +1,5 @@
 #pragma once
 #include <GraphicsEngine/Renderer/ViewMode.h>
-#include <Editor/Editor/Panel/RaytracingPanel.h>
-#include <Editor/Editor/Panel/ScreenSpacePanel.h>
-#include <Editor/Editor/Panel/RasterizationPanel.h>
-#include <Editor/Editor/Panel/EnvironmentMenuPanel.h>
 
 namespace SeedCore
 {
@@ -12,8 +8,6 @@ namespace SeedCore
 	/// [JP] メインメニューバー内の「グラフィックス」メニュー。表示モード（ビューモード）
 	///      の選択を EditorViewContext::viewMode_ に対して行う。状態はエディタービューの
 	///      ツールバーと共有する。BeginMainMenuBar の内側で Draw を呼ぶこと。
-	///      「レイトレーシング」配下は RaytracingPanel、「環境」配下は
-	///      EnvironmentMenuPanel に委譲する。
 	class GraphicsMenuPanel
 	{
 	public:
@@ -24,10 +18,5 @@ namespace SeedCore
 
 	private:
 		EditorContext& context_;
-
-		RaytracingPanel raytracingPanel_;
-		ScreenSpacePanel screenSpacePanel_;
-		RasterizationPanel rasterizationPanel_;
-		EnvironmentMenuPanel environmentMenuPanel_;
 	};
 }

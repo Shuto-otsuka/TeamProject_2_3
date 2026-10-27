@@ -1,7 +1,7 @@
 #pragma once
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
-#include <GraphicsEngine/Raytracing/Refraction/RefractionShader.h>
+#include <GraphicsEngine/Illumination/Refraction/RefractionShader.h>
 
 namespace SeedCore
 {
@@ -17,14 +17,14 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Tuning values of the refraction pass. Mirrors RefractionRayConstantBuffer
-	* in Raytracing/Refraction/RefractionRT.hlsl, which both RefractionRT.hlsl
+	* in Illumination/Refraction/RefractionRT.hlsl, which both RefractionRT.hlsl
 	* and DeferredLightingPS.hlsl read through constant_indices.refraction_index_,
 	* so the layout must match the HLSL side byte for byte.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 屈折パスの調整値。Raytracing/Refraction/RefractionRT.hlsl の
+	* 屈折パスの調整値。Illumination/Refraction/RefractionRT.hlsl の
 	* RefractionRayConstantBuffer と対応する。RefractionRT.hlsl と
 	* DeferredLightingPS.hlsl の両方が constant_indices.refraction_index_
 	* 経由で読むため、レイアウトは HLSL 側とバイト単位で一致させる。

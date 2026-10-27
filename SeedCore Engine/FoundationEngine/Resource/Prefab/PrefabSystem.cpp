@@ -21,9 +21,12 @@ namespace SeedCore
 	* プレハブの生成先となる World と読み込み元となる ResourceCache を
 	* 束縛し、このシステムを Prefab の転送先として束縛する。
 	*/
-	PrefabSystem::PrefabSystem(World& world, ResourceCache& cache) :world_(world), resource_(cache)
+	Bool PrefabSystem::Initialize(World& world, ResourceCache& cache)
 	{
+		world_ = &world;
+		resource_ = &cache;
 		Prefab::system_ = this;
+		return true;
 	}
 
 	/**
@@ -62,8 +65,8 @@ namespace SeedCore
 	{
 		/// [EN] PrefabPool caches by asset ID, so repeatedly spawning the same prefab reloads nothing - each call pays only the per-instance Instantiate() cost.
 		/// [JP] PrefabPool はアセット ID でキャッシュするため、同じプレハブを繰り返し spawn しても再読み込みは発生しない - 毎回かかるのはインスタンスごとの Instantiate() のコストだけ。
-		PrefabPool& pool = resource_.GetPrefabPool();
-		PrefabBlueprint* prefab = pool.Get(pool.Load(assetID, resource_));
+		PrefabPool& pool = resource_->GetPrefabPool();
+		PrefabBlueprint* prefab = pool.Get(pool.Load(assetID, *resource_));
 		if (prefab == nullptr)
 		{
 			return Actor();
@@ -71,7 +74,7 @@ namespace SeedCore
 
 		/// [EN] Pass assetID as sourceAssetID so the new root is registered as an instance of this prefab (inspector "apply to prefab" then targets the right asset).
 		/// [JP] assetID を sourceAssetID として渡し、新しいルートをこのプレハブのインスタンスとして登録する（インスペクタの「プレハブに適用」が正しいアセットを対象にする）。
-		return prefab->Instantiate(world_, resource_, parent, assetID);
+		return prefab->Instantiate(*world_, *resource_, parent, assetID);
 	}
 
 	/**
@@ -90,7 +93,7 @@ namespace SeedCore
 	*/
 	Actor PrefabSystem::Spawn(const String& name, Actor parent)
 	{
-		Uint32 assetID = resource_.GetAssetID(name);
+		Uint32 assetID = resource_->GetAssetID(name);
 		if (assetID == 0)
 		{
 			SC_LOG_WARNING("Prefab::Spawn: プレハブ \"{}\" が見つかりません。", name.c_str());

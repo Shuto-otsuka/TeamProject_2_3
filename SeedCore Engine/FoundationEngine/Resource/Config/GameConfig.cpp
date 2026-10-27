@@ -3,6 +3,12 @@
 
 namespace SeedCore
 {
+	Bool GameConfig::Initialize()
+	{
+		Load();
+		return true;
+	}
+
 	void GameConfig::Load(const std::filesystem::path& path)
 	{
 		BinaryInputArchive archive;

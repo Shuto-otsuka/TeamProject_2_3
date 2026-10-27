@@ -48,6 +48,17 @@ namespace SeedCore
 		pending_ = meshID_ != 0;
 	}
 
+	void MeshCollider::OnRevision()
+	{
+		OnDestroy();
+		OnAwake();
+	}
+
+	void MeshCollider::Dispatch()
+	{
+		OnRevision();
+	}
+
 	/**
 	* [EN]
 	* Builds and applies a collision shape from resolved mesh data.

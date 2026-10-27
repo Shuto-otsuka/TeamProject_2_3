@@ -43,6 +43,17 @@ namespace SeedCore
 		PhysicsSystem::DestroyColliderBody(GetActor(), bodyID_, shapeHandle_);
 	}
 
+	void BoxCollider::OnRevision()
+	{
+		OnDestroy();
+		OnAwake();
+	}
+
+	void BoxCollider::Dispatch()
+	{
+		OnRevision();
+	}
+
 	/**
 	* [EN]
 	* Creates and returns a box shape from the current settings, scaled

@@ -61,7 +61,7 @@ namespace SeedCore
 
 		/// [EN] The tuning values live in a constant buffer the shaders find through its bindless index.
 		/// [JP] 調整値は、シェーダーが bindless インデックスで見つける定数バッファに置く。
-		tuningBuffer_ = MakePtr<StaticConstantBuffer<ShadowRayConstantBuffer>>(device, bindlessHeap);
+		tuningBuffer_ = MakePtr<StaticConstantBuffer<RaytracingShadowConstantBuffer>>(device, bindlessHeap);
 
 		/// [EN] Create the size-dependent resources at the current size.
 		/// [JP] サイズに依存するリソースを現在のサイズで作る。
@@ -106,7 +106,7 @@ namespace SeedCore
 	* 保存して、各ビューのパスとディファードライティングが読むインデックスを
 	* 公開する。
 	*/
-	void ShadowRenderer::Prepare(const ShadowRayConstantBuffer& settings, Bool enabled)
+	void ShadowRenderer::Prepare(const RaytracingShadowConstantBuffer& settings, Bool enabled)
 	{
 		/// [EN] Remember whether the pass runs this frame; Dispatch reads it.
 		/// [JP] 今フレームにパスを実行するかを覚えておく。Dispatch が読む。
@@ -124,9 +124,10 @@ namespace SeedCore
 
 		/// [EN] The upload copy carries the frame counter and denoise mode on top of the user's tuning.
 		/// [JP] アップロード用のコピーには、ユーザーの調整値に加えてフレームカウンターとデノイズモードを載せる。
-		ShadowRayConstantBuffer uploadSettings = settings;
+		RaytracingShadowConstantBuffer uploadSettings = settings;
 		uploadSettings.frameIndex_ = frameIndex_;
-		uploadSettings.denoiseMode_ = static_cast<Uint32>(useDlssRayReconstruction_ ? ShadowDenoiseMode::DlssRR : ShadowDenoiseMode::Temporal);
+		uploadSettings.denoiseMode_ = static_cast<Uint32>(useDlssRayReconstruction_ ? RaytracingShadowDenoiseMode::DlssRR : RaytracingShadowDenoiseMode::Temporal);
+		uploadSettings.enabled_ = enabled ? 1 : 0;
 		/// [EN] Advance the counter for the next frame.
 		/// [JP] 次のフレームのためにカウンターを進める。
 		frameIndex_++;
@@ -150,7 +151,7 @@ namespace SeedCore
 		/// [JP] フレームをまたぐ状態を持つバッファは、すべて履歴のスロットを読んでもう一方へ書く。1 組のスロットが両信号と共有の履歴長・深度法線コピーをまとめて動かすため、幾何の判定とブレンドする信号は常に同じフレームのものになる。
 		auto buildShaderResourceIndices = [&](Uint32 viewIndex)
 		{
-			ShadowAccumulationShaderResourceIndices values{};
+			RaytracingShadowAccumulationShaderResourceIndices values{};
 
 			values.directionalHistoryIndex_ = directionalAccumulatedShaderResourceViewIndex_[viewIndex][historySlot_];
 			values.directionalAccumulatedIndex_ = directionalAccumulatedShaderResourceViewIndex_[viewIndex][writeSlot];
@@ -188,7 +189,7 @@ namespace SeedCore
 		/// [JP] 1 つのビューの、SVGF 各パスの書き込み先。
 		auto buildUnorderedAccessIndices = [&](Uint32 viewIndex)
 		{
-			ShadowAccumulationUnorderedAccessIndices values{};
+			RaytracingShadowAccumulationUnorderedAccessIndices values{};
 
 			values.directionalAccumulatedIndex_ = directionalAccumulatedUnorderedAccessViewIndex_[viewIndex][writeSlot];
 			values.directionalMomentsIndex_ = directionalMomentsUnorderedAccessViewIndex_[viewIndex][writeSlot];

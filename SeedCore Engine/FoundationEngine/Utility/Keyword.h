@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef FOUNDATIONENGINE_EXPORTS
+#ifdef SEEDCORE_EXPORTS
 #define SEEDCORE_API __declspec(dllexport)
 #else
 #define SEEDCORE_API __declspec(dllimport)

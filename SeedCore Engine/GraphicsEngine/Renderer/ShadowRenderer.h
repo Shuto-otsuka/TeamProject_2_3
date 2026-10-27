@@ -2,8 +2,8 @@
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
 #include <GraphicsEngine/Raytracing/RaytracingDispatch.h>
-#include <GraphicsEngine/Raytracing/Shadow/ShadowDenoiseShader.h>
-#include <GraphicsEngine/Raytracing/Shadow/ShadowShader.h>
+#include <GraphicsEngine/Illumination/Shadow/ShadowDenoiseShader.h>
+#include <GraphicsEngine/Illumination/Shadow/ShadowShader.h>
 
 namespace SeedCore
 {
@@ -20,16 +20,16 @@ namespace SeedCore
 	* [EN]
 	* Which denoiser cleans up the traced shadows. ShadowRenderer::Prepare
 	* reads the DLSS manager's Ray Reconstruction toggle and writes the
-	* result into ShadowRayConstantBuffer::denoiseMode_ every frame.
+	* result into RaytracingShadowConstantBuffer::denoiseMode_ every frame.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* トレースした影をどのデノイザで整えるか。ShadowRenderer::Prepare が
 	* 毎フレーム DLSS マネージャーの Ray Reconstruction の設定を読み、
-	* その結果を ShadowRayConstantBuffer::denoiseMode_ へ書き込む。
+	* その結果を RaytracingShadowConstantBuffer::denoiseMode_ へ書き込む。
 	*/
-	enum class ShadowDenoiseMode : Uint32
+	enum class RaytracingShadowDenoiseMode : Uint32
 	{
 		/// [EN] This pass's own SVGF chain with temporal reprojection.
 		/// [JP] 時間方向のリプロジェクションを伴う、このパス自身の SVGF チェーン。
@@ -42,20 +42,20 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Tuning values of the shadow pass. Mirrors ShadowRayConstantBuffer in
-	* Raytracing/Shadow/Shadow.hlsli, which both ShadowRT.hlsl and
+	* Tuning values of the shadow pass. Mirrors RaytracingShadowConstantBuffer in
+	* Illumination/Shadow/Raytracing/RaytracingShadow.hlsli, which both RaytracingShadowRT.hlsl and
 	* DeferredLightingPS.hlsl read through constant_indices.shadow_index_, so
 	* the layout must match the HLSL side byte for byte.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 影のパスの調整値。Raytracing/Shadow/Shadow.hlsli の
-	* ShadowRayConstantBuffer と対応する。ShadowRT.hlsl と
+	* 影のパスの調整値。Illumination/Shadow/Raytracing/RaytracingShadow.hlsli の
+	* RaytracingShadowConstantBuffer と対応する。RaytracingShadowRT.hlsl と
 	* DeferredLightingPS.hlsl の両方が constant_indices.shadow_index_ 経由で
 	* 読むため、レイアウトは HLSL 側とバイト単位で一致させる。
 	*/
-	struct ShadowRayConstantBuffer
+	struct RaytracingShadowConstantBuffer
 	{
 		/// [EN] Maximum length of a shadow ray; occluders beyond it cast no shadow.
 		/// [JP] シャドウレイの最大長。これより遠い遮蔽物は影を落とさない。
@@ -81,13 +81,15 @@ namespace SeedCore
 		/// [JP] エディターの UI ではなく ShadowRenderer::Prepare が書き込むフレームカウンター。ピクセルごとの乱数の種になり、ランダムなレイの方向を毎フレーム変える。
 		Uint32 frameIndex_ = 0;
 
-		/// [EN] Active ShadowDenoiseMode. Written by ShadowRenderer::Prepare every frame.
-		/// [JP] 有効な ShadowDenoiseMode。ShadowRenderer::Prepare が毎フレーム書き込む。
-		Uint32 denoiseMode_ = static_cast<Uint32>(ShadowDenoiseMode::Temporal);
+		/// [EN] Active RaytracingShadowDenoiseMode. Written by ShadowRenderer::Prepare every frame.
+		/// [JP] 有効な RaytracingShadowDenoiseMode。ShadowRenderer::Prepare が毎フレーム書き込む。
+		Uint32 denoiseMode_ = static_cast<Uint32>(RaytracingShadowDenoiseMode::Temporal);
 
-		/// [EN] Pads the last row to a full 16-byte register.
-		/// [JP] 最後の行を 16 バイトのレジスタ 1 つ分に揃える詰め物。
-		Float shadowRayPadding_ = 0.0f;
+		Uint32 rayCount_ = 1;
+
+		Uint32 enabled_ = 0;
+
+		Uint32 shadowPadding_[3] = { 0, 0, 0 };
 
 		/**
 		* [EN]
@@ -114,9 +116,9 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Runs the ray-traced shadows. ShadowRT.hlsl writes a raw, noisy texture
+	* Runs the ray-traced shadows. RaytracingShadowRT.hlsl writes a raw, noisy texture
 	* (r is directional visibility, gba is the full BRDF RGB radiance of the
-	* punctual light picked by ReSTIR), then ShadowDenoiseCS.hlsl runs a
+	* punctual light picked by ReSTIR), then RaytracingShadowDenoiseCS.hlsl runs a
 	* five-pass SVGF chain over it: temporal reprojection with moment
 	* accumulation, a spatial variance estimate for pixels with a short
 	* history, and three variance-guided A-Trous wavelet iterations. Each pass
@@ -130,10 +132,10 @@ namespace SeedCore
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* レイトレーシングによる影を実行する。ShadowRT.hlsl が生のノイズを含む
+	* レイトレーシングによる影を実行する。RaytracingShadowRT.hlsl が生のノイズを含む
 	* テクスチャ（r はディレクショナルの可視性、gba は ReSTIR で選んだ
 	* パンクチュアルライト 1 灯の完全な BRDF の RGB 放射輝度）を書き、
-	* ShadowDenoiseCS.hlsl がそれに 5 パスの SVGF チェーンをかける。
+	* RaytracingShadowDenoiseCS.hlsl がそれに 5 パスの SVGF チェーンをかける。
 	* モーメントを蓄積する時間方向のリプロジェクション、履歴の短い
 	* ピクセル向けの空間的な分散の推定、分散に導かれる A-Trous
 	* ウェーブレットの 3 反復である。各パスはディレクショナルと
@@ -222,7 +224,7 @@ namespace SeedCore
 		* GPU 処理は記録せず、各インデックスシステムが今フレームのインデックスを
 		* アップロードする前、つまり G-Buffer ができる前に呼び出す。
 		*/
-		void Prepare(const ShadowRayConstantBuffer& settings, Bool enabled);
+		void Prepare(const RaytracingShadowConstantBuffer& settings, Bool enabled);
 
 		/**
 		* [EN]
@@ -289,20 +291,20 @@ namespace SeedCore
 		/// [JP] 独自の履歴を持つビューの数（エディターとゲーム）。
 		SC_CONSTEX Uint32 viewCount_ = 2;
 
-		/// [EN] Compute shader and pipeline of ShadowRT.hlsl.
-		/// [JP] ShadowRT.hlsl のコンピュートシェーダーとパイプライン。
+		/// [EN] Compute shader and pipeline of RaytracingShadowRT.hlsl.
+		/// [JP] RaytracingShadowRT.hlsl のコンピュートシェーダーとパイプライン。
 		ShadowShader shadowShader_;
 
-		/// [EN] Compute shaders and pipelines of the SVGF passes in ShadowDenoiseCS.hlsl.
-		/// [JP] ShadowDenoiseCS.hlsl の SVGF 各パスのコンピュートシェーダーとパイプライン。
+		/// [EN] Compute shaders and pipelines of the SVGF passes in RaytracingShadowDenoiseCS.hlsl.
+		/// [JP] RaytracingShadowDenoiseCS.hlsl の SVGF 各パスのコンピュートシェーダーとパイプライン。
 		ShadowDenoiseShader denoiseShader_;
 
 		/// [EN] GPU copy of the tuning values, read through its bindless index.
 		/// [JP] 調整値の GPU 側コピー。bindless インデックス経由で読まれる。
-		ResourcePtr<StaticConstantBuffer<ShadowRayConstantBuffer>> tuningBuffer_;
+		ResourcePtr<StaticConstantBuffer<RaytracingShadowConstantBuffer>> tuningBuffer_;
 
-		/// [EN] Raw, noisy output of ShadowRT.hlsl: r is directional visibility, gba the visibility-weighted BRDF RGB radiance of the punctual light picked by ReSTIR. A single texture is enough, since the denoiser consumes it in the same flush.
-		/// [JP] ShadowRT.hlsl の生のノイズを含む出力。r はディレクショナルの可視性、gba は ReSTIR で選んだパンクチュアルライトの、可視性を掛けた BRDF の RGB 放射輝度。デノイザが同じ Flush 内で消費するため、1 枚で足りる。
+		/// [EN] Raw, noisy output of RaytracingShadowRT.hlsl: r is directional visibility, gba the visibility-weighted BRDF RGB radiance of the punctual light picked by ReSTIR. A single texture is enough, since the denoiser consumes it in the same flush.
+		/// [JP] RaytracingShadowRT.hlsl の生のノイズを含む出力。r はディレクショナルの可視性、gba は ReSTIR で選んだパンクチュアルライトの、可視性を掛けた BRDF の RGB 放射輝度。デノイザが同じ Flush 内で消費するため、1 枚で足りる。
 		Microsoft::WRL::ComPtr<ID3D12Resource> rawVisibilityResource_;
 
 		/// [EN] Resource state the raw texture is currently in.

@@ -37,6 +37,11 @@ namespace SeedCore
 	*/
 	ResourceCache::~ResourceCache()
 	{
+		Finalize();
+	}
+
+	void ResourceCache::Finalize()
+	{
 		/// [EN] Destroying the executor first waits (in ~JobExecutor) for any running StepAsync() job, so the cache can be destroyed mid-load.
 		/// [JP] 先に実行器を破棄し、動いている StepAsync() のジョブの終了を(~JobExecutor で)待つ。これで読み込み中でもキャッシュを破棄できる。
 		loadExecutor_ = nullptr;
@@ -46,9 +51,11 @@ namespace SeedCore
 		if (watchHandle_ != INVALID_HANDLE_VALUE)
 		{
 			FindCloseChangeNotification(watchHandle_);
+			watchHandle_ = INVALID_HANDLE_VALUE;
 		}
 
 		Unload();
+		resourceMap_.clear();
 	}
 
 	/**

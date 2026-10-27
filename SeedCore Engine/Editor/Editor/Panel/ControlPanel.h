@@ -1,8 +1,5 @@
 #pragma once
 #include <FoundationEngine/Resource/Scene/SceneBlueprint.h>
-#include <GraphicsEngine/Raytracing/RaytracingContext.h>
-#include <GraphicsEngine/ScreenSpace/ScreenSpaceContext.h>
-#include <GraphicsEngine/Rasterization/RasterizationContext.h>
 
 namespace SeedCore
 {
@@ -22,12 +19,9 @@ namespace SeedCore
 
 		ImGuiTexture& imguiTexture_;
 
-		/// [EN] State taken when Play starts and restored when it stops, so a play session leaves the edited scene unchanged: the scene's actors, its rendering settings and the mixer volumes.
-		/// [JP] Play 開始時に取っておき、停止時に戻す状態。Play しても編集中のシーンが変わらないようにする。シーンのアクター、描画の設定、ミキサーの音量。
+		/// [EN] State taken when Play starts and restored when it stops, so a play session leaves the edited scene unchanged: the scene's actors and the mixer volumes.
+		/// [JP] Play 開始時に取っておき、停止時に戻す状態。Play しても編集中のシーンが変わらないようにする。シーンのアクターとミキサーの音量。
 		SceneBlueprint playModeScene_;
-		RaytracingContext playModeRaytracing_;
-		ScreenSpaceContext playModeScreenSpace_;
-		RasterizationContext playModeRasterization_;
 		Float playModeMasterVolume_ = 1.0f;
 		DynamicArray<Float> playModeCategoryVolumes_;
 	};

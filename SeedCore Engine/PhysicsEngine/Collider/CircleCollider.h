@@ -21,16 +21,19 @@ namespace SeedCore
 	public:
 		/// [EN] Radius of the circle.
 		/// [JP] 円の半径。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("半径", 1.0f, 10000.0f)
 		Float radius_ = 50.0f;
 
 		/// [EN] Local offset of the circle center.
 		/// [JP] 円の中心のローカルオフセット。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("中心オフセット")
 		Vector2 center_ = { 0.0f, 0.0f };
 
 		/// [EN] Whether this collider acts as a trigger.
 		/// [JP] このコライダーをトリガーとして扱うか。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("トリガー")
 		Bool isTrigger_ = false;
 
@@ -56,6 +59,11 @@ namespace SeedCore
 		* コライダーボディを破棄し、形状を解放する。
 		*/
 		void OnDestroy();
+
+		void OnRevision();
+
+	public:
+		void Dispatch();
 
 	public:
 		/**

@@ -145,6 +145,7 @@ namespace SeedCore
 				script.triggerEnter_ = Bind<Action<Entity>>(scriptType, ScriptHook.TriggerEnter, script);
 				script.triggerStay_ = Bind<Action<Entity>>(scriptType, ScriptHook.TriggerStay, script);
 				script.triggerExit_ = Bind<Action<Entity>>(scriptType, ScriptHook.TriggerExit, script);
+				script.revision_ = Bind<Action>(scriptType, ScriptHook.Revision, script);
 				return GCHandle.ToIntPtr(GCHandle.Alloc(script));
 			}
 			catch (Exception exception)

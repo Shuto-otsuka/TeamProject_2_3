@@ -286,18 +286,18 @@ namespace SeedCore
 				pendingAnimalGroup_ = -1;
 			}
 
-			if ((kindChanged || !cameraReady_) && context_.preview_.avatar_.camera_)
+			if (kindChanged || !cameraReady_)
 			{
 				cameraReady_ = true;
 				if (kind_ == AvatarKind::Human)
 				{
-					context_.preview_.avatar_.camera_->Focus(Vector3(0.0f, 0.05f, 0.0f));
-					context_.preview_.avatar_.camera_->Eye(Vector3(0.6f, 0.25f, 2.6f));
+					context_.preview_.avatar_.camera_.Focus(Vector3(0.0f, 0.05f, 0.0f));
+					context_.preview_.avatar_.camera_.Eye(Vector3(0.6f, 0.25f, 2.6f));
 				}
 				else
 				{
-					context_.preview_.avatar_.camera_->Focus(Vector3(0.0f, 0.45f, 0.0f));
-					context_.preview_.avatar_.camera_->Eye(Vector3(1.7f, 0.75f, 2.2f));
+					context_.preview_.avatar_.camera_.Focus(Vector3(0.0f, 0.45f, 0.0f));
+					context_.preview_.avatar_.camera_.Eye(Vector3(1.7f, 0.75f, 2.2f));
 				}
 			}
 
@@ -353,23 +353,20 @@ namespace SeedCore
 				ImVec2 previewSize = ImGui::GetContentRegionAvail();
 				previewSize.y = Max(previewSize.y, 100.0f);
 
-				if (context_.preview_.avatar_.camera_)
-				{
-					context_.preview_.avatar_.camera_->Resize(previewSize.x, previewSize.y);
-				}
+				context_.preview_.avatar_.camera_.Resize(previewSize.x, previewSize.y);
 
 				ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
 
 				Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
 				Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
 
-				if (ImGui::IsItemHovered() && context_.preview_.avatar_.camera_ && context_.preview_.avatar_.cameraController_)
+				if (ImGui::IsItemHovered())
 				{
 					if (orbitHeld || panHeld)
 					{
 						InputSystem::BeginMouseCapture();
 					}
-					context_.preview_.avatar_.cameraController_->Update(*context_.preview_.avatar_.camera_, ImGui::GetIO().DeltaTime);
+					context_.preview_.avatar_.cameraController_.Update(context_.preview_.avatar_.camera_, ImGui::GetIO().DeltaTime);
 				}
 
 				if (!orbitHeld && !panHeld)

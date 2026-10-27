@@ -1390,13 +1390,14 @@ namespace SeedCore
 		Float cMin = field.clampMin_;
 		Float cMax = field.clampMax_;
 		Bool hasClamped = (cMin != -FLT_MAX || cMax != FLT_MAX);
+		Bool changed = false;
 
 		switch (field.type_)
 		{
 		case AttributeType::Int:
 		{
 			Int* value = static_cast<Int*>(pointer);
-			ImGui::DragInt(label, value, 1.0f, hasClamped ? static_cast<Int>(cMin) : 0, hasClamped ? static_cast<Int>(cMax) : 0);
+			changed = ImGui::DragInt(label, value, 1.0f, hasClamped ? static_cast<Int>(cMin) : 0, hasClamped ? static_cast<Int>(cMax) : 0);
 			if (ImGui::IsItemActivated())
 			{
 				pendingOldInt_ = *value;
@@ -1417,7 +1418,7 @@ namespace SeedCore
 		case AttributeType::Float:
 		{
 			Float* value = static_cast<Float*>(pointer);
-			ImGui::DragFloat(label, value, 0.1f, cMin, cMax);
+			changed = ImGui::DragFloat(label, value, 0.1f, cMin, cMax);
 			if (ImGui::IsItemActivated())
 			{
 				pendingOldFloat_ = *value;
@@ -1439,7 +1440,7 @@ namespace SeedCore
 		{
 			Bool* value = static_cast<Bool*>(pointer);
 			Bool oldValue = *value;
-			if (ImGui::Checkbox(label, value))
+			if (changed = ImGui::Checkbox(label, value))
 			{
 				if (field.directPtr_)
 				{
@@ -1455,7 +1456,7 @@ namespace SeedCore
 		case AttributeType::Vector2:
 		{
 			Vector2* value = static_cast<Vector2*>(pointer);
-			ImGui::DragFloat2(label, &value->x, 0.1f, cMin, cMax);
+			changed = ImGui::DragFloat2(label, &value->x, 0.1f, cMin, cMax);
 			if (ImGui::IsItemActivated())
 			{
 				pendingOldVector2_ = *value;
@@ -1476,7 +1477,7 @@ namespace SeedCore
 		case AttributeType::Vector3:
 		{
 			Vector3* value = static_cast<Vector3*>(pointer);
-			ImGui::DragFloat3(label, &value->x, 0.1f, cMin, cMax);
+			changed = ImGui::DragFloat3(label, &value->x, 0.1f, cMin, cMax);
 			if (ImGui::IsItemActivated())
 			{
 				pendingOldVector3_ = *value;
@@ -1497,7 +1498,7 @@ namespace SeedCore
 		case AttributeType::Vector4:
 		{
 			Vector4* value = static_cast<Vector4*>(pointer);
-			ImGui::DragFloat4(label, &value->x, 0.1f, cMin, cMax);
+			changed = ImGui::DragFloat4(label, &value->x, 0.1f, cMin, cMax);
 			if (ImGui::IsItemActivated())
 			{
 				pendingOldVector4_ = *value;
@@ -1520,7 +1521,7 @@ namespace SeedCore
 			String* stringValue = static_cast<String*>(pointer);
 			std::string textBuffer = stringValue->str();
 			textBuffer.resize(1024);
-			if (ImGui::InputTextMultiline(label, textBuffer.data(), textBuffer.capacity(), ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 4)))
+			if (changed = ImGui::InputTextMultiline(label, textBuffer.data(), textBuffer.capacity(), ImVec2(-FLT_MIN, ImGui::GetTextLineHeight() * 4)))
 			{
 				*stringValue = String(std::string_view(textBuffer.c_str()));
 			}
@@ -1544,7 +1545,7 @@ namespace SeedCore
 		case AttributeType::Color:
 		{
 			Color* value = static_cast<Color*>(pointer);
-			ImGui::ColorEdit4(label, &value->x);
+			changed = ImGui::ColorEdit4(label, &value->x);
 			if (ImGui::IsItemActivated())
 			{
 				pendingOldColor_ = *value;
@@ -1588,6 +1589,7 @@ namespace SeedCore
 							*current = entry.value_;
 							if (oldValue != entry.value_)
 							{
+								changed = true;
 								if (field.directPtr_)
 								{
 									context_.scene_.history_.Push(MakePtr<PointerCommand<Int>>(current, oldValue, entry.value_));
@@ -1615,6 +1617,15 @@ namespace SeedCore
 		default:
 			ImGui::TextDisabled("%s (リフレクション未対応の型です)", label);
 			break;
+		}
+
+		if (changed && field.revision_)
+		{
+			void* component = context_.world_.world_->GetComponent(entity, componentID);
+			if (component && componentID && componentID->hooks_ && componentID->hooks_->upcast_)
+			{
+				componentID->hooks_->upcast_(component)->DispatchRevision();
+			}
 		}
 	}
 

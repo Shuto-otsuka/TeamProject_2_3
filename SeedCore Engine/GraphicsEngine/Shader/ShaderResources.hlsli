@@ -13,15 +13,15 @@
 #include "../Movie/Movie.hlsli"
 #include "../Model/Model.hlsli"
 #include "../Raytracing/Raytracing.hlsli"
-#include "../Raytracing/Shadow/Shadow.hlsli"
-#include "../Raytracing/AmbientOcclusion/AmbientOcclusion.hlsli"
-#include "../Raytracing/Reflection/ReflectionReSTIR.hlsli"
-#include "../Raytracing/GlobalIllumination/GlobalIlluminationReSTIR.hlsli"
-#include "../Raytracing/Refraction/Refraction.hlsli"
-#include "../Raytracing/SubsurfaceScattering/SubsurfaceScattering.hlsli"
-#include "../Raytracing/VolumetricLight/VolumetricLight.hlsli"
-#include "../Raytracing/VolumetricCloudScapes/VolumetricCloudScapes.hlsli"
-#include "../Raytracing/VolumetricStar/VolumetricStar.hlsli"
+#include "../Illumination/Shadow/Raytracing/RaytracingShadow.hlsli"
+#include "../Illumination/AmbientOcclusion/Raytracing/RaytracingAmbientOcclusion.hlsli"
+#include "../Illumination/Reflection/Raytracing/RaytracingReflectionReSTIR.hlsli"
+#include "../Illumination/GlobalIllumination/Raytracing/RaytracingGlobalIlluminationReSTIR.hlsli"
+#include "../Illumination/Refraction/Refraction.hlsli"
+#include "../Illumination/SubsurfaceScattering/SubsurfaceScattering.hlsli"
+#include "../Illumination/VolumetricLight/VolumetricLight.hlsli"
+#include "../Environment/VolumetricCloud/VolumetricCloudScapes.hlsli"
+#include "../Environment/VolumetricStar/VolumetricStar.hlsli"
 #include "../Sky/Sky.hlsli"
 #include "../Environment/WeatherParticle.hlsli"
 
@@ -29,10 +29,10 @@ struct ShaderResourceIndices
 {
 	LightShaderResourceIndices light_;
 	ClusterAssignShaderResourceIndices cluster_assign_;
-	ShadowAccumulationShaderResourceIndices shadow_accumulation_;
-	AmbientOcclusionAccumulationShaderResourceIndices ambient_occlusion_accumulation_;
-	GlobalIlluminationAccumulationShaderResourceIndices global_illumination_accumulation_;
-	ReflectionAccumulationShaderResourceIndices reflection_accumulation_;
+	RaytracingShadowAccumulationShaderResourceIndices shadow_accumulation_;
+	RaytracingAmbientOcclusionAccumulationShaderResourceIndices ambient_occlusion_accumulation_;
+	RaytracingGlobalIlluminationAccumulationShaderResourceIndices global_illumination_accumulation_;
+	RaytracingReflectionAccumulationShaderResourceIndices reflection_accumulation_;
 
 	PostProcessShaderResourceIndices post_process_;
 	HUDShaderResourceIndices hud_;
@@ -46,12 +46,12 @@ struct ShaderResourceIndices
 	GeometryBufferShaderResourceIndices geometry_buffer_;
 	SkyShaderResourceIndices sky_;
 	RaytracingShaderResourceIndices raytracing_;
-	ShadowShaderResourceIndices shadow_;
-	AmbientOcclusionShaderResourceIndices ambient_occlusion_;
+	RaytracingShadowShaderResourceIndices shadow_;
+	RaytracingAmbientOcclusionShaderResourceIndices ambient_occlusion_;
 	SubsurfaceScatteringShaderResourceIndices subsurface_scattering_;
-	ReflectionShaderResourceIndices reflection_;
+	RaytracingReflectionShaderResourceIndices reflection_;
 	RefractionShaderResourceIndices refraction_;
-	GlobalIlluminationShaderResourceIndices global_illumination_;
+	RaytracingGlobalIlluminationShaderResourceIndices global_illumination_;
 	CloudShaderResourceIndices cloud_;
 	StarShaderResourceIndices star_;
 	WeatherParticleShaderResourceIndices weather_particle_;

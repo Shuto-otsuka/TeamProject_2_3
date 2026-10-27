@@ -52,8 +52,8 @@ namespace SeedCore
 	* [EN]
 	* Hand-driven (not SystemScheduler-registered, same as SceneTransitionSystem):
 	* finds the scene's Weather component (singleton-by-convention, see
-	* Environment/Weather.h) and interpolates cloudSettings' existing fields
-	* toward the current WeatherType's target values. Also advances the
+	* Environment/Weather.h) and interpolates the scene's VolumetricCloudScapes
+	* component toward the current WeatherType's target values. Also advances the
 	* seasonal auto-cycle (monthOfYear-weighted, force flags bypass the
 	* seasonal weighting), the wetness_/snowCoverage_ ramps, and thunder
 	* strike/flash timing. A no-op when the scene has no Weather component, so
@@ -64,8 +64,8 @@ namespace SeedCore
 	* [JP]
 	* ハンド駆動(SystemScheduler には登録しない、SceneTransitionSystem と同じ):
 	* シーンの Weather コンポーネント(singleton的運用、Environment/Weather.h
-	* 参照)を見つけ、cloudSettings の既存フィールドを現在の WeatherType の
-	* 目標値へ補間する。季節による自動サイクル(monthOfYear で重み付け、
+	* 参照)を見つけ、シーンの VolumetricCloudScapes コンポーネントを現在の
+	* WeatherType の目標値へ補間する。季節による自動サイクル(monthOfYear で重み付け、
 	* forceフラグは季節の重みを無視)、wetness_/snowCoverage_ の増減、
 	* 雷の発生/閃光タイミングも進める。シーンに Weather コンポーネントが
 	* 無ければ何もしないので、エディタでの手動雲チューニングには干渉しない。
@@ -73,7 +73,7 @@ namespace SeedCore
 	class SEEDCORE_API WeatherSystem
 	{
 	public:
-		void Execute(World& world, Float deltaTime, Uint32 monthOfYear, VolumetricCloudScapesRayConstantBuffer& cloudSettings);
+		void Execute(World& world, Float deltaTime, Uint32 monthOfYear);
 
 		/// [EN] Read-only snapshot for GPU consumption - queries the scene's
 		///      Weather component without mutating anything. Returns defaults

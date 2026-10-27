@@ -182,10 +182,7 @@ namespace SeedCore
 
 		ImVec2 previewSize = ImGui::GetContentRegionAvail();
 		previewSize.y = Max(previewSize.y - ImGui::GetFrameHeightWithSpacing(), 100.0f);
-		if (context_.preview_.modelTransform_.camera_)
-		{
-			context_.preview_.modelTransform_.camera_->Resize(previewSize.x, previewSize.y);
-		}
+		context_.preview_.modelTransform_.camera_.Resize(previewSize.x, previewSize.y);
 
 		ImVec2 imagePosition = ImGui::GetCursorScreenPos();
 		ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
@@ -205,14 +202,14 @@ namespace SeedCore
 		Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
 		Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
 
-		if (!ImGuizmo::IsUsing() && !ImGuizmo::IsOver() && ImGui::IsItemHovered() && context_.preview_.modelTransform_.camera_ && context_.preview_.modelTransform_.cameraController_)
+		if (!ImGuizmo::IsUsing() && !ImGuizmo::IsOver() && ImGui::IsItemHovered())
 		{
 			if (orbitHeld || panHeld)
 			{
 				InputSystem::BeginMouseCapture();
 			}
 
-			context_.preview_.modelTransform_.cameraController_->Update(*context_.preview_.modelTransform_.camera_, ImGui::GetIO().DeltaTime);
+			context_.preview_.modelTransform_.cameraController_.Update(context_.preview_.modelTransform_.camera_, ImGui::GetIO().DeltaTime);
 		}
 
 		if (!orbitHeld && !panHeld)
@@ -248,15 +245,14 @@ namespace SeedCore
 			baseTransformGizmoOperation_ = ImGuizmo::SCALE;
 		}
 
-		if (context_.preview_.modelTransform_.camera_)
 		{
 			ImGuizmo::SetDrawlist();
 			ImGuizmo::SetRect(imagePosition.x, imagePosition.y, previewSize.x, previewSize.y);
 			ImGuizmo::SetOrthographic(false);
 			ImGuizmo::AllowAxisFlip(false);
 
-			Matrix view = context_.preview_.modelTransform_.camera_->View();
-			Matrix projection = context_.preview_.modelTransform_.camera_->Projection();
+			Matrix view = context_.preview_.modelTransform_.camera_.View();
+			Matrix projection = context_.preview_.modelTransform_.camera_.Projection();
 
 			/// [EN] The anchor: pivot/position/rotation/scale collapsed into the
 			///      single matrix ImGuizmo manipulates, placed at pivot+position

@@ -167,7 +167,6 @@ namespace SeedCore
 		desc.allowMotionTypeChange_ = true;
 		desc.continuousCollision_ = continuousCollision_;
 		desc.layer_ = ToObjectLayer(bodyType_, actor.Layer());
-		syncedBodyType_ = bodyType_;
 
 		/// [EN] Material and motion settings; gravity off is a gravity factor of 0.
 		/// [JP] 材質と運動の設定。重力を切るのは、重力の倍率を 0 にすることと同じ。
@@ -179,7 +178,6 @@ namespace SeedCore
 		desc.gravityFactor_ = useGravity_ ? gravityScale_ : 0.0f;
 		desc.allowedDOFs_ = allowedDOFs;
 		desc.isSensor_ = isTrigger_;
-		syncedTrigger_ = isTrigger_;
 
 		/// [EN] A trigger is marked in the layer as well, so the layer filters can let it meet static and kinematic bodies.
 		/// [JP] トリガーはレイヤーにも印を付け、レイヤーフィルターがスタティック・キネマティックのボディと組ませられるようにする。
@@ -373,6 +371,22 @@ namespace SeedCore
 		actor.GetService<Physics>()->ReleaseShape(shapeHandle_);
 
 		bodyID_ = JPH::BodyID();
+	}
+
+	void Rigidbody::OnRevision()
+	{
+		if (bodyID_.IsInvalid())
+		{
+			return;
+		}
+
+		OnDestroy();
+		OnAwake();
+	}
+
+	void Rigidbody::Dispatch()
+	{
+		OnRevision();
 	}
 
 	/**
@@ -665,7 +679,7 @@ namespace SeedCore
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
 			moveTargetPosition_ = Vector3(targetPosition.x / pixelsPerMeter_, -targetPosition.y / pixelsPerMeter_, 0.0f);
-			moveTargetRotation_ = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -2.0f * std::atan2(targetRotation.z, targetRotation.w));
+			moveTargetRotation_ = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -2.0f * Atan2(targetRotation.z, targetRotation.w));
 		}
 		else
 		{
@@ -704,79 +718,18 @@ namespace SeedCore
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 前のステップからコードが変えたもの(bodyType_ と isTrigger_ と、Actor の
-	* LinearVelocity と AngularVelocity)をボディへ渡して次のステップで効く
-	* ようにし、MoveTo で始めた移動を elapsedTime の1ステップ分進める。
+	* Actor の LinearVelocity と AngularVelocity をボディへ渡し、MoveTo で
+	* 始めた移動を elapsedTime の1ステップ分進める。
 	* 固定ステップの前に PhysicsSystem から毎回呼ばれる。
 	*/
 	void Rigidbody::Apply(Float elapsedTime)
 	{
-		ApplyBodyType();
-		ApplyTrigger();
 		ApplyLinearVelocity();
 		ApplyAngularVelocity();
 
 		/// [EN] The move comes last, so while it is in progress its velocity wins over a LinearVelocity or AngularVelocity written by code.
 		/// [JP] 移動は最後に行い、移動中はコードから書かれた LinearVelocity・AngularVelocity よりも移動の速度を優先する。
 		ApplyMove(elapsedTime);
-	}
-
-	/**
-	* [EN]
-	* Hands bodyType_ to the body when it differs from the motion type
-	* the body has, so switching it from code or the inspector during
-	* play takes effect.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* bodyType_ がボディの今の運動タイプと違えばボディへ渡し、プレイ中に
-	* コードやインスペクタから切り替えたものが効くようにする。
-	*/
-	void Rigidbody::ApplyBodyType()
-	{
-		if (bodyID_.IsInvalid())
-		{
-			return;
-		}
-
-		if (bodyType_ == syncedBodyType_)
-		{
-			return;
-		}
-
-		syncedBodyType_ = bodyType_;
-		GetActor().GetService<Physics>()->BodyMotionType(bodyID_, ToMotionType(syncedBodyType_));
-	}
-
-	/**
-	* [EN]
-	* Hands isTrigger_ to the body when it differs from the value the
-	* body has, so switching it from code or the inspector during play
-	* takes effect.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* isTrigger_ がボディの今の設定と違えばボディへ渡し、プレイ中にコードや
-	* インスペクタから切り替えたものが効くようにする。
-	*/
-	void Rigidbody::ApplyTrigger()
-	{
-		if (bodyID_.IsInvalid())
-		{
-			return;
-		}
-
-		/// [EN] An unchanged isTrigger_ leaves the body as it is.
-		/// [JP] isTrigger_ が変わっていなければ、ボディはそのまま。
-		if (isTrigger_ == syncedTrigger_)
-		{
-			return;
-		}
-
-		syncedTrigger_ = isTrigger_;
-		GetActor().GetService<Physics>()->BodyTrigger(bodyID_, syncedTrigger_);
 	}
 
 	/**

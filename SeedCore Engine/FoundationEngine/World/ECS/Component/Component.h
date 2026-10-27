@@ -193,6 +193,8 @@ namespace SeedCore
 		/// [EN] The type's OnTriggerExit, given the other actor.
 		/// [JP] 型の OnTriggerExit。相手の actor を受け取る。
 		void (*triggerExit_)(ComponentBehaviour*, const Actor&) = nullptr;
+
+		void (*revision_)(ComponentBehaviour*) = nullptr;
 	};
 
 	/**

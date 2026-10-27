@@ -43,6 +43,17 @@ namespace SeedCore
 		PhysicsSystem::DestroyColliderBody(GetActor(), bodyID_, shapeHandle_);
 	}
 
+	void CylinderCollider::OnRevision()
+	{
+		OnDestroy();
+		OnAwake();
+	}
+
+	void CylinderCollider::Dispatch()
+	{
+		OnRevision();
+	}
+
 	/**
 	* [EN]
 	* Creates and returns a cylinder shape from the current settings, scaled

@@ -5,6 +5,8 @@ struct ImGui_ImplDX12_InitInfo;
 namespace SeedCore
 {
 	class BindlessHeap;
+	class Graphics;
+	class Window;
 
 	/**
 	* [EN]
@@ -55,23 +57,25 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Creates the ImGui context with docking and multi-viewport enabled,
-		* initializes the Win32 backend on hwnd and the DirectX 12 backend on
-		* bindlessHeap (textures uploaded through commandQueue, one set of
-		* per-frame buffers for each of numberFramesInFlight), loads the
-		* Japanese font and applies the editor style. Returns false if any
-		* backend fails to initialize.
+		* initializes the Win32 backend on window and the DirectX 12 backend
+		* on graphics' bindless heap (textures uploaded through its direct
+		* queue, one set of per-frame buffers for each swap-chain buffer),
+		* loads the Japanese font, applies the editor style, and routes
+		* window's messages to ImGui. Returns false if any backend fails to
+		* initialize.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* ドッキングとマルチビューポートを有効にした ImGui コンテキストを作り、
-		* hwnd で Win32 バックエンドを、bindlessHeap で DirectX 12 バックエンドを
-		* 初期化し(テクスチャは commandQueue でアップロードし、フレームごとの
-		* バッファは numberFramesInFlight 個ぶん持つ)、日本語フォントを読み込んで
-		* エディタのスタイルを適用する。いずれかのバックエンドの初期化に
-		* 失敗したら false を返す。
+		* window で Win32 バックエンドを、graphics のバインドレスヒープで
+		* DirectX 12 バックエンドを初期化し(テクスチャは direct キューで
+		* アップロードし、フレームごとのバッファはスワップチェインの
+		* バッファ数ぶん持つ)、日本語フォントを読み込んでエディタのスタイルを
+		* 適用し、window のメッセージを ImGui へ流す。いずれかのバックエンドの
+		* 初期化に失敗したら false を返す。
 		*/
-		Bool Initialize(HWND hwnd, ID3D12Device* device, ID3D12CommandQueue* commandQueue, BindlessHeap* bindlessHeap, Int numberFramesInFlight);
+		Bool Initialize(Window& window, Graphics& graphics);
 
 		/**
 		* [EN]

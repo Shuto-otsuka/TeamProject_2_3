@@ -64,6 +64,8 @@
 
 #define SC_REFLECTION_FIELD_CONDITION(...)
 
+#define SC_REFLECTION_FIELD_REVISION()
+
 #define SC_REFLECTION_CLAMPED(min, max)
 #define SC_REFLECTION_CLAMPED_EX(displayName, min, max)
 

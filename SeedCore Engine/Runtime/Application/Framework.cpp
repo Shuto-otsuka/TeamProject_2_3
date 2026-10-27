@@ -18,7 +18,7 @@ namespace SeedCore
 
 	Int Framework::Run()
 	{
-		engine_->MainLoop();
+		engine_->Run();
 		return 0;
 	}
 }

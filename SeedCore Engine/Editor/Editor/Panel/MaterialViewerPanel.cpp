@@ -136,23 +136,20 @@ namespace SeedCore
 				ImVec2 previewSize = ImGui::GetContentRegionAvail();
 				previewSize.y = Max(previewSize.y, 100.0f);
 
-				if (context_.preview_.material_.camera_)
-				{
-					context_.preview_.material_.camera_->Resize(previewSize.x, previewSize.y);
-				}
+				context_.preview_.material_.camera_.Resize(previewSize.x, previewSize.y);
 
 				ImGui::Image(ImTextureID(context_.graphics_.graphics_->MaterialDisplayGPUHandle().ptr), previewSize);
 
 				Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
 				Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
 
-				if (ImGui::IsItemHovered() && context_.preview_.material_.camera_ && context_.preview_.material_.cameraController_)
+				if (ImGui::IsItemHovered())
 				{
 					if (orbitHeld || panHeld)
 					{
 						InputSystem::BeginMouseCapture();
 					}
-					context_.preview_.material_.cameraController_->Update(*context_.preview_.material_.camera_, ImGui::GetIO().DeltaTime);
+					context_.preview_.material_.cameraController_.Update(context_.preview_.material_.camera_, ImGui::GetIO().DeltaTime);
 				}
 
 				if (!orbitHeld && !panHeld)

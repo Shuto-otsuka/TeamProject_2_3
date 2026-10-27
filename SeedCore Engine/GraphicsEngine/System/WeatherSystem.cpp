@@ -1,5 +1,6 @@
 #include <GraphicsEngine/System/WeatherSystem.h>
 #include <GraphicsEngine/Environment/Weather.h>
+#include <GraphicsEngine/Environment/VolumetricCloud/VolumetricCloudScapes.h>
 #include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/ECS/Component/Active.h>
@@ -32,8 +33,8 @@ namespace SeedCore
 	void WeatherSystem::GetTarget(WeatherType type, VolumetricCloudScapesRayConstantBuffer& target)
 	{
 		/// [EN] Deliberately does NOT touch skyZenithColor_/skyHorizonColor_:
-		///      those are CelestialSystem's time-of-day gradient (see
-		///      Engine.cpp), written every frame BEFORE this runs. If weather
+		///      those are CelestialSystem's time-of-day gradient, applied by
+		///      VolumetricCloudScapesSystem every frame. If weather
 		///      set them to fixed absolute colors, a night sky under Clear
 		///      weather would get dragged back toward a fixed "daytime blue"
 		///      here, and any progress made by the lerp below would be wiped
@@ -43,8 +44,8 @@ namespace SeedCore
 		///      pure multipliers/amounts with no such conflict, so they compose
 		///      correctly with the time-of-day color regardless of write order.
 		/// [JP] 意図的に skyZenithColor_/skyHorizonColor_ には触れない:
-		///      それらは CelestialSystem の時刻グラデーション(Engine.cpp 参照)
-		///      であり、この関数が呼ばれる前に毎フレーム書き込まれる。もし
+		///      それらは CelestialSystem の時刻グラデーションであり、
+		///      VolumetricCloudScapesSystem が毎フレーム反映する。もし
 		///      天候側が固定の絶対色を設定すると、Clear天候の夜空がここで
 		///      固定の「昼の青」へ引き戻され、下の補間が1フレーム分進んでも
 		///      次のフレームで Celestial に再び上書きされて消えてしまう -
@@ -149,11 +150,13 @@ namespace SeedCore
 		return WeatherType::Clear;
 	}
 
-	void WeatherSystem::Execute(World& world, Float deltaTime, Uint32 monthOfYear, VolumetricCloudScapesRayConstantBuffer& cloudSettings)
+	void WeatherSystem::Execute(World& world, Float deltaTime, Uint32 monthOfYear)
 	{
 		Query<Read<Active>, Write<Weather>> query(world);
 
 		Bool found = false;
+		WeatherType weatherType = WeatherType::Clear;
+		Float t = 0.0f;
 
 		query.ForEach([&](const Active& active, Weather& weather)
 			{
@@ -175,16 +178,8 @@ namespace SeedCore
 					}
 				}
 
-				VolumetricCloudScapesRayConstantBuffer target = cloudSettings;
-				GetTarget(weather.type_, target);
-
-				Float t = weather.transitionSeconds_ > 0.0f ? std::clamp(deltaTime / weather.transitionSeconds_, 0.0f, 1.0f) : 1.0f;
-
-				cloudSettings.coverage_ = Lerp(cloudSettings.coverage_, target.coverage_, t);
-				cloudSettings.densityScale_ = Lerp(cloudSettings.densityScale_, target.densityScale_, t);
-				cloudSettings.rain_ = Lerp(cloudSettings.rain_, target.rain_, t);
-				cloudSettings.windSpeed_ = Lerp(cloudSettings.windSpeed_, target.windSpeed_, t);
-				cloudSettings.skyBrightness_ = Lerp(cloudSettings.skyBrightness_, target.skyBrightness_, t);
+				weatherType = weather.type_;
+				t = weather.transitionSeconds_ > 0.0f ? std::clamp(deltaTime / weather.transitionSeconds_, 0.0f, 1.0f) : 1.0f;
 
 				/// [JP] 濡れ具合: 雨/暴風(Storm)の間に上がり、止んだ後もゆっくり乾く。
 				Bool raining = weather.type_ == WeatherType::Rain || weather.type_ == WeatherType::Storm;
@@ -230,6 +225,36 @@ namespace SeedCore
 
 				const Float thunderDecayRate = 4.0f;
 				weather.thunderFlash_ = Max(weather.thunderFlash_ - deltaTime * thunderDecayRate, 0.0f);
+			});
+
+		if (!found)
+		{
+			return;
+		}
+
+		Bool cloudFound = false;
+		Query<Read<Active>, Write<VolumetricCloudScapes>> cloudQuery(world);
+		cloudQuery.ForEach([&](const Active& active, VolumetricCloudScapes& cloud)
+			{
+				if (!active.active_ || cloudFound)
+				{
+					return;
+				}
+				cloudFound = true;
+
+				VolumetricCloudScapesRayConstantBuffer target;
+				target.coverage_ = cloud.coverage_;
+				target.densityScale_ = cloud.densityScale_;
+				target.rain_ = cloud.rain_;
+				target.windSpeed_ = cloud.windSpeed_;
+				target.skyBrightness_ = cloud.skyBrightness_;
+				GetTarget(weatherType, target);
+
+				cloud.coverage_ = Lerp(cloud.coverage_, target.coverage_, t);
+				cloud.densityScale_ = Lerp(cloud.densityScale_, target.densityScale_, t);
+				cloud.rain_ = Lerp(cloud.rain_, target.rain_, t);
+				cloud.windSpeed_ = Lerp(cloud.windSpeed_, target.windSpeed_, t);
+				cloud.skyBrightness_ = Lerp(cloud.skyBrightness_, target.skyBrightness_, t);
 			});
 	}
 

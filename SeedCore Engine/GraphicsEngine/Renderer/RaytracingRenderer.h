@@ -6,7 +6,6 @@
 #include <GraphicsEngine/Model/Morph/MorphBlendShader.h>
 #include <GraphicsEngine/Model/Skin/SkinBlendShader.h>
 #include <GraphicsEngine/Raytracing/BottomLevelAccelerationStructure.h>
-#include <GraphicsEngine/Raytracing/RaytracingContext.h>
 #include <GraphicsEngine/Raytracing/RaytracingDispatch.h>
 #include <GraphicsEngine/Raytracing/TopLevelAccelerationStructure.h>
 #include <GraphicsEngine/Renderer/AmbientOcclusionRenderer.h>
@@ -38,6 +37,15 @@ namespace SeedCore
 	class ShaderCache;
 	class ShaderResourceIndicesSystem;
 	class UnorderedAccessIndicesSystem;
+	class ShadowSystem;
+	class AmbientOcclusionSystem;
+	class ReflectionSystem;
+	class GlobalIlluminationSystem;
+	class RefractionSystem;
+	class SubsurfaceScatteringSystem;
+	class VolumetricLightSystem;
+	class VolumetricCloudScapesSystem;
+	class VolumetricStarSystem;
 	class World;
 
 	/**
@@ -232,7 +240,7 @@ namespace SeedCore
 		* オフの間は Build が BLAS/TLAS の処理を丸ごと省くため、全てオフに
 		* すれば GPU のコストはかからない。
 		*/
-		void SetRaytracingSettings(const RaytracingContext& settings);
+		void SetRaytracingSettings(const ShadowSystem& shadow, const AmbientOcclusionSystem& ambientOcclusion, const ReflectionSystem& reflection, const GlobalIlluminationSystem& globalIllumination, const RefractionSystem& refraction, const SubsurfaceScatteringSystem& subsurfaceScattering, const VolumetricLightSystem& volumetricLight, const VolumetricCloudScapesSystem& volumetricCloudScapes, const VolumetricStarSystem& volumetricStar);
 
 	private:
 		/// [EN] Maximum number of instances put into the TLAS. Must equal ReflectionRenderer's instance-table capacity, since the ray-traced passes look up that table with InstanceID().
@@ -353,7 +361,7 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* The per-Crister tables that Reflection.hlsli's ResolveReflectionMaterial
+		* The per-Crister tables that RaytracingReflection.hlsli's ResolveReflectionMaterial
 		* reads on a ray hit: the material array, and the index into it for every
 		* triangle of the RT proxy. Both are small, built once per unique mesh, and
 		* read once per hit, so they live on an UPLOAD heap and are written with a
@@ -362,7 +370,7 @@ namespace SeedCore
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* レイが当たったときに Reflection.hlsli の ResolveReflectionMaterial が
+		* レイが当たったときに RaytracingReflection.hlsli の ResolveReflectionMaterial が
 		* 読む、Crister ごとのテーブル。マテリアル配列と、RT プロキシの
 		* 三角形ごとのそこへのインデックス。どちらも小さく、ユニークな
 		* メッシュごとに 1 度だけ構築し、ヒットごとに 1 回読むだけなので、
@@ -458,11 +466,11 @@ namespace SeedCore
 		TopLevelAccelerationStructure tlas_;
 
 		ResourcePtr<ShadowRenderer> shadowRenderer_;
-		ShadowRayConstantBuffer shadowSettings_;
+		RaytracingShadowConstantBuffer shadowSettings_;
 		Bool shadowEnabled_ = true;
 
 		ResourcePtr<AmbientOcclusionRenderer> ambientOcclusionRenderer_;
-		AmbientOcclusionRayConstantBuffer ambientOcclusionSettings_;
+		RaytracingAmbientOcclusionConstantBuffer ambientOcclusionSettings_;
 		Bool ambientOcclusionEnabled_ = false;
 
 		ResourcePtr<SubsurfaceScatteringRenderer> subsurfaceScatteringRenderer_;
@@ -470,7 +478,7 @@ namespace SeedCore
 		Bool subsurfaceScatteringEnabled_ = false;
 
 		ResourcePtr<ReflectionRenderer> reflectionRenderer_;
-		ReflectionRayConstantBuffer reflectionSettings_;
+		RaytracingReflectionConstantBuffer reflectionSettings_;
 		Bool reflectionEnabled_ = false;
 
 		ResourcePtr<RefractionRenderer> refractionRenderer_;
@@ -478,7 +486,7 @@ namespace SeedCore
 		Bool refractionEnabled_ = false;
 
 		ResourcePtr<GlobalIlluminationRenderer> globalIlluminationRenderer_;
-		GlobalIlluminationRayConstantBuffer globalIlluminationSettings_;
+		RaytracingGlobalIlluminationConstantBuffer globalIlluminationSettings_;
 		Bool globalIlluminationEnabled_ = false;
 
 		ResourcePtr<VolumetricCloudScapesRenderer> volumetricCloudScapesRenderer_;

@@ -57,83 +57,99 @@ namespace SeedCore
 	public:
 		/// [EN] How the body moves.
 		/// [JP] ボディの動き方。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("動作モード")
 		BodyType bodyType_ = BodyType::Dynamic;
 
 		/// [EN] Sweeps the body along its motion so a fast body does not pass through thin geometry.
 		/// [JP] 移動経路に沿ってボディを掃引し、高速なボディが薄い物体をすり抜けないようにする。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_CONDITION(bodyType_ == BodyType::Dynamic)
 		SC_REFLECTION_FIELD_EX("連続衝突判定")
 		Bool continuousCollision_ = false;
 
 		/// [EN] Mass in kilograms; the inertia is derived from the shape at this mass.
 		/// [JP] 質量(kg)。慣性はこの質量に合わせて形状から求める。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("質量", 0.001f, 100.0f)
 		Float mass_ = 1.0f;
 
 		/// [EN] Damping that slows the body's linear velocity over time.
 		/// [JP] 移動速度を時間とともに弱める減衰。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("空気抵抗", 0.0f, 10.0f)
 		Float linearDrag_ = 0.5f;
 
 		/// [EN] Damping that slows the body's angular velocity over time.
 		/// [JP] 回転速度を時間とともに弱める減衰。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("角抵抗", 0.0f, 10.0f)
 		Float angularDrag_ = 0.5f;
 
 		/// [EN] Friction coefficient: 0 slides freely, 1 grips strongly.
 		/// [JP] 摩擦係数。0 で滑り、1 で強く止まる。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("摩擦係数", 0.0f, 1.0f)
 		Float friction_ = 0.2f;
 
 		/// [EN] Restitution: 0 does not bounce, 1 bounces back with full speed.
 		/// [JP] 反発係数。0 で跳ねず、1 で速さを保って跳ね返る。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("反発係数", 0.0f, 1.0f)
 		Float restitution_ = 0.5f;
 
 		/// [EN] Whether world gravity acts on the body.
 		/// [JP] ワールドの重力をボディに働かせるか。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("重力")
 		Bool useGravity_ = true;
 
 		/// [EN] Multiplier on world gravity.
 		/// [JP] ワールドの重力に掛ける倍率。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_CONDITION(useGravity_)
 		SC_REFLECTION_FIELD_EX("重力倍率")
 		Float gravityScale_ = 1.0f;
 
 		/// [EN] Locks movement along world X.
 		/// [JP] ワールドの X 方向の移動を固定する。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("位置X軸固定")
 		Bool freezePositionX_ = false;
 
 		/// [EN] Locks movement along world Y.
 		/// [JP] ワールドの Y 方向の移動を固定する。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("位置Y軸固定")
 		Bool freezePositionY_ = false;
 
 		/// [EN] Locks movement along world Z; has no effect on a canvas body.
 		/// [JP] ワールドの Z 方向の移動を固定する。Canvas のボディには効かない。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("位置Z軸固定")
 		Bool freezePositionZ_ = false;
 
 		/// [EN] Locks rotation about X; has no effect on a canvas body.
 		/// [JP] X 軸まわりの回転を固定する。Canvas のボディには効かない。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("回転X軸固定")
 		Bool freezeRotationX_ = false;
 
 		/// [EN] Locks rotation about Y; has no effect on a canvas body.
 		/// [JP] Y 軸まわりの回転を固定する。Canvas のボディには効かない。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("回転Y軸固定")
 		Bool freezeRotationY_ = false;
 
 		/// [EN] Locks rotation about Z; on a canvas body it locks the in-plane rotation.
 		/// [JP] Z 軸まわりの回転を固定する。Canvas のボディでは平面内の回転を固定する。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("回転Z軸固定")
 		Bool freezeRotationZ_ = false;
 
 		/// [EN] Whether the body reports overlaps without physical response.
 		/// [JP] 物理応答を行わず、重なりだけを知らせるトリガーにするか。
+		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("トリガー")
 		Bool isTrigger_ = false;
 
@@ -209,6 +225,11 @@ namespace SeedCore
 		* ボディを破棄し、形状への参照を解放する。
 		*/
 		void OnDestroy();
+
+		void OnRevision();
+
+	public:
+		void Dispatch();
 
 	public:
 		/**
@@ -355,34 +376,6 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Hands bodyType_ to the body when it differs from the motion type
-		* the body has, so switching it from code or the inspector during
-		* play takes effect.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* bodyType_ がボディの今の運動タイプと違えばボディへ渡し、プレイ中に
-		* コードやインスペクタから切り替えたものが効くようにする。
-		*/
-		void ApplyBodyType();
-
-		/**
-		* [EN]
-		* Hands isTrigger_ to the body when it differs from the value the
-		* body has, so switching it from code or the inspector during play
-		* takes effect.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* isTrigger_ がボディの今の設定と違えばボディへ渡し、プレイ中にコードや
-		* インスペクタから切り替えたものが効くようにする。
-		*/
-		void ApplyTrigger();
-
-		/**
-		* [EN]
 		* Hands the actor's LinearVelocity to the body when it differs from
 		* the value last copied back. On a canvas body the velocity is in
 		* pixels per second with Y down, and its Z is ignored. A Static body
@@ -454,14 +447,6 @@ namespace SeedCore
 		/// [EN] Angular velocity last exchanged with the body, in AngularVelocity's units; an AngularVelocity that differs from it was written by code.
 		/// [JP] 最後にボディとやり取りした角速度(AngularVelocity の単位)。これと違う AngularVelocity は、コードから書かれたもの。
 		Vector3 syncedAngularVelocity_ = { 0.0f, 0.0f, 0.0f };
-
-		/// [EN] Body type the body currently has; a bodyType_ that differs from it was switched after the body was set up.
-		/// [JP] ボディが今持っている動作モード。これと違う bodyType_ は、ボディを設定した後に切り替えられたもの。
-		BodyType syncedBodyType_ = BodyType::Dynamic;
-
-		/// [EN] Whether the body is currently a trigger; an isTrigger_ that differs from it was switched after the body was set up.
-		/// [JP] ボディが今トリガーかどうか。これと違う isTrigger_ は、ボディを設定した後に切り替えられたもの。
-		Bool syncedTrigger_ = false;
 
 		/// [EN] Whether a move started by MoveTo is in progress, including the step after arrival that stops the body.
 		/// [JP] MoveTo で始めた移動の途中かどうか。着いた後にボディを止めるステップも含む。

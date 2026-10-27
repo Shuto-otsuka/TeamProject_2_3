@@ -21,6 +21,7 @@ namespace SeedCore
 		TriggerEnter,
 		TriggerStay,
 		TriggerExit,
+		Revision,
 	};
 
 	struct ManagedApi

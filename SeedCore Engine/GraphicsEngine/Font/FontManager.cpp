@@ -1,4 +1,5 @@
 #include <GraphicsEngine/Font/FontManager.h>
+#include <FoundationEngine/Resource/Gateway.h>
 
 namespace SeedCore
 {
@@ -9,6 +10,7 @@ namespace SeedCore
 			return false;
 		}
 
+		Gateway::BindFontManager(this);
 		return true;
 	}
 

@@ -1,6 +1,8 @@
 #include <Editor/Editor/Panel/GameWindowPanel.h>
+#include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <FoundationEngine/Input/InputSystem.h>
+#include <GraphicsEngine/System/CameraSystem.h>
 
 namespace SeedCore
 {
@@ -34,14 +36,20 @@ namespace SeedCore
 		}
 	}
 
-	GameWindowPanel::GameWindowPanel(CameraSystem& cameraSystem, ImGuiRenderer& imgui, ImGuiTexture& imguiTexture) : cameraSystem_(cameraSystem), imgui_(imgui), imguiTexture_(imguiTexture)
+	GameWindowPanel::GameWindowPanel(EditorContext& context, ImGuiTexture& imguiTexture) : context_(context), imguiTexture_(imguiTexture)
 	{
 		/// No Code
 	}
 
 	void GameWindowPanel::Draw(D3D12_GPU_DESCRIPTOR_HANDLE frameBufferHandle, Float toolbarHeight)
 	{
-		ImTextureID displayTextureId = cameraSystem_.ActiveCamera() ? ImTextureID(frameBufferHandle.ptr) : imguiTexture_.Icon(IconType::NonCameraWarning);
+		CameraSystem* cameraSystem = context_.view_.game_.cameraSystem_;
+		if (!cameraSystem)
+		{
+			return;
+		}
+
+		ImTextureID displayTextureId = cameraSystem->ActiveCamera() ? ImTextureID(frameBufferHandle.ptr) : imguiTexture_.Icon(IconType::NonCameraWarning);
 
 		if ((ImGui::IsKeyDown(ImGuiKey_LeftCtrl) || ImGui::IsKeyDown(ImGuiKey_RightCtrl)) && ImGui::IsKeyPressed(ImGuiKey_F11))
 		{
@@ -83,12 +91,12 @@ namespace SeedCore
 				/// [JP] 全画面でも通常ビューと同じく Free カメラ入力を処理する
 				///      （Free モード＆ホバー中）。これが無いと全画面でカメラが動かない。
 				Bool fullscreenHovered = ImGui::IsWindowHovered();
-				UpdateFreeCameraMouseCapture(cameraSystem_.Mode() == CameraMode::Free && fullscreenHovered);
+				UpdateFreeCameraMouseCapture(cameraSystem->Mode() == CameraMode::Free && fullscreenHovered);
 
-				if (cameraSystem_.Mode() == CameraMode::Free && fullscreenHovered)
+				if (cameraSystem->Mode() == CameraMode::Free && fullscreenHovered)
 				{
 					Float deltaTime = ImGui::GetIO().DeltaTime;
-					cameraSystem_.Navigate(deltaTime);
+					cameraSystem->Navigate(deltaTime);
 				}
 
 				ImVec2 regionSize = ImGui::GetContentRegionAvail();
@@ -113,7 +121,7 @@ namespace SeedCore
 				/// [EN] Publish where the game image sits on the desktop, so the cursor can be mapped from it onto the 1920x1080 game screen.
 				/// [JP] ゲーム画像のデスクトップ上の位置を公開し、カーソルをそこから 1920x1080 のゲーム画面へ写せるようにする。
 				ImVec2 imageScreenPos = ImGui::GetCursorScreenPos();
-				cameraSystem_.Rect(Vector4(imageScreenPos.x, imageScreenPos.y, imageWidth, imageHeight));
+				cameraSystem->Rect(Vector4(imageScreenPos.x, imageScreenPos.y, imageWidth, imageHeight));
 
 				ImGui::Image(displayTextureId, ImVec2(imageWidth, imageHeight));
 				imageHovered_ = ImGui::IsItemHovered();
@@ -127,26 +135,26 @@ namespace SeedCore
 			return;
 		}
 
-		ImGuiID dockspaceID = imgui_.DockSpaceID();
+		ImGuiID dockspaceID = context_.graphics_.imgui_->DockSpaceID();
 		ImGui::SetNextWindowDockID(dockspaceID, ImGuiCond_FirstUseEver);
 
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8.0f, 8.0f));
 
 		if (ImGui::Begin("ゲームビュー"))
 		{
-			Int currentMode = static_cast<Int>(cameraSystem_.Mode());
+			Int currentMode = static_cast<Int>(cameraSystem->Mode());
 			ImGui::RadioButton("Free", &currentMode, 0);
 			ImGui::SameLine();
 			ImGui::RadioButton("User", &currentMode, 1);
-			cameraSystem_.Mode(static_cast<CameraMode>(currentMode));
+			cameraSystem->Mode(static_cast<CameraMode>(currentMode));
 
 			Bool windowedHovered = ImGui::IsWindowHovered();
-			UpdateFreeCameraMouseCapture(cameraSystem_.Mode() == CameraMode::Free && windowedHovered);
+			UpdateFreeCameraMouseCapture(cameraSystem->Mode() == CameraMode::Free && windowedHovered);
 
-			if (cameraSystem_.Mode() == CameraMode::Free && windowedHovered)
+			if (cameraSystem->Mode() == CameraMode::Free && windowedHovered)
 			{
 				Float deltaTime = ImGui::GetIO().DeltaTime;
-				cameraSystem_.Navigate(deltaTime);
+				cameraSystem->Navigate(deltaTime);
 			}
 
 			ImVec2 regionSize = ImGui::GetContentRegionAvail();
@@ -178,7 +186,7 @@ namespace SeedCore
 
 				/// [EN] Publish where the game image sits on the desktop, so the cursor can be mapped from it onto the 1920x1080 game screen.
 				/// [JP] ゲーム画像のデスクトップ上の位置を公開し、カーソルをそこから 1920x1080 のゲーム画面へ写せるようにする。
-				cameraSystem_.Rect(Vector4(screenPos.x, screenPos.y, imageWidth, imageHeight));
+				cameraSystem->Rect(Vector4(screenPos.x, screenPos.y, imageWidth, imageHeight));
 
 				ImGui::PushStyleVar(ImGuiStyleVar_ImageBorderSize, 0.0f);
 				ImGui::Image(displayTextureId, ImVec2(imageWidth, imageHeight));

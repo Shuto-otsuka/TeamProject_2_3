@@ -4,7 +4,7 @@
 #include "../../Shader/Constants.hlsli"
 #include "../../Shader/Sampler.hlsli"
 #include "../../Light/Light.hlsli"
-#include "../../Raytracing/VolumetricCloudScapes/VolumetricCloudScapes.hlsli"
+#include "../../Environment/VolumetricCloud/VolumetricCloudScapes.hlsli"
 
 /**
 * [EN]
@@ -133,7 +133,7 @@ void main(uint3 id : SV_DispatchThreadID)
 				t += step_length;
 			}
 
-			color = color * transmittance + scattering;
+			color = color * lerp(1.0, transmittance, saturate(tuning.ibl_intensity_)) + scattering * tuning.ibl_intensity_;
 		}
 	}
 

@@ -1,367 +1,53 @@
 #include <Runtime/Application/Engine.h>
-#include <FoundationEngine/Utility/Bootstrap.h>
-#include <FoundationEngine/Input/InputSystem.h>
-#include <FoundationEngine/Coroutine/CoroutineSystem.h>
-#include <FoundationEngine/File/FileDirectory.h>
-#include <PhysicsEngine/Physics/PhysicsSystem.h>
-#include <AudioEngine/Audio/AudioSystem.h>
-#include <AudioEngine/Audio/Audio.h>
-#include <PhysicsEngine/Physics/Physics.h>
-#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
-#include <FoundationEngine/Interop/QueryInstance.h>
-#include <FoundationEngine/Interop/RenderInstance.h>
-#include <FoundationEngine/Resource/Gateway.h>
-#include <FoundationEngine/World/Layer/LayerRegistry.h>
-#include <FoundationEngine/Log/Error.h>
-
-#include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
-#include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
-#include <GraphicsEngine/System/CelestialSystem.h>
-#include <FoundationEngine/Application/Application.h>
 
 namespace SeedCore
 {
-	void Engine::Boot(const Bootstrap& boot)
+	Bool Engine::Boot(const Bootstrap& bootstrap)
 	{
-		gameConfig_.Load();
+		gameConfig_.Initialize();
 
-		Bootstrap windowBoot = boot;
-		windowBoot.WindowDesc_.Width_ = gameConfig_.windowWidth_;
-		windowBoot.WindowDesc_.Height_ = gameConfig_.windowHeight_;
-		windowBoot.WindowDesc_.Fullscreen_ = gameConfig_.fullscreen_;
-
-		std::wstring windowTitle = gameConfig_.executableName_.w_str();
-		if (!windowTitle.empty())
+		if (!core_.BootWindow(bootstrap, gameConfig_))
 		{
-			windowBoot.WindowDesc_.Title_ = windowTitle.c_str();
+			return false;
 		}
 
-		if (!BootWindow(windowBoot))
+		JobTaskflow flow;
+		core_.BootPhysics(flow);
+		core_.BootSplash(flow, gameConfig_);
+		core_.BootGraphics(flow, gameConfig_);
+		core_.BootAudio(flow, gameConfig_);
+		core_.BootFont(flow);
+		core_.BootResource(flow);
+		core_.BootService(flow);
+		core_.BootPrefab(flow);
+		core_.BootCsharp(flow);
+		core_.BootPlugin(flow);
+		core_.BootScene(flow, gameConfig_);
+		return core_.Execute(flow);
+	}
+
+	void Engine::Run()
+	{
+		while (core_.Pump() && !core_.Quit())
 		{
-			return;
-		}
-
-		world_ = MakePtr<World>();
-		gameTimer_ = world_->AddService<GameTimer>();
-
-		system_ = MakePtr<SystemScheduler>();
-
-		auto worker = MakeWorkerInterface<JobScheduler>();
-		executor_ = MakePtr<JobExecutor>(std::thread::hardware_concurrency(), std::move(worker));
-
-		joltManager_ = MakePtr<JoltManager>();
-		if (!joltManager_->Initialize(*executor_))
-		{
-			return;
-		}
-		Gateway::BindJoltManager(joltManager_.get());
-
-		RECT clientRect{};
-		GetClientRect(hwnd_, &clientRect);
-		Uint32 clientWidth = static_cast<Uint32>(clientRect.right - clientRect.left);
-		Uint32 clientHeight = static_cast<Uint32>(clientRect.bottom - clientRect.top);
-
-		splashSystem_.Initialize(gameConfig_.showSplashWarning_, gameConfig_.showSplashFiction_);
-
-		graphics_ = MakePtr<Graphics>();
-		if (!graphics_->Initialize(hwnd_, clientWidth, clientHeight, splashSystem_.Config()))
-		{
-			return;
-		}
-
-		Uint32 resizedWidth = 0;
-		Uint32 resizedHeight = 0;
-		window_->ConsumeResized(resizedWidth, resizedHeight);
-
-		criManager_ = MakePtr<CriManager>();
-		if (!criManager_->Initialize())
-		{
-			return;
-		}
-		Gateway::BindCriManager(criManager_.get());
-
-		fontManager_ = MakePtr<FontManager>();
-		if (!fontManager_->Initialize())
-		{
-			return;
-		}
-		Gateway::BindFontManager(fontManager_.get());
-
-		audioModule_ = MakePtr<AudioModule>();
-		resource_ = MakePtr<ResourceCache>();
-		graphics_->GetGraphicsModule().Install(*resource_);
-		audioModule_->Install(*resource_);
-		resource_->Async();
-
-		QueryInstance* queryInstance = world_->AddService<QueryInstance>();
-		RenderInstance* renderInstance = world_->AddService<RenderInstance>();
-		world_->AddService<Physics>(*queryInstance);
-		world_->AddService<DebugDraw>(*renderInstance);
-		world_->AddService<Audio>();
-		world_->AddService<Application>();
-
-		sceneSystem_ = MakePtr<SceneSystem>(*world_, *resource_, *executor_);
-		prefabSystem_ = MakePtr<PrefabSystem>(*world_, *resource_);
-
-		InputSystem::Initialize();
-		LayerRegistry::Load();
-
-		std::filesystem::path pluginDirectory = FileDirectory::ExecutableDirectory();
-		csharpHost_.Initialize(pluginDirectory);
-		csharpHost_.Load(*world_);
-		pluginHost_.Initialize(pluginDirectory, nullptr);
-		pluginHost_.Load(*world_);
-
-		ScResolution::ResSize outputSize = ToResSize(gameConfig_.resolution_);
-		Uint32 outputWidth = static_cast<Uint32>(outputSize.Width);
-		Uint32 outputHeight = static_cast<Uint32>(outputSize.Height);
-
-		graphics_->ResizeRenderTarget(outputWidth, outputHeight, gameConfig_.upscaleMode_);
-
-		graphics_->Reflex(gameConfig_.useReflex_, false);
-		graphics_->DeepDVC(gameConfig_.useDeepDVC_, 0.5f, 0.25f);
-		graphics_->FrameGeneration(gameConfig_.useFrameGeneration_);
-
-		if (gameConfig_.initialScenePath_.view().empty())
-		{
-			SC_LOG_ERROR("起動シーンが設定されていません。GameConfig の初回シーンを設定してください");
-		}
-		else
-		{
-			SceneVisual visual;
-			if (sceneSystem_->Load(std::filesystem::path(gameConfig_.initialScenePath_.str()), &visual))
+			core_.Tick();
+			core_.Input();
+			core_.Letterbox(gameConfig_);
+			if (core_.Splash())
 			{
-				raytracing_ = DeserializeRaytracingContext(visual.raytracing_);
+				continue;
 			}
-			else
-			{
-				SC_LOG_ERROR("起動シーンの読み込みに失敗しました: {}", gameConfig_.initialScenePath_.str());
-			}
+			core_.Begin();
+			core_.Play();
+			core_.Simulate(0.0f);
+			core_.Render(gameConfig_);
+			core_.End();
+			core_.Present();
 		}
 	}
 
 	void Engine::Shutdown()
 	{
-		if (graphics_)
-		{
-			graphics_->Wait();
-		}
-
-		if (window_)
-		{
-			window_->RestoreAccessibility();
-		}
-
-		if (world_)
-		{
-			pluginHost_.Unload(*world_);
-			csharpHost_.Unload(*world_);
-		}
-
-		InputSystem::Finalize();
-
-		if (sceneSystem_)
-		{
-			sceneSystem_.reset();
-			sceneSystem_ = nullptr;
-		}
-
-		if (prefabSystem_)
-		{
-			prefabSystem_.reset();
-			prefabSystem_ = nullptr;
-		}
-
-		if (resource_)
-		{
-			resource_.reset();
-			resource_ = nullptr;
-		}
-
-		if (audioModule_)
-		{
-			audioModule_.reset();
-			audioModule_ = nullptr;
-		}
-
-		if (fontManager_)
-		{
-			fontManager_->Finalize();
-			fontManager_.reset();
-			fontManager_ = nullptr;
-		}
-
-		/// [EN] The world is torn down while the physics world still exists, since components such as CharacterController release Jolt objects that reach back into it; its audio module is already gone, so the world's audio service is destroyed first.
-		/// [JP] CharacterController などのコンポーネントは解放時に物理ワールドへ触れる Jolt のオブジェクトを手放すため、World は物理ワールドがまだある間に破棄する。オーディオモジュールは既に無いので、World のオーディオのサービスを先に壊す。
-		if (world_)
-		{
-			world_->RemoveService<Audio>();
-			world_.reset();
-			world_ = nullptr;
-		}
-
-		if (joltManager_)
-		{
-			joltManager_->Finalize();
-			joltManager_.reset();
-			joltManager_ = nullptr;
-		}
-
-		if (criManager_)
-		{
-			criManager_->Finalize();
-			criManager_.reset();
-			criManager_ = nullptr;
-		}
-
-		if (graphics_)
-		{
-			graphics_->Finalize();
-			graphics_.reset();
-			graphics_ = nullptr;
-		}
-	}
-
-	void Engine::MainLoop()
-	{
-		MSG msg{};
-		while (WM_QUIT != msg.message) [[likely]]
-		{
-			if (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) [[unlikely]]
-			{
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
-			}
-			else
-			{
-				if (window_->ConsumeCloseRequested() || world_->GetService<Application>()->ConsumeQuit())
-				{
-					return;
-				}
-
-				window_->GetTimer().Tick();
-				gameTimer_->Tick(window_->GetTimer().Delta());
-
-				/// [EN] The game rect is the one published last frame below; it only changes when the window is resized or moved.
-				/// [JP] ゲームの矩形は、下で前のフレームに公開したもの。変わるのはウィンドウの大きさや位置を変えたときだけ。
-				InputSystem::Update(true, cameraSystem_.Rect());
-
-				Uint32 resizedWidth = 0;
-				Uint32 resizedHeight = 0;
-				if (window_->ConsumeResized(resizedWidth, resizedHeight))
-				{
-					graphics_->ResizeSwapChain(resizedWidth, resizedHeight);
-				}
-
-				/// [EN] Publish where the letterboxed game image sits on the desktop (same fit as LetterScreen), so the cursor can be mapped from it onto the 1920x1080 game screen.
-				/// [JP] レターボックス表示されたゲーム画像のデスクトップ上の位置を(LetterScreen と同じ収め方で)公開し、カーソルをそこから 1920x1080 のゲーム画面へ写せるようにする。
-				RECT clientRect{};
-				GetClientRect(hwnd_, &clientRect);
-				POINT clientOrigin{};
-				ClientToScreen(hwnd_, &clientOrigin);
-				Float clientWidth = static_cast<Float>(clientRect.right - clientRect.left);
-				Float clientHeight = static_cast<Float>(clientRect.bottom - clientRect.top);
-				ScResolution::ResSize outputSize = ToResSize(gameConfig_.resolution_);
-				Float outputWidth = static_cast<Float>(outputSize.Width);
-				Float outputHeight = static_cast<Float>(outputSize.Height);
-				Float letterScale = Min(clientWidth / outputWidth, clientHeight / outputHeight);
-				Float letterWidth = outputWidth * letterScale;
-				Float letterHeight = outputHeight * letterScale;
-				Float letterLeft = static_cast<Float>(clientOrigin.x) + (clientWidth - letterWidth) * 0.5f;
-				Float letterTop = static_cast<Float>(clientOrigin.y) + (clientHeight - letterHeight) * 0.5f;
-				cameraSystem_.Rect(Vector4(letterLeft, letterTop, letterWidth, letterHeight));
-
-				splashSystem_.Update(*resource_);
-				if (!splashSystem_.Complete())
-				{
-					resource_->StepAsync(graphics_->GetContext().GetDevice(), graphics_->GetContext().GetDirectQueue(), graphics_->GetBC7CompressShader());
-
-					graphics_->DrawSplashScreen(splashSystem_);
-					continue;
-				}
-
-				graphics_->Begin();
-
-				if (!gameTimer_->Playing())
-				{
-					gameTimer_->Play();
-				}
-
-				AudioSystem::ResolveSound(audioModule_->Resource(), *world_);
-
-				/// [EN] Coroutines resume before physics and the script ticks, with this frame's input already read; they do not advance while paused, so frame waits do not count down.
-				/// [JP] コルーチンは物理とスクリプトの Tick より前に、今フレームの入力を読んだ後で再開する。ポーズ中は進めないので、フレーム待ちも減らない。
-				if (!gameTimer_->Paused())
-				{
-					CoroutineSystem::Update(gameTimer_->ScaledDeltaTime());
-				}
-
-				PhysicsSystem::ResolveMeshCollider(*graphics_->GetGraphicsModule().Resources().meshCollisionResource_, *world_);
-				PhysicsSystem::ResolveSoftbody(*graphics_->GetGraphicsModule().Resources().modelResource_, *world_);
-				PhysicsSystem::ApplyActive(*world_);
-				PhysicsSystem::ApplyCollider(*world_);
-
-				joltManager_->ActiveWorld(world_.get());
-
-				while (gameTimer_->Step())
-				{
-					PhysicsSystem::ApplyRigidbody(*world_, gameTimer_->FixedDeltaTime());
-					joltManager_->Execute(gameTimer_->FixedDeltaTime());
-					system_->Step(*world_, gameTimer_->FixedDeltaTime());
-				}
-
-				system_->Run(*world_, *resource_, *executor_, 0.0f, gameTimer_->ScaledDeltaTime(), gameTimer_->Playing());
-
-				sceneSystem_->Update(gameTimer_->ScaledDeltaTime());
-
-				if (const SceneBlueprint* switchedScene = sceneSystem_->ConsumeSwitchedScene())
-				{
-					raytracing_ = DeserializeRaytracingContext(switchedScene->Visual().raytracing_);
-				}
-
-				AudioSystem::Update(*world_, gameTimer_->ScaledDeltaTime());
-
-				criManager_->Execute();
-
-				if (raytracing_.daySystemEnabled_)
-				{
-					CelestialSystem::Advance(gameTimer_->ScaledDeltaTime(), raytracing_.daySystem_);
-
-					if (raytracing_.sunLightEnabled_)
-					{
-						CelestialResult celestial = CelestialSystem::Compute(raytracing_.daySystem_, raytracing_.sunLight_, raytracing_.moonLight_);
-						for (Int index = 0; index < 3; index++)
-						{
-							raytracing_.volumetricCloudScapes_.skyZenithColor_[index] = celestial.skyZenithColor_[index];
-							raytracing_.volumetricCloudScapes_.skyHorizonColor_[index] = celestial.skyHorizonColor_[index];
-						}
-					}
-				}
-				weatherSystem_.Execute(*world_, gameTimer_->ScaledDeltaTime(), raytracing_.daySystem_.monthOfYear_, raytracing_.volumetricCloudScapes_);
-
-				graphics_->Raytracing(raytracing_);
-				graphics_->Upscale(gameConfig_.useDlss_, gameConfig_.upscaleMode_);
-				graphics_->VerticalSync(gameConfig_.vsync_);
-
-				graphics_->GameRender(*gameTimer_, cameraSystem_, *world_);
-
-				graphics_->DrawLetterScreen();
-
-				graphics_->End();
-				graphics_->GetSwapChain().Present(graphics_->GetContext().GetDevice());
-			}
-		}
-	}
-
-	Bool Engine::BootWindow(const Bootstrap& boot)
-	{
-		window_ = MakePtr<Window>();
-		if (window_)
-		{
-			hwnd_ = window_->Create(boot);
-			window_->GetTimer().Start();
-			return true;
-		}
-		return false;
+		core_.Finalize();
 	}
 }

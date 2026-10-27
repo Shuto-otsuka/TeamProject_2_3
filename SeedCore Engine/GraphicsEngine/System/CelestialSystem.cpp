@@ -1,4 +1,11 @@
 #include <GraphicsEngine/System/CelestialSystem.h>
+#include <GraphicsEngine/Environment/Celestial/Celestial.h>
+#include <GraphicsEngine/Light/DirectionalLight.h>
+#include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <FoundationEngine/World/ECS/Query/Query.h>
+#include <FoundationEngine/World/ECS/Component/Active.h>
 
 namespace SeedCore
 {
@@ -14,9 +21,9 @@ namespace SeedCore
 		};
 
 		/// [EN] Night -> twilight -> sunrise/sunset -> day, keyed by sun elevation.
-		///      Independent of SunLightSettings (which colors the LIGHT hitting
+		///      Independent of SunSettings (which colors the LIGHT hitting
 		///      surfaces, not the sky background itself).
-		/// [JP] 夜→薄明→朝焼け/夕焼け→昼、太陽の仰角でキー付け。SunLightSettings
+		/// [JP] 夜→薄明→朝焼け/夕焼け→昼、太陽の仰角でキー付け。SunSettings
 		///      (物体に当たる光の色)とは独立 - こちらは空背景そのものの色。
 		const SkyGradientStop skyGradientStops_[] =
 		{
@@ -61,47 +68,143 @@ namespace SeedCore
 		}
 	}
 
-	void CelestialSystem::Advance(Float deltaTime, DaySystemConstantBuffer& day)
+	void CelestialSystem::Execute(World& world, Float deltaTime)
 	{
-		if (day.paused_)
+		enabled_ = false;
+		sunEnabled_ = false;
+		sunLightDriven_ = false;
+		moonEnabled_ = false;
+
+		Bool found = false;
+		Query<Read<Active>, Write<Celestial>> query(world);
+		query.ForEach([&](EntityID entityID, const Active& active, Celestial& celestial)
+			{
+				if (!active.active_ || found)
+				{
+					return;
+				}
+				found = true;
+
+				enabled_ = celestial.enable_;
+				sunEnabled_ = celestial.enable_ && celestial.sun_.enable_;
+				moonEnabled_ = celestial.enable_ && celestial.moon_.enable_;
+
+				if (enabled_)
+				{
+					Advance(deltaTime, celestial);
+				}
+				Compute(celestial);
+
+				if (!sunEnabled_)
+				{
+					return;
+				}
+
+				Actor actor = WorldAccessor::Make(world, entityID);
+				if (!actor)
+				{
+					return;
+				}
+
+				DirectionalLight* light = world.GetComponent<DirectionalLight>(ActorAccessor::GetEntity(actor));
+				if (!light)
+				{
+					return;
+				}
+
+				light->direction_ = result_.sunDirection_;
+				light->color_ = result_.sunColor_;
+				light->intensity_ = result_.sunIntensity_;
+				sunLightDriven_ = true;
+			});
+
+		if (!found)
+		{
+			Compute(Celestial());
+		}
+	}
+
+	const CelestialResult& CelestialSystem::Result()const
+	{
+		return result_;
+	}
+
+	Bool CelestialSystem::Enabled()const
+	{
+		return enabled_;
+	}
+
+	Bool CelestialSystem::SunEnabled()const
+	{
+		return sunEnabled_;
+	}
+
+	Bool CelestialSystem::SunLightDriven()const
+	{
+		return sunLightDriven_;
+	}
+
+	Bool CelestialSystem::MoonEnabled()const
+	{
+		return moonEnabled_;
+	}
+
+	Uint32 CelestialSystem::MonthOfYear()const
+	{
+		return monthOfYear_;
+	}
+
+	Float CelestialSystem::SunAngularRadius()const
+	{
+		return sunAngularRadius_;
+	}
+
+	void CelestialSystem::Advance(Float deltaTime, Celestial& celestial)
+	{
+		if (celestial.paused_)
 		{
 			return;
 		}
 
-		Float minutesPerDay = Max(day.dayLengthMinutes_, 0.001f);
-		Float hoursPerSecond = (24.0f / (minutesPerDay * 60.0f)) * day.timeScale_;
+		Float minutesPerDay = Max(celestial.dayLengthMinutes_, 0.001f);
+		Float hoursPerSecond = (24.0f / (minutesPerDay * 60.0f)) * celestial.timeScale_;
 
-		day.hourOfDay_ += deltaTime * hoursPerSecond;
+		celestial.hourOfDay_ += deltaTime * hoursPerSecond;
 
-		while (day.hourOfDay_ >= 24.0f)
+		while (celestial.hourOfDay_ >= 24.0f)
 		{
-			day.hourOfDay_ -= 24.0f;
+			celestial.hourOfDay_ -= 24.0f;
 
-			day.dayOfMonth_ += 1;
-			if (day.dayOfMonth_ > day.daysPerMonth_)
+			celestial.dayOfMonth_ += 1;
+			if (celestial.dayOfMonth_ > celestial.daysPerMonth_)
 			{
-				day.dayOfMonth_ = 1;
+				celestial.dayOfMonth_ = 1;
 
-				day.monthOfYear_ += 1;
-				if (day.monthOfYear_ > 12)
+				celestial.monthOfYear_ += 1;
+				if (celestial.monthOfYear_ > 12)
 				{
-					day.monthOfYear_ = 1;
+					celestial.monthOfYear_ = 1;
 				}
 			}
 		}
 
-		while (day.hourOfDay_ < 0.0f)
+		while (celestial.hourOfDay_ < 0.0f)
 		{
-			day.hourOfDay_ += 24.0f;
+			celestial.hourOfDay_ += 24.0f;
 		}
 	}
 
-	CelestialResult CelestialSystem::Compute(const DaySystemConstantBuffer& day, const SunLightSettings& sun, const MoonLightSettings& moon)
+	void CelestialSystem::Compute(const Celestial& celestial)
 	{
+		const SunSettings& sun = celestial.sun_;
+		const MoonSettings& moon = celestial.moon_;
 		CelestialResult result;
 
+		monthOfYear_ = celestial.monthOfYear_;
+		sunAngularRadius_ = sun.angularRadius_;
+
 		/// [JP] 太陽の軌道角: 6時に地平線から昇り、18時に地平線へ沈む単純な円軌道。
-		Float sunAngle = ((day.hourOfDay_ - 6.0f) / 24.0f) * DirectX::XM_2PI;
+		Float sunAngle = ((celestial.hourOfDay_ - 6.0f) / 24.0f) * DirectX::XM_2PI;
 		Float sunElevation = std::sin(sunAngle);
 		Float sunHorizontal = std::cos(sunAngle);
 
@@ -114,8 +217,8 @@ namespace SeedCore
 		Float sunElevationDegrees = DirectX::XMConvertToDegrees(std::asin(std::clamp(sunElevation, -1.0f, 1.0f)));
 		Float sunHeightFactor = std::clamp((sunElevationDegrees - sun.minElevationDegrees_) / (90.0f - sun.minElevationDegrees_), 0.0f, 1.0f);
 
-		Color horizonColor(sun.horizonColor_[0], sun.horizonColor_[1], sun.horizonColor_[2], 1.0f);
-		Color zenithColor(sun.zenithColor_[0], sun.zenithColor_[1], sun.zenithColor_[2], 1.0f);
+		Color horizonColor(sun.horizonColor_.x, sun.horizonColor_.y, sun.horizonColor_.z, 1.0f);
+		Color zenithColor(sun.zenithColor_.x, sun.zenithColor_.y, sun.zenithColor_.z, 1.0f);
 		result.sunColor_ = Color::Lerp(horizonColor, zenithColor, std::clamp(sunElevationDegrees / 45.0f, 0.0f, 1.0f));
 		result.sunIntensity_ = sun.maxIntensity_ * sunHeightFactor;
 
@@ -126,13 +229,13 @@ namespace SeedCore
 		Float moonElevation = moonDirection.y;
 		Float moonHeightFactor = std::clamp(moonElevation, 0.0f, 1.0f);
 
-		result.moonColor_ = Color(moon.color_[0], moon.color_[1], moon.color_[2], 1.0f);
+		result.moonColor_ = Color(moon.color_.x, moon.color_.y, moon.color_.z, 1.0f);
 		result.moonIntensity_ = moon.maxIntensity_ * moonHeightFactor;
 		result.moonAngularRadius_ = moon.angularRadius_;
 
 		/// [JP] 月齢: 月内の日数の進み具合をそのまま位相(0=新月, 0.5=満月, 1=新月)に写す。
-		Float daysPerMonth = Max<Float>(static_cast<Float>(day.daysPerMonth_), 1.0f);
-		Float monthProgress = (static_cast<Float>(day.dayOfMonth_ - 1) + (day.hourOfDay_ / 24.0f)) / daysPerMonth;
+		Float daysPerMonth = Max<Float>(static_cast<Float>(celestial.daysPerMonth_), 1.0f);
+		Float monthProgress = (static_cast<Float>(celestial.dayOfMonth_ - 1) + (celestial.hourOfDay_ / 24.0f)) / daysPerMonth;
 		result.moonPhase_ = std::fmod(monthProgress, 1.0f);
 
 		/// [JP] 夜の強さ: sunHeightFactor(強度用、90度かけてなだらかに明るくなる)
@@ -147,6 +250,6 @@ namespace SeedCore
 		result.skyZenithColor_[0] = skyZenith.R(); result.skyZenithColor_[1] = skyZenith.G(); result.skyZenithColor_[2] = skyZenith.B();
 		result.skyHorizonColor_[0] = skyHorizon.R(); result.skyHorizonColor_[1] = skyHorizon.G(); result.skyHorizonColor_[2] = skyHorizon.B();
 
-		return result;
+		result_ = result;
 	}
 }

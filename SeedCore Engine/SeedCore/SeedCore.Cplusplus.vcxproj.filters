@@ -2,6 +2,10 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="DLLMain.cpp" />
+    <ClCompile Include="Engine\EngineCore.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Prelude.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ScInput.h" />
@@ -16,5 +20,13 @@
     <ClInclude Include="ScScreen.h" />
     <ClInclude Include="ScScript.h" />
     <ClInclude Include="ScDebug.h" />
+    <ClInclude Include="Engine\EngineCore.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Engine">
+      <UniqueIdentifier>{d9397e67-318c-43ac-844f-828e92637143}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

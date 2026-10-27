@@ -51,16 +51,18 @@ namespace SeedCore
 	* [EN]
 	* Process-wide, in-memory log buffer. Entries are pushed via the
 	* SC_LOG_NOTICE/SC_LOG_WARNING/SC_LOG_ERROR macros and read back
-	* by the Editor's Console panel. The buffer has no lock, so it is
-	* meant to be written from one thread at a time.
+	* by the Editor's Console panel. Push may be called from any thread:
+	* it appends to a locked pending buffer, which GetLogs and Clear (main
+	* thread only) move into the readable buffer.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* プロセス全体で共有される、メモリ上のログバッファ。エントリは
 	* SC_LOG_NOTICE/SC_LOG_WARNING/SC_LOG_ERROR マクロ経由で追加され、
-	* Editor の Console パネルから読み出される。バッファにロックは無い
-	* ので、一度に1つのスレッドから書き込む前提になっている。
+	* Editor の Console パネルから読み出される。Push はどのスレッドから
+	* 呼んでもよい。ロック付きの保留バッファへ追加し、GetLogs と Clear
+	* （メインスレッドだけが呼ぶ）がそれを読み出し用のバッファへ移す。
 	*/
 	class SEEDCORE_API LogSystem
 	{
@@ -103,6 +105,10 @@ namespace SeedCore
 	private:
 		/// [EN] Every logged entry in push order; it keeps growing until Clear is called.
 		/// [JP] 追加順に並んだ全ログエントリ。Clear が呼ばれるまで増え続ける。
-		static DynamicArray<LogEntry> logs_;
+		static DynamicArray<LogEntry> committedLogs_;
+
+		static DynamicArray<LogEntry> pendingLogs_;
+
+		static std::mutex mutex_;
 	};
 }

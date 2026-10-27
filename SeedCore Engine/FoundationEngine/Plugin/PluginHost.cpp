@@ -4,26 +4,32 @@
 #include <Windows.h>
 #include <algorithm>
 #include <FoundationEngine/Time/GameTimer.h>
+#include <FoundationEngine/File/FileDirectory.h>
 
 namespace SeedCore
 {
 	/**
 	* [EN]
-	* Binds the plugin directory to scan (typically the directory the
-	* executable lives in) and the ImGui context to forward to each
-	* plugin. Must be called once before Load.
+	* Binds the plugin directory to scan (the directory the executable
+	* lives in) and the ImGui context to forward to each plugin (the
+	* current one, null when no ImGui context exists, as in the runtime),
+	* then loads the plugins into world.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 走査するプラグインディレクトリ（通常は実行ファイルが置かれている
-	* ディレクトリ）と、各プラグインへ渡す ImGui コンテキストを束縛する。
-	* Load の前に一度呼び出す必要がある。
+	* 走査するプラグインディレクトリ（実行ファイルが置かれている
+	* ディレクトリ）と、各プラグインへ渡す ImGui コンテキスト（現在の
+	* もの。ランタイムのように ImGui のコンテキストが無ければ null）を
+	* 束縛し、world へプラグインをロードする。
 	*/
-	void PluginHost::Initialize(const std::filesystem::path& pluginDirectory, ImGuiContext* imguiContext)
+	Bool PluginHost::Initialize(World& world)
 	{
-		pluginDirectory_ = pluginDirectory;
-		imguiContext_ = imguiContext;
+		pluginDirectory_ = FileDirectory::ExecutableDirectory();
+		imguiContext_ = ImGui::GetCurrentContext();
+
+		Load(world);
+		return true;
 	}
 
 	/**

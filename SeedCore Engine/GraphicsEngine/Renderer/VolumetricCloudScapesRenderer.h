@@ -1,7 +1,7 @@
 #pragma once
 #include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
 #include <GraphicsEngine/D3D12/Descriptor/DescriptorHeap.h>
-#include <GraphicsEngine/Raytracing/VolumetricCloudScapes/VolumetricCloudScapesShader.h>
+#include <GraphicsEngine/Environment/VolumetricCloud/VolumetricCloudScapesShader.h>
 
 namespace SeedCore
 {
@@ -18,8 +18,8 @@ namespace SeedCore
 	* [EN]
 	* Tuning values of the cloud and procedural-sky pass. Mirrors
 	* VolumetricCloudScapesRayConstantBuffer in
-	* Raytracing/VolumetricCloudScapes/VolumetricCloudScapes.hlsli, which both
-	* VolumetricCloudScapesRT.hlsl and DeferredLightingPS.hlsl read through
+	* Environment/VolumetricCloud/VolumetricCloudScapes.hlsli, which both
+	* VolumetricCloudScapesCS.hlsl and DeferredLightingPS.hlsl read through
 	* constant_indices.cloud_index_. The fields are laid out in rows of four
 	* scalars (one 16-byte cbuffer row each); new fields must keep that
 	* grouping, and the layout must match the HLSL side byte for byte.
@@ -28,9 +28,9 @@ namespace SeedCore
 	*
 	* [JP]
 	* 雲とプロシージャル空のパスの調整値。
-	* Raytracing/VolumetricCloudScapes/VolumetricCloudScapes.hlsli の
+	* Environment/VolumetricCloud/VolumetricCloudScapes.hlsli の
 	* VolumetricCloudScapesRayConstantBuffer と対応する。
-	* VolumetricCloudScapesRT.hlsl と DeferredLightingPS.hlsl の両方が
+	* VolumetricCloudScapesCS.hlsl と DeferredLightingPS.hlsl の両方が
 	* constant_indices.cloud_index_ 経由で読む。フィールドは 4 スカラー
 	* （cbuffer の 16 バイトの行 1 つ）単位で並べる。フィールドを足すときも
 	* この区切りを保ち、レイアウトは HLSL 側とバイト単位で一致させる。
@@ -185,9 +185,10 @@ namespace SeedCore
 		/// [JP] 0 はフレームに依存しないディザ（安定し、粒が這わない）。1 は毎フレーム完全に変化させ、TAA や DLSS で解決する前提。
 		Float temporalJitter_ = 0.0f;
 
+		Float iblIntensity_ = 1.0f;
+
 		/// [EN] Pads the last row to a full 16-byte register.
 		/// [JP] 最後の行を 16 バイトのレジスタ 1 つ分に揃える詰め物。
-		Float cloudPadding0_ = 0.0f;
 		Float cloudPadding1_ = 0.0f;
 		Float cloudPadding2_ = 0.0f;
 
@@ -250,7 +251,7 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Runs the cloud pass (VolumetricCloudScapesRT.hlsl: a screen-space
+	* Runs the cloud pass (VolumetricCloudScapesCS.hlsl: a screen-space
 	* raymarch through a procedural density field, sky pixels only) into an
 	* RGBA16F texture - rgb is in-scattered radiance, a is coverage - and
 	* leaves it in shader-resource state for DeferredLightingPS.hlsl to
@@ -262,7 +263,7 @@ namespace SeedCore
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 雲のパス（VolumetricCloudScapesRT.hlsl。プロシージャルな密度場を
+	* 雲のパス（VolumetricCloudScapesCS.hlsl。プロシージャルな密度場を
 	* スクリーン空間でレイマーチする。空のピクセルのみ）を RGBA16F テクスチャ
 	* （rgb は内散乱の放射輝度、a はカバレッジ）へディスパッチし、
 	* DeferredLightingPS.hlsl が空の上に合成できるよう、シェーダーリソース

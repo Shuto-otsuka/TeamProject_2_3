@@ -42,7 +42,9 @@ namespace SeedCore
 
         internal Action<Entity> triggerExit_;
 
-        internal void DispatchLifecycle(ScriptHook hook,Single elapsedTime)
+        internal Action revision_;
+
+        internal void DispatchLifecycle(ScriptHook hook, Single elapsedTime)
         {
             switch(hook)
             {
@@ -75,6 +77,9 @@ namespace SeedCore
                     break;
                 case ScriptHook.InspectorGUI:
                     inspectorGUI_?.Invoke();
+                    break;
+                case ScriptHook.Revision:
+                    revision_?.Invoke();
                     break;
             }
         }

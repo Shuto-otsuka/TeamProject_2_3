@@ -61,7 +61,7 @@ namespace SeedCore
 
 		/// [EN] The tuning values live in a constant buffer the shaders find through its bindless index.
 		/// [JP] 調整値は、シェーダーが bindless インデックスで見つける定数バッファに置く。
-		tuningBuffer_ = MakePtr<StaticConstantBuffer<AmbientOcclusionRayConstantBuffer>>(device, bindlessHeap);
+		tuningBuffer_ = MakePtr<StaticConstantBuffer<RaytracingAmbientOcclusionConstantBuffer>>(device, bindlessHeap);
 
 		/// [EN] Create the size-dependent resources at the current size.
 		/// [JP] サイズに依存するリソースを現在のサイズで作る。
@@ -106,7 +106,7 @@ namespace SeedCore
 	* 保存して、各ビューのパスとディファードライティングが読むインデックスを
 	* 公開する。
 	*/
-	void AmbientOcclusionRenderer::Prepare(const AmbientOcclusionRayConstantBuffer& settings, Bool enabled)
+	void AmbientOcclusionRenderer::Prepare(const RaytracingAmbientOcclusionConstantBuffer& settings, Bool enabled)
 	{
 		/// [EN] Remember whether the pass runs this frame; Dispatch reads it.
 		/// [JP] 今フレームにパスを実行するかを覚えておく。Dispatch が読む。
@@ -124,7 +124,7 @@ namespace SeedCore
 
 		/// [EN] The upload copy carries the frame counter on top of the user's tuning.
 		/// [JP] アップロード用のコピーには、ユーザーの調整値に加えてフレームカウンターを載せる。
-		AmbientOcclusionRayConstantBuffer uploadSettings = settings;
+		RaytracingAmbientOcclusionConstantBuffer uploadSettings = settings;
 		uploadSettings.frameIndex_ = frameIndex_;
 		/// [EN] Advance the counter for the next frame.
 		/// [JP] 次のフレームのためにカウンターを進める。
@@ -147,11 +147,11 @@ namespace SeedCore
 
 		/// [EN] The denoiser writes each view's write slot either way.
 		/// [JP] デノイザはどちらの場合も各ビューの書き込みスロットへ書き込む。
-		AmbientOcclusionAccumulationUnorderedAccessIndices editorUnorderedAccessIndices{};
+		RaytracingAmbientOcclusionAccumulationUnorderedAccessIndices editorUnorderedAccessIndices{};
 		editorUnorderedAccessIndices.accumulatedIndex_ = accumulatedUnorderedAccessViewIndex_[editorView][writeSlot];
 		unorderedAccessIndicesSystem_->SetEditorAmbientOcclusionAccumulationIndices(editorUnorderedAccessIndices);
 
-		AmbientOcclusionAccumulationUnorderedAccessIndices gameUnorderedAccessIndices{};
+		RaytracingAmbientOcclusionAccumulationUnorderedAccessIndices gameUnorderedAccessIndices{};
 		gameUnorderedAccessIndices.accumulatedIndex_ = accumulatedUnorderedAccessViewIndex_[gameView][writeSlot];
 		unorderedAccessIndicesSystem_->SetGameAmbientOcclusionAccumulationIndices(gameUnorderedAccessIndices);
 
@@ -159,7 +159,7 @@ namespace SeedCore
 		{
 			/// [EN] DLSS Ray Reconstruction denoises the composited frame, so both views read the raw texture directly and the accumulation chain is left alone.
 			/// [JP] DLSS Ray Reconstruction が合成したフレームをデノイズするため、両ビューとも生のテクスチャを直接読み、蓄積のチェーンには触れない。
-			AmbientOcclusionAccumulationShaderResourceIndices rawShaderResourceIndices{};
+			RaytracingAmbientOcclusionAccumulationShaderResourceIndices rawShaderResourceIndices{};
 			rawShaderResourceIndices.historyIndex_ = rawOpennessShaderResourceViewIndex_;
 			rawShaderResourceIndices.opennessIndex_ = rawOpennessShaderResourceViewIndex_;
 			shaderResourceIndicesSystem_->SetEditorAmbientOcclusionAccumulationIndices(rawShaderResourceIndices);
@@ -169,12 +169,12 @@ namespace SeedCore
 		{
 			/// [EN] Each view's denoiser reads its history slot, and deferred lighting reads its write slot.
 			/// [JP] 各ビューのデノイザは履歴のスロットを読み、ディファードライティングは書き込みスロットを読む。
-			AmbientOcclusionAccumulationShaderResourceIndices editorShaderResourceIndices{};
+			RaytracingAmbientOcclusionAccumulationShaderResourceIndices editorShaderResourceIndices{};
 			editorShaderResourceIndices.historyIndex_ = accumulatedShaderResourceViewIndex_[editorView][historySlot_];
 			editorShaderResourceIndices.opennessIndex_ = accumulatedShaderResourceViewIndex_[editorView][writeSlot];
 			shaderResourceIndicesSystem_->SetEditorAmbientOcclusionAccumulationIndices(editorShaderResourceIndices);
 
-			AmbientOcclusionAccumulationShaderResourceIndices gameShaderResourceIndices{};
+			RaytracingAmbientOcclusionAccumulationShaderResourceIndices gameShaderResourceIndices{};
 			gameShaderResourceIndices.historyIndex_ = accumulatedShaderResourceViewIndex_[gameView][historySlot_];
 			gameShaderResourceIndices.opennessIndex_ = accumulatedShaderResourceViewIndex_[gameView][writeSlot];
 			shaderResourceIndicesSystem_->SetGameAmbientOcclusionAccumulationIndices(gameShaderResourceIndices);
