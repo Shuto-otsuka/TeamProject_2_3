@@ -147,7 +147,6 @@
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/EffekseerRendererDX12.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/LLGI.lib")
 #pragma comment(lib, "../External/ImGui/Lib/Debug/ImGui.lib")
-#pragma comment(lib, "../External/CRI/Lib/cri_ware_pcx64_le_import.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Debug/freetyped.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Debug/harfbuzz.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Debug/msdfgen-core.lib")
@@ -166,7 +165,6 @@
 #pragma comment(lib, "../External/Effekseer/Lib/Release/EffekseerRendererDX12.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Release/LLGI.lib")
 #pragma comment(lib, "../External/ImGui/Lib/Release/ImGui.lib")
-#pragma comment(lib, "../External/CRI/Lib/cri_ware_pcx64_le_import.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Release/freetype.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Release/harfbuzz.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Release/msdfgen-core.lib")
@@ -238,8 +236,6 @@
 #include <External/Effekseer/Include/EffekseerRendererLLGI/Common.h>
 
 #include <External/Json/json.hpp>
-
-#include <External/CRI/Include/cri_adx2le.h>
 
 #ifndef MSDFGEN_PUBLIC
 #define MSDFGEN_PUBLIC

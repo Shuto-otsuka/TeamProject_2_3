@@ -1,10 +1,14 @@
 #include <External/JoltPhysics/Jolt/Jolt.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/BodyID.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/MotionType.h>
 #include <External/JoltPhysics/Jolt/Physics/Character/CharacterVirtual.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/SubShapeID.h>
 #include <PhysicsEngine/JoltPhysics/JoltCharacterContactListener.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <PhysicsEngine/Physics/PhysicsTypes.h>
 #include <PhysicsEngine/Physics/PhysicsSystem.h>
 #include <PhysicsEngine/CharacterController/CharacterController.h>
+#include <FoundationEngine/World/ECS/Entity/Entity.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/WorldAccessor.h>
 
@@ -13,16 +17,7 @@ namespace SeedCore
 	class JoltCharacterContactListener::Impl final : public JPH::CharacterContactListener
 	{
 	public:
-		/**
-		* [EN]
-		* Sets the World and entity that receive this listener's contact events.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このリスナーの接触イベントを受け取る World とエンティティを設定する。
-		*/
-		void SetTarget(World* world, EntityID entityID);
+		Impl(World& world, EntityID entityID) :world_(&world), entityID_(entityID) {}
 
 		/**
 		* [EN]
@@ -124,21 +119,6 @@ namespace SeedCore
 		/// [JP] 現在のキャラクターの更新で既に Enter か Stay のイベントを通知したボディ。
 		std::unordered_set<JPH::BodyID> notifiedBodies_;
 	};
-
-	/**
-	* [EN]
-	* Sets the World and entity that receive this listener's contact events.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* このリスナーの接触イベントを受け取る World とエンティティを設定する。
-	*/
-	void JoltCharacterContactListener::Impl::SetTarget(World* world, EntityID entityID)
-	{
-		world_ = world;
-		entityID_ = entityID;
-	}
 
 	/**
 	* [EN]
@@ -322,16 +302,16 @@ namespace SeedCore
 		}
 	}
 
-	JoltCharacterContactListener::JoltCharacterContactListener() :impl_(MakePtr<Impl>())
+	JoltCharacterContactListener::JoltCharacterContactListener(World& world, EntityID entityID) :impl_(MakePtr<Impl>(world, entityID))
 	{
 		/// No Code
 	}
 
 	JoltCharacterContactListener::~JoltCharacterContactListener() = default;
 
-	void JoltCharacterContactListener::SetTarget(World* world, EntityID entityID)
+	void JoltCharacterContactListener::Attach(ScCharacterHandle character)
 	{
-		impl_->SetTarget(world, entityID);
+		static_cast<JPH::CharacterVirtual*>(character)->SetListener(impl_.get());
 	}
 
 	void JoltCharacterContactListener::Begin()

@@ -1,9 +1,32 @@
+#include <External/JoltPhysics/Jolt/Jolt.h>
+#include <External/JoltPhysics/Jolt/Core/Color.h>
+#include <External/JoltPhysics/Jolt/Core/JobSystemWithBarrier.h>
 #include <PhysicsEngine/JoltPhysics/JoltExecutorBridge.h>
 #include <FoundationEngine/JobSystem/JobExecutor.h>
 #include <FoundationEngine/JobSystem/JobTaskflow.h>
 
 namespace SeedCore
 {
+	class JoltExecutorBridge::Impl final :public JPH::JobSystemWithBarrier
+	{
+	public:
+		explicit Impl(JobExecutor& executor, JPH::uint maxBarriers);
+
+		Int GetMaxConcurrency()const override;
+
+		JobHandle CreateJob(const Char* name, JPH::ColorArg color, const JobFunction& function, JPH::uint32 dependencyCount)override;
+
+	protected:
+		void QueueJob(Job* job)override;
+
+		void QueueJobs(Job** jobs, JPH::uint jobCount)override;
+
+		void FreeJob(Job* job)override;
+
+	private:
+		JobExecutor& executor_;
+	};
+
 	/**
 	* [EN]
 	* Creates a bridge backed by the supplied executor and barrier capacity.
@@ -13,7 +36,7 @@ namespace SeedCore
 	* [JP]
 	* 指定されたエグゼキューターとバリア容量を使うブリッジを生成する。
 	*/
-	JoltExecutorBridge::JoltExecutorBridge(JobExecutor& executor, JPH::uint inMaxBarriers) :JPH::JobSystemWithBarrier(inMaxBarriers), executor_(executor)
+	JoltExecutorBridge::Impl::Impl(JobExecutor& executor, JPH::uint maxBarriers) :JPH::JobSystemWithBarrier(maxBarriers), executor_(executor)
 	{
 		/// No Code
 	}
@@ -27,7 +50,7 @@ namespace SeedCore
 	* [JP]
 	* Jolt のジョブスケジューラーへ公開するハードウェア並行数を返す。
 	*/
-	Int JoltExecutorBridge::GetMaxConcurrency()const
+	Int JoltExecutorBridge::Impl::GetMaxConcurrency()const
 	{
 		return static_cast<Int>(std::thread::hardware_concurrency());
 	}
@@ -41,7 +64,7 @@ namespace SeedCore
 	* [JP]
 	* Jolt ジョブを確保し、依存関係がなければ即座にキューへ投入する。
 	*/
-	JoltExecutorBridge::JobHandle JoltExecutorBridge::CreateJob(const Char* inName, JPH::ColorArg inColor, const JobFunction& inJobFunction, JPH::uint32 inNumDependencies)
+	JoltExecutorBridge::Impl::JobHandle JoltExecutorBridge::Impl::CreateJob(const Char* inName, JPH::ColorArg inColor, const JobFunction& inJobFunction, JPH::uint32 inNumDependencies)
 	{
 		Job* job = new Job(inName, inColor, this, inJobFunction, inNumDependencies);
 		JobHandle handle(job);
@@ -63,17 +86,20 @@ namespace SeedCore
 	* [JP]
 	* 1つの Jolt ジョブを SeedCore のエグゼキューターへ投入する。
 	*/
-	void JoltExecutorBridge::QueueJob(Job* inJob)
+	void JoltExecutorBridge::Impl::QueueJob(Job* inJob)
 	{
 		inJob->AddRef();
 
 		ResourceRef<JobTaskflow> flow = MakeRef<JobTaskflow>();
-		flow->emplace([inJob]() {
-			inJob->Execute();
-			inJob->Release();
+		flow->emplace([inJob]()
+			{
+				inJob->Execute();
+				inJob->Release();
 			});
 
-		executor_.Run(*flow, [flow]() { /// No Code
+		executor_.Run(*flow, [flow]()
+			{
+				/// No Code
 			});
 	}
 
@@ -86,7 +112,7 @@ namespace SeedCore
 	* [JP]
 	* 複数の Jolt ジョブを1つのタスクフローへ投入する。
 	*/
-	void JoltExecutorBridge::QueueJobs(Job** inJobs, JPH::uint inNumJobs)
+	void JoltExecutorBridge::Impl::QueueJobs(Job** inJobs, JPH::uint inNumJobs)
 	{
 		ResourceRef<JobTaskflow> flow = MakeRef<JobTaskflow>();
 
@@ -94,13 +120,16 @@ namespace SeedCore
 		{
 			Job* inJob = inJobs[index];
 			inJob->AddRef();
-			flow->emplace([inJob]() {
-				inJob->Execute();
-				inJob->Release();
+			flow->emplace([inJob]()
+				{
+					inJob->Execute();
+					inJob->Release();
 				});
 		}
 
-		executor_.Run(*flow, [flow]() { /// No Code
+		executor_.Run(*flow, [flow]()
+			{
+				/// No Code
 			});
 	}
 
@@ -113,8 +142,20 @@ namespace SeedCore
 	* [JP]
 	* 参照カウントがゼロになった Jolt ジョブを削除する。
 	*/
-	void JoltExecutorBridge::FreeJob(Job* inJob)
+	void JoltExecutorBridge::Impl::FreeJob(Job* inJob)
 	{
 		delete inJob;
+	}
+
+	JoltExecutorBridge::JoltExecutorBridge(JobExecutor& executor, Uint32 maxBarriers) :impl_(MakePtr<Impl>(executor, static_cast<JPH::uint>(maxBarriers)))
+	{
+		/// No Code
+	}
+
+	JoltExecutorBridge::~JoltExecutorBridge() = default;
+
+	JPH::JobSystem* JoltExecutorBridge::Native()
+	{
+		return impl_.get();
 	}
 }

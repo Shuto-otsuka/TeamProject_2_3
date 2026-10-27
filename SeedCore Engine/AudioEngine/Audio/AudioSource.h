@@ -1,4 +1,5 @@
 #pragma once
+#include <AudioEngine/Audio/AudioTypes.h>
 #include <FoundationEngine/SeedScript.h>
 
 namespace SeedCore
@@ -208,11 +209,11 @@ namespace SeedCore
 	private:
 		/// [EN] CRI playback voice controlled by this component.
 		/// [JP] このコンポーネントが制御する CRI 再生ボイス。
-		CriAtomExPlayerHn player_ = nullptr;
+		ScAudioPlayerHandle player_ = nullptr;
 
 		/// [EN] CRI 3D source used for spatial playback.
 		/// [JP] 空間再生に使う CRI 3D 音源。
-		CriAtomEx3dSourceHn source_ = nullptr;
+		ScAudioSourceHandle source_ = nullptr;
 
 		/// [EN] Sound currently resolved from soundID_.
 		/// [JP] soundID_ から現在解決されている Sound。

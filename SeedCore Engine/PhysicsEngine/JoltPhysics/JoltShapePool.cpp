@@ -1,4 +1,8 @@
 #include <External/JoltPhysics/Jolt/Jolt.h>
+#include <External/JoltPhysics/Jolt/Core/Array.h>
+#include <External/JoltPhysics/Jolt/Math/Float3.h>
+#include <External/JoltPhysics/Jolt/Geometry/IndexedTriangle.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/Shape.h>
 #include <External/JoltPhysics/Jolt/Physics/Collision/Shape/BoxShape.h>
 #include <External/JoltPhysics/Jolt/Physics/Collision/Shape/SphereShape.h>
 #include <External/JoltPhysics/Jolt/Physics/Collision/Shape/CapsuleShape.h>
@@ -54,7 +58,7 @@ namespace SeedCore
 			shape = new JPH::RotatedTranslatedShape(JPH::Vec3{ center.x, center.y, center.z }, JPH::Quat::sIdentity(), shape);
 		}
 
-		return Register(shape.Get(), key);
+		return Register(shape.GetPtr(), key);
 	}
 
 	/**
@@ -79,7 +83,7 @@ namespace SeedCore
 
 		JPH::ShapeRefC shape = new JPH::SphereShape(radius);
 
-		return Register(shape.Get(), key);
+		return Register(shape.GetPtr(), key);
 	}
 
 	/**
@@ -105,7 +109,7 @@ namespace SeedCore
 
 		JPH::ShapeRefC shape = new JPH::CapsuleShape(height * 0.5f, radius);
 
-		return Register(shape.Get(), key);
+		return Register(shape.GetPtr(), key);
 	}
 
 	/**
@@ -131,7 +135,7 @@ namespace SeedCore
 
 		JPH::ShapeRefC shape = new JPH::CylinderShape(height * 0.5f, radius);
 
-		return Register(shape.Get(), key);
+		return Register(shape.GetPtr(), key);
 	}
 
 	/**
@@ -164,7 +168,7 @@ namespace SeedCore
 			shape = new JPH::RotatedTranslatedShape(JPH::Vec3{ center.x, center.y, 0.0f }, JPH::Quat::sIdentity(), shape);
 		}
 
-		return Register(shape.Get(), key);
+		return Register(shape.GetPtr(), key);
 	}
 
 	/**
@@ -195,7 +199,7 @@ namespace SeedCore
 			shape = new JPH::RotatedTranslatedShape(JPH::Vec3{ center.x, center.y, 0.0f }, JPH::Quat::sIdentity(), shape);
 		}
 
-		return Register(shape.Get(), key);
+		return Register(shape.GetPtr(), key);
 	}
 
 	/**
@@ -265,7 +269,7 @@ namespace SeedCore
 
 		JPH::ShapeRefC shape = result.Get();
 
-		return Register(shape.Get(), key);
+		return Register(shape.GetPtr(), key);
 	}
 
 	/**
@@ -317,7 +321,7 @@ namespace SeedCore
 
 		JPH::ShapeRefC shape = result.Get();
 
-		return Register(shape.Get(), key);
+		return Register(shape.GetPtr(), key);
 	}
 
 	/**

@@ -1,5 +1,6 @@
 #include <External/JoltPhysics/Jolt/Jolt.h>
 #include <External/JoltPhysics/Jolt/Physics/PhysicsSystem.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/Body.h>
 #include <External/JoltPhysics/Jolt/Physics/Constraints/Constraint.h>
 #include <External/JoltPhysics/Jolt/Physics/Constraints/TwoBodyConstraint.h>
 #include <PhysicsEngine/JoltPhysics/JoltConstraintPool.h>

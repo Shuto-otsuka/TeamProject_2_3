@@ -1,13 +1,103 @@
+#include <External/CRI/Include/cri_adx2le.h>
+#include <cstdlib>
 #include <AudioEngine/CRI/CriManager.h>
-#include <AudioEngine/CRI/CriAllocator.h>
 #include <AudioEngine/Audio/AudioByteStream.h>
+#include <FoundationEngine/Utility/FlatMap.h>
+#include <FoundationEngine/Log/Warning.h>
+#include <FoundationEngine/Log/Error.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 #include <FoundationEngine/Resource/Gateway.h>
 #include <FoundationEngine/Resource/Config/GameConfig.h>
 #include <FoundationEngine/Resource/Config/EditorConfig.h>
 
+#pragma comment(lib, "../External/CRI/Lib/cri_ware_pcx64_le_import.lib")
+
 namespace SeedCore
 {
+	namespace
+	{
+		void* ScCriMalloc(void*, CriUint32 size)
+		{
+			return std::malloc(size);
+		}
+
+		void ScCriFree(void*, void* ptr)
+		{
+			std::free(ptr);
+		}
+
+		void ScCriErrorCallback(const CriChar8* id, CriUint32 p1, CriUint32 p2, CriUint32*)
+		{
+			const CriChar8* message = criErr_ConvertIdToMessage(id, p1, p2);
+			if (id && id[0] == 'W')
+			{
+				SC_LOG_WARNING("CRIWARE: {} ({})", message ? message : "", id);
+			}
+			else
+			{
+				SC_LOG_ERROR("CRIWARE: {} ({})", message ? message : "", id);
+			}
+		}
+	}
+
+	class CriManager::Impl final
+	{
+	public:
+		Bool Initialize(const GameConfig& gameConfig);
+
+		Bool Initialize(const EditorConfig& editorConfig);
+
+		void Execute();
+
+		void Finalize();
+
+	public:
+		void MasterVolume(Float volume);
+
+		Float MasterVolume()const;
+
+		void DefaultMasterVolume(Float volume);
+
+		Float DefaultMasterVolume()const;
+
+		void CategoryVolume(const String& category, Float volume);
+
+		Float CategoryVolume(const String& category)const;
+
+		const DynamicArray<String>& CategoryNameList()const;
+
+		void ResetVolume();
+
+	public:
+		Bool Load();
+
+		Bool Save();
+
+	private:
+		Bool Initialize(const String& masterPath);
+
+	private:
+		CriAtomExVoicePoolHn waveVoicePool_ = nullptr;
+
+		CriAtomExVoicePoolHn standardVoicePool_ = nullptr;
+
+		CriAtomDbasId dbasID_ = CRIATOMEXDBAS_ILLEGAL_ID;
+
+		DynamicArray<Byte> acfData_;
+
+		DynamicArray<String> categoryNames_;
+
+		FlatMap<String, Float> defaultCategoryVolumes_;
+
+		FlatMap<String, Float> categoryVolumes_;
+
+		String masterPath_;
+
+		Float masterVolume_ = 1.0f;
+
+		Float defaultMasterVolume_ = 1.0f;
+	};
+
 	/**
 	* [EN]
 	* Initializes CRI, loads the saved bindings, registers the ACF and
@@ -21,7 +111,7 @@ namespace SeedCore
 	* 反映したあと、ボイスプールとストリーミング帯域の管理を確保する。
 	* どこかで失敗したら false を返す。
 	*/
-	Bool CriManager::Initialize(const GameConfig& gameConfig)
+	Bool CriManager::Impl::Initialize(const GameConfig& gameConfig)
 	{
 		return Initialize(String());
 	}
@@ -39,9 +129,277 @@ namespace SeedCore
 	* (editorConfig の acfPath_)も使い、ビルドし直した ACF で保存済みの
 	* ものを置き換える。
 	*/
-	Bool CriManager::Initialize(const EditorConfig& editorConfig)
+	Bool CriManager::Impl::Initialize(const EditorConfig& editorConfig)
 	{
 		return Initialize(editorConfig.acfPath_);
+	}
+
+	/**
+	* [EN]
+	* Runs CRI's per-frame server processing; called once every frame.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* CRI の毎フレームのサーバー処理を行う。毎フレーム1回呼ぶ。
+	*/
+	void CriManager::Impl::Execute()
+	{
+		criAtomEx_ExecuteMain();
+	}
+
+	/**
+	* [EN]
+	* Releases the voice pools, the bandwidth manager and the ACF, and
+	* shuts CRI down. Does nothing if CRI was never initialized.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボイスプール、帯域の管理、ACF を解放し、CRI を終了する。CRI が
+	* 初期化されていなければ何もしない。
+	*/
+	void CriManager::Impl::Finalize()
+	{
+		if (!criAtomEx_IsInitialized())
+		{
+			return;
+		}
+
+		/// [EN] Everything CRI allocated for this manager is released before CRI itself shuts down.
+		/// [JP] この管理機構のために CRI が確保したものは、CRI 本体を終了する前に全て解放する。
+		criAtomExVoicePool_FreeAll();
+		waveVoicePool_ = nullptr;
+		standardVoicePool_ = nullptr;
+
+		if (dbasID_ != CRIATOMEXDBAS_ILLEGAL_ID)
+		{
+			criAtomExDbas_Destroy(dbasID_);
+			dbasID_ = CRIATOMEXDBAS_ILLEGAL_ID;
+		}
+
+		if (!acfData_.empty())
+		{
+			criAtomEx_UnregisterAcf();
+			acfData_.clear();
+		}
+
+		criAtomEx_Finalize_WASAPI();
+
+		/// [EN] Removes the I/O hook so nothing calls into AudioByteStream after shutdown.
+		/// [JP] 終了後に AudioByteStream が呼ばれないよう、I/O のフックを外す。
+		AudioByteStream::Uninstall();
+	}
+
+	/**
+	* [EN]
+	* Sets the master volume and applies it to the master bus at once.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* マスター音量を設定し、すぐにマスターバスへ反映する。
+	*/
+	void CriManager::Impl::MasterVolume(Float volume)
+	{
+		masterVolume_ = volume;
+
+		/// [EN] Bus 0 is the master bus.
+		/// [JP] バス 0 がマスターバス。
+		criAtomExAsr_SetBusVolume(0, masterVolume_);
+	}
+
+	/**
+	* [EN]
+	* Returns the current master volume.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 現在のマスター音量を返す。
+	*/
+	Float CriManager::Impl::MasterVolume()const
+	{
+		return masterVolume_;
+	}
+
+	/**
+	* [EN]
+	* Sets the master volume that ResetVolume returns to.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ResetVolume で戻す先のマスター音量を設定する。
+	*/
+	void CriManager::Impl::DefaultMasterVolume(Float volume)
+	{
+		defaultMasterVolume_ = volume;
+	}
+
+	/**
+	* [EN]
+	* Returns the master volume that ResetVolume returns to.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ResetVolume で戻す先のマスター音量を返す。
+	*/
+	Float CriManager::Impl::DefaultMasterVolume()const
+	{
+		return defaultMasterVolume_;
+	}
+
+	/**
+	* [EN]
+	* Sets the volume of a category (such as BGM or SE) and applies it
+	* at once.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* カテゴリ(BGM や SE など)の音量を設定し、すぐに反映する。
+	*/
+	void CriManager::Impl::CategoryVolume(const String& category, Float volume)
+	{
+		/// [EN] Kept so it is saved and reapplied over the ACF's value on the next start.
+		/// [JP] 保存して次回の起動時に ACF の値より優先して反映するため、記録しておく。
+		if (categoryVolumes_.contains(category))
+		{
+			categoryVolumes_.at(category) = volume;
+		}
+		else
+		{
+			categoryVolumes_.insert({ category, volume });
+		}
+
+		criAtomExCategory_SetVolumeByName(category.c_str(), volume);
+	}
+
+	/**
+	* [EN]
+	* Returns the volume of a category: the value set by the user, else
+	* the ACF's value, else 1.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* カテゴリの音量を返す。ユーザーが設定した値、無ければ ACF の値、
+	* それも無ければ 1。
+	*/
+	Float CriManager::Impl::CategoryVolume(const String& category)const
+	{
+		if (categoryVolumes_.contains(category))
+		{
+			return categoryVolumes_.at(category);
+		}
+
+		if (defaultCategoryVolumes_.contains(category))
+		{
+			return defaultCategoryVolumes_.at(category);
+		}
+
+		return 1.0f;
+	}
+
+	/**
+	* [EN]
+	* Returns the names of the categories defined in the registered ACF.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 登録した ACF に定義されたカテゴリ名の一覧を返す。
+	*/
+	const DynamicArray<String>& CriManager::Impl::CategoryNameList()const
+	{
+		return categoryNames_;
+	}
+
+	/**
+	* [EN]
+	* Returns the master volume to its default and every category to the
+	* volume defined in the ACF.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* マスター音量を既定値に、全カテゴリを ACF で定めた音量に戻す。
+	*/
+	void CriManager::Impl::ResetVolume()
+	{
+		/// [EN] Dropping the user's category volumes lets the ACF's values apply again.
+		/// [JP] ユーザーのカテゴリ音量を消すと、再び ACF の値が使われる。
+		categoryVolumes_.clear();
+		masterVolume_ = defaultMasterVolume_;
+
+		for (const String& category : categoryNames_)
+		{
+			Float volume = defaultCategoryVolumes_.contains(category) ? defaultCategoryVolumes_.at(category) : 1.0f;
+			criAtomExCategory_SetVolumeByName(category.c_str(), volume);
+		}
+
+		criAtomExAsr_SetBusVolume(0, masterVolume_);
+	}
+
+	/**
+	* [EN]
+	* Reads the ACF and the volumes from AudioBindings.scg. Returns false
+	* if the file cannot be read.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* AudioBindings.scg から ACF と音量を読み込む。ファイルを読めなければ
+	* false を返す。
+	*/
+	Bool CriManager::Impl::Load()
+	{
+		BinaryInputArchive archive;
+		if (!archive.Read(String("../UserProject/Assets/Config/AudioBindings.scg")))
+		{
+			return false;
+		}
+
+		/// [EN] Fields missing from an older file keep their current values.
+		/// [JP] 古いファイルに無い項目は、今の値のまま残る。
+		archive.TryField("acfData", acfData_);
+		archive.TryField("masterVolume", masterVolume_);
+		archive.TryField("defaultMasterVolume", defaultMasterVolume_);
+		archive.TryField("categoryVolumes", categoryVolumes_);
+
+		return true;
+	}
+
+	/**
+	* [EN]
+	* Writes the ACF and the volumes to AudioBindings.scg. Returns false
+	* if the file cannot be written.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ACF と音量を AudioBindings.scg へ書き出す。書き込めなければ
+	* false を返す。
+	*/
+	Bool CriManager::Impl::Save()
+	{
+		/// [EN] Creates the Config folder first if it does not exist yet.
+		/// [JP] Config フォルダがまだ無ければ、先に作る。
+		std::filesystem::path path("../UserProject/Assets/Config/AudioBindings.scg");
+		if (path.has_parent_path())
+		{
+			std::filesystem::create_directories(path.parent_path());
+		}
+
+		BinaryOutputArchive archive;
+		archive.Field("acfData", acfData_);
+		archive.Field("masterVolume", masterVolume_);
+		archive.Field("defaultMasterVolume", defaultMasterVolume_);
+		archive.Field("categoryVolumes", categoryVolumes_);
+
+		return archive.Write(String(path.string()));
 	}
 
 	/**
@@ -55,7 +413,7 @@ namespace SeedCore
 	* 2 つの Initialize に共通する本体。masterPath は Atom Craft が出力する
 	* .acf ファイルで、ランタイムでは空。
 	*/
-	Bool CriManager::Initialize(const String& masterPath)
+	Bool CriManager::Impl::Initialize(const String& masterPath)
 	{
 		masterPath_ = masterPath;
 
@@ -64,7 +422,7 @@ namespace SeedCore
 		criErr_SetCallback(ScCriErrorCallback);
 		criAtomEx_SetUserAllocator(ScCriMalloc, ScCriFree, nullptr);
 		criFs_SetUserAllocator(ScCriMalloc, ScCriFree, nullptr);
-		criFs_SetSelectIoCallback(&AudioByteStream::SelectIo);
+		AudioByteStream::Install();
 
 		/// [EN] File system limits: how many files and bindings can be open at once, and the longest path.
 		/// [JP] ファイルシステムの上限。同時に開けるファイル数とバインド数、パスの最大長。
@@ -226,275 +584,93 @@ namespace SeedCore
 			return false;
 		}
 
+		return true;
+	}
+
+	CriManager::CriManager() :impl_(MakePtr<Impl>())
+	{
+		/// No Code
+	}
+
+	CriManager::~CriManager() = default;
+
+	Bool CriManager::Initialize(const GameConfig& gameConfig)
+	{
+		if (!impl_->Initialize(gameConfig))
+		{
+			return false;
+		}
 		Gateway::BindCriManager(this);
 		return true;
 	}
 
-	/**
-	* [EN]
-	* Runs CRI's per-frame server processing; called once every frame.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* CRI の毎フレームのサーバー処理を行う。毎フレーム1回呼ぶ。
-	*/
-	void CriManager::Execute()
+	Bool CriManager::Initialize(const EditorConfig& editorConfig)
 	{
-		criAtomEx_ExecuteMain();
-	}
-
-	/**
-	* [EN]
-	* Sets the master volume and applies it to the master bus at once.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* マスター音量を設定し、すぐにマスターバスへ反映する。
-	*/
-	void CriManager::MasterVolume(Float volume)
-	{
-		masterVolume_ = volume;
-
-		/// [EN] Bus 0 is the master bus.
-		/// [JP] バス 0 がマスターバス。
-		criAtomExAsr_SetBusVolume(0, masterVolume_);
-	}
-
-	/**
-	* [EN]
-	* Sets the master volume that ResetVolume returns to.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ResetVolume で戻す先のマスター音量を設定する。
-	*/
-	void CriManager::DefaultMasterVolume(Float volume)
-	{
-		defaultMasterVolume_ = volume;
-	}
-
-	/**
-	* [EN]
-	* Sets the volume of a category (such as BGM or SE) and applies it
-	* at once.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* カテゴリ(BGM や SE など)の音量を設定し、すぐに反映する。
-	*/
-	void CriManager::CategoryVolume(const String& category, Float volume)
-	{
-		/// [EN] Kept so it is saved and reapplied over the ACF's value on the next start.
-		/// [JP] 保存して次回の起動時に ACF の値より優先して反映するため、記録しておく。
-		if (categoryVolumes_.contains(category))
-		{
-			categoryVolumes_.at(category) = volume;
-		}
-		else
-		{
-			categoryVolumes_.insert({ category, volume });
-		}
-
-		criAtomExCategory_SetVolumeByName(category.c_str(), volume);
-	}
-
-	/**
-	* [EN]
-	* Returns the master volume to its default and every category to the
-	* volume defined in the ACF.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* マスター音量を既定値に、全カテゴリを ACF で定めた音量に戻す。
-	*/
-	void CriManager::ResetVolume()
-	{
-		/// [EN] Dropping the user's category volumes lets the ACF's values apply again.
-		/// [JP] ユーザーのカテゴリ音量を消すと、再び ACF の値が使われる。
-		categoryVolumes_.clear();
-		masterVolume_ = defaultMasterVolume_;
-
-		for (const String& category : categoryNames_)
-		{
-			Float volume = defaultCategoryVolumes_.contains(category) ? defaultCategoryVolumes_.at(category) : 1.0f;
-			criAtomExCategory_SetVolumeByName(category.c_str(), volume);
-		}
-
-		criAtomExAsr_SetBusVolume(0, masterVolume_);
-	}
-
-	/**
-	* [EN]
-	* Reads the ACF and the volumes from AudioBindings.scg. Returns false
-	* if the file cannot be read.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* AudioBindings.scg から ACF と音量を読み込む。ファイルを読めなければ
-	* false を返す。
-	*/
-	Bool CriManager::Load()
-	{
-		BinaryInputArchive archive;
-		if (!archive.Read(String("../UserProject/Assets/Config/AudioBindings.scg")))
+		if (!impl_->Initialize(editorConfig))
 		{
 			return false;
 		}
-
-		/// [EN] Fields missing from an older file keep their current values.
-		/// [JP] 古いファイルに無い項目は、今の値のまま残る。
-		archive.TryField("acfData", acfData_);
-		archive.TryField("masterVolume", masterVolume_);
-		archive.TryField("defaultMasterVolume", defaultMasterVolume_);
-		archive.TryField("categoryVolumes", categoryVolumes_);
-
+		Gateway::BindCriManager(this);
 		return true;
 	}
 
-	/**
-	* [EN]
-	* Writes the ACF and the volumes to AudioBindings.scg. Returns false
-	* if the file cannot be written.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ACF と音量を AudioBindings.scg へ書き出す。書き込めなければ
-	* false を返す。
-	*/
-	Bool CriManager::Save()
+	void CriManager::Execute()
 	{
-		/// [EN] Creates the Config folder first if it does not exist yet.
-		/// [JP] Config フォルダがまだ無ければ、先に作る。
-		std::filesystem::path path("../UserProject/Assets/Config/AudioBindings.scg");
-		if (path.has_parent_path())
-		{
-			std::filesystem::create_directories(path.parent_path());
-		}
-
-		BinaryOutputArchive archive;
-		archive.Field("acfData", acfData_);
-		archive.Field("masterVolume", masterVolume_);
-		archive.Field("defaultMasterVolume", defaultMasterVolume_);
-		archive.Field("categoryVolumes", categoryVolumes_);
-
-		return archive.Write(String(path.string()));
+		impl_->Execute();
 	}
 
-	/**
-	* [EN]
-	* Returns the current master volume.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 現在のマスター音量を返す。
-	*/
-	Float CriManager::MasterVolume()const
-	{
-		return masterVolume_;
-	}
-
-	/**
-	* [EN]
-	* Returns the master volume that ResetVolume returns to.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ResetVolume で戻す先のマスター音量を返す。
-	*/
-	Float CriManager::DefaultMasterVolume()const
-	{
-		return defaultMasterVolume_;
-	}
-
-	/**
-	* [EN]
-	* Returns the volume of a category: the value set by the user, else
-	* the ACF's value, else 1.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* カテゴリの音量を返す。ユーザーが設定した値、無ければ ACF の値、
-	* それも無ければ 1。
-	*/
-	Float CriManager::CategoryVolume(const String& category)const
-	{
-		if (categoryVolumes_.contains(category))
-		{
-			return categoryVolumes_.at(category);
-		}
-
-		if (defaultCategoryVolumes_.contains(category))
-		{
-			return defaultCategoryVolumes_.at(category);
-		}
-
-		return 1.0f;
-	}
-
-	/**
-	* [EN]
-	* Returns the names of the categories defined in the registered ACF.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 登録した ACF に定義されたカテゴリ名の一覧を返す。
-	*/
-	const DynamicArray<String>& CriManager::CategoryNameList()const
-	{
-		return categoryNames_;
-	}
-
-	/**
-	* [EN]
-	* Releases the voice pools, the bandwidth manager and the ACF, and
-	* shuts CRI down. Does nothing if CRI was never initialized.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ボイスプール、帯域の管理、ACF を解放し、CRI を終了する。CRI が
-	* 初期化されていなければ何もしない。
-	*/
 	void CriManager::Finalize()
 	{
-		if (!criAtomEx_IsInitialized())
-		{
-			return;
-		}
+		impl_->Finalize();
+	}
 
-		/// [EN] Everything CRI allocated for this manager is released before CRI itself shuts down.
-		/// [JP] この管理機構のために CRI が確保したものは、CRI 本体を終了する前に全て解放する。
-		criAtomExVoicePool_FreeAll();
-		waveVoicePool_ = nullptr;
-		standardVoicePool_ = nullptr;
+	void CriManager::MasterVolume(Float volume)
+	{
+		impl_->MasterVolume(volume);
+	}
 
-		if (dbasID_ != CRIATOMEXDBAS_ILLEGAL_ID)
-		{
-			criAtomExDbas_Destroy(dbasID_);
-			dbasID_ = CRIATOMEXDBAS_ILLEGAL_ID;
-		}
+	Float CriManager::MasterVolume()const
+	{
+		return impl_->MasterVolume();
+	}
 
-		if (!acfData_.empty())
-		{
-			criAtomEx_UnregisterAcf();
-			acfData_.clear();
-		}
+	void CriManager::DefaultMasterVolume(Float volume)
+	{
+		impl_->DefaultMasterVolume(volume);
+	}
 
-		criAtomEx_Finalize_WASAPI();
+	Float CriManager::DefaultMasterVolume()const
+	{
+		return impl_->DefaultMasterVolume();
+	}
 
-		/// [EN] Removes the I/O hook so nothing calls into AudioByteStream after shutdown.
-		/// [JP] 終了後に AudioByteStream が呼ばれないよう、I/O のフックを外す。
-		criFs_SetSelectIoCallback(nullptr);
+	void CriManager::CategoryVolume(const String& category, Float volume)
+	{
+		impl_->CategoryVolume(category, volume);
+	}
+
+	Float CriManager::CategoryVolume(const String& category)const
+	{
+		return impl_->CategoryVolume(category);
+	}
+
+	const DynamicArray<String>& CriManager::CategoryNameList()const
+	{
+		return impl_->CategoryNameList();
+	}
+
+	void CriManager::ResetVolume()
+	{
+		impl_->ResetVolume();
+	}
+
+	Bool CriManager::Load()
+	{
+		return impl_->Load();
+	}
+
+	Bool CriManager::Save()
+	{
+		return impl_->Save();
 	}
 }

@@ -1,3 +1,6 @@
+#include <External/JoltPhysics/Jolt/Jolt.h>
+#include <External/JoltPhysics/Jolt/Physics/Character/CharacterBase.h>
+#include <External/JoltPhysics/Jolt/Physics/Character/CharacterVirtual.h>
 #include <PhysicsEngine/CharacterController/CharacterController.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <PhysicsEngine/JoltPhysics/JoltCharacterContactListener.h>
@@ -53,11 +56,9 @@ namespace SeedCore
 
 		/// [EN] Forward character contacts to the owning entity in this World.
 		/// [JP] キャラクターの接触を、この World 内の所有エンティティへ転送する。
-		JoltCharacterContactListener* listener = new JoltCharacterContactListener();
-		listener->AddRef();
-		listener->SetTarget(&actor.GetWorld(), desc.userData_);
+		JoltCharacterContactListener* listener = new JoltCharacterContactListener(actor.GetWorld(), desc.userData_);
 		characterContactListener_ = listener;
-		static_cast<JPH::CharacterVirtual*>(character_)->SetListener(listener);
+		listener->Attach(character_);
 	}
 
 	/**
@@ -316,7 +317,7 @@ namespace SeedCore
 		GetActor().GetService<Physics>()->DestroyCharacter(character_);
 		if (characterContactListener_)
 		{
-			static_cast<JoltCharacterContactListener*>(characterContactListener_)->Release();
+			delete static_cast<JoltCharacterContactListener*>(characterContactListener_);
 			characterContactListener_ = nullptr;
 		}
 	}

@@ -1,4 +1,5 @@
 #pragma once
+#include <AudioEngine/Audio/AudioTypes.h>
 
 namespace SeedCore
 {
@@ -70,7 +71,7 @@ namespace SeedCore
 		* プレイヤーを生成し、破棄時に解放できるよう追跡する。CRI が生成に
 		* 失敗した場合は null を返す。
 		*/
-		CriAtomExPlayerHn CreatePlayer();
+		ScAudioPlayerHandle CreatePlayer();
 
 		/**
 		* [EN]
@@ -81,7 +82,7 @@ namespace SeedCore
 		* [JP]
 		* プレイヤーを停止し、追跡から外して破棄する。
 		*/
-		void DestroyPlayer(CriAtomExPlayerHn player);
+		void DestroyPlayer(ScAudioPlayerHandle player);
 
 		/**
 		* [EN]
@@ -94,7 +95,7 @@ namespace SeedCore
 		* 3D ソースを生成し、破棄時に解放できるよう追跡する。CRI が生成に
 		* 失敗した場合は null を返す。
 		*/
-		CriAtomEx3dSourceHn CreateSource();
+		ScAudioSourceHandle CreateSource();
 
 		/**
 		* [EN]
@@ -105,7 +106,7 @@ namespace SeedCore
 		* [JP]
 		* 3D ソースを追跡から外して破棄する。
 		*/
-		void DestroySource(CriAtomEx3dSourceHn source);
+		void DestroySource(ScAudioSourceHandle source);
 
 	public:
 		/**
@@ -125,7 +126,7 @@ namespace SeedCore
 		* を無限に繰り返す。loop でなければ、キューに設定されたループ区間を
 		* 無視して最後まで1回再生する。
 		*/
-		void PlayCue(CriAtomExPlayerHn player, Sound& sound, const String& cueName, Bool loop);
+		void PlayCue(ScAudioPlayerHandle player, Sound& sound, const String& cueName, Bool loop);
 
 		/**
 		* [EN]
@@ -144,7 +145,7 @@ namespace SeedCore
 		* が次のデータを要求するたびに同じバッファをもう一度渡すので、波形が
 		* 途切れずに繰り返される。
 		*/
-		void PlayWave(CriAtomExPlayerHn player, Sound& sound, Bool loop);
+		void PlayWave(ScAudioPlayerHandle player, Sound& sound, Bool loop);
 
 		/**
 		* [EN]
@@ -155,7 +156,7 @@ namespace SeedCore
 		* [JP]
 		* プレイヤーが再生中の全てのボイスを停止する。
 		*/
-		void Stop(CriAtomExPlayerHn player);
+		void Stop(ScAudioPlayerHandle player);
 
 		/**
 		* [EN]
@@ -166,7 +167,7 @@ namespace SeedCore
 		* [JP]
 		* プレイヤーの再生を一時停止する。
 		*/
-		void Pause(CriAtomExPlayerHn player);
+		void Pause(ScAudioPlayerHandle player);
 
 		/**
 		* [EN]
@@ -177,7 +178,7 @@ namespace SeedCore
 		* [JP]
 		* プレイヤーの一時停止中の全てのボイスを再開する。
 		*/
-		void Resume(CriAtomExPlayerHn player);
+		void Resume(ScAudioPlayerHandle player);
 
 	public:
 		/**
@@ -191,7 +192,7 @@ namespace SeedCore
 		* プレイヤーの音量(1 = そのまま)を設定し、次の再生からだけでなく、
 		* 既に再生中のボイスにも反映する。
 		*/
-		void Volume(CriAtomExPlayerHn player, Float volume);
+		void Volume(ScAudioPlayerHandle player, Float volume);
 
 		/**
 		* [EN]
@@ -205,7 +206,7 @@ namespace SeedCore
 		* プレイヤーのピッチ変化をセント単位で設定し(100 セント = 半音、
 		* 0 = そのまま)、既に再生中のボイスにも反映する。
 		*/
-		void Pitch(CriAtomExPlayerHn player, Float cents);
+		void Pitch(ScAudioPlayerHandle player, Float cents);
 
 	public:
 		/**
@@ -219,7 +220,7 @@ namespace SeedCore
 		* プレイヤーを立体音響にする: そのボイスは、共有リスナーから見た
 		* source の位置に応じて定位と減衰がかかる。
 		*/
-		void AttachSource(CriAtomExPlayerHn player, CriAtomEx3dSourceHn source);
+		void AttachSource(ScAudioPlayerHandle player, ScAudioSourceHandle source);
 
 		/**
 		* [EN]
@@ -232,7 +233,7 @@ namespace SeedCore
 		* プレイヤーを立体音響でない状態に戻す: 3D ソースとリスナーの割り当て
 		* を外し、定位はキュー自身の設定に戻る。
 		*/
-		void DetachSource(CriAtomExPlayerHn player);
+		void DetachSource(ScAudioPlayerHandle player);
 
 		/**
 		* [EN]
@@ -245,7 +246,7 @@ namespace SeedCore
 		* 3D ソースを position へ移動し、速度 velocity(ワールド単位/秒。
 		* ドップラー効果の計算に使う)を設定する。
 		*/
-		void UpdateSource(CriAtomEx3dSourceHn source, const Vector3& position, const Vector3& velocity);
+		void UpdateSource(ScAudioSourceHandle source, const Vector3& position, const Vector3& velocity);
 
 		/**
 		* [EN]
@@ -273,7 +274,7 @@ namespace SeedCore
 		* 3D ソースの距離減衰を設定する: リスナーから minDistance までは
 		* 最大音量で、そこから小さくなり maxDistance で聞こえなくなる。
 		*/
-		void AttenuationDistance(CriAtomEx3dSourceHn source, Float minDistance, Float maxDistance);
+		void AttenuationDistance(ScAudioSourceHandle source, Float minDistance, Float maxDistance);
 
 		/**
 		* [EN]
@@ -302,7 +303,7 @@ namespace SeedCore
 		* 上は再生中の扱いなので true を返す。区別するには Paused() を使う。
 		* プレイヤーが null なら false。
 		*/
-		NODISCARD Bool Playing(CriAtomExPlayerHn player)const;
+		NODISCARD Bool Playing(ScAudioPlayerHandle player)const;
 
 		/**
 		* [EN]
@@ -313,7 +314,7 @@ namespace SeedCore
 		* [JP]
 		* プレイヤーが一時停止中かどうかを返す。プレイヤーが null なら false。
 		*/
-		NODISCARD Bool Paused(CriAtomExPlayerHn player)const;
+		NODISCARD Bool Paused(ScAudioPlayerHandle player)const;
 
 	private:
 		/// [EN] The CRI library owner, bound through Gateway at construction.
@@ -322,14 +323,14 @@ namespace SeedCore
 
 		/// [EN] The single 3D listener every 3D source is heard from.
 		/// [JP] 全ての 3D ソースを聞き取る、唯一の 3D リスナー。
-		CriAtomEx3dListenerHn listener_ = nullptr;
+		ScAudioListenerHandle listener_ = nullptr;
 
 		/// [EN] Every live player, destroyed together with this object.
 		/// [JP] 生存中の全プレイヤー。このオブジェクトと一緒に破棄する。
-		DynamicArray<CriAtomExPlayerHn> players_;
+		DynamicArray<ScAudioPlayerHandle> players_;
 
 		/// [EN] Every live 3D source, destroyed together with this object.
 		/// [JP] 生存中の全 3D ソース。このオブジェクトと一緒に破棄する。
-		DynamicArray<CriAtomEx3dSourceHn> sources_;
+		DynamicArray<ScAudioSourceHandle> sources_;
 	};
 }

@@ -1,6 +1,44 @@
+#include <External/JoltPhysics/Jolt/Jolt.h>
+#include <External/JoltPhysics/Jolt/Core/Array.h>
+#include <External/JoltPhysics/Jolt/Math/Float3.h>
+#include <External/JoltPhysics/Jolt/Physics/PhysicsSystem.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/Body.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/BodyCreationSettings.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/BodyInterface.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/BodyLock.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/BodyLockMulti.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/BodyManager.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/MassProperties.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/MotionProperties.h>
+#include <External/JoltPhysics/Jolt/Physics/Character/CharacterVirtual.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/CastResult.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/CollisionCollectorImpl.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/CollideShape.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/NarrowPhaseQuery.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/ObjectLayer.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/RayCast.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/ShapeCast.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/Shape.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/CylinderShape.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/Constraint.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/TwoBodyConstraint.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/DistanceConstraint.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/FixedConstraint.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/HingeConstraint.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/SliderConstraint.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/SpringSettings.h>
+#include <External/JoltPhysics/Jolt/Physics/SoftBody/SoftBodyCreationSettings.h>
+#include <External/JoltPhysics/Jolt/Physics/SoftBody/SoftBodyMotionProperties.h>
+#include <External/JoltPhysics/Jolt/Physics/SoftBody/SoftBodySharedSettings.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <PhysicsEngine/JoltPhysics/JoltManager.h>
 #include <PhysicsEngine/JoltPhysics/JoltLayerdef.h>
+#include <PhysicsEngine/JoltPhysics/JoltShapePool.h>
+#include <PhysicsEngine/JoltPhysics/JoltConstraintPool.h>
 #include <FoundationEngine/Resource/Gateway.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/World/World.h>
@@ -21,7 +59,7 @@ namespace SeedCore
 	* エンジンのJolt管理機構へ接続された物理ファサードを構築する。
 	* クエリはすべて queryInstance に記録する。
 	*/
-	Physics::Physics(QueryInstance& queryInstance) :joltManager_(Gateway::GetJoltManager()), queryInstance_(queryInstance)
+	Physics::Physics(World& world, QueryInstance& queryInstance) :joltManager_(Gateway::GetJoltManager()), world_(world), queryInstance_(queryInstance)
 	{
 		/// No Code
 	}
@@ -1555,14 +1593,10 @@ namespace SeedCore
 			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
@@ -1586,7 +1620,7 @@ namespace SeedCore
 			outHit.position_ = Vector3(static_cast<Float>(hitPosition.GetX()), static_cast<Float>(hitPosition.GetY()), static_cast<Float>(hitPosition.GetZ()));
 			outHit.normal_ = Vector3(normal.GetX(), normal.GetY(), normal.GetZ());
 			outHit.distance_ = hit.mFraction * maxDistance;
-			outHit.entityID_ = BodyEntityID(hit.mBodyID);
+			outHit.entityID_ = BodyEntityID(hit.mBodyID.GetIndexAndSequenceNumber());
 
 #if SC_DEBUG
 			query.hit_ = true;
@@ -1673,14 +1707,10 @@ namespace SeedCore
 			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
@@ -1693,7 +1723,7 @@ namespace SeedCore
 			outHit.position_ = Vector3(hit.mContactPointOn2.GetX(), hit.mContactPointOn2.GetY(), hit.mContactPointOn2.GetZ());
 			outHit.normal_ = Vector3(normal.GetX(), normal.GetY(), normal.GetZ());
 			outHit.distance_ = hit.mFraction * maxDistance;
-			outHit.entityID_ = BodyEntityID(hit.mBodyID2);
+			outHit.entityID_ = BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber());
 
 #if SC_DEBUG
 			query.hit_ = true;
@@ -1773,14 +1803,10 @@ namespace SeedCore
 			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
@@ -1793,7 +1819,7 @@ namespace SeedCore
 			outHit.position_ = Vector3(hit.mContactPointOn2.GetX(), hit.mContactPointOn2.GetY(), hit.mContactPointOn2.GetZ());
 			outHit.normal_ = Vector3(normal.GetX(), normal.GetY(), normal.GetZ());
 			outHit.distance_ = hit.mFraction * maxDistance;
-			outHit.entityID_ = BodyEntityID(hit.mBodyID2);
+			outHit.entityID_ = BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber());
 
 #if SC_DEBUG
 			query.hit_ = true;
@@ -1911,18 +1937,14 @@ namespace SeedCore
 			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
-			result.push_back(BodyEntityID(hit.mBodyID2));
+			result.push_back(BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
 		}
 
 #if SC_DEBUG
@@ -1998,14 +2020,10 @@ namespace SeedCore
 			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
@@ -2029,7 +2047,7 @@ namespace SeedCore
 			outHit.position_ = Vector2(static_cast<Float>(hitPosition.GetX()) * pixelsPerMeter_, -static_cast<Float>(hitPosition.GetY()) * pixelsPerMeter_);
 			outHit.normal_ = Vector2(normal.GetX(), -normal.GetY());
 			outHit.distance_ = hit.mFraction * maxDistance;
-			outHit.entityID_ = BodyEntityID(hit.mBodyID);
+			outHit.entityID_ = BodyEntityID(hit.mBodyID.GetIndexAndSequenceNumber());
 
 #if SC_DEBUG
 			query.hit_ = true;
@@ -2115,14 +2133,10 @@ namespace SeedCore
 			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
@@ -2135,7 +2149,7 @@ namespace SeedCore
 			outHit.position_ = Vector2(hit.mContactPointOn2.GetX() * pixelsPerMeter_, -hit.mContactPointOn2.GetY() * pixelsPerMeter_);
 			outHit.normal_ = Vector2(normal.GetX(), -normal.GetY());
 			outHit.distance_ = hit.mFraction * maxDistance;
-			outHit.entityID_ = BodyEntityID(hit.mBodyID2);
+			outHit.entityID_ = BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber());
 
 #if SC_DEBUG
 			query.hit_ = true;
@@ -2200,14 +2214,10 @@ namespace SeedCore
 
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
@@ -2216,7 +2226,7 @@ namespace SeedCore
 			outHit.position_ = Vector2(hit.mContactPointOn2.GetX() * pixelsPerMeter_, -hit.mContactPointOn2.GetY() * pixelsPerMeter_);
 			outHit.normal_ = Vector2(normal.GetX(), -normal.GetY());
 			outHit.distance_ = hit.mFraction * maxDistance;
-			outHit.entityID_ = BodyEntityID(hit.mBodyID2);
+			outHit.entityID_ = BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber());
 
 #if SC_DEBUG
 			query.hit_ = true;
@@ -2320,18 +2330,14 @@ namespace SeedCore
 			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
-			result.push_back(BodyEntityID(hit.mBodyID2));
+			result.push_back(BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
 		}
 
 #if SC_DEBUG

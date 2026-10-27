@@ -13,6 +13,9 @@ namespace SeedCore
 	/// [EN] Packed physics layer exposed by the engine-facing API.
 	/// [JP] エンジン側 API が公開するパック済み物理レイヤー。
 	using ScObjectLayer = Uint16;
+
+	/// [EN] Engine-facing broad-phase layer index.
+	/// [JP] エンジン側のブロードフェーズレイヤー番号。
 	using ScBroadPhaseLayer = Uint8;
 
 	/// [EN] Opaque handle to the physics backend's virtual character.

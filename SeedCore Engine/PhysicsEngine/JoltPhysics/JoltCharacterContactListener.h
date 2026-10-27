@@ -1,13 +1,10 @@
 #pragma once
-#include <FoundationEngine/World/ECS/Entity/Entity.h>
-
-namespace JPH
-{
-	class CharacterContactListener;
-}
+#include <PhysicsEngine/Physics/PhysicsTypes.h>
 
 namespace SeedCore
 {
+	struct EntityID;
+
 	class World;
 
 	/**
@@ -38,14 +35,14 @@ namespace SeedCore
 	class JoltCharacterContactListener final
 	{
 	public:
-		JoltCharacterContactListener();
+		JoltCharacterContactListener(World& world, EntityID entityID);
 		~JoltCharacterContactListener();
 
 		JoltCharacterContactListener(const JoltCharacterContactListener&) = delete;
 		JoltCharacterContactListener& operator=(const JoltCharacterContactListener&) = delete;
 
 	public:
-		void SetTarget(World* world, EntityID entityID);
+		void Attach(ScCharacterHandle character);
 
 		void Begin();
 

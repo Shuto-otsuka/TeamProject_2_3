@@ -114,7 +114,7 @@ namespace SeedCore
 				world_->AddService<GameTimer>();
 				QueryInstance* queryInstance = world_->AddService<QueryInstance>();
 				RenderInstance* renderInstance = world_->AddService<RenderInstance>();
-				world_->AddService<Physics>(*queryInstance);
+				world_->AddService<Physics>(*world_, *queryInstance);
 				world_->AddService<DebugDraw>(*renderInstance);
 				world_->AddService<Audio>();
 				world_->AddService<Application>();
@@ -348,12 +348,10 @@ namespace SeedCore
 			PhysicsSystem::ResolveSoftbody(*graphics_.GetGraphicsModule().Resources().modelResource_, *world_);
 			PhysicsSystem::ApplyActive(*world_);
 			PhysicsSystem::ApplyCollider(*world_);
-			joltManager_->ActiveWorld(world_.get());
-
 			while (timer.Step())
 			{
 				PhysicsSystem::ApplyRigidbody(*world_, timer.FixedDeltaTime());
-				joltManager_->Execute(timer.FixedDeltaTime());
+				joltManager_->Execute(timer.FixedDeltaTime(), *world_);
 				system_.Step(*world_, timer.FixedDeltaTime());
 			}
 		}

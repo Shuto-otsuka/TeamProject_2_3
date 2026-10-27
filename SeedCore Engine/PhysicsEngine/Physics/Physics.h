@@ -12,6 +12,7 @@ namespace JPH
 namespace SeedCore
 {
 	class JoltManager;
+	class World;
 
 	/**
 	* [EN]
@@ -258,7 +259,7 @@ namespace SeedCore
 		* エンジンのJolt管理機構へ接続された物理ファサードを構築する。
 		* クエリはすべて queryInstance に記録する。
 		*/
-		Physics(QueryInstance& queryInstance);
+		Physics(World& world, QueryInstance& queryInstance);
 
 		/**
 		* [EN]
@@ -931,6 +932,10 @@ namespace SeedCore
 		/// [EN] Jolt services and pooled physics resources used by this facade.
 		/// [JP] このファサードが使用するJoltサービスと物理リソースプール。
 		JoltManager& joltManager_;
+
+		/// [EN] World that owns this physics facade.
+		/// [JP] この物理ファサードを所有する World。
+		World& world_;
 
 		/// [EN] Record every query is added to, owned by World.
 		/// [JP] クエリをすべて記録する先。World が所有する。
