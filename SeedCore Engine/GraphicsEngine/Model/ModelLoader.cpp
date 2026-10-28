@@ -1,7 +1,24 @@
+#ifdef __clang__
+#define STBI_NO_SIMD
+#endif
+#include <External/TinyglTF/Include/tiny_gltf.h>
+#include <External/DirectXTex/Include/DirectXTex.h>
+#ifndef FBXSDK_SHARED
+#define FBXSDK_SHARED
+#endif
+#include <External/FBXSDK/Include/fbxsdk.h>
 #include <GraphicsEngine/Model/ModelLoader.h>
 #include <GraphicsEngine/Model/Cluster/QuadricErrorMetrics.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
+
+#ifdef _DEBUG
+#pragma comment(lib, "../External/FBXSDK/Lib/Debug/libfbxsdk.lib")
+#pragma comment(lib, "../External/DirectXTex/Lib/Debug/DirectXTex.lib")
+#else
+#pragma comment(lib, "../External/FBXSDK/Lib/Release/libfbxsdk.lib")
+#pragma comment(lib, "../External/DirectXTex/Lib/Release/DirectXTex.lib")
+#endif
 
 namespace SeedCore
 {
@@ -2565,7 +2582,7 @@ namespace SeedCore
 		}
 	}
 
-	void ModelLoader::ConvertSceneConvention(FbxScene* scene, FbxManager* manager)
+	void ModelLoader::ConvertSceneConvention(fbxsdk::FbxScene* scene, fbxsdk::FbxManager* manager)
 	{
 		FbxAxisSystem gltfAxisSystem(FbxAxisSystem::eYAxis, FbxAxisSystem::eParityOdd, FbxAxisSystem::eRightHanded);
 		gltfAxisSystem.DeepConvertScene(scene);

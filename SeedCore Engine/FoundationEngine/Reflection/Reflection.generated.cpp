@@ -5677,6 +5677,24 @@ namespace SeedCore
 					}
 					{
 						FieldInfo fi;
+						fi.name_ = String("足場追従");
+						fi.offset_ = offsetof(Rigidbody, followFoothold_);
+						fi.type_ = AttributeType::Bool;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Rigidbody*>(p); return o.bodyType_ == Rigidbody::BodyType::Dynamic && !o.isTrigger_; };
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("足場の最大斜面角度");
+						fi.offset_ = offsetof(Rigidbody, footholdSlopeAngle_);
+						fi.type_ = AttributeType::Float;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<Rigidbody*>(p); return o.followFoothold_; };
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 89.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
 						fi.name_ = String("位置X軸固定");
 						fi.offset_ = offsetof(Rigidbody, freezePositionX_);
 						fi.type_ = AttributeType::Bool;

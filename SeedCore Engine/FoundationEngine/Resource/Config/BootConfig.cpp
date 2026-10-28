@@ -1,3 +1,4 @@
+#include <External/DirectXTex/Include/DirectXTex.h>
 #include <FoundationEngine/Resource/Config/BootConfig.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 #include <FoundationEngine/Log/Warning.h>

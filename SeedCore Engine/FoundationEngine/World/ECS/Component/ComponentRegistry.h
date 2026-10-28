@@ -188,6 +188,8 @@ namespace SeedCore
 								static_cast<T*>(component)->OnTriggerExit(other);
 							};
 					}
+					/// [EN] Bound only for T that rebuilds itself when a field marked SC_REFLECTION_FIELD_REVISION() changes.
+					/// [JP] SC_REFLECTION_FIELD_REVISION() の付いたフィールドが変わったときに自身を作り直す T でだけ束縛する。
 					if constexpr (HasRevision<T>)
 					{
 						hooks.revision_ = [](ComponentBehaviour* component)

@@ -148,9 +148,33 @@ namespace SeedCore
 		*/
 		void OnDestroy();
 
+		/**
+		* [EN]
+		* Rebuilds the virtual character from the current settings, so a
+		* changed field takes effect. Does nothing while no character exists.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 現在の設定で仮想キャラクターを作り直し、変更したフィールドを
+		* 効かせる。キャラクターが無い間は何もしない。
+		*/
 		void OnRevision();
 
 	public:
+		/**
+		* [EN]
+		* Applies fields changed from code. An edit in the inspector runs
+		* OnRevision on its own, but a field written by a script takes
+		* effect only once this is called.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コードから変えたフィールドを反映する。インスペクタでの編集は
+		* 自動で OnRevision が走るが、スクリプトから書き換えたフィールドは
+		* これを呼んだときに初めて効く。
+		*/
 		void Dispatch();
 
 	public:

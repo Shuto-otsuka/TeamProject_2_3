@@ -258,6 +258,8 @@ namespace SeedCore
 		/// [JP] このフィールドを現在インスペクタに表示すべきかどうか。
 		Bool editorVisible_ = true;
 
+		/// [EN] Whether editing this field in the inspector should dispatch OnRevision to the owning component (set by SC_REFLECTION_FIELD_REVISION()).
+		/// [JP] インスペクタでこのフィールドを編集したとき、所有側コンポーネントへ OnRevision をディスパッチするかどうか（SC_REFLECTION_FIELD_REVISION() で立つ）。
 		Bool revision_ = false;
 	};
 

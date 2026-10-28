@@ -1,3 +1,7 @@
+#ifdef __clang__
+#define STBI_NO_SIMD
+#endif
+#include <External/TinyglTF/Include/tiny_gltf.h>
 #include <GraphicsEngine/Avatar/Animal/AnimalCharacterConverter.h>
 #include <GraphicsEngine/Avatar/Animal/AnimalCharacterModel.h>
 #include <GraphicsEngine/Avatar/Animal/AnimalCharacterEvaluator.h>

@@ -1619,6 +1619,8 @@ namespace SeedCore
 			break;
 		}
 
+		/// [EN] A changed revision field has the component rebuild what it made from its fields, so the edit takes effect at once.
+		/// [JP] Revision 対象のフィールドが変わったら、コンポーネントにフィールドから作ったものを作り直させ、編集をすぐに効かせる。
 		if (changed && field.revision_)
 		{
 			void* component = context_.world_.world_->GetComponent(entity, componentID);

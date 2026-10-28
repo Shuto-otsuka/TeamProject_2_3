@@ -140,39 +140,23 @@
 #if _DEBUG
 #pragma comment(lib, "../External/DLSS/Lib/sl.interposer.lib" )
 #pragma comment(lib, "../External/DirectXTK/Lib/Debug/DirectXTK12.lib")
-#pragma comment(lib, "../External/DirectXTex/Lib/Debug/DirectXTex.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/Effekseer.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/EffekseerRendererCommon.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/EffekseerRendererLLGI.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/EffekseerRendererDX12.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/LLGI.lib")
 #pragma comment(lib, "../External/ImGui/Lib/Debug/ImGui.lib")
-#pragma comment(lib, "../External/MTSDF/Lib/Debug/freetyped.lib")
-#pragma comment(lib, "../External/MTSDF/Lib/Debug/harfbuzz.lib")
-#pragma comment(lib, "../External/MTSDF/Lib/Debug/msdfgen-core.lib")
-#pragma comment(lib, "../External/MTSDF/Lib/Debug/msdfgen-ext.lib")
-#pragma comment(lib, "../External/MTSDF/Lib/Debug/msdf-atlas-gen.lib")
-#pragma comment(lib, "../External/MTSDF/Lib/Debug/libpng18_staticd.lib")
-#pragma comment(lib, "../External/MTSDF/Lib/Debug/libzsd.lib")
-#pragma comment(lib, "../External/FBXSDK/Lib/Debug/libfbxsdk.lib")
+#pragma comment(lib, "../External/MTSDF/Lib/Debug/MTSDF.lib")
 #else
 #pragma comment(lib, "../External/DLSS/Lib/sl.interposer.lib" )
 #pragma comment(lib, "../External/DirectXTK/Lib/Release/DirectXTK12.lib")
-#pragma comment(lib, "../External/DirectXTex/Lib/Release/DirectXTex.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Release/Effekseer.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Release/EffekseerRendererCommon.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Release/EffekseerRendererLLGI.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Release/EffekseerRendererDX12.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Release/LLGI.lib")
 #pragma comment(lib, "../External/ImGui/Lib/Release/ImGui.lib")
-#pragma comment(lib, "../External/MTSDF/Lib/Release/freetype.lib")
-#pragma comment(lib, "../External/MTSDF/Lib/Release/harfbuzz.lib")
-#pragma comment(lib, "../External/MTSDF/Lib/Release/msdfgen-core.lib")
-#pragma comment(lib, "../External/MTSDF/Lib/Release/msdfgen-ext.lib")
-#pragma comment(lib, "../External/MTSDF/Lib/Release/msdf-atlas-gen.lib")
-#pragma comment(lib, "../External/MTSDF/Lib/Release/libpng18_static.lib")
-#pragma comment(lib, "../External/MTSDF/Lib/Release/libzs.lib")
-#pragma comment(lib, "../External/FBXSDK/Lib/Release/libfbxsdk.lib")
+#pragma comment(lib, "../External/MTSDF/Lib/Release/MTSDF.lib")
 #endif
 
 #pragma comment(lib, "ole32.lib")
@@ -215,21 +199,6 @@
 #include <External/DirectXTK/Include/ResourceUploadBatch.h>
 #include <External/DirectXTK/Include/BufferHelpers.h>
 
-#include <External/DirectXTex/Include/DirectXTex.h>
-
-#ifdef __clang__
-#define STBI_NO_SIMD
-#endif
-#include <External/TinyglTF/Include/tiny_gltf.h>
-
-#ifndef FBXSDK_SHARED
-#define FBXSDK_SHARED
-#endif
-#pragma warning(push)
-#pragma warning(disable : 4996)
-#include <External/FBXSDK/Include/fbxsdk.h>
-#pragma warning(pop)
-
 #include <External/Effekseer/Include/Effekseer.h>
 #include <External/Effekseer/Include/EffekseerRendererDX12.h>
 #include <External/Effekseer/Include/EffekseerRendererLLGI/Common.h>
@@ -253,21 +222,21 @@
 #endif
 
 #include <FoundationEngine/Math/Algorithm.h>
-#include <FoundationEngine/Math/Vector.h>
-#include <FoundationEngine/Math/Quaternion.h>
 #include <FoundationEngine/Math/Matrix.h>
+#include <FoundationEngine/Math/Quaternion.h>
+#include <FoundationEngine/Math/Vector.h>
 
-#include <FoundationEngine/Utility/Keyword.h>
-#include <FoundationEngine/Utility/Types.h>
-#include <FoundationEngine/Utility/String.h>
 #include <FoundationEngine/Utility/Array.h>
 #include <FoundationEngine/Utility/Bitset.h>
-#include <FoundationEngine/Utility/ResourcePtr.h>
-#include <FoundationEngine/Utility/ResourceRef.h>
+#include <FoundationEngine/Utility/Delegate.h>
+#include <FoundationEngine/Utility/DestructiveCopy.h>
+#include <FoundationEngine/Utility/Keyword.h>
 #include <FoundationEngine/Utility/NonCopyable.h>
 #include <FoundationEngine/Utility/NonMovable.h>
 #include <FoundationEngine/Utility/NonTransferable.h>
-#include <FoundationEngine/Utility/DestructiveCopy.h>
-#include <FoundationEngine/Utility/Delegate.h>
+#include <FoundationEngine/Utility/ResourcePtr.h>
+#include <FoundationEngine/Utility/ResourceRef.h>
+#include <FoundationEngine/Utility/String.h>
+#include <FoundationEngine/Utility/Types.h>
 
 #include <GraphicsEngine/D3D12/D3D12Common.h>

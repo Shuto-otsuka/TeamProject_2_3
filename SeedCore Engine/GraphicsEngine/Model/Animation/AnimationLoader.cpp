@@ -1,3 +1,11 @@
+#ifdef __clang__
+#define STBI_NO_SIMD
+#endif
+#include <External/TinyglTF/Include/tiny_gltf.h>
+#ifndef FBXSDK_SHARED
+#define FBXSDK_SHARED
+#endif
+#include <External/FBXSDK/Include/fbxsdk.h>
 #include <GraphicsEngine/Model/Animation/AnimationLoader.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
@@ -429,7 +437,7 @@ namespace SeedCore
 	* レストポーズへフォールバックする。スタックは事前にシーンの現在の
 	* スタックにしておくこと。
 	*/
-	void AnimationLoader::FetchAnimationClip(FbxAnimStack* fbxStack, const DynamicArray<FbxNode*>& nodeTable, Float unitScale, const ResolvedAxisConvention& resolved, Double frameRate, Animation& animation)
+	void AnimationLoader::FetchAnimationClip(fbxsdk::FbxAnimStack* fbxStack, const DynamicArray<fbxsdk::FbxNode*>& nodeTable, Float unitScale, const ResolvedAxisConvention& resolved, Double frameRate, Animation& animation)
 	{
 		animation.name_ = fbxStack->GetName();
 

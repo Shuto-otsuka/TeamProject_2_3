@@ -368,6 +368,17 @@ namespace SeedCore
 		}
 	}
 
+	/**
+	* [EN]
+	* Dispatches a revision event to this component's implementation, if
+	* any, so it can rebuild what it made from its fields.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Revision イベントを、このコンポーネントの実装（存在する場合）へ
+	* ディスパッチし、フィールドから作ったものを作り直させる。
+	*/
 	void ComponentBehaviour::DispatchRevision()
 	{
 		if (id_ && id_->hooks_ && id_->hooks_->revision_)

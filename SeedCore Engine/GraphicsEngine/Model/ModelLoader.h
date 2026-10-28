@@ -4,6 +4,21 @@
 #include <FoundationEngine/Resource/Asset/AxisConvention.h>
 #include <GraphicsEngine/Model/Crister.h>
 
+namespace tinygltf
+{
+	class Model;
+}
+
+namespace fbxsdk
+{
+	class FbxScene;
+	class FbxNode;
+	class FbxMesh;
+	class FbxSurfaceMaterial;
+	class FbxFileTexture;
+	class FbxManager;
+}
+
 namespace SeedCore
 {
 	class BindlessHeap;
@@ -23,14 +38,14 @@ namespace SeedCore
 
 	struct FbxSource
 	{
-		FbxScene* scene_ = nullptr;
+		fbxsdk::FbxScene* scene_ = nullptr;
 		std::string directory_;
 		std::string stem_;
 		Float unitScale_ = 1.0f;
-		DynamicArray<FbxNode*> nodeTable_;
-		DynamicArray<FbxMesh*> meshTable_;
-		mutable DynamicArray<FbxSurfaceMaterial*> materialTable_;
-		mutable DynamicArray<FbxFileTexture*> textureTable_;
+		DynamicArray<fbxsdk::FbxNode*> nodeTable_;
+		DynamicArray<fbxsdk::FbxMesh*> meshTable_;
+		mutable DynamicArray<fbxsdk::FbxSurfaceMaterial*> materialTable_;
+		mutable DynamicArray<fbxsdk::FbxFileTexture*> textureTable_;
 	};
 
 	struct ModelSource
@@ -240,7 +255,7 @@ namespace SeedCore
 		*/
 		void ConvertAxisConvention(Crister& crister, const AxisConvention& axisConvention);
 
-		void ConvertSceneConvention(FbxScene* scene, FbxManager* manager);
+		void ConvertSceneConvention(fbxsdk::FbxScene* scene, fbxsdk::FbxManager* manager);
 
 		void ConvertFlatConvention(ModelSource& source);
 

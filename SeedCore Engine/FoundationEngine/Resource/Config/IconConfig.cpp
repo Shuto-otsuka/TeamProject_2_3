@@ -1,4 +1,11 @@
+#include <External/DirectXTex/Include/DirectXTex.h>
 #include <FoundationEngine/Resource/Config/IconConfig.h>
+
+#ifdef _DEBUG
+#pragma comment(lib, "../External/DirectXTex/Lib/Debug/DirectXTex.lib")
+#else
+#pragma comment(lib, "../External/DirectXTex/Lib/Release/DirectXTex.lib")
+#endif
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 #include <FoundationEngine/Log/Warning.h>
 

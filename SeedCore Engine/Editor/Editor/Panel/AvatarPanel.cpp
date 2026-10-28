@@ -1,4 +1,11 @@
+#include <External/DirectXTex/Include/DirectXTex.h>
 #include <Editor/Editor/Panel/AvatarPanel.h>
+
+#ifdef _DEBUG
+#pragma comment(lib, "../External/DirectXTex/Lib/Debug/DirectXTex.lib")
+#else
+#pragma comment(lib, "../External/DirectXTex/Lib/Release/DirectXTex.lib")
+#endif
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>

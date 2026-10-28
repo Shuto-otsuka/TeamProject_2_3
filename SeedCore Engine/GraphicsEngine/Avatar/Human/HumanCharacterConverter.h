@@ -1,5 +1,10 @@
 #pragma once
 
+namespace tinygltf
+{
+	class Model;
+}
+
 namespace SeedCore
 {
 	class HumanCharacterModel;

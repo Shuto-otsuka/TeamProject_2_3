@@ -64,9 +64,33 @@ namespace SeedCore
 		*/
 		void OnDestroy();
 
+		/**
+		* [EN]
+		* Releases the current body and shape and returns to waiting for
+		* the mesh, so the shape is built again from the current settings.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 今のボディと形状を解放してメッシュ待ちに戻し、現在の設定で
+		* 形状が作り直されるようにする。
+		*/
 		void OnRevision();
 
 	public:
+		/**
+		* [EN]
+		* Applies fields changed from code. An edit in the inspector runs
+		* OnRevision on its own, but a field written by a script takes
+		* effect only once this is called.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コードから変えたフィールドを反映する。インスペクタでの編集は
+		* 自動で OnRevision が走るが、スクリプトから書き換えたフィールドは
+		* これを呼んだときに初めて効く。
+		*/
 		void Dispatch();
 
 	private:

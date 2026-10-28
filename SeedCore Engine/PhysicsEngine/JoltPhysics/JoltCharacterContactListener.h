@@ -35,20 +35,67 @@ namespace SeedCore
 	class JoltCharacterContactListener final
 	{
 	public:
+		/**
+		* [EN]
+		* Creates a listener that dispatches contacts of the character
+		* represented by entityID into world.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* entityID が表すキャラクターの接触を world へ通知するリスナーを作る。
+		*/
 		JoltCharacterContactListener(World& world, EntityID entityID);
+
+		/**
+		* [EN]
+		* Defined in the .cpp, where Impl is a complete type.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* Impl が完全型になる .cpp 側で定義する。
+		*/
 		~JoltCharacterContactListener();
 
+		/// [EN] Jolt holds a raw pointer to the Impl once attached, so the listener is neither copied nor reassigned.
+		/// [JP] 取り付けた後は Jolt が Impl の生ポインタを持つので、リスナーはコピーも代入もしない。
 		JoltCharacterContactListener(const JoltCharacterContactListener&) = delete;
 		JoltCharacterContactListener& operator=(const JoltCharacterContactListener&) = delete;
 
 	public:
+		/**
+		* [EN]
+		* Registers this listener on the given virtual character, so its
+		* contacts start arriving here.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 指定の仮想キャラクターにこのリスナーを登録し、その接触がここへ
+		* 届くようにする。
+		*/
 		void Attach(ScCharacterHandle character);
 
+		/**
+		* [EN]
+		* Starts a new character update. Each contacted body dispatches at
+		* most one enter or stay until the next call. Call it right before
+		* the character's update.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* キャラクターの新しい更新を始める。次に呼ぶまで、接触先ボディごとの
+		* Enter か Stay は最大1回になる。キャラクターの更新の直前に呼ぶ。
+		*/
 		void Begin();
 
 	private:
 		class Impl;
-	
+
+		/// [EN] The listener Jolt actually calls, owned through a pointer so its definition can stay in the .cpp.
+		/// [JP] Jolt が実際に呼ぶリスナー。定義を .cpp に置けるよう、ポインタ越しに所有する。
 		ResourcePtr<Impl> impl_;
 	};
 }

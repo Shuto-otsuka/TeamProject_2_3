@@ -61,9 +61,33 @@ namespace SeedCore
 		*/
 		void OnDestroy();
 
+		/**
+		* [EN]
+		* Rebuilds the collider body and its shape from the current
+		* settings, so a changed field takes effect.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 現在の設定からコライダーボディと形状を作り直し、変更した
+		* フィールドを効かせる。
+		*/
 		void OnRevision();
 
 	public:
+		/**
+		* [EN]
+		* Applies fields changed from code. An edit in the inspector runs
+		* OnRevision on its own, but a field written by a script takes
+		* effect only once this is called.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コードから変えたフィールドを反映する。インスペクタでの編集は
+		* 自動で OnRevision が走るが、スクリプトから書き換えたフィールドは
+		* これを呼んだときに初めて効く。
+		*/
 		void Dispatch();
 
 	public:

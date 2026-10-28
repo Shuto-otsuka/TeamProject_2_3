@@ -77,16 +77,17 @@ namespace SeedCore
 		* [EN]
 		* Hands what code has changed on every active actor's Rigidbody
 		* (bodyType_, isTrigger_, and the actor's LinearVelocity and
-		* AngularVelocity) to its body, and advances each MoveTo by one
-		* step of elapsedTime. Called before every fixed step.
+		* AngularVelocity) to its body, advances each MoveTo by one step of
+		* elapsedTime, and then carries each body that follows its foothold
+		* along with it. Called before every fixed step.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 有効な全 Actor の Rigidbody について、コードが変えたもの(bodyType_ と
 		* isTrigger_ と、Actor の LinearVelocity と AngularVelocity)をボディへ
-		* 渡し、MoveTo による移動を elapsedTime の1ステップ分進める。固定
-		* ステップの前に毎回呼ばれる。
+		* 渡し、MoveTo による移動を elapsedTime の1ステップ分進めたうえで、
+		* 足場に追従するボディを足場と一緒に運ぶ。固定ステップの前に毎回呼ばれる。
 		*/
 		static void ApplyRigidbody(World& world, Float elapsedTime);
 

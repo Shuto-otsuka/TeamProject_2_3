@@ -14,9 +14,32 @@
 
 namespace SeedCore
 {
+	/**
+	* [EN]
+	* The Jolt character contact listener behind JoltCharacterContactListener.
+	* Holds the per-body contact state and turns Jolt's per-sub-shape
+	* callbacks into one enter, stay and exit per contacted entity.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* JoltCharacterContactListener の奥にある Jolt のキャラクター接触リスナー。
+	* ボディごとの接触状態を持ち、Jolt のサブシェイプごとのコールバックを、
+	* 接触先エンティティごとの Enter・Stay・Exit 1回ずつにまとめる。
+	*/
 	class JoltCharacterContactListener::Impl final : public JPH::CharacterContactListener
 	{
 	public:
+		/**
+		* [EN]
+		* Creates the listener for the character represented by entityID in
+		* world.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* world の中で entityID が表すキャラクター用のリスナーを作る。
+		*/
 		Impl(World& world, EntityID entityID) :world_(&world), entityID_(entityID) {}
 
 		/**
@@ -153,6 +176,8 @@ namespace SeedCore
 	*/
 	void JoltCharacterContactListener::Impl::OnContactAdded(const JPH::CharacterVirtual* character, const JPH::CharacterContact& contact, JPH::CharacterContactSettings& settings)
 	{
+		/// [EN] A contact with no body (another virtual character's shape) has no entity to notify.
+		/// [JP] ボディの無い接触（他の仮想キャラクターの形状）には、通知するエンティティが無い。
 		if (!world_ || contact.mBodyB.IsInvalid())
 		{
 			return;
@@ -231,6 +256,8 @@ namespace SeedCore
 			return;
 		}
 
+		/// [EN] Only bodies that were entered here can stay; dynamic bodies and sensors were never recorded.
+		/// [JP] Stay できるのは、ここで Enter したボディだけ。動的ボディとセンサーは記録していない。
 		auto it = contactBodies_.find(contact.mBodyB);
 		if (it == contactBodies_.end())
 		{
@@ -267,6 +294,8 @@ namespace SeedCore
 	*/
 	void JoltCharacterContactListener::Impl::OnContactRemoved(const JPH::CharacterVirtual* character, const JPH::BodyID& bodyID2, const JPH::SubShapeID& subShapeID2)
 	{
+		/// [EN] Only bodies that were entered here can exit; dynamic bodies and sensors were never recorded.
+		/// [JP] Exit できるのは、ここで Enter したボディだけ。動的ボディとセンサーは記録していない。
 		auto it = contactBodies_.find(bodyID2);
 		if (it == contactBodies_.end())
 		{
@@ -302,18 +331,62 @@ namespace SeedCore
 		}
 	}
 
+	/**
+	* [EN]
+	* Creates a listener that dispatches contacts of the character
+	* represented by entityID into world.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* entityID が表すキャラクターの接触を world へ通知するリスナーを作る。
+	*/
 	JoltCharacterContactListener::JoltCharacterContactListener(World& world, EntityID entityID) :impl_(MakePtr<Impl>(world, entityID))
 	{
 		/// No Code
 	}
 
+	/**
+	* [EN]
+	* Defined here, where Impl is a complete type.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Impl が完全型になるここで定義する。
+	*/
 	JoltCharacterContactListener::~JoltCharacterContactListener() = default;
 
+	/**
+	* [EN]
+	* Registers this listener on the given virtual character, so its
+	* contacts start arriving here.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 指定の仮想キャラクターにこのリスナーを登録し、その接触がここへ
+	* 届くようにする。
+	*/
 	void JoltCharacterContactListener::Attach(ScCharacterHandle character)
 	{
+		/// [EN] The handle is the Jolt character itself, kept opaque outside the physics module.
+		/// [JP] ハンドルは Jolt のキャラクターそのもので、物理モジュールの外には中身を見せない。
 		static_cast<JPH::CharacterVirtual*>(character)->SetListener(impl_.get());
 	}
 
+	/**
+	* [EN]
+	* Starts a new character update. Each contacted body dispatches at
+	* most one enter or stay until the next call. Call it right before
+	* the character's update.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* キャラクターの新しい更新を始める。次に呼ぶまで、接触先ボディごとの
+	* Enter か Stay は最大1回になる。キャラクターの更新の直前に呼ぶ。
+	*/
 	void JoltCharacterContactListener::Begin()
 	{
 		impl_->Begin();
