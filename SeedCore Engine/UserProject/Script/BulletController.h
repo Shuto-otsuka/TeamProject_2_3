@@ -66,7 +66,7 @@ private:
 	float speed;
 	float aliveTime;
 	float aliveTimer = 0.0f;
-	float dynamicWaitTimer = 0.01f;
+	float dynamicWaitTimer = 0.1f;
 
 	int cost = 0;
 
