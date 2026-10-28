@@ -1,3 +1,4 @@
+#include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
 #include <GraphicsEngine/D3D12/Buffer/ReservoirBuffer.h>
 #include <FoundationEngine/Log/DxFail.h>
 
@@ -37,18 +38,6 @@ namespace SeedCore
 		outUnorderedAccessViewIndex = bindlessHeap->AllocateIndex();
 		device->CreateUnorderedAccessView(outResource.Get(), nullptr, &unorderedAccessViewDesc, bindlessHeap->CPUHandle(outUnorderedAccessViewIndex));
 
-		/// [EN] ClearUnorderedAccessView* cannot target a structured UAV, so
-		///      the clear goes through a RAW (R32_TYPELESS) view of the same
-		///      buffer instead of unorderedAccessViewDesc above. Both a
-		///      shader-visible (GPU handle) and a clear-heap (CPU handle)
-		///      copy are required, created identically - see LightSystem.cpp's
-		///      clusterData clear for the same pattern.
-		/// [JP] ClearUnorderedAccessView* は構造化UAVを対象にできないため、
-		///      上の unorderedAccessViewDesc ではなく、同じバッファの
-		///      RAW(R32_TYPELESS) ビュー経由でクリアする。GPUハンドル用
-		///      (shader-visible)と CPUハンドル用(clearHeap)を同一設定で
-		///      用意する必要がある - 同じパターンは LightSystem.cpp の
-		///      clusterData クリアも参照。
 		D3D12_UNORDERED_ACCESS_VIEW_DESC clearUnorderedAccessViewDesc{};
 		clearUnorderedAccessViewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
 		clearUnorderedAccessViewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;

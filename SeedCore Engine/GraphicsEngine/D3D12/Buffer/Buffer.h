@@ -1,4 +1,5 @@
 #pragma once
+#include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
 #include <FoundationEngine/Log/DxFail.h>
 
 namespace SeedCore
@@ -46,13 +47,6 @@ namespace SeedCore
 			resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 			resourceDesc.Flags = flags;
 
-			/// [EN] Buffers are always effectively created in COMMON regardless of
-			///      the InitialState argument (the runtime ignores anything else
-			///      for buffers, with a debug-layer warning); state promotion
-			///      handles the rest.
-			/// [JP] バッファは InitialState に何を渡しても実質 COMMON で作られる
-			///      （ランタイムがそれ以外を無視し、デバッグレイヤー警告が出る）。
-			///      以降はコモンステートプロモーションに任せる。
 			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource_));
 			SC_HR_CHECK(hr, "バッファの生成に失敗しました");
 #if SC_DEBUG

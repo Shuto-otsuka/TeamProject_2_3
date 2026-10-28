@@ -356,7 +356,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
             //向いてる方向にレイキャストを飛ばして撃つ方向を決める
 
             SeedCore::RaycastHit hit;
-            Uint32 layerMask = ~(1 << GetActor().Layer()) & ~(1 << 4);//プレイヤー自身と、エリア(トリガー)を除くレイヤーマスク
+            SeedCore::Uint32 layerMask = ~(1 << GetActor().Layer()) & ~(1 << 4);//プレイヤー自身と、エリア(トリガー)を除くレイヤーマスク
 
             //銃口の高さを求める
             SeedCore::Vector3 gunOffset = SeedCore::Vector3(0.0f, bulletOffsetY, 0.0f);
@@ -388,7 +388,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
         SeedCore::Vector2 cursorScreenPosition = SeedCore::Input::MousePoint();//カーソルのスクリーン座標
         SeedCore::Ray ray = SeedCore::ScreenSpace::ScreenToWorld(cursorScreenPosition);//レイキャスト情報
         SeedCore::RaycastHit hit;
-        Uint32 layerMask = ~(1 << GetActor().Layer()) & ~(1 << 4);//プレイヤー自身と、エリア(トリガー)を除くレイヤーマスク
+        SeedCore::Uint32 layerMask = ~(1 << GetActor().Layer()) & ~(1 << 4);//プレイヤー自身と、エリア(トリガー)を除くレイヤーマスク
 
         //銃口の高さを求める
         SeedCore::Vector3 gunOffset = SeedCore::Vector3(0.0f,bulletOffsetY,0.0f);

@@ -1,6 +1,6 @@
 #pragma once
+#include <PhysicsEngine/Physics/PhysicsTypes.h>
 #include <FoundationEngine/SeedScript.h>
-#include <PhysicsEngine/JoltPhysics/JoltConstraintPool.h>
 
 namespace SeedCore
 {
@@ -79,7 +79,7 @@ namespace SeedCore
 	private:
 		/// [EN] Pool handle of the created Jolt constraint.
 		/// [JP] 生成した Jolt 拘束のプールハンドル。
-		Handle<JPH::Constraint> handle_;
+		ScConstraintHandle handle_;
 	};
 	REGISTER_COMPONENT(HingeJoint, "Physics/Joint");
 }

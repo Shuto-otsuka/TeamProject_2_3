@@ -1,3 +1,4 @@
+#include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
 #include <GraphicsEngine/Raytracing/BottomLevelAccelerationStructure.h>
 #include <FoundationEngine/Log/DxFail.h>
 #include <FoundationEngine/Log/Warning.h>
@@ -27,15 +28,6 @@ namespace SeedCore
 			resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 			resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
 
-			/// [EN] Soft failure: a null return makes Build() bail out, the caller
-			///      drops this mesh from the TLAS instance list, and rendering
-			///      continues without it. Hard-failing here (modal box +
-			///      __debugbreak) would fire once per allocation while a removed
-			///      device fails every call in a row.
-			/// [JP] ソフトフェイル: null を返すと Build() が中断し、呼び出し側が
-			///      このメッシュを TLAS インスタンス一覧から外して描画を継続する。
-			///      ここでハードフェイル(モーダル + __debugbreak)すると、デバイス削除で
-			///      全呼び出しが連続して失敗する状況では確保のたびに発火してしまう。
 			Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 			HRESULT hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, state, nullptr, IID_PPV_ARGS(&resource));
 			if (FAILED(hr))
@@ -59,21 +51,6 @@ namespace SeedCore
 		{
 			const BottomLevelGeometryDesc& source = geometries[geometryIndex];
 
-			/// [EN] Reject geometry the build cannot make sense of before handing
-			///      it to DXR. A null vertex address (a Crister whose GPU buffers
-			///      are not uploaded yet, or whose upload failed) makes the build
-			///      read from GPU VA 0, which yields a BVH of degenerate triangles
-			///      rather than a page fault - and traversal over that never
-			///      terminates, hanging the GPU inside a later DispatchRays with
-			///      nothing to point at. A triangle list also needs its vertex or
-			///      index count to be a whole number of triangles.
-			/// [JP] DXR へ渡す前に、構築が意味を成さないジオメトリを弾く。頂点
-			///      アドレスが null(GPU バッファ未アップロード、あるいは
-			///      アップロード失敗の Crister)だと、構築は GPU 仮想アドレス 0 から
-			///      読み、ページフォルトではなく退化三角形だらけの BVH ができる -
-			///      その走査は終了せず、後段の DispatchRays の中で手がかりも無いまま
-			///      GPU がハングする。三角形リストは頂点数/インデックス数が
-			///      三角形単位で割り切れる必要もある。
 			Bool indexed = source.indexBuffer_ != 0 && source.indexCount_ > 0;
 			Bool valid = source.vertexBuffer_ != 0 && source.vertexCount_ > 0 && source.vertexStride_ > 0;
 			if (valid)
@@ -119,18 +96,6 @@ namespace SeedCore
 			return false;
 		}
 
-		/// [EN] Reuse the existing buffers whenever they are still large enough:
-		///      a skinned/morphed BLAS rebuilds every frame, so allocating fresh
-		///      committed resources here would mean two CreateCommittedResource
-		///      calls per animated instance per frame - the same churn the
-		///      skinned/morphed position buffers already avoid with a capacity
-		///      check (see RaytracingRenderer::Build).
-		/// [JP] 既存バッファがまだ十分な大きさなら再利用する: スキン/モーフ付きの
-		///      BLAS は毎フレーム再構築されるため、ここで毎回コミット済み
-		///      リソースを確保すると、アニメーションするインスタンス1体につき
-		///      毎フレーム CreateCommittedResource 2回になってしまう -
-		///      スキン/モーフ位置バッファが容量チェックで既に避けているのと
-		///      同じ churn(RaytracingRenderer::Build 参照)。
 		if (scratchCapacity_ < prebuildInfo.ScratchDataSizeInBytes)
 		{
 			Microsoft::WRL::ComPtr<ID3D12Resource> scratch = CreateAccelerationStructureBuffer(device, prebuildInfo.ScratchDataSizeInBytes, D3D12_RESOURCE_STATE_COMMON);
@@ -175,10 +140,6 @@ namespace SeedCore
 
 		commandList->BuildRaytracingAccelerationStructure(&buildDesc, 0, nullptr);
 
-		/// [EN] The TLAS build and any ray query reading this BLAS must wait for the
-		///      build writes to complete; a UAV barrier on the result enforces that.
-		/// [JP] この BLAS を読む TLAS 構築やレイクエリは、構築書き込みの完了を待つ
-		///      必要がある。result への UAV バリアでそれを保証する。
 		D3D12_RESOURCE_BARRIER barrier{};
 		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
 		barrier.UAV.pResource = result_.Get();

@@ -1,3 +1,4 @@
+#include <External/CRI/Include/cri_adx2le.h>
 #include <AudioEngine/Audio/AudioLoader.h>
 #include <FoundationEngine/File/FileUtility.h>
 #include <FoundationEngine/Serialization/Encryption/Aes256.h>

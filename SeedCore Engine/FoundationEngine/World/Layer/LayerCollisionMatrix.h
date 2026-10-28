@@ -10,7 +10,7 @@ namespace SeedCore
 	* collide with each other - the data backing an editor-facing Layer
 	* Collision Matrix (Unity's Physics settings-style grid). Symmetric
 	* by construction (only stores layerA<=layerB), and consulted by
-	* ObjLayerPairFilterImplementation (JoltLayerdef.h) alongside the
+	* JoltLayerFilters (JoltLayerdef.h) alongside the
 	* existing STATIC/KINEMATIC/DYNAMIC motion-type rules - both must
 	* allow collision for two bodies to actually collide. Every pair
 	* starts enabled (collides), matching Unity's default.
@@ -23,7 +23,7 @@ namespace SeedCore
 	* エディタ向けの Layer Collision Matrix（Unity の Physics 設定画面の
 	* グリッド相当）を支えるデータ。構造上対称（layerA<=layerB のみ格納）で、
 	* 既存の STATIC/KINEMATIC/DYNAMIC 運動タイプルールと併せて
-	* ObjLayerPairFilterImplementation（JoltLayerdef.h）から参照される
+	* JoltLayerFilters（JoltLayerdef.h）から参照される
 	* - 実際に衝突するには両方が許可している必要がある。全ペアは
 	* Unity のデフォルトに合わせ、最初は有効（衝突する）。
 	*/

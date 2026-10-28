@@ -1,324 +1,79 @@
 #pragma once
-#include <FoundationEngine/World/Layer/LayerRegistry.h>
-#include <FoundationEngine/World/Layer/LayerCollisionMatrix.h>
+#include <PhysicsEngine/Physics/PhysicsTypes.h>
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
+
+namespace JPH
+{
+	class PhysicsSystem;
+}
 
 namespace SeedCore
 {
-	/**
-	 * [EN]
-	 * Defines the object layers used for collision filtering. A Jolt
-	 * ObjectLayer here is a packed value: the low MOTION_TYPE_BITS bits
-	 * hold the body's motion-type classification (STATIC/KINEMATIC/
-	 * DYNAMIC, below), the bits above them hold the owning Actor's
-	 * LayerRegistry slot index (see Pack/UnpackMotionType/
-	 * UnpackUserLayer), the bit below the top (SENSOR) marks a trigger
-	 * body, and the topmost bit (PLANAR) marks a 2D canvas body - so all
-	 * four axes are encoded into the single value Jolt's broad/narrow
-	 * phase actually filters on.
-	 *
-	 * 2D and 3D bodies share one Jolt world but never interact: a body
-	 * only collides with bodies on the same side of the PLANAR bit,
-	 * regardless of motion type or LayerCollisionMatrix.
-	 *
-	 * STATIC    : Non-moving geometry (terrain, walls, floors, etc.)
-	 * KINEMATIC : Script/animation-driven bodies (moving platforms, doors, etc.)
-	 *             Moves but does not respond to physics forces.
-	 * DYNAMIC   : Fully physics-simulated bodies (rigidbodies, ragdolls, etc.)
-	 *
-	 * Motion-type collision matrix (independent of, and applied in
-	 * addition to, LayerCollisionMatrix's per-Actor-Layer matrix).
-	 * "t" pairs only when at least one of the two is a trigger (SENSOR):
-	 *               STATIC  KINEMATIC  DYNAMIC
-	 *   STATIC         -        t        o
-	 *   KINEMATIC      t        t        o
-	 *   DYNAMIC        o        o        o
-	 *
-	 * ---------------------------------------------------------------------
-	 *
-	 * [JP]
-	 * 衝突フィルタリングに使うオブジェクトレイヤーの定義。ここでの Jolt
-	 * ObjectLayer はパックされた値: 下位 MOTION_TYPE_BITS ビットがボディの
-	 * 運動タイプ分類（STATIC/KINEMATIC/DYNAMIC、下記）を保持し、その上の
-	 * ビットが所有 Actor の LayerRegistry スロットインデックスを保持し
-	 * （Pack/UnpackMotionType/UnpackUserLayer 参照）、最上位の1つ下のビット
-	 * （SENSOR）がトリガーのボディであることを、最上位ビット（PLANAR）が
-	 * Canvas の 2D ボディであることを示す - こうして4つの軸すべてを、
-	 * Jolt の Broad/Narrow Phase が実際にフィルタリングに使う単一の値へ
-	 * エンコードしている。
-	 *
-	 * 2D と 3D のボディは1つの Jolt ワールドを共有するが、互いに干渉しない:
-	 * ボディは PLANAR ビットが同じ側のボディとしか衝突しない。これは
-	 * 運動タイプや LayerCollisionMatrix に関係なく常に適用される。
-	 *
-	 * STATIC    : 動かないジオメトリ（地形・壁・床など）
-	 * KINEMATIC : スクリプト/アニメーション制御のボディ（動く床・扉など）
-	 *             移動するが物理力には反応しない。
-	 * DYNAMIC   : 物理演算で完全にシミュレートされるボディ（剛体・ラグドールなど）
-	 *
-	 * 運動タイプの衝突マトリクス（LayerCollisionMatrix の
-	 * Actor レイヤーごとのマトリクスとは独立に、それに加えて適用される）。
-	 * "t" は2つのうち少なくとも一方がトリガー（SENSOR）のときだけ組になる:
-	 *               STATIC  KINEMATIC  DYNAMIC
-	 *   STATIC         -        t        o
-	 *   KINEMATIC      t        t        o
-	 *   DYNAMIC        o        o        o
-	 */
 	namespace Layers
 	{
-		SC_CONSTEX JPH::ObjectLayer STATIC    = 0;
-		SC_CONSTEX JPH::ObjectLayer KINEMATIC = 1;
-		SC_CONSTEX JPH::ObjectLayer DYNAMIC   = 2;
+		SC_CONSTEX ScObjectLayer STATIC = 0;
+		SC_CONSTEX ScObjectLayer KINEMATIC = 1;
+		SC_CONSTEX ScObjectLayer DYNAMIC = 2;
 
-		/// [EN] Number of low bits a packed ObjectLayer reserves for the motion type; the remaining high bits hold the Actor's LayerRegistry slot index.
-		/// [JP] パックされた ObjectLayer が運動タイプ用に確保する下位ビット数。残りの上位ビットは Actor の LayerRegistry スロットインデックスを保持する。
-		SC_CONSTEX JPH::uint MOTION_TYPE_BITS = 2;
+		/// [EN] Number of low bits reserved for the motion type.
+		/// [JP] 運動タイプ用に確保する下位ビット数。
+		SC_CONSTEX Uint32 MOTION_TYPE_BITS = 2;
 
-		/// [EN] ObjectLayer bit set on trigger bodies. OR'd onto a Pack result; it lets kinematic bodies report overlaps with static and kinematic bodies through the trigger.
-		/// [JP] トリガーのボディに立てる ObjectLayer のビット。Pack の結果に OR して使い、トリガーを介してキネマティックのボディがスタティック・キネマティックのボディとの重なりを知らせられるようにする。
-		SC_CONSTEX JPH::ObjectLayer SENSOR = static_cast<JPH::ObjectLayer>(1u << 14);
+		/// [EN] Marks a trigger body.
+		/// [JP] トリガーボディを示すビット。
+		SC_CONSTEX ScObjectLayer SENSOR = static_cast<ScObjectLayer>(1u << 14);
 
-		/// [EN] Topmost ObjectLayer bit, set on bodies simulated on the 2D canvas (Rect/CircleCollider). OR'd onto a Pack result; bodies with and without it never collide.
-		/// [JP] ObjectLayer の最上位ビット。2D Canvas 上でシミュレートされるボディ（Rect/CircleCollider）に立てる。Pack の結果に OR して使い、このビットの有無が異なるボディ同士は衝突しない。
-		SC_CONSTEX JPH::ObjectLayer PLANAR = static_cast<JPH::ObjectLayer>(1u << 15);
+		/// [EN] Marks a body simulated on the 2D canvas.
+		/// [JP] 2D Canvas 上でシミュレートするボディを示すビット。
+		SC_CONSTEX ScObjectLayer PLANAR = static_cast<ScObjectLayer>(1u << 15);
 
-		/// [EN] Distinct packed ObjectLayer values below the SENSOR bit: one motion-type slot per LayerRegistry slot. A trigger or 2D body's layer is one of these with SENSOR and/or PLANAR added.
-		/// [JP] SENSOR ビットより下の、パック済み ObjectLayer の総数: LayerRegistry の各スロットにつき1つの運動タイプスロット。トリガーや 2D ボディのレイヤーは、このいずれかに SENSOR や PLANAR を加えたもの。
-		SC_CONSTEX JPH::uint COUNT = static_cast<JPH::uint>(LayerRegistry::LayerCount) << MOTION_TYPE_BITS;
+		ScObjectLayer Pack(ScObjectLayer motionType, Size userLayer);
 
-		/**
-		* [EN]
-		* Packs motionType (STATIC/KINEMATIC/DYNAMIC) and userLayer (a
-		* LayerRegistry slot index) into a single Jolt ObjectLayer value.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* motionType（STATIC/KINEMATIC/DYNAMIC）と userLayer（LayerRegistry
-		* のスロットインデックス）を、単一の Jolt ObjectLayer 値へパックする。
-		*/
-		JPH::ObjectLayer Pack(JPH::ObjectLayer motionType, Size userLayer);
+		ScObjectLayer UnpackMotionType(ScObjectLayer objectLayer);
 
-		/**
-		* [EN]
-		* Extracts the motion type (STATIC/KINEMATIC/DYNAMIC) packed into
-		* objectLayer by Pack.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Pack によって objectLayer へパックされた運動タイプ
-		* （STATIC/KINEMATIC/DYNAMIC）を取り出す。
-		*/
-		JPH::ObjectLayer UnpackMotionType(JPH::ObjectLayer objectLayer);
-
-		/**
-		* [EN]
-		* Extracts the LayerRegistry slot index packed into objectLayer by
-		* Pack, ignoring the SENSOR and PLANAR bits.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Pack によって objectLayer へパックされた LayerRegistry
-		* スロットインデックスを取り出す。SENSOR と PLANAR のビットは無視する。
-		*/
-		Size UnpackUserLayer(JPH::ObjectLayer objectLayer);
+		Size UnpackUserLayer(ScObjectLayer objectLayer);
 	}
 
-	/**
-	* [EN]
-	* Defines the broad-phase layers used for coarse collision culling.
-	* STATIC    and KINEMATIC share one BP layer because neither moves continuously,
-	* so Jolt's broad-phase tree does not need to update them separately.
-	* DYNAMIC gets its own BP layer so it can be rebuilt every frame efficiently.
-	* SENSOR holds every trigger regardless of motion type, so kinematic
-	* bodies can search triggers without searching all static geometry.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 粗い衝突カリングに使うブロードフェーズレイヤーの定義。
-	* STATIC と KINEMATIC は同じ BP レイヤーに収める。
-	* どちらも連続的には動かないため、ブロードフェーズツリーを別々に更新する必要がない。
-	* DYNAMIC は専用の BP レイヤーを持ち、毎フレーム効率よく再構築される。
-	* SENSOR は運動タイプに関係なく全てのトリガーを収め、キネマティックのボディが
-	* スタティックのジオメトリ全体を検索せずにトリガーだけを検索できるようにする。
-	*/
 	namespace BPLayers
 	{
-		SC_CONSTEX JPH::BroadPhaseLayer STATIC{ 0 };
-		SC_CONSTEX JPH::BroadPhaseLayer DYNAMIC{ 1 };
-		SC_CONSTEX JPH::BroadPhaseLayer SENSOR{ 2 };
-		SC_CONSTEX JPH::uint            COUNT{ 3 };
+		SC_CONSTEX ScBroadPhaseLayer STATIC = 0;
+		SC_CONSTEX ScBroadPhaseLayer DYNAMIC = 1;
+		SC_CONSTEX ScBroadPhaseLayer SENSOR = 2;
+		SC_CONSTEX Uint32 COUNT = 3;
 	}
 
 	/**
 	* [EN]
-	* Maps each object layer to its corresponding broad-phase layer.
-	* Required by JPH::PhysicsSystem::Init.
+	* Owns Jolt's broad-phase and object-layer filter implementations and
+	* uses them to initialize a physics system.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 各オブジェクトレイヤーを対応するブロードフェーズレイヤーへマッピングする。
-	* JPH::PhysicsSystem::Init に必要。
+	* Jolt のブロードフェーズ・オブジェクトレイヤーフィルター実装を所有し、
+	* それらを使って物理システムを初期化する。
 	*/
-	class BPLayerInterfaceImplementation final : public JPH::BroadPhaseLayerInterface
+	class JoltLayerFilters final
 	{
 	public:
-		/**
-		* [EN]
-		* Returns the number of broad-phase layers exposed to Jolt.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Jolt へ公開するブロードフェーズレイヤー数を返す。
-		*/
-		JPH::uint GetNumBroadPhaseLayers()const override;
+		JoltLayerFilters();
+		~JoltLayerFilters();
 
-		/**
-		* [EN]
-		* Maps an object layer to its broad-phase layer: a trigger goes to
-		* SENSOR, any other body by its motion type.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* オブジェクトレイヤーをブロードフェーズレイヤーへ対応付ける。トリガーは
-		* SENSOR へ、それ以外のボディは運動タイプに従って振り分ける。
-		*/
-		JPH::BroadPhaseLayer GetBroadPhaseLayer(JPH::ObjectLayer inLayer)const override;
+		JoltLayerFilters(const JoltLayerFilters&) = delete;
+		JoltLayerFilters& operator=(const JoltLayerFilters&) = delete;
 
-#if defined(JPH_EXTERNAL_PROFILE) || defined(JPH_PROFILE_ENABLED)
-		/**
-		* [EN]
-		* Returns the profiling name of a broad-phase layer.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ブロードフェーズレイヤーのプロファイル表示名を返す。
-		*/
-		const Char* GetBroadPhaseLayerName(JPH::BroadPhaseLayer inLayer)const override;
-#endif
-	};
-
-	/**
-	* [EN]
-	* Determines whether an object layer can collide with a broad-phase layer.
-	*
-	* STATIC            : only needs to test against DYNAMIC BP layer.
-	* KINEMATIC         : tests against DYNAMIC and SENSOR BP layers.
-	* KINEMATIC trigger : tests against all BP layers, since it reports
-	*                     overlaps with static bodies too.
-	* DYNAMIC           : tests against all BP layers.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* オブジェクトレイヤーがブロードフェーズレイヤーと衝突するかを返す。
-	*
-	* STATIC                  : DYNAMIC BP レイヤーとのみ判定すればよい。
-	* KINEMATIC               : DYNAMIC と SENSOR の BP レイヤーと判定する。
-	* KINEMATIC のトリガー    : スタティックのボディとの重なりも知らせるので、
-	*                           全ての BP レイヤーと判定する。
-	* DYNAMIC                 : 全ての BP レイヤーと判定する。
-	*/
-	class ObjVsBPFilterImplementation final : public JPH::ObjectVsBroadPhaseLayerFilter
-	{
 	public:
-		/**
-		* [EN]
-		* Determines whether an object layer can collide with a broad-phase layer.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* オブジェクトレイヤーがブロードフェーズレイヤーと衝突可能かを返す。
-		*/
-		Bool ShouldCollide(JPH::ObjectLayer inLayer, JPH::BroadPhaseLayer inBPLayer)const override;
+		void Initialize(JPH::PhysicsSystem& physicsSystem);
+
+	private:
+		class Impl;
+
+		ResourcePtr<Impl> impl_;
 	};
 
-	/**
-	* [EN]
-	* Determines whether two object layers can collide with each other.
-	* Layers on different sides of the PLANAR bit (2D vs 3D) never
-	* collide, checked first. Otherwise both the fixed motion-type rules
-	* below AND LayerCollisionMatrix's per-Actor-Layer matrix must allow it.
-	*
-	* STATIC    vs STATIC    : no  (both immovable)
-	* STATIC    vs KINEMATIC : only with a trigger (Kinematic pushes Dynamic, not Static, so only overlaps matter)
-	* STATIC    vs DYNAMIC   : yes
-	* KINEMATIC vs KINEMATIC : only with a trigger (no physics response between script-driven bodies, so only overlaps matter)
-	* KINEMATIC vs DYNAMIC   : yes (Kinematic can push Dynamic)
-	* DYNAMIC   vs DYNAMIC   : yes
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 2つのオブジェクトレイヤーが互いに衝突するかを返す。PLANAR ビットが
-	* 異なるレイヤー同士（2D と 3D）は決して衝突せず、これを最初に判定する。
-	* それ以外は、下記の固定された運動タイプルールと、LayerCollisionMatrix の
-	* Actor レイヤーごとのマトリクスの両方が許可している必要がある。
-	*
-	* STATIC    vs STATIC    : しない（どちらも動かない）
-	* STATIC    vs KINEMATIC : トリガーのときだけ（Kinematic は Dynamic を押すが Static は押さないので、意味があるのは重なりだけ）
-	* STATIC    vs DYNAMIC   : する
-	* KINEMATIC vs KINEMATIC : トリガーのときだけ（スクリプト制御同士に物理応答は無いので、意味があるのは重なりだけ）
-	* KINEMATIC vs DYNAMIC   : する（Kinematic は Dynamic を押せる）
-	* DYNAMIC   vs DYNAMIC   : する
-	*/
-	class ObjLayerPairFilterImplementation final : public JPH::ObjectLayerPairFilter
-	{
-	public:
-		/**
-		* [EN]
-		* Determines whether two packed object layers can collide.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* パックされた2つのオブジェクトレイヤーが衝突可能かを返す。
-		*/
-		Bool ShouldCollide(JPH::ObjectLayer inLayerA, JPH::ObjectLayer inLayerB)const override;
-	};
+	ScMotionType ToMotionType(Rigidbody::BodyType bodyType);
 
-	/**
-	* [EN]
-	* Converts a rigid-body type to the corresponding Jolt motion type.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Rigidbody の種類を対応する Jolt 運動タイプへ変換する。
-	*/
-	JPH::EMotionType ToMotionType(Rigidbody::BodyType bodyType);
+	ScObjectLayer ToObjectLayer(Rigidbody::BodyType bodyType, Size userLayer);
 
-	/**
-	* [EN]
-	* Overload of ToObjectLayer that packs userLayer (a LayerRegistry
-	* slot index) alongside bodyType's motion type.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* userLayer（LayerRegistry のスロットインデックス）を、bodyType の
-	* 運動タイプと合わせてパックする ToObjectLayer のオーバーロード。
-	*/
-	JPH::ObjectLayer ToObjectLayer(Rigidbody::BodyType bodyType, Size userLayer);
-
-	/**
-	* [EN]
-	* Overload of ToObjectLayer using LayerRegistry::DefaultLayer, for
-	* call sites with no Actor/Layer context available.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Actor/Layer の情報が無い呼び出し元向けに、LayerRegistry::DefaultLayer
-	* を使う ToObjectLayer のオーバーロード。
-	*/
-	JPH::ObjectLayer ToObjectLayer(Rigidbody::BodyType bodyType);
+	ScObjectLayer ToObjectLayer(Rigidbody::BodyType bodyType);
 }

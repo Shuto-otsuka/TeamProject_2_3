@@ -1,4 +1,5 @@
 #include <SeedCore/Engine/EngineCore.h>
+#include <PhysicsEngine/JoltPhysics/JoltManager.h>
 #include <FoundationEngine/Resource/Config/GameConfig.h>
 #include <FoundationEngine/Resource/Config/EditorConfig.h>
 #include <FoundationEngine/Input/InputSystem.h>
@@ -16,7 +17,7 @@
 
 namespace SeedCore
 {
-	EngineCore::EngineCore() :executor_(std::thread::hardware_concurrency(), MakeWorkerInterface<JobScheduler>()), world_(MakePtr<World>())
+	EngineCore::EngineCore() :executor_(std::thread::hardware_concurrency(), MakeWorkerInterface<JobScheduler>()), world_(MakePtr<World>()), joltManager_(MakePtr<JoltManager>())
 	{
 		/// No Code
 	}
@@ -37,7 +38,7 @@ namespace SeedCore
 	{
 		physicsTask_ = flow.emplace([this]()
 			{
-				if (!joltManager_.Initialize(executor_))
+				if (!joltManager_->Initialize(executor_))
 				{
 					failed_ = true;
 				}
@@ -113,7 +114,7 @@ namespace SeedCore
 				world_->AddService<GameTimer>();
 				QueryInstance* queryInstance = world_->AddService<QueryInstance>();
 				RenderInstance* renderInstance = world_->AddService<RenderInstance>();
-				world_->AddService<Physics>(*queryInstance);
+				world_->AddService<Physics>(*world_, *queryInstance);
 				world_->AddService<DebugDraw>(*renderInstance);
 				world_->AddService<Audio>();
 				world_->AddService<Application>();
@@ -347,12 +348,10 @@ namespace SeedCore
 			PhysicsSystem::ResolveSoftbody(*graphics_.GetGraphicsModule().Resources().modelResource_, *world_);
 			PhysicsSystem::ApplyActive(*world_);
 			PhysicsSystem::ApplyCollider(*world_);
-			joltManager_.ActiveWorld(world_.get());
-
 			while (timer.Step())
 			{
 				PhysicsSystem::ApplyRigidbody(*world_, timer.FixedDeltaTime());
-				joltManager_.Execute(timer.FixedDeltaTime());
+				joltManager_->Execute(timer.FixedDeltaTime(), *world_);
 				system_.Step(*world_, timer.FixedDeltaTime());
 			}
 		}
@@ -398,7 +397,7 @@ namespace SeedCore
 			world_ = nullptr;
 		}
 
-		joltManager_.Finalize();
+		joltManager_->Finalize();
 		criManager_.Finalize();
 		graphics_.Finalize();
 	}

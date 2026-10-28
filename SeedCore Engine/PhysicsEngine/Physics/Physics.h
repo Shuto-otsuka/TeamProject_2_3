@@ -1,11 +1,18 @@
 #pragma once
+#include <PhysicsEngine/Physics/PhysicsTypes.h>
 #include <FoundationEngine/World/ECS/Entity/Entity.h>
 #include <FoundationEngine/Utility/Handle.h>
 #include <FoundationEngine/Interop/QueryInstance.h>
 
+namespace JPH
+{
+	class TwoBodyConstraintSettings;
+}
+
 namespace SeedCore
 {
 	class JoltManager;
+	class World;
 
 	/**
 	* [EN]
@@ -25,7 +32,7 @@ namespace SeedCore
 		Float maxSlopeAngle_ = ToRadians(50.0f);
 		Float mass_ = 70.0f;
 		Float maxStrength_ = 100.0f;
-		JPH::ObjectLayer layer_ = 0;
+		ScObjectLayer layer_ = 0;
 		EntityID userData_;
 	};
 
@@ -40,20 +47,20 @@ namespace SeedCore
 	*/
 	struct RigidbodyDesc
 	{
-		Handle<JPH::Shape> shape_;
+		ScShapeHandle shape_;
 		Vector3 position_ = { 0.0f, 0.0f, 0.0f };
 		Quaternion rotation_ = Quaternion::Identity;
-		JPH::EMotionType motionType_ = JPH::EMotionType::Dynamic;
+		ScMotionType motionType_ = ScMotionType::Dynamic;
 		Bool allowMotionTypeChange_ = false;
 		Bool continuousCollision_ = false;
-		JPH::ObjectLayer layer_ = 0;
+		ScObjectLayer layer_ = 0;
 		Float mass_ = 1.0f;
 		Float linearDamping_ = 0.05f;
 		Float angularDamping_ = 0.05f;
 		Float friction_ = 0.2f;
 		Float restitution_ = 0.0f;
 		Float gravityFactor_ = 1.0f;
-		JPH::EAllowedDOFs allowedDOFs_ = JPH::EAllowedDOFs::All;
+		ScAllowedDOFs allowedDOFs_ = ScAllowedDOFsAll;
 		EntityID userData_;
 		Bool isSensor_ = false;
 	};
@@ -174,7 +181,7 @@ namespace SeedCore
 		DynamicArray<Uint32> indices_;
 		Vector3 position_ = { 0.0f, 0.0f, 0.0f };
 		Quaternion rotation_ = Quaternion::Identity;
-		JPH::ObjectLayer layer_ = 0;
+		ScObjectLayer layer_ = 0;
 		Float edgeCompliance_ = 0.0f;
 		Float shearCompliance_ = 0.0f;
 		Float bendCompliance_ = 0.0f;
@@ -252,7 +259,7 @@ namespace SeedCore
 		* エンジンのJolt管理機構へ接続された物理ファサードを構築する。
 		* クエリはすべて queryInstance に記録する。
 		*/
-		Physics(QueryInstance& queryInstance);
+		Physics(World& world, QueryInstance& queryInstance);
 
 		/**
 		* [EN]
@@ -275,7 +282,7 @@ namespace SeedCore
 		* [JP]
 		* ボックス衝突形状を生成または再利用する。
 		*/
-		Handle<JPH::Shape> CreateBoxShape(const Vector3& size, const Vector3& center = { 0.0f, 0.0f, 0.0f });
+		ScShapeHandle CreateBoxShape(const Vector3& size, const Vector3& center = { 0.0f, 0.0f, 0.0f });
 
 		/**
 		* [EN]
@@ -286,7 +293,7 @@ namespace SeedCore
 		* [JP]
 		* 球衝突形状を生成または再利用する。
 		*/
-		Handle<JPH::Shape> CreateSphereShape(Float radius);
+		ScShapeHandle CreateSphereShape(Float radius);
 
 		/**
 		* [EN]
@@ -297,7 +304,7 @@ namespace SeedCore
 		* [JP]
 		* カプセル衝突形状を生成または再利用する。
 		*/
-		Handle<JPH::Shape> CreateCapsuleShape(Float height, Float radius);
+		ScShapeHandle CreateCapsuleShape(Float height, Float radius);
 
 		/**
 		* [EN]
@@ -308,7 +315,7 @@ namespace SeedCore
 		* [JP]
 		* 円柱衝突形状を生成または再利用する。
 		*/
-		Handle<JPH::Shape> CreateCylinderShape(Float height, Float radius);
+		ScShapeHandle CreateCylinderShape(Float height, Float radius);
 
 		/**
 		* [EN]
@@ -319,7 +326,7 @@ namespace SeedCore
 		* [JP]
 		* 矩形の2D衝突形状を生成または再利用する。
 		*/
-		Handle<JPH::Shape> CreateRectShape(const Vector2& size, const Vector2& center = { 0.0f, 0.0f });
+		ScShapeHandle CreateRectShape(const Vector2& size, const Vector2& center = { 0.0f, 0.0f });
 
 		/**
 		* [EN]
@@ -330,7 +337,7 @@ namespace SeedCore
 		* [JP]
 		* 円形の2D衝突形状を生成または再利用する。
 		*/
-		Handle<JPH::Shape> CreateCircleShape(Float radius, const Vector2& center = { 0.0f, 0.0f });
+		ScShapeHandle CreateCircleShape(Float radius, const Vector2& center = { 0.0f, 0.0f });
 
 		/**
 		* [EN]
@@ -344,7 +351,7 @@ namespace SeedCore
 		* 頂点を軸ごとに拡縮した三角形メッシュ衝突形状を生成または再利用する。
 		* アセットとスケールの組ごとに別の形状になる。
 		*/
-		Handle<JPH::Shape> CreateMeshShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const DynamicArray<Uint32>& indices, const Vector3& scale);
+		ScShapeHandle CreateMeshShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const DynamicArray<Uint32>& indices, const Vector3& scale);
 
 		/**
 		* [EN]
@@ -357,7 +364,7 @@ namespace SeedCore
 		* 点を軸ごとに拡縮した凸包衝突形状を生成または再利用する。アセットと
 		* スケールの組ごとに別の形状になる。
 		*/
-		Handle<JPH::Shape> CreateConvexShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const Vector3& scale);
+		ScShapeHandle CreateConvexShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const Vector3& scale);
 
 		/**
 		* [EN]
@@ -368,7 +375,7 @@ namespace SeedCore
 		* [JP]
 		* プールされた衝突形状への参照を一つ解放する。
 		*/
-		void ReleaseShape(Handle<JPH::Shape> handle);
+		void ReleaseShape(ScShapeHandle handle);
 
 	public:
 		/**
@@ -382,7 +389,7 @@ namespace SeedCore
 		* 指定した情報から仮想キャラクターを生成し、物理ワールドでその代わりと
 		* なるキネマティックな内側ボディも合わせて生成する。
 		*/
-		JPH::Ref<JPH::CharacterVirtual> CreateCharacter(const CharacterDesc& desc);
+		ScCharacterHandle CreateCharacter(const CharacterDesc& desc);
 
 		/**
 		* [EN]
@@ -393,7 +400,7 @@ namespace SeedCore
 		* [JP]
 		* 1フレーム分のキャラクター移動と段差処理を更新する。
 		*/
-		void UpdateCharacter(JPH::CharacterVirtual* character, Float elapsedTime, Float maxSlopeAngle, Float stepHeight);
+		void UpdateCharacter(ScCharacterHandle character, Float elapsedTime, Float maxSlopeAngle, Float stepHeight);
 
 		/**
 		* [EN]
@@ -404,7 +411,7 @@ namespace SeedCore
 		* [JP]
 		* 仮想キャラクターの接触情報を更新する。
 		*/
-		void RefreshCharacter(JPH::CharacterVirtual* character);
+		void RefreshCharacter(ScCharacterHandle character);
 
 		/**
 		* [EN]
@@ -415,7 +422,7 @@ namespace SeedCore
 		* [JP]
 		* 仮想キャラクターへの参照を解放する。
 		*/
-		void DestroyCharacter(JPH::Ref<JPH::CharacterVirtual>& character);
+		void DestroyCharacter(ScCharacterHandle& character);
 
 		/**
 		* [EN]
@@ -429,7 +436,7 @@ namespace SeedCore
 		* 指定した高さと半径で、キャラクターとその内側ボディの形状を置き換える。
 		* 新しい形状が収まらない場合は、どちらも変えずに false を返す。
 		*/
-		Bool CharacterHeight(JPH::CharacterVirtual* character, Float height, Float radius);
+		Bool CharacterHeight(ScCharacterHandle character, Float height, Float radius);
 
 		/**
 		* [EN]
@@ -452,7 +459,7 @@ namespace SeedCore
 		* [JP]
 		* 剛体を生成して有効化する。
 		*/
-		JPH::BodyID CreateRigidbody(const RigidbodyDesc& desc);
+		ScBodyID CreateRigidbody(const RigidbodyDesc& desc);
 
 		/**
 		* [EN]
@@ -463,7 +470,7 @@ namespace SeedCore
 		* [JP]
 		* メッシュデータからソフトボディを生成して有効化する。
 		*/
-		JPH::BodyID CreateSoftbody(const SoftbodyDesc& desc);
+		ScBodyID CreateSoftbody(const SoftbodyDesc& desc);
 
 		/**
 		* [EN]
@@ -474,7 +481,7 @@ namespace SeedCore
 		* [JP]
 		* ボディを破棄せずシミュレーションから外す。
 		*/
-		void SuspendBody(JPH::BodyID bodyID);
+		void SuspendBody(ScBodyID bodyID);
 
 		/**
 		* [EN]
@@ -485,7 +492,7 @@ namespace SeedCore
 		* [JP]
 		* 停止中のボディをシミュレーションへ戻す。
 		*/
-		void ResumeBody(JPH::BodyID bodyID);
+		void ResumeBody(ScBodyID bodyID);
 
 		/**
 		* [EN]
@@ -496,7 +503,7 @@ namespace SeedCore
 		* [JP]
 		* 物理ボディを削除して破棄する。
 		*/
-		void DestroyBody(JPH::BodyID bodyID);
+		void DestroyBody(ScBodyID bodyID);
 
 		/**
 		* [EN]
@@ -509,7 +516,7 @@ namespace SeedCore
 		* ボディに割り当てられた衝突形状を置き換える。動的ボディは質量を保ち、
 		* 慣性だけを新しい形状に合わせる。
 		*/
-		void BodyShape(JPH::BodyID bodyID, Handle<JPH::Shape> shape);
+		void BodyShape(ScBodyID bodyID, ScShapeHandle shape);
 
 		/**
 		* [EN]
@@ -526,7 +533,7 @@ namespace SeedCore
 		* Quaternion::CreateFromRotationMatrix() で取り出す。無効な ID では
 		* 単位行列を返す。
 		*/
-		Matrix BodyTransform(JPH::BodyID bodyID)const;
+		Matrix BodyTransform(ScBodyID bodyID)const;
 
 		/**
 		* [EN]
@@ -540,7 +547,7 @@ namespace SeedCore
 		* ボディを、間の動きをシミュレーションせずにワールドの位置と回転へ直接
 		* 移す。ボディは起こさない。既にその位置と回転にあれば何もしない。
 		*/
-		void BodyTransform(JPH::BodyID bodyID, const Vector3& position, const Quaternion& rotation);
+		void BodyTransform(ScBodyID bodyID, const Vector3& position, const Quaternion& rotation);
 
 		/**
 		* [EN]
@@ -552,7 +559,7 @@ namespace SeedCore
 		* [JP]
 		* ボディの速度(m/s)を返す。静的ボディでは 0。
 		*/
-		Vector3 BodyLinearVelocity(JPH::BodyID bodyID)const;
+		Vector3 BodyLinearVelocity(ScBodyID bodyID)const;
 
 		/**
 		* [EN]
@@ -567,7 +574,7 @@ namespace SeedCore
 		* なければボディを起こす。キネマティックのボディは、置き換えられるまで
 		* その速度を保つ。静的ボディには効かない。
 		*/
-		void BodyLinearVelocity(JPH::BodyID bodyID, const Vector3& linearVelocity);
+		void BodyLinearVelocity(ScBodyID bodyID, const Vector3& linearVelocity);
 
 		/**
 		* [EN]
@@ -590,7 +597,7 @@ namespace SeedCore
 		* allowMotionTypeChange_ を付けて作ったボディが要る。ソフトボディは
 		* そのまま。
 		*/
-		void BodyMotionType(JPH::BodyID bodyID, JPH::EMotionType motionType);
+		void BodyMotionType(ScBodyID bodyID, ScMotionType motionType);
 
 		/**
 		* [EN]
@@ -602,7 +609,7 @@ namespace SeedCore
 		* [JP]
 		* ボディのワールド空間の角速度(rad/s)を返す。静的ボディでは 0。
 		*/
-		Vector3 BodyAngularVelocity(JPH::BodyID bodyID)const;
+		Vector3 BodyAngularVelocity(ScBodyID bodyID)const;
 
 		/**
 		* [EN]
@@ -618,7 +625,7 @@ namespace SeedCore
 		* 置き換え、角速度が 0 でなければボディを起こす。キネマティックの
 		* ボディは、置き換えられるまでその角速度を保つ。静的ボディには効かない。
 		*/
-		void BodyAngularVelocity(JPH::BodyID bodyID, const Vector3& angularVelocity);
+		void BodyAngularVelocity(ScBodyID bodyID, const Vector3& angularVelocity);
 
 		/**
 		* [EN]
@@ -635,7 +642,7 @@ namespace SeedCore
 		* ボディではスタティックのボディと組になるためのフラグを切り替え、
 		* 最初からその設定で作ったのと同じ状態にする。
 		*/
-		void BodyTrigger(JPH::BodyID bodyID, Bool isTrigger);
+		void BodyTrigger(ScBodyID bodyID, Bool isTrigger);
 
 		/**
 		* [EN]
@@ -646,7 +653,7 @@ namespace SeedCore
 		* [JP]
 		* ボディが現在シミュレーションに追加されているかを返す。
 		*/
-		Bool BodyExists(JPH::BodyID bodyID)const;
+		Bool BodyExists(ScBodyID bodyID)const;
 
 		/**
 		* [EN]
@@ -657,7 +664,7 @@ namespace SeedCore
 		* [JP]
 		* ソフトボディの全頂点のワールド位置を書き出す。
 		*/
-		void BodyVertex(JPH::BodyID bodyID, DynamicArray<Vector3>& outPositions)const;
+		void BodyVertex(ScBodyID bodyID, DynamicArray<Vector3>& outPositions)const;
 
 		/**
 		* [EN]
@@ -668,7 +675,7 @@ namespace SeedCore
 		* [JP]
 		* ボディに格納されたエンティティ識別子を返す。
 		*/
-		EntityID BodyEntityID(JPH::BodyID bodyID)const;
+		EntityID BodyEntityID(ScBodyID bodyID)const;
 
 		/**
 		* [EN]
@@ -679,7 +686,7 @@ namespace SeedCore
 		* [JP]
 		* すべての物理ボディ識別子を返す。
 		*/
-		DynamicArray<JPH::BodyID> BodyList()const;
+		DynamicArray<ScBodyID> BodyList()const;
 
 	public:
 		/**
@@ -695,7 +702,7 @@ namespace SeedCore
 		* ソフトボディでは力を頂点へ均等に分ける。動的でないボディには
 		* 何もしない。
 		*/
-		void AddForce(JPH::BodyID bodyID, const Vector3& force);
+		void AddForce(ScBodyID bodyID, const Vector3& force);
 
 		/**
 		* [EN]
@@ -711,7 +718,7 @@ namespace SeedCore
 		* 起こす。ソフトボディでは、動ける頂点すべてに同じ速度変化を与える。
 		* 動的でないボディには何もしない。
 		*/
-		void AddImpulse(JPH::BodyID bodyID, const Vector3& impulse);
+		void AddImpulse(ScBodyID bodyID, const Vector3& impulse);
 
 		/**
 		* [EN]
@@ -724,7 +731,7 @@ namespace SeedCore
 		* 次のステップの間、ワールド空間のトルク(N·m)を加え、ボディを起こす。
 		* ソフトボディと動的でないボディには効かない。
 		*/
-		void AddTorque(JPH::BodyID bodyID, const Vector3& torque);
+		void AddTorque(ScBodyID bodyID, const Vector3& torque);
 
 		/**
 		* [EN]
@@ -738,7 +745,7 @@ namespace SeedCore
 		* ワールド空間の角力積(N·m·s)を加えて角速度を一度に変え、ボディを
 		* 起こす。ソフトボディと動的でないボディには効かない。
 		*/
-		void AddSpin(JPH::BodyID bodyID, const Vector3& angularImpulse);
+		void AddSpin(ScBodyID bodyID, const Vector3& angularImpulse);
 
 	public:
 		/**
@@ -753,7 +760,7 @@ namespace SeedCore
 		* elapsedTime 後に目標の位置と回転へ着くようキネマティックボディの
 		* 速度を設定し、ボディを起こす。キネマティックでないボディには効かない。
 		*/
-		void MoveTarget(JPH::BodyID bodyID, const Vector3& targetPosition, const Quaternion& targetRotation, Float elapsedTime);
+		void MoveTarget(ScBodyID bodyID, const Vector3& targetPosition, const Quaternion& targetRotation, Float elapsedTime);
 
 	public:
 		/**
@@ -765,7 +772,7 @@ namespace SeedCore
 		* [JP]
 		* 2つのボディ間にヒンジ拘束を生成する。
 		*/
-		Handle<JPH::Constraint> CreateHingeJoint(JPH::BodyID bodyA, JPH::BodyID bodyB, const HingeJointDesc& desc);
+		ScConstraintHandle CreateHingeJoint(ScBodyID bodyA, ScBodyID bodyB, const HingeJointDesc& desc);
 
 		/**
 		* [EN]
@@ -776,7 +783,7 @@ namespace SeedCore
 		* [JP]
 		* 2つのボディ間に固定拘束を生成する。
 		*/
-		Handle<JPH::Constraint> CreateFixedJoint(JPH::BodyID bodyA, JPH::BodyID bodyB, const FixedJointDesc& desc);
+		ScConstraintHandle CreateFixedJoint(ScBodyID bodyA, ScBodyID bodyB, const FixedJointDesc& desc);
 
 		/**
 		* [EN]
@@ -787,7 +794,7 @@ namespace SeedCore
 		* [JP]
 		* 2つのボディ間にばね距離拘束を生成する。
 		*/
-		Handle<JPH::Constraint> CreateSpringJoint(JPH::BodyID bodyA, JPH::BodyID bodyB, const SpringJointDesc& desc);
+		ScConstraintHandle CreateSpringJoint(ScBodyID bodyA, ScBodyID bodyB, const SpringJointDesc& desc);
 
 		/**
 		* [EN]
@@ -798,7 +805,7 @@ namespace SeedCore
 		* [JP]
 		* 2つのボディ間にスライダー拘束を生成する。
 		*/
-		Handle<JPH::Constraint> CreateSliderJoint(JPH::BodyID bodyA, JPH::BodyID bodyB, const SliderJointDesc& desc);
+		ScConstraintHandle CreateSliderJoint(ScBodyID bodyA, ScBodyID bodyB, const SliderJointDesc& desc);
 
 		/**
 		* [EN]
@@ -809,7 +816,7 @@ namespace SeedCore
 		* [JP]
 		* ジョイント拘束を解放する。
 		*/
-		void DestroyJoint(Handle<JPH::Constraint> handle);
+		void DestroyJoint(ScConstraintHandle handle);
 
 		/**
 		* [EN]
@@ -915,7 +922,7 @@ namespace SeedCore
 		* [JP]
 		* 2ボディ拘束を生成して登録する。
 		*/
-		Handle<JPH::Constraint> CreateConstraint(JPH::BodyID bodyA, JPH::BodyID bodyB, const JPH::TwoBodyConstraintSettings& settings);
+		ScConstraintHandle CreateConstraint(ScBodyID bodyA, ScBodyID bodyB, const JPH::TwoBodyConstraintSettings& settings);
 
 	private:
 		/// [EN] Number of screen pixels represented by one physics meter.
@@ -925,6 +932,10 @@ namespace SeedCore
 		/// [EN] Jolt services and pooled physics resources used by this facade.
 		/// [JP] このファサードが使用するJoltサービスと物理リソースプール。
 		JoltManager& joltManager_;
+
+		/// [EN] World that owns this physics facade.
+		/// [JP] この物理ファサードを所有する World。
+		World& world_;
 
 		/// [EN] Record every query is added to, owned by World.
 		/// [JP] クエリをすべて記録する先。World が所有する。

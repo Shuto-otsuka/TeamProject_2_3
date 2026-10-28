@@ -45,6 +45,7 @@
     <ClInclude Include="JoltPhysics\JoltShapePool.h" />
     <ClInclude Include="Physics\Physics.h" />
     <ClInclude Include="Physics\PhysicsSystem.h" />
+    <ClInclude Include="Physics\PhysicsTypes.h" />
     <ClInclude Include="Rigidbody\Rigidbody.h" />
     <ClInclude Include="Softbody\Softbody.h" />
   </ItemGroup>

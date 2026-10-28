@@ -25,7 +25,7 @@ namespace SeedCore
 	* [JP]
 	* キューシート用に読み込まれた ACB ハンドルを返す。
 	*/
-	CriAtomExAcbHn Sound::AcbHandle()const
+	ScAudioBankHandle Sound::AcbHandle()const
 	{
 		return acbHandle_;
 	}

@@ -113,6 +113,7 @@
 #include <queue>
 #include <random>
 #include <ranges>
+#include <set>
 #include <source_location>
 #include <span>
 #include <sstream>
@@ -138,17 +139,14 @@
 
 #if _DEBUG
 #pragma comment(lib, "../External/DLSS/Lib/sl.interposer.lib" )
-#pragma comment(lib, "../External/SDL3/Lib/SDL3.lib")
 #pragma comment(lib, "../External/DirectXTK/Lib/Debug/DirectXTK12.lib")
 #pragma comment(lib, "../External/DirectXTex/Lib/Debug/DirectXTex.lib")
-#pragma comment(lib, "../External/JoltPhysics/Lib/Debug/Jolt.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/Effekseer.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/EffekseerRendererCommon.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/EffekseerRendererLLGI.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/EffekseerRendererDX12.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/LLGI.lib")
 #pragma comment(lib, "../External/ImGui/Lib/Debug/ImGui.lib")
-#pragma comment(lib, "../External/CRI/Lib/cri_ware_pcx64_le_import.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Debug/freetyped.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Debug/harfbuzz.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Debug/msdfgen-core.lib")
@@ -156,21 +154,17 @@
 #pragma comment(lib, "../External/MTSDF/Lib/Debug/msdf-atlas-gen.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Debug/libpng18_staticd.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Debug/libzsd.lib")
-#pragma comment(lib, "../External/NsightAftermath/Lib/GFSDK_Aftermath_Lib.x64.lib")
 #pragma comment(lib, "../External/FBXSDK/Lib/Debug/libfbxsdk.lib")
 #else
 #pragma comment(lib, "../External/DLSS/Lib/sl.interposer.lib" )
-#pragma comment(lib, "../External/SDL3/Lib/SDL3.lib")
 #pragma comment(lib, "../External/DirectXTK/Lib/Release/DirectXTK12.lib")
 #pragma comment(lib, "../External/DirectXTex/Lib/Release/DirectXTex.lib")
-#pragma comment(lib, "../External/JoltPhysics/Lib/Release/Jolt.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Release/Effekseer.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Release/EffekseerRendererCommon.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Release/EffekseerRendererLLGI.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Release/EffekseerRendererDX12.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Release/LLGI.lib")
 #pragma comment(lib, "../External/ImGui/Lib/Release/ImGui.lib")
-#pragma comment(lib, "../External/CRI/Lib/cri_ware_pcx64_le_import.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Release/freetype.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Release/harfbuzz.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Release/msdfgen-core.lib")
@@ -178,7 +172,6 @@
 #pragma comment(lib, "../External/MTSDF/Lib/Release/msdf-atlas-gen.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Release/libpng18_static.lib")
 #pragma comment(lib, "../External/MTSDF/Lib/Release/libzs.lib")
-#pragma comment(lib, "../External/NsightAftermath/Lib/GFSDK_Aftermath_Lib.x64.lib")
 #pragma comment(lib, "../External/FBXSDK/Lib/Release/libfbxsdk.lib")
 #endif
 
@@ -217,12 +210,6 @@
 #include <External/ImGui/Include/ImGuizmo/ImGuizmo.h>
 #include <External/ImGui/Include/ImNodeEditor/imgui_node_editor.h>
 
-#include <External/SDL3/Include/SDL3/SDL.h>
-#include <External/SDL3/Include/SDL3/SDL_keyboard.h>
-#include <External/SDL3/Include/SDL3/SDL_mouse.h>
-#include <External/SDL3/Include/SDL3/SDL_scancode.h>
-#include <External/SDL3/Include/SDL3/SDL_gamepad.h>
-
 #include <External/DirectXTK/Include/WICTextureLoader.h>
 #include <External/DirectXTK/Include/DDSTextureLoader.h>
 #include <External/DirectXTK/Include/ResourceUploadBatch.h>
@@ -243,58 +230,9 @@
 #include <External/FBXSDK/Include/fbxsdk.h>
 #pragma warning(pop)
 
-#include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
-#include <External/NsightAftermath/Include/GFSDK_Aftermath_GpuCrashDump.h>
-#include <External/NsightAftermath/Include/GFSDK_Aftermath_GpuCrashDumpDecoding.h>
-
-#include <External/RecastNavigation/Detour/Include/DetourNavMesh.h>
-#include <External/RecastNavigation/DetourCrowd/Include/DetourCrowd.h>
-#include <External/RecastNavigation/Recast/Include/Recast.h>
-
-#include <External/JoltPhysics/Jolt/Jolt.h>
-#include <External/JoltPhysics/Jolt/RegisterTypes.h>
-#include <External/JoltPhysics/Jolt/Core/Factory.h>
-#include <External/JoltPhysics/Jolt/Core/TempAllocator.h>
-#include <External/JoltPhysics/Jolt/Core/JobSystemWithBarrier.h>
-#include <External/JoltPhysics/Jolt/Physics/PhysicsSystem.h>
-#include <External/JoltPhysics/Jolt/Physics/Body/BodyCreationSettings.h>
-#include <External/JoltPhysics/Jolt/Physics/Body/BodyInterface.h>
-#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/BoxShape.h>
-#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/SphereShape.h>
-#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/CapsuleShape.h>
-#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/CylinderShape.h>
-#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/MeshShape.h>
-#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/ConvexShape.h>
-#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/ConvexHullShape.h>
-#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
-#include <External/JoltPhysics/Jolt/Physics/Character/CharacterVirtual.h>
-#include <External/JoltPhysics/Jolt/Physics/Body/Body.h>
-#include <External/JoltPhysics/Jolt/Physics/Body/BodyLock.h>
-#include <External/JoltPhysics/Jolt/Physics/Body/BodyLockMulti.h>
-#include <External/JoltPhysics/Jolt/Physics/Constraints/TwoBodyConstraint.h>
-#include <External/JoltPhysics/Jolt/Physics/Constraints/SpringSettings.h>
-#include <External/JoltPhysics/Jolt/Physics/Constraints/HingeConstraint.h>
-#include <External/JoltPhysics/Jolt/Physics/Constraints/FixedConstraint.h>
-#include <External/JoltPhysics/Jolt/Physics/Constraints/DistanceConstraint.h>
-#include <External/JoltPhysics/Jolt/Physics/Constraints/SliderConstraint.h>
-#include <External/JoltPhysics/Jolt/Physics/Collision/NarrowPhaseQuery.h>
-#include <External/JoltPhysics/Jolt/Physics/Collision/CollideShape.h>
-#include <External/JoltPhysics/Jolt/Physics/Collision/RayCast.h>
-#include <External/JoltPhysics/Jolt/Physics/Collision/CastResult.h>
-#include <External/JoltPhysics/Jolt/Physics/Collision/ShapeCast.h>
-#include <External/JoltPhysics/Jolt/Physics/Collision/CollisionCollectorImpl.h>
-#include <External/JoltPhysics/Jolt/Physics/SoftBody/SoftBodySharedSettings.h>
-#include <External/JoltPhysics/Jolt/Physics/SoftBody/SoftBodyCreationSettings.h>
-#include <External/JoltPhysics/Jolt/Physics/SoftBody/SoftBodyMotionProperties.h>
-#include <External/JoltPhysics/Jolt/Renderer/DebugRendererSimple.h>
-
 #include <External/Effekseer/Include/Effekseer.h>
 #include <External/Effekseer/Include/EffekseerRendererDX12.h>
 #include <External/Effekseer/Include/EffekseerRendererLLGI/Common.h>
-
-#include <External/Json/json.hpp>
-
-#include <External/CRI/Include/cri_adx2le.h>
 
 #ifndef MSDFGEN_PUBLIC
 #define MSDFGEN_PUBLIC

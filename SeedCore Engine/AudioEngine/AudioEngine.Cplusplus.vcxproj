@@ -25,6 +25,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Audio\Audio.h" />
+		<ClInclude Include="Audio\AudioTypes.h" />
     <ClInclude Include="Audio\AudioByteStream.h" />
     <ClInclude Include="Audio\AudioListener.h" />
     <ClInclude Include="Audio\AudioLoader.h" />
@@ -33,7 +34,6 @@
     <ClInclude Include="Audio\AudioSystem.h" />
     <ClInclude Include="Audio\MixerSystem.h" />
     <ClInclude Include="Audio\Sound.h" />
-    <ClInclude Include="CRI\CriAllocator.h" />
     <ClInclude Include="CRI\CriManager.h" />
     <ClInclude Include="Resource\AudioLoaderSystem.h" />
     <ClInclude Include="Resource\AudioModule.h" />

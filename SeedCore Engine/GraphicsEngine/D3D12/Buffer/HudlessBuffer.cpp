@@ -1,3 +1,4 @@
+#include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
 #include <GraphicsEngine/D3D12/Buffer/HudlessBuffer.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
 #include <FoundationEngine/Log/DxFail.h>

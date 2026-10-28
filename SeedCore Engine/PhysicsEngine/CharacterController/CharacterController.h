@@ -1,6 +1,6 @@
 #pragma once
+#include <PhysicsEngine/Physics/PhysicsTypes.h>
 #include <FoundationEngine/SeedScript.h>
-#include <PhysicsEngine/JoltPhysics/JoltCharacterContactListener.h>
 
 namespace SeedCore
 {
@@ -399,7 +399,7 @@ namespace SeedCore
 		{
 			/// [EN] Body being stood on; invalid while not standing on anything.
 			/// [JP] 立っているボディ。何にも立っていない間は無効。
-			JPH::BodyID bodyID_;
+			ScBodyID bodyID_ = ScInvalidBodyID;
 
 			/// [EN] Character position in the body's LOCAL space, not world space.
 			/// [JP] キャラクターの位置。ワールド空間ではなく、ボディのローカル空間の値。
@@ -437,11 +437,11 @@ namespace SeedCore
 
 		/// [EN] Jolt virtual-character instance owned by this component.
 		/// [JP] このコンポーネントが所有する Jolt 仮想キャラクター。
-		JPH::Ref<JPH::CharacterVirtual> character_;
+		ScCharacterHandle character_ = nullptr;
 
 		/// [EN] Contact listener forwarding character contacts to the World.
 		/// [JP] キャラクターの接触を World へ転送する接触リスナー。
-		JPH::Ref<JoltCharacterContactListener> characterContactListener_;
+		ScCharacterListenerHandle characterContactListener_ = nullptr;
 	};
 	REGISTER_COMPONENT(CharacterController, "Physics");
 }

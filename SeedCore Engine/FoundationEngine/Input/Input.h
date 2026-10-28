@@ -41,9 +41,9 @@ namespace SeedCore
 		/// [JP] MouseState() に渡す読みやすいマウスボタンコード。InputSystem::MouseButton を参照。
 		using MouseButton = InputSystem::MouseButton;
 
-		/// [EN] Readable gamepad button aliases for GamepadState(); see InputSystem::GamepadButton.
-		/// [JP] GamepadState() に渡す読みやすいゲームパッドボタンの別名。InputSystem::GamepadButton を参照。
-		using GamepadButton = InputSystem::GamepadButton;
+		/// [EN] SeedCore gamepad button codes for GamepadState(); see InputSystem::ScGamepadButton.
+		/// [JP] GamepadState() に渡す SeedCore のゲームパッドボタンコード。InputSystem::ScGamepadButton を参照。
+		using ScGamepadButton = InputSystem::ScGamepadButton;
 
 		/// [EN] Which analog stick GamepadAxis() reads; see InputSystem::GamepadStick.
 		/// [JP] GamepadAxis() が読むアナログスティック。InputSystem::GamepadStick を参照。
@@ -108,7 +108,7 @@ namespace SeedCore
 		* ゲームパッドボタン button が mode を満たすかを返す。キーボード/
 		* マウスの入力をゲームに渡さないフレームも含め、毎フレーム返す。
 		*/
-		static Bool GamepadState(SDL_GamepadButton button, TriggerMode mode = TriggerMode::NONE);
+		static Bool GamepadState(ScGamepadButton button, TriggerMode mode = TriggerMode::NONE);
 
 		/**
 		* [EN]

@@ -1,35 +1,55 @@
+#include <External/JoltPhysics/Jolt/Jolt.h>
+#include <External/JoltPhysics/Jolt/Physics/PhysicsSystem.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/Body.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/BodyInterface.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/MotionType.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/ContactListener.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/SubShapeIDPair.h>
 #include <PhysicsEngine/JoltPhysics/JoltContactListener.h>
 #include <PhysicsEngine/Physics/PhysicsSystem.h>
+#include <FoundationEngine/World/ECS/Entity/Entity.h>
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Sets the World that receives dispatched contact events.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 接触イベントの通知先となる World を設定する。
-	*/
-	void JoltContactListener::ActiveWorld(World* world)
+	class JoltContactListener::Impl final :public JPH::ContactListener
 	{
-		world_ = world;
-	}
+	private:
+		enum class ContactEventKind
+		{
+			Enter,
+			Stay,
+			Exit,
+		};
 
-	/**
-	* [EN]
-	* Returns the World that receives dispatched contact events.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 接触イベントの通知先となる World を返す。
-	*/
-	World* JoltContactListener::ActiveWorld()const
-	{
-		return world_;
-	}
+		struct ContactEvent
+		{
+			EntityID entityID_;
+			EntityID otherEntityID_;
+			ContactEventKind kind_ = ContactEventKind::Enter;
+			Bool isSensor_ = false;
+		};
+
+		struct ContactPair
+		{
+			std::pair<EntityID, EntityID> entityIDs_;
+			Bool isSensor_ = false;
+			Uint32 contactCount_ = 0;
+		};
+
+	public:
+		void DispatchEvent(const JPH::BodyInterface& bodyInterface, World& world);
+
+		void OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)override;
+		void OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)override;
+		void OnContactRemoved(const JPH::SubShapeIDPair& subShapePair)override;
+
+	private:
+		std::mutex mutex_;
+		DynamicArray<ContactEvent> pendingEvents_;
+		std::unordered_map<Uint64, ContactPair> contactPairs_;
+		std::unordered_set<Uint64> notifiedPairs_;
+		std::unordered_set<Uint64> restingPairs_;
+	};
 
 	/**
 	* [EN]
@@ -43,7 +63,7 @@ namespace SeedCore
 	* 最後の接触を失ったボディペアのうち本当に離れたものを判定し、その後
 	* キュー内の接触を取り出して衝突またはトリガーイベントを通知する。
 	*/
-	void JoltContactListener::DispatchEvent(const JPH::BodyInterface& bodyInterface)
+	void JoltContactListener::Impl::DispatchEvent(const JPH::BodyInterface& bodyInterface, World& world)
 	{
 		DynamicArray<ContactEvent> events;
 		{
@@ -98,11 +118,6 @@ namespace SeedCore
 			notifiedPairs_.clear();
 		}
 
-		if (!world_)
-		{
-			return;
-		}
-
 		/// [EN] Dispatch each phase symmetrically to both participating entities.
 		/// [JP] 各段階のイベントを、参加する両方のエンティティへ対称に通知する。
 		for (const ContactEvent& event : events)
@@ -112,37 +127,37 @@ namespace SeedCore
 			case ContactEventKind::Enter:
 				if (event.isSensor_)
 				{
-					PhysicsSystem::DispatchTriggerEnter(*world_, event.entityID_, event.otherEntityID_);
-					PhysicsSystem::DispatchTriggerEnter(*world_, event.otherEntityID_, event.entityID_);
+					PhysicsSystem::DispatchTriggerEnter(world, event.entityID_, event.otherEntityID_);
+					PhysicsSystem::DispatchTriggerEnter(world, event.otherEntityID_, event.entityID_);
 				}
 				else
 				{
-					PhysicsSystem::DispatchCollisionEnter(*world_, event.entityID_, event.otherEntityID_);
-					PhysicsSystem::DispatchCollisionEnter(*world_, event.otherEntityID_, event.entityID_);
+					PhysicsSystem::DispatchCollisionEnter(world, event.entityID_, event.otherEntityID_);
+					PhysicsSystem::DispatchCollisionEnter(world, event.otherEntityID_, event.entityID_);
 				}
 				break;
 			case ContactEventKind::Stay:
 				if (event.isSensor_)
 				{
-					PhysicsSystem::DispatchTriggerStay(*world_, event.entityID_, event.otherEntityID_);
-					PhysicsSystem::DispatchTriggerStay(*world_, event.otherEntityID_, event.entityID_);
+					PhysicsSystem::DispatchTriggerStay(world, event.entityID_, event.otherEntityID_);
+					PhysicsSystem::DispatchTriggerStay(world, event.otherEntityID_, event.entityID_);
 				}
 				else
 				{
-					PhysicsSystem::DispatchCollisionStay(*world_, event.entityID_, event.otherEntityID_);
-					PhysicsSystem::DispatchCollisionStay(*world_, event.otherEntityID_, event.entityID_);
+					PhysicsSystem::DispatchCollisionStay(world, event.entityID_, event.otherEntityID_);
+					PhysicsSystem::DispatchCollisionStay(world, event.otherEntityID_, event.entityID_);
 				}
 				break;
 			case ContactEventKind::Exit:
 				if (event.isSensor_)
 				{
-					PhysicsSystem::DispatchTriggerExit(*world_, event.entityID_, event.otherEntityID_);
-					PhysicsSystem::DispatchTriggerExit(*world_, event.otherEntityID_, event.entityID_);
+					PhysicsSystem::DispatchTriggerExit(world, event.entityID_, event.otherEntityID_);
+					PhysicsSystem::DispatchTriggerExit(world, event.otherEntityID_, event.entityID_);
 				}
 				else
 				{
-					PhysicsSystem::DispatchCollisionExit(*world_, event.entityID_, event.otherEntityID_);
-					PhysicsSystem::DispatchCollisionExit(*world_, event.otherEntityID_, event.entityID_);
+					PhysicsSystem::DispatchCollisionExit(world, event.entityID_, event.otherEntityID_);
+					PhysicsSystem::DispatchCollisionExit(world, event.otherEntityID_, event.entityID_);
 				}
 				break;
 			}
@@ -163,7 +178,7 @@ namespace SeedCore
 	* 既に接触中のペアへさらに追加されたとき、または休止中のペアが接触を
 	* 取り戻したときに Stay イベントをキューへ積む。
 	*/
-	void JoltContactListener::OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)
+	void JoltContactListener::Impl::OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)
 	{
 		/// [EN] Both body IDs packed into one key; Jolt always passes the smaller ID as body1, so a pair keeps the same key.
 		/// [JP] 2つのボディ ID を1つのキーへまとめる。Jolt は常に小さいほうの ID を body1 として渡すので、同じペアは同じキーになる。
@@ -208,7 +223,7 @@ namespace SeedCore
 	* 接触が続いているボディペアの Stay イベントを、1ステップにつき最大1回
 	* キューへ積む。
 	*/
-	void JoltContactListener::OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)
+	void JoltContactListener::Impl::OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)
 	{
 		/// [EN] Both body IDs packed into one key; Jolt always passes the smaller ID as body1, so a pair keeps the same key.
 		/// [JP] 2つのボディ ID を1つのキーへまとめる。Jolt は常に小さいほうの ID を body1 として渡すので、同じペアは同じキーになる。
@@ -243,7 +258,7 @@ namespace SeedCore
 	* ボディペアの最後のサブシェイプの接触が削除されたとき、そのペアを休止中
 	* にする。離れたのか眠っただけなのかは DispatchEvent で判定する。
 	*/
-	void JoltContactListener::OnContactRemoved(const JPH::SubShapeIDPair& subShapePair)
+	void JoltContactListener::Impl::OnContactRemoved(const JPH::SubShapeIDPair& subShapePair)
 	{
 		/// [EN] Both body IDs packed into one key, in the same order as the added and persisted callbacks.
 		/// [JP] 2つのボディ ID を1つのキーへまとめる。順序は追加・継続のコールバックと同じ。
@@ -269,5 +284,22 @@ namespace SeedCore
 		/// [EN] Bodies cannot be inspected during this callback, so whether the pair separated or a body only fell asleep is decided in DispatchEvent.
 		/// [JP] このコールバック中はボディを調べられないので、ペアが離れたのかボディが眠っただけなのかは DispatchEvent で判定する。
 		restingPairs_.insert(pairKey);
+	}
+
+	JoltContactListener::JoltContactListener() :impl_(MakePtr<Impl>())
+	{
+		/// No Code
+	}
+
+	JoltContactListener::~JoltContactListener() = default;
+
+	void JoltContactListener::Attach(JPH::PhysicsSystem& physicsSystem)
+	{
+		physicsSystem.SetContactListener(impl_.get());
+	}
+
+	void JoltContactListener::DispatchEvent(JPH::PhysicsSystem& physicsSystem, World& world)
+	{
+		impl_->DispatchEvent(physicsSystem.GetBodyInterface(), world);
 	}
 }

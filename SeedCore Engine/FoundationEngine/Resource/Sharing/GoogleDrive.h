@@ -215,20 +215,6 @@ namespace SeedCore
 		const String& Error()const;
 
 	private:
-		/**
-		* [EN]
-		* Sends one authenticated request to the Drive API and parses its
-		* JSON answer, recording any failure.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 認証付きのリクエストを Drive API へ1回送り、JSON の応答を解釈
-		* する。失敗した場合はその内容も記録する。
-		*/
-		Bool Send(const String& method, const String& url, const nlohmann::json& request, nlohmann::json& result);
-
-	private:
 		/// [EN] Transport shared with the rest of the sharing layer.
 		/// [JP] 共有機能の他の部分と共用する通信手段。
 		HttpClient& http_;

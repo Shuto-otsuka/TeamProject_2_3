@@ -1,7 +1,8 @@
 #pragma once
-#include <FoundationEngine/Log/DxFail.h>
+#include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
 #include <GraphicsEngine/D3D12/FrameRing.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
+#include <FoundationEngine/Log/DxFail.h>
 
 namespace SeedCore
 {

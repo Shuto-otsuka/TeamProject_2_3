@@ -1,3 +1,4 @@
+#include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
 #include <GraphicsEngine/Font/Font.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 

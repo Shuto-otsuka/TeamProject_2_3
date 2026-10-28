@@ -1,6 +1,44 @@
+#include <External/JoltPhysics/Jolt/Jolt.h>
+#include <External/JoltPhysics/Jolt/Core/Array.h>
+#include <External/JoltPhysics/Jolt/Math/Float3.h>
+#include <External/JoltPhysics/Jolt/Physics/PhysicsSystem.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/Body.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/BodyCreationSettings.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/BodyInterface.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/BodyLock.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/BodyLockMulti.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/BodyManager.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/MassProperties.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/MotionProperties.h>
+#include <External/JoltPhysics/Jolt/Physics/Character/CharacterVirtual.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/CastResult.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/CollisionCollectorImpl.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/CollideShape.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/NarrowPhaseQuery.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/ObjectLayer.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/RayCast.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/ShapeCast.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/Shape.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/BoxShape.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/CapsuleShape.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/CylinderShape.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/RotatedTranslatedShape.h>
+#include <External/JoltPhysics/Jolt/Physics/Collision/Shape/SphereShape.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/Constraint.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/TwoBodyConstraint.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/DistanceConstraint.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/FixedConstraint.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/HingeConstraint.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/SliderConstraint.h>
+#include <External/JoltPhysics/Jolt/Physics/Constraints/SpringSettings.h>
+#include <External/JoltPhysics/Jolt/Physics/SoftBody/SoftBodyCreationSettings.h>
+#include <External/JoltPhysics/Jolt/Physics/SoftBody/SoftBodyMotionProperties.h>
+#include <External/JoltPhysics/Jolt/Physics/SoftBody/SoftBodySharedSettings.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <PhysicsEngine/JoltPhysics/JoltManager.h>
 #include <PhysicsEngine/JoltPhysics/JoltLayerdef.h>
+#include <PhysicsEngine/JoltPhysics/JoltShapePool.h>
+#include <PhysicsEngine/JoltPhysics/JoltConstraintPool.h>
 #include <FoundationEngine/Resource/Gateway.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/World/World.h>
@@ -21,7 +59,7 @@ namespace SeedCore
 	* エンジンのJolt管理機構へ接続された物理ファサードを構築する。
 	* クエリはすべて queryInstance に記録する。
 	*/
-	Physics::Physics(QueryInstance& queryInstance) :joltManager_(Gateway::GetJoltManager()), queryInstance_(queryInstance)
+	Physics::Physics(World& world, QueryInstance& queryInstance) :joltManager_(Gateway::GetJoltManager()), world_(world), queryInstance_(queryInstance)
 	{
 		/// No Code
 	}
@@ -35,7 +73,7 @@ namespace SeedCore
 	* [JP]
 	* ボックス衝突形状を生成または再利用する。
 	*/
-	Handle<JPH::Shape> Physics::CreateBoxShape(const Vector3& size, const Vector3& center)
+	ScShapeHandle Physics::CreateBoxShape(const Vector3& size, const Vector3& center)
 	{
 		return joltManager_.ShapePool().CreateBoxShape(size, center);
 	}
@@ -49,7 +87,7 @@ namespace SeedCore
 	* [JP]
 	* 球衝突形状を生成または再利用する。
 	*/
-	Handle<JPH::Shape> Physics::CreateSphereShape(Float radius)
+	ScShapeHandle Physics::CreateSphereShape(Float radius)
 	{
 		return joltManager_.ShapePool().CreateSphereShape(radius);
 	}
@@ -63,7 +101,7 @@ namespace SeedCore
 	* [JP]
 	* カプセル衝突形状を生成または再利用する。
 	*/
-	Handle<JPH::Shape> Physics::CreateCapsuleShape(Float height, Float radius)
+	ScShapeHandle Physics::CreateCapsuleShape(Float height, Float radius)
 	{
 		return joltManager_.ShapePool().CreateCapsuleShape(height, radius);
 	}
@@ -77,7 +115,7 @@ namespace SeedCore
 	* [JP]
 	* 円柱衝突形状を生成または再利用する。
 	*/
-	Handle<JPH::Shape> Physics::CreateCylinderShape(Float height, Float radius)
+	ScShapeHandle Physics::CreateCylinderShape(Float height, Float radius)
 	{
 		return joltManager_.ShapePool().CreateCylinderShape(height, radius);
 	}
@@ -91,7 +129,7 @@ namespace SeedCore
 	* [JP]
 	* 矩形の2D衝突形状を生成または再利用する。
 	*/
-	Handle<JPH::Shape> Physics::CreateRectShape(const Vector2& size, const Vector2& center)
+	ScShapeHandle Physics::CreateRectShape(const Vector2& size, const Vector2& center)
 	{
 		/// [EN] Canvas pixels (Y down) become physics meters (Y up), so the center's Y is negated.
 		/// [JP] Canvas のピクセル(Y 下向き)を物理のメートル(Y 上向き)へ直すため、中心の Y を反転する。
@@ -107,7 +145,7 @@ namespace SeedCore
 	* [JP]
 	* 円形の2D衝突形状を生成または再利用する。
 	*/
-	Handle<JPH::Shape> Physics::CreateCircleShape(Float radius, const Vector2& center)
+	ScShapeHandle Physics::CreateCircleShape(Float radius, const Vector2& center)
 	{
 		/// [EN] Same pixel-to-meter conversion as CreateRectShape.
 		/// [JP] CreateRectShape と同じ、ピクセルからメートルへの変換。
@@ -126,7 +164,7 @@ namespace SeedCore
 	* 頂点を軸ごとに拡縮した三角形メッシュ衝突形状を生成または再利用する。
 	* アセットとスケールの組ごとに別の形状になる。
 	*/
-	Handle<JPH::Shape> Physics::CreateMeshShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const DynamicArray<Uint32>& indices, const Vector3& scale)
+	ScShapeHandle Physics::CreateMeshShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const DynamicArray<Uint32>& indices, const Vector3& scale)
 	{
 		return joltManager_.ShapePool().CreateMeshShape(assetID, positions, indices, scale);
 	}
@@ -142,7 +180,7 @@ namespace SeedCore
 	* 点を軸ごとに拡縮した凸包衝突形状を生成または再利用する。アセットと
 	* スケールの組ごとに別の形状になる。
 	*/
-	Handle<JPH::Shape> Physics::CreateConvexShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const Vector3& scale)
+	ScShapeHandle Physics::CreateConvexShape(Uint32 assetID, const DynamicArray<Vector3>& positions, const Vector3& scale)
 	{
 		return joltManager_.ShapePool().CreateConvexShape(assetID, positions, scale);
 	}
@@ -156,7 +194,7 @@ namespace SeedCore
 	* [JP]
 	* プールされた衝突形状への参照を一つ解放する。
 	*/
-	void Physics::ReleaseShape(Handle<JPH::Shape> handle)
+	void Physics::ReleaseShape(ScShapeHandle handle)
 	{
 		joltManager_.ShapePool().Release(handle);
 	}
@@ -172,7 +210,7 @@ namespace SeedCore
 	* 指定した情報から仮想キャラクターを生成し、物理ワールドでその代わりと
 	* なるキネマティックな内側ボディも合わせて生成する。
 	*/
-	JPH::Ref<JPH::CharacterVirtual> Physics::CreateCharacter(const CharacterDesc& desc)
+	ScCharacterHandle Physics::CreateCharacter(const CharacterDesc& desc)
 	{
 		/// [EN] Jolt's capsule takes the half height of its cylinder part; the caps add radius at each end.
 		/// [JP] Jolt のカプセルは円柱部分の半分の高さを取り、両端に半径分の半球が付く。
@@ -201,7 +239,9 @@ namespace SeedCore
 
 		/// [EN] The EntityID is stored bit for bit as the character's user data; Jolt copies it to the inner body as well, so a query or contact that hits the inner body resolves to this character's entity.
 		/// [JP] EntityID はビットのままキャラクターのユーザーデータに格納する。Jolt が内側ボディにも同じ値を写すので、内側ボディに当たったクエリや接触はこのキャラクターのエンティティへ解決される。
-		return new JPH::CharacterVirtual(&settings, JPH::RVec3(desc.position_.x, desc.position_.y, desc.position_.z), JPH::Quat(desc.rotation_.x, desc.rotation_.y, desc.rotation_.z, desc.rotation_.w), std::bit_cast<JPH::uint64>(desc.userData_), &joltManager_.PhysicsSystem());
+		JPH::CharacterVirtual* character = new JPH::CharacterVirtual(&settings, JPH::RVec3(desc.position_.x, desc.position_.y, desc.position_.z), JPH::Quat(desc.rotation_.x, desc.rotation_.y, desc.rotation_.z, desc.rotation_.w), std::bit_cast<JPH::uint64>(desc.userData_), &joltManager_.PhysicsSystem());
+		character->AddRef();
+		return character;
 	}
 
 	/**
@@ -213,8 +253,9 @@ namespace SeedCore
 	* [JP]
 	* 1フレーム分のキャラクター移動と段差処理を更新する。
 	*/
-	void Physics::UpdateCharacter(JPH::CharacterVirtual* character, Float elapsedTime, Float maxSlopeAngle, Float stepHeight)
+	void Physics::UpdateCharacter(ScCharacterHandle handle, Float elapsedTime, Float maxSlopeAngle, Float stepHeight)
 	{
+		JPH::CharacterVirtual* character = static_cast<JPH::CharacterVirtual*>(handle);
 		if (!character)
 		{
 			return;
@@ -245,8 +286,9 @@ namespace SeedCore
 	* [JP]
 	* 仮想キャラクターの接触情報を更新する。
 	*/
-	void Physics::RefreshCharacter(JPH::CharacterVirtual* character)
+	void Physics::RefreshCharacter(ScCharacterHandle handle)
 	{
+		JPH::CharacterVirtual* character = static_cast<JPH::CharacterVirtual*>(handle);
 		if (!character)
 		{
 			return;
@@ -268,11 +310,14 @@ namespace SeedCore
 	* [JP]
 	* 仮想キャラクターへの参照を解放する。
 	*/
-	void Physics::DestroyCharacter(JPH::Ref<JPH::CharacterVirtual>& character)
+	void Physics::DestroyCharacter(ScCharacterHandle& handle)
 	{
-		/// [EN] The character is reference counted; dropping the last reference frees it.
-		/// [JP] キャラクターは参照カウントで管理され、最後の参照を外すと解放される。
-		character = nullptr;
+		JPH::CharacterVirtual* character = static_cast<JPH::CharacterVirtual*>(handle);
+		if (character)
+		{
+			character->Release();
+			handle = nullptr;
+		}
 	}
 
 	/**
@@ -287,8 +332,9 @@ namespace SeedCore
 	* 指定した高さと半径で、キャラクターとその内側ボディの形状を置き換える。
 	* 新しい形状が収まらない場合は、どちらも変えずに false を返す。
 	*/
-	Bool Physics::CharacterHeight(JPH::CharacterVirtual* character, Float height, Float radius)
+	Bool Physics::CharacterHeight(ScCharacterHandle handle, Float height, Float radius)
 	{
+		JPH::CharacterVirtual* character = static_cast<JPH::CharacterVirtual*>(handle);
 		if (!character)
 		{
 			return false;
@@ -340,23 +386,23 @@ namespace SeedCore
 	* [JP]
 	* 剛体を生成して有効化する。
 	*/
-	JPH::BodyID Physics::CreateRigidbody(const RigidbodyDesc& desc)
+	ScBodyID Physics::CreateRigidbody(const RigidbodyDesc& desc)
 	{
 		/// [EN] A handle that no longer points at a pooled shape gives an invalid BodyID.
 		/// [JP] プールの形状を指さなくなったハンドルなら、無効な BodyID を返す。
 		JPH::ShapeRefC shape = joltManager_.ShapePool().Get(desc.shape_);
 		if (!shape)
 		{
-			return JPH::BodyID();
+			return ScInvalidBodyID;
 		}
 
 		/// [EN] Shape, initial pose, motion type and the packed object layer.
 		/// [JP] 形状、初期姿勢、運動タイプ、パック済みのオブジェクトレイヤー。
-		JPH::BodyCreationSettings settings(shape, JPH::RVec3(desc.position_.x, desc.position_.y, desc.position_.z), JPH::Quat(desc.rotation_.x, desc.rotation_.y, desc.rotation_.z, desc.rotation_.w), desc.motionType_, desc.layer_);
+		JPH::BodyCreationSettings settings(shape, JPH::RVec3(desc.position_.x, desc.position_.y, desc.position_.z), JPH::Quat(desc.rotation_.x, desc.rotation_.y, desc.rotation_.z, desc.rotation_.w), static_cast<JPH::EMotionType>(desc.motionType_), desc.layer_);
 
 		/// [EN] Material and motion properties; the EntityID is stored bit for bit as user data.
 		/// [JP] 材質と運動の特性。EntityID はビットのままユーザーデータに格納する。
-		settings.mAllowedDOFs = desc.allowedDOFs_;
+		settings.mAllowedDOFs = static_cast<JPH::EAllowedDOFs>(desc.allowedDOFs_);
 		settings.mLinearDamping = desc.linearDamping_;
 		settings.mAngularDamping = desc.angularDamping_;
 		settings.mFriction = desc.friction_;
@@ -371,15 +417,15 @@ namespace SeedCore
 
 		/// [EN] A kinematic trigger needs this to detect static bodies; other kinematic pairs have no simulation effect, so the flag stays off for them.
 		/// [JP] キネマティックのトリガーがスタティックのボディを検知するのに必要。それ以外のキネマティックの組はシミュレーションに影響しないので立てない。
-		settings.mCollideKinematicVsNonDynamic = desc.motionType_ == JPH::EMotionType::Kinematic && desc.isSensor_;
+		settings.mCollideKinematicVsNonDynamic = desc.motionType_ == ScMotionType::Kinematic && desc.isSensor_;
 
 		/// [EN] A kinematic body that goes to sleep loses all its contacts, so it would leave every trigger it rests in; kinematic bodies are few, so keeping them awake is cheap.
 		/// [JP] 眠ったキネマティックのボディは接触をすべて失い、止まっているトリガーから出たことになってしまう。キネマティックのボディは数が少ないので、起こしたままでも負荷は小さい。
-		settings.mAllowSleeping = desc.motionType_ != JPH::EMotionType::Kinematic;
+		settings.mAllowSleeping = desc.motionType_ != ScMotionType::Kinematic;
 
 		/// [EN] Static bodies have no mass or motion quality, unless they may later become dynamic or kinematic.
 		/// [JP] 静的ボディは質量も運動品質も持たない。後から動的・キネマティックになりうる場合は別。
-		if (desc.motionType_ != JPH::EMotionType::Static || desc.allowMotionTypeChange_)
+		if (desc.motionType_ != ScMotionType::Static || desc.allowMotionTypeChange_)
 		{
 			/// [EN] The mass is given; the inertia is derived from the shape scaled to that mass.
 			/// [JP] 質量は指定値を使い、慣性はその質量に合わせて形状から求める。
@@ -397,13 +443,13 @@ namespace SeedCore
 		JPH::Body* body = bodyInterface.CreateBody(settings);
 		if (!body)
 		{
-			return JPH::BodyID();
+			return ScInvalidBodyID;
 		}
 
 		/// [EN] Adds the body to the simulation, awake.
 		/// [JP] ボディを起きた状態でシミュレーションへ加える。
 		bodyInterface.AddBody(body->GetID(), JPH::EActivation::Activate);
-		return body->GetID();
+		return body->GetID().GetIndexAndSequenceNumber();
 	}
 
 	/**
@@ -415,7 +461,7 @@ namespace SeedCore
 	* [JP]
 	* メッシュデータからソフトボディを生成して有効化する。
 	*/
-	JPH::BodyID Physics::CreateSoftbody(const SoftbodyDesc& desc)
+	ScBodyID Physics::CreateSoftbody(const SoftbodyDesc& desc)
 	{
 		/// [EN] Mesh topology and constraints, shareable between soft bodies built from the same mesh.
 		/// [JP] メッシュの構造と拘束。同じメッシュから作るソフトボディ間で共有できる。
@@ -465,7 +511,7 @@ namespace SeedCore
 		/// [JP] 有効な面が1つも無ければ、シミュレーションするものが無い。
 		if (sharedSettings->mFaces.empty())
 		{
-			return JPH::BodyID();
+			return ScInvalidBodyID;
 		}
 
 		/// [EN] Edge, shear and bend constraints from the faces; compliance 0 is rigid, higher is softer.
@@ -491,7 +537,7 @@ namespace SeedCore
 		/// [EN] Creates the body and adds it to the simulation, awake.
 		/// [JP] ボディを生成し、起きた状態でシミュレーションへ加える。
 		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
-		return bodyInterface.CreateAndAddSoftBody(settings, JPH::EActivation::Activate);
+		return bodyInterface.CreateAndAddSoftBody(settings, JPH::EActivation::Activate).GetIndexAndSequenceNumber();
 	}
 
 	/**
@@ -503,8 +549,9 @@ namespace SeedCore
 	* [JP]
 	* ボディを破棄せずシミュレーションから外す。
 	*/
-	void Physics::SuspendBody(JPH::BodyID bodyID)
+	void Physics::SuspendBody(ScBodyID scBodyID)
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return;
@@ -528,8 +575,9 @@ namespace SeedCore
 	* [JP]
 	* 停止中のボディをシミュレーションへ戻す。
 	*/
-	void Physics::ResumeBody(JPH::BodyID bodyID)
+	void Physics::ResumeBody(ScBodyID scBodyID)
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return;
@@ -553,8 +601,9 @@ namespace SeedCore
 	* [JP]
 	* 物理ボディを削除して破棄する。
 	*/
-	void Physics::DestroyBody(JPH::BodyID bodyID)
+	void Physics::DestroyBody(ScBodyID scBodyID)
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return;
@@ -581,8 +630,9 @@ namespace SeedCore
 	* ボディに割り当てられた衝突形状を置き換える。動的ボディは質量を保ち、
 	* 慣性だけを新しい形状に合わせる。
 	*/
-	void Physics::BodyShape(JPH::BodyID bodyID, Handle<JPH::Shape> shape)
+	void Physics::BodyShape(ScBodyID scBodyID, ScShapeHandle shape)
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return;
@@ -648,8 +698,9 @@ namespace SeedCore
 	* Quaternion::CreateFromRotationMatrix() で取り出す。無効な ID では
 	* 単位行列を返す。
 	*/
-	Matrix Physics::BodyTransform(JPH::BodyID bodyID)const
+	Matrix Physics::BodyTransform(ScBodyID scBodyID)const
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return Matrix::Identity;
@@ -676,8 +727,9 @@ namespace SeedCore
 	* ボディを、間の動きをシミュレーションせずにワールドの位置と回転へ直接
 	* 移す。ボディは起こさない。既にその位置と回転にあれば何もしない。
 	*/
-	void Physics::BodyTransform(JPH::BodyID bodyID, const Vector3& position, const Quaternion& rotation)
+	void Physics::BodyTransform(ScBodyID scBodyID, const Vector3& position, const Quaternion& rotation)
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return;
@@ -699,8 +751,9 @@ namespace SeedCore
 	* [JP]
 	* ボディの速度(m/s)を返す。静的ボディでは 0。
 	*/
-	Vector3 Physics::BodyLinearVelocity(JPH::BodyID bodyID)const
+	Vector3 Physics::BodyLinearVelocity(ScBodyID scBodyID)const
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return { 0.0f, 0.0f, 0.0f };
@@ -723,8 +776,9 @@ namespace SeedCore
 	* なければボディを起こす。キネマティックのボディは、置き換えられるまで
 	* その速度を保つ。静的ボディには効かない。
 	*/
-	void Physics::BodyLinearVelocity(JPH::BodyID bodyID, const Vector3& linearVelocity)
+	void Physics::BodyLinearVelocity(ScBodyID scBodyID, const Vector3& linearVelocity)
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return;
@@ -756,8 +810,10 @@ namespace SeedCore
 	* allowMotionTypeChange_ を付けて作ったボディが要る。ソフトボディは
 	* そのまま。
 	*/
-	void Physics::BodyMotionType(JPH::BodyID bodyID, JPH::EMotionType motionType)
+	void Physics::BodyMotionType(ScBodyID scBodyID, ScMotionType motionType)
 	{
+		const JPH::BodyID bodyID(scBodyID);
+		const JPH::EMotionType joltMotionType = static_cast<JPH::EMotionType>(motionType);
 		if (bodyID.IsInvalid())
 		{
 			return;
@@ -782,7 +838,7 @@ namespace SeedCore
 				return;
 			}
 
-			if (motionType != JPH::EMotionType::Static && !body.GetMotionPropertiesUnchecked())
+			if (joltMotionType != JPH::EMotionType::Static && !body.GetMotionPropertiesUnchecked())
 			{
 				SC_LOG_WARNING("Physics::BodyMotionType: Static で生成されたボディは Dynamic/Kinematic に切り替えられません (allowMotionTypeChange_ が必要です)");
 				return;
@@ -791,11 +847,11 @@ namespace SeedCore
 
 		/// [EN] Jolt deactivates a body that becomes static and wakes one that starts moving.
 		/// [JP] Jolt はスタティックになるボディを止め、動き出すボディを起こす。
-		bodyInterface.SetMotionType(bodyID, motionType, JPH::EActivation::Activate);
+		bodyInterface.SetMotionType(bodyID, joltMotionType, JPH::EActivation::Activate);
 
 		/// [EN] A kinematic body keeps moving at its velocity, so it starts at rest as one created that way would.
 		/// [JP] キネマティックのボディは自分の速度で動き続けるので、最初からそう作ったときと同じく静止から始める。
-		if (motionType == JPH::EMotionType::Kinematic)
+		if (joltMotionType == JPH::EMotionType::Kinematic)
 		{
 			bodyInterface.SetLinearAndAngularVelocity(bodyID, JPH::Vec3::sZero(), JPH::Vec3::sZero());
 		}
@@ -803,7 +859,7 @@ namespace SeedCore
 		/// [EN] Only the motion-type bits change; the actor's layer and the SENSOR and PLANAR bits stay, and the body moves to the matching broad-phase layer.
 		/// [JP] 変えるのは運動タイプのビットだけで、Actor のレイヤーと SENSOR・PLANAR ビットはそのまま。ボディは対応するブロードフェーズレイヤーへ移る。
 		JPH::ObjectLayer motionLayer = Layers::DYNAMIC;
-		switch (motionType)
+		switch (joltMotionType)
 		{
 		case JPH::EMotionType::Kinematic:
 			motionLayer = Layers::KINEMATIC;
@@ -828,13 +884,13 @@ namespace SeedCore
 		}
 
 		JPH::Body& body = lock.GetBody();
-		body.SetCollideKinematicVsNonDynamic(motionType == JPH::EMotionType::Kinematic && body.IsSensor());
+		body.SetCollideKinematicVsNonDynamic(joltMotionType == JPH::EMotionType::Kinematic && body.IsSensor());
 
 		/// [EN] As at creation, a kinematic body stays awake so it does not leave the triggers it rests in.
 		/// [JP] 生成時と同じく、キネマティックのボディは止まっているトリガーから出たことにならないよう起こしたままにする。
 		if (body.GetMotionPropertiesUnchecked())
 		{
-			body.SetAllowSleeping(motionType != JPH::EMotionType::Kinematic);
+			body.SetAllowSleeping(joltMotionType != JPH::EMotionType::Kinematic);
 		}
 	}
 
@@ -848,8 +904,9 @@ namespace SeedCore
 	* [JP]
 	* ボディのワールド空間の角速度(rad/s)を返す。静的ボディでは 0。
 	*/
-	Vector3 Physics::BodyAngularVelocity(JPH::BodyID bodyID)const
+	Vector3 Physics::BodyAngularVelocity(ScBodyID scBodyID)const
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return { 0.0f, 0.0f, 0.0f };
@@ -873,8 +930,9 @@ namespace SeedCore
 	* 置き換え、角速度が 0 でなければボディを起こす。キネマティックの
 	* ボディは、置き換えられるまでその角速度を保つ。静的ボディには効かない。
 	*/
-	void Physics::BodyAngularVelocity(JPH::BodyID bodyID, const Vector3& angularVelocity)
+	void Physics::BodyAngularVelocity(ScBodyID scBodyID, const Vector3& angularVelocity)
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return;
@@ -900,8 +958,9 @@ namespace SeedCore
 	* ボディではスタティックのボディと組になるためのフラグを切り替え、
 	* 最初からその設定で作ったのと同じ状態にする。
 	*/
-	void Physics::BodyTrigger(JPH::BodyID bodyID, Bool isTrigger)
+	void Physics::BodyTrigger(ScBodyID scBodyID, Bool isTrigger)
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return;
@@ -950,8 +1009,9 @@ namespace SeedCore
 	* [JP]
 	* ボディが現在シミュレーションに追加されているかを返す。
 	*/
-	Bool Physics::BodyExists(JPH::BodyID bodyID)const
+	Bool Physics::BodyExists(ScBodyID scBodyID)const
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return false;
@@ -971,8 +1031,9 @@ namespace SeedCore
 	* [JP]
 	* ソフトボディの全頂点のワールド位置を書き出す。
 	*/
-	void Physics::BodyVertex(JPH::BodyID bodyID, DynamicArray<Vector3>& outPositions)const
+	void Physics::BodyVertex(ScBodyID scBodyID, DynamicArray<Vector3>& outPositions)const
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return;
@@ -1022,8 +1083,9 @@ namespace SeedCore
 	* [JP]
 	* ボディに格納されたエンティティ識別子を返す。
 	*/
-	EntityID Physics::BodyEntityID(JPH::BodyID bodyID)const
+	EntityID Physics::BodyEntityID(ScBodyID scBodyID)const
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return EntityID{};
@@ -1053,13 +1115,19 @@ namespace SeedCore
 	* [JP]
 	* すべての物理ボディ識別子を返す。
 	*/
-	DynamicArray<JPH::BodyID> Physics::BodyList()const
+	DynamicArray<ScBodyID> Physics::BodyList()const
 	{
 		/// [EN] Includes suspended bodies, since they still exist in Jolt.
 		/// [JP] 停止中のボディも Jolt 上には存在するので含まれる。
 		JPH::BodyIDVector bodyIDs;
 		joltManager_.PhysicsSystem().GetBodies(bodyIDs);
-		return DynamicArray<JPH::BodyID>(bodyIDs.begin(), bodyIDs.end());
+		DynamicArray<ScBodyID> result;
+		result.reserve(bodyIDs.size());
+		for (const JPH::BodyID bodyID : bodyIDs)
+		{
+			result.push_back(bodyID.GetIndexAndSequenceNumber());
+		}
+		return result;
 	}
 
 	/**
@@ -1075,8 +1143,9 @@ namespace SeedCore
 	* ソフトボディでは力を頂点へ均等に分ける。動的でないボディには
 	* 何もしない。
 	*/
-	void Physics::AddForce(JPH::BodyID bodyID, const Vector3& force)
+	void Physics::AddForce(ScBodyID scBodyID, const Vector3& force)
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return;
@@ -1103,8 +1172,9 @@ namespace SeedCore
 	* 起こす。ソフトボディでは、動ける頂点すべてに同じ速度変化を与える。
 	* 動的でないボディには何もしない。
 	*/
-	void Physics::AddImpulse(JPH::BodyID bodyID, const Vector3& impulse)
+	void Physics::AddImpulse(ScBodyID scBodyID, const Vector3& impulse)
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return;
@@ -1185,8 +1255,9 @@ namespace SeedCore
 	* 次のステップの間、ワールド空間のトルク(N·m)を加え、ボディを起こす。
 	* ソフトボディと動的でないボディには効かない。
 	*/
-	void Physics::AddTorque(JPH::BodyID bodyID, const Vector3& torque)
+	void Physics::AddTorque(ScBodyID scBodyID, const Vector3& torque)
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return;
@@ -1209,8 +1280,9 @@ namespace SeedCore
 	* ワールド空間の角力積(N·m·s)を加えて角速度を一度に変え、ボディを
 	* 起こす。ソフトボディと動的でないボディには効かない。
 	*/
-	void Physics::AddSpin(JPH::BodyID bodyID, const Vector3& angularImpulse)
+	void Physics::AddSpin(ScBodyID scBodyID, const Vector3& angularImpulse)
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		if (bodyID.IsInvalid())
 		{
 			return;
@@ -1233,8 +1305,9 @@ namespace SeedCore
 	* elapsedTime 後に目標の位置と回転へ着くようキネマティックボディの
 	* 速度を設定し、ボディを起こす。キネマティックでないボディには効かない。
 	*/
-	void Physics::MoveTarget(JPH::BodyID bodyID, const Vector3& targetPosition, const Quaternion& targetRotation, Float elapsedTime)
+	void Physics::MoveTarget(ScBodyID scBodyID, const Vector3& targetPosition, const Quaternion& targetRotation, Float elapsedTime)
 	{
+		const JPH::BodyID bodyID(scBodyID);
 		/// [EN] The velocity is the distance divided by elapsedTime, so a zero step has no defined velocity.
 		/// [JP] 速度は距離を elapsedTime で割ったものなので、時間が 0 のステップでは速度が定まらない。
 		if (bodyID.IsInvalid() || elapsedTime <= 0.0f)
@@ -1264,8 +1337,10 @@ namespace SeedCore
 	* [JP]
 	* 2つのボディ間にヒンジ拘束を生成する。
 	*/
-	Handle<JPH::Constraint> Physics::CreateHingeJoint(JPH::BodyID bodyA, JPH::BodyID bodyB, const HingeJointDesc& desc)
+	ScConstraintHandle Physics::CreateHingeJoint(ScBodyID scBodyA, ScBodyID scBodyB, const HingeJointDesc& desc)
 	{
+		const JPH::BodyID bodyA(scBodyA);
+		const JPH::BodyID bodyB(scBodyB);
 		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
 		JPH::RVec3 bodyPosition = bodyInterface.GetPosition(bodyA);
 		JPH::Quat bodyRotation = bodyInterface.GetRotation(bodyA);
@@ -1299,7 +1374,7 @@ namespace SeedCore
 			settings.mLimitsMax = ToRadians(desc.maxAngle_);
 		}
 
-		return CreateConstraint(bodyA, bodyB, settings);
+		return CreateConstraint(scBodyA, scBodyB, settings);
 	}
 
 	/**
@@ -1311,15 +1386,17 @@ namespace SeedCore
 	* [JP]
 	* 2つのボディ間に固定拘束を生成する。
 	*/
-	Handle<JPH::Constraint> Physics::CreateFixedJoint(JPH::BodyID bodyA, JPH::BodyID bodyB, const FixedJointDesc&)
+	ScConstraintHandle Physics::CreateFixedJoint(ScBodyID scBodyA, ScBodyID scBodyB, const FixedJointDesc&)
 	{
+		const JPH::BodyID bodyA(scBodyA);
+		const JPH::BodyID bodyB(scBodyB);
 		/// [EN] Locks the bodies in their current relative pose; the pivot is detected from their positions.
 		/// [JP] 両ボディを現在の相対姿勢のまま固定する。支点は両者の位置から自動で求める。
 		JPH::FixedConstraintSettings settings;
 		settings.mSpace = JPH::EConstraintSpace::WorldSpace;
 		settings.mAutoDetectPoint = true;
 
-		return CreateConstraint(bodyA, bodyB, settings);
+		return CreateConstraint(scBodyA, scBodyB, settings);
 	}
 
 	/**
@@ -1331,8 +1408,10 @@ namespace SeedCore
 	* [JP]
 	* 2つのボディ間にばね距離拘束を生成する。
 	*/
-	Handle<JPH::Constraint> Physics::CreateSpringJoint(JPH::BodyID bodyA, JPH::BodyID bodyB, const SpringJointDesc& desc)
+	ScConstraintHandle Physics::CreateSpringJoint(ScBodyID scBodyA, ScBodyID scBodyB, const SpringJointDesc& desc)
 	{
+		const JPH::BodyID bodyA(scBodyA);
+		const JPH::BodyID bodyB(scBodyB);
 		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
 		JPH::RVec3 positionA = bodyInterface.GetPosition(bodyA);
 		JPH::Quat rotationA = bodyInterface.GetRotation(bodyA);
@@ -1375,7 +1454,7 @@ namespace SeedCore
 		/// [JP] 距離の制限は柔らかく、この振動数と減衰のばねとして引き戻す。
 		settings.mLimitsSpringSettings = JPH::SpringSettings(JPH::ESpringMode::FrequencyAndDamping, desc.frequency_, desc.damping_);
 
-		return CreateConstraint(bodyA, bodyB, settings);
+		return CreateConstraint(scBodyA, scBodyB, settings);
 	}
 
 	/**
@@ -1387,8 +1466,10 @@ namespace SeedCore
 	* [JP]
 	* 2つのボディ間にスライダー拘束を生成する。
 	*/
-	Handle<JPH::Constraint> Physics::CreateSliderJoint(JPH::BodyID bodyA, JPH::BodyID bodyB, const SliderJointDesc& desc)
+	ScConstraintHandle Physics::CreateSliderJoint(ScBodyID scBodyA, ScBodyID scBodyB, const SliderJointDesc& desc)
 	{
+		const JPH::BodyID bodyA(scBodyA);
+		const JPH::BodyID bodyB(scBodyB);
 		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
 		/// [EN] The axis is given in bodyA's local space; a zero-length axis falls back to world X.
 		/// [JP] 軸は bodyA のローカル空間で与える。長さ 0 の軸はワールドの X 方向で代用する。
@@ -1410,7 +1491,7 @@ namespace SeedCore
 			settings.mLimitsMax = desc.maxDistance_;
 		}
 
-		return CreateConstraint(bodyA, bodyB, settings);
+		return CreateConstraint(scBodyA, scBodyB, settings);
 	}
 
 	/**
@@ -1422,7 +1503,7 @@ namespace SeedCore
 	* [JP]
 	* ジョイント拘束を解放する。
 	*/
-	void Physics::DestroyJoint(Handle<JPH::Constraint> handle)
+	void Physics::DestroyJoint(ScConstraintHandle handle)
 	{
 		/// [EN] The pool removes the constraint from the simulation and frees its slot; stale handles are ignored.
 		/// [JP] プールが拘束をシミュレーションから外してスロットを空ける。古いハンドルは無視される。
@@ -1512,14 +1593,10 @@ namespace SeedCore
 			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
@@ -1543,7 +1620,7 @@ namespace SeedCore
 			outHit.position_ = Vector3(static_cast<Float>(hitPosition.GetX()), static_cast<Float>(hitPosition.GetY()), static_cast<Float>(hitPosition.GetZ()));
 			outHit.normal_ = Vector3(normal.GetX(), normal.GetY(), normal.GetZ());
 			outHit.distance_ = hit.mFraction * maxDistance;
-			outHit.entityID_ = BodyEntityID(hit.mBodyID);
+			outHit.entityID_ = BodyEntityID(hit.mBodyID.GetIndexAndSequenceNumber());
 
 #if SC_DEBUG
 			query.hit_ = true;
@@ -1630,14 +1707,10 @@ namespace SeedCore
 			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
@@ -1650,7 +1723,7 @@ namespace SeedCore
 			outHit.position_ = Vector3(hit.mContactPointOn2.GetX(), hit.mContactPointOn2.GetY(), hit.mContactPointOn2.GetZ());
 			outHit.normal_ = Vector3(normal.GetX(), normal.GetY(), normal.GetZ());
 			outHit.distance_ = hit.mFraction * maxDistance;
-			outHit.entityID_ = BodyEntityID(hit.mBodyID2);
+			outHit.entityID_ = BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber());
 
 #if SC_DEBUG
 			query.hit_ = true;
@@ -1730,14 +1803,10 @@ namespace SeedCore
 			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
@@ -1750,7 +1819,7 @@ namespace SeedCore
 			outHit.position_ = Vector3(hit.mContactPointOn2.GetX(), hit.mContactPointOn2.GetY(), hit.mContactPointOn2.GetZ());
 			outHit.normal_ = Vector3(normal.GetX(), normal.GetY(), normal.GetZ());
 			outHit.distance_ = hit.mFraction * maxDistance;
-			outHit.entityID_ = BodyEntityID(hit.mBodyID2);
+			outHit.entityID_ = BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber());
 
 #if SC_DEBUG
 			query.hit_ = true;
@@ -1868,18 +1937,14 @@ namespace SeedCore
 			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
-			result.push_back(BodyEntityID(hit.mBodyID2));
+			result.push_back(BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
 		}
 
 #if SC_DEBUG
@@ -1955,14 +2020,10 @@ namespace SeedCore
 			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
@@ -1986,7 +2047,7 @@ namespace SeedCore
 			outHit.position_ = Vector2(static_cast<Float>(hitPosition.GetX()) * pixelsPerMeter_, -static_cast<Float>(hitPosition.GetY()) * pixelsPerMeter_);
 			outHit.normal_ = Vector2(normal.GetX(), -normal.GetY());
 			outHit.distance_ = hit.mFraction * maxDistance;
-			outHit.entityID_ = BodyEntityID(hit.mBodyID);
+			outHit.entityID_ = BodyEntityID(hit.mBodyID.GetIndexAndSequenceNumber());
 
 #if SC_DEBUG
 			query.hit_ = true;
@@ -2072,14 +2133,10 @@ namespace SeedCore
 			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
@@ -2092,7 +2149,7 @@ namespace SeedCore
 			outHit.position_ = Vector2(hit.mContactPointOn2.GetX() * pixelsPerMeter_, -hit.mContactPointOn2.GetY() * pixelsPerMeter_);
 			outHit.normal_ = Vector2(normal.GetX(), -normal.GetY());
 			outHit.distance_ = hit.mFraction * maxDistance;
-			outHit.entityID_ = BodyEntityID(hit.mBodyID2);
+			outHit.entityID_ = BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber());
 
 #if SC_DEBUG
 			query.hit_ = true;
@@ -2157,14 +2214,10 @@ namespace SeedCore
 
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
@@ -2173,7 +2226,7 @@ namespace SeedCore
 			outHit.position_ = Vector2(hit.mContactPointOn2.GetX() * pixelsPerMeter_, -hit.mContactPointOn2.GetY() * pixelsPerMeter_);
 			outHit.normal_ = Vector2(normal.GetX(), -normal.GetY());
 			outHit.distance_ = hit.mFraction * maxDistance;
-			outHit.entityID_ = BodyEntityID(hit.mBodyID2);
+			outHit.entityID_ = BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber());
 
 #if SC_DEBUG
 			query.hit_ = true;
@@ -2277,18 +2330,14 @@ namespace SeedCore
 			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
-				World* world = joltManager_.ActiveWorld();
-				if (world)
+				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
+				if (actor && (layerMask & (1u << actor.Layer())) == 0)
 				{
-					Actor actor = WorldAccessor::Make(*world, BodyEntityID(hit.mBodyID2));
-					if (actor && (layerMask & (1u << actor.Layer())) == 0)
-					{
-						continue;
-					}
+					continue;
 				}
 			}
 
-			result.push_back(BodyEntityID(hit.mBodyID2));
+			result.push_back(BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
 		}
 
 #if SC_DEBUG
@@ -2308,13 +2357,15 @@ namespace SeedCore
 	* [JP]
 	* 2ボディ拘束を生成して登録する。
 	*/
-	Handle<JPH::Constraint> Physics::CreateConstraint(JPH::BodyID bodyA, JPH::BodyID bodyB, const JPH::TwoBodyConstraintSettings& settings)
+	ScConstraintHandle Physics::CreateConstraint(ScBodyID scBodyA, ScBodyID scBodyB, const JPH::TwoBodyConstraintSettings& settings)
 	{
+		const JPH::BodyID bodyA(scBodyA);
+		const JPH::BodyID bodyB(scBodyB);
 		/// [EN] bodyA, the joint's owner, is required; bodyB is optional.
 		/// [JP] ジョイントの持ち主である bodyA は必須、bodyB は省略できる。
 		if (bodyA.IsInvalid())
 		{
-			return Handle<JPH::Constraint>::null();
+			return ScConstraintHandle::null();
 		}
 
 		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
@@ -2329,7 +2380,7 @@ namespace SeedCore
 			JPH::BodyLockWrite lock(lockInterface, bodyA);
 			if (!lock.Succeeded())
 			{
-				return Handle<JPH::Constraint>::null();
+				return ScConstraintHandle::null();
 			}
 			constraint = settings.Create(JPH::Body::sFixedToWorld, lock.GetBody());
 		}
@@ -2343,14 +2394,14 @@ namespace SeedCore
 			JPH::Body* body2 = lock.GetBody(1);
 			if (body1 == nullptr || body2 == nullptr)
 			{
-				return Handle<JPH::Constraint>::null();
+				return ScConstraintHandle::null();
 			}
 			constraint = settings.Create(*body1, *body2);
 		}
 
 		if (constraint == nullptr)
 		{
-			return Handle<JPH::Constraint>::null();
+			return ScConstraintHandle::null();
 		}
 
 		/// [EN] The pool adds the constraint to the simulation and hands back a generation-checked handle.

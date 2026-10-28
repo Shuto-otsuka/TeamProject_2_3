@@ -1,8 +1,14 @@
+#include <External/CRI/Include/cri_adx2le.h>
 #include <AudioEngine/Audio/Audio.h>
 #include <AudioEngine/Audio/Sound.h>
 #include <AudioEngine/CRI/CriManager.h>
 #include <FoundationEngine/Resource/Gateway.h>
 #include <FoundationEngine/Log/Warning.h>
+
+static_assert(std::is_same_v<SeedCore::ScAudioPlayerHandle, CriAtomExPlayerHn>);
+static_assert(std::is_same_v<SeedCore::ScAudioSourceHandle, CriAtomEx3dSourceHn>);
+static_assert(std::is_same_v<SeedCore::ScAudioListenerHandle, CriAtomEx3dListenerHn>);
+static_assert(std::is_same_v<SeedCore::ScAudioBankHandle, CriAtomExAcbHn>);
 
 namespace SeedCore
 {

@@ -2,6 +2,12 @@
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Log/Notice.h>
 
+#include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
+#include <External/NsightAftermath/Include/GFSDK_Aftermath_GpuCrashDump.h>
+#include <External/NsightAftermath/Include/GFSDK_Aftermath_GpuCrashDumpDecoding.h>
+
+#pragma comment(lib, "../External/NsightAftermath/Lib/GFSDK_Aftermath_Lib.x64.lib")
+
 namespace SeedCore
 {
 	/// [EN] Definitions of the shared state declared in AftermathCrashTracker.h.
@@ -46,6 +52,9 @@ namespace SeedCore
 	*/
 	void AftermathCrashTracker::Enable()
 	{
+		static_assert(std::is_same_v<ScAftermathAddGpuCrashDumpDescription, PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription>);
+		static_assert(std::is_same_v<decltype(&AftermathCrashTracker::OnDescription), PFN_GFSDK_Aftermath_GpuCrashDumpDescriptionCb>);
+
 		/// [EN] Only DX devices are watched, and the three callbacks receive dumps, shader debug info and description data.
 		/// [JP] 監視するのは DX のデバイスだけ。3つのコールバックがダンプ、シェーダデバッグ情報、説明の情報を受け取る。
 		GFSDK_Aftermath_Result result = GFSDK_Aftermath_EnableGpuCrashDumps(
@@ -283,8 +292,8 @@ namespace SeedCore
 	* [JP]
 	* 全てのクラッシュダンプへアプリケーション名を追加する。
 	*/
-	void AftermathCrashTracker::OnDescription(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addValue, void* userData)
+	void AftermathCrashTracker::OnDescription(ScAftermathAddGpuCrashDumpDescription addValue, void* userData)
 	{
-		addValue(GFSDK_Aftermath_GpuCrashDumpDescriptionKey_ApplicationName, "SeedCore Engine");
+		addValue(ScAftermathGpuCrashDumpDescriptionKeyApplicationName, "SeedCore Engine");
 	}
 }

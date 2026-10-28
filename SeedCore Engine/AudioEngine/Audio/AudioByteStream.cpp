@@ -1,31 +1,72 @@
+#include <External/CRI/Include/cri_adx2le.h>
 #include <AudioEngine/Audio/AudioByteStream.h>
 #include <FoundationEngine/Serialization/Encryption/Aes256.h>
 #include <FoundationEngine/Serialization/Encryption/Sha256.h>
 
 namespace SeedCore
 {
+	class AudioByteStream::Impl final
+	{
+	public:
+		static CriError CRIAPI SelectIo(const CriChar8* path, CriFsDeviceId* deviceID, CriFsIoInterfacePtr* ioInterface);
+
+		static CriFsIoError CRIAPI Exists(const CriChar8* path, CriBool* result);
+
+		static CriFsIoError CRIAPI Open(const CriChar8* path, CriFsFileMode mode, CriFsFileAccess access, CriFsFileHn* fileHandle);
+
+		static CriFsIoError CRIAPI Close(CriFsFileHn fileHandle);
+
+		static CriFsIoError CRIAPI FileSize(CriFsFileHn fileHandle, CriSint64* fileSize);
+
+		static CriFsIoError CRIAPI Read(CriFsFileHn fileHandle, CriSint64 offset, CriSint64 readSize, void* buffer, CriSint64 bufferSize);
+
+		static CriFsIoError CRIAPI Complete(CriFsFileHn fileHandle, CriBool* result);
+
+		static CriFsIoError CRIAPI ReadSize(CriFsFileHn fileHandle, CriSint64* readSize);
+
+	private:
+		struct File
+		{
+			HANDLE handle_ = INVALID_HANDLE_VALUE;
+
+			Bool encrypted_ = false;
+
+			Byte iv_[16]{};
+
+			Uint64 ciphertextOffset_ = 0;
+
+			Uint64 ciphertextSize_ = 0;
+
+			Uint64 plainSize_ = 0;
+
+			Uint64 readSize_ = 0;
+		};
+
+		static CriFsIoInterface ioInterface_;
+	};
+
 	/// [EN] Slots follow CriFsIoInterface's member order; a null slot is an operation this device does not support.
 	/// [JP] 並びは CriFsIoInterface のメンバ順。null の枠は、このデバイスが対応しない操作。
-	CriFsIoInterface AudioByteStream::ioInterface_ =
+	CriFsIoInterface AudioByteStream::Impl::ioInterface_ =
 	{
-		&AudioByteStream::Exists,
+		&AudioByteStream::Impl::Exists,
 
 		/// [EN] Remove / Rename: this device is read-only.
 		/// [JP] Remove / Rename: このデバイスは読み込み専用。
 		nullptr,
 		nullptr,
 
-		&AudioByteStream::Open,
-		&AudioByteStream::Close,
-		&AudioByteStream::FileSize,
-		&AudioByteStream::Read,
-		&AudioByteStream::Complete,
+		&AudioByteStream::Impl::Open,
+		&AudioByteStream::Impl::Close,
+		&AudioByteStream::Impl::FileSize,
+		&AudioByteStream::Impl::Read,
+		&AudioByteStream::Impl::Complete,
 
 		/// [EN] CancelRead: Read is synchronous, so there is nothing in flight to cancel.
 		/// [JP] CancelRead: Read は同期なので、取り消す処理中の読み込みが無い。
 		nullptr,
 
-		&AudioByteStream::ReadSize,
+		&AudioByteStream::Impl::ReadSize,
 
 		/// [EN] Write / WriteComplete / CancelWrite / WriteSize / Flush / Resize: read-only.
 		/// [JP] Write / WriteComplete / CancelWrite / WriteSize / Flush / Resize: 読み込み専用のため。
@@ -54,7 +95,7 @@ namespace SeedCore
 	* CRI のデバイス選択コールバック: 全てのパスを、このクラスの I/O
 	* インターフェースを持つ既定デバイスへ振り分ける。
 	*/
-	CriError CRIAPI AudioByteStream::SelectIo(const CriChar8* path, CriFsDeviceId* deviceID, CriFsIoInterfacePtr* ioInterface)
+	CriError CRIAPI AudioByteStream::Impl::SelectIo(const CriChar8* path, CriFsDeviceId* deviceID, CriFsIoInterfacePtr* ioInterface)
 	{
 		/// [EN] Plain and encrypted paths share one device; Open tells them apart by prefix.
 		/// [JP] 普通のパスと暗号化パスは同じデバイスを使う。区別は Open が接頭辞で行う。
@@ -80,7 +121,7 @@ namespace SeedCore
 	* [JP]
 	* path が指すファイルがディスク上に存在するかを返す。
 	*/
-	CriFsIoError CRIAPI AudioByteStream::Exists(const CriChar8* path, CriBool* result)
+	CriFsIoError CRIAPI AudioByteStream::Impl::Exists(const CriChar8* path, CriBool* result)
 	{
 		if (!result)
 		{
@@ -123,7 +164,7 @@ namespace SeedCore
 	* ストリーム用ブロブの位置を求める。開けないファイルや書き込み
 	* アクセスでは、null のハンドルを返す。
 	*/
-	CriFsIoError CRIAPI AudioByteStream::Open(const CriChar8* path, CriFsFileMode mode, CriFsFileAccess access, CriFsFileHn* fileHandle)
+	CriFsIoError CRIAPI AudioByteStream::Impl::Open(const CriChar8* path, CriFsFileMode mode, CriFsFileAccess access, CriFsFileHn* fileHandle)
 	{
 		if (!fileHandle)
 		{
@@ -261,7 +302,7 @@ namespace SeedCore
 	* [JP]
 	* OS のハンドルを閉じ、Open で確保した File を解放する。
 	*/
-	CriFsIoError CRIAPI AudioByteStream::Close(CriFsFileHn fileHandle)
+	CriFsIoError CRIAPI AudioByteStream::Impl::Close(CriFsFileHn fileHandle)
 	{
 		/// [EN] A null handle is one Open failed to create; closing it is a no-op.
 		/// [JP] null のハンドルは Open が作れなかったもの。閉じても何もしない。
@@ -289,7 +330,7 @@ namespace SeedCore
 	* [JP]
 	* CRI から見たファイルサイズを返す。
 	*/
-	CriFsIoError CRIAPI AudioByteStream::FileSize(CriFsFileHn fileHandle, CriSint64* fileSize)
+	CriFsIoError CRIAPI AudioByteStream::Impl::FileSize(CriFsFileHn fileHandle, CriSint64* fileSize)
 	{
 		File* file = static_cast<File*>(fileHandle);
 		if (!file || !fileSize)
@@ -314,7 +355,7 @@ namespace SeedCore
 	* offset から最大 readSize バイトの平文を buffer へ読み込む。暗号化
 	* キャッシュでは読みながら復号する。
 	*/
-	CriFsIoError CRIAPI AudioByteStream::Read(CriFsFileHn fileHandle, CriSint64 offset, CriSint64 readSize, void* buffer, CriSint64 bufferSize)
+	CriFsIoError CRIAPI AudioByteStream::Impl::Read(CriFsFileHn fileHandle, CriSint64 offset, CriSint64 readSize, void* buffer, CriSint64 bufferSize)
 	{
 		File* file = static_cast<File*>(fileHandle);
 		if (!file || !buffer)
@@ -424,7 +465,7 @@ namespace SeedCore
 	* [JP]
 	* 直前の Read が完了したかを返す。常に true。
 	*/
-	CriFsIoError CRIAPI AudioByteStream::Complete(CriFsFileHn fileHandle, CriBool* result)
+	CriFsIoError CRIAPI AudioByteStream::Impl::Complete(CriFsFileHn fileHandle, CriBool* result)
 	{
 		if (!result)
 		{
@@ -446,7 +487,7 @@ namespace SeedCore
 	* [JP]
 	* 直前の Read で実際に読めたバイト数を返す。
 	*/
-	CriFsIoError CRIAPI AudioByteStream::ReadSize(CriFsFileHn fileHandle, CriSint64* readSize)
+	CriFsIoError CRIAPI AudioByteStream::Impl::ReadSize(CriFsFileHn fileHandle, CriSint64* readSize)
 	{
 		File* file = static_cast<File*>(fileHandle);
 		if (!file || !readSize)
@@ -456,5 +497,15 @@ namespace SeedCore
 
 		*readSize = static_cast<CriSint64>(file->readSize_);
 		return CRIFS_IO_ERROR_OK;
+	}
+
+	void AudioByteStream::Install()
+	{
+		criFs_SetSelectIoCallback(&Impl::SelectIo);
+	}
+
+	void AudioByteStream::Uninstall()
+	{
+		criFs_SetSelectIoCallback(nullptr);
 	}
 }

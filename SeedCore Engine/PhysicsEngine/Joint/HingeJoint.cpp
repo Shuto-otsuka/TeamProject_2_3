@@ -35,7 +35,7 @@ namespace SeedCore
 			return;
 		}
 
-		JPH::BodyID connectedBodyID;
+		ScBodyID connectedBodyID = ScInvalidBodyID;
 		if (connectedActor_ != 0)
 		{
 			Actor connected = WorldAccessor::Find(GetWorld(), connectedActor_);
@@ -70,7 +70,7 @@ namespace SeedCore
 		if (handle_.exists())
 		{
 			GetActor().GetService<Physics>()->DestroyJoint(handle_);
-			handle_ = Handle<JPH::Constraint>::null();
+			handle_ = ScConstraintHandle::null();
 		}
 	}
 }

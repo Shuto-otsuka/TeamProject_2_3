@@ -37,7 +37,7 @@ namespace SeedCore
 
 		/// [EN] Resolve the optional connected actor; an invalid body ID represents the world.
 		/// [JP] 任意の接続先アクターを解決する。無効なボディ ID はワールドを表す。
-		JPH::BodyID connectedBodyID;
+		ScBodyID connectedBodyID = ScInvalidBodyID;
 		if (connectedActor_ != 0)
 		{
 			Actor connected = WorldAccessor::Find(GetWorld(), connectedActor_);
@@ -67,7 +67,7 @@ namespace SeedCore
 		if (handle_.exists())
 		{
 			GetActor().GetService<Physics>()->DestroyJoint(handle_);
-			handle_ = Handle<JPH::Constraint>::null();
+			handle_ = ScConstraintHandle::null();
 		}
 	}
 }

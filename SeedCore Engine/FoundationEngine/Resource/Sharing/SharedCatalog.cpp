@@ -1,7 +1,13 @@
+#include <External/Json/json.hpp>
 #include <FoundationEngine/Resource/Sharing/SharedCatalog.h>
 
 namespace SeedCore
 {
+	static void AdoptCatalog(const nlohmann::json& catalog, DynamicArray<SharedAsset>& assets);
+
+	template<typename Edit>
+	static Bool ModifyCatalog(GoogleDocument& document, const String& documentId, DynamicArray<SharedAsset>& assets, String& error, Edit&& edit);
+
 	/**
 	* [EN]
 	* Takes the document this catalog lives in.
@@ -60,7 +66,7 @@ namespace SeedCore
 		/// [EN] An empty or damaged document is taken as an empty catalog, which is also the state before the first publish.
 		/// [JP] 空や壊れたドキュメントは空のカタログとして扱う。これは最初の Publish より前の状態でもある。
 		nlohmann::json catalog = nlohmann::json::parse(snapshot.text_.str(), nullptr, false);
-		Adopt(catalog);
+		AdoptCatalog(catalog, assets_);
 		error_ = String();
 		return true;
 	}
@@ -163,7 +169,7 @@ namespace SeedCore
 	*/
 	Bool SharedCatalog::Register(const SharedAsset& asset)
 	{
-		return Modify([this, asset](nlohmann::json& catalog)
+		return ModifyCatalog(document_, documentId_, assets_, error_, [this, asset](nlohmann::json& catalog)
 		{
 			/// [EN] Both checks run against the freshly read catalog, so a member who published a moment ago is seen here.
 			/// [JP] 2つの確認は読み直したカタログに対して行う。直前に Publish したメンバーの分もここで見える。
@@ -229,7 +235,7 @@ namespace SeedCore
 	*/
 	Bool SharedCatalog::Publish(const String& assetId, const DynamicArray<SharedFile>& files, const DynamicArray<String>& dependencies, Uint64 baseRevision, Uint64& revision)
 	{
-		return Modify([this, assetId, files, dependencies, baseRevision, &revision](nlohmann::json& catalog)
+		return ModifyCatalog(document_, documentId_, assets_, error_, [this, assetId, files, dependencies, baseRevision, &revision](nlohmann::json& catalog)
 		{
 			if (!catalog["assets"].contains(assetId.str()))
 			{
@@ -285,7 +291,7 @@ namespace SeedCore
 	*/
 	Bool SharedCatalog::Remove(const String& assetId)
 	{
-		return Modify([this, assetId](nlohmann::json& catalog)
+		return ModifyCatalog(document_, documentId_, assets_, error_, [this, assetId](nlohmann::json& catalog)
 		{
 			if (!catalog["assets"].contains(assetId.str()))
 			{
@@ -323,16 +329,17 @@ namespace SeedCore
 	* カタログを読み、edit を適用して書き戻す。他のメンバーが先に
 	* 書いていた場合は、新しい内容から読み直してやり直す。
 	*/
-	Bool SharedCatalog::Modify(const std::function<Bool(nlohmann::json&)>& edit)
+	template<typename Edit>
+	static Bool ModifyCatalog(GoogleDocument& document, const String& documentId, DynamicArray<SharedAsset>& assets, String& error, Edit&& edit)
 	{
 		/// [EN] Two members publishing different assets at the same moment both belong here; one simply goes second.
 		/// [JP] 別々のアセットを同時に Publish する2人は、どちらもここを通る。片方が2周目に回るだけのこと。
 		for (Int attempt = 0; attempt < 5; ++attempt)
 		{
-			GoogleDocumentSnapshot snapshot = document_.Read(documentId_);
+			GoogleDocumentSnapshot snapshot = document.Read(documentId);
 			if (!snapshot.valid_)
 			{
-				error_ = document_.Error();
+				error = document.Error();
 				return false;
 			}
 
@@ -360,29 +367,29 @@ namespace SeedCore
 			/// [JP] 編集が拒否された場合も、読み直したカタログはメモリに残る。呼び出し側が次に見るのはそれ。
 			if (!edit(catalog))
 			{
-				Adopt(catalog);
+				AdoptCatalog(catalog, assets);
 				return false;
 			}
 
 			/// [EN] The write carries the revision the read came from, so it is refused if anyone wrote in between.
 			/// [JP] 書き込みには読み取り時の版を添える。その間に誰かが書いていれば拒否される。
-			if (document_.Write(documentId_, snapshot, String(catalog.dump())))
+			if (document.Write(documentId, snapshot, String(catalog.dump())))
 			{
-				Adopt(catalog);
-				error_ = String();
+				AdoptCatalog(catalog, assets);
+				error = String();
 				return true;
 			}
 
 			/// [EN] Being refused over the document's own revision is not a conflict over the asset, so the attempt just starts over.
 			/// [JP] ドキュメント自体の版で拒否されたのはアセットの競合ではないので、単純にやり直す。
-			if (!document_.Conflicted())
+			if (!document.Conflicted())
 			{
-				error_ = document_.Error();
+				error = document.Error();
 				return false;
 			}
 		}
 
-		error_ = String("共有カタログが混み合っています。少し待ってからやり直してください。");
+		error = String("共有カタログが混み合っています。少し待ってからやり直してください。");
 		return false;
 	}
 
@@ -395,11 +402,11 @@ namespace SeedCore
 	* [JP]
 	* ドキュメントの本文を解釈して、メモリ上のアセット一覧にする。
 	*/
-	void SharedCatalog::Adopt(const nlohmann::json& catalog)
+	static void AdoptCatalog(const nlohmann::json& catalog, DynamicArray<SharedAsset>& assets)
 	{
 		/// [EN] The list is rebuilt from scratch, so an asset removed elsewhere disappears here too.
 		/// [JP] 一覧は毎回作り直す。他所で取り除かれたアセットは、こちらからも消える。
-		assets_.clear();
+		assets.clear();
 		if (!catalog.is_object() || !catalog.contains("assets") || !catalog["assets"].is_object())
 		{
 			return;
@@ -447,7 +454,7 @@ namespace SeedCore
 					asset.dependencies_.push_back(String(dependency.get<std::string>()));
 				}
 			}
-			assets_.push_back(asset);
+			assets.push_back(asset);
 		}
 	}
 }

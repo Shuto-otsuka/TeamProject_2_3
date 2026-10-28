@@ -150,7 +150,7 @@ namespace SeedCore
 				}
 
 				Softbody* softbody = actor.GetComponent<Softbody>();
-				if (softbody && !softbody->BodyID().IsInvalid())
+				if (softbody && softbody->BodyID() != ScInvalidBodyID)
 				{
 					return;
 				}
@@ -658,7 +658,7 @@ namespace SeedCore
 			}
 
 			Softbody* softbody = actor.GetComponent<Softbody>();
-			if (!softbody || softbody->BodyID().IsInvalid())
+			if (!softbody || softbody->BodyID() == ScInvalidBodyID)
 			{
 				continue;
 			}

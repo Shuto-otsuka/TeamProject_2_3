@@ -112,6 +112,17 @@ namespace SeedCore
 		static void Disable();
 
 	private:
+		/// [EN] ABI-compatible replacement for Nsight Aftermath's description callback.
+		/// [JP] Nsight Aftermath の説明追加コールバックと ABI 互換の型。
+		using ScAftermathAddGpuCrashDumpDescription = void(*)(uint32_t key, const char* value);
+
+		/// [EN] Description keys used by this tracker; values match Nsight Aftermath.
+		/// [JP] このトラッカーが使う説明キー。値は Nsight Aftermath と一致する。
+		enum ScAftermathGpuCrashDumpDescriptionKey : uint32_t
+		{
+			ScAftermathGpuCrashDumpDescriptionKeyApplicationName = 0x1
+		};
+
 		/**
 		* [EN]
 		* Returns the directory every crash dump / shader debug info file
@@ -166,7 +177,7 @@ namespace SeedCore
 		* 全てのクラッシュダンプへ説明用のキーと値（アプリケーション名）を
 		* 追加する Aftermath のコールバック。
 		*/
-		static void OnDescription(PFN_GFSDK_Aftermath_AddGpuCrashDumpDescription addValue, void* userData);
+		static void OnDescription(ScAftermathAddGpuCrashDumpDescription addValue, void* userData);
 
 	private:
 		/// [EN] Guards lastCrashDumpPath_ and shaderDebugInfoCount_, which Aftermath callbacks write from driver threads.

@@ -276,32 +276,6 @@ namespace SeedCore
 		const String& Error()const;
 
 	private:
-		/**
-		* [EN]
-		* Reads the catalog, applies edit to it, and writes it back,
-		* retrying from the fresh contents whenever another member wrote
-		* first.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* カタログを読み、edit を適用して書き戻す。他のメンバーが先に
-		* 書いていた場合は、新しい内容から読み直してやり直す。
-		*/
-		Bool Modify(const std::function<Bool(nlohmann::json&)>& edit);
-
-		/**
-		* [EN]
-		* Parses the document text into the in-memory asset list.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ドキュメントの本文を解釈して、メモリ上のアセット一覧にする。
-		*/
-		void Adopt(const nlohmann::json& catalog);
-
-	private:
 		/// [EN] Reads and rewrites the document this catalog lives in.
 		/// [JP] このカタログが置かれているドキュメントの読み書きを行う。
 		GoogleDocument& document_;

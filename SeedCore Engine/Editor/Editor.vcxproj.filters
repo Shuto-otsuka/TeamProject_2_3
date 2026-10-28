@@ -54,9 +54,6 @@
     <ClCompile Include="Editor\Main.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\Window.cpp">
-      <Filter>Editor</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\Panel\AddComponentPanel.cpp">
       <Filter>Editor\Panel</Filter>
     </ClCompile>
@@ -184,9 +181,6 @@
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Framework.h">
-      <Filter>Editor</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Window.h">
       <Filter>Editor</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Panel\AddComponentPanel.h">

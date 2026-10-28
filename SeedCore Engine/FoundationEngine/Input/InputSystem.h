@@ -132,36 +132,45 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Readable aliases for GamepadState() call sites, in place of raw
-		* SDL_GamepadButton values. A/B/X/Y follow the Xbox face-button
-		* layout (A is the bottom button).
+		 * SeedCore gamepad button codes. Their numeric values intentionally
+		 * match SDL's layout, but SDL itself is kept out of this public header.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* GamepadState() の呼び出し箇所で、生の SDL_GamepadButton 値の
-		* 代わりに使う、読みやすいエイリアス。A/B/X/Y は Xbox の配置に
-		* 従う（A が下のボタン）。
+		 * SDL と同じ並びの SeedCore 用ゲームパッドボタンコード。公開
+		 * ヘッダーへ SDL を漏らさないため、SDL の型は使用しない。
 		*/
-		struct GamepadButton
+		enum ScGamepadButton : Int
 		{
-			SC_CONSTEX SDL_GamepadButton A = SDL_GAMEPAD_BUTTON_SOUTH;
-			SC_CONSTEX SDL_GamepadButton B = SDL_GAMEPAD_BUTTON_EAST;
-			SC_CONSTEX SDL_GamepadButton X = SDL_GAMEPAD_BUTTON_WEST;
-			SC_CONSTEX SDL_GamepadButton Y = SDL_GAMEPAD_BUTTON_NORTH;
-			SC_CONSTEX SDL_GamepadButton LeftShoulder = SDL_GAMEPAD_BUTTON_LEFT_SHOULDER;
-			SC_CONSTEX SDL_GamepadButton RightShoulder = SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER;
-			SC_CONSTEX SDL_GamepadButton LeftStick = SDL_GAMEPAD_BUTTON_LEFT_STICK;
-			SC_CONSTEX SDL_GamepadButton RightStick = SDL_GAMEPAD_BUTTON_RIGHT_STICK;
-			SC_CONSTEX SDL_GamepadButton DPadUp = SDL_GAMEPAD_BUTTON_DPAD_UP;
-			SC_CONSTEX SDL_GamepadButton DPadDown = SDL_GAMEPAD_BUTTON_DPAD_DOWN;
-			SC_CONSTEX SDL_GamepadButton DPadLeft = SDL_GAMEPAD_BUTTON_DPAD_LEFT;
-			SC_CONSTEX SDL_GamepadButton DPadRight = SDL_GAMEPAD_BUTTON_DPAD_RIGHT;
-			SC_CONSTEX SDL_GamepadButton Start = SDL_GAMEPAD_BUTTON_START;
-			SC_CONSTEX SDL_GamepadButton Back = SDL_GAMEPAD_BUTTON_BACK;
-
-		private:
-			GamepadButton() = delete;
+			ScGamepadButtonInvalid = -1,
+			ScGamepadButtonSouth,
+			ScGamepadButtonEast,
+			ScGamepadButtonWest,
+			ScGamepadButtonNorth,
+			ScGamepadButtonBack,
+			ScGamepadButtonGuide,
+			ScGamepadButtonStart,
+			ScGamepadButtonLeftStick,
+			ScGamepadButtonRightStick,
+			ScGamepadButtonLeftShoulder,
+			ScGamepadButtonRightShoulder,
+			ScGamepadButtonDPadUp,
+			ScGamepadButtonDPadDown,
+			ScGamepadButtonDPadLeft,
+			ScGamepadButtonDPadRight,
+			ScGamepadButtonMisc1,
+			ScGamepadButtonRightPaddle1,
+			ScGamepadButtonLeftPaddle1,
+			ScGamepadButtonRightPaddle2,
+			ScGamepadButtonLeftPaddle2,
+			ScGamepadButtonTouchpad,
+			ScGamepadButtonMisc2,
+			ScGamepadButtonMisc3,
+			ScGamepadButtonMisc4,
+			ScGamepadButtonMisc5,
+			ScGamepadButtonMisc6,
+			ScGamepadButtonCount
 		};
 
 		/**
@@ -576,7 +585,7 @@ namespace SeedCore
 		* action のゲームパッドボタンバインドに button を追加する。既に
 		* 紐づいていれば何もしない。
 		*/
-		static void BindGamepad(String action, SDL_GamepadButton button);
+		static void BindGamepad(String action, ScGamepadButton button);
 
 		/**
 		* [EN]
@@ -587,7 +596,7 @@ namespace SeedCore
 		* [JP]
 		* action のゲームパッドボタンバインドから button を取り除く（存在すれば）。
 		*/
-		static void UnbindGamepad(String action, SDL_GamepadButton button);
+		static void UnbindGamepad(String action, ScGamepadButton button);
 
 		/**
 		* [EN]
@@ -599,7 +608,7 @@ namespace SeedCore
 		* action に現在紐づいているゲームパッドボタンの一覧を返す。action が
 		* 未知なら空。
 		*/
-		static const DynamicArray<SDL_GamepadButton>& BoundGamepad(String action);
+		static const DynamicArray<ScGamepadButton>& BoundGamepad(String action);
 
 		/**
 		* [EN]
@@ -734,7 +743,7 @@ namespace SeedCore
 
 			/// [EN] Gamepad buttons bound to this action (see BoundGamepad()).
 			/// [JP] このアクションに紐づくゲームパッドボタン（BoundGamepad() 参照）。
-			DynamicArray<SDL_GamepadButton> gamepadList_;
+			DynamicArray<ScGamepadButton> gamepadList_;
 
 			/// [EN] Directional-key composites bound to this action (see BoundAxisKey()/Input::ActionAxis()).
 			/// [JP] このアクションに紐づく方向キー組（BoundAxisKey()/Input::ActionAxis() 参照）。
@@ -758,7 +767,7 @@ namespace SeedCore
 
 		/// [EN] Number of tracked gamepad buttons.
 		/// [JP] 追跡するゲームパッドボタンの数。
-		SC_CONSTEX Int GAMEPAD_BUTTON_COUNT = SDL_GAMEPAD_BUTTON_COUNT;
+		SC_CONSTEX Int GAMEPAD_BUTTON_COUNT = ScGamepadButtonCount;
 
 		/// [EN] Whether this frame's keyboard/mouse input belongs to the game (see Update()); read by Input.
 		/// [JP] このフレームのキーボード/マウス入力をゲームに渡すか（Update() 参照）。Input が読む。
@@ -850,7 +859,7 @@ namespace SeedCore
 
 		/// [EN] Handle to the first connected gamepad, or nullptr if none.
 		/// [JP] 最初に接続されたゲームパッドへのハンドル。なければ nullptr。
-		static SDL_Gamepad* gamepad_;
+		static void* gamepad_;
 
 		/// [EN] Action name -> its bound keys/gamepad buttons/directional keys/sticks.
 		/// [JP] アクション名 -> 紐づくキー/ゲームパッドボタン/方向キー組/スティック。

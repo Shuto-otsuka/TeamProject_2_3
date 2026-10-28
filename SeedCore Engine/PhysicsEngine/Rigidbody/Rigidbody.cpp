@@ -80,7 +80,7 @@ namespace SeedCore
 		/// [JP] 最初に見つかったコライダーの形状を借りる。呼ぶたびに、このコンポーネントが持つ参照が1つ増える。
 		/// [EN] A MeshCollider is not looked for: its shape arrives later and replaces the fallback sphere.
 		/// [JP] MeshCollider は探さない。その形状は後から届き、代わりの球と差し替わる。
-		shapeHandle_ = [&]() -> Handle<JPH::Shape>
+		shapeHandle_ = [&]() -> ScShapeHandle
 		{
 			if (BoxCollider* collider = actor.GetComponent<BoxCollider>())
 			{
@@ -127,32 +127,32 @@ namespace SeedCore
 
 		/// [EN] Starts with every axis free and removes each frozen one.
 		/// [JP] 全ての軸を自由にした状態から、固定した軸を1つずつ外す。
-		JPH::EAllowedDOFs allowedDOFs = [&]() -> JPH::EAllowedDOFs
+		ScAllowedDOFs allowedDOFs = [&]() -> ScAllowedDOFs
 		{
-			JPH::EAllowedDOFs dofs = JPH::EAllowedDOFs::All;
+			ScAllowedDOFs dofs = ScAllowedDOFsAll;
 			if (freezePositionX_)
 			{
-				dofs &= ~JPH::EAllowedDOFs::TranslationX;
+				dofs &= ~ScAllowedDOFsTranslationX;
 			}
 			if (freezePositionY_)
 			{
-				dofs &= ~JPH::EAllowedDOFs::TranslationY;
+				dofs &= ~ScAllowedDOFsTranslationY;
 			}
 			if (freezePositionZ_)
 			{
-				dofs &= ~JPH::EAllowedDOFs::TranslationZ;
+				dofs &= ~ScAllowedDOFsTranslationZ;
 			}
 			if (freezeRotationX_)
 			{
-				dofs &= ~JPH::EAllowedDOFs::RotationX;
+				dofs &= ~ScAllowedDOFsRotationX;
 			}
 			if (freezeRotationY_)
 			{
-				dofs &= ~JPH::EAllowedDOFs::RotationY;
+				dofs &= ~ScAllowedDOFsRotationY;
 			}
 			if (freezeRotationZ_)
 			{
-				dofs &= ~JPH::EAllowedDOFs::RotationZ;
+				dofs &= ~ScAllowedDOFsRotationZ;
 			}
 
 			return dofs;
@@ -193,23 +193,23 @@ namespace SeedCore
 			/// [EN] Only X/Y movement and rotation about Z remain; the 3D freeze settings are remapped below.
 			/// [JP] 残るのは X/Y の移動と Z 軸まわりの回転だけ。3D 用の固定設定は下で置き換える。
 			desc.layer_ |= Layers::PLANAR;
-			desc.allowedDOFs_ = JPH::EAllowedDOFs::Plane2D;
+			desc.allowedDOFs_ = ScAllowedDOFsPlane2D;
 
 			if (freezePositionX_)
 			{
-				desc.allowedDOFs_ &= ~JPH::EAllowedDOFs::TranslationX;
+				desc.allowedDOFs_ &= ~ScAllowedDOFsTranslationX;
 			}
 
 			if (freezePositionY_)
 			{
-				desc.allowedDOFs_ &= ~JPH::EAllowedDOFs::TranslationY;
+				desc.allowedDOFs_ &= ~ScAllowedDOFsTranslationY;
 			}
 
 			/// [EN] The canvas angle is the rotation about Z, so the Z freeze locks it.
 			/// [JP] Canvas の角度は Z 軸まわりの回転なので、Z の固定でそれを固定する。
 			if (freezeRotationZ_)
 			{
-				desc.allowedDOFs_ &= ~JPH::EAllowedDOFs::RotationZ;
+				desc.allowedDOFs_ &= ~ScAllowedDOFsRotationZ;
 			}
 		}
 
@@ -235,7 +235,7 @@ namespace SeedCore
 	*/
 	void Rigidbody::OnFixedTick(Float elapsedTime)
 	{
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			return;
 		}
@@ -359,7 +359,7 @@ namespace SeedCore
 	*/
 	void Rigidbody::OnDestroy()
 	{
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			return;
 		}
@@ -370,12 +370,12 @@ namespace SeedCore
 		actor.GetService<Physics>()->DestroyBody(bodyID_);
 		actor.GetService<Physics>()->ReleaseShape(shapeHandle_);
 
-		bodyID_ = JPH::BodyID();
+		bodyID_ = ScInvalidBodyID;
 	}
 
 	void Rigidbody::OnRevision()
 	{
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			return;
 		}
@@ -406,7 +406,7 @@ namespace SeedCore
 	{
 		/// [EN] The body exists only between OnAwake and OnDestroy, and a force moves only a Dynamic body.
 		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、力で動くのは Dynamic のボディだけ。
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			SC_LOG_ERROR("Rigidbody::AddForce を適用できません: ボディが生成されていません。");
 			return;
@@ -448,7 +448,7 @@ namespace SeedCore
 	{
 		/// [EN] The body exists only between OnAwake and OnDestroy, and an impulse moves only a Dynamic body.
 		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、力積で動くのは Dynamic のボディだけ。
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			SC_LOG_ERROR("Rigidbody::AddImpulse を適用できません: ボディが生成されていません。");
 			return;
@@ -490,7 +490,7 @@ namespace SeedCore
 	{
 		/// [EN] The body exists only between OnAwake and OnDestroy, and a torque turns only a Dynamic body.
 		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、トルクで回るのは Dynamic のボディだけ。
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			SC_LOG_ERROR("Rigidbody::AddTorque を適用できません: ボディが生成されていません。");
 			return;
@@ -535,7 +535,7 @@ namespace SeedCore
 	{
 		/// [EN] The body exists only between OnAwake and OnDestroy, and an angular impulse turns only a Dynamic body.
 		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、角力積で回るのは Dynamic のボディだけ。
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			SC_LOG_ERROR("Rigidbody::AddSpin を適用できません: ボディが生成されていません。");
 			return;
@@ -589,7 +589,7 @@ namespace SeedCore
 	{
 		/// [EN] The body exists only between OnAwake and OnDestroy, and only a Kinematic body follows a target.
 		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、目標に従うのは Kinematic のボディだけ。
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			SC_LOG_ERROR("Rigidbody::MoveTarget を適用できません: ボディが生成されていません。");
 			return;
@@ -650,7 +650,7 @@ namespace SeedCore
 	{
 		/// [EN] The body exists only between OnAwake and OnDestroy, and only a Kinematic body follows a target.
 		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、目標に従うのは Kinematic のボディだけ。
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			SC_LOG_ERROR("Rigidbody::MoveTo を適用できません: ボディが生成されていません。");
 			return;
@@ -702,7 +702,7 @@ namespace SeedCore
 	* [JP]
 	* ボディの Jolt ID を返す。OnAwake 前と OnDestroy 後は無効な ID。
 	*/
-	JPH::BodyID Rigidbody::BodyID()const
+	ScBodyID Rigidbody::BodyID()const
 	{
 		return bodyID_;
 	}
@@ -748,7 +748,7 @@ namespace SeedCore
 	*/
 	void Rigidbody::ApplyLinearVelocity()
 	{
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			return;
 		}
@@ -796,7 +796,7 @@ namespace SeedCore
 	*/
 	void Rigidbody::ApplyAngularVelocity()
 	{
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			return;
 		}
@@ -845,7 +845,7 @@ namespace SeedCore
 	*/
 	void Rigidbody::ApplyMove(Float elapsedTime)
 	{
-		if (bodyID_.IsInvalid())
+		if (bodyID_ == ScInvalidBodyID)
 		{
 			return;
 		}

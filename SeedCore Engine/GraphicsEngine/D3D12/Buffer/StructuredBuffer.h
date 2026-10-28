@@ -1,4 +1,5 @@
 #pragma once
+#include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
 #include <GraphicsEngine/D3D12/Buffer/Buffer.h>
 #include <GraphicsEngine/D3D12/FrameRing.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>

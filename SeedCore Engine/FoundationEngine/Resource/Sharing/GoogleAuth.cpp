@@ -1,3 +1,4 @@
+#include <External/Json/json.hpp>
 #include <FoundationEngine/Resource/Sharing/GoogleAuth.h>
 #include <FoundationEngine/Serialization/Encryption/Aes256.h>
 #include <FoundationEngine/Serialization/Encryption/Sha256.h>

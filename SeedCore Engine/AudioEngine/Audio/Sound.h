@@ -1,4 +1,5 @@
 #pragma once
+#include <AudioEngine/Audio/AudioTypes.h>
 
 namespace SeedCore
 {
@@ -104,7 +105,7 @@ namespace SeedCore
 		* [JP]
 		* キューシート用に読み込まれた ACB ハンドルを返す。
 		*/
-		NODISCARD CriAtomExAcbHn AcbHandle()const;
+		NODISCARD ScAudioBankHandle AcbHandle()const;
 
 		/**
 		* [EN]
@@ -146,7 +147,7 @@ namespace SeedCore
 
 		/// [EN] CRI ACB handle owned for cue-sheet playback.
 		/// [JP] キューシート再生用に所有する CRI ACB ハンドル。
-		CriAtomExAcbHn acbHandle_ = nullptr;
+		ScAudioBankHandle acbHandle_ = nullptr;
 
 		/// [EN] Decrypted ACB or wave data retained in memory.
 		/// [JP] メモリ上に保持する復号済み ACB または波形データ。

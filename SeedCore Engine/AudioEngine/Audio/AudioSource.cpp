@@ -1,3 +1,4 @@
+#include <External/CRI/Include/cri_adx2le.h>
 #include <AudioEngine/Audio/AudioSource.h>
 #include <AudioEngine/Audio/Audio.h>
 #include <AudioEngine/Audio/Sound.h>

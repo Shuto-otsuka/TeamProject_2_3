@@ -1,5 +1,12 @@
 #pragma once
+#include <PhysicsEngine/Physics/PhysicsTypes.h>
 #include <FoundationEngine/Utility/Handle.h>
+
+namespace JPH
+{
+	class PhysicsSystem;
+	class Constraint;
+}
 
 namespace SeedCore
 {
@@ -37,7 +44,7 @@ namespace SeedCore
 		* [JP]
 		* プールのストレージを破棄する。
 		*/
-		~JoltConstraintPool() = default;
+		~JoltConstraintPool();
 
 		/**
 		* [EN]
@@ -70,7 +77,7 @@ namespace SeedCore
 		* [JP]
 		* 拘束を登録し、その世代付きハンドルを返す。
 		*/
-		Handle<JPH::Constraint> Add(JPH::PhysicsSystem& system, JPH::Constraint* constraint);
+		ScConstraintHandle Add(JPH::PhysicsSystem& system, JPH::Constraint* constraint);
 
 		/**
 		* [EN]
@@ -81,7 +88,7 @@ namespace SeedCore
 		* [JP]
 		* 有効なハンドルが参照する拘束を削除して解放する。
 		*/
-		void Release(JPH::PhysicsSystem& system, Handle<JPH::Constraint> handle);
+		void Release(JPH::PhysicsSystem& system, ScConstraintHandle handle);
 
 		/**
 		* [EN]
@@ -119,7 +126,7 @@ namespace SeedCore
 		{
 			/// [EN] Reference-counted constraint occupying this slot.
 			/// [JP] このスロットを使用している参照カウント付き拘束。
-			JPH::Ref<JPH::Constraint> constraint_;
+			JPH::Constraint* constraint_ = nullptr;
 
 			/// [EN] Generation used to reject stale handles.
 			/// [JP] 古いハンドルを拒否するための世代。

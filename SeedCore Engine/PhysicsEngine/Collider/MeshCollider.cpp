@@ -43,8 +43,8 @@ namespace SeedCore
 
 		PhysicsSystem::DestroyColliderBody(GetActor(), bodyID_, shapeHandle_);
 
-		bodyID_ = JPH::BodyID();
-		shapeHandle_ = Handle<JPH::Shape>::null();
+		bodyID_ = ScInvalidBodyID;
+		shapeHandle_ = ScShapeHandle::null();
 		pending_ = meshID_ != 0;
 	}
 
@@ -75,7 +75,7 @@ namespace SeedCore
 
 		/// [EN] A Rigidbody whose body is not created yet cannot take the shape; stay pending and retry next frame.
 		/// [JP] ボディがまだ無い Rigidbody には形状を渡せないので、構築待ちのまま次のフレームで再試行する。
-		if (rigidbody && rigidbody->BodyID().IsInvalid())
+		if (rigidbody && rigidbody->BodyID() == ScInvalidBodyID)
 		{
 			return;
 		}

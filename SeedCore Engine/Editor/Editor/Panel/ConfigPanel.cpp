@@ -67,26 +67,26 @@ namespace SeedCore
 			{ "F10", InputSystem::Key::F10 }, { "F11", InputSystem::Key::F11 }, { "F12", InputSystem::Key::F12 },
 		};
 
-		/// [EN] Every commonly-used SDL_GamepadButton, paired with its display
+		/// [EN] Every commonly-used ScGamepadButton, paired with its display
 		///      label, for the "add gamepad binding" combo below.
-		/// [JP] よく使う SDL_GamepadButton の一覧を、表示ラベルと組にしたもの。
+		/// [JP] よく使う ScGamepadButton の一覧を、表示ラベルと組にしたもの。
 		///      下の「ゲームパッドバインド追加」コンボで使う。
-		constexpr std::pair<const Char*, SDL_GamepadButton> gamepadButtonEntries[] =
+		constexpr std::pair<const Char*, InputSystem::ScGamepadButton> gamepadButtonEntries[] =
 		{
-			{ "A", InputSystem::GamepadButton::A },
-			{ "B", InputSystem::GamepadButton::B },
-			{ "X", InputSystem::GamepadButton::X },
-			{ "Y", InputSystem::GamepadButton::Y },
-			{ "LeftShoulder", InputSystem::GamepadButton::LeftShoulder },
-			{ "RightShoulder", InputSystem::GamepadButton::RightShoulder },
-			{ "LeftStick", InputSystem::GamepadButton::LeftStick },
-			{ "RightStick", InputSystem::GamepadButton::RightStick },
-			{ "DPadUp", InputSystem::GamepadButton::DPadUp },
-			{ "DPadDown", InputSystem::GamepadButton::DPadDown },
-			{ "DPadLeft", InputSystem::GamepadButton::DPadLeft },
-			{ "DPadRight", InputSystem::GamepadButton::DPadRight },
-			{ "Start", InputSystem::GamepadButton::Start },
-			{ "Back", InputSystem::GamepadButton::Back },
+			{ "A", InputSystem::ScGamepadButtonSouth },
+			{ "B", InputSystem::ScGamepadButtonEast },
+			{ "X", InputSystem::ScGamepadButtonWest },
+			{ "Y", InputSystem::ScGamepadButtonNorth },
+			{ "LeftShoulder", InputSystem::ScGamepadButtonLeftShoulder },
+			{ "RightShoulder", InputSystem::ScGamepadButtonRightShoulder },
+			{ "LeftStick", InputSystem::ScGamepadButtonLeftStick },
+			{ "RightStick", InputSystem::ScGamepadButtonRightStick },
+			{ "DPadUp", InputSystem::ScGamepadButtonDPadUp },
+			{ "DPadDown", InputSystem::ScGamepadButtonDPadDown },
+			{ "DPadLeft", InputSystem::ScGamepadButtonDPadLeft },
+			{ "DPadRight", InputSystem::ScGamepadButtonDPadRight },
+			{ "Start", InputSystem::ScGamepadButtonStart },
+			{ "Back", InputSystem::ScGamepadButtonBack },
 		};
 
 		const Char* KeyLabel(InputSystem::Key key)
@@ -101,7 +101,7 @@ namespace SeedCore
 			return "?";
 		}
 
-		const Char* GamepadButtonLabel(SDL_GamepadButton button)
+		const Char* GamepadButtonLabel(InputSystem::ScGamepadButton button)
 		{
 			for (const auto& entry : gamepadButtonEntries)
 			{
@@ -672,8 +672,8 @@ namespace SeedCore
 				ImGui::SeparatorText("ゲームパッドボタン");
 				ImGui::PushID("Pad");
 				DrawChipList(InputSystem::BoundGamepad(action),
-					[](SDL_GamepadButton button) { return std::string(GamepadButtonLabel(button)); },
-					[&action](SDL_GamepadButton button)
+					[](InputSystem::ScGamepadButton button) { return std::string(GamepadButtonLabel(button)); },
+					[&action](InputSystem::ScGamepadButton button)
 					{
 						InputSystem::UnbindGamepad(action, button);
 						InputSystem::Save();
