@@ -210,7 +210,6 @@
 #include <External/ImGui/Include/ImGuizmo/ImGuizmo.h>
 #include <External/ImGui/Include/ImNodeEditor/imgui_node_editor.h>
 
-
 #include <External/DirectXTK/Include/WICTextureLoader.h>
 #include <External/DirectXTK/Include/DDSTextureLoader.h>
 #include <External/DirectXTK/Include/ResourceUploadBatch.h>
@@ -234,8 +233,6 @@
 #include <External/Effekseer/Include/Effekseer.h>
 #include <External/Effekseer/Include/EffekseerRendererDX12.h>
 #include <External/Effekseer/Include/EffekseerRendererLLGI/Common.h>
-
-#include <External/Json/json.hpp>
 
 #ifndef MSDFGEN_PUBLIC
 #define MSDFGEN_PUBLIC

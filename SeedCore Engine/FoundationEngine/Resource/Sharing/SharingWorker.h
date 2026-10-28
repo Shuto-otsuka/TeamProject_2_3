@@ -564,26 +564,6 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Takes a scene file's contents apart into the pieces a shared scene
-		* is made of - the context, the hierarchy, and per entity its
-		* header, its transform and each of its components - keyed by
-		* scope. Every member splits a scene the same way, so a piece that
-		* did not change hashes the same everywhere. When the scene cannot
-		* be split, error says why in a form that can be shown to the user.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Scene ファイルの中身を、共有 Scene を構成する断片（Scene の設定・
-		* 階層・Entity ごとの本体・トランスフォーム・各 Component）に分け、
-		* 範囲をキーにして返す。どのメンバーも同じ手順で分けるため、変わって
-		* いない断片はどこでも同じハッシュになる。分けられない場合は、その
-		* 理由をユーザーへそのまま表示できる形で error に入れる。
-		*/
-		Bool Split(const nlohmann::json& scene, std::unordered_map<String, nlohmann::json>& parts, String& error)const;
-
-		/**
-		* [EN]
 		* Shares a local asset for the first time, together with the .meta
 		* and any files it reads from beside itself. When the library
 		* already holds the same path, the library's copy is taken instead.

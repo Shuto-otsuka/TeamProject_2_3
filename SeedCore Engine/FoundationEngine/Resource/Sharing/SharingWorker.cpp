@@ -1,9 +1,12 @@
+#include <External/Json/json.hpp>
 #include <FoundationEngine/Resource/Sharing/SharingWorker.h>
 #include <FoundationEngine/Serialization/Encryption/Sha256.h>
 #include <FoundationEngine/Resource/Sharing/SharedScene.h>
 
 namespace SeedCore
 {
+	static Bool SplitScene(const nlohmann::json& scene, std::unordered_map<String, nlohmann::json>& parts, String& error);
+
 	/**
 	* [EN]
 	* Prepares the worker for a project, without connecting yet.
@@ -792,7 +795,7 @@ namespace SeedCore
 
 				std::unordered_map<String, nlohmann::json> localParts;
 				String unreadable;
-				if (Split(local, localParts, unreadable))
+				if (SplitScene(local, localParts, unreadable))
 				{
 					for (const std::pair<const String, nlohmann::json>& part : localParts)
 					{
@@ -1110,7 +1113,7 @@ namespace SeedCore
 
 			std::unordered_map<String, nlohmann::json> localParts;
 			String unreadable;
-			if (Split(local, localParts, unreadable))
+			if (SplitScene(local, localParts, unreadable))
 			{
 				SceneBase replaced;
 				for (const std::pair<const String, nlohmann::json>& part : localParts)
@@ -1171,7 +1174,7 @@ namespace SeedCore
 
 			std::unordered_map<String, nlohmann::json> parts;
 			String unsplittable;
-			if (!Split(scene, parts, unsplittable))
+			if (!SplitScene(scene, parts, unsplittable))
 			{
 				std::lock_guard<std::mutex> guard(snapshotMutex_);
 				snapshot_.error_ = unsplittable;
@@ -1457,7 +1460,7 @@ namespace SeedCore
 	* いない断片はどこでも同じハッシュになる。分けられない場合は、その
 	* 理由をユーザーへそのまま表示できる形で error に入れる。
 	*/
-	Bool SharingWorker::Split(const nlohmann::json& scene, std::unordered_map<String, nlohmann::json>& parts, String& error)const
+	static Bool SplitScene(const nlohmann::json& scene, std::unordered_map<String, nlohmann::json>& parts, String& error)
 	{
 		if (!scene.is_object() || !scene.contains("nodes") || !scene["nodes"].is_array())
 		{

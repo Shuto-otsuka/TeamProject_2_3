@@ -1,7 +1,11 @@
+#include <External/Json/json.hpp>
 #include <FoundationEngine/Resource/Sharing/GoogleDocument.h>
 
 namespace SeedCore
 {
+	static Bool SendDocument(HttpClient& http, GoogleAuth& auth, Bool& conflicted, String& error, const String& method, const String& url, const nlohmann::json& request, nlohmann::json& result);
+	static String ExtractDocument(const nlohmann::json& document);
+
 	/**
 	* [EN]
 	* Takes the transport and the sign-in that every request depends on.
@@ -53,7 +57,7 @@ namespace SeedCore
 		/// [EN] The fields parameter asks Google to send only these two parts, leaving out the styling a document also carries.
 		/// [JP] fields 指定で、この2つの部分だけを送るよう Google に頼む。ドキュメントが併せ持つ書式の情報は省かれる。
 		nlohmann::json result;
-		if (!Send(String("GET"), String(std::format("https://docs.googleapis.com/v1/documents/{}?fields=revisionId,body", documentId.str())), nlohmann::json(), result))
+		if (!SendDocument(http_, auth_, conflicted_, error_, String("GET"), String(std::format("https://docs.googleapis.com/v1/documents/{}?fields=revisionId,body", documentId.str())), nlohmann::json(), result))
 		{
 			return snapshot;
 		}
@@ -61,7 +65,7 @@ namespace SeedCore
 		/// [EN] This identifier is what a later write hands back to prove which state it was based on.
 		/// [JP] この識別子は、後で書き込むときに「どの状態を元にしたか」を示すために渡すもの。
 		snapshot.revisionId_ = String(result.value("revisionId", ""));
-		snapshot.text_ = Extract(result);
+		snapshot.text_ = ExtractDocument(result);
 
 		/// [EN] A document is addressed by character positions, and each element states where it ends.
 		/// [JP] ドキュメントは文字位置で場所を指す作りで、各要素は自分の終端位置を持っている。
@@ -142,7 +146,7 @@ namespace SeedCore
 		request["writeControl"]["requiredRevisionId"] = base.revisionId_.str();
 
 		nlohmann::json result;
-		return Send(String("POST"), String(std::format("https://docs.googleapis.com/v1/documents/{}:batchUpdate", documentId.str())), request, result);
+		return SendDocument(http_, auth_, conflicted_, error_, String("POST"), String(std::format("https://docs.googleapis.com/v1/documents/{}:batchUpdate", documentId.str())), request, result);
 	}
 
 	/**
@@ -186,14 +190,14 @@ namespace SeedCore
 	* 認証付きのリクエストを Docs API へ1回送り、JSON の応答を解釈する。
 	* 失敗した場合はその内容も記録する。
 	*/
-	Bool GoogleDocument::Send(const String& method, const String& url, const nlohmann::json& request, nlohmann::json& result)
+	static Bool SendDocument(HttpClient& http, GoogleAuth& auth, Bool& conflicted, String& error, const String& method, const String& url, const nlohmann::json& request, nlohmann::json& result)
 	{
 		/// [EN] Asking for the token here is also what renews it, so callers never deal with expiry themselves.
 		/// [JP] ここでトークンを求める動作が更新も兼ねる。そのため呼び出し側が期限を気にすることはない。
-		String token = auth_.AccessToken();
+		String token = auth.AccessToken();
 		if (token.str().empty())
 		{
-			error_ = auth_.Error();
+			error = auth.Error();
 			return false;
 		}
 
@@ -213,12 +217,12 @@ namespace SeedCore
 			std::memcpy(payload.data(), body.data(), body.size());
 		}
 
-		HttpResponse response = http_.Send(method, url, headers, payload);
+		HttpResponse response = http.Send(method, url, headers, payload);
 		if (response.status_ == 0)
 		{
 			/// [EN] Nothing reached Google, so this is a network problem rather than anything about the document.
 			/// [JP] Google まで届いていないので、これはドキュメントの問題ではなく通信の問題。
-			error_ = response.error_;
+			error = response.error_;
 			return false;
 		}
 
@@ -227,7 +231,7 @@ namespace SeedCore
 		result = nlohmann::json::parse(response.body_.begin(), response.body_.end(), nullptr, false);
 		if (response.status_ == 200)
 		{
-			error_ = String();
+			error = String();
 			return result.is_object();
 		}
 
@@ -239,14 +243,14 @@ namespace SeedCore
 		std::string message = result.is_object() && result.contains("error") ? result["error"].value("message", "") : "";
 		if (response.status_ == 400 && message.find("revision") != std::string::npos)
 		{
-			conflicted_ = true;
-			error_ = String();
+			conflicted = true;
+			error = String();
 			return false;
 		}
 
 		/// [EN] Anything else is worth showing: no permission, document deleted, quota, and so on.
 		/// [JP] それ以外は表示する価値のある失敗。権限が無い、ドキュメントが消えている、上限に達した、など。
-		error_ = String(std::format("共有ドキュメントへのアクセスに失敗しました ({}): {}", response.status_, message));
+		error = String(std::format("共有ドキュメントへのアクセスに失敗しました ({}): {}", response.status_, message));
 		return false;
 	}
 
@@ -259,7 +263,7 @@ namespace SeedCore
 	* [JP]
 	* ドキュメントの構造要素を、プレーンテキストへ平坦化する。
 	*/
-	String GoogleDocument::Extract(const nlohmann::json& document)
+	static String ExtractDocument(const nlohmann::json& document)
 	{
 		/// [EN] A document is a list of paragraphs, and each paragraph is a list of runs of text.
 		/// [JP] ドキュメントは段落の列で、段落はさらに文字列片の列になっている。

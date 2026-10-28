@@ -240,18 +240,7 @@ namespace SeedCore
 		* Scene を読み、edit を適用して書き戻す。他のメンバーが先に書いて
 		* いた場合は、新しい内容から読み直してやり直す。
 		*/
-		Bool Modify(const std::function<Bool(nlohmann::json&)>& edit);
-
-		/**
-		* [EN]
-		* Parses the document text into the in-memory piece list.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ドキュメントの本文を解釈して、メモリ上の断片一覧にする。
-		*/
-		void Adopt(const nlohmann::json& scene);
+		Bool Modify(const DynamicArray<ScenePartChange>& changes);
 
 	private:
 		/// [EN] Reads and rewrites the document this scene lives in.

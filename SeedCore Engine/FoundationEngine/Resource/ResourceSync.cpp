@@ -1,3 +1,4 @@
+#include <External/Json/json.hpp>
 #include <FoundationEngine/Resource/ResourceSync.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/WorldAccessor.h>

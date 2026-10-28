@@ -47,17 +47,21 @@ namespace SeedCore
 	class SEEDCORE_API BinaryOutputArchive
 	{
 	public:
-		BinaryOutputArchive() = default;
+		BinaryOutputArchive();
+		~BinaryOutputArchive();
+
+		BinaryOutputArchive(BinaryOutputArchive&&)noexcept;
+		BinaryOutputArchive& operator=(BinaryOutputArchive&&)noexcept;
+
+		BinaryOutputArchive(const BinaryOutputArchive&) = delete;
+		BinaryOutputArchive& operator=(const BinaryOutputArchive&) = delete;
 
 		template<typename T>
 		void Field(const Char* name, const T& value)
 		{
-			DynamicArray<Byte> payload;
+			BinaryOutputArchive payload;
 			WriteInto(payload, value);
-
-			WriteUint32(body_, BinaryField(name).GetValue());
-			WriteUint32(body_, static_cast<Uint32>(payload.size()));
-			body_.insert(body_.end(), payload.begin(), payload.end());
+			AppendField(name, std::move(payload));
 		}
 
 		template<typename T>
@@ -71,92 +75,84 @@ namespace SeedCore
 
 	private:
 		template<typename T>
-		void WriteInto(DynamicArray<Byte>& payload, const T& value)
+		void WriteInto(BinaryOutputArchive& target, const T& value)
 		{
-			if constexpr (requires { value.Save(*this); })
+			if constexpr (requires { value.Save(target); })
 			{
-				BinaryOutputArchive child;
-				value.Save(child);
-				payload = std::move(child.body_);
+				value.Save(target);
 			}
-			else if constexpr (requires(T& mutableValue) { mutableValue.Serialize(*this); })
+			else if constexpr (requires(T& mutableValue) { mutableValue.Serialize(target); })
 			{
-				BinaryOutputArchive child;
-				const_cast<T&>(value).Serialize(child);
-				payload = std::move(child.body_);
+				const_cast<T&>(value).Serialize(target);
 			}
-			else if constexpr (requires { Save(*this, value); })
+			else if constexpr (requires { Save(target, value); })
 			{
-				BinaryOutputArchive child;
-				Save(child, value);
-				payload = std::move(child.body_);
+				Save(target, value);
 			}
 			else if constexpr (BinarySequenceContainer<T>)
 			{
 				using ElementType = typename T::value_type;
 
+				target.AppendUint32(static_cast<Uint32>(value.size()));
 				if constexpr (std::is_trivially_copyable_v<ElementType> && !std::same_as<ElementType, Bool> && !std::same_as<ElementType, String> && requires { value.data(); })
 				{
-					WriteUint32(payload, static_cast<Uint32>(value.size()));
-					Size byteSize = value.size() * sizeof(ElementType);
-					Size offset = payload.size();
-					payload.resize(offset + byteSize);
-					std::memcpy(payload.data() + offset, value.data(), byteSize);
+					target.AppendRaw(value.data(), value.size() * sizeof(ElementType));
 				}
 				else
 				{
-					WriteUint32(payload, static_cast<Uint32>(value.size()));
 					for (const auto& element : value)
 					{
-						DynamicArray<Byte> elementPayload;
-						WriteInto(elementPayload, element);
-						WriteUint32(payload, static_cast<Uint32>(elementPayload.size()));
-						payload.insert(payload.end(), elementPayload.begin(), elementPayload.end());
+						BinaryOutputArchive elementArchive;
+						if constexpr (std::same_as<ElementType, Bool>)
+						{
+							Bool boolElement = static_cast<Bool>(element);
+							WriteInto(elementArchive, boolElement);
+						}
+						else
+						{
+							WriteInto(elementArchive, element);
+						}
+						target.AppendSized(std::move(elementArchive));
 					}
 				}
 			}
 			else if constexpr (BinaryAssociativeContainer<T>)
 			{
-				WriteUint32(payload, static_cast<Uint32>(value.size()));
+				target.AppendUint32(static_cast<Uint32>(value.size()));
 				for (const auto& entry : value)
 				{
 					BinaryOutputArchive entryArchive;
 					entryArchive.Field("key", entry.first);
 					entryArchive.Field("value", entry.second);
-
-					WriteUint32(payload, static_cast<Uint32>(entryArchive.body_.size()));
-					payload.insert(payload.end(), entryArchive.body_.begin(), entryArchive.body_.end());
+					target.AppendSized(std::move(entryArchive));
 				}
 			}
 			else if constexpr (BinaryFixedSizeArray<T>)
 			{
-				WriteUint32(payload, static_cast<Uint32>(value.size()));
+				target.AppendUint32(static_cast<Uint32>(value.size()));
 				for (const auto& element : value)
 				{
-					DynamicArray<Byte> elementPayload;
-					WriteInto(elementPayload, element);
-					WriteUint32(payload, static_cast<Uint32>(elementPayload.size()));
-					payload.insert(payload.end(), elementPayload.begin(), elementPayload.end());
+					BinaryOutputArchive elementArchive;
+					WriteInto(elementArchive, element);
+					target.AppendSized(std::move(elementArchive));
 				}
 			}
 			else if constexpr (std::same_as<T, String>)
 			{
 				std::string raw = value.str();
-				payload.assign(raw.begin(), raw.end());
+				target.AppendRaw(raw.data(), raw.size());
 			}
 			else if constexpr (std::same_as<T, std::string>)
 			{
-				payload.assign(value.begin(), value.end());
+				target.AppendRaw(value.data(), value.size());
 			}
 			else if constexpr (std::same_as<T, std::u16string>)
 			{
-				payload.resize(value.size() * sizeof(Char16));
-				std::memcpy(payload.data(), value.data(), payload.size());
+				target.AppendRaw(value.data(), value.size() * sizeof(Char16));
 			}
 			else if constexpr (std::is_trivially_copyable_v<T>)
 			{
-				payload.resize(sizeof(T));
-				std::memcpy(payload.data(), &value, sizeof(T));
+				target.AppendRaw(&value, sizeof(T));
 			}
 			else
 			{
@@ -164,40 +160,53 @@ namespace SeedCore
 			}
 		}
 
-		void WriteUint32(DynamicArray<Byte>& buffer, Uint32 value);
+		void AppendField(const Char* name, BinaryOutputArchive&& payload);
+
+		void AppendUint32(Uint32 value);
+
+		void AppendRaw(const void* data, Size size);
+
+		void AppendSized(BinaryOutputArchive&& payload);
 
 	private:
-		DynamicArray<Byte> body_;
+		class Impl;
 
-		friend class BinaryInputArchive;
+		ResourcePtr<Impl> impl_;
 	};
 
 	class SEEDCORE_API BinaryInputArchive
 	{
 	public:
-		BinaryInputArchive() = default;
+		BinaryInputArchive();
+		~BinaryInputArchive();
+
+		BinaryInputArchive(BinaryInputArchive&&)noexcept;
+		BinaryInputArchive& operator=(BinaryInputArchive&&)noexcept;
+
+		BinaryInputArchive(const BinaryInputArchive&) = delete;
+		BinaryInputArchive& operator=(const BinaryInputArchive&) = delete;
 
 		template<typename T>
 		void Field(const Char* name, T& value)
 		{
-			auto entry = index_.find(BinaryField(name).GetValue());
-			if (entry == index_.end())
+			BinaryInputArchive payload;
+			if (!FindField(name, payload))
 			{
 				SC_LOG_WARNING("バイナリフィールド \"{}\" が見つかりません。", name);
 				return;
 			}
-			ReadFrom(data_.subspan(entry->second.first, entry->second.second), value);
+			ReadFrom(payload, value);
 		}
 
 		template<typename T>
 		Bool TryField(const Char* name, T& value)
 		{
-			auto entry = index_.find(BinaryField(name).GetValue());
-			if (entry == index_.end())
+			BinaryInputArchive payload;
+			if (!FindField(name, payload))
 			{
 				return false;
 			}
-			ReadFrom(data_.subspan(entry->second.first, entry->second.second), value);
+			ReadFrom(payload, value);
 			return true;
 		}
 
@@ -206,73 +215,68 @@ namespace SeedCore
 		Bool Read(const String& filePath);
 
 	private:
-		explicit BinaryInputArchive(std::span<const Byte> buffer);
+		BinaryInputArchive(const Byte* data, Size size);
 
 		template<typename T>
-		void ReadFrom(std::span<const Byte> payload, T& value)
+		void ReadFrom(const BinaryInputArchive& source, T& value)
 		{
 			if constexpr (requires { value.Load(*this); })
 			{
-				BinaryInputArchive child(payload);
+				BinaryInputArchive child = source.Slice(0, source.DataSize());
 				value.Load(child);
 			}
 			else if constexpr (requires { value.Serialize(*this); })
 			{
-				BinaryInputArchive child(payload);
+				BinaryInputArchive child = source.Slice(0, source.DataSize());
 				value.Serialize(child);
 			}
 			else if constexpr (requires { Load(*this, value); })
 			{
-				BinaryInputArchive child(payload);
+				BinaryInputArchive child = source.Slice(0, source.DataSize());
 				Load(child, value);
 			}
 			else if constexpr (BinarySequenceContainer<T>)
 			{
 				using ElementType = typename T::value_type;
-
-				if (payload.size() < sizeof(Uint32))
+				if (source.DataSize() < sizeof(Uint32))
 				{
 					SC_LOG_WARNING("バイナリ配列のヘッダが不正です。初期値を使用します。");
 					return;
 				}
 
-				Uint32 elementCount = ReadUint32(payload, 0);
-
+				Uint32 elementCount = source.ReadUint32(0);
 				if constexpr (std::is_trivially_copyable_v<ElementType> && !std::same_as<ElementType, Bool> && !std::same_as<ElementType, String> && requires { value.data(); value.resize(Size(0)); })
 				{
 					Size expectedBytes = static_cast<Size>(elementCount) * sizeof(ElementType);
-					if (payload.size() != sizeof(Uint32) + expectedBytes)
+					if (source.DataSize() != sizeof(Uint32) + expectedBytes)
 					{
 						SC_LOG_WARNING("バイナリ配列のサイズが要素数と一致しません。初期値を使用します。");
 						return;
 					}
 					value.resize(elementCount);
-					std::memcpy(value.data(), payload.data() + sizeof(Uint32), expectedBytes);
+					source.ReadRaw(sizeof(Uint32), value.data(), expectedBytes);
 				}
 				else
 				{
 					Size offset = sizeof(Uint32);
-
 					value.clear();
 					for (Uint32 elementIndex = 0; elementIndex < elementCount; ++elementIndex)
 					{
-						if (offset + sizeof(Uint32) > payload.size())
+						if (offset + sizeof(Uint32) > source.DataSize())
 						{
 							SC_LOG_WARNING("バイナリ配列の要素ヘッダが不正です。読み込みを打ち切ります。");
 							break;
 						}
-
-						Uint32 elementSize = ReadUint32(payload, offset);
+						Uint32 elementSize = source.ReadUint32(offset);
 						offset += sizeof(Uint32);
-
-						if (offset + elementSize > payload.size())
+						if (offset + elementSize > source.DataSize())
 						{
 							SC_LOG_WARNING("バイナリ配列の要素サイズが不正です。読み込みを打ち切ります。");
 							break;
 						}
-
+						BinaryInputArchive elementArchive = source.Slice(offset, elementSize);
 						typename T::value_type element{};
-						ReadFrom(payload.subspan(offset, elementSize), element);
+						ReadFrom(elementArchive, element);
 						value.push_back(std::move(element));
 						offset += elementSize;
 					}
@@ -280,36 +284,30 @@ namespace SeedCore
 			}
 			else if constexpr (BinaryAssociativeContainer<T>)
 			{
-				if (payload.size() < sizeof(Uint32))
+				if (source.DataSize() < sizeof(Uint32))
 				{
 					SC_LOG_WARNING("バイナリマップのヘッダが不正です。初期値を使用します。");
 					return;
 				}
-
-				Uint32 entryCount = ReadUint32(payload, 0);
+				Uint32 entryCount = source.ReadUint32(0);
 				Size offset = sizeof(Uint32);
-
 				value.clear();
 				for (Uint32 entryIndex = 0; entryIndex < entryCount; ++entryIndex)
 				{
-					if (offset + sizeof(Uint32) > payload.size())
+					if (offset + sizeof(Uint32) > source.DataSize())
 					{
 						SC_LOG_WARNING("バイナリマップの要素ヘッダが不正です。読み込みを打ち切ります。");
 						break;
 					}
-
-					Uint32 entrySize = ReadUint32(payload, offset);
+					Uint32 entrySize = source.ReadUint32(offset);
 					offset += sizeof(Uint32);
-
-					if (offset + entrySize > payload.size())
+					if (offset + entrySize > source.DataSize())
 					{
 						SC_LOG_WARNING("バイナリマップの要素サイズが不正です。読み込みを打ち切ります。");
 						break;
 					}
-
-					BinaryInputArchive entryArchive(payload.subspan(offset, entrySize));
+					BinaryInputArchive entryArchive = source.Slice(offset, entrySize);
 					offset += entrySize;
-
 					typename T::key_type key{};
 					typename T::mapped_type mapped{};
 					entryArchive.TryField("key", key);
@@ -319,64 +317,63 @@ namespace SeedCore
 			}
 			else if constexpr (BinaryFixedSizeArray<T>)
 			{
-				if (payload.size() < sizeof(Uint32))
+				if (source.DataSize() < sizeof(Uint32))
 				{
 					SC_LOG_WARNING("バイナリ配列のヘッダが不正です。初期値を使用します。");
 					return;
 				}
-
-				Uint32 elementCount = ReadUint32(payload, 0);
+				Uint32 elementCount = source.ReadUint32(0);
 				Size offset = sizeof(Uint32);
-
 				Size elementIndex = 0;
 				for (Uint32 sourceIndex = 0; sourceIndex < elementCount; ++sourceIndex)
 				{
-					if (offset + sizeof(Uint32) > payload.size())
+					if (offset + sizeof(Uint32) > source.DataSize())
 					{
 						SC_LOG_WARNING("バイナリ配列の要素ヘッダが不正です。読み込みを打ち切ります。");
 						break;
 					}
-
-					Uint32 elementSize = ReadUint32(payload, offset);
+					Uint32 elementSize = source.ReadUint32(offset);
 					offset += sizeof(Uint32);
-
-					if (offset + elementSize > payload.size())
+					if (offset + elementSize > source.DataSize())
 					{
 						SC_LOG_WARNING("バイナリ配列の要素サイズが不正です。読み込みを打ち切ります。");
 						break;
 					}
-
 					if (elementIndex >= std::tuple_size<T>::value)
 					{
 						SC_LOG_WARNING("バイナリ配列の要素数が固定長配列より多いため、超過分を無視します。");
 						break;
 					}
-
-					ReadFrom(payload.subspan(offset, elementSize), value[elementIndex]);
+					BinaryInputArchive elementArchive = source.Slice(offset, elementSize);
+					ReadFrom(elementArchive, value[elementIndex]);
 					offset += elementSize;
 					++elementIndex;
 				}
 			}
 			else if constexpr (std::same_as<T, String>)
 			{
-				value = String(std::string_view(reinterpret_cast<const Char*>(payload.data()), payload.size()));
+				std::string raw(source.DataSize(), '\0');
+				source.ReadRaw(0, raw.data(), raw.size());
+				value = String(std::string_view(raw));
 			}
 			else if constexpr (std::same_as<T, std::string>)
 			{
-				value.assign(reinterpret_cast<const Char*>(payload.data()), payload.size());
+				value.resize(source.DataSize());
+				source.ReadRaw(0, value.data(), value.size());
 			}
 			else if constexpr (std::same_as<T, std::u16string>)
 			{
-				value.assign(reinterpret_cast<const Char16*>(payload.data()), payload.size() / sizeof(Char16));
+				value.resize(source.DataSize() / sizeof(Char16));
+				source.ReadRaw(0, value.data(), value.size() * sizeof(Char16));
 			}
 			else if constexpr (std::is_trivially_copyable_v<T>)
 			{
-				if (payload.size() != sizeof(T))
+				if (source.DataSize() != sizeof(T))
 				{
 					SC_LOG_WARNING("バイナリフィールドのサイズが型と一致しません。初期値を使用します。");
 					return;
 				}
-				std::memcpy(&value, payload.data(), sizeof(T));
+				source.ReadRaw(0, &value, sizeof(T));
 			}
 			else
 			{
@@ -384,13 +381,19 @@ namespace SeedCore
 			}
 		}
 
-		Uint32 ReadUint32(std::span<const Byte> buffer, Size offset);
+		Bool FindField(const Char* name, BinaryInputArchive& result)const;
+
+		BinaryInputArchive Slice(Size offset, Size size)const;
+
+		Size DataSize()const;
+
+		Uint32 ReadUint32(Size offset)const;
+
+		Bool ReadRaw(Size offset, void* destination, Size size)const;
 
 	private:
-		DynamicArray<Byte> ownedData_;
+		class Impl;
 
-		std::unordered_map<Uint32, std::pair<Size, Size>> index_;
-
-		std::span<const Byte> data_;
+		ResourcePtr<Impl> impl_;
 	};
 }

@@ -1,7 +1,10 @@
+#include <External/Json/json.hpp>
 #include <FoundationEngine/Resource/Sharing/GoogleDrive.h>
 
 namespace SeedCore
 {
+	static Bool SendDrive(HttpClient& http, GoogleAuth& auth, String& error, const String& method, const String& url, const nlohmann::json& request, nlohmann::json& result);
+
 	/**
 	* [EN]
 	* Takes the transport and the sign-in that every request depends on.
@@ -79,7 +82,7 @@ namespace SeedCore
 		/// [EN] Only the identifier is wanted back, and one match is enough since names are unique in these folders.
 		/// [JP] 欲しいのは識別子だけ。これらのフォルダでは名前が一意なので、1件見つかれば十分。
 		nlohmann::json result;
-		if (!Send(String("GET"), String(std::format("https://www.googleapis.com/drive/v3/files?q={}&fields=files(id)&pageSize=1", HttpClient::Escape(query).str())), nlohmann::json(), result))
+		if (!SendDrive(http_, auth_, error_, String("GET"), String(std::format("https://www.googleapis.com/drive/v3/files?q={}&fields=files(id)&pageSize=1", HttpClient::Escape(query).str())), nlohmann::json(), result))
 		{
 			return String();
 		}
@@ -204,7 +207,7 @@ namespace SeedCore
 			}
 
 			nlohmann::json result;
-			if (!Send(String("GET"), String(url), nlohmann::json(), result))
+			if (!SendDrive(http_, auth_, error_, String("GET"), String(url), nlohmann::json(), result))
 			{
 				return false;
 			}
@@ -259,7 +262,7 @@ namespace SeedCore
 		request["parents"] = nlohmann::json::array({ parentId.str() });
 
 		nlohmann::json result;
-		if (!Send(String("POST"), String("https://www.googleapis.com/drive/v3/files?fields=id"), request, result))
+		if (!SendDrive(http_, auth_, error_, String("POST"), String("https://www.googleapis.com/drive/v3/files?fields=id"), request, result))
 		{
 			return String();
 		}
@@ -440,7 +443,7 @@ namespace SeedCore
 		nlohmann::json request;
 		request["trashed"] = true;
 		nlohmann::json result;
-		return Send(String("PATCH"), String(std::format("https://www.googleapis.com/drive/v3/files/{}?fields=id", fileId.str())), request, result);
+		return SendDrive(http_, auth_, error_, String("PATCH"), String(std::format("https://www.googleapis.com/drive/v3/files/{}?fields=id", fileId.str())), request, result);
 	}
 
 	/**
@@ -468,14 +471,14 @@ namespace SeedCore
 	* 認証付きのリクエストを Drive API へ1回送り、JSON の応答を解釈
 	* する。失敗した場合はその内容も記録する。
 	*/
-	Bool GoogleDrive::Send(const String& method, const String& url, const nlohmann::json& request, nlohmann::json& result)
+	static Bool SendDrive(HttpClient& http, GoogleAuth& auth, String& error, const String& method, const String& url, const nlohmann::json& request, nlohmann::json& result)
 	{
 		/// [EN] Asking for the token here is also what renews it, so callers never deal with expiry themselves.
 		/// [JP] ここでトークンを求める動作が更新も兼ねる。そのため呼び出し側が期限を気にすることはない。
-		String token = auth_.AccessToken();
+		String token = auth.AccessToken();
 		if (token.str().empty())
 		{
-			error_ = auth_.Error();
+			error = auth.Error();
 			return false;
 		}
 
@@ -493,24 +496,24 @@ namespace SeedCore
 			std::memcpy(payload.data(), body.data(), body.size());
 		}
 
-		HttpResponse response = http_.Send(method, url, headers, payload);
+		HttpResponse response = http.Send(method, url, headers, payload);
 		if (response.status_ == 0)
 		{
-			error_ = response.error_;
+			error = response.error_;
 			return false;
 		}
 
 		result = nlohmann::json::parse(response.body_.begin(), response.body_.end(), nullptr, false);
 		if (response.status_ == 200)
 		{
-			error_ = String();
+			error = String();
 			return result.is_object();
 		}
 
 		/// [EN] 403 here usually means the member's own Drive is full, since uploads are charged to whoever sends them.
 		/// [JP] ここでの 403 は、たいていメンバー自身の Drive が一杯という意味。アップロードは送った本人の容量から引かれる。
 		std::string message = result.is_object() && result.contains("error") ? result["error"].value("message", "") : "";
-		error_ = String(std::format("Drive へのアクセスに失敗しました ({}): {}", response.status_, message));
+		error = String(std::format("Drive へのアクセスに失敗しました ({}): {}", response.status_, message));
 		return false;
 	}
 }

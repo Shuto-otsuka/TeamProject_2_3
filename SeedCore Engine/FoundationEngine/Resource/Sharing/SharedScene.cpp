@@ -1,7 +1,10 @@
+#include <External/Json/json.hpp>
 #include <FoundationEngine/Resource/Sharing/SharedScene.h>
 
 namespace SeedCore
 {
+	static void AdoptScene(const nlohmann::json& scene, DynamicArray<ScenePart>& parts);
+
 	/**
 	* [EN]
 	* Takes the document holding one shared scene's pieces.
@@ -57,7 +60,7 @@ namespace SeedCore
 		/// [EN] A scene that has never been published reads as an empty document, which is simply a scene with no pieces yet.
 		/// [JP] 一度も Publish されていない Scene は空のドキュメントとして読める。断片がまだ無い Scene というだけのこと。
 		nlohmann::json scene = nlohmann::json::parse(snapshot.text_.str(), nullptr, false);
-		Adopt(scene);
+		AdoptScene(scene, parts_);
 		error_ = String();
 		return true;
 	}
@@ -127,45 +130,7 @@ namespace SeedCore
 			return true;
 		}
 
-		return Modify([this, changes](nlohmann::json& scene)
-		{
-			/// [EN] Every piece is checked before any is written, so the library never ends up holding half of one member's change.
-			/// [JP] どれかを書く前に全ての断片を確かめる。1人の変更が半分だけライブラリに載ることのないようにするため。
-			for (const ScenePartChange& change : changes)
-			{
-				Uint64 current = 0;
-				if (scene["parts"].contains(change.scope_.str()))
-				{
-					current = scene["parts"][change.scope_.str()].value("revision", Uint64(0));
-				}
-				if (current != change.baseRevision_)
-				{
-					error_ = String(std::format("他のメンバーが先に公開した部分があるため公開しませんでした（例: {}）。「最新を取得」すると、その部分はライブラリの版になります。", change.scope_.str()));
-					return false;
-				}
-			}
-
-			for (const ScenePartChange& change : changes)
-			{
-				Uint64 current = change.baseRevision_;
-
-				nlohmann::json part;
-				part["revision"] = current + 1;
-				part["hash"] = change.hash_.str();
-
-				/// [EN] A small piece rides inside the document, which is what makes a scene edit arrive in one read rather than two.
-				/// [JP] 小さい断片はドキュメントの中に同乗させる。Scene の変更が2回ではなく1回の読み取りで届くのはこのため。
-				part["data"] = change.data_.str();
-				part["driveId"] = change.driveId_.str();
-				part["size"] = change.size_;
-
-				/// [EN] A removed piece keeps its entry and its revision, so a member with an old copy learns it was deleted.
-				/// [JP] 削除された断片も項目と Revision を保つ。古い写しを持つメンバーが、削除されたと知るために要る。
-				part["deleted"] = change.deleted_;
-				scene["parts"][change.scope_.str()] = part;
-			}
-			return true;
-		});
+		return Modify(changes);
 	}
 
 	/**
@@ -194,7 +159,7 @@ namespace SeedCore
 	* Scene を読み、edit を適用して書き戻す。他のメンバーが先に書いて
 	* いた場合は、新しい内容から読み直してやり直す。
 	*/
-	Bool SharedScene::Modify(const std::function<Bool(nlohmann::json&)>& edit)
+	Bool SharedScene::Modify(const DynamicArray<ScenePartChange>& changes)
 	{
 		/// [EN] Members in one scene write to this same document, so losing a round here is expected rather than rare.
 		/// [JP] 同じ Scene にいるメンバーはこの同じドキュメントへ書くので、ここで1周負けるのは珍しくない。
@@ -220,17 +185,38 @@ namespace SeedCore
 				scene["parts"] = nlohmann::json::object();
 			}
 
-			/// [EN] A refused edit still leaves the freshly read scene in memory, which is what the recovery flow looks at.
-			/// [JP] 拒否された場合も、読み直した Scene はメモリに残る。Recovery の処理が見るのはそれ。
-			if (!edit(scene))
+			/// [EN] Every piece is checked before any is written, so the library never ends up holding half of one member's change.
+			/// [JP] どれかを書く前に全ての断片を確かめる。1人の変更が半分だけライブラリに載ることのないようにするため。
+			for (const ScenePartChange& change : changes)
 			{
-				Adopt(scene);
-				return false;
+				Uint64 current = 0;
+				if (scene["parts"].contains(change.scope_.str()))
+				{
+					current = scene["parts"][change.scope_.str()].value("revision", Uint64(0));
+				}
+				if (current != change.baseRevision_)
+				{
+					error_ = String(std::format("他のメンバーが先に公開した部分があるため公開しませんでした（例: {}）。「最新を取得」すると、その部分はライブラリの版になります。", change.scope_.str()));
+					AdoptScene(scene, parts_);
+					return false;
+				}
+			}
+
+			for (const ScenePartChange& change : changes)
+			{
+				nlohmann::json part;
+				part["revision"] = change.baseRevision_ + 1;
+				part["hash"] = change.hash_.str();
+				part["data"] = change.data_.str();
+				part["driveId"] = change.driveId_.str();
+				part["size"] = change.size_;
+				part["deleted"] = change.deleted_;
+				scene["parts"][change.scope_.str()] = part;
 			}
 
 			if (document_.Write(documentId_, snapshot, String(scene.dump())))
 			{
-				Adopt(scene);
+				AdoptScene(scene, parts_);
 				error_ = String();
 				return true;
 			}
@@ -257,11 +243,11 @@ namespace SeedCore
 	* [JP]
 	* ドキュメントの本文を解釈して、メモリ上の断片一覧にする。
 	*/
-	void SharedScene::Adopt(const nlohmann::json& scene)
+	static void AdoptScene(const nlohmann::json& scene, DynamicArray<ScenePart>& parts)
 	{
 		/// [EN] The list is rebuilt from scratch, so a piece removed by someone else disappears from this Editor too.
 		/// [JP] 一覧は毎回作り直す。他の誰かが削除した断片は、この Editor からも消える。
-		parts_.clear();
+		parts.clear();
 		if (!scene.is_object() || !scene.contains("parts") || !scene["parts"].is_object())
 		{
 			return;
@@ -282,7 +268,7 @@ namespace SeedCore
 			part.driveId_ = String(entry.value().value("driveId", ""));
 			part.size_ = entry.value().value("size", Uint64(0));
 			part.deleted_ = entry.value().value("deleted", false);
-			parts_.push_back(part);
+			parts.push_back(part);
 		}
 	}
 }
