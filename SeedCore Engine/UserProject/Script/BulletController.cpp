@@ -334,9 +334,9 @@ void BulletController::Move(float elapsedTime)
                 {
                     isDynamicWait = false;
                     rigidbody->bodyType_ = SeedCore::Rigidbody::BodyType::Dynamic;
-                    rigidbody->freezePositionX_ = true;
-                    rigidbody->freezePositionY_ = true;
-                    rigidbody->freezePositionZ_ = true;
+                    rigidbody->freezeRotationX_ = true;
+                    rigidbody->freezeRotationY_ = true;
+                    rigidbody->freezeRotationZ_ = true;
                     rigidbody->Dispatch();
                 }
             }
