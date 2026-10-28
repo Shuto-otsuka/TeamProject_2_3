@@ -1,3 +1,12 @@
+#ifdef __clang__
+#define STBI_NO_SIMD
+#endif
+#include <External/TinyglTF/Include/tiny_gltf.h>
+#include <External/DirectXTex/Include/DirectXTex.h>
+#ifndef FBXSDK_SHARED
+#define FBXSDK_SHARED
+#endif
+#include <External/FBXSDK/Include/fbxsdk.h>
 #include <GraphicsEngine/Model/ModelExporter.h>
 #include <GraphicsEngine/Model/Crister.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>

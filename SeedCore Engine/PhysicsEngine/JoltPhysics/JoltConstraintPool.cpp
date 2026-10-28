@@ -7,8 +7,20 @@
 
 namespace SeedCore
 {
+	/**
+	* [EN]
+	* Destroys the pool storage, dropping the reference it holds on every
+	* constraint still in it.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* プールのストレージを破棄し、まだ残っている各拘束への参照を手放す。
+	*/
 	JoltConstraintPool::~JoltConstraintPool()
 	{
+		/// [EN] Constraints are reference counted by Jolt, so the pool releases its reference instead of deleting them.
+		/// [JP] 拘束は Jolt が参照カウントで管理するので、プールは削除せず自分の参照を解放する。
 		for (Slot& slot : slots_)
 		{
 			if (slot.constraint_)

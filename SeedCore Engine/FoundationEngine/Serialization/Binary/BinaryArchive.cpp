@@ -18,6 +18,18 @@ namespace SeedCore
 			data_ = data;
 			size_ = size;
 			index_.clear();
+			indexed_ = false;
+		}
+
+		void BuildIndex()const
+		{
+			if (indexed_)
+			{
+				return;
+			}
+
+			indexed_ = true;
+			index_.clear();
 
 			Size offset = 0;
 			while (offset + sizeof(Uint32) * 2 <= size_)
@@ -43,7 +55,9 @@ namespace SeedCore
 
 		DynamicArray<Byte> ownedData_;
 
-		std::unordered_map<Uint32, std::pair<Size, Size>> index_;
+		mutable std::unordered_map<Uint32, std::pair<Size, Size>> index_;
+
+		mutable Bool indexed_ = false;
 
 		const Byte* data_ = nullptr;
 
@@ -146,6 +160,7 @@ namespace SeedCore
 
 	Bool BinaryInputArchive::FindField(const Char* name, BinaryInputArchive& result)const
 	{
+		impl_->BuildIndex();
 		auto entry = impl_->index_.find(BinaryField(name).GetValue());
 		if (entry == impl_->index_.end())
 		{
@@ -193,6 +208,7 @@ namespace SeedCore
 
 	Bool BinaryInputArchive::Has(const Char* name)const
 	{
+		impl_->BuildIndex();
 		return impl_->index_.contains(BinaryField(name).GetValue());
 	}
 

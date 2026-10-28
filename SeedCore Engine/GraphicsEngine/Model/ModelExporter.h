@@ -1,6 +1,10 @@
 #pragma once
-#include <FoundationEngine/Utility/String.h>
 #include <GraphicsEngine/Model/ModelLoader.h>
+
+namespace tinygltf
+{
+	class Model;
+}
 
 namespace SeedCore
 {

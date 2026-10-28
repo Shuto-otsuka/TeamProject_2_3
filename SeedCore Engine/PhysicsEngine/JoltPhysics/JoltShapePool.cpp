@@ -17,8 +17,20 @@
 
 namespace SeedCore
 {
+	/**
+	* [EN]
+	* Destroys the shape pool, dropping the reference it holds on every
+	* shape still in it.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 形状プールを破棄し、まだ残っている各形状への参照を手放す。
+	*/
 	JoltShapePool::~JoltShapePool()
 	{
+		/// [EN] Shapes are reference counted by Jolt, so the pool releases its reference instead of deleting them.
+		/// [JP] 形状は Jolt が参照カウントで管理するので、プールは削除せず自分の参照を解放する。
 		for (Slot& slot : slots_)
 		{
 			if (slot.shape_)

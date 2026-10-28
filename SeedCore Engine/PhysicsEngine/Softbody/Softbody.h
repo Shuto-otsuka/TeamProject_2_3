@@ -156,9 +156,33 @@ namespace SeedCore
 		*/
 		void OnDestroy();
 
+		/**
+		* [EN]
+		* Destroys the body and returns to waiting, so the soft body is
+		* built again from the current settings.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ボディを破棄して構築待ちに戻し、現在の設定でソフトボディが
+		* 作り直されるようにする。
+		*/
 		void OnRevision();
 
 	public:
+		/**
+		* [EN]
+		* Applies fields changed from code. An edit in the inspector runs
+		* OnRevision on its own, but a field written by a script takes
+		* effect only once this is called.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* コードから変えたフィールドを反映する。インスペクタでの編集は
+		* 自動で OnRevision が走るが、スクリプトから書き換えたフィールドは
+		* これを呼んだときに初めて効く。
+		*/
 		void Dispatch();
 
 	public:

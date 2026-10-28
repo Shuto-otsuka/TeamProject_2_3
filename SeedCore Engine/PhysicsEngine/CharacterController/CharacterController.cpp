@@ -322,8 +322,21 @@ namespace SeedCore
 		}
 	}
 
+	/**
+	* [EN]
+	* Rebuilds the virtual character from the current settings, so a
+	* changed field takes effect. Does nothing while no character exists.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 現在の設定で仮想キャラクターを作り直し、変更したフィールドを
+	* 効かせる。キャラクターが無い間は何もしない。
+	*/
 	void CharacterController::OnRevision()
 	{
+		/// [EN] Before OnAwake or after OnDestroy there is no character to rebuild, and OnAwake builds it with the current settings anyway.
+		/// [JP] OnAwake 前や OnDestroy 後は作り直すキャラクターが無く、OnAwake がいずれ現在の設定で作る。
 		if (!character_)
 		{
 			return;
@@ -333,6 +346,19 @@ namespace SeedCore
 		OnAwake();
 	}
 
+	/**
+	* [EN]
+	* Applies fields changed from code. An edit in the inspector runs
+	* OnRevision on its own, but a field written by a script takes
+	* effect only once this is called.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* コードから変えたフィールドを反映する。インスペクタでの編集は
+	* 自動で OnRevision が走るが、スクリプトから書き換えたフィールドは
+	* これを呼んだときに初めて効く。
+	*/
 	void CharacterController::Dispatch()
 	{
 		OnRevision();

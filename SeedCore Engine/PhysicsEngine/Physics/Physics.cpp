@@ -1741,6 +1741,17 @@ namespace SeedCore
 		return false;
 	}
 
+	/**
+	* [EN]
+	* Finds the nearest 3D body intersected by a swept box, given its
+	* half extents and rotation.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 半分の大きさと回転を指定した、移動する箱と交差する最も近い
+	* 3Dボディを検索する。
+	*/
 	Bool Physics::Boxcast(const Vector3& origin, const Vector3& halfExtents, const Quaternion& rotation, const Vector3& direction, Float maxDistance, RaycastHit& outHit, Uint32 layerMask)const
 	{
 		/// [EN] Only the direction matters; a zero vector is left as is and sweeps nowhere.
@@ -2167,18 +2178,37 @@ namespace SeedCore
 		return false;
 	}
 
+	/**
+	* [EN]
+	* Finds the nearest planar body intersected by a swept rectangle,
+	* given its half extents (pixels) and rotation (degrees).
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 半分の大きさ（ピクセル）と回転（度）を指定した、移動する矩形と
+	* 交差する最も近い平面ボディを検索する。
+	*/
 	Bool Physics::Boxcast2D(const Vector2& origin, const Vector2& halfExtents, Float rotation, const Vector2& direction, Float maxDistance, RaycastHit2D& outHit, Uint32 layerMask)const
 	{
+		/// [EN] Canvas Y points down and physics Y points up, so Y is negated; 2D bodies live on the z = 0 plane.
+		/// [JP] Canvas の Y は下向き、物理の Y は上向きなので Y を反転する。2D ボディは z = 0 の平面上にある。
 		JPH::Vec3 dir(direction.x, -direction.y, 0.0f);
 		if (dir.LengthSq() > 0.0f)
 		{
 			dir = dir.Normalized();
 		}
 
+		/// [EN] On the z = 0 plane a box cuts out the rectangle; it is given some depth along Z so it reaches the planar bodies, and size, origin and reach go from pixels to meters.
+		/// [JP] z = 0 の平面上では箱の断面が矩形になる。平面ボディに届くよう Z 方向に厚みを持たせ、大きさ・始点・届く距離はピクセルからメートルへ変換する。
+		/// [EN] The canvas angle turns the other way once Y is flipped, so the rotation about Z is negated.
+		/// [JP] Y を反転すると Canvas の角度は逆回りになるので、Z 軸まわりの回転を反転する。
 		JPH::BoxShape boxShape(JPH::Vec3(halfExtents.x / pixelsPerMeter_, halfExtents.y / pixelsPerMeter_, 0.5f), 0.0f);
 		JPH::RShapeCast shapeCast(&boxShape, JPH::Vec3::sReplicate(1.0f), JPH::RMat44::sRotationTranslation(JPH::Quat::sRotation(JPH::Vec3::sAxisZ(), -ToRadians(rotation)), JPH::RVec3(origin.x / pixelsPerMeter_, -origin.y / pixelsPerMeter_, 0.0f)), dir * (maxDistance / pixelsPerMeter_));
 
 #if SC_DEBUG
+		/// [EN] Every query is recorded for the debug display, in canvas pixels with Y down: what was asked now, what was found just before returning.
+		/// [JP] クエリはすべてデバッグ表示のために、Y 下向きの Canvas ピクセルで記録する。問い合わせた内容はここで、結果は返す直前に入れる。
 		QueryDesc query;
 		query.kind_ = QueryKind::Boxcast2D;
 		query.origin_ = Vector3(origin.x, origin.y, 0.0f);
@@ -2192,6 +2222,8 @@ namespace SeedCore
 		JPH::ShapeCastSettings settings;
 		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
 
+		/// [EN] Collects every hit, since the nearest one may be filtered out below.
+		/// [JP] 最も近いヒットが下で除外されることもあるので、全てのヒットを集める。
 		JPH::AllHitCollisionCollector<JPH::CastShapeCollector> collector;
 		physicsSystem.GetNarrowPhaseQuery().CastShape(shapeCast, settings, JPH::RVec3::sZero(), collector);
 
@@ -2203,15 +2235,21 @@ namespace SeedCore
 			return false;
 		}
 
+		/// [EN] Nearest first, so the first hit that passes the filters is the answer.
+		/// [JP] 近い順に並べ、フィルタを通った最初のヒットを答えにする。
 		collector.Sort();
 
 		for (const JPH::ShapeCastResult& hit : collector.mHits)
 		{
+			/// [EN] Only 2D canvas bodies take part in 2D queries.
+			/// [JP] 2D のクエリには、2D Canvas のボディだけを含める。
 			if (!(physicsSystem.GetBodyInterface().GetObjectLayer(hit.mBodyID2) & Layers::PLANAR))
 			{
 				continue;
 			}
 
+			/// [EN] Skips bodies whose actor's layer bit is not in layerMask; all bits set means no filter.
+			/// [JP] Actor のレイヤーのビットが layerMask に無いボディは飛ばす。全ビットが立っていればフィルタ無し。
 			if (layerMask != 0xFFFFFFFF)
 			{
 				Actor actor = WorldAccessor::Make(world_, BodyEntityID(hit.mBodyID2.GetIndexAndSequenceNumber()));
@@ -2221,8 +2259,12 @@ namespace SeedCore
 				}
 			}
 
+			/// [EN] The penetration axis points from the rectangle into the hit body, so its negation is the surface normal.
+			/// [JP] めり込み軸は矩形から相手のボディへ向くので、その逆向きが面の法線になる。
 			JPH::Vec3 normal = -hit.mPenetrationAxis.Normalized();
 
+			/// [EN] Results go back to canvas pixels with Y down; the distance scales maxDistance, already in pixels.
+			/// [JP] 結果は Y 下向きの Canvas ピクセルへ戻す。距離はピクセル単位の maxDistance に割合を掛ける。
 			outHit.position_ = Vector2(hit.mContactPointOn2.GetX() * pixelsPerMeter_, -hit.mContactPointOn2.GetY() * pixelsPerMeter_);
 			outHit.normal_ = Vector2(normal.GetX(), -normal.GetY());
 			outHit.distance_ = hit.mFraction * maxDistance;

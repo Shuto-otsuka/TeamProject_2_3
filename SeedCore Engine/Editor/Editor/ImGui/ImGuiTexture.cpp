@@ -146,6 +146,17 @@ namespace SeedCore
 		load(IconType::ComponentAttachmentConstraint, "Component", "AttachmentConstraint");
 		load(IconType::ComponentIKConstraint,         "Component", "IKConstraint");
 		load(IconType::ComponentWeather,              "Component", "Weather");
+		load(IconType::ComponentCelestial,            "Component", "Celestial");
+		load(IconType::ComponentVolumetricCloudScapes, "Component", "VolumetricCloudScapes");
+		load(IconType::ComponentVolumetricStar,       "Component", "VolumetricStar");
+		load(IconType::ComponentShadow,               "Component", "Shadow");
+		load(IconType::ComponentGlobalIllumination,   "Component", "GlobalIllumination");
+		load(IconType::ComponentAmbientOcclusion,     "Component", "AmbientOcclusion");
+		load(IconType::ComponentReflection,           "Component", "Reflection");
+		load(IconType::ComponentRefraction,           "Component", "Refraction");
+		load(IconType::ComponentCaustics,             "Component", "Caustics");
+		load(IconType::ComponentSubsurfaceScattering, "Component", "SubsurfaceScattering");
+		load(IconType::ComponentVolumetricLight,      "Component", "VolumetricLight");
 		load(IconType::ComponentEffect,               "Component", "Effect");
 		load(IconType::ComponentPostProcess,          "Component", "PostProcess");
 		load(IconType::ComponentSpawner,              "Component", "Spawner");
@@ -209,6 +220,17 @@ namespace SeedCore
 			{ "AttachmentConstraint", IconType::ComponentAttachmentConstraint },
 			{ "IKConstraint", IconType::ComponentIKConstraint },
 			{ "Weather", IconType::ComponentWeather },
+			{ "Celestial", IconType::ComponentCelestial },
+			{ "VolumetricCloudScapes", IconType::ComponentVolumetricCloudScapes },
+			{ "VolumetricStar", IconType::ComponentVolumetricStar },
+			{ "Shadow", IconType::ComponentShadow },
+			{ "GlobalIllumination", IconType::ComponentGlobalIllumination },
+			{ "AmbientOcclusion", IconType::ComponentAmbientOcclusion },
+			{ "Reflection", IconType::ComponentReflection },
+			{ "Refraction", IconType::ComponentRefraction },
+			{ "Caustics", IconType::ComponentCaustics },
+			{ "SubsurfaceScattering", IconType::ComponentSubsurfaceScattering },
+			{ "VolumetricLight", IconType::ComponentVolumetricLight },
 			{ "Effect", IconType::ComponentEffect },
 			{ "PostProcess", IconType::ComponentPostProcess },
 			{ "Spawner", IconType::ComponentSpawner },

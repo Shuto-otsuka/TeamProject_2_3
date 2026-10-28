@@ -194,6 +194,8 @@ namespace SeedCore
 		/// [JP] 型の OnTriggerExit。相手の actor を受け取る。
 		void (*triggerExit_)(ComponentBehaviour*, const Actor&) = nullptr;
 
+		/// [EN] The type's OnRevision, run when a field marked for revision has changed.
+		/// [JP] 型の OnRevision。Revision 対象のフィールドが変わったときに走る。
 		void (*revision_)(ComponentBehaviour*) = nullptr;
 	};
 

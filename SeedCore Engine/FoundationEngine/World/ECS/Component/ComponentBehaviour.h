@@ -305,6 +305,17 @@ namespace SeedCore
 		*/
 		void DispatchTriggerExit(const Actor& other);
 
+		/**
+		* [EN]
+		* Dispatches a revision event to this component's implementation, if
+		* any, so it can rebuild what it made from its fields.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* Revision イベントを、このコンポーネントの実装（存在する場合）へ
+		* ディスパッチし、フィールドから作ったものを作り直させる。
+		*/
 		void DispatchRevision();
 
 	private:

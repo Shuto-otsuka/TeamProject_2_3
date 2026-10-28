@@ -25,14 +25,40 @@ namespace SeedCore
 	*/
 	struct CharacterDesc
 	{
+		/// [EN] Initial world position.
+		/// [JP] 初期のワールド位置。
 		Vector3 position_ = { 0.0f, 0.0f, 0.0f };
+
+		/// [EN] Initial world rotation.
+		/// [JP] 初期のワールド回転。
 		Quaternion rotation_ = Quaternion::Identity;
+
+		/// [EN] Radius of the character's capsule.
+		/// [JP] キャラクターのカプセルの半径。
 		Float radius_ = 0.3f;
+
+		/// [EN] Full height of the character's capsule.
+		/// [JP] キャラクターのカプセルの全高。
 		Float height_ = 1.8f;
+
+		/// [EN] Steepest slope, in radians, the character can still walk on.
+		/// [JP] キャラクターが歩いて登れる最も急な斜面の角度（ラジアン）。
 		Float maxSlopeAngle_ = ToRadians(50.0f);
+
+		/// [EN] Mass in kilograms, used when the character pushes other bodies.
+		/// [JP] 質量（kg）。キャラクターが他のボディを押すときに使う。
 		Float mass_ = 70.0f;
+
+		/// [EN] Largest force the character can push other bodies with.
+		/// [JP] キャラクターが他のボディを押せる最大の力。
 		Float maxStrength_ = 100.0f;
+
+		/// [EN] Packed object layer of the character's inner body.
+		/// [JP] キャラクターの内側ボディのパック済みオブジェクトレイヤー。
 		ScObjectLayer layer_ = 0;
+
+		/// [EN] Entity the character represents, stored on its inner body.
+		/// [JP] キャラクターが表すエンティティ。内側ボディに持たせる。
 		EntityID userData_;
 	};
 
@@ -47,21 +73,68 @@ namespace SeedCore
 	*/
 	struct RigidbodyDesc
 	{
+		/// [EN] Pooled shape the body is made of.
+		/// [JP] ボディを形作る、プールの形状。
 		ScShapeHandle shape_;
+
+		/// [EN] Initial world position.
+		/// [JP] 初期のワールド位置。
 		Vector3 position_ = { 0.0f, 0.0f, 0.0f };
+
+		/// [EN] Initial world rotation.
+		/// [JP] 初期のワールド回転。
 		Quaternion rotation_ = Quaternion::Identity;
+
+		/// [EN] Whether the body is static, kinematic or dynamic.
+		/// [JP] ボディがスタティック・キネマティック・ダイナミックのどれか。
 		ScMotionType motionType_ = ScMotionType::Dynamic;
+
+		/// [EN] Whether the motion type may be switched after creation.
+		/// [JP] 生成後に運動タイプを切り替えてよいか。
 		Bool allowMotionTypeChange_ = false;
+
+		/// [EN] Whether fast motion is swept so the body does not tunnel through thin geometry.
+		/// [JP] 速い移動を掃引で調べ、薄いジオメトリをすり抜けないようにするか。
 		Bool continuousCollision_ = false;
+
+		/// [EN] Packed object layer (motion type, Actor layer, trigger and 2D bits).
+		/// [JP] パック済みオブジェクトレイヤー（運動タイプ、Actor レイヤー、トリガーと 2D のビット）。
 		ScObjectLayer layer_ = 0;
+
+		/// [EN] Mass in kilograms.
+		/// [JP] 質量（kg）。
 		Float mass_ = 1.0f;
+
+		/// [EN] Damping that slows linear velocity over time.
+		/// [JP] 並進速度を時間とともに弱める減衰。
 		Float linearDamping_ = 0.05f;
+
+		/// [EN] Damping that slows angular velocity over time.
+		/// [JP] 角速度を時間とともに弱める減衰。
 		Float angularDamping_ = 0.05f;
+
+		/// [EN] Friction coefficient.
+		/// [JP] 摩擦係数。
 		Float friction_ = 0.2f;
+
+		/// [EN] Restitution: 0 does not bounce, 1 bounces back with full speed.
+		/// [JP] 反発係数。0 で跳ねず、1 で速さを保って跳ね返る。
 		Float restitution_ = 0.0f;
+
+		/// [EN] Multiplier on world gravity; 0 turns gravity off.
+		/// [JP] ワールドの重力に掛ける倍率。0 で重力を切る。
 		Float gravityFactor_ = 1.0f;
+
+		/// [EN] Axes the body may move and rotate along.
+		/// [JP] ボディが移動・回転してよい軸。
 		ScAllowedDOFs allowedDOFs_ = ScAllowedDOFsAll;
+
+		/// [EN] Entity the body represents, stored on the body.
+		/// [JP] ボディが表すエンティティ。ボディに持たせる。
 		EntityID userData_;
+
+		/// [EN] Whether the body only reports overlaps (a trigger) without physical response.
+		/// [JP] 物理応答をせず、重なりだけを知らせる（トリガー）か。
 		Bool isSensor_ = false;
 	};
 
@@ -76,10 +149,24 @@ namespace SeedCore
 	*/
 	struct HingeJointDesc
 	{
+		/// [EN] Point the hinge turns around.
+		/// [JP] ヒンジが回る中心の点。
 		Vector3 anchor_ = { 0.0f, 0.0f, 0.0f };
+
+		/// [EN] Axis the hinge turns about.
+		/// [JP] ヒンジが回る軸。
 		Vector3 axis_ = { 0.0f, 1.0f, 0.0f };
+
+		/// [EN] Whether the angle is held between minAngle_ and maxAngle_.
+		/// [JP] 角度を minAngle_ と maxAngle_ の間に収めるか。
 		Bool useLimits_ = false;
+
+		/// [EN] Lower angle limit.
+		/// [JP] 角度の下限。
 		Float minAngle_ = 0.0f;
+
+		/// [EN] Upper angle limit.
+		/// [JP] 角度の上限。
 		Float maxAngle_ = 0.0f;
 	};
 
@@ -108,10 +195,24 @@ namespace SeedCore
 	*/
 	struct SpringJointDesc
 	{
+		/// [EN] Point the spring is attached at.
+		/// [JP] ばねを取り付ける点。
 		Vector3 anchor_ = { 0.0f, 0.0f, 0.0f };
+
+		/// [EN] Shortest distance the spring allows between the bodies.
+		/// [JP] ばねが許すボディ間の最短距離。
 		Float minDistance_ = 0.0f;
+
+		/// [EN] Longest distance the spring allows between the bodies.
+		/// [JP] ばねが許すボディ間の最長距離。
 		Float maxDistance_ = 0.0f;
+
+		/// [EN] Oscillation frequency of the spring, in Hz; higher is stiffer.
+		/// [JP] ばねの振動数（Hz）。高いほど硬い。
 		Float frequency_ = 2.0f;
+
+		/// [EN] Damping ratio: 0 keeps oscillating, 1 settles without overshoot.
+		/// [JP] 減衰比。0 で振動し続け、1 で行き過ぎずに収まる。
 		Float damping_ = 0.5f;
 	};
 
@@ -126,9 +227,20 @@ namespace SeedCore
 	*/
 	struct SliderJointDesc
 	{
+		/// [EN] Axis the bodies slide along.
+		/// [JP] ボディが滑る軸。
 		Vector3 axis_ = { 1.0f, 0.0f, 0.0f };
+
+		/// [EN] Whether the slide is held between minDistance_ and maxDistance_.
+		/// [JP] 移動量を minDistance_ と maxDistance_ の間に収めるか。
 		Bool useLimits_ = false;
+
+		/// [EN] Lower translation limit.
+		/// [JP] 移動量の下限。
 		Float minDistance_ = 0.0f;
+
+		/// [EN] Upper translation limit.
+		/// [JP] 移動量の上限。
 		Float maxDistance_ = 0.0f;
 	};
 
@@ -143,9 +255,20 @@ namespace SeedCore
 	*/
 	struct RaycastHit
 	{
+		/// [EN] Point where the query hit, on the hit body's surface.
+		/// [JP] クエリが当たった点。当たったボディの表面上。
 		Vector3 position_ = { 0.0f, 0.0f, 0.0f };
+
+		/// [EN] Surface normal at the hit point.
+		/// [JP] 当たった点での面の法線。
 		Vector3 normal_ = { 0.0f, 0.0f, 0.0f };
+
+		/// [EN] Distance travelled from the origin to the hit.
+		/// [JP] 始点から当たった位置までの距離。
 		Float distance_ = 0.0f;
+
+		/// [EN] Entity of the hit body.
+		/// [JP] 当たったボディのエンティティ。
 		EntityID entityID_;
 	};
 
@@ -160,9 +283,20 @@ namespace SeedCore
 	*/
 	struct RaycastHit2D
 	{
+		/// [EN] Point where the query hit, in canvas pixels with Y down.
+		/// [JP] クエリが当たった点。Y 下向きの Canvas ピクセル。
 		Vector2 position_ = { 0.0f, 0.0f };
+
+		/// [EN] Surface normal at the hit point, with Y down.
+		/// [JP] 当たった点での面の法線。Y 下向き。
 		Vector2 normal_ = { 0.0f, 0.0f };
+
+		/// [EN] Distance travelled from the origin to the hit, in pixels.
+		/// [JP] 始点から当たった位置までの距離（ピクセル）。
 		Float distance_ = 0.0f;
+
+		/// [EN] Entity of the hit body.
+		/// [JP] 当たったボディのエンティティ。
 		EntityID entityID_;
 	};
 
@@ -177,20 +311,64 @@ namespace SeedCore
 	*/
 	struct SoftbodyDesc
 	{
+		/// [EN] Vertex positions of the mesh, in the body's local space.
+		/// [JP] メッシュの頂点位置。ボディのローカル空間。
 		DynamicArray<Vector3> positions_;
+
+		/// [EN] Triangle indices into positions_, three per face.
+		/// [JP] positions_ を指す三角形のインデックス。1面につき3つ。
 		DynamicArray<Uint32> indices_;
+
+		/// [EN] Initial world position.
+		/// [JP] 初期のワールド位置。
 		Vector3 position_ = { 0.0f, 0.0f, 0.0f };
+
+		/// [EN] Initial world rotation.
+		/// [JP] 初期のワールド回転。
 		Quaternion rotation_ = Quaternion::Identity;
+
+		/// [EN] Packed object layer.
+		/// [JP] パック済みオブジェクトレイヤー。
 		ScObjectLayer layer_ = 0;
+
+		/// [EN] Softness of each edge against stretching; 0 is rigid.
+		/// [JP] 各辺の伸びに対する柔らかさ。0 で硬い。
 		Float edgeCompliance_ = 0.0f;
+
+		/// [EN] Softness of each face against shearing; 0 is rigid.
+		/// [JP] 各面のせん断に対する柔らかさ。0 で硬い。
 		Float shearCompliance_ = 0.0f;
+
+		/// [EN] Softness between neighbouring faces against bending; 0 is rigid.
+		/// [JP] 隣り合う面の曲げに対する柔らかさ。0 で硬い。
 		Float bendCompliance_ = 0.0f;
+
+		/// [EN] Solver iterations per step; more iterations hold the constraints more firmly.
+		/// [JP] ステップごとのソルバの反復回数。多いほど拘束がしっかり保たれる。
 		Uint32 numIterations_ = 5;
+
+		/// [EN] Damping that slows the vertices' velocity over time.
+		/// [JP] 頂点の速度を時間とともに弱める減衰。
 		Float linearDamping_ = 0.1f;
+
+		/// [EN] Pressure inside a closed mesh; positive inflates it.
+		/// [JP] 閉じたメッシュの内部圧力。正で膨らむ。
 		Float pressure_ = 0.0f;
+
+		/// [EN] Friction coefficient.
+		/// [JP] 摩擦係数。
 		Float friction_ = 0.2f;
+
+		/// [EN] Restitution: 0 does not bounce, 1 bounces back with full speed.
+		/// [JP] 反発係数。0 で跳ねず、1 で速さを保って跳ね返る。
 		Float restitution_ = 0.0f;
+
+		/// [EN] Multiplier on world gravity; 0 turns gravity off.
+		/// [JP] ワールドの重力に掛ける倍率。0 で重力を切る。
 		Float gravityFactor_ = 1.0f;
+
+		/// [EN] Entity the body represents, stored on the body.
+		/// [JP] ボディが表すエンティティ。ボディに持たせる。
 		EntityID userData_;
 	};
 
@@ -854,6 +1032,17 @@ namespace SeedCore
 		*/
 		Bool Spherecast(const Vector3& origin, Float radius, const Vector3& direction, Float maxDistance, RaycastHit& outHit, Uint32 layerMask = 0xFFFFFFFF)const;
 
+		/**
+		* [EN]
+		* Finds the nearest 3D body intersected by a swept box, given its
+		* half extents and rotation.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 半分の大きさと回転を指定した、移動する箱と交差する最も近い
+		* 3Dボディを検索する。
+		*/
 		Bool Boxcast(const Vector3& origin, const Vector3& halfExtents, const Quaternion& rotation, const Vector3& direction, Float maxDistance, RaycastHit& outHit, Uint32 layerMask = 0xFFFFFFFF)const;
 
 		/**
@@ -893,6 +1082,17 @@ namespace SeedCore
 		*/
 		Bool Circlecast2D(const Vector2& origin, Float radius, const Vector2& direction, Float maxDistance, RaycastHit2D& outHit, Uint32 layerMask = 0xFFFFFFFF)const;
 
+		/**
+		* [EN]
+		* Finds the nearest planar body intersected by a swept rectangle,
+		* given its half extents (pixels) and rotation (degrees).
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 半分の大きさ（ピクセル）と回転（度）を指定した、移動する矩形と
+		* 交差する最も近い平面ボディを検索する。
+		*/
 		Bool Boxcast2D(const Vector2& origin, const Vector2& halfExtents, Float rotation, const Vector2& direction, Float maxDistance, RaycastHit2D& outHit, Uint32 layerMask = 0xFFFFFFFF)const;
 
 		/**

@@ -4,6 +4,18 @@
 #include <FoundationEngine/Resource/Asset/AxisConvention.h>
 #include <GraphicsEngine/Model/Animation/Animation.h>
 
+namespace tinygltf
+{
+	class Model;
+	struct Animation;
+}
+
+namespace fbxsdk
+{
+	class FbxAnimStack;
+	class FbxNode;
+}
+
 namespace SeedCore
 {
 	class SEEDCORE_API AnimationLoader :public NonCopyable
@@ -67,7 +79,7 @@ namespace SeedCore
 		* レストポーズへフォールバックする。スタックは事前にシーンの現在の
 		* スタックにしておくこと。
 		*/
-		void FetchAnimationClip(FbxAnimStack* fbxStack, const DynamicArray<FbxNode*>& nodeTable, Float unitScale, const ResolvedAxisConvention& resolved, Double frameRate, Animation& animation);
+		void FetchAnimationClip(fbxsdk::FbxAnimStack* fbxStack, const DynamicArray<fbxsdk::FbxNode*>& nodeTable, Float unitScale, const ResolvedAxisConvention& resolved, Double frameRate, Animation& animation);
 
 	private:
 		StablePool<Animation> pool_;

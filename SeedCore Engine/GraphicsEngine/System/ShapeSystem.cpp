@@ -437,6 +437,8 @@ namespace SeedCore
 			}
 			else if (query.kind_ == QueryKind::Boxcast)
 			{
+				/// [EN] The box at its start and where it stopped, joined by the path of its center, then a marker and the surface normal at the hit.
+				/// [JP] 始点と止まったところの箱を、中心の通り道でつないで描く。当たった点の目印と面の法線も描く。
 				Float length = query.hit_ ? query.hitDistance_ : query.distance_;
 				Vector3 end = query.origin_ + query.direction_ * length;
 				shapes_.push_back({ ShapeKind::Box, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, query.origin_, query.rotation_, query.dimensions_, color });
@@ -494,8 +496,13 @@ namespace SeedCore
 				}
 				else if (query.kind_ == QueryKind::Boxcast2D)
 				{
+					/// [EN] The rectangle at its start and where it stopped, joined by the path of its center, then a marker and the surface normal at the hit.
+					/// [JP] 始点と止まったところの矩形を、中心の通り道でつないで描く。当たった点の目印と面の法線も描く。
 					Float length = query.hit_ ? query.hitDistance_ : query.distance_;
 					Vector3 end = origin + direction * length;
+
+					/// [EN] The recorded rotation turns about Z by the canvas angle with Y down, so with Y flipped it turns the other way, as the 2D colliders do.
+					/// [JP] 記録された回転は Y 下向きでの Canvas の角度だけ Z 軸まわりに回るので、Y を反転した描画では、2D のコライダーと同じく逆向きに回す。
 					Quaternion rotation(-query.rotation_.x, -query.rotation_.y, -query.rotation_.z, query.rotation_.w);
 					shapes_.push_back({ ShapeKind::Rect, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, origin, rotation, query.dimensions_, color });
 					shapes_.push_back({ ShapeKind::Rect, ShapeStyle::Wireframe, ShapeSpace::Canvas, ShapeScope::Editor, end, rotation, query.dimensions_, color });

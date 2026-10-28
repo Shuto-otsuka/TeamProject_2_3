@@ -51,6 +51,8 @@ namespace SeedCore
 		*/
 		~JoltShapePool();
 
+		/// [EN] Each pooled shape holds one reference owned by this pool, so the pool is neither copied nor reassigned.
+		/// [JP] プールの各形状はこのプールが持つ参照を1つ持つので、コピーも代入もしない。
 		JoltShapePool(const JoltShapePool&) = delete;
 		JoltShapePool& operator=(const JoltShapePool&) = delete;
 
