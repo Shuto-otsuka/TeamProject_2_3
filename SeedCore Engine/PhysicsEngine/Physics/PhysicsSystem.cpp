@@ -276,16 +276,17 @@ namespace SeedCore
 	* [EN]
 	* Hands what code has changed on every active actor's Rigidbody
 	* (bodyType_, isTrigger_, and the actor's LinearVelocity and
-	* AngularVelocity) to its body, and advances each MoveTo by one
-	* step of elapsedTime. Called before every fixed step.
+	* AngularVelocity) to its body, advances each MoveTo by one step of
+	* elapsedTime, and then carries each body that follows its foothold
+	* along with it. Called before every fixed step.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 有効な全 Actor の Rigidbody について、コードが変えたもの(bodyType_ と
 	* isTrigger_ と、Actor の LinearVelocity と AngularVelocity)をボディへ
-	* 渡し、MoveTo による移動を elapsedTime の1ステップ分進める。固定
-	* ステップの前に毎回呼ばれる。
+	* 渡し、MoveTo による移動を elapsedTime の1ステップ分進めたうえで、
+	* 足場に追従するボディを足場と一緒に運ぶ。固定ステップの前に毎回呼ばれる。
 	*/
 	void PhysicsSystem::ApplyRigidbody(World& world, Float elapsedTime)
 	{
@@ -308,6 +309,25 @@ namespace SeedCore
 			}
 
 			rigidbody->Apply(elapsedTime);
+		}
+
+		/// [EN] Footholds come after every Apply, so each foothold's velocity for the step (including one set by MoveTo) is final before a body is carried by it.
+		/// [JP] 足場の処理は全ての Apply の後に行う。ボディを運ぶ前に、各足場のこのステップの速度(MoveTo によるものも含む)が決まっているようにするため。
+		for (EntityID id : rigidbodyEntities)
+		{
+			Actor actor = WorldAccessor::Make(world, id);
+			if (!actor || !actor.Active())
+			{
+				continue;
+			}
+
+			Rigidbody* rigidbody = actor.GetComponent<Rigidbody>();
+			if (!rigidbody)
+			{
+				continue;
+			}
+
+			rigidbody->ApplyFoothold(elapsedTime);
 		}
 	}
 

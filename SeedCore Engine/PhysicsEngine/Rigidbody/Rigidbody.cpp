@@ -225,13 +225,15 @@ namespace SeedCore
 	* [EN]
 	* Copies the simulated pose of the body back to the actor's
 	* Position and Rotation, its linear velocity back to LinearVelocity,
-	* and its angular velocity back to AngularVelocity.
+	* and its angular velocity back to AngularVelocity. Both velocities
+	* leave out what the foothold gives.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* シミュレーション後のボディの姿勢を Actor の Position と Rotation へ、
 	* 速度を LinearVelocity へ、角速度を AngularVelocity へ書き戻す。
+	* どちらの速度も、足場が与えている分は除く。
 	*/
 	void Rigidbody::OnFixedTick(Float elapsedTime)
 	{
@@ -246,7 +248,9 @@ namespace SeedCore
 		/// [JP] ステップ後の速度を書き戻して覚えておき、ApplyLinearVelocity がコードから書かれた LinearVelocity とこれを見分けられるようにする。
 		if (LinearVelocity* velocity = actor.GetComponent<LinearVelocity>())
 		{
-			Vector3 bodyVelocity = actor.GetService<Physics>()->BodyLinearVelocity(bodyID_);
+			/// [EN] What the foothold gives is left out, so LinearVelocity is the body's velocity relative to its foothold.
+			/// [JP] 足場が与えている分を除き、LinearVelocity を足場に対するボディの速度にする。
+			Vector3 bodyVelocity = actor.GetService<Physics>()->BodyLinearVelocity(bodyID_) - inheritedLinearVelocity_;
 
 			/// [EN] Canvas bodies go back from meters per second (Y up) to pixels per second (Y down).
 			/// [JP] Canvas のボディは、メートル毎秒(Y 上向き)からピクセル毎秒(Y 下向き)へ戻す。
@@ -268,7 +272,9 @@ namespace SeedCore
 		/// [JP] ステップ後の角速度も同じように書き戻して覚えておき、ApplyAngularVelocity が見分けられるようにする。
 		if (AngularVelocity* velocity = actor.GetComponent<AngularVelocity>())
 		{
-			Vector3 bodyAngularVelocity = actor.GetService<Physics>()->BodyAngularVelocity(bodyID_);
+			/// [EN] What the foothold gives is left out, so AngularVelocity is the body's angular velocity relative to its foothold.
+			/// [JP] 足場が与えている分を除き、AngularVelocity を足場に対するボディの角速度にする。
+			Vector3 bodyAngularVelocity = actor.GetService<Physics>()->BodyAngularVelocity(bodyID_) - inheritedAngularVelocity_;
 
 			/// [EN] A canvas body only turns about Z; the flipped Y reverses the direction of the turn, and an angle needs no pixel conversion.
 			/// [JP] Canvas のボディは Z 軸まわりにしか回らない。Y の反転で回る向きが逆になり、角度にはピクセルへの換算は要らない。
@@ -350,12 +356,13 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Destroys the body and releases the reference to its shape.
+	* Destroys the body, releases the reference to its shape, and forgets
+	* what the foothold gave.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* ボディを破棄し、形状への参照を解放する。
+	* ボディを破棄し、形状への参照を解放し、足場から受けていた分を忘れる。
 	*/
 	void Rigidbody::OnDestroy()
 	{
@@ -371,6 +378,11 @@ namespace SeedCore
 		actor.GetService<Physics>()->ReleaseShape(shapeHandle_);
 
 		bodyID_ = ScInvalidBodyID;
+
+		/// [EN] A new body starts on no foothold, so it is given nothing yet.
+		/// [JP] 新しいボディは足場に乗っていない状態から始めるので、まだ何も受けていない。
+		inheritedLinearVelocity_ = { 0.0f, 0.0f, 0.0f };
+		inheritedAngularVelocity_ = { 0.0f, 0.0f, 0.0f };
 	}
 
 	/**
@@ -762,14 +774,16 @@ namespace SeedCore
 	* [EN]
 	* Hands the actor's LinearVelocity to the body when it differs from
 	* the value last copied back. On a canvas body the velocity is in
-	* pixels per second with Y down, and its Z is ignored. A Static body
-	* is not affected.
+	* pixels per second with Y down, and its Z is ignored. The value is
+	* relative to the foothold, so the body receives it with what the
+	* foothold gives added. A Static body is not affected.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* Actor の LinearVelocity が前回書き戻した値と違えばボディへ渡す。
 	* Canvas のボディでは速度をピクセル毎秒・Y 下向きで与え、Z は無視する。
+	* 値は足場に対するものなので、足場が与えている分を足してボディへ渡す。
 	* Static のボディには効かない。
 	*/
 	void Rigidbody::ApplyLinearVelocity()
@@ -795,15 +809,17 @@ namespace SeedCore
 
 		syncedLinearVelocity_ = Vector3(velocity->x_, velocity->y_, velocity->z_);
 
+		/// [EN] The written velocity is relative to the foothold, so the body receives it with what the foothold gives added back.
+		/// [JP] 書かれた速度は足場に対する値なので、足場が与えている分を足し戻してボディへ渡す。
 		/// [EN] A canvas velocity goes from pixels per second (Y down) to meters per second (Y up) on the z = 0 plane.
 		/// [JP] Canvas の速度は、ピクセル毎秒(Y 下向き)から z = 0 平面上のメートル毎秒(Y 上向き)へ変換する。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			actor.GetService<Physics>()->BodyLinearVelocity(bodyID_, Vector3(syncedLinearVelocity_.x / pixelsPerMeter_, -syncedLinearVelocity_.y / pixelsPerMeter_, 0.0f));
+			actor.GetService<Physics>()->BodyLinearVelocity(bodyID_, Vector3(syncedLinearVelocity_.x / pixelsPerMeter_, -syncedLinearVelocity_.y / pixelsPerMeter_, 0.0f) + inheritedLinearVelocity_);
 			return;
 		}
 
-		actor.GetService<Physics>()->BodyLinearVelocity(bodyID_, syncedLinearVelocity_);
+		actor.GetService<Physics>()->BodyLinearVelocity(bodyID_, syncedLinearVelocity_ + inheritedLinearVelocity_);
 	}
 
 	/**
@@ -811,14 +827,17 @@ namespace SeedCore
 	* Hands the actor's AngularVelocity to the body when it differs from
 	* the value last copied back. On a canvas body only Z is used, as the
 	* in-plane angular velocity in the same direction as the canvas
-	* angle. A Static body is not affected.
+	* angle. The value is relative to the foothold, so the body receives
+	* it with what the foothold gives added. A Static body is not
+	* affected.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* Actor の AngularVelocity が前回書き戻した値と違えばボディへ渡す。
 	* Canvas のボディでは Z だけを、Canvas の角度と同じ向きの平面内の角速度
-	* として使う。Static のボディには効かない。
+	* として使う。値は足場に対するものなので、足場が与えている分を足して
+	* ボディへ渡す。Static のボディには効かない。
 	*/
 	void Rigidbody::ApplyAngularVelocity()
 	{
@@ -843,15 +862,17 @@ namespace SeedCore
 
 		syncedAngularVelocity_ = Vector3(velocity->x_, velocity->y_, velocity->z_);
 
+		/// [EN] The written angular velocity is relative to the foothold, so the body receives it with what the foothold gives added back.
+		/// [JP] 書かれた角速度は足場に対する値なので、足場が与えている分を足し戻してボディへ渡す。
 		/// [EN] A canvas body only turns about Z; the flipped Y reverses the direction of the turn, and an angle needs no pixel conversion.
 		/// [JP] Canvas のボディは Z 軸まわりにしか回らない。Y の反転で回る向きが逆になり、角度にはピクセルへの換算は要らない。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			actor.GetService<Physics>()->BodyAngularVelocity(bodyID_, Vector3(0.0f, 0.0f, -syncedAngularVelocity_.z));
+			actor.GetService<Physics>()->BodyAngularVelocity(bodyID_, Vector3(0.0f, 0.0f, -syncedAngularVelocity_.z) + inheritedAngularVelocity_);
 			return;
 		}
 
-		actor.GetService<Physics>()->BodyAngularVelocity(bodyID_, syncedAngularVelocity_);
+		actor.GetService<Physics>()->BodyAngularVelocity(bodyID_, syncedAngularVelocity_ + inheritedAngularVelocity_);
 	}
 
 	/**
@@ -913,5 +934,91 @@ namespace SeedCore
 
 		physics.MoveTarget(bodyID_, stepPosition, stepRotation, elapsedTime);
 		moveRemainingTime_ -= elapsedTime;
+	}
+
+	/**
+	* [EN]
+	* Carries the body along with the body it stands on for the coming
+	* step of elapsedTime. The velocity the foothold gave in the last
+	* step is swapped for the one it gives in this step, so only a
+	* change in the foothold's motion reaches the body and nothing
+	* builds up. In the air the horizontal velocity and the turn carried
+	* so far are kept and slowed by linearDrag_ and angularDrag_, while
+	* the vertical velocity stays in the body's own. Called by PhysicsSystem
+	* after every Rigidbody has run Apply, so each foothold's velocity
+	* for the step is already set.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* これから進む elapsedTime の1ステップの間、乗っているボディと一緒に
+	* このボディを運ぶ。前のステップで足場から受けた速度を、このステップで
+	* 受ける速度に入れ替えるので、ボディに届くのは足場の動きの変化分だけで、
+	* 何も溜まっていかない。空中では、それまで受けていた水平の速度と回転を
+	* 残して linearDrag_ と angularDrag_ で弱め、垂直の速度はボディ自身の
+	* 速度に残す。
+	* 全 Rigidbody の Apply が済み、各足場のこのステップの速度が決まった後に
+	* PhysicsSystem から呼ばれる。
+	*/
+	void Rigidbody::ApplyFoothold(Float elapsedTime)
+	{
+		/// [EN] Only a solid Dynamic body that asks for it is carried, and the step must have a length to turn a displacement into a velocity.
+		/// [JP] 運ぶのは、それを求めている実体のある Dynamic のボディだけ。移動量を速度に直すため、ステップには長さが要る。
+		if (bodyID_ == ScInvalidBodyID || !followFoothold_ || bodyType_ != BodyType::Dynamic || isTrigger_ || elapsedTime <= 0.0f)
+		{
+			return;
+		}
+
+		Actor actor = GetActor();
+		Physics& physics = *actor.GetService<Physics>();
+
+		Vector3 nextLinearVelocity = { 0.0f, 0.0f, 0.0f };
+		Vector3 nextAngularVelocity = { 0.0f, 0.0f, 0.0f };
+
+		/// [EN] A short sweep is enough, since a body resting on its foothold is already touching it.
+		/// [JP] 足場の上で止まっているボディは既に触れているので、短い掃引で足りる。
+		ScBodyID footholdID;
+		physics.BodyFoothold(bodyID_, ToRadians(footholdSlopeAngle_), 0.05f, footholdID);
+
+		if (footholdID != ScInvalidBodyID)
+		{
+			/// [EN] The point of the foothold under the body's origin moves this far over the step; as a velocity, that is what carries the body exactly along, around a turn as well.
+			/// [JP] ボディの原点にある足場の点が、このステップでこれだけ動く。それを速度にしたものが、回転も含めてボディをちょうど運ぶ速度になる。
+			Vector3 displacement;
+			physics.BodyPointDisplacement(footholdID, physics.BodyTransform(bodyID_).Translation(), elapsedTime, displacement);
+			nextLinearVelocity = displacement / elapsedTime;
+
+			/// [EN] Only the turn about the up axis is passed on, so a tilting foothold does not tip the body over; a canvas body turns only about Z, so that axis is passed on instead.
+			/// [JP] 渡すのは上向きの軸まわりの回転だけで、足場が傾いてもボディは倒さない。Canvas のボディは Z 軸まわりにしか回らないので、代わりにその軸の回転を渡す。
+			Vector3 footholdAngularVelocity = physics.BodyAngularVelocity(footholdID);
+			if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
+			{
+				nextAngularVelocity = Vector3(0.0f, 0.0f, footholdAngularVelocity.z);
+			}
+			else
+			{
+				nextAngularVelocity = Vector3(0.0f, footholdAngularVelocity.y, 0.0f);
+			}
+		}
+		else
+		{
+			/// [EN] In the air the horizontal velocity and the turn carried so far are kept and slowed at the same rate as the body's own, so landing back on the same foothold does not give them twice.
+			/// [JP] 空中では、それまで受けていた水平の速度と回転を残し、ボディ自身と同じ割合で弱める。同じ足場に戻っても二重に受けないようにするため。
+			Float linearDamping = Max(0.0f, 1.0f - linearDrag_ * elapsedTime);
+			Float angularDamping = Max(0.0f, 1.0f - angularDrag_ * elapsedTime);
+
+			/// [EN] The vertical part becomes the body's own, so gravity acts on the whole of it.
+			/// [JP] 垂直の分はボディ自身の速度になり、重力がその全体に働く。
+			nextLinearVelocity = Vector3(inheritedLinearVelocity_.x * linearDamping, 0.0f, inheritedLinearVelocity_.z * linearDamping);
+			nextAngularVelocity = inheritedAngularVelocity_ * angularDamping;
+		}
+
+		/// [EN] What the foothold gave in the last step is swapped for what it gives now, so only the change reaches the body.
+		/// [JP] 前のステップで足場から受けた分を今受ける分に入れ替え、ボディには変化分だけを届ける。
+		physics.BodyLinearVelocity(bodyID_, physics.BodyLinearVelocity(bodyID_) - inheritedLinearVelocity_ + nextLinearVelocity);
+		physics.BodyAngularVelocity(bodyID_, physics.BodyAngularVelocity(bodyID_) - inheritedAngularVelocity_ + nextAngularVelocity);
+
+		inheritedLinearVelocity_ = nextLinearVelocity;
+		inheritedAngularVelocity_ = nextAngularVelocity;
 	}
 }

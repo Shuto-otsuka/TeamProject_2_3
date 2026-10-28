@@ -807,6 +807,45 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Writes how far a point fixed to a body moves over elapsedTime at
+		* the body's current linear and angular velocity: the center of mass
+		* advances by the linear velocity and the point turns about it by the
+		* angular velocity. This matches how a kinematic body is integrated,
+		* so for a body moved by MoveTarget or MoveTo the result is exact.
+		* Writes zero for a static body or an invalid ID.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ボディに固定された点が、ボディの今の速度と角速度のまま elapsedTime
+		* の間にどれだけ動くかを書き出す。重心は速度の分だけ進み、点はその
+		* 重心まわりに角速度の分だけ回る。キネマティックのボディの積分と同じ
+		* 計算なので、MoveTarget や MoveTo で動くボディなら結果は正確になる。
+		* 静的ボディや無効な ID では 0 を書き出す。
+		*/
+		void BodyPointDisplacement(ScBodyID bodyID, const Vector3& point, Float elapsedTime, Vector3& outDisplacement)const;
+
+		/**
+		* [EN]
+		* Writes the body that a body stands on: sweeps the body's own shape
+		* straight down by maxDistance from its current pose and picks the
+		* nearest body whose surface faces up within maxSlopeAngle (radians).
+		* The body itself, triggers and bodies its layer does not collide
+		* with are skipped. Writes an invalid ID when nothing is found.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ボディが乗っているボディを書き出す。ボディ自身の形状を今の姿勢から
+		* 真下へ maxDistance だけ掃引し、面の向きが上から maxSlopeAngle
+		* (ラジアン)以内のボディのうち最も近いものを選ぶ。ボディ自身と
+		* トリガー、ボディのレイヤーが衝突しない相手は飛ばす。見つからなければ
+		* 無効な ID を書き出す。
+		*/
+		void BodyFoothold(ScBodyID bodyID, Float maxSlopeAngle, Float maxDistance, ScBodyID& outFootholdID)const;
+
+		/**
+		* [EN]
 		* Turns a body into a trigger or back into a solid body: switches its
 		* sensor flag, the SENSOR bit of its object layer, and for a
 		* kinematic body the flag that lets it meet static bodies, so it

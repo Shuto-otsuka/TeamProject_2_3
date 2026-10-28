@@ -13,7 +13,8 @@ namespace SeedCore
 	* The actor's LinearVelocity and AngularVelocity are kept in step with
 	* the body's velocity and angular velocity in both directions; this
 	* component adds them when it is added and removes them when it is
-	* removed, so only actors with a body carry velocities.
+	* removed, so only actors with a body carry velocities. While
+	* followFoothold_ is on, both are relative to the body it stands on.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -24,6 +25,7 @@ namespace SeedCore
 	* LinearVelocity と AngularVelocity は、ボディの速度・角速度と双方向に
 	* 同期する。このコンポーネントは追加されたときにそれらを追加し、外された
 	* ときに外すので、速度を持つのはボディを持つ actor だけになる。
+	* followFoothold_ が有効な間、どちらも乗っているボディに対する値になる。
 	*/
 	class SEEDCORE_API Rigidbody :public SeedScript
 	{
@@ -111,6 +113,18 @@ namespace SeedCore
 		SC_REFLECTION_FIELD_CONDITION(useGravity_)
 		SC_REFLECTION_FIELD_EX("重力倍率")
 		Float gravityScale_ = 1.0f;
+
+		/// [EN] Carries the body along with the body it stands on, as a character controller is carried by a moving floor; while on, LinearVelocity and AngularVelocity are relative to that foothold.
+		/// [JP] キャラクターコントローラーが移動床に運ばれるのと同じように、乗っているボディと一緒にこのボディを運ぶ。有効な間、LinearVelocity と AngularVelocity は足場に対する値になる。
+		SC_REFLECTION_FIELD_CONDITION(bodyType_ == BodyType::Dynamic && !isTrigger_)
+		SC_REFLECTION_FIELD_EX("足場追従")
+		Bool followFoothold_ = false;
+
+		/// [EN] Steepest surface, in degrees, that still counts as a foothold.
+		/// [JP] 足場とみなす面の最も急な傾き(度)。
+		SC_REFLECTION_FIELD_CONDITION(followFoothold_)
+		SC_REFLECTION_CLAMPED_EX("足場の最大斜面角度", 0.0f, 89.0f)
+		Float footholdSlopeAngle_ = 50.0f;
 
 		/// [EN] Locks movement along world X.
 		/// [JP] ワールドの X 方向の移動を固定する。
@@ -206,24 +220,27 @@ namespace SeedCore
 		* [EN]
 		* Copies the simulated pose of the body back to the actor's
 		* Position and Rotation, its linear velocity back to LinearVelocity,
-		* and its angular velocity back to AngularVelocity.
+		* and its angular velocity back to AngularVelocity. Both velocities
+		* leave out what the foothold gives.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* シミュレーション後のボディの姿勢を Actor の Position と Rotation へ、
 		* 速度を LinearVelocity へ、角速度を AngularVelocity へ書き戻す。
+		* どちらの速度も、足場が与えている分は除く。
 		*/
 		void OnFixedTick(Float elapsedTime);
 
 		/**
 		* [EN]
-		* Destroys the body and releases the reference to its shape.
+		* Destroys the body, releases the reference to its shape, and forgets
+		* what the foothold gave.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* ボディを破棄し、形状への参照を解放する。
+		* ボディを破棄し、形状への参照を解放し、足場から受けていた分を忘れる。
 		*/
 		void OnDestroy();
 
@@ -403,14 +420,16 @@ namespace SeedCore
 		* [EN]
 		* Hands the actor's LinearVelocity to the body when it differs from
 		* the value last copied back. On a canvas body the velocity is in
-		* pixels per second with Y down, and its Z is ignored. A Static body
-		* is not affected.
+		* pixels per second with Y down, and its Z is ignored. The value is
+		* relative to the foothold, so the body receives it with what the
+		* foothold gives added. A Static body is not affected.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* Actor の LinearVelocity が前回書き戻した値と違えばボディへ渡す。
 		* Canvas のボディでは速度をピクセル毎秒・Y 下向きで与え、Z は無視する。
+		* 値は足場に対するものなので、足場が与えている分を足してボディへ渡す。
 		* Static のボディには効かない。
 		*/
 		void ApplyLinearVelocity();
@@ -420,14 +439,17 @@ namespace SeedCore
 		* Hands the actor's AngularVelocity to the body when it differs from
 		* the value last copied back. On a canvas body only Z is used, as the
 		* in-plane angular velocity in the same direction as the canvas
-		* angle. A Static body is not affected.
+		* angle. The value is relative to the foothold, so the body receives
+		* it with what the foothold gives added. A Static body is not
+		* affected.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* Actor の AngularVelocity が前回書き戻した値と違えばボディへ渡す。
 		* Canvas のボディでは Z だけを、Canvas の角度と同じ向きの平面内の角速度
-		* として使う。Static のボディには効かない。
+		* として使う。値は足場に対するものなので、足場が与えている分を足して
+		* ボディへ渡す。Static のボディには効かない。
 		*/
 		void ApplyAngularVelocity();
 
@@ -447,6 +469,32 @@ namespace SeedCore
 		* 切ったら速度と角速度を 0 に戻してボディを目標に留める。
 		*/
 		void ApplyMove(Float elapsedTime);
+
+		/**
+		* [EN]
+		* Carries the body along with the body it stands on for the coming
+		* step of elapsedTime. The velocity the foothold gave in the last
+		* step is swapped for the one it gives in this step, so only a
+		* change in the foothold's motion reaches the body and nothing
+		* builds up. In the air the horizontal velocity and the turn carried
+		* so far are kept and slowed by linearDrag_ and angularDrag_, while
+		* the vertical velocity stays in the body's own. Called by PhysicsSystem
+		* after every Rigidbody has run Apply, so each foothold's velocity
+		* for the step is already set.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* これから進む elapsedTime の1ステップの間、乗っているボディと一緒に
+		* このボディを運ぶ。前のステップで足場から受けた速度を、このステップで
+		* 受ける速度に入れ替えるので、ボディに届くのは足場の動きの変化分だけで、
+		* 何も溜まっていかない。空中では、それまで受けていた水平の速度と回転を
+		* 残して linearDrag_ と angularDrag_ で弱め、垂直の速度はボディ自身の
+		* 速度に残す。
+		* 全 Rigidbody の Apply が済み、各足場のこのステップの速度が決まった後に
+		* PhysicsSystem から呼ばれる。
+		*/
+		void ApplyFoothold(Float elapsedTime);
 
 	private:
 		/// [EN] Radius of the sphere used when the actor has no collider.
@@ -488,6 +536,14 @@ namespace SeedCore
 		/// [EN] Seconds left until the body reaches the target; zero or less means it arrived in the last step.
 		/// [JP] ボディが目標に着くまでの残り秒数。0 以下なら直前のステップで着いている。
 		Float moveRemainingTime_ = 0.0f;
+
+		/// [EN] Velocity the foothold gives the body, in physics space; LinearVelocity is the body's velocity without it.
+		/// [JP] 足場がボディに与えている速度(物理空間)。LinearVelocity は、これを除いたボディの速度。
+		Vector3 inheritedLinearVelocity_ = { 0.0f, 0.0f, 0.0f };
+
+		/// [EN] Angular velocity the foothold gives the body, in physics space; AngularVelocity is the body's angular velocity without it.
+		/// [JP] 足場がボディに与えている角速度(物理空間)。AngularVelocity は、これを除いたボディの角速度。
+		Vector3 inheritedAngularVelocity_ = { 0.0f, 0.0f, 0.0f };
 	};
 	REGISTER_COMPONENT(Rigidbody, "Physics");
 }

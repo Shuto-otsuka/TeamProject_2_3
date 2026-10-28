@@ -4,6 +4,7 @@
 #include <External/JoltPhysics/Jolt/Physics/PhysicsSystem.h>
 #include <External/JoltPhysics/Jolt/Physics/Body/Body.h>
 #include <External/JoltPhysics/Jolt/Physics/Body/BodyCreationSettings.h>
+#include <External/JoltPhysics/Jolt/Physics/Body/BodyFilter.h>
 #include <External/JoltPhysics/Jolt/Physics/Body/BodyInterface.h>
 #include <External/JoltPhysics/Jolt/Physics/Body/BodyLock.h>
 #include <External/JoltPhysics/Jolt/Physics/Body/BodyLockMulti.h>
@@ -549,10 +550,10 @@ namespace SeedCore
 	* [JP]
 	* ボディを破棄せずシミュレーションから外す。
 	*/
-	void Physics::SuspendBody(ScBodyID scBodyID)
+	void Physics::SuspendBody(ScBodyID bodyID)
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return;
 		}
@@ -560,9 +561,9 @@ namespace SeedCore
 		/// [EN] Removing keeps the body and its state; it only stops simulating and colliding.
 		/// [JP] 外してもボディと状態は残り、シミュレーションと衝突だけが止まる。
 		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
-		if (bodyInterface.IsAdded(bodyID))
+		if (bodyInterface.IsAdded(physicsBodyID))
 		{
-			bodyInterface.RemoveBody(bodyID);
+			bodyInterface.RemoveBody(physicsBodyID);
 		}
 	}
 
@@ -575,10 +576,10 @@ namespace SeedCore
 	* [JP]
 	* 停止中のボディをシミュレーションへ戻す。
 	*/
-	void Physics::ResumeBody(ScBodyID scBodyID)
+	void Physics::ResumeBody(ScBodyID bodyID)
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return;
 		}
@@ -586,9 +587,9 @@ namespace SeedCore
 		/// [EN] Re-adds the body awake; a body already in the simulation is left alone.
 		/// [JP] ボディを起きた状態で戻す。既にシミュレーション中のボディはそのままにする。
 		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
-		if (!bodyInterface.IsAdded(bodyID))
+		if (!bodyInterface.IsAdded(physicsBodyID))
 		{
-			bodyInterface.AddBody(bodyID, JPH::EActivation::Activate);
+			bodyInterface.AddBody(physicsBodyID, JPH::EActivation::Activate);
 		}
 	}
 
@@ -601,10 +602,10 @@ namespace SeedCore
 	* [JP]
 	* 物理ボディを削除して破棄する。
 	*/
-	void Physics::DestroyBody(ScBodyID scBodyID)
+	void Physics::DestroyBody(ScBodyID bodyID)
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return;
 		}
@@ -612,11 +613,11 @@ namespace SeedCore
 		/// [EN] A suspended body is already out of the simulation; only an added one needs removing.
 		/// [JP] 停止中のボディは既にシミュレーション外なので、追加済みのものだけ外す。
 		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
-		if (bodyInterface.IsAdded(bodyID))
+		if (bodyInterface.IsAdded(physicsBodyID))
 		{
-			bodyInterface.RemoveBody(bodyID);
+			bodyInterface.RemoveBody(physicsBodyID);
 		}
-		bodyInterface.DestroyBody(bodyID);
+		bodyInterface.DestroyBody(physicsBodyID);
 	}
 
 	/**
@@ -630,10 +631,10 @@ namespace SeedCore
 	* ボディに割り当てられた衝突形状を置き換える。動的ボディは質量を保ち、
 	* 慣性だけを新しい形状に合わせる。
 	*/
-	void Physics::BodyShape(ScBodyID scBodyID, ScShapeHandle shape)
+	void Physics::BodyShape(ScBodyID bodyID, ScShapeHandle shape)
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return;
 		}
@@ -649,11 +650,11 @@ namespace SeedCore
 		/// [EN] Swaps the shape and wakes the body; Jolt's own recompute would replace the mass with shape volume times density.
 		/// [JP] 形状を差し替えてボディを起こす。Jolt の再計算に任せると、質量が形状の体積×密度に置き換わる。
 		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
-		bodyInterface.SetShape(bodyID, newShape, false, JPH::EActivation::Activate);
+		bodyInterface.SetShape(physicsBodyID, newShape, false, JPH::EActivation::Activate);
 
 		/// [EN] Mass properties are edited on the body directly, so it is write-locked.
 		/// [JP] 質量特性はボディを直接書き換えるので、書き込みロックをかける。
-		JPH::BodyLockWrite lock(joltManager_.PhysicsSystem().GetBodyLockInterface(), bodyID);
+		JPH::BodyLockWrite lock(joltManager_.PhysicsSystem().GetBodyLockInterface(), physicsBodyID);
 		if (!lock.Succeeded())
 		{
 			return;
@@ -698,17 +699,17 @@ namespace SeedCore
 	* Quaternion::CreateFromRotationMatrix() で取り出す。無効な ID では
 	* 単位行列を返す。
 	*/
-	Matrix Physics::BodyTransform(ScBodyID scBodyID)const
+	Matrix Physics::BodyTransform(ScBodyID bodyID)const
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return Matrix::Identity;
 		}
 
 		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
-		JPH::RVec3 position = bodyInterface.GetPosition(bodyID);
-		JPH::Quat rotation = bodyInterface.GetRotation(bodyID);
+		JPH::RVec3 position = bodyInterface.GetPosition(physicsBodyID);
+		JPH::Quat rotation = bodyInterface.GetRotation(physicsBodyID);
 
 		/// [EN] Built from Jolt's position and quaternion in the engine's row-vector order, rotation first and translation second, rather than by transposing Jolt's column-major matrix.
 		/// [JP] Jolt の行列を転置するのではなく、Jolt の位置とクォータニオンから、エンジンの行ベクトルの順（先に回転、後に平行移動）で組み立てる。
@@ -727,10 +728,10 @@ namespace SeedCore
 	* ボディを、間の動きをシミュレーションせずにワールドの位置と回転へ直接
 	* 移す。ボディは起こさない。既にその位置と回転にあれば何もしない。
 	*/
-	void Physics::BodyTransform(ScBodyID scBodyID, const Vector3& position, const Quaternion& rotation)
+	void Physics::BodyTransform(ScBodyID bodyID, const Vector3& position, const Quaternion& rotation)
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return;
 		}
@@ -738,7 +739,7 @@ namespace SeedCore
 		/// [EN] The "when changed" variant skips the broad-phase update for a body that has not moved, so calling this every frame for still bodies costs almost nothing.
 		/// [JP] 「変わったときだけ」版は、動いていないボディのブロードフェーズ更新を省くため、止まっているボディに毎フレーム呼んでもほとんどコストがかからない。
 		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
-		bodyInterface.SetPositionAndRotationWhenChanged(bodyID, JPH::RVec3(position.x, position.y, position.z), JPH::Quat(rotation.x, rotation.y, rotation.z, rotation.w).Normalized(), JPH::EActivation::DontActivate);
+		bodyInterface.SetPositionAndRotationWhenChanged(physicsBodyID, JPH::RVec3(position.x, position.y, position.z), JPH::Quat(rotation.x, rotation.y, rotation.z, rotation.w).Normalized(), JPH::EActivation::DontActivate);
 	}
 
 	/**
@@ -751,15 +752,15 @@ namespace SeedCore
 	* [JP]
 	* ボディの速度(m/s)を返す。静的ボディでは 0。
 	*/
-	Vector3 Physics::BodyLinearVelocity(ScBodyID scBodyID)const
+	Vector3 Physics::BodyLinearVelocity(ScBodyID bodyID)const
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return { 0.0f, 0.0f, 0.0f };
 		}
 
-		JPH::Vec3 linearVelocity = joltManager_.BodyInterface().GetLinearVelocity(bodyID);
+		JPH::Vec3 linearVelocity = joltManager_.BodyInterface().GetLinearVelocity(physicsBodyID);
 		return Vector3(linearVelocity.GetX(), linearVelocity.GetY(), linearVelocity.GetZ());
 	}
 
@@ -776,17 +777,17 @@ namespace SeedCore
 	* なければボディを起こす。キネマティックのボディは、置き換えられるまで
 	* その速度を保つ。静的ボディには効かない。
 	*/
-	void Physics::BodyLinearVelocity(ScBodyID scBodyID, const Vector3& linearVelocity)
+	void Physics::BodyLinearVelocity(ScBodyID bodyID, const Vector3& linearVelocity)
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return;
 		}
 
 		/// [EN] The velocity is clamped to the body's maximum speed, and frozen axes stay at zero.
 		/// [JP] 速度はボディの最大速度に収められ、固定した軸は 0 のまま。
-		joltManager_.BodyInterface().SetLinearVelocity(bodyID, JPH::Vec3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
+		joltManager_.BodyInterface().SetLinearVelocity(physicsBodyID, JPH::Vec3(linearVelocity.x, linearVelocity.y, linearVelocity.z));
 	}
 
 	/**
@@ -810,11 +811,11 @@ namespace SeedCore
 	* allowMotionTypeChange_ を付けて作ったボディが要る。ソフトボディは
 	* そのまま。
 	*/
-	void Physics::BodyMotionType(ScBodyID scBodyID, ScMotionType motionType)
+	void Physics::BodyMotionType(ScBodyID bodyID, ScMotionType motionType)
 	{
-		const JPH::BodyID bodyID(scBodyID);
+		const JPH::BodyID physicsBodyID(bodyID);
 		const JPH::EMotionType joltMotionType = static_cast<JPH::EMotionType>(motionType);
-		if (bodyID.IsInvalid())
+		if (physicsBodyID.IsInvalid())
 		{
 			return;
 		}
@@ -826,7 +827,7 @@ namespace SeedCore
 		/// [EN] The scope releases the read lock before the calls below, which lock the body themselves.
 		/// [JP] 下の呼び出しは自分でボディをロックするので、その前にこのスコープで読み込みロックを外す。
 		{
-			JPH::BodyLockRead lock(joltManager_.PhysicsSystem().GetBodyLockInterface(), bodyID);
+			JPH::BodyLockRead lock(joltManager_.PhysicsSystem().GetBodyLockInterface(), physicsBodyID);
 			if (!lock.Succeeded())
 			{
 				return;
@@ -847,13 +848,13 @@ namespace SeedCore
 
 		/// [EN] Jolt deactivates a body that becomes static and wakes one that starts moving.
 		/// [JP] Jolt はスタティックになるボディを止め、動き出すボディを起こす。
-		bodyInterface.SetMotionType(bodyID, joltMotionType, JPH::EActivation::Activate);
+		bodyInterface.SetMotionType(physicsBodyID, joltMotionType, JPH::EActivation::Activate);
 
 		/// [EN] A kinematic body keeps moving at its velocity, so it starts at rest as one created that way would.
 		/// [JP] キネマティックのボディは自分の速度で動き続けるので、最初からそう作ったときと同じく静止から始める。
 		if (joltMotionType == JPH::EMotionType::Kinematic)
 		{
-			bodyInterface.SetLinearAndAngularVelocity(bodyID, JPH::Vec3::sZero(), JPH::Vec3::sZero());
+			bodyInterface.SetLinearAndAngularVelocity(physicsBodyID, JPH::Vec3::sZero(), JPH::Vec3::sZero());
 		}
 
 		/// [EN] Only the motion-type bits change; the actor's layer and the SENSOR and PLANAR bits stay, and the body moves to the matching broad-phase layer.
@@ -871,13 +872,13 @@ namespace SeedCore
 			break;
 		}
 
-		JPH::ObjectLayer layer = bodyInterface.GetObjectLayer(bodyID);
+		JPH::ObjectLayer layer = bodyInterface.GetObjectLayer(physicsBodyID);
 		layer = static_cast<JPH::ObjectLayer>((layer & ~((1u << Layers::MOTION_TYPE_BITS) - 1u)) | motionLayer);
-		bodyInterface.SetObjectLayer(bodyID, layer);
+		bodyInterface.SetObjectLayer(physicsBodyID, layer);
 
 		/// [EN] The flags decided at creation follow the new motion type; the body interface has no setters for them, so they are written on the locked body.
 		/// [JP] 生成時に決めたフラグを新しい運動タイプに合わせる。ボディインターフェースに設定関数が無いので、ロックしたボディに書く。
-		JPH::BodyLockWrite lock(joltManager_.PhysicsSystem().GetBodyLockInterface(), bodyID);
+		JPH::BodyLockWrite lock(joltManager_.PhysicsSystem().GetBodyLockInterface(), physicsBodyID);
 		if (!lock.Succeeded())
 		{
 			return;
@@ -904,15 +905,15 @@ namespace SeedCore
 	* [JP]
 	* ボディのワールド空間の角速度(rad/s)を返す。静的ボディでは 0。
 	*/
-	Vector3 Physics::BodyAngularVelocity(ScBodyID scBodyID)const
+	Vector3 Physics::BodyAngularVelocity(ScBodyID bodyID)const
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return { 0.0f, 0.0f, 0.0f };
 		}
 
-		JPH::Vec3 angularVelocity = joltManager_.BodyInterface().GetAngularVelocity(bodyID);
+		JPH::Vec3 angularVelocity = joltManager_.BodyInterface().GetAngularVelocity(physicsBodyID);
 		return Vector3(angularVelocity.GetX(), angularVelocity.GetY(), angularVelocity.GetZ());
 	}
 
@@ -930,17 +931,156 @@ namespace SeedCore
 	* 置き換え、角速度が 0 でなければボディを起こす。キネマティックの
 	* ボディは、置き換えられるまでその角速度を保つ。静的ボディには効かない。
 	*/
-	void Physics::BodyAngularVelocity(ScBodyID scBodyID, const Vector3& angularVelocity)
+	void Physics::BodyAngularVelocity(ScBodyID bodyID, const Vector3& angularVelocity)
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return;
 		}
 
 		/// [EN] The angular velocity is clamped to the body's maximum angular speed, and frozen rotation axes stay at zero.
 		/// [JP] 角速度はボディの最大角速度に収められ、固定した回転軸は 0 のまま。
-		joltManager_.BodyInterface().SetAngularVelocity(bodyID, JPH::Vec3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
+		joltManager_.BodyInterface().SetAngularVelocity(physicsBodyID, JPH::Vec3(angularVelocity.x, angularVelocity.y, angularVelocity.z));
+	}
+
+	/**
+	* [EN]
+	* Writes how far a point fixed to a body moves over elapsedTime at
+	* the body's current linear and angular velocity: the center of mass
+	* advances by the linear velocity and the point turns about it by the
+	* angular velocity. This matches how a kinematic body is integrated,
+	* so for a body moved by MoveTarget or MoveTo the result is exact.
+	* Writes zero for a static body or an invalid ID.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディに固定された点が、ボディの今の速度と角速度のまま elapsedTime
+	* の間にどれだけ動くかを書き出す。重心は速度の分だけ進み、点はその
+	* 重心まわりに角速度の分だけ回る。キネマティックのボディの積分と同じ
+	* 計算なので、MoveTarget や MoveTo で動くボディなら結果は正確になる。
+	* 静的ボディや無効な ID では 0 を書き出す。
+	*/
+	void Physics::BodyPointDisplacement(ScBodyID bodyID, const Vector3& point, Float elapsedTime, Vector3& outDisplacement)const
+	{
+		outDisplacement = { 0.0f, 0.0f, 0.0f };
+
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
+		{
+			return;
+		}
+
+		/// [EN] A body turns about its center of mass, not its origin, so the point is measured from there.
+		/// [JP] ボディは原点ではなく重心まわりに回るので、点は重心から測る。
+		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
+		JPH::RVec3 centerOfMass = bodyInterface.GetCenterOfMassPosition(physicsBodyID);
+		JPH::Vec3 linearVelocity = bodyInterface.GetLinearVelocity(physicsBodyID);
+		JPH::Vec3 angularVelocity = bodyInterface.GetAngularVelocity(physicsBodyID);
+
+		JPH::Vec3 offset = JPH::Vec3(JPH::RVec3(point.x, point.y, point.z) - centerOfMass);
+		JPH::Vec3 rotatedOffset = offset;
+
+		/// [EN] Turning by the angular velocity over elapsedTime is a rotation about its direction by its length times elapsedTime; the point moves along the chord of that arc, so a turning body does not throw it outward.
+		/// [JP] 角速度で elapsedTime だけ回るのは、その向きを軸に、大きさ×elapsedTime の角度だけ回る回転。点はその円弧の弦に沿って動くので、回るボディが点を外側へ押し出すことはない。
+		Float angle = angularVelocity.Length() * elapsedTime;
+		if (angle > 0.0f)
+		{
+			rotatedOffset = JPH::Quat::sRotation(angularVelocity.Normalized(), angle) * offset;
+		}
+
+		JPH::Vec3 displacement = linearVelocity * elapsedTime + rotatedOffset - offset;
+		outDisplacement = Vector3(displacement.GetX(), displacement.GetY(), displacement.GetZ());
+	}
+
+	/**
+	* [EN]
+	* Writes the body that a body stands on: sweeps the body's own shape
+	* straight down by maxDistance from its current pose and picks the
+	* nearest body whose surface faces up within maxSlopeAngle (radians).
+	* The body itself, triggers and bodies its layer does not collide
+	* with are skipped. Writes an invalid ID when nothing is found.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ボディが乗っているボディを書き出す。ボディ自身の形状を今の姿勢から
+	* 真下へ maxDistance だけ掃引し、面の向きが上から maxSlopeAngle
+	* (ラジアン)以内のボディのうち最も近いものを選ぶ。ボディ自身と
+	* トリガー、ボディのレイヤーが衝突しない相手は飛ばす。見つからなければ
+	* 無効な ID を書き出す。
+	*/
+	void Physics::BodyFoothold(ScBodyID bodyID, Float maxSlopeAngle, Float maxDistance, ScBodyID& outFootholdID)const
+	{
+		outFootholdID = ScInvalidBodyID;
+
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
+		{
+			return;
+		}
+
+		JPH::PhysicsSystem& physicsSystem = joltManager_.PhysicsSystem();
+
+		/// [EN] The shape, pose and layer are copied out under a short read lock, so the sweep itself runs without holding the body.
+		/// [JP] 形状・姿勢・レイヤーは短い読み込みロックの間に写し取り、掃引そのものはボディを掴まずに行う。
+		JPH::RefConst<JPH::Shape> shape;
+		JPH::RMat44 transform;
+		JPH::ObjectLayer layer;
+		{
+			JPH::BodyLockRead lock(physicsSystem.GetBodyLockInterface(), physicsBodyID);
+			if (!lock.Succeeded())
+			{
+				return;
+			}
+
+			const JPH::Body& body = lock.GetBody();
+			shape = body.GetShape();
+			transform = body.GetCenterOfMassTransform();
+			layer = body.GetObjectLayer();
+		}
+
+		/// [EN] The body's own layer picks the filters, so only bodies it would actually collide with count, and a canvas body only finds canvas bodies.
+		/// [JP] ボディ自身のレイヤーでフィルタを選ぶので、実際に衝突する相手だけが対象になり、Canvas のボディは Canvas のボディだけを見つける。
+		JPH::RShapeCast shapeCast(shape, JPH::Vec3::sReplicate(1.0f), transform, JPH::Vec3(0.0f, -maxDistance, 0.0f));
+		JPH::ShapeCastSettings settings;
+		JPH::AllHitCollisionCollector<JPH::CastShapeCollector> collector;
+		JPH::IgnoreSingleBodyFilter bodyFilter(physicsBodyID);
+		physicsSystem.GetNarrowPhaseQuery().CastShape(shapeCast, settings, transform.GetTranslation(), collector, physicsSystem.GetDefaultBroadPhaseLayerFilter(layer), physicsSystem.GetDefaultLayerFilter(layer), bodyFilter);
+
+		if (!collector.HadHit())
+		{
+			return;
+		}
+
+		/// [EN] Nearest first, so the first hit that passes the checks below is the foothold.
+		/// [JP] 近い順に並べ、下の判定を通った最初のヒットを足場にする。
+		collector.Sort();
+
+		/// [EN] A surface counts as ground when the up component of its normal is at least the cosine of the steepest allowed slope.
+		/// [JP] 法線の上向き成分が、許される最も急な斜面の角度の余弦以上なら、その面を地面とみなす。
+		Float minNormalY = Cos(maxSlopeAngle);
+		for (const JPH::ShapeCastResult& hit : collector.mHits)
+		{
+			/// [EN] A trigger has nothing to stand on.
+			/// [JP] トリガーには乗れない。
+			if (physicsSystem.GetBodyInterface().GetObjectLayer(hit.mBodyID2) & Layers::SENSOR)
+			{
+				continue;
+			}
+
+			/// [EN] The penetration axis points from the swept shape into the hit body, so its negation is the surface normal.
+			/// [JP] めり込み軸は掃引した形状から相手のボディへ向くので、その逆向きが面の法線になる。
+			JPH::Vec3 normal = -hit.mPenetrationAxis.Normalized();
+			if (normal.GetY() < minNormalY)
+			{
+				continue;
+			}
+
+			outFootholdID = hit.mBodyID2.GetIndexAndSequenceNumber();
+			return;
+		}
 	}
 
 	/**
@@ -958,10 +1098,10 @@ namespace SeedCore
 	* ボディではスタティックのボディと組になるためのフラグを切り替え、
 	* 最初からその設定で作ったのと同じ状態にする。
 	*/
-	void Physics::BodyTrigger(ScBodyID scBodyID, Bool isTrigger)
+	void Physics::BodyTrigger(ScBodyID bodyID, Bool isTrigger)
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return;
 		}
@@ -970,11 +1110,11 @@ namespace SeedCore
 
 		/// [EN] The sensor flag decides whether the body pushes back; a trigger only reports overlaps.
 		/// [JP] センサーのフラグが、ボディが押し返すかを決める。トリガーは重なりを知らせるだけ。
-		bodyInterface.SetIsSensor(bodyID, isTrigger);
+		bodyInterface.SetIsSensor(physicsBodyID, isTrigger);
 
 		/// [EN] Only the SENSOR bit changes; the motion type, the actor's layer and the PLANAR bit stay as they are, and the body moves to the matching broad-phase layer.
 		/// [JP] 変えるのは SENSOR ビットだけで、運動タイプ・Actor のレイヤー・PLANAR ビットはそのまま。ボディは対応するブロードフェーズレイヤーへ移る。
-		JPH::ObjectLayer layer = bodyInterface.GetObjectLayer(bodyID);
+		JPH::ObjectLayer layer = bodyInterface.GetObjectLayer(physicsBodyID);
 		if (isTrigger)
 		{
 			layer |= Layers::SENSOR;
@@ -983,15 +1123,15 @@ namespace SeedCore
 		{
 			layer = static_cast<JPH::ObjectLayer>(layer & ~Layers::SENSOR);
 		}
-		bodyInterface.SetObjectLayer(bodyID, layer);
+		bodyInterface.SetObjectLayer(physicsBodyID, layer);
 
 		/// [EN] As at creation, only a kinematic trigger needs to meet static bodies.
 		/// [JP] 生成時と同じく、スタティックのボディと組になる必要があるのはキネマティックのトリガーだけ。
-		Bool collideKinematicVsNonDynamic = bodyInterface.GetMotionType(bodyID) == JPH::EMotionType::Kinematic && isTrigger;
+		Bool collideKinematicVsNonDynamic = bodyInterface.GetMotionType(physicsBodyID) == JPH::EMotionType::Kinematic && isTrigger;
 
 		/// [EN] The body interface has no setter for this flag, so it is written on the locked body; the lock is taken after the calls above, which lock the body themselves.
 		/// [JP] このフラグはボディインターフェースに設定関数が無いので、ロックしたボディに書く。上の呼び出しは自分でボディをロックするので、ロックはその後で取る。
-		JPH::BodyLockWrite lock(joltManager_.PhysicsSystem().GetBodyLockInterface(), bodyID);
+		JPH::BodyLockWrite lock(joltManager_.PhysicsSystem().GetBodyLockInterface(), physicsBodyID);
 		if (!lock.Succeeded())
 		{
 			return;
@@ -1009,17 +1149,17 @@ namespace SeedCore
 	* [JP]
 	* ボディが現在シミュレーションに追加されているかを返す。
 	*/
-	Bool Physics::BodyExists(ScBodyID scBodyID)const
+	Bool Physics::BodyExists(ScBodyID bodyID)const
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return false;
 		}
 
 		/// [EN] Destroyed and suspended bodies are both outside the simulation and report false.
 		/// [JP] 破棄済みのボディも停止中のボディもシミュレーション外なので false を返す。
-		return joltManager_.BodyInterface().IsAdded(bodyID);
+		return joltManager_.BodyInterface().IsAdded(physicsBodyID);
 	}
 
 	/**
@@ -1031,10 +1171,10 @@ namespace SeedCore
 	* [JP]
 	* ソフトボディの全頂点のワールド位置を書き出す。
 	*/
-	void Physics::BodyVertex(ScBodyID scBodyID, DynamicArray<Vector3>& outPositions)const
+	void Physics::BodyVertex(ScBodyID bodyID, DynamicArray<Vector3>& outPositions)const
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return;
 		}
@@ -1043,7 +1183,7 @@ namespace SeedCore
 		/// [JP] 頂点はボディから直接読むので、コピーの間は読み込みロックをかける。
 		const JPH::BodyLockInterface& lockInterface = joltManager_.PhysicsSystem().GetBodyLockInterface();
 
-		JPH::BodyLockRead lock(lockInterface, bodyID);
+		JPH::BodyLockRead lock(lockInterface, physicsBodyID);
 		if (!lock.Succeeded())
 		{
 			return;
@@ -1083,10 +1223,10 @@ namespace SeedCore
 	* [JP]
 	* ボディに格納されたエンティティ識別子を返す。
 	*/
-	EntityID Physics::BodyEntityID(ScBodyID scBodyID)const
+	EntityID Physics::BodyEntityID(ScBodyID bodyID)const
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return EntityID{};
 		}
@@ -1095,7 +1235,7 @@ namespace SeedCore
 		/// [JP] ロックできない(破棄済みの)ボディなら、空の EntityID を返す。
 		const JPH::BodyLockInterface& lockInterface = joltManager_.PhysicsSystem().GetBodyLockInterface();
 
-		JPH::BodyLockRead lock(lockInterface, bodyID);
+		JPH::BodyLockRead lock(lockInterface, physicsBodyID);
 		if (!lock.Succeeded())
 		{
 			return EntityID{};
@@ -1143,10 +1283,10 @@ namespace SeedCore
 	* ソフトボディでは力を頂点へ均等に分ける。動的でないボディには
 	* 何もしない。
 	*/
-	void Physics::AddForce(ScBodyID scBodyID, const Vector3& force)
+	void Physics::AddForce(ScBodyID bodyID, const Vector3& force)
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return;
 		}
@@ -1155,7 +1295,7 @@ namespace SeedCore
 		/// [JP] Jolt は次の更新まで力を溜め、動的でないボディは飛ばす。
 		/// [EN] A soft body consumes the same accumulated force, dividing it among its vertices.
 		/// [JP] ソフトボディも同じ溜めた力を使い、頂点の数で割って配る。
-		joltManager_.BodyInterface().AddForce(bodyID, JPH::Vec3(force.x, force.y, force.z));
+		joltManager_.BodyInterface().AddForce(physicsBodyID, JPH::Vec3(force.x, force.y, force.z));
 	}
 
 	/**
@@ -1172,10 +1312,10 @@ namespace SeedCore
 	* 起こす。ソフトボディでは、動ける頂点すべてに同じ速度変化を与える。
 	* 動的でないボディには何もしない。
 	*/
-	void Physics::AddImpulse(ScBodyID scBodyID, const Vector3& impulse)
+	void Physics::AddImpulse(ScBodyID bodyID, const Vector3& impulse)
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return;
 		}
@@ -1183,9 +1323,9 @@ namespace SeedCore
 		/// [EN] A rigid body takes the impulse directly as a change of its linear velocity.
 		/// [JP] 剛体は力積をそのまま移動速度の変化として受け取る。
 		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
-		if (bodyInterface.GetBodyType(bodyID) != JPH::EBodyType::SoftBody)
+		if (bodyInterface.GetBodyType(physicsBodyID) != JPH::EBodyType::SoftBody)
 		{
-			bodyInterface.AddImpulse(bodyID, JPH::Vec3(impulse.x, impulse.y, impulse.z));
+			bodyInterface.AddImpulse(physicsBodyID, JPH::Vec3(impulse.x, impulse.y, impulse.z));
 			return;
 		}
 
@@ -1194,7 +1334,7 @@ namespace SeedCore
 		/// [EN] The scope releases the write lock before the body is woken, since waking takes its own lock.
 		/// [JP] ボディを起こす処理は自分でロックを取るので、その前にこのスコープで書き込みロックを外す。
 		{
-			JPH::BodyLockWrite lock(joltManager_.PhysicsSystem().GetBodyLockInterface(), bodyID);
+			JPH::BodyLockWrite lock(joltManager_.PhysicsSystem().GetBodyLockInterface(), physicsBodyID);
 			if (!lock.Succeeded())
 			{
 				return;
@@ -1241,7 +1381,7 @@ namespace SeedCore
 
 		/// [EN] A sleeping body would ignore the new velocities, so it is woken.
 		/// [JP] 眠っているボディは新しい速度を無視するので、起こす。
-		bodyInterface.ActivateBody(bodyID);
+		bodyInterface.ActivateBody(physicsBodyID);
 	}
 
 	/**
@@ -1255,17 +1395,17 @@ namespace SeedCore
 	* 次のステップの間、ワールド空間のトルク(N·m)を加え、ボディを起こす。
 	* ソフトボディと動的でないボディには効かない。
 	*/
-	void Physics::AddTorque(ScBodyID scBodyID, const Vector3& torque)
+	void Physics::AddTorque(ScBodyID bodyID, const Vector3& torque)
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return;
 		}
 
 		/// [EN] Jolt accumulates the torque until the next update and skips bodies that are not dynamic.
 		/// [JP] Jolt は次の更新までトルクを溜め、動的でないボディは飛ばす。
-		joltManager_.BodyInterface().AddTorque(bodyID, JPH::Vec3(torque.x, torque.y, torque.z));
+		joltManager_.BodyInterface().AddTorque(physicsBodyID, JPH::Vec3(torque.x, torque.y, torque.z));
 	}
 
 	/**
@@ -1280,17 +1420,17 @@ namespace SeedCore
 	* ワールド空間の角力積(N·m·s)を加えて角速度を一度に変え、ボディを
 	* 起こす。ソフトボディと動的でないボディには効かない。
 	*/
-	void Physics::AddSpin(ScBodyID scBodyID, const Vector3& angularImpulse)
+	void Physics::AddSpin(ScBodyID bodyID, const Vector3& angularImpulse)
 	{
-		const JPH::BodyID bodyID(scBodyID);
-		if (bodyID.IsInvalid())
+		const JPH::BodyID physicsBodyID(bodyID);
+		if (physicsBodyID.IsInvalid())
 		{
 			return;
 		}
 
 		/// [EN] The angular velocity changes by the inverse inertia times the angular impulse.
 		/// [JP] 角速度は、慣性の逆数に角力積を掛けた分だけ変わる。
-		joltManager_.BodyInterface().AddAngularImpulse(bodyID, JPH::Vec3(angularImpulse.x, angularImpulse.y, angularImpulse.z));
+		joltManager_.BodyInterface().AddAngularImpulse(physicsBodyID, JPH::Vec3(angularImpulse.x, angularImpulse.y, angularImpulse.z));
 	}
 
 	/**
@@ -1305,12 +1445,12 @@ namespace SeedCore
 	* elapsedTime 後に目標の位置と回転へ着くようキネマティックボディの
 	* 速度を設定し、ボディを起こす。キネマティックでないボディには効かない。
 	*/
-	void Physics::MoveTarget(ScBodyID scBodyID, const Vector3& targetPosition, const Quaternion& targetRotation, Float elapsedTime)
+	void Physics::MoveTarget(ScBodyID bodyID, const Vector3& targetPosition, const Quaternion& targetRotation, Float elapsedTime)
 	{
-		const JPH::BodyID bodyID(scBodyID);
+		const JPH::BodyID physicsBodyID(bodyID);
 		/// [EN] The velocity is the distance divided by elapsedTime, so a zero step has no defined velocity.
 		/// [JP] 速度は距離を elapsedTime で割ったものなので、時間が 0 のステップでは速度が定まらない。
-		if (bodyID.IsInvalid() || elapsedTime <= 0.0f)
+		if (physicsBodyID.IsInvalid() || elapsedTime <= 0.0f)
 		{
 			return;
 		}
@@ -1318,14 +1458,14 @@ namespace SeedCore
 		/// [EN] Only a kinematic body follows a target; a dynamic one is driven by forces and a static one never moves.
 		/// [JP] 目標に従うのはキネマティックボディだけ。動的ボディは力で動き、静的ボディは動かない。
 		JPH::BodyInterface& bodyInterface = joltManager_.BodyInterface();
-		if (bodyInterface.GetMotionType(bodyID) != JPH::EMotionType::Kinematic)
+		if (bodyInterface.GetMotionType(physicsBodyID) != JPH::EMotionType::Kinematic)
 		{
 			return;
 		}
 
 		/// [EN] Moving by velocity rather than by teleporting lets the body push dynamic bodies and carry whatever stands on it.
 		/// [JP] 瞬間移動ではなく速度で動かすことで、ボディが動的ボディを押し、上に乗っているものを運べる。
-		bodyInterface.MoveKinematic(bodyID, JPH::RVec3(targetPosition.x, targetPosition.y, targetPosition.z), JPH::Quat(targetRotation.x, targetRotation.y, targetRotation.z, targetRotation.w).Normalized(), elapsedTime);
+		bodyInterface.MoveKinematic(physicsBodyID, JPH::RVec3(targetPosition.x, targetPosition.y, targetPosition.z), JPH::Quat(targetRotation.x, targetRotation.y, targetRotation.z, targetRotation.w).Normalized(), elapsedTime);
 	}
 
 	/**
