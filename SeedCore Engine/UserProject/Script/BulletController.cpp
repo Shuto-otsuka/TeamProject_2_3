@@ -235,6 +235,8 @@ void BulletController::Stop()
     if (isGravityArea)
     {
         isDynamicWait = true;
+        //回転を0にする
+        rigidbody->MoveTo({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, dynamicWaitTimer);
     }
     
     //衝突判定ON
@@ -325,8 +327,6 @@ void BulletController::Move(float elapsedTime)
         //常に回転0
         if (rigidbody && rigidbody->bodyType_ == SeedCore::Rigidbody::BodyType::Kinematic)
         {
-            if(position)rigidbody->MoveTarget({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, elapsedTime);
-
             if (isDynamicWait)
             {
                 dynamicWaitTimer -= elapsedTime;
@@ -337,8 +337,24 @@ void BulletController::Move(float elapsedTime)
                     rigidbody->freezeRotationX_ = true;
                     rigidbody->freezeRotationY_ = true;
                     rigidbody->freezeRotationZ_ = true;
+
                     rigidbody->Dispatch();
+
+                    //速度を0にする
+                    linearVelocity->x_ = 0.0f;
+                    linearVelocity->y_ = 0.0f;
+                    linearVelocity->z_ = 0.0f;
+                    //回転速度を0にする
+                    angularVelocity->x_ = 0.0f;
+                    angularVelocity->y_ = 0.0f;
+                    angularVelocity->z_ = 0.0f;
+                    
                 }
+            }
+            else
+            {
+                //回転を0にする
+                if(position)rigidbody->MoveTarget({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, elapsedTime);
             }
         }
 

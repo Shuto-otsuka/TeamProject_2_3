@@ -43,6 +43,7 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">FoundationEngine/Prelude.h</PrecompiledHeaderFile>
     </ClCompile>
     <ClCompile Include="Reflection\Reflection.generated.cpp" />
+    <ClCompile Include="Script\AreaController.cpp" />
     <ClCompile Include="Script\BallController.cpp" />
     <ClCompile Include="Script\BombController.cpp" />
     <ClCompile Include="Script\BombExplosionController.cpp" />
@@ -70,6 +71,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EntryPoint\EntryGame.h" />
+    <ClInclude Include="Script\AreaController.h" />
     <ClInclude Include="Script\BallController.h" />
     <ClInclude Include="Script\BombController.h" />
     <ClInclude Include="Script\BombExplosionController.h" />

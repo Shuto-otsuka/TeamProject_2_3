@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "fd02bca4-1f5b-4721-bc24-f68b66fbb1c4",
+			"collaborationId": "",
 			"components": [
 				{
 					"component": "Mesh",
@@ -155,7 +155,7 @@
 										"r": 1.0
 									},
 									"float": 0.0,
-									"int": -1188986142,
+									"int": 777307754,
 									"is_array": false,
 									"name": "[0]",
 									"string": "",
@@ -281,7 +281,7 @@
 										"r": 1.0
 									},
 									"float": 0.0,
-									"int": -1188986142,
+									"int": 777307754,
 									"is_array": false,
 									"name": "[0]",
 									"string": "",
