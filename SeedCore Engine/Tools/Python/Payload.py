@@ -559,12 +559,6 @@ def update_vcxproj(vcxproj_path, cpp_paths):
 
         compile_element = ET.SubElement(item_group, f'{{{MSBUILD_NAMESPACE}}}ClCompile')
         compile_element.set('Include', relative_path)
-        debug_precompiled_header = ET.SubElement(compile_element, f'{{{MSBUILD_NAMESPACE}}}PrecompiledHeader')
-        debug_precompiled_header.set('Condition', "'$(Configuration)|$(Platform)'=='Debug|x64'")
-        debug_precompiled_header.text = 'NotUsing'
-        release_precompiled_header = ET.SubElement(compile_element, f'{{{MSBUILD_NAMESPACE}}}PrecompiledHeader')
-        release_precompiled_header.set('Condition', "'$(Configuration)|$(Platform)'=='Release|x64'")
-        release_precompiled_header.text = 'NotUsing'
 
         print(f"vcxproj追加: {relative_path}")
         changed = True
