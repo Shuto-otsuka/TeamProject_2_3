@@ -13,6 +13,8 @@ public:
 
 	SC_REFLECTION_FIELD()
 		float respawnHeight = -10.0f;
+	SC_REFLECTION_FIELD()
+		float stopMass = 10.0f;
 
 private:
 	SeedCore::Rigidbody* myRigid;
@@ -22,9 +24,11 @@ private:
 	StopController* stopController;
 
 	bool isRespawn = false;
+	bool isStop = false;
 
 	float respawnDuration = 0.1f;
 	float respawnTimer = 0.0f;
+	float noStopMass;
 
 	SeedCore::Vector3 startPosition;
 };

@@ -242,6 +242,8 @@ void BulletController::Stop()
     //衝突判定ON
     rigidbody->isTrigger_ = false;
     rigidbody->Dispatch();
+    rigidbody->followFoothold_ = true;
+    rigidbody->Dispatch();
 
     //速度を0にする
     linearVelocity->x_ = 0.0f;
