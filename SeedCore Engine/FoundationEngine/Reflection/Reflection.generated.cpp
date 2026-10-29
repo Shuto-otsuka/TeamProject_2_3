@@ -3330,6 +3330,14 @@ namespace SeedCore
 					}
 					{
 						FieldInfo fi;
+						fi.name_ = String("loop_");
+						fi.offset_ = offsetof(AnimationState, loop_);
+						fi.type_ = AttributeType::Bool;
+						fi.editorVisible_ = false;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
 						fi.name_ = String("useRootMotion_");
 						fi.offset_ = offsetof(AnimationState, useRootMotion_);
 						fi.type_ = AttributeType::Bool;

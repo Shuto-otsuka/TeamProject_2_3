@@ -381,8 +381,8 @@ namespace SeedCore
 
 		/// [EN] A new body starts on no foothold, so it is given nothing yet.
 		/// [JP] 新しいボディは足場に乗っていない状態から始めるので、まだ何も受けていない。
-		inheritedLinearVelocity_ = { 0.0f, 0.0f, 0.0f };
-		inheritedAngularVelocity_ = { 0.0f, 0.0f, 0.0f };
+		inheritedLinearVelocity_ = Vector3::Zero;
+		inheritedAngularVelocity_ = Vector3::Zero;
 	}
 
 	/**

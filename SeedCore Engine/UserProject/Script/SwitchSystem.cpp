@@ -125,6 +125,12 @@ void SwitchSystem::OnTick(float elapsedTime)
 	}
 
 	wasInside_ = inside;
+
+	Animator* animator = actor.GetComponent<Animator>();
+	if (animator)
+	{
+		animator->SetBool("IsOn", isOn_);
+	}
 }
 
 void SwitchSystem::OnEditorTick(float elapsedTime)

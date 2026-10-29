@@ -1433,6 +1433,8 @@ namespace SeedCore
 			}
 			ImGui::Spacing();
 
+			ImGui::Checkbox("ループ", &state.loop_);
+
 			ImGui::Checkbox("ルートモーションを使用", &state.useRootMotion_);
 		}
 		else

@@ -964,7 +964,7 @@ namespace SeedCore
 	*/
 	void Physics::BodyPointDisplacement(ScBodyID bodyID, const Vector3& point, Float elapsedTime, Vector3& outDisplacement)const
 	{
-		outDisplacement = { 0.0f, 0.0f, 0.0f };
+		outDisplacement = Vector3::Zero;
 
 		const JPH::BodyID physicsBodyID(bodyID);
 		if (physicsBodyID.IsInvalid())
