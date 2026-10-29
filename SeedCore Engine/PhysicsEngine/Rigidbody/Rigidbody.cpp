@@ -8,14 +8,14 @@
 #include <PhysicsEngine/Collider/CylinderCollider.h>
 #include <PhysicsEngine/Collider/RectCollider.h>
 #include <PhysicsEngine/Collider/CircleCollider.h>
-#include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <FoundationEngine/World/ECS/Component/Scale.h>
 #include <FoundationEngine/World/ECS/Component/Velocity.h>
-#include <FoundationEngine/Log/Error.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
+#include <FoundationEngine/Log/Error.h>
 
 namespace SeedCore
 {
@@ -226,20 +226,35 @@ namespace SeedCore
 	* Copies the simulated pose of the body back to the actor's
 	* Position and Rotation, its linear velocity back to LinearVelocity,
 	* and its angular velocity back to AngularVelocity. Both velocities
-	* leave out what the foothold gives.
+	* leave out what the foothold gives. The step's damping slows the
+	* whole velocity, the foothold's part included, so that part is
+	* first scaled by the same factor to match what the body still
+	* carries.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* シミュレーション後のボディの姿勢を Actor の Position と Rotation へ、
 	* 速度を LinearVelocity へ、角速度を AngularVelocity へ書き戻す。
-	* どちらの速度も、足場が与えている分は除く。
+	* どちらの速度も、足場が与えている分は除く。ステップの減衰は足場の分も
+	* 含めた速度全体を弱めるので、先に足場の分へ同じ割合を掛け、ボディが
+	* 実際にまだ持っている分と揃える。
 	*/
 	void Rigidbody::OnFixedTick(Float elapsedTime)
 	{
 		if (bodyID_ == ScInvalidBodyID)
 		{
 			return;
+		}
+
+		/// [EN] Jolt slows a Dynamic body's whole velocity by max(0, 1 - drag * elapsedTime) each step, so the part the foothold gave shrinks by that same factor.
+		/// [JP] Jolt は Dynamic のボディの速度全体を毎ステップ max(0, 1 - 抵抗 * elapsedTime) 倍に弱めるので、足場から受けた分も同じ割合で小さくなる。
+		/// [EN] Only a body ApplyFoothold carries holds a foothold's part, under the same conditions.
+		/// [JP] 足場の分を持つのは ApplyFoothold が運ぶボディだけなので、条件もそれと揃える。
+		if (followFoothold_ && bodyType_ == BodyType::Dynamic && !isTrigger_)
+		{
+			inheritedLinearVelocity_ *= Max(0.0f, 1.0f - linearDrag_ * elapsedTime);
+			inheritedAngularVelocity_ *= Max(0.0f, 1.0f - angularDrag_ * elapsedTime);
 		}
 
 		Actor actor = GetActor();
@@ -943,10 +958,10 @@ namespace SeedCore
 	* step is swapped for the one it gives in this step, so only a
 	* change in the foothold's motion reaches the body and nothing
 	* builds up. In the air the horizontal velocity and the turn carried
-	* so far are kept and slowed by linearDrag_ and angularDrag_, while
-	* the vertical velocity stays in the body's own. Called by PhysicsSystem
-	* after every Rigidbody has run Apply, so each foothold's velocity
-	* for the step is already set.
+	* so far are kept, and the step's damping slows them along with the
+	* body's own, while the vertical velocity stays in the body's own.
+	* Called by PhysicsSystem after every Rigidbody has run Apply, so each
+	* foothold's velocity for the step is already set.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -955,8 +970,8 @@ namespace SeedCore
 	* このボディを運ぶ。前のステップで足場から受けた速度を、このステップで
 	* 受ける速度に入れ替えるので、ボディに届くのは足場の動きの変化分だけで、
 	* 何も溜まっていかない。空中では、それまで受けていた水平の速度と回転を
-	* 残して linearDrag_ と angularDrag_ で弱め、垂直の速度はボディ自身の
-	* 速度に残す。
+	* 残し、ステップの減衰がボディ自身の速度と一緒にそれを弱める。垂直の
+	* 速度はボディ自身の速度に残す。
 	* 全 Rigidbody の Apply が済み、各足場のこのステップの速度が決まった後に
 	* PhysicsSystem から呼ばれる。
 	*/
@@ -1002,15 +1017,12 @@ namespace SeedCore
 		}
 		else
 		{
-			/// [EN] In the air the horizontal velocity and the turn carried so far are kept and slowed at the same rate as the body's own, so landing back on the same foothold does not give them twice.
-			/// [JP] 空中では、それまで受けていた水平の速度と回転を残し、ボディ自身と同じ割合で弱める。同じ足場に戻っても二重に受けないようにするため。
-			Float linearDamping = Max(0.0f, 1.0f - linearDrag_ * elapsedTime);
-			Float angularDamping = Max(0.0f, 1.0f - angularDrag_ * elapsedTime);
-
+			/// [EN] In the air the horizontal velocity and the turn carried so far are kept as they are; the step's damping already slows them at the same rate as the body's own, so landing back on the same foothold does not give them twice.
+			/// [JP] 空中では、それまで受けていた水平の速度と回転をそのまま残す。ステップの減衰がボディ自身と同じ割合で既に弱めているので、同じ足場に戻っても二重に受けない。
 			/// [EN] The vertical part becomes the body's own, so gravity acts on the whole of it.
 			/// [JP] 垂直の分はボディ自身の速度になり、重力がその全体に働く。
-			nextLinearVelocity = Vector3(inheritedLinearVelocity_.x * linearDamping, 0.0f, inheritedLinearVelocity_.z * linearDamping);
-			nextAngularVelocity = inheritedAngularVelocity_ * angularDamping;
+			nextLinearVelocity = Vector3(inheritedLinearVelocity_.x, 0.0f, inheritedLinearVelocity_.z);
+			nextAngularVelocity = inheritedAngularVelocity_;
 		}
 
 		/// [EN] What the foothold gave in the last step is swapped for what it gives now, so only the change reaches the body.

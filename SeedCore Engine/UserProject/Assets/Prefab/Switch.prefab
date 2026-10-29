@@ -1,0 +1,2680 @@
+{
+	"basePrefabAssetID": 0,
+	"nodes": [
+		{
+			"active": true,
+			"collaborationId": "8cdc35f7-455c-4ed8-8271-081e128c55a3",
+			"components": [
+				{
+					"component": "Mesh",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 930630307,
+							"is_array": false,
+							"name": "メッシュID",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Material",
+					"fields": [
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 684222108,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": -674256541,
+									"is_array": false,
+									"name": "[1]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotMaterialIDs_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[0]",
+									"string": "button2_M",
+									"type": 7,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[1]",
+									"string": "button1_M",
+									"type": 7,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotNames_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 684222108,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": -870866825,
+									"is_array": false,
+									"name": "[1]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": -674256541,
+									"is_array": false,
+									"name": "[2]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "マテリアル",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Skeleton",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 1317887534,
+							"is_array": false,
+							"name": "スケルトン",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Animator",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "アニメーション速度",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": false,
+											"name": "name_",
+											"string": "IsOn",
+											"type": 7,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": false,
+											"name": "type_",
+											"string": "",
+											"type": 9,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": false,
+											"name": "value_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										}
+									],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "",
+									"string": "",
+									"type": 0,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "parameters_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": false,
+											"name": "name_",
+											"string": "Idle",
+											"type": 7,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": -59174351,
+											"is_array": false,
+											"name": "animationID_",
+											"string": "",
+											"type": 1,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": -112.0,
+											"int": 0,
+											"is_array": false,
+											"name": "nodePositionX_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 112.0,
+											"int": 0,
+											"is_array": false,
+											"name": "nodePositionY_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": true,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": false,
+											"name": "loop_",
+											"string": "",
+											"type": 3,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": false,
+											"name": "useRootMotion_",
+											"string": "",
+											"type": 3,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										}
+									],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "",
+									"string": "",
+									"type": 0,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": false,
+											"name": "name_",
+											"string": "Push",
+											"type": 7,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": -233447865,
+											"is_array": false,
+											"name": "animationID_",
+											"string": "",
+											"type": 1,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 176.0,
+											"int": 0,
+											"is_array": false,
+											"name": "nodePositionX_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 112.0,
+											"int": 0,
+											"is_array": false,
+											"name": "nodePositionY_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": false,
+											"name": "loop_",
+											"string": "",
+											"type": 3,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": false,
+											"name": "useRootMotion_",
+											"string": "",
+											"type": 3,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										}
+									],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "",
+									"string": "",
+									"type": 0,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "states_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": false,
+											"name": "fromState_",
+											"string": "",
+											"type": 1,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 1,
+											"is_array": false,
+											"name": "toState_",
+											"string": "",
+											"type": 1,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.25,
+											"int": 0,
+											"is_array": false,
+											"name": "duration_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": false,
+											"name": "hasExitTime_",
+											"string": "",
+											"type": 3,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 1.0,
+											"int": 0,
+											"is_array": false,
+											"name": "exitTime_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 156.593994140625,
+											"int": 0,
+											"is_array": false,
+											"name": "fromOffsetX_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 9.020980834960938,
+											"int": 0,
+											"is_array": false,
+											"name": "fromOffsetY_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 93.593994140625,
+											"int": 0,
+											"is_array": false,
+											"name": "toOffsetX_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 13.020980834960938,
+											"int": 0,
+											"is_array": false,
+											"name": "toOffsetY_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [
+												{
+													"bool": false,
+													"children": [
+														{
+															"bool": false,
+															"children": [],
+															"color": {
+																"a": 1.0,
+																"b": 1.0,
+																"g": 1.0,
+																"r": 1.0
+															},
+															"float": 0.0,
+															"int": 0,
+															"is_array": false,
+															"name": "parameterName_",
+															"string": "IsOn",
+															"type": 7,
+															"vector2": {
+																"x": 0.0,
+																"y": 0.0
+															},
+															"vector3": {
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															},
+															"vector4": {
+																"w": 0.0,
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															}
+														},
+														{
+															"bool": false,
+															"children": [],
+															"color": {
+																"a": 1.0,
+																"b": 1.0,
+																"g": 1.0,
+																"r": 1.0
+															},
+															"float": 0.0,
+															"int": 0,
+															"is_array": false,
+															"name": "comparison_",
+															"string": "",
+															"type": 9,
+															"vector2": {
+																"x": 0.0,
+																"y": 0.0
+															},
+															"vector3": {
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															},
+															"vector4": {
+																"w": 0.0,
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															}
+														},
+														{
+															"bool": false,
+															"children": [],
+															"color": {
+																"a": 1.0,
+																"b": 1.0,
+																"g": 1.0,
+																"r": 1.0
+															},
+															"float": 1.0,
+															"int": 0,
+															"is_array": false,
+															"name": "value_",
+															"string": "",
+															"type": 2,
+															"vector2": {
+																"x": 0.0,
+																"y": 0.0
+															},
+															"vector3": {
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															},
+															"vector4": {
+																"w": 0.0,
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															}
+														},
+														{
+															"bool": false,
+															"children": [],
+															"color": {
+																"a": 1.0,
+																"b": 1.0,
+																"g": 1.0,
+																"r": 1.0
+															},
+															"float": 0.0,
+															"int": 0,
+															"is_array": false,
+															"name": "isOr_",
+															"string": "",
+															"type": 3,
+															"vector2": {
+																"x": 0.0,
+																"y": 0.0
+															},
+															"vector3": {
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															},
+															"vector4": {
+																"w": 0.0,
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															}
+														}
+													],
+													"color": {
+														"a": 1.0,
+														"b": 1.0,
+														"g": 1.0,
+														"r": 1.0
+													},
+													"float": 0.0,
+													"int": 0,
+													"is_array": false,
+													"name": "",
+													"string": "",
+													"type": 0,
+													"vector2": {
+														"x": 0.0,
+														"y": 0.0
+													},
+													"vector3": {
+														"x": 0.0,
+														"y": 0.0,
+														"z": 0.0
+													},
+													"vector4": {
+														"w": 0.0,
+														"x": 0.0,
+														"y": 0.0,
+														"z": 0.0
+													}
+												}
+											],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": true,
+											"name": "conditions_",
+											"string": "",
+											"type": 0,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										}
+									],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "",
+									"string": "",
+									"type": 0,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 1,
+											"is_array": false,
+											"name": "fromState_",
+											"string": "",
+											"type": 1,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": false,
+											"name": "toState_",
+											"string": "",
+											"type": 1,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.05000000074505806,
+											"int": 0,
+											"is_array": false,
+											"name": "duration_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": false,
+											"name": "hasExitTime_",
+											"string": "",
+											"type": 3,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 1.0,
+											"int": 0,
+											"is_array": false,
+											"name": "exitTime_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 4.593994140625,
+											"int": 0,
+											"is_array": false,
+											"name": "fromOffsetX_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 29.020965576171875,
+											"int": 0,
+											"is_array": false,
+											"name": "fromOffsetY_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 194.593994140625,
+											"int": 0,
+											"is_array": false,
+											"name": "toOffsetX_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 32.020965576171875,
+											"int": 0,
+											"is_array": false,
+											"name": "toOffsetY_",
+											"string": "",
+											"type": 2,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										},
+										{
+											"bool": false,
+											"children": [
+												{
+													"bool": false,
+													"children": [
+														{
+															"bool": false,
+															"children": [],
+															"color": {
+																"a": 1.0,
+																"b": 1.0,
+																"g": 1.0,
+																"r": 1.0
+															},
+															"float": 0.0,
+															"int": 0,
+															"is_array": false,
+															"name": "parameterName_",
+															"string": "IsOn",
+															"type": 7,
+															"vector2": {
+																"x": 0.0,
+																"y": 0.0
+															},
+															"vector3": {
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															},
+															"vector4": {
+																"w": 0.0,
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															}
+														},
+														{
+															"bool": false,
+															"children": [],
+															"color": {
+																"a": 1.0,
+																"b": 1.0,
+																"g": 1.0,
+																"r": 1.0
+															},
+															"float": 0.0,
+															"int": 0,
+															"is_array": false,
+															"name": "comparison_",
+															"string": "",
+															"type": 9,
+															"vector2": {
+																"x": 0.0,
+																"y": 0.0
+															},
+															"vector3": {
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															},
+															"vector4": {
+																"w": 0.0,
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															}
+														},
+														{
+															"bool": false,
+															"children": [],
+															"color": {
+																"a": 1.0,
+																"b": 1.0,
+																"g": 1.0,
+																"r": 1.0
+															},
+															"float": 0.0,
+															"int": 0,
+															"is_array": false,
+															"name": "value_",
+															"string": "",
+															"type": 2,
+															"vector2": {
+																"x": 0.0,
+																"y": 0.0
+															},
+															"vector3": {
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															},
+															"vector4": {
+																"w": 0.0,
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															}
+														},
+														{
+															"bool": false,
+															"children": [],
+															"color": {
+																"a": 1.0,
+																"b": 1.0,
+																"g": 1.0,
+																"r": 1.0
+															},
+															"float": 0.0,
+															"int": 0,
+															"is_array": false,
+															"name": "isOr_",
+															"string": "",
+															"type": 3,
+															"vector2": {
+																"x": 0.0,
+																"y": 0.0
+															},
+															"vector3": {
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															},
+															"vector4": {
+																"w": 0.0,
+																"x": 0.0,
+																"y": 0.0,
+																"z": 0.0
+															}
+														}
+													],
+													"color": {
+														"a": 1.0,
+														"b": 1.0,
+														"g": 1.0,
+														"r": 1.0
+													},
+													"float": 0.0,
+													"int": 0,
+													"is_array": false,
+													"name": "",
+													"string": "",
+													"type": 0,
+													"vector2": {
+														"x": 0.0,
+														"y": 0.0
+													},
+													"vector3": {
+														"x": 0.0,
+														"y": 0.0,
+														"z": 0.0
+													},
+													"vector4": {
+														"w": 0.0,
+														"x": 0.0,
+														"y": 0.0,
+														"z": 0.0
+													}
+												}
+											],
+											"color": {
+												"a": 1.0,
+												"b": 1.0,
+												"g": 1.0,
+												"r": 1.0
+											},
+											"float": 0.0,
+											"int": 0,
+											"is_array": true,
+											"name": "conditions_",
+											"string": "",
+											"type": 0,
+											"vector2": {
+												"x": 0.0,
+												"y": 0.0
+											},
+											"vector3": {
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											},
+											"vector4": {
+												"w": 0.0,
+												"x": 0.0,
+												"y": 0.0,
+												"z": 0.0
+											}
+										}
+									],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "",
+									"string": "",
+									"type": 0,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "transitions_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "entryStateIndex_",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": -128.0,
+							"int": 0,
+							"is_array": false,
+							"name": "entryNodePositionX_",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "entryNodePositionY_",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 192.0,
+							"int": 0,
+							"is_array": false,
+							"name": "exitNodePositionX_",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "exitNodePositionY_",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 16.0,
+							"int": 0,
+							"is_array": false,
+							"name": "anyNodePositionX_",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "anyNodePositionY_",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": -59174351,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": -233447865,
+									"is_array": false,
+									"name": "[1]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "アニメーションID",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "SwitchSystem",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "動作",
+							"string": "",
+							"type": 9,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 1,
+							"is_array": false,
+							"name": "判定の形",
+							"string": "",
+							"type": 9,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "判定サイズ",
+							"string": "",
+							"type": 5,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 1.0,
+								"y": 1.149999976158142,
+								"z": 1.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "判定オフセット",
+							"string": "",
+							"type": 5,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.10000000149011612,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[0]",
+									"string": "Player",
+									"type": 7,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "対象タグ",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "クールタイム",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": true,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "判定範囲を描画するか",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				}
+			],
+			"layer": "Default",
+			"name": "Switch",
+			"nestedPrefabAssetID": 0,
+			"overrides": [],
+			"parentIndex": -1,
+			"persistentId": 139,
+			"position": {
+				"x": -1.989197015762329,
+				"y": -0.7287039160728455,
+				"z": 31.756633758544922
+			},
+			"rotation": {
+				"w": 1.0,
+				"x": -0.0,
+				"y": 0.0,
+				"z": -0.0
+			},
+			"scale": {
+				"x": 1.0,
+				"y": 1.0,
+				"z": 1.0
+			},
+			"tags": []
+		}
+	]
+}
