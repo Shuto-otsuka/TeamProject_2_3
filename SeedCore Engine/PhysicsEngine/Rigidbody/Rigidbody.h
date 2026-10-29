@@ -221,14 +221,19 @@ namespace SeedCore
 		* Copies the simulated pose of the body back to the actor's
 		* Position and Rotation, its linear velocity back to LinearVelocity,
 		* and its angular velocity back to AngularVelocity. Both velocities
-		* leave out what the foothold gives.
+		* leave out what the foothold gives. The step's damping slows the
+		* whole velocity, the foothold's part included, so that part is
+		* first scaled by the same factor to match what the body still
+		* carries.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* シミュレーション後のボディの姿勢を Actor の Position と Rotation へ、
 		* 速度を LinearVelocity へ、角速度を AngularVelocity へ書き戻す。
-		* どちらの速度も、足場が与えている分は除く。
+		* どちらの速度も、足場が与えている分は除く。ステップの減衰は足場の分も
+		* 含めた速度全体を弱めるので、先に足場の分へ同じ割合を掛け、ボディが
+		* 実際にまだ持っている分と揃える。
 		*/
 		void OnFixedTick(Float elapsedTime);
 
@@ -477,10 +482,10 @@ namespace SeedCore
 		* step is swapped for the one it gives in this step, so only a
 		* change in the foothold's motion reaches the body and nothing
 		* builds up. In the air the horizontal velocity and the turn carried
-		* so far are kept and slowed by linearDrag_ and angularDrag_, while
-		* the vertical velocity stays in the body's own. Called by PhysicsSystem
-		* after every Rigidbody has run Apply, so each foothold's velocity
-		* for the step is already set.
+		* so far are kept, and the step's damping slows them along with the
+		* body's own, while the vertical velocity stays in the body's own.
+		* Called by PhysicsSystem after every Rigidbody has run Apply, so each
+		* foothold's velocity for the step is already set.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -489,8 +494,8 @@ namespace SeedCore
 		* このボディを運ぶ。前のステップで足場から受けた速度を、このステップで
 		* 受ける速度に入れ替えるので、ボディに届くのは足場の動きの変化分だけで、
 		* 何も溜まっていかない。空中では、それまで受けていた水平の速度と回転を
-		* 残して linearDrag_ と angularDrag_ で弱め、垂直の速度はボディ自身の
-		* 速度に残す。
+		* 残し、ステップの減衰がボディ自身の速度と一緒にそれを弱める。垂直の
+		* 速度はボディ自身の速度に残す。
 		* 全 Rigidbody の Apply が済み、各足場のこのステップの速度が決まった後に
 		* PhysicsSystem から呼ばれる。
 		*/
