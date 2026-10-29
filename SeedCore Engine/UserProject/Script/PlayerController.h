@@ -119,6 +119,7 @@ private:
 	float shotInputTimer = 0.0f;
 	float resetInputTimer = 0.0f;
 	float shotChargeRate = 0.0f;
+	float shotCoolTimer = 0.0f;
 
 	int costGauge = 0;
 	int costGaugeAdd = 0;

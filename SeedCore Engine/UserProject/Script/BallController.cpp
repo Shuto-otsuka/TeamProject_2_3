@@ -1,4 +1,5 @@
 #include "UserProject/Script/BallController.h"
+#include "UserProject/Script/StopController.h"
 
 #include<SeedCore/ScLog.h>
 
@@ -7,6 +8,7 @@ void BallController::OnStart()
     myRigid = GetActor().GetComponent<SeedCore::Rigidbody>();
     myCollider = GetActor().GetComponent<SeedCore::SphereCollider>();
     velocity = GetActor().GetComponent<SeedCore::LinearVelocity>();
+    stopController = GetActor().GetComponent<StopController>();
     startPosition = GetActor().WorldMatrix().Translation();
 }
 

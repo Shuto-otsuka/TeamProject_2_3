@@ -1,0 +1,2270 @@
+{
+	"basePrefabAssetID": 0,
+	"nodes": [
+		{
+			"active": true,
+			"collaborationId": "",
+			"components": [
+				{
+					"component": "DirectionalLight",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "色",
+							"string": "",
+							"type": 8,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "強度",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "向き",
+							"string": "",
+							"type": 5,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": -1.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Shadow",
+					"fields": [
+						{
+							"bool": true,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "有効",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "手法",
+							"string": "",
+							"type": 9,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 1,
+									"is_array": false,
+									"name": "レイの本数",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 1000.0,
+									"int": 0,
+									"is_array": false,
+									"name": "レイの最大長",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.009999999776482582,
+									"int": 0,
+									"is_array": false,
+									"name": "法線方向のオフセット",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 1.0,
+									"int": 0,
+									"is_array": false,
+									"name": "影の濃さ",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.019999999552965164,
+									"int": 0,
+									"is_array": false,
+									"name": "太陽の角半径",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.10000000149011612,
+									"int": 0,
+									"is_array": false,
+									"name": "点光源の半径",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "レイトレーシング影",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 14,
+									"is_array": false,
+									"name": "仮想解像度（2の累乗）",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 128,
+									"is_array": false,
+									"name": "ページプールのサイズ（MiB）",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 6,
+									"is_array": false,
+									"name": "クリップマップの段数",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.5,
+									"int": 0,
+									"is_array": false,
+									"name": "柔らかさの半径",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0020000000949949026,
+									"int": 0,
+									"is_array": false,
+									"name": "深度バイアス",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "バーチャルシャドウマップ（VSM）",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 4,
+									"is_array": false,
+									"name": "カスケードの数",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.8500000238418579,
+									"int": 0,
+									"is_array": false,
+									"name": "分割の比率",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 3,
+									"is_array": false,
+									"name": "PCFのカーネルサイズ",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.10000000149011612,
+									"int": 0,
+									"is_array": false,
+									"name": "カスケード境界のブレンド幅",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0020000000949949026,
+									"int": 0,
+									"is_array": false,
+									"name": "深度バイアス",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": true,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "ちらつき防止",
+									"string": "",
+									"type": 3,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "カスケードシャドウマップ（CSM）",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Reflection",
+					"fields": [
+						{
+							"bool": true,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "有効",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "手法",
+							"string": "",
+							"type": 9,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "反射の強さ",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 1,
+									"is_array": false,
+									"name": "レイの本数",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 1,
+									"is_array": false,
+									"name": "バウンス数",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.30000001192092896,
+									"int": 0,
+									"is_array": false,
+									"name": "バウンス後の最大の粗さ",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 1000.0,
+									"int": 0,
+									"is_array": false,
+									"name": "レイの最大長",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.009999999776482582,
+									"int": 0,
+									"is_array": false,
+									"name": "法線方向のオフセット",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "レイトレーシング反射",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 1000.0,
+									"int": 0,
+									"is_array": false,
+									"name": "最大距離",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.05000000074505806,
+									"int": 0,
+									"is_array": false,
+									"name": "コーンの角度",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.009999999776482582,
+									"int": 0,
+									"is_array": false,
+									"name": "法線方向のオフセット",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "距離フィールド反射（SDFR）",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.6000000238418579,
+									"int": 0,
+									"is_array": false,
+									"name": "反射する最大の粗さ",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.25,
+									"int": 0,
+									"is_array": false,
+									"name": "厚み",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 64,
+									"is_array": false,
+									"name": "最大ステップ数",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "スクリーンスペース反射（SSR）",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "GlobalIllumination",
+					"fields": [
+						{
+							"bool": true,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "有効",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "手法",
+							"string": "",
+							"type": 9,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "間接光の強さ",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 1,
+									"is_array": false,
+									"name": "レイの本数",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 1,
+									"is_array": false,
+									"name": "バウンス数",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 2000.0,
+									"int": 0,
+									"is_array": false,
+									"name": "レイの最大長",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.05000000074505806,
+									"int": 0,
+									"is_array": false,
+									"name": "法線方向のオフセット",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "レイトレーシングGI",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 128,
+									"is_array": false,
+									"name": "プローブあたりのレイ数",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 2.0,
+									"int": 0,
+									"is_array": false,
+									"name": "プローブの間隔",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.9700000286102295,
+									"int": 0,
+									"is_array": false,
+									"name": "履歴の重み",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.25,
+									"int": 0,
+									"is_array": false,
+									"name": "法線方向のオフセット",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "動的ディフューズGI（DDGI）",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 32,
+									"is_array": false,
+									"name": "格子の解像度",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 64.0,
+									"int": 0,
+									"is_array": false,
+									"name": "ボリュームの大きさ",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 3,
+									"is_array": false,
+									"name": "カスケードの数",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 8,
+									"is_array": false,
+									"name": "伝播の回数",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 512,
+									"is_array": false,
+									"name": "RSM（反射シャドウマップ）の解像度",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.5,
+									"int": 0,
+									"is_array": false,
+									"name": "注入のオフセット",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": true,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "遮蔽",
+									"string": "",
+									"type": 3,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 1.0,
+									"int": 0,
+									"is_array": false,
+									"name": "遮蔽の強さ",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "ライト・プロパゲーション・ボリューム（LPV）",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 2.0,
+									"int": 0,
+									"is_array": false,
+									"name": "レイの長さ",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.25,
+									"int": 0,
+									"is_array": false,
+									"name": "厚み",
+									"string": "",
+									"type": 2,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 8,
+									"is_array": false,
+									"name": "サンプル数",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "スクリーンスペースGI（SSGI）",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "SkyLight",
+					"fields": [
+						{
+							"bool": true,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "スカイマップ使用",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.5,
+							"int": 0,
+							"is_array": false,
+							"name": "強度",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 1162998438,
+							"is_array": false,
+							"name": "スカイマップID",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				}
+			],
+			"layer": "Default",
+			"name": "Environment",
+			"nestedPrefabAssetID": 0,
+			"overrides": [],
+			"parentIndex": -1,
+			"persistentId": 11670,
+			"position": {
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
+			},
+			"rotation": {
+				"w": 1.0,
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
+			},
+			"scale": {
+				"x": 1.0,
+				"y": 1.0,
+				"z": 1.0
+			},
+			"tags": []
+		}
+	]
+}

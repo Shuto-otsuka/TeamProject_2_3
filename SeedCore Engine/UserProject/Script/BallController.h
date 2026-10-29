@@ -3,6 +3,8 @@
 #include <FoundationEngine/SeedScript.h>
 #include<SeedCore/ScComponent.h>
 
+class StopController;
+
 class BallController :public SeedCore::SeedScript
 {
 public:
@@ -16,6 +18,8 @@ private:
 	SeedCore::Rigidbody* myRigid;
 	SeedCore::SphereCollider* myCollider;
 	SeedCore::LinearVelocity* velocity;
+
+	StopController* stopController;
 
 	bool isRespawn = false;
 
