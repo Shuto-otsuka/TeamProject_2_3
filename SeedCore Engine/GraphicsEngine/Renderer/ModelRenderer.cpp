@@ -208,7 +208,8 @@ namespace SeedCore
 						Int stateIndex = animator->CurrentStateIndex();
 						if (stateIndex >= 0 && static_cast<Size>(stateIndex) < animator->states_.size())
 						{
-							Uint32 animationAssetId = static_cast<Uint32>(animator->states_[stateIndex].animationID_);
+							const AnimationState& animatorState = animator->states_[stateIndex];
+							Uint32 animationAssetId = static_cast<Uint32>(animatorState.animationID_);
 							if (animationAssetId != 0)
 							{
 								Handle<Animation> animationHandle = animationResource.GetHandle(animationAssetId);
@@ -219,7 +220,14 @@ namespace SeedCore
 									Float sampleTime = animator->CurrentTime();
 									if (duration > 0.0f)
 									{
-										sampleTime = std::fmod(sampleTime, duration);
+										if (animatorState.loop_)
+										{
+											sampleTime = std::fmod(sampleTime, duration);
+										}
+										else
+										{
+											sampleTime = Min(sampleTime, duration);
+										}
 									}
 									animator->UpdateCurrentClipDuration(duration);
 									animation->SampleMorphWeights(sampleTime, animatedMorphWeights_[entityID]);
