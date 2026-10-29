@@ -74,7 +74,9 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Runs one frame: drives Awake/Start (if isPlaying), then (if
+	* Runs one frame: (if isPlaying) runs the built-in TransformSystem so
+	* actors created since the last pass have their world matrix before
+	* Awake/Start, drives Awake/Start (if isPlaying), then (if
 	* isPlaying) runs the structural systems (Spawner + Lifetime) through
 	* SystemGraph on executor, flushes the recorded structural changes,
 	* runs the built-in TransformSystem (all before Tick/LateTick so any
@@ -87,7 +89,9 @@ namespace SeedCore
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 1フレーム分を実行する: （isPlaying であれば）Awake/Start を駆動し、
+	* 1フレーム分を実行する: （isPlaying であれば）前回以降に生成された
+	* actor が Awake/Start の前にワールド行列を持つよう組み込みの
+	* TransformSystem を実行し、（isPlaying であれば）Awake/Start を駆動し、
 	* （isPlaying であれば）構造系システム（Spawner + Lifetime）を
 	* SystemGraph 経由で executor 上で実行し、記録された構造変更を flush し、
 	* 組み込みの TransformSystem を実行し（すべて Tick/LateTick より前 —
@@ -101,6 +105,12 @@ namespace SeedCore
 	{
 		if (isPlaying)
 		{
+			/// [EN] An actor created since the last TransformSystem pass (a switched-in scene, an instantiated prefab) still holds the identity world matrix,
+			///      so the world matrices are built here first, letting Awake/Start read the actor's (and its parent's) actual world pose.
+			/// [JP] 前回の TransformSystem 以降に生成された actor（切り替え先のシーン、Instantiate した Prefab）はワールド行列がまだ単位行列のままなので、
+			///      先にここでワールド行列を作り、Awake/Start が actor（およびその親）の実際のワールドでの姿勢を読めるようにする。
+			transformSystem_.Execute(world);
+
 			/// [EN] Every behaviour is visited, with or without an OnAwake, since awoken_ must be set on all of them.
 			/// [JP] OnAwake の有無に関係なく全ビヘイビアを回す。awoken_ は全てに立てる必要があるため。
 			Dispatch(world, [](const ComponentHooks&) { return true; }, [](ComponentBehaviour* component)

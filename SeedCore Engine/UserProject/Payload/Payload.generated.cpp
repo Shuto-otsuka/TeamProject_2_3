@@ -4,12 +4,14 @@
 #include <UserProject/Script/CircuitSystem.h>
 #include <UserProject/Script/CostGaugeController.h>
 #include <UserProject/Script/DoorSystem.h>
+#include <UserProject/Script/FloorMoveSystem.h>
 #include <UserProject/Script/GoalSystem.h>
 
 extern "C" int _force_payload_AreaController = 0;
 extern "C" int _force_payload_CircuitSystem = 0;
 extern "C" int _force_payload_CostGaugeController = 0;
 extern "C" int _force_payload_DoorSystem = 0;
+extern "C" int _force_payload_FloorMoveSystem = 0;
 extern "C" int _force_payload_GoalSystem = 0;
 
 namespace SeedCore
@@ -84,6 +86,27 @@ namespace SeedCore
 			}
 		};
 		static Register_DoorSystem global_DoorSystem_register;
+
+		// ---- UserProject/Script/FloorMoveSystem.h ----
+		struct Register_FloorMoveSystem
+		{
+			Register_FloorMoveSystem()
+			{
+				PayloadRegistry::Register(String("FloorMoveSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					FloorMoveSystem& obj = *static_cast<FloorMoveSystem*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("起動元回路");
+						fi.offset_ = offsetof(FloorMoveSystem, circuitActorID_);
+						fi.type_ = AttributeType::Int;
+						fi.assetType_ = PayloadType::Actor;
+						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<FloorMoveSystem*>(p); return o.isCanCircuit_; };
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_FloorMoveSystem global_FloorMoveSystem_register;
 
 		// ---- UserProject/Script/GoalSystem.h ----
 		struct Register_GoalSystem
