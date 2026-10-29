@@ -368,7 +368,8 @@ void PlayerController::UpdateTurn(float elapsedTime)
             if(GetActor().GetService<SeedCore::Physics>()->Boxcast(gunPosition,SeedCore::Vector3(bulletHalfSize,bulletHalfSize,bulletHalfSize),SeedCore::Quaternion::Identity,front,bulletRemoveDistance,hit,layerMask))
             {
                 //当たったところをターゲットにする
-                bulletTargetPosition = hit.position_;
+                bulletTargetPosition = gunPosition + front * hit.distance_;
+                //bulletTargetPosition = hit.position_;
             }
             else
             {
@@ -404,7 +405,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
                 if (isGravityArea)
                 {
                     //重力エリアなら床にも撃てる
-                    bulletTargetPosition = hit.position_;
+                    bulletTargetPosition = ray.origin_ + ray.direction_ * hit.distance_;
                 }
                 else
                 {
@@ -422,7 +423,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
             else
             {
                 //止められるオブジェクトもしくは壁などに当たった場合当たった場所をターゲットにする
-                bulletTargetPosition = hit.position_;
+                bulletTargetPosition = ray.origin_ + ray.direction_ * hit.distance_;
             }
         }
         else
