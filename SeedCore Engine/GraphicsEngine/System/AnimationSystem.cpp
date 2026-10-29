@@ -134,7 +134,14 @@ namespace SeedCore
 								Float sampleTime = animator->CurrentTime();
 								if (duration > 0.0f)
 								{
-									sampleTime = std::fmod(sampleTime, duration);
+									if (animatorState.loop_)
+									{
+										sampleTime = std::fmod(sampleTime, duration);
+									}
+									else
+									{
+										sampleTime = Min(sampleTime, duration);
+									}
 								}
 
 								animator->UpdateCurrentClipDuration(duration);

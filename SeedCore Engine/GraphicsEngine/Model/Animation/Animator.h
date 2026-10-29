@@ -63,6 +63,9 @@ namespace SeedCore
 		Float nodePositionY_ = 0.0f;
 
 		SC_SERIALIZE_FIELD()
+		Bool loop_ = true;
+
+		SC_SERIALIZE_FIELD()
 		Bool useRootMotion_ = false;
 	};
 

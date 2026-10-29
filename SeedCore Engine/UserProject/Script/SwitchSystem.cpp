@@ -2,8 +2,8 @@
 
 #include <SeedCore/ScComponent.h>
 #include <SeedCore/ScPhysics.h>
-#include <PhysicsEngine/Physics/Physics.h>
-#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
+#include <SeedCore/ScScene.h>
+#include <SeedCore/ScDebug.h>
 
 using namespace SeedCore;
 
@@ -13,6 +13,9 @@ void SwitchSystem::OnStart()
 	isOn_ = false;
 	wasInside_ = false;
 	cooltimer_ = 0.0f;
+
+	offMaterialID_ = Scene::AssetID("button1_M.material");
+	onMaterialID_ = Scene::AssetID("button1_M_E.material");
 }
 
 void SwitchSystem::OnTick(float elapsedTime)
@@ -125,6 +128,18 @@ void SwitchSystem::OnTick(float elapsedTime)
 	}
 
 	wasInside_ = inside;
+
+	Animator* animator = actor.GetComponent<Animator>();
+	if (animator)
+	{
+		animator->SetBool("IsOn", isOn_);
+
+		Material* material = actor.GetComponent<Material>();
+		if (material && onMaterialID_ != 0 && offMaterialID_ != 0)
+		{
+			material->Set(isOn_ ? onMaterialID_ : offMaterialID_, "button1_M");
+		}
+	}
 }
 
 void SwitchSystem::OnEditorTick(float elapsedTime)
