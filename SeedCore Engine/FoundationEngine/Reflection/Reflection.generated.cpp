@@ -65,8 +65,6 @@
 #include <PhysicsEngine/Joint/SpringJoint.h>
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
-#include <Runtime/enc_temp_folder/5c60f24a1df8e757e7aad6d4f0e8d81/SwitchSystem.h>
-#include <UserProject/Script/SwitchSystem.h>
 
 extern "C" int _force_reflection_AudioListener = 0;
 extern "C" int _force_reflection_AudioSource = 0;
@@ -173,7 +171,6 @@ extern "C" int _force_reflection_SliderJoint = 0;
 extern "C" int _force_reflection_SpringJoint = 0;
 extern "C" int _force_reflection_Rigidbody = 0;
 extern "C" int _force_reflection_Softbody = 0;
-extern "C" int _force_reflection_SwitchSystem = 0;
 
 namespace SeedCore
 {
@@ -5924,61 +5921,6 @@ namespace SeedCore
 		};
 		static Register_Softbody global_Softbody_register;
 
-		// ---- Runtime/enc_temp_folder/5c60f24a1df8e757e7aad6d4f0e8d81/SwitchSystem.h ----
-		struct Register_SwitchSystem
-		{
-			Register_SwitchSystem()
-			{
-				ReflectionRegistry::Register(String("SwitchSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
-					SwitchSystem& obj = *static_cast<SwitchSystem*>(ptr);
-					{
-						FieldInfo fi;
-						fi.name_ = String("動作");
-						fi.offset_ = offsetof(SwitchSystem, mode_);
-						fi.type_ = AttributeType::Enum;
-						fi.enum_.typeName_ = String("SwitchSystem::Mode");
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("判定の形");
-						fi.offset_ = offsetof(SwitchSystem, shape_);
-						fi.type_ = AttributeType::Enum;
-						fi.enum_.typeName_ = String("SwitchSystem::Shape");
-						outInfo.push_back(std::move(fi));
-					}
-					outInfo.push_back({ String("判定サイズ"), offsetof(SwitchSystem, detectSize_), AttributeType::Vector3 });
-					outInfo.push_back({ String("判定オフセット"), offsetof(SwitchSystem, detectOffset_), AttributeType::Vector3 });
-					{
-						auto& arr = obj.targetTags_;
-						FieldInfo header;
-						header.name_ = String("対象タグ");
-						header.offset_ = 0;
-						header.type_ = AttributeType::String;
-						header.array_.size_ = arr.size();
-						header.array_.add_ = [&obj]() { obj.targetTags_.push_back({}); };
-						header.array_.remove_ = [&obj](Size idx) { if (idx < obj.targetTags_.size()) obj.targetTags_.erase(obj.targetTags_.begin() + idx); };
-						outInfo.push_back(std::move(header));
-						for (Size i = 0; i < arr.size(); ++i)
-						{
-							outInfo.push_back({ String("[" + std::to_string(i) + "]"), 0, AttributeType::String, PayloadType::None, &arr[i] });
-						}
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("クールタイム");
-						fi.offset_ = offsetof(SwitchSystem, cooltime_);
-						fi.type_ = AttributeType::Float;
-						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 10000.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					outInfo.push_back({ String("判定範囲を描画するか"), offsetof(SwitchSystem, isDebugAreaDraw_), AttributeType::Bool });
-				});
-			}
-		};
-		static Register_SwitchSystem global_SwitchSystem_register;
-
 		struct RegisterEnum_AmbientOcclusionTechnique
 		{
 			RegisterEnum_AmbientOcclusionTechnique()
@@ -6163,31 +6105,6 @@ namespace SeedCore
 			}
 		};
 		static RegisterEnum_SubsurfaceScatteringTechnique global_SubsurfaceScatteringTechnique_enum_register;
-
-		struct RegisterEnum_SwitchSystem_Mode
-		{
-			RegisterEnum_SwitchSystem_Mode()
-			{
-				EnumRegistry::Register(String("SwitchSystem::Mode"), {
-					{ static_cast<Int>(SwitchSystem::Mode::Momentary), String("Momentary") },
-					{ static_cast<Int>(SwitchSystem::Mode::Toggle), String("Toggle") },
-					{ static_cast<Int>(SwitchSystem::Mode::Latch), String("Latch") },
-				});
-			}
-		};
-		static RegisterEnum_SwitchSystem_Mode global_SwitchSystem_Mode_enum_register;
-
-		struct RegisterEnum_SwitchSystem_Shape
-		{
-			RegisterEnum_SwitchSystem_Shape()
-			{
-				EnumRegistry::Register(String("SwitchSystem::Shape"), {
-					{ static_cast<Int>(SwitchSystem::Shape::Sphere), String("Sphere") },
-					{ static_cast<Int>(SwitchSystem::Shape::Box), String("Box") },
-				});
-			}
-		};
-		static RegisterEnum_SwitchSystem_Shape global_SwitchSystem_Shape_enum_register;
 
 		struct RegisterEnum_Text_ViewType
 		{

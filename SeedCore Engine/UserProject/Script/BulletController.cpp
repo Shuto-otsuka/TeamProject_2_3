@@ -15,6 +15,11 @@ void BulletController::OnStart()
 
 void BulletController::OnTick(float elapsedTime)
 {
+    scale = GetActor().GetComponent<SeedCore::Scale>();
+    position = GetActor().GetComponent<SeedCore::Position>();
+    rotation = GetActor().GetComponent<SeedCore::Rotation>();
+    rigidbody = GetActor().GetComponent<SeedCore::Rigidbody>();
+
     //移動処理
     Move(elapsedTime);
     //生存時間が終了したら削除
@@ -177,13 +182,12 @@ void BulletController::OnTriggerExit(SeedCore::Actor other)
 void BulletController::SetParam(const SeedCore::Vector3& startPosition,const SeedCore::Vector3& moveDirection, float chargeRate,int cost)
 {
     //発射されたタイミングでパラメータをセット
-
-    SeedCore::World& world = GetWorld();
-
     scale = GetActor().GetComponent<SeedCore::Scale>();
     position = GetActor().GetComponent<SeedCore::Position>();
     rotation = GetActor().GetComponent<SeedCore::Rotation>();
     rigidbody = GetActor().GetComponent<SeedCore::Rigidbody>();
+
+    SeedCore::World& world = GetWorld();
 
     //初期位置をセット
     this->startPosition = startPosition;
