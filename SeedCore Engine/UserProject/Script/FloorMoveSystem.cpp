@@ -1,9 +1,9 @@
 #include "FloorMoveSystem.h"
+#include "StopController.h"
+#include "CircuitSystem.h"
 
 #include <SeedCore/ScDebug.h>
-
-#include "StopController.h"
-#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
+#include <SeedCore/ScLog.h>
 
 using namespace SeedCore;
 
@@ -43,6 +43,16 @@ void FloorMoveSystem::OnStart()
 	{
 		isMoveLock_ = false;
 	}
+
+	if (isCanCircuit_)
+	{
+		circuitActor_ = world.GetActor(circuitActorID_);
+		const Name* name = GetActor().GetComponent<Name>();
+		if (!circuitActor_)
+		{
+			SC_LOG_WARNING("[{}] 起動元回路 ID{} のアクターが見つかりません。無効なActorです。配線は有効ですか？", name ? name->name_.c_str() : "名前なし", circuitActorID_);
+		}
+	}
 }
 
 void FloorMoveSystem::OnFixedTick(float elapsedTime)
@@ -60,6 +70,20 @@ void FloorMoveSystem::OnFixedTick(float elapsedTime)
 	if (!rigidbody)
 	{
 		return;
+	}
+
+	if(isCanCircuit_)
+	{
+		CircuitSystem* circuitSystem = circuitActor_.GetComponent<CircuitSystem>();
+
+		// 回路システムコンポーネントがついてるか＋通電してるかでboolの値に
+		bool powered = circuitSystem && circuitSystem->IsPowered();
+
+		if (!powered)
+		{
+			rigidbody->MoveTarget(currentTarget_, cacheRotation_, elapsedTime);
+			return;
+		}
 	}
 
 	// 止められているなら現在の目標位置で固定

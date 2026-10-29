@@ -338,6 +338,7 @@ namespace SeedCore
 						outInfo.push_back(std::move(fi));
 					}
 					outInfo.push_back({ String("端での待ち時間"), offsetof(FloorMoveSystem, waitTime_), AttributeType::Float });
+					outInfo.push_back({ String("電力を用いるか"), offsetof(FloorMoveSystem, isCanCircuit_), AttributeType::Bool });
 					outInfo.push_back({ String("デバッグアローを描画するか"), offsetof(FloorMoveSystem, isDebugArrowDraw_), AttributeType::Bool });
 				});
 			}

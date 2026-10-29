@@ -26,6 +26,13 @@ public:
 	SC_REFLECTION_FIELD_EX("端での待ち時間")
 	float waitTime_ = 0.5f;
 
+	SC_REFLECTION_FIELD_EX("電力を用いるか")
+	bool isCanCircuit_ = false;
+
+	SC_REFLECTION_FIELD_CONDITION(isCanCircuit_)
+	SC_PAYLOAD_FIELD_EX("起動元回路", Actor)
+	SeedCore::Uint32 circuitActorID_ = 0;
+
 	SC_REFLECTION_FIELD_EX("デバッグアローを描画するか")
 	bool isDebugArrowDraw_ = true;
 
@@ -54,5 +61,7 @@ private:
 	float waitTimer_ = 0.0f;
 
 	bool isMoveLock_ = false;
+
+	SeedCore::Actor circuitActor_;
 };
 REGISTER_COMPONENT(FloorMoveSystem);
