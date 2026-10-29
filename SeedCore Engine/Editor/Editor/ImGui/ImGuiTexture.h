@@ -19,9 +19,11 @@ namespace SeedCore
 		Material,
 		Skeleton,
 		Movie,
+		Scene,
 
 		Text,
 		Cpp,
+		CSharp,
 		Header,
 		Hlsl,
 		Search,
@@ -34,7 +36,6 @@ namespace SeedCore
 		ActorChild,
 		Prefab,
 		PrefabChild,
-		Scene,
 
 		Lock,
 		Unlock,

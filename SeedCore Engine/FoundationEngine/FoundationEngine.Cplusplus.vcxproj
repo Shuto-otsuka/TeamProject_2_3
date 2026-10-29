@@ -67,6 +67,7 @@
     </ClCompile>
     <ClCompile Include="JobSystem\JobWorker.cpp">
     </ClCompile>
+    <ClCompile Include="Log\SlFail.cpp" />
     <ClCompile Include="Resource\Asset\Asset.cpp" />
     <ClCompile Include="Resource\Asset\AxisConvention.cpp" />
     <ClCompile Include="Resource\Blueprint\BlueprintComponent.cpp" />

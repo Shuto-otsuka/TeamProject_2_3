@@ -3,36 +3,32 @@
 
 /**
 * [EN]
-* Texture mip streaming: implemented alongside geometry StreamingGeometry
-* streaming, same shape (coarsest pinned resident, finer levels on demand,
-* EvictClusterBudget/EvictTextureBudget reclaim under separate VRAM
-* budgets — see MakeClusterResident/EvictCluster and
-* MakeTextureMipResident/EvictTextureMip). Picked option A from the two
-* considered: one committed resource PER MIP LEVEL, created/freed
-* independently (mirrors StreamingGeometry's per-cluster buffers), over
-* one MipLevels=N resource with only some subresources uploaded
-* (rejected — a DEFAULT-heap resource reserves memory for its full mip
-* chain at creation regardless of which subresources hold data, so that
-* option would not have reduced VRAM usage). No Model.hlsli change was
-* needed: UV space is unaffected by which single-mip resource currently
-* backs the SRV, so the existing sampling code works unmodified against
-* whatever resolution happens to be resident.
+* Crister streams geometry and texture mips the same way: the coarsest
+* level stays pinned resident, finer levels are made resident on demand,
+* and EvictClusterBudget/EvictTextureBudget reclaim them under separate
+* VRAM budgets (see MakeClusterResident/EvictCluster and
+* MakeTextureMipResident/EvictTextureMip). Each texture mip level is its
+* own committed resource, created and freed independently like
+* StreamingGeometry's per-cluster buffers, because a DEFAULT-heap
+* resource reserves memory for its whole mip chain at creation no matter
+* which subresources hold data. UV space does not depend on which
+* single-mip resource backs the SRV, so the shaders sample whatever
+* resolution is resident without knowing about streaming.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* テクスチャミップストリーミング: ジオメトリの StreamingGeometry ストリーミングと
-* 同じ形で実装済み（最粗ミップをピン留めして常駐、細かいミップはオンデマンド、
-* EvictClusterBudget/EvictTextureBudget がそれぞれ別の VRAM 予算超過時に回収 —
-* MakeClusterResident/EvictCluster と MakeTextureMipResident/EvictTextureMip
-* 参照）。検討した2案のうちA案を採用: ミップレベルごとに別々の committed
-* resource を作り個別に作成/破棄する方式（StreamingGeometry のクラスタごとバッファと
-* 同じ発想）。MipLevels=N の1リソースを作り一部のサブリソースにしかデータを
-* 入れない方式は却下 — DEFAULT ヒープのリソースはサブリソースにデータが
-* 入っているかに関わらず作成時点でフルミップチェーン分のメモリを確保するため、
-* VRAM 削減にならなかったはず。Model.hlsli の変更は不要だった: どの単一ミップの
-* リソースが SRV の裏にあっても UV 空間は変わらないため、既存のサンプリング
-* コードは常駐中の解像度に対してそのまま動作する。
+* Crister はジオメトリとテクスチャのミップを同じ形でストリーミングする。
+* 最も粗いレベルはピン留めして常駐させ、細かいレベルは必要に応じて
+* 常駐させ、EvictClusterBudget/EvictTextureBudget がそれぞれ別の VRAM
+* 予算で回収する（MakeClusterResident/EvictCluster と
+* MakeTextureMipResident/EvictTextureMip 参照）。テクスチャのミップは
+* レベルごとに別々の committed resource で、StreamingGeometry のクラスタ
+* ごとのバッファと同じく個別に作成・破棄する。DEFAULT ヒープのリソースは、
+* どのサブリソースにデータがあるかに関わらず作成時点でミップチェーン全体の
+* メモリを確保するためである。UV 空間は SRV の裏にある単一ミップのリソース
+* によらないので、シェーダーはストリーミングを意識せず、常駐中の解像度を
+* そのままサンプリングする。
 */
 namespace SeedCore
 {
@@ -59,11 +55,28 @@ namespace SeedCore
 	*/
 	struct Vertex
 	{
+		/// [EN] Object-space position.
+		/// [JP] オブジェクト空間の位置。
 		Vector3 position_ = { 0,0,0 };
+
+		/// [EN] Object-space unit normal.
+		/// [JP] オブジェクト空間の単位法線。
 		Vector3 normal_ = { 0,0,1 };
+
+		/// [EN] Tangent in xyz, with w = ±1 giving the handedness of the bitangent.
+		/// [JP] xyz が接線、w = ±1 が従接線の向き(利き手)。
 		Vector4 tangent_ = { 1,0,0,1 };
+
+		/// [EN] Texture coordinate (TEXCOORD_0).
+		/// [JP] テクスチャ座標(TEXCOORD_0)。
 		Vector2 texcoord_ = { 0,0 };
+
+		/// [EN] Up to four joint indices into the skin's joint list.
+		/// [JP] スキンのジョイント一覧を指す、最大4つのジョイントインデックス。
 		XmUint4 joints_ = { 0,0,0,0 };
+
+		/// [EN] Weight of each of joints_; the four sum to 1.
+		/// [JP] joints_ のそれぞれの重み。4つの合計は 1。
 		Vector4 weights_ = { 1,0,0,0 };
 	};
 
@@ -89,10 +102,21 @@ namespace SeedCore
 	*/
 	struct CompressedVertex
 	{
-		Uint32 positionXY_ = 0;    // x:16 | y:16 (UNORM in AABB)
-		Uint32 positionZTexU_ = 0; // z:16 | texcoord u:16 (UNORM in UV AABB)
-		Uint32 texVTangent_ = 0;   // texcoord v:16 | tangent oct x:8 y:7 sign:1
-		Uint32 normal_ = 0;        // octahedral x:16 | y:16
+		/// [EN] Position x:16 | y:16, UNORM within the Crister's AABB.
+		/// [JP] 位置 x:16 | y:16。Crister の AABB 内の UNORM。
+		Uint32 positionXY_ = 0;
+
+		/// [EN] Position z:16 (UNORM within the AABB) | texcoord u:16 (UNORM within the UV AABB).
+		/// [JP] 位置 z:16(AABB 内の UNORM) | テクスチャ座標 u:16(UV の AABB 内の UNORM)。
+		Uint32 positionZTexU_ = 0;
+
+		/// [EN] Texcoord v:16 | octahedral tangent x:8 y:7 | handedness sign:1.
+		/// [JP] テクスチャ座標 v:16 | octahedral の接線 x:8 y:7 | 利き手の符号:1。
+		Uint32 texVTangent_ = 0;
+
+		/// [EN] Octahedral normal x:16 | y:16.
+		/// [JP] octahedral の法線 x:16 | y:16。
+		Uint32 normal_ = 0;
 
 		template<class Archive>
 		void Serialize(Archive& archive)
@@ -117,9 +141,17 @@ namespace SeedCore
 	*/
 	struct CompressedSkinVertex
 	{
-		Uint32 jointsXY_ = 0; // joint0:16 | joint1:16
-		Uint32 jointsZW_ = 0; // joint2:16 | joint3:16
-		Uint32 weights_ = 0;  // 4 x 8-bit UNORM, renormalised in the shader
+		/// [EN] Joint indices joint0:16 | joint1:16.
+		/// [JP] ジョイントインデックス joint0:16 | joint1:16。
+		Uint32 jointsXY_ = 0;
+
+		/// [EN] Joint indices joint2:16 | joint3:16.
+		/// [JP] ジョイントインデックス joint2:16 | joint3:16。
+		Uint32 jointsZW_ = 0;
+
+		/// [EN] Four 8-bit UNORM weights, renormalised in the shader so they sum to 1 again.
+		/// [JP] 8bit UNORM の重み4つ。合計が 1 に戻るようシェーダーで正規化し直す。
+		Uint32 weights_ = 0;
 
 		template<class Archive>
 		void Serialize(Archive& archive)
@@ -151,9 +183,20 @@ namespace SeedCore
 	*/
 	struct Cluster
 	{
+		/// [EN] First meshlet of this LOD in meshlets_/meshletBounds_.
+		/// [JP] この LOD の最初の meshlet の、meshlets_/meshletBounds_ での位置。
 		Uint32 meshletOffset_ = 0;
+
+		/// [EN] Number of meshlets in this LOD.
+		/// [JP] この LOD の meshlet の数。
 		Uint32 meshletCount_ = 0;
+
+		/// [EN] Detail tier; 0 is the most detailed.
+		/// [JP] 詳細度の段。0 が最も詳細。
 		Uint32 lodLevel_ = 0;
+
+		/// [EN] QEM simplification error of this LOD, compared against screen coverage to choose which Cluster to draw.
+		/// [JP] この LOD の QEM 簡略化誤差。画面被覆率と比べて、どの Cluster を描画するかを選ぶ。
 		Float lodError_ = 0.0f;
 
 		template<class Archive>
@@ -191,7 +234,12 @@ namespace SeedCore
 	*/
 	struct Morph
 	{
+		/// [EN] Display name of the target as the source file names it, or "Morph_<index>" when it has none.
+		/// [JP] 元ファイルが付けているターゲットの表示名。名前が無ければ "Morph_<index>"。
 		std::string name_;
+
+		/// [EN] Position delta of each vertex of the SubMesh at full weight, index-aligned with its vertex range.
+		/// [JP] 重み 1 のときの、SubMesh の各頂点の位置デルタ。SubMesh の頂点範囲とインデックスが揃っている。
 		DynamicArray<Vector3> positionDeltas_;
 
 		template<class Archive>
@@ -219,37 +267,72 @@ namespace SeedCore
 	*/
 	struct SubMesh
 	{
+		/// [EN] First of this SubMesh's LOD Clusters in clusters_.
+		/// [JP] この SubMesh の LOD の Cluster のうち、最初のものの clusters_ での位置。
 		Uint32 clusterOffset_ = 0;
+
+		/// [EN] Number of LOD Clusters this SubMesh has.
+		/// [JP] この SubMesh が持つ LOD の Cluster の数。
 		Uint32 clusterCount_ = 0;
+
+		/// [EN] Index into surfaces_ of the material this SubMesh is drawn with.
+		/// [JP] この SubMesh を描画するマテリアルの、surfaces_ でのインデックス。
 		Uint32 surfaceIndex_ = 0;
+
+		/// [EN] First index of this SubMesh in the flat 32-bit triangle index buffer.
+		/// [JP] フラットな 32bit 三角形インデックスバッファでの、この SubMesh の最初のインデックス。
 		Uint32 indexOffset_ = 0;
+
+		/// [EN] Number of indices this SubMesh has in that buffer.
+		/// [JP] そのバッファでこの SubMesh が持つインデックスの数。
 		Uint32 indexCount_ = 0;
 
-		/// [EN] Index into Crister::skins_ if this SubMesh is skinned, -1 otherwise.
-		///      Resolved from the glTF node that references this SubMesh's mesh.
-		/// [JP] この SubMesh がスキンドなら Crister::skins_ へのインデックス、それ以外は -1。
-		///      この SubMesh のメッシュを参照する glTF ノードから解決される。
+		/// [EN] Index into Crister::skins_ if this SubMesh is skinned, -1 otherwise. Resolved from the glTF node that references this SubMesh's mesh.
+		/// [JP] この SubMesh がスキンドなら Crister::skins_ へのインデックス、それ以外は -1。この SubMesh のメッシュを参照する glTF ノードから解決される。
 		Int skinIndex_ = -1;
 
+		/// [EN] Index of the source mesh this SubMesh came from; SubMeshes from the same mesh share it, and nodes refer to them through it.
+		/// [JP] この SubMesh の元になったメッシュのインデックス。同じメッシュから来た SubMesh は同じ値を持ち、ノードはこれを通して参照する。
 		Int meshIndex_ = -1;
 
 		/// [EN] Empty for a SubMesh with no glTF morph targets.
 		/// [JP] glTF モーフターゲットを持たない SubMesh では空。
 		DynamicArray<Morph> morphs_;
 
+		/// [EN] First vertex of this SubMesh in vertices_.
+		/// [JP] この SubMesh の最初の頂点の、vertices_ での位置。
 		Uint32 vertexOffset_ = 0;
+
+		/// [EN] Number of vertices this SubMesh has.
+		/// [JP] この SubMesh が持つ頂点の数。
 		Uint32 vertexCount_ = 0;
 
+		/// [EN] First vertex of this SubMesh in the RT proxy vertex buffer.
+		/// [JP] RT プロキシの頂点バッファでの、この SubMesh の最初の頂点。
 		Uint32 raytracingVertexOffset_ = 0;
+
+		/// [EN] Number of vertices this SubMesh has in the RT proxy, covering every node placement of it.
+		/// [JP] RT プロキシでこの SubMesh が持つ頂点の数。この SubMesh の全てのノード配置ぶんを含む。
 		Uint32 raytracingVertexCount_ = 0;
 
+		/// [EN] First triangle of this SubMesh in the RT proxy.
+		/// [JP] RT プロキシでの、この SubMesh の最初の三角形。
 		Uint32 raytracingTriangleOffset_ = 0;
+
+		/// [EN] Number of triangles this SubMesh has in the RT proxy.
+		/// [JP] RT プロキシでこの SubMesh が持つ三角形の数。
 		Uint32 raytracingTriangleCount_ = 0;
 
+		/// [EN] First delta of this SubMesh in the RT proxy's morph delta pool, laid out per target; SC_INVALID when it has no morphs.
+		/// [JP] RT プロキシのモーフデルタプールでの、この SubMesh の最初のデルタ。ターゲットごとに並ぶ。モーフが無ければ SC_INVALID。
 		Uint32 raytracingMorphDeltaOffset_ = SC_INVALID;
 
+		/// [EN] First delta of this SubMesh in the raster morph delta pool, vertexCount_ deltas per target; SC_INVALID when it has no morphs.
+		/// [JP] ラスタのモーフデルタプールでの、この SubMesh の最初のデルタ。ターゲットごとに vertexCount_ 個ずつ並ぶ。モーフが無ければ SC_INVALID。
 		Uint32 morphDeltaOffset_ = SC_INVALID;
 
+		/// [EN] UV distance per unit of surface distance, the square root of UV area over surface area; times the texture size it gives texels per unit, which picks the mip to stream for the on-screen size. 0 when either area is degenerate.
+		/// [JP] 表面上の距離 1 あたりの UV 上の距離。UV 面積を表面積で割った値の平方根。テクスチャサイズを掛けると 1 単位あたりのテクセル数になり、画面上の大きさに対してストリーミングするミップを決める。どちらかの面積が潰れていれば 0。
 		Float texcoordDensity_ = 0.0f;
 
 		template<class Archive>
@@ -284,7 +367,12 @@ namespace SeedCore
 	*/
 	struct Stage
 	{
+		/// [EN] Name of the glTF scene.
+		/// [JP] glTF シーンの名前。
 		std::string name_;
+
+		/// [EN] Indices into nodes_ of the scene's root-level nodes.
+		/// [JP] シーンのルートレベルのノードの、nodes_ でのインデックス。
 		DynamicArray<Int> nodes_;
 
 		template<class Archive>
@@ -322,6 +410,8 @@ namespace SeedCore
 		*/
 		struct EmissiveStrength
 		{
+			/// [EN] Multiplier on the emissive color; values above 1 give HDR emission.
+			/// [JP] エミッシブ色に掛ける倍率。1 を超えると HDR の発光になる。
 			Float emissiveStrength_ = 1.0f;
 
 			template<class Archive>
@@ -330,6 +420,9 @@ namespace SeedCore
 				archive.TryField("emissive_strength", emissiveStrength_);
 			}
 		};
+
+		/// [EN] KHR_materials_emissive_strength.
+		/// [JP] KHR_materials_emissive_strength。
 		EmissiveStrength emissiveStrength_;
 
 		/**
@@ -345,6 +438,8 @@ namespace SeedCore
 		*/
 		struct Ior
 		{
+			/// [EN] Index of refraction of the dielectric; F0 is derived from it.
+			/// [JP] 誘電体の屈折率。F0 はこれから求める。
 			Float ior_ = 1.5f;
 
 			template<class Archive>
@@ -353,6 +448,9 @@ namespace SeedCore
 				archive.TryField("ior", ior_);
 			}
 		};
+
+		/// [EN] KHR_materials_ior.
+		/// [JP] KHR_materials_ior。
 		Ior ior_;
 
 		/**
@@ -367,10 +465,20 @@ namespace SeedCore
 		*/
 		struct Specular
 		{
+			/// [EN] Strength of the specular reflection.
+			/// [JP] スペキュラ反射の強さ。
 			Float specularFactor_ = 1.0f;
+
+			/// [EN] Linear RGB tint of the specular reflection at normal incidence.
+			/// [JP] 垂直入射でのスペキュラ反射の色味(リニア RGB)。
 			Float specularColorFactor_[3] = { 1,1,1 };
 
+			/// [EN] Image in bitmaps_ whose alpha scales specularFactor_; SC_INVALID when absent.
+			/// [JP] アルファで specularFactor_ を掛ける、bitmaps_ の画像。無ければ SC_INVALID。
 			Uint32 specularTextureIndex_ = SC_INVALID;
+
+			/// [EN] Image in bitmaps_ whose RGB scales specularColorFactor_; SC_INVALID when absent.
+			/// [JP] RGB で specularColorFactor_ を掛ける、bitmaps_ の画像。無ければ SC_INVALID。
 			Uint32 specularColorTextureIndex_ = SC_INVALID;
 
 			template<class Archive>
@@ -382,6 +490,9 @@ namespace SeedCore
 				archive.TryField("specular_color_texture_index", specularColorTextureIndex_);
 			}
 		};
+
+		/// [EN] KHR_materials_specular.
+		/// [JP] KHR_materials_specular。
 		Specular specular_;
 
 		/**
@@ -396,11 +507,24 @@ namespace SeedCore
 		*/
 		struct ClearCoat
 		{
+			/// [EN] Strength of the clear-coat layer; 0 means no coat.
+			/// [JP] クリアコート層の強さ。0 ならコート無し。
 			Float clearCoatFactor_ = 0.0f;
+
+			/// [EN] Roughness of the clear-coat layer.
+			/// [JP] クリアコート層のラフネス。
 			Float clearCoatRoughnessFactor_ = 0.0f;
 
+			/// [EN] Image in bitmaps_ whose red channel scales clearCoatFactor_; SC_INVALID when absent.
+			/// [JP] R チャンネルで clearCoatFactor_ を掛ける、bitmaps_ の画像。無ければ SC_INVALID。
 			Uint32 clearCoatTextureIndex_ = SC_INVALID;
+
+			/// [EN] Image in bitmaps_ whose green channel scales clearCoatRoughnessFactor_; SC_INVALID when absent.
+			/// [JP] G チャンネルで clearCoatRoughnessFactor_ を掛ける、bitmaps_ の画像。無ければ SC_INVALID。
 			Uint32 clearCoatRoughnessTextureIndex_ = SC_INVALID;
+
+			/// [EN] Normal map of the clear-coat layer in bitmaps_; SC_INVALID when absent.
+			/// [JP] クリアコート層の法線マップ(bitmaps_ の画像)。無ければ SC_INVALID。
 			Uint32 clearCoatNormalTextureIndex_ = SC_INVALID;
 
 			template<class Archive>
@@ -413,6 +537,9 @@ namespace SeedCore
 				archive.TryField("clear_coat_normal_texture_index", clearCoatNormalTextureIndex_);
 			}
 		};
+
+		/// [EN] KHR_materials_clearcoat.
+		/// [JP] KHR_materials_clearcoat。
 		ClearCoat clearCoat_;
 
 		/**
@@ -427,8 +554,12 @@ namespace SeedCore
 		*/
 		struct Transmission
 		{
+			/// [EN] Fraction of light transmitted through the surface; 0 is opaque.
+			/// [JP] 表面を透過する光の割合。0 なら不透過。
 			Float transmissionFactor_ = 0.0f;
 
+			/// [EN] Image in bitmaps_ whose red channel scales transmissionFactor_; SC_INVALID when absent.
+			/// [JP] R チャンネルで transmissionFactor_ を掛ける、bitmaps_ の画像。無ければ SC_INVALID。
 			Uint32 transmissionTextureIndex_ = SC_INVALID;
 
 			template<class Archive>
@@ -438,6 +569,9 @@ namespace SeedCore
 				archive.TryField("transmission_texture_index", transmissionTextureIndex_);
 			}
 		};
+
+		/// [EN] KHR_materials_transmission.
+		/// [JP] KHR_materials_transmission。
 		Transmission transmission_;
 
 		/**
@@ -455,10 +589,20 @@ namespace SeedCore
 		*/
 		struct Volume
 		{
+			/// [EN] Thickness of the volume under the surface, in model units; 0 makes it thin-walled.
+			/// [JP] 表面の下にあるボリュームの厚み(モデル空間の単位)。0 なら薄い壁として扱う。
 			Float thicknessFactor_ = 0.0f;
+
+			/// [EN] Distance light travels in the medium before reaching attenuationColor_; FLT_MAX means no absorption.
+			/// [JP] 媒質内で光が attenuationColor_ になるまでに進む距離。FLT_MAX なら吸収しない。
 			Float attenuationDistance_ = FLT_MAX;
+
+			/// [EN] Linear RGB color white light becomes after attenuationDistance_ in the medium.
+			/// [JP] 白色光が媒質内を attenuationDistance_ 進んだ後になる色(リニア RGB)。
 			Float attenuationColor_[3] = { 1,1,1 };
 
+			/// [EN] Image in bitmaps_ whose green channel scales thicknessFactor_; SC_INVALID when absent.
+			/// [JP] G チャンネルで thicknessFactor_ を掛ける、bitmaps_ の画像。無ければ SC_INVALID。
 			Uint32 thicknessTextureIndex_ = SC_INVALID;
 
 			template<class Archive>
@@ -470,6 +614,9 @@ namespace SeedCore
 				archive.TryField("thickness_texture_index", thicknessTextureIndex_);
 			}
 		};
+
+		/// [EN] KHR_materials_volume.
+		/// [JP] KHR_materials_volume。
 		Volume volume_;
 
 		/**
@@ -484,10 +631,20 @@ namespace SeedCore
 		*/
 		struct Sheen
 		{
+			/// [EN] Linear RGB color of the sheen; black means no sheen.
+			/// [JP] シーンの色(リニア RGB)。黒ならシーン無し。
 			Float sheenColorFactor_[3] = { 0,0,0 };
+
+			/// [EN] Roughness of the sheen lobe.
+			/// [JP] シーンのローブのラフネス。
 			Float sheenRoughnessFactor_ = 0.0f;
 
+			/// [EN] Image in bitmaps_ whose RGB scales sheenColorFactor_; SC_INVALID when absent.
+			/// [JP] RGB で sheenColorFactor_ を掛ける、bitmaps_ の画像。無ければ SC_INVALID。
 			Uint32 sheenColorTextureIndex_ = SC_INVALID;
+
+			/// [EN] Image in bitmaps_ whose alpha scales sheenRoughnessFactor_; SC_INVALID when absent.
+			/// [JP] アルファで sheenRoughnessFactor_ を掛ける、bitmaps_ の画像。無ければ SC_INVALID。
 			Uint32 sheenRoughnessTextureIndex_ = SC_INVALID;
 
 			template<class Archive>
@@ -499,6 +656,9 @@ namespace SeedCore
 				archive.TryField("sheen_roughness_texture_index", sheenRoughnessTextureIndex_);
 			}
 		};
+
+		/// [EN] KHR_materials_sheen.
+		/// [JP] KHR_materials_sheen。
 		Sheen sheen_;
 
 		/**
@@ -515,12 +675,28 @@ namespace SeedCore
 		*/
 		struct Iridescence
 		{
+			/// [EN] Strength of the thin-film iridescence; 0 means none.
+			/// [JP] 薄膜干渉による虹色の強さ。0 なら無し。
 			Float iridescenceFactor_ = 0.0f;
+
+			/// [EN] Index of refraction of the thin film.
+			/// [JP] 薄膜の屈折率。
 			Float iridescenceIor_ = 1.3f;
+
+			/// [EN] Film thickness in nanometres where the thickness texture reads 0.
+			/// [JP] 厚みテクスチャが 0 の位置での膜厚(nm)。
 			Float iridescenceThicknessMinimum_ = 100.0f;
+
+			/// [EN] Film thickness in nanometres where the thickness texture reads 1, or everywhere when there is no texture.
+			/// [JP] 厚みテクスチャが 1 の位置での膜厚(nm)。テクスチャが無ければ全体がこの厚み。
 			Float iridescenceThicknessMaximum_ = 400.0f;
 
+			/// [EN] Image in bitmaps_ whose red channel scales iridescenceFactor_; SC_INVALID when absent.
+			/// [JP] R チャンネルで iridescenceFactor_ を掛ける、bitmaps_ の画像。無ければ SC_INVALID。
 			Uint32 iridescenceTextureIndex_ = SC_INVALID;
+
+			/// [EN] Image in bitmaps_ whose green channel blends between the minimum and maximum thickness; SC_INVALID when absent.
+			/// [JP] G チャンネルで最小と最大の膜厚の間を補間する、bitmaps_ の画像。無ければ SC_INVALID。
 			Uint32 iridescenceThicknessTextureIndex_ = SC_INVALID;
 
 			template<class Archive>
@@ -534,6 +710,9 @@ namespace SeedCore
 				archive.TryField("iridescence_thickness_texture_index", iridescenceThicknessTextureIndex_);
 			}
 		};
+
+		/// [EN] KHR_materials_iridescence.
+		/// [JP] KHR_materials_iridescence。
 		Iridescence iridescence_;
 
 		/**
@@ -550,9 +729,16 @@ namespace SeedCore
 		*/
 		struct Anisotropy
 		{
+			/// [EN] Strength of the anisotropy; 0 is isotropic.
+			/// [JP] 異方性の強さ。0 なら等方。
 			Float anisotropyStrength_ = 0.0f;
+
+			/// [EN] Rotation of the anisotropy direction from the tangent, in radians.
+			/// [JP] 接線から測った異方性の向きの回転(ラジアン)。
 			Float anisotropyRotation_ = 0.0f;
 
+			/// [EN] Image in bitmaps_ holding the direction (red/green) and strength (blue) of the anisotropy; SC_INVALID when absent.
+			/// [JP] 異方性の向き(R/G)と強さ(B)を持つ、bitmaps_ の画像。無ければ SC_INVALID。
 			Uint32 anisotropyTextureIndex_ = SC_INVALID;
 
 			template<class Archive>
@@ -563,6 +749,9 @@ namespace SeedCore
 				archive.TryField("anisotropy_texture_index", anisotropyTextureIndex_);
 			}
 		};
+
+		/// [EN] KHR_materials_anisotropy.
+		/// [JP] KHR_materials_anisotropy。
 		Anisotropy anisotropy_;
 
 		/**
@@ -577,6 +766,8 @@ namespace SeedCore
 		*/
 		struct Unlit
 		{
+			/// [EN] 1 when the material is unlit, 0 for normal lighting.
+			/// [JP] ライティング無しのマテリアルなら 1、通常のライティングなら 0。
 			Int unlit_ = 0;
 
 			template<class Archive>
@@ -585,6 +776,9 @@ namespace SeedCore
 				archive.TryField("unlit", unlit_);
 			}
 		};
+
+		/// [EN] KHR_materials_unlit.
+		/// [JP] KHR_materials_unlit。
 		Unlit unlit_;
 
 		template<class Archive>
@@ -606,28 +800,46 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Which lighting response DeferredLightingPS.hlsl evaluates a material's
-	* direct/indirect light with. Not a separate shader/PSO - the deferred
-	* lighting pass reads this per-instance and switches within the single
-	* shader (the same technique khr_.unlit_ already used before this enum
-	* existed; Unlit now folds into this list instead of its own flag).
+	* direct/indirect light with. Each model is not a separate shader or
+	* PSO: the deferred lighting pass reads this per instance and switches
+	* within one shader.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* DeferredLightingPS.hlsl がマテリアルの直接光/間接光をどのライティング
-	* 応答で評価するか。別シェーダー/PSOではない — デフォードライティング
-	* パスがinstanceごとにこれを読み、単一シェーダー内でswitchする(この
-	* enumができる前からkhr_.unlit_が使っていたのと同じ手法。Unlitは
-	* 専用フラグをやめてこのリストへ統合された)。
+	* 応答で評価するか。モデルごとに別のシェーダーや PSO があるのではなく、
+	* デフォードライティングパスがインスタンスごとにこれを読み、1つの
+	* シェーダーの中で切り替える。
 	*/
 	enum class ShadingModel :Uint32
 	{
+		/// [EN] Physically based metallic-roughness shading.
+		/// [JP] 物理ベースの metallic-roughness シェーディング。
 		Pbr = 0,
+
+		/// [EN] No lighting; the base color is shown as is.
+		/// [JP] ライティング無し。ベースカラーをそのまま表示する。
 		Unlit = 1,
+
+		/// [EN] Blinn-Phong diffuse and specular.
+		/// [JP] Blinn-Phong の拡散とスペキュラ。
 		Phong = 2,
+
+		/// [EN] Banded cel shading.
+		/// [JP] 段階的に塗り分けるセルシェーディング。
 		Toon = 3,
+
+		/// [EN] Lambert diffuse only.
+		/// [JP] Lambert の拡散のみ。
 		Lambert = 4,
+
+		/// [EN] Faceted shading from the face normal.
+		/// [JP] 面法線による面ごとのシェーディング。
 		Flat = 5,
+
+		/// [EN] Fur drawn as stacked shells (see Surface::furLength_ and its siblings).
+		/// [JP] 重ねたシェルで描く毛(Surface::furLength_ などを参照)。
 		Fur = 6,
 	};
 
@@ -649,34 +861,96 @@ namespace SeedCore
 	*/
 	struct Surface
 	{
+		/// [EN] Material name from the source file.
+		/// [JP] 元ファイルでのマテリアル名。
 		std::string name_;
 
+		/// [EN] Linear RGBA base color factor, multiplied with the base color texture.
+		/// [JP] ベースカラーの係数(リニア RGBA)。ベースカラーテクスチャに掛ける。
 		Color baseColor_ = { 1,1,1,1 };
+
+		/// [EN] Metalness factor, multiplied with the texture's blue channel.
+		/// [JP] メタリックの係数。テクスチャの B チャンネルに掛ける。
 		Float metallic_ = 0.0f;
+
+		/// [EN] Perceptual roughness factor, multiplied with the texture's green channel.
+		/// [JP] 知覚的ラフネスの係数。テクスチャの G チャンネルに掛ける。
 		Float roughness_ = 1.0f;
+
+		/// [EN] Linear RGB emissive factor, multiplied with the emissive texture and khr_.emissiveStrength_.
+		/// [JP] エミッシブの係数(リニア RGB)。エミッシブテクスチャと khr_.emissiveStrength_ に掛ける。
 		Float emissiveFactor_[3] = { 0,0,0 };
+
+		/// [EN] glTF alpha mode: 0 opaque, 1 mask (cut at alphaCutoff_), 2 blend.
+		/// [JP] glTF のアルファモード。0 が不透明、1 がマスク(alphaCutoff_ で切り抜く)、2 がブレンド。
 		Int alphaMode_ = 0;
+
+		/// [EN] Alpha below which a pixel is discarded in mask mode.
+		/// [JP] マスクモードで、これ未満のアルファのピクセルを捨てる。
 		Float alphaCutoff_ = 0.5f;
+
+		/// [EN] Nonzero to draw both faces without back-face culling.
+		/// [JP] 0 以外なら裏面カリングせず両面を描く。
 		Int doubleSided_ = 0;
 
+		/// [EN] Lighting response the deferred lighting pass uses for this material.
+		/// [JP] デフォードライティングパスがこのマテリアルに使うライティング応答。
 		ShadingModel shadingModel_ = ShadingModel::Pbr;
 
+		/// [EN] KHR_materials_* extensions of this material.
+		/// [JP] このマテリアルの KHR_materials_* 拡張。
 		KHR khr_;
 
+		/// [EN] Length of the fur, the distance between the base surface and the outermost shell, in model units.
+		/// [JP] 毛の長さ。元の表面から最も外側のシェルまでの距離(モデル空間の単位)。
 		Float furLength_ = 0.03f;
+
+		/// [EN] Density of the fur strands.
+		/// [JP] 毛の密度。
 		Float furDensity_ = 1.0f;
+
+		/// [EN] Number of shells the fur is drawn with; more shells give smoother strands at a higher cost.
+		/// [JP] 毛を描くシェルの数。多いほど毛がなめらかになるが、負荷も上がる。
 		Int furShellCount_ = 16;
 
+		/// [EN] Base color image in bitmaps_; SC_INVALID when absent.
+		/// [JP] ベースカラーの画像(bitmaps_)。無ければ SC_INVALID。
 		Uint32 baseColorTextureIndex_ = SC_INVALID;
+
+		/// [EN] Tangent-space normal map in bitmaps_; SC_INVALID when absent.
+		/// [JP] 接線空間の法線マップ(bitmaps_)。無ければ SC_INVALID。
 		Uint32 normalTextureIndex_ = SC_INVALID;
+
+		/// [EN] Metallic (blue) and roughness (green) image in bitmaps_; SC_INVALID when absent.
+		/// [JP] メタリック(B)とラフネス(G)の画像(bitmaps_)。無ければ SC_INVALID。
 		Uint32 metallicRoughnessTextureIndex_ = SC_INVALID;
+
+		/// [EN] Ambient occlusion image (red) in bitmaps_; SC_INVALID when absent.
+		/// [JP] アンビエントオクルージョンの画像(R、bitmaps_)。無ければ SC_INVALID。
 		Uint32 occlusionTextureIndex_ = SC_INVALID;
+
+		/// [EN] Emissive color image in bitmaps_; SC_INVALID when absent.
+		/// [JP] エミッシブ色の画像(bitmaps_)。無ければ SC_INVALID。
 		Uint32 emissiveTextureIndex_ = SC_INVALID;
 
+		/// [EN] Texture asset that replaces baseColorTextureIndex_ when nonzero.
+		/// [JP] 0 以外なら baseColorTextureIndex_ の代わりに使うテクスチャアセット。
 		Uint32 baseColorTextureAssetID_ = 0;
+
+		/// [EN] Texture asset that replaces normalTextureIndex_ when nonzero.
+		/// [JP] 0 以外なら normalTextureIndex_ の代わりに使うテクスチャアセット。
 		Uint32 normalTextureAssetID_ = 0;
+
+		/// [EN] Texture asset that replaces metallicRoughnessTextureIndex_ when nonzero.
+		/// [JP] 0 以外なら metallicRoughnessTextureIndex_ の代わりに使うテクスチャアセット。
 		Uint32 metallicRoughnessTextureAssetID_ = 0;
+
+		/// [EN] Texture asset that replaces occlusionTextureIndex_ when nonzero.
+		/// [JP] 0 以外なら occlusionTextureIndex_ の代わりに使うテクスチャアセット。
 		Uint32 occlusionTextureAssetID_ = 0;
+
+		/// [EN] Texture asset that replaces emissiveTextureIndex_ when nonzero.
+		/// [JP] 0 以外なら emissiveTextureIndex_ の代わりに使うテクスチャアセット。
 		Uint32 emissiveTextureAssetID_ = 0;
 
 		template<class Archive>
@@ -727,20 +1001,44 @@ namespace SeedCore
 	*/
 	struct Node
 	{
+		/// [EN] Node name from the source file; not guaranteed unique.
+		/// [JP] 元ファイルでのノード名。一意とは限らない。
 		std::string name_;
+
+		/// [EN] Source mesh this node places, matched against SubMesh::meshIndex_; -1 if none.
+		/// [JP] このノードが配置する元のメッシュ。SubMesh::meshIndex_ と照合する。無ければ -1。
 		Int mesh_ = -1;
+
+		/// [EN] Index into Crister::skins_ of the skin that deforms this node's mesh; -1 if none.
+		/// [JP] このノードのメッシュを変形するスキンの、Crister::skins_ でのインデックス。無ければ -1。
 		Int skin_ = -1;
 
 		/// [EN] KHR_lights_punctual: index into Crister::lights_, -1 if none.
 		/// [JP] KHR_lights_punctual: Crister::lights_ へのインデックス。無ければ -1。
 		Int light_ = -1;
+
+		/// [EN] Indices into nodes_ of this node's children.
+		/// [JP] このノードの子の、nodes_ でのインデックス。
 		DynamicArray<Int> children_;
 
+		/// [EN] Index into nodes_ of this node's parent; -1 for a root node.
+		/// [JP] このノードの親の、nodes_ でのインデックス。ルートノードなら -1。
 		Int parentIndex_ = -1;
 
+		/// [EN] Local rotation relative to the parent.
+		/// [JP] 親に対するローカル回転。
 		Quaternion rotation_ = { 0,0,0,1 };
+
+		/// [EN] Local scale relative to the parent.
+		/// [JP] 親に対するローカルスケール。
 		Vector3 scale_ = { 1,1,1 };
+
+		/// [EN] Local translation relative to the parent.
+		/// [JP] 親に対するローカル平行移動。
 		Vector3 translation_ = { 0,0,0 };
+
+		/// [EN] Model-space transform, the local S/R/T multiplied by every ancestor's.
+		/// [JP] モデル空間での変換。ローカルの S/R/T に全ての祖先のものを掛けたもの。
 		Matrix globalTransform_ = Matrix::Identity;
 
 		template<class Archive>
@@ -773,7 +1071,12 @@ namespace SeedCore
 	*/
 	struct Skin
 	{
+		/// [EN] Inverse bind matrix of each joint, taking a model-space bind-pose vertex into that joint's space; index-aligned with joints_.
+		/// [JP] 各ジョイントの逆バインド行列。バインドポーズのモデル空間の頂点を、そのジョイントの空間へ移す。joints_ とインデックスが揃っている。
 		DynamicArray<Matrix> inverseBindMatrices_;
+
+		/// [EN] Indices into nodes_ of the joints, in the order CompressedSkinVertex joint indices refer to them.
+		/// [JP] ジョイントの nodes_ でのインデックス。CompressedSkinVertex のジョイントインデックスが指す順に並ぶ。
 		DynamicArray<Int> joints_;
 
 		template<class Archive>
@@ -824,14 +1127,37 @@ namespace SeedCore
 			Spot = 1,
 		};
 
+		/// [EN] Kind of light.
+		/// [JP] ライトの種類。
 		Type type_ = Type::Point;
+
+		/// [EN] Position of the light, resolved from its node.
+		/// [JP] ライトの位置。ノードから解決したもの。
 		Vector3 position_ = { 0,0,0 };
-		Vector3 direction_ = { 0,0,-1 }; // Spot only.
+
+		/// [EN] Direction the spot light points in; used by Spot only.
+		/// [JP] スポットライトが向く方向。Spot だけが使う。
+		Vector3 direction_ = { 0,0,-1 };
+
+		/// [EN] Linear RGB color of the light.
+		/// [JP] ライトの色(リニア RGB)。
 		Float colorRGB_[3] = { 1,1,1 };
+
+		/// [EN] Luminous intensity in candela.
+		/// [JP] 光度(カンデラ)。
 		Float intensity_ = 1.0f;
-		Float range_ = 0.0f; // glTF: 0 = unbounded; resolved to a finite fallback by FetchLights.
-		Float innerConeAngle_ = 0.0f; // Spot only, radians.
-		Float outerConeAngle_ = 0.785398163f; // Spot only, radians (45 deg default per glTF spec).
+
+		/// [EN] Distance at which the light's influence ends. glTF uses 0 for unbounded, which FetchLights resolves to a finite fallback.
+		/// [JP] ライトの影響が届かなくなる距離。glTF では 0 が無限遠を表し、FetchLights がそれを有限の代わりの値に解決する。
+		Float range_ = 0.0f;
+
+		/// [EN] Angle from the spot direction where the falloff begins, in radians; used by Spot only.
+		/// [JP] スポットの方向から測った、減衰が始まる角度(ラジアン)。Spot だけが使う。
+		Float innerConeAngle_ = 0.0f;
+
+		/// [EN] Angle from the spot direction where the light reaches zero, in radians; 45 degrees by default as in the glTF specification. Used by Spot only.
+		/// [JP] スポットの方向から測った、光が 0 になる角度(ラジアン)。既定は glTF 仕様と同じ 45 度。Spot だけが使う。
+		Float outerConeAngle_ = 0.785398163f;
 
 		template<class Archive>
 		void Serialize(Archive& archive)
@@ -868,13 +1194,36 @@ namespace SeedCore
 	*/
 	struct Bitmap
 	{
+		/// [EN] Image name from the source file.
+		/// [JP] 元ファイルでの画像名。
 		std::string name_;
+
+		/// [EN] Width of mip 0 in cacheData_, in texels.
+		/// [JP] cacheData_ のミップ 0 の幅(テクセル)。
 		Int width_ = -1;
+
+		/// [EN] Height of mip 0 in cacheData_, in texels.
+		/// [JP] cacheData_ のミップ 0 の高さ(テクセル)。
 		Int height_ = -1;
+
+		/// [EN] Channel count of the source image.
+		/// [JP] 元画像のチャンネル数。
 		Int component_ = -1;
+
+		/// [EN] Bits per channel of the source image.
+		/// [JP] 元画像のチャンネルあたりのビット数。
 		Int bits_ = -1;
+
+		/// [EN] Number of mip levels in cacheData_.
+		/// [JP] cacheData_ に入っているミップの段数。
 		Int mipCount_ = 1;
+
+		/// [EN] MIME type of the source image, such as image/png.
+		/// [JP] 元画像の MIME タイプ(image/png など)。
 		std::string mimeType_;
+
+		/// [EN] BC7 blocks of every mip, mip 0 first.
+		/// [JP] 全ミップの BC7 ブロック。ミップ 0 から順に並ぶ。
 		DynamicArray<Uchar> cacheData_;
 
 		template<class Archive>
@@ -894,21 +1243,18 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Which cluster BakeCollision pulls from a SubMesh: the coarsest
-	* cluster (same range RT already uses for its proxy geometry) or
-	* the LOD 0 cluster.
+	* cluster or the LOD 0 cluster.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* BakeCollision が SubMesh のどのクラスタから抽出するか:
-	* 最粗クラスタ（RT のプロキシジオメトリと同じ範囲）か LOD 0 クラスタか。
+	* 最粗クラスタか LOD 0 クラスタか。
 	*/
 	enum class MeshCollisionDetail
 	{
-		/// [EN] Each SubMesh's coarsest cluster — same range the RT proxy
-		///      geometry already uses.
-		/// [JP] 各 SubMesh の最粗クラスタ — RT プロキシジオメトリが既に
-		///      使っているのと同じ範囲。
+		/// [EN] Each SubMesh's coarsest cluster, the cheapest shape to collide against.
+		/// [JP] 各 SubMesh の最粗クラスタ。衝突判定が最も軽い形。
 		Proxy,
 
 		/// [EN] Each SubMesh's LOD 0 (most detailed) cluster.
@@ -949,82 +1295,86 @@ namespace SeedCore
 		friend class ModelLoader;
 		friend class ModelExporter;
 
-		/// [EN] Source vertices. Only alive during the load/bake pipeline
-		///      (FetchMeshes -> BuildMeshlets -> BakeMesh); not serialized.
-		///      BakeMesh() consumes this into compressedVertices_/
-		///      compressedSkinVertices_ and clears it.
-		/// [JP] ソース頂点。ロード/ベイクのパイプライン中
-		///      (FetchMeshes -> BuildMeshlets -> BakeMesh) のみ生存し、
-		///      シリアライズしない。BakeMesh() がこれを compressedVertices_/
-		///      compressedSkinVertices_ へ変換して空にする。
+		/// [EN] Full-precision source vertices, alive only during the load/bake pipeline (FetchMeshes -> BuildMeshlets -> BakeMesh) and not serialized; BakeMesh() turns them into compressedVertices_/compressedSkinVertices_ and clears them.
+		/// [JP] フル精度のソース頂点。ロード/ベイクのパイプライン(FetchMeshes -> BuildMeshlets -> BakeMesh)の間だけ存在し、シリアライズしない。BakeMesh() がこれを compressedVertices_/compressedSkinVertices_ へ変換して空にする。
 		DynamicArray<Vertex> vertices_;
 
-		/// [EN] For each entry in vertices_/compressedVertices_ (including
-		///      LOD-duplicated copies BuildMeshlets appends), the ORIGINAL
-		///      (pre-LOD) vertex index it descends from — identity for an
-		///      original vertex, and propagated forward from the source
-		///      vertex BuildMeshlets' QEM step copied attributes from
-		///      otherwise. Only meaningful within a SubMesh's own range.
-		///      Unlike vertices_ itself, this IS serialized — it stays
-		///      index-aligned with compressedVertices_ (also serialized),
-		///      so both must survive a cache load equally; BakeMesh() does
-		///      NOT clear this alongside vertices_. Exists solely so the
-		///      raster morph blend (SkeletalModelMS.hlsl/StaticModelMS.hlsl/
-		///      FurShellMS.hlsl/DepthPrepassMS.hlsl/Model/Material/
-		///      MaterialResolveCS.hlsl/Model/Transparent/ModelTransparentPS.hlsl)
-		///      can resolve ANY streamed LOD's vertex back to the original
-		///      vertex Morph::positionDeltas_ is index-aligned to — RT's
-		///      morph blend needs no such remap since its proxy only ever
-		///      uses each SubMesh's original (LOD-0/full-detail) cluster.
-		/// [JP] vertices_/compressedVertices_ の各要素(BuildMeshlets が
-		///      追加する LOD 複製コピーも含む)について、その元となった
-		///      (LOD 適用前の)頂点インデックス — オリジナル頂点なら恒等、
-		///      それ以外は BuildMeshlets の QEM ステップが属性をコピーした
-		///      元頂点から伝播する。SubMesh 自身の範囲内でのみ意味を持つ。
-		///      vertices_ 自身と違い、これはシリアライズする —
-		///      compressedVertices_(同じくシリアライズ)とインデックスが
-		///      整合し続ける必要があるため、両者ともキャッシュロードを
-		///      同じように生き延びる必要がある。BakeMesh() は vertices_ と
-		///      一緒にこれをクリアしない。ラスタのモーフブレンド
-		///      (SkeletalModelMS.hlsl/StaticModelMS.hlsl/FurShellMS.hlsl/
-		///      DepthPrepassMS.hlsl/Model/Material/MaterialResolveCS.hlsl/
-		///      Model/Transparent/ModelTransparentPS.hlsl)が、
-		///      ストリームされたどの LOD の頂点も
-		///      Morph::positionDeltas_ がインデックス整合するオリジナル
-		///      頂点へ逆引きできるようにする用途のみに存在する — RT の
-		///      モーフブレンドは、そのプロキシが各 SubMesh のオリジナル
-		///      (LOD0/フル詳細)クラスタしか使わないため、この逆引きを
-		///      必要としない。
+		/// [EN] For each vertex in vertices_/compressedVertices_, including the LOD copies BuildMeshlets appends, the original (pre-LOD) vertex it descends from: itself for an original vertex, otherwise the vertex the QEM step copied its attributes from. Meaningful only within a SubMesh's own range. The raster morph blend (the model mesh shaders, Model/Material/MaterialResolveCS.hlsl and Model/Transparent/ModelTransparentPS.hlsl) uses it to map a vertex of any streamed LOD back to the vertex Morph::positionDeltas_ is indexed by; the RT proxy is built from LOD 0 and needs no such map. It is serialized and kept by BakeMesh(), since it stays index-aligned with compressedVertices_.
+		/// [JP] vertices_/compressedVertices_ の各頂点(BuildMeshlets が追加する LOD のコピーも含む)について、元になった(LOD 適用前の)頂点。オリジナルの頂点なら自分自身、それ以外は QEM の段階で属性をコピーした元の頂点。SubMesh 自身の範囲内でのみ意味を持つ。ラスタのモーフブレンド(モデル用メッシュシェーダー、Model/Material/MaterialResolveCS.hlsl、Model/Transparent/ModelTransparentPS.hlsl)が、ストリーミングされたどの LOD の頂点も Morph::positionDeltas_ のインデックスの頂点へ戻すために使う。RT プロキシは LOD 0 から作るので、この対応は要らない。compressedVertices_ とインデックスが揃ったままである必要があるので、シリアライズし、BakeMesh() でも消さない。
 		DynamicArray<Uint32> vertexMorphSource_;
 
-		/// [EN] Quantised GPU vertex format, baked by BakeMesh() and cached to
-		///      disk. Indexed the same way vertices_ was (global vertex index).
-		/// [JP] 量子化済み GPU 頂点フォーマット。BakeMesh() で焼き込みディスクに
-		///      キャッシュする。vertices_ と同じグローバル頂点インデックスで引く。
+		/// [EN] Quantised GPU vertex format, baked by BakeMesh() and cached to disk. Indexed the same way vertices_ was (global vertex index).
+		/// [JP] 量子化済み GPU 頂点フォーマット。BakeMesh() で焼き込みディスクにキャッシュする。vertices_ と同じグローバル頂点インデックスで引く。
 		DynamicArray<CompressedVertex> compressedVertices_;
 
-		/// [EN] Quantised skinning attributes, baked alongside compressedVertices_.
-		///      Empty when skins_ is empty.
-		/// [JP] 量子化済みスキニング属性。compressedVertices_ と一緒に焼き込む。
-		///      skins_ が空なら空のまま。
+		/// [EN] Quantised skinning attributes, baked alongside compressedVertices_. Empty when skins_ is empty.
+		/// [JP] 量子化済みスキニング属性。compressedVertices_ と一緒に焼き込む。skins_ が空なら空のまま。
 		DynamicArray<CompressedSkinVertex> compressedSkinVertices_;
 
+		/// [EN] Global vertex index of each meshlet-local vertex, meshlet after meshlet (MeshletDesc::vertexOffset_ points in here).
+		/// [JP] meshlet ローカルな各頂点の、グローバル頂点インデックス。meshlet ごとに続けて並ぶ(MeshletDesc::vertexOffset_ がここを指す)。
 		DynamicArray<Uint32> vertexIndices_;
+
+		/// [EN] Three meshlet-local vertex numbers per triangle, one byte each (MeshletDesc::triangleOffset_ points in here).
+		/// [JP] 三角形ごとに meshlet ローカルな頂点番号を3つ、1バイトずつ(MeshletDesc::triangleOffset_ がここを指す)。
 		DynamicArray<Uint8> primitiveIndices_;
+
+		/// [EN] Every meshlet of every LOD of every SubMesh; each Cluster owns a contiguous range.
+		/// [JP] 全 SubMesh の全 LOD の全 meshlet。各 Cluster が連続した範囲を持つ。
 		DynamicArray<MeshletDesc> meshlets_;
+
+		/// [EN] Culling bounds of each meshlet, index-aligned with meshlets_.
+		/// [JP] 各 meshlet のカリング用の境界。meshlets_ とインデックスが揃っている。
 		DynamicArray<MeshletBound> meshletBounds_;
+
+		/// [EN] Every LOD Cluster of every SubMesh; each SubMesh owns a contiguous range, LOD 0 first.
+		/// [JP] 全 SubMesh の全 LOD の Cluster。各 SubMesh が連続した範囲を持ち、LOD 0 から並ぶ。
 		DynamicArray<Cluster> clusters_;
+
+		/// [EN] Scenes of the source file.
+		/// [JP] 元ファイルのシーン。
 		DynamicArray<Stage> stages_;
+
+		/// [EN] Drawable pieces of the model, one per source primitive.
+		/// [JP] モデルの描画可能なパーツ。元のプリミティブ1つにつき1つ。
 		DynamicArray<SubMesh> subMeshes_;
+
+		/// [EN] Materials, referred to by SubMesh::surfaceIndex_.
+		/// [JP] マテリアル。SubMesh::surfaceIndex_ から参照される。
 		DynamicArray<Surface> surfaces_;
+
+		/// [EN] Flattened node hierarchy of the source file.
+		/// [JP] 元ファイルのノード階層を平坦化したもの。
 		DynamicArray<Node> nodes_;
+
+		/// [EN] Skins, referred to by Node::skin_ and SubMesh::skinIndex_.
+		/// [JP] スキン。Node::skin_ と SubMesh::skinIndex_ から参照される。
 		DynamicArray<Skin> skins_;
+
+		/// [EN] Embedded images, referred to by the texture indices in Surface.
+		/// [JP] 内蔵画像。Surface のテクスチャインデックスから参照される。
 		DynamicArray<Bitmap> bitmaps_;
+
+		/// [EN] Point and spot lights of the source file.
+		/// [JP] 元ファイルのポイントライトとスポットライト。
 		DynamicArray<PunctualLight> lights_;
 
+		/// [EN] Index into stages_ of the scene drawn when none is chosen.
+		/// [JP] シーンが選ばれていないときに描画する、stages_ でのインデックス。
 		Int defaultStage_ = 0;
 
 	public:
+		/**
+		* [EN]
+		* Creates an empty Crister; ModelLoader fills it, or a .crister cache
+		* is deserialised into it.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 空の Crister を作る。ModelLoader が中身を埋めるか、.crister
+		* キャッシュをここへデシリアライズする。
+		*/
 		Crister() = default;
 
 		/**
@@ -1046,9 +1396,39 @@ namespace SeedCore
 		*/
 		~Crister();
 
+		/**
+		* [EN]
+		* Moves the model, GPU resources and streaming state included.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* GPU リソースとストリーミング状態も含めて、モデルを移動する。
+		*/
 		Crister(Crister&&)noexcept = default;
+
+		/**
+		* [EN]
+		* Move-assigns the model, GPU resources and streaming state included.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* GPU リソースとストリーミング状態も含めて、モデルをムーブ代入する。
+		*/
 		Crister& operator=(Crister&&)noexcept = default;
 
+		/**
+		* [EN]
+		* Reads or writes the baked model to or from a .crister cache.
+		* vertices_ and the GPU-side state are not part of it.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 焼き込み済みのモデルを .crister キャッシュと読み書きする。
+		* vertices_ と GPU 側の状態は含まない。
+		*/
 		template<class Archive>
 		void Serialize(Archive& archive)
 		{
@@ -1095,35 +1475,27 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Downsamples oversized textures, dilates transparent-texel color
-		* (must happen before compression — BC7 blocks can't be touched
-		* per-texel afterwards), then BC7-compresses a full mip chain into
-		* each Bitmap's cacheData_. Must run before serialising to the
-		* .crister cache.
-		* BC7 encoding runs on the GPU (BC7CompressCS.hlsl, mode 6 only —
-		* the CPU DirectXTex encoder's default quality search is
-		* impractically slow and TEX_COMPRESS_PARALLEL is a no-op unless
-		* the vendored DirectXTex.lib happens to be built with OpenMP).
-		* Needs device/cmdQueue for the one-shot compute dispatch; unlike
-		* Upload() this has no BindlessHeap dependency (the shader binds
-		* its input/output as root SRV/UAV, not through the bindless heap).
+		* (before compression, since BC7 blocks cannot be edited per texel
+		* afterwards), then BC7-compresses a full mip chain into each
+		* Bitmap's cacheData_. Must run before serialising to the .crister
+		* cache. The BC7 encoding runs on the GPU (BC7CompressCS.hlsl, mode
+		* 6 only) as a one-shot compute dispatch on cmdQueue, with the root
+		* signature and PSO owned by bc7Shader. The shader binds its input
+		* and output as root SRV/UAV, so unlike Upload() this needs no
+		* BindlessHeap.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 大きすぎるテクスチャをダウンサンプルし、透明テクセルの色を
-		* dilation する（圧縮後は BC7 ブロックをテクセル単位で触れない
-		* ため圧縮前必須）。その後フルミップチェーンを BC7 圧縮して各
+		* dilation する（圧縮後は BC7 ブロックをテクセル単位で編集できない
+		* ため、圧縮前に行う）。その後フルミップチェーンを BC7 圧縮して各
 		* Bitmap の cacheData_ へ焼き込む。.crister キャッシュへの
-		* シリアライズ前に実行すること。
-		* BC7 エンコードは GPU で行う(BC7CompressCS.hlsl、mode 6 のみ —
-		* CPU 版 DirectXTex のデフォルト品質探索は実用にならないほど遅く、
-		* TEX_COMPRESS_PARALLEL も同梱の DirectXTex.lib が OpenMP 付きで
-		* ビルドされていない限り無効)。一発実行のコンピュートディスパッチの
-		* ため device/cmdQueue が要る。Upload() と違い BindlessHeap には
-		* 依存しない(シェーダの入出力は bindless ヒープではなくルート
-		* SRV/UAV で直接バインドする)。ルートシグネチャ+PSOは
-		* BC7CompressShader(Graphics所有、ModelShaderと同じ立ち位置)が
-		* 持つので、それを渡してもらう。
+		* シリアライズ前に実行すること。BC7 エンコードは GPU で行い
+		* (BC7CompressCS.hlsl、mode 6 のみ)、cmdQueue 上の一発実行の
+		* コンピュートディスパッチとして、bc7Shader が持つルートシグネチャと
+		* PSO で動かす。シェーダーは入出力をルート SRV/UAV でバインドするので、
+		* Upload() と違い BindlessHeap は要らない。
 		*/
 		void BakeBitmap(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
 
@@ -1219,8 +1591,8 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Reads each SubMesh's coarsest cluster (same range BakeCollision's
-		* Proxy detail and the RT proxy geometry use) into a CPU-side
+		* Reads each SubMesh's coarsest cluster (the same range as
+		* BakeCollision's Proxy detail) into a CPU-side
 		* full-vertex/index pair, compacted/deduped into its own local
 		* index space (unlike SoftbodyFinestVertices, which keeps the full LOD 0
 		* global index space uncompacted). For a Softbody to stay real-time
@@ -1238,8 +1610,8 @@ namespace SeedCore
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 各 SubMesh の最粗クラスタ（BakeCollision の Proxy 詳細度や RT
-		* プロキシジオメトリと同じ範囲）を、CPU 側のフル頂点/インデックス対
+		* 各 SubMesh の最粗クラスタ（BakeCollision の Proxy 詳細度と同じ
+		* 範囲）を、CPU 側のフル頂点/インデックス対
 		* へ、自身のローカルインデックス空間に圧縮・重複排除して読み出す
 		* （LOD 0 のグローバルインデックス空間を無加工のまま保つ
 		* SoftbodyFinestVertices とは異なる）。Softbody がレンダー解像度の
@@ -1404,9 +1776,10 @@ namespace SeedCore
 		* Cluster's streaming page ranges from its meshlet slice and pins the
 		* pages that must never evict (coarsest cluster per SubMesh, skinned
 		* LOD 0, the vertex pool they reference), uploads skin attributes for
-		* the pool range, flattens each SubMesh's coarsest cluster into RT
-		* proxy geometry (compressed vertices + decoded float3 positions +
-		* flat 32-bit triangle indices, deduplicated), sets up per-texture
+		* the pool range, flattens each SubMesh's LOD 0 cluster, once per node
+		* placement, into RT proxy geometry (compressed vertices + decoded
+		* float3 positions + flat 32-bit triangle indices, deduplicated),
+		* resolves SubMeshPlacement from the nodes, sets up per-texture
 		* streaming state from BakeBitmap()'s BC7 mip chains (clamped to the
 		* leading run of mip levels legal as a standalone single-mip BC7
 		* resource), then registers with the shared streaming bookkeeping and
@@ -1422,9 +1795,10 @@ namespace SeedCore
 		* ストリーミングページ範囲を meshlet スライスから導出し、追い出しては
 		* いけないページ（SubMesh ごとの最粗クラスタ、スキンド LOD 0、それらが
 		* 参照する頂点プール）をピン留めする。プール範囲分のスキニング属性を
-		* アップロードし、各 SubMesh の最粗クラスタを RT プロキシジオメトリ
-		* （圧縮頂点 + デコード済み float3 位置 + 重複排除済みフラット 32bit
-		* 三角形インデックス）へ展開する。BakeBitmap() が焼いた BC7 ミップ
+		* アップロードし、各 SubMesh の LOD 0 クラスタをノード配置ごとに RT
+		* プロキシジオメトリ（圧縮頂点 + デコード済み float3 位置 + 重複排除
+		* 済みフラット 32bit 三角形インデックス）へ展開し、ノードから
+		* SubMeshPlacement を解決する。BakeBitmap() が焼いた BC7 ミップ
 		* チェーンから（「単一ミップの独立した BC7 リソース」として合法な
 		* 先頭のミップ範囲へ切り詰めた上で）テクスチャごとのストリーミング
 		* 状態を準備し、最後に共有ストリーミング管理へ登録してピン留め
@@ -1581,8 +1955,33 @@ namespace SeedCore
 		*/
 		NODISCARD Vector3 PositionExtent()const;
 
+		/**
+		* [EN]
+		* Minimum corner of the model-space bounds of the geometry after
+		* every SubMesh is placed by its nodes (SubMeshPlacement), taken
+		* from the RT proxy positions in Upload(). Equals PositionMin()
+		* when there is no proxy.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 各 SubMesh をノードで配置した(SubMeshPlacement)後のジオメトリの、
+		* モデル空間での境界の最小コーナー。Upload() で RT プロキシの位置から
+		* 求める。プロキシが無ければ PositionMin() と同じ。
+		*/
 		NODISCARD Vector3 PlacedPositionMin()const;
 
+		/**
+		* [EN]
+		* Extent (max - min) of the same placed model-space bounds. Equals
+		* PositionExtent() when there is no proxy.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 同じ配置後のモデル空間での境界の大きさ（max - min）。プロキシが
+		* 無ければ PositionExtent() と同じ。
+		*/
 		NODISCARD Vector3 PlacedPositionExtent()const;
 
 		/**
@@ -1737,16 +2136,17 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Bindless SRV of the RT proxy CompressedVertex buffer (built from
-		* each SubMesh's coarsest cluster — reflections trace against a
-		* low-poly proxy so full-detail geometry never has to be resident).
+		* Bindless SRV of the RT proxy CompressedVertex buffer, built from
+		* each SubMesh's LOD 0 cluster so reflections show the mesh at full
+		* detail. The proxy stays resident independently of raster
+		* streaming.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* RT プロキシ CompressedVertex バッファの bindless SRV（各 SubMesh の
-		* 最粗クラスタから構築 — 反射は低ポリプロキシに対してトレースする
-		* ため、フル詳細ジオメトリを常駐させる必要がない）。
+		* RT プロキシ CompressedVertex バッファの bindless SRV。反射に
+		* メッシュをフル詳細で映すため、各 SubMesh の LOD 0 クラスタから
+		* 構築する。プロキシはラスタ側のストリーミングとは関係なく常駐する。
 		*/
 		NODISCARD Uint VertexBufferIndex()const;
 
@@ -1913,10 +2313,8 @@ namespace SeedCore
 		* (coarsest cluster per SubMesh, skinned LOD 0 and the pool they
 		* reference) never evict, so every model can always be drawn at some
 		* LOD. MakeClusterResident/MakePoolResident/EvictCluster/EvictPool are
-		* the resident/evict pair for cluster vs. pool. Public only because
-		* MakeClusterResident is also driven externally by ModelRenderer; the
-		* naming/shape of this whole group still needs a pass — flagged in
-		* review, not yet fixed.
+		* the resident/evict pair for cluster vs. pool. They are public
+		* because ModelRenderer drives MakeClusterResident from outside.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -1930,9 +2328,8 @@ namespace SeedCore
 		* ごとの最粗クラスタ、スキンド LOD 0 とそれが参照するプール）は
 		* 追い出さないため、モデルは常に何らかの LOD で描画できる。
 		* MakeClusterResident/MakePoolResident/EvictCluster/EvictPool は
-		* クラスタ/プールの常駐・追い出しの対。MakeClusterResident が
-		* ModelRenderer からも呼ばれるため public。この群の命名・形は
-		* レビューで指摘済み、未修正。
+		* クラスタ/プールの常駐・追い出しの対。ModelRenderer が外から
+		* MakeClusterResident を呼ぶため public にしている。
 		*/
 
 		/**
@@ -1952,21 +2349,18 @@ namespace SeedCore
 		* [EN]
 		* Texture mip counterpart to MakeClusterResident: streams a mip level
 		* instead of a cluster (see StreamingTexture below). targetMip is
-		* uploaded directly — NOT one level at a time — so a texture reaches
-		* the resolution the camera wants in a single upload instead of
-		* converging over as many frames as there are mip levels (which left
-		* visible blur whenever the camera moved, since each step also
-		* blocks on a GPU fence).
+		* uploaded directly rather than one level at a time, so a texture
+		* reaches the resolution the camera wants in a single synchronous
+		* upload instead of one fence wait per level.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* MakeClusterResident のテクスチャミップ版の対。クラスタではなく
 		* ミップレベルをストリーミングする（下記 StreamingTexture 参照）。
-		* targetMip は1段ずつではなく直接アップロードする — カメラが要求する
-		* 解像度へ1回のアップロードで到達させるため。1段ずつだとミップ段数分の
-		* フレームを要し（各段が GPU フェンス待ちで同期もする）、カメラを
-		* 動かすたびにボケが残っていた。
+		* targetMip は1段ずつではなく直接アップロードするので、テクスチャは
+		* 段ごとにフェンスを待つことなく、1回の同期アップロードでカメラが
+		* 求める解像度に届く。
 		*/
 		void MakeTextureMipResident(Uint32 textureIndex, Uint32 targetMip);
 
@@ -2268,26 +2662,23 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* DirectX::CreateStaticBuffer rejects any resource above ~128MB
-		* (D3D12_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_A_TERM used
-		* directly as a flat byte cap by DirectXTK12's BufferHelpers.cpp,
-		* not an actual D3D12 hardware limit - real buffers can be
-		* gigabytes, bounded only by available GPU memory). High-poly
-		* meshes routinely exceed that for the flat 32-bit triangle index
-		* buffer, so this mirrors CreateStaticBuffer's own implementation
-		* without the artificial size gate.
+		* Creates a DEFAULT-heap buffer filled with data, the same way
+		* DirectX::CreateStaticBuffer does but with no size cap.
+		* CreateStaticBuffer rejects anything above ~128MB, because
+		* DirectXTK12 treats D3D12_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_A_TERM
+		* as a flat byte limit; D3D12 buffers themselves are bounded only by
+		* GPU memory, and a high-poly mesh's flat 32-bit triangle index
+		* buffer easily goes past 128MB.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* DirectX::CreateStaticBuffer は約128MBを超えるリソースを拒否する
-		* (DirectXTK12 の BufferHelpers.cpp が
-		* D3D12_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_A_TERM を単純な
-		* バイト上限としてそのまま使っているだけで、実際の D3D12/GPU の
-		* ハード制限ではない - 実バッファは GPU メモリが許す限り
-		* ギガバイト単位まで作れる)。ハイポリメッシュのフラット32bit
-		* 三角形インデックスバッファはこれを普通に超えるため、
-		* CreateStaticBuffer と同じ実装からサイズ上限チェックだけ外した版。
+		* data を詰めた DEFAULT ヒープのバッファを、DirectX::CreateStaticBuffer
+		* と同じ手順で、ただしサイズの上限なしで作る。CreateStaticBuffer は
+		* DirectXTK12 が D3D12_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_A_TERM
+		* を単純なバイト上限として扱うため、約128MB を超えるものを拒否する。
+		* D3D12 のバッファ自体の上限は GPU メモリだけで、ハイポリメッシュの
+		* フラットな 32bit 三角形インデックスバッファは 128MB を簡単に超える。
 		*/
 		static HRESULT CreateStaticBufferUnbounded(ID3D12Device* device, DirectX::ResourceUploadBatch& resourceUpload, const void* data, Uint64 count, Uint64 stride, D3D12_RESOURCE_STATES afterState, ID3D12Resource** outResource);
 
@@ -2458,30 +2849,88 @@ namespace SeedCore
 		*/
 		struct StreamingGeometry
 		{
-			/// [JP] CPU 配列内の派生レンジ（ロード時に meshlet 列から導出）。
+			/// [EN] Start of the page's slice of vertexIndices_, derived from its meshlets when Upload() runs.
+			/// [JP] ページが持つ vertexIndices_ のスライスの先頭。Upload() で meshlet から導出する。
 			Uint32 vertexIndexBegin_ = 0;
+
+			/// [EN] End (exclusive) of the page's slice of vertexIndices_.
+			/// [JP] ページが持つ vertexIndices_ のスライスの終わり(含まない)。
 			Uint32 vertexIndexEnd_ = 0;
+
+			/// [EN] Start of the page's slice of primitiveIndices_, in bytes.
+			/// [JP] ページが持つ primitiveIndices_ のスライスの先頭(バイト)。
 			Uint32 primitiveBegin_ = 0;
+
+			/// [EN] End (exclusive) of the page's slice of primitiveIndices_, in bytes.
+			/// [JP] ページが持つ primitiveIndices_ のスライスの終わり(バイト、含まない)。
 			Uint32 primitiveEnd_ = 0;
+
+			/// [EN] Start of the vertex range the page owns in compressedVertices_; used only when ownsVertices_.
+			/// [JP] ページが compressedVertices_ に持つ頂点範囲の先頭。ownsVertices_ のときだけ使う。
 			Uint32 vertexBegin_ = 0;
+
+			/// [EN] End (exclusive) of that vertex range.
+			/// [JP] その頂点範囲の終わり(含まない)。
 			Uint32 vertexEnd_ = 0;
+
+			/// [EN] Whether the page carries its own vertex slice (LOD >= 1) instead of referencing the shared LOD 0 pool.
+			/// [JP] 共有 LOD 0 プールを参照するのではなく、自前の頂点スライスを持つか(LOD >= 1)。
 			Bool ownsVertices_ = false;
+
+			/// [EN] Whether the page must never be evicted (the coarsest cluster of a SubMesh, or LOD 0 of a skinned one).
+			/// [JP] 追い出してはいけないページか(SubMesh の最粗クラスタか、スキン付き SubMesh の LOD 0)。
 			Bool pinned_ = false;
 
+			/// [EN] The page's meshlets, with offsets rebased to page-local numbering.
+			/// [JP] ページの meshlet。オフセットはページローカルな番号へリベース済み。
 			Microsoft::WRL::ComPtr<ID3D12Resource> meshletResource_;
+
+			/// [EN] Culling bounds of the page's meshlets.
+			/// [JP] ページの meshlet のカリング用の境界。
 			Microsoft::WRL::ComPtr<ID3D12Resource> meshletBoundResource_;
+
+			/// [EN] The page's slice of vertexIndices_.
+			/// [JP] ページが持つ vertexIndices_ のスライス。
 			Microsoft::WRL::ComPtr<ID3D12Resource> vertexIndicesResource_;
+
+			/// [EN] The page's slice of primitiveIndices_.
+			/// [JP] ページが持つ primitiveIndices_ のスライス。
 			Microsoft::WRL::ComPtr<ID3D12Resource> primitiveIndicesResource_;
+
+			/// [EN] The page's own vertices; empty when it references the shared pool.
+			/// [JP] ページ自前の頂点。共有プールを参照するページでは空。
 			Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
 
+			/// [EN] Bindless SRV of meshletResource_.
+			/// [JP] meshletResource_ の bindless SRV。
 			Uint meshletBufferIndex_ = SC_INVALID;
+
+			/// [EN] Bindless SRV of meshletBoundResource_.
+			/// [JP] meshletBoundResource_ の bindless SRV。
 			Uint meshletBoundBufferIndex_ = SC_INVALID;
+
+			/// [EN] Bindless SRV of vertexIndicesResource_.
+			/// [JP] vertexIndicesResource_ の bindless SRV。
 			Uint vertexIndicesBufferIndex_ = SC_INVALID;
+
+			/// [EN] Bindless SRV of primitiveIndicesResource_.
+			/// [JP] primitiveIndicesResource_ の bindless SRV。
 			Uint primitiveIndicesBufferIndex_ = SC_INVALID;
+
+			/// [EN] Bindless SRV of the vertices the page reads: its own vertexResource_, or the shared pool's.
+			/// [JP] ページが読む頂点の bindless SRV。自前の vertexResource_ か、共有プールのもの。
 			Uint vertexBufferIndex_ = SC_INVALID;
 
+			/// [EN] Whether the page is currently in VRAM.
+			/// [JP] ページが今 VRAM にあるか。
 			Bool resident_ = false;
+
+			/// [EN] VRAM the page takes while resident, counted against the geometry budget.
+			/// [JP] 常駐中にページが使う VRAM。ジオメトリの予算に数える。
 			Uint64 sizeBytes_ = 0;
+
+			/// [EN] Last frame the page was drawn from; it is evicted only after evictAgeFrames_ frames without use.
+			/// [JP] ページが最後に描画に使われたフレーム。evictAgeFrames_ フレーム使われなかった後でだけ追い出す。
 			Uint64 lastUsedFrame_ = 0;
 		};
 
@@ -2502,8 +2951,16 @@ namespace SeedCore
 		*/
 		struct TextureMipLevel
 		{
+			/// [EN] Single-mip BC7 texture at this mip's resolution; null while not resident.
+			/// [JP] このミップの解像度を持つ単一ミップの BC7 テクスチャ。常駐していなければ null。
 			Microsoft::WRL::ComPtr<ID3D12Resource> resource_;
+
+			/// [EN] Bindless SRV of resource_.
+			/// [JP] resource_ の bindless SRV。
 			Uint bindlessIndex_ = SC_INVALID;
+
+			/// [EN] VRAM the mip takes, counted against the texture budget.
+			/// [JP] このミップが使う VRAM。テクスチャの予算に数える。
 			Uint64 sizeBytes_ = 0;
 		};
 
@@ -2517,12 +2974,10 @@ namespace SeedCore
 		* than pinned has been requested yet). TextureBindlessIndex always
 		* returns whichever of the two is finest, so intermediate mips
 		* never need to stay resident — only the currently sampled one.
-		* (Keeping the whole [topResidentMip_, mipCount_-1] range resident,
-		* as an earlier version of this did, multiplies bindless-heap and
-		* VRAM usage by up to mipCount_ per texture once TextureDesiredMip
-		* legitimately converges toward mip 0 — exhausted the shared
-		* BindlessHeap and corrupted other textures' descriptors. Do not
-		* go back to that shape without also capping resident mips.)
+		* Holding two mips per texture keeps bindless-heap and VRAM use
+		* bounded; keeping every mip from topResidentMip_ to the coarsest
+		* resident would multiply both by up to mipCount_ per texture and
+		* exhaust the shared BindlessHeap.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -2534,173 +2989,221 @@ namespace SeedCore
 		* topResidentMip_ == mipCount_-1 の間、つまりピン留めより細かい
 		* ミップを未要求の間は未使用)。TextureBindlessIndex は常にこの2つの
 		* うち細かい方を返すため、中間ミップを常駐させ続ける必要はなく、
-		* 実際にサンプルされる1枚だけで済む。
-		* (以前のバージョンのように [topResidentMip_, mipCount_-1] を丸ごと
-		* 常駐させ続けると、TextureDesiredMip が正しくミップ0へ収束する
-		* ようになった途端、1テクスチャあたり最大 mipCount_ 個分の
-		* bindless ヒープ/VRAM を消費し、共有 BindlessHeap を枯渇させて
-		* 他テクスチャのディスクリプタまで壊れた。常駐ミップ数を制限せずに
-		* その形へ戻さないこと。)
+		* 実際にサンプルされる1枚だけで済む。テクスチャあたり2ミップに
+		* 抑えることで、bindless ヒープと VRAM の使用量に上限ができる。
+		* topResidentMip_ から最粗までの全ミップを常駐させると、どちらも
+		* テクスチャあたり最大 mipCount_ 倍になり、共有 BindlessHeap を
+		* 使い切ってしまう。
 		*/
 		struct StreamingTexture
 		{
+			/// [EN] The coarsest streamable mip, resident from Upload() until the Crister is destroyed.
+			/// [JP] ストリーミングできる中で最も粗いミップ。Upload() から Crister が破棄されるまで常駐する。
 			TextureMipLevel pinnedMip_;
+
+			/// [EN] The finest mip streamed in so far; empty while nothing finer than pinnedMip_ has been requested.
+			/// [JP] ここまでにストリームインした最も細かいミップ。pinnedMip_ より細かいものが要求されるまでは空。
 			TextureMipLevel currentMip_;
+
+			/// [EN] Number of mips that can be streamed, the leading run legal as standalone single-mip BC7 resources.
+			/// [JP] ストリーミングできるミップの数。単一ミップの BC7 リソースとして正しい、先頭からの範囲。
 			Uint32 mipCount_ = 0;
+
+			/// [EN] Finest mip currently resident; mipCount_ until the pinned mip has been uploaded.
+			/// [JP] 今常駐している最も細かいミップ。ピン留めのミップをアップロードするまでは mipCount_。
 			Uint32 topResidentMip_ = 0;
+
+			/// [EN] Last frame the texture was sampled; currentMip_ is evicted only after evictAgeFrames_ frames without use.
+			/// [JP] テクスチャが最後にサンプルされたフレーム。evictAgeFrames_ フレーム使われなかった後でだけ currentMip_ を追い出す。
 			Uint64 lastUsedFrame_ = 0;
+
+			/// [EN] Whether the texture streams at all; false when its dimensions allow no single-mip BC7 resource.
+			/// [JP] そもそもストリーミングするテクスチャか。単一ミップの BC7 リソースを作れない寸法なら false。
 			Bool valid_ = false;
 		};
 
-		/// [EN] RT proxy geometry (coarsest cluster per SubMesh): compressed
-		///      vertices for the hit shader, decoded float3 positions for BLAS,
-		///      flat 32-bit triangle indices for both. Always resident, small.
-		///      skinVertexResource_ covers the vertex pool range for skinned
-		///      models (skinned SubMeshes are LOD 0 / pool-indexed only).
-		/// [JP] RT プロキシジオメトリ（SubMesh ごとの最粗クラスタ）: ヒット
-		///      シェーダ用圧縮頂点、BLAS 用デコード済み float3 位置、両者用の
-		///      フラット 32bit 三角形インデックス。常に常駐・小サイズ。
-		///      skinVertexResource_ はスキンドモデル用に頂点プール範囲を
-		///      カバーする（スキンド SubMesh は LOD 0 / プール参照のみ）。
+		/// [EN] RT proxy vertices in the 16-byte GPU format, read by the hit shaders: each SubMesh's LOD 0 cluster, once per node placement. Always resident.
+		/// [JP] ヒットシェーダーが読む、16 バイトの GPU フォーマットの RT プロキシ頂点。各 SubMesh の LOD 0 クラスタを、ノード配置ごとに持つ。常に常駐する。
 		Microsoft::WRL::ComPtr<ID3D12Resource> vertexResource_;
+
+		/// [EN] The same RT proxy vertices decoded to float3 positions, the BLAS input and the base positions of the morph and skin blends.
+		/// [JP] 同じ RT プロキシ頂点を float3 の位置へデコードしたもの。BLAS の入力で、モーフとスキンのブレンドのベース位置にもなる。
 		Microsoft::WRL::ComPtr<ID3D12Resource> positionResource_;
+
+		/// [EN] Skinning attributes over the vertex pool range, for skinned models; skinned SubMeshes draw only from LOD 0, which indexes the pool.
+		/// [JP] スキン付きモデル用の、頂点プール範囲のスキニング属性。スキン付き SubMesh はプールを参照する LOD 0 からしか描画しない。
 		Microsoft::WRL::ComPtr<ID3D12Resource> skinVertexResource_;
+
+		/// [EN] Flat 32-bit triangle indices of the RT proxy, shared by the BLAS and the hit shaders.
+		/// [JP] RT プロキシのフラットな 32bit 三角形インデックス。BLAS とヒットシェーダーが共有する。
 		Microsoft::WRL::ComPtr<ID3D12Resource> indexResource_;
 
+		/// [EN] Skinning attributes of each RT proxy vertex, index-aligned with vertexResource_.
+		/// [JP] RT プロキシの各頂点のスキニング属性。vertexResource_ とインデックスが揃っている。
 		Microsoft::WRL::ComPtr<ID3D12Resource> raytracingSkinVertexResource_;
 
-		/// [EN] Flat float3 morph-target delta pool for the RT proxy, target-
-		///      major within each SubMesh's compact vertex range (see
-		///      SubMesh::raytracingMorphDeltaOffset_/raytracingVertexOffset_/raytracingVertexCount_).
-		///      Only allocated when at least one SubMesh has morphs_.
-		/// [JP] RT プロキシ用のフラットな float3 モーフターゲットデルタ
-		///      プール。各 SubMesh のコンパクト頂点範囲内でターゲット主順
-		///      (SubMesh::raytracingMorphDeltaOffset_/raytracingVertexOffset_/
-		///      raytracingVertexCount_ 参照)。いずれかの SubMesh が morphs_ を
-		///      持つ場合のみ確保される。
+		/// [EN] Flat float3 morph-target delta pool for the RT proxy, laid out per target within each SubMesh's compact vertex range (see SubMesh::raytracingMorphDeltaOffset_/raytracingVertexOffset_/raytracingVertexCount_). Allocated only when at least one SubMesh has morphs_.
+		/// [JP] RT プロキシ用のフラットな float3 モーフターゲットデルタプール。各 SubMesh のコンパクトな頂点範囲の中で、ターゲットごとに並ぶ(SubMesh::raytracingMorphDeltaOffset_/raytracingVertexOffset_/raytracingVertexCount_ 参照)。いずれかの SubMesh が morphs_ を持つときだけ確保する。
 		Microsoft::WRL::ComPtr<ID3D12Resource> raytracingMorphDeltaResource_;
 
-		/// [EN] Raster-side morph support, bindless-registered (pulled via
-		///      ResourceDescriptorHeap[...] from SkeletalModelMS.hlsl/
-		///      StaticModelMS.hlsl). morphDeltaResource_ is target-major
-		///      per SubMesh (SubMesh::morphDeltaOffset_), baked straight
-		///      from Morph::positionDeltas_ with no RT-proxy compaction.
-		///      vertexMorphSourceResource_ mirrors vertices_/
-		///      compressedVertices_ 1:1 (baked from vertexMorphSource_) so
-		///      any streamed LOD's vertex can resolve back to the original
-		///      vertex morphDeltaResource_ is indexed by (see
-		///      vertexMorphSource_'s comment). Both allocated only when at
-		///      least one SubMesh has morphs_.
-		/// [JP] ラスタ側のモーフ対応。bindless 登録される(
-		///      SkeletalModelMS.hlsl/StaticModelMS.hlsl から
-		///      ResourceDescriptorHeap[...] 経由で引く)。
-		///      morphDeltaResource_ は SubMesh ごとのターゲット主順
-		///      (SubMesh::morphDeltaOffset_)で、Morph::positionDeltas_
-		///      から RT プロキシの圧縮を経ずそのまま焼き込む。
-		///      vertexMorphSourceResource_ は vertices_/compressedVertices_
-		///      と 1:1 対応する(vertexMorphSource_ から焼き込む) —
-		///      ストリームされたどの LOD の頂点も、morphDeltaResource_ が
-		///      インデックスするオリジナル頂点へ逆引きできるようにする
-		///      (vertexMorphSource_ のコメント参照)。いずれも、いずれかの
-		///      SubMesh が morphs_ を持つ場合のみ確保される。
+		/// [EN] Raster morph delta pool, laid out per target for each SubMesh (SubMesh::morphDeltaOffset_) and baked straight from Morph::positionDeltas_. Read through the bindless heap by the model mesh shaders; allocated only when at least one SubMesh has morphs_.
+		/// [JP] ラスタ用のモーフデルタプール。SubMesh ごとにターゲット順で並び(SubMesh::morphDeltaOffset_)、Morph::positionDeltas_ からそのまま焼き込む。モデル用メッシュシェーダーが bindless ヒープから読む。いずれかの SubMesh が morphs_ を持つときだけ確保する。
 		Microsoft::WRL::ComPtr<ID3D12Resource> morphDeltaResource_;
+
+		/// [EN] GPU copy of vertexMorphSource_, mapping any streamed LOD's vertex back to the vertex morphDeltaResource_ is indexed by. Allocated only when at least one SubMesh has morphs_.
+		/// [JP] vertexMorphSource_ の GPU 側のコピー。ストリーミングされたどの LOD の頂点も、morphDeltaResource_ のインデックスの頂点へ戻す。いずれかの SubMesh が morphs_ を持つときだけ確保する。
 		Microsoft::WRL::ComPtr<ID3D12Resource> vertexMorphSourceResource_;
+
+		/// [EN] Bindless SRV of morphDeltaResource_.
+		/// [JP] morphDeltaResource_ の bindless SRV。
 		Uint morphDeltaBufferIndex_ = SC_INVALID;
+
+		/// [EN] Bindless SRV of vertexMorphSourceResource_.
+		/// [JP] vertexMorphSourceResource_ の bindless SRV。
 		Uint vertexMorphSourceBufferIndex_ = SC_INVALID;
 
+		/// [EN] Bindless SRV of vertexResource_.
+		/// [JP] vertexResource_ の bindless SRV。
 		Uint vertexBufferIndex_ = SC_INVALID;
+
+		/// [EN] Bindless SRV of skinVertexResource_.
+		/// [JP] skinVertexResource_ の bindless SRV。
 		Uint skinVertexBufferIndex_ = SC_INVALID;
+
+		/// [EN] Bindless SRV of indexResource_.
+		/// [JP] indexResource_ の bindless SRV。
 		Uint indexBufferIndex_ = SC_INVALID;
 
-		/// [EN] Bindless SRVs of positionResource_, raytracingSkinVertexResource_ and raytracingMorphDeltaResource_, read by the morph and skin blend passes.
-		/// [JP] positionResource_、raytracingSkinVertexResource_、raytracingMorphDeltaResource_ の bindless SRV。モーフとスキンのブレンドパスが読む。
+		/// [EN] Bindless SRV of positionResource_, read by the morph and skin blend passes.
+		/// [JP] positionResource_ の bindless SRV。モーフとスキンのブレンドパスが読む。
 		Uint positionBufferIndex_ = SC_INVALID;
+
+		/// [EN] Bindless SRV of raytracingSkinVertexResource_, read by the skin blend pass.
+		/// [JP] raytracingSkinVertexResource_ の bindless SRV。スキンのブレンドパスが読む。
 		Uint raytracingSkinVertexBufferIndex_ = SC_INVALID;
+
+		/// [EN] Bindless SRV of raytracingMorphDeltaResource_, read by the morph blend pass.
+		/// [JP] raytracingMorphDeltaResource_ の bindless SRV。モーフのブレンドパスが読む。
 		Uint raytracingMorphDeltaBufferIndex_ = SC_INVALID;
 
+		/// [EN] Number of indices in indexResource_ (three per triangle).
+		/// [JP] indexResource_ のインデックスの数(三角形1つにつき3つ)。
 		Uint32 triangleIndexCount_ = 0;
+
+		/// [EN] Number of vertices in vertexResource_ and positionResource_.
+		/// [JP] vertexResource_ と positionResource_ の頂点の数。
 		Uint32 proxyVertexCount_ = 0;
 
-		/// [EN] Logs the RT proxy's non-finite-position fallback once per
-		///      Crister instead of once per degenerate vertex - see Upload()'s
-		///      RT proxy geometry loop.
-		/// [JP] RT プロキシの非有限位置フォールバックを、退化頂点ごとでなく
-		///      Crister ごとに 1 度だけログする — Upload() の RT プロキシ
-		///      ジオメトリループ参照。
+		/// [EN] Whether the RT proxy's non-finite-position fallback has been logged, so it is reported once per Crister rather than once per degenerate vertex (see Upload()'s RT proxy geometry loop).
+		/// [JP] RT プロキシの非有限位置の代替処理をログに出したか。退化した頂点ごとではなく Crister ごとに1度だけ出すため(Upload() の RT プロキシジオメトリのループ参照)。
 		Bool degenerateRaytracingPositionLogged_ = false;
 
-		/// [EN] Shared LOD 0 vertex pool page (referenced by LOD 0 cluster pages).
-		/// [JP] 共有 LOD 0 頂点プールページ（LOD 0 クラスタページが参照する）。
+		/// [EN] Shared LOD 0 vertex pool page, referenced by the LOD 0 cluster pages.
+		/// [JP] 共有 LOD 0 頂点プールのページ。LOD 0 のクラスタページが参照する。
 		Microsoft::WRL::ComPtr<ID3D12Resource> poolResource_;
+
+		/// [EN] Bindless SRV of poolResource_.
+		/// [JP] poolResource_ の bindless SRV。
 		Uint poolBufferIndex_ = SC_INVALID;
+
+		/// [EN] End (exclusive) of the vertices LOD 0 clusters reference; the pool covers [0, poolVertexEnd_). 0 when there are none.
+		/// [JP] LOD 0 のクラスタが参照する頂点の終わり(含まない)。プールは [0, poolVertexEnd_) を持つ。無ければ 0。
 		Uint32 poolVertexEnd_ = 0;
+
+		/// [EN] Number of resident cluster pages reading the pool; the pool is evicted only at 0.
+		/// [JP] プールを読んでいる常駐中のクラスタページの数。0 のときだけプールを追い出す。
 		Uint32 poolResidentReferences_ = 0;
+
+		/// [EN] Whether the pool is currently in VRAM.
+		/// [JP] プールが今 VRAM にあるか。
 		Bool poolResident_ = false;
+
+		/// [EN] Whether the pool must never be evicted, because a pinned LOD 0 cluster reads it.
+		/// [JP] ピン留めされた LOD 0 のクラスタが読むため、プールを追い出してはいけないか。
 		Bool poolPinned_ = false;
+
+		/// [EN] VRAM the pool takes while resident, counted against the geometry budget.
+		/// [JP] 常駐中にプールが使う VRAM。ジオメトリの予算に数える。
 		Uint64 poolSizeBytes_ = 0;
+
+		/// [EN] Last frame a page reading the pool was drawn.
+		/// [JP] プールを読むページが最後に描画されたフレーム。
 		Uint64 poolLastUsedFrame_ = 0;
 
+		/// [EN] Streaming page of each Cluster, index-aligned with clusters_.
+		/// [JP] 各 Cluster のストリーミングページ。clusters_ とインデックスが揃っている。
 		DynamicArray<StreamingGeometry> streamingGeometry_;
+
+		/// [EN] Streaming state of each Bitmap, index-aligned with bitmaps_.
+		/// [JP] 各 Bitmap のストリーミング状態。bitmaps_ とインデックスが揃っている。
 		DynamicArray<StreamingTexture> streamingTextures_;
 
-		/// [EN] Set whenever any StreamingTexture's resident bindless index
-		///      changes (MakeTextureMipResident/EvictTextureMip) - the
-		///      reflection/GI material table (RaytracingRenderer::
-		///      BuildReflectionMaterialTable) bakes TextureBindlessIndex()
-		///      once and caches it, so a later mip swap leaves that baked
-		///      index pointing at whatever the freed slot gets reused for
-		///      next, or at nothing at all. ConsumeMaterialsDirty() lets the
-		///      renderer notice and rebuild the table instead of reading
-		///      through a stale/destroyed descriptor forever.
-		/// [JP] StreamingTexture の常駐バインドレスインデックスが変わるたびに
-		///      (MakeTextureMipResident/EvictTextureMip)立てる - 反射/GI
-		///      マテリアルテーブル(RaytracingRenderer::
-		///      BuildReflectionMaterialTable)は TextureBindlessIndex() を
-		///      一度だけ焼き込んでキャッシュするため、後のミップ入れ替えは
-		///      焼き込み済みインデックスを、解放されたスロットが次に再利用
-		///      された先(あるいは何も無い先)を指したままにしてしまう。
-		///      ConsumeMaterialsDirty() により、レンダラーがそれに気付いて
-		///      テーブルを再構築できるようにする — 破棄済み/不正な
-		///      ディスクリプタを読み続けさせない。
+		/// [EN] Set whenever a texture's resident bindless index changes (MakeTextureMipResident/EvictTextureMip). The reflection/GI material table (RaytracingRenderer::BuildReflectionMaterialTable) caches TextureBindlessIndex() when it is built, so after a mip swap its entries point at freed or reused slots; MaterialsDirty() lets the renderer notice and rebuild it, and ClearMaterialsDirty() resets the flag.
+		/// [JP] テクスチャの常駐中の bindless インデックスが変わるたびに立てる(MakeTextureMipResident/EvictTextureMip)。反射/GI のマテリアルテーブル(RaytracingRenderer::BuildReflectionMaterialTable)は構築時に TextureBindlessIndex() をキャッシュするので、ミップの入れ替え後は解放済みか再利用されたスロットを指してしまう。MaterialsDirty() でレンダラーがそれに気付いて再構築し、ClearMaterialsDirty() でフラグを戻す。
 		mutable Bool materialsDirty_ = false;
 
-		/// [EN] Captured at Upload() so pages can stream in and out later.
-		///      These engine objects outlive every Crister.
-		/// [JP] 後からページを出し入れできるよう Upload() で保持する。
-		///      これらのエンジンオブジェクトは全 Crister より長寿命。
+		/// [EN] Device captured at Upload() so pages can stream in and out later; outlives every Crister.
+		/// [JP] 後からページを出し入れできるよう Upload() で保持するデバイス。全ての Crister より長く生きる。
 		ID3D12Device* device_ = nullptr;
+
+		/// [EN] Queue the streaming uploads are submitted to, captured at Upload(); outlives every Crister.
+		/// [JP] ストリーミングのアップロードを投入するキュー。Upload() で保持する。全ての Crister より長く生きる。
 		D3D12CommandQueue* uploadQueue_ = nullptr;
+
+		/// [EN] Heap the streamed pages and mips take their descriptors from, captured at Upload(); outlives every Crister.
+		/// [JP] ストリーミングするページとミップがディスクリプタを取るヒープ。Upload() で保持する。全ての Crister より長く生きる。
 		BindlessHeap* bindlessHeap_ = nullptr;
 
-		/// [EN] Dequantisation AABBs computed over all vertices at Upload() time.
-		/// [JP] Upload() 時に全頂点から計算する逆量子化 AABB。
+		/// [EN] Minimum corner of the position dequantisation AABB, computed by BakeMesh() and serialized.
+		/// [JP] 位置の逆量子化 AABB の最小コーナー。BakeMesh() で計算し、シリアライズする。
 		Vector3 positionMin_ = { 0,0,0 };
+
+		/// [EN] Extent of the position dequantisation AABB, clamped away from zero on every axis.
+		/// [JP] 位置の逆量子化 AABB の大きさ。どの軸も 0 から離してクランプしている。
 		Vector3 positionExtent_ = { 1,1,1 };
+
+		/// [EN] Minimum corner of the texcoord dequantisation AABB, computed by BakeMesh() and serialized.
+		/// [JP] テクスチャ座標の逆量子化 AABB の最小コーナー。BakeMesh() で計算し、シリアライズする。
 		Vector2 texcoordMin_ = { 0,0 };
+
+		/// [EN] Extent of the texcoord dequantisation AABB, clamped away from zero on every axis.
+		/// [JP] テクスチャ座標の逆量子化 AABB の大きさ。どの軸も 0 から離してクランプしている。
 		Vector2 texcoordExtent_ = { 1,1 };
 
-		/// [EN] Per-SubMesh model-space placements (see SubMeshPlacement), indexed like subMeshes_. Resolved from nodes_ in Upload() - not serialized.
-		/// [JP] SubMesh ごとのモデル空間配置(SubMeshPlacement 参照)。subMeshes_ と同じインデックス。Upload() で nodes_ から解決する — シリアライズしない。
+		/// [EN] Per-SubMesh model-space placements (see SubMeshPlacement), indexed like subMeshes_. Resolved from nodes_ in Upload() and not serialized.
+		/// [JP] SubMesh ごとのモデル空間配置(SubMeshPlacement 参照)。subMeshes_ と同じインデックス。Upload() で nodes_ から解決し、シリアライズしない。
 		DynamicArray<DynamicArray<Matrix>> subMeshPlacement_;
+
+		/// [EN] Minimum corner of the placed model-space bounds (see PlacedPositionMin).
+		/// [JP] 配置後のモデル空間での境界の最小コーナー(PlacedPositionMin 参照)。
 		Vector3 placedPositionMin_ = { 0,0,0 };
+
+		/// [EN] Extent of the placed model-space bounds (see PlacedPositionExtent).
+		/// [JP] 配置後のモデル空間での境界の大きさ(PlacedPositionExtent 参照)。
 		Vector3 placedPositionExtent_ = { 1,1,1 };
 
-		/// [EN] Streaming bookkeeping shared by every live Crister. All access
-		///      happens on the render thread. Geometry and textures track
-		///      separate resident-byte totals against separate budgets, but
-		///      share the registry and the eviction age guard.
-		/// [JP] 生存中の全 Crister で共有するストリーミング管理。アクセスは
-		///      すべてレンダースレッド上。ジオメトリとテクスチャは常駐バイト数と
-		///      予算をそれぞれ別管理するが、レジストリと追い出しの経過フレーム
-		///      ガードは共有する。
+		/// [EN] Every live Crister that has uploaded, walked by the budget eviction. Streaming bookkeeping is shared by every Crister and touched only on the render thread; geometry and textures keep separate totals and budgets but share this registry and the eviction age guard.
+		/// [JP] アップロード済みで生存中の全 Crister。予算による追い出しがこれを順に見る。ストリーミング管理は全 Crister で共有し、レンダースレッドからだけ触る。ジオメトリとテクスチャは合計と予算を別々に持つが、このレジストリと追い出しの経過フレームガードは共有する。
 		static inline DynamicArray<Crister*> streamingRegistry_;
 
+		/// [EN] VRAM taken by every resident geometry page and pool, across all Crister.
+		/// [JP] 全 Crister の常駐中のジオメトリページとプールが使う VRAM の合計。
 		static inline Uint64 totalResidentGeometryBytes_ = 0;
+
+		/// [EN] VRAM taken by every resident texture mip, across all Crister.
+		/// [JP] 全 Crister の常駐中のテクスチャミップが使う VRAM の合計。
 		static inline Uint64 totalResidentTextureBytes_ = 0;
 
+		/// [EN] VRAM the resident geometry may take before EvictClusterBudget starts evicting.
+		/// [JP] EvictClusterBudget が追い出しを始めるまでに、常駐ジオメトリが使ってよい VRAM。
 		static inline Uint64 geometryBudgetBytes_ = 512ull * 1024 * 1024;
+
+		/// [EN] VRAM the resident texture mips may take before EvictTextureBudget starts evicting.
+		/// [JP] EvictTextureBudget が追い出しを始めるまでに、常駐テクスチャミップが使ってよい VRAM。
 		static inline Uint64 textureBudgetBytes_ = 256ull * 1024 * 1024;
 
+		/// [EN] Frames a page or mip must go unused before it may be evicted, so work still in flight on the GPU never loses a resource it reads.
+		/// [JP] ページやミップを追い出せるようになるまでに、使われないまま経つべきフレーム数。GPU でまだ実行中の処理が、読んでいるリソースを失わないようにするため。
 		SC_CONSTEX Uint64 evictAgeFrames_ = 8;
 	};
 }

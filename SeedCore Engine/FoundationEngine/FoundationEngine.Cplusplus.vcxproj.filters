@@ -481,6 +481,9 @@
     <ClCompile Include="JobSystem\JobScheduler.cpp">
       <Filter>JobSystem</Filter>
     </ClCompile>
+    <ClCompile Include="Log\SlFail.cpp">
+      <Filter>Log</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\DxFail.h">

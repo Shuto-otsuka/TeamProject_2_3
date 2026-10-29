@@ -16,7 +16,7 @@ namespace SeedCore
 	* ことで、派生型をコピー専用にできる。コンストラクタとデストラクタは
 	* protected なので、mixin 単体で作ったり消したりすることはできない。
 	*/
-	class NonMovable
+	class SEEDCORE_API NonMovable
 	{
 	protected:
 		/**

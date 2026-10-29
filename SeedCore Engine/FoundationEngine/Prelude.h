@@ -43,22 +43,6 @@
 #define __builtin_FUNCSIG() __FUNCSIG__
 #endif
 
-#ifndef JPH_DEBUG_RENDERER
-#define JPH_DEBUG_RENDERER
-#endif
-
-#ifndef JPH_PROFILE_ENABLED
-#define JPH_PROFILE_ENABLED
-#endif
-
-#ifndef JPH_FLOATING_POINT_EXCEPTIONS_ENABLED
-#define JPH_FLOATING_POINT_EXCEPTIONS_ENABLED
-#endif
-
-#ifndef JPH_OBJECT_STREAM
-#define JPH_OBJECT_STREAM
-#endif
-
 #define SC_REFLECTION_FIELD()
 #define SC_REFLECTION_FIELD_EX(displayName)
 
@@ -77,8 +61,6 @@
 #define SC_FUNCTION()
 
 #pragma warning(disable: 4251)
-#pragma warning(disable: 4273)
-#pragma warning(disable: 4275)
 
 #include <algorithm>
 #include <atomic>
@@ -178,14 +160,6 @@
 #include <crtdbg.h>
 #include <psapi.h>
 #include <intrin.h>
-
-#pragma push_macro("free")
-#undef free
-#include <External/DLSS/Include/sl.h>
-#include <External/DLSS/Include/sl_helpers.h>
-#include <External/DLSS/Include/sl_dlss.h>
-#include <External/DLSS/Include/sl_deepdvc.h>
-#pragma pop_macro("free")
 
 #include <External/ImGui/Include/imgui.h>
 #include <External/ImGui/Include/imgui_internal.h>

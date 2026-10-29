@@ -24,7 +24,7 @@ namespace SeedCore
 	* グラフ構築機能を公開する。JobSubflow も同様にこれを継承し、
 	* タスクが実行時に自身のネストされたサブグラフを構築できるようにする。
 	*/
-	class FlowBuilder
+	class SEEDCORE_API FlowBuilder
 	{
 	private:
 		/// [EN] The executor reads graph_ when it schedules what a builder produced.

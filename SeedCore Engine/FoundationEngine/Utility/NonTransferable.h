@@ -19,7 +19,7 @@ namespace SeedCore
 	* デストラクタは protected なので、mixin 単体で作ったり消したりする
 	* ことはできない。
 	*/
-	class NonTransferable
+	class SEEDCORE_API NonTransferable
 	{
 	protected:
 		/**
