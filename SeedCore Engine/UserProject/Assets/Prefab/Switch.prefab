@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "8cdc35f7-455c-4ed8-8271-081e128c55a3",
+			"collaborationId": "",
 			"components": [
 				{
 					"component": "Mesh",
@@ -307,7 +307,7 @@
 										"r": 1.0
 									},
 									"float": 0.0,
-									"int": -674256541,
+									"int": -440611752,
 									"is_array": false,
 									"name": "[2]",
 									"string": "",
@@ -2557,6 +2557,68 @@
 										"y": 0.0,
 										"z": 0.0
 									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[1]",
+									"string": "BulletMedium",
+									"type": 7,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[2]",
+									"string": "BulletBig",
+									"type": 7,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
 								}
 							],
 							"color": {
@@ -2653,15 +2715,15 @@
 				}
 			],
 			"layer": "Default",
-			"name": "Switch",
+			"name": "Switch1",
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": -1,
 			"persistentId": 139,
 			"position": {
-				"x": -1.989197015762329,
-				"y": -0.7287039160728455,
-				"z": 31.756633758544922
+				"x": -2.195903778076172,
+				"y": -0.30000001192092896,
+				"z": 7.284511566162109
 			},
 			"rotation": {
 				"w": 1.0,

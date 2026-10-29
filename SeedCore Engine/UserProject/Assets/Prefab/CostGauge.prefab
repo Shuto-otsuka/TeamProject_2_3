@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "328bbe12-16b2-495a-aea6-b9b4e95cf691",
+			"collaborationId": "",
 			"components": [
 				{
 					"component": "CostGaugeController",
@@ -254,7 +254,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "b48c74e5-2199-4487-a4fa-a68c9febd681",
+			"collaborationId": "",
 			"components": [
 				{
 					"component": "Image",
@@ -629,7 +629,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "31aaa30c-0275-4e59-9259-397ace67e5a5",
+			"collaborationId": "",
 			"components": [
 				{
 					"component": "Image",
@@ -1004,7 +1004,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "a0c51074-8a4b-44a6-b1f7-d9b2697b4621",
+			"collaborationId": "",
 			"components": [
 				{
 					"component": "Image",
@@ -1379,7 +1379,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "5fe2eceb-d99d-452b-b8a7-63bc03e6585a",
+			"collaborationId": "",
 			"components": [
 				{
 					"component": "Image",
@@ -1754,7 +1754,7 @@
 		},
 		{
 			"active": true,
-			"collaborationId": "2915b0ed-aa74-4de9-99c2-9c0f54d80560",
+			"collaborationId": "",
 			"components": [
 				{
 					"component": "Text",

@@ -61,6 +61,7 @@ private:
 
 	SeedCore::Vector3 moveDirection;
 	SeedCore::Vector3 startPosition;
+	SeedCore::Vector3 stickOffset;
 
 	float size;
 	float speed;
