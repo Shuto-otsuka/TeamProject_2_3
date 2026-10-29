@@ -10,6 +10,8 @@ void BallController::OnStart()
     velocity = GetActor().GetComponent<SeedCore::LinearVelocity>();
     stopController = GetActor().GetComponent<StopController>();
     startPosition = GetActor().WorldMatrix().Translation();
+
+    noStopMass = myRigid->mass_;
 }
 
 void BallController::OnTick(float elapsedTime)
@@ -38,4 +40,23 @@ void BallController::OnTick(float elapsedTime)
         myCollider->isTrigger_ = true;
         isRespawn = true;
     }
+
+    if (!isStop && stopController->IsStop())
+    {
+        //止められたタイミングで速度を0にして、重くする
+        velocity->x_ = 0.0f;
+        velocity->y_ = 0.0f;
+        velocity->z_ = 0.0f;
+        myRigid->mass_ = stopMass;
+        myRigid->Dispatch();
+    }
+    else if (isStop && !stopController->IsStop())
+    {
+        //止められてないとき軽くする
+        myRigid->mass_ = noStopMass;
+        myRigid->Dispatch();
+    }
+
+    isStop = stopController->IsStop();
+    
 }
