@@ -27,9 +27,9 @@ void BallController::OnTick(float elapsedTime)
             velocity->y_ = 0.0f;
             velocity->z_ = 0.0f;
             myRigid->bodyType_ = SeedCore::Rigidbody::BodyType::Dynamic;
+            myRigid->Dispatch();
             myCollider->isTrigger_ = false;
             isRespawn = false;
-            respawnTimer = 0.0f;
         }
     }
     else if (position.y <= respawnHeight)
@@ -37,8 +37,10 @@ void BallController::OnTick(float elapsedTime)
         //高さが一定以下になったら初期位置に戻す
         myRigid->bodyType_ = SeedCore::Rigidbody::BodyType::Kinematic;
         myRigid->MoveTo(startPosition, SeedCore::Quaternion::Identity, respawnDuration);
+        myRigid->Dispatch();
         myCollider->isTrigger_ = true;
         isRespawn = true;
+        respawnTimer = 0.0f;
     }
 
     if (!isStop && stopController->IsStop())
@@ -49,14 +51,13 @@ void BallController::OnTick(float elapsedTime)
         velocity->z_ = 0.0f;
         myRigid->mass_ = stopMass;
         myRigid->Dispatch();
+        isStop = stopController->IsStop();
     }
     else if (isStop && !stopController->IsStop())
     {
         //止められてないとき軽くする
         myRigid->mass_ = noStopMass;
         myRigid->Dispatch();
+        isStop = stopController->IsStop();
     }
-
-    isStop = stopController->IsStop();
-    
 }
