@@ -56,5 +56,9 @@ private:
 	bool wasInside_ = false;
 
 	float cooltimer_ = 0.0f;
+
+	SeedCore::Uint32 offMaterialID_ = 0;
+
+	SeedCore::Uint32 onMaterialID_ = 0;
 };
 REGISTER_COMPONENT(SwitchSystem);

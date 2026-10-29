@@ -106,7 +106,7 @@
 #pragma comment(linker, "/include:_force_reflection_SpringJoint")
 #pragma comment(linker, "/include:_force_reflection_Rigidbody")
 #pragma comment(linker, "/include:_force_reflection_Softbody")
-#pragma comment(linker, "/include:_force_reflection_PlayerController")
+#pragma comment(linker, "/include:_force_reflection_SwitchSystem")
 // [REFLECTION_AUTO_END]
 
 namespace SeedCore
