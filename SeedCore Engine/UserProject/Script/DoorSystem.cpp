@@ -2,7 +2,7 @@
 #include "CircuitSystem.h"
 
 #include <SeedCore/ScLog.h>
-#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
+#include <SeedCore/ScDebug.h>
 
 using namespace SeedCore;
 
