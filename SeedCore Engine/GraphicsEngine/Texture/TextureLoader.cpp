@@ -134,12 +134,9 @@ namespace SeedCore
 		}
 	}
 
-	void TextureLoader::CreateTexturePath(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* cmdQueue, SC_IN ID3D12DescriptorHeap* heap, SC_IN String filePath, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
+	void TextureLoader::CreateTexturePath(SC_IN ID3D12Device* device, SC_IN DirectX::ResourceUploadBatch& resourceUpload, SC_IN ID3D12DescriptorHeap* heap, SC_IN String filePath, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
 	{
 		HRESULT hr{ S_OK };
-
-		DirectX::ResourceUploadBatch resourceUpload(device);
-		resourceUpload.Begin();
 
 		std::string extension = std::filesystem::path(filePath.str()).extension().string();
 		std::ranges::transform(extension, extension.begin(), [](Uchar c) { return static_cast<Char>(std::tolower(c)); });
@@ -164,14 +161,6 @@ namespace SeedCore
 		}
 		else
 		{
-			/// [EN] Source-preferred, mirroring ModelLoader's ".crister" cache
-			///      handling: only trust the sibling ".texture" cache when it's
-			///      newer than the source image. Otherwise (re)load from source
-			///      and (re)bake the encrypted cache.
-			/// [JP] ソース優先、ModelLoaderの".crister"キャッシュ扱いと同じ構図:
-			///      隣の".texture"キャッシュは、ソース画像より新しい時だけ信用
-			///      する。それ以外はソースから(再)ロードし、暗号化キャッシュを
-			///      (再)ベイクする。
 			std::filesystem::path sourceFsPath(filePath.str());
 			std::filesystem::path cacheFsPath = sourceFsPath;
 			cacheFsPath.replace_extension(".texture");
@@ -222,34 +211,9 @@ namespace SeedCore
 
 		if (FAILED(hr) || !resource)
 		{
-			/// [EN] Bail out instead of dereferencing a null resource below.
-			/// [JP] 下で null リソースを参照しないよう、ここで中断する。
 			SC_LOG_ERROR("テクスチャのロードに失敗しました: {}", filePath.str());
-
-			/// [EN] Lock only around End() itself (ExecuteCommandLists/Signal,
-			///      fast) - not the wait() below, which just blocks on a CPU
-			///      event and never touches the queue, so holding the lock
-			///      there would stall the main thread's own per-frame
-			///      Signal()/Execute() for no reason.
-			/// [JP] End() 自体(ExecuteCommandLists/Signal、高速)だけをロックする
-			///      - 下の wait() は CPU イベントを待つだけでキューには一切
-			///      触れないので、そこまでロックを持ったままだとメインスレッド
-			///      の毎フレームの Signal()/Execute() を無意味に足止めする。
-			std::future<void> uploadAborted;
-			{
-				auto queueLock = cmdQueue->AcquireLock();
-				uploadAborted = resourceUpload.End(cmdQueue->GetCommandQueue());
-			}
-			uploadAborted.wait();
 			return;
 		}
-
-		std::future<void> uploadFinished;
-		{
-			auto queueLock = cmdQueue->AcquireLock();
-			uploadFinished = resourceUpload.End(cmdQueue->GetCommandQueue());
-		}
-		uploadFinished.wait();
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc{};
 		shaderResourceViewDesc.Format = resource->GetDesc().Format;
@@ -265,12 +229,24 @@ namespace SeedCore
 		device->CreateShaderResourceView(resource.Get(), &shaderResourceViewDesc, cpuHandle);
 	}
 
-	void TextureLoader::CreateTextureMemory(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* cmdQueue, SC_IN ID3D12DescriptorHeap* heap, SC_IN const DynamicArray<Byte>& data, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
+	void TextureLoader::CreateTexturePath(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* cmdQueue, SC_IN ID3D12DescriptorHeap* heap, SC_IN String filePath, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
 	{
-		HRESULT hr{ S_OK };
-
 		DirectX::ResourceUploadBatch resourceUpload(device);
 		resourceUpload.Begin();
+
+		CreateTexturePath(device, resourceUpload, heap, filePath, resource, textureIndex);
+
+		std::future<void> uploadFinished;
+		{
+			auto queueLock = cmdQueue->AcquireLock();
+			uploadFinished = resourceUpload.End(cmdQueue->GetCommandQueue());
+		}
+		uploadFinished.wait();
+	}
+
+	void TextureLoader::CreateTextureMemory(SC_IN ID3D12Device* device, SC_IN DirectX::ResourceUploadBatch& resourceUpload, SC_IN ID3D12DescriptorHeap* heap, SC_IN const DynamicArray<Byte>& data, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
+	{
+		HRESULT hr{ S_OK };
 
 		if (!data.empty())
 		{
@@ -281,13 +257,6 @@ namespace SeedCore
 				hr = DirectX::CreateWICTextureFromMemory(device, resourceUpload, reinterpret_cast<const Uint8*>(data.data()), data.size(), &resource);
 			}
 		}
-
-		std::future<void> uploadFinished;
-		{
-			auto queueLock = cmdQueue->AcquireLock();
-			uploadFinished = resourceUpload.End(cmdQueue->GetCommandQueue());
-		}
-		uploadFinished.wait();
 
 		if (data.empty() || FAILED(hr) || !resource)
 		{
@@ -308,5 +277,20 @@ namespace SeedCore
 		cpuHandle.ptr += textureIndex * descriptorSize;
 
 		device->CreateShaderResourceView(resource.Get(), &shaderResourceViewDesc, cpuHandle);
+	}
+
+	void TextureLoader::CreateTextureMemory(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* cmdQueue, SC_IN ID3D12DescriptorHeap* heap, SC_IN const DynamicArray<Byte>& data, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
+	{
+		DirectX::ResourceUploadBatch resourceUpload(device);
+		resourceUpload.Begin();
+
+		CreateTextureMemory(device, resourceUpload, heap, data, resource, textureIndex);
+
+		std::future<void> uploadFinished;
+		{
+			auto queueLock = cmdQueue->AcquireLock();
+			uploadFinished = resourceUpload.End(cmdQueue->GetCommandQueue());
+		}
+		uploadFinished.wait();
 	}
 }

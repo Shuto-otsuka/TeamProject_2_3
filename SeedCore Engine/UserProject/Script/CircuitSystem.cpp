@@ -1,5 +1,6 @@
 #include "CircuitSystem.h"
 #include "SwitchSystem.h"
+#include "LightSwitchSystem.h"
 
 #include <SeedCore/ScComponent.h>
 #include <SeedCore/ScLog.h>
@@ -42,13 +43,20 @@ void CircuitSystem::OnLateTick(float elapsedTime)
 	int onCount = 0;
 	for (const Actor& actor : cacheActors_)
 	{
-		SwitchSystem* switchSystem = actor.GetComponent<SwitchSystem>();
-		if (!switchSystem || !actor.Active())
+		if (!actor.Active())
 		{
 			continue;
 		}
 
-		if (switchSystem->IsOn())
+		SwitchSystem* switchSystem = actor.GetComponent<SwitchSystem>();
+		if (switchSystem && switchSystem->IsOn())
+		{
+			onCount++;
+			continue;
+		}
+
+		LightSwitchSystem* lightSwitchSystem = actor.GetComponent<LightSwitchSystem>();
+		if (lightSwitchSystem && lightSwitchSystem->IsOn())
 		{
 			onCount++;
 		}

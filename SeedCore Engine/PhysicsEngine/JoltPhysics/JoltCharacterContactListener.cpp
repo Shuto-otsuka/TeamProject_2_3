@@ -1,3 +1,4 @@
+#include <PhysicsEngine/JoltPhysics/JoltConfig.h>
 #include <External/JoltPhysics/Jolt/Jolt.h>
 #include <External/JoltPhysics/Jolt/Physics/Body/BodyID.h>
 #include <External/JoltPhysics/Jolt/Physics/Body/MotionType.h>

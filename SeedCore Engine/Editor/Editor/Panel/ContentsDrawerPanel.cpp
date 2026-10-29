@@ -1182,6 +1182,10 @@ namespace SeedCore
 		{
 			return imguiTexture_.Icon(IconType::Cpp);
 		}
+		if (extension == ".cs")
+		{
+			return imguiTexture_.Icon(IconType::CSharp);
+		}
 		if (extension == ".hlsli" || extension == ".hlsl")
 		{
 			return imguiTexture_.Icon(IconType::Hlsl);

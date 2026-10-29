@@ -1,3 +1,4 @@
+#include <PhysicsEngine/JoltPhysics/JoltConfig.h>
 #include <External/JoltPhysics/Jolt/Jolt.h>
 #include <External/JoltPhysics/Jolt/Core/Array.h>
 #include <External/JoltPhysics/Jolt/Math/Float3.h>

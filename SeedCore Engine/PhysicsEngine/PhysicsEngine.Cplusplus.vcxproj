@@ -37,6 +37,7 @@
     <ClInclude Include="Joint\SliderJoint.h" />
     <ClInclude Include="Joint\SpringJoint.h" />
     <ClInclude Include="JoltPhysics\JoltCharacterContactListener.h" />
+    <ClInclude Include="JoltPhysics\JoltConfig.h" />
     <ClInclude Include="JoltPhysics\JoltConstraintPool.h" />
     <ClInclude Include="JoltPhysics\JoltContactListener.h" />
     <ClInclude Include="JoltPhysics\JoltExecutorBridge.h" />

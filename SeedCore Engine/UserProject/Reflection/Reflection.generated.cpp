@@ -16,6 +16,7 @@
 #include <UserProject/Script/FloorMoveSystem.h>
 #include <UserProject/Script/GoalSystem.h>
 #include <UserProject/Script/LaserController.h>
+#include <UserProject/Script/LightSwitchSystem.h>
 #include <UserProject/Script/PendulumController.h>
 #include <UserProject/Script/PlayerController.h>
 #include <UserProject/Script/StageSelectButtonController.h>
@@ -39,6 +40,7 @@ extern "C" int _force_reflection_FirstPersonCameraController = 0;
 extern "C" int _force_reflection_FloorMoveSystem = 0;
 extern "C" int _force_reflection_GoalSystem = 0;
 extern "C" int _force_reflection_LaserController = 0;
+extern "C" int _force_reflection_LightSwitchSystem = 0;
 extern "C" int _force_reflection_PendulumController = 0;
 extern "C" int _force_reflection_PlayerController = 0;
 extern "C" int _force_reflection_StageSelectButtonController = 0;
@@ -382,6 +384,21 @@ namespace SeedCore
 			}
 		};
 		static Register_LaserController global_LaserController_register;
+
+		// ---- UserProject/Script/LightSwitchSystem.h ----
+		struct Register_LightSwitchSystem
+		{
+			Register_LightSwitchSystem()
+			{
+				ReflectionRegistry::Register(String("LightSwitchSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					LightSwitchSystem& obj = *static_cast<LightSwitchSystem*>(ptr);
+					outInfo.push_back({ String("回転速度"), offsetof(LightSwitchSystem, rotateSpeed_), AttributeType::Float });
+					outInfo.push_back({ String("反応距離"), offsetof(LightSwitchSystem, detectDistance_), AttributeType::Float });
+					outInfo.push_back({ String("点灯を保持"), offsetof(LightSwitchSystem, keepResult_), AttributeType::Bool });
+				});
+			}
+		};
+		static Register_LightSwitchSystem global_LightSwitchSystem_register;
 
 		// ---- UserProject/Script/PendulumController.h ----
 		struct Register_PendulumController

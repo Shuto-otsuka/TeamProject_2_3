@@ -16,7 +16,7 @@ namespace SeedCore
 	* ことで、派生型をムーブ専用にできる。コンストラクタとデストラクタは
 	* protected なので、mixin 単体で作ったり消したりすることはできない。
 	*/
-	class NonCopyable
+	class SEEDCORE_API NonCopyable
 	{
 	protected:
 		/**

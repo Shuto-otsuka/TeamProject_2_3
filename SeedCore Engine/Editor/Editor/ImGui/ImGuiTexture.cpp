@@ -13,13 +13,16 @@ namespace SeedCore
 		D3D12Context& d3d12Context = context.graphics_.graphics_->GetContext();
 		BindlessHeap* bindlessHeap = &context.graphics_.graphics_->GetBindlessHeap();
 
+		DirectX::ResourceUploadBatch resourceUpload(d3d12Context.GetDevice());
+		resourceUpload.Begin();
+
 		auto load = [&](IconType type, const Char* folder, const Char* name)
 		{
 			Uint index = bindlessHeap->AllocateIndex();
 
 			Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 			String filePath = String(std::string("Icon/") + folder + "/" + name + ".icon");
-			TextureLoader::CreateTexturePath(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bindlessHeap->Heap(), filePath, resource, index);
+			TextureLoader::CreateTexturePath(d3d12Context.GetDevice(), resourceUpload, bindlessHeap->Heap(), filePath, resource, index);
 
 			icons_[static_cast<Uint>(type)] = static_cast<ImTextureID>(bindlessHeap->GPUHandle(index).ptr);
 			resources_.push_back(std::move(resource));
@@ -38,9 +41,11 @@ namespace SeedCore
 		load(IconType::Material,      "Asset", "Material");
 		load(IconType::Skeleton,      "Asset", "Skeleton");
 		load(IconType::Movie,         "Asset", "Movie");
+		load(IconType::Scene,         "Asset", "Scene");
 
 		load(IconType::Text,   "Asset", "Text");
 		load(IconType::Cpp,    "Asset", "CPlusPlus");
+		load(IconType::CSharp, "Asset", "CSharp");
 		load(IconType::Header, "Asset", "Header");
 		load(IconType::Hlsl,   "Asset", "Hlsl");
 
@@ -54,7 +59,6 @@ namespace SeedCore
 		load(IconType::ActorChild,  "Hierarchy", "ActorChild");
 		load(IconType::Prefab,      "Hierarchy", "Prefab");
 		load(IconType::PrefabChild, "Hierarchy", "PrefabChild");
-		load(IconType::Scene,       "Asset", "Scene");
 
 		load(IconType::Lock,   "Misc", "Lock");
 		load(IconType::Unlock, "Misc", "Unlock");
@@ -162,6 +166,13 @@ namespace SeedCore
 		load(IconType::ComponentSpawner,              "Component", "Spawner");
 		load(IconType::ComponentLifetime,             "Component", "Lifetime");
 		load(IconType::ComponentCustom,               "Component", "Custom");
+
+		std::future<void> uploadFinished;
+		{
+			auto queueLock = d3d12Context.GetDirectQueue()->AcquireLock();
+			uploadFinished = resourceUpload.End(d3d12Context.GetDirectQueue()->GetCommandQueue());
+		}
+		uploadFinished.wait();
 	}
 
 	ImTextureID ImGuiTexture::Icon(IconType type)const

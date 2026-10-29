@@ -1,3 +1,4 @@
+#include <PhysicsEngine/JoltPhysics/JoltConfig.h>
 #include <External/JoltPhysics/Jolt/Jolt.h>
 #include <External/JoltPhysics/Jolt/RegisterTypes.h>
 #include <External/JoltPhysics/Jolt/Core/Factory.h>
