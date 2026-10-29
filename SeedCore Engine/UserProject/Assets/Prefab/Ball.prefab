@@ -18,7 +18,7 @@
 								"r": 1.0
 							},
 							"float": 0.0,
-							"int": 2017287789,
+							"int": 924338526,
 							"is_array": false,
 							"name": "メッシュID",
 							"string": "",
@@ -500,6 +500,68 @@
 							"float": 0.0,
 							"int": 0,
 							"is_array": false,
+							"name": "足場追従",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 89.0,
+							"int": 0,
+							"is_array": false,
+							"name": "足場の最大斜面角度",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
 							"name": "位置X軸固定",
 							"string": "",
 							"type": 3,
@@ -936,11 +998,78 @@
 								"y": 0.0,
 								"z": 0.0
 							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 10.0,
+							"int": 0,
+							"is_array": false,
+							"name": "stopMass",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "StopController",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "stopTimerOffset",
+							"string": "",
+							"type": 5,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 1.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
 						}
 					]
 				}
 			],
-			"layer": "Default",
+			"layer": "Gimmick",
 			"name": "Ball",
 			"nestedPrefabAssetID": 0,
 			"overrides": [],

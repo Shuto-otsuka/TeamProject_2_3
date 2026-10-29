@@ -15,6 +15,15 @@ void BulletController::OnStart()
 
 void BulletController::OnTick(float elapsedTime)
 {
+    //大量に出てくるオブジェクトはアドレスが変わる可能性があるためコンポネントを取得
+    linearVelocity = GetActor().GetComponent<SeedCore::LinearVelocity>();
+    angularVelocity = GetActor().GetComponent<SeedCore::AngularVelocity>();
+    scale = GetActor().GetComponent<SeedCore::Scale>();
+    position = GetActor().GetComponent<SeedCore::Position>();
+    rotation = GetActor().GetComponent<SeedCore::Rotation>();
+    rigidbody = GetActor().GetComponent<SeedCore::Rigidbody>();
+    playerController = player.GetComponent<PlayerController>();
+
     //移動処理
     Move(elapsedTime);
     //生存時間が終了したら削除
@@ -177,13 +186,12 @@ void BulletController::OnTriggerExit(SeedCore::Actor other)
 void BulletController::SetParam(const SeedCore::Vector3& startPosition,const SeedCore::Vector3& moveDirection, float chargeRate,int cost)
 {
     //発射されたタイミングでパラメータをセット
-
-    SeedCore::World& world = GetWorld();
-
     scale = GetActor().GetComponent<SeedCore::Scale>();
     position = GetActor().GetComponent<SeedCore::Position>();
     rotation = GetActor().GetComponent<SeedCore::Rotation>();
     rigidbody = GetActor().GetComponent<SeedCore::Rigidbody>();
+
+    SeedCore::World& world = GetWorld();
 
     //初期位置をセット
     this->startPosition = startPosition;
@@ -238,10 +246,13 @@ void BulletController::Stop()
         //回転を0にする
         rigidbody->MoveTo({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, dynamicWaitTimer);
     }
-    
-    //衝突判定ON
-    rigidbody->isTrigger_ = false;
-    rigidbody->Dispatch();
+    else
+    {
+        //衝突判定ON
+        rigidbody->isTrigger_ = false;
+        rigidbody->Dispatch();
+    }
+   
     rigidbody->followFoothold_ = true;
     rigidbody->Dispatch();
 
@@ -308,7 +319,7 @@ void BulletController::UpdateStopTimer(float elapsedTime)
 
 void BulletController::Remove()
 {
-    playerController->SubCostGauge(cost);//自分が圧迫してた分のコストを戻す
+    if(playerController)playerController->SubCostGauge(cost);//自分が圧迫してた分のコストを戻す
     GetWorld().DestroyActor(GetActor());//削除
 
     if (state != State::STOP)return;//停止中じゃなければ以下の処理を行わない
@@ -339,6 +350,8 @@ void BulletController::Move(float elapsedTime)
                     rigidbody->freezeRotationX_ = true;
                     rigidbody->freezeRotationY_ = true;
                     rigidbody->freezeRotationZ_ = true;
+                    //衝突判定ON
+                    rigidbody->isTrigger_ = false;
 
                     rigidbody->Dispatch();
 
