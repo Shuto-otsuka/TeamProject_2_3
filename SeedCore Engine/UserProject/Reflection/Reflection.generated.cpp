@@ -15,6 +15,7 @@
 #include <UserProject/Script/FirstPersonCameraController.h>
 #include <UserProject/Script/FloorMoveSystem.h>
 #include <UserProject/Script/GoalSystem.h>
+#include <UserProject/Script/HintSystem.h>
 #include <UserProject/Script/LaserController.h>
 #include <UserProject/Script/LightSwitchSystem.h>
 #include <UserProject/Script/PendulumController.h>
@@ -39,6 +40,7 @@ extern "C" int _force_reflection_DoorSystem = 0;
 extern "C" int _force_reflection_FirstPersonCameraController = 0;
 extern "C" int _force_reflection_FloorMoveSystem = 0;
 extern "C" int _force_reflection_GoalSystem = 0;
+extern "C" int _force_reflection_HintSystem = 0;
 extern "C" int _force_reflection_LaserController = 0;
 extern "C" int _force_reflection_LightSwitchSystem = 0;
 extern "C" int _force_reflection_PendulumController = 0;
@@ -368,6 +370,22 @@ namespace SeedCore
 			}
 		};
 		static Register_GoalSystem global_GoalSystem_register;
+
+		// ---- UserProject/Script/HintSystem.h ----
+		struct Register_HintSystem
+		{
+			Register_HintSystem()
+			{
+				ReflectionRegistry::Register(String("HintSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					HintSystem& obj = *static_cast<HintSystem*>(ptr);
+					outInfo.push_back({ String("回転速度"), offsetof(HintSystem, rotateSpeed_), AttributeType::Float });
+					outInfo.push_back({ String("表示維持時間"), offsetof(HintSystem, maintainTime_), AttributeType::Float });
+					outInfo.push_back({ String("フェード時間"), offsetof(HintSystem, fadeTime_), AttributeType::Float });
+					outInfo.push_back({ String("ヒント文"), offsetof(HintSystem, hintText_), AttributeType::String });
+				});
+			}
+		};
+		static Register_HintSystem global_HintSystem_register;
 
 		// ---- UserProject/Script/LaserController.h ----
 		struct Register_LaserController
