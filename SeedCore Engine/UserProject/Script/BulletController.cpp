@@ -160,6 +160,9 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
         state = State::STICK;
         //止めている相手を保存
         nowStick = stopController;
+        //くっついたところのオフセットを保存
+        SeedCore::Vector3 nowStickPosition = nowStick->GetActor().WorldMatrix().Translation();
+        stickOffset = SeedCore::Transform::Vector(*position) - nowStickPosition;
     }
 }
 
@@ -368,8 +371,21 @@ void BulletController::Move(float elapsedTime)
             }
             else
             {
-                //回転を0にする
-                if(position)rigidbody->MoveTarget({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, elapsedTime);
+                if (position)
+                {
+                    if (nowStick)
+                    {
+                        //何かにくっついてるときそのくっついてるオブジェクトに追従する
+                        SeedCore::Vector3 nowStickPosition = nowStick->GetActor().WorldMatrix().Translation();
+                        SeedCore::Vector3 stickPosition = nowStickPosition + stickOffset;
+                        rigidbody->MoveTarget({ stickPosition.x,stickPosition.y,stickPosition.z }, SeedCore::Quaternion::Identity, elapsedTime);
+                    }
+                    else
+                    {
+                        //回転を0にする
+                        if (position)rigidbody->MoveTarget({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, elapsedTime);
+                    }
+                }
             }
         }
 

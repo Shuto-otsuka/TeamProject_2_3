@@ -1166,7 +1166,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 1.0,
+							"float": 1.7999999523162842,
 							"int": 0,
 							"is_array": false,
 							"name": "minSpeed",
@@ -1197,7 +1197,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 8.0,
+							"float": 15.0,
 							"int": 0,
 							"is_array": false,
 							"name": "maxSpeed",
