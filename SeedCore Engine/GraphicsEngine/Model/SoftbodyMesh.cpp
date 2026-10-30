@@ -1,5 +1,6 @@
 #include <GraphicsEngine/Model/SoftbodyMesh.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
+#include <GraphicsEngine/Model/Crister/CristerQuantizer.h>
 
 namespace SeedCore
 {
@@ -170,11 +171,13 @@ namespace SeedCore
 		}
 		positionExtent_ = Vector3::Max(positionMax - positionMin_, Vector3(1e-6f, 1e-6f, 1e-6f));
 
+		CristerQuantizer quantizer;
+
 		for (Size vertexIndex = 0; vertexIndex < bindPoseVertices_.size(); vertexIndex++)
 		{
 			Vertex vertex = bindPoseVertices_[vertexIndex];
 			vertex.position_ = scratchDeformedPositions_[vertexIndex];
-			scratchVertices_[vertexIndex] = Crister::EncodeVertex(vertex, positionMin_, positionExtent_, texcoordMin_, texcoordExtent_);
+			scratchVertices_[vertexIndex] = quantizer.EncodeVertex(vertex, positionMin_, positionExtent_, texcoordMin_, texcoordExtent_);
 		}
 
 		/// [EN] One conservative bound (this frame's whole-mesh AABB)

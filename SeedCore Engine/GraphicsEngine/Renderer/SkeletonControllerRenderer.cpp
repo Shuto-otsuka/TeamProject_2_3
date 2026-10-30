@@ -1,6 +1,6 @@
 #include <GraphicsEngine/Renderer/SkeletonControllerRenderer.h>
 #include <GraphicsEngine/Profiler/ProfilerStats.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Resource/GraphicsResourceSystem.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
@@ -76,11 +76,11 @@ namespace SeedCore
 			return;
 		}
 
-		const DynamicArray<SubMesh>& subMeshes = crister->SubMeshes();
-		const DynamicArray<Surface>& surfaces = crister->Surfaces();
-		const DynamicArray<Cluster>& clusters = crister->Clusters();
-		const DynamicArray<Skin>& skins = crister->Skins();
-		const DynamicArray<Node>& nodes = crister->Nodes();
+		std::span<const SubMesh> subMeshes = crister->SubMeshes();
+		std::span<const Surface> surfaces = crister->Surfaces();
+		std::span<const Cluster> clusters = crister->Clusters();
+		std::span<const Skin> skins = crister->Skins();
+		std::span<const Node> nodes = crister->Nodes();
 
 		DynamicArray<Matrix> poseGlobalTransforms;
 		Bool hasPose = false;

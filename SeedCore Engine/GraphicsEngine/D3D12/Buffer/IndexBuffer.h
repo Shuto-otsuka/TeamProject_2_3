@@ -14,6 +14,7 @@ namespace SeedCore
 
 	private:
 		DXGI_FORMAT format_;
+
 		Uint size_;
 	};
 }

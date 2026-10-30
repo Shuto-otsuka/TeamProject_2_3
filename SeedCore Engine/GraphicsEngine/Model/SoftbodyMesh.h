@@ -1,5 +1,5 @@
 #pragma once
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/D3D12/Buffer/StructuredBuffer.h>
 
 namespace SeedCore

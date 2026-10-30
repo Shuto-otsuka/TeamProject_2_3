@@ -55,7 +55,7 @@ struct ReflectionMaterial
 struct ReflectionInstanceData
 {
 	// Bindless SRV of the mesh's StructuredBuffer<CompressedVertex> (Crister
-	// compressed vertex buffer - 16 bytes, see Model/Crister.h CompressedVertex).
+	// compressed vertex buffer - 16 bytes, see Model/Crister/CristerGeometry.h CompressedVertex).
 	uint vertex_buffer_index_;
 
 	// Bindless SRV of the mesh's flat 32-bit triangle index buffer

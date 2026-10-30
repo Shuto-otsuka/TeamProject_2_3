@@ -21,7 +21,7 @@
 
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/Graphics.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/ModelExporter.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Texture/Texture.h>

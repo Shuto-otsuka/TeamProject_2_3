@@ -1,6 +1,6 @@
 #include <GraphicsEngine/Renderer/ModelRenderer.h>
 #include <GraphicsEngine/Profiler/ProfilerStats.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Resource/GraphicsResourceSystem.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
@@ -175,7 +175,7 @@ namespace SeedCore
 				const auto& nodes = crister->Nodes();
 
 				const Material* materialComponent = actor.GetComponent<Material>();
-				const DynamicArray<Surface>& surfaces = (materialComponent && materialComponent->resolvedSurfaces_.size() == crister->Surfaces().size()) ? materialComponent->resolvedSurfaces_ : crister->Surfaces();
+				std::span<const Surface> surfaces = (materialComponent && materialComponent->resolvedSurfaces_.size() == crister->Surfaces().size()) ? std::span<const Surface>(materialComponent->resolvedSurfaces_) : crister->Surfaces();
 
 				const Skeleton* skeleton = actor.GetComponent<Skeleton>();
 				const Bool hasPose = skeleton && skeleton->Animated() && skeleton->GlobalTransforms().size() == nodes.size();
@@ -710,7 +710,7 @@ namespace SeedCore
 			previousWorldMatrices_[entityID] = worldMatrix;
 
 			const Material* materialComponent = actor.GetComponent<Material>();
-			const DynamicArray<Surface>& surfaces = (materialComponent && materialComponent->resolvedSurfaces_.size() == crister->Surfaces().size()) ? materialComponent->resolvedSurfaces_ : crister->Surfaces();
+			std::span<const Surface> surfaces = (materialComponent && materialComponent->resolvedSurfaces_.size() == crister->Surfaces().size()) ? std::span<const Surface>(materialComponent->resolvedSurfaces_) : crister->Surfaces();
 			const Surface& material = !surfaces.empty() ? surfaces[0] : emptySurface;
 
 			constexpr Uint32 maxMeshletsPerDispatch = 32;

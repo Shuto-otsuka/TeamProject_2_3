@@ -33,6 +33,7 @@ namespace SeedCore
 
 	private:
 		Uint stride_;
+
 		Uint size_;
 	};
 }

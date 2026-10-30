@@ -1,7 +1,7 @@
 #pragma once
 #include <FoundationEngine/SeedScript.h>
 #include <FoundationEngine/Utility/Handle.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 
 namespace SeedCore
 {

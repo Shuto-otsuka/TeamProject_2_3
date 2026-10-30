@@ -1,12 +1,12 @@
 #include <GraphicsEngine/Model/IK/IKPose.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/Animation/Animator.h>
 
 namespace SeedCore
 {
 	Int IKPose::ResolveChainRoot(const Crister& crister, Int endNodeIndex)
 	{
-		const DynamicArray<Node>& nodes = crister.Nodes();
+		std::span<const Node> nodes = crister.Nodes();
 		if (endNodeIndex < 0 || static_cast<Size>(endNodeIndex) >= nodes.size())
 		{
 			return -1;
@@ -43,7 +43,7 @@ namespace SeedCore
 		constexpr Float defaultSwingAngle1 = 45.0f;
 		constexpr Float defaultSwingAngle2 = 45.0f;
 
-		const DynamicArray<Node>& nodes = crister.Nodes();
+		std::span<const Node> nodes = crister.Nodes();
 
 		for (Size nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++)
 		{
@@ -94,7 +94,7 @@ namespace SeedCore
 
 	DynamicArray<Int> IKPose::ResolveChain(const Crister& crister, Int rootNodeIndex, Int endNodeIndex)
 	{
-		const DynamicArray<Node>& nodes = crister.Nodes();
+		std::span<const Node> nodes = crister.Nodes();
 
 		DynamicArray<Int> chain;
 		Int current = endNodeIndex;
@@ -263,7 +263,7 @@ namespace SeedCore
 		DynamicArray<Matrix> originalPoseGlobalTransforms = poseGlobalTransforms;
 
 		Int rootNodeIndex = chain.front();
-		const DynamicArray<Node>& nodes = crister.Nodes();
+		std::span<const Node> nodes = crister.Nodes();
 		const Node& rootNode = nodes[rootNodeIndex];
 
 		Matrix parentGlobal = Matrix::Identity;
@@ -277,7 +277,7 @@ namespace SeedCore
 
 	void IKPose::RecomputeSubtree(const Crister& crister, Int nodeIndex, const Matrix& parentGlobal, const std::unordered_map<Int, Quaternion>& newLocalRotations, const DynamicArray<Matrix>& originalPoseGlobalTransforms, DynamicArray<Matrix>& poseGlobalTransforms)
 	{
-		const DynamicArray<Node>& nodes = crister.Nodes();
+		std::span<const Node> nodes = crister.Nodes();
 		const Node& node = nodes[nodeIndex];
 
 		Matrix originalParentGlobal = Matrix::Identity;

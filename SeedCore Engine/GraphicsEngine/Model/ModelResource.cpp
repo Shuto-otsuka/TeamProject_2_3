@@ -51,7 +51,7 @@ namespace SeedCore
 
 		if (Crister* crister = loaders_.modelLoader_->Get(handle))
 		{
-			const DynamicArray<Surface>& materials = crister->Surfaces();
+			std::span<const Surface> materials = crister->Surfaces();
 			std::filesystem::path modelPath(asset->fullpath_.c_str());
 			std::filesystem::path directory = modelPath.parent_path() / (modelPath.stem().string() + ".Materials");
 			std::error_code error;
@@ -179,7 +179,7 @@ namespace SeedCore
 			return false;
 		}
 
-		const DynamicArray<Surface>& materials = crister->Surfaces();
+		std::span<const Surface> materials = crister->Surfaces();
 		if (materials.empty())
 		{
 			return false;

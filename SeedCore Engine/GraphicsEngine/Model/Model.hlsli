@@ -140,7 +140,7 @@ struct ExpandedModelVertex
 
 /**
 * [EN]
-* Mirrors the C++ CompressedVertex (Model/Crister.h) - 16 bytes. Quantised
+* Mirrors the C++ CompressedVertex (Model/Crister/CristerGeometry.h) - 16 bytes. Quantised
 * on the CPU at upload; the encode there must match DecodeModelVertex
 * exactly. position_xy_/position_z_texu_ pack position (UNORM in the
 * instance's position AABB) and texcoord u (UNORM in the instance's UV
@@ -158,7 +158,7 @@ struct CompressedModelVertex
 
 /**
 * [EN]
-* Mirrors the C++ CompressedSkinVertex (Model/Crister.h) - 12 bytes.
+* Mirrors the C++ CompressedSkinVertex (Model/Crister/CristerGeometry.h) - 12 bytes.
 * joints_xy_/joints_zw_ pack the four influencing joint indices as 16-bit
 * fields; weights_ packs their four blend weights as 8-bit UNORM.
 */
@@ -273,7 +273,7 @@ struct OitUnorderedAccessIndices
 	uint oit_unordered_access_padding_0_;
 };
 
-// Mirrors the C++ ShadingModel enum (Model/Crister.h). Read from
+// Mirrors the C++ ShadingModel enum (Model/Crister/CristerMaterial.h). Read from
 // ModelShading::shading_model_ and switched on by
 // Opaque/DeferredLightingPS.hlsl's direct-light dispatch.
 #define SHADING_MODEL_PBR 0

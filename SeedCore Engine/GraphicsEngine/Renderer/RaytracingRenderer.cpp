@@ -11,7 +11,7 @@
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/Model/Animation/Animator.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/Material/Material.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <GraphicsEngine/Model/ModelResource.h>
@@ -178,7 +178,7 @@ namespace SeedCore
 				instance.worldMatrix_ = actor.WorldMatrix();
 				instance.entityID_ = entityID;
 
-				const DynamicArray<Surface>* materialSurfaces = nullptr;
+				std::optional<std::span<const Surface>> materialSurfaces;
 				const Material* material = actor.GetComponent<Material>();
 				if (material && !material->resolvedSurfaces_.empty() && material->resolvedSurfaces_.size() == crister->Surfaces().size())
 				{
@@ -189,7 +189,7 @@ namespace SeedCore
 					auto tableIt = entityMaterialTables_.find(entityID);
 					if (tableIt == entityMaterialTables_.end() || tableIt->second.crister_ != crister || tableIt->second.signature_ != material->resolvedSignature_ || crister->MaterialsDirty())
 					{
-						materialSurfaces = &material->resolvedSurfaces_;
+						materialSurfaces = material->resolvedSurfaces_;
 					}
 				}
 				else if (seedMaterialCristers.insert(crister).second)
@@ -197,7 +197,7 @@ namespace SeedCore
 					auto tableIt = materialTableCache_.find(crister);
 					if (tableIt == materialTableCache_.end() || !tableIt->second.materialsResource_ || crister->MaterialsDirty())
 					{
-						materialSurfaces = &crister->Surfaces();
+						materialSurfaces = crister->Surfaces();
 					}
 				}
 
@@ -240,8 +240,8 @@ namespace SeedCore
 				/// [JP] アニメーションのモーフウェイトは Node ごとにサンプリングされる。glTF ではメッシュを参照する全 Node がそのメッシュのウェイト配列を 1 つ共有するため、モーフのある各 SubMesh は、そのメッシュを参照する最初の Node のウェイトを使う。
 				if (animator)
 				{
-					const DynamicArray<SubMesh>& subMeshes = crister->SubMeshes();
-					const DynamicArray<Node>& nodes = crister->Nodes();
+					std::span<const SubMesh> subMeshes = crister->SubMeshes();
+					std::span<const Node> nodes = crister->Nodes();
 					instance.morphWeights_.resize(subMeshes.size());
 
 					for (Size subMeshIndex = 0; subMeshIndex < subMeshes.size(); subMeshIndex++)
@@ -607,7 +607,7 @@ namespace SeedCore
 				crister->CopyMorph(commandList4, blendedBuffer.resource_.Get());
 				transition(blendedBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-				const DynamicArray<SubMesh>& subMeshes = crister->SubMeshes();
+				std::span<const SubMesh> subMeshes = crister->SubMeshes();
 				DynamicArray<MorphBlendBuffer>& blendBuffers = morphBlendBuffers_[pending.entityID_];
 				if (blendBuffers.size() < subMeshes.size())
 				{

@@ -1,5 +1,6 @@
 #include <GraphicsEngine/Avatar/AvatarMesh.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
+#include <GraphicsEngine/Model/Crister/CristerQuantizer.h>
 
 namespace SeedCore
 {
@@ -118,6 +119,8 @@ namespace SeedCore
 			return;
 		}
 
+		CristerQuantizer quantizer;
+
 		for (Uint32 vertexIndex = 0; vertexIndex < bodyVertexCount_; vertexIndex++)
 		{
 			Vertex vertex;
@@ -125,7 +128,7 @@ namespace SeedCore
 			vertex.normal_ = normals[vertexIndex];
 			vertex.tangent_ = Vector4(1.0f, 0.0f, 0.0f, 1.0f);
 			vertex.texcoord_ = baseTexcoords_[vertexIndex];
-			scratchVertices_[vertexIndex] = Crister::EncodeVertex(vertex, positionMin_, positionExtent_, texcoordMin_, texcoordExtent_);
+			scratchVertices_[vertexIndex] = quantizer.EncodeVertex(vertex, positionMin_, positionExtent_, texcoordMin_, texcoordExtent_);
 		}
 
 		MeshletBound bound;

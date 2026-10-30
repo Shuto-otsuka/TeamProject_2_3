@@ -2,7 +2,7 @@
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/Graphics.h>
@@ -14,6 +14,7 @@
 #include <GraphicsEngine/Resource/GraphicsModule.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
+#include <GraphicsEngine/Model/Crister/CristerConverter.h>
 
 namespace SeedCore
 {
@@ -376,7 +377,8 @@ namespace SeedCore
 
 			Handle<Crister> handle = modelResource->GetHandle(assetId);
 			Crister* crister = handle.empty() ? nullptr : modelResource->Resolve(handle);
-			if (!crister || !crister->ApplyAxisConversion(deltaBasis, newResolved.flipWinding_, path))
+			CristerConverter converter;
+			if (!crister || !converter.ApplyAxisConversion(*crister, deltaBasis, newResolved.flipWinding_, path))
 			{
 				return;
 			}
@@ -451,7 +453,8 @@ namespace SeedCore
 		ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
 		Handle<Crister> handle = modelResource->GetHandle(assetId);
 		Crister* crister = handle.empty() ? nullptr : modelResource->Resolve(handle);
-		if (!crister || !crister->ApplyTransformConversion(baseTransformPosition_, baseTransformRotation_, baseTransformScale_, baseTransformPivot_, path))
+		CristerConverter converter;
+		if (!crister || !converter.ApplyTransformConversion(*crister, baseTransformPosition_, baseTransformRotation_, baseTransformScale_, baseTransformPivot_, path))
 		{
 			return;
 		}

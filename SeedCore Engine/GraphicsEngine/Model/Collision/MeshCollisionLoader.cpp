@@ -1,5 +1,5 @@
 #include <GraphicsEngine/Model/Collision/MeshCollisionLoader.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
 namespace SeedCore

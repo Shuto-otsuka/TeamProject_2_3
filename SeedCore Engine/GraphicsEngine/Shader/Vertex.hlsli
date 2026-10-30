@@ -4,7 +4,7 @@
 #include "Normal.hlsli"
 
 /**
-* Mirrors the C++ CompressedVertex struct (Model/Crister.h) - 16 bytes. Used by
+* Mirrors the C++ CompressedVertex struct (Model/Crister/CristerGeometry.h) - 16 bytes. Used by
 * the raytracing hit paths (reflection, global illumination, refraction, ambient
 * occlusion, subsurface scattering), which only need the normal and texcoord
 * recovered from a hit triangle. Model.hlsli's CompressedModelVertex is the

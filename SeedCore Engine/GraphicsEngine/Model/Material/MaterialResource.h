@@ -2,7 +2,7 @@
 #include <FoundationEngine/Utility/Handle.h>
 #include <FoundationEngine/Utility/FlatMap.h>
 #include <FoundationEngine/Resource/Asset/Asset.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 
 namespace SeedCore
 {

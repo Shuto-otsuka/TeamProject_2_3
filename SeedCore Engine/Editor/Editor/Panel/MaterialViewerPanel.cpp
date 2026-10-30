@@ -6,7 +6,7 @@
 #include <GraphicsEngine/Model/Material/Material.h>
 #include <GraphicsEngine/Model/Material/MaterialLoader.h>
 #include <GraphicsEngine/Model/Material/MaterialResource.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Graphics.h>
@@ -88,7 +88,7 @@ namespace SeedCore
 			}
 			else
 			{
-				const DynamicArray<Surface>& surfaces = crister->Surfaces();
+				std::span<const Surface> surfaces = crister->Surfaces();
 				if (selected_ >= surfaces.size())
 				{
 					selected_ = 0;

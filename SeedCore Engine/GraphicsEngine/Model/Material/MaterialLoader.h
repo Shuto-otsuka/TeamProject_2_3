@@ -1,7 +1,7 @@
 #pragma once
 #include <FoundationEngine/Utility/Handle.h>
 #include <FoundationEngine/Pool/StablePool.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 
 namespace SeedCore
 {

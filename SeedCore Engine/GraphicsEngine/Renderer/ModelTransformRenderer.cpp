@@ -1,6 +1,6 @@
 #include <GraphicsEngine/Renderer/ModelTransformRenderer.h>
 #include <GraphicsEngine/Profiler/ProfilerStats.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Resource/GraphicsResourceSystem.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>

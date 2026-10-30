@@ -119,7 +119,7 @@ namespace SeedCore
 
 	void Material::Apply(const Crister& crister, const Handle<Crister>& cristerHandle, MaterialResource& materialResource)
 	{
-		const DynamicArray<Surface>& seeds = crister.Surfaces();
+		std::span<const Surface> seeds = crister.Surfaces();
 
 		Uint64 signature = 14695981039346656037ull;
 		signature = (signature ^ cristerHandle.index_) * 1099511628211ull;

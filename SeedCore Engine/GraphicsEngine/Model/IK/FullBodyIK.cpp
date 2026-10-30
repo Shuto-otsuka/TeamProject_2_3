@@ -3,7 +3,7 @@
 #include <GraphicsEngine/Model/IK/TwoBoneIK.h>
 #include <GraphicsEngine/Model/IK/FABRIK.h>
 #include <GraphicsEngine/Model/IK/TreeFABRIK.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/Animation/Animator.h>
 
 namespace SeedCore

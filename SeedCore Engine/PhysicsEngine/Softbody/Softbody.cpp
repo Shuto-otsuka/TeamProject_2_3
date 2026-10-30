@@ -5,7 +5,7 @@
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
 #include <FoundationEngine/World/Actor/ActorAccessor.h>

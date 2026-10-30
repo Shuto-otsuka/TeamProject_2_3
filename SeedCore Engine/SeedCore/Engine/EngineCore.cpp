@@ -1,5 +1,4 @@
 #include <SeedCore/Engine/EngineCore.h>
-#include <PhysicsEngine/JoltPhysics/JoltManager.h>
 #include <FoundationEngine/Resource/Config/GameConfig.h>
 #include <FoundationEngine/Resource/Config/EditorConfig.h>
 #include <FoundationEngine/Input/InputSystem.h>
@@ -11,6 +10,7 @@
 #include <FoundationEngine/World/Layer/LayerRegistry.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <PhysicsEngine/Physics/PhysicsSystem.h>
+#include <PhysicsEngine/JoltPhysics/JoltManager.h>
 #include <AudioEngine/Audio/Audio.h>
 #include <AudioEngine/Audio/AudioSystem.h>
 #include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
