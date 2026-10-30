@@ -133,6 +133,9 @@
     <ClCompile Include="Script\HintSystem.cpp">
       <Filter>Script</Filter>
     </ClCompile>
+    <ClCompile Include="Script\BallReseterController.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\ScTutorial.h">
@@ -220,6 +223,9 @@
       <Filter>Script</Filter>
     </ClInclude>
     <ClInclude Include="Script\HintSystem.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\BallReseterController.h">
       <Filter>Script</Filter>
     </ClInclude>
   </ItemGroup>

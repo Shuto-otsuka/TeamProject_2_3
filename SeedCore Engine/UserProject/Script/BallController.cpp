@@ -11,7 +11,7 @@ void BallController::OnStart()
     stopController = GetActor().GetComponent<StopController>();
     startPosition = GetActor().WorldMatrix().Translation();
 
-    noStopMass = myRigid->mass_;
+    noStopAirResistance = myRigid->linearDrag_;
 }
 
 void BallController::OnTick(float elapsedTime)
@@ -35,12 +35,7 @@ void BallController::OnTick(float elapsedTime)
     else if (position.y <= respawnHeight)
     {
         //高さが一定以下になったら初期位置に戻す
-        myRigid->bodyType_ = SeedCore::Rigidbody::BodyType::Kinematic;
-        myRigid->MoveTo(startPosition, SeedCore::Quaternion::Identity, respawnDuration);
-        myRigid->Dispatch();
-        myCollider->isTrigger_ = true;
-        isRespawn = true;
-        respawnTimer = 0.0f;
+        Respawn();
     }
 
     if (!isStop && stopController->IsStop())
@@ -49,15 +44,26 @@ void BallController::OnTick(float elapsedTime)
         velocity->x_ = 0.0f;
         velocity->y_ = 0.0f;
         velocity->z_ = 0.0f;
-        myRigid->mass_ = stopMass;
+        myRigid->linearDrag_ = stopAirResistance;
         myRigid->Dispatch();
         isStop = stopController->IsStop();
     }
     else if (isStop && !stopController->IsStop())
     {
         //止められてないとき軽くする
-        myRigid->mass_ = noStopMass;
+        myRigid->linearDrag_ = noStopAirResistance;
         myRigid->Dispatch();
         isStop = stopController->IsStop();
     }
+}
+
+void BallController::Respawn()
+{
+    //高さが一定以下になったら初期位置に戻す
+    myRigid->bodyType_ = SeedCore::Rigidbody::BodyType::Kinematic;
+    myRigid->MoveTo(startPosition, SeedCore::Quaternion::Identity, respawnDuration);
+    myRigid->Dispatch();
+    myCollider->isTrigger_ = true;
+    isRespawn = true;
+    respawnTimer = 0.0f;
 }

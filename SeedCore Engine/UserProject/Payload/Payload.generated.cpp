@@ -1,6 +1,7 @@
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Payload/PayloadRegistry.h>
 #include <UserProject/Script/AreaController.h>
+#include <UserProject/Script/BallReseterController.h>
 #include <UserProject/Script/CircuitSystem.h>
 #include <UserProject/Script/CostGaugeController.h>
 #include <UserProject/Script/DoorSystem.h>
@@ -8,6 +9,7 @@
 #include <UserProject/Script/GoalSystem.h>
 
 extern "C" int _force_payload_AreaController = 0;
+extern "C" int _force_payload_BallReseterController = 0;
 extern "C" int _force_payload_CircuitSystem = 0;
 extern "C" int _force_payload_CostGaugeController = 0;
 extern "C" int _force_payload_DoorSystem = 0;
@@ -30,6 +32,19 @@ namespace SeedCore
 			}
 		};
 		static Register_AreaController global_AreaController_register;
+
+		// ---- UserProject/Script/BallReseterController.h ----
+		struct Register_BallReseterController
+		{
+			Register_BallReseterController()
+			{
+				PayloadRegistry::Register(String("BallReseterController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					BallReseterController& obj = *static_cast<BallReseterController*>(ptr);
+					outInfo.push_back({ String("対象ボール"), offsetof(BallReseterController, ballActorID), AttributeType::Int, PayloadType::Actor });
+				});
+			}
+		};
+		static Register_BallReseterController global_BallReseterController_register;
 
 		// ---- UserProject/Script/CircuitSystem.h ----
 		struct Register_CircuitSystem
