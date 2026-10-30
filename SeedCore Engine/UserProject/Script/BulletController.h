@@ -87,7 +87,7 @@ private:
 
 	SeedCore::Actor player;
 
-	PlayerController* playerController;
+	PlayerController* playerController = nullptr;
 	StopController* nowStick = nullptr;
 };
 REGISTER_COMPONENT(BulletController);

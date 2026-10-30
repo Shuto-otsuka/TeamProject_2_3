@@ -407,7 +407,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 150.0,
+							"float": 100.0,
 							"int": 0,
 							"is_array": false,
 							"name": "質量",
@@ -500,7 +500,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 5.0,
+							"float": 1.5,
 							"int": 0,
 							"is_array": false,
 							"name": "摩擦係数",

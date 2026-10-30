@@ -49,6 +49,7 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
         if (ballReseterController)
             ballReseterController->Reset();
         Remove();
+        return;
     }
 
     if (hitActor.HasTag("GravityArea"))
@@ -308,6 +309,9 @@ void BulletController::UpdateStopTimer(float elapsedTime)
     //タイマーがなければ以下の処理を行わない
     if (!stopTimer)return;
 
+    stopTimerText = stopTimer.GetComponent<SeedCore::Text>();
+    stopTimerPosition = stopTimer.GetComponent<SeedCore::Position>();
+
     //タイマーの更新
 
     //残りの生存時間を停止時間とする
@@ -332,7 +336,7 @@ void BulletController::UpdateStopTimer(float elapsedTime)
 
 void BulletController::Remove()
 {
-    if(playerController)playerController->SubCostGauge(cost);//自分が圧迫してた分のコストを戻す
+    playerController->SubCostGauge(cost);//自分が圧迫してた分のコストを戻す
     GetWorld().DestroyActor(GetActor());//削除
 
     if (state != State::STOP)return;//停止中じゃなければ以下の処理を行わない
