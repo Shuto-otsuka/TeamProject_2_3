@@ -372,6 +372,7 @@ namespace SeedCore
 		graphics_.Upscale(gameConfig.useDlss_, gameConfig.upscaleMode_);
 		graphics_.VerticalSync(gameConfig.vsync_);
 		graphics_.GameRender(*world_->GetService<GameTimer>(), cameraSystem_, *world_);
+		graphics_.DrawLetterScreen();
 	}
 
 	void EngineCore::Present()
