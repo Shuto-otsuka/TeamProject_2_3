@@ -1,6 +1,7 @@
 #include "UserProject/Script/BulletController.h"
 #include"UserProject/Script/PlayerController.h"
 #include"UserProject/Script/StopController.h"
+#include"UserProject/Script/BallReseterController.h"
 #include<SeedCore/ScLog.h>
 #include<SeedCore/ScPrefab.h>
 #include<SeedCore/ScScreen.h>
@@ -40,6 +41,15 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
     //ヒットしたアクターの取得
     SeedCore::Actor hitActor = other;
     SeedCore::Name* hitActorName = other.GetComponent<SeedCore::Name>();
+
+    if (hitActor.HasTag("BallReseter"))
+    {
+        //ボール位置をリセットするやつに当たった
+        BallReseterController* ballReseterController = hitActor.GetComponent<BallReseterController>();
+        if (ballReseterController)
+            ballReseterController->Reset();
+        Remove();
+    }
 
     if (hitActor.HasTag("GravityArea"))
     {

@@ -11,10 +11,12 @@ public:
 	void OnStart();
 	void OnTick(float elapsedTime);
 
+	void Respawn();
+
 	SC_REFLECTION_FIELD()
 		float respawnHeight = -10.0f;
 	SC_REFLECTION_FIELD()
-		float stopMass = 10.0f;
+		float stopAirResistance = 10.0f;
 
 private:
 	SeedCore::Rigidbody* myRigid;
@@ -28,7 +30,7 @@ private:
 
 	float respawnDuration = 0.1f;
 	float respawnTimer = 0.0f;
-	float noStopMass;
+	float noStopAirResistance;
 
 	SeedCore::Vector3 startPosition;
 };

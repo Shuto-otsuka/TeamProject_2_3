@@ -73,7 +73,7 @@ namespace SeedCore
 				ReflectionRegistry::Register(String("BallController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					BallController& obj = *static_cast<BallController*>(ptr);
 					outInfo.push_back({ String("respawnHeight"), offsetof(BallController, respawnHeight), AttributeType::Float });
-					outInfo.push_back({ String("stopMass"), offsetof(BallController, stopMass), AttributeType::Float });
+					outInfo.push_back({ String("stopAirResistance"), offsetof(BallController, stopAirResistance), AttributeType::Float });
 				});
 			}
 		};
