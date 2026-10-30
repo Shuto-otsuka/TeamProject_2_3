@@ -48,6 +48,7 @@
     <ClCompile Include="Script\BallReseterController.cpp" />
     <ClCompile Include="Script\BombController.cpp" />
     <ClCompile Include="Script\BombExplosionController.cpp" />
+    <ClCompile Include="Script\HintSystem.cpp" />
     <ClCompile Include="Script\LightSwitchSystem.cpp" />
     <ClCompile Include="Tutorial\ScTutorial.cpp" />
     <ClCompile Include="Script\BulletController.cpp" />
@@ -78,6 +79,7 @@
     <ClInclude Include="Script\BallReseterController.h" />
     <ClInclude Include="Script\BombController.h" />
     <ClInclude Include="Script\BombExplosionController.h" />
+    <ClInclude Include="Script\HintSystem.h" />
     <ClInclude Include="Script\LightSwitchSystem.h" />
     <ClInclude Include="Tutorial\ScTutorial.h" />
     <ClInclude Include="Script\BulletColliderController.h" />
