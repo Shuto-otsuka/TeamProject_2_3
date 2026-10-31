@@ -49,6 +49,7 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
         if (ballReseterController)
             ballReseterController->Reset();
         Remove();
+        return;
     }
 
     if (hitActor.HasTag("GravityArea"))
@@ -308,6 +309,9 @@ void BulletController::UpdateStopTimer(float elapsedTime)
     //タイマーがなければ以下の処理を行わない
     if (!stopTimer)return;
 
+    stopTimerText = stopTimer.GetComponent<SeedCore::Text>();
+    stopTimerPosition = stopTimer.GetComponent<SeedCore::Position>();
+
     //タイマーの更新
 
     //残りの生存時間を停止時間とする
@@ -332,7 +336,7 @@ void BulletController::UpdateStopTimer(float elapsedTime)
 
 void BulletController::Remove()
 {
-    if(playerController)playerController->SubCostGauge(cost);//自分が圧迫してた分のコストを戻す
+    playerController->SubCostGauge(cost);//自分が圧迫してた分のコストを戻す
     GetWorld().DestroyActor(GetActor());//削除
 
     if (state != State::STOP)return;//停止中じゃなければ以下の処理を行わない
@@ -388,12 +392,12 @@ void BulletController::Move(float elapsedTime)
                         //何かにくっついてるときそのくっついてるオブジェクトに追従する
                         SeedCore::Vector3 nowStickPosition = nowStick->GetActor().WorldMatrix().Translation();
                         SeedCore::Vector3 stickPosition = nowStickPosition + stickOffset;
-                        rigidbody->MoveTarget({ stickPosition.x,stickPosition.y,stickPosition.z }, SeedCore::Quaternion::Identity, elapsedTime);
+                        rigidbody->MoveTo({ stickPosition.x,stickPosition.y,stickPosition.z }, SeedCore::Quaternion::Identity, elapsedTime);
                     }
                     else
                     {
                         //回転を0にする
-                        if (position)rigidbody->MoveTarget({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, elapsedTime);
+                        if (position)rigidbody->MoveTo({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, elapsedTime);
                     }
                 }
             }
@@ -412,7 +416,7 @@ void BulletController::Move(float elapsedTime)
     quaternion = SeedCore::Transform::Quat(*rotation) * quaternion;
 
     //キネマティック剛体を動かす
-    rigidbody->MoveTarget(moveTarget, quaternion, 0.02f);
+    rigidbody->MoveTo(moveTarget, quaternion, 0.02f);
 
     if ((SeedCore::Transform::Vector(*position) - startPosition).Length() >= playerController->GetBulletRemoveDistance())
     {

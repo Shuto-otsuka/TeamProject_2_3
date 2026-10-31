@@ -15,9 +15,12 @@ public:
 
 	SC_PAYLOAD_FIELD_EX("対象ボール", Actor)
 		SeedCore::Uint32 ballActorID;
+	SC_REFLECTION_FIELD()
+		float turnSpeed = 5.0f;
 
 private:
 	SeedCore::Actor targetBall;
+	SeedCore::Actor spinActor;
 
 	BallController* targetBallController;
 };

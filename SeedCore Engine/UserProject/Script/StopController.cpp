@@ -13,6 +13,8 @@ void StopController::OnTick(float elapsedTime)
 {
     if (!isStop)return;
 
+    position = GetActor().GetComponent<SeedCore::Position>();
+
     if (stopTimer)
     {
         //大量に出てくるオブジェクトはアドレスが変わる可能性があるためコンポネントを取得

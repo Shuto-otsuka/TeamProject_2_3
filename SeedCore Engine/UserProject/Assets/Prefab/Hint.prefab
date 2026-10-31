@@ -1,0 +1,1273 @@
+{
+	"basePrefabAssetID": 0,
+	"nodes": [
+		{
+			"active": true,
+			"collaborationId": "",
+			"components": [
+				{
+					"component": "HintSystem",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "回転速度",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 5.0,
+							"int": 0,
+							"is_array": false,
+							"name": "表示維持時間",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 3.0,
+							"int": 0,
+							"is_array": false,
+							"name": "フェード時間",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "ヒント文",
+							"string": "あああ",
+							"type": 7,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				}
+			],
+			"layer": "Default",
+			"name": "Hint",
+			"nestedPrefabAssetID": 0,
+			"overrides": [],
+			"parentIndex": -1,
+			"persistentId": 9435,
+			"position": {
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
+			},
+			"rotation": {
+				"w": 1.0,
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
+			},
+			"scale": {
+				"x": 1.0,
+				"y": 1.0,
+				"z": 1.0
+			},
+			"tags": []
+		},
+		{
+			"active": true,
+			"collaborationId": "",
+			"components": [
+				{
+					"component": "Text",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "テキスト",
+							"string": "",
+							"type": 7,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 32.0,
+							"int": 0,
+							"is_array": false,
+							"name": "文字サイズ",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "文字間隔",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "行間",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "中心点",
+							"string": "",
+							"type": 4,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "色",
+							"string": "",
+							"type": 8,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "アウトライン幅",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "アウトライン色",
+							"string": "",
+							"type": 8,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "発光量",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "発光色",
+							"string": "",
+							"type": 8,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "表示形式",
+							"string": "",
+							"type": 9,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "描画順",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "カメラ正対",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "影",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "影オフセット",
+							"string": "",
+							"type": 4,
+							"vector2": {
+								"x": 2.0,
+								"y": 2.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 0.5,
+								"b": 0.0,
+								"g": 0.0,
+								"r": 0.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "影色",
+							"string": "",
+							"type": 8,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": -1961241298,
+							"is_array": false,
+							"name": "フォントID",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				}
+			],
+			"layer": "Default",
+			"name": "HintText",
+			"nestedPrefabAssetID": 0,
+			"overrides": [],
+			"parentIndex": 0,
+			"persistentId": 9436,
+			"position": {
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
+			},
+			"rotation": {
+				"w": 1.0,
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
+			},
+			"scale": {
+				"x": 1.0,
+				"y": 1.0,
+				"z": 1.0
+			},
+			"tags": []
+		},
+		{
+			"active": true,
+			"collaborationId": "",
+			"components": [
+				{
+					"component": "Mesh",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 773460934,
+							"is_array": false,
+							"name": "メッシュID",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Material",
+					"fields": [
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 1852026478,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotMaterialIDs_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[0]",
+									"string": "hint_stand_M",
+									"type": 7,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotNames_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 1852026478,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "マテリアル",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				}
+			],
+			"layer": "Default",
+			"name": "HintStand",
+			"nestedPrefabAssetID": 0,
+			"overrides": [],
+			"parentIndex": 0,
+			"persistentId": 9437,
+			"position": {
+				"x": 0.0,
+				"y": -0.004804283380508423,
+				"z": 33.825130462646484
+			},
+			"rotation": {
+				"w": 1.0,
+				"x": -0.0,
+				"y": 0.0,
+				"z": -0.0
+			},
+			"scale": {
+				"x": 1.0,
+				"y": 1.0,
+				"z": 1.0
+			},
+			"tags": []
+		},
+		{
+			"active": true,
+			"collaborationId": "",
+			"components": [
+				{
+					"component": "Mesh",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 1354962898,
+							"is_array": false,
+							"name": "メッシュID",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Material",
+					"fields": [
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 1834088888,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotMaterialIDs_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[0]",
+									"string": "hint_glass_M",
+									"type": 7,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotNames_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": -657252763,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								},
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 1834088888,
+									"is_array": false,
+									"name": "[1]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "マテリアル",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				}
+			],
+			"layer": "Default",
+			"name": "HintGlass",
+			"nestedPrefabAssetID": 0,
+			"overrides": [],
+			"parentIndex": 0,
+			"persistentId": 9438,
+			"position": {
+				"x": -0.002670079469680786,
+				"y": 1.2025229930877686,
+				"z": 33.82673263549805
+			},
+			"rotation": {
+				"w": 1.0,
+				"x": -0.0,
+				"y": 0.0,
+				"z": -0.0
+			},
+			"scale": {
+				"x": 1.0,
+				"y": 1.0,
+				"z": 1.0
+			},
+			"tags": []
+		}
+	]
+}

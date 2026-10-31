@@ -1,0 +1,1321 @@
+{
+	"basePrefabAssetID": 0,
+	"nodes": [
+		{
+			"active": true,
+			"collaborationId": "",
+			"components": [
+				{
+					"component": "Mesh",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 873983301,
+							"is_array": false,
+							"name": "メッシュID",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "BoxCollider",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "サイズ",
+							"string": "",
+							"type": 5,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 1.0,
+								"y": 1.0,
+								"z": 1.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "中心オフセット",
+							"string": "",
+							"type": 5,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "トリガー",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Rigidbody",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 1,
+							"is_array": false,
+							"name": "動作モード",
+							"string": "",
+							"type": 9,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "連続衝突判定",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "質量",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.5,
+							"int": 0,
+							"is_array": false,
+							"name": "空気抵抗",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.5,
+							"int": 0,
+							"is_array": false,
+							"name": "角抵抗",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.20000000298023224,
+							"int": 0,
+							"is_array": false,
+							"name": "摩擦係数",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.5,
+							"int": 0,
+							"is_array": false,
+							"name": "反発係数",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "重力",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "重力倍率",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "足場追従",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 50.0,
+							"int": 0,
+							"is_array": false,
+							"name": "足場の最大斜面角度",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "位置X軸固定",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "位置Y軸固定",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "位置Z軸固定",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "回転X軸固定",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "回転Y軸固定",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "回転Z軸固定",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": true,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "トリガー",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "LinearVelocity",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "x_",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "y_",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "z_",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "AngularVelocity",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "x_",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "y_",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "z_",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Material",
+					"fields": [
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": -298179599,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotMaterialIDs_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[0]",
+									"string": "bullet_M",
+									"type": 7,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotNames_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "マテリアル",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "BallReseterController",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 2.0,
+							"int": 0,
+							"is_array": false,
+							"name": "turnSpeed",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 10404,
+							"is_array": false,
+							"name": "対象ボール",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				}
+			],
+			"layer": "Default",
+			"name": "BallReseter",
+			"nestedPrefabAssetID": 0,
+			"overrides": [],
+			"parentIndex": -1,
+			"persistentId": 12912,
+			"position": {
+				"x": -1.8339999914169312,
+				"y": 4.0675764083862305,
+				"z": 24.9060001373291
+			},
+			"rotation": {
+				"w": 1.0,
+				"x": -0.0,
+				"y": 0.0,
+				"z": -0.0
+			},
+			"scale": {
+				"x": 1.0,
+				"y": 1.0,
+				"z": 1.0
+			},
+			"tags": [
+				"BallReseter"
+			]
+		},
+		{
+			"active": true,
+			"collaborationId": "",
+			"components": [
+				{
+					"component": "Mesh",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": -171935742,
+							"is_array": false,
+							"name": "メッシュID",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Material",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotMaterialIDs_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotNames_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "マテリアル",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				}
+			],
+			"layer": "Default",
+			"name": "Spin",
+			"nestedPrefabAssetID": 0,
+			"overrides": [],
+			"parentIndex": 0,
+			"persistentId": 15121,
+			"position": {
+				"x": 0.0,
+				"y": 0.8120632171630859,
+				"z": 0.0
+			},
+			"rotation": {
+				"w": 1.0,
+				"x": -0.0,
+				"y": 0.0,
+				"z": -0.0
+			},
+			"scale": {
+				"x": 1.0,
+				"y": 1.0,
+				"z": 1.0
+			},
+			"tags": []
+		}
+	]
+}

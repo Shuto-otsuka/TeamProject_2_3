@@ -11,6 +11,7 @@ public:
 	{
 		PingPong,
 		Repeat,
+		Circuit,
 	};
 
 public:

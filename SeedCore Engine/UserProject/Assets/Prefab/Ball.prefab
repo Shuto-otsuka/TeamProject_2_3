@@ -311,7 +311,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 0.5,
+							"float": 3.0,
 							"int": 0,
 							"is_array": false,
 							"name": "空気抵抗",
@@ -466,7 +466,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 1.0,
+							"float": 5.0,
 							"int": 0,
 							"is_array": false,
 							"name": "重力倍率",
@@ -1011,7 +1011,7 @@
 							"float": 10.0,
 							"int": 0,
 							"is_array": false,
-							"name": "stopMass",
+							"name": "stopAirResistance",
 							"string": "",
 							"type": 2,
 							"vector2": {
@@ -1076,9 +1076,9 @@
 			"parentIndex": -1,
 			"persistentId": 10404,
 			"position": {
-				"x": -1.8344926834106445,
+				"x": 5.950473785400391,
 				"y": 0.5518040657043457,
-				"z": 24.905649185180664
+				"z": 31.796905517578125
 			},
 			"rotation": {
 				"w": 1.0,
