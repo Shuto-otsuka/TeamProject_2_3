@@ -50,6 +50,7 @@
     <ClInclude Include="D3D12\Buffer\HudlessBuffer.h" />
     <ClInclude Include="D3D12\Buffer\IndexBuffer.h" />
     <ClInclude Include="D3D12\Buffer\ReservoirBuffer.h" />
+    <ClInclude Include="D3D12\Buffer\StagingBuffer.h" />
     <ClInclude Include="D3D12\Buffer\StructuredBuffer.h" />
     <ClInclude Include="D3D12\Buffer\VertexBuffer.h" />
     <ClInclude Include="D3D12\Context\D3D12Adapter.h" />
@@ -332,6 +333,7 @@
     <ClCompile Include="D3D12\Buffer\DepthResizeBuffer.cpp" />
     <ClCompile Include="D3D12\Buffer\HudlessBuffer.cpp" />
     <ClCompile Include="D3D12\Buffer\ReservoirBuffer.cpp" />
+    <ClCompile Include="D3D12\Buffer\StagingBuffer.cpp" />
     <ClCompile Include="D3D12\Context\D3D12Check.cpp" />
     <ClCompile Include="D3D12\Context\D3D12TransferStream.cpp" />
     <ClCompile Include="D3D12\FrameRing.cpp" />

@@ -24,7 +24,7 @@ namespace SeedCore
 		}
 
 	protected:
-		Buffer(ID3D12Device* device, Uint64 size, D3D12_HEAP_TYPE type, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE)
+		Buffer(ID3D12Device* device, Uint64 size, D3D12_HEAP_TYPE type, D3D12_RESOURCE_FLAGS flags = D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATES state = D3D12_RESOURCE_STATE_COMMON)
 		{
 			HRESULT hr{ S_OK };
 
@@ -47,7 +47,7 @@ namespace SeedCore
 			resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 			resourceDesc.Flags = flags;
 
-			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&resource_));
+			hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, state, nullptr, IID_PPV_ARGS(&resource_));
 			SC_HR_CHECK(hr, "バッファの生成に失敗しました");
 #if SC_DEBUG
 			resource_->SetName(L"Buffer");

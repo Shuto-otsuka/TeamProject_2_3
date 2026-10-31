@@ -1126,6 +1126,9 @@
     <ClInclude Include="D3D12\Context\D3D12TransferStream.h">
       <Filter>D3D12\Context</Filter>
     </ClInclude>
+    <ClInclude Include="D3D12\Buffer\StagingBuffer.h">
+      <Filter>D3D12\Buffer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">
@@ -1840,6 +1843,9 @@
     </ClCompile>
     <ClCompile Include="D3D12\Context\D3D12TransferStream.cpp">
       <Filter>D3D12\Context</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12\Buffer\StagingBuffer.cpp">
+      <Filter>D3D12\Buffer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
