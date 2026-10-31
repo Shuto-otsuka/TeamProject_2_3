@@ -2,6 +2,7 @@
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
 #include <UserProject/Script/AreaController.h>
 #include <UserProject/Script/BallController.h>
+#include <UserProject/Script/BallReseterController.h>
 #include <UserProject/Script/BombController.h>
 #include <UserProject/Script/BombExplosionController.h>
 #include <UserProject/Script/BulletController.h>
@@ -27,6 +28,7 @@
 
 extern "C" int _force_reflection_AreaController = 0;
 extern "C" int _force_reflection_BallController = 0;
+extern "C" int _force_reflection_BallReseterController = 0;
 extern "C" int _force_reflection_BombController = 0;
 extern "C" int _force_reflection_BombExplosionController = 0;
 extern "C" int _force_reflection_BulletController = 0;
@@ -80,6 +82,19 @@ namespace SeedCore
 			}
 		};
 		static Register_BallController global_BallController_register;
+
+		// ---- UserProject/Script/BallReseterController.h ----
+		struct Register_BallReseterController
+		{
+			Register_BallReseterController()
+			{
+				ReflectionRegistry::Register(String("BallReseterController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					BallReseterController& obj = *static_cast<BallReseterController*>(ptr);
+					outInfo.push_back({ String("turnSpeed"), offsetof(BallReseterController, turnSpeed), AttributeType::Float });
+				});
+			}
+		};
+		static Register_BallReseterController global_BallReseterController_register;
 
 		// ---- UserProject/Script/BombController.h ----
 		struct Register_BombController

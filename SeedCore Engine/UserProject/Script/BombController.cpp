@@ -5,6 +5,7 @@
 #include<SeedCore/ScDebug.h>
 #include<SeedCore/ScPrefab.h>
 #include<SeedCore/ScScreen.h>
+#include<SeedCore/ScLog.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <format>
 
@@ -40,14 +41,18 @@ void BombController::OnTick(float elapsedTime)
     }
     else
     {
-        //進行度を進める
-        moveRate += moveSpeed * elapsedTime;
         bool change = false;
-        if (moveRate >= 1.0f)
+
+        if (!isBlocked)
         {
-            //1を超えたら方向転換フラグをON
-            change = true;
-            moveRate = 1.0f;
+            //前に障害物がある状態でなければ進行度を進める
+            moveRate += moveSpeed * elapsedTime;
+            if (moveRate >= 1.0f)
+            {
+                //1を超えたら方向転換フラグをON
+                change = true;
+                moveRate = 1.0f;
+            }
         }
 
         SeedCore::Vector3 position = GetActor().WorldMatrix().Translation();
@@ -55,24 +60,46 @@ void BombController::OnTick(float elapsedTime)
         //ターゲットポジションを算出
         DirectX::XMFLOAT3 targetPosition = SeedCore::Vector3::Lerp(targetPoints[startNum], targetPoints[endNum], moveRate);
 
-        //進行ベクトルから回転の軸を算出し、ターゲットクォータニオンを作成
-        SeedCore::Vector3 v1 = targetPosition - position;
-        if (v1.Length() <= 0.0001f)
+        //進行方向へのレイキャストで障害物がないかどうか確認
+        SeedCore::Vector3 direction = targetPosition - position;
+        SeedCore::Scale* scale = GetActor().GetComponent<SeedCore::Scale>();
+        float length = direction.Length();
+        direction.Normalize();
+        float radius = scale->x_ / 2.0f + 0.1f;//自分自身に当たらないように調整
+        SeedCore::Vector3 start = position + direction * radius;
+        SeedCore::RaycastHit hit;
+        SeedCore::Uint32 layerMask = ~(1 << 1) & ~(1 << 4);//プレイヤーとエリアを除くレイヤーマスク
+        if (GetActor().GetService<SeedCore::Physics>()->Raycast(start, direction, length, hit,layerMask))
         {
-            //進行ベクトルがなければ次のターゲットに移行
-            change = true;
+            isBlocked = true;
         }
         else
         {
-            v1.Normalize();
-            SeedCore::Vector3 v2 = SeedCore::Vector3::Up;
-            SeedCore::Vector3 axis = v2.Cross(v1);
-            float angle = turnSpeed * elapsedTime;
-            SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(axis, angle);
-            quaternion = SeedCore::Transform::Quat(*rotation) * quaternion;
+            isBlocked = false;
+        }
 
-            //キネマティック剛体を動かす
-            myRigid->MoveTarget(targetPosition, quaternion, elapsedTime);
+        //障害物が前になければ回転
+        if (!isBlocked)
+        {
+            //進行ベクトルから回転の軸を算出し、ターゲットクォータニオンを作成
+            SeedCore::Vector3 v1 = targetPosition - position;
+            if (v1.Length() <= 0.0001f)
+            {
+                //進行ベクトルがなければ次のターゲットに移行
+                change = true;
+            }
+            else
+            {
+                v1.Normalize();
+                SeedCore::Vector3 v2 = SeedCore::Vector3::Up;
+                SeedCore::Vector3 axis = v2.Cross(v1);
+                float angle = turnSpeed * elapsedTime;
+                SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(axis, angle);
+                quaternion = SeedCore::Transform::Quat(*rotation) * quaternion;
+
+                //キネマティック剛体を動かす
+                myRigid->MoveTo(targetPosition, quaternion, elapsedTime);
+            }
         }
         
         if (change)

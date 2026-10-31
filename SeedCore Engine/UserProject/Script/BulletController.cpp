@@ -392,12 +392,12 @@ void BulletController::Move(float elapsedTime)
                         //何かにくっついてるときそのくっついてるオブジェクトに追従する
                         SeedCore::Vector3 nowStickPosition = nowStick->GetActor().WorldMatrix().Translation();
                         SeedCore::Vector3 stickPosition = nowStickPosition + stickOffset;
-                        rigidbody->MoveTarget({ stickPosition.x,stickPosition.y,stickPosition.z }, SeedCore::Quaternion::Identity, elapsedTime);
+                        rigidbody->MoveTo({ stickPosition.x,stickPosition.y,stickPosition.z }, SeedCore::Quaternion::Identity, elapsedTime);
                     }
                     else
                     {
                         //回転を0にする
-                        if (position)rigidbody->MoveTarget({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, elapsedTime);
+                        if (position)rigidbody->MoveTo({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, elapsedTime);
                     }
                 }
             }
@@ -416,7 +416,7 @@ void BulletController::Move(float elapsedTime)
     quaternion = SeedCore::Transform::Quat(*rotation) * quaternion;
 
     //キネマティック剛体を動かす
-    rigidbody->MoveTarget(moveTarget, quaternion, 0.02f);
+    rigidbody->MoveTo(moveTarget, quaternion, 0.02f);
 
     if ((SeedCore::Transform::Vector(*position) - startPosition).Length() >= playerController->GetBulletRemoveDistance())
     {

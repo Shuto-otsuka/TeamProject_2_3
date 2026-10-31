@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "",
+			"collaborationId": "7b7485d8-8640-45ec-b617-a5a2d6ec42ed",
 			"components": [
 				{
 					"component": "Mesh",
@@ -57,7 +57,7 @@
 										"r": 1.0
 									},
 									"float": 0.0,
-									"int": -2084196240,
+									"int": -1602242984,
 									"is_array": false,
 									"name": "[0]",
 									"string": "",
@@ -183,7 +183,7 @@
 										"r": 1.0
 									},
 									"float": 0.0,
-									"int": -2084196240,
+									"int": -1602242984,
 									"is_array": false,
 									"name": "[0]",
 									"string": "",
@@ -407,7 +407,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 100.0,
+							"float": 150.0,
 							"int": 0,
 							"is_array": false,
 							"name": "質量",
@@ -500,7 +500,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 1.5,
+							"float": 5.0,
 							"int": 0,
 							"is_array": false,
 							"name": "摩擦係数",
@@ -593,7 +593,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 10.0,
+							"float": 1.0,
 							"int": 0,
 							"is_array": false,
 							"name": "重力倍率",
@@ -1166,7 +1166,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 1.7999999523162842,
+							"float": 4.0,
 							"int": 0,
 							"is_array": false,
 							"name": "minSpeed",
@@ -1197,7 +1197,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 15.0,
+							"float": 26.0,
 							"int": 0,
 							"is_array": false,
 							"name": "maxSpeed",
@@ -1259,7 +1259,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 18.0,
+							"float": 10.0,
 							"int": 0,
 							"is_array": false,
 							"name": "maxAliveTime",
@@ -1290,7 +1290,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 2.0,
+							"float": 5.0,
 							"int": 0,
 							"is_array": false,
 							"name": "turnSpeed",
@@ -1364,7 +1364,7 @@
 							},
 							"vector3": {
 								"x": 0.0,
-								"y": 1.0,
+								"y": 0.0,
 								"z": 0.0
 							},
 							"vector4": {

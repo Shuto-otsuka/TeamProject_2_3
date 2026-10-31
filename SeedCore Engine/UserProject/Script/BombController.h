@@ -38,6 +38,8 @@ private:
 	float moveRate = 0.0f;
 	float explosionTimer = 0.0f;
 
+	bool isBlocked = false;
+
 	SeedCore::Actor bombTimer;
 	SeedCore::Text* bombTimerText;
 	SeedCore::Position* bombTimerPosition;

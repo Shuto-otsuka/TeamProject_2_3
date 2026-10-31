@@ -3,11 +3,43 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "831cf809-4c08-42e1-a838-fee6d0113211",
+			"collaborationId": "d4799f18-a78b-408f-a7f8-93de336362b5",
 			"components": [
 				{
-					"component": "Bounds",
-					"fields": []
+					"component": "Mesh",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 1951614066,
+							"is_array": false,
+							"name": "メッシュID",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
 				},
 				{
 					"component": "GoalSystem",
@@ -17,11 +49,11 @@
 							"children": [],
 							"color": {
 								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
 							},
-							"float": 0.20000000298023224,
+							"float": 1.0,
 							"int": 0,
 							"is_array": false,
 							"name": "範囲",
@@ -48,16 +80,176 @@
 							"children": [],
 							"color": {
 								"a": 1.0,
-								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
 							},
 							"float": 0.0,
-							"int": -960907991,
+							"int": 949562770,
 							"is_array": false,
 							"name": "遷移先シーン",
 							"string": "",
 							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 352765277,
+							"is_array": false,
+							"name": "タイトルシーン",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": -1121727875,
+							"is_array": false,
+							"name": "リトライ先シーン",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Material",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotMaterialIDs_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotNames_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "マテリアル",
+							"string": "",
+							"type": 0,
 							"vector2": {
 								"x": 0.0,
 								"y": 0.0
@@ -84,9 +276,9 @@
 			"parentIndex": -1,
 			"persistentId": 117,
 			"position": {
-				"x": -4.656612873077393e-10,
-				"y": 0.6171461939811707,
-				"z": 0.0
+				"x": -0.9893922805786133,
+				"y": 5.672861099243164,
+				"z": 186.44981384277344
 			},
 			"rotation": {
 				"w": 1.0,
