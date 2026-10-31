@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "7b7485d8-8640-45ec-b617-a5a2d6ec42ed",
+			"collaborationId": "",
 			"components": [
 				{
 					"component": "Mesh",
@@ -1259,7 +1259,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 10.0,
+							"float": 18.0,
 							"int": 0,
 							"is_array": false,
 							"name": "maxAliveTime",

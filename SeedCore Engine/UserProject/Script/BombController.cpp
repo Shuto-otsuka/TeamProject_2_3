@@ -64,31 +64,35 @@ void BombController::OnTick(float elapsedTime)
         SeedCore::Vector3 direction = targetPosition - position;
         SeedCore::Scale* scale = GetActor().GetComponent<SeedCore::Scale>();
         float length = direction.Length();
-        direction.Normalize();
-        float radius = scale->x_ / 2.0f + 0.1f;//自分自身に当たらないように調整
-        SeedCore::Vector3 start = position + direction * radius;
-        SeedCore::RaycastHit hit;
-        SeedCore::Uint32 layerMask = ~(1 << 1) & ~(1 << 4);//プレイヤーとエリアを除くレイヤーマスク
-        if (GetActor().GetService<SeedCore::Physics>()->Raycast(start, direction, length, hit,layerMask))
+        if (length < 0.001f)
         {
-            isBlocked = true;
+            change = true;
+            isBlocked = false;
         }
         else
         {
-            isBlocked = false;
+            direction.Normalize();
+            float radius = scale->x_ / 2.0f + 0.1f;//自分自身に当たらないように調整
+            SeedCore::Vector3 start = position + direction * radius;
+            SeedCore::RaycastHit hit;
+            SeedCore::Uint32 layerMask = ~(1 << 1) & ~(1 << 4);//プレイヤーとエリアを除くレイヤーマスク
+            if (GetActor().GetService<SeedCore::Physics>()->Raycast(start, direction, length, hit, layerMask))
+            {
+                isBlocked = true;
+            }
+            else
+            {
+                isBlocked = false;
+            }
         }
+       
 
         //障害物が前になければ回転
         if (!isBlocked)
         {
             //進行ベクトルから回転の軸を算出し、ターゲットクォータニオンを作成
             SeedCore::Vector3 v1 = targetPosition - position;
-            if (v1.Length() <= 0.0001f)
-            {
-                //進行ベクトルがなければ次のターゲットに移行
-                change = true;
-            }
-            else
+            if (!change)
             {
                 v1.Normalize();
                 SeedCore::Vector3 v2 = SeedCore::Vector3::Up;
