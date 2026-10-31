@@ -1,7 +1,6 @@
 #pragma once
 #include <SeedCore/ScScript.h>
-
-class StopController;
+#include <SeedCore/ScComponent.h>
 
 class HintSystem :public SeedCore::SeedScript
 {
@@ -23,9 +22,22 @@ public:
 
 	void OnTick(float elapsedTime);
 
+public:
+	void Startup();
+
 private:
-	StopController* stopController_ = nullptr;
+	SeedCore::Actor textActor_;
+
+	SeedCore::Actor standActor_;
+
+	SeedCore::Actor glassActor_;
+
+	SeedCore::Uint32 offMaterialID_ = 0;
+
+	SeedCore::Uint32 onMaterialID_ = 0;
 
 	float timer_ = 0.0f;
+
+	bool startup_ = false;
 };
 REGISTER_COMPONENT(HintSystem);
