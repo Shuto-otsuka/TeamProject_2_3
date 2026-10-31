@@ -72,14 +72,16 @@ void FloorMoveSystem::OnFixedTick(float elapsedTime)
 		return;
 	}
 
+	bool powered = false;
 	if(isCanCircuit_)
 	{
 		CircuitSystem* circuitSystem = circuitActor_.GetComponent<CircuitSystem>();
 
 		// 回路システムコンポーネントがついてるか＋通電してるかでboolの値に
-		bool powered = circuitSystem && circuitSystem->IsPowered();
+		powered = circuitSystem && circuitSystem->IsPowered();
 
-		if (!powered)
+		// Circuitのみ通電してないときも動くのではじく
+		if (!powered && moveType_ != MoveType::Circuit)
 		{
 			rigidbody->MoveTarget(currentTarget_, cacheRotation_, elapsedTime);
 			return;
@@ -93,26 +95,49 @@ void FloorMoveSystem::OnFixedTick(float elapsedTime)
 		return;
 	}
 
-	// 移動床の初期位置はProbeの配列の現在の始点のPosition
-	Vector3 startPosition = localPositions_[startIndex_];
-
 	// 端での待ち時間がまだのこってるなら目標位置で固定
 	if (waitTimer_ > 0.0f)
 	{
 		waitTimer_ -= elapsedTime;
 
-		Vector3 targetPosition = cachePosition_ + startPosition;
+		Vector3 targetPosition = cachePosition_ + localPositions_[startIndex_];
 		currentTarget_ = targetPosition;
 		rigidbody->MoveTarget(targetPosition, cacheRotation_, elapsedTime);
 		return;
 	}
 
+	// サーキットの時のみ特殊処理
+	if (moveType_ == MoveType::Circuit)
+	{
+		// 通電中は終端まで、通電してないなら始点へ
+		int desiredDirection = powered ? 1 : -1;
+		if (desiredDirection != pingPongDirection_)
+		{
+			if (progress_ > 0.0f)
+			{
+				startIndex_ += pingPongDirection_;
+				progress_ = 1.0f - progress_;
+			}
+			pingPongDirection_ = desiredDirection;
+		}
+	}
+
 	// 到着予定の位置のIndexは現在の位置のIndexにPingPongなら後段で決まる-1 or 1 で、それ以外なら +1 で決まる
 	int arrivalIndex = startIndex_ + pingPongDirection_;
+
+	// 移動床の初期位置はProbeの配列の現在の始点のPosition
+	Vector3 startPosition = localPositions_[startIndex_];
 
 	// もしも予定外の範囲に入ったらロックフラグを立てて終了
 	if (arrivalIndex < 0 || arrivalIndex >= static_cast<int>(localPositions_.size()))
 	{
+		// Circuitは端についたら待つのみ、ロックなし
+		if (moveType_ == MoveType::Circuit)
+		{
+			rigidbody->MoveTarget(currentTarget_, cacheRotation_, elapsedTime);
+			return;
+		}
+
 		isMoveLock_ = true;
 		return;
 	}
@@ -168,6 +193,9 @@ void FloorMoveSystem::OnFixedTick(float elapsedTime)
 				startIndex_ = 0;
 				waitTimer_ = waitTime_;
 			}
+			break;
+		case MoveType::Circuit:
+			// なにもなし
 			break;
 		}
 	}

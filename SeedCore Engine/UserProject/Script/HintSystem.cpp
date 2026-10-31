@@ -1,62 +1,102 @@
 #include "HintSystem.h"
-#include "StopController.h"
 
-#include <SeedCore/ScComponent.h>
-//#include <SeedCore/ScLog.h>
+#include <SeedCore/ScLog.h>
+#include <SeedCore/ScScene.h>
 
 using namespace SeedCore;
 
 void HintSystem::OnStart()
 {
-	timer_ = 0.0f;
+	timer_ = maintainTime_ + fadeTime_;
 
-	Actor actor = GetActor();
-	stopController_ = actor.GetComponent<StopController>();
+	for (const Actor& child : GetActor().Children())
+	{
+		Name* name = child.GetComponent<Name>();
+		if (!name)
+		{
+			continue;
+		}
 
-	Text* hintText = actor.GetComponent<Text>();
+		if (name->name_ == "HintText")
+		{
+			textActor_ = child;
+		}
+		else if (name->name_ == "HintStand")
+		{
+			standActor_ = child;
+		}
+		else if (name->name_ == "HintGlass")
+		{
+			glassActor_ = child;
+		}
+	}
+
+	Text* hintText = textActor_.GetComponent<Text>();
 	if (hintText)
 	{
 		hintText->color_.a = 0.0f;
 	}
+
+	offMaterialID_ = Scene::AssetID("hint_glass_M_E.material");
+	onMaterialID_ = Scene::AssetID("hint_glass_M.material");
 }
 	
 void HintSystem::OnTick(float elapsedTime)
 {
+	if (!textActor_ || !standActor_ || !glassActor_)
+	{
+		SC_LOG_ERROR("テキスト用アクター、または、メッシュ用アクターが見つかりませんでした");
+		return;
+	}
+
 	World& world = GetWorld();
 	Actor actor = GetActor();
-	Rotation* rotation = actor.GetComponent<Rotation>();
+	Rotation* glassRotation = glassActor_.GetComponent<Rotation>();
+	Rotation* standRotation = standActor_.GetComponent<Rotation>();
 	Vector3 upAxis = Vector3::Up;
 	Quaternion targetQuaternion = Quaternion::CreateFromAxisAngle(upAxis, rotateSpeed_ * elapsedTime);
-	Transform::Quat(*rotation, Transform::Quat(*rotation) * targetQuaternion);
+	Transform::Quat(*glassRotation, Transform::Quat(*glassRotation) * targetQuaternion);
+	Transform::Quat(*standRotation, Transform::Quat(*standRotation) * targetQuaternion);
 
-	Text* hintText = actor.GetComponent<Text>();
-
-	if (!hintText || !stopController_)
+	Text* hintText = textActor_.GetComponent<Text>();
+	if (!hintText)
 	{
 		return;
 	}
 
-	if (stopController_->IsStop())
+	if (startup_)
 	{
 		timer_ = 0.0f;
 		hintText->text_ = hintText_;
 		hintText->color_.a = 1.0f;
-		return;
+		startup_ = false;
 	}
-
-	timer_ += elapsedTime;
-
-	if (timer_ <= maintainTime_)
+	else
 	{
-		return;
+		timer_ += elapsedTime;
+
+		if (timer_ > maintainTime_)
+		{
+
+			float fadeRate = (timer_ - maintainTime_) / fadeTime_;
+
+			if (fadeRate > 1.0f)
+			{
+				fadeRate = 1.0f;
+			}
+
+			hintText->color_.a = 1.0f - fadeRate;
+		}
 	}
 
-	float fadeRate = (timer_ - maintainTime_) / fadeTime_;
-
-	if (fadeRate > 1.0f)
+	Material* material = glassActor_.GetComponent<Material>();
+	if (material && onMaterialID_ != 0 && offMaterialID_ != 0)
 	{
-		fadeRate = 1.0f;
+		material->Set(hintText->color_.a > 0.0f ? onMaterialID_ : offMaterialID_, "hint_glass_M");
 	}
+}
 
-	hintText->color_.a = 1.0f - fadeRate;
+void HintSystem::Startup()
+{
+	startup_ = true;
 }

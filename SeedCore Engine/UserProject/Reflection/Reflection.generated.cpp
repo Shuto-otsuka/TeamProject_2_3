@@ -604,6 +604,7 @@ namespace SeedCore
 				EnumRegistry::Register(String("FloorMoveSystem::MoveType"), {
 					{ static_cast<Int>(FloorMoveSystem::MoveType::PingPong), String("PingPong") },
 					{ static_cast<Int>(FloorMoveSystem::MoveType::Repeat), String("Repeat") },
+					{ static_cast<Int>(FloorMoveSystem::MoveType::Circuit), String("Circuit") },
 				});
 			}
 		};
