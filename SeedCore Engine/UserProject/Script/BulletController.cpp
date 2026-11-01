@@ -2,6 +2,7 @@
 #include"UserProject/Script/PlayerController.h"
 #include"UserProject/Script/StopController.h"
 #include"UserProject/Script/BallReseterController.h"
+#include"UserProject/Script/HintSystem.h"
 #include<SeedCore/ScLog.h>
 #include<SeedCore/ScPrefab.h>
 #include<SeedCore/ScScreen.h>
@@ -48,6 +49,16 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
         BallReseterController* ballReseterController = hitActor.GetComponent<BallReseterController>();
         if (ballReseterController)
             ballReseterController->Reset();
+        Remove();
+        return;
+    }
+
+    if (hitActor.HasTag("Hint"))
+    {
+        //ヒントに当たった
+        HintSystem* hintSystem = hitActor.GetComponent<HintSystem>();
+        if (hintSystem)
+            hintSystem->Startup();
         Remove();
         return;
     }
@@ -104,6 +115,7 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
                 //足場作れないエリアならどちらも消す
                 Remove();
                 hitBulletController->Remove();
+                return;
             }
             else
             {
@@ -113,6 +125,7 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
 
                 hitBulletController->Stop();//停止
                 Remove();//自分は削除
+                return;
             }
             break;
         }
@@ -129,6 +142,7 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
             {
                 //重力エリアじゃなければ消して終了
                 Remove();
+                return;
             }
             break;
         }
@@ -227,6 +241,7 @@ void BulletController::SetParam(const SeedCore::Vector3& startPosition,const See
     if (chargeRate <= 0.33f)
     {
         GetActor().AddTag("BulletSmall");
+        GetActor().Layer("BulletSmall");//格子と当たらないためのレイヤー設定
     }
     else if (chargeRate <= 0.66f)
     {
@@ -301,6 +316,7 @@ void BulletController::UpdateAliveTime(float elapsedTime)
     {
         //生存時間が終了したら削除
         Remove();
+        return;
     }
 }
 
@@ -422,5 +438,6 @@ void BulletController::Move(float elapsedTime)
     {
         //一定距離飛んだら消す
         Remove();
+        return;
     }
 }
