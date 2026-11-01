@@ -1,6 +1,7 @@
 #include <GraphicsEngine/Graphics.h>
 
 #include <FoundationEngine/Application/Window.h>
+#include <FoundationEngine/Benchmark/Benchmark.h>
 #include <FoundationEngine/Log/AftermathCrashTracker.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Resource/Gateway.h>
@@ -17,6 +18,7 @@
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/D3D12/Context/D3D12DebugLayer.h>
+#include <GraphicsEngine/D3D12/Context/D3D12TransferLane.h>
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
 #include <GraphicsEngine/Font/FontResource.h>
 #include <GraphicsEngine/Movie/MovieResource.h>
@@ -97,9 +99,9 @@ namespace SeedCore
 			return false;
 		}
 
-		/// [EN] The asset module needs the finished bindless heap, which its texture, model and skymap resources allocate descriptors from.
-		/// [JP] アセットモジュールは完成した bindless ヒープを必要とする。テクスチャ・モデル・スカイマップのリソースがそこからディスクリプタを確保するため。
-		graphicsModule_ = MakePtr<GraphicsModule>(*bindlessHeap_);
+		/// [EN] The asset module needs the finished context, bindless heap and BC7 shader: its texture, model and skymap resources upload through the context's queues and transfer lanes, allocate descriptors from the heap, and compress model textures with the shader.
+		/// [JP] アセットモジュールは完成した Context、bindless ヒープ、BC7 シェーダーを必要とする。テクスチャ・モデル・スカイマップのリソースが、Context のキューと転送レーンでアップロードし、ヒープからディスクリプタを確保し、シェーダーでモデルのテクスチャを圧縮するため。
+		graphicsModule_ = MakePtr<GraphicsModule>(*context_, *bindlessHeap_, *bc7CompressShader_);
 
 		/// [EN] DLSS features are created against the finished device.
 		/// [JP] DLSS の機能は、生成済みのデバイスに対して作成する。
@@ -283,14 +285,9 @@ namespace SeedCore
 	{
 		/// [EN] Each queue is signaled independently because resource work can be submitted to any of them.
 		/// [JP] リソース処理は任意のキューへ投入されるため、各キューを個別に Signal / Wait する。
-		context_->GetDirectQueue()->Signal();
-		context_->GetDirectQueue()->Wait();
-
-		context_->GetCopyQueue()->Signal();
-		context_->GetCopyQueue()->Wait();
-
-		context_->GetComputeQueue()->Signal();
-		context_->GetComputeQueue()->Wait();
+		context_->GetDirectQueue()->WaitFor(context_->GetDirectQueue()->Signal());
+		context_->GetCopyQueue()->WaitFor(context_->GetCopyQueue()->Signal());
+		context_->GetComputeQueue()->WaitFor(context_->GetComputeQueue()->Signal());
 	}
 
 	/**
@@ -467,6 +464,10 @@ namespace SeedCore
 		/// [JP] 準備（ストリーミングと、形とコライダーの収集とアップロード）は、全エディターパスより先に行う。
 		Prepare(timer.DeltaTime(), world, selectedEntities, editorSceneConstantBuffer);
 
+		/// [EN] EditorView is only the CPU cost of recording this view's passes; the shared preparation is measured under Prepare instead.
+		/// [JP] EditorView はこのビューのパスを記録する CPU コストだけ。共有の準備は Prepare の方で測る。
+		Benchmark::Begin("EditorView");
+
 		/// [EN] Upload the view-specific constants before the renderer records editor commands.
 		/// [JP] Renderer がエディターコマンドを記録する前に、ビュー固有の定数をアップロードする。
 		editorSceneSystem_->Upload(editorSceneConstantBuffer);
@@ -476,6 +477,8 @@ namespace SeedCore
 		renderer_->BeginEditorFrame(context_->GetDirectList());
 		renderer_->EditorFlush(context_->GetDirectList(), editorSceneSystem_.get(), viewMode);
 		renderer_->EndEditorFrame(context_->GetDirectList(), editorSceneConstantBuffer);
+
+		Benchmark::End("EditorView");
 	}
 
 	/**
@@ -492,6 +495,10 @@ namespace SeedCore
 		/// [EN] Prepare shared assets using the camera state available at the frame's entry.
 		/// [JP] フレーム開始時点で利用可能なカメラ状態を用いて、共有アセットを準備する。
 		Prepare(timer.ScaledDeltaTime(), world, {}, cameraSystem.GetSceneConstantBuffer());
+
+		/// [EN] GameView is the game camera update plus recording this view's passes, without the shared preparation.
+		/// [JP] GameView はゲームカメラの更新とこのビューのパスの記録で、共有の準備は含まない。
+		Benchmark::Begin("GameView");
 
 		/// [EN] CameraSystem resolves the active game camera for the current world and render extent.
 		/// [JP] CameraSystem は、現在のワールドとレンダーサイズに対するアクティブゲームカメラを解決する。
@@ -519,6 +526,8 @@ namespace SeedCore
 		fadeScreen_.Draw(context_->GetDirectList()->Get(), Scene::FadeAlpha(), static_cast<Float>(nativeWidth_), static_cast<Float>(nativeHeight_));
 
 		renderer_->EndGameFrame(context_->GetDirectList(), gameSceneConstantBuffer, hasActiveCamera);
+
+		Benchmark::End("GameView");
 	}
 
 	/**
@@ -566,6 +575,10 @@ namespace SeedCore
 		/// [JP] 共有準備は、このフレームでまだ他のビューが行っていない場合にのみここで実行される。
 		Prepare(timer.DeltaTime(), world, {}, canvasSceneConstantBuffer);
 
+		/// [EN] CanvasView is only the CPU cost of recording this view's passes, without the shared preparation.
+		/// [JP] CanvasView はこのビューのパスを記録する CPU コストだけで、共有の準備は含まない。
+		Benchmark::Begin("CanvasView");
+
 		canvasSceneSystem_->Upload(canvasSceneConstantBuffer);
 
 		/// [EN] Record the canvas passes into the canvas view's frame buffer.
@@ -573,6 +586,8 @@ namespace SeedCore
 		renderer_->BeginCanvasFrame(context_->GetDirectList());
 		renderer_->CanvasFlush(context_->GetDirectList(), canvasSceneSystem_.get());
 		renderer_->EndCanvasFrame(context_->GetDirectList());
+
+		Benchmark::End("CanvasView");
 	}
 
 	/**
@@ -588,7 +603,7 @@ namespace SeedCore
 	{
 		/// [EN] Resolve the mesh pose at the requested timeline time before recording the preview pass.
 		/// [JP] プレビューパスを記録する前に、指定タイムライン時刻のメッシュ姿勢を解決する。
-		renderer_->GatherTimelinePreview(graphicsModule_->Resources(), meshAssetId, animationAssetId, time, worldMatrix);
+		renderer_->GatherTimelinePreview(*context_->GetFrameTransferLane(), graphicsModule_->Resources(), meshAssetId, animationAssetId, time, worldMatrix);
 
 		/// [EN] The preview camera supplies a self-contained scene-constant buffer for this offscreen view.
 		/// [JP] プレビューカメラは、このオフスクリーンビュー専用の自己完結したシーン定数バッファを渡す。
@@ -640,7 +655,7 @@ namespace SeedCore
 	{
 		/// [EN] Gather the evaluated model pose used by the transform-editing preview.
 		/// [JP] 変形編集プレビューで使用する、評価済みモデル姿勢を収集する。
-		renderer_->GatherModelTransformPreview(graphicsModule_->Resources(), meshAssetId, animationAssetId, time, worldMatrix);
+		renderer_->GatherModelTransformPreview(*context_->GetFrameTransferLane(), graphicsModule_->Resources(), meshAssetId, animationAssetId, time, worldMatrix);
 
 		/// [EN] Keep this preview's camera state separate from editor and game scene constants.
 		/// [JP] このプレビューのカメラ状態は、エディターおよびゲームのシーン定数から分離して保持する。
@@ -692,7 +707,7 @@ namespace SeedCore
 	{
 		/// [EN] Gather the selected mesh and surface before the material inspection pass.
 		/// [JP] マテリアル検査パスの前に、選択中のメッシュとサーフェスを収集する。
-		renderer_->GatherMaterialPreview(graphicsModule_->Resources(), meshAssetId, surfaceAssetId, worldMatrix);
+		renderer_->GatherMaterialPreview(*context_->GetFrameTransferLane(), graphicsModule_->Resources(), meshAssetId, surfaceAssetId, worldMatrix);
 
 		/// [EN] Material inspection has its own camera constants and output dimensions.
 		/// [JP] マテリアル検査は、専用のカメラ定数と出力サイズを持つ。
@@ -744,7 +759,7 @@ namespace SeedCore
 	{
 		/// [EN] Gather the evaluated skeleton and retain the selected node for controller visualization.
 		/// [JP] 評価済みスケルトンを収集し、コントローラー可視化用に選択ノードを保持する。
-		renderer_->GatherSkeletonControllerPreview(graphicsModule_->Resources(), meshAssetId, animationAssetId, time, worldMatrix, selectedNodeIndex);
+		renderer_->GatherSkeletonControllerPreview(*context_->GetFrameTransferLane(), graphicsModule_->Resources(), meshAssetId, animationAssetId, time, worldMatrix, selectedNodeIndex);
 
 		/// [EN] Skeleton editing uses a dedicated preview camera and scene constants.
 		/// [JP] スケルトン編集では、専用のプレビューカメラとシーン定数を使用する。
@@ -1223,35 +1238,51 @@ namespace SeedCore
 		}
 		prepared_ = true;
 
+		/// [EN] Prepare is the shared per-frame work every view relies on; it runs inside whichever view renders first, so it nests under that view's Draw.
+		/// [JP] Prepare は全ビューが頼る、フレームごとの共有の処理。最初に描くビューの中で走るので、そのビューの Draw の下に入る。
+		Benchmark::Begin("Prepare");
+
 		GraphicsResourceSystem& resources = graphicsModule_->Resources();
 
 		/// [EN] Resource updates precede Renderer::PrepareFrame so every pass observes the same current asset state.
 		/// [JP] 全パスが同じ最新アセット状態を参照できるよう、リソース更新を Renderer::PrepareFrame より先に行う。
+		Benchmark::Begin("Font");
 		resources.fontResource_->Update(context_->GetDevice(), context_->GetDirectQueue()->GetCommandQueue(), bindlessHeap_.get());
+		Benchmark::End("Font");
 
 		/// [EN] Movies advance before their GPU texture is consumed by renderer passes.
 		/// [JP] ムービーは GPU テクスチャが Renderer パスで消費される前に進める。
+		Benchmark::Begin("Movie");
 		movieSystem_.Update(*resources.movieResource_, world);
 		resources.movieResource_->Update(context_->GetDevice(), context_->GetDirectList()->Get(), bindlessHeap_.get());
+		Benchmark::End("Movie");
 
 		/// [EN] Effects advance before Renderer::PrepareFrame so the renderer uploads this frame's age and spawn count.
 		/// [JP] Renderer が今フレームの経過時間と発生数を送れるよう、エフェクトは Renderer::PrepareFrame より先に進める。
+		Benchmark::Begin("Effect");
 		effectSystem_.Update(world, deltaTime);
+		Benchmark::End("Effect");
 
 		/// [EN] Colliders are gathered once per frame, before they are uploaded with the shapes.
 		/// [JP] コライダーは、形と一緒にアップロードする前に、フレームに1回集める。
+		Benchmark::Begin("Collider");
 		colliderSystem_.Update(world);
+		Benchmark::End("Collider");
 
 		/// [EN] Shapes are gathered once per frame as well; the debug display follows the editor selection and the visibility flag, and camera frustums use the render aspect ratio.
 		/// [JP] 形もフレームに1回集める。デバッグ表示はエディタの選択と表示のフラグに従い、カメラの視錐台は描画の縦横比を使う。
+		Benchmark::Begin("Shape");
 		shapeSystem_.Update(world, selectedEntities, shapeVisible_, static_cast<Float>(nativeWidth_) / static_cast<Float>(nativeHeight_));
 
 		/// [EN] Shapes and colliders are uploaded together here rather than by one view, since the editor, game and canvas views each draw their own batch of them.
 		/// [JP] 形とコライダーはエディター、ゲーム、Canvas の各ビューがそれぞれのバッチを描くので、どれか1つのビューではなくここでまとめてアップロードする。
 		renderer_->UploadShapes(shapeSystem_.Shapes(), colliderSystem_.Colliders(), *resources.textureResource_);
+		Benchmark::End("Shape");
 
 		/// [EN] Renderer receives the selected view's scene constants and entity selection after shared assets are current.
 		/// [JP] 共有アセットが最新化された後、Renderer は選択されたビューのシーン定数とエンティティ選択を受け取る。
-		renderer_->PrepareFrame(context_->GetDirectList(), resources, world, streamingScene, deltaTime, selectedEntities);
+		renderer_->PrepareFrame(context_->GetDirectList(), *context_->GetFrameTransferLane(), resources, world, streamingScene, deltaTime, selectedEntities);
+
+		Benchmark::End("Prepare");
 	}
 }

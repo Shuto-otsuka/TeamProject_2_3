@@ -3,6 +3,8 @@
 
 namespace SeedCore
 {
+	class BenchmarkSystem;
+
 	/**
 	* [EN]
 	* Editor-wide application state shared by every panel: the shared-asset
@@ -19,6 +21,10 @@ namespace SeedCore
 		/// [EN] Shared-asset sync service owned by Editor; null until Editor is constructed.
 		/// [JP] Editor が所有する共有アセットの同期サービス。Editor の構築までは null。
 		ResourceSync* resourceSync_ = nullptr;
+
+		/// [EN] CPU section measurements owned by EngineCore; null until the editor boot step wires it.
+		/// [JP] EngineCore が所有する CPU の区間計測。エディタの起動手順でつなぐまでは null。
+		BenchmarkSystem* benchmark_ = nullptr;
 
 		/// [EN] Number of UI frames drawn so far, advanced once per frame by Engine.
 		/// [JP] これまでに描いた UI のフレーム数。Engine が毎フレーム1つ進める。

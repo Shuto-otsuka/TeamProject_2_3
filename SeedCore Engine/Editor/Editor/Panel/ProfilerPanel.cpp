@@ -11,7 +11,7 @@ namespace SeedCore
 		/// No Code
 	}
 
-	void ProfilerPanel::Draw(const GpuProfiler& gpuProfiler)
+	void ProfilerPanel::Draw()
 	{
 		ImGuiIO& io = ImGui::GetIO();
 
@@ -96,117 +96,5 @@ namespace SeedCore
 
 			ImGui::EndTable();
 		}
-
-		DrawGpuTable(gpuProfiler);
-	}
-
-	/**
-	* [EN]
-	* Per-pass GPU times, one column per view. The editor and the game view run
-	* the same pass list against different cameras, so seeing them side by side
-	* is what makes "the frame rate collapses once the game view is open"
-	* attributable to a specific pass instead of guesswork.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* パス別 GPU 時間。ビューごとに列を分ける。エディタとゲームビューは同じパス列を
-	* 別カメラで回すので、両者を並べて見られることが「ゲームビューを開くと FPS が
-	* 落ちる」を特定のパスに帰着させる決め手になる(推測でなくなる)。
-	*/
-	void ProfilerPanel::DrawGpuTable(const GpuProfiler& gpuProfiler)
-	{
-		ImGui::SeparatorText("GPU（パス別）");
-
-		if (!gpuProfiler.Available())
-		{
-			ImGui::TextDisabled("GPU タイムスタンプが利用できません");
-			return;
-		}
-
-		/// [JP] 値は数フレーム遅れて返ってくるので、そのまま毎フレーム表示すると
-		///      読めないほどちらつく。FPS 表示と同じ refreshInterval_ で間引く。
-		gpuRefreshTimer_ += ImGui::GetIO().DeltaTime;
-		Bool refresh = gpuRefreshTimer_ >= refreshInterval_;
-		if (refresh)
-		{
-			gpuRefreshTimer_ = 0.0f;
-		}
-
-		const Uint32 viewCount = static_cast<Uint32>(GpuProfileView::Count);
-		const Uint32 scopeCount = static_cast<Uint32>(GpuProfileScope::Count);
-
-		if (refresh)
-		{
-			for (Uint32 viewIndex = 0; viewIndex < viewCount; viewIndex++)
-			{
-				for (Uint32 scopeIndex = 0; scopeIndex < scopeCount; scopeIndex++)
-				{
-					gpuDisplay_[viewIndex][scopeIndex] = gpuProfiler.GetMilliseconds(static_cast<GpuProfileView>(viewIndex), static_cast<GpuProfileScope>(scopeIndex));
-				}
-			}
-		}
-
-		if (ImGui::BeginTable("##GpuStats", 1 + static_cast<Int>(viewCount), ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
-		{
-			ImGui::TableSetupColumn("パス", ImGuiTableColumnFlags_WidthStretch);
-			for (Uint32 viewIndex = 0; viewIndex < viewCount; viewIndex++)
-			{
-				ImGui::TableSetupColumn(GpuProfiler::ViewName(static_cast<GpuProfileView>(viewIndex)), ImGuiTableColumnFlags_WidthFixed, 78.0f);
-			}
-			ImGui::TableHeadersRow();
-
-			Float totals[static_cast<Uint32>(GpuProfileView::Count)] = {};
-
-			for (Uint32 scopeIndex = 0; scopeIndex < scopeCount; scopeIndex++)
-			{
-				ImGui::TableNextRow();
-				ImGui::TableNextColumn();
-				ImGui::TextDisabled("%s", GpuProfiler::ScopeName(static_cast<GpuProfileScope>(scopeIndex)));
-
-				for (Uint32 viewIndex = 0; viewIndex < viewCount; viewIndex++)
-				{
-					ImGui::TableNextColumn();
-
-					Float milliseconds = gpuDisplay_[viewIndex][scopeIndex];
-					totals[viewIndex] += milliseconds;
-
-					/// [JP] 走っていないパスは 0 が返るので、0.0 と表示するより
-					///      「-」の方が「無効」と「速い」を混同しない。
-					if (milliseconds <= 0.0f)
-					{
-						ImGui::TextDisabled("-");
-						continue;
-					}
-
-					/// [JP] 重いパスを目で拾えるように色を付ける(1ms/4ms 基準)。
-					if (milliseconds >= 4.0f)
-					{
-						ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "%.2f ms", milliseconds);
-					}
-					else if (milliseconds >= 1.0f)
-					{
-						ImGui::TextColored(ImVec4(1.0f, 0.8f, 0.35f, 1.0f), "%.2f ms", milliseconds);
-					}
-					else
-					{
-						ImGui::Text("%.2f ms", milliseconds);
-					}
-				}
-			}
-
-			ImGui::TableNextRow();
-			ImGui::TableNextColumn();
-			ImGui::Text("合計");
-			for (Uint32 viewIndex = 0; viewIndex < viewCount; viewIndex++)
-			{
-				ImGui::TableNextColumn();
-				ImGui::Text("%.2f ms", totals[viewIndex]);
-			}
-
-			ImGui::EndTable();
-		}
-
-		ImGui::TextDisabled("※計測対象パスの合計です（フレーム全体ではありません）");
 	}
 }

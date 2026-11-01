@@ -1,6 +1,7 @@
 #include <GraphicsEngine/Model/SoftbodyMesh.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/Model/Crister/CristerQuantizer.h>
+#include <GraphicsEngine/Model/Crister/CristerExtractor.h>
 
 namespace SeedCore
 {
@@ -93,14 +94,18 @@ namespace SeedCore
 
 	Bool SoftbodyMesh::Create(ID3D12Device* device, BindlessHeap* bindlessHeap, const Crister& crister)
 	{
+		/// [EN] Reads both the full-resolution render mesh and the simulation proxy out of the model's CPU-side geometry.
+		/// [JP] モデルの CPU 側のジオメトリから、フル解像度の描画メッシュとシミュレーション用のプロキシの両方を読み出す。
+		CristerExtractor extractor;
+
 		DynamicArray<Uint32> indices;
-		if (!crister.SoftbodyFinestVertices(bindPoseVertices_, indices))
+		if (!extractor.FinestVertices(crister, bindPoseVertices_, indices))
 		{
 			return false;
 		}
 
 		DynamicArray<Uint32> proxyIndices;
-		if (!crister.SoftbodyCoarsestVertices(proxyBindPoseVertices_, proxyIndices))
+		if (!extractor.CoarsestVertices(crister, proxyBindPoseVertices_, proxyIndices))
 		{
 			return false;
 		}

@@ -48,6 +48,11 @@ namespace SeedCore
 
 		if (ImGui::Begin("エディタービュー"))
 		{
+			if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+			{
+				context_.view_.focused_ = FocusedView::Editor;
+			}
+
 			DrawGuizmo();
 			ImGui::Separator();
 

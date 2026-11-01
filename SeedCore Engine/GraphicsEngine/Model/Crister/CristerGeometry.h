@@ -321,13 +321,13 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Which cluster BakeCollision pulls from a SubMesh: the coarsest
+	* Which cluster CristerExtractor::Collision pulls from a SubMesh: the coarsest
 	* cluster or the LOD 0 cluster.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* BakeCollision が SubMesh のどのクラスタから抽出するか:
+	* CristerExtractor::Collision が SubMesh のどのクラスタから抽出するか:
 	* 最粗クラスタか LOD 0 クラスタか。
 	*/
 	enum class MeshCollisionDetail

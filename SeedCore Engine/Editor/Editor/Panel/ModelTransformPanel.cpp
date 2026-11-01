@@ -359,14 +359,11 @@ namespace SeedCore
 
 		ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
 
-		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		BC7CompressShader& bc7Shader = context_.graphics_.graphics_->GetBC7CompressShader();
-
 		if (isSourceAsset)
 		{
 			context_.world_.resource_->WriteAssetMeta(assetId, editConvention_);
 			modelResource->Unload(assetId);
-			modelResource->Load(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bc7Shader, *context_.world_.resource_, assetId);
+			modelResource->Load(*context_.world_.resource_, assetId);
 		}
 		else
 		{
@@ -385,7 +382,7 @@ namespace SeedCore
 
 			context_.world_.resource_->WriteAssetMeta(assetId, editConvention_);
 			modelResource->Unload(assetId);
-			modelResource->Load(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bc7Shader, *context_.world_.resource_, assetId);
+			modelResource->Load(*context_.world_.resource_, assetId);
 		}
 	}
 
@@ -468,8 +465,7 @@ namespace SeedCore
 		baseTransformScale_ = Vector3(1.0f, 1.0f, 1.0f);
 		baseTransformPivot_ = Vector3(0.0f, 0.0f, 0.0f);
 
-		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
 		modelResource->Unload(assetId);
-		modelResource->Load(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, assetId);
+		modelResource->Load(*context_.world_.resource_, assetId);
 	}
 }

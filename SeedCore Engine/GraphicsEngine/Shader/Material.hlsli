@@ -18,7 +18,7 @@ struct ReflectionMaterial
 	float3 base_color_;
 
 	// Bindless SRV of that material's base-color texture, or 0xFFFFFFFF when it
-	// has none / is not resident yet (Crister::TextureBindlessIndex returns the
+	// has none / is not resident yet (CristerResidency::TextureBindlessIndex returns the
 	// sentinel while a streaming mip is still loading).
 	uint base_color_texture_index_;
 

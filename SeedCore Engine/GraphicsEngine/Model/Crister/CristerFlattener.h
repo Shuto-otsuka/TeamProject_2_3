@@ -10,7 +10,7 @@ namespace SeedCore
 	* Flattens each SubMesh's LOD 0 cluster, once per node placement, into
 	* the RT proxy: a compact vertex set, its float3 positions, a 32-bit
 	* triangle list, the skin attributes and the morph deltas, plus the
-	* bounds of the placed geometry. CristerGpu uploads the result.
+	* bounds of the placed geometry. CristerResidency uploads the result.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -18,7 +18,7 @@ namespace SeedCore
 	* 各 SubMesh の LOD 0 クラスタを、ノードの配置ごとに RT プロキシへ
 	* 展開する。コンパクトな頂点集合、その float3 の位置、32bit の
 	* 三角形リスト、スキン属性、モーフデルタと、配置後のジオメトリの
-	* 境界を作る。結果は CristerGpu がアップロードする。
+	* 境界を作る。結果は CristerResidency がアップロードする。
 	*/
 	class SEEDCORE_API CristerFlattener
 	{

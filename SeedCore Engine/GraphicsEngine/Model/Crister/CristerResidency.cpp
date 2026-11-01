@@ -2,7 +2,7 @@
 #include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/Crister/CristerFlattener.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
-#include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
+#include <GraphicsEngine/D3D12/Context/D3D12TransferLane.h>
 #include <FoundationEngine/Log/DxFail.h>
 #include <FoundationEngine/Log/Warning.h>
 
@@ -10,56 +10,81 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* Releases every resident streaming page (pinned included — the model
-	* itself is going away) and returns their descriptor indices to
-	* bindlessHeap_. Every GPU resource is handed to the deferred-reclaim
-	* ring rather than dying with this object, since frames still in
-	* flight may be drawing from these exact buffers and textures.
+	* Leaves the shared streaming registry, so budget eviction never walks
+	* into this Crister while it is being torn down. The GPU resources and
+	* descriptors are returned by Release(), which the owner calls before
+	* destroying the Crister.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 常駐中のストリーミングページをすべて解放し（モデル自体が消えるため
-	* ピン留め込み）、ディスクリプタインデックスを bindlessHeap_ へ返す。
-	* GPU リソースはこのオブジェクトと一緒に死なせず、遅延回収リングへ
-	* 渡す — インフライトのフレームがまさにこれらのバッファやテクスチャで
-	* 描画している可能性があるため。
+	* 共有のストリーミングレジストリから外れ、破棄中のこの Crister を予算に
+	* よる追い出しが辿らないようにする。GPU リソースとディスクリプタは、
+	* 持ち主が Crister を破棄する前に呼ぶ Release() が返す。
 	*/
-	CristerGpu::~CristerGpu()
+	CristerResidency::~CristerResidency()
 	{
-		/// [EN] Leave the shared streaming registry first, so budget eviction never walks into this Crister while it is being torn down.
-		/// [JP] まず共有のストリーミングレジストリから外れ、破棄中のこの Crister を予算による追い出しが辿らないようにする。
+		auto found = std::ranges::find(streamingRegistry_, this);
+		if (found != streamingRegistry_.end())
+		{
+			streamingRegistry_.erase(found);
+		}
+	}
+
+	/**
+	* [EN]
+	* Releases every resident streaming page (pinned included — the model
+	* itself is going away), the RT proxy and the morph buffers, and
+	* returns their descriptor indices to heap. Every GPU resource is
+	* handed to the deferred-reclaim ring rather than dying with this
+	* object, since frames still in flight may be drawing from these exact
+	* buffers and textures. No-op for a Crister that never ran Upload().
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 常駐中のストリーミングページ（モデル自体が消えるためピン留め込み）、
+	* RT プロキシ、モーフのバッファをすべて解放し、ディスクリプタ
+	* インデックスを heap へ返す。GPU リソースはこのオブジェクトと一緒に
+	* 死なせず、遅延回収リングへ渡す — インフライトのフレームがまさに
+	* これらのバッファやテクスチャで描画している可能性があるため。
+	* Upload() を通っていない Crister では何もしない。
+	*/
+	void CristerResidency::Release(BindlessHeap* heap)
+	{
+		/// [EN] A Crister that never ran Upload() holds no GPU resources and no descriptors.
+		/// [JP] Upload() を通っていない Crister は GPU リソースもディスクリプタも持たない。
+		if (!uploaded_)
+		{
+			return;
+		}
+
+		/// [EN] Leave the registry first, so budget eviction stops seeing pages that are about to go.
+		/// [JP] 先にレジストリから外れ、これから消えるページを予算による追い出しが見ないようにする。
 		auto found = std::ranges::find(streamingRegistry_, this);
 		if (found != streamingRegistry_.end())
 		{
 			streamingRegistry_.erase(found);
 		}
 
-		/// [EN] A Crister that never ran Upload() holds no GPU resources and no descriptors, so there is nothing more to release.
-		/// [JP] Upload() を通っていない Crister は GPU リソースもディスクリプタも持たないので、これ以上解放するものは無い。
-		if (!bindlessHeap_)
-		{
-			return;
-		}
-
-		/// [EN] Release every resident page (pinned included — the model itself is going away) and give the descriptor indices back to the heap. Every GPU resource is handed to the deferred-reclaim ring rather than dying with this object: ModelLoader::Clear destroys the Crister synchronously (ModelResource::Unload, which the editor's model-conversion "適用" runs mid-session), and the frames still in flight are drawing from exactly these buffers and textures.
-		/// [JP] 常駐ページをすべて解放し（モデル自体が消えるためピン留め込み）、ディスクリプタインデックスをヒープへ返す。GPU リソースはこのオブジェクトと一緒に死なせず、遅延回収リングへ渡す: ModelLoader::Clear は Crister を同期的に破棄し(ModelResource::Unload — エディタのモデル変換「適用」が実行中に呼ぶ)、インフライトのフレームはまさにこれらのバッファとテクスチャで描画している最中だから。
+		/// [EN] Release every resident page (pinned included — the model itself is going away) and give the descriptor indices back to the heap. Each resource goes to the deferred-reclaim ring because the frames still in flight are drawing from exactly these buffers and textures.
+		/// [JP] 常駐ページをすべて解放し（モデル自体が消えるためピン留め込み）、ディスクリプタインデックスをヒープへ返す。インフライトのフレームはまさにこれらのバッファとテクスチャで描画している最中なので、各リソースは遅延回収リングへ渡す。
 		for (StreamingGeometry& page : streamingGeometry_)
 		{
 			if (!page.resident_)
 			{
 				continue;
 			}
-			bindlessHeap_->Release(std::move(page.meshletResource_), page.meshletBufferIndex_);
-			bindlessHeap_->Release(std::move(page.meshletBoundResource_), page.meshletBoundBufferIndex_);
-			bindlessHeap_->Release(std::move(page.vertexIndicesResource_), page.vertexIndicesBufferIndex_);
-			bindlessHeap_->Release(std::move(page.primitiveIndicesResource_), page.primitiveIndicesBufferIndex_);
+			heap->Release(std::move(page.meshletResource_), page.meshletBufferIndex_);
+			heap->Release(std::move(page.meshletBoundResource_), page.meshletBoundBufferIndex_);
+			heap->Release(std::move(page.vertexIndicesResource_), page.vertexIndicesBufferIndex_);
+			heap->Release(std::move(page.primitiveIndicesResource_), page.primitiveIndicesBufferIndex_);
 
 			/// [EN] A page that reads the shared pool has no vertex buffer of its own; the pool is released once below.
 			/// [JP] 共有プールを読むページは自前の頂点バッファを持たない。プールは下で1度だけ解放する。
 			if (page.ownsVertices_)
 			{
-				bindlessHeap_->Release(std::move(page.vertexResource_), page.vertexBufferIndex_);
+				heap->Release(std::move(page.vertexResource_), page.vertexBufferIndex_);
 			}
 
 			/// [EN] Take the page out of the geometry total so the budget stays accurate for the remaining Crister.
@@ -72,7 +97,7 @@ namespace SeedCore
 		/// [JP] ピン留めかどうかに関わらず、共有 LOD 0 頂点プールを解放する。
 		if (poolResident_)
 		{
-			bindlessHeap_->Release(std::move(poolResource_), poolBufferIndex_);
+			heap->Release(std::move(poolResource_), poolBufferIndex_);
 			totalResidentGeometryBytes_ -= poolSizeBytes_;
 			poolResident_ = false;
 		}
@@ -84,25 +109,29 @@ namespace SeedCore
 			if (streamingTexture.pinnedMip_.resource_)
 			{
 				totalResidentTextureBytes_ -= streamingTexture.pinnedMip_.sizeBytes_;
-				bindlessHeap_->Release(std::move(streamingTexture.pinnedMip_.resource_), streamingTexture.pinnedMip_.bindlessIndex_);
+				heap->Release(std::move(streamingTexture.pinnedMip_.resource_), streamingTexture.pinnedMip_.bindlessIndex_);
 			}
 			if (streamingTexture.currentMip_.resource_)
 			{
 				totalResidentTextureBytes_ -= streamingTexture.currentMip_.sizeBytes_;
-				bindlessHeap_->Release(std::move(streamingTexture.currentMip_.resource_), streamingTexture.currentMip_.bindlessIndex_);
+				heap->Release(std::move(streamingTexture.currentMip_.resource_), streamingTexture.currentMip_.bindlessIndex_);
 			}
 		}
 
 		/// [EN] The RT proxy geometry (vertex/position/index/skin), its morph pools, and the raster-side morph buffers outlive this object the same way the streaming pages above do: a reflection/GI TLAS instance built over this Crister can linger for a few frames after the model is unloaded (see RaytracingRenderer's pendingBlasEviction_ deferral), and its closest-hit shader fetches vertex attributes from exactly these buffers. Hand them to the deferred-reclaim ring and return their bindless SRV slots instead of letting the ComPtr members free them synchronously here.
 		/// [JP] RT プロキシジオメトリ（頂点/位置/インデックス/スキン）、そのモーフプール、およびラスタ側のモーフバッファは、上の streamingページと同じくこのオブジェクトより長生きする: この Crister の上に構築された反射/GI の TLAS インスタンスは、モデルのアンロード後も数フレーム残り得る（RaytracingRenderer のpendingBlasEviction_ 遅延参照）。そのヒットシェーダはまさにこれらのバッファから頂点属性を読む。ComPtr メンバにここで同期的に解放させず、遅延回収リングへ渡し、bindless SRVスロットを返す。
-		bindlessHeap_->Release(std::move(vertexResource_), vertexBufferIndex_);
-		bindlessHeap_->Release(std::move(skinVertexResource_), skinVertexBufferIndex_);
-		bindlessHeap_->Release(std::move(indexResource_), indexBufferIndex_);
-		bindlessHeap_->Release(std::move(positionResource_), positionBufferIndex_);
-		bindlessHeap_->Release(std::move(raytracingSkinVertexResource_), raytracingSkinVertexBufferIndex_);
-		bindlessHeap_->Release(std::move(raytracingMorphDeltaResource_), raytracingMorphDeltaBufferIndex_);
-		bindlessHeap_->Release(std::move(morphDeltaResource_), morphDeltaBufferIndex_);
-		bindlessHeap_->Release(std::move(vertexMorphSourceResource_), vertexMorphSourceBufferIndex_);
+		heap->Release(std::move(vertexResource_), vertexBufferIndex_);
+		heap->Release(std::move(skinVertexResource_), skinVertexBufferIndex_);
+		heap->Release(std::move(indexResource_), indexBufferIndex_);
+		heap->Release(std::move(positionResource_), positionBufferIndex_);
+		heap->Release(std::move(raytracingSkinVertexResource_), raytracingSkinVertexBufferIndex_);
+		heap->Release(std::move(raytracingMorphDeltaResource_), raytracingMorphDeltaBufferIndex_);
+		heap->Release(std::move(morphDeltaResource_), morphDeltaBufferIndex_);
+		heap->Release(std::move(vertexMorphSourceResource_), vertexMorphSourceBufferIndex_);
+
+		/// [EN] Everything is returned; a second Release() has nothing left to do.
+		/// [JP] すべて返したので、2回目の Release() には何も残っていない。
+		uploaded_ = false;
 	}
 
 	/**
@@ -119,9 +148,11 @@ namespace SeedCore
 	* leading run of mip levels legal as a standalone single-mip BC7
 	* resource), then registers with the shared streaming bookkeeping and
 	* brings the pinned geometry pages/texture mips resident so the model
-	* is immediately drawable at its fallback LOD/resolution. Finer
-	* pages/mips stream in later on demand (MakeClusterResident/
-	* MakeTextureMipResident, driven by ModelRenderer::Gather).
+	* is drawable at its fallback LOD/resolution as soon as lane's work
+	* completes. Finer pages/mips stream in later on demand
+	* (MakeClusterResident/MakeTextureMipResident, driven by
+	* ModelRenderer::Gather). Every copy is only recorded on lane; the
+	* caller submits it and waits for its fence before the model is drawn.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -137,25 +168,20 @@ namespace SeedCore
 	* チェーンから（「単一ミップの独立した BC7 リソース」として合法な
 	* 先頭のミップ範囲へ切り詰めた上で）テクスチャごとのストリーミング
 	* 状態を準備し、最後に共有ストリーミング管理へ登録してピン留め
-	* ジオメトリページ/テクスチャミップを常駐させ、フォールバック
-	* LOD/解像度で即座に描画可能にする。より細かいページ/ミップは後で
-	* オンデマンドにストリームインする（MakeClusterResident/
-	* MakeTextureMipResident、ModelRenderer::Gather から駆動）。
+	* ジオメトリページ/テクスチャミップを常駐させ、lane の処理が終われば
+	* フォールバック LOD/解像度で描画できるようにする。より細かい
+	* ページ/ミップは後でオンデマンドにストリームインする
+	* （MakeClusterResident/MakeTextureMipResident、ModelRenderer::Gather
+	* から駆動）。コピーは lane に記録するだけで、投入とフェンスの待ちは
+	* モデルを描画する前に呼び出し側が行う。
 	*/
-	void CristerGpu::Upload(Crister& crister, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap)
+	void CristerResidency::Upload(Crister& crister, ID3D12Device* device, D3D12TransferLane& lane, BindlessHeap* heap)
 	{
 		HRESULT hr{ S_OK };
 
-		/// [EN] Every static buffer created below is queued on one upload batch and submitted together near the end.
-		/// [JP] 以下で作る静的バッファは全て1つのアップロードバッチに積み、終わり近くでまとめて投入する。
-		DirectX::ResourceUploadBatch resourceUpload(device);
-		resourceUpload.Begin();
-
-		/// [EN] Capture upload context so cluster pages can stream in and out after load (these engine objects outlive every Crister).
-		/// [JP] ロード後にクラスタページを出し入れできるようアップロードコンテキストを保持する（全 Crister より長寿命のオブジェクト）。
-		device_ = device;
-		uploadQueue_ = cmdQueue;
-		bindlessHeap_ = heap;
+		/// [EN] From here on this Crister owns GPU resources that Release() must return.
+		/// [JP] ここから先、この Crister は Release() で返すべき GPU リソースを持つ。
+		uploaded_ = true;
 
 		/// [EN] Resolve each SubMesh's placements: the global transform of every node that references its mesh, or a single identity for a skinned or unreferenced SubMesh.
 		/// [JP] 各 SubMesh の配置を解決する。そのメッシュを参照する全ノードのグローバル変換で、スキン付きか参照されない SubMesh は単位行列1つ。
@@ -259,7 +285,7 @@ namespace SeedCore
 		/// [JP] プール範囲分のスキニング属性（スキンド SubMesh は LOD 0 のみなのでプールサイズで足りる）。スキンがあれば常に常駐 — どのみちスキンド LOD 0 はピン留めされている。
 		if (!crister.scene_.skins_.empty() && poolVertexEnd_ > 0)
 		{
-			hr = CreateStaticBufferUnbounded(device, resourceUpload, crister.geometry_.compressedSkinVertices_.data(), poolVertexEnd_, sizeof(CompressedSkinVertex), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, skinVertexResource_.ReleaseAndGetAddressOf());
+			hr = CreateStaticBufferUnbounded(device, lane, crister.geometry_.compressedSkinVertices_.data(), poolVertexEnd_, sizeof(CompressedSkinVertex), skinVertexResource_.ReleaseAndGetAddressOf());
 			SC_HR_CHECK(hr, "スキンバーテックスバッファの生成に失敗しました");
 			skinVertexBufferIndex_ = CreateStructuredShaderResourceView(device, heap, skinVertexResource_.Get(), poolVertexEnd_, sizeof(CompressedSkinVertex));
 		}
@@ -273,16 +299,16 @@ namespace SeedCore
 		/// [JP] RT プロキシのバッファと SRV を作る。圧縮頂点、float3 の位置、三角形インデックス、あればスキンとモーフのデータ。
 		if (!flattener.TriangleIndices().empty())
 		{
-			hr = CreateStaticBufferUnbounded(device, resourceUpload, flattener.Vertices().data(), flattener.Vertices().size(), sizeof(CompressedVertex), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, vertexResource_.ReleaseAndGetAddressOf());
+			hr = CreateStaticBufferUnbounded(device, lane, flattener.Vertices().data(), flattener.Vertices().size(), sizeof(CompressedVertex), vertexResource_.ReleaseAndGetAddressOf());
 			SC_HR_CHECK(hr, "レイトレーシング用バーテックスバッファの生成に失敗しました");
 			vertexBufferIndex_ = CreateStructuredShaderResourceView(device, heap, vertexResource_.Get(), static_cast<Uint>(flattener.Vertices().size()), sizeof(CompressedVertex));
 			proxyVertexCount_ = static_cast<Uint32>(flattener.Vertices().size());
 
-			hr = CreateStaticBufferUnbounded(device, resourceUpload, flattener.Positions().data(), flattener.Positions().size(), sizeof(Vector3), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, positionResource_.ReleaseAndGetAddressOf());
+			hr = CreateStaticBufferUnbounded(device, lane, flattener.Positions().data(), flattener.Positions().size(), sizeof(Vector3), positionResource_.ReleaseAndGetAddressOf());
 			SC_HR_CHECK(hr, "レイトレーシング用ポジションバッファの生成に失敗しました");
 			positionBufferIndex_ = CreateStructuredShaderResourceView(device, heap, positionResource_.Get(), static_cast<Uint>(flattener.Positions().size()), sizeof(Vector3));
 
-			hr = CreateStaticBufferUnbounded(device, resourceUpload, flattener.TriangleIndices().data(), flattener.TriangleIndices().size(), sizeof(Uint32), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, indexResource_.ReleaseAndGetAddressOf());
+			hr = CreateStaticBufferUnbounded(device, lane, flattener.TriangleIndices().data(), flattener.TriangleIndices().size(), sizeof(Uint32), indexResource_.ReleaseAndGetAddressOf());
 			SC_HR_CHECK(hr, "レイトレーシング用インデックスバッファの生成に失敗しました");
 			triangleIndexCount_ = static_cast<Uint32>(flattener.TriangleIndices().size());
 			indexBufferIndex_ = CreateStructuredShaderResourceView(device, heap, indexResource_.Get(), triangleIndexCount_, sizeof(Uint32));
@@ -291,14 +317,14 @@ namespace SeedCore
 			/// [JP] プロキシのスキンバッファは、プロキシ頂点と 1 対 1 で揃っているときだけ作る。
 			if (flattener.SkinVerticesBuilt() && flattener.SkinVertices().size() == flattener.Vertices().size())
 			{
-				hr = CreateStaticBufferUnbounded(device, resourceUpload, flattener.SkinVertices().data(), flattener.SkinVertices().size(), sizeof(CompressedSkinVertex), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, raytracingSkinVertexResource_.ReleaseAndGetAddressOf());
+				hr = CreateStaticBufferUnbounded(device, lane, flattener.SkinVertices().data(), flattener.SkinVertices().size(), sizeof(CompressedSkinVertex), raytracingSkinVertexResource_.ReleaseAndGetAddressOf());
 				SC_HR_CHECK(hr, "レイトレーシング用スキンバーテックスバッファの生成に失敗しました");
 				raytracingSkinVertexBufferIndex_ = CreateStructuredShaderResourceView(device, heap, raytracingSkinVertexResource_.Get(), static_cast<Uint>(flattener.SkinVertices().size()), sizeof(CompressedSkinVertex));
 			}
 
 			if (!flattener.MorphDeltas().empty())
 			{
-				hr = CreateStaticBufferUnbounded(device, resourceUpload, flattener.MorphDeltas().data(), flattener.MorphDeltas().size(), sizeof(Vector3), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, raytracingMorphDeltaResource_.ReleaseAndGetAddressOf());
+				hr = CreateStaticBufferUnbounded(device, lane, flattener.MorphDeltas().data(), flattener.MorphDeltas().size(), sizeof(Vector3), raytracingMorphDeltaResource_.ReleaseAndGetAddressOf());
 				SC_HR_CHECK(hr, "レイトレーシング用モーフデルタバッファの生成に失敗しました");
 				raytracingMorphDeltaBufferIndex_ = CreateStructuredShaderResourceView(device, heap, raytracingMorphDeltaResource_.Get(), static_cast<Uint>(flattener.MorphDeltas().size()), sizeof(Vector3));
 			}
@@ -327,11 +353,11 @@ namespace SeedCore
 		/// [JP] ラスタ用のデルタプールを、シェーダーが LOD の頂点を解決するのに使う元頂点への対応と一緒に作る。
 		if (!morphDeltas.empty())
 		{
-			hr = CreateStaticBufferUnbounded(device, resourceUpload, morphDeltas.data(), morphDeltas.size(), sizeof(Vector3), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, morphDeltaResource_.ReleaseAndGetAddressOf());
+			hr = CreateStaticBufferUnbounded(device, lane, morphDeltas.data(), morphDeltas.size(), sizeof(Vector3), morphDeltaResource_.ReleaseAndGetAddressOf());
 			SC_HR_CHECK(hr, "ラスタ用モーフデルタバッファの生成に失敗しました");
 			morphDeltaBufferIndex_ = CreateStructuredShaderResourceView(device, heap, morphDeltaResource_.Get(), static_cast<Uint>(morphDeltas.size()), sizeof(Vector3));
 
-			hr = CreateStaticBufferUnbounded(device, resourceUpload, crister.geometry_.vertexMorphSource_.data(), crister.geometry_.vertexMorphSource_.size(), sizeof(Uint32), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, vertexMorphSourceResource_.ReleaseAndGetAddressOf());
+			hr = CreateStaticBufferUnbounded(device, lane, crister.geometry_.vertexMorphSource_.data(), crister.geometry_.vertexMorphSource_.size(), sizeof(Uint32), vertexMorphSourceResource_.ReleaseAndGetAddressOf());
 			SC_HR_CHECK(hr, "頂点モーフソースバッファの生成に失敗しました");
 			vertexMorphSourceBufferIndex_ = CreateStructuredShaderResourceView(device, heap, vertexMorphSourceResource_.Get(), static_cast<Uint>(crister.geometry_.vertexMorphSource_.size()), sizeof(Uint32));
 		}
@@ -373,15 +399,6 @@ namespace SeedCore
 			streamingTexture.valid_ = true;
 		}
 
-		/// [EN] Submit the batch under the queue lock and wait for it, so every buffer above is ready before the model is drawn.
-		/// [JP] キューのロックの下でバッチを投入して完了を待ち、モデルを描画する前に上の全バッファが揃っているようにする。
-		std::future<void> uploadFinished;
-		{
-			auto queueLock = cmdQueue->AcquireLock();
-			uploadFinished = resourceUpload.End(cmdQueue->GetCommandQueue());
-		}
-		uploadFinished.wait();
-
 		/// [EN] Register with the streaming bookkeeping, then bring the pinned geometry pages and texture mips in so the model is immediately drawable at its fallback LOD/resolution. Finer pages/mips stream in on demand from ModelRenderer::Gather.
 		/// [JP] ストリーミング管理へ登録し、ピン留めジオメトリページとテクスチャミップをアップロードしてフォールバック LOD/解像度で即描画可能にする。より細かいページ/ミップは ModelRenderer::Gather からオンデマンドで常駐する。
 		if (!std::ranges::contains(streamingRegistry_, this))
@@ -392,7 +409,7 @@ namespace SeedCore
 		{
 			if (streamingGeometry_[clusterIndex].pinned_)
 			{
-				MakeClusterResident(crister, static_cast<Uint32>(clusterIndex));
+				MakeClusterResident(crister, device, lane, heap, static_cast<Uint32>(clusterIndex));
 			}
 		}
 
@@ -402,7 +419,7 @@ namespace SeedCore
 		{
 			if (streamingTextures_[textureIndex].valid_)
 			{
-				MakeTextureMipResident(crister, static_cast<Uint32>(textureIndex), streamingTextures_[textureIndex].mipCount_ - 1);
+				MakeTextureMipResident(crister, device, lane, heap, static_cast<Uint32>(textureIndex), streamingTextures_[textureIndex].mipCount_ - 1);
 			}
 		}
 	}
@@ -421,7 +438,7 @@ namespace SeedCore
 	* モデル空間での境界の最小コーナー。Upload() で RT プロキシの位置から
 	* 求める。プロキシが無ければ PositionMin() と同じ。
 	*/
-	Vector3 CristerGpu::PlacedPositionMin()const
+	Vector3 CristerResidency::PlacedPositionMin()const
 	{
 		return placedPositionMin_;
 	}
@@ -437,7 +454,7 @@ namespace SeedCore
 	* 同じ配置後のモデル空間での境界の大きさ（max - min）。プロキシが
 	* 無ければ PositionExtent() と同じ。
 	*/
-	Vector3 CristerGpu::PlacedPositionExtent()const
+	Vector3 CristerResidency::PlacedPositionExtent()const
 	{
 		return placedPositionExtent_;
 	}
@@ -457,7 +474,7 @@ namespace SeedCore
 	* CompressedVertex からメッシュシェーダと同じ計算で CPU デコード
 	* するため、BLAS の位置はラスタライズ結果と一致する。
 	*/
-	D3D12_GPU_VIRTUAL_ADDRESS CristerGpu::PositionBufferAddress()const
+	D3D12_GPU_VIRTUAL_ADDRESS CristerResidency::PositionBufferAddress()const
 	{
 		return positionResource_ ? positionResource_->GetGPUVirtualAddress() : 0;
 	}
@@ -473,7 +490,7 @@ namespace SeedCore
 	* 同じ float3 位置バッファの bindless SRV。モーフとスキンのブレンド
 	* パスがベース位置として読む。
 	*/
-	Uint CristerGpu::PositionBufferIndex()const
+	Uint CristerResidency::PositionBufferIndex()const
 	{
 		return positionBufferIndex_;
 	}
@@ -492,7 +509,7 @@ namespace SeedCore
 	* 頂点バッファ(positionResource_/vertexResource_)の頂点数。
 	* モーフブレンド用の一時位置バッファを確保すべきサイズでもある。
 	*/
-	Uint32 CristerGpu::VertexCount()const
+	Uint32 CristerResidency::VertexCount()const
 	{
 		return proxyVertexCount_;
 	}
@@ -514,7 +531,7 @@ namespace SeedCore
 	* — BLAS のジオメトリはラスタライズされるジオメトリと完全に一致する
 	* （巻き順を再導出しない）。
 	*/
-	D3D12_GPU_VIRTUAL_ADDRESS CristerGpu::IndexBufferAddress()const
+	D3D12_GPU_VIRTUAL_ADDRESS CristerResidency::IndexBufferAddress()const
 	{
 		return indexResource_ ? indexResource_->GetGPUVirtualAddress() : 0;
 	}
@@ -528,7 +545,7 @@ namespace SeedCore
 	* [JP]
 	* IndexBufferAddress() が指すフラットインデックスバッファの三角形数。
 	*/
-	Uint32 CristerGpu::IndexCount()const
+	Uint32 CristerResidency::IndexCount()const
 	{
 		return triangleIndexCount_;
 	}
@@ -546,7 +563,7 @@ namespace SeedCore
 	* アップロード済み GPU テクスチャの bindless ヒープインデックスに
 	* 変換する。無ければ 0xFFFFFFFF。
 	*/
-	Uint CristerGpu::TextureBindlessIndex(Uint32 textureIndex)const
+	Uint CristerResidency::TextureBindlessIndex(Uint32 textureIndex)const
 	{
 		if (textureIndex >= streamingTextures_.size())
 		{
@@ -584,7 +601,7 @@ namespace SeedCore
 	* 反射/GI マテリアルテーブル(構築時に TextureBindlessIndex() を
 	* 焼き込んでいる)を再構築すべきか判断する。
 	*/
-	Bool CristerGpu::MaterialsDirty()const
+	Bool CristerResidency::MaterialsDirty()const
 	{
 		return materialsDirty_;
 	}
@@ -600,7 +617,7 @@ namespace SeedCore
 	* MaterialsDirty() が報告するフラグをクリアする。呼び出し側が、
 	* 古いバインドレスインデックスに依存していたものを再構築した後に呼ぶ。
 	*/
-	void CristerGpu::ClearMaterialsDirty()const
+	void CristerResidency::ClearMaterialsDirty()const
 	{
 		materialsDirty_ = false;
 	}
@@ -619,7 +636,7 @@ namespace SeedCore
 	* メッシュをフル詳細で映すため、各 SubMesh の LOD 0 クラスタから
 	* 構築する。プロキシはラスタ側のストリーミングとは関係なく常駐する。
 	*/
-	Uint CristerGpu::VertexBufferIndex()const
+	Uint CristerResidency::VertexBufferIndex()const
 	{
 		return vertexBufferIndex_;
 	}
@@ -637,7 +654,7 @@ namespace SeedCore
 	* レイトレの closesthit がヒット三角形の頂点を引き直すのに使う
 	* (PrimitiveIndex() * 3 + 0/1/2 → 頂点インデックス)。
 	*/
-	Uint CristerGpu::IndexBufferIndex()const
+	Uint CristerResidency::IndexBufferIndex()const
 	{
 		return indexBufferIndex_;
 	}
@@ -653,7 +670,7 @@ namespace SeedCore
 	* CompressedSkinVertex バッファの bindless SRV。スキンが無い
 	* Crister では 0xFFFFFFFF。
 	*/
-	Uint CristerGpu::SkinVertexBufferIndex()const
+	Uint CristerResidency::SkinVertexBufferIndex()const
 	{
 		return skinVertexBufferIndex_;
 	}
@@ -673,7 +690,7 @@ namespace SeedCore
 	* 参照)の bindless SRV。どの SubMesh も morphs_ を持たなければ
 	* 0xFFFFFFFF。
 	*/
-	Uint CristerGpu::MorphDeltaBufferIndex()const
+	Uint CristerResidency::MorphDeltaBufferIndex()const
 	{
 		return morphDeltaBufferIndex_;
 	}
@@ -693,7 +710,7 @@ namespace SeedCore
 	* コメント参照)の bindless SRV。どの SubMesh も morphs_ を持たなければ
 	* 0xFFFFFFFF。
 	*/
-	Uint CristerGpu::VertexMorphSourceBufferIndex()const
+	Uint CristerResidency::VertexMorphSourceBufferIndex()const
 	{
 		return vertexMorphSourceBufferIndex_;
 	}
@@ -712,7 +729,7 @@ namespace SeedCore
 	* skins_ が空でなく、RT プロキシ構築時にスキンド SubMesh を
 	* 1つ以上見つけた場合に true。
 	*/
-	Bool CristerGpu::ProxySkinned()const
+	Bool CristerResidency::ProxySkinned()const
 	{
 		return raytracingSkinVertexResource_ != nullptr;
 	}
@@ -729,7 +746,7 @@ namespace SeedCore
 	* RT プロキシのスキン頂点プール (raytracingSkinVertexResource_) の
 	* bindless SRV。ProxySkinned が false なら SC_INVALID。
 	*/
-	Uint CristerGpu::ProxySkinVertexBufferIndex()const
+	Uint CristerResidency::ProxySkinVertexBufferIndex()const
 	{
 		return raytracingSkinVertexBufferIndex_;
 	}
@@ -746,7 +763,7 @@ namespace SeedCore
 	* RT プロキシのモーフデルタプール (raytracingMorphDeltaResource_) の
 	* bindless SRV。どの SubMesh も morphs_ を持たなければ SC_INVALID。
 	*/
-	Uint CristerGpu::ProxyMorphDeltaBufferIndex()const
+	Uint CristerResidency::ProxyMorphDeltaBufferIndex()const
 	{
 		return raytracingMorphDeltaBufferIndex_;
 	}
@@ -772,7 +789,7 @@ namespace SeedCore
 	* 1つを返す。レンダラーは各 SubMesh を 配置 * アクターワールド で
 	* 描く。
 	*/
-	std::span<const Matrix> CristerGpu::SubMeshPlacement(Size subMeshIndex)const
+	std::span<const Matrix> CristerResidency::SubMeshPlacement(Size subMeshIndex)const
 	{
 		/// [EN] Fallback for an index Upload() has not resolved: one identity placement, i.e. draw at the actor world as-is.
 		/// [JP] Upload() が解決していないインデックス用のフォールバック: 単位行列1つ、つまりアクターワールドのまま描く。
@@ -801,7 +818,7 @@ namespace SeedCore
 	* 上書きする前の、インスタンスごとのモーフブレンド用一時バッファの
 	* 種として使う — それ以外の頂点はベース位置のまま保つ必要がある。
 	*/
-	void CristerGpu::CopyMorph(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* destination)const
+	void CristerResidency::CopyMorph(ID3D12GraphicsCommandList* cmdList, ID3D12Resource* destination)const
 	{
 		/// [EN] Nothing to copy without a proxy, a destination, or any proxy vertices.
 		/// [JP] プロキシか書き込み先、またはプロキシ頂点が無ければコピーするものは無い。
@@ -817,23 +834,47 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Synchronously uploads the cluster's page (and the vertex pool if
-	* the cluster is LOD 0). No-op when already resident.
+	* Creates the cluster's page (and the vertex pool if the cluster is
+	* LOD 0) and records its copies on lane. No-op when already resident.
+	*
+	* Geometry streaming (Nanite-style residency) + budget control
+	* overview. A page is one Cluster's slice of meshlets/bounds/vertex-
+	* indices/primitive-indices (+ its own vertex range for LOD>=1). LOD 0
+	* clusters share the original vertex pool page instead. Pages upload
+	* on demand from the CPU-resident arrays and are evicted by
+	* EvictClusterBudget when total VRAM exceeds the budget. Pinned pages
+	* (coarsest cluster per SubMesh, skinned LOD 0 and the pool they
+	* reference) never evict, so every model can always be drawn at some
+	* LOD. MakeClusterResident/MakePoolResident/EvictCluster/EvictPool are
+	* the resident/evict pair for cluster vs. pool. They are public
+	* because ModelRenderer drives MakeClusterResident from outside.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* クラスタのページを同期アップロードする（LOD 0 なら頂点プールも）。
+	* クラスタのページを作り（LOD 0 なら頂点プールも）、そのコピーを lane に記録する。
 	* 常駐済みなら何もしない。
+	*
+	* ジオメトリストリーミング（Nanite 型の常駐管理）+ 予算制御の概要。
+	* ページは 1 Cluster 分の meshlet/バウンド/頂点インデックス/
+	* プリミティブインデックスのスライス（LOD>=1 は専用頂点範囲込み）。
+	* LOD 0 クラスタは代わりに元の共有頂点プールページを参照する。
+	* ページは CPU 常駐配列からオンデマンドでアップロードされ、VRAM が
+	* 予算を超えると EvictClusterBudget が追い出す。ピン留めページ（SubMesh
+	* ごとの最粗クラスタ、スキンド LOD 0 とそれが参照するプール）は
+	* 追い出さないため、モデルは常に何らかの LOD で描画できる。
+	* MakeClusterResident/MakePoolResident/EvictCluster/EvictPool は
+	* クラスタ/プールの常駐・追い出しの対。ModelRenderer が外から
+	* MakeClusterResident を呼ぶため public にしている。
 	*/
-	void CristerGpu::MakeClusterResident(const Crister& crister, Uint32 clusterIndex)
+	void CristerResidency::MakeClusterResident(const Crister& crister, ID3D12Device* device, D3D12TransferLane& lane, BindlessHeap* heap, Uint32 clusterIndex)
 	{
 		StreamingGeometry& page = streamingGeometry_[clusterIndex];
 		const Cluster& cluster = crister.geometry_.clusters_[clusterIndex];
 
 		/// [EN] Nothing to do for a page already in VRAM, an empty cluster, or a Crister that has not run Upload().
 		/// [JP] 既に VRAM にあるページ、空のクラスタ、Upload() を通っていない Crister では何もしない。
-		if (page.resident_ || cluster.meshletCount_ == 0 || !device_)
+		if (page.resident_ || cluster.meshletCount_ == 0 || !uploaded_)
 		{
 			return;
 		}
@@ -842,7 +883,7 @@ namespace SeedCore
 		/// [JP] 共有プールを読むページは、先にプールを常駐させ、プールを残しておく参照の1つとして数える。
 		if (!page.ownsVertices_)
 		{
-			MakePoolResident(crister);
+			MakePoolResident(crister, device, lane, heap);
 			poolResidentReferences_++;
 		}
 
@@ -887,28 +928,26 @@ namespace SeedCore
 			}
 		}
 
-		/// [EN] Create the page's buffers and SRVs on one upload batch.
-		/// [JP] ページのバッファと SRV を、1つのアップロードバッチで作る。
-		DirectX::ResourceUploadBatch resourceUpload(device_);
-		resourceUpload.Begin();
-		HRESULT hr = CreateStaticBufferUnbounded(device_, resourceUpload, localMeshlets.data(), localMeshlets.size(), sizeof(MeshletDesc), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, page.meshletResource_.ReleaseAndGetAddressOf());
+		/// [EN] Create the page's buffers and SRVs, recording their copies on lane.
+		/// [JP] ページのバッファと SRV を作り、そのコピーを lane に記録する。
+		HRESULT hr = CreateStaticBufferUnbounded(device, lane, localMeshlets.data(), localMeshlets.size(), sizeof(MeshletDesc), page.meshletResource_.ReleaseAndGetAddressOf());
 		SC_HR_CHECK(hr, "メッシュレットバッファの生成に失敗しました");
-		page.meshletBufferIndex_ = CreateStructuredShaderResourceView(device_, bindlessHeap_, page.meshletResource_.Get(), cluster.meshletCount_, sizeof(MeshletDesc));
+		page.meshletBufferIndex_ = CreateStructuredShaderResourceView(device, heap, page.meshletResource_.Get(), cluster.meshletCount_, sizeof(MeshletDesc));
 
-		hr = CreateStaticBufferUnbounded(device_, resourceUpload, localBounds.data(), localBounds.size(), sizeof(MeshletBound), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, page.meshletBoundResource_.ReleaseAndGetAddressOf());
+		hr = CreateStaticBufferUnbounded(device, lane, localBounds.data(), localBounds.size(), sizeof(MeshletBound), page.meshletBoundResource_.ReleaseAndGetAddressOf());
 		SC_HR_CHECK(hr, "メッシュレットバウンドバッファの生成に失敗しました");
-		page.meshletBoundBufferIndex_ = CreateStructuredShaderResourceView(device_, bindlessHeap_, page.meshletBoundResource_.Get(), cluster.meshletCount_, sizeof(MeshletBound));
+		page.meshletBoundBufferIndex_ = CreateStructuredShaderResourceView(device, heap, page.meshletBoundResource_.Get(), cluster.meshletCount_, sizeof(MeshletBound));
 
-		hr = CreateStaticBufferUnbounded(device_, resourceUpload, localVertexIndices.data(), localVertexIndices.size(), sizeof(Uint32), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, page.vertexIndicesResource_.ReleaseAndGetAddressOf());
+		hr = CreateStaticBufferUnbounded(device, lane, localVertexIndices.data(), localVertexIndices.size(), sizeof(Uint32), page.vertexIndicesResource_.ReleaseAndGetAddressOf());
 		SC_HR_CHECK(hr, "頂点インデックスバッファの生成に失敗しました");
-		page.vertexIndicesBufferIndex_ = CreateStructuredShaderResourceView(device_, bindlessHeap_, page.vertexIndicesResource_.Get(), static_cast<Uint>(localVertexIndices.size()), sizeof(Uint32));
+		page.vertexIndicesBufferIndex_ = CreateStructuredShaderResourceView(device, heap, page.vertexIndicesResource_.Get(), static_cast<Uint>(localVertexIndices.size()), sizeof(Uint32));
 
-		hr = CreateStaticBufferUnbounded(device_, resourceUpload, localPrimitives.data(), alignedSize, 1, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, page.primitiveIndicesResource_.ReleaseAndGetAddressOf());
+		hr = CreateStaticBufferUnbounded(device, lane, localPrimitives.data(), alignedSize, 1, page.primitiveIndicesResource_.ReleaseAndGetAddressOf());
 		SC_HR_CHECK(hr, "プリミティブインデックスバッファの生成に失敗しました");
 		{
 			/// [EN] The primitive indices get a raw (ByteAddressBuffer) SRV over 32-bit words instead of a structured one.
 			/// [JP] プリミティブインデックスには構造化バッファではなく、32bit ワード単位の raw (ByteAddressBuffer) の SRV を作る。
-			Uint index = bindlessHeap_->AllocateIndex();
+			Uint index = heap->AllocateIndex();
 
 			D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc{};
 			shaderResourceViewDesc.Format = DXGI_FORMAT_R32_TYPELESS;
@@ -918,26 +957,17 @@ namespace SeedCore
 			shaderResourceViewDesc.Buffer.NumElements = alignedSize / 4;
 			shaderResourceViewDesc.Buffer.StructureByteStride = 0;
 			shaderResourceViewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_RAW;
-			device_->CreateShaderResourceView(page.primitiveIndicesResource_.Get(), &shaderResourceViewDesc, bindlessHeap_->CPUHandle(index));
+			device->CreateShaderResourceView(page.primitiveIndicesResource_.Get(), &shaderResourceViewDesc, heap->CPUHandle(index));
 
 			page.primitiveIndicesBufferIndex_ = index;
 		}
 
 		if (page.ownsVertices_)
 		{
-			hr = CreateStaticBufferUnbounded(device_, resourceUpload, localVertices.data(), localVertices.size(), sizeof(CompressedVertex), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, page.vertexResource_.ReleaseAndGetAddressOf());
+			hr = CreateStaticBufferUnbounded(device, lane, localVertices.data(), localVertices.size(), sizeof(CompressedVertex), page.vertexResource_.ReleaseAndGetAddressOf());
 			SC_HR_CHECK(hr, "頂点バッファの生成に失敗しました");
-			page.vertexBufferIndex_ = CreateStructuredShaderResourceView(device_, bindlessHeap_, page.vertexResource_.Get(), static_cast<Uint>(localVertices.size()), sizeof(CompressedVertex));
+			page.vertexBufferIndex_ = CreateStructuredShaderResourceView(device, heap, page.vertexResource_.Get(), static_cast<Uint>(localVertices.size()), sizeof(CompressedVertex));
 		}
-
-		/// [EN] Submit under the queue lock and wait, so the page is drawable as soon as this returns.
-		/// [JP] キューのロックの下で投入して待ち、戻った時点でページを描画できるようにする。
-		std::future<void> finished;
-		{
-			auto queueLock = uploadQueue_->AcquireLock();
-			finished = resourceUpload.End(uploadQueue_->GetCommandQueue());
-		}
-		finished.wait();
 
 		/// [EN] Count the page's VRAM against the geometry budget.
 		/// [JP] ページの VRAM をジオメトリの予算に数える。
@@ -951,8 +981,8 @@ namespace SeedCore
 	* Texture mip counterpart to MakeClusterResident: streams a mip level
 	* instead of a cluster (see StreamingTexture below). targetMip is
 	* uploaded directly rather than one level at a time, so a texture
-	* reaches the resolution the camera wants in a single synchronous
-	* upload instead of one fence wait per level.
+	* reaches the resolution the camera wants in a single copy recorded on
+	* lane instead of one copy per level.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -960,10 +990,10 @@ namespace SeedCore
 	* MakeClusterResident のテクスチャミップ版の対。クラスタではなく
 	* ミップレベルをストリーミングする（下記 StreamingTexture 参照）。
 	* targetMip は1段ずつではなく直接アップロードするので、テクスチャは
-	* 段ごとにフェンスを待つことなく、1回の同期アップロードでカメラが
+	* 段ごとにコピーすることなく、lane に記録する1回のコピーでカメラが
 	* 求める解像度に届く。
 	*/
-	void CristerGpu::MakeTextureMipResident(const Crister& crister, Uint32 textureIndex, Uint32 targetMip)
+	void CristerResidency::MakeTextureMipResident(const Crister& crister, ID3D12Device* device, D3D12TransferLane& lane, BindlessHeap* heap, Uint32 textureIndex, Uint32 targetMip)
 	{
 		if (textureIndex >= streamingTextures_.size())
 		{
@@ -974,7 +1004,7 @@ namespace SeedCore
 
 		/// [EN] A texture that does not stream, or a Crister that has not run Upload(), cannot take a mip.
 		/// [JP] ストリーミングしないテクスチャや、Upload() を通っていない Crister にはミップを入れられない。
-		if (!streamingTexture.valid_ || !device_)
+		if (!streamingTexture.valid_ || !uploaded_)
 		{
 			return;
 		}
@@ -1013,8 +1043,10 @@ namespace SeedCore
 		D3D12_HEAP_PROPERTIES heapProperties{};
 		heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
 
+		/// [EN] Created in COMMON: the copy queue promotes it to COPY_DEST, it decays back to COMMON once the copy completes, and the direct queue promotes it to a shader-resource state when it is sampled.
+		/// [JP] COMMON で作る。Copy キューが COPY_DEST へ自動で上げ、コピーの完了で COMMON に戻り、Direct キューがサンプリングするときにシェーダーリソースの状態へ自動で上げる。
 		Microsoft::WRL::ComPtr<ID3D12Resource> newResource;
-		HRESULT hr = device_->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &textureDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(newResource.ReleaseAndGetAddressOf()));
+		HRESULT hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &textureDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(newResource.ReleaseAndGetAddressOf()));
 
 		/// [EN] A failure on one mip is not worth taking the whole model down: warn and carry on without this mip (topResidentMip_ does not advance).
 		/// [JP] ミップ1枚の失敗はモデル全体を巻き込んでクラッシュさせるほどではない。警告を出してこのミップ抜きで続行する(topResidentMip_ は進めない)。
@@ -1028,34 +1060,21 @@ namespace SeedCore
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(newResource.Get());
 #endif
 
-		/// [EN] Upload the mip's blocks straight from cacheData_, move it to a shader-readable state, and wait for the upload to finish.
-		/// [JP] ミップのブロックを cacheData_ から直接アップロードし、シェーダーが読める状態へ移して、アップロードの完了を待つ。
-		D3D12_SUBRESOURCE_DATA subresource{};
-		subresource.pData = bitmap.cacheData_.data() + byteOffset;
-		subresource.RowPitch = static_cast<LONG_PTR>(rowPitch);
-		subresource.SlicePitch = static_cast<LONG_PTR>(slicePitch);
-
-		DirectX::ResourceUploadBatch resourceUpload(device_);
-		resourceUpload.Begin();
-		resourceUpload.Upload(newResource.Get(), 0, &subresource, 1);
-		resourceUpload.Transition(newResource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-		std::future<void> finished;
-		{
-			auto queueLock = uploadQueue_->AcquireLock();
-			finished = resourceUpload.End(uploadQueue_->GetCommandQueue());
-		}
-		finished.wait();
+		/// [EN] Record the copy of the mip's tightly packed blocks straight from cacheData_.
+		/// [JP] 隙間なく詰まったミップのブロックを、cacheData_ から直接コピーするよう記録する。
+		std::span<const std::byte> mipBytes = std::as_bytes(std::span(bitmap.cacheData_)).subspan(byteOffset, slicePitch);
+		lane.GetStream().Upload(device, lane.GetCommandList(), newResource.Get(), 0, mipBytes);
 
 		/// [EN] Give the new mip its own bindless SRV.
 		/// [JP] 新しいミップに専用の bindless SRV を作る。
-		Uint newIndex = bindlessHeap_->AllocateIndex();
+		Uint newIndex = heap->AllocateIndex();
 		D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc{};
 		shaderResourceViewDesc.Format = DXGI_FORMAT_BC7_UNORM;
 		shaderResourceViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		shaderResourceViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		shaderResourceViewDesc.Texture2D.MipLevels = 1;
 		shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
-		device_->CreateShaderResourceView(newResource.Get(), &shaderResourceViewDesc, bindlessHeap_->CPUHandle(newIndex));
+		device->CreateShaderResourceView(newResource.Get(), &shaderResourceViewDesc, heap->CPUHandle(newIndex));
 
 		/// [EN] Intermediate mips are not kept: only the first upload of the pinned (coarsest) mip goes to pinnedMip_; every other upload replaces currentMip_, releasing the old one first.
 		/// [JP] 中間ミップは常駐させ続けない: ピン留めミップ(最粗)を初めてアップロードする1回だけ pinnedMip_ へ、それ以外は currentMip_ を置き換える(古い currentMip_ があれば解放してから差し替える)。
@@ -1071,7 +1090,7 @@ namespace SeedCore
 			{
 				/// [EN] The mip being replaced is the one the in-flight frames are still sampling - this upgrade is driven by worldScale, so it fires on the very frame the Actor's Scale changes. Dropping the last reference here would destroy the texture out from under the GPU.
 				/// [JP] 置き換えられるミップは、インフライトのフレームがまだサンプリングしている当のもの — この昇格は worldScale で駆動されるため、Actor の Scale を変えたまさにそのフレームで発火する。ここで最後の参照を落とすと、GPU が使っている最中にテクスチャを破棄することになる。
-				bindlessHeap_->Release(std::move(streamingTexture.currentMip_.resource_), streamingTexture.currentMip_.bindlessIndex_);
+				heap->Release(std::move(streamingTexture.currentMip_.resource_), streamingTexture.currentMip_.bindlessIndex_);
 				totalResidentTextureBytes_ -= streamingTexture.currentMip_.sizeBytes_;
 			}
 			streamingTexture.currentMip_.resource_ = newResource;
@@ -1088,39 +1107,31 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Synchronously uploads the shared LOD 0 vertex pool page. No-op when
-	* already resident, when poolVertexEnd_ is 0 (no LOD 0 clusters), or
-	* when no device is bound yet.
+	* Creates the shared LOD 0 vertex pool page and records its copy on
+	* lane. No-op when already resident, when poolVertexEnd_ is 0 (no
+	* LOD 0 clusters), or when Upload() has not run.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 共有 LOD 0 頂点プールページを同期アップロードする。常駐済み、
-	* poolVertexEnd_ が 0（LOD 0 クラスタが無い）、またはまだ device が
-	* 束縛されていない場合は何もしない。
+	* 共有 LOD 0 頂点プールページを作り、そのコピーを lane に記録する。
+	* 常駐済み、poolVertexEnd_ が 0（LOD 0 クラスタが無い）、または
+	* Upload() を通っていない場合は何もしない。
 	*/
-	void CristerGpu::MakePoolResident(const Crister& crister)
+	void CristerResidency::MakePoolResident(const Crister& crister, ID3D12Device* device, D3D12TransferLane& lane, BindlessHeap* heap)
 	{
 		/// [EN] Nothing to do when the pool is already in VRAM, no LOD 0 cluster needs it, or Upload() has not run.
 		/// [JP] プールが既に VRAM にあるか、どの LOD 0 クラスタも必要としないか、Upload() を通っていなければ何もしない。
-		if (poolResident_ || poolVertexEnd_ == 0 || !device_)
+		if (poolResident_ || poolVertexEnd_ == 0 || !uploaded_)
 		{
 			return;
 		}
 
 		/// [EN] The pool is the leading [0, poolVertexEnd_) range of compressedVertices_, uploaded as is.
 		/// [JP] プールは compressedVertices_ の先頭 [0, poolVertexEnd_) の範囲で、そのままアップロードする。
-		DirectX::ResourceUploadBatch resourceUpload(device_);
-		resourceUpload.Begin();
-		HRESULT hr = CreateStaticBufferUnbounded(device_, resourceUpload, crister.geometry_.compressedVertices_.data(), poolVertexEnd_, sizeof(CompressedVertex), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, poolResource_.ReleaseAndGetAddressOf());
+		HRESULT hr = CreateStaticBufferUnbounded(device, lane, crister.geometry_.compressedVertices_.data(), poolVertexEnd_, sizeof(CompressedVertex), poolResource_.ReleaseAndGetAddressOf());
 		SC_HR_CHECK(hr, "頂点プールバッファの生成に失敗しました");
-		poolBufferIndex_ = CreateStructuredShaderResourceView(device_, bindlessHeap_, poolResource_.Get(), poolVertexEnd_, sizeof(CompressedVertex));
-		std::future<void> finished;
-		{
-			auto queueLock = uploadQueue_->AcquireLock();
-			finished = resourceUpload.End(uploadQueue_->GetCommandQueue());
-		}
-		finished.wait();
+		poolBufferIndex_ = CreateStructuredShaderResourceView(device, heap, poolResource_.Get(), poolVertexEnd_, sizeof(CompressedVertex));
 
 		/// [EN] Count the pool against the geometry budget.
 		/// [JP] プールをジオメトリの予算に数える。
@@ -1142,7 +1153,7 @@ namespace SeedCore
 	* （インフライトのフレームがまだ参照している可能性があるため遅延
 	* 解放）。常駐していないかピン留め済みなら何もしない。
 	*/
-	void CristerGpu::EvictCluster(Uint32 clusterIndex)
+	void CristerResidency::EvictCluster(BindlessHeap* heap, Uint32 clusterIndex)
 	{
 		StreamingGeometry& page = streamingGeometry_[clusterIndex];
 		if (!page.resident_ || page.pinned_)
@@ -1152,13 +1163,13 @@ namespace SeedCore
 
 		/// [EN] Hand the page's buffers to the deferred-reclaim ring and return their descriptors.
 		/// [JP] ページのバッファを遅延回収リングへ渡し、ディスクリプタを返す。
-		bindlessHeap_->Release(std::move(page.meshletResource_), page.meshletBufferIndex_);
-		bindlessHeap_->Release(std::move(page.meshletBoundResource_), page.meshletBoundBufferIndex_);
-		bindlessHeap_->Release(std::move(page.vertexIndicesResource_), page.vertexIndicesBufferIndex_);
-		bindlessHeap_->Release(std::move(page.primitiveIndicesResource_), page.primitiveIndicesBufferIndex_);
+		heap->Release(std::move(page.meshletResource_), page.meshletBufferIndex_);
+		heap->Release(std::move(page.meshletBoundResource_), page.meshletBoundBufferIndex_);
+		heap->Release(std::move(page.vertexIndicesResource_), page.vertexIndicesBufferIndex_);
+		heap->Release(std::move(page.primitiveIndicesResource_), page.primitiveIndicesBufferIndex_);
 		if (page.ownsVertices_)
 		{
-			bindlessHeap_->Release(std::move(page.vertexResource_), page.vertexBufferIndex_);
+			heap->Release(std::move(page.vertexResource_), page.vertexBufferIndex_);
 		}
 		else
 		{
@@ -1187,7 +1198,7 @@ namespace SeedCore
 	* ピン留めされた最粗ミップへ戻す。無効、または既にピン留めミップの
 	* 場合は何もしない。
 	*/
-	void CristerGpu::EvictTextureMip(Uint32 textureIndex)
+	void CristerResidency::EvictTextureMip(BindlessHeap* heap, Uint32 textureIndex)
 	{
 		if (textureIndex >= streamingTextures_.size())
 		{
@@ -1205,7 +1216,7 @@ namespace SeedCore
 
 		/// [EN] Release currentMip_, take it out of the texture total, and fall back to the pinned mip.
 		/// [JP] currentMip_ を解放してテクスチャの合計から外し、ピン留めのミップへ戻す。
-		bindlessHeap_->Release(std::move(streamingTexture.currentMip_.resource_), streamingTexture.currentMip_.bindlessIndex_);
+		heap->Release(std::move(streamingTexture.currentMip_.resource_), streamingTexture.currentMip_.bindlessIndex_);
 		streamingTexture.currentMip_.bindlessIndex_ = SC_INVALID;
 		totalResidentTextureBytes_ -= streamingTexture.currentMip_.sizeBytes_;
 		streamingTexture.currentMip_.sizeBytes_ = 0;
@@ -1229,7 +1240,7 @@ namespace SeedCore
 	* ピン留め済み、または常駐中のクラスタページから参照されている場合
 	* （poolResidentReferences_ > 0）は何もしない。
 	*/
-	void CristerGpu::EvictPool()
+	void CristerResidency::EvictPool(BindlessHeap* heap)
 	{
 		/// [EN] The pool may go only when it is resident, not pinned, and no resident page reads it.
 		/// [JP] プールを追い出せるのは、常駐していて、ピン留めでなく、どの常駐ページも読んでいないときだけ。
@@ -1237,7 +1248,7 @@ namespace SeedCore
 		{
 			return;
 		}
-		bindlessHeap_->Release(std::move(poolResource_), poolBufferIndex_);
+		heap->Release(std::move(poolResource_), poolBufferIndex_);
 		totalResidentGeometryBytes_ -= poolSizeBytes_;
 		poolSizeBytes_ = 0;
 		poolResident_ = false;
@@ -1256,7 +1267,7 @@ namespace SeedCore
 	* 今フレーム使用中として記録し、GPU がまだ参照しうる間は追い出しの
 	* 経過フレームガードで生存させる。
 	*/
-	void CristerGpu::TouchCluster(Uint32 clusterIndex, Uint64 frame)
+	void CristerResidency::TouchCluster(Uint32 clusterIndex, Uint64 frame)
 	{
 		streamingGeometry_[clusterIndex].lastUsedFrame_ = frame;
 
@@ -1280,7 +1291,7 @@ namespace SeedCore
 	* テクスチャの現在常駐中のミップを今フレーム使用中として記録し、
 	* GPU がまだ参照しうる間は追い出しの経過フレームガードで生存させる。
 	*/
-	void CristerGpu::TouchTexture(Uint32 textureIndex, Uint64 frame)
+	void CristerResidency::TouchTexture(Uint32 textureIndex, Uint64 frame)
 	{
 		if (textureIndex >= streamingTextures_.size())
 		{
@@ -1298,7 +1309,7 @@ namespace SeedCore
 	* [JP]
 	* クラスタのページが現在 GPU に常駐しているか。
 	*/
-	Bool CristerGpu::ClusterResident(Uint32 clusterIndex)const
+	Bool CristerResidency::ClusterResident(Uint32 clusterIndex)const
 	{
 		return streamingGeometry_[clusterIndex].resident_;
 	}
@@ -1312,7 +1323,7 @@ namespace SeedCore
 	* [JP]
 	* テクスチャがミップ 0（最も細かい）まで完全にストリームインしているか。
 	*/
-	Bool CristerGpu::TextureResident(Uint32 textureIndex)const
+	Bool CristerResidency::TextureResident(Uint32 textureIndex)const
 	{
 		if (textureIndex >= streamingTextures_.size())
 		{
@@ -1341,7 +1352,7 @@ namespace SeedCore
 	* 参照中のバッファを失わないよう、evictAgeFrames_ フレーム未使用の
 	* ページのみ追い出す。
 	*/
-	void CristerGpu::EvictClusterBudget(Uint64 currentFrame)
+	void CristerResidency::EvictClusterBudget(BindlessHeap* heap, Uint64 currentFrame)
 	{
 		/// [EN] Nothing to do while the geometry fits its budget.
 		/// [JP] ジオメトリが予算内に収まっている間は何もしない。
@@ -1356,7 +1367,7 @@ namespace SeedCore
 		{
 			/// [EN] Crister the page belongs to.
 			/// [JP] ページが属する Crister。
-			CristerGpu* crister_;
+			CristerResidency* crister_;
 
 			/// [EN] Index of the page's cluster in that Crister.
 			/// [JP] その Crister での、ページのクラスタのインデックス。
@@ -1370,7 +1381,7 @@ namespace SeedCore
 		/// [EN] Collect every resident, unpinned page across all Crister that has gone unused for at least evictAgeFrames_.
 		/// [JP] 全 Crister から、常駐中でピン留めでなく、evictAgeFrames_ 以上使われていないページを集める。
 		DynamicArray<Candidate> candidates;
-		for (CristerGpu* crister : streamingRegistry_)
+		for (CristerResidency* crister : streamingRegistry_)
 		{
 			for (Size clusterIndex = 0; clusterIndex < crister->streamingGeometry_.size(); clusterIndex++)
 			{
@@ -1397,12 +1408,12 @@ namespace SeedCore
 			{
 				break;
 			}
-			candidate.crister_->EvictCluster(candidate.clusterIndex_);
+			candidate.crister_->EvictCluster(heap, candidate.clusterIndex_);
 		}
 
 		/// [EN] Still over budget: free vertex pools that have gone unused long enough and that no resident page reads any more.
 		/// [JP] まだ予算を超えていれば、十分長く使われておらず、もうどの常駐ページも読んでいない頂点プールを解放する。
-		for (CristerGpu* crister : streamingRegistry_)
+		for (CristerResidency* crister : streamingRegistry_)
 		{
 			if (totalResidentGeometryBytes_ <= geometryBudgetBytes_)
 			{
@@ -1410,7 +1421,7 @@ namespace SeedCore
 			}
 			if (crister->poolLastUsedFrame_ + evictAgeFrames_ <= currentFrame)
 			{
-				crister->EvictPool();
+				crister->EvictPool(heap);
 			}
 		}
 	}
@@ -1428,7 +1439,7 @@ namespace SeedCore
 	* 未ピンの常駐ミップを古い順に追い出し、常駐テクスチャメモリ合計を
 	* textureBudgetBytes_ 以内に収める。
 	*/
-	void CristerGpu::EvictTextureBudget(Uint64 currentFrame)
+	void CristerResidency::EvictTextureBudget(BindlessHeap* heap, Uint64 currentFrame)
 	{
 		/// [EN] Nothing to do while the textures fit their budget.
 		/// [JP] テクスチャが予算内に収まっている間は何もしない。
@@ -1443,7 +1454,7 @@ namespace SeedCore
 		{
 			/// [EN] Crister the texture belongs to.
 			/// [JP] テクスチャが属する Crister。
-			CristerGpu* crister_;
+			CristerResidency* crister_;
 
 			/// [EN] Index of the texture in that Crister.
 			/// [JP] その Crister でのテクスチャのインデックス。
@@ -1457,7 +1468,7 @@ namespace SeedCore
 		/// [EN] Collect every texture across all Crister holding a mip finer than its pinned one that has gone unused for at least evictAgeFrames_.
 		/// [JP] 全 Crister から、ピン留めより細かいミップを持ち、evictAgeFrames_ 以上使われていないテクスチャを集める。
 		DynamicArray<Candidate> candidates;
-		for (CristerGpu* crister : streamingRegistry_)
+		for (CristerResidency* crister : streamingRegistry_)
 		{
 			for (Size textureIndex = 0; textureIndex < crister->streamingTextures_.size(); textureIndex++)
 			{
@@ -1484,7 +1495,7 @@ namespace SeedCore
 			{
 				break;
 			}
-			candidate.crister_->EvictTextureMip(candidate.textureIndex_);
+			candidate.crister_->EvictTextureMip(heap, candidate.textureIndex_);
 		}
 	}
 
@@ -1499,7 +1510,7 @@ namespace SeedCore
 	* クラスタページの頂点バッファの bindless SRV — 頂点を自前で持てば
 	* 自身のページ、そうでなければ共有 LOD 0 プール。
 	*/
-	Uint CristerGpu::ClusterVertexBufferIndex(Uint32 clusterIndex)const
+	Uint CristerResidency::ClusterVertexBufferIndex(Uint32 clusterIndex)const
 	{
 		const StreamingGeometry& page = streamingGeometry_[clusterIndex];
 
@@ -1517,7 +1528,7 @@ namespace SeedCore
 	* [JP]
 	* クラスタページの meshlet バッファの bindless SRV。
 	*/
-	Uint CristerGpu::ClusterMeshletBufferIndex(Uint32 clusterIndex)const
+	Uint CristerResidency::ClusterMeshletBufferIndex(Uint32 clusterIndex)const
 	{
 		return streamingGeometry_[clusterIndex].meshletBufferIndex_;
 	}
@@ -1531,7 +1542,7 @@ namespace SeedCore
 	* [JP]
 	* クラスタページの meshlet バウンドバッファの bindless SRV。
 	*/
-	Uint CristerGpu::ClusterMeshletBoundBufferIndex(Uint32 clusterIndex)const
+	Uint CristerResidency::ClusterMeshletBoundBufferIndex(Uint32 clusterIndex)const
 	{
 		return streamingGeometry_[clusterIndex].meshletBoundBufferIndex_;
 	}
@@ -1545,7 +1556,7 @@ namespace SeedCore
 	* [JP]
 	* クラスタページの頂点インデックスバッファの bindless SRV。
 	*/
-	Uint CristerGpu::ClusterVertexIndicesBufferIndex(Uint32 clusterIndex)const
+	Uint CristerResidency::ClusterVertexIndicesBufferIndex(Uint32 clusterIndex)const
 	{
 		return streamingGeometry_[clusterIndex].vertexIndicesBufferIndex_;
 	}
@@ -1559,7 +1570,7 @@ namespace SeedCore
 	* [JP]
 	* クラスタページのプリミティブインデックスバッファの bindless SRV。
 	*/
-	Uint CristerGpu::ClusterPrimitiveIndicesBufferIndex(Uint32 clusterIndex)const
+	Uint CristerResidency::ClusterPrimitiveIndicesBufferIndex(Uint32 clusterIndex)const
 	{
 		return streamingGeometry_[clusterIndex].primitiveIndicesBufferIndex_;
 	}
@@ -1591,7 +1602,7 @@ namespace SeedCore
 	* モーフフィールドをゼロのまま
 	* (ModelStructuredBuffer::morphTargetCount_ == 0)にすること。
 	*/
-	Bool CristerGpu::StandaloneVertices(Uint32 clusterIndex)const
+	Bool CristerResidency::StandaloneVertices(Uint32 clusterIndex)const
 	{
 		return streamingGeometry_[clusterIndex].ownsVertices_;
 	}
@@ -1607,7 +1618,7 @@ namespace SeedCore
 	* 現在 GPU に常駐している最も細かいミップ段。textureIndex が範囲外
 	* なら 0。
 	*/
-	Uint32 CristerGpu::TextureFinestMip(Uint32 textureIndex)const
+	Uint32 CristerResidency::TextureFinestMip(Uint32 textureIndex)const
 	{
 		if (textureIndex >= streamingTextures_.size())
 		{
@@ -1633,7 +1644,7 @@ namespace SeedCore
 	* pixelsPerUnit)を比べる。texcoordDensity が 0 のときはテクスチャが
 	* モデル全体に 1 回貼られている前提にフォールバックする。
 	*/
-	Uint32 CristerGpu::TextureDesiredMip(const Crister& crister, Uint32 textureIndex, Float texcoordDensity, Float worldScale, Float pixelsPerUnit)const
+	Uint32 CristerResidency::TextureDesiredMip(const Crister& crister, Uint32 textureIndex, Float texcoordDensity, Float worldScale, Float pixelsPerUnit)const
 	{
 		/// [EN] A texture that does not stream has no mip to choose.
 		/// [JP] ストリーミングしないテクスチャには選ぶミップが無い。
@@ -1696,7 +1707,7 @@ namespace SeedCore
 	* bindless ヒープインデックスを1つ確保し、resource に対する
 	* StructuredBuffer SRV をそのインデックスへ作成する。
 	*/
-	Uint CristerGpu::CreateStructuredShaderResourceView(ID3D12Device* device, BindlessHeap* heap, ID3D12Resource* resource, Uint elementCount, Uint stride)
+	Uint CristerResidency::CreateStructuredShaderResourceView(ID3D12Device* device, BindlessHeap* heap, ID3D12Resource* resource, Uint elementCount, Uint stride)
 	{
 		/// [EN] Take a free slot in the bindless heap and describe the whole buffer as elementCount structured elements of stride bytes.
 		/// [JP] bindless ヒープの空きスロットを取り、バッファ全体を stride バイトの構造化要素 elementCount 個として記述する。
@@ -1717,25 +1728,24 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Creates a DEFAULT-heap buffer filled with data, the same way
-	* DirectX::CreateStaticBuffer does but with no size cap.
-	* CreateStaticBuffer rejects anything above ~128MB, because
-	* DirectXTK12 treats D3D12_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_A_TERM
-	* as a flat byte limit; D3D12 buffers themselves are bounded only by
-	* GPU memory, and a high-poly mesh's flat 32-bit triangle index
-	* buffer easily goes past 128MB.
+	* Creates a DEFAULT-heap buffer of count * stride bytes and records the
+	* copy of data into it on lane. The size is bounded only by GPU
+	* memory, so a high-poly mesh's flat 32-bit triangle index buffer can
+	* go past 128MB. The buffer stays in COMMON: the copy queue promotes
+	* it to COPY_DEST, it decays back to COMMON once the copy completes,
+	* and the shaders read it through implicit promotion.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* data を詰めた DEFAULT ヒープのバッファを、DirectX::CreateStaticBuffer
-	* と同じ手順で、ただしサイズの上限なしで作る。CreateStaticBuffer は
-	* DirectXTK12 が D3D12_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_A_TERM
-	* を単純なバイト上限として扱うため、約128MB を超えるものを拒否する。
-	* D3D12 のバッファ自体の上限は GPU メモリだけで、ハイポリメッシュの
-	* フラットな 32bit 三角形インデックスバッファは 128MB を簡単に超える。
+	* count * stride バイトの DEFAULT ヒープのバッファを作り、data を
+	* そこへコピーする処理を lane に記録する。サイズの上限は GPU メモリ
+	* だけなので、ハイポリメッシュのフラットな 32bit 三角形インデックス
+	* バッファが 128MB を超えても作れる。バッファは COMMON のまま:
+	* Copy キューが COPY_DEST へ自動で上げ、コピーの完了で COMMON に戻り、
+	* シェーダーは自動の昇格で読む。
 	*/
-	HRESULT CristerGpu::CreateStaticBufferUnbounded(ID3D12Device* device, DirectX::ResourceUploadBatch& resourceUpload, const void* data, Uint64 count, Uint64 stride, D3D12_RESOURCE_STATES afterState, ID3D12Resource** outResource)
+	HRESULT CristerResidency::CreateStaticBufferUnbounded(ID3D12Device* device, D3D12TransferLane& lane, const void* data, Uint64 count, Uint64 stride, ID3D12Resource** outResource)
 	{
 		/// [EN] A plain DEFAULT-heap buffer of the full size, with no cap.
 		/// [JP] 上限なしで、全体のサイズを持つ素の DEFAULT ヒープのバッファ。
@@ -1765,11 +1775,9 @@ namespace SeedCore
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(resource.Get());
 #endif
 
-		/// [EN] Queue the data upload and the move to afterState on the caller's batch; the buffer is filled when the batch is submitted.
-		/// [JP] データのアップロードと afterState への移行を呼び出し側のバッチに積む。バッファはバッチを投入したときに埋まる。
-		D3D12_SUBRESOURCE_DATA subresourceData{ data, 0, 0 };
-		resourceUpload.Upload(resource.Get(), 0, &subresourceData, 1);
-		resourceUpload.Transition(resource.Get(), D3D12_RESOURCE_STATE_COPY_DEST, afterState);
+		/// [EN] Record the copy on lane; the buffer is filled once the caller submits lane and its fence completes.
+		/// [JP] コピーを lane に記録する。バッファが埋まるのは、呼び出し側が lane を投入してそのフェンスが完了したとき。
+		lane.GetStream().Upload(device, lane.GetCommandList(), resource.Get(), 0, std::span<const std::byte>(static_cast<const std::byte*>(data), sizeInBytes));
 
 		/// [EN] Hand ownership of the reference to the caller.
 		/// [JP] 参照の所有権を呼び出し側へ渡す。
@@ -1794,7 +1802,7 @@ namespace SeedCore
 	* ブロックレイアウト（4x4 テクセルブロックあたり 16 バイト、
 	* ミップは順に連結・オフセット未保存）から解決する。
 	*/
-	void CristerGpu::ComputeTextureMipLayout(const Bitmap& bitmap, Uint32 mipIndex, Uint32& outWidth, Uint32& outHeight, Uint64& outRowPitch, Uint64& outSlicePitch, Uint64& outByteOffset)
+	void CristerResidency::ComputeTextureMipLayout(const Bitmap& bitmap, Uint32 mipIndex, Uint32& outWidth, Uint32& outHeight, Uint64& outRowPitch, Uint64& outSlicePitch, Uint64& outByteOffset)
 	{
 		Uint64 offset = 0;
 		Int mipWidth = bitmap.width_;

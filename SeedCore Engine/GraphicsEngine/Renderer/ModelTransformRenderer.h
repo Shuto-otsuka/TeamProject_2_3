@@ -14,6 +14,7 @@ namespace SeedCore
 	struct GraphicsResourceSystem;
 	class Crister;
 	class BindlessHeap;
+	class D3D12TransferLane;
 	class ShaderCache;
 	class RootSignature;
 	class PipelineStateObject;
@@ -77,7 +78,7 @@ namespace SeedCore
 		///      animationAssetIdのポーズをtime時点でmeshAssetIdのCristerへ
 		///      サンプリングし、このレンダラー専有のinstance/bone配列を
 		///      再構築する。
-		void Gather(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix);
+		void Gather(GraphicsResourceSystem& resources, ID3D12Device* device, D3D12TransferLane& transferLane, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix);
 
 		void Upload();
 

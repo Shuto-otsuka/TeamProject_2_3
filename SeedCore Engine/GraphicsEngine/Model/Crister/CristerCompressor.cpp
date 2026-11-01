@@ -363,21 +363,33 @@ namespace SeedCore
 
 		for (Bitmap& texture : bitmaps)
 		{
-			/// [EN] Only images decoded to 8 bits per channel can be baked; anything else is left as it is.
-			/// [JP] 焼けるのはチャンネルあたり 8bit にデコードされた画像だけ。それ以外はそのままにする。
-			if (texture.width_ <= 0 || texture.height_ <= 0 || texture.cacheData_.empty() || texture.bits_ != 8)
+			/// [EN] An image with no texels has nothing to bake.
+			/// [JP] テクセルの無い画像には焼くものが無い。
+			if (texture.width_ <= 0 || texture.height_ <= 0 || texture.cacheData_.empty())
 			{
 				continue;
 			}
 
-			/// [EN] Always produce a mutable RGBA8 buffer (expanding when the decoded image has fewer than 4 components) so it can be dilated in place.
-			/// [JP] dilation で書き換えるため、常に可変の RGBA8 バッファを作る（4 コンポーネント未満なら展開、4 ならコピー）。
+			/// [EN] Only images decoded to 8 or 16 bits per channel, with 1 to 4 channels and as many bytes as that layout needs, can be baked. Anything else is dropped (no data, no mips), so the residency never mistakes undecoded pixels for BC7 blocks.
+			/// [JP] 焼けるのは、チャンネルあたり 8bit か 16bit で 1〜4 チャンネル、その形に必要なだけのバイトがある画像だけ。それ以外は捨て(データもミップも無し)、デコードしたままのピクセルを常駐管理が BC7 のブロックと取り違えないようにする。
 			Size pixelCount = static_cast<Size>(texture.width_) * static_cast<Size>(texture.height_);
+			Size bytesPerComponent = static_cast<Size>(texture.bits_ / 8);
+			Bool supportedLayout = (texture.bits_ == 8 || texture.bits_ == 16) && texture.component_ >= 1 && texture.component_ <= 4;
+			if (!supportedLayout || texture.cacheData_.size() < pixelCount * static_cast<Size>(texture.component_) * bytesPerComponent)
+			{
+				SC_LOG_WARNING("テクスチャ {} の形式({} チャンネル, {}bit)には対応していません。このテクスチャ抜きで続行します。", texture.name_, texture.component_, texture.bits_);
+				texture.cacheData_.clear();
+				texture.mipCount_ = 0;
+				continue;
+			}
+
+			/// [EN] Always produce a mutable RGBA8 buffer (expanding when the decoded image has fewer than 4 components, and narrowing 16-bit channels to 8 bits) so it can be dilated in place.
+			/// [JP] dilation で書き換えるため、常に可変の RGBA8 バッファを作る（4 コンポーネント未満なら展開し、16bit のチャンネルは 8bit へ狭める。8bit の 4 コンポーネントならコピー）。
 			DynamicArray<Uchar> rgba(pixelCount * 4);
 
-			/// [EN] Missing channels are filled with 0, and a missing alpha with 255 so the texel is opaque.
-			/// [JP] 足りないチャンネルは 0 で埋め、アルファが無ければ 255 にして不透明にする。
-			if (texture.component_ == 4)
+			/// [EN] Missing channels are filled with 0, and a missing alpha with 255 so the texel is opaque. A 16-bit channel is little-endian and is rounded to the nearest 8-bit value.
+			/// [JP] 足りないチャンネルは 0 で埋め、アルファが無ければ 255 にして不透明にする。16bit のチャンネルはリトルエンディアンで、最も近い 8bit の値へ丸める。
+			if (texture.component_ == 4 && bytesPerComponent == 1)
 			{
 				memcpy(rgba.data(), texture.cacheData_.data(), pixelCount * 4);
 			}
@@ -389,7 +401,16 @@ namespace SeedCore
 					{
 						if (component < texture.component_)
 						{
-							rgba[pixel * 4 + component] = texture.cacheData_[pixel * texture.component_ + component];
+							Size source = (pixel * static_cast<Size>(texture.component_) + static_cast<Size>(component)) * bytesPerComponent;
+							if (bytesPerComponent == 2)
+							{
+								Uint32 wide = static_cast<Uint32>(texture.cacheData_[source]) | (static_cast<Uint32>(texture.cacheData_[source + 1]) << 8);
+								rgba[pixel * 4 + component] = static_cast<Uchar>((wide * 255 + 32767) / 65535);
+							}
+							else
+							{
+								rgba[pixel * 4 + component] = texture.cacheData_[source];
+							}
 						}
 						else
 						{
@@ -429,6 +450,8 @@ namespace SeedCore
 			if (FAILED(hr))
 			{
 				SC_LOG_WARNING("テクスチャ {} のミップ生成に失敗しました(HRESULT=0x{:08X})。このテクスチャ抜きで続行します。", texture.name_, static_cast<Uint32>(hr));
+				texture.cacheData_.clear();
+				texture.mipCount_ = 0;
 				continue;
 			}
 

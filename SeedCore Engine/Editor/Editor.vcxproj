@@ -179,6 +179,7 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClCompile Include="Editor\Interaction\ViewportPicking.cpp" />
     <ClCompile Include="Editor\Panel\AnimatorControllerPanel.cpp" />
     <ClCompile Include="Editor\Panel\AvatarPanel.cpp" />
+    <ClCompile Include="Editor\Panel\BenchmarkPanel.cpp" />
     <ClCompile Include="Editor\Panel\BootScreenPanel.cpp" />
     <ClCompile Include="Editor\Panel\CanvasViewPanel.cpp" />
     <ClCompile Include="Editor\Panel\ConfigPanel.cpp" />
@@ -271,6 +272,7 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClInclude Include="Editor\Panel\AddComponentPanel.h" />
     <ClInclude Include="Editor\Panel\AnimatorControllerPanel.h" />
     <ClInclude Include="Editor\Panel\AvatarPanel.h" />
+    <ClInclude Include="Editor\Panel\BenchmarkPanel.h" />
     <ClInclude Include="Editor\Panel\BootScreenPanel.h" />
     <ClInclude Include="Editor\Panel\CanvasViewPanel.h" />
     <ClInclude Include="Editor\Panel\ConfigPanel.h" />

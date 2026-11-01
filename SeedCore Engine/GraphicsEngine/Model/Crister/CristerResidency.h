@@ -2,7 +2,7 @@
 
 /**
 * [EN]
-* CristerGpu streams geometry and texture mips the same way: the coarsest
+* CristerResidency streams geometry and texture mips the same way: the coarsest
 * level stays pinned resident, finer levels are made resident on demand,
 * and EvictClusterBudget/EvictTextureBudget reclaim them under separate
 * VRAM budgets (see MakeClusterResident/EvictCluster and
@@ -17,7 +17,7 @@
 * ---------------------------------------------------------------------
 *
 * [JP]
-* CristerGpu はジオメトリとテクスチャのミップを同じ形でストリーミングする。
+* CristerResidency はジオメトリとテクスチャのミップを同じ形でストリーミングする。
 * 最も粗いレベルはピン留めして常駐させ、細かいレベルは必要に応じて
 * 常駐させ、EvictClusterBudget/EvictTextureBudget がそれぞれ別の VRAM
 * 予算で回収する（MakeClusterResident/EvictCluster と
@@ -33,7 +33,7 @@ namespace SeedCore
 {
 	class Crister;
 	class BindlessHeap;
-	class D3D12CommandQueue;
+	class D3D12TransferLane;
 	struct Bitmap;
 
 	/**
@@ -54,7 +54,7 @@ namespace SeedCore
 	* による追い出しを持つ。モデルのデータは Upload() と常駐の関数に
 	* 渡される Crister から読み、CPU 側のモデルのデータは持たない。
 	*/
-	class SEEDCORE_API CristerGpu
+	class SEEDCORE_API CristerResidency
 	{
 	public:
 		/**
@@ -66,26 +66,23 @@ namespace SeedCore
 		* [JP]
 		* 空の GPU 状態を作る。Upload() で中身を埋める。
 		*/
-		CristerGpu() = default;
+		CristerResidency() = default;
 
 		/**
 		* [EN]
-		* Releases every resident streaming page (pinned included — the model
-		* itself is going away) and returns their descriptor indices to
-		* bindlessHeap_. Every GPU resource is handed to the deferred-reclaim
-		* ring rather than dying with this object, since frames still in
-		* flight may be drawing from these exact buffers and textures.
+		* Leaves the shared streaming registry, so budget eviction never walks
+		* into this Crister while it is being torn down. The GPU resources and
+		* descriptors are returned by Release(), which the owner calls before
+		* destroying the Crister.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 常駐中のストリーミングページをすべて解放し（モデル自体が消えるため
-		* ピン留め込み）、ディスクリプタインデックスを bindlessHeap_ へ返す。
-		* GPU リソースはこのオブジェクトと一緒に死なせず、遅延回収リングへ
-		* 渡す — インフライトのフレームがまさにこれらのバッファやテクスチャで
-		* 描画している可能性があるため。
+		* 共有のストリーミングレジストリから外れ、破棄中のこの Crister を予算に
+		* よる追い出しが辿らないようにする。GPU リソースとディスクリプタは、
+		* 持ち主が Crister を破棄する前に呼ぶ Release() が返す。
 		*/
-		~CristerGpu();
+		~CristerResidency();
 
 		/**
 		* [EN]
@@ -96,7 +93,7 @@ namespace SeedCore
 		* [JP]
 		* GPU リソースとストリーミング状態を移動する。
 		*/
-		CristerGpu(CristerGpu&&)noexcept = default;
+		CristerResidency(CristerResidency&&)noexcept = default;
 
 		/**
 		* [EN]
@@ -107,7 +104,28 @@ namespace SeedCore
 		* [JP]
 		* GPU リソースとストリーミング状態をムーブ代入する。
 		*/
-		CristerGpu& operator=(CristerGpu&&)noexcept = default;
+		CristerResidency& operator=(CristerResidency&&)noexcept = default;
+
+		/**
+		* [EN]
+		* Releases every resident streaming page (pinned included — the model
+		* itself is going away), the RT proxy and the morph buffers, and
+		* returns their descriptor indices to heap. Every GPU resource is
+		* handed to the deferred-reclaim ring rather than dying with this
+		* object, since frames still in flight may be drawing from these exact
+		* buffers and textures. No-op for a Crister that never ran Upload().
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 常駐中のストリーミングページ（モデル自体が消えるためピン留め込み）、
+		* RT プロキシ、モーフのバッファをすべて解放し、ディスクリプタ
+		* インデックスを heap へ返す。GPU リソースはこのオブジェクトと一緒に
+		* 死なせず、遅延回収リングへ渡す — インフライトのフレームがまさに
+		* これらのバッファやテクスチャで描画している可能性があるため。
+		* Upload() を通っていない Crister では何もしない。
+		*/
+		void Release(BindlessHeap* heap);
 
 		/**
 		* [EN]
@@ -123,9 +141,11 @@ namespace SeedCore
 		* leading run of mip levels legal as a standalone single-mip BC7
 		* resource), then registers with the shared streaming bookkeeping and
 		* brings the pinned geometry pages/texture mips resident so the model
-		* is immediately drawable at its fallback LOD/resolution. Finer
-		* pages/mips stream in later on demand (MakeClusterResident/
-		* MakeTextureMipResident, driven by ModelRenderer::Gather).
+		* is drawable at its fallback LOD/resolution as soon as lane's work
+		* completes. Finer pages/mips stream in later on demand
+		* (MakeClusterResident/MakeTextureMipResident, driven by
+		* ModelRenderer::Gather). Every copy is only recorded on lane; the
+		* caller submits it and waits for its fence before the model is drawn.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -141,12 +161,14 @@ namespace SeedCore
 		* チェーンから（「単一ミップの独立した BC7 リソース」として合法な
 		* 先頭のミップ範囲へ切り詰めた上で）テクスチャごとのストリーミング
 		* 状態を準備し、最後に共有ストリーミング管理へ登録してピン留め
-		* ジオメトリページ/テクスチャミップを常駐させ、フォールバック
-		* LOD/解像度で即座に描画可能にする。より細かいページ/ミップは後で
-		* オンデマンドにストリームインする（MakeClusterResident/
-		* MakeTextureMipResident、ModelRenderer::Gather から駆動）。
+		* ジオメトリページ/テクスチャミップを常駐させ、lane の処理が終われば
+		* フォールバック LOD/解像度で描画できるようにする。より細かい
+		* ページ/ミップは後でオンデマンドにストリームインする
+		* （MakeClusterResident/MakeTextureMipResident、ModelRenderer::Gather
+		* から駆動）。コピーは lane に記録するだけで、投入とフェンスの待ちは
+		* モデルを描画する前に呼び出し側が行う。
 		*/
-		void Upload(Crister& crister, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap);
+		void Upload(Crister& crister, ID3D12Device* device, D3D12TransferLane& lane, BindlessHeap* heap);
 
 		/**
 		* [EN]
@@ -470,24 +492,48 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Synchronously uploads the cluster's page (and the vertex pool if
-		* the cluster is LOD 0). No-op when already resident.
+		* Creates the cluster's page (and the vertex pool if the cluster is
+		* LOD 0) and records its copies on lane. No-op when already resident.
+		*
+		* Geometry streaming (Nanite-style residency) + budget control
+		* overview. A page is one Cluster's slice of meshlets/bounds/vertex-
+		* indices/primitive-indices (+ its own vertex range for LOD>=1). LOD 0
+		* clusters share the original vertex pool page instead. Pages upload
+		* on demand from the CPU-resident arrays and are evicted by
+		* EvictClusterBudget when total VRAM exceeds the budget. Pinned pages
+		* (coarsest cluster per SubMesh, skinned LOD 0 and the pool they
+		* reference) never evict, so every model can always be drawn at some
+		* LOD. MakeClusterResident/MakePoolResident/EvictCluster/EvictPool are
+		* the resident/evict pair for cluster vs. pool. They are public
+		* because ModelRenderer drives MakeClusterResident from outside.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* クラスタのページを同期アップロードする（LOD 0 なら頂点プールも）。
+		* クラスタのページを作り（LOD 0 なら頂点プールも）、そのコピーを lane に記録する。
 		* 常駐済みなら何もしない。
+		*
+		* ジオメトリストリーミング（Nanite 型の常駐管理）+ 予算制御の概要。
+		* ページは 1 Cluster 分の meshlet/バウンド/頂点インデックス/
+		* プリミティブインデックスのスライス（LOD>=1 は専用頂点範囲込み）。
+		* LOD 0 クラスタは代わりに元の共有頂点プールページを参照する。
+		* ページは CPU 常駐配列からオンデマンドでアップロードされ、VRAM が
+		* 予算を超えると EvictClusterBudget が追い出す。ピン留めページ（SubMesh
+		* ごとの最粗クラスタ、スキンド LOD 0 とそれが参照するプール）は
+		* 追い出さないため、モデルは常に何らかの LOD で描画できる。
+		* MakeClusterResident/MakePoolResident/EvictCluster/EvictPool は
+		* クラスタ/プールの常駐・追い出しの対。ModelRenderer が外から
+		* MakeClusterResident を呼ぶため public にしている。
 		*/
-		void MakeClusterResident(const Crister& crister, Uint32 clusterIndex);
+		void MakeClusterResident(const Crister& crister, ID3D12Device* device, D3D12TransferLane& lane, BindlessHeap* heap, Uint32 clusterIndex);
 
 		/**
 		* [EN]
 		* Texture mip counterpart to MakeClusterResident: streams a mip level
 		* instead of a cluster (see StreamingTexture below). targetMip is
 		* uploaded directly rather than one level at a time, so a texture
-		* reaches the resolution the camera wants in a single synchronous
-		* upload instead of one fence wait per level.
+		* reaches the resolution the camera wants in a single copy recorded on
+		* lane instead of one copy per level.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -495,25 +541,25 @@ namespace SeedCore
 		* MakeClusterResident のテクスチャミップ版の対。クラスタではなく
 		* ミップレベルをストリーミングする（下記 StreamingTexture 参照）。
 		* targetMip は1段ずつではなく直接アップロードするので、テクスチャは
-		* 段ごとにフェンスを待つことなく、1回の同期アップロードでカメラが
+		* 段ごとにコピーすることなく、lane に記録する1回のコピーでカメラが
 		* 求める解像度に届く。
 		*/
-		void MakeTextureMipResident(const Crister& crister, Uint32 textureIndex, Uint32 targetMip);
+		void MakeTextureMipResident(const Crister& crister, ID3D12Device* device, D3D12TransferLane& lane, BindlessHeap* heap, Uint32 textureIndex, Uint32 targetMip);
 
 		/**
 		* [EN]
-		* Synchronously uploads the shared LOD 0 vertex pool page. No-op when
-		* already resident, when poolVertexEnd_ is 0 (no LOD 0 clusters), or
-		* when no device is bound yet.
+		* Creates the shared LOD 0 vertex pool page and records its copy on
+		* lane. No-op when already resident, when poolVertexEnd_ is 0 (no
+		* LOD 0 clusters), or when Upload() has not run.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 共有 LOD 0 頂点プールページを同期アップロードする。常駐済み、
-		* poolVertexEnd_ が 0（LOD 0 クラスタが無い）、またはまだ device が
-		* 束縛されていない場合は何もしない。
+		* 共有 LOD 0 頂点プールページを作り、そのコピーを lane に記録する。
+		* 常駐済み、poolVertexEnd_ が 0（LOD 0 クラスタが無い）、または
+		* Upload() を通っていない場合は何もしない。
 		*/
-		void MakePoolResident(const Crister& crister);
+		void MakePoolResident(const Crister& crister, ID3D12Device* device, D3D12TransferLane& lane, BindlessHeap* heap);
 
 		/**
 		* [EN]
@@ -528,7 +574,7 @@ namespace SeedCore
 		* （インフライトのフレームがまだ参照している可能性があるため遅延
 		* 解放）。常駐していないかピン留め済みなら何もしない。
 		*/
-		void EvictCluster(Uint32 clusterIndex);
+		void EvictCluster(BindlessHeap* heap, Uint32 clusterIndex);
 
 		/**
 		* [EN]
@@ -543,7 +589,7 @@ namespace SeedCore
 		* ピン留めされた最粗ミップへ戻す。無効、または既にピン留めミップの
 		* 場合は何もしない。
 		*/
-		void EvictTextureMip(Uint32 textureIndex);
+		void EvictTextureMip(BindlessHeap* heap, Uint32 textureIndex);
 
 		/**
 		* [EN]
@@ -558,7 +604,7 @@ namespace SeedCore
 		* ピン留め済み、または常駐中のクラスタページから参照されている場合
 		* （poolResidentReferences_ > 0）は何もしない。
 		*/
-		void EvictPool();
+		void EvictPool(BindlessHeap* heap);
 
 		/**
 		* [EN]
@@ -628,7 +674,7 @@ namespace SeedCore
 		* 参照中のバッファを失わないよう、evictAgeFrames_ フレーム未使用の
 		* ページのみ追い出す。
 		*/
-		static void EvictClusterBudget(Uint64 currentFrame);
+		static void EvictClusterBudget(BindlessHeap* heap, Uint64 currentFrame);
 
 		/**
 		* [EN]
@@ -643,7 +689,7 @@ namespace SeedCore
 		* 未ピンの常駐ミップを古い順に追い出し、常駐テクスチャメモリ合計を
 		* textureBudgetBytes_ 以内に収める。
 		*/
-		static void EvictTextureBudget(Uint64 currentFrame);
+		static void EvictTextureBudget(BindlessHeap* heap, Uint64 currentFrame);
 
 		/**
 		* [EN]
@@ -779,25 +825,24 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Creates a DEFAULT-heap buffer filled with data, the same way
-		* DirectX::CreateStaticBuffer does but with no size cap.
-		* CreateStaticBuffer rejects anything above ~128MB, because
-		* DirectXTK12 treats D3D12_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_A_TERM
-		* as a flat byte limit; D3D12 buffers themselves are bounded only by
-		* GPU memory, and a high-poly mesh's flat 32-bit triangle index
-		* buffer easily goes past 128MB.
+		* Creates a DEFAULT-heap buffer of count * stride bytes and records the
+		* copy of data into it on lane. The size is bounded only by GPU
+		* memory, so a high-poly mesh's flat 32-bit triangle index buffer can
+		* go past 128MB. The buffer stays in COMMON: the copy queue promotes
+		* it to COPY_DEST, it decays back to COMMON once the copy completes,
+		* and the shaders read it through implicit promotion.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* data を詰めた DEFAULT ヒープのバッファを、DirectX::CreateStaticBuffer
-		* と同じ手順で、ただしサイズの上限なしで作る。CreateStaticBuffer は
-		* DirectXTK12 が D3D12_REQ_RESOURCE_SIZE_IN_MEGABYTES_EXPRESSION_A_TERM
-		* を単純なバイト上限として扱うため、約128MB を超えるものを拒否する。
-		* D3D12 のバッファ自体の上限は GPU メモリだけで、ハイポリメッシュの
-		* フラットな 32bit 三角形インデックスバッファは 128MB を簡単に超える。
+		* count * stride バイトの DEFAULT ヒープのバッファを作り、data を
+		* そこへコピーする処理を lane に記録する。サイズの上限は GPU メモリ
+		* だけなので、ハイポリメッシュのフラットな 32bit 三角形インデックス
+		* バッファが 128MB を超えても作れる。バッファは COMMON のまま:
+		* Copy キューが COPY_DEST へ自動で上げ、コピーの完了で COMMON に戻り、
+		* シェーダーは自動の昇格で読む。
 		*/
-		static HRESULT CreateStaticBufferUnbounded(ID3D12Device* device, DirectX::ResourceUploadBatch& resourceUpload, const void* data, Uint64 count, Uint64 stride, D3D12_RESOURCE_STATES afterState, ID3D12Resource** outResource);
+		static HRESULT CreateStaticBufferUnbounded(ID3D12Device* device, D3D12TransferLane& lane, const void* data, Uint64 count, Uint64 stride, ID3D12Resource** outResource);
 
 		/**
 		* [EN]
@@ -1124,17 +1169,9 @@ namespace SeedCore
 		/// [JP] テクスチャの常駐中の bindless インデックスが変わるたびに立てる(MakeTextureMipResident/EvictTextureMip)。反射/GI のマテリアルテーブル(RaytracingRenderer::BuildReflectionMaterialTable)は構築時に TextureBindlessIndex() をキャッシュするので、ミップの入れ替え後は解放済みか再利用されたスロットを指してしまう。MaterialsDirty() でレンダラーがそれに気付いて再構築し、ClearMaterialsDirty() でフラグを戻す。
 		mutable Bool materialsDirty_ = false;
 
-		/// [EN] Device captured at Upload() so pages can stream in and out later; outlives every Crister.
-		/// [JP] 後からページを出し入れできるよう Upload() で保持するデバイス。全ての Crister より長く生きる。
-		ID3D12Device* device_ = nullptr;
-
-		/// [EN] Queue the streaming uploads are submitted to, captured at Upload(); outlives every Crister.
-		/// [JP] ストリーミングのアップロードを投入するキュー。Upload() で保持する。全ての Crister より長く生きる。
-		D3D12CommandQueue* uploadQueue_ = nullptr;
-
-		/// [EN] Heap the streamed pages and mips take their descriptors from, captured at Upload(); outlives every Crister.
-		/// [JP] ストリーミングするページとミップがディスクリプタを取るヒープ。Upload() で保持する。全ての Crister より長く生きる。
-		BindlessHeap* bindlessHeap_ = nullptr;
+		/// [EN] Set by Upload() and cleared by Release(): whether this Crister holds GPU resources and descriptors. Pages and mips stream only while it is set.
+		/// [JP] Upload() で立て、Release() で下ろす。この Crister が GPU リソースとディスクリプタを持っているか。立っている間だけページとミップをストリーミングする。
+		Bool uploaded_ = false;
 
 		/// [EN] Per-SubMesh model-space placements (see SubMeshPlacement), indexed like subMeshes_. Resolved from nodes_ in Upload() and not serialized.
 		/// [JP] SubMesh ごとのモデル空間配置(SubMeshPlacement 参照)。subMeshes_ と同じインデックス。Upload() で nodes_ から解決し、シリアライズしない。
@@ -1150,7 +1187,7 @@ namespace SeedCore
 
 		/// [EN] Every live Crister that has uploaded, walked by the budget eviction. Streaming bookkeeping is shared by every Crister and touched only on the render thread; geometry and textures keep separate totals and budgets but share this registry and the eviction age guard.
 		/// [JP] アップロード済みで生存中の全 Crister。予算による追い出しがこれを順に見る。ストリーミング管理は全 Crister で共有し、レンダースレッドからだけ触る。ジオメトリとテクスチャは合計と予算を別々に持つが、このレジストリと追い出しの経過フレームガードは共有する。
-		static inline DynamicArray<CristerGpu*> streamingRegistry_;
+		static inline DynamicArray<CristerResidency*> streamingRegistry_;
 
 		/// [EN] VRAM taken by every resident geometry page and pool, across all Crister.
 		/// [JP] 全 Crister の常駐中のジオメトリページとプールが使う VRAM の合計。

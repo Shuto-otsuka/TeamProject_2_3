@@ -6,8 +6,6 @@
 namespace SeedCore
 {
 	class ResourceCache;
-	class D3D12CommandQueue;
-	class BC7CompressShader;
 
 	/// [EN] Identifies which kind of asset a given AssetRecord entry represents, driving both file-extension classification during Scan and which resource manager handles loading/unloading it.
 	/// [JP] 各 AssetRecord エントリがどの種類のアセットを表すかを識別する。Scan 時のファイル拡張子分類と、読み込み/解放を担当するリソースマネージャの両方を決定する。
@@ -161,20 +159,44 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Everything a resource manager may need to load or release one
-	* asset, gathered into a single argument so the Asset interface is
-	* the same for every asset type. A manager reads only the fields
-	* its own type needs; the rest are null on paths that don't have
-	* them (a release pass carries no device/queue/shader, for example).
+	* Which thread a load is running on. A resource manager that keeps
+	* per-thread state (such as one transfer lane per loading thread)
+	* picks it by this, since two threads must never share it.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* リソースマネージャがアセット1件を読み込む/解放するのに必要となり得る
-	* ものを1つの引数へまとめたもの。これにより Asset インターフェースは
-	* 全アセット種別で同一の形になる。各マネージャは自分の種別が必要とする
-	* フィールドだけを読む。それ以外は、持っていない経路では null になる
-	* （例えば解放パスは device/queue/shader を運ばない）。
+	* 読み込みがどのスレッドで動いているか。スレッドごとの状態（読み込む
+	* スレッドごとの転送レーンなど）を持つリソースマネージャは、2つの
+	* スレッドが同じものを使わないよう、これで選ぶ。
+	*/
+	enum class LoadThread
+	{
+		/// [EN] The main thread: editor reloads, file watching and synchronous loads.
+		/// [JP] メインスレッド。エディタの読み直し、ファイルの監視、同期の読み込み。
+		Main,
+
+		/// [EN] The background worker driven by ResourceCache::StepAsync.
+		/// [JP] ResourceCache::StepAsync が動かすバックグラウンドのワーカー。
+		Async
+	};
+
+	/**
+	* [EN]
+	* What a resource manager is told about one load or release, gathered
+	* into a single argument so the Asset interface is the same for every
+	* asset type. It carries only what is common to every module; a
+	* manager receives its own module's dependencies (devices, queues,
+	* shaders) when it is constructed.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* リソースマネージャに伝える、アセット1件の読み込み/解放の情報を
+	* 1つの引数へまとめたもの。これにより Asset インターフェースは全
+	* アセット種別で同一の形になる。全モジュールに共通のものだけを運び、
+	* 各マネージャは自分のモジュールの依存（デバイス、キュー、シェーダー）
+	* を構築時に受け取る。
 	*/
 	struct AssetContext
 	{
@@ -182,17 +204,9 @@ namespace SeedCore
 		/// [JP] アセットテーブルを所有するキャッシュ。アセット ID に対応するレコードを引くために使う。
 		ResourceCache& cache_;
 
-		/// [EN] Device used to create GPU resources. Null on paths that create none.
-		/// [JP] GPU リソースを生成するためのデバイス。生成を行わない経路では null。
-		ID3D12Device* device_ = nullptr;
-
-		/// [EN] Queue used to submit upload work. Null on paths that submit none.
-		/// [JP] アップロード処理を提出するためのキュー。提出を行わない経路では null。
-		D3D12CommandQueue* cmdQueue_ = nullptr;
-
-		/// [EN] BC7 compression shader used when importing textures. Null on paths that import none.
-		/// [JP] テクスチャのインポート時に使う BC7 圧縮シェーダ。インポートを行わない経路では null。
-		BC7CompressShader* bc7Shader_ = nullptr;
+		/// [EN] Thread the load is running on.
+		/// [JP] 読み込みが動いているスレッド。
+		LoadThread thread_ = LoadThread::Main;
 	};
 
 	/**

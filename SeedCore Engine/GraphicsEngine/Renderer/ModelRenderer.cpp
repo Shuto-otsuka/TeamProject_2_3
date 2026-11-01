@@ -1,4 +1,5 @@
 #include <GraphicsEngine/Renderer/ModelRenderer.h>
+#include <FoundationEngine/Benchmark/Benchmark.h>
 #include <GraphicsEngine/Profiler/ProfilerStats.h>
 #include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Resource/GraphicsResourceSystem.h>
@@ -76,7 +77,7 @@ namespace SeedCore
 		oitBuffer_.Resize(device, bindlessHeap, constantIndicesSystem, unorderedAccessIndicesSystem, width, height);
 	}
 
-	void ModelRenderer::Gather(GraphicsResourceSystem& resources, World& world, const SceneConstantBuffer& scene, std::span<const Entity> selectedEntities)
+	void ModelRenderer::Gather(GraphicsResourceSystem& resources, World& world, D3D12TransferLane& transferLane, const SceneConstantBuffer& scene, std::span<const Entity> selectedEntities)
 	{
 		ModelResource& modelResource = *resources.modelResource_;
 		AnimationResource& animationResource = *resources.animationResource_;
@@ -111,6 +112,9 @@ namespace SeedCore
 
 		ComponentID boundsComponentID = ComponentRegistry::GetComponentID<Bounds>();
 
+		/// [EN] Instance covers walking every mesh actor and building its instance data, the part expected to grow with the actor count.
+		/// [JP] Instance は全メッシュ Actor の走査とインスタンスデータの構築で、Actor 数に比例して伸びると見込まれる部分。
+		Benchmark::Begin("Instance");
 		Query<Read<Active>, Read<Mesh>> query(world);
 		query.ForEach([&](EntityID entityID, const Active& active, const Mesh& mesh)
 			{
@@ -143,8 +147,8 @@ namespace SeedCore
 					if (boundsRaw)
 					{
 						Bounds* bounds = static_cast<Bounds*>(boundsRaw);
-						Vector3 positionExtent = crister->PlacedPositionExtent();
-						bounds->center_ = crister->PlacedPositionMin() + positionExtent * 0.5f;
+						Vector3 positionExtent = crister->Residency().PlacedPositionExtent();
+						bounds->center_ = crister->Residency().PlacedPositionMin() + positionExtent * 0.5f;
 						bounds->extent_ = positionExtent * 0.5f;
 					}
 				}
@@ -354,7 +358,7 @@ namespace SeedCore
 						continue;
 					}
 
-					Matrix lodWorldMatrix = crister->SubMeshPlacement(subMeshIndex).front() * worldMatrix;
+					Matrix lodWorldMatrix = crister->Residency().SubMeshPlacement(subMeshIndex).front() * worldMatrix;
 					Float worldScale = Max(Max(Vector3(lodWorldMatrix._11, lodWorldMatrix._12, lodWorldMatrix._13).Length(), Vector3(lodWorldMatrix._21, lodWorldMatrix._22, lodWorldMatrix._23).Length()), Vector3(lodWorldMatrix._31, lodWorldMatrix._32, lodWorldMatrix._33).Length());
 					Vector3 instancePosition(lodWorldMatrix._41, lodWorldMatrix._42, lodWorldMatrix._43);
 					Float viewDistance = Max((instancePosition - Vector3(scene.cameraPosition_.x, scene.cameraPosition_.y, scene.cameraPosition_.z)).Length(), 0.0001f);
@@ -371,17 +375,30 @@ namespace SeedCore
 						{
 							return;
 						}
-						Uint32 desiredMip = crister->TextureDesiredMip(materialTextureIndex, subMesh.texcoordDensity_, worldScale, texturePixelsPerUnit);
-						if (crister->TextureFinestMip(materialTextureIndex) > desiredMip)
+						Uint32 desiredMip = crister->Residency().TextureDesiredMip(*crister, materialTextureIndex, subMesh.texcoordDensity_, worldScale, texturePixelsPerUnit);
+						if (crister->Residency().TextureFinestMip(materialTextureIndex) > desiredMip)
 						{
 							textureStreamingRequests_.push_back({ crister, materialTextureIndex, desiredMip });
 						}
-						crister->TouchTexture(materialTextureIndex, streamingFrame_);
+						crister->Residency().TouchTexture(materialTextureIndex, streamingFrame_);
 					};
 					requestTextureMip(material.baseColorTextureAssetID_ != 0 ? SC_INVALID : material.baseColorTextureIndex_);
 					requestTextureMip(material.normalTextureAssetID_ != 0 ? SC_INVALID : material.normalTextureIndex_);
 					requestTextureMip(material.metallicRoughnessTextureAssetID_ != 0 ? SC_INVALID : material.metallicRoughnessTextureIndex_);
 					requestTextureMip(material.emissiveTextureAssetID_ != 0 ? SC_INVALID : material.emissiveTextureIndex_);
+					requestTextureMip(material.occlusionTextureAssetID_ != 0 ? SC_INVALID : material.occlusionTextureIndex_);
+					requestTextureMip(material.khr_.specular_.specularTextureIndex_);
+					requestTextureMip(material.khr_.specular_.specularColorTextureIndex_);
+					requestTextureMip(material.khr_.clearCoat_.clearCoatTextureIndex_);
+					requestTextureMip(material.khr_.clearCoat_.clearCoatRoughnessTextureIndex_);
+					requestTextureMip(material.khr_.clearCoat_.clearCoatNormalTextureIndex_);
+					requestTextureMip(material.khr_.transmission_.transmissionTextureIndex_);
+					requestTextureMip(material.khr_.volume_.thicknessTextureIndex_);
+					requestTextureMip(material.khr_.sheen_.sheenColorTextureIndex_);
+					requestTextureMip(material.khr_.sheen_.sheenRoughnessTextureIndex_);
+					requestTextureMip(material.khr_.iridescence_.iridescenceTextureIndex_);
+					requestTextureMip(material.khr_.iridescence_.iridescenceThicknessTextureIndex_);
+					requestTextureMip(material.khr_.anisotropy_.anisotropyTextureIndex_);
 
 					Uint32 selectedCluster = 0xFFFFFFFF;
 					if (skinned)
@@ -399,7 +416,7 @@ namespace SeedCore
 								desired = c;
 							}
 						}
-						if (!crister->ClusterResident(subMesh.clusterOffset_ + desired))
+						if (!crister->Residency().ClusterResident(subMesh.clusterOffset_ + desired))
 						{
 							geometryStreamingRequests_.push_back({ crister, subMesh.clusterOffset_ + desired });
 						}
@@ -407,7 +424,7 @@ namespace SeedCore
 						for (Uint32 c = 0; c < subMesh.clusterCount_; ++c)
 						{
 							Uint32 clusterIndex = subMesh.clusterOffset_ + c;
-							if (!crister->ClusterResident(clusterIndex))
+							if (!crister->Residency().ClusterResident(clusterIndex))
 							{
 								continue;
 							}
@@ -431,7 +448,7 @@ namespace SeedCore
 					Uint32 morphTargetCount = 0;
 					Uint32 morphWeightOffset = 0;
 
-					if (!subMesh.morphs_.empty() && !crister->StandaloneVertices(selectedCluster))
+					if (!subMesh.morphs_.empty() && !crister->Residency().StandaloneVertices(selectedCluster))
 					{
 						Int ownerNodeIndex = -1;
 						for (Size nodeIndex = 0; nodeIndex < nodes.size(); nodeIndex++)
@@ -467,8 +484,8 @@ namespace SeedCore
 									}
 									previousMorphWeights_.insert(previousMorphWeights_.end(), previousWeights->begin(), previousWeights->end());
 
-									morphDeltaBufferIndex = crister->MorphDeltaBufferIndex();
-									vertexMorphSourceBufferIndex = crister->VertexMorphSourceBufferIndex();
+									morphDeltaBufferIndex = crister->Residency().MorphDeltaBufferIndex();
+									vertexMorphSourceBufferIndex = crister->Residency().VertexMorphSourceBufferIndex();
 									morphDeltaOffset = subMesh.morphDeltaOffset_;
 									morphVertexOffset = subMesh.vertexOffset_;
 									morphVertexCount = subMesh.vertexCount_;
@@ -480,16 +497,16 @@ namespace SeedCore
 
 					if (skinned)
 					{
-						crister->TouchCluster(subMesh.clusterOffset_, streamingFrame_);
+						crister->Residency().TouchCluster(subMesh.clusterOffset_, streamingFrame_);
 					}
 					else
 					{
 						for (Uint32 c = 0; c < subMesh.clusterCount_; ++c)
 						{
 							Uint32 clusterIndex = subMesh.clusterOffset_ + c;
-							if (crister->ClusterResident(clusterIndex))
+							if (crister->Residency().ClusterResident(clusterIndex))
 							{
-								crister->TouchCluster(clusterIndex, streamingFrame_);
+								crister->Residency().TouchCluster(clusterIndex, streamingFrame_);
 							}
 						}
 					}
@@ -538,39 +555,39 @@ namespace SeedCore
 
 						/// [EN] Material stores glTF image indices — resolve to bindless heap indices.
 						/// [JP] Material には glTF の image インデックスが入っているため、bindless ヒープインデックスに解決する。
-						instanceData.texture_.baseColorTextureIndex_ = material.baseColorTextureAssetID_ != 0 ? textureResource.GetID(material.baseColorTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.baseColorTextureIndex_);
-						instanceData.texture_.normalTextureIndex_ = material.normalTextureAssetID_ != 0 ? textureResource.GetID(material.normalTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.normalTextureIndex_);
-						instanceData.texture_.metallicRoughnessTextureIndex_ = material.metallicRoughnessTextureAssetID_ != 0 ? textureResource.GetID(material.metallicRoughnessTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
-						instanceData.texture_.emissiveTextureIndex_ = material.emissiveTextureAssetID_ != 0 ? textureResource.GetID(material.emissiveTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.emissiveTextureIndex_);
-						instanceData.texture_.occlusionTextureIndex_ = material.occlusionTextureAssetID_ != 0 ? textureResource.GetID(material.occlusionTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.occlusionTextureIndex_);
-						instanceData.extension_.specularTextureIndex_ = crister->TextureBindlessIndex(material.khr_.specular_.specularTextureIndex_);
-						instanceData.extension_.specularColorTextureIndex_ = crister->TextureBindlessIndex(material.khr_.specular_.specularColorTextureIndex_);
-						instanceData.extension_.clearCoatTextureIndex_ = crister->TextureBindlessIndex(material.khr_.clearCoat_.clearCoatTextureIndex_);
-						instanceData.extension_.clearCoatRoughnessTextureIndex_ = crister->TextureBindlessIndex(material.khr_.clearCoat_.clearCoatRoughnessTextureIndex_);
-						instanceData.extension_.clearCoatNormalTextureIndex_ = crister->TextureBindlessIndex(material.khr_.clearCoat_.clearCoatNormalTextureIndex_);
-						instanceData.extension_.transmissionTextureIndex_ = crister->TextureBindlessIndex(material.khr_.transmission_.transmissionTextureIndex_);
-						instanceData.extension_.thicknessTextureIndex_ = crister->TextureBindlessIndex(material.khr_.volume_.thicknessTextureIndex_);
-						instanceData.extension_.sheenColorTextureIndex_ = crister->TextureBindlessIndex(material.khr_.sheen_.sheenColorTextureIndex_);
-						instanceData.extension_.sheenRoughnessTextureIndex_ = crister->TextureBindlessIndex(material.khr_.sheen_.sheenRoughnessTextureIndex_);
-						instanceData.extension_.iridescenceTextureIndex_ = crister->TextureBindlessIndex(material.khr_.iridescence_.iridescenceTextureIndex_);
-						instanceData.extension_.iridescenceThicknessTextureIndex_ = crister->TextureBindlessIndex(material.khr_.iridescence_.iridescenceThicknessTextureIndex_);
-						instanceData.extension_.anisotropyTextureIndex_ = crister->TextureBindlessIndex(material.khr_.anisotropy_.anisotropyTextureIndex_);
+						instanceData.texture_.baseColorTextureIndex_ = material.baseColorTextureAssetID_ != 0 ? textureResource.GetID(material.baseColorTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.baseColorTextureIndex_);
+						instanceData.texture_.normalTextureIndex_ = material.normalTextureAssetID_ != 0 ? textureResource.GetID(material.normalTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.normalTextureIndex_);
+						instanceData.texture_.metallicRoughnessTextureIndex_ = material.metallicRoughnessTextureAssetID_ != 0 ? textureResource.GetID(material.metallicRoughnessTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
+						instanceData.texture_.emissiveTextureIndex_ = material.emissiveTextureAssetID_ != 0 ? textureResource.GetID(material.emissiveTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.emissiveTextureIndex_);
+						instanceData.texture_.occlusionTextureIndex_ = material.occlusionTextureAssetID_ != 0 ? textureResource.GetID(material.occlusionTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.occlusionTextureIndex_);
+						instanceData.extension_.specularTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.specular_.specularTextureIndex_);
+						instanceData.extension_.specularColorTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.specular_.specularColorTextureIndex_);
+						instanceData.extension_.clearCoatTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.clearCoat_.clearCoatTextureIndex_);
+						instanceData.extension_.clearCoatRoughnessTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.clearCoat_.clearCoatRoughnessTextureIndex_);
+						instanceData.extension_.clearCoatNormalTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.clearCoat_.clearCoatNormalTextureIndex_);
+						instanceData.extension_.transmissionTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.transmission_.transmissionTextureIndex_);
+						instanceData.extension_.thicknessTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.volume_.thicknessTextureIndex_);
+						instanceData.extension_.sheenColorTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.sheen_.sheenColorTextureIndex_);
+						instanceData.extension_.sheenRoughnessTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.sheen_.sheenRoughnessTextureIndex_);
+						instanceData.extension_.iridescenceTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.iridescence_.iridescenceTextureIndex_);
+						instanceData.extension_.iridescenceThicknessTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.iridescence_.iridescenceThicknessTextureIndex_);
+						instanceData.extension_.anisotropyTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.anisotropy_.anisotropyTextureIndex_);
 						instanceData.extension_.anisotropyRotation_ = material.khr_.anisotropy_.anisotropyRotation_;
 						instanceData.shading_.furLength_ = material.furLength_;
 						instanceData.shading_.furDensity_ = material.furDensity_;
 						instanceData.shading_.furShellCount_ = static_cast<Uint>(material.furShellCount_);
 
-						instanceData.geometry_.vertexBufferIndex_ = crister->ClusterVertexBufferIndex(clusterIndex);
-						instanceData.skining_.skinVertexBufferIndex_ = crister->SkinVertexBufferIndex();
+						instanceData.geometry_.vertexBufferIndex_ = crister->Residency().ClusterVertexBufferIndex(clusterIndex);
+						instanceData.skining_.skinVertexBufferIndex_ = crister->Residency().SkinVertexBufferIndex();
 						instanceData.streaming_.positionMin_ = crister->PositionMin();
 						instanceData.streaming_.positionExtent_ = crister->PositionExtent();
 						instanceData.streaming_.texcoordMinU_ = crister->TexcoordMin().x;
 						instanceData.streaming_.texcoordMinV_ = crister->TexcoordMin().y;
 						instanceData.streaming_.texcoordExtent_ = crister->TexcoordExtent();
-						instanceData.geometry_.meshletBufferIndex_ = crister->ClusterMeshletBufferIndex(clusterIndex);
-						instanceData.geometry_.meshletBoundBufferIndex_ = crister->ClusterMeshletBoundBufferIndex(clusterIndex);
-						instanceData.geometry_.vertexIndicesBufferIndex_ = crister->ClusterVertexIndicesBufferIndex(clusterIndex);
-						instanceData.geometry_.primitiveIndicesBufferIndex_ = crister->ClusterPrimitiveIndicesBufferIndex(clusterIndex);
+						instanceData.geometry_.meshletBufferIndex_ = crister->Residency().ClusterMeshletBufferIndex(clusterIndex);
+						instanceData.geometry_.meshletBoundBufferIndex_ = crister->Residency().ClusterMeshletBoundBufferIndex(clusterIndex);
+						instanceData.geometry_.vertexIndicesBufferIndex_ = crister->Residency().ClusterVertexIndicesBufferIndex(clusterIndex);
+						instanceData.geometry_.primitiveIndicesBufferIndex_ = crister->Residency().ClusterPrimitiveIndicesBufferIndex(clusterIndex);
 
 						instanceData.morph_.morphDeltaBufferIndex_ = morphDeltaBufferIndex;
 						instanceData.morph_.vertexMorphSourceBufferIndex_ = vertexMorphSourceBufferIndex;
@@ -609,7 +626,7 @@ namespace SeedCore
 							hasSelectedSkinned_ = hasSelectedSkinned_ || skinned;
 						}
 
-						for (const Matrix& placement : crister->SubMeshPlacement(subMeshIndex))
+						for (const Matrix& placement : crister->Residency().SubMeshPlacement(subMeshIndex))
 						{
 							Matrix placedWorldMatrix = placement * worldMatrix;
 							instanceData.transform_.world_ = placedWorldMatrix;
@@ -648,7 +665,9 @@ namespace SeedCore
 					}
 				}
 			});
+		Benchmark::End("Instance");
 
+		Benchmark::Begin("Softbody");
 		DynamicArray<EntityID> softbodyEntities;
 		Query<Read<Softbody>>(world).ForEach([&](EntityID entityID, const Softbody&) { softbodyEntities.push_back(entityID); });
 		for (EntityID entityID : softbodyEntities)
@@ -751,23 +770,23 @@ namespace SeedCore
 				instanceData.extension_.unlit_ = material.khr_.unlit_.unlit_ != 0 ? 1.0f : 0.0f;
 				instanceData.shading_.shadingModel_ = material.khr_.unlit_.unlit_ != 0 ? static_cast<Uint>(ShadingModel::Unlit) : static_cast<Uint>(material.shadingModel_);
 
-				instanceData.texture_.baseColorTextureIndex_ = material.baseColorTextureAssetID_ != 0 ? textureResource.GetID(material.baseColorTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.baseColorTextureIndex_);
-				instanceData.texture_.normalTextureIndex_ = material.normalTextureAssetID_ != 0 ? textureResource.GetID(material.normalTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.normalTextureIndex_);
-				instanceData.texture_.metallicRoughnessTextureIndex_ = material.metallicRoughnessTextureAssetID_ != 0 ? textureResource.GetID(material.metallicRoughnessTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
-				instanceData.texture_.emissiveTextureIndex_ = material.emissiveTextureAssetID_ != 0 ? textureResource.GetID(material.emissiveTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.emissiveTextureIndex_);
-				instanceData.texture_.occlusionTextureIndex_ = material.occlusionTextureAssetID_ != 0 ? textureResource.GetID(material.occlusionTextureAssetID_, streamingFrame_) : crister->TextureBindlessIndex(material.occlusionTextureIndex_);
-				instanceData.extension_.specularTextureIndex_ = crister->TextureBindlessIndex(material.khr_.specular_.specularTextureIndex_);
-				instanceData.extension_.specularColorTextureIndex_ = crister->TextureBindlessIndex(material.khr_.specular_.specularColorTextureIndex_);
-				instanceData.extension_.clearCoatTextureIndex_ = crister->TextureBindlessIndex(material.khr_.clearCoat_.clearCoatTextureIndex_);
-				instanceData.extension_.clearCoatRoughnessTextureIndex_ = crister->TextureBindlessIndex(material.khr_.clearCoat_.clearCoatRoughnessTextureIndex_);
-				instanceData.extension_.clearCoatNormalTextureIndex_ = crister->TextureBindlessIndex(material.khr_.clearCoat_.clearCoatNormalTextureIndex_);
-				instanceData.extension_.transmissionTextureIndex_ = crister->TextureBindlessIndex(material.khr_.transmission_.transmissionTextureIndex_);
-				instanceData.extension_.thicknessTextureIndex_ = crister->TextureBindlessIndex(material.khr_.volume_.thicknessTextureIndex_);
-				instanceData.extension_.sheenColorTextureIndex_ = crister->TextureBindlessIndex(material.khr_.sheen_.sheenColorTextureIndex_);
-				instanceData.extension_.sheenRoughnessTextureIndex_ = crister->TextureBindlessIndex(material.khr_.sheen_.sheenRoughnessTextureIndex_);
-				instanceData.extension_.iridescenceTextureIndex_ = crister->TextureBindlessIndex(material.khr_.iridescence_.iridescenceTextureIndex_);
-				instanceData.extension_.iridescenceThicknessTextureIndex_ = crister->TextureBindlessIndex(material.khr_.iridescence_.iridescenceThicknessTextureIndex_);
-				instanceData.extension_.anisotropyTextureIndex_ = crister->TextureBindlessIndex(material.khr_.anisotropy_.anisotropyTextureIndex_);
+				instanceData.texture_.baseColorTextureIndex_ = material.baseColorTextureAssetID_ != 0 ? textureResource.GetID(material.baseColorTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.baseColorTextureIndex_);
+				instanceData.texture_.normalTextureIndex_ = material.normalTextureAssetID_ != 0 ? textureResource.GetID(material.normalTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.normalTextureIndex_);
+				instanceData.texture_.metallicRoughnessTextureIndex_ = material.metallicRoughnessTextureAssetID_ != 0 ? textureResource.GetID(material.metallicRoughnessTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
+				instanceData.texture_.emissiveTextureIndex_ = material.emissiveTextureAssetID_ != 0 ? textureResource.GetID(material.emissiveTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.emissiveTextureIndex_);
+				instanceData.texture_.occlusionTextureIndex_ = material.occlusionTextureAssetID_ != 0 ? textureResource.GetID(material.occlusionTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.occlusionTextureIndex_);
+				instanceData.extension_.specularTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.specular_.specularTextureIndex_);
+				instanceData.extension_.specularColorTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.specular_.specularColorTextureIndex_);
+				instanceData.extension_.clearCoatTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.clearCoat_.clearCoatTextureIndex_);
+				instanceData.extension_.clearCoatRoughnessTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.clearCoat_.clearCoatRoughnessTextureIndex_);
+				instanceData.extension_.clearCoatNormalTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.clearCoat_.clearCoatNormalTextureIndex_);
+				instanceData.extension_.transmissionTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.transmission_.transmissionTextureIndex_);
+				instanceData.extension_.thicknessTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.volume_.thicknessTextureIndex_);
+				instanceData.extension_.sheenColorTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.sheen_.sheenColorTextureIndex_);
+				instanceData.extension_.sheenRoughnessTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.sheen_.sheenRoughnessTextureIndex_);
+				instanceData.extension_.iridescenceTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.iridescence_.iridescenceTextureIndex_);
+				instanceData.extension_.iridescenceThicknessTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.iridescence_.iridescenceThicknessTextureIndex_);
+				instanceData.extension_.anisotropyTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.anisotropy_.anisotropyTextureIndex_);
 				instanceData.extension_.anisotropyRotation_ = material.khr_.anisotropy_.anisotropyRotation_;
 				instanceData.shading_.furLength_ = material.furLength_;
 				instanceData.shading_.furDensity_ = material.furDensity_;
@@ -824,7 +843,9 @@ namespace SeedCore
 				remaining -= count;
 			}
 		}
+		Benchmark::End("Softbody");
 
+		Benchmark::Begin("GeometryStreaming");
 		constexpr Uint maxUploadsPerFrame = 4;
 		Uint uploads = 0;
 		for (const auto& request : geometryStreamingRequests_)
@@ -833,15 +854,17 @@ namespace SeedCore
 			{
 				break;
 			}
-			if (!request.first->ClusterResident(request.second))
+			if (!request.first->Residency().ClusterResident(request.second))
 			{
-				request.first->MakeClusterResident(request.second);
-				request.first->TouchCluster(request.second, streamingFrame_);
+				request.first->Residency().MakeClusterResident(*request.first, device_, transferLane, bindlessHeap_, request.second);
+				request.first->Residency().TouchCluster(request.second, streamingFrame_);
 				uploads++;
 			}
 		}
 		geometryStreamingRequests_.clear();
+		Benchmark::End("GeometryStreaming");
 
+		Benchmark::Begin("TextureStreaming");
 		constexpr Uint maxTextureUploadsPerFrame = 8;
 		Uint textureUploads = 0;
 		for (const TextureStreamingRequest& request : textureStreamingRequests_)
@@ -850,17 +873,20 @@ namespace SeedCore
 			{
 				break;
 			}
-			if (request.crister_->TextureFinestMip(request.textureIndex_) > request.desiredMip_)
+			if (request.crister_->Residency().TextureFinestMip(request.textureIndex_) > request.desiredMip_)
 			{
-				request.crister_->MakeTextureMipResident(request.textureIndex_, request.desiredMip_);
-				request.crister_->TouchTexture(request.textureIndex_, streamingFrame_);
+				request.crister_->Residency().MakeTextureMipResident(*request.crister_, device_, transferLane, bindlessHeap_, request.textureIndex_, request.desiredMip_);
+				request.crister_->Residency().TouchTexture(request.textureIndex_, streamingFrame_);
 				textureUploads++;
 			}
 		}
 		textureStreamingRequests_.clear();
+		Benchmark::End("TextureStreaming");
 
-		Crister::EvictClusterBudget(streamingFrame_);
-		Crister::EvictTextureBudget(streamingFrame_);
+		Benchmark::Begin("Evict");
+		CristerResidency::EvictClusterBudget(bindlessHeap_, streamingFrame_);
+		CristerResidency::EvictTextureBudget(bindlessHeap_, streamingFrame_);
+		Benchmark::End("Evict");
 	}
 
 	void ModelRenderer::Upload()

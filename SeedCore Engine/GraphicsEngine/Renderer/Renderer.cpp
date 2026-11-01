@@ -7,6 +7,7 @@
 #include <GraphicsEngine/D3D12/PipelineState/DepthStencilState.h>
 #include <GraphicsEngine/System/SceneConstantSystem.h>
 #include <GraphicsEngine/System/WeatherSystem.h>
+#include <FoundationEngine/Benchmark/Benchmark.h>
 #include <FoundationEngine/Resource/Gateway.h>
 #include <GraphicsEngine/Resource/GraphicsResourceSystem.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
@@ -200,7 +201,7 @@ namespace SeedCore
 		return gpuProfiler_;
 	}
 
-	void Renderer::PrepareFrame(D3D12CommandList* cmdList, GraphicsResourceSystem& resources, World& world, const SceneConstantBuffer& scene, Float deltaTime, std::span<const Entity> selectedEntities)
+	void Renderer::PrepareFrame(D3D12CommandList* cmdList, D3D12TransferLane& transferLane, GraphicsResourceSystem& resources, World& world, const SceneConstantBuffer& scene, Float deltaTime, std::span<const Entity> selectedEntities)
 	{
 		ProfilerStats::Reset();
 
@@ -209,11 +210,21 @@ namespace SeedCore
 		///      resolve を積む場所になる。
 		gpuProfiler_.Advance(cmdList);
 
+		/// [EN] Animation includes both constraint passes, since constraints are solved around the pose update.
+		/// [JP] Animation には前後2回のコンストレイントも含める。コンストレイントは姿勢の更新を挟んで解くため。
+		Benchmark::Begin("Animation");
 		constraintSystem_.Execute(world);
 		animationSystem_.Execute(world, *resources.animationResource_, *resources.modelResource_);
 		constraintSystem_.Execute(world);
-		materialSystem_.Execute(world, *resources.materialResource_, *resources.modelResource_);
+		Benchmark::End("Animation");
 
+		Benchmark::Begin("Material");
+		materialSystem_.Execute(world, *resources.materialResource_, *resources.modelResource_);
+		Benchmark::End("Material");
+
+		/// [EN] Environment is the per-frame update of sky, weather and the ray-traced effect settings.
+		/// [JP] Environment は空、天候、レイトレーシング系エフェクト設定のフレームごとの更新。
+		Benchmark::Begin("Environment");
 		GameTimer* gameTimer = world.GetService<GameTimer>();
 		Float gameDeltaTime = gameTimer ? gameTimer->ScaledDeltaTime() : 0.0f;
 		celestialSystem_.Execute(world, gameDeltaTime);
@@ -236,17 +247,31 @@ namespace SeedCore
 			cloudHash = (cloudHash ^ cloudBytes[byteIndex]) * 16777619u;
 		}
 		skyRenderer_->SetProceduralSky(volumetricCloudScapesSystem_.Enabled(), cloudHash, lightSystem_ ? lightSystem_->GetIndex() : 0, skyTotalTime_);
+		Benchmark::End("Environment");
 
-		modelRenderer_->Gather(resources, world, scene, selectedEntities);
+		/// [EN] Model gathering walks every model actor, so it is the section expected to grow with the actor count.
+		/// [JP] モデルの収集は全モデル Actor を走査するので、Actor 数に比例して伸びると見込まれる区間。
+		Benchmark::Begin("GatherModel");
+		modelRenderer_->Gather(resources, world, transferLane, scene, selectedEntities);
+		Benchmark::End("GatherModel");
+
+		Benchmark::Begin("GatherRaytracing");
 		raytracingRenderer_->Gather(*resources.modelResource_, world, *modelRenderer_);
+		Benchmark::End("GatherRaytracing");
 
+		/// [EN] Sprite gathering covers the 2D renderers: textures, fonts and movies.
+		/// [JP] Sprite の収集は 2D のレンダラー（テクスチャ、フォント、ムービー）をまとめたもの。
+		Benchmark::Begin("GatherSprite");
 		Vector2 gameDisplaySize = PostProcessOutputSize();
 		textureRenderer_->Gather(*resources.textureResource_, world, gameDisplaySize, selectedEntities);
 		fontRenderer_->Gather(*resources.fontResource_, world, gameDisplaySize, selectedEntities);
 		movieRenderer_->Gather(*resources.movieResource_, world, gameDisplaySize, selectedEntities);
+		Benchmark::End("GatherSprite");
 
+		Benchmark::Begin("GatherLight");
 		weatherState_ = WeatherSystem::ReadGpuState(world);
 		lightSystem_->Gather(*resources.modelResource_, world, celestialSystem_.Enabled() ? &celestialSystem_ : nullptr);
+		Benchmark::End("GatherLight");
 
 		WeatherConstantBuffer weatherConstantBuffer{};
 		weatherConstantBuffer.wetness_ = weatherState_.wetness_;
@@ -274,11 +299,13 @@ namespace SeedCore
 		shaderResourceIndicesSystem_->SetClusterAssignIndices(lightSystem_->GetClusterAssignShaderResourceIndices());
 		unorderedAccessIndicesSystem_->SetClusterAssignIndices(lightSystem_->GetClusterAssignUnorderedAccessIndices());
 
+		Benchmark::Begin("Upload");
 		lightSystem_->Upload();
 		modelRenderer_->Upload();
 		textureRenderer_->Upload();
 		fontRenderer_->Upload();
 		movieRenderer_->Upload();
+		Benchmark::End("Upload");
 
 		/// [EN] BLAS/TLAS build (and prepping every RT-effect renderer's per-frame
 		///      data, e.g. ShadowRenderer::PrepareFrame) has no G-Buffer
@@ -296,7 +323,11 @@ namespace SeedCore
 		ID3D12DescriptorHeap* heap = bindlessHeap_->Heap();
 		RootAddresses addresses{ shaderResourceIndicesSystem_->GameAddress(), unorderedAccessIndicesSystem_->GameAddress(), constantIndicesSystem_->GameConstantAddress() };
 
+		/// [EN] BuildAccelerationStructure is the CPU side of recording the BLAS/TLAS builds; their GPU time is not included.
+		/// [JP] BuildAccelerationStructure は BLAS/TLAS 構築を記録する CPU 側のコストで、GPU 上の時間は含まない。
+		Benchmark::Begin("BuildAccelerationStructure");
 		raytracingRenderer_->Build(cmdList, heap, addresses, device_, *modelRenderer_, deltaTime, celestialSystem_.Result().nightFactor_, lastCameraPosition_, skyTotalTime_, weatherState_);
+		Benchmark::End("BuildAccelerationStructure");
 
 		/// [JP] 天候パーティクルのシミュレートは共有のワールド空間状態を進める
 		///      だけなので、フレームに1回(ここのみ)実行する。描画はビューごとに
@@ -543,24 +574,24 @@ namespace SeedCore
 		shapeRenderer_->Upload(shapes, colliders, textureResource);
 	}
 
-	void Renderer::GatherTimelinePreview(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
+	void Renderer::GatherTimelinePreview(D3D12TransferLane& transferLane, GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
 	{
-		timelineRenderer_->Gather(resources, meshAssetId, animationAssetId, time, worldMatrix);
+		timelineRenderer_->Gather(resources, device_, transferLane, meshAssetId, animationAssetId, time, worldMatrix);
 	}
 
-	void Renderer::GatherModelTransformPreview(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
+	void Renderer::GatherModelTransformPreview(D3D12TransferLane& transferLane, GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)
 	{
-		modelTransformRenderer_->Gather(resources, meshAssetId, animationAssetId, time, worldMatrix);
+		modelTransformRenderer_->Gather(resources, device_, transferLane, meshAssetId, animationAssetId, time, worldMatrix);
 	}
 
-	void Renderer::GatherMaterialPreview(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 surfaceAssetId, const Matrix& worldMatrix)
+	void Renderer::GatherMaterialPreview(D3D12TransferLane& transferLane, GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 surfaceAssetId, const Matrix& worldMatrix)
 	{
-		materialRenderer_->Gather(resources, meshAssetId, surfaceAssetId, worldMatrix);
+		materialRenderer_->Gather(resources, device_, transferLane, meshAssetId, surfaceAssetId, worldMatrix);
 	}
 
-	void Renderer::GatherSkeletonControllerPreview(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix, Int selectedNodeIndex)
+	void Renderer::GatherSkeletonControllerPreview(D3D12TransferLane& transferLane, GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix, Int selectedNodeIndex)
 	{
-		skeletonControllerRenderer_->Gather(resources, meshAssetId, animationAssetId, time, worldMatrix, selectedNodeIndex);
+		skeletonControllerRenderer_->Gather(resources, device_, transferLane, meshAssetId, animationAssetId, time, worldMatrix, selectedNodeIndex);
 	}
 
 	void Renderer::GatherAvatarPreview(const AvatarMesh& mesh, Uint32 boneCount, const Matrix& worldMatrix, std::span<const Uint32> regionTextureIndices)

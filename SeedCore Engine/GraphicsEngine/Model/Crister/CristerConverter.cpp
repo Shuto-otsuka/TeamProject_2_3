@@ -46,6 +46,10 @@ namespace SeedCore
 		Bool isMirror = determinant < 0.0f;
 		Float tangentSign = isMirror ? -1.0f : 1.0f;
 
+		/// [EN] Decodes the quantised vertices here and re-quantises the converted ones at the end.
+		/// [JP] ここで量子化済みの頂点をデコードし、最後に変換後の頂点を量子化し直す。
+		CristerQuantizer quantizer;
+
 		/// [EN] Decode every quantised vertex back to full precision, then transform position/normal/tangent in place. Texcoord is unaffected by an axis-convention change.
 		/// [JP] 量子化済みの全頂点をフル精度へデコードし、位置/法線/タンジェントをその場で変換する。テクスチャ座標は軸コンベンション変更の影響を受けない。
 		DynamicArray<Vertex> transformedVertices(crister.geometry_.compressedVertices_.size());
@@ -54,7 +58,7 @@ namespace SeedCore
 			const CompressedVertex& compressed = crister.geometry_.compressedVertices_[vertexIndex];
 			Vertex& vertex = transformedVertices[vertexIndex];
 
-			Vertex decoded = crister.DecodeVertex(compressed);
+			Vertex decoded = quantizer.DecodeVertex(crister, compressed);
 			vertex.position_ = Vector3::Transform(decoded.position_, deltaBasis);
 			vertex.texcoord_ = decoded.texcoord_;
 			vertex.normal_ = Vector3::Transform(decoded.normal_, deltaBasis);
@@ -66,7 +70,7 @@ namespace SeedCore
 			/// [JP] スキン属性は軸に依存しない。BakeMesh() で符号化し直せるようデコードするだけ。
 			if (!crister.geometry_.compressedSkinVertices_.empty())
 			{
-				crister.DecodeSkin(crister.geometry_.compressedSkinVertices_[vertexIndex], vertex.joints_, vertex.weights_);
+				quantizer.DecodeSkin(crister.geometry_.compressedSkinVertices_[vertexIndex], vertex.joints_, vertex.weights_);
 			}
 		}
 
@@ -120,7 +124,6 @@ namespace SeedCore
 		/// [EN] Reuse BakeMesh()'s existing quantisation pipeline verbatim: it recomputes positionMin_/positionExtent_/texcoordMin_/texcoordExtent_ from vertices_ and re-populates compressedVertices_/compressedSkinVertices_.
 		/// [JP] BakeMesh() の既存の量子化パイプラインをそのまま再利用する: vertices_ から positionMin_/positionExtent_/texcoordMin_/texcoordExtent_ を再計算し、compressedVertices_/compressedSkinVertices_ を再構築する。
 		crister.geometry_.vertices_ = std::move(transformedVertices);
-		CristerQuantizer quantizer;
 		quantizer.BakeMesh(crister);
 
 		/// [EN] Write the converted model back over its .crister cache.

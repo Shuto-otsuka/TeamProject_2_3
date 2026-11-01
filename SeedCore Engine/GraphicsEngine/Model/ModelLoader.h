@@ -24,6 +24,7 @@ namespace SeedCore
 	class BindlessHeap;
 	class BC7CompressShader;
 	class D3D12CommandQueue;
+	class D3D12TransferLane;
 
 	enum class ModelFormat
 	{
@@ -67,7 +68,7 @@ namespace SeedCore
 	*   - Build a multi-level LOD hierarchy using QEM simplification
 	*   - Compute per-meshlet bounding spheres and normal cones
 	*   - Serialise the result as a ".crister" cache for fast future loads
-	*   - Trigger GPU upload via Crister::Upload
+	*   - Trigger GPU upload via CristerResidency::Upload
 	*
 	* Crister objects are pooled in a StablePool and accessed via Handle.
 	*
@@ -84,7 +85,7 @@ namespace SeedCore
 	*   - QEM 簡略化によるマルチレベル LOD 階層の構築
 	*   - メシュレットごとの包囲球と法線コーンの計算
 	*   - 次回の高速ロードのため ".crister" キャッシュとしてシリアライズ
-	*   - Crister::Upload による GPU アップロードの起動
+	*   - CristerResidency::Upload による GPU アップロードの起動
 	*
 	* Crister オブジェクトは StablePool でプールされ、Handle でアクセスする。
 	*/
@@ -110,7 +111,7 @@ namespace SeedCore
 		* せずキャッシュから読み込む。axisConvention は glTF を再解析する
 		* 場合のみ適用される（キャッシュ読み込み時は無視される）。
 		*/
-		Handle<Crister> Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, String filePath, const AxisConvention& axisConvention = AxisConvention{}, Bool forExport = false);
+		Handle<Crister> Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, D3D12CommandQueue* copyQueue, D3D12TransferLane* transferLane, BindlessHeap* heap, BC7CompressShader& bc7Shader, String filePath, const AxisConvention& axisConvention = AxisConvention{}, Bool forExport = false);
 
 		/**
 		* [EN]

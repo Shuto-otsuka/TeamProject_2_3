@@ -86,7 +86,7 @@ namespace SeedCore
 	* フレーム前=確実に完了済み。
 	*
 	* SEEDCORE_API が必要なのは、Editor が SeedCore.Cplusplus.dll 越しにこのクラスを直接
-	* 呼ぶため(ProfilerPanel)。Renderer に付いていないのは Editor が Renderer を
+	* 呼ぶため(BenchmarkPanel)。Renderer に付いていないのは Editor が Renderer を
 	* 直接触らないから — 付ける基準は「DLL の外から呼ぶかどうか」。
 	*/
 	class SEEDCORE_API GpuProfiler

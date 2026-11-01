@@ -13,6 +13,8 @@
 #include <GraphicsEngine/Model/Crister/CristerConverter.h>
 #include <GraphicsEngine/Model/Crister/CristerClusterizer.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
+#include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
+#include <GraphicsEngine/D3D12/Context/D3D12TransferLane.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
 #ifdef _DEBUG
@@ -37,7 +39,7 @@ namespace SeedCore
 	*      (scenes, nodes, meshes, materials, skins, textures), generate
 	*      meshlets + LOD hierarchy, then serialise the result as a
 	*      ".crister" cache for future loads.
-	*   3. Upload GPU resources via Crister::Upload.
+	*   3. Upload GPU resources via CristerResidency::Upload.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -52,9 +54,9 @@ namespace SeedCore
 	*      （シーン、ノード、メッシュ、マテリアル、スキン、テクスチャ）を抽出し、
 	*      メシュレット + LOD 階層を生成した後、".crister" キャッシュとして
 	*      シリアライズして次回のロードに備える。
-	*   3. Crister::Upload で GPU リソースをアップロードする。
+	*   3. CristerResidency::Upload で GPU リソースをアップロードする。
 	*/
-	Handle<Crister> ModelLoader::Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, String filePath, const AxisConvention& axisConvention, Bool forExport)
+	Handle<Crister> ModelLoader::Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, D3D12CommandQueue* copyQueue, D3D12TransferLane* transferLane, BindlessHeap* heap, BC7CompressShader& bc7Shader, String filePath, const AxisConvention& axisConvention, Bool forExport)
 	{
 		Handle<Crister> handle = pool_.Create();
 		Crister* crister = pool_.Get(handle);
@@ -89,7 +91,10 @@ namespace SeedCore
 
 				if (forExport)
 				{
-					crister->Reconstruct();
+					/// [EN] An export needs full-precision, non-meshlet geometry, so the baked data is decoded back.
+					/// [JP] 書き出しにはフル精度でメッシュレットでないジオメトリが要るので、焼き込んだデータをデコードし直す。
+					CristerQuantizer quantizer;
+					quantizer.Reconstruct(*crister);
 				}
 			}
 			else
@@ -240,9 +245,11 @@ namespace SeedCore
 			return handle;
 		}
 
-		/// [EN] Upload vertex/index/meshlet buffers to GPU.
-		/// [JP] 頂点・インデックス・メシュレットバッファを GPU にアップロードする。
-		crister->Upload(device, cmdQueue, heap);
+		/// [EN] Record every upload on transferLane, submit it to the copy queue and wait on this thread, so the model is complete on the GPU when Load returns. Only the loading thread waits; the frames keep running on the direct queue.
+		/// [JP] すべてのアップロードを transferLane に記録して Copy キューへ投入し、このスレッドで完了を待つ。これで Load から戻った時点でモデルは GPU 上に揃っている。待つのはロードするスレッドだけで、フレームは Direct キューで動き続ける。
+		transferLane->Begin(device, *copyQueue);
+		crister->Residency().Upload(*crister, device, *transferLane, heap);
+		copyQueue->WaitFor(transferLane->Submit(*copyQueue));
 
 		return handle;
 	}
@@ -1380,6 +1387,14 @@ namespace SeedCore
 				FbxFileTexture* fileTexture = property.GetSrcObject<FbxFileTexture>(0);
 				if (!fileTexture)
 				{
+					FbxLayeredTexture* layeredTexture = property.GetSrcObject<FbxLayeredTexture>(0);
+					if (layeredTexture)
+					{
+						fileTexture = layeredTexture->GetSrcObject<FbxFileTexture>(0);
+					}
+				}
+				if (!fileTexture)
+				{
 					return 0xFFFFFFFF;
 				}
 				for (Size textureIndex = 0; textureIndex < source.fbx_.textureTable_.size(); textureIndex++)
@@ -1439,6 +1454,14 @@ namespace SeedCore
 					/// [EN] In FBX a texture connected to the diffuse/base color slot replaces the slot's color value rather than multiplying it, so the factor becomes white.
 					/// [JP] FBX ではディフューズ/ベースカラーのスロットに接続されたテクスチャはスロットのカラー値を置き換える（乗算しない）ため、係数は白にする。
 					material.baseColorTextureIndex_ = resolveTexture(diffuseProperty);
+					if (material.baseColorTextureIndex_ == 0xFFFFFFFF)
+					{
+						material.baseColorTextureIndex_ = resolveTexture(fbxMaterial->FindPropertyHierarchical("Maya|baseColor"));
+					}
+					if (material.baseColorTextureIndex_ == 0xFFFFFFFF)
+					{
+						material.baseColorTextureIndex_ = resolveTexture(fbxMaterial->FindPropertyHierarchical("Maya|TEX_color_map"));
+					}
 					if (material.baseColorTextureIndex_ != 0xFFFFFFFF)
 					{
 						material.baseColor_ = Color(1.0f, 1.0f, 1.0f, 1.0f);
@@ -1477,7 +1500,30 @@ namespace SeedCore
 					}
 
 					material.normalTextureIndex_ = resolveTexture(fbxMaterial->FindProperty(FbxSurfaceMaterial::sNormalMap));
+					if (material.normalTextureIndex_ == 0xFFFFFFFF)
+					{
+						material.normalTextureIndex_ = resolveTexture(fbxMaterial->FindPropertyHierarchical("Maya|normalCamera"));
+					}
+					if (material.normalTextureIndex_ == 0xFFFFFFFF)
+					{
+						material.normalTextureIndex_ = resolveTexture(fbxMaterial->FindPropertyHierarchical("Maya|TEX_normal_map"));
+					}
+					if (material.normalTextureIndex_ == 0xFFFFFFFF)
+					{
+						material.normalTextureIndex_ = resolveTexture(fbxMaterial->FindProperty(FbxSurfaceMaterial::sBump));
+					}
+
 					material.emissiveTextureIndex_ = resolveTexture(emissiveProperty);
+					if (material.emissiveTextureIndex_ == 0xFFFFFFFF)
+					{
+						material.emissiveTextureIndex_ = resolveTexture(fbxMaterial->FindPropertyHierarchical("Maya|emissionColor"));
+					}
+					if (material.emissiveTextureIndex_ == 0xFFFFFFFF)
+					{
+						material.emissiveTextureIndex_ = resolveTexture(fbxMaterial->FindPropertyHierarchical("Maya|TEX_emissive_map"));
+					}
+
+					material.occlusionTextureIndex_ = resolveTexture(fbxMaterial->FindPropertyHierarchical("Maya|TEX_ao_map"));
 				}
 			}
 			break;
@@ -1664,7 +1710,7 @@ namespace SeedCore
 	* [EN]
 	* Copies raw texture image data from the glTF model into Crister's
 	* texture array. This is a data packing step only — actual GPU texture
-	* creation happens later in Crister::Upload.
+	* creation happens later in CristerResidency::Upload.
 	*
 	* tinygltf has already decoded the image data (PNG/JPEG → raw pixels)
 	* by the time we access it, so we just copy the decoded buffer.
@@ -1674,7 +1720,7 @@ namespace SeedCore
 	* [JP]
 	* glTF モデルの生テクスチャ画像データを Crister のテクスチャ配列にコピーする。
 	* これはデータを詰めるだけのステップであり、実際の GPU テクスチャ作成は
-	* Crister::Upload で行う。
+	* CristerResidency::Upload で行う。
 	*
 	* tinygltf はアクセス時点で既に画像データをデコード済み
 	* （PNG/JPEG → 生ピクセル）なので、デコード済みバッファをコピーするだけ。
@@ -1722,6 +1768,8 @@ namespace SeedCore
 				candidatePaths.push_back(fbxDirectory / fileTexture->GetRelativeFileName());
 				candidatePaths.push_back(std::filesystem::path(fileTexture->GetFileName()));
 
+				std::filesystem::path nonTexturePath("../Editor/Icon/Warning/NonTexture.icon");
+
 				std::filesystem::path texturePath;
 				for (const std::filesystem::path& candidatePath : candidatePaths)
 				{
@@ -1731,23 +1779,79 @@ namespace SeedCore
 						break;
 					}
 				}
+				if (texturePath.empty())
+				{
+					SC_LOG_WARNING("FBX のテクスチャ {} が見つかりません({})。NonTexture で代用します。", texture.name_, fileTexture->GetFileName());
+					texturePath = nonTexturePath;
+				}
+
+				DynamicArray<std::filesystem::path> loadPaths = { texturePath };
+				if (texturePath != nonTexturePath)
+				{
+					loadPaths.push_back(nonTexturePath);
+				}
 
 				DirectX::ScratchImage loadedImage;
-				DirectX::TexMetadata loadedMetadata{};
-				HRESULT loadResult = DirectX::LoadFromWICFile(texturePath.wstring().c_str(), DirectX::WIC_FLAGS_NONE, &loadedMetadata, loadedImage);
-
 				DirectX::ScratchImage rgbaImage;
 				const DirectX::Image* image = nullptr;
-				if (SUCCEEDED(loadResult))
+				for (const std::filesystem::path& loadPath : loadPaths)
 				{
-					if (loadedMetadata.format == DXGI_FORMAT_R8G8B8A8_UNORM)
+					std::string extension = loadPath.extension().string();
+					std::ranges::transform(extension, extension.begin(), [](Uchar character) { return static_cast<Char>(std::tolower(character)); });
+
+					DirectX::TexMetadata loadedMetadata{};
+					HRESULT loadResult{ S_OK };
+					if (extension == ".icon")
 					{
-						image = loadedImage.GetImage(0, 0, 0);
+						loadResult = E_FAIL;
+						BinaryInputArchive iconArchive;
+						if (iconArchive.Read(String(loadPath.string())))
+						{
+							DynamicArray<Byte> iconData;
+							iconArchive.TryField("data", iconData);
+							if (!iconData.empty())
+							{
+								loadResult = DirectX::LoadFromDDSMemory(reinterpret_cast<const Uint8*>(iconData.data()), iconData.size(), DirectX::DDS_FLAGS_NONE, &loadedMetadata, loadedImage);
+							}
+						}
 					}
-					else if (SUCCEEDED(DirectX::Convert(*loadedImage.GetImage(0, 0, 0), DXGI_FORMAT_R8G8B8A8_UNORM, DirectX::TEX_FILTER_DEFAULT, DirectX::TEX_THRESHOLD_DEFAULT, rgbaImage)))
+					else if (extension == ".tga")
 					{
-						image = rgbaImage.GetImage(0, 0, 0);
+						loadResult = DirectX::LoadFromTGAFile(loadPath.wstring().c_str(), &loadedMetadata, loadedImage);
 					}
+					else if (extension == ".dds")
+					{
+						loadResult = DirectX::LoadFromDDSFile(loadPath.wstring().c_str(), DirectX::DDS_FLAGS_NONE, &loadedMetadata, loadedImage);
+					}
+					else
+					{
+						loadResult = DirectX::LoadFromWICFile(loadPath.wstring().c_str(), DirectX::WIC_FLAGS_NONE, &loadedMetadata, loadedImage);
+					}
+
+					if (SUCCEEDED(loadResult))
+					{
+						if (loadedMetadata.format == DXGI_FORMAT_R8G8B8A8_UNORM)
+						{
+							image = loadedImage.GetImage(0, 0, 0);
+						}
+						else if (DirectX::IsCompressed(loadedMetadata.format))
+						{
+							if (SUCCEEDED(DirectX::Decompress(*loadedImage.GetImage(0, 0, 0), DXGI_FORMAT_R8G8B8A8_UNORM, rgbaImage)))
+							{
+								image = rgbaImage.GetImage(0, 0, 0);
+							}
+						}
+						else if (SUCCEEDED(DirectX::Convert(*loadedImage.GetImage(0, 0, 0), DXGI_FORMAT_R8G8B8A8_UNORM, DirectX::TEX_FILTER_DEFAULT, DirectX::TEX_THRESHOLD_DEFAULT, rgbaImage)))
+						{
+							image = rgbaImage.GetImage(0, 0, 0);
+						}
+					}
+
+					if (image)
+					{
+						break;
+					}
+					SC_LOG_WARNING("FBX のテクスチャ {} を読み込めませんでした({})。", texture.name_, loadPath.string());
 				}
 
 				if (image)

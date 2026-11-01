@@ -1,5 +1,6 @@
 #include <GraphicsEngine/Model/Collision/MeshCollisionLoader.h>
 #include <GraphicsEngine/Model/Crister/Crister.h>
+#include <GraphicsEngine/Model/Crister/CristerExtractor.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
 namespace SeedCore
@@ -43,7 +44,11 @@ namespace SeedCore
 	Bool MeshCollisionLoader::Bake(const Crister& crister, MeshCollisionDetail detail, String filePath)
 	{
 		MeshCollision meshCollision;
-		if (!crister.BakeCollision(detail, meshCollision.positions_, meshCollision.indices_))
+
+		/// [EN] Reads the triangles out of the model's CPU-side geometry at the requested detail.
+		/// [JP] 指定された詳細度で、モデルの CPU 側のジオメトリから三角形を読み出す。
+		CristerExtractor extractor;
+		if (!extractor.Collision(crister, detail, meshCollision.positions_, meshCollision.indices_))
 		{
 			return false;
 		}

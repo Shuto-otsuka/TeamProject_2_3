@@ -8,6 +8,13 @@ namespace SeedCore
 	class CanvasCamera;
 	class CameraSystem;
 
+	enum class FocusedView
+	{
+		Editor,
+		Game,
+		Canvas
+	};
+
 	/**
 	* [EN]
 	* The 3D editor view: its camera, how the scene is shown in it, and
@@ -85,5 +92,7 @@ namespace SeedCore
 		/// [EN] The 2D canvas view.
 		/// [JP] 2D の Canvas ビュー。
 		CanvasViewContext canvas_;
+
+		FocusedView focused_ = FocusedView::Editor;
 	};
 }

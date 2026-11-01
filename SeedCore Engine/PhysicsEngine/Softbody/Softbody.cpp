@@ -6,6 +6,7 @@
 #include <FoundationEngine/World/ECS/Component/Position.h>
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <GraphicsEngine/Model/Crister/Crister.h>
+#include <GraphicsEngine/Model/Crister/CristerExtractor.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
 #include <FoundationEngine/World/Actor/ActorAccessor.h>
@@ -214,7 +215,11 @@ namespace SeedCore
 		/// [JP] 各 SubMesh の最も粗いクラスタをシミュレートする。フル解像度のメッシュはソルバが想定する規模を大きく超える。
 		DynamicArray<Vertex> vertices;
 		SoftbodyDesc desc;
-		if (!crister.SoftbodyCoarsestVertices(vertices, desc.indices_))
+
+		/// [EN] Reads the proxy mesh out of the model's CPU-side geometry.
+		/// [JP] モデルの CPU 側のジオメトリからプロキシメッシュを読み出す。
+		CristerExtractor extractor;
+		if (!extractor.CoarsestVertices(crister, vertices, desc.indices_))
 		{
 			return;
 		}

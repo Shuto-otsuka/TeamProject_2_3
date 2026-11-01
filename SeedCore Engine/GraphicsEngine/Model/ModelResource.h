@@ -11,7 +11,7 @@ namespace SeedCore
 	class ResourceCache;
 	class BindlessHeap;
 	class BC7CompressShader;
-	class D3D12CommandQueue;
+	class D3D12Context;
 
 	enum class MeshCollisionDetail;
 	enum class ModelFormat;
@@ -33,7 +33,7 @@ namespace SeedCore
 	class SEEDCORE_API ModelResource :public Asset, public NonCopyable
 	{
 	public:
-		ModelResource(GraphicsLoaderSystem& loaders, BindlessHeap& heap);
+		ModelResource(GraphicsLoaderSystem& loaders, D3D12Context& context, BindlessHeap& heap, BC7CompressShader& bc7Shader);
 		~ModelResource() = default;
 
 		void Load(const AssetContext& context, Uint32 assetID)override;
@@ -41,17 +41,21 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Loads a model by asset ID. If already loaded, returns the existing handle.
+		* thread selects the transfer lane the upload is recorded on, so a load
+		* on the async worker and one on the main thread never share a lane.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* アセット ID でモデルをロードする。既にロード済みなら既存のハンドルを返す。
+		* thread でアップロードを記録する転送レーンを選び、非同期のワーカーと
+		* メインスレッドの読み込みが同じレーンを使わないようにする。
 		*/
-		Handle<Crister> Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetID);
+		Handle<Crister> Load(ResourceCache& cache, Uint32 assetID, LoadThread thread = LoadThread::Main);
 
 		void Unload(Uint32 assetID)override;
 
-		Bool Export(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetID, ExportPreset preset, String outputPath);
+		Bool Export(ResourceCache& cache, Uint32 assetID, ExportPreset preset, String outputPath);
 
 		/**
 		* [EN]
@@ -76,7 +80,7 @@ namespace SeedCore
 		* 「コリジョン生成」アセットアクションから呼ばれる。モデルは
 		* ロード時に衝突を自動生成しなくなった。
 		*/
-		Bool GenerateCollision(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetID, MeshCollisionDetail detail);
+		Bool GenerateCollision(ResourceCache& cache, Uint32 assetID, MeshCollisionDetail detail);
 
 		/**
 		* [EN]
@@ -103,7 +107,7 @@ namespace SeedCore
 		* スキャンで AssetType::Material アセットになる。モデルにマテリアルが
 		* 無い、または書き込みに失敗した場合は false を返す。
 		*/
-		Bool GenerateMaterial(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetID, Bool overwrite);
+		Bool GenerateMaterial(ResourceCache& cache, Uint32 assetID, Bool overwrite);
 
 		/**
 		* [EN]
@@ -130,7 +134,7 @@ namespace SeedCore
 		* AssetType::Skeleton アセットになる。モデルにスキンが無い、または
 		* 書き込みに失敗した場合は false を返す。
 		*/
-		Bool GenerateSkeleton(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, Uint32 assetID, Bool overwrite);
+		Bool GenerateSkeleton(ResourceCache& cache, Uint32 assetID, Bool overwrite);
 
 		/**
 		* [EN]
@@ -168,7 +172,11 @@ namespace SeedCore
 	private:
 		GraphicsLoaderSystem& loaders_;
 
+		D3D12Context& context_;
+
 		BindlessHeap& heap_;
+
+		BC7CompressShader& bc7Shader_;
 
 		FlatMap<Uint32, Handle<Crister>> assetHandleMap_;
 	};

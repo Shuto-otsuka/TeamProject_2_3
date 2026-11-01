@@ -1,10 +1,12 @@
 #include <FoundationEngine/Resource/ResourceCache.h>
+#include <FoundationEngine/Benchmark/Benchmark.h>
+#include <FoundationEngine/Benchmark/BenchmarkSystem.h>
+#include <FoundationEngine/JobSystem/JobScheduler.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 #include <FoundationEngine/JobSystem/JobExecutor.h>
 #include <FoundationEngine/JobSystem/JobTaskflow.h>
 #include <FoundationEngine/File/FileLocator.h>
-#include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 
 namespace SeedCore
 {
@@ -119,17 +121,19 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Loads exactly one pending asset from the queue built by Async(),
-	* if any remain. Returns whether an asset was processed this call
-	* (false once the queue is drained or Async hasn't been called).
+	* if any remain, telling its manager that thread runs the load.
+	* Returns whether an asset was processed this call (false once the
+	* queue is drained or Async hasn't been called).
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* Async() が構築したキューから、残っていればちょうど1つの保留
-	* アセットを読み込む。この呼び出しでアセットを処理したかどうかを
-	* 返す（キューが尽きた、または Async が呼ばれていない場合は false）。
+	* アセットを読み込み、その管理クラスへ thread で読み込んでいることを
+	* 伝える。この呼び出しでアセットを処理したかどうかを返す（キューが
+	* 尽きた、または Async が呼ばれていない場合は false）。
 	*/
-	Bool ResourceCache::Step(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
+	Bool ResourceCache::Step(LoadThread thread)
 	{
 		if (!scanComplete_.load(std::memory_order_acquire))
 		{
@@ -146,15 +150,15 @@ namespace SeedCore
 		AssetRecord* asset = GetAsset(assetID);
 		if (asset && !asset->isLoaded_)
 		{
-			/// [EN] Dispatch to the manager for this asset type (Prefab/Scene have no Step loader). This runs on StepAsync's worker while the main thread may use the same Direct queue,
-			///      so each Load() locks D3D12CommandQueue::AcquireLock() only around ExecuteCommandLists/Signal.
-			/// [JP] アセット種別に対応する管理クラスへ渡す(Prefab/Scene は Step の読み込みを持たない)。これは StepAsync のワーカーで動き、メインスレッドも同じ Direct キューを使うので、
-			///      各 Load() は ExecuteCommandLists/Signal の間だけ D3D12CommandQueue::AcquireLock() でロックする。
+			/// [EN] Dispatch to the manager for this asset type (Prefab/Scene have no Step loader). The thread is passed along so a manager keeping per-thread state never shares it with a load running on the main thread at the same time.
+			/// [JP] アセット種別に対応する管理クラスへ渡す(Prefab/Scene は Step の読み込みを持たない)。スレッドの種類も渡し、スレッドごとの状態を持つ管理クラスが、同時にメインスレッドで動く読み込みとそれを共有しないようにする。
 			Asset* resource = GetResource(asset->type_);
 			if (resource)
 			{
-				AssetContext context{ *this, device, cmdQueue, &bc7Shader };
+				AssetContext context{ *this, thread };
+				Benchmark::Begin("Load");
 				resource->Load(context, asset->assetID_);
+				Benchmark::End("Load");
 			}
 
 			asset->isLoaded_ = true;
@@ -175,7 +179,7 @@ namespace SeedCore
 	* 最初の呼び出しでフォルダの監視を始め、以降の呼び出しでは変更が通知されて
 	* いれば Reload() を実行する。
 	*/
-	void ResourceCache::Watch(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
+	void ResourceCache::Watch()
 	{
 		/// [EN] Gameplay assets live under UserProject; watching the whole root would also catch build output and Visual Studio's own files.
 		/// [JP] ゲームのアセットは UserProject 以下にある。ルート全体を監視すると、ビルド出力や Visual Studio 自身のファイルまで拾ってしまう。
@@ -194,7 +198,7 @@ namespace SeedCore
 		/// [JP] タイムアウト 0 は通知の有無を見るだけなので、何も変わっていないフレームがここで待つことはない。
 		if (WaitForSingleObject(watchHandle_, 0) == WAIT_OBJECT_0)
 		{
-			Reload(device, cmdQueue, bc7Shader);
+			Reload();
 		}
 	}
 
@@ -211,7 +215,7 @@ namespace SeedCore
 	* ワーカースレッド上でキューが尽きるまで Step() を繰り返し呼ぶ。
 	* 完全な契約についてはヘッダのドキュメントコメント参照。
 	*/
-	void ResourceCache::StepAsync(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
+	void ResourceCache::StepAsync()
 	{
 		Bool expected = false;
 		if (!loadStarted_.compare_exchange_strong(expected, true, std::memory_order_acq_rel))
@@ -221,15 +225,16 @@ namespace SeedCore
 
 		if (!loadExecutor_)
 		{
-			loadExecutor_ = MakePtr<JobExecutor>(1);
+			ResourceRef<JobWorkerInterface> scheduler = benchmark_ ? MakeWorkerInterface<JobScheduler>(*benchmark_) : nullptr;
+			loadExecutor_ = MakePtr<JobExecutor>(1, scheduler);
 		}
 
 		/// [EN] Clear the member taskflow first, since a rescan (Unload() resetting loadStarted_) would otherwise re-run it with the previous pass's finished task still inside.
 		/// [JP] 先にメンバーの taskflow を空にする。再スキャン(Unload() が loadStarted_ を戻した場合)で、前回の完了済みタスクが残ったまま再実行しないため。
 		loadTaskflow_.Clear();
-		loadTaskflow_.emplace([this, device, cmdQueue, &bc7Shader]()
+		loadTaskflow_.emplace([this]()
 		{
-			while (Step(device, cmdQueue, bc7Shader))
+			while (Step(LoadThread::Async))
 			{
 				/// No Code
 			}
@@ -238,6 +243,20 @@ namespace SeedCore
 		/// [EN] Passed by reference, not moved: the JobTopology only keeps a reference to the taskflow, which the member loadTaskflow_ keeps alive.
 		/// [JP] ムーブせず参照で渡す。JobTopology は taskflow への参照しか持たず、その寿命はメンバーの loadTaskflow_ が保つ。
 		loadExecutor_->Run(loadTaskflow_);
+	}
+
+	/**
+	* [EN]
+	* Makes the dedicated asynchronous loader attach to benchmark recording.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 専用の非同期ローダーをベンチマーク計測へ Attach する。
+	*/
+	void ResourceCache::Benchmark(BenchmarkSystem& benchmark)
+	{
+		benchmark_ = &benchmark;
 	}
 
 	/**
@@ -587,11 +606,11 @@ namespace SeedCore
 	* プロジェクトのアセット変更を同期的に再スキャンし、まだ読み込まれて
 	* いない全アセットを一括で読み込む。
 	*/
-	void ResourceCache::Reload(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
+	void ResourceCache::Reload()
 	{
 		Rescan();
 
-		AssetContext context{ *this, device, cmdQueue, &bc7Shader };
+		AssetContext context{ *this, LoadThread::Main };
 
 		for (auto& asset : assetsMap_ | std::ranges::views::values)
 		{
@@ -635,7 +654,7 @@ namespace SeedCore
 	* のものを解放し、新しい中身をその場所へ読み込む。Editor の実行中に
 	* 共有ライブラリが新しい Revision を持ってきた場合に使う。
 	*/
-	void ResourceCache::Reload(Uint32 assetID, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader)
+	void ResourceCache::Reload(Uint32 assetID)
 	{
 		/// [EN] An asset this cache has never seen has nothing to release, and its file is picked up by the next scan instead.
 		/// [JP] このキャッシュが知らないアセットには解放するものが無く、そのファイルは次の走査で拾われる。
@@ -653,7 +672,7 @@ namespace SeedCore
 
 		/// [EN] The identifier survives the swap, so every reference held elsewhere keeps pointing at this asset.
 		/// [JP] 識別子は入れ替えをまたいで変わらないため、他所が持っている参照はこのアセットを指したままになる。
-		AssetContext context{ *this, device, cmdQueue, &bc7Shader };
+		AssetContext context{ *this, LoadThread::Main };
 		if (it->second.isLoaded_)
 		{
 			resource->Unload(assetID);

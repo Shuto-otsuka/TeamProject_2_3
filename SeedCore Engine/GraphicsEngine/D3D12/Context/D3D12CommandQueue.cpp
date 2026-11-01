@@ -78,6 +78,12 @@ namespace SeedCore
 		}
 	}
 
+	void D3D12CommandQueue::Wait(const D3D12CommandQueue& producer, Uint64 fenceValue)
+	{
+		std::lock_guard<std::mutex> lock(mutex_);
+		cmdQueue_->Wait(producer.GetFence(), fenceValue);
+	}
+
 	void D3D12CommandQueue::Execute(ID3D12CommandList* cmdList)
 	{
 		if (!cmdList)

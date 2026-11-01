@@ -1,4 +1,5 @@
 #include <SeedCore/Engine/EngineCore.h>
+#include <FoundationEngine/Benchmark/Benchmark.h>
 #include <FoundationEngine/Resource/Config/GameConfig.h>
 #include <FoundationEngine/Resource/Config/EditorConfig.h>
 #include <FoundationEngine/Input/InputSystem.h>
@@ -17,9 +18,12 @@
 
 namespace SeedCore
 {
-	EngineCore::EngineCore() :executor_(std::thread::hardware_concurrency(), MakeWorkerInterface<JobScheduler>()), world_(MakePtr<World>()), joltManager_(MakePtr<JoltManager>())
+	EngineCore::EngineCore() :executor_(std::thread::hardware_concurrency(), MakeWorkerInterface<JobScheduler>(benchmark_)), world_(MakePtr<World>()), joltManager_(MakePtr<JoltManager>())
 	{
-		/// No Code
+		/// [EN] The engine is constructed on the main thread, which runs the frame loop, so the main thread's sections are recorded from here on.
+		/// [JP] エンジンはフレームループを回すメインスレッドで構築されるので、ここから先メインスレッドの区間が記録される。
+		benchmark_.Attach(String("Main"));
+		resource_.Benchmark(benchmark_);
 	}
 
 	EngineCore::~EngineCore() = default;
@@ -242,16 +246,21 @@ namespace SeedCore
 
 	Bool EngineCore::Pump()
 	{
+		/// [EN] Window messages are measured too, since a slow message handler stalls the whole frame.
+		/// [JP] ウィンドウメッセージも測る。遅いメッセージ処理はフレーム全体を止めるため。
+		Benchmark::Begin("Pump");
 		MSG msg{};
 		while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
 		{
 			if (msg.message == WM_QUIT)
 			{
+				Benchmark::End("Pump");
 				return false;
 			}
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
+		Benchmark::End("Pump");
 		return true;
 	}
 
@@ -268,22 +277,32 @@ namespace SeedCore
 			return false;
 		}
 
-		resource_.StepAsync(graphics_.GetContext().GetDevice(), graphics_.GetContext().GetDirectQueue(), graphics_.GetBC7CompressShader());
+		Benchmark::Begin("Splash");
+		resource_.StepAsync();
 		graphics_.DrawSplashScreen(splashSystem_);
+		Benchmark::End("Splash");
+
+		/// [EN] The splash screen presents on its own and skips Present, so the frame is collected here instead.
+		/// [JP] スプラッシュ画面は自分で表示して Present を通らないので、ここでフレームを締める。
+		benchmark_.Collect();
 
 		return true;
 	}
 
 	void EngineCore::Tick()
 	{
+		Benchmark::Begin("Timer");
 		window_.CalculateFrameStats();
 		window_.GetTimer().Tick();
 		world_->GetService<GameTimer>()->Tick(window_.GetTimer().Delta());
+		Benchmark::End("Timer");
 	}
 
 	void EngineCore::Input()
 	{
+		Benchmark::Begin("Input");
 		InputSystem::Update(cameraSystem_.Rect());
+		Benchmark::End("Input");
 	}
 
 	void EngineCore::Letterbox(const GameConfig& gameConfig)
@@ -314,12 +333,18 @@ namespace SeedCore
 
 	void EngineCore::Begin()
 	{
+		/// [EN] Includes the wait for the GPU to free this frame's slot, so a GPU-bound frame shows up here.
+		/// [JP] GPU がこのフレームの枠を空けるのを待つ時間も含むので、GPU 律速のフレームはここに出る。
+		Benchmark::Begin("BeginFrame");
 		graphics_.Begin();
+		Benchmark::End("BeginFrame");
 	}
 
 	void EngineCore::End()
 	{
+		Benchmark::Begin("EndFrame");
 		graphics_.End();
+		Benchmark::End("EndFrame");
 	}
 
 	void EngineCore::Play()
@@ -333,51 +358,103 @@ namespace SeedCore
 
 	void EngineCore::Simulate(Float deltaTime)
 	{
+		Benchmark::Begin("Simulate");
+
 		GameTimer& timer = *world_->GetService<GameTimer>();
 
+		Benchmark::Begin("ResolveSound");
 		AudioSystem::ResolveSound(audioModule_.Resource(), *world_);
+		Benchmark::End("ResolveSound");
 
 		if (timer.Playing())
 		{
 			if (!timer.Paused())
 			{
+				Benchmark::Begin("Coroutine");
 				CoroutineSystem::Update(timer.ScaledDeltaTime());
+				Benchmark::End("Coroutine");
 			}
 
+			/// [EN] Physics covers both syncing the world into Jolt and every fixed step, since together they are the cost of simulating the bodies.
+			/// [JP] Physics にはワールドから Jolt への反映と全固定ステップの両方を含める。合わせて剛体を動かすコストになるため。
+			Benchmark::Begin("Physics");
+
+			Benchmark::Begin("ResolveMeshCollider");
 			PhysicsSystem::ResolveMeshCollider(*graphics_.GetGraphicsModule().Resources().meshCollisionResource_, *world_);
+			Benchmark::End("ResolveMeshCollider");
+
+			Benchmark::Begin("ResolveSoftbody");
 			PhysicsSystem::ResolveSoftbody(*graphics_.GetGraphicsModule().Resources().modelResource_, *world_);
+			Benchmark::End("ResolveSoftbody");
+
+			Benchmark::Begin("ApplyActive");
 			PhysicsSystem::ApplyActive(*world_);
+			Benchmark::End("ApplyActive");
+
+			Benchmark::Begin("ApplyCollider");
 			PhysicsSystem::ApplyCollider(*world_);
+			Benchmark::End("ApplyCollider");
+
+			/// [EN] Each fixed step is one call of these sections, so their call count is the number of fixed steps taken this frame.
+			/// [JP] 固定ステップ1回がこれらの区間の1呼び出しになるので、回数がこのフレームに進めた固定ステップ数になる。
 			while (timer.Step())
 			{
+				Benchmark::Begin("ApplyRigidbody");
 				PhysicsSystem::ApplyRigidbody(*world_, timer.FixedDeltaTime());
+				Benchmark::End("ApplyRigidbody");
+
+				Benchmark::Begin("Jolt");
 				joltManager_->Execute(timer.FixedDeltaTime(), *world_);
+				Benchmark::End("Jolt");
+
 				system_.Step(*world_, timer.FixedDeltaTime());
 			}
+			Benchmark::End("Physics");
 		}
 
+		Benchmark::Begin("Systems");
 		system_.Run(*world_, resource_, executor_, deltaTime, timer.ScaledDeltaTime(), timer.Playing());
+		Benchmark::End("Systems");
 
 		if (timer.Playing())
 		{
+			Benchmark::Begin("Scene");
 			sceneSystem_.Update(timer.ScaledDeltaTime());
+			Benchmark::End("Scene");
+
+			Benchmark::Begin("Audio");
 			AudioSystem::Update(*world_, timer.ScaledDeltaTime());
+			Benchmark::End("Audio");
 		}
 
+		Benchmark::Begin("CriAtom");
 		criManager_.Execute();
+		Benchmark::End("CriAtom");
+
+		Benchmark::End("Simulate");
 	}
 
 	void EngineCore::Render(const GameConfig& gameConfig)
 	{
+		Benchmark::Begin("Render");
 		graphics_.Upscale(gameConfig.useDlss_, gameConfig.upscaleMode_);
 		graphics_.VerticalSync(gameConfig.vsync_);
 		graphics_.GameRender(*world_->GetService<GameTimer>(), cameraSystem_, *world_);
 		graphics_.DrawLetterScreen();
+		Benchmark::End("Render");
 	}
 
 	void EngineCore::Present()
 	{
+		/// [EN] Includes the wait for vertical sync when it is on.
+		/// [JP] 垂直同期が有効なら、その待ち時間も含む。
+		Benchmark::Begin("Present");
 		graphics_.GetSwapChain().Present(graphics_.GetContext().GetDevice());
+		Benchmark::End("Present");
+
+		/// [EN] Present is the last step of the frame in both the editor and the runtime, so every section of the frame has ended by here.
+		/// [JP] Present はエディタでもランタイムでもフレームの最後の手順なので、ここではフレームの区間が全て閉じている。
+		benchmark_.Collect();
 	}
 
 	void EngineCore::Finalize()
@@ -446,5 +523,19 @@ namespace SeedCore
 	CameraSystem& EngineCore::GetCamera()
 	{
 		return cameraSystem_;
+	}
+
+	/**
+	* [EN]
+	* The CPU section measurements, collected once per frame in Present.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* CPU の区間計測。Present でフレームに1回集計される。
+	*/
+	BenchmarkSystem& EngineCore::GetBenchmark()
+	{
+		return benchmark_;
 	}
 }

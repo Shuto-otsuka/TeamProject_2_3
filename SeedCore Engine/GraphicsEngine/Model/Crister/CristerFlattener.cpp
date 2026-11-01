@@ -91,7 +91,7 @@ namespace SeedCore
 
 								/// [EN] A source asset with a degenerate/non-finite quantisation AABB (positionMin_/positionExtent_) decodes to a NaN/Inf position here even though the compressed bit pattern itself is well-formed. That NaN reaches the BLAS's position buffer, producing a NaN bounding box the traversal hardware can never cull against - every ray descends into it instead of skipping it, which is a no-page-fault DispatchRays hang rather than a crash. Falling back to the origin keeps this mesh's triangle count/indexing intact (so BLAS build still succeeds) while giving the BVH a finite, if wrong-looking, box.
 								/// [JP] 量子化 AABB(positionMin_/positionExtent_)が退化/非有限なソースアセットは、圧縮ビットパターン自体は正常でもここで NaN/Inf の位置へデコードされる。その NaN は BLAS の位置バッファへそのまま渡り、走査ハードウェアが絶対にカリングできない NaN境界ボックスを生む - 全てのレイがスキップされずそこへ降りていくため、クラッシュではなくページフォルト無しの DispatchRays ハングになる。原点へフォールバックすれば、このメッシュの三角形数/インデックス構造は保ったまま(BLAS 構築を成功させたまま)、見た目はおかしくとも有限な境界ボックスを BVH に与えられる。
-								Vector3 position = crister.DecodePosition(compressed);
+								Vector3 position = quantizer.DecodePosition(crister, compressed);
 								if (!std::isfinite(position.x) || !std::isfinite(position.y) || !std::isfinite(position.z))
 								{
 									if (!degeneratePositionLogged)
@@ -106,7 +106,7 @@ namespace SeedCore
 								/// [JP] 配置するコピーはデコードして配置へ移し(法線は逆転置行列で、鏡映では接線の利き手を反転)、符号化し直す。配置しないものはそのままコピーする。
 								if (placed)
 								{
-									Vertex placedVertex = crister.DecodeVertex(compressed);
+									Vertex placedVertex = quantizer.DecodeVertex(crister, compressed);
 									placedVertex.position_ = Vector3::Transform(position, placement);
 									placedVertex.normal_ = Vector3::TransformNormal(placedVertex.normal_, normalPlacement);
 									placedVertex.normal_.Normalize();

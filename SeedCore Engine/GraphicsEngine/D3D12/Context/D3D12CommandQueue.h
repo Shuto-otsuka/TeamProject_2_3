@@ -14,6 +14,8 @@ namespace SeedCore
 
 		void WaitFor(Uint64 fenceValue);
 
+		void Wait(const D3D12CommandQueue& producer, Uint64 fenceValue);
+
 		void Execute(ID3D12CommandList* cmdList);
 
 		void Execute(DynamicArray<ID3D12CommandList*>& cmdLists);

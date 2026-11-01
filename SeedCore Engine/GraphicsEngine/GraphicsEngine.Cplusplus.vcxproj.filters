@@ -1105,9 +1105,6 @@
     <ClInclude Include="Model\Crister\CristerScene.h">
       <Filter>Model\Crister</Filter>
     </ClInclude>
-    <ClInclude Include="Model\Crister\CristerGpu.h">
-      <Filter>Model\Crister</Filter>
-    </ClInclude>
     <ClInclude Include="Model\Crister\CristerClusterizer.h">
       <Filter>Model\Crister</Filter>
     </ClInclude>
@@ -1128,6 +1125,21 @@
     </ClInclude>
     <ClInclude Include="D3D12\Buffer\StagingBuffer.h">
       <Filter>D3D12\Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Crister\CristerResidency.h">
+      <Filter>Model\Crister</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Crister\CristerExtractor.h">
+      <Filter>Model\Crister</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12\Context\D3D12TransferLane.h">
+      <Filter>D3D12\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Material\BakedSurface.h">
+      <Filter>Model\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Material\MaterialBaker.h">
+      <Filter>Model\Material</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1823,9 +1835,6 @@
     <ClCompile Include="Model\Crister\Crister.cpp">
       <Filter>Model\Crister</Filter>
     </ClCompile>
-    <ClCompile Include="Model\Crister\CristerGpu.cpp">
-      <Filter>Model\Crister</Filter>
-    </ClCompile>
     <ClCompile Include="Model\Crister\CristerClusterizer.cpp">
       <Filter>Model\Crister</Filter>
     </ClCompile>
@@ -1846,6 +1855,18 @@
     </ClCompile>
     <ClCompile Include="D3D12\Buffer\StagingBuffer.cpp">
       <Filter>D3D12\Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Crister\CristerResidency.cpp">
+      <Filter>Model\Crister</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Crister\CristerExtractor.cpp">
+      <Filter>Model\Crister</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12\Context\D3D12TransferLane.cpp">
+      <Filter>D3D12\Context</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Material\MaterialBaker.cpp">
+      <Filter>Model\Material</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -7,7 +7,7 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Owns the dedicated root signature + PSO for BC7CompressCS.hlsl (used by
-	* Crister::BakeBitmap to GPU-compress baked model textures). Built once
+	* CristerCompressor::BakeBitmap to GPU-compress baked model textures). Built once
 	* at startup and shared by every load, like ModelShader.
 	*
 	* This shader does not use the engine's shared bindless root signature —
@@ -17,7 +17,7 @@ namespace SeedCore
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* BC7CompressCS.hlsl（Crister::BakeBitmap がモデルテクスチャの GPU BC7
+	* BC7CompressCS.hlsl（CristerCompressor::BakeBitmap がモデルテクスチャの GPU BC7
 	* 圧縮に使う）専用のルートシグネチャ+PSO を持つ。ModelShader と同じく
 	* 起動時に一度だけ構築し、以降のロード全てで共有する。
 	*

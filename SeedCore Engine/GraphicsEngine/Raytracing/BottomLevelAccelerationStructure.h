@@ -5,14 +5,14 @@ namespace SeedCore
 	/// [EN] Description of a single triangle geometry fed into a BLAS build.
 	///      Addresses point at the raw vertex/index buffers (the same data the
 	///      rasterizer uses); by default (ModelLoader::ConvertAxisConvention /
-	///      Crister::ApplyAxisConversion with WindingOverride::Auto) index
+	///      CristerConverter::ApplyAxisConversion with WindingOverride::Auto) index
 	///      order is never touched, matching the implicit winding flip caused
 	///      by vertex mirroring alone - only an explicit WindingOverride::Flip
 	///      swaps index order, so this invariant only breaks if that override
 	///      is misused for a given asset's actual axis convention.
 	/// [JP] BLAS 構築へ渡す単一の三角形ジオメトリ記述。アドレスはラスタと同じ
 	///      生の頂点/インデックスバッファを指す。既定では
-	///      （ModelLoader::ConvertAxisConvention / Crister::ApplyAxisConversion
+	///      （ModelLoader::ConvertAxisConvention / CristerConverter::ApplyAxisConversion
 	///      の WindingOverride::Auto）インデックス順は一切触らない。これは
 	///      頂点ミラーだけで暗黙的に起きる巻き順反転と一致する — 明示的に
 	///      WindingOverride::Flip を選んだ時だけインデックス順を入れ替えるため、

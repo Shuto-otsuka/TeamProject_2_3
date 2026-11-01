@@ -1,5 +1,6 @@
 #include <Editor/Editor/Engine.h>
 #include <Editor/Editor/Build/AtomCraft.h>
+#include <FoundationEngine/Benchmark/Benchmark.h>
 #include <FoundationEngine/Utility/Bootstrap.h>
 #include <FoundationEngine/Time/GameTimer.h>
 
@@ -75,6 +76,7 @@ namespace SeedCore
 				editorContext_.view_.canvas_.camera_ = &canvasCamera_;
 				editorContext_.graphics_.graphics_ = &core_.GetGraphics();
 				editorContext_.graphics_.imgui_ = imgui_.get();
+				editorContext_.application_.benchmark_ = &core_.GetBenchmark();
 
 				/// [EN] The editor camera resumes where it was when the editor last closed.
 				/// [JP] エディタのカメラは、前回エディタを閉じたときの状態から再開する。
@@ -153,8 +155,13 @@ namespace SeedCore
 
 			/// [EN] Reloaded code is swapped in before the frame, so this frame already runs the new code.
 			/// [JP] 読み直したコードはフレームの前に差し替え、このフレームから新しいコードで動かす。
+			Benchmark::Begin("HotReload");
 			hotReload_.Tick(core_.GetWorld());
+			Benchmark::End("HotReload");
+
+			Benchmark::Begin("Plugin");
 			core_.GetPlugin().Tick(core_.GetWorld());
+			Benchmark::End("Plugin");
 
 			/// [EN] While the splash screen is up, the frame is spent loading assets instead.
 			/// [JP] スプラッシュ画面の間は、フレームをアセットの読み込みに使う。
@@ -165,10 +172,17 @@ namespace SeedCore
 
 			/// [EN] The editor's own delta time drives editor-side work, which keeps going while the game is stopped.
 			/// [JP] エディタ自身の経過時間でエディタ側の処理を進め、ゲームが止まっていても動き続けるようにする。
+			Benchmark::Begin("EditorUpdate");
 			editor_->Tick(core_.GetWindow().GetTimer().Delta());
+			Benchmark::End("EditorUpdate");
 			core_.Begin();
 			core_.Simulate(core_.GetWindow().GetTimer().Delta());
+
+			/// [EN] Draw covers the view rendering and the panels; the sections inside it break it down further.
+			/// [JP] Draw はビューの描画とパネルを含む。内訳はその中の区間に出る。
+			Benchmark::Begin("Draw");
 			editor_->Draw();
+			Benchmark::End("Draw");
 
 			core_.End();
 			core_.Present();

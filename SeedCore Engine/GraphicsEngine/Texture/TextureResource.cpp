@@ -2,21 +2,24 @@
 #include <GraphicsEngine/Texture/Texture.h>
 #include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
+#include <GraphicsEngine/D3D12/Context/D3D12TransferLane.h>
+#include <GraphicsEngine/Model/Crister/CristerMaterial.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 
 namespace SeedCore
 {
-	TextureResource::TextureResource(GraphicsLoaderSystem& loaders, BindlessHeap& heap) :loaders_(loaders), heap_(heap)
+	TextureResource::TextureResource(GraphicsLoaderSystem& loaders, D3D12Context& context, BindlessHeap& heap) :loaders_(loaders), context_(context), heap_(heap)
 	{
 		/// No Code
 	}
 
 	void TextureResource::Load(const AssetContext& context, Uint32 assetID)
 	{
-		Load(context.device_, context.cmdQueue_, context.cache_, assetID);
+		Load(context.cache_, assetID);
 	}
 
-	Handle<Texture> TextureResource::Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, ResourceCache& cache, Uint32 assetID)
+	Handle<Texture> TextureResource::Load(ResourceCache& cache, Uint32 assetID)
 	{
 		if (assetHandleMap_.contains(assetID))
 		{
@@ -29,7 +32,7 @@ namespace SeedCore
 			return Handle<Texture>::null();
 		}
 
-		Handle<Texture> handle = loaders_.textureLoader_->Load(device, cmdQueue, &heap_, asset->fullpath_);
+		Handle<Texture> handle = loaders_.textureLoader_->Load(context_.GetDevice(), context_.GetDirectQueue(), &heap_, asset->fullpath_);
 		if (handle.empty())
 		{
 			return Handle<Texture>::null();
@@ -49,6 +52,27 @@ namespace SeedCore
 		Handle<Texture> handle = assetHandleMap_.at(assetID);
 		loaders_.textureLoader_->Clear(handle, &heap_);
 		assetHandleMap_.erase(assetID);
+	}
+
+	void TextureResource::Adopt(Uint32 assetID, const Bitmap& bitmap, LoadThread thread)
+	{
+		if (assetHandleMap_.contains(assetID))
+		{
+			Handle<Texture> existing = assetHandleMap_.at(assetID);
+			Texture* texture = loaders_.textureLoader_->Get(existing);
+			if (texture && !texture->FilePath().view().empty())
+			{
+				return;
+			}
+			loaders_.textureLoader_->Clear(existing, &heap_);
+			assetHandleMap_.erase(assetID);
+		}
+
+		Handle<Texture> handle = loaders_.textureLoader_->Adopt(context_.GetDevice(), context_.GetCopyQueue(), context_.GetLoadTransferLane(thread), &heap_, bitmap);
+		if (!handle.empty())
+		{
+			assetHandleMap_.insert({ assetID, handle });
+		}
 	}
 
 	Handle<Texture> TextureResource::GetHandle(Uint32 assetID)const
