@@ -1,5 +1,6 @@
 #include <FoundationEngine/World/ECS/System/SystemScheduler.h>
 #include <FoundationEngine/World/ECS/System/TransformSystem.h>
+#include <FoundationEngine/Benchmark/Benchmark.h>
 
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/WorldAccessor.h>
@@ -48,6 +49,10 @@ namespace SeedCore
 				continue;
 			}
 
+			/// [EN] Each behaviour type is its own section, named after the type, so a heavy script shows up by name under its phase.
+			/// [JP] ビヘイビアの型ごとに、型名の区間にする。重いスクリプトがフェーズの下に名前で出るようにする。
+			Benchmark::Begin(id->name_);
+
 			entities_.clear();
 			for (Uint32 row = 0; row < set->EntityCount(); ++row)
 			{
@@ -69,6 +74,8 @@ namespace SeedCore
 
 				call(id->hooks_->upcast_(data));
 			}
+
+			Benchmark::End(id->name_);
 		}
 	}
 
@@ -109,10 +116,13 @@ namespace SeedCore
 			///      so the world matrices are built here first, letting Awake/Start read the actor's (and its parent's) actual world pose.
 			/// [JP] 前回の TransformSystem 以降に生成された actor（切り替え先のシーン、Instantiate した Prefab）はワールド行列がまだ単位行列のままなので、
 			///      先にここでワールド行列を作り、Awake/Start が actor（およびその親）の実際のワールドでの姿勢を読めるようにする。
+			Benchmark::Begin("Transform");
 			transformSystem_.Execute(world);
+			Benchmark::End("Transform");
 
 			/// [EN] Every behaviour is visited, with or without an OnAwake, since awoken_ must be set on all of them.
 			/// [JP] OnAwake の有無に関係なく全ビヘイビアを回す。awoken_ は全てに立てる必要があるため。
+			Benchmark::Begin("Awake");
 			Dispatch(world, [](const ComponentHooks&) { return true; }, [](ComponentBehaviour* component)
 				{
 					if (!component->awoken_)
@@ -121,9 +131,11 @@ namespace SeedCore
 						component->DispatchAwake();
 					}
 				});
+			Benchmark::End("Awake");
 
 			/// [EN] The same holds for started_, which FixedTick checks.
 			/// [JP] FixedTick が確かめる started_ も同じ。
+			Benchmark::Begin("Start");
 			Dispatch(world, [](const ComponentHooks&) { return true; }, [](ComponentBehaviour* component)
 				{
 					if (!component->started_)
@@ -132,6 +144,7 @@ namespace SeedCore
 						component->DispatchStart();
 					}
 				});
+			Benchmark::End("Start");
 		}
 
 		/// [EN] Spawn before TransformSystem::Execute so a new actor's world matrix is built from its spawn Position this frame;
@@ -145,38 +158,58 @@ namespace SeedCore
 			systemGraph_.Clear();
 			systemGraph_.Add(Query<Read<Spawner>, Read<Lifetime>>::ReadSignature(), Query<Read<Spawner>, Read<Lifetime>>::WriteSignature(), [this, &world, gameElapsedTime]()
 				{
+					Benchmark::Begin("Spawner");
 					spawnerSystem_.Execute(commandBuffer_, world, gameElapsedTime);
+					Benchmark::End("Spawner");
+
+					Benchmark::Begin("Lifetime");
 					lifetimeSystem_.Execute(commandBuffer_, world, gameElapsedTime);
+					Benchmark::End("Lifetime");
 				});
+
+			/// [EN] The graph runs on the workers, so this section on the main thread is the wait for it; the work itself appears on the worker lanes.
+			/// [JP] グラフはワーカー上で走るので、メインスレッドのこの区間はその待ち時間。処理そのものはワーカーのレーンに出る。
+			Benchmark::Begin("SystemGraph");
 			systemGraph_.Run(executor);
+			Benchmark::End("SystemGraph");
 		}
 
 		/// [EN] Flush the structural changes systems recorded (spawns, destroys) before TransformSystem, so this frame's world matrices already reflect them.
 		/// [JP] システムが記録した構造変更(スポーン・破棄)を TransformSystem より前に flush し、今フレームのワールド行列に反映させる。
+		Benchmark::Begin("CommandBuffer");
 		commandBuffer_.Flush(world, cache);
+		Benchmark::End("CommandBuffer");
 
+		Benchmark::Begin("Transform");
 		transformSystem_.Execute(world);
+		Benchmark::End("Transform");
 
 		if (isPlaying)
 		{
+			Benchmark::Begin("Tick");
 			Dispatch(world, [](const ComponentHooks& hooks) { return hooks.tick_ != nullptr; }, [gameElapsedTime](ComponentBehaviour* component)
 				{
 					component->DispatchTick(gameElapsedTime);
 				});
+			Benchmark::End("Tick");
 
+			Benchmark::Begin("LateTick");
 			Dispatch(world, [](const ComponentHooks& hooks) { return hooks.lateTick_ != nullptr; }, [gameElapsedTime](ComponentBehaviour* component)
 				{
 					component->DispatchLateTick(gameElapsedTime);
 				});
+			Benchmark::End("LateTick");
 		}
 		else
 		{
 			/// [EN] While not playing, EditorTick takes Tick's place, passing the world's elapsed time, since the game's stays 0 while not playing.
 			/// [JP] プレイしていない間は Tick の代わりに EditorTick を送る。ゲームの経過時間は 0 のままなので、ワールドの経過時間を渡す。
+			Benchmark::Begin("EditorTick");
 			Dispatch(world, [](const ComponentHooks& hooks) { return hooks.editorTick_ != nullptr; }, [worldElapsedTime](ComponentBehaviour* component)
 				{
 					component->DispatchEditorTick(worldElapsedTime);
 				});
+			Benchmark::End("EditorTick");
 		}
 	}
 
@@ -197,6 +230,7 @@ namespace SeedCore
 	{
 		/// [EN] FixedTick reaches only a component that has been through Start, so a fixed step never sees a component before Awake has set it up (a Rigidbody's body, for one).
 		/// [JP] FixedTick は Start を通ったコンポーネントにだけ届く。固定ステップが、Awake で準備される前(Rigidbody のボディなど)のコンポーネントに触れないようにするため。
+		Benchmark::Begin("FixedTick");
 		Dispatch(world, [](const ComponentHooks& hooks) { return hooks.fixedTick_ != nullptr; }, [fixedTime](ComponentBehaviour* component)
 			{
 				if (component->started_)
@@ -204,6 +238,7 @@ namespace SeedCore
 					component->DispatchFixedTick(fixedTime);
 				}
 			});
+		Benchmark::End("FixedTick");
 	}
 
 	/**

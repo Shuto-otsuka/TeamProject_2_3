@@ -241,6 +241,9 @@
     <Filter Include="Environment\Celestial">
       <UniqueIdentifier>{84da79a0-c715-43d7-9e65-50b125b2d72d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Model\Crister">
+      <UniqueIdentifier>{7390d222-652f-4892-9418-f07a526ec086}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12\Context\D3D12Adapter.h">
@@ -763,9 +766,6 @@
     <ClInclude Include="Model\Transparent\OITBuffer.h">
       <Filter>Model\Transparent</Filter>
     </ClInclude>
-    <ClInclude Include="Model\Crister.h">
-      <Filter>Model</Filter>
-    </ClInclude>
     <ClInclude Include="Model\Mesh.h">
       <Filter>Model</Filter>
     </ClInclude>
@@ -1092,6 +1092,54 @@
     </ClInclude>
     <ClInclude Include="System\VolumetricStarSystem.h">
       <Filter>System</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Crister\Crister.h">
+      <Filter>Model\Crister</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Crister\CristerGeometry.h">
+      <Filter>Model\Crister</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Crister\CristerMaterial.h">
+      <Filter>Model\Crister</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Crister\CristerScene.h">
+      <Filter>Model\Crister</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Crister\CristerClusterizer.h">
+      <Filter>Model\Crister</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Crister\CristerCompressor.h">
+      <Filter>Model\Crister</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Crister\CristerConverter.h">
+      <Filter>Model\Crister</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Crister\CristerFlattener.h">
+      <Filter>Model\Crister</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Crister\CristerQuantizer.h">
+      <Filter>Model\Crister</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12\Context\D3D12TransferStream.h">
+      <Filter>D3D12\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12\Buffer\StagingBuffer.h">
+      <Filter>D3D12\Buffer</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Crister\CristerResidency.h">
+      <Filter>Model\Crister</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Crister\CristerExtractor.h">
+      <Filter>Model\Crister</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12\Context\D3D12TransferLane.h">
+      <Filter>D3D12\Context</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Material\BakedSurface.h">
+      <Filter>Model\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Material\MaterialBaker.h">
+      <Filter>Model\Material</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1532,9 +1580,6 @@
     <ClCompile Include="Model\Transparent\OITBuffer.cpp">
       <Filter>Model\Transparent</Filter>
     </ClCompile>
-    <ClCompile Include="Model\Crister.cpp">
-      <Filter>Model</Filter>
-    </ClCompile>
     <ClCompile Include="Model\ModelCommon.cpp">
       <Filter>Model</Filter>
     </ClCompile>
@@ -1786,6 +1831,42 @@
     </ClCompile>
     <ClCompile Include="System\VolumetricStarSystem.cpp">
       <Filter>System</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Crister\Crister.cpp">
+      <Filter>Model\Crister</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Crister\CristerClusterizer.cpp">
+      <Filter>Model\Crister</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Crister\CristerCompressor.cpp">
+      <Filter>Model\Crister</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Crister\CristerConverter.cpp">
+      <Filter>Model\Crister</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Crister\CristerFlattener.cpp">
+      <Filter>Model\Crister</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Crister\CristerQuantizer.cpp">
+      <Filter>Model\Crister</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12\Context\D3D12TransferStream.cpp">
+      <Filter>D3D12\Context</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12\Buffer\StagingBuffer.cpp">
+      <Filter>D3D12\Buffer</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Crister\CristerResidency.cpp">
+      <Filter>Model\Crister</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Crister\CristerExtractor.cpp">
+      <Filter>Model\Crister</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12\Context\D3D12TransferLane.cpp">
+      <Filter>D3D12\Context</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Material\MaterialBaker.cpp">
+      <Filter>Model\Material</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

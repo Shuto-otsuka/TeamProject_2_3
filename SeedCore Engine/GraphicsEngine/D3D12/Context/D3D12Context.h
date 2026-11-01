@@ -10,6 +10,9 @@ namespace SeedCore
 	class D3D12CommandQueue;
 	class D3D12CommandAllocator;
 	class D3D12CommandList;
+	class D3D12TransferLane;
+
+	enum class LoadThread;
 
 	class SEEDCORE_API D3D12Context :public NonTransferable
 	{
@@ -45,6 +48,10 @@ namespace SeedCore
 
 		D3D12CommandList* GetComputeList()const;
 
+		D3D12TransferLane* GetFrameTransferLane()const;
+
+		D3D12TransferLane* GetLoadTransferLane(LoadThread thread)const;
+
 		D3D12Adapter* GetAdapter()const;
 
 	private:
@@ -77,5 +84,9 @@ namespace SeedCore
 		ResourcePtr<D3D12CommandList> directList_;
 		ResourcePtr<D3D12CommandList> copyList_;
 		ResourcePtr<D3D12CommandList> computeList_;
+
+		ResourcePtr<D3D12TransferLane> frameTransferLane_;
+		ResourcePtr<D3D12TransferLane> loadTransferLane_;
+		ResourcePtr<D3D12TransferLane> asyncLoadTransferLane_;
 	};
 }

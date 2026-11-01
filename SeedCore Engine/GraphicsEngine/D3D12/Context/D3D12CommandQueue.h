@@ -7,19 +7,14 @@ namespace SeedCore
 {
 	class SEEDCORE_API D3D12CommandQueue :public NonTransferable
 	{
-	private:
-		SC_CONSTEX Uint fenceTimeoutMilliseconds = 5000;
-
 	public:
 		explicit D3D12CommandQueue(ID3D12Device* device, D3D12CommandType type = D3D12CommandType::Direct);
 
-		void Signal();
-
-		void Wait();
+		Uint64 Signal();
 
 		void WaitFor(Uint64 fenceValue);
 
-		NODISCARD Uint64 LastFenceValue()const;
+		void Wait(const D3D12CommandQueue& producer, Uint64 fenceValue);
 
 		void Execute(ID3D12CommandList* cmdList);
 
@@ -34,14 +29,14 @@ namespace SeedCore
 		NODISCARD std::unique_lock<std::mutex> AcquireLock();
 
 	private:
-		std::mutex queueMutex_;
+		SC_CONSTEX Uint fenceTimeoutMilliseconds = 5000;
+
+		std::mutex mutex_;
 
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue> cmdQueue_;
 
 		ResourcePtr<D3D12Fence> fence_;
 
 		D3D12CommandType type_;
-
-		Uint64 lastFenceValue_ = 0;
 	};
 }

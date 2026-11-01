@@ -6,7 +6,10 @@
 #include <GraphicsEngine/Model/Material/Material.h>
 #include <GraphicsEngine/Model/Material/MaterialLoader.h>
 #include <GraphicsEngine/Model/Material/MaterialResource.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Material/MaterialBaker.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
+#include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Graphics.h>
@@ -88,7 +91,7 @@ namespace SeedCore
 			}
 			else
 			{
-				const DynamicArray<Surface>& surfaces = crister->Surfaces();
+				std::span<const Surface> surfaces = crister->Surfaces();
 				if (selected_ >= surfaces.size())
 				{
 					selected_ = 0;
@@ -260,12 +263,12 @@ namespace SeedCore
 
 		if (editingState_.assetID_ != surfaceAssetID)
 		{
-			Handle<Surface> handle = materialResource->GetHandle(surfaceAssetID);
+			Handle<BakedSurface> handle = materialResource->GetHandle(surfaceAssetID);
 			if (handle.empty())
 			{
 				handle = materialResource->Load(*cache, surfaceAssetID);
 			}
-			Surface* loaded = graphicsModule.Loaders().materialLoader_->Get(handle);
+			Surface* loaded = materialResource->Resolve(handle);
 			if (!loaded)
 			{
 				ImGui::TextDisabled("マテリアルを読み込めません");
@@ -277,11 +280,24 @@ namespace SeedCore
 
 		Surface& surface = *editingState_.surface_;
 
+		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
+		BC7CompressShader& bc7Shader = context_.graphics_.graphics_->GetBC7CompressShader();
+		MaterialBaker baker;
+
 		if (ImGui::Button("上書き保存"))
 		{
 			if (AssetRecord* asset = cache->GetAsset(surfaceAssetID))
 			{
-				graphicsModule.Loaders().materialLoader_->Save(surface, asset->fullpath_);
+				BakedSurface bakedSurface;
+				BinaryInputArchive archive;
+				if (archive.Read(asset->fullpath_))
+				{
+					bakedSurface.Serialize(archive);
+				}
+				bakedSurface.surface_ = surface;
+				baker.BakeReferenced(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bc7Shader, *cache, bakedSurface);
+
+				graphicsModule.Loaders().materialLoader_->Save(bakedSurface, asset->fullpath_);
 				materialResource->Unload(surfaceAssetID);
 				materialResource->Load(*cache, surfaceAssetID);
 			}
@@ -291,15 +307,44 @@ namespace SeedCore
 		{
 			if (AssetRecord* asset = cache->GetAsset(surfaceAssetID))
 			{
+				BakedSurface bakedSurface;
+				BinaryInputArchive archive;
+				if (archive.Read(asset->fullpath_))
+				{
+					bakedSurface.Serialize(archive);
+				}
+				bakedSurface.surface_ = surface;
+				baker.BakeReferenced(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bc7Shader, *cache, bakedSurface);
+
 				std::filesystem::path sourcePath(asset->fullpath_.c_str());
 				std::filesystem::path newPath = sourcePath;
 				for (Int copyIndex = 2; std::filesystem::exists(newPath); copyIndex++)
 				{
 					newPath = sourcePath.parent_path() / (sourcePath.stem().string() + " (" + std::to_string(copyIndex) + ")" + sourcePath.extension().string());
 				}
-				graphicsModule.Loaders().materialLoader_->Save(surface, String(newPath.string()));
-				D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-				cache->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+				graphicsModule.Loaders().materialLoader_->Save(bakedSurface, String(newPath.string()));
+				cache->Reload();
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("テクスチャを同梱して保存"))
+		{
+			if (AssetRecord* asset = cache->GetAsset(surfaceAssetID))
+			{
+				BakedSurface bakedSurface;
+				BinaryInputArchive archive;
+				if (archive.Read(asset->fullpath_))
+				{
+					bakedSurface.Serialize(archive);
+				}
+				bakedSurface.surface_ = surface;
+				baker.BakeEmbedded(*crister, mesh->meshID_, bakedSurface);
+				baker.BakeReferenced(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bc7Shader, *cache, bakedSurface);
+
+				graphicsModule.Loaders().materialLoader_->Save(bakedSurface, asset->fullpath_);
+				surface = bakedSurface.surface_;
+				materialResource->Unload(surfaceAssetID);
+				materialResource->Load(*cache, surfaceAssetID);
 			}
 		}
 

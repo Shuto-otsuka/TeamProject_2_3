@@ -1,5 +1,6 @@
 #include <GraphicsEngine/Renderer/RaytracingRenderer.h>
 
+#include <FoundationEngine/Benchmark/Benchmark.h>
 #include <FoundationEngine/Log/DxFail.h>
 #include <FoundationEngine/Log/Error.h>
 #include <FoundationEngine/Log/Warning.h>
@@ -11,7 +12,7 @@
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/Model/Animation/Animator.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/Material/Material.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <GraphicsEngine/Model/ModelResource.h>
@@ -135,6 +136,7 @@ namespace SeedCore
 	*/
 	void RaytracingRenderer::Gather(ModelResource& modelResource, World& world, const ModelRenderer& modelRenderer)
 	{
+		Benchmark::Begin("Gather");
 		pendingInstances_.clear();
 		pendingBlasBuilds_.clear();
 
@@ -162,7 +164,7 @@ namespace SeedCore
 				}
 
 				Crister* crister = modelResource.Resolve(cristerHandle);
-				if (!crister || crister->IndexCount() == 0)
+				if (!crister || crister->Residency().IndexCount() == 0)
 				{
 					return;
 				}
@@ -178,7 +180,7 @@ namespace SeedCore
 				instance.worldMatrix_ = actor.WorldMatrix();
 				instance.entityID_ = entityID;
 
-				const DynamicArray<Surface>* materialSurfaces = nullptr;
+				std::optional<std::span<const Surface>> materialSurfaces;
 				const Material* material = actor.GetComponent<Material>();
 				if (material && !material->resolvedSurfaces_.empty() && material->resolvedSurfaces_.size() == crister->Surfaces().size())
 				{
@@ -187,17 +189,17 @@ namespace SeedCore
 					ownMaterialEntities.insert(entityID);
 
 					auto tableIt = entityMaterialTables_.find(entityID);
-					if (tableIt == entityMaterialTables_.end() || tableIt->second.crister_ != crister || tableIt->second.signature_ != material->resolvedSignature_ || crister->MaterialsDirty())
+					if (tableIt == entityMaterialTables_.end() || tableIt->second.crister_ != crister || tableIt->second.signature_ != material->resolvedSignature_ || crister->Residency().MaterialsDirty())
 					{
-						materialSurfaces = &material->resolvedSurfaces_;
+						materialSurfaces = material->resolvedSurfaces_;
 					}
 				}
 				else if (seedMaterialCristers.insert(crister).second)
 				{
 					auto tableIt = materialTableCache_.find(crister);
-					if (tableIt == materialTableCache_.end() || !tableIt->second.materialsResource_ || crister->MaterialsDirty())
+					if (tableIt == materialTableCache_.end() || !tableIt->second.materialsResource_ || crister->Residency().MaterialsDirty())
 					{
-						materialSurfaces = &crister->Surfaces();
+						materialSurfaces = crister->Surfaces();
 					}
 				}
 
@@ -214,7 +216,7 @@ namespace SeedCore
 						materialData.baseColor_[1] = surface.baseColor_.G();
 						materialData.baseColor_[2] = surface.baseColor_.B();
 						materialData.baseColorAlpha_ = surface.baseColor_.A();
-						materialData.baseColorTextureIndex_ = static_cast<Uint32>(crister->TextureBindlessIndex(surface.baseColorTextureIndex_));
+						materialData.baseColorTextureIndex_ = static_cast<Uint32>(crister->Residency().TextureBindlessIndex(surface.baseColorTextureIndex_));
 						materialData.ior_ = surface.khr_.ior_.ior_;
 						materialData.transmissionFactor_ = surface.khr_.transmission_.transmissionFactor_;
 						materialData.volumeAttenuationColor_[0] = surface.khr_.volume_.attenuationColor_[0];
@@ -222,7 +224,7 @@ namespace SeedCore
 						materialData.volumeAttenuationColor_[2] = surface.khr_.volume_.attenuationColor_[2];
 						materialData.volumeAttenuationDistance_ = surface.khr_.volume_.attenuationDistance_;
 						materialData.thicknessFactor_ = surface.khr_.volume_.thicknessFactor_;
-						materialData.thicknessTextureIndex_ = static_cast<Uint32>(crister->TextureBindlessIndex(surface.khr_.volume_.thicknessTextureIndex_));
+						materialData.thicknessTextureIndex_ = static_cast<Uint32>(crister->Residency().TextureBindlessIndex(surface.khr_.volume_.thicknessTextureIndex_));
 						materialData.alphaMode_ = static_cast<Uint32>(surface.alphaMode_);
 						materialData.alphaCutoff_ = surface.alphaCutoff_;
 					}
@@ -231,7 +233,7 @@ namespace SeedCore
 				/// [EN] A skinned mesh with a pose written by ModelRenderer this frame takes the skinned-BLAS path.
 				/// [JP] 今フレーム ModelRenderer がポーズを書いたスキンメッシュは、スキン済み BLAS の経路を通る。
 				const Animator* animator = actor.GetComponent<Animator>();
-				if (animator && crister->ProxySkinned())
+				if (animator && crister->Residency().ProxySkinned())
 				{
 					instance.hasSkeletalPose_ = modelRenderer.TryGetAnimatedBoneOffset(entityID, instance.boneOffset_);
 				}
@@ -240,8 +242,8 @@ namespace SeedCore
 				/// [JP] アニメーションのモーフウェイトは Node ごとにサンプリングされる。glTF ではメッシュを参照する全 Node がそのメッシュのウェイト配列を 1 つ共有するため、モーフのある各 SubMesh は、そのメッシュを参照する最初の Node のウェイトを使う。
 				if (animator)
 				{
-					const DynamicArray<SubMesh>& subMeshes = crister->SubMeshes();
-					const DynamicArray<Node>& nodes = crister->Nodes();
+					std::span<const SubMesh> subMeshes = crister->SubMeshes();
+					std::span<const Node> nodes = crister->Nodes();
 					instance.morphWeights_.resize(subMeshes.size());
 
 					for (Size subMeshIndex = 0; subMeshIndex < subMeshes.size(); subMeshIndex++)
@@ -348,6 +350,7 @@ namespace SeedCore
 				bindlessHeap_->Release(entry.second.materialsResource_, entry.second.materialsShaderResourceViewIndex_);
 				return true;
 			});
+		Benchmark::End("Gather");
 	}
 
 	/**
@@ -447,11 +450,11 @@ namespace SeedCore
 				{
 					BottomLevelGeometryDesc geometryDesc{};
 					geometryDesc.vertexBuffer_ = vertexBuffer;
-					geometryDesc.vertexCount_ = crister->VertexCount();
+					geometryDesc.vertexCount_ = crister->Residency().VertexCount();
 					geometryDesc.vertexStride_ = sizeof(Vector3);
 					geometryDesc.vertexFormat_ = DXGI_FORMAT_R32G32B32_FLOAT;
-					geometryDesc.indexBuffer_ = crister->IndexBufferAddress();
-					geometryDesc.indexCount_ = crister->IndexCount();
+					geometryDesc.indexBuffer_ = crister->Residency().IndexBufferAddress();
+					geometryDesc.indexCount_ = crister->Residency().IndexCount();
 					geometryDesc.indexFormat_ = DXGI_FORMAT_R32_UINT;
 					geometryDesc.opaque_ = std::ranges::all_of(crister->Surfaces(), [](const Surface& material) { return material.alphaMode_ == 0; });
 					return blas.Build(device5, commandList4, &geometryDesc, 1);
@@ -511,10 +514,11 @@ namespace SeedCore
 
 			/// [EN] Static BLAS for the meshes Gather queued; built once and cached until the mesh is evicted.
 			/// [JP] Gather が積んだメッシュの静的 BLAS。1 度だけ構築し、メッシュが破棄されるまでキャッシュする。
+			Benchmark::Begin("BLAS");
 			for (const Crister* crister : pendingBlasBuilds_)
 			{
 				ResourcePtr<BottomLevelAccelerationStructure> blas = MakePtr<BottomLevelAccelerationStructure>();
-				if (buildBlas(*blas, crister, crister->PositionBufferAddress()))
+				if (buildBlas(*blas, crister, crister->Residency().PositionBufferAddress()))
 				{
 					blasCache_.emplace(crister, std::move(blas));
 				}
@@ -525,6 +529,7 @@ namespace SeedCore
 				}
 			}
 			pendingBlasBuilds_.clear();
+			Benchmark::End("BLAS");
 
 			/// [EN] Material tables. Every instance, skinned or not, resolves its hit material through its mesh's table, so each mesh in the scene needs one. A table is also rebuilt when texture streaming has moved a material's texture to another bindless slot (MaterialsDirty).
 			/// [JP] マテリアルテーブル。スキンの有無に関わらず、全インスタンスはメッシュのテーブルでヒットしたマテリアルを解決するため、シーンの各メッシュにテーブルが要る。テクスチャストリーミングでマテリアルのテクスチャが別の bindless スロットへ移ったとき(MaterialsDirty)も再構築する。
@@ -536,7 +541,7 @@ namespace SeedCore
 				{
 					/// [EN] Each SubMesh writes its surfaceIndex_ over its triangle range in the RT proxy, which already covers every node placement of that SubMesh. A triangle no SubMesh covers stays on material 0.
 					/// [JP] 各 SubMesh は RT プロキシ内の自分の三角形範囲へ surfaceIndex_ を書き込む。この範囲はその SubMesh の全ノード配置を含む。どの SubMesh にも属さない三角形はマテリアル 0 のまま。
-					Uint32 triangleCount = Max(crister->IndexCount() / 3, 1u);
+					Uint32 triangleCount = Max(crister->Residency().IndexCount() / 3, 1u);
 					DynamicArray<Uint32> triangleMaterialIndices(triangleCount, 0);
 					for (const SubMesh& subMesh : crister->SubMeshes())
 					{
@@ -580,7 +585,7 @@ namespace SeedCore
 
 			for (const Crister* crister : visitedCristers)
 			{
-				crister->ClearMaterialsDirty();
+				crister->Residency().ClearMaterialsDirty();
 			}
 
 			/// [EN] The morph and skin blend passes run on the shared root signature like every other pass. Each dispatch only swaps the pipeline and the per-dispatch root constant (root parameter 3, the bindless index of its DispatchBuffer).
@@ -595,19 +600,19 @@ namespace SeedCore
 			for (const PendingInstance& pending : pendingInstances_)
 			{
 				const Crister* crister = pending.crister_;
-				if (!pending.hasMorphWeights_ || crister->VertexCount() == 0)
+				if (!pending.hasMorphWeights_ || crister->Residency().VertexCount() == 0)
 				{
 					continue;
 				}
 
 				SkinnedPositionBuffer& blendedBuffer = morphedPositionBuffers_[frameIndex][pending.entityID_];
-				reservePositions(blendedBuffer, crister->VertexCount(), L"MorphedPositionBuffer");
+				reservePositions(blendedBuffer, crister->Residency().VertexCount(), L"MorphedPositionBuffer");
 
 				transition(blendedBuffer, D3D12_RESOURCE_STATE_COPY_DEST);
-				crister->CopyMorph(commandList4, blendedBuffer.resource_.Get());
+				crister->Residency().CopyMorph(commandList4, blendedBuffer.resource_.Get());
 				transition(blendedBuffer, D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
 
-				const DynamicArray<SubMesh>& subMeshes = crister->SubMeshes();
+				std::span<const SubMesh> subMeshes = crister->SubMeshes();
 				DynamicArray<MorphBlendBuffer>& blendBuffers = morphBlendBuffers_[pending.entityID_];
 				if (blendBuffers.size() < subMeshes.size())
 				{
@@ -633,7 +638,7 @@ namespace SeedCore
 						blendBuffer.dispatchBuffer_ = MakePtr<StaticConstantBuffer<MorphBlendDispatchBuffer>>(device, bindlessHeap_);
 					}
 					blendBuffer.weights_->Update(weights.data(), static_cast<Uint>(Min(weights.size(), static_cast<Size>(targetCount))));
-					blendBuffer.dispatchBuffer_->Update(MorphBlendDispatchBuffer{ subMesh.raytracingVertexOffset_, subMesh.raytracingVertexCount_, targetCount, subMesh.raytracingMorphDeltaOffset_, crister->PositionBufferIndex(), crister->ProxyMorphDeltaBufferIndex(), blendBuffer.weights_->Index(), blendedBuffer.unorderedAccessViewIndex_ });
+					blendBuffer.dispatchBuffer_->Update(MorphBlendDispatchBuffer{ subMesh.raytracingVertexOffset_, subMesh.raytracingVertexCount_, targetCount, subMesh.raytracingMorphDeltaOffset_, crister->Residency().PositionBufferIndex(), crister->Residency().ProxyMorphDeltaBufferIndex(), blendBuffer.weights_->Index(), blendedBuffer.unorderedAccessViewIndex_ });
 
 					Uint dispatchBufferIndex = blendBuffer.dispatchBuffer_->Index();
 					commandList4->SetPipelineState(morphBlendShader_.GetPipelineState());
@@ -672,7 +677,7 @@ namespace SeedCore
 				}
 
 				const Crister* crister = pending.crister_;
-				Uint32 vertexCount = crister->VertexCount();
+				Uint32 vertexCount = crister->Residency().VertexCount();
 
 				SkinnedPositionBuffer& skinnedBuffer = skinnedPositionBuffers_[frameIndex][pending.entityID_];
 				reservePositions(skinnedBuffer, vertexCount, L"SkinnedPositionBuffer");
@@ -680,7 +685,7 @@ namespace SeedCore
 
 				/// [EN] Skin the morph-blended positions when the morph pass produced them, the base positions otherwise.
 				/// [JP] モーフのパスがブレンド済み位置を作っていればそれを、無ければベース位置をスキニングする。
-				Uint32 inputPositionIndex = crister->PositionBufferIndex();
+				Uint32 inputPositionIndex = crister->Residency().PositionBufferIndex();
 				auto morphed = morphedPositionBuffers_[frameIndex].find(pending.entityID_);
 				if (pending.hasMorphWeights_ && morphed != morphedPositionBuffers_[frameIndex].end())
 				{
@@ -692,7 +697,7 @@ namespace SeedCore
 				{
 					dispatchBuffer = MakePtr<StaticConstantBuffer<SkinBlendDispatchBuffer>>(device, bindlessHeap_);
 				}
-				dispatchBuffer->Update(SkinBlendDispatchBuffer{ vertexCount, pending.boneOffset_, inputPositionIndex, crister->ProxySkinVertexBufferIndex(), modelRenderer.BoneMatrixBufferIndex(), skinnedBuffer.unorderedAccessViewIndex_, 0, 0 });
+				dispatchBuffer->Update(SkinBlendDispatchBuffer{ vertexCount, pending.boneOffset_, inputPositionIndex, crister->Residency().ProxySkinVertexBufferIndex(), modelRenderer.BoneMatrixBufferIndex(), skinnedBuffer.unorderedAccessViewIndex_, 0, 0 });
 
 				Uint dispatchBufferIndex = dispatchBuffer->Index();
 				commandList4->SetPipelineState(skinBlendShader_.GetPipelineState());
@@ -780,7 +785,7 @@ namespace SeedCore
 
 				/// [EN] Closest-hit shaders re-fetch the hit triangle through the RT-proxy vertex/index views, so an instance whose proxy is still streaming in (views unallocated) is dropped; reading an unallocated descriptor from a hit shader hangs DispatchRays.
 				/// [JP] closest-hit シェーダは RT プロキシの頂点/インデックスのビュー経由でヒットした三角形を引き直すため、プロキシがストリーミング中(ビュー未確保)のインスタンスは除外する。ヒットシェーダが未確保のディスクリプタを読むと DispatchRays がハングする。
-				if (pending.crister_->VertexBufferIndex() == 0xFFFFFFFF || pending.crister_->IndexBufferIndex() == 0xFFFFFFFF)
+				if (pending.crister_->Residency().VertexBufferIndex() == 0xFFFFFFFF || pending.crister_->Residency().IndexBufferIndex() == 0xFFFFFFFF)
 				{
 					if (!rtProxyNotReadyLogged_)
 					{
@@ -811,8 +816,8 @@ namespace SeedCore
 				/// [EN] The instance's RT-proxy views, its material tables, and the UV quantization range that decodes the compressed vertex UVs (the same range the raster path gets through ModelRenderer).
 				/// [JP] インスタンスの RT プロキシのビュー、マテリアルテーブル、圧縮された頂点 UV を復元する UV 量子化範囲(ラスタ経路が ModelRenderer 経由で受け取るものと同じ)。
 				ReflectionInstanceData reflectionInstance{};
-				reflectionInstance.vertexBufferIndex_ = pending.crister_->VertexBufferIndex();
-				reflectionInstance.indexBufferIndex_ = pending.crister_->IndexBufferIndex();
+				reflectionInstance.vertexBufferIndex_ = pending.crister_->Residency().VertexBufferIndex();
+				reflectionInstance.indexBufferIndex_ = pending.crister_->Residency().IndexBufferIndex();
 
 				const MaterialTable& materialTable = materialTableCache_.at(pending.crister_);
 				reflectionInstance.materialDataIndex_ = pending.ownMaterials_ ? entityMaterialTables_.at(pending.entityID_).materialsShaderResourceViewIndex_ : materialTable.materialsShaderResourceViewIndex_;
@@ -827,6 +832,7 @@ namespace SeedCore
 				reflectionInstances.push_back(reflectionInstance);
 			}
 
+			Benchmark::Begin("TLAS");
 			if (!instanceDescs.empty())
 			{
 				reflectionRenderer_->UpdateInstanceTable(reflectionInstances.data(), static_cast<Uint32>(reflectionInstances.size()));
@@ -849,6 +855,7 @@ namespace SeedCore
 					tlasBuildFailureLogged_ = true;
 				}
 			}
+			Benchmark::End("TLAS");
 		}
 
 		/// [EN] Published every frame, so the shaders see a consistent 0xFFFFFFFF when no TLAS was built.

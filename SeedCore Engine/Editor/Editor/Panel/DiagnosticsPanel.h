@@ -1,6 +1,6 @@
 #pragma once
+#include <Editor/Editor/Panel/BenchmarkPanel.h>
 #include <Editor/Editor/Panel/ConsolePanel.h>
-#include <Editor/Editor/Panel/ProfilerPanel.h>
 
 namespace SeedCore
 {
@@ -9,8 +9,7 @@ namespace SeedCore
 
 	enum class DiagnosticsTab 
 	{
-		Console,
-		Profiler
+		Console
 	};
 
 	class DiagnosticsPanel
@@ -19,7 +18,7 @@ namespace SeedCore
 		DiagnosticsPanel(EditorContext& context, ImGuiTexture& imguiTexture);
 		~DiagnosticsPanel() = default;
 
-		void Draw(const GpuProfiler& gpuProfiler);
+		void Draw(const GpuProfiler& gpuProfiler, BenchmarkSystem& benchmark);
 
 		void ShowConsoleTab();
 
@@ -34,6 +33,8 @@ namespace SeedCore
 
 		ConsolePanel consolePanel_;
 
-		ProfilerPanel profilerPanel_;
+		/// [EN] CPU section and GPU pass timings, shown in their own window.
+		/// [JP] CPU 区間と GPU パスの計測。独立ウィンドウに出す。
+		BenchmarkPanel benchmarkPanel_;
 	};
 }

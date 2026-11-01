@@ -479,8 +479,7 @@ namespace SeedCore
 			return;
 		}
 
-		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		context_.world_.resource_->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+		context_.world_.resource_->Reload();
 
 		std::string relative = std::filesystem::relative(savedPath, context_.world_.resource_->ProjectRootPath()).string();
 		std::ranges::replace(relative, '\\', '/');

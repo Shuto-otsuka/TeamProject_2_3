@@ -3,45 +3,45 @@
 
 namespace SeedCore
 {
-	Handle<Surface> MaterialLoader::Load(String filePath)
+	Handle<BakedSurface> MaterialLoader::Load(String filePath)
 	{
 		std::filesystem::path path(filePath.c_str());
 		if (path.extension() != ".material" || !std::filesystem::exists(path))
 		{
-			return Handle<Surface>::null();
+			return Handle<BakedSurface>::null();
 		}
 
 		BinaryInputArchive archive;
 		if (!archive.Read(filePath))
 		{
-			return Handle<Surface>::null();
+			return Handle<BakedSurface>::null();
 		}
 
-		Handle<Surface> handle = pool_.Create();
-		Surface* surface = pool_.Get(handle);
-		if (!surface)
+		Handle<BakedSurface> handle = pool_.Create();
+		BakedSurface* bakedSurface = pool_.Get(handle);
+		if (!bakedSurface)
 		{
-			return Handle<Surface>::null();
+			return Handle<BakedSurface>::null();
 		}
-		surface->Serialize(archive);
+		bakedSurface->Serialize(archive);
 
 		return handle;
 	}
 
-	Surface* MaterialLoader::Get(const Handle<Surface>& handle)
+	BakedSurface* MaterialLoader::Get(const Handle<BakedSurface>& handle)
 	{
 		return pool_.Get(handle);
 	}
 
-	void MaterialLoader::Clear(Handle<Surface>& handle)noexcept
+	void MaterialLoader::Clear(Handle<BakedSurface>& handle)noexcept
 	{
 		pool_.Destroy(handle);
 	}
 
-	Bool MaterialLoader::Save(const Surface& surface, String filePath)
+	Bool MaterialLoader::Save(const BakedSurface& bakedSurface, String filePath)
 	{
 		BinaryOutputArchive archive;
-		const_cast<Surface&>(surface).Serialize(archive);
+		const_cast<BakedSurface&>(bakedSurface).Serialize(archive);
 		return archive.Write(filePath);
 	}
 }

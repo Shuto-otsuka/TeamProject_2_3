@@ -6,11 +6,13 @@
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandAllocator.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
+#include <GraphicsEngine/D3D12/Context/D3D12TransferLane.h>
 #include <GraphicsEngine/D3D12/Context/D3D12DebugLayer.h>
 #include <GraphicsEngine/D3D12/D3D12Types.h>
 #include <GraphicsEngine/D3D12/FrameRing.h>
 #include <FoundationEngine/Log/DxFail.h>
 #include <FoundationEngine/Log/Notice.h>
+#include <FoundationEngine/Resource/Asset/Asset.h>
 
 namespace SeedCore
 {
@@ -62,6 +64,10 @@ namespace SeedCore
 		copyList_->Close();
 		computeList_->Close();
 
+		frameTransferLane_ = MakePtr<D3D12TransferLane>(device, *copyQueue_, 32ull * 1024 * 1024);
+		loadTransferLane_ = MakePtr<D3D12TransferLane>(device, *copyQueue_, 32ull * 1024 * 1024);
+		asyncLoadTransferLane_ = MakePtr<D3D12TransferLane>(device, *copyQueue_, 32ull * 1024 * 1024);
+
 		return true;
 	}
 
@@ -91,15 +97,19 @@ namespace SeedCore
 
 		directAllocators_[frame]->Reset();
 		directList_->Reset(directAllocators_[frame]->Get());
+
+		frameTransferLane_->Begin(device_->Get(), *copyQueue_);
 	}
 
 	void D3D12Context::EndFrame()
 	{
+		Uint64 transferFenceValue = frameTransferLane_->Submit(*copyQueue_);
+		directQueue_->Wait(*copyQueue_, transferFenceValue);
+
 		directList_->Close();
 		ExecuteDirect();
 
-		directQueue_->Signal();
-		frameFenceValues_[FrameRing::Index()] = directQueue_->LastFenceValue();
+		frameFenceValues_[FrameRing::Index()] = directQueue_->Signal();
 		FrameRing::Advance();
 	}
 
@@ -156,6 +166,16 @@ namespace SeedCore
 	D3D12CommandList* D3D12Context::GetComputeList()const
 	{
 		return computeList_.get();
+	}
+
+	D3D12TransferLane* D3D12Context::GetFrameTransferLane()const
+	{
+		return frameTransferLane_.get();
+	}
+
+	D3D12TransferLane* D3D12Context::GetLoadTransferLane(LoadThread thread)const
+	{
+		return thread == LoadThread::Async ? asyncLoadTransferLane_.get() : loadTransferLane_.get();
 	}
 
 	D3D12Adapter* D3D12Context::GetAdapter()const

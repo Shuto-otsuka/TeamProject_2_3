@@ -9,10 +9,9 @@
 
 namespace SeedCore
 {
-	class D3D12CommandQueue;
-	class BC7CompressShader;
 	class FontManager;
 	class JobExecutor;
+	class BenchmarkSystem;
 
 	/**
 	* [EN]
@@ -74,7 +73,7 @@ namespace SeedCore
 		* プロジェクトのアセット変更を同期的に再スキャンし、まだ読み込まれて
 		* いない全アセットを一括で読み込む。
 		*/
-		void Reload(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
+		void Reload();
 
 		/**
 		* [EN]
@@ -90,7 +89,7 @@ namespace SeedCore
 		* のものを解放し、新しい中身をその場所へ読み込む。Editor の実行中に
 		* 共有ライブラリが新しい Revision を持ってきた場合に使う。
 		*/
-		void Reload(Uint32 assetID, ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
+		void Reload(Uint32 assetID);
 
 		/**
 		* [EN]
@@ -125,17 +124,19 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Loads exactly one pending asset from the queue built by Async(),
-		* if any remain. Returns whether an asset was processed this call
-		* (false once the queue is drained or Async hasn't been called).
+		* if any remain, telling its manager that thread runs the load.
+		* Returns whether an asset was processed this call (false once the
+		* queue is drained or Async hasn't been called).
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* Async() が構築したキューから、残っていればちょうど1つの保留
-		* アセットを読み込む。この呼び出しでアセットを処理したかどうかを
-		* 返す（キューが尽きた、または Async が呼ばれていない場合は false）。
+		* アセットを読み込み、その管理クラスへ thread で読み込んでいることを
+		* 伝える。この呼び出しでアセットを処理したかどうかを返す（キューが
+		* 尽きた、または Async が呼ばれていない場合は false）。
 		*/
-		Bool Step(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
+		Bool Step(LoadThread thread);
 
 		/**
 		* [EN]
@@ -152,7 +153,7 @@ namespace SeedCore
 		* 呼び出しは監視を始めるだけなので、毎フレーム呼ぶホスト（Editor）
 		* だけがその負担を持つ。
 		*/
-		void Watch(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
+		void Watch();
 
 		/**
 		* [EN]
@@ -176,7 +177,18 @@ namespace SeedCore
 		* ジョブの完了を待ってから解放処理に入るので、読み込み中に破棄しても
 		* 常に安全。
 		*/
-		void StepAsync(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader);
+		void StepAsync();
+
+		/**
+		* [EN]
+		* Makes the dedicated asynchronous loader attach to benchmark recording.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 専用の非同期ローダーをベンチマーク計測へ Attach する。
+		*/
+		void Benchmark(BenchmarkSystem& benchmark);
 
 		/**
 		* [EN]
@@ -494,6 +506,10 @@ namespace SeedCore
 		/// [EN] Single-worker executor for StepAsync(), created on first use and destroyed first in ~ResourceCache() (waiting for running work) before anything is unloaded.
 		/// [JP] StepAsync() 専用の1ワーカーの実行器。初回使用時に作り、~ResourceCache() の最初で(実行中の作業を待って)何かを解放する前に破棄する。
 		ResourcePtr<JobExecutor> loadExecutor_;
+
+		/// [EN] Benchmark the dedicated load worker attaches to, when profiling is enabled.
+		/// [JP] プロファイリング時に専用ローダーワーカーが Attach するベンチマーク。
+		BenchmarkSystem* benchmark_ = nullptr;
 
 		/// [EN] Guards against StepAsync() starting a second background job while one from the current Async() pass is still running.
 		/// [JP] 現在の Async() パスのバックグラウンドジョブがまだ実行中の間に、StepAsync() が2つ目のジョブを開始しないようにする。

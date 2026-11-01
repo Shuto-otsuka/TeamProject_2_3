@@ -18,7 +18,7 @@ struct ReflectionMaterial
 	float3 base_color_;
 
 	// Bindless SRV of that material's base-color texture, or 0xFFFFFFFF when it
-	// has none / is not resident yet (Crister::TextureBindlessIndex returns the
+	// has none / is not resident yet (CristerResidency::TextureBindlessIndex returns the
 	// sentinel while a streaming mip is still loading).
 	uint base_color_texture_index_;
 
@@ -55,7 +55,7 @@ struct ReflectionMaterial
 struct ReflectionInstanceData
 {
 	// Bindless SRV of the mesh's StructuredBuffer<CompressedVertex> (Crister
-	// compressed vertex buffer - 16 bytes, see Model/Crister.h CompressedVertex).
+	// compressed vertex buffer - 16 bytes, see Model/Crister/CristerGeometry.h CompressedVertex).
 	uint vertex_buffer_index_;
 
 	// Bindless SRV of the mesh's flat 32-bit triangle index buffer

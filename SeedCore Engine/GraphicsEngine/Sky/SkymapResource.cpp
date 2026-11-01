@@ -2,21 +2,22 @@
 #include <GraphicsEngine/Sky/SkymapLoader.h>
 #include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 
 namespace SeedCore
 {
-	SkymapResource::SkymapResource(GraphicsLoaderSystem& loaders, BindlessHeap& heap) :loaders_(loaders), heap_(heap)
+	SkymapResource::SkymapResource(GraphicsLoaderSystem& loaders, D3D12Context& context, BindlessHeap& heap) :loaders_(loaders), context_(context), heap_(heap)
 	{
 		/// No Code
 	}
 
 	void SkymapResource::Load(const AssetContext& context, Uint32 assetID)
 	{
-		Load(context.device_, context.cmdQueue_, context.cache_, assetID);
+		Load(context.cache_, assetID);
 	}
 
-	Handle<Skymap> SkymapResource::Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, ResourceCache& cache, Uint32 assetID)
+	Handle<Skymap> SkymapResource::Load(ResourceCache& cache, Uint32 assetID)
 	{
 		if (assetHandleMap_.contains(assetID))
 		{
@@ -29,7 +30,7 @@ namespace SeedCore
 			return Handle<Skymap>::null();
 		}
 
-		Handle<Skymap> handle = loaders_.skymapLoader_->Load(device, cmdQueue, &heap_, asset->fullpath_);
+		Handle<Skymap> handle = loaders_.skymapLoader_->Load(context_.GetDevice(), context_.GetDirectQueue(), &heap_, asset->fullpath_);
 		if (handle.empty())
 		{
 			return Handle<Skymap>::null();

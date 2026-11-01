@@ -16,6 +16,8 @@ namespace SeedCore
 	struct GraphicsLoaderSystem;
 
 	class BindlessHeap;
+	class D3D12Context;
+	class BC7CompressShader;
 
 	struct SEEDCORE_API GraphicsResourceSystem
 	{
@@ -59,6 +61,6 @@ namespace SeedCore
 		/// [JP] Effekseerエフェクト(.efkefc)アセットを読み込む。
 		ResourcePtr<EffekseerResource> effekseerResource_;
 
-		GraphicsResourceSystem(GraphicsLoaderSystem& loaders, BindlessHeap& heap);
+		GraphicsResourceSystem(GraphicsLoaderSystem& loaders, D3D12Context& context, BindlessHeap& heap, BC7CompressShader& bc7Shader);
 	};
 }

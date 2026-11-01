@@ -7,11 +7,13 @@ namespace SeedCore
 {
 	class ResourceCache;
 	class BindlessHeap;
+	class D3D12Context;
+	class BC7CompressShader;
 
 	class SEEDCORE_API GraphicsModule
 	{
 	public:
-		GraphicsModule(BindlessHeap& heap);
+		GraphicsModule(D3D12Context& context, BindlessHeap& heap, BC7CompressShader& bc7Shader);
 
 		void Install(ResourceCache& cache);
 

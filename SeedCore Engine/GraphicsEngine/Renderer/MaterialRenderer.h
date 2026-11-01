@@ -14,6 +14,7 @@ namespace SeedCore
 	struct GraphicsResourceSystem;
 	class Crister;
 	class BindlessHeap;
+	class D3D12TransferLane;
 	class ShaderCache;
 	class RootSignature;
 	class PipelineStateObject;
@@ -52,7 +53,7 @@ namespace SeedCore
 
 		void Resize(ID3D12Device* device, BindlessHeap* bindlessHeap, Uint32 width, Uint32 height);
 
-		void Gather(GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 surfaceAssetId, const Matrix& worldMatrix);
+		void Gather(GraphicsResourceSystem& resources, ID3D12Device* device, D3D12TransferLane& transferLane, Uint32 meshAssetId, Uint32 surfaceAssetId, const Matrix& worldMatrix);
 
 		void Upload();
 

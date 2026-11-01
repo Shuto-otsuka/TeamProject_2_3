@@ -2,7 +2,7 @@
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/Graphics.h>
@@ -14,6 +14,7 @@
 #include <GraphicsEngine/Resource/GraphicsModule.h>
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/World.h>
+#include <GraphicsEngine/Model/Crister/CristerConverter.h>
 
 namespace SeedCore
 {
@@ -358,14 +359,11 @@ namespace SeedCore
 
 		ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
 
-		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		BC7CompressShader& bc7Shader = context_.graphics_.graphics_->GetBC7CompressShader();
-
 		if (isSourceAsset)
 		{
 			context_.world_.resource_->WriteAssetMeta(assetId, editConvention_);
 			modelResource->Unload(assetId);
-			modelResource->Load(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bc7Shader, *context_.world_.resource_, assetId);
+			modelResource->Load(*context_.world_.resource_, assetId);
 		}
 		else
 		{
@@ -376,14 +374,15 @@ namespace SeedCore
 
 			Handle<Crister> handle = modelResource->GetHandle(assetId);
 			Crister* crister = handle.empty() ? nullptr : modelResource->Resolve(handle);
-			if (!crister || !crister->ApplyAxisConversion(deltaBasis, newResolved.flipWinding_, path))
+			CristerConverter converter;
+			if (!crister || !converter.ApplyAxisConversion(*crister, deltaBasis, newResolved.flipWinding_, path))
 			{
 				return;
 			}
 
 			context_.world_.resource_->WriteAssetMeta(assetId, editConvention_);
 			modelResource->Unload(assetId);
-			modelResource->Load(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bc7Shader, *context_.world_.resource_, assetId);
+			modelResource->Load(*context_.world_.resource_, assetId);
 		}
 	}
 
@@ -451,7 +450,8 @@ namespace SeedCore
 		ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
 		Handle<Crister> handle = modelResource->GetHandle(assetId);
 		Crister* crister = handle.empty() ? nullptr : modelResource->Resolve(handle);
-		if (!crister || !crister->ApplyTransformConversion(baseTransformPosition_, baseTransformRotation_, baseTransformScale_, baseTransformPivot_, path))
+		CristerConverter converter;
+		if (!crister || !converter.ApplyTransformConversion(*crister, baseTransformPosition_, baseTransformRotation_, baseTransformScale_, baseTransformPivot_, path))
 		{
 			return;
 		}
@@ -465,8 +465,7 @@ namespace SeedCore
 		baseTransformScale_ = Vector3(1.0f, 1.0f, 1.0f);
 		baseTransformPivot_ = Vector3(0.0f, 0.0f, 0.0f);
 
-		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
 		modelResource->Unload(assetId);
-		modelResource->Load(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, assetId);
+		modelResource->Load(*context_.world_.resource_, assetId);
 	}
 }

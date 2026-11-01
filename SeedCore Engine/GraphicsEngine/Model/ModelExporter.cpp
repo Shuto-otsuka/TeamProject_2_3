@@ -8,7 +8,7 @@
 #endif
 #include <External/FBXSDK/Include/fbxsdk.h>
 #include <GraphicsEngine/Model/ModelExporter.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
 namespace SeedCore
@@ -62,7 +62,7 @@ namespace SeedCore
 		{
 		case ModelFormat::Gltf:
 		{
-			if (crister.vertices_.empty())
+			if (crister.geometry_.vertices_.empty())
 			{
 				return false;
 			}
@@ -107,7 +107,7 @@ namespace SeedCore
 				return static_cast<Int>(model.accessors.size()) - 1;
 			};
 
-			const DynamicArray<SubMesh>& subMeshes = crister.SubMeshes();
+			std::span<const SubMesh> subMeshes = crister.SubMeshes();
 			DynamicArray<Int> meshGroupKeys;
 			for (const SubMesh& subMesh : subMeshes)
 			{
@@ -150,7 +150,7 @@ namespace SeedCore
 					DynamicArray<Vector2> texcoords(vertexCount);
 					for (Uint32 vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
 					{
-						const Vertex& vertex = crister.vertices_[vertexBase + vertexIndex];
+						const Vertex& vertex = crister.geometry_.vertices_[vertexBase + vertexIndex];
 						positions[vertexIndex] = Vector3(-vertex.position_.x, vertex.position_.y, vertex.position_.z);
 						normals[vertexIndex] = Vector3(-vertex.normal_.x, vertex.normal_.y, vertex.normal_.z);
 						tangents[vertexIndex] = Vector4(-vertex.tangent_.x, vertex.tangent_.y, vertex.tangent_.z, vertex.tangent_.w);
@@ -179,7 +179,7 @@ namespace SeedCore
 						DynamicArray<Vector4> weights(vertexCount);
 						for (Uint32 vertexIndex = 0; vertexIndex < vertexCount; vertexIndex++)
 						{
-							const Vertex& vertex = crister.vertices_[vertexBase + vertexIndex];
+							const Vertex& vertex = crister.geometry_.vertices_[vertexBase + vertexIndex];
 							joints[vertexIndex * 4 + 0] = static_cast<Uint16>(vertex.joints_.x);
 							joints[vertexIndex * 4 + 1] = static_cast<Uint16>(vertex.joints_.y);
 							joints[vertexIndex * 4 + 2] = static_cast<Uint16>(vertex.joints_.z);
@@ -193,7 +193,7 @@ namespace SeedCore
 					DynamicArray<Uint32> indices(subMesh.indexCount_);
 					for (Uint32 index = 0; index < subMesh.indexCount_; index++)
 					{
-						indices[index] = crister.vertexIndices_[subMesh.indexOffset_ + index] - vertexBase;
+						indices[index] = crister.geometry_.vertexIndices_[subMesh.indexOffset_ + index] - vertexBase;
 					}
 					primitive.indices = appendAccessor(indices.data(), indices.size() * sizeof(Uint32), TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT, TINYGLTF_TYPE_SCALAR, subMesh.indexCount_, TINYGLTF_TARGET_ELEMENT_ARRAY_BUFFER);
 
@@ -213,9 +213,9 @@ namespace SeedCore
 				}
 			}
 
-			for (Size bitmapIndex = 0; bitmapIndex < crister.bitmaps_.size(); bitmapIndex++)
+			for (Size bitmapIndex = 0; bitmapIndex < crister.material_.bitmaps_.size(); bitmapIndex++)
 			{
-				const Bitmap& bitmap = crister.bitmaps_[bitmapIndex];
+				const Bitmap& bitmap = crister.material_.bitmaps_[bitmapIndex];
 				std::string pngName = outputPath.stem().string() + "_" + std::to_string(bitmapIndex) + ".png";
 				std::filesystem::path pngPath = outputPath.parent_path() / pngName;
 
@@ -326,7 +326,7 @@ namespace SeedCore
 				}
 			}
 
-			const DynamicArray<Skin>& skins = crister.Skins();
+			std::span<const Skin> skins = crister.Skins();
 			for (const Skin& skin : skins)
 			{
 				tinygltf::Skin& gltfSkin = model.skins.emplace_back();
@@ -352,7 +352,7 @@ namespace SeedCore
 				}
 			}
 
-			const DynamicArray<Node>& nodes = crister.Nodes();
+			std::span<const Node> nodes = crister.Nodes();
 			for (const Node& node : nodes)
 			{
 				tinygltf::Node& gltfNode = model.nodes.emplace_back();
@@ -401,7 +401,7 @@ namespace SeedCore
 		}
 		case ModelFormat::Fbx:
 		{
-			if (crister.vertices_.empty())
+			if (crister.geometry_.vertices_.empty())
 			{
 				return false;
 			}
@@ -414,10 +414,10 @@ namespace SeedCore
 			scene->GetGlobalSettings().SetAxisSystem(FbxAxisSystem::DirectX);
 			scene->GetGlobalSettings().SetSystemUnit(FbxSystemUnit::m);
 
-			const DynamicArray<Node>& nodes = crister.Nodes();
-			const DynamicArray<Skin>& skins = crister.Skins();
-			const DynamicArray<Surface>& surfaces = crister.Surfaces();
-			const DynamicArray<SubMesh>& subMeshes = crister.SubMeshes();
+			std::span<const Node> nodes = crister.Nodes();
+			std::span<const Skin> skins = crister.Skins();
+			std::span<const Surface> surfaces = crister.Surfaces();
+			std::span<const SubMesh> subMeshes = crister.SubMeshes();
 
 			DynamicArray<Bool> isJoint(nodes.size(), false);
 			for (const Skin& skin : skins)
@@ -472,10 +472,10 @@ namespace SeedCore
 				}
 			}
 
-			DynamicArray<FbxFileTexture*> fbxTextures(crister.bitmaps_.size(), nullptr);
-			for (Size bitmapIndex = 0; bitmapIndex < crister.bitmaps_.size(); bitmapIndex++)
+			DynamicArray<FbxFileTexture*> fbxTextures(crister.material_.bitmaps_.size(), nullptr);
+			for (Size bitmapIndex = 0; bitmapIndex < crister.material_.bitmaps_.size(); bitmapIndex++)
 			{
-				const Bitmap& bitmap = crister.bitmaps_[bitmapIndex];
+				const Bitmap& bitmap = crister.material_.bitmaps_[bitmapIndex];
 				std::string pngName = outputPath.stem().string() + "_" + std::to_string(bitmapIndex) + ".png";
 				std::filesystem::path pngPath = outputPath.parent_path() / pngName;
 
@@ -587,7 +587,7 @@ namespace SeedCore
 				{
 					for (Uint32 vertexIndex = 0; vertexIndex < subMesh->vertexCount_; vertexIndex++)
 					{
-						const Vertex& vertex = crister.vertices_[subMesh->vertexOffset_ + vertexIndex];
+						const Vertex& vertex = crister.geometry_.vertices_[subMesh->vertexOffset_ + vertexIndex];
 						mesh->SetControlPointAt(FbxVector4(vertex.position_.x * unitScale, vertex.position_.y * unitScale, vertex.position_.z * unitScale), static_cast<int>(controlPointCursor + vertexIndex));
 						normalElement->GetDirectArray().Add(FbxVector4(vertex.normal_.x, vertex.normal_.y, vertex.normal_.z));
 						uvElement->GetDirectArray().Add(FbxVector2(vertex.texcoord_.x, 1.0 - vertex.texcoord_.y));
@@ -653,7 +653,7 @@ namespace SeedCore
 						mesh->BeginPolygon(nodeMaterialIndex);
 						for (Uint32 corner = 0; corner < 3; corner++)
 						{
-							Uint32 globalIndex = crister.vertexIndices_[subMesh->indexOffset_ + triangleStart + corner];
+							Uint32 globalIndex = crister.geometry_.vertexIndices_[subMesh->indexOffset_ + triangleStart + corner];
 							mesh->AddPolygon(static_cast<int>(controlPointCursor + (globalIndex - subMesh->vertexOffset_)));
 						}
 						mesh->EndPolygon();
@@ -696,7 +696,7 @@ namespace SeedCore
 					{
 						for (Uint32 vertexIndex = 0; vertexIndex < subMesh->vertexCount_; vertexIndex++)
 						{
-							const Vertex& vertex = crister.vertices_[subMesh->vertexOffset_ + vertexIndex];
+							const Vertex& vertex = crister.geometry_.vertices_[subMesh->vertexOffset_ + vertexIndex];
 							Uint32 vertexJoints[4] = { vertex.joints_.x, vertex.joints_.y, vertex.joints_.z, vertex.joints_.w };
 							Float vertexWeights[4] = { vertex.weights_.x, vertex.weights_.y, vertex.weights_.z, vertex.weights_.w };
 							for (Int influence = 0; influence < 4; influence++)

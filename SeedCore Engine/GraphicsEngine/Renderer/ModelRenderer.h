@@ -24,6 +24,7 @@ namespace SeedCore
 	class ShaderResourceIndicesSystem;
 	class UnorderedAccessIndicesSystem;
 	class D3D12CommandList;
+	class D3D12TransferLane;
 	class FrameBuffer;
 	class GeometryBuffer;
 
@@ -60,7 +61,7 @@ namespace SeedCore
 
 		void Resize(ID3D12Device* device, BindlessHeap* bindlessHeap, ConstantIndicesSystem& constantIndicesSystem, UnorderedAccessIndicesSystem& unorderedAccessIndicesSystem, Uint32 width, Uint32 height);
 
-		void Gather(GraphicsResourceSystem& resources, World& world, const SceneConstantBuffer& scene, std::span<const Entity> selectedEntities = {});
+		void Gather(GraphicsResourceSystem& resources, World& world, D3D12TransferLane& transferLane, const SceneConstantBuffer& scene, std::span<const Entity> selectedEntities = {});
 
 		void Upload();
 

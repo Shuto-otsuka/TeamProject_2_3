@@ -1,10 +1,12 @@
 #include <GraphicsEngine/Texture/TextureLoader.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
-#include <FoundationEngine/Log/DxFail.h>
-#include <FoundationEngine/Log/Error.h>
+#include <GraphicsEngine/D3D12/Context/D3D12TransferLane.h>
+#include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
+#include <GraphicsEngine/Model/Crister/CristerMaterial.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 #include <FoundationEngine/File/FileUtility.h>
-#include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
+#include <FoundationEngine/Log/DxFail.h>
+#include <FoundationEngine/Log/Error.h>
 
 namespace SeedCore
 {
@@ -35,6 +37,86 @@ namespace SeedCore
 
 		loadedHandles_.push_back(handle);
 
+		return handle;
+	}
+
+	Handle<Texture> TextureLoader::Adopt(ID3D12Device* device, D3D12CommandQueue* copyQueue, D3D12TransferLane* transferLane, BindlessHeap* heap, const Bitmap& bitmap)
+	{
+		if (bitmap.width_ <= 0 || bitmap.height_ <= 0 || bitmap.mipCount_ <= 0 || bitmap.width_ % 4 != 0 || bitmap.height_ % 4 != 0)
+		{
+			return Handle<Texture>::null();
+		}
+
+		Uint64 totalBytes = 0;
+		Uint32 mipWidth = static_cast<Uint32>(bitmap.width_);
+		Uint32 mipHeight = static_cast<Uint32>(bitmap.height_);
+		for (Int mipIndex = 0;mipIndex < bitmap.mipCount_;mipIndex++)
+		{
+			totalBytes += static_cast<Uint64>(Max((mipWidth + 3) / 4, 1u)) * Max((mipHeight + 3) / 4, 1u) * 16;
+			mipWidth = Max(mipWidth / 2, 1u);
+			mipHeight = Max(mipHeight / 2, 1u);
+		}
+		if (bitmap.cacheData_.size() < totalBytes)
+		{
+			return Handle<Texture>::null();
+		}
+
+		D3D12_RESOURCE_DESC textureDesc{};
+		textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+		textureDesc.Width = static_cast<Uint64>(bitmap.width_);
+		textureDesc.Height = static_cast<Uint64>(bitmap.height_);
+		textureDesc.DepthOrArraySize = 1;
+		textureDesc.MipLevels = static_cast<Uint16>(bitmap.mipCount_);
+		textureDesc.Format = DXGI_FORMAT_BC7_UNORM;
+		textureDesc.SampleDesc.Count = 1;
+		textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+
+		D3D12_HEAP_PROPERTIES heapProperties{};
+		heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> resource;
+		HRESULT hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &textureDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(resource.GetAddressOf()));
+		if (FAILED(hr))
+		{
+			return Handle<Texture>::null();
+		}
+
+		transferLane->Begin(device, *copyQueue);
+		Uint64 offset = 0;
+		mipWidth = static_cast<Uint32>(bitmap.width_);
+		mipHeight = static_cast<Uint32>(bitmap.height_);
+		for (Int mipIndex = 0;mipIndex < bitmap.mipCount_;mipIndex++)
+		{
+			Uint64 mipBytes = static_cast<Uint64>(Max((mipWidth + 3) / 4, 1u)) * Max((mipHeight + 3) / 4, 1u) * 16;
+			transferLane->GetStream().Upload(device, transferLane->GetCommandList(), resource.Get(), static_cast<Uint32>(mipIndex), std::as_bytes(std::span(bitmap.cacheData_)).subspan(offset, mipBytes));
+			offset += mipBytes;
+			mipWidth = Max(mipWidth / 2, 1u);
+			mipHeight = Max(mipHeight / 2, 1u);
+		}
+		copyQueue->WaitFor(transferLane->Submit(*copyQueue));
+
+		Handle<Texture> handle = pool_.Create();
+		Texture* texture = pool_.Get(handle);
+		if (!texture)
+		{
+			return Handle<Texture>::null();
+		}
+
+		texture->handle_ = handle;
+		texture->resource_ = resource;
+		texture->pinned_ = true;
+		texture->textureIndex_ = heap->AllocateIndex();
+
+		D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc{};
+		shaderResourceViewDesc.Format = DXGI_FORMAT_BC7_UNORM;
+		shaderResourceViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		shaderResourceViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		shaderResourceViewDesc.Texture2D.MipLevels = static_cast<Uint>(bitmap.mipCount_);
+		device->CreateShaderResourceView(resource.Get(), &shaderResourceViewDesc, heap->CPUHandle(texture->textureIndex_));
+
+		texture->sizeBytes_ = device->GetResourceAllocationInfo(0, 1, &textureDesc).SizeInBytes;
+		totalResidentBytes_ += texture->sizeBytes_;
+		loadedHandles_.push_back(handle);
 		return handle;
 	}
 

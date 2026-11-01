@@ -1,4 +1,5 @@
 #pragma once
+#include <FoundationEngine/Benchmark/BenchmarkSystem.h>
 #include <FoundationEngine/JobSystem/JobExecutor.h>
 #include <FoundationEngine/JobSystem/JobScheduler.h>
 #include <FoundationEngine/Application/Window.h>
@@ -124,7 +125,22 @@ namespace SeedCore
 
 		NODISCARD CameraSystem& GetCamera();
 
+		/**
+		* [EN]
+		* The CPU section measurements, collected once per frame in Present.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* CPU の区間計測。Present でフレームに1回集計される。
+		*/
+		NODISCARD BenchmarkSystem& GetBenchmark();
+
 	private:
+		/// [EN] CPU section measurements. Declared first so it is built before executor_, whose worker threads attach to it as they start.
+		/// [JP] CPU の区間計測。executor_ のワーカースレッドが起動時に Attach するので、それより先に構築されるよう最初に宣言する。
+		BenchmarkSystem benchmark_;
+
 		ResourcePtr<World> world_;
 
 		ResourcePtr<JoltManager> joltManager_;

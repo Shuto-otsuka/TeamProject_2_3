@@ -5,8 +5,11 @@
 
 namespace SeedCore
 {
+	struct Bitmap;
+
 	class BindlessHeap;
 	class D3D12CommandQueue;
+	class D3D12TransferLane;
 
 	class SEEDCORE_API TextureLoader :public NonCopyable
 	{
@@ -15,6 +18,8 @@ namespace SeedCore
 		~TextureLoader() = default;
 
 		Handle<Texture> Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, String filePath);
+
+		Handle<Texture> Adopt(ID3D12Device* device, D3D12CommandQueue* copyQueue, D3D12TransferLane* transferLane, BindlessHeap* heap, const Bitmap& bitmap);
 
 		Texture* Get(const Handle<Texture>& handle);
 

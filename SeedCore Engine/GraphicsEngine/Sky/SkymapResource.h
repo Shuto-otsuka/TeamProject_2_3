@@ -10,7 +10,7 @@ namespace SeedCore
 	class Skymap;
 	class ResourceCache;
 	class BindlessHeap;
-	class D3D12CommandQueue;
+	class D3D12Context;
 
 	/**
 	* [EN]
@@ -28,12 +28,12 @@ namespace SeedCore
 	class SkymapResource :public Asset, public NonCopyable
 	{
 	public:
-		SkymapResource(GraphicsLoaderSystem& loaders, BindlessHeap& heap);
+		SkymapResource(GraphicsLoaderSystem& loaders, D3D12Context& context, BindlessHeap& heap);
 		~SkymapResource() = default;
 
 		void Load(const AssetContext& context, Uint32 assetID)override;
 
-		Handle<Skymap> Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, ResourceCache& cache, Uint32 assetID);
+		Handle<Skymap> Load(ResourceCache& cache, Uint32 assetID);
 
 		void Unload(Uint32 assetID)override;
 
@@ -45,6 +45,8 @@ namespace SeedCore
 
 	private:
 		GraphicsLoaderSystem& loaders_;
+
+		D3D12Context& context_;
 
 		BindlessHeap& heap_;
 

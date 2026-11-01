@@ -17,7 +17,7 @@
 #include <FoundationEngine/World/ECS/Component/Rotation.h>
 #include <GraphicsEngine/Model/Collision/MeshCollisionResource.h>
 #include <GraphicsEngine/Model/ModelResource.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
 #include <FoundationEngine/World/ECS/Query/Query.h>

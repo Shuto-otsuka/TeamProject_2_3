@@ -496,6 +496,11 @@ namespace SeedCore
 
 		if (ImGui::Begin("キャンバスビュー"))
 		{
+			if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+			{
+				context_.view_.focused_ = FocusedView::Canvas;
+			}
+
 			DrawGizmoMenu();
 			ImGui::Separator();
 

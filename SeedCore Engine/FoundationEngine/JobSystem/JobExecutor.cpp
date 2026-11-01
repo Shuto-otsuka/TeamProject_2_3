@@ -1,4 +1,5 @@
 #include <FoundationEngine/JobSystem/JobExecutor.h>
+#include <FoundationEngine/Benchmark/Benchmark.h>
 #include <FoundationEngine/JobSystem/JobTaskflow.h>
 #include <FoundationEngine/JobSystem/JobTopology.h>
 #include <FoundationEngine/Log/Exeption.h>
@@ -973,6 +974,18 @@ namespace SeedCore
 	*/
 	void JobExecutor::InvokeStaticTask(JobWorker& worker, JobNode* node)
 	{
+		/// [EN] Every task shows up on its thread's timeline; a named task under its own name, the rest as "Job".
+		/// [JP] 全タスクがそのスレッドのタイムラインに出る。名前付きのタスクはその名前で、それ以外は "Job" として出す。
+		Bool named = !node->name_.view().empty();
+		if (named)
+		{
+			Benchmark::Begin(node->name_);
+		}
+		else
+		{
+			Benchmark::Begin("Job");
+		}
+
 #if !SC_DISABLE_EXCEPTION_HANDLING
 		try
 		{
@@ -987,6 +1000,15 @@ namespace SeedCore
 			ProcessException(worker, node);
 		}
 #endif
+
+		if (named)
+		{
+			Benchmark::End(node->name_);
+		}
+		else
+		{
+			Benchmark::End("Job");
+		}
 	}
 
 	/**

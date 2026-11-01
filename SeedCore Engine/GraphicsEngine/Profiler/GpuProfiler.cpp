@@ -1,6 +1,7 @@
 #include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
 #include <GraphicsEngine/Profiler/GpuProfiler.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
+#include <FoundationEngine/Benchmark/Benchmark.h>
 #include <FoundationEngine/Log/Warning.h>
 
 namespace SeedCore
@@ -188,6 +189,10 @@ namespace SeedCore
 
 	void GpuProfiler::Begin(D3D12CommandList* cmdList, GpuProfileView view, GpuProfileScope scope)
 	{
+		/// [EN] Every GPU-timed pass is also a CPU section under the same name, so the cost of recording the pass shows up without touching the call sites; it is recorded even when timestamps are unavailable.
+		/// [JP] GPU 計測するパスは同じ名前の CPU 区間にもする。呼び出し側に手を入れずにパスの記録コストが出る。タイムスタンプが使えないときも記録する。
+		Benchmark::Begin(String(ScopeName(scope)));
+
 		if (!available_ || !cmdList)
 		{
 			return;
@@ -206,6 +211,8 @@ namespace SeedCore
 
 	void GpuProfiler::End(D3D12CommandList* cmdList, GpuProfileView view, GpuProfileScope scope)
 	{
+		Benchmark::End(String(ScopeName(scope)));
+
 		if (!available_ || !cmdList)
 		{
 			return;

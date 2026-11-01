@@ -2,7 +2,7 @@
 #include <FoundationEngine/Utility/Handle.h>
 #include <FoundationEngine/Pool/StablePool.h>
 #include <FoundationEngine/Resource/Asset/AxisConvention.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 
 namespace tinygltf
 {
@@ -24,6 +24,7 @@ namespace SeedCore
 	class BindlessHeap;
 	class BC7CompressShader;
 	class D3D12CommandQueue;
+	class D3D12TransferLane;
 
 	enum class ModelFormat
 	{
@@ -67,7 +68,7 @@ namespace SeedCore
 	*   - Build a multi-level LOD hierarchy using QEM simplification
 	*   - Compute per-meshlet bounding spheres and normal cones
 	*   - Serialise the result as a ".crister" cache for fast future loads
-	*   - Trigger GPU upload via Crister::Upload
+	*   - Trigger GPU upload via CristerResidency::Upload
 	*
 	* Crister objects are pooled in a StablePool and accessed via Handle.
 	*
@@ -84,7 +85,7 @@ namespace SeedCore
 	*   - QEM 簡略化によるマルチレベル LOD 階層の構築
 	*   - メシュレットごとの包囲球と法線コーンの計算
 	*   - 次回の高速ロードのため ".crister" キャッシュとしてシリアライズ
-	*   - Crister::Upload による GPU アップロードの起動
+	*   - CristerResidency::Upload による GPU アップロードの起動
 	*
 	* Crister オブジェクトは StablePool でプールされ、Handle でアクセスする。
 	*/
@@ -110,7 +111,7 @@ namespace SeedCore
 		* せずキャッシュから読み込む。axisConvention は glTF を再解析する
 		* 場合のみ適用される（キャッシュ読み込み時は無視される）。
 		*/
-		Handle<Crister> Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, String filePath, const AxisConvention& axisConvention = AxisConvention{}, Bool forExport = false);
+		Handle<Crister> Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, D3D12CommandQueue* copyQueue, D3D12TransferLane* transferLane, BindlessHeap* heap, BC7CompressShader& bc7Shader, String filePath, const AxisConvention& axisConvention = AxisConvention{}, Bool forExport = false);
 
 		/**
 		* [EN]
@@ -214,47 +215,6 @@ namespace SeedCore
 		*/
 		void FetchTexture(const ModelSource& source, Crister& crister);
 
-		/**
-		* [EN]
-		* Generates meshlets and multi-level LOD hierarchy (QEM + DAG clusters).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* メシュレットとマルチレベル LOD 階層（QEM + DAG クラスター）を生成する。
-		*/
-		void BuildMeshlets(Crister& crister);
-
-		/**
-		* [EN]
-		* Walks the node tree depth-first to compute world-space transforms.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ノードツリーを深さ優先で走査し、ワールド空間トランスフォームを計算する。
-		*/
-		void CumulateTransforms(Crister& crister);
-
-		/**
-		* [EN]
-		* Converts every node/vertex/skin in crister from its source axis
-		* convention into the engine's fixed LH/Y-up/Z-forward space, using
-		* the basis resolved from axisConvention. Falls back to the default
-		* AxisConvention if axisConvention resolves to an invalid basis
-		* (never silently skips conversion).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* crister 内の全ノード/頂点/スキンを、axisConvention から解決された
-		* 基底を用いて、ソースの軸コンベンションからエンジン固定の
-		* LH/Y-up/Z-forward 空間へ変換する。axisConvention が無効な基底に
-		* 解決された場合はデフォルトの AxisConvention にフォールバックする
-		* （変換を黙ってスキップすることはない）。
-		*/
-		void ConvertAxisConvention(Crister& crister, const AxisConvention& axisConvention);
-
 		void ConvertSceneConvention(fbxsdk::FbxScene* scene, fbxsdk::FbxManager* manager);
 
 		void ConvertFlatConvention(ModelSource& source);
@@ -279,26 +239,6 @@ namespace SeedCore
 		* ディレクショナルライトはモデル単位ではなくシーン単位で設定する。
 		*/
 		void FetchLights(const ModelSource& source, Crister& crister);
-
-		/// [EN] Transforms a position/direction Vector3 by a change-of-basis matrix (v' = Vector3::Transform(v, basis)).
-		/// [JP] 位置/方向を表す Vector3 を基底変換行列で変換する (v' = Vector3::Transform(v, basis))。
-		void ConvertPositionByBasis(Vector3& vector, const Matrix& basis);
-
-		/// [EN] Transforms the .xyz of a Vector4 (e.g. tangent) by basis; .w (handedness sign) is not touched here.
-		/// [JP] Vector4（タンジェント等）の .xyz を basis で変換する。.w（利き手符号）はここでは触らない。
-		void ConvertPositionByBasis(Vector4& vector, const Matrix& basis);
-
-		/// [EN] Conjugates a rotation quaternion by an orthogonal change-of-basis: R' = basis^T * R * basis.
-		/// [JP] 回転クォータニオンを直交基底変換で共役変換する: R' = basis^T * R * basis。
-		void ConvertRotationByBasis(Quaternion& quaternion, const Matrix& basis);
-
-		/// [EN] Conjugates a full 4x4 transform (e.g. an inverse bind matrix) by basis: matrix' = basis^T * matrix * basis.
-		/// [JP] 4x4変換（逆バインド行列等）を basis で共役変換する: matrix' = basis^T * matrix * basis。
-		void ConvertMatrixByBasis(Matrix& matrix, const Matrix& basis);
-
-		/// [EN] Swaps two corners of every triangle in crister.vertexIndices_ (pre-meshlet, flat global index list), reversing winding order. Only called when the resolved conversion explicitly requires it.
-		/// [JP] crister.vertexIndices_（メシュレット化前のフラットなグローバルインデックス列）の全三角形について2頂点を入れ替え、巻き順を反転する。解決済みの変換が明示的に要求する時のみ呼ばれる。
-		void FlipTriangleWinding(Crister& crister);
 
 	private:
 		/// [EN] Object pool for Crister instances. Provides stable pointers and handle-based access.

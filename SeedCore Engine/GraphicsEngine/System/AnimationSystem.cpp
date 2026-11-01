@@ -1,5 +1,5 @@
 #include <GraphicsEngine/System/AnimationSystem.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Model/Animation/Animator.h>
 #include <GraphicsEngine/Model/Animation/AnimationResource.h>
@@ -43,7 +43,7 @@ namespace SeedCore
 					return;
 				}
 
-				const DynamicArray<Skin>& skins = crister->Skins();
+				std::span<const Skin> skins = crister->Skins();
 				if (skins.empty())
 				{
 					return;
@@ -65,7 +65,7 @@ namespace SeedCore
 					return;
 				}
 
-				const DynamicArray<Node>& nodes = crister->Nodes();
+				std::span<const Node> nodes = crister->Nodes();
 
 				if (skeleton->boneNames_.size() != nodes.size())
 				{

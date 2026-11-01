@@ -2,7 +2,7 @@
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <GraphicsEngine/Camera/PreviewCamera.h>
@@ -106,7 +106,7 @@ namespace SeedCore
 
 		ImGui::Separator();
 
-		const DynamicArray<Node>& nodes = crister.Nodes();
+		std::span<const Node> nodes = crister.Nodes();
 
 		for (const Skin& skin : crister.Skins())
 		{
@@ -191,7 +191,7 @@ namespace SeedCore
 			Int closestJointIndex = -1;
 			Float closestDistance = 0.08f;
 
-			const DynamicArray<Node>& nodes = currentCrister_->Nodes();
+			std::span<const Node> nodes = currentCrister_->Nodes();
 			for (const Skin& skin : currentCrister_->Skins())
 			{
 				for (Int jointIndex : skin.joints_)
@@ -234,7 +234,7 @@ namespace SeedCore
 			return;
 		}
 
-		const DynamicArray<Node>& nodes = currentCrister_->Nodes();
+		std::span<const Node> nodes = currentCrister_->Nodes();
 
 		if (selectedNodeIndex_ < 0 || static_cast<Size>(selectedNodeIndex_) >= nodes.size())
 		{

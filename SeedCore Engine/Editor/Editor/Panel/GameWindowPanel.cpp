@@ -88,6 +88,11 @@ namespace SeedCore
 
 			if (ImGui::Begin("##GameFullscreen", nullptr, fullFlags))
 			{
+				if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+				{
+					context_.view_.focused_ = FocusedView::Game;
+				}
+
 				/// [JP] 全画面でも通常ビューと同じく Free カメラ入力を処理する
 				///      （Free モード＆ホバー中）。これが無いと全画面でカメラが動かない。
 				Bool fullscreenHovered = ImGui::IsWindowHovered();
@@ -142,6 +147,11 @@ namespace SeedCore
 
 		if (ImGui::Begin("ゲームビュー"))
 		{
+			if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+			{
+				context_.view_.focused_ = FocusedView::Game;
+			}
+
 			Int currentMode = static_cast<Int>(cameraSystem->Mode());
 			ImGui::RadioButton("Free", &currentMode, 0);
 			ImGui::SameLine();

@@ -21,7 +21,7 @@
 
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/Graphics.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/ModelExporter.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Texture/Texture.h>
@@ -59,8 +59,7 @@ namespace SeedCore
 		/// [EN] Let the ResourceCache reload on file changes under UserProject; a reload advances its revision.
 		/// [JP] UserProject 以下のファイル変更で ResourceCache に読み直させる。読み直すと revision が進む。
 		ResourceCache* resource = context_.world_.resource_;
-		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		resource->Watch(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+		resource->Watch();
 
 		/// [EN] Rebuild here, before anything is drawn, because the menus below hold references into the tree.
 		/// [JP] 下のメニューはツリーの中を参照するので、何かを描く前のここで作り直す。
@@ -258,7 +257,7 @@ namespace SeedCore
 						{
 							/// [EN] Reload at once rather than waiting for the watch, because the new Prefab's ID is needed right now.
 							/// [JP] 新しい Prefab の ID がすぐ要るので、監視を待たずにここで読み直す。
-							resource->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+							resource->Reload();
 							if (Uint32 newAssetID = resource->GetAssetID(String(savedPath.RelativeText())))
 							{
 								PrefabRegistry* prefabs = dropped.GetWorld().AddService<PrefabRegistry>();
@@ -1314,8 +1313,7 @@ namespace SeedCore
 	*/
 	void ContentsDrawerPanel::GenerateMeshCollision(const AssetRecord& asset, MeshCollisionDetail detail)
 	{
-		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->GenerateCollision(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, detail))
+		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->GenerateCollision(*context_.world_.resource_, asset.assetID_, detail))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: コリジョン生成に失敗しました: {}", asset.path_.c_str());
 			return;
@@ -1323,7 +1321,7 @@ namespace SeedCore
 
 		/// [EN] Rescan so the just-written ".collision" sibling is picked up as its own asset.
 		/// [JP] 書き出した ".collision" 兄弟を個別アセットとして拾えるよう再スキャンする。
-		context_.world_.resource_->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+		context_.world_.resource_->Reload();
 		SC_LOG_NOTICE("コンテンツドロワー: コリジョンを生成しました: {}", asset.path_.c_str());
 	}
 
@@ -1338,8 +1336,7 @@ namespace SeedCore
 	*/
 	void ContentsDrawerPanel::GenerateMaterial(const AssetRecord& asset)
 	{
-		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->GenerateMaterial(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, true))
+		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->GenerateMaterial(*context_.world_.resource_, asset.assetID_, true))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: マテリアル生成に失敗しました: {}", asset.path_.c_str());
 			return;
@@ -1347,7 +1344,7 @@ namespace SeedCore
 
 		/// [EN] Rescan so the just-written ".material" siblings are picked up as their own assets.
 		/// [JP] 書き出した ".material" 兄弟を個別アセットとして拾えるよう再スキャンする。
-		context_.world_.resource_->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+		context_.world_.resource_->Reload();
 		SC_LOG_NOTICE("コンテンツドロワー: マテリアルを生成しました: {}", asset.path_.c_str());
 	}
 
@@ -1362,8 +1359,7 @@ namespace SeedCore
 	*/
 	void ContentsDrawerPanel::GenerateSkeleton(const AssetRecord& asset)
 	{
-		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->GenerateSkeleton(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, false))
+		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->GenerateSkeleton(*context_.world_.resource_, asset.assetID_, false))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: スケルトン生成に失敗しました（スキン無し？）: {}", asset.path_.c_str());
 			return;
@@ -1371,7 +1367,7 @@ namespace SeedCore
 
 		/// [EN] Rescan so the just-written ".skeleton" sibling is picked up as its own asset.
 		/// [JP] 書き出した ".skeleton" 兄弟を個別アセットとして拾えるよう再スキャンする。
-		context_.world_.resource_->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+		context_.world_.resource_->Reload();
 		SC_LOG_NOTICE("コンテンツドロワー: スケルトンを生成しました: {}", asset.path_.c_str());
 	}
 
@@ -1726,8 +1722,7 @@ namespace SeedCore
 			return;
 		}
 
-		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->Export(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader(), *context_.world_.resource_, asset.assetID_, preset, String(outputPath.string())))
+		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->Export(*context_.world_.resource_, asset.assetID_, preset, String(outputPath.string())))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: モデルのエクスポートに失敗しました: {}", asset.path_.c_str());
 			return;
@@ -1735,7 +1730,7 @@ namespace SeedCore
 
 		/// [EN] Reload so an export written inside the project shows up as an asset.
 		/// [JP] プロジェクト内へ書き出した場合にアセットとして出てくるよう、読み直す。
-		context_.world_.resource_->Reload(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+		context_.world_.resource_->Reload();
 		SC_LOG_NOTICE("コンテンツドロワー: モデルをエクスポートしました: {}", asset.path_.c_str());
 	}
 }

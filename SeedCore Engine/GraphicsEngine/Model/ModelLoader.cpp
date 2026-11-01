@@ -8,8 +8,13 @@
 #endif
 #include <External/FBXSDK/Include/fbxsdk.h>
 #include <GraphicsEngine/Model/ModelLoader.h>
-#include <GraphicsEngine/Model/Cluster/QuadricErrorMetrics.h>
+#include <GraphicsEngine/Model/Crister/CristerQuantizer.h>
+#include <GraphicsEngine/Model/Crister/CristerCompressor.h>
+#include <GraphicsEngine/Model/Crister/CristerConverter.h>
+#include <GraphicsEngine/Model/Crister/CristerClusterizer.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
+#include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
+#include <GraphicsEngine/D3D12/Context/D3D12TransferLane.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
 #ifdef _DEBUG
@@ -34,7 +39,7 @@ namespace SeedCore
 	*      (scenes, nodes, meshes, materials, skins, textures), generate
 	*      meshlets + LOD hierarchy, then serialise the result as a
 	*      ".crister" cache for future loads.
-	*   3. Upload GPU resources via Crister::Upload.
+	*   3. Upload GPU resources via CristerResidency::Upload.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -49,9 +54,9 @@ namespace SeedCore
 	*      （シーン、ノード、メッシュ、マテリアル、スキン、テクスチャ）を抽出し、
 	*      メシュレット + LOD 階層を生成した後、".crister" キャッシュとして
 	*      シリアライズして次回のロードに備える。
-	*   3. Crister::Upload で GPU リソースをアップロードする。
+	*   3. CristerResidency::Upload で GPU リソースをアップロードする。
 	*/
-	Handle<Crister> ModelLoader::Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, BC7CompressShader& bc7Shader, String filePath, const AxisConvention& axisConvention, Bool forExport)
+	Handle<Crister> ModelLoader::Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, D3D12CommandQueue* copyQueue, D3D12TransferLane* transferLane, BindlessHeap* heap, BC7CompressShader& bc7Shader, String filePath, const AxisConvention& axisConvention, Bool forExport)
 	{
 		Handle<Crister> handle = pool_.Create();
 		Crister* crister = pool_.Get(handle);
@@ -73,20 +78,23 @@ namespace SeedCore
 				crister->Serialize(archive);
 				loadedFromCache = true;
 
-				for (Size nodeIndex = 0; nodeIndex < crister->nodes_.size(); nodeIndex++)
+				for (Size nodeIndex = 0; nodeIndex < crister->scene_.nodes_.size(); nodeIndex++)
 				{
-					for (Int childIndex : crister->nodes_[nodeIndex].children_)
+					for (Int childIndex : crister->scene_.nodes_[nodeIndex].children_)
 					{
-						if (childIndex >= 0 && static_cast<Size>(childIndex) < crister->nodes_.size())
+						if (childIndex >= 0 && static_cast<Size>(childIndex) < crister->scene_.nodes_.size())
 						{
-							crister->nodes_[childIndex].parentIndex_ = static_cast<Int>(nodeIndex);
+							crister->scene_.nodes_[childIndex].parentIndex_ = static_cast<Int>(nodeIndex);
 						}
 					}
 				}
 
 				if (forExport)
 				{
-					crister->Reconstruct();
+					/// [EN] An export needs full-precision, non-meshlet geometry, so the baked data is decoded back.
+					/// [JP] 書き出しにはフル精度でメッシュレットでないジオメトリが要るので、焼き込んだデータをデコードし直す。
+					CristerQuantizer quantizer;
+					quantizer.Reconstruct(*crister);
 				}
 			}
 			else
@@ -182,7 +190,8 @@ namespace SeedCore
 			ResolveSubMeshSkins(source, *crister);
 			FetchTexture(source, *crister);
 
-			ConvertAxisConvention(*crister, axisConvention);
+			CristerConverter converter;
+			converter.ConvertAxisConvention(*crister, axisConvention);
 
 			FetchLights(source, *crister);
 
@@ -206,20 +215,23 @@ namespace SeedCore
 
 			/// [EN] Generate meshlets and LOD hierarchy from the extracted mesh data.
 			/// [JP] 抽出したメッシュデータからメシュレットと LOD 階層を生成する。
-			BuildMeshlets(*crister);
+			CristerClusterizer clusterizer;
+			clusterizer.BuildMeshlets(*crister);
 
 			/// [EN] Quantise vertices_ (now including LOD-duplicated copies) into
 			///      the GPU format and bake it into the cache, freeing vertices_.
 			/// [JP] vertices_（LOD 複製後の最終集合）を GPU フォーマットへ量子化し
 			///      キャッシュへ焼き込む。vertices_ はここで解放される。
-			crister->BakeMesh();
+			CristerQuantizer quantizer;
+			quantizer.BakeMesh(*crister);
 
 			/// [EN] Downsample/dilate/BC7-compress every texture and bake the
 			///      result into the cache. Independent of BakeMesh; order
 			///      between the two doesn't matter.
 			/// [JP] 全テクスチャをダウンサンプル/dilation/BC7 圧縮してキャッシュへ
 			///      焼き込む。BakeMesh とは独立しており、両者の順序は問わない。
-			crister->BakeBitmap(device, cmdQueue, bc7Shader);
+			CristerCompressor compressor;
+			compressor.BakeBitmap(device, cmdQueue, bc7Shader, crister->material_.bitmaps_);
 
 			/// [EN] Serialise everything to ".crister" binary cache for next load.
 			/// [JP] 次回のロードのため ".crister" バイナリキャッシュにシリアライズする。
@@ -233,9 +245,11 @@ namespace SeedCore
 			return handle;
 		}
 
-		/// [EN] Upload vertex/index/meshlet buffers to GPU.
-		/// [JP] 頂点・インデックス・メシュレットバッファを GPU にアップロードする。
-		crister->Upload(device, cmdQueue, heap);
+		/// [EN] Record every upload on transferLane, submit it to the copy queue and wait on this thread, so the model is complete on the GPU when Load returns. Only the loading thread waits; the frames keep running on the direct queue.
+		/// [JP] すべてのアップロードを transferLane に記録して Copy キューへ投入し、このスレッドで完了を待つ。これで Load から戻った時点でモデルは GPU 上に揃っている。待つのはロードするスレッドだけで、フレームは Direct キューで動き続ける。
+		transferLane->Begin(device, *copyQueue);
+		crister->Residency().Upload(*crister, device, *transferLane, heap);
+		copyQueue->WaitFor(transferLane->Submit(*copyQueue));
 
 		return handle;
 	}
@@ -270,17 +284,17 @@ namespace SeedCore
 			const tinygltf::Model& model = *source.gltf_.model_;
 			for (const tinygltf::Scene& gltfScene : model.scenes)
 			{
-				Stage& stage = crister.stages_.emplace_back();
+				Stage& stage = crister.scene_.stages_.emplace_back();
 				stage.name_ = gltfScene.name;
 				stage.nodes_ = gltfScene.nodes;
 			}
-			crister.defaultStage_ = model.defaultScene < 0 ? 0 : model.defaultScene;
+			crister.scene_.defaultStage_ = model.defaultScene < 0 ? 0 : model.defaultScene;
 			break;
 		}
 		case ModelFormat::Fbx:
 		{
 			FbxScene* fbxScene = source.fbx_.scene_;
-			Stage& stage = crister.stages_.emplace_back();
+			Stage& stage = crister.scene_.stages_.emplace_back();
 			stage.name_ = fbxScene->GetName();
 			FbxNode* fbxRoot = fbxScene->GetRootNode();
 			for (Int childIndex = 0; childIndex < fbxRoot->GetChildCount(); childIndex++)
@@ -295,7 +309,7 @@ namespace SeedCore
 					}
 				}
 			}
-			crister.defaultStage_ = 0;
+			crister.scene_.defaultStage_ = 0;
 			break;
 		}
 		}
@@ -334,7 +348,7 @@ namespace SeedCore
 
 			for (const tinygltf::Node& gltfNode : model.nodes)
 			{
-				Node& node = crister.nodes_.emplace_back();
+				Node& node = crister.scene_.nodes_.emplace_back();
 				node.name_ = gltfNode.name;
 				node.skin_ = gltfNode.skin;
 				node.mesh_ = gltfNode.mesh;
@@ -408,18 +422,18 @@ namespace SeedCore
 				}
 			}
 
-			for (Size nodeIndex = 0; nodeIndex < crister.nodes_.size(); nodeIndex++)
+			for (Size nodeIndex = 0; nodeIndex < crister.scene_.nodes_.size(); nodeIndex++)
 			{
-				for (Int childIndex : crister.nodes_[nodeIndex].children_)
+				for (Int childIndex : crister.scene_.nodes_[nodeIndex].children_)
 				{
-					if (childIndex >= 0 && static_cast<Size>(childIndex) < crister.nodes_.size())
+					if (childIndex >= 0 && static_cast<Size>(childIndex) < crister.scene_.nodes_.size())
 					{
-						crister.nodes_[childIndex].parentIndex_ = static_cast<Int>(nodeIndex);
+						crister.scene_.nodes_[childIndex].parentIndex_ = static_cast<Int>(nodeIndex);
 					}
 				}
 			}
 
-			CumulateTransforms(crister);
+			crister.CumulateTransforms();
 			break;
 		}
 		case ModelFormat::Fbx:
@@ -427,7 +441,7 @@ namespace SeedCore
 			for (Size tableIndex = 0; tableIndex < source.fbx_.nodeTable_.size(); tableIndex++)
 			{
 				FbxNode* fbxNode = source.fbx_.nodeTable_[tableIndex];
-				Node& node = crister.nodes_.emplace_back();
+				Node& node = crister.scene_.nodes_.emplace_back();
 				node.name_ = fbxNode->GetName();
 
 				for (Int fbxChildIndex = 0; fbxChildIndex < fbxNode->GetChildCount(); fbxChildIndex++)
@@ -465,18 +479,18 @@ namespace SeedCore
 				node.scale_ = Vector3(static_cast<Float>(localScale[0]), static_cast<Float>(localScale[1]), static_cast<Float>(localScale[2]));
 			}
 
-			for (Size nodeIndex = 0; nodeIndex < crister.nodes_.size(); nodeIndex++)
+			for (Size nodeIndex = 0; nodeIndex < crister.scene_.nodes_.size(); nodeIndex++)
 			{
-				for (Int childIndex : crister.nodes_[nodeIndex].children_)
+				for (Int childIndex : crister.scene_.nodes_[nodeIndex].children_)
 				{
-					if (childIndex >= 0 && static_cast<Size>(childIndex) < crister.nodes_.size())
+					if (childIndex >= 0 && static_cast<Size>(childIndex) < crister.scene_.nodes_.size())
 					{
-						crister.nodes_[childIndex].parentIndex_ = static_cast<Int>(nodeIndex);
+						crister.scene_.nodes_[childIndex].parentIndex_ = static_cast<Int>(nodeIndex);
 					}
 				}
 			}
 
-			CumulateTransforms(crister);
+			crister.CumulateTransforms();
 			break;
 		}
 		}
@@ -550,7 +564,7 @@ namespace SeedCore
 				const tinygltf::Mesh& gltfMesh = model.meshes[meshIndex];
 				for (const tinygltf::Primitive& gltfPrimitive : gltfMesh.primitives)
 				{
-					SubMesh& subMesh = crister.subMeshes_.emplace_back();
+					SubMesh& subMesh = crister.geometry_.subMeshes_.emplace_back();
 					subMesh.meshIndex_ = static_cast<Int>(meshIndex);
 					if (gltfPrimitive.material >= 0)
 					{
@@ -560,13 +574,13 @@ namespace SeedCore
 					{
 						if (defaultSurfaceIndex < 0)
 						{
-							defaultSurfaceIndex = static_cast<Int>(crister.surfaces_.size());
-							crister.surfaces_.emplace_back();
+							defaultSurfaceIndex = static_cast<Int>(crister.material_.surfaces_.size());
+							crister.material_.surfaces_.emplace_back();
 						}
 						subMesh.surfaceIndex_ = static_cast<Uint32>(defaultSurfaceIndex);
 					}
 
-					Uint32 vertexOffset = static_cast<Uint32>(crister.vertices_.size());
+					Uint32 vertexOffset = static_cast<Uint32>(crister.geometry_.vertices_.size());
 					if (!gltfPrimitive.attributes.contains("POSITION"))
 					{
 						continue;
@@ -574,8 +588,8 @@ namespace SeedCore
 
 					const tinygltf::Accessor& positionAccessor = model.accessors.at(gltfPrimitive.attributes.at("POSITION"));
 					Size vertexCount = positionAccessor.count;
-					Size baseVertex = crister.vertices_.size();
-					crister.vertices_.resize(baseVertex + vertexCount);
+					Size baseVertex = crister.geometry_.vertices_.size();
+					crister.geometry_.vertices_.resize(baseVertex + vertexCount);
 
 					/// [EN] Identity-initialise this range of vertexMorphSource_:
 					///      each of these ORIGINAL vertices is its own source
@@ -587,10 +601,10 @@ namespace SeedCore
 					///      ソースになる(vertexMorphSource_ のコメント参照)。
 					///      BuildMeshlets が後で追加する LOD 複製コピーへは
 					///      これを伝播する。
-					crister.vertexMorphSource_.resize(baseVertex + vertexCount);
+					crister.geometry_.vertexMorphSource_.resize(baseVertex + vertexCount);
 					for (Size index = 0; index < vertexCount; index++)
 					{
-						crister.vertexMorphSource_[baseVertex + index] = static_cast<Uint32>(baseVertex + index);
+						crister.geometry_.vertexMorphSource_[baseVertex + index] = static_cast<Uint32>(baseVertex + index);
 					}
 
 					subMesh.vertexOffset_ = vertexOffset;
@@ -700,7 +714,7 @@ namespace SeedCore
 
 							for (Size index = 0;index < vertexCount;index++)
 							{
-								Float* destination = reinterpret_cast<Float*>(&(crister.vertices_[baseVertex + index].*memberPtr));
+								Float* destination = reinterpret_cast<Float*>(&(crister.geometry_.vertices_[baseVertex + index].*memberPtr));
 								const Uchar* element = source + index * sourceStride;
 								if (isPlainFloat)
 								{
@@ -735,7 +749,7 @@ namespace SeedCore
 
 							for (Size index = 0;index < vertexCount;index++)
 							{
-								Vertex& vertex = crister.vertices_[baseVertex + index];
+								Vertex& vertex = crister.geometry_.vertices_[baseVertex + index];
 								if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT)
 								{
 									const Uint* data = reinterpret_cast<const Uint*>(source + index * accessor.ByteStride(bufferView));
@@ -769,7 +783,7 @@ namespace SeedCore
 
 							for (Size index = 0;index < vertexCount;index++)
 							{
-								Vertex& vertex = crister.vertices_[baseVertex + index];
+								Vertex& vertex = crister.geometry_.vertices_[baseVertex + index];
 								if (accessor.componentType == TINYGLTF_COMPONENT_TYPE_FLOAT)
 								{
 									const Float* data = reinterpret_cast<const Float*>(source + index * accessor.ByteStride(bufferView));
@@ -862,7 +876,7 @@ namespace SeedCore
 
 					/// [EN] Record where this SubMesh's indices begin in vertexIndices_.
 					/// [JP] この SubMesh のインデックスが vertexIndices_ 内のどこから始まるかを記録する。
-					subMesh.indexOffset_ = static_cast<Uint32>(crister.vertexIndices_.size());
+					subMesh.indexOffset_ = static_cast<Uint32>(crister.geometry_.vertexIndices_.size());
 
 					if (gltfPrimitive.indices > -1)
 					{
@@ -876,8 +890,8 @@ namespace SeedCore
 						const tinygltf::BufferView& bufferView = model.bufferViews.at(accessor.bufferView);
 						const Uchar* source = model.buffers.at(bufferView.buffer).data.data() + bufferView.byteOffset + accessor.byteOffset;
 
-						Size indexBase = crister.vertexIndices_.size();
-						crister.vertexIndices_.resize(indexBase + accessor.count);
+						Size indexBase = crister.geometry_.vertexIndices_.size();
+						crister.geometry_.vertexIndices_.resize(indexBase + accessor.count);
 
 						for (Size index = 0;index < accessor.count;index++)
 						{
@@ -894,7 +908,7 @@ namespace SeedCore
 							{
 								vertexIndex = source[index];
 							}
-							crister.vertexIndices_[indexBase + index] = vertexOffset + vertexIndex;
+							crister.geometry_.vertexIndices_[indexBase + index] = vertexOffset + vertexIndex;
 						}
 					}
 					else
@@ -907,15 +921,15 @@ namespace SeedCore
 						///      一部の glTF ファイルは全頂点がユニーク（共有なし）の場合、インデックス
 						///      バッファを完全に省略する。パイプラインの残りがインデックスバッファの
 						///      存在を仮定できるよう、恒等インデックスを作成する。
-						Size indexBase = crister.vertexIndices_.size();
-						crister.vertexIndices_.resize(indexBase + vertexCount);
+						Size indexBase = crister.geometry_.vertexIndices_.size();
+						crister.geometry_.vertexIndices_.resize(indexBase + vertexCount);
 						for (Size index = 0;index < vertexCount;index++)
 						{
-							crister.vertexIndices_[indexBase + index] = vertexOffset + static_cast<Uint32>(index);
+							crister.geometry_.vertexIndices_[indexBase + index] = vertexOffset + static_cast<Uint32>(index);
 						}
 					}
 
-					subMesh.indexCount_ = static_cast<Uint32>(crister.vertexIndices_.size()) - subMesh.indexOffset_;
+					subMesh.indexCount_ = static_cast<Uint32>(crister.geometry_.vertexIndices_.size()) - subMesh.indexOffset_;
 				}
 			}
 			break;
@@ -1023,8 +1037,8 @@ namespace SeedCore
 					}
 					if (defaultSurfaceIndex < 0)
 					{
-						defaultSurfaceIndex = static_cast<Int>(crister.surfaces_.size());
-						crister.surfaces_.emplace_back();
+						defaultSurfaceIndex = static_cast<Int>(crister.material_.surfaces_.size());
+						crister.material_.surfaces_.emplace_back();
 					}
 					return static_cast<Uint32>(defaultSurfaceIndex);
 				};
@@ -1075,12 +1089,12 @@ namespace SeedCore
 
 				for (Uint32 surfaceIndex : usedSurfaces)
 				{
-					SubMesh& subMesh = crister.subMeshes_.emplace_back();
+					SubMesh& subMesh = crister.geometry_.subMeshes_.emplace_back();
 					subMesh.meshIndex_ = static_cast<Int>(meshTableIndex);
 					subMesh.surfaceIndex_ = surfaceIndex;
 					subMesh.skinIndex_ = meshSkinIndex;
 
-					Uint32 vertexOffset = static_cast<Uint32>(crister.vertices_.size());
+					Uint32 vertexOffset = static_cast<Uint32>(crister.geometry_.vertices_.size());
 					subMesh.vertexOffset_ = vertexOffset;
 
 					for (FbxBlendShapeChannel* channel : blendShapeChannels)
@@ -1098,7 +1112,7 @@ namespace SeedCore
 						for (Int corner = 0; corner < 3; corner++)
 						{
 							Int controlPoint = fbxMesh->GetPolygonVertex(polygonIndex, corner);
-							Vertex& vertex = crister.vertices_.emplace_back();
+							Vertex& vertex = crister.geometry_.vertices_.emplace_back();
 
 							FbxVector4 position = controlPoints[controlPoint];
 							vertex.position_ = Vector3(static_cast<Float>(position[0]), static_cast<Float>(position[1]), static_cast<Float>(position[2])) * source.fbx_.unitScale_;
@@ -1125,7 +1139,7 @@ namespace SeedCore
 								vertex.weights_ = Vector4(1.0f, 0.0f, 0.0f, 0.0f);
 							}
 
-							crister.vertexMorphSource_.push_back(static_cast<Uint32>(crister.vertices_.size() - 1));
+							crister.geometry_.vertexMorphSource_.push_back(static_cast<Uint32>(crister.geometry_.vertices_.size() - 1));
 
 							for (Size channelIndex = 0; channelIndex < blendShapeChannels.size(); channelIndex++)
 							{
@@ -1135,13 +1149,13 @@ namespace SeedCore
 						}
 					}
 
-					Uint32 vertexCount = static_cast<Uint32>(crister.vertices_.size()) - vertexOffset;
+					Uint32 vertexCount = static_cast<Uint32>(crister.geometry_.vertices_.size()) - vertexOffset;
 					subMesh.vertexCount_ = vertexCount;
 
-					subMesh.indexOffset_ = static_cast<Uint32>(crister.vertexIndices_.size());
+					subMesh.indexOffset_ = static_cast<Uint32>(crister.geometry_.vertexIndices_.size());
 					for (Uint32 localIndex = 0; localIndex < vertexCount; localIndex++)
 					{
-						crister.vertexIndices_.push_back(vertexOffset + localIndex);
+						crister.geometry_.vertexIndices_.push_back(vertexOffset + localIndex);
 					}
 					subMesh.indexCount_ = vertexCount;
 				}
@@ -1192,9 +1206,9 @@ namespace SeedCore
 
 			for (const tinygltf::Material& gltfMaterial : model.materials)
 			{
-				Surface& material = crister.surfaces_.emplace_back();
+				Surface& material = crister.material_.surfaces_.emplace_back();
 
-				Size materialIndex = crister.surfaces_.size() - 1;
+				Size materialIndex = crister.material_.surfaces_.size() - 1;
 				material.name_ = gltfMaterial.name.empty() ? ("Material_" + std::to_string(materialIndex)) : gltfMaterial.name;
 
 				const auto& pbr = gltfMaterial.pbrMetallicRoughness;
@@ -1373,6 +1387,14 @@ namespace SeedCore
 				FbxFileTexture* fileTexture = property.GetSrcObject<FbxFileTexture>(0);
 				if (!fileTexture)
 				{
+					FbxLayeredTexture* layeredTexture = property.GetSrcObject<FbxLayeredTexture>(0);
+					if (layeredTexture)
+					{
+						fileTexture = layeredTexture->GetSrcObject<FbxFileTexture>(0);
+					}
+				}
+				if (!fileTexture)
+				{
 					return 0xFFFFFFFF;
 				}
 				for (Size textureIndex = 0; textureIndex < source.fbx_.textureTable_.size(); textureIndex++)
@@ -1406,7 +1428,7 @@ namespace SeedCore
 					}
 					source.fbx_.materialTable_.push_back(fbxMaterial);
 
-					Surface& material = crister.surfaces_.emplace_back();
+					Surface& material = crister.material_.surfaces_.emplace_back();
 					std::string materialName = fbxMaterial->GetName();
 					Size namespaceEnd = materialName.find_last_of(':');
 					material.name_ = (namespaceEnd == std::string::npos) ? materialName : materialName.substr(namespaceEnd + 1);
@@ -1432,6 +1454,14 @@ namespace SeedCore
 					/// [EN] In FBX a texture connected to the diffuse/base color slot replaces the slot's color value rather than multiplying it, so the factor becomes white.
 					/// [JP] FBX ではディフューズ/ベースカラーのスロットに接続されたテクスチャはスロットのカラー値を置き換える（乗算しない）ため、係数は白にする。
 					material.baseColorTextureIndex_ = resolveTexture(diffuseProperty);
+					if (material.baseColorTextureIndex_ == 0xFFFFFFFF)
+					{
+						material.baseColorTextureIndex_ = resolveTexture(fbxMaterial->FindPropertyHierarchical("Maya|baseColor"));
+					}
+					if (material.baseColorTextureIndex_ == 0xFFFFFFFF)
+					{
+						material.baseColorTextureIndex_ = resolveTexture(fbxMaterial->FindPropertyHierarchical("Maya|TEX_color_map"));
+					}
 					if (material.baseColorTextureIndex_ != 0xFFFFFFFF)
 					{
 						material.baseColor_ = Color(1.0f, 1.0f, 1.0f, 1.0f);
@@ -1470,7 +1500,30 @@ namespace SeedCore
 					}
 
 					material.normalTextureIndex_ = resolveTexture(fbxMaterial->FindProperty(FbxSurfaceMaterial::sNormalMap));
+					if (material.normalTextureIndex_ == 0xFFFFFFFF)
+					{
+						material.normalTextureIndex_ = resolveTexture(fbxMaterial->FindPropertyHierarchical("Maya|normalCamera"));
+					}
+					if (material.normalTextureIndex_ == 0xFFFFFFFF)
+					{
+						material.normalTextureIndex_ = resolveTexture(fbxMaterial->FindPropertyHierarchical("Maya|TEX_normal_map"));
+					}
+					if (material.normalTextureIndex_ == 0xFFFFFFFF)
+					{
+						material.normalTextureIndex_ = resolveTexture(fbxMaterial->FindProperty(FbxSurfaceMaterial::sBump));
+					}
+
 					material.emissiveTextureIndex_ = resolveTexture(emissiveProperty);
+					if (material.emissiveTextureIndex_ == 0xFFFFFFFF)
+					{
+						material.emissiveTextureIndex_ = resolveTexture(fbxMaterial->FindPropertyHierarchical("Maya|emissionColor"));
+					}
+					if (material.emissiveTextureIndex_ == 0xFFFFFFFF)
+					{
+						material.emissiveTextureIndex_ = resolveTexture(fbxMaterial->FindPropertyHierarchical("Maya|TEX_emissive_map"));
+					}
+
+					material.occlusionTextureIndex_ = resolveTexture(fbxMaterial->FindPropertyHierarchical("Maya|TEX_ao_map"));
 				}
 			}
 			break;
@@ -1513,7 +1566,7 @@ namespace SeedCore
 
 			for (const tinygltf::Skin& gltfSkin : model.skins)
 			{
-				Skin& skin = crister.skins_.emplace_back();
+				Skin& skin = crister.scene_.skins_.emplace_back();
 				skin.joints_ = gltfSkin.joints;
 
 				if (gltfSkin.inverseBindMatrices >= 0)
@@ -1544,7 +1597,7 @@ namespace SeedCore
 				}
 				FbxSkin* fbxSkin = static_cast<FbxSkin*>(fbxMesh->GetDeformer(0, FbxDeformer::eSkin));
 
-				Skin& skin = crister.skins_.emplace_back();
+				Skin& skin = crister.scene_.skins_.emplace_back();
 				for (Int clusterIndex = 0; clusterIndex < fbxSkin->GetClusterCount(); clusterIndex++)
 				{
 					FbxCluster* cluster = fbxSkin->GetCluster(clusterIndex);
@@ -1641,7 +1694,7 @@ namespace SeedCore
 				Uint32 count = static_cast<Uint32>(model.meshes[gltfNode.mesh].primitives.size());
 				for (Uint32 index = 0; index < count; index++)
 				{
-					crister.subMeshes_[begin + index].skinIndex_ = gltfNode.skin;
+					crister.geometry_.subMeshes_[begin + index].skinIndex_ = gltfNode.skin;
 				}
 			}
 			break;
@@ -1657,7 +1710,7 @@ namespace SeedCore
 	* [EN]
 	* Copies raw texture image data from the glTF model into Crister's
 	* texture array. This is a data packing step only — actual GPU texture
-	* creation happens later in Crister::Upload.
+	* creation happens later in CristerResidency::Upload.
 	*
 	* tinygltf has already decoded the image data (PNG/JPEG → raw pixels)
 	* by the time we access it, so we just copy the decoded buffer.
@@ -1667,7 +1720,7 @@ namespace SeedCore
 	* [JP]
 	* glTF モデルの生テクスチャ画像データを Crister のテクスチャ配列にコピーする。
 	* これはデータを詰めるだけのステップであり、実際の GPU テクスチャ作成は
-	* Crister::Upload で行う。
+	* CristerResidency::Upload で行う。
 	*
 	* tinygltf はアクセス時点で既に画像データをデコード済み
 	* （PNG/JPEG → 生ピクセル）なので、デコード済みバッファをコピーするだけ。
@@ -1682,7 +1735,7 @@ namespace SeedCore
 
 			for (const tinygltf::Image& gltfImage : model.images)
 			{
-				Bitmap& texture = crister.bitmaps_.emplace_back();
+				Bitmap& texture = crister.material_.bitmaps_.emplace_back();
 				texture.name_ = gltfImage.name;
 				texture.width_ = gltfImage.width;
 				texture.height_ = gltfImage.height;
@@ -1697,7 +1750,7 @@ namespace SeedCore
 		{
 			for (FbxFileTexture* fileTexture : source.fbx_.textureTable_)
 			{
-				Bitmap& texture = crister.bitmaps_.emplace_back();
+				Bitmap& texture = crister.material_.bitmaps_.emplace_back();
 				texture.name_ = fileTexture->GetName();
 				texture.component_ = 4;
 				texture.bits_ = 8;
@@ -1715,6 +1768,8 @@ namespace SeedCore
 				candidatePaths.push_back(fbxDirectory / fileTexture->GetRelativeFileName());
 				candidatePaths.push_back(std::filesystem::path(fileTexture->GetFileName()));
 
+				std::filesystem::path nonTexturePath("../Editor/Icon/Warning/NonTexture.icon");
+
 				std::filesystem::path texturePath;
 				for (const std::filesystem::path& candidatePath : candidatePaths)
 				{
@@ -1724,23 +1779,79 @@ namespace SeedCore
 						break;
 					}
 				}
+				if (texturePath.empty())
+				{
+					SC_LOG_WARNING("FBX のテクスチャ {} が見つかりません({})。NonTexture で代用します。", texture.name_, fileTexture->GetFileName());
+					texturePath = nonTexturePath;
+				}
+
+				DynamicArray<std::filesystem::path> loadPaths = { texturePath };
+				if (texturePath != nonTexturePath)
+				{
+					loadPaths.push_back(nonTexturePath);
+				}
 
 				DirectX::ScratchImage loadedImage;
-				DirectX::TexMetadata loadedMetadata{};
-				HRESULT loadResult = DirectX::LoadFromWICFile(texturePath.wstring().c_str(), DirectX::WIC_FLAGS_NONE, &loadedMetadata, loadedImage);
-
 				DirectX::ScratchImage rgbaImage;
 				const DirectX::Image* image = nullptr;
-				if (SUCCEEDED(loadResult))
+				for (const std::filesystem::path& loadPath : loadPaths)
 				{
-					if (loadedMetadata.format == DXGI_FORMAT_R8G8B8A8_UNORM)
+					std::string extension = loadPath.extension().string();
+					std::ranges::transform(extension, extension.begin(), [](Uchar character) { return static_cast<Char>(std::tolower(character)); });
+
+					DirectX::TexMetadata loadedMetadata{};
+					HRESULT loadResult{ S_OK };
+					if (extension == ".icon")
 					{
-						image = loadedImage.GetImage(0, 0, 0);
+						loadResult = E_FAIL;
+						BinaryInputArchive iconArchive;
+						if (iconArchive.Read(String(loadPath.string())))
+						{
+							DynamicArray<Byte> iconData;
+							iconArchive.TryField("data", iconData);
+							if (!iconData.empty())
+							{
+								loadResult = DirectX::LoadFromDDSMemory(reinterpret_cast<const Uint8*>(iconData.data()), iconData.size(), DirectX::DDS_FLAGS_NONE, &loadedMetadata, loadedImage);
+							}
+						}
 					}
-					else if (SUCCEEDED(DirectX::Convert(*loadedImage.GetImage(0, 0, 0), DXGI_FORMAT_R8G8B8A8_UNORM, DirectX::TEX_FILTER_DEFAULT, DirectX::TEX_THRESHOLD_DEFAULT, rgbaImage)))
+					else if (extension == ".tga")
 					{
-						image = rgbaImage.GetImage(0, 0, 0);
+						loadResult = DirectX::LoadFromTGAFile(loadPath.wstring().c_str(), &loadedMetadata, loadedImage);
 					}
+					else if (extension == ".dds")
+					{
+						loadResult = DirectX::LoadFromDDSFile(loadPath.wstring().c_str(), DirectX::DDS_FLAGS_NONE, &loadedMetadata, loadedImage);
+					}
+					else
+					{
+						loadResult = DirectX::LoadFromWICFile(loadPath.wstring().c_str(), DirectX::WIC_FLAGS_NONE, &loadedMetadata, loadedImage);
+					}
+
+					if (SUCCEEDED(loadResult))
+					{
+						if (loadedMetadata.format == DXGI_FORMAT_R8G8B8A8_UNORM)
+						{
+							image = loadedImage.GetImage(0, 0, 0);
+						}
+						else if (DirectX::IsCompressed(loadedMetadata.format))
+						{
+							if (SUCCEEDED(DirectX::Decompress(*loadedImage.GetImage(0, 0, 0), DXGI_FORMAT_R8G8B8A8_UNORM, rgbaImage)))
+							{
+								image = rgbaImage.GetImage(0, 0, 0);
+							}
+						}
+						else if (SUCCEEDED(DirectX::Convert(*loadedImage.GetImage(0, 0, 0), DXGI_FORMAT_R8G8B8A8_UNORM, DirectX::TEX_FILTER_DEFAULT, DirectX::TEX_THRESHOLD_DEFAULT, rgbaImage)))
+						{
+							image = rgbaImage.GetImage(0, 0, 0);
+						}
+					}
+
+					if (image)
+					{
+						break;
+					}
+					SC_LOG_WARNING("FBX のテクスチャ {} を読み込めませんでした({})。", texture.name_, loadPath.string());
 				}
 
 				if (image)
@@ -1763,822 +1874,6 @@ namespace SeedCore
 			}
 			break;
 		}
-		}
-	}
-
-	/**
-	* [EN]
-	* Generates meshlets and a multi-level LOD hierarchy for all SubMeshes.
-	*
-	* This is the core of the Mesh Shader rendering pipeline preparation:
-	*
-	* ┌────────────────────────────────────────────────────────────────────┐
-	* │  MESHLET: A small group of triangles processed by one GPU thread  │
-	* │           group (workgroup) in the Mesh Shader.                   │
-	* │                                                                   │
-	* │  Constraints:                                                     │
-	* │    - Max 64 unique vertices per meshlet                           │
-	* │    - Max 124 triangles per meshlet                                │
-	* │                                                                   │
-	* │  Why 64 / 124?                                                    │
-	* │    - 64 vertices = the typical thread count in an MS workgroup    │
-	* │    - 124 triangles × 3 = 372 indices → fits in shared memory	   ｜
-	* │    - These limits come from D3D12 Mesh Shader best practices      │
-	* ├────────────────────────────────────────────────────────────────────┤
-	* │  MESHLET BOUND: Per-meshlet bounding sphere + normal cone for     │
-	* │                 culling in the Amplification Shader (AS).         │
-	* │                                                                   │
-	* │  The AS can skip entire meshlets that are:                        │
-	* │    - Outside the view frustum (bounding sphere test)              │
-	* │    - Facing away from the camera (normal cone test)               │
-	* ├────────────────────────────────────────────────────────────────────┤
-	* │  LOD (Level of Detail): Multiple simplified versions of the mesh. │
-	* │                                                                   │
-	* │  LOD 0 = original (full detail)                                   │
-	* │  LOD 1 = ~50% triangles                                           │
-	* │  LOD 2 = ~25% triangles                                           │
-	* │  ...                                                              │
-	* │  LOD N = minimum triangles (< 4 stops the chain)                  │
-	* │                                                                   │
-	* │  Each LOD is a "Cluster" containing its own meshlets.             │
-	* │  The AS selects the appropriate LOD based on screen-space size.   │
-	* │                                                                   │
-	* │  lodError is CUMULATIVE (not per-level delta) so the AS can       │
-	* │  compare it directly against the screen-space error threshold.    │
-	* └────────────────────────────────────────────────────────────────────┘
-	*
-	* Data flow:
-	*
-	*   vertexIndices_  →  per-SubMesh slice
-	*                          │
-	*                          ▼
-	*                   LOD 0: buildMeshletsFromIndices → computeBounds → Cluster
-	*                          │
-	*                          ▼
-	*                   QEM Simplify (50% reduction)
-	*                          │
-	*                          ▼
-	*                   LOD 1: buildMeshletsFromIndices → computeBounds → Cluster
-	*                          │
-	*                          ▼
-	*                   QEM Simplify (50% reduction)
-	*                          │
-	*                         ...
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 全 SubMesh に対してメシュレットとマルチレベル LOD 階層を生成する。
-	*
-	* Mesh Shader レンダリングパイプライン準備のコア部分:
-	*
-	* ┌────────────────────────────────────────────────────────────────────┐
-	* │  メシュレット: GPU の 1 スレッドグループ（ワークグループ）で処理   │
-	* │               される小さな三角形グループ。                         │
-	* │                                                                    │
-	* │  制約:                                                             │
-	* │    - メシュレットあたり最大 64 固有頂点                            │
-	* │    - メシュレットあたり最大 124 三角形                             │
-	* │                                                                    │
-	* │  なぜ 64 / 124 か？                                                │
-	* │    - 64 頂点 = MS ワークグループの典型的なスレッド数               │
-	* │    - 124 三角形 × 3 = 372 インデックス → 共有メモリに収まる      │
-	* │    - これらの制限は D3D12 Mesh Shader のベストプラクティスによる   │
-	* ├────────────────────────────────────────────────────────────────────┤
-	* │  メシュレットバウンド: Amplification Shader (AS) でのカリング用    │
-	* │                       メシュレットごとの包囲球 + 法線コーン。      │
-	* │                                                                    │
-	* │  AS は以下のメシュレットを丸ごとスキップできる:                    │
-	* │    - ビューフラスタムの外（包囲球テスト）                          │
-	* │    - カメラに背を向けている（法線コーンテスト）                    │
-	* ├────────────────────────────────────────────────────────────────────┤
-	* │  LOD（詳細度レベル）: メッシュの複数の簡略化バージョン。           │
-	* │                                                                    │
-	* │  LOD 0 = オリジナル（最大詳細度）                                  │
-	* │  LOD 1 = 三角形 ~50%                                               │
-	* │  LOD 2 = 三角形 ~25%                                               │
-	* │  ...                                                               │
-	* │  LOD N = 最小三角形数（4 未満でチェーン停止）                      │
-	* │                                                                    │
-	* │  各 LOD は独自のメシュレットを含む「Cluster」である。              │
-	* │  AS が画面空間サイズに基づいて適切な LOD を選択する。              │
-	* │                                                                    │
-	* │  lodError は累積（レベルごとのデルタではない）なので、AS が        │
-	* │  画面空間エラー閾値と直接比較できる。                              │
-	* └────────────────────────────────────────────────────────────────────┘
-	*
-	* データフロー:
-	*
-	*   vertexIndices_  →  SubMesh ごとのスライス
-	*                          │
-	*                          ▼
-	*                   LOD 0: buildMeshletsFromIndices → computeBounds → Cluster
-	*                          │
-	*                          ▼
-	*                   QEM Simplify（50% 削減）
-	*                          │
-	*                          ▼
-	*                   LOD 1: buildMeshletsFromIndices → computeBounds → Cluster
-	*                          │
-	*                          ▼
-	*                   QEM Simplify（50% 削減）
-	*                          │
-	*                         ...
-	*/
-	void ModelLoader::BuildMeshlets(Crister& crister)
-	{
-		/// [EN] Maximum LOD depth. 24 levels at 50% reduction per level gives
-		///      a theoretical reduction of 2^24 ≈ 16 million : 1.
-		/// [JP] 最大 LOD 深度。レベルごと 50% 削減で 24 レベルなら
-		///      理論上 2^24 ≈ 1600 万 : 1 の削減。
-		constexpr Uint32 maxLodLevels = 24;
-
-		/// [EN] Move the original global index buffer out — we rebuild it from scratch
-		///      as meshlet vertex indices (vertexIndices_) and primitive indices (primitiveIndices_).
-		/// [JP] 元のグローバルインデックスバッファを退避 — メシュレットの頂点インデックス
-		///      (vertexIndices_) とプリミティブインデックス (primitiveIndices_) として一から再構築する。
-		DynamicArray<Uint32> originalIndices = std::move(crister.vertexIndices_);
-		crister.vertexIndices_.clear();
-		crister.primitiveIndices_.clear();
-		crister.meshlets_.clear();
-		crister.meshletBounds_.clear();
-		crister.clusters_.clear();
-
-		/**
-		* [EN]
-		* Packs a flat triangle index buffer (global vertex indices) into
-		* meshlets with Meshlet and appends them to the Crister. Meshlet
-		* places each meshlet at the start of its own tables, so the vertex
-		* and triangle offsets are shifted by how much the Crister already
-		* holds. Only the primitive index bytes the meshlets use are copied:
-		* primitiveIndices_ stays a tight run of three bytes per triangle,
-		* which the winding flip and page upload read as such.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* フラットな三角形インデックスバッファ（全体での頂点番号）を Meshlet で
-		* メッシュレットに詰め、Crister へ追加する。Meshlet は自分の表の先頭から
-		* 並べるので、頂点と三角形の開始位置は Crister がすでに持っている分だけ
-		* ずらす。三角形番号はメッシュレットが使うバイトだけを写す。
-		* primitiveIndices_ は三角形1つにつき3バイトが隙間なく並ぶ列のまま保ち、
-		* 向きの反転やページのアップロードはそれを前提に読む。
-		*/
-		auto buildMeshletsFromIndices = [&](const Uint32* indices, Size indexCount) -> void
-			{
-				Meshlet meshlet(std::span<const Uint32>(indices, indexCount));
-				std::span<const MeshletDesc> meshlets = meshlet.Meshlets();
-
-				Uint32 vertexBase = static_cast<Uint32>(crister.vertexIndices_.size());
-				Uint32 triangleBase = static_cast<Uint32>(crister.primitiveIndices_.size());
-				for (const MeshletDesc& source : meshlets)
-				{
-					MeshletDesc& destination = crister.meshlets_.emplace_back(source);
-					destination.vertexOffset_ += vertexBase;
-					destination.triangleOffset_ += triangleBase;
-				}
-
-				std::span<const Uint32> vertexIndices = meshlet.VertexIndices();
-				crister.vertexIndices_.insert(crister.vertexIndices_.end(), vertexIndices.begin(), vertexIndices.end());
-
-				/// [EN] Leave out the padding Meshlet adds after the last triangle.
-				/// [JP] Meshlet が最後の三角形の後ろに足す詰め物は写さない。
-				Size usedByteCount = meshlets.empty() ? 0 : static_cast<Size>(meshlets.back().triangleOffset_) + static_cast<Size>(meshlets.back().triangleCount_) * 3;
-				std::span<const Uint8> primitiveIndices = meshlet.PrimitiveIndices().first(usedByteCount);
-				crister.primitiveIndices_.insert(crister.primitiveIndices_.end(), primitiveIndices.begin(), primitiveIndices.end());
-			};
-
-		/**
-		* [EN]
-		* Computes the bounding sphere and normal cone for a range of meshlets.
-		*
-		* Bounding sphere:
-		*   - Center = average of all vertex positions in the meshlet.
-		*   - Radius = max distance from center to any vertex.
-		*   Used by the AS for frustum culling (reject meshlets entirely
-		*   outside the camera frustum).
-		*
-		* Normal cone:
-		*   - coneAxis = average of all face normals in the meshlet.
-		*   - coneCutoff = minimum dot product between any face normal and
-		*     the cone axis. If coneCutoff > 0, all faces point roughly
-		*     the same direction, and the AS can do backface culling:
-		*     the entire meshlet faces away from the camera when
-		*     dot(center - camera, coneAxis) >= sqrt(1 - coneCutoff^2) *
-		*     length(center - camera) + radius (coneCutoff is the cosine of
-		*     the cone's half-angle, the test needs its sine).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* メシュレット範囲に対して包囲球と法線コーンを計算する。
-		*
-		* 包囲球:
-		*   - 中心 = メシュレット内の全頂点位置の平均。
-		*   - 半径 = 中心からいずれかの頂点までの最大距離。
-		*   AS がフラスタムカリングに使用する（カメラフラスタムの完全に
-		*   外にあるメシュレットを棄却）。
-		*
-		* 法線コーン:
-		*   - coneAxis = メシュレット内の全面法線の平均。
-		*   - coneCutoff = いずれかの面法線とコーン軸の最小内積。
-		*     coneCutoff > 0 なら全面がほぼ同じ方向を向いており、
-		*     AS がバックフェイスカリングを行える:
-		*     dot(center - camera, coneAxis) >= sqrt(1 - coneCutoff^2) *
-		*     length(center - camera) + radius ならメシュレット全体が
-		*     カメラに背を向けている(coneCutoff はコーン半角の cos で、
-		*     判定にはその sin を使う)。
-		*/
-		auto computeBounds = [&](Uint32 meshletBegin, Uint32 meshletEnd)
-			{
-				for (Uint32 meshletIndex = meshletBegin; meshletIndex < meshletEnd; meshletIndex++)
-				{
-					const MeshletDesc& meshlet = crister.meshlets_[meshletIndex];
-					MeshletBound& bound = crister.meshletBounds_.emplace_back();
-
-					/// [EN] Step 1: Compute bounding sphere.
-					/// [JP] ステップ 1: 包囲球を計算する。
-
-					/// [EN] Compute the centroid (average position) of all vertices in this meshlet.
-					/// [JP] このメシュレットの全頂点の重心（平均位置）を計算する。
-					Vector3 center = Vector3::Zero;
-					for (Uint32 index = 0; index < meshlet.vertexCount_; index++)
-					{
-						Uint32 vertexIndex = crister.vertexIndices_[meshlet.vertexOffset_ + index];
-						center += crister.vertices_[vertexIndex].position_;
-					}
-					center /= static_cast<Float>(meshlet.vertexCount_);
-
-					/// [EN] Find the maximum squared distance from any vertex to the centroid.
-					/// [JP] いずれかの頂点から重心までの最大二乗距離を求める。
-					Float maxDistance2 = 0;
-					for (Uint32 index = 0; index < meshlet.vertexCount_; index++)
-					{
-						Uint32 vertexIndex = crister.vertexIndices_[meshlet.vertexOffset_ + index];
-						Vector3 difference = crister.vertices_[vertexIndex].position_ - center;
-						Float distance2 = difference.Dot(difference);
-						if (distance2 > maxDistance2)
-						{
-							maxDistance2 = distance2;
-						}
-					}
-
-					bound.center_ = center;
-					bound.radius_ = std::sqrt(maxDistance2);
-
-					/// [EN] Step 2: Compute normal cone.
-					/// [JP] ステップ 2: 法線コーンを計算する。
-
-					/// [EN] Compute the average face normal across all triangles in the meshlet.
-					/// [JP] メシュレット内の全三角形にわたる平均面法線を計算する。
-					Vector3 avgNormal = Vector3::Zero;
-					Uint32 faceCount = 0;
-
-					for (Uint32 triangle = 0; triangle < meshlet.triangleCount_; triangle++)
-					{
-						Uint32 base = meshlet.triangleOffset_ + triangle * 3;
-
-						/// [EN] Resolve the 2-level indirection: primitiveIndices_ → vertexIndices_ → global vertex.
-						/// [JP] 2 段階の間接参照を解決: primitiveIndices_ → vertexIndices_ → グローバル頂点。
-						Uint32 gi0 = crister.vertexIndices_[meshlet.vertexOffset_ + crister.primitiveIndices_[base]];
-						Uint32 gi1 = crister.vertexIndices_[meshlet.vertexOffset_ + crister.primitiveIndices_[base + 1]];
-						Uint32 gi2 = crister.vertexIndices_[meshlet.vertexOffset_ + crister.primitiveIndices_[base + 2]];
-
-						Vector3 p0 = crister.vertices_[gi0].position_;
-						Vector3 p1 = crister.vertices_[gi1].position_;
-						Vector3 p2 = crister.vertices_[gi2].position_;
-
-						Vector3 e1 = p1 - p0;
-						Vector3 e2 = p2 - p0;
-						Vector3 n = e2.Cross(e1);
-						Float length = n.Length();
-						if (length < 1e-8f)
-						{
-							continue;
-						}
-						n /= length;
-
-						avgNormal += n;
-						faceCount++;
-					}
-
-					if (faceCount > 0)
-					{
-						Float length = avgNormal.Length();
-						if (length > 1e-8f)
-						{
-							avgNormal /= length;
-							bound.coneAxis_ = avgNormal;
-
-							/// [EN] Find the tightest cone that contains all face normals:
-							///      coneCutoff = min dot(faceNormal, avgNormal) over all faces.
-							///      If this is > 0, all faces are within a hemisphere centered on avgNormal.
-							/// [JP] 全面法線を包含する最小のコーンを求める:
-							///      coneCutoff = 全面について min dot(faceNormal, avgNormal)。
-							///      これが > 0 なら全面が avgNormal 中心の半球内にある。
-							Float minDot = 1.0f;
-							for (Uint32 triangle = 0; triangle < meshlet.triangleCount_; triangle++)
-							{
-								Uint32 base = meshlet.triangleOffset_ + triangle * 3;
-								Uint32 gi0 = crister.vertexIndices_[meshlet.vertexOffset_ + crister.primitiveIndices_[base]];
-								Uint32 gi1 = crister.vertexIndices_[meshlet.vertexOffset_ + crister.primitiveIndices_[base + 1]];
-								Uint32 gi2 = crister.vertexIndices_[meshlet.vertexOffset_ + crister.primitiveIndices_[base + 2]];
-
-								Vector3 p0 = crister.vertices_[gi0].position_;
-								Vector3 p1 = crister.vertices_[gi1].position_;
-								Vector3 p2 = crister.vertices_[gi2].position_;
-
-								Vector3 e1 = p1 - p0;
-								Vector3 e2 = p2 - p0;
-								Vector3 n = e2.Cross(e1);
-								Float length2 = n.Length();
-								if (length2 < 1e-8f)
-								{
-									continue;
-								}
-								n /= length2;
-
-								Float dot = n.Dot(avgNormal);
-								if (dot < minDot)
-								{
-									minDot = dot;
-								}
-							}
-							bound.coneCutoff_ = minDot;
-						}
-					}
-				}
-			};
-
-		/**
-		* [EN]
-		* Detects "boundary" vertices in a triangle mesh — vertices that
-		* touch an edge used by exactly one triangle (an open/unwelded
-		* edge). QuadricErrorMetrics::Simplify has no concept of boundaries
-		* on its own: without locking, it happily collapses boundary edges
-		* like any interior one, since a boundary vertex's quadric is only
-		* built from its (one-sided) adjacent triangle planes and has no
-		* term discouraging movement along the open edge. For a mesh made
-		* of many small, non-closed parts (e.g. separately-exported prop
-		* pieces that are meant to butt against each other, as opposed to
-		* a single watertight mesh), this lets QEM shrink/warp every part's
-		* silhouette at LOD1+ — the parts cave inward as their boundaries
-		* get pulled toward the interior, which reads as the whole model
-		* collapsing into flattened shards. Locking boundary vertices (see
-		* QuadricErrorMetrics::Simplify's `locked` parameter) keeps their
-		* position fixed — an edge with both endpoints on the boundary
-		* becomes uncollapsible, preserving the silhouette, while interior
-		* edges can still collapse onto a boundary vertex to reduce
-		* triangle count.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 三角形メッシュの「境界」頂点を検出する — ちょうど 1 つの三角形からしか
-		* 使われていないエッジ（開いた/溶接されていないエッジ）に接する頂点。
-		* QuadricErrorMetrics::Simplify はそれ自体では境界という概念を持たない:
-		* ロックしなければ、内部のエッジと同じように境界エッジも平気で崩壊させる。
-		* 境界頂点の Quadric は片側の隣接三角形平面からしか構築されず、開いた
-		* エッジに沿った移動を抑止する項が無いためである。多数の小さく閉じていない
-		* パーツ（単一のウォータータイトメッシュではなく、互いに突き合わさる想定で
-		* 別々にエクスポートされたプロップパーツなど）からなるメッシュでは、これにより
-		* LOD1 以降で各パーツのシルエットが縮小/歪曲する — 境界が内側に引っ張られて
-		* パーツが陥没し、モデル全体が潰れた破片の集まりに見える。境界頂点をロックする
-		* （QuadricErrorMetrics::Simplify の `locked` 引数を参照）ことで位置を固定でき、
-		* 両端点が境界にあるエッジは崩壊不可能になりシルエットが保たれる一方、内部の
-		* エッジは境界頂点へ向けて崩壊でき三角形数の削減は引き続き行える。
-		*/
-		/// [EN] Returns std::unique_ptr<Bool[]> rather than DynamicArray<Bool>
-		///      (= std::vector<bool>) on purpose: vector<bool> is bit-packed
-		///      and has no .data(), so it can't produce the raw `const Bool*`
-		///      QuadricErrorMetrics::Simplify's `locked` parameter needs.
-		/// [JP] DynamicArray<Bool>（= std::vector<bool>）ではなく
-		///      std::unique_ptr<Bool[]> を返すのは意図的: vector<bool> は
-		///      ビットパック実装で .data() を持たないため、
-		///      QuadricErrorMetrics::Simplify の `locked` 引数が要求する
-		///      生の `const Bool*` を作れない。
-		auto computeBoundaryLocks = [](const Uint32* indices, Size indexCount, Size vertexCount) -> std::unique_ptr<Bool[]>
-			{
-				std::unordered_map<Uint64, Uint32> edgeUseCount;
-				Size triangleCount = indexCount / 3;
-				for (Size triangleIndex = 0; triangleIndex < triangleCount; triangleIndex++)
-				{
-					Uint32 triangleVertices[3] = { indices[triangleIndex * 3], indices[triangleIndex * 3 + 1], indices[triangleIndex * 3 + 2] };
-					for (Int edgeIndex = 0; edgeIndex < 3; edgeIndex++)
-					{
-						Uint32 vertexA = triangleVertices[edgeIndex];
-						Uint32 vertexB = triangleVertices[(edgeIndex + 1) % 3];
-						if (vertexA > vertexB)
-						{
-							std::swap(vertexA, vertexB);
-						}
-						Uint64 key = (static_cast<Uint64>(vertexA) << 32) | vertexB;
-						edgeUseCount[key]++;
-					}
-				}
-
-				/// [EN] make_unique<Bool[]>(n) value-initialises every element to false.
-				/// [JP] make_unique<Bool[]>(n) は全要素を false に値初期化する。
-				std::unique_ptr<Bool[]> locked = std::make_unique<Bool[]>(vertexCount);
-				for (const auto& [key, count] : edgeUseCount)
-				{
-					if (count == 1)
-					{
-						locked[static_cast<Uint32>(key >> 32)] = true;
-						locked[static_cast<Uint32>(key & 0xFFFFFFFF)] = true;
-					}
-				}
-				return locked;
-			};
-
-		/// [EN] Process each SubMesh independently: generate LOD 0, then
-		///      repeatedly simplify with QEM to build LOD 1, 2, ... up to
-		///      maxLodLevels. Each LOD gets its own set of meshlets (a Cluster).
-		/// [JP] 各 SubMesh を独立に処理: LOD 0 を生成した後、QEM で繰り返し
-		///      簡略化して LOD 1, 2, ... を maxLodLevels まで構築する。
-		///      各 LOD は独自のメシュレットセット（Cluster）を持つ。
-		for (SubMesh& sub : crister.subMeshes_)
-		{
-			sub.clusterOffset_ = static_cast<Uint32>(crister.clusters_.size());
-
-			/// [EN] Extract this SubMesh's index slice from the original (pre-meshlet) indices.
-			/// [JP] 元の（メシュレット化前の）インデックスからこの SubMesh のインデックススライスを抽出する。
-			DynamicArray<Uint32> currentIndices(originalIndices.begin() + sub.indexOffset_, originalIndices.begin() + sub.indexOffset_ + sub.indexCount_);
-
-			/// [EN] Texel density for texture streaming (SubMesh::texcoordDensity_):
-			///      sqrt(sum UV area / sum world area) over the full-detail
-			///      triangles, i.e. UV units per mesh-local world unit. Area-
-			///      weighted, so a few stretched/degenerate triangles don't skew it.
-			/// [JP] テクスチャストリーミング用のテクセル密度(SubMesh::texcoordDensity_):
-			///      フル詳細の三角形全体での sqrt(UV 面積合計 / ワールド面積合計)、
-			///      すなわちメッシュローカル 1 ワールド単位あたりの UV 量。面積で
-			///      重み付けするため、少数の引き伸ばされた/縮退した三角形に引きずられない。
-			{
-				Double worldAreaSum = 0.0;
-				Double texcoordAreaSum = 0.0;
-				for (Size corner = 0; corner + 2 < currentIndices.size(); corner += 3)
-				{
-					const Vertex& vertex0 = crister.vertices_[currentIndices[corner + 0]];
-					const Vertex& vertex1 = crister.vertices_[currentIndices[corner + 1]];
-					const Vertex& vertex2 = crister.vertices_[currentIndices[corner + 2]];
-
-					Vector3 edge1 = vertex1.position_ - vertex0.position_;
-					Vector3 edge2 = vertex2.position_ - vertex0.position_;
-					worldAreaSum += 0.5 * static_cast<Double>(edge1.Cross(edge2).Length());
-
-					Vector2 texcoordEdge1 = vertex1.texcoord_ - vertex0.texcoord_;
-					Vector2 texcoordEdge2 = vertex2.texcoord_ - vertex0.texcoord_;
-					texcoordAreaSum += 0.5 * std::abs(static_cast<Double>(texcoordEdge1.x) * texcoordEdge2.y - static_cast<Double>(texcoordEdge2.x) * texcoordEdge1.y);
-				}
-				sub.texcoordDensity_ = (worldAreaSum > 1e-12 && texcoordAreaSum > 1e-12) ? static_cast<Float>(std::sqrt(texcoordAreaSum / worldAreaSum)) : 0.0f;
-			}
-
-			/**
-			* [EN]
-			* Build a local ↔ global vertex index mapping for this SubMesh.
-			*
-			* The indices in currentIndices are GLOBAL (into crister.vertices_).
-			* QEM needs a DENSE local vertex array (0, 1, 2, ..., N-1), so we:
-			*   1. Collect all unique global indices → localToGlobal
-			*   2. Build the reverse map          → globalToLocal
-			*   3. Extract local positions from crister.vertices_
-			*   4. Remap the indices to local space
-			*
-			* After QEM simplifies, we map back to global to store the results.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* この SubMesh のローカル ↔ グローバル頂点インデックスマッピングを構築する。
-			*
-			* currentIndices 内のインデックスはグローバル（crister.vertices_ 内）。
-			* QEM には密なローカル頂点配列 (0, 1, 2, ..., N-1) が必要なので:
-			*   1. 全ユニークグローバルインデックスを収集 → localToGlobal
-			*   2. 逆マップを構築                      → globalToLocal
-			*   3. crister.vertices_ からローカル位置を抽出
-			*   4. インデックスをローカル空間にリマップ
-			*
-			* QEM での簡略化後、結果を格納するためにグローバルに戻す。
-			*/
-			std::set<Uint32> usedSet(currentIndices.begin(), currentIndices.end());
-			DynamicArray<Uint32> localToGlobal(usedSet.begin(), usedSet.end());
-			std::unordered_map<Uint32, Uint32> globalToLocal;
-			for (Uint32 index = 0; index < static_cast<Uint32>(localToGlobal.size()); index++)
-			{
-				globalToLocal[localToGlobal[index]] = index;
-			}
-
-			DynamicArray<Vector3> localPositions(localToGlobal.size());
-			for (Size index = 0; index < localToGlobal.size(); index++)
-			{
-				localPositions[index] = crister.vertices_[localToGlobal[index]].position_;
-			}
-
-			DynamicArray<Uint32> localIndices(currentIndices.size());
-			for (Size index = 0; index < currentIndices.size(); index++)
-			{
-				localIndices[index] = globalToLocal[currentIndices[index]];
-			}
-
-			/// [EN] LOD 0: Original detail. Build meshlets from unmodified indices.
-			/// [JP] LOD 0: オリジナル詳細度。未変更のインデックスからメシュレットを構築。
-			Uint32 meshletBegin = static_cast<Uint32>(crister.meshlets_.size());
-			buildMeshletsFromIndices(currentIndices.data(), currentIndices.size());
-			Uint32 meshletEnd = static_cast<Uint32>(crister.meshlets_.size());
-			computeBounds(meshletBegin, meshletEnd);
-
-			Cluster& lod0 = crister.clusters_.emplace_back();
-			lod0.meshletOffset_ = meshletBegin;
-			lod0.meshletCount_ = meshletEnd - meshletBegin;
-			lod0.lodLevel_ = 0;
-			lod0.lodError_ = 0.0f;
-
-			/// [EN] State carried forward across LOD levels for iterative simplification.
-			/// [JP] 反復的な簡略化のために LOD レベル間で持ち越す状態。
-			DynamicArray<Vector3> lodPositions = localPositions;
-			DynamicArray<Uint32> lodIndices = localIndices;
-
-			/// [EN] lodVertexMap[localIndex] = global vertex index. Initially maps to the
-			///      SubMesh's own vertices; updated each LOD as QEM creates new vertices.
-			/// [JP] lodVertexMap[ローカルインデックス] = グローバル頂点インデックス。
-			///      初期値は SubMesh 自身の頂点へのマップ。QEM が新頂点を作るたびに更新。
-			DynamicArray<Uint32> lodVertexMap(localToGlobal.size());
-			for (Uint32 index = 0; index < static_cast<Uint32>(localToGlobal.size()); index++)
-			{
-				lodVertexMap[index] = localToGlobal[index];
-			}
-
-			/// [EN] Cumulative error from LOD 0 to the current LOD. The AS uses this to decide
-			///      whether this LOD is acceptable for the current screen-space pixel budget.
-			///      It must be monotonically increasing so that LOD N+1 >= LOD N.
-			/// [JP] LOD 0 から現在の LOD までの累積誤差。AS はこれを使って、この LOD が
-			///      現在の画面空間ピクセル予算に対して許容可能かを判断する。
-			///      LOD N+1 >= LOD N となるよう単調増加でなければならない。
-			Float accumulatedError = 0.0f;
-
-			/// [EN] LOD 1..N: Iteratively simplify with QEM.
-			/// [JP] LOD 1..N: QEM で反復的に簡略化する。
-			for (Uint32 lod = 1; lod < maxLodLevels; lod++)
-			{
-				Size currentTriangleCount = lodIndices.size() / 3;
-
-				/// [EN] Target is 50% of the current triangle count. Stop if too few remain.
-				/// [JP] 目標は現在の三角形数の 50%。残りが少なすぎたら停止。
-				Size targetTriangleCount = currentTriangleCount / 2;
-				if (targetTriangleCount < 4)
-				{
-					break;
-				}
-
-				/// [EN] Run QEM simplification on the current LOD's local mesh.
-				///      Boundary vertices are recomputed every level (topology
-				///      changes as edges collapse) and locked so open edges
-				///      can't be pulled inward — see computeBoundaryLocks above.
-				/// [JP] 現在の LOD のローカルメッシュに対して QEM 簡略化を実行する。
-				///      境界頂点はレベルごとに再計算し（エッジ崩壊でトポロジーが
-				///      変わるため）、開いたエッジが内側に引っ張られないようロックする
-				///      — 上記 computeBoundaryLocks 参照。
-				std::unique_ptr<Bool[]> boundaryLocks = computeBoundaryLocks(lodIndices.data(), lodIndices.size(), lodPositions.size());
-				QuadricErrorMetrics qem;
-				auto result = qem.Simplify(lodPositions.data(), lodPositions.size(), lodIndices.data(), lodIndices.size(), targetTriangleCount, boundaryLocks.get());
-
-				/// [EN] If QEM couldn't reduce the mesh at all (e.g. all edges locked), stop.
-				/// [JP] QEM がメッシュをまったく削減できなかった場合（全エッジがロックなど）、停止。
-				if (result.indices.size() / 3 >= currentTriangleCount)
-				{
-					break;
-				}
-
-				/**
-				* [EN]
-				* Create new vertices for this LOD in crister.vertices_.
-				*
-				* QEM may have moved vertex positions to optimal locations, so we
-				* can't reuse the original vertices. For each surviving vertex:
-				*   1. Look up which original vertex it descended from (vertexMap).
-				*   2. Copy that original vertex's attributes (normal, texcoord, etc.).
-				*   3. Override the position with QEM's optimised position.
-				*   4. Append as a new vertex at the end of crister.vertices_.
-				*
-				* This means each LOD level adds its own vertex copies. This is
-				* intentional — the Mesh Shader will access the correct LOD's
-				* vertices via the meshlet's vertexOffset_.
-				*
-				* ---------------------------------------------------------------------
-				*
-				* [JP]
-				* この LOD の新しい頂点を crister.vertices_ に作成する。
-				*
-				* QEM は頂点位置を最適な場所に移動した可能性があるため、元の頂点は
-				* 再利用できない。生き残った各頂点について:
-				*   1. 元のどの頂点から派生したかを参照する (vertexMap)。
-				*   2. その元の頂点の属性（法線、テクスチャ座標など）をコピーする。
-				*   3. 位置を QEM の最適化された位置で上書きする。
-				*   4. crister.vertices_ の末尾に新しい頂点として追加する。
-				*
-				* つまり各 LOD レベルが独自の頂点コピーを追加する。これは意図的で、
-				* Mesh Shader がメシュレットの vertexOffset_ を通じて正しい LOD の
-				* 頂点にアクセスする。
-				*/
-				Uint32 newVertexBase = static_cast<Uint32>(crister.vertices_.size());
-				crister.vertices_.resize(newVertexBase + result.positions.size());
-				crister.vertexMorphSource_.resize(newVertexBase + result.positions.size());
-
-				DynamicArray<Uint32> newLodVertexMap(result.vertexMap.size());
-				for (Size index = 0; index < result.positions.size(); index++)
-				{
-					Uint32 originalLocal = result.vertexMap[index];
-					Uint32 globalIndex = lodVertexMap[originalLocal];
-
-					/// [EN] Copy all attributes from the original vertex, then replace position.
-					/// [JP] 元の頂点から全属性をコピーし、位置だけ置き換える。
-					Vertex vertex = crister.vertices_[globalIndex];
-					vertex.position_ = result.positions[index];
-					crister.vertices_[newVertexBase + index] = vertex;
-
-					/// [EN] Propagate forward rather than pointing at
-					///      globalIndex directly - globalIndex may itself be
-					///      a previous LOD's duplicated vertex, and
-					///      vertexMorphSource_[globalIndex] already resolves
-					///      to the TRUE original ancestor in that case (see
-					///      vertexMorphSource_'s comment).
-					/// [JP] globalIndex を直接指すのではなく前方へ伝播する —
-					///      globalIndex 自体が前の LOD の複製頂点である
-					///      場合があり、その場合 vertexMorphSource_
-					///      [globalIndex] は既に真のオリジナル祖先へ解決
-					///      済み(vertexMorphSource_ のコメント参照)。
-					crister.vertexMorphSource_[newVertexBase + index] = crister.vertexMorphSource_[globalIndex];
-					newLodVertexMap[index] = newVertexBase + static_cast<Uint32>(index);
-				}
-
-				/// [EN] Remap QEM's local indices to global indices (into crister.vertices_).
-				/// [JP] QEM のローカルインデックスをグローバルインデックス（crister.vertices_ 内）にリマップする。
-				DynamicArray<Uint32> globalLodIndices(result.indices.size());
-				for (Size index = 0; index < result.indices.size(); index++)
-				{
-					globalLodIndices[index] = newVertexBase + result.indices[index];
-				}
-
-				/// [EN] Build meshlets for this LOD level and compute their bounds.
-				/// [JP] この LOD レベルのメシュレットを構築し、バウンドを計算する。
-				Uint32 lodMeshletBegin = static_cast<Uint32>(crister.meshlets_.size());
-				buildMeshletsFromIndices(globalLodIndices.data(), globalLodIndices.size());
-				Uint32 lodMeshletEnd = static_cast<Uint32>(crister.meshlets_.size());
-				computeBounds(lodMeshletBegin, lodMeshletEnd);
-
-				/**
-				* [EN]
-				* Compute this LOD level's geometric error and accumulate it.
-				*
-				* For each vertex that survived QEM, measure how far it moved
-				* from its pre-simplification position. The maximum displacement
-				* across all vertices is this level's error contribution.
-				*
-				* We ACCUMULATE (not replace) because LOD error must be monotonically
-				* increasing for the AS LOD selection to work correctly. If LOD 1
-				* introduced 0.5 units of error and LOD 2 introduces 0.3 more,
-				* the total error at LOD 2 is 0.8, not 0.3.
-				*
-				* ---------------------------------------------------------------------
-				*
-				* [JP]
-				* この LOD レベルの幾何学的誤差を計算し、累積する。
-				*
-				* QEM を生き残った各頂点について、簡略化前の位置からどれだけ移動したかを
-				* 測定する。全頂点にわたる最大変位がこのレベルの誤差寄与となる。
-				*
-				* AS の LOD 選択が正しく機能するには LOD 誤差が単調増加でなければ
-				* ならないため、置換ではなく累積する。LOD 1 で 0.5 単位の誤差が
-				* 導入され、LOD 2 でさらに 0.3 導入された場合、LOD 2 での
-				* 総誤差は 0.3 ではなく 0.8 である。
-				*/
-				Float maxLevelError = 0.0f;
-				for (Size index = 0; index < result.positions.size(); index++)
-				{
-					Uint32 originalLocal = result.vertexMap[index];
-					Vector3 difference = result.positions[index] - lodPositions[originalLocal];
-					Float error = difference.Length();
-					if (error > maxLevelError)
-					{
-						maxLevelError = error;
-					}
-				}
-				accumulatedError += maxLevelError;
-
-				/// [EN] Create a Cluster for this LOD level.
-				/// [JP] この LOD レベルの Cluster を作成する。
-				Cluster& lodCluster = crister.clusters_.emplace_back();
-				lodCluster.meshletOffset_ = lodMeshletBegin;
-				lodCluster.meshletCount_ = lodMeshletEnd - lodMeshletBegin;
-				lodCluster.lodLevel_ = lod;
-				lodCluster.lodError_ = accumulatedError;
-
-				/// [EN] Carry state forward for the next LOD iteration.
-				/// [JP] 次の LOD 反復のために状態を持ち越す。
-				lodPositions = std::move(result.positions);
-				lodIndices = std::move(result.indices);
-				lodVertexMap = std::move(newLodVertexMap);
-			}
-
-			sub.clusterCount_ = static_cast<Uint32>(crister.clusters_.size()) - sub.clusterOffset_;
-		}
-	}
-
-	/**
-	* [EN]
-	* Computes the global (world-space) transform for each node by walking
-	* the scene graph tree depth-first.
-	*
-	* Each node's local transform is S · R · T (scale × rotation × translation).
-	* The global transform is: localTransform × parentGlobalTransform.
-	*
-	* We use a stack to track the parent's global transform as we recurse
-	* into children, pushing before descent and popping after return.
-	*
-	* Starting nodes come from the default scene's root node list, each
-	* beginning with an identity parent transform.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* シーングラフツリーを深さ優先で走査し、各ノードのグローバル
-	* （ワールド空間）トランスフォームを計算する。
-	*
-	* 各ノードのローカルトランスフォームは S · R · T（スケール × 回転 × 平行移動）。
-	* グローバルトランスフォームは: localTransform × parentGlobalTransform。
-	*
-	* スタックを使って再帰時に親のグローバルトランスフォームを追跡し、
-	* 子に降りる前に push、戻った後に pop する。
-	*
-	* 開始ノードはデフォルトシーンのルートノードリストから取得し、
-	* それぞれ単位行列の親トランスフォームから始める。
-	*/
-	void ModelLoader::CumulateTransforms(Crister& crister)
-	{
-		std::stack<Matrix> parentGlobalTransforms;
-		std::function<void(Int)> traverse = [&](Int nodeIndex)
-			{
-				Node& node = crister.nodes_[nodeIndex];
-				Matrix scale = Matrix::CreateScale(node.scale_.x, node.scale_.y, node.scale_.z);
-				Matrix rotation = Matrix::CreateFromQuaternion(node.rotation_);
-				Matrix translation = Matrix::CreateTranslation(node.translation_.x, node.translation_.y, node.translation_.z);
-
-				/// [EN] Local transform = S · R · T, then multiplied by parent to get world-space.
-				/// [JP] ローカルトランスフォーム = S · R · T、親と掛けてワールド空間に変換。
-				Matrix localTransform = scale * rotation * translation;
-				node.globalTransform_ = localTransform * parentGlobalTransforms.top();
-
-				for (Int childIndex : node.children_)
-				{
-					parentGlobalTransforms.push(node.globalTransform_);
-					traverse(childIndex);
-					parentGlobalTransforms.pop();
-				}
-			};
-
-		for (Int nodeIndex : crister.stages_[crister.defaultStage_].nodes_)
-		{
-			parentGlobalTransforms.push(Matrix::Identity);
-			traverse(nodeIndex);
-			parentGlobalTransforms.pop();
-		}
-	}
-
-	void ModelLoader::ConvertAxisConvention(Crister& crister, const AxisConvention& axisConvention)
-	{
-		ResolvedAxisConvention resolved = ResolvedAxisConvention::Resolve(axisConvention);
-		if (!resolved.valid_)
-		{
-			resolved = ResolvedAxisConvention::Resolve(AxisConvention{});
-		}
-
-		for (Node& node : crister.nodes_)
-		{
-			ConvertRotationByBasis(node.rotation_, resolved.basis_);
-			ConvertPositionByBasis(node.translation_, resolved.basis_);
-		}
-		CumulateTransforms(crister);
-
-		Float tangentSign = resolved.isMirror_ ? -1.0f : 1.0f;
-		for (Vertex& vertex : crister.vertices_)
-		{
-			ConvertPositionByBasis(vertex.position_, resolved.basis_);
-			ConvertPositionByBasis(vertex.normal_, resolved.basis_);
-			ConvertPositionByBasis(vertex.tangent_, resolved.basis_);
-			vertex.tangent_.w *= tangentSign;
-		}
-
-		for (Skin& skin : crister.skins_)
-		{
-			for (Matrix& inverseBindMatrix : skin.inverseBindMatrices_)
-			{
-				ConvertMatrixByBasis(inverseBindMatrix, resolved.basis_);
-			}
-		}
-
-		if (resolved.flipWinding_)
-		{
-			FlipTriangleWinding(crister);
 		}
 	}
 
@@ -2639,7 +1934,7 @@ namespace SeedCore
 		{
 			const tinygltf::Model& model = *source.gltf_.model_;
 
-			for (const Node& node : crister.nodes_)
+			for (const Node& node : crister.scene_.nodes_)
 			{
 				if (node.light_ < 0 || node.light_ >= static_cast<Int>(model.lights.size()))
 				{
@@ -2702,7 +1997,7 @@ namespace SeedCore
 					light.outerConeAngle_ = static_cast<Float>(gltfLight.spot.outerConeAngle);
 				}
 
-				crister.lights_.push_back(light);
+				crister.scene_.lights_.push_back(light);
 			}
 			break;
 		}
@@ -2724,7 +2019,7 @@ namespace SeedCore
 				PunctualLight light{};
 				light.type_ = (lightType == FbxLight::eSpot) ? PunctualLight::Type::Spot : PunctualLight::Type::Point;
 
-				const Matrix& worldTransform = crister.nodes_[nodeIndex].globalTransform_;
+				const Matrix& worldTransform = crister.scene_.nodes_[nodeIndex].globalTransform_;
 				light.position_ = worldTransform.Translation();
 
 				Vector3 worldForward(worldTransform._31, worldTransform._32, worldTransform._33);
@@ -2749,110 +2044,11 @@ namespace SeedCore
 					light.outerConeAngle_ = static_cast<Float>(fbxLight->OuterAngle.Get()) * 0.5f * degreesToRadians;
 				}
 
-				crister.lights_.push_back(light);
+				crister.scene_.lights_.push_back(light);
 			}
 			break;
 		}
 		}
 	}
 
-	/**
-	* [EN]
-	* Transforms a position/direction Vector3 by a change-of-basis matrix.
-	* Generalizes the old fixed X-negation to an arbitrary signed-permutation basis.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 位置/方向を表す Vector3 を基底変換行列で変換する。
-	* 旧来の固定X反転を、任意の符号付き置換基底へ一般化したもの。
-	*/
-	void ModelLoader::ConvertPositionByBasis(Vector3& vector, const Matrix& basis)
-	{
-		vector = Vector3::Transform(vector, basis);
-	}
-
-	/**
-	* [EN]
-	* Transforms the .xyz of a Vector4 (e.g. tangent) by basis. .w
-	* (handedness sign) is intentionally left untouched here - the caller
-	* is responsible for flipping it when the basis is a mirror.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Vector4（タンジェント等）の .xyz を basis で変換する。.w（利き手符号）
-	* はここでは意図的に触らない — 基底がミラーの場合の符号反転は
-	* 呼び出し側の責任とする。
-	*/
-	void ModelLoader::ConvertPositionByBasis(Vector4& vector, const Matrix& basis)
-	{
-		Vector3 xyz = Vector3::Transform(Vector3(vector.x, vector.y, vector.z), basis);
-		vector.x = xyz.x;
-		vector.y = xyz.y;
-		vector.z = xyz.z;
-	}
-
-	/**
-	* [EN]
-	* Conjugates a rotation quaternion by an orthogonal change-of-basis:
-	* R' = basis^T * R * basis. Generalizes the old fixed "negate y/z"
-	* hack, which was this same conjugation specialized to basis = diag(-1,1,1).
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 回転クォータニオンを直交基底変換で共役変換する: R' = basis^T * R * basis。
-	* 旧来の固定「y,z符号反転」は、この共役変換を basis = diag(-1,1,1) に
-	* 特殊化したものに等しい。
-	*/
-	void ModelLoader::ConvertRotationByBasis(Quaternion& quaternion, const Matrix& basis)
-	{
-		Matrix rotation = Matrix::CreateFromQuaternion(quaternion);
-		Matrix converted = basis.Transpose() * rotation * basis;
-		quaternion = Quaternion::CreateFromRotationMatrix(converted);
-	}
-
-	/**
-	* [EN]
-	* Conjugates a full 4x4 transform (e.g. an inverse bind matrix) by
-	* basis: matrix' = basis^T * matrix * basis. Since basis's own
-	* translation row is identity, this correctly transforms both the
-	* linear part and the translation in one step.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 4x4変換（逆バインド行列等）を basis で共役変換する:
-	* matrix' = basis^T * matrix * basis。basis 自身の平行移動行は単位
-	* なので、線形部分と平行移動を1回で正しく変換できる。
-	*/
-	void ModelLoader::ConvertMatrixByBasis(Matrix& matrix, const Matrix& basis)
-	{
-		matrix = basis.Transpose() * matrix * basis;
-	}
-
-	/**
-	* [EN]
-	* Reverses triangle winding by swapping the last two corners of every
-	* triangle in crister.vertexIndices_ (the flat, pre-meshlet global
-	* index list populated by FetchMeshes). Only invoked when the
-	* resolved axis conversion explicitly requires a winding flip.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* crister.vertexIndices_（FetchMeshes が生成する、メシュレット化前の
-	* フラットなグローバルインデックス列）の全三角形について後ろ2頂点を
-	* 入れ替え、巻き順を反転する。解決済みの軸変換が巻き順反転を
-	* 明示的に要求する時のみ呼ばれる。
-	*/
-	void ModelLoader::FlipTriangleWinding(Crister& crister)
-	{
-		Size triangleCount = crister.vertexIndices_.size() / 3;
-		for (Size triangleIndex = 0; triangleIndex < triangleCount; ++triangleIndex)
-		{
-			std::swap(crister.vertexIndices_[triangleIndex * 3 + 1], crister.vertexIndices_[triangleIndex * 3 + 2]);
-		}
-	}
 }

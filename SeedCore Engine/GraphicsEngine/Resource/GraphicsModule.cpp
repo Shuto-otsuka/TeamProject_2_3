@@ -4,7 +4,7 @@
 
 namespace SeedCore
 {
-	GraphicsModule::GraphicsModule(BindlessHeap& heap) :resources_(loaders_, heap)
+	GraphicsModule::GraphicsModule(D3D12Context& context, BindlessHeap& heap, BC7CompressShader& bc7Shader) :resources_(loaders_, context, heap, bc7Shader)
 	{
 		/// No Code
 	}

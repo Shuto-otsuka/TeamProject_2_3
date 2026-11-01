@@ -4,12 +4,12 @@
 
 namespace SeedCore
 {
-	DiagnosticsPanel::DiagnosticsPanel(EditorContext& context, ImGuiTexture& imguiTexture) : context_(context), consolePanel_(imguiTexture), profilerPanel_(context)
+	DiagnosticsPanel::DiagnosticsPanel(EditorContext& context, ImGuiTexture& imguiTexture) : context_(context), consolePanel_(imguiTexture), benchmarkPanel_(context)
 	{
 		/// No Code
 	}
 
-	void DiagnosticsPanel::Draw(const GpuProfiler& gpuProfiler)
+	void DiagnosticsPanel::Draw(const GpuProfiler& gpuProfiler, BenchmarkSystem& benchmark)
 	{
 		ImGuiID dockspaceID = context_.graphics_.imgui_->DockSpaceID();
 		ImGui::SetNextWindowDockID(dockspaceID, ImGuiCond_FirstUseEver);
@@ -19,8 +19,6 @@ namespace SeedCore
 			if (ImGui::BeginTabBar("##DiagnosticsTabs"))
 			{
 				ImGuiTabItemFlags consoleFlags = (requestChange_ && currentTab_ == DiagnosticsTab::Console) ? ImGuiTabItemFlags_SetSelected : 0;
-				ImGuiTabItemFlags profilerFlags = (requestChange_ && currentTab_ == DiagnosticsTab::Profiler) ? ImGuiTabItemFlags_SetSelected : 0;
-
 				if (ImGui::BeginTabItem("コンソール###ConsoleTabID", nullptr, consoleFlags))
 				{
 					requestChange_ = false;
@@ -28,17 +26,12 @@ namespace SeedCore
 					ImGui::EndTabItem();
 				}
 
-				if (ImGui::BeginTabItem("プロファイラー###ProfilerTabID", nullptr, profilerFlags))
-				{
-					requestChange_ = false;
-					profilerPanel_.Draw(gpuProfiler);
-					ImGui::EndTabItem();
-				}
-
 				ImGui::EndTabBar();
 			}
 		}
 		ImGui::End();
+
+		benchmarkPanel_.Draw(gpuProfiler, benchmark);
 	}
 
 	void DiagnosticsPanel::ShowConsoleTab()
@@ -49,7 +42,6 @@ namespace SeedCore
 
 	void DiagnosticsPanel::ShowProfilerTab()
 	{
-		requestChange_ = true;
-		currentTab_ = DiagnosticsTab::Profiler;
+		benchmarkPanel_.Open();
 	}
 }

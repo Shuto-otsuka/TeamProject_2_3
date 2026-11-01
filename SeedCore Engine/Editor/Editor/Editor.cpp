@@ -25,6 +25,7 @@
 #include <Editor/Editor/Panel/TodoListPanel.h>
 #include <Editor/Editor/Panel/VersionPanel.h>
 
+#include <FoundationEngine/Benchmark/Benchmark.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/Resource/ResourceSync.h>
 #include <FoundationEngine/Resource/Blueprint/BlueprintNode.h>
@@ -392,19 +393,27 @@ namespace SeedCore
 			context_.graphics_.graphics_->FrameGeneration(context_.config_.game_->useFrameGeneration_);
 		}
 
+		Benchmark::Begin("ImGuiNewFrame");
 		context_.graphics_.imgui_->NewFrame();
 		ImGuizmo::BeginFrame();
+		Benchmark::End("ImGuiNewFrame");
+
+		Benchmark::Begin("Camera");
 		worldTimer_.Tick(deltaTime);
 		context_.view_.editor_.camera_->Tick(deltaTime);
 		context_.view_.canvas_.camera_->Resize(ScResolution::SC_CANVAS.Width, ScResolution::SC_CANVAS.Height);
 		context_.view_.canvas_.camera_->Tick(deltaTime);
 		context_.preview_.Tick(deltaTime);
+		Benchmark::End("Camera");
 
 		/// [EN] Sync first collects what the library changed, the cache then takes it in, and finally any asset the world refers to but lacks is fetched.
 		/// [JP] まず同期がライブラリの変化を集め、次にキャッシュがそれを取り込み、最後にワールドが参照しているのに手元に無いアセットを取りに行く。
+		Benchmark::Begin("ResourceSync");
 		resourceSync_.Update();
 		ProcessResources();
 		resourceSync_.FetchReferenced(*context_.world_.world_);
+		Benchmark::End("ResourceSync");
+
 		PruneSelection();
 	}
 
@@ -441,12 +450,23 @@ namespace SeedCore
 		graphics.Upscale(context_.config_.game_->useDlss_, context_.config_.game_->upscaleMode_);
 		graphics.VerticalSync(context_.config_.game_->vsync_);
 		graphics.ShapeVisible(context_.view_.editor_.shapeVisible_);
-		graphics.EditorRender(worldTimer_, *context_.view_.editor_.camera_, world, context_.view_.editor_.viewMode_, selectedEntities);
-		graphics.GameRender(gameTimer, *context_.view_.game_.cameraSystem_, world);
-		graphics.CanvasRender(worldTimer_, *context_.view_.canvas_.camera_, world);
+		FocusedView focused = context_.view_.focused_;
+		if (focused == FocusedView::Editor)
+		{
+			graphics.EditorRender(worldTimer_, *context_.view_.editor_.camera_, world, context_.view_.editor_.viewMode_, selectedEntities);
+		}
+		if (focused == FocusedView::Game || gameTimer.Playing())
+		{
+			graphics.GameRender(gameTimer, *context_.view_.game_.cameraSystem_, world);
+		}
+		if (focused == FocusedView::Canvas)
+		{
+			graphics.CanvasRender(worldTimer_, *context_.view_.canvas_.camera_, world);
+		}
 
 		/// [EN] Each preview is rendered only while its panel is open.
 		/// [JP] 各プレビューは、そのパネルが開いている間だけ描画する。
+		Benchmark::Begin("Preview");
 		const PreviewContext& preview = context_.preview_;
 		if (preview.timeline_.active_)
 		{
@@ -473,7 +493,11 @@ namespace SeedCore
 		{
 			preview.bootScreen_.renderer_->Render(graphics.GetContext().GetDirectList(), *preview.bootScreen_.config_, preview.bootScreen_.progress_, worldTimer_.TotalTime());
 		}
+		Benchmark::End("Preview");
 
+		/// [EN] Panels covers building every ImGui window and recording ImGui's draw commands.
+		/// [JP] Panels は全 ImGui ウィンドウの構築と、ImGui の描画コマンドの記録を含む。
+		Benchmark::Begin("Panels");
 		graphics.Bind();
 
 		/// [EN] The previews just rendered are handed to their panels to show as images.
@@ -485,39 +509,83 @@ namespace SeedCore
 
 		/// [EN] The menu bar runs before ProcessPanels so a panel it asks for opens in this same frame.
 		/// [JP] メニューバーを ProcessPanels より先に描き、そこで求めたパネルが同じフレームで開くようにする。
+		Benchmark::Begin("MenuBarPanel");
 		panels_.Get<MenuBarPanel>().Draw();
+		Benchmark::End("MenuBarPanel");
 		ProcessPanels();
 
 		/// [EN] The dock space starts below the toolbar, so the toolbar's height is needed first.
 		/// [JP] ドックスペースはツールバーの下から始まるので、先にツールバーの高さが要る。
+		Benchmark::Begin("ControlPanel");
 		Float toolbarHeight = panels_.Get<ControlPanel>().Draw();
+		Benchmark::End("ControlPanel");
 
 		imgui.DockSpaceBegin(toolbarHeight);
+		Benchmark::Begin("AnimatorControllerPanel");
 		panels_.Get<AnimatorControllerPanel>().Draw();
+		Benchmark::End("AnimatorControllerPanel");
+		Benchmark::Begin("TimelinePanel");
 		panels_.Get<TimelinePanel>().Draw();
+		Benchmark::End("TimelinePanel");
+		Benchmark::Begin("SkeletonControllerPanel");
 		panels_.Get<SkeletonControllerPanel>().Draw();
+		Benchmark::End("SkeletonControllerPanel");
+		Benchmark::Begin("MaterialViewerPanel");
 		panels_.Get<MaterialViewerPanel>().Draw();
+		Benchmark::End("MaterialViewerPanel");
+		Benchmark::Begin("ModelTransformPanel");
 		panels_.Get<ModelTransformPanel>().Draw();
+		Benchmark::End("ModelTransformPanel");
+		Benchmark::Begin("AvatarPanel");
 		panels_.Get<AvatarPanel>().Draw();
+		Benchmark::End("AvatarPanel");
+		Benchmark::Begin("BootScreenPanel");
 		panels_.Get<BootScreenPanel>().Draw();
+		Benchmark::End("BootScreenPanel");
+		Benchmark::Begin("GameWindowPanel");
 		panels_.Get<GameWindowPanel>().Draw(graphics.GameDisplayGPUHandle(), toolbarHeight);
+		Benchmark::End("GameWindowPanel");
+		Benchmark::Begin("ShortCutKeyPanel");
 		panels_.Get<ShortCutKeyPanel>().Draw();
+		Benchmark::End("ShortCutKeyPanel");
+		Benchmark::Begin("SpecMemoPanel");
 		panels_.Get<SpecMemoPanel>().Draw();
+		Benchmark::End("SpecMemoPanel");
+		Benchmark::Begin("TodoListPanel");
 		panels_.Get<TodoListPanel>().Draw();
+		Benchmark::End("TodoListPanel");
+		Benchmark::Begin("VersionPanel");
 		panels_.Get<VersionPanel>().Draw();
+		Benchmark::End("VersionPanel");
+		Benchmark::Begin("ConfigPanel");
 		panels_.Get<ConfigPanel>().Draw();
+		Benchmark::End("ConfigPanel");
+		Benchmark::Begin("LayerSettingsPanel");
 		panels_.Get<LayerSettingsPanel>().Draw();
+		Benchmark::End("LayerSettingsPanel");
 
 		/// [EN] A fullscreen game window hides the scene-editing panels behind it.
 		/// [JP] ゲームウィンドウが全画面なら、その裏のシーン編集用パネルは描かない。
 		if (!panels_.Get<GameWindowPanel>().Fullscreen())
 		{
+			Benchmark::Begin("HierarchyPanel");
 			panels_.Get<HierarchyPanel>().Draw();
+			Benchmark::End("HierarchyPanel");
+			Benchmark::Begin("InspectorPanel");
 			panels_.Get<InspectorPanel>().Draw();
-			panels_.Get<DiagnosticsPanel>().Draw(graphics.GetGpuProfiler());
+			Benchmark::End("InspectorPanel");
+			Benchmark::Begin("DiagnosticsPanel");
+			panels_.Get<DiagnosticsPanel>().Draw(graphics.GetGpuProfiler(), *context_.application_.benchmark_);
+			Benchmark::End("DiagnosticsPanel");
+			Benchmark::Begin("EditorWindowPanel");
 			panels_.Get<EditorWindowPanel>().Draw(graphics.EditorDisplayGPUHandle());
+			Benchmark::End("EditorWindowPanel");
+			Benchmark::Begin("CanvasViewPanel");
 			panels_.Get<CanvasViewPanel>().Draw(graphics.CanvasDisplayGPUHandle());
+			Benchmark::End("CanvasViewPanel");
+			Benchmark::Begin("ContentsDrawerPanel");
 			panels_.Get<ContentsDrawerPanel>().Draw();
+			Benchmark::End("ContentsDrawerPanel");
 		}
 		imgui.DockSpaceEnd();
 
@@ -540,7 +608,10 @@ namespace SeedCore
 			}
 		}
 
+		Benchmark::Begin("ImGuiRender");
 		imgui.Render(graphics.GetContext().GetDirectList()->Get());
+		Benchmark::End("ImGuiRender");
+		Benchmark::End("Panels");
 	}
 
 	/**
@@ -671,7 +742,6 @@ namespace SeedCore
 	void Editor::Impl::ProcessResources()
 	{
 		ResourceCache& resource = *context_.world_.resource_;
-		D3D12Context& d3d12 = context_.graphics_.graphics_->GetContext();
 
 		/// [EN] The sync is told which scene is open, so changes other members make to it come down while it is being edited.
 		/// [JP] どの Scene が開いているかを同期に伝え、編集中の Scene に他のメンバーが加えた変更が降りてくるようにする。
@@ -699,7 +769,7 @@ namespace SeedCore
 			}
 			if (unknown)
 			{
-				resource.Reload(d3d12.GetDevice(), d3d12.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+				resource.Reload();
 			}
 
 			/// [EN] Once in the cache, each imported file is registered with the sync under its cache ID.
@@ -748,10 +818,10 @@ namespace SeedCore
 
 		/// [EN] The full reload picks up new files; each changed asset is then reloaded by ID so already-loaded ones are replaced too.
 		/// [JP] 全体の読み直しで新しいファイルを拾い、続けて変わったアセットを ID ごとに読み直して、読み込み済みのものも差し替える。
-		resource.Reload(d3d12.GetDevice(), d3d12.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+		resource.Reload();
 		for (Uint32 id : changed)
 		{
-			resource.Reload(id, d3d12.GetDevice(), d3d12.GetDirectQueue(), context_.graphics_.graphics_->GetBC7CompressShader());
+			resource.Reload(id);
 			ProcessScene(id);
 		}
 	}

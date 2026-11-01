@@ -12,7 +12,7 @@
 #include <GraphicsEngine/Light/SpotLight.h>
 #include <GraphicsEngine/Light/RectangleLight.h>
 #include <GraphicsEngine/Model/ModelResource.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/ECS/Component/Active.h>

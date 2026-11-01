@@ -148,6 +148,9 @@
     <ClCompile Include="Editor\Interaction\ActorEditing.cpp">
       <Filter>Editor\Interaction</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\Panel\BenchmarkPanel.cpp">
+      <Filter>Editor\Panel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Editor\ImGui\ImGuiCommon.h">
@@ -305,6 +308,9 @@
     </ClInclude>
     <ClInclude Include="Editor\Interaction\ActorEditing.h">
       <Filter>Editor\Interaction</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\BenchmarkPanel.h">
+      <Filter>Editor\Panel</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

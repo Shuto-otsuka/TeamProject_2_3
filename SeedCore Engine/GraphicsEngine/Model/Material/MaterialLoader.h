@@ -1,26 +1,28 @@
 #pragma once
 #include <FoundationEngine/Utility/Handle.h>
 #include <FoundationEngine/Pool/StablePool.h>
-#include <GraphicsEngine/Model/Crister.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
+#include <GraphicsEngine/Model/Material/BakedSurface.h>
 
 namespace SeedCore
 {
 	/**
 	* [EN]
 	* Loads and saves standalone ".material" assets - one serialized
-	* Surface per file (PBR factors + KHR_materials_* + shading model +
-	* alpha/double-sided + glTF texture-image indices). Mirrors
-	* MeshCollisionLoader: a pool of Surface, binary (de)serialization
+	* BakedSurface per file: the Surface (PBR factors + KHR_materials_* +
+	* shading model + alpha/double-sided + texture references) plus the
+	* textures baked into the file by MaterialBaker. Mirrors
+	* MeshCollisionLoader: a pool of BakedSurface, binary (de)serialization
 	* through BinaryArchive, no GPU work.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 単体 ".material" アセット（Surface 1 個 = PBR ファクタ +
-	* KHR_materials_* + シェーディングモデル + アルファ/両面 + glTF の
-	* テクスチャ image インデックス）の読み書きを行う。
-	* MeshCollisionLoader と同型: Surface のプール、BinaryArchive での
-	* バイナリ直列化、GPU 処理なし。
+	* 単体 ".material" アセットの読み書きを行う。1 ファイルに BakedSurface
+	* を 1 個持つ: Surface（PBR ファクタ + KHR_materials_* + シェーディング
+	* モデル + アルファ/両面 + テクスチャの参照）と、MaterialBaker が
+	* ファイルに焼き込んだテクスチャ。MeshCollisionLoader と同型:
+	* BakedSurface のプール、BinaryArchive でのバイナリ直列化、GPU 処理なし。
 	*/
 	class SEEDCORE_API MaterialLoader :public NonCopyable
 	{
@@ -28,26 +30,26 @@ namespace SeedCore
 		MaterialLoader() = default;
 		~MaterialLoader() = default;
 
-		Handle<Surface> Load(String filePath);
+		Handle<BakedSurface> Load(String filePath);
 
-		Surface* Get(const Handle<Surface>& handle);
+		BakedSurface* Get(const Handle<BakedSurface>& handle);
 
-		void Clear(Handle<Surface>& handle)noexcept;
+		void Clear(Handle<BakedSurface>& handle)noexcept;
 
 		/**
 		* [EN]
-		* Serializes surface to filePath as a ".material" binary file
+		* Serializes bakedSurface to filePath as a ".material" binary file
 		* (overwriting any existing one). Returns false when the write failed.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* surface を ".material" バイナリファイルとして filePath へ直列化
-		* する（既存があれば上書き）。書き込みに失敗した場合は false を返す。
+		* bakedSurface を ".material" バイナリファイルとして filePath へ
+		* 直列化する（既存があれば上書き）。書き込みに失敗した場合は false を返す。
 		*/
-		Bool Save(const Surface& surface, String filePath);
+		Bool Save(const BakedSurface& bakedSurface, String filePath);
 
 	private:
-		StablePool<Surface> pool_;
+		StablePool<BakedSurface> pool_;
 	};
 }
