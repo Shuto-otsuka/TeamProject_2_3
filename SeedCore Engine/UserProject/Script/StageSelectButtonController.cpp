@@ -8,6 +8,7 @@ void StageSelectButtonController::OnStart()
     myButton = GetActor().GetComponent<Button>();
     myImage = GetActor().GetComponent<SeedCore::Image>();
     scale = GetActor().GetComponent<SeedCore::Scale>();
+    audioSource = GetActor().GetComponent<SeedCore::AudioSource>();
 
     defaultColor = myImage->color_;
     targetColor = defaultColor;
@@ -59,7 +60,7 @@ void StageSelectButtonController::OnTick(float elapsedTime)
     scale->x_ = SeedCore::Lerp(scale->x_, targetSize, sizeChangeSpeed * elapsedTime);
     scale->y_ = SeedCore::Lerp(scale->y_, targetSize, sizeChangeSpeed * elapsedTime);
 
-    if (myButton->IsClick())
+    if (myButton->IsClick() && !isClicked)
     {
         //遷移待ちフラグをオンにする
         isClicked = true;
@@ -67,5 +68,9 @@ void StageSelectButtonController::OnTick(float elapsedTime)
         //ターゲットに向かうスピードを2倍にする
         colorChangeSpeed *= 2.0f;
         sizeChangeSpeed *= 2.0f;
+
+        //音再生
+        if(audioSource)
+            audioSource->Play();
     }
 }

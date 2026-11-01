@@ -102,7 +102,7 @@ void BombController::OnTick(float elapsedTime)
                 quaternion = SeedCore::Transform::Quat(*rotation) * quaternion;
 
                 //キネマティック剛体を動かす
-                myRigid->MoveTo(targetPosition, quaternion, elapsedTime);
+                myRigid->MoveTo(targetPosition, quaternion, 0.01f);
             }
         }
         

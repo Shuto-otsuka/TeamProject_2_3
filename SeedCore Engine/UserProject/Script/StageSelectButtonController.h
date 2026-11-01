@@ -30,6 +30,7 @@ public:
 private:
 	SeedCore::Image* myImage = nullptr;
 	SeedCore::Scale* scale = nullptr;
+	SeedCore::AudioSource* audioSource = nullptr;
 	Button* myButton = nullptr;
 
 	SeedCore::Color defaultColor;
