@@ -73,9 +73,10 @@ void PlayerController::OnTriggerEnter(SeedCore::Actor other)
 
         CheckPointAreaController* checkPointAreaController = other.GetComponent<CheckPointAreaController>();
 
-        if (checkPointAreaController->GetStep() > beforeCheckPointStep)
-        {
-            //前回踏んだチェックポイントより先のチェックポイントだったら更新
+        //if (checkPointAreaController->GetStep() > beforeCheckPointStep)
+        //{
+            //前回踏んだチェックポイントより先のチェックポイントだったら更新にしようと思ってたけど
+            //踏んだ時点でそのチェックポイントに更新
             SeedCore::Position* hitActorPosition = other.GetComponent<SeedCore::Position>();
             checkPointPosition = SeedCore::Vector3(hitActorPosition->x_, hitActorPosition->y_, hitActorPosition->z_);
             beforeCheckPointStep = checkPointAreaController->GetStep();
@@ -96,7 +97,7 @@ void PlayerController::OnTriggerEnter(SeedCore::Actor other)
                 SeedCore::Input::UnlockCursor();
                 SeedCore::Input::RevealCursor();
             }
-        }
+        //}
     }
 
     if (hitActor.HasTag("GravityArea"))
