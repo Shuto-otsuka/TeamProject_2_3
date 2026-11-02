@@ -162,6 +162,7 @@
     <ClInclude Include="Model\Material\Material.h" />
     <ClInclude Include="Model\Material\MaterialBaker.h" />
     <ClInclude Include="Model\Material\MaterialLoader.h" />
+    <ClInclude Include="Model\Material\MaterialOutline.h" />
     <ClInclude Include="Model\Material\MaterialResolveShader.h" />
     <ClInclude Include="Model\Material\MaterialResource.h" />
     <ClInclude Include="Model\Material\MaterialSortBuffer.h" />
@@ -388,6 +389,7 @@
     <ClCompile Include="Model\Material\Material.cpp" />
     <ClCompile Include="Model\Material\MaterialBaker.cpp" />
     <ClCompile Include="Model\Material\MaterialLoader.cpp" />
+    <ClCompile Include="Model\Material\MaterialOutline.cpp" />
     <ClCompile Include="Model\Material\MaterialResolveShader.cpp" />
     <ClCompile Include="Model\Material\MaterialResource.cpp" />
     <ClCompile Include="Model\Material\MaterialSortBuffer.cpp" />
@@ -654,7 +656,14 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
-    <None Include="Model\Material\MaterialMapping.hlsli" />
+    <None Include="Model\Material\MaterialMapping.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Model\Material\MaterialOutline.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+    </None>
     <None Include="Model\Model.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -1423,6 +1432,16 @@
       <FileType>Document</FileType>
     </Text>
     <Text Include="Shape\Primitive\Wireframe\PrimitiveWireframeVS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\Material\MaterialOutlineCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Model\Material\MaterialOutlinePS.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>

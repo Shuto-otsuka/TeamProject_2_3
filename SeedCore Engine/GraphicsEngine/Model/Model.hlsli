@@ -283,7 +283,7 @@ struct OitUnorderedAccessIndices
 	uint head_pointer_index_;
 	uint fragment_buffer_index_;
 	uint counter_index_;
-	uint oit_unordered_access_padding_0_;
+	uint material_outline_index_;
 };
 
 // Mirrors the C++ ShadingModel enum (Model/Crister/CristerMaterial.h). Read from
@@ -385,27 +385,54 @@ struct ModelStreaming                     // 3 rows
 
 /**
 * [EN]
-* shading_model_ selects the lighting response DeferredLightingPS.hlsl
-* evaluates this instance with. fur_length_/fur_density_/fur_shell_count_
-* are ShadingModel::Fur tuning (shell height in metres, per-strand
-* hash-noise density, shell layers above the base surface).
+* Per-instance shading parameters copied from the instance's material and
+* its actor. shading_model_ selects the lighting response
+* DeferredLightingPS.hlsl evaluates this instance with;
+* fur_length_/fur_density_/fur_shell_count_ are ShadingModel::Fur tuning.
+* double_sided_/blend_ route the instance to the culling lists and passes
+* that match its faces and alpha mode, and selected_ marks it for the
+* editor's selection outline. material_mapping_/tiling_/
+* triplanar_sharpness_ decide how the material's textures are placed
+* (MaterialMapping.hlsli), and outline_color_/outline_width_ are the
+* material's screen-space outline (MaterialOutlineCS.hlsl).
 */
-struct ModelShading                       // 2 rows
+struct ModelShading                       // 3 rows
 {
+	/// Lighting response the deferred lighting pass evaluates this instance with (SHADING_MODEL_*).
 	uint shading_model_;
+
+	/// Fur shell height in metres (SHADING_MODEL_FUR).
 	float fur_length_;
+
+	/// Per-strand hash-noise density of the fur (SHADING_MODEL_FUR).
 	float fur_density_;
+
+	/// Number of shell layers drawn above the base surface (SHADING_MODEL_FUR).
 	uint fur_shell_count_;
 
+	/// 1 when the material draws both faces; culling puts the instance in the double-sided list and skips back-face rejection.
 	uint double_sided_;
-	uint blend_;
-	uint selected_;
-	uint model_shading_padding_0_;
 
+	/// 1 when the material's alpha mode is BLEND; the instance is drawn by the transparent (OIT) pass instead of the opaque ones.
+	uint blend_;
+
+	/// 1 when the instance's actor is selected in the editor; it is drawn into the selection silhouette.
+	uint selected_;
+
+	/// How the material's textures are placed (MATERIAL_MAPPING_*).
 	uint material_mapping_;
+
+	/// Pattern repetitions per unit of scaled size; unused by MATERIAL_MAPPING_STRETCH.
 	float tiling_;
+
+	/// Exponent applied to the normal before it weights the three Triplanar projections.
 	float triplanar_sharpness_;
-	uint model_shading_padding_1_;
+
+	/// Material outline color packed as RGBA8 (R in the lowest byte).
+	uint outline_color_;
+
+	/// Material outline width in display-resolution pixels; 0 leaves the instance unoutlined.
+	float outline_width_;
 };
 
 /**

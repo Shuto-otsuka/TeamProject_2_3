@@ -789,6 +789,11 @@ namespace SeedCore
 		canvasIndices_.oit_.counterIndex_ = index;
 	}
 
+	void UnorderedAccessIndicesSystem::SetOITMaterialOutlineIndex(Uint index)
+	{
+		gameIndices_.oit_.materialOutlineIndex_ = index;
+	}
+
 	void UnorderedAccessIndicesSystem::SetGBuffer0UnorderedAccessViewIndex(Uint index)
 	{
 		editorIndices_.geometryBuffer_.index0_ = index;

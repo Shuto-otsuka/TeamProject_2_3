@@ -1141,6 +1141,9 @@
     <ClInclude Include="Model\Material\MaterialBaker.h">
       <Filter>Model\Material</Filter>
     </ClInclude>
+    <ClInclude Include="Model\Material\MaterialOutline.h">
+      <Filter>Model\Material</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">
@@ -1868,6 +1871,9 @@
     <ClCompile Include="Model\Material\MaterialBaker.cpp">
       <Filter>Model\Material</Filter>
     </ClCompile>
+    <ClCompile Include="Model\Material\MaterialOutline.cpp">
+      <Filter>Model\Material</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\Sampler.hlsli">
@@ -2048,6 +2054,9 @@
       <Filter>Shape\Primitive\Wireframe</Filter>
     </None>
     <None Include="Model\Material\MaterialMapping.hlsli">
+      <Filter>Model\Material</Filter>
+    </None>
+    <None Include="Model\Material\MaterialOutline.hlsli">
       <Filter>Model\Material</Filter>
     </None>
   </ItemGroup>
@@ -2501,6 +2510,12 @@
     </Text>
     <Text Include="Shape\Primitive\Wireframe\PrimitiveWireframeVS.hlsl">
       <Filter>Shape\Primitive\Wireframe</Filter>
+    </Text>
+    <Text Include="Model\Material\MaterialOutlineCS.hlsl">
+      <Filter>Model\Material</Filter>
+    </Text>
+    <Text Include="Model\Material\MaterialOutlinePS.hlsl">
+      <Filter>Model\Material</Filter>
     </Text>
   </ItemGroup>
 </Project>

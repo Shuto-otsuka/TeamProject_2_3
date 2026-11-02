@@ -614,7 +614,7 @@ namespace SeedCore
 		Uint headPointerIndex_ = 0;
 		Uint fragmentBufferIndex_ = 0;
 		Uint counterIndex_ = 0;
-		Uint oitUnorderedAccessPadding0_ = 0;
+		Uint materialOutlineIndex_ = 0xFFFFFFFF;
 	};
 	SC_STATIC_ASSERT(OitUnorderedAccessIndices, 16, "Model/Model.hlsli");
 
@@ -1190,6 +1190,8 @@ namespace SeedCore
 		void SetOITFragmentBufferIndex(Uint index);
 
 		void SetOITCounterIndex(Uint index);
+
+		void SetOITMaterialOutlineIndex(Uint index);
 
 		void SetGBuffer0UnorderedAccessViewIndex(Uint index);
 

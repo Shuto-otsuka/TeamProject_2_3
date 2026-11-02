@@ -580,6 +580,9 @@ namespace SeedCore
 						instanceData.shading_.tiling_ = material.tiling_;
 						instanceData.shading_.triplanarSharpness_ = material.triplanarSharpness_;
 
+						instanceData.shading_.outlineColor_ = static_cast<Uint>(Clamp(material.outlineColor_.r, 0.0f, 1.0f) * 255.0f + 0.5f) | (static_cast<Uint>(Clamp(material.outlineColor_.g, 0.0f, 1.0f) * 255.0f + 0.5f) << 8) | (static_cast<Uint>(Clamp(material.outlineColor_.b, 0.0f, 1.0f) * 255.0f + 0.5f) << 16) | (static_cast<Uint>(Clamp(material.outlineColor_.a, 0.0f, 1.0f) * 255.0f + 0.5f) << 24);
+						instanceData.shading_.outlineWidth_ = material.outlineWidth_;
+
 						instanceData.geometry_.vertexBufferIndex_ = crister->Residency().ClusterVertexBufferIndex(clusterIndex);
 						instanceData.skining_.skinVertexBufferIndex_ = crister->Residency().SkinVertexBufferIndex();
 						instanceData.streaming_.positionMin_ = crister->PositionMin();
@@ -797,6 +800,9 @@ namespace SeedCore
 				instanceData.shading_.materialMapping_ = static_cast<Uint>(material.materialMapping_);
 				instanceData.shading_.tiling_ = material.tiling_;
 				instanceData.shading_.triplanarSharpness_ = material.triplanarSharpness_;
+
+				instanceData.shading_.outlineColor_ = static_cast<Uint>(Clamp(material.outlineColor_.r, 0.0f, 1.0f) * 255.0f + 0.5f) | (static_cast<Uint>(Clamp(material.outlineColor_.g, 0.0f, 1.0f) * 255.0f + 0.5f) << 8) | (static_cast<Uint>(Clamp(material.outlineColor_.b, 0.0f, 1.0f) * 255.0f + 0.5f) << 16) | (static_cast<Uint>(Clamp(material.outlineColor_.a, 0.0f, 1.0f) * 255.0f + 0.5f) << 24);
+				instanceData.shading_.outlineWidth_ = material.outlineWidth_;
 
 				/// [EN] SoftbodyMesh's own buffers, not Crister's — see
 				///      SoftbodyMesh's class comment.

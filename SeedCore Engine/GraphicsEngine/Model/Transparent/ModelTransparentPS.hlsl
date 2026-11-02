@@ -535,6 +535,15 @@ void main(ModelMSOutput input, ModelMSPrimitiveOutput primitive)
 
 	float4 final_color = float4(lighting, base_color.a);
 
+	/// [EN] Outlined transparent fragments also go into the material outline's transparent record: (depth << 16) | (instance + 1), so InterlockedMax keeps the nearest one per pixel (reverse-Z), and 0 stays "none".
+	/// [JP] 縁取りのある半透明のフラグメントは、マテリアルのアウトラインの半透明の記録にも書く。(深度 << 16) | (インスタンス + 1) なので、InterlockedMax でピクセルごとに一番手前のものが残り(reverse-Z)、0 は「無し」のまま。
+	if (instance.shading_.outline_width_ > 0.0 && unordered_access_indices.oit_.material_outline_index_ != 0xFFFFFFFF)
+	{
+		RWTexture2D<uint> material_outline = ResourceDescriptorHeap[unordered_access_indices.oit_.material_outline_index_];
+		uint outline_depth = (uint)(saturate(input.position.z) * 65535.0);
+		InterlockedMax(material_outline[uint2(input.position.xy)], (outline_depth << 16) | ((input.instance_index + 1) & 0xFFFF));
+	}
+
 	RWTexture2D<uint> head_pointer = ResourceDescriptorHeap[unordered_access_indices.oit_.head_pointer_index_];
 	RWStructuredBuffer<OITFragment> fragment_buffer = ResourceDescriptorHeap[unordered_access_indices.oit_.fragment_buffer_index_];
 	RWByteAddressBuffer oit_counter = ResourceDescriptorHeap[unordered_access_indices.oit_.counter_index_];

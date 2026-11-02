@@ -28,17 +28,25 @@ namespace SeedCore
 	*/
 	struct DepthOfFieldSettings
 	{
+		/// [EN] Turns the depth-of-field blur on; while off, downstream passes read the raw scene color.
+		/// [JP] 被写界深度のブラーを有効にする。無効の間、後続のパスは生のシーン色を読む。
 		SC_REFLECTION_FIELD_EX("有効")
 		Bool enabled_ = false;
 
+		/// [EN] View-space distance from the camera to the plane that stays perfectly sharp.
+		/// [JP] カメラから、完全にピントが合う面までのビュー空間での距離。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("焦点距離", 0.0f, 100.0f)
 		Float focusDistance_ = 10.0f;
 
+		/// [EN] Distance from the focus plane over which the circle of confusion grows from 0 to its maximum; the lower bound keeps the division that normalises it away from 0.
+		/// [JP] 焦点面からの距離で、錯乱円が 0 から最大まで広がる幅。下限は、これで割って正規化する除算が 0 にならないようにするため。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("焦点範囲", 0.01f, 50.0f)
 		Float focusRange_ = 4.0f;
 
+		/// [EN] Blur radius, in UV, of a pixel whose circle of confusion is at its maximum.
+		/// [JP] 錯乱円が最大のピクセルのぼけ半径(UV 単位)。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("最大ぼけ半径", 0.0f, 0.05f)
 		Float maxBlurRadius_ = 0.015f;
@@ -76,17 +84,25 @@ namespace SeedCore
 	*/
 	struct BokehSettings
 	{
+		/// [EN] Turns the bokeh highlights on; takes effect only while DepthOfFieldSettings::enabled_ is on too.
+		/// [JP] ボケハイライトを有効にする。DepthOfFieldSettings::enabled_ も有効なときだけ効く。
 		SC_REFLECTION_FIELD_EX("有効")
 		Bool enabled_ = false;
 
+		/// [EN] HDR brightness above which a point of the unblurred scene becomes a bokeh highlight.
+		/// [JP] ぼかす前のシーンで、これを超える HDR の明るさの点がボケハイライトになる。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("しきい値", 0.0f, 20.0f)
 		Float highlightThreshold_ = 4.0f;
 
+		/// [EN] Multiplier on the scattered highlight shapes.
+		/// [JP] 散布するハイライト形状に掛ける倍率。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("強度", 0.0f, 5.0f)
 		Float highlightIntensity_ = 1.0f;
 
+		/// [EN] Number of aperture blades, which is the number of sides of each bokeh shape; LensFlareSettings derives its spike count from the same value.
+		/// [JP] 絞り羽根の枚数で、ボケ形状の辺の数になる。LensFlareSettings もこの値から棘の本数を決める。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("角形の頂点数", 3, 8)
 		Uint32 bladeCount_ = 6;
@@ -131,28 +147,31 @@ namespace SeedCore
 	*/
 	struct LensDistortionSettings
 	{
+		/// [EN] Turns the radial lens distortion on.
+		/// [JP] 半径方向のレンズ歪曲を有効にする。
 		SC_REFLECTION_FIELD_EX("有効")
 		Bool enabled_ = false;
 
-		/// [EN] Primary radial coefficient - positive is barrel, negative is
-		///      pincushion. This is the one to reach for first.
+		/// [EN] Primary radial coefficient - positive is barrel, negative is pincushion. This is the one to reach for first.
 		/// [JP] 半径方向の主係数。正で樽型、負で糸巻き型。まず触るのはここ。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("歪曲 k1", -0.5f, 0.5f)
 		Float k1_ = 0.0f;
 
+		/// [EN] Second radial coefficient (the r^4 term); it mostly reshapes the corners on top of k1_.
+		/// [JP] 半径方向の 2 番目の係数(r^4 の項)。k1_ の上から主に四隅の形を整える。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("歪曲 k2", -0.5f, 0.5f)
 		Float k2_ = 0.0f;
 
+		/// [EN] Third radial coefficient (the r^6 term); it barely moves anything except the far corners.
+		/// [JP] 半径方向の 3 番目の係数(r^6 の項)。四隅の端以外はほとんど動かさない。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("歪曲 k3", -0.5f, 0.5f)
 		Float k3_ = 0.0f;
 
-		/// [EN] Zoom applied before distorting, to crop away the empty
-		///      corners barrel distortion creates.
-		/// [JP] 歪ませる前に掛ける拡大。樽型歪曲が作る四隅の余白を
-		///      切り落とすため。
+		/// [EN] Zoom applied before distorting, to crop away the empty corners barrel distortion creates.
+		/// [JP] 歪ませる前に掛ける拡大。樽型歪曲が作る四隅の余白を切り落とすため。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("スケール", 0.5f, 1.5f)
 		Float scale_ = 1.0f;
@@ -203,6 +222,8 @@ namespace SeedCore
 	*/
 	struct ChromaticAberrationSettings
 	{
+		/// [EN] Turns the lateral chromatic aberration on.
+		/// [JP] 倍率色収差を有効にする。
 		SC_REFLECTION_FIELD_EX("有効")
 		Bool enabled_ = false;
 
@@ -212,10 +233,8 @@ namespace SeedCore
 		SC_REFLECTION_CLAMPED_EX("強度", 0.0f, 0.05f)
 		Float intensity_ = 0.008f;
 
-		/// [EN] Samples marched along the radial line. Below about 6 the
-		///      fringe breaks into separate coloured copies.
-		/// [JP] 半径方向の線上を刻むサンプル数。6程度を下回ると、にじみでは
-		///      なく分離した色の分身に見え始める。
+		/// [EN] Samples marched along the radial line. Below about 6 the fringe breaks into separate coloured copies.
+		/// [JP] 半径方向の線上を刻むサンプル数。6程度を下回ると、にじみではなく分離した色の分身に見え始める。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("サンプル数", 3, 16)
 		Uint32 sampleCount_ = 8;
@@ -254,30 +273,25 @@ namespace SeedCore
 	*/
 	struct VignetteSettings
 	{
+		/// [EN] Turns the vignette on.
+		/// [JP] ビネットを有効にする。
 		SC_REFLECTION_FIELD_EX("有効")
 		Bool enabled_ = false;
 
-		/// [EN] Exponent applied to the falloff curve. 1 = the physical
-		///      cosine-fourth curve as-is, 0 = no vignette, above 1 pushes
-		///      the corners darker than the physical curve.
-		/// [JP] 減光カーブに掛かる指数。1で物理どおりのコサイン4乗カーブ
-		///      そのまま、0で無効、1を超えると物理カーブより四隅が暗くなる。
+		/// [EN] Exponent applied to the falloff curve. 1 = the physical cosine-fourth curve as-is, 0 = no vignette, above 1 pushes the corners darker than the physical curve.
+		/// [JP] 減光カーブに掛かる指数。1で物理どおりのコサイン4乗カーブそのまま、0で無効、1を超えると物理カーブより四隅が暗くなる。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("強度", 0.0f, 8.0f)
 		Float intensity_ = 0.5f;
 
-		/// [EN] 4 is the physical cosine-fourth law (see the struct comment).
-		///      Anything else is art direction.
-		/// [JP] 4 が物理どおりのコサイン4乗則(struct のコメント参照)。
-		///      それ以外の値はアートディレクション。
+		/// [EN] 4 is the physical cosine-fourth law (see the struct comment). Anything else is art direction.
+		/// [JP] 4 が物理どおりのコサイン4乗則(struct のコメント参照)。それ以外の値はアートディレクション。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("減光指数", 1.0f, 8.0f)
 		Float exponent_ = 4.0f;
 
-		/// [EN] What the corners fall off toward. Black is the physical
-		///      answer (absence of light); anything else is a look.
-		/// [JP] 四隅が何色へ向かって落ちるか。物理的な答えは黒(光が無い
-		///      ということ)で、それ以外は演出。
+		/// [EN] What the corners fall off toward. Black is the physical answer (absence of light); anything else is a look.
+		/// [JP] 四隅が何色へ向かって落ちるか。物理的な答えは黒(光が無いということ)で、それ以外は演出。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_FIELD_EX("色")
 		Color color_ = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -320,21 +334,31 @@ namespace SeedCore
 	*/
 	struct BloomSettings
 	{
+		/// [EN] Turns the bloom on.
+		/// [JP] ブルームを有効にする。
 		SC_REFLECTION_FIELD_EX("有効")
 		Bool enabled_ = false;
 
+		/// [EN] HDR brightness above which a pixel starts to bleed into its surroundings.
+		/// [JP] これを超える HDR の明るさのピクセルが、周囲へにじみ始める。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("しきい値", 0.0f, 10.0f)
 		Float threshold_ = 1.0f;
 
+		/// [EN] Width of the quadratic ramp around threshold_, so pixels near the cutoff fade in instead of popping.
+		/// [JP] threshold_ 周辺の二次曲線の立ち上がりの幅。しきい値付近のピクセルが突然出入りせず、滑らかに現れる。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("ソフトニー", 0.0f, 1.0f)
 		Float softKnee_ = 0.5f;
 
+		/// [EN] Multiplier on the bloom added into the HDR color before exposure.
+		/// [JP] 露出の前に HDR カラーへ加算するブルームの倍率。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("強度", 0.0f, 1.0f)
 		Float intensity_ = 0.08f;
 
+		/// [EN] Tap spacing of the 3x3 tent upsample, in UV; larger values spread each level's glow wider.
+		/// [JP] 3x3 テントアップサンプルのタップ間隔(UV 単位)。大きいほど各レベルのグローが広がる。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("フィルタ半径", 0.001f, 0.02f)
 		Float filterRadius_ = 0.005f;
@@ -390,37 +414,37 @@ namespace SeedCore
 	*/
 	struct AnamorphicFlareSettings
 	{
+		/// [EN] Turns the anamorphic streak on.
+		/// [JP] アナモルフィックの筋を有効にする。
 		SC_REFLECTION_FIELD_EX("有効")
 		Bool enabled_ = false;
 
+		/// [EN] HDR brightness above which a point throws a streak.
+		/// [JP] これを超える HDR の明るさの点が筋を出す。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("しきい値", 0.0f, 20.0f)
 		Float threshold_ = 4.0f;
 
+		/// [EN] Multiplier on the streak added into the HDR color.
+		/// [JP] HDR カラーへ加算する筋の倍率。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("強度", 0.0f, 5.0f)
 		Float intensity_ = 0.6f;
 
-		/// [EN] Tap spacing scale inside the squeezed buffer - how far the
-		///      streak reaches horizontally.
-		/// [JP] 圧縮バッファ内でのタップ間隔スケール。筋が横方向へどこまで
-		///      伸びるかを決める。
+		/// [EN] Tap spacing scale inside the squeezed buffer - how far the streak reaches horizontally.
+		/// [JP] 圧縮バッファ内でのタップ間隔スケール。筋が横方向へどこまで伸びるかを決める。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("筋の長さ", 0.0f, 1.0f)
 		Float streakLength_ = 0.5f;
 
-		/// [EN] Kawase's light-streak attenuation `a`: the per-texel decay
-		///      along the streak, so a tap `d` texels out is weighted a^d.
-		/// [JP] Kawase のライトストリークの減衰係数 a。筋に沿った1テクセル
-		///      あたりの減衰率で、d テクセル先のタップの重みが a^d になる。
+		/// [EN] Kawase's light-streak attenuation `a`: the per-texel decay along the streak, so a tap `d` texels out is weighted a^d.
+		/// [JP] Kawase のライトストリークの減衰係数 a。筋に沿った1テクセルあたりの減衰率で、d テクセル先のタップの重みが a^d になる。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("減衰", 0.80f, 0.99f)
 		Float attenuation_ = 0.95f;
 
-		/// [EN] Streak colour. A lens characteristic, not physics - see the
-		///      struct comment. Default is the familiar cine blue.
-		/// [JP] 筋の色。物理ではなくレンズ個体の特性(struct のコメント参照)。
-		///      既定値は見慣れたシネマ調の青。
+		/// [EN] Streak colour. A lens characteristic, not physics - see the struct comment. Default is the familiar cine blue.
+		/// [JP] 筋の色。物理ではなくレンズ個体の特性(struct のコメント参照)。既定値は見慣れたシネマ調の青。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_FIELD_EX("色")
 		Color tint_ = { 0.35f, 0.6f, 1.0f, 1.0f };
@@ -478,62 +502,73 @@ namespace SeedCore
 	*/
 	struct LensFlareSettings
 	{
+		/// [EN] Turns both the diffraction spikes and the ghost/halo chain on.
+		/// [JP] 回折スパイクとゴースト/ハローの両方を有効にする。
 		SC_REFLECTION_FIELD_EX("有効")
 		Bool enabled_ = false;
 
+		/// [EN] HDR brightness above which a point produces spikes and ghosts.
+		/// [JP] これを超える HDR の明るさの点が、スパイクとゴーストを出す。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("しきい値", 0.0f, 20.0f)
 		Float threshold_ = 4.0f;
 
+		/// [EN] Overall multiplier applied to both the spikes and the ghost/halo chain.
+		/// [JP] スパイクとゴースト/ハローの両方に掛ける全体の倍率。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("全体強度", 0.0f, 5.0f)
 		Float intensity_ = 0.5f;
 
+		/// [EN] Tap spacing scale along each spike - how far the spikes reach.
+		/// [JP] 各スパイクに沿ったタップ間隔のスケール。棘がどこまで伸びるかを決める。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("スパイク長", 0.0f, 1.0f)
 		Float streakLength_ = 0.25f;
 
+		/// [EN] Per-texel decay along a spike, so a tap `d` texels out is weighted streakAttenuation_^d.
+		/// [JP] スパイクに沿った 1 テクセルあたりの減衰。d テクセル先のタップの重みが streakAttenuation_^d になる。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("減衰", 0.80f, 0.99f)
 		Float streakAttenuation_ = 0.93f;
 
+		/// [EN] R/G/B separation along each spike, in UV; physically motivated, since the diffraction angle grows with wavelength.
+		/// [JP] 各スパイクに沿った R/G/B のずれ(UV 単位)。回折角は波長と共に大きくなるので、物理的な裏付けがある。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("色収差", 0.0f, 0.02f)
 		Float chromaticAberration_ = 0.004f;
 
+		/// [EN] Rotation of the whole spike pattern, in radians.
+		/// [JP] スパイク全体の回転(ラジアン)。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("回転", -3.14159265f, 3.14159265f)
 		Float angleOffset_ = 0.0f;
 
+		/// [EN] Number of ghost copies strung from the light source through the screen center.
+		/// [JP] 光源から画面中心を通って並べるゴーストの数。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("ゴースト数", 1, 8)
 		Uint32 ghostCount_ = 4;
 
+		/// [EN] Spacing between consecutive ghosts, as a fraction of the vector to the screen center.
+		/// [JP] 隣り合うゴーストの間隔。画面中心へのベクトルに対する割合。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("ゴースト間隔", 0.0f, 1.0f)
 		Float ghostDispersal_ = 0.3f;
 
+		/// [EN] Multiplier on the ghosts and the halo, on top of intensity_.
+		/// [JP] intensity_ に加えて、ゴーストとハローに掛ける倍率。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("ゴースト強度", 0.0f, 2.0f)
 		Float ghostIntensity_ = 0.3f;
 
+		/// [EN] Radius of the halo ring around the screen center, as a fraction of the screen.
+		/// [JP] 画面中心の周りに出るハローの輪の半径。画面に対する割合。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("ハロー半径", 0.0f, 1.0f)
 		Float haloWidth_ = 0.45f;
 
-		/// [EN] Per-spike randomisation of brightness and length, keyed off
-		///      the spike index so it is stable frame to frame. NOT physics:
-		///      an ideal iris is perfectly symmetric and produces identical
-		///      spikes. Real lenses do not, because the blades are neither
-		///      identical nor perfectly aligned, and that asymmetry is most
-		///      of what separates a photographed starburst from a CG
-		///      asterisk. 0 disables it and gives the ideal symmetric star.
-		/// [JP] 棘ごとの明るさ・長さのばらつき。棘の番号から決めるので
-		///      フレーム間で安定する。【物理ではない】: 理想的な絞りは
-		///      完全に対称で、棘は全て同一になる。実際のレンズがそうならない
-		///      のは羽根が同一でも完全な位置合わせでもないからで、その
-		///      非対称性こそが実写のスターバーストとCGのアスタリスクを
-		///      分けている大部分。0で無効になり、理想的な対称の星になる。
+		/// [EN] Per-spike randomisation of brightness and length, keyed off the spike index so it is stable frame to frame. NOT physics: an ideal iris is perfectly symmetric and produces identical spikes. Real lenses do not, because the blades are neither identical nor perfectly aligned, and that asymmetry is most of what separates a photographed starburst from a CG asterisk. 0 disables it and gives the ideal symmetric star.
+		/// [JP] 棘ごとの明るさ・長さのばらつき。棘の番号から決めるのでフレーム間で安定する。【物理ではない】: 理想的な絞りは完全に対称で、棘は全て同一になる。実際のレンズがそうならないのは羽根が同一でも完全な位置合わせでもないからで、その非対称性こそが実写のスターバーストとCGのアスタリスクを分けている大部分。0で無効になり、理想的な対称の星になる。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("棘のばらつき", 0.0f, 1.0f)
 		Float spikeVariation_ = 0.35f;
@@ -562,66 +597,42 @@ namespace SeedCore
 	*/
 	struct ExposureSettings
 	{
-		/// [EN] Exposure compensation in stops, ALWAYS applied (not gated by
-		///      enabled_ below) on top of the automatic value (0 when auto
-		///      exposure is off, so this is the only exposure control in that
-		///      case). The scene is rendered in radiance units where a sunlit
-		///      white Lambertian surface lands at about 0.318 (the BRDF
-		///      carries the 1/PI), so roughly +1.65 EV is needed to reach
-		///      display white when auto exposure is off — that is why the
-		///      default is not 0.
-		/// [JP] 露出補正(EV/段)。下の enabled_ に関わらず【常に】効く、自動値
-		///      への加算値(自動露出が無効なら自動値は0なので、その場合は
-		///      これが唯一の露出調整になる)。シーンは「日向の白いランバート面
-		///      ≒ 0.318」という放射輝度の単位で描かれている(BRDF が 1/PI を
-		///      含むため)ので、自動露出が無効な状態で表示上の白へ持ち上げる
-		///      にはおよそ +1.65EV 要る。既定値が 0 でないのはそのため。
+		/// [EN] Exposure compensation in stops, ALWAYS applied (not gated by enabled_ below) on top of the automatic value (0 when auto exposure is off, so this is the only exposure control in that case). The scene is rendered in radiance units where a sunlit white Lambertian surface lands at about 0.318 (the BRDF carries the 1/PI), so roughly +1.65 EV is needed to reach display white when auto exposure is off — that is why the default is not 0.
+		/// [JP] 露出補正(EV/段)。下の enabled_ に関わらず【常に】効く、自動値への加算値(自動露出が無効なら自動値は0なので、その場合はこれが唯一の露出調整になる)。シーンは「日向の白いランバート面 ≒ 0.318」という放射輝度の単位で描かれている(BRDF が 1/PI を含むため)ので、自動露出が無効な状態で表示上の白へ持ち上げるにはおよそ +1.65EV 要る。既定値が 0 でないのはそのため。
 		SC_REFLECTION_CLAMPED_EX("露出補正(EV)", -8.0f, 8.0f)
 		Float compensation_ = 1.65f;
 
+		/// [EN] Turns on histogram-based auto exposure; compensation_ is added on top of its result either way.
+		/// [JP] ヒストグラムによる自動露出を有効にする。どちらの場合も compensation_ はその結果に加算される。
 		SC_REFLECTION_FIELD_EX("自動露出(ヒストグラム)を使う")
 		Bool enabled_ = false;
 
-		/// [EN] Log2 luminance range the histogram covers. Pixels outside this
-		///      range clamp to the nearest edge bin. Widen it if very dark
-		///      interiors or very bright skies never seem to adapt.
-		/// [JP] ヒストグラムが対象とする log2 輝度の範囲。範囲外のピクセルは
-		///      最寄りの端のビンへクランプされる。暗い室内や明るい空へ順応が
-		///      効かない場合は広げる。
+		/// [EN] Log2 luminance range the histogram covers. Pixels outside this range clamp to the nearest edge bin. Widen it if very dark interiors or very bright skies never seem to adapt.
+		/// [JP] ヒストグラムが対象とする log2 輝度の範囲。範囲外のピクセルは最寄りの端のビンへクランプされる。暗い室内や明るい空へ順応が効かない場合は広げる。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("最小log輝度", -16.0f, 0.0f)
 		Float minLogLuminance_ = -10.0f;
 
+		/// [EN] Upper end of the log2 luminance range the histogram covers (see minLogLuminance_).
+		/// [JP] ヒストグラムが対象とする log2 輝度の範囲の上端(minLogLuminance_ 参照)。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("最大log輝度", 0.0f, 16.0f)
 		Float maxLogLuminance_ = 4.0f;
 
-		/// [EN] Target average scene luminance (the "18% grey card" concept from
-		///      photography, expressed in this engine's own radiance units, not
-		///      the traditional 0.18 — see compensation_'s comment on this
-		///      engine's ~0.318 white reference).
-		/// [JP] シーン平均輝度の目標値(写真の「18%グレーカード」の考え方を、この
-		///      エンジンの放射輝度単位で表したもの — 伝統的な 0.18 ではない点に
-		///      注意。compensation_ のコメントにある通り、このエンジンの白基準は
-		///      約 0.318)。
+		/// [EN] Target average scene luminance (the "18% grey card" concept from photography, expressed in this engine's own radiance units, not the traditional 0.18 — see compensation_'s comment on this engine's ~0.318 white reference).
+		/// [JP] シーン平均輝度の目標値(写真の「18%グレーカード」の考え方を、このエンジンの放射輝度単位で表したもの — 伝統的な 0.18 ではない点に注意。compensation_ のコメントにある通り、このエンジンの白基準は約 0.318)。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("目標輝度(キー値)", 0.001f, 1.0f)
 		Float keyValue_ = 0.18f;
 
-		/// [EN] Adaptation speed (in 1/seconds, larger = faster). Photography/
-		///      vision terminology: 明順応 (light adaptation) is adapting TO a
-		///      brighter scene - fast, the iris stops down quickly; 暗順応 (dark
-		///      adaptation) is adapting TO a darker scene - slow, rod recovery
-		///      takes time. Two knobs instead of one so that asymmetry is
-		///      tunable rather than baked in.
-		/// [JP] 順応速度(1/秒、大きいほど速い)。明順応=より明るいシーンへの
-		///      順応(速い、虹彩がすぐ絞る)、暗順応=より暗いシーンへの順応
-		///      (遅い、桿体の回復に時間がかかる)。1つの速度に固定せず2つの
-		///      つまみにして、この非対称性を調整可能にしている。
+		/// [EN] Adaptation speed (in 1/seconds, larger = faster). Photography/vision terminology: 明順応 (light adaptation) is adapting TO a brighter scene - fast, the iris stops down quickly; 暗順応 (dark adaptation) is adapting TO a darker scene - slow, rod recovery takes time. Two knobs instead of one so that asymmetry is tunable rather than baked in.
+		/// [JP] 順応速度(1/秒、大きいほど速い)。明順応=より明るいシーンへの順応(速い、虹彩がすぐ絞る)、暗順応=より暗いシーンへの順応(遅い、桿体の回復に時間がかかる)。1つの速度に固定せず2つのつまみにして、この非対称性を調整可能にしている。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("明順応速度", 0.01f, 20.0f)
 		Float adaptSpeedToBright_ = 3.0f;
 
+		/// [EN] Adaptation speed toward a darker scene (in 1/seconds, see adaptSpeedToBright_); slower than light adaptation by default, like rod recovery.
+		/// [JP] より暗いシーンへの順応速度(1/秒、adaptSpeedToBright_ 参照)。桿体の回復と同じく、既定値は明順応より遅い。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("暗順応速度", 0.01f, 20.0f)
 		Float adaptSpeedToDark_ = 1.0f;
@@ -668,60 +679,33 @@ namespace SeedCore
 	*/
 	struct ColorGradingRangeSettings
 	{
-		/// [EN] White balance for this range, applied first - it is a
-		///      capture-side correction, so it belongs before the creative
-		///      wheels rather than after them. Negative is cooler (blue),
-		///      positive warmer (amber). This is a real chromatic adaptation
-		///      (CIE xy white point -> LMS cone space -> von Kries scale),
-		///      not an RGB tint, which is why it shifts the whole image's
-		///      white point instead of just staining it.
-		///
-		///      Unreal keeps white balance global; per-range is strictly more
-		///      capable - cooling shadows while warming highlights is a
-		///      standard grade and needs the two independently. Note this is
-		///      only half of white balance: its partner is TINT
-		///      (green<->magenta), which is not exposed here.
-		/// [JP] この階調域のホワイトバランス。撮影側の補正なので、創作的な
-		///      ホイール群より【前】に適用する。負で寒色(青)、正で暖色(琥珀)。
-		///      RGBの色被せではなく本物の色順応(CIE xy の白色点 → LMS 錐体
-		///      空間 → von Kries スケール)なので、色を塗るのではなく画像
-		///      全体の白色点そのものが動く。
-		///
-		///      Unreal はホワイトバランスを全体設定として持つが、階調域ごとに
-		///      持つ方が純粋に強い — シャドウを寒色に、ハイライトを暖色に、は
-		///      定番のグレーディングで、独立していないとできない。なお
-		///      これはホワイトバランスの半分で、相方の【ティント】
-		///      (緑↔マゼンタ)はここでは公開していない。
+		/// [EN] White balance for this range, applied first - it is a capture-side correction, so it belongs before the creative wheels rather than after them. Negative is cooler (blue), positive warmer (amber). This is a real chromatic adaptation (CIE xy white point -> LMS cone space -> von Kries scale), not an RGB tint, which is why it shifts the whole image's white point instead of just staining it. Unreal keeps white balance global; per-range is strictly more capable - cooling shadows while warming highlights is a standard grade and needs the two independently. Note this is only half of white balance: its partner is TINT (green<->magenta), which is not exposed here.
+		/// [JP] この階調域のホワイトバランス。撮影側の補正なので、創作的なホイール群より【前】に適用する。負で寒色(青)、正で暖色(琥珀)。RGBの色被せではなく本物の色順応(CIE xy の白色点 → LMS 錐体空間 → von Kries スケール)なので、色を塗るのではなく画像全体の白色点そのものが動く。Unreal はホワイトバランスを全体設定として持つが、階調域ごとに持つ方が純粋に強い — シャドウを寒色に、ハイライトを暖色に、は定番のグレーディングで、独立していないとできない。なおこれはホワイトバランスの半分で、相方の【ティント】(緑↔マゼンタ)はここでは公開していない。
 		SC_REFLECTION_CLAMPED_EX("色温度", -1.0f, 1.0f)
 		Float temperature_ = 0.0f;
 
-		/// [EN] These five are scalars, applied uniformly across R/G/B,
-		///      rather than per-channel wheels. The colour axis is already
-		///      covered by temperature_ above as a proper chromatic
-		///      adaptation, so these five stay pure brightness/contrast
-		///      controls.
-		/// [JP] この5つはチャンネル別のホイールではなく、R/G/Bへ一律に
-		///      掛かるスカラー。色方向は上の temperature_ が本物の色順応
-		///      として担当しているので、この5つは純粋な明るさ・
-		///      コントラスト系の操作にとどめてある。
+		/// [EN] These five are scalars, applied uniformly across R/G/B, rather than per-channel wheels. The colour axis is already covered by temperature_ above as a proper chromatic adaptation, so these five stay pure brightness/contrast controls.
+		/// [JP] この5つはチャンネル別のホイールではなく、R/G/Bへ一律に掛かるスカラー。色方向は上の temperature_ が本物の色順応として担当しているので、この5つは純粋な明るさ・コントラスト系の操作にとどめてある。
 		SC_REFLECTION_CLAMPED_EX("彩度", 0.0f, 4.0f)
 		Float saturation_ = 1.0f;
 
+		/// [EN] Contrast around the 0.18 scene-referred middle grey pivot; 1 is neutral.
+		/// [JP] シーン参照の中間グレー 0.18 を軸にしたコントラスト。1 で中立。
 		SC_REFLECTION_CLAMPED_EX("コントラスト", 0.1f, 4.0f)
 		Float contrast_ = 1.0f;
 
-		/// [EN] Lower bound is 0.1, not 0. Gamma is inverted before being used
-		///      as an exponent, so letting it approach 0 sends the exponent
-		///      toward infinity and crushes the whole frame to black.
-		/// [JP] 下限が0ではなく0.1なのは、ガンマが指数として使われる前に
-		///      逆数を取られるため。0へ近づけると指数が発散し、画面全体が
-		///      黒へ潰れる。
+		/// [EN] Lower bound is 0.1, not 0. Gamma is inverted before being used as an exponent, so letting it approach 0 sends the exponent toward infinity and crushes the whole frame to black.
+		/// [JP] 下限が0ではなく0.1なのは、ガンマが指数として使われる前に逆数を取られるため。0へ近づけると指数が発散し、画面全体が黒へ潰れる。
 		SC_REFLECTION_CLAMPED_EX("ガンマ", 0.1f, 4.0f)
 		Float gamma_ = 1.0f;
 
+		/// [EN] Multiplier on the color after gamma; 1 is neutral.
+		/// [JP] ガンマの後の色に掛ける倍率。1 で中立。
 		SC_REFLECTION_CLAMPED_EX("ゲイン", 0.0f, 4.0f)
 		Float gain_ = 1.0f;
 
+		/// [EN] Value added to the color last, lifting or lowering every level uniformly; 0 is neutral.
+		/// [JP] 最後に色へ加算する値。すべての階調を一律に持ち上げる/下げる。0 で中立。
 		SC_REFLECTION_CLAMPED_EX("オフセット", -1.0f, 1.0f)
 		Float offset_ = 0.0f;
 	};
@@ -767,21 +751,31 @@ namespace SeedCore
 	*/
 	struct ColorGradingSettings
 	{
+		/// [EN] Turns the color grading on.
+		/// [JP] カラーグレーディングを有効にする。
 		SC_REFLECTION_FIELD_EX("有効")
 		Bool enabled_ = false;
 
+		/// [EN] Master grade applied to every pixel; the three ranges below are combined with it as relative adjustments.
+		/// [JP] すべてのピクセルに掛かるマスターのグレード。下の 3 つの階調域は、これに相対的な調整として掛け合わされる。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_FIELD_EX("全体")
 		ColorGradingRangeSettings global_;
 
+		/// [EN] Grade for pixels below shadowsMax_, faded out smoothly toward the midtones.
+		/// [JP] shadowsMax_ を下回るピクセル向けのグレード。中間調へ向かって滑らかに弱まる。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_FIELD_EX("シャドウ")
 		ColorGradingRangeSettings shadows_;
 
+		/// [EN] Grade for whatever weight is left between the shadow and highlight crossovers.
+		/// [JP] シャドウとハイライトの境界の間に残った重みの分に掛かるグレード。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_FIELD_EX("中間調")
 		ColorGradingRangeSettings midtones_;
 
+		/// [EN] Grade for pixels above highlightsMin_, faded in smoothly from the midtones.
+		/// [JP] highlightsMin_ を上回るピクセル向けのグレード。中間調から滑らかに強まる。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_FIELD_EX("ハイライト")
 		ColorGradingRangeSettings highlights_;
@@ -818,17 +812,43 @@ namespace SeedCore
 	*/
 	struct ToneMappingSettings
 	{
+		/// [EN] Turns the tone curve on; while off, the exposed color is only clamped.
+		/// [JP] トーンカーブを有効にする。無効の間、露出済みの色はクランプされるだけになる。
 		SC_REFLECTION_FIELD_EX("有効")
 		Bool enabled_ = true;
 
+		/**
+		* [EN]
+		* Curve that compresses the exposed scene-referred HDR color into the
+		* displayable [0, 1] range (ToneMappingCurves.hlsli).
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 露出済みのシーン参照 HDR カラーを、表示できる [0, 1] の範囲へ圧縮
+		* するカーブ(ToneMappingCurves.hlsli)。
+		*/
 		enum class ToneCurve
 		{
-			None,      // クランプのみ、カーブ無し
+			/// [EN] No curve; values above 1 are clamped.
+			/// [JP] カーブ無し。1 を超える値はクランプする。
+			None,
+
+			/// [EN] Basic per-channel Reinhard, x / (1 + x), with no white point.
+			/// [JP] チャンネルごとの基本の Reinhard。x / (1 + x) で、白色点は持たない。
 			Reinhard,
+
+			/// [EN] Krzysztof Narkowicz's analytic fit of the ACES filmic curve - a strong S-curve.
+			/// [JP] Krzysztof Narkowicz による ACES フィルミックカーブの解析的な近似。S 字の強いカーブ。
 			AcesFilmic,
-			PbrNeutral // Khronos PBR Neutral
+
+			/// [EN] Khronos PBR Neutral: stays close to the source colors through the mid-range and only compresses near the peak.
+			/// [JP] Khronos PBR Neutral。中間域では元の色に近いまま保ち、ピーク付近だけを圧縮する。
+			PbrNeutral
 		};
 
+		/// [EN] Which tone curve compresses the HDR color (see ToneCurve).
+		/// [JP] HDR カラーをどのトーンカーブで圧縮するか(ToneCurve 参照)。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_FIELD_EX("方式")
 		ToneCurve mode_ = ToneCurve::AcesFilmic;
@@ -855,9 +875,13 @@ namespace SeedCore
 	*/
 	struct SharpnessSettings
 	{
+		/// [EN] Turns the unsharp mask on.
+		/// [JP] アンシャープマスクを有効にする。
 		SC_REFLECTION_FIELD_EX("有効")
 		Bool enabled_ = false;
 
+		/// [EN] How far each pixel is pushed away from the average of its 4 neighbours.
+		/// [JP] 各ピクセルを、上下左右 4 近傍の平均からどれだけ引き離すか。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("強さ", 0.0f, 2.0f)
 		Float amount_ = 0.5f;
@@ -907,34 +931,31 @@ namespace SeedCore
 	*/
 	struct FilmGrainSettings
 	{
+		/// [EN] Turns the film grain on.
+		/// [JP] フィルムグレインを有効にする。
 		SC_REFLECTION_FIELD_EX("有効")
 		Bool enabled_ = false;
 
+		/// [EN] Strength of the grain at the midtone peak of the response curve.
+		/// [JP] 応答カーブが最大になる中間調での、グレインの強さ。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("強度", 0.0f, 1.0f)
 		Float intensity_ = 0.15f;
 
-		/// [EN] Grain size in pixels. 1 gives per-pixel noise, which reads as
-		///      digital noise rather than film.
-		/// [JP] 粒の大きさ(画素単位)。1にすると画素単位のノイズになり、
-		///      フィルムではなくデジタルノイズに見える。
+		/// [EN] Grain size in pixels. 1 gives per-pixel noise, which reads as digital noise rather than film.
+		/// [JP] 粒の大きさ(画素単位)。1にすると画素単位のノイズになり、フィルムではなくデジタルノイズに見える。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("粒の大きさ", 1.0f, 8.0f)
 		Float size_ = 2.0f;
 
-		/// [EN] How strongly grain follows the midtone-peaked film response.
-		///      0 applies it uniformly across the tonal range, which is what
-		///      fake grain looks like.
-		/// [JP] 中間調で最大になるフィルムの応答にどれだけ従うか。0にすると
-		///      階調全域へ一様に乗り、いかにも作り物のグレインになる。
+		/// [EN] How strongly grain follows the midtone-peaked film response. 0 applies it uniformly across the tonal range, which is what fake grain looks like.
+		/// [JP] 中間調で最大になるフィルムの応答にどれだけ従うか。0にすると階調全域へ一様に乗り、いかにも作り物のグレインになる。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_CLAMPED_EX("階調応答", 0.0f, 1.0f)
 		Float luminanceResponse_ = 1.0f;
 
-		/// [EN] Colour film records grain per emulsion layer, so the grain is
-		///      coloured. Monochrome grain is the cheaper approximation.
-		/// [JP] カラーフィルムは乳剤層ごとに粒を持つので、グレインにも色が
-		///      付く。モノクロのグレインはそれを簡略化したもの。
+		/// [EN] Colour film records grain per emulsion layer, so the grain is coloured. Monochrome grain is the cheaper approximation.
+		/// [JP] カラーフィルムは乳剤層ごとに粒を持つので、グレインにも色が付く。モノクロのグレインはそれを簡略化したもの。
 		SC_REFLECTION_FIELD_CONDITION(enabled_)
 		SC_REFLECTION_FIELD_EX("色付き")
 		Bool colored_ = true;
@@ -946,8 +967,11 @@ namespace SeedCore
 	* shape as Unreal's PostProcessVolume or Unity's Post Process Volume). The
 	* renderer gathers it with Query<Read<Active>, Read<PostProcess>> and runs
 	* the effect chain in PostProcess/PostEffect/ with these values; when no
-	* entity carries one, the renderer falls back to this struct's defaults so
-	* a scene without a post-process entity still tonemaps.
+	* entity carries one, the renderer uses neutral settings instead (no
+	* exposure compensation, no tone curve, auto exposure off - see
+	* PostProcessRenderer::ResolveSettings), so a scene without a post-process
+	* entity gets no implicit correction. This struct's defaults are the
+	* starting point for a newly authored volume, not that fallback.
 	*
 	* Each effect gets its own reflected Settings struct (see
 	* ToneMappingSettings/ExposureSettings above) plus one field here and its
@@ -961,8 +985,11 @@ namespace SeedCore
 	* (Unreal の PostProcessVolume / Unity の Post Process Volume と同じ形)。
 	* レンダラーが Query<Read<Active>, Read<PostProcess>> で拾い、
 	* PostProcess/PostEffect/ のエフェクト列をこの値で走らせる。どのエンティティ
-	* も持っていない場合はこの構造体の既定値へフォールバックするので、
-	* ポストプロセス用エンティティが無いシーンでもトーンマップは掛かる。
+	* も持っていない場合はニュートラルな設定(露出補正なし、トーンカーブなし、
+	* 自動露出オフ — PostProcessRenderer::ResolveSettings 参照)を使うので、
+	* ポストプロセス用エンティティが無いシーンには暗黙の補正が掛からない。
+	* この構造体の既定値は、ボリュームを新しく配置したときの初期値であって、
+	* そのフォールバックではない。
 	*
 	* 各エフェクトは上の ToneMappingSettings/ExposureSettings のような専用の
 	* リフレクション対象構造体を持ち、ここにフィールドを1つ足し、
@@ -970,49 +997,71 @@ namespace SeedCore
 	*/
 	struct PostProcess
 	{
-		/// [EN] Fields are ordered to match the order the passes actually run
-		///      in PostProcessRenderer::Dispatch, so reading the inspector
-		///      top to bottom is reading the frame in the order it is built.
-		/// [JP] フィールドの並びは PostProcessRenderer::Dispatch で実際に
-		///      パスが走る順に合わせてある。インスペクタを上から下へ読むと、
-		///      フレームが組み立てられる順に読めることになる。
+		/// [EN] Fields are ordered to match the order the passes actually run in PostProcessRenderer::Dispatch, so reading the inspector top to bottom is reading the frame in the order it is built.
+		/// [JP] フィールドの並びは PostProcessRenderer::Dispatch で実際にパスが走る順に合わせてある。インスペクタを上から下へ読むと、フレームが組み立てられる順に読めることになる。
 
+		/// [EN] Depth-of-field gather blur (DepthOfFieldCS.hlsl).
+		/// [JP] 被写界深度のギャザーブラー(DepthOfFieldCS.hlsl)。
 		SC_REFLECTION_FIELD_EX("被写界深度")
 		DepthOfFieldSettings depthOfField_;
 
+		/// [EN] Bokeh highlights layered on the depth-of-field blur (BokehCS.hlsl).
+		/// [JP] 被写界深度のブラーに重ねるボケハイライト(BokehCS.hlsl)。
 		SC_REFLECTION_FIELD_EX("ボケ")
 		BokehSettings bokeh_;
 
+		/// [EN] Brown-Conrady radial lens distortion (LensDistortionCS.hlsl).
+		/// [JP] Brown-Conrady モデルの半径方向のレンズ歪曲(LensDistortionCS.hlsl)。
 		SC_REFLECTION_FIELD_EX("レンズ歪曲")
 		LensDistortionSettings lensDistortion_;
 
+		/// [EN] Lateral chromatic aberration (ChromaticAberrationCS.hlsl).
+		/// [JP] 倍率色収差(ChromaticAberrationCS.hlsl)。
 		SC_REFLECTION_FIELD_EX("色収差")
 		ChromaticAberrationSettings chromaticAberration_;
 
+		/// [EN] Cosine-fourth vignette, applied before exposure (VignetteCS.hlsl).
+		/// [JP] コサイン4乗則のビネット。露出の前に適用する(VignetteCS.hlsl)。
 		SC_REFLECTION_FIELD_EX("ビネット")
 		VignetteSettings vignette_;
 
+		/// [EN] Kawase-lineage bloom added into the HDR color before exposure (KawaseBloomCS.hlsl).
+		/// [JP] 露出の前に HDR カラーへ加算する Kawase 系列のブルーム(KawaseBloomCS.hlsl)。
 		SC_REFLECTION_FIELD_EX("ブルーム")
 		BloomSettings bloom_;
 
+		/// [EN] Horizontal anamorphic streak (AnamorphicFlareCS.hlsl).
+		/// [JP] 横方向のアナモルフィックの筋(AnamorphicFlareCS.hlsl)。
 		SC_REFLECTION_FIELD_EX("アナモルフィックフレア")
 		AnamorphicFlareSettings anamorphicFlare_;
 
+		/// [EN] Diffraction spikes plus the ghost/halo chain (LensFlareCS.hlsl).
+		/// [JP] 回折スパイクと、ゴースト/ハローの連なり(LensFlareCS.hlsl)。
 		SC_REFLECTION_FIELD_EX("レンズフレア")
 		LensFlareSettings lensFlare_;
 
+		/// [EN] Manual exposure compensation and histogram auto exposure.
+		/// [JP] 手動の露出補正と、ヒストグラムによる自動露出。
 		SC_REFLECTION_FIELD_EX("露出")
 		ExposureSettings exposure_;
 
+		/// [EN] Per-tonal-range color grading in scene-referred linear space (ColorGradingCS.hlsl).
+		/// [JP] シーン参照リニア空間での、階調域ごとのカラーグレーディング(ColorGradingCS.hlsl)。
 		SC_REFLECTION_FIELD_EX("カラーグレーディング")
 		ColorGradingSettings colorGrading_;
 
+		/// [EN] Tone curve that compresses HDR into the display range (ToneMappingCS.hlsl).
+		/// [JP] HDR を表示範囲へ圧縮するトーンカーブ(ToneMappingCS.hlsl)。
 		SC_REFLECTION_FIELD_EX("トーンマップ")
 		ToneMappingSettings toneMapping_;
 
+		/// [EN] Unsharp mask on the tone-mapped output (SharpnessCS.hlsl).
+		/// [JP] トーンマップ済みの出力へ掛けるアンシャープマスク(SharpnessCS.hlsl)。
 		SC_REFLECTION_FIELD_EX("シャープネス")
 		SharpnessSettings sharpness_;
 
+		/// [EN] Midtone-weighted film grain on the tone-mapped output (FilmGrainCS.hlsl).
+		/// [JP] トーンマップ済みの出力へ乗せる、中間調で強いフィルムグレイン(FilmGrainCS.hlsl)。
 		SC_REFLECTION_FIELD_EX("フィルムグレイン")
 		FilmGrainSettings filmGrain_;
 	};

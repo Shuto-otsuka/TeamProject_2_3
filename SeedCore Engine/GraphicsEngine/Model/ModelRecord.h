@@ -80,37 +80,82 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* shadingModel_ selects the lighting response DeferredLightingPS.hlsl
-	* evaluates this instance with (see Crister.h's ShadingModel).
-	* furLength_/furDensity_/furShellCount_ are ShadingModel::Fur tuning
-	* (shell height in metres, per-strand hash-noise density, shell layers
-	* above the base surface).
+	* Per-instance shading parameters copied from the instance's material
+	* (Surface) and its actor (3 rows / 48 bytes). shadingModel_ selects the
+	* lighting response DeferredLightingPS.hlsl evaluates this instance with
+	* (see CristerMaterial.h's ShadingModel); furLength_/furDensity_/
+	* furShellCount_ are ShadingModel::Fur tuning. doubleSided_/blend_ route
+	* the instance to the culling lists and passes that match its faces and
+	* alpha mode, and selected_ marks it for the editor's selection outline.
+	* materialMapping_/tiling_/triplanarSharpness_ decide how the material's
+	* textures are placed (MaterialMapping.hlsli), and outlineColor_/
+	* outlineWidth_ are the material's screen-space outline
+	* (MaterialOutlineCS.hlsl).
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* shadingModel_ は DeferredLightingPS.hlsl がこのインスタンスをどの
-	* ライティング応答で評価するか(Crister.h の ShadingModel 参照)。
-	* furLength_/furDensity_/furShellCount_ は ShadingModel::Fur の
-	* チューニング値(シェルの高さ(メートル)、毛1本ごとのハッシュノイズ密度、
-	* ベース面の上に描画するシェル層数)。
+	* インスタンスのマテリアル(Surface)とアクターから写す、インスタンス
+	* ごとのシェーディングの値(3 行 / 48 バイト)。shadingModel_ は
+	* DeferredLightingPS.hlsl がこのインスタンスをどのライティング応答で
+	* 評価するか(CristerMaterial.h の ShadingModel 参照)、furLength_/
+	* furDensity_/furShellCount_ は ShadingModel::Fur のチューニング値。
+	* doubleSided_/blend_ は、面の向きとアルファモードに合ったカリングの
+	* リストとパスへインスタンスを振り分け、selected_ はエディタの選択
+	* アウトラインの対象であることを示す。materialMapping_/tiling_/
+	* triplanarSharpness_ はマテリアルのテクスチャの貼り方
+	* (MaterialMapping.hlsli)を決め、outlineColor_/outlineWidth_ は
+	* マテリアルのスクリーン空間の縁取り(MaterialOutlineCS.hlsl)。
 	*/
 	struct ModelShading
 	{
+		/// [EN] Lighting response the deferred lighting pass evaluates this instance with (ShadingModel); KHR_materials_unlit forces Unlit.
+		/// [JP] デフォードライティングパスがこのインスタンスを評価するライティング応答(ShadingModel)。KHR_materials_unlit なら Unlit に固定される。
 		Uint shadingModel_;
+
+		/// [EN] Fur shell height in metres (ShadingModel::Fur).
+		/// [JP] 毛のシェルの高さ(メートル、ShadingModel::Fur)。
 		Float furLength_;
+
+		/// [EN] Per-strand hash-noise density of the fur (ShadingModel::Fur).
+		/// [JP] 毛 1 本ごとのハッシュノイズの密度(ShadingModel::Fur)。
 		Float furDensity_;
+
+		/// [EN] Number of shell layers drawn above the base surface (ShadingModel::Fur).
+		/// [JP] ベース面の上に描くシェルの層数(ShadingModel::Fur)。
 		Uint furShellCount_;
 
+		/// [EN] 1 when the material draws both faces, so culling puts the instance in the double-sided list and skips back-face rejection.
+		/// [JP] マテリアルが両面を描くときに 1。カリングはインスタンスを両面用のリストへ入れ、裏面の除外を行わない。
 		Uint doubleSided_;
-		Uint blend_;
-		Uint selected_;
-		Uint modelShadingPadding0_;
 
+		/// [EN] 1 when the material's alpha mode is BLEND, so the instance is drawn by the transparent (OIT) pass instead of the opaque ones.
+		/// [JP] マテリアルのアルファモードが BLEND のときに 1。インスタンスは不透明のパスではなく、半透明(OIT)のパスで描かれる。
+		Uint blend_;
+
+		/// [EN] 1 when the instance's actor is selected in the editor, so it is drawn into the selection silhouette.
+		/// [JP] インスタンスのアクターがエディタで選択されているときに 1。選択シルエットに描かれる。
+		Uint selected_;
+
+		/// [EN] How the material's textures are placed (MaterialMapping as an integer, MATERIAL_MAPPING_* in Model.hlsli).
+		/// [JP] マテリアルのテクスチャの貼り方(MaterialMapping を整数にしたもの。Model.hlsli の MATERIAL_MAPPING_*)。
 		Uint materialMapping_;
+
+		/// [EN] Pattern repetitions per unit of scaled size; unused by MaterialMapping::Stretch.
+		/// [JP] スケール込みの大きさ 1 単位あたりの柄の繰り返し回数。MaterialMapping::Stretch では使わない。
 		Float tiling_;
+
+		/// [EN] Exponent applied to the normal before it weights the three Triplanar projections.
+		/// [JP] 3 つの Triplanar 投影の重みにする前に、法線へ掛ける指数。
 		Float triplanarSharpness_;
-		Uint modelShadingPadding1_;
+
+		/// [EN] Material outline color packed as RGBA8 (R in the lowest byte), from Surface::outlineColor_.
+		/// [JP] マテリアルの縁取りの色を RGBA8 に詰めたもの(最下位バイトが R)。Surface::outlineColor_ から写す。
+		Uint outlineColor_;
+
+		/// [EN] Material outline width in display-resolution pixels, from Surface::outlineWidth_; 0 leaves the instance unoutlined.
+		/// [JP] マテリアルの縁取りの幅(表示解像度のピクセル数)。Surface::outlineWidth_ から写す。0 ならこのインスタンスは縁取らない。
+		Float outlineWidth_;
 	};
 	SC_STATIC_ASSERT(ModelShading, 48, "Model/Model.hlsli");
 

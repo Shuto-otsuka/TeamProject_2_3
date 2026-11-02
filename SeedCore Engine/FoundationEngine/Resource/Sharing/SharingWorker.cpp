@@ -345,6 +345,21 @@ namespace SeedCore
 			break;
 		}
 
+		/// [EN] Each failure already carries its own wording, so the one that happened is simply passed along.
+		/// [JP] 失敗にはそれぞれ固有の文言が付いているので、起きたものをそのまま渡す。
+		{
+			std::lock_guard<std::mutex> guard(snapshotMutex_);
+			snapshot_.operation_ = String();
+
+			/// [EN] A message set while the work ran - such as a file whose Drive contents did not match the catalog - is kept even when the request as a whole went through.
+			/// [JP] 作業中に設定された文言（Drive 上の中身がカタログと一致しないファイルがあった、など）は、依頼全体が通った場合でも残す。
+			if (!done && snapshot_.error_.str().empty())
+			{
+				snapshot_.error_ = catalog_.Error();
+			}
+		}
+		Capture();
+
 		/// [EN] A publish or an unshare leaves the previous contents unnamed, so the blobs folder is swept right after either succeeds.
 		/// [JP] 公開や共有の解除は前の中身をどこからも指されない状態にするため、どちらかが成功した直後に blobs フォルダを掃除する。
 		if (done && (request.action_ == SharingAction::Publish || request.action_ == SharingAction::Unshare) && !config_.blobFolderId_.str().empty())
@@ -381,32 +396,20 @@ namespace SeedCore
 				std::string cutoff = std::format("{:%FT%TZ}", std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now() - std::chrono::hours(1)));
 				for (const DriveEntry& blob : blobs)
 				{
-					if (blob.folder_ || inUse.contains(blob.id_.str()) || blob.modified_.str().empty() || blob.modified_.str() >= cutoff)
+					if (blob.folder_ || !blob.canTrash_ || inUse.contains(blob.id_.str()) || blob.modified_.str().empty() || blob.modified_.str() >= cutoff)
 					{
 						continue;
 					}
 
 					/// [EN] Trashing rather than deleting outright leaves a member a way back for a while if this was a mistake.
 					/// [JP] 完全に消すのではなくゴミ箱へ移すため、誤りだった場合もしばらくは戻せる。
-					drive_.Trash(blob.id_);
+					if (!drive_.Trash(blob.id_))
+					{
+						break;
+					}
 				}
 			}
 		}
-
-		/// [EN] Each failure already carries its own wording, so the one that happened is simply passed along.
-		/// [JP] 失敗にはそれぞれ固有の文言が付いているので、起きたものをそのまま渡す。
-		{
-			std::lock_guard<std::mutex> guard(snapshotMutex_);
-			snapshot_.operation_ = String();
-
-			/// [EN] A message set while the work ran - such as a file whose Drive contents did not match the catalog - is kept even when the request as a whole went through.
-			/// [JP] 作業中に設定された文言（Drive 上の中身がカタログと一致しないファイルがあった、など）は、依頼全体が通った場合でも残す。
-			if (!done && snapshot_.error_.str().empty())
-			{
-				snapshot_.error_ = catalog_.Error();
-			}
-		}
-		Capture();
 	}
 
 	/**
