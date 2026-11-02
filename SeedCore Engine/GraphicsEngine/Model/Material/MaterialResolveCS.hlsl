@@ -4,6 +4,7 @@
 #include "../../Shader/Sampler.hlsli"
 #include "../../Shader/Normal.hlsli"
 #include "../../Shader/Scene.hlsli"
+#include "MaterialMapping.hlsli"
 
 /**
 * [EN]
@@ -315,23 +316,47 @@ void main(uint3 dtid : SV_DispatchThreadID)
 	float tangent_sign = surface.tangent_sign_;
 	float2 texcoord = surface.texcoord_;
 
+	float3 object_position = perspective_w0 * local_position0 + perspective_w1 * local_position1 + perspective_w2 * local_position2;
+	float3 object_normal = normalize(perspective_w0 * local_normal0 + perspective_w1 * local_normal1 + perspective_w2 * local_normal2);
+	if (!resolve_is_front_face)
+	{
+		object_normal = -object_normal;
+	}
+	float3 object_tangent = resolve_world_tangent_xyz;
+	float3 object_bitangent = cross(object_normal, object_tangent) * tangent_sign;
+	float3 object_scale = float3(length(instance.transform_.world_[0].xyz), length(instance.transform_.world_[1].xyz), length(instance.transform_.world_[2].xyz));
+
+	MaterialMappingCoordinate mapping = ResolveMaterialMapping(instance.shading_.material_mapping_, instance.shading_.tiling_, instance.shading_.triplanar_sharpness_, texcoord, object_position, object_normal, object_tangent, object_bitangent, object_scale, world_position, N);
+
 	/// [JP] StaticModelPS.hlsl と同じマテリアル評価。
 	float4 base_color = instance.texture_.base_color_;
 	if (instance.texture_.base_color_texture_index_ != 0xFFFFFFFF)
 	{
 		Texture2D base_color_texture = ResourceDescriptorHeap[instance.texture_.base_color_texture_index_];
-		base_color *= base_color_texture.SampleLevel(sampler_aniso_wrap, texcoord, 0);
+		base_color *= SampleMaterialMappingLevel(base_color_texture, sampler_aniso_wrap, mapping, 0);
 	}
 
 	if (instance.texture_.normal_texture_index_ != 0xFFFFFFFF)
 	{
-		float3 T = world_tangent_xyz;
-		float3 B = cross(N, T) * tangent_sign;
-		float3x3 TBN = float3x3(T, B, N);
-
 		Texture2D normal_texture = ResourceDescriptorHeap[instance.texture_.normal_texture_index_];
-		float3 normal_sample = normal_texture.SampleLevel(sampler_linear_wrap, texcoord, 0).xyz * 2.0 - 1.0;
-		N = normalize(mul(normal_sample, TBN));
+		if (instance.shading_.material_mapping_ == MATERIAL_MAPPING_TRIPLANAR_OBJECT)
+		{
+			float3 projection_normal = SampleNormalMappingLevel(normal_texture, sampler_linear_wrap, mapping, 0);
+			N = normalize(mul(float4(projection_normal * object_scale, 0.0), instance.transform_.inverse_transpose_world_).xyz);
+		}
+		else if (instance.shading_.material_mapping_ == MATERIAL_MAPPING_TRIPLANAR_WORLD)
+		{
+			N = SampleNormalMappingLevel(normal_texture, sampler_linear_wrap, mapping, 0);
+		}
+		else
+		{
+			float3 T = world_tangent_xyz;
+			float3 B = cross(N, T) * tangent_sign;
+			float3x3 TBN = float3x3(T, B, N);
+
+			float3 normal_sample = SampleMaterialMappingLevel(normal_texture, sampler_linear_wrap, mapping, 0).xyz * 2.0 - 1.0;
+			N = normalize(mul(normal_sample, TBN));
+		}
 	}
 
 	float metallic = instance.texture_.metallic_;
@@ -339,7 +364,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
 	if (instance.texture_.metallic_roughness_texture_index_ != 0xFFFFFFFF)
 	{
 		Texture2D metallic_roughness_texture = ResourceDescriptorHeap[instance.texture_.metallic_roughness_texture_index_];
-		float4 metallic_roughness = metallic_roughness_texture.SampleLevel(sampler_linear_wrap, texcoord, 0);
+		float4 metallic_roughness = SampleMaterialMappingLevel(metallic_roughness_texture, sampler_linear_wrap, mapping, 0);
 		metallic *= metallic_roughness.b;
 		roughness *= metallic_roughness.g;
 	}
@@ -348,7 +373,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
 	if (instance.texture_.emissive_texture_index_ != 0xFFFFFFFF)
 	{
 		Texture2D emissive_texture = ResourceDescriptorHeap[instance.texture_.emissive_texture_index_];
-		emissive *= emissive_texture.SampleLevel(sampler_linear_wrap, texcoord, 0).rgb;
+		emissive *= SampleMaterialMappingLevel(emissive_texture, sampler_linear_wrap, mapping, 0).rgb;
 	}
 
 	float4 previous_clip = mul(float4(surface.previous_world_position_, 1.0), scene.previous_view_projection_);

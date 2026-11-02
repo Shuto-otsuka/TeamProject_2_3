@@ -2,7 +2,7 @@
 #include "../../Shader/ShaderResources.hlsli"
 #include "../../Shader/Scene.hlsli"
 
-DepthPrepassOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
+DepthPrepassVSOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 {
 	StructuredBuffer<ModelCullingStructuredBuffer> culling = GetModelCullingStructuredBuffer(dispatch_buffer_index_);
 	StructuredBuffer<ModelStructuredBuffer> instances = GetModelStructuredBuffer(shader_resource_indices.model_.instance_index_);
@@ -18,7 +18,7 @@ DepthPrepassOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_Inst
 	ModelMeshlet meshlet = meshlets[visible.meshlet_index_];
 	uint triangle_index = vertex_id / 3;
 
-	DepthPrepassOutput output = (DepthPrepassOutput)0;
+	DepthPrepassVSOutput output = (DepthPrepassVSOutput)0;
 	output.position = float4(2.0, 2.0, 2.0, 1.0);
 
 	if (triangle_index >= meshlet.triangle_count_)
@@ -64,6 +64,8 @@ DepthPrepassOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_Inst
 	output.position = mul(world_position, GetSceneConstantBuffer().current_view_projection_);
 	output.texcoord = vertex.texcoord_;
 	output.instance_index = visible.instance_index_;
+	output.meshlet_index = visible.meshlet_index_;
+	output.triangle_in_meshlet_index = triangle_index;
 
 	return output;
 }

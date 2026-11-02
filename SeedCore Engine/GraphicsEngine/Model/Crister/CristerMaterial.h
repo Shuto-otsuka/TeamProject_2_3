@@ -464,6 +464,45 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* How a material's textures are placed on the surface. Stretch reads the
+	* mesh's own UVs, so the texture scales together with the object. Tile
+	* multiplies those UVs by the object's scale measured along the UV
+	* tangent directions, so scaling up repeats the pattern instead of
+	* enlarging it. The two Triplanar modes ignore UVs and project the texture
+	* from the three axis planes using the surface position, blended by the
+	* surface normal, so the pattern density stays constant on any shape.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* マテリアルのテクスチャを表面にどう貼るか。Stretch はメッシュ自身の UV を
+	* 読むので、オブジェクトを拡大するとテクスチャも一緒に伸びる。Tile は
+	* その UV に、UV の接線方向に沿って測ったオブジェクトのスケールを掛けるので、
+	* 拡大すると柄が大きくなるのではなく繰り返しが増える。Triplanar の2つは
+	* UV を使わず、表面の位置を使って3つの軸平面からテクスチャを投影し、
+	* 法線で混ぜ合わせるので、どんな形状でも柄の密度が一定になる。
+	*/
+	enum class MaterialMapping :Uint32
+	{
+		/// [EN] Mesh UVs as authored; the texture stretches with the object's scale.
+		/// [JP] メッシュの UV をそのまま使う。オブジェクトのスケールに合わせてテクスチャが伸びる。
+		Stretch = 0,
+
+		/// [EN] Mesh UVs scaled by the object's scale along the UV tangent directions; the pattern repeats as the object grows.
+		/// [JP] UV の接線方向に沿ったオブジェクトのスケールを UV に掛ける。オブジェクトが大きくなるほど柄が繰り返される。
+		Tile = 1,
+
+		/// [EN] Three-axis projection from the scaled object-space position; the pattern follows the object when it moves.
+		/// [JP] スケール込みのオブジェクト空間の位置から3軸で投影する。オブジェクトを動かすと柄もついてくる。
+		TriplanarObject = 2,
+
+		/// [EN] Three-axis projection from the world-space position; the object slides across a pattern fixed in the world, keeping adjacent objects seamless.
+		/// [JP] ワールド空間の位置から3軸で投影する。柄はワールドに固定され、オブジェクトがその上を滑るので、隣り合うオブジェクト同士の継ぎ目が出ない。
+		TriplanarWorld = 3,
+	};
+
+	/**
+	* [EN]
 	* glTF PBR metallic-roughness material: base factors, alpha mode/
 	* cutoff/double-sidedness, bundled KHR_materials_* extensions (khr_),
 	* and bindless-heap-agnostic texture indices (resolved into actual
@@ -572,6 +611,18 @@ namespace SeedCore
 		/// [JP] 0 以外なら emissiveTextureIndex_ の代わりに使うテクスチャアセット。
 		Uint32 emissiveTextureAssetID_ = 0;
 
+		/// [EN] How this material's textures are placed on the surface (see MaterialMapping).
+		/// [JP] このマテリアルのテクスチャを表面にどう貼るか(MaterialMapping 参照)。
+		MaterialMapping materialMapping_ = MaterialMapping::Stretch;
+
+		/// [EN] Pattern repetitions per unit of scaled size; unused by Stretch.
+		/// [JP] スケール込みの大きさ1単位あたりの柄の繰り返し回数。Stretch では使わない。
+		Float tiling_ = 1.0f;
+
+		// [EN] Exponent applied to the normal before it weights the three Triplanar projections; higher values narrow the blend band where two projections overlap.
+		/// [JP] 3つの Triplanar 投影の重みにする前に法線へ掛ける指数。大きいほど2つの投影が重なって混ざる帯が狭くなる。
+		Float triplanarSharpness_ = 4.0f;
+
 		template<class Archive>
 		void Serialize(Archive& archive)
 		{
@@ -598,6 +649,9 @@ namespace SeedCore
 			archive.TryField("metallic_roughness_texture_asset_id", metallicRoughnessTextureAssetID_);
 			archive.TryField("occlusion_texture_asset_id", occlusionTextureAssetID_);
 			archive.TryField("emissive_texture_asset_id", emissiveTextureAssetID_);
+			archive.TryField("material_mapping", materialMapping_);
+			archive.TryField("tiling", tiling_);
+			archive.TryField("triplanar_sharpness", triplanarSharpness_);
 		}
 	};
 

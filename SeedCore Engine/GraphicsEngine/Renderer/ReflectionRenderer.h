@@ -145,9 +145,16 @@ namespace SeedCore
 		/// [JP] 厚みテクスチャの bindless インデックス。無ければ 0xFFFFFFFF。
 		Uint32 thicknessTextureIndex_ = 0xFFFFFFFF;
 
+		Uint32 materialMapping_ = 0;
+
+		Float tiling_ = 1.0f;
+
+		Float triplanarSharpness_ = 4.0f;
+
 		/// [EN] Pads the structure to a whole number of 16-byte rows.
 		/// [JP] 構造体を 16 バイトの行の整数倍に揃える詰め物。
-		Float materialPadding_ = 0.0f;
+		Float materialPadding0_ = 0.0f;
+		Float materialPadding1_ = 0.0f;
 	};
 
 	/**

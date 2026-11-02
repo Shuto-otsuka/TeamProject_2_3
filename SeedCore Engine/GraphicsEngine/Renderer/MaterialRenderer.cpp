@@ -58,6 +58,7 @@ namespace SeedCore
 		transparentInstances_.clear();
 		boneMatrices_.clear();
 		hasSkinnedOpaque_ = false;
+		hasSkinnedTransparent_ = false;
 		uploaded_ = false;
 
 		Handle<Crister> cristerHandle = modelResource.GetHandle(meshAssetId);
@@ -211,6 +212,9 @@ namespace SeedCore
 						instanceData.extension_.iridescenceThickness_ = (material.khr_.iridescence_.iridescenceThicknessMinimum_ + material.khr_.iridescence_.iridescenceThicknessMaximum_) * 0.5f;
 						instanceData.extension_.unlit_ = material.khr_.unlit_.unlit_ != 0 ? 1.0f : 0.0f;
 						instanceData.shading_.shadingModel_ = material.khr_.unlit_.unlit_ != 0 ? static_cast<Uint>(ShadingModel::Unlit) : static_cast<Uint>(material.shadingModel_);
+						instanceData.shading_.materialMapping_ = static_cast<Uint>(material.materialMapping_);
+						instanceData.shading_.tiling_ = material.tiling_;
+						instanceData.shading_.triplanarSharpness_ = material.triplanarSharpness_;
 
 						instanceData.texture_.baseColorTextureIndex_ = material.baseColorTextureAssetID_ != 0 ? textureResource.GetID(material.baseColorTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.baseColorTextureIndex_);
 						instanceData.texture_.normalTextureIndex_ = material.normalTextureAssetID_ != 0 ? textureResource.GetID(material.normalTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.normalTextureIndex_);
@@ -277,6 +281,7 @@ namespace SeedCore
 						else
 						{
 							transparentInstances_.push_back(instanceData);
+							hasSkinnedTransparent_ = hasSkinnedTransparent_ || instanceData.skining_.skinIndex_ != 0xFFFFFFFF;
 						}
 
 						offset += count;
@@ -334,7 +339,7 @@ namespace SeedCore
 		constantIndicesBuffer_->Update(constantIndices_);
 		shaderResourceIndicesBuffer_->Update(shaderResourceIndices_);
 
-		if (opaqueInstances_.empty())
+		if (opaqueInstances_.empty() && transparentInstances_.empty())
 		{
 			return;
 		}
@@ -361,6 +366,20 @@ namespace SeedCore
 				cmd->SetPipelineState(modelShader_.GetPipelineStatePreviewSkeletal());
 				cmd->DispatchMesh(static_cast<Uint>(opaqueInstances_.size() + transparentInstances_.size()), 1, 1);
 				ProfilerStats::AddDrawCall();
+			}
+
+			if (!transparentInstances_.empty())
+			{
+				cmd->SetPipelineState(modelShader_.GetPipelineStatePreviewStaticTransparent());
+				cmd->DispatchMesh(static_cast<Uint>(opaqueInstances_.size() + transparentInstances_.size()), 1, 1);
+				ProfilerStats::AddDrawCall();
+
+				if (hasSkinnedTransparent_)
+				{
+					cmd->SetPipelineState(modelShader_.GetPipelineStatePreviewSkeletalTransparent());
+					cmd->DispatchMesh(static_cast<Uint>(opaqueInstances_.size() + transparentInstances_.size()), 1, 1);
+					ProfilerStats::AddDrawCall();
+				}
 			}
 		}
 		else
@@ -406,6 +425,42 @@ namespace SeedCore
 			}
 
 			modelCullingBuffer_.End(cmd);
+
+			if (!transparentInstances_.empty())
+			{
+				modelCullingBuffer_.Begin(cmd);
+
+				cmd->SetComputeRoot32BitConstants(3, 1, &cullingIndex, 0);
+				cmd->SetPipelineState(modelShader_.GetPipelineStateModelTransparentCulling());
+				cmd->Dispatch(static_cast<Uint>(opaqueInstances_.size() + transparentInstances_.size()), 1, 1);
+
+				modelCullingBuffer_.Barrier(cmd);
+
+				cmd->SetGraphicsRoot32BitConstants(3, 1, &singleSidedIndex, 0);
+				cmd->SetPipelineState(modelShader_.GetPipelineStatePreviewStaticTransparent());
+				cmd->ExecuteIndirect(modelCullingBuffer_.GetCommandSignature(), 1, modelCullingBuffer_.GetArgumentBuffer(), 0, nullptr, 0);
+				ProfilerStats::AddDrawCall();
+
+				cmd->SetGraphicsRoot32BitConstants(3, 1, &doubleSidedIndex, 0);
+				cmd->SetPipelineState(modelShader_.GetPipelineStatePreviewStaticTransparentDoubleSided());
+				cmd->ExecuteIndirect(modelCullingBuffer_.GetCommandSignature(), 1, modelCullingBuffer_.GetArgumentBuffer(), sizeof(D3D12_DRAW_ARGUMENTS), nullptr, 0);
+				ProfilerStats::AddDrawCall();
+
+				if (hasSkinnedTransparent_)
+				{
+					cmd->SetGraphicsRoot32BitConstants(3, 1, &singleSidedIndex, 0);
+					cmd->SetPipelineState(modelShader_.GetPipelineStatePreviewSkeletalTransparent());
+					cmd->ExecuteIndirect(modelCullingBuffer_.GetCommandSignature(), 1, modelCullingBuffer_.GetArgumentBuffer(), 0, nullptr, 0);
+					ProfilerStats::AddDrawCall();
+
+					cmd->SetGraphicsRoot32BitConstants(3, 1, &doubleSidedIndex, 0);
+					cmd->SetPipelineState(modelShader_.GetPipelineStatePreviewSkeletalTransparentDoubleSided());
+					cmd->ExecuteIndirect(modelCullingBuffer_.GetCommandSignature(), 1, modelCullingBuffer_.GetArgumentBuffer(), sizeof(D3D12_DRAW_ARGUMENTS), nullptr, 0);
+					ProfilerStats::AddDrawCall();
+				}
+
+				modelCullingBuffer_.End(cmd);
+			}
 		}
 	}
 

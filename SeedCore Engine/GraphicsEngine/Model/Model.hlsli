@@ -68,6 +68,16 @@ struct DepthPrepassOutput
 	float4 position : SV_Position;
 	float2 texcoord : TEXCOORD0;
 	nointerpolation uint instance_index : BLENDINDICES0;
+	nointerpolation uint meshlet_index  : BLENDINDICES1;
+};
+
+struct DepthPrepassVSOutput
+{
+	float4 position : SV_Position;
+	float2 texcoord : TEXCOORD0;
+	nointerpolation uint instance_index : BLENDINDICES0;
+	nointerpolation uint meshlet_index  : BLENDINDICES1;
+	nointerpolation uint triangle_in_meshlet_index : BLENDINDICES2;
 };
 
 /**
@@ -109,6 +119,9 @@ struct FurShellMSOutput
 	float3 world_normal   : TEXCOORD2;
 	float3 world_tangent  : TEXCOORD3;
 	float2 texcoord       : TEXCOORD0;
+	float3 object_position : TEXCOORD5;
+	float3 object_normal   : TEXCOORD6;
+	float4 object_tangent  : TEXCOORD7;
 	nointerpolation uint instance_index : BLENDINDICES0;
 	nointerpolation float shell_ratio   : TEXCOORD4;
 };
@@ -284,6 +297,11 @@ struct OitUnorderedAccessIndices
 #define SHADING_MODEL_FLAT 5
 #define SHADING_MODEL_FUR 6
 
+#define MATERIAL_MAPPING_STRETCH 0
+#define MATERIAL_MAPPING_TILE 1
+#define MATERIAL_MAPPING_TRIPLANAR_OBJECT 2
+#define MATERIAL_MAPPING_TRIPLANAR_WORLD 3
+
 // VisibilityBuffer material sort: pixels are bucketed by (instance_index %
 // MATERIAL_SORT_BUCKET_COUNT) before Model/Material/MaterialResolveCS.hlsl runs, so
 // adjacent threads in a wave land on the same/nearby instance and share
@@ -383,6 +401,11 @@ struct ModelShading                       // 2 rows
 	uint blend_;
 	uint selected_;
 	uint model_shading_padding_0_;
+
+	uint material_mapping_;
+	float tiling_;
+	float triplanar_sharpness_;
+	uint model_shading_padding_1_;
 };
 
 /**

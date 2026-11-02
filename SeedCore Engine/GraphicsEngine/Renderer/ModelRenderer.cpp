@@ -576,6 +576,9 @@ namespace SeedCore
 						instanceData.shading_.furLength_ = material.furLength_;
 						instanceData.shading_.furDensity_ = material.furDensity_;
 						instanceData.shading_.furShellCount_ = static_cast<Uint>(material.furShellCount_);
+						instanceData.shading_.materialMapping_ = static_cast<Uint>(material.materialMapping_);
+						instanceData.shading_.tiling_ = material.tiling_;
+						instanceData.shading_.triplanarSharpness_ = material.triplanarSharpness_;
 
 						instanceData.geometry_.vertexBufferIndex_ = crister->Residency().ClusterVertexBufferIndex(clusterIndex);
 						instanceData.skining_.skinVertexBufferIndex_ = crister->Residency().SkinVertexBufferIndex();
@@ -791,6 +794,9 @@ namespace SeedCore
 				instanceData.shading_.furLength_ = material.furLength_;
 				instanceData.shading_.furDensity_ = material.furDensity_;
 				instanceData.shading_.furShellCount_ = static_cast<Uint>(material.furShellCount_);
+				instanceData.shading_.materialMapping_ = static_cast<Uint>(material.materialMapping_);
+				instanceData.shading_.tiling_ = material.tiling_;
+				instanceData.shading_.triplanarSharpness_ = material.triplanarSharpness_;
 
 				/// [EN] SoftbodyMesh's own buffers, not Crister's — see
 				///      SoftbodyMesh's class comment.

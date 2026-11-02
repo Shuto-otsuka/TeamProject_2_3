@@ -57,6 +57,9 @@ FurShellMSOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_Instan
 	output.world_normal = normalize(mul(float4(vertex.normal_, 0.0), instance.transform_.inverse_transpose_world_).xyz);
 	output.world_tangent = normalize(mul(float4(vertex.tangent_.xyz, 0.0), instance.transform_.world_).xyz);
 	output.texcoord = vertex.texcoord_;
+	output.object_position = vertex.position_;
+	output.object_normal = vertex.normal_;
+	output.object_tangent = vertex.tangent_;
 	output.instance_index = visible.instance_index_;
 	output.shell_ratio = shell_ratio;
 

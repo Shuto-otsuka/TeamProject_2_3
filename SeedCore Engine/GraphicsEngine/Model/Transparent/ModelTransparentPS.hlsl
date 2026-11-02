@@ -11,6 +11,7 @@
 #include "../../Illumination/Reflection/Raytracing/RaytracingReflection.hlsli"
 #include "../../Sky/SkyGenerate.hlsli"
 #include "OitShading.hlsli"
+#include "../Material/MaterialMapping.hlsli"
 
 float3 EvalTransparentDirectLight(float3 normal, float3 view, float3 light_direction, float3 diffuse_color, float3 f0, float roughness)
 {
@@ -96,18 +97,6 @@ void main(ModelMSOutput input, ModelMSPrimitiveOutput primitive)
 {
 	StructuredBuffer<ModelStructuredBuffer> instances = GetModelStructuredBuffer(shader_resource_indices.model_.instance_index_);
 	ModelStructuredBuffer instance = instances[input.instance_index];
-
-	/// [JP] まずアルファだけ先に評価してクリップする — 完全に透明なフラグメント
-	///      に対して面の再構築とライティングを走らせても無駄なので、
-	///      ベースカラーのサンプルは補間済み texcoord で先に済ませる。
-	float4 base_color = instance.texture_.base_color_;
-	if (instance.texture_.base_color_texture_index_ != OIT_INVALID_INDEX)
-	{
-		Texture2D base_color_texture = ResourceDescriptorHeap[instance.texture_.base_color_texture_index_];
-		base_color *= base_color_texture.Sample(sampler_aniso_wrap, input.texcoord);
-	}
-
-	clip(base_color.a - instance.texture_.alpha_cutoff_);
 
 	SceneConstantBuffer scene = GetSceneConstantBuffer();
 
@@ -335,15 +324,48 @@ void main(ModelMSOutput input, ModelMSPrimitiveOutput primitive)
 
 	float3 N = surface.normal_;
 
+	float3 object_position = perspective_w0 * local_position0 + perspective_w1 * local_position1 + perspective_w2 * local_position2;
+	float3 object_normal = normalize(perspective_w0 * local_normal0 + perspective_w1 * local_normal1 + perspective_w2 * local_normal2);
+	if (!resolve_is_front_face)
+	{
+		object_normal = -object_normal;
+	}
+	float3 object_tangent = resolve_world_tangent_xyz;
+	float3 object_bitangent = cross(object_normal, object_tangent) * surface.tangent_sign_;
+	float3 object_scale = float3(length(instance.transform_.world_[0].xyz), length(instance.transform_.world_[1].xyz), length(instance.transform_.world_[2].xyz));
+
+	MaterialMappingCoordinate mapping = ResolveMaterialMapping(instance.shading_.material_mapping_, instance.shading_.tiling_, instance.shading_.triplanar_sharpness_, surface.texcoord_, object_position, object_normal, object_tangent, object_bitangent, object_scale, surface.world_position_, N);
+
+	float4 base_color = instance.texture_.base_color_;
+	if (instance.texture_.base_color_texture_index_ != OIT_INVALID_INDEX)
+	{
+		Texture2D base_color_texture = ResourceDescriptorHeap[instance.texture_.base_color_texture_index_];
+		base_color *= SampleMaterialMappingGrad(base_color_texture, sampler_aniso_wrap, mapping);
+	}
+
+	clip(base_color.a - instance.texture_.alpha_cutoff_);
+
 	if (instance.texture_.normal_texture_index_ != OIT_INVALID_INDEX)
 	{
-		float3 T = surface.tangent_;
-		float3 B = cross(N, T) * surface.tangent_sign_;
-		float3x3 TBN = float3x3(T, B, N);
-
 		Texture2D normal_texture = ResourceDescriptorHeap[instance.texture_.normal_texture_index_];
-		float3 normal_sample = normal_texture.Sample(sampler_linear_wrap, surface.texcoord_).xyz * 2.0 - 1.0;
-		N = normalize(mul(normal_sample, TBN));
+		if (instance.shading_.material_mapping_ == MATERIAL_MAPPING_TRIPLANAR_OBJECT)
+		{
+			float3 projection_normal = SampleNormalMappingGrad(normal_texture, sampler_linear_wrap, mapping);
+			N = normalize(mul(float4(projection_normal * object_scale, 0.0), instance.transform_.inverse_transpose_world_).xyz);
+		}
+		else if (instance.shading_.material_mapping_ == MATERIAL_MAPPING_TRIPLANAR_WORLD)
+		{
+			N = SampleNormalMappingGrad(normal_texture, sampler_linear_wrap, mapping);
+		}
+		else
+		{
+			float3 T = surface.tangent_;
+			float3 B = cross(N, T) * surface.tangent_sign_;
+			float3x3 TBN = float3x3(T, B, N);
+
+			float3 normal_sample = SampleMaterialMappingGrad(normal_texture, sampler_linear_wrap, mapping).xyz * 2.0 - 1.0;
+			N = normalize(mul(normal_sample, TBN));
+		}
 	}
 
 	float metallic = instance.texture_.metallic_;
@@ -351,7 +373,7 @@ void main(ModelMSOutput input, ModelMSPrimitiveOutput primitive)
 	if (instance.texture_.metallic_roughness_texture_index_ != OIT_INVALID_INDEX)
 	{
 		Texture2D metallic_roughness_texture = ResourceDescriptorHeap[instance.texture_.metallic_roughness_texture_index_];
-		float4 metallic_roughness = metallic_roughness_texture.Sample(sampler_linear_wrap, surface.texcoord_);
+		float4 metallic_roughness = SampleMaterialMappingGrad(metallic_roughness_texture, sampler_linear_wrap, mapping);
 		metallic *= metallic_roughness.b;
 		roughness *= metallic_roughness.g;
 	}
@@ -361,7 +383,7 @@ void main(ModelMSOutput input, ModelMSPrimitiveOutput primitive)
 	if (instance.texture_.emissive_texture_index_ != OIT_INVALID_INDEX)
 	{
 		Texture2D emissive_texture = ResourceDescriptorHeap[instance.texture_.emissive_texture_index_];
-		emissive *= emissive_texture.Sample(sampler_linear_wrap, surface.texcoord_).rgb;
+		emissive *= SampleMaterialMappingGrad(emissive_texture, sampler_linear_wrap, mapping).rgb;
 	}
 	emissive *= instance.texture_.emissive_strength_;
 

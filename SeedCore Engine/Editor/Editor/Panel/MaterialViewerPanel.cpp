@@ -364,6 +364,23 @@ namespace SeedCore
 			ImGui::SliderInt("シェル数", &surface.furShellCount_, 1, 32);
 		}
 
+		const Char* materialMappings = "伸びる\0柄が増える\0Triplanar（オブジェクト）\0Triplanar（ワールド）\0";
+		Int materialMapping = static_cast<Int>(surface.materialMapping_);
+		if (ImGui::Combo("マッピング", &materialMapping, materialMappings))
+		{
+			surface.materialMapping_ = static_cast<MaterialMapping>(materialMapping);
+		}
+
+		if (surface.materialMapping_ != MaterialMapping::Stretch)
+		{
+			ImGui::SliderFloat("タイリング", &surface.tiling_, 0.01f, 16.0f, "%.2f");
+		}
+
+		if (surface.materialMapping_ == MaterialMapping::TriplanarObject || surface.materialMapping_ == MaterialMapping::TriplanarWorld)
+		{
+			ImGui::SliderFloat("ブレンドの鋭さ", &surface.triplanarSharpness_, 1.0f, 16.0f);
+		}
+
 		Bool doubleSided = surface.doubleSided_ != 0;
 		if (ImGui::Checkbox("両面描画", &doubleSided))
 		{

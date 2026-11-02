@@ -4,6 +4,7 @@
 #include "../../Shader/Scene.hlsli"
 #include "../../Shader/Sampler.hlsli"
 #include "../../Light/Light.hlsli"
+#include "../Material/MaterialMapping.hlsli"
 
 // Pixel shader for the shell-fur forward pass. Alpha-blended over the lit
 // opaque frame. Per-strand hash noise decides how tall each strand is; a
@@ -43,11 +44,19 @@ float4 main(FurShellMSOutput input) : SV_Target0
 	float3 light_direction = normalize(-GetDirectionalLightConstantBuffer().direction_);
 	float3 light_color = GetDirectionalLightConstantBuffer().sun_color_.rgb * GetDirectionalLightConstantBuffer().sun_intensity_;
 
+	float3 object_normal = normalize(input.object_normal);
+	float3 object_tangent = input.object_tangent.xyz;
+	float3 object_bitangent = cross(object_normal, object_tangent) * input.object_tangent.w;
+	float3 object_scale = float3(length(instance.transform_.world_[0].xyz), length(instance.transform_.world_[1].xyz), length(instance.transform_.world_[2].xyz));
+	float3 base_world_position = mul(float4(input.object_position, 1.0), instance.transform_.world_).xyz;
+
+	MaterialMappingCoordinate mapping = ResolveMaterialMapping(instance.shading_.material_mapping_, instance.shading_.tiling_, instance.shading_.triplanar_sharpness_, input.texcoord, input.object_position, object_normal, object_tangent, object_bitangent, object_scale, base_world_position, normal);
+
 	float3 base_color = instance.texture_.base_color_.rgb;
 	if (instance.texture_.base_color_texture_index_ != 0xFFFFFFFF)
 	{
 		Texture2D base_color_texture = ResourceDescriptorHeap[instance.texture_.base_color_texture_index_];
-		base_color *= base_color_texture.Sample(sampler_linear_wrap, input.texcoord).rgb;
+		base_color *= SampleMaterialMappingGrad(base_color_texture, sampler_linear_wrap, mapping).rgb;
 	}
 
 	float fur_shininess = lerp(48.0, 4.0, instance.texture_.roughness_);
