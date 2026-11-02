@@ -396,7 +396,6 @@ namespace SeedCore
 					outInfo.push_back({ String("回転速度"), offsetof(HintSystem, rotateSpeed_), AttributeType::Float });
 					outInfo.push_back({ String("表示維持時間"), offsetof(HintSystem, maintainTime_), AttributeType::Float });
 					outInfo.push_back({ String("フェード時間"), offsetof(HintSystem, fadeTime_), AttributeType::Float });
-					outInfo.push_back({ String("ヒント文"), offsetof(HintSystem, hintText_), AttributeType::String });
 				});
 			}
 		};

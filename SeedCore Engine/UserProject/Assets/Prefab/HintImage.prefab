@@ -1,0 +1,384 @@
+{
+	"basePrefabAssetID": 0,
+	"nodes": [
+		{
+			"active": true,
+			"collaborationId": "",
+			"components": [
+				{
+					"component": "Image",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "テクスチャサイズ",
+							"string": "",
+							"type": 4,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "テクスチャ位置",
+							"string": "",
+							"type": 4,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "中心点",
+							"string": "",
+							"type": 4,
+							"vector2": {
+								"x": 328.0,
+								"y": 63.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 0.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "色",
+							"string": "",
+							"type": 8,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "表示形式",
+							"string": "",
+							"type": 9,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "描画順",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "カメラ正対",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "テクスチャタイプ",
+							"string": "",
+							"type": 9,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "スクロール速度",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "スクロール向き",
+							"string": "",
+							"type": 4,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 1019890532,
+							"is_array": false,
+							"name": "テクスチャID",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "HintImageScript",
+					"fields": []
+				}
+			],
+			"layer": "Default",
+			"name": "HintImage",
+			"nestedPrefabAssetID": 0,
+			"overrides": [],
+			"parentIndex": -1,
+			"persistentId": 19684,
+			"position": {
+				"x": 960.0,
+				"y": 879.0697021484375,
+				"z": 0.0
+			},
+			"rotation": {
+				"w": 1.0,
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
+			},
+			"scale": {
+				"x": 1.0,
+				"y": 1.0,
+				"z": 1.0
+			},
+			"tags": []
+		}
+	]
+}

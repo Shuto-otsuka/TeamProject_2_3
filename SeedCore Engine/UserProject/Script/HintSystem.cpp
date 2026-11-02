@@ -1,9 +1,12 @@
 #include "HintSystem.h"
+#include "HintImageScript.h"
 
 #include <SeedCore/ScLog.h>
 #include <SeedCore/ScScene.h>
 
 using namespace SeedCore;
+
+SeedCore::Actor HintSystem::activeTextActor_ = SeedCore::Actor();
 
 void HintSystem::OnStart()
 {
@@ -31,6 +34,8 @@ void HintSystem::OnStart()
 		}
 	}
 
+	imageActor_ = GetWorld().GetActor("HintImage");
+
 	Text* hintText = textActor_.GetComponent<Text>();
 	if (hintText)
 	{
@@ -43,7 +48,7 @@ void HintSystem::OnStart()
 	
 void HintSystem::OnTick(float elapsedTime)
 {
-	if (!textActor_ || !standActor_ || !glassActor_)
+	if (!textActor_ || !standActor_ || !glassActor_ || !imageActor_)
 	{
 		SC_LOG_ERROR("テキスト用アクター、または、メッシュ用アクターが見つかりませんでした");
 		return;
@@ -57,8 +62,11 @@ void HintSystem::OnTick(float elapsedTime)
 	Quaternion targetQuaternion = Quaternion::CreateFromAxisAngle(upAxis, rotateSpeed_ * elapsedTime);
 	Transform::Quat(*glassRotation, Transform::Quat(*glassRotation) * targetQuaternion);
 	Transform::Quat(*standRotation, Transform::Quat(*standRotation) * targetQuaternion);
-
+	
 	Text* hintText = textActor_.GetComponent<Text>();
+
+	HintImageScript* hintImageScript = imageActor_.GetComponent<HintImageScript>();
+
 	if (!hintText)
 	{
 		return;
@@ -67,23 +75,26 @@ void HintSystem::OnTick(float elapsedTime)
 	if (startup_)
 	{
 		timer_ = 0.0f;
-		hintText->text_ = hintText_;
+		if (activeTextActor_)
+		{
+			SeedCore::Text* beforeText = activeTextActor_.GetComponent<SeedCore::Text>();
+			beforeText->color_.a = 0.0f;
+		}
+		activeTextActor_ = textActor_;
 		hintText->color_.a = 1.0f;
+		hintImageScript->Display(maintainTime_,fadeTime_);
 		startup_ = false;
 	}
-	else
+	else if(hintText->color_.a > 0.0f)
 	{
 		timer_ += elapsedTime;
 
 		if (timer_ > maintainTime_)
 		{
-
 			float fadeRate = (timer_ - maintainTime_) / fadeTime_;
 
 			if (fadeRate > 1.0f)
-			{
 				fadeRate = 1.0f;
-			}
 
 			hintText->color_.a = 1.0f - fadeRate;
 		}

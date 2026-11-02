@@ -65,6 +65,7 @@
 #include <PhysicsEngine/Joint/SpringJoint.h>
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
+#include <Runtime/enc_temp_folder/fb4ec58eedff2c7cfe52f4eaddcf5b5/HintSystem.h>
 
 extern "C" int _force_reflection_AudioListener = 0;
 extern "C" int _force_reflection_AudioSource = 0;
@@ -171,6 +172,7 @@ extern "C" int _force_reflection_SliderJoint = 0;
 extern "C" int _force_reflection_SpringJoint = 0;
 extern "C" int _force_reflection_Rigidbody = 0;
 extern "C" int _force_reflection_Softbody = 0;
+extern "C" int _force_reflection_HintSystem = 0;
 
 namespace SeedCore
 {
@@ -5920,6 +5922,21 @@ namespace SeedCore
 			}
 		};
 		static Register_Softbody global_Softbody_register;
+
+		// ---- Runtime/enc_temp_folder/fb4ec58eedff2c7cfe52f4eaddcf5b5/HintSystem.h ----
+		struct Register_HintSystem
+		{
+			Register_HintSystem()
+			{
+				ReflectionRegistry::Register(String("HintSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					HintSystem& obj = *static_cast<HintSystem*>(ptr);
+					outInfo.push_back({ String("回転速度"), offsetof(HintSystem, rotateSpeed_), AttributeType::Float });
+					outInfo.push_back({ String("表示維持時間"), offsetof(HintSystem, maintainTime_), AttributeType::Float });
+					outInfo.push_back({ String("フェード時間"), offsetof(HintSystem, fadeTime_), AttributeType::Float });
+				});
+			}
+		};
+		static Register_HintSystem global_HintSystem_register;
 
 		struct RegisterEnum_AmbientOcclusionTechnique
 		{

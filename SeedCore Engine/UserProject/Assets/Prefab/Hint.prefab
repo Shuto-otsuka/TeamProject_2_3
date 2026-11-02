@@ -6,135 +6,6 @@
 			"collaborationId": "",
 			"components": [
 				{
-					"component": "HintSystem",
-					"fields": [
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 1.0,
-								"g": 1.0,
-								"r": 1.0
-							},
-							"float": 1.0,
-							"int": 0,
-							"is_array": false,
-							"name": "回転速度",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 1.0,
-								"g": 1.0,
-								"r": 1.0
-							},
-							"float": 5.0,
-							"int": 0,
-							"is_array": false,
-							"name": "表示維持時間",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 1.0,
-								"g": 1.0,
-								"r": 1.0
-							},
-							"float": 3.0,
-							"int": 0,
-							"is_array": false,
-							"name": "フェード時間",
-							"string": "",
-							"type": 2,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						},
-						{
-							"bool": false,
-							"children": [],
-							"color": {
-								"a": 1.0,
-								"b": 1.0,
-								"g": 1.0,
-								"r": 1.0
-							},
-							"float": 0.0,
-							"int": 0,
-							"is_array": false,
-							"name": "ヒント文",
-							"string": "あああ",
-							"type": 7,
-							"vector2": {
-								"x": 0.0,
-								"y": 0.0
-							},
-							"vector3": {
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							},
-							"vector4": {
-								"w": 0.0,
-								"x": 0.0,
-								"y": 0.0,
-								"z": 0.0
-							}
-						}
-					]
-				},
-				{
 					"component": "BoxCollider",
 					"fields": [
 						{
@@ -231,6 +102,104 @@
 							}
 						}
 					]
+				},
+				{
+					"component": "HintSystem",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "回転速度",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 5.0,
+							"int": 0,
+							"is_array": false,
+							"name": "表示維持時間",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 3.0,
+							"int": 0,
+							"is_array": false,
+							"name": "フェード時間",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
 				}
 			],
 			"layer": "Default",
@@ -240,9 +209,9 @@
 			"parentIndex": -1,
 			"persistentId": 9435,
 			"position": {
-				"x": 0.0,
-				"y": 2.990546226501465,
-				"z": 33.494361877441406
+				"x": -2.484426498413086,
+				"y": 2.0,
+				"z": 40.44319152832031
 			},
 			"rotation": {
 				"w": 1.0,
@@ -279,7 +248,7 @@
 							"int": 0,
 							"is_array": false,
 							"name": "テキスト",
-							"string": "",
+							"string": "まずは前へ。段差はスペースでジャンプ！",
 							"type": 7,
 							"vector2": {
 								"x": 0.0,
@@ -306,7 +275,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 32.0,
+							"float": 27.0,
 							"int": 0,
 							"is_array": false,
 							"name": "文字サイズ",
@@ -425,7 +394,7 @@
 							"bool": false,
 							"children": [],
 							"color": {
-								"a": 1.0,
+								"a": 0.0,
 								"b": 1.0,
 								"g": 1.0,
 								"r": 1.0
@@ -489,8 +458,8 @@
 							"color": {
 								"a": 1.0,
 								"b": 0.0,
-								"g": 0.0,
-								"r": 0.0
+								"g": 1.0,
+								"r": 0.9634552001953125
 							},
 							"float": 0.0,
 							"int": 0,
@@ -617,7 +586,7 @@
 								"r": 1.0
 							},
 							"float": 0.0,
-							"int": 0,
+							"int": 1,
 							"is_array": false,
 							"name": "描画順",
 							"string": "",
@@ -803,8 +772,8 @@
 			"parentIndex": 0,
 			"persistentId": 9436,
 			"position": {
-				"x": 0.0,
-				"y": 0.0,
+				"x": 749.5780639648438,
+				"y": 858.0,
 				"z": 0.0
 			},
 			"rotation": {

@@ -14,9 +14,6 @@ public:
 	SC_REFLECTION_FIELD_EX("フェード時間")
 	float fadeTime_ = 3.0f;
 
-	SC_REFLECTION_FIELD_EX("ヒント文")
-	SeedCore::String hintText_;
-
 public:
 	void OnStart();
 
@@ -26,11 +23,15 @@ public:
 	void Startup();
 
 private:
+	static SeedCore::Actor activeTextActor_;
+
 	SeedCore::Actor textActor_;
 
 	SeedCore::Actor standActor_;
 
 	SeedCore::Actor glassActor_;
+
+	SeedCore::Actor imageActor_;
 
 	SeedCore::Uint32 offMaterialID_ = 0;
 
