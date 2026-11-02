@@ -227,6 +227,9 @@ namespace SeedCore
 						materialData.thicknessTextureIndex_ = static_cast<Uint32>(crister->Residency().TextureBindlessIndex(surface.khr_.volume_.thicknessTextureIndex_));
 						materialData.alphaMode_ = static_cast<Uint32>(surface.alphaMode_);
 						materialData.alphaCutoff_ = surface.alphaCutoff_;
+						materialData.materialMapping_ = static_cast<Uint32>(surface.materialMapping_);
+						materialData.tiling_ = surface.tiling_;
+						materialData.triplanarSharpness_ = surface.triplanarSharpness_;
 					}
 				}
 

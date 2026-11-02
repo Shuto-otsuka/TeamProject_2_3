@@ -110,6 +110,14 @@ namespace SeedCore
 
 		NODISCARD ID3D12PipelineState* GetPipelineStatePreviewSkeletalDoubleSided()const;
 
+		NODISCARD ID3D12PipelineState* GetPipelineStatePreviewStaticTransparent()const;
+
+		NODISCARD ID3D12PipelineState* GetPipelineStatePreviewStaticTransparentDoubleSided()const;
+
+		NODISCARD ID3D12PipelineState* GetPipelineStatePreviewSkeletalTransparent()const;
+
+		NODISCARD ID3D12PipelineState* GetPipelineStatePreviewSkeletalTransparentDoubleSided()const;
+
 		NODISCARD ID3D12PipelineState* GetPipelineStateAvatarPreview()const;
 
 		NODISCARD ID3D12PipelineState* GetPipelineStateAvatarPreviewDoubleSided()const;
@@ -220,6 +228,10 @@ namespace SeedCore
 		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectPreviewStaticDoubleSided_;
 		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectPreviewSkeletal_;
 		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectPreviewSkeletalDoubleSided_;
+		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectPreviewStaticTransparent_;
+		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectPreviewStaticTransparentDoubleSided_;
+		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectPreviewSkeletalTransparent_;
+		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectPreviewSkeletalTransparentDoubleSided_;
 
 		Handle<PixelShader> avatarPreviewPixelShader_;
 		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectAvatarPreview_;

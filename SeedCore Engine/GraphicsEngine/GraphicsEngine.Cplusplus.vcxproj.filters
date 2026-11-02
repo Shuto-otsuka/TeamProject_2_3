@@ -2047,6 +2047,9 @@
     <None Include="Shape\Primitive\Wireframe\PrimitiveWireframe.hlsli">
       <Filter>Shape\Primitive\Wireframe</Filter>
     </None>
+    <None Include="Model\Material\MaterialMapping.hlsli">
+      <Filter>Model\Material</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Light\ClusterAssignCS.hlsl">

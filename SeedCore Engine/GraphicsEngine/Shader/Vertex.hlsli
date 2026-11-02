@@ -39,4 +39,12 @@ float2 DecodeCompressedVertexTexcoord(CompressedVertex vertex, float2 texcoord_m
 	return texcoord_min + texcoord01 * texcoord_extent;
 }
 
+float4 DecodeCompressedVertexTangent(CompressedVertex vertex)
+{
+	uint tangent_bits = vertex.texv_tangent_ >> 16;
+	float2 tangent_oct = float2(tangent_bits & 0xFF, (tangent_bits >> 8) & 0x7F) / float2(255.0, 127.0);
+	float tangent_sign = (tangent_bits >> 15) ? 1.0 : -1.0;
+	return float4(OctNormalDecode(tangent_oct), tangent_sign);
+}
+
 #endif // __VERTEX_HLSL__

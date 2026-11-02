@@ -106,8 +106,13 @@ namespace SeedCore
 		Uint blend_;
 		Uint selected_;
 		Uint modelShadingPadding0_;
+
+		Uint materialMapping_;
+		Float tiling_;
+		Float triplanarSharpness_;
+		Uint modelShadingPadding1_;
 	};
-	SC_STATIC_ASSERT(ModelShading, 32, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(ModelShading, 48, "Model/Model.hlsli");
 
 	/**
 	* [EN]
@@ -294,5 +299,5 @@ namespace SeedCore
 		ModelTexture texture_;
 		ModelExtension extension_;
 	};
-	SC_STATIC_ASSERT(ModelStructuredBuffer, 576, "Model/Model.hlsli");
+	SC_STATIC_ASSERT(ModelStructuredBuffer, 592, "Model/Model.hlsli");
 }

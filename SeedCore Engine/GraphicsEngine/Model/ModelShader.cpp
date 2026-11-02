@@ -236,6 +236,44 @@ namespace SeedCore
 		}
 
 		{
+			PipelineStateKey psokey{};
+			memset(&psokey, 0, sizeof(psokey));
+			psokey.rootSignature_ = rootSignature_.Get(modelRootSignature_)->Get();
+			psokey.pixelShader_ = shaderCache.GetPixelShader(previewPixelShader_)->Bytecode();
+			psokey.blendDesc_ = BlendState::Get(BlendStateType::Alpha);
+			psokey.depthStencilDesc_ = DepthStencilState::Get(DepthStencilStateType::DepthOnWriteOffReverseZ);
+			psokey.renderTargetViewFormat_[0] = DXGI_FORMAT_R16G16B16A16_FLOAT;
+			psokey.renderTargetViewCount_ = 1;
+			psokey.depthStencilViewFormat_ = DXGI_FORMAT_D32_FLOAT;
+			if (D3D12Check::GetLevel() == D3D12Level::D12_2)
+			{
+				psokey.amplificationShader_ = shaderCache.GetAmplificationShader(transparentAmplificationShader_)->Bytecode();
+				psokey.meshShader_ = shaderCache.GetMeshShader(staticMeshShader_)->Bytecode();
+				psokey.rasterizerDesc_ = RasterizerState::Get(RasterizerStateType::SolidNoneLHS);
+				psokey.primitiveTopologyType_ = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+				pipelineStateObjectPreviewStaticTransparent_ = pipelineStateObject_.GetOrCreate(device, psokey);
+
+				psokey.meshShader_ = shaderCache.GetMeshShader(skeletalMeshShader_)->Bytecode();
+				pipelineStateObjectPreviewSkeletalTransparent_ = pipelineStateObject_.GetOrCreate(device, psokey);
+			}
+			else
+			{
+				psokey.vertexShader_ = shaderCache.GetVertexShader(staticVertexShader_)->Bytecode();
+				psokey.primitiveTopologyType_ = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+				psokey.rasterizerDesc_ = RasterizerState::Get(RasterizerStateType::SolidBackLHS);
+				pipelineStateObjectPreviewStaticTransparent_ = pipelineStateObject_.GetOrCreate(device, psokey);
+				psokey.rasterizerDesc_ = RasterizerState::Get(RasterizerStateType::SolidNoneLHS);
+				pipelineStateObjectPreviewStaticTransparentDoubleSided_ = pipelineStateObject_.GetOrCreate(device, psokey);
+
+				psokey.vertexShader_ = shaderCache.GetVertexShader(skeletalVertexShader_)->Bytecode();
+				psokey.rasterizerDesc_ = RasterizerState::Get(RasterizerStateType::SolidBackLHS);
+				pipelineStateObjectPreviewSkeletalTransparent_ = pipelineStateObject_.GetOrCreate(device, psokey);
+				psokey.rasterizerDesc_ = RasterizerState::Get(RasterizerStateType::SolidNoneLHS);
+				pipelineStateObjectPreviewSkeletalTransparentDoubleSided_ = pipelineStateObject_.GetOrCreate(device, psokey);
+			}
+		}
+
+		{
 			avatarPreviewPixelShader_ = shaderCache.GetOrCreatePixelShader(String("../GraphicsEngine/Avatar/AvatarPreviewPS.hlsl"));
 
 			PipelineStateKey psokey{};
@@ -668,6 +706,26 @@ namespace SeedCore
 	ID3D12PipelineState* ModelShader::GetPipelineStatePreviewSkeletalDoubleSided()const
 	{
 		return pipelineStateObject_.Get(pipelineStateObjectPreviewSkeletalDoubleSided_);
+	}
+
+	ID3D12PipelineState* ModelShader::GetPipelineStatePreviewStaticTransparent()const
+	{
+		return pipelineStateObject_.Get(pipelineStateObjectPreviewStaticTransparent_);
+	}
+
+	ID3D12PipelineState* ModelShader::GetPipelineStatePreviewStaticTransparentDoubleSided()const
+	{
+		return pipelineStateObject_.Get(pipelineStateObjectPreviewStaticTransparentDoubleSided_);
+	}
+
+	ID3D12PipelineState* ModelShader::GetPipelineStatePreviewSkeletalTransparent()const
+	{
+		return pipelineStateObject_.Get(pipelineStateObjectPreviewSkeletalTransparent_);
+	}
+
+	ID3D12PipelineState* ModelShader::GetPipelineStatePreviewSkeletalTransparentDoubleSided()const
+	{
+		return pipelineStateObject_.Get(pipelineStateObjectPreviewSkeletalTransparentDoubleSided_);
 	}
 
 	ID3D12PipelineState* ModelShader::GetPipelineStateAvatarPreview()const

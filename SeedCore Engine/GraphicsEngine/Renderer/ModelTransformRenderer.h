@@ -102,6 +102,7 @@ namespace SeedCore
 		ResourcePtr<ReadOnlyStructuredBuffer<Matrix>> boneBuffer_;
 
 		Bool hasSkinnedOpaque_ = false;
+		Bool hasSkinnedTransparent_ = false;
 		Bool uploaded_ = false;
 
 		Uint maxInstanceCount_ = 0;

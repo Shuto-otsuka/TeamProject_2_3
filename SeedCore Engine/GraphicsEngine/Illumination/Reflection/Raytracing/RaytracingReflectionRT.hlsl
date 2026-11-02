@@ -245,7 +245,7 @@ void ReflectionMiss(inout RaytracingReflectionPayload payload)
 [shader("anyhit")]
 void ReflectionAnyHit(inout RaytracingReflectionPayload payload, in BuiltInTriangleIntersectionAttributes attributes)
 {
-	if (IsMaterialPassthrough(shader_resource_indices.raytracing_.instance_data_index_, InstanceID(), PrimitiveIndex(), attributes.barycentrics))
+	if (IsMaterialPassthrough(shader_resource_indices.raytracing_.instance_data_index_, InstanceID(), PrimitiveIndex(), attributes.barycentrics, ObjectToWorld3x4(), WorldToObject3x4(), WorldRayOrigin() + WorldRayDirection() * RayTCurrent()))
 	{
 		IgnoreHit();
 	}
@@ -324,8 +324,25 @@ void ReflectionClosestHit(inout RaytracingReflectionPayload payload, in BuiltInT
 
 	if (material.base_color_texture_index_ != 0xFFFFFFFF)
 	{
+		MaterialMappingCoordinate mapping;
+		mapping.texcoord_x_ = texcoord;
+		mapping.texcoord_y_ = texcoord;
+		mapping.texcoord_z_ = texcoord;
+		mapping.weight_ = float3(1.0, 0.0, 0.0);
+		mapping.projection_normal_ = float3(0.0, 0.0, 1.0);
+		if (material.material_mapping_ != MATERIAL_MAPPING_STRETCH)
+		{
+			float3x4 object_to_world = ObjectToWorld3x4();
+			float3 mapping_object_normal = normalize(object_normal);
+			float4 object_tangent = DecodeCompressedVertexTangent(vertex0) * weight0 + DecodeCompressedVertexTangent(vertex1) * weight1 + DecodeCompressedVertexTangent(vertex2) * weight2;
+			float3 object_bitangent = cross(mapping_object_normal, object_tangent.xyz) * DecodeCompressedVertexTangent(vertex0).w;
+			float3 object_position = mul(WorldToObject3x4(), float4(hit_position, 1.0));
+			float3 object_scale = float3(length(float3(object_to_world[0][0], object_to_world[1][0], object_to_world[2][0])), length(float3(object_to_world[0][1], object_to_world[1][1], object_to_world[2][1])), length(float3(object_to_world[0][2], object_to_world[1][2], object_to_world[2][2])));
+			mapping = ResolveMaterialMapping(material.material_mapping_, material.tiling_, material.triplanar_sharpness_, texcoord, object_position, mapping_object_normal, object_tangent.xyz, object_bitangent, object_scale, hit_position, world_normal);
+		}
+
 		Texture2D<float4> base_color_texture = ResourceDescriptorHeap[material.base_color_texture_index_];
-		albedo *= base_color_texture.SampleLevel(sampler_linear_wrap, texcoord, 0).rgb;
+		albedo *= SampleMaterialMappingLevel(base_color_texture, sampler_linear_wrap, mapping, 0).rgb;
 	}
 
 	payload.radiance_ = albedo * lighting;

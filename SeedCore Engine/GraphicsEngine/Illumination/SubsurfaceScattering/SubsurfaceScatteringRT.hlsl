@@ -166,7 +166,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
 	{
 		if (query.CandidateType() == CANDIDATE_NON_OPAQUE_TRIANGLE)
 		{
-			if (!IsMaterialPassthrough(shader_resource_indices.raytracing_.instance_data_index_, query.CandidateInstanceID(), query.CandidatePrimitiveIndex(), query.CandidateTriangleBarycentrics()))
+			if (!IsMaterialPassthrough(shader_resource_indices.raytracing_.instance_data_index_, query.CandidateInstanceID(), query.CandidatePrimitiveIndex(), query.CandidateTriangleBarycentrics(), query.CandidateObjectToWorld3x4(), query.CandidateWorldToObject3x4(), query.WorldRayOrigin() + query.WorldRayDirection() * query.CandidateTriangleRayT()))
 			{
 				query.CommitNonOpaqueTriangleHit();
 			}

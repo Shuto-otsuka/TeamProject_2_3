@@ -7,7 +7,7 @@ groupshared float4 clip_positions[64];
 
 [NumThreads(64, 1, 1)]
 [OutputTopology("triangle")]
-void main(in payload ModelASPayload as_payload, uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices DepthPrepassOutput verts[64], out indices uint3 tris[124])
+void main(in payload ModelASPayload as_payload, uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices DepthPrepassOutput verts[64], out indices uint3 tris[124], out primitives ModelMSPrimitiveOutput prims[124])
 {
 	StructuredBuffer<ModelStructuredBuffer> instances = GetModelStructuredBuffer(shader_resource_indices.model_.instance_index_);
 
@@ -78,6 +78,7 @@ void main(in payload ModelASPayload as_payload, uint gtid : SV_GroupThreadID, ui
 		verts[gtid].position = clip_position;
 		verts[gtid].texcoord = vertex.texcoord_;
 		verts[gtid].instance_index = instance_index;
+		verts[gtid].meshlet_index = meshlet_index;
 		clip_positions[gtid] = clip_position;
 	}
 
@@ -106,6 +107,8 @@ void main(in payload ModelASPayload as_payload, uint gtid : SV_GroupThreadID, ui
 		uint i0 = packed & 0xFF;
 		uint i1 = (packed >> 8) & 0xFF;
 		uint i2 = (packed >> 16) & 0xFF;
+
+		prims[triangle_index].triangle_in_meshlet_index = triangle_index;
 
 		if (instance.shading_.double_sided_ == 0 && IsBackFace(clip_positions[i0], clip_positions[i1], clip_positions[i2]))
 		{

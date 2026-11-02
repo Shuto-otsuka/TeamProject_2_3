@@ -30,7 +30,7 @@ float AmbientOcclusionOccluderDistance(RaytracingAccelerationStructure tlas, Ray
 	{
 		if (query.CandidateType() == CANDIDATE_NON_OPAQUE_TRIANGLE)
 		{
-			if (!IsMaterialPassthrough(instance_data_index, query.CandidateInstanceID(), query.CandidatePrimitiveIndex(), query.CandidateTriangleBarycentrics()))
+			if (!IsMaterialPassthrough(instance_data_index, query.CandidateInstanceID(), query.CandidatePrimitiveIndex(), query.CandidateTriangleBarycentrics(), query.CandidateObjectToWorld3x4(), query.CandidateWorldToObject3x4(), query.WorldRayOrigin() + query.WorldRayDirection() * query.CandidateTriangleRayT()))
 			{
 				query.CommitNonOpaqueTriangleHit();
 			}
