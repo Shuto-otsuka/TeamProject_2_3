@@ -1,5 +1,5 @@
 #include <GraphicsEngine/Shape/Screen/BootScreen.h>
-#include <GraphicsEngine/Texture/TextureLoader.h>
+#include <GraphicsEngine/Texture/TextureCreator.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/Shader/ShaderCompiler.h>
@@ -251,13 +251,13 @@ namespace SeedCore
 
 		if (!image.empty())
 		{
-			TextureLoader::CreateTextureMemory(device_, cmdQueue_, bindlessHeap_->Heap(), image, resource, textureIndex);
+			TextureCreator::CreateTextureMemory(device_, cmdQueue_, bindlessHeap_->Heap(), image, resource, textureIndex);
 		}
 
 		if (!resource)
 		{
 			String filePath = String(std::string("../Runtime/Logo/") + defaultName + ".sub.logo");
-			TextureLoader::CreateTexturePath(device_, cmdQueue_, bindlessHeap_->Heap(), filePath, resource, textureIndex);
+			TextureCreator::CreateTexturePath(device_, cmdQueue_, bindlessHeap_->Heap(), filePath, resource, textureIndex);
 		}
 
 		if (!resource)

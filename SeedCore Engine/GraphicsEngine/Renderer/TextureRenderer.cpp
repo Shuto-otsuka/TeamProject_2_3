@@ -3,6 +3,7 @@
 #include <GraphicsEngine/Texture/Image.h>
 #include <GraphicsEngine/Texture/Texture.h>
 #include <GraphicsEngine/Texture/TextureResource.h>
+#include <GraphicsEngine/Texture/TextureStreaming.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Check.h>
@@ -38,7 +39,7 @@ namespace SeedCore
 		shaderResourceIndicesSystem.SetTextureBillboardIndex(billboardBuffer_->Index());
 	}
 
-	void TextureRenderer::Gather(TextureResource& resource, World& world, Vector2 nativeScreenSize, std::span<const Entity> selectedEntities)
+	void TextureRenderer::Gather(TextureResource& resource, TextureStreaming& streaming, World& world, Vector2 nativeScreenSize, std::span<const Entity> selectedEntities)
 	{
 		spriteInstances_.clear();
 		billboardInstances_.clear();
@@ -106,7 +107,7 @@ namespace SeedCore
 				continue;
 			}
 
-			Texture* texture = resource.Resolve(textureHandle, streamingFrame_);
+			Texture* texture = streaming.Resolve(textureHandle, streamingFrame_);
 			if (!texture)
 			{
 				continue;
@@ -221,7 +222,7 @@ namespace SeedCore
 		worldBillboardCount_ = static_cast<Uint>(billboardInstances_.size());
 		billboardInstances_.insert(billboardInstances_.end(), canvasInstances_.begin(), canvasInstances_.end());
 
-		resource.EvictBudget(streamingFrame_);
+		streaming.EvictBudget(streamingFrame_);
 		streamingFrame_++;
 	}
 

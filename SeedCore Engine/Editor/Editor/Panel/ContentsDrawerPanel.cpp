@@ -26,6 +26,8 @@
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Texture/Texture.h>
 #include <GraphicsEngine/Texture/TextureResource.h>
+#include <GraphicsEngine/Texture/TextureStreaming.h>
+#include <GraphicsEngine/Resource/GraphicsModule.h>
 
 namespace SeedCore
 {
@@ -611,8 +613,8 @@ namespace SeedCore
 		/// [JP] テクスチャのピクセルサイズ。GPU リソースから読む。
 		if (preview)
 		{
-			TextureResource* textureResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().textureResource_.get();
-			Texture* texture = textureResource->Resolve(textureResource->GetHandle(asset.assetID_), context_.application_.uiFrame_);
+			GraphicsResourceSystem& graphicsResources = context_.graphics_.graphics_->GetGraphicsModule().Resources();
+			Texture* texture = graphicsResources.textureStreaming_->Resolve(graphicsResources.textureResource_->GetHandle(asset.assetID_), context_.application_.uiFrame_);
 			if (texture && texture->Resource())
 			{
 				D3D12_RESOURCE_DESC desc = texture->Resource()->GetDesc();
@@ -716,38 +718,45 @@ namespace SeedCore
 				OpenAssetPopup(asset);
 			}
 
-			/// [EN] Asset actions exist only for models.
-			/// [JP] アセットアクションはモデルにだけある。
-			if (asset.type_ == AssetType::Model && ImGui::BeginMenu("アセットアクション"))
+			/// [EN] Every asset type that keeps a cache file can have it generated; models additionally generate the files derived from them.
+			/// [JP] キャッシュファイルを持つ全てのアセット種別は、それを作れる。モデルはさらに、モデルから作るファイルも作れる。
+			Asset* assetResource = context_.world_.resource_->GetResource(asset.type_);
+			Bool cached = asset.type_ == AssetType::Texture || asset.type_ == AssetType::Model || asset.type_ == AssetType::Audio || asset.type_ == AssetType::Movie || asset.type_ == AssetType::Skymap || asset.type_ == AssetType::Effect;
+			if (assetResource && cached && ImGui::BeginMenu("アセットアクション"))
 			{
-				if (ImGui::BeginMenu("コリジョン生成"))
+				if (ImGui::MenuItem("キャッシュファイルを作成"))
 				{
-					if (ImGui::MenuItem("Proxy"))
+					GenerateAsset(asset, *assetResource, "キャッシュファイル");
+				}
+
+				GraphicsResourceSystem& resources = context_.graphics_.graphics_->GetGraphicsModule().Resources();
+				if (asset.type_ == AssetType::Model)
+				{
+					if (ImGui::MenuItem("コリジョン生成"))
 					{
-						GenerateMeshCollision(asset, MeshCollisionDetail::Proxy);
+						GenerateAsset(asset, *resources.meshCollisionResource_, "コリジョン");
 					}
-					if (ImGui::MenuItem("Exact"))
+					if (ImGui::MenuItem("マテリアル生成"))
 					{
-						GenerateMeshCollision(asset, MeshCollisionDetail::Exact);
+						GenerateAsset(asset, *resources.materialResource_, "マテリアル");
 					}
-					ImGui::EndMenu();
-				}
-				if (ImGui::MenuItem("モデル変換"))
-				{
-					context_.panel_.modelTransform_->Open(asset.assetID_);
-				}
-				if (ImGui::MenuItem("マテリアル生成"))
-				{
-					GenerateMaterial(asset);
-				}
-				if (ImGui::MenuItem("スケルトン生成"))
-				{
-					GenerateSkeleton(asset);
+					if (ImGui::MenuItem("スケルトン生成"))
+					{
+						GenerateAsset(asset, *resources.skeletonResource_, "スケルトン");
+					}
+					if (ImGui::MenuItem("アニメーション抽出"))
+					{
+						GenerateAsset(asset, *resources.animationResource_, "アニメーション");
+					}
+					if (ImGui::MenuItem("モデル変換"))
+					{
+						context_.panel_.modelTransform_->Open(asset.assetID_);
+					}
 				}
 
 				/// [EN] One entry per export preset: its label, the preset and the file extension it writes.
 				/// [JP] エクスポートのプリセットごとに 1 項目。表示名、プリセット、書き出す拡張子。
-				if (ImGui::BeginMenu("エクスポート"))
+				if (asset.type_ == AssetType::Model && ImGui::BeginMenu("エクスポート"))
 				{
 					static const std::tuple<const Char*, ExportPreset, const Wchar*> exportList[] =
 					{
@@ -1152,8 +1161,8 @@ namespace SeedCore
 			}
 
 			BindlessHeap& bindlessHeap = context_.graphics_.graphics_->GetBindlessHeap();
-			TextureResource* textureResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().textureResource_.get();
-			Texture* texture = textureResource->Resolve(textureResource->GetHandle(asset.assetID_), context_.application_.uiFrame_);
+			GraphicsResourceSystem& graphicsResources = context_.graphics_.graphics_->GetGraphicsModule().Resources();
+			Texture* texture = graphicsResources.textureStreaming_->Resolve(graphicsResources.textureResource_->GetHandle(asset.assetID_), context_.application_.uiFrame_);
 			if (texture && texture->Resource())
 			{
 				/// [EN] Pin the texture so streaming never evicts the resource the thumbnail views.
@@ -1304,71 +1313,89 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Bakes a model's collision and registers it as an asset.
+	* Has resource write the files it generates from the source asset
+	* asset, then makes each written file an asset and shares it at once:
+	* a file the team does not have yet is registered, and one it already
+	* shares (an overwrite) is published as a new revision. label names
+	* what was generated in the log.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* モデルのコリジョンを焼き、アセットとして登録する。
+	* 元アセット asset から resource が作るファイルを書かせ、書いた各
+	* ファイルをアセットにして、その場で共有する。チームがまだ持っていない
+	* ファイルは登録し、既に共有しているもの（上書きしたもの）は新しい
+	* Revision として公開する。label はログに出す、作ったものの名前。
 	*/
-	void ContentsDrawerPanel::GenerateMeshCollision(const AssetRecord& asset, MeshCollisionDetail detail)
+	void ContentsDrawerPanel::GenerateAsset(const AssetRecord& asset, Asset& resource, const Char* label)
 	{
-		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->GenerateCollision(*context_.world_.resource_, asset.assetID_, detail))
+		ResourceCache& cache = *context_.world_.resource_;
+
+		DynamicArray<String> writtenPaths;
+		Bool succeeded = resource.Generate(AssetContext{ cache, LoadThread::Main }, asset.assetID_, writtenPaths);
+
+		/// [EN] Each written file in the form AssetRecord::path_ takes (relative to the project root, forward slashes), which is how the cache is searched.
+		/// [JP] 書いた各ファイルを、AssetRecord::path_ と同じ形（プロジェクトルートからの相対、スラッシュ区切り）にしたもの。キャッシュはこの形で引く。
+		DynamicArray<String> assetPaths;
+		for (const String& writtenPath : writtenPaths)
 		{
-			SC_LOG_WARNING("コンテンツドロワー: コリジョン生成に失敗しました: {}", asset.path_.c_str());
-			return;
+			std::string relativePath = std::filesystem::relative(std::filesystem::path(writtenPath.c_str()), cache.ProjectRootPath()).string();
+			std::ranges::replace(relativePath, '\\', '/');
+			assetPaths.push_back(String(relativePath));
 		}
 
-		/// [EN] Rescan so the just-written ".collision" sibling is picked up as its own asset.
-		/// [JP] 書き出した ".collision" 兄弟を個別アセットとして拾えるよう再スキャンする。
-		context_.world_.resource_->Reload();
-		SC_LOG_NOTICE("コンテンツドロワー: コリジョンを生成しました: {}", asset.path_.c_str());
-	}
-
-	/**
-	* [EN]
-	* Writes a model's materials and registers them as assets.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* モデルのマテリアルを書き出し、アセットとして登録する。
-	*/
-	void ContentsDrawerPanel::GenerateMaterial(const AssetRecord& asset)
-	{
-		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->GenerateMaterial(*context_.world_.resource_, asset.assetID_, true))
+		/// [EN] A file that was already an asset was overwritten, so its loaded copy is stale and is read again once the new files are scanned in.
+		/// [JP] 既にアセットだったファイルは上書きされたので、読み込み済みの写しは古い。新しいファイルを走査で取り込んだ後に読み直す。
+		DynamicArray<Uint32> overwrittenIDs;
+		for (const String& assetPath : assetPaths)
 		{
-			SC_LOG_WARNING("コンテンツドロワー: マテリアル生成に失敗しました: {}", asset.path_.c_str());
-			return;
+			Uint32 id = cache.GetAssetID(assetPath);
+			AssetRecord* record = id == 0 ? nullptr : cache.GetAsset(id);
+			if (record && record->path_ == assetPath)
+			{
+				overwrittenIDs.push_back(id);
+			}
+		}
+		if (!writtenPaths.empty())
+		{
+			cache.Reload();
+		}
+		for (Uint32 id : overwrittenIDs)
+		{
+			cache.Reload(id);
 		}
 
-		/// [EN] Rescan so the just-written ".material" siblings are picked up as their own assets.
-		/// [JP] 書き出した ".material" 兄弟を個別アセットとして拾えるよう再スキャンする。
-		context_.world_.resource_->Reload();
-		SC_LOG_NOTICE("コンテンツドロワー: マテリアルを生成しました: {}", asset.path_.c_str());
-	}
-
-	/**
-	* [EN]
-	* Writes a skinned model's skeleton and registers it as an asset.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* スキン付きモデルのスケルトンを書き出し、アセットとして登録する。
-	*/
-	void ContentsDrawerPanel::GenerateSkeleton(const AssetRecord& asset)
-	{
-		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->GenerateSkeleton(*context_.world_.resource_, asset.assetID_, false))
+		/// [EN] Every generated file is shared the moment it exists, so the team never has to generate the same file on each machine.
+		/// [JP] 作ったファイルはできた時点で全て共有する。チームの各 PC で同じファイルを作り直さずに済むようにするため。
+		ResourceSync* resourceSync = context_.application_.resourceSync_;
+		if (resourceSync)
 		{
-			SC_LOG_WARNING("コンテンツドロワー: スケルトン生成に失敗しました（スキン無し？）: {}", asset.path_.c_str());
-			return;
+			for (const String& assetPath : assetPaths)
+			{
+				Uint32 id = cache.GetAssetID(assetPath);
+				AssetRecord* record = id == 0 ? nullptr : cache.GetAsset(id);
+				if (!record || record->path_ != assetPath)
+				{
+					continue;
+				}
+
+				if (resourceSync->GetAsset(id))
+				{
+					resourceSync->RequestPublish(id);
+				}
+				else
+				{
+					resourceSync->RequestRegister(*record);
+				}
+			}
 		}
 
-		/// [EN] Rescan so the just-written ".skeleton" sibling is picked up as its own asset.
-		/// [JP] 書き出した ".skeleton" 兄弟を個別アセットとして拾えるよう再スキャンする。
-		context_.world_.resource_->Reload();
-		SC_LOG_NOTICE("コンテンツドロワー: スケルトンを生成しました: {}", asset.path_.c_str());
+		if (!succeeded)
+		{
+			SC_LOG_WARNING("コンテンツドロワー: {}の作成に失敗しました: {}", label, asset.path_.c_str());
+			return;
+		}
+		SC_LOG_NOTICE("コンテンツドロワー: {}を作成しました（{} 件）: {}", label, writtenPaths.size(), asset.path_.c_str());
 	}
 
 	/**
@@ -1722,7 +1749,9 @@ namespace SeedCore
 			return;
 		}
 
-		if (!context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_->Export(*context_.world_.resource_, asset.assetID_, preset, String(outputPath.string())))
+		ModelExporter& modelExporter = *context_.graphics_.graphics_->GetGraphicsModule().Exporters().modelExporter_;
+		modelExporter.Preset(preset);
+		if (!modelExporter.Export(AssetContext{ *context_.world_.resource_, LoadThread::Main }, asset.assetID_, String(outputPath.string())))
 		{
 			SC_LOG_WARNING("コンテンツドロワー: モデルのエクスポートに失敗しました: {}", asset.path_.c_str());
 			return;

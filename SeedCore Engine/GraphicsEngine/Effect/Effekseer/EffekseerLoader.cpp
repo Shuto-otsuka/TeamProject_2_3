@@ -109,53 +109,22 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Loads an Effekseer effect and returns a handle to the resulting
-	* EffectRef.
-	*
-	* Flow:
-	*   1. If a pre-built ".effekseer" binary cache exists alongside the
-	*      source file, deserialise the raw ".efkefc" bytes plus every
-	*      embedded dependency (texture/model/material/wave/curve) from
-	*      cache (fast path, and the only form shipped in a release
-	*      build), registering each dependency into the shared
-	*      EffekseerFileInterface before creating the effect so texture/
-	*      model/material loading resolves from memory instead of disk.
-	*   2. Otherwise, read the ".efkefc" source bytes directly, create the
-	*      effect from disk (dependencies resolve normally via the on-
-	*      disk fallback), then enumerate and read every dependency the
-	*      freshly-created effect references and serialise the source
-	*      bytes plus all of them together as a ".effekseer" cache for
-	*      future loads.
-	*
-	* In both cases the byte-buffer overload of Effekseer::Effect::Create
-	* is used, explicitly passing the source file's parent directory as
-	* materialPath — unlike the path overload, the byte-buffer overload
-	* does not derive it automatically.
+	* Creates an effect from the ".effekseer" cache or ".efkefc" source
+	* at filePath and returns its handle, or a null handle when it cannot
+	* be read or created. A cache registers its bundled files with the
+	* manager's file interface first. Nothing is written. thread is
+	* unused: the effect needs no per-thread state.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* Effekseerエフェクトを読み込み、結果のEffectRefへのハンドルを返す。
-	*
-	* フロー:
-	*   1. ソースファイルと同じ場所に ".effekseer" バイナリキャッシュが
-	*      あれば、生の ".efkefc" バイト列と埋め込み済みの全依存関係
-	*      （テクスチャ/モデル/マテリアル/wave/curve）をキャッシュから
-	*      デシリアライズする（高速パス。リリースビルドで出荷するのも
-	*      この形式のみ）。エフェクト生成前に各依存関係を共有の
-	*      EffekseerFileInterfaceへ登録し、テクスチャ/モデル/マテリアルの
-	*      読み込みがディスクではなくメモリから解決されるようにする。
-	*   2. なければ ".efkefc" ソースのバイト列を直接読み込み、ディスクから
-	*      エフェクトを生成し（依存関係はディスクフォールバック経由で通常
-	*      通り解決される）、生成直後のエフェクトが参照する全依存関係を
-	*      列挙・読み込みし、ソースのバイト列と合わせて ".effekseer"
-	*      キャッシュとしてシリアライズし次回のロードに備える。
-	*
-	* いずれの場合も Effekseer::Effect::Create のバイトバッファ版に渡す際、
-	* ソースファイルの親ディレクトリを materialPath として明示的に渡す —
-	* pathバージョンと違いバイトバッファ版は自動で解決してくれないため。
+	* filePath の ".effekseer" キャッシュか ".efkefc" ソースからエフェクトを
+	* 作り、そのハンドルを返す。読めない、または作れない場合は null の
+	* ハンドルを返す。キャッシュは、同梱したファイルを先にマネージャの
+	* ファイルインターフェースへ登録する。何も書き出さない。thread は
+	* 使わない（エフェクトはスレッドごとの状態を持たないため）。
 	*/
-	Handle<EffekseerEffect> EffekseerLoader::Load(String filePath)
+	Handle<EffekseerEffect> EffekseerLoader::Load(String filePath, LoadThread thread)
 	{
 		std::filesystem::path path(filePath.c_str());
 		std::filesystem::path cachePath = path;
@@ -226,22 +195,6 @@ namespace SeedCore
 				SC_LOG_ERROR("Effekseer::Effect::Createに失敗しました: {} (materialPath: {})", filePath.c_str(), std::filesystem::path(materialPath).string());
 				return Handle<EffekseerEffect>::null();
 			}
-
-			FlatMap<std::u16string, DynamicArray<Byte>> collected = CollectDependencies(effect, materialPath);
-
-			EffekseerCache cache;
-			cache.data_ = bytes;
-			for (auto& [dependencyPath, dependencyData] : collected)
-			{
-				EffekseerDependency dependency;
-				dependency.path_ = dependencyPath;
-				dependency.data_ = dependencyData;
-				cache.dependencies_.push_back(std::move(dependency));
-			}
-
-			BinaryOutputArchive archive;
-			cache.Serialize(archive);
-			archive.Write(String(cachePath.string()));
 		}
 
 		Handle<EffekseerEffect> handle = pool_.Create();
@@ -255,13 +208,87 @@ namespace SeedCore
 		return handle;
 	}
 
-	EffekseerEffect* EffekseerLoader::Get(const Handle<EffekseerEffect>& handle)
-	{
-		return pool_.Get(handle);
-	}
-
+	/**
+	* [EN]
+	* Destroys the effect handle names.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* handle が示すエフェクトを破棄する。
+	*/
 	void EffekseerLoader::Clear(Handle<EffekseerEffect>& handle)noexcept
 	{
 		pool_.Destroy(handle);
+	}
+
+	/**
+	* [EN]
+	* Creates the effect from the ".efkefc" source at sourcePath to learn
+	* which files it reads, then writes the source and every one of
+	* those files into the ".effekseer" cache at cachePath. Returns false
+	* when the source cannot be read or created, or the write failed.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* sourcePath の ".efkefc" ソースからエフェクトを作って、それが読む
+	* ファイルを調べ、ソースとそれらの全ファイルを cachePath の
+	* ".effekseer" キャッシュへ書く。ソースを読めない、作れない、または
+	* 書き込みに失敗した場合は false を返す。
+	*/
+	Bool EffekseerLoader::Bake(String sourcePath, String cachePath)
+	{
+		std::filesystem::path path(sourcePath.c_str());
+		if (path.extension() != ".efkefc" || !std::filesystem::exists(path))
+		{
+			return false;
+		}
+
+		/// [EN] The effect resolves the files it reads relative to its own folder, so that folder is its material path.
+		/// [JP] エフェクトは読むファイルを自分のフォルダからの相対で解決するため、そのフォルダをマテリアルのパスにする。
+		std::u16string materialPath = path.parent_path().u16string();
+		for (Char16& c : materialPath)
+		{
+			if (c == u'\\')
+			{
+				c = u'/';
+			}
+		}
+		if (!materialPath.empty() && materialPath.back() != u'/')
+		{
+			materialPath += u'/';
+		}
+
+		std::ifstream ifs(path, std::ios::binary);
+		DynamicArray<Byte> bytes((std::istreambuf_iterator<Char>(ifs)), std::istreambuf_iterator<Char>());
+		if (bytes.empty())
+		{
+			return false;
+		}
+
+		/// [EN] Only a created effect can tell which files it reads, so it is created here just to be asked.
+		/// [JP] どのファイルを読むかは作ったエフェクトにしか分からないため、尋ねるためだけにここで作る。
+		Effekseer::EffectRef effect = Effekseer::Effect::Create(Gateway::GetEffekseerManager().GetManager(), bytes.data(), static_cast<Int32>(bytes.size()), 1.0f, materialPath.c_str());
+		if (effect == nullptr)
+		{
+			return false;
+		}
+
+		FlatMap<std::u16string, DynamicArray<Byte>> collected = CollectDependencies(effect, materialPath);
+
+		EffekseerCache cache;
+		cache.data_ = bytes;
+		for (auto& [dependencyPath, dependencyData] : collected)
+		{
+			EffekseerDependency dependency;
+			dependency.path_ = dependencyPath;
+			dependency.data_ = dependencyData;
+			cache.dependencies_.push_back(std::move(dependency));
+		}
+
+		BinaryOutputArchive archive;
+		cache.Serialize(archive);
+		return archive.Write(cachePath);
 	}
 }

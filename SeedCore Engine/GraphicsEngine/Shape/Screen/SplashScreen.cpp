@@ -1,5 +1,5 @@
 #include <GraphicsEngine/Shape/Screen/SplashScreen.h>
-#include <GraphicsEngine/Texture/TextureLoader.h>
+#include <GraphicsEngine/Texture/TextureCreator.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/Shader/ShaderCompiler.h>
@@ -16,7 +16,7 @@ namespace SeedCore
 		{
 			textureIndex = bindlessHeap->AllocateIndex();
 			String filePath = String(std::string("../Runtime/Logo/") + name + "." + tag);
-			TextureLoader::CreateTexturePath(device, cmdQueue, bindlessHeap->Heap(), filePath, resource, textureIndex);
+			TextureCreator::CreateTexturePath(device, cmdQueue, bindlessHeap->Heap(), filePath, resource, textureIndex);
 		};
 
 		load("Day",   "logo", dayTextureIndex_, dayResource_);

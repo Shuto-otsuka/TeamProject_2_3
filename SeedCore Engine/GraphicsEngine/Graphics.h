@@ -16,6 +16,7 @@
 #include <GraphicsEngine/Shape/Screen/LetterScreen.h>
 #include <GraphicsEngine/Shape/Screen/SplashScreen.h>
 #include <GraphicsEngine/System/MovieSystem.h>
+#include <GraphicsEngine/System/FontSystem.h>
 #include <GraphicsEngine/System/EffectSystem.h>
 #include <GraphicsEngine/System/ColliderSystem.h>
 #include <GraphicsEngine/System/ShapeSystem.h>
@@ -652,6 +653,10 @@ namespace SeedCore
 		/// [EN] Updates movie resources before rendering consumes their current frame.
 		/// [JP] 描画が現在フレームを消費する前に、ムービーリソースを更新する。
 		MovieSystem movieSystem_;
+
+		/// [EN] Fills and uploads font atlases before rendering draws this frame's glyphs.
+		/// [JP] 描画が今フレームのグリフを描く前に、フォントのアトラスを埋めてアップロードする。
+		FontSystem fontSystem_;
 
 		/// [EN] Advances each effect's age and decides how many particles it spawns this frame, before rendering reads them.
 		/// [JP] 描画が読む前に、各エフェクトの経過時間を進め、今フレームに発生させるパーティクルの数を決める。

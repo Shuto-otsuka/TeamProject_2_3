@@ -269,7 +269,7 @@ namespace SeedCore
 		/// [JP] Sprite の収集は 2D のレンダラー（テクスチャ、フォント、ムービー）をまとめたもの。
 		Benchmark::Begin("GatherSprite");
 		Vector2 gameDisplaySize = PostProcessOutputSize();
-		textureRenderer_->Gather(*resources.textureResource_, world, gameDisplaySize, selectedEntities);
+		textureRenderer_->Gather(*resources.textureResource_, *resources.textureStreaming_, world, gameDisplaySize, selectedEntities);
 		fontRenderer_->Gather(*resources.fontResource_, world, gameDisplaySize, selectedEntities);
 		movieRenderer_->Gather(*resources.movieResource_, world, gameDisplaySize, selectedEntities);
 		Benchmark::End("GatherSprite");
@@ -580,9 +580,9 @@ namespace SeedCore
 		avatarRenderer_->End(cmdList);
 	}
 
-	void Renderer::UploadShapes(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, TextureResource& textureResource)
+	void Renderer::UploadShapes(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, TextureResource& textureResource, TextureStreaming& textureStreaming)
 	{
-		shapeRenderer_->Upload(shapes, colliders, textureResource);
+		shapeRenderer_->Upload(shapes, colliders, textureResource, textureStreaming);
 	}
 
 	void Renderer::GatherTimelinePreview(D3D12TransferLane& transferLane, GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix)

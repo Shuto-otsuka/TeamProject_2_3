@@ -57,6 +57,7 @@ namespace SeedCore
 {
 	struct GraphicsResourceSystem;
 	class TextureResource;
+	class TextureStreaming;
 	class BindlessHeap;
 	class D3D12CommandList;
 	class D3D12TransferLane;
@@ -111,7 +112,7 @@ namespace SeedCore
 		void EndAvatarFrame(D3D12CommandList* cmdList);
 
 	public:
-		void UploadShapes(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, TextureResource& textureResource);
+		void UploadShapes(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, TextureResource& textureResource, TextureStreaming& textureStreaming);
 
 		void GatherTimelinePreview(D3D12TransferLane& transferLane, GraphicsResourceSystem& resources, Uint32 meshAssetId, Uint32 animationAssetId, Float time, const Matrix& worldMatrix);
 

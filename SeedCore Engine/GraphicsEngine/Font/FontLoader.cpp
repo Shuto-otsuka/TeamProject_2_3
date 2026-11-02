@@ -4,7 +4,26 @@
 
 namespace SeedCore
 {
-	Handle<Font> FontLoader::Load(String filePath, Float fontSize)
+	/**
+	* [EN]
+	* Opens the font file at filePath and returns the handle of the new
+	* Font, or a null handle when any of the third-party handles cannot
+	* be opened. Glyphs are rasterised at one fixed size into the
+	* atlas; the size text is drawn at is applied by the Text component,
+	* since an MTSDF atlas scales without losing sharpness. thread is
+	* unused: the atlas is filled later, on the main thread.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* filePath のフォントファイルを開き、新しい Font のハンドルを返す。
+	* サードパーティのハンドルのどれかを開けなければ null のハンドルを
+	* 返す。グリフは1つの固定サイズでアトラスへ描く。描画する文字の
+	* 大きさは Text コンポーネントが決める（MTSDF のアトラスは鮮明さを
+	* 失わずに拡大縮小できるため）。thread は使わない（アトラスは後で
+	* メインスレッドで埋めるため）。
+	*/
+	Handle<Font> FontLoader::Load(String filePath, LoadThread thread)
 	{
 		Handle<Font> handle = pool_.Create();
 		Font* font = pool_.Get(handle);
@@ -13,7 +32,9 @@ namespace SeedCore
 			return Handle<Font>::null();
 		}
 
-		font->fontSize_ = fontSize;
+		/// [EN] The size the glyphs are rasterised at into the atlas, in pixels per em.
+		/// [JP] アトラスへグリフを描く大きさ（1em あたりのピクセル数）。
+		font->fontSize_ = 48.0f;
 
 		std::string path = filePath.str();
 		if (FT_New_Face(Gateway::GetFontManager().GetLibrary(), path.c_str(), 0, &font->ftFace_) != FT_Err_Ok)
@@ -60,11 +81,17 @@ namespace SeedCore
 		return handle;
 	}
 
-	Font* FontLoader::Get(const Handle<Font>& handle)
-	{
-		return pool_.Get(handle);
-	}
-
+	/**
+	* [EN]
+	* Tears down every third-party handle of the Font handle names, then
+	* frees its slot.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* handle が示す Font の全サードパーティのハンドルを破棄してから、
+	* スロットを解放する。
+	*/
 	void FontLoader::Clear(Handle<Font>& handle)noexcept
 	{
 		Font* font = pool_.Get(handle);

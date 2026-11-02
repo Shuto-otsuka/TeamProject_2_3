@@ -204,6 +204,9 @@
     <ClCompile Include="Reflection\Reflection.generated.cpp" />
     <ClCompile Include="Payload\Payload.generated.cpp" />
     <ClInclude Include="Resource\Asset\Asset.h" />
+    <ClInclude Include="Resource\Asset\AssetExporter.h" />
+    <ClInclude Include="Resource\Asset\AssetLoader.h" />
+    <ClInclude Include="Resource\Asset\AssetResource.h" />
     <ClInclude Include="Resource\Asset\AxisConvention.h" />
     <ClInclude Include="Resource\Blueprint\BlueprintComponent.h" />
     <ClInclude Include="Resource\Blueprint\BlueprintNode.h" />

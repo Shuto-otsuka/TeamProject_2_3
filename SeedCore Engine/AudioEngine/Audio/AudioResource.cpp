@@ -31,9 +31,8 @@ namespace SeedCore
 	*/
 	void AudioResource::Load(const AssetContext& context, Uint32 assetID)
 	{
-		Load(context.cache_, assetID);
+		Load(context.cache_, assetID, context.thread_);
 	}
-
 
 	/**
 	* [EN]
@@ -44,41 +43,40 @@ namespace SeedCore
 	* [JP]
 	* 必要に応じて音声アセットを読み込み、キャッシュ済みの Sound ハンドルを返す。
 	*/
-	Handle<Sound> AudioResource::Load(ResourceCache& cache, Uint32 assetID)
+	Handle<Sound> AudioResource::Load(ResourceCache& cache, Uint32 assetID, LoadThread thread)
 	{
-		/// [EN] Reuse the existing handle when this asset is already loaded.
-		/// [JP] このアセットが読み込み済みなら、既存のハンドルを再利用する。
 		if (assetHandleMap_.contains(assetID))
 		{
 			return assetHandleMap_.at(assetID);
 		}
 
-		/// [EN] Resolve the asset path and load its Sound into AudioLoader storage.
-		/// [JP] アセットのパスを解決し、Sound を AudioLoader のストレージへ読み込む。
 		AssetRecord* asset = cache.GetAsset(assetID);
 		if (!asset)
 		{
 			return Handle<Sound>::null();
 		}
 
-		Handle<Sound> handle = loaders_.audioLoader_->Load(asset->fullpath_);
+		Handle<Sound> handle = loaders_.audioLoader_->Load(asset->fullpath_, thread);
 		if (handle.empty())
 		{
 			return Handle<Sound>::null();
 		}
 
 		assetHandleMap_.insert({ assetID, handle });
+		revision_++;
 		return handle;
 	}
 
 	/**
 	* [EN]
-	* Releases and removes the Sound associated with an asset ID.
+	* Releases the Sound loaded for an asset ID and removes the mapping.
+	* Does nothing when the asset is not loaded.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* アセット ID に対応する Sound を解放し、対応関係を削除する。
+	* アセット ID に対して読み込まれた Sound を解放し、対応を削除する。
+	* 読み込まれていなければ何もしない。
 	*/
 	void AudioResource::Unload(Uint32 assetID)
 	{
@@ -87,30 +85,55 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Release the pooled Sound before removing its asset-to-handle mapping.
-		/// [JP] アセットとハンドルの対応を削除する前に、プール内の Sound を解放する。
 		Handle<Sound> handle = assetHandleMap_.at(assetID);
 		loaders_.audioLoader_->Clear(handle);
 		assetHandleMap_.erase(assetID);
+		revision_++;
 	}
 
 	/**
 	* [EN]
-	* Returns the loaded Sound handle associated with an asset ID.
+	* Converts the audio source sourceAssetID into the encrypted .audio
+	* cache beside it, overwriting any existing one. Nothing is written
+	* for an asset that already is a cache, or for a ".awb" streamed
+	* alongside its ".acb". Returns false when the source cannot be
+	* converted or the write failed.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* アセット ID に対応する読み込み済み Sound ハンドルを返す。
+	* 音声素材 sourceAssetID を、その隣の暗号化された .audio キャッシュへ
+	* 変換する（既存があれば上書き）。既にキャッシュであるアセットと、
+	* ".acb" と一緒にストリーミングされる ".awb" には何も書かない。素材を
+	* 変換できない、または書き込みに失敗した場合は false を返す。
 	*/
-	Handle<Sound> AudioResource::GetHandle(Uint32 assetId)const
+	Bool AudioResource::Generate(const AssetContext& context, Uint32 sourceAssetID, DynamicArray<String>& writtenPaths)
 	{
-		if (!assetHandleMap_.contains(assetId))
+		AssetRecord* asset = context.cache_.GetAsset(sourceAssetID);
+		if (!asset)
 		{
-			return Handle<Sound>::null();
+			return false;
 		}
 
-		return assetHandleMap_.at(assetId);
+		/// [EN] A ".awb" is baked into the cache of the ".acb" beside it, so it has no cache of its own.
+		/// [JP] ".awb" は隣の ".acb" のキャッシュへ一緒に焼き込まれるため、自分のキャッシュを持たない。
+		std::filesystem::path sourcePath(asset->fullpath_.c_str());
+		std::string extension = sourcePath.extension().string();
+		std::ranges::transform(extension, extension.begin(), [](Uchar c) { return static_cast<Char>(std::tolower(c)); });
+		if (extension == ".audio" || extension == ".awb")
+		{
+			return true;
+		}
+
+		std::filesystem::path cachePath = sourcePath;
+		cachePath.replace_extension(".audio");
+		if (!loaders_.audioLoader_->Bake(asset->fullpath_, String(cachePath.string())))
+		{
+			return false;
+		}
+
+		writtenPaths.push_back(String(cachePath.string()));
+		return true;
 	}
 
 	/**
@@ -125,19 +148,5 @@ namespace SeedCore
 	Sound* AudioResource::Resolve(const Handle<Sound>& handle)
 	{
 		return loaders_.audioLoader_->Get(handle);
-	}
-
-	/**
-	* [EN]
-	* Reports whether an asset ID has a loaded Sound handle.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* アセット ID に読み込み済み Sound ハンドルがあるかを返す。
-	*/
-	Bool AudioResource::Contains(Uint32 assetId)const
-	{
-		return assetHandleMap_.contains(assetId);
 	}
 }

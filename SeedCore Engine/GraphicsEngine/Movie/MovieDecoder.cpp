@@ -51,21 +51,6 @@ namespace SeedCore
 		}
 		else
 		{
-			/// [EN] Source-preferred, mirroring ModelLoader's ".crister" cache
-			///      handling: only trust the sibling ".movie" cache when it's
-			///      newer than the source video. Otherwise (re)open from source
-			///      and (re)bake the encrypted cache. Unlike the BinaryArchive-
-			///      backed caches, ".movie" has no field framing (just a 16-byte
-			///      IV followed by raw AES-256-CBC ciphertext) so MovieByteStream
-			///      can decrypt an arbitrary requested range without first
-			///      parsing the whole file.
-			/// [JP] ソース優先、ModelLoaderの".crister"キャッシュ扱いと同じ構図:
-			///      隣の".movie"キャッシュは、ソース動画より新しい時だけ信用
-			///      する。それ以外はソースから(再)オープンし、暗号化キャッシュを
-			///      (再)ベイクする。他のBinaryArchiveベースのキャッシュと違い、
-			///      ".movie"はフィールド形式を持たない(16バイトIV+生のAES-256-CBC
-			///      暗号文のみ)ため、MovieByteStreamはファイル全体を解析せずに
-			///      任意範囲を復号できる。
 			std::filesystem::path cacheFsPath = sourceFsPath;
 			cacheFsPath.replace_extension(".movie");
 
@@ -99,31 +84,6 @@ namespace SeedCore
 				{
 					SC_LOG_ERROR("MovieDecoder: 動画ファイルを開けませんでした ({})", filePath);
 					return false;
-				}
-
-				DynamicArray<Uint8> sourceBytes = FileUtility::LoadFileBinary(String(sourceFsPath.string()));
-				if (!sourceBytes.empty())
-				{
-					DynamicArray<Byte> plaintext(sourceBytes.size());
-					std::memcpy(plaintext.data(), sourceBytes.data(), sourceBytes.size());
-
-					DynamicArray<Byte> key = Sha256::Hash(reinterpret_cast<const Byte*>(SC_ENCRYPTION_KEY_SEED), std::strlen(SC_ENCRYPTION_KEY_SEED));
-
-					DynamicArray<Byte> iv(16);
-					std::random_device randomDevice;
-					for (Byte& ivByte : iv)
-					{
-						ivByte = static_cast<Byte>(randomDevice());
-					}
-
-					DynamicArray<Byte> ciphertext = Aes256::Encrypt(key, iv, plaintext);
-
-					std::ofstream ofs(cacheFsPath, std::ios::binary);
-					if (ofs)
-					{
-						ofs.write(iv.data(), iv.size());
-						ofs.write(ciphertext.data(), ciphertext.size());
-					}
 				}
 			}
 		}

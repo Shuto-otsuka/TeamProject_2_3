@@ -1,6 +1,5 @@
 #pragma once
-#include <FoundationEngine/Utility/Handle.h>
-#include <FoundationEngine/Pool/StablePool.h>
+#include <FoundationEngine/Resource/Asset/AssetLoader.h>
 #include <FoundationEngine/Resource/Asset/AxisConvention.h>
 #include <GraphicsEngine/Model/Crister/Crister.h>
 
@@ -23,8 +22,7 @@ namespace SeedCore
 {
 	class BindlessHeap;
 	class BC7CompressShader;
-	class D3D12CommandQueue;
-	class D3D12TransferLane;
+	class D3D12Context;
 
 	enum class ModelFormat
 	{
@@ -67,10 +65,12 @@ namespace SeedCore
 	*   - Generate meshlets (64 vertices / 124 triangles per workgroup)
 	*   - Build a multi-level LOD hierarchy using QEM simplification
 	*   - Compute per-meshlet bounding spheres and normal cones
-	*   - Serialise the result as a ".crister" cache for fast future loads
 	*   - Trigger GPU upload via CristerResidency::Upload
 	*
 	* Crister objects are pooled in a StablePool and accessed via Handle.
+	* Writing the ".crister" cache is private and reached only by
+	* ModelResource; parsing a source without baking it, for export, is
+	* reached only by ModelExporter.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -84,58 +84,98 @@ namespace SeedCore
 	*   - メシュレット生成（ワークグループあたり 64 頂点 / 124 三角形）
 	*   - QEM 簡略化によるマルチレベル LOD 階層の構築
 	*   - メシュレットごとの包囲球と法線コーンの計算
-	*   - 次回の高速ロードのため ".crister" キャッシュとしてシリアライズ
 	*   - CristerResidency::Upload による GPU アップロードの起動
 	*
 	* Crister オブジェクトは StablePool でプールされ、Handle でアクセスする。
+	* ".crister" キャッシュの書き出しは private で ModelResource からだけ、
+	* 書き出し（エクスポート）用に焼き込まずにソースを解析する処理は
+	* ModelExporter からだけ使う。
 	*/
-	class ModelLoader :public NonCopyable
+	class SEEDCORE_API ModelLoader :public AssetLoader<Crister>
 	{
+	private:
+		friend class ModelResource;
+		friend class ModelExporter;
+
 	public:
-		ModelLoader() = default;
+		/**
+		* [EN]
+		* Takes the device context models are uploaded with, the bindless
+		* heap their buffers and textures are registered in, and the compute
+		* shader that BC7-compresses their textures.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* モデルをアップロードするデバイスのコンテキスト、バッファと
+		* テクスチャの登録先のバインドレスヒープ、テクスチャを BC7 圧縮する
+		* コンピュートシェーダーを受け取る。
+		*/
+		ModelLoader(D3D12Context& context, BindlessHeap& heap, BC7CompressShader& bc7Shader);
 		~ModelLoader() = default;
 
 		/**
 		* [EN]
-		* Loads a 3D model from a glTF/GLB file path.
-		* Returns a handle to the loaded Crister, or a null handle on failure.
-		* If a ".crister" cache exists next to the source file, loads from
-		* cache instead of re-parsing the glTF.
+		* Loads a 3D model from filePath and uploads it on thread's transfer
+		* lane. Returns a handle to the loaded Crister, or a null handle on
+		* failure. A ".crister" path is read as the baked cache; a source
+		* (glTF/GLB/FBX) is parsed, converted with the axis convention in its
+		* own ".meta", and baked in memory. Nothing is written.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* glTF/GLB ファイルパスから 3D モデルを読み込む。
-		* 読み込まれた Crister へのハンドルを返す。失敗時は null ハンドル。
-		* ソースファイルの隣に ".crister" キャッシュがあれば、glTF を再解析
-		* せずキャッシュから読み込む。axisConvention は glTF を再解析する
-		* 場合のみ適用される（キャッシュ読み込み時は無視される）。
+		* filePath から 3D モデルを読み込み、thread の転送レーンで
+		* アップロードする。読み込まれた Crister へのハンドルを返す。失敗時は
+		* null ハンドル。".crister" は焼き込み済みのキャッシュとして読む。
+		* ソース（glTF/GLB/FBX）は解析し、自身の ".meta" にある座標系規約で
+		* 変換して、メモリ上で焼き込む。何も書き出さない。
 		*/
-		Handle<Crister> Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, D3D12CommandQueue* copyQueue, D3D12TransferLane* transferLane, BindlessHeap* heap, BC7CompressShader& bc7Shader, String filePath, const AxisConvention& axisConvention = AxisConvention{}, Bool forExport = false);
+		Handle<Crister> Load(String filePath, LoadThread thread);
 
 		/**
 		* [EN]
-		* Retrieves a Crister pointer from a handle. Returns nullptr if invalid.
+		* Releases a Crister's GPU residency and returns the handle to the
+		* pool.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* ハンドルから Crister ポインタを取得する。無効なら nullptr を返す。
-		*/
-		Crister* Get(const Handle<Crister>& handle);
-
-		/**
-		* [EN]
-		* Releases a Crister and returns the handle to the pool.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Crister を解放し、ハンドルをプールに返却する。
+		* Crister の GPU 常駐分を解放し、ハンドルをプールに返却する。
 		*/
 		void Clear(Handle<Crister>& handle)noexcept;
 
 	private:
+		/**
+		* [EN]
+		* The body of Load. When forExport is set, a source stops right after
+		* extraction: geometry, materials and images stay uncompressed and
+		* LOD-free for ModelExporter, with no GPU upload; a ".crister" is
+		* decoded back to full-precision geometry instead.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* Load の本体。forExport のとき、ソースは抽出の直後で止め、ジオメトリ・
+		* マテリアル・画像を非圧縮・LOD 無しのまま ModelExporter へ渡し、GPU
+		* アップロードもしない。".crister" は代わりにフル精度のジオメトリへ
+		* デコードし直す。
+		*/
+		Handle<Crister> Import(String filePath, LoadThread thread, Bool forExport);
+
+		/**
+		* [EN]
+		* Serializes crister to filePath as a ".crister" cache (overwriting
+		* any existing one). Returns false when the write failed.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* crister を ".crister" キャッシュとして filePath へ直列化する
+		* （既存があれば上書き）。書き込みに失敗した場合は false を返す。
+		*/
+		Bool Bake(Crister& crister, String filePath);
+
 		/**
 		* [EN]
 		* Extracts scene definitions (root node lists + default scene) from glTF.
@@ -241,8 +281,16 @@ namespace SeedCore
 		void FetchLights(const ModelSource& source, Crister& crister);
 
 	private:
-		/// [EN] Object pool for Crister instances. Provides stable pointers and handle-based access.
-		/// [JP] Crister インスタンスのオブジェクトプール。安定したポインタとハンドルベースのアクセスを提供する。
-		StablePool<Crister> pool_;
+		/// [EN] Device context models are uploaded with.
+		/// [JP] モデルをアップロードするデバイスのコンテキスト。
+		D3D12Context& context_;
+
+		/// [EN] Bindless heap the models' buffers and textures are registered in.
+		/// [JP] モデルのバッファとテクスチャが登録されるバインドレスヒープ。
+		BindlessHeap& heap_;
+
+		/// [EN] Compute shader that BC7-compresses the models' textures.
+		/// [JP] モデルのテクスチャを BC7 圧縮するコンピュートシェーダー。
+		BC7CompressShader& bc7Shader_;
 	};
 }

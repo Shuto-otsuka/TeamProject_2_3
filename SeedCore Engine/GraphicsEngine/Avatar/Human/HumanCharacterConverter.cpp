@@ -5,7 +5,7 @@
 #include <GraphicsEngine/Avatar/Human/HumanCharacterConverter.h>
 #include <GraphicsEngine/Avatar/Human/HumanCharacterModel.h>
 #include <GraphicsEngine/Avatar/Human/HumanCharacterEvaluator.h>
-#include <GraphicsEngine/Model/ModelExporter.h>
+#include <GraphicsEngine/Model/ModelWriter.h>
 
 namespace SeedCore
 {
@@ -196,7 +196,6 @@ namespace SeedCore
 		tinygltf::Model gltfModel;
 		Convert(model, evaluator, gltfModel);
 
-		ModelExporter exporter;
-		return exporter.Export(gltfModel, ModelExporter::Preset(preset), filePath);
+		return ModelWriter::Write(gltfModel, ModelWriter::Profile(preset), filePath);
 	}
 }

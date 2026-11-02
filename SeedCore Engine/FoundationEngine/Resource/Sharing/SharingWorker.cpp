@@ -1,6 +1,8 @@
 #include <External/Json/json.hpp>
 #include <FoundationEngine/Resource/Sharing/SharingWorker.h>
 #include <FoundationEngine/Serialization/Encryption/Sha256.h>
+#include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
+#include <FoundationEngine/Resource/Asset/Asset.h>
 #include <FoundationEngine/Resource/Sharing/SharedScene.h>
 
 namespace SeedCore
@@ -1836,16 +1838,44 @@ namespace SeedCore
 				{
 					continue;
 				}
+
+				/// [EN] The .meta is in place before the file itself, so whatever scan reaches the file reads this GUID instead of minting its own.
+				/// [JP] .meta をファイル本体より先に置く。どの走査がファイルに届いても、独自の GUID を発行せずにこの GUID を読むようにするため。
+				Bool metaWritten = false;
+				if (!std::filesystem::exists(meta))
+				{
+					/// [EN] The path is formed as ResourceCache::Scan forms asset.path_, and no time is mixed in, so every machine that receives this file arrives at the same GUID.
+					/// [JP] 位置は ResourceCache::Scan が asset.path_ を作るのと同じ形にし、時刻は混ぜない。このファイルを受け取ったどの PC でも、同じ GUID になるようにするため。
+					std::string rootPath = std::filesystem::relative(local, projectRoot_, errorCode).string();
+					std::ranges::replace(rootPath, '\\', '/');
+					if (!errorCode && !rootPath.empty())
+					{
+						AssetMeta assetMeta;
+						assetMeta.guid_ = static_cast<Uint32>(std::hash<std::string>{}(rootPath));
+
+						BinaryOutputArchive outputArchive;
+						assetMeta.Serialize(outputArchive);
+						metaWritten = outputArchive.Write(String(meta.string()));
+					}
+				}
+
 				std::filesystem::rename(staging, local, errorCode);
 				if (errorCode)
 				{
 					std::filesystem::remove(staging, errorCode);
+
+					/// [EN] A .meta left without its file would be taken as an orphan by the next scan and handed to some other file of the same name.
+					/// [JP] ファイルの無い .meta を残すと、次の走査で孤立した .meta とみなされ、同じ名前の別のファイルへ渡されてしまう。
+					if (metaWritten)
+					{
+						std::filesystem::remove(meta, errorCode);
+					}
 					continue;
 				}
 			}
 
-			/// [EN] The Editor is told, because a file that arrived this way may have no identity yet and has to be scanned to get its .meta.
-			/// [JP] Editor へ知らせる。この経路で届いたファイルはまだ識別情報を持たないことがあり、走査して .meta を得る必要があるため。
+			/// [EN] The Editor is told, so it scans the file in and shares it under the GUID its .meta carries.
+			/// [JP] Editor へ知らせる。ファイルを走査で取り込み、.meta が持つ GUID のまま共有させるため。
 			std::lock_guard<std::mutex> guard(snapshotMutex_);
 			imported_.push_back(logical);
 		}

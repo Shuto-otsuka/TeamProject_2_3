@@ -270,44 +270,42 @@ namespace SeedCore
 			{
 				handle = materialResource->Load(*cache, surfaceAssetID);
 			}
-			Surface* loaded = materialResource->Resolve(handle);
+			BakedSurface* loaded = materialResource->Resolve(handle);
 			if (!loaded)
 			{
 				ImGui::TextDisabled("マテリアルを読み込めません");
 				return;
 			}
-			editingState_.surface_ = MakePtr<Surface>(*loaded);
+			editingState_.surface_ = MakePtr<Surface>(loaded->surface_);
 			editingState_.assetID_ = surfaceAssetID;
 		}
 
 		Surface& surface = *editingState_.surface_;
 
-		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		BC7CompressShader& bc7Shader = context_.graphics_.graphics_->GetBC7CompressShader();
+		/// [EN] Every save writes through the material manager's Bake, which re-bakes the referenced textures; the edited Surface is put on the loaded material first.
+		/// [JP] どの保存もマテリアルのマネージャの Bake を通して書く。Bake は参照しているテクスチャを焼き直す。編集した Surface は先に読み込み済みのマテリアルへ載せる。
+		BakedSurface* loadedMaterial = materialResource->Resolve(materialResource->GetHandle(surfaceAssetID));
+		AssetRecord* materialAsset = cache->GetAsset(surfaceAssetID);
+		AssetContext assetContext{ *cache, LoadThread::Main };
 		MaterialBaker baker;
 
 		if (ImGui::Button("上書き保存"))
 		{
-			if (AssetRecord* asset = cache->GetAsset(surfaceAssetID))
+			if (loadedMaterial && materialAsset)
 			{
-				BakedSurface bakedSurface;
-				BinaryInputArchive archive;
-				if (archive.Read(asset->fullpath_))
-				{
-					bakedSurface.Serialize(archive);
-				}
-				bakedSurface.surface_ = surface;
-				baker.BakeReferenced(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bc7Shader, *cache, bakedSurface);
+				loadedMaterial->surface_ = surface;
 
-				if (graphicsModule.Loaders().materialLoader_->Save(bakedSurface, asset->fullpath_))
+				/// [EN] Reloading hands the freshly baked textures to the texture manager.
+				/// [JP] 読み直すことで、焼き直したテクスチャをテクスチャのマネージャへ渡す。
+				if (materialResource->Bake(assetContext, surfaceAssetID, materialAsset->fullpath_))
 				{
 					materialResource->Unload(surfaceAssetID);
 					materialResource->Load(*cache, surfaceAssetID);
-					SC_LOG_NOTICE("マテリアルビューア: 上書き保存しました: {}", asset->fullpath_.c_str());
+					SC_LOG_NOTICE("マテリアルビューア: 上書き保存しました: {}", materialAsset->fullpath_.c_str());
 				}
 				else
 				{
-					SC_LOG_WARNING("マテリアルビューア: 上書き保存に失敗しました: {}", asset->fullpath_.c_str());
+					SC_LOG_WARNING("マテリアルビューア: 上書き保存に失敗しました: {}", materialAsset->fullpath_.c_str());
 				}
 			}
 			else
@@ -318,24 +316,25 @@ namespace SeedCore
 		ImGui::SameLine();
 		if (ImGui::Button("複製して保存"))
 		{
-			if (AssetRecord* asset = cache->GetAsset(surfaceAssetID))
+			if (loadedMaterial && materialAsset)
 			{
-				BakedSurface bakedSurface;
-				BinaryInputArchive archive;
-				if (archive.Read(asset->fullpath_))
-				{
-					bakedSurface.Serialize(archive);
-				}
-				bakedSurface.surface_ = surface;
-				baker.BakeReferenced(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bc7Shader, *cache, bakedSurface);
-
-				std::filesystem::path sourcePath(asset->fullpath_.c_str());
+				/// [EN] The copy is named after the source with the first free " (N)" suffix beside it.
+				/// [JP] 複製の名前は、元の名前に、隣で空いている最初の " (N)" を付けたもの。
+				std::filesystem::path sourcePath(materialAsset->fullpath_.c_str());
 				std::filesystem::path newPath = sourcePath;
 				for (Int copyIndex = 2; std::filesystem::exists(newPath); copyIndex++)
 				{
 					newPath = sourcePath.parent_path() / (sourcePath.stem().string() + " (" + std::to_string(copyIndex) + ")" + sourcePath.extension().string());
 				}
-				if (graphicsModule.Loaders().materialLoader_->Save(bakedSurface, String(newPath.string())))
+
+				/// [EN] Only the copy takes the edit, so the loaded original is put back as it was once the copy is written.
+				/// [JP] 編集を受け取るのは複製だけなので、複製を書いたら読み込み済みの元は元通りに戻す。
+				Surface original = loadedMaterial->surface_;
+				loadedMaterial->surface_ = surface;
+				Bool written = materialResource->Bake(assetContext, surfaceAssetID, String(newPath.string()));
+				loadedMaterial->surface_ = original;
+
+				if (written)
 				{
 					cache->Reload();
 					SC_LOG_NOTICE("マテリアルビューア: 複製して保存しました: {}", newPath.string());
@@ -353,28 +352,23 @@ namespace SeedCore
 		ImGui::SameLine();
 		if (ImGui::Button("テクスチャを同梱して保存"))
 		{
-			if (AssetRecord* asset = cache->GetAsset(surfaceAssetID))
+			if (loadedMaterial && materialAsset)
 			{
-				BakedSurface bakedSurface;
-				BinaryInputArchive archive;
-				if (archive.Read(asset->fullpath_))
-				{
-					bakedSurface.Serialize(archive);
-				}
-				bakedSurface.surface_ = surface;
-				baker.BakeEmbedded(*crister, mesh->meshID_, bakedSurface);
-				baker.BakeReferenced(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bc7Shader, *cache, bakedSurface);
+				/// [EN] The model's embedded images are added to the loaded material under IDs derived from the model, and the Surface is pointed at them.
+				/// [JP] モデルに埋め込まれた画像を、モデルから導いた ID で読み込み済みのマテリアルへ足し、Surface をそれらへ向ける。
+				loadedMaterial->surface_ = surface;
+				baker.BakeEmbedded(*crister, mesh->meshID_, *loadedMaterial);
 
-				if (graphicsModule.Loaders().materialLoader_->Save(bakedSurface, asset->fullpath_))
+				if (materialResource->Bake(assetContext, surfaceAssetID, materialAsset->fullpath_))
 				{
-					surface = bakedSurface.surface_;
+					surface = loadedMaterial->surface_;
+					SC_LOG_NOTICE("マテリアルビューア: テクスチャを同梱して保存しました（{} 枚）: {}", loadedMaterial->textures_.size(), materialAsset->fullpath_.c_str());
 					materialResource->Unload(surfaceAssetID);
 					materialResource->Load(*cache, surfaceAssetID);
-					SC_LOG_NOTICE("マテリアルビューア: テクスチャを同梱して保存しました（{} 枚）: {}", bakedSurface.textures_.size(), asset->fullpath_.c_str());
 				}
 				else
 				{
-					SC_LOG_WARNING("マテリアルビューア: テクスチャ同梱の保存に失敗しました: {}", asset->fullpath_.c_str());
+					SC_LOG_WARNING("マテリアルビューア: テクスチャ同梱の保存に失敗しました: {}", materialAsset->fullpath_.c_str());
 				}
 			}
 			else

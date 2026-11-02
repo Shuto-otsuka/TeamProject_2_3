@@ -1247,14 +1247,14 @@ namespace SeedCore
 		/// [EN] Resource updates precede Renderer::PrepareFrame so every pass observes the same current asset state.
 		/// [JP] 全パスが同じ最新アセット状態を参照できるよう、リソース更新を Renderer::PrepareFrame より先に行う。
 		Benchmark::Begin("Font");
-		resources.fontResource_->Update(context_->GetDevice(), context_->GetDirectQueue()->GetCommandQueue(), bindlessHeap_.get());
+		fontSystem_.Update(*resources.fontResource_, context_->GetDevice(), context_->GetDirectQueue()->GetCommandQueue(), bindlessHeap_.get());
 		Benchmark::End("Font");
 
 		/// [EN] Movies advance before their GPU texture is consumed by renderer passes.
 		/// [JP] ムービーは GPU テクスチャが Renderer パスで消費される前に進める。
 		Benchmark::Begin("Movie");
 		movieSystem_.Update(*resources.movieResource_, world);
-		resources.movieResource_->Update(context_->GetDevice(), context_->GetDirectList()->Get(), bindlessHeap_.get());
+		movieSystem_.Upload(*resources.movieResource_, context_->GetDevice(), context_->GetDirectList()->Get(), bindlessHeap_.get());
 		Benchmark::End("Movie");
 
 		/// [EN] Effects advance before Renderer::PrepareFrame so the renderer uploads this frame's age and spawn count.
@@ -1276,7 +1276,7 @@ namespace SeedCore
 
 		/// [EN] Shapes and colliders are uploaded together here rather than by one view, since the editor, game and canvas views each draw their own batch of them.
 		/// [JP] 形とコライダーはエディター、ゲーム、Canvas の各ビューがそれぞれのバッチを描くので、どれか1つのビューではなくここでまとめてアップロードする。
-		renderer_->UploadShapes(shapeSystem_.Shapes(), colliderSystem_.Colliders(), *resources.textureResource_);
+		renderer_->UploadShapes(shapeSystem_.Shapes(), colliderSystem_.Colliders(), *resources.textureResource_, *resources.textureStreaming_);
 		Benchmark::End("Shape");
 
 		/// [EN] Renderer receives the selected view's scene constants and entity selection after shared assets are current.

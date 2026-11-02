@@ -12,7 +12,7 @@
 #include <GraphicsEngine/Graphics.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
-#include <GraphicsEngine/Texture/TextureLoader.h>
+#include <GraphicsEngine/Texture/TextureCreator.h>
 
 namespace SeedCore
 {
@@ -526,7 +526,7 @@ namespace SeedCore
 			Graphics* graphics = context_.graphics_.graphics_;
 			graphics->Wait();
 			iconPreviewResource_.Reset();
-			TextureLoader::CreateTextureMemory(graphics->GetContext().GetDevice(), graphics->GetContext().GetDirectQueue(), bindlessHeap->Heap(), previewData, iconPreviewResource_, iconPreviewIndex_);
+			TextureCreator::CreateTextureMemory(graphics->GetContext().GetDevice(), graphics->GetContext().GetDirectQueue(), bindlessHeap->Heap(), previewData, iconPreviewResource_, iconPreviewIndex_);
 		}
 
 		ImGui::TextDisabled("実行ファイルのアイコン");

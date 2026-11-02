@@ -57,19 +57,25 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Loads a Sound from an up-to-date .audio cache, baking one from the
-	* source file when needed. Returns a null handle on failure.
+	* Loads a Sound from the .audio cache at filePath, or from the one
+	* beside the source file filePath names. A source plays only through
+	* its cache, which AudioResource::Generate writes; nothing is written
+	* here. Returns a null handle on failure. thread is unused: a Sound
+	* needs no per-thread state.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 最新の .audio キャッシュから Sound を読み込み、必要なら素材ファイル
-	* からキャッシュを作成する。失敗時は null ハンドルを返す。
+	* filePath の .audio キャッシュ、または filePath が示す素材ファイルの
+	* 隣の .audio キャッシュから Sound を読み込む。素材はキャッシュを通して
+	* しか再生できず、キャッシュは AudioResource::Generate が書く。ここでは
+	* 何も書かない。失敗時は null ハンドルを返す。thread は使わない（Sound は
+	* スレッドごとの状態を持たないため）。
 	*/
-	Handle<Sound> AudioLoader::Load(String filePath)
+	Handle<Sound> AudioLoader::Load(String filePath, LoadThread thread)
 	{
-		/// [EN] Resolve the source and cache paths, rebuilding stale caches before loading.
-		/// [JP] 素材とキャッシュのパスを解決し、古いキャッシュは読み込み前に再作成する。
+		/// [EN] Resolve the source and cache paths.
+		/// [JP] 素材とキャッシュのパスを解決する。
 		std::filesystem::path sourceFsPath(filePath.c_str());
 		std::string extension = sourceFsPath.extension().string();
 		std::ranges::transform(extension, extension.begin(), [](Uchar c) { return static_cast<Char>(std::tolower(c)); });
@@ -84,10 +90,11 @@ namespace SeedCore
 		{
 			cacheFsPath.replace_extension(".audio");
 
-			Bool cacheValid = std::filesystem::exists(cacheFsPath) && std::filesystem::exists(sourceFsPath) && std::filesystem::last_write_time(cacheFsPath) >= std::filesystem::last_write_time(sourceFsPath);
-			if (!cacheValid && !Bake(String(sourceFsPath.string()), String(cacheFsPath.string())))
+			/// [EN] The cache is used whenever it exists: its write time says nothing reliable once files travel through the shared library, so it is refreshed by generating it again rather than judged by age.
+			/// [JP] キャッシュがあれば常にそれを使う。共有ライブラリを通してファイルが運ばれると書き込み時刻は当てにならないため、古さで判断せず、作り直すことで更新する。
+			if (!std::filesystem::exists(cacheFsPath))
 			{
-				SC_LOG_ERROR("AudioLoader: .audioの作成に失敗しました ({})", sourceFsPath.string());
+				SC_LOG_ERROR("AudioLoader: .audioがありません。アセットアクションでキャッシュファイルを作成してください ({})", sourceFsPath.string());
 				return Handle<Sound>::null();
 			}
 		}
@@ -213,20 +220,6 @@ namespace SeedCore
 		}
 
 		return handle;
-	}
-
-	/**
-	* [EN]
-	* Resolves a Sound handle to its pooled object.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Sound ハンドルからプール内のオブジェクトを取得する。
-	*/
-	Sound* AudioLoader::Get(const Handle<Sound>& handle)
-	{
-		return pool_.Get(handle);
 	}
 
 	/**

@@ -11,7 +11,6 @@ namespace SeedCore
 	class ImGuiTexture;
 
 	enum class ExportPreset;
-	enum class MeshCollisionDetail;
 
 	/**
 	* [EN]
@@ -305,42 +304,21 @@ namespace SeedCore
 	private:
 		/**
 		* [EN]
-		* Bakes a ".collision" file next to a model at the given detail level
-		* and reloads the ResourceCache so it appears as an asset.
+		* Has resource write the files it generates from the source asset
+		* asset, then makes each written file an asset and shares it at once:
+		* a file the team does not have yet is registered, and one it already
+		* shares (an overwrite) is published as a new revision. label names
+		* what was generated in the log.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 指定した精度でモデルの隣に ".collision" ファイルを焼き、アセットとして
-		* 出てくるよう ResourceCache を読み直す。
+		* 元アセット asset から resource が作るファイルを書かせ、書いた各
+		* ファイルをアセットにして、その場で共有する。チームがまだ持っていない
+		* ファイルは登録し、既に共有しているもの（上書きしたもの）は新しい
+		* Revision として公開する。label はログに出す、作ったものの名前。
 		*/
-		void GenerateMeshCollision(const AssetRecord& asset, MeshCollisionDetail detail);
-
-		/**
-		* [EN]
-		* Writes a ".material" file for each of a model's materials and
-		* reloads the ResourceCache so they appear as assets.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* モデルのマテリアルごとに ".material" ファイルを書き出し、アセットとして
-		* 出てくるよう ResourceCache を読み直す。
-		*/
-		void GenerateMaterial(const AssetRecord& asset);
-
-		/**
-		* [EN]
-		* Writes a ".skeleton" file from a skinned model and reloads the
-		* ResourceCache so it appears as an asset.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* スキン付きモデルから ".skeleton" ファイルを書き出し、アセットとして
-		* 出てくるよう ResourceCache を読み直す。
-		*/
-		void GenerateSkeleton(const AssetRecord& asset);
+		void GenerateAsset(const AssetRecord& asset, Asset& resource, const Char* label);
 
 	private:
 		/**

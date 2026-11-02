@@ -52,7 +52,7 @@ namespace SeedCore
 	{
 		ModelResource& modelResource = *resources.modelResource_;
 		MaterialResource& materialResource = *resources.materialResource_;
-		TextureResource& textureResource = *resources.textureResource_;
+		TextureStreaming& textureStreaming = *resources.textureStreaming_;
 
 		opaqueInstances_.clear();
 		transparentInstances_.clear();
@@ -79,7 +79,8 @@ namespace SeedCore
 		const auto& skins = crister->Skins();
 		const auto& nodes = crister->Nodes();
 
-		Surface* previewSurface = surfaceAssetId != 0 ? materialResource.Resolve(materialResource.GetHandle(surfaceAssetId)) : nullptr;
+		BakedSurface* previewBakedSurface = surfaceAssetId != 0 ? materialResource.Resolve(materialResource.GetHandle(surfaceAssetId)) : nullptr;
+		Surface* previewSurface = previewBakedSurface ? &previewBakedSurface->surface_ : nullptr;
 
 		Uint boneBase = 0;
 		Bool boneOverflow = false;
@@ -216,11 +217,11 @@ namespace SeedCore
 						instanceData.shading_.tiling_ = material.tiling_;
 						instanceData.shading_.triplanarSharpness_ = material.triplanarSharpness_;
 
-						instanceData.texture_.baseColorTextureIndex_ = material.baseColorTextureAssetID_ != 0 ? textureResource.GetID(material.baseColorTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.baseColorTextureIndex_);
-						instanceData.texture_.normalTextureIndex_ = material.normalTextureAssetID_ != 0 ? textureResource.GetID(material.normalTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.normalTextureIndex_);
-						instanceData.texture_.metallicRoughnessTextureIndex_ = material.metallicRoughnessTextureAssetID_ != 0 ? textureResource.GetID(material.metallicRoughnessTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
-						instanceData.texture_.emissiveTextureIndex_ = material.emissiveTextureAssetID_ != 0 ? textureResource.GetID(material.emissiveTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.emissiveTextureIndex_);
-						instanceData.texture_.occlusionTextureIndex_ = material.occlusionTextureAssetID_ != 0 ? textureResource.GetID(material.occlusionTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.occlusionTextureIndex_);
+						instanceData.texture_.baseColorTextureIndex_ = material.baseColorTextureAssetID_ != 0 ? textureStreaming.GetID(material.baseColorTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.baseColorTextureIndex_);
+						instanceData.texture_.normalTextureIndex_ = material.normalTextureAssetID_ != 0 ? textureStreaming.GetID(material.normalTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.normalTextureIndex_);
+						instanceData.texture_.metallicRoughnessTextureIndex_ = material.metallicRoughnessTextureAssetID_ != 0 ? textureStreaming.GetID(material.metallicRoughnessTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
+						instanceData.texture_.emissiveTextureIndex_ = material.emissiveTextureAssetID_ != 0 ? textureStreaming.GetID(material.emissiveTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.emissiveTextureIndex_);
+						instanceData.texture_.occlusionTextureIndex_ = material.occlusionTextureAssetID_ != 0 ? textureStreaming.GetID(material.occlusionTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.occlusionTextureIndex_);
 						instanceData.extension_.specularTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.specular_.specularTextureIndex_);
 						instanceData.extension_.specularColorTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.specular_.specularColorTextureIndex_);
 						instanceData.extension_.clearCoatTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.clearCoat_.clearCoatTextureIndex_);

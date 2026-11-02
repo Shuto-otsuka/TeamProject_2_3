@@ -15,6 +15,7 @@ namespace SeedCore
 	class BindlessHeap;
 	class D3D12CommandList;
 	class TextureResource;
+	class TextureStreaming;
 
 	/**
 	* [EN]
@@ -97,7 +98,8 @@ namespace SeedCore
 		* a batch's maximum are dropped), uploads each non-empty batch, and
 		* registers the wireframe batches in each view's primitive wireframe
 		* slot and the solid buffers in the primitive solid slots. Textures of
-		* solid shapes are resolved to bindless indices here.
+		* solid shapes are looked up in textureResource and resolved to
+		* bindless indices through textureStreaming here.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -105,10 +107,10 @@ namespace SeedCore
 		* 形とコライダーを GPU 用の並びに詰め（バッチの最大数を超えた分は
 		* 破棄する）、空でない各バッチをアップロードする。ワイヤーフレームの
 		* バッチは各ビューの基本形状ワイヤーフレームの枠に、面のバッファは
-		* 基本形状の面の枠に登録する。面の形のテクスチャは、ここで bindless の
-		* 番号に直す。
+		* 基本形状の面の枠に登録する。面の形のテクスチャは、ここで
+		* textureResource から引き、textureStreaming を通して bindless の番号に直す。
 		*/
-		void Upload(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, TextureResource& textureResource);
+		void Upload(std::span<const ShapeDesc> shapes, std::span<const ShapeDesc> colliders, TextureResource& textureResource, TextureStreaming& textureStreaming);
 
 		/**
 		* [EN]
@@ -189,7 +191,7 @@ namespace SeedCore
 		* 形は面のバッチへ、ワイヤーフレームの形は Canvas のバッチか
 		* ワールドのバッチ（Game のものはゲームのバッチにも）へ入れる。
 		*/
-		void AppendShape(const ShapeDesc& shape, TextureResource& textureResource);
+		void AppendShape(const ShapeDesc& shape, TextureResource& textureResource, TextureStreaming& textureStreaming);
 
 		/**
 		* [EN]

@@ -7,6 +7,7 @@ namespace SeedCore
 {
 	struct RootAddresses;
 	class TextureResource;
+	class TextureStreaming;
 	class World;
 	class BindlessHeap;
 	class ShaderCache;
@@ -76,7 +77,7 @@ namespace SeedCore
 
 		void Create(ID3D12Device* device, BindlessHeap* bindlessHeap, ShaderCache& shaderCache, ShaderResourceIndicesSystem& shaderResourceIndicesSystem);
 
-		void Gather(TextureResource& resource, World& world, Vector2 nativeScreenSize, std::span<const Entity> selectedEntities = {});
+		void Gather(TextureResource& resource, TextureStreaming& streaming, World& world, Vector2 nativeScreenSize, std::span<const Entity> selectedEntities = {});
 
 		void Upload();
 

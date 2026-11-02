@@ -173,6 +173,7 @@
     <ClInclude Include="Model\ModelRecord.h" />
     <ClInclude Include="Model\ModelResource.h" />
     <ClInclude Include="Model\ModelShader.h" />
+    <ClInclude Include="Model\ModelWriter.h" />
     <ClInclude Include="Model\Morph\MorphBlendShader.h" />
     <ClInclude Include="Model\Skeleton\Skeleton.h" />
     <ClInclude Include="Model\Skeleton\SkeletonLoader.h" />
@@ -258,6 +259,7 @@
     <ClInclude Include="Renderer\VolumetricLightRenderer.h" />
     <ClInclude Include="Renderer\VolumetricStarRenderer.h" />
     <ClInclude Include="Renderer\WeatherParticleRenderer.h" />
+    <ClInclude Include="Resource\GraphicsExporterSystem.h" />
     <ClInclude Include="Resource\GraphicsLoaderSystem.h" />
     <ClInclude Include="Resource\GraphicsModule.h" />
     <ClInclude Include="Resource\GraphicsResourceSystem.h" />
@@ -295,6 +297,7 @@
     <ClInclude Include="System\ColliderSystem.h" />
     <ClInclude Include="System\ConstraintSystem.h" />
     <ClInclude Include="System\EffectSystem.h" />
+    <ClInclude Include="System\FontSystem.h" />
     <ClInclude Include="System\GlobalIlluminationSystem.h" />
     <ClInclude Include="System\IndicesSystem.h" />
     <ClInclude Include="System\LightSystem.h" />
@@ -315,9 +318,11 @@
     <ClInclude Include="Texture\Compression\BC7CompressShader.h" />
     <ClInclude Include="Texture\Image.h" />
     <ClInclude Include="Texture\Texture.h" />
+    <ClInclude Include="Texture\TextureCreator.h" />
     <ClInclude Include="Texture\TextureLoader.h" />
     <ClInclude Include="Texture\TextureResource.h" />
     <ClInclude Include="Texture\TextureShader.h" />
+    <ClInclude Include="Texture\TextureStreaming.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Avatar\Animal\AnimalCharacterConverter.cpp" />
@@ -398,6 +403,7 @@
     <ClCompile Include="Model\ModelLoader.cpp" />
     <ClCompile Include="Model\ModelResource.cpp" />
     <ClCompile Include="Model\ModelShader.cpp" />
+    <ClCompile Include="Model\ModelWriter.cpp" />
     <ClCompile Include="Model\Morph\MorphBlendShader.cpp" />
     <ClCompile Include="Model\Skeleton\Skeleton.cpp" />
     <ClCompile Include="Model\Skeleton\SkeletonLoader.cpp" />
@@ -555,6 +561,7 @@
     <ClCompile Include="Renderer\VolumetricLightRenderer.cpp" />
     <ClCompile Include="Renderer\VolumetricStarRenderer.cpp" />
     <ClCompile Include="Renderer\WeatherParticleRenderer.cpp" />
+    <ClCompile Include="Resource\GraphicsExporterSystem.cpp" />
     <ClCompile Include="Resource\GraphicsLoaderSystem.cpp" />
     <ClCompile Include="Resource\GraphicsModule.cpp" />
     <ClCompile Include="Resource\GraphicsResourceSystem.cpp" />
@@ -584,6 +591,7 @@
     <ClCompile Include="System\ColliderSystem.cpp" />
     <ClCompile Include="System\ConstraintSystem.cpp" />
     <ClCompile Include="System\EffectSystem.cpp" />
+    <ClCompile Include="System\FontSystem.cpp" />
     <ClCompile Include="System\GlobalIlluminationSystem.cpp" />
     <ClCompile Include="System\IndicesSystem.cpp">
     </ClCompile>
@@ -605,9 +613,11 @@
     <ClCompile Include="TAAU\TaauResolveShader.cpp" />
     <ClCompile Include="Texture\Compression\BC7CompressShader.cpp" />
     <ClCompile Include="Texture\Texture.cpp" />
+    <ClCompile Include="Texture\TextureCreator.cpp" />
     <ClCompile Include="Texture\TextureLoader.cpp" />
     <ClCompile Include="Texture\TextureResource.cpp" />
     <ClCompile Include="Texture\TextureShader.cpp" />
+    <ClCompile Include="Texture\TextureStreaming.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FoundationEngine\FoundationEngine.Cplusplus.vcxproj">

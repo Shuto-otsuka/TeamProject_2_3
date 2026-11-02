@@ -35,7 +35,7 @@ namespace SeedCore
 	{
 	private:
 		friend class ModelLoader;
-		friend class ModelExporter;
+		friend class ModelWriter;
 		friend class CristerResidency;
 		friend class CristerQuantizer;
 		friend class CristerConverter;

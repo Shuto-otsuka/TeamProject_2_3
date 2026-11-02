@@ -15,6 +15,7 @@
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/D3D12/Context/D3D12TransferLane.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
 #ifdef _DEBUG
@@ -29,35 +30,145 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* Loads a 3D model from a glTF/GLB file and returns a handle to the
-	* resulting Crister object.
-	*
-	* Flow:
-	*   1. If a pre-built ".crister" binary cache exists alongside the
-	*      source file, deserialise from cache (fast path).
-	*   2. Otherwise, parse the glTF/GLB with tinygltf, extract all data
-	*      (scenes, nodes, meshes, materials, skins, textures), generate
-	*      meshlets + LOD hierarchy, then serialise the result as a
-	*      ".crister" cache for future loads.
-	*   3. Upload GPU resources via CristerResidency::Upload.
+	* Takes the device context models are uploaded with, the bindless
+	* heap their buffers and textures are registered in, and the compute
+	* shader that BC7-compresses their textures.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* glTF/GLB ファイルから 3D モデルを読み込み、結果の Crister オブジェクトへの
-	* ハンドルを返す。
+	* モデルをアップロードするデバイスのコンテキスト、バッファと
+	* テクスチャの登録先のバインドレスヒープ、テクスチャを BC7 圧縮する
+	* コンピュートシェーダーを受け取る。
+	*/
+	ModelLoader::ModelLoader(D3D12Context& context, BindlessHeap& heap, BC7CompressShader& bc7Shader) :context_(context), heap_(heap), bc7Shader_(bc7Shader)
+	{
+		/// No Code
+	}
+
+	/**
+	* [EN]
+	* Loads a 3D model from filePath and uploads it on thread's transfer
+	* lane. Returns a handle to the loaded Crister, or a null handle on
+	* failure. A ".crister" path is read as the baked cache; a source
+	* (glTF/GLB/FBX) is parsed, converted with the axis convention in its
+	* own ".meta", and baked in memory. Nothing is written.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* filePath から 3D モデルを読み込み、thread の転送レーンで
+	* アップロードする。読み込まれた Crister へのハンドルを返す。失敗時は
+	* null ハンドル。".crister" は焼き込み済みのキャッシュとして読む。
+	* ソース（glTF/GLB/FBX）は解析し、自身の ".meta" にある座標系規約で
+	* 変換して、メモリ上で焼き込む。何も書き出さない。
+	*/
+	Handle<Crister> ModelLoader::Load(String filePath, LoadThread thread)
+	{
+		return Import(filePath, thread, false);
+	}
+
+	/**
+	* [EN]
+	* Releases a Crister's GPU residency and returns the handle to the
+	* pool.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Crister の GPU 常駐分を解放し、ハンドルをプールに返却する。
+	*/
+	void ModelLoader::Clear(Handle<Crister>& handle)noexcept
+	{
+		/// [EN] A Crister that was never uploaded (one loaded for export) has nothing to release, which Release itself checks.
+		/// [JP] 一度もアップロードしていない Crister（書き出し用に読み込んだもの）には解放するものが無く、それは Release 自身が確かめる。
+		if (Crister* crister = pool_.Get(handle))
+		{
+			crister->Residency().Release(&heap_);
+		}
+		pool_.Destroy(handle);
+	}
+
+	/**
+	* [EN]
+	* Serializes crister to filePath as a ".crister" cache (overwriting
+	* any existing one). Returns false when the write failed.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* crister を ".crister" キャッシュとして filePath へ直列化する
+	* （既存があれば上書き）。書き込みに失敗した場合は false を返す。
+	*/
+	Bool ModelLoader::Bake(Crister& crister, String filePath)
+	{
+		BinaryOutputArchive archive;
+		crister.Serialize(archive);
+		return archive.Write(filePath);
+	}
+
+	/**
+	* [EN]
+	* The body of Load: returns a handle to the resulting Crister object.
+	*
+	* Flow:
+	*   1. A ".crister" path is deserialised as the baked cache (fast path).
+	*   2. Otherwise, parse the glTF/GLB with tinygltf or the FBX with the
+	*      FBX SDK, extract all data (scenes, nodes, meshes, materials,
+	*      skins, textures), convert it with the axis convention in the
+	*      source's ".meta", then generate meshlets + LOD hierarchy and
+	*      compress in memory.
+	*   3. Upload GPU resources via CristerResidency::Upload.
+	*
+	* When forExport is set, a source stops right after extraction:
+	* geometry, materials and images stay uncompressed and LOD-free for
+	* ModelExporter, with no GPU upload; a ".crister" is decoded back to
+	* full-precision geometry instead.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Load の本体。結果の Crister オブジェクトへのハンドルを返す。
 	*
 	* フロー:
-	*   1. ソースファイルと同じ場所に ".crister" バイナリキャッシュがあれば
-	*      キャッシュからデシリアライズする（高速パス）。
-	*   2. なければ tinygltf で glTF/GLB を解析し、全データ
-	*      （シーン、ノード、メッシュ、マテリアル、スキン、テクスチャ）を抽出し、
-	*      メシュレット + LOD 階層を生成した後、".crister" キャッシュとして
-	*      シリアライズして次回のロードに備える。
+	*   1. ".crister" は焼き込み済みのキャッシュとしてデシリアライズする
+	*      （高速パス）。
+	*   2. それ以外は glTF/GLB を tinygltf で、FBX を FBX SDK で解析し、全データ
+	*      （シーン、ノード、メッシュ、マテリアル、スキン、テクスチャ）を抽出して
+	*      ソースの ".meta" にある座標系規約で変換した後、メシュレット + LOD
+	*      階層を生成し、メモリ上で圧縮する。
 	*   3. CristerResidency::Upload で GPU リソースをアップロードする。
+	*
+	* forExport のとき、ソースは抽出の直後で止め、ジオメトリ・マテリアル・
+	* 画像を非圧縮・LOD 無しのまま ModelExporter へ渡し、GPU アップロードも
+	* しない。".crister" は代わりにフル精度のジオメトリへデコードし直す。
 	*/
-	Handle<Crister> ModelLoader::Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, D3D12CommandQueue* copyQueue, D3D12TransferLane* transferLane, BindlessHeap* heap, BC7CompressShader& bc7Shader, String filePath, const AxisConvention& axisConvention, Bool forExport)
+	Handle<Crister> ModelLoader::Import(String filePath, LoadThread thread, Bool forExport)
 	{
+		/// [EN] The GPU objects every step below works with, taken from the dependencies this loader was built with; the transfer lane is the loading thread's own.
+		/// [JP] 以下の各段階が使う GPU のオブジェクト。このローダーが構築時に受け取った依存から取る。転送レーンは読み込むスレッド専用のもの。
+		ID3D12Device* device = context_.GetDevice();
+		D3D12CommandQueue* cmdQueue = context_.GetDirectQueue();
+		D3D12CommandQueue* copyQueue = context_.GetCopyQueue();
+		D3D12TransferLane* transferLane = context_.GetLoadTransferLane(thread);
+		BindlessHeap* heap = &heap_;
+		BC7CompressShader& bc7Shader = bc7Shader_;
+
+		/// [EN] A source is converted with the axis convention recorded in its own ".meta"; a missing or older ".meta" yields the default convention.
+		/// [JP] ソースは自身の ".meta" に記録された座標系規約で変換する。".meta" が無いか古ければ既定の規約になる。
+		AxisConvention axisConvention{};
+		{
+			std::filesystem::path metaPath(filePath.c_str());
+			metaPath += ".meta";
+			BinaryInputArchive metaArchive;
+			if (std::filesystem::exists(metaPath) && metaArchive.Read(String(metaPath.string())))
+			{
+				AssetMeta meta;
+				meta.Serialize(metaArchive);
+				axisConvention = meta.axisConvention_;
+			}
+		}
+
 		Handle<Crister> handle = pool_.Create();
 		Crister* crister = pool_.Get(handle);
 		if (!crister)
@@ -225,19 +336,16 @@ namespace SeedCore
 			CristerQuantizer quantizer;
 			quantizer.BakeMesh(*crister);
 
-			/// [EN] Downsample/dilate/BC7-compress every texture and bake the
-			///      result into the cache. Independent of BakeMesh; order
-			///      between the two doesn't matter.
-			/// [JP] 全テクスチャをダウンサンプル/dilation/BC7 圧縮してキャッシュへ
-			///      焼き込む。BakeMesh とは独立しており、両者の順序は問わない。
+			/// [EN] Downsample/dilate/BC7-compress every texture in memory.
+			///      Independent of BakeMesh; order between the two doesn't
+			///      matter. Writing the result as a ".crister" cache is
+			///      ModelResource::Generate's job.
+			/// [JP] 全テクスチャをメモリ上でダウンサンプル/dilation/BC7 圧縮する。
+			///      BakeMesh とは独立しており、両者の順序は問わない。結果を
+			///      ".crister" キャッシュとして書き出すのは ModelResource::Generate
+			///      の役目。
 			CristerCompressor compressor;
 			compressor.BakeBitmap(device, cmdQueue, bc7Shader, crister->material_.bitmaps_);
-
-			/// [EN] Serialise everything to ".crister" binary cache for next load.
-			/// [JP] 次回のロードのため ".crister" バイナリキャッシュにシリアライズする。
-			BinaryOutputArchive archive;
-			crister->Serialize(archive);
-			archive.Write(String(cristerPath.string()));
 		}
 
 		if (forExport)
@@ -252,16 +360,6 @@ namespace SeedCore
 		copyQueue->WaitFor(transferLane->Submit(*copyQueue));
 
 		return handle;
-	}
-
-	Crister* ModelLoader::Get(const Handle<Crister>& handle)
-	{
-		return pool_.Get(handle);
-	}
-
-	void ModelLoader::Clear(Handle<Crister>& handle)noexcept
-	{
-		pool_.Destroy(handle);
 	}
 
 	/**

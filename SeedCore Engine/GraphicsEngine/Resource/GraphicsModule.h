@@ -2,6 +2,7 @@
 
 #include <GraphicsEngine/Resource/GraphicsLoaderSystem.h>
 #include <GraphicsEngine/Resource/GraphicsResourceSystem.h>
+#include <GraphicsEngine/Resource/GraphicsExporterSystem.h>
 
 namespace SeedCore
 {
@@ -21,9 +22,13 @@ namespace SeedCore
 
 		NODISCARD GraphicsResourceSystem& Resources();
 
+		NODISCARD GraphicsExporterSystem& Exporters();
+
 	private:
 		GraphicsLoaderSystem loaders_;
 
 		GraphicsResourceSystem resources_;
+
+		GraphicsExporterSystem exporters_;
 	};
 }

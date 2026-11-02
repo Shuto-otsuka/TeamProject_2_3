@@ -2,7 +2,7 @@
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
-#include <GraphicsEngine/Texture/TextureLoader.h>
+#include <GraphicsEngine/Texture/TextureCreator.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Adapter.h>
 #include <GraphicsEngine/Graphics.h>
@@ -24,7 +24,7 @@ namespace SeedCore
 		IDXGIAdapter4* adapter = d3d12Context.GetAdapter()->Get();
 
 		Uint index = bindlessHeap->AllocateIndex();
-		TextureLoader::CreateTexturePath(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bindlessHeap->Heap(), logoPath, logoResource_, index);
+		TextureCreator::CreateTexturePath(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bindlessHeap->Heap(), logoPath, logoResource_, index);
 		logoTextureId_ = static_cast<ImTextureID>(bindlessHeap->GPUHandle(index).ptr);
 
 		if (logoResource_)

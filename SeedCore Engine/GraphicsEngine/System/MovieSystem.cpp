@@ -34,4 +34,32 @@ namespace SeedCore
 				video->Update();
 			});
 	}
+
+	/**
+	* [EN]
+	* Uploads the frame each loaded video decoded since the last upload
+	* into its GPU texture, recording the copies on cmdList. Runs after
+	* Update and before the renderers consume the textures.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 読み込み済みの各動画が前回のアップロード以降にデコードした
+	* フレームを、その GPU テクスチャへアップロードする。コピーは cmdList
+	* に記録する。Update の後、レンダラーがテクスチャを使う前に動かす。
+	*/
+	void MovieSystem::Upload(MovieResource& movieResource, ID3D12Device* device, ID3D12GraphicsCommandList6* cmdList, BindlessHeap* bindlessHeap)
+	{
+		/// [EN] Every loaded video is uploaded, not only those a Movie component names, so a video played from outside the world still shows its frames.
+		/// [JP] Movie コンポーネントが指すものに限らず、読み込み済みの全動画をアップロードする。world の外から再生された動画でもフレームが出るようにするため。
+		for (const Handle<Video>& handle : movieResource.assetHandleMap_ | std::ranges::views::values)
+		{
+			Video* video = movieResource.Resolve(handle);
+			if (!video)
+			{
+				continue;
+			}
+			video->UploadFrame(device, cmdList, bindlessHeap);
+		}
+	}
 }

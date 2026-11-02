@@ -6,6 +6,8 @@ namespace SeedCore
 	class SEEDCORE_API Texture :public NonCopyable
 	{
 		friend class TextureLoader;
+		friend class TextureCreator;
+		friend class TextureStreaming;
 
 	public:
 		Texture() = default;

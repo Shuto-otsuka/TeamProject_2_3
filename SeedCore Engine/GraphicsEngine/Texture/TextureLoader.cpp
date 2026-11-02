@@ -1,16 +1,42 @@
 #include <GraphicsEngine/Texture/TextureLoader.h>
-#include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
-#include <GraphicsEngine/D3D12/Context/D3D12TransferLane.h>
+#include <GraphicsEngine/Texture/TextureCreator.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
-#include <GraphicsEngine/Model/Crister/CristerMaterial.h>
 #include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 #include <FoundationEngine/File/FileUtility.h>
-#include <FoundationEngine/Log/DxFail.h>
-#include <FoundationEngine/Log/Error.h>
 
 namespace SeedCore
 {
-	Handle<Texture> TextureLoader::Load(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* heap, String filePath)
+	/**
+	* [EN]
+	* Takes the device context and the bindless heap every texture is
+	* created on and registered in.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 全てのテクスチャを作るデバイスのコンテキストと、登録先の
+	* バインドレスヒープを受け取る。
+	*/
+	TextureLoader::TextureLoader(D3D12Context& context, BindlessHeap& heap) :context_(context), heap_(heap)
+	{
+		/// No Code
+	}
+
+	/**
+	* [EN]
+	* Creates a texture from the image file at filePath and returns its
+	* handle. The upload goes through the direct queue, so thread is not
+	* needed to pick per-thread state.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* filePath の画像ファイルからテクスチャを作り、そのハンドルを返す。
+	* アップロードは Direct キューを通すため、スレッドごとの状態を選ぶ
+	* のに thread は要らない。
+	*/
+	Handle<Texture> TextureLoader::Load(String filePath, LoadThread thread)
 	{
 		Handle<Texture> handle = pool_.Create();
 		Texture* texture = pool_.Get(handle);
@@ -19,360 +45,96 @@ namespace SeedCore
 			return Handle<Texture>::null();
 		}
 
-		device_ = device;
-		cmdQueue_ = cmdQueue;
-
+		/// [EN] The file path is kept on the texture, since streaming recreates an evicted texture from it.
+		/// [JP] ファイルの位置はテクスチャに残す。追い出されたテクスチャを、ストリーミングがそこから作り直すため。
 		texture->handle_ = handle;
-		texture->textureIndex_ = heap->AllocateIndex();
+		texture->textureIndex_ = heap_.AllocateIndex();
 		texture->filePath_ = filePath;
 
-		CreateTexturePath(device, cmdQueue, heap->Heap(), filePath, texture->resource_, texture->textureIndex_);
+		TextureCreator::CreateTexturePath(context_.GetDevice(), context_.GetDirectQueue(), heap_.Heap(), filePath, texture->resource_, texture->textureIndex_);
 
+		/// [EN] The allocation size is what streaming counts against its budget.
+		/// [JP] 確保した大きさは、ストリーミングが予算と比べるのに使う。
 		if (texture->resource_)
 		{
 			D3D12_RESOURCE_DESC desc = texture->resource_->GetDesc();
-			texture->sizeBytes_ = device->GetResourceAllocationInfo(0, 1, &desc).SizeInBytes;
-			totalResidentBytes_ += texture->sizeBytes_;
+			texture->sizeBytes_ = context_.GetDevice()->GetResourceAllocationInfo(0, 1, &desc).SizeInBytes;
 		}
-
-		loadedHandles_.push_back(handle);
 
 		return handle;
 	}
 
-	Handle<Texture> TextureLoader::Adopt(ID3D12Device* device, D3D12CommandQueue* copyQueue, D3D12TransferLane* transferLane, BindlessHeap* heap, const Bitmap& bitmap)
+	/**
+	* [EN]
+	* Moves a texture built by TextureCreator into the pool and returns
+	* its handle, recording the handle on the texture itself.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* TextureCreator が組み立てたテクスチャをプールへ移してハンドルを
+	* 返し、テクスチャ自身にもそのハンドルを記録する。
+	*/
+	Handle<Texture> TextureLoader::Adopt(Texture&& texture)
 	{
-		if (bitmap.width_ <= 0 || bitmap.height_ <= 0 || bitmap.mipCount_ <= 0 || bitmap.width_ % 4 != 0 || bitmap.height_ % 4 != 0)
+		Handle<Texture> handle = AssetLoader<Texture>::Adopt(std::move(texture));
+		Texture* adopted = pool_.Get(handle);
+		if (adopted)
 		{
-			return Handle<Texture>::null();
+			adopted->handle_ = handle;
 		}
-
-		Uint64 totalBytes = 0;
-		Uint32 mipWidth = static_cast<Uint32>(bitmap.width_);
-		Uint32 mipHeight = static_cast<Uint32>(bitmap.height_);
-		for (Int mipIndex = 0;mipIndex < bitmap.mipCount_;mipIndex++)
-		{
-			totalBytes += static_cast<Uint64>(Max((mipWidth + 3) / 4, 1u)) * Max((mipHeight + 3) / 4, 1u) * 16;
-			mipWidth = Max(mipWidth / 2, 1u);
-			mipHeight = Max(mipHeight / 2, 1u);
-		}
-		if (bitmap.cacheData_.size() < totalBytes)
-		{
-			return Handle<Texture>::null();
-		}
-
-		D3D12_RESOURCE_DESC textureDesc{};
-		textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-		textureDesc.Width = static_cast<Uint64>(bitmap.width_);
-		textureDesc.Height = static_cast<Uint64>(bitmap.height_);
-		textureDesc.DepthOrArraySize = 1;
-		textureDesc.MipLevels = static_cast<Uint16>(bitmap.mipCount_);
-		textureDesc.Format = DXGI_FORMAT_BC7_UNORM;
-		textureDesc.SampleDesc.Count = 1;
-		textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-
-		D3D12_HEAP_PROPERTIES heapProperties{};
-		heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-
-		Microsoft::WRL::ComPtr<ID3D12Resource> resource;
-		HRESULT hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &textureDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(resource.GetAddressOf()));
-		if (FAILED(hr))
-		{
-			return Handle<Texture>::null();
-		}
-
-		transferLane->Begin(device, *copyQueue);
-		Uint64 offset = 0;
-		mipWidth = static_cast<Uint32>(bitmap.width_);
-		mipHeight = static_cast<Uint32>(bitmap.height_);
-		for (Int mipIndex = 0;mipIndex < bitmap.mipCount_;mipIndex++)
-		{
-			Uint64 mipBytes = static_cast<Uint64>(Max((mipWidth + 3) / 4, 1u)) * Max((mipHeight + 3) / 4, 1u) * 16;
-			transferLane->GetStream().Upload(device, transferLane->GetCommandList(), resource.Get(), static_cast<Uint32>(mipIndex), std::as_bytes(std::span(bitmap.cacheData_)).subspan(offset, mipBytes));
-			offset += mipBytes;
-			mipWidth = Max(mipWidth / 2, 1u);
-			mipHeight = Max(mipHeight / 2, 1u);
-		}
-		copyQueue->WaitFor(transferLane->Submit(*copyQueue));
-
-		Handle<Texture> handle = pool_.Create();
-		Texture* texture = pool_.Get(handle);
-		if (!texture)
-		{
-			return Handle<Texture>::null();
-		}
-
-		texture->handle_ = handle;
-		texture->resource_ = resource;
-		texture->pinned_ = true;
-		texture->textureIndex_ = heap->AllocateIndex();
-
-		D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc{};
-		shaderResourceViewDesc.Format = DXGI_FORMAT_BC7_UNORM;
-		shaderResourceViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		shaderResourceViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		shaderResourceViewDesc.Texture2D.MipLevels = static_cast<Uint>(bitmap.mipCount_);
-		device->CreateShaderResourceView(resource.Get(), &shaderResourceViewDesc, heap->CPUHandle(texture->textureIndex_));
-
-		texture->sizeBytes_ = device->GetResourceAllocationInfo(0, 1, &textureDesc).SizeInBytes;
-		totalResidentBytes_ += texture->sizeBytes_;
-		loadedHandles_.push_back(handle);
 		return handle;
 	}
 
-	Texture* TextureLoader::Get(const Handle<Texture>& handle)
-	{
-		return pool_.Get(handle);
-	}
-
-	void TextureLoader::Clear(Handle<Texture>& handle, BindlessHeap* heap)noexcept
+	/**
+	* [EN]
+	* Releases the texture handle names, returning its GPU resource and
+	* shader resource view index to the heap.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* handle が示すテクスチャを解放し、GPU リソースとシェーダーリソース
+	* ビューの番号をヒープへ返す。
+	*/
+	void TextureLoader::Clear(Handle<Texture>& handle)noexcept
 	{
 		Texture* texture = pool_.Get(handle);
-		if (texture)
+
+		/// [EN] An evicted texture already gave its resource and index back, so only a resident one returns them here.
+		/// [JP] 追い出されたテクスチャはリソースと番号を既に返しているため、ここで返すのは常駐しているものだけ。
+		if (texture && texture->resource_)
 		{
-			if (texture->resource_)
-			{
-				heap->Release(std::move(texture->resource_), texture->textureIndex_);
-				totalResidentBytes_ -= texture->sizeBytes_;
-			}
-			auto found = std::ranges::find_if(loadedHandles_, [handle](const auto& candidate){ return candidate == handle; });
-			if (found != loadedHandles_.end())
-			{
-				loadedHandles_.erase(found);
-			}
+			heap_.Release(std::move(texture->resource_), texture->textureIndex_);
 		}
 		pool_.Destroy(handle);
 	}
 
-	Texture* TextureLoader::Resolve(BindlessHeap* heap, const Handle<Texture>& handle, Uint64 frame)
+	/**
+	* [EN]
+	* Writes the image bytes of sourcePath into the encrypted ".texture"
+	* cache at cachePath. Returns false when the source cannot be read or
+	* the write failed.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* sourcePath の画像バイト列を、cachePath の暗号化された ".texture"
+	* キャッシュへ書き出す。ソースを読めない、または書き込みに失敗した
+	* 場合は false を返す。
+	*/
+	Bool TextureLoader::Bake(String sourcePath, String cachePath)
 	{
-		Texture* texture = pool_.Get(handle);
-		if (!texture)
+		DynamicArray<Uint8> sourceBytes = FileUtility::LoadFileBinary(sourcePath);
+		if (sourceBytes.empty())
 		{
-			return nullptr;
+			return false;
 		}
 
-		texture->lastUsedFrame_ = frame;
-
-		if (!texture->resource_ && device_ && cmdQueue_)
-		{
-			texture->textureIndex_ = heap->AllocateIndex();
-			CreateTexturePath(device_, cmdQueue_, heap->Heap(), texture->filePath_, texture->resource_, texture->textureIndex_);
-			if (texture->resource_)
-			{
-				D3D12_RESOURCE_DESC desc = texture->resource_->GetDesc();
-				texture->sizeBytes_ = device_->GetResourceAllocationInfo(0, 1, &desc).SizeInBytes;
-				totalResidentBytes_ += texture->sizeBytes_;
-			}
-		}
-
-		return texture;
-	}
-
-	void TextureLoader::EvictBudget(BindlessHeap* heap, Uint64 currentFrame)
-	{
-		if (totalResidentBytes_ <= budgetBytes_)
-		{
-			return;
-		}
-
-		struct Candidate
-		{
-			Handle<Texture> handle_;
-			Uint64 lastUsedFrame_;
-		};
-		DynamicArray<Candidate> candidates;
-		for (const Handle<Texture>& handle : loadedHandles_)
-		{
-			Texture* texture = pool_.Get(handle);
-			if (texture && texture->resource_ && !texture->pinned_ && texture->lastUsedFrame_ + evictAgeFrames_ <= currentFrame)
-			{
-				candidates.push_back({ handle, texture->lastUsedFrame_ });
-			}
-		}
-
-		std::ranges::sort(candidates, [](const Candidate& a, const Candidate& b)
-		{
-			return a.lastUsedFrame_ < b.lastUsedFrame_;
-		});
-
-		for (const Candidate& candidate : candidates)
-		{
-			if (totalResidentBytes_ <= budgetBytes_)
-			{
-				break;
-			}
-
-			Texture* texture = pool_.Get(candidate.handle_);
-			if (!texture)
-			{
-				continue;
-			}
-
-			heap->Release(std::move(texture->resource_), texture->textureIndex_);
-			texture->textureIndex_ = 0xFFFFFFFF;
-			totalResidentBytes_ -= texture->sizeBytes_;
-			texture->sizeBytes_ = 0;
-		}
-	}
-
-	void TextureLoader::CreateTexturePath(SC_IN ID3D12Device* device, SC_IN DirectX::ResourceUploadBatch& resourceUpload, SC_IN ID3D12DescriptorHeap* heap, SC_IN String filePath, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
-	{
-		HRESULT hr{ S_OK };
-
-		std::string extension = std::filesystem::path(filePath.str()).extension().string();
-		std::ranges::transform(extension, extension.begin(), [](Uchar c) { return static_cast<Char>(std::tolower(c)); });
-
-		if (extension == ".icon" || extension == ".logo" || extension == ".texture")
-		{
-			BinaryInputArchive archive;
-			if (archive.Read(filePath))
-			{
-				DynamicArray<Byte> data;
-				archive.TryField("data", data);
-				if (!data.empty())
-				{
-					hr = DirectX::CreateDDSTextureFromMemory(device, resourceUpload, reinterpret_cast<const Uint8*>(data.data()), data.size(), &resource);
-
-					if (FAILED(hr))
-					{
-						hr = DirectX::CreateWICTextureFromMemory(device, resourceUpload, reinterpret_cast<const Uint8*>(data.data()), data.size(), &resource);
-					}
-				}
-			}
-		}
-		else
-		{
-			std::filesystem::path sourceFsPath(filePath.str());
-			std::filesystem::path cacheFsPath = sourceFsPath;
-			cacheFsPath.replace_extension(".texture");
-
-			Bool loadedFromCache = false;
-			if (std::filesystem::exists(cacheFsPath) && std::filesystem::exists(sourceFsPath) && std::filesystem::last_write_time(cacheFsPath) >= std::filesystem::last_write_time(sourceFsPath))
-			{
-				BinaryInputArchive archive;
-				if (archive.Read(String(cacheFsPath.string())))
-				{
-					DynamicArray<Byte> data;
-					archive.TryField("data", data);
-					if (!data.empty())
-					{
-						hr = DirectX::CreateDDSTextureFromMemory(device, resourceUpload, reinterpret_cast<const Uint8*>(data.data()), data.size(), &resource);
-
-						if (FAILED(hr))
-						{
-							hr = DirectX::CreateWICTextureFromMemory(device, resourceUpload, reinterpret_cast<const Uint8*>(data.data()), data.size(), &resource);
-						}
-
-						loadedFromCache = SUCCEEDED(hr) && resource;
-					}
-				}
-			}
-
-			if (!loadedFromCache)
-			{
-				hr = DirectX::CreateDDSTextureFromFile(device, resourceUpload, filePath.w_str().c_str(), &resource);
-
-				if (FAILED(hr))
-				{
-					hr = DirectX::CreateWICTextureFromFile(device, resourceUpload, filePath.w_str().c_str(), &resource, false);
-				}
-
-				if (SUCCEEDED(hr) && resource)
-				{
-					DynamicArray<Uint8> sourceBytes = FileUtility::LoadFileBinary(filePath);
-					if (!sourceBytes.empty())
-					{
-						BinaryOutputArchive cacheArchive;
-						cacheArchive.Field("data", sourceBytes);
-						cacheArchive.Write(String(cacheFsPath.string()));
-					}
-				}
-			}
-		}
-
-		if (FAILED(hr) || !resource)
-		{
-			SC_LOG_ERROR("テクスチャのロードに失敗しました: {}", filePath.str());
-			return;
-		}
-
-		D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc{};
-		shaderResourceViewDesc.Format = resource->GetDesc().Format;
-		shaderResourceViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		shaderResourceViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		shaderResourceViewDesc.Texture2D.MipLevels = resource->GetDesc().MipLevels;
-		shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
-
-		D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->GetCPUDescriptorHandleForHeapStart();
-		Uint64 descriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		cpuHandle.ptr += textureIndex * descriptorSize;
-
-		device->CreateShaderResourceView(resource.Get(), &shaderResourceViewDesc, cpuHandle);
-	}
-
-	void TextureLoader::CreateTexturePath(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* cmdQueue, SC_IN ID3D12DescriptorHeap* heap, SC_IN String filePath, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
-	{
-		DirectX::ResourceUploadBatch resourceUpload(device);
-		resourceUpload.Begin();
-
-		CreateTexturePath(device, resourceUpload, heap, filePath, resource, textureIndex);
-
-		std::future<void> uploadFinished;
-		{
-			auto queueLock = cmdQueue->AcquireLock();
-			uploadFinished = resourceUpload.End(cmdQueue->GetCommandQueue());
-		}
-		uploadFinished.wait();
-	}
-
-	void TextureLoader::CreateTextureMemory(SC_IN ID3D12Device* device, SC_IN DirectX::ResourceUploadBatch& resourceUpload, SC_IN ID3D12DescriptorHeap* heap, SC_IN const DynamicArray<Byte>& data, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
-	{
-		HRESULT hr{ S_OK };
-
-		if (!data.empty())
-		{
-			hr = DirectX::CreateDDSTextureFromMemory(device, resourceUpload, reinterpret_cast<const Uint8*>(data.data()), data.size(), &resource);
-
-			if (FAILED(hr))
-			{
-				hr = DirectX::CreateWICTextureFromMemory(device, resourceUpload, reinterpret_cast<const Uint8*>(data.data()), data.size(), &resource);
-			}
-		}
-
-		if (data.empty() || FAILED(hr) || !resource)
-		{
-			SC_LOG_ERROR("メモリ上の画像からテクスチャを作成できませんでした");
-			resource.Reset();
-			return;
-		}
-
-		D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc{};
-		shaderResourceViewDesc.Format = resource->GetDesc().Format;
-		shaderResourceViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-		shaderResourceViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-		shaderResourceViewDesc.Texture2D.MipLevels = resource->GetDesc().MipLevels;
-		shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
-
-		D3D12_CPU_DESCRIPTOR_HANDLE cpuHandle = heap->GetCPUDescriptorHandleForHeapStart();
-		Uint64 descriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-		cpuHandle.ptr += textureIndex * descriptorSize;
-
-		device->CreateShaderResourceView(resource.Get(), &shaderResourceViewDesc, cpuHandle);
-	}
-
-	void TextureLoader::CreateTextureMemory(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* cmdQueue, SC_IN ID3D12DescriptorHeap* heap, SC_IN const DynamicArray<Byte>& data, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
-	{
-		DirectX::ResourceUploadBatch resourceUpload(device);
-		resourceUpload.Begin();
-
-		CreateTextureMemory(device, resourceUpload, heap, data, resource, textureIndex);
-
-		std::future<void> uploadFinished;
-		{
-			auto queueLock = cmdQueue->AcquireLock();
-			uploadFinished = resourceUpload.End(cmdQueue->GetCommandQueue());
-		}
-		uploadFinished.wait();
+		/// [EN] The cache keeps the source bytes as they are, so it decodes exactly like the source; what it adds is encryption.
+		/// [JP] キャッシュはソースのバイト列をそのまま持つため、ソースと全く同じにデコードされる。加わるのは暗号化だけ。
+		BinaryOutputArchive cacheArchive;
+		cacheArchive.Field("data", sourceBytes);
+		return cacheArchive.Write(cachePath);
 	}
 }

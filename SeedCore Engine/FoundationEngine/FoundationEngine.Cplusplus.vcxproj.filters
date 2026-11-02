@@ -1064,5 +1064,14 @@
     <ClInclude Include="JobSystem\JobScheduler.h">
       <Filter>JobSystem</Filter>
     </ClInclude>
+    <ClInclude Include="Resource\Asset\AssetLoader.h">
+      <Filter>Resource\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Asset\AssetResource.h">
+      <Filter>Resource\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource\Asset\AssetExporter.h">
+      <Filter>Resource\Asset</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

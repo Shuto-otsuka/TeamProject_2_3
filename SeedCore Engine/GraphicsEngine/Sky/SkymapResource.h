@@ -1,7 +1,5 @@
 #pragma once
-#include <FoundationEngine/Utility/Handle.h>
-#include <FoundationEngine/Utility/FlatMap.h>
-#include <FoundationEngine/Resource/Asset/Asset.h>
+#include <FoundationEngine/Resource/Asset/AssetResource.h>
 
 namespace SeedCore
 {
@@ -9,47 +7,100 @@ namespace SeedCore
 
 	class Skymap;
 	class ResourceCache;
-	class BindlessHeap;
-	class D3D12Context;
 
 	/**
 	* [EN]
 	* Manages the mapping between asset IDs and loaded Skymap handles.
-	* Mirrors the ModelResource pattern: Load by asset ID, retrieve handles,
-	* resolve to Skymap pointers, and unload when no longer needed.
+	* Generate writes an ".hdr" source's ".skymap" cache.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* アセット ID とロード済み Skymap ハンドル間のマッピングを管理する。
-	* ModelResource パターンと同じ: アセット ID でロード、ハンドル取得、
-	* Skymap ポインタへの解決、不要時のアンロード。
+	* Generate は ".hdr" ソースの ".skymap" キャッシュを書く。
 	*/
-	class SkymapResource :public Asset, public NonCopyable
+	class SkymapResource :public AssetResource<Skymap>
 	{
 	public:
-		SkymapResource(GraphicsLoaderSystem& loaders, D3D12Context& context, BindlessHeap& heap);
+		/**
+		* [EN]
+		* Takes the loaders.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ローダーを受け取る。
+		*/
+		SkymapResource(GraphicsLoaderSystem& loaders);
 		~SkymapResource() = default;
 
+		/**
+		* [EN]
+		* Loads the asset registered under assetID (the entry point
+		* ResourceCache drives).
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* assetID で登録されているアセットを読み込む（ResourceCache が動かす
+		* 入口）。
+		*/
 		void Load(const AssetContext& context, Uint32 assetID)override;
 
-		Handle<Skymap> Load(ResourceCache& cache, Uint32 assetID);
+		/**
+		* [EN]
+		* Loads assetID unless it is already loaded and returns its handle,
+		* or a null handle when the asset is unknown or cannot be read.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* assetID がまだ読み込まれていなければ読み込み、そのハンドルを返す。
+		* 未知のアセットか読めない場合は null のハンドルを返す。
+		*/
+		Handle<Skymap> Load(ResourceCache& cache, Uint32 assetID, LoadThread thread = LoadThread::Main);
 
+		/**
+		* [EN]
+		* Releases the skymap loaded under assetID.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* assetID で読み込まれているスカイマップを解放する。
+		*/
 		void Unload(Uint32 assetID)override;
 
-		Handle<Skymap> GetHandle(Uint32 assetID)const;
+		/**
+		* [EN]
+		* Writes the ".skymap" cache beside the ".hdr" source sourceAssetID.
+		* Nothing is written for an asset that already is a ".skymap".
+		* Returns false when the source cannot be decoded or the write
+		* failed.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ".hdr" ソース sourceAssetID の隣に ".skymap" キャッシュを書く。既に
+		* ".skymap" であるアセットには何も書かない。ソースをデコードできない、
+		* または書き込みに失敗した場合は false を返す。
+		*/
+		Bool Generate(const AssetContext& context, Uint32 sourceAssetID, DynamicArray<String>& writtenPaths)override;
 
+		/**
+		* [EN]
+		* Resolves a handle to a Skymap pointer.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ハンドルを Skymap ポインタに解決する。
+		*/
 		Skymap* Resolve(const Handle<Skymap>& handle);
 
-		Bool Contains(Uint32 assetID)const;
-
 	private:
+		/// [EN] Loaders this manager reads skymaps and writes ".skymap" caches through.
+		/// [JP] このマネージャがスカイマップを読み込み、".skymap" キャッシュを書くのに使うローダー。
 		GraphicsLoaderSystem& loaders_;
-
-		D3D12Context& context_;
-
-		BindlessHeap& heap_;
-
-		FlatMap<Uint32, Handle<Skymap>> assetHandleMap_;
 	};
 }

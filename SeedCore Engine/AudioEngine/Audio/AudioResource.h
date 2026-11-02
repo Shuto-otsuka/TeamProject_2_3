@@ -1,7 +1,5 @@
 #pragma once
-#include <FoundationEngine/Utility/Handle.h>
-#include <FoundationEngine/Utility/FlatMap.h>
-#include <FoundationEngine/Resource/Asset/Asset.h>
+#include <FoundationEngine/Resource/Asset/AssetResource.h>
 
 namespace SeedCore
 {
@@ -13,15 +11,18 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Asset resource that maps audio asset IDs to loaded Sound handles and
-	* coordinates their lifetime with AudioLoader.
+	* coordinates their lifetime with AudioLoader. Generate converts a
+	* source file into its .audio cache, which is the only form a sound
+	* plays from.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 音声アセット ID と読み込み済み Sound ハンドルを対応付け、その寿命を
-	* AudioLoader と連携して管理するアセットリソース。
+	* AudioLoader と連携して管理するアセットリソース。Generate は素材
+	* ファイルを .audio キャッシュへ変換する。音はこの形からしか再生しない。
 	*/
-	class SEEDCORE_API AudioResource :public Asset, public NonCopyable
+	class SEEDCORE_API AudioResource :public AssetResource<Sound>
 	{
 	public:
 		/**
@@ -70,7 +71,7 @@ namespace SeedCore
 		* [JP]
 		* 必要に応じて音声アセットを読み込み、キャッシュ済みの Sound ハンドルを返す。
 		*/
-		Handle<Sound> Load(ResourceCache& cache, Uint32 assetID);
+		Handle<Sound> Load(ResourceCache& cache, Uint32 assetID, LoadThread thread = LoadThread::Main);
 
 		/**
 		* [EN]
@@ -87,14 +88,21 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Returns the loaded Sound handle associated with an asset ID.
+		* Converts the audio source sourceAssetID into the encrypted .audio
+		* cache beside it, overwriting any existing one. Nothing is written
+		* for an asset that already is a cache, or for a ".awb" streamed
+		* alongside its ".acb". Returns false when the source cannot be
+		* converted or the write failed.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* アセット ID に対応する読み込み済み Sound ハンドルを返す。
+		* 音声素材 sourceAssetID を、その隣の暗号化された .audio キャッシュへ
+		* 変換する（既存があれば上書き）。既にキャッシュであるアセットと、
+		* ".acb" と一緒にストリーミングされる ".awb" には何も書かない。素材を
+		* 変換できない、または書き込みに失敗した場合は false を返す。
 		*/
-		Handle<Sound> GetHandle(Uint32 assetID)const;
+		Bool Generate(const AssetContext& context, Uint32 sourceAssetID, DynamicArray<String>& writtenPaths)override;
 
 		/**
 		* [EN]
@@ -107,24 +115,9 @@ namespace SeedCore
 		*/
 		Sound* Resolve(const Handle<Sound>& handle);
 
-		/**
-		* [EN]
-		* Reports whether an asset ID has a loaded Sound handle.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* アセット ID に読み込み済み Sound ハンドルがあるかを返す。
-		*/
-		Bool Contains(Uint32 assetID)const;
-
 	private:
 		/// [EN] Loader bundle owned by AudioModule; this resource only uses it.
 		/// [JP] AudioModule が所有するローダーのまとまり。このリソースは使うだけ。
 		AudioLoaderSystem& loaders_;
-
-		/// [EN] Loaded Sound handle indexed by audio asset ID.
-		/// [JP] 音声アセット ID をキーとする読み込み済み Sound ハンドル。
-		FlatMap<Uint32, Handle<Sound>> assetHandleMap_;
 	};
 }

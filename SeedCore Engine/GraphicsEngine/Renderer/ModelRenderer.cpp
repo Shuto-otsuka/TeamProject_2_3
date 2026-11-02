@@ -81,7 +81,7 @@ namespace SeedCore
 	{
 		ModelResource& modelResource = *resources.modelResource_;
 		AnimationResource& animationResource = *resources.animationResource_;
-		TextureResource& textureResource = *resources.textureResource_;
+		TextureStreaming& textureStreaming = *resources.textureStreaming_;
 
 		streamingFrame_++;
 		geometryStreamingRequests_.clear();
@@ -555,11 +555,11 @@ namespace SeedCore
 
 						/// [EN] Material stores glTF image indices — resolve to bindless heap indices.
 						/// [JP] Material には glTF の image インデックスが入っているため、bindless ヒープインデックスに解決する。
-						instanceData.texture_.baseColorTextureIndex_ = material.baseColorTextureAssetID_ != 0 ? textureResource.GetID(material.baseColorTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.baseColorTextureIndex_);
-						instanceData.texture_.normalTextureIndex_ = material.normalTextureAssetID_ != 0 ? textureResource.GetID(material.normalTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.normalTextureIndex_);
-						instanceData.texture_.metallicRoughnessTextureIndex_ = material.metallicRoughnessTextureAssetID_ != 0 ? textureResource.GetID(material.metallicRoughnessTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
-						instanceData.texture_.emissiveTextureIndex_ = material.emissiveTextureAssetID_ != 0 ? textureResource.GetID(material.emissiveTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.emissiveTextureIndex_);
-						instanceData.texture_.occlusionTextureIndex_ = material.occlusionTextureAssetID_ != 0 ? textureResource.GetID(material.occlusionTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.occlusionTextureIndex_);
+						instanceData.texture_.baseColorTextureIndex_ = material.baseColorTextureAssetID_ != 0 ? textureStreaming.GetID(material.baseColorTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.baseColorTextureIndex_);
+						instanceData.texture_.normalTextureIndex_ = material.normalTextureAssetID_ != 0 ? textureStreaming.GetID(material.normalTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.normalTextureIndex_);
+						instanceData.texture_.metallicRoughnessTextureIndex_ = material.metallicRoughnessTextureAssetID_ != 0 ? textureStreaming.GetID(material.metallicRoughnessTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
+						instanceData.texture_.emissiveTextureIndex_ = material.emissiveTextureAssetID_ != 0 ? textureStreaming.GetID(material.emissiveTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.emissiveTextureIndex_);
+						instanceData.texture_.occlusionTextureIndex_ = material.occlusionTextureAssetID_ != 0 ? textureStreaming.GetID(material.occlusionTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.occlusionTextureIndex_);
 						instanceData.extension_.specularTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.specular_.specularTextureIndex_);
 						instanceData.extension_.specularColorTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.specular_.specularColorTextureIndex_);
 						instanceData.extension_.clearCoatTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.clearCoat_.clearCoatTextureIndex_);
@@ -776,11 +776,11 @@ namespace SeedCore
 				instanceData.extension_.unlit_ = material.khr_.unlit_.unlit_ != 0 ? 1.0f : 0.0f;
 				instanceData.shading_.shadingModel_ = material.khr_.unlit_.unlit_ != 0 ? static_cast<Uint>(ShadingModel::Unlit) : static_cast<Uint>(material.shadingModel_);
 
-				instanceData.texture_.baseColorTextureIndex_ = material.baseColorTextureAssetID_ != 0 ? textureResource.GetID(material.baseColorTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.baseColorTextureIndex_);
-				instanceData.texture_.normalTextureIndex_ = material.normalTextureAssetID_ != 0 ? textureResource.GetID(material.normalTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.normalTextureIndex_);
-				instanceData.texture_.metallicRoughnessTextureIndex_ = material.metallicRoughnessTextureAssetID_ != 0 ? textureResource.GetID(material.metallicRoughnessTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
-				instanceData.texture_.emissiveTextureIndex_ = material.emissiveTextureAssetID_ != 0 ? textureResource.GetID(material.emissiveTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.emissiveTextureIndex_);
-				instanceData.texture_.occlusionTextureIndex_ = material.occlusionTextureAssetID_ != 0 ? textureResource.GetID(material.occlusionTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.occlusionTextureIndex_);
+				instanceData.texture_.baseColorTextureIndex_ = material.baseColorTextureAssetID_ != 0 ? textureStreaming.GetID(material.baseColorTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.baseColorTextureIndex_);
+				instanceData.texture_.normalTextureIndex_ = material.normalTextureAssetID_ != 0 ? textureStreaming.GetID(material.normalTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.normalTextureIndex_);
+				instanceData.texture_.metallicRoughnessTextureIndex_ = material.metallicRoughnessTextureAssetID_ != 0 ? textureStreaming.GetID(material.metallicRoughnessTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.metallicRoughnessTextureIndex_);
+				instanceData.texture_.emissiveTextureIndex_ = material.emissiveTextureAssetID_ != 0 ? textureStreaming.GetID(material.emissiveTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.emissiveTextureIndex_);
+				instanceData.texture_.occlusionTextureIndex_ = material.occlusionTextureAssetID_ != 0 ? textureStreaming.GetID(material.occlusionTextureAssetID_, streamingFrame_) : crister->Residency().TextureBindlessIndex(material.occlusionTextureIndex_);
 				instanceData.extension_.specularTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.specular_.specularTextureIndex_);
 				instanceData.extension_.specularColorTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.specular_.specularColorTextureIndex_);
 				instanceData.extension_.clearCoatTextureIndex_ = crister->Residency().TextureBindlessIndex(material.khr_.clearCoat_.clearCoatTextureIndex_);

@@ -11,7 +11,22 @@
 
 namespace SeedCore
 {
-	Handle<Animation> AnimationLoader::Load(String filePath)
+	/**
+	* [EN]
+	* Reads the ".animation" file at filePath into a new Animation and
+	* returns its handle, or a null handle when the file is missing, has
+	* another extension or cannot be read. thread is unused: a clip needs
+	* no per-thread state.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* filePath の ".animation" ファイルを新しい Animation へ読み込み、
+	* そのハンドルを返す。ファイルが無い、拡張子が違う、読めない場合は
+	* null のハンドルを返す。thread は使わない（クリップはスレッドごとの
+	* 状態を持たないため）。
+	*/
+	Handle<Animation> AnimationLoader::Load(String filePath, LoadThread thread)
 	{
 		std::filesystem::path path(filePath.c_str());
 		if (path.extension() != ".animation" || !std::filesystem::exists(path))
@@ -37,18 +52,15 @@ namespace SeedCore
 		return handle;
 	}
 
-	Bool AnimationLoader::Save(Animation& animation, const std::filesystem::path& filePath)
-	{
-		BinaryOutputArchive archive;
-		animation.Serialize(archive);
-		return archive.Write(String(filePath.string()));
-	}
-
-	Animation* AnimationLoader::Get(const Handle<Animation>& handle)
-	{
-		return pool_.Get(handle);
-	}
-
+	/**
+	* [EN]
+	* Destroys the clip handle names.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* handle が示すクリップを破棄する。
+	*/
 	void AnimationLoader::Clear(Handle<Animation>& handle)noexcept
 	{
 		pool_.Destroy(handle);
@@ -56,27 +68,54 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Serializes animation to filePath as a ".animation" file
+	* (overwriting any existing one). Returns false when the write
+	* failed.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* animation を ".animation" ファイルとして filePath へ直列化する
+	* （既存があれば上書き）。書き込みに失敗した場合は false を返す。
+	*/
+	Bool AnimationLoader::Bake(const Animation& animation, String filePath)
+	{
+		BinaryOutputArchive archive;
+		const_cast<Animation&>(animation).Serialize(archive);
+		return archive.Write(filePath);
+	}
+
+	/**
+	* [EN]
 	* Splits every clip embedded in a model source file into its own
-	* "<model dir>/<model stem>.Animations/<clip name>.animation" file.
+	* "<model dir>/<model stem>.Animations/<clip name>.animation" file,
+	* appending the full path of each file written to writtenPaths.
 	* glTF/GLB writes one file per glTF animation; FBX writes one file per
 	* animation stack (take). axisConvention is the model asset's own
 	* convention from its .meta, so FBX clips land in the same space as the
-	* Crister nodes they drive. Other extensions write nothing.
+	* Crister nodes they drive. Other extensions write nothing. Returns
+	* false when the source cannot be read or a write failed.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* モデルのソースファイルに埋め込まれた全クリップを、それぞれ
 	* "<モデルのディレクトリ>/<モデル名>.Animations/<クリップ名>.animation"
-	* へ個別に書き出す。glTF/GLB は glTF アニメーション1つにつき1ファイル、
+	* へ個別に書き出し、書いた各ファイルのフルパスを writtenPaths へ追加する。
+	* glTF/GLB は glTF アニメーション1つにつき1ファイル、
 	* FBX はアニメーションスタック（テイク）1つにつき1ファイル。
 	* axisConvention はモデルアセット自身の .meta の座標系規約で、FBX の
 	* クリップを、それが動かす Crister のノードと同じ空間に揃えるために使う。
-	* それ以外の拡張子は何も書き出さない。
+	* それ以外の拡張子は何も書き出さない。ソースを読めない、または書き
+	* 込みに失敗した場合は false を返す。
 	*/
-	void AnimationLoader::SplitClips(String filePath, const AxisConvention& axisConvention)
+	Bool AnimationLoader::SplitClips(String filePath, const AxisConvention& axisConvention, DynamicArray<String>& writtenPaths)
 	{
 		std::filesystem::path path(filePath.c_str());
+
+		/// [EN] Cleared by any clip that fails to write, so the caller learns the split was incomplete.
+		/// [JP] 書き出せなかったクリップがあれば落とす。分割が不完全だったことを呼び出し側が知れるようにするため。
+		Bool allWritten = true;
 
 		if (path.extension() == ".fbx")
 		{
@@ -94,11 +133,17 @@ namespace SeedCore
 			}
 			importer->Destroy();
 
-			Int stackCount = imported ? fbxScene->GetSrcObjectCount<FbxAnimStack>() : 0;
+			if (!imported)
+			{
+				fbxManager->Destroy();
+				return false;
+			}
+
+			Int stackCount = fbxScene->GetSrcObjectCount<FbxAnimStack>();
 			if (stackCount == 0)
 			{
 				fbxManager->Destroy();
-				return;
+				return true;
 			}
 
 			/// [EN] Source unit to meters, read before the axis conversion exactly as ModelLoader does (centimeters are the FBX base unit).
@@ -177,16 +222,24 @@ namespace SeedCore
 				std::error_code directoryError;
 				std::filesystem::create_directories(directory, directoryError);
 
-				Save(animation, directory / (clipName + ".animation"));
+				std::filesystem::path clipPath = directory / (clipName + ".animation");
+				if (Bake(animation, String(clipPath.string())))
+				{
+					writtenPaths.push_back(String(clipPath.string()));
+				}
+				else
+				{
+					allWritten = false;
+				}
 			}
 
 			fbxManager->Destroy();
-			return;
+			return allWritten;
 		}
 
 		if (path.extension() != ".gltf" && path.extension() != ".glb")
 		{
-			return;
+			return true;
 		}
 
 		tinygltf::Model model;
@@ -206,12 +259,12 @@ namespace SeedCore
 
 		if (!result)
 		{
-			return;
+			return false;
 		}
 
 		if (model.animations.empty())
 		{
-			return;
+			return true;
 		}
 
 		std::filesystem::path directory = path.parent_path() / (path.stem().string() + ".Animations");
@@ -235,11 +288,17 @@ namespace SeedCore
 			}
 
 			std::filesystem::path clipPath = directory / (clipName + ".animation");
-
-			BinaryOutputArchive archive;
-			animation.Serialize(archive);
-			archive.Write(String(clipPath.string()));
+			if (Bake(animation, String(clipPath.string())))
+			{
+				writtenPaths.push_back(String(clipPath.string()));
+			}
+			else
+			{
+				allWritten = false;
+			}
 		}
+
+		return allWritten;
 	}
 
 	void AnimationLoader::FetchAnimationClip(const tinygltf::Model& model, const tinygltf::Animation& gltfAnimation, Animation& animation)

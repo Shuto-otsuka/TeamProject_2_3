@@ -1,23 +1,27 @@
 #pragma once
-#include <FoundationEngine/Utility/Handle.h>
-#include <FoundationEngine/Pool/StablePool.h>
+#include <FoundationEngine/Resource/Asset/AssetLoader.h>
 #include <AudioEngine/Audio/Sound.h>
 
 namespace SeedCore
 {
 	/**
 	* [EN]
-	* Loads encrypted audio caches into stable Sound storage and converts
-	* supported source files into the engine's .audio cache format.
+	* Loads encrypted audio caches into stable Sound storage. Converting a
+	* supported source file into the engine's .audio cache format is
+	* private and reached only by AudioResource.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 暗号化された音声キャッシュを安定した Sound ストレージへ読み込み、
-	* 対応する素材ファイルをエンジンの .audio キャッシュ形式へ変換する。
+	* 暗号化された音声キャッシュを安定した Sound ストレージへ読み込む。
+	* 対応する素材ファイルをエンジンの .audio キャッシュ形式へ変換する処理は
+	* private で、AudioResource からだけ使う。
 	*/
-	class SEEDCORE_API AudioLoader :public NonCopyable
+	class SEEDCORE_API AudioLoader :public AssetLoader<Sound>
 	{
+	private:
+		friend class AudioResource;
+
 	public:
 		/**
 		* [EN]
@@ -43,27 +47,22 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Loads a Sound from an up-to-date .audio cache, baking one from the
-		* source file when needed. Returns a null handle on failure.
+		* Loads a Sound from the .audio cache at filePath, or from the one
+		* beside the source file filePath names. A source plays only through
+		* its cache, which AudioResource::Generate writes; nothing is written
+		* here. Returns a null handle on failure. thread is unused: a Sound
+		* needs no per-thread state.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 最新の .audio キャッシュから Sound を読み込み、必要なら素材ファイル
-		* からキャッシュを作成する。失敗時は null ハンドルを返す。
+		* filePath の .audio キャッシュ、または filePath が示す素材ファイルの
+		* 隣の .audio キャッシュから Sound を読み込む。素材はキャッシュを通して
+		* しか再生できず、キャッシュは AudioResource::Generate が書く。ここでは
+		* 何も書かない。失敗時は null ハンドルを返す。thread は使わない（Sound は
+		* スレッドごとの状態を持たないため）。
 		*/
-		Handle<Sound> Load(String filePath);
-
-		/**
-		* [EN]
-		* Resolves a Sound handle to its pooled object.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Sound ハンドルからプール内のオブジェクトを取得する。
-		*/
-		Sound* Get(const Handle<Sound>& handle);
+		Handle<Sound> Load(String filePath, LoadThread thread);
 
 		/**
 		* [EN]
@@ -76,6 +75,7 @@ namespace SeedCore
 		*/
 		void Clear(Handle<Sound>& handle)noexcept;
 
+	private:
 		/**
 		* [EN]
 		* Converts a supported audio source into an encrypted .audio cache.
@@ -88,10 +88,6 @@ namespace SeedCore
 		Bool Bake(String sourcePath, String cachePath);
 
 	private:
-		/// [EN] Stable storage backing every Sound handle created by this loader.
-		/// [JP] このローダーが生成する全 Sound ハンドルの安定した格納先。
-		StablePool<Sound> pool_;
-
 		/// [EN] Whether this instance owns a successful COM initialization call.
 		/// [JP] このインスタンスが成功した COM 初期化呼び出しを所有するか。
 		Bool ownsComInitialize_ = false;

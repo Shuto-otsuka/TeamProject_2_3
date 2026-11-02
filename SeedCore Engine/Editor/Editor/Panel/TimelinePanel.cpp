@@ -549,10 +549,14 @@ namespace SeedCore
 
 		AssetRecord* asset = context_.world_.resource_->GetAsset(assetId);
 
+		/// [EN] Saving writes the clip as edited in memory through the animation manager's Bake.
+		/// [JP] 保存は、メモリ上で編集したクリップを、アニメーションのマネージャの Bake を通して書く。
+		AssetContext assetContext{ *context_.world_.resource_, LoadThread::Main };
+
 		if (ImGui::Button("上書き保存") && asset)
 		{
 			std::filesystem::path overwritePath(asset->fullpath_.c_str());
-			if (context_.graphics_.graphics_->GetGraphicsModule().Loaders().animationLoader_->Save(*animation, overwritePath))
+			if (animationResource->Bake(assetContext, assetId, String(overwritePath.string())))
 			{
 				SC_LOG_NOTICE("アニメーションを上書き保存しました: {}", overwritePath.string());
 			}
@@ -569,7 +573,7 @@ namespace SeedCore
 			std::filesystem::path savePath;
 			if (FileDialog::SaveFile(savePath, initialDir, L"Animation Files (*.animation)", L"*.animation", L"animation"))
 			{
-				if (context_.graphics_.graphics_->GetGraphicsModule().Loaders().animationLoader_->Save(*animation, savePath))
+				if (animationResource->Bake(assetContext, assetId, String(savePath.string())))
 				{
 					SC_LOG_NOTICE("アニメーションを保存しました: {}", savePath.string());
 				}

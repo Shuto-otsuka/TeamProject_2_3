@@ -1,4 +1,5 @@
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
+#include <GraphicsEngine/Texture/TextureCreator.h>
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
@@ -22,7 +23,7 @@ namespace SeedCore
 
 			Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 			String filePath = String(std::string("Icon/") + folder + "/" + name + ".icon");
-			TextureLoader::CreateTexturePath(d3d12Context.GetDevice(), resourceUpload, bindlessHeap->Heap(), filePath, resource, index);
+			TextureCreator::CreateTexturePath(d3d12Context.GetDevice(), resourceUpload, bindlessHeap->Heap(), filePath, resource, index);
 
 			icons_[static_cast<Uint>(type)] = static_cast<ImTextureID>(bindlessHeap->GPUHandle(index).ptr);
 			resources_.push_back(std::move(resource));

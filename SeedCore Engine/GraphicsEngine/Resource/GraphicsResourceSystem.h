@@ -1,6 +1,7 @@
 #pragma once
 
 #include <GraphicsEngine/Texture/TextureResource.h>
+#include <GraphicsEngine/Texture/TextureStreaming.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/Model/Animation/AnimationResource.h>
 #include <GraphicsEngine/Model/Collision/MeshCollisionResource.h>
@@ -24,6 +25,10 @@ namespace SeedCore
 		/// [EN] Loads texture assets from disk and uploads them to the GPU.
 		/// [JP] ディスクからテクスチャアセットを読み込み、GPU へアップロードする。
 		ResourcePtr<TextureResource> textureResource_;
+
+		/// [EN] Keeps the textures textureResource_ holds within the GPU memory budget; renderers resolve the textures they draw with through it.
+		/// [JP] textureResource_ が持つテクスチャを GPU メモリの予算内に収める。レンダラーは描画に使うテクスチャをこれを通して解決する。
+		ResourcePtr<TextureStreaming> textureStreaming_;
 
 		/// [EN] Loads 3D model assets (geometry/materials).
 		/// [JP] 3Dモデルアセット（ジオメトリ/マテリアル）を読み込む。
@@ -61,6 +66,20 @@ namespace SeedCore
 		/// [JP] Effekseerエフェクト(.efkefc)アセットを読み込む。
 		ResourcePtr<EffekseerResource> effekseerResource_;
 
+		/**
+		* [EN]
+		* Creates every resource manager, handing each the loaders and the
+		* other managers or GPU objects it depends on. The model manager is
+		* created before the managers that generate their files from a
+		* model's Crister.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 全てのリソースマネージャを生成し、それぞれにローダーと、依存する
+		* 他のマネージャや GPU のオブジェクトを渡す。モデルの Crister から
+		* ファイルを作るマネージャより先に、モデルのマネージャを生成する。
+		*/
 		GraphicsResourceSystem(GraphicsLoaderSystem& loaders, D3D12Context& context, BindlessHeap& heap, BC7CompressShader& bc7Shader);
 	};
 }

@@ -170,9 +170,9 @@ namespace SeedCore
 					Uint32 assignedID = slotMaterialIDs_[index];
 					if (assignedID != 0 && std::ranges::contains(materialIDs_, assignedID))
 					{
-						if (const Surface* assigned = materialResource.Resolve(materialResource.GetHandle(assignedID)))
+						if (const BakedSurface* assigned = materialResource.Resolve(materialResource.GetHandle(assignedID)))
 						{
-							target = assigned;
+							target = &assigned->surface_;
 						}
 					}
 					break;
@@ -192,9 +192,9 @@ namespace SeedCore
 				const Surface* from = &seed;
 				if (lerpFromIDs_[lerpIndex] != 0)
 				{
-					if (const Surface* lerpSource = materialResource.Resolve(materialResource.GetHandle(lerpFromIDs_[lerpIndex])))
+					if (const BakedSurface* lerpSource = materialResource.Resolve(materialResource.GetHandle(lerpFromIDs_[lerpIndex])))
 					{
-						from = lerpSource;
+						from = &lerpSource->surface_;
 					}
 				}
 

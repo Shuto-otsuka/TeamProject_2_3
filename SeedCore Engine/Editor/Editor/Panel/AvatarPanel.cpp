@@ -1,4 +1,5 @@
 #include <External/DirectXTex/Include/DirectXTex.h>
+#include <GraphicsEngine/Texture/TextureCreator.h>
 #include <Editor/Editor/Panel/AvatarPanel.h>
 
 #ifdef _DEBUG
@@ -144,7 +145,7 @@ namespace SeedCore
 			regionTextureIndices_[regionIndex] = bindlessHeap->AllocateIndex();
 		}
 		regionTextureResources_[regionIndex].Reset();
-		TextureLoader::CreateTexturePath(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bindlessHeap->Heap(), filePath, regionTextureResources_[regionIndex], regionTextureIndices_[regionIndex]);
+		TextureCreator::CreateTexturePath(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bindlessHeap->Heap(), filePath, regionTextureResources_[regionIndex], regionTextureIndices_[regionIndex]);
 		regionTexturePaths_[regionIndex] = filePath;
 	}
 
