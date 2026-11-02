@@ -3,6 +3,7 @@
 #include<SeedCore/ScComponent.h>
 
 class BulletStartController;
+class CameraController;
 
 class PlayerController :public SeedCore::SeedScript
 {
@@ -148,5 +149,6 @@ private:
 	SeedCore::AudioSource* chargeAudio;
 	SeedCore::AudioSource* shotAudio;
 	BulletStartController* bulletStartController = nullptr;
+	CameraController* cameraController = nullptr;
 };
 REGISTER_COMPONENT(PlayerController);

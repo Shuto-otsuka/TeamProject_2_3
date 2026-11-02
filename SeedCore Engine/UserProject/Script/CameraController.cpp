@@ -59,8 +59,8 @@ void CameraController::Rotate()
     if (playerController->IsFirstPerson())return;
 
     //右クリックでカーソル固定、解除切り替え
-    if (SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Right, SeedCore::Input::OnPressed) ||
-        SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Right, SeedCore::Input::OnReleased))
+    if ((SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Right, SeedCore::Input::IsPressed) && !isCursorLock) ||
+        (!SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Right, SeedCore::Input::IsPressed) && isCursorLock))
         ChangeCursorMode();
 
     //マウスカーソルが自由に動かせる状態なら回転処理しない
