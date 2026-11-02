@@ -37,5 +37,7 @@ private:
 	SeedCore::Actor toNextSceneActor_;
 	SeedCore::Actor toTitleSceneActor_;
 	SeedCore::Actor toRetrySceneActor_;
+
+	SeedCore::AudioSource* clearAudio;
 };
 REGISTER_COMPONENT(GoalSystem);

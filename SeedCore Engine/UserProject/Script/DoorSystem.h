@@ -33,5 +33,10 @@ private:
 	SeedCore::Quaternion cacheRotation_ = SeedCore::Quaternion::Identity;
 
 	float progress_ = 0.0f;
+
+	bool wasPowerd = false;
+
+	SeedCore::AudioSource* openAudio;
+	SeedCore::AudioSource* closeAudio;
 };
 REGISTER_COMPONENT(DoorSystem);

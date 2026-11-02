@@ -59,7 +59,7 @@ void StageSelectButtonController::OnTick(float elapsedTime)
     myImage->color_ = SeedCore::Color::Lerp(myImage->color_, targetColor, colorChangeSpeed * elapsedTime);
     scale->x_ = SeedCore::Lerp(scale->x_, targetSize, sizeChangeSpeed * elapsedTime);
     scale->y_ = SeedCore::Lerp(scale->y_, targetSize, sizeChangeSpeed * elapsedTime);
-
+    
     if (myButton->IsClick() && !isClicked)
     {
         //遷移待ちフラグをオンにする
