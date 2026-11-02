@@ -32,6 +32,11 @@ void DoorSystem::OnStart()
 
 	// 初期化しとく
 	progress_ = 0.0f;
+
+	SeedCore::Actor openAudioActor = GetWorld().GetActor("AudioGateOpen");
+	if (openAudioActor)openAudio = openAudioActor.GetComponent<SeedCore::AudioSource>();
+	SeedCore::Actor closeAudioActor = GetWorld().GetActor("AudioGateClose");
+	if (closeAudioActor)closeAudio = closeAudioActor.GetComponent<SeedCore::AudioSource>();
 }
 
 void DoorSystem::OnFixedTick(float elapsedTime)
@@ -55,12 +60,26 @@ void DoorSystem::OnFixedTick(float elapsedTime)
 	{
 		// 通電しているならprogressを増やす
 		progress_ += elapsedTime / openTime_;
+
+		if (!wasPowerd)
+		{
+			//開く瞬間
+			if(openAudio)openAudio->Play();
+		}
 	}
 	else
 	{
 		// 通電していないのでprogressを減らす
 		progress_ -= elapsedTime / closeTime_;
+
+		if (wasPowerd)
+		{
+			//閉まる瞬間
+			if (closeAudio)closeAudio->Play();
+		}
 	}
+
+	wasPowerd = powered;
 
 	// 1を超える可能性があるのでクランプ
 	progress_ = Clamp(progress_, 0.0f, 1.0f);

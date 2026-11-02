@@ -29,6 +29,16 @@ void PlayerController::OnStart()
     firstPersonCameraBrainComp = firstPersonCameraBrain.GetComponent<SeedCore::CameraBrain>();
     firstPersonCameraBrainRotate = firstPersonCameraBrain.GetComponent<SeedCore::Rotation>();
 
+    //音取得しまくる
+    SeedCore::Actor jumpAudioActor = GetWorld().GetActor("AudioJump");
+    if (jumpAudioActor)jumpAudio = jumpAudioActor.GetComponent<SeedCore::AudioSource>();
+    SeedCore::Actor landAudioActor = GetWorld().GetActor("AudioLand");
+    if (landAudioActor)landAudio = landAudioActor.GetComponent<SeedCore::AudioSource>();
+    SeedCore::Actor chargeAudioActor = GetWorld().GetActor("AudioCharge");
+    if (chargeAudioActor)chargeAudio = chargeAudioActor.GetComponent<SeedCore::AudioSource>();
+    SeedCore::Actor shotAudioActor = GetWorld().GetActor("AudioShot");
+    if (shotAudioActor)shotAudio = shotAudioActor.GetComponent<SeedCore::AudioSource>();
+
     if (bulletNaviStart)
     {
         bulletStartController = bulletNaviStart.GetComponent<BulletStartController>();
@@ -138,6 +148,8 @@ void PlayerController::UpdateUsually(float elapsedTime)
     UpdateHorizontalAcceleration(elapsedTime);
     //旋回処理
     UpdateTurn(elapsedTime);
+    //着地更新
+    UpdateLand();
     //コヨーテタイム更新
     UpdateCoyoteTime(elapsedTime);
     //ジャンプ入力更新
@@ -287,6 +299,7 @@ void PlayerController::Jump()
 {
     //ジャンプ
     myCharacterController->Jump();
+    if(jumpAudio)jumpAudio->Play();
 }
 
 void PlayerController::UpdateCoyoteTime(float elapsedTime)
@@ -486,6 +499,8 @@ void PlayerController::UpdateInputShot(float elapsedTime)
         //発射キー押された瞬間にタイマーリセット
         shotReady = true;
         shotInputTimer = 0.0f;
+        //チャージ音再生
+        if(chargeAudio)chargeAudio->Play();
     }
 
     if (SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Left, SeedCore::Input::IsPressed) && shotReady)
@@ -511,6 +526,9 @@ void PlayerController::UpdateInputShot(float elapsedTime)
     {
         //発射キーが離された瞬間に発射
         Shot();
+
+        //チャージ音停止
+        if(chargeAudio)chargeAudio->Stop();
 
         //ショットチャージ中のパラメータをリセット
         shotChargeRate = 0.0f;
@@ -552,6 +570,9 @@ void PlayerController::Shot()
     BulletController* bulletController = bullet.GetComponent<BulletController>();
 
     bulletController->SetParam(bulletPosition,shotDirection, shotChargeRate,costGaugeAdd);//位置、見てる方向、チャージ率、増加コストを渡す
+
+    //音再生
+    if (shotAudio)shotAudio->Play();
 }
 
 void PlayerController::UpdateFallJudge(float elapsedTime)
@@ -605,6 +626,16 @@ void PlayerController::UpdateInputReset(float elapsedTime)
     {
         //タイマーリセット
         resetInputTimer = 0.0f;
+    }
+}
+
+void PlayerController::UpdateLand()
+{
+    bool isGround = myCharacterController->OnGround();
+    if (isGround && !beforeIsGround)
+    {
+        //着地タイミングで音鳴らす
+        if(landAudio)landAudio->Play();
     }
 }
 

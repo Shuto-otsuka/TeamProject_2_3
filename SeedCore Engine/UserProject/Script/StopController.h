@@ -28,5 +28,7 @@ private:
 	SeedCore::Text* stopTimerText;
 	SeedCore::Position* stopTimerPosition;
 	SeedCore::Position* position;
+	SeedCore::AudioSource* moveAudio;
+	SeedCore::AudioSource* stopAudio;
 };
 REGISTER_COMPONENT(StopController);

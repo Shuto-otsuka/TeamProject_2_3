@@ -1,6 +1,5 @@
 #include "SwitchSystem.h"
 
-#include <SeedCore/ScComponent.h>
 #include <SeedCore/ScPhysics.h>
 #include <SeedCore/ScScene.h>
 #include <SeedCore/ScDebug.h>
@@ -16,6 +15,11 @@ void SwitchSystem::OnStart()
 
 	offMaterialID_ = Scene::AssetID("button1_M.material");
 	onMaterialID_ = Scene::AssetID("button1_M_E.material");
+
+	SeedCore::Actor pushAudioActor = GetWorld().GetActor("AudioButtonPress");
+	if (pushAudioActor)pushAudio = pushAudioActor.GetComponent<SeedCore::AudioSource>();
+	SeedCore::Actor releaseAudioActor = GetWorld().GetActor("AudioButtonRelease");
+	if (releaseAudioActor)releaseAudio = releaseAudioActor.GetComponent<SeedCore::AudioSource>();
 }
 
 void SwitchSystem::OnTick(float elapsedTime)
@@ -125,6 +129,17 @@ void SwitchSystem::OnTick(float elapsedTime)
 			isOn_ = true;
 		}
 		break;
+	}
+
+	if (!wasInside_ && inside)
+	{
+		//押された瞬間
+		if (pushAudio)pushAudio->Play();
+	}
+	else if(wasInside_ && !inside)
+	{
+		//離れた瞬間
+		if (releaseAudio)releaseAudio->Play();
 	}
 
 	wasInside_ = inside;

@@ -1,6 +1,7 @@
 #pragma once
 #include <SeedCore/ScScript.h>
 #include <SeedCore/ScMath.h>
+#include<SeedCore/ScComponent.h>
 
 class SwitchSystem :public SeedCore::SeedScript
 {
@@ -60,5 +61,8 @@ private:
 	SeedCore::Uint32 offMaterialID_ = 0;
 
 	SeedCore::Uint32 onMaterialID_ = 0;
+
+	SeedCore::AudioSource* pushAudio;
+	SeedCore::AudioSource* releaseAudio;
 };
 REGISTER_COMPONENT(SwitchSystem);

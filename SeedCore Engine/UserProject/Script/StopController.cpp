@@ -7,6 +7,11 @@
 void StopController::OnStart()
 {
     position = GetActor().GetComponent<SeedCore::Position>();
+
+    SeedCore::Actor stopAudioActor = GetWorld().GetActor("AudioMoveStop");
+    if (stopAudioActor)stopAudio = stopAudioActor.GetComponent<SeedCore::AudioSource>();
+    SeedCore::Actor moveAudioActor = GetWorld().GetActor("AudioMoveStart");
+    if (moveAudioActor)moveAudio = moveAudioActor.GetComponent<SeedCore::AudioSource>();
 }
 
 void StopController::OnTick(float elapsedTime)
@@ -68,6 +73,8 @@ void StopController::Stop(float stopTime)
         SeedCore::Vector2 screenPosition = SeedCore::ScreenSpace::WorldToScreen(worldPosition);
         stopTimerPosition->x_ = screenPosition.x;
         stopTimerPosition->y_ = screenPosition.y;
+
+        if (stopAudio)stopAudio->Play();
     }
 
     isStop = true;
@@ -83,6 +90,8 @@ void StopController::Move()
         GetWorld().DestroyActor(stopTimer);
         stopTimerText = nullptr;
         stopTimerPosition = nullptr;
+
+        if (moveAudio)moveAudio->Play();
     }
 
     //動かす

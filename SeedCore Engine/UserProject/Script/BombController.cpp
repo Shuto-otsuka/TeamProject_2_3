@@ -22,12 +22,20 @@ void BombController::OnStart()
     bombTimer = SeedCore::Prefab::Spawn("BombTimerText.prefab");
     bombTimerText = bombTimer.GetComponent<SeedCore::Text>();
     bombTimerPosition = bombTimer.GetComponent<SeedCore::Position>();
+
+    SeedCore::Actor explosionAudioActor = GetWorld().GetActor("AudioExplosion");
+    if (explosionAudioActor)explosionAudio = explosionAudioActor.GetComponent<SeedCore::AudioSource>();
+    SeedCore::Actor bombCountAudioActor = GetWorld().GetActor("AudioBombCount");
+    if (bombCountAudioActor)bombCountAudio = bombCountAudioActor.GetComponent<SeedCore::AudioSource>();
 }
 
 void BombController::OnTick(float elapsedTime)
 {
     if (stopController->IsStop())
     {
+        //カウントダウンの音が再生されていた場合一時停止
+        if (bombCountAudio && isBombCountAudioPlayed)bombCountAudio->Pause();
+
         //停止中
         linearVelocity->x_ = 0.0f;
         linearVelocity->y_ = 0.0f;
@@ -41,6 +49,9 @@ void BombController::OnTick(float elapsedTime)
     }
     else
     {
+        //カウントダウンの音が再生されていた場合再開
+        if (bombCountAudio && isBombCountAudioPlayed)bombCountAudio->Resume();
+
         bool change = false;
 
         if (!isBlocked)
@@ -102,7 +113,7 @@ void BombController::OnTick(float elapsedTime)
                 quaternion = SeedCore::Transform::Quat(*rotation) * quaternion;
 
                 //キネマティック剛体を動かす
-                myRigid->MoveTo(targetPosition, quaternion, elapsedTime);
+                myRigid->MoveTo(targetPosition, quaternion, 0.01f);
             }
         }
         
@@ -118,6 +129,13 @@ void BombController::OnTick(float elapsedTime)
         }
 
         explosionTimer += elapsedTime;
+
+        if (explosionTimer >= explosionInterval - bombCountAudioPlayTime && !isBombCountAudioPlayed)
+        {
+            if (bombCountAudio)bombCountAudio->Play();
+            isBombCountAudioPlayed = true;
+        }
+
         if (explosionTimer >= explosionInterval)
         {
             explosionTimer = 0.0f;
@@ -153,6 +171,11 @@ void BombController::OnTick(float elapsedTime)
             SeedCore::Actor bombExplosion = SeedCore::Prefab::Spawn("BombExplosion.prefab");
             BombExplosionController* bombExplosionController = bombExplosion.GetComponent<BombExplosionController>();
             bombExplosionController->SetParam(position, explosionRadius * 2.0f);
+
+            //爆発
+            if (explosionAudio)explosionAudio->Play();
+
+            isBombCountAudioPlayed = false;
         }
 
         //爆発までの残り時間

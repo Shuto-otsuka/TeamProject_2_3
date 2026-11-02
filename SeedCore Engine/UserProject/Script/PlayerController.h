@@ -86,6 +86,7 @@ private:
 	void UpdateFallJudge(float elapsedTime);
 	void UpdateAllBulletRemove(float elapsedTime);
 	void UpdateInputReset(float elapsedTime);
+	void UpdateLand();
 
 	bool OnGroundOrCoyote();
 
@@ -142,6 +143,10 @@ private:
 	SeedCore::CharacterController* myCharacterController = nullptr;
 	SeedCore::LinearVelocity* velocity = nullptr;
 	SeedCore::CameraBrain* firstPersonCameraBrainComp;
+	SeedCore::AudioSource* jumpAudio;
+	SeedCore::AudioSource* landAudio;
+	SeedCore::AudioSource* chargeAudio;
+	SeedCore::AudioSource* shotAudio;
 	BulletStartController* bulletStartController = nullptr;
 };
 REGISTER_COMPONENT(PlayerController);

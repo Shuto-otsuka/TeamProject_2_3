@@ -818,7 +818,7 @@
 							}
 						},
 						{
-							"bool": false,
+							"bool": true,
 							"children": [],
 							"color": {
 								"a": 1.0,
@@ -2016,7 +2016,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 1.0,
+							"float": 0.30000001192092896,
 							"int": 0,
 							"is_array": false,
 							"name": "音量",
@@ -2383,7 +2383,7 @@
 							}
 						},
 						{
-							"bool": false,
+							"bool": true,
 							"children": [],
 							"color": {
 								"a": 1.0,

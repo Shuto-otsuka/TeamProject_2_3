@@ -37,8 +37,10 @@ private:
 
 	float moveRate = 0.0f;
 	float explosionTimer = 0.0f;
+	float bombCountAudioPlayTime = 2.7f;
 
 	bool isBlocked = false;
+	bool isBombCountAudioPlayed = false;
 
 	SeedCore::Actor bombTimer;
 	SeedCore::Text* bombTimerText;
@@ -47,6 +49,8 @@ private:
 	SeedCore::Rotation* rotation;
 	SeedCore::LinearVelocity* linearVelocity;
 	SeedCore::AngularVelocity* angularVelocity;
+	SeedCore::AudioSource* explosionAudio;
+	SeedCore::AudioSource* bombCountAudio;
 	StopController* stopController;
 };
 REGISTER_COMPONENT(BombController);

@@ -39,6 +39,9 @@ void GoalSystem::OnStart()
 	toNextSceneActor_ = world.GetActor("NextButtonUI");
 	toTitleSceneActor_ = world.GetActor("TitleButtonUI");
 	toRetrySceneActor_ = world.GetActor("RetryButtonUI");
+
+	SeedCore::Actor clearAudioActor = GetWorld().GetActor("AudioClear");
+	if (clearAudioActor)clearAudio = clearAudioActor.GetComponent<SeedCore::AudioSource>();
 }
 
 void GoalSystem::OnTick(float elapsedTime)
@@ -63,6 +66,7 @@ void GoalSystem::OnTick(float elapsedTime)
 			{
 				isGoal_ = true;
 				resultActor_.Active(true);
+				if (clearAudio)clearAudio->Play();
 				break;
 			}
 		}
