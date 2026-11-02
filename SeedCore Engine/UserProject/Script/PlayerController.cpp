@@ -4,6 +4,7 @@
 #include "UserProject/Script/BulletStartController.h"
 #include "UserProject/Script/CheckPointAreaController.h"
 #include "UserProject/Script/BulletNaviController.h"
+#include "UserProject/Script/CameraController.h"
 
 #include <SeedCore/ScInput.h>
 #include <SeedCore/ScPrefab.h>
@@ -28,6 +29,7 @@ void PlayerController::OnStart()
     myCharacterController = GetActor().GetComponent<SeedCore::CharacterController>();
     firstPersonCameraBrainComp = firstPersonCameraBrain.GetComponent<SeedCore::CameraBrain>();
     firstPersonCameraBrainRotate = firstPersonCameraBrain.GetComponent<SeedCore::Rotation>();
+    cameraController = cameraBrain.GetComponent<CameraController>();
 
     //音取得しまくる
     SeedCore::Actor jumpAudioActor = GetWorld().GetActor("AudioJump");
@@ -96,16 +98,15 @@ void PlayerController::OnTriggerEnter(SeedCore::Actor other)
                 //一人称切り替えフラグがONだったらカメラ切り替え
                 isFirstPerson = true;
                 firstPersonCameraBrainComp->weight_ = 11;
-                SeedCore::Input::LockCursor(SeedCore::Vector2(960, 540));
-                SeedCore::Input::HideCursor();
+                if(!cameraController->IsCursorLock())cameraController->ChangeCursorMode();
+                
             }
             else
             {
                 isFirstPerson = false;
                 firstPersonCameraBrainComp->weight_ = 9;
                 //カーソル固定解除
-                SeedCore::Input::UnlockCursor();
-                SeedCore::Input::RevealCursor();
+                if (cameraController->IsCursorLock())cameraController->ChangeCursorMode();
             }
         //}
     }
@@ -162,6 +163,12 @@ void PlayerController::UpdateUsually(float elapsedTime)
     UpdateFallJudge(elapsedTime);
     //やり直し処理
     UpdateInputReset(elapsedTime);
+
+    //デバッグ用
+    if (SeedCore::Input::KeyState(SeedCore::Input::Key::Escape, SeedCore::Input::OnPressed))
+    {
+        SeedCore::Scene::Change("Title.scene");
+    }
 }
 
 void PlayerController::UpdateHorizontalAcceleration(float elapsedTime)
@@ -345,24 +352,6 @@ void PlayerController::UpdateTurn(float elapsedTime)
         SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(axis, angle);
         front = SeedCore::Vector3::Transform(front, quaternion);
         myCharacterController->ForwardDirection(front);
-        
-        //カーソルの縦の動きからカメラのpitchをクォータニオンで回転させる
-        axis = firstPersonCameraBrain.WorldMatrix().Right();
-        angle = -cursorMove.y * firstPersonSensitivity;
-
-        //pitchが上限を超えないようにクランプ
-        float nowPitch = SeedCore::Transform::Euler(*firstPersonCameraBrainRotate).x;
-        float maxPitchRad = DirectX::XMConvertToRadians(firstPersonMaxPitch);
-        float minPitchRad = DirectX::XMConvertToRadians(firstPersonMinPitch);
-        if (nowPitch + angle > maxPitchRad)angle = maxPitchRad - nowPitch;
-        if (nowPitch + angle < minPitchRad)angle = minPitchRad - nowPitch;
-
-        quaternion = SeedCore::Quaternion::CreateFromAxisAngle(axis, angle);
-        quaternion = SeedCore::Transform::Quat(*firstPersonCameraBrainRotate) * quaternion;
-        firstPersonCameraBrainRotate->x_ = quaternion.x;
-        firstPersonCameraBrainRotate->y_ = quaternion.y;
-        firstPersonCameraBrainRotate->z_ = quaternion.z;
-        firstPersonCameraBrainRotate->w_ = quaternion.w;
 
         if (shotReady)
         {
@@ -516,6 +505,7 @@ void PlayerController::UpdateInputShot(float elapsedTime)
         costGaugeAdd = static_cast<int>(SeedCore::Lerp(static_cast<float>(minAddCostGauge), static_cast<float>(maxAddCostGauge), shotChargeRate));
 
         SeedCore::Vector3 bulletOffset;
+        bulletOffset.x = 0.0f;
         bulletOffset.y = bulletOffsetY;
         bulletOffset.z = SeedCore::Lerp(minBulletOffsetZ, maxBulletOffsetZ, shotChargeRate);//埋まり防止のため弾のサイズがでかいほどオフセットを空ける
         //プレイヤー姿勢、弾のローカルオフセットから弾のワールド位置を計算

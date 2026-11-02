@@ -2,6 +2,8 @@
 #include <FoundationEngine/SeedScript.h>
 #include<SeedCore/ScComponent.h>
 
+class PlayerController;
+
 class FirstPersonCameraController :public SeedCore::SeedScript
 {
 public:
@@ -19,5 +21,9 @@ private:
 	SeedCore::Rotation* rotation;
 	SeedCore::Position* playerPosition;
 	SeedCore::Rotation* playerRotation;
+	PlayerController* playerController;
+
+	float pitch = 0.0f;
+	float yaw = 0.0f;
 };
 REGISTER_COMPONENT(FirstPersonCameraController);

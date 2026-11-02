@@ -257,6 +257,8 @@ void BulletController::SetParam(const SeedCore::Vector3& startPosition,const See
     scale->y_ = size;
     scale->z_ = size;
 
+    SC_LOG_NOTICE("{}", std::to_string(size));
+
     //コストをセット
     this->cost = cost;
 }

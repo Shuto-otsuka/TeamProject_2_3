@@ -1,4 +1,6 @@
 #include "UserProject/Script/FirstPersonCameraController.h"
+#include "UserProject/Script/PlayerController.h"
+#include<SeedCore/ScInput.h>
 
 void FirstPersonCameraController::OnStart()
 {
@@ -8,6 +10,7 @@ void FirstPersonCameraController::OnStart()
     rotation = GetActor().GetComponent<SeedCore::Rotation>();
     playerPosition = player.GetComponent<SeedCore::Position>();
     playerRotation = player.GetComponent<SeedCore::Rotation>();
+    playerController = player.GetComponent<PlayerController>();
 }
 
 void FirstPersonCameraController::OnTick(float elapsedTime)
@@ -28,13 +31,18 @@ void FirstPersonCameraController::FollowPlayer(float elapsedTime)
 void FirstPersonCameraController::Rotate(float elapsedTime)
 {
     //カメラのyawだけプレイヤーに合わせる
-    //pitchはプレイヤー側から制御される
-    float playerYaw = SeedCore::Transform::Euler(*playerRotation).y + DirectX::XM_PI;
-    float cameraYaw = SeedCore::Transform::Euler(*rotation).y;
-    float angle = playerYaw - cameraYaw;
-    SeedCore::Vector3 axis = SeedCore::Vector3(0.0f, 1.0f, 0.0f);
-    SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromAxisAngle(axis, angle);
-    quaternion = SeedCore::Transform::Quat(*rotation) * quaternion;
+    //pitchはカーソルの移動量から動かす
+    yaw = SeedCore::Transform::Euler(*playerRotation).y + DirectX::XM_PI;
+ 
+    SeedCore::Vector2 cursorMove = SeedCore::Input::MouseMotion();
+    pitch -= cursorMove.y * playerController->firstPersonSensitivity;
+    float minPitch = DirectX::XMConvertToRadians(playerController->firstPersonMinPitch);
+    float maxPitch = DirectX::XMConvertToRadians(playerController->firstPersonMaxPitch);
+    pitch = std::clamp(pitch,minPitch, maxPitch);
+
+    SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromYawPitchRoll(yaw,pitch,0);
+    quaternion.Normalize();
+
     rotation->x_ = quaternion.x;
     rotation->y_ = quaternion.y;
     rotation->z_ = quaternion.z;

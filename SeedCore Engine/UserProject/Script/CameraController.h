@@ -10,6 +10,9 @@ public:
 	void OnStart();
 	void OnTick(float elapsedTime);
 
+	bool IsCursorLock() const { return isCursorLock; }
+	void ChangeCursorMode();
+
 	SC_REFLECTION_FIELD()
 		float smoothFocusSpeed;
 	SC_REFLECTION_FIELD()
@@ -37,7 +40,6 @@ private:
 	void Rotate();
 	void UpdateZoom();
 	void UpdateDebug();
-	void ChangeCursorMode();
 
 	SeedCore::Vector3 smoothFocusPoint;
 
