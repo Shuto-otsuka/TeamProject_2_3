@@ -3,24 +3,26 @@
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
+#include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
+#include <FoundationEngine/Input/InputSystem.h>
+#include <FoundationEngine/Resource/ResourceCache.h>
+#include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <FoundationEngine/World/World.h>
+#include <FoundationEngine/Log/Notice.h>
+#include <FoundationEngine/Log/Warning.h>
 #include <GraphicsEngine/Model/Material/Material.h>
 #include <GraphicsEngine/Model/Material/MaterialLoader.h>
 #include <GraphicsEngine/Model/Material/MaterialResource.h>
 #include <GraphicsEngine/Model/Material/MaterialBaker.h>
-#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
-#include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 #include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <GraphicsEngine/Model/ModelResource.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
 #include <GraphicsEngine/Camera/PreviewCamera.h>
 #include <GraphicsEngine/Camera/PreviewCameraController.h>
-#include <FoundationEngine/Input/InputSystem.h>
-#include <FoundationEngine/Resource/ResourceCache.h>
 #include <GraphicsEngine/Resource/GraphicsModule.h>
-#include <FoundationEngine/World/Actor/Actor.h>
-#include <FoundationEngine/World/World.h>
-#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <GraphicsEngine/Graphics.h>
 
 namespace SeedCore
 {
@@ -297,9 +299,20 @@ namespace SeedCore
 				bakedSurface.surface_ = surface;
 				baker.BakeReferenced(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bc7Shader, *cache, bakedSurface);
 
-				graphicsModule.Loaders().materialLoader_->Save(bakedSurface, asset->fullpath_);
-				materialResource->Unload(surfaceAssetID);
-				materialResource->Load(*cache, surfaceAssetID);
+				if (graphicsModule.Loaders().materialLoader_->Save(bakedSurface, asset->fullpath_))
+				{
+					materialResource->Unload(surfaceAssetID);
+					materialResource->Load(*cache, surfaceAssetID);
+					SC_LOG_NOTICE("マテリアルビューア: 上書き保存しました: {}", asset->fullpath_.c_str());
+				}
+				else
+				{
+					SC_LOG_WARNING("マテリアルビューア: 上書き保存に失敗しました: {}", asset->fullpath_.c_str());
+				}
+			}
+			else
+			{
+				SC_LOG_WARNING("マテリアルビューア: 保存先のアセットが見つかりません: {}", surfaceAssetID);
 			}
 		}
 		ImGui::SameLine();
@@ -322,8 +335,19 @@ namespace SeedCore
 				{
 					newPath = sourcePath.parent_path() / (sourcePath.stem().string() + " (" + std::to_string(copyIndex) + ")" + sourcePath.extension().string());
 				}
-				graphicsModule.Loaders().materialLoader_->Save(bakedSurface, String(newPath.string()));
-				cache->Reload();
+				if (graphicsModule.Loaders().materialLoader_->Save(bakedSurface, String(newPath.string())))
+				{
+					cache->Reload();
+					SC_LOG_NOTICE("マテリアルビューア: 複製して保存しました: {}", newPath.string());
+				}
+				else
+				{
+					SC_LOG_WARNING("マテリアルビューア: 複製の保存に失敗しました: {}", newPath.string());
+				}
+			}
+			else
+			{
+				SC_LOG_WARNING("マテリアルビューア: 保存先のアセットが見つかりません: {}", surfaceAssetID);
 			}
 		}
 		ImGui::SameLine();
@@ -341,10 +365,21 @@ namespace SeedCore
 				baker.BakeEmbedded(*crister, mesh->meshID_, bakedSurface);
 				baker.BakeReferenced(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bc7Shader, *cache, bakedSurface);
 
-				graphicsModule.Loaders().materialLoader_->Save(bakedSurface, asset->fullpath_);
-				surface = bakedSurface.surface_;
-				materialResource->Unload(surfaceAssetID);
-				materialResource->Load(*cache, surfaceAssetID);
+				if (graphicsModule.Loaders().materialLoader_->Save(bakedSurface, asset->fullpath_))
+				{
+					surface = bakedSurface.surface_;
+					materialResource->Unload(surfaceAssetID);
+					materialResource->Load(*cache, surfaceAssetID);
+					SC_LOG_NOTICE("マテリアルビューア: テクスチャを同梱して保存しました（{} 枚）: {}", bakedSurface.textures_.size(), asset->fullpath_.c_str());
+				}
+				else
+				{
+					SC_LOG_WARNING("マテリアルビューア: テクスチャ同梱の保存に失敗しました: {}", asset->fullpath_.c_str());
+				}
+			}
+			else
+			{
+				SC_LOG_WARNING("マテリアルビューア: 保存先のアセットが見つかりません: {}", surfaceAssetID);
 			}
 		}
 
@@ -379,6 +414,12 @@ namespace SeedCore
 		if (surface.materialMapping_ == MaterialMapping::TriplanarObject || surface.materialMapping_ == MaterialMapping::TriplanarWorld)
 		{
 			ImGui::SliderFloat("ブレンドの鋭さ", &surface.triplanarSharpness_, 1.0f, 16.0f);
+		}
+
+		ImGui::SliderFloat("アウトラインの幅", &surface.outlineWidth_, 0.0f, 8.0f, "%.1f px");
+		if (surface.outlineWidth_ > 0.0f)
+		{
+			ImGui::ColorEdit4("アウトラインの色", &surface.outlineColor_.x);
 		}
 
 		Bool doubleSided = surface.doubleSided_ != 0;

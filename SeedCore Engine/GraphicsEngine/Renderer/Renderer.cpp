@@ -97,6 +97,9 @@ namespace SeedCore
 
 		debugDepthResizeBuffer_.Create(device, bindlessHeap, shaderCache, rootSignature_, pipelineStateObject_, width, height);
 
+		materialOutline_.Create(device, bindlessHeap, shaderCache, rootSignature_, pipelineStateObject_, width, height);
+		unorderedAccessIndicesSystem_->SetOITMaterialOutlineIndex(materialOutline_.TransparentUnorderedAccessViewIndex());
+
 		/// [EN] Not a frame-ring resource — its SRV index is stable across frames.
 		/// [JP] フレームリングではないため SRV インデックスは毎フレーム固定。
 		silhouetteRenderTargetViewHeap_.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1);
@@ -170,6 +173,9 @@ namespace SeedCore
 		shaderResourceIndicesSystem_->SetHiZIndex(hiZBuffer_.ShaderResourceViewIndex());
 
 		debugDepthResizeBuffer_.Resize(device, bindlessHeap, shaderCache, rootSignature_, pipelineStateObject_, outputWidth, outputHeight);
+
+		materialOutline_.Resize(device, bindlessHeap, shaderCache, rootSignature_, pipelineStateObject_, nativeWidth, nativeHeight);
+		unorderedAccessIndicesSystem_->SetOITMaterialOutlineIndex(materialOutline_.TransparentUnorderedAccessViewIndex());
 
 		silhouetteRenderTargetViewHeap_.Create(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, 1);
 		silhouetteFrameBuffer_->Resize(device, bindlessHeap, nativeWidth, nativeHeight);
@@ -455,6 +461,11 @@ namespace SeedCore
 		/// [JP] 形はこのフレームのゲームの深度で深度テストするので、カメラがあるときだけ描く。カメラがないと、このフレームのゲームの深度は描かれていない。
 		if (hasActiveCamera)
 		{
+			/// [EN] Material outlines are part of the scene, so they are composited before the hudless capture and frame generation sees them; the depth is made shader-readable for the resolve first.
+			/// [JP] マテリアルの縁取りはシーンの一部なので、hudless の取得より前に合成し、フレーム生成がそれを含めて見るようにする。resolve のために、先に深度をシェーダから読める状態にする。
+			geometryBuffer_.EndDepth(cmdList);
+			materialOutline_.Draw(cmdList, bindlessHeap_->Heap(), gameDisplayRenderTargetView, gameDisplayViewport, addresses);
+
 			debugDepthResizeBuffer_.Dispatch(cmdList, bindlessHeap_->Heap(), geometryBuffer_, nativeWidth_, nativeHeight_, addresses);
 
 			/// [EN] Filled shapes are part of the scene, so they are drawn before the hudless capture and frame generation sees them.
@@ -990,6 +1001,7 @@ namespace SeedCore
 		gpuProfiler_.End(cmdList, profileView, GpuProfileScope::Composite);
 
 		gpuProfiler_.Begin(cmdList, profileView, GpuProfileScope::Transparent);
+		materialOutline_.ClearTransparent(cmdList, heap, addresses);
 		geometryBuffer_.BeginDepth(cmdList);
 		modelRenderer_->DrawTransparent(cmdList, gameFrameBuffer_.get(), &geometryBuffer_, heap, addresses);
 		modelRenderer_->DrawFurShell(cmdList, heap, addresses);

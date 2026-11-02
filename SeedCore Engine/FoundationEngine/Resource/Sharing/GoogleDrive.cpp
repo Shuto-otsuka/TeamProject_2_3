@@ -197,7 +197,7 @@ namespace SeedCore
 
 			/// [EN] modifiedTime is asked for so the blob sweep can leave anything written moments ago alone.
 			/// [JP] modifiedTime を求めるのは、blob の掃除が書かれたばかりのものに手を出さずに済むようにするため。
-			std::string url = std::format("https://www.googleapis.com/drive/v3/files?q={}&fields=nextPageToken,files(id,name,mimeType,size,sha256Checksum,modifiedTime)&pageSize=1000", HttpClient::Escape(query).str());
+			std::string url = std::format("https://www.googleapis.com/drive/v3/files?q={}&fields=nextPageToken,files(id,name,mimeType,size,sha256Checksum,modifiedTime,capabilities/canTrash)&pageSize=1000", HttpClient::Escape(query).str());
 
 			/// [EN] Every page after the first names where the previous one stopped.
 			/// [JP] 2ページ目以降は、前のページが止まった位置を示して続きを求める。
@@ -227,6 +227,7 @@ namespace SeedCore
 				/// [JP] Drive はサイズを文字列で返す。非常に大きいファイルでは JSON の数値に収まらないため。
 				entry.size_ = file.contains("size") ? std::strtoull(file["size"].get<std::string>().c_str(), nullptr, 10) : 0;
 				entry.modified_ = String(file.value("modifiedTime", ""));
+				entry.canTrash_ = file.contains("capabilities") && file["capabilities"].value("canTrash", false);
 				entries.push_back(entry);
 			}
 

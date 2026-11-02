@@ -28,6 +28,7 @@
 #include <GraphicsEngine/D3D12/Buffer/DepthResizeBuffer.h>
 #include <GraphicsEngine/Model/Material/MaterialResolveShader.h>
 #include <GraphicsEngine/Model/Material/MaterialSortBuffer.h>
+#include <GraphicsEngine/Model/Material/MaterialOutline.h>
 #include <GraphicsEngine/Renderer/TextureRenderer.h>
 #include <GraphicsEngine/Renderer/FontRenderer.h>
 #include <GraphicsEngine/Renderer/MovieRenderer.h>
@@ -270,6 +271,8 @@ namespace SeedCore
 		ResourcePtr<MaterialResolveShader> materialResolveShader_;
 
 		MaterialSortBuffer materialSortBuffer_;
+
+		MaterialOutline materialOutline_;
 
 		DepthResizeBuffer debugDepthResizeBuffer_;
 

@@ -41,6 +41,8 @@ namespace SeedCore
 		/// [EN] When it last changed, in UTC as RFC 3339 text such as "2026-10-09T12:34:56.789Z", which orders correctly as plain text.
 		/// [JP] 最後に変わった時刻。"2026-10-09T12:34:56.789Z" のような UTC の RFC 3339 形式で、文字列のまま比べても順序が正しい。
 		String modified_;
+
+		Bool canTrash_ = false;
 	};
 
 	/**
