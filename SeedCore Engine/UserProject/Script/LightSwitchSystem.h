@@ -1,5 +1,6 @@
 #pragma once
 #include <SeedCore/ScScript.h>
+#include <SeedCore/ScComponent.h>
 
 class LightSwitchSystem :public SeedCore::SeedScript
 {
@@ -23,6 +24,8 @@ public:
 
 private:
 	bool isOn_ = false;
+
+	SeedCore::Actor switchOnAudioActor_;
 
 	SeedCore::Uint32 offMaterialID_ = 0;
 

@@ -64,6 +64,7 @@ void HintSystem::OnTick(float elapsedTime)
 	Transform::Quat(*standRotation, Transform::Quat(*standRotation) * targetQuaternion);
 	
 	Text* hintText = textActor_.GetComponent<Text>();
+	SeedCore::Active* hintActive = textActor_.GetComponent<SeedCore::Active>();
 
 	HintImageScript* hintImageScript = imageActor_.GetComponent<HintImageScript>();
 
@@ -99,6 +100,8 @@ void HintSystem::OnTick(float elapsedTime)
 			hintText->color_.a = 1.0f - fadeRate;
 		}
 	}
+
+	hintActive->active_ = hintText->color_.a > 0.0f;
 
 	Material* material = glassActor_.GetComponent<Material>();
 	if (material && onMaterialID_ != 0 && offMaterialID_ != 0)

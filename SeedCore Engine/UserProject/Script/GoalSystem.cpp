@@ -67,6 +67,8 @@ void GoalSystem::OnTick(float elapsedTime)
 				isGoal_ = true;
 				resultActor_.Active(true);
 				if (clearAudio)clearAudio->Play();
+				SeedCore::Input::RevealCursor();
+				SeedCore::Input::UnlockCursor();
 				break;
 			}
 		}

@@ -1,6 +1,5 @@
 #include "UserProject/Script/LightSwitchSystem.h"
 
-#include <SeedCore/ScComponent.h>
 #include <SeedCore/ScPhysics.h>
 #include <SeedCore/ScScene.h>
 
@@ -12,6 +11,8 @@ void LightSwitchSystem::OnStart()
 
 	offMaterialID_ = Scene::AssetID("switch_cube_M.material");
 	onMaterialID_ = Scene::AssetID("switch_cube_M_E.material");
+
+	switchOnAudioActor_ = GetWorld().GetActor("AudioSwitchOn");
 }
 
 void LightSwitchSystem::OnTick(float elapsedTime)
@@ -42,6 +43,11 @@ void LightSwitchSystem::OnTick(float elapsedTime)
 		Actor other = world.GetActor(entityID);
 		if (other && other.HasTag("Player"))
 		{
+			if (switchOnAudioActor_)
+			{
+				SeedCore::AudioSource* switchOnAudio = switchOnAudioActor_.GetComponent<AudioSource>();
+				if(switchOnAudio)switchOnAudio->Play();
+			}
 			inside = true;
 			break;
 		}

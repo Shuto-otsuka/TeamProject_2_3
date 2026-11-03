@@ -323,7 +323,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 19617,
+			"persistentId": 19656,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
@@ -636,7 +636,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 19618,
+			"persistentId": 19657,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
@@ -949,7 +949,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 19619,
+			"persistentId": 19658,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
@@ -1262,7 +1262,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 19620,
+			"persistentId": 19659,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
@@ -1575,7 +1575,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 19630,
+			"persistentId": 19660,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
@@ -1888,7 +1888,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 19621,
+			"persistentId": 19661,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
@@ -2201,7 +2201,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 19622,
+			"persistentId": 19662,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
@@ -2514,7 +2514,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 19623,
+			"persistentId": 19663,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
@@ -2827,7 +2827,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 19624,
+			"persistentId": 19664,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
@@ -3140,7 +3140,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 19629,
+			"persistentId": 19665,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
@@ -3453,7 +3453,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 19625,
+			"persistentId": 19666,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
@@ -3766,7 +3766,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 19626,
+			"persistentId": 19667,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
@@ -4079,7 +4079,320 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 19627,
+			"persistentId": 19668,
+			"position": {
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
+			},
+			"rotation": {
+				"w": 1.0,
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
+			},
+			"scale": {
+				"x": 1.0,
+				"y": 1.0,
+				"z": 1.0
+			},
+			"tags": []
+		},
+		{
+			"active": true,
+			"collaborationId": "",
+			"components": [
+				{
+					"component": "AudioSource",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "cueName_",
+							"string": "",
+							"type": 7,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "自動再生",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "ループ再生",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "音量",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "ピッチ(半音)",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "立体音響",
+							"string": "",
+							"type": 3,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "減衰開始距離",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 50.0,
+							"int": 0,
+							"is_array": false,
+							"name": "減衰終了距離",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 1373689553,
+							"is_array": false,
+							"name": "サウンド",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				}
+			],
+			"layer": "Default",
+			"name": "AudioSwitchOn",
+			"nestedPrefabAssetID": 0,
+			"overrides": [],
+			"parentIndex": 0,
+			"persistentId": 19728,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
@@ -4392,7 +4705,7 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": 0,
-			"persistentId": 19632,
+			"persistentId": 19669,
 			"position": {
 				"x": 0.0,
 				"y": 0.0,
