@@ -22,7 +22,7 @@ void PendulumController::OnStart()
     endQuaternion = startQuaternion * rotateQuaternion;
 }
 
-void PendulumController::OnTick(float elapsedTime)
+void PendulumController::OnFixedTick(float elapsedTime)
 {
     //弾によってギミック停止中であれば終了
     if (myStopController->IsStop())

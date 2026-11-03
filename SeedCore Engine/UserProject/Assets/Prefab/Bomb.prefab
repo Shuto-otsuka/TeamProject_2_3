@@ -46,7 +46,39 @@
 					"fields": [
 						{
 							"bool": false,
-							"children": [],
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 964634457,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
 							"color": {
 								"a": 1.0,
 								"b": 1.0,
@@ -77,7 +109,39 @@
 						},
 						{
 							"bool": false,
-							"children": [],
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[0]",
+									"string": "bomb_M",
+									"type": 7,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
 							"color": {
 								"a": 1.0,
 								"b": 1.0,
@@ -108,7 +172,39 @@
 						},
 						{
 							"bool": false,
-							"children": [],
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 964634457,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
 							"color": {
 								"a": 1.0,
 								"b": 1.0,
@@ -977,7 +1073,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 5.0,
+							"float": 14.0,
 							"int": 0,
 							"is_array": false,
 							"name": "moveX",
@@ -1008,7 +1104,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 5.0,
+							"float": 0.0,
 							"int": 0,
 							"is_array": false,
 							"name": "moveZ",
@@ -1101,7 +1197,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 5.0,
+							"float": 4.0,
 							"int": 0,
 							"is_array": false,
 							"name": "explosionInterval",
@@ -1260,11 +1356,11 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": -1,
-			"persistentId": 13731,
+			"persistentId": 10347,
 			"position": {
-				"x": 1.3421976566314697,
-				"y": 0.0,
-				"z": 32.73593521118164
+				"x": -7.0,
+				"y": 0.5,
+				"z": 9.0
 			},
 			"rotation": {
 				"w": 1.0,
@@ -1278,8 +1374,7 @@
 				"z": 1.0
 			},
 			"tags": [
-				"CanStop",
-				"Bomb"
+				"CanStop"
 			]
 		}
 	]
