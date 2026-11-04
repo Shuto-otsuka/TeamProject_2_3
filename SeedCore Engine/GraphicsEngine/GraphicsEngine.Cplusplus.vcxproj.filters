@@ -244,6 +244,9 @@
     <Filter Include="Model\Crister">
       <UniqueIdentifier>{7390d222-652f-4892-9418-f07a526ec086}</UniqueIdentifier>
     </Filter>
+    <Filter Include="RenderGraph">
+      <UniqueIdentifier>{8cb19bc5-219a-4762-aea1-7330aec2a60e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12\Context\D3D12Adapter.h">
@@ -1158,6 +1161,30 @@
     </ClInclude>
     <ClInclude Include="Model\ModelWriter.h">
       <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderResource.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderName.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderResourceDeclaration.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderAccess.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderView.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderStage.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderFeatureAccess.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderStageRules.h">
+      <Filter>RenderGraph</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

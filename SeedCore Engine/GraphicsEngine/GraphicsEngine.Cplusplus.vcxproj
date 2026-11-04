@@ -259,6 +259,14 @@
     <ClInclude Include="Renderer\VolumetricLightRenderer.h" />
     <ClInclude Include="Renderer\VolumetricStarRenderer.h" />
     <ClInclude Include="Renderer\WeatherParticleRenderer.h" />
+    <ClInclude Include="RenderGraph\RenderAccess.h" />
+    <ClInclude Include="RenderGraph\RenderFeatureAccess.h" />
+    <ClInclude Include="RenderGraph\RenderName.h" />
+    <ClInclude Include="RenderGraph\RenderResource.h" />
+    <ClInclude Include="RenderGraph\RenderResourceDeclaration.h" />
+    <ClInclude Include="RenderGraph\RenderStage.h" />
+    <ClInclude Include="RenderGraph\RenderStageRules.h" />
+    <ClInclude Include="RenderGraph\RenderView.h" />
     <ClInclude Include="Resource\GraphicsExporterSystem.h" />
     <ClInclude Include="Resource\GraphicsLoaderSystem.h" />
     <ClInclude Include="Resource\GraphicsModule.h" />
