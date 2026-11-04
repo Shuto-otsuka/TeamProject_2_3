@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "",
+			"collaborationId": "db7041e0-daf4-4d87-9416-f0cadefd3f8f",
 			"components": [
 				{
 					"component": "Mesh",
@@ -46,7 +46,39 @@
 					"fields": [
 						{
 							"bool": false,
-							"children": [],
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": -1584756078,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
 							"color": {
 								"a": 1.0,
 								"b": 1.0,
@@ -77,7 +109,39 @@
 						},
 						{
 							"bool": false,
-							"children": [],
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[0]",
+									"string": "gate_M",
+									"type": 7,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
 							"color": {
 								"a": 1.0,
 								"b": 1.0,
@@ -108,7 +172,39 @@
 						},
 						{
 							"bool": false,
-							"children": [],
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": -1584756078,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
 							"color": {
 								"a": 1.0,
 								"b": 1.0,
@@ -360,7 +456,7 @@
 							}
 						},
 						{
-							"bool": true,
+							"bool": false,
 							"children": [],
 							"color": {
 								"a": 1.0,
@@ -923,7 +1019,7 @@
 							"vector3": {
 								"x": 2.0,
 								"y": 3.0,
-								"z": 0.30000001192092896
+								"z": 0.20000000298023224
 							},
 							"vector4": {
 								"w": 0.0,
@@ -1008,7 +1104,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 9.0,
+							"float": 6.0,
 							"int": 0,
 							"is_array": false,
 							"name": "沈む距離",
@@ -1102,7 +1198,7 @@
 								"r": 1.0
 							},
 							"float": 0.0,
-							"int": 15911,
+							"int": 9055,
 							"is_array": false,
 							"name": "起動元回路",
 							"string": "",
@@ -1131,22 +1227,22 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": -1,
-			"persistentId": 15912,
+			"persistentId": 9057,
 			"position": {
-				"x": 0.5,
-				"y": 0.0,
-				"z": 16.54085922241211
+				"x": 19.558000564575195,
+				"y": 0.10918761044740677,
+				"z": 16.0007266998291
 			},
 			"rotation": {
-				"w": 1.0,
+				"w": 0.7071068286895752,
 				"x": -0.0,
-				"y": 0.0,
+				"y": 0.7071067094802856,
 				"z": -0.0
 			},
 			"scale": {
-				"x": 2.0,
-				"y": 3.0,
-				"z": 1.0
+				"x": 1.4699995517730713,
+				"y": 1.620232343673706,
+				"z": 1.4699995517730713
 			},
 			"tags": []
 		}

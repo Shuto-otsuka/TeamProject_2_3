@@ -92,6 +92,7 @@ void PlayerController::OnTriggerEnter(SeedCore::Actor other)
             SeedCore::Position* hitActorPosition = other.GetComponent<SeedCore::Position>();
             checkPointPosition = SeedCore::Vector3(hitActorPosition->x_, hitActorPosition->y_, hitActorPosition->z_);
             beforeCheckPointStep = checkPointAreaController->GetStep();
+            checkPointAreaController->SetOn();
 
             if (checkPointAreaController->GetFirstPerson())
             {

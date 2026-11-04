@@ -8,7 +8,7 @@ class PendulumController :public SeedCore::SeedScript
 {
 public:
 	void OnStart();
-	void OnTick(float elapsedTime);
+	void OnFixedTick(float elapsedTime);
 	void OnInspectorGUI();
     
 	SC_REFLECTION_FIELD()

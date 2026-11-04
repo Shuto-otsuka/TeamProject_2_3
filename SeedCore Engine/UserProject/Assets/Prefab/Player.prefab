@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "",
+			"collaborationId": "67373fca-e353-4e96-af0c-d1d21d912725",
 			"components": [
 				{
 					"component": "Mesh",
@@ -276,7 +276,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 100.0,
+							"float": 10000.0,
 							"int": 0,
 							"is_array": false,
 							"name": "押し出し力",
@@ -1434,9 +1434,9 @@
 			"parentIndex": -1,
 			"persistentId": 6,
 			"position": {
-				"x": -1.0,
-				"y": -0.5327600240707397,
-				"z": 32.0
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
 			},
 			"rotation": {
 				"w": 1.0,

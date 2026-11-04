@@ -8,12 +8,15 @@ void BombExplosionController::OnStart()
 
 void BombExplosionController::OnTick(float elapsedTime)
 {
+    this->position = GetActor().GetComponent<SeedCore::Position>();
+    scale = GetActor().GetComponent<SeedCore::Scale>();
+
     switch (state)
     {
     case BombExplosionController::State::SCALE_UP:
         //爆発拡大
         sizeRate += elapsedTime / scaleUpTime;
-        currentSize = SeedCore::Easing::OutSine(0.0f, targetSize, std::min(sizeRate,1.0f));
+        currentSize = SeedCore::Easing::OutSine(0.0f, targetSize, std::min(sizeRate, 1.0f));
         if (sizeRate >= 1.0f)
         {
             sizeRate = 0.0f;
@@ -28,16 +31,12 @@ void BombExplosionController::OnTick(float elapsedTime)
     case BombExplosionController::State::SCALE_DOWN:
         //爆発縮小
         sizeRate += elapsedTime / scaleDownTime;
-        currentSize = SeedCore::Easing::InSine(targetSize, 0.0f, std::min(sizeRate,1.0f));
+        currentSize = SeedCore::Easing::InSine(targetSize, 0.0f, std::min(sizeRate, 1.0f));
         if (sizeRate >= 1.0f)GetWorld().DestroyActor(GetActor());
         break;
     default:
         break;
     }
-    
-    scale->x_ = currentSize;
-    scale->y_ = currentSize;
-    scale->z_ = currentSize;
 }
 
 void BombExplosionController::SetParam(const SeedCore::Vector3& pos, float targetSize)

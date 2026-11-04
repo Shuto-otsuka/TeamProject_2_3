@@ -10,9 +10,16 @@ public:
 	int GetStep() const { return step; }
 	bool GetFirstPerson() const { return firstPerson; }
 
+	void SetOn();
+
 	SC_REFLECTION_FIELD_EX("何個目のチェックポイントか")
 		int step = 0;
 	SC_REFLECTION_FIELD()
 		bool firstPerson = false;
+
+private:
+	bool isOn = false;
+
+	SeedCore::Uint32 onMaterialId;
 };
 REGISTER_COMPONENT(CheckPointAreaController);
