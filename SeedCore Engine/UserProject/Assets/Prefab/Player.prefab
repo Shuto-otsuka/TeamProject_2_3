@@ -276,7 +276,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 10000.0,
+							"float": 100.0,
 							"int": 0,
 							"is_array": false,
 							"name": "押し出し力",
@@ -1313,6 +1313,68 @@
 							"int": 0,
 							"is_array": false,
 							"name": "bulletMaxSize",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 50.0,
+							"int": 0,
+							"is_array": false,
+							"name": "thirdPersonFov",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 75.0,
+							"int": 0,
+							"is_array": false,
+							"name": "firstPersonFov",
 							"string": "",
 							"type": 2,
 							"vector2": {

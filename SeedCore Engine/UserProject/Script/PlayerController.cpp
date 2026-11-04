@@ -18,6 +18,7 @@ void PlayerController::OnStart()
 {
     SeedCore::World& world = GetWorld();
 
+    cameraActor = world.GetActor("MainCamera");
     cameraBrain = world.GetActor("CameraBrain");
     firstPersonCameraBrain = world.GetActor("FirstPersonCameraBrain");
     bulletNaviStart = world.GetActor("BulletStart");
@@ -100,6 +101,11 @@ void PlayerController::OnTriggerEnter(SeedCore::Actor other)
                 isFirstPerson = true;
                 firstPersonCameraBrainComp->weight_ = 11;
                 if(!cameraController->IsCursorLock())cameraController->ChangeCursorMode();
+                if (cameraActor)
+                {
+                    SeedCore::Camera* camera = cameraActor.GetComponent<SeedCore::Camera>();
+                    if(camera)camera->fieldOfView_ = firstPersonFov;
+                }
                 
             }
             else
@@ -108,6 +114,11 @@ void PlayerController::OnTriggerEnter(SeedCore::Actor other)
                 firstPersonCameraBrainComp->weight_ = 9;
                 //カーソル固定解除
                 if (cameraController->IsCursorLock())cameraController->ChangeCursorMode();
+                if (cameraActor)
+                {
+                    SeedCore::Camera* camera = cameraActor.GetComponent<SeedCore::Camera>();
+                    if (camera)camera->fieldOfView_ = thirdPersonFov;
+                }
             }
         //}
     }
