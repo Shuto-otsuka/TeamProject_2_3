@@ -5,6 +5,8 @@ namespace SeedCore
 	class RenderResource
 	{
 	public:
+		constexpr RenderResource() = default;
+
 		consteval explicit RenderResource(const Char* name) :name_(name)
 		{
 			/// No Code
