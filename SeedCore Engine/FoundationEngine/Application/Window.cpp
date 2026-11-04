@@ -3,7 +3,7 @@
 #endif
 
 #include <FoundationEngine/Application/Window.h>
-#include <FoundationEngine/Utility/Bootstrap.h>
+#include <FoundationEngine/Application/Bootstrap.h>
 #include <FoundationEngine/Input/InputSystem.h>
 #include <FoundationEngine/Resource/Config/GameConfig.h>
 #include <FoundationEngine/Resource/Config/EditorConfig.h>

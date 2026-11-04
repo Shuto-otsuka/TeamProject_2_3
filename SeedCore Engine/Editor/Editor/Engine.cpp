@@ -1,7 +1,7 @@
 #include <Editor/Editor/Engine.h>
 #include <Editor/Editor/Build/AtomCraft.h>
 #include <FoundationEngine/Benchmark/Benchmark.h>
-#include <FoundationEngine/Utility/Bootstrap.h>
+#include <FoundationEngine/Application/Bootstrap.h>
 #include <FoundationEngine/Time/GameTimer.h>
 
 namespace SeedCore

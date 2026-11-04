@@ -484,6 +484,9 @@
     <ClCompile Include="Log\SlFail.cpp">
       <Filter>Log</Filter>
     </ClCompile>
+    <ClCompile Include="Application\Bootstrap.cpp">
+      <Filter>Application</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\DxFail.h">
@@ -529,9 +532,6 @@
       <Filter>Utility</Filter>
     </ClInclude>
     <ClInclude Include="Utility\Bitset.h">
-      <Filter>Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="Utility\Bootstrap.h">
       <Filter>Utility</Filter>
     </ClInclude>
     <ClInclude Include="Utility\DestructiveCopy.h">
@@ -1072,6 +1072,9 @@
     </ClInclude>
     <ClInclude Include="Resource\Asset\AssetExporter.h">
       <Filter>Resource\Asset</Filter>
+    </ClInclude>
+    <ClInclude Include="Application\Bootstrap.h">
+      <Filter>Application</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

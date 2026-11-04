@@ -1,4 +1,4 @@
-#include <FoundationEngine/Utility/Bootstrap.h>
+#include <FoundationEngine/Application/Bootstrap.h>
 #include <FoundationEngine/Input/InputSystem.h>
 #include <Runtime/Application/Window.h>
 
