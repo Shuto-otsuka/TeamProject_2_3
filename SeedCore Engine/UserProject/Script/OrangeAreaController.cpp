@@ -39,12 +39,14 @@ void OrangeAreaController::OnTick(float elapsedTime)
 		SC_LOG_NOTICE("変わったよ～ん");
 	}
 
+	float fadeFactor = fadeTimer_ / fadeTime_;
+
 	if (isTransparent == 1)
 	{
-		material->Set(transparentMaterialID, "bullet_M", fadeTime_);
+		material->Set(transparentMaterialID, "bullet_M", fadeFactor);
 	}
 	else if (isTransparent == -1)
 	{
-		material->Set(ownerMaterialID, "bullet_M", fadeTime_);
+		material->Set(ownerMaterialID, "bullet_M", fadeFactor);
 	}
 }

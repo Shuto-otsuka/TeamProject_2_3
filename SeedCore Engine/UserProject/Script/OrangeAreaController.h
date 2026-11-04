@@ -1,7 +1,7 @@
 #pragma once
 #include <SeedCore/ScScript.h>
 
-class OrangeAreaController :SeedCore::SeedScript
+class OrangeAreaController :public SeedCore::SeedScript
 {
 public:
 	SC_REFLECTION_CLAMPED_EX("フェード時間", 0.0f, 10000.0f)
