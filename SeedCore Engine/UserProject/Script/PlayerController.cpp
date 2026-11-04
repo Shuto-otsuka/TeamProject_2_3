@@ -41,6 +41,8 @@ void PlayerController::OnStart()
     if (chargeAudioActor)chargeAudio = chargeAudioActor.GetComponent<SeedCore::AudioSource>();
     SeedCore::Actor shotAudioActor = GetWorld().GetActor("AudioShot");
     if (shotAudioActor)shotAudio = shotAudioActor.GetComponent<SeedCore::AudioSource>();
+    SeedCore::Actor checkPointAudioActor = GetWorld().GetActor("AudioCheckpoint");
+    if (checkPointAudioActor)checkPointAudio = checkPointAudioActor.GetComponent<SeedCore::AudioSource>();
 
     if (bulletNaviStart)
     {
@@ -85,6 +87,11 @@ void PlayerController::OnTriggerEnter(SeedCore::Actor other)
         //当たったのがチェックポイントだったら
 
         CheckPointAreaController* checkPointAreaController = other.GetComponent<CheckPointAreaController>();
+
+        if (checkPointAreaController->GetStep() > beforeCheckPointStep)
+        {
+            if (checkPointAudio)checkPointAudio->Play();
+        }
 
         //if (checkPointAreaController->GetStep() > beforeCheckPointStep)
         //{
@@ -179,6 +186,8 @@ void PlayerController::UpdateUsually(float elapsedTime)
     //デバッグ用
     if (SeedCore::Input::KeyState(SeedCore::Input::Key::Escape, SeedCore::Input::OnPressed))
     {
+        SeedCore::Input::UnlockCursor();
+        SeedCore::Input::RevealCursor();
         SeedCore::Scene::Change("Title.scene");
     }
 }

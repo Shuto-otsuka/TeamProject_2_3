@@ -10,6 +10,7 @@
 void BulletController::OnStart()
 {
     player = GetWorld().GetActor("Player");
+    hintAudioActor = GetWorld().GetActor("AudioHint");
     playerController = player.GetComponent<PlayerController>();
     linearVelocity = GetActor().GetComponent<SeedCore::LinearVelocity>();
     angularVelocity = GetActor().GetComponent<SeedCore::AngularVelocity>();
@@ -58,7 +59,14 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
         //ヒントに当たった
         HintSystem* hintSystem = hitActor.GetComponent<HintSystem>();
         if (hintSystem)
+        {
+            if (hintAudioActor)
+            {
+                SeedCore::AudioSource* hintAudio = hintAudioActor.GetComponent<SeedCore::AudioSource>();
+                if(hintAudio)hintAudio->Play();
+            }
             hintSystem->Startup();
+        }
         Remove();
         return;
     }

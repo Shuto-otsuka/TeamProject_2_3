@@ -86,6 +86,7 @@ private:
 	SeedCore::Position* stopTimerPosition;
 
 	SeedCore::Actor player;
+	SeedCore::Actor hintAudioActor;
 
 	PlayerController* playerController = nullptr;
 	StopController* nowStick = nullptr;
