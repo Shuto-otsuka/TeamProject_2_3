@@ -3,7 +3,7 @@
 	"nodes": [
 		{
 			"active": true,
-			"collaborationId": "",
+			"collaborationId": "968e3298-7741-41e9-b78b-5be0e47232fc",
 			"components": [
 				{
 					"component": "Mesh",
@@ -332,6 +332,73 @@
 							}
 						}
 					]
+				},
+				{
+					"component": "OrangeAreaController",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "フェード時間",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 3.0,
+							"int": 0,
+							"is_array": false,
+							"name": "切り替わり時間",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
 				}
 			],
 			"layer": "Area",
@@ -339,11 +406,11 @@
 			"nestedPrefabAssetID": 0,
 			"overrides": [],
 			"parentIndex": -1,
-			"persistentId": 16528,
+			"persistentId": 8764,
 			"position": {
-				"x": 0.0,
-				"y": 10.495951652526855,
-				"z": 42.17055892944336
+				"x": 22.853567123413086,
+				"y": 8.07692813873291,
+				"z": 91.66400909423828
 			},
 			"rotation": {
 				"w": 1.0,
@@ -352,9 +419,9 @@
 				"z": -0.0
 			},
 			"scale": {
-				"x": 30.556381225585938,
-				"y": 25.533727645874023,
-				"z": 103.4136734008789
+				"x": 8.290922164916992,
+				"y": 19.9999942779541,
+				"z": 11.486992835998535
 			},
 			"tags": [
 				"NoScaffoldArea"

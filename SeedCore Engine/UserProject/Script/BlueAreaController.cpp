@@ -23,6 +23,8 @@ void BlueAreaController::OnTick(float elapsedTime)
 		return;
 	}
 
+	fadeTimer_ += elapsedTime;
+
 	if (fadeTimer_ > switchTime_)
 	{
 		fadeTimer_ = 0.0f;
