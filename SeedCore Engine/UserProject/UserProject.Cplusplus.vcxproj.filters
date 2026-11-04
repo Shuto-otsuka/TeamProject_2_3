@@ -124,9 +124,6 @@
     <ClCompile Include="Script\BallController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
-    <ClCompile Include="Script\AreaController.cpp">
-      <Filter>Script</Filter>
-    </ClCompile>
     <ClCompile Include="Script\LightSwitchSystem.cpp">
       <Filter>Script</Filter>
     </ClCompile>
@@ -137,6 +134,12 @@
       <Filter>Script</Filter>
     </ClCompile>
     <ClCompile Include="Script\HintImageScript.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\BlueAreaController.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
+    <ClCompile Include="Script\OrangeAreaController.cpp">
       <Filter>Script</Filter>
     </ClCompile>
   </ItemGroup>
@@ -219,9 +222,6 @@
     <ClInclude Include="Script\BallController.h">
       <Filter>Script</Filter>
     </ClInclude>
-    <ClInclude Include="Script\AreaController.h">
-      <Filter>Script</Filter>
-    </ClInclude>
     <ClInclude Include="Script\LightSwitchSystem.h">
       <Filter>Script</Filter>
     </ClInclude>
@@ -232,6 +232,12 @@
       <Filter>Script</Filter>
     </ClInclude>
     <ClInclude Include="Script\HintImageScript.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\BlueAreaController.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\OrangeAreaController.h">
       <Filter>Script</Filter>
     </ClInclude>
   </ItemGroup>

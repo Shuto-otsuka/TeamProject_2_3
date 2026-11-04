@@ -43,14 +43,15 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">FoundationEngine/Prelude.h</PrecompiledHeaderFile>
     </ClCompile>
     <ClCompile Include="Reflection\Reflection.generated.cpp" />
-    <ClCompile Include="Script\AreaController.cpp" />
     <ClCompile Include="Script\BallController.cpp" />
     <ClCompile Include="Script\BallReseterController.cpp" />
+    <ClCompile Include="Script\BlueAreaController.cpp" />
     <ClCompile Include="Script\BombController.cpp" />
     <ClCompile Include="Script\BombExplosionController.cpp" />
     <ClCompile Include="Script\HintImageScript.cpp" />
     <ClCompile Include="Script\HintSystem.cpp" />
     <ClCompile Include="Script\LightSwitchSystem.cpp" />
+    <ClCompile Include="Script\OrangeAreaController.cpp" />
     <ClCompile Include="Tutorial\ScTutorial.cpp" />
     <ClCompile Include="Script\BulletController.cpp" />
     <ClCompile Include="Script\BulletNaviController.cpp" />
@@ -75,14 +76,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EntryPoint\EntryGame.h" />
-    <ClInclude Include="Script\AreaController.h" />
     <ClInclude Include="Script\BallController.h" />
     <ClInclude Include="Script\BallReseterController.h" />
+    <ClInclude Include="Script\BlueAreaController.h" />
     <ClInclude Include="Script\BombController.h" />
     <ClInclude Include="Script\BombExplosionController.h" />
     <ClInclude Include="Script\HintImageScript.h" />
     <ClInclude Include="Script\HintSystem.h" />
     <ClInclude Include="Script\LightSwitchSystem.h" />
+    <ClInclude Include="Script\OrangeAreaController.h" />
     <ClInclude Include="Tutorial\ScTutorial.h" />
     <ClInclude Include="Script\BulletColliderController.h" />
     <ClInclude Include="Script\BulletController.h" />
