@@ -195,15 +195,18 @@ namespace SeedCore
 #if SC_DEBUG
 		//preference.logLevel = sl::LogLevel::eDefault;
 		preference.logLevel = sl::LogLevel::eVerbose;
+		const Wchar* logDirectory = L"../Logs/Streamline";
+		std::filesystem::create_directories(logDirectory);
+		preference.pathToLogsAndData = logDirectory;
 #else
 		preference.logLevel = sl::LogLevel::eOff;
+		preference.pathToLogsAndData = nullptr;
 #endif
 
 		/// [EN] No extra plugin or log paths: plugins are found next to the executable, and logs go only to the callback.
 		/// [JP] プラグインやログの追加パスは指定しない。プラグインは実行ファイルの隣から探し、ログはコールバックにだけ送る。
 		preference.pathsToPlugins = nullptr;
 		preference.numPathsToPlugins = 0;
-		preference.pathToLogsAndData = nullptr;
 		preference.logMessageCallback = ScDlssErrorCallback;
 		preference.featuresToLoad = features;
 		preference.numFeaturesToLoad = static_cast<Uint32>(std::size(features));

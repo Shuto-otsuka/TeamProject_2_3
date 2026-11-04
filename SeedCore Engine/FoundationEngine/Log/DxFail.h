@@ -264,7 +264,9 @@ namespace SeedCore
 
 		/// [EN] Aftermath's report can block for seconds while the driver finishes the dump, so it goes last to keep the DRED report above from being delayed.
 		/// [JP] Aftermath のレポートはドライバがダンプを書き終えるまで数秒止まることがあるので、上の DRED レポートを遅らせないよう最後に行う。
+#if SC_DEBUG
 		output += AftermathCrashTracker::Report().str();
+#endif
 
 		/// [EN] The message box takes UTF-16, so the Japanese text is converted first.
 		/// [JP] メッセージボックスは UTF-16 を受け取るので、先に日本語の文字列を変換する。
