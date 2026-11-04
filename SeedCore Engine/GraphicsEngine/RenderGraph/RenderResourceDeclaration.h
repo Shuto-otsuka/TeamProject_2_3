@@ -8,6 +8,15 @@ namespace SeedCore
 		Contract,
 		Internal,
 		Accumulation,
+		Debug,
+	};
+
+	enum class RenderResourceLifetime :Uint8
+	{
+		Transient,
+		Persistent,
+		Imported,
+		Upload,
 	};
 
 	enum class RenderFallback :Uint8
@@ -24,6 +33,10 @@ namespace SeedCore
 
 		RenderResourceKind kind_ = RenderResourceKind::Internal;
 
+		RenderResourceLifetime lifetime_ = RenderResourceLifetime::Transient;
+
 		RenderFallback fallback_ = RenderFallback::None;
+
+		RenderResource passThrough_ = {};
 	};
 }

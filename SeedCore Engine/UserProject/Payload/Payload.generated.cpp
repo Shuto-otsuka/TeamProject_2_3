@@ -1,6 +1,5 @@
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Payload/PayloadRegistry.h>
-#include <UserProject/Script/AreaController.h>
 #include <UserProject/Script/BallReseterController.h>
 #include <UserProject/Script/CircuitSystem.h>
 #include <UserProject/Script/CostGaugeController.h>
@@ -8,7 +7,6 @@
 #include <UserProject/Script/FloorMoveSystem.h>
 #include <UserProject/Script/GoalSystem.h>
 
-extern "C" int _force_payload_AreaController = 0;
 extern "C" int _force_payload_BallReseterController = 0;
 extern "C" int _force_payload_CircuitSystem = 0;
 extern "C" int _force_payload_CostGaugeController = 0;
@@ -20,19 +18,6 @@ namespace SeedCore
 {
 	 namespace ScPayload
 	 {
-		// ---- UserProject/Script/AreaController.h ----
-		struct Register_AreaController
-		{
-			Register_AreaController()
-			{
-				PayloadRegistry::Register(String("AreaController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
-					AreaController& obj = *static_cast<AreaController*>(ptr);
-					outInfo.push_back({ String("lerpMaterial"), offsetof(AreaController, lerpMaterial), AttributeType::Int, PayloadType::Material });
-				});
-			}
-		};
-		static Register_AreaController global_AreaController_register;
-
 		// ---- UserProject/Script/BallReseterController.h ----
 		struct Register_BallReseterController
 		{

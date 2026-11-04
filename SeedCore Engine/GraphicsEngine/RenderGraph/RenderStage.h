@@ -12,6 +12,7 @@ namespace SeedCore
 		Raster,
 		Compute,
 		Raytracing,
+		Build,
 		Copy,
 		Callback,
 	};

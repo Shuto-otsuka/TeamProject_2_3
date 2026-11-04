@@ -50,6 +50,32 @@ namespace SeedCore
 		}
 
 		template<class... Features>
+		static consteval Bool HasDeclaredPassThroughs()
+		{
+			StaticArray resources = ResourceRecordsOf<Features...>();
+			for (const ResourceRecord& resource : resources)
+			{
+				if (resource.passThroughName_.empty())
+				{
+					continue;
+				}
+				Bool declared = false;
+				for (const ResourceRecord& other : resources)
+				{
+					if (other.resourceName_ == resource.passThroughName_)
+					{
+						declared = true;
+					}
+				}
+				if (!declared)
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
+		template<class... Features>
 		static consteval Bool HasOwnedContractWrites()
 		{
 			StaticArray resources = ResourceRecordsOf<Features...>();
@@ -58,7 +84,7 @@ namespace SeedCore
 			{
 				for (const RenderAccess& access : stage.accesses_)
 				{
-					if (access.Type() != RenderAccessType::Write)
+					if (access.Type() != RenderAccessType::Write && access.Type() != RenderAccessType::Target && access.Type() != RenderAccessType::DepthWrite)
 					{
 						continue;
 					}
@@ -85,7 +111,15 @@ namespace SeedCore
 				{
 					for (const ResourceRecord& resource : resources)
 					{
-						if (resource.resourceName_ == access.Resource().Name() && resource.kind_ == RenderResourceKind::Internal && resource.featureName_ != stage.featureName_)
+						if (resource.resourceName_ != access.Resource().Name() || resource.featureName_ == stage.featureName_)
+						{
+							continue;
+						}
+						if (resource.kind_ == RenderResourceKind::Internal)
+						{
+							return false;
+						}
+						if (resource.kind_ == RenderResourceKind::Debug && stage.featureName_ != "DebugView")
 						{
 							return false;
 						}
@@ -102,7 +136,7 @@ namespace SeedCore
 			StaticArray stages = StageRecordsOf<Features...>();
 			for (const ResourceRecord& resource : resources)
 			{
-				if (resource.kind_ != RenderResourceKind::Contract || resource.fallback_ != RenderFallback::None)
+				if (resource.kind_ != RenderResourceKind::Contract || resource.fallback_ != RenderFallback::None || resource.lifetime_ == RenderResourceLifetime::Imported || resource.lifetime_ == RenderResourceLifetime::Upload || !resource.passThroughName_.empty())
 				{
 					continue;
 				}
@@ -116,11 +150,11 @@ namespace SeedCore
 						{
 							continue;
 						}
-						if (access.Type() == RenderAccessType::Read)
+						if (access.Type() == RenderAccessType::Read || access.Type() == RenderAccessType::History || access.Type() == RenderAccessType::Constant || access.Type() == RenderAccessType::DepthTest)
 						{
 							read = true;
 						}
-						if (access.Type() == RenderAccessType::Write)
+						if (access.Type() == RenderAccessType::Write || access.Type() == RenderAccessType::Target || access.Type() == RenderAccessType::DepthWrite)
 						{
 							written = true;
 						}
@@ -197,7 +231,11 @@ namespace SeedCore
 
 			RenderResourceKind kind_ = RenderResourceKind::Internal;
 
+			RenderResourceLifetime lifetime_ = RenderResourceLifetime::Transient;
+
 			RenderFallback fallback_ = RenderFallback::None;
+
+			std::string_view passThroughName_;
 		};
 
 		struct StageRecord
@@ -221,7 +259,7 @@ namespace SeedCore
 			{
 				for (const RenderResourceDeclaration& declaration : declarationLists[featureIndex])
 				{
-					records[count] = ResourceRecord{ featureNames[featureIndex], declaration.resource_.Name(), declaration.kind_, declaration.fallback_ };
+					records[count] = ResourceRecord{ featureNames[featureIndex], declaration.resource_.Name(), declaration.kind_, declaration.lifetime_, declaration.fallback_, declaration.passThrough_.Name() };
 					++count;
 				}
 			}
@@ -232,7 +270,7 @@ namespace SeedCore
 		static consteval StaticArray<StageRecord, (decltype(RenderFeatureAccess::StagesOf<Features>())::names_.size() + ... + 0)> StageRecordsOf()
 		{
 			StaticArray<std::string_view, sizeof...(Features)> featureNames = { RenderFeatureAccess::NameOf<Features>().Name()... };
-			StaticArray < std::span < const std::string_view>, sizeof...(Features)> stageNameLists = { decltype(RenderFeatureAccess::StagesOf<Features>())::names_... };
+			StaticArray<std::span<const std::string_view>, sizeof...(Features)> stageNameLists = { decltype(RenderFeatureAccess::StagesOf<Features>())::names_... };
 			StaticArray<std::span<const std::span<const RenderAccess>>, sizeof...(Features)> accessLists = { decltype(RenderFeatureAccess::StagesOf<Features>())::accesses_... };
 			StaticArray<StageRecord, (decltype(RenderFeatureAccess::StagesOf<Features>())::names_.size() + ... + 0)> records{};
 			Size count = 0;

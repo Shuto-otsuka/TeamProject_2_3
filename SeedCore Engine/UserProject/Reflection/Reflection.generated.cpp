@@ -1,8 +1,8 @@
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
-#include <UserProject/Script/AreaController.h>
 #include <UserProject/Script/BallController.h>
 #include <UserProject/Script/BallReseterController.h>
+#include <UserProject/Script/BlueAreaController.h>
 #include <UserProject/Script/BombController.h>
 #include <UserProject/Script/BombExplosionController.h>
 #include <UserProject/Script/BulletController.h>
@@ -19,6 +19,7 @@
 #include <UserProject/Script/HintSystem.h>
 #include <UserProject/Script/LaserController.h>
 #include <UserProject/Script/LightSwitchSystem.h>
+#include <UserProject/Script/OrangeAreaController.h>
 #include <UserProject/Script/PendulumController.h>
 #include <UserProject/Script/PlayerController.h>
 #include <UserProject/Script/StageSelectButtonController.h>
@@ -26,9 +27,9 @@
 #include <UserProject/Script/SwitchSystem.h>
 #include <UserProject/Script/TitleLogoController.h>
 
-extern "C" int _force_reflection_AreaController = 0;
 extern "C" int _force_reflection_BallController = 0;
 extern "C" int _force_reflection_BallReseterController = 0;
+extern "C" int _force_reflection_BlueAreaController = 0;
 extern "C" int _force_reflection_BombController = 0;
 extern "C" int _force_reflection_BombExplosionController = 0;
 extern "C" int _force_reflection_BulletController = 0;
@@ -45,6 +46,7 @@ extern "C" int _force_reflection_GoalSystem = 0;
 extern "C" int _force_reflection_HintSystem = 0;
 extern "C" int _force_reflection_LaserController = 0;
 extern "C" int _force_reflection_LightSwitchSystem = 0;
+extern "C" int _force_reflection_OrangeAreaController = 0;
 extern "C" int _force_reflection_PendulumController = 0;
 extern "C" int _force_reflection_PlayerController = 0;
 extern "C" int _force_reflection_StageSelectButtonController = 0;
@@ -56,19 +58,6 @@ namespace SeedCore
 {
 	 namespace ScReflection
 	 {
-		// ---- UserProject/Script/AreaController.h ----
-		struct Register_AreaController
-		{
-			Register_AreaController()
-			{
-				ReflectionRegistry::Register(String("AreaController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
-					AreaController& obj = *static_cast<AreaController*>(ptr);
-					outInfo.push_back({ String("fadeSpeed"), offsetof(AreaController, fadeSpeed), AttributeType::Float });
-				});
-			}
-		};
-		static Register_AreaController global_AreaController_register;
-
 		// ---- UserProject/Script/BallController.h ----
 		struct Register_BallController
 		{
@@ -95,6 +84,36 @@ namespace SeedCore
 			}
 		};
 		static Register_BallReseterController global_BallReseterController_register;
+
+		// ---- UserProject/Script/BlueAreaController.h ----
+		struct Register_BlueAreaController
+		{
+			Register_BlueAreaController()
+			{
+				ReflectionRegistry::Register(String("BlueAreaController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					BlueAreaController& obj = *static_cast<BlueAreaController*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("フェード時間");
+						fi.offset_ = offsetof(BlueAreaController, fadeTime_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 10000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("切り替わり時間");
+						fi.offset_ = offsetof(BlueAreaController, switchTime_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 10000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_BlueAreaController global_BlueAreaController_register;
 
 		// ---- UserProject/Script/BombController.h ----
 		struct Register_BombController
@@ -431,6 +450,36 @@ namespace SeedCore
 			}
 		};
 		static Register_LightSwitchSystem global_LightSwitchSystem_register;
+
+		// ---- UserProject/Script/OrangeAreaController.h ----
+		struct Register_OrangeAreaController
+		{
+			Register_OrangeAreaController()
+			{
+				ReflectionRegistry::Register(String("OrangeAreaController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					OrangeAreaController& obj = *static_cast<OrangeAreaController*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("フェード時間");
+						fi.offset_ = offsetof(OrangeAreaController, fadeTime_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 10000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("切り替わり時間");
+						fi.offset_ = offsetof(OrangeAreaController, switchTime_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 10000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_OrangeAreaController global_OrangeAreaController_register;
 
 		// ---- UserProject/Script/PendulumController.h ----
 		struct Register_PendulumController
