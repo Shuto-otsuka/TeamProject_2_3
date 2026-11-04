@@ -472,6 +472,8 @@ namespace SeedCore
 					outInfo.push_back({ String("resetInputTime"), offsetof(PlayerController, resetInputTime), AttributeType::Float });
 					outInfo.push_back({ String("bulletMinSize"), offsetof(PlayerController, bulletMinSize), AttributeType::Float });
 					outInfo.push_back({ String("bulletMaxSize"), offsetof(PlayerController, bulletMaxSize), AttributeType::Float });
+					outInfo.push_back({ String("thirdPersonFov"), offsetof(PlayerController, thirdPersonFov), AttributeType::Float });
+					outInfo.push_back({ String("firstPersonFov"), offsetof(PlayerController, firstPersonFov), AttributeType::Float });
 					outInfo.push_back({ String("maxCostGauge"), offsetof(PlayerController, maxCostGauge), AttributeType::Int });
 					outInfo.push_back({ String("minAddCostGauge"), offsetof(PlayerController, minAddCostGauge), AttributeType::Int });
 					outInfo.push_back({ String("maxAddCostGauge"), offsetof(PlayerController, maxAddCostGauge), AttributeType::Int });

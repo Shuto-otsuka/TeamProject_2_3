@@ -68,6 +68,10 @@ public:
 	SC_REFLECTION_FIELD()
 		float bulletMaxSize;
 	SC_REFLECTION_FIELD()
+		float thirdPersonFov;
+	SC_REFLECTION_FIELD()
+		float firstPersonFov;
+	SC_REFLECTION_FIELD()
 		int maxCostGauge = 100;
 	SC_REFLECTION_FIELD()
 		int minAddCostGauge = 10;
@@ -134,6 +138,7 @@ private:
 	SeedCore::Vector3 checkPointPosition;
 	SeedCore::Vector2 cursorMove;
 
+	SeedCore::Actor cameraActor;
 	SeedCore::Actor cameraBrain;
 	SeedCore::Actor firstPersonCameraBrain;
 	SeedCore::Actor bulletNaviStart;
