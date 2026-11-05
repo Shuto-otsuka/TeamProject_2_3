@@ -1,11 +1,9 @@
 #include <Editor/Editor/Framework.h>
 #include <Editor/Editor/Engine.h>
-#include <FoundationEngine/Utility/Bootstrap.h>
+#include <FoundationEngine/Application/Bootstrap.h>
 
 int WinMain(HINSTANCE hCurrentInstance, HINSTANCE hPreviousInstance, LPSTR lpCommandLine, int nShowCommand)
 {
-	setlocale(LC_CTYPE, ".UTF8");
-
 	SeedCore::Bootstrap boot{};
 
 	SeedCore::Engine engine;

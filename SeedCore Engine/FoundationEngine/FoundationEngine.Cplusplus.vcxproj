@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Application\Application.cpp" />
+    <ClCompile Include="Application\Bootstrap.cpp" />
     <ClCompile Include="Application\Window.cpp" />
     <ClCompile Include="Benchmark\Benchmark.cpp" />
     <ClCompile Include="Benchmark\BenchmarkSuite.cpp" />
@@ -130,6 +131,7 @@
     <ClCompile Include="World\WorldAccessor.cpp" />
     <ClCompile Include="World\WorldSnapshot.cpp" />
     <ClInclude Include="Application\Application.h" />
+    <ClInclude Include="Application\Bootstrap.h" />
     <ClInclude Include="Application\Window.h" />
     <ClInclude Include="Benchmark\Benchmark.h" />
     <ClInclude Include="Benchmark\BenchmarkSuite.h" />
@@ -351,7 +353,6 @@
     <ClInclude Include="Time\WorldTimer.h" />
     <ClInclude Include="Utility\Array.h" />
     <ClInclude Include="Utility\Bitset.h" />
-    <ClInclude Include="Utility\Bootstrap.h" />
     <ClInclude Include="Utility\Delegate.h" />
     <ClInclude Include="Utility\DestructiveCopy.h" />
     <ClInclude Include="Utility\DynamicArray.h" />

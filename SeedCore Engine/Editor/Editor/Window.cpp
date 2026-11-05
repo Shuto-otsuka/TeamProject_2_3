@@ -3,7 +3,7 @@
 #include <crtdbg.h>
 #endif
 
-#include <FoundationEngine/Utility/Bootstrap.h>
+#include <FoundationEngine/Application/Bootstrap.h>
 #include <FoundationEngine/Input/InputSystem.h>
 #include <Editor/Editor/Window.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>

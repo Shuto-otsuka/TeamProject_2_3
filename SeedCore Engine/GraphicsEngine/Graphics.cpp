@@ -75,7 +75,9 @@ namespace SeedCore
 
 		/// [EN] Attach crash tracking to the device that was just created.
 		/// [JP] 作成したばかりのデバイスにクラッシュ追跡を関連付ける。
+#if SC_DEBUG
 		AftermathCrashTracker::Create(context_->GetDevice());
+#endif
 
 		/// [EN] Presentation resources are created after the device and direct queue exist.
 		/// [JP] 表示用リソースは、デバイスと direct キューの生成後に作成する。
@@ -257,7 +259,9 @@ namespace SeedCore
 
 		/// [EN] Crash tracking stops while the device still exists, then the device itself is destroyed last.
 		/// [JP] クラッシュ追跡はデバイスが存在するうちに停止し、その後デバイス自体を最後に破棄する。
+#if SC_DEBUG
 		AftermathCrashTracker::Disable();
+#endif
 
 		if (context_)
 		{

@@ -1,11 +1,9 @@
 #include <Runtime/Application/Framework.h>
 #include <Runtime/Application/Engine.h>
-#include <FoundationEngine/Utility/Bootstrap.h>
+#include <FoundationEngine/Application/Bootstrap.h>
 
 int WinMain(HINSTANCE hCurrentInstance, HINSTANCE hPreviousInstance, LPSTR lpCommandLine, int nShowCommand)
 {
-	setlocale(LC_CTYPE, ".UTF8");
-
 	wchar_t modulePath[MAX_PATH]{};
 	GetModuleFileNameW(nullptr, modulePath, MAX_PATH);
 	SetCurrentDirectoryW(std::filesystem::path(modulePath).parent_path().c_str());

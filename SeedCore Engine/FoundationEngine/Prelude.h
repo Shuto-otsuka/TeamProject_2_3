@@ -69,6 +69,7 @@
 #include <cfloat>
 #include <charconv>
 #include <chrono>
+#include <clocale>
 #include <cmath>
 #include <concepts>
 #include <coroutine>

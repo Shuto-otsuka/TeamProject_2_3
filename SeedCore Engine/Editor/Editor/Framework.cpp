@@ -1,6 +1,6 @@
 #include <Editor/Editor/Framework.h>
 #include <Editor/Editor/Engine.h>
-#include <FoundationEngine/Utility/Bootstrap.h>
+#include <FoundationEngine/Application/Bootstrap.h>
 
 namespace SeedCore
 {

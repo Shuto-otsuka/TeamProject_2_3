@@ -1,6 +1,6 @@
 #include <Runtime/Application/Framework.h>
 #include <Runtime/Application/Engine.h>
-#include <FoundationEngine/Utility/Bootstrap.h>
+#include <FoundationEngine/Application/Bootstrap.h>
 
 namespace SeedCore
 {
