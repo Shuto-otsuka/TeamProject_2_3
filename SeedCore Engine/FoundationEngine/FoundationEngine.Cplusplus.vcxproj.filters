@@ -1076,5 +1076,8 @@
     <ClInclude Include="Application\Bootstrap.h">
       <Filter>Application</Filter>
     </ClInclude>
+    <ClInclude Include="World\ECS\Component\Selected.h">
+      <Filter>World\ECS\Component</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -603,6 +603,7 @@ namespace SeedCore
 		static const String meshString("Mesh");
 		static const String materialString("Material");
 		static const String skeletonString("Skeleton");
+		static const String selectedString("Selected");
 
 		ComponentID positionID = ComponentRegistry::GetComponentID(positionString);
 		ComponentID rotationID = ComponentRegistry::GetComponentID(rotationString);
@@ -734,7 +735,10 @@ namespace SeedCore
 		{
 			String componentName = ComponentRegistry::Name(componentBaseID);
 
-			if (componentName == materialString || componentName == skeletonString)
+			if (componentName == materialString || 
+				componentName == skeletonString ||
+				componentName == selectedString
+			)
 			{
 				continue;
 			}

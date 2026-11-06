@@ -226,7 +226,7 @@ namespace SeedCore
 		* Bounds), which the node holds as dedicated members or rebuilds
 		* each frame, and the velocities Rigidbody attaches with itself
 		* (LinearVelocity, AngularVelocity), which come back whenever the
-		* Rigidbody is added.
+		* Rigidbody is added, and the Selected tag, which is editor state.
 		*
 		* ---------------------------------------------------------------------
 		*
@@ -236,7 +236,7 @@ namespace SeedCore
 		* Position、Rotation、Scale、Active、WorldMatrix、Bounds）は、ノードが
 		* 専用のメンバーとして持つか、毎フレーム作り直される。Rigidbody が自分と
 		* 一緒に付ける速度（LinearVelocity、AngularVelocity）は、Rigidbody を
-		* 追加すれば必ず付き直す。
+		* 追加すれば必ず付き直す。Selected のタグはエディタの状態。
 		*/
 		static Bool Builtin(ComponentID id);
 

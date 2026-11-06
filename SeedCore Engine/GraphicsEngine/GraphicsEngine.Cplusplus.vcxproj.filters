@@ -1186,6 +1186,24 @@
     <ClInclude Include="RenderGraph\RenderStageRules.h">
       <Filter>RenderGraph</Filter>
     </ClInclude>
+    <ClInclude Include="RenderGraph\RenderDevice.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderGraph.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderGraphMemory.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderUpload.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderScene.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderPass.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">
@@ -1931,6 +1949,21 @@
     <ClCompile Include="Model\ModelWriter.cpp">
       <Filter>Model</Filter>
     </ClCompile>
+    <ClCompile Include="RenderGraph\RenderDevice.cpp">
+      <Filter>RenderGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderGraph\RenderGraph.cpp">
+      <Filter>RenderGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderGraph\RenderGraphMemory.cpp">
+      <Filter>RenderGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderGraph\RenderUpload.cpp">
+      <Filter>RenderGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderGraph\RenderPass.cpp">
+      <Filter>RenderGraph</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\Sampler.hlsli">
@@ -2115,6 +2148,9 @@
     </None>
     <None Include="Model\Material\MaterialOutline.hlsli">
       <Filter>Model\Material</Filter>
+    </None>
+    <None Include="Shader\RootSignature.hlsli">
+      <Filter>Shader</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

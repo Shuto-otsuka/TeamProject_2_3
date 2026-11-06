@@ -9,6 +9,7 @@ namespace SeedCore
 
 	class RenderDevice;
 	class RenderGraph;
+	class RenderUpload;
 
 	class RenderFeatureAccess
 	{
@@ -27,12 +28,12 @@ namespace SeedCore
 		}
 
 		template<class Feature>
-		SC_CONSTEX Bool IsRenderFeature = std::is_default_constructible_v<Feature> && requires(Feature& feature, RenderDevice& device, RenderGraph& graph, const RenderScene& scene, RenderFrame& frame)
+		SC_CONSTEX Bool IsRenderFeature = std::is_default_constructible_v<Feature> && requires(Feature & feature, RenderDevice & device, RenderGraph & graph, const RenderScene & scene, RenderFrame & frame, RenderUpload & upload)
 		{
 			{ feature.Create(device) } -> std::same_as<void>;
 			{ feature.Register(graph) } -> std::same_as<void>;
 			{ feature.Gather(scene, frame) } -> std::same_as<void>;
-			{ feature.Prepare(std::as_const(frame)) } -> std::same_as<void>;
+			{ feature.Prepare(std::as_const(frame), upload) } -> std::same_as<void>;
 				requires std::same_as<std::remove_cv_t<decltype(Feature::name_)>, RenderFeatureName>;
 			std::span<const RenderResourceDeclaration>(Feature::resources_);
 			typename Feature::Stages;
@@ -79,10 +80,10 @@ namespace SeedCore
 		}
 
 		template<class Feature>
-		static void Prepare(Feature& feature, const RenderFrame& frame)
+		static void Prepare(Feature& feature, const RenderFrame& frame, RenderUpload& upload)
 		{
 			static_assert(IsRenderFeature<Feature>, "Feature は Create / Register / Gather / Prepare と name_ / Stages / resources_ を持つこと");
-			feature.Prepare(frame);
+			feature.Prepare(frame, upload);
 		}
 	};
 }

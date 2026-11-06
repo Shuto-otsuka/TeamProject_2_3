@@ -354,10 +354,7 @@ namespace SeedCore
 			}
 			for (Actor actor : hits)
 			{
-				if (!selection.Contains(actor))
-				{
-					selection.actors_.push_back(actor);
-				}
+				selection.Add(actor);
 			}
 		}
 		else if (mouseInImage)

@@ -5,7 +5,7 @@
 
 namespace SeedCore
 {
-	class RenderStageContext;
+	class RenderPass;
 
 	enum class RenderStageKind :Uint8
 	{
@@ -42,13 +42,14 @@ namespace SeedCore
 	{
 	public:
 		template<class Stage, class Feature>
-		SC_CONSTEX Bool IsRenderStage = requires(Feature & feature, RenderStageContext & context)
+		SC_CONSTEX Bool IsRenderStage = requires(Feature & feature, RenderPass & pass)
 		{
-			{ Stage::Execute(feature, context) } -> std::same_as<void>;
+			{ Stage::Execute(feature, pass) } -> std::same_as<void>;
 			requires std::same_as<std::remove_cv_t<decltype(Stage::name_)>, RenderStageName>;
 			requires std::same_as<std::remove_cv_t<decltype(Stage::kind_)>, RenderStageKind>;
 			requires std::same_as<std::remove_cv_t<decltype(Stage::queue_)>, RenderQueue>;
 			requires std::same_as<std::remove_cv_t<decltype(Stage::viewMask_)>, RenderViewMask>;
+			requires std::same_as<std::remove_cv_t<decltype(Stage::async_)>, Bool>;
 			requires std::same_as<std::remove_cv_t<decltype(Stage::enableCondition_)>, std::nullptr_t> || std::same_as<std::remove_cv_t<decltype(Stage::enableCondition_)>, Bool Feature::*> || std::same_as<std::remove_cv_t<decltype(Stage::enableCondition_)>, Bool(Feature::*)[RenderViewCount]>;
 			requires std::is_array_v<decltype(Stage::accesses_)> && std::same_as<std::remove_cv_t<std::remove_extent_t<decltype(Stage::accesses_)>>, RenderAccess>;
 		};

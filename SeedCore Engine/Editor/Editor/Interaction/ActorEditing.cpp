@@ -104,6 +104,10 @@ namespace SeedCore
 			context.scene_.history_.Push(std::move(group));
 		}
 
-		context.selection_.actors_ = newSelection;
+		context.selection_.Clear();
+		for (Actor actor : newSelection)
+		{
+			context.selection_.Add(actor);
+		}
 	}
 }

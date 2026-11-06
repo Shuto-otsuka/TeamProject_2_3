@@ -134,12 +134,12 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Draws the per-pass GPU times, one column per view.
+		* Draws the per-pass GPU times, one row per Stage and one column per view, with the passes that run once per frame in their own column.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* パス別の GPU 時間を、ビューごとに列を分けて描く。
+		* パス別の GPU 時間を、Stage ごとに行、ビューごとに列を分けて描く。フレームで 1 回のパスは専用の列に出す。
 		*/
 		void DrawGpuTable(const GpuProfiler& gpuProfiler);
 
@@ -152,9 +152,9 @@ namespace SeedCore
 		/// [JP] 写し取った CPU の行。グループ順、その中は平均時間の大きい順に並ぶ。
 		DynamicArray<BenchmarkRow> rows_;
 
-		/// [EN] Latched copy of the GPU times per view and scope.
-		/// [JP] ビュー×スコープごとの GPU 時間の写し。
-		Float gpuDisplay_[static_cast<Uint32>(GpuProfileView::Count)][static_cast<Uint32>(GpuProfileScope::Count)] = {};
+		/// [EN] Latched copy of the GPU time of every pass, in the order the passes ran.
+		/// [JP] 全パスの GPU の時間の写し。パスが動いた順に並ぶ。
+		DynamicArray<GpuProfilerResult> gpuResults_;
 
 		/// [EN] Latched frame time, the reference for every section's share of the frame.
 		/// [JP] 写し取ったフレーム時間。各区間がフレームに占める割合の基準になる。

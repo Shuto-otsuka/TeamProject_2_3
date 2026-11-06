@@ -274,6 +274,7 @@
     <ClInclude Include="World\ECS\Component\Revisionable.h" />
     <ClInclude Include="World\ECS\Component\Rotation.h" />
     <ClInclude Include="World\ECS\Component\Scale.h" />
+    <ClInclude Include="World\ECS\Component\Selected.h" />
     <ClInclude Include="World\ECS\Component\Spawner.h" />
     <ClInclude Include="World\ECS\Component\Startable.h" />
     <ClInclude Include="World\ECS\Component\Tickable.h" />

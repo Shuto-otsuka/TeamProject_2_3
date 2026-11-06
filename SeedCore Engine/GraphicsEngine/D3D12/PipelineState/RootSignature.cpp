@@ -1,117 +1,59 @@
 #include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
 #include <GraphicsEngine/D3D12/PipelineState/SamplerState.h>
 #include <FoundationEngine/Log/DxFail.h>
-#include <FoundationEngine/Pool/StablePool.h>
 
 namespace SeedCore
 {
-	namespace
+	void RootSignature::Create(ID3D12Device* device)
 	{
-		struct RootSignatureCache
-		{
-			StablePool<RootSignature> pool_;
-			Handle<RootSignature> handle_;
-		};
-		RootSignatureCache cache_;
-	}
+		D3D12_ROOT_PARAMETER1 parameters[3]{};
 
-	Handle<RootSignature> RootSignature::GetOrCreate(ID3D12Device* device)
-	{
-		if (cache_.handle_.exists())
-		{
-			return cache_.handle_;
-		}
+		D3D12_ROOT_PARAMETER1& stage = parameters[static_cast<Uint32>(RootParameter::Stage)];
+		stage.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		stage.Descriptor.ShaderRegister = 0;
+		stage.Descriptor.RegisterSpace = 1;
+		stage.Descriptor.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
+		stage.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
-		HRESULT hr{ S_OK };
+		D3D12_ROOT_PARAMETER1& view = parameters[static_cast<Uint32>(RootParameter::View)];
+		view.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		view.Descriptor.ShaderRegister = 1;
+		view.Descriptor.RegisterSpace = 1;
+		view.Descriptor.Flags = D3D12_ROOT_DESCRIPTOR_FLAG_DATA_STATIC_WHILE_SET_AT_EXECUTE;
+		view.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
-		DynamicArray<D3D12_STATIC_SAMPLER_DESC> samplerDesc = SamplerState::Create();
+		D3D12_ROOT_PARAMETER1& dispatch = parameters[static_cast<Uint32>(RootParameter::Dispatch)];
+		dispatch.ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+		dispatch.Constants.ShaderRegister = 2;
+		dispatch.Constants.RegisterSpace = 1;
+		dispatch.Constants.Num32BitValues = 1;
+		dispatch.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
-		D3D12_ROOT_PARAMETER params[4]{};
+		StaticArray<D3D12_STATIC_SAMPLER_DESC, static_cast<Size>(SamplerStateType::Count)> samplers = SamplerState::Create();
 
-		params[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-		params[0].Descriptor.ShaderRegister = 0;
-		params[0].Descriptor.RegisterSpace = 1;
-		params[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
-		params[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-		params[1].Descriptor.ShaderRegister = 1;
-		params[1].Descriptor.RegisterSpace = 1;
-		params[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
-		params[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-		params[2].Descriptor.ShaderRegister = 2;
-		params[2].Descriptor.RegisterSpace = 1;
-		params[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
-		params[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-		params[3].Constants.ShaderRegister = 4;
-		params[3].Constants.RegisterSpace = 1;
-		params[3].Constants.Num32BitValues = 1;
-		params[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
-		D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc{};
-		rootSignatureDesc.NumParameters = 4;
-		rootSignatureDesc.pParameters = params;
-		rootSignatureDesc.NumStaticSamplers = static_cast<Uint>(samplerDesc.size());
-		rootSignatureDesc.pStaticSamplers = samplerDesc.data();
-		rootSignatureDesc.Flags = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED;
+		D3D12_VERSIONED_ROOT_SIGNATURE_DESC rootSignatureDesc{};
+		rootSignatureDesc.Version = D3D_ROOT_SIGNATURE_VERSION_1_1;
+		rootSignatureDesc.Desc_1_1.NumParameters = 3;
+		rootSignatureDesc.Desc_1_1.pParameters = parameters;
+		rootSignatureDesc.Desc_1_1.NumStaticSamplers = static_cast<Uint>(samplers.size());
+		rootSignatureDesc.Desc_1_1.pStaticSamplers = samplers.data();
+		rootSignatureDesc.Desc_1_1.Flags = D3D12_ROOT_SIGNATURE_FLAG_CBV_SRV_UAV_HEAP_DIRECTLY_INDEXED | D3D12_ROOT_SIGNATURE_FLAG_SAMPLER_HEAP_DIRECTLY_INDEXED;
 
 		Microsoft::WRL::ComPtr<ID3DBlob> serializedRootSignature;
 		Microsoft::WRL::ComPtr<ID3DBlob> errorBlob;
-		hr = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &serializedRootSignature, &errorBlob);
-		if (FAILED(hr))
+		HRESULT hr = D3D12SerializeVersionedRootSignature(&rootSignatureDesc, &serializedRootSignature, &errorBlob);
+		if (FAILED(hr) && errorBlob)
 		{
-			if (errorBlob)
-			{
-				OutputDebugStringA(static_cast<const Char*>(errorBlob->GetBufferPointer()));
-			}
-			return Handle<RootSignature>::null();
+			OutputDebugStringA(static_cast<const Char*>(errorBlob->GetBufferPointer()));
 		}
+		SC_HR_CHECK(hr, "RootSignature のシリアライズに失敗しました");
 
-		Microsoft::WRL::ComPtr<ID3D12RootSignature> cacheRootSignature;
-		hr = device->CreateRootSignature(0, serializedRootSignature->GetBufferPointer(), serializedRootSignature->GetBufferSize(), IID_PPV_ARGS(&cacheRootSignature));
-		SC_HR_CHECK(hr, "RootSignatureの生成に失敗しました");
-
-		auto handle = cache_.pool_.Create();
-		if (auto rootSignature = cache_.pool_.Get(handle))
-		{
-			rootSignature->rootSignature_ = std::move(cacheRootSignature);
-		}
-
-		cache_.handle_ = handle;
-		return handle;
+		hr = device->CreateRootSignature(0, serializedRootSignature->GetBufferPointer(), serializedRootSignature->GetBufferSize(), IID_PPV_ARGS(&rootSignature_));
+		SC_HR_CHECK(hr, "RootSignature の生成に失敗しました");
 	}
 
-	RootSignature* RootSignature::Get(const Handle<RootSignature>& handle)
-	{
-		return cache_.pool_.Get(handle);
-	}
-
-	ID3D12RootSignature* RootSignature::Get()const noexcept
+	ID3D12RootSignature* RootSignature::Signature()const
 	{
 		return rootSignature_.Get();
-	}
-
-	void RootSignature::ClearCache()
-	{
-		if (cache_.handle_.exists())
-		{
-			cache_.pool_.Destroy(cache_.handle_);
-			cache_.handle_ = Handle<RootSignature>::null();
-		}
-	}
-
-	void RootSignature::BindCompute(ID3D12GraphicsCommandList* cmd, const RootAddresses& addresses)
-	{
-		cmd->SetComputeRootConstantBufferView(0, addresses.shaderResource_);
-		cmd->SetComputeRootConstantBufferView(1, addresses.unorderedAccess_);
-		cmd->SetComputeRootConstantBufferView(2, addresses.constant_);
-	}
-
-	void RootSignature::BindGraphics(ID3D12GraphicsCommandList* cmd, const RootAddresses& addresses)
-	{
-		cmd->SetGraphicsRootConstantBufferView(0, addresses.shaderResource_);
-		cmd->SetGraphicsRootConstantBufferView(1, addresses.unorderedAccess_);
-		cmd->SetGraphicsRootConstantBufferView(2, addresses.constant_);
 	}
 }

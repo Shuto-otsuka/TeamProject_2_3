@@ -260,12 +260,18 @@
     <ClInclude Include="Renderer\VolumetricStarRenderer.h" />
     <ClInclude Include="Renderer\WeatherParticleRenderer.h" />
     <ClInclude Include="RenderGraph\RenderAccess.h" />
+    <ClInclude Include="RenderGraph\RenderDevice.h" />
     <ClInclude Include="RenderGraph\RenderFeatureAccess.h" />
+    <ClInclude Include="RenderGraph\RenderGraph.h" />
+    <ClInclude Include="RenderGraph\RenderGraphMemory.h" />
     <ClInclude Include="RenderGraph\RenderName.h" />
+    <ClInclude Include="RenderGraph\RenderPass.h" />
     <ClInclude Include="RenderGraph\RenderResource.h" />
     <ClInclude Include="RenderGraph\RenderResourceDeclaration.h" />
+    <ClInclude Include="RenderGraph\RenderScene.h" />
     <ClInclude Include="RenderGraph\RenderStage.h" />
     <ClInclude Include="RenderGraph\RenderStageRules.h" />
+    <ClInclude Include="RenderGraph\RenderUpload.h" />
     <ClInclude Include="RenderGraph\RenderView.h" />
     <ClInclude Include="Resource\GraphicsExporterSystem.h" />
     <ClInclude Include="Resource\GraphicsLoaderSystem.h" />
@@ -569,6 +575,11 @@
     <ClCompile Include="Renderer\VolumetricLightRenderer.cpp" />
     <ClCompile Include="Renderer\VolumetricStarRenderer.cpp" />
     <ClCompile Include="Renderer\WeatherParticleRenderer.cpp" />
+    <ClCompile Include="RenderGraph\RenderDevice.cpp" />
+    <ClCompile Include="RenderGraph\RenderGraph.cpp" />
+    <ClCompile Include="RenderGraph\RenderGraphMemory.cpp" />
+    <ClCompile Include="RenderGraph\RenderPass.cpp" />
+    <ClCompile Include="RenderGraph\RenderUpload.cpp" />
     <ClCompile Include="Resource\GraphicsExporterSystem.cpp" />
     <ClCompile Include="Resource\GraphicsLoaderSystem.cpp" />
     <ClCompile Include="Resource\GraphicsModule.cpp" />
@@ -810,6 +821,10 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
     <None Include="Shader\Precipitation.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Shader\RootSignature.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>

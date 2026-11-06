@@ -15,6 +15,7 @@
 #include <FoundationEngine/World/ECS/Component/WorldMatrix.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
 #include <FoundationEngine/World/ECS/Component/Velocity.h>
+#include <FoundationEngine/World/ECS/Component/Selected.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
 #include <FoundationEngine/World/ECS/Component/UnknownComponent.h>
 
@@ -247,20 +248,22 @@ namespace SeedCore
 	* Returns whether id is one of the components the engine attaches on
 	* its own rather than the node capturing it: those every actor gets on
 	* creation (Name, Position, Rotation, Scale, Active, WorldMatrix,
-	* Bounds) and the velocities Rigidbody attaches with itself
-	* (LinearVelocity, AngularVelocity).
+	* Bounds), the velocities Rigidbody attaches with itself
+	* (LinearVelocity, AngularVelocity), and the Selected tag the editor
+	* attaches to the actors it has selected.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* id が、ノードが取得するのではなく、エンジンが自分で付けるコンポーネント
 	* のどれかかどうかを返す。全ての actor に生成時に付くもの（Name、
-	* Position、Rotation、Scale、Active、WorldMatrix、Bounds）と、Rigidbody
-	* が自分と一緒に付ける速度（LinearVelocity、AngularVelocity）。
+	* Position、Rotation、Scale、Active、WorldMatrix、Bounds）、Rigidbody
+	* が自分と一緒に付ける速度（LinearVelocity、AngularVelocity）、エディタが
+	* 選択中の actor に付ける Selected のタグ。
 	*/
 	Bool BlueprintNode::Builtin(ComponentID id)
 	{
-		return id == ComponentRegistry::GetComponentID<Name>() || id == ComponentRegistry::GetComponentID<Position>() || id == ComponentRegistry::GetComponentID<Rotation>() || id == ComponentRegistry::GetComponentID<Scale>() || id == ComponentRegistry::GetComponentID<Active>() || id == ComponentRegistry::GetComponentID<WorldMatrix>() || id == ComponentRegistry::GetComponentID<Bounds>() || id == ComponentRegistry::GetComponentID<LinearVelocity>() || id == ComponentRegistry::GetComponentID<AngularVelocity>();
+		return id == ComponentRegistry::GetComponentID<Name>() || id == ComponentRegistry::GetComponentID<Position>() || id == ComponentRegistry::GetComponentID<Rotation>() || id == ComponentRegistry::GetComponentID<Scale>() || id == ComponentRegistry::GetComponentID<Active>() || id == ComponentRegistry::GetComponentID<WorldMatrix>() || id == ComponentRegistry::GetComponentID<Bounds>() || id == ComponentRegistry::GetComponentID<LinearVelocity>() || id == ComponentRegistry::GetComponentID<AngularVelocity>() || id == ComponentRegistry::GetComponentID<Selected>();
 	}
 
 	/**

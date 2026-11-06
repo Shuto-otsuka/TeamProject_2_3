@@ -2,220 +2,28 @@
 
 namespace SeedCore
 {
-	DynamicArray<D3D12_STATIC_SAMPLER_DESC> SamplerState::Create()
+	StaticArray<D3D12_STATIC_SAMPLER_DESC, static_cast<Size>(SamplerStateType::Count)> SamplerState::Create()
 	{
-		DynamicArray<D3D12_STATIC_SAMPLER_DESC> samplers;
-		samplers.reserve(static_cast<Uint>(SamplerStateType::MAX_COUNT));
-
+		StaticArray<D3D12_TEXTURE_ADDRESS_MODE, 3> addressModes = { D3D12_TEXTURE_ADDRESS_MODE_CLAMP, D3D12_TEXTURE_ADDRESS_MODE_WRAP, D3D12_TEXTURE_ADDRESS_MODE_MIRROR };
+		StaticArray<D3D12_STATIC_SAMPLER_DESC, static_cast<Size>(SamplerStateType::Count)> samplers{};
+		
+		for (Size index = 0;index < samplers.size();++index)
 		{
-			D3D12_STATIC_SAMPLER_DESC samplerDesc{};
-			samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-			samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-			samplerDesc.MipLODBias = 0;
-			samplerDesc.MaxAnisotropy = 16;
-			samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-			samplerDesc.ShaderRegister = static_cast<Uint>(SamplerStateType::POINT_WRAP);
-			samplerDesc.RegisterSpace = 0;
-			samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-			samplerDesc.MinLOD = 0;
-			samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-
-			samplers.push_back(samplerDesc);
+			SamplerStateType type = static_cast<SamplerStateType>(index);
+			Bool border = type == SamplerStateType::BorderBlack || type == SamplerStateType::BorderWhite;
+			D3D12_TEXTURE_ADDRESS_MODE addressMode = border ? D3D12_TEXTURE_ADDRESS_MODE_BORDER : addressModes[index % 3];
+			D3D12_STATIC_SAMPLER_DESC& sampler = samplers[index];
+			sampler.Filter = index <= static_cast<Size>(SamplerStateType::PointMirror) ? D3D12_FILTER_MIN_MAG_MIP_POINT : D3D12_FILTER_MIN_MAG_MIP_LINEAR;
+			sampler.AddressU = addressMode;
+			sampler.AddressV = addressMode;
+			sampler.AddressW = addressMode;
+			sampler.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+			sampler.BorderColor = type == SamplerStateType::BorderWhite ? D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE : D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
+			sampler.MaxLOD = D3D12_FLOAT32_MAX;
+			sampler.ShaderRegister = static_cast<Uint>(index);
+			sampler.RegisterSpace = 0;
+			sampler.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 		}
-
-		{
-			D3D12_STATIC_SAMPLER_DESC samplerDesc{};
-			samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-			samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-			samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-			samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-			samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-			samplerDesc.MipLODBias = 0;
-			samplerDesc.MaxAnisotropy = 16;
-			samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-			samplerDesc.ShaderRegister = static_cast<Uint>(SamplerStateType::POINT_CLAMP);
-			samplerDesc.RegisterSpace = 0;
-			samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-			samplerDesc.MinLOD = 0;
-			samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-
-			samplers.push_back(samplerDesc);
-		}
-
-		{
-			D3D12_STATIC_SAMPLER_DESC samplerDesc{};
-			samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_POINT;
-			samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-			samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-			samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-			samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-			samplerDesc.MipLODBias = 0;
-			samplerDesc.MaxAnisotropy = 16;
-			samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-			samplerDesc.ShaderRegister = static_cast<Uint>(SamplerStateType::POINT_MIRROR);
-			samplerDesc.RegisterSpace = 0;
-			samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-			samplerDesc.MinLOD = 0;
-			samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-
-			samplers.push_back(samplerDesc);
-		}
-
-		{
-			D3D12_STATIC_SAMPLER_DESC samplerDesc{};
-			samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-			samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-			samplerDesc.MipLODBias = 0;
-			samplerDesc.MaxAnisotropy = 16;
-			samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-			samplerDesc.ShaderRegister = static_cast<Uint>(SamplerStateType::LINEAR_WRAP);
-			samplerDesc.RegisterSpace = 0;
-			samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-			samplerDesc.MinLOD = 0;
-			samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-
-			samplers.push_back(samplerDesc);
-		}
-
-		{
-			D3D12_STATIC_SAMPLER_DESC samplerDesc{};
-			samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-			samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-			samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-			samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-			samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-			samplerDesc.MipLODBias = 0;
-			samplerDesc.MaxAnisotropy = 16;
-			samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-			samplerDesc.ShaderRegister = static_cast<Uint>(SamplerStateType::LINEAR_CLAMP);
-			samplerDesc.RegisterSpace = 0;
-			samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-			samplerDesc.MinLOD = 0;
-			samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-
-			samplers.push_back(samplerDesc);
-		}
-
-		{
-			D3D12_STATIC_SAMPLER_DESC samplerDesc{};
-			samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-			samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-			samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-			samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-			samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-			samplerDesc.MipLODBias = 0;
-			samplerDesc.MaxAnisotropy = 16;
-			samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-			samplerDesc.ShaderRegister = static_cast<Uint>(SamplerStateType::LINEAR_MIRROR);
-			samplerDesc.RegisterSpace = 0;
-			samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-			samplerDesc.MinLOD = 0;
-			samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-
-			samplers.push_back(samplerDesc);
-		}
-
-		{
-			D3D12_STATIC_SAMPLER_DESC samplerDesc{};
-			samplerDesc.Filter = D3D12_FILTER_ANISOTROPIC;
-			samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
-			samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-			samplerDesc.MipLODBias = 0;
-			samplerDesc.MaxAnisotropy = 16;
-			samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-			samplerDesc.ShaderRegister = static_cast<Uint>(SamplerStateType::ANISOTROPIC_WRAP);
-			samplerDesc.RegisterSpace = 0;
-			samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-			samplerDesc.MinLOD = 0;
-			samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-
-			samplers.push_back(samplerDesc);
-		}
-
-		{
-			D3D12_STATIC_SAMPLER_DESC samplerDesc{};
-			samplerDesc.Filter = D3D12_FILTER_ANISOTROPIC;
-			samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-			samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-			samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-			samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-			samplerDesc.MipLODBias = 0;
-			samplerDesc.MaxAnisotropy = 16;
-			samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-			samplerDesc.ShaderRegister = static_cast<Uint>(SamplerStateType::ANISOTROPIC_CLAMP);
-			samplerDesc.RegisterSpace = 0;
-			samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-			samplerDesc.MinLOD = 0;
-			samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-
-			samplers.push_back(samplerDesc);
-		}
-
-		{
-			D3D12_STATIC_SAMPLER_DESC samplerDesc{};
-			samplerDesc.Filter = D3D12_FILTER_ANISOTROPIC;
-			samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-			samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-			samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_MIRROR;
-			samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-			samplerDesc.MipLODBias = 0;
-			samplerDesc.MaxAnisotropy = 16;
-			samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
-			samplerDesc.ShaderRegister = static_cast<Uint>(SamplerStateType::ANISOTROPIC_MIRROR);
-			samplerDesc.RegisterSpace = 0;
-			samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-			samplerDesc.MinLOD = 0;
-			samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-
-			samplers.push_back(samplerDesc);
-		}
-
-		{
-			D3D12_STATIC_SAMPLER_DESC samplerDesc{};
-			samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-			samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-			samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-			samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-			samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-			samplerDesc.MipLODBias = 0;
-			samplerDesc.MaxAnisotropy = 16;
-			samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_BLACK;
-			samplerDesc.ShaderRegister = static_cast<Uint>(SamplerStateType::BORDER_BLACK);
-			samplerDesc.RegisterSpace = 0;
-			samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-			samplerDesc.MinLOD = 0;
-			samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-
-			samplers.push_back(samplerDesc);
-		}
-
-		{
-			D3D12_STATIC_SAMPLER_DESC samplerDesc{};
-			samplerDesc.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
-			samplerDesc.AddressU = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-			samplerDesc.AddressV = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-			samplerDesc.AddressW = D3D12_TEXTURE_ADDRESS_MODE_BORDER;
-			samplerDesc.ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
-			samplerDesc.MipLODBias = 0;
-			samplerDesc.MaxAnisotropy = 16;
-			samplerDesc.BorderColor = D3D12_STATIC_BORDER_COLOR_OPAQUE_WHITE;
-			samplerDesc.ShaderRegister = static_cast<Uint>(SamplerStateType::BORDER_WHITE);
-			samplerDesc.RegisterSpace = 0;
-			samplerDesc.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-			samplerDesc.MinLOD = 0;
-			samplerDesc.MaxLOD = D3D12_FLOAT32_MAX;
-
-			samplers.push_back(samplerDesc);
-		}
-
 		return samplers;
 	}
 }

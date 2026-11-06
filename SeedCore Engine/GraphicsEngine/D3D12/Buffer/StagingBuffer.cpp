@@ -31,7 +31,7 @@ namespace SeedCore
 
 	NODISCARD std::optional<Uint64> StagingBuffer::Allocate(Uint64 size, Uint64 alignment)
 	{
-		Uint64 offset = (used_ + alignment - 1) & ~(alignment - 1);
+		Uint64 offset = (used_ + alignment - 1) / alignment * alignment;
 		if (offset > size_ || size > size_ - offset)
 		{
 			return std::nullopt;

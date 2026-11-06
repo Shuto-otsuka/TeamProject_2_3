@@ -1,32 +1,20 @@
 #pragma once
-#include <FoundationEngine/Utility/Handle.h>
 
 namespace SeedCore
 {
-	struct RootAddresses
+	enum class RootParameter :Uint32
 	{
-		D3D12_GPU_VIRTUAL_ADDRESS shaderResource_ = 0;
-		D3D12_GPU_VIRTUAL_ADDRESS unorderedAccess_ = 0;
-		D3D12_GPU_VIRTUAL_ADDRESS constant_ = 0;
+		Stage,
+		View,
+		Dispatch,
 	};
 
 	class RootSignature
 	{
 	public:
-		RootSignature() = default;
-		~RootSignature() = default;
+		void Create(ID3D12Device* device);
 
-		Handle<RootSignature> GetOrCreate(ID3D12Device* device);
-
-		RootSignature* Get(const Handle<RootSignature>& handle);
-
-		NODISCARD ID3D12RootSignature* Get()const noexcept;
-
-		static void ClearCache();
-
-		static void BindCompute(ID3D12GraphicsCommandList* cmd, const RootAddresses& addresses);
-
-		static void BindGraphics(ID3D12GraphicsCommandList* cmd, const RootAddresses& addresses);
+		NODISCARD ID3D12RootSignature* Signature()const;
 
 	private:
 		Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;

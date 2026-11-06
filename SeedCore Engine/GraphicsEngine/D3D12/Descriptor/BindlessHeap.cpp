@@ -3,10 +3,10 @@
 
 namespace SeedCore
 {
-	Bool BindlessHeap::Create(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, Uint maxCount)
+	Bool BindlessHeap::Create(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, Uint maxCount, Bool shaderVisible)
 	{
 		heap_ = MakePtr<DescriptorHeap>();
-		if (!heap_->Create(device, type, maxCount, true))
+		if (!heap_->Create(device, type, maxCount, shaderVisible))
 		{
 			return false;
 		}
