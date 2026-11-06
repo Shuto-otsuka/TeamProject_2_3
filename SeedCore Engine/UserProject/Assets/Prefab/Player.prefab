@@ -1487,6 +1487,42 @@
 							}
 						}
 					]
+				},
+				{
+					"component": "AudioListener",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 1.0,
+							"int": 0,
+							"is_array": false,
+							"name": "ドップラー倍率",
+							"string": "",
+							"type": 2,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
 				}
 			],
 			"layer": "Player",
@@ -1496,9 +1532,9 @@
 			"parentIndex": -1,
 			"persistentId": 6,
 			"position": {
-				"x": 0.0,
-				"y": 0.0,
-				"z": 0.0
+				"x": -1.0,
+				"y": 0.787398636341095,
+				"z": 32.0
 			},
 			"rotation": {
 				"w": 1.0,

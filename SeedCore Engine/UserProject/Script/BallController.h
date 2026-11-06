@@ -28,7 +28,7 @@ private:
 	bool isRespawn = false;
 	bool isStop = false;
 
-	float respawnDuration = 0.1f;
+	float respawnDuration = 0.2f;
 	float respawnTimer = 0.0f;
 	float noStopAirResistance;
 

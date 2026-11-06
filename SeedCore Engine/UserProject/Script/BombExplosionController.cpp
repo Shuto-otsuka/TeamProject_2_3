@@ -37,6 +37,10 @@ void BombExplosionController::OnTick(float elapsedTime)
     default:
         break;
     }
+
+    scale->x_ = currentSize;
+    scale->y_ = currentSize;
+    scale->z_ = currentSize;
 }
 
 void BombExplosionController::SetParam(const SeedCore::Vector3& pos, float targetSize)
