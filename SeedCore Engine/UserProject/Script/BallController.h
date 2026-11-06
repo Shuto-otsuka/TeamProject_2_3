@@ -17,6 +17,8 @@ public:
 		float respawnHeight = -10.0f;
 	SC_REFLECTION_FIELD()
 		float stopAirResistance = 10.0f;
+	SC_REFLECTION_FIELD()
+		float stopAngularResistance = 20.0f;
 
 private:
 	SeedCore::Rigidbody* myRigid;
@@ -31,6 +33,7 @@ private:
 	float respawnDuration = 0.2f;
 	float respawnTimer = 0.0f;
 	float noStopAirResistance;
+	float noStopAngularResistance;
 
 	SeedCore::Vector3 startPosition;
 };

@@ -24,7 +24,8 @@ void BombController::OnStart()
     bombTimerPosition = bombTimer.GetComponent<SeedCore::Position>();
 
     explosionAudio = GetActor().GetComponent<SeedCore::AudioSource>();
-    SeedCore::Actor bombCountAudioActor = GetWorld().GetActor("AudioBombCount");
+    SeedCore::DynamicArray<SeedCore::Actor> children = GetActor().Children();
+    SeedCore::Actor bombCountAudioActor = children[0];
     if (bombCountAudioActor)bombCountAudio = bombCountAudioActor.GetComponent<SeedCore::AudioSource>();
 }
 
@@ -131,7 +132,7 @@ void BombController::OnTick(float elapsedTime)
 
         if (explosionTimer >= explosionInterval - bombCountAudioPlayTime && !isBombCountAudioPlayed)
         {
-            //if (bombCountAudio)bombCountAudio->Play();
+            if (bombCountAudio)bombCountAudio->Play();
             isBombCountAudioPlayed = true;
         }
 

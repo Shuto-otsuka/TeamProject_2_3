@@ -12,6 +12,7 @@ void BallController::OnStart()
     startPosition = GetActor().WorldMatrix().Translation();
 
     noStopAirResistance = myRigid->linearDrag_;
+    noStopAngularResistance = myRigid->angularDrag_;
 }
 
 void BallController::OnTick(float elapsedTime)
@@ -45,6 +46,7 @@ void BallController::OnTick(float elapsedTime)
         velocity->y_ = 0.0f;
         velocity->z_ = 0.0f;
         myRigid->linearDrag_ = stopAirResistance;
+        myRigid->angularDrag_ = stopAngularResistance;
         myRigid->Dispatch();
         isStop = stopController->IsStop();
     }
@@ -52,6 +54,7 @@ void BallController::OnTick(float elapsedTime)
     {
         //止められてないとき軽くする
         myRigid->linearDrag_ = noStopAirResistance;
+        myRigid->angularDrag_ = noStopAngularResistance;
         myRigid->Dispatch();
         isStop = stopController->IsStop();
     }

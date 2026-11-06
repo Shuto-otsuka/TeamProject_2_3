@@ -283,7 +283,7 @@ void BulletController::Stop()
     {
         isDynamicWait = true;
         //回転を0にする
-        rigidbody->MoveTo({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, dynamicWaitTimer);
+        rigidbody->MoveTo({ position->x_,position->y_,position->z_ }, SeedCore::Quaternion::Identity, dynamicWaitTimer / 2.0f);
     }
     else
     {

@@ -30,6 +30,8 @@ void FirstPersonCameraController::FollowPlayer(float elapsedTime)
 
 void FirstPersonCameraController::Rotate(float elapsedTime)
 {
+    if (elapsedTime <= 0.0f)return;//リザルトの時回らないようにする
+
     //カメラのyawだけプレイヤーに合わせる
     //pitchはカーソルの移動量から動かす
     yaw = SeedCore::Transform::Euler(*playerRotation).y + DirectX::XM_PI;

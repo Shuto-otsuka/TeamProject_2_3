@@ -67,6 +67,7 @@ namespace SeedCore
 					BallController& obj = *static_cast<BallController*>(ptr);
 					outInfo.push_back({ String("respawnHeight"), offsetof(BallController, respawnHeight), AttributeType::Float });
 					outInfo.push_back({ String("stopAirResistance"), offsetof(BallController, stopAirResistance), AttributeType::Float });
+					outInfo.push_back({ String("stopAngularResistance"), offsetof(BallController, stopAngularResistance), AttributeType::Float });
 				});
 			}
 		};
