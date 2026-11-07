@@ -84,6 +84,7 @@ private:
 	SeedCore::Actor stopTimer;
 	SeedCore::Text* stopTimerText;
 	SeedCore::Position* stopTimerPosition;
+	SeedCore::AudioSource* stopAudio;
 
 	SeedCore::Actor player;
 	SeedCore::Actor hintAudioActor;

@@ -14,6 +14,9 @@ void BulletController::OnStart()
     playerController = player.GetComponent<PlayerController>();
     linearVelocity = GetActor().GetComponent<SeedCore::LinearVelocity>();
     angularVelocity = GetActor().GetComponent<SeedCore::AngularVelocity>();
+
+    SeedCore::Actor stopAudioActor = GetWorld().GetActor("AudioMoveStop");
+    if (stopAudioActor)stopAudio = stopAudioActor.GetComponent<SeedCore::AudioSource>();
 }
 
 void BulletController::OnTick(float elapsedTime)
@@ -133,6 +136,8 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
 
                 hitBulletController->Stop();//停止
                 Remove();//自分は削除
+
+                if (stopAudio)stopAudio->Play();
                 return;
             }
             break;
@@ -170,6 +175,8 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
                 state = State::STICK;
                 //止めている相手を保存
                 nowStick = hitBulletController->GetNowStick();
+
+                if (stopAudio)stopAudio->Play();
             }
             break; 
         }
@@ -196,6 +203,8 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
         //くっついたところのオフセットを保存
         SeedCore::Vector3 nowStickPosition = nowStick->GetActor().WorldMatrix().Translation();
         stickOffset = SeedCore::Transform::Vector(*position) - nowStickPosition;
+
+        if (stopAudio)stopAudio->Play();
     }
 }
 
