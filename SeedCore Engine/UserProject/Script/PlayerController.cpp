@@ -28,6 +28,7 @@ void PlayerController::OnStart()
     scale = GetActor().GetComponent<SeedCore::Scale>();
     velocity = GetActor().GetComponent<SeedCore::LinearVelocity>();
     myCharacterController = GetActor().GetComponent<SeedCore::CharacterController>();
+    myAnimator = GetActor().GetComponent<SeedCore::Animator>();
     firstPersonCameraBrainComp = firstPersonCameraBrain.GetComponent<SeedCore::CameraBrain>();
     firstPersonCameraBrainRotate = firstPersonCameraBrain.GetComponent<SeedCore::Rotation>();
     cameraController = cameraBrain.GetComponent<CameraController>();
@@ -327,6 +328,8 @@ void PlayerController::Jump()
 {
     //ジャンプ
     myCharacterController->Jump();
+    //ジャンプアニメーション再生
+    myAnimator->SetTrigger("Jump");
     if(jumpAudio)jumpAudio->Play();
 }
 
@@ -524,6 +527,15 @@ void PlayerController::UpdateInputShot(float elapsedTime)
 
         //チャージ率からコストを計算
         costGaugeAdd = static_cast<int>(SeedCore::Lerp(static_cast<float>(minAddCostGauge), static_cast<float>(maxAddCostGauge), shotChargeRate));
+        
+        //追加コストゲージを最大値超えないようにする
+        if (costGauge + costGaugeAdd > maxCostGauge)
+        {
+            costGaugeAdd = maxCostGauge - costGauge;
+            shotChargeRate = static_cast<float>(costGaugeAdd) / static_cast<float>(maxAddCostGauge);
+            if (costGaugeAdd < minAddCostGauge)shotChargeRate = 0.0f;
+            else shotChargeRate = static_cast<float>(costGaugeAdd) / static_cast<float>(maxAddCostGauge);
+        }
 
         SeedCore::Vector3 bulletOffset;
         bulletOffset.x = 0.0f;
@@ -547,6 +559,9 @@ void PlayerController::UpdateInputShot(float elapsedTime)
 
         shotReady = false;
     }
+
+    //アニメーションフラグ切り替え
+    myAnimator->SetBool("IsCharge", shotReady);
 
     /*
     //弾のナビがなければ以下の処理を行わない
@@ -573,7 +588,7 @@ void PlayerController::Shot()
     lookDirection = shotDirection;
 
     //コストが100超える場合撃たない
-    if (costGauge + costGaugeAdd > maxCostGauge)return;
+    if (costGauge + costGaugeAdd > maxCostGauge || shotChargeRate <= 0.0f)return;
     //コスト増加
     costGauge += costGaugeAdd;
 
@@ -581,6 +596,17 @@ void PlayerController::Shot()
     BulletController* bulletController = bullet.GetComponent<BulletController>();
 
     bulletController->SetParam(bulletPosition,shotDirection, shotChargeRate,costGaugeAdd);//位置、見てる方向、チャージ率、増加コストを渡す
+
+    if (shotChargeRate < 0.5f)
+    {
+        //小さい弾発射アニメーション
+        myAnimator->SetTrigger("ShotSmall");
+    }
+    else
+    {
+        //大きい弾発射アニメーション
+        myAnimator->SetTrigger("ShotLarge");
+    }
 
     //音再生
     if (shotAudio)shotAudio->Play();

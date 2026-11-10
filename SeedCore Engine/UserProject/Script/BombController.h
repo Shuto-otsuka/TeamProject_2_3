@@ -43,6 +43,9 @@ private:
 	bool isBombCountAudioPlayed = false;
 
 	SeedCore::Actor bombTimer;
+	SeedCore::Actor thirdPersonCameraActor;
+	SeedCore::Actor firstPersonCameraActor;
+	SeedCore::Actor player;
 	SeedCore::Text* bombTimerText;
 	SeedCore::Position* bombTimerPosition;
 	SeedCore::Rigidbody* myRigid;

@@ -16,6 +16,9 @@ void BombController::OnStart()
     linearVelocity = GetActor().GetComponent<SeedCore::LinearVelocity>();
     angularVelocity = GetActor().GetComponent<SeedCore::AngularVelocity>();
     stopController = GetActor().GetComponent<StopController>();
+    thirdPersonCameraActor = GetWorld().GetActor("CameraBrain");
+    firstPersonCameraActor = GetWorld().GetActor("FirstPersonCameraBrain");
+    player = GetWorld().GetActor("Player");
 
     UpdateMoveTarget();
 
@@ -177,18 +180,44 @@ void BombController::OnTick(float elapsedTime)
 
             isBombCountAudioPlayed = false;
         }
+        
+        //カメラが爆弾と真反対の方向向いてたらテキストを表示しない
+        SeedCore::Active* bombCountTimerActive = bombTimer.GetComponent<SeedCore::Active>();
+        PlayerController* playerController = player.GetComponent<PlayerController>();
+        SeedCore::Position* cameraPosition = nullptr;
+        SeedCore::Vector3 cameraFront;
+        if (playerController->IsFirstPerson())
+        {
+            cameraPosition = firstPersonCameraActor.GetComponent<SeedCore::Position>();
+            cameraFront = firstPersonCameraActor.WorldMatrix().Backward();
+        }
+        else
+        {
+            cameraPosition = thirdPersonCameraActor.GetComponent<SeedCore::Position>();
+            cameraFront = thirdPersonCameraActor.WorldMatrix().Backward();
+        }
+        SeedCore::Vector3 cameraToBomb = position - SeedCore::Transform::Vector(*cameraPosition);
+        cameraToBomb.Normalize();
+        if (cameraFront.Dot(cameraToBomb) < 0.0f)
+        {
+            bombCountTimerActive->active_ = false;
+        }
+        else
+        {
+            bombCountTimerActive->active_ = true;
 
-        //爆発までの残り時間
-        float timer = explosionInterval - explosionTimer;
-        //テキスト反映
-        std::string timerStr = std::format("{:.1f}", timer); //小数点第一以下を切り捨て
-        bombTimerText->text_ = SeedCore::String(timerStr);
+            //爆発までの残り時間
+            float timer = explosionInterval - explosionTimer;
+            //テキスト反映
+            std::string timerStr = std::format("{:.1f}", timer); //小数点第一以下を切り捨て
+            bombTimerText->text_ = SeedCore::String(timerStr);
 
-        //タイマーのスクリーン座標を算出し、セット
-        SeedCore::Vector3 timerWorldPosition = GetActor().WorldMatrix().Translation() + timerOffset;
-        SeedCore::Vector2 timerScreenPosition = SeedCore::ScreenSpace::WorldToScreen(timerWorldPosition);
-        bombTimerPosition->x_ = timerScreenPosition.x;
-        bombTimerPosition->y_ = timerScreenPosition.y;
+            //タイマーのスクリーン座標を算出し、セット
+            SeedCore::Vector3 timerWorldPosition = GetActor().WorldMatrix().Translation() + timerOffset;
+            SeedCore::Vector2 timerScreenPosition = SeedCore::ScreenSpace::WorldToScreen(timerWorldPosition);
+            bombTimerPosition->x_ = timerScreenPosition.x;
+            bombTimerPosition->y_ = timerScreenPosition.y;
+        }
 
         //爆発範囲のデバッグ描画
         GetActor().GetService<SeedCore::DebugDraw>()->Sphere(GetActor().WorldMatrix().Translation(), explosionRadius, SeedCore::Color(1.0f, 0.0f, 0.0f, 0.5f));

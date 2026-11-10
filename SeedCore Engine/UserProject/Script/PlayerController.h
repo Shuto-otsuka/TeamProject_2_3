@@ -154,6 +154,7 @@ private:
 	SeedCore::AudioSource* chargeAudio;
 	SeedCore::AudioSource* shotAudio;
 	SeedCore::AudioSource* checkPointAudio;
+	SeedCore::Animator* myAnimator;
 	BulletStartController* bulletStartController = nullptr;
 	CameraController* cameraController = nullptr;
 };
