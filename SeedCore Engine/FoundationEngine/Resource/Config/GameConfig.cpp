@@ -17,14 +17,15 @@ namespace SeedCore
 			return;
 		}
 
-		Int32 upscaleModeValue = static_cast<Int32>(upscaleMode_);
+		Int32 upscaleMethodValue = static_cast<Int32>(upscale_.method_);
+		Int32 upscaleModeValue = static_cast<Int32>(upscale_.mode_);
 		Int32 resolutionValue = static_cast<Int32>(resolution_);
 
 		archive.TryField("windowWidth", windowWidth_);
 		archive.TryField("windowHeight", windowHeight_);
 		archive.TryField("fullscreen", fullscreen_);
 		archive.TryField("resolution", resolutionValue);
-		archive.TryField("useDlss", useDlss_);
+		archive.TryField("upscaleMethod", upscaleMethodValue);
 		archive.TryField("upscaleMode", upscaleModeValue);
 		archive.TryField("useFrameGeneration", useFrameGeneration_);
 		archive.TryField("vsync", vsync_);
@@ -35,7 +36,8 @@ namespace SeedCore
 		archive.TryField("showSplashFiction", showSplashFiction_);
 		archive.TryField("executableName", executableName_);
 
-		upscaleMode_ = static_cast<UpscaleMode>(upscaleModeValue);
+		upscale_.method_ = static_cast<UpscaleMethod>(upscaleMethodValue);
+		upscale_.mode_ = static_cast<UpscaleMode>(upscaleModeValue);
 		resolution_ = static_cast<ResolutionPreset>(resolutionValue);
 	}
 
@@ -47,14 +49,15 @@ namespace SeedCore
 		}
 
 		BinaryOutputArchive archive;
-		Int32 upscaleModeValue = static_cast<Int32>(upscaleMode_);
+		Int32 upscaleMethodValue = static_cast<Int32>(upscale_.method_);
+		Int32 upscaleModeValue = static_cast<Int32>(upscale_.mode_);
 		Int32 resolutionValue = static_cast<Int32>(resolution_);
 
 		archive.Field("windowWidth", windowWidth_);
 		archive.Field("windowHeight", windowHeight_);
 		archive.Field("fullscreen", fullscreen_);
 		archive.Field("resolution", resolutionValue);
-		archive.Field("useDlss", useDlss_);
+		archive.Field("upscaleMethod", upscaleMethodValue);
 		archive.Field("upscaleMode", upscaleModeValue);
 		archive.Field("useFrameGeneration", useFrameGeneration_);
 		archive.Field("vsync", vsync_);

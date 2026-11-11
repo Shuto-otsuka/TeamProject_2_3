@@ -1,7 +1,9 @@
 #include <Editor/Editor/Panel/BootScreenPanel.h>
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
+#include <GraphicsEngine/RenderGraph/RenderDevice.h>
+#include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Context.h>
 #include <GraphicsEngine/Shape/Screen/BootScreen.h>
 #include <FoundationEngine/Resource/Config/GameConfig.h>
@@ -60,7 +62,7 @@ namespace SeedCore
 			if (!renderer_)
 			{
 				renderer_ = MakePtr<BootScreenRenderer>();
-				renderer_->Create(graphics->GetContext().GetDevice(), graphics->GetContext().GetDirectQueue(), &graphics->GetBindlessHeap(), screenWidth_, screenHeight_);
+				renderer_->Create(graphics->Device().Context().GetDevice(), graphics->Device().Context().GetDirectQueue(), &graphics->Device().ResourceHeap(), screenWidth_, screenHeight_);
 			}
 			else if (renderer_->Width() != screenWidth_ || renderer_->Height() != screenHeight_)
 			{

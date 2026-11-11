@@ -1,7 +1,7 @@
 #pragma once
 #include <FoundationEngine/Log/Assert.h>
 #include <FoundationEngine/Utility/Handle.h>
-#include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
+#include <GraphicsEngine/D3D12/Signature/RootSignature.h>
 #include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
 #include <GraphicsEngine/D3D12/PipelineState/DepthStencilState.h>
 

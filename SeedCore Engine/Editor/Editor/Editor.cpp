@@ -39,7 +39,11 @@
 
 #include <GraphicsEngine/Camera/CanvasCamera.h>
 #include <GraphicsEngine/Camera/EditorCamera.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
+#include <GraphicsEngine/RenderGraph/RenderDevice.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
+#include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
+#include <GraphicsEngine/Graphics/GraphicsDisplay.h>
 #include <GraphicsEngine/Avatar/AvatarMesh.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
 #include <GraphicsEngine/Renderer/BootScreenRenderer.h>
@@ -380,18 +384,15 @@ namespace SeedCore
 
 		/// [EN] Settings changed in the config panel are applied here, between frames, rather than in the middle of drawing.
 		/// [JP] 設定パネルで変えた設定は、描画の途中ではなくフレームの間のここで反映する。
-		if (context_.config_.resizeRequested_)
-		{
-			context_.config_.resizeRequested_ = false;
-			ScResolution::ResSize outputSize = ToResSize(context_.config_.game_->resolution_);
-			context_.graphics_.graphics_->ResizeRenderTarget(static_cast<Uint32>(outputSize.Width), static_cast<Uint32>(outputSize.Height), context_.config_.game_->upscaleMode_);
-		}
-
-		if (context_.config_.recreateRequested_)
-		{
-			context_.config_.recreateRequested_ = false;
-			context_.graphics_.graphics_->FrameGeneration(context_.config_.game_->useFrameGeneration_);
-		}
+		ScResolution::ResSize outputSize = ToResSize(context_.config_.game_->resolution_);
+		GraphicsSettings settings;
+		settings.outputWidth_ = static_cast<Uint32>(outputSize.Width);
+		settings.outputHeight_ = static_cast<Uint32>(outputSize.Height);
+		settings.upscale_ = context_.config_.game_->upscale_;
+		settings.verticalSync_ = context_.config_.game_->vsync_;
+		settings.frameGeneration_ = context_.config_.game_->useFrameGeneration_;
+		settings.shapeVisible_ = context_.view_.editor_.shapeVisible_;
+		context_.graphics_.graphics_->Configure(settings);
 
 		Benchmark::Begin("ImGuiNewFrame");
 		context_.graphics_.imgui_->NewFrame();
@@ -435,63 +436,44 @@ namespace SeedCore
 		World& world = *context_.world_.world_;
 		GameTimer& gameTimer = *context_.world_.timer_;
 
-		/// [EN] The selected actors' entities, which the editor view draws with a selection highlight.
-		/// [JP] 選択中の Actor のエンティティ。エディタービューはこれらを選択の強調付きで描く。
-		DynamicArray<Entity> selectedEntities;
-		selectedEntities.reserve(context_.selection_.actors_.size());
-		for (Actor actor : context_.selection_.actors_)
-		{
-			if (actor)
-			{
-				selectedEntities.push_back(ActorAccessor::GetEntity(actor));
-			}
-		}
-
-		graphics.Upscale(context_.config_.game_->useDlss_, context_.config_.game_->upscaleMode_);
-		graphics.VerticalSync(context_.config_.game_->vsync_);
-		graphics.ShapeVisible(context_.view_.editor_.shapeVisible_);
 		FocusedView focused = context_.view_.focused_;
+
+		/// [EN] The shared per-frame state advances once, on the game's time while the game view is focused or the game is playing, and on the editor's time otherwise; the editor view, when focused, keeps the editor's time even during play.
+		/// [JP] 共有のフレームごとの状態は 1 回だけ進める。ゲームのビューにフォーカスがあるか再生中ならゲームの時間、それ以外はエディターの時間で進める。ただしエディターのビューにフォーカスがあれば、再生中でもエディターの時間を使う。
+		Float deltaTime = worldTimer_.DeltaTime();
+		if (focused != FocusedView::Editor && (focused == FocusedView::Game || gameTimer.Playing()))
+		{
+			deltaTime = gameTimer.ScaledDeltaTime();
+		}
+		graphics.Update(deltaTime, world);
+
 		if (focused == FocusedView::Editor)
 		{
-			graphics.EditorRender(worldTimer_, *context_.view_.editor_.camera_, world, context_.view_.editor_.viewMode_, selectedEntities);
+			graphics.EditorRender(worldTimer_, *context_.view_.editor_.camera_, world, context_.view_.editor_.viewMode_);
 		}
 		if (focused == FocusedView::Game || gameTimer.Playing())
 		{
-			graphics.GameRender(gameTimer, *context_.view_.game_.cameraSystem_, world);
+			/// [EN] The editor shows the game view in a panel, so it fills the whole of its own texture at the game's resolution.
+			/// [JP] エディターはゲームビューをパネルに映すので、ゲームの解像度の自分のテクスチャ全体に出す。
+			ScResolution::ResSize outputSize = ToResSize(context_.config_.game_->resolution_);
+			graphics.GameRender(gameTimer, *context_.view_.game_.cameraSystem_, world, RenderViewOutput::Texture, Vector4(0.0f, 0.0f, static_cast<Float>(outputSize.Width), static_cast<Float>(outputSize.Height)));
 		}
 		if (focused == FocusedView::Canvas)
 		{
 			graphics.CanvasRender(worldTimer_, *context_.view_.canvas_.camera_, world);
 		}
 
-		/// [EN] Each preview is rendered only while its panel is open.
-		/// [JP] 各プレビューは、そのパネルが開いている間だけ描画する。
+		/// [EN] The avatar preview's mesh and the boot screen preview are updated only while their panels are open.
+		/// [JP] アバタープレビューのメッシュと起動画面のプレビューは、そのパネルが開いている間だけ更新する。
 		Benchmark::Begin("Preview");
 		const PreviewContext& preview = context_.preview_;
-		if (preview.timeline_.active_)
-		{
-			graphics.TimelineRender(worldTimer_, preview.timeline_.camera_, preview.timeline_.meshAssetID_, preview.timeline_.animationAssetID_, preview.timeline_.time_, Matrix::Identity);
-		}
-		if (preview.modelTransform_.active_)
-		{
-			graphics.ModelTransformRender(worldTimer_, preview.modelTransform_.camera_, preview.modelTransform_.meshAssetID_, 0, 0.0f, preview.modelTransform_.worldMatrix_);
-		}
-		if (preview.material_.active_)
-		{
-			graphics.MaterialRender(worldTimer_, preview.material_.camera_, preview.material_.meshAssetID_, preview.material_.surfaceAssetID_, Matrix::Identity);
-		}
-		if (preview.skeletonController_.active_)
-		{
-			graphics.SkeletonControllerRender(worldTimer_, preview.skeletonController_.camera_, preview.skeletonController_.meshAssetID_, 0, 0.0f, Matrix::Identity, preview.skeletonController_.nodeIndex_);
-		}
 		if (preview.avatar_.active_ && preview.avatar_.mesh_)
 		{
 			preview.avatar_.mesh_->Update(preview.avatar_.positions_, preview.avatar_.normals_);
-			graphics.AvatarRender(worldTimer_, preview.avatar_.camera_, *preview.avatar_.mesh_, preview.avatar_.boneCount_, Matrix::Identity, std::span<const Uint32>(preview.avatar_.regionTextureIndices_, preview.avatar_.regionCount_));
 		}
 		if (preview.bootScreen_.active_ && preview.bootScreen_.renderer_ && preview.bootScreen_.config_)
 		{
-			preview.bootScreen_.renderer_->Render(graphics.GetContext().GetDirectList(), *preview.bootScreen_.config_, preview.bootScreen_.progress_, worldTimer_.TotalTime());
+			preview.bootScreen_.renderer_->Render(graphics.Device().Context().GetDirectList(), *preview.bootScreen_.config_, preview.bootScreen_.progress_, worldTimer_.TotalTime());
 		}
 		Benchmark::End("Preview");
 
@@ -499,13 +481,6 @@ namespace SeedCore
 		/// [JP] Panels は全 ImGui ウィンドウの構築と、ImGui の描画コマンドの記録を含む。
 		Benchmark::Begin("Panels");
 		graphics.Bind();
-
-		/// [EN] The previews just rendered are handed to their panels to show as images.
-		/// [JP] 今描いたプレビューを、画像として表示させるためにそれぞれのパネルへ渡す。
-		panels_.Get<TimelinePanel>().SetPreviewHandle(graphics.TimelineDisplayGPUHandle());
-		panels_.Get<ModelTransformPanel>().SetPreviewHandle(graphics.ModelTransformDisplayGPUHandle());
-		panels_.Get<SkeletonControllerPanel>().SetPreviewHandle(graphics.SkeletonControllerDisplayGPUHandle());
-		panels_.Get<AvatarPanel>().SetPreviewHandle(graphics.AvatarDisplayGPUHandle());
 
 		/// [EN] The menu bar runs before ProcessPanels so a panel it asks for opens in this same frame.
 		/// [JP] メニューバーを ProcessPanels より先に描き、そこで求めたパネルが同じフレームで開くようにする。
@@ -543,7 +518,7 @@ namespace SeedCore
 		panels_.Get<BootScreenPanel>().Draw();
 		Benchmark::End("BootScreenPanel");
 		Benchmark::Begin("GameWindowPanel");
-		panels_.Get<GameWindowPanel>().Draw(graphics.GameDisplayGPUHandle(), toolbarHeight);
+		panels_.Get<GameWindowPanel>().Draw(graphics.Display().View(RenderViewKind::Game), toolbarHeight);
 		Benchmark::End("GameWindowPanel");
 		Benchmark::Begin("ShortCutKeyPanel");
 		panels_.Get<ShortCutKeyPanel>().Draw();
@@ -575,13 +550,13 @@ namespace SeedCore
 			panels_.Get<InspectorPanel>().Draw();
 			Benchmark::End("InspectorPanel");
 			Benchmark::Begin("DiagnosticsPanel");
-			panels_.Get<DiagnosticsPanel>().Draw(graphics.GetGpuProfiler(), *context_.application_.benchmark_);
+			panels_.Get<DiagnosticsPanel>().Draw(graphics.Profiler(), *context_.application_.benchmark_);
 			Benchmark::End("DiagnosticsPanel");
 			Benchmark::Begin("EditorWindowPanel");
-			panels_.Get<EditorWindowPanel>().Draw(graphics.EditorDisplayGPUHandle());
+			panels_.Get<EditorWindowPanel>().Draw(graphics.Display().View(RenderViewKind::Editor));
 			Benchmark::End("EditorWindowPanel");
 			Benchmark::Begin("CanvasViewPanel");
-			panels_.Get<CanvasViewPanel>().Draw(graphics.CanvasDisplayGPUHandle());
+			panels_.Get<CanvasViewPanel>().Draw(graphics.Display().View(RenderViewKind::Canvas));
 			Benchmark::End("CanvasViewPanel");
 			Benchmark::Begin("ContentsDrawerPanel");
 			panels_.Get<ContentsDrawerPanel>().Draw();
@@ -609,7 +584,7 @@ namespace SeedCore
 		}
 
 		Benchmark::Begin("ImGuiRender");
-		imgui.Render(graphics.GetContext().GetDirectList()->Get());
+		imgui.Render(graphics.Device().Context().GetDirectList()->Get());
 		Benchmark::End("ImGuiRender");
 		Benchmark::End("Panels");
 	}

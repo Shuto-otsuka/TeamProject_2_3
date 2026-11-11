@@ -7,10 +7,11 @@
 
 namespace SeedCore
 {
-	void BootScreen::Initialize(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap, DXGI_FORMAT renderTargetFormat)
+	void BootScreen::Initialize(ID3D12Device* device, D3D12CommandQueue* copyQueue, D3D12TransferLane* transferLane, BindlessHeap* bindlessHeap, DXGI_FORMAT renderTargetFormat)
 	{
 		device_ = device;
-		cmdQueue_ = cmdQueue;
+		copyQueue_ = copyQueue;
+		transferLane_ = transferLane;
 		bindlessHeap_ = bindlessHeap;
 
 		HRESULT hr{ S_OK };
@@ -148,7 +149,8 @@ namespace SeedCore
 		pipelineState_.Reset();
 
 		device_ = nullptr;
-		cmdQueue_ = nullptr;
+		copyQueue_ = nullptr;
+		transferLane_ = nullptr;
 		bindlessHeap_ = nullptr;
 		initialized_ = false;
 	}
@@ -251,13 +253,13 @@ namespace SeedCore
 
 		if (!image.empty())
 		{
-			TextureCreator::CreateTextureMemory(device_, cmdQueue_, bindlessHeap_->Heap(), image, resource, textureIndex);
+			TextureCreator::CreateTextureMemory(device_, copyQueue_, transferLane_, bindlessHeap_->Heap(), image, resource, textureIndex);
 		}
 
 		if (!resource)
 		{
 			String filePath = String(std::string("../Runtime/Logo/") + defaultName + ".sub.logo");
-			TextureCreator::CreateTexturePath(device_, cmdQueue_, bindlessHeap_->Heap(), filePath, resource, textureIndex);
+			TextureCreator::CreateTexturePath(device_, copyQueue_, transferLane_, bindlessHeap_->Heap(), filePath, resource, textureIndex);
 		}
 
 		if (!resource)

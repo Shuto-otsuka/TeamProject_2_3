@@ -54,7 +54,7 @@ namespace SeedCore
 
 		NODISCARD constexpr const RenderResource& Resource()const
 		{
-			return resource_;
+			return *resource_;
 		}
 
 		NODISCARD constexpr RenderAccessType Type()const
@@ -63,14 +63,14 @@ namespace SeedCore
 		}
 
 	private:
-		consteval RenderAccess(const RenderResource& resource, RenderAccessType type) :resource_(resource), type_(type)
+		consteval RenderAccess(const RenderResource& resource, RenderAccessType type) :resource_(&resource), type_(type)
 		{
 			/// No Code
 		}
 
 	private:
-		RenderResource resource_;
+		const RenderResource* resource_ = nullptr;
 
 		RenderAccessType type_ = RenderAccessType::Read;
 	};
-}
+}

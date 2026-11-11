@@ -13,7 +13,7 @@
 #include <Editor/Editor/Context/ConfigContext.h>
 #include <Editor/Editor/Context/PreviewContext.h>
 #include <Editor/Editor/Context/PanelContext.h>
-#include <GraphicsEngine/Renderer/ViewMode.h>
+#include <GraphicsEngine/RenderGraph/RenderView.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
 
 namespace SeedCore

@@ -5,6 +5,7 @@ namespace SeedCore
 {
 	class BindlessHeap;
 	class D3D12CommandQueue;
+	class D3D12TransferLane;
 
 	struct BootScreenConstantBuffer
 	{
@@ -36,7 +37,7 @@ namespace SeedCore
 		BootScreen() = default;
 		~BootScreen() = default;
 
-		void Initialize(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap, DXGI_FORMAT renderTargetFormat);
+		void Initialize(ID3D12Device* device, D3D12CommandQueue* copyQueue, D3D12TransferLane* transferLane, BindlessHeap* bindlessHeap, DXGI_FORMAT renderTargetFormat);
 
 		void Finalize();
 
@@ -72,7 +73,8 @@ namespace SeedCore
 		Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
 
 		ID3D12Device* device_ = nullptr;
-		D3D12CommandQueue* cmdQueue_ = nullptr;
+		D3D12CommandQueue* copyQueue_ = nullptr;
+		D3D12TransferLane* transferLane_ = nullptr;
 		BindlessHeap* bindlessHeap_ = nullptr;
 
 		Bool initialized_ = false;

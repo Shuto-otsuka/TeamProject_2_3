@@ -1,5 +1,4 @@
 #pragma once
-#include <GraphicsEngine/RenderGraph/RenderName.h>
 #include <GraphicsEngine/RenderGraph/RenderAccess.h>
 #include <GraphicsEngine/RenderGraph/RenderView.h>
 
@@ -21,6 +20,7 @@ namespace SeedCore
 	{
 		Frame = 0,
 		Geometry = 1000,
+		Occlusion = 1100,
 		Illumination = 1500,
 		Lighting = 2000,
 		Compose = 2500,
@@ -30,28 +30,14 @@ namespace SeedCore
 		Overlay = 5000,
 	};
 
-	template<class... Stages>
-	struct RenderStageList
+	struct RenderStage
 	{
-		SC_CONSTEX StaticArray<std::string_view, sizeof...(Stages)> names_ = { Stages::name_.Name()... };
+		SC_CONSTEX RenderStageKind kind_ = RenderStageKind::Compute;
 
-		SC_CONSTEX StaticArray<std::span<const RenderAccess>, sizeof...(Stages)> accesses_ = { std::span<const RenderAccess>(Stages::accesses_)... };
-	};
+		SC_CONSTEX RenderViewMask viewMask_ = RenderViewMask::Scene;
 
-	class RenderStageAccess
-	{
-	public:
-		template<class Stage, class Feature>
-		SC_CONSTEX Bool IsRenderStage = requires(Feature & feature, RenderPass & pass)
-		{
-			{ Stage::Execute(feature, pass) } -> std::same_as<void>;
-			requires std::same_as<std::remove_cv_t<decltype(Stage::name_)>, RenderStageName>;
-			requires std::same_as<std::remove_cv_t<decltype(Stage::kind_)>, RenderStageKind>;
-			requires std::same_as<std::remove_cv_t<decltype(Stage::queue_)>, RenderQueue>;
-			requires std::same_as<std::remove_cv_t<decltype(Stage::viewMask_)>, RenderViewMask>;
-			requires std::same_as<std::remove_cv_t<decltype(Stage::async_)>, Bool>;
-			requires std::same_as<std::remove_cv_t<decltype(Stage::enableCondition_)>, std::nullptr_t> || std::same_as<std::remove_cv_t<decltype(Stage::enableCondition_)>, Bool Feature::*> || std::same_as<std::remove_cv_t<decltype(Stage::enableCondition_)>, Bool(Feature::*)[RenderViewCount]>;
-			requires std::is_array_v<decltype(Stage::accesses_)> && std::same_as<std::remove_cv_t<std::remove_extent_t<decltype(Stage::accesses_)>>, RenderAccess>;
-		};
+		SC_CONSTEX Bool async_ = false;
+
+		SC_CONSTEX std::nullptr_t enableCondition_ = nullptr;
 	};
 }

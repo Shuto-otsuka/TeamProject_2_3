@@ -1,88 +1,67 @@
-#include "../Texture.hlsli"
-#include "../../Shader/ShaderResources.hlsli"
-#include "../../Shader/Scene.hlsli"
+#include <GraphicsEngine/Texture/Billboard/TextureBillboard.hlsli>
 
-[NumThreads(32, 1, 1)]
+/**
+* [EN]
+* Texture.Billboard: one thread group draws 32 consecutive entries of the
+* billboard section of Texture.DrawList (from billboard_base_), 4 vertices
+* and 2 triangles per quad, in list order so the premultiplied blend layers
+* them as Texture.Expand ordered them.
+*
+* ---------------------------------------------------------------------
+*
+* [JP]
+* Texture.Billboard。1 スレッドグループが Texture.DrawList のビルボードの区間
+* （billboard_base_ から）の連続する 32 件を、1 四角形 4 頂点・2 三角形で描く。
+* リストの順に出すので、プリマルチプライドのブレンドは Texture.Expand が並べた
+* 順に重なる。
+*/
+[NumThreads(128, 1, 1)]
 [OutputTopology("triangle")]
-void main(in payload TextureASPayload payload, uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices TextureMSOutput output[4], out indices uint3 triangles[2])
+void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices TextureBillboardOutput verts[128], out indices uint3 tris[64])
 {
-	StructuredBuffer<TextureBillboardStructuredBuffer> texture_billboard = GetTextureBillboardStructuredBuffer(shader_resource_indices.texture_.billboard_index_);
-
-	SetMeshOutputCounts(4u, 2u);
-
-	uint billboard_id = payload.texture_indices[gid];
-	SceneConstantBuffer scene_constant = GetSceneConstantBuffer();
-	TextureBillboardStructuredBuffer billboard = texture_billboard[billboard_id];
-
-	float2 offsets[4] =
+	ConstantBuffer<TextureConstantBuffer> constants = ResourceDescriptorHeap[bindings.texture_constants_];
+	uint first = gid * 32;
+	uint quad_count = first < constants.billboard_count_ ? min(32, constants.billboard_count_ - first) : 0;
+	SetMeshOutputCounts(quad_count * 4, quad_count * 2);
+	if (quad_count == 0)
 	{
-		float2(-0.5f,  0.5f),
-		float2( 0.5f,  0.5f),
-		float2(-0.5f, -0.5f),
-		float2( 0.5f, -0.5f)
-	};
-
-	float2 uvs[4] =
-	{
-		float2(0.0f, 0.0f),
-		float2(1.0f, 0.0f),
-		float2(0.0f, 1.0f),
-		float2(1.0f, 1.0f)
-	};
-
-	Texture2D texture = ResourceDescriptorHeap[billboard.texture_index_];
-	float texture_width, texture_height;
-	texture.GetDimensions(texture_width, texture_height);
-	float2 texture_dimentions = float2(texture_width, texture_height);
-
-	float2 uv_offset = float2(0.0f, 0.0f);
-	if (billboard.motion_type_ == 1)
-	{
-		uv_offset = billboard.scroll_direction_ * billboard.scroll_speed_ * scene_constant.total_time_;
+		return;
 	}
 
-	if (gtid < 4u)
+	uint quad_local = gtid / 4;
+	if (quad_local < quad_count)
 	{
-		float2 pivot_norm = (billboard.texture_size_.x > 0.0f) ? (billboard.pivot_ / billboard.texture_size_) : float2(0.5f, 0.5f);
-		float2 local = offsets[gtid] + float2(0.5f - pivot_norm.x, pivot_norm.y - 0.5f);
-		float3 scaled = float3(local.x * billboard.scale_.x, local.y * billboard.scale_.y, 0.0f);
+		StructuredBuffer<uint> draw_list = ResourceDescriptorHeap[bindings.texture_draw_list_];
+		StructuredBuffer<TextureQuadStructuredBuffer> quads = ResourceDescriptorHeap[bindings.texture_quads_];
+		StructuredBuffer<TextureUnitStructuredBuffer> units = ResourceDescriptorHeap[bindings.texture_units_];
+		uint quad_index = draw_list[constants.billboard_base_ + first + quad_local];
+		TextureQuadStructuredBuffer quad = quads[quad_index];
+		TextureUnitStructuredBuffer unit = units[quad.unit_];
+		SceneConstantBuffer scene = GetSceneConstantBuffer();
 
-		float3 world_position;
-		if (billboard.face_camera_ != 0)
+		uint corner_index = gtid % 4;
+		float2 corner = float2(corner_index & 1, corner_index >> 1);
+
+		float2 local = quad.rect_min_ + corner * quad.rect_size_;
+		float3 world_position = mul(float4(local, 0.0, 1.0), unit.world_).xyz;
+		if ((unit.flags_ & TEXTURE_UNIT_FACE_CAMERA) != 0)
 		{
-			float3 camera_right = scene_constant.inverse_view_[0].xyz;
-			float3 camera_up = scene_constant.inverse_view_[1].xyz;
-
-			float cos_r = cos(billboard.rotation_.z);
-			float sin_r = sin(billboard.rotation_.z);
-			float roll_x = scaled.x * cos_r + scaled.y * sin_r;
-			float roll_y = -scaled.x * sin_r + scaled.y * cos_r;
-
-			world_position = billboard.position_ + camera_right * roll_x + camera_up * roll_y;
-		}
-		else
-		{
-			float cx = cos(billboard.rotation_.x); float sx = sin(billboard.rotation_.x);
-			float cy = cos(billboard.rotation_.y); float sy = sin(billboard.rotation_.y);
-			float cz = cos(billboard.rotation_.z); float sz = sin(billboard.rotation_.z);
-
-			float3 rotated;
-			rotated.x = (cy * cz) * scaled.x + (sx * sy * cz - cx * sz) * scaled.y + (cx * sy * cz + sx * sz) * scaled.z;
-			rotated.y = (cy * sz) * scaled.x + (sx * sy * sz + cx * cz) * scaled.y + (cx * sy * sz - sx * cz) * scaled.z;
-			rotated.z = (-sy)     * scaled.x + (sx * cy)                * scaled.y + (cx * cy)                * scaled.z;
-
-			world_position = billboard.position_ + rotated;
+			float rotation = unit.kind_ == TEXTURE_KIND_FONT ? 0.0 : atan2(unit.world_[0].y, unit.world_[0].x);
+			float2 scale = float2(length(unit.world_[0].xyz), length(unit.world_[1].xyz));
+			float2 rotated = float2(local.x * cos(rotation) - local.y * sin(rotation), local.x * sin(rotation) + local.y * cos(rotation)) * scale;
+			world_position = unit.world_[3].xyz + scene.inverse_view_[0].xyz * rotated.x + scene.inverse_view_[1].xyz * rotated.y;
 		}
 
-		output[gtid].position = mul(float4(world_position, 1.0f), scene_constant.current_view_projection_);
-		output[gtid].uv = (billboard.texture_position_ + uvs[gtid] * billboard.texture_size_) / texture_dimentions + uv_offset;
-		output[gtid].color = billboard.color_;
-		output[gtid].texture_index = billboard.texture_index_;
+		TextureBillboardOutput output;
+		output.position = mul(float4(world_position, 1.0), scene.current_view_projection_);
+		output.texcoord = lerp(quad.uv_min_, quad.uv_max_, corner);
+		output.quad_index = quad_index;
+		verts[gtid] = output;
 	}
 
-	if (gtid == 0)
+	if (gtid < quad_count * 2)
 	{
-		triangles[0] = uint3(0u, 1u, 2u);
-		triangles[1] = uint3(1u, 3u, 2u);
+		uint base = (gtid / 2) * 4;
+		tris[gtid] = (gtid & 1) == 0 ? uint3(base + 0, base + 1, base + 2) : uint3(base + 1, base + 3, base + 2);
 	}
 }

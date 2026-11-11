@@ -529,7 +529,14 @@ namespace SeedCore
 				ImGui::SetCursorScreenPos(screenPosition);
 
 				ImGui::PushStyleVar(ImGuiStyleVar_ImageBorderSize, 0.0f);
-				ImGui::Image(ImTextureID(frameBufferHandle.ptr), ImVec2(imageWidth, imageHeight));
+				if (frameBufferHandle.ptr != 0)
+				{
+					ImGui::Image(ImTextureID(frameBufferHandle.ptr), ImVec2(imageWidth, imageHeight));
+				}
+				else
+				{
+					ImGui::Dummy(ImVec2(imageWidth, imageHeight));
+				}
 				ImGui::PopStyleVar();
 
 				Bool canvasHovered = ImGui::IsItemHovered();

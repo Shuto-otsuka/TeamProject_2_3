@@ -36,7 +36,7 @@
 #include <GraphicsEngine/Texture/Image.h>
 #include <GraphicsEngine/Font/Text.h>
 #include <GraphicsEngine/Movie/Movie.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
 #include <PhysicsEngine/Collider/RectCollider.h>
 #include <PhysicsEngine/Collider/CircleCollider.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
@@ -558,7 +558,7 @@ namespace SeedCore
 			Skeleton* skeletonComponent = actor.GetComponent<Skeleton>();
 			if (!skeletonComponent || skeletonComponent->skeletonID_ == 0)
 			{
-				ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
+				ModelResource* modelResource = context_.graphics_.graphics_->Module().Resources().modelResource_.get();
 				Crister* crister = modelResource->Resolve(modelResource->GetHandle(mesh->meshID_));
 				AssetRecord* modelAsset = context_.world_.resource_->GetAsset(mesh->meshID_);
 				if (crister && modelAsset && !crister->Skins().empty())

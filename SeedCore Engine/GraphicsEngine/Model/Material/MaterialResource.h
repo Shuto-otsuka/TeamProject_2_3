@@ -12,7 +12,7 @@ namespace SeedCore
 	class ModelResource;
 	class D3D12Context;
 	class BindlessHeap;
-	class BC7CompressShader;
+	class GraphicsProcessor;
 
 	/**
 	* [EN]
@@ -44,17 +44,19 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Takes the loaders, the texture manager baked textures are handed
-		* to, the model manager a material is generated from, and the GPU
-		* objects textures are uploaded and BC7-compressed with.
+		* to, the model manager a material is generated from, the GPU
+		* objects textures are uploaded with, and the GPU processor they are
+		* BC7-compressed with.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* ローダー、焼き込まれたテクスチャを渡すテクスチャのマネージャ、
 		* マテリアルの生成元になるモデルのマネージャ、テクスチャの
-		* アップロードと BC7 圧縮に使う GPU のオブジェクトを受け取る。
+		* アップロードに使う GPU のオブジェクト、BC7 圧縮に使う GPU の
+		* 加工器を受け取る。
 		*/
-		MaterialResource(GraphicsLoaderSystem& loaders, TextureResource& textureResource, ModelResource& modelResource, D3D12Context& context, BindlessHeap& heap, BC7CompressShader& bc7Shader);
+		MaterialResource(GraphicsLoaderSystem& loaders, TextureResource& textureResource, ModelResource& modelResource, D3D12Context& context, BindlessHeap& heap, GraphicsProcessor& processor);
 		~MaterialResource() = default;
 
 		/**
@@ -170,8 +172,8 @@ namespace SeedCore
 		/// [JP] 焼き込まれたテクスチャのシェーダーリソースビューが置かれるバインドレスヒープ。
 		BindlessHeap& heap_;
 
-		/// [EN] Compute shader that BC7-compresses the textures Bake re-bakes.
-		/// [JP] Bake が焼き直すテクスチャを BC7 圧縮するコンピュートシェーダー。
-		BC7CompressShader& bc7Shader_;
+		/// [EN] GPU processor that BC7-compresses the textures Bake re-bakes.
+		/// [JP] Bake が焼き直すテクスチャを BC7 圧縮する GPU の加工器。
+		GraphicsProcessor& processor_;
 	};
 }

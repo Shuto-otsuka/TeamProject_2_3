@@ -3,8 +3,8 @@
 
 namespace SeedCore
 {
-	class BC7CompressShader;
 	class D3D12CommandQueue;
+	class GraphicsProcessor;
 
 	/**
 	* [EN]
@@ -31,7 +31,7 @@ namespace SeedCore
 		* Bitmap's cacheData_. Must run before serialising to the .crister
 		* cache. The BC7 encoding runs on the GPU (BC7CompressCS.hlsl, mode
 		* 6 only) as a one-shot compute dispatch on cmdQueue, with the root
-		* signature and PSO owned by bc7Shader. The shader binds its input
+		* signature and PSO of the processor's BC7 shader. The shader binds its input
 		* and output as root SRV/UAV, so unlike Upload() this needs no
 		* BindlessHeap.
 		*
@@ -44,10 +44,10 @@ namespace SeedCore
 		* Bitmap の cacheData_ へ焼き込む。.crister キャッシュへの
 		* シリアライズ前に実行すること。BC7 エンコードは GPU で行い
 		* (BC7CompressCS.hlsl、mode 6 のみ)、cmdQueue 上の一発実行の
-		* コンピュートディスパッチとして、bc7Shader が持つルートシグネチャと
-		* PSO で動かす。シェーダーは入出力をルート SRV/UAV でバインドするので、
-		* Upload() と違い BindlessHeap は要らない。
+		* コンピュートディスパッチとして、processor の BC7 シェーダーの
+		* ルートシグネチャと PSO で動かす。シェーダーは入出力をルート
+		* SRV/UAV でバインドするので、Upload() と違い BindlessHeap は要らない。
 		*/
-		void BakeBitmap(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, std::span<Bitmap> bitmaps)const;
+		void BakeBitmap(ID3D12Device* device, D3D12CommandQueue* cmdQueue, GraphicsProcessor& processor, std::span<Bitmap> bitmaps)const;
 	};
 }

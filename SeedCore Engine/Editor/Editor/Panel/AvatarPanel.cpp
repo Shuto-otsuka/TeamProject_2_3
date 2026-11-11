@@ -1,5 +1,6 @@
 #include <External/DirectXTex/Include/DirectXTex.h>
 #include <GraphicsEngine/Texture/TextureCreator.h>
+#include <FoundationEngine/Resource/Asset/Asset.h>
 #include <Editor/Editor/Panel/AvatarPanel.h>
 
 #ifdef _DEBUG
@@ -10,7 +11,8 @@
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiCommon.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
+#include <GraphicsEngine/RenderGraph/RenderDevice.h>
 #include <GraphicsEngine/Camera/PreviewCamera.h>
 #include <GraphicsEngine/Camera/PreviewCameraController.h>
 #include <GraphicsEngine/Avatar/AvatarMesh.h>
@@ -122,7 +124,7 @@ namespace SeedCore
 
 	void AvatarPanel::ClearRegionTextures()
 	{
-		BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->GetBindlessHeap();
+		BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->Device().ResourceHeap();
 		for (Uint32 regionIndex = 0; regionIndex < regionSlotCount_; regionIndex++)
 		{
 			bindlessHeap->Release(std::move(regionTextureResources_[regionIndex]), regionTextureIndices_[regionIndex]);
@@ -137,15 +139,15 @@ namespace SeedCore
 		{
 			return;
 		}
-		D3D12Context& d3d12Context = context_.graphics_.graphics_->GetContext();
-		BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->GetBindlessHeap();
+		D3D12Context& d3d12Context = context_.graphics_.graphics_->Device().Context();
+		BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->Device().ResourceHeap();
 
 		if (regionTextureIndices_[regionIndex] == 0xFFFFFFFF)
 		{
 			regionTextureIndices_[regionIndex] = bindlessHeap->AllocateIndex();
 		}
 		regionTextureResources_[regionIndex].Reset();
-		TextureCreator::CreateTexturePath(d3d12Context.GetDevice(), d3d12Context.GetDirectQueue(), bindlessHeap->Heap(), filePath, regionTextureResources_[regionIndex], regionTextureIndices_[regionIndex]);
+		TextureCreator::CreateTexturePath(d3d12Context.GetDevice(), d3d12Context.GetCopyQueue(), d3d12Context.GetLoadTransferLane(LoadThread::Main), bindlessHeap->Heap(), filePath, regionTextureResources_[regionIndex], regionTextureIndices_[regionIndex]);
 		regionTexturePaths_[regionIndex] = filePath;
 	}
 
@@ -319,8 +321,8 @@ namespace SeedCore
 				ResourcePtr<AvatarMesh>& mesh = kind_ == AvatarKind::Human ? humanMesh_ : animalMesh_;
 				if (!mesh)
 				{
-					ID3D12Device* device = context_.graphics_.graphics_->GetContext().GetDevice();
-					BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->GetBindlessHeap();
+					ID3D12Device* device = context_.graphics_.graphics_->Device().Context().GetDevice();
+					BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->Device().ResourceHeap();
 					mesh = MakePtr<AvatarMesh>();
 					Uint32 regionRanges[regionSlotCount_ * 2] = {};
 					for (Uint32 regionIndex = 0; regionIndex < ActiveRegionCount(); regionIndex++)
@@ -363,7 +365,14 @@ namespace SeedCore
 
 				context_.preview_.avatar_.camera_.Resize(previewSize.x, previewSize.y);
 
-				ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
+				if (previewHandle_.ptr != 0)
+				{
+					ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
+				}
+				else
+				{
+					ImGui::Dummy(previewSize);
+				}
 
 				Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
 				Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
@@ -491,7 +500,7 @@ namespace SeedCore
 					ImGui::SameLine();
 					if (ImGui::SmallButton("解除"))
 					{
-						BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->GetBindlessHeap();
+						BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->Device().ResourceHeap();
 						bindlessHeap->Release(std::move(regionTextureResources_[regionIndex]), regionTextureIndices_[regionIndex]);
 						regionTextureIndices_[regionIndex] = 0xFFFFFFFF;
 						regionTexturePaths_[regionIndex] = String();

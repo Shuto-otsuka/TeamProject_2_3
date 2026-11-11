@@ -16,6 +16,7 @@
 #include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/ECS/Component/Transform.h>
 #include <FoundationEngine/World/ECS/Component/Active.h>
+#include <FoundationEngine/World/ECS/Component/Selected.h>
 #include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/World/Actor/ActorAccessor.h>
 #include <FoundationEngine/Interop/QueryInstance.h>
@@ -26,18 +27,18 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Rebuilds the shape list from the World. The debug display covers
-	* only the selected actors, or every actor while visible is on.
+	* only the selected actors (those with the Selected tag), or every actor while visible is on.
 	* aspectRatio is the game view's width over height, for camera
 	* frustums.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* World から形の一覧を作り直す。デバッグ表示は選択中のアクターだけ、
+	* World から形の一覧を作り直す。デバッグ表示は選択中のアクター（Selected タグを持つもの）だけ、
 	* visible がオンなら全アクターが対象。aspectRatio はゲームビューの
 	* 幅÷高さで、カメラの視錐台に使う。
 	*/
-	void ShapeSystem::Update(World& world, std::span<const Entity> selectedEntities, Bool visible, Float aspectRatio)
+	void ShapeSystem::Update(World& world, Bool visible, Float aspectRatio)
 	{
 		shapes_.clear();
 
@@ -56,7 +57,7 @@ namespace SeedCore
 			{
 				continue;
 			}
-			if (!visible && std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) == selectedEntities.end())
+			if (!visible && !actor.HasComponent<Selected>())
 			{
 				continue;
 			}
@@ -116,7 +117,7 @@ namespace SeedCore
 			{
 				continue;
 			}
-			if (!visible && std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) == selectedEntities.end())
+			if (!visible && !actor.HasComponent<Selected>())
 			{
 				continue;
 			}
@@ -157,7 +158,7 @@ namespace SeedCore
 			{
 				continue;
 			}
-			if (!visible && std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) == selectedEntities.end())
+			if (!visible && !actor.HasComponent<Selected>())
 			{
 				continue;
 			}
@@ -178,7 +179,7 @@ namespace SeedCore
 			{
 				continue;
 			}
-			if (!visible && std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) == selectedEntities.end())
+			if (!visible && !actor.HasComponent<Selected>())
 			{
 				continue;
 			}
@@ -224,7 +225,7 @@ namespace SeedCore
 			{
 				continue;
 			}
-			if (!visible && std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) == selectedEntities.end())
+			if (!visible && !actor.HasComponent<Selected>())
 			{
 				continue;
 			}
@@ -262,7 +263,7 @@ namespace SeedCore
 			{
 				continue;
 			}
-			if (!visible && std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) == selectedEntities.end())
+			if (!visible && !actor.HasComponent<Selected>())
 			{
 				continue;
 			}
@@ -314,7 +315,7 @@ namespace SeedCore
 			{
 				continue;
 			}
-			if (!visible && std::ranges::find(selectedEntities, ActorAccessor::GetEntity(actor)) == selectedEntities.end())
+			if (!visible && !actor.HasComponent<Selected>())
 			{
 				continue;
 			}

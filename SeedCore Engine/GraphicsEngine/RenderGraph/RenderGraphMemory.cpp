@@ -10,13 +10,18 @@ namespace SeedCore
 	RenderGraphAllocation RenderGraphMemory::Create(RenderDevice& device, const RenderGraphResource& resource, const RenderGraphInstance& instance)
 	{
 		const RenderResourceDesc& desc = resource.desc_;
+		Uint32 mipLimit = 1;
+		while ((Max(instance.width_, instance.height_) >> mipLimit) > 0)
+		{
+			++mipLimit;
+		}
 		RenderGraphAllocation allocation;
 		allocation.shape_ = desc.shape_;
 		allocation.format_ = desc.format_;
 		allocation.width_ = instance.width_;
 		allocation.height_ = instance.height_;
 		allocation.depth_ = instance.depth_;
-		allocation.mipLevels_ = desc.mipLevels_;
+		allocation.mipLevels_ = Min(desc.mipLevels_, mipLimit);
 		allocation.stride_ = desc.stride_;
 		allocation.count_ = instance.count_;
 		allocation.shaderResource_ = resource.shaderResource_;
@@ -79,7 +84,7 @@ namespace SeedCore
 		resourceDesc.Width = buffer ? static_cast<Uint64>(Max(desc.stride_ * instance.count_, 1u)) : instance.width_;
 		resourceDesc.Height = buffer ? 1 : instance.height_;
 		resourceDesc.DepthOrArraySize = buffer ? 1 : static_cast<Uint16>(instance.depth_);
-		resourceDesc.MipLevels = buffer ? 1 : static_cast<Uint16>(desc.mipLevels_);
+		resourceDesc.MipLevels = buffer ? 1 : static_cast<Uint16>(allocation.mipLevels_);
 		resourceDesc.Format = buffer ? DXGI_FORMAT_UNKNOWN : depthFormat ? DXGI_FORMAT_R32_TYPELESS : desc.format_;
 		resourceDesc.SampleDesc.Count = 1;
 		resourceDesc.Layout = buffer ? D3D12_TEXTURE_LAYOUT_ROW_MAJOR : D3D12_TEXTURE_LAYOUT_UNKNOWN;
@@ -149,30 +154,37 @@ namespace SeedCore
 
 		if (resource.unorderedAccess_)
 		{
-			D3D12_UNORDERED_ACCESS_VIEW_DESC unorderdAccessViewDesc{};
-			unorderdAccessViewDesc.Format = buffer ? DXGI_FORMAT_UNKNOWN : desc.format_;
-			if (buffer)
+			Uint32 mipLevels = buffer ? 1 : allocation.mipLevels_;
+			allocation.unorderedAccessView_ = mipLevels > 1 ? device.ResourceHeap().AllocateRange(mipLevels) : device.ResourceHeap().AllocateIndex();
+			for (Uint32 mip = 0;mip < mipLevels;++mip)
 			{
-				unorderdAccessViewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
-				unorderdAccessViewDesc.Buffer.NumElements = instance.count_;
-				unorderdAccessViewDesc.Buffer.StructureByteStride = desc.stride_;
+				D3D12_UNORDERED_ACCESS_VIEW_DESC unorderdAccessViewDesc{};
+				unorderdAccessViewDesc.Format = buffer ? DXGI_FORMAT_UNKNOWN : desc.format_;
+				if (buffer)
+				{
+					unorderdAccessViewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+					unorderdAccessViewDesc.Buffer.NumElements = instance.count_;
+					unorderdAccessViewDesc.Buffer.StructureByteStride = desc.stride_;
+				}
+				else if (desc.shape_ == RenderResourceShape::Texture3D)
+				{
+					unorderdAccessViewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
+					unorderdAccessViewDesc.Texture3D.MipSlice = mip;
+					unorderdAccessViewDesc.Texture3D.WSize = Max(instance.depth_ >> mip, 1u);
+				}
+				else if (desc.shape_ == RenderResourceShape::Texture2D)
+				{
+					unorderdAccessViewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+					unorderdAccessViewDesc.Texture2D.MipSlice = mip;
+				}
+				else
+				{
+					unorderdAccessViewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+					unorderdAccessViewDesc.Texture2DArray.MipSlice = mip;
+					unorderdAccessViewDesc.Texture2DArray.ArraySize = instance.depth_;
+				}
+				d3dDevice->CreateUnorderedAccessView(allocation.resource_.Get(), nullptr, &unorderdAccessViewDesc, device.ResourceHeap().CPUHandle(allocation.unorderedAccessView_ + mip));
 			}
-			else if (desc.shape_ == RenderResourceShape::Texture3D)
-			{
-				unorderdAccessViewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
-				unorderdAccessViewDesc.Texture3D.WSize = instance.depth_;
-			}
-			else if (desc.shape_ == RenderResourceShape::Texture2D)
-			{
-				unorderdAccessViewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
-			}
-			else
-			{
-				unorderdAccessViewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
-				unorderdAccessViewDesc.Texture2DArray.ArraySize = instance.depth_;
-			}
-			allocation.unorderedAccessView_ = device.ResourceHeap().AllocateIndex();
-			d3dDevice->CreateUnorderedAccessView(allocation.resource_.Get(), nullptr, &unorderdAccessViewDesc, device.ResourceHeap().CPUHandle(allocation.unorderedAccessView_));
 		}
 
 		if (resource.renderTarget_)
@@ -244,7 +256,11 @@ namespace SeedCore
 		}
 		if (allocation.unorderedAccessView_ != SC_INVALID)
 		{
-			device.ResourceHeap().Release(allocation.resource_, allocation.unorderedAccessView_);
+			Uint32 mipLevels = allocation.shape_ == RenderResourceShape::Buffer ? 1 : allocation.mipLevels_;
+			for (Uint32 mip = 0;mip < mipLevels;++mip)
+			{
+				device.ResourceHeap().Release(allocation.resource_, allocation.unorderedAccessView_ + mip);
+			}
 		}
 		if (allocation.renderTargetView_ != SC_INVALID)
 		{
@@ -260,6 +276,11 @@ namespace SeedCore
 	Bool RenderGraphMemory::Matches(const RenderGraphAllocation& allocation, const RenderGraphResource& resource, const RenderGraphInstance& instance)
 	{
 		const RenderResourceDesc& desc = resource.desc_;
-		return allocation.shape_ == desc.shape_ && allocation.format_ == desc.format_ && allocation.width_ == instance.width_ && allocation.height_ == instance.height_ && allocation.depth_ == instance.depth_ && allocation.mipLevels_ == desc.mipLevels_ && allocation.stride_ == desc.stride_ && allocation.count_ == instance.count_ && allocation.shaderResource_ == resource.shaderResource_ && allocation.unorderedAccess_ == resource.unorderedAccess_ && allocation.renderTarget_ == resource.renderTarget_ && allocation.depthStencil_ == resource.depthStencil_;
+		Uint32 mipLimit = 1;
+		while ((Max(instance.width_, instance.height_) >> mipLimit) > 0)
+		{
+			++mipLimit;
+		}
+		return allocation.shape_ == desc.shape_ && allocation.format_ == desc.format_ && allocation.width_ == instance.width_ && allocation.height_ == instance.height_ && allocation.depth_ == instance.depth_ && allocation.mipLevels_ == Min(desc.mipLevels_, mipLimit) && allocation.stride_ == desc.stride_ && allocation.count_ == instance.count_ && allocation.shaderResource_ == resource.shaderResource_ && allocation.unorderedAccess_ == resource.unorderedAccess_ && allocation.renderTarget_ == resource.renderTarget_ && allocation.depthStencil_ == resource.depthStencil_;
 	}
 }

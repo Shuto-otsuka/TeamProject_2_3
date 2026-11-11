@@ -14,9 +14,7 @@ namespace SeedCore
 
 		ResolutionPreset resolution_ = ResolutionPreset::FHD;
 
-		Bool useDlss_ = false;
-
-		UpscaleMode upscaleMode_ = UpscaleMode::Balanced;
+		GraphicsUpscale upscale_ = { UpscaleMethod::Taau, UpscaleMode::Balanced };
 
 		Bool useFrameGeneration_ = false;
 

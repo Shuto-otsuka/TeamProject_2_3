@@ -14,7 +14,7 @@
 #include <AudioEngine/CRI/CriManager.h>
 #include <AudioEngine/Resource/AudioModule.h>
 
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
 #include <GraphicsEngine/Font/FontManager.h>
 #include <GraphicsEngine/System/CameraSystem.h>
 #include <GraphicsEngine/System/SplashSystem.h>
@@ -22,6 +22,7 @@
 namespace SeedCore
 {
 	struct Bootstrap;
+	class DlssManager;
 	class JoltManager;
 	struct GameConfig;
 	struct EditorConfig;
@@ -41,6 +42,8 @@ namespace SeedCore
 
 	public:
 		JobTask BootPhysics(JobTaskflow& flow);
+
+		JobTask BootDlss(JobTaskflow& flow);
 
 		JobTask BootAudio(JobTaskflow& flow, const GameConfig& gameConfig);
 
@@ -145,6 +148,8 @@ namespace SeedCore
 
 		ResourcePtr<JoltManager> joltManager_;
 
+		ResourcePtr<DlssManager> dlssManager_;
+
 		Window window_;
 
 		JobExecutor executor_;
@@ -171,12 +176,16 @@ namespace SeedCore
 
 		CameraSystem cameraSystem_;
 
+		Vector4 outputRect_ = { 0.0f, 0.0f, 0.0f, 0.0f };
+
 		SplashSystem splashSystem_;
 
 	private:
 		std::atomic<Bool> failed_ = false;
 
 		JobTask physicsTask_;
+
+		JobTask dlssTask_;
 
 		JobTask audioTask_;
 

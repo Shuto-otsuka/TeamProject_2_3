@@ -8,7 +8,7 @@
 
 namespace SeedCore
 {
-	void SplashScreen::Initialize(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap)
+	void SplashScreen::Initialize(ID3D12Device* device, D3D12CommandQueue* copyQueue, D3D12TransferLane* transferLane, BindlessHeap* bindlessHeap)
 	{
 		bindlessHeap_ = bindlessHeap;
 
@@ -16,7 +16,7 @@ namespace SeedCore
 		{
 			textureIndex = bindlessHeap->AllocateIndex();
 			String filePath = String(std::string("../Runtime/Logo/") + name + "." + tag);
-			TextureCreator::CreateTexturePath(device, cmdQueue, bindlessHeap->Heap(), filePath, resource, textureIndex);
+			TextureCreator::CreateTexturePath(device, copyQueue, transferLane, bindlessHeap->Heap(), filePath, resource, textureIndex);
 		};
 
 		load("Day",   "logo", dayTextureIndex_, dayResource_);

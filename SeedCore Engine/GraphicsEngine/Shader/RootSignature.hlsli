@@ -18,4 +18,4 @@ struct DispatchBindings
 };
 ConstantBuffer<DispatchBindings> dispatch_bindings : register(b2, space1);
 
-#endif // __ROOT_SIGNATURE_HLSL__
+#endif // __ROOT_SIGNATURE_HLSL__

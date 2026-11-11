@@ -26,6 +26,14 @@ namespace SeedCore
 
 		NODISCARD ID3D12Resource* Resource(const RenderResource& resource)const;
 
+		void ClearDepth(const RenderResource& resource);
+
+		void ClearTarget(const RenderResource& resource);
+
+#if SC_DEBUG
+		void Verify(std::span<IDxcBlob* const> reflections);
+#endif
+
 	private:
 		RenderGraph& graph_;
 

@@ -19,6 +19,13 @@ namespace SeedCore
 		Game = 1 << 1,
 		Canvas = 1 << 2,
 		Scene = Editor | Game,
+		All = Editor | Game | Canvas,
+	};
+
+	enum class RenderViewOutput :Uint8
+	{
+		Texture,
+		Screen,
 	};
 
 	enum class RenderViewMode :Uint32
@@ -49,6 +56,8 @@ namespace SeedCore
 
 		RenderViewMode mode_ = RenderViewMode::Lit;
 
+		RenderViewOutput output_ = RenderViewOutput::Texture;
+
 		SceneConstantBuffer scene_;
 
 		Uint32 renderWidth_ = 0;
@@ -58,6 +67,8 @@ namespace SeedCore
 		Uint32 displayWidth_ = 0;
 
 		Uint32 displayHeight_ = 0;
+
+		Vector4 outputRect_ = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 		Bool hasActiveCamera_ = false;
 	};

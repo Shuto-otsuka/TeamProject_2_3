@@ -14,6 +14,8 @@ namespace SeedCore
 
 		NODISCARD Uint AllocateIndex();
 
+		NODISCARD Uint AllocateRange(Uint count);
+
 		void Release(Microsoft::WRL::ComPtr<ID3D12Resource> resource, Uint index);
 
 		void Release(Microsoft::WRL::ComPtr<ID3D12Resource> resource, std::initializer_list<Uint> indices);

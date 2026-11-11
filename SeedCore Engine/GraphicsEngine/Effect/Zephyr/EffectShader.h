@@ -1,7 +1,7 @@
 #pragma once
 #include <FoundationEngine/Utility/Handle.h>
 #include <GraphicsEngine/Effect/Zephyr/ZephyrModuleAssembler.h>
-#include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
+#include <GraphicsEngine/D3D12/Signature/RootSignature.h>
 #include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
 
 namespace SeedCore

@@ -1,7 +1,10 @@
 #include <Editor/Editor/Panel/BenchmarkPanel.h>
 #include <Editor/Editor/Context/EditorContext.h>
 #include <FoundationEngine/Benchmark/BenchmarkSystem.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
+#include <GraphicsEngine/RenderGraph/RenderDevice.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
+#include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Adapter.h>
 #include <GraphicsEngine/Profiler/ProfilerStats.h>
 
@@ -175,7 +178,7 @@ namespace SeedCore
 		memoryCounters.cb = sizeof(memoryCounters);
 		Float ramMegabytes = GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&memoryCounters), sizeof(memoryCounters)) ? static_cast<Float>(memoryCounters.WorkingSetSize) / (1024.0f * 1024.0f) : 0.0f;
 		Float videoMemoryMegabytes = 0.0f;
-		IDXGIAdapter4* adapter = context_.graphics_.graphics_->GetContext().GetAdapter()->Get();
+		IDXGIAdapter4* adapter = context_.graphics_.graphics_->Device().Context().GetAdapter()->Get();
 		if (adapter)
 		{
 			DXGI_QUERY_VIDEO_MEMORY_INFO videoMemory{};

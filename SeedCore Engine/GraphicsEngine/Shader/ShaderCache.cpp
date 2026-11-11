@@ -26,7 +26,7 @@ namespace SeedCore
 		StablePool<ComputeShader> computeShaderPool_;
 	}
 
-	Handle<VertexShader> ShaderCache::GetOrCreateVertexShader(String filePath, String entryPoint)
+	Handle<VertexShader> ShaderCache::GetOrCreateVertexShader(String filePath, String entryPoint, ShaderMount mount)
 	{
 		Key key{};
 		key.filePath_ = filePath;
@@ -37,8 +37,8 @@ namespace SeedCore
 			return *found;
 		}
 
-		ShaderCompileResult compileResult = ShaderCompiler::CompileVertexShader(filePath.w_str(), entryPoint.str());
-		if (!compileResult.objectBlob)
+		ShaderCompileResult compileResult = ShaderCompiler::CompileVertexShader(filePath.w_str(), entryPoint.str(), mount);
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<VertexShader>::null();
 		}
@@ -46,11 +46,16 @@ namespace SeedCore
 		Handle<VertexShader> handle = vertexShaderPool_.Create();
 		if (auto vertexShader = vertexShaderPool_.Get(handle))
 		{
-			vertexShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			vertexShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		vertexShaderCache_.insert(key, handle);
 		return handle;
+	}
+
+	Handle<VertexShader> ShaderCache::GetOrCreateVertexShader(const ShaderPath& path, String entryPoint)
+	{
+		return GetOrCreateVertexShader(String(path.Absolute().wstring()), entryPoint, path.Mount());
 	}
 
 	VertexShader* ShaderCache::GetVertexShader(const Handle<VertexShader>& handle)noexcept
@@ -58,7 +63,7 @@ namespace SeedCore
 		return vertexShaderPool_.Get(handle);
 	}
 
-	Handle<HullShader> ShaderCache::GetOrCreateHullShader(String filePath, String entryPoint)
+	Handle<HullShader> ShaderCache::GetOrCreateHullShader(String filePath, String entryPoint, ShaderMount mount)
 	{
 		Key key{};
 		key.filePath_ = filePath;
@@ -69,8 +74,8 @@ namespace SeedCore
 			return *found;
 		}
 
-		ShaderCompileResult compileResult = ShaderCompiler::CompileHullShader(filePath.w_str(), entryPoint.str());
-		if (!compileResult.objectBlob)
+		ShaderCompileResult compileResult = ShaderCompiler::CompileHullShader(filePath.w_str(), entryPoint.str(), mount);
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<HullShader>::null();
 		}
@@ -78,11 +83,16 @@ namespace SeedCore
 		Handle<HullShader> handle = hullShaderPool_.Create();
 		if (auto hullShader = hullShaderPool_.Get(handle))
 		{
-			hullShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			hullShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		hullShaderCache_.insert(key, handle);
 		return handle;
+	}
+
+	Handle<HullShader> ShaderCache::GetOrCreateHullShader(const ShaderPath& path, String entryPoint)
+	{
+		return GetOrCreateHullShader(String(path.Absolute().wstring()), entryPoint, path.Mount());
 	}
 
 	HullShader* ShaderCache::GetHullShader(const Handle<HullShader>& handle)noexcept
@@ -90,7 +100,7 @@ namespace SeedCore
 		return hullShaderPool_.Get(handle);
 	}
 
-	Handle<DomainShader> ShaderCache::GetOrCreateDomainShader(String filePath, String entryPoint)
+	Handle<DomainShader> ShaderCache::GetOrCreateDomainShader(String filePath, String entryPoint, ShaderMount mount)
 	{
 		Key key{};
 		key.filePath_ = filePath;
@@ -101,8 +111,8 @@ namespace SeedCore
 			return *found;
 		}
 
-		ShaderCompileResult compileResult = ShaderCompiler::CompileDomainShader(filePath.w_str(), entryPoint.str());
-		if (!compileResult.objectBlob)
+		ShaderCompileResult compileResult = ShaderCompiler::CompileDomainShader(filePath.w_str(), entryPoint.str(), mount);
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<DomainShader>::null();
 		}
@@ -110,11 +120,16 @@ namespace SeedCore
 		Handle<DomainShader> handle = domainShaderPool_.Create();
 		if (auto domainShader = domainShaderPool_.Get(handle))
 		{
-			domainShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			domainShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		domainShaderCache_.insert(key, handle);
 		return handle;
+	}
+
+	Handle<DomainShader> ShaderCache::GetOrCreateDomainShader(const ShaderPath& path, String entryPoint)
+	{
+		return GetOrCreateDomainShader(String(path.Absolute().wstring()), entryPoint, path.Mount());
 	}
 
 	DomainShader* ShaderCache::GetDomainShader(const Handle<DomainShader>& handle)noexcept
@@ -122,7 +137,7 @@ namespace SeedCore
 		return domainShaderPool_.Get(handle);
 	}
 
-	Handle<GeometryShader> ShaderCache::GetOrCreateGeometryShader(String filePath, String entryPoint)
+	Handle<GeometryShader> ShaderCache::GetOrCreateGeometryShader(String filePath, String entryPoint, ShaderMount mount)
 	{
 		Key key{};
 		key.filePath_ = filePath;
@@ -133,8 +148,8 @@ namespace SeedCore
 			return *found;
 		}
 
-		ShaderCompileResult compileResult = ShaderCompiler::CompileGeometryShader(filePath.w_str(), entryPoint.str());
-		if (!compileResult.objectBlob)
+		ShaderCompileResult compileResult = ShaderCompiler::CompileGeometryShader(filePath.w_str(), entryPoint.str(), mount);
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<GeometryShader>::null();
 		}
@@ -142,11 +157,16 @@ namespace SeedCore
 		Handle<GeometryShader> handle = geometryShaderPool_.Create();
 		if (auto geometryShader = geometryShaderPool_.Get(handle))
 		{
-			geometryShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			geometryShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		geometryShaderCache_.insert(key, handle);
 		return handle;
+	}
+
+	Handle<GeometryShader> ShaderCache::GetOrCreateGeometryShader(const ShaderPath& path, String entryPoint)
+	{
+		return GetOrCreateGeometryShader(String(path.Absolute().wstring()), entryPoint, path.Mount());
 	}
 
 	GeometryShader* ShaderCache::GetGeometryShader(const Handle<GeometryShader>& handle)noexcept
@@ -154,7 +174,7 @@ namespace SeedCore
 		return geometryShaderPool_.Get(handle);
 	}
 
-	Handle<PixelShader> ShaderCache::GetOrCreatePixelShader(String filePath, String entryPoint)
+	Handle<PixelShader> ShaderCache::GetOrCreatePixelShader(String filePath, String entryPoint, ShaderMount mount)
 	{
 		Key key{};
 		key.filePath_ = filePath;
@@ -165,8 +185,8 @@ namespace SeedCore
 			return *found;
 		}
 
-		ShaderCompileResult compileResult = ShaderCompiler::CompilePixelShader(filePath.w_str(), entryPoint.str());
-		if (!compileResult.objectBlob)
+		ShaderCompileResult compileResult = ShaderCompiler::CompilePixelShader(filePath.w_str(), entryPoint.str(), mount);
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<PixelShader>::null();
 		}
@@ -174,11 +194,16 @@ namespace SeedCore
 		Handle<PixelShader> handle = pixelShaderPool_.Create();
 		if (auto pixelShader = pixelShaderPool_.Get(handle))
 		{
-			pixelShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			pixelShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		pixelShaderCache_.insert(key, handle);
 		return handle;
+	}
+
+	Handle<PixelShader> ShaderCache::GetOrCreatePixelShader(const ShaderPath& path, String entryPoint)
+	{
+		return GetOrCreatePixelShader(String(path.Absolute().wstring()), entryPoint, path.Mount());
 	}
 
 	PixelShader* ShaderCache::GetPixelShader(const Handle<PixelShader>& handle)noexcept
@@ -186,7 +211,7 @@ namespace SeedCore
 		return pixelShaderPool_.Get(handle);
 	}
 
-	Handle<AmplificationShader> ShaderCache::GetOrCreateAmplificationShader(String filePath, String entryPoint)
+	Handle<AmplificationShader> ShaderCache::GetOrCreateAmplificationShader(String filePath, String entryPoint, ShaderMount mount)
 	{
 		Key key{};
 		key.filePath_ = filePath;
@@ -197,8 +222,8 @@ namespace SeedCore
 			return *found;
 		}
 
-		ShaderCompileResult compileResult = ShaderCompiler::CompileAmplificationShader(filePath.w_str(), entryPoint.str());
-		if (!compileResult.objectBlob)
+		ShaderCompileResult compileResult = ShaderCompiler::CompileAmplificationShader(filePath.w_str(), entryPoint.str(), mount);
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<AmplificationShader>::null();
 		}
@@ -206,11 +231,16 @@ namespace SeedCore
 		Handle<AmplificationShader> handle = amplificationShaderPool_.Create();
 		if (auto amplificationShader = amplificationShaderPool_.Get(handle))
 		{
-			amplificationShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			amplificationShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		amplificationShaderCache_.insert(key, handle);
 		return handle;
+	}
+
+	Handle<AmplificationShader> ShaderCache::GetOrCreateAmplificationShader(const ShaderPath& path, String entryPoint)
+	{
+		return GetOrCreateAmplificationShader(String(path.Absolute().wstring()), entryPoint, path.Mount());
 	}
 
 	AmplificationShader* ShaderCache::GetAmplificationShader(const Handle<AmplificationShader>& handle)noexcept
@@ -218,7 +248,7 @@ namespace SeedCore
 		return amplificationShaderPool_.Get(handle);
 	}
 
-	Handle<MeshShader> ShaderCache::GetOrCreateMeshShader(String filePath, String entryPoint)
+	Handle<MeshShader> ShaderCache::GetOrCreateMeshShader(String filePath, String entryPoint, ShaderMount mount)
 	{
 		Key key{};
 		key.filePath_ = filePath;
@@ -229,8 +259,8 @@ namespace SeedCore
 			return *found;
 		}
 
-		ShaderCompileResult compileResult = ShaderCompiler::CompileMeshShader(filePath.w_str(), entryPoint.str());
-		if (!compileResult.objectBlob)
+		ShaderCompileResult compileResult = ShaderCompiler::CompileMeshShader(filePath.w_str(), entryPoint.str(), mount);
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<MeshShader>::null();
 		}
@@ -238,11 +268,16 @@ namespace SeedCore
 		Handle<MeshShader> handle = meshShaderPool_.Create();
 		if (auto meshShader = meshShaderPool_.Get(handle))
 		{
-			meshShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			meshShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		meshShaderCache_.insert(key, handle);
 		return handle;
+	}
+
+	Handle<MeshShader> ShaderCache::GetOrCreateMeshShader(const ShaderPath& path, String entryPoint)
+	{
+		return GetOrCreateMeshShader(String(path.Absolute().wstring()), entryPoint, path.Mount());
 	}
 
 	MeshShader* ShaderCache::GetMeshShader(const Handle<MeshShader>& handle)noexcept
@@ -250,7 +285,7 @@ namespace SeedCore
 		return meshShaderPool_.Get(handle);
 	}
 
-	Handle<RaytracingShader> ShaderCache::GetOrCreateRaytracingShader(String filePath)
+	Handle<RaytracingShader> ShaderCache::GetOrCreateRaytracingShader(String filePath, ShaderMount mount)
 	{
 		Key key{};
 		key.filePath_ = filePath;
@@ -260,8 +295,8 @@ namespace SeedCore
 			return *found;
 		}
 
-		ShaderCompileResult compileResult = ShaderCompiler::CompileLibraryShader(filePath.w_str());
-		if (!compileResult.objectBlob)
+		ShaderCompileResult compileResult = ShaderCompiler::CompileLibraryShader(filePath.w_str(), mount);
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<RaytracingShader>::null();
 		}
@@ -269,11 +304,16 @@ namespace SeedCore
 		Handle<RaytracingShader> handle = raytracingShaderPool_.Create();
 		if (auto raytracingShader = raytracingShaderPool_.Get(handle))
 		{
-			raytracingShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			raytracingShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		raytracingShaderCache_.insert(key, handle);
 		return handle;
+	}
+
+	Handle<RaytracingShader> ShaderCache::GetOrCreateRaytracingShader(const ShaderPath& path)
+	{
+		return GetOrCreateRaytracingShader(String(path.Absolute().wstring()), path.Mount());
 	}
 
 	RaytracingShader* ShaderCache::GetRaytracingShader(const Handle<RaytracingShader>& handle)noexcept
@@ -281,7 +321,7 @@ namespace SeedCore
 		return raytracingShaderPool_.Get(handle);
 	}
 
-	Handle<ComputeShader> ShaderCache::GetOrCreateComputeShader(String filePath, String entryPoint)
+	Handle<ComputeShader> ShaderCache::GetOrCreateComputeShader(String filePath, String entryPoint, ShaderMount mount)
 	{
 		Key key{};
 		key.filePath_ = filePath;
@@ -292,8 +332,8 @@ namespace SeedCore
 			return *found;
 		}
 
-		ShaderCompileResult compileResult = ShaderCompiler::CompileComputeShader(filePath.w_str(), entryPoint.str());
-		if (!compileResult.objectBlob)
+		ShaderCompileResult compileResult = ShaderCompiler::CompileComputeShader(filePath.w_str(), entryPoint.str(), mount);
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<ComputeShader>::null();
 		}
@@ -301,11 +341,16 @@ namespace SeedCore
 		Handle<ComputeShader> handle = computeShaderPool_.Create();
 		if (auto computeShader = computeShaderPool_.Get(handle))
 		{
-			computeShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			computeShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		computeShaderCache_.insert(key, handle);
 		return handle;
+	}
+
+	Handle<ComputeShader> ShaderCache::GetOrCreateComputeShader(const ShaderPath& path, String entryPoint)
+	{
+		return GetOrCreateComputeShader(String(path.Absolute().wstring()), entryPoint, path.Mount());
 	}
 
 	ComputeShader* ShaderCache::GetComputeShader(const Handle<ComputeShader>& handle)noexcept

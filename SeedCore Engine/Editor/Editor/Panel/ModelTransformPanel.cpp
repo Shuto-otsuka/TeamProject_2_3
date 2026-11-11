@@ -5,7 +5,7 @@
 #include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/ModelResource.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <GraphicsEngine/Camera/PreviewCamera.h>
 #include <GraphicsEngine/Camera/PreviewCameraController.h>
@@ -137,7 +137,7 @@ namespace SeedCore
 			}
 			else
 			{
-				ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
+				ModelResource* modelResource = context_.graphics_.graphics_->Module().Resources().modelResource_.get();
 				Handle<Crister> handle = modelResource->GetHandle(targetMeshAssetId_);
 				Crister* crister = handle.empty() ? nullptr : modelResource->Resolve(handle);
 
@@ -186,7 +186,14 @@ namespace SeedCore
 		context_.preview_.modelTransform_.camera_.Resize(previewSize.x, previewSize.y);
 
 		ImVec2 imagePosition = ImGui::GetCursorScreenPos();
-		ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
+		if (previewHandle_.ptr != 0)
+		{
+			ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
+		}
+		else
+		{
+			ImGui::Dummy(previewSize);
+		}
 
 		/// [EN] Orbit-style preview navigation: left-click drag orbits around
 		///      Focus(), middle-click drag pans, wheel dollies - see
@@ -357,7 +364,7 @@ namespace SeedCore
 		std::filesystem::path path(asset->fullpath_.c_str());
 		Bool isSourceAsset = (path.extension() == ".gltf" || path.extension() == ".glb");
 
-		ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
+		ModelResource* modelResource = context_.graphics_.graphics_->Module().Resources().modelResource_.get();
 
 		if (isSourceAsset)
 		{
@@ -447,7 +454,7 @@ namespace SeedCore
 			return;
 		}
 
-		ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
+		ModelResource* modelResource = context_.graphics_.graphics_->Module().Resources().modelResource_.get();
 		Handle<Crister> handle = modelResource->GetHandle(assetId);
 		Crister* crister = handle.empty() ? nullptr : modelResource->Resolve(handle);
 		CristerConverter converter;

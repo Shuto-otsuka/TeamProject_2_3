@@ -1,73 +1,44 @@
 #pragma once
-#include <GraphicsEngine/RenderGraph/RenderFeatureAccess.h>
+#include <GraphicsEngine/RenderGraph/RenderStage.h>
 
 namespace SeedCore
 {
+	struct RenderScene;
+
+	class RenderFrame;
+	class RenderDevice;
+	class RenderUpload;
+
 	class RenderStageRules
 	{
 	public:
-		template<class... Features>
-		static consteval Bool HasUniqueResourceNames()
+		template<class Feature>
+		SC_CONSTEX Bool IsRenderFeature = std::is_default_constructible_v<Feature> && requires(Feature & feature, RenderDevice & device, const RenderScene & scene, RenderFrame & frame, RenderUpload & upload)
 		{
-			StaticArray resources = ResourceRecordsOf<Features...>();
-			for (Size index = 0;index < resources.size();++index)
-			{
-				for (Size otherIndex = index + 1;otherIndex < resources.size();++otherIndex)
-				{
-					if (resources[index].resourceName_ == resources[otherIndex].resourceName_)
-					{
-						return false;
-					}
-				}
-			}
-			return true;
-		}
+			{ feature.Create(device) } -> std::same_as<void>;
+			{ feature.Gather(scene, frame) } -> std::same_as<void>;
+			{ feature.Prepare(std::as_const(frame), upload) } -> std::same_as<void>;
+			std::span<const RenderResource* const>(Feature::resources_);
+		};
 
-		template<class... Features>
-		static consteval Bool HasDeclaredAccesses()
+		template<class Stage, class Feature>
+		SC_CONSTEX Bool IsRenderStage = requires(Feature & feature, RenderPass & pass)
 		{
-			StaticArray resources = ResourceRecordsOf<Features...>();
-			StaticArray stages = StageRecordsOf<Features...>();
-			for (const StageRecord& stage : stages)
-			{
-				for (const RenderAccess& access : stage.accesses_)
-				{
-					Bool declared = false;
-					for (const ResourceRecord& resource : resources)
-					{
-						if (resource.resourceName_ == access.Resource().Name())
-						{
-							declared = true;
-						}
-					}
-					if (!declared)
-					{
-						return false;
-					}
-				}
-			}
-			return true;
-		}
+			{ Stage::Execute(feature, pass) } -> std::same_as<void>;
+			requires std::same_as<std::remove_cv_t<decltype(Stage::kind_)>, RenderStageKind>;
+			requires std::same_as<std::remove_cv_t<decltype(Stage::queue_)>, RenderQueue>;
+			requires std::same_as<std::remove_cv_t<decltype(Stage::viewMask_)>, RenderViewMask>;
+			requires std::same_as<std::remove_cv_t<decltype(Stage::async_)>, Bool>;
+			requires std::same_as<std::remove_cv_t<decltype(Stage::enableCondition_)>, std::nullptr_t> || std::same_as<std::remove_cv_t<decltype(Stage::enableCondition_)>, Bool Feature::*> || std::same_as<std::remove_cv_t<decltype(Stage::enableCondition_)>, Bool(Feature::*)[RenderViewCount]>;
+			requires std::is_array_v<decltype(Stage::accesses_)> && std::same_as<std::remove_cv_t<std::remove_extent_t<decltype(Stage::accesses_)>>, RenderAccess>;
+		};
 
-		template<class... Features>
-		static consteval Bool HasDeclaredPassThroughs()
+		template<class Feature>
+		static consteval Bool HasOwnedResources()
 		{
-			StaticArray resources = ResourceRecordsOf<Features...>();
-			for (const ResourceRecord& resource : resources)
+			for (const RenderResource* resource : std::span<const RenderResource* const>(Feature::resources_))
 			{
-				if (resource.passThroughName_.empty())
-				{
-					continue;
-				}
-				Bool declared = false;
-				for (const ResourceRecord& other : resources)
-				{
-					if (other.resourceName_ == resource.passThroughName_)
-					{
-						declared = true;
-					}
-				}
-				if (!declared)
+				if (resource->FeatureName() != RenderName::FeatureName<Feature>())
 				{
 					return false;
 				}
@@ -75,214 +46,71 @@ namespace SeedCore
 			return true;
 		}
 
-		template<class... Features>
-		static consteval Bool HasOwnedContractWrites()
-		{
-			StaticArray resources = ResourceRecordsOf<Features...>();
-			StaticArray stages = StageRecordsOf<Features...>();
-			for (const StageRecord& stage : stages)
-			{
-				for (const RenderAccess& access : stage.accesses_)
-				{
-					if (access.Type() != RenderAccessType::Write && access.Type() != RenderAccessType::Target && access.Type() != RenderAccessType::DepthWrite)
-					{
-						continue;
-					}
-					for (const ResourceRecord& resource : resources)
-					{
-						if (resource.resourceName_ == access.Resource().Name() && resource.kind_ == RenderResourceKind::Contract && resource.featureName_ != stage.featureName_)
-						{
-							return false;
-						}
-					}
-				}
-			}
-			return true;
-		}
-
-		template<class... Features>
-		static consteval Bool HasOwnedInternalAccesses()
-		{
-			StaticArray resources = ResourceRecordsOf<Features...>();
-			StaticArray stages = StageRecordsOf<Features...>();
-			for (const StageRecord& stage : stages)
-			{
-				for (const RenderAccess& access : stage.accesses_)
-				{
-					for (const ResourceRecord& resource : resources)
-					{
-						if (resource.resourceName_ != access.Resource().Name() || resource.featureName_ == stage.featureName_)
-						{
-							continue;
-						}
-						if (resource.kind_ == RenderResourceKind::Internal)
-						{
-							return false;
-						}
-						if (resource.kind_ == RenderResourceKind::Debug && stage.featureName_ != "DebugView")
-						{
-							return false;
-						}
-					}
-				}
-			}
-			return true;
-		}
-
-		template<class... Features>
-		static consteval Bool HasReadableContracts()
-		{
-			StaticArray resources = ResourceRecordsOf<Features...>();
-			StaticArray stages = StageRecordsOf<Features...>();
-			for (const ResourceRecord& resource : resources)
-			{
-				if (resource.kind_ != RenderResourceKind::Contract || resource.fallback_ != RenderFallback::None || resource.lifetime_ == RenderResourceLifetime::Imported || resource.lifetime_ == RenderResourceLifetime::Upload || !resource.passThroughName_.empty())
-				{
-					continue;
-				}
-				Bool read = false;
-				Bool written = false;
-				for (const StageRecord& stage : stages)
-				{
-					for (const RenderAccess& access : stage.accesses_)
-					{
-						if (access.Resource().Name() != resource.resourceName_)
-						{
-							continue;
-						}
-						if (access.Type() == RenderAccessType::Read || access.Type() == RenderAccessType::History || access.Type() == RenderAccessType::Constant || access.Type() == RenderAccessType::DepthTest)
-						{
-							read = true;
-						}
-						if (access.Type() == RenderAccessType::Write || access.Type() == RenderAccessType::Target || access.Type() == RenderAccessType::DepthWrite)
-						{
-							written = true;
-						}
-					}
-				}
-				if (read && !written)
-				{
-					return false;
-				}
-			}
-			return true;
-		}
-
-		template<class... Features>
+		template<class... Stages>
 		static consteval Bool HasUniqueStageAccesses()
 		{
-			StaticArray stages = StageRecordsOf<Features...>();
-			for (const StageRecord& stage : stages)
-			{
-				for (Size index = 0;index < stage.accesses_.size();++index)
+			Bool unique = true;
+			([&]()
 				{
-					for (Size otherIndex = index + 1;otherIndex < stage.accesses_.size();++otherIndex)
+					for (Size index = 0;index < std::size(Stages::accesses_);++index)
 					{
-						if (stage.accesses_[index].Resource() == stage.accesses_[otherIndex].Resource())
+						for (Size otherIndex = index + 1;otherIndex < std::size(Stages::accesses_);++otherIndex)
 						{
-							return false;
+							if (Stages::accesses_[index].Resource() == Stages::accesses_[otherIndex].Resource() && (Stages::accesses_[index].Type() == RenderAccessType::History) == (Stages::accesses_[otherIndex].Type() == RenderAccessType::History))
+							{
+								unique = false;
+							}
 						}
 					}
-				}
-			}
-			return true;
+				}(), ...);
+			return unique;
 		}
 
-		template<class... Features>
-		static consteval Bool HasUniqueFeatureNames()
+		template<class Feature, class... Stages>
+		static consteval Bool HasOwnedContractWrites()
 		{
-			StaticArray<std::string_view, sizeof...(Features)> featureNames = { RenderFeatureAccess::NameOf<Features>().Name()... };
-			for (Size index = 0;index < featureNames.size();++index)
-			{
-				for (Size otherIndex = index + 1;otherIndex < featureNames.size();++otherIndex)
+			Bool owned = true;
+			([&]()
 				{
-					if (featureNames[index] == featureNames[otherIndex])
+					for (const RenderAccess& access : Stages::accesses_)
 					{
-						return false;
+						Bool write = access.Type() == RenderAccessType::Write || access.Type() == RenderAccessType::Target || access.Type() == RenderAccessType::DepthWrite;
+						if (write && access.Resource().Kind() == RenderResourceKind::Contract && access.Resource().FeatureName() != RenderName::FeatureName<Feature>())
+						{
+							owned = false;
+						}
 					}
-				}
-			}
-			return true;
+				}(), ...);
+			return owned;
 		}
 
-		template<class... Features>
-		static consteval Bool HasUniqueStageNames()
+		template<class Feature, class... Stages>
+		static consteval Bool HasWrittenContracts()
 		{
-			StaticArray stages = StageRecordsOf<Features...>();
-			for (Size index = 0;index < stages.size();++index)
+			for (const RenderResource* resource : std::span<const RenderResource* const>(Feature::resources_))
 			{
-				for (Size otherIndex = index + 1;otherIndex < stages.size();++otherIndex)
+				if (resource->Kind() != RenderResourceKind::Contract || resource->Fallback() != RenderFallback::None || resource->Lifetime() == RenderResourceLifetime::Imported || resource->Lifetime() == RenderResourceLifetime::Upload || resource->PassThrough())
 				{
-					if (stages[index].stageName_ == stages[otherIndex].stageName_)
+					continue;
+				}
+				Bool written = false;
+				([&]()
 					{
-						return false;
-					}
+						for (const RenderAccess& access : Stages::accesses_)
+						{
+							Bool write = access.Type() == RenderAccessType::Write || access.Type() == RenderAccessType::Target || access.Type() == RenderAccessType::DepthWrite;
+							if (write && access.Resource() == *resource)
+							{
+								written = true;
+							}
+						}
+					}(), ...);
+				if (!written)
+				{
+					return false;
 				}
 			}
 			return true;
-		}
-
-	private:
-		struct ResourceRecord
-		{
-			std::string_view featureName_;
-
-			std::string_view resourceName_;
-
-			RenderResourceKind kind_ = RenderResourceKind::Internal;
-
-			RenderResourceLifetime lifetime_ = RenderResourceLifetime::Transient;
-
-			RenderFallback fallback_ = RenderFallback::None;
-
-			std::string_view passThroughName_;
-		};
-
-		struct StageRecord
-		{
-			std::string_view featureName_;
-
-			std::string_view stageName_;
-
-			std::span<const RenderAccess> accesses_;
-		};
-
-	private:
-		template<class... Features>
-		static consteval StaticArray<ResourceRecord, (RenderFeatureAccess::ResourcesOf<Features>().size() + ... + 0)> ResourceRecordsOf()
-		{
-			StaticArray<std::string_view, sizeof...(Features)> featureNames = { RenderFeatureAccess::NameOf<Features>().Name()... };
-			StaticArray<std::span<const RenderResourceDeclaration>, sizeof...(Features)> declarationLists = { RenderFeatureAccess::ResourcesOf<Features>()... };
-			StaticArray<ResourceRecord, (RenderFeatureAccess::ResourcesOf<Features>().size() + ... + 0)> records{};
-			Size count = 0;
-			for (Size featureIndex = 0;featureIndex < featureNames.size();++featureIndex)
-			{
-				for (const RenderResourceDeclaration& declaration : declarationLists[featureIndex])
-				{
-					records[count] = ResourceRecord{ featureNames[featureIndex], declaration.resource_.Name(), declaration.kind_, declaration.lifetime_, declaration.fallback_, declaration.passThrough_.Name() };
-					++count;
-				}
-			}
-			return records;
-		}
-
-		template<class... Features>
-		static consteval StaticArray<StageRecord, (decltype(RenderFeatureAccess::StagesOf<Features>())::names_.size() + ... + 0)> StageRecordsOf()
-		{
-			StaticArray<std::string_view, sizeof...(Features)> featureNames = { RenderFeatureAccess::NameOf<Features>().Name()... };
-			StaticArray<std::span<const std::string_view>, sizeof...(Features)> stageNameLists = { decltype(RenderFeatureAccess::StagesOf<Features>())::names_... };
-			StaticArray<std::span<const std::span<const RenderAccess>>, sizeof...(Features)> accessLists = { decltype(RenderFeatureAccess::StagesOf<Features>())::accesses_... };
-			StaticArray<StageRecord, (decltype(RenderFeatureAccess::StagesOf<Features>())::names_.size() + ... + 0)> records{};
-			Size count = 0;
-			for (Size featureIndex = 0;featureIndex < featureNames.size();++featureIndex)
-			{
-				for (Size stageIndex = 0;stageIndex < stageNameLists[featureIndex].size();++stageIndex)
-				{
-					records[count] = StageRecord{ featureNames[featureIndex], stageNameLists[featureIndex][stageIndex], accessLists[featureIndex][stageIndex] };
-					++count;
-				}
-			}
-			return records;
 		}
 	};
 }

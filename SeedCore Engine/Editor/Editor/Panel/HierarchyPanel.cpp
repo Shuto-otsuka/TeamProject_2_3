@@ -15,7 +15,7 @@
 #include <FoundationEngine/File/FileDialog.h>
 #include <GraphicsEngine/Camera/EditorCamera.h>
 #include <GraphicsEngine/Camera/CanvasCamera.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
 #include <GraphicsEngine/Texture/Image.h>
 #include <GraphicsEngine/Font/Text.h>
 #include <GraphicsEngine/Movie/Movie.h>

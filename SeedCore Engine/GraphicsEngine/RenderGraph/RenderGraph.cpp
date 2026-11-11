@@ -104,12 +104,157 @@ namespace SeedCore
 
 		std::ranges::stable_sort(stages_, [](const RenderGraphStage& a, const RenderGraphStage& b) { return a.queue_ < b.queue_; });
 
+		DynamicArray<RenderGraphStage> ordered;
+		ordered.reserve(stages_.size());
+		Size groupBegin = 0;
+		while (groupBegin < stages_.size())
+		{
+			Size groupEnd = groupBegin;
+			while (groupEnd < stages_.size() && stages_[groupEnd].queue_ == stages_[groupBegin].queue_)
+			{
+				++groupEnd;
+			}
+			Size count = groupEnd - groupBegin;
+
+			DynamicArray<Bool> reach(count * count, false);
+			for (Size fromIndex = 0;fromIndex < count;++fromIndex)
+			{
+				const RenderGraphStage& from = stages_[groupBegin + fromIndex];
+				for (Size toIndex = 0;toIndex < count;++toIndex)
+				{
+					const RenderGraphStage& to = stages_[groupBegin + toIndex];
+					if (fromIndex == toIndex)
+					{
+						continue;
+					}
+					if (from.featureName_ == to.featureName_)
+					{
+						reach[fromIndex * count + toIndex] = from.order_ < to.order_;
+						continue;
+					}
+					for (const RenderGraphAccess& write : from.accesses_)
+					{
+						if (write.type_ != RenderAccessType::Write && write.type_ != RenderAccessType::Target && write.type_ != RenderAccessType::DepthWrite)
+						{
+							continue;
+						}
+						for (const RenderGraphAccess& read : to.accesses_)
+						{
+							if (read.resourceName_ == write.resourceName_ && (read.type_ == RenderAccessType::Read || read.type_ == RenderAccessType::Constant || read.type_ == RenderAccessType::DepthTest))
+							{
+								reach[fromIndex * count + toIndex] = true;
+							}
+						}
+					}
+				}
+			}
+			DynamicArray<Bool> edges = reach;
+
+			for (Size middleIndex = 0;middleIndex < count;++middleIndex)
+			{
+				for (Size fromIndex = 0;fromIndex < count;++fromIndex)
+				{
+					for (Size toIndex = 0;toIndex < count;++toIndex)
+					{
+						if (reach[fromIndex * count + middleIndex] && reach[middleIndex * count + toIndex])
+						{
+							reach[fromIndex * count + toIndex] = true;
+						}
+					}
+				}
+			}
+
+			for (Size index = 0;index < count;++index)
+			{
+				for (Size otherIndex = index + 1;otherIndex < count;++otherIndex)
+				{
+					const RenderGraphStage& stage = stages_[groupBegin + index];
+					const RenderGraphStage& other = stages_[groupBegin + otherIndex];
+					if (stage.featureName_ == other.featureName_ || reach[index * count + otherIndex] || reach[otherIndex * count + index])
+					{
+						continue;
+					}
+					for (const RenderGraphAccess& access : stage.accesses_)
+					{
+						for (const RenderGraphAccess& otherAccess : other.accesses_)
+						{
+							Bool write = access.type_ == RenderAccessType::Write || access.type_ == RenderAccessType::Target || access.type_ == RenderAccessType::DepthWrite;
+							Bool otherWrite = otherAccess.type_ == RenderAccessType::Write || otherAccess.type_ == RenderAccessType::Target || otherAccess.type_ == RenderAccessType::DepthWrite;
+							if (write && otherWrite && access.resourceName_ == otherAccess.resourceName_)
+							{
+								SC_LOG_ERROR("RenderGraph: {} と {} が同じ区切りで {} に書いていて、どちらが先か決まりません", stage.stageName_.c_str(), other.stageName_.c_str(), access.resourceName_.c_str());
+							}
+						}
+					}
+				}
+			}
+
+			DynamicArray<Uint32> incoming(count, 0);
+			for (Size fromIndex = 0;fromIndex < count;++fromIndex)
+			{
+				for (Size toIndex = 0;toIndex < count;++toIndex)
+				{
+					if (edges[fromIndex * count + toIndex])
+					{
+						++incoming[toIndex];
+					}
+				}
+			}
+			DynamicArray<Bool> placed(count, false);
+			for (Size step = 0;step < count;++step)
+			{
+				Size next = count;
+				for (Size index = 0;index < count;++index)
+				{
+					if (!placed[index] && incoming[index] == 0)
+					{
+						next = index;
+						break;
+					}
+				}
+				if (next == count)
+				{
+					std::string cycle;
+					for (Size index = 0;index < count;++index)
+					{
+						if (!placed[index])
+						{
+							cycle += cycle.empty() ? "" : ", ";
+							cycle += stages_[groupBegin + index].stageName_.c_str();
+						}
+					}
+					SC_LOG_ERROR("RenderGraph: 区切り {} の中で順番が循環しています（{}）", static_cast<Uint32>(stages_[groupBegin].queue_), cycle);
+					for (Size index = 0;index < count;++index)
+					{
+						if (!placed[index])
+						{
+							placed[index] = true;
+							ordered.push_back(std::move(stages_[groupBegin + index]));
+						}
+					}
+					break;
+				}
+				placed[next] = true;
+				ordered.push_back(std::move(stages_[groupBegin + next]));
+				for (Size toIndex = 0;toIndex < count;++toIndex)
+				{
+					if (edges[next * count + toIndex])
+					{
+						--incoming[toIndex];
+					}
+				}
+			}
+			groupBegin = groupEnd;
+		}
+		stages_ = std::move(ordered);
+
 		for (RenderGraphResource& resource : resources_)
 		{
 			resource.shaderResource_ = false;
 			resource.unorderedAccess_ = false;
 			resource.renderTarget_ = false;
 			resource.depthStencil_ = false;
+			resource.history_ = false;
 			resource.passThroughIndex_ = SC_INVALID;
 			if ((resource.fallback_ == RenderFallback::Zero && resource.desc_.shape_ == RenderResourceShape::Constant) || ((resource.fallback_ == RenderFallback::One || resource.fallback_ == RenderFallback::Alpha) && resource.desc_.shape_ != RenderResourceShape::Texture2D))
 			{
@@ -158,6 +303,7 @@ namespace SeedCore
 				resource.unorderedAccess_ = resource.unorderedAccess_ || access.type_ == RenderAccessType::Write;
 				resource.renderTarget_ = resource.renderTarget_ || access.type_ == RenderAccessType::Target;
 				resource.depthStencil_ = resource.depthStencil_ || access.type_ == RenderAccessType::DepthWrite || access.type_ == RenderAccessType::DepthTest;
+				resource.history_ = resource.history_ || access.type_ == RenderAccessType::History;
 			}
 		}
 
@@ -251,7 +397,8 @@ namespace SeedCore
 					Uint32 baseWidth = desc.scale_ == RenderResourceScale::Render ? view.renderWidth_ : view.displayWidth_;
 					Uint32 baseHeight = desc.scale_ == RenderResourceScale::Render ? view.renderHeight_ : view.displayHeight_;
 					instance.width_ = (baseWidth + desc.divisor_ - 1) / desc.divisor_;
-					instance.height_ = (baseHeight + desc.divisor_ - 1) / desc.divisor_;
+					Uint32 heightDivisor = desc.heightDivisor_ != 0 ? desc.heightDivisor_ : desc.divisor_;
+					instance.height_ = (baseHeight + heightDivisor - 1) / heightDivisor;
 				}
 				instance.count_ = desc.shape_ == RenderResourceShape::Buffer && desc.scale_ != RenderResourceScale::Fixed ? instance.width_ * instance.height_ * desc.depth_ * desc.count_ : desc.count_;
 			}
@@ -279,7 +426,7 @@ namespace SeedCore
 				continue;
 			}
 			const RenderGraphResource& resource = resources_[instance.resource_];
-			if (instance.written_ || resource.lifetime_ == RenderResourceLifetime::Imported || resource.lifetime_ == RenderResourceLifetime::Upload)
+			if (instance.written_ || resource.lifetime_ == RenderResourceLifetime::Imported || resource.lifetime_ == RenderResourceLifetime::Upload || resource.lifetime_ == RenderResourceLifetime::Persistent)
 			{
 				continue;
 			}
@@ -350,10 +497,14 @@ namespace SeedCore
 			}
 			if (resource.lifetime_ == RenderResourceLifetime::Persistent)
 			{
-				Uint32 current = static_cast<Uint32>(instanceIndex * 2 + (frame_ & 1));
+				Uint32 current = static_cast<Uint32>(instanceIndex * 2 + (resource.history_ ? (frame_ & 1) : 0));
 				Uint32 previous = static_cast<Uint32>(instanceIndex * 2 + ((frame_ + 1) & 1));
 				for (Uint32 slot : { current, previous })
 				{
+					if (slot == previous && !resource.history_)
+					{
+						continue;
+					}
 					if (!persistent_[slot].resource_ || !RenderGraphMemory::Matches(persistent_[slot], resource, instance))
 					{
 						RenderGraphMemory::Release(device_, persistent_[slot]);
@@ -361,7 +512,7 @@ namespace SeedCore
 					}
 				}
 				instance.allocation_ = current;
-				instance.history_ = previous;
+				instance.history_ = resource.history_ ? previous : SC_INVALID;
 				continue;
 			}
 			RenderViewKind kind = instance.view_ != SC_INVALID ? scene.views_[instance.view_].kind_ : RenderViewKind::Game;
@@ -877,6 +1028,7 @@ namespace SeedCore
 		{
 			direct.Get()->ResourceBarrier(static_cast<Uint32>(closing_.size()), closing_.data());
 		}
+		imports_.clear();
 		profiler_.Resolve(direct, static_cast<Uint32>(passes_.size()));
 	}
 
@@ -889,4 +1041,4 @@ namespace SeedCore
 	{
 		return profiler_;
 	}
-}
+}

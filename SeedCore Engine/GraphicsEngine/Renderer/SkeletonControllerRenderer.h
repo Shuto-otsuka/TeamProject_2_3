@@ -6,7 +6,7 @@
 #include <GraphicsEngine/D3D12/Buffer/FrameBuffer.h>
 #include <GraphicsEngine/Model/ModelShader.h>
 #include <GraphicsEngine/Model/Culling/ModelCullingBuffer.h>
-#include <GraphicsEngine/Model/ModelRecord.h>
+#include <GraphicsEngine/Model/ModelDriven.h>
 #include <GraphicsEngine/Shape/Primitive/Wireframe/PrimitiveWireframeShader.h>
 #include <GraphicsEngine/System/SceneConstantSystem.h>
 #include <GraphicsEngine/System/IndicesSystem.h>

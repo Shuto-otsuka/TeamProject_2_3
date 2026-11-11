@@ -6,6 +6,7 @@ namespace SeedCore
 	class TextureLoader;
 	class BindlessHeap;
 	class D3D12CommandQueue;
+	class D3D12TransferLane;
 
 	class SplashScreen
 	{
@@ -13,7 +14,7 @@ namespace SeedCore
 		SplashScreen() = default;
 		~SplashScreen() = default;
 
-		void Initialize(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap);
+		void Initialize(ID3D12Device* device, D3D12CommandQueue* copyQueue, D3D12TransferLane* transferLane, BindlessHeap* bindlessHeap);
 
 		void Finalize();
 

@@ -1,8 +1,7 @@
 #ifndef __MATERIAL_MAPPING_HLSL__
 #define __MATERIAL_MAPPING_HLSL__
 
-#include "../Model.hlsli"
-#include "../../Shader/ShaderResources.hlsli"
+#include <GraphicsEngine/Model/Model.hlsli>
 
 struct MaterialMappingCoordinate
 {
@@ -63,7 +62,7 @@ MaterialMappingCoordinate ResolveMaterialMapping(uint material_mapping, float ti
     return coordinate;
 }
 
-MaterialMappingSurface ReconstructMaterialMapping(ModelStructuredBuffer instance, uint meshlet_index, uint triangle_in_meshlet_index, float2 pixel_ndc, float4x4 view_projection, float3 camera_position)
+MaterialMappingSurface ReconstructMaterialMapping(ModelStructuredBuffer instance, uint meshlet_index, uint triangle_in_meshlet_index, float2 pixel_ndc, float4x4 view_projection, float3 camera_position, uint model_bones, uint model_morph_weights)
 {
 	StructuredBuffer<CompressedModelVertex> vertices = ResourceDescriptorHeap[instance.geometry_.vertex_buffer_index_];
 	StructuredBuffer<ModelMeshlet> meshlets = ResourceDescriptorHeap[instance.geometry_.meshlet_buffer_index_];
@@ -98,7 +97,7 @@ MaterialMappingSurface ReconstructMaterialMapping(ModelStructuredBuffer instance
 	{
 		StructuredBuffer<uint> vertex_morph_source = ResourceDescriptorHeap[instance.morph_.vertex_morph_source_buffer_index_];
 		StructuredBuffer<float3> morph_deltas = ResourceDescriptorHeap[instance.morph_.morph_delta_buffer_index_];
-		StructuredBuffer<float> morph_weights = ResourceDescriptorHeap[shader_resource_indices.model_.morph_weight_index_];
+		StructuredBuffer<float> morph_weights = ResourceDescriptorHeap[model_morph_weights];
 
 		uint local_vertex_index0 = vertex_morph_source[global_index0] - instance.morph_.morph_vertex_offset_;
 		uint local_vertex_index1 = vertex_morph_source[global_index1] - instance.morph_.morph_vertex_offset_;
@@ -122,7 +121,7 @@ MaterialMappingSurface ReconstructMaterialMapping(ModelStructuredBuffer instance
 
 	if (instance.skining_.skin_index_ != 0xFFFFFFFF)
 	{
-		StructuredBuffer<ModelBoneMatrix> bone_matrices = ResourceDescriptorHeap[shader_resource_indices.model_.bone_matrix_index_];
+		StructuredBuffer<ModelBoneMatrix> bone_matrices = ResourceDescriptorHeap[model_bones];
 		StructuredBuffer<CompressedModelSkin> skin_vertices = ResourceDescriptorHeap[instance.skining_.skin_vertex_buffer_index_];
 
 		ExpandedModelSkin skin0 = DecodeSkinVertex(skin_vertices[global_index0]);
@@ -228,6 +227,30 @@ float4 SampleMaterialMappingGrad(Texture2D source_texture, SamplerState texture_
     return color;
 }
 
+/**
+* [EN]
+* Same as above for compute shaders, which have no ddx/ddy: the derivatives
+* are the differences to the mapping coordinates of the pixel one step right
+* (coordinate_x) and one step down (coordinate_y).
+*/
+float4 SampleMaterialMappingGrad(Texture2D source_texture, SamplerState texture_sampler, MaterialMappingCoordinate coordinate, MaterialMappingCoordinate coordinate_x, MaterialMappingCoordinate coordinate_y)
+{
+	float4 color = float4(0.0, 0.0, 0.0, 0.0);
+	if (coordinate.weight_.x > 0.0)
+	{
+		color += source_texture.SampleGrad(texture_sampler, coordinate.texcoord_x_, coordinate_x.texcoord_x_ - coordinate.texcoord_x_, coordinate_y.texcoord_x_ - coordinate.texcoord_x_) * coordinate.weight_.x;
+	}
+	if (coordinate.weight_.y > 0.0)
+	{
+		color += source_texture.SampleGrad(texture_sampler, coordinate.texcoord_y_, coordinate_x.texcoord_y_ - coordinate.texcoord_y_, coordinate_y.texcoord_y_ - coordinate.texcoord_y_) * coordinate.weight_.y;
+	}
+	if (coordinate.weight_.z > 0.0)
+	{
+		color += source_texture.SampleGrad(texture_sampler, coordinate.texcoord_z_, coordinate_x.texcoord_z_ - coordinate.texcoord_z_, coordinate_y.texcoord_z_ - coordinate.texcoord_z_) * coordinate.weight_.z;
+	}
+	return color;
+}
+
 float3 SampleNormalMappingGrad(Texture2D normal_texture, SamplerState texture_sampler, MaterialMappingCoordinate coordinate)
 {
     float2 ddx_x = ddx(coordinate.texcoord_x_);
@@ -258,6 +281,37 @@ float3 SampleNormalMappingGrad(Texture2D normal_texture, SamplerState texture_sa
         result += blended.xyz * coordinate.weight_.z;
     }
     return normalize(result);
+}
+
+/**
+* [EN]
+* Compute-shader form of the triplanar normal sample, with derivatives taken
+* from the neighbouring pixels' mapping coordinates as in
+* SampleMaterialMappingGrad.
+*/
+float3 SampleNormalMappingGrad(Texture2D normal_texture, SamplerState texture_sampler, MaterialMappingCoordinate coordinate, MaterialMappingCoordinate coordinate_x, MaterialMappingCoordinate coordinate_y)
+{
+	float3 normal = coordinate.projection_normal_;
+	float3 result = float3(0.0, 0.0, 0.0);
+	if (coordinate.weight_.x > 0.0)
+	{
+		float3 tangent_normal = normal_texture.SampleGrad(texture_sampler, coordinate.texcoord_x_, coordinate_x.texcoord_x_ - coordinate.texcoord_x_, coordinate_y.texcoord_x_ - coordinate.texcoord_x_).xyz * 2.0 - 1.0;
+		float3 blended = float3(tangent_normal.xy + normal.zy, abs(tangent_normal.z) * normal.x);
+		result += blended.zyx * coordinate.weight_.x;
+	}
+	if (coordinate.weight_.y > 0.0)
+	{
+		float3 tangent_normal = normal_texture.SampleGrad(texture_sampler, coordinate.texcoord_y_, coordinate_x.texcoord_y_ - coordinate.texcoord_y_, coordinate_y.texcoord_y_ - coordinate.texcoord_y_).xyz * 2.0 - 1.0;
+		float3 blended = float3(tangent_normal.xy + normal.xz, abs(tangent_normal.z) * normal.y);
+		result += blended.xzy * coordinate.weight_.y;
+	}
+	if (coordinate.weight_.z > 0.0)
+	{
+		float3 tangent_normal = normal_texture.SampleGrad(texture_sampler, coordinate.texcoord_z_, coordinate_x.texcoord_z_ - coordinate.texcoord_z_, coordinate_y.texcoord_z_ - coordinate.texcoord_z_).xyz * 2.0 - 1.0;
+		float3 blended = float3(tangent_normal.xy + normal.xy, abs(tangent_normal.z) * normal.z);
+		result += blended.xyz * coordinate.weight_.z;
+	}
+	return normalize(result);
 }
 
 float4 SampleMaterialMappingLevel(Texture2D source_texture, SamplerState texture_sampler, MaterialMappingCoordinate coordinate, float level)

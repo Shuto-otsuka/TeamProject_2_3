@@ -14,17 +14,19 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Takes the loaders, the texture manager baked textures are handed
-	* to, the model manager a material is generated from, and the GPU
-	* objects textures are uploaded and BC7-compressed with.
+	* to, the model manager a material is generated from, the GPU
+	* objects textures are uploaded with, and the GPU processor they are
+	* BC7-compressed with.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* ローダー、焼き込まれたテクスチャを渡すテクスチャのマネージャ、
 	* マテリアルの生成元になるモデルのマネージャ、テクスチャの
-	* アップロードと BC7 圧縮に使う GPU のオブジェクトを受け取る。
+	* アップロードに使う GPU のオブジェクト、BC7 圧縮に使う GPU の
+	* 加工器を受け取る。
 	*/
-	MaterialResource::MaterialResource(GraphicsLoaderSystem& loaders, TextureResource& textureResource, ModelResource& modelResource, D3D12Context& context, BindlessHeap& heap, BC7CompressShader& bc7Shader) :loaders_(loaders), textureResource_(textureResource), modelResource_(modelResource), context_(context), heap_(heap), bc7Shader_(bc7Shader)
+	MaterialResource::MaterialResource(GraphicsLoaderSystem& loaders, TextureResource& textureResource, ModelResource& modelResource, D3D12Context& context, BindlessHeap& heap, GraphicsProcessor& processor) :loaders_(loaders), textureResource_(textureResource), modelResource_(modelResource), context_(context), heap_(heap), processor_(processor)
 	{
 		/// No Code
 	}
@@ -279,7 +281,7 @@ namespace SeedCore
 		}
 
 		MaterialBaker baker;
-		baker.BakeReferenced(context_.GetDevice(), context_.GetDirectQueue(), bc7Shader_, context.cache_, bakedSurface);
+		baker.BakeReferenced(context_.GetDevice(), context_.GetDirectQueue(), processor_, context.cache_, bakedSurface);
 		return loaders_.materialLoader_->Bake(bakedSurface, filePath);
 	}
 

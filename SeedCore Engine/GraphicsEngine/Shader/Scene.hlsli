@@ -1,7 +1,7 @@
 #ifndef __SCENE_HLSL__
 #define __SCENE_HLSL__
 
-#include "Constants.hlsli"
+#include <GraphicsEngine/Shader/RootSignature.hlsli>
 
 struct SceneConstantBuffer
 {
@@ -38,7 +38,7 @@ struct SceneConstantBuffer
 
 ConstantBuffer<SceneConstantBuffer> GetSceneConstantBuffer()
 {
-	return ResourceDescriptorHeap[constant_indices.scene_index_];
+	return ResourceDescriptorHeap[view_bindings.scene_];
 }
 
 #endif // __SCENE_HLSL__

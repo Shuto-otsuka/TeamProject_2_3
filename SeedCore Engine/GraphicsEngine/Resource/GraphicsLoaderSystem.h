@@ -15,7 +15,7 @@ namespace SeedCore
 {
 	class D3D12Context;
 	class BindlessHeap;
-	class BC7CompressShader;
+	class GraphicsProcessor;
 
 	struct SEEDCORE_API GraphicsLoaderSystem
 	{
@@ -63,15 +63,15 @@ namespace SeedCore
 		* [EN]
 		* Constructs the loader system, creating each format-specific loader
 		* and handing the GPU-backed ones the device context, bindless heap
-		* and BC7 compute shader they create their objects with.
+		* and GPU processor they create their objects with.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* ローダーシステムを構築し、各フォーマット固有のローダーを生成する。
 		* GPU を使うローダーには、オブジェクトを作るためのデバイスの
-		* コンテキスト、バインドレスヒープ、BC7 のコンピュートシェーダーを渡す。
+		* コンテキスト、バインドレスヒープ、GPU の加工器を渡す。
 		*/
-		GraphicsLoaderSystem(D3D12Context& context, BindlessHeap& heap, BC7CompressShader& bc7Shader);
+		GraphicsLoaderSystem(D3D12Context& context, BindlessHeap& heap, GraphicsProcessor& processor);
 	};
 }

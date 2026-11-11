@@ -22,7 +22,7 @@
 #include <GraphicsEngine/Camera/PreviewCamera.h>
 #include <GraphicsEngine/Camera/PreviewCameraController.h>
 #include <GraphicsEngine/Resource/GraphicsModule.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
 
 namespace SeedCore
 {
@@ -80,7 +80,7 @@ namespace SeedCore
 		if (visible_)
 		{
 			const Mesh* mesh = actor ? context_.world_.world_->GetComponent<Mesh>(ActorAccessor::GetEntity(actor)) : nullptr;
-			ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
+			ModelResource* modelResource = context_.graphics_.graphics_->Module().Resources().modelResource_.get();
 			Crister* crister = (mesh && mesh->meshID_ != 0) ? modelResource->Resolve(modelResource->GetHandle(mesh->meshID_)) : nullptr;
 
 			if (!material || !mesh || mesh->meshID_ == 0)
@@ -143,7 +143,7 @@ namespace SeedCore
 
 				context_.preview_.material_.camera_.Resize(previewSize.x, previewSize.y);
 
-				ImGui::Image(ImTextureID(context_.graphics_.graphics_->MaterialDisplayGPUHandle().ptr), previewSize);
+				ImGui::Dummy(previewSize);
 
 				Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
 				Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
@@ -172,7 +172,7 @@ namespace SeedCore
 		Material* material = actor ? context_.world_.world_->GetComponent<Material>(ActorAccessor::GetEntity(actor)) : nullptr;
 		const Mesh* mesh = actor ? context_.world_.world_->GetComponent<Mesh>(ActorAccessor::GetEntity(actor)) : nullptr;
 
-		GraphicsModule& graphicsModule = context_.graphics_.graphics_->GetGraphicsModule();
+		GraphicsModule& graphicsModule = context_.graphics_.graphics_->Module();
 		ResourceCache* cache = context_.world_.resource_;
 		ModelResource* modelResource = graphicsModule.Resources().modelResource_.get();
 		MaterialResource* materialResource = graphicsModule.Resources().materialResource_.get();

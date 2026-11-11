@@ -1,5 +1,5 @@
 #pragma once
-#include <GraphicsEngine/RenderGraph/RenderFeatureAccess.h>
+#include <GraphicsEngine/RenderGraph/RenderStage.h>
 #include <GraphicsEngine/RenderGraph/RenderUpload.h>
 #include <GraphicsEngine/RenderGraph/RenderScene.h>
 #include <GraphicsEngine/Profiler/GpuProfiler.h>
@@ -30,6 +30,8 @@ namespace SeedCore
 
 		Bool depthStencil_ = false;
 
+		Bool history_ = false;
+
 		String passThroughName_;
 
 		Uint32 passThroughIndex_ = SC_INVALID;
@@ -51,6 +53,8 @@ namespace SeedCore
 		String featureName_;
 
 		String stageName_;
+
+		Uint32 order_ = 0;
 
 		RenderStageKind kind_ = RenderStageKind::Compute;
 
@@ -202,53 +206,53 @@ namespace SeedCore
 		NODISCARD const GpuProfiler& Profiler()const;
 
 	public:
-		template<class Feature>
+		template<class Feature, class... Stages>
 		void Add(Feature& feature)
 		{
-			static_assert(RenderFeatureAccess::IsRenderFeature<Feature>, "Feature は Create / Register / Gather / Prepare と name_ / Stages / resources_ を持つこと");
-			String featureName = String(RenderFeatureAccess::NameOf<Feature>().Name());
-			for (const RenderResourceDeclaration& declaration : RenderFeatureAccess::ResourcesOf<Feature>())
+			String featureName = String(RenderName::FeatureName<Feature>());
+			for (const RenderResource* resource : std::span<const RenderResource* const>(Feature::resources_))
 			{
-				resources_.push_back(RenderGraphResource{ featureName, String(declaration.resource_.Name()), declaration.desc_, declaration.scope_, declaration.kind_, declaration.lifetime_, declaration.fallback_, false, false, false, false, String(declaration.passThrough_.Name()), SC_INVALID, &feature });
+				String passThroughName = resource->PassThrough() ? String(resource->PassThrough()->Name()) : String();
+				resources_.push_back(RenderGraphResource{ featureName, String(resource->Name()), resource->Desc(), resource->Scope(), resource->Kind(), resource->Lifetime(), resource->Fallback(), false, false, false, false, false, passThroughName, SC_INVALID, &feature });
 			}
-			[&] <class... Stages>(RenderStageList<Stages...>)
-			{
-				([&]()
+			Uint32 order = 0;
+			([&]()
+				{
+					RenderGraphStage& stage = stages_.emplace_back();
+					stage.featureName_ = featureName;
+					stage.stageName_ = String(RenderStageName<Feature, Stages>.View());
+					stage.order_ = order;
+					++order;
+					stage.kind_ = Stages::kind_;
+					stage.queue_ = Stages::queue_;
+					stage.viewMask_ = Stages::viewMask_;
+					stage.async_ = Stages::async_;
+					for (const RenderAccess& access : Stages::accesses_)
 					{
-						RenderGraphStage& stage = stages_.emplace_back();
-						stage.featureName_ = featureName;
-						stage.stageName_ = String(Stages::name_.Name());
-						stage.kind_ = Stages::kind_;
-						stage.queue_ = Stages::queue_;
-						stage.viewMask_ = Stages::viewMask_;
-						stage.async_ = Stages::async_;
-						for (const RenderAccess& access : Stages::accesses_)
+						stage.accesses_.push_back(RenderGraphAccess{ String(access.Resource().Name()), access.Type() });
+					}
+					stage.feature_ = &feature;
+					stage.enabled_ = [](const void* owner, RenderViewKind view) -> Bool
 						{
-							stage.accesses_.push_back(RenderGraphAccess{ String(access.Resource().Name()), access.Type() });
-						}
-						stage.feature_ = &feature;
-						stage.enabled_ = [](const void* owner, RenderViewKind view) -> Bool
+							using Condition = std::remove_cv_t<decltype(Stages::enableCondition_)>;
+							if constexpr (std::same_as<Condition, std::nullptr_t>)
 							{
-								using Condition = std::remove_cv_t<decltype(Stages::enableCondition_)>;
-								if constexpr (std::same_as<Condition, std::nullptr_t>)
-								{
-									return true;
-								}
-								else if constexpr (std::same_as<Condition, Bool Feature::*>)
-								{
-									return static_cast<const Feature*>(owner)->*Stages::enableCondition_;
-								}
-								else
-								{
-									return (static_cast<const Feature*>(owner)->*Stages::enableCondition_)[static_cast<Size>(view)];
-								}
-							};
-						stage.execute_ = [](void* owner, RenderPass& pass)
+								return true;
+							}
+							else if constexpr (std::same_as<Condition, Bool Feature::*>)
 							{
-								Stages::Execute(*static_cast<Feature*>(owner), pass);
-							};
-					}(), ...);
-			}(RenderFeatureAccess::StagesOf<Feature>());
+								return static_cast<const Feature*>(owner)->*Stages::enableCondition_;
+							}
+							else
+							{
+								return (static_cast<const Feature*>(owner)->*Stages::enableCondition_)[static_cast<Size>(view)];
+							}
+						};
+					stage.execute_ = [](void* owner, RenderPass& pass)
+						{
+							Stages::Execute(*static_cast<Feature*>(owner), pass);
+						};
+				}(), ...);
 			dirty_ = true;
 		}
 
@@ -287,10 +291,14 @@ namespace SeedCore
 
 		GpuProfiler profiler_;
 
+#if SC_DEBUG
+		DynamicArray<std::pair<String, IDxcBlob*>> verified_;
+#endif
+
 		RenderUpload upload_;
 
 		Uint32 frame_ = 0;
 
 		Bool dirty_ = true;
 	};
-}
+}

@@ -50,7 +50,7 @@ namespace SeedCore
 		if (!texture->resource_ && !texture->filePath_.view().empty())
 		{
 			texture->textureIndex_ = heap_.AllocateIndex();
-			TextureCreator::CreateTexturePath(context_.GetDevice(), context_.GetDirectQueue(), heap_.Heap(), texture->filePath_, texture->resource_, texture->textureIndex_);
+			TextureCreator::CreateTexturePath(context_.GetDevice(), context_.GetCopyQueue(), context_.GetLoadTransferLane(LoadThread::Main), heap_.Heap(), texture->filePath_, texture->resource_, texture->textureIndex_);
 			if (texture->resource_)
 			{
 				D3D12_RESOURCE_DESC desc = texture->resource_->GetDesc();

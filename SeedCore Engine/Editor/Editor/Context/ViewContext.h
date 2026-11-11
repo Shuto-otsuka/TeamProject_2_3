@@ -1,5 +1,5 @@
 #pragma once
-#include <GraphicsEngine/Renderer/ViewMode.h>
+#include <GraphicsEngine/RenderGraph/RenderView.h>
 
 namespace SeedCore
 {
@@ -37,7 +37,7 @@ namespace SeedCore
 
 		/// [EN] How the scene is shown: lit, unlit, wireframe or a buffer visualization.
 		/// [JP] 場面の見せ方。ライティングあり・なし、ワイヤーフレーム、各バッファの可視化など。
-		ViewMode viewMode_ = ViewMode::Lit;
+		RenderViewMode viewMode_ = RenderViewMode::Lit;
 
 		/// [EN] Whether icons are drawn at the positions of cameras, lights, audio and other actors without geometry.
 		/// [JP] カメラ・ライト・音、そのほか見た目を持たないアクターの位置にアイコンを描くか。

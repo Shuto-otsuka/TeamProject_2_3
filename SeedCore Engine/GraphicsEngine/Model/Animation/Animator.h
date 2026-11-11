@@ -121,7 +121,7 @@ namespace SeedCore
 		Float swingAngle2_ = 45.0f;
 	};
 
-	class ModelRenderer;
+	class ModelMorph;
 	class AnimationSystem;
 	class AnimatorControllerPanel;
 	class TimelinePanel;
@@ -139,7 +139,7 @@ namespace SeedCore
 
 	class SEEDCORE_API Animator :public SeedScript
 	{
-		friend class ModelRenderer;
+		friend class ModelMorph;
 		friend class AnimationSystem;
 		friend class AnimatorControllerPanel;
 		friend class TimelinePanel;

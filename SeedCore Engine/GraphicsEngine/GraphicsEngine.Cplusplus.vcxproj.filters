@@ -124,9 +124,6 @@
     <Filter Include="Decal">
       <UniqueIdentifier>{b284a0a2-7950-4667-a116-e2b76d44f3b3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="PostProcess\PostEffect">
-      <UniqueIdentifier>{ed270c07-bf4c-40bd-982d-21c63e7031d8}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Constraint">
       <UniqueIdentifier>{b194b082-4dc2-4dc5-8b98-d3589574858f}</UniqueIdentifier>
     </Filter>
@@ -135,9 +132,6 @@
     </Filter>
     <Filter Include="Model\Collision">
       <UniqueIdentifier>{0b6e0942-763b-4c4a-af40-2b64ad4da33b}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="TAAU">
-      <UniqueIdentifier>{cdaa4885-4f34-4b9b-9bcf-3ead1c9f0b08}</UniqueIdentifier>
     </Filter>
     <Filter Include="Model\Opaque">
       <UniqueIdentifier>{cf25155a-8a98-4e3b-8d25-40bf44cbec0d}</UniqueIdentifier>
@@ -180,27 +174,6 @@
     </Filter>
     <Filter Include="Texture\Compression">
       <UniqueIdentifier>{c5fd277a-0c51-4d14-8d8b-63f052c51210}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Texture\Sprite">
-      <UniqueIdentifier>{b8bc3169-4b24-43c8-bbec-63fa8f47a8ff}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Texture\Billboard">
-      <UniqueIdentifier>{d0b1ee2c-8512-4291-bfe3-852d6871529f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Font\Sprite">
-      <UniqueIdentifier>{0fcb83da-5ec8-487c-8dbf-12e4341b419f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Font\Billboard">
-      <UniqueIdentifier>{6bcfbe35-7acc-470d-8e07-94553d674059}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Movie\Sprite">
-      <UniqueIdentifier>{842b63c2-9e29-48ee-b72c-db6f7ff1fbe2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Movie\Billboard">
-      <UniqueIdentifier>{55964158-b661-49aa-8abf-23c6ba137b8c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Movie\Fullscreen">
-      <UniqueIdentifier>{90aa1224-0301-45fc-9030-e1ca7d725f4e}</UniqueIdentifier>
     </Filter>
     <Filter Include="Avatar">
       <UniqueIdentifier>{2c696a44-0c81-485f-b77e-ea1f89f30465}</UniqueIdentifier>
@@ -247,6 +220,93 @@
     <Filter Include="RenderGraph">
       <UniqueIdentifier>{8cb19bc5-219a-4762-aea1-7330aec2a60e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="RenderGraph\Pipeline">
+      <UniqueIdentifier>{00c2da71-ae10-48ff-8ddf-e5d9957c3cbb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="D3D12\Signature">
+      <UniqueIdentifier>{b25ba495-f800-4a86-b890-9ad958963d9d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Graphics">
+      <UniqueIdentifier>{e943843e-159b-4b16-a343-734b2af89377}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Shape\Fullscreen">
+      <UniqueIdentifier>{41370916-4f54-4444-8283-ab606f08651a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Model\Softbody">
+      <UniqueIdentifier>{78c79e51-d4a7-4418-9596-8c614af3eb45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Culling">
+      <UniqueIdentifier>{4b2d6cf2-955e-4102-b38e-ed32dec86b18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Debug">
+      <UniqueIdentifier>{dee315e9-4f80-49ac-afd1-17f54f3a4a67}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination\DirectLight">
+      <UniqueIdentifier>{c278ea3b-7148-4f8c-b4da-838ec5b660a8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Illumination\Radiance">
+      <UniqueIdentifier>{d93971b9-1da2-43a9-adc5-c8b6bb722706}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\Upscale">
+      <UniqueIdentifier>{32d41843-f13d-4896-a4f3-7fb7b04ba01a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\AutoExposure">
+      <UniqueIdentifier>{c0636f6f-2e26-4ef5-a4ad-7e79c2be3145}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\Bokeh">
+      <UniqueIdentifier>{f92ae5b3-549e-40ac-aa22-d9996ac9d99f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\DepthOfField">
+      <UniqueIdentifier>{192f230c-b6cd-4638-877a-5ed96ea2c839}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\ChromaticAberration">
+      <UniqueIdentifier>{a33ab068-7a74-4708-a399-8ee74e2bb555}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\LensDistortion">
+      <UniqueIdentifier>{fe477529-374a-4e01-a38f-c8ed3aada721}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\Vignette">
+      <UniqueIdentifier>{3dbe59e2-bbcd-40e2-bee6-bc77b2cfc75f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\KawaseBloom">
+      <UniqueIdentifier>{6c051444-a171-4f62-8a1d-0a533a3b3cc1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\FilmGrain">
+      <UniqueIdentifier>{baa01feb-a8b0-462a-b29e-e50c49a58728}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\LensFlare">
+      <UniqueIdentifier>{4df0c833-2e2e-48d4-8296-ecc86cf74054}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\AnamorphicFlare">
+      <UniqueIdentifier>{7152ff4a-b9dc-4b37-bc42-4832ddc5f945}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\ColorGrading">
+      <UniqueIdentifier>{1aa1ab7e-1809-4f47-81f7-adeea3f1069d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\Sharpness">
+      <UniqueIdentifier>{dc049ff5-5b90-414e-acaa-c556c25f0f29}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\ToneMapping">
+      <UniqueIdentifier>{d87a690c-b835-43a6-8fd9-2c65a74c9c8d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\MotionBlur">
+      <UniqueIdentifier>{4b71650c-eeed-4763-9a6b-58dfbf886445}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\RadialBlur">
+      <UniqueIdentifier>{ed11ced2-bcb3-46a1-9503-8ddde8678560}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\ZoomBlur">
+      <UniqueIdentifier>{c3e0af4f-70be-44f8-b1f3-f07caddcaed6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="PostProcess\DirectionalBlur">
+      <UniqueIdentifier>{7ffe459a-8e52-4dc6-a551-cbaebc22b630}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Texture\Sprite">
+      <UniqueIdentifier>{0d4387d6-08c0-4256-8c1d-60967ef46473}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Texture\Billboard">
+      <UniqueIdentifier>{171c77af-0e5b-426d-bfc8-bcb7804ea884}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12\Context\D3D12Adapter.h">
@@ -282,7 +342,6 @@
     <ClInclude Include="D3D12\D3D12Types.h">
       <Filter>D3D12</Filter>
     </ClInclude>
-    <ClInclude Include="Graphics.h" />
     <ClInclude Include="D3D12\SwapChain\SwapChain.h">
       <Filter>D3D12\SwapChain</Filter>
     </ClInclude>
@@ -340,9 +399,6 @@
     <ClInclude Include="D3D12\PipelineState\RaytracingStateObject.h">
       <Filter>D3D12\PipelineState</Filter>
     </ClInclude>
-    <ClInclude Include="D3D12\PipelineState\RootSignature.h">
-      <Filter>D3D12\PipelineState</Filter>
-    </ClInclude>
     <ClInclude Include="D3D12\PipelineState\VertexShader.h">
       <Filter>D3D12\PipelineState</Filter>
     </ClInclude>
@@ -366,12 +422,6 @@
     </ClInclude>
     <ClInclude Include="D3D12\Buffer\GeometryBuffer.h">
       <Filter>D3D12\Buffer</Filter>
-    </ClInclude>
-    <ClInclude Include="D3D12\Buffer\HiZBuffer.h">
-      <Filter>D3D12\Buffer</Filter>
-    </ClInclude>
-    <ClInclude Include="System\LightSystem.h">
-      <Filter>System</Filter>
     </ClInclude>
     <ClInclude Include="Camera\Camera.h">
       <Filter>Camera</Filter>
@@ -415,15 +465,6 @@
     <ClInclude Include="Font\ShapedText.h">
       <Filter>Font</Filter>
     </ClInclude>
-    <ClInclude Include="Font\FontShader.h">
-      <Filter>Font</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\FontRenderer.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\Renderer.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="Font\FontResource.h">
       <Filter>Font</Filter>
     </ClInclude>
@@ -437,9 +478,6 @@
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\ShapeRenderer.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\MovieRenderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Camera\CanvasCamera.h">
@@ -474,9 +512,6 @@
     </ClInclude>
     <ClInclude Include="Light\RectangleLight.h">
       <Filter>Light</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\ViewMode.h">
-      <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Shape\Outline\OutlineShader.h">
       <Filter>Shape\Outline</Filter>
@@ -571,9 +606,6 @@
     <ClInclude Include="Movie\MovieResource.h">
       <Filter>Movie</Filter>
     </ClInclude>
-    <ClInclude Include="Movie\MovieShader.h">
-      <Filter>Movie</Filter>
-    </ClInclude>
     <ClInclude Include="System\MovieSystem.h">
       <Filter>System</Filter>
     </ClInclude>
@@ -598,9 +630,6 @@
     <ClInclude Include="Texture\Texture.h">
       <Filter>Texture</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer\TextureRenderer.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="Effect\Zephyr\ZephyParticler.h">
       <Filter>Effect\Zephyr</Filter>
     </ClInclude>
@@ -613,58 +642,7 @@
     <ClInclude Include="Effect\Zephyr\EffectLoader.h">
       <Filter>Effect\Zephyr</Filter>
     </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\AnamorphicFlare.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\AutoExposure.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\Bokeh.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\ChromaticAberration.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\ColorGrading.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\DepthOfField.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\DirectionalBlur.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\FilmGrain.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\KawaseBloom.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\LensDistortion.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\LensFlare.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\MotionBlur.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\RadialBlur.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\ToneMapping.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\Vignette.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\ZoomBlur.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
     <ClInclude Include="Renderer\DecalRenderer.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\PostProcessRenderer.h">
       <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="Renderer\GlobalIlluminationRenderer.h">
@@ -699,15 +677,6 @@
     </ClInclude>
     <ClInclude Include="Illumination\GlobalIllumination\GlobalIlluminationDenoiseShader.h">
       <Filter>Illumination\GlobalIllumination</Filter>
-    </ClInclude>
-    <ClInclude Include="DLSS\DlssNormalRoughnessShader.h">
-      <Filter>DLSS</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\DlssRayReconstructionRenderer.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="DLSS\DlssBackgroundVelocityShader.h">
-      <Filter>DLSS</Filter>
     </ClInclude>
     <ClInclude Include="Environment\Weather.h">
       <Filter>Environment</Filter>
@@ -748,21 +717,6 @@
     <ClInclude Include="Model\Collision\MeshCollisionResource.h">
       <Filter>Model\Collision</Filter>
     </ClInclude>
-    <ClInclude Include="TAAU\TaauResolveShader.h">
-      <Filter>TAAU</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\TaauUpsamplingRenderer.h">
-      <Filter>Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="PostProcess\PostEffect\Sharpness.h">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClInclude>
-    <ClInclude Include="Model\Material\MaterialResolveShader.h">
-      <Filter>Model\Material</Filter>
-    </ClInclude>
-    <ClInclude Include="Model\Material\MaterialSortBuffer.h">
-      <Filter>Model\Material</Filter>
-    </ClInclude>
     <ClInclude Include="Model\Morph\MorphBlendShader.h">
       <Filter>Model\Morph</Filter>
     </ClInclude>
@@ -776,12 +730,6 @@
       <Filter>Model</Filter>
     </ClInclude>
     <ClInclude Include="Model\ModelResource.h">
-      <Filter>Model</Filter>
-    </ClInclude>
-    <ClInclude Include="Model\ModelShader.h">
-      <Filter>Model</Filter>
-    </ClInclude>
-    <ClInclude Include="Model\SoftbodyMesh.h">
       <Filter>Model</Filter>
     </ClInclude>
     <ClInclude Include="Model\IK\FullBodyIK.h">
@@ -813,12 +761,6 @@
     </ClInclude>
     <ClInclude Include="Camera\ScreenSpace.h">
       <Filter>Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="Shape\HUD\HUDComposeShader.h">
-      <Filter>Shape\HUD</Filter>
-    </ClInclude>
-    <ClInclude Include="Renderer\HUDComposeRenderer.h">
-      <Filter>Renderer</Filter>
     </ClInclude>
     <ClInclude Include="D3D12\Buffer\HudlessBuffer.h">
       <Filter>D3D12\Buffer</Filter>
@@ -903,9 +845,6 @@
     </ClInclude>
     <ClInclude Include="Effect\Zephyr\ZephyrModuleAssembler.h">
       <Filter>Effect\Zephyr</Filter>
-    </ClInclude>
-    <ClInclude Include="Model\ModelRecord.h">
-      <Filter>Model</Filter>
     </ClInclude>
     <ClInclude Include="Camera\CameraBrain.h">
       <Filter>Camera</Filter>
@@ -1168,9 +1107,6 @@
     <ClInclude Include="RenderGraph\RenderName.h">
       <Filter>RenderGraph</Filter>
     </ClInclude>
-    <ClInclude Include="RenderGraph\RenderResourceDeclaration.h">
-      <Filter>RenderGraph</Filter>
-    </ClInclude>
     <ClInclude Include="RenderGraph\RenderAccess.h">
       <Filter>RenderGraph</Filter>
     </ClInclude>
@@ -1178,9 +1114,6 @@
       <Filter>RenderGraph</Filter>
     </ClInclude>
     <ClInclude Include="RenderGraph\RenderStage.h">
-      <Filter>RenderGraph</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderGraph\RenderFeatureAccess.h">
       <Filter>RenderGraph</Filter>
     </ClInclude>
     <ClInclude Include="RenderGraph\RenderStageRules.h">
@@ -1203,6 +1136,333 @@
     </ClInclude>
     <ClInclude Include="RenderGraph\RenderPass.h">
       <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="Shader\ShaderPath.h">
+      <Filter>Shader</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\Pipeline\PipelineDescriptionAccess.h">
+      <Filter>RenderGraph\Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\Pipeline\ComputePipeline.h">
+      <Filter>RenderGraph\Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\Pipeline\GraphicsPipeline.h">
+      <Filter>RenderGraph\Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12\Signature\RootSignature.h">
+      <Filter>D3D12\Signature</Filter>
+    </ClInclude>
+    <ClInclude Include="D3D12\Signature\CommandSignature.h">
+      <Filter>D3D12\Signature</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\Pipeline\RaytracingPipeline.h">
+      <Filter>RenderGraph\Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderFrame.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\SceneRenderer.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\Graphics.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsDisplay.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsPresenter.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsProcessor.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsUpdater.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Graphics\GraphicsScene.h">
+      <Filter>Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\HUD\HUDShader.h">
+      <Filter>Shape\HUD</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\HUD\HUDFeature.h">
+      <Filter>Shape\HUD</Filter>
+    </ClInclude>
+    <ClInclude Include="Shape\HUD\HUDStage.h">
+      <Filter>Shape\HUD</Filter>
+    </ClInclude>
+    <ClInclude Include="Sky\SkyShader.h">
+      <Filter>Sky</Filter>
+    </ClInclude>
+    <ClInclude Include="Sky\SkyStage.h">
+      <Filter>Sky</Filter>
+    </ClInclude>
+    <ClInclude Include="Sky\SkyFeature.h">
+      <Filter>Sky</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Skin\ModelSkin.h">
+      <Filter>Model\Skin</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Softbody\ModelSoftbody.h">
+      <Filter>Model\Softbody</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Morph\ModelMorph.h">
+      <Filter>Model\Morph</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Material\ModelMaterial.h">
+      <Filter>Model\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\ModelFeature.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\ModelMesh.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\ModelStage.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\ModelDrivenShader.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Softbody\SoftbodyMesh.h">
+      <Filter>Model\Softbody</Filter>
+    </ClInclude>
+    <ClInclude Include="Culling\CullingFeature.h">
+      <Filter>Culling</Filter>
+    </ClInclude>
+    <ClInclude Include="Culling\CullingShader.h">
+      <Filter>Culling</Filter>
+    </ClInclude>
+    <ClInclude Include="Culling\CullingStage.h">
+      <Filter>Culling</Filter>
+    </ClInclude>
+    <ClInclude Include="Debug\DebugViewFeature.h">
+      <Filter>Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Debug\DebugViewShader.h">
+      <Filter>Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Debug\DebugViewStage.h">
+      <Filter>Debug</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Opaque\GeometryFeature.h">
+      <Filter>Model\Opaque</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Opaque\GeometryShader.h">
+      <Filter>Model\Opaque</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Opaque\GeometryStage.h">
+      <Filter>Model\Opaque</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Model.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Material\MaterialFeature.h">
+      <Filter>Model\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Material\MaterialStage.h">
+      <Filter>Model\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Material\MaterialShader.h">
+      <Filter>Model\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Light\Light.h">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="Light\LightCluster.h">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="Light\LightFeature.h">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="Light\LightShader.h">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="Light\LightStage.h">
+      <Filter>Light</Filter>
+    </ClInclude>
+    <ClInclude Include="Illumination\DirectLight\DirectLightFeature.h">
+      <Filter>Illumination\DirectLight</Filter>
+    </ClInclude>
+    <ClInclude Include="Illumination\DirectLight\DirectLightShader.h">
+      <Filter>Illumination\DirectLight</Filter>
+    </ClInclude>
+    <ClInclude Include="Illumination\DirectLight\DirectLightStage.h">
+      <Filter>Illumination\DirectLight</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Opaque\DeferredLightingFeature.h">
+      <Filter>Model\Opaque</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Opaque\DeferredLightingShader.h">
+      <Filter>Model\Opaque</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\Opaque\DeferredLightingStage.h">
+      <Filter>Model\Opaque</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture\TextureDriven.h">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture\TextureFeature.h">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture\TextureStage.h">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture\TextureUnit.h">
+      <Filter>Texture</Filter>
+    </ClInclude>
+    <ClInclude Include="Model\ModelUnit.h">
+      <Filter>Model</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderFeatureRegistry.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\RenderFormat.h">
+      <Filter>RenderGraph</Filter>
+    </ClInclude>
+    <ClInclude Include="Illumination\Radiance\RadianceFeature.h">
+      <Filter>Illumination\Radiance</Filter>
+    </ClInclude>
+    <ClInclude Include="Illumination\Radiance\RadianceShader.h">
+      <Filter>Illumination\Radiance</Filter>
+    </ClInclude>
+    <ClInclude Include="Illumination\Radiance\RadianceStage.h">
+      <Filter>Illumination\Radiance</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\Upscale\UpscaleFeature.h">
+      <Filter>PostProcess\Upscale</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\Upscale\UpscaleShader.h">
+      <Filter>PostProcess\Upscale</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\Upscale\UpscaleStage.h">
+      <Filter>PostProcess\Upscale</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\AutoExposure\AutoExposureFeature.h">
+      <Filter>PostProcess\AutoExposure</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\AutoExposure\AutoExposureShader.h">
+      <Filter>PostProcess\AutoExposure</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\AutoExposure\AutoExposureStage.h">
+      <Filter>PostProcess\AutoExposure</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\ChromaticAberration\ChromaticAberrationFeature.h">
+      <Filter>PostProcess\ChromaticAberration</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\ChromaticAberration\ChromaticAberrationShader.h">
+      <Filter>PostProcess\ChromaticAberration</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\ChromaticAberration\ChromaticAberrationStage.h">
+      <Filter>PostProcess\ChromaticAberration</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\DepthOfField\DepthOfFieldFeature.h">
+      <Filter>PostProcess\DepthOfField</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\DepthOfField\DepthOfFieldShader.h">
+      <Filter>PostProcess\DepthOfField</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\DepthOfField\DepthOfFieldStage.h">
+      <Filter>PostProcess\DepthOfField</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\Bokeh\BokehFeature.h">
+      <Filter>PostProcess\Bokeh</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\Bokeh\BokehShader.h">
+      <Filter>PostProcess\Bokeh</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\Bokeh\BokehStage.h">
+      <Filter>PostProcess\Bokeh</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\LensDistortion\LensDistortionFeature.h">
+      <Filter>PostProcess\LensDistortion</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\LensDistortion\LensDistortionShader.h">
+      <Filter>PostProcess\LensDistortion</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\LensDistortion\LensDistortionStage.h">
+      <Filter>PostProcess\LensDistortion</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\Vignette\VignetteFeature.h">
+      <Filter>PostProcess\Vignette</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\Vignette\VignetteShader.h">
+      <Filter>PostProcess\Vignette</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\Vignette\VignetteStage.h">
+      <Filter>PostProcess\Vignette</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\KawaseBloom\KawaseBloomFeature.h">
+      <Filter>PostProcess\KawaseBloom</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\KawaseBloom\KawaseBloomShader.h">
+      <Filter>PostProcess\KawaseBloom</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\KawaseBloom\KawaseBloomStage.h">
+      <Filter>PostProcess\KawaseBloom</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\AnamorphicFlare\AnamorphicFlareFeature.h">
+      <Filter>PostProcess\AnamorphicFlare</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\AnamorphicFlare\AnamorphicFlareShader.h">
+      <Filter>PostProcess\AnamorphicFlare</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\AnamorphicFlare\AnamorphicFlareStage.h">
+      <Filter>PostProcess\AnamorphicFlare</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\LensFlare\LensFlareFeature.h">
+      <Filter>PostProcess\LensFlare</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\LensFlare\LensFlareShader.h">
+      <Filter>PostProcess\LensFlare</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\LensFlare\LensFlareStage.h">
+      <Filter>PostProcess\LensFlare</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\PostProcessFeature.h">
+      <Filter>PostProcess</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\PostProcessShader.h">
+      <Filter>PostProcess</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\PostProcessStage.h">
+      <Filter>PostProcess</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\FilmGrain\FilmGrainFeature.h">
+      <Filter>PostProcess\FilmGrain</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\FilmGrain\FilmGrainShader.h">
+      <Filter>PostProcess\FilmGrain</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\FilmGrain\FilmGrainStage.h">
+      <Filter>PostProcess\FilmGrain</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\ColorGrading\ColorGradingFeature.h">
+      <Filter>PostProcess\ColorGrading</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\ColorGrading\ColorGradingShader.h">
+      <Filter>PostProcess\ColorGrading</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\ColorGrading\ColorGradingStage.h">
+      <Filter>PostProcess\ColorGrading</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\Sharpness\SharpnessFeature.h">
+      <Filter>PostProcess\Sharpness</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\Sharpness\SharpnessShader.h">
+      <Filter>PostProcess\Sharpness</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\Sharpness\SharpnessStage.h">
+      <Filter>PostProcess\Sharpness</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\ToneMapping\ToneMappingFeature.h">
+      <Filter>PostProcess\ToneMapping</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\ToneMapping\ToneMappingShader.h">
+      <Filter>PostProcess\ToneMapping</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcess\ToneMapping\ToneMappingStage.h">
+      <Filter>PostProcess\ToneMapping</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1233,7 +1493,6 @@
     <ClCompile Include="D3D12\Context\D3D12Context.cpp">
       <Filter>D3D12\Context</Filter>
     </ClCompile>
-    <ClCompile Include="Graphics.cpp" />
     <ClCompile Include="D3D12\SwapChain\SwapChain.cpp">
       <Filter>D3D12\SwapChain</Filter>
     </ClCompile>
@@ -1279,9 +1538,6 @@
     <ClCompile Include="D3D12\PipelineState\RaytracingStateObject.cpp">
       <Filter>D3D12\PipelineState</Filter>
     </ClCompile>
-    <ClCompile Include="D3D12\PipelineState\RootSignature.cpp">
-      <Filter>D3D12\PipelineState</Filter>
-    </ClCompile>
     <ClCompile Include="D3D12\PipelineState\VertexShader.cpp">
       <Filter>D3D12\PipelineState</Filter>
     </ClCompile>
@@ -1302,12 +1558,6 @@
     </ClCompile>
     <ClCompile Include="D3D12\Buffer\GeometryBuffer.cpp">
       <Filter>D3D12\Buffer</Filter>
-    </ClCompile>
-    <ClCompile Include="D3D12\Buffer\HiZBuffer.cpp">
-      <Filter>D3D12\Buffer</Filter>
-    </ClCompile>
-    <ClCompile Include="System\LightSystem.cpp">
-      <Filter>System</Filter>
     </ClCompile>
     <ClCompile Include="Camera\EditorCamera.cpp">
       <Filter>Camera</Filter>
@@ -1337,15 +1587,6 @@
     <ClCompile Include="Font\ShapedText.cpp">
       <Filter>Font</Filter>
     </ClCompile>
-    <ClCompile Include="Font\FontShader.cpp">
-      <Filter>Font</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\Renderer.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\FontRenderer.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="Font\FontResource.cpp">
       <Filter>Font</Filter>
     </ClCompile>
@@ -1356,9 +1597,6 @@
       <Filter>Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\ShapeRenderer.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\MovieRenderer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Camera\CanvasCamera.cpp">
@@ -1472,9 +1710,6 @@
     <ClCompile Include="Movie\MovieResource.cpp">
       <Filter>Movie</Filter>
     </ClCompile>
-    <ClCompile Include="Movie\MovieShader.cpp">
-      <Filter>Movie</Filter>
-    </ClCompile>
     <ClCompile Include="System\MovieSystem.cpp">
       <Filter>System</Filter>
     </ClCompile>
@@ -1493,70 +1728,13 @@
     <ClCompile Include="Texture\TextureResource.cpp">
       <Filter>Texture</Filter>
     </ClCompile>
-    <ClCompile Include="Texture\TextureShader.cpp">
-      <Filter>Texture</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\TextureRenderer.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="Effect\Zephyr\EffectResource.cpp">
       <Filter>Effect\Zephyr</Filter>
     </ClCompile>
     <ClCompile Include="Effect\Zephyr\EffectLoader.cpp">
       <Filter>Effect\Zephyr</Filter>
     </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\AnamorphicFlare.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\AutoExposure.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\Bokeh.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\ChromaticAberration.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\ColorGrading.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\DepthOfField.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\DirectionalBlur.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\FilmGrain.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\KawaseBloom.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\LensDistortion.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\LensFlare.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\MotionBlur.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\RadialBlur.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\ToneMapping.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\Vignette.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\ZoomBlur.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
     <ClCompile Include="Renderer\DecalRenderer.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\PostProcessRenderer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
     <ClCompile Include="Renderer\GlobalIlluminationRenderer.cpp">
@@ -1576,15 +1754,6 @@
     </ClCompile>
     <ClCompile Include="Illumination\GlobalIllumination\GlobalIlluminationDenoiseShader.cpp">
       <Filter>Illumination\GlobalIllumination</Filter>
-    </ClCompile>
-    <ClCompile Include="DLSS\DlssNormalRoughnessShader.cpp">
-      <Filter>DLSS</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\DlssRayReconstructionRenderer.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="DLSS\DlssBackgroundVelocityShader.cpp">
-      <Filter>DLSS</Filter>
     </ClCompile>
     <ClCompile Include="Environment\VolumetricStar\VolumetricStarShader.cpp">
       <Filter>Environment\VolumetricStar</Filter>
@@ -1622,21 +1791,6 @@
     <ClCompile Include="Model\Collision\MeshCollisionResource.cpp">
       <Filter>Model\Collision</Filter>
     </ClCompile>
-    <ClCompile Include="TAAU\TaauResolveShader.cpp">
-      <Filter>TAAU</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\TaauUpsamplingRenderer.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
-    <ClCompile Include="PostProcess\PostEffect\Sharpness.cpp">
-      <Filter>PostProcess\PostEffect</Filter>
-    </ClCompile>
-    <ClCompile Include="Model\Material\MaterialResolveShader.cpp">
-      <Filter>Model\Material</Filter>
-    </ClCompile>
-    <ClCompile Include="Model\Material\MaterialSortBuffer.cpp">
-      <Filter>Model\Material</Filter>
-    </ClCompile>
     <ClCompile Include="Model\Morph\MorphBlendShader.cpp">
       <Filter>Model\Morph</Filter>
     </ClCompile>
@@ -1650,12 +1804,6 @@
       <Filter>Model</Filter>
     </ClCompile>
     <ClCompile Include="Model\ModelResource.cpp">
-      <Filter>Model</Filter>
-    </ClCompile>
-    <ClCompile Include="Model\ModelShader.cpp">
-      <Filter>Model</Filter>
-    </ClCompile>
-    <ClCompile Include="Model\SoftbodyMesh.cpp">
       <Filter>Model</Filter>
     </ClCompile>
     <ClCompile Include="Model\IK\FullBodyIK.cpp">
@@ -1676,9 +1824,6 @@
     <ClCompile Include="Renderer\ModelTransformRenderer.cpp">
       <Filter>Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="Renderer\TimelineRenderer.cpp">
-      <Filter>Renderer</Filter>
-    </ClCompile>
     <ClCompile Include="Camera\PreviewCameraController.cpp">
       <Filter>Camera</Filter>
     </ClCompile>
@@ -1687,12 +1832,6 @@
     </ClCompile>
     <ClCompile Include="Camera\ScreenSpace.cpp">
       <Filter>Camera</Filter>
-    </ClCompile>
-    <ClCompile Include="Shape\HUD\HUDComposeShader.cpp">
-      <Filter>Shape\HUD</Filter>
-    </ClCompile>
-    <ClCompile Include="Renderer\HUDComposeRenderer.cpp">
-      <Filter>Renderer</Filter>
     </ClCompile>
     <ClCompile Include="D3D12\Buffer\HudlessBuffer.cpp">
       <Filter>D3D12\Buffer</Filter>
@@ -1964,6 +2103,225 @@
     <ClCompile Include="RenderGraph\RenderPass.cpp">
       <Filter>RenderGraph</Filter>
     </ClCompile>
+    <ClCompile Include="Shader\ShaderPath.cpp">
+      <Filter>Shader</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12\Signature\RootSignature.cpp">
+      <Filter>D3D12\Signature</Filter>
+    </ClCompile>
+    <ClCompile Include="D3D12\Signature\CommandSignature.cpp">
+      <Filter>D3D12\Signature</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderGraph\SceneRenderer.cpp">
+      <Filter>RenderGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\Graphics.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsDisplay.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsPresenter.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsProcessor.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsUpdater.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Graphics\GraphicsScene.cpp">
+      <Filter>Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\HUD\HUDFeature.cpp">
+      <Filter>Shape\HUD</Filter>
+    </ClCompile>
+    <ClCompile Include="Shape\HUD\HUDStage.cpp">
+      <Filter>Shape\HUD</Filter>
+    </ClCompile>
+    <ClCompile Include="Sky\SkyStage.cpp">
+      <Filter>Sky</Filter>
+    </ClCompile>
+    <ClCompile Include="Sky\SkyFeature.cpp">
+      <Filter>Sky</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Skin\ModelSkin.cpp">
+      <Filter>Model\Skin</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Softbody\ModelSoftbody.cpp">
+      <Filter>Model\Softbody</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Morph\ModelMorph.cpp">
+      <Filter>Model\Morph</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Material\ModelMaterial.cpp">
+      <Filter>Model\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\ModelFeature.cpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\ModelMesh.cpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\ModelStage.cpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Softbody\SoftbodyMesh.cpp">
+      <Filter>Model\Softbody</Filter>
+    </ClCompile>
+    <ClCompile Include="Culling\CullingFeature.cpp">
+      <Filter>Culling</Filter>
+    </ClCompile>
+    <ClCompile Include="Culling\CullingStage.cpp">
+      <Filter>Culling</Filter>
+    </ClCompile>
+    <ClCompile Include="Debug\DebugViewFeature.cpp">
+      <Filter>Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="Debug\DebugViewStage.cpp">
+      <Filter>Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Opaque\GeometryFeature.cpp">
+      <Filter>Model\Opaque</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Opaque\GeometryStage.cpp">
+      <Filter>Model\Opaque</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Material\MaterialFeature.cpp">
+      <Filter>Model\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Material\MaterialStage.cpp">
+      <Filter>Model\Material</Filter>
+    </ClCompile>
+    <ClCompile Include="Light\LightFeature.cpp">
+      <Filter>Light</Filter>
+    </ClCompile>
+    <ClCompile Include="Light\LightStage.cpp">
+      <Filter>Light</Filter>
+    </ClCompile>
+    <ClCompile Include="Illumination\DirectLight\DirectLightFeature.cpp">
+      <Filter>Illumination\DirectLight</Filter>
+    </ClCompile>
+    <ClCompile Include="Illumination\DirectLight\DirectLightStage.cpp">
+      <Filter>Illumination\DirectLight</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Opaque\DeferredLightingFeature.cpp">
+      <Filter>Model\Opaque</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\Opaque\DeferredLightingStage.cpp">
+      <Filter>Model\Opaque</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture\TextureFeature.cpp">
+      <Filter>Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture\TextureStage.cpp">
+      <Filter>Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture\TextureUnit.cpp">
+      <Filter>Texture</Filter>
+    </ClCompile>
+    <ClCompile Include="Model\ModelUnit.cpp">
+      <Filter>Model</Filter>
+    </ClCompile>
+    <ClCompile Include="RenderGraph\RenderFeatureRegistry.cpp">
+      <Filter>RenderGraph</Filter>
+    </ClCompile>
+    <ClCompile Include="Illumination\Radiance\RadianceFeature.cpp">
+      <Filter>Illumination\Radiance</Filter>
+    </ClCompile>
+    <ClCompile Include="Illumination\Radiance\RadianceStage.cpp">
+      <Filter>Illumination\Radiance</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\Upscale\UpscaleFeature.cpp">
+      <Filter>PostProcess\Upscale</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\Upscale\UpscaleStage.cpp">
+      <Filter>PostProcess\Upscale</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\AutoExposure\AutoExposureFeature.cpp">
+      <Filter>PostProcess\AutoExposure</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\AutoExposure\AutoExposureStage.cpp">
+      <Filter>PostProcess\AutoExposure</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\ChromaticAberration\ChromaticAberrationFeature.cpp">
+      <Filter>PostProcess\ChromaticAberration</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\ChromaticAberration\ChromaticAberrationStage.cpp">
+      <Filter>PostProcess\ChromaticAberration</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\DepthOfField\DepthOfFieldFeature.cpp">
+      <Filter>PostProcess\DepthOfField</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\DepthOfField\DepthOfFieldStage.cpp">
+      <Filter>PostProcess\DepthOfField</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\Bokeh\BokehFeature.cpp">
+      <Filter>PostProcess\Bokeh</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\Bokeh\BokehStage.cpp">
+      <Filter>PostProcess\Bokeh</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\LensDistortion\LensDistortionFeature.cpp">
+      <Filter>PostProcess\LensDistortion</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\LensDistortion\LensDistortionStage.cpp">
+      <Filter>PostProcess\LensDistortion</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\Vignette\VignetteFeature.cpp">
+      <Filter>PostProcess\Vignette</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\Vignette\VignetteStage.cpp">
+      <Filter>PostProcess\Vignette</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\KawaseBloom\KawaseBloomStage.cpp">
+      <Filter>PostProcess\KawaseBloom</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\KawaseBloom\KawaseBloomFeature.cpp">
+      <Filter>PostProcess\KawaseBloom</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\AnamorphicFlare\AnamorphicFlareFeature.cpp">
+      <Filter>PostProcess\AnamorphicFlare</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\AnamorphicFlare\AnamorphicFlareStage.cpp">
+      <Filter>PostProcess\AnamorphicFlare</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\LensFlare\LensFlareFeature.cpp">
+      <Filter>PostProcess\LensFlare</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\LensFlare\LensFlareStage.cpp">
+      <Filter>PostProcess\LensFlare</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\PostProcessFeature.cpp">
+      <Filter>PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\PostProcessStage.cpp">
+      <Filter>PostProcess</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\FilmGrain\FilmGrainFeature.cpp">
+      <Filter>PostProcess\FilmGrain</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\FilmGrain\FilmGrainStage.cpp">
+      <Filter>PostProcess\FilmGrain</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\ColorGrading\ColorGradingFeature.cpp">
+      <Filter>PostProcess\ColorGrading</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\ColorGrading\ColorGradingStage.cpp">
+      <Filter>PostProcess\ColorGrading</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\Sharpness\SharpnessFeature.cpp">
+      <Filter>PostProcess\Sharpness</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\Sharpness\SharpnessStage.cpp">
+      <Filter>PostProcess\Sharpness</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\ToneMapping\ToneMappingFeature.cpp">
+      <Filter>PostProcess\ToneMapping</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcess\ToneMapping\ToneMappingStage.cpp">
+      <Filter>PostProcess\ToneMapping</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\Sampler.hlsli">
@@ -1977,9 +2335,6 @@
     </None>
     <None Include="Shader\Culling.hlsli">
       <Filter>Shader</Filter>
-    </None>
-    <None Include="Light\Cluster.hlsli">
-      <Filter>Light</Filter>
     </None>
     <None Include="Shader\Normal.hlsli">
       <Filter>Shader</Filter>
@@ -2026,9 +2381,6 @@
     <None Include="Illumination\GlobalIllumination\Raytracing\RaytracingGlobalIllumination.hlsli">
       <Filter>Illumination\GlobalIllumination\Raytracing</Filter>
     </None>
-    <None Include="PostProcess\ToneMappingCurves.hlsli">
-      <Filter>PostProcess</Filter>
-    </None>
     <None Include="Environment\VolumetricStar\VolumetricStar.hlsli">
       <Filter>Environment\VolumetricStar</Filter>
     </None>
@@ -2058,9 +2410,6 @@
     </None>
     <None Include="Illumination\GlobalIllumination\Raytracing\RaytracingGlobalIlluminationReSTIR.hlsli">
       <Filter>Illumination\GlobalIllumination\Raytracing</Filter>
-    </None>
-    <None Include="Shader\Material.hlsli">
-      <Filter>Shader</Filter>
     </None>
     <None Include="Illumination\Reflection\Raytracing\RaytracingReflectionReSTIR.hlsli">
       <Filter>Illumination\Reflection\Raytracing</Filter>
@@ -2097,9 +2446,6 @@
     </None>
     <None Include="Shader\Scene.hlsli">
       <Filter>Shader</Filter>
-    </None>
-    <None Include="DLSS\Dlss.hlsli">
-      <Filter>DLSS</Filter>
     </None>
     <None Include="Light\Light.hlsli">
       <Filter>Light</Filter>
@@ -2152,11 +2498,44 @@
     <None Include="Shader\RootSignature.hlsli">
       <Filter>Shader</Filter>
     </None>
+    <None Include="Shape\Fullscreen\Fullscreen.hlsli">
+      <Filter>Shape\Fullscreen</Filter>
+    </None>
+    <None Include="Culling\BackfaceCulling.hlsli">
+      <Filter>Culling</Filter>
+    </None>
+    <None Include="Culling\Culling.hlsli">
+      <Filter>Culling</Filter>
+    </None>
+    <None Include="Culling\FrustumCulling.hlsli">
+      <Filter>Culling</Filter>
+    </None>
+    <None Include="Culling\OcclusionCulling.hlsli">
+      <Filter>Culling</Filter>
+    </None>
+    <None Include="Model\Opaque\Geometry.hlsli">
+      <Filter>Model\Opaque</Filter>
+    </None>
+    <None Include="Light\LightShading.hlsli">
+      <Filter>Light</Filter>
+    </None>
+    <None Include="PostProcess\AutoExposure\AutoExposure.hlsli">
+      <Filter>PostProcess\AutoExposure</Filter>
+    </None>
+    <None Include="PostProcess\ToneMapping\ToneMapping.hlsli">
+      <Filter>PostProcess\ToneMapping</Filter>
+    </None>
+    <None Include="Texture\TextureShading.hlsli">
+      <Filter>Texture</Filter>
+    </None>
+    <None Include="Texture\Billboard\TextureBillboard.hlsli">
+      <Filter>Texture\Billboard</Filter>
+    </None>
+    <None Include="Texture\Sprite\TextureSprite.hlsli">
+      <Filter>Texture\Sprite</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="Light\ClusterAssignCS.hlsl">
-      <Filter>Light</Filter>
-    </Text>
     <Text Include="Illumination\Shadow\Raytracing\RaytracingShadowRT.hlsl">
       <Filter>Illumination\Shadow\Raytracing</Filter>
     </Text>
@@ -2199,32 +2578,8 @@
     <Text Include="Environment\VolumetricCloud\CloudNoiseDetailBakeCS.hlsl">
       <Filter>Environment\VolumetricCloud</Filter>
     </Text>
-    <Text Include="PostProcess\AutoExposureAverageCS.hlsl">
-      <Filter>PostProcess</Filter>
-    </Text>
-    <Text Include="PostProcess\AutoExposureHistogramCS.hlsl">
-      <Filter>PostProcess</Filter>
-    </Text>
-    <Text Include="PostProcess\ToneMappingCS.hlsl">
-      <Filter>PostProcess</Filter>
-    </Text>
     <Text Include="Illumination\GlobalIllumination\Raytracing\RaytracingGlobalIlluminationDenoiseCS.hlsl">
       <Filter>Illumination\GlobalIllumination\Raytracing</Filter>
-    </Text>
-    <Text Include="DLSS\DlssNormalRoughnessCS.hlsl">
-      <Filter>DLSS</Filter>
-    </Text>
-    <Text Include="DLSS\DlssBackgroundVelocityCS.hlsl">
-      <Filter>DLSS</Filter>
-    </Text>
-    <Text Include="PostProcess\LensFlareCS.hlsl">
-      <Filter>PostProcess</Filter>
-    </Text>
-    <Text Include="PostProcess\DepthOfFieldCS.hlsl">
-      <Filter>PostProcess</Filter>
-    </Text>
-    <Text Include="PostProcess\BokehCS.hlsl">
-      <Filter>PostProcess</Filter>
     </Text>
     <Text Include="Environment\VolumetricStar\VolumetricStarCS.hlsl">
       <Filter>Environment\VolumetricStar</Filter>
@@ -2243,33 +2598,6 @@
     </Text>
     <Text Include="Illumination\Reflection\Raytracing\RaytracingReflectionDenoiseCS.hlsl">
       <Filter>Illumination\Reflection\Raytracing</Filter>
-    </Text>
-    <Text Include="TAAU\TaauResolveCS.hlsl">
-      <Filter>TAAU</Filter>
-    </Text>
-    <Text Include="PostProcess\SharpnessCS.hlsl">
-      <Filter>PostProcess</Filter>
-    </Text>
-    <Text Include="PostProcess\KawaseBloomCS.hlsl">
-      <Filter>PostProcess</Filter>
-    </Text>
-    <Text Include="PostProcess\AnamorphicFlareCS.hlsl">
-      <Filter>PostProcess</Filter>
-    </Text>
-    <Text Include="PostProcess\ChromaticAberrationCS.hlsl">
-      <Filter>PostProcess</Filter>
-    </Text>
-    <Text Include="PostProcess\VignetteCS.hlsl">
-      <Filter>PostProcess</Filter>
-    </Text>
-    <Text Include="PostProcess\LensDistortionCS.hlsl">
-      <Filter>PostProcess</Filter>
-    </Text>
-    <Text Include="PostProcess\FilmGrainCS.hlsl">
-      <Filter>PostProcess</Filter>
-    </Text>
-    <Text Include="PostProcess\ColorGradingCS.hlsl">
-      <Filter>PostProcess</Filter>
     </Text>
     <Text Include="Model\Material\MaterialClassifyCS.hlsl">
       <Filter>Model\Material</Filter>
@@ -2295,25 +2623,7 @@
     <Text Include="Model\Transparent\OITResolvePS.hlsl">
       <Filter>Model\Transparent</Filter>
     </Text>
-    <Text Include="Model\Opaque\DeferredLightingMS.hlsl">
-      <Filter>Model\Opaque</Filter>
-    </Text>
     <Text Include="Model\Opaque\DeferredLightingPS.hlsl">
-      <Filter>Model\Opaque</Filter>
-    </Text>
-    <Text Include="Model\Opaque\ModelAS.hlsl">
-      <Filter>Model\Opaque</Filter>
-    </Text>
-    <Text Include="Model\Opaque\SkeletalModelMS.hlsl">
-      <Filter>Model\Opaque</Filter>
-    </Text>
-    <Text Include="Model\Opaque\SkeletalModelPS.hlsl">
-      <Filter>Model\Opaque</Filter>
-    </Text>
-    <Text Include="Model\Opaque\StaticModelMS.hlsl">
-      <Filter>Model\Opaque</Filter>
-    </Text>
-    <Text Include="Model\Opaque\StaticModelPS.hlsl">
       <Filter>Model\Opaque</Filter>
     </Text>
     <Text Include="Model\ModelPreviewPS.hlsl">
@@ -2331,12 +2641,6 @@
     <Text Include="Illumination\Reflection\Raytracing\RaytracingReflectionReservoirSpatialCS.hlsl">
       <Filter>Illumination\Reflection\Raytracing</Filter>
     </Text>
-    <Text Include="Shape\HUD\HUDComposeMS.hlsl">
-      <Filter>Shape\HUD</Filter>
-    </Text>
-    <Text Include="Shape\HUD\HUDComposePS.hlsl">
-      <Filter>Shape\HUD</Filter>
-    </Text>
     <Text Include="Avatar\AvatarPreviewPS.hlsl">
       <Filter>Avatar</Filter>
     </Text>
@@ -2352,38 +2656,17 @@
     <Text Include="Model\Opaque\FurShellVS.hlsl">
       <Filter>Model\Opaque</Filter>
     </Text>
-    <Text Include="Model\Opaque\SkeletalModelVS.hlsl">
-      <Filter>Model\Opaque</Filter>
-    </Text>
-    <Text Include="Model\Opaque\StaticModelVS.hlsl">
-      <Filter>Model\Opaque</Filter>
-    </Text>
-    <Text Include="Font\FontSilhouettePS.hlsl">
-      <Filter>Font</Filter>
-    </Text>
-    <Text Include="Model\Opaque\GeometryBufferAS.hlsl">
-      <Filter>Model\Opaque</Filter>
-    </Text>
     <Text Include="Model\ModelSilhouetteAS.hlsl">
       <Filter>Model</Filter>
     </Text>
     <Text Include="Model\ModelSilhouettePS.hlsl">
       <Filter>Model</Filter>
     </Text>
-    <Text Include="Movie\MovieSilhouettePS.hlsl">
-      <Filter>Movie</Filter>
-    </Text>
-    <Text Include="Texture\TextureSilhouettePS.hlsl">
-      <Filter>Texture</Filter>
-    </Text>
     <Text Include="Shape\Outline\OutlineMS.hlsl">
       <Filter>Shape\Outline</Filter>
     </Text>
     <Text Include="Shape\Outline\OutlinePS.hlsl">
       <Filter>Shape\Outline</Filter>
-    </Text>
-    <Text Include="Shape\HUD\FullscreenVS.hlsl">
-      <Filter>Shape\HUD</Filter>
     </Text>
     <Text Include="Environment\WeatherParticleVS.hlsl">
       <Filter>Environment</Filter>
@@ -2394,28 +2677,10 @@
     <Text Include="Model\Cluster\MeshletPS.hlsl">
       <Filter>Model\Cluster</Filter>
     </Text>
-    <Text Include="Model\Depth\DepthPrepassMS.hlsl">
-      <Filter>Model\Depth</Filter>
-    </Text>
-    <Text Include="Model\Depth\DepthPrepassPS.hlsl">
-      <Filter>Model\Depth</Filter>
-    </Text>
-    <Text Include="Model\Depth\DepthPrepassVS.hlsl">
-      <Filter>Model\Depth</Filter>
-    </Text>
     <Text Include="Model\Depth\DepthResizeCS.hlsl">
       <Filter>Model\Depth</Filter>
     </Text>
-    <Text Include="Model\Depth\HiZBufferCS.hlsl">
-      <Filter>Model\Depth</Filter>
-    </Text>
     <Text Include="Model\Culling\FurShellCullingCS.hlsl">
-      <Filter>Model\Culling</Filter>
-    </Text>
-    <Text Include="Model\Culling\GeometryBufferCullingCS.hlsl">
-      <Filter>Model\Culling</Filter>
-    </Text>
-    <Text Include="Model\Culling\ModelCullingCS.hlsl">
       <Filter>Model\Culling</Filter>
     </Text>
     <Text Include="Model\Culling\ModelSilhouetteCullingCS.hlsl">
@@ -2426,126 +2691,6 @@
     </Text>
     <Text Include="Texture\Compression\BC7CompressCS.hlsl">
       <Filter>Texture\Compression</Filter>
-    </Text>
-    <Text Include="Texture\Billboard\TextureBillboardAS.hlsl">
-      <Filter>Texture\Billboard</Filter>
-    </Text>
-    <Text Include="Texture\Billboard\TextureBillboardMS.hlsl">
-      <Filter>Texture\Billboard</Filter>
-    </Text>
-    <Text Include="Texture\Billboard\TextureBillboardPS.hlsl">
-      <Filter>Texture\Billboard</Filter>
-    </Text>
-    <Text Include="Texture\Billboard\TextureBillboardSilhouetteAS.hlsl">
-      <Filter>Texture\Billboard</Filter>
-    </Text>
-    <Text Include="Texture\Billboard\TextureBillboardSilhouetteVS.hlsl">
-      <Filter>Texture\Billboard</Filter>
-    </Text>
-    <Text Include="Texture\Billboard\TextureBillboardVS.hlsl">
-      <Filter>Texture\Billboard</Filter>
-    </Text>
-    <Text Include="Texture\Sprite\TextureSpriteAS.hlsl">
-      <Filter>Texture\Sprite</Filter>
-    </Text>
-    <Text Include="Texture\Sprite\TextureSpriteMS.hlsl">
-      <Filter>Texture\Sprite</Filter>
-    </Text>
-    <Text Include="Texture\Sprite\TextureSpritePS.hlsl">
-      <Filter>Texture\Sprite</Filter>
-    </Text>
-    <Text Include="Texture\Sprite\TextureSpriteSilhouetteAS.hlsl">
-      <Filter>Texture\Sprite</Filter>
-    </Text>
-    <Text Include="Texture\Sprite\TextureSpriteSilhouetteVS.hlsl">
-      <Filter>Texture\Sprite</Filter>
-    </Text>
-    <Text Include="Texture\Sprite\TextureSpriteVS.hlsl">
-      <Filter>Texture\Sprite</Filter>
-    </Text>
-    <Text Include="Font\Billboard\FontBillboardAS.hlsl">
-      <Filter>Font\Billboard</Filter>
-    </Text>
-    <Text Include="Font\Billboard\FontBillboardMS.hlsl">
-      <Filter>Font\Billboard</Filter>
-    </Text>
-    <Text Include="Font\Billboard\FontBillboardPS.hlsl">
-      <Filter>Font\Billboard</Filter>
-    </Text>
-    <Text Include="Font\Billboard\FontBillboardSilhouetteAS.hlsl">
-      <Filter>Font\Billboard</Filter>
-    </Text>
-    <Text Include="Font\Billboard\FontBillboardSilhouetteVS.hlsl">
-      <Filter>Font\Billboard</Filter>
-    </Text>
-    <Text Include="Font\Billboard\FontBillboardVS.hlsl">
-      <Filter>Font\Billboard</Filter>
-    </Text>
-    <Text Include="Font\Sprite\FontSpriteAS.hlsl">
-      <Filter>Font\Sprite</Filter>
-    </Text>
-    <Text Include="Font\Sprite\FontSpriteMS.hlsl">
-      <Filter>Font\Sprite</Filter>
-    </Text>
-    <Text Include="Font\Sprite\FontSpritePS.hlsl">
-      <Filter>Font\Sprite</Filter>
-    </Text>
-    <Text Include="Font\Sprite\FontSpriteSilhouetteAS.hlsl">
-      <Filter>Font\Sprite</Filter>
-    </Text>
-    <Text Include="Font\Sprite\FontSpriteSilhouetteVS.hlsl">
-      <Filter>Font\Sprite</Filter>
-    </Text>
-    <Text Include="Font\Sprite\FontSpriteVS.hlsl">
-      <Filter>Font\Sprite</Filter>
-    </Text>
-    <Text Include="Movie\Billboard\MovieBillboardAS.hlsl">
-      <Filter>Movie\Billboard</Filter>
-    </Text>
-    <Text Include="Movie\Billboard\MovieBillboardMS.hlsl">
-      <Filter>Movie\Billboard</Filter>
-    </Text>
-    <Text Include="Movie\Billboard\MovieBillboardPS.hlsl">
-      <Filter>Movie\Billboard</Filter>
-    </Text>
-    <Text Include="Movie\Billboard\MovieBillboardSilhouetteAS.hlsl">
-      <Filter>Movie\Billboard</Filter>
-    </Text>
-    <Text Include="Movie\Billboard\MovieBillboardSilhouetteVS.hlsl">
-      <Filter>Movie\Billboard</Filter>
-    </Text>
-    <Text Include="Movie\Billboard\MovieBillboardVS.hlsl">
-      <Filter>Movie\Billboard</Filter>
-    </Text>
-    <Text Include="Movie\Fullscreen\MovieFullscreenAS.hlsl">
-      <Filter>Movie\Fullscreen</Filter>
-    </Text>
-    <Text Include="Movie\Fullscreen\MovieFullscreenMS.hlsl">
-      <Filter>Movie\Fullscreen</Filter>
-    </Text>
-    <Text Include="Movie\Fullscreen\MovieFullscreenPS.hlsl">
-      <Filter>Movie\Fullscreen</Filter>
-    </Text>
-    <Text Include="Movie\Fullscreen\MovieFullscreenVS.hlsl">
-      <Filter>Movie\Fullscreen</Filter>
-    </Text>
-    <Text Include="Movie\Sprite\MovieSpriteAS.hlsl">
-      <Filter>Movie\Sprite</Filter>
-    </Text>
-    <Text Include="Movie\Sprite\MovieSpriteMS.hlsl">
-      <Filter>Movie\Sprite</Filter>
-    </Text>
-    <Text Include="Movie\Sprite\MovieSpritePS.hlsl">
-      <Filter>Movie\Sprite</Filter>
-    </Text>
-    <Text Include="Movie\Sprite\MovieSpriteSilhouetteAS.hlsl">
-      <Filter>Movie\Sprite</Filter>
-    </Text>
-    <Text Include="Movie\Sprite\MovieSpriteSilhouetteVS.hlsl">
-      <Filter>Movie\Sprite</Filter>
-    </Text>
-    <Text Include="Movie\Sprite\MovieSpriteVS.hlsl">
-      <Filter>Movie\Sprite</Filter>
     </Text>
     <Text Include="Sky\IBL\BrdfLutCS.hlsl">
       <Filter>Sky\IBL</Filter>
@@ -2610,5 +2755,121 @@
     <Text Include="Model\Material\MaterialOutlinePS.hlsl">
       <Filter>Model\Material</Filter>
     </Text>
+    <Text Include="Shape\Fullscreen\FullscreenMS.hlsl">
+      <Filter>Shape\Fullscreen</Filter>
+    </Text>
+    <Text Include="Shape\Fullscreen\FullscreenVS.hlsl">
+      <Filter>Shape\Fullscreen</Filter>
+    </Text>
+    <Text Include="Model\ModelDrivenCS.hlsl">
+      <Filter>Model</Filter>
+    </Text>
+    <Text Include="Culling\CullingCS.hlsl">
+      <Filter>Culling</Filter>
+    </Text>
+    <Text Include="Debug\DebugViewCS.hlsl">
+      <Filter>Debug</Filter>
+    </Text>
+    <Text Include="Model\Opaque\GeometryCS.hlsl">
+      <Filter>Model\Opaque</Filter>
+    </Text>
+    <Text Include="Model\Opaque\GeometryMS.hlsl">
+      <Filter>Model\Opaque</Filter>
+    </Text>
+    <Text Include="Model\Opaque\GeometryPS.hlsl">
+      <Filter>Model\Opaque</Filter>
+    </Text>
+    <Text Include="Model\Opaque\GeometryVS.hlsl">
+      <Filter>Model\Opaque</Filter>
+    </Text>
+    <Text Include="Light\LightClusterCS.hlsl">
+      <Filter>Light</Filter>
+    </Text>
+    <Text Include="Illumination\DirectLight\DirectLightCS.hlsl">
+      <Filter>Illumination\DirectLight</Filter>
+    </Text>
+    <Text Include="Texture\TextureDrivenCS.hlsl">
+      <Filter>Texture</Filter>
+    </Text>
+    <Text Include="Illumination\Radiance\RadianceCS.hlsl">
+      <Filter>Illumination\Radiance</Filter>
+    </Text>
+    <Text Include="PostProcess\Upscale\UpscaleGuidesCS.hlsl">
+      <Filter>PostProcess\Upscale</Filter>
+    </Text>
+    <Text Include="PostProcess\Upscale\UpscaleTaauCS.hlsl">
+      <Filter>PostProcess\Upscale</Filter>
+    </Text>
+    <Text Include="PostProcess\AutoExposure\AutoExposureAverageCS.hlsl">
+      <Filter>PostProcess\AutoExposure</Filter>
+    </Text>
+    <Text Include="PostProcess\AutoExposure\AutoExposureHistogramCS.hlsl">
+      <Filter>PostProcess\AutoExposure</Filter>
+    </Text>
+    <Text Include="PostProcess\Bokeh\BokehCS.hlsl">
+      <Filter>PostProcess\Bokeh</Filter>
+    </Text>
+    <Text Include="PostProcess\DepthOfField\DepthOfFieldCS.hlsl">
+      <Filter>PostProcess\DepthOfField</Filter>
+    </Text>
+    <Text Include="Sky\SkyResolveCS.hlsl">
+      <Filter>Sky</Filter>
+    </Text>
+    <Text Include="PostProcess\ChromaticAberration\ChromaticAberrationCS.hlsl">
+      <Filter>PostProcess\ChromaticAberration</Filter>
+    </Text>
+    <Text Include="PostProcess\LensDistortion\LensDistortionCS.hlsl">
+      <Filter>PostProcess\LensDistortion</Filter>
+    </Text>
+    <Text Include="PostProcess\Vignette\VignetteCS.hlsl">
+      <Filter>PostProcess\Vignette</Filter>
+    </Text>
+    <Text Include="PostProcess\KawaseBloom\KawaseBloomCS.hlsl">
+      <Filter>PostProcess\KawaseBloom</Filter>
+    </Text>
+    <Text Include="PostProcess\AnamorphicFlare\AnamorphicFlareCS.hlsl">
+      <Filter>PostProcess\AnamorphicFlare</Filter>
+    </Text>
+    <Text Include="PostProcess\LensFlare\LensFlareCS.hlsl">
+      <Filter>PostProcess\LensFlare</Filter>
+    </Text>
+    <Text Include="PostProcess\Sharpness\SharpnessCS.hlsl">
+      <Filter>PostProcess\Sharpness</Filter>
+    </Text>
+    <Text Include="PostProcess\ColorGrading\ColorGradingCS.hlsl">
+      <Filter>PostProcess\ColorGrading</Filter>
+    </Text>
+    <Text Include="PostProcess\ToneMapping\ToneMappingCS.hlsl">
+      <Filter>PostProcess\ToneMapping</Filter>
+    </Text>
+    <Text Include="PostProcess\PostProcessCS.hlsl">
+      <Filter>PostProcess</Filter>
+    </Text>
+    <Text Include="Texture\Billboard\TextureBillboardMS.hlsl">
+      <Filter>Texture\Billboard</Filter>
+    </Text>
+    <Text Include="Texture\Billboard\TextureBillboardPS.hlsl">
+      <Filter>Texture\Billboard</Filter>
+    </Text>
+    <Text Include="Texture\Billboard\TextureBillboardVS.hlsl">
+      <Filter>Texture\Billboard</Filter>
+    </Text>
+    <Text Include="Texture\Sprite\TextureSpriteMS.hlsl">
+      <Filter>Texture\Sprite</Filter>
+    </Text>
+    <Text Include="Texture\Sprite\TextureSpritePS.hlsl">
+      <Filter>Texture\Sprite</Filter>
+    </Text>
+    <Text Include="Texture\Sprite\TextureSpriteVS.hlsl">
+      <Filter>Texture\Sprite</Filter>
+    </Text>
+    <Text Include="Shape\HUD\HUDOutputPS.hlsl">
+      <Filter>Shape\HUD</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="PostProcess\FilmGrain\FilmGrainCS.hlsl">
+      <Filter>PostProcess\FilmGrain</Filter>
+    </FxCompile>
   </ItemGroup>
 </Project>

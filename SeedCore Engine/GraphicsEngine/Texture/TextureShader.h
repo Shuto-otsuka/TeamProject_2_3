@@ -1,62 +1,78 @@
 #pragma once
-#include <FoundationEngine/Utility/Handle.h>
-#include <GraphicsEngine/D3D12/PipelineState/RootSignature.h>
-#include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
+#include <GraphicsEngine/RenderGraph/Pipeline/ComputePipeline.h>
+#include <GraphicsEngine/RenderGraph/Pipeline/GraphicsPipeline.h>
 
 namespace SeedCore
 {
-	class ShaderCache;
-
-	class VertexShader;
-	class AmplificationShader;
-	class MeshShader;
-	class PixelShader;
-
-	class TextureShader
+	struct TextureUpdateDescription
 	{
-	public:
-		TextureShader(RootSignature& rootSignature, PipelineStateObject& pipelineStateObject);
-		~TextureShader() = default;
+		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/Texture/TextureDrivenCS.hlsl");
 
-		void Create(ShaderCache& shaderCache, ID3D12Device* device);
+		SC_CONSTEX const Char* entryPoint_ = "Update";
 
-		NODISCARD ID3D12PipelineState* GetPipelineStateSprite()const;
+		SC_CONSTEX Uint32 threadGroupSizeX_ = 64;
 
-		NODISCARD ID3D12PipelineState* GetPipelineStateBillboard()const;
+		SC_CONSTEX Uint32 threadGroupSizeY_ = 1;
+	};
 
-		NODISCARD ID3D12PipelineState* GetPipelineStateSilhouetteSprite()const;
+	struct TextureExpandDescription
+	{
+		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/Texture/TextureDrivenCS.hlsl");
 
-		NODISCARD ID3D12PipelineState* GetPipelineStateSilhouetteBillboard()const;
+		SC_CONSTEX const Char* entryPoint_ = "Expand";
 
-		NODISCARD ID3D12RootSignature* GetRootSignature()const;
+		SC_CONSTEX Uint32 threadGroupSizeX_ = 64;
 
-	private:
-		Handle<VertexShader> spriteVertexShader_;
-		Handle<AmplificationShader> spriteAmplificationShader_;
-		Handle<MeshShader> spriteMeshShader_;
-		Handle<PixelShader> spritePixelShader_;
+		SC_CONSTEX Uint32 threadGroupSizeY_ = 1;
+	};
 
-		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectSprite_;
+	struct TextureSpriteDescription
+	{
+		SC_CONSTEX ShaderPath meshFile_ = ShaderPath::Engine("GraphicsEngine/Texture/Sprite/TextureSpriteMS.hlsl");
 
-		Handle<VertexShader> billboardVertexShader_;
-		Handle<AmplificationShader> billboardAmplificationShader_;
-		Handle<MeshShader> billboardMeshShader_;
-		Handle<PixelShader> billboardPixelShader_;
+		SC_CONSTEX ShaderPath vertexFile_ = ShaderPath::Engine("GraphicsEngine/Texture/Sprite/TextureSpriteVS.hlsl");
 
-		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectBillboard_;
+		SC_CONSTEX ShaderPath pixelFile_ = ShaderPath::Engine("GraphicsEngine/Texture/Sprite/TextureSpritePS.hlsl");
 
-		Handle<VertexShader> spriteSilhouetteVertexShader_;
-		Handle<VertexShader> billboardSilhouetteVertexShader_;
-		Handle<AmplificationShader> spriteSilhouetteAmplificationShader_;
-		Handle<AmplificationShader> billboardSilhouetteAmplificationShader_;
-		Handle<PixelShader> silhouettePixelShader_;
+		SC_CONSTEX GraphicsFallback fallback_ = GraphicsFallback::Instanced;
 
-		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectSilhouetteSprite_;
-		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectSilhouetteBillboard_;
+		SC_CONSTEX Uint32 instancesPerGroup_ = 32;
 
-		Handle<RootSignature> imageRootSignature_;
+		SC_CONSTEX Uint32 fallbackVertexCount_ = 6;
 
-		RootSignature& rootSignature_;
-		PipelineStateObject& pipelineStateObject_;
+		SC_CONSTEX StaticArray<DXGI_FORMAT, 1> targetFormat_ = { DXGI_FORMAT_R16G16B16A16_FLOAT };
+
+		SC_CONSTEX DXGI_FORMAT depthFormat_ = DXGI_FORMAT_UNKNOWN;
+
+		SC_CONSTEX BlendStateType blend_ = BlendStateType::AlphaPremultiplied;
+
+		SC_CONSTEX DepthStencilStateType depthStencil_ = DepthStencilStateType::DepthOff;
+
+		SC_CONSTEX RasterizerStateType rasterizer_ = RasterizerStateType::SolidNoneLHS;
+	};
+
+	struct TextureBillboardDescription
+	{
+		SC_CONSTEX ShaderPath meshFile_ = ShaderPath::Engine("GraphicsEngine/Texture/Billboard/TextureBillboardMS.hlsl");
+
+		SC_CONSTEX ShaderPath vertexFile_ = ShaderPath::Engine("GraphicsEngine/Texture/Billboard/TextureBillboardVS.hlsl");
+
+		SC_CONSTEX ShaderPath pixelFile_ = ShaderPath::Engine("GraphicsEngine/Texture/Billboard/TextureBillboardPS.hlsl");
+
+		SC_CONSTEX GraphicsFallback fallback_ = GraphicsFallback::Instanced;
+
+		SC_CONSTEX Uint32 instancesPerGroup_ = 32;
+
+		SC_CONSTEX Uint32 fallbackVertexCount_ = 6;
+
+		SC_CONSTEX StaticArray<DXGI_FORMAT, 1> targetFormat_ = { DXGI_FORMAT_R16G16B16A16_FLOAT };
+
+		SC_CONSTEX DXGI_FORMAT depthFormat_ = DXGI_FORMAT_D32_FLOAT;
+
+		SC_CONSTEX BlendStateType blend_ = BlendStateType::AlphaPremultiplied;
+
+		SC_CONSTEX DepthStencilStateType depthStencil_ = DepthStencilStateType::DepthOnWriteOffReverseZ;
+
+		SC_CONSTEX RasterizerStateType rasterizer_ = RasterizerStateType::SolidNoneLHS;
 	};
 }
