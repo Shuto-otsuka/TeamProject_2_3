@@ -5,6 +5,7 @@
 #include "UserProject/Script/CheckPointAreaController.h"
 #include "UserProject/Script/BulletNaviController.h"
 #include "UserProject/Script/CameraController.h"
+#include "UserProject/Script/AnnounceController.h"
 
 #include <SeedCore/ScInput.h>
 #include <SeedCore/ScPrefab.h>
@@ -22,6 +23,8 @@ void PlayerController::OnStart()
     cameraBrain = world.GetActor("CameraBrain");
     firstPersonCameraBrain = world.GetActor("FirstPersonCameraBrain");
     bulletNaviStart = world.GetActor("BulletStart");
+    announceActor = world.GetActor("Announce");
+    crossHair = world.GetActor("CrossHair");
 
     position = GetActor().GetComponent<SeedCore::Position>();
     rotation = GetActor().GetComponent<SeedCore::Rotation>();
@@ -32,6 +35,10 @@ void PlayerController::OnStart()
     firstPersonCameraBrainComp = firstPersonCameraBrain.GetComponent<SeedCore::CameraBrain>();
     firstPersonCameraBrainRotate = firstPersonCameraBrain.GetComponent<SeedCore::Rotation>();
     cameraController = cameraBrain.GetComponent<CameraController>();
+    if(announceActor)announceController = announceActor.GetComponent<AnnounceController>();
+
+    normalMaterial = SeedCore::Scene::AssetID("player_M.material");
+    transparentMaterial = SeedCore::Scene::AssetID("player_M_T.material");
 
     //音取得しまくる
     SeedCore::Actor jumpAudioActor = GetWorld().GetActor("AudioJump");
@@ -100,23 +107,32 @@ void PlayerController::OnTriggerEnter(SeedCore::Actor other)
             //踏んだ時点でそのチェックポイントに更新
             SeedCore::Position* hitActorPosition = other.GetComponent<SeedCore::Position>();
             checkPointPosition = SeedCore::Vector3(hitActorPosition->x_, hitActorPosition->y_, hitActorPosition->z_);
-            beforeCheckPointStep = checkPointAreaController->GetStep();
             checkPointAreaController->SetOn();
 
-            if (checkPointAreaController->GetFirstPerson())
+            if (checkPointAreaController->GetFirstPerson() && !isFirstPerson)
             {
                 //一人称切り替えフラグがONだったらカメラ切り替え
                 isFirstPerson = true;
                 firstPersonCameraBrainComp->weight_ = 11;
                 if(!cameraController->IsCursorLock())cameraController->ChangeCursorMode();
+                if (crossHair)
+                {
+                    SeedCore::Active* crossHairActive = crossHair.GetComponent<SeedCore::Active>();
+                    crossHairActive->active_ = true;
+                }
                 if (cameraActor)
                 {
                     SeedCore::Camera* camera = cameraActor.GetComponent<SeedCore::Camera>();
                     if(camera)camera->fieldOfView_ = firstPersonFov;
                 }
+                //マテリアル切り替えで透明にする
+                SeedCore::Material* material = GetActor().GetComponent<SeedCore::Material>();
+                material->Set(transparentMaterial, "player_M");
+                //アナウンス
+                if(announceController)announceController->StartAnnounce(AnnounceController::Type::FIRST_PERSON);
                 
             }
-            else
+            else if(!checkPointAreaController->GetFirstPerson() && isFirstPerson)
             {
                 isFirstPerson = false;
                 firstPersonCameraBrainComp->weight_ = 9;
@@ -127,8 +143,22 @@ void PlayerController::OnTriggerEnter(SeedCore::Actor other)
                     SeedCore::Camera* camera = cameraActor.GetComponent<SeedCore::Camera>();
                     if (camera)camera->fieldOfView_ = thirdPersonFov;
                 }
+                //マテリアル切り替えで不透明にする
+                SeedCore::Material* material = GetActor().GetComponent<SeedCore::Material>();
+                material->Set(normalMaterial, "player_M");
+                //アナウンス
+                if(announceController)announceController->StartAnnounce(AnnounceController::Type::THIRD_PERSON);
+            }
+            else
+            {
+                //アナウンス
+                if (checkPointAreaController->GetStep() > beforeCheckPointStep)
+                {
+                    if (announceController)announceController->StartAnnounce(AnnounceController::Type::CHECK_POINT);
+                }
             }
         //}
+            beforeCheckPointStep = checkPointAreaController->GetStep();
     }
 
     if (hitActor.HasTag("GravityArea"))
@@ -161,6 +191,20 @@ void PlayerController::Reset()
 {
     //チェックポイントから再開
     myCharacterController->Teleport(checkPointPosition);
+    //アナウンス
+    if(announceController)announceController->StartAnnounce(AnnounceController::Type::DEATH);
+}
+
+void PlayerController::Goal()
+{
+    isGoal = true;
+    SeedCore::Input::UnlockCursor();
+    SeedCore::Input::RevealCursor();
+    if (crossHair)
+    {
+        SeedCore::Active* crossHairActive = crossHair.GetComponent<SeedCore::Active>();
+        crossHairActive->active_ = false;
+    }
 }
 
 void PlayerController::UpdateUsually(float elapsedTime)
@@ -187,8 +231,6 @@ void PlayerController::UpdateUsually(float elapsedTime)
     //デバッグ用
     if (SeedCore::Input::KeyState(SeedCore::Input::Key::Escape, SeedCore::Input::OnPressed))
     {
-        SeedCore::Input::UnlockCursor();
-        SeedCore::Input::RevealCursor();
         SeedCore::Scene::Change("Title.scene");
     }
 }
@@ -241,6 +283,14 @@ void PlayerController::UpdateHorizontalAcceleration(float elapsedTime)
     {
         moveDirection.Normalize();
         lookDirection = moveDirection;
+
+        //走りモーション再生
+        myAnimator->SetBool("IsRun", true);
+    }
+    else
+    {
+        //走りモーション停止
+        myAnimator->SetBool("IsRun", false);
     }
 }
 
@@ -408,6 +458,14 @@ void PlayerController::UpdateTurn(float elapsedTime)
             shotDirection = bulletTargetPosition - gunPosition;
             shotDirection.Normalize();
         }
+
+        //真ん中にクロスヘア表示
+        if (crossHair)
+        {
+            SeedCore::Position* crossHairPosition = crossHair.GetComponent<SeedCore::Position>();
+            crossHairPosition->x_ = 960;
+            crossHairPosition->y_ = 540;
+        }
     }
     else if (shotReady)
     {
@@ -512,6 +570,8 @@ void PlayerController::UpdateInputShot(float elapsedTime)
         //発射キー押された瞬間にタイマーリセット
         shotReady = true;
         shotInputTimer = 0.0f;
+        //銃持ってるフラグをオンにする
+        hasGun = true;
         //チャージ音再生
         if(chargeAudio)chargeAudio->Play();
     }
@@ -563,6 +623,17 @@ void PlayerController::UpdateInputShot(float elapsedTime)
     //アニメーションフラグ切り替え
     myAnimator->SetBool("IsCharge", shotReady);
 
+    if (isGunFinishWait)
+    {
+        //銃を消すの待機
+        gunFinishTimer += elapsedTime;
+        if (gunFinishTimer >= gunFinishTime)
+        {
+            hasGun = false;
+            isGunFinishWait = false;
+        }
+    }
+
     /*
     //弾のナビがなければ以下の処理を行わない
     if (!bulletStartController)return;
@@ -592,6 +663,10 @@ void PlayerController::Shot()
     //コスト増加
     costGauge += costGaugeAdd;
 
+    //コスト上限到達でアナウンス
+    if(costGauge == maxCostGauge) 
+        if(announceController)announceController->StartAnnounce(AnnounceController::Type::COST_OVER);
+
     SeedCore::Actor bullet = SeedCore::Prefab::Spawn(SeedCore::String("Bullet.prefab"));//弾生成
     BulletController* bulletController = bullet.GetComponent<BulletController>();
 
@@ -601,11 +676,13 @@ void PlayerController::Shot()
     {
         //小さい弾発射アニメーション
         myAnimator->SetTrigger("ShotSmall");
+        FinishGun(0.4f);
     }
     else
     {
         //大きい弾発射アニメーション
         myAnimator->SetTrigger("ShotLarge");
+        FinishGun(0.4f);
     }
 
     //音再生
@@ -624,6 +701,9 @@ void PlayerController::UpdateFallJudge(float elapsedTime)
 void PlayerController::UpdateAllBulletRemove(float elapsedTime)
 {
     if (!SeedCore::Input::KeyState(SeedCore::Input::Key::R, SeedCore::Input::OnPressed))return;//Rキー押された瞬間じゃなければ終了
+
+    //アナウンス
+    if(announceController)announceController->StartAnnounce(AnnounceController::Type::COST_RESET);
 
     //アクターを走査
     for (SeedCore::Actor actor : GetWorld().Actors())
@@ -674,6 +754,13 @@ void PlayerController::UpdateLand()
         //着地タイミングで音鳴らす
         if(landAudio)landAudio->Play();
     }
+}
+
+void PlayerController::FinishGun(float gunFinishTime)
+{
+    isGunFinishWait = true;
+    gunFinishTimer = 0.0f;
+    this->gunFinishTime = gunFinishTime;
 }
 
 bool PlayerController::OnGroundOrCoyote()

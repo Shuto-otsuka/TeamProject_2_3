@@ -40,6 +40,7 @@ private:
 	void Rotate();
 	void UpdateZoom();
 	void UpdateDebug();
+	void FollowCrossHairToCursor();
 
 	SeedCore::Vector3 smoothFocusPoint;
 
@@ -50,6 +51,7 @@ private:
 
 	SeedCore::Actor cameraBrain;
 	SeedCore::Actor player;
+	SeedCore::Actor crossHair;
 	SeedCore::Position* position;
 	SeedCore::Position* playerPosition;
 	SeedCore::Rotation* rotation;

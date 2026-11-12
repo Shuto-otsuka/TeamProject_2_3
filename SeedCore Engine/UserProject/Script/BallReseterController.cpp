@@ -1,9 +1,11 @@
 #include "UserProject/Script/BallReseterController.h"
 #include "UserProject/Script/BallController.h"
+#include "UserProject/Script/AnnounceController.h"
 
 void BallReseterController::OnStart()
 {
     spinActor = GetActor().Children().at(0);
+    announceActor = GetWorld().GetActor("Announce");
     //リセット対象のボールを取得
     targetBall = GetWorld().GetActor(ballActorID);
     if(targetBall)
@@ -29,4 +31,12 @@ void BallReseterController::Reset()
 
     //ボール位置をリセット
     targetBallController->Respawn();
+
+    //アナウンス
+    if (announceActor)
+    {
+        AnnounceController* announceController = announceActor.GetComponent<AnnounceController>();
+        if (announceController)
+            announceController->StartAnnounce(AnnounceController::Type::BALL_RESET);
+    }
 }

@@ -6,6 +6,7 @@ void CameraController::OnStart()
 {
     SeedCore::World& world = GetWorld();
     player = world.GetActor("Player");
+    crossHair = world.GetActor("CrossHair");
     position = GetActor().GetComponent<SeedCore::Position>();
     rotation = GetActor().GetComponent<SeedCore::Rotation>();
     playerPosition = player.GetComponent<SeedCore::Position>();
@@ -16,6 +17,9 @@ void CameraController::OnStart()
     //回転初期化
     Rotate();
     isCursorLock = false;
+
+    //カーソル不可視化
+    SeedCore::Input::HideCursor();
 }
 
 void CameraController::OnTick(float elapsedTime)
@@ -55,8 +59,8 @@ void CameraController::LookPlayer()
 
 void CameraController::Rotate()
 {
-    //一人称カメラを使っている場合回転処理しない
-    if (playerController->IsFirstPerson())return;
+    //一人称カメラを使っているもしくはゴールしてたら回転処理しない
+    if (playerController->IsFirstPerson() || playerController->IsGoal())return;
 
     //右クリックでカーソル固定、解除切り替え
     if ((SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Right, SeedCore::Input::IsPressed) && !isCursorLock) ||
@@ -64,10 +68,15 @@ void CameraController::Rotate()
         ChangeCursorMode();
 
     //マウスカーソルが自由に動かせる状態なら回転処理しない
-    if (!isCursorLock)return;
+    if (!isCursorLock)
+    {
+        FollowCrossHairToCursor();
+        return;
+    }
 
     //マウスの移動量を取得
     SeedCore::Vector2 mouseMove = SeedCore::Input::MouseMotion();
+
     //マウスの移動量をピッチ、ヨーに適応
     pitch += mouseMove.y * horizontalSensitivity;
     yaw += mouseMove.x * verticalSensitivity;
@@ -99,20 +108,32 @@ void CameraController::UpdateDebug()
    
 }
 
+void CameraController::FollowCrossHairToCursor()
+{
+    if (!crossHair)return;
+    SeedCore::Position* crossHairPosition = crossHair.GetComponent<SeedCore::Position>();
+    SeedCore::Vector2 mousePos = SeedCore::Input::MousePoint();
+    crossHairPosition->x_ = mousePos.x;
+    crossHairPosition->y_ = mousePos.y;
+}
+
 void CameraController::ChangeCursorMode()
 {
+    SeedCore::Active* crossHairActive = nullptr;
+    if (crossHair)crossHairActive = crossHair.GetComponent<SeedCore::Active>();
+
     if (isCursorLock)
     {
         //カーソル固定解除、見せる
         SeedCore::Input::UnlockCursor();
-        SeedCore::Input::RevealCursor();
+        if(crossHairActive)crossHairActive->active_ = true;
         isCursorLock = false;
     }
     else
     {
         //カーソル中央固定、隠す
         SeedCore::Input::LockCursor(SeedCore::Vector2(960,540));
-        SeedCore::Input::HideCursor();
+        if (crossHairActive)crossHairActive->active_ = false;
         isCursorLock = true;
     }
 }
