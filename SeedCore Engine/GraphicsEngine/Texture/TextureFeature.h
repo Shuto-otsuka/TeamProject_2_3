@@ -21,11 +21,9 @@ namespace SeedCore
 	public:
 		struct UpdateStage;
 
-		struct ExpandStage;
+		struct SubmitStage;
 
-		struct SpriteStage;
-
-		struct BillboardStage;
+		struct DrawStage;
 
 	public:
 		void Create(RenderDevice& device);

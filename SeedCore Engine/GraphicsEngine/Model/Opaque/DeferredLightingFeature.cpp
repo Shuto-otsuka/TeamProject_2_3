@@ -4,10 +4,10 @@
 
 namespace SeedCore
 {
-	REGISTER_RENDER_FEATURE(DeferredLightingFeature, DrawStage);
+	REGISTER_RENDER_FEATURE(DeferredLightingFeature, ResolveStage);
 
 	void DeferredLightingFeature::Create(RenderDevice& device)
 	{
-		drawPipeline_.Create(device);
+		resolvePipeline_.Create(device);
 	}
 }

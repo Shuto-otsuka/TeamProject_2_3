@@ -86,7 +86,7 @@ namespace SeedCore
 		load(IconType::ShowIcon,    "Viewport", "ShowIcon");
 		load(IconType::ShowShape,   "Viewport", "ShowShape");
 		load(IconType::Camera,      "Viewport", "Camera");
-		load(IconType::RenderViewMode,    "Viewport", "RenderViewMode");
+		load(IconType::RenderViewMode,    "Viewport", "ViewMode");
 
 		load(IconType::LogError,   "Log", "Error");
 		load(IconType::LogWarning, "Log", "Warning");

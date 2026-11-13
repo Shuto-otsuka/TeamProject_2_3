@@ -4,11 +4,13 @@
 
 namespace SeedCore
 {
-	struct DepthOfFieldFeature::BlurStage :RenderStage
+	struct DepthOfFieldFeature::FilterStage :RenderStage
 	{
 		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
 
 		SC_CONSTEX Bool DepthOfFieldFeature::* enableCondition_ = &DepthOfFieldFeature::enabled_;
+
+		SC_CONSTEX Uint64 showFlags_ = static_cast<Uint64>(RenderShowFlag::PostProcess) | static_cast<Uint64>(RenderShowFlag::DepthOfField);
 
 		SC_CONSTEX RenderAccess accesses_[] =
 		{

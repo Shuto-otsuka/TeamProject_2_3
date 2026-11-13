@@ -3,8 +3,8 @@
 
 namespace SeedCore
 {
-	void DeferredLightingFeature::DrawStage::Execute(DeferredLightingFeature& feature, RenderPass& pass)
+	void DeferredLightingFeature::ResolveStage::Execute(DeferredLightingFeature& feature, RenderPass& pass)
 	{
-		feature.drawPipeline_.Draw(pass);
+		feature.resolvePipeline_.Draw(pass);
 	}
 }

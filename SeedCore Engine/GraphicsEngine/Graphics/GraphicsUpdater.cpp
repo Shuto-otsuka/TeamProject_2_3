@@ -92,6 +92,12 @@ namespace SeedCore
 		std::get<CelestialSystem>(systems_).Execute(world, deltaTime);
 		Benchmark::End("Celestial");
 
+		/// [EN] Weather follows the celestial clock, whose month weights the seasonal weather cycle, and pulls the cloud settings toward the current weather.
+		/// [JP] 天気は天体の時計の後。季節による天気の巡りはその月で重み付けし、雲の設定を今の天気へ寄せる。
+		Benchmark::Begin("Weather");
+		std::get<WeatherSystem>(systems_).Execute(world, deltaTime, std::get<CelestialSystem>(systems_).MonthOfYear());
+		Benchmark::End("Weather");
+
 		/// [EN] Colliders and shapes are gathered once per frame; the debug display follows the Selected tag and the visibility flag, and camera frustums use the render aspect ratio.
 		/// [JP] コライダーと形はフレームに1回集める。デバッグ表示は Selected タグと表示のフラグに従い、カメラの視錐台は描画の縦横比を使う。
 		Benchmark::Begin("Collider");
@@ -129,5 +135,24 @@ namespace SeedCore
 	const CelestialResult& GraphicsUpdater::Celestial()const
 	{
 		return std::get<CelestialSystem>(systems_).Result();
+	}
+
+	/**
+	* [EN]
+	* Returns the shapes from the shape System and the colliders from the
+	* collider System, as gathered by the last Update.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 最後の Update で集めた、形の System の形とコライダーの System の
+	* コライダーを返す。
+	*/
+	ShapeList GraphicsUpdater::Shapes()const
+	{
+		ShapeList list;
+		list.shapes_ = std::get<ShapeSystem>(systems_).Shapes();
+		list.colliders_ = std::get<ColliderSystem>(systems_).Colliders();
+		return list;
 	}
 }

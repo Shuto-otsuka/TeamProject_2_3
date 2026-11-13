@@ -1,5 +1,6 @@
 #include <GraphicsEngine/Model/Softbody/ModelSoftbody.h>
 #include <GraphicsEngine/Model/ModelUnit.h>
+#include <GraphicsEngine/Model/Opaque/GeometryFeature.h>
 #include <GraphicsEngine/Model/Softbody/SoftbodyMesh.h>
 #include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/RenderGraph/RenderDevice.h>
@@ -26,7 +27,6 @@ namespace SeedCore
 	{
 		opaque_.clear();
 		transparent_.clear();
-		fur_.clear();
 	}
 
 	Bool ModelSoftbody::Write(Uint32 slot, Bool reset, Actor& actor, Crister& crister, const Matrix& world, const Matrix& previousWorld, const ModelMaterialStructuredBuffer& material, Bool selected)
@@ -64,6 +64,7 @@ namespace SeedCore
 		instance.transform_.previousWorld_ = previousWorld;
 		instance.shading_ = material.shading_;
 		instance.shading_.selected_ = selected ? 1 : 0;
+		instance.shading_.actor_ = slot;
 		instance.texture_ = material.texture_;
 		instance.extension_ = material.extension_;
 		instance.geometry_.vertexBufferIndex_ = mesh->VertexBufferIndex();
@@ -77,7 +78,7 @@ namespace SeedCore
 		instance.streaming_.texcoordMinV_ = mesh->TexcoordMin().y;
 		instance.streaming_.texcoordExtent_ = mesh->TexcoordExtent();
 		instance.streaming_.lodError_ = 0.0f;
-		instance.streaming_.lodErrorNext_ = FLT_MAX;
+		instance.streaming_.lodLevel_ = 0;
 		instance.skining_.skinIndex_ = SC_INVALID;
 		instance.skining_.boneOffset_ = 0;
 		instance.skining_.skinVertexBufferIndex_ = SC_INVALID;
@@ -96,10 +97,11 @@ namespace SeedCore
 				transparent_.push_back(instance);
 				continue;
 			}
-			opaque_.push_back(instance);
-			if (fur)
+			Uint32 layerCount = fur ? material.shading_.furShellCount_ + 1 : 1;
+			for (Uint32 layer = 0;layer < layerCount;++layer)
 			{
-				fur_.push_back(instance);
+				instance.geometry_.layer_ = layer;
+				opaque_.push_back(instance);
 			}
 		}
 		return true;
@@ -115,14 +117,12 @@ namespace SeedCore
 
 	void ModelSoftbody::End()
 	{
-		opaque_.resize(Min(opaque_.size(), static_cast<Size>(ModelUnit::transparentBase_)));
-		transparent_.resize(Min(transparent_.size(), static_cast<Size>(ModelUnit::furBase_ - ModelUnit::transparentBase_)));
-		fur_.resize(Min(fur_.size(), static_cast<Size>(ModelUnit::instanceCapacity_ - ModelUnit::furBase_)));
+		opaque_.resize(Min(opaque_.size(), static_cast<Size>(GeometryFeature::transparentBase_)));
+		transparent_.resize(Min(transparent_.size(), static_cast<Size>(GeometryFeature::instanceCapacity_ - GeometryFeature::transparentBase_)));
 
 		instances_.clear();
 		instances_.insert(instances_.end(), opaque_.begin(), opaque_.end());
 		instances_.insert(instances_.end(), transparent_.begin(), transparent_.end());
-		instances_.insert(instances_.end(), fur_.begin(), fur_.end());
 	}
 
 	std::span<const ModelStructuredBuffer> ModelSoftbody::Instances()const
@@ -138,10 +138,5 @@ namespace SeedCore
 	Uint32 ModelSoftbody::TransparentCount()const
 	{
 		return static_cast<Uint32>(transparent_.size());
-	}
-
-	Uint32 ModelSoftbody::FurCount()const
-	{
-		return static_cast<Uint32>(fur_.size());
 	}
 }

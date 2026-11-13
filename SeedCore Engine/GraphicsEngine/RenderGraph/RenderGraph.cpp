@@ -61,20 +61,6 @@ namespace SeedCore
 			d3dDevice->CreateShaderResourceView(nullptr, &shaderResourceViewDesc, device_.ResourceHeap().CPUHandle(nulls_[shapeIndex]));
 		}
 
-		RenderGraphResource fallback;
-		fallback.resourceName_ = String("RenderGraph.Fallback");
-		fallback.desc_ = RenderResourceDesc::FixedTexture(DXGI_FORMAT_R8G8B8A8_UNORM, 1, 1);
-		fallback.shaderResource_ = true;
-		fallback.renderTarget_ = true;
-		RenderGraphInstance texel;
-		texel.width_ = 1;
-		texel.height_ = 1;
-		for (RenderGraphAllocation& allocation : fallbacks_)
-		{
-			allocation = RenderGraphMemory::Create(device_, fallback, texel);
-			allocation.state_ = D3D12_RESOURCE_STATE_COMMON;
-		}
-
 		for (ResourcePtr<StagingBuffer>& buffer : bindings_)
 		{
 			buffer = MakePtr<StagingBuffer>(d3dDevice, 1 << 20, D3D12_HEAP_TYPE_UPLOAD);
@@ -134,13 +120,15 @@ namespace SeedCore
 					}
 					for (const RenderGraphAccess& write : from.accesses_)
 					{
-						if (write.type_ != RenderAccessType::Write && write.type_ != RenderAccessType::Target && write.type_ != RenderAccessType::DepthWrite)
+						Bool initialize = write.type_ == RenderAccessType::Write || write.type_ == RenderAccessType::Target || write.type_ == RenderAccessType::DepthWrite;
+						if (!initialize && write.type_ != RenderAccessType::Append)
 						{
 							continue;
 						}
 						for (const RenderGraphAccess& read : to.accesses_)
 						{
-							if (read.resourceName_ == write.resourceName_ && (read.type_ == RenderAccessType::Read || read.type_ == RenderAccessType::Constant || read.type_ == RenderAccessType::DepthTest))
+							Bool reads = read.type_ == RenderAccessType::Read || read.type_ == RenderAccessType::Constant || read.type_ == RenderAccessType::DepthTest;
+							if (read.resourceName_ == write.resourceName_ && (reads || (initialize && read.type_ == RenderAccessType::Append)))
 							{
 								reach[fromIndex * count + toIndex] = true;
 							}
@@ -300,10 +288,23 @@ namespace SeedCore
 				}
 				RenderGraphResource& resource = resources_[access.index_];
 				resource.shaderResource_ = resource.shaderResource_ || access.type_ == RenderAccessType::Read || access.type_ == RenderAccessType::History;
-				resource.unorderedAccess_ = resource.unorderedAccess_ || access.type_ == RenderAccessType::Write;
+				resource.unorderedAccess_ = resource.unorderedAccess_ || access.type_ == RenderAccessType::Write || access.type_ == RenderAccessType::Append;
 				resource.renderTarget_ = resource.renderTarget_ || access.type_ == RenderAccessType::Target;
 				resource.depthStencil_ = resource.depthStencil_ || access.type_ == RenderAccessType::DepthWrite || access.type_ == RenderAccessType::DepthTest;
 				resource.history_ = resource.history_ || access.type_ == RenderAccessType::History;
+			}
+		}
+
+		for (const RenderGraphResource& resource : resources_)
+		{
+			Uint32 source = resource.passThroughIndex_;
+			while (source != SC_INVALID)
+			{
+				RenderGraphResource& target = resources_[source];
+				target.shaderResource_ = target.shaderResource_ || resource.shaderResource_;
+				target.unorderedAccess_ = target.unorderedAccess_ || resource.unorderedAccess_;
+				target.renderTarget_ = target.renderTarget_ || resource.renderTarget_;
+				source = target.passThroughIndex_;
 			}
 		}
 
@@ -321,7 +322,7 @@ namespace SeedCore
 				{
 					for (const RenderGraphAccess& other : stages_[otherIndex].accesses_)
 					{
-						if (other.index_ != access.index_ || (other.type_ != RenderAccessType::Write && other.type_ != RenderAccessType::Target && other.type_ != RenderAccessType::DepthWrite))
+						if (other.index_ != access.index_ || (other.type_ != RenderAccessType::Write && other.type_ != RenderAccessType::Append && other.type_ != RenderAccessType::Target && other.type_ != RenderAccessType::DepthWrite))
 						{
 							continue;
 						}
@@ -360,7 +361,12 @@ namespace SeedCore
 			const RenderGraphStage& stage = stages_[stageIndex];
 			if (stage.viewMask_ == RenderViewMask::Frame)
 			{
-				if (stage.enabled_(stage.feature_, RenderViewKind::Game))
+				Bool shown = stage.showFlags_ == 0;
+				for (const RenderView& view : scene.views_)
+				{
+					shown = shown || (view.showFlags_ & stage.showFlags_) == stage.showFlags_;
+				}
+				if (shown && stage.enabled_(stage.feature_, RenderViewKind::Game))
 				{
 					passes_.push_back(RenderGraphPass{ static_cast<Uint32>(stageIndex), SC_INVALID });
 				}
@@ -369,7 +375,8 @@ namespace SeedCore
 			for (Size viewIndex = 0;viewIndex < scene.views_.size();++viewIndex)
 			{
 				Uint32 viewBit = 1u << static_cast<Uint32>(scene.views_[viewIndex].kind_);
-				if ((static_cast<Uint32>(stage.viewMask_) & viewBit) != 0 && stage.enabled_(stage.feature_, scene.views_[viewIndex].kind_))
+				Bool shown = (scene.views_[viewIndex].showFlags_ & stage.showFlags_) == stage.showFlags_;
+				if ((static_cast<Uint32>(stage.viewMask_) & viewBit) != 0 && shown && stage.enabled_(stage.feature_, scene.views_[viewIndex].kind_))
 				{
 					passes_.push_back(RenderGraphPass{ static_cast<Uint32>(stageIndex), static_cast<Uint32>(viewIndex) });
 				}
@@ -415,7 +422,8 @@ namespace SeedCore
 				Uint32 view = resources_[access.index_].scope_ == RenderResourceScope::View && pass.view_ != SC_INVALID ? pass.view_ : 0;
 				RenderGraphInstance& instance = instances_[access.index_ * RenderViewCount + view];
 				instance.accessed_ = true;
-				instance.written_ = instance.written_ || access.type_ == RenderAccessType::Write || access.type_ == RenderAccessType::Target || access.type_ == RenderAccessType::DepthWrite;
+				Bool addition = access.type_ == RenderAccessType::Append || access.type_ == RenderAccessType::Target;
+				instance.written_ = instance.written_ || access.type_ == RenderAccessType::Write || access.type_ == RenderAccessType::DepthWrite || (addition && resources_[access.index_].passThroughIndex_ == SC_INVALID);
 			}
 		}
 
@@ -501,7 +509,7 @@ namespace SeedCore
 				Uint32 previous = static_cast<Uint32>(instanceIndex * 2 + ((frame_ + 1) & 1));
 				for (Uint32 slot : { current, previous })
 				{
-					if (slot == previous && !resource.history_)
+					if (!resource.history_ && slot != current)
 					{
 						continue;
 					}
@@ -644,7 +652,7 @@ namespace SeedCore
 				{
 					required = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
 				}
-				else if (access.type_ == RenderAccessType::Write)
+				else if (access.type_ == RenderAccessType::Write || access.type_ == RenderAccessType::Append)
 				{
 					required = copy ? D3D12_RESOURCE_STATE_COPY_DEST : D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 				}
@@ -661,7 +669,7 @@ namespace SeedCore
 					required = D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 				}
 
-				Bool write = access.type_ == RenderAccessType::Write || access.type_ == RenderAccessType::Target || access.type_ == RenderAccessType::DepthWrite;
+				Bool write = access.type_ == RenderAccessType::Write || access.type_ == RenderAccessType::Append || access.type_ == RenderAccessType::Target || access.type_ == RenderAccessType::DepthWrite;
 				D3D12_RESOURCE_STATES readable = D3D12_RESOURCE_STATE_GENERIC_READ | D3D12_RESOURCE_STATE_DEPTH_READ;
 				D3D12_RESOURCE_STATES computable = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_UNORDERED_ACCESS | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT | D3D12_RESOURCE_STATE_COPY_DEST | D3D12_RESOURCE_STATE_COPY_SOURCE | D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
 				Bool satisfied = memory->state_ == required;
@@ -775,7 +783,7 @@ namespace SeedCore
 		{
 			const RenderView& view = scene.views_[viewIndex];
 			std::optional<Uint64> sceneOffset = uploadBuffer.Allocate(sceneSize, D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
-			std::optional<Uint64> viewOffset = uploadBuffer.Allocate(sizeof(ViewBindings), D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
+			std::optional<Uint64> viewOffset = bindings.Allocate(sizeof(ViewBindings), D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT);
 			if (!sceneOffset || !viewOffset)
 			{
 				SC_LOG_ERROR("RenderGraph: ビューのバインディングの容量が足りません");
@@ -796,6 +804,11 @@ namespace SeedCore
 
 			bindings.Write(*viewOffset, std::as_bytes(std::span<const ViewBindings>(&viewBindings, 1)));
 			views_[viewIndex] = bindings.Address() + *viewOffset;
+		}
+
+		for (RenderGraphFallback& fallback : fallbacks_)
+		{
+			fallback.allocation_.used_ = false;
 		}
 
 		for (RenderGraphPass& pass : passes_)
@@ -828,15 +841,51 @@ namespace SeedCore
 					}
 					else if (instance.fallback_ == RenderFallback::One || instance.fallback_ == RenderFallback::Alpha)
 					{
-						index = fallbacks_[static_cast<Size>(instance.fallback_) - 2].shaderResourceView_;
+						Uint32 found = SC_INVALID;
+						for (Size fallbackIndex = 0;fallbackIndex < fallbacks_.size();++fallbackIndex)
+						{
+							const RenderGraphAllocation& allocation = fallbacks_[fallbackIndex].allocation_;
+							if (fallbacks_[fallbackIndex].fallback_ == instance.fallback_ && allocation.width_ == instance.width_ && allocation.height_ == instance.height_)
+							{
+								found = static_cast<Uint32>(fallbackIndex);
+								break;
+							}
+						}
+						if (found == SC_INVALID)
+						{
+							RenderGraphResource fallback;
+							fallback.resourceName_ = String("RenderGraph.Fallback");
+							fallback.desc_ = RenderResourceDesc::FixedTexture(RenderFormat::RGBA8Unorm, 1, 1);
+							fallback.shaderResource_ = true;
+							fallback.renderTarget_ = true;
+							RenderGraphFallback& created = fallbacks_.emplace_back();
+							created.fallback_ = instance.fallback_;
+							Float value = instance.fallback_ == RenderFallback::One ? 1.0f : 0.0f;
+							created.allocation_ = RenderGraphMemory::Create(device_, fallback, instance, { value, value, value, 1.0f });
+							created.allocation_.state_ = D3D12_RESOURCE_STATE_COMMON;
+							found = static_cast<Uint32>(fallbacks_.size() - 1);
+						}
+						fallbacks_[found].allocation_.used_ = true;
+						index = fallbacks_[found].allocation_.shaderResourceView_;
 					}
 					else if (memory)
 					{
-						index = access.type_ == RenderAccessType::Write ? memory->unorderedAccessView_ : memory->shaderResourceView_;
+						index = access.type_ == RenderAccessType::Write || access.type_ == RenderAccessType::Append ? memory->unorderedAccessView_ : memory->shaderResourceView_;
 					}
 				}
 				bindings.Write(cursor, std::as_bytes(std::span<const Uint32>(&index, 1)));
 				cursor += sizeof(Uint32);
+			}
+		}
+
+		for (Size fallbackIndex = fallbacks_.size();fallbackIndex > 0;--fallbackIndex)
+		{
+			RenderGraphAllocation& allocation = fallbacks_[fallbackIndex - 1].allocation_;
+			allocation.idleFrames_ = allocation.used_ ? 0 : allocation.idleFrames_ + 1;
+			if (allocation.idleFrames_ > 2)
+			{
+				RenderGraphMemory::Release(device_, allocation);
+				fallbacks_.erase(fallbacks_.begin() + (fallbackIndex - 1));
 			}
 		}
 
@@ -851,14 +900,14 @@ namespace SeedCore
 		StaticArray<Bool, 2> fresh = { true, true };
 		profiler_.Read();
 
-		for (Size fallbackIndex = 0;fallbackIndex < fallbacks_.size();++fallbackIndex)
+		for (RenderGraphFallback& entry : fallbacks_)
 		{
-			RenderGraphAllocation& fallback = fallbacks_[fallbackIndex];
+			RenderGraphAllocation& fallback = entry.allocation_;
 			if (fallback.state_ != D3D12_RESOURCE_STATE_COMMON)
 			{
 				continue;
 			}
-			Float value = fallbackIndex == 0 ? 1.0f : 0.0f;
+			Float value = entry.fallback_ == RenderFallback::One ? 1.0f : 0.0f;
 			StaticArray<Float, 4> color = { value,value,value,1.0f };
 			direct.Barrier(fallback.resource_.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
 			direct.Get()->ClearRenderTargetView(device_.RenderTargetHeap().CPUHandle(fallback.renderTargetView_), color.data(), 0, nullptr);

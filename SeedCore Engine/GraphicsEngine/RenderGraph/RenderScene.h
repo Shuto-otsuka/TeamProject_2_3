@@ -4,9 +4,9 @@
 namespace SeedCore
 {
 	struct RenderGraphImport;
+	struct GraphicsResourceSystem;
 
 	class World;
-	class GraphicsResourceSystem;
 
 	class RenderTypeKey
 	{

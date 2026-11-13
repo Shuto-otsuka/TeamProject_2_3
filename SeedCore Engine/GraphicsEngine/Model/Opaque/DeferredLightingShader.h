@@ -3,7 +3,7 @@
 
 namespace SeedCore
 {
-	struct DeferredLightingDrawDescription
+	struct DeferredLightingResolveDescription
 	{
 		SC_CONSTEX ShaderPath meshFile_ = ShaderPath::Engine("GraphicsEngine/Shape/Fullscreen/FullscreenMS.hlsl");
 
@@ -13,9 +13,9 @@ namespace SeedCore
 
 		SC_CONSTEX GraphicsFallback fallback_ = GraphicsFallback::FullscreenTriangle;
 
-		SC_CONSTEX StaticArray<DXGI_FORMAT, 1> targetFormat_ = { DXGI_FORMAT_R16G16B16A16_FLOAT };
+		SC_CONSTEX StaticArray<RenderFormat, 1> targetFormat_ = { RenderFormat::RGBA16Float };
 
-		SC_CONSTEX DXGI_FORMAT depthFormat_ = DXGI_FORMAT_UNKNOWN;
+		SC_CONSTEX RenderFormat depthFormat_ = RenderFormat::Unknown;
 
 		SC_CONSTEX BlendStateType blend_ = BlendStateType::Additive;
 

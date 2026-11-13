@@ -40,9 +40,9 @@ namespace SeedCore
 
 		SC_CONSTEX Uint32 fallbackVertexCount_ = 6;
 
-		SC_CONSTEX StaticArray<DXGI_FORMAT, 1> targetFormat_ = { DXGI_FORMAT_R16G16B16A16_FLOAT };
+		SC_CONSTEX StaticArray<RenderFormat, 1> targetFormat_ = { RenderFormat::RGBA16Float };
 
-		SC_CONSTEX DXGI_FORMAT depthFormat_ = DXGI_FORMAT_UNKNOWN;
+		SC_CONSTEX RenderFormat depthFormat_ = RenderFormat::Unknown;
 
 		SC_CONSTEX BlendStateType blend_ = BlendStateType::AlphaPremultiplied;
 
@@ -65,9 +65,9 @@ namespace SeedCore
 
 		SC_CONSTEX Uint32 fallbackVertexCount_ = 6;
 
-		SC_CONSTEX StaticArray<DXGI_FORMAT, 1> targetFormat_ = { DXGI_FORMAT_R16G16B16A16_FLOAT };
+		SC_CONSTEX StaticArray<RenderFormat, 1> targetFormat_ = { RenderFormat::RGBA16Float };
 
-		SC_CONSTEX DXGI_FORMAT depthFormat_ = DXGI_FORMAT_D32_FLOAT;
+		SC_CONSTEX RenderFormat depthFormat_ = RenderFormat::D32Float;
 
 		SC_CONSTEX BlendStateType blend_ = BlendStateType::AlphaPremultiplied;
 

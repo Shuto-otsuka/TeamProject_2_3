@@ -9,8 +9,10 @@ groupshared float4 clip_positions[64];
 * the early or the late command; the late entries start right after the early
 * ones. Groups past the command's count (the indirect dispatch is rounded up
 * to whole rows of 1024) emit nothing. Each vertex applies morph targets, then
-* linear blend skinning, then the world transform; single-sided triangles that
-* face away are collapsed, since the rasterizer itself culls nothing.
+* linear blend skinning, then the world transform; a fur shell layer is pushed
+* out along the skinned normal and droops towards world down as it rises.
+* Single-sided triangles that face away are collapsed, since the rasterizer
+* itself culls nothing.
 */
 [NumThreads(64, 1, 1)]
 [OutputTopology("triangle")]
@@ -33,7 +35,7 @@ void main(uint gtid : SV_GroupThreadID, uint3 gid : SV_GroupID, out vertices Geo
 	}
 
 	uint2 entry = draw_lists[base + entry_index];
-	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.model_instances_];
+	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.geometry_instances_];
 	ModelStructuredBuffer instance = instances[entry.x];
 	StructuredBuffer<ModelMeshlet> meshlets = ResourceDescriptorHeap[instance.geometry_.meshlet_buffer_index_];
 	ModelMeshlet meshlet = meshlets[entry.y];
@@ -49,6 +51,8 @@ void main(uint gtid : SV_GroupThreadID, uint3 gid : SV_GroupID, out vertices Geo
 		uint global_vertex_index = vertex_indices[meshlet.vertex_offset_ + gtid];
 		ExpandedModelVertex vertex = DecodeModelVertex(vertices[global_vertex_index], instance);
 		float3 local_position = vertex.position_;
+		float3 local_normal = vertex.normal_;
+		float3 local_tangent = vertex.tangent_.xyz;
 
 		if (instance.morph_.morph_target_count_ != 0)
 		{
@@ -73,14 +77,28 @@ void main(uint gtid : SV_GroupThreadID, uint3 gid : SV_GroupID, out vertices Geo
 				LoadBoneMatrix(bone_matrices[instance.skining_.bone_offset_ + skin.joints_.z]) * skin.weights_.z +
 				LoadBoneMatrix(bone_matrices[instance.skining_.bone_offset_ + skin.joints_.w]) * skin.weights_.w;
 			local_position = mul(float4(local_position, 1.0), skin_matrix).xyz;
+			local_normal = mul(float4(local_normal, 0.0), skin_matrix).xyz;
+			local_tangent = mul(float4(local_tangent, 0.0), skin_matrix).xyz;
 		}
 
-		float4 world_position = mul(float4(local_position, 1.0), instance.transform_.world_);
-		float4 clip_position = mul(world_position, scene.current_view_projection_);
+		float fur_ratio = 0.0;
+		if (instance.geometry_.layer_ != 0)
+		{
+			fur_ratio = (float)instance.geometry_.layer_ / (float)instance.shading_.fur_shell_count_;
+			local_position += normalize(local_normal) * pow(fur_ratio, 1.35) * instance.shading_.fur_length_;
+		}
+
+		precise float4 world_position = mul(float4(local_position, 1.0), instance.transform_.world_);
+		world_position.y -= fur_ratio * fur_ratio * instance.shading_.fur_length_ * 0.35;
+		precise float4 clip_position = mul(world_position, scene.current_view_projection_);
 
 		GeometryOutput output;
 		output.position = clip_position;
 		output.texcoord = vertex.texcoord_;
+		output.object_position = local_position;
+		output.object_normal = normalize(local_normal);
+		output.object_tangent = float4(normalize(local_tangent), vertex.tangent_.w);
+		output.world_position = world_position.xyz;
 		output.instance_index = entry.x;
 		output.meshlet_index = entry.y;
 		verts[gtid] = output;

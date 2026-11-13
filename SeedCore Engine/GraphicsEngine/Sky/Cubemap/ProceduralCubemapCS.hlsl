@@ -1,64 +1,67 @@
-#include "../Sky.hlsli"
-#include "../SkyGenerate.hlsli"
-#include "../../Shader/ShaderResources.hlsli"
-#include "../../Shader/Constants.hlsli"
-#include "../../Shader/Sampler.hlsli"
-#include "../../Light/Light.hlsli"
-#include "../../Environment/VolumetricCloud/VolumetricCloudScapes.hlsli"
+#include <GraphicsEngine/Sky/Sky.hlsli>
+#include <GraphicsEngine/Environment/VolumetricCloud/VolumetricCloud.hlsli>
+#include <GraphicsEngine/Light/Light.hlsli>
+#include <GraphicsEngine/Shader/RootSignature.hlsli>
+#include <GraphicsEngine/Shader/Sampler.hlsli>
+
+struct SkyProceduralBindings
+{
+	uint volumetric_cloud_constants_;
+	uint volumetric_cloud_shape_;
+	uint volumetric_cloud_detail_;
+	uint light_constants_;
+	uint sky_cubemap_;
+};
+ConstantBuffer<SkyProceduralBindings> bindings : register(b0, space1);
 
 /**
 * [EN]
-* Renders the procedural sky (gradient + sun, see
-* VolumetricCloudScapes.hlsli::ProceduralSkyColor) onto the six faces of the
-* environment cube so the existing irradiance/prefilter convolution can turn
-* it into IBL - this is how the procedural sky lights the scene when no
-* skymap is bound. The environment cube's SRV index is deliberately NOT
-* registered in this mode, so the background stays the analytic sky (crisp
-* sun disc) while only the convolved IBL cubes are consumed.
-* Root bindings: SkyDispatchBuffer (params[3], see SkyGenerate.hlsli) carries
-* dest/face size; constant_indices (params[2]) resolves the sun via
-* GetDirectionalLightConstantBuffer() the same way every other shader does;
-* constant_indices (params[2]) also resolves the cloud/sky tuning constant
-* buffer.
+* Sky.Build.Procedural: renders the procedural sky (gradient + sun, see
+* VolumetricCloud.hlsli::ProceduralSkyColor) and the clouds onto the six
+* faces of Sky.Cubemap so the irradiance/prefilter convolution that follows
+* turns it into IBL - this is how the procedural sky lights the scene when no
+* skymap is bound. The background itself is not read from this cube: Sky.Resolve
+* draws the analytic sky (crisp sun disc) and the full-resolution clouds. The
+* dispatch constant carries the scene time (as float bits) that scrolls the
+* cloud wind.
 *
 * [JP]
-* プロシージャル空(グラデーション+太陽、
-* VolumetricCloudScapes.hlsli::ProceduralSkyColor 参照)を environment
-* キューブの6面へ描き、既存の irradiance/prefilter 畳み込みで IBL 化する —
-* スカイマップ未バインド時にプロシージャル空がシーンを照らす仕組み。
-* このモードでは environment キューブの SRV インデックスを意図的に登録しない
-* ため、背景は解析的な空(シャープな太陽)のまま、畳み込み済み IBL キューブ
-* だけが消費される。
-* ルートバインディング: SkyDispatchBuffer(params[3]、SkyGenerate.hlsli参照)が
-* 出力先/面サイズを運び、constant_indices(params[2])から他の全シェーダと
-* 同じ形で GetDirectionalLightConstantBuffer() 経由で太陽を引く。
-* 同じく constant_indices(params[2])から雲/空チューニング定数バッファを引く。
+* Sky.Build.Procedural。プロシージャル空(グラデーション+太陽、
+* VolumetricCloud.hlsli::ProceduralSkyColor 参照)と雲を Sky.Cubemap の6面へ描き、
+* 続く irradiance/prefilter 畳み込みで IBL 化する — スカイマップ未バインド時に
+* プロシージャル空がシーンを照らす仕組み。背景そのものはこのキューブから読まず、
+* Sky.Resolve が解析的な空(シャープな太陽)とフル解像度の雲を描く。ディスパッチの
+* 定数は雲の風を流すシーンの時刻(float のビット列)。
 */
 [numthreads(8, 8, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {
-	uint size = GetSkyDispatchBuffer().face_size_;
+	RWTexture2DArray<float4> destination = ResourceDescriptorHeap[bindings.sky_cubemap_];
+	uint size;
+	uint height;
+	uint element_count;
+	destination.GetDimensions(size, height, element_count);
 	if (id.x >= size || id.y >= size)
 	{
 		return;
 	}
 
-	uint face = id.z + GetSkyDispatchBuffer().face_offset_;
+	uint face = id.z;
 	float2 uv = (float2(id.xy) + 0.5) / float(size) * 2.0 - 1.0;
 	float3 direction = normalize(CubeFaceDirection(face, uv));
 
-	ConstantBuffer<VolumetricCloudScapesRayConstantBuffer> tuning = ResourceDescriptorHeap[constant_indices.cloud_index_];
+	ConstantBuffer<VolumetricCloudConstantBuffer> tuning = ResourceDescriptorHeap[bindings.volumetric_cloud_constants_];
 
-	float3 sun_direction = normalize(-GetDirectionalLightConstantBuffer().direction_);
-	float3 sun_radiance = GetDirectionalLightConstantBuffer().sun_color_.rgb * GetDirectionalLightConstantBuffer().sun_intensity_;
+	ConstantBuffer<LightConstantBuffer> light = ResourceDescriptorHeap[bindings.light_constants_];
+	float3 sun_direction = normalize(-light.sun_direction_);
+	float3 sun_radiance = light.sun_color_ * light.sun_intensity_;
 
 	float3 color = ProceduralSkyColor(direction, sun_direction, sun_radiance, tuning);
 
 	// [JP] 雲もキューブへ焼き込む(縮小版レイマーチ: 固定24ステップ+
 	//      ライト3ステップ)。これで反射(prefilter経由)にも IBL にも雲が乗り、
 	//      雨雲にすると地上の環境光も暗くなる。キャプチャ視点は地上原点
-	//      (0,0,0)。時刻(風スクロール)は GetSkyDispatchBuffer().roughness_ に転用して
-	//      渡される(このパスでは prefilter 用の roughness は未使用)。
+	//      (0,0,0)。時刻(風スクロール)はディスパッチの定数で渡される。
 	//      IBL は低周波なので適応ステップまでは持ち込まないが、積分式・シェル
 	//      形状・多重散乱はスクリーン側と揃える — でないとキューブ由来の環境光
 	//      だけが別の明るさになる。
@@ -66,10 +69,10 @@ void main(uint3 id : SV_DispatchThreadID)
 	{
 		const uint capture_step_count = 24;
 		const uint capture_light_step_count = 3;
-		float capture_time = GetSkyDispatchBuffer().roughness_;
+		float capture_time = asfloat(dispatch_bindings.constants_);
 
-		Texture3D<float> shape_noise = ResourceDescriptorHeap[shader_resource_indices.cloud_.shape_noise_index_];
-		Texture3D<float> detail_noise = ResourceDescriptorHeap[shader_resource_indices.cloud_.detail_noise_index_];
+		Texture3D<float> shape_noise = ResourceDescriptorHeap[bindings.volumetric_cloud_shape_];
+		Texture3D<float> detail_noise = ResourceDescriptorHeap[bindings.volumetric_cloud_detail_];
 
 		float3 ray_origin = float3(0.0, 0.0, 0.0);
 		float layer_thickness = max(tuning.cloud_top_ - tuning.cloud_bottom_, 1.0);
@@ -137,6 +140,5 @@ void main(uint3 id : SV_DispatchThreadID)
 		}
 	}
 
-	RWTexture2DArray<float4> destination = ResourceDescriptorHeap[GetSkyDispatchBuffer().dest_index_];
 	destination[uint3(id.xy, face)] = float4(color, 1.0);
 }

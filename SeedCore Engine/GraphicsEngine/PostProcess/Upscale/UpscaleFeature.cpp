@@ -6,12 +6,12 @@
 
 namespace SeedCore
 {
-	REGISTER_RENDER_FEATURE(UpscaleFeature, TaauResolveStage, PrepareGuidesStage, DlssRayReconstructionStage, DlssSuperResolutionStage);
+	REGISTER_RENDER_FEATURE(UpscaleFeature, BuildStage, ResolveStage);
 
 	void UpscaleFeature::Create(RenderDevice& device)
 	{
-		taauResolvePipeline_.Create(device);
-		prepareGuidesPipeline_.Create(device);
+		taauPipeline_.Create(device);
+		guidesPipeline_.Create(device);
 	}
 
 	void UpscaleFeature::Gather(const RenderScene& scene, RenderFrame& frame)

@@ -38,8 +38,8 @@ namespace SeedCore
 		}
 
 		ShaderCompileResult compileResult = ShaderCompiler::CompileVertexShader(filePath.w_str(), entryPoint.str());
-		errorMessages_[filePath] = compileResult.errorMessage;
-		if (!compileResult.objectBlob)
+		errorMessages_[filePath] = compileResult.errorMessage_;
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<VertexShader>::null();
 		}
@@ -47,7 +47,7 @@ namespace SeedCore
 		Handle<VertexShader> handle = vertexShaderPool_.Create();
 		if (auto vertexShader = vertexShaderPool_.Get(handle))
 		{
-			vertexShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			vertexShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		vertexShaderCache_.insert(key, handle);
@@ -71,8 +71,8 @@ namespace SeedCore
 		}
 
 		ShaderCompileResult compileResult = ShaderCompiler::CompileHullShader(filePath.w_str(), entryPoint.str());
-		errorMessages_[filePath] = compileResult.errorMessage;
-		if (!compileResult.objectBlob)
+		errorMessages_[filePath] = compileResult.errorMessage_;
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<HullShader>::null();
 		}
@@ -80,7 +80,7 @@ namespace SeedCore
 		Handle<HullShader> handle = hullShaderPool_.Create();
 		if (auto hullShader = hullShaderPool_.Get(handle))
 		{
-			hullShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			hullShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		hullShaderCache_.insert(key, handle);
@@ -104,8 +104,8 @@ namespace SeedCore
 		}
 
 		ShaderCompileResult compileResult = ShaderCompiler::CompileDomainShader(filePath.w_str(), entryPoint.str());
-		errorMessages_[filePath] = compileResult.errorMessage;
-		if (!compileResult.objectBlob)
+		errorMessages_[filePath] = compileResult.errorMessage_;
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<DomainShader>::null();
 		}
@@ -113,7 +113,7 @@ namespace SeedCore
 		Handle<DomainShader> handle = domainShaderPool_.Create();
 		if (auto domainShader = domainShaderPool_.Get(handle))
 		{
-			domainShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			domainShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		domainShaderCache_.insert(key, handle);
@@ -137,8 +137,8 @@ namespace SeedCore
 		}
 
 		ShaderCompileResult compileResult = ShaderCompiler::CompileGeometryShader(filePath.w_str(), entryPoint.str());
-		errorMessages_[filePath] = compileResult.errorMessage;
-		if (!compileResult.objectBlob)
+		errorMessages_[filePath] = compileResult.errorMessage_;
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<GeometryShader>::null();
 		}
@@ -146,7 +146,7 @@ namespace SeedCore
 		Handle<GeometryShader> handle = geometryShaderPool_.Create();
 		if (auto geometryShader = geometryShaderPool_.Get(handle))
 		{
-			geometryShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			geometryShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		geometryShaderCache_.insert(key, handle);
@@ -170,8 +170,8 @@ namespace SeedCore
 		}
 
 		ShaderCompileResult compileResult = ShaderCompiler::CompilePixelShader(filePath.w_str(), entryPoint.str());
-		errorMessages_[filePath] = compileResult.errorMessage;
-		if (!compileResult.objectBlob)
+		errorMessages_[filePath] = compileResult.errorMessage_;
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<PixelShader>::null();
 		}
@@ -179,7 +179,7 @@ namespace SeedCore
 		Handle<PixelShader> handle = pixelShaderPool_.Create();
 		if (auto pixelShader = pixelShaderPool_.Get(handle))
 		{
-			pixelShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			pixelShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		pixelShaderCache_.insert(key, handle);
@@ -203,8 +203,8 @@ namespace SeedCore
 		}
 
 		ShaderCompileResult compileResult = ShaderCompiler::CompileAmplificationShader(filePath.w_str(), entryPoint.str());
-		errorMessages_[filePath] = compileResult.errorMessage;
-		if (!compileResult.objectBlob)
+		errorMessages_[filePath] = compileResult.errorMessage_;
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<AmplificationShader>::null();
 		}
@@ -212,7 +212,7 @@ namespace SeedCore
 		Handle<AmplificationShader> handle = amplificationShaderPool_.Create();
 		if (auto amplificationShader = amplificationShaderPool_.Get(handle))
 		{
-			amplificationShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			amplificationShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		amplificationShaderCache_.insert(key, handle);
@@ -236,8 +236,8 @@ namespace SeedCore
 		}
 
 		ShaderCompileResult compileResult = ShaderCompiler::CompileMeshShader(filePath.w_str(), entryPoint.str());
-		errorMessages_[filePath] = compileResult.errorMessage;
-		if (!compileResult.objectBlob)
+		errorMessages_[filePath] = compileResult.errorMessage_;
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<MeshShader>::null();
 		}
@@ -245,7 +245,7 @@ namespace SeedCore
 		Handle<MeshShader> handle = meshShaderPool_.Create();
 		if (auto meshShader = meshShaderPool_.Get(handle))
 		{
-			meshShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			meshShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		meshShaderCache_.insert(key, handle);
@@ -268,8 +268,8 @@ namespace SeedCore
 		}
 
 		ShaderCompileResult compileResult = ShaderCompiler::CompileLibraryShader(filePath.w_str());
-		errorMessages_[filePath] = compileResult.errorMessage;
-		if (!compileResult.objectBlob)
+		errorMessages_[filePath] = compileResult.errorMessage_;
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<RaytracingShader>::null();
 		}
@@ -277,7 +277,7 @@ namespace SeedCore
 		Handle<RaytracingShader> handle = raytracingShaderPool_.Create();
 		if (auto raytracingShader = raytracingShaderPool_.Get(handle))
 		{
-			raytracingShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			raytracingShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		raytracingShaderCache_.insert(key, handle);
@@ -301,8 +301,8 @@ namespace SeedCore
 		}
 
 		ShaderCompileResult compileResult = ShaderCompiler::CompileComputeShader(filePath.w_str(), entryPoint.str());
-		errorMessages_[filePath] = compileResult.errorMessage;
-		if (!compileResult.objectBlob)
+		errorMessages_[filePath] = compileResult.errorMessage_;
+		if (!compileResult.objectBlob_)
 		{
 			return Handle<ComputeShader>::null();
 		}
@@ -310,7 +310,7 @@ namespace SeedCore
 		Handle<ComputeShader> handle = computeShaderPool_.Create();
 		if (auto computeShader = computeShaderPool_.Get(handle))
 		{
-			computeShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+			computeShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 		}
 
 		computeShaderCache_.insert(key, handle);
@@ -331,12 +331,12 @@ namespace SeedCore
 				continue;
 			}
 			ShaderCompileResult compileResult = ShaderCompiler::CompileVertexShader(filePath.w_str(), it->first.entryPoint_.str());
-			errorMessages_[filePath] = compileResult.errorMessage;
-			if (compileResult.objectBlob)
+			errorMessages_[filePath] = compileResult.errorMessage_;
+			if (compileResult.objectBlob_)
 			{
 				if (auto vertexShader = vertexShaderPool_.Get(it->second))
 				{
-					vertexShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+					vertexShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 				}
 			}
 		}
@@ -348,12 +348,12 @@ namespace SeedCore
 				continue;
 			}
 			ShaderCompileResult compileResult = ShaderCompiler::CompileHullShader(filePath.w_str(), it->first.entryPoint_.str());
-			errorMessages_[filePath] = compileResult.errorMessage;
-			if (compileResult.objectBlob)
+			errorMessages_[filePath] = compileResult.errorMessage_;
+			if (compileResult.objectBlob_)
 			{
 				if (auto hullShader = hullShaderPool_.Get(it->second))
 				{
-					hullShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+					hullShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 				}
 			}
 		}
@@ -365,12 +365,12 @@ namespace SeedCore
 				continue;
 			}
 			ShaderCompileResult compileResult = ShaderCompiler::CompileDomainShader(filePath.w_str(), it->first.entryPoint_.str());
-			errorMessages_[filePath] = compileResult.errorMessage;
-			if (compileResult.objectBlob)
+			errorMessages_[filePath] = compileResult.errorMessage_;
+			if (compileResult.objectBlob_)
 			{
 				if (auto domainShader = domainShaderPool_.Get(it->second))
 				{
-					domainShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+					domainShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 				}
 			}
 		}
@@ -382,12 +382,12 @@ namespace SeedCore
 				continue;
 			}
 			ShaderCompileResult compileResult = ShaderCompiler::CompileGeometryShader(filePath.w_str(), it->first.entryPoint_.str());
-			errorMessages_[filePath] = compileResult.errorMessage;
-			if (compileResult.objectBlob)
+			errorMessages_[filePath] = compileResult.errorMessage_;
+			if (compileResult.objectBlob_)
 			{
 				if (auto geometryShader = geometryShaderPool_.Get(it->second))
 				{
-					geometryShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+					geometryShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 				}
 			}
 		}
@@ -399,12 +399,12 @@ namespace SeedCore
 				continue;
 			}
 			ShaderCompileResult compileResult = ShaderCompiler::CompilePixelShader(filePath.w_str(), it->first.entryPoint_.str());
-			errorMessages_[filePath] = compileResult.errorMessage;
-			if (compileResult.objectBlob)
+			errorMessages_[filePath] = compileResult.errorMessage_;
+			if (compileResult.objectBlob_)
 			{
 				if (auto pixelShader = pixelShaderPool_.Get(it->second))
 				{
-					pixelShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+					pixelShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 				}
 			}
 		}
@@ -416,12 +416,12 @@ namespace SeedCore
 				continue;
 			}
 			ShaderCompileResult compileResult = ShaderCompiler::CompileAmplificationShader(filePath.w_str(), it->first.entryPoint_.str());
-			errorMessages_[filePath] = compileResult.errorMessage;
-			if (compileResult.objectBlob)
+			errorMessages_[filePath] = compileResult.errorMessage_;
+			if (compileResult.objectBlob_)
 			{
 				if (auto amplificationShader = amplificationShaderPool_.Get(it->second))
 				{
-					amplificationShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+					amplificationShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 				}
 			}
 		}
@@ -433,12 +433,12 @@ namespace SeedCore
 				continue;
 			}
 			ShaderCompileResult compileResult = ShaderCompiler::CompileMeshShader(filePath.w_str(), it->first.entryPoint_.str());
-			errorMessages_[filePath] = compileResult.errorMessage;
-			if (compileResult.objectBlob)
+			errorMessages_[filePath] = compileResult.errorMessage_;
+			if (compileResult.objectBlob_)
 			{
 				if (auto meshShader = meshShaderPool_.Get(it->second))
 				{
-					meshShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+					meshShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 				}
 			}
 		}
@@ -450,12 +450,12 @@ namespace SeedCore
 				continue;
 			}
 			ShaderCompileResult compileResult = ShaderCompiler::CompileLibraryShader(filePath.w_str());
-			errorMessages_[filePath] = compileResult.errorMessage;
-			if (compileResult.objectBlob)
+			errorMessages_[filePath] = compileResult.errorMessage_;
+			if (compileResult.objectBlob_)
 			{
 				if (auto raytracingShader = raytracingShaderPool_.Get(it->second))
 				{
-					raytracingShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+					raytracingShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 				}
 			}
 		}
@@ -467,12 +467,12 @@ namespace SeedCore
 				continue;
 			}
 			ShaderCompileResult compileResult = ShaderCompiler::CompileComputeShader(filePath.w_str(), it->first.entryPoint_.str());
-			errorMessages_[filePath] = compileResult.errorMessage;
-			if (compileResult.objectBlob)
+			errorMessages_[filePath] = compileResult.errorMessage_;
+			if (compileResult.objectBlob_)
 			{
 				if (auto computeShader = computeShaderPool_.Get(it->second))
 				{
-					computeShader->SetBlob(compileResult.objectBlob, compileResult.reflectionBlob);
+					computeShader->SetBlob(compileResult.objectBlob_, compileResult.reflectionBlob_);
 				}
 			}
 		}

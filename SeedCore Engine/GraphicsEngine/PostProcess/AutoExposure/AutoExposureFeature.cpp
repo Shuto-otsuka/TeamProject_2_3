@@ -8,7 +8,7 @@
 
 namespace SeedCore
 {
-	REGISTER_RENDER_FEATURE(AutoExposureFeature, HistogramStage, AverageStage);
+	REGISTER_RENDER_FEATURE(AutoExposureFeature, BuildStage);
 
 	void AutoExposureFeature::Create(RenderDevice& device)
 	{

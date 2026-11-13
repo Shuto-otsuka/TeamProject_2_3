@@ -9,22 +9,14 @@ namespace SeedCore
 	public:
 		SC_RENDER_RESOURCES
 		(
-			SC_RENDER_CONTRACT(Radiance, RenderResourceDesc::ScaledTexture(DXGI_FORMAT_R16G16B16A16_FLOAT, RenderResourceScale::Display, 4), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero),
-			SC_RENDER_INTERNAL(Ping, RenderResourceDesc::ScaledTexture(DXGI_FORMAT_R16G16B16A16_FLOAT, RenderResourceScale::Display, 8, 4, 1), RenderResourceScope::View, RenderResourceLifetime::Transient),
-			SC_RENDER_INTERNAL(Pong, RenderResourceDesc::ScaledTexture(DXGI_FORMAT_R16G16B16A16_FLOAT, RenderResourceScale::Display, 8, 4, 1), RenderResourceScope::View, RenderResourceLifetime::Transient),
+			SC_RENDER_CONTRACT(Radiance, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float, RenderResourceScale::Display, 4), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero),
+			SC_RENDER_INTERNAL(Ping, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float, RenderResourceScale::Display, 8, 4, 1), RenderResourceScope::View, RenderResourceLifetime::Transient),
+			SC_RENDER_INTERNAL(Pong, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float, RenderResourceScale::Display, 8, 4, 1), RenderResourceScope::View, RenderResourceLifetime::Transient),
 			SC_RENDER_INTERNAL(Constants, RenderResourceDesc::Constant(sizeof(AnamorphicFlareConstantBuffer)), RenderResourceScope::Frame, RenderResourceLifetime::Upload)
 		);
 
 	public:
-		struct PrefilterStage;
-
-		struct Blur1Stage;
-
-		struct Blur2Stage;
-
-		struct Blur3Stage;
-
-		struct Blur4Stage;
+		struct FilterStage;
 
 		struct ComposeStage;
 
@@ -38,13 +30,7 @@ namespace SeedCore
 	private:
 		ComputePipeline<AnamorphicFlarePrefilterDescription> prefilterPipeline_;
 
-		ComputePipeline<AnamorphicFlareBlur1Description> blur1Pipeline_;
-
-		ComputePipeline<AnamorphicFlareBlur2Description> blur2Pipeline_;
-
-		ComputePipeline<AnamorphicFlareBlur3Description> blur3Pipeline_;
-
-		ComputePipeline<AnamorphicFlareBlur4Description> blur4Pipeline_;
+		ComputePipeline<AnamorphicFlareBlurDescription> blurPipeline_;
 
 		ComputePipeline<AnamorphicFlareComposeDescription> composePipeline_;
 

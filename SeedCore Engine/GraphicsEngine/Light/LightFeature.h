@@ -17,7 +17,7 @@ namespace SeedCore
 		);
 
 	public:
-		struct ClusterAssignStage;
+		struct BuildStage;
 
 	public:
 		void Create(RenderDevice& device);

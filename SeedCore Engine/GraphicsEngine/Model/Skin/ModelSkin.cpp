@@ -63,7 +63,7 @@ namespace SeedCore
 			return SC_INVALID;
 		}
 
-		const DynamicArray<Skin>& skins = crister.Skins();
+		const std::span<const Skin> skins = crister.Skins();
 		const Skeleton* skeleton = actor.GetComponent<Skeleton>();
 		Bool posed = skeleton && skeleton->Animated() && skeleton->GlobalTransforms().size() == crister.Nodes().size();
 		if (!posed)

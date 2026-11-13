@@ -8,21 +8,13 @@
 
 namespace SeedCore
 {
-	REGISTER_RENDER_FEATURE(KawaseBloomFeature, PrefilterStage, Downsample1Stage, Downsample2Stage, Downsample3Stage, Downsample4Stage, Downsample5Stage, Upsample4Stage, Upsample3Stage, Upsample2Stage, Upsample1Stage, Upsample0Stage);
+	REGISTER_RENDER_FEATURE(KawaseBloomFeature, FilterStage);
 
 	void KawaseBloomFeature::Create(RenderDevice& device)
 	{
 		prefilterPipeline_.Create(device);
-		downsample1Pipeline_.Create(device);
-		downsample2Pipeline_.Create(device);
-		downsample3Pipeline_.Create(device);
-		downsample4Pipeline_.Create(device);
-		downsample5Pipeline_.Create(device);
-		upsample4Pipeline_.Create(device);
-		upsample3Pipeline_.Create(device);
-		upsample2Pipeline_.Create(device);
-		upsample1Pipeline_.Create(device);
-		upsample0Pipeline_.Create(device);
+		downsamplePipeline_.Create(device);
+		upsamplePipeline_.Create(device);
 	}
 
 	void KawaseBloomFeature::Gather(const RenderScene& scene, RenderFrame& frame)

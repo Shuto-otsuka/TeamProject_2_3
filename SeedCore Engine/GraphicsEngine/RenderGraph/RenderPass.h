@@ -24,11 +24,15 @@ namespace SeedCore
 
 		NODISCARD Uint32 Height()const;
 
+		NODISCARD Uint32 Iteration()const;
+
 		NODISCARD ID3D12Resource* Resource(const RenderResource& resource)const;
 
 		void ClearDepth(const RenderResource& resource);
 
 		void ClearTarget(const RenderResource& resource);
+
+		void ClearTarget(const RenderResource& resource, const StaticArray<Float, 4>& color);
 
 #if SC_DEBUG
 		void Verify(std::span<IDxcBlob* const> reflections);

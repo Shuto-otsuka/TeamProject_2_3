@@ -1,5 +1,6 @@
 #pragma once
 #include <GraphicsEngine/RenderGraph/RenderName.h>
+#include <GraphicsEngine/RenderGraph/RenderFormat.h>
 
 namespace SeedCore
 {
@@ -28,7 +29,7 @@ namespace SeedCore
 
 		RenderResourceScale scale_ = RenderResourceScale::Render;
 
-		DXGI_FORMAT format_ = DXGI_FORMAT_UNKNOWN;
+		RenderFormat format_ = RenderFormat::Unknown;
 
 		Uint32 divisor_ = 1;
 
@@ -46,64 +47,69 @@ namespace SeedCore
 
 		Uint32 heightDivisor_ = 0;
 
-		NODISCARD static consteval RenderResourceDesc ScaledTexture(DXGI_FORMAT format, RenderResourceScale scale = RenderResourceScale::Render, Uint32 divisor = 1, Uint32 mipLevels = 1)
+		NODISCARD static consteval RenderResourceDesc ScaledTexture(RenderFormat format, RenderResourceScale scale = RenderResourceScale::Render, Uint32 divisor = 1, Uint32 mipLevels = 1)
 		{
 			return RenderResourceDesc{ RenderResourceShape::Texture2D, scale, format, divisor, 0, 0, 1, mipLevels };
 		}
 
-		NODISCARD static consteval RenderResourceDesc ScaledTexture(DXGI_FORMAT format, RenderResourceScale scale, Uint32 widthDivisor, Uint32 heightDivisor, Uint32 mipLevels)
+		NODISCARD static consteval RenderResourceDesc ScaledTexture(RenderFormat format, RenderResourceScale scale, Uint32 widthDivisor, Uint32 heightDivisor, Uint32 mipLevels)
 		{
 			return RenderResourceDesc{ RenderResourceShape::Texture2D, scale, format, widthDivisor, 0, 0, 1, mipLevels, 0, 0, heightDivisor };
 		}
 
-		NODISCARD static consteval RenderResourceDesc FixedTexture(DXGI_FORMAT format, Uint32 width, Uint32 height, Uint32 mipLevels = 1)
+		NODISCARD static consteval RenderResourceDesc FixedTexture(RenderFormat format, Uint32 width, Uint32 height, Uint32 mipLevels = 1)
 		{
 			return RenderResourceDesc{ RenderResourceShape::Texture2D, RenderResourceScale::Fixed, format, 1, width, height, 1, mipLevels };
 		}
 
-		NODISCARD static consteval RenderResourceDesc ScaledTextureArray(DXGI_FORMAT format, Uint32 arraySize, RenderResourceScale scale = RenderResourceScale::Render, Uint32 divisor = 1, Uint32 mipLevels = 1)
+		NODISCARD static consteval RenderResourceDesc ScaledTextureArray(RenderFormat format, Uint32 arraySize, RenderResourceScale scale = RenderResourceScale::Render, Uint32 divisor = 1, Uint32 mipLevels = 1)
 		{
 			return RenderResourceDesc{ RenderResourceShape::Texture2DArray, scale, format, divisor, 0, 0, arraySize, mipLevels };
 		}
 
-		NODISCARD static consteval RenderResourceDesc FixedTextureArray(DXGI_FORMAT format, Uint32 arraySize, Uint32 width, Uint32 height, Uint32 mipLevels = 1)
+		NODISCARD static consteval RenderResourceDesc FixedTextureArray(RenderFormat format, Uint32 arraySize, Uint32 width, Uint32 height, Uint32 mipLevels = 1)
 		{
 			return RenderResourceDesc{ RenderResourceShape::Texture2DArray, RenderResourceScale::Fixed, format, 1, width, height, arraySize, mipLevels };
 		}
 
-		NODISCARD static consteval RenderResourceDesc Cube(DXGI_FORMAT format, Uint32 size, Uint32 mipLevels = 1)
+		NODISCARD static consteval RenderResourceDesc Cube(RenderFormat format, Uint32 size, Uint32 mipLevels = 1)
 		{
 			return RenderResourceDesc{ RenderResourceShape::TextureCube, RenderResourceScale::Fixed, format, 1, size, size, 6, mipLevels };
 		}
 
-		NODISCARD static consteval RenderResourceDesc CubeArray(DXGI_FORMAT format, Uint32 size, Uint32 cubeCount, Uint32 mipLevels = 1)
+		NODISCARD static consteval RenderResourceDesc CubeArray(RenderFormat format, Uint32 size, Uint32 cubeCount, Uint32 mipLevels = 1)
 		{
 			return RenderResourceDesc{ RenderResourceShape::TextureCubeArray, RenderResourceScale::Fixed, format, 1, size, size, 6 * cubeCount, mipLevels };
 		}
 
-		NODISCARD static consteval RenderResourceDesc Volume(DXGI_FORMAT format, RenderResourceScale scale, Uint32 divisor, Uint32 depth)
+		NODISCARD static consteval RenderResourceDesc Volume(RenderFormat format, RenderResourceScale scale, Uint32 divisor, Uint32 depth)
 		{
 			return RenderResourceDesc{ RenderResourceShape::Texture3D, scale, format, divisor, 0, 0, depth, 1 };
 		}
 
+		NODISCARD static consteval RenderResourceDesc FixedVolume(RenderFormat format, Uint32 width, Uint32 height, Uint32 depth)
+		{
+			return RenderResourceDesc{ RenderResourceShape::Texture3D, RenderResourceScale::Fixed, format, 1, width, height, depth, 1 };
+		}
+
 		NODISCARD static consteval RenderResourceDesc ScaledBuffer(Uint32 stride, Uint32 count, RenderResourceScale scale, Uint32 divisor, Uint32 depth = 1)
 		{
-			return RenderResourceDesc{ RenderResourceShape::Buffer, scale, DXGI_FORMAT_UNKNOWN, divisor, 0, 0, depth, 1, stride, count };
+			return RenderResourceDesc{ RenderResourceShape::Buffer, scale, RenderFormat::Unknown, divisor, 0, 0, depth, 1, stride, count };
 		}
 
 		NODISCARD static consteval RenderResourceDesc FixedBuffer(Uint32 stride, Uint32 count)
 		{
-			return RenderResourceDesc{ RenderResourceShape::Buffer, RenderResourceScale::Fixed, DXGI_FORMAT_UNKNOWN, 1, 0, 0, 1, 1, stride, count };
+			return RenderResourceDesc{ RenderResourceShape::Buffer, RenderResourceScale::Fixed, RenderFormat::Unknown, 1, 0, 0, 1, 1, stride, count };
 		}
 
 		NODISCARD static consteval RenderResourceDesc Constant(Uint32 size)
 		{
-			return RenderResourceDesc{ RenderResourceShape::Constant, RenderResourceScale::Fixed, DXGI_FORMAT_UNKNOWN, 1, 0, 0, 1, 1, size, 1 };
+			return RenderResourceDesc{ RenderResourceShape::Constant, RenderResourceScale::Fixed, RenderFormat::Unknown, 1, 0, 0, 1, 1, size, 1 };
 		}
 
 		NODISCARD static consteval RenderResourceDesc AccelerationStructure(Uint32 count)
 		{
-			return RenderResourceDesc{ RenderResourceShape::AccelerationStructure, RenderResourceScale::Fixed, DXGI_FORMAT_UNKNOWN, 1, 0, 0, 1, 1, 0, count };
+			return RenderResourceDesc{ RenderResourceShape::AccelerationStructure, RenderResourceScale::Fixed, RenderFormat::Unknown, 1, 0, 0, 1, 1, 0, count };
 		}
 	};
 

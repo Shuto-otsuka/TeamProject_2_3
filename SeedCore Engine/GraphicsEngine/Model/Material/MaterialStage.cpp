@@ -4,7 +4,7 @@
 
 namespace SeedCore
 {
-	void MaterialFeature::ClassifyStage::Execute(MaterialFeature& feature, RenderPass& pass)
+	void MaterialFeature::BuildStage::ClassifyStep::Execute(MaterialFeature& feature, RenderPass& pass)
 	{
 		feature.preparePipeline_.Dispatch(pass, 1025, 1, 1);
 
@@ -16,12 +16,12 @@ namespace SeedCore
 		feature.classifyPipeline_.Dispatch(pass, pass.Width(), pass.Height(), 1);
 	}
 
-	void MaterialFeature::PrefixSumStage::Execute(MaterialFeature& feature, RenderPass& pass)
+	void MaterialFeature::BuildStage::PrefixSumStep::Execute(MaterialFeature& feature, RenderPass& pass)
 	{
 		feature.prefixSumPipeline_.Dispatch(pass, 1024, 1, 1);
 	}
 
-	void MaterialFeature::ScatterStage::Execute(MaterialFeature& feature, RenderPass& pass)
+	void MaterialFeature::BuildStage::ScatterStep::Execute(MaterialFeature& feature, RenderPass& pass)
 	{
 		feature.scatterPipeline_.Dispatch(pass, pass.Width(), pass.Height(), 1);
 	}

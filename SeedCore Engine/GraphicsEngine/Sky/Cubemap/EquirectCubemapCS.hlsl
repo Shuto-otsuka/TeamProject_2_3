@@ -1,11 +1,11 @@
 #include <GraphicsEngine/Sky/Sky.hlsli>
 #include <GraphicsEngine/Shader/RootSignature.hlsli>
 
-struct SkyGenerateEquirectBindings
+struct SkyEquirectBindings
 {
     uint sky_cubemap_;
 };
-ConstantBuffer<SkyGenerateEquirectBindings> bindings : register(b0, space1);
+ConstantBuffer<SkyEquirectBindings> bindings : register(b0, space1);
 
 /**
 * [EN]

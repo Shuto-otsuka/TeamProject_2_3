@@ -3,7 +3,7 @@
 
 namespace SeedCore
 {
-	struct UpscaleTaauResolveDescription
+	struct UpscaleTaauDescription
 	{
 		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/PostProcess/Upscale/UpscaleTaauCS.hlsl");
 
@@ -14,7 +14,7 @@ namespace SeedCore
 		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
 	};
 
-	struct UpscalePrepareGuidesDescription
+	struct UpscaleGuidesDescription
 	{
 		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/PostProcess/Upscale/UpscaleGuidesCS.hlsl");
 

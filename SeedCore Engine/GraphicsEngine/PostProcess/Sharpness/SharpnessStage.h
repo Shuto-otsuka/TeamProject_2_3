@@ -9,6 +9,8 @@ namespace SeedCore
 
 		SC_CONSTEX Bool SharpnessFeature::* enableCondition_ = &SharpnessFeature::enabled_;
 
+		SC_CONSTEX Uint64 showFlags_ = static_cast<Uint64>(RenderShowFlag::PostProcess) | static_cast<Uint64>(RenderShowFlag::Sharpness);
+
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(ToneMappingFeature::Color),

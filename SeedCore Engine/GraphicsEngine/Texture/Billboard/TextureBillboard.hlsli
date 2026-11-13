@@ -10,6 +10,9 @@ struct TextureBillboardBindings
 	uint texture_quads_;
 	uint texture_draw_list_;
 	uint texture_constants_;
+	uint raytracing_volumetric_light_fog_volume_;
+	uint outline_styles_;
+	uint outline_mask_;
 };
 ConstantBuffer<TextureBillboardBindings> bindings : register(b0, space1);
 

@@ -2,6 +2,7 @@
 #include <GraphicsEngine/RenderGraph/RenderStage.h>
 #include <GraphicsEngine/RenderGraph/RenderUpload.h>
 #include <GraphicsEngine/RenderGraph/RenderScene.h>
+#include <GraphicsEngine/RenderGraph/RenderFormat.h>
 #include <GraphicsEngine/Profiler/GpuProfiler.h>
 
 namespace SeedCore
@@ -46,6 +47,8 @@ namespace SeedCore
 		RenderAccessType type_ = RenderAccessType::Read;
 
 		Uint32 index_ = SC_INVALID;
+
+		String bindingName_;
 	};
 
 	struct RenderGraphStage
@@ -56,6 +59,8 @@ namespace SeedCore
 
 		Uint32 order_ = 0;
 
+		Uint32 iteration_ = 0;
+
 		RenderStageKind kind_ = RenderStageKind::Compute;
 
 		RenderQueue queue_ = RenderQueue::Frame;
@@ -63,6 +68,8 @@ namespace SeedCore
 		RenderViewMask viewMask_ = RenderViewMask::Frame;
 
 		Bool async_ = false;
+
+		Uint64 showFlags_ = 0;
 
 		DynamicArray<RenderGraphAccess> accesses_;
 
@@ -106,7 +113,7 @@ namespace SeedCore
 
 		RenderResourceShape shape_ = RenderResourceShape::Texture2D;
 
-		DXGI_FORMAT format_ = DXGI_FORMAT_UNKNOWN;
+		RenderFormat format_ = RenderFormat::Unknown;
 
 		Uint32 width_ = 0;
 
@@ -181,6 +188,13 @@ namespace SeedCore
 		RenderGraphAllocation allocation_;
 	};
 
+	struct RenderGraphFallback
+	{
+		RenderFallback fallback_ = RenderFallback::None;
+
+		RenderGraphAllocation allocation_;
+	};
+
 	class RenderGraph :public NonTransferable
 	{
 	private:
@@ -218,18 +232,31 @@ namespace SeedCore
 			Uint32 order = 0;
 			([&]()
 				{
+					std::string stageName = std::string(RenderName::FeatureName<Feature>()) + "." + std::string(Stages::slot_);
+					if (!Stages::step_.empty())
+					{
+						stageName += "." + std::string(Stages::step_);
+					}
+					if (Stages::repeat_ > 1)
+					{
+						stageName += "[" + std::to_string(Stages::iteration_) + "]";
+					}
+
 					RenderGraphStage& stage = stages_.emplace_back();
 					stage.featureName_ = featureName;
-					stage.stageName_ = String(RenderStageName<Feature, Stages>.View());
+					stage.stageName_ = String(std::string_view(stageName));
 					stage.order_ = order;
 					++order;
+					stage.iteration_ = Stages::iteration_;
 					stage.kind_ = Stages::kind_;
 					stage.queue_ = Stages::queue_;
 					stage.viewMask_ = Stages::viewMask_;
 					stage.async_ = Stages::async_;
+					stage.showFlags_ = Stages::showFlags_;
 					for (const RenderAccess& access : Stages::accesses_)
 					{
-						stage.accesses_.push_back(RenderGraphAccess{ String(access.Resource().Name()), access.Type() });
+						std::string bindingName = access.Alias().empty() ? std::string(access.Resource().Name()) : std::string(RenderName::FeatureName<Feature>()) + "." + std::string(access.Alias());
+						stage.accesses_.push_back(RenderGraphAccess{ String(access.Resource().Name()), access.Type(), SC_INVALID, String(std::string_view(bindingName)) });
 					}
 					stage.feature_ = &feature;
 					stage.enabled_ = [](const void* owner, RenderViewKind view) -> Bool
@@ -281,7 +308,7 @@ namespace SeedCore
 
 		StaticArray<Uint32, 8> nulls_ = {};
 
-		StaticArray<RenderGraphAllocation, 2> fallbacks_;
+		DynamicArray<RenderGraphFallback> fallbacks_;
 
 		StaticArray<ResourcePtr<StagingBuffer>, 2> bindings_;
 

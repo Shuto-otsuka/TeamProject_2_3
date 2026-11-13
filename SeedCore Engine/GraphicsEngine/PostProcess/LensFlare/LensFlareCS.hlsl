@@ -16,7 +16,6 @@ struct LensFlareConstantBuffer
 	float spike_variation_;
 };
 
-
 /**
 * [EN]
 * Reference:
@@ -37,7 +36,7 @@ struct LensFlareConstantBuffer
 * BokehSettings::bladeCount_ (the same physical iris the bokeh shape comes
 * from) into axis_count_, and the axes are spread evenly over half a turn.
 * Each axis is blurred independently and bidirectionally across 4 passes
-* (BlurPass1..4), ping-ponging between that axis's slices of
+* (Blur, 4 iterations), ping-ponging between that axis's slices of
 * LensFlare.Ping and LensFlare.Pong.
 *
 * Each pass takes 3 taps per side at a texel spacing of 4^(pass-1)
@@ -57,8 +56,8 @@ struct LensFlareConstantBuffer
 * specular highlight) - a single-dispatch sparse gather would instead
 * reproduce separate copies of that source at each sample position, visible
 * as a chain of overlapping circles ("beads on a string").
-* BlurPass1 also performs the bright-pass extraction (from the same HDR
-* source PostProcessCS.hlsl reads); Compose reads each axis's final
+* The first Blur iteration also performs the bright-pass extraction (from the same HDR
+* source PostProcessCS.hlsl reads); Glare reads each axis's final
 * (post-pass-6) buffer, applies the color-fringing chromatic_aberration_
 * offset and intensity_ once, and writes the summed result directly into
 * LensFlare.Radiance, which PostProcessCS.hlsl samples and adds
@@ -82,7 +81,7 @@ struct LensFlareConstantBuffer
 * 直線が重なるため)、奇数枚では2n本になる。軸数は偶数で n/2、奇数で n。
 * LensFlareFeature::Gather が BokehSettings::bladeCount_
 * (ボケの形を決めるのと同じ物理的な絞り)から計算して axis_count_ に
-* 入れ、軸は半周に等間隔で並ぶ。各軸を独立に、4パス(BlurPass1..4)
+* 入れ、軸は半周に等間隔で並ぶ。各軸を独立に、4回(Blur の繰り返し)
 * かけて双方向にブラーする。LensFlare.Ping と LensFlare.Pong の
 * その軸のスライスの間でピンポンする。
 *
@@ -100,8 +99,8 @@ struct LensFlareConstantBuffer
 * スペキュラハイライトなど)でも連続した線になる — 1回ディスパッチの
 * 疎なゲザーは、少数のサンプル位置ごとにその光源の独立したコピーを
 * 複製してしまい、重なり合った円の数珠つなぎ(ビーズ状)に見えていた。
-* BlurPass1はブライトパス抽出も兼ねる
-* (PostProcessCS.hlsl が読むのと同じHDRソースから)。Compose は各軸の
+* Blur の 1 回目はブライトパス抽出も兼ねる
+* (PostProcessCS.hlsl が読むのと同じHDRソースから)。Glare は各軸の
 * 最終(パス4後)バッファを読み、色収差(chromatic_aberration_)オフセットと
 * intensity_ を1回だけ適用し、合計結果を LensFlare.Radiance(PostProcessCS.hlsl がサンプルして露出適用前のHDRカラーへ
 * 加算する)へ直接書き込む。最後に Ghost パスが古典的な「ゴーストチェーン」
@@ -278,20 +277,20 @@ float3 StreakGather(Texture2DArray<float4> source, float slice, float2 uv, float
 
 /**
 * [EN]
-* Shared body for BlurPass1..4: for every axis, applies the streak kernel to
+* Shared body for Blur: for every axis, applies the streak kernel to
 * that axis's slice of source and writes it to the same slice of destination.
-* BlurPass1 reads LensFlare.Bright (one slice, shared by every axis); the
-* later passes alternate between LensFlare.Ping and LensFlare.Pong, each pass
-* a Stage of its own.
+* The first iteration reads LensFlare.Bright (one slice, shared by every axis); the
+* later iterations alternate between LensFlare.Ping and LensFlare.Pong, each
+* iteration a graph pass of its own.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* BlurPass1..4 の共通本体。軸ごとに、source のその軸のスライスへストリークの
-* カーネルを掛け、destination の同じスライスへ書く。BlurPass1 は
-* LensFlare.Bright（全軸で共有する 1 スライス）を読み、以降のパスは
-* LensFlare.Ping と LensFlare.Pong を交互に読み書きする。1 パスが 1 つの
-* Stage。
+* Blur の共通本体。軸ごとに、source のその軸のスライスへストリークの
+* カーネルを掛け、destination の同じスライスへ書く。1 回目は
+* LensFlare.Bright（全軸で共有する 1 スライス）を読み、以降の回は
+* LensFlare.Ping と LensFlare.Pong を交互に読み書きする。1 回が 1 つの
+* グラフのパス。
 */
 void BlurPass(uint3 dtid, float spacing, Texture2DArray<float4> source, bool shared_source, RWTexture2DArray<float4> destination, ConstantBuffer<LensFlareConstantBuffer> constants)
 {
@@ -339,86 +338,36 @@ void BlurPass(uint3 dtid, float spacing, Texture2DArray<float4> source, bool sha
 * 半分以上)に届く。倍率が4なぶん2倍刻みより少ないパス数で済み、以前の6
 * パスから4パスへ減らせた。
 */
-struct LensFlareBlurPass1Bindings
+struct LensFlareBlurBindings
 {
 	uint lens_flare_constants_;
-	uint lens_flare_bright_;
-	uint lens_flare_ping_;
+	uint lens_flare_source_;
+	uint lens_flare_destination_;
 };
-ConstantBuffer<LensFlareBlurPass1Bindings> blur_pass1_bindings : register(b0, space1);
+ConstantBuffer<LensFlareBlurBindings> blur_bindings : register(b0, space1);
 
 [numthreads(8, 8, 1)]
-void BlurPass1(uint3 dtid : SV_DispatchThreadID)
+void Blur(uint3 dtid : SV_DispatchThreadID)
 {
-	ConstantBuffer<LensFlareConstantBuffer> constants = ResourceDescriptorHeap[blur_pass1_bindings.lens_flare_constants_];
-	Texture2DArray<float4> source = ResourceDescriptorHeap[blur_pass1_bindings.lens_flare_bright_];
-	RWTexture2DArray<float4> destination = ResourceDescriptorHeap[blur_pass1_bindings.lens_flare_ping_];
-	BlurPass(dtid, 1.0, source, true, destination, constants);
+	uint iteration = dispatch_bindings.constants_;
+	ConstantBuffer<LensFlareConstantBuffer> constants = ResourceDescriptorHeap[blur_bindings.lens_flare_constants_];
+	Texture2DArray<float4> source = ResourceDescriptorHeap[blur_bindings.lens_flare_source_];
+	RWTexture2DArray<float4> destination = ResourceDescriptorHeap[blur_bindings.lens_flare_destination_];
+	BlurPass(dtid, float(1u << (iteration * 2)), source, iteration == 0, destination, constants);
 }
 
-struct LensFlareBlurPass2Bindings
-{
-	uint lens_flare_constants_;
-	uint lens_flare_ping_;
-	uint lens_flare_pong_;
-};
-ConstantBuffer<LensFlareBlurPass2Bindings> blur_pass2_bindings : register(b0, space1);
-
-[numthreads(8, 8, 1)]
-void BlurPass2(uint3 dtid : SV_DispatchThreadID)
-{
-	ConstantBuffer<LensFlareConstantBuffer> constants = ResourceDescriptorHeap[blur_pass2_bindings.lens_flare_constants_];
-	Texture2DArray<float4> source = ResourceDescriptorHeap[blur_pass2_bindings.lens_flare_ping_];
-	RWTexture2DArray<float4> destination = ResourceDescriptorHeap[blur_pass2_bindings.lens_flare_pong_];
-	BlurPass(dtid, 4.0, source, false, destination, constants);
-}
-
-struct LensFlareBlurPass3Bindings
-{
-	uint lens_flare_constants_;
-	uint lens_flare_pong_;
-	uint lens_flare_ping_;
-};
-ConstantBuffer<LensFlareBlurPass3Bindings> blur_pass3_bindings : register(b0, space1);
-
-[numthreads(8, 8, 1)]
-void BlurPass3(uint3 dtid : SV_DispatchThreadID)
-{
-	ConstantBuffer<LensFlareConstantBuffer> constants = ResourceDescriptorHeap[blur_pass3_bindings.lens_flare_constants_];
-	Texture2DArray<float4> source = ResourceDescriptorHeap[blur_pass3_bindings.lens_flare_pong_];
-	RWTexture2DArray<float4> destination = ResourceDescriptorHeap[blur_pass3_bindings.lens_flare_ping_];
-	BlurPass(dtid, 16.0, source, false, destination, constants);
-}
-
-struct LensFlareBlurPass4Bindings
-{
-	uint lens_flare_constants_;
-	uint lens_flare_ping_;
-	uint lens_flare_pong_;
-};
-ConstantBuffer<LensFlareBlurPass4Bindings> blur_pass4_bindings : register(b0, space1);
-
-[numthreads(8, 8, 1)]
-void BlurPass4(uint3 dtid : SV_DispatchThreadID)
-{
-	ConstantBuffer<LensFlareConstantBuffer> constants = ResourceDescriptorHeap[blur_pass4_bindings.lens_flare_constants_];
-	Texture2DArray<float4> source = ResourceDescriptorHeap[blur_pass4_bindings.lens_flare_ping_];
-	RWTexture2DArray<float4> destination = ResourceDescriptorHeap[blur_pass4_bindings.lens_flare_pong_];
-	BlurPass(dtid, 64.0, source, false, destination, constants);
-}
-
-struct LensFlareComposeBindings
+struct LensFlareGlareBindings
 {
 	uint lens_flare_constants_;
 	uint lens_flare_pong_;
 	uint lens_flare_radiance_;
 };
-ConstantBuffer<LensFlareComposeBindings> compose_bindings : register(b0, space1);
+ConstantBuffer<LensFlareGlareBindings> glare_bindings : register(b0, space1);
 
 [numthreads(8, 8, 1)]
-void Compose(uint3 dtid : SV_DispatchThreadID)
+void Glare(uint3 dtid : SV_DispatchThreadID)
 {
-	RWTexture2D<float4> output = ResourceDescriptorHeap[compose_bindings.lens_flare_radiance_];
+	RWTexture2D<float4> output = ResourceDescriptorHeap[glare_bindings.lens_flare_radiance_];
 
 	uint width, height;
 	output.GetDimensions(width, height);
@@ -428,8 +377,8 @@ void Compose(uint3 dtid : SV_DispatchThreadID)
 		return;
 	}
 
-	ConstantBuffer<LensFlareConstantBuffer> constants = ResourceDescriptorHeap[compose_bindings.lens_flare_constants_];
-	Texture2DArray<float4> axis_source = ResourceDescriptorHeap[compose_bindings.lens_flare_pong_];
+	ConstantBuffer<LensFlareConstantBuffer> constants = ResourceDescriptorHeap[glare_bindings.lens_flare_constants_];
+	Texture2DArray<float4> axis_source = ResourceDescriptorHeap[glare_bindings.lens_flare_pong_];
 
 	float2 uv = (float2(dtid.xy) + 0.5) / float2(width, height);
 	float chromatic_aberration = constants.chromatic_aberration_;
@@ -525,7 +474,7 @@ float3 LensColor(float radius01)
 * ghost that goes off-screen.
 *
 * The input is the bright-passed buffer Downsample wrote. This adds onto the
-* streak result Compose wrote (a read-modify-write; Ghost is a later Stage of the same
+* streak result Glare wrote (a read-modify-write; Ghost is a later step of the same
 * Feature, so the graph places the barrier).
 *
 * ---------------------------------------------------------------------
@@ -545,8 +494,8 @@ float3 LensColor(float radius01)
 * 位置を使う(ラップ後の実際のサンプル位置と重みを一致させる)。クランプ
 * サンプラだと画面外へ出たゴーストが端の画素を引き伸ばす。
 *
-* 入力は Downsample が書いたブライトパス済みバッファ。Compose が書いた
-* ストリーク結果へ加算する(読み書き。Ghost は同じ Feature の後の Stage
+* 入力は Downsample が書いたブライトパス済みバッファ。Glare が書いた
+* ストリーク結果へ加算する(読み書き。Ghost は同じ Feature の後のステップ
 * なので、バリアはグラフが置く)。
 */
 struct LensFlareGhostBindings

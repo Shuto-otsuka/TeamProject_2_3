@@ -3,6 +3,8 @@
 #include <GraphicsEngine/Light/LightShading.hlsli>
 #include <GraphicsEngine/Model/Material/Material.hlsli>
 #include <GraphicsEngine/Shader/Scene.hlsli>
+#include <GraphicsEngine/Environment/Weather/Weather.hlsli>
+#include <GraphicsEngine/Debug/DebugView.hlsli>
 
 struct DirectLightRatioBindings
 {
@@ -12,32 +14,36 @@ struct DirectLightRatioBindings
 	uint material_surface_tangent_;
 	uint geometry_visibility_id_;
 	uint geometry_visibility_texcoord_;
-	uint model_instances_;
+	uint geometry_instances_;
 	uint light_list_;
 	uint light_constants_;
+	uint weather_constants_;
 	uint light_cluster_grid_;
+	uint raytracing_shadow_visibility_;
 	uint direct_light_punctual_radiance_;
 };
 ConstantBuffer<DirectLightRatioBindings> bindings : register(b0, space1);
 
 /**
 * [EN]
-* DirectLight.ResolveRatio: one thread per pixel. Rebuilds the surface from
+* DirectLight.Resolve: one thread per pixel. Rebuilds the surface from
 * the G-Buffer and its material (LoadSurfaceMaterial), finds the pixel's
 * cluster from its screen tile and its logarithmic depth slice, and sums the
 * unshadowed direct light of every point, spot and rectangle light in it. All
 * three share one smooth distance falloff to zero at range_; a spot fades
 * over softness_ inside its cone, and a rectangle lights only its front side,
-* from the point of the rectangle nearest to the surface. The background
-* receives no light.
+* from the point of the rectangle nearest to the surface. The sum is then
+* scaled by the punctual visibility ratio in RaytracingShadow.Visibility.y.
+* The background receives no light.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* DirectLight.ResolveRatio。1 ピクセルに 1 スレッド。G-Buffer とマテリアル
+* DirectLight.Resolve。1 ピクセルに 1 スレッド。G-Buffer とマテリアル
 * （LoadSurfaceMaterial）から表面を組み立て、画面のタイルと対数の深さの
 * スライスからピクセルのクラスタを求め、そこに入る点光源・スポット・矩形
-* ライトの影なしの直接光を合計する。3 種類とも range_ で 0 になる同じ
+* ライトの影なしの直接光を合計し、RaytracingShadow.Visibility.y の点光源の
+* 可視率を掛ける。3 種類とも range_ で 0 になる同じ
 * なめらかな距離の減衰を使い、スポットはコーンの内側で softness_ の幅で
 * フェードし、矩形は表側だけを、表面にいちばん近い矩形上の点から照らす。
 * 背景には光を書かない。
@@ -57,7 +63,8 @@ void Ratio(uint3 id : SV_DispatchThreadID)
 
 	uint2 pixel = id.xy;
 	float depth = depth_texture.Load(int3(pixel, 0));
-	if (depth == 0.0)
+	Texture2D<uint2> visibility_id = ResourceDescriptorHeap[bindings.geometry_visibility_id_];
+	if (depth == 0.0 || visibility_id.Load(int3(pixel, 0)).x == 0)
 	{
 		punctual_radiance[pixel] = float4(0.0, 0.0, 0.0, 0.0);
 		return;
@@ -73,7 +80,6 @@ void Ratio(uint3 id : SV_DispatchThreadID)
 	Texture2D<float4> surface_base_color = ResourceDescriptorHeap[bindings.material_surface_base_color_];
 	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_surface_normal_roughness_];
 	Texture2D<uint> surface_tangent = ResourceDescriptorHeap[bindings.material_surface_tangent_];
-	Texture2D<uint2> visibility_id = ResourceDescriptorHeap[bindings.geometry_visibility_id_];
 	Texture2D<float2> visibility_texcoord = ResourceDescriptorHeap[bindings.geometry_visibility_texcoord_];
 	float4 base_color = surface_base_color.Load(int3(pixel, 0));
 	uint normal_roughness = surface_normal_roughness.Load(int3(pixel, 0));
@@ -84,16 +90,35 @@ void Ratio(uint3 id : SV_DispatchThreadID)
 	uint meshlet_index;
 	uint triangle_in_meshlet_index;
 	UnpackVisibilityID(visibility_id.Load(int3(pixel, 0)), instance_index, meshlet_index, triangle_in_meshlet_index);
-	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.model_instances_];
+	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.geometry_instances_];
 	ModelStructuredBuffer instance = instances[instance_index];
 
 	uint2 pixel_x = uint2(min(pixel.x + 1, width - 1), pixel.y);
 	uint2 pixel_y = uint2(pixel.x, min(pixel.y + 1, height - 1));
 	float2 texcoord = visibility_texcoord.Load(int3(pixel, 0));
-	float2 texcoord_dx = visibility_id.Load(int3(pixel_x, 0)).x == instance_index ? visibility_texcoord.Load(int3(pixel_x, 0)) - texcoord : float2(0.0, 0.0);
-	float2 texcoord_dy = visibility_id.Load(int3(pixel_y, 0)).x == instance_index ? visibility_texcoord.Load(int3(pixel_y, 0)) - texcoord : float2(0.0, 0.0);
+	float2 texcoord_dx = visibility_id.Load(int3(pixel_x, 0)).x == instance_index + 1 ? visibility_texcoord.Load(int3(pixel_x, 0)) - texcoord : float2(0.0, 0.0);
+	float2 texcoord_dy = visibility_id.Load(int3(pixel_y, 0)).x == instance_index + 1 ? visibility_texcoord.Load(int3(pixel_y, 0)) - texcoord : float2(0.0, 0.0);
 
-	SurfaceMaterial material = LoadSurfaceMaterial(base_color.rgb, base_color.a, roughness, normal, view, instance, texcoord, texcoord_dx, texcoord_dy, surface_tangent.Load(int3(pixel, 0)), 0.0, 0.0);
+	ConstantBuffer<WeatherConstantBuffer> weather = ResourceDescriptorHeap[bindings.weather_constants_];
+	SurfaceMaterial material = LoadSurfaceMaterial(base_color.rgb, base_color.a, roughness, normal, view, instance, texcoord, texcoord_dx, texcoord_dy, surface_tangent.Load(int3(pixel, 0)), weather.wetness_, weather.snow_coverage_);
+	if (scene.view_mode_ == VIEW_MODE_DETAIL_LIGHTING)
+	{
+		material.diffuse_color_ = float3(0.5, 0.5, 0.5);
+		material.f0_ = float3(0.04, 0.04, 0.04);
+	}
+	else if (scene.view_mode_ == VIEW_MODE_LIGHTING_ONLY)
+	{
+		material.diffuse_color_ = float3(1.0, 1.0, 1.0);
+		material.f0_ = float3(0.04, 0.04, 0.04);
+	}
+	else if (scene.view_mode_ == VIEW_MODE_DIRECT_DIFFUSE)
+	{
+		material.f0_ = float3(0.0, 0.0, 0.0);
+	}
+	else if (scene.view_mode_ == VIEW_MODE_DIRECT_SPECULAR)
+	{
+		material.diffuse_color_ = float3(0.0, 0.0, 0.0);
+	}
 
 	uint2 tile_count = (uint2(width, height) + LIGHT_CLUSTER_TILE_SIZE - 1) / LIGHT_CLUSTER_TILE_SIZE;
 	uint2 tile = min(pixel / LIGHT_CLUSTER_TILE_SIZE, tile_count - 1);
@@ -158,5 +183,6 @@ void Ratio(uint3 id : SV_DispatchThreadID)
 			}
 		}
 	}
-	punctual_radiance[pixel] = float4(lighting, 0.0);
+	Texture2D<float2> shadow_visibility = ResourceDescriptorHeap[bindings.raytracing_shadow_visibility_];
+	punctual_radiance[pixel] = float4(lighting * shadow_visibility.Load(int3(pixel, 0)).y, 0.0);
 }

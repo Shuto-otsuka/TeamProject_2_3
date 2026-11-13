@@ -10,7 +10,7 @@ namespace SeedCore
 
 		~SceneRenderer();
 
-		void Initialize(Uint64 capacity);
+		void Initialize(RenderFeatureSet set, Uint64 capacity);
 
 		void Render(const RenderScene& scene);
 

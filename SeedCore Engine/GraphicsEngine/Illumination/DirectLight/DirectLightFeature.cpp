@@ -4,7 +4,7 @@
 
 namespace SeedCore
 {
-	REGISTER_RENDER_FEATURE(DirectLightFeature, ResolveRatioStage);
+	REGISTER_RENDER_FEATURE(DirectLightFeature, ResolveStage);
 
 	void DirectLightFeature::Create(RenderDevice& device)
 	{

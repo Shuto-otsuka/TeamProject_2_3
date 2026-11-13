@@ -47,7 +47,7 @@ namespace SeedCore
 		Uint primitiveIndicesBufferIndex_;
 		Uint meshletOffset_;
 		Uint meshletCount_;
-		Uint modelGeometryPadding0_;
+		Uint layer_;
 	};
 	SC_STATIC_ASSERT(ModelGeometry, 32, "Model/Model.hlsli");
 
@@ -55,15 +55,15 @@ namespace SeedCore
 	* [EN]
 	* Dequantisation AABB for the compressed vertex buffer (Crister::
 	* PositionMin etc. - see Model.hlsli's DecodeModelVertex), plus the
-	* cumulative LOD error of this cluster and of the next coarser cluster
-	* in the chain (FLT_MAX = always keep).
+	* screen-space error in pixels of this cluster as seen from the closest
+	* view, and the cluster's level in its LOD chain (0 = most detailed).
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 圧縮頂点バッファの逆量子化AABB(Crister::PositionMinほか — Model.hlsli の
-	* DecodeModelVertex 参照)と、このクラスタの累積LOD誤差、チェーン内の次に
-	* 粗いクラスタの誤差(FLT_MAX = 常に描画)。
+	* DecodeModelVertex 参照)と、いちばん近いビューから見たこのクラスタの
+	* 画面上の誤差（ピクセル）、LOD の段の中での段（0 が最も詳細）。
 	*/
 	struct ModelStreaming
 	{
@@ -75,7 +75,7 @@ namespace SeedCore
 
 		Vector2 texcoordExtent_;
 		Float lodError_;
-		Float lodErrorNext_;
+		Uint lodLevel_;
 	};
 	SC_STATIC_ASSERT(ModelStreaming, 48, "Model/Model.hlsli");
 
@@ -87,11 +87,11 @@ namespace SeedCore
 	* (see CristerMaterial.h's ShadingModel); furLength_/furDensity_/
 	* furShellCount_ are ShadingModel::Fur tuning. doubleSided_/blend_ route
 	* the instance to the culling lists and passes that match its faces and
-	* alpha mode, and selected_ marks it for the editor's selection outline.
+	* alpha mode, and selected_ marks an actor the editor has selected.
 	* materialMapping_/tiling_/triplanarSharpness_ decide how the material's
-	* textures are placed (MaterialMapping.hlsli), and outlineColor_/
-	* outlineWidth_ are the material's screen-space outline
-	* (MaterialOutlineCS.hlsl).
+	* textures are placed (MaterialMapping.hlsli), and actor_ is the entity
+	* index of the actor the instance belongs to, which the outline looks its
+	* style up by (OutlineCS.hlsl).
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -102,11 +102,11 @@ namespace SeedCore
 	* 評価するか(CristerMaterial.h の ShadingModel 参照)、furLength_/
 	* furDensity_/furShellCount_ は ShadingModel::Fur のチューニング値。
 	* doubleSided_/blend_ は、面の向きとアルファモードに合ったカリングの
-	* リストとパスへインスタンスを振り分け、selected_ はエディタの選択
-	* アウトラインの対象であることを示す。materialMapping_/tiling_/
+	* リストとパスへインスタンスを振り分け、selected_ はエディタで選択中の
+	* アクターであることを示す。materialMapping_/tiling_/
 	* triplanarSharpness_ はマテリアルのテクスチャの貼り方
-	* (MaterialMapping.hlsli)を決め、outlineColor_/outlineWidth_ は
-	* マテリアルのスクリーン空間の縁取り(MaterialOutlineCS.hlsl)。
+	* (MaterialMapping.hlsli)を決め、actor_ はインスタンスが属するアクターの
+	* エンティティ番号で、縁取りはこれで設定を引く(OutlineCS.hlsl)。
 	*/
 	struct ModelShading
 	{
@@ -134,8 +134,8 @@ namespace SeedCore
 		/// [JP] マテリアルのアルファモードが BLEND のときに 1。インスタンスは不透明のパスではなく、半透明(OIT)のパスで描かれる。
 		Uint blend_;
 
-		/// [EN] 1 when the instance's actor is selected in the editor, so it is drawn into the selection silhouette.
-		/// [JP] インスタンスのアクターがエディタで選択されているときに 1。選択シルエットに描かれる。
+		/// [EN] 1 when the instance's actor is selected in the editor.
+		/// [JP] インスタンスのアクターがエディタで選択されているときに 1。
 		Uint selected_;
 
 		/// [EN] How the material's textures are placed (MaterialMapping as an integer, MATERIAL_MAPPING_* in Model.hlsli).
@@ -150,13 +150,11 @@ namespace SeedCore
 		/// [JP] 3 つの Triplanar 投影の重みにする前に、法線へ掛ける指数。
 		Float triplanarSharpness_;
 
-		/// [EN] Material outline color packed as RGBA8 (R in the lowest byte), from Surface::outlineColor_.
-		/// [JP] マテリアルの縁取りの色を RGBA8 に詰めたもの(最下位バイトが R)。Surface::outlineColor_ から写す。
-		Uint outlineColor_;
+		/// [EN] Entity index of the actor the instance belongs to, which indexes Outline.Styles; SC_INVALID for an instance with no actor (primitive solids).
+		/// [JP] インスタンスが属するアクターのエンティティ番号。Outline.Styles の添え字になる。アクターを持たないインスタンス(プリミティブの形)では SC_INVALID。
+		Uint actor_;
 
-		/// [EN] Material outline width in display-resolution pixels, from Surface::outlineWidth_; 0 leaves the instance unoutlined.
-		/// [JP] マテリアルの縁取りの幅(表示解像度のピクセル数)。Surface::outlineWidth_ から写す。0 ならこのインスタンスは縁取らない。
-		Float outlineWidth_;
+		Uint modelShadingPadding0_;
 	};
 	SC_STATIC_ASSERT(ModelShading, 48, "Model/Model.hlsli");
 
@@ -184,7 +182,7 @@ namespace SeedCore
 	* [EN]
 	* Raster morph blend (see the model mesh shaders and
 	* Model/Material/MaterialResolveCS.hlsl/
-	* Model/Transparent/ModelTransparentPS.hlsl). morphDeltaOffset_
+	* Model/Transparent/TransparentMS.hlsl). morphDeltaOffset_
 	* is in float3 units into morphDeltaBufferIndex_; morphVertexOffset_/
 	* morphVertexCount_ are this SubMesh's Crister::vertices_ range start and
 	* ORIGINAL (pre-LOD) vertex count; morphWeightOffset_ indexes into the
@@ -201,7 +199,7 @@ namespace SeedCore
 	* [JP]
 	* ラスタのモーフブレンド(モデル用メッシュシェーダーと
 	* Model/Material/MaterialResolveCS.hlsl/
-	* Model/Transparent/ModelTransparentPS.hlsl 参照)。
+	* Model/Transparent/TransparentMS.hlsl 参照)。
 	* morphDeltaOffset_ は morphDeltaBufferIndex_ への float3 単位のオフセット。
 	* morphVertexOffset_/morphVertexCount_ はこの SubMesh の
 	* Crister::vertices_ 範囲の開始位置と元(LOD前)頂点数。
@@ -489,6 +487,51 @@ namespace SeedCore
 	};
 	SC_STATIC_ASSERT(ModelMaterialUpdate, 288, "Model/Model.hlsli");
 
+	struct ModelRaytracingStructuredBuffer
+	{
+		Uint64 bottomLevel_ = 0;
+		Uint vertexBufferIndex_ = SC_INVALID;
+		Uint indexBufferIndex_ = SC_INVALID;
+
+		Uint surfaceBufferIndex_ = SC_INVALID;
+		Uint modelRaytracingStructuredBufferPadding0_ = 0;
+		Vector2 texcoordMin_ = { 0.0f, 0.0f };
+
+		Vector2 texcoordExtent_ = { 0.0f, 0.0f };
+		Uint modelRaytracingStructuredBufferPadding1_ = 0;
+		Uint modelRaytracingStructuredBufferPadding2_ = 0;
+	};
+	SC_STATIC_ASSERT(ModelRaytracingStructuredBuffer, 48, "Model/Model.hlsli");
+
+	struct ModelRaytracingUpdate
+	{
+		Uint index_ = 0;
+		Uint modelRaytracingUpdatePadding0_ = 0;
+		Uint modelRaytracingUpdatePadding1_ = 0;
+		Uint modelRaytracingUpdatePadding2_ = 0;
+
+		ModelRaytracingStructuredBuffer data_;
+	};
+	SC_STATIC_ASSERT(ModelRaytracingUpdate, 64, "Model/Model.hlsli");
+
+	struct ModelDeformStructuredBuffer
+	{
+		Uint unitIndex_ = 0;
+		Uint subMeshIndex_ = 0;
+		Uint vertexOffset_ = 0;
+		Uint vertexCount_ = 0;
+
+		Uint outputOffset_ = 0;
+		Uint morphDeltaOffset_ = 0;
+		Uint morphTargetCount_ = 0;
+		Uint positionBufferIndex_ = SC_INVALID;
+
+		Uint skinVertexBufferIndex_ = SC_INVALID;
+		Uint morphDeltaBufferIndex_ = SC_INVALID;
+		Uint64 bottomLevel_ = 0;
+	};
+	SC_STATIC_ASSERT(ModelDeformStructuredBuffer, 48, "Model/Model.hlsli");
+
 	struct ModelExpandConstantBuffer
 	{
 		StaticArray<Vector4, RenderViewCount * 6> planes_;
@@ -498,12 +541,12 @@ namespace SeedCore
 		Uint viewCount_ = 0;
 		Uint unitCount_ = 0;
 		Uint transparentBase_ = 0;
-		Uint furBase_ = 0;
-
 		Uint capacity_ = 0;
+
 		Uint softbodyOpaqueCount_ = 0;
 		Uint softbodyTransparentCount_ = 0;
-		Uint softbodyFurCount_ = 0;
+		Uint modelExpandConstantBufferPadding0_ = 0;
+		Uint modelExpandConstantBufferPadding1_ = 0;
 	};
 	SC_STATIC_ASSERT(ModelExpandConstantBuffer, 368, "Model/Model.hlsli");
 }

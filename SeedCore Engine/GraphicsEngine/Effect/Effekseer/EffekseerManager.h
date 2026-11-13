@@ -3,15 +3,13 @@
 
 namespace SeedCore
 {
-	class EffekseerRenderer;
-
 	class EffekseerManager :public NonCopyable
 	{
 	public:
 		EffekseerManager() = default;
 		~EffekseerManager() = default;
 
-		Bool Initialize(EffekseerRenderer& renderer, Uint32 instanceMax = 8000);
+		Bool Initialize(::EffekseerRenderer::RendererRef backend, Uint32 instanceMax = 8000);
 
 		void Update(Float deltaTime);
 

@@ -28,44 +28,11 @@ namespace SeedCore
 		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
 	};
 
-	struct AnamorphicFlareBlur1Description
+	struct AnamorphicFlareBlurDescription
 	{
 		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/PostProcess/AnamorphicFlare/AnamorphicFlareCS.hlsl");
 
-		SC_CONSTEX const Char* entryPoint_ = "Blur1";
-
-		SC_CONSTEX Uint32 threadGroupSizeX_ = 8;
-
-		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
-	};
-
-	struct AnamorphicFlareBlur2Description
-	{
-		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/PostProcess/AnamorphicFlare/AnamorphicFlareCS.hlsl");
-
-		SC_CONSTEX const Char* entryPoint_ = "Blur2";
-
-		SC_CONSTEX Uint32 threadGroupSizeX_ = 8;
-
-		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
-	};
-
-	struct AnamorphicFlareBlur3Description
-	{
-		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/PostProcess/AnamorphicFlare/AnamorphicFlareCS.hlsl");
-
-		SC_CONSTEX const Char* entryPoint_ = "Blur3";
-
-		SC_CONSTEX Uint32 threadGroupSizeX_ = 8;
-
-		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
-	};
-
-	struct AnamorphicFlareBlur4Description
-	{
-		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/PostProcess/AnamorphicFlare/AnamorphicFlareCS.hlsl");
-
-		SC_CONSTEX const Char* entryPoint_ = "Blur4";
+		SC_CONSTEX const Char* entryPoint_ = "Blur";
 
 		SC_CONSTEX Uint32 threadGroupSizeX_ = 8;
 

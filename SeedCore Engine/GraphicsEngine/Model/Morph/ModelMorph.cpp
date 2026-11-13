@@ -66,7 +66,7 @@ namespace SeedCore
 
 		Uint32 base = static_cast<Uint32>(current_.size());
 		current_.resize(current_.size() + record.morphWeightCount_, 0.0f);
-		const DynamicArray<SubMesh>& subMeshes = crister.SubMeshes();
+		const std::span<const SubMesh> subMeshes = crister.SubMeshes();
 		for (Size subMeshIndex = 0;subMeshIndex < subMeshes.size();++subMeshIndex)
 		{
 			if (subMeshes[subMeshIndex].morphs_.empty())

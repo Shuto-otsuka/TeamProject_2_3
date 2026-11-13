@@ -1,5 +1,5 @@
 #include <GraphicsEngine/System/WeatherSystem.h>
-#include <GraphicsEngine/Environment/Weather.h>
+#include <GraphicsEngine/Environment/Weather/Weather.h>
 #include <GraphicsEngine/Environment/VolumetricCloud/VolumetricCloudScapes.h>
 #include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/World.h>
@@ -30,11 +30,11 @@ namespace SeedCore
 		}
 	}
 
-	void WeatherSystem::GetTarget(WeatherType type, VolumetricCloudScapesRayConstantBuffer& target)
+	void WeatherSystem::GetTarget(WeatherType type, VolumetricCloudScapes& target)
 	{
 		/// [EN] Deliberately does NOT touch skyZenithColor_/skyHorizonColor_:
 		///      those are CelestialSystem's time-of-day gradient, applied by
-		///      VolumetricCloudScapesSystem every frame. If weather
+		///      VolumetricCloudFeature every frame. If weather
 		///      set them to fixed absolute colors, a night sky under Clear
 		///      weather would get dragged back toward a fixed "daytime blue"
 		///      here, and any progress made by the lerp below would be wiped
@@ -45,7 +45,7 @@ namespace SeedCore
 		///      correctly with the time-of-day color regardless of write order.
 		/// [JP] 意図的に skyZenithColor_/skyHorizonColor_ には触れない:
 		///      それらは CelestialSystem の時刻グラデーションであり、
-		///      VolumetricCloudScapesSystem が毎フレーム反映する。もし
+		///      VolumetricCloudFeature が毎フレーム反映する。もし
 		///      天候側が固定の絶対色を設定すると、Clear天候の夜空がここで
 		///      固定の「昼の青」へ引き戻され、下の補間が1フレーム分進んでも
 		///      次のフレームで Celestial に再び上書きされて消えてしまう -
@@ -242,12 +242,7 @@ namespace SeedCore
 				}
 				cloudFound = true;
 
-				VolumetricCloudScapesRayConstantBuffer target;
-				target.coverage_ = cloud.coverage_;
-				target.densityScale_ = cloud.densityScale_;
-				target.rain_ = cloud.rain_;
-				target.windSpeed_ = cloud.windSpeed_;
-				target.skyBrightness_ = cloud.skyBrightness_;
+				VolumetricCloudScapes target = cloud;
 				GetTarget(weatherType, target);
 
 				cloud.coverage_ = Lerp(cloud.coverage_, target.coverage_, t);
@@ -256,49 +251,5 @@ namespace SeedCore
 				cloud.windSpeed_ = Lerp(cloud.windSpeed_, target.windSpeed_, t);
 				cloud.skyBrightness_ = Lerp(cloud.skyBrightness_, target.skyBrightness_, t);
 			});
-	}
-
-	WeatherGpuState WeatherSystem::ReadGpuState(World& world)
-	{
-		WeatherGpuState state;
-
-		Query<Read<Active>, Read<Weather>> query(world);
-		Bool found = false;
-
-		query.ForEach([&](const Active& active, const Weather& weather)
-			{
-				if (found || !active.active_)
-				{
-					return;
-				}
-				found = true;
-
-				state.wetness_ = weather.wetness_;
-				state.snowCoverage_ = weather.snowCoverage_;
-				state.thunderFlash_ = weather.thunderFlash_;
-				state.snowIntensity_ = weather.snowIntensity_;
-				state.thunderSeed_ = weather.thunderSeed_;
-				state.rainEnabled_ = weather.rainEnabled_;
-				state.rain_ = weather.rain_;
-				state.snowEnabled_ = weather.snowEnabled_;
-				state.snow_ = weather.snow_;
-			});
-
-		return state;
-	}
-
-	void WeatherSystem::Upload(ID3D12Device* device, BindlessHeap* bindlessHeap, const WeatherConstantBuffer& buffer)
-	{
-		if (!weatherConstantBuffer_)
-		{
-			weatherConstantBuffer_ = MakePtr<StaticConstantBuffer<WeatherConstantBuffer>>(device, bindlessHeap);
-		}
-
-		weatherConstantBuffer_->Update(buffer);
-	}
-
-	Uint WeatherSystem::GetIndex()const
-	{
-		return weatherConstantBuffer_ ? weatherConstantBuffer_->Index() : 0;
 	}
 }

@@ -4,6 +4,7 @@
 #include <GraphicsEngine/Model/Morph/ModelMorph.h>
 #include <GraphicsEngine/Model/Skin/ModelSkin.h>
 #include <GraphicsEngine/Model/Softbody/ModelSoftbody.h>
+#include <GraphicsEngine/Model/Opaque/GeometryFeature.h>
 #include <GraphicsEngine/Model/Mesh.h>
 #include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/Material/Material.h>
@@ -82,7 +83,7 @@ namespace SeedCore
 				{
 					return;
 				}
-				const ModelMeshRecord* record = meshes.Register(*crister);
+				const ModelMeshRecord* record = meshes.Register(cristerHandle, *crister);
 				if (!record)
 				{
 					return;
@@ -98,7 +99,7 @@ namespace SeedCore
 				Matrix worldMatrix = actor.WorldMatrix();
 				Matrix previousWorldMatrix = reset ? worldMatrix : slot.previousWorld_;
 
-				if ((reset || slot.crister_ != crister) && boundsComponentID)
+				if ((reset || slot.crister_ != cristerHandle) && boundsComponentID)
 				{
 					void* boundsRaw = actor.GetComponent(boundsComponentID);
 					if (boundsRaw)
@@ -113,7 +114,7 @@ namespace SeedCore
 				slot.used_ = true;
 				slot.seen_ = true;
 				slot.generation_ = entityID.generation_;
-				slot.crister_ = crister;
+				slot.crister_ = cristerHandle;
 				slot.previousWorld_ = worldMatrix;
 
 				const Material* materialComponent = actor.GetComponent<Material>();
@@ -159,7 +160,7 @@ namespace SeedCore
 				morphs.Release(index);
 				softbodies.Release(index);
 				slot.used_ = false;
-				slot.crister_ = nullptr;
+				slot.crister_ = Handle<Crister>{};
 				ModelUnitStructuredBuffer unit{};
 				if (!slot.sent_ || std::memcmp(&unit, &slot.unit_, sizeof(ModelUnitStructuredBuffer)) != 0)
 				{
@@ -219,12 +220,10 @@ namespace SeedCore
 			constants_.cameras_[viewIndex] = Vector4(sceneConstants.cameraPosition_.x, sceneConstants.cameraPosition_.y, sceneConstants.cameraPosition_.z, sceneConstants.projection_._22 * sceneConstants.screenSize_.y * 0.5f);
 		}
 		constants_.unitCount_ = count_;
-		constants_.transparentBase_ = transparentBase_;
-		constants_.furBase_ = furBase_;
-		constants_.capacity_ = instanceCapacity_;
+		constants_.transparentBase_ = GeometryFeature::transparentBase_;
+		constants_.capacity_ = GeometryFeature::instanceCapacity_;
 		constants_.softbodyOpaqueCount_ = softbodies.OpaqueCount();
 		constants_.softbodyTransparentCount_ = softbodies.TransparentCount();
-		constants_.softbodyFurCount_ = softbodies.FurCount();
 	}
 
 	std::span<const ModelUnitUpdate> ModelUnit::Updates()const

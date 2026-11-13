@@ -16,7 +16,7 @@ namespace SeedCore
 	* RenderInstance; shape components drawn as filled surfaces will be
 	* gathered here as well.
 	* Reads other modules' components as data only, and knows nothing about
-	* the GPU, which is ShapeRenderer's side.
+	* the GPU, which is PrimitiveFeature's side.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -26,7 +26,7 @@ namespace SeedCore
 	* 範囲、音の範囲）と、Debug ビルドでは World の QueryInstance に記録された
 	* 物理クエリと、DebugDraw で RenderInstance に頼まれた形で、面で描く形のコンポーネントもここで集める。他の
 	* モジュールのコンポーネントはデータとして読むだけで、GPU のことは
-	* 知らない（そちらは ShapeRenderer の担当）。
+	* 知らない（そちらは PrimitiveFeature の担当）。
 	*/
 	class ShapeSystem
 	{

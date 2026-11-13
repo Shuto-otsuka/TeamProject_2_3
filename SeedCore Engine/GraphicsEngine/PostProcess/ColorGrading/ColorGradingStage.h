@@ -9,6 +9,8 @@ namespace SeedCore
 
 		SC_CONSTEX Bool ColorGradingFeature::* enableCondition_ = &ColorGradingFeature::enabled_;
 
+		SC_CONSTEX Uint64 showFlags_ = static_cast<Uint64>(RenderShowFlag::PostProcess) | static_cast<Uint64>(RenderShowFlag::ColorGrading);
+
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(PostProcessFeature::Color),

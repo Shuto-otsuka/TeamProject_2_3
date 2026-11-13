@@ -1,7 +1,9 @@
 #pragma once
+#include <GraphicsEngine/Illumination/VolumetricLight/Raytracing/RaytracingVolumetricLightFeature.h>
 #include <GraphicsEngine/Texture/TextureFeature.h>
 #include <GraphicsEngine/Illumination/Radiance/RadianceFeature.h>
 #include <GraphicsEngine/Model/Opaque/GeometryFeature.h>
+#include <GraphicsEngine/PostProcess/Outline/OutlineFeature.h>
 #include <GraphicsEngine/Shape/HUD/HUDFeature.h>
 
 namespace SeedCore
@@ -25,7 +27,7 @@ namespace SeedCore
 		static void Execute(TextureFeature& feature, RenderPass& pass);
 	};
 
-	struct TextureFeature::ExpandStage :RenderStage
+	struct TextureFeature::SubmitStage :RenderStage
 	{
 		SC_CONSTEX RenderQueue queue_ = RenderQueue::Frame;
 
@@ -42,7 +44,16 @@ namespace SeedCore
 		static void Execute(TextureFeature& feature, RenderPass& pass);
 	};
 
-	struct TextureFeature::SpriteStage :RenderStage
+	struct TextureFeature::DrawStage
+	{
+		struct SpriteStep;
+
+		struct BillboardStep;
+
+		using Sequence = RenderSequence<SpriteStep, BillboardStep>;
+	};
+
+	struct TextureFeature::DrawStage::SpriteStep :RenderStage
 	{
 		SC_CONSTEX RenderStageKind kind_ = RenderStageKind::Raster;
 
@@ -58,17 +69,19 @@ namespace SeedCore
 			RenderAccess::Read(Quads),
 			RenderAccess::Read(DrawList),
 			RenderAccess::Constant(Constants),
+			RenderAccess::Read(OutlineFeature::Styles),
+			RenderAccess::Write(OutlineFeature::Mask),
 			RenderAccess::Target(HUDFeature::Color)
 		};
 
 		static void Execute(TextureFeature& feature, RenderPass& pass);
 	};
 
-	struct TextureFeature::BillboardStage :RenderStage
+	struct TextureFeature::DrawStage::BillboardStep :RenderStage
 	{
 		SC_CONSTEX RenderStageKind kind_ = RenderStageKind::Raster;
 
-		SC_CONSTEX RenderQueue queue_ = RenderQueue::Transparent;
+		SC_CONSTEX RenderQueue queue_ = RenderQueue::Particle;
 
 		SC_CONSTEX Bool TextureFeature::* enableCondition_ = &TextureFeature::billboarding_;
 
@@ -78,6 +91,9 @@ namespace SeedCore
 			RenderAccess::Read(Quads),
 			RenderAccess::Read(DrawList),
 			RenderAccess::Constant(Constants),
+			RenderAccess::Read(RaytracingVolumetricLightFeature::FogVolume),
+			RenderAccess::Read(OutlineFeature::Styles),
+			RenderAccess::Write(OutlineFeature::Mask),
 			RenderAccess::Target(RadianceFeature::Color),
 			RenderAccess::DepthTest(GeometryFeature::Depth)
 		};

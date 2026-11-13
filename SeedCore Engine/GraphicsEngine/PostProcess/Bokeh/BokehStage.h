@@ -10,6 +10,8 @@ namespace SeedCore
 
 		SC_CONSTEX Bool BokehFeature::* enableCondition_ = &BokehFeature::enabled_;
 
+		SC_CONSTEX Uint64 showFlags_ = static_cast<Uint64>(RenderShowFlag::PostProcess) | static_cast<Uint64>(RenderShowFlag::Bokeh);
+
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(UpscaleFeature::Color),

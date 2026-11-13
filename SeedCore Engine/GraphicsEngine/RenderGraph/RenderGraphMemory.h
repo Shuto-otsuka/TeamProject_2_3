@@ -8,7 +8,7 @@ namespace SeedCore
 	class RenderGraphMemory
 	{
 	public:
-		NODISCARD static RenderGraphAllocation Create(RenderDevice& device, const RenderGraphResource& resource, const RenderGraphInstance& instance);
+		NODISCARD static RenderGraphAllocation Create(RenderDevice& device, const RenderGraphResource& resource, const RenderGraphInstance& instance, const Color& clear = { 0.0f, 0.0f, 0.0f, 0.0f });
 
 		NODISCARD static RenderGraphAllocation Create(RenderDevice& device, const RenderGraphResource& resource, const StagingBuffer& buffer, const RenderUploadEntry& entry);
 

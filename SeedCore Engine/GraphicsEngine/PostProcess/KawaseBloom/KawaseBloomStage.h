@@ -4,11 +4,24 @@
 
 namespace SeedCore
 {
-	struct KawaseBloomFeature::PrefilterStage :RenderStage
+	struct KawaseBloomFeature::FilterStage
+	{
+		struct PrefilterStep;
+
+		struct DownsampleStep;
+
+		struct UpsampleStep;
+
+		using Sequence = RenderSequence<PrefilterStep, DownsampleStep, UpsampleStep>;
+	};
+
+	struct KawaseBloomFeature::FilterStage::PrefilterStep :RenderStage
 	{
 		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
 
 		SC_CONSTEX Bool KawaseBloomFeature::* enableCondition_ = &KawaseBloomFeature::enabled_;
+
+		SC_CONSTEX Uint64 showFlags_ = static_cast<Uint64>(RenderShowFlag::PostProcess) | static_cast<Uint64>(RenderShowFlag::Bloom);
 
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
@@ -20,156 +33,80 @@ namespace SeedCore
 		static void Execute(KawaseBloomFeature& feature, RenderPass& pass);
 	};
 
-	struct KawaseBloomFeature::Downsample1Stage :RenderStage
+	struct KawaseBloomFeature::FilterStage::DownsampleStep :RenderStage
 	{
 		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
 
 		SC_CONSTEX Bool KawaseBloomFeature::* enableCondition_ = &KawaseBloomFeature::enabled_;
 
-		SC_CONSTEX RenderAccess accesses_[] =
+		SC_CONSTEX Uint64 showFlags_ = static_cast<Uint64>(RenderShowFlag::PostProcess) | static_cast<Uint64>(RenderShowFlag::Bloom);
+
+		SC_CONSTEX Uint32 repeat_ = 5;
+
+		SC_CONSTEX RenderAccess accesses_[][2] =
 		{
-			RenderAccess::Read(Radiance),
-			RenderAccess::Write(Level1)
+			{
+				RenderAccess::Read(Radiance).As("Source"),
+				RenderAccess::Write(Level1).As("Destination")
+			},
+			{
+				RenderAccess::Read(Level1).As("Source"),
+				RenderAccess::Write(Level2).As("Destination")
+			},
+			{
+				RenderAccess::Read(Level2).As("Source"),
+				RenderAccess::Write(Level3).As("Destination")
+			},
+			{
+				RenderAccess::Read(Level3).As("Source"),
+				RenderAccess::Write(Level4).As("Destination")
+			},
+			{
+				RenderAccess::Read(Level4).As("Source"),
+				RenderAccess::Write(Level5).As("Destination")
+			}
 		};
 
 		static void Execute(KawaseBloomFeature& feature, RenderPass& pass);
 	};
 
-	struct KawaseBloomFeature::Downsample2Stage :RenderStage
+	struct KawaseBloomFeature::FilterStage::UpsampleStep :RenderStage
 	{
 		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
 
 		SC_CONSTEX Bool KawaseBloomFeature::* enableCondition_ = &KawaseBloomFeature::enabled_;
 
-		SC_CONSTEX RenderAccess accesses_[] =
+		SC_CONSTEX Uint64 showFlags_ = static_cast<Uint64>(RenderShowFlag::PostProcess) | static_cast<Uint64>(RenderShowFlag::Bloom);
+
+		SC_CONSTEX Uint32 repeat_ = 5;
+
+		SC_CONSTEX RenderAccess accesses_[][3] =
 		{
-			RenderAccess::Read(Level1),
-			RenderAccess::Write(Level2)
-		};
-
-		static void Execute(KawaseBloomFeature& feature, RenderPass& pass);
-	};
-
-	struct KawaseBloomFeature::Downsample3Stage :RenderStage
-	{
-		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
-
-		SC_CONSTEX Bool KawaseBloomFeature::* enableCondition_ = &KawaseBloomFeature::enabled_;
-
-		SC_CONSTEX RenderAccess accesses_[] =
-		{
-			RenderAccess::Read(Level2),
-			RenderAccess::Write(Level3)
-		};
-
-		static void Execute(KawaseBloomFeature& feature, RenderPass& pass);
-	};
-
-	struct KawaseBloomFeature::Downsample4Stage :RenderStage
-	{
-		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
-
-		SC_CONSTEX Bool KawaseBloomFeature::* enableCondition_ = &KawaseBloomFeature::enabled_;
-
-		SC_CONSTEX RenderAccess accesses_[] =
-		{
-			RenderAccess::Read(Level3),
-			RenderAccess::Write(Level4)
-		};
-
-		static void Execute(KawaseBloomFeature& feature, RenderPass& pass);
-	};
-
-	struct KawaseBloomFeature::Downsample5Stage :RenderStage
-	{
-		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
-
-		SC_CONSTEX Bool KawaseBloomFeature::* enableCondition_ = &KawaseBloomFeature::enabled_;
-
-		SC_CONSTEX RenderAccess accesses_[] =
-		{
-			RenderAccess::Read(Level4),
-			RenderAccess::Write(Level5)
-		};
-
-		static void Execute(KawaseBloomFeature& feature, RenderPass& pass);
-	};
-
-	struct KawaseBloomFeature::Upsample4Stage :RenderStage
-	{
-		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
-
-		SC_CONSTEX Bool KawaseBloomFeature::* enableCondition_ = &KawaseBloomFeature::enabled_;
-
-		SC_CONSTEX RenderAccess accesses_[] =
-		{
-			RenderAccess::Constant(Constants),
-			RenderAccess::Read(Level5),
-			RenderAccess::Write(Level4)
-		};
-
-		static void Execute(KawaseBloomFeature& feature, RenderPass& pass);
-	};
-
-	struct KawaseBloomFeature::Upsample3Stage :RenderStage
-	{
-		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
-
-		SC_CONSTEX Bool KawaseBloomFeature::* enableCondition_ = &KawaseBloomFeature::enabled_;
-
-		SC_CONSTEX RenderAccess accesses_[] =
-		{
-			RenderAccess::Constant(Constants),
-			RenderAccess::Read(Level4),
-			RenderAccess::Write(Level3)
-		};
-
-		static void Execute(KawaseBloomFeature& feature, RenderPass& pass);
-	};
-
-	struct KawaseBloomFeature::Upsample2Stage :RenderStage
-	{
-		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
-
-		SC_CONSTEX Bool KawaseBloomFeature::* enableCondition_ = &KawaseBloomFeature::enabled_;
-
-		SC_CONSTEX RenderAccess accesses_[] =
-		{
-			RenderAccess::Constant(Constants),
-			RenderAccess::Read(Level3),
-			RenderAccess::Write(Level2)
-		};
-
-		static void Execute(KawaseBloomFeature& feature, RenderPass& pass);
-	};
-
-	struct KawaseBloomFeature::Upsample1Stage :RenderStage
-	{
-		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
-
-		SC_CONSTEX Bool KawaseBloomFeature::* enableCondition_ = &KawaseBloomFeature::enabled_;
-
-		SC_CONSTEX RenderAccess accesses_[] =
-		{
-			RenderAccess::Constant(Constants),
-			RenderAccess::Read(Level2),
-			RenderAccess::Write(Level1)
-		};
-
-		static void Execute(KawaseBloomFeature& feature, RenderPass& pass);
-	};
-
-	struct KawaseBloomFeature::Upsample0Stage :RenderStage
-	{
-		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
-
-		SC_CONSTEX Bool KawaseBloomFeature::* enableCondition_ = &KawaseBloomFeature::enabled_;
-
-		SC_CONSTEX RenderAccess accesses_[] =
-		{
-			RenderAccess::Constant(Constants),
-			RenderAccess::Read(Level1),
-			RenderAccess::Write(Radiance)
+			{
+				RenderAccess::Constant(Constants),
+				RenderAccess::Read(Level5).As("Source"),
+				RenderAccess::Write(Level4).As("Destination")
+			},
+			{
+				RenderAccess::Constant(Constants),
+				RenderAccess::Read(Level4).As("Source"),
+				RenderAccess::Write(Level3).As("Destination")
+			},
+			{
+				RenderAccess::Constant(Constants),
+				RenderAccess::Read(Level3).As("Source"),
+				RenderAccess::Write(Level2).As("Destination")
+			},
+			{
+				RenderAccess::Constant(Constants),
+				RenderAccess::Read(Level2).As("Source"),
+				RenderAccess::Write(Level1).As("Destination")
+			},
+			{
+				RenderAccess::Constant(Constants),
+				RenderAccess::Read(Level1).As("Source"),
+				RenderAccess::Write(Radiance).As("Destination")
+			}
 		};
 
 		static void Execute(KawaseBloomFeature& feature, RenderPass& pass);

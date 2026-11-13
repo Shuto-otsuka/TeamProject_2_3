@@ -8,6 +8,7 @@
 namespace SeedCore
 {
 	struct CelestialResult;
+	struct ShapeList;
 	struct GraphicsSettings;
 
 	class CameraSystem;
@@ -126,7 +127,7 @@ namespace SeedCore
 		* [JP]
 		* editorCamera から見たエディタービューを、このフレームのビューに足す。
 		*/
-		void AddEditorView(WorldTimer& timer, const EditorCamera& editorCamera, World& world, RenderViewMode viewMode);
+		void AddEditorView(WorldTimer& timer, const EditorCamera& editorCamera, World& world, RenderViewMode viewMode, RenderDebugSource debugSource, Uint64 showFlags);
 
 		/**
 		* [EN]
@@ -172,9 +173,10 @@ namespace SeedCore
 		* このフレームに集めた全ビューを、SceneRenderer でフレームに 1 回
 		* 描画する。同じフレームの 2 回目以降の呼び出しは何もしない。画面に
 		* 出すビューは、screen（render-target 状態の現在のバックバッファ）へ
-		* 描く。celestial は、このフレームの太陽・月・夜の度合い。
+		* 描く。celestial は、このフレームの太陽・月・夜の度合い。shapes は、
+		* このフレームに集めた形とコライダー。
 		*/
-		void Render(ID3D12Resource* screen, const CelestialResult& celestial);
+		void Render(ID3D12Resource* screen, const CelestialResult& celestial, const ShapeList& shapes);
 
 	public:
 		/**

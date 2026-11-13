@@ -1,5 +1,6 @@
 #pragma once
 #include <GraphicsEngine/Model/ModelDriven.h>
+#include <FoundationEngine/Utility/Handle.h>
 
 namespace SeedCore
 {
@@ -16,12 +17,6 @@ namespace SeedCore
 	{
 	public:
 		SC_CONSTEX Uint32 capacity_ = 131072;
-
-		SC_CONSTEX Uint32 instanceCapacity_ = 131072;
-
-		SC_CONSTEX Uint32 transparentBase_ = 98304;
-
-		SC_CONSTEX Uint32 furBase_ = 122880;
 
 	public:
 		ModelUnit();
@@ -50,7 +45,7 @@ namespace SeedCore
 
 			Uint32 generation_ = 0;
 
-			const Crister* crister_ = nullptr;
+			Handle<Crister> crister_;
 
 			Matrix previousWorld_;
 

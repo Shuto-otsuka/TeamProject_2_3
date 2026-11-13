@@ -15,9 +15,7 @@ namespace SeedCore
 		);
 
 	public:
-		struct HistogramStage;
-
-		struct AverageStage;
+		struct BuildStage;
 
 	public:
 		void Create(RenderDevice& device);

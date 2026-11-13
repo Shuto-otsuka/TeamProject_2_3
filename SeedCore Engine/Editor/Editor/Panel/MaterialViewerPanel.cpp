@@ -39,6 +39,11 @@ namespace SeedCore
 		ImGui::SetWindowFocus("マテリアルビューア");
 	}
 
+	void MaterialViewerPanel::SetPreviewHandle(D3D12_GPU_DESCRIPTOR_HANDLE previewHandle)
+	{
+		previewHandle_ = previewHandle;
+	}
+
 	Bool MaterialViewerPanel::Visible()const
 	{
 		return visible_;
@@ -143,7 +148,14 @@ namespace SeedCore
 
 				context_.preview_.material_.camera_.Resize(previewSize.x, previewSize.y);
 
-				ImGui::Dummy(previewSize);
+				if (previewHandle_.ptr != 0)
+				{
+					ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
+				}
+				else
+				{
+					ImGui::Dummy(previewSize);
+				}
 
 				Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
 				Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
@@ -408,12 +420,6 @@ namespace SeedCore
 		if (surface.materialMapping_ == MaterialMapping::TriplanarObject || surface.materialMapping_ == MaterialMapping::TriplanarWorld)
 		{
 			ImGui::SliderFloat("ブレンドの鋭さ", &surface.triplanarSharpness_, 1.0f, 16.0f);
-		}
-
-		ImGui::SliderFloat("アウトラインの幅", &surface.outlineWidth_, 0.0f, 8.0f, "%.1f px");
-		if (surface.outlineWidth_ > 0.0f)
-		{
-			ImGui::ColorEdit4("アウトラインの色", &surface.outlineColor_.x);
 		}
 
 		Bool doubleSided = surface.doubleSided_ != 0;

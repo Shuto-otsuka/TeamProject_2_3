@@ -1,58 +1,16 @@
 #pragma once
-#include <FoundationEngine/Log/Assert.h>
-#include <GraphicsEngine/Renderer/VolumetricCloudScapesRenderer.h>
-#include <GraphicsEngine/Environment/Weather.h>
-#include <GraphicsEngine/D3D12/Buffer/ConstantBuffer.h>
+#include <GraphicsEngine/Environment/Weather/Weather.h>
 
 namespace SeedCore
 {
 	class World;
-	class BindlessHeap;
 
-	struct WeatherConstantBuffer
-	{
-		Float wetness_ = 0.0f;
-		Float snowCoverage_ = 0.0f;
-		Float thunderFlash_ = 0.0f;
-		Float weatherPadding0_ = 0.0f;
-
-		Float snowIntensity_ = 0.0f;
-		Float thunderSeed_ = 0.0f;
-		Vector2 weatherPadding1_;
-	};
-	SC_STATIC_ASSERT(WeatherConstantBuffer, 32, "Environment/Weather.hlsli");
-
-	/// [EN] Snapshot of the scene's Weather runtime state for the GPU (see
-	///      LightSystem::Gather's weather parameter). Zeroed when the scene
-	///      has no Weather component.
-	/// [JP] シーンの Weather 実行時状態のGPU向けスナップショット
-	///      (LightSystem::Gather の weather 引数参照)。シーンに Weather
-	///      コンポーネントが無ければ全て0。
-	struct WeatherGpuState
-	{
-		Float wetness_ = 0.0f;
-		Float snowCoverage_ = 0.0f;
-		Float thunderFlash_ = 0.0f;
-		Float snowIntensity_ = 0.0f;
-		Float thunderSeed_ = 0.0f;
-
-		/// [EN] The Weather component's particle tuning, carried through to
-		///      WeatherParticleRenderer::PrepareFrame. Left at defaults with
-		///      both enables off when the scene has no Weather component.
-		/// [JP] Weather コンポーネントのパーティクル調整値。
-		///      WeatherParticleRenderer::PrepareFrame まで運ぶ。シーンに
-		///      Weather コンポーネントが無ければ既定値かつ両方無効のまま。
-		Bool rainEnabled_ = false;
-		Rain rain_;
-		Bool snowEnabled_ = false;
-		Snow snow_;
-	};
+	struct VolumetricCloudScapes;
 
 	/**
 	* [EN]
-	* Hand-driven (not SystemScheduler-registered, same as SceneTransitionSystem):
-	* finds the scene's Weather component (singleton-by-convention, see
-	* Environment/Weather.h) and interpolates the scene's VolumetricCloudScapes
+	* Run by GraphicsUpdater once per frame after CelestialSystem: finds the scene's Weather component (singleton-by-convention, see
+	* Environment/Weather/Weather.h) and interpolates the scene's VolumetricCloudScapes
 	* component toward the current WeatherType's target values. Also advances the
 	* seasonal auto-cycle (monthOfYear-weighted, force flags bypass the
 	* seasonal weighting), the wetness_/snowCoverage_ ramps, and thunder
@@ -62,8 +20,7 @@ namespace SeedCore
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* ハンド駆動(SystemScheduler には登録しない、SceneTransitionSystem と同じ):
-	* シーンの Weather コンポーネント(singleton的運用、Environment/Weather.h
+	* GraphicsUpdater が毎フレーム CelestialSystem の後に回す。シーンの Weather コンポーネント(singleton的運用、Environment/Weather/Weather.h
 	* 参照)を見つけ、シーンの VolumetricCloudScapes コンポーネントを現在の
 	* WeatherType の目標値へ補間する。季節による自動サイクル(monthOfYear で重み付け、
 	* forceフラグは季節の重みを無視)、wetness_/snowCoverage_ の増減、
@@ -75,26 +32,13 @@ namespace SeedCore
 	public:
 		void Execute(World& world, Float deltaTime, Uint32 monthOfYear);
 
-		/// [EN] Read-only snapshot for GPU consumption - queries the scene's
-		///      Weather component without mutating anything. Returns defaults
-		///      (all zero) if the scene has none.
-		/// [JP] GPU向けの読み取り専用スナップショット - シーンの Weather
-		///      コンポーネントを何も変更せず読む。無ければ既定値(全0)を返す。
-		NODISCARD static WeatherGpuState ReadGpuState(World& world);
-
-		void Upload(ID3D12Device* device, BindlessHeap* bindlessHeap, const WeatherConstantBuffer& buffer);
-
-		NODISCARD Uint GetIndex()const;
-
 	private:
-		static void GetTarget(WeatherType type, VolumetricCloudScapesRayConstantBuffer& target);
+		static void GetTarget(WeatherType type, VolumetricCloudScapes& target);
 
 		NODISCARD WeatherType PickRandomType(Uint32 monthOfYear, const Weather& weather);
 
 		NODISCARD Float RandomRange(Float minValue, Float maxValue);
 
 		std::mt19937 randomEngine_ = std::mt19937(std::random_device{}());
-
-		ResourcePtr<StaticConstantBuffer<WeatherConstantBuffer>> weatherConstantBuffer_;
 	};
 }

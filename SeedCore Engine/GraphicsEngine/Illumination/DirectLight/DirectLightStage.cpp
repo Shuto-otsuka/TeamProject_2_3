@@ -3,7 +3,7 @@
 
 namespace SeedCore
 {
-	void DirectLightFeature::ResolveRatioStage::Execute(DirectLightFeature& feature, RenderPass& pass)
+	void DirectLightFeature::ResolveStage::Execute(DirectLightFeature& feature, RenderPass& pass)
 	{
 		feature.ratioPipeline_.Dispatch(pass, pass.Width(), pass.Height(), 1);
 	}

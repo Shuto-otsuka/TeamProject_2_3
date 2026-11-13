@@ -4,7 +4,7 @@
 
 namespace SeedCore
 {
-	REGISTER_RENDER_FEATURE(MaterialFeature, ClassifyStage, PrefixSumStage, ScatterStage, ResolveStage);
+	REGISTER_RENDER_FEATURE(MaterialFeature, BuildStage, ResolveStage);
 
 	void MaterialFeature::Create(RenderDevice& device)
 	{

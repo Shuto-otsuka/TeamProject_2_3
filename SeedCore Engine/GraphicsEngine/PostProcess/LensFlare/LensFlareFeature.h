@@ -12,27 +12,17 @@ namespace SeedCore
 	public:
 		SC_RENDER_RESOURCES
 		(
-			SC_RENDER_CONTRACT(Radiance, RenderResourceDesc::ScaledTexture(DXGI_FORMAT_R16G16B16A16_FLOAT, RenderResourceScale::Display, 4), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero),
-			SC_RENDER_INTERNAL(Bright, RenderResourceDesc::ScaledTextureArray(DXGI_FORMAT_R16G16B16A16_FLOAT, 1, RenderResourceScale::Display, 4), RenderResourceScope::View, RenderResourceLifetime::Transient),
-			SC_RENDER_INTERNAL(Ping, RenderResourceDesc::ScaledTextureArray(DXGI_FORMAT_R16G16B16A16_FLOAT, axisCapacity_, RenderResourceScale::Display, 4), RenderResourceScope::View, RenderResourceLifetime::Transient),
-			SC_RENDER_INTERNAL(Pong, RenderResourceDesc::ScaledTextureArray(DXGI_FORMAT_R16G16B16A16_FLOAT, axisCapacity_, RenderResourceScale::Display, 4), RenderResourceScope::View, RenderResourceLifetime::Transient),
+			SC_RENDER_CONTRACT(Radiance, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float, RenderResourceScale::Display, 4), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero),
+			SC_RENDER_INTERNAL(Bright, RenderResourceDesc::ScaledTextureArray(RenderFormat::RGBA16Float, 1, RenderResourceScale::Display, 4), RenderResourceScope::View, RenderResourceLifetime::Transient),
+			SC_RENDER_INTERNAL(Ping, RenderResourceDesc::ScaledTextureArray(RenderFormat::RGBA16Float, axisCapacity_, RenderResourceScale::Display, 4), RenderResourceScope::View, RenderResourceLifetime::Transient),
+			SC_RENDER_INTERNAL(Pong, RenderResourceDesc::ScaledTextureArray(RenderFormat::RGBA16Float, axisCapacity_, RenderResourceScale::Display, 4), RenderResourceScope::View, RenderResourceLifetime::Transient),
 			SC_RENDER_INTERNAL(Constants, RenderResourceDesc::Constant(sizeof(LensFlareConstantBuffer)), RenderResourceScope::Frame, RenderResourceLifetime::Upload)
 		);
 
 	public:
-		struct DownsampleStage;
-
-		struct BlurPass1Stage;
-
-		struct BlurPass2Stage;
-
-		struct BlurPass3Stage;
-
-		struct BlurPass4Stage;
+		struct FilterStage;
 
 		struct ComposeStage;
-
-		struct GhostStage;
 
 	public:
 		void Create(RenderDevice& device);
@@ -44,15 +34,9 @@ namespace SeedCore
 	private:
 		ComputePipeline<LensFlareDownsampleDescription> downsamplePipeline_;
 
-		ComputePipeline<LensFlareBlurPass1Description> blurPass1Pipeline_;
+		ComputePipeline<LensFlareBlurDescription> blurPipeline_;
 
-		ComputePipeline<LensFlareBlurPass2Description> blurPass2Pipeline_;
-
-		ComputePipeline<LensFlareBlurPass3Description> blurPass3Pipeline_;
-
-		ComputePipeline<LensFlareBlurPass4Description> blurPass4Pipeline_;
-
-		ComputePipeline<LensFlareComposeDescription> composePipeline_;
+		ComputePipeline<LensFlareGlareDescription> glarePipeline_;
 
 		ComputePipeline<LensFlareGhostDescription> ghostPipeline_;
 

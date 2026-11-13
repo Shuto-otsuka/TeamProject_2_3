@@ -61,7 +61,8 @@ struct TextureUnitStructuredBuffer
 
 	uint quad_count_;
 	uint draw_base_;
-	uint2 texture_unit_padding_0_;
+	uint actor_;
+	uint texture_unit_padding_0_;
 };
 
 /**

@@ -1,6 +1,7 @@
 #include <GraphicsEngine/Model/Model.hlsli>
 #include <GraphicsEngine/Shader/Scene.hlsli>
 #include <GraphicsEngine/Model/Material/MaterialMapping.hlsli>
+#include <GraphicsEngine/Debug/DebugView.hlsli>
 
 #define MATERIAL_SORT_BUCKET_COUNT 1024
 
@@ -9,7 +10,7 @@ struct MaterialResolveBindings
 	uint material_sorted_pixels_;
 	uint material_buckets_;
 	uint geometry_visibility_id_;
-	uint model_instances_;
+	uint geometry_instances_;
 	uint model_bones_;
 	uint model_morph_weights_;
 	uint material_surface_base_color_;
@@ -17,6 +18,7 @@ struct MaterialResolveBindings
 	uint material_surface_tangent_;
 	uint material_velocity_;
 	uint material_surface_radiance_;
+	uint material_mip_;
 };
 ConstantBuffer<MaterialResolveBindings> bindings : register(b0, space1);
 
@@ -26,9 +28,10 @@ ConstantBuffer<MaterialResolveBindings> bindings : register(b0, space1);
 * Material.SortedPixels (rows of 65536 threads; the total sits after the
 * buckets). Rebuilds the covering triangle from the same buffers the geometry
 * passes read - morph targets, then skinning, for this frame and, with the
-* second half of ModelBones / ModelMorphWeights, for the previous one - and
-* derives perspective-correct barycentric weights for the pixel and for its
-* right and lower neighbours. The neighbours give the mapping coordinates'
+* second half of ModelBones / ModelMorphWeights, for the previous one, then
+* the same fur shell push and droop as the geometry passes - and derives
+* perspective-correct barycentric weights for the pixel and for its right
+* and lower neighbours. The neighbours give the mapping coordinates'
 * screen derivatives, so every texture is sampled with SampleGrad at the
 * right mip. Writes the base color and metallic, the octahedral normal (12+12
 * bits) with roughness (8 bits), the tangent angle, the velocity, and the
@@ -42,7 +45,8 @@ ConstantBuffer<MaterialResolveBindings> bindings : register(b0, space1);
 * マテリアルソートの最後。Material.SortedPixels の 1 件につき 1 スレッド
 * (1 行 65536 スレッド。総数はバケットの後ろにある)。ジオメトリのパスと
 * 同じバッファから三角形を組み直し（モーフ、次にスキン。ModelBones /
-* ModelMorphWeights の後ろ半分で前のフレームの分も）、ピクセルと右隣・下隣の
+* ModelMorphWeights の後ろ半分で前のフレームの分も。そのあとジオメトリのパスと
+* 同じ Fur のシェルの押し出しと垂れ）、ピクセルと右隣・下隣の
 * パースペクティブ補正した重心座標を求める。隣の分がマッピングの座標の画面方向の
 * 微分になり、テクスチャはすべて正しいミップの SampleGrad で読む。ベースカラーと
 * メタリック、八面体法線（12+12 bit）とラフネス（8 bit）、タンジェントの角度、
@@ -75,13 +79,28 @@ void main(uint3 id : SV_DispatchThreadID)
 	uint triangle_in_meshlet_index;
 	UnpackVisibilityID(visibility_id.Load(int3(pixel, 0)), instance_index, meshlet_index, triangle_in_meshlet_index);
 
-	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.model_instances_];
+	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.geometry_instances_];
 	ModelStructuredBuffer instance = instances[instance_index];
 
-	StructuredBuffer<CompressedModelVertex> vertices = ResourceDescriptorHeap[instance.geometry_.vertex_buffer_index_];
-	StructuredBuffer<ModelMeshlet> meshlets = ResourceDescriptorHeap[instance.geometry_.meshlet_buffer_index_];
-	StructuredBuffer<uint> vertex_indices = ResourceDescriptorHeap[instance.geometry_.vertex_indices_buffer_index_];
-	ByteAddressBuffer primitive_indices = ResourceDescriptorHeap[instance.geometry_.primitive_indices_buffer_index_];
+	if (instance.geometry_.meshlet_count_ == 0)
+	{
+		RWTexture2D<float4> empty_base_color = ResourceDescriptorHeap[bindings.material_surface_base_color_];
+		RWTexture2D<uint> empty_normal_roughness = ResourceDescriptorHeap[bindings.material_surface_normal_roughness_];
+		RWTexture2D<uint> empty_tangent = ResourceDescriptorHeap[bindings.material_surface_tangent_];
+		RWTexture2D<float2> empty_velocity = ResourceDescriptorHeap[bindings.material_velocity_];
+		RWTexture2D<float4> empty_radiance = ResourceDescriptorHeap[bindings.material_surface_radiance_];
+		empty_base_color[pixel] = float4(0.0, 0.0, 0.0, 0.0);
+		empty_normal_roughness[pixel] = 0;
+		empty_tangent[pixel] = 0;
+		empty_velocity[pixel] = float2(0.0, 0.0);
+		empty_radiance[pixel] = float4(0.0, 0.0, 0.0, 0.0);
+		return;
+	}
+
+	StructuredBuffer<CompressedModelVertex> vertices = ResourceDescriptorHeap[NonUniformResourceIndex(instance.geometry_.vertex_buffer_index_)];
+	StructuredBuffer<ModelMeshlet> meshlets = ResourceDescriptorHeap[NonUniformResourceIndex(instance.geometry_.meshlet_buffer_index_)];
+	StructuredBuffer<uint> vertex_indices = ResourceDescriptorHeap[NonUniformResourceIndex(instance.geometry_.vertex_indices_buffer_index_)];
+	ByteAddressBuffer primitive_indices = ResourceDescriptorHeap[NonUniformResourceIndex(instance.geometry_.primitive_indices_buffer_index_)];
 	ModelMeshlet meshlet = meshlets[meshlet_index];
 
 	uint byte_offset = meshlet.triangle_offset_ + triangle_in_meshlet_index * 3;
@@ -110,8 +129,8 @@ void main(uint3 id : SV_DispatchThreadID)
 
 	if (instance.morph_.morph_target_count_ != 0)
 	{
-		StructuredBuffer<uint> vertex_morph_source = ResourceDescriptorHeap[instance.morph_.vertex_morph_source_buffer_index_];
-		StructuredBuffer<float3> morph_deltas = ResourceDescriptorHeap[instance.morph_.morph_delta_buffer_index_];
+		StructuredBuffer<uint> vertex_morph_source = ResourceDescriptorHeap[NonUniformResourceIndex(instance.morph_.vertex_morph_source_buffer_index_)];
+		StructuredBuffer<float3> morph_deltas = ResourceDescriptorHeap[NonUniformResourceIndex(instance.morph_.morph_delta_buffer_index_)];
 		StructuredBuffer<float> morph_weights = ResourceDescriptorHeap[bindings.model_morph_weights_];
 		uint weight_count;
 		uint weight_stride;
@@ -147,7 +166,7 @@ void main(uint3 id : SV_DispatchThreadID)
 	if (instance.skining_.skin_index_ != MODEL_INVALID)
 	{
 		StructuredBuffer<ModelBoneMatrix> bone_matrices = ResourceDescriptorHeap[bindings.model_bones_];
-		StructuredBuffer<CompressedModelSkin> skin_vertices = ResourceDescriptorHeap[instance.skining_.skin_vertex_buffer_index_];
+		StructuredBuffer<CompressedModelSkin> skin_vertices = ResourceDescriptorHeap[NonUniformResourceIndex(instance.skining_.skin_vertex_buffer_index_)];
 		uint bone_count;
 		uint bone_stride;
 		bone_matrices.GetDimensions(bone_count, bone_stride);
@@ -203,9 +222,23 @@ void main(uint3 id : SV_DispatchThreadID)
 		local_tangent2 = normalize(mul(float4(local_tangent2, 0.0), skin_matrix2).xyz);
 	}
 
-	float3 world_position0 = mul(float4(local_position0, 1.0), instance.transform_.world_).xyz;
-	float3 world_position1 = mul(float4(local_position1, 1.0), instance.transform_.world_).xyz;
-	float3 world_position2 = mul(float4(local_position2, 1.0), instance.transform_.world_).xyz;
+	float fur_ratio = 0.0;
+	if (instance.geometry_.layer_ != 0)
+	{
+		fur_ratio = (float)instance.geometry_.layer_ / (float)instance.shading_.fur_shell_count_;
+		float fur_height = pow(fur_ratio, 1.35) * instance.shading_.fur_length_;
+		local_position0 += normalize(local_normal0) * fur_height;
+		local_position1 += normalize(local_normal1) * fur_height;
+		local_position2 += normalize(local_normal2) * fur_height;
+		previous_local_position0 += normalize(local_normal0) * fur_height;
+		previous_local_position1 += normalize(local_normal1) * fur_height;
+		previous_local_position2 += normalize(local_normal2) * fur_height;
+	}
+	float3 fur_droop = float3(0.0, fur_ratio * fur_ratio * instance.shading_.fur_length_ * 0.35, 0.0);
+
+	float3 world_position0 = mul(float4(local_position0, 1.0), instance.transform_.world_).xyz - fur_droop;
+	float3 world_position1 = mul(float4(local_position1, 1.0), instance.transform_.world_).xyz - fur_droop;
+	float3 world_position2 = mul(float4(local_position2, 1.0), instance.transform_.world_).xyz - fur_droop;
 	float4 clip0 = mul(float4(world_position0, 1.0), scene.current_view_projection_);
 	float4 clip1 = mul(float4(world_position1, 1.0), scene.current_view_projection_);
 	float4 clip2 = mul(float4(world_position2, 1.0), scene.current_view_projection_);
@@ -230,9 +263,9 @@ void main(uint3 id : SV_DispatchThreadID)
 	float3 weight = weights[0];
 
 	float3 world_position = weight.x * world_position0 + weight.y * world_position1 + weight.z * world_position2;
-	float3 previous_world_position0 = mul(float4(previous_local_position0, 1.0), instance.transform_.previous_world_).xyz;
-	float3 previous_world_position1 = mul(float4(previous_local_position1, 1.0), instance.transform_.previous_world_).xyz;
-	float3 previous_world_position2 = mul(float4(previous_local_position2, 1.0), instance.transform_.previous_world_).xyz;
+	float3 previous_world_position0 = mul(float4(previous_local_position0, 1.0), instance.transform_.previous_world_).xyz - fur_droop;
+	float3 previous_world_position1 = mul(float4(previous_local_position1, 1.0), instance.transform_.previous_world_).xyz - fur_droop;
+	float3 previous_world_position2 = mul(float4(previous_local_position2, 1.0), instance.transform_.previous_world_).xyz - fur_droop;
 	float3 previous_world_position = weight.x * previous_world_position0 + weight.y * previous_world_position1 + weight.z * previous_world_position2;
 
 	float3 object_normal = normalize(weight.x * local_normal0 + weight.y * local_normal1 + weight.z * local_normal2);
@@ -271,14 +304,30 @@ void main(uint3 id : SV_DispatchThreadID)
 	float4 base_color = instance.texture_.base_color_;
 	if (instance.texture_.base_color_texture_index_ != MODEL_INVALID)
 	{
-		Texture2D base_color_texture = ResourceDescriptorHeap[instance.texture_.base_color_texture_index_];
+		Texture2D base_color_texture = ResourceDescriptorHeap[NonUniformResourceIndex(instance.texture_.base_color_texture_index_)];
 		base_color *= SampleMaterialMappingGrad(base_color_texture, sampler_linear_wrap, mappings[0], mappings[1], mappings[2]);
+		if (scene.view_mode_ == VIEW_MODE_TEXTURE_MIP)
+		{
+			uint texture_width;
+			uint texture_height;
+			uint texture_levels;
+			base_color_texture.GetDimensions(0, texture_width, texture_height, texture_levels);
+			float2 texel_dx = (mappings[1].texcoord_x_ - mappings[0].texcoord_x_) * float2(texture_width, texture_height);
+			float2 texel_dy = (mappings[2].texcoord_x_ - mappings[0].texcoord_x_) * float2(texture_width, texture_height);
+			RWTexture2D<float> mip = ResourceDescriptorHeap[bindings.material_mip_];
+			mip[pixel] = 0.5 * log2(max(max(dot(texel_dx, texel_dx), dot(texel_dy, texel_dy)), 1e-8)) + 1.0;
+		}
+	}
+	else if (scene.view_mode_ == VIEW_MODE_TEXTURE_MIP)
+	{
+		RWTexture2D<float> mip = ResourceDescriptorHeap[bindings.material_mip_];
+		mip[pixel] = 0.0;
 	}
 
 	float3 shading_normal = normal;
 	if (instance.texture_.normal_texture_index_ != MODEL_INVALID)
 	{
-		Texture2D normal_texture = ResourceDescriptorHeap[instance.texture_.normal_texture_index_];
+		Texture2D normal_texture = ResourceDescriptorHeap[NonUniformResourceIndex(instance.texture_.normal_texture_index_)];
 		if (instance.shading_.material_mapping_ == MATERIAL_MAPPING_TRIPLANAR_OBJECT)
 		{
 			float3 projection_normal = SampleNormalMappingGrad(normal_texture, sampler_linear_wrap, mappings[0], mappings[1], mappings[2]);
@@ -300,7 +349,7 @@ void main(uint3 id : SV_DispatchThreadID)
 	float roughness = instance.texture_.roughness_;
 	if (instance.texture_.metallic_roughness_texture_index_ != MODEL_INVALID)
 	{
-		Texture2D metallic_roughness_texture = ResourceDescriptorHeap[instance.texture_.metallic_roughness_texture_index_];
+		Texture2D metallic_roughness_texture = ResourceDescriptorHeap[NonUniformResourceIndex(instance.texture_.metallic_roughness_texture_index_)];
 		float4 metallic_roughness = SampleMaterialMappingGrad(metallic_roughness_texture, sampler_linear_wrap, mappings[0], mappings[1], mappings[2]);
 		metallic *= metallic_roughness.b;
 		roughness *= metallic_roughness.g;
@@ -309,7 +358,7 @@ void main(uint3 id : SV_DispatchThreadID)
 	float3 emissive = instance.texture_.emissive_;
 	if (instance.texture_.emissive_texture_index_ != MODEL_INVALID)
 	{
-		Texture2D emissive_texture = ResourceDescriptorHeap[instance.texture_.emissive_texture_index_];
+		Texture2D emissive_texture = ResourceDescriptorHeap[NonUniformResourceIndex(instance.texture_.emissive_texture_index_)];
 		emissive *= SampleMaterialMappingGrad(emissive_texture, sampler_linear_wrap, mappings[0], mappings[1], mappings[2]).rgb;
 	}
 	emissive *= instance.texture_.emissive_strength_;

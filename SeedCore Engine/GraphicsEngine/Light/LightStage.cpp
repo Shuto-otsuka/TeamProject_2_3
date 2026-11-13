@@ -3,7 +3,7 @@
 
 namespace SeedCore
 {
-	void LightFeature::ClusterAssignStage::Execute(LightFeature& feature, RenderPass& pass)
+	void LightFeature::BuildStage::Execute(LightFeature& feature, RenderPass& pass)
 	{
 		Uint32 tileCountX = (pass.Width() + LIGHT_CLUSTER_TILE_SIZE - 1) / LIGHT_CLUSTER_TILE_SIZE;
 		Uint32 tileCountY = (pass.Height() + LIGHT_CLUSTER_TILE_SIZE - 1) / LIGHT_CLUSTER_TILE_SIZE;

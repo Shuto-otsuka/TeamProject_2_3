@@ -77,7 +77,9 @@ namespace SeedCore
 
 		Uint quadCount_ = 0;
 		Uint drawBase_ = 0;
-		Uint textureUnitPadding0_[2] = { 0, 0 };
+		Uint actor_ = SC_INVALID;
+
+		Uint textureUnitPadding0_ = 0;
 	};
 	SC_STATIC_ASSERT(TextureUnitStructuredBuffer, 192, "Texture/Texture.hlsli");
 

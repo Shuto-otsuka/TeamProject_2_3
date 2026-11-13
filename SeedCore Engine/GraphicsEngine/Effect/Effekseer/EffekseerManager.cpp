@@ -1,11 +1,9 @@
 #include <GraphicsEngine/Effect/Effekseer/EffekseerManager.h>
-#include <GraphicsEngine/Renderer/EffekseerRenderer.h>
 
 namespace SeedCore
 {
-	Bool EffekseerManager::Initialize(EffekseerRenderer& renderer, Uint32 instanceMax)
+	Bool EffekseerManager::Initialize(::EffekseerRenderer::RendererRef backend, Uint32 instanceMax)
 	{
-		::EffekseerRenderer::RendererRef backend = renderer.GetRenderer();
 		if (backend == nullptr)
 		{
 			return false;

@@ -14,13 +14,13 @@ namespace SeedCore
 		(
 			SC_RENDER_CONTRACT(DrawLists, RenderResourceDesc::FixedBuffer(sizeof(Uint32) * 2, capacity_), RenderResourceScope::View, RenderResourceLifetime::Transient),
 			SC_RENDER_CONTRACT(DrawArguments, RenderResourceDesc::FixedBuffer(sizeof(Uint32), 16), RenderResourceScope::View, RenderResourceLifetime::Transient),
+			SC_RENDER_CONTRACT(TransparentLists, RenderResourceDesc::FixedBuffer(sizeof(Uint32) * 2, capacity_), RenderResourceScope::View, RenderResourceLifetime::Transient),
+			SC_RENDER_CONTRACT(TransparentArguments, RenderResourceDesc::FixedBuffer(sizeof(Uint32), 8), RenderResourceScope::View, RenderResourceLifetime::Transient),
 			SC_RENDER_INTERNAL(Rejected, RenderResourceDesc::FixedBuffer(sizeof(Uint32) * 2, capacity_), RenderResourceScope::View, RenderResourceLifetime::Transient)
 		);
 
 	public:
-		struct CameraEarlyStage;
-
-		struct CameraLateStage;
+		struct CullingStage;
 
 	public:
 		void Create(RenderDevice& device);
@@ -31,6 +31,8 @@ namespace SeedCore
 		ComputePipeline<CullingEarlyDescription> earlyPipeline_;
 
 		ComputePipeline<CullingLateDescription> latePipeline_;
+
+		ComputePipeline<CullingTransparentDescription> transparentPipeline_;
 
 		Bool mesh_ = false;
 	};

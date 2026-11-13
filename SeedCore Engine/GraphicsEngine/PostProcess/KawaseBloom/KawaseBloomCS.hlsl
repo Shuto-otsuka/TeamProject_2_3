@@ -8,7 +8,6 @@ struct KawaseBloomConstantBuffer
 	float kawase_bloom_padding_0_;
 };
 
-
 /**
 * [EN]
 * Reference:
@@ -23,14 +22,15 @@ struct KawaseBloomConstantBuffer
 * Post Processing in Call of Duty: Advanced Warfare": a 13-tap downsample
 * and a 3x3 tent upsample.
 *
-* Pass order is DownsamplePrefilter -> Downsample1..5 -> Upsample4..0, so
-* level0 (KawaseBloom.Radiance) ends up holding the final result that
+* Pass order is Prefilter -> Downsample x5 -> Upsample x5, so level0
+* (KawaseBloom.Radiance) ends up holding the final result that
 * PostProcessCS.hlsl samples and adds into the HDR color before exposure.
-* Every level is its own render graph resource and every pass its own Stage
-* with its own entry point and bindings, so the graph places the barrier
-* between a level being written and being read.
+* Every level is its own render graph resource and every iteration its own
+* graph pass, binding the levels it reads and writes as source and
+* destination, so the graph places the barrier between a level being
+* written and being read.
 *
-* The Karis average in DownsamplePrefilter is the reason this uses the COD
+* The Karis average in Prefilter is the reason this uses the COD
 * tap patterns rather than the cheaper 5-tap/8-tap dual-Kawase filter: with
 * ray-traced HDR input a single blown-out subpixel is easy to produce, and
 * averaging it naively makes it grow into a large flickering block as it
@@ -47,14 +47,14 @@ struct KawaseBloomConstantBuffer
 * 「Next Generation Post Processing in Call of Duty: Advanced Warfare」の
 * もの(13タップダウンサンプルと3x3テントアップサンプル)を使う。
 *
-* パスの順序は DownsamplePrefilter → Downsample1..5 → Upsample4..0 で、
+* パスの順序は Prefilter → Downsample ×5 → Upsample ×5 で、
 * 最終結果は level0（KawaseBloom.Radiance）に入る — PostProcessCS.hlsl が
 * それをサンプルして露出適用前のHDRカラーへ加算する。各レベルはそれぞれ
-* レンダーグラフのリソースで、各パスはそれぞれ自分のエントリポイントと
-* バインディングを持つ Stage なので、レベルを書いてから読むまでのバリアは
-* グラフが置く。
+* レンダーグラフのリソースで、1 回の繰り返しが 1 つのグラフのパスとして
+* 読み書きするレベルを source と destination にバインドするので、レベルを
+* 書いてから読むまでのバリアはグラフが置く。
 *
-* DownsamplePrefilter の Karis 平均が、より安価な5タップ/8タップの
+* Prefilter の Karis 平均が、より安価な5タップ/8タップの
 * dual-Kawase ではなくCOD版のタップパターンを採る理由そのもの:
 * レイトレHDR入力では1画素だけ飛び抜けて明るい点が簡単に発生し、
 * それを素直に平均するとチェーンを昇るにつれて巨大なちらつくブロックに
@@ -272,14 +272,14 @@ float3 UpsampleTent(Texture2D<float4> source, float2 uv, float radius)
 
 /**
 * [EN]
-* Shared body for Downsample1..5. The levels to read and write are passed in by
-* the calling entry point, each bound from its own Stage's bindings.
+* Shared body for Downsample. The levels to read and write are passed in by
+* the entry point, bound per iteration as source and destination.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* Downsample1..5 の共通本体。読み書きするレベルは、呼び出し側のエントリ
-* ポイントが自分の Stage のバインディングから渡す。
+* Downsample の共通本体。読み書きするレベルは、エントリポイントが回ごとの
+* source と destination のバインディングから渡す。
 */
 void DownsampleLevel(uint3 dtid, Texture2D<float4> source, RWTexture2D<float4> destination)
 {
@@ -302,7 +302,7 @@ void DownsampleLevel(uint3 dtid, Texture2D<float4> source, RWTexture2D<float4> d
 
 /**
 * [EN]
-* Shared body for Upsample4..0. Stretches the level one below (lower
+* Shared body for Upsample. Stretches the level one below (lower
 * resolution) with the tent filter and 【adds】 it into the destination level
 * (read-modify-write). Because it adds, every level's contribution
 * accumulates while climbing the chain, layering a wide bleed and a fine
@@ -311,7 +311,7 @@ void DownsampleLevel(uint3 dtid, Texture2D<float4> source, RWTexture2D<float4> d
 * ---------------------------------------------------------------------
 *
 * [JP]
-* Upsample4..0 の共通本体。1つ下(低解像度)のレベルをテントで引き伸ばし、
+* Upsample の共通本体。1つ下(低解像度)のレベルをテントで引き伸ばし、
 * 書き込み先レベルへ【加算】する(read-modify-write)。加算なのでチェーンを
 * 上がるにつれて全レベルの寄与が積み上がり、広い滲みと細かい滲みが同時に
 * 乗る。
@@ -341,7 +341,7 @@ struct KawaseBloomPrefilterBindings
 ConstantBuffer<KawaseBloomPrefilterBindings> prefilter_bindings : register(b0, space1);
 
 [numthreads(8, 8, 1)]
-void DownsamplePrefilter(uint3 dtid : SV_DispatchThreadID)
+void Prefilter(uint3 dtid : SV_DispatchThreadID)
 {
 	RWTexture2D<float4> destination = ResourceDescriptorHeap[prefilter_bindings.kawase_bloom_radiance_];
 
@@ -368,162 +368,34 @@ void DownsamplePrefilter(uint3 dtid : SV_DispatchThreadID)
 	destination[dtid.xy] = float4(result, 1.0);
 }
 
-struct KawaseBloomDownsample1Bindings
+struct KawaseBloomDownsampleBindings
 {
-	uint kawase_bloom_radiance_;
-	uint kawase_bloom_level1_;
+	uint kawase_bloom_source_;
+	uint kawase_bloom_destination_;
 };
-ConstantBuffer<KawaseBloomDownsample1Bindings> downsample1_bindings : register(b0, space1);
+ConstantBuffer<KawaseBloomDownsampleBindings> downsample_bindings : register(b0, space1);
 
 [numthreads(8, 8, 1)]
-void Downsample1(uint3 dtid : SV_DispatchThreadID)
+void Downsample(uint3 dtid : SV_DispatchThreadID)
 {
-	Texture2D<float4> source = ResourceDescriptorHeap[downsample1_bindings.kawase_bloom_radiance_];
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[downsample1_bindings.kawase_bloom_level1_];
+	Texture2D<float4> source = ResourceDescriptorHeap[downsample_bindings.kawase_bloom_source_];
+	RWTexture2D<float4> destination = ResourceDescriptorHeap[downsample_bindings.kawase_bloom_destination_];
 	DownsampleLevel(dtid, source, destination);
 }
 
-struct KawaseBloomDownsample2Bindings
-{
-	uint kawase_bloom_level1_;
-	uint kawase_bloom_level2_;
-};
-ConstantBuffer<KawaseBloomDownsample2Bindings> downsample2_bindings : register(b0, space1);
-
-[numthreads(8, 8, 1)]
-void Downsample2(uint3 dtid : SV_DispatchThreadID)
-{
-	Texture2D<float4> source = ResourceDescriptorHeap[downsample2_bindings.kawase_bloom_level1_];
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[downsample2_bindings.kawase_bloom_level2_];
-	DownsampleLevel(dtid, source, destination);
-}
-
-struct KawaseBloomDownsample3Bindings
-{
-	uint kawase_bloom_level2_;
-	uint kawase_bloom_level3_;
-};
-ConstantBuffer<KawaseBloomDownsample3Bindings> downsample3_bindings : register(b0, space1);
-
-[numthreads(8, 8, 1)]
-void Downsample3(uint3 dtid : SV_DispatchThreadID)
-{
-	Texture2D<float4> source = ResourceDescriptorHeap[downsample3_bindings.kawase_bloom_level2_];
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[downsample3_bindings.kawase_bloom_level3_];
-	DownsampleLevel(dtid, source, destination);
-}
-
-struct KawaseBloomDownsample4Bindings
-{
-	uint kawase_bloom_level3_;
-	uint kawase_bloom_level4_;
-};
-ConstantBuffer<KawaseBloomDownsample4Bindings> downsample4_bindings : register(b0, space1);
-
-[numthreads(8, 8, 1)]
-void Downsample4(uint3 dtid : SV_DispatchThreadID)
-{
-	Texture2D<float4> source = ResourceDescriptorHeap[downsample4_bindings.kawase_bloom_level3_];
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[downsample4_bindings.kawase_bloom_level4_];
-	DownsampleLevel(dtid, source, destination);
-}
-
-struct KawaseBloomDownsample5Bindings
-{
-	uint kawase_bloom_level4_;
-	uint kawase_bloom_level5_;
-};
-ConstantBuffer<KawaseBloomDownsample5Bindings> downsample5_bindings : register(b0, space1);
-
-[numthreads(8, 8, 1)]
-void Downsample5(uint3 dtid : SV_DispatchThreadID)
-{
-	Texture2D<float4> source = ResourceDescriptorHeap[downsample5_bindings.kawase_bloom_level4_];
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[downsample5_bindings.kawase_bloom_level5_];
-	DownsampleLevel(dtid, source, destination);
-}
-
-struct KawaseBloomUpsample4Bindings
+struct KawaseBloomUpsampleBindings
 {
 	uint kawase_bloom_constants_;
-	uint kawase_bloom_level5_;
-	uint kawase_bloom_level4_;
+	uint kawase_bloom_source_;
+	uint kawase_bloom_destination_;
 };
-ConstantBuffer<KawaseBloomUpsample4Bindings> upsample4_bindings : register(b0, space1);
+ConstantBuffer<KawaseBloomUpsampleBindings> upsample_bindings : register(b0, space1);
 
 [numthreads(8, 8, 1)]
-void Upsample4(uint3 dtid : SV_DispatchThreadID)
+void Upsample(uint3 dtid : SV_DispatchThreadID)
 {
-	ConstantBuffer<KawaseBloomConstantBuffer> constants = ResourceDescriptorHeap[upsample4_bindings.kawase_bloom_constants_];
-	Texture2D<float4> source = ResourceDescriptorHeap[upsample4_bindings.kawase_bloom_level5_];
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[upsample4_bindings.kawase_bloom_level4_];
-	UpsampleLevel(dtid, source, destination, constants.filter_radius_);
-}
-
-struct KawaseBloomUpsample3Bindings
-{
-	uint kawase_bloom_constants_;
-	uint kawase_bloom_level4_;
-	uint kawase_bloom_level3_;
-};
-ConstantBuffer<KawaseBloomUpsample3Bindings> upsample3_bindings : register(b0, space1);
-
-[numthreads(8, 8, 1)]
-void Upsample3(uint3 dtid : SV_DispatchThreadID)
-{
-	ConstantBuffer<KawaseBloomConstantBuffer> constants = ResourceDescriptorHeap[upsample3_bindings.kawase_bloom_constants_];
-	Texture2D<float4> source = ResourceDescriptorHeap[upsample3_bindings.kawase_bloom_level4_];
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[upsample3_bindings.kawase_bloom_level3_];
-	UpsampleLevel(dtid, source, destination, constants.filter_radius_);
-}
-
-struct KawaseBloomUpsample2Bindings
-{
-	uint kawase_bloom_constants_;
-	uint kawase_bloom_level3_;
-	uint kawase_bloom_level2_;
-};
-ConstantBuffer<KawaseBloomUpsample2Bindings> upsample2_bindings : register(b0, space1);
-
-[numthreads(8, 8, 1)]
-void Upsample2(uint3 dtid : SV_DispatchThreadID)
-{
-	ConstantBuffer<KawaseBloomConstantBuffer> constants = ResourceDescriptorHeap[upsample2_bindings.kawase_bloom_constants_];
-	Texture2D<float4> source = ResourceDescriptorHeap[upsample2_bindings.kawase_bloom_level3_];
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[upsample2_bindings.kawase_bloom_level2_];
-	UpsampleLevel(dtid, source, destination, constants.filter_radius_);
-}
-
-struct KawaseBloomUpsample1Bindings
-{
-	uint kawase_bloom_constants_;
-	uint kawase_bloom_level2_;
-	uint kawase_bloom_level1_;
-};
-ConstantBuffer<KawaseBloomUpsample1Bindings> upsample1_bindings : register(b0, space1);
-
-[numthreads(8, 8, 1)]
-void Upsample1(uint3 dtid : SV_DispatchThreadID)
-{
-	ConstantBuffer<KawaseBloomConstantBuffer> constants = ResourceDescriptorHeap[upsample1_bindings.kawase_bloom_constants_];
-	Texture2D<float4> source = ResourceDescriptorHeap[upsample1_bindings.kawase_bloom_level2_];
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[upsample1_bindings.kawase_bloom_level1_];
-	UpsampleLevel(dtid, source, destination, constants.filter_radius_);
-}
-
-struct KawaseBloomUpsample0Bindings
-{
-	uint kawase_bloom_constants_;
-	uint kawase_bloom_level1_;
-	uint kawase_bloom_radiance_;
-};
-ConstantBuffer<KawaseBloomUpsample0Bindings> upsample0_bindings : register(b0, space1);
-
-[numthreads(8, 8, 1)]
-void Upsample0(uint3 dtid : SV_DispatchThreadID)
-{
-	ConstantBuffer<KawaseBloomConstantBuffer> constants = ResourceDescriptorHeap[upsample0_bindings.kawase_bloom_constants_];
-	Texture2D<float4> source = ResourceDescriptorHeap[upsample0_bindings.kawase_bloom_level1_];
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[upsample0_bindings.kawase_bloom_radiance_];
+	ConstantBuffer<KawaseBloomConstantBuffer> constants = ResourceDescriptorHeap[upsample_bindings.kawase_bloom_constants_];
+	Texture2D<float4> source = ResourceDescriptorHeap[upsample_bindings.kawase_bloom_source_];
+	RWTexture2D<float4> destination = ResourceDescriptorHeap[upsample_bindings.kawase_bloom_destination_];
 	UpsampleLevel(dtid, source, destination, constants.filter_radius_);
 }

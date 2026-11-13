@@ -8,7 +8,7 @@
 
 namespace SeedCore
 {
-	REGISTER_RENDER_FEATURE(DepthOfFieldFeature, BlurStage);
+	REGISTER_RENDER_FEATURE(DepthOfFieldFeature, FilterStage);
 
 	void DepthOfFieldFeature::Create(RenderDevice& device)
 	{

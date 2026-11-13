@@ -10,18 +10,25 @@ namespace SeedCore
 	public:
 		SC_RENDER_RESOURCES
 		(
-			SC_RENDER_ACCUMULATION(DisplayColor, RenderResourceDesc::ScaledTexture(DXGI_FORMAT_R16G16B16A16_FLOAT, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero, &SharpnessFeature::Color),
-			SC_RENDER_ACCUMULATION(Color, RenderResourceDesc::ScaledTexture(DXGI_FORMAT_R16G16B16A16_FLOAT, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero),
-			SC_RENDER_CONTRACT(ViewOutput, RenderResourceDesc::ScaledTexture(DXGI_FORMAT_R8G8B8A8_UNORM, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Imported)
+			SC_RENDER_ACCUMULATION(DisplayColor, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero, &SharpnessFeature::Color),
+			SC_RENDER_ACCUMULATION(Color, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero),
+			SC_RENDER_CONTRACT(ViewOutput, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA8Unorm, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Imported),
+			SC_RENDER_INTERNAL(Constants, RenderResourceDesc::Constant(sizeof(HUDComposeConstantBuffer)), RenderResourceScope::View, RenderResourceLifetime::Upload)
 		);
 
 	public:
-		struct OutputStage;
+		struct ComposeStage;
 
 	public:
 		void Create(RenderDevice& device);
 
+		void Gather(const RenderScene& scene, RenderFrame& frame);
+
+		void Prepare(const RenderFrame& frame, RenderUpload& upload);
+
 	private:
-		GraphicsPipeline<HUDOutputDescription> outputPipeline_;
+		GraphicsPipeline<HUDComposeDescription> composePipeline_;
+
+		StaticArray<HUDComposeConstantBuffer, RenderViewCount> constants_;
 	};
 }

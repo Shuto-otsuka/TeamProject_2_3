@@ -1,12 +1,12 @@
 #include <GraphicsEngine/Sky/Sky.hlsli>
 #include <GraphicsEngine/Shader/RootSignature.hlsli>
 
-struct SkySpecularPrefilterBindings
+struct SkyPrefilterBindings
 {
     uint sky_cubemap_;
     uint sky_specular_prefiltered_;
 };
-ConstantBuffer<SkySpecularPrefilterBindings> bindings : register(b0, space1);
+ConstantBuffer<SkyPrefilterBindings> bindings : register(b0, space1);
 
 /**
 * [EN]

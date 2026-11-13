@@ -4,18 +4,18 @@
 
 namespace SeedCore
 {
-	void UpscaleFeature::TaauResolveStage::Execute(UpscaleFeature& feature, RenderPass& pass)
+	void UpscaleFeature::BuildStage::Execute(UpscaleFeature& feature, RenderPass& pass)
+	{
+		feature.guidesPipeline_.Dispatch(pass, pass.Width(), pass.Height());
+	}
+
+	void UpscaleFeature::ResolveStage::TaauStep::Execute(UpscaleFeature& feature, RenderPass& pass)
 	{
 		const RenderView* view = pass.View();
-		feature.taauResolvePipeline_.Dispatch(pass, view->displayWidth_, view->displayHeight_);
+		feature.taauPipeline_.Dispatch(pass, view->displayWidth_, view->displayHeight_);
 	}
 
-	void UpscaleFeature::PrepareGuidesStage::Execute(UpscaleFeature& feature, RenderPass& pass)
-	{
-		feature.prepareGuidesPipeline_.Dispatch(pass, pass.Width(), pass.Height());
-	}
-
-	void UpscaleFeature::DlssRayReconstructionStage::Execute(UpscaleFeature& feature, RenderPass& pass)
+	void UpscaleFeature::ResolveStage::RayReconstructionStep::Execute(UpscaleFeature& feature, RenderPass& pass)
 	{
 		const RenderView* view = pass.View();
 		Uint32 viewportIndex = static_cast<Uint32>(view->kind_);
@@ -40,7 +40,7 @@ namespace SeedCore
 		dlssManager.EvaluateRayReconstruction(cmdList, view->scene_, viewportIndex, view->displayWidth_, view->displayHeight_, feature.mode_);
 	}
 
-	void UpscaleFeature::DlssSuperResolutionStage::Execute(UpscaleFeature& feature, RenderPass& pass)
+	void UpscaleFeature::ResolveStage::SuperResolutionStep::Execute(UpscaleFeature& feature, RenderPass& pass)
 	{
 		const RenderView* view = pass.View();
 		Uint32 viewportIndex = static_cast<Uint32>(view->kind_);

@@ -9,7 +9,6 @@ struct AnamorphicFlareConstantBuffer
 	float4 tint_;
 };
 
-
 /**
 * [EN]
 * Reference:
@@ -33,7 +32,7 @@ struct AnamorphicFlareConstantBuffer
 * out of the sampling for free, with no directional logic needed for it.
 *
 * A 2:1 squeeze on its own only yields a 2:1 ellipse though, and real
-* anamorphic streaks are far longer than that. So BlurPass1..4 additionally
+* anamorphic streaks are far longer than that. So the Blur iterations additionally
 * blur horizontally inside the squeezed space, out to streak_length_. That
 * part is art direction rather than physics and it is not energy conserving
 * - every shipped implementation of this effect does the same (KinoStreak
@@ -62,7 +61,7 @@ struct AnamorphicFlareConstantBuffer
 * そのための方向処理は一切要らない。
 *
 * ただし 2:1 の圧縮だけでは 2:1 の楕円にしかならず、実写のアナモルフィック
-* 筋はそれよりはるかに細長い。そこで BlurPass1..4 が圧縮空間の中でさらに
+* 筋はそれよりはるかに細長い。そこで the Blur iterations が圧縮空間の中でさらに
 * 横方向へ streak_length_ ぶんブラーして長さを稼ぐ。この部分は物理では
 * なくアートディレクションで、エネルギー保存もしていない — このエフェクトの
 * 実装は軒並みそうしている(KinoStreak は自らそう明言している)。
@@ -149,20 +148,21 @@ float3 AnamorphicStreakGather(Texture2D<float4> source, float2 uv, float texel_w
 		sum += source.SampleLevel(sampler_linear_clamp, uv - float2(offset, 0.0), 0).rgb * weight;
 		weight_sum += weight * 2.0;
 	}
-
+	return sum / weight_sum;
+}
 
 /**
 * [EN]
-* Shared body for Blur1..4: reads source and writes the streak to destination.
-* The passes alternate between AnamorphicFlare.Ping and AnamorphicFlare.Pong,
-* each pass a Stage of its own.
+* Shared body for Blur: reads source and writes the streak to destination.
+* The iterations alternate between AnamorphicFlare.Ping and AnamorphicFlare.Pong,
+* and the tap spacing grows by 4x per iteration.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* Blur1..4 の共通本体。source を読み、ストリークを destination へ書く。
-* パスは AnamorphicFlare.Ping と AnamorphicFlare.Pong を交互に読み書きし、
-* 1 パスが 1 つの Stage。
+* Blur の共通本体。source を読み、ストリークを destination へ書く。
+* 回ごとに AnamorphicFlare.Ping と AnamorphicFlare.Pong を交互に読み書きし、
+* タップの間隔は 1 回ごとに 4 倍に広がる。
 */
 void AnamorphicBlurPass(uint3 dtid, float spacing, Texture2D<float4> source, RWTexture2D<float4> destination, ConstantBuffer<AnamorphicFlareConstantBuffer> constants)
 {
@@ -232,72 +232,21 @@ void Prefilter(uint3 dtid : SV_DispatchThreadID)
 	destination[dtid.xy] = float4(result * 0.125, 1.0);
 }
 
-struct AnamorphicFlareBlur1Bindings
+struct AnamorphicFlareBlurBindings
 {
 	uint anamorphic_flare_constants_;
-	uint anamorphic_flare_ping_;
-	uint anamorphic_flare_pong_;
+	uint anamorphic_flare_source_;
+	uint anamorphic_flare_destination_;
 };
-ConstantBuffer<AnamorphicFlareBlur1Bindings> blur1_bindings : register(b0, space1);
+ConstantBuffer<AnamorphicFlareBlurBindings> blur_bindings : register(b0, space1);
 
 [numthreads(8, 8, 1)]
-void Blur1(uint3 dtid : SV_DispatchThreadID)
+void Blur(uint3 dtid : SV_DispatchThreadID)
 {
-	ConstantBuffer<AnamorphicFlareConstantBuffer> constants = ResourceDescriptorHeap[blur1_bindings.anamorphic_flare_constants_];
-	Texture2D<float4> source = ResourceDescriptorHeap[blur1_bindings.anamorphic_flare_ping_];
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[blur1_bindings.anamorphic_flare_pong_];
-	AnamorphicBlurPass(dtid, 1.0, source, destination, constants);
-}
-
-struct AnamorphicFlareBlur2Bindings
-{
-	uint anamorphic_flare_constants_;
-	uint anamorphic_flare_pong_;
-	uint anamorphic_flare_ping_;
-};
-ConstantBuffer<AnamorphicFlareBlur2Bindings> blur2_bindings : register(b0, space1);
-
-[numthreads(8, 8, 1)]
-void Blur2(uint3 dtid : SV_DispatchThreadID)
-{
-	ConstantBuffer<AnamorphicFlareConstantBuffer> constants = ResourceDescriptorHeap[blur2_bindings.anamorphic_flare_constants_];
-	Texture2D<float4> source = ResourceDescriptorHeap[blur2_bindings.anamorphic_flare_pong_];
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[blur2_bindings.anamorphic_flare_ping_];
-	AnamorphicBlurPass(dtid, 4.0, source, destination, constants);
-}
-
-struct AnamorphicFlareBlur3Bindings
-{
-	uint anamorphic_flare_constants_;
-	uint anamorphic_flare_ping_;
-	uint anamorphic_flare_pong_;
-};
-ConstantBuffer<AnamorphicFlareBlur3Bindings> blur3_bindings : register(b0, space1);
-
-[numthreads(8, 8, 1)]
-void Blur3(uint3 dtid : SV_DispatchThreadID)
-{
-	ConstantBuffer<AnamorphicFlareConstantBuffer> constants = ResourceDescriptorHeap[blur3_bindings.anamorphic_flare_constants_];
-	Texture2D<float4> source = ResourceDescriptorHeap[blur3_bindings.anamorphic_flare_ping_];
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[blur3_bindings.anamorphic_flare_pong_];
-	AnamorphicBlurPass(dtid, 16.0, source, destination, constants);
-}
-
-struct AnamorphicFlareBlur4Bindings
-{
-	uint anamorphic_flare_constants_;
-	uint anamorphic_flare_pong_;
-	uint anamorphic_flare_ping_;
-};
-ConstantBuffer<AnamorphicFlareBlur4Bindings> blur4_bindings : register(b0, space1);
-
-[numthreads(8, 8, 1)]
-void Blur4(uint3 dtid : SV_DispatchThreadID)
-{
-	ConstantBuffer<AnamorphicFlareConstantBuffer> constants = ResourceDescriptorHeap[blur4_bindings.anamorphic_flare_constants_];
-	Texture2D<float4> source = ResourceDescriptorHeap[blur4_bindings.anamorphic_flare_pong_];
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[blur4_bindings.anamorphic_flare_ping_];
-	AnamorphicBlurPass(dtid, 64.0, source, destination, constants);
+	ConstantBuffer<AnamorphicFlareConstantBuffer> constants = ResourceDescriptorHeap[blur_bindings.anamorphic_flare_constants_];
+	Texture2D<float4> source = ResourceDescriptorHeap[blur_bindings.anamorphic_flare_source_];
+	RWTexture2D<float4> destination = ResourceDescriptorHeap[blur_bindings.anamorphic_flare_destination_];
+	AnamorphicBlurPass(dtid, float(1u << (dispatch_bindings.constants_ * 2)), source, destination, constants);
 }
 
 struct AnamorphicFlareComposeBindings

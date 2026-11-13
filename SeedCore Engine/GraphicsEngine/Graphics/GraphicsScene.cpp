@@ -15,6 +15,7 @@
 #include <GraphicsEngine/Resource/GraphicsModule.h>
 
 #include <FoundationEngine/Benchmark/Benchmark.h>
+#include <FoundationEngine/Interop/ShapeInstance.h>
 #include <FoundationEngine/Time/GameTimer.h>
 #include <FoundationEngine/Time/WorldTimer.h>
 
@@ -59,7 +60,7 @@ namespace SeedCore
 		/// [EN] The scene renderer shares the device; its Upload ring holds 64 MB per frame, enough for the first frame of a large scene, when every Model table row and the full bone palette go up at once.
 		/// [JP] SceneRenderer はデバイスを共有する。Upload のリングはフレームあたり 64 MB。大きなシーンの最初のフレームで、Model の表の全行とボーンのパレット全体を一度に送っても足りる大きさ。
 		renderer_ = MakePtr<SceneRenderer>(device_);
-		renderer_->Initialize(64ull * 1024 * 1024);
+		renderer_->Initialize(RenderFeatureSet::Scene, 64ull * 1024 * 1024);
 
 		screenView_ = device_.RenderTargetHeap().AllocateIndex();
 	}
@@ -136,7 +137,7 @@ namespace SeedCore
 	* [JP]
 	* エディターカメラからエディタービューを組み立て、このフレームのビューに足す。
 	*/
-	void GraphicsScene::AddEditorView(WorldTimer& timer, const EditorCamera& editorCamera, World& world, RenderViewMode viewMode)
+	void GraphicsScene::AddEditorView(WorldTimer& timer, const EditorCamera& editorCamera, World& world, RenderViewMode viewMode, RenderDebugSource debugSource, Uint64 showFlags)
 	{
 		if (viewCount_ >= RenderViewCount)
 		{
@@ -151,6 +152,8 @@ namespace SeedCore
 		/// [JP] ビューは倍率適用後のサイズで描き、出力のサイズで表示する。
 		view.kind_ = RenderViewKind::Editor;
 		view.mode_ = viewMode;
+		view.debugSource_ = debugSource;
+		view.showFlags_ = showFlags;
 		view.output_ = RenderViewOutput::Texture;
 		view.renderWidth_ = nativeWidth_;
 		view.renderHeight_ = nativeHeight_;
@@ -182,6 +185,9 @@ namespace SeedCore
 		scene.nearPlane_ = editorCamera.Near();
 		scene.farPlane_ = editorCamera.Far();
 		scene.viewMode_ = static_cast<Uint>(viewMode);
+		scene.showFlagsLow_ = static_cast<Uint>(showFlags);
+		scene.showFlagsHigh_ = static_cast<Uint>(showFlags >> 32);
+		scene.debugSource_ = static_cast<Uint>(debugSource);
 		scene.totalTime_ = timer.TotalTime();
 		scene.deltaTime_ = timer.DeltaTime();
 		scene.screenSize_ = Vector2(static_cast<Float>(nativeWidth_), static_cast<Float>(nativeHeight_));
@@ -215,6 +221,8 @@ namespace SeedCore
 
 		view.kind_ = RenderViewKind::Game;
 		view.mode_ = RenderViewMode::Lit;
+		view.debugSource_ = RenderDebugSource::Reflection;
+		view.showFlags_ = static_cast<Uint64>(RenderShowFlag::All);
 		view.output_ = output;
 		view.renderWidth_ = nativeWidth_;
 		view.renderHeight_ = nativeHeight_;
@@ -227,6 +235,10 @@ namespace SeedCore
 		/// [JP] カメラシステムの定数は、シーンが知っている表示サイズ以外はそろっている。
 		view.scene_ = cameraSystem.GetSceneConstantBuffer();
 		view.scene_.displaySize_ = Vector2(static_cast<Float>(outputWidth_), static_cast<Float>(outputHeight_));
+		view.scene_.viewMode_ = static_cast<Uint>(RenderViewMode::Lit);
+		view.scene_.showFlagsLow_ = static_cast<Uint>(view.showFlags_);
+		view.scene_.showFlagsHigh_ = static_cast<Uint>(view.showFlags_ >> 32);
+		view.scene_.debugSource_ = static_cast<Uint>(view.debugSource_);
 	}
 
 	/**
@@ -253,6 +265,8 @@ namespace SeedCore
 		/// [JP] キャンバスの出力はネイティブサイズのため、表示サイズは描画サイズと等しい。
 		view.kind_ = RenderViewKind::Canvas;
 		view.mode_ = RenderViewMode::Lit;
+		view.debugSource_ = RenderDebugSource::Reflection;
+		view.showFlags_ = static_cast<Uint64>(RenderShowFlag::All);
 		view.output_ = RenderViewOutput::Texture;
 		view.renderWidth_ = nativeWidth_;
 		view.renderHeight_ = nativeHeight_;
@@ -287,6 +301,9 @@ namespace SeedCore
 		scene.screenSize_ = Vector2(static_cast<Float>(nativeWidth_), static_cast<Float>(nativeHeight_));
 		scene.inverseScreenSize_ = Vector2(1.0f / nativeWidth_, 1.0f / nativeHeight_);
 		scene.displaySize_ = scene.screenSize_;
+		scene.showFlagsLow_ = static_cast<Uint>(view.showFlags_);
+		scene.showFlagsHigh_ = static_cast<Uint>(view.showFlags_ >> 32);
+		scene.debugSource_ = static_cast<Uint>(view.debugSource_);
 	}
 
 	/**
@@ -298,7 +315,7 @@ namespace SeedCore
 	* [JP]
 	* このフレームに集めた全ビューを、SceneRenderer でフレームに 1 回、各ビューの出力テクスチャか screen へ描画する。celestial はフレームの太陽と月。
 	*/
-	void GraphicsScene::Render(ID3D12Resource* screen, const CelestialResult& celestial)
+	void GraphicsScene::Render(ID3D12Resource* screen, const CelestialResult& celestial, const ShapeList& shapes)
 	{
 		if (rendered_ || viewCount_ == 0 || !world_)
 		{
@@ -324,7 +341,7 @@ namespace SeedCore
 				RenderGraphAllocation screenOutput;
 				screenOutput.resource_ = screen;
 				screenOutput.state_ = D3D12_RESOURCE_STATE_RENDER_TARGET;
-				screenOutput.format_ = screenDesc.Format;
+				screenOutput.format_ = static_cast<RenderFormat>(screenDesc.Format);
 				screenOutput.width_ = static_cast<Uint32>(screenDesc.Width);
 				screenOutput.height_ = screenDesc.Height;
 				screenOutput.renderTarget_ = true;
@@ -344,14 +361,14 @@ namespace SeedCore
 				resource.resourceName_ = String(HUDFeature::ViewOutput.Name());
 				resource.desc_.shape_ = RenderResourceShape::Texture2D;
 				resource.desc_.scale_ = RenderResourceScale::Fixed;
-				resource.desc_.format_ = DXGI_FORMAT_R8G8B8A8_UNORM;
+				resource.desc_.format_ = RenderFormat::RGBA8Unorm;
 				resource.shaderResource_ = true;
 				resource.unorderedAccess_ = true;
 				resource.renderTarget_ = true;
 				RenderGraphInstance instance;
 				instance.width_ = view.displayWidth_;
 				instance.height_ = view.displayHeight_;
-				output = RenderGraphMemory::Create(device_, resource, instance);
+				output = RenderGraphMemory::Create(device_, resource, instance, { 0.0f, 0.0f, 0.0f, 1.0f });
 
 				StaticArray<Float, 4> black = { 0.0f, 0.0f, 0.0f, 1.0f };
 				cmdList.Barrier(output.resource_.Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
@@ -363,13 +380,14 @@ namespace SeedCore
 			display_.views_[static_cast<Size>(view.kind_)] = device_.ResourceHeap().GPUHandle(output.shaderResourceView_);
 		}
 
-		/// [EN] The scene is everything this frame draws: the World, the asset resources, the sun and moon, the upscale settings, the collected views and their outputs.
-		/// [JP] シーンは、このフレームに描くものすべて。World、アセットのリソース、太陽と月、アップスケールの設定、集めたビューとその出力。
+		/// [EN] The scene is everything this frame draws: the World, the asset resources, the sun and moon, the upscale settings, the shapes and colliders, the collected views and their outputs.
+		/// [JP] シーンは、このフレームに描くものすべて。World、アセットのリソース、太陽と月、アップスケールの設定、形とコライダー、集めたビューとその出力。
 		RenderScene scene;
 		scene.world_ = world_;
 		scene.resource_ = &module_.Resources();
 		scene.Set(celestial);
 		scene.Set(upscale_);
+		scene.Set(shapes);
 		scene.views_ = std::span<const RenderView>(views_.data(), viewCount_);
 		scene.imports_ = imports;
 		renderer_->Render(scene);

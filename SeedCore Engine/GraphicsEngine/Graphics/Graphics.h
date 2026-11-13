@@ -4,9 +4,13 @@
 namespace SeedCore
 {
 	enum class RenderViewMode :Uint32;
+	enum class RenderDebugSource :Uint32;
 	enum class RenderViewOutput :Uint8;
+	enum class PreviewSlot :Uint8;
 
+	struct BootRequest;
 	struct GameConfig;
+	struct PreviewRequest;
 
 	class CameraSystem;
 	class CanvasCamera;
@@ -15,6 +19,7 @@ namespace SeedCore
 	class GpuProfiler;
 	class GraphicsDisplay;
 	class GraphicsModule;
+	class PreviewCamera;
 	class RenderDevice;
 	class SplashSystem;
 	class Window;
@@ -271,7 +276,7 @@ namespace SeedCore
 		* 選択（形のデバッグ表示とアウトライン）は、引数で受け取らず、World の
 		* Selected タグから読む。
 		*/
-		void EditorRender(WorldTimer& timer, const EditorCamera& editorCamera, World& world, RenderViewMode viewMode);
+		void EditorRender(WorldTimer& timer, const EditorCamera& editorCamera, World& world, RenderViewMode viewMode, RenderDebugSource debugSource, Uint64 showFlags);
 
 		/**
 		* [EN]
@@ -305,6 +310,32 @@ namespace SeedCore
 		* フレームのビューに足す。
 		*/
 		void CanvasRender(WorldTimer& timer, const CanvasCamera& canvasCamera, World& world);
+
+		/**
+		* [EN]
+		* Asks for an editor tool preview to be drawn this frame into slot's
+		* own texture, as request describes and seen from camera.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* エディタのツールのプレビューを、このフレームに slot 専用のテクスチャへ描くよう
+		* 求める。描くものは request、視点は camera。
+		*/
+		void PreviewRender(PreviewSlot slot, const PreviewRequest& request, const PreviewCamera& camera, Float totalTime);
+
+		/**
+		* [EN]
+		* Asks for the boot screen preview to be drawn this frame into its own
+		* texture, as request describes, at a screen of width by height.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ブート画面のプレビューを、このフレームに専用のテクスチャへ描くよう求める。
+		* 描くものは request、画面の大きさは width × height。
+		*/
+		void PreviewRender(const BootRequest& request, Uint32 width, Uint32 height);
 
 	public:
 		/**
@@ -382,6 +413,19 @@ namespace SeedCore
 		* テクスチャのハンドルを返す。Graphics が毎フレーム描画の後に書き直す。
 		*/
 		NODISCARD const GraphicsDisplay& Display()const;
+
+		/**
+		* [EN]
+		* Returns the handle of the texture a tool preview was drawn into, or
+		* a null handle before slot is first drawn.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* ツールのプレビューを描いたテクスチャのハンドルを返す。slot を初めて描くまでは
+		* 空のハンドル。
+		*/
+		NODISCARD D3D12_GPU_DESCRIPTOR_HANDLE PreviewDisplay(PreviewSlot slot)const;
 
 	private:
 		/**

@@ -1,5 +1,8 @@
 #pragma once
 #include <GraphicsEngine/Model/ModelFeature.h>
+#include <GraphicsEngine/Model/Opaque/GeometryFeature.h>
+#include <GraphicsEngine/Raytracing/BottomLevelFeature.h>
+#include <GraphicsEngine/Raytracing/TopLevelFeature.h>
 
 namespace SeedCore
 {
@@ -18,17 +21,52 @@ namespace SeedCore
 			RenderAccess::Read(ClusterUpdates),
 			RenderAccess::Read(PlacementUpdates),
 			RenderAccess::Read(MaterialUpdates),
+			RenderAccess::Read(RaytracingUnitUpdates),
 			RenderAccess::Write(Units),
 			RenderAccess::Write(Meshes),
 			RenderAccess::Write(Clusters),
 			RenderAccess::Write(Placements),
-			RenderAccess::Write(Materials)
+			RenderAccess::Write(Materials),
+			RenderAccess::Write(RaytracingUnits)
 		};
 
 		static void Execute(ModelFeature& feature, RenderPass& pass);
 	};
 
-	struct ModelFeature::ExpandStage :RenderStage
+	struct ModelFeature::DeformStage :RenderStage
+	{
+		SC_CONSTEX RenderQueue queue_ = RenderQueue::Frame;
+
+		SC_CONSTEX RenderViewMask viewMask_ = RenderViewMask::Frame;
+
+		SC_CONSTEX Bool ModelFeature::* enableCondition_ = &ModelFeature::deforming_;
+
+		SC_CONSTEX RenderAccess accesses_[] =
+		{
+			RenderAccess::Read(Deforms),
+			RenderAccess::Read(Units),
+			RenderAccess::Read(Meshes),
+			RenderAccess::Read(Bones),
+			RenderAccess::Read(MorphWeights),
+			RenderAccess::Read(BottomLevelFeature::Table),
+			RenderAccess::Append(BottomLevelFeature::Vertices)
+		};
+
+		static void Execute(ModelFeature& feature, RenderPass& pass);
+	};
+
+	struct ModelFeature::SubmitStage
+	{
+		struct ExpandStep;
+
+		struct ReadbackStep;
+
+		struct RaytracingStep;
+
+		using Sequence = RenderSequence<ExpandStep, ReadbackStep, RaytracingStep>;
+	};
+
+	struct ModelFeature::SubmitStage::ExpandStep :RenderStage
 	{
 		SC_CONSTEX RenderQueue queue_ = RenderQueue::Frame;
 
@@ -43,8 +81,46 @@ namespace SeedCore
 			RenderAccess::Read(Materials),
 			RenderAccess::Read(SoftbodyInstances),
 			RenderAccess::Constant(Constants),
-			RenderAccess::Write(Instances),
-			RenderAccess::Write(Counts)
+			RenderAccess::Append(GeometryFeature::Instances),
+			RenderAccess::Append(GeometryFeature::Counts),
+			RenderAccess::Write(Streaming)
+		};
+
+		static void Execute(ModelFeature& feature, RenderPass& pass);
+	};
+
+	struct ModelFeature::SubmitStage::ReadbackStep :RenderStage
+	{
+		SC_CONSTEX RenderStageKind kind_ = RenderStageKind::Copy;
+
+		SC_CONSTEX RenderQueue queue_ = RenderQueue::Frame;
+
+		SC_CONSTEX RenderViewMask viewMask_ = RenderViewMask::Frame;
+
+		SC_CONSTEX RenderAccess accesses_[] =
+		{
+			RenderAccess::Read(Streaming)
+		};
+
+		static void Execute(ModelFeature& feature, RenderPass& pass);
+	};
+
+	struct ModelFeature::SubmitStage::RaytracingStep :RenderStage
+	{
+		SC_CONSTEX RenderQueue queue_ = RenderQueue::Frame;
+
+		SC_CONSTEX RenderViewMask viewMask_ = RenderViewMask::Frame;
+
+		SC_CONSTEX Bool ModelFeature::* enableCondition_ = &ModelFeature::submitting_;
+
+		SC_CONSTEX RenderAccess accesses_[] =
+		{
+			RenderAccess::Read(Units),
+			RenderAccess::Read(RaytracingUnits),
+			RenderAccess::Read(Meshes),
+			RenderAccess::Read(Materials),
+			RenderAccess::Append(TopLevelFeature::Instances),
+			RenderAccess::Append(TopLevelFeature::Counts)
 		};
 
 		static void Execute(ModelFeature& feature, RenderPass& pass);

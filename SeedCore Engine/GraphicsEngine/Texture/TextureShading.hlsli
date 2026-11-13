@@ -23,7 +23,7 @@
 float4 ShadeTexture(TextureUnitStructuredBuffer unit, TextureQuadStructuredBuffer quad, float2 texcoord)
 {
 	SceneConstantBuffer scene = GetSceneConstantBuffer();
-	Texture2D<float4> source = ResourceDescriptorHeap[unit.texture_index_];
+	Texture2D<float4> source = ResourceDescriptorHeap[NonUniformResourceIndex(unit.texture_index_)];
 
 	float4 color = float4(0.0, 0.0, 0.0, 0.0);
 	if (unit.kind_ == TEXTURE_KIND_TEXTURE)

@@ -1,47 +1,62 @@
 #pragma once
-#include <FoundationEngine/Utility/Handle.h>
-#include <GraphicsEngine/D3D12/Signature/RootSignature.h>
-#include <GraphicsEngine/D3D12/PipelineState/PipelineStateObject.h>
+#include <GraphicsEngine/RenderGraph/Pipeline/ComputePipeline.h>
 
 namespace SeedCore
 {
-	class ShaderCache;
-	class ComputeShader;
-
-	/**
-	* [EN]
-	* Manages PSO creation for the volumetric star compute pass
-	* (VolumetricStarCS.hlsl - screen-space, one thread per screen pixel). Uses
-	* the same shared root signature as every other pass (bindless table + the
-	* engine's two indices CBVs), same as VolumetricCloudScapesShader.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ボリューメトリック・スター用コンピュートパス(VolumetricStarCS.hlsl -
-	* スクリーン空間、1 ピクセル 1 スレッド)の PSO 管理。他の全パスと同じ
-	* 共有ルートシグネチャ(bindless テーブル+エンジン共通の2つの indices
-	* CBV)を使う。VolumetricCloudScapesShader と同じ構成。
-	*/
-	class VolumetricStarShader
+	struct VolumetricStarMeteor
 	{
-	public:
-		VolumetricStarShader(RootSignature& rootSignature, PipelineStateObject& pipelineStateObject);
-		~VolumetricStarShader() = default;
+		Vector3 startDirection_ = { 0.0f, 1.0f, 0.0f };
 
-		void Create(ShaderCache& shaderCache, ID3D12Device* device);
+		Float progress_ = 0.0f;
 
-		NODISCARD ID3D12PipelineState* GetPipelineState()const;
+		Vector3 endDirection_ = { 0.0f, 1.0f, 0.0f };
 
-		NODISCARD ID3D12RootSignature* GetRootSignature()const;
+		Float brightness_ = 0.0f;
+	};
+	SC_STATIC_ASSERT(VolumetricStarMeteor, 32, "Environment/VolumetricStar/VolumetricStar.hlsli");
 
-	private:
-		Handle<ComputeShader> computeShader_;
-		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineStateObjectHandle_;
+	struct VolumetricStarConstantBuffer
+	{
+		Float cellSize_ = 0.12f;
 
-		Handle<RootSignature> starRootSignature_;
+		Float density_ = 0.35f;
 
-		RootSignature& rootSignature_;
-		PipelineStateObject& pipelineStateObject_;
+		Float brightness_ = 1.0f;
+
+		Float twinkleSpeed_ = 2.0f;
+
+		Vector3 color_ = { 0.9f, 0.95f, 1.0f };
+
+		Float sizeMin_ = 0.02f;
+
+		Float sizeMax_ = 0.05f;
+
+		Float shootingStarChancePerSecond_ = 0.05f;
+
+		Float shootingStarBrightness_ = 3.0f;
+
+		Float shootingStarWidth_ = 0.0015f;
+
+		Uint maxConcurrentShootingStars_ = 4;
+
+		Uint enabled_ = 0;
+
+		Float glowIntensity_ = 0.8f;
+
+		Float glowFalloff_ = 120.0f;
+
+		StaticArray<VolumetricStarMeteor, 4> activeShootingStars_ = {};
+	};
+	SC_STATIC_ASSERT(VolumetricStarConstantBuffer, 192, "Environment/VolumetricStar/VolumetricStar.hlsli");
+
+	struct VolumetricStarTraceDescription
+	{
+		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/Environment/VolumetricStar/VolumetricStarCS.hlsl");
+
+		SC_CONSTEX const Char* entryPoint_ = "Trace";
+
+		SC_CONSTEX Uint32 threadGroupSizeX_ = 8;
+
+		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
 	};
 }

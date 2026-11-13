@@ -15,7 +15,7 @@ bool IsInsideFrustum(float3 center, float radius, row_major float4x4 view_projec
 	planes[1] = float4(view_projection[0][3] - view_projection[0][0], view_projection[1][3] - view_projection[1][0], view_projection[2][3] - view_projection[2][0], view_projection[3][3] - view_projection[3][0]);
 	planes[2] = float4(view_projection[0][1] + view_projection[0][3], view_projection[1][1] + view_projection[1][3], view_projection[2][1] + view_projection[2][3], view_projection[3][1] + view_projection[3][3]);
 	planes[3] = float4(view_projection[0][3] - view_projection[0][1], view_projection[1][3] - view_projection[1][1], view_projection[2][3] - view_projection[2][1], view_projection[3][3] - view_projection[3][1]);
-	planes[4] = float4(view_projection[0][2], view_projection[1][2], view_projection[2][2], view_projection[3][2]);
+	planes[4] = float4(view_projection[0][2],  view_projection[1][2], view_projection[2][2],  view_projection[3][2]);
 	planes[5] = float4(view_projection[0][3] - view_projection[0][2], view_projection[1][3] - view_projection[1][2], view_projection[2][3] - view_projection[2][2], view_projection[3][3] - view_projection[3][2]);
 
 	[unroll]

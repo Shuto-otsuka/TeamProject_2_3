@@ -1,7 +1,9 @@
 #include <GraphicsEngine/Graphics/Graphics.h>
 #include <GraphicsEngine/Graphics/GraphicsPresenter.h>
+#include <GraphicsEngine/Graphics/GraphicsPreview.h>
 #include <GraphicsEngine/Graphics/GraphicsProcessor.h>
 #include <GraphicsEngine/Graphics/GraphicsScene.h>
+#include <GraphicsEngine/Graphics/GraphicsScreen.h>
 #include <GraphicsEngine/Graphics/GraphicsUpdater.h>
 
 #include <FoundationEngine/Log/AftermathCrashTracker.h>
@@ -14,10 +16,12 @@
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
 #include <GraphicsEngine/DLSS/DlssManager.h>
+#include <GraphicsEngine/Profiler/ProfilerStats.h>
 #include <GraphicsEngine/RenderGraph/RenderDevice.h>
 #include <GraphicsEngine/Resource/GraphicsModule.h>
 #include <GraphicsEngine/Shader/ShaderCache.h>
 #include <GraphicsEngine/Shader/ShaderHotReload.h>
+#include <GraphicsEngine/System/SplashSystem.h>
 
 namespace SeedCore
 {
@@ -40,8 +44,8 @@ namespace SeedCore
 		/// [JP] 全グラフィックスサービスで共有する、D3D12 コンテキスト、シェーダーキャッシュ、シェーダーのホットリロード、ディスクリプタヒープ、パイプラインのキャッシュ、ルートシグネチャを所有する。
 		ResourcePtr<RenderDevice> device_;
 
-		/// [EN] Owns the swap chain and the screen overlays, and presents each frame; built after the device and released before it.
-		/// [JP] スワップチェインと画面オーバーレイを持ち、各フレームを表示する。デバイスの後に生成し、前に解放する。
+		/// [EN] Owns the swap chain and presents each frame; built after the device and released before it.
+		/// [JP] スワップチェインを持ち、各フレームを表示する。デバイスの後に生成し、前に解放する。
 		ResourcePtr<GraphicsPresenter> presenter_;
 
 		/// [EN] Processes asset data on the GPU outside the render graph (BC7 compression of model and material textures).
@@ -59,6 +63,14 @@ namespace SeedCore
 		/// [EN] Collects the views during the frame and renders them once through the render graph; built after the asset module it renders with and released before it.
 		/// [JP] フレームの間にビューを集め、レンダーグラフで 1 回描画する。描画に使うアセットモジュールの後に生成し、前に解放する。
 		ResourcePtr<GraphicsScene> scene_;
+
+		/// [EN] Draws the editor's tool previews, each through its own small renderer; built after the asset module it reads from and released before it.
+		/// [JP] エディタのツールのプレビューを、それぞれ専用の小さなレンダラーで描く。読み先のアセットモジュールの後に生成し、前に解放する。
+		ResourcePtr<GraphicsPreview> preview_;
+
+		/// [EN] Draws the splash and boot screens straight into the back buffer before the game starts; built after the device and released before it.
+		/// [JP] ゲーム開始前のスプラッシュ画面とブート画面を、バックバッファへ直接描く。デバイスの後に生成し、前に解放する。
+		ResourcePtr<GraphicsScreen> screen_;
 	};
 
 	/**
@@ -120,13 +132,18 @@ namespace SeedCore
 		AftermathCrashTracker::Create(context.GetDevice());
 #endif
 
-		/// [EN] The presenter creates the swap chain and the screen overlays on the finished device.
-		/// [JP] 表示器は、生成済みのデバイスにスワップチェインと画面オーバーレイを作る。
+		/// [EN] The presenter creates the swap chain on the finished device.
+		/// [JP] 表示器は、生成済みのデバイスにスワップチェインを作る。
 		impl_->presenter_ = MakePtr<GraphicsPresenter>(*impl_->device_);
-		if (!impl_->presenter_->Initialize(window, splashSystem))
+		if (!impl_->presenter_->Initialize(window))
 		{
 			return false;
 		}
+
+		/// [EN] The screens load the splash images and, from the splash system's boot config, the boot screen's images.
+		/// [JP] 画面は、スプラッシュの絵と、スプラッシュシステムのブート設定からブート画面の絵を読み込む。
+		impl_->screen_ = MakePtr<GraphicsScreen>(*impl_->device_);
+		impl_->screen_->Initialize(splashSystem.Config());
 
 		impl_->processor_.Initialize(*impl_->device_);
 
@@ -146,6 +163,8 @@ namespace SeedCore
 
 		impl_->scene_ = MakePtr<GraphicsScene>(*impl_->device_, *impl_->module_);
 		impl_->scene_->Initialize();
+
+		impl_->preview_ = MakePtr<GraphicsPreview>(*impl_->device_, *impl_->module_);
 
 		/// [EN] Reflex and DeepDVC are set once from the game config.
 		/// [JP] Reflex と DeepDVC は、ゲームの設定から 1 度だけ設定する。
@@ -185,10 +204,22 @@ namespace SeedCore
 
 		/// [EN] Destroy higher-level users before the device services they depend on.
 		/// [JP] 依存しているデバイスサービスより先に、上位の利用者を破棄する。
+		if (impl_->preview_)
+		{
+			impl_->preview_->Finalize();
+			impl_->preview_.reset();
+		}
+
 		if (impl_->scene_)
 		{
 			impl_->scene_->Finalize();
 			impl_->scene_.reset();
+		}
+
+		if (impl_->screen_)
+		{
+			impl_->screen_->Finalize();
+			impl_->screen_.reset();
 		}
 
 		/// [EN] EngineCore has already finalized DLSS, which releases its features before the swap chain it presents through.
@@ -284,6 +315,7 @@ namespace SeedCore
 	*/
 	void Graphics::Begin()
 	{
+		ProfilerStats::Reset();
 		impl_->scene_->Begin();
 		impl_->device_->Context().BeginFrame();
 		impl_->presenter_->Begin();
@@ -300,7 +332,8 @@ namespace SeedCore
 	*/
 	void Graphics::Bind()
 	{
-		impl_->scene_->Render(impl_->presenter_->BackBuffer(), impl_->updater_->Celestial());
+		impl_->scene_->Render(impl_->presenter_->BackBuffer(), impl_->updater_->Celestial(), impl_->updater_->Shapes());
+		impl_->preview_->Render();
 		impl_->presenter_->Bind();
 	}
 
@@ -315,7 +348,8 @@ namespace SeedCore
 	*/
 	void Graphics::End()
 	{
-		impl_->scene_->Render(impl_->presenter_->BackBuffer(), impl_->updater_->Celestial());
+		impl_->scene_->Render(impl_->presenter_->BackBuffer(), impl_->updater_->Celestial(), impl_->updater_->Shapes());
+		impl_->preview_->Render();
 
 		/// [EN] The back buffer leaves the render-target state before the frame is submitted, and is presented after.
 		/// [JP] バックバッファはフレームの送信前に render-target 状態を抜け、送信後に表示する。
@@ -354,9 +388,9 @@ namespace SeedCore
 	* [JP]
 	* エディタービューを、このフレームのビューに足す。
 	*/
-	void Graphics::EditorRender(WorldTimer& timer, const EditorCamera& editorCamera, World& world, RenderViewMode viewMode)
+	void Graphics::EditorRender(WorldTimer& timer, const EditorCamera& editorCamera, World& world, RenderViewMode viewMode, RenderDebugSource debugSource, Uint64 showFlags)
 	{
-		impl_->scene_->AddEditorView(timer, editorCamera, world, viewMode);
+		impl_->scene_->AddEditorView(timer, editorCamera, world, viewMode, debugSource, showFlags);
 	}
 
 	/**
@@ -389,6 +423,34 @@ namespace SeedCore
 
 	/**
 	* [EN]
+	* Asks for an editor tool preview to be drawn this frame into slot's own texture, as request describes and seen from camera.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* エディタのツールのプレビューを、このフレームに slot 専用のテクスチャへ描くよう求める。描くものは request、視点は camera。
+	*/
+	void Graphics::PreviewRender(PreviewSlot slot, const PreviewRequest& request, const PreviewCamera& camera, Float totalTime)
+	{
+		impl_->preview_->Add(slot, request, camera, totalTime);
+	}
+
+	/**
+	* [EN]
+	* Asks for the boot screen preview to be drawn this frame into its own texture, as request describes, at a screen of width by height.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ブート画面のプレビューを、このフレームに専用のテクスチャへ描くよう求める。描くものは request、画面の大きさは width × height。
+	*/
+	void Graphics::PreviewRender(const BootRequest& request, Uint32 width, Uint32 height)
+	{
+		impl_->preview_->Add(request, width, height);
+	}
+
+	/**
+	* [EN]
 	* Draws the current splash phase directly to the presentation back buffer.
 	*
 	* ---------------------------------------------------------------------
@@ -398,11 +460,10 @@ namespace SeedCore
 	*/
 	void Graphics::DrawSplashScreen(const SplashSystem& splashSystem)
 	{
-		/// [EN] Splash rendering owns a complete presentation frame and collects no views, so Bind and End render nothing.
-		/// [JP] スプラッシュ描画は完全な表示フレームを所有し、ビューを集めないので、Bind と End は何も描画しない。
+		/// [EN] Splash rendering owns a complete presentation frame and collects no views, so End renders nothing else.
+		/// [JP] スプラッシュ描画は完全な表示フレームを所有し、ビューを集めないので、End はほかに何も描画しない。
 		Begin();
-		Bind();
-		impl_->presenter_->DrawSplash(splashSystem);
+		impl_->screen_->Render(impl_->presenter_->BackBuffer(), splashSystem);
 
 		/// [EN] End closes and presents the frame, so the caller skips the normal frame entirely.
 		/// [JP] End がフレームを閉じて表示するため、呼び出し側は通常フレームを丸ごと省略する。
@@ -463,5 +524,19 @@ namespace SeedCore
 	const GraphicsDisplay& Graphics::Display()const
 	{
 		return impl_->scene_->Display();
+	}
+
+	/**
+	* [EN]
+	* Returns the handle of the texture a tool preview was drawn into, or a null handle before slot is first drawn.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* ツールのプレビューを描いたテクスチャのハンドルを返す。slot を初めて描くまでは空のハンドル。
+	*/
+	D3D12_GPU_DESCRIPTOR_HANDLE Graphics::PreviewDisplay(PreviewSlot slot)const
+	{
+		return impl_->preview_->Display(slot);
 	}
 }

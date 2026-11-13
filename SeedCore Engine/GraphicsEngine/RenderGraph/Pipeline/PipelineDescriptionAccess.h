@@ -33,7 +33,7 @@ namespace SeedCore
 			{ Description::vertexFile_ } -> std::convertible_to<ShaderPath>;
 			{ Description::fallback_ } -> std::convertible_to<GraphicsFallback>;
 			{ Description::targetFormat_.size() } -> std::convertible_to<Size>;
-			{ Description::depthFormat_ } -> std::convertible_to<DXGI_FORMAT>;
+			{ Description::depthFormat_ } -> std::convertible_to<RenderFormat>;
 			{ Description::blend_ } -> std::convertible_to<BlendStateType>;
 			{ Description::depthStencil_ } -> std::convertible_to<DepthStencilStateType>;
 			{ Description::rasterizer_ } -> std::convertible_to<RasterizerStateType>;

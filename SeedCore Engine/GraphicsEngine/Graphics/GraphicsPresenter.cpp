@@ -4,28 +4,25 @@
 #include <FoundationEngine/Application/Window.h>
 #include <FoundationEngine/Benchmark/Benchmark.h>
 #include <FoundationEngine/Resource/Gateway.h>
-#include <FoundationEngine/Resource/Asset/Asset.h>
 
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Context.h>
-#include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/SwapChain/SwapChain.h>
 #include <GraphicsEngine/DLSS/DlssManager.h>
 #include <GraphicsEngine/RenderGraph/RenderDevice.h>
-#include <GraphicsEngine/System/SplashSystem.h>
 
 namespace SeedCore
 {
 	/**
 	* [EN]
-	* Keeps the device the swap chain and overlays are created on.
+	* Keeps the device the swap chain is created on.
 	* Nothing touches the GPU until Initialize.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* スワップチェインとオーバーレイを作るデバイスを受け取る。
+	* スワップチェインを作るデバイスを受け取る。
 	* Initialize まで GPU には触らない。
 	*/
 	GraphicsPresenter::GraphicsPresenter(RenderDevice& device) :device_(device)
@@ -46,66 +43,47 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Creates the swap chain at the window's client size, then the screen overlays.
+	* Creates the swap chain at the window's client size.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* ウィンドウのクライアントサイズでスワップチェインを作り、続けて画面オーバーレイを作る。
+	* ウィンドウのクライアントサイズでスワップチェインを作る。
 	*/
-	Bool GraphicsPresenter::Initialize(const Window& window, const SplashSystem& splashSystem)
+	Bool GraphicsPresenter::Initialize(const Window& window)
 	{
 		HWND hwnd = window.Handle();
 
 		RECT clientRect{};
 		GetClientRect(hwnd, &clientRect);
-		width_ = static_cast<Uint32>(clientRect.right - clientRect.left);
-		height_ = static_cast<Uint32>(clientRect.bottom - clientRect.top);
+		Float width = static_cast<Float>(clientRect.right - clientRect.left);
+		Float height = static_cast<Float>(clientRect.bottom - clientRect.top);
 
 		D3D12Context& context = device_.Context();
-		BindlessHeap& resourceHeap = device_.ResourceHeap();
 
 		/// [EN] Presentation resources are created after the device and direct queue exist.
 		/// [JP] 表示用リソースは、デバイスと direct キューの生成後に作成する。
-		swapChain_ = MakePtr<SwapChain>(static_cast<Float>(width_), static_cast<Float>(height_));
+		swapChain_ = MakePtr<SwapChain>(width, height);
 		if (!swapChain_->Create(context.GetFactory(), context.GetDevice(), context.GetDirectQueue()->GetCommandQueue(), hwnd))
 		{
 			return false;
 		}
-
-		/// [EN] Screen overlays load their pipelines and fixed images up front; the boot screen's images come from bootConfig.
-		/// [JP] 画面オーバーレイはパイプラインと固定画像を先に読み込む。ブート画面の画像は bootConfig から与える。
-		splashScreen_.Initialize(context.GetDevice(), context.GetCopyQueue(), context.GetLoadTransferLane(LoadThread::Main), &resourceHeap);
-
-		bootScreen_.Initialize(context.GetDevice(), context.GetCopyQueue(), context.GetLoadTransferLane(LoadThread::Main), &resourceHeap, DXGI_FORMAT_R8G8B8A8_UNORM);
-		bootScreen_.LoadImages(splashSystem.Config());
-
-		fadeScreen_.Initialize(context.GetDevice());
-
-		letterScreen_.Initialize(context.GetDevice(), &resourceHeap);
 
 		return true;
 	}
 
 	/**
 	* [EN]
-	* Releases the swap chain, then the screen overlays' pipeline state.
+	* Releases the swap chain.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* スワップチェインを解放し、続けて画面オーバーレイのパイプライン状態を解放する。
+	* スワップチェインを解放する。
 	*/
 	void GraphicsPresenter::Finalize()
 	{
 		swapChain_.reset();
-
-		/// [EN] Screen overlays release their pipeline state before descriptor and device ownership end.
-		/// [JP] 画面オーバーレイは、ディスクリプタとデバイスの所有終了前にパイプライン状態を解放する。
-		letterScreen_.Finalize();
-		splashScreen_.Finalize();
-		bootScreen_.Finalize();
-		fadeScreen_.Finalize();
 	}
 
 	/**
@@ -154,9 +132,6 @@ namespace SeedCore
 
 		device_.Wait();
 
-		width_ = width;
-		height_ = height;
-
 		swapChain_->Resize(device_.Context().GetDevice(), static_cast<Float>(width), static_cast<Float>(height));
 
 		dlssManager.FrameGenerationSuppress(false);
@@ -183,11 +158,6 @@ namespace SeedCore
 		/// [EN] Presentation owns the back buffer before this barrier; rendering owns it until End restores present state.
 		/// [JP] このバリア前は表示処理がバックバッファを所有し、End で present 状態へ戻すまで描画処理が所有する。
 		device_.Context().GetDirectList()->Barrier(swapChain_->BackBuffer(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-		/// [EN] Whatever a view does not cover (the letterbox bars of a view shown on the screen) stays black.
-		/// [JP] ビューが覆わないところ（画面に出すビューのレターボックスの帯）は黒のまま残る。
-		StaticArray<Float, 4> black = { 0.0f, 0.0f, 0.0f, 1.0f };
-		device_.Context().GetDirectList()->Get()->ClearRenderTargetView(swapChain_->Handle(), black.data(), 0, nullptr);
 	}
 
 	/**
@@ -237,32 +207,6 @@ namespace SeedCore
 		Benchmark::Begin("Present");
 		swapChain_->Present(device_.Context().GetDevice());
 		Benchmark::End("Present");
-	}
-
-	/**
-	* [EN]
-	* Draws the current splash phase onto the bound back buffer.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 現在のスプラッシュフェーズを、バインド済みのバックバッファへ描く。
-	*/
-	void GraphicsPresenter::DrawSplash(const SplashSystem& splashSystem)
-	{
-		ID3D12GraphicsCommandList6* cmdList = device_.Context().GetDirectList()->Get();
-		D3D12_CPU_DESCRIPTOR_HANDLE renderTargetViewHandle = swapChain_->Handle();
-
-		/// [EN] Boot uses configurable progress visuals; earlier phases use fixed splash imagery.
-		/// [JP] ブートでは設定可能な進行表示を使い、それ以前のフェーズでは固定スプラッシュ画像を使う。
-		if (splashSystem.Phase() == SplashPhase::Boot)
-		{
-			bootScreen_.Draw(cmdList, renderTargetViewHandle, splashSystem.Config(), static_cast<Float>(width_), static_cast<Float>(height_), splashSystem.Progress(), splashSystem.Time(), 1.0f);
-		}
-		else
-		{
-			splashScreen_.Draw(cmdList, renderTargetViewHandle, static_cast<Float>(width_), static_cast<Float>(height_), splashSystem.Phase(), splashSystem.Alpha());
-		}
 	}
 
 	/**

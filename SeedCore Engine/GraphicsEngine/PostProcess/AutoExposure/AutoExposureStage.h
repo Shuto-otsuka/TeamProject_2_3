@@ -4,11 +4,22 @@
 
 namespace SeedCore
 {
-	struct AutoExposureFeature::HistogramStage :RenderStage
+	struct AutoExposureFeature::BuildStage
+	{
+		struct HistogramStep;
+
+		struct AverageStep;
+
+		using Sequence = RenderSequence<HistogramStep, AverageStep>;
+	};
+
+	struct AutoExposureFeature::BuildStage::HistogramStep :RenderStage
 	{
 		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
 
 		SC_CONSTEX Bool AutoExposureFeature::* enableCondition_ = &AutoExposureFeature::enabled_;
+
+		SC_CONSTEX Uint64 showFlags_ = static_cast<Uint64>(RenderShowFlag::PostProcess) | static_cast<Uint64>(RenderShowFlag::AutoExposure);
 
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
@@ -20,11 +31,13 @@ namespace SeedCore
 		static void Execute(AutoExposureFeature& feature, RenderPass& pass);
 	};
 
-	struct AutoExposureFeature::AverageStage :RenderStage
+	struct AutoExposureFeature::BuildStage::AverageStep :RenderStage
 	{
 		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
 
 		SC_CONSTEX Bool AutoExposureFeature::* enableCondition_ = &AutoExposureFeature::enabled_;
+
+		SC_CONSTEX Uint64 showFlags_ = static_cast<Uint64>(RenderShowFlag::PostProcess) | static_cast<Uint64>(RenderShowFlag::AutoExposure);
 
 		SC_CONSTEX RenderAccess accesses_[] =
 		{

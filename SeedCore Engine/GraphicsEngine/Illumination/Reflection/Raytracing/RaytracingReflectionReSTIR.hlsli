@@ -16,11 +16,11 @@
 *   receiver-side target function is deliberately not adopted here either.)
 *
 * Cap on the reservoir's confidence (candidate count folded in so far) -
-* shared between RaytracingReflectionRT.hlsl's raygen (which clamps the reprojected
-* history's M before combining) and RaytracingReflectionReservoirSpatialCS.hlsl (which
+* shared between RaytracingReflectionTraceRT.hlsl's raygen (which clamps the reprojected
+* history's M before combining) and RaytracingReflectionSpatialCS.hlsl (which
 * normalizes the final M into a 0..1 confidence signal for
 * RaytracingReflectionDenoiseCS.hlsl - see that file's use of
-* shader_resource_indices.reflection_.confidence_index_).
+* the RaytracingReflection.Confidence binding).
 *
 * This directly trades noise for responsiveness: the streaming RIS combine's
 * probability of accepting a brand-new frame's candidate over the existing
@@ -43,10 +43,10 @@ static const float REFLECTION_RESERVOIR_DEPTH_THRESHOLD = 0.1;
 static const float REFLECTION_RESERVOIR_NORMAL_THRESHOLD = 0.5;
 
 /**
-* Per-pixel ReSTIR reservoir for the single GGX-visible-normal-sampled
-* reflection ray ReflectionRayGeneration traces per frame (replacing the old
-* 4-rays-averaged-per-frame scheme - see RaytracingReflectionRT.hlsl). 64 bytes - must
-* match the C++ side (ReflectionRenderer::reservoirElementSizeInBytes_)
+* Per-pixel ReSTIR reservoir for the GGX-visible-normal-sampled
+* reflection rays RaytracingReflectionRayGeneration traces per frame (see
+* RaytracingReflectionTraceRT.hlsl). 64 bytes - must
+* match the C++ side (RaytracingReflectionReservoir in RaytracingReflectionShader.h)
 * byte-for-byte.
 */
 struct RaytracingReflectionReservoir
@@ -62,7 +62,7 @@ struct RaytracingReflectionReservoir
 
 	/// That candidate's traced radiance (same convention the old 4-ray
 	/// average used - already includes the VNDF sample's Smith G2/G1 weight,
-	/// see RaytracingReflectionRT.hlsl - no further BRDF/pdf division needed here).
+	/// see RaytracingReflectionTraceRT.hlsl - no further BRDF/pdf division needed here).
 	float3 sample_radiance_;
 
 	/// Final unbiased resampling weight for sample_radiance_ - multiplying
@@ -119,7 +119,7 @@ RaytracingReflectionReservoir ReflectionReservoirFromSample(float3 direction, fl
 * reweight by how well the borrowed direction fits the CURRENT pixel's GGX
 * lobe (its target function here is plain luminance, not a BRDF-aware one).
 * Skipped here for the same reason GI's version skips it - see
-* RaytracingReflectionRT.hlsl's call site comment: a target function that depends on
+* RaytracingReflectionTraceRT.hlsl's call site comment: a target function that depends on
 * the receiving pixel's own geometry drifts a little every frame under
 * temporal reprojection, which turns the resampling DECISION itself into a
 * new source of flicker/noise that outweighs the bias it would remove.
@@ -159,19 +159,5 @@ RaytracingReflectionReservoir ReflectionReservoirCombine(RaytracingReflectionRes
 
 	return result;
 }
-
-struct RaytracingReflectionShaderResourceIndices
-{
-	uint output_index_;
-	uint confidence_index_;
-	uint2 reflection_shader_resource_padding_0_;
-};
-
-struct RaytracingReflectionUnorderedAccessIndices
-{
-	uint output_index_;
-	uint confidence_index_;
-	uint2 reflection_unordered_access_padding_0_;
-};
 
 #endif // __REFLECTION_RESTIR_HLSL__

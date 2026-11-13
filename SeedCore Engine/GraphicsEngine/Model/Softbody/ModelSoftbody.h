@@ -32,8 +32,6 @@ namespace SeedCore
 
 		NODISCARD Uint32 TransparentCount()const;
 
-		NODISCARD Uint32 FurCount()const;
-
 	private:
 		RenderDevice* device_ = nullptr;
 
@@ -42,8 +40,6 @@ namespace SeedCore
 		DynamicArray<ModelStructuredBuffer> opaque_;
 
 		DynamicArray<ModelStructuredBuffer> transparent_;
-
-		DynamicArray<ModelStructuredBuffer> fur_;
 
 		DynamicArray<ModelStructuredBuffer> instances_;
 	};

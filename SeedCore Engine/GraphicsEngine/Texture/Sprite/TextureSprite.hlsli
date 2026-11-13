@@ -10,6 +10,8 @@ struct TextureSpriteBindings
 	uint texture_quads_;
 	uint texture_draw_list_;
 	uint texture_constants_;
+	uint outline_styles_;
+	uint outline_mask_;
 };
 ConstantBuffer<TextureSpriteBindings> bindings : register(b0, space1);
 

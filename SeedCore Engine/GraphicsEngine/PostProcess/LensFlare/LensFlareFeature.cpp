@@ -8,16 +8,13 @@
 
 namespace SeedCore
 {
-	REGISTER_RENDER_FEATURE(LensFlareFeature, DownsampleStage, BlurPass1Stage, BlurPass2Stage, BlurPass3Stage, BlurPass4Stage, ComposeStage, GhostStage);
+	REGISTER_RENDER_FEATURE(LensFlareFeature, FilterStage, ComposeStage);
 
 	void LensFlareFeature::Create(RenderDevice& device)
 	{
 		downsamplePipeline_.Create(device);
-		blurPass1Pipeline_.Create(device);
-		blurPass2Pipeline_.Create(device);
-		blurPass3Pipeline_.Create(device);
-		blurPass4Pipeline_.Create(device);
-		composePipeline_.Create(device);
+		blurPipeline_.Create(device);
+		glarePipeline_.Create(device);
 		ghostPipeline_.Create(device);
 	}
 

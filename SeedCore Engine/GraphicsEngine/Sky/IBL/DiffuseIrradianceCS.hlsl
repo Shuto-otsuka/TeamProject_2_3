@@ -1,12 +1,12 @@
 #include <GraphicsEngine/Sky/Sky.hlsli>
 #include <GraphicsEngine/Shader/RootSignature.hlsli>
 
-struct SkyDiffuseIrradianceBindings
+struct SkyIrradianceBindings
 {
     uint sky_cubemap_;
     uint sky_diffuse_irradiance_;
 };
-ConstantBuffer<SkyDiffuseIrradianceBindings> bindings : register(b0, space1);
+ConstantBuffer<SkyIrradianceBindings> bindings : register(b0, space1);
 
 /**
 * [EN]

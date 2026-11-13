@@ -38,12 +38,12 @@ void main(uint3 id : SV_DispatchThreadID)
 	}
 
 	uint2 pixel = id.xy;
-	if (depth_texture.Load(int3(pixel, 0)) == 0.0)
+	Texture2D<uint2> visibility_id = ResourceDescriptorHeap[bindings.geometry_visibility_id_];
+	if (depth_texture.Load(int3(pixel, 0)) == 0.0 || visibility_id.Load(int3(pixel, 0)).x == 0)
 	{
 		return;
 	}
 
-	Texture2D<uint2> visibility_id = ResourceDescriptorHeap[bindings.geometry_visibility_id_];
 	uint instance_index;
 	uint meshlet_index;
 	uint triangle_in_meshlet_index;

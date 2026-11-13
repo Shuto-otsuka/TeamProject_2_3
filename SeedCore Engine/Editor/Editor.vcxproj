@@ -196,6 +196,7 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClCompile Include="Editor\Panel\TimelinePanel.cpp" />
     <ClCompile Include="Editor\Panel\TodoListPanel.cpp" />
     <ClCompile Include="Editor\Panel\VersionPanel.cpp" />
+    <ClCompile Include="Editor\Panel\ViewModePanel.cpp" />
     <ClCompile Include="Prelude.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
@@ -299,6 +300,7 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClInclude Include="Editor\Panel\TimelinePanel.h" />
     <ClInclude Include="Editor\Panel\TodoListPanel.h" />
     <ClInclude Include="Editor\Panel\VersionPanel.h" />
+    <ClInclude Include="Editor\Panel\ViewModePanel.h" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PostBuildEvent>

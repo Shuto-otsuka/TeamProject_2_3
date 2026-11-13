@@ -5,7 +5,7 @@
 
 namespace SeedCore
 {
-	REGISTER_RENDER_FEATURE(TextureFeature, UpdateStage, ExpandStage, SpriteStage, BillboardStage);
+	REGISTER_RENDER_FEATURE(TextureFeature, UpdateStage, SubmitStage, DrawStage);
 
 	void TextureFeature::Create(RenderDevice& device)
 	{

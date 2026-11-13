@@ -3,7 +3,7 @@
 
 namespace SeedCore
 {
-	struct HUDFeature::OutputStage :RenderStage
+	struct HUDFeature::ComposeStage :RenderStage
 	{
 		SC_CONSTEX RenderStageKind kind_ = RenderStageKind::Raster;
 
@@ -15,6 +15,7 @@ namespace SeedCore
 		{
 			RenderAccess::Read(DisplayColor),
 			RenderAccess::Read(Color),
+			RenderAccess::Constant(Constants),
 			RenderAccess::Target(ViewOutput)
 		};
 

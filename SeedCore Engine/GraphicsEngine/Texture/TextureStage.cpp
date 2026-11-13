@@ -17,7 +17,7 @@ namespace SeedCore
 		}
 	}
 
-	void TextureFeature::ExpandStage::Execute(TextureFeature& feature, RenderPass& pass)
+	void TextureFeature::SubmitStage::Execute(TextureFeature& feature, RenderPass& pass)
 	{
 		Uint32 quadCount = feature.units_.Constants().quadCount_;
 		if (quadCount > 0)
@@ -26,13 +26,13 @@ namespace SeedCore
 		}
 	}
 
-	void TextureFeature::SpriteStage::Execute(TextureFeature& feature, RenderPass& pass)
+	void TextureFeature::DrawStage::SpriteStep::Execute(TextureFeature& feature, RenderPass& pass)
 	{
 		pass.ClearTarget(HUDFeature::Color);
 		feature.spritePipeline_.Draw(pass, feature.units_.Constants().spriteCount_);
 	}
 
-	void TextureFeature::BillboardStage::Execute(TextureFeature& feature, RenderPass& pass)
+	void TextureFeature::DrawStage::BillboardStep::Execute(TextureFeature& feature, RenderPass& pass)
 	{
 		feature.billboardPipeline_.Draw(pass, feature.units_.Constants().billboardCount_);
 	}

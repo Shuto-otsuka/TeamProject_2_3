@@ -462,7 +462,8 @@ namespace SeedCore
 		GraphicsSettings settings;
 		settings.outputWidth_ = static_cast<Uint32>(outputSize.Width);
 		settings.outputHeight_ = static_cast<Uint32>(outputSize.Height);
-		settings.upscaleMode_ = gameConfig.upscaleMode_;
+		settings.upscale_.method_ = gameConfig.upscale_.method_;
+		settings.upscale_.mode_ = gameConfig.upscale_.mode_;
 		settings.verticalSync_ = gameConfig.vsync_;
 		settings.frameGeneration_ = gameConfig.useFrameGeneration_;
 		graphics_.Configure(settings);

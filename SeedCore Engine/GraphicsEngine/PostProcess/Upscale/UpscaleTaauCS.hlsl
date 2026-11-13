@@ -4,7 +4,7 @@
 static const float TAAU_TEMPORAL_BLEND_ALPHA = 0.1;
 static const float TAAU_HISTORY_CLIP_GAMMA = 0.75;
 
-struct UpscaleTaauResolveBindings
+struct UpscaleTaauBindings
 {
 	uint radiance_color_;
 	uint material_velocity_;
@@ -12,7 +12,7 @@ struct UpscaleTaauResolveBindings
 	uint upscale_history_;
 	uint upscale_color_;
 };
-ConstantBuffer<UpscaleTaauResolveBindings> bindings : register(b0, space1);
+ConstantBuffer<UpscaleTaauBindings> bindings : register(b0, space1);
 
 float4 CatmullRomWeights(float t)
 {

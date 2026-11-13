@@ -10,12 +10,12 @@ namespace SeedCore
 	public:
 		SC_RENDER_RESOURCES
 		(
-			SC_RENDER_CONTRACT(Color, RenderResourceDesc::ScaledTexture(DXGI_FORMAT_R16G16B16A16_FLOAT, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::None, &UpscaleFeature::Color),
+			SC_RENDER_CONTRACT(Color, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::None, &UpscaleFeature::Color),
 			SC_RENDER_INTERNAL(Constants, RenderResourceDesc::Constant(sizeof(DepthOfFieldConstantBuffer)), RenderResourceScope::Frame, RenderResourceLifetime::Upload)
 		);
 
 	public:
-		struct BlurStage;
+		struct FilterStage;
 
 	public:
 		void Create(RenderDevice& device);

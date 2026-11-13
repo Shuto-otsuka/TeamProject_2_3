@@ -1,4 +1,5 @@
 #pragma once
+#include <GraphicsEngine/Illumination/VolumetricLight/Raytracing/RaytracingVolumetricLightFeature.h>
 #include <GraphicsEngine/Illumination/Radiance/RadianceFeature.h>
 #include <GraphicsEngine/Model/Material/MaterialFeature.h>
 #include <GraphicsEngine/Model/Opaque/GeometryFeature.h>
@@ -15,6 +16,7 @@ namespace SeedCore
 			RenderAccess::Read(GeometryFeature::Depth),
 			RenderAccess::Read(SkyFeature::Radiance),
 			RenderAccess::Read(MaterialFeature::SurfaceRadiance),
+			RenderAccess::Read(RaytracingVolumetricLightFeature::FogVolume),
 			RenderAccess::Write(Color)
 		};
 

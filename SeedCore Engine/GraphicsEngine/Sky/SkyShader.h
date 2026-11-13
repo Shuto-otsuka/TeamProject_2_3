@@ -3,7 +3,7 @@
 
 namespace SeedCore
 {
-	struct SkyGenerateEquirectDescription
+	struct SkyEquirectDescription
 	{
 		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/Sky/Cubemap/EquirectCubemapCS.hlsl");
 
@@ -14,7 +14,18 @@ namespace SeedCore
 		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
 	};
 
-	struct SkyDiffuseIrradianceDescription
+	struct SkyProceduralDescription
+	{
+		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/Sky/Cubemap/ProceduralCubemapCS.hlsl");
+
+		SC_CONSTEX const Char* entryPoint_ = "main";
+
+		SC_CONSTEX Uint32 threadGroupSizeX_ = 8;
+
+		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
+	};
+
+	struct SkyIrradianceDescription
 	{
 		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/Sky/IBL/DiffuseIrradianceCS.hlsl");
 
@@ -25,7 +36,7 @@ namespace SeedCore
 		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
 	};
 
-	struct SkySpecularPrefilterDescription
+	struct SkyPrefilterDescription
 	{
 		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/Sky/IBL/SpecularPrefilterCS.hlsl");
 

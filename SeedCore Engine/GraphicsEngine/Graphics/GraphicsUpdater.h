@@ -8,6 +8,7 @@
 #include <GraphicsEngine/System/MaterialSystem.h>
 #include <GraphicsEngine/System/MovieSystem.h>
 #include <GraphicsEngine/System/ShapeSystem.h>
+#include <GraphicsEngine/System/WeatherSystem.h>
 
 namespace SeedCore
 {
@@ -101,6 +102,17 @@ namespace SeedCore
 		*/
 		NODISCARD const CelestialResult& Celestial()const;
 
+		/**
+		* [EN]
+		* Returns the shapes and the colliders the last Update gathered.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 最後の Update が集めた形とコライダーを返す。
+		*/
+		NODISCARD ShapeList Shapes()const;
+
 	private:
 		/// [EN] One instance per system type; std::get by type finds a system at compile time.
 		/// [JP] System の型ごとに 1 つ。型で std::get すればコンパイル時に System が決まる。
@@ -110,6 +122,7 @@ namespace SeedCore
 			MovieSystem,
 			EffectSystem,
 			CelestialSystem,
+			WeatherSystem,
 			ColliderSystem,
 			ShapeSystem,
 			ConstraintSystem,

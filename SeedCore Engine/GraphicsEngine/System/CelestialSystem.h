@@ -2,16 +2,23 @@
 
 namespace SeedCore
 {
-	/// [EN] Output of CelestialSystem::Compute: everything downstream (LightSystem,
-	///      VolumetricStarRenderer) needs for this frame's sun/moon/night state.
-	/// [JP] CelestialSystem::Compute の出力: 下流(LightSystem、
-	///      VolumetricStarRenderer)がこのフレームの太陽/月/夜状態のために必要な
-	///      全てを持つ。
+	/// [EN] Output of CelestialSystem: everything downstream (LightFeature,
+	///      VolumetricCloudFeature) needs for this frame's sun/moon/night state.
+	/// [JP] CelestialSystem の出力: 下流(LightFeature、VolumetricCloudFeature)が
+	///      このフレームの太陽/月/夜状態のために必要な全てを持つ。
 	struct CelestialResult
 	{
 		Vector3 sunDirection_ = { 0.0f, -1.0f, 0.0f };
 		Color sunColor_ = { 1.0f, 1.0f, 1.0f, 1.0f };
 		Float sunIntensity_ = 0.0f;
+
+		/// [EN] Whether the celestial cycle drives the sun this frame; the sky gradient and sunAngularRadius_ replace the cloud settings' own only then.
+		/// [JP] このフレームに天体の巡りが太陽を動かしているか。空のグラデーションと sunAngularRadius_ が雲の設定の値を置き換えるのはこのときだけ。
+		Bool sunEnabled_ = false;
+
+		/// [EN] Angular radius of the sun disc in radians.
+		/// [JP] 太陽の円盤の角半径(ラジアン)。
+		Float sunAngularRadius_ = 0.03f;
 
 		Vector3 moonDirection_ = { 0.0f, 1.0f, 0.0f };
 		Color moonColor_ = { 1.0f, 1.0f, 1.0f, 1.0f };
@@ -29,11 +36,11 @@ namespace SeedCore
 
 		/// [EN] Realistic time-of-day background sky gradient (night -> twilight ->
 		///      sunrise/sunset -> day), independent of the sun's light color.
-		///      Drives VolumetricCloudScapesRayConstantBuffer's
-		///      skyZenithColor_/skyHorizonColor_ through VolumetricCloudScapesSystem.
+		///      Drives VolumetricCloudConstantBuffer's skyZenithColor_/skyHorizonColor_
+		///      through VolumetricCloudFeature.
 		/// [JP] 現実的な時刻依存の空グラデーション(夜→薄明→朝焼け/夕焼け→昼)。
-		///      太陽の光源色とは独立。VolumetricCloudScapesSystem を通して
-		///      VolumetricCloudScapesRayConstantBuffer の skyZenithColor_/skyHorizonColor_ を駆動する。
+		///      太陽の光源色とは独立。VolumetricCloudFeature を通して
+		///      VolumetricCloudConstantBuffer の skyZenithColor_/skyHorizonColor_ を駆動する。
 		Float skyZenithColor_[3] = { 0.15f, 0.35f, 0.75f };
 		Float skyHorizonColor_[3] = { 0.65f, 0.75f, 0.9f };
 	};

@@ -1,11 +1,30 @@
 #include <GraphicsEngine/Shader/RootSignature.hlsli>
 
-struct GeometryResolveBindings
+struct GeometryPyramidBindings
 {
 	uint geometry_depth_;
 	uint geometry_hierarchical_depth_;
 };
-ConstantBuffer<GeometryResolveBindings> bindings : register(b0, space1);
+ConstantBuffer<GeometryPyramidBindings> pyramid_bindings : register(b0, space1);
+
+struct GeometryUpdateBindings
+{
+	uint geometry_counts_;
+};
+ConstantBuffer<GeometryUpdateBindings> update_bindings : register(b0, space1);
+
+/**
+* [EN]
+* Starts the frame's shared instance list: every section counter (opaque,
+* transparent, fur, overflow) goes back to zero, and each source then appends
+* its instances behind it.
+*/
+[numthreads(4, 1, 1)]
+void Update(uint3 id : SV_DispatchThreadID)
+{
+	RWStructuredBuffer<uint> counts = ResourceDescriptorHeap[update_bindings.geometry_counts_];
+	counts[id.x] = 0;
+}
 
 /**
 * [EN]
@@ -18,10 +37,10 @@ ConstantBuffer<GeometryResolveBindings> bindings : register(b0, space1);
 * fold the extra edge row/column in, so no depth sample is dropped.
 */
 [numthreads(8, 8, 1)]
-void Resolve(uint3 id : SV_DispatchThreadID)
+void Pyramid(uint3 id : SV_DispatchThreadID)
 {
 	uint mip = dispatch_bindings.constants_;
-	RWTexture2D<float> destination = ResourceDescriptorHeap[bindings.geometry_hierarchical_depth_ + mip];
+	RWTexture2D<float> destination = ResourceDescriptorHeap[pyramid_bindings.geometry_hierarchical_depth_ + mip];
 	uint destination_width;
 	uint destination_height;
 	destination.GetDimensions(destination_width, destination_height);
@@ -30,8 +49,8 @@ void Resolve(uint3 id : SV_DispatchThreadID)
 		return;
 	}
 
-	Texture2D<float> depth = ResourceDescriptorHeap[bindings.geometry_depth_];
-	RWTexture2D<float> source = ResourceDescriptorHeap[bindings.geometry_hierarchical_depth_ + max(mip, 1) - 1];
+	Texture2D<float> depth = ResourceDescriptorHeap[pyramid_bindings.geometry_depth_];
+	RWTexture2D<float> source = ResourceDescriptorHeap[pyramid_bindings.geometry_hierarchical_depth_ + max(mip, 1) - 1];
 	uint source_width;
 	uint source_height;
 	if (mip == 0)

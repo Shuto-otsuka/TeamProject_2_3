@@ -130,6 +130,7 @@ namespace SeedCore
 				}
 
 				TextureUnitStructuredBuffer unit{};
+				unit.actor_ = entityID.index_;
 				unit.world_ = actor.WorldMatrix();
 				unit.color_ = image.color_;
 				unit.scrollDirection_ = image.scrollDirection_;
@@ -250,6 +251,7 @@ namespace SeedCore
 				}
 
 				TextureUnitStructuredBuffer unit{};
+				unit.actor_ = entityID.index_;
 				unit.world_ = actor.WorldMatrix();
 				unit.color_ = text.color_;
 				unit.outlineColor_ = text.outlineColor_;
@@ -322,6 +324,7 @@ namespace SeedCore
 				}
 
 				TextureUnitStructuredBuffer unit{};
+				unit.actor_ = entityID.index_;
 				unit.world_ = actor.WorldMatrix();
 				unit.color_ = movie.color_;
 				unit.textureIndex_ = video->GetTextureIndex();

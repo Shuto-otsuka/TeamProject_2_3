@@ -3,7 +3,7 @@
 
 namespace SeedCore
 {
-	struct LightFeature::ClusterAssignStage :RenderStage
+	struct LightFeature::BuildStage :RenderStage
 	{
 		SC_CONSTEX RenderQueue queue_ = RenderQueue::Geometry;
 

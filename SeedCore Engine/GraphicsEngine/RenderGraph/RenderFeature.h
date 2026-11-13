@@ -9,6 +9,13 @@ namespace SeedCore
 	class RenderDevice;
 	class RenderUpload;
 
+	enum class RenderFeatureSet :Uint8
+	{
+		Scene,
+		Preview,
+		Screen,
+	};
+
 	template<class Feature>
 	class RenderFeature
 	{
@@ -16,6 +23,8 @@ namespace SeedCore
 		using Self = Feature;
 
 		SC_CONSTEX StaticArray<const RenderResource*, 0> resources_ = {};
+
+		SC_CONSTEX RenderFeatureSet set_ = RenderFeatureSet::Scene;
 
 	public:
 		void Create(RenderDevice& device)

@@ -2,18 +2,18 @@
 #include <GraphicsEngine/Shader/Normal.hlsli>
 #include <GraphicsEngine/Model/Model.hlsli>
 
-struct UpscalePrepareGuidesBindings
+struct UpscaleGuidesBindings
 {
 	uint material_surface_base_color_;
 	uint material_surface_normal_roughness_;
 	uint geometry_visibility_id_;
 	uint geometry_depth_;
-	uint model_instances_;
+	uint geometry_instances_;
 	uint upscale_normal_roughness_;
 	uint upscale_specular_albedo_;
 	uint upscale_diffuse_albedo_;
 };
-ConstantBuffer<UpscalePrepareGuidesBindings> bindings : register(b0, space1);
+ConstantBuffer<UpscaleGuidesBindings> bindings : register(b0, space1);
 
 /**
 * [EN]
@@ -77,7 +77,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
 	RWTexture2D<float4> diffuse_albedo = ResourceDescriptorHeap[bindings.upscale_diffuse_albedo_];
 
 	float depth = depth_texture.Load(int3(pixel, 0));
-	if (depth == 0.0)
+	if (depth == 0.0 || visibility_id.Load(int3(pixel, 0)).x == 0)
 	{
 		normal_roughness[pixel] = float4(0.0, 0.0, 0.0, 1.0);
 		specular_albedo[pixel] = float4(0.0, 0.0, 0.0, 1.0);
@@ -101,7 +101,7 @@ void main(uint3 dtid : SV_DispatchThreadID)
 	uint meshlet_index;
 	uint triangle_index;
 	UnpackVisibilityID(visibility_id.Load(int3(pixel, 0)), instance_index, meshlet_index, triangle_index);
-	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.model_instances_];
+	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.geometry_instances_];
 	ModelStructuredBuffer instance = instances[instance_index];
 	float dielectric = (instance.texture_.ior_ - 1.0) / (instance.texture_.ior_ + 1.0);
 	dielectric *= dielectric;

@@ -23,7 +23,7 @@
 #include <GraphicsEngine/Constraint/PositionConstraint.h>
 #include <GraphicsEngine/Constraint/RotationConstraint.h>
 #include <GraphicsEngine/Effect/Zephyr/Effect.h>
-#include <GraphicsEngine/Environment/Weather.h>
+#include <GraphicsEngine/Environment/Weather/Weather.h>
 #include <GraphicsEngine/Font/Text.h>
 #include <GraphicsEngine/Light/DirectionalLight.h>
 #include <GraphicsEngine/Light/PointLight.h>

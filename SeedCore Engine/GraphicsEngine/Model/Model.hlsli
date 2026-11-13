@@ -23,7 +23,7 @@
 /**
 * [EN]
 * previous_world_ is this instance's own world matrix as of the previous
-* frame - used for velocity (MaterialResolveCS.hlsl/ModelTransparentPS.hlsl)
+* frame - used for velocity (MaterialResolveCS.hlsl/TransparentMS.hlsl)
 * so moving objects get correct motion vectors instead of only reflecting
 * camera motion. Per-bone skinning and morph deformation come from the
 * previous-frame bone palette / morph weights instead
@@ -52,15 +52,14 @@ struct ModelGeometry                      // 2 rows
 	uint primitive_indices_buffer_index_;
 	uint meshlet_offset_;
 	uint meshlet_count_;
-	uint model_geometry_padding_0_;
+	uint layer_;
 };
 
 /**
 * [EN]
 * Dequantisation AABB for CompressedModelVertex (per Crister), plus the
-* cumulative screen-space LOD error of this instance's cluster and of the
-* next coarser cluster in the same chain (FLT_MAX when there is none or LOD
-* selection must always keep this instance).
+* screen-space error in pixels of this instance's cluster as seen from the
+* closest view, and the cluster's level in its LOD chain (0 = most detailed).
 */
 struct ModelStreaming                     // 3 rows
 {
@@ -72,7 +71,7 @@ struct ModelStreaming                     // 3 rows
 
 	float2 texcoord_extent_;
 	float lod_error_;
-	float lod_error_next_;
+	uint lod_level_;
 };
 
 /**
@@ -82,11 +81,11 @@ struct ModelStreaming                     // 3 rows
 * DeferredLightingPS.hlsl evaluates this instance with;
 * fur_length_/fur_density_/fur_shell_count_ are ShadingModel::Fur tuning.
 * double_sided_/blend_ route the instance to the culling lists and passes
-* that match its faces and alpha mode, and selected_ marks it for the
-* editor's selection outline. material_mapping_/tiling_/
-* triplanar_sharpness_ decide how the material's textures are placed
-* (MaterialMapping.hlsli), and outline_color_/outline_width_ are the
-* material's screen-space outline (MaterialOutlineCS.hlsl).
+* that match its faces and alpha mode, and selected_ marks an actor the
+* editor has selected. material_mapping_/tiling_/triplanar_sharpness_
+* decide how the material's textures are placed (MaterialMapping.hlsli),
+* and actor_ is the entity index of the actor the instance belongs to,
+* which the outline looks its style up by (OutlineCS.hlsl).
 */
 struct ModelShading                       // 3 rows
 {
@@ -108,7 +107,7 @@ struct ModelShading                       // 3 rows
 	/// 1 when the material's alpha mode is BLEND; the instance is drawn by the transparent (OIT) pass instead of the opaque ones.
 	uint blend_;
 
-	/// 1 when the instance's actor is selected in the editor; it is drawn into the selection silhouette.
+	/// 1 when the instance's actor is selected in the editor.
 	uint selected_;
 
 	/// How the material's textures are placed (MATERIAL_MAPPING_*).
@@ -120,11 +119,10 @@ struct ModelShading                       // 3 rows
 	/// Exponent applied to the normal before it weights the three Triplanar projections.
 	float triplanar_sharpness_;
 
-	/// Material outline color packed as RGBA8 (R in the lowest byte).
-	uint outline_color_;
+	/// Entity index of the actor the instance belongs to, indexing Outline.Styles; MODEL_INVALID for an instance with no actor.
+	uint actor_;
 
-	/// Material outline width in display-resolution pixels; 0 leaves the instance unoutlined.
-	float outline_width_;
+	uint model_shading_padding_0_;
 };
 
 /**
@@ -143,7 +141,7 @@ struct ModelSkining                       // 1 row
 /**
 * [EN]
 * Raster morph blend (see the model mesh shaders and
-* Model/Material/MaterialResolveCS.hlsl/Model/Transparent/ModelTransparentPS.hlsl).
+* Model/Material/MaterialResolveCS.hlsl/Model/Transparent/TransparentMS.hlsl).
 * morph_delta_offset_ is in float3 units into morph_delta_buffer_index_; morph_vertex_offset_/
 * morph_vertex_count_ are this SubMesh's Crister::vertices_ range start and
 * ORIGINAL (pre-LOD) vertex count; morph_weight_offset_ indexes into the
@@ -404,23 +402,24 @@ float4x4 LoadBoneMatrix(ModelBoneMatrix bone)
 /**
 * [EN]
 * Packs a triangle's Visibility-Buffer identity: x is the index into
-* ModelInstances, y keeps the low 7 bits for triangle_in_meshlet_index
+* ModelInstances plus one, so the cleared value 0 means no triangle covers
+* the pixel; y keeps the low 7 bits for triangle_in_meshlet_index
 * (meshlets emit at most 124 triangles) and the high bits for meshlet_index.
 * The texcoord is written separately to VisibilityTexcoord.
 */
 uint2 PackVisibilityID(uint instance_index, uint meshlet_index, uint triangle_in_meshlet_index)
 {
-	return uint2(instance_index, (meshlet_index << 7) | (triangle_in_meshlet_index & 0x7F));
+	return uint2(instance_index + 1, (meshlet_index << 7) | (triangle_in_meshlet_index & 0x7F));
 }
 
 /**
 * [EN]
 * Unpacks the instance/meshlet/triangle-in-meshlet fields packed by
-* PackVisibilityID.
+* PackVisibilityID. Callers check packed.x for 0 (no triangle) first.
 */
 void UnpackVisibilityID(uint2 packed, out uint instance_index, out uint meshlet_index, out uint triangle_in_meshlet_index)
 {
-	instance_index = packed.x;
+	instance_index = packed.x - 1;
 	meshlet_index = packed.y >> 7;
 	triangle_in_meshlet_index = packed.y & 0x7F;
 }
@@ -437,7 +436,6 @@ void UnpackVisibilityID(uint2 packed, out uint instance_index, out uint meshlet_
 
 #define MODEL_COUNT_OPAQUE 0
 #define MODEL_COUNT_TRANSPARENT 1
-#define MODEL_COUNT_FUR 2
 #define MODEL_COUNT_OVERFLOW 3
 
 struct ModelUnitStructuredBuffer
@@ -552,6 +550,45 @@ struct ModelMaterialUpdate
     ModelMaterialStructuredBuffer data_;
 };
 
+struct ModelRaytracingStructuredBuffer
+{
+    uint2 bottom_level_;
+    uint vertex_buffer_index_;
+    uint index_buffer_index_;
+
+    uint surface_buffer_index_;
+    uint model_raytracing_structured_buffer_padding_0_;
+    float2 texcoord_min_;
+
+    float2 texcoord_extent_;
+    uint model_raytracing_structured_buffer_padding_1_;
+    uint model_raytracing_structured_buffer_padding_2_;
+};
+
+struct ModelRaytracingUpdate
+{
+    uint index_;
+    uint3 model_raytracing_update_padding_0_;
+    ModelRaytracingStructuredBuffer data_;
+};
+
+struct ModelDeformStructuredBuffer
+{
+    uint unit_index_;
+    uint sub_mesh_index_;
+    uint vertex_offset_;
+    uint vertex_count_;
+
+    uint output_offset_;
+    uint morph_delta_offset_;
+    uint morph_target_count_;
+    uint position_buffer_index_;
+
+    uint skin_vertex_buffer_index_;
+    uint morph_delta_buffer_index_;
+    uint2 bottom_level_;
+};
+
 struct ModelExpandConstantBuffer
 {
     float4 planes_[18];
@@ -560,12 +597,11 @@ struct ModelExpandConstantBuffer
     uint view_count_;
     uint unit_count_;
     uint transparent_base_;
-    uint fur_base_;
-
     uint capacity_;
+
     uint softbody_opaque_count_;
     uint softbody_transparent_count_;
-    uint softbody_fur_count_;
+    uint2 model_expand_constant_buffer_padding_0_;
 };
 
 #endif // __MODEL_HLSL__

@@ -272,6 +272,10 @@ namespace SeedCore
 			projectRoot.c_str(),
 		};
 #endif
+		if (targetProfile.str().starts_with("lib_"))
+		{
+			arguments.push_back(L"-enable-payload-qualifiers");
+		}
 
 		Microsoft::WRL::ComPtr<IDxcResult> result;
 		hr = dxcCompiler->Compile(&dxcBuffer, arguments.data(), static_cast<Uint32>(arguments.size()), &includeHandle, IID_PPV_ARGS(&result));

@@ -7,7 +7,7 @@
 
 namespace SeedCore
 {
-	RenderGraphAllocation RenderGraphMemory::Create(RenderDevice& device, const RenderGraphResource& resource, const RenderGraphInstance& instance)
+	RenderGraphAllocation RenderGraphMemory::Create(RenderDevice& device, const RenderGraphResource& resource, const RenderGraphInstance& instance, const Color& clear)
 	{
 		const RenderResourceDesc& desc = resource.desc_;
 		Uint32 mipLimit = 1;
@@ -77,7 +77,7 @@ namespace SeedCore
 		}
 
 		Bool buffer = desc.shape_ == RenderResourceShape::Buffer;
-		Bool depthFormat = desc.format_ == DXGI_FORMAT_D32_FLOAT;
+		Bool depthFormat = desc.format_ == RenderFormat::D32Float;
 
 		D3D12_RESOURCE_DESC resourceDesc{};
 		resourceDesc.Dimension = buffer ? D3D12_RESOURCE_DIMENSION_BUFFER : desc.shape_ == RenderResourceShape::Texture3D ? D3D12_RESOURCE_DIMENSION_TEXTURE3D : D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -85,7 +85,7 @@ namespace SeedCore
 		resourceDesc.Height = buffer ? 1 : instance.height_;
 		resourceDesc.DepthOrArraySize = buffer ? 1 : static_cast<Uint16>(instance.depth_);
 		resourceDesc.MipLevels = buffer ? 1 : static_cast<Uint16>(allocation.mipLevels_);
-		resourceDesc.Format = buffer ? DXGI_FORMAT_UNKNOWN : depthFormat ? DXGI_FORMAT_R32_TYPELESS : desc.format_;
+		resourceDesc.Format = buffer ? DXGI_FORMAT_UNKNOWN : depthFormat ? DXGI_FORMAT_R32_TYPELESS : static_cast<DXGI_FORMAT>(desc.format_);
 		resourceDesc.SampleDesc.Count = 1;
 		resourceDesc.Layout = buffer ? D3D12_TEXTURE_LAYOUT_ROW_MAJOR : D3D12_TEXTURE_LAYOUT_UNKNOWN;
 		resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
@@ -105,8 +105,26 @@ namespace SeedCore
 		D3D12_HEAP_PROPERTIES heapProperties{};
 		heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
 
+		D3D12_CLEAR_VALUE clearValue{};
+		const D3D12_CLEAR_VALUE* optimizedClearValue = nullptr;
+		if (resource.depthStencil_)
+		{
+			clearValue.Format = DXGI_FORMAT_D32_FLOAT;
+			clearValue.DepthStencil.Depth = 0.0f;
+			optimizedClearValue = &clearValue;
+		}
+		else if (resource.renderTarget_)
+		{
+			clearValue.Format = static_cast<DXGI_FORMAT>(desc.format_);
+			clearValue.Color[0] = clear.x;
+			clearValue.Color[1] = clear.y;
+			clearValue.Color[2] = clear.z;
+			clearValue.Color[3] = clear.w;
+			optimizedClearValue = &clearValue;
+		}
+
 		ID3D12Device* d3dDevice = device.Context().GetDevice();
-		HRESULT hr = d3dDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&allocation.resource_));
+		HRESULT hr = d3dDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, optimizedClearValue, IID_PPV_ARGS(&allocation.resource_));
 		SC_HR_CHECK(hr, "RenderGraph のリソースの生成に失敗しました");
 		allocation.resource_->SetName(std::wstring(resource.resourceName_.w_str()).c_str());
 
@@ -114,7 +132,7 @@ namespace SeedCore
 		{
 			D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc{};
 			shaderResourceViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			shaderResourceViewDesc.Format = buffer ? DXGI_FORMAT_UNKNOWN : depthFormat ? DXGI_FORMAT_R32_FLOAT : desc.format_;
+			shaderResourceViewDesc.Format = buffer ? DXGI_FORMAT_UNKNOWN : depthFormat ? DXGI_FORMAT_R32_FLOAT : static_cast<DXGI_FORMAT>(desc.format_);
 			if (buffer)
 			{
 				shaderResourceViewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
@@ -159,7 +177,7 @@ namespace SeedCore
 			for (Uint32 mip = 0;mip < mipLevels;++mip)
 			{
 				D3D12_UNORDERED_ACCESS_VIEW_DESC unorderdAccessViewDesc{};
-				unorderdAccessViewDesc.Format = buffer ? DXGI_FORMAT_UNKNOWN : desc.format_;
+				unorderdAccessViewDesc.Format = buffer ? DXGI_FORMAT_UNKNOWN : static_cast<DXGI_FORMAT>(desc.format_);
 				if (buffer)
 				{
 					unorderdAccessViewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
@@ -190,7 +208,7 @@ namespace SeedCore
 		if (resource.renderTarget_)
 		{
 			D3D12_RENDER_TARGET_VIEW_DESC renderTargetViewDesc{};
-			renderTargetViewDesc.Format = desc.format_;
+			renderTargetViewDesc.Format = static_cast<DXGI_FORMAT>(desc.format_);
 			renderTargetViewDesc.ViewDimension = desc.shape_ == RenderResourceShape::Texture2D ? D3D12_RTV_DIMENSION_TEXTURE2D : D3D12_RTV_DIMENSION_TEXTURE2DARRAY;
 			renderTargetViewDesc.Texture2DArray.ArraySize = instance.depth_;
 			allocation.renderTargetView_ = device.RenderTargetHeap().AllocateIndex();
@@ -200,7 +218,7 @@ namespace SeedCore
 		if (resource.depthStencil_)
 		{
 			D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc{};
-			depthStencilViewDesc.Format = desc.format_;
+			depthStencilViewDesc.Format = static_cast<DXGI_FORMAT>(desc.format_);
 			depthStencilViewDesc.ViewDimension = desc.shape_ == RenderResourceShape::Texture2D ? D3D12_DSV_DIMENSION_TEXTURE2D : D3D12_DSV_DIMENSION_TEXTURE2DARRAY;
 			depthStencilViewDesc.Texture2DArray.ArraySize = instance.depth_;
 			allocation.depthStencilView_ = device.DepthStencilHeap().AllocateIndex();

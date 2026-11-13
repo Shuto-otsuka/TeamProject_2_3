@@ -30,8 +30,36 @@ namespace SeedCore
 			requires std::same_as<std::remove_cv_t<decltype(Stage::viewMask_)>, RenderViewMask>;
 			requires std::same_as<std::remove_cv_t<decltype(Stage::async_)>, Bool>;
 			requires std::same_as<std::remove_cv_t<decltype(Stage::enableCondition_)>, std::nullptr_t> || std::same_as<std::remove_cv_t<decltype(Stage::enableCondition_)>, Bool Feature::*> || std::same_as<std::remove_cv_t<decltype(Stage::enableCondition_)>, Bool(Feature::*)[RenderViewCount]>;
-			requires std::is_array_v<decltype(Stage::accesses_)> && std::same_as<std::remove_cv_t<std::remove_extent_t<decltype(Stage::accesses_)>>, RenderAccess>;
+			requires std::is_array_v<std::remove_reference_t<decltype(Stage::accesses_)>> && std::same_as<std::remove_cv_t<std::remove_extent_t<std::remove_reference_t<decltype(Stage::accesses_)>>>, RenderAccess>;
 		};
+
+		SC_CONSTEX std::string_view slots_[] = { "Update", "Deform", "Submit", "Build", "Culling", "Draw", "Trace", "Filter", "Resolve", "Compose" };
+
+		template<class... Slots>
+		static consteval Bool HasSlotOrder()
+		{
+			Bool ordered = true;
+			Size previous = 0;
+			Bool first = true;
+			([&]()
+				{
+					Size found = std::size(slots_);
+					for (Size index = 0;index < std::size(slots_);++index)
+					{
+						if (slots_[index] == RenderName::StageName<Slots>())
+						{
+							found = index;
+						}
+					}
+					if (found == std::size(slots_) || (!first && found <= previous))
+					{
+						ordered = false;
+					}
+					previous = found;
+					first = false;
+				}(), ...);
+			return ordered;
+		}
 
 		template<class Feature>
 		static consteval Bool HasOwnedResources()
@@ -82,6 +110,23 @@ namespace SeedCore
 					}
 				}(), ...);
 			return owned;
+		}
+
+		template<class... Stages>
+		static consteval Bool HasAccumulationAppends()
+		{
+			Bool accumulation = true;
+			([&]()
+				{
+					for (const RenderAccess& access : Stages::accesses_)
+					{
+						if (access.Type() == RenderAccessType::Append && access.Resource().Kind() != RenderResourceKind::Accumulation)
+						{
+							accumulation = false;
+						}
+					}
+				}(), ...);
+			return accumulation;
 		}
 
 		template<class Feature, class... Stages>

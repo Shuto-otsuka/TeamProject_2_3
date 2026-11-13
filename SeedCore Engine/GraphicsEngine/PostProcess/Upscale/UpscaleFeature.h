@@ -11,21 +11,17 @@ namespace SeedCore
 	public:
 		SC_RENDER_RESOURCES
 		(
-			SC_RENDER_CONTRACT(Color, RenderResourceDesc::ScaledTexture(DXGI_FORMAT_R16G16B16A16_FLOAT, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::None, &RadianceFeature::Color),
-			SC_RENDER_INTERNAL(History, RenderResourceDesc::ScaledTexture(DXGI_FORMAT_R16G16B16A16_FLOAT, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Persistent),
-			SC_RENDER_INTERNAL(NormalRoughness, RenderResourceDesc::ScaledTexture(DXGI_FORMAT_R16G16B16A16_FLOAT), RenderResourceScope::View, RenderResourceLifetime::Transient),
-			SC_RENDER_INTERNAL(SpecularAlbedo, RenderResourceDesc::ScaledTexture(DXGI_FORMAT_R16G16B16A16_FLOAT), RenderResourceScope::View, RenderResourceLifetime::Transient),
-			SC_RENDER_INTERNAL(DiffuseAlbedo, RenderResourceDesc::ScaledTexture(DXGI_FORMAT_R16G16B16A16_FLOAT), RenderResourceScope::View, RenderResourceLifetime::Transient)
+			SC_RENDER_CONTRACT(Color, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::None, &RadianceFeature::Color),
+			SC_RENDER_INTERNAL(History, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Persistent),
+			SC_RENDER_INTERNAL(NormalRoughness, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Transient),
+			SC_RENDER_INTERNAL(SpecularAlbedo, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Transient),
+			SC_RENDER_INTERNAL(DiffuseAlbedo, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Transient)
 		);
 
 	public:
-		struct TaauResolveStage;
+		struct BuildStage;
 
-		struct PrepareGuidesStage;
-
-		struct DlssRayReconstructionStage;
-
-		struct DlssSuperResolutionStage;
+		struct ResolveStage;
 
 	public:
 		void Create(RenderDevice& device);
@@ -33,9 +29,9 @@ namespace SeedCore
 		void Gather(const RenderScene& scene, RenderFrame& frame);
 
 	private:
-		ComputePipeline<UpscaleTaauResolveDescription> taauResolvePipeline_;
+		ComputePipeline<UpscaleTaauDescription> taauPipeline_;
 
-		ComputePipeline<UpscalePrepareGuidesDescription> prepareGuidesPipeline_;
+		ComputePipeline<UpscaleGuidesDescription> guidesPipeline_;
 
 		UpscaleMode mode_ = UpscaleMode::MaxQuality;
 

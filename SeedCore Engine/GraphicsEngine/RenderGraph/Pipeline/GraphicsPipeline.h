@@ -10,6 +10,7 @@
 #include <GraphicsEngine/D3D12/PipelineState/PixelShader.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Context.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
+#include <GraphicsEngine/Profiler/ProfilerStats.h>
 #include <FoundationEngine/Log/Error.h>
 
 namespace SeedCore
@@ -38,9 +39,9 @@ namespace SeedCore
 			key.renderTargetViewCount_ = static_cast<Uint32>(Description::targetFormat_.size());
 			for (Size index = 0;index < Description::targetFormat_.size();++index)
 			{
-				key.renderTargetViewFormat_[index] = Description::targetFormat_[index];
+				key.renderTargetViewFormat_[index] = static_cast<DXGI_FORMAT>(Description::targetFormat_[index]);
 			}
-			key.depthStencilViewFormat_ = Description::depthFormat_;
+			key.depthStencilViewFormat_ = static_cast<DXGI_FORMAT>(Description::depthFormat_);
 			key.primitiveTopologyType_ = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 
 			if constexpr (requires { Description::pixelFile_; })
@@ -147,6 +148,7 @@ namespace SeedCore
 					cmdList->DrawInstanced(Description::fallbackVertexCount_, instanceCount, 0, 0);
 				}
 			}
+			ProfilerStats::AddDrawCall();
 		}
 
 		void DrawIndirect(RenderPass& pass, Uint32 maxCount, Uint32 first = 0, Uint32 countIndex = 0, D3D12_GPU_VIRTUAL_ADDRESS bindings = 0, Uint32 constant = 0)
@@ -179,6 +181,7 @@ namespace SeedCore
 			}
 			const CommandSignature& signature = mesh_ ? pass.Device().MeshSignature() : pass.Device().VertexSignature();
 			cmdList->ExecuteIndirect(signature.Signature(), maxCount, arguments, first * signature.Stride(), counts, countIndex * sizeof(Uint32));
+			ProfilerStats::AddDrawCall();
 		}
 
 	private:

@@ -5,7 +5,18 @@
 
 namespace SeedCore
 {
-	struct MaterialFeature::ClassifyStage :RenderStage
+	struct MaterialFeature::BuildStage
+	{
+		struct ClassifyStep;
+
+		struct PrefixSumStep;
+
+		struct ScatterStep;
+
+		using Sequence = RenderSequence<ClassifyStep, PrefixSumStep, ScatterStep>;
+	};
+
+	struct MaterialFeature::BuildStage::ClassifyStep :RenderStage
 	{
 		SC_CONSTEX RenderQueue queue_ = RenderQueue::Occlusion;
 
@@ -21,7 +32,7 @@ namespace SeedCore
 		static void Execute(MaterialFeature& feature, RenderPass& pass);
 	};
 
-	struct MaterialFeature::PrefixSumStage :RenderStage
+	struct MaterialFeature::BuildStage::PrefixSumStep :RenderStage
 	{
 		SC_CONSTEX RenderQueue queue_ = RenderQueue::Occlusion;
 
@@ -33,7 +44,7 @@ namespace SeedCore
 		static void Execute(MaterialFeature& feature, RenderPass& pass);
 	};
 
-	struct MaterialFeature::ScatterStage :RenderStage
+	struct MaterialFeature::BuildStage::ScatterStep :RenderStage
 	{
 		SC_CONSTEX RenderQueue queue_ = RenderQueue::Occlusion;
 
@@ -57,14 +68,15 @@ namespace SeedCore
 			RenderAccess::Read(SortedPixels),
 			RenderAccess::Read(Buckets),
 			RenderAccess::Read(GeometryFeature::VisibilityId),
-			RenderAccess::Read(ModelFeature::Instances),
+			RenderAccess::Read(GeometryFeature::Instances),
 			RenderAccess::Read(ModelFeature::Bones),
 			RenderAccess::Read(ModelFeature::MorphWeights),
 			RenderAccess::Write(SurfaceBaseColor),
 			RenderAccess::Write(SurfaceNormalRoughness),
 			RenderAccess::Write(SurfaceTangent),
 			RenderAccess::Write(Velocity),
-			RenderAccess::Write(SurfaceRadiance)
+			RenderAccess::Write(SurfaceRadiance),
+			RenderAccess::Write(Mip)
 		};
 
 		static void Execute(MaterialFeature& feature, RenderPass& pass);

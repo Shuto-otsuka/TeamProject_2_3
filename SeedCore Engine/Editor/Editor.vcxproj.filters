@@ -151,6 +151,9 @@
     <ClCompile Include="Editor\Panel\BenchmarkPanel.cpp">
       <Filter>Editor\Panel</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\Panel\ViewModePanel.cpp">
+      <Filter>Editor\Panel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Editor\ImGui\ImGuiCommon.h">
@@ -310,6 +313,9 @@
       <Filter>Editor\Interaction</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Panel\BenchmarkPanel.h">
+      <Filter>Editor\Panel</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\ViewModePanel.h">
       <Filter>Editor\Panel</Filter>
     </ClInclude>
   </ItemGroup>

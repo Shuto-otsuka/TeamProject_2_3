@@ -42,55 +42,22 @@ namespace SeedCore
 		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
 	};
 
-	struct LensFlareBlurPass1Description
+	struct LensFlareBlurDescription
 	{
 		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/PostProcess/LensFlare/LensFlareCS.hlsl");
 
-		SC_CONSTEX const Char* entryPoint_ = "BlurPass1";
+		SC_CONSTEX const Char* entryPoint_ = "Blur";
 
 		SC_CONSTEX Uint32 threadGroupSizeX_ = 8;
 
 		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
 	};
 
-	struct LensFlareBlurPass2Description
+	struct LensFlareGlareDescription
 	{
 		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/PostProcess/LensFlare/LensFlareCS.hlsl");
 
-		SC_CONSTEX const Char* entryPoint_ = "BlurPass2";
-
-		SC_CONSTEX Uint32 threadGroupSizeX_ = 8;
-
-		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
-	};
-
-	struct LensFlareBlurPass3Description
-	{
-		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/PostProcess/LensFlare/LensFlareCS.hlsl");
-
-		SC_CONSTEX const Char* entryPoint_ = "BlurPass3";
-
-		SC_CONSTEX Uint32 threadGroupSizeX_ = 8;
-
-		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
-	};
-
-	struct LensFlareBlurPass4Description
-	{
-		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/PostProcess/LensFlare/LensFlareCS.hlsl");
-
-		SC_CONSTEX const Char* entryPoint_ = "BlurPass4";
-
-		SC_CONSTEX Uint32 threadGroupSizeX_ = 8;
-
-		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
-	};
-
-	struct LensFlareComposeDescription
-	{
-		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/PostProcess/LensFlare/LensFlareCS.hlsl");
-
-		SC_CONSTEX const Char* entryPoint_ = "Compose";
+		SC_CONSTEX const Char* entryPoint_ = "Glare";
 
 		SC_CONSTEX Uint32 threadGroupSizeX_ = 8;
 

@@ -35,6 +35,8 @@ namespace SeedCore
 
 		void Open();
 
+		void SetPreviewHandle(D3D12_GPU_DESCRIPTOR_HANDLE previewHandle);
+
 		void DrawDetails();
 
 		NODISCARD Bool Visible()const;
@@ -52,6 +54,8 @@ namespace SeedCore
 		ImGuiTexture& imguiTexture_;
 
 		EditingState editingState_;
+
+		D3D12_GPU_DESCRIPTOR_HANDLE previewHandle_{};
 
 		Bool show_ = false;
 

@@ -39,6 +39,14 @@ namespace SeedCore
 		/// [JP] 場面の見せ方。ライティングあり・なし、ワイヤーフレーム、各バッファの可視化など。
 		RenderViewMode viewMode_ = RenderViewMode::Lit;
 
+		/// [EN] Which ray-traced effect the ReSTIR and denoiser view modes inspect.
+		/// [JP] ReSTIR とデノイザーの表示モードが調べる、レイトレーシングの効果。
+		RenderDebugSource debugSource_ = RenderDebugSource::Reflection;
+
+		/// [EN] What the scene draws, one RenderShowFlag bit each.
+		/// [JP] 場面が何を描くか。RenderShowFlag のビット 1 つずつ。
+		Uint64 showFlags_ = static_cast<Uint64>(RenderShowFlag::All);
+
 		/// [EN] Whether icons are drawn at the positions of cameras, lights, audio and other actors without geometry.
 		/// [JP] カメラ・ライト・音、そのほか見た目を持たないアクターの位置にアイコンを描くか。
 		Bool iconVisible_ = true;

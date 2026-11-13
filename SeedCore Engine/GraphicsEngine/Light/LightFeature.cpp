@@ -19,7 +19,7 @@
 
 namespace SeedCore
 {
-	REGISTER_RENDER_FEATURE(LightFeature, ClusterAssignStage);
+	REGISTER_RENDER_FEATURE(LightFeature, BuildStage);
 
 	void LightFeature::Create(RenderDevice& device)
 	{

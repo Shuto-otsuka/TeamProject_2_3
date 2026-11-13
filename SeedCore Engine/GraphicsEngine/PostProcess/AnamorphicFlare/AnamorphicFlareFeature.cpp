@@ -8,15 +8,12 @@
 
 namespace SeedCore
 {
-	REGISTER_RENDER_FEATURE(AnamorphicFlareFeature, PrefilterStage, Blur1Stage, Blur2Stage, Blur3Stage, Blur4Stage, ComposeStage);
+	REGISTER_RENDER_FEATURE(AnamorphicFlareFeature, FilterStage, ComposeStage);
 
 	void AnamorphicFlareFeature::Create(RenderDevice& device)
 	{
 		prefilterPipeline_.Create(device);
-		blur1Pipeline_.Create(device);
-		blur2Pipeline_.Create(device);
-		blur3Pipeline_.Create(device);
-		blur4Pipeline_.Create(device);
+		blurPipeline_.Create(device);
 		composePipeline_.Create(device);
 	}
 

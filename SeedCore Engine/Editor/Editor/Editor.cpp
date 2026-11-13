@@ -40,13 +40,14 @@
 #include <GraphicsEngine/Camera/CanvasCamera.h>
 #include <GraphicsEngine/Camera/EditorCamera.h>
 #include <GraphicsEngine/Graphics/Graphics.h>
+#include <GraphicsEngine/Preview/PreviewRequest.h>
+#include <GraphicsEngine/Screen/Boot/BootRequest.h>
 #include <GraphicsEngine/RenderGraph/RenderDevice.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Context.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/Graphics/GraphicsDisplay.h>
 #include <GraphicsEngine/Avatar/AvatarMesh.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
-#include <GraphicsEngine/Renderer/BootScreenRenderer.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
 #include <GraphicsEngine/Font/Text.h>
 #include <GraphicsEngine/Model/Animation/Animator.h>
@@ -449,7 +450,7 @@ namespace SeedCore
 
 		if (focused == FocusedView::Editor)
 		{
-			graphics.EditorRender(worldTimer_, *context_.view_.editor_.camera_, world, context_.view_.editor_.viewMode_);
+			graphics.EditorRender(worldTimer_, *context_.view_.editor_.camera_, world, context_.view_.editor_.viewMode_, context_.view_.editor_.debugSource_, context_.view_.editor_.showFlags_);
 		}
 		if (focused == FocusedView::Game || gameTimer.Playing())
 		{
@@ -463,17 +464,62 @@ namespace SeedCore
 			graphics.CanvasRender(worldTimer_, *context_.view_.canvas_.camera_, world);
 		}
 
-		/// [EN] The avatar preview's mesh and the boot screen preview are updated only while their panels are open.
-		/// [JP] アバタープレビューのメッシュと起動画面のプレビューは、そのパネルが開いている間だけ更新する。
+		/// [EN] Each tool preview is asked for only while its panel showed it last frame; the avatar preview's mesh and the boot screen preview are updated only while their panels are open.
+		/// [JP] ツールのプレビューは、前のフレームにそのパネルが見せていたときだけ描くよう求める。アバタープレビューのメッシュと起動画面のプレビューは、そのパネルが開いている間だけ更新する。
 		Benchmark::Begin("Preview");
 		const PreviewContext& preview = context_.preview_;
+		if (preview.timeline_.active_)
+		{
+			PreviewRequest request;
+			request.meshAssetID_ = preview.timeline_.meshAssetID_;
+			request.animationAssetID_ = preview.timeline_.animationAssetID_;
+			request.time_ = preview.timeline_.time_;
+			graphics.PreviewRender(PreviewSlot::Timeline, request, preview.timeline_.camera_, worldTimer_.TotalTime());
+		}
+		if (preview.modelTransform_.active_)
+		{
+			PreviewRequest request;
+			request.meshAssetID_ = preview.modelTransform_.meshAssetID_;
+			request.world_ = preview.modelTransform_.worldMatrix_;
+			request.axes_ = true;
+			graphics.PreviewRender(PreviewSlot::ModelTransform, request, preview.modelTransform_.camera_, worldTimer_.TotalTime());
+		}
+		if (preview.material_.active_)
+		{
+			PreviewRequest request;
+			request.meshAssetID_ = preview.material_.meshAssetID_;
+			request.surfaceAssetID_ = preview.material_.surfaceAssetID_;
+			graphics.PreviewRender(PreviewSlot::Material, request, preview.material_.camera_, worldTimer_.TotalTime());
+		}
+		if (preview.skeletonController_.active_)
+		{
+			PreviewRequest request;
+			request.meshAssetID_ = preview.skeletonController_.meshAssetID_;
+			request.bones_ = true;
+			request.joint_ = preview.skeletonController_.nodeIndex_;
+			graphics.PreviewRender(PreviewSlot::Skeleton, request, preview.skeletonController_.camera_, worldTimer_.TotalTime());
+		}
 		if (preview.avatar_.active_ && preview.avatar_.mesh_)
 		{
 			preview.avatar_.mesh_->Update(preview.avatar_.positions_, preview.avatar_.normals_);
+
+			PreviewRequest request;
+			request.avatar_ = preview.avatar_.mesh_;
+			request.regionCount_ = Min(preview.avatar_.regionCount_, static_cast<Uint32>(request.regionTextures_.size()));
+			for (Uint32 regionIndex = 0;regionIndex < request.regionCount_;++regionIndex)
+			{
+				request.regionTextures_[regionIndex] = preview.avatar_.regionTextureIndices_[regionIndex];
+			}
+			graphics.PreviewRender(PreviewSlot::Avatar, request, preview.avatar_.camera_, worldTimer_.TotalTime());
 		}
-		if (preview.bootScreen_.active_ && preview.bootScreen_.renderer_ && preview.bootScreen_.config_)
+		if (preview.bootScreen_.active_ && preview.bootScreen_.texture_ && preview.bootScreen_.config_)
 		{
-			preview.bootScreen_.renderer_->Render(graphics.Device().Context().GetDirectList(), *preview.bootScreen_.config_, preview.bootScreen_.progress_, worldTimer_.TotalTime());
+			BootRequest request;
+			request.progress_ = preview.bootScreen_.progress_;
+			request.time_ = worldTimer_.TotalTime();
+			request.config_ = preview.bootScreen_.config_;
+			request.texture_ = preview.bootScreen_.texture_;
+			graphics.PreviewRender(request, preview.bootScreen_.width_, preview.bootScreen_.height_);
 		}
 		Benchmark::End("Preview");
 
@@ -481,6 +527,15 @@ namespace SeedCore
 		/// [JP] Panels は全 ImGui ウィンドウの構築と、ImGui の描画コマンドの記録を含む。
 		Benchmark::Begin("Panels");
 		graphics.Bind();
+
+		/// [EN] Bind has drawn the previews, so each panel gets the handle of its preview's texture before it draws.
+		/// [JP] Bind でプレビューを描いたので、各パネルが描く前に自分のプレビューのテクスチャのハンドルを渡す。
+		panels_.Get<TimelinePanel>().SetPreviewHandle(graphics.PreviewDisplay(PreviewSlot::Timeline));
+		panels_.Get<ModelTransformPanel>().SetPreviewHandle(graphics.PreviewDisplay(PreviewSlot::ModelTransform));
+		panels_.Get<MaterialViewerPanel>().SetPreviewHandle(graphics.PreviewDisplay(PreviewSlot::Material));
+		panels_.Get<SkeletonControllerPanel>().SetPreviewHandle(graphics.PreviewDisplay(PreviewSlot::Skeleton));
+		panels_.Get<AvatarPanel>().SetPreviewHandle(graphics.PreviewDisplay(PreviewSlot::Avatar));
+		panels_.Get<BootScreenPanel>().SetPreviewHandle(graphics.PreviewDisplay(PreviewSlot::Boot));
 
 		/// [EN] The menu bar runs before ProcessPanels so a panel it asks for opens in this same frame.
 		/// [JP] メニューバーを ProcessPanels より先に描き、そこで求めたパネルが同じフレームで開くようにする。

@@ -1,12 +1,43 @@
 #pragma once
 #include <GraphicsEngine/PostProcess/Upscale/UpscaleFeature.h>
-#include <GraphicsEngine/Model/ModelFeature.h>
 #include <GraphicsEngine/Model/Material/MaterialFeature.h>
 #include <GraphicsEngine/Model/Opaque/GeometryFeature.h>
 
 namespace SeedCore
 {
-	struct UpscaleFeature::TaauResolveStage :RenderStage
+	struct UpscaleFeature::BuildStage :RenderStage
+	{
+		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
+
+		SC_CONSTEX Bool UpscaleFeature::* enableCondition_ = &UpscaleFeature::dlssRayReconstruction_;
+
+		SC_CONSTEX RenderAccess accesses_[] =
+		{
+			RenderAccess::Read(MaterialFeature::SurfaceBaseColor),
+			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
+			RenderAccess::Read(GeometryFeature::VisibilityId),
+			RenderAccess::Read(GeometryFeature::Depth),
+			RenderAccess::Read(GeometryFeature::Instances),
+			RenderAccess::Write(NormalRoughness),
+			RenderAccess::Write(SpecularAlbedo),
+			RenderAccess::Write(DiffuseAlbedo)
+		};
+
+		static void Execute(UpscaleFeature& feature, RenderPass& pass);
+	};
+
+	struct UpscaleFeature::ResolveStage
+	{
+		struct TaauStep;
+
+		struct RayReconstructionStep;
+
+		struct SuperResolutionStep;
+
+		using Sequence = RenderSequence<TaauStep, RayReconstructionStep, SuperResolutionStep>;
+	};
+
+	struct UpscaleFeature::ResolveStage::TaauStep :RenderStage
 	{
 		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
 
@@ -24,28 +55,7 @@ namespace SeedCore
 		static void Execute(UpscaleFeature& feature, RenderPass& pass);
 	};
 
-	struct UpscaleFeature::PrepareGuidesStage :RenderStage
-	{
-		SC_CONSTEX RenderQueue queue_ = RenderQueue::PostProcess;
-
-		SC_CONSTEX Bool UpscaleFeature::* enableCondition_ = &UpscaleFeature::dlssRayReconstruction_;
-
-		SC_CONSTEX RenderAccess accesses_[] =
-		{
-			RenderAccess::Read(MaterialFeature::SurfaceBaseColor),
-			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
-			RenderAccess::Read(GeometryFeature::VisibilityId),
-			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(ModelFeature::Instances),
-			RenderAccess::Write(NormalRoughness),
-			RenderAccess::Write(SpecularAlbedo),
-			RenderAccess::Write(DiffuseAlbedo)
-		};
-
-		static void Execute(UpscaleFeature& feature, RenderPass& pass);
-	};
-
-	struct UpscaleFeature::DlssRayReconstructionStage :RenderStage
+	struct UpscaleFeature::ResolveStage::RayReconstructionStep :RenderStage
 	{
 		SC_CONSTEX RenderStageKind kind_ = RenderStageKind::Callback;
 
@@ -67,7 +77,7 @@ namespace SeedCore
 		static void Execute(UpscaleFeature& feature, RenderPass& pass);
 	};
 
-	struct UpscaleFeature::DlssSuperResolutionStage :RenderStage
+	struct UpscaleFeature::ResolveStage::SuperResolutionStep :RenderStage
 	{
 		SC_CONSTEX RenderStageKind kind_ = RenderStageKind::Callback;
 

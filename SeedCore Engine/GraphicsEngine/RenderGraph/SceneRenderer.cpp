@@ -9,7 +9,7 @@ namespace SeedCore
 
 	SceneRenderer::~SceneRenderer() = default;
 
-	void SceneRenderer::Initialize(Uint64 capacity)
+	void SceneRenderer::Initialize(RenderFeatureSet set, Uint64 capacity)
 	{
 		graph_.Initialize(capacity);
 
@@ -17,6 +17,10 @@ namespace SeedCore
 		std::ranges::sort(entries, [](const RenderFeatureEntry& a, const RenderFeatureEntry& b) { return a.featureName_ < b.featureName_; });
 		for (const RenderFeatureEntry& entry : entries)
 		{
+			if (entry.set_ != set)
+			{
+				continue;
+			}
 			ResourcePtr<RenderFeatureInstance>& feature = features_.emplace_back(entry.create_());
 			feature->Initialize(device_, graph_);
 		}

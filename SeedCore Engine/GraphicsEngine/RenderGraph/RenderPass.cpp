@@ -38,6 +38,11 @@ namespace SeedCore
 		return view_ ? view_->renderHeight_ : 0;
 	}
 
+	Uint32 RenderPass::Iteration()const
+	{
+		return graph_.stages_[graph_.passes_[pass_].stage_].iteration_;
+	}
+
 	ID3D12Resource* RenderPass::Resource(const RenderResource& resource)const
 	{
 		const RenderGraphPass& pass = graph_.passes_[pass_];
@@ -89,6 +94,11 @@ namespace SeedCore
 
 	void RenderPass::ClearTarget(const RenderResource& resource)
 	{
+		ClearTarget(resource, { 0.0f, 0.0f, 0.0f, 0.0f });
+	}
+
+	void RenderPass::ClearTarget(const RenderResource& resource, const StaticArray<Float, 4>& color)
+	{
 		const RenderGraphPass& pass = graph_.passes_[pass_];
 		const RenderGraphStage& stage = graph_.stages_[pass.stage_];
 		for (const RenderGraphAccess& access : stage.accesses_)
@@ -103,7 +113,6 @@ namespace SeedCore
 			{
 				return;
 			}
-			StaticArray<Float, 4> color = { 0.0f, 0.0f, 0.0f, 0.0f };
 			cmdList_.Get()->ClearRenderTargetView(graph_.device_.RenderTargetHeap().CPUHandle(memory->renderTargetView_), color.data(), 0, nullptr);
 			return;
 		}
@@ -220,7 +229,7 @@ namespace SeedCore
 				continue;
 			}
 			std::string expected;
-			std::string_view name = std::string_view(access.resourceName_);
+			std::string_view name = std::string_view(access.bindingName_);
 			for (Size index = 0;index < name.size();++index)
 			{
 				if (name[index] == '.')

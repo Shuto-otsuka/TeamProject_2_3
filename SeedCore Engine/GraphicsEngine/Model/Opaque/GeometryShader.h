@@ -21,9 +21,9 @@ namespace SeedCore
 
 		SC_CONSTEX RenderResource fallbackArguments_ = CullingFeature::DrawArguments;
 
-		SC_CONSTEX StaticArray<DXGI_FORMAT, 0> targetFormat_ = {};
+		SC_CONSTEX StaticArray<RenderFormat, 0> targetFormat_ = {};
 
-		SC_CONSTEX DXGI_FORMAT depthFormat_ = DXGI_FORMAT_D32_FLOAT;
+		SC_CONSTEX RenderFormat depthFormat_ = RenderFormat::D32Float;
 
 		SC_CONSTEX BlendStateType blend_ = BlendStateType::Opaque;
 
@@ -48,9 +48,9 @@ namespace SeedCore
 
 		SC_CONSTEX RenderResource fallbackArguments_ = CullingFeature::DrawArguments;
 
-		SC_CONSTEX StaticArray<DXGI_FORMAT, 2> targetFormat_ = { DXGI_FORMAT_R32G32_UINT, DXGI_FORMAT_R32G32_FLOAT };
+		SC_CONSTEX StaticArray<RenderFormat, 2> targetFormat_ = { RenderFormat::RG32Uint, RenderFormat::RG32Float };
 
-		SC_CONSTEX DXGI_FORMAT depthFormat_ = DXGI_FORMAT_D32_FLOAT;
+		SC_CONSTEX RenderFormat depthFormat_ = RenderFormat::D32Float;
 
 		SC_CONSTEX BlendStateType blend_ = BlendStateType::Opaque;
 
@@ -59,11 +59,22 @@ namespace SeedCore
 		SC_CONSTEX RasterizerStateType rasterizer_ = RasterizerStateType::SolidNoneLHS;
 	};
 
-	struct GeometryResolveDescription
+	struct GeometryUpdateDescription
 	{
 		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/Model/Opaque/GeometryCS.hlsl");
 
-		SC_CONSTEX const Char* entryPoint_ = "Resolve";
+		SC_CONSTEX const Char* entryPoint_ = "Update";
+
+		SC_CONSTEX Uint32 threadGroupSizeX_ = 4;
+
+		SC_CONSTEX Uint32 threadGroupSizeY_ = 1;
+	};
+
+	struct GeometryPyramidDescription
+	{
+		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/Model/Opaque/GeometryCS.hlsl");
+
+		SC_CONSTEX const Char* entryPoint_ = "Pyramid";
 
 		SC_CONSTEX Uint32 threadGroupSizeX_ = 8;
 

@@ -5,7 +5,7 @@
 
 namespace SeedCore
 {
-	REGISTER_RENDER_FEATURE(CullingFeature, CameraEarlyStage, CameraLateStage);
+	REGISTER_RENDER_FEATURE(CullingFeature, CullingStage);
 
 	void CullingFeature::Create(RenderDevice& device)
 	{
@@ -13,5 +13,6 @@ namespace SeedCore
 		preparePipeline_.Create(device);
 		earlyPipeline_.Create(device);
 		latePipeline_.Create(device);
+		transparentPipeline_.Create(device);
 	}
 }

@@ -12,7 +12,7 @@ namespace SeedCore
 	class ShaderCache;
 	class ShaderHotReload;
 
-	class RenderDevice :public NonTransferable
+	class SEEDCORE_API RenderDevice :public NonTransferable
 	{
 	public:
 		RenderDevice();

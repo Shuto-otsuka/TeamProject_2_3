@@ -2,13 +2,13 @@
 #include <GraphicsEngine/Light/LightCluster.h>
 #include <GraphicsEngine/Shader/Scene.hlsli>
 
-struct LightClusterAssignBindings
+struct LightBuildBindings
 {
 	uint light_list_;
 	uint light_constants_;
 	uint light_cluster_grid_;
 };
-ConstantBuffer<LightClusterAssignBindings> bindings : register(b0, space1);
+ConstantBuffer<LightBuildBindings> bindings : register(b0, space1);
 
 /**
 * [EN]

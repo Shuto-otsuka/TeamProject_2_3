@@ -7,12 +7,12 @@ namespace SeedCore
 	class DeferredLightingFeature :public RenderFeature<DeferredLightingFeature>
 	{
 	public:
-		struct DrawStage;
+		struct ResolveStage;
 
 	public:
 		void Create(RenderDevice& device);
 
 	private:
-		GraphicsPipeline<DeferredLightingDrawDescription> drawPipeline_;
+		GraphicsPipeline<DeferredLightingResolveDescription> resolvePipeline_;
 	};
 }

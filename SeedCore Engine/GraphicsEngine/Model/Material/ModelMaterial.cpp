@@ -171,8 +171,7 @@ namespace SeedCore
 		material.shading_.materialMapping_ = static_cast<Uint>(surface.materialMapping_);
 		material.shading_.tiling_ = surface.tiling_;
 		material.shading_.triplanarSharpness_ = surface.triplanarSharpness_;
-		material.shading_.outlineColor_ = static_cast<Uint>(Clamp(surface.outlineColor_.r, 0.0f, 1.0f) * 255.0f + 0.5f) | (static_cast<Uint>(Clamp(surface.outlineColor_.g, 0.0f, 1.0f) * 255.0f + 0.5f) << 8) | (static_cast<Uint>(Clamp(surface.outlineColor_.b, 0.0f, 1.0f) * 255.0f + 0.5f) << 16) | (static_cast<Uint>(Clamp(surface.outlineColor_.a, 0.0f, 1.0f) * 255.0f + 0.5f) << 24);
-		material.shading_.outlineWidth_ = surface.outlineWidth_;
+		material.shading_.actor_ = SC_INVALID;
 		return material;
 	}
 }

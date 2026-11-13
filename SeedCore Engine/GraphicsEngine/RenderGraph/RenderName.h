@@ -81,12 +81,18 @@ namespace SeedCore
 			return Trim(TypeName<Stage>(), "Stage");
 		}
 
+		template<class Step>
+		static consteval std::string_view StepName()
+		{
+			return Trim(TypeName<Step>(), "Step");
+		}
+
 	private:
 		static consteval std::string_view Trim(std::string_view name, std::string_view suffix)
 		{
 			if (!name.ends_with(suffix) || name.size() == suffix.size())
 			{
-				throw "Feature のクラス名は <名前>Feature、Stage の struct 名は <名前>Stage にすること";
+				throw "Feature のクラス名は <名前>Feature、Stage の struct 名は <名前>Stage、Step の struct 名は <名前>Step にすること";
 			}
 			name.remove_suffix(suffix.size());
 			for (Size index = 0;index < name.size();++index)
@@ -97,11 +103,11 @@ namespace SeedCore
 				Bool isDigit = character >= '0' && character <= '9';
 				if (index == 0 && !isUpper)
 				{
-					throw "Feature と Stage の名前は大文字で始めること";
+					throw "Feature と Stage と Step の名前は大文字で始めること";
 				}
 				if (!isUpper && !isLower && !isDigit)
 				{
-					throw "Feature と Stage の名前は英数字だけにすること";
+					throw "Feature と Stage と Step の名前は英数字だけにすること";
 				}
 			}
 			return name;
@@ -109,8 +115,5 @@ namespace SeedCore
 	};
 
 	template<class Feature, RenderLiteral Member>
-	inline constexpr RenderNameStorage<RenderName::FeatureName<Feature>().size() + 1 + Member.View().size()> RenderResourceName = RenderNameStorage<RenderName::FeatureName<Feature>().size() + 1 + Member.View().size()>(RenderName::FeatureName<Feature>(), Member.View());
-
-	template<class Feature, class Stage>
-	inline constexpr RenderNameStorage<RenderName::FeatureName<Feature>().size() + 1 + RenderName::StageName<Stage>().size()> RenderStageName = RenderNameStorage<RenderName::FeatureName<Feature>().size() + 1 + RenderName::StageName<Stage>().size()>(RenderName::FeatureName<Feature>(), RenderName::StageName<Stage>());
+	inline constexpr auto RenderResourceName =RenderNameStorage<RenderName::FeatureName<Feature>().size() + 1 + Member.View().size()>(RenderName::FeatureName<Feature>(), Member.View());
 }

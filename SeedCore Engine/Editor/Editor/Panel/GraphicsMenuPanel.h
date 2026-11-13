@@ -1,5 +1,6 @@
 #pragma once
 #include <GraphicsEngine/RenderGraph/RenderView.h>
+#include <Editor/Editor/Panel/ViewModePanel.h>
 
 namespace SeedCore
 {
@@ -18,5 +19,7 @@ namespace SeedCore
 
 	private:
 		EditorContext& context_;
+
+		ViewModePanel viewModePanel_;
 	};
 }

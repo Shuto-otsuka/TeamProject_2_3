@@ -1,6 +1,6 @@
 #pragma once
 #include <FoundationEngine/Resource/Config/BootConfig.h>
-#include <GraphicsEngine/Renderer/BootScreenRenderer.h>
+#include <GraphicsEngine/Screen/Boot/BootTexture.h>
 
 namespace SeedCore
 {
@@ -19,6 +19,8 @@ namespace SeedCore
 		void Open();
 
 		NODISCARD Bool Focused()const;
+
+		void SetPreviewHandle(D3D12_GPU_DESCRIPTOR_HANDLE previewHandle);
 
 	private:
 		void DrawCanvas();
@@ -42,7 +44,9 @@ namespace SeedCore
 
 		BootConfig config_;
 
-		ResourcePtr<BootScreenRenderer> renderer_;
+		ResourcePtr<BootTexture> texture_;
+
+		D3D12_GPU_DESCRIPTOR_HANDLE previewHandle_{};
 
 		Uint32 screenWidth_ = 1920;
 		Uint32 screenHeight_ = 1080;
