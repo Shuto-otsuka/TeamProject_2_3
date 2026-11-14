@@ -8,6 +8,7 @@ namespace SeedCore
 		Read,
 		History,
 		Write,
+		Append,
 		Constant,
 		Target,
 		DepthWrite,
@@ -32,6 +33,11 @@ namespace SeedCore
 			return RenderAccess(resource, RenderAccessType::Write);
 		}
 
+		NODISCARD static consteval RenderAccess Append(const RenderResource& resource)
+		{
+			return RenderAccess(resource, RenderAccessType::Append);
+		}
+
 		NODISCARD static consteval RenderAccess Constant(const RenderResource& resource)
 		{
 			return RenderAccess(resource, RenderAccessType::Constant);
@@ -52,9 +58,16 @@ namespace SeedCore
 			return RenderAccess(resource, RenderAccessType::DepthTest);
 		}
 
+		NODISCARD consteval RenderAccess As(std::string_view alias)const
+		{
+			RenderAccess access = *this;
+			access.alias_ = alias;
+			return access;
+		}
+
 		NODISCARD constexpr const RenderResource& Resource()const
 		{
-			return resource_;
+			return *resource_;
 		}
 
 		NODISCARD constexpr RenderAccessType Type()const
@@ -62,15 +75,22 @@ namespace SeedCore
 			return type_;
 		}
 
+		NODISCARD constexpr std::string_view Alias()const
+		{
+			return alias_;
+		}
+
 	private:
-		consteval RenderAccess(const RenderResource& resource, RenderAccessType type) :resource_(resource), type_(type)
+		consteval RenderAccess(const RenderResource& resource, RenderAccessType type) :resource_(&resource), type_(type)
 		{
 			/// No Code
 		}
 
 	private:
-		RenderResource resource_;
+		const RenderResource* resource_ = nullptr;
 
 		RenderAccessType type_ = RenderAccessType::Read;
+
+		std::string_view alias_;
 	};
-}
+}

@@ -6,8 +6,8 @@
 #include <GraphicsEngine/Model/ModelShader.h>
 #include <GraphicsEngine/Model/Transparent/OITBuffer.h>
 #include <GraphicsEngine/Model/Culling/ModelCullingBuffer.h>
-#include <GraphicsEngine/Model/ModelRecord.h>
-#include <GraphicsEngine/Model/SoftbodyMesh.h>
+#include <GraphicsEngine/Model/ModelDriven.h>
+#include <GraphicsEngine/Model/Softbody/SoftbodyMesh.h>
 #include <GraphicsEngine/System/SceneConstantSystem.h>
 
 namespace SeedCore

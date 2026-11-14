@@ -8,7 +8,7 @@
 #include <GraphicsEngine/Camera/PreviewCamera.h>
 #include <GraphicsEngine/Camera/PreviewCameraController.h>
 #include <GraphicsEngine/Resource/GraphicsModule.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
 #include <FoundationEngine/Input/InputSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/World/Actor/Actor.h>
@@ -389,7 +389,7 @@ namespace SeedCore
 
 				if (selectedAnimationIndex_ != SIZE_MAX)
 				{
-					AnimationResource* animationResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().animationResource_.get();
+					AnimationResource* animationResource = context_.graphics_.graphics_->Module().Resources().animationResource_.get();
 					Handle<Animation> handle = animationResource->Load(*context_.world_.resource_, assetId);
 					animation = animationResource->Resolve(handle);
 
@@ -423,7 +423,14 @@ namespace SeedCore
 
 					context_.preview_.timeline_.camera_.Resize(previewSize.x, previewSize.y);
 
-					ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
+					if (previewHandle_.ptr != 0)
+					{
+						ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
+					}
+					else
+					{
+						ImGui::Dummy(previewSize);
+					}
 
 					/// [EN] Orbit-style preview navigation: left-click drag orbits around
 					///      Focus(), middle-click drag pans, wheel dollies - see
@@ -488,7 +495,7 @@ namespace SeedCore
 		}
 
 		Uint32 assetId = target_->animationIDs_[selectedAnimationIndex_];
-		AnimationResource* animationResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().animationResource_.get();
+		AnimationResource* animationResource = context_.graphics_.graphics_->Module().Resources().animationResource_.get();
 		Handle<Animation> handle = animationResource->Load(*context_.world_.resource_, assetId);
 		Animation* animation = animationResource->Resolve(handle);
 		if (!animation)

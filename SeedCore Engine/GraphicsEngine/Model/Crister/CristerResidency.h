@@ -648,6 +648,19 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Returns the residency version: it goes up by one every time a
+		* cluster page or the vertex pool becomes resident or is evicted.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 常駐の版数を返す。クラスタのページか頂点プールが常駐するか追い出される
+		* たびに 1 増える。
+		*/
+		NODISCARD Uint64 Version()const;
+
+		/**
+		* [EN]
 		* Whether the texture has streamed all the way in to mip 0 (its finest).
 		*
 		* ---------------------------------------------------------------------
@@ -1156,6 +1169,10 @@ namespace SeedCore
 		/// [EN] Last frame a page reading the pool was drawn.
 		/// [JP] プールを読むページが最後に描画されたフレーム。
 		Uint64 poolLastUsedFrame_ = 0;
+
+		/// [EN] Residency version, raised whenever a cluster page or the pool becomes resident or is evicted.
+		/// [JP] 常駐の版数。クラスタのページかプールが常駐するか追い出されるたびに上げる。
+		Uint64 version_ = 0;
 
 		/// [EN] Streaming page of each Cluster, index-aligned with clusters_.
 		/// [JP] 各 Cluster のストリーミングページ。clusters_ とインデックスが揃っている。

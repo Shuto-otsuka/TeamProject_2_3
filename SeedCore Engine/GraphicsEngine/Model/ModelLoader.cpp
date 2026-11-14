@@ -31,17 +31,17 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Takes the device context models are uploaded with, the bindless
-	* heap their buffers and textures are registered in, and the compute
-	* shader that BC7-compresses their textures.
+	* heap their buffers and textures are registered in, and the GPU
+	* processor that BC7-compresses their textures.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* モデルをアップロードするデバイスのコンテキスト、バッファと
 	* テクスチャの登録先のバインドレスヒープ、テクスチャを BC7 圧縮する
-	* コンピュートシェーダーを受け取る。
+	* GPU の加工器を受け取る。
 	*/
-	ModelLoader::ModelLoader(D3D12Context& context, BindlessHeap& heap, BC7CompressShader& bc7Shader) :context_(context), heap_(heap), bc7Shader_(bc7Shader)
+	ModelLoader::ModelLoader(D3D12Context& context, BindlessHeap& heap, GraphicsProcessor& processor) :context_(context), heap_(heap), processor_(processor)
 	{
 		/// No Code
 	}
@@ -152,7 +152,7 @@ namespace SeedCore
 		D3D12CommandQueue* copyQueue = context_.GetCopyQueue();
 		D3D12TransferLane* transferLane = context_.GetLoadTransferLane(thread);
 		BindlessHeap* heap = &heap_;
-		BC7CompressShader& bc7Shader = bc7Shader_;
+		GraphicsProcessor& processor = processor_;
 
 		/// [EN] A source is converted with the axis convention recorded in its own ".meta"; a missing or older ".meta" yields the default convention.
 		/// [JP] ソースは自身の ".meta" に記録された座標系規約で変換する。".meta" が無いか古ければ既定の規約になる。
@@ -345,7 +345,7 @@ namespace SeedCore
 			///      ".crister" キャッシュとして書き出すのは ModelResource::Generate
 			///      の役目。
 			CristerCompressor compressor;
-			compressor.BakeBitmap(device, cmdQueue, bc7Shader, crister->material_.bitmaps_);
+			compressor.BakeBitmap(device, cmdQueue, processor, crister->material_.bitmaps_);
 		}
 
 		if (forExport)
@@ -646,15 +646,15 @@ namespace SeedCore
 			///      is a valid state that must fall back to a default material, not be
 			///      reinterpreted as an index: assigning -1 directly into the Uint32
 			///      surfaceIndex_ would wrap to 0xFFFFFFFF and cause an out-of-bounds
-			///      read in ModelRenderer/TimelineRenderer/ModelTransformRenderer's
-			///      surfaces[subMesh.surfaceIndex_].
+			///      read wherever surfaces[subMesh.surfaceIndex_] is looked up
+			///      (ModelMesh, PreviewFeature).
 			/// [JP] プリミティブがマテリアルを持たない場合（gltfPrimitive.material == -1）
 			///      に使う、遅延生成の共有デフォルトマテリアル。glTF 仕様上これは正当な
 			///      状態でありデフォルトマテリアルへフォールバックすべきで、そのまま
 			///      インデックスとして解釈してはならない: -1 を Uint32 の surfaceIndex_
 			///      にそのまま代入すると 0xFFFFFFFF にラップし、
-			///      ModelRenderer/TimelineRenderer/ModelTransformRenderer の
-			///      surfaces[subMesh.surfaceIndex_] で範囲外アクセスを引き起こす。
+			///      surfaces[subMesh.surfaceIndex_] を引く所（ModelMesh、PreviewFeature）で
+			///      範囲外アクセスを引き起こす。
 			Int defaultSurfaceIndex = -1;
 
 			for (Size meshIndex = 0; meshIndex < model.meshes.size(); meshIndex++)

@@ -3,7 +3,10 @@
 #include <FoundationEngine/Interop/ImGuiInstance.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
+#include <GraphicsEngine/RenderGraph/RenderDevice.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
+#include <GraphicsEngine/D3D12/FrameRing.h>
 #include <FoundationEngine/Application/Window.h>
 
 namespace SeedCore
@@ -13,7 +16,7 @@ namespace SeedCore
 	* Creates the ImGui context with docking and multi-viewport enabled,
 	* initializes the Win32 backend on window and the DirectX 12 backend
 	* on graphics' bindless heap (textures uploaded through its direct
-	* queue, one set of per-frame buffers for each swap-chain buffer),
+	* queue, one set of per-frame buffers for each frame in flight),
 	* loads the Japanese font, applies the editor style, and routes
 	* window's messages to ImGui. Returns false if any backend fails to
 	* initialize.
@@ -24,18 +27,18 @@ namespace SeedCore
 	* ドッキングとマルチビューポートを有効にした ImGui コンテキストを作り、
 	* window で Win32 バックエンドを、graphics のバインドレスヒープで
 	* DirectX 12 バックエンドを初期化し(テクスチャは direct キューで
-	* アップロードし、フレームごとのバッファはスワップチェインの
-	* バッファ数ぶん持つ)、日本語フォントを読み込んでエディタのスタイルを
+	* アップロードし、フレームごとのバッファは同時に走るフレームの
+	* 数ぶん持つ)、日本語フォントを読み込んでエディタのスタイルを
 	* 適用し、window のメッセージを ImGui へ流す。いずれかのバックエンドの
 	* 初期化に失敗したら false を返す。
 	*/
 	Bool ImGuiRenderer::Initialize(Window& window, Graphics& graphics)
 	{
 		HWND hwnd = window.Handle();
-		ID3D12Device* device = graphics.GetContext().GetDevice();
-		ID3D12CommandQueue* commandQueue = graphics.GetContext().GetDirectQueue()->GetCommandQueue();
-		BindlessHeap* bindlessHeap = &graphics.GetBindlessHeap();
-		Int numberFramesInFlight = static_cast<Int>(graphics.GetSwapChain().BufferCount());
+		ID3D12Device* device = graphics.Device().Context().GetDevice();
+		ID3D12CommandQueue* commandQueue = graphics.Device().Context().GetDirectQueue()->GetCommandQueue();
+		BindlessHeap* bindlessHeap = &graphics.Device().ResourceHeap();
+		Int numberFramesInFlight = static_cast<Int>(FrameRing::frameCount);
 
 		bindlessHeap_ = bindlessHeap;
 

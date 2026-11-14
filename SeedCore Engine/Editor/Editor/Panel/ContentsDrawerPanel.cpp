@@ -20,7 +20,9 @@
 #include <FoundationEngine/Resource/Prefab/PrefabRegistry.h>
 
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
+#include <GraphicsEngine/RenderGraph/RenderDevice.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
 #include <GraphicsEngine/Model/Crister/Crister.h>
 #include <GraphicsEngine/Model/ModelExporter.h>
 #include <GraphicsEngine/Model/ModelResource.h>
@@ -613,7 +615,7 @@ namespace SeedCore
 		/// [JP] テクスチャのピクセルサイズ。GPU リソースから読む。
 		if (preview)
 		{
-			GraphicsResourceSystem& graphicsResources = context_.graphics_.graphics_->GetGraphicsModule().Resources();
+			GraphicsResourceSystem& graphicsResources = context_.graphics_.graphics_->Module().Resources();
 			Texture* texture = graphicsResources.textureStreaming_->Resolve(graphicsResources.textureResource_->GetHandle(asset.assetID_), context_.application_.uiFrame_);
 			if (texture && texture->Resource())
 			{
@@ -729,7 +731,7 @@ namespace SeedCore
 					GenerateAsset(asset, *assetResource, "キャッシュファイル");
 				}
 
-				GraphicsResourceSystem& resources = context_.graphics_.graphics_->GetGraphicsModule().Resources();
+				GraphicsResourceSystem& resources = context_.graphics_.graphics_->Module().Resources();
 				if (asset.type_ == AssetType::Model)
 				{
 					if (ImGui::MenuItem("コリジョン生成"))
@@ -1160,8 +1162,8 @@ namespace SeedCore
 				return thumbnailCache_.at(asset.assetID_);
 			}
 
-			BindlessHeap& bindlessHeap = context_.graphics_.graphics_->GetBindlessHeap();
-			GraphicsResourceSystem& graphicsResources = context_.graphics_.graphics_->GetGraphicsModule().Resources();
+			BindlessHeap& bindlessHeap = context_.graphics_.graphics_->Device().ResourceHeap();
+			GraphicsResourceSystem& graphicsResources = context_.graphics_.graphics_->Module().Resources();
 			Texture* texture = graphicsResources.textureStreaming_->Resolve(graphicsResources.textureResource_->GetHandle(asset.assetID_), context_.application_.uiFrame_);
 			if (texture && texture->Resource())
 			{
@@ -1172,7 +1174,7 @@ namespace SeedCore
 				/// [EN] A view slot of its own, covering the whole resource, so the thumbnail stays valid when streaming swaps the texture's own bindless index.
 				/// [JP] リソース全体を覆う専用のビューの枠を使う。ストリーミングがテクスチャ自身のバインドレス番号を差し替えても、サムネイルは有効なまま。
 				Uint descIndex = bindlessHeap.AllocateIndex();
-				context_.graphics_.graphics_->GetContext().GetDevice()->CreateShaderResourceView(texture->Resource(), nullptr, bindlessHeap.CPUHandle(descIndex));
+				context_.graphics_.graphics_->Device().Context().GetDevice()->CreateShaderResourceView(texture->Resource(), nullptr, bindlessHeap.CPUHandle(descIndex));
 				ImTextureID textureID = static_cast<ImTextureID>(bindlessHeap.GPUHandle(descIndex).ptr);
 				thumbnailCache_.insert({ asset.assetID_, textureID });
 				return textureID;
@@ -1749,7 +1751,7 @@ namespace SeedCore
 			return;
 		}
 
-		ModelExporter& modelExporter = *context_.graphics_.graphics_->GetGraphicsModule().Exporters().modelExporter_;
+		ModelExporter& modelExporter = *context_.graphics_.graphics_->Module().Exporters().modelExporter_;
 		modelExporter.Preset(preset);
 		if (!modelExporter.Export(AssetContext{ *context_.world_.resource_, LoadThread::Main }, asset.assetID_, String(outputPath.string())))
 		{

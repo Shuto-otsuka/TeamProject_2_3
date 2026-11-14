@@ -3,6 +3,7 @@
 namespace SeedCore
 {
 	class BindlessHeap;
+	class D3D12TransferLane;
 
 	struct ShapedGlyph
 	{
@@ -54,7 +55,7 @@ namespace SeedCore
 
 		void ClearAtlasDirty();
 
-		void UploadAtlas(ID3D12Device* device, ID3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap);
+		void UploadAtlas(ID3D12Device* device, D3D12TransferLane& lane, BindlessHeap* bindlessHeap);
 
 		Uint GetAtlasTextureIndex()const;
 

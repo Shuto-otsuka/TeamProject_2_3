@@ -1,1 +1,8 @@
-<Project Sdk="Microsoft.NET.Sdk" />
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <Configurations>Debug;Release;Develop</Configurations>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Develop|AnyCPU'">
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+</Project>

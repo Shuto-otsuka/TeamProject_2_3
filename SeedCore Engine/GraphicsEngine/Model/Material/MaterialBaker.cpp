@@ -9,7 +9,7 @@
 
 namespace SeedCore
 {
-	void MaterialBaker::BakeReferenced(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, ResourceCache& cache, BakedSurface& bakedSurface)const
+	void MaterialBaker::BakeReferenced(ID3D12Device* device, D3D12CommandQueue* cmdQueue, GraphicsProcessor& processor, ResourceCache& cache, BakedSurface& bakedSurface)const
 	{
 		const Surface& surface = bakedSurface.surface_;
 		Uint32 referenceIDs[] = { surface.baseColorTextureAssetID_, surface.normalTextureAssetID_, surface.metallicRoughnessTextureAssetID_, surface.occlusionTextureAssetID_, surface.emissiveTextureAssetID_ };
@@ -116,7 +116,7 @@ namespace SeedCore
 		}
 
 		CristerCompressor compressor;
-		compressor.BakeBitmap(device, cmdQueue, bc7Shader, bitmaps);
+		compressor.BakeBitmap(device, cmdQueue, processor, bitmaps);
 
 		for (Size freshIndex = 0; freshIndex < freshIDs.size(); freshIndex++)
 		{

@@ -7,15 +7,16 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Fills and uploads the atlas of every font fontResource holds,
-	* through cmdQueue into bindlessHeap.
+	* recording the uploads into lane, the frame transfer lane the render graph
+	* submits before the frame draws, with views in bindlessHeap.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* fontResource が持つ全フォントのアトラスを埋め、cmdQueue を通して
-	* bindlessHeap へアップロードする。
+	* fontResource が持つ全フォントのアトラスを埋め、アップロードを lane（描画の前に
+	* レンダーグラフが送信するフレームの転送レーン）に積む。ビューは bindlessHeap に置く。
 	*/
-	void FontSystem::Update(FontResource& fontResource, ID3D12Device* device, ID3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap)
+	void FontSystem::Update(FontResource& fontResource, ID3D12Device* device, D3D12TransferLane& lane, BindlessHeap* bindlessHeap)
 	{
 		/// [EN] Every loaded font is advanced, not only those a Text component names, since glyphs can be requested from outside the world as well.
 		/// [JP] Text コンポーネントが指すものに限らず、読み込み済みの全フォントを進める。グリフは world の外からも求められることがあるため。
@@ -28,7 +29,7 @@ namespace SeedCore
 			}
 
 			font->Update();
-			font->UploadAtlas(device, cmdQueue, bindlessHeap);
+			font->UploadAtlas(device, lane, bindlessHeap);
 		}
 	}
 }

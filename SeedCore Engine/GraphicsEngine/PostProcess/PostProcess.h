@@ -8,23 +8,20 @@ namespace SeedCore
 	* Depth-of-field settings: a CoC (circle of confusion) gather blur based
 	* on the distance from focusDistance_ - pixels within focusRange_ of the
 	* focus plane stay sharp, pixels further away blur up to maxBlurRadius_
-	* (DepthOfFieldCS.hlsl). Runs at native resolution and writes a whole new
-	* HDR buffer (not an additive contribution like LensFlareSettings) that
-	* downstream passes (BokehSettings, LensFlareSettings, ToneMappingSettings)
-	* read from instead of the raw scene color when enabled_ is set - see
-	* PostProcessRenderer::Dispatch for the source-selection branch.
+	* (DepthOfFieldCS.hlsl). Writes a whole new HDR color, DepthOfField.Color
+	* (not an additive contribution like LensFlareSettings), that the
+	* downstream passes read; while enabled_ is off, DepthOfField.Color passes
+	* the upscaled scene color through.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* 被写界深度設定: focusDistance_ からの距離に基づく CoC(錯乱円)ギャザー
 	* ブラー。焦点面から focusRange_ 以内のピクセルはシャープなまま、それより
-	* 遠いピクセルは maxBlurRadius_ まで滲む(DepthOfFieldCS.hlsl)。ネイティブ
-	* 解像度で走り、LensFlareSettings のような加算コントリビューションではなく
-	* 新しいHDRバッファそのものを書き込む — enabled_ が立っている間、後続パス
-	* (BokehSettings、LensFlareSettings、ToneMappingSettings)は生のシーン色
-	* ではなくこちらを読む(ソース選択の分岐は PostProcessRenderer::Dispatch
-	* 参照)。
+	* 遠いピクセルは maxBlurRadius_ まで滲む(DepthOfFieldCS.hlsl)。
+	* LensFlareSettings のような加算コントリビューションではなく、新しいHDRの色
+	* DepthOfField.Color そのものを書き、後続のパスがそれを読む。enabled_ が
+	* オフの間、DepthOfField.Color はアップスケール済みのシーン色を素通しで指す。
 	*/
 	struct DepthOfFieldSettings
 	{
@@ -55,32 +52,32 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Bokeh highlight settings, layered on top of DepthOfFieldSettings'
-	* gather blur (BokehCS.hlsl runs after DepthOfFieldCS.hlsl and
-	* read-modify-writes the same output buffer - it has no resources of its
-	* own). Bright-passes the ORIGINAL scene color (before blur, so highlight
+	* gather blur (BokehCS.hlsl runs after DepthOfFieldCS.hlsl, reads
+	* DepthOfField.Color and writes it plus the highlights into Bokeh.Color).
+	* Bright-passes the ORIGINAL scene color (before blur, so highlight
 	* positions stay crisp) at highlightThreshold_ and, for pixels with a
 	* non-trivial circle of confusion, scatters a bladeCount_-sided polygon
 	* highlight (approximated the same "sample along N fixed arms" way
 	* LensFlareCS.hlsl does) scaled by that pixel's CoC and boosted by
 	* highlightIntensity_ - the classic "bright out-of-focus points become
 	* visible bokeh shapes" look. Meaningless without DepthOfFieldSettings.
-	* enabled_ also being on; PostProcessRenderer::Dispatch enforces that at
-	* runtime.
+	* enabled_ also being on; BokehFeature runs its Stage only when both are
+	* on.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* ボケハイライト設定。DepthOfFieldSettings のギャザーブラーの上に重ねる
-	* (BokehCS.hlsl は DepthOfFieldCS.hlsl の後に走り、同じ出力バッファを
-	* read-modify-write する — 自前のリソースは持たない)。ぼかす前の元の
+	* (BokehCS.hlsl は DepthOfFieldCS.hlsl の後に走り、DepthOfField.Color を
+	* 読んでハイライトを足したものを Bokeh.Color へ書く)。ぼかす前の元の
 	* シーン色を highlightThreshold_ でブライトパスし(ハイライト位置が
 	* にじまないようにするため)、錯乱円が無視できないピクセルについて
 	* bladeCount_ 角形のハイライトを(LensFlareCS.hlsl と同じ「N本の固定腕に
 	* 沿ってサンプルする」近似で)そのピクセルのCoCでスケールし
 	* highlightIntensity_ で強調して散布する — 「ピントの外れた明るい点が
 	* 目に見えるボケ形状になる」典型的な見た目。DepthOfFieldSettings.enabled_
-	* も同時に有効でなければ意味を持たない — これは実行時に
-	* PostProcessRenderer::Dispatch が担保する。
+	* も同時に有効でなければ意味を持たない — BokehFeature は両方が有効なとき
+	* だけ Stage を動かす。
 	*/
 	struct BokehSettings
 	{
@@ -820,13 +817,13 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Curve that compresses the exposed scene-referred HDR color into the
-		* displayable [0, 1] range (ToneMappingCurves.hlsli).
+		* displayable [0, 1] range (ToneMapping.hlsli).
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* 露出済みのシーン参照 HDR カラーを、表示できる [0, 1] の範囲へ圧縮
-		* するカーブ(ToneMappingCurves.hlsli)。
+		* するカーブ(ToneMapping.hlsli)。
 		*/
 		enum class ToneCurve
 		{
@@ -965,17 +962,16 @@ namespace SeedCore
 	* [EN]
 	* Post-process settings, authored as a component on an entity (the same
 	* shape as Unreal's PostProcessVolume or Unity's Post Process Volume). The
-	* renderer gathers it with Query<Read<Active>, Read<PostProcess>> and runs
-	* the effect chain in PostProcess/PostEffect/ with these values; when no
-	* entity carries one, the renderer uses neutral settings instead (no
-	* exposure compensation, no tone curve, auto exposure off - see
-	* PostProcessRenderer::ResolveSettings), so a scene without a post-process
-	* entity gets no implicit correction. This struct's defaults are the
+	* post-process Features (PostProcess/<Effect>/) each read the first active
+	* one with Query<Read<Active>, Read<PostProcess>>; when no entity carries
+	* one, every effect stays off (no exposure compensation, no tone curve,
+	* auto exposure off), so a scene without a post-process entity gets no
+	* implicit correction. This struct's defaults are the
 	* starting point for a newly authored volume, not that fallback.
 	*
 	* Each effect gets its own reflected Settings struct (see
 	* ToneMappingSettings/ExposureSettings above) plus one field here and its
-	* own class under PostEffect/, so this component stays the single
+	* own Feature folder under PostProcess/, so this component stays the single
 	* authoring surface without turning into a flat pile of unrelated fields.
 	*
 	* ---------------------------------------------------------------------
@@ -983,22 +979,23 @@ namespace SeedCore
 	* [JP]
 	* ポストプロセス設定。エンティティに付けるコンポーネントとして持たせる
 	* (Unreal の PostProcessVolume / Unity の Post Process Volume と同じ形)。
-	* レンダラーが Query<Read<Active>, Read<PostProcess>> で拾い、
-	* PostProcess/PostEffect/ のエフェクト列をこの値で走らせる。どのエンティティ
-	* も持っていない場合はニュートラルな設定(露出補正なし、トーンカーブなし、
-	* 自動露出オフ — PostProcessRenderer::ResolveSettings 参照)を使うので、
-	* ポストプロセス用エンティティが無いシーンには暗黙の補正が掛からない。
+	* ポストプロセスの各 Feature(PostProcess/<効果>/)が
+	* Query<Read<Active>, Read<PostProcess>> で最初の有効なものを読む。どの
+	* エンティティも持っていない場合はどの効果も掛からない(露出補正なし、
+	* トーンカーブなし、自動露出オフ)ので、ポストプロセス用エンティティが無い
+	* シーンには暗黙の補正が掛からない。
 	* この構造体の既定値は、ボリュームを新しく配置したときの初期値であって、
 	* そのフォールバックではない。
 	*
 	* 各エフェクトは上の ToneMappingSettings/ExposureSettings のような専用の
 	* リフレクション対象構造体を持ち、ここにフィールドを1つ足し、
-	* PostEffect/ にクラスを足す — 無関係なフィールドの寄せ集めにしない。
+	* PostProcess/ に Feature のフォルダを足す — 無関係なフィールドの寄せ集めに
+	* しない。
 	*/
 	struct PostProcess
 	{
-		/// [EN] Fields are ordered to match the order the passes actually run in PostProcessRenderer::Dispatch, so reading the inspector top to bottom is reading the frame in the order it is built.
-		/// [JP] フィールドの並びは PostProcessRenderer::Dispatch で実際にパスが走る順に合わせてある。インスペクタを上から下へ読むと、フレームが組み立てられる順に読めることになる。
+		/// [EN] Fields are ordered to match the order the post-process Stages actually run, so reading the inspector top to bottom is reading the frame in the order it is built.
+		/// [JP] フィールドの並びは、ポストプロセスの Stage が実際に走る順に合わせてある。インスペクタを上から下へ読むと、フレームが組み立てられる順に読めることになる。
 
 		/// [EN] Depth-of-field gather blur (DepthOfFieldCS.hlsl).
 		/// [JP] 被写界深度のギャザーブラー(DepthOfFieldCS.hlsl)。

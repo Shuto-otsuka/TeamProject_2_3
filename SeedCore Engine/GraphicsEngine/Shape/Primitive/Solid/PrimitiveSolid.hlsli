@@ -1,104 +1,72 @@
-#ifndef __PRIMITIVE_SOLID_HLSL__
-#define __PRIMITIVE_SOLID_HLSL__
+#ifndef __PRIMITIVE_SOLID_HLSLI__
+#define __PRIMITIVE_SOLID_HLSLI__
 
-#include "../Primitive.hlsli"
-#include "../../../Shader/Dispatch.hlsli"
+#include <GraphicsEngine/Shape/Primitive/Primitive.hlsli>
+#include <GraphicsEngine/Model/Model.hlsli>
 
-/**
-* [EN]
-* What one amplification group hands to the mesh shader: the instance and
-* those of its meshlets that survived culling.
-*/
-struct PrimitiveSolidASPayload
-{
-    uint instance_index;
-    uint meshlet_indices[32];
-};
-
-struct PrimitiveSolidMSOutput
-{
-    float4 position : SV_Position;
-    float3 normal : NORMAL;
-    float2 texcoord : TEXCOORD0;
-    nointerpolation uint instance_index : INSTANCE0;
-};
+/// [EN] Bit of PrimitiveSolidStructuredBuffer::flags_ set while the row holds a shape drawn this frame.
+#define PRIMITIVE_SOLID_ACTIVE 1
 
 /**
 * [EN]
-* Where the culling compute shader writes its lists and indirect
-* arguments. Same layout as ModelCullingConstantBuffer.
-*/
-struct PrimitiveSolidCullingConstantBuffer
-{
-    uint single_sided_index_;
-    uint double_sided_index_;
-    uint arguments_index_;
-    uint primitive_solid_culling_constant_buffer_padding_0_;
-};
-
-ConstantBuffer<PrimitiveSolidCullingConstantBuffer> GetPrimitiveSolidCullingConstantBuffer()
-{
-    return ResourceDescriptorHeap[dispatch_buffer_index_];
-}
-
-/**
-* [EN]
-* Bindless indices of the solid batch's buffers, in the shader resource
-* index table.
-*/
-struct PrimitiveSolidShaderResourceIndices
-{
-    uint instance_index_;
-    uint vertex_index_;
-    uint meshlet_index_;
-    uint meshlet_bound_index_;
-
-    uint vertex_indices_index_;
-    uint primitive_indices_index_;
-    uint2 primitive_solid_shader_resource_padding_0_;
-};
-
-/**
-* [EN]
-* One filled shape to draw: its pose, its size (what each component means
-* depends on shape_kind_), and how its surfaces are colored.
+* One solid shape: its world matrices (the unit mesh already scaled to the
+* shape's size), which unit mesh it uses and that mesh's meshlet range,
+* its texture coordinate transform, and the index buffer of its mesh for
+* ray hits. Mirrors the C++ PrimitiveSolidStructuredBuffer (176 bytes).
 */
 struct PrimitiveSolidStructuredBuffer
 {
-    float3 position_;
-    float4 rotation_;
-    float3 dimensions_;
-    float4 color_;
-    float2 uv_scale_;
-    float2 uv_offset_;
-    uint shape_kind_;
-    uint texture_index_;
-    uint double_sided_;
-    uint meshlet_offset_;
-    uint meshlet_count_;
+	row_major float4x4 world_;
+	row_major float4x4 previous_world_;
+	uint slot_;
+	uint flags_;
+	uint meshlet_offset_;
+	uint meshlet_count_;
+	float2 texcoord_min_;
+	float2 texcoord_extent_;
+	uint index_buffer_index_;
+	uint3 primitive_solid_structured_buffer_padding_0_;
 };
-
-StructuredBuffer<PrimitiveSolidStructuredBuffer> GetPrimitiveSolidStructuredBuffer(uint index)
-{
-    return ResourceDescriptorHeap[index];
-}
 
 /**
 * [EN]
-* One visible meshlet, written by the culling compute shader and read by
-* the indirect vertex shader. Same layout as ModelCullingStructuredBuffer,
-* since the buffers come from ModelCullingBuffer.
+* One changed solid row and the slot it goes to.
 */
-struct PrimitiveSolidCullingStructuredBuffer
+struct PrimitiveSolidUpdate
 {
-    uint instance_index_;
-    uint meshlet_index_;
-    uint2 primitive_solid_culling_structured_buffer_padding_0_;
+	uint index_;
+	uint3 primitive_solid_update_padding_0_;
+	PrimitiveSolidStructuredBuffer data_;
 };
 
-StructuredBuffer<PrimitiveSolidCullingStructuredBuffer> GetPrimitiveSolidCullingStructuredBuffer(uint index)
+/**
+* [EN]
+* One changed material row and the slot it goes to.
+*/
+struct PrimitiveMaterialUpdate
 {
-    return ResourceDescriptorHeap[index];
-}
+	uint index_;
+	uint3 primitive_material_update_padding_0_;
+	ModelMaterialStructuredBuffer data_;
+};
 
-#endif // __PRIMITIVE_SOLID_HLSL__
+/**
+* [EN]
+* Per-frame values of the expansion: how many solid rows are in use, the
+* sections of Geometry's shared instance list, and the bindless indices of
+* the unit meshes' buffers every shape shares.
+*/
+struct PrimitiveSolidConstantBuffer
+{
+	uint solid_count_;
+	uint transparent_base_;
+	uint capacity_;
+	uint vertex_buffer_index_;
+	uint meshlet_buffer_index_;
+	uint meshlet_bound_buffer_index_;
+	uint vertex_indices_buffer_index_;
+	uint primitive_indices_buffer_index_;
+	uint4 primitive_solid_constant_buffer_padding_0_;
+};
+
+#endif // __PRIMITIVE_SOLID_HLSLI__

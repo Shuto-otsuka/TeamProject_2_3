@@ -1,4 +1,8 @@
 #include <SeedCore/Engine/EngineCore.h>
+#include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
+#include <GraphicsEngine/DLSS/DlssManager.h>
+#include <GraphicsEngine/RenderGraph/RenderView.h>
+#include <GraphicsEngine/Resource/GraphicsModule.h>
 #include <FoundationEngine/Benchmark/Benchmark.h>
 #include <FoundationEngine/Resource/Config/GameConfig.h>
 #include <FoundationEngine/Resource/Config/EditorConfig.h>
@@ -18,7 +22,7 @@
 
 namespace SeedCore
 {
-	EngineCore::EngineCore() :executor_(std::thread::hardware_concurrency(), MakeWorkerInterface<JobScheduler>(benchmark_)), world_(MakePtr<World>()), joltManager_(MakePtr<JoltManager>())
+	EngineCore::EngineCore() :executor_(std::thread::hardware_concurrency(), MakeWorkerInterface<JobScheduler>(benchmark_)), world_(MakePtr<World>()), joltManager_(MakePtr<JoltManager>()), dlssManager_(MakePtr<DlssManager>())
 	{
 		/// [EN] The engine is constructed on the main thread, which runs the frame loop, so the main thread's sections are recorded from here on.
 		/// [JP] エンジンはフレームループを回すメインスレッドで構築されるので、ここから先メインスレッドの区間が記録される。
@@ -48,6 +52,18 @@ namespace SeedCore
 				}
 			});
 		return physicsTask_;
+	}
+
+	JobTask EngineCore::BootDlss(JobTaskflow& flow)
+	{
+		dlssTask_ = flow.emplace([this]()
+			{
+				if (!dlssManager_->Initialize())
+				{
+					failed_ = true;
+				}
+			});
+		return dlssTask_;
 	}
 
 	JobTask EngineCore::BootAudio(JobTaskflow& flow, const GameConfig& gameConfig)
@@ -84,6 +100,7 @@ namespace SeedCore
 				}
 			});
 		splashTask_.Precede(graphicsTask_);
+		dlssTask_.Precede(graphicsTask_);
 		return graphicsTask_;
 	}
 
@@ -103,7 +120,7 @@ namespace SeedCore
 	{
 		resourceTask_ = flow.emplace([this]()
 			{
-				graphics_.GetGraphicsModule().Install(resource_);
+				graphics_.Module().Install(resource_);
 				audioModule_.Install(resource_);
 				resource_.Async();
 			});
@@ -326,9 +343,13 @@ namespace SeedCore
 		Float letterScale = Min(clientWidth / outputWidth, clientHeight / outputHeight);
 		Float letterWidth = outputWidth * letterScale;
 		Float letterHeight = outputHeight * letterScale;
-		Float letterLeft = static_cast<Float>(clientOrigin.x) + (clientWidth - letterWidth) * 0.5f;
-		Float letterTop = static_cast<Float>(clientOrigin.y) + (clientHeight - letterHeight) * 0.5f;
-		cameraSystem_.Rect(Vector4(letterLeft, letterTop, letterWidth, letterHeight));
+		Float letterLeft = (clientWidth - letterWidth) * 0.5f;
+		Float letterTop = (clientHeight - letterHeight) * 0.5f;
+
+		/// [EN] The game view is drawn at the rectangle in client coordinates, and input reads it in screen coordinates.
+		/// [JP] ゲームビューはクライアント座標の矩形に描き、入力は同じ矩形をスクリーン座標で読む。
+		outputRect_ = Vector4(letterLeft, letterTop, letterWidth, letterHeight);
+		cameraSystem_.Rect(Vector4(static_cast<Float>(clientOrigin.x) + letterLeft, static_cast<Float>(clientOrigin.y) + letterTop, letterWidth, letterHeight));
 	}
 
 	void EngineCore::Begin()
@@ -380,11 +401,11 @@ namespace SeedCore
 			Benchmark::Begin("Physics");
 
 			Benchmark::Begin("ResolveMeshCollider");
-			PhysicsSystem::ResolveMeshCollider(*graphics_.GetGraphicsModule().Resources().meshCollisionResource_, *world_);
+			PhysicsSystem::ResolveMeshCollider(*graphics_.Module().Resources().meshCollisionResource_, *world_);
 			Benchmark::End("ResolveMeshCollider");
 
 			Benchmark::Begin("ResolveSoftbody");
-			PhysicsSystem::ResolveSoftbody(*graphics_.GetGraphicsModule().Resources().modelResource_, *world_);
+			PhysicsSystem::ResolveSoftbody(*graphics_.Module().Resources().modelResource_, *world_);
 			Benchmark::End("ResolveSoftbody");
 
 			Benchmark::Begin("ApplyActive");
@@ -437,23 +458,25 @@ namespace SeedCore
 	void EngineCore::Render(const GameConfig& gameConfig)
 	{
 		Benchmark::Begin("Render");
-		graphics_.Upscale(gameConfig.useDlss_, gameConfig.upscaleMode_);
-		graphics_.VerticalSync(gameConfig.vsync_);
-		graphics_.GameRender(*world_->GetService<GameTimer>(), cameraSystem_, *world_);
-		graphics_.DrawLetterScreen();
+		ScResolution::ResSize outputSize = ToResSize(gameConfig.resolution_);
+		GraphicsSettings settings;
+		settings.outputWidth_ = static_cast<Uint32>(outputSize.Width);
+		settings.outputHeight_ = static_cast<Uint32>(outputSize.Height);
+		settings.upscale_.method_ = gameConfig.upscale_.method_;
+		settings.upscale_.mode_ = gameConfig.upscale_.mode_;
+		settings.verticalSync_ = gameConfig.vsync_;
+		settings.frameGeneration_ = gameConfig.useFrameGeneration_;
+		graphics_.Configure(settings);
+		GameTimer& timer = *world_->GetService<GameTimer>();
+		graphics_.Update(timer.ScaledDeltaTime(), *world_);
+		graphics_.GameRender(timer, cameraSystem_, *world_, RenderViewOutput::Screen, outputRect_);
 		Benchmark::End("Render");
 	}
 
 	void EngineCore::Present()
 	{
-		/// [EN] Includes the wait for vertical sync when it is on.
-		/// [JP] 垂直同期が有効なら、その待ち時間も含む。
-		Benchmark::Begin("Present");
-		graphics_.GetSwapChain().Present(graphics_.GetContext().GetDevice());
-		Benchmark::End("Present");
-
-		/// [EN] Present is the last step of the frame in both the editor and the runtime, so every section of the frame has ended by here.
-		/// [JP] Present はエディタでもランタイムでもフレームの最後の手順なので、ここではフレームの区間が全て閉じている。
+		/// [EN] Graphics::End has already presented the frame. Present is the last step of the frame in both the editor and the runtime, so every section of the frame has ended by here.
+		/// [JP] フレームの表示は Graphics::End で済んでいる。Present はエディタでもランタイムでもフレームの最後の手順なので、ここではフレームの区間が全て閉じている。
 		benchmark_.Collect();
 	}
 
@@ -477,6 +500,7 @@ namespace SeedCore
 
 		joltManager_->Finalize();
 		criManager_.Finalize();
+		dlssManager_->Finalize();
 		graphics_.Finalize();
 	}
 

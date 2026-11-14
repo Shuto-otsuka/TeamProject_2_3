@@ -91,6 +91,7 @@ namespace SeedCore
 			/// [JP] 残りの Crister にとって予算が正しいままになるよう、ページをジオメトリの合計から外す。
 			totalResidentGeometryBytes_ -= page.sizeBytes_;
 			page.resident_ = false;
+			++version_;
 		}
 
 		/// [EN] Release the shared LOD 0 vertex pool, pinned or not.
@@ -100,6 +101,7 @@ namespace SeedCore
 			heap->Release(std::move(poolResource_), poolBufferIndex_);
 			totalResidentGeometryBytes_ -= poolSizeBytes_;
 			poolResident_ = false;
+			++version_;
 		}
 
 		/// [EN] Release both resident mips of every texture, the pinned fallback included.
@@ -330,8 +332,8 @@ namespace SeedCore
 			}
 		}
 
-		/// [EN] Raster morph support: unlike the RT proxy's morph delta pool above, this is baked straight from Morph::positionDeltas_ (no compaction/remap — every SubMesh's original vertexCount_ deltas per target, back to back) since the raster path already has its own per-vertex remap (vertexMorphSource_) to resolve any streamed LOD's vertex back to this buffer's indexing. See the raster morph blend in the model mesh shaders and Model/Material/MaterialResolveCS.hlsl/Model/Transparent/ModelTransparentPS.hlsl.
-		/// [JP] ラスタのモーフ対応: 上の RT プロキシ用モーフデルタプールと違い、Morph::positionDeltas_ からそのまま焼き込む(圧縮/リマップ無し — 各 SubMesh のオリジナル vertexCount_ 個のデルタをターゲットごとに連続で)。ラスタ経路はストリームされたどの LOD の頂点もこのバッファの番号付けへ逆引きする独自の頂点リマップ(vertexMorphSource_)を既に持つため。モデル用メッシュシェーダーと Model/Material/MaterialResolveCS.hlsl/Model/Transparent/ModelTransparentPS.hlsl のラスタのモーフブレンド参照。
+		/// [EN] Raster morph support: unlike the RT proxy's morph delta pool above, this is baked straight from Morph::positionDeltas_ (no compaction/remap — every SubMesh's original vertexCount_ deltas per target, back to back) since the raster path already has its own per-vertex remap (vertexMorphSource_) to resolve any streamed LOD's vertex back to this buffer's indexing. See the raster morph blend in the model mesh shaders and Model/Material/MaterialResolveCS.hlsl/Model/Transparent/TransparentMS.hlsl.
+		/// [JP] ラスタのモーフ対応: 上の RT プロキシ用モーフデルタプールと違い、Morph::positionDeltas_ からそのまま焼き込む(圧縮/リマップ無し — 各 SubMesh のオリジナル vertexCount_ 個のデルタをターゲットごとに連続で)。ラスタ経路はストリームされたどの LOD の頂点もこのバッファの番号付けへ逆引きする独自の頂点リマップ(vertexMorphSource_)を既に持つため。モデル用メッシュシェーダーと Model/Material/MaterialResolveCS.hlsl/Model/Transparent/TransparentMS.hlsl のラスタのモーフブレンド参照。
 		DynamicArray<Vector3> morphDeltas;
 		for (SubMesh& subMesh : crister.geometry_.subMeshes_)
 		{
@@ -974,6 +976,7 @@ namespace SeedCore
 		page.sizeBytes_ = static_cast<Uint64>(cluster.meshletCount_) * (sizeof(MeshletDesc) + sizeof(MeshletBound)) + localVertexIndices.size() * sizeof(Uint32) + alignedSize + localVertices.size() * sizeof(CompressedVertex);
 		totalResidentGeometryBytes_ += page.sizeBytes_;
 		page.resident_ = true;
+		++version_;
 	}
 
 	/**
@@ -1138,6 +1141,7 @@ namespace SeedCore
 		poolSizeBytes_ = static_cast<Uint64>(poolVertexEnd_) * sizeof(CompressedVertex);
 		totalResidentGeometryBytes_ += poolSizeBytes_;
 		poolResident_ = true;
+		++version_;
 	}
 
 	/**
@@ -1183,6 +1187,7 @@ namespace SeedCore
 		totalResidentGeometryBytes_ -= page.sizeBytes_;
 		page.sizeBytes_ = 0;
 		page.resident_ = false;
+		++version_;
 	}
 
 	/**
@@ -1252,6 +1257,7 @@ namespace SeedCore
 		totalResidentGeometryBytes_ -= poolSizeBytes_;
 		poolSizeBytes_ = 0;
 		poolResident_ = false;
+		++version_;
 	}
 
 	/**
@@ -1312,6 +1318,25 @@ namespace SeedCore
 	Bool CristerResidency::ClusterResident(Uint32 clusterIndex)const
 	{
 		return streamingGeometry_[clusterIndex].resident_;
+	}
+
+	/**
+	* [EN]
+	* Returns the residency version: it goes up by one every time a cluster
+	* page or the vertex pool becomes resident or is evicted, so a caller
+	* that remembers it can skip re-reading cluster residency while it is
+	* unchanged.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 常駐の版数を返す。クラスタのページか頂点プールが常駐するか追い出される
+	* たびに 1 増えるので、覚えておいた呼び出し側は、変わらない間はクラスタの
+	* 常駐を読み直さずに済む。
+	*/
+	Uint64 CristerResidency::Version()const
+	{
+		return version_;
 	}
 
 	/**

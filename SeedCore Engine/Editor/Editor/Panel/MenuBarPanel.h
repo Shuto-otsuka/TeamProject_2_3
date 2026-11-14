@@ -1,5 +1,5 @@
 #pragma once
-#include <GraphicsEngine/Renderer/ViewMode.h>
+#include <GraphicsEngine/RenderGraph/RenderView.h>
 #include <Editor/Editor/Panel/GraphicsMenuPanel.h>
 #include <Editor/Editor/Build/RuntimeBuilder.h>
 

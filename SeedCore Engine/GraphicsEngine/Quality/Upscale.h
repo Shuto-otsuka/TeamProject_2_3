@@ -11,6 +11,20 @@ namespace SeedCore
 		Dlaa = 4,
 	};
 
+	enum class UpscaleMethod : Int32
+	{
+		Taau = 0,
+		DlssSuperResolution = 1,
+		DlssRayReconstruction = 2,
+	};
+
+	struct GraphicsUpscale
+	{
+		UpscaleMethod method_ = UpscaleMethod::Taau;
+
+		UpscaleMode mode_ = UpscaleMode::MaxQuality;
+	};
+
 	/// [EN] Standard NVIDIA DLSS per-dimension render/output ratios, shared by
 	///      both DLSS Ray Reconstruction and TAAU. Used to derive the native
 	///      render resolution from the target output resolution whichever of

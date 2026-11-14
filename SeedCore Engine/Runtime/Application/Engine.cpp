@@ -28,6 +28,7 @@ namespace SeedCore
 		/// [JP] 各 Boot 呼び出しは、待つ手順と一緒に自分の手順をグラフへ足すだけで、Execute まで何も走らない。
 		JobTaskflow flow;
 		core_.BootPhysics(flow);
+		core_.BootDlss(flow);
 		core_.BootSplash(flow, gameConfig_);
 		core_.BootGraphics(flow, gameConfig_);
 		core_.BootAudio(flow, gameConfig_);

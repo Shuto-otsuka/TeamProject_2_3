@@ -59,6 +59,19 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Adds actor as the new primary selection unless it is already
+		* selected; an invalid actor is ignored.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* actor が選択中でなければ、新しい主な選択として加える。無効な actor は
+		* 無視する。
+		*/
+		void Add(Actor actor);
+
+		/**
+		* [EN]
 		* Whether actor is selected.
 		*
 		* ---------------------------------------------------------------------

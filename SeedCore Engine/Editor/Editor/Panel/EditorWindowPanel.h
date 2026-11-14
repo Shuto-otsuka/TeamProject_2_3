@@ -1,6 +1,7 @@
 #pragma once
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <Editor/Editor/Panel/GuizmoPanel3D.h>
+#include <Editor/Editor/Panel/ViewModePanel.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 
 namespace SeedCore
@@ -50,6 +51,8 @@ namespace SeedCore
 		ImGuiTexture& imguiTexture_;
 
 		GuizmoPanel3D guizmoPanel_;
+
+		ViewModePanel viewModePanel_;
 
 		DynamicArray<ViewIcon> icons_;
 	};

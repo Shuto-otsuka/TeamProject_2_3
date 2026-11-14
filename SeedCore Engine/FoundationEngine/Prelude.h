@@ -91,6 +91,7 @@
 #include <memory_resource>
 #include <mutex>
 #include <new>
+#include <numeric>
 #include <optional>
 #include <ostream>
 #include <queue>
@@ -168,11 +169,6 @@
 #include <External/ImGui/Include/imgui_impl_win32.h>
 #include <External/ImGui/Include/ImGuizmo/ImGuizmo.h>
 #include <External/ImGui/Include/ImNodeEditor/imgui_node_editor.h>
-
-#include <External/DirectXTK/Include/WICTextureLoader.h>
-#include <External/DirectXTK/Include/DDSTextureLoader.h>
-#include <External/DirectXTK/Include/ResourceUploadBatch.h>
-#include <External/DirectXTK/Include/BufferHelpers.h>
 
 #include <External/Effekseer/Include/Effekseer.h>
 #include <External/Effekseer/Include/EffekseerRendererDX12.h>

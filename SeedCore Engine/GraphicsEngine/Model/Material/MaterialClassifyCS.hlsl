@@ -1,74 +1,96 @@
-#include "../Model.hlsli"
-#include "../../Shader/ShaderResources.hlsli"
-#include "../../Shader/UnorderedAccesses.hlsli"
-#include "../../Shader/Scene.hlsli"
+#include <GraphicsEngine/Model/Model.hlsli>
+#include <GraphicsEngine/Shader/Scene.hlsli>
+
+#define MATERIAL_SORT_BUCKET_COUNT 1024
+
+struct MaterialClassifyBindings
+{
+	uint geometry_depth_;
+	uint geometry_visibility_id_;
+	uint material_buckets_;
+	uint material_velocity_;
+	uint material_radiance_;
+};
+ConstantBuffer<MaterialClassifyBindings> bindings : register(b0, space1);
 
 /**
 * [EN]
-* VisibilityBuffer material sort, pass 1/3: counts how many foreground
-* pixels land in each (instance_index % MATERIAL_SORT_BUCKET_COUNT) bucket.
-* Model/MaterialPrefixSumCS.hlsl turns these counts into exclusive-scan
-* offsets, and Model/MaterialScatterCS.hlsl scatters pixels into their
-* bucket's range so Model/MaterialResolveCS.hlsl can walk them
-* material-grouped instead of in raw screen order.
+* First dispatch of Material.Classify: clears every bucket count and the
+* total that follows them.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* VisibilityBuffer マテリアルソート、パス1/3: 前景ピクセルが
-* (instance_index % MATERIAL_SORT_BUCKET_COUNT) の各バケットへ何個
-* 落ちるかを数える。Model/MaterialPrefixSumCS.hlsl がこのカウントを
-* 排他的スキャンのオフセットへ変え、Model/MaterialScatterCS.hlsl が
-* 各ピクセルをそのバケットの範囲へ書き出すことで、
-* Model/MaterialResolveCS.hlsl が生のスクリーン順ではなくマテリアルで
-* まとまった順に辿れるようにする。
+* Material.Classify の最初のディスパッチ。全バケットの数と、その後ろの総数を
+* 0 にする。
+*/
+[numthreads(64, 1, 1)]
+void Prepare(uint3 id : SV_DispatchThreadID)
+{
+	RWStructuredBuffer<uint> buckets = ResourceDescriptorHeap[bindings.material_buckets_];
+	if (id.x <= MATERIAL_SORT_BUCKET_COUNT)
+	{
+		buckets[id.x] = 0;
+	}
+}
+
+/**
+* [EN]
+* Material sort, pass 1/3. A foreground pixel counts itself into the bucket
+* (instance_index % MATERIAL_SORT_BUCKET_COUNT); Material.PrefixSum turns the
+* counts into offsets and Material.Scatter lays the pixels out bucket by
+* bucket, so neighbouring threads of Material.Resolve share instances and
+* textures. A background pixel instead gets its final values here: no
+* emitted radiance, and the velocity of a point at a pseudo-infinite distance
+* along its view ray, which isolates the camera rotation.
+*
+* ---------------------------------------------------------------------
+*
+* [JP]
+* マテリアルソート、パス 1/3。前景のピクセルは自分をバケット
+* (instance_index % MATERIAL_SORT_BUCKET_COUNT) に数える。Material.PrefixSum が
+* 数をオフセットへ変え、Material.Scatter がバケット順にピクセルを並べるので、
+* Material.Resolve の隣り合うスレッドがインスタンスとテクスチャを共有する。
+* 背景のピクセルはここで最終の値を書く。放射は 0、速度は視線の方向へ
+* 実質無限遠まで進めた点の速度で、カメラの回転だけを取り出す。
 */
 [numthreads(8, 8, 1)]
-void main(uint3 dtid : SV_DispatchThreadID)
+void Classify(uint3 id : SV_DispatchThreadID)
 {
-	SceneConstantBuffer scene = GetSceneConstantBuffer();
-
-	if (dtid.x >= (uint)scene.screen_size_.x || dtid.y >= (uint)scene.screen_size_.y)
+	Texture2D<float> depth_texture = ResourceDescriptorHeap[bindings.geometry_depth_];
+	uint width;
+	uint height;
+	depth_texture.GetDimensions(width, height);
+	if (id.x >= width || id.y >= height)
 	{
 		return;
 	}
 
-	uint2 pixel = dtid.xy;
-
-	Texture2D<float> depth_texture = ResourceDescriptorHeap[shader_resource_indices.geometry_buffer_.depth_index_];
+	uint2 pixel = id.xy;
 	float depth = depth_texture.Load(int3(pixel, 0));
-
-	/// [JP] reverse-Z のクリア値は 0.0 = 背景。ソートに参加させないが、この
-	///      パスは全画面を走査する唯一のパス(Scatter/Resolveはソート済み
-	///      リスト経由で前景ピクセルしか回らない)なので、RT0-3への明示的な
-	///      ゼロ書き込みもここで行う - さもないと Editor/Game で同じ
-	///      geometryBuffer_ を使い回した時、前回ディスパッチの内容が背景
-	///      ピクセルに残り、前のカメラの絵が二重露光のように透けて見える
-	///      (DeferredLightingPS.hlsl は rt1 が全ゼロかどうかで背景判定する)。
-	if (depth == 0.0)
+	Texture2D<uint2> visibility_id = ResourceDescriptorHeap[bindings.geometry_visibility_id_];
+	if (depth == 0.0 || visibility_id.Load(int3(pixel, 0)).x == 0)
 	{
-		RWTexture2D<float4> background_rt0 = ResourceDescriptorHeap[unordered_access_indices.geometry_buffer_.index_0_];
-		RWTexture2D<float4> background_rt1 = ResourceDescriptorHeap[unordered_access_indices.geometry_buffer_.index_1_];
-		RWTexture2D<float2> background_rt2 = ResourceDescriptorHeap[unordered_access_indices.geometry_buffer_.index_2_];
-		RWTexture2D<float4> background_rt3 = ResourceDescriptorHeap[unordered_access_indices.geometry_buffer_.index_3_];
-		background_rt0[pixel] = float4(0.0, 0.0, 0.0, 0.0);
-		background_rt1[pixel] = float4(0.0, 0.0, 0.0, 0.0);
-		background_rt2[pixel] = float2(0.0, 0.0);
-		background_rt3[pixel] = float4(0.0, 0.0, 0.0, 0.0);
+		SceneConstantBuffer scene = GetSceneConstantBuffer();
+		float2 uv = (float2(pixel) + 0.5) / float2(width, height);
+		float4 world = mul(float4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, depth, 1.0), scene.inverse_view_projection_);
+		float3 view_direction = normalize(world.xyz / world.w - scene.camera_position_.xyz);
+		float3 far_position = scene.camera_position_.xyz + view_direction * 100000.0;
+		float4 current_clip = mul(float4(far_position, 1.0), scene.current_view_projection_);
+		float4 previous_clip = mul(float4(far_position, 1.0), scene.previous_view_projection_);
+
+		RWTexture2D<float2> velocity = ResourceDescriptorHeap[bindings.material_velocity_];
+		RWTexture2D<float4> surface_radiance = ResourceDescriptorHeap[bindings.material_radiance_];
+		velocity[pixel] = (current_clip.xy / current_clip.w - previous_clip.xy / previous_clip.w) * 0.5;
+		surface_radiance[pixel] = float4(0.0, 0.0, 0.0, 0.0);
 		return;
 	}
-
-	Texture2D<uint4> visibility_texture = ResourceDescriptorHeap[shader_resource_indices.geometry_buffer_.index_4_];
-	uint4 visibility_id = visibility_texture.Load(int3(pixel, 0));
 
 	uint instance_index;
 	uint meshlet_index;
 	uint triangle_in_meshlet_index;
-	UnpackVisibilityID(visibility_id, instance_index, meshlet_index, triangle_in_meshlet_index);
+	UnpackVisibilityID(visibility_id.Load(int3(pixel, 0)), instance_index, meshlet_index, triangle_in_meshlet_index);
 
-	uint bucket = instance_index % MATERIAL_SORT_BUCKET_COUNT;
-
-	RWByteAddressBuffer bucket_buffer = ResourceDescriptorHeap[unordered_access_indices.material_sort_.bucket_index_];
-	uint original_value;
-	bucket_buffer.InterlockedAdd(bucket * 4, 1, original_value);
+	RWStructuredBuffer<uint> buckets = ResourceDescriptorHeap[bindings.material_buckets_];
+	InterlockedAdd(buckets[instance_index % MATERIAL_SORT_BUCKET_COUNT], 1);
 }

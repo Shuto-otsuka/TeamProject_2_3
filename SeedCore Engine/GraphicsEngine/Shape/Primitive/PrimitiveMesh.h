@@ -1,44 +1,54 @@
 #pragma once
-#include <FoundationEngine/Log/Assert.h>
 #include <FoundationEngine/Interop/ShapeInstance.h>
 #include <GraphicsEngine/Model/Cluster/Meshlet.h>
 
 namespace SeedCore
 {
-	struct PrimitiveVertex
-	{
-		Vector3 position_;
-		Vector3 normal_;
-		Vector2 texcoord_;
-		Float cap_;
-	};
-	SC_STATIC_ASSERT(PrimitiveVertex, 36, "Shape/Primitive/Primitive.hlsli");
+	class BindlessHeap;
 
-	class PrimitiveMesh :public NonCopyable
+	class PrimitiveMesh :public NonTransferable
 	{
 	public:
-		void Build();
+		SC_CONSTEX Uint32 kindCount_ = 4;
 
 	public:
-		/// [EN] Most meshlets one shape may have: one amplification shader group of 32 threads tests one instance's meshlets.
-		/// [JP] 形1つが持てるメッシュレットの最大数。32 スレッドの Amplification Shader の 1 グループが、1 インスタンスのメッシュレットを調べる。
-		SC_CONSTEX Uint32 maxMeshletsPerShape_ = 32;
+		PrimitiveMesh();
+
+		~PrimitiveMesh();
+
+		void Create(ID3D12Device* device, BindlessHeap& heap);
 
 	public:
-		NODISCARD std::span<const PrimitiveVertex> Vertices()const;
+		NODISCARD Uint32 Slot(ShapeKind kind)const;
 
-		NODISCARD std::span<const MeshletDesc> Meshlets()const;
+		NODISCARD const Meshlet::MeshletRange& Meshlets(Uint32 slot)const;
 
-		NODISCARD std::span<const MeshletBound> MeshletBounds()const;
+		NODISCARD Uint IndexBufferIndex(Uint32 slot)const;
 
-		NODISCARD std::span<const Meshlet::MeshletRange> MeshletRanges()const;
+		NODISCARD const D3D12_RAYTRACING_GEOMETRY_DESC& Geometry(Uint32 slot)const;
 
-		NODISCARD std::span<const Uint32> VertexIndices()const;
+		NODISCARD Uint VertexBufferIndex()const;
 
-		NODISCARD std::span<const Uint8> PrimitiveIndices()const;
+		NODISCARD Uint MeshletBufferIndex()const;
+
+		NODISCARD Uint MeshletBoundBufferIndex()const;
+
+		NODISCARD Uint VertexIndicesBufferIndex()const;
+
+		NODISCARD Uint PrimitiveIndicesBufferIndex()const;
 
 	private:
-		static void CreateBoxShape(DynamicArray<PrimitiveVertex>& vertices, DynamicArray<Uint32>& triangles);
+		struct Point
+		{
+			Vector3 position_ = { 0.0f, 0.0f, 0.0f };
+
+			Vector3 normal_ = { 0.0f, 0.0f, 1.0f };
+
+			Vector2 texcoord_ = { 0.0f, 0.0f };
+		};
+
+	private:
+		static void CreateBox(DynamicArray<Point>& points, DynamicArray<Uint32>& triangles);
 
 		/**
 		* [EN]
@@ -51,7 +61,7 @@ namespace SeedCore
 		* 単位の球を作る。半径 1 で原点が中心。上の極（+Y）から下の極まで
 		* 16 段、Y 軸まわりに 32 分割。
 		*/
-		static void CreateSphereShape(DynamicArray<PrimitiveVertex>& vertices, DynamicArray<Uint32>& triangles);
+		static void CreateSphere(DynamicArray<Point>& points, DynamicArray<Uint32>& triangles);
 
 		/**
 		* [EN]
@@ -64,7 +74,7 @@ namespace SeedCore
 		* 単位の円柱を作る。Y 軸まわりに半径 1、y = -1 から y = 1 まで。
 		* Y 軸まわりに 32 分割し、両端に平らなフタを付ける。
 		*/
-		static void CreateCylinderShape(DynamicArray<PrimitiveVertex>& vertices, DynamicArray<Uint32>& triangles);
+		static void CreateCylinder(DynamicArray<Point>& points, DynamicArray<Uint32>& triangles);
 
 		/**
 		* [EN]
@@ -77,19 +87,39 @@ namespace SeedCore
 		* 単位の円錐を作る。半径 1 の底面の円が y = -1、頂点が y = 1。
 		* Y 軸まわりに 32 分割し、底面に平らなフタを付ける。
 		*/
-		static void CreateConeShape(DynamicArray<PrimitiveVertex>& vertices, DynamicArray<Uint32>& triangles);
+		static void CreateCone(DynamicArray<Point>& points, DynamicArray<Uint32>& triangles);
+
+		Uint CreateBuffer(ID3D12Device* device, BindlessHeap& heap, const void* data, Uint64 size, Uint32 stride, Bool raw, Microsoft::WRL::ComPtr<ID3D12Resource>& resource);
 
 	private:
-		DynamicArray<PrimitiveVertex> vertices_;
+		StaticArray<Meshlet::MeshletRange, kindCount_> meshlets_ = {};
 
-		DynamicArray<MeshletDesc> meshlets_;
+		StaticArray<Uint, kindCount_> indexBufferIndices_ = {};
 
-		DynamicArray<MeshletBound> meshletBounds_;
+		StaticArray<D3D12_RAYTRACING_GEOMETRY_DESC, kindCount_> geometries_ = {};
 
-		DynamicArray<Meshlet::MeshletRange> meshletRanges_;
+		Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer_;
 
-		DynamicArray<Uint32> vertexIndices_;
+		Microsoft::WRL::ComPtr<ID3D12Resource> meshletBuffer_;
 
-		DynamicArray<Uint8> primitiveIndices_;
+		Microsoft::WRL::ComPtr<ID3D12Resource> meshletBoundBuffer_;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> vertexIndicesBuffer_;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> primitiveIndicesBuffer_;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> positionBuffer_;
+
+		Microsoft::WRL::ComPtr<ID3D12Resource> indexBuffer_;
+
+		Uint vertexBufferIndex_ = SC_INVALID;
+
+		Uint meshletBufferIndex_ = SC_INVALID;
+
+		Uint meshletBoundBufferIndex_ = SC_INVALID;
+
+		Uint vertexIndicesBufferIndex_ = SC_INVALID;
+
+		Uint primitiveIndicesBufferIndex_ = SC_INVALID;
 	};
 }

@@ -1,14 +1,15 @@
 #ifndef __VERTEX_HLSL__
 #define __VERTEX_HLSL__
 
-#include "Normal.hlsli"
+#include <GraphicsEngine/Shader/Normal.hlsli>
 
 /**
 * Mirrors the C++ CompressedVertex struct (Model/Crister/CristerGeometry.h) - 16 bytes. Used by
-* the raytracing hit paths (reflection, global illumination, refraction, ambient
-* occlusion, subsurface scattering), which only need the normal and texcoord
-* recovered from a hit triangle. Model.hlsli's CompressedModelVertex is the
-* same layout for the mesh-shader path.
+* the raytracing hit paths (RaytracingHit.hlsli: shadows, reflection, global
+* illumination, refraction, ambient occlusion, subsurface scattering,
+* volumetric light), which recover the normal, tangent and texcoord of a hit
+* triangle. Model.hlsli's CompressedModelVertex is the same layout for the
+* raster path.
 */
 struct CompressedVertex
 {
@@ -28,7 +29,7 @@ float3 DecodeCompressedVertexNormal(CompressedVertex vertex)
 }
 
 /**
-* Same unpacking as Model.hlsli's DecodeVertex - u is the high half of
+* Same unpacking as Model.hlsli's DecodeModelVertex - u is the high half of
 * position_z_texu_, v the low half of texv_tangent_ - rescaled out of the
 * mesh's UV AABB. Kept in sync with that: a mismatch here shows up as a
 * raytraced effect sampling the wrong part of the texture.
@@ -39,6 +40,11 @@ float2 DecodeCompressedVertexTexcoord(CompressedVertex vertex, float2 texcoord_m
 	return texcoord_min + texcoord01 * texcoord_extent;
 }
 
+/**
+* Decodes the octahedral tangent (x:8 y:7) in the high half of texv_tangent_
+* and its handedness sign (bit 15, stored in w), as Model.hlsli's
+* DecodeModelVertex does.
+*/
 float4 DecodeCompressedVertexTangent(CompressedVertex vertex)
 {
 	uint tangent_bits = vertex.texv_tangent_ >> 16;

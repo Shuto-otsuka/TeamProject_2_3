@@ -4,18 +4,22 @@
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/D3D12/Context/D3D12TransferLane.h>
+#include <FoundationEngine/Resource/Asset/Asset.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
+#include <GraphicsEngine/RenderGraph/RenderDevice.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
 #include <GraphicsEngine/Resource/GraphicsModule.h>
 
 namespace SeedCore
 {
 	ImGuiTexture::ImGuiTexture(EditorContext& context)
 	{
-		D3D12Context& d3d12Context = context.graphics_.graphics_->GetContext();
-		BindlessHeap* bindlessHeap = &context.graphics_.graphics_->GetBindlessHeap();
+		D3D12Context& d3d12Context = context.graphics_.graphics_->Device().Context();
+		BindlessHeap* bindlessHeap = &context.graphics_.graphics_->Device().ResourceHeap();
 
-		DirectX::ResourceUploadBatch resourceUpload(d3d12Context.GetDevice());
-		resourceUpload.Begin();
+		D3D12TransferLane* transferLane = d3d12Context.GetLoadTransferLane(LoadThread::Main);
+		transferLane->Begin(d3d12Context.GetDevice(), *d3d12Context.GetCopyQueue());
 
 		auto load = [&](IconType type, const Char* folder, const Char* name)
 		{
@@ -23,7 +27,7 @@ namespace SeedCore
 
 			Microsoft::WRL::ComPtr<ID3D12Resource> resource;
 			String filePath = String(std::string("Icon/") + folder + "/" + name + ".icon");
-			TextureCreator::CreateTexturePath(d3d12Context.GetDevice(), resourceUpload, bindlessHeap->Heap(), filePath, resource, index);
+			TextureCreator::CreateTexturePath(d3d12Context.GetDevice(), *transferLane, bindlessHeap->Heap(), filePath, resource, index);
 
 			icons_[static_cast<Uint>(type)] = static_cast<ImTextureID>(bindlessHeap->GPUHandle(index).ptr);
 			resources_.push_back(std::move(resource));
@@ -82,7 +86,7 @@ namespace SeedCore
 		load(IconType::ShowIcon,    "Viewport", "ShowIcon");
 		load(IconType::ShowShape,   "Viewport", "ShowShape");
 		load(IconType::Camera,      "Viewport", "Camera");
-		load(IconType::ViewMode,    "Viewport", "ViewMode");
+		load(IconType::RenderViewMode,    "Viewport", "ViewMode");
 
 		load(IconType::LogError,   "Log", "Error");
 		load(IconType::LogWarning, "Log", "Warning");
@@ -168,12 +172,7 @@ namespace SeedCore
 		load(IconType::ComponentLifetime,             "Component", "Lifetime");
 		load(IconType::ComponentCustom,               "Component", "Custom");
 
-		std::future<void> uploadFinished;
-		{
-			auto queueLock = d3d12Context.GetDirectQueue()->AcquireLock();
-			uploadFinished = resourceUpload.End(d3d12Context.GetDirectQueue()->GetCommandQueue());
-		}
-		uploadFinished.wait();
+		d3d12Context.GetCopyQueue()->WaitFor(transferLane->Submit(*d3d12Context.GetCopyQueue()));
 	}
 
 	ImTextureID ImGuiTexture::Icon(IconType type)const

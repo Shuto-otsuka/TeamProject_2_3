@@ -400,6 +400,7 @@ namespace SeedCore
 			String("Bounds"),
 			String("Material"),
 			String("Skeleton"),
+			String("Selected"),
 
 			/// [EN] Only ever made by loading a component whose script is missing, never added by hand.
 			/// [JP] スクリプトの無いコンポーネントを読み込んだときにだけ作られるもので、手で追加するものではない。

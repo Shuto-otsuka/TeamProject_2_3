@@ -10,9 +10,11 @@ namespace SeedCore
 		BindlessHeap() = default;
 		~BindlessHeap() = default;
 
-		Bool Create(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, Uint maxCount);
+		Bool Create(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, Uint maxCount, Bool shaderVisible = true);
 
 		NODISCARD Uint AllocateIndex();
+
+		NODISCARD Uint AllocateRange(Uint count);
 
 		void Release(Microsoft::WRL::ComPtr<ID3D12Resource> resource, Uint index);
 

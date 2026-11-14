@@ -1,6 +1,7 @@
 #include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
 #include <GraphicsEngine/Font/Font.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
+#include <GraphicsEngine/D3D12/Context/D3D12TransferLane.h>
 
 namespace SeedCore
 {
@@ -133,7 +134,7 @@ namespace SeedCore
 		atlasDirty_ = false;
 	}
 
-	void Font::UploadAtlas(ID3D12Device* device, ID3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap)
+	void Font::UploadAtlas(ID3D12Device* device, D3D12TransferLane& lane, BindlessHeap* bindlessHeap)
 	{
 		if (!atlasDirty_)
 		{
@@ -146,65 +147,52 @@ namespace SeedCore
 			return;
 		}
 
-		if (!atlasTextureIndexAllocated_)
+		/// [EN] Frames still in flight may sample the current atlas, so every update writes a new texture under a new index and hands the old pair to the heap's deferred release.
+		/// [JP] 実行中のフレームが今のアトラスを読んでいる可能性があるため、更新のたびに新しい番号で新しいテクスチャへ書き、古い組はヒープの遅延解放へ渡す。
+		if (atlasTextureIndexAllocated_)
 		{
-			atlasTextureIndex_ = bindlessHeap->AllocateIndex();
-			atlasTextureIndexAllocated_ = true;
+			bindlessHeap->Release(atlasTexture_, atlasTextureIndex_);
+			atlasTexture_.Reset();
+			atlasTextureIndexAllocated_ = false;
 		}
 
-		if (!atlasTexture_ || atlasTextureWidth_ != bitmap.width || atlasTextureHeight_ != bitmap.height)
+		D3D12_HEAP_PROPERTIES heapProperties{};
+		heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+
+		D3D12_RESOURCE_DESC resourceDesc{};
+		resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+		resourceDesc.Width = static_cast<Uint64>(bitmap.width);
+		resourceDesc.Height = static_cast<Uint>(bitmap.height);
+		resourceDesc.DepthOrArraySize = 1;
+		resourceDesc.MipLevels = 1;
+		resourceDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		resourceDesc.SampleDesc.Count = 1;
+		resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+
+		/// [EN] The texture starts in the COMMON state, so the copy queue writes it and the frame reads it without explicit transitions.
+		/// [JP] テクスチャは COMMON 状態で始まるので、コピーキューが書き、フレームが読むのに明示的な遷移は要らない。
+		if (FAILED(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(atlasTexture_.ReleaseAndGetAddressOf()))))
 		{
-			D3D12_HEAP_PROPERTIES heapProperties{};
-			heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-
-			D3D12_RESOURCE_DESC resourceDesc{};
-			resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-			resourceDesc.Width = static_cast<Uint64>(bitmap.width);
-			resourceDesc.Height = static_cast<Uint>(bitmap.height);
-			resourceDesc.DepthOrArraySize = 1;
-			resourceDesc.MipLevels = 1;
-			resourceDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-			resourceDesc.SampleDesc.Count = 1;
-			resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
-
-			atlasTexture_.Reset();
-			if (FAILED(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(atlasTexture_.ReleaseAndGetAddressOf()))))
-			{
-				return;
-			}
+			return;
+		}
 #if SC_DEBUG
-			atlasTexture_->SetName(L"Font_Atlas");
-			GFSDK_Aftermath_DX12_UpdateResourceInfo(atlasTexture_.Get());
+		atlasTexture_->SetName(L"Font_Atlas");
+		GFSDK_Aftermath_DX12_UpdateResourceInfo(atlasTexture_.Get());
 #endif
 
-			atlasTextureWidth_ = bitmap.width;
-			atlasTextureHeight_ = bitmap.height;
+		atlasTextureWidth_ = bitmap.width;
+		atlasTextureHeight_ = bitmap.height;
+		atlasTextureIndex_ = bindlessHeap->AllocateIndex();
+		atlasTextureIndexAllocated_ = true;
 
-			D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
-			srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-			srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-			srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-			srvDesc.Texture2D.MipLevels = 1;
-			device->CreateShaderResourceView(atlasTexture_.Get(), &srvDesc, bindlessHeap->CPUHandle(atlasTextureIndex_));
-		}
-		else
-		{
-			DirectX::ResourceUploadBatch transition(device);
-			transition.Begin();
-			transition.Transition(atlasTexture_.Get(), D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_COPY_DEST);
-			transition.End(cmdQueue).wait();
-		}
+		D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc{};
+		srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+		srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+		srvDesc.Texture2D.MipLevels = 1;
+		device->CreateShaderResourceView(atlasTexture_.Get(), &srvDesc, bindlessHeap->CPUHandle(atlasTextureIndex_));
 
-		D3D12_SUBRESOURCE_DATA subresource{};
-		subresource.pData = bitmap.pixels;
-		subresource.RowPitch = static_cast<Longlong>(bitmap.width) * 4;
-		subresource.SlicePitch = subresource.RowPitch * bitmap.height;
-
-		DirectX::ResourceUploadBatch upload(device);
-		upload.Begin();
-		upload.Upload(atlasTexture_.Get(), 0, &subresource, 1);
-		upload.Transition(atlasTexture_.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE);
-		upload.End(cmdQueue).wait();
+		lane.GetStream().Upload(device, lane.GetCommandList(), atlasTexture_.Get(), 0, std::as_bytes(std::span(bitmap.pixels, static_cast<Size>(bitmap.width) * bitmap.height * 4)));
 
 		ClearAtlasDirty();
 	}

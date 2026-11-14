@@ -1,4 +1,5 @@
 #include <Editor/Editor/Context/SelectionContext.h>
+#include <FoundationEngine/World/ECS/Component/Selected.h>
 
 namespace SeedCore
 {
@@ -28,11 +29,8 @@ namespace SeedCore
 	*/
 	void SelectionContext::Select(Actor actor)
 	{
-		actors_.clear();
-		if (actor)
-		{
-			actors_.push_back(actor);
-		}
+		Clear();
+		Add(actor);
 	}
 
 	/**
@@ -56,10 +54,33 @@ namespace SeedCore
 		auto it = std::ranges::find(actors_, actor);
 		if (it != actors_.end())
 		{
+			actor.RemoveComponent<Selected>();
 			actors_.erase(it);
 			return;
 		}
 
+		Add(actor);
+	}
+
+	/**
+	* [EN]
+	* Adds actor as the new primary selection unless it is already
+	* selected; an invalid actor is ignored.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* actor が選択中でなければ、新しい主な選択として加える。無効な actor は
+	* 無視する。
+	*/
+	void SelectionContext::Add(Actor actor)
+	{
+		if (!actor || Contains(actor))
+		{
+			return;
+		}
+
+		actor.AddComponent<Selected>();
 		actors_.push_back(actor);
 	}
 
@@ -88,6 +109,13 @@ namespace SeedCore
 	*/
 	void SelectionContext::Clear()
 	{
+		for (Actor actor : actors_)
+		{
+			if (actor)
+			{
+				actor.RemoveComponent<Selected>();
+			}
+		}
 		actors_.clear();
 	}
 }

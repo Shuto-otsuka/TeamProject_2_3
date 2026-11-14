@@ -3,10 +3,10 @@
 
 namespace SeedCore
 {
-	Bool BindlessHeap::Create(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, Uint maxCount)
+	Bool BindlessHeap::Create(ID3D12Device* device, D3D12_DESCRIPTOR_HEAP_TYPE type, Uint maxCount, Bool shaderVisible)
 	{
 		heap_ = MakePtr<DescriptorHeap>();
-		if (!heap_->Create(device, type, maxCount, true))
+		if (!heap_->Create(device, type, maxCount, shaderVisible))
 		{
 			return false;
 		}
@@ -39,6 +39,29 @@ namespace SeedCore
 		Uint index = freeLists_.back();
 		freeLists_.pop_back();
 		return index;
+	}
+
+	Uint BindlessHeap::AllocateRange(Uint count)
+	{
+		std::scoped_lock lock(mutex_);
+
+		std::ranges::sort(freeLists_, std::greater<Uint>());
+		for (Size end = freeLists_.size(); end >= count && end > 0; --end)
+		{
+			Uint first = freeLists_[end - 1];
+			if (freeLists_[end - count] == first + count - 1)
+			{
+				freeLists_.erase(freeLists_.begin() + (end - count), freeLists_.begin() + end);
+				return first;
+			}
+		}
+
+		if (!exhaustedLogged_)
+		{
+			SC_LOG_ERROR("バインドレスディスクリプタヒープに、連続した {} 個の空きがありません(上限 {})。以降の確保はディスクリプタ 0 を共有するため描画が乱れます。", count, maxCount_);
+			exhaustedLogged_ = true;
+		}
+		return 0;
 	}
 
 	void BindlessHeap::Release(Microsoft::WRL::ComPtr<ID3D12Resource> resource, Uint index)

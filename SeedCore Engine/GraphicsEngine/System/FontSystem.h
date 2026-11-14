@@ -4,6 +4,7 @@ namespace SeedCore
 {
 	class FontResource;
 	class BindlessHeap;
+	class D3D12TransferLane;
 
 	/**
 	* [EN]
@@ -26,14 +27,15 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Fills and uploads the atlas of every font fontResource holds,
-		* through cmdQueue into bindlessHeap.
+		* recording the uploads into lane, the frame transfer lane the render graph
+		* submits before the frame draws, with views in bindlessHeap.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* fontResource が持つ全フォントのアトラスを埋め、cmdQueue を通して
-		* bindlessHeap へアップロードする。
+		* fontResource が持つ全フォントのアトラスを埋め、アップロードを lane（描画の前に
+		* レンダーグラフが送信するフレームの転送レーン）に積む。ビューは bindlessHeap に置く。
 		*/
-		void Update(FontResource& fontResource, ID3D12Device* device, ID3D12CommandQueue* cmdQueue, BindlessHeap* bindlessHeap);
+		void Update(FontResource& fontResource, ID3D12Device* device, D3D12TransferLane& lane, BindlessHeap* bindlessHeap);
 	};
 }

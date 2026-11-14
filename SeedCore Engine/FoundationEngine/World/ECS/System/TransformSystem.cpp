@@ -68,7 +68,7 @@ namespace SeedCore
 		Matrix worldMatrix = local * parentMatrix;
 		actor.WorldMatrix(worldMatrix);
 
-		for (Actor child : actor.Children())
+		for (const Actor& child : actor.Children())
 		{
 			UpdateActor(child, worldMatrix, world);
 		}

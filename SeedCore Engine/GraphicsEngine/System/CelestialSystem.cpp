@@ -122,6 +122,8 @@ namespace SeedCore
 		{
 			Compute(Celestial());
 		}
+		result_.sunEnabled_ = sunEnabled_;
+		result_.sunAngularRadius_ = sunAngularRadius_;
 	}
 
 	const CelestialResult& CelestialSystem::Result()const

@@ -1,6 +1,10 @@
-#include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
 #include <GraphicsEngine/Profiler/GpuProfiler.h>
+#include <GraphicsEngine/RenderGraph/RenderGraph.h>
+#include <GraphicsEngine/RenderGraph/RenderDevice.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
+#include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandList.h>
+#include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
 #include <FoundationEngine/Benchmark/Benchmark.h>
 #include <FoundationEngine/Log/Warning.h>
 
@@ -8,58 +12,48 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* Allocates the timestamp query heap (one frame's worth of slots) and the
-	* frame-ringed readback buffer, and caches the queue's timestamp frequency.
-	* On any failure the profiler stays unavailable and every entry point turns
-	* into a no-op, so callers never need to guard their Begin/End calls.
+	* Creates the query heap and the ringed readback buffer, and reads the tick frequency of the Direct and Compute queues.
+	* On failure the profiler stays unavailable and every other function does nothing, so the graph never has to check before calling them.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* タイムスタンプクエリヒープ(1フレーム分のスロット)とフレームリングの
-	* リードバックバッファを確保し、キューのタイムスタンプ周波数をキャッシュする。
-	* 失敗した場合はプロファイラを無効のままにして全エントリポイントを no-op に
-	* するので、呼び出し側は Begin/End をガードしなくてよい。
+	* クエリのヒープとリングにした読み戻しのバッファを作り、Direct キューと Compute キューの周波数を読む。
+	* 失敗したときは使えないままにし、ほかの関数は何もしない。そのためグラフは呼ぶ前に確かめなくてよい。
 	*/
-	void GpuProfiler::Create(ID3D12Device* device, ID3D12CommandQueue* commandQueue, Uint32 frameCount)
+	void GpuProfiler::Create(RenderDevice& device)
 	{
 		available_ = false;
 
-		if (!device || !commandQueue)
+		/// [EN] Each queue reports its own tick frequency, so both are read and kept in the order of the graph's queue numbers.
+		/// [JP] 周波数はキューごとに違いうるので、両方を読み、グラフのキューの番号の順に持つ。
+		D3D12Context& context = device.Context();
+		if (FAILED(context.GetDirectQueue()->GetCommandQueue()->GetTimestampFrequency(&frequencies_[0])) || FAILED(context.GetComputeQueue()->GetCommandQueue()->GetTimestampFrequency(&frequencies_[1])) || frequencies_[0] == 0 || frequencies_[1] == 0)
 		{
+			SC_LOG_WARNING("GPU のタイムスタンプの周波数を取得できませんでした。GPU プロファイラを無効にします。");
 			return;
 		}
 
-		/// [JP] 読み出しは frameCount-1 フレーム前の領域を対象にするので、
-		///      最低 3 にして2フレーム以上の余裕を作る。
-		frameCount_ = frameCount < 3 ? 3 : frameCount;
-		if (frameCount_ > maxFrameCount_)
-		{
-			frameCount_ = maxFrameCount_;
-		}
-
-		if (FAILED(commandQueue->GetTimestampFrequency(&timestampFrequency_)) || timestampFrequency_ == 0)
-		{
-			SC_LOG_WARNING("GPU タイムスタンプ周波数を取得できませんでした。GPU プロファイラを無効化します。");
-			return;
-		}
-
+		/// [EN] The query heap holds one frame of slots: two per pass (before and after).
+		/// [JP] クエリのヒープは 1 フレーム分のスロットを持つ。パスごとに 2 つ（前と後）。
+		ID3D12Device* d3dDevice = context.GetDevice();
 		D3D12_QUERY_HEAP_DESC queryHeapDesc{};
 		queryHeapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
-		queryHeapDesc.Count = slotCount_;
-
-		if (FAILED(device->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&queryHeap_))))
+		queryHeapDesc.Count = passCapacity_ * 2;
+		if (FAILED(d3dDevice->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&queryHeap_))))
 		{
-			SC_LOG_WARNING("タイムスタンプクエリヒープの生成に失敗しました。GPU プロファイラを無効化します。");
+			SC_LOG_WARNING("タイムスタンプのクエリのヒープを作れませんでした。GPU プロファイラを無効にします。");
 			return;
 		}
 
+		/// [EN] The readback buffer holds frameCount_ regions of one frame each, so the region being read is never the one the GPU is copying into.
+		/// [JP] 読み戻しのバッファは 1 フレーム分の領域を frameCount_ 個持つ。そのため読む領域が、GPU が写している領域と重ならない。
 		D3D12_HEAP_PROPERTIES heapProperties{};
 		heapProperties.Type = D3D12_HEAP_TYPE_READBACK;
 
 		D3D12_RESOURCE_DESC resourceDesc{};
 		resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-		resourceDesc.Width = static_cast<Uint64>(frameCount_) * slotCount_ * sizeof(Uint64);
+		resourceDesc.Width = static_cast<Uint64>(frameCount_) * passCapacity_ * 2 * sizeof(Uint64);
 		resourceDesc.Height = 1;
 		resourceDesc.DepthOrArraySize = 1;
 		resourceDesc.MipLevels = 1;
@@ -67,281 +61,223 @@ namespace SeedCore
 		resourceDesc.SampleDesc.Count = 1;
 		resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
-		/// [JP] READBACK ヒープのバッファは COPY_DEST 固定で生成し、以後遷移
-		///      させない(ResolveQueryData の要求状態がそれ)。
-		if (FAILED(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc,
-			D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&readbackResource_))))
+		/// [EN] A READBACK buffer stays in COPY_DEST for its whole life, which is the state ResolveQueryData writes into.
+		/// [JP] READBACK のバッファはずっと COPY_DEST のままにする。ResolveQueryData が書き込む状態がそれ。
+		if (FAILED(d3dDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&readback_))))
 		{
-			SC_LOG_WARNING("タイムスタンプ読み戻しバッファの生成に失敗しました。GPU プロファイラを無効化します。");
+			SC_LOG_WARNING("タイムスタンプの読み戻しのバッファを作れませんでした。GPU プロファイラを無効にします。");
 			queryHeap_.Reset();
 			return;
 		}
 #if SC_DEBUG
-		readbackResource_->SetName(L"GpuProfiler_Readback");
-		GFSDK_Aftermath_DX12_UpdateResourceInfo(readbackResource_.Get());
+		readback_->SetName(L"GpuProfiler.Readback");
+		GFSDK_Aftermath_DX12_UpdateResourceInfo(readback_.Get());
 #endif
 
+		/// [EN] Start the ring from an empty state.
+		/// [JP] リングを空の状態から始める。
+		for (DynamicArray<GpuProfilerResult>& records : records_)
+		{
+			records.clear();
+		}
+		results_.clear();
 		writeFrame_ = 0;
-		advanceCount_ = 0;
+		resolveCount_ = 0;
+		warned_ = false;
 		available_ = true;
 	}
 
 	/**
 	* [EN]
-	* Resolves the frame that just finished, reads back the oldest completed
-	* frame, and rotates the ring.
+	* Writes the timestamp before a pass and records which Stage, view and queue the pass's slots belong to.
+	* Passes beyond passCapacity_ are not timed, and a warning is logged once.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 直前に終わったフレームを resolve し、完了済みの最古フレームを読み戻して
-	* リングを回す。
+	* パスの前のタイムスタンプを書き、そのパスのスロットがどの Stage・ビュー・キューのものかを記録する。
+	* passCapacity_ を超えたパスは計らず、警告を 1 回だけ出す。
 	*/
-	void GpuProfiler::Advance(D3D12CommandList* cmdList)
+	void GpuProfiler::Begin(D3D12CommandList& list, Uint32 pass, const RenderGraphStage& stage, RenderViewMask view)
 	{
-		if (!available_ || !cmdList)
+		/// [EN] Every pass is also a CPU section under its Stage name, recorded even when timestamps are unavailable.
+		/// [JP] 各パスは Stage の名前で CPU の区間にもする。タイムスタンプが使えないときも記録する。
+		Benchmark::Begin(stage.stageName_);
+
+		/// [EN] The record is kept for every pass, so End can close the CPU section by name even for a pass that is not timed.
+		/// [JP] 記録はすべてのパスについて残す。計らないパスでも、End が名前で CPU の区間を閉じられるようにするため。
+		DynamicArray<GpuProfilerResult>& records = records_[writeFrame_];
+		if (records.size() <= pass)
+		{
+			records.resize(pass + 1);
+		}
+		records[pass] = GpuProfilerResult{ stage.featureName_, stage.stageName_, view, stage.async_, 0.0f };
+
+		if (!available_)
 		{
 			return;
 		}
-
-		auto* cmd = cmdList->Get();
-		if (!cmd)
+		if (pass >= passCapacity_)
 		{
-			return;
-		}
-
-		/// [JP] 初回はまだ記録されたタイムスタンプが無いので resolve しない。
-		///      代わりに全スロットを一度書いて初期化しておく。ResolveQueryData は
-		///      毎フレーム全スロットを対象にする一方、無効なパスや計測していない
-		///      ビュー(Canvas など)のスロットは一度も書かれない。未書き込みの
-		///      タイムスタンプを resolve すると内容が未定義になり、デバッグレイヤも
-		///      警告を出す。値自体は recorded_ のマスクで捨てているが、未定義領域を
-		///      読むこと自体を避けておく。
-		if (advanceCount_ == 0)
-		{
-			for (Uint32 slot = 0; slot < slotCount_; slot++)
+			if (!warned_)
 			{
-				cmd->EndQuery(queryHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, slot);
+				SC_LOG_WARNING("GPU プロファイラ: 1 フレームのパスが {} を超えたので、超えた分は計りません", passCapacity_);
+				warned_ = true;
 			}
-		}
-		else
-		{
-			cmd->ResolveQueryData(queryHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 0, slotCount_, readbackResource_.Get(), static_cast<Uint64>(writeFrame_) * slotCount_ * sizeof(Uint64));
+			return;
 		}
 
-		/// [JP] 次に上書きする領域=最も古い領域。そこは frameCount_-1 フレーム前に
-		///      resolve を記録した分なので GPU は確実に書き終えている。
-		Uint32 readFrame = (writeFrame_ + 1) % frameCount_;
+		/// [EN] A timestamp query has no Begin: EndQuery alone writes the current GPU time into the slot.
+		/// [JP] タイムスタンプのクエリには Begin が無く、EndQuery だけでそのときの GPU の時刻をスロットに書く。
+		list.Get()->EndQuery(queryHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, pass * 2);
+	}
 
-		if (advanceCount_ >= frameCount_)
+	/**
+	* [EN]
+	* Writes the timestamp after a pass, on the same command list that Begin used.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* パスの後のタイムスタンプを、Begin と同じコマンドリストで書く。
+	*/
+	void GpuProfiler::End(D3D12CommandList& list, Uint32 pass)
+	{
+		/// [EN] Close the CPU section opened by Begin, using the name Begin recorded.
+		/// [JP] Begin が開いた CPU の区間を、Begin が記録した名前で閉じる。
+		Benchmark::End(records_[writeFrame_][pass].stageName_);
+
+		if (!available_ || pass >= passCapacity_)
 		{
-			const Uint64 regionBytes = static_cast<Uint64>(slotCount_) * sizeof(Uint64);
-			const Uint64 regionBegin = static_cast<Uint64>(readFrame) * regionBytes;
+			return;
+		}
+		list.Get()->EndQuery(queryHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, pass * 2 + 1);
+	}
 
-			/// [JP] READBACK は読む範囲を明示して Map/Unmap する(ドライバに
-			///      キャッシュ整合の範囲を伝えるため)。毎フレーム1回なので
-			///      コストは無視できる。
+	/**
+	* [EN]
+	* Copies the timestamps of the passes recorded this frame into this frame's region of the readback buffer, then moves the ring to the next frame.
+	* Called on the Direct command list after the Direct queue has waited for the Compute queue.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* このフレームで記録したパスのタイムスタンプを、読み戻しのバッファのこのフレームの領域へ写し、リングを次のフレームへ進める。
+	* Direct キューが Compute キューを待った後に、Direct のコマンドリストで呼ぶ。
+	*/
+	void GpuProfiler::Resolve(D3D12CommandList& list, Uint32 passCount)
+	{
+		if (!available_)
+		{
+			return;
+		}
+
+		/// [EN] Only the slots written this frame are resolved. Resolving a slot that was never written gives undefined data, and the debug layer warns about it.
+		/// [JP] このフレームで書いたスロットだけを写す。一度も書いていないスロットを写すと中身が未定義になり、デバッグレイヤも警告を出す。
+		Uint32 timedCount = passCount < passCapacity_ ? passCount : passCapacity_;
+		if (timedCount > 0)
+		{
+			list.Get()->ResolveQueryData(queryHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 0, timedCount * 2, readback_.Get(), static_cast<Uint64>(writeFrame_) * passCapacity_ * 2 * sizeof(Uint64));
+		}
+
+		/// [EN] The next frame records into the next region of the ring.
+		/// [JP] 次のフレームは、リングの次の領域に記録する。
+		writeFrame_ = (writeFrame_ + 1) % frameCount_;
+		++resolveCount_;
+	}
+
+	/**
+	* [EN]
+	* Reads back the oldest resolved frame and rebuilds Results from its records, then clears those records for the frame that is starting.
+	* Called once at the start of Execute.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Resolve 済みのいちばん古いフレームを読み戻して、その記録から Results を作り直し、始まるフレームのためにその記録を空にする。
+	* Execute の始めに 1 回呼ぶ。
+	*/
+	void GpuProfiler::Read()
+	{
+		if (!available_)
+		{
+			return;
+		}
+
+		/// [EN] The region the starting frame is about to reuse was resolved frameCount_ frames ago, so the GPU has finished writing it.
+		/// [JP] 始まるフレームが使い回す領域は frameCount_ フレーム前に写したものなので、GPU は書き終えている。
+		DynamicArray<GpuProfilerResult>& records = records_[writeFrame_];
+
+		/// [EN] Until a full ring has been resolved, the region holds nothing yet and the previous results are kept.
+		/// [JP] リング 1 周分を写すまでは領域にまだ何も入っていないので、前の結果をそのまま残す。
+		if (resolveCount_ >= frameCount_)
+		{
+			results_.clear();
+			Uint32 timedCount = records.size() < passCapacity_ ? static_cast<Uint32>(records.size()) : passCapacity_;
+			Uint64 regionBegin = static_cast<Uint64>(writeFrame_) * passCapacity_ * 2 * sizeof(Uint64);
+
+			/// [EN] Map only the range that is read, so the driver knows which part has to be coherent with the CPU.
+			/// [JP] 読む範囲だけを Map し、CPU と整合させる範囲をドライバに伝える。
 			D3D12_RANGE readRange{};
 			readRange.Begin = static_cast<SIZE_T>(regionBegin);
-			readRange.End = static_cast<SIZE_T>(regionBegin + regionBytes);
+			readRange.End = static_cast<SIZE_T>(regionBegin + static_cast<Uint64>(timedCount) * 2 * sizeof(Uint64));
 
 			void* mapped = nullptr;
-			if (SUCCEEDED(readbackResource_->Map(0, &readRange, &mapped)) && mapped)
+			if (timedCount > 0 && SUCCEEDED(readback_->Map(0, &readRange, &mapped)) && mapped)
 			{
 				const Uint64* timestamps = reinterpret_cast<const Uint64*>(static_cast<const Byte*>(mapped) + regionBegin);
-
-				for (Uint32 viewIndex = 0; viewIndex < viewCount_; viewIndex++)
+				for (Uint32 index = 0;index < timedCount;++index)
 				{
-					Uint32 mask = recorded_[readFrame][viewIndex];
+					/// [EN] Copy the record and fill in its time. The tick frequency is the one of the queue the pass ran on.
+					/// [JP] 記録を写して時間を入れる。周波数は、そのパスが走ったキューのもの。
+					GpuProfilerResult result = records[index];
+					Uint64 beginTick = timestamps[index * 2];
+					Uint64 endTick = timestamps[index * 2 + 1];
 
-					for (Uint32 scopeIndex = 0; scopeIndex < scopeCount_; scopeIndex++)
-					{
-						if ((mask & (1u << scopeIndex)) == 0)
-						{
-							milliseconds_[viewIndex][scopeIndex] = 0.0f;
-							continue;
-						}
-
-						Uint32 beginSlot = (viewIndex * scopeCount_ + scopeIndex) * 2;
-						Uint64 beginTick = timestamps[beginSlot];
-						Uint64 endTick = timestamps[beginSlot + 1];
-
-						/// [JP] タイムスタンプが逆順/同値になるケース(計測不能)は
-						///      0 として扱う。負値を Uint64 で引くと巨大値になる。
-						Uint64 elapsed = endTick > beginTick ? endTick - beginTick : 0;
-						milliseconds_[viewIndex][scopeIndex] = static_cast<Float>(static_cast<Double>(elapsed) * 1000.0 / static_cast<Double>(timestampFrequency_));
-					}
+					/// [EN] An end tick that is not after the begin tick cannot be measured and counts as zero; subtracting it as unsigned would wrap to a huge value.
+					/// [JP] 終わりが始めより後でない時刻は計れないので 0 とする。符号なしで引くと巨大な値になるため。
+					Uint64 elapsed = endTick > beginTick ? endTick - beginTick : 0;
+					result.milliseconds_ = static_cast<Float>(static_cast<Double>(elapsed) * 1000.0 / static_cast<Double>(frequencies_[result.async_ ? 1 : 0]));
+					results_.push_back(result);
 				}
 
+				/// [EN] Nothing was written by the CPU, so the written range is empty.
+				/// [JP] CPU は何も書いていないので、書いた範囲は空にする。
 				D3D12_RANGE writtenRange{};
-				readbackResource_->Unmap(0, &writtenRange);
+				readback_->Unmap(0, &writtenRange);
 			}
 		}
 
-		writeFrame_ = readFrame;
-		++advanceCount_;
-
-		for (Uint32 viewIndex = 0; viewIndex < viewCount_; viewIndex++)
-		{
-			recorded_[writeFrame_][viewIndex] = 0;
-		}
+		/// [EN] The starting frame records into this region from now on.
+		/// [JP] 始まるフレームは、これからこの領域に記録する。
+		records.clear();
 	}
 
-	void GpuProfiler::Begin(D3D12CommandList* cmdList, GpuProfileView view, GpuProfileScope scope)
+	/**
+	* [EN]
+	* GPU time of every pass in the most recently read frame, in the order the passes ran.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* 最後に読み戻したフレームの、全パスの GPU の時間。パスが動いた順に並ぶ。
+	*/
+	std::span<const GpuProfilerResult> GpuProfiler::Results()const
 	{
-		/// [EN] Every GPU-timed pass is also a CPU section under the same name, so the cost of recording the pass shows up without touching the call sites; it is recorded even when timestamps are unavailable.
-		/// [JP] GPU 計測するパスは同じ名前の CPU 区間にもする。呼び出し側に手を入れずにパスの記録コストが出る。タイムスタンプが使えないときも記録する。
-		Benchmark::Begin(String(ScopeName(scope)));
-
-		if (!available_ || !cmdList)
-		{
-			return;
-		}
-
-		auto* cmd = cmdList->Get();
-		if (!cmd)
-		{
-			return;
-		}
-
-		/// [JP] タイムスタンプクエリは BeginQuery を取らず EndQuery のみで
-		///      「その時点の時刻を書く」という使い方をする(D3D12 の仕様)。
-		cmd->EndQuery(queryHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, BeginSlot(view, scope));
+		return results_;
 	}
 
-	void GpuProfiler::End(D3D12CommandList* cmdList, GpuProfileView view, GpuProfileScope scope)
-	{
-		Benchmark::End(String(ScopeName(scope)));
-
-		if (!available_ || !cmdList)
-		{
-			return;
-		}
-
-		auto* cmd = cmdList->Get();
-		if (!cmd)
-		{
-			return;
-		}
-
-		cmd->EndQuery(queryHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, BeginSlot(view, scope) + 1);
-
-		/// [JP] End 側で記録済みビットを立てる。Begin だけ通って End が通らない
-		///      経路(途中 return など)を「計測済み」と誤認しないため。
-		recorded_[writeFrame_][static_cast<Uint32>(view)] |= 1u << static_cast<Uint32>(scope);
-	}
-
-	Float GpuProfiler::GetMilliseconds(GpuProfileView view, GpuProfileScope scope)const
-	{
-		if (!available_)
-		{
-			return 0.0f;
-		}
-
-		return milliseconds_[static_cast<Uint32>(view)][static_cast<Uint32>(scope)];
-	}
-
-	Float GpuProfiler::GetViewMilliseconds(GpuProfileView view)const
-	{
-		if (!available_)
-		{
-			return 0.0f;
-		}
-
-		Float total = 0.0f;
-		Uint32 viewIndex = static_cast<Uint32>(view);
-
-		for (Uint32 scopeIndex = 0; scopeIndex < scopeCount_; scopeIndex++)
-		{
-			total += milliseconds_[viewIndex][scopeIndex];
-		}
-
-		return total;
-	}
-
+	/**
+	* [EN]
+	* Whether Create succeeded and timestamps are being written.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* Create が成功し、タイムスタンプを書いているか。
+	*/
 	Bool GpuProfiler::Available()const
 	{
 		return available_;
-	}
-
-	Uint32 GpuProfiler::BeginSlot(GpuProfileView view, GpuProfileScope scope)const
-	{
-		return (static_cast<Uint32>(view) * scopeCount_ + static_cast<Uint32>(scope)) * 2;
-	}
-
-	const Char* GpuProfiler::ScopeName(GpuProfileScope scope)
-	{
-		switch (scope)
-		{
-		case GpuProfileScope::DepthPrepass:					
-			return "深度プリパス";
-		case GpuProfileScope::HiZBuild:						
-			return "Hi-Z 構築";
-		case GpuProfileScope::GeometryBuffer:
-			return "G-Buffer";
-		case GpuProfileScope::MaterialResolve:
-			return "VisBuffer マテリアル解決";
-		case GpuProfileScope::LightCluster:
-			return "ライトクラスタ";
-		case GpuProfileScope::RaytraceShadow:				
-			return "RT 影";
-		case GpuProfileScope::RaytraceAmbientOcclusion:		
-			return "RT AO";
-		case GpuProfileScope::RaytraceSubsurfaceScattering:	
-			return "RT 表面下散乱";
-		case GpuProfileScope::RaytraceReflection:
-			return "RT 反射";
-		case GpuProfileScope::RaytraceRefraction:
-			return "RT 屈折";
-		case GpuProfileScope::RaytraceGlobalIllumination:
-			return "RT GI";
-		case GpuProfileScope::VolumetricCloudScapes:
-			return "RT 雲";
-		case GpuProfileScope::VolumetricStar:
-			return "RT 星";
-		case GpuProfileScope::WeatherParticle:
-			return "天候パーティクル";
-		case GpuProfileScope::VolumetricLight:
-			return "RT ボリュメトリックライト";
-		case GpuProfileScope::SkyGenerate:
-			return "空 IBL 生成";
-		case GpuProfileScope::Composite:
-			return "ライティング合成";
-		case GpuProfileScope::Transparent:
-			return "半透明";
-		case GpuProfileScope::DlssRayReconstruction:
-			return "DLSS-RR";
-		case GpuProfileScope::Taau:
-			return "TAAU";
-		case GpuProfileScope::PostProcess:
-			return "ポストプロセス";
-		default:											
-			return "不明";
-		}
-	}
-
-	const Char* GpuProfiler::ViewName(GpuProfileView view)
-	{
-		switch (view)
-		{
-		case GpuProfileView::Editor:	
-			return "エディタ";
-		case GpuProfileView::Game:		
-			return "ゲーム";
-		case GpuProfileView::Canvas:	
-			return "キャンバス";
-		default:						
-			return "不明";
-		}
-	}
-
-	GpuProfileScopeGuard::GpuProfileScopeGuard(GpuProfiler& profiler, D3D12CommandList* cmdList, GpuProfileView view, GpuProfileScope scope) : profiler_(profiler), cmdList_(cmdList), view_(view), scope_(scope)
-	{
-		profiler_.Begin(cmdList_, view_, scope_);
-	}
-
-	GpuProfileScopeGuard::~GpuProfileScopeGuard()
-	{
-		profiler_.End(cmdList_, view_, scope_);
 	}
 }

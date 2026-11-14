@@ -648,7 +648,7 @@ def precompile_shaders(project_root, output_dir):
         path, profile, entry = jobs[job_index]
         object_path = os.path.join(temp_dir, f"{job_index}.cso")
         include_options = ["-I", project_root, "-I", os.path.join(project_root, "UserProject")]
-        arguments = [dxc_path, "-T", profile] + ([] if profile == "lib_6_6" else ["-E", entry]) + SHADER_COMPILE_OPTIONS + include_options + [path, "-Fo", object_path]
+        arguments = [dxc_path, "-T", profile] + (["-enable-payload-qualifiers"] if profile == "lib_6_6" else ["-E", entry]) + SHADER_COMPILE_OPTIONS + include_options + [path, "-Fo", object_path]
         result = subprocess.run(arguments, capture_output=True)
         if result.returncode != 0 or not os.path.exists(object_path):
             return job_index, None, result.stderr.decode("utf-8", "replace") + result.stdout.decode("utf-8", "replace")

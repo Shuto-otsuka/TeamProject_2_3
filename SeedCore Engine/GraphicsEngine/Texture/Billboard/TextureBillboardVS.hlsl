@@ -1,93 +1,46 @@
-#include "../Texture.hlsli"
-#include "../../Shader/ShaderResources.hlsli"
-#include "../../Shader/Culling.hlsli"
-#include "../../Shader/Dispatch.hlsli"
+#include <GraphicsEngine/Texture/Billboard/TextureBillboard.hlsli>
 
-TextureMSOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
+/**
+* [EN]
+* Texture.Billboard for devices without mesh shaders: one DrawInstanced
+* instance per entry of the billboard section of Texture.Draws, 6
+* vertices (two triangles) each, placed exactly like TextureBillboardMS.
+*
+* ---------------------------------------------------------------------
+*
+* [JP]
+* メッシュシェーダーの無いデバイス用の Texture.Billboard。Texture.Draws の
+* ビルボードの区間の 1 件につき DrawInstanced のインスタンス 1 つ、6 頂点
+* （2 三角形）。配置は TextureBillboardMS と同じ。
+*/
+TextureBillboardOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 {
-	StructuredBuffer<TextureBillboardStructuredBuffer> texture_billboard = GetTextureBillboardStructuredBuffer(shader_resource_indices.texture_.billboard_index_);
-	SceneConstantBuffer scene_constant = GetSceneConstantBuffer();
-	TextureBillboardStructuredBuffer billboard = texture_billboard[(dispatch_buffer_index_ != 0xFFFFFFFFu ? dispatch_buffer_index_ : 0u) + instance_id];
+	ConstantBuffer<TextureConstantBuffer> constants = ResourceDescriptorHeap[bindings.texture_constants_];
+	StructuredBuffer<uint> draws = ResourceDescriptorHeap[bindings.texture_draws_];
+	StructuredBuffer<TextureQuadStructuredBuffer> quads = ResourceDescriptorHeap[bindings.texture_quads_];
+	StructuredBuffer<TextureUnitStructuredBuffer> units = ResourceDescriptorHeap[bindings.texture_units_];
+	uint quad_index = draws[constants.billboard_base_ + instance_id];
+	TextureQuadStructuredBuffer quad = quads[quad_index];
+	TextureUnitStructuredBuffer unit = units[quad.unit_];
+	SceneConstantBuffer scene = GetSceneConstantBuffer();
 
-	TextureMSOutput output = (TextureMSOutput)0;
-	output.position = float4(2.0f, 2.0f, 2.0f, 1.0f);
+	uint corners[6] = { 0, 1, 2, 1, 3, 2 };
+	uint corner_index = corners[vertex_id % 6];
+	float2 corner = float2(corner_index & 1, corner_index >> 1);
 
-	bool is_visible = false;
-	if (billboard.scale_.x > 0.0 && billboard.scale_.y > 0.0)
+	float2 local = quad.rect_min_ + corner * quad.rect_size_;
+	float3 world_position = mul(float4(local, 0.0, 1.0), unit.world_).xyz;
+	if ((unit.flags_ & TEXTURE_UNIT_FACE_CAMERA) != 0)
 	{
-		float radius = max(billboard.scale_.x, billboard.scale_.y) * 0.5f;
-		is_visible = IsVisibleInFrustum(billboard.position_, radius, scene_constant.current_view_projection_);
-	}
-	if (!is_visible)
-	{
-		return output;
-	}
-
-	uint quad_indices[6] = { 0u, 1u, 2u, 1u, 3u, 2u };
-	uint corner_index = quad_indices[vertex_id];
-
-	float2 offsets[4] =
-	{
-		float2(-0.5f,  0.5f),
-		float2( 0.5f,  0.5f),
-		float2(-0.5f, -0.5f),
-		float2( 0.5f, -0.5f)
-	};
-
-	float2 uvs[4] =
-	{
-		float2(0.0f, 0.0f),
-		float2(1.0f, 0.0f),
-		float2(0.0f, 1.0f),
-		float2(1.0f, 1.0f)
-	};
-
-	Texture2D texture = ResourceDescriptorHeap[billboard.texture_index_];
-	float texture_width, texture_height;
-	texture.GetDimensions(texture_width, texture_height);
-	float2 texture_dimentions = float2(texture_width, texture_height);
-
-	float2 uv_offset = float2(0.0f, 0.0f);
-	if (billboard.motion_type_ == 1)
-	{
-		uv_offset = billboard.scroll_direction_ * billboard.scroll_speed_ * scene_constant.total_time_;
+		float rotation = unit.kind_ == TEXTURE_KIND_FONT ? 0.0 : atan2(unit.world_[0].y, unit.world_[0].x);
+		float2 scale = float2(length(unit.world_[0].xyz), length(unit.world_[1].xyz));
+		float2 rotated = float2(local.x * cos(rotation) - local.y * sin(rotation), local.x * sin(rotation) + local.y * cos(rotation)) * scale;
+		world_position = unit.world_[3].xyz + scene.inverse_view_[0].xyz * rotated.x + scene.inverse_view_[1].xyz * rotated.y;
 	}
 
-	float2 pivot_norm = (billboard.texture_size_.x > 0.0f) ? (billboard.pivot_ / billboard.texture_size_) : float2(0.5f, 0.5f);
-	float2 local = offsets[corner_index] + float2(0.5f - pivot_norm.x, pivot_norm.y - 0.5f);
-	float3 scaled = float3(local.x * billboard.scale_.x, local.y * billboard.scale_.y, 0.0f);
-
-	float3 world_position;
-	if (billboard.face_camera_ != 0)
-	{
-		float3 camera_right = scene_constant.inverse_view_[0].xyz;
-		float3 camera_up = scene_constant.inverse_view_[1].xyz;
-
-		float cos_r = cos(billboard.rotation_.z);
-		float sin_r = sin(billboard.rotation_.z);
-		float roll_x = scaled.x * cos_r + scaled.y * sin_r;
-		float roll_y = -scaled.x * sin_r + scaled.y * cos_r;
-
-		world_position = billboard.position_ + camera_right * roll_x + camera_up * roll_y;
-	}
-	else
-	{
-		float cx = cos(billboard.rotation_.x); float sx = sin(billboard.rotation_.x);
-		float cy = cos(billboard.rotation_.y); float sy = sin(billboard.rotation_.y);
-		float cz = cos(billboard.rotation_.z); float sz = sin(billboard.rotation_.z);
-
-		float3 rotated;
-		rotated.x = (cy * cz) * scaled.x + (sx * sy * cz - cx * sz) * scaled.y + (cx * sy * cz + sx * sz) * scaled.z;
-		rotated.y = (cy * sz) * scaled.x + (sx * sy * sz + cx * cz) * scaled.y + (cx * sy * sz - sx * cz) * scaled.z;
-		rotated.z = (-sy)     * scaled.x + (sx * cy)                * scaled.y + (cx * cy)                * scaled.z;
-
-		world_position = billboard.position_ + rotated;
-	}
-
-	output.position = mul(float4(world_position, 1.0f), scene_constant.current_view_projection_);
-	output.uv = (billboard.texture_position_ + uvs[corner_index] * billboard.texture_size_) / texture_dimentions + uv_offset;
-	output.color = billboard.color_;
-	output.texture_index = billboard.texture_index_;
-
+	TextureBillboardOutput output;
+	output.position = mul(float4(world_position, 1.0), scene.current_view_projection_);
+	output.texcoord = lerp(quad.uv_min_, quad.uv_max_, corner);
+	output.quad_index = quad_index;
 	return output;
 }

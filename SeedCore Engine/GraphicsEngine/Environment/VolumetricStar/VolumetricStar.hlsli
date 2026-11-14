@@ -1,14 +1,15 @@
 #ifndef __VOLUMETRIC_STAR_HLSL__
 #define __VOLUMETRIC_STAR_HLSL__
 
+#include <GraphicsEngine/Shader/Noise.hlsli>
+
 /**
-* One currently-flying shooting star. Mirrors
-* GraphicsEngine/Renderer/VolumetricStarRenderer.h's
-* VolumetricStarRayConstantBuffer. Laid out as 4-scalar (16-byte) cbuffer
-* rows, same convention as VolumetricCloudScapes.hlsli - keep the C++ mirror
-* row-for-row in sync.
+* One currently-flying shooting star. Mirrors VolumetricStarMeteor in
+* Environment/VolumetricStar/VolumetricStarShader.h. Laid out as 4-scalar
+* (16-byte) cbuffer rows, same convention as VolumetricCloud.hlsli - keep the
+* C++ mirror row-for-row in sync.
 */
-struct ShootingStarInstance
+struct VolumetricStarMeteor
 {
 	float3 start_direction_;
 
@@ -20,11 +21,11 @@ struct ShootingStarInstance
 };
 
 /**
-* Volumetric star tuning constant buffer, read by VolumetricStarCS.hlsl.
-* Must match the C++ mirror in Renderer/VolumetricStarRenderer.h
-* byte-for-byte.
+* VolumetricStar.Constants: the star tuning, read by VolumetricStarCS.hlsl.
+* Must match the C++ mirror in
+* Environment/VolumetricStar/VolumetricStarShader.h byte-for-byte.
 */
-struct VolumetricStarRayConstantBuffer
+struct VolumetricStarConstantBuffer
 {
 	/// Angular size (radians) of the star placement grid.
 	float cell_size_;
@@ -47,8 +48,8 @@ struct VolumetricStarRayConstantBuffer
 
 	uint max_concurrent_shooting_stars_;
 
-	/// Stamped by VolumetricStarRenderer (not the UI), like
-	/// VolumetricCloudScapes' procedural_sky_enabled_.
+	/// Stamped by VolumetricStarFeature (not the UI), like
+	/// VolumetricCloud's procedural_sky_enabled_.
 	uint enabled_;
 
 	/// Strength of the soft halo outside the SDF star shape.
@@ -57,7 +58,7 @@ struct VolumetricStarRayConstantBuffer
 	/// How fast the halo fades with SDF distance - higher = tighter glow.
 	float glow_falloff_;
 
-	ShootingStarInstance active_shooting_stars_[4];
+	VolumetricStarMeteor active_shooting_stars_[4];
 };
 
 static const float STAR_PI = 3.14159265358979;
@@ -120,7 +121,7 @@ float StarSDF(float2 p, float r, float n, float m)
 * Betelgeuse/Rigel) instead of the base tuning.color_, echoing how bright
 * real stars show visible color from their temperature.
 */
-float3 StarFieldColor(float3 view_direction, float night_factor, float total_time, VolumetricStarRayConstantBuffer tuning)
+float3 StarFieldColor(float3 view_direction, float night_factor, float total_time, VolumetricStarConstantBuffer tuning)
 {
 	if (night_factor <= 0.0 || tuning.enabled_ == 0)
 	{
@@ -243,7 +244,7 @@ float3 MoonDiscColor(float3 view_direction, float3 moon_direction, float moon_ra
 * great-circle arc segment between its trailing edge (progress_ - trail
 * length) and its head (progress_), brightest at the head like a comet.
 */
-float3 ShootingStarColor(float3 view_direction, VolumetricStarRayConstantBuffer tuning)
+float3 ShootingStarColor(float3 view_direction, VolumetricStarConstantBuffer tuning)
 {
 	float3 total = float3(0, 0, 0);
 
@@ -251,7 +252,7 @@ float3 ShootingStarColor(float3 view_direction, VolumetricStarRayConstantBuffer 
 
 	for (uint index = 0; index < tuning.max_concurrent_shooting_stars_; index++)
 	{
-		ShootingStarInstance instance = tuning.active_shooting_stars_[index];
+		VolumetricStarMeteor instance = tuning.active_shooting_stars_[index];
 
 		if (instance.progress_ <= 0.0 || instance.progress_ >= 1.0)
 		{
@@ -296,17 +297,5 @@ float3 ShootingStarColor(float3 view_direction, VolumetricStarRayConstantBuffer 
 
 	return total;
 }
-
-struct StarShaderResourceIndices
-{
-	uint output_index_;
-	uint3 star_shader_resource_padding_0_;
-};
-
-struct StarUnorderedAccessIndices
-{
-	uint output_index_;
-	uint3 star_unordered_access_padding_0_;
-};
 
 #endif // __VOLUMETRIC_STAR_HLSL__

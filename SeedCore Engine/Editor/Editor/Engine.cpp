@@ -35,6 +35,7 @@ namespace SeedCore
 		/// [JP] 各 Boot 呼び出しは、待つ手順と一緒に自分の手順をグラフへ足すだけで、Execute まで何も走らない。
 		JobTaskflow flow;
 		core_.BootPhysics(flow);
+		core_.BootDlss(flow);
 		core_.BootSplash(flow, editorConfig_);
 		core_.BootGraphics(flow, gameConfig_);
 		core_.BootAudio(flow, editorConfig_);
@@ -108,11 +109,10 @@ namespace SeedCore
 					}
 				}
 
-				/// [EN] The first editor frame applies the configured resolution.
-				/// [JP] 最初のエディタのフレームで、設定した解像度を反映させる。
+				/// [EN] The editor applies the configured settings to Graphics every frame from these.
+				/// [JP] エディタは、これらの設定を毎フレーム Graphics へ反映する。
 				editorContext_.config_.game_ = &gameConfig_;
 				editorContext_.config_.editor_ = &editorConfig_;
-				editorContext_.config_.resizeRequested_ = true;
 
 				/// [EN] With a scene loaded, the editor reopens the scene file that was open last time.
 				/// [JP] Scene が読み込まれていれば、前回開いていた Scene ファイルをエディタで開き直す。

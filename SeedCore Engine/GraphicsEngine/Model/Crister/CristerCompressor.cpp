@@ -2,6 +2,7 @@
 #include <External/DirectXTex/Include/DirectXTex.h>
 #include <GraphicsEngine/Model/Crister/CristerCompressor.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
+#include <GraphicsEngine/Graphics/GraphicsProcessor.h>
 #include <GraphicsEngine/Texture/Compression/BC7CompressShader.h>
 #include <FoundationEngine/Log/DxFail.h>
 #include <FoundationEngine/Log/Warning.h>
@@ -16,7 +17,7 @@ namespace SeedCore
 	* Bitmap's cacheData_. Must run before serialising to the .crister
 	* cache. The BC7 encoding runs on the GPU (BC7CompressCS.hlsl, mode
 	* 6 only) as a one-shot compute dispatch on cmdQueue, with the root
-	* signature and PSO owned by bc7Shader. The shader binds its input
+	* signature and PSO of the processor's BC7 shader. The shader binds its input
 	* and output as root SRV/UAV, so unlike Upload() this needs no
 	* BindlessHeap.
 	*
@@ -29,11 +30,11 @@ namespace SeedCore
 	* Bitmap の cacheData_ へ焼き込む。.crister キャッシュへの
 	* シリアライズ前に実行すること。BC7 エンコードは GPU で行い
 	* (BC7CompressCS.hlsl、mode 6 のみ)、cmdQueue 上の一発実行の
-	* コンピュートディスパッチとして、bc7Shader が持つルートシグネチャと
-	* PSO で動かす。シェーダーは入出力をルート SRV/UAV でバインドするので、
-	* Upload() と違い BindlessHeap は要らない。
+	* コンピュートディスパッチとして、processor の BC7 シェーダーの
+	* ルートシグネチャと PSO で動かす。シェーダーは入出力をルート
+	* SRV/UAV でバインドするので、Upload() と違い BindlessHeap は要らない。
 	*/
-	void CristerCompressor::BakeBitmap(ID3D12Device* device, D3D12CommandQueue* cmdQueue, BC7CompressShader& bc7Shader, std::span<Bitmap> bitmaps)const
+	void CristerCompressor::BakeBitmap(ID3D12Device* device, D3D12CommandQueue* cmdQueue, GraphicsProcessor& processor, std::span<Bitmap> bitmaps)const
 	{
 		/// [EN] Shrinks an RGBA8 image by an integer box filter until it fits maxDimension; used only for images beyond D3D12's 2D texture limit of 16384.
 		/// [JP] RGBA8 画像を整数倍率のボックスフィルタで縮小する（D3D12 の 2Dテクスチャ最大寸法 16384 を超える場合のみ呼ばれる）。
@@ -187,9 +188,9 @@ namespace SeedCore
 			}
 		};
 
-		/// [EN] BC7-compresses one mip on the GPU and reads the blocks back into outputBlocks, fully synchronously: a one-shot command list and fence are created and the calling thread blocks until the GPU is done. The root signature and PSO come from bc7Shader, which Graphics builds once at startup.
-		/// [JP] 1ミップぶんをGPUでBC7圧縮してoutputBlocksへ読み戻す。完全同期:専用の一発コマンドリストとフェンスを作り、GPUが終わるまで呼び出しスレッドをブロックする。ルートシグネチャ/PSOはbc7Shader(Graphics所有、起動時に一度だけ構築)のものを使う。
-		auto compressBC7 = [device, cmdQueue, &bc7Shader](const DirectX::Image& image, DynamicArray<Uchar>& outputBlocks)
+		/// [EN] BC7-compresses one mip on the GPU and reads the blocks back into outputBlocks, fully synchronously: a one-shot command list and fence are created and the calling thread blocks until the GPU is done. The root signature and PSO come from the processor's BC7 shader, which Graphics builds once at startup.
+		/// [JP] 1ミップぶんをGPUでBC7圧縮してoutputBlocksへ読み戻す。完全同期:専用の一発コマンドリストとフェンスを作り、GPUが終わるまで呼び出しスレッドをブロックする。ルートシグネチャ/PSOはprocessorのBC7シェーダー(Graphics所有、起動時に一度だけ構築)のものを使う。
+		auto compressBC7 = [device, cmdQueue, &processor](const DirectX::Image& image, DynamicArray<Uchar>& outputBlocks)
 		{
 			Uint32 width = static_cast<Uint32>(image.width);
 			Uint32 height = static_cast<Uint32>(image.height);
@@ -297,8 +298,8 @@ namespace SeedCore
 			hr = device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, cmdAllocator.Get(), nullptr, IID_PPV_ARGS(cmdList.GetAddressOf()));
 			SC_HR_CHECK(hr, "コマンドリストの生成に失敗しました");
 
-			cmdList->SetComputeRootSignature(bc7Shader.GetRootSignature());
-			cmdList->SetPipelineState(bc7Shader.GetPipelineState());
+			cmdList->SetComputeRootSignature(processor.BC7().GetRootSignature());
+			cmdList->SetPipelineState(processor.BC7().GetPipelineState());
 
 			/// [EN] Root parameters: the image and block-grid size as constants, the input as a root SRV and the output as a root UAV.
 			/// [JP] ルートパラメーター: 画像とブロック格子のサイズを定数で、入力をルート SRV、出力をルート UAV で渡す。

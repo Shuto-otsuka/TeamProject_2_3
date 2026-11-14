@@ -26,15 +26,15 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Creates a texture from the image file at filePath and returns its
-	* handle. The upload goes through the direct queue, so thread is not
-	* needed to pick per-thread state.
+	* handle. The upload goes through the copy queue on the transfer lane of
+	* thread, so loads on different threads never share a lane.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* filePath の画像ファイルからテクスチャを作り、そのハンドルを返す。
-	* アップロードは Direct キューを通すため、スレッドごとの状態を選ぶ
-	* のに thread は要らない。
+	* アップロードは thread の転送レーンでコピーキューへ送るため、別の
+	* スレッドの読み込みがレーンを共有することはない。
 	*/
 	Handle<Texture> TextureLoader::Load(String filePath, LoadThread thread)
 	{
@@ -51,7 +51,7 @@ namespace SeedCore
 		texture->textureIndex_ = heap_.AllocateIndex();
 		texture->filePath_ = filePath;
 
-		TextureCreator::CreateTexturePath(context_.GetDevice(), context_.GetDirectQueue(), heap_.Heap(), filePath, texture->resource_, texture->textureIndex_);
+		TextureCreator::CreateTexturePath(context_.GetDevice(), context_.GetCopyQueue(), context_.GetLoadTransferLane(thread), heap_.Heap(), filePath, texture->resource_, texture->textureIndex_);
 
 		/// [EN] The allocation size is what streaming counts against its budget.
 		/// [JP] 確保した大きさは、ストリーミングが予算と比べるのに使う。

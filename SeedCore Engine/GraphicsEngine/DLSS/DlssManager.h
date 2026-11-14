@@ -196,16 +196,18 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Starts Streamline before the D3D12 device is created, asking it to
-		* load every feature, and records which ones actually loaded. In
-		* Release the Streamline interposer DLL is checked for NVIDIA's
-		* signature first, and false is returned if it does not pass.
+		* load every feature, records which ones actually loaded, and makes
+		* the manager reachable through the Gateway. In Release the Streamline
+		* interposer DLL is checked for NVIDIA's signature first, and false is
+		* returned if it does not pass.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* D3D12 デバイスを作る前に Streamline を起動して全ての機能の読み込みを
-		* 頼み、実際に読み込めたものを記録する。Release では先に Streamline の
-		* インターポーザー DLL の NVIDIA 署名を確かめ、通らなければ false を返す。
+		* 頼み、実際に読み込めたものを記録して、Gateway からマネージャーへ
+		* 届くようにする。Release では先に Streamline のインターポーザー DLL の
+		* NVIDIA 署名を確かめ、通らなければ false を返す。
 		*/
 		Bool Initialize();
 

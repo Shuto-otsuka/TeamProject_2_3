@@ -36,6 +36,11 @@ namespace SeedCore
 
 		Vector2 screenSize_;
 		Vector2 inverseScreenSize_;
+
+		Uint showFlagsLow_ = 0xFFFFFFFF;
+		Uint showFlagsHigh_ = 0xFFFFFFFF;
+		Uint debugSource_ = 0;
+		Uint sceneConstantBufferPadding_ = 0;
 	};
 
 	class BindlessHeap;

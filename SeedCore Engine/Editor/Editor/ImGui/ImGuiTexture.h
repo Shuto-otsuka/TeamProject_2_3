@@ -58,7 +58,7 @@ namespace SeedCore
 		ShowIcon,
 		ShowShape,
 		Camera,
-		ViewMode,
+		RenderViewMode,
 
 		LogError,
 		LogWarning,

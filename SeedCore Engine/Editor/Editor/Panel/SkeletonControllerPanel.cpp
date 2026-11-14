@@ -8,7 +8,7 @@
 #include <GraphicsEngine/Camera/PreviewCamera.h>
 #include <GraphicsEngine/Camera/PreviewCameraController.h>
 #include <GraphicsEngine/Resource/GraphicsModule.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
 #include <FoundationEngine/Input/InputSystem.h>
 #include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/World/Actor/Actor.h>
@@ -66,7 +66,7 @@ namespace SeedCore
 			}
 			else
 			{
-				ModelResource* modelResource = context_.graphics_.graphics_->GetGraphicsModule().Resources().modelResource_.get();
+				ModelResource* modelResource = context_.graphics_.graphics_->Module().Resources().modelResource_.get();
 				Handle<Crister> handle = modelResource->GetHandle(mesh->meshID_);
 				currentCrister_ = handle.empty() ? nullptr : modelResource->Resolve(handle);
 
@@ -139,7 +139,14 @@ namespace SeedCore
 		context_.preview_.skeletonController_.camera_.Resize(previewSize.x, previewSize.y);
 
 		ImVec2 imagePosition = ImGui::GetCursorScreenPos();
-		ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
+		if (previewHandle_.ptr != 0)
+		{
+			ImGui::Image(ImTextureID(previewHandle_.ptr), previewSize);
+		}
+		else
+		{
+			ImGui::Dummy(previewSize);
+		}
 
 		/// [EN] Orbit-style preview navigation: left-click drag orbits around
 		///      Focus(), middle-click drag pans, wheel dollies - see
