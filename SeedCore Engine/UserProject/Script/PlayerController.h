@@ -21,8 +21,11 @@ public:
 	int GetCostGaugeUsed() const { return costGauge; }
 	int GetCostGaugeAdd() const { return costGaugeAdd; }
 	int GetCostGaugeMax() const { return maxCostGauge; }
+	int GetTotalUseCost() const { return totalUseCost; }
+	int GetDeathCount() const { return deathCount; }
 	float GetChargeRate() const { return shotChargeRate; }
 	float GetBulletRemoveDistance() const { return bulletRemoveDistance; }
+	float GetClearTimer() const { return clearTimer; }
 	bool IsFirstPerson() const { return isFirstPerson; }
 	bool HasGun() const { return hasGun; }
 	bool IsGoal() const { return isGoal; }
@@ -97,6 +100,7 @@ private:
 	void UpdateInputReset(float elapsedTime);
 	void UpdateLand();
 	void FinishGun(float gunFinishTime);
+	void UpdateClearTimer(float elapsedTime);
 
 	bool OnGroundOrCoyote();
 
@@ -136,10 +140,13 @@ private:
 	float shotCoolTimer = 0.0f;
 	float gunFinishTime = 0.0f;
 	float gunFinishTimer = 0.0f;
+	float clearTimer = 0.0f;
 
 	int costGauge = 0;
 	int costGaugeAdd = 0;
 	int beforeCheckPointStep = -1;
+	int totalUseCost = 0;
+	int deathCount = 0;
 
 	SeedCore::Uint32 normalMaterial;
 	SeedCore::Uint32 transparentMaterial;

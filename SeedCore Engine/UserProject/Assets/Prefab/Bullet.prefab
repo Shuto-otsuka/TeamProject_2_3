@@ -57,7 +57,7 @@
 										"r": 1.0
 									},
 									"float": 0.0,
-									"int": -1602242984,
+									"int": -298179599,
 									"is_array": false,
 									"name": "[0]",
 									"string": "",
@@ -183,7 +183,7 @@
 										"r": 1.0
 									},
 									"float": 0.0,
-									"int": -1602242984,
+									"int": -298179599,
 									"is_array": false,
 									"name": "[0]",
 									"string": "",
@@ -531,7 +531,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 0.0,
+							"float": 0.10000000149011612,
 							"int": 0,
 							"is_array": false,
 							"name": "反発係数",
@@ -1197,7 +1197,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 78.0,
+							"float": 65.0,
 							"int": 0,
 							"is_array": false,
 							"name": "maxSpeed",
