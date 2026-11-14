@@ -65,6 +65,13 @@ SHADER_NUMTHREADS_PATTERN = re.compile(r'\[\s*numthreads', re.IGNORECASE)
 # 1ファイルに複数のエントリを持つ CS（ブラー各パス、A-Trous 各パス等）もこれで全て拾う。
 SHADER_COMPUTE_ENTRY_PATTERN = re.compile(r'\[\s*numthreads\s*\([^)]*\)\s*\]\s*(?:\[[^\]]*\]\s*)*void\s+([A-Za-z_]\w*)\s*\(', re.IGNORECASE)
 
+# PS のエントリポイントは、パイプラインの記述(GraphicsEngine の *.h の struct)が
+# pixelFile_ と一緒に pixelEntryPoint_ で指定したもの（無ければ main）。
+# 1ファイルに複数のエントリを持つ PS（GeometryPS の Depth / Visibility 等）もこれで全て拾う。
+SHADER_PIXEL_FILE_PATTERN = re.compile(r'\bpixelFile_\s*=\s*ShaderPath::Engine\s*\(\s*"([^"]+)"\s*\)')
+SHADER_PIXEL_ENTRY_PATTERN = re.compile(r'\bpixelEntryPoint_\s*=\s*"([^"]+)"')
+SHADER_MAIN_PATTERN = re.compile(r'\bmain\s*\(')
+
 
 def fnv1a(name):
     """
@@ -620,6 +627,20 @@ def precompile_shaders(project_root, output_dir):
         print("FoundationEngine/Prelude.h から SC_ENCRYPTION_KEY_SEED を読み取れませんでした — シェーダキャッシュを暗号化できません")
         return None
 
+    pixel_entries = {}
+    for root, _, files in os.walk(os.path.join(project_root, "GraphicsEngine")):
+        for file in files:
+            if not file.endswith(".h"):
+                continue
+            with open(os.path.join(root, file), 'r', encoding='utf-8', errors='ignore') as f:
+                header = strip_comments(f.read())
+            for description in re.split(r'\bstruct\b', header):
+                pixel_file = SHADER_PIXEL_FILE_PATTERN.search(description)
+                pixel_entry = SHADER_PIXEL_ENTRY_PATTERN.search(description)
+                if pixel_file and pixel_entry:
+                    pixel_path = os.path.normcase(os.path.normpath(os.path.join(project_root, pixel_file.group(1))))
+                    pixel_entries.setdefault(pixel_path, set()).add(pixel_entry.group(1))
+
     jobs = []
     for root, _, files in os.walk(os.path.join(project_root, "GraphicsEngine")):
         for file in files:
@@ -636,6 +657,12 @@ def precompile_shaders(project_root, output_dir):
             elif profile == "cs_6_6" or (profile is None and SHADER_NUMTHREADS_PATTERN.search(source)):
                 for entry in SHADER_COMPUTE_ENTRY_PATTERN.findall(source) or ["main"]:
                     jobs.append((path, "cs_6_6", entry))
+            elif profile == "ps_6_6":
+                entries = set(pixel_entries.get(os.path.normcase(os.path.normpath(path)), ()))
+                if SHADER_MAIN_PATTERN.search(source) or not entries:
+                    entries.add("main")
+                for entry in sorted(entries):
+                    jobs.append((path, profile, entry))
             elif profile:
                 jobs.append((path, profile, "main"))
             else:
