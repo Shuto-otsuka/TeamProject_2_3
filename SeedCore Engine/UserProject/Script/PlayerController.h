@@ -4,6 +4,7 @@
 
 class BulletStartController;
 class CameraController;
+class AnnounceController;
 
 class PlayerController :public SeedCore::SeedScript
 {
@@ -23,9 +24,12 @@ public:
 	float GetChargeRate() const { return shotChargeRate; }
 	float GetBulletRemoveDistance() const { return bulletRemoveDistance; }
 	bool IsFirstPerson() const { return isFirstPerson; }
+	bool HasGun() const { return hasGun; }
+	bool IsGoal() const { return isGoal; }
 	const SeedCore::Vector3& GetBulletPosition() const { return bulletPosition; }
 	const SeedCore::Vector3& GetBulletTargetPosition() const { return bulletTargetPosition; }
 	void Reset();
+	void Goal();
 
 	SC_REFLECTION_FIELD()
 		float acceleration;
@@ -92,6 +96,7 @@ private:
 	void UpdateAllBulletRemove(float elapsedTime);
 	void UpdateInputReset(float elapsedTime);
 	void UpdateLand();
+	void FinishGun(float gunFinishTime);
 
 	bool OnGroundOrCoyote();
 
@@ -116,6 +121,9 @@ private:
 	bool shotReady = false;
 	bool isGravityArea = false;
 	bool isFirstPerson = false;
+	bool hasGun = false;
+	bool isGunFinishWait = false;
+	bool isGoal = false;
 
 	float defaultGravity = 0.0f;
 	float jumpInputBufferTimer = 0.0f;
@@ -126,10 +134,15 @@ private:
 	float resetInputTimer = 0.0f;
 	float shotChargeRate = 0.0f;
 	float shotCoolTimer = 0.0f;
+	float gunFinishTime = 0.0f;
+	float gunFinishTimer = 0.0f;
 
 	int costGauge = 0;
 	int costGaugeAdd = 0;
 	int beforeCheckPointStep = -1;
+
+	SeedCore::Uint32 normalMaterial;
+	SeedCore::Uint32 transparentMaterial;
 
 	SeedCore::Vector3 lookDirection = { 0.0f,0.0f,1.0f };
 	SeedCore::Vector3 shotDirection = { 0.0f,0.0f,1.0f };
@@ -142,6 +155,8 @@ private:
 	SeedCore::Actor cameraBrain;
 	SeedCore::Actor firstPersonCameraBrain;
 	SeedCore::Actor bulletNaviStart;
+	SeedCore::Actor announceActor;
+	SeedCore::Actor crossHair;
 	SeedCore::Position* position = nullptr;
 	SeedCore::Rotation* rotation = nullptr;
 	SeedCore::Rotation* firstPersonCameraBrainRotate;
@@ -157,5 +172,6 @@ private:
 	SeedCore::Animator* myAnimator;
 	BulletStartController* bulletStartController = nullptr;
 	CameraController* cameraController = nullptr;
+	AnnounceController* announceController = nullptr;
 };
 REGISTER_COMPONENT(PlayerController);

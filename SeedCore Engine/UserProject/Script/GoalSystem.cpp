@@ -1,4 +1,5 @@
 #include "GoalSystem.h"
+#include "PlayerController.h"
 
 #include <SeedCore/ScPhysics.h>
 #include <SeedCore/ScLog.h>
@@ -67,8 +68,9 @@ void GoalSystem::OnTick(float elapsedTime)
 				isGoal_ = true;
 				resultActor_.Active(true);
 				if (clearAudio)clearAudio->Play();
-				SeedCore::Input::RevealCursor();
-				SeedCore::Input::UnlockCursor();
+				PlayerController* playerController = other.GetComponent<PlayerController>();
+				if (playerController)
+					playerController->Goal();
 				break;
 			}
 		}

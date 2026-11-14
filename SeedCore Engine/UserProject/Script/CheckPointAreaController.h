@@ -1,6 +1,8 @@
 #pragma once
 #include <FoundationEngine/SeedScript.h>
 
+class AnnounceController;
+
 class CheckPointAreaController :public SeedCore::SeedScript
 {
 public:

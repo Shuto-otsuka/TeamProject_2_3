@@ -1,5 +1,6 @@
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Reflection/ReflectionRegistry.h>
+#include <UserProject/Script/AnnounceController.h>
 #include <UserProject/Script/BallController.h>
 #include <UserProject/Script/BallReseterController.h>
 #include <UserProject/Script/BlueAreaController.h>
@@ -27,6 +28,7 @@
 #include <UserProject/Script/SwitchSystem.h>
 #include <UserProject/Script/TitleLogoController.h>
 
+extern "C" int _force_reflection_AnnounceController = 0;
 extern "C" int _force_reflection_BallController = 0;
 extern "C" int _force_reflection_BallReseterController = 0;
 extern "C" int _force_reflection_BlueAreaController = 0;
@@ -58,6 +60,20 @@ namespace SeedCore
 {
 	 namespace ScReflection
 	 {
+		// ---- UserProject/Script/AnnounceController.h ----
+		struct Register_AnnounceController
+		{
+			Register_AnnounceController()
+			{
+				ReflectionRegistry::Register(String("AnnounceController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					AnnounceController& obj = *static_cast<AnnounceController*>(ptr);
+					outInfo.push_back({ String("announceTime"), offsetof(AnnounceController, announceTime), AttributeType::Float });
+					outInfo.push_back({ String("fadeTime"), offsetof(AnnounceController, fadeTime), AttributeType::Float });
+				});
+			}
+		};
+		static Register_AnnounceController global_AnnounceController_register;
+
 		// ---- UserProject/Script/BallController.h ----
 		struct Register_BallController
 		{

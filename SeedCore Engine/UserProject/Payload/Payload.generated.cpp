@@ -1,5 +1,6 @@
 #include <FoundationEngine/Prelude.h>
 #include <FoundationEngine/Payload/PayloadRegistry.h>
+#include <UserProject/Script/AnnounceController.h>
 #include <UserProject/Script/BallReseterController.h>
 #include <UserProject/Script/CircuitSystem.h>
 #include <UserProject/Script/CostGaugeController.h>
@@ -7,6 +8,7 @@
 #include <UserProject/Script/FloorMoveSystem.h>
 #include <UserProject/Script/GoalSystem.h>
 
+extern "C" int _force_payload_AnnounceController = 0;
 extern "C" int _force_payload_BallReseterController = 0;
 extern "C" int _force_payload_CircuitSystem = 0;
 extern "C" int _force_payload_CostGaugeController = 0;
@@ -18,6 +20,25 @@ namespace SeedCore
 {
 	 namespace ScPayload
 	 {
+		// ---- UserProject/Script/AnnounceController.h ----
+		struct Register_AnnounceController
+		{
+			Register_AnnounceController()
+			{
+				PayloadRegistry::Register(String("AnnounceController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					AnnounceController& obj = *static_cast<AnnounceController*>(ptr);
+					outInfo.push_back({ String("firstPersonImage"), offsetof(AnnounceController, firstPersonImage), AttributeType::Int, PayloadType::Texture });
+					outInfo.push_back({ String("thirdPersonImage"), offsetof(AnnounceController, thirdPersonImage), AttributeType::Int, PayloadType::Texture });
+					outInfo.push_back({ String("costResetImage"), offsetof(AnnounceController, costResetImage), AttributeType::Int, PayloadType::Texture });
+					outInfo.push_back({ String("costOverImage"), offsetof(AnnounceController, costOverImage), AttributeType::Int, PayloadType::Texture });
+					outInfo.push_back({ String("ballResetImage"), offsetof(AnnounceController, ballResetImage), AttributeType::Int, PayloadType::Texture });
+					outInfo.push_back({ String("checkPointImage"), offsetof(AnnounceController, checkPointImage), AttributeType::Int, PayloadType::Texture });
+					outInfo.push_back({ String("deathImage"), offsetof(AnnounceController, deathImage), AttributeType::Int, PayloadType::Texture });
+				});
+			}
+		};
+		static Register_AnnounceController global_AnnounceController_register;
+
 		// ---- UserProject/Script/BallReseterController.h ----
 		struct Register_BallReseterController
 		{

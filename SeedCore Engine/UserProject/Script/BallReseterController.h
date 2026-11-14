@@ -21,6 +21,7 @@ public:
 private:
 	SeedCore::Actor targetBall;
 	SeedCore::Actor spinActor;
+	SeedCore::Actor announceActor;
 
 	BallController* targetBallController;
 };
