@@ -24,11 +24,11 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(MaterialFeature::SurfaceBaseColor),
-			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
-			RenderAccess::Read(MaterialFeature::SurfaceTangent),
-			RenderAccess::Read(GeometryFeature::VisibilityId),
-			RenderAccess::Read(GeometryFeature::VisibilityTexcoord),
+			RenderAccess::Read(MaterialFeature::BaseColor),
+			RenderAccess::Read(MaterialFeature::NormalRoughness),
+			RenderAccess::Read(MaterialFeature::Tangent),
+			RenderAccess::Read(GeometryFeature::VisibilityID),
+			RenderAccess::Read(GeometryFeature::VisibilityUV),
 			RenderAccess::Read(GeometryFeature::Instances),
 			RenderAccess::Constant(LightFeature::Constants),
 			RenderAccess::Constant(WeatherFeature::Constants),
@@ -38,11 +38,11 @@ namespace SeedCore
 			RenderAccess::Read(RaytracingReflectionFeature::Radiance),
 			RenderAccess::Read(RaytracingGlobalIlluminationFeature::Radiance),
 			RenderAccess::Read(RaytracingRefractionFeature::Radiance),
-			RenderAccess::Read(DirectLightFeature::PunctualRadiance),
-			RenderAccess::Read(SkyFeature::DiffuseIrradiance),
-			RenderAccess::Read(SkyFeature::SpecularPrefiltered),
-			RenderAccess::Read(SkyFeature::BrdfLut),
-			RenderAccess::Target(MaterialFeature::SurfaceRadiance)
+			RenderAccess::Read(DirectLightFeature::Radiance),
+			RenderAccess::Read(SkyFeature::Diffuse),
+			RenderAccess::Read(SkyFeature::Specular),
+			RenderAccess::Read(SkyFeature::BRDF),
+			RenderAccess::Target(MaterialFeature::Radiance)
 		};
 
 		static void Execute(DeferredLightingFeature& feature, RenderPass& pass);

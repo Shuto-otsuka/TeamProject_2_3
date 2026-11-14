@@ -10,8 +10,8 @@ struct HUDComposeConstantBuffer
 
 struct HUDComposeBindings
 {
-	uint hud_display_color_;
-	uint hud_color_;
+	uint hud_display_;
+	uint hud_overlay_;
 	uint hud_constants_;
 };
 ConstantBuffer<HUDComposeBindings> bindings : register(b0, space1);
@@ -25,8 +25,8 @@ float4 main(FullscreenOutput input) : SV_Target0
 		return float4(0.0, 0.0, 0.0, 1.0);
 	}
 
-	Texture2D<float4> display_color = ResourceDescriptorHeap[bindings.hud_display_color_];
-	Texture2D<float4> hud_color = ResourceDescriptorHeap[bindings.hud_color_];
+	Texture2D<float4> display_color = ResourceDescriptorHeap[bindings.hud_display_];
+	Texture2D<float4> hud_color = ResourceDescriptorHeap[bindings.hud_overlay_];
 	float3 display = display_color.SampleLevel(sampler_linear_clamp, texcoord, 0.0).rgb;
 	display = any(display > 0.0) ? display : constants.background_;
 	float4 hud = hud_color.SampleLevel(sampler_linear_clamp, texcoord, 0.0);

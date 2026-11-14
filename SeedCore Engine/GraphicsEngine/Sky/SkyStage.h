@@ -70,7 +70,7 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(Cubemap),
-			RenderAccess::Write(DiffuseIrradiance)
+			RenderAccess::Write(Diffuse)
 		};
 
 		static void Execute(SkyFeature& feature, RenderPass& pass);
@@ -87,7 +87,7 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(Cubemap),
-			RenderAccess::Write(SpecularPrefiltered)
+			RenderAccess::Write(Specular)
 		};
 
 		static void Execute(SkyFeature& feature, RenderPass& pass);
@@ -103,7 +103,7 @@ namespace SeedCore
 
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
-			RenderAccess::Write(BrdfLut)
+			RenderAccess::Write(BRDF)
 		};
 
 		static void Execute(SkyFeature& feature, RenderPass& pass);

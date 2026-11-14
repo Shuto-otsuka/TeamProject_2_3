@@ -405,7 +405,7 @@ float4x4 LoadBoneMatrix(ModelBoneMatrix bone)
 * ModelInstances plus one, so the cleared value 0 means no triangle covers
 * the pixel; y keeps the low 7 bits for triangle_in_meshlet_index
 * (meshlets emit at most 124 triangles) and the high bits for meshlet_index.
-* The texcoord is written separately to VisibilityTexcoord.
+* The texcoord is written separately to VisibilityUV.
 */
 uint2 PackVisibilityID(uint instance_index, uint meshlet_index, uint triangle_in_meshlet_index)
 {

@@ -16,13 +16,13 @@ struct RaytracingSubsurfaceScatteringConstantBuffer
 struct RaytracingSubsurfaceScatteringTraceBindings
 {
 	uint geometry_depth_;
-	uint material_surface_normal_roughness_;
+	uint material_normal_roughness_;
 	uint light_constants_;
 	uint top_level_structure_;
 	uint top_level_hits_;
 	uint raytracing_subsurface_scattering_constants_;
 	uint raytracing_subsurface_scattering_transmittance_;
-	uint debug_view_ray_count_;
+	uint debug_view_rays_;
 };
 ConstantBuffer<RaytracingSubsurfaceScatteringTraceBindings> bindings : register(b0, space1);
 
@@ -48,7 +48,7 @@ void main(uint3 id : SV_DispatchThreadID)
 		return;
 	}
 
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_surface_normal_roughness_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_normal_roughness_];
 	uint normal_roughness = surface_normal_roughness.Load(int3(pixel, 0));
 	float3 normal = OctNormalDecode(float2(normal_roughness & 0xFFF, (normal_roughness >> 12) & 0xFFF) / 4095.0);
 	float3 sun_direction = normalize(-light_constants.sun_direction_);
@@ -79,7 +79,7 @@ void main(uint3 id : SV_DispatchThreadID)
 	query.TraceRayInline(top_level, RAY_FLAG_NONE, 0xFF, ray);
 	if (scene.view_mode_ == VIEW_MODE_RAY_COUNT)
 	{
-		RWTexture2D<uint> ray_count_texture = ResourceDescriptorHeap[bindings.debug_view_ray_count_];
+		RWTexture2D<uint> ray_count_texture = ResourceDescriptorHeap[bindings.debug_view_rays_];
 		InterlockedAdd(ray_count_texture[pixel], 1);
 	}
 	while (query.Proceed())

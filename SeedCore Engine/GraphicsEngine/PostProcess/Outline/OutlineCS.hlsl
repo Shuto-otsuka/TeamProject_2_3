@@ -2,6 +2,7 @@
 #include <GraphicsEngine/Model/Model.hlsli>
 #include <GraphicsEngine/Shader/Normal.hlsli>
 #include <GraphicsEngine/Shader/RootSignature.hlsli>
+#include <GraphicsEngine/Shader/Scene.hlsli>
 
 struct OutlineStyleBindings
 {
@@ -24,7 +25,7 @@ struct OutlineResolveBindings
 	uint geometry_depth_;
 	uint geometry_visibility_id_;
 	uint geometry_instances_;
-	uint material_surface_normal_roughness_;
+	uint material_normal_roughness_;
 	uint outline_source_;
 	uint outline_widest_;
 };
@@ -106,8 +107,8 @@ void Mask(uint3 dtid : SV_DispatchThreadID)
 * outlined transparent, billboard or sprite fragment when the mask holds
 * one (it lies in front of the opaque surface), and
 * otherwise the opaque surface's instance from the visibility buffer. In an
-* editor view a selected actor takes the selection outline (orange, 2
-* pixels); otherwise an actor with an Outline component takes its own.
+* editor view a selected actor takes the selection outline (orange, 3
+* render-resolution pixels); otherwise an actor with an Outline component takes its own.
 * An opaque actor that follows its shape also marks its inner edges: a
 * neighbour of the same actor that lies clearly behind it (a depth jump of
 * more than 5 percent of the distance) or faces a clearly different way
@@ -124,7 +125,7 @@ void Mask(uint3 dtid : SV_DispatchThreadID)
 * そのアクターをどう縁取るかを決める。アクターは、マスクに記録があれば一番手前の
 * 縁取る半透明・ビルボード・スプライトのフラグメント（不透明の面より手前にある）、
 * 無ければ Visibility バッファの不透明の面のインスタンス。
-* エディタのビューでは、選択中のアクターは選択の縁取り（オレンジ、2 ピクセル）、
+* エディタのビューでは、選択中のアクターは選択の縁取り（オレンジ、描画解像度で 3 ピクセル）、
 * それ以外で Outline コンポーネントを持つアクターは自分の縁取りになる。
 * 形に沿う不透明のアクターは、内側の境目にも印を付ける。同じアクターの隣の
 * ピクセルが、はっきり奥にある（距離の 5% を超える深度の差）か、はっきり違う
@@ -176,7 +177,7 @@ void Resolve(uint3 dtid : SV_DispatchThreadID)
 			{
 				uint3 selection = uint3(float3(0.95, 0.55, 0.05) * 255.0 + 0.5);
 				outline.x = selection.r | (selection.g << 8) | (selection.b << 16) | (255u << 24);
-				outline_width = 2.0;
+				outline_width = 3.0 * (GetSceneConstantBuffer().display_size_.y / float(height));
 			}
 			else if ((style.flags_ & OUTLINE_STYLE_OUTLINE) != 0)
 			{
@@ -193,7 +194,7 @@ void Resolve(uint3 dtid : SV_DispatchThreadID)
 				{
 					outline.w = OUTLINE_SOURCE_CONTOUR;
 
-					Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[resolve_bindings.material_surface_normal_roughness_];
+					Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[resolve_bindings.material_normal_roughness_];
 					uint center_packed = surface_normal_roughness.Load(int3(pixel, 0));
 					float3 center_normal = OctNormalDecode(float2(center_packed & 0xFFF, (center_packed >> 12) & 0xFFF) / 4095.0);
 					int2 pixel_max = int2(width - 1, height - 1);
@@ -232,7 +233,7 @@ void Resolve(uint3 dtid : SV_DispatchThreadID)
 * Outline.Resolve.Canvas: the canvas view's resolve. The canvas has no
 * scene geometry, so the only actors are the sprites recorded in the mask.
 * The canvas is an editor tool, so a selected actor always takes the
-* selection outline (orange, 2 pixels); otherwise an actor with an Outline
+* selection outline (orange, 3 render-resolution pixels); otherwise an actor with an Outline
 * component takes its own, following its outer edge only. Each pixel is
 * written and the widest width reduced the same way as Outline.Resolve.Scene.
 *
@@ -241,7 +242,7 @@ void Resolve(uint3 dtid : SV_DispatchThreadID)
 * [JP]
 * Outline.Resolve.Canvas。キャンバスのビューの解決。キャンバスにはシーンの形が
 * 無いので、アクターはマスクに記録されたスプライトだけ。キャンバスはエディタの
-* 道具なので、選択中のアクターは常に選択の縁取り（オレンジ、2 ピクセル）、
+* 道具なので、選択中のアクターは常に選択の縁取り（オレンジ、描画解像度で 3 ピクセル）、
 * それ以外で Outline コンポーネントを持つアクターは自分の縁取りを外側だけに付ける。
 * 各ピクセルの書き方と一番太い幅の求め方は Outline.Resolve.Scene と同じ。
 */
@@ -270,7 +271,7 @@ void Canvas(uint3 dtid : SV_DispatchThreadID)
 			{
 				uint3 selection = uint3(float3(0.95, 0.55, 0.05) * 255.0 + 0.5);
 				outline.x = selection.r | (selection.g << 8) | (selection.b << 16) | (255u << 24);
-				outline_width = 2.0;
+				outline_width = 3.0 * (GetSceneConstantBuffer().display_size_.y / float(height));
 			}
 			else if ((style.flags_ & OUTLINE_STYLE_OUTLINE) != 0)
 			{

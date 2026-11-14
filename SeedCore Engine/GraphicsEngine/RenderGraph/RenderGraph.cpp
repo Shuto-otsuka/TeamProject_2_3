@@ -338,7 +338,39 @@ namespace SeedCore
 				}
 				if (!writtenBefore && writtenAfter)
 				{
-					SC_LOG_WARNING("RenderGraph: {} が {} を、書く Stage より前で読んでいます", stages_[stageIndex].stageName_.c_str(), access.resourceName_.c_str());
+					std::string_view stageName = std::string_view(stages_[stageIndex].stageName_);
+					Size bracket = stageName.find('[');
+					Bool readLater = false;
+					for (Size laterIndex = stageIndex + 1;bracket != std::string_view::npos && laterIndex < stages_.size() && !readLater;++laterIndex)
+					{
+						std::string_view laterName = std::string_view(stages_[laterIndex].stageName_);
+						if (laterName.substr(0, laterName.find('[')) != stageName.substr(0, bracket))
+						{
+							continue;
+						}
+						Bool laterReads = false;
+						for (const RenderGraphAccess& laterAccess : stages_[laterIndex].accesses_)
+						{
+							if (laterAccess.index_ == access.index_ && laterAccess.type_ == access.type_)
+							{
+								laterReads = true;
+							}
+						}
+						for (Size writerIndex = stageIndex + 1;laterReads && writerIndex < laterIndex && !readLater;++writerIndex)
+						{
+							for (const RenderGraphAccess& other : stages_[writerIndex].accesses_)
+							{
+								if (other.index_ == access.index_ && (other.type_ == RenderAccessType::Write || other.type_ == RenderAccessType::Append || other.type_ == RenderAccessType::Target || other.type_ == RenderAccessType::DepthWrite))
+								{
+									readLater = true;
+								}
+							}
+						}
+					}
+					if (!readLater)
+					{
+						SC_LOG_WARNING("RenderGraph: {} が {} を、書く Stage より前で読んでいます", stages_[stageIndex].stageName_.c_str(), access.resourceName_.c_str());
+					}
 				}
 			}
 		}

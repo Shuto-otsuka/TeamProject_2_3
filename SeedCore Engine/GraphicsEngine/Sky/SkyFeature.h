@@ -27,9 +27,9 @@ namespace SeedCore
 		SC_RENDER_RESOURCES
 		(
 			SC_RENDER_CONTRACT(Cubemap, RenderResourceDesc::Cube(cubeFormat_, environmentSize_), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
-			SC_RENDER_CONTRACT(DiffuseIrradiance, RenderResourceDesc::Cube(cubeFormat_, irradianceSize_), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
-			SC_RENDER_CONTRACT(SpecularPrefiltered, RenderResourceDesc::Cube(cubeFormat_, prefilterSize_, prefilterMipLevels_), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
-			SC_RENDER_CONTRACT(BrdfLut, RenderResourceDesc::FixedTexture(brdfLookupTableFormat_, brdfLookupTableSize_, brdfLookupTableSize_), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
+			SC_RENDER_CONTRACT(Diffuse, RenderResourceDesc::Cube(cubeFormat_, irradianceSize_), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
+			SC_RENDER_CONTRACT(Specular, RenderResourceDesc::Cube(cubeFormat_, prefilterSize_, prefilterMipLevels_), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
+			SC_RENDER_CONTRACT(BRDF, RenderResourceDesc::FixedTexture(brdfLookupTableFormat_, brdfLookupTableSize_, brdfLookupTableSize_), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
 			SC_RENDER_CONTRACT(Radiance, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero)
 		);
 

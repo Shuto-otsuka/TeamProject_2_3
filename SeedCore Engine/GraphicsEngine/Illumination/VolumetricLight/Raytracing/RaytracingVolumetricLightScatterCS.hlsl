@@ -8,7 +8,7 @@ struct RaytracingVolumetricLightScatterBindings
 {
 	uint raytracing_volumetric_light_density_;
 	uint light_constants_;
-	uint sky_diffuse_irradiance_;
+	uint sky_diffuse_;
 	uint top_level_structure_;
 	uint top_level_hits_;
 	uint raytracing_volumetric_light_constants_;
@@ -44,7 +44,7 @@ void main(uint3 id : SV_DispatchThreadID)
 	float3 world_position = RaytracingVolumetricLightFroxelToWorld(float3(id) + 0.5 + constants.jitter_, froxel_dimensions, scene.near_plane_, scene.far_plane_, scene.projection_, scene.inverse_view_);
 	float3 view_direction = normalize(world_position - scene.camera_position_.xyz);
 
-	TextureCube<float4> diffuse_irradiance = ResourceDescriptorHeap[bindings.sky_diffuse_irradiance_];
+	TextureCube<float4> diffuse_irradiance = ResourceDescriptorHeap[bindings.sky_diffuse_];
 	float3 in_scattering = scattering_coefficient * diffuse_irradiance.SampleLevel(sampler_linear_clamp, float3(0.0, 1.0, 0.0), 0).rgb * light_constants.sky_intensity_;
 
 	if (light_constants.sun_intensity_ > 0.0)

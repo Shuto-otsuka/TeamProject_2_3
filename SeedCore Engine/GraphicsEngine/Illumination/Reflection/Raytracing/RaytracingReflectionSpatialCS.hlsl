@@ -9,7 +9,7 @@
 struct RaytracingReflectionSpatialBindings
 {
 	uint geometry_depth_;
-	uint material_surface_normal_roughness_;
+	uint material_normal_roughness_;
 	uint raytracing_reflection_reservoir_;
 	uint raytracing_reflection_constants_;
 	uint raytracing_reflection_raw_;
@@ -42,7 +42,7 @@ void main(uint3 id : SV_DispatchThreadID)
 	}
 
 	ConstantBuffer<RaytracingReflectionConstantBuffer> constants = ResourceDescriptorHeap[bindings.raytracing_reflection_constants_];
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_surface_normal_roughness_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_normal_roughness_];
 	StructuredBuffer<RaytracingReflectionReservoir> reservoirs = ResourceDescriptorHeap[bindings.raytracing_reflection_reservoir_];
 
 	uint packed = surface_normal_roughness.Load(int3(pixel, 0));

@@ -9,17 +9,19 @@
 struct TransparentDrawBindings
 {
 	uint geometry_instances_;
-	uint culling_transparent_lists_;
+	uint culling_transparent_meshlets_;
 	uint culling_transparent_arguments_;
+	uint culling_transparent_chunks_;
+	uint geometry_hi_z_;
 	uint model_bones_;
-	uint model_morph_weights_;
+	uint model_morphs_;
 	uint light_list_;
 	uint light_constants_;
 	uint weather_constants_;
-	uint light_cluster_grid_;
-	uint sky_diffuse_irradiance_;
-	uint sky_specular_prefiltered_;
-	uint sky_brdf_lut_;
+	uint light_clusters_;
+	uint sky_diffuse_;
+	uint sky_specular_;
+	uint sky_brdf_;
 	uint top_level_structure_;
 	uint top_level_hits_;
 	uint transparent_heads_;
@@ -29,6 +31,16 @@ struct TransparentDrawBindings
 	uint outline_mask_;
 };
 ConstantBuffer<TransparentDrawBindings> bindings : register(b0, space1);
+
+/**
+* [EN]
+* What TransparentAS hands to TransparentMS: one (instance, meshlet) entry per
+* mesh shader group it launches.
+*/
+struct TransparentPayload
+{
+	uint2 entries_[32];
+};
 
 /**
 * [EN]

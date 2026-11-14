@@ -1,5 +1,6 @@
 #include <GraphicsEngine/Debug/DebugViewFeature.h>
 #include <GraphicsEngine/Debug/DebugViewStage.h>
+#include <GraphicsEngine/RenderGraph/RenderDevice.h>
 #include <GraphicsEngine/RenderGraph/RenderFeatureRegistry.h>
 #include <GraphicsEngine/RenderGraph/RenderScene.h>
 
@@ -9,6 +10,7 @@ namespace SeedCore
 
 	void DebugViewFeature::Create(RenderDevice& device)
 	{
+		mesh_ = device.Level() == D3D12Level::D12_2;
 		clearPipeline_.Create(device);
 		wireframePipeline_.Create(device);
 		overdrawPipeline_.Create(device);
@@ -30,7 +32,7 @@ namespace SeedCore
 		{
 			Size kind = static_cast<Size>(view.kind_);
 			RenderViewMode mode = view.mode_;
-			clearing_[kind] = mode == RenderViewMode::RayCount || mode == RenderViewMode::MeshletOverdraw;
+			clearing_[kind] = mode == RenderViewMode::RayCount || mode == RenderViewMode::MeshletOverdraw || mode == RenderViewMode::MeshletBounds;
 			wireframing_[kind] = mode == RenderViewMode::Wireframe;
 			overdrawing_[kind] = mode == RenderViewMode::MeshletOverdraw;
 			bounding_[kind] = mode == RenderViewMode::MeshletBounds;

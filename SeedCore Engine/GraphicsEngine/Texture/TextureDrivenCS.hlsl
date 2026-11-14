@@ -15,7 +15,7 @@ struct TextureExpandBindings
 	uint texture_units_;
 	uint texture_quads_;
 	uint texture_constants_;
-	uint texture_draw_list_;
+	uint texture_draws_;
 };
 ConstantBuffer<TextureExpandBindings> expand_bindings : register(b0, space1);
 
@@ -62,7 +62,7 @@ void Update(uint3 id : SV_DispatchThreadID)
 /**
 * [EN]
 * Texture.Expand: one thread per quad slot. A quad of a drawn unit writes its
-* own index at Texture.DrawList[draw_base_ + its position inside the unit].
+* own index at Texture.Draws[draw_base_ + its position inside the unit].
 * The CPU chose every draw_base_ from the units' order, so the list comes out
 * in drawing order without sorting or atomics. A slot outside its unit's
 * current range is stale (the unit moved or shrank) and is skipped.
@@ -71,7 +71,7 @@ void Update(uint3 id : SV_DispatchThreadID)
 *
 * [JP]
 * Texture.Expand。四角形の枠 1 つにつき 1 スレッド。描くユニットの四角形は、
-* 自分の番号を Texture.DrawList[draw_base_ + ユニット内の位置] に書く。
+* 自分の番号を Texture.Draws[draw_base_ + ユニット内の位置] に書く。
 * draw_base_ は CPU がユニットの順番から決めているので、ソートも atomic も
 * 使わずに描く順番の並びになる。ユニットの今の範囲の外にある枠は古い
 * （ユニットが移ったか縮んだ）ので飛ばす。
@@ -102,6 +102,6 @@ void Expand(uint3 id : SV_DispatchThreadID)
 		return;
 	}
 
-	RWStructuredBuffer<uint> draw_list = ResourceDescriptorHeap[expand_bindings.texture_draw_list_];
-	draw_list[unit.draw_base_ + local] = id.x;
+	RWStructuredBuffer<uint> draws = ResourceDescriptorHeap[expand_bindings.texture_draws_];
+	draws[unit.draw_base_ + local] = id.x;
 }

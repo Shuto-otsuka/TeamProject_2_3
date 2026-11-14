@@ -3,7 +3,7 @@
 
 struct SkyBrdfLutBindings
 {
-    uint sky_brdf_lut_;
+    uint sky_brdf_;
 };
 ConstantBuffer<SkyBrdfLutBindings> bindings : register(b0, space1);
 
@@ -35,7 +35,7 @@ float GeometrySmith(float normal_dot_view, float normal_dot_light, float roughne
 [numthreads(8, 8, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {
-    RWTexture2D<float2> destination = ResourceDescriptorHeap[bindings.sky_brdf_lut_];
+    RWTexture2D<float2> destination = ResourceDescriptorHeap[bindings.sky_brdf_];
     uint width;
     uint height;
     destination.GetDimensions(width, height);

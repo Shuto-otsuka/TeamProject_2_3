@@ -25,8 +25,9 @@ namespace SeedCore
 
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
-			RenderAccess::Write(RayCount),
-			RenderAccess::Write(GeometryFeature::Debug)
+			RenderAccess::Write(Rays),
+			RenderAccess::Write(GeometryFeature::Debug),
+			RenderAccess::Write(GeometryFeature::VisibleMeshlets)
 		};
 
 		static void Execute(DebugViewFeature& feature, RenderPass& pass);
@@ -52,12 +53,19 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(GeometryFeature::Instances),
-			RenderAccess::Read(CullingFeature::DrawLists),
-			RenderAccess::Read(CullingFeature::DrawArguments),
+			RenderAccess::Read(CullingFeature::OpaqueMeshlets),
+			RenderAccess::Read(CullingFeature::MeshletArguments),
+			RenderAccess::Read(CullingFeature::OpaqueChunks),
+			RenderAccess::Read(CullingFeature::OccludedChunks),
+			RenderAccess::Read(CullingFeature::ChunkArguments),
+			RenderAccess::Write(GeometryFeature::OccludedMeshlets),
+			RenderAccess::History(GeometryFeature::HiZ),
+			RenderAccess::Read(GeometryFeature::HiZ),
 			RenderAccess::Read(ModelFeature::Bones),
-			RenderAccess::Read(ModelFeature::MorphWeights),
+			RenderAccess::Read(ModelFeature::Morphs),
 			RenderAccess::Write(GeometryFeature::Debug),
-			RenderAccess::Target(HUDFeature::DisplayColor)
+			RenderAccess::Write(GeometryFeature::VisibleMeshlets),
+			RenderAccess::Target(HUDFeature::Display)
 		};
 
 		static void Execute(DebugViewFeature& feature, RenderPass& pass);
@@ -74,11 +82,18 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(GeometryFeature::Instances),
-			RenderAccess::Read(CullingFeature::DrawLists),
-			RenderAccess::Read(CullingFeature::DrawArguments),
+			RenderAccess::Read(CullingFeature::OpaqueMeshlets),
+			RenderAccess::Read(CullingFeature::MeshletArguments),
+			RenderAccess::Read(CullingFeature::OpaqueChunks),
+			RenderAccess::Read(CullingFeature::OccludedChunks),
+			RenderAccess::Read(CullingFeature::ChunkArguments),
+			RenderAccess::Write(GeometryFeature::OccludedMeshlets),
+			RenderAccess::History(GeometryFeature::HiZ),
+			RenderAccess::Read(GeometryFeature::HiZ),
 			RenderAccess::Read(ModelFeature::Bones),
-			RenderAccess::Read(ModelFeature::MorphWeights),
+			RenderAccess::Read(ModelFeature::Morphs),
 			RenderAccess::Write(GeometryFeature::Debug),
+			RenderAccess::Write(GeometryFeature::VisibleMeshlets),
 			RenderAccess::DepthTest(GeometryFeature::Depth)
 		};
 
@@ -94,47 +109,47 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(GeometryFeature::VisibilityId),
+			RenderAccess::Read(GeometryFeature::VisibilityID),
 			RenderAccess::Read(GeometryFeature::Instances),
 			RenderAccess::Read(GeometryFeature::Debug),
-			RenderAccess::Read(MaterialFeature::SurfaceBaseColor),
-			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
+			RenderAccess::Read(MaterialFeature::BaseColor),
+			RenderAccess::Read(MaterialFeature::NormalRoughness),
 			RenderAccess::Read(MaterialFeature::Velocity),
-			RenderAccess::Read(MaterialFeature::SurfaceRadiance),
+			RenderAccess::Read(MaterialFeature::Radiance),
 			RenderAccess::Read(MaterialFeature::Mip),
-			RenderAccess::Read(LightFeature::ClusterGrid),
+			RenderAccess::Read(LightFeature::Clusters),
 			RenderAccess::Read(TopLevelFeature::Structure),
 			RenderAccess::Read(TopLevelFeature::Hits),
-			RenderAccess::Read(RayCount),
+			RenderAccess::Read(Rays),
 			RenderAccess::Read(RaytracingReflectionFeature::Raw),
 			RenderAccess::Read(RaytracingReflectionFeature::Radiance),
 			RenderAccess::Read(RaytracingReflectionFeature::Reservoir),
 			RenderAccess::Read(RaytracingReflectionFeature::Reuse),
 			RenderAccess::Read(RaytracingReflectionFeature::Moments),
-			RenderAccess::Read(RaytracingReflectionFeature::HistoryLength),
+			RenderAccess::Read(RaytracingReflectionFeature::Age),
 			RenderAccess::Read(RaytracingReflectionFeature::Validity),
 			RenderAccess::Read(RaytracingGlobalIlluminationFeature::Raw),
 			RenderAccess::Read(RaytracingGlobalIlluminationFeature::Radiance),
 			RenderAccess::Read(RaytracingGlobalIlluminationFeature::Reservoir),
 			RenderAccess::Read(RaytracingGlobalIlluminationFeature::Reuse),
 			RenderAccess::Read(RaytracingGlobalIlluminationFeature::Variance),
-			RenderAccess::Read(RaytracingGlobalIlluminationFeature::HistoryLength),
+			RenderAccess::Read(RaytracingGlobalIlluminationFeature::Age),
 			RenderAccess::Read(RaytracingGlobalIlluminationFeature::Validity),
 			RenderAccess::Read(RaytracingShadowFeature::Raw),
 			RenderAccess::Read(RaytracingShadowFeature::Visibility),
 			RenderAccess::Read(RaytracingShadowFeature::Moments),
-			RenderAccess::Read(RaytracingShadowFeature::HistoryLength),
+			RenderAccess::Read(RaytracingShadowFeature::Age),
 			RenderAccess::Read(RaytracingShadowFeature::Validity),
 			RenderAccess::Read(RaytracingAmbientOcclusionFeature::Raw),
 			RenderAccess::Read(RaytracingAmbientOcclusionFeature::Openness),
 			RenderAccess::Read(RaytracingAmbientOcclusionFeature::Variance),
-			RenderAccess::Read(RaytracingAmbientOcclusionFeature::HistoryLength),
+			RenderAccess::Read(RaytracingAmbientOcclusionFeature::Age),
 			RenderAccess::Read(RaytracingAmbientOcclusionFeature::Validity),
 			RenderAccess::Read(RadianceFeature::Color),
 			RenderAccess::Read(UpscaleFeature::Color),
 			RenderAccess::Read(KawaseBloomFeature::Radiance),
 			RenderAccess::Read(AutoExposureFeature::Exposure),
-			RenderAccess::Write(HUDFeature::DisplayColor)
+			RenderAccess::Write(HUDFeature::Display)
 		};
 
 		static void Execute(DebugViewFeature& feature, RenderPass& pass);
@@ -149,9 +164,10 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(GeometryFeature::Instances),
-			RenderAccess::Read(CullingFeature::DrawLists),
-			RenderAccess::Read(CullingFeature::DrawArguments),
-			RenderAccess::Write(HUDFeature::DisplayColor)
+			RenderAccess::Read(CullingFeature::OpaqueMeshlets),
+			RenderAccess::Read(CullingFeature::MeshletArguments),
+			RenderAccess::Read(GeometryFeature::VisibleMeshlets),
+			RenderAccess::Write(HUDFeature::Display)
 		};
 
 		static void Execute(DebugViewFeature& feature, RenderPass& pass);

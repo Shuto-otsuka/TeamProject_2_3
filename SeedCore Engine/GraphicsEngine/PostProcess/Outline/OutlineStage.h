@@ -60,7 +60,7 @@ namespace SeedCore
 
 	struct OutlineFeature::ResolveStage::SceneStep :RenderStage
 	{
-		SC_CONSTEX RenderQueue queue_ = RenderQueue::Overlay;
+		SC_CONSTEX RenderQueue queue_ = RenderQueue::Highlight;
 
 		SC_CONSTEX Bool OutlineFeature::* enableCondition_ = &OutlineFeature::outlining_;
 
@@ -71,9 +71,9 @@ namespace SeedCore
 			RenderAccess::Read(Mask),
 			RenderAccess::Read(Styles),
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(GeometryFeature::VisibilityId),
+			RenderAccess::Read(GeometryFeature::VisibilityID),
 			RenderAccess::Read(GeometryFeature::Instances),
-			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
+			RenderAccess::Read(MaterialFeature::NormalRoughness),
 			RenderAccess::Write(Source),
 			RenderAccess::Write(Widest)
 		};
@@ -83,7 +83,7 @@ namespace SeedCore
 
 	struct OutlineFeature::ResolveStage::CanvasStep :RenderStage
 	{
-		SC_CONSTEX RenderQueue queue_ = RenderQueue::Overlay;
+		SC_CONSTEX RenderQueue queue_ = RenderQueue::Highlight;
 
 		SC_CONSTEX RenderViewMask viewMask_ = RenderViewMask::Canvas;
 
@@ -106,7 +106,7 @@ namespace SeedCore
 	{
 		SC_CONSTEX RenderStageKind kind_ = RenderStageKind::Raster;
 
-		SC_CONSTEX RenderQueue queue_ = RenderQueue::Overlay;
+		SC_CONSTEX RenderQueue queue_ = RenderQueue::Highlight;
 
 		SC_CONSTEX RenderViewMask viewMask_ = RenderViewMask::All;
 
@@ -118,7 +118,7 @@ namespace SeedCore
 		{
 			RenderAccess::Read(Source),
 			RenderAccess::Read(Widest),
-			RenderAccess::Target(HUDFeature::DisplayColor)
+			RenderAccess::Target(HUDFeature::Display)
 		};
 
 		static void Execute(OutlineFeature& feature, RenderPass& pass);

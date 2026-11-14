@@ -23,11 +23,15 @@ namespace SeedCore
 		{
 			RenderAccess::Read(GeometryFeature::Instances),
 			RenderAccess::Read(GeometryFeature::Counts),
-			RenderAccess::History(GeometryFeature::HierarchicalDepth),
-			RenderAccess::Write(Rejected),
-			RenderAccess::Write(DrawLists),
-			RenderAccess::Write(DrawArguments),
-			RenderAccess::Write(TransparentArguments)
+			RenderAccess::History(GeometryFeature::HiZ),
+			RenderAccess::Write(OccludedMeshlets),
+			RenderAccess::Write(OpaqueMeshlets),
+			RenderAccess::Write(MeshletArguments),
+			RenderAccess::Write(TransparentArguments),
+			RenderAccess::Write(OpaqueChunks),
+			RenderAccess::Write(OccludedChunks),
+			RenderAccess::Write(ChunkArguments),
+			RenderAccess::Write(GeometryFeature::OccludedMeshlets)
 		};
 
 		static void Execute(CullingFeature& feature, RenderPass& pass);
@@ -41,10 +45,10 @@ namespace SeedCore
 		{
 			RenderAccess::Read(GeometryFeature::Instances),
 			RenderAccess::Read(GeometryFeature::Counts),
-			RenderAccess::Read(GeometryFeature::HierarchicalDepth),
-			RenderAccess::Read(Rejected),
-			RenderAccess::Write(DrawLists),
-			RenderAccess::Write(DrawArguments)
+			RenderAccess::Read(GeometryFeature::HiZ),
+			RenderAccess::Read(OccludedMeshlets),
+			RenderAccess::Write(OpaqueMeshlets),
+			RenderAccess::Write(MeshletArguments)
 		};
 
 		static void Execute(CullingFeature& feature, RenderPass& pass);
@@ -60,8 +64,9 @@ namespace SeedCore
 		{
 			RenderAccess::Read(GeometryFeature::Instances),
 			RenderAccess::Read(GeometryFeature::Counts),
-			RenderAccess::Read(GeometryFeature::HierarchicalDepth),
-			RenderAccess::Write(TransparentLists),
+			RenderAccess::Read(GeometryFeature::HiZ),
+			RenderAccess::Write(TransparentMeshlets),
+			RenderAccess::Write(TransparentChunks),
 			RenderAccess::Write(TransparentArguments)
 		};
 

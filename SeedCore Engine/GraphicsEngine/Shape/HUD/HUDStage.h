@@ -3,6 +3,22 @@
 
 namespace SeedCore
 {
+	struct HUDFeature::UpdateStage :RenderStage
+	{
+		SC_CONSTEX RenderStageKind kind_ = RenderStageKind::Raster;
+
+		SC_CONSTEX RenderQueue queue_ = RenderQueue::Frame;
+
+		SC_CONSTEX RenderViewMask viewMask_ = RenderViewMask::Canvas;
+
+		SC_CONSTEX RenderAccess accesses_[] =
+		{
+			RenderAccess::Target(Display)
+		};
+
+		static void Execute(HUDFeature& feature, RenderPass& pass);
+	};
+
 	struct HUDFeature::ComposeStage :RenderStage
 	{
 		SC_CONSTEX RenderStageKind kind_ = RenderStageKind::Raster;
@@ -13,10 +29,10 @@ namespace SeedCore
 
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
-			RenderAccess::Read(DisplayColor),
-			RenderAccess::Read(Color),
+			RenderAccess::Read(Display),
+			RenderAccess::Read(Overlay),
 			RenderAccess::Constant(Constants),
-			RenderAccess::Target(ViewOutput)
+			RenderAccess::Target(Output)
 		};
 
 		static void Execute(HUDFeature& feature, RenderPass& pass);

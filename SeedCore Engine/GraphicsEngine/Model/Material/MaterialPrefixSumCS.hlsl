@@ -14,7 +14,7 @@ groupshared uint scan_data[MATERIAL_SORT_BUCKET_COUNT];
 * [EN]
 * Material sort, pass 2/3: a single-group Hillis-Steele exclusive prefix sum
 * over the bucket counts, turning each count into the first slot its bucket
-* owns in Material.SortedPixels. MATERIAL_SORT_BUCKET_COUNT equals the largest
+* owns in Material.Pixels. MATERIAL_SORT_BUCKET_COUNT equals the largest
 * thread group, so one dispatch covers it. The total of all buckets goes to
 * the element after them, which bounds Material.Resolve.
 *
@@ -22,7 +22,7 @@ groupshared uint scan_data[MATERIAL_SORT_BUCKET_COUNT];
 *
 * [JP]
 * マテリアルソート、パス 2/3。バケットの数に対する 1 グループの Hillis-Steele
-* 排他的接頭和で、各数を Material.SortedPixels の中でそのバケットが持つ先頭の
+* 排他的接頭和で、各数を Material.Pixels の中でそのバケットが持つ先頭の
 * 位置に変える。MATERIAL_SORT_BUCKET_COUNT はスレッドグループの最大の大きさと
 * 同じなので 1 回のディスパッチで済む。全バケットの合計はその後ろの要素に書き、
 * Material.Resolve の範囲になる。

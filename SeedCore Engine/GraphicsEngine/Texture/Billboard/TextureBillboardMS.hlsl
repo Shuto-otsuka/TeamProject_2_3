@@ -2,39 +2,33 @@
 
 /**
 * [EN]
-* Texture.Billboard: one thread group draws 32 consecutive entries of the
-* billboard section of Texture.DrawList (from billboard_base_), 4 vertices
-* and 2 triangles per quad, in list order so the premultiplied blend layers
-* them as Texture.Expand ordered them.
+* Texture.Billboard: one thread group draws the quads TextureBillboardAS kept
+* inside the frustum from 32 consecutive entries of the billboard section of
+* Texture.Draws, 4 vertices and 2 triangles per quad, in list order so the
+* premultiplied blend layers them as Texture.Expand ordered them.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* Texture.Billboard。1 スレッドグループが Texture.DrawList のビルボードの区間
-* （billboard_base_ から）の連続する 32 件を、1 四角形 4 頂点・2 三角形で描く。
+* Texture.Billboard。1 スレッドグループが、Texture.Draws のビルボードの区間の
+* 連続する 32 件から TextureBillboardAS が残した視錐台内の四角形を、
+* 1 四角形 4 頂点・2 三角形で描く。
 * リストの順に出すので、プリマルチプライドのブレンドは Texture.Expand が並べた
 * 順に重なる。
 */
 [NumThreads(128, 1, 1)]
 [OutputTopology("triangle")]
-void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices TextureBillboardOutput verts[128], out indices uint3 tris[64])
+void main(uint gtid : SV_GroupThreadID, in payload TextureBillboardPayload payload, out vertices TextureBillboardOutput verts[128], out indices uint3 tris[64])
 {
-	ConstantBuffer<TextureConstantBuffer> constants = ResourceDescriptorHeap[bindings.texture_constants_];
-	uint first = gid * 32;
-	uint quad_count = first < constants.billboard_count_ ? min(32, constants.billboard_count_ - first) : 0;
+	uint quad_count = payload.count_;
 	SetMeshOutputCounts(quad_count * 4, quad_count * 2);
-	if (quad_count == 0)
-	{
-		return;
-	}
 
 	uint quad_local = gtid / 4;
 	if (quad_local < quad_count)
 	{
-		StructuredBuffer<uint> draw_list = ResourceDescriptorHeap[bindings.texture_draw_list_];
 		StructuredBuffer<TextureQuadStructuredBuffer> quads = ResourceDescriptorHeap[bindings.texture_quads_];
 		StructuredBuffer<TextureUnitStructuredBuffer> units = ResourceDescriptorHeap[bindings.texture_units_];
-		uint quad_index = draw_list[constants.billboard_base_ + first + quad_local];
+		uint quad_index = payload.quads_[quad_local];
 		TextureQuadStructuredBuffer quad = quads[quad_index];
 		TextureUnitStructuredBuffer unit = units[quad.unit_];
 		SceneConstantBuffer scene = GetSceneConstantBuffer();

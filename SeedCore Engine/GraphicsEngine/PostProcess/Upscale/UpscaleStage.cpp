@@ -25,8 +25,8 @@ namespace SeedCore
 		tags.depthBuffer_ = pass.Resource(GeometryFeature::Depth);
 		tags.velocityBuffer_ = pass.Resource(MaterialFeature::Velocity);
 		tags.normalRoughnessBuffer_ = pass.Resource(NormalRoughness);
-		tags.specularAlbedoBuffer_ = pass.Resource(SpecularAlbedo);
-		tags.albedoBuffer_ = pass.Resource(DiffuseAlbedo);
+		tags.specularAlbedoBuffer_ = pass.Resource(Specular);
+		tags.albedoBuffer_ = pass.Resource(Diffuse);
 		tags.albedoBufferState_ = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
 		tags.normalRoughnessBufferState_ = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;
 		tags.specularAlbedoBufferState_ = D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE;

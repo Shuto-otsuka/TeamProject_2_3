@@ -28,7 +28,7 @@ namespace SeedCore
 
 	void TextureFeature::DrawStage::SpriteStep::Execute(TextureFeature& feature, RenderPass& pass)
 	{
-		pass.ClearTarget(HUDFeature::Color);
+		pass.ClearTarget(HUDFeature::Overlay);
 		feature.spritePipeline_.Draw(pass, feature.units_.Constants().spriteCount_);
 	}
 

@@ -11,14 +11,14 @@ struct RaytracingAmbientOcclusionTemporalBindings
 {
 	uint raytracing_ambient_occlusion_raw_;
 	uint geometry_depth_;
-	uint material_surface_normal_roughness_;
+	uint material_normal_roughness_;
 	uint material_velocity_;
 	uint raytracing_ambient_occlusion_constants_;
 	uint raytracing_ambient_occlusion_accumulated_history_;
 	uint raytracing_ambient_occlusion_accumulated_;
 	uint raytracing_ambient_occlusion_openness_;
-	uint raytracing_ambient_occlusion_history_length_history_;
-	uint raytracing_ambient_occlusion_history_length_;
+	uint raytracing_ambient_occlusion_age_history_;
+	uint raytracing_ambient_occlusion_age_;
 	uint raytracing_ambient_occlusion_validity_;
 	uint raytracing_ambient_occlusion_variance_;
 };
@@ -39,19 +39,19 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 	int2 pixel = int2(id.xy);
 	RWTexture2D<float> accumulated = ResourceDescriptorHeap[bindings.raytracing_ambient_occlusion_accumulated_];
 	RWTexture2D<float> openness = ResourceDescriptorHeap[bindings.raytracing_ambient_occlusion_openness_];
-	RWTexture2D<float> history_length_output = ResourceDescriptorHeap[bindings.raytracing_ambient_occlusion_history_length_];
+	RWTexture2D<float> age_output = ResourceDescriptorHeap[bindings.raytracing_ambient_occlusion_age_];
 	float depth = depth_texture.Load(int3(pixel, 0));
 	if (depth == 0.0)
 	{
 		accumulated[pixel] = 1.0;
 		openness[pixel] = 1.0;
-		history_length_output[pixel] = 0.0;
+		age_output[pixel] = 0.0;
 		return;
 	}
 
 	ConstantBuffer<RaytracingAmbientOcclusionConstantBuffer> constants = ResourceDescriptorHeap[bindings.raytracing_ambient_occlusion_constants_];
 	Texture2D<float> raw = ResourceDescriptorHeap[bindings.raytracing_ambient_occlusion_raw_];
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_surface_normal_roughness_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_normal_roughness_];
 	int2 screen_max = int2(width, height) - 1;
 	uint center_packed = surface_normal_roughness.Load(int3(pixel, 0));
 	float3 center_normal = OctNormalDecode(float2(center_packed & 0xFFF, (center_packed >> 12) & 0xFFF) / 4095.0);
@@ -86,19 +86,19 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 	Texture2D<float2> velocity = ResourceDescriptorHeap[bindings.material_velocity_];
 	float2 previous_uv = DenoiserPreviousUv(uv, velocity.Load(int3(pixel, 0)));
 	bool valid = constants.history_valid_ != 0 && all(previous_uv >= 0.0) && all(previous_uv <= 1.0);
-	float history_length = 1.0;
+	float age = 1.0;
 	if (valid)
 	{
 		Texture2D<float> history = ResourceDescriptorHeap[bindings.raytracing_ambient_occlusion_accumulated_history_];
 		float history_value = clamp(history.SampleLevel(sampler_linear_clamp, previous_uv, 0), filtered_raw - clip_radius, filtered_raw + clip_radius);
 		result = lerp(history_value, filtered_raw, AMBIENT_OCCLUSION_TEMPORAL_ALPHA);
-		Texture2D<float> history_length_history = ResourceDescriptorHeap[bindings.raytracing_ambient_occlusion_history_length_history_];
-		history_length = min(history_length_history.SampleLevel(sampler_linear_clamp, previous_uv, 0) + 1.0, 255.0);
+		Texture2D<float> age_history = ResourceDescriptorHeap[bindings.raytracing_ambient_occlusion_age_history_];
+		age = min(age_history.SampleLevel(sampler_linear_clamp, previous_uv, 0) + 1.0, 255.0);
 	}
 
 	accumulated[pixel] = result;
 	openness[pixel] = pow(saturate(result), max(constants.power_, 0.0001));
-	history_length_output[pixel] = history_length;
+	age_output[pixel] = age;
 
 	SceneConstantBuffer scene = GetSceneConstantBuffer();
 	if (scene.view_mode_ >= VIEW_MODE_DENOISER_RAW && scene.view_mode_ <= VIEW_MODE_DENOISER_REPROJECTION)

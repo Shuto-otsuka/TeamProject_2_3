@@ -8,14 +8,14 @@
 * a Gaussian falloff across its width and a linear falloff along its length;
 * snow is a soft round flake. The additive blend weights the color by alpha;
 * the light also fades through the fog between the particle and the camera
-* (the transmittance at its depth in FogVolume).
+* (the transmittance at its depth in VolumetricLight.Fog).
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
 * Weather.Draw。四角形をパーティクルの形にする。雨は幅方向にガウスで、長さ方向に
 * 直線で薄くなる細い筋、雪は柔らかい丸い粒。加算ブレンドは色をアルファで重み付けする。
-* 光はパーティクルとカメラの間のフォグでも弱まる（FogVolume の自分の深度の透過率）。
+* 光はパーティクルとカメラの間のフォグでも弱まる（VolumetricLight.Fog の自分の深度の透過率）。
 */
 float4 main(WeatherOutput input) : SV_Target0
 {
@@ -36,7 +36,7 @@ float4 main(WeatherOutput input) : SV_Target0
 	}
 
 	SceneConstantBuffer scene = GetSceneConstantBuffer();
-	Texture3D<float4> fog_volume = ResourceDescriptorHeap[draw_bindings.raytracing_volumetric_light_fog_volume_];
+	Texture3D<float4> fog_volume = ResourceDescriptorHeap[draw_bindings.raytracing_volumetric_light_fog_];
 	uint3 froxel_dimensions;
 	fog_volume.GetDimensions(froxel_dimensions.x, froxel_dimensions.y, froxel_dimensions.z);
 	float slice = saturate(ViewZToFroxelSlice(input.position.w, scene.near_plane_, scene.far_plane_) - 0.5 / float(froxel_dimensions.z));

@@ -2,8 +2,8 @@
 #define __IMAGE_BASED_LIGHTING_HLSL__
 
 // Bindless IBL sampling. The environment / irradiance / prefilter cubes and the
-// BRDF lookup table are passed in as descriptor indices (SkyCubemap,
-// DiffuseIrradiance, SpecularPrefiltered and BrdfLut of the Sky feature).
+// BRDF lookup table are passed in as descriptor indices (Sky.Cubemap,
+// Sky.Diffuse, Sky.Specular and Sky.BRDF).
 
 #include <GraphicsEngine/Shader/Sampler.hlsli>
 

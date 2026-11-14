@@ -28,6 +28,8 @@ namespace SeedCore
 
 	struct TextureSpriteDescription
 	{
+		SC_CONSTEX ShaderPath amplificationFile_ = ShaderPath::Engine("GraphicsEngine/Texture/Sprite/TextureSpriteAS.hlsl");
+
 		SC_CONSTEX ShaderPath meshFile_ = ShaderPath::Engine("GraphicsEngine/Texture/Sprite/TextureSpriteMS.hlsl");
 
 		SC_CONSTEX ShaderPath vertexFile_ = ShaderPath::Engine("GraphicsEngine/Texture/Sprite/TextureSpriteVS.hlsl");
@@ -53,6 +55,8 @@ namespace SeedCore
 
 	struct TextureBillboardDescription
 	{
+		SC_CONSTEX ShaderPath amplificationFile_ = ShaderPath::Engine("GraphicsEngine/Texture/Billboard/TextureBillboardAS.hlsl");
+
 		SC_CONSTEX ShaderPath meshFile_ = ShaderPath::Engine("GraphicsEngine/Texture/Billboard/TextureBillboardMS.hlsl");
 
 		SC_CONSTEX ShaderPath vertexFile_ = ShaderPath::Engine("GraphicsEngine/Texture/Billboard/TextureBillboardVS.hlsl");

@@ -11,7 +11,7 @@ namespace SeedCore
 		{
 			RenderAccess::Read(List),
 			RenderAccess::Constant(Constants),
-			RenderAccess::Write(ClusterGrid)
+			RenderAccess::Write(Clusters)
 		};
 
 		static void Execute(LightFeature& feature, RenderPass& pass);

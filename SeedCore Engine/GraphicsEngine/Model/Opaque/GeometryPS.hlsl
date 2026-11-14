@@ -70,7 +70,7 @@ void Depth(GeometryOutput input, GeometryPrimitive primitive)
 * triangle covers each pixel plus its texcoord, after the same alpha and fur
 * strand cutouts as the depth passes.
 */
-void Visibility(GeometryOutput input, GeometryPrimitive primitive, out uint2 visibility_id : SV_Target0, out float2 visibility_texcoord : SV_Target1)
+void Visibility(GeometryOutput input, GeometryPrimitive primitive, out uint2 visibility_id : SV_Target0, out float2 visibility_uv : SV_Target1)
 {
 	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.geometry_instances_];
 	ModelStructuredBuffer instance = instances[input.instance_index];
@@ -122,9 +122,9 @@ void Visibility(GeometryOutput input, GeometryPrimitive primitive, out uint2 vis
 	if (scene.view_mode_ == VIEW_MODE_MESHLET_CULLING)
 	{
 		RWTexture2D<uint> debug = ResourceDescriptorHeap[bindings.geometry_debug_];
-		debug[uint2(input.position.xy)] = dispatch_bindings.constants_ == CULLING_LATE_ARGUMENTS ? DEBUG_GEOMETRY_LATE : 0;
+		debug[uint2(input.position.xy)] = (dispatch_bindings.constants_ & CULLING_COMMAND_MASK) != CULLING_EARLY_ARGUMENTS ? DEBUG_GEOMETRY_LATE : 0;
 	}
 
 	visibility_id = PackVisibilityID(input.instance_index, input.meshlet_index, primitive.triangle_in_meshlet_index);
-	visibility_texcoord = input.texcoord;
+	visibility_uv = input.texcoord;
 }

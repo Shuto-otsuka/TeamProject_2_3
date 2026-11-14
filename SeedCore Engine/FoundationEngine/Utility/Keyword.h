@@ -10,8 +10,12 @@
 #define SC_OUT _Out_
 #define SC_INOUT _Inout_
 
-#define SC_DEBUG _DEBUG
+#define SC_DEBUG (_DEBUG && !SC_DEVELOP)
 #define SC_RELEASE !_DEBUG
+
+#ifndef SC_DEVELOP
+#define SC_DEVELOP 0
+#endif
 
 #define SC_CONSTEX static constexpr
 

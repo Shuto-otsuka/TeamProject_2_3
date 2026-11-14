@@ -15,8 +15,8 @@ namespace SeedCore
 		{
 			RenderAccess::Read(GeometryFeature::Depth),
 			RenderAccess::Read(SkyFeature::Radiance),
-			RenderAccess::Read(MaterialFeature::SurfaceRadiance),
-			RenderAccess::Read(RaytracingVolumetricLightFeature::FogVolume),
+			RenderAccess::Read(MaterialFeature::Radiance),
+			RenderAccess::Read(RaytracingVolumetricLightFeature::Fog),
 			RenderAccess::Write(Color)
 		};
 

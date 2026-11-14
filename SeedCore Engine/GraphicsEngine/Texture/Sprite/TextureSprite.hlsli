@@ -8,12 +8,23 @@ struct TextureSpriteBindings
 {
 	uint texture_units_;
 	uint texture_quads_;
-	uint texture_draw_list_;
+	uint texture_draws_;
 	uint texture_constants_;
 	uint outline_styles_;
 	uint outline_mask_;
 };
 ConstantBuffer<TextureSpriteBindings> bindings : register(b0, space1);
+
+/**
+* [EN]
+* What TextureSpriteAS hands to TextureSpriteMS: the quads of its 32 that are
+* on screen, as indices into Texture.Quads, still in draw-list order.
+*/
+struct TextureSpritePayload
+{
+	uint count_;
+	uint quads_[32];
+};
 
 /**
 * [EN]

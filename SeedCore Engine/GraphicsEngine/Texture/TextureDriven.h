@@ -146,13 +146,13 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Texture.Constants: where the sprite quads (screen quads, drawn first) and
-	* the billboard quads start in Texture.DrawList and how many of each there
+	* the billboard quads start in Texture.Draws and how many of each there
 	* are, and the quad slots Texture.Expand walks.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* Texture.Constants。Texture.DrawList の中の、スプライト（画面の四角形。
+	* Texture.Constants。Texture.Draws の中の、スプライト（画面の四角形。
 	* 先に描く）とビルボードの四角形それぞれの先頭と数、Texture.Expand が回す
 	* 四角形の枠の数。
 	*/

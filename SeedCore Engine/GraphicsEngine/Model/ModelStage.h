@@ -21,13 +21,13 @@ namespace SeedCore
 			RenderAccess::Read(ClusterUpdates),
 			RenderAccess::Read(PlacementUpdates),
 			RenderAccess::Read(MaterialUpdates),
-			RenderAccess::Read(RaytracingUnitUpdates),
+			RenderAccess::Read(TraceUpdates),
 			RenderAccess::Write(Units),
 			RenderAccess::Write(Meshes),
 			RenderAccess::Write(Clusters),
 			RenderAccess::Write(Placements),
 			RenderAccess::Write(Materials),
-			RenderAccess::Write(RaytracingUnits)
+			RenderAccess::Write(Traces)
 		};
 
 		static void Execute(ModelFeature& feature, RenderPass& pass);
@@ -47,7 +47,7 @@ namespace SeedCore
 			RenderAccess::Read(Units),
 			RenderAccess::Read(Meshes),
 			RenderAccess::Read(Bones),
-			RenderAccess::Read(MorphWeights),
+			RenderAccess::Read(Morphs),
 			RenderAccess::Read(BottomLevelFeature::Table),
 			RenderAccess::Append(BottomLevelFeature::Vertices)
 		};
@@ -79,7 +79,7 @@ namespace SeedCore
 			RenderAccess::Read(Clusters),
 			RenderAccess::Read(Placements),
 			RenderAccess::Read(Materials),
-			RenderAccess::Read(SoftbodyInstances),
+			RenderAccess::Read(Softbodies),
 			RenderAccess::Constant(Constants),
 			RenderAccess::Append(GeometryFeature::Instances),
 			RenderAccess::Append(GeometryFeature::Counts),
@@ -116,7 +116,7 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(Units),
-			RenderAccess::Read(RaytracingUnits),
+			RenderAccess::Read(Traces),
 			RenderAccess::Read(Meshes),
 			RenderAccess::Read(Materials),
 			RenderAccess::Append(TopLevelFeature::Instances),

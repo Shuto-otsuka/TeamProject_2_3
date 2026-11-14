@@ -14,7 +14,7 @@ struct TransparentResolveBindings
 {
 	uint transparent_heads_;
 	uint transparent_fragments_;
-	uint raytracing_volumetric_light_fog_volume_;
+	uint raytracing_volumetric_light_fog_;
 	uint radiance_color_;
 	uint material_velocity_;
 };
@@ -56,7 +56,7 @@ void Clear(uint3 id : SV_DispatchThreadID)
 * farther layers past 16 are dropped), then blends them over Radiance.Color
 * from the back with their premultiplied colors. Each layer first passes
 * through the fog in front of it: its color is scaled by the transmittance
-* at its depth in FogVolume and the light scattered in front of it is added
+* at its depth in VolumetricLight.Fog and the light scattered in front of it is added
 * weighted by the layer's opacity, so light shafts in front of a surface stay
 * in front and those behind it show through. Walking front to back, the
 * layer at which the accumulated opacity first passes one half also owns the
@@ -69,7 +69,7 @@ void Clear(uint3 id : SV_DispatchThreadID)
 * 1 ピクセルに 1 スレッド。ピクセルのリストをたどり、手前の 16 層を手前から
 * 奥の順に並べて持つ（逆 Z なので深度が大きいほど手前。16 を超えた奥の層は
 * 捨てる）。そのあと奥から順に、アルファを掛けた色で Radiance.Color の上へ
-* 重ねる。各層はまず手前のフォグを通す。FogVolume の自分の深度の透過率を色に
+* 重ねる。各層はまず手前のフォグを通す。VolumetricLight.Fog の自分の深度の透過率を色に
 * 掛け、手前で散乱した光を層の不透明度の分だけ足すので、面の手前の光の筋は
 * 手前に残り、奥の筋は透けて見える。手前からたどって、積み上げた不透明度が初めて半分を超えた層が
 * そのピクセルの動きも持ち、Material.Velocity を上書きする。そこまで不透明に
@@ -123,7 +123,7 @@ void Resolve(uint3 id : SV_DispatchThreadID)
 	}
 
 	SceneConstantBuffer scene = GetSceneConstantBuffer();
-	Texture3D<float4> fog_volume = ResourceDescriptorHeap[resolve_bindings.raytracing_volumetric_light_fog_volume_];
+	Texture3D<float4> fog_volume = ResourceDescriptorHeap[resolve_bindings.raytracing_volumetric_light_fog_];
 	uint3 froxel_dimensions;
 	fog_volume.GetDimensions(froxel_dimensions.x, froxel_dimensions.y, froxel_dimensions.z);
 	float2 uv = (float2(id.xy) + 0.5) / float2(width, height);

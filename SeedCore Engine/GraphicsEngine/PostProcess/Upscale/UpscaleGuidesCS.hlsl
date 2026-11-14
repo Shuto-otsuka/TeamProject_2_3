@@ -4,21 +4,21 @@
 
 struct UpscaleGuidesBindings
 {
-	uint material_surface_base_color_;
-	uint material_surface_normal_roughness_;
+	uint material_base_color_;
+	uint material_normal_roughness_;
 	uint geometry_visibility_id_;
 	uint geometry_depth_;
 	uint geometry_instances_;
 	uint upscale_normal_roughness_;
-	uint upscale_specular_albedo_;
-	uint upscale_diffuse_albedo_;
+	uint upscale_specular_;
+	uint upscale_diffuse_;
 };
 ConstantBuffer<UpscaleGuidesBindings> bindings : register(b0, space1);
 
 /**
 * [EN]
 * Writes the guides NVIDIA DLSS Ray Reconstruction expects: RGB=normal /
-* A=roughness decoded from Material.SurfaceNormalRoughness (12-bit
+* A=roughness decoded from Material.NormalRoughness (12-bit
 * octahedral normal and 8-bit roughness), the specular albedo from the
 * split-sum approximation, and the diffuse albedo. DLSS-RR wants a plain float
 * normal and roughness rather than the engine's packing, so this full-screen
@@ -26,7 +26,7 @@ ConstantBuffer<UpscaleGuidesBindings> bindings : register(b0, space1);
 *
 * [JP]
 * NVIDIA DLSS Ray Reconstruction が要求するガイドを書く。RGB=法線 / A=ラフネスは
-* Material.SurfaceNormalRoughness（12 ビットの八面体法線と 8 ビットのラフネス）
+* Material.NormalRoughness（12 ビットの八面体法線と 8 ビットのラフネス）
 * から戻したもの、スペキュラアルベドは split-sum の近似、それと拡散アルベド。
 * DLSS-RR はエンジン独自のパッキングではなく素の float の法線とラフネスを求める
 * ので、各ビューの Upscale.DlssRayReconstruction の直前に 1 回だけ走る全画面の
@@ -69,12 +69,12 @@ void main(uint3 dtid : SV_DispatchThreadID)
 
 	SceneConstantBuffer scene = GetSceneConstantBuffer();
 	uint2 pixel = dtid.xy;
-	Texture2D<float4> surface_base_color = ResourceDescriptorHeap[bindings.material_surface_base_color_];
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_surface_normal_roughness_];
+	Texture2D<float4> surface_base_color = ResourceDescriptorHeap[bindings.material_base_color_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_normal_roughness_];
 	Texture2D<uint2> visibility_id = ResourceDescriptorHeap[bindings.geometry_visibility_id_];
 	Texture2D<float> depth_texture = ResourceDescriptorHeap[bindings.geometry_depth_];
-	RWTexture2D<float4> specular_albedo = ResourceDescriptorHeap[bindings.upscale_specular_albedo_];
-	RWTexture2D<float4> diffuse_albedo = ResourceDescriptorHeap[bindings.upscale_diffuse_albedo_];
+	RWTexture2D<float4> specular_albedo = ResourceDescriptorHeap[bindings.upscale_specular_];
+	RWTexture2D<float4> diffuse_albedo = ResourceDescriptorHeap[bindings.upscale_diffuse_];
 
 	float depth = depth_texture.Load(int3(pixel, 0));
 	if (depth == 0.0 || visibility_id.Load(int3(pixel, 0)).x == 0)

@@ -3,23 +3,23 @@
 /**
 * [EN]
 * Texture.Billboard for devices without mesh shaders: one DrawInstanced
-* instance per entry of the billboard section of Texture.DrawList, 6
+* instance per entry of the billboard section of Texture.Draws, 6
 * vertices (two triangles) each, placed exactly like TextureBillboardMS.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* メッシュシェーダーの無いデバイス用の Texture.Billboard。Texture.DrawList の
+* メッシュシェーダーの無いデバイス用の Texture.Billboard。Texture.Draws の
 * ビルボードの区間の 1 件につき DrawInstanced のインスタンス 1 つ、6 頂点
 * （2 三角形）。配置は TextureBillboardMS と同じ。
 */
 TextureBillboardOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 {
 	ConstantBuffer<TextureConstantBuffer> constants = ResourceDescriptorHeap[bindings.texture_constants_];
-	StructuredBuffer<uint> draw_list = ResourceDescriptorHeap[bindings.texture_draw_list_];
+	StructuredBuffer<uint> draws = ResourceDescriptorHeap[bindings.texture_draws_];
 	StructuredBuffer<TextureQuadStructuredBuffer> quads = ResourceDescriptorHeap[bindings.texture_quads_];
 	StructuredBuffer<TextureUnitStructuredBuffer> units = ResourceDescriptorHeap[bindings.texture_units_];
-	uint quad_index = draw_list[constants.billboard_base_ + instance_id];
+	uint quad_index = draws[constants.billboard_base_ + instance_id];
 	TextureQuadStructuredBuffer quad = quads[quad_index];
 	TextureUnitStructuredBuffer unit = units[quad.unit_];
 	SceneConstantBuffer scene = GetSceneConstantBuffer();

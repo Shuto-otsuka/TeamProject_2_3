@@ -28,7 +28,7 @@ namespace SeedCore
 	*/
 	void DebugDraw::Line(const Vector3& start, const Vector3& end, const Color& color)
 	{
-#if SC_DEBUG
+#if SC_DEBUG || SC_DEVELOP
 		/// [EN] A segment starts at its position and runs along its dimensions, so the dimensions are the vector to the end.
 		/// [JP] 線分は位置から始まり大きさの向きに伸びるので、大きさは終点までのベクトル。
 		ShapeDesc shape{};
@@ -61,7 +61,7 @@ namespace SeedCore
 	*/
 	void DebugDraw::Arrow(const Vector3& start, const Vector3& end, const Color& color, Float headLength)
 	{
-#if SC_DEBUG
+#if SC_DEBUG || SC_DEVELOP
 		/// [EN] An arrow with no length has no direction to point in, so nothing is drawn.
 		/// [JP] 長さの無い矢印は向きを持たないので、何も描かない。
 		Vector3 direction = end - start;
@@ -126,7 +126,7 @@ namespace SeedCore
 	*/
 	void DebugDraw::Box(const Vector3& center, const Quaternion& rotation, const Vector3& size, const Color& color)
 	{
-#if SC_DEBUG
+#if SC_DEBUG || SC_DEVELOP
 		/// [EN] The unit box spans -1 to 1, so the dimensions are half the size.
 		/// [JP] 単位の箱は -1 から 1 なので、大きさはサイズの半分。
 		ShapeDesc shape{};
@@ -153,7 +153,7 @@ namespace SeedCore
 	*/
 	void DebugDraw::Sphere(const Vector3& center, Float radius, const Color& color)
 	{
-#if SC_DEBUG
+#if SC_DEBUG || SC_DEVELOP
 		/// [EN] A sphere reads only its radius, from the dimensions' X.
 		/// [JP] 球が使うのは大きさの X に入れた半径だけ。
 		ShapeDesc shape{};
@@ -182,7 +182,7 @@ namespace SeedCore
 	*/
 	void DebugDraw::Capsule(const Vector3& center, const Quaternion& rotation, Float radius, Float height, const Color& color)
 	{
-#if SC_DEBUG
+#if SC_DEBUG || SC_DEVELOP
 		/// [EN] The dimensions are the radius and half the cylinder part's height.
 		/// [JP] 大きさは、半径と、円柱部分の高さの半分。
 		ShapeDesc shape{};
@@ -209,7 +209,7 @@ namespace SeedCore
 	*/
 	void DebugDraw::Cylinder(const Vector3& center, const Quaternion& rotation, Float radius, Float height, const Color& color)
 	{
-#if SC_DEBUG
+#if SC_DEBUG || SC_DEVELOP
 		/// [EN] The dimensions are the radius and half the height.
 		/// [JP] 大きさは、半径と高さの半分。
 		ShapeDesc shape{};

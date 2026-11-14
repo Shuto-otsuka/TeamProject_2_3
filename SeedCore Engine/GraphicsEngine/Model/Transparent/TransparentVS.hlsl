@@ -4,7 +4,7 @@
 /**
 * [EN]
 * Fallback for devices without mesh shaders: one DrawInstanced instance per
-* entry of Culling.TransparentLists, 124 triangles' worth of vertices each.
+* entry of Culling.TransparentMeshlets, 124 triangles' worth of vertices each.
 * Vertices past the meshlet's triangle count are placed outside the clip
 * volume. For a single-sided material every vertex transforms all three
 * corners of its triangle so it can collapse back-facing triangles itself,
@@ -13,7 +13,7 @@
 * ---------------------------------------------------------------------
 *
 * [JP]
-* メッシュシェーダーが使えないデバイス向けの代わり。Culling.TransparentLists の
+* メッシュシェーダーが使えないデバイス向けの代わり。Culling.TransparentMeshlets の
 * 1 件につき DrawInstanced の 1 インスタンスで、三角形 124 個分の頂点を描く。
 * メッシュレットの三角形数を超えた頂点はクリップ空間の外へ置く。片面の
 * マテリアルでは、各頂点が三角形の 3 つの角をすべて変換し、裏を向く三角形を
@@ -21,8 +21,8 @@
 */
 void main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID, out TransparentOutput output)
 {
-	StructuredBuffer<uint2> lists = ResourceDescriptorHeap[bindings.culling_transparent_lists_];
-	uint2 entry = lists[instance_id];
+	StructuredBuffer<uint2> transparent_meshlets = ResourceDescriptorHeap[bindings.culling_transparent_meshlets_];
+	uint2 entry = transparent_meshlets[instance_id];
 
 	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.geometry_instances_];
 	ModelStructuredBuffer instance = instances[entry.x];
@@ -73,17 +73,17 @@ void main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID, out Tr
 		{
 			StructuredBuffer<uint> vertex_morph_source = ResourceDescriptorHeap[NonUniformResourceIndex(instance.morph_.vertex_morph_source_buffer_index_)];
 			StructuredBuffer<float3> morph_deltas = ResourceDescriptorHeap[NonUniformResourceIndex(instance.morph_.morph_delta_buffer_index_)];
-			StructuredBuffer<float> morph_weights = ResourceDescriptorHeap[bindings.model_morph_weights_];
+			StructuredBuffer<float> morphs = ResourceDescriptorHeap[bindings.model_morphs_];
 			uint weight_count;
 			uint weight_stride;
-			morph_weights.GetDimensions(weight_count, weight_stride);
+			morphs.GetDimensions(weight_count, weight_stride);
 			uint previous_weight_base = weight_count / 2;
 			uint morph_vertex_index = vertex_morph_source[global_vertex_index] - instance.morph_.morph_vertex_offset_;
 			for (uint target = 0; target < instance.morph_.morph_target_count_; target++)
 			{
 				float3 morph_delta = morph_deltas[instance.morph_.morph_delta_offset_ + target * instance.morph_.morph_vertex_count_ + morph_vertex_index];
-				local_position += morph_delta * morph_weights[instance.morph_.morph_weight_offset_ + target];
-				previous_local_position += morph_delta * morph_weights[previous_weight_base + instance.morph_.morph_weight_offset_ + target];
+				local_position += morph_delta * morphs[instance.morph_.morph_weight_offset_ + target];
+				previous_local_position += morph_delta * morphs[previous_weight_base + instance.morph_.morph_weight_offset_ + target];
 			}
 		}
 

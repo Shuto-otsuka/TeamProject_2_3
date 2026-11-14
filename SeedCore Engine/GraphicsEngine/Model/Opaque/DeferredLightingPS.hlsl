@@ -9,11 +9,11 @@
 struct DeferredLightingResolveBindings
 {
 	uint geometry_depth_;
-	uint material_surface_base_color_;
-	uint material_surface_normal_roughness_;
-	uint material_surface_tangent_;
+	uint material_base_color_;
+	uint material_normal_roughness_;
+	uint material_tangent_;
 	uint geometry_visibility_id_;
-	uint geometry_visibility_texcoord_;
+	uint geometry_visibility_uv_;
 	uint geometry_instances_;
 	uint light_constants_;
 	uint weather_constants_;
@@ -23,23 +23,23 @@ struct DeferredLightingResolveBindings
 	uint raytracing_reflection_radiance_;
 	uint raytracing_global_illumination_radiance_;
 	uint raytracing_refraction_radiance_;
-	uint direct_light_punctual_radiance_;
-	uint sky_diffuse_irradiance_;
-	uint sky_specular_prefiltered_;
-	uint sky_brdf_lut_;
+	uint direct_light_radiance_;
+	uint sky_diffuse_;
+	uint sky_specular_;
+	uint sky_brdf_;
 };
 ConstantBuffer<DeferredLightingResolveBindings> bindings : register(b0, space1);
 
 /**
 * [EN]
 * DeferredLighting.Resolve: adds the light reaching the G-Buffer surface onto
-* SurfaceRadiance, which Material already started with the emitted radiance.
+* Radiance, which Material already started with the emitted radiance.
 * The sum is the sun through the surface's BRDF, scaled by the sun
 * visibility in RaytracingShadow.Visibility.x (LoadSurfaceMaterial, with
 * the texcoord's derivatives taken from the right and lower neighbours of the
 * same instance, and Weather.Constants' wetness and snow cover), the sunlight seen through thin back-lit surfaces
 * (RaytracingSubsurfaceScattering.Transmittance), the indirect light, the
-* refracted light, the punctual lights' PunctualRadiance and a lightning
+* refracted light, the punctual lights' DirectLight.Radiance and a lightning
 * strike's flash lighting the diffuse color. The indirect
 * diffuse is the sky irradiance darkened by the occlusion (the ray-traced
 * openness times the material's occlusion texture, and for fur the
@@ -56,12 +56,12 @@ ConstantBuffer<DeferredLightingResolveBindings> bindings : register(b0, space1);
 *
 * [JP]
 * DeferredLighting.Resolve。G-Buffer の表面に届く光を、Material が放射を初期値
-* として書いた SurfaceRadiance へ足す。足すのは、表面の BRDF
+* として書いた Radiance へ足す。足すのは、表面の BRDF
 * （LoadSurfaceMaterial。UV の微分は同じインスタンスの右隣と下隣から求め、
 * Weather.Constants の濡れと積雪を渡す）
 * を通し RaytracingShadow.Visibility.x の太陽の可視率を掛けた太陽、薄く
 * 裏から照らされた面を透ける太陽の光（RaytracingSubsurfaceScattering.
-* Transmittance）、間接光、屈折光、点光源の PunctualRadiance、拡散色を照らす雷の
+* Transmittance）、間接光、屈折光、点光源の DirectLight.Radiance、拡散色を照らす雷の
 * 閃光。間接の拡散は
 * 遮蔽（レイトレの開放度とマテリアルの occlusion テクスチャの積。Fur は根元から
 * 毛先へ薄れる自己遮蔽も掛ける）で暗くした
@@ -103,10 +103,10 @@ float4 main(FullscreenOutput input) : SV_Target0
 	float4 world = mul(float4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, depth, 1.0), scene.inverse_view_projection_);
 	float3 view = normalize(scene.camera_position_.xyz - world.xyz / world.w);
 
-	Texture2D<float4> surface_base_color = ResourceDescriptorHeap[bindings.material_surface_base_color_];
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_surface_normal_roughness_];
-	Texture2D<uint> surface_tangent = ResourceDescriptorHeap[bindings.material_surface_tangent_];
-	Texture2D<float2> visibility_texcoord = ResourceDescriptorHeap[bindings.geometry_visibility_texcoord_];
+	Texture2D<float4> surface_base_color = ResourceDescriptorHeap[bindings.material_base_color_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_normal_roughness_];
+	Texture2D<uint> surface_tangent = ResourceDescriptorHeap[bindings.material_tangent_];
+	Texture2D<float2> visibility_uv = ResourceDescriptorHeap[bindings.geometry_visibility_uv_];
 	float4 base_color = surface_base_color.Load(int3(pixel, 0));
 	uint normal_roughness = surface_normal_roughness.Load(int3(pixel, 0));
 	float3 normal = OctNormalDecode(float2(normal_roughness & 0xFFF, (normal_roughness >> 12) & 0xFFF) / 4095.0);
@@ -114,9 +114,9 @@ float4 main(FullscreenOutput input) : SV_Target0
 
 	uint2 pixel_x = uint2(min(pixel.x + 1, width - 1), pixel.y);
 	uint2 pixel_y = uint2(pixel.x, min(pixel.y + 1, height - 1));
-	float2 texcoord = visibility_texcoord.Load(int3(pixel, 0));
-	float2 texcoord_dx = visibility_id.Load(int3(pixel_x, 0)).x == instance_index + 1 ? visibility_texcoord.Load(int3(pixel_x, 0)) - texcoord : float2(0.0, 0.0);
-	float2 texcoord_dy = visibility_id.Load(int3(pixel_y, 0)).x == instance_index + 1 ? visibility_texcoord.Load(int3(pixel_y, 0)) - texcoord : float2(0.0, 0.0);
+	float2 texcoord = visibility_uv.Load(int3(pixel, 0));
+	float2 texcoord_dx = visibility_id.Load(int3(pixel_x, 0)).x == instance_index + 1 ? visibility_uv.Load(int3(pixel_x, 0)) - texcoord : float2(0.0, 0.0);
+	float2 texcoord_dy = visibility_id.Load(int3(pixel_y, 0)).x == instance_index + 1 ? visibility_uv.Load(int3(pixel_y, 0)) - texcoord : float2(0.0, 0.0);
 
 	ConstantBuffer<WeatherConstantBuffer> weather = ResourceDescriptorHeap[bindings.weather_constants_];
 	SurfaceMaterial material = LoadSurfaceMaterial(base_color.rgb, base_color.a, roughness, normal, view, instance, texcoord, texcoord_dx, texcoord_dy, surface_tangent.Load(int3(pixel, 0)), weather.wetness_, weather.snow_coverage_);
@@ -178,8 +178,8 @@ float4 main(FullscreenOutput input) : SV_Target0
 	float3 image_based_specular = float3(0.0, 0.0, 0.0);
 	if (constants.sky_intensity_ > 0.0)
 	{
-		image_based_diffuse = ImageBasedLightingRadianceLambertian(bindings.sky_brdf_lut_, bindings.sky_diffuse_irradiance_, normal, view, material.roughness_, material.diffuse_color_, material.f0_) * occlusion * constants.sky_intensity_;
-		image_based_specular = ImageBasedLightingRadianceGgx(bindings.sky_brdf_lut_, bindings.sky_specular_prefiltered_, normal, view, material.roughness_, material.f0_) * specular_occlusion * constants.sky_intensity_;
+		image_based_diffuse = ImageBasedLightingRadianceLambertian(bindings.sky_brdf_, bindings.sky_diffuse_, normal, view, material.roughness_, material.diffuse_color_, material.f0_) * occlusion * constants.sky_intensity_;
+		image_based_specular = ImageBasedLightingRadianceGgx(bindings.sky_brdf_, bindings.sky_specular_, normal, view, material.roughness_, material.f0_) * specular_occlusion * constants.sky_intensity_;
 	}
 
 	Texture2D<float4> reflection_radiance = ResourceDescriptorHeap[bindings.raytracing_reflection_radiance_];
@@ -198,7 +198,7 @@ float4 main(FullscreenOutput input) : SV_Target0
 	float4 refraction = refraction_radiance.Load(int3(pixel, 0));
 	float3 indirect_specular = image_based_specular + refraction.rgb * (1.0 - fresnel) * refraction.a * saturate(instance.extension_.transmission_factor_);
 
-	Texture2D<float4> punctual_radiance = ResourceDescriptorHeap[bindings.direct_light_punctual_radiance_];
+	Texture2D<float4> punctual_radiance = ResourceDescriptorHeap[bindings.direct_light_radiance_];
 	lighting += punctual_radiance.Load(int3(pixel, 0)).rgb;
 
 	lighting += material.diffuse_color_ * weather.thunder_flash_ * float3(0.85, 0.9, 1.0) * 2.5;

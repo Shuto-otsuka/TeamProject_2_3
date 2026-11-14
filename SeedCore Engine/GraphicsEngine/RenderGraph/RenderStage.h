@@ -29,6 +29,7 @@ namespace SeedCore
 		Particle = 3500,
 		PostProcess = 4000,
 		Diagnostic = 4500,
+		Highlight = 4750,
 		Overlay = 5000,
 	};
 

@@ -9,22 +9,29 @@ namespace SeedCore
 		Uint32 mesh = feature.mesh_ ? 0x80000000u : 0u;
 		feature.preparePipeline_.Dispatch(pass, 1, 1, 1, mesh);
 
-		D3D12_RESOURCE_BARRIER barrier{};
-		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-		barrier.UAV.pResource = pass.Resource(DrawArguments);
-		pass.List().Get()->ResourceBarrier(1, &barrier);
+		StaticArray<D3D12_RESOURCE_BARRIER, 2> barriers{};
+		barriers[0].Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+		barriers[0].UAV.pResource = pass.Resource(MeshletArguments);
+		barriers[1].Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+		barriers[1].UAV.pResource = pass.Resource(ChunkArguments);
+		pass.List().Get()->ResourceBarrier(static_cast<Uint32>(barriers.size()), barriers.data());
 
-		feature.earlyPipeline_.Dispatch(pass, GeometryFeature::transparentBase_ * 32, 1, 1, mesh | GeometryFeature::transparentBase_);
+		feature.earlyPipeline_.Dispatch(pass, feature.mesh_ ? GeometryFeature::transparentBase_ : GeometryFeature::transparentBase_ * 32, 1, 1, mesh | GeometryFeature::transparentBase_);
 	}
 
 	void CullingFeature::CullingStage::LateStep::Execute(CullingFeature& feature, RenderPass& pass)
 	{
-		feature.latePipeline_.Dispatch(pass, capacity_, 1, 1, feature.mesh_ ? 0x80000000u : 0u);
+		if (feature.mesh_)
+		{
+			return;
+		}
+		feature.latePipeline_.Dispatch(pass, capacity_, 1, 1, 0);
 	}
 
 	void CullingFeature::CullingStage::TransparentStep::Execute(CullingFeature& feature, RenderPass& pass)
 	{
 		Uint32 mesh = feature.mesh_ ? 0x80000000u : 0u;
-		feature.transparentPipeline_.Dispatch(pass, (GeometryFeature::instanceCapacity_ - GeometryFeature::transparentBase_) * 32, 1, 1, mesh | GeometryFeature::transparentBase_);
+		Uint32 count = GeometryFeature::instanceCapacity_ - GeometryFeature::transparentBase_;
+		feature.transparentPipeline_.Dispatch(pass, feature.mesh_ ? count : count * 32, 1, 1, mesh | GeometryFeature::transparentBase_);
 	}
 }

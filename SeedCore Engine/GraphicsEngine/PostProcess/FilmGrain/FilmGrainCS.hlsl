@@ -12,7 +12,7 @@ struct FilmGrainResolveBindings
 {
 	uint sharpness_color_;
 	uint film_grain_constants_;
-	uint hud_display_color_;
+	uint hud_display_;
 };
 ConstantBuffer<FilmGrainResolveBindings> bindings : register(b0, space1);
 
@@ -46,7 +46,7 @@ ConstantBuffer<FilmGrainResolveBindings> bindings : register(b0, space1);
 * approximation that shifts only brightness.
 *
 * Runs LAST, after SharpnessCS.hlsl: reads Sharpness.Color and writes
-* HUD.DisplayColor. Last is deliberate: sharpening grain would amplify it
+* HUD.Display. Last is deliberate: sharpening grain would amplify it
 * into crawling speckle.
 *
 * ---------------------------------------------------------------------
@@ -74,7 +74,7 @@ ConstantBuffer<FilmGrainResolveBindings> bindings : register(b0, space1);
 * 動かす簡略版。
 *
 * SharpnessCS.hlsl の後、最後に走り、Sharpness.Color を読んで
-* HUD.DisplayColor へ書く。最後に置くのは意図的で、グレインをシャープにすると
+* HUD.Display へ書く。最後に置くのは意図的で、グレインをシャープにすると
 * 這い回るスペックルへ増幅されてしまう。
 */
 
@@ -120,7 +120,7 @@ float GrainLuminanceResponse(float luminance, float response)
 [numthreads(8, 8, 1)]
 void main(uint3 dtid : SV_DispatchThreadID)
 {
-	RWTexture2D<float4> destination = ResourceDescriptorHeap[bindings.hud_display_color_];
+	RWTexture2D<float4> destination = ResourceDescriptorHeap[bindings.hud_display_];
 	ConstantBuffer<FilmGrainConstantBuffer> constants = ResourceDescriptorHeap[bindings.film_grain_constants_];
 	Texture2D<float4> source = ResourceDescriptorHeap[bindings.sharpness_color_];
 

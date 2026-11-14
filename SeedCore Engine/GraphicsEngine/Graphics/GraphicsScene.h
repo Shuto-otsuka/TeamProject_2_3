@@ -253,8 +253,8 @@ namespace SeedCore
 		/// [JP] エディター UI が表示する、各ビューの出力テクスチャのハンドル。
 		GraphicsDisplay display_;
 
-		/// [EN] Output texture of each view, imported into the render graph as ViewOutput and shown by the editor UI. Indexed by RenderViewKind.
-		/// [JP] 各ビューの出力テクスチャ。ViewOutput としてレンダーグラフに取り込み、エディター UI が表示する。RenderViewKind の番号で引く。
+		/// [EN] Output texture of each view, imported into the render graph as HUD.Output and shown by the editor UI. Indexed by RenderViewKind.
+		/// [JP] 各ビューの出力テクスチャ。HUD.Output としてレンダーグラフに取り込み、エディター UI が表示する。RenderViewKind の番号で引く。
 		StaticArray<RenderGraphAllocation, RenderViewCount> outputs_;
 
 		/// [EN] Slot in the device's render target heap that Render rewrites with the current back buffer's view, for the views shown on the screen.

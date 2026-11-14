@@ -22,20 +22,20 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
+			RenderAccess::Read(MaterialFeature::NormalRoughness),
 			RenderAccess::Read(MaterialFeature::Velocity),
 			RenderAccess::Read(TopLevelFeature::Structure),
 			RenderAccess::Read(TopLevelFeature::Hits),
 			RenderAccess::Read(LightFeature::List),
 			RenderAccess::Constant(LightFeature::Constants),
-			RenderAccess::Read(LightFeature::ClusterGrid),
+			RenderAccess::Read(LightFeature::Clusters),
 			RenderAccess::Read(SkyFeature::Cubemap),
-			RenderAccess::Read(SkyFeature::DiffuseIrradiance),
+			RenderAccess::Read(SkyFeature::Diffuse),
 			RenderAccess::Constant(Constants),
 			RenderAccess::History(Reservoir),
 			RenderAccess::Write(Reservoir),
 			RenderAccess::Write(Reuse),
-			RenderAccess::Append(DebugViewFeature::RayCount)
+			RenderAccess::Append(DebugViewFeature::Rays)
 		};
 
 		static void Execute(RaytracingGlobalIlluminationFeature& feature, RenderPass& pass);
@@ -63,7 +63,7 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
+			RenderAccess::Read(MaterialFeature::NormalRoughness),
 			RenderAccess::Read(Reservoir),
 			RenderAccess::Constant(Constants),
 			RenderAccess::Write(Raw),
@@ -87,13 +87,13 @@ namespace SeedCore
 			RenderAccess::Read(Raw),
 			RenderAccess::Read(Confidence),
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
+			RenderAccess::Read(MaterialFeature::NormalRoughness),
 			RenderAccess::Read(MaterialFeature::Velocity),
 			RenderAccess::Constant(Constants),
 			RenderAccess::History(Accumulated),
 			RenderAccess::Write(Ping),
-			RenderAccess::History(HistoryLength),
-			RenderAccess::Write(HistoryLength),
+			RenderAccess::History(Age),
+			RenderAccess::Write(Age),
 			RenderAccess::Write(Validity),
 			RenderAccess::Write(Variance)
 		};
@@ -116,19 +116,19 @@ namespace SeedCore
 			{
 				RenderAccess::Read(Ping).As("Source"),
 				RenderAccess::Read(GeometryFeature::Depth),
-				RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
+				RenderAccess::Read(MaterialFeature::NormalRoughness),
 				RenderAccess::Write(Pong).As("Destination")
 			},
 			{
 				RenderAccess::Read(Pong).As("Source"),
 				RenderAccess::Read(GeometryFeature::Depth),
-				RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
+				RenderAccess::Read(MaterialFeature::NormalRoughness),
 				RenderAccess::Write(Accumulated).As("Destination")
 			},
 			{
 				RenderAccess::Read(Accumulated).As("Source"),
 				RenderAccess::Read(GeometryFeature::Depth),
-				RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
+				RenderAccess::Read(MaterialFeature::NormalRoughness),
 				RenderAccess::Write(Radiance).As("Destination")
 			}
 		};

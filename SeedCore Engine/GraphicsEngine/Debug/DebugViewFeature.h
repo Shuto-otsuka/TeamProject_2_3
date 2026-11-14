@@ -9,7 +9,7 @@ namespace SeedCore
 	public:
 		SC_RENDER_RESOURCES
 		(
-			SC_RENDER_ACCUMULATION(RayCount, RenderResourceDesc::ScaledTexture(RenderFormat::R32Uint), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero)
+			SC_RENDER_ACCUMULATION(Rays, RenderResourceDesc::ScaledTexture(RenderFormat::R32Uint), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero)
 		);
 
 	public:
@@ -46,5 +46,7 @@ namespace SeedCore
 		Bool resolving_[RenderViewCount] = { false, false, false };
 
 		Bool bounding_[RenderViewCount] = { false, false, false };
+
+		Bool mesh_ = false;
 	};
 }

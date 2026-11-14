@@ -5,39 +5,29 @@ groupshared float4 clip_positions[64];
 
 /**
 * [EN]
-* One thread group per entry of Culling.TransparentLists. Each vertex applies
-* morph targets, then linear blend skinning, then the world transform, for
-* this frame and, with the second half of ModelBones / ModelMorphWeights, for
-* the previous one, and hands the pixel shader the world and object space
-* position, normal and tangent it shades with. Single-sided triangles that
-* face away are collapsed, since the rasterizer itself culls nothing.
+* One thread group per (instance, meshlet) entry TransparentAS kept, read from
+* its payload. Each vertex applies morph targets, then linear blend skinning,
+* then the world transform, for this frame and, with the second half of
+* ModelBones / ModelMorphWeights, for the previous one, and hands the pixel
+* shader the world and object space position, normal and tangent it shades
+* with. Single-sided triangles that face away are collapsed, since the
+* rasterizer itself culls nothing.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* Culling.TransparentLists の 1 件につき 1 スレッドグループ。各頂点はモーフ、
-* 次にスキン、次にワールド変換を、このフレームの分と、ModelBones /
-* ModelMorphWeights の後ろ半分で前のフレームの分を求め、ピクセルシェーダーが
-* 陰影付けに使うワールドとオブジェクト空間の位置・法線・タンジェントを渡す。
-* ラスタライザー自身は何もカリングしないので、片面で裏を向く三角形は潰す。
+* TransparentAS が残した (インスタンス, meshlet) の 1 件につき 1 スレッドグループで、
+* その 1 件はペイロードから読む。各頂点はモーフ、次にスキン、次にワールド変換を、
+* このフレームの分と、ModelBones / ModelMorphWeights の後ろ半分で前のフレームの分を
+* 求め、ピクセルシェーダーが陰影付けに使うワールドとオブジェクト空間の位置・法線・
+* タンジェントを渡す。ラスタライザー自身は何もカリングしないので、片面で裏を向く
+* 三角形は潰す。
 */
 [NumThreads(64, 1, 1)]
 [OutputTopology("triangle")]
-void main(uint gtid : SV_GroupThreadID, uint3 gid : SV_GroupID, out vertices TransparentOutput verts[64], out indices uint3 tris[124])
+void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, in payload TransparentPayload payload, out vertices TransparentOutput verts[64], out indices uint3 tris[124])
 {
-	StructuredBuffer<uint2> lists = ResourceDescriptorHeap[bindings.culling_transparent_lists_];
-	StructuredBuffer<uint> arguments = ResourceDescriptorHeap[bindings.culling_transparent_arguments_];
-	uint capacity;
-	uint stride;
-	lists.GetDimensions(capacity, stride);
-	uint count = min(arguments[CULLING_TRANSPARENT_COUNT], capacity);
-	uint entry_index = gid.y * 1024 + gid.x;
-	if (entry_index >= count)
-	{
-		return;
-	}
-
-	uint2 entry = lists[entry_index];
+	uint2 entry = payload.entries_[gid];
 	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.geometry_instances_];
 	ModelStructuredBuffer instance = instances[entry.x];
 	StructuredBuffer<ModelMeshlet> meshlets = ResourceDescriptorHeap[instance.geometry_.meshlet_buffer_index_];
@@ -62,17 +52,17 @@ void main(uint gtid : SV_GroupThreadID, uint3 gid : SV_GroupID, out vertices Tra
 		{
 			StructuredBuffer<uint> vertex_morph_source = ResourceDescriptorHeap[instance.morph_.vertex_morph_source_buffer_index_];
 			StructuredBuffer<float3> morph_deltas = ResourceDescriptorHeap[instance.morph_.morph_delta_buffer_index_];
-			StructuredBuffer<float> morph_weights = ResourceDescriptorHeap[bindings.model_morph_weights_];
+			StructuredBuffer<float> morphs = ResourceDescriptorHeap[bindings.model_morphs_];
 			uint weight_count;
 			uint weight_stride;
-			morph_weights.GetDimensions(weight_count, weight_stride);
+			morphs.GetDimensions(weight_count, weight_stride);
 			uint previous_weight_base = weight_count / 2;
 			uint morph_vertex_index = vertex_morph_source[global_vertex_index] - instance.morph_.morph_vertex_offset_;
 			for (uint target = 0; target < instance.morph_.morph_target_count_; target++)
 			{
 				float3 morph_delta = morph_deltas[instance.morph_.morph_delta_offset_ + target * instance.morph_.morph_vertex_count_ + morph_vertex_index];
-				local_position += morph_delta * morph_weights[instance.morph_.morph_weight_offset_ + target];
-				previous_local_position += morph_delta * morph_weights[previous_weight_base + instance.morph_.morph_weight_offset_ + target];
+				local_position += morph_delta * morphs[instance.morph_.morph_weight_offset_ + target];
+				previous_local_position += morph_delta * morphs[previous_weight_base + instance.morph_.morph_weight_offset_ + target];
 			}
 		}
 

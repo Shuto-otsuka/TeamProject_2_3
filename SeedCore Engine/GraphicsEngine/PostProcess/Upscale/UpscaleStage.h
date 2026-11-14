@@ -13,14 +13,14 @@ namespace SeedCore
 
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
-			RenderAccess::Read(MaterialFeature::SurfaceBaseColor),
-			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
-			RenderAccess::Read(GeometryFeature::VisibilityId),
+			RenderAccess::Read(MaterialFeature::BaseColor),
+			RenderAccess::Read(MaterialFeature::NormalRoughness),
+			RenderAccess::Read(GeometryFeature::VisibilityID),
 			RenderAccess::Read(GeometryFeature::Depth),
 			RenderAccess::Read(GeometryFeature::Instances),
 			RenderAccess::Write(NormalRoughness),
-			RenderAccess::Write(SpecularAlbedo),
-			RenderAccess::Write(DiffuseAlbedo)
+			RenderAccess::Write(Specular),
+			RenderAccess::Write(Diffuse)
 		};
 
 		static void Execute(UpscaleFeature& feature, RenderPass& pass);
@@ -69,8 +69,8 @@ namespace SeedCore
 			RenderAccess::Read(GeometryFeature::Depth),
 			RenderAccess::Read(MaterialFeature::Velocity),
 			RenderAccess::Read(NormalRoughness),
-			RenderAccess::Read(SpecularAlbedo),
-			RenderAccess::Read(DiffuseAlbedo),
+			RenderAccess::Read(Specular),
+			RenderAccess::Read(Diffuse),
 			RenderAccess::Write(Color)
 		};
 

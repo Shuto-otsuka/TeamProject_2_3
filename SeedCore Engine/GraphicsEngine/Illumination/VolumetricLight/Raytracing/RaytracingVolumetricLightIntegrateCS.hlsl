@@ -4,14 +4,14 @@
 struct RaytracingVolumetricLightIntegrateBindings
 {
 	uint raytracing_volumetric_light_scattering_;
-	uint raytracing_volumetric_light_fog_volume_;
+	uint raytracing_volumetric_light_fog_;
 };
 ConstantBuffer<RaytracingVolumetricLightIntegrateBindings> bindings : register(b0, space1);
 
 [numthreads(8, 8, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {
-	RWTexture3D<float4> fog_volume = ResourceDescriptorHeap[bindings.raytracing_volumetric_light_fog_volume_];
+	RWTexture3D<float4> fog_volume = ResourceDescriptorHeap[bindings.raytracing_volumetric_light_fog_];
 	uint3 froxel_dimensions;
 	fog_volume.GetDimensions(froxel_dimensions.x, froxel_dimensions.y, froxel_dimensions.z);
 	if (id.x >= froxel_dimensions.x || id.y >= froxel_dimensions.y)

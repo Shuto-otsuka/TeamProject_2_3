@@ -11,7 +11,7 @@ ConstantBuffer<OutlineComposeBindings> bindings : register(b0, space1);
 
 /**
 * [EN]
-* Outline.Compose: draws the outlines fullscreen onto HUD.DisplayColor
+* Outline.Compose: draws the outlines fullscreen onto HUD.Display
 * with alpha blending, at display resolution. A pixel outside every
 * outlined actor looks for the nearest outlined pixel within the widest
 * outline on screen and, when that pixel's own width reaches this far,
@@ -26,7 +26,7 @@ ConstantBuffer<OutlineComposeBindings> bindings : register(b0, space1);
 * ---------------------------------------------------------------------
 *
 * [JP]
-* Outline.Compose。縁取りを HUD.DisplayColor へ、表示解像度でフルスクリーンに
+* Outline.Compose。縁取りを HUD.Display へ、表示解像度でフルスクリーンに
 * アルファブレンドして描く。どの縁取るアクターにも入っていないピクセルは、画面上で
 * 一番太い縁取りの範囲内で一番近い縁取るピクセルを探し、そのピクセル自身の幅が
 * ここまで届いていれば、その色を使う。こうして各アクターの、見えているシルエットの

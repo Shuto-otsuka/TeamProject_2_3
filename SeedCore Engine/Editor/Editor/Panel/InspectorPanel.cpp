@@ -706,7 +706,11 @@ namespace SeedCore
 			}
 
 			String componentName = ComponentRegistry::Name(componentID);
-			if (componentName == linearVelocityString || componentName == angularVelocityString)
+			if (
+				componentName == linearVelocityString ||
+				componentName == angularVelocityString ||
+				componentName == selectedString
+				)
 			{
 				continue;
 			}
@@ -735,10 +739,10 @@ namespace SeedCore
 		{
 			String componentName = ComponentRegistry::Name(componentBaseID);
 
-			if (componentName == materialString || 
-				componentName == skeletonString ||
-				componentName == selectedString
-			)
+			if (
+				componentName == materialString || 
+				componentName == skeletonString
+				)
 			{
 				continue;
 			}

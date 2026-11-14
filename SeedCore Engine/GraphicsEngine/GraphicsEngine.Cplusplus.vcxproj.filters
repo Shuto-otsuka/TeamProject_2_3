@@ -2692,5 +2692,17 @@
     <Text Include="PostProcess\Outline\OutlinePS.hlsl">
       <Filter>PostProcess\Outline</Filter>
     </Text>
+    <Text Include="Model\Opaque\GeometryAS.hlsl">
+      <Filter>Model\Opaque</Filter>
+    </Text>
+    <Text Include="Model\Transparent\TransparentAS.hlsl">
+      <Filter>Model\Transparent</Filter>
+    </Text>
+    <Text Include="Texture\Billboard\TextureBillboardAS.hlsl">
+      <Filter>Texture\Billboard</Filter>
+    </Text>
+    <Text Include="Texture\Sprite\TextureSpriteAS.hlsl">
+      <Filter>Texture\Sprite</Filter>
+    </Text>
   </ItemGroup>
 </Project>

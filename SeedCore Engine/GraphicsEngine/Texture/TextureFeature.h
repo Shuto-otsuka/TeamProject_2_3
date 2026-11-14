@@ -12,7 +12,7 @@ namespace SeedCore
 		(
 			SC_RENDER_CONTRACT(Units, RenderResourceDesc::FixedBuffer(sizeof(TextureUnitStructuredBuffer), TextureUnit::unitCapacity_), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
 			SC_RENDER_CONTRACT(Quads, RenderResourceDesc::FixedBuffer(sizeof(TextureQuadStructuredBuffer), TextureUnit::quadCapacity_), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
-			SC_RENDER_CONTRACT(DrawList, RenderResourceDesc::FixedBuffer(sizeof(Uint32), TextureUnit::quadCapacity_), RenderResourceScope::Frame, RenderResourceLifetime::Transient),
+			SC_RENDER_CONTRACT(Draws, RenderResourceDesc::FixedBuffer(sizeof(Uint32), TextureUnit::quadCapacity_), RenderResourceScope::Frame, RenderResourceLifetime::Transient),
 			SC_RENDER_CONTRACT(Constants, RenderResourceDesc::Constant(sizeof(TextureConstantBuffer)), RenderResourceScope::Frame, RenderResourceLifetime::Upload),
 			SC_RENDER_INTERNAL(UnitUpdates, RenderResourceDesc::FixedBuffer(sizeof(TextureUnitUpdate), 1), RenderResourceScope::Frame, RenderResourceLifetime::Upload),
 			SC_RENDER_INTERNAL(QuadUpdates, RenderResourceDesc::FixedBuffer(sizeof(TextureQuadUpdate), 1), RenderResourceScope::Frame, RenderResourceLifetime::Upload)

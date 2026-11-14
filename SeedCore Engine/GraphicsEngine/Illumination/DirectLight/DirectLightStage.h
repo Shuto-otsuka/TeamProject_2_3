@@ -17,18 +17,18 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(MaterialFeature::SurfaceBaseColor),
-			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
-			RenderAccess::Read(MaterialFeature::SurfaceTangent),
-			RenderAccess::Read(GeometryFeature::VisibilityId),
-			RenderAccess::Read(GeometryFeature::VisibilityTexcoord),
+			RenderAccess::Read(MaterialFeature::BaseColor),
+			RenderAccess::Read(MaterialFeature::NormalRoughness),
+			RenderAccess::Read(MaterialFeature::Tangent),
+			RenderAccess::Read(GeometryFeature::VisibilityID),
+			RenderAccess::Read(GeometryFeature::VisibilityUV),
 			RenderAccess::Read(GeometryFeature::Instances),
 			RenderAccess::Read(LightFeature::List),
 			RenderAccess::Constant(LightFeature::Constants),
 			RenderAccess::Constant(WeatherFeature::Constants),
-			RenderAccess::Read(LightFeature::ClusterGrid),
+			RenderAccess::Read(LightFeature::Clusters),
 			RenderAccess::Read(RaytracingShadowFeature::Visibility),
-			RenderAccess::Write(PunctualRadiance)
+			RenderAccess::Write(Radiance)
 		};
 
 		static void Execute(DirectLightFeature& feature, RenderPass& pass);

@@ -346,19 +346,19 @@ namespace SeedCore
 				screenOutput.height_ = screenDesc.Height;
 				screenOutput.renderTarget_ = true;
 				screenOutput.renderTargetView_ = screenView_;
-				imports.push_back(RenderGraphImport{ String(HUDFeature::ViewOutput.Name()), view.kind_, screenOutput });
+				imports.push_back(RenderGraphImport{ String(HUDFeature::Output.Name()), view.kind_, screenOutput });
 				continue;
 			}
 
-			/// [EN] Any other view gets an output texture of its display size, imported as ViewOutput. A new texture is cleared to black and left in the pixel-shader-resource state, which the graph returns it to after every frame, so the editor UI can read it.
-			/// [JP] それ以外のビューには、表示の大きさの出力テクスチャを用意し、ViewOutput として取り込む。新しく作ったテクスチャは黒で塗ってピクセルシェーダーリソースの状態にしておく。グラフは毎フレームこの状態に戻して返すので、エディター UI がそのまま読める。
+			/// [EN] Any other view gets an output texture of its display size, imported as HUD.Output. A new texture is cleared to black and left in the pixel-shader-resource state, which the graph returns it to after every frame, so the editor UI can read it.
+			/// [JP] それ以外のビューには、表示の大きさの出力テクスチャを用意し、HUD.Output として取り込む。新しく作ったテクスチャは黒で塗ってピクセルシェーダーリソースの状態にしておく。グラフは毎フレームこの状態に戻して返すので、エディター UI がそのまま読める。
 			RenderGraphAllocation& output = outputs_[static_cast<Size>(view.kind_)];
 			if (!output.resource_ || output.width_ != view.displayWidth_ || output.height_ != view.displayHeight_)
 			{
 				RenderGraphMemory::Release(device_, output);
 
 				RenderGraphResource resource;
-				resource.resourceName_ = String(HUDFeature::ViewOutput.Name());
+				resource.resourceName_ = String(HUDFeature::Output.Name());
 				resource.desc_.shape_ = RenderResourceShape::Texture2D;
 				resource.desc_.scale_ = RenderResourceScale::Fixed;
 				resource.desc_.format_ = RenderFormat::RGBA8Unorm;
@@ -376,7 +376,7 @@ namespace SeedCore
 				cmdList.Barrier(output.resource_.Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 				output.state_ = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 			}
-			imports.push_back(RenderGraphImport{ String(HUDFeature::ViewOutput.Name()), view.kind_, output });
+			imports.push_back(RenderGraphImport{ String(HUDFeature::Output.Name()), view.kind_, output });
 			display_.views_[static_cast<Size>(view.kind_)] = device_.ResourceHeap().GPUHandle(output.shaderResourceView_);
 		}
 

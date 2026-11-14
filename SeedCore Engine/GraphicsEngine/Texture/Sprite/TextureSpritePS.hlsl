@@ -6,7 +6,7 @@
 * [EN]
 * Texture.Sprite pixel shader: the quad's colour from ShadeTexture
 * (TextureShading.hlsli), premultiplied for the premultiplied blend into
-* HUD.Color. When the unit's actor is outlined, the more opaque half of the
+* HUD.Overlay. When the unit's actor is outlined, the more opaque half of the
 * quad also records itself in Outline.Mask with the largest depth, since a
 * sprite lies in front of the whole scene; the mask is render resolution,
 * so the display pixel is scaled down to it first.
@@ -15,7 +15,7 @@
 *
 * [JP]
 * Texture.Sprite のピクセルシェーダー。四角形の色を ShadeTexture
-* （TextureShading.hlsli）で求め、HUD.Color へのプリマルチプライドの
+* （TextureShading.hlsli）で求め、HUD.Overlay へのプリマルチプライドの
 * ブレンドに合わせてアルファを掛けた色で返す。ユニットのアクターが縁取られる
 * ときは、四角形のうち不透明寄りの部分が Outline.Mask にも一番大きい深度で
 * 自分を記録する。スプライトはシーン全体より手前にあるため。マスクは描画解像度

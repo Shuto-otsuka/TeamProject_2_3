@@ -43,6 +43,8 @@ namespace SeedCore
 
 	struct TransparentDrawDescription
 	{
+		SC_CONSTEX ShaderPath amplificationFile_ = ShaderPath::Engine("GraphicsEngine/Model/Transparent/TransparentAS.hlsl");
+
 		SC_CONSTEX ShaderPath meshFile_ = ShaderPath::Engine("GraphicsEngine/Model/Transparent/TransparentMS.hlsl");
 
 		SC_CONSTEX ShaderPath vertexFile_ = ShaderPath::Engine("GraphicsEngine/Model/Transparent/TransparentVS.hlsl");

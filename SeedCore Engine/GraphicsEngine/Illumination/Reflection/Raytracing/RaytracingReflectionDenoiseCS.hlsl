@@ -21,14 +21,14 @@ struct RaytracingReflectionTemporalBindings
 	uint raytracing_reflection_raw_;
 	uint raytracing_reflection_confidence_;
 	uint geometry_depth_;
-	uint material_surface_normal_roughness_;
+	uint material_normal_roughness_;
 	uint material_velocity_;
 	uint raytracing_reflection_constants_;
 	uint raytracing_reflection_accumulated_history_;
 	uint raytracing_reflection_moments_history_;
 	uint raytracing_reflection_moments_;
-	uint raytracing_reflection_history_length_history_;
-	uint raytracing_reflection_history_length_;
+	uint raytracing_reflection_age_history_;
+	uint raytracing_reflection_age_;
 	uint raytracing_reflection_depth_normal_history_;
 	uint raytracing_reflection_depth_normal_;
 	uint raytracing_reflection_ping_;
@@ -40,9 +40,9 @@ struct RaytracingReflectionMomentsBindings
 {
 	uint raytracing_reflection_ping_;
 	uint raytracing_reflection_moments_;
-	uint raytracing_reflection_history_length_;
+	uint raytracing_reflection_age_;
 	uint raytracing_reflection_depth_normal_;
-	uint material_surface_normal_roughness_;
+	uint material_normal_roughness_;
 	uint raytracing_reflection_pong_;
 };
 ConstantBuffer<RaytracingReflectionMomentsBindings> moments_bindings : register(b0, space1);
@@ -51,7 +51,7 @@ struct RaytracingReflectionATrousBindings
 {
 	uint raytracing_reflection_source_;
 	uint raytracing_reflection_depth_normal_;
-	uint material_surface_normal_roughness_;
+	uint material_normal_roughness_;
 	uint raytracing_reflection_constants_;
 	uint raytracing_reflection_destination_;
 };
@@ -73,7 +73,7 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 	int2 screen_max = int2(width, height) - 1;
 	RWTexture2D<float4> ping = ResourceDescriptorHeap[temporal_bindings.raytracing_reflection_ping_];
 	RWTexture2D<float2> moments_output = ResourceDescriptorHeap[temporal_bindings.raytracing_reflection_moments_];
-	RWTexture2D<float> history_length_output = ResourceDescriptorHeap[temporal_bindings.raytracing_reflection_history_length_];
+	RWTexture2D<float> age_output = ResourceDescriptorHeap[temporal_bindings.raytracing_reflection_age_];
 	RWTexture2D<float4> depth_normal_output = ResourceDescriptorHeap[temporal_bindings.raytracing_reflection_depth_normal_];
 
 	float depth = depth_texture.Load(int3(pixel, 0));
@@ -81,14 +81,14 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 	{
 		ping[pixel] = float4(0.0, 0.0, 0.0, 0.0);
 		moments_output[pixel] = float2(0.0, 0.0);
-		history_length_output[pixel] = 0.0;
+		age_output[pixel] = 0.0;
 		depth_normal_output[pixel] = float4(0.0, 0.0, 0.0, 0.0);
 		return;
 	}
 
 	SceneConstantBuffer scene = GetSceneConstantBuffer();
 	ConstantBuffer<RaytracingReflectionConstantBuffer> constants = ResourceDescriptorHeap[temporal_bindings.raytracing_reflection_constants_];
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[temporal_bindings.material_surface_normal_roughness_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[temporal_bindings.material_normal_roughness_];
 	float2 screen_size = float2(width, height);
 	float2 uv = (float2(pixel) + 0.5) / screen_size;
 	float view_z = abs(DenoiserViewPosition(scene.inverse_projection_, uv, depth).z);
@@ -118,7 +118,7 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 
 	float3 previous_radiance = float3(0.0, 0.0, 0.0);
 	float2 previous_moments = float2(0.0, 0.0);
-	float previous_history_length = 0.0;
+	float previous_age = 0.0;
 	bool valid = false;
 	float reprojection = 0.0;
 	if (constants.history_valid_ != 0)
@@ -137,7 +137,7 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 
 		Texture2D<float4> accumulated_history = ResourceDescriptorHeap[temporal_bindings.raytracing_reflection_accumulated_history_];
 		Texture2D<float2> moments_history = ResourceDescriptorHeap[temporal_bindings.raytracing_reflection_moments_history_];
-		Texture2D<float> history_length_history = ResourceDescriptorHeap[temporal_bindings.raytracing_reflection_history_length_history_];
+		Texture2D<float> age_history = ResourceDescriptorHeap[temporal_bindings.raytracing_reflection_age_history_];
 		Texture2D<float4> depth_normal_history = ResourceDescriptorHeap[temporal_bindings.raytracing_reflection_depth_normal_history_];
 
 		float2 previous_position = previous_uv * screen_size - 0.5;
@@ -167,14 +167,14 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 			}
 			previous_radiance += accumulated_history.Load(int3(tap_pixel, 0)).rgb * bilinear_weights[tap];
 			previous_moments += moments_history.Load(int3(tap_pixel, 0)) * bilinear_weights[tap];
-			previous_history_length += history_length_history.Load(int3(tap_pixel, 0)) * bilinear_weights[tap];
+			previous_age += age_history.Load(int3(tap_pixel, 0)) * bilinear_weights[tap];
 			weight_sum += bilinear_weights[tap];
 		}
 		if (weight_sum >= 0.01)
 		{
 			previous_radiance /= weight_sum;
 			previous_moments /= weight_sum;
-			previous_history_length /= weight_sum;
+			previous_age /= weight_sum;
 			valid = true;
 		}
 		else
@@ -199,7 +199,7 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 					}
 					previous_radiance += accumulated_history.Load(int3(tap_pixel, 0)).rgb;
 					previous_moments += moments_history.Load(int3(tap_pixel, 0));
-					previous_history_length += history_length_history.Load(int3(tap_pixel, 0));
+					previous_age += age_history.Load(int3(tap_pixel, 0));
 					fallback_count += 1.0;
 				}
 			}
@@ -207,22 +207,22 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 			{
 				previous_radiance /= fallback_count;
 				previous_moments /= fallback_count;
-				previous_history_length /= fallback_count;
+				previous_age /= fallback_count;
 				valid = true;
 			}
 		}
 	}
 
 	Texture2D<float> confidence_texture = ResourceDescriptorHeap[temporal_bindings.raytracing_reflection_confidence_];
-	float history_length = min(REFLECTION_MAX_HISTORY_LENGTH, valid ? previous_history_length + 1.0 : 1.0);
-	float alpha = valid ? max(lerp(REFLECTION_TEMPORAL_ALPHA, 1.0, confidence_texture.Load(int3(pixel, 0))), 1.0 / history_length) : 1.0;
-	float moments_alpha = valid ? max(REFLECTION_MOMENTS_ALPHA, 1.0 / history_length) : 1.0;
+	float age = min(REFLECTION_MAX_HISTORY_LENGTH, valid ? previous_age + 1.0 : 1.0);
+	float alpha = valid ? max(lerp(REFLECTION_TEMPORAL_ALPHA, 1.0, confidence_texture.Load(int3(pixel, 0))), 1.0 / age) : 1.0;
+	float moments_alpha = valid ? max(REFLECTION_MOMENTS_ALPHA, 1.0 / age) : 1.0;
 	float raw_luminance = DenoiserLuminance(raw_value.rgb);
 	float2 moments = lerp(previous_moments, float2(raw_luminance, raw_luminance * raw_luminance), moments_alpha);
 
 	ping[pixel] = float4(lerp(previous_radiance, raw_value.rgb, alpha), max(0.0, moments.y - moments.x * moments.x));
 	moments_output[pixel] = moments;
-	history_length_output[pixel] = history_length;
+	age_output[pixel] = age;
 
 	if (scene.view_mode_ >= VIEW_MODE_DENOISER_RAW && scene.view_mode_ <= VIEW_MODE_DENOISER_REPROJECTION)
 	{
@@ -246,15 +246,15 @@ void Moments(uint3 id : SV_DispatchThreadID)
 	int2 pixel = int2(id.xy);
 	int2 screen_max = int2(width, height) - 1;
 	Texture2D<float2> moments_texture = ResourceDescriptorHeap[moments_bindings.raytracing_reflection_moments_];
-	Texture2D<float> history_length_texture = ResourceDescriptorHeap[moments_bindings.raytracing_reflection_history_length_];
+	Texture2D<float> age_texture = ResourceDescriptorHeap[moments_bindings.raytracing_reflection_age_];
 	Texture2D<float4> depth_normal_texture = ResourceDescriptorHeap[moments_bindings.raytracing_reflection_depth_normal_];
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[moments_bindings.material_surface_normal_roughness_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[moments_bindings.material_normal_roughness_];
 	RWTexture2D<float4> destination = ResourceDescriptorHeap[moments_bindings.raytracing_reflection_pong_];
 
 	float4 center = source.Load(int3(pixel, 0));
 	float4 center_depth_normal = depth_normal_texture.Load(int3(pixel, 0));
-	float history_length = history_length_texture.Load(int3(pixel, 0));
-	if (center_depth_normal.x <= 0.0 || history_length >= REFLECTION_SPATIAL_VARIANCE_FRAMES)
+	float age = age_texture.Load(int3(pixel, 0));
+	if (center_depth_normal.x <= 0.0 || age >= REFLECTION_SPATIAL_VARIANCE_FRAMES)
 	{
 		destination[pixel] = center;
 		return;
@@ -294,7 +294,7 @@ void Moments(uint3 id : SV_DispatchThreadID)
 
 	weight_sum = max(weight_sum, 1e-6);
 	float2 moments = moments_sum / weight_sum;
-	float variance = max(0.0, moments.y - moments.x * moments.x) * REFLECTION_SPATIAL_VARIANCE_FRAMES / max(history_length, 1.0);
+	float variance = max(0.0, moments.y - moments.x * moments.x) * REFLECTION_SPATIAL_VARIANCE_FRAMES / max(age, 1.0);
 	destination[pixel] = float4(radiance_sum / weight_sum, variance);
 }
 
@@ -363,7 +363,7 @@ void ATrous(uint3 id : SV_DispatchThreadID)
 	}
 
 	Texture2D<float4> depth_normal_texture = ResourceDescriptorHeap[atrous_bindings.raytracing_reflection_depth_normal_];
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[atrous_bindings.material_surface_normal_roughness_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[atrous_bindings.material_normal_roughness_];
 	RWTexture2D<float4> destination = ResourceDescriptorHeap[atrous_bindings.raytracing_reflection_destination_];
 	float4 filtered = RaytracingReflectionATrous(source, depth_normal_texture, surface_normal_roughness, int2(id.xy), int2(width, height) - 1, int(1u << iteration));
 	if (iteration < 2)

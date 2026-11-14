@@ -14,13 +14,13 @@ struct RaytracingGlobalIlluminationTemporalBindings
 	uint raytracing_global_illumination_raw_;
 	uint raytracing_global_illumination_confidence_;
 	uint geometry_depth_;
-	uint material_surface_normal_roughness_;
+	uint material_normal_roughness_;
 	uint material_velocity_;
 	uint raytracing_global_illumination_constants_;
 	uint raytracing_global_illumination_accumulated_history_;
 	uint raytracing_global_illumination_ping_;
-	uint raytracing_global_illumination_history_length_history_;
-	uint raytracing_global_illumination_history_length_;
+	uint raytracing_global_illumination_age_history_;
+	uint raytracing_global_illumination_age_;
 	uint raytracing_global_illumination_validity_;
 	uint raytracing_global_illumination_variance_;
 };
@@ -30,7 +30,7 @@ struct RaytracingGlobalIlluminationATrousBindings
 {
 	uint raytracing_global_illumination_source_;
 	uint geometry_depth_;
-	uint material_surface_normal_roughness_;
+	uint material_normal_roughness_;
 	uint raytracing_global_illumination_destination_;
 };
 ConstantBuffer<RaytracingGlobalIlluminationATrousBindings> atrous_bindings : register(b0, space1);
@@ -49,18 +49,18 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 
 	int2 pixel = int2(id.xy);
 	RWTexture2D<float4> ping = ResourceDescriptorHeap[temporal_bindings.raytracing_global_illumination_ping_];
-	RWTexture2D<float> history_length_output = ResourceDescriptorHeap[temporal_bindings.raytracing_global_illumination_history_length_];
+	RWTexture2D<float> age_output = ResourceDescriptorHeap[temporal_bindings.raytracing_global_illumination_age_];
 	float depth = depth_texture.Load(int3(pixel, 0));
 	if (depth == 0.0)
 	{
 		ping[pixel] = float4(0.0, 0.0, 0.0, 0.0);
-		history_length_output[pixel] = 0.0;
+		age_output[pixel] = 0.0;
 		return;
 	}
 
 	ConstantBuffer<RaytracingGlobalIlluminationConstantBuffer> constants = ResourceDescriptorHeap[temporal_bindings.raytracing_global_illumination_constants_];
 	Texture2D<float4> raw = ResourceDescriptorHeap[temporal_bindings.raytracing_global_illumination_raw_];
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[temporal_bindings.material_surface_normal_roughness_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[temporal_bindings.material_normal_roughness_];
 	int2 screen_max = int2(width, height) - 1;
 	uint center_packed = surface_normal_roughness.Load(int3(pixel, 0));
 	float3 center_normal = OctNormalDecode(float2(center_packed & 0xFFF, (center_packed >> 12) & 0xFFF) / 4095.0);
@@ -93,7 +93,7 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 	float3 result = filtered_raw;
 	bool valid = false;
 	float reprojection = 0.0;
-	float history_length = 1.0;
+	float age = 1.0;
 	if (constants.history_valid_ != 0)
 	{
 		float3 clip_min = DenoiserVarianceClipMin(moments, filtered_raw, GLOBAL_ILLUMINATION_HISTORY_CLIP_GAMMA);
@@ -108,12 +108,12 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 		valid = all(previous_uv >= 0.0) && all(previous_uv <= 1.0) && history.SampleLevel(sampler_linear_clamp, previous_uv, 0).a > 0.5;
 		if (valid)
 		{
-			Texture2D<float> history_length_history = ResourceDescriptorHeap[temporal_bindings.raytracing_global_illumination_history_length_history_];
-			history_length = min(history_length_history.SampleLevel(sampler_linear_clamp, previous_uv, 0) + 1.0, 255.0);
+			Texture2D<float> age_history = ResourceDescriptorHeap[temporal_bindings.raytracing_global_illumination_age_history_];
+			age = min(age_history.SampleLevel(sampler_linear_clamp, previous_uv, 0) + 1.0, 255.0);
 		}
 	}
 	ping[pixel] = float4(result, 1.0);
-	history_length_output[pixel] = history_length;
+	age_output[pixel] = age;
 
 	SceneConstantBuffer scene = GetSceneConstantBuffer();
 	if (scene.view_mode_ >= VIEW_MODE_DENOISER_RAW && scene.view_mode_ <= VIEW_MODE_DENOISER_REPROJECTION)
@@ -176,7 +176,7 @@ void ATrous(uint3 id : SV_DispatchThreadID)
 	}
 
 	Texture2D<float> depth_texture = ResourceDescriptorHeap[atrous_bindings.geometry_depth_];
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[atrous_bindings.material_surface_normal_roughness_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[atrous_bindings.material_normal_roughness_];
 	RWTexture2D<float4> destination = ResourceDescriptorHeap[atrous_bindings.raytracing_global_illumination_destination_];
 	destination[id.xy] = RaytracingGlobalIlluminationATrous(source, depth_texture, surface_normal_roughness, int2(id.xy), int2(width, height) - 1, int(1u << iteration));
 }

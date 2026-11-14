@@ -9,18 +9,18 @@
 struct DirectLightRatioBindings
 {
 	uint geometry_depth_;
-	uint material_surface_base_color_;
-	uint material_surface_normal_roughness_;
-	uint material_surface_tangent_;
+	uint material_base_color_;
+	uint material_normal_roughness_;
+	uint material_tangent_;
 	uint geometry_visibility_id_;
-	uint geometry_visibility_texcoord_;
+	uint geometry_visibility_uv_;
 	uint geometry_instances_;
 	uint light_list_;
 	uint light_constants_;
 	uint weather_constants_;
-	uint light_cluster_grid_;
+	uint light_clusters_;
 	uint raytracing_shadow_visibility_;
-	uint direct_light_punctual_radiance_;
+	uint direct_light_radiance_;
 };
 ConstantBuffer<DirectLightRatioBindings> bindings : register(b0, space1);
 
@@ -51,7 +51,7 @@ ConstantBuffer<DirectLightRatioBindings> bindings : register(b0, space1);
 [numthreads(8, 8, 1)]
 void Ratio(uint3 id : SV_DispatchThreadID)
 {
-	RWTexture2D<float4> punctual_radiance = ResourceDescriptorHeap[bindings.direct_light_punctual_radiance_];
+	RWTexture2D<float4> punctual_radiance = ResourceDescriptorHeap[bindings.direct_light_radiance_];
 	Texture2D<float> depth_texture = ResourceDescriptorHeap[bindings.geometry_depth_];
 	uint width;
 	uint height;
@@ -77,10 +77,10 @@ void Ratio(uint3 id : SV_DispatchThreadID)
 	float3 view = normalize(scene.camera_position_.xyz - world_position);
 	float view_depth = mul(float4(world_position, 1.0), scene.view_).z;
 
-	Texture2D<float4> surface_base_color = ResourceDescriptorHeap[bindings.material_surface_base_color_];
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_surface_normal_roughness_];
-	Texture2D<uint> surface_tangent = ResourceDescriptorHeap[bindings.material_surface_tangent_];
-	Texture2D<float2> visibility_texcoord = ResourceDescriptorHeap[bindings.geometry_visibility_texcoord_];
+	Texture2D<float4> surface_base_color = ResourceDescriptorHeap[bindings.material_base_color_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_normal_roughness_];
+	Texture2D<uint> surface_tangent = ResourceDescriptorHeap[bindings.material_tangent_];
+	Texture2D<float2> visibility_uv = ResourceDescriptorHeap[bindings.geometry_visibility_uv_];
 	float4 base_color = surface_base_color.Load(int3(pixel, 0));
 	uint normal_roughness = surface_normal_roughness.Load(int3(pixel, 0));
 	float3 normal = OctNormalDecode(float2(normal_roughness & 0xFFF, (normal_roughness >> 12) & 0xFFF) / 4095.0);
@@ -95,9 +95,9 @@ void Ratio(uint3 id : SV_DispatchThreadID)
 
 	uint2 pixel_x = uint2(min(pixel.x + 1, width - 1), pixel.y);
 	uint2 pixel_y = uint2(pixel.x, min(pixel.y + 1, height - 1));
-	float2 texcoord = visibility_texcoord.Load(int3(pixel, 0));
-	float2 texcoord_dx = visibility_id.Load(int3(pixel_x, 0)).x == instance_index + 1 ? visibility_texcoord.Load(int3(pixel_x, 0)) - texcoord : float2(0.0, 0.0);
-	float2 texcoord_dy = visibility_id.Load(int3(pixel_y, 0)).x == instance_index + 1 ? visibility_texcoord.Load(int3(pixel_y, 0)) - texcoord : float2(0.0, 0.0);
+	float2 texcoord = visibility_uv.Load(int3(pixel, 0));
+	float2 texcoord_dx = visibility_id.Load(int3(pixel_x, 0)).x == instance_index + 1 ? visibility_uv.Load(int3(pixel_x, 0)) - texcoord : float2(0.0, 0.0);
+	float2 texcoord_dy = visibility_id.Load(int3(pixel_y, 0)).x == instance_index + 1 ? visibility_uv.Load(int3(pixel_y, 0)) - texcoord : float2(0.0, 0.0);
 
 	ConstantBuffer<WeatherConstantBuffer> weather = ResourceDescriptorHeap[bindings.weather_constants_];
 	SurfaceMaterial material = LoadSurfaceMaterial(base_color.rgb, base_color.a, roughness, normal, view, instance, texcoord, texcoord_dx, texcoord_dy, surface_tangent.Load(int3(pixel, 0)), weather.wetness_, weather.snow_coverage_);
@@ -134,7 +134,7 @@ void Ratio(uint3 id : SV_DispatchThreadID)
 	}
 	uint cluster = (slice * tile_count.y + tile.y) * tile_count.x + tile.x;
 
-	StructuredBuffer<uint> grid = ResourceDescriptorHeap[bindings.light_cluster_grid_];
+	StructuredBuffer<uint> grid = ResourceDescriptorHeap[bindings.light_clusters_];
 	uint base = cluster * (1 + LIGHT_CLUSTER_MAX_LIGHTS);
 	uint light_count = grid[base];
 

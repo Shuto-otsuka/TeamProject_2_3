@@ -14,7 +14,7 @@ namespace SeedCore
 	public:
 		SC_RENDER_RESOURCES
 		(
-			SC_RENDER_CONTRACT(FogVolume, RenderResourceDesc::Volume(RenderFormat::RGBA16Float, RenderResourceScale::Render, froxelDivisor_, froxelDepth_), RenderResourceScope::View, RenderResourceLifetime::Transient),
+			SC_RENDER_CONTRACT(Fog, RenderResourceDesc::Volume(RenderFormat::RGBA16Float, RenderResourceScale::Render, froxelDivisor_, froxelDepth_), RenderResourceScope::View, RenderResourceLifetime::Transient),
 			SC_RENDER_INTERNAL(Density, RenderResourceDesc::Volume(RenderFormat::RGBA16Float, RenderResourceScale::Render, froxelDivisor_, froxelDepth_), RenderResourceScope::View, RenderResourceLifetime::Transient),
 			SC_RENDER_INTERNAL(Scattering, RenderResourceDesc::Volume(RenderFormat::RGBA16Float, RenderResourceScale::Render, froxelDivisor_, froxelDepth_), RenderResourceScope::View, RenderResourceLifetime::Persistent),
 			SC_RENDER_INTERNAL(Constants, RenderResourceDesc::Constant(sizeof(RaytracingVolumetricLightConstantBuffer)), RenderResourceScope::Frame, RenderResourceLifetime::Upload)

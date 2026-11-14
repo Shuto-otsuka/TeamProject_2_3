@@ -9,20 +9,20 @@
 struct RaytracingGlobalIlluminationTraceBindings
 {
 	uint geometry_depth_;
-	uint material_surface_normal_roughness_;
+	uint material_normal_roughness_;
 	uint material_velocity_;
 	uint top_level_structure_;
 	uint top_level_hits_;
 	uint light_list_;
 	uint light_constants_;
-	uint light_cluster_grid_;
+	uint light_clusters_;
 	uint sky_cubemap_;
-	uint sky_diffuse_irradiance_;
+	uint sky_diffuse_;
 	uint raytracing_global_illumination_constants_;
 	uint raytracing_global_illumination_reservoir_history_;
 	uint raytracing_global_illumination_reservoir_;
 	uint raytracing_global_illumination_reuse_;
-	uint debug_view_ray_count_;
+	uint debug_view_rays_;
 };
 ConstantBuffer<RaytracingGlobalIlluminationTraceBindings> bindings : register(b0, space1);
 
@@ -68,13 +68,13 @@ void RaytracingGlobalIlluminationRayGeneration()
 	float4 world = mul(float4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, depth, 1.0), scene.inverse_view_projection_);
 	float3 world_position = world.xyz / world.w;
 
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_surface_normal_roughness_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_normal_roughness_];
 	uint normal_roughness = surface_normal_roughness.Load(int3(pixel, 0));
 	float3 normal = OctNormalDecode(float2(normal_roughness & 0xFFF, (normal_roughness >> 12) & 0xFFF) / 4095.0);
 
 	uint random_state = SeedFromPixel(pixel, constants.frame_ + 15486071u);
 	RaytracingAccelerationStructure top_level = ResourceDescriptorHeap[bindings.top_level_structure_];
-	TextureCube<float4> diffuse_irradiance = ResourceDescriptorHeap[bindings.sky_diffuse_irradiance_];
+	TextureCube<float4> diffuse_irradiance = ResourceDescriptorHeap[bindings.sky_diffuse_];
 
 	uint ray_count = max(constants.ray_count_, 1);
 	uint bounce_count = max(constants.bounce_count_, 1);
@@ -102,7 +102,7 @@ void RaytracingGlobalIlluminationRayGeneration()
 			payload.normal_ = float2(0.0, 0.0);
 			if (scene.view_mode_ == VIEW_MODE_RAY_COUNT)
 			{
-				RWTexture2D<uint> ray_count_texture = ResourceDescriptorHeap[bindings.debug_view_ray_count_];
+				RWTexture2D<uint> ray_count_texture = ResourceDescriptorHeap[bindings.debug_view_rays_];
 				InterlockedAdd(ray_count_texture[pixel], 1);
 			}
 			TraceRay(top_level, RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES, 0xFF, 0, 0, 0, ray, payload);
@@ -198,7 +198,7 @@ void RaytracingGlobalIlluminationClosestHit(inout RaytracingGlobalIlluminationPa
 	RaytracingHitLights lights;
 	lights.list_ = bindings.light_list_;
 	lights.constants_ = bindings.light_constants_;
-	lights.cluster_grid_ = bindings.light_cluster_grid_;
+	lights.cluster_grid_ = bindings.light_clusters_;
 	float3 lighting = RaytracingHitLighting(tables, lights, hit_position, normal, constants.normal_bias_, constants.ray_t_max_);
 
 	payload.radiance_ = surface.albedo_ * lighting;

@@ -17,7 +17,7 @@ namespace SeedCore
 		{
 			RenderAccess::Read(SharpnessFeature::Color),
 			RenderAccess::Constant(Constants),
-			RenderAccess::Write(HUDFeature::DisplayColor)
+			RenderAccess::Write(HUDFeature::Display)
 		};
 
 		static void Execute(FilmGrainFeature& feature, RenderPass& pass);

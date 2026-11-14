@@ -35,7 +35,7 @@ namespace SeedCore
 		{
 			RenderAccess::Read(Density),
 			RenderAccess::Constant(LightFeature::Constants),
-			RenderAccess::Read(SkyFeature::DiffuseIrradiance),
+			RenderAccess::Read(SkyFeature::Diffuse),
 			RenderAccess::Read(TopLevelFeature::Structure),
 			RenderAccess::Read(TopLevelFeature::Hits),
 			RenderAccess::Constant(Constants),
@@ -53,7 +53,7 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(Scattering),
-			RenderAccess::Write(FogVolume)
+			RenderAccess::Write(Fog)
 		};
 
 		static void Execute(RaytracingVolumetricLightFeature& feature, RenderPass& pass);

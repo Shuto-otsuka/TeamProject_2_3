@@ -4,7 +4,7 @@
 struct SkyPrefilterBindings
 {
     uint sky_cubemap_;
-    uint sky_specular_prefiltered_;
+    uint sky_specular_;
 };
 ConstantBuffer<SkyPrefilterBindings> bindings : register(b0, space1);
 
@@ -29,7 +29,7 @@ void main(uint3 id : SV_DispatchThreadID)
     uint mip = dispatch_bindings.constants_ & 0xFFFF;
     uint mip_count = dispatch_bindings.constants_ >> 16;
 
-    RWTexture2DArray<float4> destination = ResourceDescriptorHeap[bindings.sky_specular_prefiltered_ + mip];
+    RWTexture2DArray<float4> destination = ResourceDescriptorHeap[bindings.sky_specular_ + mip];
     uint width;
     uint height;
     uint element_count;

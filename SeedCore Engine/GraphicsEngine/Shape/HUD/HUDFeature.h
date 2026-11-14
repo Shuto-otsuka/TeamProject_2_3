@@ -10,13 +10,15 @@ namespace SeedCore
 	public:
 		SC_RENDER_RESOURCES
 		(
-			SC_RENDER_ACCUMULATION(DisplayColor, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero, &SharpnessFeature::Color),
-			SC_RENDER_ACCUMULATION(Color, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero),
-			SC_RENDER_CONTRACT(ViewOutput, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA8Unorm, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Imported),
+			SC_RENDER_ACCUMULATION(Display, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero, &SharpnessFeature::Color),
+			SC_RENDER_ACCUMULATION(Overlay, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero),
+			SC_RENDER_CONTRACT(Output, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA8Unorm, RenderResourceScale::Display), RenderResourceScope::View, RenderResourceLifetime::Imported),
 			SC_RENDER_INTERNAL(Constants, RenderResourceDesc::Constant(sizeof(HUDComposeConstantBuffer)), RenderResourceScope::View, RenderResourceLifetime::Upload)
 		);
 
 	public:
+		struct UpdateStage;
+
 		struct ComposeStage;
 
 	public:

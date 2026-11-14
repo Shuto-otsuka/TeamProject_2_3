@@ -81,7 +81,7 @@ namespace SeedCore
 		}
 		if (!raytracing_.Updates().empty())
 		{
-			upload.Write(RaytracingUnitUpdates, RenderViewKind::Game, raytracing_.Updates());
+			upload.Write(TraceUpdates, RenderViewKind::Game, raytracing_.Updates());
 		}
 		if (!raytracing_.Deforms().empty())
 		{
@@ -93,11 +93,11 @@ namespace SeedCore
 		}
 		if (!morphs_.Weights().empty())
 		{
-			upload.Write(MorphWeights, RenderViewKind::Game, morphs_.Weights());
+			upload.Write(Morphs, RenderViewKind::Game, morphs_.Weights());
 		}
 		if (!softbodies_.Instances().empty())
 		{
-			upload.Write(SoftbodyInstances, RenderViewKind::Game, softbodies_.Instances());
+			upload.Write(Softbodies, RenderViewKind::Game, softbodies_.Instances());
 		}
 		upload.Write(Constants, RenderViewKind::Game, std::span<const ModelExpandConstantBuffer>(&units_.Constants(), 1));
 	}

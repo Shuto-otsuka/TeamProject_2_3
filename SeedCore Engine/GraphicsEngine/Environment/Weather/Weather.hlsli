@@ -84,7 +84,7 @@ struct WeatherDrawBindings
 {
 	uint weather_particles_;
 	uint weather_emitter_;
-	uint raytracing_volumetric_light_fog_volume_;
+	uint raytracing_volumetric_light_fog_;
 };
 ConstantBuffer<WeatherDrawBindings> draw_bindings : register(b0, space1);
 

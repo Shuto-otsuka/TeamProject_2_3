@@ -10,8 +10,9 @@
 
 struct DebugViewClearBindings
 {
-	uint debug_view_ray_count_;
+	uint debug_view_rays_;
 	uint geometry_debug_;
+	uint geometry_visible_meshlets_;
 };
 ConstantBuffer<DebugViewClearBindings> clear_bindings : register(b0, space1);
 
@@ -21,66 +22,69 @@ struct DebugViewResolveBindings
 	uint geometry_visibility_id_;
 	uint geometry_instances_;
 	uint geometry_debug_;
-	uint material_surface_base_color_;
-	uint material_surface_normal_roughness_;
+	uint material_base_color_;
+	uint material_normal_roughness_;
 	uint material_velocity_;
-	uint material_surface_radiance_;
+	uint material_radiance_;
 	uint material_mip_;
-	uint light_cluster_grid_;
+	uint light_clusters_;
 	uint top_level_structure_;
 	uint top_level_hits_;
-	uint debug_view_ray_count_;
+	uint debug_view_rays_;
 	uint raytracing_reflection_raw_;
 	uint raytracing_reflection_radiance_;
 	uint raytracing_reflection_reservoir_;
 	uint raytracing_reflection_reuse_;
 	uint raytracing_reflection_moments_;
-	uint raytracing_reflection_history_length_;
+	uint raytracing_reflection_age_;
 	uint raytracing_reflection_validity_;
 	uint raytracing_global_illumination_raw_;
 	uint raytracing_global_illumination_radiance_;
 	uint raytracing_global_illumination_reservoir_;
 	uint raytracing_global_illumination_reuse_;
 	uint raytracing_global_illumination_variance_;
-	uint raytracing_global_illumination_history_length_;
+	uint raytracing_global_illumination_age_;
 	uint raytracing_global_illumination_validity_;
 	uint raytracing_shadow_raw_;
 	uint raytracing_shadow_visibility_;
 	uint raytracing_shadow_moments_;
-	uint raytracing_shadow_history_length_;
+	uint raytracing_shadow_age_;
 	uint raytracing_shadow_validity_;
 	uint raytracing_ambient_occlusion_raw_;
 	uint raytracing_ambient_occlusion_openness_;
 	uint raytracing_ambient_occlusion_variance_;
-	uint raytracing_ambient_occlusion_history_length_;
+	uint raytracing_ambient_occlusion_age_;
 	uint raytracing_ambient_occlusion_validity_;
 	uint radiance_color_;
 	uint upscale_color_;
 	uint kawase_bloom_radiance_;
 	uint auto_exposure_exposure_;
-	uint hud_display_color_;
+	uint hud_display_;
 };
 ConstantBuffer<DebugViewResolveBindings> resolve_bindings : register(b0, space1);
 
 struct DebugViewBoundsBindings
 {
 	uint geometry_instances_;
-	uint culling_draw_lists_;
-	uint culling_draw_arguments_;
-	uint hud_display_color_;
+	uint culling_opaque_meshlets_;
+	uint culling_meshlet_arguments_;
+	uint geometry_visible_meshlets_;
+	uint hud_display_;
 };
 ConstantBuffer<DebugViewBoundsBindings> bounds_bindings : register(b0, space1);
 
 /**
 * [EN]
-* Zeroes the per-pixel counters the debug producers add into before they
-* run: DebugView.RayCount (every ray-traced effect adds one per traced ray)
-* and Geometry.Debug (the meshlet overdraw pass adds one per fragment).
+* Zeroes the counters the debug producers add into before they run:
+* DebugView.Rays (every ray-traced effect adds one per traced ray),
+* Geometry.Debug (the meshlet overdraw pass adds one per fragment) and the
+* count at the head of Geometry.VisibleMeshlets (GeometryAS appends every meshlet it
+* keeps in the meshlet bounds view mode).
 */
 [numthreads(8, 8, 1)]
 void Clear(uint3 id : SV_DispatchThreadID)
 {
-	RWTexture2D<uint> ray_count = ResourceDescriptorHeap[clear_bindings.debug_view_ray_count_];
+	RWTexture2D<uint> rays = ResourceDescriptorHeap[clear_bindings.debug_view_rays_];
 	RWTexture2D<uint> debug = ResourceDescriptorHeap[clear_bindings.geometry_debug_];
 	uint width;
 	uint height;
@@ -89,13 +93,18 @@ void Clear(uint3 id : SV_DispatchThreadID)
 	{
 		return;
 	}
-	ray_count[id.xy] = 0;
+	rays[id.xy] = 0;
 	debug[id.xy] = 0;
+	if (all(id.xy == 0))
+	{
+		RWStructuredBuffer<uint> visible_meshlets = ResourceDescriptorHeap[clear_bindings.geometry_visible_meshlets_];
+		visible_meshlets[0] = 0;
+	}
 }
 
 /**
 * [EN]
-* Replaces DisplayColor with a debug image, one thread per display pixel; the
+* Replaces HUD.Display with a debug image, one thread per display pixel; the
 * dispatch constant is the RenderViewMode. Render-resolution buffers are read
 * at the pixel under the display pixel. Scalar modes produce a value in [0,1]
 * that is shown on a blue-cyan-green-yellow-red heat ramp, id modes produce an
@@ -107,7 +116,7 @@ void Clear(uint3 id : SV_DispatchThreadID)
 [numthreads(8, 8, 1)]
 void Resolve(uint3 id : SV_DispatchThreadID)
 {
-	RWTexture2D<float4> display_color = ResourceDescriptorHeap[resolve_bindings.hud_display_color_];
+	RWTexture2D<float4> display_color = ResourceDescriptorHeap[resolve_bindings.hud_display_];
 	uint display_width;
 	uint display_height;
 	display_color.GetDimensions(display_width, display_height);
@@ -152,7 +161,7 @@ void Resolve(uint3 id : SV_DispatchThreadID)
 	}
 	bool surface = depth > 0.0 && packed.x != 0;
 
-	float3 color = float3(0.2, 0.2, 0.2);
+	float3 color = float3(0.3, 0.3, 0.3);
 	float heat = -1.0;
 	uint hashed = 0;
 	bool hashing = false;
@@ -261,14 +270,14 @@ void Resolve(uint3 id : SV_DispatchThreadID)
 	}
 	else if (mode == VIEW_MODE_RAY_COUNT && depth > 0.0)
 	{
-		Texture2D<uint> ray_count = ResourceDescriptorHeap[resolve_bindings.debug_view_ray_count_];
-		heat = saturate(ray_count.Load(int3(pixel, 0)) / 16.0);
+		Texture2D<uint> rays = ResourceDescriptorHeap[resolve_bindings.debug_view_rays_];
+		heat = saturate(rays.Load(int3(pixel, 0)) / 16.0);
 	}
 	else if (depth > 0.0)
 	{
-		Texture2D<float4> surface_base_color = ResourceDescriptorHeap[resolve_bindings.material_surface_base_color_];
-		Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[resolve_bindings.material_surface_normal_roughness_];
-		Texture2D<float4> surface_radiance = ResourceDescriptorHeap[resolve_bindings.material_surface_radiance_];
+		Texture2D<float4> surface_base_color = ResourceDescriptorHeap[resolve_bindings.material_base_color_];
+		Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[resolve_bindings.material_normal_roughness_];
+		Texture2D<float4> surface_radiance = ResourceDescriptorHeap[resolve_bindings.material_radiance_];
 		float4 base_color = surface_base_color.Load(int3(pixel, 0));
 		uint normal_roughness = surface_normal_roughness.Load(int3(pixel, 0));
 		float3 normal = OctNormalDecode(float2(normal_roughness & 0xFFF, (normal_roughness >> 12) & 0xFFF) / 4095.0);
@@ -377,7 +386,7 @@ void Resolve(uint3 id : SV_DispatchThreadID)
 			}
 			else
 			{
-				StructuredBuffer<uint> grid = ResourceDescriptorHeap[resolve_bindings.light_cluster_grid_];
+				StructuredBuffer<uint> grid = ResourceDescriptorHeap[resolve_bindings.light_clusters_];
 				heat = saturate(grid[cluster * (1 + LIGHT_CLUSTER_MAX_LIGHTS)] / 16.0);
 			}
 		}
@@ -465,19 +474,19 @@ void Resolve(uint3 id : SV_DispatchThreadID)
 			float3 raw = float3(0.0, 0.0, 0.0);
 			float3 denoised = float3(0.0, 0.0, 0.0);
 			float deviation = 0.0;
-			float history_length = 0.0;
+			float age = 0.0;
 			float2 validity = float2(0.0, 0.0);
 			if (source == DEBUG_SOURCE_GLOBAL_ILLUMINATION)
 			{
 				Texture2D<float4> raw_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_global_illumination_raw_];
 				Texture2D<float4> denoised_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_global_illumination_radiance_];
 				Texture2D<float> variance_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_global_illumination_variance_];
-				Texture2D<float> history_length_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_global_illumination_history_length_];
+				Texture2D<float> age_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_global_illumination_age_];
 				Texture2D<float2> validity_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_global_illumination_validity_];
 				raw = raw_texture.Load(int3(pixel, 0)).rgb;
 				denoised = denoised_texture.Load(int3(pixel, 0)).rgb;
 				deviation = sqrt(max(variance_texture.Load(int3(pixel, 0)), 0.0));
-				history_length = history_length_texture.Load(int3(pixel, 0));
+				age = age_texture.Load(int3(pixel, 0));
 				validity = validity_texture.Load(int3(pixel, 0));
 			}
 			else if (source == DEBUG_SOURCE_SHADOW)
@@ -485,13 +494,13 @@ void Resolve(uint3 id : SV_DispatchThreadID)
 				Texture2D<float2> raw_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_shadow_raw_];
 				Texture2D<float2> denoised_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_shadow_visibility_];
 				Texture2D<float4> moments_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_shadow_moments_];
-				Texture2D<float> history_length_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_shadow_history_length_];
+				Texture2D<float> age_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_shadow_age_];
 				Texture2D<float2> validity_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_shadow_validity_];
 				float4 moments = moments_texture.Load(int3(pixel, 0));
 				raw = float3(raw_texture.Load(int3(pixel, 0)), 0.0);
 				denoised = float3(denoised_texture.Load(int3(pixel, 0)), 0.0);
 				deviation = sqrt(max(max(moments.y - moments.x * moments.x, moments.w - moments.z * moments.z), 0.0));
-				history_length = history_length_texture.Load(int3(pixel, 0));
+				age = age_texture.Load(int3(pixel, 0));
 				validity = validity_texture.Load(int3(pixel, 0));
 			}
 			else if (source == DEBUG_SOURCE_AMBIENT_OCCLUSION)
@@ -499,12 +508,12 @@ void Resolve(uint3 id : SV_DispatchThreadID)
 				Texture2D<float> raw_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_ambient_occlusion_raw_];
 				Texture2D<float> denoised_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_ambient_occlusion_openness_];
 				Texture2D<float> variance_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_ambient_occlusion_variance_];
-				Texture2D<float> history_length_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_ambient_occlusion_history_length_];
+				Texture2D<float> age_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_ambient_occlusion_age_];
 				Texture2D<float2> validity_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_ambient_occlusion_validity_];
 				raw = raw_texture.Load(int3(pixel, 0)).xxx;
 				denoised = denoised_texture.Load(int3(pixel, 0)).xxx;
 				deviation = sqrt(max(variance_texture.Load(int3(pixel, 0)), 0.0)) * 4.0;
-				history_length = history_length_texture.Load(int3(pixel, 0));
+				age = age_texture.Load(int3(pixel, 0));
 				validity = validity_texture.Load(int3(pixel, 0));
 			}
 			else
@@ -512,13 +521,13 @@ void Resolve(uint3 id : SV_DispatchThreadID)
 				Texture2D<float4> raw_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_reflection_raw_];
 				Texture2D<float4> denoised_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_reflection_radiance_];
 				Texture2D<float2> moments_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_reflection_moments_];
-				Texture2D<float> history_length_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_reflection_history_length_];
+				Texture2D<float> age_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_reflection_age_];
 				Texture2D<float2> validity_texture = ResourceDescriptorHeap[resolve_bindings.raytracing_reflection_validity_];
 				float2 moments = moments_texture.Load(int3(pixel, 0));
 				raw = raw_texture.Load(int3(pixel, 0)).rgb;
 				denoised = denoised_texture.Load(int3(pixel, 0)).rgb;
 				deviation = sqrt(max(moments.y - moments.x * moments.x, 0.0));
-				history_length = history_length_texture.Load(int3(pixel, 0));
+				age = age_texture.Load(int3(pixel, 0));
 				validity = validity_texture.Load(int3(pixel, 0));
 			}
 
@@ -536,7 +545,7 @@ void Resolve(uint3 id : SV_DispatchThreadID)
 			}
 			else if (mode == VIEW_MODE_DENOISER_LENGTH)
 			{
-				heat = saturate(history_length / 32.0);
+				heat = saturate(age / 32.0);
 			}
 			else if (mode == VIEW_MODE_DENOISER_VALIDITY)
 			{
@@ -638,27 +647,44 @@ void Resolve(uint3 id : SV_DispatchThreadID)
 
 /**
 * [EN]
-* Meshlet bounds view mode: one thread per entry of the view's draw list
-* (early and late). Projects the meshlet's bounding sphere to the display and
-* draws its outline into DisplayColor over the lit image, in a color hashed
-* from the entry so neighbouring meshlets stay apart.
+* Meshlet bounds view mode: one thread per meshlet drawn in the view, early
+* and late - the entries GeometryAS recorded in Geometry.VisibleMeshlets on the mesh
+* path (dispatch constant 1), the view's draw list on the fallback path.
+* Projects the meshlet's bounding sphere to the display and draws its outline
+* into HUD.Display over the lit image, in a color hashed from the entry so
+* neighbouring meshlets stay apart.
 */
 [numthreads(64, 1, 1)]
 void Bounds(uint3 id : SV_DispatchThreadID)
 {
-	StructuredBuffer<uint2> draw_lists = ResourceDescriptorHeap[bounds_bindings.culling_draw_lists_];
-	StructuredBuffer<uint> arguments = ResourceDescriptorHeap[bounds_bindings.culling_draw_arguments_];
-	uint capacity;
-	uint stride;
-	draw_lists.GetDimensions(capacity, stride);
-	uint early_count = min(arguments[CULLING_EARLY_COUNT], capacity);
-	uint count = early_count + min(arguments[CULLING_LATE_COUNT], capacity - early_count);
-	if (id.x >= count)
+	uint2 entry;
+	if (dispatch_bindings.constants_ != 0)
 	{
-		return;
+		StructuredBuffer<uint> visible_meshlets = ResourceDescriptorHeap[bounds_bindings.geometry_visible_meshlets_];
+		uint visible_meshlets_capacity;
+		uint visible_meshlets_stride;
+		visible_meshlets.GetDimensions(visible_meshlets_capacity, visible_meshlets_stride);
+		if (id.x >= min(visible_meshlets[0], (visible_meshlets_capacity - 1) / 2))
+		{
+			return;
+		}
+		entry = uint2(visible_meshlets[1 + id.x * 2], visible_meshlets[2 + id.x * 2]);
 	}
-
-	uint2 entry = draw_lists[id.x];
+	else
+	{
+		StructuredBuffer<uint2> opaque_meshlets = ResourceDescriptorHeap[bounds_bindings.culling_opaque_meshlets_];
+		StructuredBuffer<uint> arguments = ResourceDescriptorHeap[bounds_bindings.culling_meshlet_arguments_];
+		uint capacity;
+		uint stride;
+		opaque_meshlets.GetDimensions(capacity, stride);
+		uint early_count = min(arguments[CULLING_EARLY_COUNT], capacity);
+		uint count = early_count + min(arguments[CULLING_LATE_COUNT], capacity - early_count);
+		if (id.x >= count)
+		{
+			return;
+		}
+		entry = opaque_meshlets[id.x];
+	}
 	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bounds_bindings.geometry_instances_];
 	ModelStructuredBuffer instance = instances[entry.x];
 	StructuredBuffer<ModelMeshletBound> bounds = ResourceDescriptorHeap[NonUniformResourceIndex(instance.geometry_.meshlet_bound_buffer_index_)];
@@ -674,7 +700,7 @@ void Bounds(uint3 id : SV_DispatchThreadID)
 		return;
 	}
 
-	RWTexture2D<float4> display_color = ResourceDescriptorHeap[bounds_bindings.hud_display_color_];
+	RWTexture2D<float4> display_color = ResourceDescriptorHeap[bounds_bindings.hud_display_];
 	uint display_width;
 	uint display_height;
 	display_color.GetDimensions(display_width, display_height);

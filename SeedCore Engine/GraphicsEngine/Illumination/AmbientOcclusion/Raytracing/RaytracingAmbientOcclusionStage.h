@@ -18,12 +18,12 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
+			RenderAccess::Read(MaterialFeature::NormalRoughness),
 			RenderAccess::Read(TopLevelFeature::Structure),
 			RenderAccess::Read(TopLevelFeature::Hits),
 			RenderAccess::Constant(Constants),
 			RenderAccess::Write(Raw),
-			RenderAccess::Append(DebugViewFeature::RayCount)
+			RenderAccess::Append(DebugViewFeature::Rays)
 		};
 
 		static void Execute(RaytracingAmbientOcclusionFeature& feature, RenderPass& pass);
@@ -41,14 +41,14 @@ namespace SeedCore
 		{
 			RenderAccess::Read(Raw),
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
+			RenderAccess::Read(MaterialFeature::NormalRoughness),
 			RenderAccess::Read(MaterialFeature::Velocity),
 			RenderAccess::Constant(Constants),
 			RenderAccess::History(Accumulated),
 			RenderAccess::Write(Accumulated),
 			RenderAccess::Write(Openness),
-			RenderAccess::History(HistoryLength),
-			RenderAccess::Write(HistoryLength),
+			RenderAccess::History(Age),
+			RenderAccess::Write(Age),
 			RenderAccess::Write(Validity),
 			RenderAccess::Write(Variance)
 		};

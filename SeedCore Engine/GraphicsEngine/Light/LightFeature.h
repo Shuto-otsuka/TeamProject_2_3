@@ -13,7 +13,7 @@ namespace SeedCore
 		(
 			SC_RENDER_CONTRACT(List, RenderResourceDesc::FixedBuffer(sizeof(LightStructuredBuffer), 1), RenderResourceScope::Frame, RenderResourceLifetime::Upload),
 			SC_RENDER_CONTRACT(Constants, RenderResourceDesc::Constant(sizeof(LightConstantBuffer)), RenderResourceScope::Frame, RenderResourceLifetime::Upload),
-			SC_RENDER_CONTRACT(ClusterGrid, RenderResourceDesc::ScaledBuffer(sizeof(Uint32), 1 + LIGHT_CLUSTER_MAX_LIGHTS, RenderResourceScale::Render, LIGHT_CLUSTER_TILE_SIZE, LIGHT_CLUSTER_DEPTH_SLICES), RenderResourceScope::View, RenderResourceLifetime::Transient)
+			SC_RENDER_CONTRACT(Clusters, RenderResourceDesc::ScaledBuffer(sizeof(Uint32), 1 + LIGHT_CLUSTER_MAX_LIGHTS, RenderResourceScale::Render, LIGHT_CLUSTER_TILE_SIZE, LIGHT_CLUSTER_DEPTH_SLICES), RenderResourceScope::View, RenderResourceLifetime::Transient)
 		);
 
 	public:

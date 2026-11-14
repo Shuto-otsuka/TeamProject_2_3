@@ -7,15 +7,15 @@
 struct RaytracingShadowTraceBindings
 {
 	uint geometry_depth_;
-	uint material_surface_normal_roughness_;
+	uint material_normal_roughness_;
 	uint light_list_;
 	uint light_constants_;
-	uint light_cluster_grid_;
+	uint light_clusters_;
 	uint top_level_structure_;
 	uint top_level_hits_;
 	uint raytracing_shadow_constants_;
 	uint raytracing_shadow_raw_;
-	uint debug_view_ray_count_;
+	uint debug_view_rays_;
 };
 ConstantBuffer<RaytracingShadowTraceBindings> bindings : register(b0, space1);
 
@@ -49,7 +49,7 @@ void main(uint3 id : SV_DispatchThreadID)
 	float3 world_position = world.xyz / world.w;
 	float view_depth = mul(float4(world_position, 1.0), scene.view_).z;
 
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_surface_normal_roughness_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_normal_roughness_];
 	uint normal_roughness = surface_normal_roughness.Load(int3(pixel, 0));
 	float3 normal = OctNormalDecode(float2(normal_roughness & 0xFFF, (normal_roughness >> 12) & 0xFFF) / 4095.0);
 	float3 origin = world_position + normal * constants.normal_bias_;
@@ -69,7 +69,7 @@ void main(uint3 id : SV_DispatchThreadID)
 	}
 	uint cluster = (slice * tile_count.y + tile.y) * tile_count.x + tile.x;
 
-	StructuredBuffer<uint> grid = ResourceDescriptorHeap[bindings.light_cluster_grid_];
+	StructuredBuffer<uint> grid = ResourceDescriptorHeap[bindings.light_clusters_];
 	StructuredBuffer<LightStructuredBuffer> lights = ResourceDescriptorHeap[bindings.light_list_];
 	uint base = cluster * (1 + LIGHT_CLUSTER_MAX_LIGHTS);
 	uint light_count = grid[base];
@@ -172,7 +172,7 @@ void main(uint3 id : SV_DispatchThreadID)
 		float visible = RaytracingHitIsOccluded(tables, ray) ? 0.0 : 1.0;
 		if (scene.view_mode_ == VIEW_MODE_RAY_COUNT)
 		{
-			RWTexture2D<uint> ray_count_texture = ResourceDescriptorHeap[bindings.debug_view_ray_count_];
+			RWTexture2D<uint> ray_count_texture = ResourceDescriptorHeap[bindings.debug_view_rays_];
 			InterlockedAdd(ray_count_texture[pixel], 1);
 		}
 		if (sun_ray)

@@ -30,9 +30,9 @@ struct SurfaceMaterial
 	float anisotropy_strength_;
 };
 
-// Builds a SurfaceMaterial from the G-Buffer values (SurfaceBaseColor,
-// SurfaceNormalRoughness), the surface's ModelStructuredBuffer and its
-// VisibilityTexcoord. tangent_bits is SurfaceTangent (PackTangentAngle's 16
+// Builds a SurfaceMaterial from the G-Buffer values (Material.BaseColor,
+// Material.NormalRoughness), the surface's ModelStructuredBuffer and its
+// VisibilityUV. tangent_bits is Material.Tangent (PackTangentAngle's 16
 // bits), which rebuilds the tangent basis for the clearcoat normal map and the
 // anisotropy direction. wetness and snow_coverage are the weather's global
 // amounts. texcoord_dx/texcoord_dy are the texcoord's screen derivatives,

@@ -10,7 +10,7 @@
 * corner texels are compared. Every uncertain case (camera inside the sphere,
 * sphere crossing the camera plane) counts as visible.
 */
-bool IsOccluded(float3 center, float radius, row_major float4x4 view_projection, float3 camera_position, float projection_scale_y, float2 screen_size, uint hierarchical_depth)
+bool IsOccluded(float3 center, float radius, row_major float4x4 view_projection, float3 camera_position, float projection_scale_y, float2 screen_size, uint hi_z)
 {
 	float3 to_camera = camera_position - center;
 	float center_distance = length(to_camera);
@@ -32,7 +32,7 @@ bool IsOccluded(float3 center, float radius, row_major float4x4 view_projection,
 	float2 center_pixel = float2(center_ndc.x * 0.5 + 0.5, 0.5 - center_ndc.y * 0.5) * screen_size;
 	float radius_pixels = radius * projection_scale_y * screen_size.y * 0.5 / center_clip.w;
 
-	Texture2D<float> depth_pyramid = ResourceDescriptorHeap[hierarchical_depth];
+	Texture2D<float> depth_pyramid = ResourceDescriptorHeap[hi_z];
 	uint pyramid_width;
 	uint pyramid_height;
 	uint pyramid_mip_count;

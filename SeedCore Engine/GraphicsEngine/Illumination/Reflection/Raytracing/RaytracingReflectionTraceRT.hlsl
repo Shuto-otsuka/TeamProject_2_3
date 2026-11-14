@@ -10,20 +10,20 @@
 struct RaytracingReflectionTraceBindings
 {
 	uint geometry_depth_;
-	uint material_surface_normal_roughness_;
+	uint material_normal_roughness_;
 	uint material_velocity_;
 	uint top_level_structure_;
 	uint top_level_hits_;
 	uint light_list_;
 	uint light_constants_;
-	uint light_cluster_grid_;
+	uint light_clusters_;
 	uint sky_cubemap_;
-	uint sky_diffuse_irradiance_;
+	uint sky_diffuse_;
 	uint raytracing_reflection_constants_;
 	uint raytracing_reflection_reservoir_history_;
 	uint raytracing_reflection_reservoir_;
 	uint raytracing_reflection_reuse_;
-	uint debug_view_ray_count_;
+	uint debug_view_rays_;
 };
 ConstantBuffer<RaytracingReflectionTraceBindings> bindings : register(b0, space1);
 
@@ -60,7 +60,7 @@ void RaytracingReflectionRayGeneration()
 	float4 world = mul(float4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, depth, 1.0), scene.inverse_view_projection_);
 	float3 world_position = world.xyz / world.w;
 
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_surface_normal_roughness_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_normal_roughness_];
 	uint normal_roughness = surface_normal_roughness.Load(int3(pixel, 0));
 	float3 normal = OctNormalDecode(float2(normal_roughness & 0xFFF, (normal_roughness >> 12) & 0xFFF) / 4095.0);
 	float roughness = (normal_roughness >> 24) / 255.0;
@@ -80,9 +80,8 @@ void RaytracingReflectionRayGeneration()
 		float3 reflect_direction = normalize(2.0 * dot(view, half_vector) * half_vector - view);
 		float sample_weight = SmithGgxG2OverG1(normal_dot_view, dot(normal, reflect_direction), roughness);
 
-		RaytracingReflectionPayload payload;
-		payload.radiance_ = float3(0.0, 0.0, 0.0);
-		payload.hit_distance_ = 0.0;
+		float3 sample_radiance = float3(0.0, 0.0, 0.0);
+		float sample_distance = 0.0;
 		if (sample_weight > 0.0)
 		{
 			RayDesc ray;
@@ -92,19 +91,23 @@ void RaytracingReflectionRayGeneration()
 			ray.TMax = constants.ray_t_max_;
 			if (scene.view_mode_ == VIEW_MODE_RAY_COUNT)
 			{
-				RWTexture2D<uint> ray_count_texture = ResourceDescriptorHeap[bindings.debug_view_ray_count_];
+				RWTexture2D<uint> ray_count_texture = ResourceDescriptorHeap[bindings.debug_view_rays_];
 				InterlockedAdd(ray_count_texture[pixel], 1);
 			}
+			RaytracingReflectionPayload payload;
+			payload.radiance_ = float3(0.0, 0.0, 0.0);
+			payload.hit_distance_ = 0.0;
 			TraceRay(top_level, RAY_FLAG_SKIP_PROCEDURAL_PRIMITIVES, 0xFF, 0, 0, 0, ray, payload);
-			payload.radiance_ *= sample_weight;
+			sample_radiance = payload.radiance_ * sample_weight;
+			sample_distance = payload.hit_distance_;
 		}
 		else
 		{
 			reflect_direction = mirror_direction;
 		}
 
-		float hit_distance = (isnan(payload.hit_distance_) || isinf(payload.hit_distance_)) ? 0.0 : clamp(payload.hit_distance_, 0.0, 65504.0);
-		RaytracingReflectionReservoir candidate = ReflectionReservoirFromSample(reflect_direction, DenoiserSanitizeRadiance(payload.radiance_), hit_distance);
+		float hit_distance = (isnan(sample_distance) || isinf(sample_distance)) ? 0.0 : clamp(sample_distance, 0.0, 65504.0);
+		RaytracingReflectionReservoir candidate = ReflectionReservoirFromSample(reflect_direction, DenoiserSanitizeRadiance(sample_radiance), hit_distance);
 		if (ray_index == 0)
 		{
 		    reservoir = candidate;
@@ -175,9 +178,9 @@ void RaytracingReflectionClosestHit(inout RaytracingReflectionPayload payload, i
 	RaytracingHitLights lights;
 	lights.list_ = bindings.light_list_;
 	lights.constants_ = bindings.light_constants_;
-	lights.cluster_grid_ = bindings.light_cluster_grid_;
+	lights.cluster_grid_ = bindings.light_clusters_;
 
-	TextureCube<float4> diffuse_irradiance = ResourceDescriptorHeap[bindings.sky_diffuse_irradiance_];
+	TextureCube<float4> diffuse_irradiance = ResourceDescriptorHeap[bindings.sky_diffuse_];
 	float3 lighting = diffuse_irradiance.SampleLevel(sampler_linear_clamp, surface.normal_, 0).rgb * light_constants.sky_intensity_;
 	lighting += RaytracingHitLighting(tables, lights, hit_position, surface.normal_, constants.normal_bias_, constants.ray_t_max_);
 

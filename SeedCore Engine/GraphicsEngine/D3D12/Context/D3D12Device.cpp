@@ -25,8 +25,7 @@ namespace SeedCore
 				featureLevel_ = level;
 				if (level >= D3D_FEATURE_LEVEL_12_2)
 				{
-					/* TODO SpikeTest */
-					D3D12Check::SetLevel(D3D12Level::D12_1);
+					D3D12Check::SetLevel(D3D12Level::D12_2);
 				}
 				else if (level >= D3D_FEATURE_LEVEL_12_1)
 				{

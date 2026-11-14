@@ -97,7 +97,7 @@ namespace SeedCore
 		{
 			RenderAccess::Read(Wireframes),
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Target(HUDFeature::DisplayColor)
+			RenderAccess::Target(HUDFeature::Display)
 		};
 
 		static void Execute(PrimitiveFeature& feature, RenderPass& pass);
@@ -116,7 +116,7 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(Wireframes),
-			RenderAccess::Target(HUDFeature::DisplayColor)
+			RenderAccess::Target(HUDFeature::Display)
 		};
 
 		static void Execute(PrimitiveFeature& feature, RenderPass& pass);

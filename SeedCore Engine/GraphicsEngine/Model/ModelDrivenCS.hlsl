@@ -10,13 +10,13 @@ struct ModelUpdateBindings
     uint model_cluster_updates_;
     uint model_placement_updates_;
     uint model_material_updates_;
-    uint model_raytracing_unit_updates_;
+    uint model_trace_updates_;
     uint model_units_;
     uint model_meshes_;
     uint model_clusters_;
     uint model_placements_;
     uint model_materials_;
-    uint model_raytracing_units_;
+    uint model_traces_;
 };
 ConstantBuffer<ModelUpdateBindings> update_bindings : register(b0, space1);
 
@@ -27,7 +27,7 @@ struct ModelExpandBindings
     uint model_clusters_;
     uint model_placements_;
     uint model_materials_;
-    uint model_softbody_instances_;
+    uint model_softbodies_;
     uint model_constants_;
     uint geometry_instances_;
     uint geometry_counts_;
@@ -41,7 +41,7 @@ struct ModelDeformBindings
 	uint model_units_;
 	uint model_meshes_;
 	uint model_bones_;
-	uint model_morph_weights_;
+	uint model_morphs_;
 	uint bottom_level_table_;
 	uint bottom_level_vertices_;
 };
@@ -50,7 +50,7 @@ ConstantBuffer<ModelDeformBindings> deform_bindings : register(b0, space1);
 struct ModelRaytracingBindings
 {
 	uint model_units_;
-	uint model_raytracing_units_;
+	uint model_traces_;
 	uint model_meshes_;
 	uint model_materials_;
 	uint top_level_instances_;
@@ -147,14 +147,14 @@ void Update(uint3 id : SV_DispatchThreadID)
     }
     else
     {
-        StructuredBuffer<ModelRaytracingUpdate> updates = ResourceDescriptorHeap[update_bindings.model_raytracing_unit_updates_];
+        StructuredBuffer<ModelRaytracingUpdate> updates = ResourceDescriptorHeap[update_bindings.model_trace_updates_];
         updates.GetDimensions(update_count, update_stride);
         if (id.x >= update_count)
         {
             return;
         }
-        RWStructuredBuffer<ModelRaytracingStructuredBuffer> raytracing_units = ResourceDescriptorHeap[update_bindings.model_raytracing_units_];
-        raytracing_units[updates[id.x].index_] = updates[id.x].data_;
+        RWStructuredBuffer<ModelRaytracingStructuredBuffer> traces = ResourceDescriptorHeap[update_bindings.model_traces_];
+        traces[updates[id.x].index_] = updates[id.x].data_;
     }
 }
 
@@ -210,7 +210,7 @@ void Prepare(uint3 id : SV_DispatchThreadID)
     }
 
     RWStructuredBuffer<uint> counts = ResourceDescriptorHeap[expand_bindings.geometry_counts_];
-    StructuredBuffer<ModelStructuredBuffer> softbody_instances = ResourceDescriptorHeap[expand_bindings.model_softbody_instances_];
+    StructuredBuffer<ModelStructuredBuffer> softbodies = ResourceDescriptorHeap[expand_bindings.model_softbodies_];
     RWStructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[expand_bindings.geometry_instances_];
 
     uint counter = MODEL_COUNT_OPAQUE;
@@ -230,7 +230,7 @@ void Prepare(uint3 id : SV_DispatchThreadID)
         InterlockedAdd(counts[MODEL_COUNT_OVERFLOW], 1);
         return;
     }
-    instances[section_base + slot] = softbody_instances[id.x];
+    instances[section_base + slot] = softbodies[id.x];
 }
 
 /**
@@ -514,11 +514,11 @@ void Deform(uint3 id : SV_DispatchThreadID)
 	if (deform.morph_target_count_ > 0 && unit.morph_weight_offset_ != MODEL_INVALID)
 	{
 		StructuredBuffer<float3> morph_deltas = ResourceDescriptorHeap[deform.morph_delta_buffer_index_];
-		StructuredBuffer<float> morph_weights = ResourceDescriptorHeap[deform_bindings.model_morph_weights_];
+		StructuredBuffer<float> morphs = ResourceDescriptorHeap[deform_bindings.model_morphs_];
 		uint weight_offset = unit.morph_weight_offset_ + mesh.morph_weight_offset_;
 		for (uint target = 0; target < deform.morph_target_count_; target++)
 		{
-			position += morph_deltas[deform.morph_delta_offset_ + target * deform.vertex_count_ + id.x] * morph_weights[weight_offset + target];
+			position += morph_deltas[deform.morph_delta_offset_ + target * deform.vertex_count_ + id.x] * morphs[weight_offset + target];
 		}
 	}
 
@@ -573,9 +573,9 @@ void Raytracing(uint3 id : SV_DispatchThreadID)
 		return;
 	}
 
-	StructuredBuffer<ModelRaytracingStructuredBuffer> raytracing_units = ResourceDescriptorHeap[raytracing_bindings.model_raytracing_units_];
-	ModelRaytracingStructuredBuffer raytracing_unit = raytracing_units[id.x];
-	if (all(raytracing_unit.bottom_level_ == 0))
+	StructuredBuffer<ModelRaytracingStructuredBuffer> traces = ResourceDescriptorHeap[raytracing_bindings.model_traces_];
+	ModelRaytracingStructuredBuffer trace = traces[id.x];
+	if (all(trace.bottom_level_ == 0))
 	{
 		return;
 	}
@@ -605,7 +605,7 @@ void Raytracing(uint3 id : SV_DispatchThreadID)
 	instance.transform_[0] = float4(world[0][0], world[1][0], world[2][0], world[3][0]);
 	instance.transform_[1] = float4(world[0][1], world[1][1], world[2][1], world[3][1]);
 	instance.transform_[2] = float4(world[0][2], world[1][2], world[2][2], world[3][2]);
-	instance.bottom_level_ = raytracing_unit.bottom_level_;
+	instance.bottom_level_ = trace.bottom_level_;
 	instance.instance_mask_ = 0xFF;
 	instance.flags_ = 0;
 	StructuredBuffer<ModelMeshStructuredBuffer> meshes = ResourceDescriptorHeap[raytracing_bindings.model_meshes_];
@@ -617,14 +617,14 @@ void Raytracing(uint3 id : SV_DispatchThreadID)
 			instance.flags_ = 0x8;
 		}
 	}
-	instance.hit_.vertex_buffer_index_ = raytracing_unit.vertex_buffer_index_;
-	instance.hit_.index_buffer_index_ = raytracing_unit.index_buffer_index_;
-	instance.hit_.surface_buffer_index_ = raytracing_unit.surface_buffer_index_;
+	instance.hit_.vertex_buffer_index_ = trace.vertex_buffer_index_;
+	instance.hit_.index_buffer_index_ = trace.index_buffer_index_;
+	instance.hit_.surface_buffer_index_ = trace.surface_buffer_index_;
 	instance.hit_.material_buffer_index_ = raytracing_bindings.model_materials_;
 	instance.hit_.material_offset_ = unit.material_offset_;
 	instance.hit_.top_level_hit_structured_buffer_padding_0_ = 0;
-	instance.hit_.texcoord_min_ = raytracing_unit.texcoord_min_;
-	instance.hit_.texcoord_extent_ = raytracing_unit.texcoord_extent_;
+	instance.hit_.texcoord_min_ = trace.texcoord_min_;
+	instance.hit_.texcoord_extent_ = trace.texcoord_extent_;
 	instance.hit_.top_level_hit_structured_buffer_padding_1_ = 0;
 	instance.hit_.top_level_hit_structured_buffer_padding_2_ = 0;
 	instances[slot] = instance;

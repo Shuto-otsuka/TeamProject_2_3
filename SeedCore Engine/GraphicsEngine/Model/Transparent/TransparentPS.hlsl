@@ -146,7 +146,7 @@ void main(TransparentOutput input, bool front_face : SV_IsFrontFace)
 		}
 		uint cluster = (slice * tile_count.y + tile.y) * tile_count.x + tile.x;
 
-		StructuredBuffer<uint> grid = ResourceDescriptorHeap[bindings.light_cluster_grid_];
+		StructuredBuffer<uint> grid = ResourceDescriptorHeap[bindings.light_clusters_];
 		StructuredBuffer<LightStructuredBuffer> light_list = ResourceDescriptorHeap[bindings.light_list_];
 		uint base = cluster * (1 + LIGHT_CLUSTER_MAX_LIGHTS);
 		uint light_count = grid[base];
@@ -194,8 +194,8 @@ void main(TransparentOutput input, bool front_face : SV_IsFrontFace)
 				Texture2D<float4> occlusion_texture = ResourceDescriptorHeap[NonUniformResourceIndex(instance.texture_.occlusion_texture_index_)];
 				occlusion = occlusion_texture.Sample(sampler_linear_wrap, input.texcoord).r;
 			}
-			lighting += ImageBasedLightingRadianceLambertian(bindings.sky_brdf_lut_, bindings.sky_diffuse_irradiance_, shading_normal, view, material.roughness_, material.diffuse_color_, material.f0_) * occlusion * constants.sky_intensity_;
-			lighting += ImageBasedLightingRadianceGgx(bindings.sky_brdf_lut_, bindings.sky_specular_prefiltered_, shading_normal, view, material.roughness_, material.f0_) * occlusion * constants.sky_intensity_;
+			lighting += ImageBasedLightingRadianceLambertian(bindings.sky_brdf_, bindings.sky_diffuse_, shading_normal, view, material.roughness_, material.diffuse_color_, material.f0_) * occlusion * constants.sky_intensity_;
+			lighting += ImageBasedLightingRadianceGgx(bindings.sky_brdf_, bindings.sky_specular_, shading_normal, view, material.roughness_, material.f0_) * occlusion * constants.sky_intensity_;
 		}
 		radiance = lighting + emissive;
 	}

@@ -4,7 +4,7 @@
 /**
 * [EN]
 * Fallback for devices without mesh shaders: one DrawInstanced instance per
-* entry of CullingDrawLists, 124 triangles' worth of vertices each. Vertices
+* entry of Culling.OpaqueMeshlets, 124 triangles' worth of vertices each. Vertices
 * past the meshlet's triangle count are placed outside the clip volume. For a
 * single-sided material every vertex transforms all three corners of its
 * triangle so it can collapse back-facing triangles itself, matching the mesh
@@ -12,13 +12,13 @@
 */
 void main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID, out GeometryOutput output, out GeometryPrimitive primitive)
 {
-	StructuredBuffer<uint2> draw_lists = ResourceDescriptorHeap[bindings.culling_draw_lists_];
-	StructuredBuffer<uint> arguments = ResourceDescriptorHeap[bindings.culling_draw_arguments_];
+	StructuredBuffer<uint2> opaque_meshlets = ResourceDescriptorHeap[bindings.culling_opaque_meshlets_];
+	StructuredBuffer<uint> arguments = ResourceDescriptorHeap[bindings.culling_meshlet_arguments_];
 	uint capacity;
 	uint stride;
-	draw_lists.GetDimensions(capacity, stride);
-	uint base = dispatch_bindings.constants_ == CULLING_LATE_ARGUMENTS ? min(arguments[CULLING_EARLY_COUNT], capacity) : 0;
-	uint2 entry = draw_lists[base + instance_id];
+	opaque_meshlets.GetDimensions(capacity, stride);
+	uint base = (dispatch_bindings.constants_ & CULLING_COMMAND_MASK) == CULLING_LATE_ARGUMENTS ? min(arguments[CULLING_EARLY_COUNT], capacity) : 0;
+	uint2 entry = opaque_meshlets[base + instance_id];
 
 	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.geometry_instances_];
 	ModelStructuredBuffer instance = instances[entry.x];
@@ -73,11 +73,11 @@ void main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID, out Ge
 		{
 			StructuredBuffer<uint> vertex_morph_source = ResourceDescriptorHeap[NonUniformResourceIndex(instance.morph_.vertex_morph_source_buffer_index_)];
 			StructuredBuffer<float3> morph_deltas = ResourceDescriptorHeap[NonUniformResourceIndex(instance.morph_.morph_delta_buffer_index_)];
-			StructuredBuffer<float> morph_weights = ResourceDescriptorHeap[bindings.model_morph_weights_];
+			StructuredBuffer<float> morphs = ResourceDescriptorHeap[bindings.model_morphs_];
 			uint morph_vertex_index = vertex_morph_source[global_vertex_index] - instance.morph_.morph_vertex_offset_;
 			for (uint target = 0; target < instance.morph_.morph_target_count_; target++)
 			{
-				local_position += morph_deltas[instance.morph_.morph_delta_offset_ + target * instance.morph_.morph_vertex_count_ + morph_vertex_index] * morph_weights[instance.morph_.morph_weight_offset_ + target];
+				local_position += morph_deltas[instance.morph_.morph_delta_offset_ + target * instance.morph_.morph_vertex_count_ + morph_vertex_index] * morphs[instance.morph_.morph_weight_offset_ + target];
 			}
 		}
 

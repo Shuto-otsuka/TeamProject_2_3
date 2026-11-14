@@ -7,7 +7,7 @@
 
 namespace SeedCore
 {
-	REGISTER_RENDER_FEATURE(HUDFeature, ComposeStage);
+	REGISTER_RENDER_FEATURE(HUDFeature, UpdateStage, ComposeStage);
 
 	void HUDFeature::Create(RenderDevice& device)
 	{
@@ -22,7 +22,7 @@ namespace SeedCore
 			HUDComposeConstantBuffer& constants = constants_[static_cast<Size>(view.kind_)];
 			constants.outputRect_ = view.outputRect_;
 			constants.fade_ = view.kind_ == RenderViewKind::Game ? fade : 0.0f;
-			constants.background_ = view.kind_ == RenderViewKind::Canvas ? Vector3(0.2f, 0.2f, 0.2f) : Vector3(0.0f, 0.0f, 0.0f);
+			constants.background_ = view.kind_ == RenderViewKind::Canvas ? Vector3(0.3f, 0.3f, 0.3f) : Vector3(0.0f, 0.0f, 0.0f);
 		}
 	}
 

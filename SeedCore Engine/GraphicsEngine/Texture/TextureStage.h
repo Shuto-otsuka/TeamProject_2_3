@@ -38,7 +38,7 @@ namespace SeedCore
 			RenderAccess::Read(Units),
 			RenderAccess::Read(Quads),
 			RenderAccess::Constant(Constants),
-			RenderAccess::Write(DrawList)
+			RenderAccess::Write(Draws)
 		};
 
 		static void Execute(TextureFeature& feature, RenderPass& pass);
@@ -67,11 +67,11 @@ namespace SeedCore
 		{
 			RenderAccess::Read(Units),
 			RenderAccess::Read(Quads),
-			RenderAccess::Read(DrawList),
+			RenderAccess::Read(Draws),
 			RenderAccess::Constant(Constants),
 			RenderAccess::Read(OutlineFeature::Styles),
 			RenderAccess::Write(OutlineFeature::Mask),
-			RenderAccess::Target(HUDFeature::Color)
+			RenderAccess::Target(HUDFeature::Overlay)
 		};
 
 		static void Execute(TextureFeature& feature, RenderPass& pass);
@@ -89,9 +89,9 @@ namespace SeedCore
 		{
 			RenderAccess::Read(Units),
 			RenderAccess::Read(Quads),
-			RenderAccess::Read(DrawList),
+			RenderAccess::Read(Draws),
 			RenderAccess::Constant(Constants),
-			RenderAccess::Read(RaytracingVolumetricLightFeature::FogVolume),
+			RenderAccess::Read(RaytracingVolumetricLightFeature::Fog),
 			RenderAccess::Read(OutlineFeature::Styles),
 			RenderAccess::Write(OutlineFeature::Mask),
 			RenderAccess::Target(RadianceFeature::Color),

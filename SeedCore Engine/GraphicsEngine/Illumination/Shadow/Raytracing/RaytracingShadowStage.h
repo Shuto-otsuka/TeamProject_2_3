@@ -19,15 +19,15 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
+			RenderAccess::Read(MaterialFeature::NormalRoughness),
 			RenderAccess::Read(LightFeature::List),
 			RenderAccess::Constant(LightFeature::Constants),
-			RenderAccess::Read(LightFeature::ClusterGrid),
+			RenderAccess::Read(LightFeature::Clusters),
 			RenderAccess::Read(TopLevelFeature::Structure),
 			RenderAccess::Read(TopLevelFeature::Hits),
 			RenderAccess::Constant(Constants),
 			RenderAccess::Write(Raw),
-			RenderAccess::Append(DebugViewFeature::RayCount)
+			RenderAccess::Append(DebugViewFeature::Rays)
 		};
 
 		static void Execute(RaytracingShadowFeature& feature, RenderPass& pass);
@@ -56,14 +56,14 @@ namespace SeedCore
 		{
 			RenderAccess::Read(Raw),
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
+			RenderAccess::Read(MaterialFeature::NormalRoughness),
 			RenderAccess::Read(MaterialFeature::Velocity),
 			RenderAccess::Constant(Constants),
 			RenderAccess::History(Accumulated),
 			RenderAccess::History(Moments),
 			RenderAccess::Write(Moments),
-			RenderAccess::History(HistoryLength),
-			RenderAccess::Write(HistoryLength),
+			RenderAccess::History(Age),
+			RenderAccess::Write(Age),
 			RenderAccess::History(DepthNormal),
 			RenderAccess::Write(DepthNormal),
 			RenderAccess::Write(Ping),
@@ -85,7 +85,7 @@ namespace SeedCore
 		{
 			RenderAccess::Read(Ping),
 			RenderAccess::Read(Moments),
-			RenderAccess::Read(HistoryLength),
+			RenderAccess::Read(Age),
 			RenderAccess::Read(DepthNormal),
 			RenderAccess::Write(Pong)
 		};

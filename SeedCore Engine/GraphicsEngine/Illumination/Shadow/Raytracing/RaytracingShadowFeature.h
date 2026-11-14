@@ -13,7 +13,7 @@ namespace SeedCore
 			SC_RENDER_DEBUG(Raw, RenderResourceDesc::ScaledTexture(RenderFormat::RG16Float), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::One),
 			SC_RENDER_INTERNAL(Accumulated, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Persistent),
 			SC_RENDER_DEBUG(Moments, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Persistent),
-			SC_RENDER_DEBUG(HistoryLength, RenderResourceDesc::ScaledTexture(RenderFormat::R16Float), RenderResourceScope::View, RenderResourceLifetime::Persistent),
+			SC_RENDER_DEBUG(Age, RenderResourceDesc::ScaledTexture(RenderFormat::R16Float), RenderResourceScope::View, RenderResourceLifetime::Persistent),
 			SC_RENDER_DEBUG(Validity, RenderResourceDesc::ScaledTexture(RenderFormat::RG16Float), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero),
 			SC_RENDER_INTERNAL(DepthNormal, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA32Float), RenderResourceScope::View, RenderResourceLifetime::Persistent),
 			SC_RENDER_INTERNAL(Ping, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Transient),

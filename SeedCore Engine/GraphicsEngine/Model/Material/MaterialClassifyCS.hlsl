@@ -9,7 +9,7 @@ struct MaterialClassifyBindings
 	uint geometry_visibility_id_;
 	uint material_buckets_;
 	uint material_velocity_;
-	uint material_surface_radiance_;
+	uint material_radiance_;
 };
 ConstantBuffer<MaterialClassifyBindings> bindings : register(b0, space1);
 
@@ -80,7 +80,7 @@ void Classify(uint3 id : SV_DispatchThreadID)
 		float4 previous_clip = mul(float4(far_position, 1.0), scene.previous_view_projection_);
 
 		RWTexture2D<float2> velocity = ResourceDescriptorHeap[bindings.material_velocity_];
-		RWTexture2D<float4> surface_radiance = ResourceDescriptorHeap[bindings.material_surface_radiance_];
+		RWTexture2D<float4> surface_radiance = ResourceDescriptorHeap[bindings.material_radiance_];
 		velocity[pixel] = (current_clip.xy / current_clip.w - previous_clip.xy / previous_clip.w) * 0.5;
 		surface_radiance[pixel] = float4(0.0, 0.0, 0.0, 0.0);
 		return;

@@ -9,6 +9,7 @@ namespace SeedCore
 
 	void GeometryFeature::Create(RenderDevice& device)
 	{
+		mesh_ = device.Level() == D3D12Level::D12_2;
 		updatePipeline_.Create(device);
 		depthPipeline_.Create(device);
 		visibilityPipeline_.Create(device);

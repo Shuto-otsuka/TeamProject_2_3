@@ -184,6 +184,24 @@ namespace SeedCore
 			ProfilerStats::AddDrawCall();
 		}
 
+		void DrawGroups(RenderPass& pass, Uint32 groupCountX, Uint32 groupCountY, Uint32 constant = 0)
+		{
+			SC_STATIC_ASSERT(Description::fallback_ == GraphicsFallback::Indirect, "DrawGroups は Indirect の記述で使うこと");
+			ID3D12PipelineState* pipelineState = pass.Device().PipelineState().Get(pipelineState_);
+			if (!pipelineState || !mesh_)
+			{
+				return;
+			}
+#if SC_DEBUG
+			pass.Verify(reflections_);
+#endif
+			ID3D12GraphicsCommandList6* cmdList = pass.List().Get();
+			cmdList->SetPipelineState(pipelineState);
+			cmdList->SetGraphicsRoot32BitConstant(static_cast<Uint32>(RootParameter::Dispatch), constant, 0);
+			cmdList->DispatchMesh(groupCountX, groupCountY, 1);
+			ProfilerStats::AddDrawCall();
+		}
+
 	private:
 		Handle<Microsoft::WRL::ComPtr<ID3D12PipelineState>> pipelineState_;
 

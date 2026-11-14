@@ -8,7 +8,7 @@ struct MaterialScatterBindings
 	uint geometry_depth_;
 	uint geometry_visibility_id_;
 	uint material_buckets_;
-	uint material_sorted_pixels_;
+	uint material_pixels_;
 };
 ConstantBuffer<MaterialScatterBindings> bindings : register(b0, space1);
 
@@ -53,6 +53,6 @@ void main(uint3 id : SV_DispatchThreadID)
 	uint slot;
 	InterlockedAdd(buckets[instance_index % MATERIAL_SORT_BUCKET_COUNT], 1, slot);
 
-	RWStructuredBuffer<uint> sorted_pixels = ResourceDescriptorHeap[bindings.material_sorted_pixels_];
-	sorted_pixels[slot] = pixel.y * width + pixel.x;
+	RWStructuredBuffer<uint> pixels = ResourceDescriptorHeap[bindings.material_pixels_];
+	pixels[slot] = pixel.y * width + pixel.x;
 }

@@ -4,7 +4,7 @@
 struct SkyIrradianceBindings
 {
     uint sky_cubemap_;
-    uint sky_diffuse_irradiance_;
+    uint sky_diffuse_;
 };
 ConstantBuffer<SkyIrradianceBindings> bindings : register(b0, space1);
 
@@ -21,7 +21,7 @@ ConstantBuffer<SkyIrradianceBindings> bindings : register(b0, space1);
 [numthreads(8, 8, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {
-    RWTexture2DArray<float4> destination = ResourceDescriptorHeap[bindings.sky_diffuse_irradiance_];
+    RWTexture2DArray<float4> destination = ResourceDescriptorHeap[bindings.sky_diffuse_];
     uint width;
     uint height;
     uint element_count;

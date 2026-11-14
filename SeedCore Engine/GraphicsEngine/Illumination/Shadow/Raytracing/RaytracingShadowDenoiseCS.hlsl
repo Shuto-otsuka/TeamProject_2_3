@@ -18,14 +18,14 @@ struct RaytracingShadowTemporalBindings
 {
 	uint raytracing_shadow_raw_;
 	uint geometry_depth_;
-	uint material_surface_normal_roughness_;
+	uint material_normal_roughness_;
 	uint material_velocity_;
 	uint raytracing_shadow_constants_;
 	uint raytracing_shadow_accumulated_history_;
 	uint raytracing_shadow_moments_history_;
 	uint raytracing_shadow_moments_;
-	uint raytracing_shadow_history_length_history_;
-	uint raytracing_shadow_history_length_;
+	uint raytracing_shadow_age_history_;
+	uint raytracing_shadow_age_;
 	uint raytracing_shadow_depth_normal_history_;
 	uint raytracing_shadow_depth_normal_;
 	uint raytracing_shadow_ping_;
@@ -37,7 +37,7 @@ struct RaytracingShadowMomentsBindings
 {
 	uint raytracing_shadow_ping_;
 	uint raytracing_shadow_moments_;
-	uint raytracing_shadow_history_length_;
+	uint raytracing_shadow_age_;
 	uint raytracing_shadow_depth_normal_;
 	uint raytracing_shadow_pong_;
 };
@@ -67,7 +67,7 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 	int2 screen_max = int2(width, height) - 1;
 	RWTexture2D<float4> ping = ResourceDescriptorHeap[temporal_bindings.raytracing_shadow_ping_];
 	RWTexture2D<float4> moments_output = ResourceDescriptorHeap[temporal_bindings.raytracing_shadow_moments_];
-	RWTexture2D<float> history_length_output = ResourceDescriptorHeap[temporal_bindings.raytracing_shadow_history_length_];
+	RWTexture2D<float> age_output = ResourceDescriptorHeap[temporal_bindings.raytracing_shadow_age_];
 	RWTexture2D<float4> depth_normal_output = ResourceDescriptorHeap[temporal_bindings.raytracing_shadow_depth_normal_];
 
 	float depth = depth_texture.Load(int3(pixel, 0));
@@ -75,14 +75,14 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 	{
 		ping[pixel] = float4(1.0, 1.0, 0.0, 0.0);
 		moments_output[pixel] = float4(0.0, 0.0, 0.0, 0.0);
-		history_length_output[pixel] = 0.0;
+		age_output[pixel] = 0.0;
 		depth_normal_output[pixel] = float4(0.0, 0.0, 0.0, 0.0);
 		return;
 	}
 
 	SceneConstantBuffer scene = GetSceneConstantBuffer();
 	ConstantBuffer<RaytracingShadowConstantBuffer> constants = ResourceDescriptorHeap[temporal_bindings.raytracing_shadow_constants_];
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[temporal_bindings.material_surface_normal_roughness_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[temporal_bindings.material_normal_roughness_];
 
 	float2 screen_size = float2(width, height);
 	float2 uv = (float2(pixel) + 0.5) / screen_size;
@@ -111,12 +111,12 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 
 	Texture2D<float4> accumulated_history = ResourceDescriptorHeap[temporal_bindings.raytracing_shadow_accumulated_history_];
 	Texture2D<float4> moments_history = ResourceDescriptorHeap[temporal_bindings.raytracing_shadow_moments_history_];
-	Texture2D<float> history_length_history = ResourceDescriptorHeap[temporal_bindings.raytracing_shadow_history_length_history_];
+	Texture2D<float> age_history = ResourceDescriptorHeap[temporal_bindings.raytracing_shadow_age_history_];
 	Texture2D<float4> depth_normal_history = ResourceDescriptorHeap[temporal_bindings.raytracing_shadow_depth_normal_history_];
 
 	float2 previous_value = float2(0.0, 0.0);
 	float4 previous_moments = float4(0.0, 0.0, 0.0, 0.0);
-	float previous_history_length = 0.0;
+	float previous_age = 0.0;
 	bool valid = false;
 	float reprojection = 0.0;
 	if (constants.history_valid_ != 0)
@@ -152,14 +152,14 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 			}
 			previous_value += accumulated_history.Load(int3(tap_pixel, 0)).xy * bilinear_weights[tap];
 			previous_moments += moments_history.Load(int3(tap_pixel, 0)) * bilinear_weights[tap];
-			previous_history_length += history_length_history.Load(int3(tap_pixel, 0)) * bilinear_weights[tap];
+			previous_age += age_history.Load(int3(tap_pixel, 0)) * bilinear_weights[tap];
 			weight_sum += bilinear_weights[tap];
 		}
 		if (weight_sum >= 0.01)
 		{
 			previous_value /= weight_sum;
 			previous_moments /= weight_sum;
-			previous_history_length /= weight_sum;
+			previous_age /= weight_sum;
 			valid = true;
 		}
 		else
@@ -184,7 +184,7 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 					}
 					previous_value += accumulated_history.Load(int3(tap_pixel, 0)).xy;
 					previous_moments += moments_history.Load(int3(tap_pixel, 0));
-					previous_history_length += history_length_history.Load(int3(tap_pixel, 0));
+					previous_age += age_history.Load(int3(tap_pixel, 0));
 					fallback_count += 1.0;
 				}
 			}
@@ -192,15 +192,15 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 			{
 				previous_value /= fallback_count;
 				previous_moments /= fallback_count;
-				previous_history_length /= fallback_count;
+				previous_age /= fallback_count;
 				valid = true;
 			}
 		}
 	}
 
-	float history_length = min(SHADOW_MAX_HISTORY_LENGTH, valid ? previous_history_length + 1.0 : 1.0);
-	float alpha = valid ? max(SHADOW_TEMPORAL_ALPHA, 1.0 / history_length) : 1.0;
-	float moments_alpha = valid ? max(SHADOW_MOMENTS_ALPHA, 1.0 / history_length) : 1.0;
+	float age = min(SHADOW_MAX_HISTORY_LENGTH, valid ? previous_age + 1.0 : 1.0);
+	float alpha = valid ? max(SHADOW_TEMPORAL_ALPHA, 1.0 / age) : 1.0;
+	float moments_alpha = valid ? max(SHADOW_MOMENTS_ALPHA, 1.0 / age) : 1.0;
 
 	float4 moments = lerp(previous_moments, float4(raw_value.x, raw_value.x * raw_value.x, raw_value.y, raw_value.y * raw_value.y), moments_alpha);
 	float2 variance = max(0.0, float2(moments.y - moments.x * moments.x, moments.w - moments.z * moments.z));
@@ -208,7 +208,7 @@ void Temporal(uint3 id : SV_DispatchThreadID)
 
 	ping[pixel] = float4(value, variance);
 	moments_output[pixel] = moments;
-	history_length_output[pixel] = history_length;
+	age_output[pixel] = age;
 
 	if (scene.view_mode_ >= VIEW_MODE_DENOISER_RAW && scene.view_mode_ <= VIEW_MODE_DENOISER_REPROJECTION)
 	{
@@ -232,14 +232,14 @@ void Moments(uint3 id : SV_DispatchThreadID)
 	int2 pixel = int2(id.xy);
 	int2 screen_max = int2(width, height) - 1;
 	Texture2D<float4> moments_texture = ResourceDescriptorHeap[moments_bindings.raytracing_shadow_moments_];
-	Texture2D<float> history_length_texture = ResourceDescriptorHeap[moments_bindings.raytracing_shadow_history_length_];
+	Texture2D<float> age_texture = ResourceDescriptorHeap[moments_bindings.raytracing_shadow_age_];
 	Texture2D<float4> depth_normal_texture = ResourceDescriptorHeap[moments_bindings.raytracing_shadow_depth_normal_];
 	RWTexture2D<float4> destination = ResourceDescriptorHeap[moments_bindings.raytracing_shadow_pong_];
 
 	float4 center = source.Load(int3(pixel, 0));
 	float4 center_depth_normal = depth_normal_texture.Load(int3(pixel, 0));
-	float history_length = history_length_texture.Load(int3(pixel, 0));
-	if (center_depth_normal.x <= 0.0 || history_length >= SHADOW_SPATIAL_VARIANCE_FRAMES)
+	float age = age_texture.Load(int3(pixel, 0));
+	if (center_depth_normal.x <= 0.0 || age >= SHADOW_SPATIAL_VARIANCE_FRAMES)
 	{
 		destination[pixel] = center;
 		return;
@@ -277,7 +277,7 @@ void Moments(uint3 id : SV_DispatchThreadID)
 
 	weight_sum = max(weight_sum, 1e-6);
 	float4 moments = moments_sum / float4(weight_sum.x, weight_sum.x, weight_sum.y, weight_sum.y);
-	float2 variance = max(0.0, float2(moments.y - moments.x * moments.x, moments.w - moments.z * moments.z)) * SHADOW_SPATIAL_VARIANCE_FRAMES / max(history_length, 1.0);
+	float2 variance = max(0.0, float2(moments.y - moments.x * moments.x, moments.w - moments.z * moments.z)) * SHADOW_SPATIAL_VARIANCE_FRAMES / max(age, 1.0);
 	destination[pixel] = float4(value_sum / weight_sum, variance);
 }
 

@@ -39,17 +39,19 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(GeometryFeature::Instances),
-			RenderAccess::Read(CullingFeature::TransparentLists),
+			RenderAccess::Read(CullingFeature::TransparentMeshlets),
 			RenderAccess::Read(CullingFeature::TransparentArguments),
+			RenderAccess::Read(CullingFeature::TransparentChunks),
+			RenderAccess::Read(GeometryFeature::HiZ),
 			RenderAccess::Read(ModelFeature::Bones),
-			RenderAccess::Read(ModelFeature::MorphWeights),
+			RenderAccess::Read(ModelFeature::Morphs),
 			RenderAccess::Read(LightFeature::List),
 			RenderAccess::Constant(LightFeature::Constants),
 			RenderAccess::Constant(WeatherFeature::Constants),
-			RenderAccess::Read(LightFeature::ClusterGrid),
-			RenderAccess::Read(SkyFeature::DiffuseIrradiance),
-			RenderAccess::Read(SkyFeature::SpecularPrefiltered),
-			RenderAccess::Read(SkyFeature::BrdfLut),
+			RenderAccess::Read(LightFeature::Clusters),
+			RenderAccess::Read(SkyFeature::Diffuse),
+			RenderAccess::Read(SkyFeature::Specular),
+			RenderAccess::Read(SkyFeature::BRDF),
 			RenderAccess::Read(TopLevelFeature::Structure),
 			RenderAccess::Read(TopLevelFeature::Hits),
 			RenderAccess::Write(Heads),
@@ -73,7 +75,7 @@ namespace SeedCore
 		{
 			RenderAccess::Read(Heads),
 			RenderAccess::Read(Fragments),
-			RenderAccess::Read(RaytracingVolumetricLightFeature::FogVolume),
+			RenderAccess::Read(RaytracingVolumetricLightFeature::Fog),
 			RenderAccess::Write(RadianceFeature::Color),
 			RenderAccess::Write(MaterialFeature::Velocity)
 		};

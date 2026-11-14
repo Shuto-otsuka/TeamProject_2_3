@@ -19,13 +19,13 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(MaterialFeature::SurfaceNormalRoughness),
+			RenderAccess::Read(MaterialFeature::NormalRoughness),
 			RenderAccess::Constant(LightFeature::Constants),
 			RenderAccess::Read(TopLevelFeature::Structure),
 			RenderAccess::Read(TopLevelFeature::Hits),
 			RenderAccess::Constant(Constants),
 			RenderAccess::Write(Transmittance),
-			RenderAccess::Append(DebugViewFeature::RayCount)
+			RenderAccess::Append(DebugViewFeature::Rays)
 		};
 
 		static void Execute(RaytracingSubsurfaceScatteringFeature& feature, RenderPass& pass);

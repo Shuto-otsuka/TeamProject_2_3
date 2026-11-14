@@ -2,9 +2,10 @@
 
 /**
 * [EN]
-* Texture.Sprite: one thread group draws 32 consecutive entries of the
-* sprite section of Texture.DrawList (from sprite_base_), 4 vertices and 2 triangles per quad, in list order so the
-* units' drawing order holds. A fullscreen quad covers the whole view; a
+* Texture.Sprite: one thread group draws the on-screen quads TextureSpriteAS
+* kept from 32 consecutive entries of the sprite section of Texture.Draws,
+* 4 vertices and 2 triangles per quad, in list order so the units' drawing
+* order holds. A fullscreen quad covers the whole view; a
 * sprite quad is placed on the 1920x1080 canvas by its unit's world matrix
 * (translation, z rotation - none for text - and scale) and then scaled to the view's display
 * height, so the game and canvas views lay sprites out the same way (the
@@ -13,8 +14,8 @@
 * ---------------------------------------------------------------------
 *
 * [JP]
-* Texture.Sprite。1 スレッドグループが Texture.DrawList のスプライトの区間
-* （sprite_base_ から）の連続する 32 件を、
+* Texture.Sprite。1 スレッドグループが、Texture.Draws のスプライトの区間の
+* 連続する 32 件から TextureSpriteAS が残した画面内の四角形を、
 * 1 四角形につき 4 頂点・2 三角形で描く。並びの順に描くので、ユニットの
 * 描く順番が保たれる。全画面の四角形はビュー全体を覆い、スプライトの
 * 四角形はユニットの世界行列（平行移動・z 回転・拡大）で 1920x1080 の
@@ -23,24 +24,17 @@
 */
 [NumThreads(128, 1, 1)]
 [OutputTopology("triangle")]
-void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices TextureSpriteOutput verts[128], out indices uint3 tris[64])
+void main(uint gtid : SV_GroupThreadID, in payload TextureSpritePayload payload, out vertices TextureSpriteOutput verts[128], out indices uint3 tris[64])
 {
-	ConstantBuffer<TextureConstantBuffer> constants = ResourceDescriptorHeap[bindings.texture_constants_];
-	uint first = gid * 32;
-	uint quad_count = first < constants.sprite_count_ ? min(32, constants.sprite_count_ - first) : 0;
+	uint quad_count = payload.count_;
 	SetMeshOutputCounts(quad_count * 4, quad_count * 2);
-	if (quad_count == 0)
-	{
-		return;
-	}
 
 	uint quad_local = gtid / 4;
 	if (quad_local < quad_count)
 	{
-		StructuredBuffer<uint> draw_list = ResourceDescriptorHeap[bindings.texture_draw_list_];
 		StructuredBuffer<TextureQuadStructuredBuffer> quads = ResourceDescriptorHeap[bindings.texture_quads_];
 		StructuredBuffer<TextureUnitStructuredBuffer> units = ResourceDescriptorHeap[bindings.texture_units_];
-		uint quad_index = draw_list[constants.sprite_base_ + first + quad_local];
+		uint quad_index = payload.quads_[quad_local];
 		TextureQuadStructuredBuffer quad = quads[quad_index];
 		TextureUnitStructuredBuffer unit = units[quad.unit_];
 		SceneConstantBuffer scene = GetSceneConstantBuffer();

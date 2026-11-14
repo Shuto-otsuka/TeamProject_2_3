@@ -41,11 +41,18 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(Instances),
-			RenderAccess::Read(CullingFeature::DrawLists),
-			RenderAccess::Read(CullingFeature::DrawArguments),
+			RenderAccess::Read(CullingFeature::OpaqueMeshlets),
+			RenderAccess::Read(CullingFeature::MeshletArguments),
+			RenderAccess::Read(CullingFeature::OpaqueChunks),
+			RenderAccess::Read(CullingFeature::OccludedChunks),
+			RenderAccess::Read(CullingFeature::ChunkArguments),
+			RenderAccess::Write(OccludedMeshlets),
+			RenderAccess::History(HiZ),
+			RenderAccess::Read(HiZ),
 			RenderAccess::Read(ModelFeature::Bones),
-			RenderAccess::Read(ModelFeature::MorphWeights),
+			RenderAccess::Read(ModelFeature::Morphs),
 			RenderAccess::Write(Debug),
+			RenderAccess::Write(VisibleMeshlets),
 			RenderAccess::DepthWrite(Depth)
 		};
 
@@ -61,7 +68,7 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(Depth),
-			RenderAccess::Write(HierarchicalDepth)
+			RenderAccess::Write(HiZ)
 		};
 
 		static void Execute(GeometryFeature& feature, RenderPass& pass);
@@ -76,13 +83,20 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(Instances),
-			RenderAccess::Read(CullingFeature::DrawLists),
-			RenderAccess::Read(CullingFeature::DrawArguments),
+			RenderAccess::Read(CullingFeature::OpaqueMeshlets),
+			RenderAccess::Read(CullingFeature::MeshletArguments),
+			RenderAccess::Read(CullingFeature::OpaqueChunks),
+			RenderAccess::Read(CullingFeature::OccludedChunks),
+			RenderAccess::Read(CullingFeature::ChunkArguments),
+			RenderAccess::Write(OccludedMeshlets),
+			RenderAccess::History(HiZ),
+			RenderAccess::Read(HiZ),
 			RenderAccess::Read(ModelFeature::Bones),
-			RenderAccess::Read(ModelFeature::MorphWeights),
+			RenderAccess::Read(ModelFeature::Morphs),
 			RenderAccess::Write(Debug),
-			RenderAccess::Target(VisibilityId),
-			RenderAccess::Target(VisibilityTexcoord),
+			RenderAccess::Write(VisibleMeshlets),
+			RenderAccess::Target(VisibilityID),
+			RenderAccess::Target(VisibilityUV),
 			RenderAccess::DepthTest(Depth)
 		};
 

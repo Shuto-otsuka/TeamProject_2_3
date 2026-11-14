@@ -8,18 +8,35 @@
 struct GeometryDrawBindings
 {
 	uint geometry_instances_;
-	uint culling_draw_lists_;
-	uint culling_draw_arguments_;
+	uint culling_opaque_meshlets_;
+	uint culling_meshlet_arguments_;
+	uint culling_opaque_chunks_;
+	uint culling_occluded_chunks_;
+	uint culling_chunk_arguments_;
+	uint geometry_occluded_meshlets_;
+	uint geometry_hi_z_history_;
+	uint geometry_hi_z_;
 	uint model_bones_;
-	uint model_morph_weights_;
+	uint model_morphs_;
 	uint geometry_debug_;
+	uint geometry_visible_meshlets_;
 };
 ConstantBuffer<GeometryDrawBindings> bindings : register(b0, space1);
 
 /**
 * [EN]
+* What GeometryAS hands to GeometryMS: one (instance, meshlet) entry per mesh
+* shader group it launches.
+*/
+struct GeometryPayload
+{
+	uint2 entries_[32];
+};
+
+/**
+* [EN]
 * Per-vertex output of GeometryMS/GeometryVS. The pixel shaders need the
-* texcoord (alpha cutout, VisibilityTexcoord) and the ids, plus the deformed
+* texcoord (alpha cutout, VisibilityUV) and the ids, plus the deformed
 * surface (object-space position, normal and tangent after morph targets,
 * skinning and fur, and the world position) that a non-stretch material
 * mapping places its alpha texture with; everything else is rebuilt from the

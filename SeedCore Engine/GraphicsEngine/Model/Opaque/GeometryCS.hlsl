@@ -3,7 +3,7 @@
 struct GeometryPyramidBindings
 {
 	uint geometry_depth_;
-	uint geometry_hierarchical_depth_;
+	uint geometry_hi_z_;
 };
 ConstantBuffer<GeometryPyramidBindings> pyramid_bindings : register(b0, space1);
 
@@ -33,14 +33,14 @@ void Update(uint3 id : SV_DispatchThreadID)
 * source footprint, which under reversed-Z is the farthest surface, as the
 * conservative occlusion test needs. Mip 0 (half the render resolution)
 * reduces Depth; every later mip reduces the previous one through its UAV
-* (per-mip UAVs are contiguous from geometry_hierarchical_depth_). Odd source sizes
+* (per-mip UAVs are contiguous from geometry_hi_z_). Odd source sizes
 * fold the extra edge row/column in, so no depth sample is dropped.
 */
 [numthreads(8, 8, 1)]
 void Pyramid(uint3 id : SV_DispatchThreadID)
 {
 	uint mip = dispatch_bindings.constants_;
-	RWTexture2D<float> destination = ResourceDescriptorHeap[pyramid_bindings.geometry_hierarchical_depth_ + mip];
+	RWTexture2D<float> destination = ResourceDescriptorHeap[pyramid_bindings.geometry_hi_z_ + mip];
 	uint destination_width;
 	uint destination_height;
 	destination.GetDimensions(destination_width, destination_height);
@@ -50,7 +50,7 @@ void Pyramid(uint3 id : SV_DispatchThreadID)
 	}
 
 	Texture2D<float> depth = ResourceDescriptorHeap[pyramid_bindings.geometry_depth_];
-	RWTexture2D<float> source = ResourceDescriptorHeap[pyramid_bindings.geometry_hierarchical_depth_ + max(mip, 1) - 1];
+	RWTexture2D<float> source = ResourceDescriptorHeap[pyramid_bindings.geometry_hi_z_ + max(mip, 1) - 1];
 	uint source_width;
 	uint source_height;
 	if (mip == 0)

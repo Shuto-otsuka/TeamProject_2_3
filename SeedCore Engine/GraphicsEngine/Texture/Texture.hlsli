@@ -32,7 +32,7 @@
 * TEXTURE_UNIT_SCROLL. texture_index_ is the image, the font atlas or the
 * movie frame. The unit owns quads [quad_offset_, quad_offset_ +
 * quad_count_) and, when TEXTURE_UNIT_DRAWN is set, draws them at
-* Texture.DrawList[draw_base_ + n].
+* Texture.Draws[draw_base_ + n].
 */
 struct TextureUnitStructuredBuffer
 {
@@ -104,7 +104,7 @@ struct TextureQuadUpdate
 
 /**
 * [EN]
-* sprite_count_ quads are drawn first from Texture.DrawList[sprite_base_],
+* sprite_count_ quads are drawn first from Texture.Draws[sprite_base_],
 * then billboard_count_ from billboard_base_. Texture.Expand walks quad_count_
 * quad slots.
 */

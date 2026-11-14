@@ -7,17 +7,17 @@
 
 struct MaterialResolveBindings
 {
-	uint material_sorted_pixels_;
+	uint material_pixels_;
 	uint material_buckets_;
 	uint geometry_visibility_id_;
 	uint geometry_instances_;
 	uint model_bones_;
-	uint model_morph_weights_;
-	uint material_surface_base_color_;
-	uint material_surface_normal_roughness_;
-	uint material_surface_tangent_;
+	uint model_morphs_;
+	uint material_base_color_;
+	uint material_normal_roughness_;
+	uint material_tangent_;
 	uint material_velocity_;
-	uint material_surface_radiance_;
+	uint material_radiance_;
 	uint material_mip_;
 };
 ConstantBuffer<MaterialResolveBindings> bindings : register(b0, space1);
@@ -25,7 +25,7 @@ ConstantBuffer<MaterialResolveBindings> bindings : register(b0, space1);
 /**
 * [EN]
 * Final step of the material sort: one thread per entry of
-* Material.SortedPixels (rows of 65536 threads; the total sits after the
+* Material.Pixels (rows of 65536 threads; the total sits after the
 * buckets). Rebuilds the covering triangle from the same buffers the geometry
 * passes read - morph targets, then skinning, for this frame and, with the
 * second half of ModelBones / ModelMorphWeights, for the previous one, then
@@ -35,14 +35,14 @@ ConstantBuffer<MaterialResolveBindings> bindings : register(b0, space1);
 * screen derivatives, so every texture is sampled with SampleGrad at the
 * right mip. Writes the base color and metallic, the octahedral normal (12+12
 * bits) with roughness (8 bits), the tangent angle, the velocity, and the
-* emitted radiance that SurfaceRadiance starts from (emissive times its
+* emitted radiance that Material.Radiance starts from (emissive times its
 * strength; base color plus emissive for Unlit). Normals face the camera,
 * and the Flat shading model uses the geometric face normal.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* マテリアルソートの最後。Material.SortedPixels の 1 件につき 1 スレッド
+* マテリアルソートの最後。Material.Pixels の 1 件につき 1 スレッド
 * (1 行 65536 スレッド。総数はバケットの後ろにある)。ジオメトリのパスと
 * 同じバッファから三角形を組み直し（モーフ、次にスキン。ModelBones /
 * ModelMorphWeights の後ろ半分で前のフレームの分も。そのあとジオメトリのパスと
@@ -50,7 +50,7 @@ ConstantBuffer<MaterialResolveBindings> bindings : register(b0, space1);
 * パースペクティブ補正した重心座標を求める。隣の分がマッピングの座標の画面方向の
 * 微分になり、テクスチャはすべて正しいミップの SampleGrad で読む。ベースカラーと
 * メタリック、八面体法線（12+12 bit）とラフネス（8 bit）、タンジェントの角度、
-* 速度、SurfaceRadiance の初期値の放射（エミッシブ×強さ。Unlit はベースカラー＋
+* 速度、Material.Radiance の初期値の放射（エミッシブ×強さ。Unlit はベースカラー＋
 * エミッシブ）を書く。法線はカメラの側へ向け、Flat のシェーディングモデルは
 * 三角形の面の法線を使う。
 */
@@ -70,8 +70,8 @@ void main(uint3 id : SV_DispatchThreadID)
 	uint height;
 	visibility_id.GetDimensions(width, height);
 
-	StructuredBuffer<uint> sorted_pixels = ResourceDescriptorHeap[bindings.material_sorted_pixels_];
-	uint linear_pixel = sorted_pixels[entry_index];
+	StructuredBuffer<uint> pixels = ResourceDescriptorHeap[bindings.material_pixels_];
+	uint linear_pixel = pixels[entry_index];
 	uint2 pixel = uint2(linear_pixel % width, linear_pixel / width);
 
 	uint instance_index;
@@ -84,11 +84,11 @@ void main(uint3 id : SV_DispatchThreadID)
 
 	if (instance.geometry_.meshlet_count_ == 0)
 	{
-		RWTexture2D<float4> empty_base_color = ResourceDescriptorHeap[bindings.material_surface_base_color_];
-		RWTexture2D<uint> empty_normal_roughness = ResourceDescriptorHeap[bindings.material_surface_normal_roughness_];
-		RWTexture2D<uint> empty_tangent = ResourceDescriptorHeap[bindings.material_surface_tangent_];
+		RWTexture2D<float4> empty_base_color = ResourceDescriptorHeap[bindings.material_base_color_];
+		RWTexture2D<uint> empty_normal_roughness = ResourceDescriptorHeap[bindings.material_normal_roughness_];
+		RWTexture2D<uint> empty_tangent = ResourceDescriptorHeap[bindings.material_tangent_];
 		RWTexture2D<float2> empty_velocity = ResourceDescriptorHeap[bindings.material_velocity_];
-		RWTexture2D<float4> empty_radiance = ResourceDescriptorHeap[bindings.material_surface_radiance_];
+		RWTexture2D<float4> empty_radiance = ResourceDescriptorHeap[bindings.material_radiance_];
 		empty_base_color[pixel] = float4(0.0, 0.0, 0.0, 0.0);
 		empty_normal_roughness[pixel] = 0;
 		empty_tangent[pixel] = 0;
@@ -131,10 +131,10 @@ void main(uint3 id : SV_DispatchThreadID)
 	{
 		StructuredBuffer<uint> vertex_morph_source = ResourceDescriptorHeap[NonUniformResourceIndex(instance.morph_.vertex_morph_source_buffer_index_)];
 		StructuredBuffer<float3> morph_deltas = ResourceDescriptorHeap[NonUniformResourceIndex(instance.morph_.morph_delta_buffer_index_)];
-		StructuredBuffer<float> morph_weights = ResourceDescriptorHeap[bindings.model_morph_weights_];
+		StructuredBuffer<float> morphs = ResourceDescriptorHeap[bindings.model_morphs_];
 		uint weight_count;
 		uint weight_stride;
-		morph_weights.GetDimensions(weight_count, weight_stride);
+		morphs.GetDimensions(weight_count, weight_stride);
 		uint previous_weight_base = weight_count / 2;
 
 		uint morph_vertex_index0 = vertex_morph_source[global_index0] - instance.morph_.morph_vertex_offset_;
@@ -142,8 +142,8 @@ void main(uint3 id : SV_DispatchThreadID)
 		uint morph_vertex_index2 = vertex_morph_source[global_index2] - instance.morph_.morph_vertex_offset_;
 		for (uint target = 0; target < instance.morph_.morph_target_count_; target++)
 		{
-			float weight = morph_weights[instance.morph_.morph_weight_offset_ + target];
-			float previous_weight = morph_weights[previous_weight_base + instance.morph_.morph_weight_offset_ + target];
+			float weight = morphs[instance.morph_.morph_weight_offset_ + target];
+			float previous_weight = morphs[previous_weight_base + instance.morph_.morph_weight_offset_ + target];
 			float3 morph_delta0 = morph_deltas[instance.morph_.morph_delta_offset_ + target * instance.morph_.morph_vertex_count_ + morph_vertex_index0];
 			float3 morph_delta1 = morph_deltas[instance.morph_.morph_delta_offset_ + target * instance.morph_.morph_vertex_count_ + morph_vertex_index1];
 			float3 morph_delta2 = morph_deltas[instance.morph_.morph_delta_offset_ + target * instance.morph_.morph_vertex_count_ + morph_vertex_index2];
@@ -369,11 +369,11 @@ void main(uint3 id : SV_DispatchThreadID)
 	uint2 octahedral = uint2(saturate(OctNormalEncode(shading_normal)) * 4095.0 + 0.5);
 	uint roughness_bits = uint(saturate(roughness) * 255.0 + 0.5);
 
-	RWTexture2D<float4> surface_base_color = ResourceDescriptorHeap[bindings.material_surface_base_color_];
-	RWTexture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_surface_normal_roughness_];
-	RWTexture2D<uint> surface_tangent = ResourceDescriptorHeap[bindings.material_surface_tangent_];
+	RWTexture2D<float4> surface_base_color = ResourceDescriptorHeap[bindings.material_base_color_];
+	RWTexture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_normal_roughness_];
+	RWTexture2D<uint> surface_tangent = ResourceDescriptorHeap[bindings.material_tangent_];
 	RWTexture2D<float2> velocity = ResourceDescriptorHeap[bindings.material_velocity_];
-	RWTexture2D<float4> surface_radiance = ResourceDescriptorHeap[bindings.material_surface_radiance_];
+	RWTexture2D<float4> surface_radiance = ResourceDescriptorHeap[bindings.material_radiance_];
 	surface_base_color[pixel] = float4(base_color.rgb, metallic);
 	surface_normal_roughness[pixel] = octahedral.x | (octahedral.y << 12) | (roughness_bits << 24);
 	surface_tangent[pixel] = uint(PackTangentAngle(shading_normal, tangent, tangent_sign) * 65535.0 + 0.5);

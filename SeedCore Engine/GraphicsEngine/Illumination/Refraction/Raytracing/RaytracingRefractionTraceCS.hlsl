@@ -15,7 +15,7 @@ struct RaytracingRefractionConstantBuffer
 struct RaytracingRefractionTraceBindings
 {
 	uint geometry_depth_;
-	uint material_surface_normal_roughness_;
+	uint material_normal_roughness_;
 	uint geometry_visibility_id_;
 	uint geometry_instances_;
 	uint top_level_structure_;
@@ -23,7 +23,7 @@ struct RaytracingRefractionTraceBindings
 	uint sky_cubemap_;
 	uint raytracing_refraction_constants_;
 	uint raytracing_refraction_radiance_;
-	uint debug_view_ray_count_;
+	uint debug_view_rays_;
 };
 ConstantBuffer<RaytracingRefractionTraceBindings> bindings : register(b0, space1);
 
@@ -67,7 +67,7 @@ void main(uint3 id : SV_DispatchThreadID)
 	float4 world = mul(float4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, depth, 1.0), scene.inverse_view_projection_);
 	float3 world_position = world.xyz / world.w;
 
-	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_surface_normal_roughness_];
+	Texture2D<uint> surface_normal_roughness = ResourceDescriptorHeap[bindings.material_normal_roughness_];
 	uint normal_roughness = surface_normal_roughness.Load(int3(pixel, 0));
 	float3 normal = OctNormalDecode(float2(normal_roughness & 0xFFF, (normal_roughness >> 12) & 0xFFF) / 4095.0);
 	float3 view_direction = normalize(world_position - scene.camera_position_.xyz);
@@ -100,7 +100,7 @@ void main(uint3 id : SV_DispatchThreadID)
 		query.TraceRayInline(top_level, RAY_FLAG_NONE, 0xFF, ray);
 		if (scene.view_mode_ == VIEW_MODE_RAY_COUNT)
 		{
-			RWTexture2D<uint> ray_count_texture = ResourceDescriptorHeap[bindings.debug_view_ray_count_];
+			RWTexture2D<uint> ray_count_texture = ResourceDescriptorHeap[bindings.debug_view_rays_];
 			InterlockedAdd(ray_count_texture[pixel], 1);
 		}
 		while (query.Proceed())

@@ -23,10 +23,10 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(GeometryFeature::VisibilityId),
+			RenderAccess::Read(GeometryFeature::VisibilityID),
 			RenderAccess::Write(Buckets),
 			RenderAccess::Write(Velocity),
-			RenderAccess::Write(SurfaceRadiance)
+			RenderAccess::Write(Radiance)
 		};
 
 		static void Execute(MaterialFeature& feature, RenderPass& pass);
@@ -51,9 +51,9 @@ namespace SeedCore
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
 			RenderAccess::Read(GeometryFeature::Depth),
-			RenderAccess::Read(GeometryFeature::VisibilityId),
+			RenderAccess::Read(GeometryFeature::VisibilityID),
 			RenderAccess::Write(Buckets),
-			RenderAccess::Write(SortedPixels)
+			RenderAccess::Write(Pixels)
 		};
 
 		static void Execute(MaterialFeature& feature, RenderPass& pass);
@@ -65,17 +65,17 @@ namespace SeedCore
 
 		SC_CONSTEX RenderAccess accesses_[] =
 		{
-			RenderAccess::Read(SortedPixels),
+			RenderAccess::Read(Pixels),
 			RenderAccess::Read(Buckets),
-			RenderAccess::Read(GeometryFeature::VisibilityId),
+			RenderAccess::Read(GeometryFeature::VisibilityID),
 			RenderAccess::Read(GeometryFeature::Instances),
 			RenderAccess::Read(ModelFeature::Bones),
-			RenderAccess::Read(ModelFeature::MorphWeights),
-			RenderAccess::Write(SurfaceBaseColor),
-			RenderAccess::Write(SurfaceNormalRoughness),
-			RenderAccess::Write(SurfaceTangent),
+			RenderAccess::Read(ModelFeature::Morphs),
+			RenderAccess::Write(BaseColor),
+			RenderAccess::Write(NormalRoughness),
+			RenderAccess::Write(Tangent),
 			RenderAccess::Write(Velocity),
-			RenderAccess::Write(SurfaceRadiance),
+			RenderAccess::Write(Radiance),
 			RenderAccess::Write(Mip)
 		};
 

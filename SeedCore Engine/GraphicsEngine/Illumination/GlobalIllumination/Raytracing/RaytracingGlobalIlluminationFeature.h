@@ -15,7 +15,7 @@ namespace SeedCore
 			SC_RENDER_DEBUG(Reservoir, RenderResourceDesc::ScaledBuffer(sizeof(RaytracingGlobalIlluminationReservoir), 1, RenderResourceScale::Render, 1), RenderResourceScope::View, RenderResourceLifetime::Persistent),
 			SC_RENDER_DEBUG(Reuse, RenderResourceDesc::ScaledTexture(RenderFormat::R32Uint), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero),
 			SC_RENDER_INTERNAL(Accumulated, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Persistent),
-			SC_RENDER_DEBUG(HistoryLength, RenderResourceDesc::ScaledTexture(RenderFormat::R16Float), RenderResourceScope::View, RenderResourceLifetime::Persistent),
+			SC_RENDER_DEBUG(Age, RenderResourceDesc::ScaledTexture(RenderFormat::R16Float), RenderResourceScope::View, RenderResourceLifetime::Persistent),
 			SC_RENDER_DEBUG(Validity, RenderResourceDesc::ScaledTexture(RenderFormat::RG16Float), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero),
 			SC_RENDER_DEBUG(Variance, RenderResourceDesc::ScaledTexture(RenderFormat::R16Float), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero),
 			SC_RENDER_INTERNAL(Ping, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Transient),

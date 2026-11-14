@@ -6,7 +6,7 @@ struct LightBuildBindings
 {
 	uint light_list_;
 	uint light_constants_;
-	uint light_cluster_grid_;
+	uint light_clusters_;
 };
 ConstantBuffer<LightBuildBindings> bindings : register(b0, space1);
 
@@ -66,7 +66,7 @@ void main(uint3 id : SV_DispatchThreadID)
 	}
 
 	ConstantBuffer<LightConstantBuffer> constants = ResourceDescriptorHeap[bindings.light_constants_];
-	RWStructuredBuffer<uint> grid = ResourceDescriptorHeap[bindings.light_cluster_grid_];
+	RWStructuredBuffer<uint> grid = ResourceDescriptorHeap[bindings.light_clusters_];
 	uint base = id.x * (1 + LIGHT_CLUSTER_MAX_LIGHTS);
 	uint count = 0;
 	if (constants.light_count_ > 0)

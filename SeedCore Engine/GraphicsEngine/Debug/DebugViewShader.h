@@ -18,6 +18,8 @@ namespace SeedCore
 
 	struct DebugViewWireframeDescription
 	{
+		SC_CONSTEX ShaderPath amplificationFile_ = ShaderPath::Engine("GraphicsEngine/Model/Opaque/GeometryAS.hlsl");
+
 		SC_CONSTEX ShaderPath meshFile_ = ShaderPath::Engine("GraphicsEngine/Model/Opaque/GeometryMS.hlsl");
 
 		SC_CONSTEX ShaderPath vertexFile_ = ShaderPath::Engine("GraphicsEngine/Model/Opaque/GeometryVS.hlsl");
@@ -28,9 +30,9 @@ namespace SeedCore
 
 		SC_CONSTEX GraphicsFallback fallback_ = GraphicsFallback::Indirect;
 
-		SC_CONSTEX RenderResource arguments_ = CullingFeature::DrawArguments;
+		SC_CONSTEX RenderResource arguments_ = CullingFeature::ChunkArguments;
 
-		SC_CONSTEX RenderResource fallbackArguments_ = CullingFeature::DrawArguments;
+		SC_CONSTEX RenderResource fallbackArguments_ = CullingFeature::MeshletArguments;
 
 		SC_CONSTEX StaticArray<RenderFormat, 1> targetFormat_ = { RenderFormat::RGBA16Float };
 
@@ -45,6 +47,8 @@ namespace SeedCore
 
 	struct DebugViewOverdrawDescription
 	{
+		SC_CONSTEX ShaderPath amplificationFile_ = ShaderPath::Engine("GraphicsEngine/Model/Opaque/GeometryAS.hlsl");
+
 		SC_CONSTEX ShaderPath meshFile_ = ShaderPath::Engine("GraphicsEngine/Model/Opaque/GeometryMS.hlsl");
 
 		SC_CONSTEX ShaderPath vertexFile_ = ShaderPath::Engine("GraphicsEngine/Model/Opaque/GeometryVS.hlsl");
@@ -55,9 +59,9 @@ namespace SeedCore
 
 		SC_CONSTEX GraphicsFallback fallback_ = GraphicsFallback::Indirect;
 
-		SC_CONSTEX RenderResource arguments_ = CullingFeature::DrawArguments;
+		SC_CONSTEX RenderResource arguments_ = CullingFeature::ChunkArguments;
 
-		SC_CONSTEX RenderResource fallbackArguments_ = CullingFeature::DrawArguments;
+		SC_CONSTEX RenderResource fallbackArguments_ = CullingFeature::MeshletArguments;
 
 		SC_CONSTEX StaticArray<RenderFormat, 0> targetFormat_ = {};
 

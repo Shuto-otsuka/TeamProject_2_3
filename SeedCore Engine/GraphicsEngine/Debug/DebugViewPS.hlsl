@@ -3,7 +3,7 @@
 /**
 * [EN]
 * Wireframe view mode: GeometryMS rasterised with a wireframe rasterizer state
-* over a cleared DisplayColor, every edge drawn in a color hashed from its
+* over a cleared HUD.Display, every edge drawn in a color hashed from its
 * instance so neighbouring objects stay apart.
 */
 float4 Wireframe(GeometryOutput input, GeometryPrimitive primitive) : SV_Target0

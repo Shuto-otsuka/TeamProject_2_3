@@ -35,7 +35,7 @@ namespace SeedCore
 		{
 			RenderAccess::Read(Particles),
 			RenderAccess::Constant(Emitter),
-			RenderAccess::Read(RaytracingVolumetricLightFeature::FogVolume),
+			RenderAccess::Read(RaytracingVolumetricLightFeature::Fog),
 			RenderAccess::Target(RadianceFeature::Color),
 			RenderAccess::DepthTest(GeometryFeature::Depth)
 		};

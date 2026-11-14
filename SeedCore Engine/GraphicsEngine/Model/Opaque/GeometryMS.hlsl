@@ -5,36 +5,17 @@ groupshared float4 clip_positions[64];
 
 /**
 * [EN]
-* One thread group per entry of CullingDrawLists. The dispatch constant picks
-* the early or the late command; the late entries start right after the early
-* ones. Groups past the command's count (the indirect dispatch is rounded up
-* to whole rows of 1024) emit nothing. Each vertex applies morph targets, then
-* linear blend skinning, then the world transform; a fur shell layer is pushed
-* out along the skinned normal and droops towards world down as it rises.
-* Single-sided triangles that face away are collapsed, since the rasterizer
-* itself culls nothing.
+* One thread group per (instance, meshlet) entry GeometryAS kept, read from
+* its payload. Each vertex applies morph targets, then linear blend skinning,
+* then the world transform; a fur shell layer is pushed out along the skinned
+* normal and droops towards world down as it rises. Single-sided triangles
+* that face away are collapsed, since the rasterizer itself culls nothing.
 */
 [NumThreads(64, 1, 1)]
 [OutputTopology("triangle")]
-void main(uint gtid : SV_GroupThreadID, uint3 gid : SV_GroupID, out vertices GeometryOutput verts[64], out indices uint3 tris[124], out primitives GeometryPrimitive prims[124])
+void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, in payload GeometryPayload payload, out vertices GeometryOutput verts[64], out indices uint3 tris[124], out primitives GeometryPrimitive prims[124])
 {
-	StructuredBuffer<uint2> draw_lists = ResourceDescriptorHeap[bindings.culling_draw_lists_];
-	StructuredBuffer<uint> arguments = ResourceDescriptorHeap[bindings.culling_draw_arguments_];
-	uint capacity;
-	uint stride;
-	draw_lists.GetDimensions(capacity, stride);
-	uint early_count = min(arguments[CULLING_EARLY_COUNT], capacity);
-	bool late = dispatch_bindings.constants_ == CULLING_LATE_ARGUMENTS;
-	uint base = late ? early_count : 0;
-	uint count = late ? min(arguments[CULLING_LATE_COUNT], capacity - early_count) : early_count;
-	uint entry_index = gid.y * 1024 + gid.x;
-
-	if (entry_index >= count)
-	{
-		return;
-	}
-
-	uint2 entry = draw_lists[base + entry_index];
+	uint2 entry = payload.entries_[gid];
 	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.geometry_instances_];
 	ModelStructuredBuffer instance = instances[entry.x];
 	StructuredBuffer<ModelMeshlet> meshlets = ResourceDescriptorHeap[instance.geometry_.meshlet_buffer_index_];
@@ -58,11 +39,11 @@ void main(uint gtid : SV_GroupThreadID, uint3 gid : SV_GroupID, out vertices Geo
 		{
 			StructuredBuffer<uint> vertex_morph_source = ResourceDescriptorHeap[instance.morph_.vertex_morph_source_buffer_index_];
 			StructuredBuffer<float3> morph_deltas = ResourceDescriptorHeap[instance.morph_.morph_delta_buffer_index_];
-			StructuredBuffer<float> morph_weights = ResourceDescriptorHeap[bindings.model_morph_weights_];
+			StructuredBuffer<float> morphs = ResourceDescriptorHeap[bindings.model_morphs_];
 			uint morph_vertex_index = vertex_morph_source[global_vertex_index] - instance.morph_.morph_vertex_offset_;
 			for (uint target = 0; target < instance.morph_.morph_target_count_; target++)
 			{
-				local_position += morph_deltas[instance.morph_.morph_delta_offset_ + target * instance.morph_.morph_vertex_count_ + morph_vertex_index] * morph_weights[instance.morph_.morph_weight_offset_ + target];
+				local_position += morph_deltas[instance.morph_.morph_delta_offset_ + target * instance.morph_.morph_vertex_count_ + morph_vertex_index] * morphs[instance.morph_.morph_weight_offset_ + target];
 			}
 		}
 
