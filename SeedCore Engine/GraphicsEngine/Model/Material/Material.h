@@ -6,13 +6,14 @@
 namespace SeedCore
 {
 	class MaterialResource;
+	class ModelUnit;
 
 	class SEEDCORE_API Material :public SeedScript
 	{
 	private:
 		friend class MaterialSystem;
+		friend class ModelUnit;
 		friend class ModelRenderer;
-		friend class RaytracingRenderer;
 
 	public:
 		SC_PAYLOAD_FIELD_EX("マテリアル", Material)

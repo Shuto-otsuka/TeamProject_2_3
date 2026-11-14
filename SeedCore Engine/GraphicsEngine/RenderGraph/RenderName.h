@@ -2,107 +2,118 @@
 
 namespace SeedCore
 {
-	class RenderFeatureName
+	template<Size Length>
+	struct RenderLiteral
+	{
+		consteval RenderLiteral(const Char(&text)[Length])
+		{
+			for (Size index = 0;index < Length;++index)
+			{
+				text_[index] = text[index];
+			}
+		}
+
+		NODISCARD constexpr std::string_view View()const
+		{
+			return std::string_view(text_, Length - 1);
+		}
+
+		Char text_[Length] = {};
+	};
+
+	template<Size Length>
+	struct RenderNameStorage
+	{
+		consteval RenderNameStorage(std::string_view first, std::string_view second)
+		{
+			Size cursor = 0;
+			for (Char character : first)
+			{
+				text_[cursor] = character;
+				++cursor;
+			}
+			text_[cursor] = '.';
+			++cursor;
+			for (Char character : second)
+			{
+				text_[cursor] = character;
+				++cursor;
+			}
+		}
+
+		NODISCARD constexpr std::string_view View()const
+		{
+			return std::string_view(text_, Length);
+		}
+
+		Char text_[Length + 1] = {};
+	};
+
+	class RenderName
 	{
 	public:
-		consteval RenderFeatureName(const Char* name) :name_(name)
+		template<class Type>
+		static consteval std::string_view TypeName()
 		{
-			if (name_.empty())
+#if defined(__clang__)
+			std::string_view signature = __PRETTY_FUNCTION__;
+			Size begin = signature.find("[Type = ") + 8;
+			Size end = signature.find_first_of("];", begin);
+#else
+			std::string_view signature = __FUNCSIG__;
+			Size begin = signature.find("TypeName<") + 9;
+			Size end = signature.rfind(">(void)");
+#endif
+			std::string_view type = signature.substr(begin, end - begin);
+			Size last = type.find_last_of(": ");
+			return last == std::string_view::npos ? type : type.substr(last + 1);
+		}
+
+		template<class Feature>
+		static consteval std::string_view FeatureName()
+		{
+			return Trim(TypeName<Feature>(), "Feature");
+		}
+
+		template<class Stage>
+		static consteval std::string_view StageName()
+		{
+			return Trim(TypeName<Stage>(), "Stage");
+		}
+
+		template<class Step>
+		static consteval std::string_view StepName()
+		{
+			return Trim(TypeName<Step>(), "Step");
+		}
+
+	private:
+		static consteval std::string_view Trim(std::string_view name, std::string_view suffix)
+		{
+			if (!name.ends_with(suffix) || name.size() == suffix.size())
 			{
-				throw "Feature の名前が空";
+				throw "Feature のクラス名は <名前>Feature、Stage の struct 名は <名前>Stage、Step の struct 名は <名前>Step にすること";
 			}
-			for (Size index = 0;index < name_.size();++index)
+			name.remove_suffix(suffix.size());
+			for (Size index = 0;index < name.size();++index)
 			{
-				Char character = name_[index];
+				Char character = name[index];
 				Bool isUpper = character >= 'A' && character <= 'Z';
 				Bool isLower = character >= 'a' && character <= 'z';
 				Bool isDigit = character >= '0' && character <= '9';
 				if (index == 0 && !isUpper)
 				{
-					throw "Feature の名前は大文字で始めること";
+					throw "Feature と Stage と Step の名前は大文字で始めること";
 				}
 				if (!isUpper && !isLower && !isDigit)
 				{
-					throw "Feature の名前は英数字だけにすること";
+					throw "Feature と Stage と Step の名前は英数字だけにすること";
 				}
 			}
+			return name;
 		}
-
-		NODISCARD constexpr std::string_view Name()const
-		{
-			return name_;
-		}
-
-		constexpr Bool operator==(const RenderFeatureName& other)const
-		{
-			return name_ == other.name_;
-		}
-
-		constexpr Bool operator!=(const RenderFeatureName& other)const
-		{
-			return !(*this == other);
-		}
-
-	private:
-		std::string_view name_;
 	};
 
-	class RenderStageName
-	{
-	public:
-		consteval RenderStageName(const Char* name) :name_(name)
-		{
-			Size dot = name_.find('.');
-			if (dot == std::string_view::npos || dot == 0 || dot + 1 == name_.size())
-			{
-				throw "Stage の名前は \"<Feature>.<動詞>\" の形にすること";
-			}
-			if (name_.find('.', dot + 1) != std::string_view::npos)
-			{
-				throw "Stage の名前のドットは1つだけにすること";
-			}
-			for (Size index = 0;index < name_.size();++index)
-			{
-				if (index == dot)
-				{
-					continue;
-				}
-				Char character = name_[index];
-				Bool isUpper = character >= 'A' && character <= 'Z';
-				Bool isLower = character >= 'a' && character <= 'z';
-				Bool isDigit = character >= '0' && character <= '9';
-				if ((index == 0 || index == dot + 1) && !isUpper)
-				{
-					throw "Stage の名前の Feature と動詞は大文字で始めること";
-				}
-				if (!isUpper && !isLower && !isDigit)
-				{
-					throw "Stage の名前は英数字とドット1つだけにすること";
-				}
-			}
-		}
-
-		NODISCARD constexpr std::string_view Name()const
-		{
-			return name_;
-		}
-
-		NODISCARD constexpr std::string_view FeatureName()const
-		{
-			return name_.substr(0, name_.find('.'));
-		}
-
-		constexpr Bool operator==(const RenderStageName& other)const
-		{
-			return name_ == other.name_;
-		}
-
-		constexpr Bool operator!=(const RenderStageName& other)const
-		{
-			return !(*this == other);
-		}
-
-	private:
-		std::string_view name_;
-	};
+	template<class Feature, RenderLiteral Member>
+	inline constexpr auto RenderResourceName =RenderNameStorage<RenderName::FeatureName<Feature>().size() + 1 + Member.View().size()>(RenderName::FeatureName<Feature>(), Member.View());
 }

@@ -1,9 +1,8 @@
 #include <Editor/Editor/Panel/BootScreenPanel.h>
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
-#include <GraphicsEngine/Graphics.h>
-#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
-#include <GraphicsEngine/Shape/Screen/BootScreen.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
+#include <GraphicsEngine/RenderGraph/RenderDevice.h>
 #include <FoundationEngine/Resource/Config/GameConfig.h>
 #include <FoundationEngine/File/FileDialog.h>
 
@@ -35,10 +34,15 @@ namespace SeedCore
 		return isFocused_;
 	}
 
+	void BootScreenPanel::SetPreviewHandle(D3D12_GPU_DESCRIPTOR_HANDLE previewHandle)
+	{
+		previewHandle_ = previewHandle;
+	}
+
 	void BootScreenPanel::Draw()
 	{
 		context_.preview_.bootScreen_.active_ = false;
-		context_.preview_.bootScreen_.renderer_ = nullptr;
+		context_.preview_.bootScreen_.texture_ = nullptr;
 		context_.preview_.bootScreen_.config_ = nullptr;
 		isFocused_ = false;
 
@@ -57,21 +61,16 @@ namespace SeedCore
 		{
 			Graphics* graphics = context_.graphics_.graphics_;
 
-			if (!renderer_)
+			if (!texture_)
 			{
-				renderer_ = MakePtr<BootScreenRenderer>();
-				renderer_->Create(graphics->GetContext().GetDevice(), graphics->GetContext().GetDirectQueue(), &graphics->GetBindlessHeap(), screenWidth_, screenHeight_);
-			}
-			else if (renderer_->Width() != screenWidth_ || renderer_->Height() != screenHeight_)
-			{
-				graphics->Wait();
-				renderer_->Resize(screenWidth_, screenHeight_);
+				texture_ = MakePtr<BootTexture>();
+				texture_->Initialize(graphics->Device());
 			}
 
 			if (imagesDirty_)
 			{
 				imagesDirty_ = false;
-				renderer_->LoadImages(config_);
+				texture_->Load(config_);
 			}
 
 			DrawCanvas();
@@ -92,9 +91,11 @@ namespace SeedCore
 			}
 
 			context_.preview_.bootScreen_.active_ = true;
-			context_.preview_.bootScreen_.renderer_ = &*renderer_;
+			context_.preview_.bootScreen_.texture_ = &*texture_;
 			context_.preview_.bootScreen_.config_ = &config_;
 			context_.preview_.bootScreen_.progress_ = Min(progress_, 1.0f);
+			context_.preview_.bootScreen_.width_ = screenWidth_;
+			context_.preview_.bootScreen_.height_ = screenHeight_;
 		}
 		ImGui::End();
 	}
@@ -332,7 +333,7 @@ namespace SeedCore
 		Vector2 imageMin = canvasCenter + pan_ - imageSize * 0.5f;
 		Vector2 imageMax = imageMin + imageSize;
 
-		Vector4 barRect = BootScreen::BarRect(config_, screenWidth, screenHeight, renderer_->BarAspect());
+		Vector4 barRect = texture_->BarRect(config_, screenWidth, screenHeight);
 		Vector2 barMin = imageMin + Vector2(barRect.x, barRect.y) * imageSize;
 		Vector2 barMax = imageMin + Vector2(barRect.z, barRect.w) * imageSize;
 
@@ -390,7 +391,7 @@ namespace SeedCore
 					Float draggedCornerX = (draggingRight ? dragStartRect_.z : dragStartRect_.x) + deltaUv.x;
 
 					Float width = std::clamp(std::abs(draggedCornerX - fixedCorner.x), 0.01f, 2.0f);
-					Float height = width * screenWidth / (Max(renderer_->BarAspect(), 0.0001f) * screenHeight);
+					Float height = width * screenWidth / (Max(texture_->BarAspect(), 0.0001f) * screenHeight);
 
 					Vector2 newMin = Vector2(draggingRight ? fixedCorner.x : fixedCorner.x - width, draggingBottom ? fixedCorner.y : fixedCorner.y - height);
 
@@ -421,7 +422,10 @@ namespace SeedCore
 		drawList->PushClipRect(canvasPosition, ImVec2(canvasPosition.x + canvasSize.x, canvasPosition.y + canvasSize.y), true);
 
 		drawList->AddRectFilled(canvasPosition, ImVec2(canvasPosition.x + canvasSize.x, canvasPosition.y + canvasSize.y), IM_COL32(32, 32, 32, 255));
-		drawList->AddImage(ImTextureID(renderer_->DisplayGPUHandle().ptr), ImVec2(imageMin.x, imageMin.y), ImVec2(imageMax.x, imageMax.y));
+		if (previewHandle_.ptr != 0)
+		{
+			drawList->AddImage(ImTextureID(previewHandle_.ptr), ImVec2(imageMin.x, imageMin.y), ImVec2(imageMax.x, imageMax.y));
+		}
 		drawList->AddRect(ImVec2(imageMin.x, imageMin.y), ImVec2(imageMax.x, imageMax.y), IM_COL32(110, 110, 110, 255));
 
 		Int32 anchorIndex = static_cast<Int32>(config_.anchor_);

@@ -1,7 +1,10 @@
 #include <Editor/Editor/Panel/BenchmarkPanel.h>
 #include <Editor/Editor/Context/EditorContext.h>
 #include <FoundationEngine/Benchmark/BenchmarkSystem.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
+#include <GraphicsEngine/RenderGraph/RenderDevice.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
+#include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Adapter.h>
 #include <GraphicsEngine/Profiler/ProfilerStats.h>
 
@@ -52,9 +55,6 @@ namespace SeedCore
 		}
 
 		ImGuiIO& io = ImGui::GetIO();
-
-		const Uint32 viewCount = static_cast<Uint32>(GpuProfileView::Count);
-		const Uint32 scopeCount = static_cast<Uint32>(GpuProfileScope::Count);
 
 		/// [EN] The first draw refreshes at once, so the panel does not open empty for half a second.
 		/// [JP] 最初の描画ではすぐに更新し、開いてから0.5秒間パネルが空にならないようにする。
@@ -142,13 +142,10 @@ namespace SeedCore
 					return left.averageMilliseconds_ > right.averageMilliseconds_;
 				});
 
-			for (Uint32 viewIndex = 0; viewIndex < viewCount; viewIndex++)
-			{
-				for (Uint32 scopeIndex = 0; scopeIndex < scopeCount; scopeIndex++)
-				{
-					gpuDisplay_[viewIndex][scopeIndex] = gpuProfiler.GetMilliseconds(static_cast<GpuProfileView>(viewIndex), static_cast<GpuProfileScope>(scopeIndex));
-				}
-			}
+			/// [EN] The GPU results are latched together with the CPU rows, so both tables show the same moment.
+			/// [JP] GPU の結果も CPU の行と同時に写し取り、2 つの表が同じ時点を見せるようにする。
+			std::span<const GpuProfilerResult> gpuResults = gpuProfiler.Results();
+			gpuResults_.assign(gpuResults.begin(), gpuResults.end());
 		}
 
 		if (ImGui::Button(benchmark.Paused() ? "再開" : "一時停止"))
@@ -162,17 +159,26 @@ namespace SeedCore
 		ImGui::InputTextWithHint("##BenchmarkSearch", "検索", search_, sizeof(search_));
 		ImGui::SameLine();
 		Float frameMilliseconds = io.Framerate > 0.0f ? 1000.0f / io.Framerate : 0.0f;
+		/// [EN] FocusedView lists Editor, Game and Canvas in the same order as RenderViewKind, so the focused view's mask is the bit of its index.
+		/// [JP] FocusedView は RenderViewKind と同じ順に Editor、Game、Canvas を並べているので、フォーカス中のビューのマスクはその番号のビットになる。
 		Uint32 focusedViewIndex = static_cast<Uint32>(context_.view_.focused_);
+		RenderViewMask focusedView = static_cast<RenderViewMask>(1u << focusedViewIndex);
+
+		/// [EN] The focused view's GPU total also counts the passes that run once per frame, since that work is part of every view's frame.
+		/// [JP] フォーカス中のビューの GPU の合計には、フレームで 1 回のパスも含める。その仕事はどのビューのフレームにも含まれるため。
 		Float gpuMilliseconds = 0.0f;
-		for (Uint32 scopeIndex = 0; scopeIndex < scopeCount; scopeIndex++)
+		for (const GpuProfilerResult& result : gpuResults_)
 		{
-			gpuMilliseconds += gpuDisplay_[focusedViewIndex][scopeIndex];
+			if (result.view_ == focusedView || result.view_ == RenderViewMask::Frame)
+			{
+				gpuMilliseconds += result.milliseconds_;
+			}
 		}
 		PROCESS_MEMORY_COUNTERS_EX memoryCounters{};
 		memoryCounters.cb = sizeof(memoryCounters);
 		Float ramMegabytes = GetProcessMemoryInfo(GetCurrentProcess(), reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&memoryCounters), sizeof(memoryCounters)) ? static_cast<Float>(memoryCounters.WorkingSetSize) / (1024.0f * 1024.0f) : 0.0f;
 		Float videoMemoryMegabytes = 0.0f;
-		IDXGIAdapter4* adapter = context_.graphics_.graphics_->GetContext().GetAdapter()->Get();
+		IDXGIAdapter4* adapter = context_.graphics_.graphics_->Device().Context().GetAdapter()->Get();
 		if (adapter)
 		{
 			DXGI_QUERY_VIDEO_MEMORY_INFO videoMemory{};
@@ -187,9 +193,6 @@ namespace SeedCore
 
 		ImGui::SeparatorText("フレーム予算（60 FPS）");
 
-		/// [EN] FocusedView and GpuProfileView list Editor, Game and Canvas in the same order, so the focused view maps straight onto its GPU column.
-		/// [JP] FocusedView と GpuProfileView は Editor、Game、Canvas を同じ順に並べているので、フォーカス中のビューはそのまま GPU の列に対応する。
-
 		if (ImGui::BeginTable("##Budget", 2))
 		{
 			ImGui::TableSetupColumn("Label", ImGuiTableColumnFlags_WidthFixed, 120.0f);
@@ -197,7 +200,10 @@ namespace SeedCore
 
 			/// [EN] One bar per measured total: the whole frame on the CPU side, and the focused view's passes on the GPU side.
 			/// [JP] 計測した合計ごとに1本。CPU 側はフレーム全体、GPU 側はフォーカス中のビューのパス合計。
-			const Char* labels[2] = { "フレーム", GpuProfiler::ViewName(static_cast<GpuProfileView>(focusedViewIndex)) };
+			/// [EN] View names in the order of FocusedView, for the GPU bar's label.
+			/// [JP] GPU のバーの見出しに使う、FocusedView の順に並べたビューの名前。
+			StaticArray<const Char*, 3> viewLabels = { "エディタ", "ゲーム", "キャンバス" };
+			const Char* labels[2] = { "フレーム", viewLabels[focusedViewIndex] };
 			Float milliseconds[2] = { displayFrameMilliseconds_, gpuMilliseconds };
 
 			for (Uint32 barIndex = 0; barIndex < 2; barIndex++)
@@ -606,16 +612,18 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Per-pass GPU times, one column per view. The editor and the game view run
-	* the same pass list against different cameras, so seeing them side by side
-	* attributes a frame-rate drop to a specific pass. The focused view's column
-	* is highlighted, since it is the one the budget bar above sums up.
+	* Per-pass GPU times, one row per Stage and one column per view, with the
+	* passes that run once per frame in their own column. The editor and the
+	* game view run the same Stages against different cameras, so seeing them
+	* side by side attributes a frame-rate drop to a specific Stage. The focused
+	* view's column is highlighted, since it is the one the budget bar above sums up.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* パス別 GPU 時間。ビューごとに列を分ける。エディタとゲームビューは同じパス列を
-	* 別カメラで回すので、両者を並べて見ることで FPS の低下を特定のパスに帰着できる。
+	* パス別 GPU 時間。Stage ごとに行、ビューごとに列を分け、フレームで 1 回の
+	* パスは専用の列に出す。エディタとゲームビューは同じ Stage を別カメラで回すので、
+	* 両者を並べて見ることで FPS の低下を特定の Stage に帰着できる。
 	* 上の予算バーが合計しているのはフォーカス中のビューなので、その列を強調する。
 	*/
 	void BenchmarkPanel::DrawGpuTable(const GpuProfiler& gpuProfiler)
@@ -627,42 +635,83 @@ namespace SeedCore
 			ImGui::TextDisabled("GPU タイムスタンプが利用できません");
 			return;
 		}
+		if (gpuResults_.empty())
+		{
+			ImGui::TextDisabled("計測されたパスがありません");
+			return;
+		}
 
-		const Uint32 viewCount = static_cast<Uint32>(GpuProfileView::Count);
-		const Uint32 scopeCount = static_cast<Uint32>(GpuProfileScope::Count);
-		Uint32 focusedViewIndex = static_cast<Uint32>(context_.view_.focused_);
+		/// [EN] Columns after the Stage name: the passes that run once per frame, then each view. views and labels list them in the same order.
+		/// [JP] Stage の名前の後の列。フレームで 1 回のパス、続いて各ビュー。views と labels は同じ順に並べる。
+		StaticArray<RenderViewMask, 4> views = { RenderViewMask::Frame, RenderViewMask::Editor, RenderViewMask::Game, RenderViewMask::Canvas };
+		StaticArray<const Char*, 4> labels = { "フレーム", "エディタ", "ゲーム", "キャンバス" };
+
+		/// [EN] FocusedView lists Editor, Game and Canvas in the same order as views after its first column, so the focused column is the view's index plus one.
+		/// [JP] FocusedView は views の先頭の列の後と同じ順に Editor、Game、Canvas を並べているので、フォーカス中の列はビューの番号に 1 を足したもの。
+		Size focusedColumn = static_cast<Size>(context_.view_.focused_) + 1;
+
+		/// [EN] One row per Stage, in the order the Stages first ran. The same Stage run for several views fills several columns of one row.
+		/// [JP] Stage ごとに 1 行。Stage が最初に動いた順に並べる。同じ Stage を複数のビューで動かしたものは、1 行の複数の列に入る。
+		DynamicArray<const GpuProfilerResult*> stages;
+		DynamicArray<StaticArray<Float, 4>> times;
+		for (const GpuProfilerResult& result : gpuResults_)
+		{
+			Size row = stages.size();
+			for (Size rowIndex = 0; rowIndex < stages.size(); ++rowIndex)
+			{
+				if (stages[rowIndex]->stageName_ == result.stageName_)
+				{
+					row = rowIndex;
+					break;
+				}
+			}
+			if (row == stages.size())
+			{
+				stages.push_back(&result);
+				times.push_back(StaticArray<Float, 4>{});
+			}
+			for (Size columnIndex = 0; columnIndex < views.size(); ++columnIndex)
+			{
+				if (views[columnIndex] == result.view_)
+				{
+					times[row][columnIndex] += result.milliseconds_;
+				}
+			}
+		}
 
 		/// [EN] Translucent tint laid over the focused view's cells.
 		/// [JP] フォーカス中のビューのセルに重ねる半透明の色。
 		ImU32 focusedColor = ImGui::GetColorU32(ImVec4(0.35f, 0.55f, 1.0f, 0.15f));
 
-		if (ImGui::BeginTable("##GpuStats", 1 + static_cast<Int>(viewCount), ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
+		if (ImGui::BeginTable("##GpuStats", 1 + static_cast<Int>(views.size()), ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingFixedFit))
 		{
 			ImGui::TableSetupColumn("パス", ImGuiTableColumnFlags_WidthStretch);
-			for (Uint32 viewIndex = 0; viewIndex < viewCount; viewIndex++)
+			for (const Char* label : labels)
 			{
-				ImGui::TableSetupColumn(GpuProfiler::ViewName(static_cast<GpuProfileView>(viewIndex)), ImGuiTableColumnFlags_WidthFixed, 78.0f);
+				ImGui::TableSetupColumn(label, ImGuiTableColumnFlags_WidthFixed, 78.0f);
 			}
 			ImGui::TableHeadersRow();
 
-			Float totals[static_cast<Uint32>(GpuProfileView::Count)] = {};
+			StaticArray<Float, 4> totals = {};
 
-			for (Uint32 scopeIndex = 0; scopeIndex < scopeCount; scopeIndex++)
+			for (Size rowIndex = 0; rowIndex < stages.size(); ++rowIndex)
 			{
+				/// [EN] A pass on the asynchronous Compute queue is marked, since it overlaps the passes on the Direct queue.
+				/// [JP] 非同期の Compute キューのパスは、Direct キューのパスと重なって走るので印を付ける。
 				ImGui::TableNextRow();
 				ImGui::TableNextColumn();
-				ImGui::TextDisabled("%s", GpuProfiler::ScopeName(static_cast<GpuProfileScope>(scopeIndex)));
+				ImGui::TextDisabled("%s%s", stages[rowIndex]->stageName_.c_str(), stages[rowIndex]->async_ ? "（非同期）" : "");
 
-				for (Uint32 viewIndex = 0; viewIndex < viewCount; viewIndex++)
+				for (Size columnIndex = 0; columnIndex < views.size(); ++columnIndex)
 				{
 					ImGui::TableNextColumn();
-					if (viewIndex == focusedViewIndex)
+					if (columnIndex == focusedColumn)
 					{
 						ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, focusedColor);
 					}
 
-					Float milliseconds = gpuDisplay_[viewIndex][scopeIndex];
-					totals[viewIndex] += milliseconds;
+					Float milliseconds = times[rowIndex][columnIndex];
+					totals[columnIndex] += milliseconds;
 
 					/// [EN] A pass that did not run reads 0; "-" keeps "disabled" from looking like "fast".
 					/// [JP] 走っていないパスは 0 が返るので、0.0 と表示するより「-」の方が「無効」と「速い」を混同しない。
@@ -690,19 +739,19 @@ namespace SeedCore
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
 			ImGui::Text("合計");
-			for (Uint32 viewIndex = 0; viewIndex < viewCount; viewIndex++)
+			for (Size columnIndex = 0; columnIndex < views.size(); ++columnIndex)
 			{
 				ImGui::TableNextColumn();
-				if (viewIndex == focusedViewIndex)
+				if (columnIndex == focusedColumn)
 				{
 					ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, focusedColor);
 				}
-				ImGui::Text("%.2f ms", totals[viewIndex]);
+				ImGui::Text("%.2f ms", totals[columnIndex]);
 			}
 
 			ImGui::EndTable();
 		}
 
-		ImGui::TextDisabled("※計測対象パスの合計です（フレーム全体ではありません）");
+		ImGui::TextDisabled("※各パスの時間の和です。非同期のパスは他のパスと重なって走るので、フレームの時間とは一致しません");
 	}
 }

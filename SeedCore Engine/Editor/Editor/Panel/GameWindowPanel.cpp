@@ -128,7 +128,14 @@ namespace SeedCore
 				ImVec2 imageScreenPos = ImGui::GetCursorScreenPos();
 				cameraSystem->Rect(Vector4(imageScreenPos.x, imageScreenPos.y, imageWidth, imageHeight));
 
-				ImGui::Image(displayTextureId, ImVec2(imageWidth, imageHeight));
+				if (displayTextureId != 0)
+				{
+					ImGui::Image(displayTextureId, ImVec2(imageWidth, imageHeight));
+				}
+				else
+				{
+					ImGui::Dummy(ImVec2(imageWidth, imageHeight));
+				}
 				imageHovered_ = ImGui::IsItemHovered();
 			}
 			else
@@ -199,7 +206,14 @@ namespace SeedCore
 				cameraSystem->Rect(Vector4(screenPos.x, screenPos.y, imageWidth, imageHeight));
 
 				ImGui::PushStyleVar(ImGuiStyleVar_ImageBorderSize, 0.0f);
-				ImGui::Image(displayTextureId, ImVec2(imageWidth, imageHeight));
+				if (displayTextureId != 0)
+				{
+					ImGui::Image(displayTextureId, ImVec2(imageWidth, imageHeight));
+				}
+				else
+				{
+					ImGui::Dummy(ImVec2(imageWidth, imageHeight));
+				}
 				ImGui::PopStyleVar();
 				imageHovered_ = ImGui::IsItemHovered();
 

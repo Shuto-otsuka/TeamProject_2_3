@@ -16,7 +16,7 @@ namespace SeedCore
 	* RenderInstance; shape components drawn as filled surfaces will be
 	* gathered here as well.
 	* Reads other modules' components as data only, and knows nothing about
-	* the GPU, which is ShapeRenderer's side.
+	* the GPU, which is PrimitiveFeature's side.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -26,7 +26,7 @@ namespace SeedCore
 	* 範囲、音の範囲）と、Debug ビルドでは World の QueryInstance に記録された
 	* 物理クエリと、DebugDraw で RenderInstance に頼まれた形で、面で描く形のコンポーネントもここで集める。他の
 	* モジュールのコンポーネントはデータとして読むだけで、GPU のことは
-	* 知らない（そちらは ShapeRenderer の担当）。
+	* 知らない（そちらは PrimitiveFeature の担当）。
 	*/
 	class ShapeSystem
 	{
@@ -34,18 +34,18 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Rebuilds the shape list from the World. The debug display covers
-		* only the selected actors, or every actor while visible is on.
+		* only the selected actors (those with the Selected tag), or every actor while visible is on.
 		* aspectRatio is the game view's width over height, for camera
 		* frustums.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* World から形の一覧を作り直す。デバッグ表示は選択中のアクターだけ、
+		* World から形の一覧を作り直す。デバッグ表示は選択中のアクター（Selected タグを持つもの）だけ、
 		* visible がオンなら全アクターが対象。aspectRatio はゲームビューの
 		* 幅÷高さで、カメラの視錐台に使う。
 		*/
-		void Update(World& world, std::span<const Entity> selectedEntities, Bool visible, Float aspectRatio);
+		void Update(World& world, Bool visible, Float aspectRatio);
 
 	public:
 		/**

@@ -9,10 +9,13 @@
 #include <FoundationEngine/Log/Warning.h>
 #include <AudioEngine/CRI/CriManager.h>
 #include <GraphicsEngine/DLSS/DlssManager.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
+#include <GraphicsEngine/RenderGraph/RenderDevice.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/Texture/TextureCreator.h>
+#include <FoundationEngine/Resource/Asset/Asset.h>
 
 namespace SeedCore
 {
@@ -185,7 +188,7 @@ namespace SeedCore
 		executableNameBuffer_.resize(256);
 		newActionBuffer_.resize(128);
 
-		iconPreviewIndex_ = context_.graphics_.graphics_->GetBindlessHeap().AllocateIndex();
+		iconPreviewIndex_ = context_.graphics_.graphics_->Device().ResourceHeap().AllocateIndex();
 	}
 
 	void ConfigPanel::Open()
@@ -316,29 +319,29 @@ namespace SeedCore
 		{
 			config.resolution_ = static_cast<ResolutionPreset>(resolutionIndex);
 			changed = true;
-			context_.config_.resizeRequested_ = true;
 		}
 
-		if (ImGui::Checkbox("DLSSを使用する", &config.useDlss_))
+		const Char* upscaleMethodLabels[] = { "TAAU", "DLSS Super Resolution", "DLSS Ray Reconstruction" };
+		Int32 upscaleMethodIndex = static_cast<Int32>(config.upscale_.method_);
+
+		if (ImGui::Combo("アップスケール", &upscaleMethodIndex, upscaleMethodLabels, IM_ARRAYSIZE(upscaleMethodLabels)))
 		{
+			config.upscale_.method_ = static_cast<UpscaleMethod>(upscaleMethodIndex);
 			changed = true;
-			context_.config_.resizeRequested_ = true;
 		}
 
 		const Char* upscaleModeLabels[] = { "MaxPerformance（最高性能）", "Balanced（バランス）", "MaxQuality（最高画質）", "UltraPerformance（超高性能）", "DLAA" };
-		Int32 upscaleModeIndex = static_cast<Int32>(config.upscaleMode_);
+		Int32 upscaleModeIndex = static_cast<Int32>(config.upscale_.mode_);
 
 		if (ImGui::Combo("パフォーマンス", &upscaleModeIndex, upscaleModeLabels, IM_ARRAYSIZE(upscaleModeLabels)))
 		{
-			config.upscaleMode_ = static_cast<UpscaleMode>(upscaleModeIndex);
+			config.upscale_.mode_ = static_cast<UpscaleMode>(upscaleModeIndex);
 			changed = true;
-			context_.config_.resizeRequested_ = true;
 		}
 
 		if (ImGui::Checkbox("フレーム生成(FG)を使用する", &config.useFrameGeneration_))
 		{
 			changed = true;
-			context_.config_.recreateRequested_ = true;
 		}
 		ImGui::SetItemTooltip("Editor状態では画面に反映されません。Runtime出力後、実際の機能をご確認ください。");
 
@@ -510,7 +513,7 @@ namespace SeedCore
 	{
 		Bool changed = false;
 
-		BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->GetBindlessHeap();
+		BindlessHeap* bindlessHeap = &context_.graphics_.graphics_->Device().ResourceHeap();
 
 		if (iconPreviewDirty_)
 		{
@@ -526,7 +529,7 @@ namespace SeedCore
 			Graphics* graphics = context_.graphics_.graphics_;
 			graphics->Wait();
 			iconPreviewResource_.Reset();
-			TextureCreator::CreateTextureMemory(graphics->GetContext().GetDevice(), graphics->GetContext().GetDirectQueue(), bindlessHeap->Heap(), previewData, iconPreviewResource_, iconPreviewIndex_);
+			TextureCreator::CreateTextureMemory(graphics->Device().Context().GetDevice(), graphics->Device().Context().GetCopyQueue(), graphics->Device().Context().GetLoadTransferLane(LoadThread::Main), bindlessHeap->Heap(), previewData, iconPreviewResource_, iconPreviewIndex_);
 		}
 
 		ImGui::TextDisabled("実行ファイルのアイコン");

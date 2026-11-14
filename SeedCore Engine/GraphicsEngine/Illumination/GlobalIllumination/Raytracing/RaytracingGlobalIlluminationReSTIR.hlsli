@@ -16,11 +16,11 @@
 *   comment on GlobalIlluminationReservoirCombine below for why.)
 *
 * Cap on the reservoir's confidence (candidate count folded in so far) -
-* shared between RaytracingGlobalIlluminationRT.hlsl's raygen (which clamps the
+* shared between RaytracingGlobalIlluminationTraceRT.hlsl's raygen (which clamps the
 * reprojected history's M before combining) and
-* RaytracingGlobalIlluminationReservoirSpatialCS.hlsl (which normalizes the final M
+* RaytracingGlobalIlluminationSpatialCS.hlsl (which normalizes the final M
 * into a 0..1 confidence signal for RaytracingGlobalIlluminationDenoiseCS.hlsl - see
-* that file's use of shader_resource_indices.global_illumination_.confidence_index_).
+* that file's use of the RaytracingGlobalIllumination.Confidence binding).
 *
 * This directly trades noise for responsiveness: the streaming RIS combine's
 * probability of accepting a brand-new frame's candidate over the existing
@@ -42,8 +42,8 @@ static const float GI_RESERVOIR_NORMAL_THRESHOLD = 0.5;
 
 /**
 * Per-pixel ReSTIR reservoir for the single cosine-weighted hemisphere sample
-* GlobalIlluminationRayGeneration traces per frame. 64 bytes - must match the
-* C++ side (GlobalIlluminationRenderer::reservoirElementSizeInBytes)
+* RaytracingGlobalIlluminationRayGeneration traces per frame. 64 bytes - must match the
+* C++ side (RaytracingGlobalIlluminationReservoir in RaytracingGlobalIlluminationShader.h)
 * byte-for-byte.
 */
 struct RaytracingGlobalIlluminationReservoir
@@ -79,7 +79,7 @@ struct RaytracingGlobalIlluminationReservoir
 
 /**
 * Wraps one fresh Monte Carlo estimate (already divided by its own pdf, e.g.
-* GlobalIlluminationRayGeneration's cosine-weighted hemisphere sample) as a
+* RaytracingGlobalIlluminationRayGeneration's cosine-weighted hemisphere sample) as a
 * trivial single-sample reservoir: M = 1, and W = 1 because a reservoir of
 * exactly one sample resamples itself with probability 1 by definition
 * (wsum == target, so W = wsum / (M * target) = 1).
@@ -106,13 +106,13 @@ RaytracingGlobalIlluminationReservoir GlobalIlluminationReservoirFromSample(floa
 * target(sample) * W * M. Calling this repeatedly - once against the
 * reprojected temporal history, then once per accepted spatial neighbor -
 * accumulates an arbitrarily large effective sample count one reservoir at a
-* time (see RaytracingGlobalIlluminationRT.hlsl's call site). b_valid selects out
+* time (see RaytracingGlobalIlluminationTraceRT.hlsl's call site). b_valid selects out
 * disocclusion/off-screen/rejected-neighbor cases without a branch at the
 * call site.
 *
 * This is a biased simplification: a fully unbiased spatiotemporal ReSTIR
 * also re-verifies the winning sample's visibility/Jacobian against the
-* current pixel. Skipped here - see RaytracingGlobalIlluminationRT.hlsl's call site
+* current pixel. Skipped here - see RaytracingGlobalIlluminationTraceRT.hlsl's call site
 * comment.
 *
 * A receiver-side target function (luminance * cosine at the receiving pixel,
@@ -125,7 +125,7 @@ RaytracingGlobalIlluminationReservoir GlobalIlluminationReservoirFromSample(floa
 * to frame, which reads as noise no denoiser downstream is tuned to absorb.
 * Plain luminance has no such receiver dependency, so the decision is stable;
 * the cost is the corner/narrow-interior brightening bias the omitted terms
-* would have fixed. RaytracingReflection.hlsli's own reservoir makes the identical
+* would have fixed. RaytracingReflectionReSTIR.hlsli's own reservoir makes the identical
 * trade for the identical reason - keep them consistent.
 */
 RaytracingGlobalIlluminationReservoir GlobalIlluminationReservoirCombine(RaytracingGlobalIlluminationReservoir a, RaytracingGlobalIlluminationReservoir b, bool b_valid, inout uint rng_state)
@@ -162,19 +162,5 @@ RaytracingGlobalIlluminationReservoir GlobalIlluminationReservoirCombine(Raytrac
 
 	return result;
 }
-
-struct RaytracingGlobalIlluminationShaderResourceIndices
-{
-	uint output_index_;
-	uint confidence_index_;
-	uint2 global_illumination_shader_resource_padding_0_;
-};
-
-struct RaytracingGlobalIlluminationUnorderedAccessIndices
-{
-	uint output_index_;
-	uint confidence_index_;
-	uint2 global_illumination_unordered_access_padding_0_;
-};
 
 #endif // __GLOBAL_ILLUMINATION_RESTIR_HLSL__

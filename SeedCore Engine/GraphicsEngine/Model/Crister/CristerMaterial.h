@@ -623,14 +623,6 @@ namespace SeedCore
 		/// [JP] 3つの Triplanar 投影の重みにする前に法線へ掛ける指数。大きいほど2つの投影が重なって混ざる帯が狭くなる。
 		Float triplanarSharpness_ = 4.0f;
 
-		/// [EN] Screen-space outline color drawn around every mesh that uses this material; composited after tone mapping, so it appears on screen as picked.
-		/// [JP] このマテリアルを使うメッシュの周りに描く、スクリーン空間の縁取りの色。トーンマップの後に合成するので、選んだ色がそのまま画面に出る。
-		Color outlineColor_ = { 1.0f,0.8f,0.1f,1.0f };
-
-		/// [EN] Outline width in display-resolution pixels; 0 draws no outline.
-		/// [JP] 縁取りの幅(表示解像度のピクセル数)。0 なら縁取らない。
-		Float outlineWidth_ = 0.0f;
-
 		template<class Archive>
 		void Serialize(Archive& archive)
 		{
@@ -660,8 +652,6 @@ namespace SeedCore
 			archive.TryField("material_mapping", materialMapping_);
 			archive.TryField("tiling", tiling_);
 			archive.TryField("triplanar_sharpness", triplanarSharpness_);
-			archive.TryField("outline_color", outlineColor_);
-			archive.TryField("outline_width", outlineWidth_);
 		}
 	};
 

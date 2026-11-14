@@ -18,7 +18,7 @@ namespace SeedCore
 
 	class BindlessHeap;
 	class D3D12Context;
-	class BC7CompressShader;
+	class GraphicsProcessor;
 
 	struct SEEDCORE_API GraphicsResourceSystem
 	{
@@ -80,6 +80,6 @@ namespace SeedCore
 		* 他のマネージャや GPU のオブジェクトを渡す。モデルの Crister から
 		* ファイルを作るマネージャより先に、モデルのマネージャを生成する。
 		*/
-		GraphicsResourceSystem(GraphicsLoaderSystem& loaders, D3D12Context& context, BindlessHeap& heap, BC7CompressShader& bc7Shader);
+		GraphicsResourceSystem(GraphicsLoaderSystem& loaders, D3D12Context& context, BindlessHeap& heap, GraphicsProcessor& processor);
 	};
 }

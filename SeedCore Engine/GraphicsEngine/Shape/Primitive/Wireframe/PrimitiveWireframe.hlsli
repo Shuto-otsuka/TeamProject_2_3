@@ -1,7 +1,7 @@
 #ifndef __PRIMITIVE_WIREFRAME_HLSL__
 #define __PRIMITIVE_WIREFRAME_HLSL__
 
-#include "../Primitive.hlsli"
+#include <GraphicsEngine/Shape/Primitive/Primitive.hlsli>
 
 /**
 * [EN]
@@ -18,23 +18,6 @@ struct PrimitiveWireframeStructuredBuffer
 	uint shape_kind_;
 	float head_length_;
 	float line_width_;
-};
-
-StructuredBuffer<PrimitiveWireframeStructuredBuffer> GetPrimitiveWireframeStructuredBuffer(uint index)
-{
-	return ResourceDescriptorHeap[index];
-}
-
-/**
-* [EN]
-* Bindless index of the view's wireframe instances, in the shader resource
-* index table. The editor, game and canvas views each point at their own
-* batch.
-*/
-struct PrimitiveWireframeShaderResourceIndices
-{
-	uint instance_index_;
-	uint3 primitive_wireframe_shader_resource_padding_0_;
 };
 
 struct PrimitiveWireframeMSOutput
@@ -653,6 +636,89 @@ void GetPrimitiveWireframeLine(uint shape_kind, float3 dimensions, float head_le
 	{
 		GetArrowLine(dimensions, head_length, local_camera, line_index, a, b, silhouette);
 	}
+}
+
+/**
+* [EN]
+* Builds the screen quad of one line of a shape: the four clip-space corners
+* (0 and 1 at the a end, 2 and 3 at the b end, on opposite sides of the
+* line) and its color. Returns false when the line has nothing to draw. The
+* view's unjittered projection is used because the lines are drawn after
+* upscaling, at display resolution.
+*/
+bool PrimitiveWireframeQuad(PrimitiveWireframeStructuredBuffer instance, uint line_index, out float4 corners[4], out float4 color)
+{
+	corners[0] = float4(0.0, 0.0, 0.0, 0.0);
+	corners[1] = float4(0.0, 0.0, 0.0, 0.0);
+	corners[2] = float4(0.0, 0.0, 0.0, 0.0);
+	corners[3] = float4(0.0, 0.0, 0.0, 0.0);
+	color = instance.color_;
+
+	SceneConstantBuffer scene = GetSceneConstantBuffer();
+
+	/// [EN] The silhouette depends on where the camera is, so the camera is brought into the shape's local space. A unit quaternion q rotates v as v + w*t + cross(xyz, t) with t = 2*cross(xyz, v); the inverse rotation negates xyz.
+	float3 to_camera = scene.camera_position_.xyz - instance.position_;
+	float3 inverse_axis = -instance.rotation_.xyz;
+	float3 camera_twist = 2.0 * cross(inverse_axis, to_camera);
+	float3 local_camera = to_camera + instance.rotation_.w * camera_twist + cross(inverse_axis, camera_twist);
+
+	float3 local_a;
+	float3 local_b;
+	bool silhouette;
+	GetPrimitiveWireframeLine(instance.shape_kind_, instance.dimensions_, instance.head_length_, local_camera, line_index, local_a, local_b, silhouette);
+
+	/// [EN] Both ends go back to world space by the instance rotation, then the instance position.
+	float3 twist_a = 2.0 * cross(instance.rotation_.xyz, local_a);
+	float3 world_a = local_a + instance.rotation_.w * twist_a + cross(instance.rotation_.xyz, twist_a) + instance.position_;
+	float3 twist_b = 2.0 * cross(instance.rotation_.xyz, local_b);
+	float3 world_b = local_b + instance.rotation_.w * twist_b + cross(instance.rotation_.xyz, twist_b) + instance.position_;
+	float4 clip_a = mul(float4(world_a, 1.0), scene.non_jitter_view_projection_);
+	float4 clip_b = mul(float4(world_b, 1.0), scene.non_jitter_view_projection_);
+
+	/// [EN] Silhouette lines are drawn halfway to white and 1.5 times the instance's line width, so the outline stands out from the rest of the shape.
+	color = silhouette ? float4(lerp(instance.color_.rgb, float3(1.0, 1.0, 1.0), 0.5), instance.color_.a) : instance.color_;
+	float width = silhouette ? instance.line_width_ * 1.5 : instance.line_width_;
+
+	/// [EN] An end behind the camera has no screen position, so the line is cut where it crosses just in front of the eye; a line entirely behind the camera is not drawn.
+	const float near_w = 1.0e-3;
+	if (clip_a.w < near_w && clip_b.w < near_w)
+	{
+		return false;
+	}
+	if (clip_a.w < near_w)
+	{
+		clip_a = lerp(clip_a, clip_b, (near_w - clip_a.w) / (clip_b.w - clip_a.w));
+	}
+	if (clip_b.w < near_w)
+	{
+		clip_b = lerp(clip_b, clip_a, (near_w - clip_b.w) / (clip_a.w - clip_b.w));
+	}
+
+	/// [EN] The line's direction and its perpendicular are taken in pixels, so the width stays even however the viewport is stretched. A line shorter than a pixel fraction has no direction and is not drawn.
+	float2 pixel_a = (clip_a.xy / clip_a.w) * scene.display_size_;
+	float2 pixel_b = (clip_b.xy / clip_b.w) * scene.display_size_;
+	float2 pixel_direction = pixel_b - pixel_a;
+	float pixel_length = length(pixel_direction);
+	if (pixel_length < 1.0e-6)
+	{
+		return false;
+	}
+	pixel_direction /= pixel_length;
+	float2 pixel_normal = float2(-pixel_direction.y, pixel_direction.x);
+
+	/// [EN] Normalized device coordinates span 2 across display_size pixels, so half the width in pixels is width / display_size in them.
+	float2 to_ndc = width / scene.display_size_;
+
+	/// [EN] Each end is also pushed out by half the width so neighbouring segments of a curve overlap at their joints, and every offset is scaled by w so it survives the perspective divide unchanged.
+	for (uint corner = 0; corner < 4; corner++)
+	{
+		float2 side_offset = pixel_normal * to_ndc * (((corner & 1) != 0) ? 1.0 : -1.0);
+		float2 end_offset = pixel_direction * to_ndc * ((corner < 2) ? -1.0 : 1.0);
+		float4 clip_position = (corner < 2) ? clip_a : clip_b;
+		clip_position.xy += (side_offset + end_offset) * clip_position.w;
+		corners[corner] = clip_position;
+	}
+	return true;
 }
 
 #endif // __PRIMITIVE_WIREFRAME_HLSL__

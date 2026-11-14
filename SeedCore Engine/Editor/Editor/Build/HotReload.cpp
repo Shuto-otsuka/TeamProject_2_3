@@ -218,7 +218,9 @@ namespace SeedCore
 			return;
 		}
 
-#if SC_DEBUG
+#if SC_DEVELOP
+		const Wchar* configuration = L"Develop";
+#elif SC_DEBUG
 		const Wchar* configuration = L"Debug";
 #else
 		const Wchar* configuration = L"Release";
@@ -250,7 +252,9 @@ namespace SeedCore
 
 	void HotReload::TriggerCsharpBuild()
 	{
-#if SC_DEBUG
+#if SC_DEVELOP
+		const Wchar* configuration = L"Develop";
+#elif SC_DEBUG
 		const Wchar* configuration = L"Debug";
 #else
 		const Wchar* configuration = L"Release";

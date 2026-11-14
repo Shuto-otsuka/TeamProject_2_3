@@ -5,6 +5,7 @@
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Context.h>
+#include <GraphicsEngine/D3D12/Context/D3D12TransferLane.h>
 #include <FoundationEngine/Log/DxFail.h>
 #include <FoundationEngine/Log/Error.h>
 
@@ -29,24 +30,25 @@ namespace SeedCore
 	/**
 	* [EN]
 	* Reads the ".hdr" source or ".skymap" cache at filePath, uploads it
-	* through the direct queue and returns the handle of the new Skymap,
-	* or a null handle when it cannot be read or uploaded. Nothing is
-	* written. thread is unused: the upload waits on the direct queue.
+	* through the copy queue on the transfer lane of thread and returns the
+	* handle of the new Skymap, or a null handle when it cannot be read or
+	* uploaded. Nothing is written.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* filePath の ".hdr" ソースか ".skymap" キャッシュを読み、Direct キュー
-	* でアップロードして、新しい Skymap のハンドルを返す。読めない、または
-	* アップロードできない場合は null のハンドルを返す。何も書き出さない。
-	* thread は使わない（アップロードは Direct キューで待つため）。
+	* filePath の ".hdr" ソースか ".skymap" キャッシュを読み、thread の
+	* 転送レーンでコピーキューへアップロードして、新しい Skymap のハンドルを
+	* 返す。読めない、またはアップロードできない場合は null のハンドルを
+	* 返す。何も書き出さない。
 	*/
 	Handle<Skymap> SkymapLoader::Load(String filePath, LoadThread thread)
 	{
 		/// [EN] The GPU objects the upload below works with, taken from the dependencies this loader was built with.
 		/// [JP] 以下のアップロードが使う GPU のオブジェクト。このローダーが構築時に受け取った依存から取る。
 		ID3D12Device* device = context_.GetDevice();
-		D3D12CommandQueue* cmdQueue = context_.GetDirectQueue();
+		D3D12CommandQueue* copyQueue = context_.GetCopyQueue();
+		D3D12TransferLane* transferLane = context_.GetLoadTransferLane(thread);
 		BindlessHeap* heap = &heap_;
 
 		Handle<Skymap> handle = pool_.Create();
@@ -130,7 +132,7 @@ namespace SeedCore
 		resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 		resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-		HRESULT hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST, nullptr, IID_PPV_ARGS(&skymap->resource_));
+		HRESULT hr = device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(&skymap->resource_));
 		if (FAILED(hr) || !skymap->resource_)
 		{
 			SC_LOG_ERROR("スカイマップ equirect テクスチャの生成に失敗しました: {}", filePath.str());
@@ -142,21 +144,11 @@ namespace SeedCore
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(skymap->resource_.Get());
 #endif
 
-		D3D12_SUBRESOURCE_DATA subresource{};
-		subresource.pData = pixels;
-		subresource.RowPitch = static_cast<LONG_PTR>(rowPitch);
-		subresource.SlicePitch = static_cast<LONG_PTR>(rowPitch) * static_cast<LONG_PTR>(height);
-
-		DirectX::ResourceUploadBatch resourceUpload(device);
-		resourceUpload.Begin();
-		resourceUpload.Upload(skymap->resource_.Get(), 0, &subresource, 1);
-		resourceUpload.Transition(skymap->resource_.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
-		std::future<void> uploadFinished;
-		{
-			auto queueLock = cmdQueue->AcquireLock();
-			uploadFinished = resourceUpload.End(cmdQueue->GetCommandQueue());
-		}
-		uploadFinished.wait();
+		/// [EN] The texture starts in the COMMON state, so the copy queue writes it and the sky generation reads it without explicit transitions.
+		/// [JP] テクスチャは COMMON 状態で始まるので、コピーキューが書き、空の生成が読むのに明示的な遷移は要らない。
+		transferLane->Begin(device, *copyQueue);
+		transferLane->GetStream().Upload(device, transferLane->GetCommandList(), skymap->resource_.Get(), 0, std::span<const std::byte>(static_cast<const std::byte*>(pixels),static_cast<Size>(rowPitch) * height));
+		copyQueue->WaitFor(transferLane->Submit(*copyQueue));
 
 		skymap->shaderResourceViewIndex_ = heap->AllocateIndex();
 		D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc{};

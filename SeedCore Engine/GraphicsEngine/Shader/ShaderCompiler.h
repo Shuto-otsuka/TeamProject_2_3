@@ -1,12 +1,15 @@
 #pragma once
+#include <GraphicsEngine/Shader/ShaderPath.h>
 
 namespace SeedCore
 {
 	struct ShaderCompileResult
 	{
-		Microsoft::WRL::ComPtr<IDxcBlob> objectBlob;
-		Microsoft::WRL::ComPtr<IDxcBlob> reflectionBlob;
-		std::string errorMessage;
+		Microsoft::WRL::ComPtr<IDxcBlob> objectBlob_;
+
+		Microsoft::WRL::ComPtr<IDxcBlob> reflectionBlob_;
+
+		std::string errorMessage_;
 	};
 
 	class ShaderIncludeHandler :public IDxcIncludeHandler
@@ -31,25 +34,25 @@ namespace SeedCore
 	class ShaderCompiler
 	{
 	public:
-		static ShaderCompileResult CompileVertexShader(const std::wstring& filePath, const std::string& entryPoint = "main");
+		static ShaderCompileResult CompileVertexShader(const std::wstring& filePath, const std::string& entryPoint = "main", ShaderMount mount = ShaderMount::Engine);
 
-		static ShaderCompileResult CompileHullShader(const std::wstring& filePath, const std::string& entryPoint = "main");
+		static ShaderCompileResult CompileHullShader(const std::wstring& filePath, const std::string& entryPoint = "main", ShaderMount mount = ShaderMount::Engine);
 
-		static ShaderCompileResult CompileDomainShader(const std::wstring& filePath, const std::string& entryPoint = "main");
+		static ShaderCompileResult CompileDomainShader(const std::wstring& filePath, const std::string& entryPoint = "main", ShaderMount mount = ShaderMount::Engine);
 
-		static ShaderCompileResult CompileGeometryShader(const std::wstring& filePath, const std::string& entryPoint = "main");
+		static ShaderCompileResult CompileGeometryShader(const std::wstring& filePath, const std::string& entryPoint = "main", ShaderMount mount = ShaderMount::Engine);
 
-		static ShaderCompileResult CompilePixelShader(const std::wstring& filePath, const std::string& entryPoint = "main");
+		static ShaderCompileResult CompilePixelShader(const std::wstring& filePath, const std::string& entryPoint = "main", ShaderMount mount = ShaderMount::Engine);
 
-		static ShaderCompileResult CompileAmplificationShader(const std::wstring& filePath, const std::string& entryPoint = "main");
+		static ShaderCompileResult CompileAmplificationShader(const std::wstring& filePath, const std::string& entryPoint = "main", ShaderMount mount = ShaderMount::Engine);
 
-		static ShaderCompileResult CompileMeshShader(const std::wstring& filePath, const std::string& entryPoint = "main");
+		static ShaderCompileResult CompileMeshShader(const std::wstring& filePath, const std::string& entryPoint = "main", ShaderMount mount = ShaderMount::Engine);
 
-		static ShaderCompileResult CompileComputeShader(const std::wstring& filePath, const std::string& entryPoint = "main");
+		static ShaderCompileResult CompileComputeShader(const std::wstring& filePath, const std::string& entryPoint = "main", ShaderMount mount = ShaderMount::Engine);
 
-		static ShaderCompileResult CompileLibraryShader(const std::wstring& filePath);
+		static ShaderCompileResult CompileLibraryShader(const std::wstring& filePath, ShaderMount mount = ShaderMount::Engine);
 
 	private:
-		static ShaderCompileResult CompileInternal(String filePath, String entryPoint, String targetProfile);
+		static ShaderCompileResult CompileInternal(String filePath, String entryPoint, String targetProfile, ShaderMount mount);
 	};
 }

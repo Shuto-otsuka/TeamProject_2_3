@@ -1,7 +1,7 @@
 #ifndef __BIDIRECTIONAL_REFLECTANCE_DISTRIBUTION_FUNCTION_HLSL__
 #define __BIDIRECTIONAL_REFLECTANCE_DISTRIBUTION_FUNCTION_HLSL__
 
-#include "../Sky/IBL/ImageBasedLighting.hlsli"
+#include <GraphicsEngine/Sky/IBL/ImageBasedLighting.hlsli>
 
 float3 FresnelSchlick(float3 f0, float3 f90, float view_dot_half)
 {
@@ -76,14 +76,14 @@ float3 BrdfLambertian(float3 f0, float3 f90, float3 diffuse_color, float view_do
 	return (1.0 - FresnelSchlick(f0, f90, view_dot_half)) * (diffuse_color / PI);
 }
 
-float3 ImageBasedLightingRadianceLambertian(float3 normal, float3 view, float roughness, float3 diffuse_color, float3 f0)
+float3 ImageBasedLightingRadianceLambertian(uint brdf_lut, uint diffuse_irradiance_cube, float3 normal, float3 view, float roughness, float3 diffuse_color, float3 f0)
 {
 	float normal_dot_view = clamp(dot(normal, view), 0.0, 1.0);
 
 	float2 brdf_sample_point = clamp(float2(normal_dot_view, roughness), 0.0, 1.0);
-	float2 f_ab = SampleGgxLookupTable(brdf_sample_point).rg;
+	float2 f_ab = SampleGgxLookupTable(brdf_lut, brdf_sample_point).rg;
 
-	float3 irradiance = SampleDiffuseIrradianceEnvironmentMap(normal).rgb;
+	float3 irradiance = SampleDiffuseIrradianceEnvironmentMap(diffuse_irradiance_cube, normal).rgb;
 
 	float3 fresnel_roughness = max(1.0 - roughness, f0) - f0;
 	float3 specular_color = f0 + fresnel_roughness * pow(1.0 - normal_dot_view, 5.0);
@@ -97,15 +97,15 @@ float3 ImageBasedLightingRadianceLambertian(float3 normal, float3 view, float ro
 	return (multi_scattering + diffuse_contribution) * irradiance;
 }
 
-float3 ImageBasedLightingRadianceGgx(float3 normal, float3 view, float roughness, float3 f0)
+float3 ImageBasedLightingRadianceGgx(uint brdf_lut, uint specular_prefiltered_cube, float3 normal, float3 view, float roughness, float3 f0)
 {
 	float normal_dot_view = clamp(dot(normal, view), 0.0, 1.0);
 
 	float2 brdf_sample_point = clamp(float2(normal_dot_view, roughness), 0.0, 1.0);
-	float2 f_ab = SampleGgxLookupTable(brdf_sample_point).rg;
+	float2 f_ab = SampleGgxLookupTable(brdf_lut, brdf_sample_point).rg;
 
 	float3 reflection = normalize(reflect(-view, normal));
-	float3 specular_light = SampleSpecularPrefilteredRadianceEnvironmentMap(reflection, roughness).rgb;
+	float3 specular_light = SampleSpecularPrefilteredRadianceEnvironmentMap(specular_prefiltered_cube, reflection, roughness).rgb;
 
 	float3 fresnel_roughness = max(1.0 - roughness, f0) - f0;
 	float3 specular_color = f0 + fresnel_roughness * pow(1.0 - normal_dot_view, 5.0);

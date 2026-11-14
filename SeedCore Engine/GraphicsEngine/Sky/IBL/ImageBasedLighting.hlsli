@@ -2,28 +2,26 @@
 #define __IMAGE_BASED_LIGHTING_HLSL__
 
 // Bindless IBL sampling. The environment / irradiance / prefilter cubes and the
-// BRDF lookup table are addressed through ShaderResourceIndices (set per frame by
-// the SkyRenderer). ASCII only (this file is included by BRDF; DXC breaks on
-// non-ASCII in .hlsli).
+// BRDF lookup table are passed in as descriptor indices (Sky.Cubemap,
+// Sky.Diffuse, Sky.Specular and Sky.BRDF).
 
-#include "../../Shader/ShaderResources.hlsli"
-#include "../../Shader/Sampler.hlsli"
+#include <GraphicsEngine/Shader/Sampler.hlsli>
 
-float4 SampleGgxLookupTable(float2 sample_point)
+float4 SampleGgxLookupTable(uint brdf_lut, float2 sample_point)
 {
-	Texture2D<float2> ggx_lookup_table = ResourceDescriptorHeap[shader_resource_indices.sky_.brdf_lut_index_];
+	Texture2D<float2> ggx_lookup_table = ResourceDescriptorHeap[brdf_lut];
 	return float4(ggx_lookup_table.Sample(sampler_linear_clamp, sample_point), 0.0, 0.0);
 }
 
-float4 SampleDiffuseIrradianceEnvironmentMap(float3 direction)
+float4 SampleDiffuseIrradianceEnvironmentMap(uint diffuse_irradiance_cube, float3 direction)
 {
-	TextureCube<float4> diffuse_irradiance = ResourceDescriptorHeap[shader_resource_indices.sky_.diffuse_irradiance_index_];
+	TextureCube<float4> diffuse_irradiance = ResourceDescriptorHeap[diffuse_irradiance_cube];
 	return diffuse_irradiance.Sample(sampler_linear_clamp, direction);
 }
 
-float4 SampleSpecularPrefilteredRadianceEnvironmentMap(float3 direction, float roughness)
+float4 SampleSpecularPrefilteredRadianceEnvironmentMap(uint specular_prefiltered_cube, float3 direction, float roughness)
 {
-	TextureCube<float4> specular_prefiltered = ResourceDescriptorHeap[shader_resource_indices.sky_.specular_prefiltered_index_];
+	TextureCube<float4> specular_prefiltered = ResourceDescriptorHeap[specular_prefiltered_cube];
 
 	uint width, height, number_of_levels;
 	specular_prefiltered.GetDimensions(0, width, height, number_of_levels);
@@ -33,9 +31,9 @@ float4 SampleSpecularPrefilteredRadianceEnvironmentMap(float3 direction, float r
 }
 
 // Environment cube sampled for the skybox background (mip 0).
-float4 SampleSkyboxEnvironment(float3 direction)
+float4 SampleSkyboxEnvironment(uint sky_cubemap, float3 direction)
 {
-	TextureCube<float4> environment = ResourceDescriptorHeap[shader_resource_indices.sky_.environment_cube_index_];
+	TextureCube<float4> environment = ResourceDescriptorHeap[sky_cubemap];
 	return environment.SampleLevel(sampler_linear_clamp, direction, 0);
 }
 

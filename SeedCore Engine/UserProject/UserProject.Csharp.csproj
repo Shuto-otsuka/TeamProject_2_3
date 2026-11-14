@@ -2,6 +2,10 @@
 	<PropertyGroup>
 		<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
 		<CompilerGeneratedFilesOutputPath>Reflection</CompilerGeneratedFilesOutputPath>
+		<Configurations>Debug;Release;Develop</Configurations>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Develop|AnyCPU'">
+	  <Optimize>True</Optimize>
 	</PropertyGroup>
 	<ItemGroup>
 		<ProjectReference Include="..\SeedCore\SeedCore.Csharp.csproj" Private="false" />

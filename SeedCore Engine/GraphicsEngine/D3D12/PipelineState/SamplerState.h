@@ -4,24 +4,21 @@ namespace SeedCore
 {
 	enum class SamplerStateType
 	{
-		POINT_WRAP = 0,
-		POINT_CLAMP,
-		POINT_MIRROR,
-		LINEAR_WRAP,
-		LINEAR_CLAMP,
-		LINEAR_MIRROR,
-		ANISOTROPIC_WRAP,
-		ANISOTROPIC_CLAMP,
-		ANISOTROPIC_MIRROR,
-		BORDER_BLACK,
-		BORDER_WHITE,
+		PointClamp = 0, 
+		PointWrap,
+		PointMirror,
+		LinearClamp,
+		LinearWrap,
+		LinearMirror,
+		BorderBlack,
+		BorderWhite,
 
-		MAX_COUNT,
+		Count,
 	};
 
 	class SamplerState
 	{
 	public:
-		static DynamicArray<D3D12_STATIC_SAMPLER_DESC> Create();
+		static StaticArray<D3D12_STATIC_SAMPLER_DESC, static_cast<Size>(SamplerStateType::Count)> Create();
 	};
 }

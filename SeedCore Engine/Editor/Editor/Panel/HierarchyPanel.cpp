@@ -15,7 +15,7 @@
 #include <FoundationEngine/File/FileDialog.h>
 #include <GraphicsEngine/Camera/EditorCamera.h>
 #include <GraphicsEngine/Camera/CanvasCamera.h>
-#include <GraphicsEngine/Graphics.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
 #include <GraphicsEngine/Texture/Image.h>
 #include <GraphicsEngine/Font/Text.h>
 #include <GraphicsEngine/Movie/Movie.h>
@@ -179,7 +179,7 @@ namespace SeedCore
 						Bool overlaps = !(row.max_.x < rectMin.x || row.min_.x > rectMax.x || row.max_.y < rectMin.y || row.min_.y > rectMax.y);
 						if (overlaps)
 						{
-							context_.selection_.actors_.push_back(row.actor_);
+							context_.selection_.Add(row.actor_);
 						}
 					}
 
@@ -553,7 +553,7 @@ namespace SeedCore
 				context_.selection_.Clear();
 				for (Size rowIndex = lo; rowIndex <= hi; ++rowIndex)
 				{
-					context_.selection_.actors_.push_back(rows_[rowIndex].actor_);
+					context_.selection_.Add(rows_[rowIndex].actor_);
 				}
 			}
 		}

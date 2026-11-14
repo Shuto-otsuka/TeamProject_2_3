@@ -11,7 +11,7 @@ namespace SeedCore
 	* the editor only (3D colliders in the world, 2D colliders on the
 	* canvas), once per frame before rendering reads them. Knows the
 	* collider components and how each one is scaled; knows nothing about
-	* the GPU, which is ShapeRenderer's side.
+	* the GPU, which is PrimitiveFeature's side.
 	*
 	* ---------------------------------------------------------------------
 	*
@@ -20,7 +20,7 @@ namespace SeedCore
 	* に集める（3D のコライダーはワールドに、2D のコライダーは Canvas に置く）。
 	* 描画が読む前に、フレームに1回行う。コライダーのコンポーネントと
 	* それぞれの拡縮のしかたは知っているが、GPU のことは知らない（そちらは
-	* ShapeRenderer の担当）。
+	* PrimitiveFeature の担当）。
 	*/
 	class ColliderSystem
 	{

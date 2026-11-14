@@ -169,4 +169,26 @@ namespace SeedCore
 		/// [JP] Solid のときだけ使う、裏面も描くか。
 		Bool doubleSided_ = false;
 	};
+
+	/**
+	* [EN]
+	* The shapes and the colliders gathered this frame, handed to the
+	* renderer together through the render scene.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* このフレームに集めた形とコライダー。レンダーシーンを通して、まとめて
+	* 描画へ渡す。
+	*/
+	struct ShapeList
+	{
+		/// [EN] Shapes other than colliders.
+		/// [JP] コライダー以外の形。
+		std::span<const ShapeDesc> shapes_;
+
+		/// [EN] Collider wireframes, shown in the editor only.
+		/// [JP] コライダーのワイヤーフレーム。エディターにだけ出す。
+		std::span<const ShapeDesc> colliders_;
+	};
 }

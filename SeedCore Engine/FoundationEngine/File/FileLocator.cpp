@@ -8,7 +8,7 @@ namespace SeedCore
 	{
 		std::error_code errorCode;
 		std::filesystem::path directory = FileDirectory::ExecutableDirectory();
-		while (!std::filesystem::is_directory(directory / "CompliedShaderObject", errorCode))
+		while (!std::filesystem::is_directory(directory / "CompiledShaderObject", errorCode))
 		{
 			if (directory == directory.parent_path())
 			{

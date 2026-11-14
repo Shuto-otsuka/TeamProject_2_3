@@ -21,7 +21,7 @@ namespace fbxsdk
 namespace SeedCore
 {
 	class BindlessHeap;
-	class BC7CompressShader;
+	class GraphicsProcessor;
 	class D3D12Context;
 
 	enum class ModelFormat
@@ -101,17 +101,17 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Takes the device context models are uploaded with, the bindless
-		* heap their buffers and textures are registered in, and the compute
-		* shader that BC7-compresses their textures.
+		* heap their buffers and textures are registered in, and the GPU
+		* processor that BC7-compresses their textures.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* モデルをアップロードするデバイスのコンテキスト、バッファと
 		* テクスチャの登録先のバインドレスヒープ、テクスチャを BC7 圧縮する
-		* コンピュートシェーダーを受け取る。
+		* GPU の加工器を受け取る。
 		*/
-		ModelLoader(D3D12Context& context, BindlessHeap& heap, BC7CompressShader& bc7Shader);
+		ModelLoader(D3D12Context& context, BindlessHeap& heap, GraphicsProcessor& processor);
 		~ModelLoader() = default;
 
 		/**
@@ -289,8 +289,8 @@ namespace SeedCore
 		/// [JP] モデルのバッファとテクスチャが登録されるバインドレスヒープ。
 		BindlessHeap& heap_;
 
-		/// [EN] Compute shader that BC7-compresses the models' textures.
-		/// [JP] モデルのテクスチャを BC7 圧縮するコンピュートシェーダー。
-		BC7CompressShader& bc7Shader_;
+		/// [EN] GPU processor that BC7-compresses the models' textures.
+		/// [JP] モデルのテクスチャを BC7 圧縮する GPU の加工器。
+		GraphicsProcessor& processor_;
 	};
 }

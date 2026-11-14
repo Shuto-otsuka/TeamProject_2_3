@@ -53,57 +53,55 @@ namespace SeedCore
 
 namespace SeedCore
 {
-	ShaderCompileResult ShaderCompiler::CompileVertexShader(const std::wstring& filePath, const std::string& entryPoint)
+	ShaderCompileResult ShaderCompiler::CompileVertexShader(const std::wstring& filePath, const std::string& entryPoint, ShaderMount mount)
 	{
-		return CompileInternal(String(filePath), String(entryPoint), String("vs_6_6"));
+		return CompileInternal(String(filePath), String(entryPoint), String("vs_6_6"), mount);
 	}
 
-	ShaderCompileResult ShaderCompiler::CompileHullShader(const std::wstring& filePath, const std::string& entryPoint)
+	ShaderCompileResult ShaderCompiler::CompileHullShader(const std::wstring& filePath, const std::string& entryPoint, ShaderMount mount)
 	{
-		return CompileInternal(String(filePath), String(entryPoint), String("hs_6_6"));
+		return CompileInternal(String(filePath), String(entryPoint), String("hs_6_6"), mount);
 	}
 
-	ShaderCompileResult ShaderCompiler::CompileDomainShader(const std::wstring& filePath, const std::string& entryPoint)
+	ShaderCompileResult ShaderCompiler::CompileDomainShader(const std::wstring& filePath, const std::string& entryPoint, ShaderMount mount)
 	{
-		return CompileInternal(String(filePath), String(entryPoint), String("ds_6_6"));
+		return CompileInternal(String(filePath), String(entryPoint), String("ds_6_6"), mount);
 	}
 
-	ShaderCompileResult ShaderCompiler::CompileGeometryShader(const std::wstring& filePath, const std::string& entryPoint)
+	ShaderCompileResult ShaderCompiler::CompileGeometryShader(const std::wstring& filePath, const std::string& entryPoint, ShaderMount mount)
 	{
-		return CompileInternal(String(filePath), String(entryPoint), String("gs_6_6"));
+		return CompileInternal(String(filePath), String(entryPoint), String("gs_6_6"), mount);
 	}
 
-	ShaderCompileResult ShaderCompiler::CompilePixelShader(const std::wstring& filePath, const std::string& entryPoint)
+	ShaderCompileResult ShaderCompiler::CompilePixelShader(const std::wstring& filePath, const std::string& entryPoint, ShaderMount mount)
 	{
-		return CompileInternal(String(filePath), String(entryPoint), String("ps_6_6"));
+		return CompileInternal(String(filePath), String(entryPoint), String("ps_6_6"), mount);
 	}
 
-	ShaderCompileResult ShaderCompiler::CompileAmplificationShader(const std::wstring& filePath, const std::string& entryPoint)
+	ShaderCompileResult ShaderCompiler::CompileAmplificationShader(const std::wstring& filePath, const std::string& entryPoint, ShaderMount mount)
 	{
-		return CompileInternal(String(filePath), String(entryPoint), String("as_6_6"));
+		return CompileInternal(String(filePath), String(entryPoint), String("as_6_6"), mount);
 	}
 
-	ShaderCompileResult ShaderCompiler::CompileMeshShader(const std::wstring& filePath, const std::string& entryPoint)
+	ShaderCompileResult ShaderCompiler::CompileMeshShader(const std::wstring& filePath, const std::string& entryPoint, ShaderMount mount)
 	{
-		return CompileInternal(String(filePath), String(entryPoint), String("ms_6_6"));
+		return CompileInternal(String(filePath), String(entryPoint), String("ms_6_6"), mount);
 	}
 
-	ShaderCompileResult ShaderCompiler::CompileComputeShader(const std::wstring& filePath, const std::string& entryPoint)
+	ShaderCompileResult ShaderCompiler::CompileComputeShader(const std::wstring& filePath, const std::string& entryPoint, ShaderMount mount)
 	{
-		return CompileInternal(String(filePath), String(entryPoint), String("cs_6_6"));
+		return CompileInternal(String(filePath), String(entryPoint), String("cs_6_6"), mount);
 	}
 
-	ShaderCompileResult ShaderCompiler::CompileLibraryShader(const std::wstring& filePath)
+	ShaderCompileResult ShaderCompiler::CompileLibraryShader(const std::wstring& filePath, ShaderMount mount)
 	{
-		return CompileInternal(String(filePath), String("main"), String("lib_6_6"));
+		return CompileInternal(String(filePath), String("main"), String("lib_6_6"), mount);
 	}
 
-	ShaderCompileResult ShaderCompiler::CompileInternal(String filePath, String entryPoint, String targetProfile)
+	ShaderCompileResult ShaderCompiler::CompileInternal(String filePath, String entryPoint, String targetProfile, ShaderMount mount)
 	{
-		HRESULT hr{ S_OK };
-
 		Microsoft::WRL::ComPtr<IDxcUtils> dxcUtils;
-		hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
+		HRESULT hr = DxcCreateInstance(CLSID_DxcUtils, IID_PPV_ARGS(&dxcUtils));
 		SC_HR_CHECK(hr, "DxcUtilsインスタンスの生成に失敗しました");
 
 		std::string path = filePath.str();
@@ -125,10 +123,11 @@ namespace SeedCore
 			}
 		}
 
+		std::filesystem::path mountRoot = mount == ShaderMount::Engine ? FileLocator::EngineRoot() : FileLocator::ProjectRoot();
 #if SC_DEBUG
-		String csoPath = String((FileLocator::EngineRoot() / "CompiledShaderObject" / "Develop" / (filename.substr(0, filename.size() - 5) + ".dbg.cso")).string());
+		String csoPath = String((mountRoot / "CompiledShaderObject" / "Develop" / (filename.substr(0, filename.size() - 5) + ".dbg.cso")).string());
 #else
-		String csoPath = String((FileLocator::EngineRoot() / "CompiledShaderObject" / "Application" / (filename.substr(0, filename.size() - 5) + ".dx.cso")).string());
+		String csoPath = String((mountRoot / "CompiledShaderObject" / "Application" / (filename.substr(0, filename.size() - 5) + ".dx.cso")).string());
 #endif
 		String cacheKey = String(targetProfile.str() + ":" + entryPoint.str());
 		std::filesystem::path hlslFs(path);
@@ -178,7 +177,7 @@ namespace SeedCore
 			if (SUCCEEDED(hr))
 			{
 				ShaderCompileResult precompiledResult{};
-				precompiledResult.objectBlob = blobEncoding;
+				precompiledResult.objectBlob_ = blobEncoding;
 
 				Microsoft::WRL::ComPtr<IDxcContainerReflection> containerReflection;
 				hr = DxcCreateInstance(CLSID_DxcContainerReflection, IID_PPV_ARGS(&containerReflection));
@@ -193,7 +192,7 @@ namespace SeedCore
 						{
 							Microsoft::WRL::ComPtr<IDxcBlob> partBlob;
 							containerReflection->GetPartContent(partIndex, &partBlob);
-							precompiledResult.reflectionBlob = partBlob;
+							precompiledResult.reflectionBlob_ = partBlob;
 						}
 					}
 				}
@@ -273,6 +272,10 @@ namespace SeedCore
 			projectRoot.c_str(),
 		};
 #endif
+		if (targetProfile.str().starts_with("lib_"))
+		{
+			arguments.push_back(L"-enable-payload-qualifiers");
+		}
 
 		Microsoft::WRL::ComPtr<IDxcResult> result;
 		hr = dxcCompiler->Compile(&dxcBuffer, arguments.data(), static_cast<Uint32>(arguments.size()), &includeHandle, IID_PPV_ARGS(&result));
@@ -284,7 +287,7 @@ namespace SeedCore
 		result->GetOutput(DXC_OUT_ERRORS, IID_PPV_ARGS(&errorBlob), nullptr);
 		if (errorBlob && errorBlob->GetStringLength() > 0)
 		{
-			compileResult.errorMessage.assign(errorBlob->GetStringPointer(), errorBlob->GetStringLength());
+			compileResult.errorMessage_.assign(errorBlob->GetStringPointer(), errorBlob->GetStringLength());
 			SC_LOG_WARNING("シェーダーコンパイル警告: {}", errorBlob->GetStringPointer());
 			OutputDebugStringA(errorBlob->GetStringPointer());
 		}
@@ -297,18 +300,18 @@ namespace SeedCore
 			return compileResult;
 		}
 
-		result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&compileResult.objectBlob), nullptr);
-		result->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&compileResult.reflectionBlob), nullptr);
+		result->GetOutput(DXC_OUT_OBJECT, IID_PPV_ARGS(&compileResult.objectBlob_), nullptr);
+		result->GetOutput(DXC_OUT_REFLECTION, IID_PPV_ARGS(&compileResult.reflectionBlob_), nullptr);
 
-		if (compileResult.objectBlob)
+		if (compileResult.objectBlob_)
 		{
 			if (csoFs.has_parent_path())
 			{
 				std::filesystem::create_directories(csoFs.parent_path());
 			}
 
-			const Uint8* objectBegin = static_cast<const Uint8*>(compileResult.objectBlob->GetBufferPointer());
-			cachedEntries[cacheKey] = DynamicArray<Uint8>(objectBegin, objectBegin + compileResult.objectBlob->GetBufferSize());
+			const Uint8* objectBegin = static_cast<const Uint8*>(compileResult.objectBlob_->GetBufferPointer());
+			cachedEntries[cacheKey] = DynamicArray<Uint8>(objectBegin, objectBegin + compileResult.objectBlob_->GetBufferSize());
 
 			BinaryOutputArchive cacheArchive;
 			cacheArchive.Field("entries", cachedEntries);

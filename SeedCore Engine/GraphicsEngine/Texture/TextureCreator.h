@@ -30,65 +30,72 @@ namespace SeedCore
 		/**
 		* [EN]
 		* Creates a texture from the image file at filePath into resource and
-		* writes its shader resource view at textureIndex of heap, recording
-		* the upload into resourceUpload. A sibling ".texture" cache newer
-		* than the source is read instead of the source; a ".icon", ".logo"
-		* or ".texture" file is read as such a cache directly. Nothing is
-		* written: the cache is made by TextureResource::Generate.
+		* writes its shader resource view at textureIndex of heap, recording the
+		* upload into lane, which the caller has begun and submits. A sibling
+		* ".texture" cache newer than the source is read instead of the source; a
+		* ".icon", ".logo" or ".texture" file is read as such a cache directly.
+		* Nothing is written: the cache is made by TextureResource::Generate.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
 		* filePath の画像ファイルから resource にテクスチャを作り、heap の
-		* textureIndex にシェーダーリソースビューを書く。アップロードは
-		* resourceUpload に記録する。ソースより新しい隣の ".texture"
-		* キャッシュがあれば、ソースの代わりにそれを読む。".icon"・".logo"・
-		* ".texture" のファイルは、そのままキャッシュとして読む。何も書かない
-		* （キャッシュは TextureResource::Generate が作る）。
+		* textureIndex にシェーダーリソースビューを書く。アップロードは lane に
+		* 積む（Begin と Submit は呼び出し側が行う）。ソースより新しい隣の
+		* ".texture" キャッシュがあれば、ソースの代わりにそれを読む。".icon"・
+		* ".logo"・".texture" のファイルは、そのままキャッシュとして読む。何も
+		* 書かない（キャッシュは TextureResource::Generate が作る）。
 		*/
-		static void CreateTexturePath(SC_IN ID3D12Device* device, SC_IN DirectX::ResourceUploadBatch& resourceUpload, SC_IN ID3D12DescriptorHeap* heap, SC_IN String filePath, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex);
+		static void CreateTexturePath(SC_IN ID3D12Device* device, SC_IN D3D12TransferLane& lane, SC_IN ID3D12DescriptorHeap* heap, SC_IN String filePath, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex);
 
 		/**
 		* [EN]
-		* Same as the ResourceUploadBatch overload, but submits the upload to
-		* cmdQueue and waits for it before returning.
+		* Same as the lane overload, but begins transferLane on copyQueue, submits
+		* it and waits for the upload before returning.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* ResourceUploadBatch 版と同じだが、アップロードを cmdQueue へ投入し、
-		* 完了を待ってから戻る。
+		* lane 版と同じだが、copyQueue 上で transferLane を Begin し、Submit して
+		* アップロードの完了を待ってから戻る。
 		*/
-		static void CreateTexturePath(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* cmdQueue, SC_IN ID3D12DescriptorHeap* heap, SC_IN String filePath, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex);
+		static void CreateTexturePath(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* copyQueue, SC_IN D3D12TransferLane* transferLane, SC_IN ID3D12DescriptorHeap* heap, SC_IN String filePath, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex);
 
 		/**
 		* [EN]
-		* Creates a texture from DDS or WIC image bytes in data into resource
-		* and writes its shader resource view at textureIndex of heap,
-		* recording the upload into resourceUpload. resource is reset when
-		* the bytes cannot be decoded.
+		* Creates a texture from DDS or WIC image bytes in data into resource and
+		* writes its shader resource view at textureIndex of heap, recording the
+		* upload of every subresource into lane, which the caller has begun and
+		* submits. The bytes are decoded with DirectXTex (DDS first, then WIC);
+		* the texture is created in the COMMON state, so the copy queue writes it
+		* and the graphics queue reads it without explicit transitions. resource
+		* is reset when the bytes cannot be decoded or the texture cannot be
+		* created.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* data の DDS か WIC の画像バイト列から resource にテクスチャを作り、
-		* heap の textureIndex にシェーダーリソースビューを書く。アップロードは
-		* resourceUpload に記録する。デコードできなければ resource を空にする。
+		* data の DDS か WIC の画像バイト列から resource にテクスチャを作り、heap の
+		* textureIndex にシェーダーリソースビューを書く。全サブリソースの
+		* アップロードは lane に積む（Begin と Submit は呼び出し側が行う）。
+		* デコードは DirectXTex で行う（DDS、次に WIC）。テクスチャは COMMON 状態で
+		* 作るので、コピーキューが書き、描画のキューが読むのに明示的な遷移が
+		* 要らない。デコードできないか作れなければ resource を空にする。
 		*/
-		static void CreateTextureMemory(SC_IN ID3D12Device* device, SC_IN DirectX::ResourceUploadBatch& resourceUpload, SC_IN ID3D12DescriptorHeap* heap, SC_IN const DynamicArray<Byte>& data, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex);
+		static void CreateTextureMemory(SC_IN ID3D12Device* device, SC_IN D3D12TransferLane& lane, SC_IN ID3D12DescriptorHeap* heap, SC_IN const DynamicArray<Byte>& data, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex);
 
 		/**
 		* [EN]
-		* Same as the ResourceUploadBatch overload, but submits the upload to
-		* cmdQueue and waits for it before returning.
+		* Same as the lane overload, but begins transferLane on copyQueue, submits
+		* it and waits for the upload before returning.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* ResourceUploadBatch 版と同じだが、アップロードを cmdQueue へ投入し、
-		* 完了を待ってから戻る。
+		* lane 版と同じだが、copyQueue 上で transferLane を Begin し、Submit して
+		* アップロードの完了を待ってから戻る。
 		*/
-		static void CreateTextureMemory(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* cmdQueue, SC_IN ID3D12DescriptorHeap* heap, SC_IN const DynamicArray<Byte>& data, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex);
+		static void CreateTextureMemory(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* copyQueue, SC_IN D3D12TransferLane* transferLane, SC_IN ID3D12DescriptorHeap* heap, SC_IN const DynamicArray<Byte>& data, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex);
 
 		/**
 		* [EN]

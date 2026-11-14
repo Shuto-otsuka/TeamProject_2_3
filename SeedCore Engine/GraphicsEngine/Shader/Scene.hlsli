@@ -1,7 +1,7 @@
 #ifndef __SCENE_HLSL__
 #define __SCENE_HLSL__
 
-#include "Constants.hlsli"
+#include <GraphicsEngine/Shader/RootSignature.hlsli>
 
 struct SceneConstantBuffer
 {
@@ -29,16 +29,21 @@ struct SceneConstantBuffer
 	float total_time_;
 	float delta_time_;
 
-	// Resolution of whatever the post-tonemap debug overlay (collider wireframes, selection outline) actually draws onto - screen_size_ normally, or PostProcessRenderer's DLSS-RR-upscaled output resolution while DLSS-RR is active. OutlinePS.hlsl scales SV_Position by screen_size_/display_size_ before indexing the (native-resolution) silhouette.
+	// Resolution of the view's display output, which the post-tonemap passes (overlays, outlines) draw at - screen_size_ when nothing upscales, larger while an upscaler is active. Outline.Compose scales SV_Position by the render-to-display ratio before reading the render-resolution Outline.Source.
 	float2 display_size_;
 
 	float2 screen_size_;
 	float2 inverse_screen_size_;
+
+	uint show_flags_low_;
+	uint show_flags_high_;
+	uint debug_source_;
+	uint scene_constant_buffer_padding_;
 };
 
 ConstantBuffer<SceneConstantBuffer> GetSceneConstantBuffer()
 {
-	return ResourceDescriptorHeap[constant_indices.scene_index_];
+	return ResourceDescriptorHeap[view_bindings.scene_];
 }
 
 #endif // __SCENE_HLSL__

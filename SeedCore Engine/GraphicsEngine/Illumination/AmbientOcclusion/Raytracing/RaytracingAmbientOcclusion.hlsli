@@ -1,46 +1,17 @@
-#ifndef __AMBIENT_OCCLUSION_HLSL__
-#define __AMBIENT_OCCLUSION_HLSL__
+#ifndef __RAYTRACING_AMBIENT_OCCLUSION_HLSLI__
+#define __RAYTRACING_AMBIENT_OCCLUSION_HLSLI__
 
-/**
-* [EN]
-* AO tuning constant buffer, read by both RaytracingAmbientOcclusionRT.hlsl (the
-* raytrace pass) and DeferredLightingPS.hlsl (the composite pass, which reads
-* power_ to shape the contrast curve). Must match the C++ mirror in
-* Renderer/AmbientOcclusionRenderer.h byte-for-byte.
-*/
 struct RaytracingAmbientOcclusionConstantBuffer
 {
-	/// World-space AO radius: occluders farther than this along the traced
-	/// ray don't darken this pixel at all.
 	float ray_length_;
-
-	/// Offset along the surface normal applied to the ray origin, to keep
-	/// the ray from immediately re-hitting the triangle it was cast from.
 	float normal_bias_;
-
-	/// Contrast exponent applied in DeferredLightingPS.hlsl:
-	/// ao = pow(ao, power_). 1 = as-is, >1 = darker/stronger.
 	float power_;
-
-	/// Per-frame counter driving the RNG seed - set by
-	/// AmbientOcclusionRenderer, not the UI.
-	uint frame_index_;
-
 	uint ray_count_;
 
-	float3 ambient_occlusion_ray_padding_;
+	uint frame_;
+	uint history_valid_;
+	uint raytracing_ambient_occlusion_constant_buffer_padding_0_;
+	uint raytracing_ambient_occlusion_constant_buffer_padding_1_;
 };
 
-struct RaytracingAmbientOcclusionShaderResourceIndices
-{
-	uint raw_index_;
-	uint3 ambient_occlusion_shader_resource_padding_0_;
-};
-
-struct RaytracingAmbientOcclusionUnorderedAccessIndices
-{
-	uint raw_index_;
-	uint3 ambient_occlusion_unordered_access_padding_0_;
-};
-
-#endif // __AMBIENT_OCCLUSION_HLSL__
+#endif // __RAYTRACING_AMBIENT_OCCLUSION_HLSLI__

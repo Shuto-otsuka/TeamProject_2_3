@@ -1,65 +1,58 @@
-#include "../Model.hlsli"
-#include "../../Shader/ShaderResources.hlsli"
-#include "../../Shader/UnorderedAccesses.hlsli"
-#include "../../Shader/Scene.hlsli"
+#include <GraphicsEngine/Model/Model.hlsli>
+#include <GraphicsEngine/Shader/RootSignature.hlsli>
+
+#define MATERIAL_SORT_BUCKET_COUNT 1024
+
+struct MaterialScatterBindings
+{
+	uint geometry_depth_;
+	uint geometry_visibility_id_;
+	uint material_buckets_;
+	uint material_pixels_;
+};
+ConstantBuffer<MaterialScatterBindings> bindings : register(b0, space1);
 
 /**
 * [EN]
-* VisibilityBuffer material sort, pass 3/3: re-walks every foreground pixel
-* (same test as Model/MaterialClassifyCS.hlsl) and atomically claims the next
-* free slot in its bucket's range (Model/MaterialPrefixSumCS.hlsl turned the
-* bucket buffer from counts into offsets; this pass's InterlockedAdd turns
-* those offsets into running write cursors), writing the pixel's linear
-* screen coordinate there. Model/MaterialResolveCS.hlsl is dispatched 1D over
-* the resulting list.
+* Material sort, pass 3/3: every foreground pixel claims the next slot of its
+* bucket (the offsets from Material.PrefixSum become running write cursors
+* here) and stores its linear pixel position there.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* VisibilityBuffer マテリアルソート、パス3/3: 全前景ピクセルを再度辿り
-* (Model/MaterialClassifyCS.hlsl と同じ判定)、そのバケット範囲内の次の
-* 空きスロットを atomic に確保して(Model/MaterialPrefixSumCS.hlsl が
-* bucket バッファをカウントからオフセットへ変えており、このパスの
-* InterlockedAdd がそのオフセットを進行中の書き込みカーソルへ変える)、
-* ピクセルの線形スクリーン座標をそこへ書く。Model/MaterialResolveCS.hlsl は
-* 結果のリストを1Dディスパッチで辿る。
+* マテリアルソート、パス 3/3。前景のピクセルは自分のバケットの次の位置を確保し
+* (Material.PrefixSum のオフセットがここで書き込み位置に変わる)、そこへ自分の
+* 線形のピクセル位置を書く。
 */
 [numthreads(8, 8, 1)]
-void main(uint3 dtid : SV_DispatchThreadID)
+void main(uint3 id : SV_DispatchThreadID)
 {
-	SceneConstantBuffer scene = GetSceneConstantBuffer();
-
-	if (dtid.x >= (uint)scene.screen_size_.x || dtid.y >= (uint)scene.screen_size_.y)
+	Texture2D<float> depth_texture = ResourceDescriptorHeap[bindings.geometry_depth_];
+	uint width;
+	uint height;
+	depth_texture.GetDimensions(width, height);
+	if (id.x >= width || id.y >= height)
 	{
 		return;
 	}
 
-	uint2 pixel = dtid.xy;
-
-	Texture2D<float> depth_texture = ResourceDescriptorHeap[shader_resource_indices.geometry_buffer_.depth_index_];
-	float depth = depth_texture.Load(int3(pixel, 0));
-
-	if (depth == 0.0)
+	uint2 pixel = id.xy;
+	Texture2D<uint2> visibility_id = ResourceDescriptorHeap[bindings.geometry_visibility_id_];
+	if (depth_texture.Load(int3(pixel, 0)) == 0.0 || visibility_id.Load(int3(pixel, 0)).x == 0)
 	{
 		return;
 	}
-
-	Texture2D<uint4> visibility_texture = ResourceDescriptorHeap[shader_resource_indices.geometry_buffer_.index_4_];
-	uint4 visibility_id = visibility_texture.Load(int3(pixel, 0));
 
 	uint instance_index;
 	uint meshlet_index;
 	uint triangle_in_meshlet_index;
-	UnpackVisibilityID(visibility_id, instance_index, meshlet_index, triangle_in_meshlet_index);
+	UnpackVisibilityID(visibility_id.Load(int3(pixel, 0)), instance_index, meshlet_index, triangle_in_meshlet_index);
 
-	uint bucket = instance_index % MATERIAL_SORT_BUCKET_COUNT;
+	RWStructuredBuffer<uint> buckets = ResourceDescriptorHeap[bindings.material_buckets_];
+	uint slot;
+	InterlockedAdd(buckets[instance_index % MATERIAL_SORT_BUCKET_COUNT], 1, slot);
 
-	RWByteAddressBuffer bucket_buffer = ResourceDescriptorHeap[unordered_access_indices.material_sort_.bucket_index_];
-	uint write_slot;
-	bucket_buffer.InterlockedAdd(bucket * 4, 1, write_slot);
-
-	RWByteAddressBuffer sorted_pixel_list = ResourceDescriptorHeap[unordered_access_indices.material_sort_.sorted_pixel_list_index_];
-	uint screen_width = (uint)scene.screen_size_.x;
-	uint linear_pixel = pixel.y * screen_width + pixel.x;
-	sorted_pixel_list.Store(write_slot * 4, linear_pixel);
+	RWStructuredBuffer<uint> pixels = ResourceDescriptorHeap[bindings.material_pixels_];
+	pixels[slot] = pixel.y * width + pixel.x;
 }

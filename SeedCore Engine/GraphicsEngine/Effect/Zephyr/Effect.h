@@ -6,7 +6,6 @@ namespace SeedCore
 	class Effect :public SeedScript
 	{
 		friend class EffectSystem;
-		friend class EffectRenderer;
 
 	public:
 		SC_REFLECTION_FIELD_EX("スポーンレート")

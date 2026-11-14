@@ -7,7 +7,7 @@ namespace SeedCore
 	struct BootConfig;
 
 	class AvatarMesh;
-	class BootScreenRenderer;
+	class BootTexture;
 
 	struct PreviewViewContext
 	{
@@ -193,9 +193,9 @@ namespace SeedCore
 		/// [JP] このフレームに Engine がこのプレビューを描くか。パネルが毎フレーム下ろし、ウィンドウが開いているときだけ立てる。
 		Bool active_ = false;
 
-		/// [EN] Renderer owned by the panel that draws the loading screen.
-		/// [JP] ローディング画面を描くレンダラー。パネルが所有する。
-		BootScreenRenderer* renderer_ = nullptr;
+		/// [EN] Background, bar and frame images of the loading screen, owned by the panel.
+		/// [JP] ローディング画面の背景・バー・枠の絵。パネルが所有する。
+		const BootTexture* texture_ = nullptr;
 
 		/// [EN] Loading screen settings being edited, owned by the panel.
 		/// [JP] 編集中のローディング画面の設定。パネルが所有する。
@@ -204,6 +204,14 @@ namespace SeedCore
 		/// [EN] Loading progress from 0 to 1.
 		/// [JP] 読み込みの進み具合（0〜1）。
 		Float progress_ = 0.0f;
+
+		/// [EN] Width of the game screen the loading screen is drawn at.
+		/// [JP] ローディング画面を描くゲーム画面の幅。
+		Uint32 width_ = 1;
+
+		/// [EN] Height of the game screen the loading screen is drawn at.
+		/// [JP] ローディング画面を描くゲーム画面の高さ。
+		Uint32 height_ = 1;
 	};
 
 	/**

@@ -111,6 +111,7 @@ enc_temp_folder/
 [Bb]in/
 [Oo]bj/
 Debug/
+!/GraphicsEngine/Debug/
 DebugGame/
 Release/
 RelWithDebInfo/
