@@ -13,6 +13,7 @@ public:
 	bool GetFirstPerson() const { return firstPerson; }
 
 	void SetOn();
+	bool IsOn() const { return isOn; }
 
 	SC_REFLECTION_FIELD_EX("何個目のチェックポイントか")
 		int step = 0;

@@ -1357,7 +1357,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 14.0,
+							"float": -11.0,
 							"int": 0,
 							"is_array": false,
 							"name": "moveX",
@@ -1388,7 +1388,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 0.0,
+							"float": 12.0,
 							"int": 0,
 							"is_array": false,
 							"name": "moveZ",
@@ -1481,7 +1481,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 4.0,
+							"float": 7.0,
 							"int": 0,
 							"is_array": false,
 							"name": "explosionInterval",
@@ -1633,6 +1633,10 @@
 							}
 						}
 					]
+				},
+				{
+					"component": "Selected",
+					"fields": []
 				}
 			],
 			"layer": "Gimmick",
@@ -1642,7 +1646,7 @@
 			"parentIndex": -1,
 			"persistentId": 10347,
 			"position": {
-				"x": -7.0,
+				"x": 27.0,
 				"y": 0.5,
 				"z": 9.0
 			},
@@ -1658,7 +1662,8 @@
 				"z": 1.0
 			},
 			"tags": [
-				"CanStop"
+				"CanStop",
+				"Bomb"
 			]
 		},
 		{
@@ -1958,14 +1963,14 @@
 			"persistentId": 20747,
 			"position": {
 				"x": 0.0,
-				"y": 0.0,
+				"y": -1.1920928955078125e-07,
 				"z": 0.0
 			},
 			"rotation": {
 				"w": 1.0,
-				"x": 0.0,
+				"x": -0.0,
 				"y": 0.0,
-				"z": 0.0
+				"z": -0.0
 			},
 			"scale": {
 				"x": 1.0,
