@@ -5,6 +5,9 @@
 class GoalSystem :public SeedCore::SeedScript
 {
 public:
+	SC_REFLECTION_FIELD()
+		float textSizeXRate;
+
 	SC_PAYLOAD_FIELD_EX("遷移先シーン", Scene)
 	SeedCore::Uint32 nextSceneID_ = 0;
 
@@ -25,6 +28,8 @@ public:
 	void OnEditorTick(float elapsedTime);
 
 private:
+	void ApplyResult();
+
 	SC_CONSTEX float directionTime_ = 0.4f;
 
 	bool isGoal_ = false;
@@ -37,6 +42,7 @@ private:
 	SeedCore::Actor toNextSceneActor_;
 	SeedCore::Actor toTitleSceneActor_;
 	SeedCore::Actor toRetrySceneActor_;
+	SeedCore::Actor player_;
 
 	SeedCore::AudioSource* clearAudio;
 };

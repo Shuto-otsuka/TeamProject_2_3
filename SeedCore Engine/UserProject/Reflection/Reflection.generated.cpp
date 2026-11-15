@@ -408,6 +408,7 @@ namespace SeedCore
 			{
 				ReflectionRegistry::Register(String("GoalSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					GoalSystem& obj = *static_cast<GoalSystem*>(ptr);
+					outInfo.push_back({ String("textSizeXRate"), offsetof(GoalSystem, textSizeXRate), AttributeType::Float });
 					{
 						FieldInfo fi;
 						fi.name_ = String("範囲");

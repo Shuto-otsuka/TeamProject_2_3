@@ -191,6 +191,8 @@ void PlayerController::Reset()
 {
     //チェックポイントから再開
     myCharacterController->Teleport(checkPointPosition);
+    //死亡回数カウント
+    deathCount++;
     //アナウンス
     if(announceController)announceController->StartAnnounce(AnnounceController::Type::DEATH);
 }
@@ -227,6 +229,8 @@ void PlayerController::UpdateUsually(float elapsedTime)
     UpdateFallJudge(elapsedTime);
     //やり直し処理
     UpdateInputReset(elapsedTime);
+    //クリアタイム更新
+    UpdateClearTimer(elapsedTime);
 
     //デバッグ用
     if (SeedCore::Input::KeyState(SeedCore::Input::Key::Escape, SeedCore::Input::OnPressed))
@@ -662,6 +666,7 @@ void PlayerController::Shot()
     if (costGauge + costGaugeAdd > maxCostGauge || shotChargeRate <= 0.0f)return;
     //コスト増加
     costGauge += costGaugeAdd;
+    totalUseCost += costGaugeAdd;
 
     //コスト上限到達でアナウンス
     if(costGauge == maxCostGauge) 
@@ -761,6 +766,11 @@ void PlayerController::FinishGun(float gunFinishTime)
     isGunFinishWait = true;
     gunFinishTimer = 0.0f;
     this->gunFinishTime = gunFinishTime;
+}
+
+void PlayerController::UpdateClearTimer(float elapsedTime)
+{
+    clearTimer += elapsedTime;
 }
 
 bool PlayerController::OnGroundOrCoyote()

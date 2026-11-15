@@ -4,15 +4,16 @@
 #include<SeedCore/ScLog.h>
 
 void BallController::OnStart()
-{
+{  
     myRigid = GetActor().GetComponent<SeedCore::Rigidbody>();
     myCollider = GetActor().GetComponent<SeedCore::SphereCollider>();
     velocity = GetActor().GetComponent<SeedCore::LinearVelocity>();
     stopController = GetActor().GetComponent<StopController>();
-    startPosition = GetActor().WorldMatrix().Translation();
 
     noStopAirResistance = myRigid->linearDrag_;
     noStopAngularResistance = myRigid->angularDrag_;
+
+    startPosition = GetActor().WorldMatrix().Translation();
 }
 
 void BallController::OnTick(float elapsedTime)

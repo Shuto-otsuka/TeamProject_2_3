@@ -16,6 +16,7 @@ void BombController::OnStart()
     linearVelocity = GetActor().GetComponent<SeedCore::LinearVelocity>();
     angularVelocity = GetActor().GetComponent<SeedCore::AngularVelocity>();
     stopController = GetActor().GetComponent<StopController>();
+
     thirdPersonCameraActor = GetWorld().GetActor("CameraBrain");
     firstPersonCameraActor = GetWorld().GetActor("FirstPersonCameraBrain");
     player = GetWorld().GetActor("Player");
@@ -23,8 +24,6 @@ void BombController::OnStart()
     UpdateMoveTarget();
 
     bombTimer = SeedCore::Prefab::Spawn("BombTimerText.prefab");
-    bombTimerText = bombTimer.GetComponent<SeedCore::Text>();
-    bombTimerPosition = bombTimer.GetComponent<SeedCore::Position>();
 
     explosionAudio = GetActor().GetComponent<SeedCore::AudioSource>();
     SeedCore::DynamicArray<SeedCore::Actor> children = GetActor().Children();
@@ -34,6 +33,9 @@ void BombController::OnStart()
 
 void BombController::OnTick(float elapsedTime)
 {
+    bombTimerText = bombTimer.GetComponent<SeedCore::Text>();
+    bombTimerPosition = bombTimer.GetComponent<SeedCore::Position>();
+
     if (stopController->IsStop())
     {
         //カウントダウンの音が再生されていた場合一時停止

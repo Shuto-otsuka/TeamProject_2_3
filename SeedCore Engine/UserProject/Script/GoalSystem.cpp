@@ -37,6 +37,7 @@ void GoalSystem::OnStart()
 	}
 
 	// それぞれのUIのActorを取得する
+	player_ = world.GetActor("Player");
 	toNextSceneActor_ = world.GetActor("NextButtonUI");
 	toTitleSceneActor_ = world.GetActor("TitleButtonUI");
 	toRetrySceneActor_ = world.GetActor("RetryButtonUI");
@@ -67,6 +68,7 @@ void GoalSystem::OnTick(float elapsedTime)
 			{
 				isGoal_ = true;
 				resultActor_.Active(true);
+				ApplyResult();//ここでリザルトのテキストをセット
 				if (clearAudio)clearAudio->Play();
 				PlayerController* playerController = other.GetComponent<PlayerController>();
 				if (playerController)
@@ -151,4 +153,56 @@ void GoalSystem::OnEditorTick(float elapsedTime)
 	// 場所がわかりやすいように球を表示する
 	Vector3 center = GetActor().WorldMatrix().Translation();
 	GetActor().GetService<DebugDraw>()->Sphere(center, 0.5f, Color(1.0f, 0.0f, 0.0f, 0.5f));
+}
+
+void GoalSystem::ApplyResult()
+{
+	PlayerController* playerController = player_.GetComponent<PlayerController>();
+
+	for (auto& resultChild : resultActor_.Children())
+	{
+		SeedCore::Name* name = resultChild.GetComponent<SeedCore::Name>();
+		if (name->name_ == "UseCostText")
+		{
+			//使った総コストのテキスト
+
+			SeedCore::Text* text = resultChild.GetComponent<SeedCore::Text>();
+			int costI = playerController->GetTotalUseCost();
+			text->text_ = SeedCore::String(std::to_string(costI));
+			float textSizeX = text->fontSize_ * textSizeXRate;
+			int digit = costI <= 0 ? 1 : std::log10(costI) + 1;
+			SeedCore::Position* position = resultChild.GetComponent<SeedCore::Position>();
+			position->x_ -= textSizeX * (digit - 1);
+		}
+		else if (name->name_ == "DeathText")
+		{
+			//死亡回数のテキスト
+
+			SeedCore::Text* text = resultChild.GetComponent<SeedCore::Text>();
+			int deathCountI = playerController->GetDeathCount();
+			text->text_ = SeedCore::String(std::to_string(deathCountI));
+			float textSizeX = text->fontSize_ * textSizeXRate;
+			int digit = deathCountI <= 0 ? 1 : std::log10(deathCountI) + 1;
+			SeedCore::Position* position = resultChild.GetComponent<SeedCore::Position>();
+			position->x_ -= textSizeX * (digit - 1);
+		}
+		else if(name->name_ == "ClearTimeText")
+		{
+			//クリアタイムのテキスト
+
+			SeedCore::Text* text = resultChild.GetComponent<SeedCore::Text>();
+			float clearTimeF = playerController->GetClearTimer();
+			int clearTimeI = static_cast<int>(clearTimeF);
+			int minute = clearTimeI / 60;
+			int second = clearTimeI % 60;
+			std::string str = std::to_string(minute) + "分" + std::to_string(second) + "秒";
+			float textSizeX = text->fontSize_ * (textSizeXRate + 0.07f);
+			int digit = 2;
+			digit += minute <= 0 ? 1 : std::log10(minute) + 1;
+			digit += second <= 0 ? 1 : std::log10(second) + 1;
+			text->text_ = SeedCore::String(str);
+			SeedCore::Position* position = resultChild.GetComponent<SeedCore::Position>();
+			position->x_ -= textSizeX * (digit - 1);
+		}
+    }
 }
