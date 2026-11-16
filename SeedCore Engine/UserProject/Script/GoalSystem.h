@@ -5,9 +5,6 @@
 class GoalSystem :public SeedCore::SeedScript
 {
 public:
-	SC_REFLECTION_FIELD()
-		float textSizeXRate;
-
 	SC_PAYLOAD_FIELD_EX("遷移先シーン", Scene)
 	SeedCore::Uint32 nextSceneID_ = 0;
 
@@ -37,6 +34,7 @@ private:
 	bool isDecided_ = false;
 
 	float resultTimer_ = 0.0f;
+	float textSizeXRate = 0.33f;
 
 	SeedCore::Actor resultActor_;
 	SeedCore::Actor toNextSceneActor_;
