@@ -66,6 +66,7 @@
 #include <PhysicsEngine/Joint/SpringJoint.h>
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
+#include <Runtime/enc_temp_folder/91a7985f607e77a9e716e11e7c34bea/CheckPointAreaController.h>
 
 extern "C" int _force_reflection_AudioListener = 0;
 extern "C" int _force_reflection_AudioSource = 0;
@@ -177,6 +178,7 @@ extern "C" int _force_reflection_SliderJoint = 0;
 extern "C" int _force_reflection_SpringJoint = 0;
 extern "C" int _force_reflection_Rigidbody = 0;
 extern "C" int _force_reflection_Softbody = 0;
+extern "C" int _force_reflection_CheckPointAreaController = 0;
 
 namespace SeedCore
 {
@@ -5974,6 +5976,20 @@ namespace SeedCore
 			}
 		};
 		static Register_Softbody global_Softbody_register;
+
+		// ---- Runtime/enc_temp_folder/91a7985f607e77a9e716e11e7c34bea/CheckPointAreaController.h ----
+		struct Register_CheckPointAreaController
+		{
+			Register_CheckPointAreaController()
+			{
+				ReflectionRegistry::Register(String("CheckPointAreaController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					CheckPointAreaController& obj = *static_cast<CheckPointAreaController*>(ptr);
+					outInfo.push_back({ String("何個目のチェックポイントか"), offsetof(CheckPointAreaController, step), AttributeType::Int });
+					outInfo.push_back({ String("firstPerson"), offsetof(CheckPointAreaController, firstPerson), AttributeType::Bool });
+				});
+			}
+		};
+		static Register_CheckPointAreaController global_CheckPointAreaController_register;
 
 		struct RegisterEnum_AmbientOcclusionTechnique
 		{

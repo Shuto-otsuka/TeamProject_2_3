@@ -1,6 +1,7 @@
 #include "CircuitSystem.h"
 #include "SwitchSystem.h"
 #include "LightSwitchSystem.h"
+#include"CheckPointAreaController.h"
 
 #include <SeedCore/ScComponent.h>
 #include <SeedCore/ScLog.h>
@@ -57,6 +58,13 @@ void CircuitSystem::OnLateTick(float elapsedTime)
 
 		LightSwitchSystem* lightSwitchSystem = actor.GetComponent<LightSwitchSystem>();
 		if (lightSwitchSystem && lightSwitchSystem->IsOn())
+		{
+			onCount++;
+			continue;
+		}
+
+		CheckPointAreaController* checkPointAreaController = actor.GetComponent<CheckPointAreaController>();
+		if (checkPointAreaController && checkPointAreaController->IsOn())
 		{
 			onCount++;
 		}

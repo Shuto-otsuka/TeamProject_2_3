@@ -491,9 +491,27 @@ void PlayerController::UpdateTurn(float elapsedTime)
             SeedCore::Actor hitActor = GetWorld().GetActor(hit.entityID_);//ヒットしたアクターの取得
             if (!hitActor.HasTag("CanStop") && hit.normal_.y > 0.99f)
             {
-                if (isGravityArea)
+                //重力エリアかどうかで撃ち方を変える
+                bool gravityShot = isGravityArea;
+                //自分が重力エリアにいなくても、撃つ先が重力エリアであれば重力ショットフラグをtrueにする
+                if (!gravityShot)
                 {
-                    //重力エリアなら床にも撃てる
+                    SeedCore::Vector3 targetPosition = ray.origin_ + ray.direction_ * hit.distance_;
+                    SeedCore::DynamicArray<SeedCore::EntityID> hitEntities = GetActor().GetService<SeedCore::Physics>()->Overlap(SeedCore::OverlapShapeKind::Sphere, { 0.1f,0.1f,0.1f }, targetPosition, SeedCore::Quaternion::Identity);
+                    for (auto entity : hitEntities)
+                    {
+                        SeedCore::Actor hitActor = GetWorld().GetActor(entity);
+                        if (hitActor.HasTag("GravityArea"))
+                        {
+                            gravityShot = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (gravityShot)
+                {
+                    //重力ショットなら床にも撃てる
                     bulletTargetPosition = ray.origin_ + ray.direction_ * hit.distance_;
                 }
                 else
