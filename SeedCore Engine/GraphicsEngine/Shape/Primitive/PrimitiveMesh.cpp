@@ -75,12 +75,9 @@ namespace SeedCore
 			MeshletBound& bound = meshletBounds[meshletIndex];
 
 			Vector3 center = Vector3::Zero;
-			Vector3 axis = Vector3::Zero;
 			for (Uint32 vertexIndex = 0;vertexIndex < meshletDesc.vertexCount_;++vertexIndex)
 			{
-				const Point& point = points[vertexIndices[meshletDesc.vertexOffset_ + vertexIndex]];
-				center += point.position_;
-				axis += point.normal_;
+				center += points[vertexIndices[meshletDesc.vertexOffset_ + vertexIndex]].position_;
 			}
 			center /= static_cast<Float>(meshletDesc.vertexCount_);
 
@@ -92,14 +89,43 @@ namespace SeedCore
 			bound.center_ = center;
 			bound.radius_ = radius;
 
+			std::span<const Uint8> primitiveIndices = meshlet.PrimitiveIndices();
+			Vector3 axis = Vector3::Zero;
+			for (Uint32 triangleIndex = 0;triangleIndex < meshletDesc.triangleCount_;++triangleIndex)
+			{
+				Uint32 byteOffset = meshletDesc.triangleOffset_ + triangleIndex * 3;
+				const Point& point0 = points[vertexIndices[meshletDesc.vertexOffset_ + primitiveIndices[byteOffset]]];
+				const Point& point1 = points[vertexIndices[meshletDesc.vertexOffset_ + primitiveIndices[byteOffset + 1]]];
+				const Point& point2 = points[vertexIndices[meshletDesc.vertexOffset_ + primitiveIndices[byteOffset + 2]]];
+				Vector3 faceNormal = (point1.position_ - point0.position_).Cross(point2.position_ - point0.position_);
+				Float faceLength = faceNormal.Length();
+				if (faceLength < 1e-8f)
+				{
+					continue;
+				}
+				faceNormal /= faceNormal.Dot(point0.normal_ + point1.normal_ + point2.normal_) < 0.0f ? -faceLength : faceLength;
+				axis += faceNormal;
+			}
+
 			Float axisLength = axis.Length();
 			if (axisLength > 1e-6f)
 			{
 				axis /= axisLength;
 				Float minDot = 1.0f;
-				for (Uint32 vertexIndex = 0;vertexIndex < meshletDesc.vertexCount_;++vertexIndex)
+				for (Uint32 triangleIndex = 0;triangleIndex < meshletDesc.triangleCount_;++triangleIndex)
 				{
-					minDot = Min(minDot, points[vertexIndices[meshletDesc.vertexOffset_ + vertexIndex]].normal_.Dot(axis));
+					Uint32 byteOffset = meshletDesc.triangleOffset_ + triangleIndex * 3;
+					const Point& point0 = points[vertexIndices[meshletDesc.vertexOffset_ + primitiveIndices[byteOffset]]];
+					const Point& point1 = points[vertexIndices[meshletDesc.vertexOffset_ + primitiveIndices[byteOffset + 1]]];
+					const Point& point2 = points[vertexIndices[meshletDesc.vertexOffset_ + primitiveIndices[byteOffset + 2]]];
+					Vector3 faceNormal = (point1.position_ - point0.position_).Cross(point2.position_ - point0.position_);
+					Float faceLength = faceNormal.Length();
+					if (faceLength < 1e-8f)
+					{
+						continue;
+					}
+					faceNormal /= faceNormal.Dot(point0.normal_ + point1.normal_ + point2.normal_) < 0.0f ? -faceLength : faceLength;
+					minDot = Min(minDot, faceNormal.Dot(axis));
 				}
 				bound.coneAxis_ = axis;
 				bound.coneCutoff_ = minDot;

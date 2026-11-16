@@ -23,7 +23,7 @@ namespace SeedCore
 
 		Float noiseScale_ = 0.0008f;
 
-		Float windSpeed_ = 0.01f;
+		Float windX_ = 0.0f;
 
 		Uint frameIndex_ = 0;
 
@@ -77,13 +77,13 @@ namespace SeedCore
 
 		Float multiScatterEccentricity_ = 0.5f;
 
-		Float temporalJitter_ = 0.0f;
+		Float windZ_ = 0.0f;
 
 		Float iblIntensity_ = 1.0f;
 
-		Float volumetricCloudConstantBufferPadding0_ = 0.0f;
+		Float lightDensity_ = 1.0f;
 
-		Float volumetricCloudConstantBufferPadding1_ = 0.0f;
+		Float sunStrength_ = 1.0f;
 	};
 	SC_STATIC_ASSERT(VolumetricCloudConstantBuffer, 192, "Environment/VolumetricCloud/VolumetricCloud.hlsli");
 
@@ -118,6 +118,17 @@ namespace SeedCore
 		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/Environment/VolumetricCloud/VolumetricCloudCS.hlsl");
 
 		SC_CONSTEX const Char* entryPoint_ = "Trace";
+
+		SC_CONSTEX Uint32 threadGroupSizeX_ = 8;
+
+		SC_CONSTEX Uint32 threadGroupSizeY_ = 8;
+	};
+
+	struct VolumetricCloudResolveDescription
+	{
+		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/Environment/VolumetricCloud/VolumetricCloudCS.hlsl");
+
+		SC_CONSTEX const Char* entryPoint_ = "Resolve";
 
 		SC_CONSTEX Uint32 threadGroupSizeX_ = 8;
 

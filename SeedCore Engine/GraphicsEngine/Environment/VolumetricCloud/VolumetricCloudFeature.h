@@ -17,7 +17,9 @@ namespace SeedCore
 			SC_RENDER_CONTRACT(Constants, RenderResourceDesc::Constant(sizeof(VolumetricCloudConstantBuffer)), RenderResourceScope::Frame, RenderResourceLifetime::Upload),
 			SC_RENDER_CONTRACT(Shape, RenderResourceDesc::FixedVolume(RenderFormat::R16Float, shapeSize_, shapeSize_, shapeSize_), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
 			SC_RENDER_CONTRACT(Detail, RenderResourceDesc::FixedVolume(RenderFormat::R16Float, detailSize_, detailSize_, detailSize_), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
-			SC_RENDER_CONTRACT(Radiance, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero)
+			SC_RENDER_CONTRACT(Radiance, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Transient, RenderFallback::Zero),
+			SC_RENDER_INTERNAL(Raw, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Transient),
+			SC_RENDER_INTERNAL(Accumulated, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Persistent)
 		);
 
 	public:
@@ -39,6 +41,8 @@ namespace SeedCore
 
 		ComputePipeline<VolumetricCloudTraceDescription> tracePipeline_;
 
+		ComputePipeline<VolumetricCloudResolveDescription> resolvePipeline_;
+
 		VolumetricCloudConstantBuffer constants_;
 
 		Uint32 frameIndex_ = 0;
@@ -48,5 +52,7 @@ namespace SeedCore
 		Bool baking_ = false;
 
 		Bool tracing_ = false;
+
+		Bool historyValid_ = false;
 	};
 }

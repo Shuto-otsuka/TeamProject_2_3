@@ -35,14 +35,16 @@ struct VolumetricCloudConstantBuffer
 	uint step_count_;
 	uint light_step_count_;
 
-	/// World position -> shape noise domain scale (smaller = bigger shapes).
+	/// Horizontal world position -> shape noise domain scale: a quarter of one
+	/// over the size of a cloud cell, since a shape tile holds four cells. The
+	/// vertical scale follows the layer thickness instead (see CloudDensity).
 	float noise_scale_;
 
-	/// Wind scroll speed (noise domain units per second).
-	float wind_speed_;
+	/// X component of the wind velocity, in shape noise units per second.
+	float wind_x_;
 
-	/// Per-frame counter. Only used for the raymarch start jitter, and only
-	/// when temporal_jitter_ is non-zero.
+	/// Per-frame counter that rotates the raymarch start jitter every frame,
+	/// for the temporal resolve behind it to average.
 	uint frame_index_;
 
 	/// 0 = stratus (flat, low band), 1 = cumulus (tall, billowing).
@@ -101,8 +103,8 @@ struct VolumetricCloudConstantBuffer
 
 	/// ---- Weather ----
 
-	/// Weather field frequency, RELATIVE to noise_scale_. Smaller = larger
-	/// cloud masses.
+	/// Horizontal world position -> weather field domain scale: a quarter of
+	/// one over the size of a cloud mass. Smaller = larger masses and gaps.
 	float weather_scale_;
 
 	/// How hard the weather field pushes coverage around, 0..1. 0 restores the
@@ -113,7 +115,7 @@ struct VolumetricCloudConstantBuffer
 	/// cloud edges).
 	float detail_strength_;
 
-	/// Detail scroll speed relative to wind_speed_. The detail volume needs its
+	/// Detail scroll speed relative to the wind. The detail volume needs its
 	/// own offset - see CloudDensity.
 	float detail_wind_speed_;
 
@@ -140,12 +142,19 @@ struct VolumetricCloudConstantBuffer
 	float multi_scatter_contribution_;
 	float multi_scatter_eccentricity_;
 
-	/// 0 = frame-independent dither (stable, no crawling grain).
-	/// 1 = full per-frame rotation, for use behind TAA/DLSS.
-	float temporal_jitter_;
+	/// Z component of the wind velocity, in shape noise units per second.
+	float wind_z_;
 
 	float ibl_intensity_;
-	float2 volumetric_cloud_constant_buffer_padding_0_;
+
+	/// Extinction multiplier for the march toward the sun only. Below 1 the
+	/// sunlight reaches deeper into a cloud than its view opacity suggests, so
+	/// a denser cloud stays lit inside instead of turning dark.
+	float light_density_;
+
+	/// Sunlight multiplier on the phase, which is normalized so isotropic
+	/// scattering is 1.
+	float sun_strength_;
 };
 
 // ---------------------------------------------------------------------------
@@ -329,14 +338,16 @@ float CloudDensity(float3 world_position, float altitude, VolumetricCloudConstan
 		return 0.0;
 	}
 
-	float wind_offset = total_time * tuning.wind_speed_;
+	float2 wind_offset = float2(tuning.wind_x_, tuning.wind_z_) * total_time;
 
 	/// Weather field: a very low-frequency XZ slice of the shape volume. This
 	/// is what gives the sky large-scale cloud masses and clear gaps instead of
 	/// one globally uniform coverage - without it the field reads as an even
-	/// carpet of identical puffs. The scale and the W slice are deliberately
-	/// non-harmonic with the shape lookup below so the two do not correlate.
-	float2 weather_position = world_position.xz * tuning.noise_scale_ * tuning.weather_scale_ + wind_offset * 0.15;
+	/// carpet of identical puffs. The W slice is deliberately non-harmonic with
+	/// the shape lookup below so the two do not correlate. The wind is carried
+	/// over into the weather domain at the same world speed, so the masses
+	/// drift with the clouds inside them.
+	float2 weather_position = world_position.xz * tuning.weather_scale_ + wind_offset * (tuning.weather_scale_ / max(tuning.noise_scale_, 1e-8));
 	float weather = shape_noise.SampleLevel(wrap_sampler, float3(weather_position, 0.713), 0);
 	weather = smoothstep(0.35, 0.75, weather);
 
@@ -354,25 +365,39 @@ float CloudDensity(float3 world_position, float altitude, VolumetricCloudConstan
 	float top_extent = lerp(0.35, 1.0, weather);
 	float profile_height = saturate(height01 / max(top_extent, 0.0001));
 
-	/// Height profile: stratus (flat low band) <-> cumulus (tall) by type.
-	float stratus_profile = saturate((profile_height - 0.05) * 8.0) * saturate((0.4 - profile_height) * 6.0);
-	float cumulus_profile = saturate(profile_height * 3.0) * saturate((1.0 - profile_height) * 1.5);
-	float height_fade = lerp(stratus_profile, cumulus_profile, saturate(tuning.cloud_type_));
-	if (height_fade <= 0.0)
+	/// Height gradient by cloud type, as in Nubis: the probability of cloud at
+	/// each height. Stratus is a thin low band; cumulus rises sharply from a
+	/// flat base and tapers off over the upper part of the layer, which is what
+	/// rounds the tops. The gradient multiplies the shape BEFORE the coverage
+	/// cut below, so it carves the silhouette itself (flat bottoms, domed tops)
+	/// instead of only scaling the density of an unchanged shape.
+	float stratus_gradient = saturate(profile_height / 0.08) * saturate((0.3 - profile_height) / 0.15);
+	float cumulus_gradient = saturate(profile_height / 0.07) * saturate((1.0 - profile_height) / 0.6);
+	float height_gradient = lerp(stratus_gradient, cumulus_gradient, saturate(tuning.cloud_type_));
+	if (height_gradient <= 0.0)
 	{
 		return 0.0;
 	}
 
-	float3 shape_position = world_position * tuning.noise_scale_ + float3(wind_offset, 0.0, wind_offset * 0.3);
+	/// Horizontally the shape follows the cloud size; vertically two cells span
+	/// the layer whatever its thickness, so a larger size widens the masses
+	/// instead of flattening the few cells that fit in the layer into a sheet.
+	float3 shape_position = float3(world_position.x * tuning.noise_scale_ + wind_offset.x, (altitude - tuning.cloud_bottom_) * (0.5 / layer_thickness), world_position.z * tuning.noise_scale_ + wind_offset.y);
 	float shape = shape_noise.SampleLevel(wrap_sampler, shape_position, 0);
 
-	float base = saturate((shape - (1.0 - coverage)) / max(coverage, 0.0001));
+	/// The Perlin-Worley values gather around the middle (roughly 0.3 to 0.7),
+	/// so they are stretched to 0..1 first; the coverage cut below then grows
+	/// the covered area evenly across the whole coverage range.
+	shape = saturate((shape - 0.3) / 0.4);
+
+	/// Nubis coverage: remap(shape * gradient, 1 - coverage, 1, 0, 1) * coverage.
+	/// The trailing multiply keeps sparse skies thin and soft-edged while full
+	/// coverage stays solid.
+	float base = saturate((shape * height_gradient - (1.0 - coverage)) / max(coverage, 0.0001)) * coverage;
 	if (base <= 0.0)
 	{
 		return 0.0;
 	}
-
-	float density = base;
 
 	if (detail_strength > 0.0)
 	{
@@ -382,20 +407,23 @@ float CloudDensity(float3 world_position, float altitude, VolumetricCloudConstan
 		/// speed, which reads as the surface boiling rather than as texture
 		/// locked to the cloud. The slight downward Y drift is what makes tops
 		/// look like they are being blown off.
-		float detail_wind = total_time * tuning.wind_speed_ * tuning.detail_wind_speed_;
+		float2 detail_wind = wind_offset * tuning.detail_wind_speed_;
 		float3 detail_position = world_position * tuning.noise_scale_ * tuning.detail_scale_
-			+ float3(detail_wind, -detail_wind * 0.5, detail_wind * 0.3);
+			+ float3(detail_wind.x, -length(detail_wind) * 0.5, detail_wind.y);
 		float detail = detail_noise.SampleLevel(wrap_sampler, detail_position, 0);
 
-		/// Erode hardest at the edges (low base) and toward the top, which is
-		/// what gives wispy tops over solid bottoms.
-		float erosion_amount = tuning.detail_strength_ * detail_strength * lerp(1.0, 1.6, height01);
-		float erosion = (1.0 - detail) * erosion_amount * (1.0 - base);
-		density = saturate(base - erosion);
+		/// Nubis erosion: remap(base, modifier, 1, 0, 1) cuts the whole silhouette
+		/// back by the detail value, not only its thin fringe. The detail volume
+		/// is inverted Worley (bright at cell centers): eroding by it near the
+		/// base leaves wispy strands, and eroding by its inverse above that
+		/// leaves round billows, the cauliflower surface of a cumulus.
+		float detail_modifier = lerp(detail, 1.0 - detail, saturate(height01 * 10.0));
+		float erosion = detail_modifier * tuning.detail_strength_ * 0.5 * detail_strength;
+		base = saturate((base - erosion) / max(1.0 - erosion, 0.0001));
 	}
 
 	float density_boost = 1.0 + tuning.rain_ * 1.5;
-	return density * height_fade * tuning.density_scale_ * density_boost;
+	return base * tuning.density_scale_ * density_boost;
 }
 
 // ---------------------------------------------------------------------------
@@ -483,7 +511,11 @@ CloudMultiScatter CloudMultiScatterSetup(float cos_theta, VolumetricCloudConstan
 	[unroll]
 	for (uint octave = 0; octave < CLOUD_MULTI_SCATTER_MAX_OCTAVES; octave++)
 	{
-		result.weight_[octave] = octave < octaves ? contribution * CloudPhase(cos_theta, tuning, eccentricity) : 0.0;
+		/// The Henyey-Greenstein phase integrates to 1 over the sphere, so
+		/// isotropic scattering is 1/(4 pi); scaling by 4 pi measures it against
+		/// isotropic instead, which puts a sunlit cloud on the same footing as
+		/// the sky ambient term and lets it reach white.
+		result.weight_[octave] = octave < octaves ? contribution * CloudPhase(cos_theta, tuning, eccentricity) * 4.0 * CLOUD_PI * tuning.sun_strength_ : 0.0;
 		result.attenuation_[octave] = attenuation;
 
 		attenuation *= tuning.multi_scatter_attenuation_;
@@ -585,7 +617,7 @@ float CloudLightOpticalDepth(float3 position, float altitude, float3 light_direc
 		weight *= growth;
 	}
 
-	return optical_depth;
+	return optical_depth * tuning.light_density_;
 }
 
 // ---------------------------------------------------------------------------

@@ -46,7 +46,16 @@ namespace SeedCore
 		static void Execute(VolumetricCloudFeature& feature, RenderPass& pass);
 	};
 
-	struct VolumetricCloudFeature::TraceStage :RenderStage
+	struct VolumetricCloudFeature::TraceStage
+	{
+		struct MarchStep;
+
+		struct ResolveStep;
+
+		using Sequence = RenderSequence<MarchStep, ResolveStep>;
+	};
+
+	struct VolumetricCloudFeature::TraceStage::MarchStep :RenderStage
 	{
 		SC_CONSTEX RenderQueue queue_ = RenderQueue::Illumination;
 
@@ -61,6 +70,26 @@ namespace SeedCore
 			RenderAccess::Read(Detail),
 			RenderAccess::Read(GeometryFeature::Depth),
 			RenderAccess::Constant(LightFeature::Constants),
+			RenderAccess::Write(Raw)
+		};
+
+		static void Execute(VolumetricCloudFeature& feature, RenderPass& pass);
+	};
+
+	struct VolumetricCloudFeature::TraceStage::ResolveStep :RenderStage
+	{
+		SC_CONSTEX RenderQueue queue_ = RenderQueue::Illumination;
+
+		SC_CONSTEX Bool VolumetricCloudFeature::* enableCondition_ = &VolumetricCloudFeature::tracing_;
+
+		SC_CONSTEX Uint64 showFlags_ = static_cast<Uint64>(RenderShowFlag::VolumetricCloud);
+
+		SC_CONSTEX RenderAccess accesses_[] =
+		{
+			RenderAccess::Read(Raw),
+			RenderAccess::Read(GeometryFeature::Depth),
+			RenderAccess::History(Accumulated),
+			RenderAccess::Write(Accumulated),
 			RenderAccess::Write(Radiance)
 		};
 

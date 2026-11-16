@@ -13,8 +13,13 @@ namespace SeedCore
 		feature.detailPipeline_.Dispatch(pass, detailSize_, detailSize_, detailSize_);
 	}
 
-	void VolumetricCloudFeature::TraceStage::Execute(VolumetricCloudFeature& feature, RenderPass& pass)
+	void VolumetricCloudFeature::TraceStage::MarchStep::Execute(VolumetricCloudFeature& feature, RenderPass& pass)
 	{
 		feature.tracePipeline_.Dispatch(pass, pass.Width(), pass.Height());
+	}
+
+	void VolumetricCloudFeature::TraceStage::ResolveStep::Execute(VolumetricCloudFeature& feature, RenderPass& pass)
+	{
+		feature.resolvePipeline_.Dispatch(pass, pass.Width(), pass.Height(), 1, feature.historyValid_ ? 1u : 0u);
 	}
 }

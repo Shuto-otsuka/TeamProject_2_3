@@ -10,8 +10,12 @@
 * projected: their screen rectangle contains the sphere's projection however
 * close or off-center it is, and their largest depth is at least the
 * sphere's nearest depth, since view depth is linear over the box and peaks
-* at a corner. The mip is chosen so the rectangle covers at most 2x2 texels,
-* and the four corner texels are compared. A corner behind the camera (the
+* at a corner. The rectangle is taken in mip 0 texels, widened by one texel
+* on its far side so that rounding never leaves out a covered texel, and
+* each coarser texel is found by shifting the mip 0 coordinate, which is
+* exactly the texel the pyramid reduced it into (the last row and column
+* fold in the odd remainder). The mip is chosen so the rectangle covers at
+* most 2x2 texels, and the four corner texels are compared. A corner behind the camera (the
 * camera inside the box or the box crossing the camera plane) counts as
 * visible.
 */
@@ -44,12 +48,15 @@ bool IsOccluded(float3 center, float radius, row_major float4x4 view_projection,
 	uint pyramid_mip_count;
 	depth_pyramid.GetDimensions(0, pyramid_width, pyramid_height, pyramid_mip_count);
 
-	float2 extent = (uv_max - uv_min) * float2(pyramid_width, pyramid_height);
-	uint mip_level = min((uint)ceil(log2(max(max(extent.x, extent.y), 1.0))), pyramid_mip_count - 1);
-	float2 mip_size = float2(max(pyramid_width >> mip_level, 1u), max(pyramid_height >> mip_level, 1u));
+	uint2 pyramid_size = uint2(pyramid_width, pyramid_height);
+	uint2 base_min = min(uint2(uv_min * float2(pyramid_size)), pyramid_size - 1);
+	uint2 base_max = min(uint2(uv_max * float2(pyramid_size)) + 1, pyramid_size - 1);
+	uint2 base_extent = base_max - base_min;
+	uint mip_level = min((uint)ceil(log2(max((float)max(base_extent.x, base_extent.y), 1.0))), pyramid_mip_count - 1);
+	uint2 mip_size = max(pyramid_size >> mip_level, uint2(1, 1));
 
-	int2 texel_min = int2(clamp(uv_min * mip_size, 0.0, mip_size - 1.0));
-	int2 texel_max = int2(clamp(uv_max * mip_size, 0.0, mip_size - 1.0));
+	int2 texel_min = int2(min(base_min >> mip_level, mip_size - 1));
+	int2 texel_max = int2(min(base_max >> mip_level, mip_size - 1));
 
 	float depth00 = depth_pyramid.Load(int3(texel_min.x, texel_min.y, mip_level));
 	float depth10 = depth_pyramid.Load(int3(texel_max.x, texel_min.y, mip_level));
