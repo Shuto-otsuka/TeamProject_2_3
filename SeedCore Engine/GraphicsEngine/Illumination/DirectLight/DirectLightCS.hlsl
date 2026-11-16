@@ -4,6 +4,7 @@
 #include <GraphicsEngine/Model/Material/Material.hlsli>
 #include <GraphicsEngine/Shader/Scene.hlsli>
 #include <GraphicsEngine/Environment/Weather/Weather.hlsli>
+#include <GraphicsEngine/Illumination/Shadow/Raytracing/RaytracingShadow.hlsli>
 #include <GraphicsEngine/Debug/DebugView.hlsli>
 
 struct DirectLightRatioBindings
@@ -20,6 +21,7 @@ struct DirectLightRatioBindings
 	uint weather_constants_;
 	uint light_clusters_;
 	uint raytracing_shadow_visibility_;
+	uint raytracing_shadow_constants_;
 	uint direct_light_radiance_;
 };
 ConstantBuffer<DirectLightRatioBindings> bindings : register(b0, space1);
@@ -33,7 +35,9 @@ ConstantBuffer<DirectLightRatioBindings> bindings : register(b0, space1);
 * three share one smooth distance falloff to zero at range_; a spot fades
 * over softness_ inside its cone, and a rectangle lights only its front side,
 * from the point of the rectangle nearest to the surface. The sum is then
-* scaled by the punctual visibility ratio in RaytracingShadow.Visibility.y.
+* scaled by the punctual visibility ratio in RaytracingShadow.Visibility.y,
+* blended toward 1 by the shadow strength in RaytracingShadow.Constants
+* (0 leaves the light unshadowed, 1 applies the ratio as it is).
 * The background receives no light.
 *
 * ---------------------------------------------------------------------
@@ -43,7 +47,8 @@ ConstantBuffer<DirectLightRatioBindings> bindings : register(b0, space1);
 * （LoadSurfaceMaterial）から表面を組み立て、画面のタイルと対数の深さの
 * スライスからピクセルのクラスタを求め、そこに入る点光源・スポット・矩形
 * ライトの影なしの直接光を合計し、RaytracingShadow.Visibility.y の点光源の
-* 可視率を掛ける。3 種類とも range_ で 0 になる同じ
+* 可視率を、RaytracingShadow.Constants の影の濃さで 1 との間を補間して掛ける
+* （0 で影なし、1 で可視率そのまま）。3 種類とも range_ で 0 になる同じ
 * なめらかな距離の減衰を使い、スポットはコーンの内側で softness_ の幅で
 * フェードし、矩形は表側だけを、表面にいちばん近い矩形上の点から照らす。
 * 背景には光を書かない。
@@ -184,5 +189,6 @@ void Ratio(uint3 id : SV_DispatchThreadID)
 		}
 	}
 	Texture2D<float2> shadow_visibility = ResourceDescriptorHeap[bindings.raytracing_shadow_visibility_];
-	punctual_radiance[pixel] = float4(lighting * shadow_visibility.Load(int3(pixel, 0)).y, 0.0);
+	ConstantBuffer<RaytracingShadowConstantBuffer> shadow_constants = ResourceDescriptorHeap[bindings.raytracing_shadow_constants_];
+	punctual_radiance[pixel] = float4(lighting * saturate(lerp(1.0, saturate(shadow_visibility.Load(int3(pixel, 0)).y), saturate(shadow_constants.strength_))), 0.0);
 }

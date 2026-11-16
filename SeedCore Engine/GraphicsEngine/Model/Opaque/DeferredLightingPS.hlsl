@@ -4,6 +4,7 @@
 #include <GraphicsEngine/Model/Material/Material.hlsli>
 #include <GraphicsEngine/Shader/Scene.hlsli>
 #include <GraphicsEngine/Environment/Weather/Weather.hlsli>
+#include <GraphicsEngine/Illumination/Shadow/Raytracing/RaytracingShadow.hlsli>
 #include <GraphicsEngine/Debug/DebugView.hlsli>
 
 struct DeferredLightingResolveBindings
@@ -18,6 +19,7 @@ struct DeferredLightingResolveBindings
 	uint light_constants_;
 	uint weather_constants_;
 	uint raytracing_shadow_visibility_;
+	uint raytracing_shadow_constants_;
 	uint raytracing_ambient_occlusion_openness_;
 	uint raytracing_subsurface_scattering_transmittance_;
 	uint raytracing_reflection_radiance_;
@@ -49,7 +51,10 @@ ConstantBuffer<DeferredLightingResolveBindings> bindings : register(b0, space1);
 * by RaytracingReflection.Radiance by its alpha (the reflection strength).
 * The refracted light RaytracingRefraction.Radiance is weighted by its alpha,
 * the transmission factor and the transmitted share of the Fresnel term.
-* Unlit surfaces and the background receive nothing. The additive blend weights the output by its alpha, so
+* The shadow strength in RaytracingShadow.Constants blends the sun
+* visibility toward 1 up to 1, and from 1 to 2 also darkens the indirect
+* light where a surface facing the sun is in its shadow, until the umbra is
+* black at 2. Unlit surfaces and the background receive nothing. The additive blend weights the output by its alpha, so
 * the light is returned with alpha 1.
 *
 * ---------------------------------------------------------------------
@@ -69,7 +74,9 @@ ConstantBuffer<DeferredLightingResolveBindings> bindings : register(b0, space1);
 * だけ置き換える。間接の鏡面は対応するスペキュラオクルージョンで暗くした
 * 事前フィルタの空で、RaytracingReflection.Radiance をそのアルファ（反射の
 * 強さ）の分だけ置き換える。屈折光 RaytracingRefraction.Radiance は、その
-* アルファ・透過係数・フレネルの透過分で重み付けする。Unlit の表面と背景には
+* アルファ・透過係数・フレネルの透過分で重み付けする。RaytracingShadow.Constants
+* の影の濃さは、1 までは太陽の可視率を 1 との間で補間し、1〜2 では太陽を向いた
+* 面が影に入ったところの間接光も暗くして、2 で本影が真っ黒になる。Unlit の表面と背景には
 * 何も足さない。加算ブレンドは出力をアルファで重み付けするので、光はアルファ 1
 * で返す。
 */
@@ -148,12 +155,14 @@ float4 main(FullscreenOutput input) : SV_Target0
 
 	ConstantBuffer<LightConstantBuffer> constants = ResourceDescriptorHeap[bindings.light_constants_];
 	float3 lighting = float3(0.0, 0.0, 0.0);
+	float3 sun_direction = normalize(-constants.sun_direction_);
+	Texture2D<float2> shadow_visibility = ResourceDescriptorHeap[bindings.raytracing_shadow_visibility_];
+	ConstantBuffer<RaytracingShadowConstantBuffer> shadow_constants = ResourceDescriptorHeap[bindings.raytracing_shadow_constants_];
+	float sun_visibility = saturate(shadow_visibility.Load(int3(pixel, 0)).x);
 	if (constants.sun_intensity_ > 0.0 && (scene.show_flags_low_ & SHOW_FLAG_DIRECT_LIGHT) != 0)
 	{
-		float3 sun_direction = normalize(-constants.sun_direction_);
 		float3 sun_radiance = constants.sun_color_ * constants.sun_intensity_;
-		Texture2D<float2> shadow_visibility = ResourceDescriptorHeap[bindings.raytracing_shadow_visibility_];
-		lighting += shadow_visibility.Load(int3(pixel, 0)).x * EvalDirectLightDispatch(instance.shading_.shading_model_, normal, view, sun_direction, material.diffuse_color_, material.f0_, material.roughness_, material.clearcoat_factor_, material.clearcoat_roughness_, material.clearcoat_normal_, material.sheen_color_, material.sheen_roughness_, material.anisotropy_tangent_, material.anisotropy_bitangent_, material.anisotropy_strength_) * sun_radiance;
+		lighting += saturate(lerp(1.0, sun_visibility, saturate(shadow_constants.strength_))) * EvalDirectLightDispatch(instance.shading_.shading_model_, normal, view, sun_direction, material.diffuse_color_, material.f0_, material.roughness_, material.clearcoat_factor_, material.clearcoat_roughness_, material.clearcoat_normal_, material.sheen_color_, material.sheen_roughness_, material.anisotropy_tangent_, material.anisotropy_bitangent_, material.anisotropy_strength_) * sun_radiance;
 
 		Texture2D<float4> subsurface_transmittance = ResourceDescriptorHeap[bindings.raytracing_subsurface_scattering_transmittance_];
 		lighting += material.diffuse_color_ * subsurface_transmittance.Load(int3(pixel, 0)).rgb * sun_radiance * saturate(dot(-normal, sun_direction));
@@ -197,6 +206,11 @@ float4 main(FullscreenOutput input) : SV_Target0
 	Texture2D<float4> refraction_radiance = ResourceDescriptorHeap[bindings.raytracing_refraction_radiance_];
 	float4 refraction = refraction_radiance.Load(int3(pixel, 0));
 	float3 indirect_specular = image_based_specular + refraction.rgb * (1.0 - fresnel) * refraction.a * saturate(instance.extension_.transmission_factor_);
+
+	float sun_facing = constants.sun_intensity_ > 0.0 ? saturate(dot(normal, sun_direction)) : 0.0;
+	float indirect_shadow = 1.0 - saturate(shadow_constants.strength_ - 1.0) * (1.0 - sun_visibility) * sun_facing;
+	indirect_diffuse *= indirect_shadow;
+	indirect_specular *= indirect_shadow;
 
 	Texture2D<float4> punctual_radiance = ResourceDescriptorHeap[bindings.direct_light_radiance_];
 	lighting += punctual_radiance.Load(int3(pixel, 0)).rgb;

@@ -17,11 +17,13 @@ namespace SeedCore
 		shapePipeline_.Create(device);
 		detailPipeline_.Create(device);
 		tracePipeline_.Create(device);
+		resolvePipeline_.Create(device);
 	}
 
 	void VolumetricCloudFeature::Gather(const RenderScene& scene, RenderFrame& frame)
 	{
 		constants_ = VolumetricCloudConstantBuffer{};
+		Bool traced = tracing_;
 		Bool enabled = false;
 		Bool found = false;
 		Query<Read<Active>, Read<VolumetricCloudScapes>> query(*scene.world_);
@@ -34,42 +36,72 @@ namespace SeedCore
 				found = true;
 
 				enabled = cloud.enable_;
+				Float horizontalFrequency = 0.25f / cloud.shape_.size_;
+				Float windAngle = ToRadians(cloud.windDirection_);
 				constants_.cloudBottom_ = cloud.cloudBottom_;
-				constants_.cloudTop_ = cloud.cloudTop_;
+				constants_.cloudTop_ = cloud.cloudBottom_ + cloud.cloudThickness_;
 				constants_.coverage_ = cloud.coverage_;
-				constants_.densityScale_ = cloud.densityScale_;
-				constants_.cloudAlbedo_ = Vector3(cloud.cloudAlbedo_.r, cloud.cloudAlbedo_.g, cloud.cloudAlbedo_.b);
-				constants_.scatteringG_ = cloud.scatteringG_;
-				constants_.stepCount_ = cloud.stepCount_;
-				constants_.lightStepCount_ = cloud.lightStepCount_;
-				constants_.noiseScale_ = cloud.noiseScale_;
-				constants_.windSpeed_ = cloud.windSpeed_;
+				constants_.densityScale_ = 0.002f * Pow(100.0f, cloud.lighting_.density_);
+				constants_.cloudAlbedo_ = Vector3(cloud.lighting_.albedo_.r, cloud.lighting_.albedo_.g, cloud.lighting_.albedo_.b);
+				constants_.scatteringG_ = cloud.lighting_.forwardScattering_;
+				constants_.noiseScale_ = horizontalFrequency;
+				constants_.windX_ = Cos(windAngle) * cloud.windSpeed_ * horizontalFrequency;
+				constants_.windZ_ = Sin(windAngle) * cloud.windSpeed_ * horizontalFrequency;
 				constants_.cloudType_ = cloud.cloudType_;
 				constants_.rain_ = cloud.rain_;
-				constants_.detailScale_ = cloud.detailScale_;
-				constants_.skyZenithColor_ = Vector3(cloud.skyZenithColor_.r, cloud.skyZenithColor_.g, cloud.skyZenithColor_.b);
-				constants_.sunSize_ = cloud.sunSize_;
-				constants_.skyHorizonColor_ = Vector3(cloud.skyHorizonColor_.r, cloud.skyHorizonColor_.g, cloud.skyHorizonColor_.b);
-				constants_.skyBrightness_ = cloud.skyBrightness_;
-				constants_.groundColor_ = Vector3(cloud.groundColor_.r, cloud.groundColor_.g, cloud.groundColor_.b);
-				constants_.planetRadius_ = cloud.planetRadius_;
-				constants_.maxMarchDistance_ = cloud.maxMarchDistance_;
-				constants_.lodDistance_ = cloud.lodDistance_;
-				constants_.aerialDensity_ = cloud.aerialDensity_;
-				constants_.weatherScale_ = cloud.weatherScale_;
-				constants_.weatherAmount_ = cloud.weatherAmount_;
-				constants_.detailStrength_ = cloud.detailStrength_;
-				constants_.detailWindSpeed_ = cloud.detailWindSpeed_;
-				constants_.phaseBackward_ = cloud.phaseBackward_;
-				constants_.phaseBlend_ = cloud.phaseBlend_;
-				constants_.powderStrength_ = cloud.powderStrength_;
-				constants_.ambientStrength_ = cloud.ambientStrength_;
-				constants_.multiScatterOctaves_ = cloud.multiScatterOctaves_;
-				constants_.multiScatterAttenuation_ = cloud.multiScatterAttenuation_;
-				constants_.multiScatterContribution_ = cloud.multiScatterContribution_;
-				constants_.multiScatterEccentricity_ = cloud.multiScatterEccentricity_;
-				constants_.temporalJitter_ = cloud.temporalJitter_;
-				constants_.iblIntensity_ = cloud.iblIntensity_;
+				constants_.detailScale_ = cloud.shape_.detailScale_;
+				constants_.skyZenithColor_ = Vector3(cloud.sky_.zenithColor_.r, cloud.sky_.zenithColor_.g, cloud.sky_.zenithColor_.b);
+				constants_.sunSize_ = cloud.sky_.sunSize_;
+				constants_.skyHorizonColor_ = Vector3(cloud.sky_.horizonColor_.r, cloud.sky_.horizonColor_.g, cloud.sky_.horizonColor_.b);
+				constants_.skyBrightness_ = cloud.sky_.brightness_;
+				constants_.groundColor_ = Vector3(cloud.sky_.groundColor_.r, cloud.sky_.groundColor_.g, cloud.sky_.groundColor_.b);
+				constants_.planetRadius_ = cloud.advanced_.planetRadius_;
+				switch (cloud.quality_)
+				{
+				case VolumetricCloudQuality::Low:
+					constants_.stepCount_ = 32;
+					constants_.lightStepCount_ = 4;
+					constants_.maxMarchDistance_ = 60000.0f;
+					constants_.lodDistance_ = 15000.0f;
+					break;
+
+				case VolumetricCloudQuality::Medium:
+					constants_.stepCount_ = 48;
+					constants_.lightStepCount_ = 5;
+					constants_.maxMarchDistance_ = 90000.0f;
+					constants_.lodDistance_ = 20000.0f;
+					break;
+
+				case VolumetricCloudQuality::High:
+					constants_.stepCount_ = 64;
+					constants_.lightStepCount_ = 6;
+					constants_.maxMarchDistance_ = 120000.0f;
+					constants_.lodDistance_ = 25000.0f;
+					break;
+
+				case VolumetricCloudQuality::Ultra:
+					constants_.stepCount_ = 128;
+					constants_.lightStepCount_ = 8;
+					constants_.maxMarchDistance_ = 200000.0f;
+					constants_.lodDistance_ = 40000.0f;
+					break;
+				}
+				constants_.aerialDensity_ = cloud.advanced_.aerialDensity_;
+				constants_.weatherScale_ = 0.25f / (cloud.shape_.weatherSize_ * 1000.0f);
+				constants_.weatherAmount_ = cloud.shape_.weatherAmount_;
+				constants_.detailStrength_ = cloud.shape_.detailStrength_;
+				constants_.detailWindSpeed_ = cloud.shape_.detailWindSpeed_;
+				constants_.phaseBackward_ = cloud.advanced_.phaseBackward_;
+				constants_.phaseBlend_ = cloud.advanced_.phaseBlend_;
+				constants_.powderStrength_ = cloud.lighting_.powderStrength_;
+				constants_.ambientStrength_ = cloud.lighting_.ambientStrength_;
+				constants_.multiScatterOctaves_ = cloud.advanced_.multiScatterOctaves_;
+				constants_.multiScatterAttenuation_ = cloud.advanced_.multiScatterAttenuation_;
+				constants_.multiScatterContribution_ = cloud.advanced_.multiScatterContribution_;
+				constants_.multiScatterEccentricity_ = cloud.advanced_.multiScatterEccentricity_;
+				constants_.iblIntensity_ = cloud.advanced_.iblIntensity_;
+				constants_.lightDensity_ = 1.0f - 0.9f * cloud.lighting_.lightPenetration_;
+				constants_.sunStrength_ = cloud.lighting_.sunStrength_;
 			});
 
 		const CelestialResult* celestial = scene.Find<CelestialResult>();
@@ -87,6 +119,7 @@ namespace SeedCore
 		baking_ = !baked_;
 		baked_ = true;
 		tracing_ = enabled;
+		historyValid_ = traced && tracing_;
 	}
 
 	void VolumetricCloudFeature::Prepare(const RenderFrame& frame, RenderUpload& upload)

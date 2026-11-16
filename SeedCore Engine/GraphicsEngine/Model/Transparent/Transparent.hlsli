@@ -24,6 +24,7 @@ struct TransparentDrawBindings
 	uint sky_brdf_;
 	uint top_level_structure_;
 	uint top_level_hits_;
+	uint raytracing_shadow_constants_;
 	uint transparent_heads_;
 	uint transparent_fragments_;
 	uint transparent_counter_;

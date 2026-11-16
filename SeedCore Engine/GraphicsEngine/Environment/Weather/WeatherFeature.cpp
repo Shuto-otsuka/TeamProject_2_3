@@ -36,7 +36,8 @@ namespace SeedCore
 				}
 				cloudFound = true;
 				rainAmount = cloud.rain_;
-				emitter_.wind_ = Vector3(cloud.windSpeed_ * 10.0f, 0.0f, 0.0f);
+				Float windAngle = ToRadians(cloud.windDirection_);
+				emitter_.wind_ = Vector3(Cos(windAngle), 0.0f, Sin(windAngle)) * (cloud.windSpeed_ * 0.008f);
 			});
 
 		Bool weatherFound = false;

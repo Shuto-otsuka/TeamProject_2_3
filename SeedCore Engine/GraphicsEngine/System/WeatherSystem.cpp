@@ -57,50 +57,50 @@ namespace SeedCore
 		{
 		case WeatherType::Clear:
 			target.coverage_ = 0.15f;
-			target.densityScale_ = 0.02f;
+			target.lighting_.density_ = 0.5f;
 			target.rain_ = 0.0f;
-			target.windSpeed_ = 0.01f;
-			target.skyBrightness_ = 1.0f;
+			target.windSpeed_ = 5.0f;
+			target.sky_.brightness_ = 1.0f;
 			break;
 
 		case WeatherType::Cloudy:
 			target.coverage_ = 0.45f;
-			target.densityScale_ = 0.02f;
+			target.lighting_.density_ = 0.5f;
 			target.rain_ = 0.0f;
-			target.windSpeed_ = 0.02f;
-			target.skyBrightness_ = 0.9f;
+			target.windSpeed_ = 10.0f;
+			target.sky_.brightness_ = 0.9f;
 			break;
 
 		case WeatherType::Overcast:
 			target.coverage_ = 0.85f;
-			target.densityScale_ = 0.03f;
+			target.lighting_.density_ = 0.6f;
 			target.rain_ = 0.0f;
-			target.windSpeed_ = 0.03f;
-			target.skyBrightness_ = 0.6f;
+			target.windSpeed_ = 15.0f;
+			target.sky_.brightness_ = 0.6f;
 			break;
 
 		case WeatherType::Rain:
 			target.coverage_ = 0.9f;
-			target.densityScale_ = 0.035f;
+			target.lighting_.density_ = 0.62f;
 			target.rain_ = 0.7f;
-			target.windSpeed_ = 0.05f;
-			target.skyBrightness_ = 0.45f;
+			target.windSpeed_ = 25.0f;
+			target.sky_.brightness_ = 0.45f;
 			break;
 
 		case WeatherType::Snow:
 			target.coverage_ = 0.8f;
-			target.densityScale_ = 0.03f;
+			target.lighting_.density_ = 0.6f;
 			target.rain_ = 0.0f;
-			target.windSpeed_ = 0.02f;
-			target.skyBrightness_ = 0.55f;
+			target.windSpeed_ = 10.0f;
+			target.sky_.brightness_ = 0.55f;
 			break;
 
 		case WeatherType::Storm:
 			target.coverage_ = 1.0f;
-			target.densityScale_ = 0.045f;
+			target.lighting_.density_ = 0.68f;
 			target.rain_ = 1.0f;
-			target.windSpeed_ = 0.09f;
-			target.skyBrightness_ = 0.3f;
+			target.windSpeed_ = 45.0f;
+			target.sky_.brightness_ = 0.3f;
 			break;
 		}
 	}
@@ -246,10 +246,10 @@ namespace SeedCore
 				GetTarget(weatherType, target);
 
 				cloud.coverage_ = Lerp(cloud.coverage_, target.coverage_, t);
-				cloud.densityScale_ = Lerp(cloud.densityScale_, target.densityScale_, t);
+				cloud.lighting_.density_ = Lerp(cloud.lighting_.density_, target.lighting_.density_, t);
 				cloud.rain_ = Lerp(cloud.rain_, target.rain_, t);
 				cloud.windSpeed_ = Lerp(cloud.windSpeed_, target.windSpeed_, t);
-				cloud.skyBrightness_ = Lerp(cloud.skyBrightness_, target.skyBrightness_, t);
+				cloud.sky_.brightness_ = Lerp(cloud.sky_.brightness_, target.sky_.brightness_, t);
 			});
 	}
 }

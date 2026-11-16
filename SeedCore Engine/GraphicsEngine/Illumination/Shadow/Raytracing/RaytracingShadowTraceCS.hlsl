@@ -187,6 +187,5 @@ void main(uint3 id : SV_DispatchThreadID)
 
 	float sun = sun_present ? (sun_facing ? sun_visible / ray_count : 0.0) : 1.0;
 	float punctual = punctual_present ? punctual_visible / ray_count : 1.0;
-	float strength = max(constants.strength_, 0.0);
-	raw[pixel] = float2(saturate(lerp(1.0, sun, strength)), saturate(lerp(1.0, punctual, strength)));
+	raw[pixel] = float2(sun, punctual);
 }

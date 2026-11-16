@@ -90,6 +90,10 @@ extern "C" int _force_reflection_Effect = 0;
 extern "C" int _force_reflection_SunSettings = 0;
 extern "C" int _force_reflection_MoonSettings = 0;
 extern "C" int _force_reflection_Celestial = 0;
+extern "C" int _force_reflection_VolumetricCloudShapeSettings = 0;
+extern "C" int _force_reflection_VolumetricCloudLightingSettings = 0;
+extern "C" int _force_reflection_VolumetricCloudAdvancedSettings = 0;
+extern "C" int _force_reflection_VolumetricCloudSkySettings = 0;
 extern "C" int _force_reflection_VolumetricCloudScapes = 0;
 extern "C" int _force_reflection_VolumetricStar = 0;
 extern "C" int _force_reflection_Rain = 0;
@@ -1012,6 +1016,261 @@ namespace SeedCore
 		static Register_Celestial global_Celestial_register;
 
 		// ---- GraphicsEngine/Environment/VolumetricCloud/VolumetricCloudScapes.h ----
+		struct Register_VolumetricCloudShapeSettings
+		{
+			Register_VolumetricCloudShapeSettings()
+			{
+				ReflectionRegistry::Register(String("VolumetricCloudShapeSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					VolumetricCloudShapeSettings& obj = *static_cast<VolumetricCloudShapeSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("雲の大きさ（m）");
+						fi.offset_ = offsetof(VolumetricCloudShapeSettings, size_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 200.0f;
+						fi.clampMax_ = 20000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("塊と晴れ間の大きさ（km）");
+						fi.offset_ = offsetof(VolumetricCloudShapeSettings, weatherSize_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 2.0f;
+						fi.clampMax_ = 200.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("塊と晴れ間の強さ");
+						fi.offset_ = offsetof(VolumetricCloudShapeSettings, weatherAmount_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("縁のディテールの細かさ");
+						fi.offset_ = offsetof(VolumetricCloudShapeSettings, detailScale_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 1.0f;
+						fi.clampMax_ = 16.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("縁の侵食");
+						fi.offset_ = offsetof(VolumetricCloudShapeSettings, detailStrength_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("縁の流れる速さ");
+						fi.offset_ = offsetof(VolumetricCloudShapeSettings, detailWindSpeed_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 2.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_VolumetricCloudShapeSettings global_VolumetricCloudShapeSettings_register;
+
+		struct Register_VolumetricCloudLightingSettings
+		{
+			Register_VolumetricCloudLightingSettings()
+			{
+				ReflectionRegistry::Register(String("VolumetricCloudLightingSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					VolumetricCloudLightingSettings& obj = *static_cast<VolumetricCloudLightingSettings*>(ptr);
+					outInfo.push_back({ String("雲の色"), offsetof(VolumetricCloudLightingSettings, albedo_), AttributeType::Color });
+					{
+						FieldInfo fi;
+						fi.name_ = String("濃さ");
+						fi.offset_ = offsetof(VolumetricCloudLightingSettings, density_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("光の通りやすさ");
+						fi.offset_ = offsetof(VolumetricCloudLightingSettings, lightPenetration_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("太陽の当たり方");
+						fi.offset_ = offsetof(VolumetricCloudLightingSettings, sunStrength_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 4.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("影の明るさ（環境光）");
+						fi.offset_ = offsetof(VolumetricCloudLightingSettings, ambientStrength_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 2.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("縁の光り（前方散乱）");
+						fi.offset_ = offsetof(VolumetricCloudLightingSettings, forwardScattering_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 0.9f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("もこもこ感（パウダー）");
+						fi.offset_ = offsetof(VolumetricCloudLightingSettings, powderStrength_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_VolumetricCloudLightingSettings global_VolumetricCloudLightingSettings_register;
+
+		struct Register_VolumetricCloudAdvancedSettings
+		{
+			Register_VolumetricCloudAdvancedSettings()
+			{
+				ReflectionRegistry::Register(String("VolumetricCloudAdvancedSettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					VolumetricCloudAdvancedSettings& obj = *static_cast<VolumetricCloudAdvancedSettings*>(ptr);
+					{
+						FieldInfo fi;
+						fi.name_ = String("後方散乱の異方性");
+						fi.offset_ = offsetof(VolumetricCloudAdvancedSettings, phaseBackward_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 0.9f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("前方・後方のブレンド");
+						fi.offset_ = offsetof(VolumetricCloudAdvancedSettings, phaseBlend_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 1.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("多重散乱のオクターブ数");
+						fi.offset_ = offsetof(VolumetricCloudAdvancedSettings, multiScatterOctaves_);
+						fi.type_ = AttributeType::Int;
+						fi.clampMin_ = 1;
+						fi.clampMax_ = 8;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("多重散乱の消散の減衰");
+						fi.offset_ = offsetof(VolumetricCloudAdvancedSettings, multiScatterAttenuation_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.1f;
+						fi.clampMax_ = 0.95f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("多重散乱の寄与の減衰");
+						fi.offset_ = offsetof(VolumetricCloudAdvancedSettings, multiScatterContribution_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.1f;
+						fi.clampMax_ = 0.95f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("多重散乱の偏心の減衰");
+						fi.offset_ = offsetof(VolumetricCloudAdvancedSettings, multiScatterEccentricity_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.1f;
+						fi.clampMax_ = 0.95f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("空気遠近の密度");
+						fi.offset_ = offsetof(VolumetricCloudAdvancedSettings, aerialDensity_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 0.0002f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("IBL の強さ");
+						fi.offset_ = offsetof(VolumetricCloudAdvancedSettings, iblIntensity_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 4.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("惑星の半径");
+						fi.offset_ = offsetof(VolumetricCloudAdvancedSettings, planetRadius_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 100000.0f;
+						fi.clampMax_ = 40000000.0f;
+						outInfo.push_back(std::move(fi));
+					}
+				});
+			}
+		};
+		static Register_VolumetricCloudAdvancedSettings global_VolumetricCloudAdvancedSettings_register;
+
+		struct Register_VolumetricCloudSkySettings
+		{
+			Register_VolumetricCloudSkySettings()
+			{
+				ReflectionRegistry::Register(String("VolumetricCloudSkySettings"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					VolumetricCloudSkySettings& obj = *static_cast<VolumetricCloudSkySettings*>(ptr);
+					outInfo.push_back({ String("天頂の色"), offsetof(VolumetricCloudSkySettings, zenithColor_), AttributeType::Color });
+					outInfo.push_back({ String("地平線の色"), offsetof(VolumetricCloudSkySettings, horizonColor_), AttributeType::Color });
+					{
+						FieldInfo fi;
+						fi.name_ = String("空の明るさ");
+						fi.offset_ = offsetof(VolumetricCloudSkySettings, brightness_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 4.0f;
+						outInfo.push_back(std::move(fi));
+					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("太陽の視半径");
+						fi.offset_ = offsetof(VolumetricCloudSkySettings, sunSize_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.005f;
+						fi.clampMax_ = 0.2f;
+						outInfo.push_back(std::move(fi));
+					}
+					outInfo.push_back({ String("地面の色"), offsetof(VolumetricCloudSkySettings, groundColor_), AttributeType::Color });
+				});
+			}
+		};
+		static Register_VolumetricCloudSkySettings global_VolumetricCloudSkySettings_register;
+
 		struct Register_VolumetricCloudScapes
 		{
 			Register_VolumetricCloudScapes()
@@ -1019,36 +1278,6 @@ namespace SeedCore
 				ReflectionRegistry::Register(String("VolumetricCloudScapes"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					VolumetricCloudScapes& obj = *static_cast<VolumetricCloudScapes*>(ptr);
 					outInfo.push_back({ String("有効"), offsetof(VolumetricCloudScapes, enable_), AttributeType::Bool });
-					{
-						FieldInfo fi;
-						fi.name_ = String("雲層の下端");
-						fi.offset_ = offsetof(VolumetricCloudScapes, cloudBottom_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 5000.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("雲層の上端");
-						fi.offset_ = offsetof(VolumetricCloudScapes, cloudTop_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 100.0f;
-						fi.clampMax_ = 10000.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("惑星の半径");
-						fi.offset_ = offsetof(VolumetricCloudScapes, planetRadius_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 100000.0f;
-						fi.clampMax_ = 40000000.0f;
-						outInfo.push_back(std::move(fi));
-					}
 					{
 						FieldInfo fi;
 						fi.name_ = String("雲量");
@@ -1061,17 +1290,7 @@ namespace SeedCore
 					}
 					{
 						FieldInfo fi;
-						fi.name_ = String("密度");
-						fi.offset_ = offsetof(VolumetricCloudScapes, densityScale_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.0001f;
-						fi.clampMax_ = 0.5f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("雲の形（層雲〜積雲）");
+						fi.name_ = String("雲の形（層雲～積雲）");
 						fi.offset_ = offsetof(VolumetricCloudScapes, cloudType_);
 						fi.type_ = AttributeType::Float;
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
@@ -1091,284 +1310,87 @@ namespace SeedCore
 					}
 					{
 						FieldInfo fi;
-						fi.name_ = String("形状ノイズのスケール");
-						fi.offset_ = offsetof(VolumetricCloudScapes, noiseScale_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.0001f;
-						fi.clampMax_ = 0.01f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("ディテールのスケール");
-						fi.offset_ = offsetof(VolumetricCloudScapes, detailScale_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 1.0f;
-						fi.clampMax_ = 16.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("ディテールの強さ");
-						fi.offset_ = offsetof(VolumetricCloudScapes, detailStrength_);
+						fi.name_ = String("雲の高さ（下端 m）");
+						fi.offset_ = offsetof(VolumetricCloudScapes, cloudBottom_);
 						fi.type_ = AttributeType::Float;
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
 						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 1.0f;
+						fi.clampMax_ = 5000.0f;
 						outInfo.push_back(std::move(fi));
 					}
 					{
 						FieldInfo fi;
-						fi.name_ = String("天候フィールドの周波数");
-						fi.offset_ = offsetof(VolumetricCloudScapes, weatherScale_);
+						fi.name_ = String("雲の厚さ（m）");
+						fi.offset_ = offsetof(VolumetricCloudScapes, cloudThickness_);
 						fi.type_ = AttributeType::Float;
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.005f;
-						fi.clampMax_ = 0.5f;
+						fi.clampMin_ = 100.0f;
+						fi.clampMax_ = 8000.0f;
 						outInfo.push_back(std::move(fi));
 					}
 					{
 						FieldInfo fi;
-						fi.name_ = String("天候フィールドの影響");
-						fi.offset_ = offsetof(VolumetricCloudScapes, weatherAmount_);
+						fi.name_ = String("風の向き（度）");
+						fi.offset_ = offsetof(VolumetricCloudScapes, windDirection_);
 						fi.type_ = AttributeType::Float;
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
 						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 1.0f;
+						fi.clampMax_ = 360.0f;
 						outInfo.push_back(std::move(fi));
 					}
 					{
 						FieldInfo fi;
-						fi.name_ = String("風の速さ");
+						fi.name_ = String("風の速さ（m/s）");
 						fi.offset_ = offsetof(VolumetricCloudScapes, windSpeed_);
 						fi.type_ = AttributeType::Float;
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
 						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 0.5f;
+						fi.clampMax_ = 100.0f;
 						outInfo.push_back(std::move(fi));
 					}
 					{
 						FieldInfo fi;
-						fi.name_ = String("ディテールの風の速さ");
-						fi.offset_ = offsetof(VolumetricCloudScapes, detailWindSpeed_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 2.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("雲の散乱色");
-						fi.offset_ = offsetof(VolumetricCloudScapes, cloudAlbedo_);
-						fi.type_ = AttributeType::Color;
+						fi.name_ = String("形");
+						fi.offset_ = offsetof(VolumetricCloudScapes, shape_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("VolumetricCloudShapeSettings");
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
 						outInfo.push_back(std::move(fi));
 					}
 					{
 						FieldInfo fi;
-						fi.name_ = String("前方散乱の異方性");
-						fi.offset_ = offsetof(VolumetricCloudScapes, scatteringG_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = -0.9f;
-						fi.clampMax_ = 0.9f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("後方散乱の異方性");
-						fi.offset_ = offsetof(VolumetricCloudScapes, phaseBackward_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 0.9f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("前方・後方のブレンド");
-						fi.offset_ = offsetof(VolumetricCloudScapes, phaseBlend_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 1.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("パウダー効果の強さ");
-						fi.offset_ = offsetof(VolumetricCloudScapes, powderStrength_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 1.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("環境光の強さ");
-						fi.offset_ = offsetof(VolumetricCloudScapes, ambientStrength_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 2.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("IBL の強さ");
-						fi.offset_ = offsetof(VolumetricCloudScapes, iblIntensity_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 4.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("多重散乱のオクターブ数");
-						fi.offset_ = offsetof(VolumetricCloudScapes, multiScatterOctaves_);
-						fi.type_ = AttributeType::Int;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 1;
-						fi.clampMax_ = 8;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("多重散乱の消散の減衰");
-						fi.offset_ = offsetof(VolumetricCloudScapes, multiScatterAttenuation_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.1f;
-						fi.clampMax_ = 0.95f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("多重散乱の寄与の減衰");
-						fi.offset_ = offsetof(VolumetricCloudScapes, multiScatterContribution_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.1f;
-						fi.clampMax_ = 0.95f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("多重散乱の偏心の減衰");
-						fi.offset_ = offsetof(VolumetricCloudScapes, multiScatterEccentricity_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.1f;
-						fi.clampMax_ = 0.95f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("視線のステップ数");
-						fi.offset_ = offsetof(VolumetricCloudScapes, stepCount_);
-						fi.type_ = AttributeType::Int;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 8;
-						fi.clampMax_ = 256;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("ライトマーチのステップ数");
-						fi.offset_ = offsetof(VolumetricCloudScapes, lightStepCount_);
-						fi.type_ = AttributeType::Int;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 1;
-						fi.clampMax_ = 16;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("マーチの最大距離");
-						fi.offset_ = offsetof(VolumetricCloudScapes, maxMarchDistance_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 20000.0f;
-						fi.clampMax_ = 400000.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("LOD の開始距離");
-						fi.offset_ = offsetof(VolumetricCloudScapes, lodDistance_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 2000.0f;
-						fi.clampMax_ = 100000.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("時間方向のジッター");
-						fi.offset_ = offsetof(VolumetricCloudScapes, temporalJitter_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 1.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("天頂の色");
-						fi.offset_ = offsetof(VolumetricCloudScapes, skyZenithColor_);
-						fi.type_ = AttributeType::Color;
+						fi.name_ = String("ライティング");
+						fi.offset_ = offsetof(VolumetricCloudScapes, lighting_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("VolumetricCloudLightingSettings");
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
 						outInfo.push_back(std::move(fi));
 					}
 					{
 						FieldInfo fi;
-						fi.name_ = String("地平線の色");
-						fi.offset_ = offsetof(VolumetricCloudScapes, skyHorizonColor_);
-						fi.type_ = AttributeType::Color;
+						fi.name_ = String("品質");
+						fi.offset_ = offsetof(VolumetricCloudScapes, quality_);
+						fi.type_ = AttributeType::Enum;
+						fi.enum_.typeName_ = String("VolumetricCloudQuality");
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
 						outInfo.push_back(std::move(fi));
 					}
 					{
 						FieldInfo fi;
-						fi.name_ = String("空の明るさ");
-						fi.offset_ = offsetof(VolumetricCloudScapes, skyBrightness_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 4.0f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("太陽の視半径");
-						fi.offset_ = offsetof(VolumetricCloudScapes, sunSize_);
-						fi.type_ = AttributeType::Float;
-						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.005f;
-						fi.clampMax_ = 0.2f;
-						outInfo.push_back(std::move(fi));
-					}
-					{
-						FieldInfo fi;
-						fi.name_ = String("地面の色");
-						fi.offset_ = offsetof(VolumetricCloudScapes, groundColor_);
-						fi.type_ = AttributeType::Color;
+						fi.name_ = String("詳細");
+						fi.offset_ = offsetof(VolumetricCloudScapes, advanced_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("VolumetricCloudAdvancedSettings");
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
 						outInfo.push_back(std::move(fi));
 					}
 					{
 						FieldInfo fi;
-						fi.name_ = String("空気遠近の密度");
-						fi.offset_ = offsetof(VolumetricCloudScapes, aerialDensity_);
-						fi.type_ = AttributeType::Float;
+						fi.name_ = String("空（天体が太陽を動かしていないときだけ効く）");
+						fi.offset_ = offsetof(VolumetricCloudScapes, sky_);
+						fi.type_ = AttributeType::Struct;
+						fi.nestedTypeName_ = String("VolumetricCloudSkySettings");
 						fi.enableIf_ = [](void* p) -> Bool { auto& o = *static_cast<VolumetricCloudScapes*>(p); return o.enable_; };
-						fi.clampMin_ = 0.0f;
-						fi.clampMax_ = 0.0002f;
 						outInfo.push_back(std::move(fi));
 					}
 				});
@@ -6175,6 +6197,20 @@ namespace SeedCore
 			}
 		};
 		static RegisterEnum_ToneMappingSettings_ToneCurve global_ToneMappingSettings_ToneCurve_enum_register;
+
+		struct RegisterEnum_VolumetricCloudQuality
+		{
+			RegisterEnum_VolumetricCloudQuality()
+			{
+				EnumRegistry::Register(String("VolumetricCloudQuality"), {
+					{ static_cast<Int>(VolumetricCloudQuality::Low), String("Low") },
+					{ static_cast<Int>(VolumetricCloudQuality::Medium), String("Medium") },
+					{ static_cast<Int>(VolumetricCloudQuality::High), String("High") },
+					{ static_cast<Int>(VolumetricCloudQuality::Ultra), String("Ultra") },
+				});
+			}
+		};
+		static RegisterEnum_VolumetricCloudQuality global_VolumetricCloudQuality_enum_register;
 
 		struct RegisterEnum_VolumetricLightTechnique
 		{

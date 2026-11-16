@@ -65,7 +65,7 @@ namespace SeedCore
 				}
 				cloudFound = true;
 				cloudEnabled = cloud.enable_;
-				const Byte* first = reinterpret_cast<const Byte*>(&cloud.cloudBottom_);
+				const Byte* first = reinterpret_cast<const Byte*>(&cloud.coverage_);
 				const Byte* last = reinterpret_cast<const Byte*>(&cloud) + sizeof(VolumetricCloudScapes);
 				for (const Byte* byte = first;byte < last;++byte)
 				{

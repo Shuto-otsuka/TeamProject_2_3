@@ -66,7 +66,7 @@ void main(uint gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 				}
 				if (visible)
 				{
-					visible = !IsOccluded(center, radius, scene.current_view_projection_, scene.camera_position_.xyz, scene.projection_._m11, scene.screen_size_, bindings.geometry_hi_z_);
+					visible = !IsOccluded(center, radius, scene.current_view_projection_, bindings.geometry_hi_z_);
 				}
 			}
 		}

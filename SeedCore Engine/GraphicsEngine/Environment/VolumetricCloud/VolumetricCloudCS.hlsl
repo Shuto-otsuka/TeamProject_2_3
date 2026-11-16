@@ -24,9 +24,19 @@ struct VolumetricCloudTraceBindings
 	uint volumetric_cloud_detail_;
 	uint geometry_depth_;
 	uint light_constants_;
-	uint volumetric_cloud_radiance_;
+	uint volumetric_cloud_raw_;
 };
 ConstantBuffer<VolumetricCloudTraceBindings> trace_bindings : register(b0, space1);
+
+struct VolumetricCloudResolveBindings
+{
+	uint volumetric_cloud_raw_;
+	uint geometry_depth_;
+	uint volumetric_cloud_accumulated_history_;
+	uint volumetric_cloud_accumulated_;
+	uint volumetric_cloud_radiance_;
+};
+ConstantBuffer<VolumetricCloudResolveBindings> resolve_bindings : register(b0, space1);
 
 /**
 * [EN]
@@ -130,8 +140,18 @@ void Detail(uint3 dtid : SV_DispatchThreadID)
 *   (Wrenninge et al., "Art-Directable Multiple Volumetric Scattering",
 *   SIGGRAPH 2015 - the octave-stack multiple-scattering approximation
 *   CloudMultiScatterSetup/CloudSunLight implement, in VolumetricCloud.hlsli.)
+* - https://media.contentapi.ea.com/content/dam/eacom/frostbite/files/s2016_pbs_frostbite_sky_clouds.pdf
+*   (Hillaire, "Physically Based Sky, Atmosphere and Cloud Rendering in
+*   Frostbite", SIGGRAPH 2016 - the energy-conserving integration of each
+*   march segment and the phase normalized against isotropic scattering.)
+* - https://forums.unrealengine.com/t/implementing-the-nubis-cloud-density-model/234144
+*   (Community walkthrough of the Nubis density model - the order of the
+*   height-gradient multiply, the coverage remap and the erosion remap.)
+* - https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definition@17.0/manual/volumetric-clouds-volume-override-reference.html
+*   (Unity HDRP volumetric clouds - the artist-facing grouping of the cloud
+*   settings: shape, erosion, lighting, quality.)
 *
-* VolumetricCloud.Trace: volumetric cloud scapes (screen-space raymarch). Marches the view
+* VolumetricCloud.Trace.March: volumetric cloud scapes (screen-space raymarch). Marches the view
 * ray through a curved cloud SHELL (a layer wrapped around a planet of
 * planet_radius_, so it bends down and converges at the horizon instead of
 * extending forever as a flat slab), sampling PRE-BAKED tileable Texture3Ds
@@ -144,15 +164,15 @@ void Detail(uint3 dtid : SV_DispatchThreadID)
 * Beer-powder term, a geometrically-stepped sun lightmarch that follows the real
 * path length through the layer, and a sky-gradient ambient term. Distant clouds
 * wash toward the horizon color (aerial perspective) and fade out at the march
-* limit. Writes VolumetricCloud.Radiance (rgb the scattered light already
-* weighted by transmittance, a the coverage); SkyResolveCS.hlsl blends it over
-* the procedural sky, which is drawn only when no skymap is bound. Sky pixels
-* only, no TLAS.
+* limit. The march start is jittered per pixel with interleaved gradient noise
+* offset each frame through a 16-frame cycle, which VolumetricCloud.Trace.Resolve
+* averages over time. Writes VolumetricCloud.Raw (rgb the scattered light
+* already weighted by transmittance, a the coverage). Sky pixels only, no TLAS.
 *
 * ---------------------------------------------------------------------
 *
 * [JP]
-* VolumetricCloud.Trace。ボリューメトリック・クラウドスケープ(スクリーン空間レイマーチ)。
+* VolumetricCloud.Trace.March。ボリューメトリック・クラウドスケープ(スクリーン空間レイマーチ)。
 * 視線を【曲率つきの雲シェル】(planet_radius_ の球殻。無限平板ではないので
 * 遠方で下がって地平線に収束する)に沿ってマーチし、【ベイク済み】タイル可能
 * Texture3D(Perlin-Worley 形状 128^3 + Worley ディテール 64^3、
@@ -163,9 +183,10 @@ void Detail(uint3 dtid : SV_DispatchThreadID)
 * ライティングはデュアルローブ位相 + Wrenninge の多重散乱オクターブ +
 * Beer-powder + 層内の実光路長に沿った指数ステップのライトマーチ +
 * 空グラデーション環境光。遠景の雲は地平線色へ寄せ(空気遠近)、マーチ上限へ
-* 向けてフェードアウトする。VolumetricCloud.Radiance(rgb は透過率を掛け済みの
-* 散乱光、a はカバレッジ)へ書き、SkyResolveCS.hlsl がプロシージャル空の上に
-* 合成する(プロシージャル空はスカイマップが無いときだけ描く)。空ピクセル限定、
+* 向けてフェードアウトする。マーチの開始位置はピクセルごとに Interleaved
+* Gradient Noise でずらし、16 フレームで一巡するよう毎フレーム回して、
+* VolumetricCloud.Trace.Resolve が時間方向に平均する。VolumetricCloud.Raw
+* (rgb は透過率を掛け済みの散乱光、a はカバレッジ)へ書く。空ピクセル限定、
 * TLAS 不使用。
 */
 
@@ -174,7 +195,7 @@ void Trace(uint3 dtid : SV_DispatchThreadID)
 {
 	SceneConstantBuffer scene = GetSceneConstantBuffer();
 
-	RWTexture2D<float4> output = ResourceDescriptorHeap[trace_bindings.volumetric_cloud_radiance_];
+	RWTexture2D<float4> output = ResourceDescriptorHeap[trace_bindings.volumetric_cloud_raw_];
 	uint cloud_width;
 	uint cloud_height;
 	output.GetDimensions(cloud_width, cloud_height);
@@ -224,7 +245,7 @@ void Trace(uint3 dtid : SV_DispatchThreadID)
 
 	CloudMultiScatter multi_scatter = CloudMultiScatterSetup(cos_theta, tuning);
 
-	float jitter = frac(InterleavedGradientNoise(float2(pixel)) + tuning.temporal_jitter_ * float(tuning.frame_index_ & 63u) * 0.6180339887);
+	float jitter = InterleavedGradientNoise(float2(pixel) + 5.588238 * float(tuning.frame_index_ & 15u));
 
 	const uint max_iterations = 256;
 
@@ -338,4 +359,107 @@ void Trace(uint3 dtid : SV_DispatchThreadID)
 	}
 
 	output[pixel] = float4(scattering, alpha);
+}
+
+/**
+* [EN]
+* Reference:
+* - https://advances.realtimerendering.com/s2015/The%20Real-time%20Volumetric%20Cloudscapes%20of%20Horizon%20-%20Zero%20Dawn%20-%20ARTR.pdf
+*   (Schneider & Vos, SIGGRAPH 2015 - clouds are resolved over several frames
+*   by reprojecting the previous result, so each frame only adds a fraction
+*   of new samples.)
+* - https://media.contentapi.ea.com/content/dam/eacom/frostbite/files/s2016_pbs_frostbite_sky_clouds.pdf
+*   (Hillaire, SIGGRAPH 2016 - temporal reprojection of the cloud buffer,
+*   with the history clamped to the current neighborhood.)
+*
+* VolumetricCloud.Trace.Resolve: accumulates the jittered march over time.
+* The previous frame's pixel is found by projecting the view DIRECTION alone
+* through the previous view-projection: the clouds lie kilometers away, so
+* camera rotation is followed exactly while camera translation shifts them by
+* a negligible amount. The history is clamped to the min/max of the current
+* 3x3 neighborhood of VolumetricCloud.Raw, which keeps moving and changing
+* clouds free of trails, then 10% of the current value is blended in. With no
+* valid history (dispatch constant 0, first frame or clouds just switched on)
+* or when the reprojected pixel falls off screen, the current value is taken
+* as is. Non-sky pixels write 0. The result goes to VolumetricCloud.Accumulated
+* (next frame's history) and VolumetricCloud.Radiance, which SkyResolveCS.hlsl
+* blends over the procedural sky.
+*
+* ---------------------------------------------------------------------
+*
+* [JP]
+* VolumetricCloud.Trace.Resolve。ずらしながらマーチした結果を時間方向に蓄積する。
+* 前フレームでのピクセルは、視線の【方向だけ】を前フレームのビュー投影で投影して
+* 求める。雲は数 km 先にあるので、カメラの回転は正確に追従でき、平行移動による
+* ずれは無視できるほど小さい。前フレームの値は、今フレームの
+* VolumetricCloud.Raw の周囲 3x3 の最小値と最大値の範囲に押し込み、動いたり形が
+* 変わったりする雲に残像が残らないようにしてから、今フレームの値を 1 割混ぜる。
+* 前フレームが無い(ディスパッチの定数が 0。最初のフレームや雲を有効にした直後)
+* とき、または投影先が画面外のときは今フレームの値をそのまま使う。空以外の
+* ピクセルには 0 を書く。結果は VolumetricCloud.Accumulated(次フレームの履歴)と
+* VolumetricCloud.Radiance へ書き、SkyResolveCS.hlsl がプロシージャル空の上に
+* 合成する。
+*/
+[numthreads(8, 8, 1)]
+void Resolve(uint3 dtid : SV_DispatchThreadID)
+{
+	RWTexture2D<float4> radiance = ResourceDescriptorHeap[resolve_bindings.volumetric_cloud_radiance_];
+	uint width;
+	uint height;
+	radiance.GetDimensions(width, height);
+	if (dtid.x >= width || dtid.y >= height)
+	{
+		return;
+	}
+
+	uint2 pixel = dtid.xy;
+	RWTexture2D<float4> accumulated = ResourceDescriptorHeap[resolve_bindings.volumetric_cloud_accumulated_];
+	Texture2D<float> depth_texture = ResourceDescriptorHeap[resolve_bindings.geometry_depth_];
+	if (depth_texture.Load(int3(pixel, 0)) != 0.0)
+	{
+		accumulated[pixel] = float4(0.0, 0.0, 0.0, 0.0);
+		radiance[pixel] = float4(0.0, 0.0, 0.0, 0.0);
+		return;
+	}
+
+	Texture2D<float4> raw = ResourceDescriptorHeap[resolve_bindings.volumetric_cloud_raw_];
+	float4 current = raw.Load(int3(pixel, 0));
+	float4 result = current;
+
+	if (dispatch_bindings.constants_ != 0)
+	{
+		SceneConstantBuffer scene = GetSceneConstantBuffer();
+		float2 uv = (float2(pixel) + 0.5) / float2(width, height);
+		float2 ndc = float2(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0);
+		float4 far_world = mul(float4(ndc, 0.0, 1.0), scene.inverse_view_projection_);
+		float3 direction = normalize(far_world.xyz / far_world.w - scene.camera_position_.xyz);
+		float4 previous_clip = mul(float4(direction, 0.0), scene.previous_view_projection_);
+		if (previous_clip.w > 0.0)
+		{
+			float2 previous_ndc = previous_clip.xy / previous_clip.w;
+			float2 previous_uv = float2(previous_ndc.x * 0.5 + 0.5, 0.5 - previous_ndc.y * 0.5);
+			if (all(previous_uv >= 0.0) && all(previous_uv <= 1.0))
+			{
+				float4 minimum = current;
+				float4 maximum = current;
+				int2 pixel_max = int2(width, height) - 1;
+				for (int offset_y = -1; offset_y <= 1; offset_y++)
+				{
+					for (int offset_x = -1; offset_x <= 1; offset_x++)
+					{
+						float4 neighbor = raw.Load(int3(clamp(int2(pixel) + int2(offset_x, offset_y), int2(0, 0), pixel_max), 0));
+						minimum = min(minimum, neighbor);
+						maximum = max(maximum, neighbor);
+					}
+				}
+
+				Texture2D<float4> history = ResourceDescriptorHeap[resolve_bindings.volumetric_cloud_accumulated_history_];
+				float4 previous = clamp(history.SampleLevel(sampler_linear_clamp, previous_uv, 0), minimum, maximum);
+				result = lerp(previous, current, 0.1);
+			}
+		}
+	}
+
+	accumulated[pixel] = result;
+	radiance[pixel] = result;
 }
