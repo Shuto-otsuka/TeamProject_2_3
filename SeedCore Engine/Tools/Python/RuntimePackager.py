@@ -72,6 +72,11 @@ SHADER_PIXEL_FILE_PATTERN = re.compile(r'\bpixelFile_\s*=\s*ShaderPath::Engine\s
 SHADER_PIXEL_ENTRY_PATTERN = re.compile(r'\bpixelEntryPoint_\s*=\s*"([^"]+)"')
 SHADER_MAIN_PATTERN = re.compile(r'\bmain\s*\(')
 
+# エンジンが実行時に読むシェーダ = GraphicsEngine の C++ ソースに書かれた "GraphicsEngine/....hlsl"
+# の文字列（ShaderPath::Engine(...) でも、先頭に "../" の付いた直接のパスでも）。
+# 使われていない古いシェーダや開発中で未接続のシェーダは事前コンパイルしない。
+SHADER_REFERENCE_PATTERN = re.compile(r'"(?:\.\./)?(GraphicsEngine/[^"]+\.hlsl)"')
+
 
 def fnv1a(name):
     """
@@ -607,7 +612,8 @@ def binary_record(name, payload):
 
 def precompile_shaders(project_root, output_dir):
     """
-    GraphicsEngine 以下の全 .hlsl を、Release の ShaderCompiler と同じ
+    GraphicsEngine 以下の .hlsl のうち、エンジンの C++ ソースから参照されているもの
+    (SHADER_REFERENCE_PATTERN)を、Release の ShaderCompiler と同じ
     プロファイル/オプションで External/DXC/dxc.exe によりコンパイルし、
     エンジンが読むキャッシュ形式
     (CompiledShaderObject/Application/<ファイル名>.dx.cso) で output_dir へ書き出す。
@@ -628,12 +634,15 @@ def precompile_shaders(project_root, output_dir):
         return None
 
     pixel_entries = {}
+    referenced_shaders = set()
     for root, _, files in os.walk(os.path.join(project_root, "GraphicsEngine")):
         for file in files:
-            if not file.endswith(".h"):
+            if not (file.endswith(".h") or file.endswith(".cpp")):
                 continue
             with open(os.path.join(root, file), 'r', encoding='utf-8', errors='ignore') as f:
                 header = strip_comments(f.read())
+            for reference in SHADER_REFERENCE_PATTERN.findall(header):
+                referenced_shaders.add(os.path.normcase(os.path.normpath(os.path.join(project_root, reference))))
             for description in re.split(r'\bstruct\b', header):
                 pixel_file = SHADER_PIXEL_FILE_PATTERN.search(description)
                 pixel_entry = SHADER_PIXEL_ENTRY_PATTERN.search(description)
@@ -642,12 +651,17 @@ def precompile_shaders(project_root, output_dir):
                     pixel_entries.setdefault(pixel_path, set()).add(pixel_entry.group(1))
 
     jobs = []
+    unreferenced_count = 0
     for root, _, files in os.walk(os.path.join(project_root, "GraphicsEngine")):
         for file in files:
             if not file.lower().endswith(".hlsl"):
                 continue
 
             path = os.path.join(root, file)
+            if os.path.normcase(os.path.normpath(path)) not in referenced_shaders:
+                unreferenced_count += 1
+                continue
+
             with open(path, 'r', encoding='utf-8', errors='ignore') as f:
                 source = strip_comments(f.read())
 
@@ -667,6 +681,8 @@ def precompile_shaders(project_root, output_dir):
                 jobs.append((path, profile, "main"))
             else:
                 print(f"警告: シェーダ種別を判定できないため事前コンパイルしません: {os.path.relpath(path, project_root)}")
+
+    print(f"エンジンから参照されていないシェーダ {unreferenced_count} 件は事前コンパイルしません")
 
     temp_dir = os.path.join(output_dir, "_ShaderTemp")
     os.makedirs(temp_dir, exist_ok=True)
