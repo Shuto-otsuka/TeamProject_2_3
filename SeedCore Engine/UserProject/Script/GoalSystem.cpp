@@ -135,7 +135,7 @@ void GoalSystem::OnTick(float elapsedTime)
 			{
 				targetScene = retrySceneID_;
 			}
-
+			
 			// 一度きりにするためフラグを立てる
 			isDecided_ = true;
 
