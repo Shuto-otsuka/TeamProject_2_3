@@ -168,7 +168,7 @@ void Early(uint3 id : SV_DispatchThreadID)
 			{
 				return;
 			}
-			hidden = IsOccluded(chunk_center, chunk_radius, scene.previous_view_projection_, scene.camera_position_.xyz, scene.projection_._m11, scene.screen_size_, early_bindings.geometry_hi_z_history_);
+			hidden = IsOccluded(chunk_center, chunk_radius, scene.previous_view_projection_, early_bindings.geometry_hi_z_history_);
 		}
 
 		RWStructuredBuffer<uint> chunk_arguments = ResourceDescriptorHeap[early_bindings.culling_chunk_arguments_];
@@ -218,7 +218,7 @@ void Early(uint3 id : SV_DispatchThreadID)
 				return;
 			}
 		}
-		if (IsOccluded(center, radius, scene.previous_view_projection_, scene.camera_position_.xyz, scene.projection_._m11, scene.screen_size_, early_bindings.geometry_hi_z_history_))
+		if (IsOccluded(center, radius, scene.previous_view_projection_, early_bindings.geometry_hi_z_history_))
 		{
 			RWStructuredBuffer<uint2> occluded_meshlets = ResourceDescriptorHeap[early_bindings.culling_occluded_meshlets_];
 			uint occluded_capacity;
@@ -284,7 +284,7 @@ void Late(uint3 id : SV_DispatchThreadID)
 	}
 
 	SceneConstantBuffer scene = GetSceneConstantBuffer();
-	if (IsOccluded(center, radius, scene.current_view_projection_, scene.camera_position_.xyz, scene.projection_._m11, scene.screen_size_, late_bindings.geometry_hi_z_))
+	if (IsOccluded(center, radius, scene.current_view_projection_, late_bindings.geometry_hi_z_))
 	{
 		return;
 	}
@@ -357,7 +357,7 @@ void Transparent(uint3 id : SV_DispatchThreadID)
 			{
 				return;
 			}
-			if (IsOccluded(chunk_center, chunk_radius, scene.current_view_projection_, scene.camera_position_.xyz, scene.projection_._m11, scene.screen_size_, transparent_bindings.geometry_hi_z_))
+			if (IsOccluded(chunk_center, chunk_radius, scene.current_view_projection_, transparent_bindings.geometry_hi_z_))
 			{
 				return;
 			}
@@ -394,7 +394,7 @@ void Transparent(uint3 id : SV_DispatchThreadID)
 				return;
 			}
 		}
-		if (IsOccluded(center, radius, scene.current_view_projection_, scene.camera_position_.xyz, scene.projection_._m11, scene.screen_size_, transparent_bindings.geometry_hi_z_))
+		if (IsOccluded(center, radius, scene.current_view_projection_, transparent_bindings.geometry_hi_z_))
 		{
 			return;
 		}

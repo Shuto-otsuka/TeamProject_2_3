@@ -65,7 +65,7 @@ void main(uint gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 				{
 					radius += instance.shading_.fur_length_ * (world_scale + 0.35);
 				}
-				visible = !IsOccluded(center, radius, scene.current_view_projection_, scene.camera_position_.xyz, scene.projection_._m11, scene.screen_size_, bindings.geometry_hi_z_);
+				visible = !IsOccluded(center, radius, scene.current_view_projection_, bindings.geometry_hi_z_);
 			}
 		}
 	}
@@ -102,9 +102,9 @@ void main(uint gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 					}
 					if (visible && late)
 					{
-						visible = !IsOccluded(center, radius, scene.current_view_projection_, scene.camera_position_.xyz, scene.projection_._m11, scene.screen_size_, bindings.geometry_hi_z_);
+						visible = !IsOccluded(center, radius, scene.current_view_projection_, bindings.geometry_hi_z_);
 					}
-					else if (visible && IsOccluded(center, radius, scene.previous_view_projection_, scene.camera_position_.xyz, scene.projection_._m11, scene.screen_size_, bindings.geometry_hi_z_history_))
+					else if (visible && IsOccluded(center, radius, scene.previous_view_projection_, bindings.geometry_hi_z_history_))
 					{
 						if (replay)
 						{

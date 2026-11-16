@@ -5,32 +5,38 @@
 * [EN]
 * Sphere versus a Hi-Z pyramid. Each texel stores the MINIMUM depth of its
 * footprint, which under reversed-Z is the farthest surface there; the sphere
-* is occluded when even its nearest point is farther than all of it. The mip
-* is chosen so the projected sphere covers about 2x2 texels, and the four
-* corner texels are compared. Every uncertain case (camera inside the sphere,
-* sphere crossing the camera plane) counts as visible.
+* is occluded when even its nearest point is farther than all of it. The
+* sphere is bounded by its axis-aligned box, whose eight corners are
+* projected: their screen rectangle contains the sphere's projection however
+* close or off-center it is, and their largest depth is at least the
+* sphere's nearest depth, since view depth is linear over the box and peaks
+* at a corner. The mip is chosen so the rectangle covers at most 2x2 texels,
+* and the four corner texels are compared. A corner behind the camera (the
+* camera inside the box or the box crossing the camera plane) counts as
+* visible.
 */
-bool IsOccluded(float3 center, float radius, row_major float4x4 view_projection, float3 camera_position, float projection_scale_y, float2 screen_size, uint hi_z)
+bool IsOccluded(float3 center, float radius, row_major float4x4 view_projection, uint hi_z)
 {
-	float3 to_camera = camera_position - center;
-	float center_distance = length(to_camera);
-	if (center_distance <= radius)
+	float2 ndc_min = float2(3.402823e38, 3.402823e38);
+	float2 ndc_max = float2(-3.402823e38, -3.402823e38);
+	float nearest_depth = 0.0;
+	[unroll]
+	for (uint corner_index = 0; corner_index < 8; corner_index++)
 	{
-		return false;
+		float3 corner = center + float3((corner_index & 1) != 0 ? radius : -radius, (corner_index & 2) != 0 ? radius : -radius, (corner_index & 4) != 0 ? radius : -radius);
+		float4 clip = mul(float4(corner, 1.0), view_projection);
+		if (clip.w <= 0.0)
+		{
+			return false;
+		}
+		float3 ndc = clip.xyz / clip.w;
+		ndc_min = min(ndc_min, ndc.xy);
+		ndc_max = max(ndc_max, ndc.xy);
+		nearest_depth = max(nearest_depth, ndc.z);
 	}
 
-	float3 nearest = center + to_camera / center_distance * radius;
-	float4 nearest_clip = mul(float4(nearest, 1.0), view_projection);
-	float4 center_clip = mul(float4(center, 1.0), view_projection);
-	if (nearest_clip.w <= 0.0 || center_clip.w <= 0.0)
-	{
-		return false;
-	}
-	float nearest_depth = nearest_clip.z / nearest_clip.w;
-
-	float2 center_ndc = center_clip.xy / center_clip.w;
-	float2 center_pixel = float2(center_ndc.x * 0.5 + 0.5, 0.5 - center_ndc.y * 0.5) * screen_size;
-	float radius_pixels = radius * projection_scale_y * screen_size.y * 0.5 / center_clip.w;
+	float2 uv_min = saturate(float2(ndc_min.x, -ndc_max.y) * 0.5 + 0.5);
+	float2 uv_max = saturate(float2(ndc_max.x, -ndc_min.y) * 0.5 + 0.5);
 
 	Texture2D<float> depth_pyramid = ResourceDescriptorHeap[hi_z];
 	uint pyramid_width;
@@ -38,11 +44,10 @@ bool IsOccluded(float3 center, float radius, row_major float4x4 view_projection,
 	uint pyramid_mip_count;
 	depth_pyramid.GetDimensions(0, pyramid_width, pyramid_height, pyramid_mip_count);
 
-	uint mip_level = min((uint)max(ceil(log2(max(radius_pixels * 2.0, 1.0))), 0.0), pyramid_mip_count - 1);
+	float2 extent = (uv_max - uv_min) * float2(pyramid_width, pyramid_height);
+	uint mip_level = min((uint)ceil(log2(max(max(extent.x, extent.y), 1.0))), pyramid_mip_count - 1);
 	float2 mip_size = float2(max(pyramid_width >> mip_level, 1u), max(pyramid_height >> mip_level, 1u));
 
-	float2 uv_min = saturate((center_pixel - radius_pixels) / screen_size);
-	float2 uv_max = saturate((center_pixel + radius_pixels) / screen_size);
 	int2 texel_min = int2(clamp(uv_min * mip_size, 0.0, mip_size - 1.0));
 	int2 texel_max = int2(clamp(uv_max * mip_size, 0.0, mip_size - 1.0));
 

@@ -18,7 +18,7 @@ namespace SeedCore
 			SC_RENDER_INTERNAL(DepthNormal, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA32Float), RenderResourceScope::View, RenderResourceLifetime::Persistent),
 			SC_RENDER_INTERNAL(Ping, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Transient),
 			SC_RENDER_INTERNAL(Pong, RenderResourceDesc::ScaledTexture(RenderFormat::RGBA16Float), RenderResourceScope::View, RenderResourceLifetime::Transient),
-			SC_RENDER_INTERNAL(Constants, RenderResourceDesc::Constant(sizeof(RaytracingShadowConstantBuffer)), RenderResourceScope::Frame, RenderResourceLifetime::Upload)
+			SC_RENDER_CONTRACT(Constants, RenderResourceDesc::Constant(sizeof(RaytracingShadowConstantBuffer)), RenderResourceScope::Frame, RenderResourceLifetime::Upload)
 		);
 
 	public:

@@ -40,15 +40,16 @@ namespace SeedCore
 				constants_.punctualRadius_ = shadow.raytracing_.punctualLightRadius_;
 				constants_.rayCount_ = shadow.raytracing_.rayCount_;
 			});
+		if (!tracing_)
+		{
+			constants_.strength_ = 0.0f;
+		}
 		constants_.historyValid_ = traced && tracing_ ? 1u : 0u;
 		++constants_.frame_;
 	}
 
 	void RaytracingShadowFeature::Prepare(const RenderFrame& frame, RenderUpload& upload)
 	{
-		if (tracing_)
-		{
-			upload.Write(Constants, RenderViewKind::Game, std::span<const RaytracingShadowConstantBuffer>(&constants_, 1));
-		}
+		upload.Write(Constants, RenderViewKind::Game, std::span<const RaytracingShadowConstantBuffer>(&constants_, 1));
 	}
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <GraphicsEngine/Illumination/VolumetricLight/Raytracing/RaytracingVolumetricLightFeature.h>
+#include <GraphicsEngine/Illumination/Shadow/Raytracing/RaytracingShadowFeature.h>
 #include <GraphicsEngine/Model/Transparent/TransparentFeature.h>
 #include <GraphicsEngine/Model/ModelFeature.h>
 #include <GraphicsEngine/Model/Material/MaterialFeature.h>
@@ -54,6 +55,7 @@ namespace SeedCore
 			RenderAccess::Read(SkyFeature::BRDF),
 			RenderAccess::Read(TopLevelFeature::Structure),
 			RenderAccess::Read(TopLevelFeature::Hits),
+			RenderAccess::Constant(RaytracingShadowFeature::Constants),
 			RenderAccess::Write(Heads),
 			RenderAccess::Write(Fragments),
 			RenderAccess::Write(Counter),

@@ -2,6 +2,7 @@
 #include <GraphicsEngine/Model/Material/Material.hlsli>
 #include <GraphicsEngine/Light/LightShading.hlsli>
 #include <GraphicsEngine/Raytracing/RaytracingHit.hlsli>
+#include <GraphicsEngine/Illumination/Shadow/Raytracing/RaytracingShadow.hlsli>
 #include <GraphicsEngine/PostProcess/Outline/Outline.hlsli>
 
 /**
@@ -9,8 +10,12 @@
 * Shades one transparent fragment forward and adds it to its pixel's list.
 * The material is read the same way the opaque material resolve reads it
 * (mapping, base color, normal map, metallic and roughness, emission). The
-* light is the sun, shadowed by a ray traced through TopLevel.Structure, the
-* clustered punctual lights and the sky's image based lighting. The color is
+* light is the sun, shadowed by a ray traced through TopLevel.Structure with
+* the settings in RaytracingShadow.Constants, the clustered punctual lights
+* and the sky's image based lighting. The shadow strength there blends the
+* sun's visibility toward 1 up to 1, and from 1 to 2 also darkens the sky
+* light where a surface facing the sun is in its shadow; a strength of 0,
+* sent when ray traced shadows are off, traces nothing. The color is
 * stored premultiplied by its alpha, together with the depth and this
 * layer's motion, and linked in front of the pixel's head with one atomic
 * exchange; fragments past the pool's capacity are dropped. When the
@@ -24,8 +29,12 @@
 * 半透明のフラグメントを 1 つ前方で陰影付けし、そのピクセルのリストへ足す。
 * マテリアルは不透明のマテリアル解決と同じ読み方をする（マッピング、
 * ベースカラー、法線マップ、メタリックとラフネス、放射）。光は、
-* TopLevel.Structure へ飛ばすレイで影を取った太陽、クラスタの点光源類、
-* 空の IBL。色はアルファを掛けた形で、深度とこの層の動きと一緒に置き、
+* RaytracingShadow.Constants の設定で TopLevel.Structure へ飛ばすレイで
+* 影を取った太陽、クラスタの点光源類、
+* 空の IBL。そこの影の濃さは、1 までは太陽の可視率を 1 との間で補間し、
+* 1〜2 では太陽を向いた面が影に入ったところの空の光も暗くする（レイトレーシング
+* の影が切れているときは濃さ 0 が届き、レイは飛ばさない）。
+* 色はアルファを掛けた形で、深度とこの層の動きと一緒に置き、
 * ピクセルの先頭へ不可分な交換 1 回でつなぐ。プールの容量を超えた
 * フラグメントは捨てる。インスタンスのアクターが縁取られるときは、
 * (深度 << 17) | アクター として Outline.Mask にも記録し、ピクセルごとに
@@ -111,21 +120,28 @@ void main(TransparentOutput input, bool front_face : SV_IsFrontFace)
 		SurfaceMaterial material = LoadSurfaceMaterial(base_color.rgb, metallic, roughness, shading_normal, view, instance, input.texcoord, ddx(input.texcoord), ddy(input.texcoord), tangent_bits, weather.wetness_, weather.snow_coverage_);
 		ConstantBuffer<LightConstantBuffer> constants = ResourceDescriptorHeap[bindings.light_constants_];
 		float3 lighting = float3(0.0, 0.0, 0.0);
+		float3 sun_direction = normalize(-constants.sun_direction_);
+		ConstantBuffer<RaytracingShadowConstantBuffer> shadow_constants = ResourceDescriptorHeap[bindings.raytracing_shadow_constants_];
+		float sun_visibility = 1.0;
 
 		if (constants.sun_intensity_ > 0.0)
 		{
-			float3 sun_direction = normalize(-constants.sun_direction_);
-			RayDesc shadow_ray;
-			shadow_ray.Origin = input.world_position + normal * 0.01;
-			shadow_ray.Direction = sun_direction;
-			shadow_ray.TMin = 0.001;
-			shadow_ray.TMax = 10000.0;
-			RaytracingHitTables tables;
-			tables.top_level_ = bindings.top_level_structure_;
-			tables.hits_ = bindings.top_level_hits_;
-			if (!RaytracingHitIsOccluded(tables, shadow_ray))
+			if (shadow_constants.strength_ > 0.0)
 			{
-				lighting += EvalDirectLightDispatch(instance.shading_.shading_model_, shading_normal, view, sun_direction, material.diffuse_color_, material.f0_, material.roughness_, material.clearcoat_factor_, material.clearcoat_roughness_, material.clearcoat_normal_, material.sheen_color_, material.sheen_roughness_, material.anisotropy_tangent_, material.anisotropy_bitangent_, material.anisotropy_strength_) * constants.sun_color_ * constants.sun_intensity_;
+				RayDesc shadow_ray;
+				shadow_ray.Origin = input.world_position + normal * shadow_constants.normal_bias_;
+				shadow_ray.Direction = sun_direction;
+				shadow_ray.TMin = 0.001;
+				shadow_ray.TMax = shadow_constants.ray_t_max_;
+				RaytracingHitTables tables;
+				tables.top_level_ = bindings.top_level_structure_;
+				tables.hits_ = bindings.top_level_hits_;
+				sun_visibility = RaytracingHitIsOccluded(tables, shadow_ray) ? 0.0 : 1.0;
+			}
+			float sun_shadow = saturate(lerp(1.0, sun_visibility, saturate(shadow_constants.strength_)));
+			if (sun_shadow > 0.0)
+			{
+				lighting += sun_shadow * EvalDirectLightDispatch(instance.shading_.shading_model_, shading_normal, view, sun_direction, material.diffuse_color_, material.f0_, material.roughness_, material.clearcoat_factor_, material.clearcoat_roughness_, material.clearcoat_normal_, material.sheen_color_, material.sheen_roughness_, material.anisotropy_tangent_, material.anisotropy_bitangent_, material.anisotropy_strength_) * constants.sun_color_ * constants.sun_intensity_;
 			}
 		}
 
@@ -194,8 +210,10 @@ void main(TransparentOutput input, bool front_face : SV_IsFrontFace)
 				Texture2D<float4> occlusion_texture = ResourceDescriptorHeap[NonUniformResourceIndex(instance.texture_.occlusion_texture_index_)];
 				occlusion = occlusion_texture.Sample(sampler_linear_wrap, input.texcoord).r;
 			}
-			lighting += ImageBasedLightingRadianceLambertian(bindings.sky_brdf_, bindings.sky_diffuse_, shading_normal, view, material.roughness_, material.diffuse_color_, material.f0_) * occlusion * constants.sky_intensity_;
-			lighting += ImageBasedLightingRadianceGgx(bindings.sky_brdf_, bindings.sky_specular_, shading_normal, view, material.roughness_, material.f0_) * occlusion * constants.sky_intensity_;
+			float sun_facing = constants.sun_intensity_ > 0.0 ? saturate(dot(normal, sun_direction)) : 0.0;
+			float indirect_shadow = 1.0 - saturate(shadow_constants.strength_ - 1.0) * (1.0 - sun_visibility) * sun_facing;
+			lighting += ImageBasedLightingRadianceLambertian(bindings.sky_brdf_, bindings.sky_diffuse_, shading_normal, view, material.roughness_, material.diffuse_color_, material.f0_) * occlusion * constants.sky_intensity_ * indirect_shadow;
+			lighting += ImageBasedLightingRadianceGgx(bindings.sky_brdf_, bindings.sky_specular_, shading_normal, view, material.roughness_, material.f0_) * occlusion * constants.sky_intensity_ * indirect_shadow;
 		}
 		radiance = lighting + emissive;
 	}

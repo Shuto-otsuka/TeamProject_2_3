@@ -33,6 +33,7 @@ namespace SeedCore
 			RenderAccess::Constant(LightFeature::Constants),
 			RenderAccess::Constant(WeatherFeature::Constants),
 			RenderAccess::Read(RaytracingShadowFeature::Visibility),
+			RenderAccess::Constant(RaytracingShadowFeature::Constants),
 			RenderAccess::Read(RaytracingAmbientOcclusionFeature::Openness),
 			RenderAccess::Read(RaytracingSubsurfaceScatteringFeature::Transmittance),
 			RenderAccess::Read(RaytracingReflectionFeature::Radiance),
