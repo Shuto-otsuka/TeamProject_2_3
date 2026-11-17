@@ -15,29 +15,25 @@ namespace SeedCore
 	* [EN]
 	* Creates a texture from the image file at filePath into resource and
 	* writes its shader resource view at textureIndex of heap, recording the
-	* upload into lane, which the caller has begun and submits. A sibling
-	* ".texture" cache newer than the source is read instead of the source; a
-	* ".icon", ".logo" or ".texture" file is read as such a cache directly.
-	* Nothing is written: the cache is made by TextureResource::Generate.
+	* upload into lane, which the caller has begun and submits. A ".icon",
+	* ".logo" or ".texture" file is read as a cache; any other file is read
+	* as the source image itself. Nothing is written: the cache is made by
+	* TextureResource::Generate.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
 	* filePath の画像ファイルから resource にテクスチャを作り、heap の
 	* textureIndex にシェーダーリソースビューを書く。アップロードは lane に
-	* 積む（Begin と Submit は呼び出し側が行う）。ソースより新しい隣の
-	* ".texture" キャッシュがあれば、ソースの代わりにそれを読む。".icon"・
-	* ".logo"・".texture" のファイルは、そのままキャッシュとして読む。何も
-	* 書かない（キャッシュは TextureResource::Generate が作る）。
+	* 積む（Begin と Submit は呼び出し側が行う）。".icon"・".logo"・
+	* ".texture" のファイルはキャッシュとして読み、それ以外はソース画像
+	* そのものとして読む。何も書かない（キャッシュは
+	* TextureResource::Generate が作る）。
 	*/
 	void TextureCreator::CreateTexturePath(SC_IN ID3D12Device* device, SC_IN D3D12TransferLane& lane, SC_IN ID3D12DescriptorHeap* heap, SC_IN String filePath, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
 	{
 		std::string extension = std::filesystem::path(filePath.str()).extension().string();
 		std::ranges::transform(extension, extension.begin(), [](Uchar c) { return static_cast<Char>(std::tolower(c)); });
-
-		std::filesystem::path sourceFsPath(filePath.str());
-		std::filesystem::path cacheFsPath = sourceFsPath;
-		cacheFsPath.replace_extension(".texture");
 
 		DynamicArray<Byte> data;
 		if (extension == ".icon" || extension == ".logo" || extension == ".texture")
@@ -50,19 +46,8 @@ namespace SeedCore
 		}
 		else
 		{
-			if (std::filesystem::exists(cacheFsPath) && std::filesystem::exists(sourceFsPath) && std::filesystem::last_write_time(cacheFsPath) >= std::filesystem::last_write_time(sourceFsPath))
-			{
-				BinaryInputArchive archive;
-				if (archive.Read(String(cacheFsPath.string())))
-				{
-					archive.TryField("data", data);
-				}
-			}
-			if (data.empty())
-			{
-				DynamicArray<Uint8> source = FileUtility::LoadFileBinary(filePath);
-				data.assign(source.begin(), source.end());
-			}
+			DynamicArray<Uint8> source = FileUtility::LoadFileBinary(filePath);
+			data.assign(source.begin(), source.end());
 		}
 
 		if (data.empty())

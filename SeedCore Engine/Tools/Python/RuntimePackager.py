@@ -286,6 +286,11 @@ def build_guid_map(project_root, user_project_root):
             except Exception:
                 continue
 
+            if guid in guid_to_path:
+                print(f"[ERROR] Duplicate GUID: {guid}")
+                print(f"  Existing: {guid_to_path[guid]}")
+                print(f"  New:      {full_path}")
+
             guid_to_path[guid] = full_path
 
             rel_path = os.path.relpath(full_path, project_root).replace('\\', '/')

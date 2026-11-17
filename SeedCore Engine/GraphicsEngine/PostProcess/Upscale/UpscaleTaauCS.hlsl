@@ -1,8 +1,9 @@
 #include <GraphicsEngine/Shader/Scene.hlsli>
 #include <GraphicsEngine/Shader/Denoiser.hlsli>
 
-static const float TAAU_TEMPORAL_BLEND_ALPHA = 0.1;
-static const float TAAU_HISTORY_CLIP_GAMMA = 0.75;
+static const float TAAU_TEMPORAL_BLEND_ALPHA_MIN = 0.05;
+static const float TAAU_TEMPORAL_BLEND_ALPHA_MAX = 0.15;
+static const float TAAU_HISTORY_CLIP_GAMMA = 1.0;
 
 struct UpscaleTaauBindings
 {
@@ -95,10 +96,12 @@ void main(uint3 dtid : SV_DispatchThreadID)
 	float2 source_pixel_f = (output_uv + jitter_uv) * source_size;
 	int2 center_pixel = clamp(int2(round(source_pixel_f - 0.5)), int2(0, 0), source_max);
 
-	float3 filtered_raw = SampleCatmullRom(color_texture, source_pixel_f, source_max);
+	float3 filtered_raw = max(SampleCatmullRom(color_texture, source_pixel_f, source_max), 0.0);
+	float3 current_weighted = filtered_raw / (1.0 + dot(filtered_raw, float3(0.2126, 0.7152, 0.0722)));
+	float3 current = float3(dot(current_weighted, float3(0.25, 0.5, 0.25)), dot(current_weighted, float3(0.5, 0.0, -0.5)), dot(current_weighted, float3(-0.25, 0.5, -0.25)));
 
-	DenoiserMoments moments = DenoiserMomentsInit();
-
+	float3 moment1 = float3(0.0, 0.0, 0.0);
+	float3 moment2 = float3(0.0, 0.0, 0.0);
 	[unroll]
 	for (int dy = -1; dy <= 1; ++dy)
 	{
@@ -106,21 +109,44 @@ void main(uint3 dtid : SV_DispatchThreadID)
 		for (int dx = -1; dx <= 1; ++dx)
 		{
 			int2 neighbor = clamp(center_pixel + int2(dx, dy), int2(0, 0), source_max);
-			float3 neighbor_color = color_texture.Load(int3(neighbor, 0)).rgb;
-			DenoiserMomentsAccumulate(moments, neighbor_color, 1.0);
+			float3 neighbor_color = max(color_texture.Load(int3(neighbor, 0)).rgb, 0.0);
+			float3 neighbor_weighted = neighbor_color / (1.0 + dot(neighbor_color, float3(0.2126, 0.7152, 0.0722)));
+			float3 neighbor_ycocg = float3(dot(neighbor_weighted, float3(0.25, 0.5, 0.25)), dot(neighbor_weighted, float3(0.5, 0.0, -0.5)), dot(neighbor_weighted, float3(-0.25, 0.5, -0.25)));
+			moment1 += neighbor_ycocg;
+			moment2 += neighbor_ycocg * neighbor_ycocg;
 		}
 	}
-
-	float3 clip_min = DenoiserVarianceClipMin(moments, filtered_raw, TAAU_HISTORY_CLIP_GAMMA);
-	float3 clip_max = DenoiserVarianceClipMax(moments, filtered_raw, TAAU_HISTORY_CLIP_GAMMA);
+	float3 mean = moment1 / 9.0;
+	float3 extent = TAAU_HISTORY_CLIP_GAMMA * sqrt(max(moment2 / 9.0 - mean * mean, 0.0));
 
 	Texture2D<float2> velocity_texture = ResourceDescriptorHeap[bindings.material_velocity_];
 	float2 velocity = velocity_texture.Load(int3(center_pixel, 0));
 	float2 delta_uv = float2(velocity.x, -velocity.y) - (jitter_uv - previous_jitter_uv);
 	float2 previous_output_uv = output_uv - delta_uv;
 
+	float3 result = filtered_raw;
 	Texture2D<float4> history_texture = ResourceDescriptorHeap[bindings.upscale_history_history_];
-	float3 result = DenoiserTemporalBlend(history_texture, previous_output_uv, clip_min, clip_max, filtered_raw, TAAU_TEMPORAL_BLEND_ALPHA);
+	float4 history_sample = history_texture.SampleLevel(sampler_linear_clamp, previous_output_uv, 0);
+	if (all(previous_output_uv >= 0.0) && all(previous_output_uv <= 1.0) && history_sample.a > 0.5)
+	{
+		float3 history_color = max(history_sample.rgb, 0.0);
+		float3 history_weighted = history_color / (1.0 + dot(history_color, float3(0.2126, 0.7152, 0.0722)));
+		float3 history = float3(dot(history_weighted, float3(0.25, 0.5, 0.25)), dot(history_weighted, float3(0.5, 0.0, -0.5)), dot(history_weighted, float3(-0.25, 0.5, -0.25)));
+
+		float3 offset = history - mean;
+		float3 unit = abs(offset / max(extent, 1e-5));
+		float overshoot = max(unit.x, max(unit.y, unit.z));
+		if (overshoot > 1.0)
+		{
+			history = mean + offset / overshoot;
+		}
+
+		float speed = length(delta_uv * destination_size);
+		float blend_alpha = lerp(TAAU_TEMPORAL_BLEND_ALPHA_MIN, TAAU_TEMPORAL_BLEND_ALPHA_MAX, saturate(speed / 8.0));
+		float3 blended = lerp(history, current, blend_alpha);
+		float3 blended_weighted = max(float3(blended.x + blended.y - blended.z, blended.x + blended.z, blended.x - blended.y - blended.z), 0.0);
+		result = blended_weighted / max(1.0 - dot(blended_weighted, float3(0.2126, 0.7152, 0.0722)), 1e-4);
+	}
 
 	RWTexture2D<float4> history = ResourceDescriptorHeap[bindings.upscale_history_];
 	history[destination_pixel] = float4(result, 1.0);

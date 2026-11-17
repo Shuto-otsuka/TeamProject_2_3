@@ -192,22 +192,25 @@
 #pragma clang diagnostic pop
 #endif
 
-#include <FoundationEngine/Math/Algorithm.h>
-#include <FoundationEngine/Math/Matrix.h>
-#include <FoundationEngine/Math/Quaternion.h>
-#include <FoundationEngine/Math/Vector.h>
+#include <FoundationEngine/Utility/Types.h>
+#include <FoundationEngine/Utility/Keyword.h>
 
 #include <FoundationEngine/Utility/Array.h>
 #include <FoundationEngine/Utility/Bitset.h>
 #include <FoundationEngine/Utility/Delegate.h>
 #include <FoundationEngine/Utility/DestructiveCopy.h>
-#include <FoundationEngine/Utility/Keyword.h>
 #include <FoundationEngine/Utility/NonCopyable.h>
 #include <FoundationEngine/Utility/NonMovable.h>
 #include <FoundationEngine/Utility/NonTransferable.h>
 #include <FoundationEngine/Utility/ResourcePtr.h>
 #include <FoundationEngine/Utility/ResourceRef.h>
 #include <FoundationEngine/Utility/String.h>
-#include <FoundationEngine/Utility/Types.h>
+
+#include <FoundationEngine/Math/Algorithm.h>
+//#include <FoundationEngine/Math/Vector/Vector2.h>
+//#include <FoundationEngine/Math/Vector/Vector3.h>
+#include <FoundationEngine/Math/Matrix.h>
+#include <FoundationEngine/Math/Quaternion.h>
+#include <FoundationEngine/Math/Vector.h>
 
 #include <GraphicsEngine/D3D12/D3D12Common.h>

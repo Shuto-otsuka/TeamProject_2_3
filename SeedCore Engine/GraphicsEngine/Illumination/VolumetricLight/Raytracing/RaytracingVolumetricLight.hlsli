@@ -19,7 +19,7 @@ struct RaytracingVolumetricLightConstantBuffer
 	float godray_strength_;
 	uint frame_;
 	uint history_valid_;
-	uint raytracing_volumetric_light_constant_buffer_padding_0_;
+	uint cloud_shadow_;
 };
 
 float3 RaytracingVolumetricLightFroxelToWorld(float3 froxel_coordinate, uint3 froxel_dimensions, float near_plane, float far_plane, float4x4 projection, float4x4 inverse_view)

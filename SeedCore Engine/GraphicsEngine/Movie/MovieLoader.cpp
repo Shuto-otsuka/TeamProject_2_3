@@ -39,7 +39,7 @@ namespace SeedCore
 	* Opens the video at filePath (a source, or a ".movie" cache) and
 	* returns the handle of the new Video, or a null handle when Media
 	* Foundation is unavailable or the video cannot be opened. A source
-	* is read from its sibling ".movie" cache when that is newer. thread
+	* is read as it is, a ".movie" cache through its decryption. thread
 	* is unused: the decoder keeps no per-thread state.
 	*
 	* ---------------------------------------------------------------------
@@ -47,9 +47,9 @@ namespace SeedCore
 	* [JP]
 	* filePath の動画（ソースか ".movie" キャッシュ）を開き、新しい Video の
 	* ハンドルを返す。Media Foundation が使えない、または動画を開けない
-	* 場合は null のハンドルを返す。ソースは、隣の ".movie" キャッシュの
-	* 方が新しければそちらから読む。thread は使わない（デコーダはスレッド
-	* ごとの状態を持たないため）。
+	* 場合は null のハンドルを返す。ソースはそのまま、".movie" キャッシュは
+	* 復号を通して読む。thread は使わない（デコーダはスレッドごとの状態を
+	* 持たないため）。
 	*/
 	Handle<Video> MovieLoader::Load(String filePath, LoadThread thread)
 	{

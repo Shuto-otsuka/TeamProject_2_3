@@ -215,6 +215,8 @@
     </ClCompile>
     <ClCompile Include="Reflection\Reflection.generated.cpp" />
     <ClCompile Include="Payload\Payload.generated.cpp" />
+    <ClInclude Include="Math\Vector\Vector2.h" />
+    <ClInclude Include="Math\Vector\Vector3.h" />
     <ClInclude Include="Resource\Asset\Asset.h" />
     <ClInclude Include="Resource\Asset\AssetExporter.h" />
     <ClInclude Include="Resource\Asset\AssetLoader.h" />
