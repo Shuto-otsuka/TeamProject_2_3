@@ -41,6 +41,7 @@ namespace SeedCore
 				constants_.scatteringG_ = volumetricLight.raytracing_.scatteringG_;
 				constants_.rayTMax_ = volumetricLight.raytracing_.rayTMax_;
 				constants_.godrayStrength_ = volumetricLight.raytracing_.godrayStrength_;
+				constants_.cloudShadow_ = volumetricLight.raytracing_.cloudShadowEnabled_ ? 1u : 0u;
 			});
 		constants_.historyValid_ = traced && tracing_ ? 1u : 0u;
 		++constants_.frame_;

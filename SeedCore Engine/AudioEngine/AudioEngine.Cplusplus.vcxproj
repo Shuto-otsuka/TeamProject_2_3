@@ -33,6 +33,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Audio\Audio.h" />
+    <ClInclude Include="Audio\AudioDecoder.h" />
     <ClInclude Include="Audio\AudioTypes.h" />
     <ClInclude Include="Audio\AudioByteStream.h" />
     <ClInclude Include="Audio\AudioListener.h" />
@@ -49,6 +50,7 @@
   <ItemGroup>
     <ClCompile Include="Audio\Audio.cpp" />
     <ClCompile Include="Audio\AudioByteStream.cpp" />
+    <ClCompile Include="Audio\AudioDecoder.cpp" />
     <ClCompile Include="Audio\AudioListener.cpp" />
     <ClCompile Include="Audio\AudioLoader.cpp" />
     <ClCompile Include="Audio\AudioResource.cpp" />

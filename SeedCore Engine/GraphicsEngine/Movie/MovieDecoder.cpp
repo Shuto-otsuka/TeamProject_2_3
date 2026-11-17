@@ -51,40 +51,12 @@ namespace SeedCore
 		}
 		else
 		{
-			std::filesystem::path cacheFsPath = sourceFsPath;
-			cacheFsPath.replace_extension(".movie");
-
-			Bool openedFromCache = false;
-			if (std::filesystem::exists(cacheFsPath) && std::filesystem::exists(sourceFsPath) && std::filesystem::last_write_time(cacheFsPath) >= std::filesystem::last_write_time(sourceFsPath))
+			std::wstring widePath(filePath.begin(), filePath.end());
+			hr = MFCreateSourceReaderFromURL(widePath.c_str(), attributes.Get(), sourceReader_.ReleaseAndGetAddressOf());
+			if (FAILED(hr))
 			{
-				MovieByteStream* rawByteStream = new MovieByteStream();
-				if (rawByteStream->Open(cacheFsPath.string()))
-				{
-					byteStream_.Attach(rawByteStream);
-					hr = MFCreateSourceReaderFromByteStream(byteStream_.Get(), attributes.Get(), sourceReader_.ReleaseAndGetAddressOf());
-					openedFromCache = SUCCEEDED(hr) && sourceReader_;
-				}
-				else
-				{
-					delete rawByteStream;
-				}
-
-				if (!openedFromCache)
-				{
-					byteStream_.Reset();
-					sourceReader_.Reset();
-				}
-			}
-
-			if (!openedFromCache)
-			{
-				std::wstring widePath(filePath.begin(), filePath.end());
-				hr = MFCreateSourceReaderFromURL(widePath.c_str(), attributes.Get(), sourceReader_.ReleaseAndGetAddressOf());
-				if (FAILED(hr))
-				{
-					SC_LOG_ERROR("MovieDecoder: 動画ファイルを開けませんでした ({})", filePath);
-					return false;
-				}
+				SC_LOG_ERROR("MovieDecoder: 動画ファイルを開けませんでした ({})", filePath);
+				return false;
 			}
 		}
 

@@ -27,7 +27,7 @@ namespace SeedCore
 
 		Uint32 historyValid_ = 0;
 
-		Uint32 raytracingVolumetricLightConstantBufferPadding0_ = 0;
+		Uint32 cloudShadow_ = 0;
 	};
 	SC_STATIC_ASSERT(RaytracingVolumetricLightConstantBuffer, 64, "Illumination/VolumetricLight/Raytracing/RaytracingVolumetricLight.hlsli");
 

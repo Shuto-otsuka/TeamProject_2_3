@@ -1,6 +1,7 @@
 #include <GraphicsEngine/Illumination/VolumetricLight/Raytracing/RaytracingVolumetricLight.hlsli>
 #include <GraphicsEngine/Raytracing/RaytracingHit.hlsli>
 #include <GraphicsEngine/Shader/Noise.hlsli>
+#include <GraphicsEngine/Environment/VolumetricCloud/VolumetricCloud.hlsli>
 
 static const float FROXEL_TEMPORAL_ALPHA = 0.1;
 
@@ -12,6 +13,9 @@ struct RaytracingVolumetricLightScatterBindings
 	uint top_level_structure_;
 	uint top_level_hits_;
 	uint raytracing_volumetric_light_constants_;
+	uint volumetric_cloud_constants_;
+	uint volumetric_cloud_shape_;
+	uint volumetric_cloud_detail_;
 	uint raytracing_volumetric_light_scattering_history_;
 	uint raytracing_volumetric_light_scattering_;
 };
@@ -62,6 +66,28 @@ void main(uint3 id : SV_DispatchThreadID)
 		ray.TMin = 0.001;
 		ray.TMax = constants.ray_t_max_;
 		float3 transmittance = RaytracingHitTransmittance(tables, ray);
+		ConstantBuffer<VolumetricCloudConstantBuffer> cloud_constants = ResourceDescriptorHeap[bindings.volumetric_cloud_constants_];
+		if (any(transmittance > 0.0) && constants.cloud_shadow_ != 0 && cloud_constants.procedural_sky_enabled_ != 0 && sun_direction.y > 0.001)
+		{
+			float t_enter;
+			float t_exit;
+			if (CloudLayerInterval(world_position, sun_direction, cloud_constants, t_enter, t_exit))
+			{
+				Texture3D<float> shape_noise = ResourceDescriptorHeap[bindings.volumetric_cloud_shape_];
+				Texture3D<float> detail_noise = ResourceDescriptorHeap[bindings.volumetric_cloud_detail_];
+				float cloud_curvature = CloudCurvature(sun_direction, cloud_constants.planet_radius_);
+				float cloud_step_length = (t_exit - t_enter) / 3.0;
+				float optical_depth = 0.0;
+				for (uint cloud_step = 0; cloud_step < 3; cloud_step++)
+				{
+					float cloud_t = t_enter + cloud_step_length * (float(cloud_step) + 0.5);
+					float cloud_altitude = CloudAltitudeAt(world_position.y, sun_direction.y, cloud_curvature, cloud_t);
+					optical_depth += CloudDensity(world_position + sun_direction * cloud_t, cloud_altitude, cloud_constants, scene.total_time_, shape_noise, detail_noise, sampler_linear_wrap, 0.0) * cloud_step_length;
+				}
+				transmittance *= exp(-optical_depth * cloud_constants.light_density_);
+			}
+		}
+
 		float phase = PhaseHenyeyGreenstein(dot(view_direction, sun_direction), constants.scattering_g_);
 		in_scattering += scattering_coefficient * phase * transmittance * light_constants.sun_color_ * light_constants.sun_intensity_ * constants.godray_strength_;
 	}

@@ -6,15 +6,15 @@ namespace SeedCore
 {
 	/**
 	* [EN]
-	* Loads encrypted audio caches into stable Sound storage. Converting a
-	* supported source file into the engine's .audio cache format is
-	* private and reached only by AudioResource.
+	* Loads audio sources or their encrypted .audio caches into stable
+	* Sound storage. Writing a source out as a .audio cache is private and
+	* reached only by AudioResource.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* 暗号化された音声キャッシュを安定した Sound ストレージへ読み込む。
-	* 対応する素材ファイルをエンジンの .audio キャッシュ形式へ変換する処理は
+	* 音声素材、またはその暗号化された .audio キャッシュを、安定した Sound
+	* ストレージへ読み込む。素材を .audio キャッシュとして書き出す処理は
 	* private で、AudioResource からだけ使う。
 	*/
 	class SEEDCORE_API AudioLoader :public AssetLoader<Sound>
@@ -47,20 +47,20 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Loads a Sound from the .audio cache at filePath, or from the one
-		* beside the source file filePath names. A source plays only through
-		* its cache, which AudioResource::Generate writes; nothing is written
-		* here. Returns a null handle on failure. thread is unused: a Sound
-		* needs no per-thread state.
+		* Loads a Sound from filePath. A ".audio" path is read as the
+		* encrypted cache; a source (".wav"/".mp3"/".acb") is converted in
+		* memory, with an ".acb" streaming from the ".awb" beside it when
+		* there is one. Nothing is written. Returns a null handle on failure.
+		* thread is unused: a Sound needs no per-thread state.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* filePath の .audio キャッシュ、または filePath が示す素材ファイルの
-		* 隣の .audio キャッシュから Sound を読み込む。素材はキャッシュを通して
-		* しか再生できず、キャッシュは AudioResource::Generate が書く。ここでは
-		* 何も書かない。失敗時は null ハンドルを返す。thread は使わない（Sound は
-		* スレッドごとの状態を持たないため）。
+		* filePath から Sound を読み込む。".audio" は暗号化されたキャッシュ
+		* として読む。素材（".wav"/".mp3"/".acb"）はメモリ上で変換し、".acb"
+		* は隣に ".awb" があればそこからストリーミングする。何も書き出さない。
+		* 失敗時は null ハンドルを返す。thread は使わない（Sound はスレッド
+		* ごとの状態を持たないため）。
 		*/
 		Handle<Sound> Load(String filePath, LoadThread thread);
 

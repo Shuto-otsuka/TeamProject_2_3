@@ -1,5 +1,6 @@
 #include <External/CRI/Include/cri_adx2le.h>
 #include <AudioEngine/Audio/AudioLoader.h>
+#include <AudioEngine/Audio/AudioDecoder.h>
 #include <FoundationEngine/File/FileUtility.h>
 #include <FoundationEngine/Serialization/Encryption/Aes256.h>
 #include <FoundationEngine/Serialization/Encryption/Sha256.h>
@@ -57,27 +58,27 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Loads a Sound from the .audio cache at filePath, or from the one
-	* beside the source file filePath names. A source plays only through
-	* its cache, which AudioResource::Generate writes; nothing is written
-	* here. Returns a null handle on failure. thread is unused: a Sound
-	* needs no per-thread state.
+	* Loads a Sound from filePath. A ".audio" path is read as the
+	* encrypted cache; a source (".wav"/".mp3"/".acb") is converted in
+	* memory, with an ".acb" streaming from the ".awb" beside it when
+	* there is one. Nothing is written. Returns a null handle on failure.
+	* thread is unused: a Sound needs no per-thread state.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* filePath の .audio キャッシュ、または filePath が示す素材ファイルの
-	* 隣の .audio キャッシュから Sound を読み込む。素材はキャッシュを通して
-	* しか再生できず、キャッシュは AudioResource::Generate が書く。ここでは
-	* 何も書かない。失敗時は null ハンドルを返す。thread は使わない（Sound は
-	* スレッドごとの状態を持たないため）。
+	* filePath から Sound を読み込む。".audio" は暗号化されたキャッシュ
+	* として読む。素材（".wav"/".mp3"/".acb"）はメモリ上で変換し、".acb"
+	* は隣に ".awb" があればそこからストリーミングする。何も書き出さない。
+	* 失敗時は null ハンドルを返す。thread は使わない（Sound はスレッド
+	* ごとの状態を持たないため）。
 	*/
 	Handle<Sound> AudioLoader::Load(String filePath, LoadThread thread)
 	{
-		/// [EN] Resolve the source and cache paths.
-		/// [JP] 素材とキャッシュのパスを解決する。
-		std::filesystem::path sourceFsPath(filePath.c_str());
-		std::string extension = sourceFsPath.extension().string();
+		/// [EN] A ".awb" is only the streamed half of an ".acb", so it is never loaded on its own.
+		/// [JP] ".awb" は ".acb" のストリーミング側でしかないため、単体では読み込まない。
+		std::filesystem::path fileFsPath(filePath.c_str());
+		std::string extension = fileFsPath.extension().string();
 		std::ranges::transform(extension, extension.begin(), [](Uchar c) { return static_cast<Char>(std::tolower(c)); });
 
 		if (extension == ".awb")
@@ -85,104 +86,19 @@ namespace SeedCore
 			return Handle<Sound>::null();
 		}
 
-		std::filesystem::path cacheFsPath = sourceFsPath;
-		if (extension != ".audio")
+		/// [EN] Decode the file into its plain body, its kind, and the path CRI streams the AWB from.
+		/// [JP] ファイルを、平文の本体・その種別・CRI が AWB をストリーミングするパスへデコードする。
+		SoundType type = SoundType::Wave;
+		DynamicArray<Byte> data;
+		String awbPath;
+		if (!AudioDecoder::Decode(filePath, type, data, awbPath))
 		{
-			cacheFsPath.replace_extension(".audio");
-
-			/// [EN] The cache is used whenever it exists: its write time says nothing reliable once files travel through the shared library, so it is refreshed by generating it again rather than judged by age.
-			/// [JP] キャッシュがあれば常にそれを使う。共有ライブラリを通してファイルが運ばれると書き込み時刻は当てにならないため、古さで判断せず、作り直すことで更新する。
-			if (!std::filesystem::exists(cacheFsPath))
-			{
-				SC_LOG_ERROR("AudioLoader: .audioがありません。アセットアクションでキャッシュファイルを作成してください ({})", sourceFsPath.string());
-				return Handle<Sound>::null();
-			}
-		}
-
-		/// [EN] Read and validate the fixed header of the encrypted audio container.
-		/// [JP] 暗号化音声コンテナの固定ヘッダーを読み込み、妥当性を検証する。
-		std::ifstream ifs(cacheFsPath, std::ios::binary);
-		if (!ifs)
-		{
-			SC_LOG_ERROR("AudioLoader: .audioを開けませんでした ({})", cacheFsPath.string());
+			SC_LOG_ERROR("AudioLoader: 音声を読み込めませんでした ({})", fileFsPath.string());
 			return Handle<Sound>::null();
 		}
 
-		Byte magic[8]{};
-		Uint32 version = 0;
-		Uint32 typeValue = 0;
-		Uint32 blobCount = 0;
-		Uint32 reserved = 0;
-		ifs.read(magic, 8);
-		ifs.read(reinterpret_cast<Char*>(&version), 4);
-		ifs.read(reinterpret_cast<Char*>(&typeValue), 4);
-		ifs.read(reinterpret_cast<Char*>(&blobCount), 4);
-		ifs.read(reinterpret_cast<Char*>(&reserved), 4);
-
-		if (!ifs || std::memcmp(magic, "SCAUDIO\0", 8) != 0 || version != 1 || blobCount == 0 || blobCount > 2 || typeValue > static_cast<Uint32>(SoundType::Wave))
-		{
-			SC_LOG_ERROR("AudioLoader: .audioのヘッダーが不正です ({})", cacheFsPath.string());
-			return Handle<Sound>::null();
-		}
-
-		/// [EN] Locate the in-memory body and record whether a streamed AWB blob is present.
-		/// [JP] メモリへ読む本体の位置を取得し、ストリーミング用 AWB ブロブの有無を記録する。
-		Uint64 mainOffset = 0;
-		Uint64 mainEncryptedSize = 0;
-		Bool hasStreamBlob = false;
-		for (Uint32 blobIndex = 0; blobIndex < blobCount; ++blobIndex)
-		{
-			Uint32 blobID = 0;
-			Uint32 blobReserved = 0;
-			Uint64 offset = 0;
-			Uint64 encryptedSize = 0;
-			Uint64 plainSize = 0;
-			ifs.read(reinterpret_cast<Char*>(&blobID), 4);
-			ifs.read(reinterpret_cast<Char*>(&blobReserved), 4);
-			ifs.read(reinterpret_cast<Char*>(&offset), 8);
-			ifs.read(reinterpret_cast<Char*>(&encryptedSize), 8);
-			ifs.read(reinterpret_cast<Char*>(&plainSize), 8);
-
-			if (blobID == 0)
-			{
-				mainOffset = offset;
-				mainEncryptedSize = encryptedSize;
-			}
-			else if (blobID == 1)
-			{
-				hasStreamBlob = true;
-			}
-		}
-
-		if (!ifs || mainEncryptedSize <= 16)
-		{
-			SC_LOG_ERROR("AudioLoader: .audioの本体データが不正です ({})", cacheFsPath.string());
-			return Handle<Sound>::null();
-		}
-
-		/// [EN] Read the initialization vector and ciphertext, then decrypt the main body.
-		/// [JP] 初期化ベクトルと暗号文を読み込み、本体データを復号する。
-		DynamicArray<Byte> iv(16);
-		DynamicArray<Byte> ciphertext(static_cast<Size>(mainEncryptedSize - 16));
-		ifs.seekg(static_cast<std::streamoff>(mainOffset));
-		ifs.read(iv.data(), 16);
-		ifs.read(ciphertext.data(), static_cast<std::streamsize>(ciphertext.size()));
-		if (!ifs)
-		{
-			SC_LOG_ERROR("AudioLoader: .audioの本体データを読み込めませんでした ({})", cacheFsPath.string());
-			return Handle<Sound>::null();
-		}
-
-		static const DynamicArray<Byte> key = Sha256::Hash(reinterpret_cast<const Byte*>(SC_ENCRYPTION_KEY_SEED), std::strlen(SC_ENCRYPTION_KEY_SEED));
-		DynamicArray<Byte> plaintext = Aes256::Decrypt(key, iv, ciphertext);
-		if (plaintext.empty())
-		{
-			SC_LOG_ERROR("AudioLoader: .audioの復号に失敗しました ({})", cacheFsPath.string());
-			return Handle<Sound>::null();
-		}
-
-		/// [EN] Store the decoded body in a stable Sound slot addressed by the returned handle.
-		/// [JP] 復号した本体を、返却ハンドルで参照する安定した Sound スロットへ格納する。
+		/// [EN] Store the plain body in a stable Sound slot addressed by the returned handle.
+		/// [JP] 平文の本体を、返却ハンドルで参照する安定した Sound スロットへ格納する。
 		Handle<Sound> handle = pool_.Create();
 		Sound* sound = pool_.Get(handle);
 		if (!sound)
@@ -190,13 +106,9 @@ namespace SeedCore
 			return Handle<Sound>::null();
 		}
 
-		sound->type_ = static_cast<SoundType>(typeValue);
-		sound->data_ = std::move(plaintext);
-
-		if (hasStreamBlob)
-		{
-			sound->awbPath_ = String("seedcore_audio://" + std::filesystem::absolute(cacheFsPath).generic_string());
-		}
+		sound->type_ = type;
+		sound->data_ = std::move(data);
+		sound->awbPath_ = awbPath;
 
 		/// [EN] Register cue-sheet data with CRI when the global ACF is available.
 		/// [JP] グローバル ACF を利用できる場合は、キューシートデータを CRI へ登録する。
@@ -205,14 +117,14 @@ namespace SeedCore
 			CriAtomExAcfInfo acfInfo{};
 			if (criAtomExAcf_GetAcfInfo(&acfInfo) != CRI_TRUE)
 			{
-				SC_LOG_WARNING("AudioLoader: ACFが登録されていないため、キューシートをCRIへ登録できません ({})", cacheFsPath.string());
+				SC_LOG_WARNING("AudioLoader: ACFが登録されていないため、キューシートをCRIへ登録できません ({})", fileFsPath.string());
 			}
 			else
 			{
 				sound->acbHandle_ = criAtomExAcb_LoadAcbData(sound->data_.data(), static_cast<CriSint32>(sound->data_.size()), nullptr, sound->awbPath_.str().empty() ? nullptr : sound->awbPath_.c_str(), nullptr, 0);
 				if (!sound->acbHandle_)
 				{
-					SC_LOG_ERROR("AudioLoader: ACBの読み込みに失敗しました ({})", cacheFsPath.string());
+					SC_LOG_ERROR("AudioLoader: ACBの読み込みに失敗しました ({})", fileFsPath.string());
 					pool_.Destroy(handle);
 					return Handle<Sound>::null();
 				}
@@ -258,171 +170,24 @@ namespace SeedCore
 	*/
 	Bool AudioLoader::Bake(String sourcePath, String cachePath)
 	{
-		/// [EN] Select the conversion path from the source extension.
-		/// [JP] 素材の拡張子に応じて変換経路を選択する。
-		std::filesystem::path sourceFsPath(sourcePath.c_str());
-		std::string extension = sourceFsPath.extension().string();
-		std::ranges::transform(extension, extension.begin(), [](Uchar c) { return static_cast<Char>(std::tolower(c)); });
-
+		/// [EN] Decode the source into the plain main body, the same bytes Load gives a Sound.
+		/// [JP] 素材を平文の本体データへデコードする。Load が Sound に渡すのと同じバイト列。
 		SoundType type = SoundType::Wave;
 		DynamicArray<Byte> mainData;
-		DynamicArray<Byte> streamData;
-
-		if (extension == ".acb" || extension == ".wav")
-		{
-			/// [EN] Preserve ACB and wave bytes directly as the main body.
-			/// [JP] ACB と wave のバイト列は、そのまま本体データとして保持する。
-			type = (extension == ".acb") ? SoundType::CueSheet : SoundType::Wave;
-
-			DynamicArray<Uint8> sourceBytes = FileUtility::LoadFileBinary(String(sourceFsPath.string()));
-			if (sourceBytes.empty())
-			{
-				return false;
-			}
-			mainData.resize(sourceBytes.size());
-			std::memcpy(mainData.data(), sourceBytes.data(), sourceBytes.size());
-
-			if (extension == ".acb")
-			{
-				/// [EN] Package a sibling AWB as the optional streamed-data blob when present.
-				/// [JP] 同階層の AWB が存在する場合は、任意のストリームデータブロブとして格納する。
-				std::filesystem::path awbFsPath = sourceFsPath;
-				awbFsPath.replace_extension(".awb");
-				if (std::filesystem::exists(awbFsPath))
-				{
-					DynamicArray<Uint8> streamBytes = FileUtility::LoadFileBinary(String(awbFsPath.string()));
-					streamData.resize(streamBytes.size());
-					std::memcpy(streamData.data(), streamBytes.data(), streamBytes.size());
-				}
-			}
-		}
-		else if (extension == ".mp3")
-		{
-			/// [EN] Decode MP3 input to PCM through Media Foundation.
-			/// [JP] Media Foundation を通じて MP3 入力を PCM へデコードする。
-			if (!mfStarted_)
-			{
-				return false;
-			}
-
-			std::wstring widePath = sourceFsPath.wstring();
-			Microsoft::WRL::ComPtr<IMFSourceReader> sourceReader;
-			if (FAILED(MFCreateSourceReaderFromURL(widePath.c_str(), nullptr, sourceReader.ReleaseAndGetAddressOf())))
-			{
-				SC_LOG_ERROR("AudioLoader: mp3を開けませんでした ({})", sourceFsPath.string());
-				return false;
-			}
-
-			sourceReader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_ALL_STREAMS), FALSE);
-			sourceReader->SetStreamSelection(static_cast<DWORD>(MF_SOURCE_READER_FIRST_AUDIO_STREAM), TRUE);
-
-			Microsoft::WRL::ComPtr<IMFMediaType> outputType;
-			if (FAILED(MFCreateMediaType(outputType.ReleaseAndGetAddressOf())))
-			{
-				return false;
-			}
-			outputType->SetGUID(MF_MT_MAJOR_TYPE, MFMediaType_Audio);
-			outputType->SetGUID(MF_MT_SUBTYPE, MFAudioFormat_PCM);
-
-			if (FAILED(sourceReader->SetCurrentMediaType(static_cast<DWORD>(MF_SOURCE_READER_FIRST_AUDIO_STREAM), nullptr, outputType.Get())))
-			{
-				SC_LOG_ERROR("AudioLoader: mp3のPCM出力を設定できませんでした ({})", sourceFsPath.string());
-				return false;
-			}
-
-			Microsoft::WRL::ComPtr<IMFMediaType> currentType;
-			if (FAILED(sourceReader->GetCurrentMediaType(static_cast<DWORD>(MF_SOURCE_READER_FIRST_AUDIO_STREAM), currentType.ReleaseAndGetAddressOf())))
-			{
-				return false;
-			}
-
-			WAVEFORMATEX* waveFormat = nullptr;
-			Uint32 waveFormatSize = 0;
-			if (FAILED(MFCreateWaveFormatExFromMFMediaType(currentType.Get(), &waveFormat, &waveFormatSize)))
-			{
-				return false;
-			}
-
-			Uint16 channels = waveFormat->nChannels;
-			Uint32 samplesPerSecond = waveFormat->nSamplesPerSec;
-			Uint16 bitsPerSample = waveFormat->wBitsPerSample;
-			CoTaskMemFree(waveFormat);
-
-			DynamicArray<Byte> pcmData;
-			while (true)
-			{
-				DWORD streamFlags = 0;
-				Microsoft::WRL::ComPtr<IMFSample> sample;
-				if (FAILED(sourceReader->ReadSample(static_cast<DWORD>(MF_SOURCE_READER_FIRST_AUDIO_STREAM), 0, nullptr, &streamFlags, nullptr, sample.ReleaseAndGetAddressOf())))
-				{
-					break;
-				}
-
-				if (streamFlags & MF_SOURCE_READERF_ENDOFSTREAM)
-				{
-					break;
-				}
-
-				if (!sample)
-				{
-					continue;
-				}
-
-				Microsoft::WRL::ComPtr<IMFMediaBuffer> buffer;
-				if (FAILED(sample->ConvertToContiguousBuffer(buffer.ReleaseAndGetAddressOf())))
-				{
-					break;
-				}
-
-				BYTE* data = nullptr;
-				DWORD currentLength = 0;
-				if (FAILED(buffer->Lock(&data, nullptr, &currentLength)))
-				{
-					break;
-				}
-
-				Size offset = pcmData.size();
-				pcmData.resize(offset + currentLength);
-				std::memcpy(pcmData.data() + offset, data, currentLength);
-
-				buffer->Unlock();
-			}
-
-			if (pcmData.empty())
-			{
-				SC_LOG_ERROR("AudioLoader: mp3のデコード結果が空でした ({})", sourceFsPath.string());
-				return false;
-			}
-
-			/// [EN] Wrap decoded PCM samples in a standard wave container.
-			/// [JP] デコードした PCM サンプルを標準的な wave コンテナへ格納する。
-			Uint16 blockAlign = static_cast<Uint16>(channels * (bitsPerSample / 8));
-			Uint32 bytesPerSecond = samplesPerSecond * blockAlign;
-			Uint32 dataSize = static_cast<Uint32>(pcmData.size());
-			Uint32 riffSize = 36 + dataSize;
-			Uint32 formatSize = 16;
-			Uint16 formatTag = 1;
-
-			mainData.resize(44 + pcmData.size());
-			Byte* writePointer = mainData.data();
-			std::memcpy(writePointer, "RIFF", 4); writePointer += 4;
-			std::memcpy(writePointer, &riffSize, 4); writePointer += 4;
-			std::memcpy(writePointer, "WAVE", 4); writePointer += 4;
-			std::memcpy(writePointer, "fmt ", 4); writePointer += 4;
-			std::memcpy(writePointer, &formatSize, 4); writePointer += 4;
-			std::memcpy(writePointer, &formatTag, 2); writePointer += 2;
-			std::memcpy(writePointer, &channels, 2); writePointer += 2;
-			std::memcpy(writePointer, &samplesPerSecond, 4); writePointer += 4;
-			std::memcpy(writePointer, &bytesPerSecond, 4); writePointer += 4;
-			std::memcpy(writePointer, &blockAlign, 2); writePointer += 2;
-			std::memcpy(writePointer, &bitsPerSample, 2); writePointer += 2;
-			std::memcpy(writePointer, "data", 4); writePointer += 4;
-			std::memcpy(writePointer, &dataSize, 4); writePointer += 4;
-			std::memcpy(writePointer, pcmData.data(), pcmData.size());
-		}
-		else
+		String awbPath;
+		if (!AudioDecoder::Decode(sourcePath, type, mainData, awbPath))
 		{
 			return false;
+		}
+
+		/// [EN] Package the AWB beside an ".acb" as the optional streamed-data blob when present.
+		/// [JP] ".acb" の隣に AWB がある場合は、任意のストリームデータブロブとして格納する。
+		DynamicArray<Byte> streamData;
+		if (!awbPath.str().empty())
+		{
+			DynamicArray<Uint8> streamBytes = FileUtility::LoadFileBinary(awbPath);
+			streamData.resize(streamBytes.size());
+			std::memcpy(streamData.data(), streamBytes.data(), streamBytes.size());
 		}
 
 		/// [EN] Encrypt each populated blob with an independent initialization vector.

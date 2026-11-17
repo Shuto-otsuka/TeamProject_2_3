@@ -127,6 +127,15 @@
     <Filter Include="Application">
       <UniqueIdentifier>{82c64b8a-1b12-4e4b-ad7c-d922e1cdd60d}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Math\Vector">
+      <UniqueIdentifier>{8dcd0670-511e-41df-b2f1-33952c11b876}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math\Matrix">
+      <UniqueIdentifier>{c376172f-0f48-4135-8598-1844c9093ae2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Math\Quaternion">
+      <UniqueIdentifier>{6d6d5a23-700c-4ddd-9d37-36d1893a9bb0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JobSystem\FlowBuilder.cpp">
@@ -1078,6 +1087,12 @@
     </ClInclude>
     <ClInclude Include="World\ECS\Component\Selected.h">
       <Filter>World\ECS\Component</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector\Vector2.h">
+      <Filter>Math\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector\Vector3.h">
+      <Filter>Math\Vector</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

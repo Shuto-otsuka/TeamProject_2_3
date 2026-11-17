@@ -3,6 +3,7 @@
 #include <GraphicsEngine/Light/LightFeature.h>
 #include <GraphicsEngine/Raytracing/TopLevelFeature.h>
 #include <GraphicsEngine/Sky/SkyFeature.h>
+#include <GraphicsEngine/Environment/VolumetricCloud/VolumetricCloudFeature.h>
 
 namespace SeedCore
 {
@@ -39,6 +40,9 @@ namespace SeedCore
 			RenderAccess::Read(TopLevelFeature::Structure),
 			RenderAccess::Read(TopLevelFeature::Hits),
 			RenderAccess::Constant(Constants),
+			RenderAccess::Constant(VolumetricCloudFeature::Constants),
+			RenderAccess::Read(VolumetricCloudFeature::Shape),
+			RenderAccess::Read(VolumetricCloudFeature::Detail),
 			RenderAccess::History(Scattering),
 			RenderAccess::Write(Scattering)
 		};
