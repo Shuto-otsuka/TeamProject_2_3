@@ -37,7 +37,7 @@ namespace SeedCore
 				constants_.absorption_ = volumetricLight.absorption_;
 				constants_.heightFalloff_ = volumetricLight.heightFalloff_;
 				constants_.heightReference_ = volumetricLight.heightReference_;
-				constants_.fogAlbedo_ = Vector3(volumetricLight.fogAlbedo_.r, volumetricLight.fogAlbedo_.g, volumetricLight.fogAlbedo_.b);
+				constants_.fogAlbedo_ = volumetricLight.fogAlbedo_.rgb;
 				constants_.scatteringG_ = volumetricLight.raytracing_.scatteringG_;
 				constants_.rayTMax_ = volumetricLight.raytracing_.rayTMax_;
 				constants_.godrayStrength_ = volumetricLight.raytracing_.godrayStrength_;

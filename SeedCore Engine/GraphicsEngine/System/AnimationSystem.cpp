@@ -101,13 +101,13 @@ namespace SeedCore
 							Actor targetActor = (ik->enabled_ && entry.target_ != 0 && entry.weight_ > 0.0f) ? WorldAccessor::Find(world, entry.target_) : Actor();
 							if (targetActor)
 							{
-								Vector3 targetModelPosition = Vector3::Transform(targetActor.WorldMatrix().Translation(), worldToModel);
+								Vector3 targetModelPosition = Vector3::TransformPosition(targetActor.WorldMatrix().Translation(), worldToModel);
 								animator->SetIKTarget(entry.effectorBoneName_.str(), targetModelPosition, entry.weight_);
 
 								Actor poleActor = (entry.pole_ != 0) ? WorldAccessor::Find(world, entry.pole_) : Actor();
 								if (poleActor)
 								{
-									Vector3 poleModelPosition = Vector3::Transform(poleActor.WorldMatrix().Translation(), worldToModel);
+									Vector3 poleModelPosition = Vector3::TransformPosition(poleActor.WorldMatrix().Translation(), worldToModel);
 									animator->SetIKPole(entry.effectorBoneName_.str(), poleModelPosition);
 								}
 							}
@@ -268,7 +268,7 @@ namespace SeedCore
 												Matrix scaleMatrix = scaleComponent ? Matrix::CreateScale(scaleComponent->x_, scaleComponent->y_, scaleComponent->z_) : Matrix::Identity;
 												Matrix rotationMatrix = rotationComponent ? Matrix::CreateFromQuaternion(Transform::Quat(*rotationComponent)) : Matrix::Identity;
 
-												Vector3 localDelta = Vector3::TransformNormal(delta, scaleMatrix * rotationMatrix);
+												Vector3 localDelta = Vector3::TransformDirection(delta, scaleMatrix * rotationMatrix);
 
 												Position* positionComponent = world.GetComponent<Position>(entity);
 												if (positionComponent)

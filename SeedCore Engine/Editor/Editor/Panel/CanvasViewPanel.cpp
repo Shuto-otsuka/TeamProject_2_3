@@ -242,7 +242,7 @@ namespace SeedCore
 					Quaternion worldRotation;
 					Vector3 worldTranslation;
 					Matrix worldMatrix = actor.WorldMatrix();
-					worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
+					worldMatrix.Decompose(worldTranslation, worldRotation, worldScale);
 
 					Float rotation = worldRotation.ToEuler().z;
 					Float cosRotation = std::cos(rotation);
@@ -302,7 +302,7 @@ namespace SeedCore
 					Quaternion worldRotation;
 					Vector3 worldTranslation;
 					Matrix worldMatrix = actor.WorldMatrix();
-					worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
+					worldMatrix.Decompose(worldTranslation, worldRotation, worldScale);
 
 					Float centerX = 100000.0f + worldTranslation.x + bounds.center_.x * worldScale.x;
 					Float centerY = 100000.0f + ScResolution::SC_CANVAS.Height - worldTranslation.y + bounds.center_.y * worldScale.y;
@@ -335,7 +335,7 @@ namespace SeedCore
 					Quaternion worldRotation;
 					Vector3 worldTranslation;
 					Matrix worldMatrix = actor.WorldMatrix();
-					worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
+					worldMatrix.Decompose(worldTranslation, worldRotation, worldScale);
 
 					Float centerX = 100000.0f + worldTranslation.x + bounds.center_.x * worldScale.x;
 					Float centerY = 100000.0f + ScResolution::SC_CANVAS.Height - worldTranslation.y + bounds.center_.y * worldScale.y;
@@ -384,7 +384,7 @@ namespace SeedCore
 					Quaternion worldRotation;
 					Vector3 worldTranslation;
 					Matrix worldMatrix = actor.WorldMatrix();
-					worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
+					worldMatrix.Decompose(worldTranslation, worldRotation, worldScale);
 
 					Float rotation = worldRotation.ToEuler().z;
 					Float cosRotation = std::cos(rotation);
@@ -429,7 +429,7 @@ namespace SeedCore
 					Quaternion worldRotation;
 					Vector3 worldTranslation;
 					Matrix worldMatrix = actor.WorldMatrix();
-					worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
+					worldMatrix.Decompose(worldTranslation, worldRotation, worldScale);
 
 					Float localX = mouseWorldX - (100000.0f + worldTranslation.x) - bounds.center_.x * worldScale.x;
 					Float localY = mouseWorldY - (100000.0f + ScResolution::SC_CANVAS.Height - worldTranslation.y) - bounds.center_.y * worldScale.y;
@@ -461,7 +461,7 @@ namespace SeedCore
 					Quaternion worldRotation;
 					Vector3 worldTranslation;
 					Matrix worldMatrix = actor.WorldMatrix();
-					worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
+					worldMatrix.Decompose(worldTranslation, worldRotation, worldScale);
 
 					Float localX = mouseWorldX - (100000.0f + worldTranslation.x) - bounds.center_.x * worldScale.x;
 					Float localY = mouseWorldY - (100000.0f + ScResolution::SC_CANVAS.Height - worldTranslation.y) - bounds.center_.y * worldScale.y;
@@ -591,7 +591,7 @@ namespace SeedCore
 					canvasCamera.Focus(newFocus);
 					canvasCamera.Eye(newEye);
 
-					if (Vector3::DistanceSquared(newFocus, targetFocus) < 0.01f)
+					if (Vector3::DistanceSq(newFocus, targetFocus) < 0.01f)
 					{
 						canvasCamera.Focus(targetFocus);
 						canvasCamera.Eye(targetEye);

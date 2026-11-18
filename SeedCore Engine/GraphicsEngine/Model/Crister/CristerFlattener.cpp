@@ -107,12 +107,12 @@ namespace SeedCore
 								if (placed)
 								{
 									Vertex placedVertex = quantizer.DecodeVertex(crister, compressed);
-									placedVertex.position_ = Vector3::Transform(position, placement);
-									placedVertex.normal_ = Vector3::TransformNormal(placedVertex.normal_, normalPlacement);
+									placedVertex.position_ = Vector3::TransformPosition(position, placement);
+									placedVertex.normal_ = Vector3::TransformDirection(placedVertex.normal_, normalPlacement);
 									placedVertex.normal_.Normalize();
-									Vector3 placedTangent = Vector3::TransformNormal(Vector3(placedVertex.tangent_.x, placedVertex.tangent_.y, placedVertex.tangent_.z), placement);
+									Vector3 placedTangent = Vector3::TransformDirection(placedVertex.tangent_.xyz, placement);
 									placedTangent.Normalize();
-									placedVertex.tangent_ = Vector4(placedTangent.x, placedTangent.y, placedTangent.z, placedVertex.tangent_.w * tangentSign);
+									placedVertex.tangent_ = Vector4(placedTangent, placedVertex.tangent_.w * tangentSign);
 									position = placedVertex.position_;
 									vertices_.push_back(quantizer.EncodeVertex(placedVertex, crister.geometry_.positionMin_, crister.geometry_.positionExtent_, crister.geometry_.texcoordMin_, crister.geometry_.texcoordExtent_));
 								}
@@ -149,7 +149,7 @@ namespace SeedCore
 									{
 										const DynamicArray<Vector3>& deltas = subMesh.morphs_[targetIndex].positionDeltas_;
 										Vector3 delta = localVertexIndex < deltas.size() ? deltas[localVertexIndex] : Vector3::Zero;
-										submeshMorphDeltas[targetIndex].push_back(placed ? Vector3::TransformNormal(delta, placement) : delta);
+										submeshMorphDeltas[targetIndex].push_back(placed ? Vector3::TransformDirection(delta, placement) : delta);
 									}
 								}
 							}

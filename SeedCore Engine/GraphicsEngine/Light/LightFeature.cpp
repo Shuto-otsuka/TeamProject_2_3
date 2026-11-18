@@ -38,7 +38,7 @@ namespace SeedCore
 		if (celestial)
 		{
 			constants_.moonIntensity_ = celestial->moonIntensity_;
-			constants_.moonColor_ = Vector3(celestial->moonColor_.r, celestial->moonColor_.g, celestial->moonColor_.b);
+			constants_.moonColor_ = celestial->moonColor_.rgb;
 			constants_.moonPhase_ = celestial->moonPhase_;
 			constants_.moonAngularRadius_ = celestial->moonAngularRadius_;
 			constants_.nightFactor_ = celestial->nightFactor_;
@@ -57,13 +57,13 @@ namespace SeedCore
 				Actor actor = WorldAccessor::Make(world, entityID);
 				if (actor)
 				{
-					direction = Vector3::TransformNormal(direction, actor.WorldMatrix());
+					direction = Vector3::TransformDirection(direction, actor.WorldMatrix());
 				}
 				direction.Normalize();
 
 				constants_.sunDirection_ = direction;
 				constants_.sunIntensity_ = light.intensity_;
-				constants_.sunColor_ = Vector3(light.color_.r, light.color_.g, light.color_.b);
+				constants_.sunColor_ = light.color_.rgb;
 			});
 
 		Bool hasSky = false;
@@ -95,7 +95,7 @@ namespace SeedCore
 				entry.type_ = LightType::Point;
 				entry.position_ = actor.WorldMatrix().Translation();
 				entry.range_ = light.range_;
-				entry.color_ = Vector3(light.color_.r, light.color_.g, light.color_.b);
+				entry.color_ = light.color_.rgb;
 				entry.intensity_ = light.intensity_;
 				lights_.push_back(entry);
 			});
@@ -114,7 +114,7 @@ namespace SeedCore
 				}
 
 				Matrix worldMatrix = actor.WorldMatrix();
-				Vector3 direction = Vector3::TransformNormal(light.direction_, worldMatrix);
+				Vector3 direction = Vector3::TransformDirection(light.direction_, worldMatrix);
 				direction.Normalize();
 
 				LightStructuredBuffer entry{};
@@ -123,7 +123,7 @@ namespace SeedCore
 				entry.range_ = light.range_;
 				entry.direction_ = direction;
 				entry.cosHalfAngle_ = Cos(ToRadians(light.spotAngle_ * 0.5f));
-				entry.color_ = Vector3(light.color_.r, light.color_.g, light.color_.b);
+				entry.color_ = light.color_.rgb;
 				entry.intensity_ = light.intensity_;
 				entry.softness_ = light.softness_;
 				lights_.push_back(entry);
@@ -143,11 +143,11 @@ namespace SeedCore
 				}
 
 				Matrix worldMatrix = actor.WorldMatrix();
-				Vector3 normal = Vector3::TransformNormal(light.direction_, worldMatrix);
+				Vector3 normal = Vector3::TransformDirection(light.direction_, worldMatrix);
 				normal.Normalize();
-				Vector3 upHint = Vector3::TransformNormal(light.up_, worldMatrix);
+				Vector3 upHint = Vector3::TransformDirection(light.up_, worldMatrix);
 				Vector3 right = upHint.Cross(normal);
-				if (right.LengthSquared() < 1e-6f)
+				if (right.LengthSq() < 1e-6f)
 				{
 					right = Vector3::Right;
 				}
@@ -164,7 +164,7 @@ namespace SeedCore
 				entry.halfWidth_ = light.width_ * 0.5f;
 				entry.up_ = up;
 				entry.halfHeight_ = light.height_ * 0.5f;
-				entry.color_ = Vector3(light.color_.r, light.color_.g, light.color_.b);
+				entry.color_ = light.color_.rgb;
 				entry.intensity_ = light.intensity_;
 				lights_.push_back(entry);
 			});
@@ -195,11 +195,11 @@ namespace SeedCore
 				Matrix worldMatrix = actor.WorldMatrix();
 				for (const PunctualLight& light : crister->Lights())
 				{
-					Vector3 direction = Vector3::TransformNormal(light.direction_, worldMatrix);
+					Vector3 direction = Vector3::TransformDirection(light.direction_, worldMatrix);
 					direction.Normalize();
 
 					LightStructuredBuffer entry{};
-					entry.position_ = Vector3::Transform(light.position_, worldMatrix);
+					entry.position_ = Vector3::TransformPosition(light.position_, worldMatrix);
 					entry.range_ = light.range_;
 					entry.color_ = Vector3(light.colorRGB_[0], light.colorRGB_[1], light.colorRGB_[2]);
 					entry.intensity_ = light.intensity_;

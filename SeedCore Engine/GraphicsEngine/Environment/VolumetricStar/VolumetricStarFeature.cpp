@@ -36,7 +36,7 @@ namespace SeedCore
 				constants_.density_ = star.density_;
 				constants_.brightness_ = star.brightness_;
 				constants_.twinkleSpeed_ = star.twinkleSpeed_;
-				constants_.color_ = Vector3(star.color_.r, star.color_.g, star.color_.b);
+				constants_.color_ = star.color_.rgb;
 				constants_.sizeMin_ = star.sizeMin_;
 				constants_.sizeMax_ = star.sizeMax_;
 				constants_.shootingStarChancePerSecond_ = star.shootingStarChancePerSecond_;
@@ -80,14 +80,14 @@ namespace SeedCore
 
 					Vector3 randomVector = Vector3(std::uniform_real_distribution<Float>(-1.0f, 1.0f)(randomEngine_), std::uniform_real_distribution<Float>(-1.0f, 1.0f)(randomEngine_), std::uniform_real_distribution<Float>(-1.0f, 1.0f)(randomEngine_));
 					Vector3 axis = start.Cross(randomVector);
-					if (axis.LengthSquared() < 0.0001f)
+					if (axis.LengthSq() < 0.0001f)
 					{
 						axis = Vector3(1.0f, 0.0f, 0.0f);
 					}
 					axis.Normalize();
 
-					Float travelAngle = DirectX::XMConvertToRadians(std::uniform_real_distribution<Float>(50.0f, 110.0f)(randomEngine_));
-					Vector3 end = Vector3::Transform(start, Matrix::CreateFromAxisAngle(axis, travelAngle));
+					Float travelAngle = ToRadians(std::uniform_real_distribution<Float>(50.0f, 110.0f)(randomEngine_));
+					Vector3 end = Vector3::TransformPosition(start, Matrix::CreateFromAxisAngle(axis, travelAngle));
 					if (end.y < 0.1f)
 					{
 						end.y = 0.1f;

@@ -92,7 +92,7 @@ namespace SeedCore
 			Vector3 childPulledPosition = BackwardPull(crister, childIndex, activeNodes, downstreamWeight, segmentLengths, targetPositions, jointPositions);
 
 			Vector3 direction = jointPositions[nodeIndex] - childPulledPosition;
-			direction = direction.LengthSquared() > 1e-12f ? direction : Vector3::Up;
+			direction = direction.LengthSq() > 1e-12f ? direction : Vector3::Up;
 			direction.Normalize();
 			Float segmentLength = segmentLengths.at(childIndex);
 			Vector3 candidatePosition = childPulledPosition + direction * segmentLength;
@@ -119,7 +119,7 @@ namespace SeedCore
 			}
 
 			Vector3 direction = jointPositions[childIndex] - parentPosition;
-			direction = direction.LengthSquared() > 1e-12f ? direction : Vector3::Up;
+			direction = direction.LengthSq() > 1e-12f ? direction : Vector3::Up;
 			direction.Normalize();
 			Float segmentLength = segmentLengths.at(childIndex);
 			Vector3 childForwardPosition = parentPosition + direction * segmentLength;

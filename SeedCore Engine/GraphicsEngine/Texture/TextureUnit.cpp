@@ -154,7 +154,12 @@ namespace SeedCore
 				}
 				Actor actor = WorldAccessor::Make(world, entityID);
 				Font* font = fontResource.Resolve(fontResource.GetHandle(text.fontID_));
-				if (!actor || !font || !font->HasAtlasTexture())
+				if (!actor || !font)
+				{
+					return;
+				}
+				font->Shape(text.text_.str());
+				if (!font->HasAtlasTexture())
 				{
 					return;
 				}
@@ -184,7 +189,6 @@ namespace SeedCore
 					slot.content_ = content;
 					slot.text_ = text.text_;
 					quads_.clear();
-					font->Shape(text.text_.str());
 
 					Float scaleFactor = text.fontSize_ / font->GetFontSize();
 					Float lineAdvance = font->GetLineHeight() * scaleFactor * text.lineSpacing_;

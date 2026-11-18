@@ -47,11 +47,11 @@ void CameraController::SmoothFocus(float elapsedTime)
 void CameraController::LookPlayer()
 {
     //ピッチ、ヨーから回転行列を作成
-    float pitchRad = DirectX::XMConvertToRadians(pitch);
-    float yawRad = DirectX::XMConvertToRadians(yaw + 180.0f);
-    SeedCore::Matrix rotationMatrix = SeedCore::Matrix::CreateFromYawPitchRoll(SeedCore::Vector3(pitchRad, yawRad, 0.0f));
+    float pitchRad = SeedCore::ToRadians(pitch);
+    float yawRad = SeedCore::ToRadians(yaw + 180.0f);
+    SeedCore::Matrix rotationMatrix = SeedCore::Matrix::CreateFromEuler(SeedCore::Vector3(pitchRad, yawRad, 0.0f));
     //後ろ方向をかけることで注視点からのオフセットを算出
-    SeedCore::Vector3 offset = SeedCore::Vector3::TransformNormal({ 0.0f,0.0f,-distance }, rotationMatrix);
+    SeedCore::Vector3 offset = SeedCore::Vector3::TransformDirection({ 0.0f,0.0f,-distance }, rotationMatrix);
     //ポジションを確定
     SeedCore::Vector3 p = smoothFocusPoint + offset;
     SeedCore::Transform::Vector(*position, p);
@@ -87,9 +87,9 @@ void CameraController::Rotate()
     while (yaw < 0)yaw += 360;
 
     //ピッチとヨーからクォータニオンを作成
-    float pitchRad = -DirectX::XMConvertToRadians(pitch);
-    float yawRad = DirectX::XMConvertToRadians(yaw);
-    SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromYawPitchRoll(SeedCore::Vector3(pitchRad, yawRad, 0.0f));
+    float pitchRad = -SeedCore::ToRadians(pitch);
+    float yawRad = SeedCore::ToRadians(yaw);
+    SeedCore::Quaternion quaternion = SeedCore::Quaternion::FromEuler(SeedCore::Vector3(pitchRad, yawRad, 0.0f));
     quaternion.Normalize();
     //現在のローテーションにセット
     SeedCore::Transform::Quat(*rotation, quaternion);

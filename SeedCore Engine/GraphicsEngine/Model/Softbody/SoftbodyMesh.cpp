@@ -35,7 +35,7 @@ namespace SeedCore
 
 			for (Size proxyIndex = 0; proxyIndex < proxyVertices.size(); proxyIndex++)
 			{
-				Float distanceSquared = (proxyVertices[proxyIndex].position_ - renderPosition).LengthSquared();
+				Float distanceSquared = (proxyVertices[proxyIndex].position_ - renderPosition).LengthSq();
 
 				if (bestCount < bindMaxWeights_)
 				{

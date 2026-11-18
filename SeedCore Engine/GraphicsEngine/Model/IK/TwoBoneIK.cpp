@@ -10,7 +10,7 @@ namespace SeedCore
 
 	Quaternion TwoBoneIK::FromToRotation(const Vector3& from, const Vector3& to)
 	{
-		if (from.LengthSquared() < 1e-12f || to.LengthSquared() < 1e-12f)
+		if (from.LengthSq() < 1e-12f || to.LengthSq() < 1e-12f)
 		{
 			return Quaternion::Identity;
 		}
@@ -23,7 +23,7 @@ namespace SeedCore
 		Float dot = Clamp(f.Dot(t), -1.0f, 1.0f);
 		Vector3 axis = f.Cross(t);
 
-		if (axis.LengthSquared() < 1e-12f)
+		if (axis.LengthSq() < 1e-12f)
 		{
 			if (dot > 0.0f)
 			{
@@ -31,12 +31,12 @@ namespace SeedCore
 			}
 
 			axis = f.Cross(Vector3::Right);
-			if (axis.LengthSquared() < 1e-6f)
+			if (axis.LengthSq() < 1e-6f)
 			{
 				axis = f.Cross(Vector3::Up);
 			}
 			axis.Normalize();
-			return Quaternion::CreateFromAxisAngle(axis, DirectX::XM_PI);
+			return Quaternion::CreateFromAxisAngle(axis, Pi<Float>::Value);
 		}
 
 		axis.Normalize();
@@ -64,15 +64,15 @@ namespace SeedCore
 		Float newMidAngle = TriangleAngle(upperLength, lowerLength, targetDistance);
 
 		Vector3 bendAxis = rootToMid.Cross(poleVector - rootPosition);
-		if (bendAxis.LengthSquared() < epsilon)
+		if (bendAxis.LengthSq() < epsilon)
 		{
 			bendAxis = rootToEnd.Cross(rootToMid);
 		}
-		if (bendAxis.LengthSquared() < epsilon)
+		if (bendAxis.LengthSq() < epsilon)
 		{
 			bendAxis = rootToMid.Cross(Vector3::Up);
 		}
-		if (bendAxis.LengthSquared() < epsilon)
+		if (bendAxis.LengthSq() < epsilon)
 		{
 			bendAxis = rootToMid.Cross(Vector3::Right);
 		}

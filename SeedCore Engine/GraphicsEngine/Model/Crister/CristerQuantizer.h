@@ -178,7 +178,7 @@ namespace SeedCore
 		* ウェイトを逆量子化する。4つの 8bit UNORM 値は合計がちょうど1に
 		* なることが稀なため再正規化する。
 		*/
-		void DecodeSkin(const CompressedSkinVertex& compressed, XmUint4& outJoints, Vector4& outWeights)const;
+		void DecodeSkin(const CompressedSkinVertex& compressed, Uvector4& outJoints, Vector4& outWeights)const;
 
 	private:
 		/**

@@ -190,7 +190,7 @@ namespace SeedCore
 			/// [JP] LightSystem と同じ位置と向き。direction_ はローカルで、ワールド行列で回す。
 			Matrix worldMatrix = actor.WorldMatrix();
 			Vector3 apex = worldMatrix.Translation();
-			Vector3 direction = Vector3::TransformNormal(light->direction_, worldMatrix);
+			Vector3 direction = Vector3::TransformDirection(light->direction_, worldMatrix);
 			direction.Normalize();
 
 			/// [EN] The Cone shape runs along +Y with its apex on top, so +Y is turned to point back at the light.
@@ -234,7 +234,7 @@ namespace SeedCore
 
 			Matrix worldMatrix = actor.WorldMatrix();
 			Vector3 origin = worldMatrix.Translation();
-			Vector3 direction = Vector3::TransformNormal(light->direction_, worldMatrix);
+			Vector3 direction = Vector3::TransformDirection(light->direction_, worldMatrix);
 			direction.Normalize();
 
 			/// [EN] Two axes across the light direction; Y is crossed with it unless the light points nearly straight up or down, in which case X is used.
@@ -274,11 +274,11 @@ namespace SeedCore
 			/// [JP] LightSystem と同じ基底。normal が正面、right と up が四角の辺の向き。up_ が normal とほぼ平行なら right は +X にする。
 			Matrix worldMatrix = actor.WorldMatrix();
 			Vector3 center = worldMatrix.Translation();
-			Vector3 normal = Vector3::TransformNormal(light->direction_, worldMatrix);
+			Vector3 normal = Vector3::TransformDirection(light->direction_, worldMatrix);
 			normal.Normalize();
-			Vector3 upHint = Vector3::TransformNormal(light->up_, worldMatrix);
+			Vector3 upHint = Vector3::TransformDirection(light->up_, worldMatrix);
 			Vector3 right = upHint.Cross(normal);
-			if (right.LengthSquared() < 1e-6f)
+			if (right.LengthSq() < 1e-6f)
 			{
 				right = Vector3::Right;
 			}
@@ -355,7 +355,7 @@ namespace SeedCore
 					Matrix worldMatrix = actor.WorldMatrix();
 					Vector3 translation, scale;
 					Quaternion rotation;
-					worldMatrix.Decompose(scale, rotation, translation);
+					worldMatrix.Decompose(translation, rotation, scale);
 
 					ShapeDesc shape{};
 					shape.kind_ = kind;
@@ -428,7 +428,7 @@ namespace SeedCore
 				/// [EN] The volume the sphere swept up to where it stopped, as a capsule along the direction (the Capsule shape runs along +Y), then a marker and the surface normal at the hit.
 				/// [JP] 球が止まったところまでになぞった範囲を、向きに沿ったカプセルで描く（Capsule の形は +Y 方向に伸びる）。当たった点の目印と面の法線も描く。
 				Float length = query.hit_ ? query.hitDistance_ : query.distance_;
-				Quaternion sweepRotation = query.direction_.LengthSquared() > 0.0f ? Quaternion::FromToRotation(Vector3::Up, query.direction_) : Quaternion::Identity;
+				Quaternion sweepRotation = query.direction_.LengthSq() > 0.0f ? Quaternion::FromToRotation(Vector3::Up, query.direction_) : Quaternion::Identity;
 				shapes_.push_back({ ShapeKind::Capsule, ShapeStyle::Wireframe, ShapeSpace::World, ShapeScope::Game, query.origin_ + query.direction_ * (length * 0.5f), sweepRotation, Vector3(query.radius_, length * 0.5f, 0.0f), color });
 				if (query.hit_)
 				{

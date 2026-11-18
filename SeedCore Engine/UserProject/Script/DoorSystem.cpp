@@ -15,7 +15,7 @@ void DoorSystem::OnStart()
 	Vector3 position, scale;
 	Quaternion rotation;
 	Matrix worldMatrix = actor.WorldMatrix();
-	worldMatrix.Decompose(scale, rotation, position);
+	worldMatrix.Decompose(position, rotation, scale);
 
 	// MoveTargetを使うので、初期位置・回転をキャッシュする
 	cachePosition_ = position;

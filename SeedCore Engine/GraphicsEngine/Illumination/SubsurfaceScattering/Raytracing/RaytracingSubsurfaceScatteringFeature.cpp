@@ -33,7 +33,7 @@ namespace SeedCore
 				constants_.thicknessBias_ = subsurfaceScattering.raytracing_.thicknessBias_;
 				constants_.rayTMax_ = subsurfaceScattering.raytracing_.rayTMax_;
 				constants_.strength_ = subsurfaceScattering.strength_;
-				constants_.subsurfaceColor_ = Vector3(subsurfaceScattering.subsurfaceColor_.r, subsurfaceScattering.subsurfaceColor_.g, subsurfaceScattering.subsurfaceColor_.b);
+				constants_.subsurfaceColor_ = subsurfaceScattering.subsurfaceColor_.rgb;
 			});
 	}
 

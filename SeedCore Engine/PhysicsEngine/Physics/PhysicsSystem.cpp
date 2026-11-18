@@ -55,9 +55,9 @@ namespace SeedCore
 		Vector3 parentScale;
 		Quaternion parentRotation;
 		Vector3 parentTranslation;
-		parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+		parentMatrix.Decompose(parentTranslation, parentRotation, parentScale);
 
-		Vector3 origin = Vector3::Transform(position ? Transform::Vector(*position) : Vector3::Zero, parentMatrix);
+		Vector3 origin = Vector3::TransformPosition(position ? Transform::Vector(*position) : Vector3::Zero, parentMatrix);
 		Quaternion worldRotation = (rotation ? Transform::Quat(*rotation) : Quaternion::Identity) * parentRotation;
 
 		/// [EN] A Rect or Circle collider marks the actor as a 2D canvas actor.

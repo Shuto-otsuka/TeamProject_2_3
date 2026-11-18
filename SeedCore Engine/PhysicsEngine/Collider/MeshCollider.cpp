@@ -123,7 +123,7 @@ namespace SeedCore
 		if (parentActor)
 		{
 			Matrix parentMatrix = parentActor.WorldMatrix();
-			parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+			parentMatrix.Decompose(parentTranslation, parentRotation, parentScale);
 		}
 		Vector3 scaleVector = Transform::Vector(*scale) * parentScale;
 

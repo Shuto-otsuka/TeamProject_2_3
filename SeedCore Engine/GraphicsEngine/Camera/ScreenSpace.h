@@ -1,5 +1,4 @@
 #pragma once
-#include <FoundationEngine/Math/Ray.h>
 
 namespace SeedCore
 {

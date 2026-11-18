@@ -33,7 +33,7 @@ void LightSwitchSystem::OnTick(float elapsedTime)
 	Vector3 position, scale;
 	Quaternion quaternion;
 	Matrix worldMatrix = actor.WorldMatrix();
-	worldMatrix.Decompose(scale, quaternion, position);
+	worldMatrix.Decompose(position, quaternion, scale);
 	Physics& physics = *actor.GetService<Physics>();
 	DynamicArray<EntityID> entityIDs = physics.Overlap(OverlapShapeKind::Sphere, Vector3(detectDistance_, 0.0f, 0.0f), position, Quaternion::Identity);
 

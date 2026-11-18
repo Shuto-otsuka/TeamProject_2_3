@@ -308,14 +308,14 @@ namespace SeedCore
 				Bool skinned = actor.GetComponent<Animator>() != nullptr;
 
 				Float radius = 0.0f;
-				Vector3 target = Vector3(worldMatrix._41, worldMatrix._42, worldMatrix._43);
+				Vector3 target = worldMatrix.Translation();
 
 				const Bounds* bounds = actor.GetComponent<Bounds>();
 				if (bounds && !skinned)
 				{
 					Float worldScale = Max(Max(Vector3(worldMatrix._11, worldMatrix._12, worldMatrix._13).Length(), Vector3(worldMatrix._21, worldMatrix._22, worldMatrix._23).Length()), Vector3(worldMatrix._31, worldMatrix._32, worldMatrix._33).Length());
 					radius = bounds->extent_.Length() * worldScale;
-					target = Vector3::Transform(bounds->center_, worldMatrix);
+					target = Vector3::TransformPosition(bounds->center_, worldMatrix);
 				}
 
 				context_.view_.editor_.camera_->FocusOn(target, radius);

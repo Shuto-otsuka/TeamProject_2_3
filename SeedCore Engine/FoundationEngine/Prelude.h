@@ -123,7 +123,6 @@
 
 #if _DEBUG
 #pragma comment(lib, "../External/DLSS/Lib/sl.interposer.lib" )
-#pragma comment(lib, "../External/DirectXTK/Lib/Debug/DirectXTK12.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/Effekseer.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/EffekseerRendererCommon.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Debug/EffekseerRendererLLGI.lib")
@@ -133,7 +132,6 @@
 #pragma comment(lib, "../External/MTSDF/Lib/Debug/MTSDF.lib")
 #else
 #pragma comment(lib, "../External/DLSS/Lib/sl.interposer.lib" )
-#pragma comment(lib, "../External/DirectXTK/Lib/Release/DirectXTK12.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Release/Effekseer.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Release/EffekseerRendererCommon.lib")
 #pragma comment(lib, "../External/Effekseer/Lib/Release/EffekseerRendererLLGI.lib")
@@ -207,10 +205,18 @@
 #include <FoundationEngine/Utility/String.h>
 
 #include <FoundationEngine/Math/Algorithm.h>
-//#include <FoundationEngine/Math/Vector/Vector2.h>
-//#include <FoundationEngine/Math/Vector/Vector3.h>
-#include <FoundationEngine/Math/Matrix.h>
-#include <FoundationEngine/Math/Quaternion.h>
-#include <FoundationEngine/Math/Vector.h>
+#include <FoundationEngine/Math/Vector/Vector2.h>
+#include <FoundationEngine/Math/Vector/Ivector2.h>
+#include <FoundationEngine/Math/Vector/Uvector2.h>
+#include <FoundationEngine/Math/Vector/Vector3.h>
+#include <FoundationEngine/Math/Vector/Ivector3.h>
+#include <FoundationEngine/Math/Vector/Uvector3.h>
+#include <FoundationEngine/Math/Vector/Vector4.h>
+#include <FoundationEngine/Math/Vector/Ivector4.h>
+#include <FoundationEngine/Math/Vector/Uvector4.h>
+#include <FoundationEngine/Math/Vector/Color.h>
+#include <FoundationEngine/Math/Quaternion/Quaternion.h>
+#include <FoundationEngine/Math/Matrix/Matrix.h>
+#include <FoundationEngine/Math/Geometry/Ray.h>
 
 #include <GraphicsEngine/D3D12/D3D12Common.h>

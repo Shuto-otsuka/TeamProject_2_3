@@ -22,7 +22,7 @@ void FirstPersonCameraController::OnTick(float elapsedTime)
 void FirstPersonCameraController::FollowPlayer(float elapsedTime)
 {
     //プレイヤーに追従する処理
-    SeedCore::Vector3 worldPosition = SeedCore::Vector3::Transform(offset, player.WorldMatrix());
+    SeedCore::Vector3 worldPosition = SeedCore::Vector3::TransformPosition(offset, player.WorldMatrix());
     position->x_ = worldPosition.x;
     position->y_ = worldPosition.y;
     position->z_ = worldPosition.z;
@@ -34,12 +34,12 @@ void FirstPersonCameraController::Rotate(float elapsedTime)
 
     //カメラのyawだけプレイヤーに合わせる
     //pitchはカーソルの移動量から動かす
-    yaw = SeedCore::Transform::Euler(*playerRotation).y + DirectX::XM_PI;
+    yaw = SeedCore::Transform::Euler(*playerRotation).y + SeedCore::Pi<SeedCore::Float>::Value;
  
     SeedCore::Vector2 cursorMove = SeedCore::Input::MouseMotion();
     pitch -= cursorMove.y * playerController->firstPersonSensitivity;
-    float minPitch = DirectX::XMConvertToRadians(playerController->firstPersonMinPitch);
-    float maxPitch = DirectX::XMConvertToRadians(playerController->firstPersonMaxPitch);
+    float minPitch = SeedCore::ToRadians(playerController->firstPersonMinPitch);
+    float maxPitch = SeedCore::ToRadians(playerController->firstPersonMaxPitch);
     pitch = std::clamp(pitch,minPitch, maxPitch);
 
     SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromYawPitchRoll(yaw,pitch,0);

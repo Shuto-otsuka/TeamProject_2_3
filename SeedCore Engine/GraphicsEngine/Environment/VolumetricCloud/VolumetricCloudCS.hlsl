@@ -220,9 +220,8 @@ void Trace(uint3 dtid : SV_DispatchThreadID)
 
 	float2 uv = (float2(pixel) + 0.5) / float2(cloud_width, cloud_height);
 	float2 ndc = float2(uv.x * 2 - 1, 1 - uv.y * 2);
-	float4 far_clip = float4(ndc, 0.0, 1.0);
-	float4 far_world = mul(far_clip, scene.inverse_view_projection_);
-	float3 ray_direction = normalize(far_world.xyz / far_world.w - scene.camera_position_.xyz);
+	float3 view_direction = float3((ndc.x + scene.projection_._31) / scene.projection_._11, (ndc.y + scene.projection_._32) / scene.projection_._22, -1.0);
+	float3 ray_direction = normalize(mul(view_direction, (float3x3)scene.inverse_view_));
 	float3 ray_origin = scene.camera_position_.xyz;
 
 	float t_enter;
@@ -431,8 +430,8 @@ void Resolve(uint3 dtid : SV_DispatchThreadID)
 		SceneConstantBuffer scene = GetSceneConstantBuffer();
 		float2 uv = (float2(pixel) + 0.5) / float2(width, height);
 		float2 ndc = float2(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0);
-		float4 far_world = mul(float4(ndc, 0.0, 1.0), scene.inverse_view_projection_);
-		float3 direction = normalize(far_world.xyz / far_world.w - scene.camera_position_.xyz);
+		float3 view_direction = float3((ndc.x + scene.projection_._31) / scene.projection_._11, (ndc.y + scene.projection_._32) / scene.projection_._22, -1.0);
+		float3 direction = normalize(mul(view_direction, (float3x3)scene.inverse_view_));
 		float4 previous_clip = mul(float4(direction, 0.0), scene.previous_view_projection_);
 		if (previous_clip.w > 0.0)
 		{

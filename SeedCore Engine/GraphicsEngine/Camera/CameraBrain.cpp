@@ -47,8 +47,8 @@ namespace SeedCore
 		{
 			const Matrix& worldMatrix = mainTarget.WorldMatrix();
 			const Bounds* bounds = mainTarget.GetComponent<Bounds>();
-			mainCenter = bounds ? Vector3::Transform(bounds->center_, worldMatrix) : worldMatrix.Translation();
-			mainRadius = bounds ? Vector3::TransformNormal(bounds->extent_, worldMatrix).Length() : 0.0f;
+			mainCenter = bounds ? Vector3::TransformPosition(bounds->center_, worldMatrix) : worldMatrix.Translation();
+			mainRadius = bounds ? Vector3::TransformDirection(bounds->extent_, worldMatrix).Length() : 0.0f;
 		}
 
 		Actor subTarget = (subTarget_ != 0) ? WorldAccessor::Find(GetWorld(), subTarget_) : Actor();
@@ -58,8 +58,8 @@ namespace SeedCore
 		{
 			const Matrix& worldMatrix = subTarget.WorldMatrix();
 			const Bounds* bounds = subTarget.GetComponent<Bounds>();
-			subCenter = bounds ? Vector3::Transform(bounds->center_, worldMatrix) : worldMatrix.Translation();
-			subRadius = bounds ? Vector3::TransformNormal(bounds->extent_, worldMatrix).Length() : 0.0f;
+			subCenter = bounds ? Vector3::TransformPosition(bounds->center_, worldMatrix) : worldMatrix.Translation();
+			subRadius = bounds ? Vector3::TransformDirection(bounds->extent_, worldMatrix).Length() : 0.0f;
 		}
 
 		if (mode_ == CameraBrainMode::Lookat)
@@ -69,7 +69,7 @@ namespace SeedCore
 			if (mainTarget)
 			{
 				Vector3 look = mainCenter - eye;
-				if (look.LengthSquared() > 1e-8f)
+				if (look.LengthSq() > 1e-8f)
 				{
 					look.Normalize();
 					direction_ = look;
@@ -163,7 +163,7 @@ namespace SeedCore
 		Transform::Vector(*position, next);
 
 		Vector3 look = pivot - next;
-		if (look.LengthSquared() > 1e-8f)
+		if (look.LengthSq() > 1e-8f)
 		{
 			look.Normalize();
 			direction_ = look;
@@ -180,7 +180,7 @@ namespace SeedCore
 		Vector3 forward = direction_;
 		forward.Normalize();
 		Vector3 right = Vector3::Up.Cross(forward);
-		if (right.LengthSquared() < 1e-6f)
+		if (right.LengthSq() < 1e-6f)
 		{
 			right = Vector3::Right;
 		}
@@ -233,7 +233,7 @@ namespace SeedCore
 			Transform::Vector(*current, position);
 		}
 
-		if (direction.LengthSquared() > 1e-8f)
+		if (direction.LengthSq() > 1e-8f)
 		{
 			direction_ = direction;
 			direction_.Normalize();

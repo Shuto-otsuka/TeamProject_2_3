@@ -13,7 +13,7 @@ namespace SeedCore
 
 			Vector3 right = Vector3::Up.Cross(direction);
 
-			if (right.LengthSquared() < 1e-6f)
+			if (right.LengthSq() < 1e-6f)
 			{
 				right = Vector3::Right;
 			}
@@ -47,23 +47,17 @@ namespace SeedCore
 
 			if (Abs(dx) > 0.0f || Abs(dy) > 0.0f)
 			{
-				Quaternion pitchDelta = Quaternion::CreateFromAxisAngle(Vector3::Right, ToRadians(-dy * rotateSpeed_));
+				Quaternion pitchDelta = Quaternion::CreateFromAxisAngle(Vector3::Right, ToRadians(dy * rotateSpeed_));
 				Quaternion yawDelta = Quaternion::CreateFromAxisAngle(Vector3::Up, ToRadians(dx * rotateSpeed_));
 
 				rotation_ = pitchDelta * rotation_ * yawDelta;
 				rotation_.Normalize();
 			}
 
-			/// [EN] Unreal-style: while right-click flying, the wheel changes the
-			///      WASD move speed itself instead of dollying the camera (the
-			///      wheel-dolly block below is skipped whenever rightMouseHeld).
-			/// [JP] Unreal 風: 右クリックでの視点移動中は、ホイールでカメラを
-			///      ドリーさせるのではなく WASD の移動速度自体を変更する
-			///      （下のホイールドリー処理は rightMouseHeld 中はスキップされる）。
 			Float speedWheel = InputSystem::MouseWheel();
 			if (Abs(speedWheel) > 0.0f)
 			{
-				moveSpeed_ = Clamp(moveSpeed_ * std::pow(1.1f, speedWheel), 0.1f, 1000.0f);
+				moveSpeed_ = Clamp(moveSpeed_ * Pow(1.1f, speedWheel), 0.1f, 1000.0f);
 			}
 
 			Vector3 forward = Vector3::Transform(Vector3::Forward, rotation_);
@@ -86,11 +80,11 @@ namespace SeedCore
 			{
 				eye -= forward * speed;
 			}
-			if (InputSystem::KeyState(InputSystem::Key::A))
+			if (InputSystem::KeyState(InputSystem::Key::D))
 			{
 				eye += right * speed;
 			}
-			if (InputSystem::KeyState(InputSystem::Key::D))
+			if (InputSystem::KeyState(InputSystem::Key::A))
 			{
 				eye -= right * speed;
 			}

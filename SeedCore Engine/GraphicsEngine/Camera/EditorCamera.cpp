@@ -24,7 +24,7 @@ namespace SeedCore
 		}
 
 		forward_ = focus_ - eye_;
-		if (forward_.LengthSquared() < 1e-4)
+		if (forward_.LengthSq() < 1e-4)
 		{
 			forward_ = Vector3::Forward;
 		}
@@ -34,7 +34,7 @@ namespace SeedCore
 		}
 
 		right_ = forward_.Cross(up_);
-		if (right_.LengthSquared() < 1e-4)
+		if (right_.LengthSq() < 1e-4)
 		{
 			right_ = Vector3::Right;
 		}
@@ -43,19 +43,17 @@ namespace SeedCore
 			right_.Normalize();
 		}
 
-		view_ = Matrix::CreateLookAt(eye_, focus_, up_);
+		view_ = Matrix::CreateViewLookAt(eye_, focus_, up_);
 
 		aspectRatio_ = width_ / height_;
-		nonJitterProjection_ = Matrix::CreatePerspectiveFieldOfView(ToRadians(Max(0.001f, fieldOfView_)), aspectRatio_, nearPlane_, farPlane_);
-		nonJitterProjection_._33 = nearPlane_ / (nearPlane_ - farPlane_);
-		nonJitterProjection_._43 = (farPlane_ * nearPlane_) / (farPlane_ - nearPlane_);
+		nonJitterProjection_ = Matrix::CreatePerspectiveFov(ToRadians(Max(0.001f, fieldOfView_)), aspectRatio_, farPlane_, nearPlane_);
 
 		jitter_ = Halton23Jitter(frameIndex_);
 		++frameIndex_;
 
 		projection_ = nonJitterProjection_;
 
-		if (jitter_.LengthSquared() > 0.0f)
+		if (jitter_.LengthSq() > 0.0f)
 		{
 			projection_._31 += (jitter_.x * 2.0f) / static_cast<Float>(width_);
 			projection_._32 -= (jitter_.y * 2.0f) / static_cast<Float>(height_);
@@ -90,21 +88,6 @@ namespace SeedCore
 
 	void EditorCamera::FocusOn(Vector3 targetPosition, Float radius)
 	{
-		/// [EN] Preserve the current look direction always. Distance either
-		///      fits radius in view (bounds-fit dolly) or stays at the
-		///      current eye-to-focus distance (pan only) — see the header
-		///      comment.
-		/// [JP] 向きは常に保つ。距離は radius が画角に収まる値（バウンズ
-		///      フィットのドリー）か、現在の eye-focus 間距離のまま
-		///      （パンのみ）のどちらか — ヘッダのコメント参照。
-		/// [EN] A degenerate Bounds (e.g. a skinned mesh whose bind-pose AABB
-		///      has a stray far vertex) can hand us a non-finite target or
-		///      radius; ignore the call rather than lerp eye_/focus_ to NaN
-		///      and leave the view permanently broken.
-		/// [JP] 退化した Bounds(例: バインドポーズ AABB に遠くの外れ頂点を
-		///      持つスキンメッシュ)は非有限な target や radius を渡してくる
-		///      ことがある。eye_/focus_ を NaN へ補間してビューを永久に
-		///      壊すより、その呼び出しを無視する。
 		if (!std::isfinite(targetPosition.x) || !std::isfinite(targetPosition.y) || !std::isfinite(targetPosition.z))
 		{
 			return;

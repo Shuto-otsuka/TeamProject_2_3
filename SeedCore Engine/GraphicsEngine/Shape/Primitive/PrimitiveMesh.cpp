@@ -151,7 +151,7 @@ namespace SeedCore
 			Vertex vertex;
 			vertex.position_ = point.position_;
 			vertex.normal_ = point.normal_;
-			vertex.tangent_ = Vector4(tangent.x, tangent.y, tangent.z, 1.0f);
+			vertex.tangent_ = Vector4(tangent, 1.0f);
 			vertex.texcoord_ = point.texcoord_;
 			vertices.push_back(quantizer.EncodeVertex(vertex, Vector3(-1.0f, -1.0f, -1.0f), Vector3(2.0f, 2.0f, 2.0f), Vector2(0.0f, 0.0f), Vector2(1.0f, 1.0f)));
 			positions.push_back(point.position_);

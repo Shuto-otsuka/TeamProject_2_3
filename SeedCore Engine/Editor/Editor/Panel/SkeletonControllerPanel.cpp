@@ -189,7 +189,7 @@ namespace SeedCore
 
 			Matrix inverseViewProjection = context_.preview_.skeletonController_.camera_.InverseViewProjection();
 			Vector4 unprojected = Vector4::Transform(Vector4(ndcX, ndcY, 0.5f, 1.0f), inverseViewProjection);
-			Vector3 worldPoint = Vector3(unprojected.x, unprojected.y, unprojected.z) / unprojected.w;
+			Vector3 worldPoint = unprojected.xyz / unprojected.w;
 
 			Vector3 rayOrigin = context_.preview_.skeletonController_.camera_.Eye();
 			Vector3 rayDirection = worldPoint - rayOrigin;

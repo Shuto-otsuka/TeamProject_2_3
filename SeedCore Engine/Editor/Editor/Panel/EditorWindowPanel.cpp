@@ -415,12 +415,12 @@ namespace SeedCore
 			Matrix cameraWorld = view.Invert();
 
 			Vector3 newEye = cameraWorld.Translation();
-			Vector3 newForward = Vector3::TransformNormal(Vector3::Forward, cameraWorld);
+			Vector3 newForward = Vector3::TransformDirection(Vector3::Forward, cameraWorld);
 			newForward.Normalize();
 
 			Vector3 worldUp = Vector3::Up;
 			Vector3 newUp = worldUp - newForward * newForward.Dot(worldUp);
-			if (newUp.LengthSquared() < 1e-6f)
+			if (newUp.LengthSq() < 1e-6f)
 			{
 				newUp = context_.view_.editor_.camera_->Up();
 			}
@@ -459,42 +459,42 @@ namespace SeedCore
 			if (actor.GetComponent<Camera>() || actor.GetComponent<CameraBrain>())
 			{
 				icon.type_ = IconType::ViewCamera;
-				icon.color_ = IM_COL32(127, 178, 255, 255);
+				icon.color_ = Color::FromPacked(IM_COL32(255, 178, 127, 255));
 			}
 			else if (actor.GetComponent<PointLight>())
 			{
 				icon.type_ = IconType::ViewPointLight;
-				icon.color_ = IM_COL32(255, 210, 90, 255);
+				icon.color_ = Color::FromPacked(IM_COL32(90, 210, 255, 255));
 			}
 			else if (actor.GetComponent<SpotLight>())
 			{
 				icon.type_ = IconType::ViewSpotLight;
-				icon.color_ = IM_COL32(255, 210, 90, 255);
+				icon.color_ = Color::FromPacked(IM_COL32(90, 210, 255, 255));
 			}
 			else if (actor.GetComponent<DirectionalLight>())
 			{
 				icon.type_ = IconType::ViewDirectionalLight;
-				icon.color_ = IM_COL32(255, 210, 90, 255);
+				icon.color_ = Color::FromPacked(IM_COL32(90, 210, 255, 255));
 			}
 			else if (actor.GetComponent<RectangleLight>())
 			{
 				icon.type_ = IconType::ViewRectangleLight;
-				icon.color_ = IM_COL32(255, 210, 90, 255);
+				icon.color_ = Color::FromPacked(IM_COL32(90, 210, 255, 255));
 			}
 			else if (actor.GetComponent<SkyLight>())
 			{
 				icon.type_ = IconType::ViewSkyLight;
-				icon.color_ = IM_COL32(150, 210, 255, 255);
+				icon.color_ = Color::FromPacked(IM_COL32(255, 210, 150, 255));
 			}
 			else if (actor.GetComponent<AudioSource>())
 			{
 				icon.type_ = IconType::ViewAudioSource;
-				icon.color_ = IM_COL32(111, 224, 180, 255);
+				icon.color_ = Color::FromPacked(IM_COL32(180, 224, 111, 255));
 			}
 			else if (actor.GetComponent<AudioListener>())
 			{
 				icon.type_ = IconType::ViewAudioListener;
-				icon.color_ = IM_COL32(111, 224, 180, 255);
+				icon.color_ = Color::FromPacked(IM_COL32(180, 224, 111, 255));
 			}
 			else if (actor.GetComponent<Mesh>() || actor.GetComponent<Effect>() || actor.GetComponent<Image>() || actor.GetComponent<Text>() || actor.GetComponent<Movie>())
 			{
@@ -503,13 +503,13 @@ namespace SeedCore
 			else
 			{
 				icon.type_ = IconType::ViewActor;
-				icon.color_ = IM_COL32(255, 122, 217, 255);
+				icon.color_ = Color::FromPacked(IM_COL32(217, 122, 255, 255));
 			}
 
 			/// [EN] Behind the camera or well outside the image, the icon is not drawn.
 			/// [JP] カメラの後ろや画像の外側にあるものは描かない。
 			Vector3 worldPosition = actor.WorldMatrix().Translation();
-			Vector4 clip = Vector4::Transform(Vector4(worldPosition.x, worldPosition.y, worldPosition.z, 1.0f), viewProjection);
+			Vector4 clip = Vector4::Transform(Vector4(worldPosition, 1.0f), viewProjection);
 			if (clip.w <= 0.0001f)
 			{
 				continue;
@@ -540,7 +540,7 @@ namespace SeedCore
 		for (const ViewIcon& icon : icons_)
 		{
 			drawList->AddCircleFilled(ImVec2(icon.center_.x, icon.center_.y), half + 3.0f, IM_COL32(20, 20, 28, 170));
-			drawList->AddImage(imguiTexture_.Icon(icon.type_), ImVec2(icon.center_.x - half, icon.center_.y - half), ImVec2(icon.center_.x + half, icon.center_.y + half), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), ImGui::ColorConvertFloat4ToU32(ImVec4(icon.color_.R(), icon.color_.G(), icon.color_.B(), icon.color_.A())));
+			drawList->AddImage(imguiTexture_.Icon(icon.type_), ImVec2(icon.center_.x - half, icon.center_.y - half), ImVec2(icon.center_.x + half, icon.center_.y + half), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), icon.color_.ToPacked());
 			if (context_.selection_.Contains(icon.actor_))
 			{
 				drawList->AddCircle(ImVec2(icon.center_.x, icon.center_.y), half + 3.0f, IM_COL32(255, 200, 60, 255), 0, 2.0f);
@@ -584,7 +584,7 @@ namespace SeedCore
 
 				Vector3 rayOrigin = camera.Eye();
 				Vector4 farPointH = Vector4::Transform(Vector4(ndcX, ndcY, 1.0f, 1.0f), camera.InverseViewProjection());
-				Vector3 farPoint = Vector3(farPointH.x, farPointH.y, farPointH.z) / farPointH.w;
+				Vector3 farPoint = farPointH.xyz / farPointH.w;
 				Vector3 rayDirection = farPoint - rayOrigin;
 				rayDirection.Normalize();
 

@@ -20,7 +20,7 @@ void FloorMoveSystem::OnStart()
 	Matrix worldMatrix = actor.WorldMatrix();
 	Vector3 floorPosition, floorScale;
 	Quaternion floorRotation;
-	worldMatrix.Decompose(floorScale, floorRotation, floorPosition);
+	worldMatrix.Decompose(floorPosition, floorRotation, floorScale);
 	cachePosition_ = floorPosition;
 	cacheRotation_ = floorRotation;
 

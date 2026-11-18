@@ -26,7 +26,7 @@ namespace SeedCore
 		Matrix worldMatrix = GetActor().WorldMatrix();
 		Quaternion worldRotation;
 		Vector3 worldTranslation;
-		worldMatrix.Decompose(shapeScale_, worldRotation, worldTranslation);
+		worldMatrix.Decompose(worldTranslation, worldRotation, shapeScale_);
 	}
 
 	/**
@@ -102,7 +102,7 @@ namespace SeedCore
 		if (parentActor)
 		{
 			Matrix parentMatrix = parentActor.WorldMatrix();
-			parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+			parentMatrix.Decompose(parentTranslation, parentRotation, parentScale);
 		}
 		Vector3 worldScale = Vector3(scale->x_, scale->y_, scale->z_) * parentScale;
 
@@ -156,7 +156,7 @@ namespace SeedCore
 		Vector3 worldScale;
 		Quaternion worldRotation;
 		Vector3 worldTranslation;
-		worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
+		worldMatrix.Decompose(worldTranslation, worldRotation, worldScale);
 		if (worldScale == shapeScale_)
 		{
 			return;

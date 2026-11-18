@@ -179,8 +179,8 @@ namespace SeedCore
 
 		/// [EN] Camera pose, projection range, debug view mode, frame timing and the render and display sizes.
 		/// [JP] カメラ姿勢、投影範囲、デバッグビュー、フレーム時刻、描画と表示のサイズ。
-		scene.cameraPosition_ = Vector4(editorCamera.Eye().x, editorCamera.Eye().y, editorCamera.Eye().z, 1.0f);
-		scene.cameraFocus_ = Vector4(editorCamera.Focus().x, editorCamera.Focus().y, editorCamera.Focus().z, 1.0f);
+		scene.cameraPosition_ = Vector4(editorCamera.Eye(), 1.0f);
+		scene.cameraFocus_ = Vector4(editorCamera.Focus(), 1.0f);
 		scene.fieldOfView_ = editorCamera.Fov();
 		scene.nearPlane_ = editorCamera.Near();
 		scene.farPlane_ = editorCamera.Far();
@@ -291,8 +291,8 @@ namespace SeedCore
 
 		/// [EN] The canvas camera's pose, projection range, frame timing and sizes.
 		/// [JP] キャンバスカメラの姿勢、投影範囲、フレーム時刻、サイズ。
-		scene.cameraPosition_ = Vector4(canvasCamera.Eye().x, canvasCamera.Eye().y, canvasCamera.Eye().z, 1.0f);
-		scene.cameraFocus_ = Vector4(canvasCamera.Focus().x, canvasCamera.Focus().y, canvasCamera.Focus().z, 1.0f);
+		scene.cameraPosition_ = Vector4(canvasCamera.Eye(), 1.0f);
+		scene.cameraFocus_ = Vector4(canvasCamera.Focus(), 1.0f);
 		scene.fieldOfView_ = canvasCamera.Fov();
 		scene.nearPlane_ = canvasCamera.Near();
 		scene.farPlane_ = canvasCamera.Far();

@@ -183,7 +183,7 @@ namespace SeedCore
 				brain.aspectRatio_ = aspectRatio;
 
 				Quaternion rotationQuaternion = Transform::Quat(rotation);
-				Bool directionChanged = brain.synced_ && (brain.direction_ - brain.syncedDirection_).LengthSquared() > 1e-10f;
+				Bool directionChanged = brain.synced_ && (brain.direction_ - brain.syncedDirection_).LengthSq() > 1e-10f;
 				Bool rotationChanged = !brain.synced_ || rotationQuaternion != brain.syncedRotation_;
 
 				/// [EN] direction_ was edited: rebuild pitch/yaw from it, keeping the current roll.
@@ -191,7 +191,7 @@ namespace SeedCore
 				if (directionChanged)
 				{
 					Vector3 direction = brain.direction_;
-					if (direction.LengthSquared() < 1e-8f)
+					if (direction.LengthSq() < 1e-8f)
 					{
 						direction = brain.syncedDirection_;
 					}
@@ -214,7 +214,7 @@ namespace SeedCore
 				else if (rotationChanged)
 				{
 					Matrix rotationMatrix = Matrix::CreateFromQuaternion(rotationQuaternion);
-					Vector3 direction = Vector3::TransformNormal(Vector3::Forward, rotationMatrix);
+					Vector3 direction = Vector3::TransformDirection(Vector3::Forward, rotationMatrix);
 					direction.Normalize();
 					brain.direction_ = direction;
 				}
@@ -272,8 +272,8 @@ namespace SeedCore
 		sceneConstantBuffer_.inverseViewProjection_ = freeCamera_.InverseViewProjection();
 		sceneConstantBuffer_.nonJitterViewProjection_ = freeCamera_.NonJitterViewProjection();
 		sceneConstantBuffer_.previousNonJitterViewProjection_ = previousNonJitterViewProjection_;
-		sceneConstantBuffer_.cameraPosition_ = Vector4(freeCamera_.Eye().x, freeCamera_.Eye().y, freeCamera_.Eye().z, 1.0f);
-		sceneConstantBuffer_.cameraFocus_ = Vector4(freeCamera_.Focus().x, freeCamera_.Focus().y, freeCamera_.Focus().z, 1.0f);
+		sceneConstantBuffer_.cameraPosition_ = Vector4(freeCamera_.Eye(), 1.0f);
+		sceneConstantBuffer_.cameraFocus_ = Vector4(freeCamera_.Focus(), 1.0f);
 		sceneConstantBuffer_.fieldOfView_ = freeCamera_.Fov();
 		sceneConstantBuffer_.nearPlane_ = freeCamera_.Near();
 		sceneConstantBuffer_.farPlane_ = freeCamera_.Far();
@@ -404,11 +404,9 @@ namespace SeedCore
 		const Vector3 up = Vector3::Transform(Vector3::Up, orientation);
 
 		const Float aspectRatio = renderWidth / renderHeight;
-		const Matrix view = Matrix::CreateLookAt(eye, focus, up);
+		const Matrix view = Matrix::CreateViewLookAt(eye, focus, up);
 
-		Matrix nonJitterProjection = Matrix::CreatePerspectiveFieldOfView(ToRadians(activeCamera->fieldOfView_), aspectRatio, activeCamera->nearPlane_, activeCamera->farPlane_);
-		nonJitterProjection._33 = activeCamera->nearPlane_ / (activeCamera->nearPlane_ - activeCamera->farPlane_);
-		nonJitterProjection._43 = (activeCamera->farPlane_ * activeCamera->nearPlane_) / (activeCamera->farPlane_ - activeCamera->nearPlane_);
+		Matrix nonJitterProjection = Matrix::CreatePerspectiveFov(ToRadians(activeCamera->fieldOfView_), aspectRatio, activeCamera->farPlane_, activeCamera->nearPlane_);
 
 		/// [EN] Offset the projection by this frame's sub-pixel jitter for TAA/upscaling.
 		/// [JP] TAA/アップスケール用に、今フレームのサブピクセルジッター分だけ射影をずらす。
@@ -416,7 +414,7 @@ namespace SeedCore
 		++frameIndex_;
 
 		Matrix projection = nonJitterProjection;
-		if (jitter_.LengthSquared() > 0.0f)
+		if (jitter_.LengthSq() > 0.0f)
 		{
 			projection._31 += (jitter_.x * 2.0f) / renderWidth;
 			projection._32 -= (jitter_.y * 2.0f) / renderHeight;
@@ -441,8 +439,8 @@ namespace SeedCore
 		sceneConstantBuffer_.inverseViewProjection_ = viewProjection.Invert();
 		sceneConstantBuffer_.nonJitterViewProjection_ = nonJitterViewProjection;
 		sceneConstantBuffer_.previousNonJitterViewProjection_ = previousNonJitterViewProjection_;
-		sceneConstantBuffer_.cameraPosition_ = Vector4(eye.x, eye.y, eye.z, 1.0f);
-		sceneConstantBuffer_.cameraFocus_ = Vector4(focus.x, focus.y, focus.z, 1.0f);
+		sceneConstantBuffer_.cameraPosition_ = Vector4(eye, 1.0f);
+		sceneConstantBuffer_.cameraFocus_ = Vector4(focus, 1.0f);
 		sceneConstantBuffer_.fieldOfView_ = activeCamera->fieldOfView_;
 		sceneConstantBuffer_.nearPlane_ = activeCamera->nearPlane_;
 		sceneConstantBuffer_.farPlane_ = activeCamera->farPlane_;
@@ -455,14 +453,6 @@ namespace SeedCore
 		previousViewProjection_ = viewProjection;
 		previousNonJitterViewProjection_ = nonJitterViewProjection;
 
-		/// [EN] nonJitterProjection, not the TAA-jittered projection
-		///      above - gameplay screen<->world picking should use
-		///      the camera's true projection, not the render-only
-		///      sub-pixel jitter offset.
-		/// [JP] 上のTAAジッター付きprojectionではなくnonJitterProjection
-		///      を使う - ゲームプレイのスクリーン⇔ワールド変換は、
-		///      描画専用のサブピクセルジッターオフセットではなく
-		///      カメラ本来のprojectionを使うべきなため。
 		ScreenSpace::SetCurrentView(view, nonJitterProjection);
 	}
 }

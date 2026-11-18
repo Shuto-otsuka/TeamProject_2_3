@@ -21,17 +21,14 @@ namespace SeedCore
 			}
 		}
 
-		view_ = Matrix::CreateLookAt(eye_, focus_, up_);
+		view_ = Matrix::CreateViewLookAt(eye_, focus_, up_);
 
 		aspectRatio_ = width_ / height_;
 
 		Float orthoHeight = baseViewHeight_ / zoom_;
 		Float orthoWidth = orthoHeight * aspectRatio_;
 
-		nonJitterProjection_ = Matrix::CreateOrthographic(orthoWidth, orthoHeight, nearPlane_, farPlane_);
-
-		nonJitterProjection_._33 = 1.0f / (nearPlane_ - farPlane_);
-		nonJitterProjection_._43 = farPlane_ / (farPlane_ - nearPlane_);
+		nonJitterProjection_ = Matrix::CreateOrthographic(orthoWidth, orthoHeight, farPlane_, nearPlane_);
 
 		projection_ = nonJitterProjection_;
 

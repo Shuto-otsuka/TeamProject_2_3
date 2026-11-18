@@ -13,7 +13,7 @@ void TitleLogoController::OnStart()
 void TitleLogoController::OnTick(float elapsedTime)
 {
     //上下にsin波で移動
-    rad += (elapsedTime * DirectX::XM_2PI) / moveTime;
+    rad += (elapsedTime * SeedCore::Pi<SeedCore::Float>::Two) / moveTime;
     float rate = sinf(rad);
     rate = (rate + 1) / 2;
 

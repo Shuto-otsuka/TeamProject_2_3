@@ -135,9 +135,9 @@ namespace SeedCore
 		}
 		changed |= ImGui::Checkbox("画像を使う##Background", &config_.useBackgroundImage_);
 		ImGui::BeginDisabled(!config_.useBackgroundImage_);
-		changed |= ImGui::ColorEdit4("乗算色##Background", &config_.backgroundTint_.x);
+		changed |= ImGui::ColorEdit4("乗算色##Background", &config_.backgroundTint_.r);
 		ImGui::EndDisabled();
-		changed |= ImGui::ColorEdit3("背景色##Background", &config_.backgroundColor_.x);
+		changed |= ImGui::ColorEdit3("背景色##Background", &config_.backgroundColor_.r);
 
 		ImGui::SeparatorText("バー");
 
@@ -165,7 +165,7 @@ namespace SeedCore
 			imagesDirty_ = true;
 			changed = true;
 		}
-		changed |= ImGui::ColorEdit4("乗算色##Bar", &config_.barTint_.x);
+		changed |= ImGui::ColorEdit4("乗算色##Bar", &config_.barTint_.r);
 
 		ImGui::SeparatorText("枠");
 
@@ -195,7 +195,7 @@ namespace SeedCore
 		}
 		changed |= ImGui::Checkbox("表示する##Frame", &config_.useFrame_);
 		ImGui::BeginDisabled(!config_.useFrame_);
-		changed |= ImGui::ColorEdit4("乗算色##Frame", &config_.frameTint_.x);
+		changed |= ImGui::ColorEdit4("乗算色##Frame", &config_.frameTint_.r);
 		ImGui::EndDisabled();
 		ImGui::TextWrapped("枠はバーの矩形に合わせて伸縮します。バー画像と同じ縦横比で作ってください。");
 

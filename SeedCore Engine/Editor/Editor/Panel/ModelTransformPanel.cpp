@@ -280,7 +280,7 @@ namespace SeedCore
 			{
 				Vector3 newScale, newTranslation;
 				Quaternion newRotation;
-				if (anchorWorld.Decompose(newScale, newRotation, newTranslation))
+				if (anchorWorld.Decompose(newTranslation, newRotation, newScale))
 				{
 					baseTransformScale_ = newScale;
 

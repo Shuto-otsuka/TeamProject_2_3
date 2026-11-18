@@ -200,7 +200,7 @@ namespace SeedCore
 
 		/// [EN] Tangent is 8+7-bit octahedral plus a 1-bit handedness sign; error in the tangent-space rotation of a normal map is harder to see than error in the normal itself, so the coarser precision is enough.
 		/// [JP] タンジェントは 8+7bit octahedral + 利き手符号 1bit。法線マップの接空間回転誤差は法線本体より知覚されにくいため粗くて足りる。
-		Uint32 tangentOctahedral = EncodeOctahedralNormal(Vector3(vertex.tangent_.x, vertex.tangent_.y, vertex.tangent_.z));
+		Uint32 tangentOctahedral = EncodeOctahedralNormal(vertex.tangent_.xyz);
 
 		/// [EN] Requantise the 16-bit octahedral components to 8 and 7 bits with rounding, leaving the top bit for the sign.
 		/// [JP] 16bit の octahedral 成分を丸めながら 8bit と 7bit に量子化し直し、最上位の1bit を符号に空ける。
@@ -320,7 +320,7 @@ namespace SeedCore
 		Float sign = (tangentBits >> 15) ? 1.0f : -1.0f;
 
 		Vector3 xyz = DecodeOctahedralNormal(octX16 | (octY16 << 16));
-		return Vector4(xyz.x, xyz.y, xyz.z, sign);
+		return Vector4(xyz, sign);
 	}
 
 	/**
@@ -374,7 +374,7 @@ namespace SeedCore
 	* ウェイトを逆量子化する。4つの 8bit UNORM 値は合計がちょうど1に
 	* なることが稀なため再正規化する。
 	*/
-	void CristerQuantizer::DecodeSkin(const CompressedSkinVertex& compressed, XmUint4& outJoints, Vector4& outWeights)const
+	void CristerQuantizer::DecodeSkin(const CompressedSkinVertex& compressed, Uvector4& outJoints, Vector4& outWeights)const
 	{
 		/// [EN] Unpack the four 16-bit joint indices.
 		/// [JP] 16bit のジョイントインデックスを4つ取り出す。

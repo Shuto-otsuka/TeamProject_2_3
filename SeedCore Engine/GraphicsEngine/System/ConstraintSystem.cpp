@@ -101,7 +101,7 @@ namespace SeedCore
 		Vector3 finalScale;
 		Quaternion finalRotation;
 		Vector3 finalTranslation;
-		worldMatrix.Decompose(finalScale, finalRotation, finalTranslation);
+		worldMatrix.Decompose(finalTranslation, finalRotation, finalScale);
 
 		AttachmentConstraint* attachmentConstraint = world.GetComponent<AttachmentConstraint>(entity);
 		ParentConstraint* parentConstraint = world.GetComponent<ParentConstraint>(entity);
@@ -125,7 +125,7 @@ namespace SeedCore
 				Vector3 attachedScale;
 				Quaternion attachedRotation;
 				Vector3 attachedTranslation;
-				if (attachedMatrix.Decompose(attachedScale, attachedRotation, attachedTranslation))
+				if (attachedMatrix.Decompose(attachedTranslation, attachedRotation, attachedScale))
 				{
 					finalTranslation = Vector3::Lerp(finalTranslation, attachedTranslation, attachmentConstraint->weight_);
 					finalRotation = Quaternion::Slerp(finalRotation, attachedRotation, attachmentConstraint->weight_);
@@ -144,7 +144,7 @@ namespace SeedCore
 				Vector3 constrainedScale;
 				Quaternion constrainedRotation;
 				Vector3 constrainedTranslation;
-				if (constrainedMatrix.Decompose(constrainedScale, constrainedRotation, constrainedTranslation))
+				if (constrainedMatrix.Decompose(constrainedTranslation, constrainedRotation, constrainedScale))
 				{
 					finalTranslation = Vector3::Lerp(finalTranslation, constrainedTranslation, parentConstraint->weight_);
 					finalRotation = Quaternion::Slerp(finalRotation, constrainedRotation, parentConstraint->weight_);
@@ -162,7 +162,7 @@ namespace SeedCore
 					Vector3 targetScale;
 					Quaternion targetRotation;
 					Vector3 targetTranslation;
-					targetWorldMatrix.Decompose(targetScale, targetRotation, targetTranslation);
+					targetWorldMatrix.Decompose(targetTranslation, targetRotation, targetScale);
 
 					Vector3 desiredTranslation = targetTranslation + positionConstraint->offset_;
 					finalTranslation = Vector3::Lerp(finalTranslation, desiredTranslation, positionConstraint->weight_);
@@ -178,7 +178,7 @@ namespace SeedCore
 					Vector3 targetScale;
 					Quaternion targetRotation;
 					Vector3 targetTranslation;
-					targetWorldMatrix.Decompose(targetScale, targetRotation, targetTranslation);
+					targetWorldMatrix.Decompose(targetTranslation, targetRotation, targetScale);
 
 					Quaternion offsetRotation = Quaternion::CreateFromYawPitchRoll(ToRadians(rotationConstraint->offset_.y), ToRadians(rotationConstraint->offset_.x), ToRadians(rotationConstraint->offset_.z));
 					Quaternion desiredRotation = offsetRotation * targetRotation;
@@ -197,13 +197,13 @@ namespace SeedCore
 				Vector3 targetScale;
 				Quaternion targetRotation;
 				Vector3 targetTranslation;
-				targetWorldMatrix.Decompose(targetScale, targetRotation, targetTranslation);
+				targetWorldMatrix.Decompose(targetTranslation, targetRotation, targetScale);
 
 				Vector3 forward = targetTranslation - finalTranslation;
-				if (forward.LengthSquared() > 0.0001f)
+				if (forward.LengthSq() > 0.0001f)
 				{
 					forward.Normalize();
-					Matrix lookMatrix = Matrix::CreateWorld(finalTranslation, forward, lookAtConstraint->upVector_);
+					Matrix lookMatrix = Matrix::CreateTranslationForwardUp(finalTranslation, forward, lookAtConstraint->upVector_);
 					Quaternion desiredRotation = Quaternion::CreateFromRotationMatrix(lookMatrix);
 
 					finalRotation = Quaternion::Slerp(finalRotation, desiredRotation, lookAtConstraint->weight_);

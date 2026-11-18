@@ -106,7 +106,7 @@ namespace SeedCore
 								/// [JP] このグローバル頂点を初めて見た場合: 位置をデコードして追加し、後で同じ頂点を共有する角のためにコンパクトインデックスを記憶する。
 								Uint32 compactIndex = static_cast<Uint32>(outPositions.size());
 								remap[globalIndex] = compactIndex;
-								outPositions.push_back(Vector3::Transform(quantizer.DecodePosition(crister, crister.geometry_.compressedVertices_[globalIndex]), placement));
+								outPositions.push_back(Vector3::TransformPosition(quantizer.DecodePosition(crister, crister.geometry_.compressedVertices_[globalIndex]), placement));
 								outIndices.push_back(compactIndex);
 							}
 							else
@@ -234,12 +234,12 @@ namespace SeedCore
 						{
 							placedVertices[globalIndex] = true;
 							Vertex& vertex = outVertices[globalIndex];
-							vertex.position_ = Vector3::Transform(vertex.position_, placement);
-							vertex.normal_ = Vector3::TransformNormal(vertex.normal_, normalPlacement);
+							vertex.position_ = Vector3::TransformPosition(vertex.position_, placement);
+							vertex.normal_ = Vector3::TransformDirection(vertex.normal_, normalPlacement);
 							vertex.normal_.Normalize();
-							Vector3 tangent = Vector3::TransformNormal(Vector3(vertex.tangent_.x, vertex.tangent_.y, vertex.tangent_.z), placement);
+							Vector3 tangent = Vector3::TransformDirection(vertex.tangent_.xyz, placement);
 							tangent.Normalize();
-							vertex.tangent_ = Vector4(tangent.x, tangent.y, tangent.z, vertex.tangent_.w * tangentSign);
+							vertex.tangent_ = Vector4(tangent, vertex.tangent_.w * tangentSign);
 						}
 					}
 				}
@@ -364,7 +364,7 @@ namespace SeedCore
 						vertex.position_ = quantizer.DecodePosition(crister, compressed);
 						if (placed)
 						{
-							vertex.position_ = Vector3::Transform(vertex.position_, placement);
+							vertex.position_ = Vector3::TransformPosition(vertex.position_, placement);
 						}
 
 						Uint64 key = quantisedPositionKey(vertex.position_);
@@ -381,11 +381,11 @@ namespace SeedCore
 							vertex.texcoord_ = quantizer.DecodeTexcoord(crister, compressed);
 							if (placed)
 							{
-								vertex.normal_ = Vector3::TransformNormal(vertex.normal_, normalPlacement);
+								vertex.normal_ = Vector3::TransformDirection(vertex.normal_, normalPlacement);
 								vertex.normal_.Normalize();
-								Vector3 tangent = Vector3::TransformNormal(Vector3(vertex.tangent_.x, vertex.tangent_.y, vertex.tangent_.z), placement);
+								Vector3 tangent = Vector3::TransformDirection(vertex.tangent_.xyz, placement);
 								tangent.Normalize();
-								vertex.tangent_ = Vector4(tangent.x, tangent.y, tangent.z, vertex.tangent_.w * tangentSign);
+								vertex.tangent_ = Vector4(tangent, vertex.tangent_.w * tangentSign);
 							}
 							outVertices.push_back(vertex);
 

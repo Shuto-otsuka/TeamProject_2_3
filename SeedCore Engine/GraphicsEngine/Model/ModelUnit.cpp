@@ -214,10 +214,10 @@ namespace SeedCore
 			for (Size planeIndex = 0;planeIndex < planes.size();++planeIndex)
 			{
 				Vector4 plane = planes[planeIndex];
-				Float length = Vector3(plane.x, plane.y, plane.z).Length();
+				Float length = plane.xyz.Length();
 				constants_.planes_[viewIndex * 6 + planeIndex] = length > 0.0f ? plane / length : Vector4(0.0f, 0.0f, 0.0f, 0.0f);
 			}
-			constants_.cameras_[viewIndex] = Vector4(sceneConstants.cameraPosition_.x, sceneConstants.cameraPosition_.y, sceneConstants.cameraPosition_.z, sceneConstants.projection_._22 * sceneConstants.screenSize_.y * 0.5f);
+			constants_.cameras_[viewIndex] = Vector4(sceneConstants.cameraPosition_.xyz, sceneConstants.projection_._22 * sceneConstants.screenSize_.y * 0.5f);
 		}
 		constants_.unitCount_ = count_;
 		constants_.transparentBase_ = GeometryFeature::transparentBase_;

@@ -1024,7 +1024,7 @@ namespace SeedCore
 			Vector3 discardedScale;
 			Vector3 discardedPosition;
 			Quaternion quaternion;
-			if (rotationMatrix.Decompose(discardedScale, quaternion, discardedPosition))
+			if (rotationMatrix.Decompose(discardedPosition, quaternion, discardedScale))
 			{
 				Transform::Quat(*rotation, quaternion);
 			}
@@ -1553,7 +1553,7 @@ namespace SeedCore
 		case AttributeType::Color:
 		{
 			Color* value = static_cast<Color*>(pointer);
-			changed = ImGui::ColorEdit4(label, &value->x);
+			changed = ImGui::ColorEdit4(label, &value->r);
 			if (ImGui::IsItemActivated())
 			{
 				pendingOldColor_ = *value;

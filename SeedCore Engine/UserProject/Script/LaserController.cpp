@@ -29,7 +29,7 @@ void LaserController::OnTick(float elapsedTime)
     {
         float len = length;
         //レーザーの始点のオフセットをワールド位置に変換
-        startPositions[i] = SeedCore::Vector3::Transform(startOffsets[i], GetActor().WorldMatrix());
+        startPositions[i] = SeedCore::Vector3::TransformPosition(startOffsets[i], GetActor().WorldMatrix());
 
         //レイキャストをして弾に当たった場合そこをレーザーの終点とする
         SeedCore::RaycastHit hit;

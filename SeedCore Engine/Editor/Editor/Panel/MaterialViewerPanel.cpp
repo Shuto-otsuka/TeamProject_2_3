@@ -435,7 +435,7 @@ namespace SeedCore
 			ImGui::SliderFloat("アルファカットオフ", &surface.alphaCutoff_, 0.0f, 1.0f);
 		}
 
-		ImGui::ColorEdit4("ベースカラー", &surface.baseColor_.x);
+		ImGui::ColorEdit4("ベースカラー", &surface.baseColor_.r);
 		ImGui::SliderFloat("メタリック", &surface.metallic_, 0.0f, 1.0f);
 		ImGui::SliderFloat("ラフネス", &surface.roughness_, 0.0f, 1.0f);
 		ImGui::ColorEdit3("エミッシブ", surface.emissiveFactor_);

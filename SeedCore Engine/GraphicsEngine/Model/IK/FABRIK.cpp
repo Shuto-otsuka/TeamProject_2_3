@@ -28,7 +28,7 @@ namespace SeedCore
 			for (Size jointIndex = 0; jointIndex + 1 < jointCount; jointIndex++)
 			{
 				Vector3 direction = targetPosition - jointPositions[jointIndex];
-				direction = direction.LengthSquared() > 1e-12f ? direction : Vector3::Up;
+				direction = direction.LengthSq() > 1e-12f ? direction : Vector3::Up;
 				direction.Normalize();
 				jointPositions[jointIndex + 1] = jointPositions[jointIndex] + direction * segmentLengths[jointIndex];
 			}
@@ -46,7 +46,7 @@ namespace SeedCore
 			for (Size jointIndex = jointCount - 1; jointIndex > 0; jointIndex--)
 			{
 				Vector3 direction = jointPositions[jointIndex - 1] - jointPositions[jointIndex];
-				direction = direction.LengthSquared() > 1e-12f ? direction : Vector3::Up;
+				direction = direction.LengthSq() > 1e-12f ? direction : Vector3::Up;
 				direction.Normalize();
 				jointPositions[jointIndex - 1] = jointPositions[jointIndex] + direction * segmentLengths[jointIndex - 1];
 			}
@@ -55,7 +55,7 @@ namespace SeedCore
 			for (Size jointIndex = 0; jointIndex + 1 < jointCount; jointIndex++)
 			{
 				Vector3 direction = jointPositions[jointIndex + 1] - jointPositions[jointIndex];
-				direction = direction.LengthSquared() > 1e-12f ? direction : Vector3::Up;
+				direction = direction.LengthSq() > 1e-12f ? direction : Vector3::Up;
 				direction.Normalize();
 				jointPositions[jointIndex + 1] = jointPositions[jointIndex] + direction * segmentLengths[jointIndex];
 			}
