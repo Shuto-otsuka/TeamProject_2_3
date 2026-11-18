@@ -257,8 +257,8 @@ namespace SeedCore
 			Float c2 = m[2][0] * m[3][3] - m[3][0] * m[2][3];
 			Float c1 = m[2][0] * m[3][2] - m[3][0] * m[2][2];
 			Float c0 = m[2][0] * m[3][1] - m[3][0] * m[2][1];
-			Float inverse = 1.0f / (s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0);
 
+			Float inverse = 1.0f / (s0 * c5 - s1 * c4 + s2 * c3 + s3 * c2 - s4 * c1 + s5 * c0);
 			result.m[0][0] = (m[1][1] * c5 - m[1][2] * c4 + m[1][3] * c3) * inverse;
 			result.m[0][1] = (-m[0][1] * c5 + m[0][2] * c4 - m[0][3] * c3) * inverse;
 			result.m[0][2] = (m[3][1] * s5 - m[3][2] * s4 + m[3][3] * s3) * inverse;
@@ -278,46 +278,60 @@ namespace SeedCore
 		}
 		else
 		{
-			__m128 row0 = _mm_loadu_ps(m[0]);
-			__m128 row1 = _mm_loadu_ps(m[1]);
-			__m128 row2 = _mm_loadu_ps(m[2]);
-			__m128 row3 = _mm_loadu_ps(m[3]);
+			const __m128 r0 = _mm_loadu_ps(m[0]);
+			const __m128 r1 = _mm_loadu_ps(m[1]);
+			const __m128 r2 = _mm_loadu_ps(m[2]);
+			const __m128 r3 = _mm_loadu_ps(m[3]);
+			const __m128 A = _mm_movelh_ps(r0, r1);
+			const __m128 B = _mm_movehl_ps(r1, r0);
+			const __m128 C = _mm_movelh_ps(r2, r3);
+			const __m128 D = _mm_movehl_ps(r3, r2);
 
-			__m128 blockA = _mm_movelh_ps(row0, row1);
-			__m128 blockB = _mm_movehl_ps(row1, row0);
-			__m128 blockC = _mm_movelh_ps(row2, row3);
-			__m128 blockD = _mm_movehl_ps(row3, row2);
+			auto adj2 = [](__m128 x) -> __m128
+			{
+				const __m128 swapped = _mm_shuffle_ps(x, x, _MM_SHUFFLE(0, 2, 1, 3));
+				const __m128 signs = _mm_setr_ps(1.0f, -1.0f, -1.0f, 1.0f);
+				return _mm_mul_ps(swapped, signs);
+			};
 
-			__m128 determinants = _mm_sub_ps(_mm_mul_ps(_mm_shuffle_ps(row0, row2, _MM_SHUFFLE(2, 0, 2, 0)), _mm_shuffle_ps(row1, row3, _MM_SHUFFLE(3, 1, 3, 1))), _mm_mul_ps(_mm_shuffle_ps(row0, row2, _MM_SHUFFLE(3, 1, 3, 1)), _mm_shuffle_ps(row1, row3, _MM_SHUFFLE(2, 0, 2, 0))));
-			__m128 determinantsA = _mm_shuffle_ps(determinants, determinants, _MM_SHUFFLE(0, 0, 0, 0));
-			__m128 determinantsB = _mm_shuffle_ps(determinants, determinants, _MM_SHUFFLE(1, 1, 1, 1));
-			__m128 determinantsC = _mm_shuffle_ps(determinants, determinants, _MM_SHUFFLE(2, 2, 2, 2));
-			__m128 determinantsD = _mm_shuffle_ps(determinants, determinants, _MM_SHUFFLE(3, 3, 3, 3));
+			auto mul2 = [](__m128 x, __m128 y) -> __m128
+			{
+				const __m128 x0 = _mm_shuffle_ps(x, x, _MM_SHUFFLE(2, 2, 0, 0));
+				const __m128 x1 = _mm_shuffle_ps(x, x, _MM_SHUFFLE(3, 3, 1, 1));
+				const __m128 y0 = _mm_shuffle_ps(y, y, _MM_SHUFFLE(1, 0, 1, 0));
+				const __m128 y1 = _mm_shuffle_ps(y, y, _MM_SHUFFLE(3, 2, 3, 2));
+				return _mm_add_ps(_mm_mul_ps(x0, y0), _mm_mul_ps(x1, y1));
+			};
 
-			__m128 adjugateDC = _mm_sub_ps(_mm_mul_ps(_mm_shuffle_ps(blockD, blockD, _MM_SHUFFLE(0, 0, 3, 3)), blockC), _mm_mul_ps(_mm_shuffle_ps(blockD, blockD, _MM_SHUFFLE(2, 2, 1, 1)), _mm_shuffle_ps(blockC, blockC, _MM_SHUFFLE(1, 0, 3, 2))));
-			__m128 adjugateAB = _mm_sub_ps(_mm_mul_ps(_mm_shuffle_ps(blockA, blockA, _MM_SHUFFLE(0, 0, 3, 3)), blockB), _mm_mul_ps(_mm_shuffle_ps(blockA, blockA, _MM_SHUFFLE(2, 2, 1, 1)), _mm_shuffle_ps(blockB, blockB, _MM_SHUFFLE(1, 0, 3, 2))));
+			auto det2 = [](__m128 x) -> Float
+				{
+					const __m128 rev = _mm_shuffle_ps(x, x, _MM_SHUFFLE(0, 1, 2, 3));
+					const __m128 prod = _mm_mul_ps(x, rev);
+					return _mm_cvtss_f32(prod) - _mm_cvtss_f32(_mm_shuffle_ps(prod, prod, _MM_SHUFFLE(1, 1, 1, 1)));
+				};
 
-			__m128 blockX = _mm_sub_ps(_mm_mul_ps(determinantsD, blockA), _mm_add_ps(_mm_mul_ps(blockB, _mm_shuffle_ps(adjugateDC, adjugateDC, _MM_SHUFFLE(3, 0, 3, 0))), _mm_mul_ps(_mm_shuffle_ps(blockB, blockB, _MM_SHUFFLE(2, 3, 0, 1)), _mm_shuffle_ps(adjugateDC, adjugateDC, _MM_SHUFFLE(1, 2, 1, 2)))));
-			__m128 blockW = _mm_sub_ps(_mm_mul_ps(determinantsA, blockD), _mm_add_ps(_mm_mul_ps(blockC, _mm_shuffle_ps(adjugateAB, adjugateAB, _MM_SHUFFLE(3, 0, 3, 0))), _mm_mul_ps(_mm_shuffle_ps(blockC, blockC, _MM_SHUFFLE(2, 3, 0, 1)), _mm_shuffle_ps(adjugateAB, adjugateAB, _MM_SHUFFLE(1, 2, 1, 2)))));
-			__m128 blockY = _mm_sub_ps(_mm_mul_ps(determinantsB, blockC), _mm_sub_ps(_mm_mul_ps(blockD, _mm_shuffle_ps(adjugateAB, adjugateAB, _MM_SHUFFLE(0, 3, 0, 3))), _mm_mul_ps(_mm_shuffle_ps(blockD, blockD, _MM_SHUFFLE(2, 3, 0, 1)), _mm_shuffle_ps(adjugateAB, adjugateAB, _MM_SHUFFLE(1, 2, 1, 2)))));
-			__m128 blockZ = _mm_sub_ps(_mm_mul_ps(determinantsC, blockB), _mm_sub_ps(_mm_mul_ps(blockA, _mm_shuffle_ps(adjugateDC, adjugateDC, _MM_SHUFFLE(0, 3, 0, 3))), _mm_mul_ps(_mm_shuffle_ps(blockA, blockA, _MM_SHUFFLE(2, 3, 0, 1)), _mm_shuffle_ps(adjugateDC, adjugateDC, _MM_SHUFFLE(1, 2, 1, 2)))));
-
-			__m128 trace = _mm_mul_ps(adjugateAB, _mm_shuffle_ps(adjugateDC, adjugateDC, _MM_SHUFFLE(3, 1, 2, 0)));
-			trace = _mm_add_ps(trace, _mm_shuffle_ps(trace, trace, _MM_SHUFFLE(2, 3, 0, 1)));
-			trace = _mm_add_ps(trace, _mm_shuffle_ps(trace, trace, _MM_SHUFFLE(1, 0, 3, 2)));
-
-			__m128 determinant = _mm_sub_ps(_mm_add_ps(_mm_mul_ps(determinantsA, determinantsD), _mm_mul_ps(determinantsB, determinantsC)), trace);
-			__m128 inverse = _mm_div_ps(_mm_setr_ps(1.0f, -1.0f, -1.0f, 1.0f), determinant);
-
-			blockX = _mm_mul_ps(blockX, inverse);
-			blockY = _mm_mul_ps(blockY, inverse);
-			blockZ = _mm_mul_ps(blockZ, inverse);
-			blockW = _mm_mul_ps(blockW, inverse);
-
-			_mm_storeu_ps(result.m[0], _mm_shuffle_ps(blockX, blockY, _MM_SHUFFLE(1, 3, 1, 3)));
-			_mm_storeu_ps(result.m[1], _mm_shuffle_ps(blockX, blockY, _MM_SHUFFLE(0, 2, 0, 2)));
-			_mm_storeu_ps(result.m[2], _mm_shuffle_ps(blockZ, blockW, _MM_SHUFFLE(1, 3, 1, 3)));
-			_mm_storeu_ps(result.m[3], _mm_shuffle_ps(blockZ, blockW, _MM_SHUFFLE(0, 2, 0, 2)));
+			const Float a = det2(A);
+			const Float b = det2(B);
+			const Float c = det2(C);
+			const Float d = det2(D);
+			const __m128 AB = mul2(adj2(A), B);
+			const __m128 DC = mul2(adj2(D), C);
+			const __m128 dot = mul2(AB, DC);
+			const Float trace = _mm_cvtss_f32(dot) + _mm_cvtss_f32(_mm_shuffle_ps(dot, dot, _MM_SHUFFLE(3, 3, 3, 3)));
+			const Float det = a * d + b * c - trace;
+			const __m128 reciprocalDet = _mm_set1_ps(1.0f / det);
+			const __m128 X = _mm_sub_ps(_mm_mul_ps(_mm_set1_ps(d), A), mul2(B, DC));
+			const __m128 W = _mm_sub_ps(_mm_mul_ps(_mm_set1_ps(a), D), mul2(C, AB));
+			const __m128 Y = _mm_sub_ps(_mm_mul_ps(_mm_set1_ps(b), C), mul2(D, adj2(AB)));
+			const __m128 Z = _mm_sub_ps(_mm_mul_ps(_mm_set1_ps(c), B), mul2(A, adj2(DC)));
+			const __m128 iA = _mm_mul_ps(adj2(X), reciprocalDet);
+			const __m128 iB = _mm_mul_ps(adj2(Y), reciprocalDet);
+			const __m128 iC = _mm_mul_ps(adj2(Z), reciprocalDet);
+			const __m128 iD = _mm_mul_ps(adj2(W), reciprocalDet);
+			_mm_storeu_ps(result.m[0], _mm_movelh_ps(iA, iB));
+			_mm_storeu_ps(result.m[1], _mm_movehl_ps(iB, iA));
+			_mm_storeu_ps(result.m[2], _mm_movelh_ps(iC, iD));
+			_mm_storeu_ps(result.m[3], _mm_movehl_ps(iD, iC));
 		}
 		return result;
 	}

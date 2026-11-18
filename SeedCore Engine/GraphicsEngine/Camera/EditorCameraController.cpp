@@ -121,7 +121,7 @@ namespace SeedCore
 					pan *= shiftSpeedMultiplier_;
 				}
 
-				eye += right * dx * pan;
+				eye += -right * dx * pan;
 				eye += up * dy * pan;
 
 				camera.Eye(eye);

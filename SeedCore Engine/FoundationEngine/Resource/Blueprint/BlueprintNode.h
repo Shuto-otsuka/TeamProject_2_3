@@ -141,6 +141,39 @@ namespace SeedCore
 			archive.TryField("overrides", overrides_);
 			archive.TryField("persistentId", persistentId_);
 			archive.TryField("collaborationId", collaborationId_);
+
+			/// [ForwardFix] ===== ここから一時処理：全シーン・プレハブを開いて保存したら [ForwardFix] の間をまるごと削除 =====
+			Bool hasCamera = false;
+			Bool hasCameraBrain = false;
+			Vector3 brainDirection = Vector3::Zero;
+			for (const BlueprintComponent& component : components_)
+			{
+				if (component.componentName_ == "Camera")
+				{
+					hasCamera = true;
+				}
+				if (component.componentName_ == "CameraBrain")
+				{
+					hasCameraBrain = true;
+					for (const BlueprintField& field : component.fields_)
+					{
+						if (field.name_ == "カメラ向き")
+						{
+							brainDirection = field.vector3Value_;
+						}
+					}
+				}
+			}
+			Quaternion halfTurn = Quaternion(0.0f, 1.0f, 0.0f, 0.0f);
+			if (hasCameraBrain && Vector3::Transform(Vector3::Backward, rotation_).Dot(brainDirection) > Vector3::Transform(Vector3::Forward, rotation_).Dot(brainDirection))
+			{
+				rotation_ = halfTurn * rotation_;
+			}
+			else if (!hasCameraBrain && hasCamera && rotation_.w > 0.9999f)
+			{
+				rotation_ = halfTurn * rotation_;
+			}
+			/// [ForwardFix] ===== ここまで =====
 		}
 
 		/**
