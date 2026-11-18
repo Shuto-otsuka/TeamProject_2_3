@@ -168,7 +168,9 @@ void BombController::OnTick(float elapsedTime)
                 else if (hitActor.HasTag("Breakable"))
                 {
                     //壊れるものだったら削除
-                    GetWorld().DestroyActor(hitActor);
+                    SeedCore::Active* active = hitActor.GetComponent<SeedCore::Active>();
+                    if (active)
+                        active->active_ = false;
                 }
             }
 
