@@ -31,7 +31,7 @@ public:
 		SeedCore::Vector3 timerOffset = {0,0,0};
 
 private:
-	DirectX::XMFLOAT3 targetPoints[4];
+	SeedCore::Vector3 targetPoints[4];
 	int startNum = 0;
 	int endNum = 1;
 

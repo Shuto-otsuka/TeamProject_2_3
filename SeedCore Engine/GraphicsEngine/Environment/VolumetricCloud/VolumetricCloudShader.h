@@ -37,6 +37,8 @@ namespace SeedCore
 
 		Float sunSize_ = 0.03f;
 
+		Float sunEmissive_ = 1.0f;
+
 		Vector3 skyHorizonColor_ = { 0.65f, 0.75f, 0.9f };
 
 		Float skyBrightness_ = 1.0f;
@@ -85,7 +87,7 @@ namespace SeedCore
 
 		Float sunStrength_ = 1.0f;
 	};
-	SC_STATIC_ASSERT(VolumetricCloudConstantBuffer, 192, "Environment/VolumetricCloud/VolumetricCloud.hlsli");
+	SC_STATIC_ASSERT(VolumetricCloudConstantBuffer, 196, "Environment/VolumetricCloud/VolumetricCloud.hlsli");
 
 	struct VolumetricCloudShapeDescription
 	{

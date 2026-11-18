@@ -73,8 +73,9 @@ void main(uint3 id : SV_DispatchThreadID)
 
 	SceneConstantBuffer scene = GetSceneConstantBuffer();
 	float2 uv = (float2(id.xy) + 0.5) / float2(width, height);
-	float4 near_point = mul(float4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, 1.0, 1.0), scene.inverse_view_projection_);
-	float3 direction = normalize(near_point.xyz / near_point.w - scene.camera_position_.xyz);
+	float2 ndc = float2(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0);
+	float3 view_direction = float3((ndc.x - scene.projection_._31) / scene.projection_._11, (ndc.y - scene.projection_._32) / scene.projection_._22, 1.0);
+	float3 direction = normalize(mul(view_direction, (float3x3)scene.inverse_view_));
 
 	float3 color;
 	if (dispatch_bindings.constants_ != 0)

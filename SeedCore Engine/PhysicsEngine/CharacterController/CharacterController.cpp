@@ -40,10 +40,10 @@ namespace SeedCore
 		Vector3 parentScale;
 		Quaternion parentRotation;
 		Vector3 parentTranslation;
-		parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+		parentMatrix.Decompose(parentTranslation, parentRotation, parentScale);
 
 		CharacterDesc desc;
-		desc.position_ = Vector3::Transform(position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f), parentMatrix);
+		desc.position_ = Vector3::TransformPosition(position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f), parentMatrix);
 		desc.rotation_ = (rotation ? Transform::Quat(*rotation) : Quaternion::Identity) * parentRotation;
 		desc.radius_ = radius_;
 		desc.height_ = height_;
@@ -175,7 +175,7 @@ namespace SeedCore
 				/// [EN] World-space rotation of the body since the record: the recorded rotation undone, followed by the current one.
 				/// [JP] 記録時からのボディのワールド空間での回転。記録時の回転を戻し、現在の回転を続けて適用したもの。
 				Quaternion inverseRotation;
-				foothold_.rotation_.Inverse(inverseRotation);
+				inverseRotation = foothold_.rotation_.Inverse();
 				Quaternion deltaRotation = inverseRotation * footholdRotation;
 
 				/// [EN] The shorter of the two equivalent quaternions keeps the extracted angle within half a turn.
@@ -260,7 +260,7 @@ namespace SeedCore
 			Quaternion footholdRotation = Quaternion::CreateFromRotationMatrix(footholdMatrix);
 
 			Quaternion inverseRotation;
-			footholdRotation.Inverse(inverseRotation);
+			inverseRotation = footholdRotation.Inverse();
 
 			Vector3 characterPosition = { static_cast<Float>(outPosition.GetX()), static_cast<Float>(outPosition.GetY()), static_cast<Float>(outPosition.GetZ()) };
 
@@ -286,15 +286,15 @@ namespace SeedCore
 		Vector3 parentScale;
 		Quaternion parentRotation;
 		Vector3 parentTranslation;
-		parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+		parentMatrix.Decompose(parentTranslation, parentRotation, parentScale);
 
 		Quaternion inverseParentRotation;
-		parentRotation.Inverse(inverseParentRotation);
+		inverseParentRotation = parentRotation.Inverse();
 
 		Position* position = world.GetComponent<Position>(entity);
 		if (position)
 		{
-			Transform::Vector(*position, Vector3::Transform(Vector3(static_cast<Float>(outPosition.GetX()), static_cast<Float>(outPosition.GetY()), static_cast<Float>(outPosition.GetZ())), parentMatrix.Invert()));
+			Transform::Vector(*position, Vector3::TransformPosition(Vector3(static_cast<Float>(outPosition.GetX()), static_cast<Float>(outPosition.GetY()), static_cast<Float>(outPosition.GetZ())), parentMatrix.Invert()));
 		}
 
 		Rotation* rotation = world.GetComponent<Rotation>(entity);
@@ -466,7 +466,7 @@ namespace SeedCore
 		/// [EN] position is a Position, relative to the parent, so the character goes to that point in world space.
 		/// [JP] position は親から見た Position なので、キャラクターはその点のワールドでの位置へ移す。
 		Actor parentActor = actor.Parent();
-		Vector3 worldPosition = parentActor ? Vector3::Transform(position, parentActor.WorldMatrix()) : position;
+		Vector3 worldPosition = parentActor ? Vector3::TransformPosition(position, parentActor.WorldMatrix()) : position;
 		static_cast<JPH::CharacterVirtual*>(character_)->SetPosition(JPH::RVec3(worldPosition.x, worldPosition.y, worldPosition.z));
 
 		/// [EN] A teleport leaves the foothold behind, so neither its record nor its velocity carries over.

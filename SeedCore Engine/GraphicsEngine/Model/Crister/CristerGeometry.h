@@ -40,7 +40,7 @@ namespace SeedCore
 
 		/// [EN] Up to four joint indices into the skin's joint list.
 		/// [JP] スキンのジョイント一覧を指す、最大4つのジョイントインデックス。
-		XmUint4 joints_ = { 0,0,0,0 };
+		Uvector4 joints_ = { 0,0,0,0 };
 
 		/// [EN] Weight of each of joints_; the four sum to 1.
 		/// [JP] joints_ のそれぞれの重み。4つの合計は 1。

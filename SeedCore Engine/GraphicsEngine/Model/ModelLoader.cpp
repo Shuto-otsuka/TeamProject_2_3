@@ -489,7 +489,7 @@ namespace SeedCore
 					}
 					Vector3 cacheScale, cacheTranslation;
 					Quaternion cacheRotation;
-					matrix.Decompose(cacheScale, cacheRotation, cacheTranslation);
+					matrix.Decompose(cacheTranslation, cacheRotation, cacheScale);
 					node.scale_ = cacheScale;
 					node.rotation_ = cacheRotation;
 					node.translation_ = cacheTranslation;
@@ -1590,7 +1590,7 @@ namespace SeedCore
 						Double transparencyFactor = transparencyFactorProperty.IsValid() ? transparencyFactorProperty.Get<FbxDouble>() : 1.0;
 						Double transparency = (transparentColor[0] + transparentColor[1] + transparentColor[2]) / 3.0 * transparencyFactor;
 						Float alpha = 1.0f - Clamp(static_cast<Float>(transparency), 0.0f, 1.0f);
-						material.baseColor_.w = alpha;
+						material.baseColor_.a = alpha;
 						if (alpha < 0.999f)
 						{
 							material.alphaMode_ = 2;

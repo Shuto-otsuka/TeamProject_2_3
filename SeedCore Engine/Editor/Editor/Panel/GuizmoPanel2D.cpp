@@ -140,7 +140,7 @@ namespace SeedCore
 						Quaternion worldRotation;
 						Vector3 worldTranslation;
 						Matrix worldMatrix = actor.WorldMatrix();
-						worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
+						worldMatrix.Decompose(worldTranslation, worldRotation, worldScale);
 
 						Float rotation = isImage ? worldRotation.ToEuler().z : 0.0f;
 
@@ -244,7 +244,7 @@ namespace SeedCore
 						Vector3 newTranslation = Vector3(newCanvas.x - 100000.0f, 100000.0f + canvasHeight - newCanvas.y, startTranslation.z);
 
 						Actor parentActor = actor ? actor.Parent() : Actor();
-						Vector3 localTranslation = parentActor ? Vector3::Transform(newTranslation, parentActor.WorldMatrix().Invert()) : newTranslation;
+						Vector3 localTranslation = parentActor ? Vector3::TransformPosition(newTranslation, parentActor.WorldMatrix().Invert()) : newTranslation;
 
 						Float* positionData = static_cast<Float*>(world.GetComponent(entity, positionID));
 						Float* scaleData = static_cast<Float*>(world.GetComponent(entity, scaleID));
@@ -333,7 +333,7 @@ namespace SeedCore
 						{
 							Vector2 edgeStart = handleScreens[edgeHandles[edgeIndex][1]];
 							Vector2 edgeSegment = handleScreens[edgeHandles[edgeIndex][2]] - edgeStart;
-							Float along = std::clamp((mouse - edgeStart).Dot(edgeSegment) / Max(edgeSegment.LengthSquared(), 0.0001f), 0.0f, 1.0f);
+							Float along = std::clamp((mouse - edgeStart).Dot(edgeSegment) / Max(edgeSegment.LengthSq(), 0.0001f), 0.0f, 1.0f);
 							if ((mouse - (edgeStart + edgeSegment * along)).Length() <= 6.0f)
 							{
 								rectHandle_ = edgeHandles[edgeIndex][0] + 1;
@@ -667,7 +667,7 @@ namespace SeedCore
 
 					Vector3 newWorldPosition = isChild ? dragStartWorldMatrices_[index].Translation() : (dragStartWorldMatrices_[index] * pivotDelta).Translation();
 					Matrix parentMatrix = isChild ? dragStartWorldMatrices_[parentIt - dragEntities_.begin()] * pivotDelta : (parentActor ? parentActor.WorldMatrix() : Matrix::Identity);
-					Vector3 newPosition = Vector3::Transform(newWorldPosition, parentMatrix.Invert());
+					Vector3 newPosition = Vector3::TransformPosition(newWorldPosition, parentMatrix.Invert());
 
 					Float* positionData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, positionID));
 					if (positionData)
@@ -687,7 +687,7 @@ namespace SeedCore
 				Vector3 deltaScale;
 				Vector3 deltaTranslation;
 				Quaternion deltaRotation;
-				pivotDelta.Decompose(deltaScale, deltaRotation, deltaTranslation);
+				pivotDelta.Decompose(deltaTranslation, deltaRotation, deltaScale);
 
 				for (Size index = 0; index < dragEntities_.size(); ++index)
 				{
@@ -714,7 +714,7 @@ namespace SeedCore
 
 				Vector3 position, scale;
 				Quaternion rotation;
-				if (localMatrix.Decompose(scale, rotation, position))
+				if (localMatrix.Decompose(position, rotation, scale))
 				{
 					Float* positionData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, positionID));
 					Rotation* rotationData = static_cast<Rotation*>(context_.world_.world_->GetComponent(entity, rotationID));

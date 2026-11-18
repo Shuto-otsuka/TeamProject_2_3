@@ -441,7 +441,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
 
             //銃口の高さを求める
             SeedCore::Vector3 gunOffset = SeedCore::Vector3(0.0f, bulletOffsetY, 0.0f);
-            SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
+            SeedCore::Vector3 gunPosition = SeedCore::Vector3::TransformPosition(gunOffset, GetActor().WorldMatrix());
             SeedCore::Vector3 front = firstPersonCameraBrain.WorldMatrix().Backward();
 
             float bulletHalfSize = SeedCore::Lerp(bulletMinSize, bulletMaxSize, shotChargeRate) / 2.0f;
@@ -482,7 +482,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
 
         //銃口の高さを求める
         SeedCore::Vector3 gunOffset = SeedCore::Vector3(0.0f,bulletOffsetY,0.0f);
-        SeedCore::Vector3 gunPosition = SeedCore::Vector3::Transform(gunOffset, GetActor().WorldMatrix());
+        SeedCore::Vector3 gunPosition = SeedCore::Vector3::TransformPosition(gunOffset, GetActor().WorldMatrix());
 
         float bulletHalfSize = SeedCore::Lerp(bulletMinSize, bulletMaxSize, shotChargeRate) / 2.0f;
 
@@ -624,7 +624,7 @@ void PlayerController::UpdateInputShot(float elapsedTime)
         bulletOffset.y = bulletOffsetY;
         bulletOffset.z = SeedCore::Lerp(minBulletOffsetZ, maxBulletOffsetZ, shotChargeRate);//埋まり防止のため弾のサイズがでかいほどオフセットを空ける
         //プレイヤー姿勢、弾のローカルオフセットから弾のワールド位置を計算
-        bulletPosition = SeedCore::Vector3::Transform(bulletOffset, GetActor().WorldMatrix());
+        bulletPosition = SeedCore::Vector3::TransformPosition(bulletOffset, GetActor().WorldMatrix());
     }
 
     if (SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Left, SeedCore::Input::OnReleased) && shotReady)

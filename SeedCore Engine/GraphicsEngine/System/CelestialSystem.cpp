@@ -55,7 +55,7 @@ namespace SeedCore
 				if (sunElevationDegrees <= to.elevationDegrees_)
 				{
 					Float span = Max(to.elevationDegrees_ - from.elevationDegrees_, 0.0001f);
-					Float t = std::clamp((sunElevationDegrees - from.elevationDegrees_) / span, 0.0f, 1.0f);
+					Float t = Clamp((sunElevationDegrees - from.elevationDegrees_) / span, 0.0f, 1.0f);
 
 					outZenithColor = Color::Lerp(from.zenithColor_, to.zenithColor_, t);
 					outHorizonColor = Color::Lerp(from.horizonColor_, to.horizonColor_, t);
@@ -206,9 +206,9 @@ namespace SeedCore
 		sunAngularRadius_ = sun.angularRadius_;
 
 		/// [JP] 太陽の軌道角: 6時に地平線から昇り、18時に地平線へ沈む単純な円軌道。
-		Float sunAngle = ((celestial.hourOfDay_ - 6.0f) / 24.0f) * DirectX::XM_2PI;
-		Float sunElevation = std::sin(sunAngle);
-		Float sunHorizontal = std::cos(sunAngle);
+		Float sunAngle = ((celestial.hourOfDay_ - 6.0f) / 24.0f) * Pi<Float>::Two;
+		Float sunElevation = Sin(sunAngle);
+		Float sunHorizontal = Cos(sunAngle);
 
 		Vector3 sunDirection = Vector3(sunHorizontal, sunElevation, 0.0f);
 		sunDirection.Normalize();
@@ -216,12 +216,12 @@ namespace SeedCore
 		/// [JP] 光の進行方向(ライトが指す向き)は、太陽の方向と反対。
 		result.sunDirection_ = -sunDirection;
 
-		Float sunElevationDegrees = DirectX::XMConvertToDegrees(std::asin(std::clamp(sunElevation, -1.0f, 1.0f)));
-		Float sunHeightFactor = std::clamp((sunElevationDegrees - sun.minElevationDegrees_) / (90.0f - sun.minElevationDegrees_), 0.0f, 1.0f);
+		Float sunElevationDegrees = ToDegrees(Asin(Clamp(sunElevation, -1.0f, 1.0f)));
+		Float sunHeightFactor = Clamp((sunElevationDegrees - sun.minElevationDegrees_) / (90.0f - sun.minElevationDegrees_), 0.0f, 1.0f);
 
-		Color horizonColor(sun.horizonColor_.x, sun.horizonColor_.y, sun.horizonColor_.z, 1.0f);
-		Color zenithColor(sun.zenithColor_.x, sun.zenithColor_.y, sun.zenithColor_.z, 1.0f);
-		result.sunColor_ = Color::Lerp(horizonColor, zenithColor, std::clamp(sunElevationDegrees / 45.0f, 0.0f, 1.0f));
+		Color horizonColor(sun.horizonColor_.rgb, 1.0f);
+		Color zenithColor(sun.zenithColor_.rgb, 1.0f);
+		result.sunColor_ = Color::Lerp(horizonColor, zenithColor, Clamp(sunElevationDegrees / 45.0f, 0.0f, 1.0f));
 		result.sunIntensity_ = sun.maxIntensity_ * sunHeightFactor;
 
 		/// [JP] 月は太陽の反対側(180度オフセット)。
@@ -229,9 +229,9 @@ namespace SeedCore
 		result.moonDirection_ = -moonDirection;
 
 		Float moonElevation = moonDirection.y;
-		Float moonHeightFactor = std::clamp(moonElevation, 0.0f, 1.0f);
+		Float moonHeightFactor = Clamp(moonElevation, 0.0f, 1.0f);
 
-		result.moonColor_ = Color(moon.color_.x, moon.color_.y, moon.color_.z, 1.0f);
+		result.moonColor_ = Color(moon.color_.rgb, 1.0f);
 		result.moonIntensity_ = moon.maxIntensity_ * moonHeightFactor;
 		result.moonAngularRadius_ = moon.angularRadius_;
 
@@ -244,13 +244,17 @@ namespace SeedCore
 		///      とは別に、星は薄明が終わってすぐ見えなくなるべきなので、
 		///      minElevationDegrees_ から数度の間で急速にフェードさせる。
 		Float starFadeDegrees = 8.0f;
-		Float starHeightFactor = std::clamp((sunElevationDegrees - sun.minElevationDegrees_) / starFadeDegrees, 0.0f, 1.0f);
+		Float starHeightFactor = Clamp((sunElevationDegrees - sun.minElevationDegrees_) / starFadeDegrees, 0.0f, 1.0f);
 		result.nightFactor_ = 1.0f - starHeightFactor;
 
 		Color skyZenith, skyHorizon;
 		ComputeSkyGradient(sunElevationDegrees, skyZenith, skyHorizon);
-		result.skyZenithColor_[0] = skyZenith.R(); result.skyZenithColor_[1] = skyZenith.G(); result.skyZenithColor_[2] = skyZenith.B();
-		result.skyHorizonColor_[0] = skyHorizon.R(); result.skyHorizonColor_[1] = skyHorizon.G(); result.skyHorizonColor_[2] = skyHorizon.B();
+		result.skyZenithColor_[0] = skyZenith.r; 
+		result.skyZenithColor_[1] = skyZenith.g;
+		result.skyZenithColor_[2] = skyZenith.b;
+		result.skyHorizonColor_[0] = skyHorizon.r; 
+		result.skyHorizonColor_[1] = skyHorizon.g; 
+		result.skyHorizonColor_[2] = skyHorizon.b;
 
 		result_ = result;
 	}

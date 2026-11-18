@@ -714,7 +714,7 @@ namespace SeedCore
 			/// [JP] 最も大きい軸のスケールを使い、Actor がどう拡縮されても Bounds 全体が収まるようにする。
 			Float worldScale = Max(Max(Vector3(worldMatrix._11, worldMatrix._12, worldMatrix._13).Length(), Vector3(worldMatrix._21, worldMatrix._22, worldMatrix._23).Length()), Vector3(worldMatrix._31, worldMatrix._32, worldMatrix._33).Length());
 			radius = bounds->extent_.Length() * worldScale;
-			target = Vector3::Transform(bounds->center_, worldMatrix);
+			target = Vector3::TransformPosition(bounds->center_, worldMatrix);
 		}
 
 		context_.view_.editor_.camera_->FocusOn(target, radius);

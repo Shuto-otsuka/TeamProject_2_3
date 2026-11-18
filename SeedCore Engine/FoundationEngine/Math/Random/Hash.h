@@ -1,5 +1,6 @@
 #pragma once
-#include <FoundationEngine/Math/Vector.h>
+#include <FoundationEngine/Math/Vector/Vector2.h>
+#include <FoundationEngine/Math/Vector/Vector3.h>
 
 namespace SeedCore
 {

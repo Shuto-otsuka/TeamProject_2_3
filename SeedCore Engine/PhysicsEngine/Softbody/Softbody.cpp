@@ -57,7 +57,7 @@ namespace SeedCore
 		Matrix inverseWorld = GetActor().WorldMatrix().Invert();
 		for (Vector3& position : vertexPositions_)
 		{
-			position = Vector3::Transform(position, inverseWorld);
+			position = Vector3::TransformPosition(position, inverseWorld);
 		}
 	}
 
@@ -267,9 +267,9 @@ namespace SeedCore
 		Vector3 parentScale;
 		Quaternion parentRotation;
 		Vector3 parentTranslation;
-		parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+		parentMatrix.Decompose(parentTranslation, parentRotation, parentScale);
 
-		desc.position_ = Vector3::Transform(position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f), parentMatrix);
+		desc.position_ = Vector3::TransformPosition(position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f), parentMatrix);
 		desc.rotation_ = (rotation ? Transform::Quat(*rotation) : Quaternion::Identity) * parentRotation;
 
 		/// [EN] On failure the soft body stays pending and is tried again next frame.

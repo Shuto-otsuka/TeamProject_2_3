@@ -47,7 +47,7 @@ namespace SeedCore
 			if (Abs(dx) > 0.0f || Abs(dy) > 0.0f)
 			{
 				Vector3 right = Vector3::Up.Cross(direction);
-				if (right.LengthSquared() < 1e-6f)
+				if (right.LengthSq() < 1e-6f)
 				{
 					right = Vector3::Right;
 				}

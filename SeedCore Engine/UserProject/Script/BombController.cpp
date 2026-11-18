@@ -76,7 +76,7 @@ void BombController::OnTick(float elapsedTime)
         SeedCore::Vector3 position = GetActor().WorldMatrix().Translation();
 
         //ターゲットポジションを算出
-        DirectX::XMFLOAT3 targetPosition = SeedCore::Vector3::Lerp(targetPoints[startNum], targetPoints[endNum], moveRate);
+        SeedCore::Vector3 targetPosition = SeedCore::Vector3::Lerp(targetPoints[startNum], targetPoints[endNum], moveRate);
 
         //進行方向へのレイキャストで障害物がないかどうか確認
         SeedCore::Vector3 direction = targetPosition - position;
@@ -260,7 +260,7 @@ void BombController::UpdateMoveTarget()
     //移動する4頂点を保存
     SeedCore::Vector3 position = GetActor().WorldMatrix().Translation();
 
-    targetPoints[0] = SeedCore::Vector3(position.x, position.y, position.z);
+    targetPoints[0] = position;
     if (startX)
     {
         targetPoints[1] = SeedCore::Vector3(position.x + moveX, position.y, position.z);

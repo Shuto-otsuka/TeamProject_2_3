@@ -90,8 +90,8 @@ namespace SeedCore
 		scene.inverseViewProjection_ = camera.InverseViewProjection();
 		scene.nonJitterViewProjection_ = camera.NonJitterViewProjection();
 		scene.previousNonJitterViewProjection_ = camera.NonJitterViewProjection();
-		scene.cameraPosition_ = Vector4(camera.Eye().x, camera.Eye().y, camera.Eye().z, 1.0f);
-		scene.cameraFocus_ = Vector4(camera.Focus().x, camera.Focus().y, camera.Focus().z, 1.0f);
+		scene.cameraPosition_ = Vector4(camera.Eye(), 1.0f);
+		scene.cameraFocus_ = Vector4(camera.Focus(), 1.0f);
 		scene.fieldOfView_ = camera.Fov();
 		scene.nearPlane_ = camera.Near();
 		scene.farPlane_ = camera.Far();

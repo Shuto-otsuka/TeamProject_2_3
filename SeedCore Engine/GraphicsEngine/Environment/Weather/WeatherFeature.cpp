@@ -64,7 +64,7 @@ namespace SeedCore
 				emitter_.rainBrightness_ = rain.brightness_;
 				emitter_.rainVolumeRadius_ = rain.volumeRadius_;
 				emitter_.rainVolumeHeight_ = rain.volumeHeight_;
-				emitter_.rainColor_ = Vector3(rain.color_.r, rain.color_.g, rain.color_.b);
+				emitter_.rainColor_ = rain.color_.rgb;
 
 				const Snow& snow = weather.snow_;
 				emitter_.snowCount_ = weather.snowEnabled_ ? static_cast<Uint>(snowCapacity_ * std::clamp(snow.density_, 0.0f, 1.0f) * std::clamp(weather.snowIntensity_, 0.0f, 1.0f)) : 0;
@@ -74,7 +74,7 @@ namespace SeedCore
 				emitter_.snowBrightness_ = snow.brightness_;
 				emitter_.snowVolumeRadius_ = snow.volumeRadius_;
 				emitter_.snowVolumeHeight_ = snow.volumeHeight_;
-				emitter_.snowColor_ = Vector3(snow.color_.r, snow.color_.g, snow.color_.b);
+				emitter_.snowColor_ = snow.color_.rgb;
 			});
 
 		falling_ = emitter_.rainCount_ + emitter_.snowCount_ > 0;

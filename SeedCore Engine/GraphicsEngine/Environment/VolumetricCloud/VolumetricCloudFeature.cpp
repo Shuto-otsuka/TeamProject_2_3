@@ -42,7 +42,7 @@ namespace SeedCore
 				constants_.cloudTop_ = cloud.cloudBottom_ + cloud.cloudThickness_;
 				constants_.coverage_ = cloud.coverage_;
 				constants_.densityScale_ = 0.002f * Pow(100.0f, cloud.lighting_.density_);
-				constants_.cloudAlbedo_ = Vector3(cloud.lighting_.albedo_.r, cloud.lighting_.albedo_.g, cloud.lighting_.albedo_.b);
+				constants_.cloudAlbedo_ = cloud.lighting_.albedo_.rgb;
 				constants_.scatteringG_ = cloud.lighting_.forwardScattering_;
 				constants_.noiseScale_ = horizontalFrequency;
 				constants_.windX_ = Cos(windAngle) * cloud.windSpeed_ * horizontalFrequency;
@@ -50,11 +50,12 @@ namespace SeedCore
 				constants_.cloudType_ = cloud.cloudType_;
 				constants_.rain_ = cloud.rain_;
 				constants_.detailScale_ = cloud.shape_.detailScale_;
-				constants_.skyZenithColor_ = Vector3(cloud.sky_.zenithColor_.r, cloud.sky_.zenithColor_.g, cloud.sky_.zenithColor_.b);
+				constants_.skyZenithColor_ = cloud.sky_.zenithColor_.rgb;
 				constants_.sunSize_ = cloud.sky_.sunSize_;
-				constants_.skyHorizonColor_ = Vector3(cloud.sky_.horizonColor_.r, cloud.sky_.horizonColor_.g, cloud.sky_.horizonColor_.b);
+				constants_.sunEmissive_ = cloud.sky_.sunEmissive_;
+				constants_.skyHorizonColor_ = cloud.sky_.horizonColor_.rgb;
 				constants_.skyBrightness_ = cloud.sky_.brightness_;
-				constants_.groundColor_ = Vector3(cloud.sky_.groundColor_.r, cloud.sky_.groundColor_.g, cloud.sky_.groundColor_.b);
+				constants_.groundColor_ = cloud.sky_.groundColor_.rgb;
 				constants_.planetRadius_ = cloud.advanced_.planetRadius_;
 				switch (cloud.quality_)
 				{

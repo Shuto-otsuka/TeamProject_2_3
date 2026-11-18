@@ -116,10 +116,10 @@ namespace SeedCore
 		else if (resource.renderTarget_)
 		{
 			clearValue.Format = static_cast<DXGI_FORMAT>(desc.format_);
-			clearValue.Color[0] = clear.x;
-			clearValue.Color[1] = clear.y;
-			clearValue.Color[2] = clear.z;
-			clearValue.Color[3] = clear.w;
+			clearValue.Color[0] = clear.r;
+			clearValue.Color[1] = clear.g;
+			clearValue.Color[2] = clear.b;
+			clearValue.Color[3] = clear.a;
 			optimizedClearValue = &clearValue;
 		}
 

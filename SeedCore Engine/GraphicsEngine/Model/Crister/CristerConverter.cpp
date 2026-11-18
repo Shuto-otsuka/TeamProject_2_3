@@ -59,12 +59,12 @@ namespace SeedCore
 			Vertex& vertex = transformedVertices[vertexIndex];
 
 			Vertex decoded = quantizer.DecodeVertex(crister, compressed);
-			vertex.position_ = Vector3::Transform(decoded.position_, deltaBasis);
+			vertex.position_ = Vector3::TransformPosition(decoded.position_, deltaBasis);
 			vertex.texcoord_ = decoded.texcoord_;
-			vertex.normal_ = Vector3::Transform(decoded.normal_, deltaBasis);
+			vertex.normal_ = Vector3::TransformPosition(decoded.normal_, deltaBasis);
 
-			Vector3 tangentXyz = Vector3::Transform(Vector3(decoded.tangent_.x, decoded.tangent_.y, decoded.tangent_.z), deltaBasis);
-			vertex.tangent_ = Vector4(tangentXyz.x, tangentXyz.y, tangentXyz.z, decoded.tangent_.w * tangentSign);
+			Vector3 tangentXyz = Vector3::TransformPosition(decoded.tangent_.xyz, deltaBasis);
+			vertex.tangent_ = Vector4(tangentXyz, decoded.tangent_.w * tangentSign);
 
 			/// [EN] Skin attributes do not depend on the axes; they are only decoded so BakeMesh() can re-encode them.
 			/// [JP] スキン属性は軸に依存しない。BakeMesh() で符号化し直せるようデコードするだけ。
@@ -213,7 +213,7 @@ namespace SeedCore
 				/// [JP] ルートのローカル S/R/T に変換を後ろから掛け、結果を S/R/T へ分解し直す。
 				Matrix newLocal = localScale * localRotation * localTranslation * fullTransform;
 
-				newLocal.Decompose(node.scale_, node.rotation_, node.translation_);
+				newLocal.Decompose(node.translation_, node.rotation_, node.scale_);
 			}
 		}
 
@@ -225,8 +225,8 @@ namespace SeedCore
 		/// [JP] ライトは解決済みの値で持つので、変換を直接かける。位置には全体の変換を、向きには線形部分だけをかける。
 		for (PunctualLight& light : crister.scene_.lights_)
 		{
-			light.position_ = Vector3::Transform(light.position_, fullTransform);
-			light.direction_ = Vector3::TransformNormal(light.direction_, linearBasis);
+			light.position_ = Vector3::TransformPosition(light.position_, fullTransform);
+			light.direction_ = Vector3::TransformDirection(light.direction_, linearBasis);
 			light.direction_.Normalize();
 		}
 
@@ -308,7 +308,7 @@ namespace SeedCore
 	*/
 	void CristerConverter::ConvertPositionByBasis(Vector3& vector, const Matrix& basis)const
 	{
-		vector = Vector3::Transform(vector, basis);
+		vector = Vector3::TransformPosition(vector, basis);
 	}
 
 	/**
@@ -326,10 +326,7 @@ namespace SeedCore
 	*/
 	void CristerConverter::ConvertPositionByBasis(Vector4& vector, const Matrix& basis)const
 	{
-		Vector3 xyz = Vector3::Transform(Vector3(vector.x, vector.y, vector.z), basis);
-		vector.x = xyz.x;
-		vector.y = xyz.y;
-		vector.z = xyz.z;
+		vector.xyz = Vector3::TransformPosition(vector.xyz, basis);
 	}
 
 	/**

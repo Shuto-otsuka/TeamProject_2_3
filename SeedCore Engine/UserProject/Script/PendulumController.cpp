@@ -17,8 +17,8 @@ void PendulumController::OnStart()
     startQuaternion = SeedCore::Transform::Quat(*rotation);
     SeedCore::Vector3 localAxis = SeedCore::Vector3::Right;
     SeedCore::Matrix worldMat = SeedCore::Matrix::CreateFromQuaternion(SeedCore::Transform::Quat(*rotation));
-    SeedCore::Vector3 worldAxis = SeedCore::Vector3::Transform(localAxis, worldMat);//ローカル軸をワールド軸に変換
-    SeedCore::Quaternion rotateQuaternion = SeedCore::Quaternion::CreateFromAxisAngle(worldAxis, DirectX::XM_PIDIV2);//90度回転
+    SeedCore::Vector3 worldAxis = SeedCore::Vector3::TransformPosition(localAxis, worldMat);//ローカル軸をワールド軸に変換
+    SeedCore::Quaternion rotateQuaternion = SeedCore::Quaternion::CreateFromAxisAngle(worldAxis, SeedCore::Pi<SeedCore::Float>::Half);//90度回転
     endQuaternion = startQuaternion * rotateQuaternion;
 }
 

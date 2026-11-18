@@ -170,7 +170,10 @@
     <ClInclude Include="Log\SlFail.h" />
     <ClInclude Include="Log\Warning.h" />
     <ClInclude Include="Math\Easing\Easing.h" />
+    <ClInclude Include="Math\Geometry\Ray.h" />
     <ClInclude Include="Math\Halton.h" />
+    <ClInclude Include="Math\Matrix\Matrix.h" />
+    <ClInclude Include="Math\Quaternion\Quaternion.h" />
     <ClInclude Include="Math\Random\Hash.h" />
     <ClInclude Include="Math\Random\Xorshift.h" />
     <ClCompile Include="JobSystem\Semaphore.cpp">
@@ -215,8 +218,16 @@
     </ClCompile>
     <ClCompile Include="Reflection\Reflection.generated.cpp" />
     <ClCompile Include="Payload\Payload.generated.cpp" />
+    <ClInclude Include="Math\Vector\Color.h" />
+    <ClInclude Include="Math\Vector\Ivector2.h" />
+    <ClInclude Include="Math\Vector\Ivector3.h" />
+    <ClInclude Include="Math\Vector\Ivector4.h" />
+    <ClInclude Include="Math\Vector\Uvector2.h" />
+    <ClInclude Include="Math\Vector\Uvector3.h" />
+    <ClInclude Include="Math\Vector\Uvector4.h" />
     <ClInclude Include="Math\Vector\Vector2.h" />
     <ClInclude Include="Math\Vector\Vector3.h" />
+    <ClInclude Include="Math\Vector\Vector4.h" />
     <ClInclude Include="Resource\Asset\Asset.h" />
     <ClInclude Include="Resource\Asset\AssetExporter.h" />
     <ClInclude Include="Resource\Asset\AssetLoader.h" />
@@ -339,11 +350,6 @@
     <ClInclude Include="Log\DxFail.h" />
     <ClInclude Include="Log\Exeption.h" />
     <ClInclude Include="Math\Algorithm.h" />
-    <ClInclude Include="Math\MathCommon.h" />
-    <ClInclude Include="Math\Matrix.h" />
-    <ClInclude Include="Math\Quaternion.h" />
-    <ClInclude Include="Math\Ray.h" />
-    <ClInclude Include="Math\Vector.h" />
     <ClInclude Include="Memory\ChunkAllocator.h" />
     <ClInclude Include="Payload\PayloadRegistry.h" />
     <ClInclude Include="Plugin\PluginHost.h" />

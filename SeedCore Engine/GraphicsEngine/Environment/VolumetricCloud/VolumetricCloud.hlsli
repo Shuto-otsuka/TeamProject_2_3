@@ -67,6 +67,10 @@ struct VolumetricCloudConstantBuffer
 	/// Angular radius of the sun disc (radians).
 	float sun_size_;
 
+	/// Multiplier on the sun disc's radiance alone, leaving the sunlight on
+	/// surfaces unchanged; raises the disc above the bloom threshold.
+	float sun_emissive_;
+
 	float3 sky_horizon_color_;
 
 	/// Overall sky brightness multiplier.
@@ -653,7 +657,7 @@ float3 ProceduralSkyColor(float3 direction, float3 sun_direction, float3 sun_rad
 		/// and what the clouds' silver lining reads against.
 		float glow = pow(saturate(cos_view_sun), 96.0) * 0.06 + pow(saturate(cos_view_sun), 8.0) * 0.02;
 
-		color += sun_radiance * (disc + glow);
+		color += sun_radiance * (disc * tuning.sun_emissive_ + glow);
 	}
 
 	return color;

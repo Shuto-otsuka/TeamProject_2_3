@@ -68,7 +68,7 @@ namespace SeedCore
 			ExtractWorldTransform(nodes[static_cast<Size>(childIndex)].globalTransform_, childPosition, childRotation);
 
 			Vector3 worldAxis = childPosition - thisPosition;
-			if (worldAxis.LengthSquared() < 1e-8f)
+			if (worldAxis.LengthSq() < 1e-8f)
 			{
 				continue;
 			}
@@ -79,7 +79,7 @@ namespace SeedCore
 			ExtractWorldTransform(nodes[static_cast<Size>(node.parentIndex_)].globalTransform_, parentPosition, parentWorldRotation);
 
 			Quaternion parentInverseRotation;
-			parentWorldRotation.Inverse(parentInverseRotation);
+			parentInverseRotation = parentWorldRotation.Inverse();
 
 			Vector3 worldSwingReference = Abs(worldAxis.Dot(Vector3::Right)) < 0.9f ? Vector3::Right : Vector3::Up;
 			Vector3 worldSwingAxis = worldSwingReference - worldAxis * worldSwingReference.Dot(worldAxis);
@@ -124,12 +124,12 @@ namespace SeedCore
 	{
 		Vector3 scale;
 		Matrix copy = globalTransform;
-		copy.Decompose(scale, outRotation, outPosition);
+		copy.Decompose(outPosition, outRotation, scale);
 	}
 
 	Quaternion IKPose::SwingRotation(const Vector3& fromDirection, const Vector3& toDirection)
 	{
-		if (fromDirection.LengthSquared() < 1e-12f || toDirection.LengthSquared() < 1e-12f)
+		if (fromDirection.LengthSq() < 1e-12f || toDirection.LengthSq() < 1e-12f)
 		{
 			return Quaternion::Identity;
 		}
@@ -142,7 +142,7 @@ namespace SeedCore
 		Float dot = Clamp(from.Dot(to), -1.0f, 1.0f);
 		Vector3 axis = from.Cross(to);
 
-		if (axis.LengthSquared() < 1e-12f)
+		if (axis.LengthSq() < 1e-12f)
 		{
 			if (dot > 0.0f)
 			{
@@ -150,12 +150,12 @@ namespace SeedCore
 			}
 
 			axis = from.Cross(Vector3::Right);
-			if (axis.LengthSquared() < 1e-6f)
+			if (axis.LengthSq() < 1e-6f)
 			{
 				axis = from.Cross(Vector3::Up);
 			}
 			axis.Normalize();
-			return Quaternion::CreateFromAxisAngle(axis, DirectX::XM_PI);
+			return Quaternion::CreateFromAxisAngle(axis, Pi<Float>::Value);
 		}
 
 		axis.Normalize();
@@ -203,7 +203,7 @@ namespace SeedCore
 
 	Vector3 IKPose::SwingLimit(const Vector3& direction, const Vector3& axis, const Vector3& swingAxis, Float maxAngle1, Float maxAngle2)
 	{
-		if (direction.LengthSquared() < 1e-12f || axis.LengthSquared() < 1e-12f)
+		if (direction.LengthSq() < 1e-12f || axis.LengthSq() < 1e-12f)
 		{
 			return direction;
 		}
@@ -212,7 +212,7 @@ namespace SeedCore
 		forward.Normalize();
 
 		Vector3 reference1 = swingAxis - forward * swingAxis.Dot(forward);
-		if (reference1.LengthSquared() < 1e-8f)
+		if (reference1.LengthSq() < 1e-8f)
 		{
 			reference1 = Abs(forward.Dot(Vector3::Right)) < 0.9f ? Vector3::Right : Vector3::Up;
 			reference1 = reference1 - forward * reference1.Dot(forward);
@@ -230,7 +230,7 @@ namespace SeedCore
 		Float theta = Acos(dot);
 
 		Vector3 perpendicular = to - forward * dot;
-		if (perpendicular.LengthSquared() < 1e-8f)
+		if (perpendicular.LengthSq() < 1e-8f)
 		{
 			return direction;
 		}
@@ -291,7 +291,7 @@ namespace SeedCore
 		Vector3 localScale;
 		Quaternion localRotation;
 		Vector3 localTranslation;
-		originalLocal.Decompose(localScale, localRotation, localTranslation);
+		originalLocal.Decompose(localTranslation, localRotation, localScale);
 
 		auto overrideIt = newLocalRotations.find(nodeIndex);
 		if (overrideIt != newLocalRotations.end())

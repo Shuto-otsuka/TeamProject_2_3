@@ -1265,6 +1265,15 @@ namespace SeedCore
 						fi.clampMax_ = 0.2f;
 						outInfo.push_back(std::move(fi));
 					}
+					{
+						FieldInfo fi;
+						fi.name_ = String("太陽の発光強度");
+						fi.offset_ = offsetof(VolumetricCloudSkySettings, sunEmissive_);
+						fi.type_ = AttributeType::Float;
+						fi.clampMin_ = 0.0f;
+						fi.clampMax_ = 100.0f;
+						outInfo.push_back(std::move(fi));
+					}
 					outInfo.push_back({ String("地面の色"), offsetof(VolumetricCloudSkySettings, groundColor_), AttributeType::Color });
 				});
 			}

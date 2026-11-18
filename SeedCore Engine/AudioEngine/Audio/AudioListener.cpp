@@ -23,10 +23,10 @@ namespace SeedCore
 
 		Vector3 position = worldMatrix.Translation();
 
-		Vector3 front = Vector3::TransformNormal(Vector3::Forward, worldMatrix);
+		Vector3 front = Vector3::TransformDirection(Vector3::Forward, worldMatrix);
 		front.Normalize();
 
-		Vector3 up = Vector3::TransformNormal(Vector3::Up, worldMatrix);
+		Vector3 up = Vector3::TransformDirection(Vector3::Up, worldMatrix);
 		up.Normalize();
 
 		/// [EN] Calculate world-space velocity from movement since the preceding update.

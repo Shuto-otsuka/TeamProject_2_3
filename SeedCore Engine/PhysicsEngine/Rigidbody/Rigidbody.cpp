@@ -119,7 +119,7 @@ namespace SeedCore
 			if (parentActor)
 			{
 				Matrix parentMatrix = parentActor.WorldMatrix();
-				parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+				parentMatrix.Decompose(parentTranslation, parentRotation, parentScale);
 			}
 			Vector3 worldScale = Vector3(scale->x_, scale->y_, scale->z_) * parentScale;
 			return actor.GetService<Physics>()->CreateSphereShape(defaultShapeRadius_ * Max(Abs(worldScale.x), Abs(worldScale.y), Abs(worldScale.z)));
@@ -327,11 +327,11 @@ namespace SeedCore
 		Vector3 parentScale;
 		Quaternion parentRotation;
 		Vector3 parentTranslation;
-		parentMatrix.Decompose(parentScale, parentRotation, parentTranslation);
+		parentMatrix.Decompose(parentTranslation, parentRotation, parentScale);
 
 		Matrix inverseParentMatrix = parentMatrix.Invert();
 		Quaternion inverseParentRotation;
-		parentRotation.Inverse(inverseParentRotation);
+		inverseParentRotation = parentRotation.Inverse();
 
 		/// [EN] Canvas bodies go back from meters (Y up) to pixels (Y down).
 		/// [JP] Canvas のボディは、メートル(Y 上向き)からピクセル(Y 下向き)へ戻す。
@@ -343,7 +343,7 @@ namespace SeedCore
 
 			if (position)
 			{
-				Vector3 localPosition = Vector3::Transform(Vector3(outPosition.x * pixelsPerMeter_, -outPosition.y * pixelsPerMeter_, 0.0f), inverseParentMatrix);
+				Vector3 localPosition = Vector3::TransformPosition(Vector3(outPosition.x * pixelsPerMeter_, -outPosition.y * pixelsPerMeter_, 0.0f), inverseParentMatrix);
 				position->x_ = localPosition.x;
 				position->y_ = localPosition.y;
 			}
@@ -358,7 +358,7 @@ namespace SeedCore
 
 		if (position)
 		{
-			Transform::Vector(*position, Vector3::Transform(outPosition, inverseParentMatrix));
+			Transform::Vector(*position, Vector3::TransformPosition(outPosition, inverseParentMatrix));
 		}
 
 		/// [EN] Rotation is stored as a normalized quaternion.

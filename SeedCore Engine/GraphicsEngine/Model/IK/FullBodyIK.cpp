@@ -84,7 +84,7 @@ namespace SeedCore
 		Int limbParentIndex = crister.Nodes()[rootNodeIndex].parentIndex_;
 		if (limbParentIndex >= 0 && static_cast<Size>(limbParentIndex) < poseGlobalTransforms.size())
 		{
-			constexpr Float maxLeanAngle = DirectX::XM_PI / 6.0f;
+			constexpr Float maxLeanAngle = Pi<Float>::Value / 6.0f;
 			constexpr Float leanTransitionDistance = 0.1f;
 
 			Float reachDeficit = Vector3::Distance(originalPositions[0], target.targetPosition_) - maxReach;
@@ -99,7 +99,7 @@ namespace SeedCore
 				Vector3 leanToRoot = originalPositions[0] - leanPosition;
 				Vector3 leanToTarget = target.targetPosition_ - leanPosition;
 
-				if (leanToRoot.LengthSquared() > 1e-8f && leanToTarget.LengthSquared() > 1e-8f)
+				if (leanToRoot.LengthSq() > 1e-8f && leanToTarget.LengthSq() > 1e-8f)
 				{
 					leanToRoot.Normalize();
 					leanToTarget.Normalize();
@@ -107,7 +107,7 @@ namespace SeedCore
 					Float leanAngle = Min(Acos(Clamp(leanToRoot.Dot(leanToTarget), -1.0f, 1.0f)), maxLeanAngle) * target.weight_ * leanBlend;
 
 					Vector3 leanAxis = leanToRoot.Cross(leanToTarget);
-					if (leanAngle > 0.0f && leanAxis.LengthSquared() > 1e-8f)
+					if (leanAngle > 0.0f && leanAxis.LengthSq() > 1e-8f)
 					{
 						leanAxis.Normalize();
 						Quaternion leanDelta = Quaternion::CreateFromAxisAngle(leanAxis, leanAngle);
@@ -144,7 +144,7 @@ namespace SeedCore
 				/// [JP] ポール未指定の場合はチェーンの現在の曲がり方向を維持する: mid ジョイントの root-end 直線に対するはみ出し方向を求め、その方向へ mid ジョイントからさらに1つ分オフセットした位置をポールとする。
 				Vector3 rootToEndAxis = originalPositions[2] - originalPositions[0];
 				Vector3 rootToMidOffset = originalPositions[1] - originalPositions[0];
-				Float rootToEndLengthSquared = rootToEndAxis.LengthSquared();
+				Float rootToEndLengthSquared = rootToEndAxis.LengthSq();
 				Vector3 bendOffset = rootToEndLengthSquared > 1e-8f ? rootToMidOffset - rootToEndAxis * (rootToMidOffset.Dot(rootToEndAxis) / rootToEndLengthSquared) : rootToMidOffset;
 				poleVector = originalPositions[1] + bendOffset;
 			}
@@ -192,20 +192,20 @@ namespace SeedCore
 			Quaternion solvedParentWorldRotation = jointIndex == 0 ? (hasLean ? leanParentWorldRotation : originalParentWorldRotation) : solvedWorldRotations[jointIndex - 1];
 
 			auto constraintIt = jointConstraints.find(crister.Nodes()[nodeIndex].name_);
-			if (constraintIt != jointConstraints.end() && constraintIt->second.axis_.LengthSquared() > 1e-12f)
+			if (constraintIt != jointConstraints.end() && constraintIt->second.axis_.LengthSq() > 1e-12f)
 			{
 				const JointConstraint& constraint = constraintIt->second;
 
 				Vector3 originalDirection = originalPositions[jointIndex + 1] - originalPositions[jointIndex];
 
 				Quaternion originalInverseRotation;
-				originalRotations[jointIndex].Inverse(originalInverseRotation);
+				originalInverseRotation = originalRotations[jointIndex].Inverse();
 				Vector3 localDirection = Vector3::Transform(originalDirection, originalInverseRotation);
 				Vector3 newDirection = Vector3::Transform(localDirection, solvedWorldRotations[jointIndex]);
 
 				Vector3 worldAxis = Vector3::Transform(constraint.axis_, solvedParentWorldRotation);
 				worldAxis.Normalize();
-				Vector3 worldSwingAxis = constraint.swingAxis_.LengthSquared() > 1e-12f ? Vector3::Transform(constraint.swingAxis_, solvedParentWorldRotation) : Vector3::Right;
+				Vector3 worldSwingAxis = constraint.swingAxis_.LengthSq() > 1e-12f ? Vector3::Transform(constraint.swingAxis_, solvedParentWorldRotation) : Vector3::Right;
 				worldSwingAxis.Normalize();
 
 				Vector3 clampedDirection = IKPose::SwingLimit(newDirection, worldAxis, worldSwingAxis, ToRadians(constraint.swingAngle1_), ToRadians(constraint.swingAngle2_));
@@ -215,14 +215,14 @@ namespace SeedCore
 			}
 
 			Quaternion solvedParentInverseRotation;
-			solvedParentWorldRotation.Inverse(solvedParentInverseRotation);
+			solvedParentInverseRotation = solvedParentWorldRotation.Inverse();
 
 			Quaternion localRotation = solvedWorldRotations[jointIndex] * solvedParentInverseRotation;
 
 			if (target.weight_ < 1.0f)
 			{
 				Quaternion originalParentInverseRotation;
-				originalParentWorldRotation.Inverse(originalParentInverseRotation);
+				originalParentInverseRotation = originalParentWorldRotation.Inverse();
 				Quaternion originalLocalRotation = pristineRotations[jointIndex] * originalParentInverseRotation;
 				localRotation = Quaternion::Slerp(originalLocalRotation, localRotation, target.weight_);
 			}
@@ -242,7 +242,7 @@ namespace SeedCore
 			}
 
 			Quaternion leanGrandparentInverseRotation;
-			leanGrandparentWorldRotation.Inverse(leanGrandparentInverseRotation);
+			leanGrandparentInverseRotation = leanGrandparentWorldRotation.Inverse();
 			localRotationOverrides[leanNodeIndex] = leanParentWorldRotation * leanGrandparentInverseRotation;
 		}
 
@@ -251,14 +251,14 @@ namespace SeedCore
 			Int effectorNodeIndex = chain.back();
 			Quaternion solvedParentWorldRotation = solvedWorldRotations[chain.size() - 2];
 			Quaternion solvedParentInverseRotation;
-			solvedParentWorldRotation.Inverse(solvedParentInverseRotation);
+			solvedParentInverseRotation = solvedParentWorldRotation.Inverse();
 
 			Quaternion localRotation = target.targetRotation_ * solvedParentInverseRotation;
 
 			if (target.weight_ < 1.0f)
 			{
 				Quaternion originalParentInverseRotation;
-				pristineRotations[chain.size() - 2].Inverse(originalParentInverseRotation);
+				originalParentInverseRotation = pristineRotations[chain.size() - 2].Inverse();
 				Quaternion originalLocalRotation = pristineRotations.back() * originalParentInverseRotation;
 				localRotation = Quaternion::Slerp(originalLocalRotation, localRotation, target.weight_);
 			}
@@ -444,7 +444,7 @@ namespace SeedCore
 			}
 
 			auto constraintIt = jointConstraints.find(crister.Nodes()[nodeIndex].name_);
-			if (constraintIt != jointConstraints.end() && constraintIt->second.axis_.LengthSquared() > 1e-12f)
+			if (constraintIt != jointConstraints.end() && constraintIt->second.axis_.LengthSq() > 1e-12f)
 			{
 				const JointConstraint& constraint = constraintIt->second;
 
@@ -470,13 +470,13 @@ namespace SeedCore
 					Vector3 originalDirection = originalPositions[primaryChild] - originalPositions[nodeIndex];
 
 					Quaternion originalInverseRotation;
-					originalRotations[nodeIndex].Inverse(originalInverseRotation);
+					originalInverseRotation = originalRotations[nodeIndex].Inverse();
 					Vector3 localDirection = Vector3::Transform(originalDirection, originalInverseRotation);
 					Vector3 newDirection = Vector3::Transform(localDirection, solvedWorldRotations[nodeIndex]);
 
 					Vector3 worldAxis = Vector3::Transform(constraint.axis_, solvedParentWorldRotation);
 					worldAxis.Normalize();
-					Vector3 worldSwingAxis = constraint.swingAxis_.LengthSquared() > 1e-12f ? Vector3::Transform(constraint.swingAxis_, solvedParentWorldRotation) : Vector3::Right;
+					Vector3 worldSwingAxis = constraint.swingAxis_.LengthSq() > 1e-12f ? Vector3::Transform(constraint.swingAxis_, solvedParentWorldRotation) : Vector3::Right;
 					worldSwingAxis.Normalize();
 
 					Vector3 clampedDirection = IKPose::SwingLimit(newDirection, worldAxis, worldSwingAxis, ToRadians(constraint.swingAngle1_), ToRadians(constraint.swingAngle2_));
@@ -487,7 +487,7 @@ namespace SeedCore
 			}
 
 			Quaternion solvedParentInverseRotation;
-			solvedParentWorldRotation.Inverse(solvedParentInverseRotation);
+			solvedParentInverseRotation = solvedParentWorldRotation.Inverse();
 
 			Quaternion localRotation = solvedWorldRotations[nodeIndex] * solvedParentInverseRotation;
 
@@ -495,7 +495,7 @@ namespace SeedCore
 			if (nodeWeight < 1.0f)
 			{
 				Quaternion originalParentInverseRotation;
-				originalParentWorldRotation.Inverse(originalParentInverseRotation);
+				originalParentInverseRotation = originalParentWorldRotation.Inverse();
 				Quaternion originalLocalRotation = originalRotations[nodeIndex] * originalParentInverseRotation;
 				localRotation = Quaternion::Slerp(originalLocalRotation, localRotation, nodeWeight);
 			}
@@ -528,14 +528,14 @@ namespace SeedCore
 			}
 
 			Quaternion solvedParentInverseRotation;
-			solvedParentWorldRotation.Inverse(solvedParentInverseRotation);
+			solvedParentInverseRotation = solvedParentWorldRotation.Inverse();
 
 			Quaternion localRotation = target->targetRotation_ * solvedParentInverseRotation;
 
 			if (target->weight_ < 1.0f)
 			{
 				Quaternion originalParentInverseRotation;
-				originalParentWorldRotation.Inverse(originalParentInverseRotation);
+				originalParentInverseRotation = originalParentWorldRotation.Inverse();
 				Quaternion originalLocalRotation = originalRotations[endNodeIndex] * originalParentInverseRotation;
 				localRotation = Quaternion::Slerp(originalLocalRotation, localRotation, target->weight_);
 			}

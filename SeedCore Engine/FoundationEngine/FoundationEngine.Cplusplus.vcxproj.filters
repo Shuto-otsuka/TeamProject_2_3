@@ -136,6 +136,9 @@
     <Filter Include="Math\Quaternion">
       <UniqueIdentifier>{6d6d5a23-700c-4ddd-9d37-36d1893a9bb0}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Math\Geometry">
+      <UniqueIdentifier>{7463d493-3371-4580-b7de-51cc7f60e857}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="JobSystem\FlowBuilder.cpp">
@@ -622,23 +625,11 @@
     <ClInclude Include="Utility\ArtMap.h">
       <Filter>Utility</Filter>
     </ClInclude>
-    <ClInclude Include="Math\Vector.h">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\MathCommon.h">
-      <Filter>Math</Filter>
-    </ClInclude>
     <ClInclude Include="Utility\FlatMap.h">
       <Filter>Utility</Filter>
     </ClInclude>
     <ClInclude Include="Utility\ReadWrite.h">
       <Filter>Utility</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Matrix.h">
-      <Filter>Math</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Quaternion.h">
-      <Filter>Math</Filter>
     </ClInclude>
     <ClInclude Include="Resource\ResourceCache.h">
       <Filter>Resource</Filter>
@@ -706,9 +697,6 @@
     </ClInclude>
     <ClInclude Include="Log\AftermathCrashTracker.h">
       <Filter>Log</Filter>
-    </ClInclude>
-    <ClInclude Include="Math\Ray.h">
-      <Filter>Math</Filter>
     </ClInclude>
     <ClInclude Include="Serialization\Encryption\Sha256.h">
       <Filter>Serialization\Encryption</Filter>
@@ -1093,6 +1081,39 @@
     </ClInclude>
     <ClInclude Include="Math\Vector\Vector3.h">
       <Filter>Math\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector\Vector4.h">
+      <Filter>Math\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector\Color.h">
+      <Filter>Math\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Quaternion\Quaternion.h">
+      <Filter>Math\Quaternion</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Matrix\Matrix.h">
+      <Filter>Math\Matrix</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector\Ivector2.h">
+      <Filter>Math\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector\Ivector3.h">
+      <Filter>Math\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector\Ivector4.h">
+      <Filter>Math\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector\Uvector2.h">
+      <Filter>Math\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector\Uvector3.h">
+      <Filter>Math\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Vector\Uvector4.h">
+      <Filter>Math\Vector</Filter>
+    </ClInclude>
+    <ClInclude Include="Math\Geometry\Ray.h">
+      <Filter>Math\Geometry</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

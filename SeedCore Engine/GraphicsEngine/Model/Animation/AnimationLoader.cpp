@@ -617,7 +617,7 @@ namespace SeedCore
 
 					/// [EN] Same change of basis ModelLoader::ConvertAxisConvention applies to Node::translation_.
 					/// [JP] ModelLoader::ConvertAxisConvention が Node::translation_ に適用するのと同じ基底変換。
-					translation = Vector3::Transform(translation, resolved.basis_);
+					translation = Vector3::TransformPosition(translation, resolved.basis_);
 					animation.translations_[key].push_back(translation);
 				}
 

@@ -53,19 +53,19 @@ namespace SeedCore
 	template<typename Archive>
 	void Save(Archive& archive, const Color& c)
 	{
-		archive.Field("r", c.x);
-		archive.Field("g", c.y);
-		archive.Field("b", c.z);
-		archive.Field("a", c.w);
+		archive.Field("r", c.r);
+		archive.Field("g", c.g);
+		archive.Field("b", c.b);
+		archive.Field("a", c.a);
 	}
 
 	template<typename Archive>
 	void Load(Archive& archive, Color& c)
 	{
-		archive.TryField("r", c.x);
-		archive.TryField("g", c.y);
-		archive.TryField("b", c.z);
-		archive.TryField("a", c.w);
+		archive.TryField("r", c.r);
+		archive.TryField("g", c.g);
+		archive.TryField("b", c.b);
+		archive.TryField("a", c.a);
 	}
 
 	template<typename Archive>
@@ -105,21 +105,21 @@ namespace SeedCore
 	}
 
 	template<typename Archive>
-	void Save(Archive& archive, const XmUint2& v)
+	void Save(Archive& archive, const Uvector2& v)
 	{
 		archive.Field("x", v.x);
 		archive.Field("y", v.y);
 	}
 
 	template<typename Archive>
-	void Load(Archive& archive, XmUint2& v)
+	void Load(Archive& archive, Uvector2& v)
 	{
 		archive.TryField("x", v.x);
 		archive.TryField("y", v.y);
 	}
 
 	template<typename Archive>
-	void Save(Archive& archive, const XmUint3& v)
+	void Save(Archive& archive, const Uvector3& v)
 	{
 		archive.Field("x", v.x);
 		archive.Field("y", v.y);
@@ -127,7 +127,7 @@ namespace SeedCore
 	}
 
 	template<typename Archive>
-	void Load(Archive& archive, XmUint3& v)
+	void Load(Archive& archive, Uvector3& v)
 	{
 		archive.TryField("x", v.x);
 		archive.TryField("y", v.y);
@@ -135,7 +135,7 @@ namespace SeedCore
 	}
 
 	template<typename Archive>
-	void Save(Archive& archive, const XmUint4& v)
+	void Save(Archive& archive, const Uvector4& v)
 	{
 		archive.Field("x", v.x);
 		archive.Field("y", v.y);
@@ -144,7 +144,7 @@ namespace SeedCore
 	}
 
 	template<typename Archive>
-	void Load(Archive& archive, XmUint4& v)
+	void Load(Archive& archive, Uvector4& v)
 	{
 		archive.TryField("x", v.x);
 		archive.TryField("y", v.y);

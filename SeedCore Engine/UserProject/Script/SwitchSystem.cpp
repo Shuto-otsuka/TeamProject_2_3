@@ -38,7 +38,7 @@ void SwitchSystem::OnTick(float elapsedTime)
 	Vector3 position, scale;
 	Quaternion rotation;
 	Matrix worldMatrix = actor.WorldMatrix();
-	worldMatrix.Decompose(scale, rotation, position);
+	worldMatrix.Decompose(position, rotation, scale);
 
 	// 中心算出
 	Vector3 center = position + Vector3::Transform(detectOffset_, rotation);
@@ -169,7 +169,7 @@ void SwitchSystem::OnEditorTick(float elapsedTime)
 		Vector3 position, scale;
 		Quaternion rotation;
 		Matrix worldMatrix = actor.WorldMatrix();
-		worldMatrix.Decompose(scale, rotation, position);
+		worldMatrix.Decompose(position, rotation, scale);
 
 		Vector3 center = position + Vector3::Transform(detectOffset_, rotation);
 

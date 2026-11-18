@@ -7,7 +7,7 @@ namespace SeedCore
 		previousViewProjection_ = currentViewProjection_;
 
 		forward_ = focus_ - eye_;
-		if (forward_.LengthSquared() < 1e-4)
+		if (forward_.LengthSq() < 1e-4)
 		{
 			forward_ = Vector3::Forward;
 		}
@@ -17,7 +17,7 @@ namespace SeedCore
 		}
 
 		right_ = forward_.Cross(up_);
-		if (right_.LengthSquared() < 1e-4)
+		if (right_.LengthSq() < 1e-4)
 		{
 			right_ = Vector3::Right;
 		}
@@ -26,12 +26,10 @@ namespace SeedCore
 			right_.Normalize();
 		}
 
-		view_ = Matrix::CreateLookAt(eye_, focus_, up_);
+		view_ = Matrix::CreateViewLookAt(eye_, focus_, up_);
 
 		aspectRatio_ = width_ / height_;
-		nonJitterProjection_ = Matrix::CreatePerspectiveFieldOfView(ToRadians(Max(0.001f, fieldOfView_)), aspectRatio_, nearPlane_, farPlane_);
-		nonJitterProjection_._33 = nearPlane_ / (nearPlane_ - farPlane_);
-		nonJitterProjection_._43 = (farPlane_ * nearPlane_) / (farPlane_ - nearPlane_);
+		nonJitterProjection_ = Matrix::CreatePerspectiveFov(ToRadians(Max(0.001f, fieldOfView_)), aspectRatio_, farPlane_, nearPlane_);
 
 		projection_ = nonJitterProjection_;
 

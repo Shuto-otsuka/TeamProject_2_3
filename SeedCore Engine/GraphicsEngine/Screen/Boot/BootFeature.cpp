@@ -43,10 +43,10 @@ namespace SeedCore
 		constants_.useBackgroundImage_ = config.useBackgroundImage_ ? 1 : 0;
 		constants_.useFrame_ = config.useFrame_ ? 1 : 0;
 		constants_.barRect_ = texture.BarRect(config, width, height);
-		constants_.backgroundColor_ = Vector4(config.backgroundColor_.x, config.backgroundColor_.y, config.backgroundColor_.z, config.backgroundColor_.w);
-		constants_.backgroundTint_ = Vector4(config.backgroundTint_.x, config.backgroundTint_.y, config.backgroundTint_.z, config.backgroundTint_.w);
-		constants_.barTint_ = Vector4(config.barTint_.x, config.barTint_.y, config.barTint_.z, config.barTint_.w);
-		constants_.frameTint_ = Vector4(config.frameTint_.x, config.frameTint_.y, config.frameTint_.z, config.frameTint_.w);
+		constants_.backgroundColor_ = Vector4(config.backgroundColor_);
+		constants_.backgroundTint_ = Vector4(config.backgroundTint_);
+		constants_.barTint_ = Vector4(config.barTint_);
+		constants_.frameTint_ = Vector4(config.frameTint_);
 		constants_.backgroundTexture_ = texture.BackgroundIndex();
 		constants_.barTexture_ = texture.BarIndex();
 		constants_.frameTexture_ = texture.FrameIndex();

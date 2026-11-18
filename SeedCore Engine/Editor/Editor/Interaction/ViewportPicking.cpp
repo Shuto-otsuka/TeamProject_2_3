@@ -57,8 +57,8 @@ namespace SeedCore
 			Matrix worldMatrix = actor.WorldMatrix();
 			Matrix inverseWorld = worldMatrix.Invert();
 
-			Vector3 localOrigin = Vector3::Transform(rayOrigin, inverseWorld);
-			Vector3 localDirection = Vector3::TransformNormal(rayDirection, inverseWorld);
+			Vector3 localOrigin = Vector3::TransformPosition(rayOrigin, inverseWorld);
+			Vector3 localDirection = Vector3::TransformDirection(rayDirection, inverseWorld);
 
 			Vector3 boundsMin = bounds->center_ - bounds->extent_;
 			Vector3 boundsMax = bounds->center_ + bounds->extent_;
@@ -70,7 +70,7 @@ namespace SeedCore
 			}
 
 			Vector3 localHitPoint = localOrigin + localDirection * localT;
-			Vector3 worldHitPoint = Vector3::Transform(localHitPoint, worldMatrix);
+			Vector3 worldHitPoint = Vector3::TransformPosition(localHitPoint, worldMatrix);
 			Float worldDistance = Vector3::Distance(rayOrigin, worldHitPoint);
 
 			if (worldDistance < closestDistance)

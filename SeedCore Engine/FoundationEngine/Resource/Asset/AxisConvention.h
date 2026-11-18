@@ -96,8 +96,8 @@ namespace SeedCore
 	*/
 	struct SEEDCORE_API ResolvedAxisConvention
 	{
-		/// [EN] Signed-permutation, orthonormal basis matrix (v' = Vector3::Transform(v, basis_)).
-		/// [JP] 符号付き置換の正規直交基底行列 (v' = Vector3::Transform(v, basis_))。
+		/// [EN] Signed-permutation, orthonormal basis matrix (v' = Vector3::TransformPosition(v, basis_)).
+		/// [JP] 符号付き置換の正規直交基底行列 (v' = Vector3::TransformPosition(v, basis_))。
 		Matrix basis_ = Matrix::Identity;
 
 		/// [EN] False when two of the three picks name the same underlying axis.

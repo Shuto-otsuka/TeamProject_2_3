@@ -45,14 +45,14 @@ namespace SeedCore
 		///      除算するため、これらは既に通常のワールド空間の点として
 		///      返ってくる - 同じ(ndcX, ndcY)のスクリーン列上の、近平面上の
 		///      点と遠平面上の点。
-		Vector3 nearPoint = Vector3::Transform(Vector3(ndcX, ndcY, 1.0f), inverseViewProjection);
+		Vector3 nearPoint = Vector3::TransformCoordinate(Vector3(ndcX, ndcY, 1.0f), inverseViewProjection);
 		
 		Vector3 cameraPosition = view_.Invert().Translation();
 
 		Ray ray;
 		ray.origin_ = nearPoint;
 		ray.direction_ = nearPoint - cameraPosition;
-		if (ray.direction_.LengthSquared() > 0.0f)
+		if (ray.direction_.LengthSq() > 0.0f)
 		{
 			ray.direction_.Normalize();
 		}
@@ -72,7 +72,7 @@ namespace SeedCore
 	*/
 	Vector2 ScreenSpace::WorldToScreen(const Vector3& worldPosition)
 	{
-		Vector3 clipPosition = Vector3::Transform(worldPosition, view_ * projection_);
+		Vector3 clipPosition = Vector3::TransformCoordinate(worldPosition, view_ * projection_);
 
 		/// [EN] NDC -> position on the game screen, in its pixels.
 		/// [JP] NDC→ゲーム画面上の位置を、そのピクセル単位で表したもの。

@@ -275,8 +275,8 @@ namespace SeedCore
 				}
 				Bool highlighted = request->joint_ >= 0 && (request->joint_ == static_cast<Int>(nodeIndex) || request->joint_ == parentIndex);
 				PreviewLineStructuredBuffer line;
-				line.start_ = Vector3::Transform(pose[parentIndex].Translation(), world);
-				line.end_ = Vector3::Transform(pose[nodeIndex].Translation(), world);
+				line.start_ = Vector3::TransformPosition(pose[parentIndex].Translation(), world);
+				line.end_ = Vector3::TransformPosition(pose[nodeIndex].Translation(), world);
 				line.width_ = highlighted ? 3.0f : 2.0f;
 				line.color_ = highlighted ? Color(1.0f, 0.8f, 0.1f, 1.0f) : Color(0.55f, 0.75f, 1.0f, 1.0f);
 				lines_.push_back(line);

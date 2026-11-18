@@ -91,14 +91,14 @@ namespace SeedCore
 				ComponentID positionID = ComponentRegistry::GetComponentID(positionString);
 				ComponentID scaleID = ComponentRegistry::GetComponentID(scaleString);
 
-				Matrix viewProjection = camera.View() * Matrix::CreatePerspectiveFieldOfView(ToRadians(camera.Fov()), camera.AspectRatio(), camera.Near(), camera.Far());
+				Matrix viewProjection = camera.View() * Matrix::CreatePerspectiveFov(ToRadians(camera.Fov()), camera.AspectRatio(), camera.Near(), camera.Far());
 
 				Vector2 mouse = Vector2(io.MousePos.x, io.MousePos.y);
 				Float ndcX = ((mouse.x - position.x) / size.x) * 2.0f - 1.0f;
 				Float ndcY = 1.0f - ((mouse.y - position.y) / size.y) * 2.0f;
 				Vector4 farPoint = Vector4::Transform(Vector4(ndcX, ndcY, 1.0f, 1.0f), viewProjection.Invert());
 				Vector3 rayOrigin = camera.Eye();
-				Vector3 rayDirection = Vector3(farPoint.x, farPoint.y, farPoint.z) / farPoint.w - rayOrigin;
+				Vector3 rayDirection = farPoint.xyz / farPoint.w - rayOrigin;
 				rayDirection.Normalize();
 
 				Vector3 origin = Vector3::Zero;
@@ -112,7 +112,7 @@ namespace SeedCore
 					axisU = Vector3(dragStartPivotMatrix_._11, dragStartPivotMatrix_._12, dragStartPivotMatrix_._13);
 					axisV = Vector3(dragStartPivotMatrix_._21, dragStartPivotMatrix_._22, dragStartPivotMatrix_._23);
 					axisN = Vector3(dragStartPivotMatrix_._31, dragStartPivotMatrix_._32, dragStartPivotMatrix_._33);
-					origin = Vector3(dragStartPivotMatrix_._41, dragStartPivotMatrix_._42, dragStartPivotMatrix_._43);
+					origin = dragStartPivotMatrix_.Translation();
 				}
 				else
 				{
@@ -135,7 +135,7 @@ namespace SeedCore
 						Vector3 worldScale;
 						Quaternion worldRotation;
 						Vector3 worldTranslation;
-						worldMatrix.Decompose(worldScale, worldRotation, worldTranslation);
+						worldMatrix.Decompose(worldTranslation, worldRotation, worldScale);
 
 						origin = worldTranslation;
 						axes[0] = Vector3(worldMatrix._11, worldMatrix._12, worldMatrix._13);
@@ -150,7 +150,7 @@ namespace SeedCore
 						for (Int32 cornerIndex = 0; cornerIndex < 8; cornerIndex++)
 						{
 							Vector3 localCorner = actorBounds->center_ + Vector3((cornerIndex & 1) ? actorBounds->extent_.x : -actorBounds->extent_.x, (cornerIndex & 2) ? actorBounds->extent_.y : -actorBounds->extent_.y, (cornerIndex & 4) ? actorBounds->extent_.z : -actorBounds->extent_.z);
-							Vector3 worldCorner = Vector3::Transform(localCorner, worldMatrix);
+							Vector3 worldCorner = Vector3::TransformPosition(localCorner, worldMatrix);
 							worldMin = Vector3::Min(worldMin, worldCorner);
 							worldMax = Vector3::Max(worldMax, worldCorner);
 						}
@@ -283,7 +283,7 @@ namespace SeedCore
 						Vector3 newTranslation = startTranslation + axisU * (newFrame.x - startFrame.x) + axisV * (newFrame.y - startFrame.y);
 
 						Actor parentActor = actor ? actor.Parent() : Actor();
-						Vector3 localTranslation = parentActor ? Vector3::Transform(newTranslation, parentActor.WorldMatrix().Invert()) : newTranslation;
+						Vector3 localTranslation = parentActor ? Vector3::TransformPosition(newTranslation, parentActor.WorldMatrix().Invert()) : newTranslation;
 
 						Vector3 actorAxes[3] = { Vector3(startWorldMatrix._11, startWorldMatrix._12, startWorldMatrix._13), Vector3(startWorldMatrix._21, startWorldMatrix._22, startWorldMatrix._23), Vector3(startWorldMatrix._31, startWorldMatrix._32, startWorldMatrix._33) };
 						Int32 uScaleIndex = 0;
@@ -375,7 +375,7 @@ namespace SeedCore
 					Float frameX = handleSideX < 0 ? displayBounds.x : (handleSideX > 0 ? displayBounds.z : (displayBounds.x + displayBounds.z) * 0.5f);
 					Float frameY = handleSideY < 0 ? displayBounds.y : (handleSideY > 0 ? displayBounds.w : (displayBounds.y + displayBounds.w) * 0.5f);
 					Vector3 handleWorld = origin + axisU * frameX + axisV * frameY;
-					Vector4 handleClip = Vector4::Transform(Vector4(handleWorld.x, handleWorld.y, handleWorld.z, 1.0f), viewProjection);
+					Vector4 handleClip = Vector4::Transform(Vector4(handleWorld, 1.0f), viewProjection);
 					if (handleClip.w <= 0.0001f)
 					{
 						rectHandle_ = wasDragging_ ? rectHandle_ : 0;
@@ -406,7 +406,7 @@ namespace SeedCore
 						{
 							Vector2 edgeStart = handleScreens[edgeHandles[edgeIndex][1]];
 							Vector2 edgeSegment = handleScreens[edgeHandles[edgeIndex][2]] - edgeStart;
-							Float along = std::clamp((mouse - edgeStart).Dot(edgeSegment) / Max(edgeSegment.LengthSquared(), 0.0001f), 0.0f, 1.0f);
+							Float along = std::clamp((mouse - edgeStart).Dot(edgeSegment) / Max(edgeSegment.LengthSq(), 0.0001f), 0.0f, 1.0f);
 							if ((mouse - (edgeStart + edgeSegment * along)).Length() <= 6.0f)
 							{
 								rectHandle_ = edgeHandles[edgeIndex][0] + 1;
@@ -511,7 +511,7 @@ namespace SeedCore
 			ImGuizmo::SetGizmoSizeClipSpace(0.2f);
 
 			Matrix view = context_.view_.editor_.camera_->View();
-			Matrix projection = Matrix::CreatePerspectiveFieldOfView(ToRadians(context_.view_.editor_.camera_->Fov()), context_.view_.editor_.camera_->AspectRatio(), context_.view_.editor_.camera_->Near(), context_.view_.editor_.camera_->Far());
+			Matrix projection = Matrix::CreatePerspectiveFov(ToRadians(context_.view_.editor_.camera_->Fov()), context_.view_.editor_.camera_->AspectRatio(), context_.view_.editor_.camera_->Near(), context_.view_.editor_.camera_->Far());
 
 			Bool isDragging = ImGuizmo::IsUsing();
 
@@ -737,7 +737,7 @@ namespace SeedCore
 
 					Vector3 newWorldPosition = isChild ? dragStartWorldMatrices_[index].Translation() : (dragStartWorldMatrices_[index] * pivotDelta).Translation();
 					Matrix parentMatrix = isChild ? dragStartWorldMatrices_[parentIt - dragEntities_.begin()] * pivotDelta : (parentActor ? parentActor.WorldMatrix() : Matrix::Identity);
-					Vector3 newPosition = Vector3::Transform(newWorldPosition, parentMatrix.Invert());
+					Vector3 newPosition = Vector3::TransformPosition(newWorldPosition, parentMatrix.Invert());
 
 					Float* positionData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, positionID));
 					if (positionData)
@@ -770,7 +770,7 @@ namespace SeedCore
 				Vector3 deltaScale;
 				Vector3 deltaTranslation;
 				Quaternion deltaRotation;
-				pivotDelta.Decompose(deltaScale, deltaRotation, deltaTranslation);
+				pivotDelta.Decompose(deltaTranslation, deltaRotation, deltaScale);
 
 				for (Size index = 0; index < dragEntities_.size(); ++index)
 				{
@@ -799,7 +799,7 @@ namespace SeedCore
 
 				Vector3 position, scale;
 				Quaternion rotation;
-				if (localMatrix.Decompose(scale, rotation, position))
+				if (localMatrix.Decompose(position, rotation, scale))
 				{
 					Float* positionData = static_cast<Float*>(context_.world_.world_->GetComponent(entity, positionID));
 					Rotation* rotationData = static_cast<Rotation*>(context_.world_.world_->GetComponent(entity, rotationID));

@@ -321,7 +321,7 @@ namespace SeedCore
 			{
 				tinygltf::Material& material = model.materials.emplace_back();
 				material.name = surface.name_;
-				material.pbrMetallicRoughness.baseColorFactor = { surface.baseColor_.x, surface.baseColor_.y, surface.baseColor_.z, surface.baseColor_.w };
+				material.pbrMetallicRoughness.baseColorFactor = { surface.baseColor_.r, surface.baseColor_.g, surface.baseColor_.b, surface.baseColor_.a };
 				material.pbrMetallicRoughness.metallicFactor = surface.metallic_;
 				material.pbrMetallicRoughness.roughnessFactor = surface.roughness_;
 				material.emissiveFactor = { surface.emissiveFactor_[0], surface.emissiveFactor_[1], surface.emissiveFactor_[2] };
@@ -548,7 +548,7 @@ namespace SeedCore
 			{
 				const Surface& surface = surfaces[surfaceIndex];
 				FbxSurfacePhong* material = FbxSurfacePhong::Create(scene, surface.name_.c_str());
-				material->Diffuse.Set(FbxDouble3(surface.baseColor_.x, surface.baseColor_.y, surface.baseColor_.z));
+				material->Diffuse.Set(FbxDouble3(surface.baseColor_.r, surface.baseColor_.g, surface.baseColor_.b));
 				material->Emissive.Set(FbxDouble3(surface.emissiveFactor_[0], surface.emissiveFactor_[1], surface.emissiveFactor_[2]));
 				material->Shininess.Set((1.0 - surface.roughness_) * 100.0);
 				if (surface.baseColorTextureIndex_ < fbxTextures.size() && fbxTextures[surface.baseColorTextureIndex_])

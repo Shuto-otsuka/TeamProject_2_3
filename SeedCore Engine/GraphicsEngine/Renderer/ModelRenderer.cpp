@@ -361,12 +361,12 @@ namespace SeedCore
 					Matrix lodWorldMatrix = crister->Residency().SubMeshPlacement(subMeshIndex).front() * worldMatrix;
 					Float worldScale = Max(Max(Vector3(lodWorldMatrix._11, lodWorldMatrix._12, lodWorldMatrix._13).Length(), Vector3(lodWorldMatrix._21, lodWorldMatrix._22, lodWorldMatrix._23).Length()), Vector3(lodWorldMatrix._31, lodWorldMatrix._32, lodWorldMatrix._33).Length());
 					Vector3 instancePosition(lodWorldMatrix._41, lodWorldMatrix._42, lodWorldMatrix._43);
-					Float viewDistance = Max((instancePosition - Vector3(scene.cameraPosition_.x, scene.cameraPosition_.y, scene.cameraPosition_.z)).Length(), 0.0001f);
+					Float viewDistance = Max((instancePosition - scene.cameraPosition_.xyz).Length(), 0.0001f);
 					Float pixelsPerUnit = scene.projection_._22 * scene.screenSize_.y * 0.5f / viewDistance;
 
-					Vector3 boundsCenter = Vector3::Transform(crister->PositionMin() + crister->PositionExtent() * 0.5f, lodWorldMatrix);
+					Vector3 boundsCenter = Vector3::TransformPosition(crister->PositionMin() + crister->PositionExtent() * 0.5f, lodWorldMatrix);
 					Float boundsRadius = crister->PositionExtent().Length() * 0.5f * worldScale;
-					Float textureViewDistance = Max((boundsCenter - Vector3(scene.cameraPosition_.x, scene.cameraPosition_.y, scene.cameraPosition_.z)).Length() - boundsRadius, Max(scene.nearPlane_, 0.0001f));
+					Float textureViewDistance = Max((boundsCenter - scene.cameraPosition_.xyz).Length() - boundsRadius, Max(scene.nearPlane_, 0.0001f));
 					Float texturePixelsPerUnit = scene.projection_._22 * scene.screenSize_.y * 0.5f / textureViewDistance;
 
 					auto requestTextureMip = [&](Uint32 materialTextureIndex)

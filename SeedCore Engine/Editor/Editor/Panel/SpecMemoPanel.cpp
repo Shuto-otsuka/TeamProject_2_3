@@ -73,7 +73,6 @@ namespace SeedCore
 				{ "NVIDIA Streamline (DLSS)", "2.11.1", "アップスケーリング" },
 				{ "CRI ADX",          "バージョン表記なし", "音声再生" },
 				{ "TinyglTF",         "バージョン表記なし", "glTF モデル読み込み" },
-				{ "DirectXTK12",      "バージョン表記なし", "数学ライブラリ / テクスチャロード" },
 			};
 
 			if (ImGui::BeginTable("##Libraries", 3, ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_RowBg))
