@@ -17,7 +17,9 @@ public:
 		COST_OVER,
 		BALL_RESET,
 		CHECK_POINT,
-		DEATH
+		DEATH,
+		OPEN_GATE,
+		BREAKE_WALL
 	};
 
 	SC_PAYLOAD_FIELD(Texture)
@@ -34,6 +36,10 @@ public:
 		SeedCore::Uint32 checkPointImage;
 	SC_PAYLOAD_FIELD(Texture)
 		SeedCore::Uint32 deathImage;
+	SC_PAYLOAD_FIELD(Texture)
+		SeedCore::Uint32 openGateImage;
+	SC_PAYLOAD_FIELD(Texture)
+		SeedCore::Uint32 breakeWallImage;
 	SC_REFLECTION_FIELD()
 		float announceTime = 1.0f;
 	SC_REFLECTION_FIELD()

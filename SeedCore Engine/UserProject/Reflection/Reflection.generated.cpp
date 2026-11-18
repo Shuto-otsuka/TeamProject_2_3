@@ -336,6 +336,7 @@ namespace SeedCore
 						fi.clampMax_ = 10000.0f;
 						outInfo.push_back(std::move(fi));
 					}
+					outInfo.push_back({ String("開いたときアナウンスするかどうか"), offsetof(DoorSystem, openAnnounce), AttributeType::Bool });
 				});
 			}
 		};

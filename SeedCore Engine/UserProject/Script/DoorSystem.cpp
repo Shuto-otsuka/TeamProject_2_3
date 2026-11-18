@@ -1,5 +1,6 @@
 #include "DoorSystem.h"
 #include "CircuitSystem.h"
+#include "AnnounceController.h"
 
 #include <SeedCore/ScLog.h>
 #include <SeedCore/ScDebug.h>
@@ -10,6 +11,8 @@ void DoorSystem::OnStart()
 {
 	World& world = GetWorld();
 	Actor actor = GetActor();
+
+	announceActor_ = GetWorld().GetActor("Announce");
 
 	// 行列を分解して自分の回転と位置をとる
 	Vector3 position, scale;
@@ -65,6 +68,14 @@ void DoorSystem::OnFixedTick(float elapsedTime)
 		{
 			//開く瞬間
 			if(openAudio)openAudio->Play();
+
+			if (openAnnounce && announceActor_)
+			{
+				//アナウンス
+				AnnounceController* announceController = announceActor_.GetComponent<AnnounceController>();
+				if (announceController)
+					announceController->StartAnnounce(AnnounceController::Type::OPEN_GATE);
+			}
 		}
 	}
 	else

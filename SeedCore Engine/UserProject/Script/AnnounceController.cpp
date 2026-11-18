@@ -56,6 +56,12 @@ void AnnounceController::StartAnnounce(Type type)
 	case AnnounceController::Type::DEATH:
 		image->textureID_ = deathImage;
 		break;
+	case AnnounceController::Type::OPEN_GATE:
+		image->textureID_ = openGateImage;
+		break;
+	case AnnounceController::Type::BREAKE_WALL:
+		image->textureID_ = breakeWallImage;
+		break;
 	default:
 		break;
 	}
