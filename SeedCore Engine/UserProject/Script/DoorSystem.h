@@ -18,6 +18,9 @@ public:
 	SC_REFLECTION_CLAMPED_EX("閉まるまでの時間", 0.0f, 10000.0f)
 	float closeTime_ = 0.3f;
 
+	SC_REFLECTION_FIELD_EX("開いたときアナウンスするかどうか")
+		bool openAnnounce = false;
+
 public:
 	void OnStart();
 
@@ -27,6 +30,7 @@ public:
 
 private:
 	SeedCore::Actor circuitActor_;
+	SeedCore::Actor announceActor_;
 
 	SeedCore::Vector3 cachePosition_ = { 0.0f,0.0f,0.0f };
 

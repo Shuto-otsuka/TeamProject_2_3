@@ -46,6 +46,7 @@ private:
 	SeedCore::Actor thirdPersonCameraActor;
 	SeedCore::Actor firstPersonCameraActor;
 	SeedCore::Actor player;
+	SeedCore::Actor announce;
 	SeedCore::Text* bombTimerText;
 	SeedCore::Position* bombTimerPosition;
 	SeedCore::Rigidbody* myRigid;

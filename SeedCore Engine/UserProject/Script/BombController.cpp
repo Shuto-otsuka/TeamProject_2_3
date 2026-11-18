@@ -1,6 +1,7 @@
 #include "UserProject/Script/BombController.h"
 #include"UserProject/Script/StopController.h"
 #include"UserProject/Script/PlayerController.h"
+#include"AnnounceController.h"
 #include"BombExplosionController.h"
 #include<SeedCore/ScDebug.h>
 #include<SeedCore/ScPrefab.h>
@@ -20,6 +21,7 @@ void BombController::OnStart()
     thirdPersonCameraActor = GetWorld().GetActor("CameraBrain");
     firstPersonCameraActor = GetWorld().GetActor("FirstPersonCameraBrain");
     player = GetWorld().GetActor("Player");
+    announce = GetWorld().GetActor("Announce");
 
     UpdateMoveTarget();
 
@@ -171,6 +173,16 @@ void BombController::OnTick(float elapsedTime)
                     SeedCore::Active* active = hitActor.GetComponent<SeedCore::Active>();
                     if (active)
                         active->active_ = false;
+
+                    if (announce)
+                    {
+                        AnnounceController* announceController = announce.GetComponent<AnnounceController>();
+                        if (announceController)
+                        {
+                            //アナウンス
+                            announceController->StartAnnounce(AnnounceController::Type::BREAKE_WALL);
+                        }
+                    }
                 }
             }
 
