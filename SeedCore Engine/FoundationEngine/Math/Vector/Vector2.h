@@ -212,7 +212,7 @@ namespace SeedCore
 		{
 			Float inverse = 1.0f / length;
 			x *= inverse;
-			y += inverse;
+			y *= inverse;
 		}
 	}
 
