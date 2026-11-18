@@ -100,6 +100,9 @@ namespace SeedCore
 		SC_REFLECTION_CLAMPED_EX("太陽の視半径", 0.005f, 0.2f)
 		Float sunSize_ = 0.03f;
 
+		SC_REFLECTION_CLAMPED_EX("太陽の発光強度", 0.0f, 100.0f)
+		Float sunEmissive_ = 1.0f;
+
 		SC_REFLECTION_FIELD_EX("地面の色")
 		Color groundColor_ = { 0.25f, 0.22f, 0.2f, 1.0f };
 	};

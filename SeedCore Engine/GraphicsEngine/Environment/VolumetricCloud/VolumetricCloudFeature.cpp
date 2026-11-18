@@ -52,6 +52,7 @@ namespace SeedCore
 				constants_.detailScale_ = cloud.shape_.detailScale_;
 				constants_.skyZenithColor_ = cloud.sky_.zenithColor_.rgb;
 				constants_.sunSize_ = cloud.sky_.sunSize_;
+				constants_.sunEmissive_ = cloud.sky_.sunEmissive_;
 				constants_.skyHorizonColor_ = cloud.sky_.horizonColor_.rgb;
 				constants_.skyBrightness_ = cloud.sky_.brightness_;
 				constants_.groundColor_ = cloud.sky_.groundColor_.rgb;
