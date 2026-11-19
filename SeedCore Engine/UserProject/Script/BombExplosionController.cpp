@@ -32,7 +32,12 @@ void BombExplosionController::OnTick(float elapsedTime)
         //爆発縮小
         sizeRate += elapsedTime / scaleDownTime;
         currentSize = SeedCore::Easing::InSine(targetSize, 0.0f, std::min(sizeRate, 1.0f));
-        if (sizeRate >= 1.0f)GetWorld().DestroyActor(GetActor());
+        if (sizeRate >= 1.0f)
+        {
+            GetWorld().DestroyActor(GetActor());
+            //破棄した後にscaleを触らないためreturn
+            return;
+        }
         break;
     default:
         break;

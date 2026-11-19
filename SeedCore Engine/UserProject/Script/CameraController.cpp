@@ -87,8 +87,10 @@ void CameraController::Rotate()
     while (yaw < 0)yaw += 360;
 
     //ピッチとヨーからクォータニオンを作成
-    float pitchRad = -SeedCore::ToRadians(pitch);
-    float yawRad = SeedCore::ToRadians(yaw);
+    //float pitchRad = -SeedCore::ToRadians(pitch);
+    //float yawRad = SeedCore::ToRadians(yaw);
+    float pitchRad = SeedCore::ToRadians(pitch);
+    float yawRad = SeedCore::ToRadians(yaw + 180.0f);
     SeedCore::Quaternion quaternion = SeedCore::Quaternion::FromEuler(SeedCore::Vector3(pitchRad, yawRad, 0.0f));
     quaternion.Normalize();
     //現在のローテーションにセット

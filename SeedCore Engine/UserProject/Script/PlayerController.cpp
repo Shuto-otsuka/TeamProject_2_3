@@ -257,20 +257,24 @@ void PlayerController::UpdateHorizontalAcceleration(float elapsedTime)
     if (isFirstPerson)
     {
         //1人称カメラ
-        cameraFront = firstPersonCameraBrain.WorldMatrix().Backward();//右手系;
+        //cameraFront = firstPersonCameraBrain.WorldMatrix().Backward();//右手系;
+        cameraFront = firstPersonCameraBrain.WorldMatrix().Forward();//左手系;
         cameraFront.y = 0.0f;//Y軸は必要ない
         cameraFront.Normalize();
-        cameraRight = firstPersonCameraBrain.WorldMatrix().Left();//右手系;
+        //cameraRight = firstPersonCameraBrain.WorldMatrix().Left();//右手系;
+        cameraRight = firstPersonCameraBrain.WorldMatrix().Right();//左手系;
         cameraRight.y = 0.0f;
         cameraRight.Normalize();
     }
     else
     {
         //3人称カメラ
-        cameraFront = cameraBrain.WorldMatrix().Backward();//右手系;
+        //cameraFront = cameraBrain.WorldMatrix().Backward();//右手系;
+        cameraFront = cameraBrain.WorldMatrix().Forward();//左手系;
         cameraFront.y = 0.0f;//Y軸は必要ない
         cameraFront.Normalize();
-        cameraRight = cameraBrain.WorldMatrix().Left();//右手系;
+        //cameraRight = cameraBrain.WorldMatrix().Left();//右手系;
+        cameraRight = cameraBrain.WorldMatrix().Right();//左手系;
         cameraRight.y = 0.0f;
         cameraRight.Normalize();
     }

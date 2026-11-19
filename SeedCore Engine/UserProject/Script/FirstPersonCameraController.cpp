@@ -34,7 +34,7 @@ void FirstPersonCameraController::Rotate(float elapsedTime)
 
     //カメラのyawだけプレイヤーに合わせる
     //pitchはカーソルの移動量から動かす
-    yaw = SeedCore::Transform::Euler(*playerRotation).y + SeedCore::Pi<SeedCore::Float>::Value;
+    yaw = SeedCore::Transform::Euler(*playerRotation).y /* + SeedCore::Pi<SeedCore::Float>::Value */;
  
     SeedCore::Vector2 cursorMove = SeedCore::Input::MouseMotion();
     pitch -= cursorMove.y * playerController->firstPersonSensitivity;
@@ -42,7 +42,8 @@ void FirstPersonCameraController::Rotate(float elapsedTime)
     float maxPitch = SeedCore::ToRadians(playerController->firstPersonMaxPitch);
     pitch = std::clamp(pitch,minPitch, maxPitch);
 
-    SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromYawPitchRoll(yaw,pitch,0);
+    //SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromYawPitchRoll(yaw,pitch,0);
+    SeedCore::Quaternion quaternion = SeedCore::Quaternion::CreateFromYawPitchRoll(yaw,-pitch,0);
     quaternion.Normalize();
 
     rotation->x_ = quaternion.x;

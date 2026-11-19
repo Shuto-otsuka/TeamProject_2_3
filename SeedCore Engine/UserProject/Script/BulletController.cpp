@@ -376,10 +376,13 @@ void BulletController::Remove()
 
     if (state != State::STOP)return;//停止中じゃなければ以下の処理を行わない
 
-    //ストップタイマーを削除
-    GetWorld().DestroyActor(stopTimer);
+    //破棄後に触らないように移動
     stopTimerText = nullptr;
     stopTimerPosition = nullptr;
+    //ストップタイマーを削除
+    GetWorld().DestroyActor(stopTimer);
+    //stopTimerText = nullptr;
+    //stopTimerPosition = nullptr;
 }
 
 void BulletController::Move(float elapsedTime)
