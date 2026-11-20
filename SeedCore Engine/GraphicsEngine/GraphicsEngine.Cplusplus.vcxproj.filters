@@ -322,6 +322,9 @@
     <Filter Include="PostProcess\Outline">
       <UniqueIdentifier>{ff2dd1c7-7d01-47c3-9d76-d555bbd9fec6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Effect\Zephyr\Quad">
+      <UniqueIdentifier>{9ba270bc-dbdf-4c4d-8044-a8a7d4baa09f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12\Context\D3D12Adapter.h">
@@ -555,18 +558,6 @@
     <ClInclude Include="Texture\Texture.h">
       <Filter>Texture</Filter>
     </ClInclude>
-    <ClInclude Include="Effect\Zephyr\ZephyParticler.h">
-      <Filter>Effect\Zephyr</Filter>
-    </ClInclude>
-    <ClInclude Include="Effect\Zephyr\Effect.h">
-      <Filter>Effect\Zephyr</Filter>
-    </ClInclude>
-    <ClInclude Include="Effect\Zephyr\EffectResource.h">
-      <Filter>Effect\Zephyr</Filter>
-    </ClInclude>
-    <ClInclude Include="Effect\Zephyr\EffectLoader.h">
-      <Filter>Effect\Zephyr</Filter>
-    </ClInclude>
     <ClInclude Include="Constraint\LookAtConstraint.h">
       <Filter>Constraint</Filter>
     </ClInclude>
@@ -731,9 +722,6 @@
     </ClInclude>
     <ClInclude Include="System\SplashSystem.h">
       <Filter>System</Filter>
-    </ClInclude>
-    <ClInclude Include="Effect\Zephyr\ZephyrParticleStorage.h">
-      <Filter>Effect\Zephyr</Filter>
     </ClInclude>
     <ClInclude Include="System\EffectSystem.h">
       <Filter>System</Filter>
@@ -1458,6 +1446,27 @@
     <ClInclude Include="PostProcess\Outline\OutlineStage.h">
       <Filter>PostProcess\Outline</Filter>
     </ClInclude>
+    <ClInclude Include="Effect\Effect.h">
+      <Filter>Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Effect\EffectLoader.h">
+      <Filter>Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Effect\EffectResource.h">
+      <Filter>Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Effect\Zephyr\ParticleShader.h">
+      <Filter>Effect\Zephyr</Filter>
+    </ClInclude>
+    <ClInclude Include="RenderGraph\Pipeline\DynamicPipeline.h">
+      <Filter>RenderGraph\Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="Effect\Zephyr\ParticleFeature.h">
+      <Filter>Effect\Zephyr</Filter>
+    </ClInclude>
+    <ClInclude Include="Effect\Zephyr\ParticleStage.h">
+      <Filter>Effect\Zephyr</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">
@@ -1635,12 +1644,6 @@
     <ClCompile Include="Texture\TextureResource.cpp">
       <Filter>Texture</Filter>
     </ClCompile>
-    <ClCompile Include="Effect\Zephyr\EffectResource.cpp">
-      <Filter>Effect\Zephyr</Filter>
-    </ClCompile>
-    <ClCompile Include="Effect\Zephyr\EffectLoader.cpp">
-      <Filter>Effect\Zephyr</Filter>
-    </ClCompile>
     <ClCompile Include="System\ConstraintSystem.cpp">
       <Filter>System</Filter>
     </ClCompile>
@@ -1784,9 +1787,6 @@
     </ClCompile>
     <ClCompile Include="D3D12\FrameRing.cpp">
       <Filter>D3D12</Filter>
-    </ClCompile>
-    <ClCompile Include="Effect\Zephyr\ZephyrParticleStorage.cpp">
-      <Filter>Effect\Zephyr</Filter>
     </ClCompile>
     <ClCompile Include="System\EffectSystem.cpp">
       <Filter>System</Filter>
@@ -2235,6 +2235,18 @@
     <ClCompile Include="PostProcess\Outline\OutlineStage.cpp">
       <Filter>PostProcess\Outline</Filter>
     </ClCompile>
+    <ClCompile Include="Effect\EffectLoader.cpp">
+      <Filter>Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Effect\EffectResource.cpp">
+      <Filter>Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Effect\Zephyr\ParticleStage.cpp">
+      <Filter>Effect\Zephyr</Filter>
+    </ClCompile>
+    <ClCompile Include="Effect\Zephyr\ParticleFeature.cpp">
+      <Filter>Effect\Zephyr</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\Sampler.hlsli">
@@ -2408,6 +2420,9 @@
     <None Include="PostProcess\Outline\Outline.hlsli">
       <Filter>PostProcess\Outline</Filter>
     </None>
+    <None Include="Effect\Zephyr\Quad\ParticleQuad.hlsli">
+      <Filter>Effect\Zephyr\Quad</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Model\Material\MaterialClassifyCS.hlsl">
@@ -2442,9 +2457,6 @@
     </Text>
     <Text Include="Sky\Cubemap\ProceduralCubemapCS.hlsl">
       <Filter>Sky\Cubemap</Filter>
-    </Text>
-    <Text Include="Effect\Zephyr\ParticleSystemCS.hlsl">
-      <Filter>Effect\Zephyr</Filter>
     </Text>
     <Text Include="Shape\Fullscreen\FullscreenMS.hlsl">
       <Filter>Shape\Fullscreen</Filter>
@@ -2703,6 +2715,24 @@
     </Text>
     <Text Include="Texture\Sprite\TextureSpriteAS.hlsl">
       <Filter>Texture\Sprite</Filter>
+    </Text>
+    <Text Include="Effect\Zephyr\ParticleResetCS.hlsl">
+      <Filter>Effect\Zephyr</Filter>
+    </Text>
+    <Text Include="Effect\Zephyr\ParticleBeginCS.hlsl">
+      <Filter>Effect\Zephyr</Filter>
+    </Text>
+    <Text Include="Effect\Zephyr\ParticleDrivenCS.hlsl">
+      <Filter>Effect\Zephyr</Filter>
+    </Text>
+    <Text Include="Effect\Zephyr\Quad\ParticleQuadMS.hlsl">
+      <Filter>Effect\Zephyr\Quad</Filter>
+    </Text>
+    <Text Include="Effect\Zephyr\Quad\ParticleQuadPS.hlsl">
+      <Filter>Effect\Zephyr\Quad</Filter>
+    </Text>
+    <Text Include="Effect\Zephyr\Quad\ParticleQuadVS.hlsl">
+      <Filter>Effect\Zephyr\Quad</Filter>
     </Text>
   </ItemGroup>
 </Project>

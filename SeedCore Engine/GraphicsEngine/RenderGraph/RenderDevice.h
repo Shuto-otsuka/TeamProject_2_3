@@ -48,6 +48,8 @@ namespace SeedCore
 
 		NODISCARD const CommandSignature& MeshSignature()const;
 
+		NODISCARD const CommandSignature& DispatchSignature()const;
+
 		NODISCARD D3D12Level Level()const;
 
 	private:
@@ -74,6 +76,8 @@ namespace SeedCore
 		CommandSignature vertexSignature_;
 
 		CommandSignature meshSignature_;
+
+		CommandSignature dispatchSignature_;
 
 		D3D12Level level_ = D3D12Level::D12_0;
 	};

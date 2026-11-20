@@ -14,7 +14,7 @@
 #include <GraphicsEngine/Light/RectangleLight.h>
 #include <GraphicsEngine/Light/SkyLight.h>
 #include <GraphicsEngine/Model/Mesh.h>
-#include <GraphicsEngine/Effect/Zephyr/Effect.h>
+#include <GraphicsEngine/Effect/Effect.h>
 #include <GraphicsEngine/Texture/Image.h>
 #include <GraphicsEngine/Font/Text.h>
 #include <GraphicsEngine/Movie/Movie.h>

@@ -76,7 +76,7 @@ namespace SeedCore
 			return allocation;
 		}
 
-		Bool buffer = desc.shape_ == RenderResourceShape::Buffer;
+		Bool buffer = desc.shape_ == RenderResourceShape::StaticBuffer;
 		Bool depthFormat = desc.format_ == RenderFormat::D32Float;
 
 		D3D12_RESOURCE_DESC resourceDesc{};
@@ -274,7 +274,7 @@ namespace SeedCore
 		}
 		if (allocation.unorderedAccessView_ != SC_INVALID)
 		{
-			Uint32 mipLevels = allocation.shape_ == RenderResourceShape::Buffer ? 1 : allocation.mipLevels_;
+			Uint32 mipLevels = allocation.shape_ == RenderResourceShape::StaticBuffer ? 1 : allocation.mipLevels_;
 			for (Uint32 mip = 0;mip < mipLevels;++mip)
 			{
 				device.ResourceHeap().Release(allocation.resource_, allocation.unorderedAccessView_ + mip);

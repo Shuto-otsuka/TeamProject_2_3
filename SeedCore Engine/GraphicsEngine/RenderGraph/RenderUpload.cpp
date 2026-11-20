@@ -23,6 +23,7 @@ namespace SeedCore
 		current_ = frame % FrameRing::frameCount;
 		buffers_[current_]->Reset();
 		entries_.clear();
+		resizes_.clear();
 	}
 
 	void RenderUpload::Write(const RenderResource& resource, RenderViewKind view, std::span<const std::byte> data, Uint64 alignment)
@@ -37,11 +38,28 @@ namespace SeedCore
 		entries_.push_back(RenderUploadEntry{ String(resource.Name()), view, *offset, data.size() });
 	}
 
-	const RenderUploadEntry* RenderUpload::Find(const String& resourceName, RenderViewKind view)const
+	void RenderUpload::Resize(const RenderResource& resource, std::span<const Uint32> counts)
+	{
+		resizes_.push_back(RenderResizeEntry{ String(resource.Name()), DynamicArray<Uint32>(counts.begin(),counts.end()) });
+	}
+
+	const RenderUploadEntry* RenderUpload::FindUpload(const String& resourceName, RenderViewKind view)const
 	{
 		for (const RenderUploadEntry& entry : entries_)
 		{
 			if (entry.resourceName_ == resourceName && entry.view_ == view)
+			{
+				return &entry;
+			}
+		}
+		return nullptr;
+	}
+
+	const RenderResizeEntry* RenderUpload::FindResize(const String& resourceName)const
+	{
+		for (const RenderResizeEntry& entry : resizes_)
+		{
+			if (entry.resourceName_ == resourceName)
 			{
 				return &entry;
 			}

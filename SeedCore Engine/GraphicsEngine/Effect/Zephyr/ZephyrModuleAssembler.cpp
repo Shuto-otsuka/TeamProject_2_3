@@ -1,11 +1,11 @@
 #include <GraphicsEngine/Effect/Zephyr/ZephyrModuleAssembler.h>
 #include <GraphicsEngine/Effect/Zephyr/ZephyrModuleRegistry.h>
-#include <GraphicsEngine/Shader/ShaderHotReload.h>
+#include <FoundationEngine/File/FileLocator.h>
 #include <FoundationEngine/Log/Error.h>
 
 namespace SeedCore
 {
-	ZephyrGeneratedShader ZephyrModuleAssembler::GetOrCreate(const DynamicArray<String>& moduleNames, ShaderHotReload& shaderHotReload)
+	String ZephyrModuleAssembler::GetOrCreate(const DynamicArray<String>& moduleNames)
 	{
 		Uint64 contentHash = 14695981039346656037ull;
 		for (const String& name : moduleNames)
@@ -25,8 +25,11 @@ namespace SeedCore
 			return found->second;
 		}
 
-		DynamicArray<const ZephyrModuleDescriptor*> resolvedModules;
-		DynamicArray<String> fieldNames;
+		std::ostringstream includes;
+		std::ostringstream spawnCalls;
+		std::ostringstream simulateCalls;
+		Uint32 row = 0;
+		Size moduleIndex = 0;
 		for (const String& name : moduleNames)
 		{
 			const ZephyrModuleDescriptor* descriptor = ZephyrModuleRegistry::Find(name);
@@ -36,93 +39,76 @@ namespace SeedCore
 				continue;
 			}
 
-			Size index = resolvedModules.size();
-			std::string configStructName = descriptor->name_.str();
-			configStructName[0] = static_cast<Char>(std::tolower(static_cast<Uint8>(configStructName[0])));
+			std::string variableName = descriptor->name_.str();
+			variableName[0] = static_cast<Char>(std::tolower(static_cast<Uint8>(variableName[0])));
+			variableName += "_" + std::to_string(moduleIndex) + "_";
+			++moduleIndex;
 
-			std::ostringstream fieldName;
-			fieldName << configStructName << "_" << index << "_";
+			includes << "#include <" << descriptor->includePath_.str() << ">\n";
 
-			resolvedModules.push_back(descriptor);
-			fieldNames.push_back(String(fieldName.str()));
-		}
-
-		std::ostringstream includes;
-		for (const ZephyrModuleDescriptor* descriptor : resolvedModules)
-		{
-			includes << "#include \"../" << descriptor->includePath_.str() << "\"\n";
-		}
-
-		std::ostringstream fields;
-		for (Size moduleIndex = 0; moduleIndex < resolvedModules.size(); ++moduleIndex)
-		{
-			fields << "\t" << resolvedModules[moduleIndex]->configStructName_.str() << " " << fieldNames[moduleIndex].str() << ";\n";
-		}
-
-		std::ostringstream spawnCalls;
-		for (Size moduleIndex = 0; moduleIndex < resolvedModules.size(); ++moduleIndex)
-		{
-			if (!resolvedModules[moduleIndex]->hasSpawn_)
+			std::ostringstream assemble;
+			assemble << "\t" << descriptor->configStructName_.str() << " " << variableName << ";\n";
+			for (const ZephyrModuleField& field : descriptor->fields_)
 			{
-				continue;
+				assemble << "\t" << variableName << "." << field.name_.str() << " = parameters[base + " << row << "]." << field.swizzle_.str() << ";\n";
+				++row;
 			}
-			spawnCalls << "\tApply" << resolvedModules[moduleIndex]->name_.str() << "Spawn(seed, modules." << fieldNames[moduleIndex].str() << ", particle);\n";
-		}
 
-		std::ostringstream updateCalls;
-		for (Size moduleIndex = 0; moduleIndex < resolvedModules.size(); ++moduleIndex)
-		{
-			if (!resolvedModules[moduleIndex]->hasUpdate_)
+			if (descriptor->hasSpawn_)
 			{
-				continue;
+				spawnCalls << assemble.str() << "\tApply" << descriptor->name_.str() << "Spawn(seed, " << variableName << ", emitter);\n";
 			}
-			updateCalls << "\tApply" << resolvedModules[moduleIndex]->name_.str() << "Update(seed, modules." << fieldNames[moduleIndex].str() << ", particle);\n";
+			if (descriptor->hasSimulate_)
+			{
+				simulateCalls << assemble.str() << "\tApply" << descriptor->name_.str() << "Simulate(seed, " << variableName << ", emitter);\n";
+			}
 		}
 
-		std::ifstream templateFile("../GraphicsEngine/Effect/Zephyr/ParticleTemplate.hlsli", std::ios::binary);
+		std::filesystem::path templatePath = FileLocator::EngineRoot() / "GraphicsEngine/Effect/Zephyr/ParticleTemplate.hlsli";
+		std::ifstream templateFile(templatePath, std::ios::binary);
 		if (!templateFile)
 		{
-			SC_LOG_ERROR("Zephyrシステム: テンプレートが見つかりません");
-			return ZephyrGeneratedShader{};
+			SC_LOG_ERROR("Zephyrシステム: テンプレートが見つかりません: {}", templatePath.string());
+			return String();
 		}
 		std::string text((std::istreambuf_iterator<Char>(templateFile)), std::istreambuf_iterator<Char>());
 
-		auto replaceMarker = [&text](const std::string& marker, const std::string& content)
+		StaticArray<std::pair<std::string, std::string>, 3> markers =
+		{
+			std::pair<std::string,std::string>{ "// @SC_ZEPHYR_INCLUDE", includes.str() },
+			std::pair<std::string,std::string>{ "// @SC_ZEPHYR_SPAWN_CALL", spawnCalls.str() },
+			std::pair<std::string,std::string>{ "// @SC_ZEPHYR_SIMULATE_CALL", simulateCalls.str() },
+		};
+		for (const std::pair<std::string, std::string>& marker : markers)
+		{
+			Size position = text.find(marker.first);
+			if (position == std::string::npos)
 			{
-				Size position = text.find(marker);
-				if (position == std::string::npos)
-				{
-					SC_LOG_ERROR("Zephyrシステム: 目印が見つかりません: {}", marker);
-					return;
-				}
-				text.replace(position, marker.size(), content);
-			};
-		replaceMarker("// @SC_ZEPHYR_INCLUDE", includes.str());
-		replaceMarker("// @SC_ZEPHYR_MODULE_FIELD", fields.str());
-		replaceMarker("// @SC_ZEPHYR_SPAWN_CALL", spawnCalls.str());
-		replaceMarker("// @SC_ZEPHYR_UPDATE_CALL", updateCalls.str());
+				SC_LOG_ERROR("Zephyrシステム: 目印が見つかりません: {}", marker.first);
+				continue;
+			}
+			text.replace(position, marker.first.size(), marker.second);
+		}
 
-		std::ostringstream fileNameStream;
-		fileNameStream << "../GraphicsEngine/Effect/Zephyr/Generated/Zephyr_" << std::hex << contentHash << ".hlsl";
-		String filePath = String(fileNameStream.str());
+		std::ostringstream fileName;
+		fileName << "Zephyr_" << std::hex << contentHash << ".hlsl";
+		std::filesystem::path outputPath = FileLocator::EngineRoot() / "GraphicsEngine/Effect/Zephyr/Generated" / fileName.str();
 
-		std::filesystem::path outputPath(filePath.str());
 		std::error_code directoryError;
+
 		std::filesystem::create_directories(outputPath.parent_path(), directoryError);
 
 		std::ofstream outputFile(outputPath, std::ios::binary);
-		if (outputFile)
+		if (!outputFile)
 		{
-			outputFile.write(text.data(), static_cast<std::streamsize>(text.size()));
+			SC_LOG_ERROR("Zephyrシステム: 生成ファイルを書き出せません: {}", outputPath.string());
+			return String();
 		}
+		outputFile.write(text.data(), static_cast<std::streamsize>(text.size()));
 		outputFile.close();
 
-		ZephyrGeneratedShader generatedShader{};
-		generatedShader.generatedFilePath_ = filePath;
-		generatedShader.spawnShader_ = shaderHotReload.GetOrCreateComputeShader(filePath, String("SpawnMain"));
-		generatedShader.updateShader_ = shaderHotReload.GetOrCreateComputeShader(filePath, String("UpdateMain"));
-
-		generatedCache_.insert({ contentHash, generatedShader });
-		return generatedShader;
+		String filePath = String(outputPath.string());
+		generatedCache_.insert({ contentHash, filePath });
+		return filePath;
 	}
 }

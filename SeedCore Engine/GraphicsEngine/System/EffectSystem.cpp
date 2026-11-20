@@ -2,7 +2,7 @@
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/ECS/Component/Active.h>
-#include <GraphicsEngine/Effect/Zephyr/Effect.h>
+#include <GraphicsEngine/Effect/Effect.h>
 
 namespace SeedCore
 {
@@ -13,10 +13,12 @@ namespace SeedCore
 			{
 				if (!active.active_)
 				{
+					effect.delta_ = 0.0f;
 					effect.spawnCount_ = 0;
 					return;
 				}
 
+				effect.delta_ = deltaTime;
 				effect.age_ += deltaTime;
 				effect.spawnAccumulator_ += effect.spawnRate_ * deltaTime;
 				effect.spawnCount_ = static_cast<Uint32>(effect.spawnAccumulator_);
