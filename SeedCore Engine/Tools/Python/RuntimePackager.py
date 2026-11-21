@@ -655,6 +655,12 @@ def precompile_shaders(project_root, output_dir):
                     pixel_path = os.path.normcase(os.path.normpath(os.path.join(project_root, pixel_file.group(1))))
                     pixel_entries.setdefault(pixel_path, set()).add(pixel_entry.group(1))
 
+    zephyr_generated_dir = os.path.join(project_root, "GraphicsEngine", "Effect", "Zephyr", "Generated")
+    if os.path.isdir(zephyr_generated_dir):
+        for file in os.listdir(zephyr_generated_dir):
+            if file.lower().endswith(".hlsl"):
+                referenced_shaders.add(os.path.normcase(os.path.normpath(os.path.join(zephyr_generated_dir, file))))
+
     jobs = []
     unreferenced_count = 0
     for root, _, files in os.walk(os.path.join(project_root, "GraphicsEngine")):
@@ -728,9 +734,16 @@ def precompile_shaders(project_root, output_dir):
         shutil.rmtree(shader_dir)
     os.makedirs(shader_dir)
 
+    generated_dir = os.path.normcase(os.path.normpath(os.path.join(project_root, "GraphicsEngine", "Effect", "Zephyr", "Generated")))
+
+    def cache_directory(path):
+        if os.path.normcase(os.path.dirname(os.path.normpath(path))) == generated_dir:
+            return os.path.join(shader_dir, "Zephyr")
+        return shader_dir
+
     stems = {}
     for path in entries_by_file:
-        stems.setdefault(os.path.basename(path)[:-5].lower(), []).append(os.path.relpath(path, project_root))
+        stems.setdefault((cache_directory(path), os.path.basename(path)[:-5].lower()), []).append(os.path.relpath(path, project_root))
     for paths in stems.values():
         if len(paths) > 1:
             print(f"同名のシェーダが複数あり、キャッシュファイル名が衝突します: {', '.join(paths)}")
@@ -743,7 +756,9 @@ def precompile_shaders(project_root, output_dir):
             map_payload += struct.pack('<I', len(entry_body)) + entry_body
 
         stem = os.path.basename(path)[:-5]
-        with open(os.path.join(shader_dir, f"{stem}.dx.cso"), 'wb') as f:
+        output_dir = cache_directory(path)
+        os.makedirs(output_dir, exist_ok=True)
+        with open(os.path.join(output_dir, f"{stem}.dx.cso"), 'wb') as f:
             f.write(aes256_cbc_encrypt(key, binary_record("entries", map_payload)))
 
     return len(jobs)

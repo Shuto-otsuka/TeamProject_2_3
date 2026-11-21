@@ -64,12 +64,17 @@ namespace SeedCore
 			}
 		}
 
+		Uint32 shortHash = static_cast<Uint32>(contentHash ^ (contentHash >> 32));
+		std::string fileName = std::format("Zephyr_{:08X}.hlsl", shortHash);
+		std::filesystem::path outputPath = FileLocator::EngineRoot() / "GraphicsEngine/Effect/Zephyr/Generated" / fileName;
+		String filePath = String(outputPath.string());
+
 		std::filesystem::path templatePath = FileLocator::EngineRoot() / "GraphicsEngine/Effect/Zephyr/ParticleTemplate.hlsli";
 		std::ifstream templateFile(templatePath, std::ios::binary);
 		if (!templateFile)
 		{
-			SC_LOG_ERROR("Zephyrシステム: テンプレートが見つかりません: {}", templatePath.string());
-			return String();
+			generatedCache_.insert({ contentHash, filePath });
+			return filePath;
 		}
 		std::string text((std::istreambuf_iterator<Char>(templateFile)), std::istreambuf_iterator<Char>());
 
@@ -90,10 +95,6 @@ namespace SeedCore
 			text.replace(position, marker.first.size(), marker.second);
 		}
 
-		std::ostringstream fileName;
-		fileName << "Zephyr_" << std::hex << contentHash << ".hlsl";
-		std::filesystem::path outputPath = FileLocator::EngineRoot() / "GraphicsEngine/Effect/Zephyr/Generated" / fileName.str();
-
 		std::error_code directoryError;
 
 		std::filesystem::create_directories(outputPath.parent_path(), directoryError);
@@ -102,12 +103,11 @@ namespace SeedCore
 		if (!outputFile)
 		{
 			SC_LOG_ERROR("Zephyrシステム: 生成ファイルを書き出せません: {}", outputPath.string());
-			return String();
+			return filePath;
 		}
 		outputFile.write(text.data(), static_cast<std::streamsize>(text.size()));
 		outputFile.close();
 
-		String filePath = String(outputPath.string());
 		generatedCache_.insert({ contentHash, filePath });
 		return filePath;
 	}

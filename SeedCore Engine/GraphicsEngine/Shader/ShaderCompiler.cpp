@@ -125,10 +125,17 @@ namespace SeedCore
 
 		std::filesystem::path mountRoot = mount == ShaderMount::Engine ? FileLocator::EngineRoot() : FileLocator::ProjectRoot();
 #if SC_DEBUG
-		String csoPath = String((mountRoot / "CompiledShaderObject" / "Develop" / (filename.substr(0, filename.size() - 5) + ".dbg.cso")).string());
+		std::filesystem::path cacheDirectory = mountRoot / "CompiledShaderObject" / "Develop";
+		std::string cacheExtension = ".dbg.cso";
 #else
-		String csoPath = String((mountRoot / "CompiledShaderObject" / "Application" / (filename.substr(0, filename.size() - 5) + ".dx.cso")).string());
+		std::filesystem::path cacheDirectory = mountRoot / "CompiledShaderObject" / "Application";
+		std::string cacheExtension = ".dx.cso";
 #endif
+		if (std::filesystem::path(path).parent_path().lexically_normal() == (FileLocator::EngineRoot() / "GraphicsEngine/Effect/Zephyr/Generated").lexically_normal())
+		{
+			cacheDirectory /= "Zephyr";
+		}
+		String csoPath = String((cacheDirectory / (filename.substr(0, filename.size() - 5) + cacheExtension)).string());
 		String cacheKey = String(targetProfile.str() + ":" + entryPoint.str());
 		std::filesystem::path hlslFs(path);
 		std::filesystem::path csoFs(csoPath.str());
