@@ -245,6 +245,7 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClCompile Include="Editor\Context\SelectionContext.cpp" />
     <ClCompile Include="Editor\Interaction\ActorEditing.cpp" />
     <ClCompile Include="Editor\Interaction\ViewportPicking.cpp" />
+    <ClCompile Include="Editor\Node\NodeCanvas.cpp" />
     <ClCompile Include="Editor\Panel\AnimatorControllerPanel.cpp" />
     <ClCompile Include="Editor\Panel\AvatarPanel.cpp" />
     <ClCompile Include="Editor\Panel\BenchmarkPanel.cpp" />
@@ -344,6 +345,7 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClInclude Include="Editor\ImGui\ImGuiTexture.h" />
     <ClInclude Include="Editor\Interaction\ActorEditing.h" />
     <ClInclude Include="Editor\Interaction\ViewportPicking.h" />
+    <ClInclude Include="Editor\Node\NodeCanvas.h" />
     <ClInclude Include="Editor\Panel\AddComponentPanel.h" />
     <ClInclude Include="Editor\Panel\AnimatorControllerPanel.h" />
     <ClInclude Include="Editor\Panel\AvatarPanel.h" />

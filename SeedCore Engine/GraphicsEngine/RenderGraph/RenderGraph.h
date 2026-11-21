@@ -176,6 +176,10 @@ namespace SeedCore
 
 		Uint32 history_ = SC_INVALID;
 
+		Uint32 readTable_ = SC_INVALID;
+
+		Uint32 writeTable_ = SC_INVALID;
+
 		RenderGraphAllocation* memory_ = nullptr;
 	};
 
@@ -298,6 +302,8 @@ namespace SeedCore
 
 		DynamicArray<RenderGraphAllocation> persistent_;
 
+		DynamicArray<DynamicArray<RenderGraphAllocation>> dynamics_;
+
 		DynamicArray<RenderGraphAllocation> uploads_;
 
 		DynamicArray<RenderGraphAllocation> imports_;
@@ -306,7 +312,7 @@ namespace SeedCore
 
 		DynamicArray<D3D12_RESOURCE_BARRIER> closing_;
 
-		StaticArray<Uint32, 8> nulls_ = {};
+		StaticArray<Uint32, 9> nulls_ = {};
 
 		DynamicArray<RenderGraphFallback> fallbacks_;
 

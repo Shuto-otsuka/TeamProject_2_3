@@ -25,13 +25,14 @@ namespace SeedCore
 		upload_.Initialize(device_, capacity);
 
 		ID3D12Device* d3dDevice = device_.Context().GetDevice();
-		StaticArray<D3D12_SRV_DIMENSION, 8> dimensions =
+		StaticArray<D3D12_SRV_DIMENSION, 9> dimensions =
 		{
 			D3D12_SRV_DIMENSION_TEXTURE2D,
 			D3D12_SRV_DIMENSION_TEXTURE2DARRAY,
 			D3D12_SRV_DIMENSION_TEXTURECUBE,
 			D3D12_SRV_DIMENSION_TEXTURECUBEARRAY,
 			D3D12_SRV_DIMENSION_TEXTURE3D,
+			D3D12_SRV_DIMENSION_BUFFER,
 			D3D12_SRV_DIMENSION_BUFFER,
 			D3D12_SRV_DIMENSION_UNKNOWN,
 			D3D12_SRV_DIMENSION_RAYTRACING_ACCELERATION_STRUCTURE,
@@ -76,6 +77,18 @@ namespace SeedCore
 
 	void RenderGraph::Remove(const void* feature)
 	{
+		for (Size resourceIndex = Min(resources_.size(), dynamics_.size());resourceIndex > 0;--resourceIndex)
+		{
+			if (resources_[resourceIndex - 1].feature_ != feature)
+			{
+				continue;
+			}
+			for (RenderGraphAllocation& element : dynamics_[resourceIndex - 1])
+			{
+				RenderGraphMemory::Release(device_, element);
+			}
+			dynamics_.erase(dynamics_.begin() + (resourceIndex - 1));
+		}
 		SeedCore::erase_if(resources_, [feature](const RenderGraphResource& resource) { return resource.feature_ == feature; });
 		SeedCore::erase_if(stages_, [feature](const RenderGraphStage& stage) { return stage.feature_ == feature; });
 		dirty_ = true;
@@ -439,7 +452,7 @@ namespace SeedCore
 					Uint32 heightDivisor = desc.heightDivisor_ != 0 ? desc.heightDivisor_ : desc.divisor_;
 					instance.height_ = (baseHeight + heightDivisor - 1) / heightDivisor;
 				}
-				instance.count_ = desc.shape_ == RenderResourceShape::Buffer && desc.scale_ != RenderResourceScale::Fixed ? instance.width_ * instance.height_ * desc.depth_ * desc.count_ : desc.count_;
+				instance.count_ = desc.shape_ == RenderResourceShape::StaticBuffer && desc.scale_ != RenderResourceScale::Fixed ? instance.width_ * instance.height_ * desc.depth_ * desc.count_ : desc.count_;
 			}
 		}
 
@@ -507,6 +520,15 @@ namespace SeedCore
 		}
 		persistent_.resize(resources_.size() * RenderViewCount * 2);
 
+		for (Size resourceIndex = resources_.size();resourceIndex < dynamics_.size();++resourceIndex)
+		{
+			for (RenderGraphAllocation& element : dynamics_[resourceIndex])
+			{
+				RenderGraphMemory::Release(device_, element);
+			}
+		}
+		dynamics_.resize(resources_.size());
+
 		for (Size instanceIndex = 0;instanceIndex < instances_.size();++instanceIndex)
 		{
 			RenderGraphInstance& instance = instances_[instanceIndex];
@@ -535,6 +557,73 @@ namespace SeedCore
 				instance.allocation_ = found;
 				continue;
 			}
+			if (resource.desc_.shape_ == RenderResourceShape::DynamicBuffer)
+			{
+				DynamicArray<RenderGraphAllocation>& elements = dynamics_[instance.resource_];
+				const RenderResizeEntry* resize = upload_.FindResize(resource.resourceName_);
+				if (resize)
+				{
+					for (Size elementIndex = resize->counts_.size();elementIndex < elements.size();++elementIndex)
+					{
+						RenderGraphMemory::Release(device_, elements[elementIndex]);
+					}
+					elements.resize(resize->counts_.size());
+
+					RenderGraphResource element = resource;
+					element.desc_.shape_ = RenderResourceShape::StaticBuffer;
+					for (Size elementIndex = 0;elementIndex < elements.size();++elementIndex)
+					{
+						Uint32 count = resize->counts_[elementIndex];
+						if (elements[elementIndex].count_ == count && (count == 0 || elements[elementIndex].resource_))
+						{
+							continue;
+						}
+						RenderGraphMemory::Release(device_, elements[elementIndex]);
+						elements[elementIndex] = RenderGraphAllocation{};
+						if (count == 0)
+						{
+							continue;
+						}
+						RenderGraphInstance sized = instance;
+						sized.count_ = count;
+						elements[elementIndex] = RenderGraphMemory::Create(device_, element, sized);
+					}
+				}
+
+				if (!elements.empty())
+				{
+					StaticArray<DynamicArray<Uint32>, 2> tables;
+					for (const RenderGraphAllocation& allocation : elements)
+					{
+						Uint32 empty = nulls_[static_cast<Size>(RenderResourceShape::StaticBuffer)];
+						tables[0].push_back(allocation.resource_ ? allocation.shaderResourceView_ : empty);
+						tables[1].push_back(allocation.resource_ ? allocation.unorderedAccessView_ : empty);
+					}
+
+					RenderGraphResource table;
+					table.resourceName_ = resource.resourceName_;
+					table.desc_.shape_ = RenderResourceShape::StaticBuffer;
+					table.desc_.stride_ = sizeof(Uint32);
+
+					StaticArray<Uint32*, 2> targets = { &instance.readTable_, &instance.writeTable_ };
+					for (Size tableIndex = 0;tableIndex < tables.size();++tableIndex)
+					{
+						std::span<const std::byte> data = std::as_bytes(std::span<const Uint32>(tables[tableIndex]));
+						Uint64 alignment = D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT;
+						std::optional<Uint64> offset = upload_.Buffer().Allocate((data.size() + alignment - 1) / alignment * alignment, alignment);
+						if (!offset)
+						{
+							SC_LOG_ERROR("RenderGraph: {} の番号表を置く容量が足りません", resource.resourceName_.str());
+							break;
+						}
+						upload_.Buffer().Write(*offset, data);
+						*targets[tableIndex] = static_cast<Uint32>(uploads_.size());
+
+						uploads_.push_back(RenderGraphMemory::Create(device_, table, upload_.Buffer(), RenderUploadEntry{ resource.resourceName_, RenderViewKind::Game, *offset, data.size() }));
+					}
+				}
+				continue;
+			}
 			if (resource.lifetime_ == RenderResourceLifetime::Persistent)
 			{
 				Uint32 current = static_cast<Uint32>(instanceIndex * 2 + (resource.history_ ? (frame_ & 1) : 0));
@@ -558,7 +647,7 @@ namespace SeedCore
 			RenderViewKind kind = instance.view_ != SC_INVALID ? scene.views_[instance.view_].kind_ : RenderViewKind::Game;
 			if (resource.lifetime_ == RenderResourceLifetime::Upload)
 			{
-				const RenderUploadEntry* entry = upload_.Find(resource.resourceName_, kind);
+				const RenderUploadEntry* entry = upload_.FindUpload(resource.resourceName_, kind);
 				if (!entry)
 				{
 					instance.fallback_ = resource.fallback_;
@@ -643,6 +732,15 @@ namespace SeedCore
 			allocation.readers_ = { SC_INVALID, SC_INVALID };
 		}
 
+		for (DynamicArray<RenderGraphAllocation>& elements : dynamics_)
+		{
+			for (RenderGraphAllocation& allocation : elements)
+			{
+				allocation.writer_ = SC_INVALID;
+				allocation.readers_ = { SC_INVALID, SC_INVALID };
+			}
+		}
+
 		opening_.clear();
 		StaticArray<Uint32, 2> waited = { SC_INVALID, SC_INVALID };
 		for (Uint32 passIndex = 0;passIndex < passes_.size();++passIndex)
@@ -661,12 +759,23 @@ namespace SeedCore
 				const RenderGraphResource& resource = resources_[access.index_];
 				Uint32 view = resource.scope_ == RenderResourceScope::View && pass.view_ != SC_INVALID ? pass.view_ : 0;
 				const RenderGraphInstance& instance = instances_[access.index_ * RenderViewCount + view];
-				RenderGraphAllocation* memory = instance.memory_;
-				if (access.type_ == RenderAccessType::History)
+				std::span<RenderGraphAllocation> memories;
+				if (resource.desc_.shape_ == RenderResourceShape::DynamicBuffer)
 				{
-					memory = instance.history_ != SC_INVALID ? &persistent_[instance.history_] : nullptr;
+					memories = std::span<RenderGraphAllocation>(dynamics_[access.index_]);
 				}
-				if (!memory || resource.lifetime_ == RenderResourceLifetime::Upload)
+				else if (access.type_ == RenderAccessType::History)
+				{
+					if (instance.history_ != SC_INVALID)
+					{
+						memories = std::span<RenderGraphAllocation>(&persistent_[instance.history_], 1);
+					}
+				}
+				else if (instance.memory_)
+				{
+					memories = std::span<RenderGraphAllocation>(instance.memory_, 1);
+				}
+				if (memories.empty() || resource.lifetime_ == RenderResourceLifetime::Upload)
 				{
 					continue;
 				}
@@ -675,7 +784,7 @@ namespace SeedCore
 				if (access.type_ == RenderAccessType::Read || access.type_ == RenderAccessType::History)
 				{
 					required = copy ? D3D12_RESOURCE_STATE_COPY_SOURCE : pixel ? D3D12_RESOURCE_STATE_ALL_SHADER_RESOURCE : D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
-					if (resource.desc_.shape_ == RenderResourceShape::Buffer && !copy)
+					if ((resource.desc_.shape_ == RenderResourceShape::StaticBuffer || resource.desc_.shape_ == RenderResourceShape::DynamicBuffer) && !copy)
 					{
 						required |= D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT;
 					}
@@ -704,74 +813,84 @@ namespace SeedCore
 				Bool write = access.type_ == RenderAccessType::Write || access.type_ == RenderAccessType::Append || access.type_ == RenderAccessType::Target || access.type_ == RenderAccessType::DepthWrite;
 				D3D12_RESOURCE_STATES readable = D3D12_RESOURCE_STATE_GENERIC_READ | D3D12_RESOURCE_STATE_DEPTH_READ;
 				D3D12_RESOURCE_STATES computable = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER | D3D12_RESOURCE_STATE_UNORDERED_ACCESS | D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE | D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT | D3D12_RESOURCE_STATE_COPY_DEST | D3D12_RESOURCE_STATE_COPY_SOURCE | D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE;
-				Bool satisfied = memory->state_ == required;
-				if (!satisfied && memory->state_ != D3D12_RESOURCE_STATE_COMMON && (memory->state_ & ~readable) == 0 && (required & ~readable) == 0)
+				for (RenderGraphAllocation& allocation : memories)
 				{
-					satisfied = (memory->state_ & required) == required;
-					required |= memory->state_;
-				}
-				if (satisfied)
-				{
-					if (memory->state_ == D3D12_RESOURCE_STATE_UNORDERED_ACCESS || memory->state_ == D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE)
+					if (!allocation.resource_)
 					{
-						D3D12_RESOURCE_BARRIER barrier{};
-						barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
-						barrier.UAV.pResource = memory->resource_.Get();
-						pass.barriers_.push_back(barrier);
+						continue;
 					}
-				}
-				else
-				{
-					D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE, { memory->resource_.Get(), D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, memory->state_, required } };
-					if (stage.async_ && ((memory->state_ | required) & ~computable) != 0)
+					RenderGraphAllocation* memory = &allocation;
+					D3D12_RESOURCE_STATES needed = required;
+					Bool written = write;
+					Bool satisfied = memory->state_ == needed;
+					if (!satisfied && memory->state_ != D3D12_RESOURCE_STATE_COMMON && (memory->state_ & ~readable) == 0 && (needed & ~readable) == 0)
 					{
-						Uint32 owner = memory->readers_[0];
-						if (memory->writer_ != SC_INVALID && !stages_[passes_[memory->writer_].stage_].async_ && (owner == SC_INVALID || memory->writer_ > owner))
+						satisfied = (memory->state_ & needed) == needed;
+						needed |= memory->state_;
+					}
+					if (satisfied)
+					{
+						if (memory->state_ == D3D12_RESOURCE_STATE_UNORDERED_ACCESS || memory->state_ == D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE)
 						{
-							owner = memory->writer_;
-						}
-						if (memory->readers_[1] != SC_INVALID && (owner == SC_INVALID || memory->readers_[1] > owner))
-						{
-							pass.handoff_.push_back(barrier);
-						}
-						else if (owner != SC_INVALID)
-						{
-							passes_[owner].release_.push_back(barrier);
-						}
-						else
-						{
-							opening_.push_back(barrier);
+							D3D12_RESOURCE_BARRIER barrier{};
+							barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_UAV;
+							barrier.UAV.pResource = memory->resource_.Get();
+							pass.barriers_.push_back(barrier);
 						}
 					}
 					else
 					{
-						pass.barriers_.push_back(barrier);
+						D3D12_RESOURCE_BARRIER barrier = { D3D12_RESOURCE_BARRIER_TYPE_TRANSITION, D3D12_RESOURCE_BARRIER_FLAG_NONE, { memory->resource_.Get(), D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES, memory->state_, needed } };
+						if (stage.async_ && ((memory->state_ | needed) & ~computable) != 0)
+						{
+							Uint32 owner = memory->readers_[0];
+							if (memory->writer_ != SC_INVALID && !stages_[passes_[memory->writer_].stage_].async_ && (owner == SC_INVALID || memory->writer_ > owner))
+							{
+								owner = memory->writer_;
+							}
+							if (memory->readers_[1] != SC_INVALID && (owner == SC_INVALID || memory->readers_[1] > owner))
+							{
+								pass.handoff_.push_back(barrier);
+							}
+							else if (owner != SC_INVALID)
+							{
+								passes_[owner].release_.push_back(barrier);
+							}
+							else
+							{
+								opening_.push_back(barrier);
+							}
+						}
+						else
+						{
+							pass.barriers_.push_back(barrier);
+						}
+						memory->state_ = needed;
+						written = true;
 					}
-					memory->state_ = required;
-					write = true;
-				}
 
-				Uint32 dependency = SC_INVALID;
-				if (memory->writer_ != SC_INVALID && stages_[passes_[memory->writer_].stage_].async_ != stage.async_)
-				{
-					dependency = memory->writer_;
-				}
-				if (write && memory->readers_[1 - queue] != SC_INVALID && (dependency == SC_INVALID || memory->readers_[1 - queue] > dependency))
-				{
-					dependency = memory->readers_[1 - queue];
-				}
-				if (dependency != SC_INVALID && (pass.wait_ == SC_INVALID || dependency > pass.wait_))
-				{
-					pass.wait_ = dependency;
-				}
-				if (write)
-				{
-					memory->writer_ = passIndex;
-					memory->readers_ = { SC_INVALID, SC_INVALID };
-				}
-				else
-				{
-					memory->readers_[queue] = passIndex;
+					Uint32 dependency = SC_INVALID;
+					if (memory->writer_ != SC_INVALID && stages_[passes_[memory->writer_].stage_].async_ != stage.async_)
+					{
+						dependency = memory->writer_;
+					}
+					if (written && memory->readers_[1 - queue] != SC_INVALID && (dependency == SC_INVALID || memory->readers_[1 - queue] > dependency))
+					{
+						dependency = memory->readers_[1 - queue];
+					}
+					if (dependency != SC_INVALID && (pass.wait_ == SC_INVALID || dependency > pass.wait_))
+					{
+						pass.wait_ = dependency;
+					}
+					if (written)
+					{
+						memory->writer_ = passIndex;
+						memory->readers_ = { SC_INVALID, SC_INVALID };
+					}
+					else
+					{
+						memory->readers_[queue] = passIndex;
+					}
 				}
 			}
 
@@ -867,7 +986,12 @@ namespace SeedCore
 					Uint32 view = resource.scope_ == RenderResourceScope::View && pass.view_ != SC_INVALID ? pass.view_ : 0;
 					const RenderGraphInstance& instance = instances_[access.index_ * RenderViewCount + view];
 					const RenderGraphAllocation* memory = access.type_ == RenderAccessType::History && instance.history_ != SC_INVALID ? &persistent_[instance.history_] : instance.memory_;
-					if (instance.fallback_ == RenderFallback::Zero)
+					if (resource.desc_.shape_ == RenderResourceShape::DynamicBuffer)
+					{
+						Uint32 table = access.type_ == RenderAccessType::Write || access.type_ == RenderAccessType::Append ? instance.writeTable_ : instance.readTable_;
+						index = table != SC_INVALID ? uploads_[table].shaderResourceView_ : nulls_[static_cast<Size>(RenderResourceShape::DynamicBuffer)];
+					}
+					else if (instance.fallback_ == RenderFallback::Zero)
 					{
 						index = nulls_[static_cast<Size>(resource.desc_.shape_)];
 					}

@@ -11,7 +11,8 @@ namespace SeedCore
 		TextureCube,
 		TextureCubeArray,
 		Texture3D,
-		Buffer,
+		StaticBuffer,
+		DynamicBuffer,
 		Constant,
 		AccelerationStructure,
 	};
@@ -94,12 +95,17 @@ namespace SeedCore
 
 		NODISCARD static consteval RenderResourceDesc ScaledBuffer(Uint32 stride, Uint32 count, RenderResourceScale scale, Uint32 divisor, Uint32 depth = 1)
 		{
-			return RenderResourceDesc{ RenderResourceShape::Buffer, scale, RenderFormat::Unknown, divisor, 0, 0, depth, 1, stride, count };
+			return RenderResourceDesc{ RenderResourceShape::StaticBuffer, scale, RenderFormat::Unknown, divisor, 0, 0, depth, 1, stride, count };
 		}
 
 		NODISCARD static consteval RenderResourceDesc FixedBuffer(Uint32 stride, Uint32 count)
 		{
-			return RenderResourceDesc{ RenderResourceShape::Buffer, RenderResourceScale::Fixed, RenderFormat::Unknown, 1, 0, 0, 1, 1, stride, count };
+			return RenderResourceDesc{ RenderResourceShape::StaticBuffer, RenderResourceScale::Fixed, RenderFormat::Unknown, 1, 0, 0, 1, 1, stride, count };
+		}
+
+		NODISCARD static consteval RenderResourceDesc DynamicBuffer(Uint32 stride)
+		{
+			return RenderResourceDesc{ RenderResourceShape::DynamicBuffer, RenderResourceScale::Fixed, RenderFormat::Unknown, 1, 0, 0, 1, 1, stride, 0 };
 		}
 
 		NODISCARD static consteval RenderResourceDesc Constant(Uint32 size)

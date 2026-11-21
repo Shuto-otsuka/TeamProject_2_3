@@ -1,16 +1,6 @@
 #ifndef __PARTICLE_HLSL__
 #define __PARTICLE_HLSL__
 
-struct ParticleConstantBuffer
-{
-	float emitter_delta_;
-	float emitter_age_;
-    uint sim_space_;
-    uint spawn_count_;
-	row_major float4x4 emitter_to_world_;
-	row_major float4x4 world_to_emitter_;
-};
-
 struct ParticleSeed
 {
 	float3 position_;
@@ -31,6 +21,17 @@ struct ParticleSeed
 	float age_;
 	float lifetime_;
 	uint seed_;
+};
+
+struct ParticleEmitter
+{
+	float delta_;
+	float age_;
+	uint sim_space_;
+	uint particle_emitter_padding_0_;
+
+	row_major float4x4 emitter_to_world_;
+	row_major float4x4 world_to_emitter_;
 };
 
 #endif // __PARTICLE_HLSL__

@@ -1,16 +1,16 @@
 #ifndef __DRAG_MODULE_HLSL__
 #define __DRAG_MODULE_HLSL__
 
-#include "../Particle.hlsli"
+#include <GraphicsEngine/Effect/Zephyr/Particle.hlsli>
 
 struct DragModule
 {
 	float drag_;
 };
 
-void ApplyDragUpdate(inout ParticleSeed seed, DragModule module_, ParticleConstantBuffer particle)
+void ApplyDragSimulate(inout ParticleSeed seed, DragModule module_, ParticleEmitter emitter)
 {
-	seed.live_velocity_ *= max(0.0f, 1.0f - module_.drag_ * particle.emitter_delta_);
+	seed.live_velocity_ *= max(0.0f, 1.0f - module_.drag_ * emitter.delta_);
 }
 
 #endif // __DRAG_MODULE_HLSL__

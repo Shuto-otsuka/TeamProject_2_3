@@ -19,6 +19,13 @@ namespace SeedCore
 		Uint64 size_ = 0;
 	};
 
+	struct RenderResizeEntry
+	{
+		String resourceName_;
+
+		DynamicArray<Uint32> counts_;
+	};
+
 	class RenderUpload :public NonTransferable
 	{
 	public:
@@ -38,7 +45,11 @@ namespace SeedCore
 			Write(resource, view, std::as_bytes(values), std::lcm<Uint64>(D3D12_CONSTANT_BUFFER_DATA_PLACEMENT_ALIGNMENT, sizeof(T)));
 		}
 
-		NODISCARD const RenderUploadEntry* Find(const String& resourceName, RenderViewKind view)const;
+		void Resize(const RenderResource& resource, std::span<const Uint32> counts);
+
+		NODISCARD const RenderUploadEntry* FindUpload(const String& resourceName, RenderViewKind view)const;
+
+		NODISCARD const RenderResizeEntry* FindResize(const String& resourceName)const;
 
 		NODISCARD StagingBuffer& Buffer()const;
 
@@ -46,6 +57,8 @@ namespace SeedCore
 		StaticArray<ResourcePtr<StagingBuffer>, FrameRing::frameCount> buffers_;
 
 		DynamicArray<RenderUploadEntry> entries_;
+
+		DynamicArray<RenderResizeEntry> resizes_;
 
 		Uint32 current_ = 0;
 	};

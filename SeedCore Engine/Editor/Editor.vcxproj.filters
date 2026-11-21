@@ -19,6 +19,9 @@
     <Filter Include="Editor\Interaction">
       <UniqueIdentifier>{cf1cfb02-be56-49c3-bab1-308d9d601d1e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Editor\Node">
+      <UniqueIdentifier>{6adcd218-5396-471d-9d7f-d45885d35263}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Editor\ImGui\ImGuiRenderer.cpp">
@@ -153,6 +156,9 @@
     </ClCompile>
     <ClCompile Include="Editor\Panel\ViewModePanel.cpp">
       <Filter>Editor\Panel</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Node\NodeCanvas.cpp">
+      <Filter>Editor\Node</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -317,6 +323,9 @@
     </ClInclude>
     <ClInclude Include="Editor\Panel\ViewModePanel.h">
       <Filter>Editor\Panel</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Node\NodeCanvas.h">
+      <Filter>Editor\Node</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

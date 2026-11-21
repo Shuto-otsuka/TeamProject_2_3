@@ -95,19 +95,20 @@
     <ClInclude Include="Debug\DebugViewShader.h" />
     <ClInclude Include="Debug\DebugViewStage.h" />
     <ClInclude Include="DLSS\DlssManager.h" />
+    <ClInclude Include="Effect\Effect.h" />
+    <ClInclude Include="Effect\EffectLoader.h" />
+    <ClInclude Include="Effect\EffectResource.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerCache.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerEffect.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerFileInterface.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerLoader.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerManager.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerResource.h" />
-    <ClInclude Include="Effect\Zephyr\Effect.h" />
-    <ClInclude Include="Effect\Zephyr\EffectLoader.h" />
-    <ClInclude Include="Effect\Zephyr\EffectResource.h" />
-    <ClInclude Include="Effect\Zephyr\ZephyParticler.h" />
+    <ClInclude Include="Effect\Zephyr\ParticleFeature.h" />
+    <ClInclude Include="Effect\Zephyr\ParticleShader.h" />
+    <ClInclude Include="Effect\Zephyr\ParticleStage.h" />
     <ClInclude Include="Effect\Zephyr\ZephyrModuleAssembler.h" />
     <ClInclude Include="Effect\Zephyr\ZephyrModuleRegistry.h" />
-    <ClInclude Include="Effect\Zephyr\ZephyrParticleStorage.h" />
     <ClInclude Include="Environment\Celestial\Celestial.h" />
     <ClInclude Include="Environment\VolumetricCloud\VolumetricCloudFeature.h" />
     <ClInclude Include="Environment\VolumetricCloud\VolumetricCloudScapes.h" />
@@ -312,6 +313,7 @@
     <ClInclude Include="Raytracing\TopLevelShader.h" />
     <ClInclude Include="Raytracing\TopLevelStage.h" />
     <ClInclude Include="RenderGraph\Pipeline\ComputePipeline.h" />
+    <ClInclude Include="RenderGraph\Pipeline\DynamicPipeline.h" />
     <ClInclude Include="RenderGraph\Pipeline\GraphicsPipeline.h" />
     <ClInclude Include="RenderGraph\Pipeline\PipelineDescriptionAccess.h" />
     <ClInclude Include="RenderGraph\Pipeline\RaytracingPipeline.h" />
@@ -432,16 +434,17 @@
     <ClCompile Include="D3D12\Signature\RootSignature.cpp" />
     <ClCompile Include="Debug\DebugViewFeature.cpp" />
     <ClCompile Include="Debug\DebugViewStage.cpp" />
+    <ClCompile Include="Effect\EffectLoader.cpp" />
+    <ClCompile Include="Effect\EffectResource.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerEffect.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerFileInterface.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerLoader.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerManager.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerResource.cpp" />
-    <ClCompile Include="Effect\Zephyr\EffectLoader.cpp" />
-    <ClCompile Include="Effect\Zephyr\EffectResource.cpp" />
+    <ClCompile Include="Effect\Zephyr\ParticleFeature.cpp" />
+    <ClCompile Include="Effect\Zephyr\ParticleStage.cpp" />
     <ClCompile Include="Effect\Zephyr\ZephyrModuleAssembler.cpp" />
     <ClCompile Include="Effect\Zephyr\ZephyrModuleRegistry.cpp" />
-    <ClCompile Include="Effect\Zephyr\ZephyrParticleStorage.cpp" />
     <ClCompile Include="Environment\VolumetricCloud\VolumetricCloudFeature.cpp" />
     <ClCompile Include="Environment\VolumetricCloud\VolumetricCloudStage.cpp" />
     <ClCompile Include="Environment\VolumetricStar\VolumetricStarFeature.cpp" />
@@ -755,6 +758,11 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
+    <None Include="Effect\Zephyr\Quad\ParticleQuad.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
     <None Include="Environment\VolumetricCloud\VolumetricCloud.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">true</ExcludedFromBuild>
@@ -1037,23 +1045,6 @@
       <FileType>Document</FileType>
     </Text>
     <Text Include="Sky\Cubemap\ProceduralCubemapCS.hlsl">
-      <FileType>Document</FileType>
-    </Text>
-  </ItemGroup>
-  <ItemGroup>
-    <Text Include="Effect\Zephyr\ParticleSystemCS.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|Win32'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>
@@ -1424,6 +1415,56 @@
   </ItemGroup>
   <ItemGroup>
     <Text Include="Texture\Sprite\TextureSpriteAS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Effect\Zephyr\ParticleResetCS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Effect\Zephyr\ParticleBeginCS.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Effect\Zephyr\ParticleDrivenCS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="Effect\Zephyr\Quad\ParticleQuadMS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Effect\Zephyr\Quad\ParticleQuadPS.hlsl">
+      <FileType>Document</FileType>
+    </Text>
+    <Text Include="Effect\Zephyr\Quad\ParticleQuadVS.hlsl">
       <FileType>Document</FileType>
     </Text>
   </ItemGroup>

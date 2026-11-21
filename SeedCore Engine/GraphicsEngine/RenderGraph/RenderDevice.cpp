@@ -68,6 +68,10 @@ namespace SeedCore
 		{
 			return false;
 		}
+		if (!dispatchSignature_.Create(context_->GetDevice(), D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH))
+		{
+			return false;
+		}
 
 		return true;
 	}
@@ -137,6 +141,11 @@ namespace SeedCore
 	const CommandSignature& RenderDevice::MeshSignature()const
 	{
 		return meshSignature_;
+	}
+
+	const CommandSignature& RenderDevice::DispatchSignature()const
+	{
+		return dispatchSignature_;
 	}
 
 	D3D12Level RenderDevice::Level()const

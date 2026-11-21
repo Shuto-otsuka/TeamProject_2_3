@@ -1,16 +1,16 @@
 #ifndef __GRAVITY_MODULE_HLSL__
 #define __GRAVITY_MODULE_HLSL__
 
-#include "../Particle.hlsli"
+#include <GraphicsEngine/Effect/Zephyr/Particle.hlsli>
 
 struct GravityModule
 {
 	float3 gravity_;
 };
 
-void ApplyGravityUpdate(inout ParticleSeed seed, GravityModule module_, ParticleConstantBuffer particle)
+void ApplyGravitySimulate(inout ParticleSeed seed, GravityModule module_, ParticleEmitter emitter)
 {
-	seed.live_velocity_ += module_.gravity_ * particle.emitter_delta_;
+	seed.live_velocity_ += module_.gravity_ * emitter.delta_;
 }
 
 #endif // __GRAVITY_MODULE_HLSL__
