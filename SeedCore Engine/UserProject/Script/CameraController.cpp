@@ -68,27 +68,26 @@ void CameraController::Rotate()
         ChangeCursorMode();
 
     //マウスカーソルが自由に動かせる状態なら回転処理しない
-    if (!isCursorLock)
+    if (isCursorLock)
+    {   
+        //マウスの移動量を取得
+        SeedCore::Vector2 mouseMove = SeedCore::Input::MouseMotion();
+
+        //マウスの移動量をピッチ、ヨーに適応
+        pitch += mouseMove.y * horizontalSensitivity;
+        yaw += mouseMove.x * verticalSensitivity;
+        //ピッチをクランプ
+        pitch = std::clamp(pitch, pitchMin, pitchMax);
+        //ヨーを0から360の範囲に
+        while (yaw > 360)yaw -= 360;
+        while (yaw < 0)yaw += 360;
+    }
+    else
     {
         FollowCrossHairToCursor();
-        return;
     }
 
-    //マウスの移動量を取得
-    SeedCore::Vector2 mouseMove = SeedCore::Input::MouseMotion();
-
-    //マウスの移動量をピッチ、ヨーに適応
-    pitch += mouseMove.y * horizontalSensitivity;
-    yaw += mouseMove.x * verticalSensitivity;
-    //ピッチをクランプ
-    pitch = std::clamp(pitch, pitchMin, pitchMax);
-    //ヨーを0から360の範囲に
-    while (yaw > 360)yaw -= 360;
-    while (yaw < 0)yaw += 360;
-
     //ピッチとヨーからクォータニオンを作成
-    //float pitchRad = -SeedCore::ToRadians(pitch);
-    //float yawRad = SeedCore::ToRadians(yaw);
     float pitchRad = SeedCore::ToRadians(pitch);
     float yawRad = SeedCore::ToRadians(yaw + 180.0f);
     SeedCore::Quaternion quaternion = SeedCore::Quaternion::FromEuler(SeedCore::Vector3(pitchRad, yawRad, 0.0f));

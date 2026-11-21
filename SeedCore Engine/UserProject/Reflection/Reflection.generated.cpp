@@ -507,6 +507,7 @@ namespace SeedCore
 				ReflectionRegistry::Register(String("PendulumController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
 					PendulumController& obj = *static_cast<PendulumController*>(ptr);
 					outInfo.push_back({ String("rotateSpeed"), offsetof(PendulumController, rotateSpeed), AttributeType::Float });
+					outInfo.push_back({ String("targetAngle"), offsetof(PendulumController, targetAngle), AttributeType::Float });
 				});
 			}
 		};

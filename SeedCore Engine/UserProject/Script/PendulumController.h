@@ -13,6 +13,8 @@ public:
     
 	SC_REFLECTION_FIELD()
 		float rotateSpeed;
+	SC_REFLECTION_FIELD()
+		float targetAngle = 90.0f;
 private:
 
 	StopController* myStopController;

@@ -446,7 +446,7 @@ void PlayerController::UpdateTurn(float elapsedTime)
             //銃口の高さを求める
             SeedCore::Vector3 gunOffset = SeedCore::Vector3(0.0f, bulletOffsetY, 0.0f);
             SeedCore::Vector3 gunPosition = SeedCore::Vector3::TransformPosition(gunOffset, GetActor().WorldMatrix());
-            SeedCore::Vector3 front = firstPersonCameraBrain.WorldMatrix().Backward();
+            SeedCore::Vector3 front = firstPersonCameraBrain.WorldMatrix().Forward();
 
             float bulletHalfSize = SeedCore::Lerp(bulletMinSize, bulletMaxSize, shotChargeRate) / 2.0f;
 

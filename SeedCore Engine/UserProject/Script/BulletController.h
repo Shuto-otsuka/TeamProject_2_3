@@ -88,6 +88,8 @@ private:
 
 	SeedCore::Actor player;
 	SeedCore::Actor hintAudioActor;
+	SeedCore::Actor firstPersonCameraActor;
+	SeedCore::Actor thirdPersonCameraActor;
 
 	PlayerController* playerController = nullptr;
 	StopController* nowStick = nullptr;

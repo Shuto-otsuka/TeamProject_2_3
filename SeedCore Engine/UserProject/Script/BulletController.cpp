@@ -11,6 +11,8 @@ void BulletController::OnStart()
 {
     player = GetWorld().GetActor("Player");
     hintAudioActor = GetWorld().GetActor("AudioHint");
+    thirdPersonCameraActor = GetWorld().GetActor("CameraBrain");
+    firstPersonCameraActor = GetWorld().GetActor("FirstPersonCameraBrain");
     playerController = player.GetComponent<PlayerController>();
     linearVelocity = GetActor().GetComponent<SeedCore::LinearVelocity>();
     angularVelocity = GetActor().GetComponent<SeedCore::AngularVelocity>();
@@ -346,27 +348,52 @@ void BulletController::UpdateStopTimer(float elapsedTime)
 
     stopTimerText = stopTimer.GetComponent<SeedCore::Text>();
     stopTimerPosition = stopTimer.GetComponent<SeedCore::Position>();
+    SeedCore::Active* stopTimerActive = stopTimer.GetComponent<SeedCore::Active>();
 
     //タイマーの更新
 
-    //残りの生存時間を停止時間とする
-    float stopTime = aliveTime - aliveTimer;
-    //小数点第一以下を切り捨て
-    float stopTimeSca10 = stopTime * 10.0f;
-    int stopTimeInt = static_cast<int>(stopTimeSca10);
-    float stopTimeDisplay = static_cast<float>(stopTimeInt) / 10.0f;
-    //テキスト反映
-    std::string stopTimeStr = std::format("Stop {:.1f}", stopTimeDisplay);
-    stopTimerText->text_ = SeedCore::String(stopTimeStr);
+    SeedCore::Position* cameraPosition = nullptr;
+    SeedCore::Vector3 cameraFront;
+    if (playerController->IsFirstPerson())
+    {
+        cameraPosition = firstPersonCameraActor.GetComponent<SeedCore::Position>();
+        cameraFront = firstPersonCameraActor.WorldMatrix().Forward();
+    }
+    else
+    {
+        cameraPosition = thirdPersonCameraActor.GetComponent<SeedCore::Position>();
+        cameraFront = thirdPersonCameraActor.WorldMatrix().Forward();
+    }
+    SeedCore::Vector3 cameraToBullet = SeedCore::Transform::Vector(*position) - SeedCore::Transform::Vector(*cameraPosition);
+    cameraToBullet.Normalize();
+    if (cameraFront.Dot(cameraToBullet) < 0.0f)
+    {
+        //カメラが爆弾と真反対の方向向いてたらテキストを表示しない
+        stopTimerActive->active_ = false;
+    }
+    else
+    {
+        stopTimerActive->active_ = true;
 
-    //スクリーン座標変換&オフセットを適応
-    SeedCore::Vector3 worldPosition;
-    worldPosition.x = position->x_ + stopTimerOffset.x;
-    worldPosition.y = position->y_ + stopTimerOffset.y;
-    worldPosition.z = position->z_ + stopTimerOffset.z;
-    SeedCore::Vector2 screenPosition = SeedCore::ScreenSpace::WorldToScreen(worldPosition);
-    stopTimerPosition->x_ = screenPosition.x;
-    stopTimerPosition->y_ = screenPosition.y;
+        //残りの生存時間を停止時間とする
+        float stopTime = aliveTime - aliveTimer;
+        //小数点第一以下を切り捨て
+        float stopTimeSca10 = stopTime * 10.0f;
+        int stopTimeInt = static_cast<int>(stopTimeSca10);
+        float stopTimeDisplay = static_cast<float>(stopTimeInt) / 10.0f;
+        //テキスト反映
+        std::string stopTimeStr = std::format("Stop {:.1f}", stopTimeDisplay);
+        stopTimerText->text_ = SeedCore::String(stopTimeStr);
+
+        //スクリーン座標変換&オフセットを適応
+        SeedCore::Vector3 worldPosition;
+        worldPosition.x = position->x_ + stopTimerOffset.x;
+        worldPosition.y = position->y_ + stopTimerOffset.y;
+        worldPosition.z = position->z_ + stopTimerOffset.z;
+        SeedCore::Vector2 screenPosition = SeedCore::ScreenSpace::WorldToScreen(worldPosition);
+        stopTimerPosition->x_ = screenPosition.x;
+        stopTimerPosition->y_ = screenPosition.y;
+    }
 }
 
 void BulletController::Remove()
