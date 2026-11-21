@@ -205,12 +205,12 @@ void BombController::OnTick(float elapsedTime)
         if (playerController->IsFirstPerson())
         {
             cameraPosition = firstPersonCameraActor.GetComponent<SeedCore::Position>();
-            cameraFront = firstPersonCameraActor.WorldMatrix().Backward();
+            cameraFront = firstPersonCameraActor.WorldMatrix().Forward();
         }
         else
         {
             cameraPosition = thirdPersonCameraActor.GetComponent<SeedCore::Position>();
-            cameraFront = thirdPersonCameraActor.WorldMatrix().Backward();
+            cameraFront = thirdPersonCameraActor.WorldMatrix().Forward();
         }
         SeedCore::Vector3 cameraToBomb = position - SeedCore::Transform::Vector(*cameraPosition);
         cameraToBomb.Normalize();

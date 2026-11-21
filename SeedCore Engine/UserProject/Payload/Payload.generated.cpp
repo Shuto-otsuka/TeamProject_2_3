@@ -7,6 +7,7 @@
 #include <UserProject/Script/DoorSystem.h>
 #include <UserProject/Script/FloorMoveSystem.h>
 #include <UserProject/Script/GoalSystem.h>
+#include <UserProject/Script/StopController.h>
 
 extern "C" int _force_payload_AnnounceController = 0;
 extern "C" int _force_payload_BallReseterController = 0;
@@ -15,6 +16,7 @@ extern "C" int _force_payload_CostGaugeController = 0;
 extern "C" int _force_payload_DoorSystem = 0;
 extern "C" int _force_payload_FloorMoveSystem = 0;
 extern "C" int _force_payload_GoalSystem = 0;
+extern "C" int _force_payload_StopController = 0;
 
 namespace SeedCore
 {
@@ -145,6 +147,35 @@ namespace SeedCore
 			}
 		};
 		static Register_GoalSystem global_GoalSystem_register;
+
+		// ---- UserProject/Script/StopController.h ----
+		struct Register_StopController
+		{
+			Register_StopController()
+			{
+				PayloadRegistry::Register(String("StopController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					StopController& obj = *static_cast<StopController*>(ptr);
+					{
+						auto& arr = obj.linkActorIDs_;
+						FieldInfo header;
+						header.name_ = String("連動アクター");
+						header.offset_ = 0;
+						header.type_ = AttributeType::Int;
+						header.assetType_ = PayloadType::Actor;
+						header.array_.size_ = arr.size();
+						header.array_.add_ = [&obj]() { obj.linkActorIDs_.push_back({}); };
+						header.array_.remove_ = [&obj](Size idx) { if (idx < obj.linkActorIDs_.size()) obj.linkActorIDs_.erase(obj.linkActorIDs_.begin() + idx); };
+						header.array_.lastPtr_ = [&obj]() -> void* { return &obj.linkActorIDs_.back(); };
+						outInfo.push_back(std::move(header));
+						for (Size i = 0; i < arr.size(); ++i)
+						{
+							outInfo.push_back({ String("[" + std::to_string(i) + "]"), 0, AttributeType::Int, PayloadType::Actor, &arr[i] });
+						}
+					}
+				});
+			}
+		};
+		static Register_StopController global_StopController_register;
 
 	}
 }
