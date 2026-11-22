@@ -120,7 +120,7 @@ namespace SeedCore
 	{
 		SC_CONSTEX RenderStageKind kind_ = RenderStageKind::Raster;
 
-		SC_CONSTEX RenderQueue queue_ = RenderQueue::Particle;
+		SC_CONSTEX RenderQueue queue_ = RenderQueue::Effect;
 
 		SC_CONSTEX Bool ParticleFeature::* enableCondition_ = &ParticleFeature::active_;
 

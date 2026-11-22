@@ -27,6 +27,7 @@ namespace SeedCore
 		Background = 2600,
 		Transparent = 3000,
 		Particle = 3500,
+		Effect = 3750,
 		PostProcess = 4000,
 		Diagnostic = 4500,
 		Highlight = 4750,

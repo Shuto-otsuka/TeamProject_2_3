@@ -23,11 +23,11 @@ namespace SeedCore
 		spawnPipeline_.Create(device, DynamicComputeDescription{ filePath, String("Spawn"), 64, 1, 1 });
 		simulatePipeline_.Create(device, DynamicComputeDescription{ filePath, String("Simulate"), 64, 1, 1, &SimulateArguments });
 
-		std::filesystem::path folder = FileLocator::EngineRoot() / "GraphicsEngine/Effect/Zephyr";
+		std::filesystem::path engineRoot = FileLocator::EngineRoot();
 		DynamicGraphicsDescription quadDescription{};
-		quadDescription.meshFile_ = String((folder / "Quad/ParticleQuadMS.hlsl").string());
-		quadDescription.vertexFile_ = String((folder / "Quad/ParticleQuadVS.hlsl").string());
-		quadDescription.pixelFile_ = String((folder / "Quad/ParticleQuadPS.hlsl").string());
+		quadDescription.meshFile_ = String((engineRoot / "GraphicsEngine/Effect/Zephyr/Quad/ParticleQuadMS.hlsl").string());
+		quadDescription.vertexFile_ = String((engineRoot / "GraphicsEngine/Effect/Zephyr/Quad/ParticleQuadVS.hlsl").string());
+		quadDescription.pixelFile_ = String((engineRoot / "GraphicsEngine/Effect/Zephyr/Quad/ParticleQuadPS.hlsl").string());
 		quadDescription.fallback_ = GraphicsFallback::Indirect;
 		quadDescription.targetFormat_ = { RenderFormat::RGBA16Float };
 		quadDescription.depthFormat_ = RenderFormat::D32Float;
