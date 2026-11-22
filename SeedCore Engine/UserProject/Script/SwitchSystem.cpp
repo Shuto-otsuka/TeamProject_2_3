@@ -109,7 +109,16 @@ void SwitchSystem::OnTick(float elapsedTime)
 	{
 	case Mode::Momentary:
 		// 乗っている間のみOnなので常に代入
-		isOn_ = inside;
+		if (inside)
+		{
+			pushTimer_ += elapsedTime;
+			isOn_ = pushTimer_ >= minPushTime_;
+		}
+		else
+		{
+			pushTimer_ = 0.0f;
+			isOn_ = false;
+		}
 		break;
 	case Mode::Toggle:
 		// 押された瞬間に反転し、その瞬間からクールタイム開始

@@ -632,6 +632,7 @@ namespace SeedCore
 						fi.clampMax_ = 10000.0f;
 						outInfo.push_back(std::move(fi));
 					}
+					outInfo.push_back({ String("オンになるための最低押下時間"), offsetof(SwitchSystem, minPushTime_), AttributeType::Float });
 					outInfo.push_back({ String("判定範囲を描画するか"), offsetof(SwitchSystem, isDebugAreaDraw_), AttributeType::Bool });
 				});
 			}

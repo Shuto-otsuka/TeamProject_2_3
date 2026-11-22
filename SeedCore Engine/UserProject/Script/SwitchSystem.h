@@ -38,6 +38,9 @@ public:
 	SC_REFLECTION_CLAMPED_EX("クールタイム", 0.0f, 10000.0f)
 	float cooltime_ = 1.0f;
 
+	SC_REFLECTION_FIELD_EX("オンになるための最低押下時間")
+	float minPushTime_ = 0.0f;
+
 	SC_REFLECTION_FIELD_EX("判定範囲を描画するか")
 	bool isDebugAreaDraw_ = true;
 
@@ -57,6 +60,8 @@ private:
 	bool wasInside_ = false;
 
 	float cooltimer_ = 0.0f;
+
+	float pushTimer_ = 0.0f;
 
 	SeedCore::Uint32 offMaterialID_ = 0;
 
