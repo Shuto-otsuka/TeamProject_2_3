@@ -34,6 +34,10 @@ public:
 
 	void OnDestroy();
 
+	int GetNeedCount() { return needCount_; }
+
+	int GetOnCount() { return onCount_; }
+
 public:
 	bool IsPowered()const;
 
@@ -43,5 +47,9 @@ private:
 	bool powered_ = false;
 
 	bool latched_ = false;
+
+	int needCount_ = 0;
+	
+	int onCount_ = 0;
 };
 REGISTER_COMPONENT(CircuitSystem);
