@@ -49,12 +49,14 @@ public:
 
 	void OnTick(float elapsedTime);
 
-	void OnEditorTick(float elapsedTime);
+	void OnEditorTick(float elapsedTime); 
 
 public:
 	bool IsOn()const;
 
 private:
+	void WaitGaugeSetActive(bool active);
+
 	bool isOn_ = false;
 
 	bool wasInside_ = false;
@@ -62,6 +64,10 @@ private:
 	float cooltimer_ = 0.0f;
 
 	float pushTimer_ = 0.0f;
+
+	float waitGaugeSizeXMax_ = 142.0f;
+
+	SeedCore::Actor waitGauge_;
 
 	SeedCore::Uint32 offMaterialID_ = 0;
 

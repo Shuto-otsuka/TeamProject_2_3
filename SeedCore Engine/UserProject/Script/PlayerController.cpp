@@ -96,7 +96,7 @@ void PlayerController::OnTriggerEnter(SeedCore::Actor other)
 
         CheckPointAreaController* checkPointAreaController = other.GetComponent<CheckPointAreaController>();
 
-        if (checkPointAreaController->GetStep() > beforeCheckPointStep)
+        if (!checkPointAreaController->IsOn())
         {
             if (checkPointAudio)checkPointAudio->Play();
         }
@@ -152,7 +152,7 @@ void PlayerController::OnTriggerEnter(SeedCore::Actor other)
             else
             {
                 //アナウンス
-                if (checkPointAreaController->GetStep() > beforeCheckPointStep)
+                if (!checkPointAreaController->IsOn())
                 {
                     if (announceController)announceController->StartAnnounce(AnnounceController::Type::CHECK_POINT);
                 }
