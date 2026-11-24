@@ -5,6 +5,7 @@
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
 #include <Editor/Editor/Panel/MaterialViewerPanel.h>
+#include <Editor/Editor/Panel/EffectGraphPanel.h>
 #include <Editor/Editor/Panel/ModelTransformPanel.h>
 #include <Editor/Editor/Panel/ResourceSyncControlPanel.h>
 
@@ -30,6 +31,7 @@
 #include <GraphicsEngine/Texture/TextureResource.h>
 #include <GraphicsEngine/Texture/TextureStreaming.h>
 #include <GraphicsEngine/Resource/GraphicsModule.h>
+#include <FoundationEngine/File/FileLocator.h>
 
 namespace SeedCore
 {
@@ -169,7 +171,7 @@ namespace SeedCore
 					if ((!context_.application_.resourceSync_ || !context_.application_.resourceSync_->RemoteOnly(asset.assetID_)) && ImGui::BeginDragDropSource())
 					{
 						ImGui::SetDragDropPayload(GetPayloadType(asset.type_), &asset.assetID_, sizeof(Uint32));
-						ImGui::Text("%s", FilePath(asset.fullpath_.str(), resource->ProjectRootPath()).FilenameText().c_str());
+						ImGui::Text("%s", FilePath(asset.fullpath_.str(), FileLocator::EngineRoot()).FilenameText().c_str());
 						ImGui::EndDragDropSource();
 					}
 
@@ -262,7 +264,7 @@ namespace SeedCore
 							/// [EN] Reload at once rather than waiting for the watch, because the new Prefab's ID is needed right now.
 							/// [JP] 新しい Prefab の ID がすぐ要るので、監視を待たずにここで読み直す。
 							resource->Reload();
-							if (Uint32 newAssetID = resource->GetAssetID(String(savedPath.RelativeText())))
+							if (Uint32 newAssetID = resource->Find(String(savedPath.RelativeText())))
 							{
 								PrefabRegistry* prefabs = dropped.GetWorld().AddService<PrefabRegistry>();
 								EntityID droppedID = ActorAccessor::GetEntity(dropped).GetID();
@@ -654,6 +656,10 @@ namespace SeedCore
 			{
 				OpenScriptPopup(folderPath, ScriptType::Csharp);
 			}
+			if (ImGui::MenuItem("新規エフェクト"))
+			{
+				CreateNewEffect(folderPath);
+			}
 
 			ImGui::Separator();
 
@@ -722,8 +728,8 @@ namespace SeedCore
 
 			/// [EN] Every asset type that keeps a cache file can have it generated; models additionally generate the files derived from them.
 			/// [JP] キャッシュファイルを持つ全てのアセット種別は、それを作れる。モデルはさらに、モデルから作るファイルも作れる。
-			Asset* assetResource = context_.world_.resource_->GetResource(asset.type_);
-			Bool cached = asset.type_ == AssetType::Texture || asset.type_ == AssetType::Model || asset.type_ == AssetType::Audio || asset.type_ == AssetType::Movie || asset.type_ == AssetType::Skymap || asset.type_ == AssetType::Effect;
+			Asset* assetResource = context_.world_.resource_->Resource(asset.type_);
+			Bool cached = asset.type_ == AssetType::Texture || asset.type_ == AssetType::Model || asset.type_ == AssetType::Audio || asset.type_ == AssetType::Movie || asset.type_ == AssetType::Skymap || asset.type_ == AssetType::Effekseer;
 			if (assetResource && cached && ImGui::BeginMenu("アセットアクション"))
 			{
 				if (ImGui::MenuItem("キャッシュファイルを作成"))
@@ -850,6 +856,10 @@ namespace SeedCore
 			if (ImGui::MenuItem("新規 C# スクリプト"))
 			{
 				OpenScriptPopup(directoryPath, ScriptType::Csharp);
+			}
+			if (ImGui::MenuItem("新規エフェクト"))
+			{
+				CreateNewEffect(directoryPath);
 			}
 			if (ImGui::MenuItem("貼り付け", nullptr, false, clipboardState_.type_ != ClipboardType::None))
 			{
@@ -1022,7 +1032,7 @@ namespace SeedCore
 			".vs", "x64", ".git", ".asset",
 		};
 
-		const std::filesystem::path& projectRoot = context_.world_.resource_->ProjectRootPath();
+		const std::filesystem::path& projectRoot = FileLocator::EngineRoot();
 		root_ = {};
 		root_.path_ = FilePath(projectRoot, projectRoot);
 
@@ -1065,7 +1075,7 @@ namespace SeedCore
 		/// [EN] Local assets first, then shared-library assets that are not in this workspace yet.
 		/// [JP] 先にローカルのアセット、次に共有ライブラリにあってこのワークスペースにまだ無いアセット。
 		assetList_.clear();
-		for (const AssetRecord& asset : context_.world_.resource_->AssetList() | std::ranges::views::values)
+		for (const AssetRecord& asset : context_.world_.resource_->Records() | std::ranges::views::values)
 		{
 			assetList_.push_back(asset);
 		}
@@ -1115,6 +1125,8 @@ namespace SeedCore
 		case AssetType::Model:
 			return imguiTexture_.Icon(IconType::Model);
 		case AssetType::Effect:
+		case AssetType::Effekseer:
+		case AssetType::Houdini:
 			return imguiTexture_.Icon(IconType::Effect);
 		case AssetType::Audio:
 			return imguiTexture_.Icon(IconType::Audio);
@@ -1288,6 +1300,10 @@ namespace SeedCore
 			return "ASSET_MODEL";
 		case AssetType::Effect:
 			return "ASSET_EFFECT";
+		case AssetType::Effekseer:
+			return "ASSET_EFFEKSEER";
+		case AssetType::Houdini:
+			return "ASSET_HOUDINI";
 		case AssetType::Audio:
 			return "ASSET_AUDIO";
 		case AssetType::Font:
@@ -1341,7 +1357,7 @@ namespace SeedCore
 		DynamicArray<String> assetPaths;
 		for (const String& writtenPath : writtenPaths)
 		{
-			std::string relativePath = std::filesystem::relative(std::filesystem::path(writtenPath.c_str()), cache.ProjectRootPath()).string();
+			std::string relativePath = std::filesystem::relative(std::filesystem::path(writtenPath.c_str()), FileLocator::EngineRoot()).string();
 			std::ranges::replace(relativePath, '\\', '/');
 			assetPaths.push_back(String(relativePath));
 		}
@@ -1351,8 +1367,8 @@ namespace SeedCore
 		DynamicArray<Uint32> overwrittenIDs;
 		for (const String& assetPath : assetPaths)
 		{
-			Uint32 id = cache.GetAssetID(assetPath);
-			AssetRecord* record = id == 0 ? nullptr : cache.GetAsset(id);
+			Uint32 id = cache.Find(assetPath);
+			AssetRecord* record = id == 0 ? nullptr : cache.Record(id);
 			if (record && record->path_ == assetPath)
 			{
 				overwrittenIDs.push_back(id);
@@ -1374,8 +1390,8 @@ namespace SeedCore
 		{
 			for (const String& assetPath : assetPaths)
 			{
-				Uint32 id = cache.GetAssetID(assetPath);
-				AssetRecord* record = id == 0 ? nullptr : cache.GetAsset(id);
+				Uint32 id = cache.Find(assetPath);
+				AssetRecord* record = id == 0 ? nullptr : cache.Record(id);
 				if (!record || record->path_ != assetPath)
 				{
 					continue;
@@ -1514,7 +1530,7 @@ namespace SeedCore
 	*/
 	Bool ContentsDrawerPanel::ExecuteRegister(const FilePath& headerPath, const FilePath& cppPath)
 	{
-		const std::filesystem::path& projectRoot = context_.world_.resource_->ProjectRootPath();
+		const std::filesystem::path& projectRoot = FileLocator::EngineRoot();
 
 		/// [EN] Tried first: if Visual Studio has Runtime.sln open, letting it add the files itself keeps Solution Explorer in sync immediately and never triggers the "project modified outside the editor" reload prompt (see VisualStudioAutomation's own doc comment). Falls through to editing UserProject.Cplusplus.vcxproj directly — the only path available when Visual Studio isn't running this solution at all.
 		/// [JP] まずこちらを試す: Visual Studio が Runtime.sln を開いていれば、ファイルの追加自体をVSにやらせることで Solution Explorer が即座に同期され、「プロジェクトが外部で変更されました」という再読み込み確認も一切発生しない(詳細は VisualStudioAutomation 自身のドキュメントコメントを参照)。Visual Studio がこのソリューションを開いていない場合にのみ、UserProject.Cplusplus.vcxproj を直接編集する経路へフォールバックする。
@@ -1580,6 +1596,57 @@ namespace SeedCore
 		renameMenuState_.focusRequested_ = true;
 		renameMenuState_.targetPath_.emplace(newPath, targetPath.RootPath());
 		renameMenuState_.targetPath_->FilenameText().resize(256);
+	}
+
+	/**
+	* [EN]
+	* Creates an empty effect file "NewEffect.zephyr" in folderPath,
+	* numbering the name "(2)", "(3)", ... while it is taken, and opens it
+	* in the effect graph. An empty file is read as a new effect with one
+	* emitter holding the fixed nodes, so nothing is written into it here.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* folderPath に空のエフェクトファイル "NewEffect.zephyr" を作り、
+	* エフェクトグラフで開く。名前が使われていれば "(2)"、"(3)"… と番号を
+	* 付ける。空のファイルは、固定ノードを持つエミッターが1つある新しい
+	* エフェクトとして読まれるので、ここでは何も書き込まない。
+	*/
+	void ContentsDrawerPanel::CreateNewEffect(const FilePath& folderPath)
+	{
+		/// [EN] Number the name the same way CreateNewFolder does: "NewEffect.zephyr", "NewEffect(2).zephyr", ...
+		/// [JP] CreateNewFolder と同じく番号を付ける。"NewEffect.zephyr"、"NewEffect(2).zephyr"…
+		std::filesystem::path folder = folderPath.FullPath();
+		std::filesystem::path newPath = folder / "NewEffect.zephyr";
+		for (Int index = 2;std::filesystem::exists(newPath);++index)
+		{
+			newPath = folder / std::format("NewEffect({}).zephyr", index);
+		}
+
+		/// [EN] Only the file itself is made; its contents are filled in when the effect loader reads the empty file.
+		/// [JP] ファイルそのものだけを作る。中身は、エフェクトのローダーが空のファイルを読むときに埋まる。
+		std::ofstream file(newPath, std::ios::binary);
+		if (!file)
+		{
+			SC_LOG_WARNING("コンテンツドロワー: エフェクトの作成に失敗しました: {}", newPath.string());
+			return;
+		}
+		file.close();
+
+		/// [EN] Reload so the new file gets an asset ID, then look that ID up by its path from the engine root.
+		/// [JP] 新しいファイルにアセット ID が付くよう読み直し、エンジンのルートからのパスでその ID を引く。
+		ResourceCache& cache = *context_.world_.resource_;
+		cache.Reload();
+		Uint32 assetID = cache.Find(String(std::filesystem::relative(newPath, FileLocator::EngineRoot()).generic_string()));
+		if (assetID == 0)
+		{
+			return;
+		}
+
+		/// [EN] Open the new effect in the graph right away, as creating a folder starts renaming it right away.
+		/// [JP] フォルダを作るとすぐ名前変更が始まるのと同じく、作ったエフェクトをすぐグラフで開く。
+		context_.panel_.effectGraph_->Open(assetID);
 	}
 
 	/**
@@ -1702,10 +1769,15 @@ namespace SeedCore
 			context_.panel_.materialViewer_->Open();
 			return;
 		}
+		if (asset.type_ == AssetType::Effect)
+		{
+			context_.panel_.effectGraph_->Open(asset.assetID_);
+			return;
+		}
 
 		/// [EN] Anything else opens in the application Windows associates with it.
 		/// [JP] それ以外は、Windows が関連付けているアプリケーションで開く。
-		const FilePath assetPath(asset.fullpath_.str(), context_.world_.resource_->ProjectRootPath());
+		const FilePath assetPath(asset.fullpath_.str(), FileLocator::EngineRoot());
 		ShellExecuteW(NULL, L"open", assetPath.FullPath().wstring().c_str(), NULL, NULL, SW_SHOWNORMAL);
 	}
 
@@ -1742,7 +1814,7 @@ namespace SeedCore
 	{
 		/// [EN] The dialog starts next to the model with the model's name, filtered to the preset's extension.
 		/// [JP] ダイアログはモデルの隣、モデルの名前で始め、プリセットの拡張子で絞り込む。
-		const FilePath sourcePath(asset.fullpath_.str(), context_.world_.resource_->ProjectRootPath());
+		const FilePath sourcePath(asset.fullpath_.str(), FileLocator::EngineRoot());
 		const std::wstring filter = std::wstring(L"*.") + extension;
 
 		std::filesystem::path outputPath;

@@ -1,5 +1,6 @@
 #include <External/Json/json.hpp>
 #include <FoundationEngine/Resource/ResourceSync.h>
+#include <FoundationEngine/Resource/ResourceCache.h>
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/Resource/Prefab/PrefabRegistry.h>
@@ -314,7 +315,9 @@ namespace SeedCore
 			/// [JP] ファイルがあるかのように記録を埋める。1つのブラウザで両方を扱えるのはこのため。
 			AssetRecord record;
 			record.assetID_ = asset.runtimeId_;
-			record.type_ = static_cast<AssetType>(asset.type_);
+			/// [EN] The type is decided from the path's extension, the same way the scan decides it, rather than from the number stored in the catalog, so adding a type to AssetType never misreads entries the catalog already holds.
+			/// [JP] 種類は、カタログに保存された番号ではなく、走査と同じくパスの拡張子から決める。AssetType に種類を足しても、カタログにある既存の項目を読み違えないようにするため。
+			record.type_ = ResourceCache::Classify(std::filesystem::path(asset.path_.str()).extension().string());
 			record.fullpath_ = String(local.generic_wstring());
 			record.path_ = String(std::filesystem::path(config_.workspace_.str()).generic_string() + "/" + asset.path_.str());
 			assets.push_back(record);

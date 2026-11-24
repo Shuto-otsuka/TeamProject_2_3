@@ -25,6 +25,7 @@
 #include <FoundationEngine/World/Actor/ActorAccessor.h>
 #include <FoundationEngine/World/WorldAccessor.h>
 #include <FoundationEngine/Resource/Prefab/PrefabRegistry.h>
+#include <FoundationEngine/File/FileLocator.h>
 
 namespace SeedCore
 {
@@ -94,8 +95,8 @@ namespace SeedCore
 				if (const ImGuiPayload* prefabPayload = ImGui::AcceptDragDropPayload("ASSET_PREFAB"))
 				{
 					Uint32 assetID = *static_cast<const Uint32*>(prefabPayload->Data);
-					Handle<PrefabBlueprint> handle = context_.world_.resource_->GetPrefabPool().Load(assetID, *context_.world_.resource_);
-					PrefabBlueprint* prefab = context_.world_.resource_->GetPrefabPool().Get(handle);
+					Handle<PrefabBlueprint> handle = context_.world_.resource_->Prefabs().Load(assetID, *context_.world_.resource_);
+					PrefabBlueprint* prefab = context_.world_.resource_->Prefabs().Get(handle);
 					if (prefab)
 					{
 						prefab->Instantiate(*context_.world_.world_, *context_.world_.resource_, Actor(), assetID);
@@ -372,8 +373,8 @@ namespace SeedCore
 			if (const ImGuiPayload* prefabPayload = ImGui::AcceptDragDropPayload("ASSET_PREFAB"))
 			{
 				Uint32 assetID = *static_cast<const Uint32*>(prefabPayload->Data);
-				Handle<PrefabBlueprint> handle = context_.world_.resource_->GetPrefabPool().Load(assetID, *context_.world_.resource_);
-				PrefabBlueprint* prefab = context_.world_.resource_->GetPrefabPool().Get(handle);
+				Handle<PrefabBlueprint> handle = context_.world_.resource_->Prefabs().Load(assetID, *context_.world_.resource_);
+				PrefabBlueprint* prefab = context_.world_.resource_->Prefabs().Get(handle);
 				if (prefab)
 				{
 					prefab->Instantiate(*context_.world_.world_, *context_.world_.resource_, actor, assetID);
@@ -465,7 +466,7 @@ namespace SeedCore
 
 	void HierarchyPanel::SaveAsPrefab(Actor actor)
 	{
-		std::filesystem::path prefabDir = context_.world_.resource_->ProjectRootPath() / "UserProject" / "Assets" / "Prefab";
+		std::filesystem::path prefabDir = FileLocator::EngineRoot() / "UserProject" / "Assets" / "Prefab";
 		std::filesystem::create_directories(prefabDir);
 
 		std::filesystem::path savedPath;
@@ -481,9 +482,9 @@ namespace SeedCore
 
 		context_.world_.resource_->Reload();
 
-		std::string relative = std::filesystem::relative(savedPath, context_.world_.resource_->ProjectRootPath()).string();
+		std::string relative = std::filesystem::relative(savedPath, FileLocator::EngineRoot()).string();
 		std::ranges::replace(relative, '\\', '/');
-		Uint32 newAssetID = context_.world_.resource_->GetAssetID(String(relative));
+		Uint32 newAssetID = context_.world_.resource_->Find(String(relative));
 		if (newAssetID != 0)
 		{
 			PrefabRegistry* prefabs = context_.world_.world_->AddService<PrefabRegistry>();

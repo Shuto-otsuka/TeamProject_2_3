@@ -1852,10 +1852,7 @@ namespace SeedCore
 					{
 						AssetMeta assetMeta;
 						assetMeta.guid_ = static_cast<Uint32>(std::hash<std::string>{}(rootPath));
-
-						BinaryOutputArchive outputArchive;
-						assetMeta.Serialize(outputArchive);
-						metaWritten = outputArchive.Write(String(meta.string()));
+						metaWritten = assetMeta.Write(local);
 					}
 				}
 

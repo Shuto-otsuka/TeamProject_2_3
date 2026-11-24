@@ -188,6 +188,7 @@ namespace SeedCore
 		scene.showFlagsLow_ = static_cast<Uint>(showFlags);
 		scene.showFlagsHigh_ = static_cast<Uint>(showFlags >> 32);
 		scene.debugSource_ = static_cast<Uint>(debugSource);
+		scene.viewKind_ = static_cast<Uint>(view.kind_);
 		scene.totalTime_ = timer.TotalTime();
 		scene.deltaTime_ = timer.DeltaTime();
 		scene.screenSize_ = Vector2(static_cast<Float>(nativeWidth_), static_cast<Float>(nativeHeight_));
@@ -239,6 +240,7 @@ namespace SeedCore
 		view.scene_.showFlagsLow_ = static_cast<Uint>(view.showFlags_);
 		view.scene_.showFlagsHigh_ = static_cast<Uint>(view.showFlags_ >> 32);
 		view.scene_.debugSource_ = static_cast<Uint>(view.debugSource_);
+		view.scene_.viewKind_ = static_cast<Uint>(view.kind_);
 	}
 
 	/**
@@ -288,6 +290,7 @@ namespace SeedCore
 		scene.previousViewProjection_ = canvasCamera.PreviousViewProjection();
 		scene.inverseViewProjection_ = canvasCamera.InverseViewProjection();
 		scene.nonJitterViewProjection_ = canvasCamera.NonJitterViewProjection();
+		scene.previousNonJitterViewProjection_ = canvasCamera.PreviousViewProjection();
 
 		/// [EN] The canvas camera's pose, projection range, frame timing and sizes.
 		/// [JP] キャンバスカメラの姿勢、投影範囲、フレーム時刻、サイズ。
@@ -304,6 +307,7 @@ namespace SeedCore
 		scene.showFlagsLow_ = static_cast<Uint>(view.showFlags_);
 		scene.showFlagsHigh_ = static_cast<Uint>(view.showFlags_ >> 32);
 		scene.debugSource_ = static_cast<Uint>(view.debugSource_);
+		scene.viewKind_ = static_cast<Uint>(view.kind_);
 	}
 
 	/**

@@ -18,7 +18,7 @@ import Payload
 NO_META_EXTENSIONS = {".h", ".cpp", ".hlsli", ".hlsl"}
 
 # ゲームプレイコードが名前/パス/ID で Asset に辿り着く入口と、そのうち Asset を指す引数の位置。
-# スクリプトから ResourceCache には直接触れないため、名前解決(ResourceCache::GetAssetID)を
+# スクリプトから ResourceCache には直接触れないため、名前解決(ResourceCache::Find)を
 # 経由する公開 API はこの3つだけ（Scene.h/.cpp, Prefab.h/.cpp 参照）。
 # Scene::Change の第2引数はローディングシーン版ではパス/ID、フェード版では秒数なので、
 # 解決できなかった場合も警告しない。
@@ -248,7 +248,7 @@ def build_guid_map(project_root, user_project_root):
     として保存している(鍵は SC_ENCRYPTION_KEY_SEED の SHA-256)。
     aes256_cbc_decrypt で復号してから、read_tagged_binary_fields で
     フィールドIDから "guid" の4バイトを引く。
-    後者は ResourceCache::GetAssetID() が asset.path_（プロジェクトルート
+    後者は ResourceCache::Find() が asset.path_（プロジェクトルート
     相対、フォワードスラッシュ）に対して完全一致で引く仕組みと同じ形。
     """
     guid_to_path = {}
@@ -396,7 +396,7 @@ def build_filename_index(relpath_to_guid):
 
 def resolve_asset_name(name, relpath_to_guid, filename_to_guids):
     """
-    ResourceCache::GetAssetID と同じ規則で name を Asset ID の集合へ解決する:
+    ResourceCache::Find と同じ規則で name を Asset ID の集合へ解決する:
     まずプロジェクトルート相対パスとして完全一致、外れたらファイル名だけで一致。
     同名ファイルが複数ある場合、エンジンは最初に見つかった1つを使うが、
     どれになるかは静的に決まらないため全候補を返す（パッケージには全て入れる）。

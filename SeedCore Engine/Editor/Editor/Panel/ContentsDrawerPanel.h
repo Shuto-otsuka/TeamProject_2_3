@@ -396,6 +396,23 @@ namespace SeedCore
 
 		/**
 		* [EN]
+		* Creates an empty effect file "NewEffect.zephyr" in folderPath,
+		* numbering the name "(2)", "(3)", ... while it is taken, and opens it
+		* in the effect graph. An empty file is read as a new effect with one
+		* emitter holding the fixed nodes, so nothing is written into it here.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* folderPath に空のエフェクトファイル "NewEffect.zephyr" を作り、
+		* エフェクトグラフで開く。名前が使われていれば "(2)"、"(3)"… と番号を
+		* 付ける。空のファイルは、固定ノードを持つエミッターが1つある新しい
+		* エフェクトとして読まれるので、ここでは何も書き込まない。
+		*/
+		void CreateNewEffect(const FilePath& folderPath);
+
+		/**
+		* [EN]
 		* Creates a C++ (header and source, registered in the project) or C#
 		* script from targetPath's stem. The name is reduced to a valid
 		* identifier and numbered while taken, and the file lands in its

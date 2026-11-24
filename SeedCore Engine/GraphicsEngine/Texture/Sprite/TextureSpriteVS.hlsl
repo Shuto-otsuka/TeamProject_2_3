@@ -35,8 +35,17 @@ TextureSpriteOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_Ins
 		float rotation = unit.kind_ == TEXTURE_KIND_FONT ? 0.0 : atan2(unit.world_[0].y, unit.world_[0].x);
 		float2 scale = float2(length(unit.world_[0].xyz), length(unit.world_[1].xyz));
 		float2 rotated = float2(local.x * cos(rotation) - local.y * sin(rotation), local.x * sin(rotation) + local.y * cos(rotation));
-		float2 pixel = (rotated * scale + unit.world_[3].xy) * (scene.display_size_.y / TEXTURE_CANVAS_HEIGHT);
-		clip = float2(pixel.x / scene.display_size_.x * 2.0 - 1.0, 1.0 - pixel.y / scene.display_size_.y * 2.0);
+		float2 canvas = rotated * scale + unit.world_[3].xy;
+		if (scene.view_kind_ == SCENE_VIEW_KIND_CANVAS)
+		{
+			float3 world_position = float3(100000.0 + canvas.x, 100000.0 + TEXTURE_CANVAS_HEIGHT - canvas.y, 100000.0);
+			clip = mul(float4(world_position, 1.0), scene.current_view_projection_).xy;
+		}
+		else
+		{
+			float2 pixel = canvas * (scene.display_size_.y / TEXTURE_CANVAS_HEIGHT);
+			clip = float2(pixel.x / scene.display_size_.x * 2.0 - 1.0, 1.0 - pixel.y / scene.display_size_.y * 2.0);
+		}
 	}
 
 	TextureSpriteOutput output;

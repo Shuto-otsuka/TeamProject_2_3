@@ -11,6 +11,7 @@
 #include <Editor/Editor/Panel/ControlPanel.h>
 #include <Editor/Editor/Panel/DiagnosticsPanel.h>
 #include <Editor/Editor/Panel/EditorWindowPanel.h>
+#include <Editor/Editor/Panel/EffectGraphPanel.h>
 #include <Editor/Editor/Panel/GameWindowPanel.h>
 #include <Editor/Editor/Panel/HierarchyPanel.h>
 #include <Editor/Editor/Panel/InspectorPanel.h>
@@ -56,6 +57,7 @@
 #include <GraphicsEngine/Model/Skeleton/SkeletonState.h>
 #include <GraphicsEngine/Movie/Movie.h>
 #include <GraphicsEngine/Texture/Image.h>
+#include <FoundationEngine/File/FileLocator.h>
 
 namespace SeedCore
 {
@@ -145,6 +147,7 @@ namespace SeedCore
 			ResourcePtr<TimelinePanel>,
 			ResourcePtr<SkeletonControllerPanel>,
 			ResourcePtr<MaterialViewerPanel>,
+			ResourcePtr<EffectGraphPanel>,
 			ResourcePtr<ModelTransformPanel>,
 			ResourcePtr<AvatarPanel>,
 			ResourcePtr<BootScreenPanel>
@@ -329,6 +332,7 @@ namespace SeedCore
 		Create<TimelinePanel>(context);
 		Create<SkeletonControllerPanel>(context);
 		Create<MaterialViewerPanel>(context, texture);
+		Create<EffectGraphPanel>(context, texture);
 		Create<ModelTransformPanel>(context);
 		Create<AvatarPanel>(context);
 		Create<BootScreenPanel>(context);
@@ -340,6 +344,7 @@ namespace SeedCore
 		context.panel_.timeline_ = &Get<TimelinePanel>();
 		context.panel_.skeletonController_ = &Get<SkeletonControllerPanel>();
 		context.panel_.materialViewer_ = &Get<MaterialViewerPanel>();
+		context.panel_.effectGraph_ = &Get<EffectGraphPanel>();
 		context.panel_.modelTransform_ = &Get<ModelTransformPanel>();
 		context.panel_.avatar_ = &Get<AvatarPanel>();
 		context.panel_.bootScreen_ = &Get<BootScreenPanel>();
@@ -361,7 +366,7 @@ namespace SeedCore
 	* [JP]
 	* パネルと共有アセットの同期を作り、同期をコンテキスト越しに公開する。
 	*/
-	Editor::Impl::Impl(EditorContext& context) : context_(context), texture_(context_), resourceSync_(context_.world_.resource_->ProjectRootPath()), panels_(context_, texture_)
+	Editor::Impl::Impl(EditorContext& context) : context_(context), texture_(context_), resourceSync_(FileLocator::EngineRoot()), panels_(context_, texture_)
 	{
 		/// [EN] Panels read the sync's state (revisions, sharing status) through the context.
 		/// [JP] パネルは同期の状態（Revision、共有の状態）をコンテキスト越しに読む。
@@ -563,6 +568,9 @@ namespace SeedCore
 		Benchmark::Begin("MaterialViewerPanel");
 		panels_.Get<MaterialViewerPanel>().Draw();
 		Benchmark::End("MaterialViewerPanel");
+		Benchmark::Begin("EffectGraphPanel");
+		panels_.Get<EffectGraphPanel>().Draw();
+		Benchmark::End("EffectGraphPanel");
 		Benchmark::Begin("ModelTransformPanel");
 		panels_.Get<ModelTransformPanel>().Draw();
 		Benchmark::End("ModelTransformPanel");
@@ -793,8 +801,8 @@ namespace SeedCore
 			for (const String& asset : imported)
 			{
 				String path = String((std::filesystem::path("UserProject") / asset.w_str()).generic_wstring());
-				Uint32 id = resource.GetAssetID(path);
-				AssetRecord* record = id == 0 ? nullptr : resource.GetAsset(id);
+				Uint32 id = resource.Find(path);
+				AssetRecord* record = id == 0 ? nullptr : resource.Record(id);
 				unknown = unknown || !record || record->path_ != path;
 			}
 			if (unknown)
@@ -807,8 +815,8 @@ namespace SeedCore
 			for (const String& asset : imported)
 			{
 				String path = String((std::filesystem::path("UserProject") / asset.w_str()).generic_wstring());
-				Uint32 id = resource.GetAssetID(path);
-				AssetRecord* record = id == 0 ? nullptr : resource.GetAsset(id);
+				Uint32 id = resource.Find(path);
+				AssetRecord* record = id == 0 ? nullptr : resource.Record(id);
 				if (record && record->path_ == path)
 				{
 					resourceSync_.RequestRegister(*record);
@@ -833,13 +841,13 @@ namespace SeedCore
 		for (Uint32 id : changed)
 		{
 			const SharedAsset* shared = resourceSync_.GetAsset(id);
-			if (!shared || resource.GetAsset(id))
+			if (!shared || resource.Record(id))
 			{
 				continue;
 			}
 			String path = String((std::filesystem::path("UserProject") / shared->path_.str()).generic_string());
-			Uint32 staleId = resource.GetAssetID(path);
-			AssetRecord* stale = staleId == 0 ? nullptr : resource.GetAsset(staleId);
+			Uint32 staleId = resource.Find(path);
+			AssetRecord* stale = staleId == 0 ? nullptr : resource.Record(staleId);
 			if (stale && stale->path_ == path)
 			{
 				resource.Forget(staleId);

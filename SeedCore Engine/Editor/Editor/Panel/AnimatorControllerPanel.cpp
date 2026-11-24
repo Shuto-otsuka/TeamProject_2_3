@@ -904,7 +904,7 @@ namespace SeedCore
 			return "(未選択)";
 		}
 
-		AssetRecord* asset = context_.world_.resource_->GetAsset(static_cast<Uint32>(assetID));
+		AssetRecord* asset = context_.world_.resource_->Record(static_cast<Uint32>(assetID));
 		if (!asset)
 		{
 			return "";

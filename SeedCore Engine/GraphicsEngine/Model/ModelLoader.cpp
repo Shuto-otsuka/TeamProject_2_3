@@ -156,18 +156,9 @@ namespace SeedCore
 
 		/// [EN] A source is converted with the axis convention recorded in its own ".meta"; a missing or older ".meta" yields the default convention.
 		/// [JP] ソースは自身の ".meta" に記録された座標系規約で変換する。".meta" が無いか古ければ既定の規約になる。
-		AxisConvention axisConvention{};
-		{
-			std::filesystem::path metaPath(filePath.c_str());
-			metaPath += ".meta";
-			BinaryInputArchive metaArchive;
-			if (std::filesystem::exists(metaPath) && metaArchive.Read(String(metaPath.string())))
-			{
-				AssetMeta meta;
-				meta.Serialize(metaArchive);
-				axisConvention = meta.axisConvention_;
-			}
-		}
+		AssetMeta meta;
+		meta.Read(std::filesystem::path(filePath.c_str()));
+		AxisConvention axisConvention = meta.axisConvention_;
 
 		Handle<Crister> handle = pool_.Create();
 		Crister* crister = pool_.Get(handle);

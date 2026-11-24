@@ -6,17 +6,21 @@ namespace SeedCore
 {
 	std::filesystem::path FileLocator::EngineRoot()
 	{
-		std::error_code errorCode;
-		std::filesystem::path directory = FileDirectory::ExecutableDirectory();
-		while (!std::filesystem::is_directory(directory / "CompiledShaderObject", errorCode))
-		{
-			if (directory == directory.parent_path())
+		static const std::filesystem::path root = []()
 			{
-				return std::filesystem::current_path().parent_path();
-			}
-			directory = directory.parent_path();
-		}
-		return directory;
+				std::error_code errorCode;
+				std::filesystem::path directory = FileDirectory::ExecutableDirectory();
+				while (!std::filesystem::is_directory(directory / "CompiledShaderObject", errorCode))
+				{
+					if (directory == directory.parent_path())
+					{
+						return std::filesystem::current_path().parent_path();
+					}
+					directory = directory.parent_path();
+				}
+				return directory;
+			}();
+		return root;
 	}
 
 	std::filesystem::path FileLocator::ProjectRoot()

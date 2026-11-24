@@ -13,17 +13,33 @@ namespace SeedCore
 
 		SC_CONSTEX Uint32 sharedThreshold_ = 4096;
 
+		SC_CONSTEX Uint32 groupCapacity_ = 256;
+
+		struct Program
+		{
+			String file_;
+
+			DynamicPipeline<DynamicPipelineKind::Compute> spawn_;
+
+			DynamicPipeline<DynamicPipelineKind::Compute> simulate_;
+
+			Bool created_ = false;
+
+			Bool valid_ = false;
+		};
+
 	public:
 		SC_RENDER_RESOURCES
 		(
 			SC_RENDER_INTERNAL(Emitters, RenderResourceDesc::FixedBuffer(sizeof(ParticleEmitterStructuredBuffer), 1), RenderResourceScope::Frame, RenderResourceLifetime::Upload),
 			SC_RENDER_INTERNAL(Parameters, RenderResourceDesc::FixedBuffer(sizeof(Vector4), 1), RenderResourceScope::Frame, RenderResourceLifetime::Upload),
+			SC_RENDER_INTERNAL(Groups, RenderResourceDesc::FixedBuffer(sizeof(ParticleGroupStructuredBuffer), 1), RenderResourceScope::Frame, RenderResourceLifetime::Upload),
 			SC_RENDER_INTERNAL(Seeds, RenderResourceDesc::DynamicBuffer(sizeof(ParticleSeed)), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
 			SC_RENDER_INTERNAL(Dead, RenderResourceDesc::DynamicBuffer(sizeof(Uint32)), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
 			SC_RENDER_INTERNAL(Alive, RenderResourceDesc::DynamicBuffer(sizeof(Uint32)), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
 			SC_RENDER_INTERNAL(Counters, RenderResourceDesc::DynamicBuffer(sizeof(ParticleCounterStructuredBuffer)), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
 			SC_RENDER_INTERNAL(Offsets, RenderResourceDesc::DynamicBuffer(sizeof(Uint32)), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
-			SC_RENDER_INTERNAL(SimulateArguments, RenderResourceDesc::FixedBuffer(sizeof(Uint32), 3), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
+			SC_RENDER_INTERNAL(SimulateArguments, RenderResourceDesc::FixedBuffer(sizeof(Uint32), 3 * groupCapacity_), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
 			SC_RENDER_INTERNAL(QuadOffsets, RenderResourceDesc::DynamicBuffer(sizeof(Uint32)), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
 			SC_RENDER_INTERNAL(QuadArguments, RenderResourceDesc::FixedBuffer(sizeof(Uint32), 3), RenderResourceScope::Frame, RenderResourceLifetime::Persistent),
 			SC_RENDER_INTERNAL(QuadFallbackArguments, RenderResourceDesc::FixedBuffer(sizeof(Uint32), 4), RenderResourceScope::Frame, RenderResourceLifetime::Persistent)
@@ -48,17 +64,23 @@ namespace SeedCore
 
 		ComputePipeline<ParticleDrivenDescription> drivenPipeline_;
 
-		DynamicPipeline<DynamicPipelineKind::Compute> spawnPipeline_;
-
-		DynamicPipeline<DynamicPipelineKind::Compute> simulatePipeline_;
-
 		DynamicPipeline<DynamicPipelineKind::Graphics> quadPipeline_;
+
+		DynamicArray<Program> programs_;
 
 		ZephyrModuleAssembler assembler_;
 
 		DynamicArray<ParticleEmitterStructuredBuffer> emitters_;
 
 		DynamicArray<Vector4> parameters_;
+
+		DynamicArray<ParticleGroupStructuredBuffer> groups_;
+
+		DynamicArray<Uint32> groupPrograms_;
+
+		DynamicArray<Uint32> emitterPrograms_;
+
+		DynamicArray<Uint32> sources_;
 
 		DynamicArray<Uint32> seedCounts_;
 

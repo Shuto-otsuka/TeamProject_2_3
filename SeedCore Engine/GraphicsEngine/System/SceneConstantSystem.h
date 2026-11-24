@@ -40,7 +40,7 @@ namespace SeedCore
 		Uint showFlagsLow_ = 0xFFFFFFFF;
 		Uint showFlagsHigh_ = 0xFFFFFFFF;
 		Uint debugSource_ = 0;
-		Uint sceneConstantBufferPadding_ = 0;
+		Uint viewKind_ = 0;
 	};
 
 	class BindlessHeap;

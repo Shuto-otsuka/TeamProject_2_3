@@ -50,7 +50,7 @@ namespace SeedCore
 			return assetHandleMap_.at(assetID);
 		}
 
-		AssetRecord* asset = cache.GetAsset(assetID);
+		AssetRecord* asset = cache.Record(assetID);
 		if (!asset)
 		{
 			return Handle<Sound>::null();
@@ -109,7 +109,7 @@ namespace SeedCore
 	*/
 	Bool AudioResource::Generate(const AssetContext& context, Uint32 sourceAssetID, DynamicArray<String>& writtenPaths)
 	{
-		AssetRecord* asset = context.cache_.GetAsset(sourceAssetID);
+		AssetRecord* asset = context.cache_.Record(sourceAssetID);
 		if (!asset)
 		{
 			return false;

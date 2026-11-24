@@ -26,4 +26,10 @@ struct ParticleCounterStructuredBuffer
 	uint particle_counter_structured_buffer_padding_0_;
 };
 
+struct ParticleGroupStructuredBuffer
+{
+	uint first_;
+	uint count_;
+};
+
 #endif // __PARTICLE_POOL_HLSL__

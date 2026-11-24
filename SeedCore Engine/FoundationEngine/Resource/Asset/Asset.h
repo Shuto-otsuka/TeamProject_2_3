@@ -19,9 +19,33 @@ namespace SeedCore
 		/// [JP] 3Dモデル（.gltf/.glb/.fbx/.crister）。
 		Model,
 
-		/// [EN] Particle/visual effect (.efkefc/.effekseer/.zephyr).
-		/// [JP] パーティクル/ビジュアルエフェクト（.efkefc/.effekseer/.zephyr）。
+		/// [EN] Animation clip (.animation).
+		/// [JP] アニメーションクリップ（.animation）。
+		Animation,
+
+		/// [EN] Baked mesh collision geometry (.collision).
+		/// [JP] 焼き込み済みの衝突ジオメトリ（.collision）。
+		MeshCollision,
+
+		/// [EN] Standalone material (.material).
+		/// [JP] 単体マテリアル（.material）。
+		Material,
+
+		/// [EN] Standalone skeleton rig (.skeleton): sockets + root bone.
+		/// [JP] 単体スケルトンリグ（.skeleton）: ソケット + ルートボーン。
+		Skeleton,
+
+		/// [EN] Engine-made effect (.zephyr).
+		/// [JP] エンジン製のエフェクト（.zephyr）。
 		Effect,
+
+		/// [EN] Effekseer effect (.efkefc/.effekseer).
+		/// [JP] Effekseer のエフェクト（.efkefc/.effekseer）。
+		Effekseer,
+
+		/// [EN] Data exported from Houdini.
+		/// [JP] Houdini から書き出したデータ。
+		Houdini,
 
 		/// [EN] Audio (.wav/.mp3/.acb/.awb/.audio).
 		/// [JP] オーディオ（.wav/.mp3/.acb/.awb/.audio）。
@@ -35,9 +59,9 @@ namespace SeedCore
 		/// [JP] ムービー（.mp4/.movie）。
 		Movie,
 
-		/// [EN] Animation clip (.animation).
-		/// [JP] アニメーションクリップ（.animation）。
-		Animation,
+		/// [EN] Skybox/environment map (.hdr/.skymap).
+		/// [JP] スカイボックス/環境マップ（.hdr/.skymap）。
+		Skymap,
 
 		/// [EN] Actor prefab (.prefab).
 		/// [JP] Actor プレハブ（.prefab）。
@@ -46,22 +70,6 @@ namespace SeedCore
 		/// [EN] Scene (.scene).
 		/// [JP] シーン（.scene）。
 		Scene,
-
-		/// [EN] Skybox/environment map (.hdr/.skymap).
-		/// [JP] スカイボックス/環境マップ（.hdr/.skymap）。
-		Skymap,
-
-		/// [EN] Baked mesh collision geometry (.collision).
-		/// [JP] 焼き込み済みの衝突ジオメトリ（.collision）。
-		MeshCollision,
-
-		/// [EN] Standalone material (.material).
-		/// [JP] 単体マテリアル（.material）。
-		Material,
-
-		/// [EN] Standalone skeleton rig (.skeleton): sockets + root bone.
-		/// [JP] 単体スケルトンリグ（.skeleton）: ソケット + ルートボーン。
-		Skeleton,
 
 		/// [EN] Extension not recognized by Scan.
 		/// [JP] Scan が認識しない拡張子。
@@ -118,7 +126,7 @@ namespace SeedCore
 	* （パス由来のハッシュとは異なり）ファイルの移動/リネームを経ても
 	* 変化しない。
 	*/
-	struct AssetMeta
+	struct SEEDCORE_API AssetMeta
 	{
 		/// [EN] Meta file format version, for future migration.
 		/// [JP] メタファイルフォーマットのバージョン。将来のマイグレーション用。
@@ -134,6 +142,10 @@ namespace SeedCore
 		///      Model 以外のアセットでは使わない。
 		AxisConvention axisConvention_;
 
+		/// [EN] Total transform baked into this Model asset. Each new transform replaces the stored one rather than accumulating onto it.
+		///      Unused for other asset types.
+		/// [JP] この Model アセットに焼き込まれた合計のトランスフォーム。新しいトランスフォームは、保存済みのものへ積み上げず置き換える。
+		///      Model 以外のアセットでは使わない。
 		Matrix modelTransform_ = Matrix::Identity;
 
 		/**
@@ -155,6 +167,38 @@ namespace SeedCore
 			archive.TryField("axis_convention", axisConvention_);
 			archive.TryField("model_transform", modelTransform_);
 		}
+
+		/**
+		* [EN]
+		* Reads the ".meta" beside the asset file at filePath into this
+		* object and returns true. Returns false and leaves every field as it
+		* was when that ".meta" does not exist or cannot be read, so a caller
+		* sets the values it wants as defaults before reading.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* filePath のアセットファイルの隣にある ".meta" を、このオブジェクトへ
+		* 読み込んで true を返す。その ".meta" が無い、または読めない場合は
+		* false を返し、全てのフィールドを元のまま残す。なので呼び出し側は、
+		* 既定にしたい値を読む前に入れておく。
+		*/
+		Bool Read(const std::filesystem::path& filePath);
+
+		/**
+		* [EN]
+		* Writes this object to the ".meta" beside the asset file at
+		* filePath, replacing any existing one. Returns false when the write
+		* failed.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* このオブジェクトを、filePath のアセットファイルの隣にある ".meta" へ
+		* 書き出す。既存のものは置き換える。書き込みに失敗した場合は false を
+		* 返す。
+		*/
+		Bool Write(const std::filesystem::path& filePath)const;
 	};
 
 	/**
@@ -176,8 +220,8 @@ namespace SeedCore
 		/// [JP] メインスレッド。エディタの読み直し、ファイルの監視、同期の読み込み。
 		Main,
 
-		/// [EN] The background worker driven by ResourceCache::StepAsync.
-		/// [JP] ResourceCache::StepAsync が動かすバックグラウンドのワーカー。
+		/// [EN] The background worker driven by ResourceCache::Run.
+		/// [JP] ResourceCache::Run が動かすバックグラウンドのワーカー。
 		Async
 	};
 

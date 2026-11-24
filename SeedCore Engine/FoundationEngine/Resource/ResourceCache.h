@@ -15,52 +15,119 @@ namespace SeedCore
 
 	/**
 	* [EN]
-	* Owns the project's discovered asset table and the resource
-	* managers (texture/model/animation/font/movie/skymap) that load them,
-	* plus the Prefab/Scene pools. Scan() walks the project directory
-	* tree to (re)discover assets and reconcile their .meta-derived
-	* GUIDs; Step()/Async() drive incremental/background loading with
-	* progress tracking, while Reload()/Unload() perform full
-	* synchronous passes.
+	* Owns the project's discovered asset table and the Prefab/Scene
+	* pools, and drives the resource managers each engine module
+	* registers per AssetType through Register() (it does not own them).
+	* Queue() scans the engine root's directory tree to (re)discover
+	* assets and reconcile their .meta-derived GUIDs, then Step()/Run()
+	* load them one at a time or on a background worker with progress
+	* tracking, while Reload() performs a full synchronous pass.
 	*
 	* ---------------------------------------------------------------------
 	*
 	* [JP]
-	* プロジェクトの発見済みアセットテーブルと、それらを読み込む
-	* リソースマネージャ（texture/model/animation/font/movie/skymap）、および
-	* Prefab/Scene プールを所有する。Scan() はプロジェクトディレクトリ
-	* ツリーを走査してアセットを（再）発見し、.meta 由来の GUID を
-	* 整合させる。Step()/Async() はプログレス追跡付きの逐次/バックグラウンド
-	* 読み込みを駆動し、Reload()/Unload() は完全同期パスを実行する。
+	* プロジェクトの発見済みアセットテーブルと Prefab/Scene のプールを
+	* 所有し、各エンジンのモジュールが Register() で AssetType ごとに登録
+	* するリソースマネージャを動かす（マネージャは所有しない）。Queue() は
+	* エンジンのルートのディレクトリツリーを走査してアセットを（再）発見し、
+	* .meta 由来の GUID を整合させる。その後 Step()/Run() が、1つずつ、
+	* またはバックグラウンドのワーカーで、進捗を追いながら読み込む。
+	* Reload() は完全な同期のパスを実行する。
 	*/
 	class SEEDCORE_API ResourceCache
 	{
 	public:
 		/**
 		* [EN]
-		* Constructs an empty cache and resolves the project root path.
-		* Resource managers are added afterwards through Register().
+		* Constructs an empty cache. Resource managers are added afterwards
+		* through Register().
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* 空のキャッシュを構築し、プロジェクトルートパスを解決する。
-		* リソースマネージャは後から Register() で追加する。
+		* 空のキャッシュを構築する。リソースマネージャは後から Register() で
+		* 追加する。
 		*/
 		ResourceCache();
 
 		/**
 		* [EN]
-		* Destroys the cache, unloading every currently-loaded asset.
+		* Destroys the cache through Finalize().
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* キャッシュを破棄し、現在読み込まれている全アセットを解放する。
+		* Finalize() を通してキャッシュを破棄する。
 		*/
 		~ResourceCache();
 
+		/**
+		* [EN]
+		* Waits for a running Run() job, stops the folder watch, unloads
+		* every loaded asset and forgets the registered resource managers.
+		* Called by the destructor, and earlier by a host whose resource
+		* managers are destroyed before the cache.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 実行中の Run() のジョブを待ち、フォルダの監視を止め、読み込み済みの
+		* 全アセットを解放し、登録されたリソースマネージャを忘れる。
+		* デストラクタが呼ぶほか、リソースマネージャがキャッシュより先に
+		* 破棄されるホストは、それより前に呼ぶ。
+		*/
 		void Finalize();
+
+		/**
+		* [EN]
+		* Registers resource as the manager that loads and releases every
+		* asset of type. The cache keeps only a reference, so resource must
+		* outlive it or be dropped through Finalize() first.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* resource を、type の全アセットを読み込み・解放するマネージャとして
+		* 登録する。キャッシュは参照しか持たないので、resource はキャッシュより
+		* 長く生きるか、先に Finalize() で外す必要がある。
+		*/
+		void Register(AssetType type, Asset& resource);
+
+		/**
+		* [EN]
+		* Returns the resource manager registered for type, or nullptr if
+		* no manager was registered for it (e.g. Prefab/Scene, which the
+		* pools handle instead).
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* type に登録されているリソースマネージャを返す。登録が無ければ
+		* nullptr を返す（例: Prefab/Scene は代わりにプールが扱う）。
+		*/
+		NODISCARD Asset* Resource(AssetType type)const;
+
+		/**
+		* [EN]
+		* Returns the prefab pool.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* プレハブのプールを返す。
+		*/
+		NODISCARD PrefabPool& Prefabs();
+
+		/**
+		* [EN]
+		* Returns the scene pool.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* シーンのプールを返す。
+		*/
+		NODISCARD ScenePool& Scenes();
 
 		/**
 		* [EN]
@@ -108,39 +175,7 @@ namespace SeedCore
 
 		/**
 		* [EN]
-		* Starts (or restarts) an incremental scan/load pass: rescans the
-		* project directory tree, builds the pending-load queue ordered
-		* by AssetType, and resets progress counters.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 逐次的なスキャン/読み込みパスを開始（または再開始）する:
-		* プロジェクトディレクトリツリーを再スキャンし、AssetType 順に
-		* 並べた保留読み込みキューを構築し、進捗カウンタをリセットする。
-		*/
-		void Async();
-
-		/**
-		* [EN]
-		* Loads exactly one pending asset from the queue built by Async(),
-		* if any remain, telling its manager that thread runs the load.
-		* Returns whether an asset was processed this call (false once the
-		* queue is drained or Async hasn't been called).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Async() が構築したキューから、残っていればちょうど1つの保留
-		* アセットを読み込み、その管理クラスへ thread で読み込んでいることを
-		* 伝える。この呼び出しでアセットを処理したかどうかを返す（キューが
-		* 尽きた、または Async が呼ばれていない場合は false）。
-		*/
-		Bool Step(LoadThread thread);
-
-		/**
-		* [EN]
-		* Watches UserProject (the project root when UserProject does not
+		* Watches UserProject (the engine root when UserProject does not
 		* exist) for file and folder changes and runs Reload() when one has
 		* happened. The first call only starts the watch, so only a host that
 		* calls this every frame (the Editor) pays for it.
@@ -148,73 +183,12 @@ namespace SeedCore
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* UserProject（UserProject が無ければプロジェクトルート）のファイルと
+		* UserProject（UserProject が無ければエンジンのルート）のファイルと
 		* フォルダの変更を監視し、変更があれば Reload() を実行する。最初の
 		* 呼び出しは監視を始めるだけなので、毎フレーム呼ぶホスト（Editor）
 		* だけがその負担を持つ。
 		*/
 		void Watch();
-
-		/**
-		* [EN]
-		* Starts (once per Async() pass - later calls are ignored until the
-		* pass finishes) a background job that repeatedly calls Step() on a
-		* dedicated worker thread until the pending queue is drained. Callers
-		* poll Complete()/Progress() (both atomic) from the main thread instead
-		* of calling Step() themselves, so a heavy per-asset load never blocks
-		* frame presentation. The destructor waits for this job to finish
-		* before unloading anything, so it's always safe to tear down mid-load.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* バックグラウンドジョブを開始する（Async() パスごとに1回のみ - パスが
-		* 終わるまで以降の呼び出しは無視される）。専用のワーカースレッド上で
-		* キューが尽きるまで Step() を繰り返し呼ぶ。呼び出し側は自分で Step()
-		* を呼ぶ代わりに、メインスレッドから Complete()/Progress()（どちらも
-		* atomic）をポーリングする。これにより重いアセット単位の読み込みが
-		* フレーム表示をブロックすることがなくなる。デストラクタはこの
-		* ジョブの完了を待ってから解放処理に入るので、読み込み中に破棄しても
-		* 常に安全。
-		*/
-		void StepAsync();
-
-		/**
-		* [EN]
-		* Makes the dedicated asynchronous loader attach to benchmark recording.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 専用の非同期ローダーをベンチマーク計測へ Attach する。
-		*/
-		void Benchmark(BenchmarkSystem& benchmark);
-
-		/**
-		* [EN]
-		* Returns whether the current Async() pass has scanned and
-		* loaded every pending asset.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 現在の Async() パスが、保留中の全アセットをスキャン・読み込み
-		* 済みかどうかを返す。
-		*/
-		Bool Complete()const;
-
-		/**
-		* [EN]
-		* Returns the current load progress of the Async() pass, from 0
-		* to 1 (1 if there is nothing to load).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Async() パスの現在の読み込み進捗を 0 から 1 の範囲で返す
-		* （読み込むものが無ければ 1）。
-		*/
-		Float Progress()const;
 
 		/**
 		* [EN]
@@ -229,23 +203,137 @@ namespace SeedCore
 		* 覚えておけば、誰が読み直したかを知らなくても、アセット一覧が変わった
 		* ことを判断できる。
 		*/
-		Uint64 Revision()const;
+		NODISCARD Uint64 Revision()const;
 
 		/**
 		* [EN]
-		* Returns the AssetRecord registered under id, or nullptr if unknown.
+		* Starts (or restarts) an incremental load pass: scans the engine
+		* root's directory tree on the calling thread, queues every
+		* not-yet-loaded asset in dependency order, and resets the progress
+		* counters. Step() or Run() then works through the queue.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* id に登録されている AssetRecord を返す。不明であれば nullptr を返す。
+		* 逐次の読み込みパスを開始（または再開始）する。呼び出したスレッドで
+		* エンジンのルートのディレクトリツリーを走査し、まだ読み込まれていない
+		* 全アセットを依存の順にキューへ積み、進捗のカウンタをリセットする。
+		* その後、Step() か Run() がキューを処理する。
 		*/
-		AssetRecord* GetAsset(Uint32 id);
+		void Queue();
+
+		/**
+		* [EN]
+		* Loads exactly one pending asset from the queue built by Queue(),
+		* if any remain, telling its manager that thread runs the load.
+		* Returns whether an asset was processed this call (false once the
+		* queue is drained or Queue() hasn't been called).
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* Queue() が構築したキューから、残っていればちょうど1つの保留
+		* アセットを読み込み、その管理クラスへ thread で読み込んでいることを
+		* 伝える。この呼び出しでアセットを処理したかどうかを返す（キューが
+		* 尽きた、または Queue() が呼ばれていない場合は false）。
+		*/
+		Bool Step(LoadThread thread);
+
+		/**
+		* [EN]
+		* Starts (once per Queue() pass - later calls are ignored until the
+		* pass finishes) a background job that repeatedly calls Step() on a
+		* dedicated worker thread until the pending queue is drained. Callers
+		* poll Complete()/Progress() (both atomic) from the main thread instead
+		* of calling Step() themselves, so a heavy per-asset load never blocks
+		* frame presentation. Finalize() waits for this job to finish before
+		* unloading anything, so it's always safe to tear down mid-load.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* バックグラウンドジョブを開始する（Queue() パスごとに1回のみ - パスが
+		* 終わるまで以降の呼び出しは無視される）。専用のワーカースレッド上で
+		* キューが尽きるまで Step() を繰り返し呼ぶ。呼び出し側は自分で Step()
+		* を呼ぶ代わりに、メインスレッドから Complete()/Progress()（どちらも
+		* atomic）をポーリングする。これにより重いアセット単位の読み込みが
+		* フレーム表示をブロックすることがなくなる。Finalize() はこの
+		* ジョブの完了を待ってから解放処理に入るので、読み込み中に破棄しても
+		* 常に安全。
+		*/
+		void Run();
+
+		/**
+		* [EN]
+		* Makes the dedicated asynchronous loader attach to benchmark recording.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 専用の非同期ローダーをベンチマーク計測へ Attach する。
+		*/
+		void Benchmark(BenchmarkSystem& benchmark);
+
+		/**
+		* [EN]
+		* Returns whether the current Queue() pass has scanned and
+		* loaded every pending asset.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 現在の Queue() パスが、保留中の全アセットをスキャン・読み込み
+		* 済みかどうかを返す。
+		*/
+		NODISCARD Bool Complete()const;
+
+		/**
+		* [EN]
+		* Returns the current load progress of the Queue() pass, from 0
+		* to 1 (1 if there is nothing to load).
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* Queue() パスの現在の読み込み進捗を 0 から 1 の範囲で返す
+		* （読み込むものが無ければ 1）。
+		*/
+		NODISCARD Float Progress()const;
+
+		/**
+		* [EN]
+		* Returns the asset type a file with extension (including the
+		* leading dot, e.g. ".png") belongs to, or AssetType::Unknown when
+		* no type uses it. This is the single place an extension is mapped
+		* to a type, shared by Scan and by the team library listing.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 拡張子 extension（先頭のドットを含む。例: ".png"）のファイルが属する
+		* アセットの種類を返す。どの種類も使わない拡張子なら
+		* AssetType::Unknown を返す。拡張子から種類を決めるのはここだけで、
+		* Scan とチームのライブラリの一覧が共有する。
+		*/
+		NODISCARD static AssetType Classify(const std::string& extension);
+
+		/**
+		* [EN]
+		* Returns the AssetRecord registered under assetID, or nullptr if
+		* unknown.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* assetID に登録されている AssetRecord を返す。不明であれば nullptr を
+		* 返す。
+		*/
+		NODISCARD AssetRecord* Record(Uint32 assetID);
 
 		/**
 		* [EN]
 		* Returns the asset ID whose path matches filename, or 0 if not
-		* found. filename can be a full project-root-relative path (e.g.
+		* found. filename can be a full engine-root-relative path (e.g.
 		* "UserProject/Assets/Scene/Foo.scene", matched exactly) or just a
 		* bare filename (e.g. "Foo.scene", matched against every asset's
 		* own filename - the caller doesn't need to know which subfolder
@@ -257,7 +345,7 @@ namespace SeedCore
 		*
 		* [JP]
 		* パスが filename に一致するアセットの ID を返す。見つからなければ
-		* 0 を返す。filename には、プロジェクトルート相対のフルパス(例:
+		* 0 を返す。filename には、エンジンのルートからの相対のフルパス(例:
 		* "UserProject/Assets/Scene/Foo.scene"、完全一致)か、単なる
 		* ファイル名(例: "Foo.scene"、各アセット自身のファイル名と比較 -
 		* 呼び出し側はどのサブフォルダにあるか知らなくてよい)のどちらも
@@ -265,7 +353,7 @@ namespace SeedCore
 		* 見つかったものを使い、警告を出す(どれが「正しい」かは判別
 		* できないため)。
 		*/
-		Uint32 GetAssetID(String filename);
+		NODISCARD Uint32 Find(String filename);
 
 		/**
 		* [EN]
@@ -276,150 +364,20 @@ namespace SeedCore
 		* [JP]
 		* パスに key を部分文字列として含む、全ての AssetRecord を返す。
 		*/
-		DynamicArray<AssetRecord*> Search(String key);
+		NODISCARD DynamicArray<AssetRecord*> Search(String key);
 
 		/**
 		* [EN]
-		* Reads the AxisConvention persisted in id's .meta sidecar. Returns a
-		* default-constructed AxisConvention (matching the engine's existing
-		* fixed RH->LH behavior) if the asset or its .meta file don't exist,
-		* or if the .meta predates this field.
+		* Returns every discovered asset's record, keyed by asset ID.
 		*
 		* ---------------------------------------------------------------------
 		*
 		* [JP]
-		* id の .meta サイドカーに永続化されている AxisConvention を読み取る。
-		* アセットや .meta ファイルが存在しない場合、またはこのフィールドより
-		* 前の .meta の場合は、デフォルト構築の AxisConvention（エンジン既存の
-		* 固定 RH->LH 挙動と一致）を返す。
+		* 発見済みの全アセットの記録を、アセット ID をキーとして返す。
 		*/
-		AxisConvention ReadAxisConvention(Uint32 assetId)const;
-
-		/**
-		* [EN]
-		* Reads the total transform baked into the Model asset behind id,
-		* as persisted in its .meta sidecar. Returns the identity matrix
-		* if the asset or its .meta file don't exist, or if the .meta
-		* predates this field.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* id の Model アセットに焼き込まれている合計トランスフォームを、
-		* その .meta サイドカーに永続化されている値として読み取る。アセットや
-		* .meta ファイルが存在しない場合、またはこのフィールドより前の .meta
-		* の場合は、単位行列を返す。
-		*/
-		Matrix ReadModelTransform(Uint32 assetId)const;
-
-		/**
-		* [EN]
-		* Persists convention into id's .meta sidecar, preserving the
-		* existing guid_. Creates the .meta file if it doesn't exist yet.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* id の .meta サイドカーへ convention を永続化する。既存の guid_ は
-		* 保持する。.meta ファイがまだ無ければ新規作成する。
-		*/
-		void WriteAssetMeta(Uint32 assetId, const AxisConvention& convention);
-
-		/**
-		* [EN]
-		* Persists transform into id's .meta sidecar as the total transform
-		* baked into that Model asset, preserving the existing guid_.
-		* Replaces the stored matrix rather than accumulating onto it, so a
-		* caller applying a further transform multiplies it onto
-		* ReadModelTransform's result itself. Creates the .meta file if it
-		* doesn't exist yet.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* id の .meta サイドカーへ、その Model アセットに焼き込まれた合計
-		* トランスフォームとして transform を永続化する。既存の guid_ は
-		* 保持する。保存済みの行列へ積み上げるのではなく置き換えるため、
-		* さらにトランスフォームを適用する呼び出し側は、自分で
-		* ReadModelTransform の結果へ掛けてから渡す。.meta ファイルがまだ
-		* 無ければ新規作成する。
-		*/
-		void WriteAssetMeta(Uint32 assetId, const Matrix& transform);
-
-		void Register(AssetType type, Asset& resource);
-
-		/**
-		* [EN]
-		* Returns the resource manager registered for type, or nullptr if
-		* no manager was registered for it (e.g. Prefab/Scene, which the
-		* pools handle instead).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* type に登録されているリソースマネージャを返す。登録が無ければ
-		* nullptr を返す（例: Prefab/Scene は代わりにプールが扱う）。
-		*/
-		Asset* GetResource(AssetType type)const;
-
-		/**
-		* [EN]
-		* Returns the prefab pool.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* プレハブプールを返す。
-		*/
-		PrefabPool& GetPrefabPool();
-
-		/**
-		* [EN]
-		* Returns the scene pool.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* シーンプールを返す。
-		*/
-		ScenePool& GetScenePool();
-
-		/**
-		* [EN]
-		* Returns the full map of discovered assets, keyed by asset ID.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 発見済みの全アセットのマップを、アセット ID をキーとして返す。
-		*/
-		const FlatMap<Uint32, AssetRecord>& AssetList()const;
-
-		/**
-		* [EN]
-		* Returns the resolved project root path.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 解決済みのプロジェクトルートパスを返す。
-		*/
-		const std::filesystem::path& ProjectRootPath()const;
+		NODISCARD const FlatMap<Uint32, AssetRecord>& Records()const;
 
 	private:
-		/**
-		* [EN]
-		* Unloads every currently-loaded asset from its owning resource
-		* manager and clears the asset/search maps.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 現在読み込まれている全アセットを、それぞれの所有元リソース
-		* マネージャから解放し、アセット/検索マップをクリアする。
-		*/
-		void Unload();
-
 		/**
 		* [EN]
 		* Walks targetPath's directory tree, discovering asset files by
@@ -452,6 +410,19 @@ namespace SeedCore
 		*/
 		void Rescan();
 
+		/**
+		* [EN]
+		* Unloads every currently-loaded asset from its owning resource
+		* manager and clears the asset/search maps.
+		*
+		* ---------------------------------------------------------------------
+		*
+		* [JP]
+		* 現在読み込まれている全アセットを、それぞれの所有元リソース
+		* マネージャから解放し、アセット/検索マップをクリアする。
+		*/
+		void Unload();
+
 	private:
 		/// [EN] Every discovered asset, keyed by asset ID.
 		/// [JP] 発見済みの全アセット。アセット ID をキーとする。
@@ -460,10 +431,6 @@ namespace SeedCore
 		/// [EN] Adaptive radix tree mapping an asset's path to its asset ID, for fast prefix/substring lookups.
 		/// [JP] アセットのパスをそのアセット ID へ対応付ける、高速な前方一致/部分一致検索のためのアダプティブ基数木。
 		ArtMap<String, Uint32> searchMap_;
-
-		/// [EN] Resolved absolute path of the project root.
-		/// [JP] 解決済みの、プロジェクトルートの絶対パス。
-		std::filesystem::path projectRootPath_;
 
 		/// [EN] Resource manager per asset type, registered by each engine module through Register(); not owned, so a new asset type needs no change here.
 		/// [JP] アセット種別ごとのリソースマネージャ。各エンジンのモジュールが Register() で登録する。所有はしないので、新しいアセット種別を追加してもここには変更が要らない。
@@ -477,42 +444,42 @@ namespace SeedCore
 		/// [JP] 読み込み済みの Scene アセットのプール。
 		ScenePool scenePool_;
 
-		/// [EN] AssetRecord IDs awaiting load in the current Async() pass, ordered by AssetType.
-		/// [JP] 現在の Async() パスで読み込みを待っている、AssetType 順に並んだアセット ID 群。
+		/// [EN] AssetRecord IDs awaiting load in the current Queue() pass, in dependency order.
+		/// [JP] 現在の Queue() パスで読み込みを待っている、依存の順に並んだアセット ID 群。
 		DynamicArray<Uint32> pendingAssetIDs_;
 
-		/// [EN] Index of the next pending asset for Step(); atomic because StepAsync() updates it on a worker while Complete() reads it on the main thread.
-		/// [JP] Step() が次に処理する保留アセットの番号。StepAsync() がワーカーで更新し、Complete() がメインスレッドで読むので atomic。
+		/// [EN] Index of the next pending asset for Step(); atomic because Run() updates it on a worker while Complete() reads it on the main thread.
+		/// [JP] Step() が次に処理する保留アセットの番号。Run() がワーカーで更新し、Complete() がメインスレッドで読むので atomic。
 		std::atomic<Size> pendingIndex_{ 0 };
 
-		/// [EN] Total number of assets queued in the current Async() pass.
-		/// [JP] 現在の Async() パスでキューに入れられたアセットの総数。
+		/// [EN] Total number of assets queued in the current Queue() pass.
+		/// [JP] 現在の Queue() パスでキューに入れられたアセットの総数。
 		std::atomic<Uint32> totalAssetCount_{ 0 };
 
-		/// [EN] Number of assets loaded so far in the current Async() pass.
-		/// [JP] 現在の Async() パスで、これまでに読み込まれたアセット数。
+		/// [EN] Number of assets loaded so far in the current Queue() pass.
+		/// [JP] 現在の Queue() パスで、これまでに読み込まれたアセット数。
 		std::atomic<Uint32> loadedAssetCount_{ 0 };
 
-		/// [EN] Whether the directory scan for the current Async() pass has finished.
-		/// [JP] 現在の Async() パスにおけるディレクトリスキャンが完了しているかどうか。
+		/// [EN] Whether the directory scan for the current Queue() pass has finished.
+		/// [JP] 現在の Queue() パスにおけるディレクトリスキャンが完了しているかどうか。
 		std::atomic<Bool> scanComplete_{ false };
 
-		/// [EN] Taskflow for StepAsync()'s background job. A member, not a local, because JobTopology only references it
-		///      and the job keeps running after StepAsync() returns.
-		/// [JP] StepAsync() のバックグラウンドジョブ用の taskflow。JobTopology は参照しか持たず、
-		///      ジョブは StepAsync() が戻った後も動き続けるので、ローカル変数ではなくメンバーにする。
+		/// [EN] Taskflow for Run()'s background job. A member, not a local, because JobTopology only references it
+		///      and the job keeps running after Run() returns.
+		/// [JP] Run() のバックグラウンドジョブ用の taskflow。JobTopology は参照しか持たず、
+		///      ジョブは Run() が戻った後も動き続けるので、ローカル変数ではなくメンバーにする。
 		JobTaskflow loadTaskflow_;
 
-		/// [EN] Single-worker executor for StepAsync(), created on first use and destroyed first in ~ResourceCache() (waiting for running work) before anything is unloaded.
-		/// [JP] StepAsync() 専用の1ワーカーの実行器。初回使用時に作り、~ResourceCache() の最初で(実行中の作業を待って)何かを解放する前に破棄する。
+		/// [EN] Single-worker executor for Run(), created on first use and destroyed first in Finalize() (waiting for running work) before anything is unloaded.
+		/// [JP] Run() 専用の1ワーカーの実行器。初回使用時に作り、Finalize() の最初で(実行中の作業を待って)何かを解放する前に破棄する。
 		ResourcePtr<JobExecutor> loadExecutor_;
 
 		/// [EN] Benchmark the dedicated load worker attaches to, when profiling is enabled.
 		/// [JP] プロファイリング時に専用ローダーワーカーが Attach するベンチマーク。
 		BenchmarkSystem* benchmark_ = nullptr;
 
-		/// [EN] Guards against StepAsync() starting a second background job while one from the current Async() pass is still running.
-		/// [JP] 現在の Async() パスのバックグラウンドジョブがまだ実行中の間に、StepAsync() が2つ目のジョブを開始しないようにする。
+		/// [EN] Guards against Run() starting a second background job while one from the current Queue() pass is still running.
+		/// [JP] 現在の Queue() パスのバックグラウンドジョブがまだ実行中の間に、Run() が2つ目のジョブを開始しないようにする。
 		std::atomic<Bool> loadStarted_{ false };
 
 		/// [EN] Change-notification handle for the folder Watch() observes; INVALID_HANDLE_VALUE until Watch() is first called.
@@ -523,24 +490,25 @@ namespace SeedCore
 		/// [JP] これまでの全体の Reload() の回数。Revision() が返す。
 		Uint64 revision_ = 0;
 
-	private:
-		/// [EN] File extensions Scan recognizes as candidate assets.
-		/// [JP] Scan がアセット候補として認識するファイル拡張子。
+		/// [EN] File extensions Scan recognizes as candidate assets, in AssetType order; ".navmesh" is listed with the model-derived files it is made beside but classifies as Unknown, and source code is listed last.
+		/// [JP] Scan がアセット候補として認識するファイル拡張子。AssetType の順に並べる。".navmesh" は一緒に作られるモデル由来のファイルの並びに置くが、種類は Unknown になる。ソースコードは最後に置く。
 		std::set<std::string_view> includeExtensions_ =
 		{
-			".png", ".jpg", ".jpeg", ".texture", ".dds",
+			".png", ".jpg", ".jpeg", ".dds", ".texture",
 			".gltf", ".glb", ".fbx", ".crister",
 			".animation",
 			".collision",
 			".material",
 			".skeleton",
 			".navmesh",
-			".efkefc", ".effekseer", ".zephyr",
+			".zephyr",
+			".efkefc", ".effekseer",
 			".mp3", ".wav", ".acb", ".awb", ".audio",
-			".hdr", ".skymap",
 			".ttf", ".otf", ".ttc",
 			".mp4", ".movie",
-			".scene", ".prefab",
+			".hdr", ".skymap",
+			".prefab",
+			".scene",
 			".h", ".cpp", ".cs", ".hlsli", ".hlsl",
 		};
 
@@ -573,15 +541,27 @@ namespace SeedCore
 		/// [JP] 対応する .meta ファイルを持たないファイル拡張子（その GUID は代わりにパスハッシュから導出される）。
 		std::set<std::string_view> noMetaExtensions_ =
 		{
-			".h", ".cpp", ".cs", ".hlsli", ".hlsl"
+			".h", 
+			".cpp", 
+			".cs", 
+			".hlsli", 
+			".hlsl"
 		};
 
-		/// [EN] Extensions of the files the engine writes out by itself. Their .meta is still written, but the GUID in it is derived from the project-relative path, so every machine that bakes the same file arrives at the same identifier without exchanging anything.
-		/// [JP] エンジンが自分で書き出すファイルの拡張子。.meta は書き出すが、その GUID はプロジェクト内の位置から導出する。同じファイルを焼いた PC は、何もやり取りせずに同じ識別子へ行き着く。
+		/// [EN] Extensions of the files the engine writes out by itself, in AssetType order. Their .meta is still written, but the GUID in it is derived from the project-relative path, so every machine that bakes the same file arrives at the same identifier without exchanging anything.
+		/// [JP] エンジンが自分で書き出すファイルの拡張子。AssetType の順に並べる。.meta は書き出すが、その GUID はプロジェクト内の位置から導出する。同じファイルを焼いた PC は、何もやり取りせずに同じ識別子へ行き着く。
 		std::set<std::string_view> generatedExtensions_ =
 		{
-			".crister", ".material", ".skeleton", ".animation", ".collision", ".navmesh",
-			".texture", ".audio", ".movie", ".skymap",
+			".texture",
+			".crister",
+			".animation",
+			".collision",
+			".material",
+			".skeleton",
+			".navmesh",
+			".audio",
+			".movie",
+			".skymap",
 		};
 	};
 }

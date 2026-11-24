@@ -111,7 +111,7 @@ namespace SeedCore
 	{
 		/// [EN] Use the pool's shared scratch instance instead of allocating a new blueprint, since this is a one-shot operation with no need for pooled/deduplicated storage.
 		/// [JP] 新しい設計図を確保する代わりに、プールの共有作業用インスタンスを使用する。これは使い捨ての操作であり、プール化/重複排除されたストレージは不要なため。
-		SceneBlueprint& scene = resource_->GetScenePool().GetScratch();
+		SceneBlueprint& scene = resource_->Scenes().GetScratch();
 		scene.Capture(*world_);
 
 		if (path.has_parent_path())
@@ -137,7 +137,7 @@ namespace SeedCore
 	* destroys every actor currently in the world, and instantiates the
 	* loaded scene, bypassing the request queue. path is first looked up
 	* as an asset name (a bare filename like "Foo.scene" works - see
-	* ResourceCache::GetAssetID) and, if found, that asset's real
+	* ResourceCache::Find) and, if found, that asset's real
 	* filesystem path is used instead; only if no matching asset exists
 	* is path opened literally (relative to the current working
 	* directory). Returns whether loading succeeded.
@@ -149,7 +149,7 @@ namespace SeedCore
 	* 即座に読み込み、world 内の現在の全 actor を破棄した上で、読み込んだ
 	* シーンをインスタンス化する。path はまずアセット名として検索し
 	* ("Foo.scene" のような単なるファイル名でもよい - ResourceCache::
-	* GetAssetID 参照)、見つかればそのアセットの実際のファイルシステム
+	* Find 参照)、見つかればそのアセットの実際のファイルシステム
 	* パスを代わりに使う。一致するアセットが無い場合のみ、path を文字通り
 	* (カレントディレクトリからの相対で)開く。読み込みに成功したか
 	* どうかを返す。
@@ -157,17 +157,17 @@ namespace SeedCore
 	Bool SceneSystem::Load(const std::filesystem::path& path)
 	{
 		std::filesystem::path resolvedPath = path;
-		Uint32 assetID = resource_->GetAssetID(String(path.string()));
+		Uint32 assetID = resource_->Find(String(path.string()));
 		if (assetID != 0)
 		{
-			AssetRecord* asset = resource_->GetAsset(assetID);
+			AssetRecord* asset = resource_->Record(assetID);
 			if (asset)
 			{
 				resolvedPath = std::filesystem::path(asset->fullpath_.c_str());
 			}
 		}
 
-		SceneBlueprint& scene = resource_->GetScenePool().GetScratch();
+		SceneBlueprint& scene = resource_->Scenes().GetScratch();
 		if (!scene.Read(resolvedPath))
 		{
 			return false;
@@ -192,7 +192,7 @@ namespace SeedCore
 	*/
 	Bool SceneSystem::Load(Uint32 assetID)
 	{
-		AssetRecord* asset = resource_->GetAsset(assetID);
+		AssetRecord* asset = resource_->Record(assetID);
 		if (!asset)
 		{
 			return false;
@@ -336,7 +336,7 @@ namespace SeedCore
 	*/
 	void SceneSystem::Change(Uint32 targetScene)
 	{
-		AssetRecord* targetAsset = resource_->GetAsset(targetScene);
+		AssetRecord* targetAsset = resource_->Record(targetScene);
 		if (!targetAsset)
 		{
 			return;
@@ -384,8 +384,8 @@ namespace SeedCore
 	*/
 	void SceneSystem::Change(Uint32 targetScene, Uint32 loadingScene)
 	{
-		AssetRecord* targetAsset = resource_->GetAsset(targetScene);
-		AssetRecord* loadingAsset = resource_->GetAsset(loadingScene);
+		AssetRecord* targetAsset = resource_->Record(targetScene);
+		AssetRecord* loadingAsset = resource_->Record(loadingScene);
 		if (!targetAsset || !loadingAsset)
 		{
 			return;
@@ -433,7 +433,7 @@ namespace SeedCore
 	*/
 	void SceneSystem::Change(Uint32 targetScene, Float fadeOutDuration, Float fadeInDuration)
 	{
-		AssetRecord* targetAsset = resource_->GetAsset(targetScene);
+		AssetRecord* targetAsset = resource_->Record(targetScene);
 		if (!targetAsset)
 		{
 			return;
@@ -484,8 +484,8 @@ namespace SeedCore
 	*/
 	void SceneSystem::Change(Uint32 targetScene, Uint32 loadingScene, Float coverDuration, Float revealDuration)
 	{
-		AssetRecord* targetAsset = resource_->GetAsset(targetScene);
-		AssetRecord* loadingAsset = resource_->GetAsset(loadingScene);
+		AssetRecord* targetAsset = resource_->Record(targetScene);
+		AssetRecord* loadingAsset = resource_->Record(loadingScene);
 		if (!targetAsset || !loadingAsset)
 		{
 			return;
@@ -541,7 +541,7 @@ namespace SeedCore
 	*/
 	Uint32 SceneSystem::AssetID(const String& path)const
 	{
-		return resource_->GetAssetID(path);
+		return resource_->Find(path);
 	}
 
 	/**

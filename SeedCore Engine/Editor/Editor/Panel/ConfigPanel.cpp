@@ -16,6 +16,7 @@
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/Texture/TextureCreator.h>
 #include <FoundationEngine/Resource/Asset/Asset.h>
+#include <FoundationEngine/File/FileLocator.h>
 
 namespace SeedCore
 {
@@ -389,7 +390,7 @@ namespace SeedCore
 
 		if (ImGui::ImageButton("##InitialSceneBrowse", imguiTexture_.Icon(IconType::FolderNoItem), ImVec2(folderIconSize, folderIconSize)))
 		{
-			std::filesystem::path projectRoot = context_.world_.resource_->ProjectRootPath();
+			std::filesystem::path projectRoot = FileLocator::EngineRoot();
 			std::filesystem::path sceneDirectory = projectRoot / "UserProject" / "Assets" / "Scene";
 
 			std::filesystem::path pickedScenePath;

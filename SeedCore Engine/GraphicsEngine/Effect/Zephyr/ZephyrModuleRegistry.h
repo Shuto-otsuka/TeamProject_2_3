@@ -2,20 +2,39 @@
 
 namespace SeedCore
 {
-	struct ZephyrModuleField
+	enum class ZephyrType :Uint8
+	{
+		Float,
+		Float2,
+		Float3,
+		Float4,
+		Color,
+		Int,
+		Bool,
+		Numeric,
+		Force,
+		Position,
+		Shape,
+		Renderer,
+		Effekseer,
+	};
+
+	struct ZephyrModuleInput
 	{
 		String name_;
-		String swizzle_;
+
+		ZephyrType type_ = ZephyrType::Float;
 	};
 
 	struct ZephyrModuleDescriptor
 	{
 		String name_;
-		String includePath_;
-		String configStructName_;
-		DynamicArray<ZephyrModuleField> fields_;
-		Bool hasSpawn_;
-		Bool hasSimulate_;
+
+		String include_;
+
+		ZephyrType output_ = ZephyrType::Force;
+
+		DynamicArray<ZephyrModuleInput> inputs_;
 	};
 
 	class ZephyrModuleRegistry

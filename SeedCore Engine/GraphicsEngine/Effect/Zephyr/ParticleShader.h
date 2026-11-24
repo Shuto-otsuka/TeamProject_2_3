@@ -61,6 +61,13 @@ namespace SeedCore
 	};
 	SC_STATIC_ASSERT(ParticleCounterStructuredBuffer, 16, "Effect/Zephyr/ParticlePool.hlsli");
 
+	struct ParticleGroupStructuredBuffer
+	{
+		Uint32 first_ = 0;
+		Uint32 count_ = 0;
+	};
+	SC_STATIC_ASSERT(ParticleGroupStructuredBuffer, 8, "Effect/Zephyr/ParticlePool.hlsli");
+
 	struct ParticleResetDescription
 	{
 		SC_CONSTEX ShaderPath file_ = ShaderPath::Engine("GraphicsEngine/Effect/Zephyr/ParticleResetCS.hlsl");

@@ -202,8 +202,8 @@ namespace SeedCore
 		{
 			/// [EN] A nested prefab reference: the referenced prefab builds the actor and its subtree; this node only supplies what the outer scene or prefab changed on top.
 			/// [JP] ネストされたプレハブへの参照: actor とそのサブツリーは参照先のプレハブが作る。このノードが与えるのは、外側のシーンやプレハブがその上で変えた部分だけ。
-			Handle<PrefabBlueprint> nestedHandle = cache.GetPrefabPool().Load(nestedPrefabAssetID_, cache);
-			PrefabBlueprint* nestedPrefab = cache.GetPrefabPool().Get(nestedHandle);
+			Handle<PrefabBlueprint> nestedHandle = cache.Prefabs().Load(nestedPrefabAssetID_, cache);
+			PrefabBlueprint* nestedPrefab = cache.Prefabs().Get(nestedHandle);
 			if (nestedPrefab)
 			{
 				actor = nestedPrefab->Instantiate(world, cache, parent, nestedPrefabAssetID_);

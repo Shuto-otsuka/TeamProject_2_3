@@ -1,6 +1,6 @@
 #include <GraphicsEngine/Effect/Effekseer/EffekseerLoader.h>
 #include <GraphicsEngine/Effect/Effekseer/EffekseerManager.h>
-#include <GraphicsEngine/Effect/Effekseer/EffekseerCache.h>
+#include <GraphicsEngine/Effect/Effekseer/EffekseerAsset.h>
 #include <FoundationEngine/Resource/Gateway.h>
 #include <FoundationEngine/Log/Warning.h>
 #include <FoundationEngine/Log/Error.h>
@@ -151,15 +151,15 @@ namespace SeedCore
 			BinaryInputArchive archive;
 			if (archive.Read(String(cachePath.string())))
 			{
-				EffekseerCache cache;
-				cache.Serialize(archive);
+				EffekseerAsset asset;
+				asset.Serialize(archive);
 
-				for (EffekseerDependency& dependency : cache.dependencies_)
+				for (EffekseerDependency& dependency : asset.dependencies_)
 				{
 					manager.GetFileInterface().Register(dependency.path_, std::move(dependency.data_));
 				}
 
-				effect = Effekseer::Effect::Create(manager.GetManager(), cache.data_.data(), static_cast<Int32>(cache.data_.size()), 1.0f, materialPath.c_str());
+				effect = Effekseer::Effect::Create(manager.GetManager(), asset.data_.data(), static_cast<Int32>(asset.data_.size()), 1.0f, materialPath.c_str());
 			}
 			else
 			{
@@ -277,18 +277,18 @@ namespace SeedCore
 
 		FlatMap<std::u16string, DynamicArray<Byte>> collected = CollectDependencies(effect, materialPath);
 
-		EffekseerCache cache;
-		cache.data_ = bytes;
+		EffekseerAsset asset;
+		asset.data_ = bytes;
 		for (auto& [dependencyPath, dependencyData] : collected)
 		{
 			EffekseerDependency dependency;
 			dependency.path_ = dependencyPath;
 			dependency.data_ = dependencyData;
-			cache.dependencies_.push_back(std::move(dependency));
+			asset.dependencies_.push_back(std::move(dependency));
 		}
 
 		BinaryOutputArchive archive;
-		cache.Serialize(archive);
+		asset.Serialize(archive);
 		return archive.Write(cachePath);
 	}
 }

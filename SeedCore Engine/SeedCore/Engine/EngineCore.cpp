@@ -1,8 +1,10 @@
 #include <SeedCore/Engine/EngineCore.h>
 #include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
 #include <GraphicsEngine/DLSS/DlssManager.h>
+#include <GraphicsEngine/RenderGraph/RenderDevice.h>
 #include <GraphicsEngine/RenderGraph/RenderView.h>
 #include <GraphicsEngine/Resource/GraphicsModule.h>
+#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
 #include <FoundationEngine/Benchmark/Benchmark.h>
 #include <FoundationEngine/Resource/Config/GameConfig.h>
 #include <FoundationEngine/Resource/Config/EditorConfig.h>
@@ -18,7 +20,6 @@
 #include <PhysicsEngine/JoltPhysics/JoltManager.h>
 #include <AudioEngine/Audio/Audio.h>
 #include <AudioEngine/Audio/AudioSystem.h>
-#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
 
 namespace SeedCore
 {
@@ -116,15 +117,29 @@ namespace SeedCore
 		return fontTask_;
 	}
 
+	JobTask EngineCore::BootEffekseer(JobTaskflow& flow)
+	{
+		effekseerTask_ = flow.emplace([this]()
+			{
+				if (!effekseerManager_.Initialize(graphics_.Device().Context()))
+				{
+					failed_ = true;
+				}
+			});
+		graphicsTask_.Precede(effekseerTask_);
+		return effekseerTask_;
+	}
+
 	JobTask EngineCore::BootResource(JobTaskflow& flow)
 	{
 		resourceTask_ = flow.emplace([this]()
 			{
 				graphics_.Module().Install(resource_);
 				audioModule_.Install(resource_);
-				resource_.Async();
+				resource_.Queue();
 			});
 		graphicsTask_.Precede(resourceTask_);
+		effekseerTask_.Precede(resourceTask_);
 		return resourceTask_;
 	}
 
@@ -295,7 +310,7 @@ namespace SeedCore
 		}
 
 		Benchmark::Begin("Splash");
-		resource_.StepAsync();
+		resource_.Run();
 		graphics_.DrawSplashScreen(splashSystem_);
 		Benchmark::End("Splash");
 
@@ -452,6 +467,10 @@ namespace SeedCore
 		criManager_.Execute();
 		Benchmark::End("CriAtom");
 
+		Benchmark::Begin("Effekseer");
+		effekseerManager_.Execute(timer.ScaledDeltaTime());
+		Benchmark::End("Effekseer");
+
 		Benchmark::End("Simulate");
 	}
 
@@ -491,6 +510,7 @@ namespace SeedCore
 
 		resource_.Finalize();
 		fontManager_.Finalize();
+		effekseerManager_.Finalize();
 
 		if (world_)
 		{

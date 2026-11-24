@@ -325,6 +325,9 @@
     <Filter Include="Effect\Zephyr\Quad">
       <UniqueIdentifier>{9ba270bc-dbdf-4c4d-8044-a8a7d4baa09f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Effect\Houdini">
+      <UniqueIdentifier>{bcbd7ed7-8f6b-4b7f-8ddf-046afd3964fa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="D3D12\Context\D3D12Adapter.h">
@@ -486,9 +489,6 @@
     <ClInclude Include="Sky\SkymapResource.h">
       <Filter>Sky</Filter>
     </ClInclude>
-    <ClInclude Include="Sky\SkymapCache.h">
-      <Filter>Sky</Filter>
-    </ClInclude>
     <ClInclude Include="Light\RectangleLight.h">
       <Filter>Light</Filter>
     </ClInclude>
@@ -520,9 +520,6 @@
       <Filter>Effect\Effekseer</Filter>
     </ClInclude>
     <ClInclude Include="Effect\Effekseer\EffekseerManager.h">
-      <Filter>Effect\Effekseer</Filter>
-    </ClInclude>
-    <ClInclude Include="Effect\Effekseer\EffekseerCache.h">
       <Filter>Effect\Effekseer</Filter>
     </ClInclude>
     <ClInclude Include="Effect\Effekseer\EffekseerFileInterface.h">
@@ -1467,6 +1464,24 @@
     <ClInclude Include="Effect\Zephyr\ParticleStage.h">
       <Filter>Effect\Zephyr</Filter>
     </ClInclude>
+    <ClInclude Include="Effect\Zephyr\ZephyrNodeRegistry.h">
+      <Filter>Effect\Zephyr</Filter>
+    </ClInclude>
+    <ClInclude Include="Sky\SkymapAsset.h">
+      <Filter>Sky</Filter>
+    </ClInclude>
+    <ClInclude Include="Effect\Effekseer\EffekseerAsset.h">
+      <Filter>Effect\Effekseer</Filter>
+    </ClInclude>
+    <ClInclude Include="Effect\EffectAsset.h">
+      <Filter>Effect</Filter>
+    </ClInclude>
+    <ClInclude Include="Effect\Effekseer\EffekseerFeature.h">
+      <Filter>Effect\Effekseer</Filter>
+    </ClInclude>
+    <ClInclude Include="Effect\Effekseer\EffekseerStage.h">
+      <Filter>Effect\Effekseer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">
@@ -1588,9 +1603,6 @@
       <Filter>Sky</Filter>
     </ClCompile>
     <ClCompile Include="Sky\SkymapResource.cpp">
-      <Filter>Sky</Filter>
-    </ClCompile>
-    <ClCompile Include="Sky\SkymapCache.cpp">
       <Filter>Sky</Filter>
     </ClCompile>
     <ClCompile Include="Model\Animation\Animator.cpp">
@@ -2247,6 +2259,18 @@
     <ClCompile Include="Effect\Zephyr\ParticleFeature.cpp">
       <Filter>Effect\Zephyr</Filter>
     </ClCompile>
+    <ClCompile Include="Effect\Zephyr\ZephyrNodeRegistry.cpp">
+      <Filter>Effect\Zephyr</Filter>
+    </ClCompile>
+    <ClCompile Include="Effect\EffectAsset.cpp">
+      <Filter>Effect</Filter>
+    </ClCompile>
+    <ClCompile Include="Effect\Effekseer\EffekseerFeature.cpp">
+      <Filter>Effect\Effekseer</Filter>
+    </ClCompile>
+    <ClCompile Include="Effect\Effekseer\EffekseerStage.cpp">
+      <Filter>Effect\Effekseer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\Sampler.hlsli">
@@ -2422,6 +2446,24 @@
     </None>
     <None Include="Effect\Zephyr\Quad\ParticleQuad.hlsli">
       <Filter>Effect\Zephyr\Quad</Filter>
+    </None>
+    <None Include="Effect\Zephyr\Module\Receiver.hlsli">
+      <Filter>Effect\Zephyr\Module</Filter>
+    </None>
+    <None Include="Effect\Zephyr\Module\PointModule.hlsli">
+      <Filter>Effect\Zephyr\Module</Filter>
+    </None>
+    <None Include="Effect\Zephyr\Module\SphereModule.hlsli">
+      <Filter>Effect\Zephyr\Module</Filter>
+    </None>
+    <None Include="Effect\Zephyr\Module\ConeModule.hlsli">
+      <Filter>Effect\Zephyr\Module</Filter>
+    </None>
+    <None Include="Effect\Zephyr\Module\RandomRangeModule.hlsli">
+      <Filter>Effect\Zephyr\Module</Filter>
+    </None>
+    <None Include="Effect\Zephyr\Module\EffekseerModule.hlsli">
+      <Filter>Effect\Zephyr\Module</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>

@@ -33,6 +33,60 @@ namespace SeedCore
 		requires std::tuple_size<T>::value >= 0;
 	};
 
+	class BinaryProbe
+	{
+	public:
+		template<typename T>
+		NODISCARD static Bool HasString()
+		{
+			if constexpr (requires(T& value, BinaryProbe& probe) { value.Serialize(probe); })
+			{
+				static const Bool found = []()
+					{
+						T value{};
+						BinaryProbe probe;
+						value.Serialize(probe);
+						return probe.found_;
+					}();
+				return found;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
+		template<typename T>
+		void Field(const Char* name, T& value)
+		{
+			if constexpr (std::same_as<T, String>)
+			{
+				found_ = true;
+			}
+			else if constexpr (requires { value.Serialize(*this); })
+			{
+				value.Serialize(*this);
+			}
+			else if constexpr (BinaryFixedSizeArray<T>)
+			{
+				for (auto& element : value)
+				{
+					Field(name, element);
+				}
+			}
+		}
+
+		template<typename T>
+		Bool TryField(const Char* name, T& value)
+		{
+			Field(name, value);
+			return true;
+		}
+
+	private:
+		Bool found_ = false;
+	};
+
 	class SEEDCORE_API BinaryField
 	{
 	public:
@@ -94,9 +148,18 @@ namespace SeedCore
 				using ElementType = typename T::value_type;
 
 				target.AppendUint32(static_cast<Uint32>(value.size()));
-				if constexpr (std::is_trivially_copyable_v<ElementType> && !std::same_as<ElementType, Bool> && !std::same_as<ElementType, String> && requires { value.data(); })
+				constexpr Bool copyable = std::is_trivially_copyable_v<ElementType> && !std::same_as<ElementType, Bool> && !std::same_as<ElementType, String> && requires { value.data(); };
+				Bool raw = false;
+				if constexpr (copyable)
 				{
-					target.AppendRaw(value.data(), value.size() * sizeof(ElementType));
+					raw = !BinaryProbe::HasString<ElementType>();
+				}
+				if (raw)
+				{
+					if constexpr (copyable)
+					{
+						target.AppendRaw(value.data(), value.size() * sizeof(ElementType));
+					}
 				}
 				else
 				{
@@ -245,16 +308,25 @@ namespace SeedCore
 				}
 
 				Uint32 elementCount = source.ReadUint32(0);
-				if constexpr (std::is_trivially_copyable_v<ElementType> && !std::same_as<ElementType, Bool> && !std::same_as<ElementType, String> && requires { value.data(); value.resize(Size(0)); })
+				constexpr Bool copyable = std::is_trivially_copyable_v<ElementType> && !std::same_as<ElementType, Bool> && !std::same_as<ElementType, String> && requires { value.data(); value.resize(Size(0)); };
+				Bool raw = false;
+				if constexpr (copyable)
 				{
-					Size expectedBytes = static_cast<Size>(elementCount) * sizeof(ElementType);
-					if (source.DataSize() != sizeof(Uint32) + expectedBytes)
+					raw = !BinaryProbe::HasString<ElementType>();
+				}
+				if (raw)
+				{
+					if constexpr (copyable)
 					{
-						SC_LOG_WARNING("バイナリ配列のサイズが要素数と一致しません。初期値を使用します。");
-						return;
+						Size expectedBytes = static_cast<Size>(elementCount) * sizeof(ElementType);
+						if (source.DataSize() != sizeof(Uint32) + expectedBytes)
+						{
+							SC_LOG_WARNING("バイナリ配列のサイズが要素数と一致しません。初期値を使用します。");
+							return;
+						}
+						value.resize(elementCount);
+						source.ReadRaw(sizeof(Uint32), value.data(), expectedBytes);
 					}
-					value.resize(elementCount);
-					source.ReadRaw(sizeof(Uint32), value.data(), expectedBytes);
 				}
 				else
 				{

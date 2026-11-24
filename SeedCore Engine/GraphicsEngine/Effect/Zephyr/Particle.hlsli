@@ -34,4 +34,10 @@ struct ParticleEmitter
 	row_major float4x4 world_to_emitter_;
 };
 
+struct ParticleShape
+{
+	float3 position_;
+	float3 normal_;
+};
+
 #endif // __PARTICLE_HLSL__

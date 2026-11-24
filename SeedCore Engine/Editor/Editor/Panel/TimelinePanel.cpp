@@ -23,7 +23,7 @@ namespace SeedCore
 	{
 		std::string AnimationLabel(ResourceCache* resource, Uint32 assetId)
 		{
-			AssetRecord* asset = resource->GetAsset(assetId);
+			AssetRecord* asset = resource->Record(assetId);
 			if (!asset)
 			{
 				return "";
@@ -554,7 +554,7 @@ namespace SeedCore
 		ImGui::Separator();
 		ImGui::Spacing();
 
-		AssetRecord* asset = context_.world_.resource_->GetAsset(assetId);
+		AssetRecord* asset = context_.world_.resource_->Record(assetId);
 
 		/// [EN] Saving writes the clip as edited in memory through the animation manager's Bake.
 		/// [JP] 保存は、メモリ上で編集したクリップを、アニメーションのマネージャの Bake を通して書く。

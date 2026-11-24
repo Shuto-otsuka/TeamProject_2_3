@@ -1,7 +1,68 @@
 #include <FoundationEngine/Resource/Asset/Asset.h>
+#include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
 namespace SeedCore
 {
+	/**
+	* [EN]
+	* Reads the ".meta" beside the asset file at filePath into this
+	* object and returns true. Returns false and leaves every field as it
+	* was when that ".meta" does not exist or cannot be read, so a caller
+	* sets the values it wants as defaults before reading.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* filePath のアセットファイルの隣にある ".meta" を、このオブジェクトへ
+	* 読み込んで true を返す。その ".meta" が無い、または読めない場合は
+	* false を返し、全てのフィールドを元のまま残す。なので呼び出し側は、
+	* 既定にしたい値を読む前に入れておく。
+	*/
+	Bool AssetMeta::Read(const std::filesystem::path& filePath)
+	{
+		std::filesystem::path metaPath = filePath;
+		metaPath += ".meta";
+		if (!std::filesystem::exists(metaPath))
+		{
+			return false;
+		}
+
+		/// [EN] The archive reads the whole file before anything is deserialized, so a file it cannot read leaves the fields untouched.
+		/// [JP] アーカイブはデシリアライズの前にファイル全体を読むので、読めないファイルはフィールドに触れない。
+		BinaryInputArchive archive;
+		if (!archive.Read(String(metaPath.string())))
+		{
+			return false;
+		}
+		Serialize(archive);
+		return true;
+	}
+
+	/**
+	* [EN]
+	* Writes this object to the ".meta" beside the asset file at
+	* filePath, replacing any existing one. Returns false when the write
+	* failed.
+	*
+	* ---------------------------------------------------------------------
+	*
+	* [JP]
+	* このオブジェクトを、filePath のアセットファイルの隣にある ".meta" へ
+	* 書き出す。既存のものは置き換える。書き込みに失敗した場合は false を
+	* 返す。
+	*/
+	Bool AssetMeta::Write(const std::filesystem::path& filePath)const
+	{
+		std::filesystem::path metaPath = filePath;
+		metaPath += ".meta";
+
+		/// [EN] Serialize is shared with reading and so is not const; writing does not change any field.
+		/// [JP] Serialize は読み込みと共通なので const ではない。書き出しはどのフィールドも変えない。
+		BinaryOutputArchive archive;
+		const_cast<AssetMeta*>(this)->Serialize(archive);
+		return archive.Write(String(metaPath.string()));
+	}
+
 	/**
 	* [EN]
 	* Releases whatever this manager still holds after a per-asset

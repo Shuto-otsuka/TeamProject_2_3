@@ -6,6 +6,7 @@ struct ParticleBeginBindings
 	uint particle_counters_;
 	uint particle_offsets_;
 	uint particle_simulate_arguments_;
+	uint particle_groups_;
 };
 ConstantBuffer<ParticleBeginBindings> bindings : register(b0, space1);
 
@@ -68,11 +69,22 @@ void main(uint group_index : SV_GroupIndex)
 		GroupMemoryBarrierWithGroupSync();
 	}
 
-	if (group_index == 0)
+	DeviceMemoryBarrierWithGroupSync();
+
+	StructuredBuffer<ParticleGroupStructuredBuffer> groups = ResourceDescriptorHeap[bindings.particle_groups_];
+	RWStructuredBuffer<uint> arguments = ResourceDescriptorHeap[bindings.particle_simulate_arguments_];
+	uint group_count = dispatch_bindings.constants_;
+	for (uint particle_group_index = group_index; particle_group_index < group_count; particle_group_index += 256)
 	{
-		RWStructuredBuffer<uint> arguments = ResourceDescriptorHeap[bindings.particle_simulate_arguments_];
-		arguments[0] = (chunk_base + 63) / 64;
-		arguments[1] = 1;
-		arguments[2] = 1;
+		ParticleGroupStructuredBuffer group = groups[particle_group_index];
+		uint total = 0;
+		if (group.count_ > 0)
+		{
+			uint last = group.first_ + group.count_ - 1;
+			total = offsets[last] + counters[last].alive_count_ - offsets[group.first_];
+		}
+		arguments[particle_group_index * 3 + 0] = (total + 63) / 64;
+		arguments[particle_group_index * 3 + 1] = 1;
+		arguments[particle_group_index * 3 + 2] = 1;
 	}
 }

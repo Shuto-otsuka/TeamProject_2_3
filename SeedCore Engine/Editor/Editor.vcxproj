@@ -253,6 +253,7 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClCompile Include="Editor\Panel\CanvasViewPanel.cpp" />
     <ClCompile Include="Editor\Panel\ConfigPanel.cpp" />
     <ClCompile Include="Editor\Panel\DiagnosticsPanel.cpp" />
+    <ClCompile Include="Editor\Panel\EffectGraphPanel.cpp" />
     <ClCompile Include="Editor\Panel\GraphicsMenuPanel.cpp" />
     <ClCompile Include="Editor\Panel\LayerSettingsPanel.cpp" />
     <ClCompile Include="Editor\Panel\MaterialViewerPanel.cpp" />
@@ -358,6 +359,7 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClInclude Include="Editor\Panel\ControlPanel.h" />
     <ClInclude Include="Editor\Panel\DiagnosticsPanel.h" />
     <ClInclude Include="Editor\Panel\EditorWindowPanel.h" />
+    <ClInclude Include="Editor\Panel\EffectGraphPanel.h" />
     <ClInclude Include="Editor\Panel\GameWindowPanel.h" />
     <ClInclude Include="Editor\Panel\GraphicsMenuPanel.h" />
     <ClInclude Include="Editor\Panel\GuizmoPanel3D.h" />

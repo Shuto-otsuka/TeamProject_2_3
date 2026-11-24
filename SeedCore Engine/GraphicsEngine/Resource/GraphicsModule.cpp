@@ -20,7 +20,8 @@ namespace SeedCore
 		cache.Register(AssetType::Font, *resources_.fontResource_);
 		cache.Register(AssetType::Movie, *resources_.movieResource_);
 		cache.Register(AssetType::Skymap, *resources_.skymapResource_);
-		cache.Register(AssetType::Effect, *resources_.effekseerResource_);
+		cache.Register(AssetType::Effect, *resources_.effectResource_);
+		cache.Register(AssetType::Effekseer, *resources_.effekseerResource_);
 	}
 
 	GraphicsLoaderSystem& GraphicsModule::Loaders()

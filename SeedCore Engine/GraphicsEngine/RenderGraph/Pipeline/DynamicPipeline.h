@@ -198,7 +198,7 @@ namespace SeedCore
 			cmdList->Dispatch((width + description_.threadGroupSizeX_ - 1) / description_.threadGroupSizeX_, (height + description_.threadGroupSizeY_ - 1) / description_.threadGroupSizeY_, (depth + description_.threadGroupSizeZ_ - 1) / description_.threadGroupSizeZ_);
 		}
 
-		void DispatchIndirect(RenderPass& pass, Uint32 constant = 0)
+		void DispatchIndirect(RenderPass& pass, Uint32 first = 0, Uint32 constant = 0)
 		{
 			SC_STATIC_ASSERT(Kind == DynamicPipelineKind::Compute, "DispatchIndirect はコンピュートの DynamicPipeline で使うこと");
 			ID3D12PipelineState* pipelineState = pass.Device().PipelineState().Get(pipelineState_);
@@ -213,7 +213,7 @@ namespace SeedCore
 			ID3D12GraphicsCommandList6* cmdList = pass.List().Get();
 			cmdList->SetPipelineState(pipelineState);
 			cmdList->SetComputeRoot32BitConstant(static_cast<Uint32>(RootParameter::Dispatch), constant, 0);
-			cmdList->ExecuteIndirect(pass.Device().DispatchSignature().Signature(), 1, arguments, 0, nullptr, 0);
+			cmdList->ExecuteIndirect(pass.Device().DispatchSignature().Signature(), 1, arguments, static_cast<Uint64>(first) * sizeof(D3D12_DISPATCH_ARGUMENTS), nullptr, 0);
 		}
 
 		void Draw(RenderPass& pass, Uint32 instanceCount = 1, D3D12_GPU_VIRTUAL_ADDRESS bindings = 0, Uint32 constant = 0)

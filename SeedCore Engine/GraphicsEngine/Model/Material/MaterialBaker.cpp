@@ -27,7 +27,7 @@ namespace SeedCore
 		DynamicArray<Bitmap> bitmaps;
 		for (Uint32 assetID : referenceIDs)
 		{
-			AssetRecord* asset = assetID != 0 ? cache.GetAsset(assetID) : nullptr;
+			AssetRecord* asset = assetID != 0 ? cache.Record(assetID) : nullptr;
 			if (!asset || std::ranges::contains(freshIDs, assetID))
 			{
 				continue;

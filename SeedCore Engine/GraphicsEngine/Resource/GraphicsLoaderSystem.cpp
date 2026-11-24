@@ -26,6 +26,7 @@ namespace SeedCore
 		fontLoader_ = MakePtr<FontLoader>();
 		movieLoader_ = MakePtr<MovieLoader>();
 		skymapLoader_ = MakePtr<SkymapLoader>(context, heap);
+		effectLoader_ = MakePtr<EffectLoader>();
 		effekseerLoader_ = MakePtr<EffekseerLoader>();
 	}
 }

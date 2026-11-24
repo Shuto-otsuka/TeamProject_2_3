@@ -1,14 +1,30 @@
 #include <GraphicsEngine/Effect/Zephyr/ZephyrModuleRegistry.h>
+#include <GraphicsEngine/Effect/Zephyr/ZephyrNodeRegistry.h>
 
 namespace SeedCore
 {
 	const DynamicArray<ZephyrModuleDescriptor>& ZephyrModuleRegistry::Modules()
 	{
-		static const DynamicArray<ZephyrModuleDescriptor> modules =
-		{
-			ZephyrModuleDescriptor{ String("Gravity"), String("GraphicsEngine/Effect/Zephyr/Module/GravityModule.hlsli"), String("GravityModule"), { ZephyrModuleField{ String("gravity_"), String("xyz") } }, false, true},
-			ZephyrModuleDescriptor{ String("Drag"), String("GraphicsEngine/Effect/Zephyr/Module/DragModule.hlsli"), String("DragModule"), { ZephyrModuleField{ String("drag_"), String("x") } }, false, true },
-		};
+		static const DynamicArray<ZephyrModuleDescriptor> modules = []()
+			{
+				DynamicArray<ZephyrModuleDescriptor> table;
+				for (const ZephyrNodeDefinition& node : ZephyrNodeRegistry::Nodes())
+				{
+					if (node.include_.str().empty() || node.outputs_.empty())
+					{
+						continue;
+					}
+					ZephyrModuleDescriptor& module = table.emplace_back();
+					module.name_ = node.type_;
+					module.include_ = node.include_;
+					module.output_ = node.outputs_[0].type_;
+					for (const ZephyrNodeInput& input : node.inputs_)
+					{
+						module.inputs_.push_back(ZephyrModuleInput{ input.name_, input.type_ });
+					}
+				}
+				return table;
+			}();
 		return modules;
 	}
 

@@ -1,13 +1,14 @@
 #include <External/NsightAftermath/Include/GFSDK_Aftermath.h>
 #include <External/DirectXTex/Include/DirectXTex.h>
 #include <GraphicsEngine/Sky/SkymapLoader.h>
-#include <GraphicsEngine/Sky/SkymapCache.h>
+#include <GraphicsEngine/Sky/SkymapAsset.h>
 #include <GraphicsEngine/D3D12/Descriptor/BindlessHeap.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Context.h>
 #include <GraphicsEngine/D3D12/Context/D3D12TransferLane.h>
 #include <FoundationEngine/Log/DxFail.h>
 #include <FoundationEngine/Log/Error.h>
+#include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 
 namespace SeedCore
 {
@@ -71,25 +72,32 @@ namespace SeedCore
 		const void* pixels = nullptr;
 
 		DirectX::ScratchImage image;
-		DynamicArray<Uint8> cachePixels;
+		SkymapAsset asset;
 		Bool fromCache = (extension == ".skymap");
 
 		if (fromCache)
 		{
-			SkymapCacheHeader header{};
-			if (!ReadSkymapCache(filePath, header, cachePixels))
+			BinaryInputArchive archive;
+			if (!archive.Read(filePath))
+			{
+				SC_LOG_ERROR("スカイマップキャッシュのロードに失敗しました: {}", filePath.str());
+				pool_.Destroy(handle);
+				return Handle<Skymap>::null();
+			}
+			asset.Serialize(archive);
+			if (asset.pixels_.empty())
 			{
 				SC_LOG_ERROR("スカイマップキャッシュのロードに失敗しました: {}", filePath.str());
 				pool_.Destroy(handle);
 				return Handle<Skymap>::null();
 			}
 
-			format = static_cast<DXGI_FORMAT>(header.format_);
-			width = header.width_;
-			height = header.height_;
-			rowPitch = header.rowPitch_;
-			slicePitch = header.dataSize_;
-			pixels = cachePixels.data();
+			format = static_cast<DXGI_FORMAT>(asset.format_);
+			width = asset.width_;
+			height = asset.height_;
+			rowPitch = asset.rowPitch_;
+			slicePitch = static_cast<Uint>(asset.pixels_.size());
+			pixels = asset.pixels_.data();
 		}
 		else
 		{
@@ -221,16 +229,22 @@ namespace SeedCore
 			return false;
 		}
 
-		/// [EN] The header records exactly what Load needs to recreate the texture without decoding the HDR again.
-		/// [JP] ヘッダーには、HDR をデコードし直さずに Load がテクスチャを作り直すのに要るものをそのまま記録する。
-		SkymapCacheHeader header{};
-		std::memcpy(header.magic_, skymapCacheMagic_, sizeof(header.magic_));
-		header.version_ = skymapCacheVersion_;
-		header.format_ = static_cast<Uint32>(metadata.format);
-		header.width_ = static_cast<Uint32>(metadata.width);
-		header.height_ = static_cast<Uint32>(metadata.height);
-		header.rowPitch_ = static_cast<Uint32>(sourceImage->rowPitch);
-		header.dataSize_ = static_cast<Uint32>(sourceImage->slicePitch);
-		return WriteSkymapCache(cachePath, header, sourceImage->pixels);
+		/// [EN] The asset records exactly what Load needs to recreate the texture without decoding the HDR again.
+		/// [JP] アセットには、HDR をデコードし直さずに Load がテクスチャを作り直すのに要るものをそのまま記録する。
+		SkymapAsset asset;
+		asset.format_ = static_cast<Uint32>(metadata.format);
+		asset.width_ = static_cast<Uint32>(metadata.width);
+		asset.height_ = static_cast<Uint32>(metadata.height);
+		asset.rowPitch_ = static_cast<Uint32>(sourceImage->rowPitch);
+		asset.pixels_.assign(sourceImage->pixels, sourceImage->pixels + sourceImage->slicePitch);
+
+		BinaryOutputArchive archive;
+		asset.Serialize(archive);
+		if (!archive.Write(cachePath))
+		{
+			SC_LOG_ERROR("スカイマップキャッシュの書き出しに失敗しました: {}", cachePath.str());
+			return false;
+		}
+		return true;
 	}
 }

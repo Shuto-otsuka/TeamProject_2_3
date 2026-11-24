@@ -71,7 +71,7 @@ namespace SeedCore
 			return assetHandleMap_.at(assetID);
 		}
 
-		AssetRecord* asset = cache.GetAsset(assetID);
+		AssetRecord* asset = cache.Record(assetID);
 		if (!asset)
 		{
 			return Handle<BakedSurface>::null();
@@ -162,7 +162,7 @@ namespace SeedCore
 	*/
 	Bool MaterialResource::Generate(const AssetContext& context, Uint32 sourceAssetID, DynamicArray<String>& writtenPaths)
 	{
-		AssetRecord* asset = context.cache_.GetAsset(sourceAssetID);
+		AssetRecord* asset = context.cache_.Record(sourceAssetID);
 		if (!asset)
 		{
 			return false;
@@ -253,7 +253,7 @@ namespace SeedCore
 		/// [EN] The in-memory copy released its baked pixels once they reached the GPU, so the textures baked so far are read back from the material's own file.
 		/// [JP] メモリ上の写しは、焼き込んだピクセルが GPU に移った時点で解放しているため、これまで焼き込んだテクスチャはマテリアル自身のファイルから読み直す。
 		BakedSurface bakedSurface;
-		if (AssetRecord* asset = context.cache_.GetAsset(assetID))
+		if (AssetRecord* asset = context.cache_.Record(assetID))
 		{
 			BinaryInputArchive archive;
 			if (archive.Read(asset->fullpath_))

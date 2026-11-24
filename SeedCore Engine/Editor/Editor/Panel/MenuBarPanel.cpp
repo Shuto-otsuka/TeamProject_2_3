@@ -25,6 +25,7 @@
 #include <FoundationEngine/World/World.h>
 #include <FoundationEngine/Time/GameTimer.h>
 #include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/File/FileLocator.h>
 
 namespace SeedCore
 {
@@ -335,7 +336,7 @@ namespace SeedCore
 		}
 
 		SC_LOG_NOTICE("Runtimeビルドを開始します");
-		runtimeBuilder_.BuildAsync(context_.world_.resource_->ProjectRootPath());
+		runtimeBuilder_.BuildAsync(FileLocator::EngineRoot());
 	}
 
 	void MenuBarPanel::RequestSceneSwitch(PendingSceneOp op, const std::filesystem::path& path, Uint32 assetID)
@@ -372,7 +373,7 @@ namespace SeedCore
 				SC_LOG_WARNING("シーンの読み込みに失敗しました: {}", path.string());
 				break;
 			}
-			context_.scene_.path_ = FilePath(path, context_.world_.resource_->ProjectRootPath());
+			context_.scene_.path_ = FilePath(path, FileLocator::EngineRoot());
 			context_.selection_.Clear();
 			context_.scene_.history_.Clear();
 			SC_LOG_NOTICE("シーンを読み込みました: {}", path.string());
@@ -385,7 +386,7 @@ namespace SeedCore
 				SC_LOG_WARNING("シーンの読み込みに失敗しました(assetID: {})", assetID);
 				break;
 			}
-			context_.scene_.path_ = FilePath(context_.world_.resource_->GetAsset(assetID)->fullpath_.c_str(), context_.world_.resource_->ProjectRootPath());
+			context_.scene_.path_ = FilePath(context_.world_.resource_->Record(assetID)->fullpath_.c_str(), FileLocator::EngineRoot());
 			context_.selection_.Clear();
 			context_.scene_.history_.Clear();
 			SC_LOG_NOTICE("シーンを読み込みました: {}", context_.scene_.path_.FullPath().string());
@@ -412,7 +413,7 @@ namespace SeedCore
 
 	void MenuBarPanel::OpenScene()
 	{
-		std::filesystem::path sceneDir = context_.world_.resource_->ProjectRootPath() / "UserProject" / "Assets" / "Scene";
+		std::filesystem::path sceneDir = FileLocator::EngineRoot() / "UserProject" / "Assets" / "Scene";
 		std::filesystem::create_directories(sceneDir);
 
 		std::filesystem::path selectedPath;
@@ -426,7 +427,7 @@ namespace SeedCore
 
 	void MenuBarPanel::SaveScene()
 	{
-		std::filesystem::path sceneDir = context_.world_.resource_->ProjectRootPath() / "UserProject" / "Assets" / "Scene";
+		std::filesystem::path sceneDir = FileLocator::EngineRoot() / "UserProject" / "Assets" / "Scene";
 		std::filesystem::create_directories(sceneDir);
 
 		std::filesystem::path savePath;
@@ -441,7 +442,7 @@ namespace SeedCore
 			return;
 		}
 
-		context_.scene_.path_ = FilePath(savePath, context_.world_.resource_->ProjectRootPath());
+		context_.scene_.path_ = FilePath(savePath, FileLocator::EngineRoot());
 
 		SC_LOG_NOTICE("シーンを保存しました: {}", savePath.string());
 	}

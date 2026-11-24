@@ -25,7 +25,7 @@ namespace SeedCore
 			return it->second;
 		}
 
-		AssetRecord* asset = cache.GetAsset(assetID);
+		AssetRecord* asset = cache.Record(assetID);
 		if (!asset)
 		{
 			return Handle<PrefabBlueprint>::null();

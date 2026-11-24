@@ -68,7 +68,7 @@ namespace SeedCore
 			{
 				return std::format("[{}] {} : (内蔵マテリアル)", slot, slotText);
 			}
-			AssetRecord* asset = resource->GetAsset(assetID);
+			AssetRecord* asset = resource->Record(assetID);
 			std::string name = asset ? std::filesystem::path(asset->path_.c_str()).stem().string() : std::to_string(assetID);
 			return std::format("[{}] {} : {}", slot, slotText, name);
 		};
@@ -199,7 +199,7 @@ namespace SeedCore
 		const std::string& slotName = crister->Surfaces()[selected_].name_;
 		Uint32 surfaceAssetID = context_.preview_.material_.surfaceAssetID_;
 
-		AssetRecord* assignedAsset = surfaceAssetID != 0 ? cache->GetAsset(surfaceAssetID) : nullptr;
+		AssetRecord* assignedAsset = surfaceAssetID != 0 ? cache->Record(surfaceAssetID) : nullptr;
 		std::string preview = assignedAsset ? std::filesystem::path(assignedAsset->path_.c_str()).stem().string() : std::string("(内蔵マテリアル)");
 		Uint32 newID = surfaceAssetID;
 
@@ -213,7 +213,7 @@ namespace SeedCore
 			for (Size paletteIndex = 0; paletteIndex < material->materialIDs_.size(); paletteIndex++)
 			{
 				Uint32 paletteID = material->materialIDs_[paletteIndex];
-				AssetRecord* paletteAsset = paletteID != 0 ? cache->GetAsset(paletteID) : nullptr;
+				AssetRecord* paletteAsset = paletteID != 0 ? cache->Record(paletteID) : nullptr;
 				if (!paletteAsset)
 				{
 					continue;
@@ -297,7 +297,7 @@ namespace SeedCore
 		/// [EN] Every save writes through the material manager's Bake, which re-bakes the referenced textures; the edited Surface is put on the loaded material first.
 		/// [JP] どの保存もマテリアルのマネージャの Bake を通して書く。Bake は参照しているテクスチャを焼き直す。編集した Surface は先に読み込み済みのマテリアルへ載せる。
 		BakedSurface* loadedMaterial = materialResource->Resolve(materialResource->GetHandle(surfaceAssetID));
-		AssetRecord* materialAsset = cache->GetAsset(surfaceAssetID);
+		AssetRecord* materialAsset = cache->Record(surfaceAssetID);
 		AssetContext assetContext{ *cache, LoadThread::Main };
 		MaterialBaker baker;
 
@@ -442,7 +442,7 @@ namespace SeedCore
 
 		auto textureSlot = [cache](const Char* label, Uint32& assetID, Uint32 embeddedIndex)
 			{
-				AssetRecord* asset = assetID != 0 ? cache->GetAsset(assetID) : nullptr;
+				AssetRecord* asset = assetID != 0 ? cache->Record(assetID) : nullptr;
 				std::string text = asset ? std::filesystem::path(asset->path_.c_str()).stem().string() : (embeddedIndex != SC_INVALID ? std::format("内蔵 #{}", embeddedIndex) : std::string("なし"));
 
 				ImGui::PushID(label);

@@ -7,6 +7,7 @@ namespace SeedCore
 	class BootScreenPanel;
 	class ConfigPanel;
 	class DiagnosticsPanel;
+	class EffectGraphPanel;
 	class LayerSettingsPanel;
 	class MaterialViewerPanel;
 	class ModelTransformPanel;
@@ -51,6 +52,10 @@ namespace SeedCore
 		/// [EN] Material viewer, opened from the view menu and the contents drawer; the inspector draws its details while it is focused.
 		/// [JP] マテリアルビューア。表示メニューとコンテンツドロワーから開き、フォーカス中はインスペクターが詳細を描く。
 		MaterialViewerPanel* materialViewer_ = nullptr;
+
+		/// [EN] Effect graph editor, opened on an effect from the contents drawer; the inspector draws its details while it is focused.
+		/// [JP] エフェクトグラフの編集。コンテンツドロワーからエフェクトを指定して開き、フォーカス中はインスペクターが詳細を描く。
+		EffectGraphPanel* effectGraph_ = nullptr;
 
 		/// [EN] Model transform, opened from the view menu, or on a model from the contents drawer.
 		/// [JP] モデル変換。表示メニューから開くか、コンテンツドロワーからモデルを指定して開く。

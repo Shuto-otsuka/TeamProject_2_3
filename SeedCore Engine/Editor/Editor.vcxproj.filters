@@ -160,6 +160,9 @@
     <ClCompile Include="Editor\Node\NodeCanvas.cpp">
       <Filter>Editor\Node</Filter>
     </ClCompile>
+    <ClCompile Include="Editor\Panel\EffectGraphPanel.cpp">
+      <Filter>Editor\Panel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Editor\ImGui\ImGuiCommon.h">
@@ -326,6 +329,9 @@
     </ClInclude>
     <ClInclude Include="Editor\Node\NodeCanvas.h">
       <Filter>Editor\Node</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\EffectGraphPanel.h">
+      <Filter>Editor\Panel</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

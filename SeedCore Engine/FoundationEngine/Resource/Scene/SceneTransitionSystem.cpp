@@ -23,10 +23,10 @@ namespace SeedCore
 		/// [EN] Resolve targetScene as an asset name first (a bare "Foo.scene" is fine), falling back to the literal path.
 		/// [JP] targetScene をまずアセット名として解決し("Foo.scene" のような単なるファイル名でもよい)、見つからなければ文字通りのパスを使う。
 		std::filesystem::path resolvedPath = targetScene;
-		Uint32 assetID = cache.GetAssetID(String(targetScene.string()));
+		Uint32 assetID = cache.Find(String(targetScene.string()));
 		if (assetID != 0)
 		{
-			AssetRecord* asset = cache.GetAsset(assetID);
+			AssetRecord* asset = cache.Record(assetID);
 			if (asset)
 			{
 				resolvedPath = std::filesystem::path(asset->fullpath_.c_str());
@@ -59,7 +59,7 @@ namespace SeedCore
 	*/
 	Bool SceneTransitionSystem::LoadScene(World& world, ResourceCache& cache, Uint32 targetScene)
 	{
-		AssetRecord* targetAsset = cache.GetAsset(targetScene);
+		AssetRecord* targetAsset = cache.Record(targetScene);
 		if (!targetAsset)
 		{
 			return false;
@@ -87,10 +87,10 @@ namespace SeedCore
 		/// [EN] Resolve loadingScene as an asset name first (a bare "Foo.scene" is fine), falling back to the literal path.
 		/// [JP] loadingScene をまずアセット名として解決し("Foo.scene" のような単なるファイル名でもよい)、見つからなければ文字通りのパスを使う。
 		std::filesystem::path resolvedLoadingScene = loadingScene;
-		Uint32 loadingSceneAssetID = cache.GetAssetID(String(loadingScene.string()));
+		Uint32 loadingSceneAssetID = cache.Find(String(loadingScene.string()));
 		if (loadingSceneAssetID != 0)
 		{
-			AssetRecord* loadingSceneAsset = cache.GetAsset(loadingSceneAssetID);
+			AssetRecord* loadingSceneAsset = cache.Record(loadingSceneAssetID);
 			if (loadingSceneAsset)
 			{
 				resolvedLoadingScene = std::filesystem::path(loadingSceneAsset->fullpath_.c_str());
@@ -123,8 +123,8 @@ namespace SeedCore
 	*/
 	void SceneTransitionSystem::LoadScene(World& world, ResourceCache& cache, JobExecutor& executor, Uint32 targetScene, Uint32 loadingScene)
 	{
-		AssetRecord* targetAsset = cache.GetAsset(targetScene);
-		AssetRecord* loadingAsset = cache.GetAsset(loadingScene);
+		AssetRecord* targetAsset = cache.Record(targetScene);
+		AssetRecord* loadingAsset = cache.Record(loadingScene);
 		if (!targetAsset || !loadingAsset)
 		{
 			return;
@@ -173,7 +173,7 @@ namespace SeedCore
 	*/
 	void SceneTransitionSystem::LoadScene(World& world, ResourceCache& cache, JobExecutor& executor, Uint32 targetScene, Float fadeOutDuration, Float fadeInDuration)
 	{
-		AssetRecord* targetAsset = cache.GetAsset(targetScene);
+		AssetRecord* targetAsset = cache.Record(targetScene);
 		if (!targetAsset)
 		{
 			return;
@@ -213,10 +213,10 @@ namespace SeedCore
 		}
 
 		std::filesystem::path resolvedLoadingScene = loadingScene;
-		Uint32 loadingSceneAssetID = cache.GetAssetID(String(loadingScene.string()));
+		Uint32 loadingSceneAssetID = cache.Find(String(loadingScene.string()));
 		if (loadingSceneAssetID != 0)
 		{
-			AssetRecord* loadingSceneAsset = cache.GetAsset(loadingSceneAssetID);
+			AssetRecord* loadingSceneAsset = cache.Record(loadingSceneAssetID);
 			if (loadingSceneAsset)
 			{
 				resolvedLoadingScene = std::filesystem::path(loadingSceneAsset->fullpath_.c_str());
@@ -247,8 +247,8 @@ namespace SeedCore
 	*/
 	void SceneTransitionSystem::LoadScene(World& world, ResourceCache& cache, JobExecutor& executor, Uint32 targetScene, Uint32 loadingScene, Float coverDuration, Float revealDuration)
 	{
-		AssetRecord* targetAsset = cache.GetAsset(targetScene);
-		AssetRecord* loadingAsset = cache.GetAsset(loadingScene);
+		AssetRecord* targetAsset = cache.Record(targetScene);
+		AssetRecord* loadingAsset = cache.Record(loadingScene);
 		if (!targetAsset || !loadingAsset)
 		{
 			return;
@@ -453,10 +453,10 @@ namespace SeedCore
 	void SceneTransitionSystem::BackgroundLoad(ResourceCache& cache, JobExecutor& executor, const std::filesystem::path& path)
 	{
 		std::filesystem::path resolvedPath = path;
-		Uint32 assetID = cache.GetAssetID(String(path.string()));
+		Uint32 assetID = cache.Find(String(path.string()));
 		if (assetID != 0)
 		{
-			AssetRecord* asset = cache.GetAsset(assetID);
+			AssetRecord* asset = cache.Record(assetID);
 			if (asset)
 			{
 				resolvedPath = std::filesystem::path(asset->fullpath_.c_str());

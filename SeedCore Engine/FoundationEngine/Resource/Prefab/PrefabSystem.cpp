@@ -65,7 +65,7 @@ namespace SeedCore
 	{
 		/// [EN] PrefabPool caches by asset ID, so repeatedly spawning the same prefab reloads nothing - each call pays only the per-instance Instantiate() cost.
 		/// [JP] PrefabPool はアセット ID でキャッシュするため、同じプレハブを繰り返し spawn しても再読み込みは発生しない - 毎回かかるのはインスタンスごとの Instantiate() のコストだけ。
-		PrefabPool& pool = resource_->GetPrefabPool();
+		PrefabPool& pool = resource_->Prefabs();
 		PrefabBlueprint* prefab = pool.Get(pool.Load(assetID, *resource_));
 		if (prefab == nullptr)
 		{
@@ -93,7 +93,7 @@ namespace SeedCore
 	*/
 	Actor PrefabSystem::Spawn(const String& name, Actor parent)
 	{
-		Uint32 assetID = resource_->GetAssetID(name);
+		Uint32 assetID = resource_->Find(name);
 		if (assetID == 0)
 		{
 			SC_LOG_WARNING("Prefab::Spawn: プレハブ \"{}\" が見つかりません。", name.c_str());

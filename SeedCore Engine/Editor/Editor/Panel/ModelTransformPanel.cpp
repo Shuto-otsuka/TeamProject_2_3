@@ -89,7 +89,13 @@ namespace SeedCore
 	void ModelTransformPanel::SetTarget(Uint32 assetId)
 	{
 		targetMeshAssetId_ = assetId;
-		editConvention_ = context_.world_.resource_->ReadAxisConvention(assetId);
+		AssetMeta meta;
+		AssetRecord* asset = context_.world_.resource_->Record(assetId);
+		if (asset)
+		{
+			meta.Read(std::filesystem::path(asset->fullpath_.c_str()));
+		}
+		editConvention_ = meta.axisConvention_;
 		baseTransformPosition_ = Vector3(0.0f, 0.0f, 0.0f);
 		baseTransformRotation_ = Vector3(0.0f, 0.0f, 0.0f);
 		baseTransformScale_ = Vector3(1.0f, 1.0f, 1.0f);
@@ -355,7 +361,7 @@ namespace SeedCore
 
 	void ModelTransformPanel::ApplyConversion(Uint32 assetId)
 	{
-		AssetRecord* asset = context_.world_.resource_->GetAsset(assetId);
+		AssetRecord* asset = context_.world_.resource_->Record(assetId);
 		if (!asset)
 		{
 			return;
@@ -366,15 +372,24 @@ namespace SeedCore
 
 		ModelResource* modelResource = context_.graphics_.graphics_->Module().Resources().modelResource_.get();
 
+		AssetMeta meta;
+		meta.guid_ = assetId;
+		meta.Read(path);
+		auto writeConvention = [&meta, &path, this]()
+			{
+				meta.axisConvention_ = editConvention_;
+				meta.Write(path);
+			};
+
 		if (isSourceAsset)
 		{
-			context_.world_.resource_->WriteAssetMeta(assetId, editConvention_);
+			writeConvention();
 			modelResource->Unload(assetId);
 			modelResource->Load(*context_.world_.resource_, assetId);
 		}
 		else
 		{
-			AxisConvention previousConvention = context_.world_.resource_->ReadAxisConvention(assetId);
+			AxisConvention previousConvention = meta.axisConvention_;
 			ResolvedAxisConvention oldResolved = ResolvedAxisConvention::Resolve(previousConvention);
 			ResolvedAxisConvention newResolved = ResolvedAxisConvention::Resolve(editConvention_);
 			Matrix deltaBasis = oldResolved.basis_.Transpose() * newResolved.basis_;
@@ -387,7 +402,7 @@ namespace SeedCore
 				return;
 			}
 
-			context_.world_.resource_->WriteAssetMeta(assetId, editConvention_);
+			writeConvention();
 			modelResource->Unload(assetId);
 			modelResource->Load(*context_.world_.resource_, assetId);
 		}
@@ -423,7 +438,7 @@ namespace SeedCore
 		ImGui::Separator();
 		ImGui::Spacing();
 
-		AssetRecord* asset = context_.world_.resource_->GetAsset(assetId);
+		AssetRecord* asset = context_.world_.resource_->Record(assetId);
 		std::filesystem::path path = asset ? std::filesystem::path(asset->fullpath_.c_str()) : std::filesystem::path();
 		Bool isSourceAsset = (path.extension() == ".gltf" || path.extension() == ".glb");
 
@@ -442,7 +457,7 @@ namespace SeedCore
 
 	void ModelTransformPanel::ApplyTransformConversion(Uint32 assetId)
 	{
-		AssetRecord* asset = context_.world_.resource_->GetAsset(assetId);
+		AssetRecord* asset = context_.world_.resource_->Record(assetId);
 		if (!asset)
 		{
 			return;
@@ -465,7 +480,11 @@ namespace SeedCore
 
 		Matrix baseTransformLinearBasis = Matrix::CreateScale(baseTransformScale_.x, baseTransformScale_.y, baseTransformScale_.z) * Matrix::CreateFromYawPitchRoll(ToRadians(baseTransformRotation_.y), ToRadians(baseTransformRotation_.x), ToRadians(baseTransformRotation_.z));
 		Matrix appliedTransform = Matrix::CreateTranslation(-baseTransformPivot_) * baseTransformLinearBasis * Matrix::CreateTranslation(baseTransformPivot_ + baseTransformPosition_);
-		context_.world_.resource_->WriteAssetMeta(assetId, context_.world_.resource_->ReadModelTransform(assetId) * appliedTransform);
+		AssetMeta meta;
+		meta.guid_ = assetId;
+		meta.Read(path);
+		meta.modelTransform_ = meta.modelTransform_ * appliedTransform;
+		meta.Write(path);
 
 		baseTransformPosition_ = Vector3(0.0f, 0.0f, 0.0f);
 		baseTransformRotation_ = Vector3(0.0f, 0.0f, 0.0f);

@@ -46,7 +46,8 @@ namespace SeedCore
 		{
 			RenderAccess::Write(Counters),
 			RenderAccess::Write(Offsets),
-			RenderAccess::Write(SimulateArguments)
+			RenderAccess::Write(SimulateArguments),
+			RenderAccess::Read(Groups)
 		};
 
 		static void Execute(ParticleFeature& feature, RenderPass& pass);
@@ -86,7 +87,8 @@ namespace SeedCore
 			RenderAccess::Write(Alive),
 			RenderAccess::Write(Counters),
 			RenderAccess::Read(Offsets),
-			RenderAccess::Read(SimulateArguments)
+			RenderAccess::Read(SimulateArguments),
+			RenderAccess::Read(Groups)
 		};
 
 		static void Execute(ParticleFeature& feature, RenderPass& pass);

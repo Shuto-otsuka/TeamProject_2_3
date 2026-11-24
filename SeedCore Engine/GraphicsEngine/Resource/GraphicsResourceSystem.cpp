@@ -29,6 +29,7 @@ namespace SeedCore
 		fontResource_ = MakePtr<FontResource>(loaders);
 		movieResource_ = MakePtr<MovieResource>(loaders);
 		skymapResource_ = MakePtr<SkymapResource>(loaders);
+		effectResource_ = MakePtr<EffectResource>(loaders);
 		effekseerResource_ = MakePtr<EffekseerResource>(loaders);
 	}
 }

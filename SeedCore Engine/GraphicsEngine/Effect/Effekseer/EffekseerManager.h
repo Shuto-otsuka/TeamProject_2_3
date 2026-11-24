@@ -3,30 +3,54 @@
 
 namespace SeedCore
 {
+	class D3D12Context;
+	class D3D12CommandList;
+
 	class EffekseerManager :public NonCopyable
 	{
 	public:
 		EffekseerManager() = default;
 		~EffekseerManager() = default;
 
-		Bool Initialize(::EffekseerRenderer::RendererRef backend, Uint32 instanceMax = 8000);
+		Bool Initialize(D3D12Context& context);
 
-		void Update(Float deltaTime);
+		void Execute(Float elapsedTime);
 
+		void Finalize();
+
+		void Draw(D3D12CommandList& cmdList, const Matrix& view, const Matrix& projection);
+
+		Effekseer::Handle Play(const Effekseer::EffectRef& effect, const Vector3& position);
+
+		void Stop(Effekseer::Handle handle);
+
+		NODISCARD Bool Playing(Effekseer::Handle handle);
+
+		void Transform(Effekseer::Handle handle, const Matrix& matrix);
+
+		void Speed(Effekseer::Handle handle, Float speed);
+
+		void Color(Effekseer::Handle handle, const SeedCore::Color& color);
+
+	public:
 		NODISCARD Effekseer::ManagerRef GetManager()const;
 
 		NODISCARD Float GetTotalTime()const;
 
-		/// [EN] Shared file interface used by the texture/model/material loaders;
-		///      EffekseerLoader registers ".effekseer" cache dependencies into it.
-		/// [JP] テクスチャ/モデル/マテリアルローダーが共有するファイルインターフェース。
-		///      EffekseerLoaderが".effekseer"キャッシュの依存関係をここに登録する。
 		NODISCARD EffekseerFileInterface& GetFileInterface();
 
 	private:
 		Effekseer::ManagerRef manager_;
 
+		EffekseerRenderer::RendererRef renderer_;
+
+		Effekseer::RefPtr<EffekseerRenderer::SingleFrameMemoryPool> memoryPool_;
+
+		Effekseer::RefPtr<EffekseerRenderer::CommandList> cmdList_;
+
 		Effekseer::RefPtr<EffekseerFileInterface> fileInterface_;
+
+		DynamicArray<Effekseer::Handle> handles_;
 
 		Float totalTime_ = 0.0f;
 	};

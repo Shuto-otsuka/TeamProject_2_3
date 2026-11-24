@@ -49,7 +49,7 @@ namespace SeedCore
 	*/
 	Bool ModelExporter::Export(const AssetContext& context, Uint32 assetID, String outputPath)
 	{
-		AssetRecord* asset = context.cache_.GetAsset(assetID);
+		AssetRecord* asset = context.cache_.Record(assetID);
 		if (!asset)
 		{
 			return false;

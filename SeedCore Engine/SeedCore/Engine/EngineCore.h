@@ -16,6 +16,7 @@
 
 #include <GraphicsEngine/Graphics/Graphics.h>
 #include <GraphicsEngine/Font/FontManager.h>
+#include <GraphicsEngine/Effect/Effekseer/EffekseerManager.h>
 #include <GraphicsEngine/System/CameraSystem.h>
 #include <GraphicsEngine/System/SplashSystem.h>
 
@@ -52,6 +53,8 @@ namespace SeedCore
 		JobTask BootGraphics(JobTaskflow& flow, const GameConfig& gameConfig);
 
 		JobTask BootFont(JobTaskflow& flow);
+
+		JobTask BootEffekseer(JobTaskflow& flow);
 
 		JobTask BootResource(JobTaskflow& flow);
 
@@ -164,6 +167,8 @@ namespace SeedCore
 
 		FontManager fontManager_;
 
+		EffekseerManager effekseerManager_;
+
 		AudioModule audioModule_;
 
 		PrefabSystem prefabSystem_;
@@ -192,6 +197,8 @@ namespace SeedCore
 		JobTask graphicsTask_;
 
 		JobTask fontTask_;
+
+		JobTask effekseerTask_;
 
 		JobTask resourceTask_;
 

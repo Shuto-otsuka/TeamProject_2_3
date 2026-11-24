@@ -6,6 +6,7 @@
 #include <Editor/Editor/Panel/TimelinePanel.h>
 #include <Editor/Editor/Panel/LayerSettingsPanel.h>
 #include <Editor/Editor/Panel/MaterialViewerPanel.h>
+#include <Editor/Editor/Panel/EffectGraphPanel.h>
 #include <Editor/Editor/Panel/SkeletonControllerPanel.h>
 #include <Editor/Editor/Panel/AvatarPanel.h>
 #include <Editor/Editor/Panel/BootScreenPanel.h>
@@ -81,6 +82,13 @@ namespace SeedCore
 			if (context_.panel_.materialViewer_ && context_.panel_.materialViewer_->Visible())
 			{
 				context_.panel_.materialViewer_->DrawDetails();
+				ImGui::End();
+				return;
+			}
+
+			if (context_.panel_.effectGraph_ && context_.panel_.effectGraph_->Focused())
+			{
+				context_.panel_.effectGraph_->DrawDetails();
 				ImGui::End();
 				return;
 			}
@@ -452,7 +460,7 @@ namespace SeedCore
 			return;
 		}
 
-		AssetRecord* asset = context_.world_.resource_->GetAsset(assetID);
+		AssetRecord* asset = context_.world_.resource_->Record(assetID);
 		if (!asset)
 		{
 			return;
@@ -468,8 +476,8 @@ namespace SeedCore
 
 		if (ImGui::Button("Prefab に適用"))
 		{
-			Handle<PrefabBlueprint> handle = context_.world_.resource_->GetPrefabPool().Load(assetID, *context_.world_.resource_);
-			PrefabBlueprint* prefab = context_.world_.resource_->GetPrefabPool().Get(handle);
+			Handle<PrefabBlueprint> handle = context_.world_.resource_->Prefabs().Load(assetID, *context_.world_.resource_);
+			PrefabBlueprint* prefab = context_.world_.resource_->Prefabs().Get(handle);
 			if (prefab)
 			{
 				prefab->Capture(actor);
@@ -560,12 +568,12 @@ namespace SeedCore
 			{
 				ModelResource* modelResource = context_.graphics_.graphics_->Module().Resources().modelResource_.get();
 				Crister* crister = modelResource->Resolve(modelResource->GetHandle(mesh->meshID_));
-				AssetRecord* modelAsset = context_.world_.resource_->GetAsset(mesh->meshID_);
+				AssetRecord* modelAsset = context_.world_.resource_->Record(mesh->meshID_);
 				if (crister && modelAsset && !crister->Skins().empty())
 				{
 					std::string target = (std::filesystem::path(modelAsset->fullpath_.c_str()).parent_path() / (std::filesystem::path(modelAsset->fullpath_.c_str()).stem().string() + ".skeleton")).string();
 					std::ranges::replace(target, '\\', '/');
-					for (const auto& [assetId, asset] : context_.world_.resource_->AssetList())
+					for (const auto& [assetId, asset] : context_.world_.resource_->Records())
 					{
 						if (asset.type_ == AssetType::Skeleton && asset.fullpath_.str() == target)
 						{
@@ -1727,7 +1735,7 @@ namespace SeedCore
 		}
 
 		Uint32 assetId = static_cast<Uint32>(*value);
-		AssetRecord* asset = (assetId != 0) ? context_.world_.resource_->GetAsset(assetId) : nullptr;
+		AssetRecord* asset = (assetId != 0) ? context_.world_.resource_->Record(assetId) : nullptr;
 
 		std::string buttonLabel = asset ? std::filesystem::path(asset->path_.c_str()).filename().string() : "ここにドロップ";
 
@@ -1775,7 +1783,7 @@ namespace SeedCore
 		}
 
 		Uint32 assetId = static_cast<Uint32>(*value);
-		AssetRecord* asset = (assetId != 0) ? context_.world_.resource_->GetAsset(assetId) : nullptr;
+		AssetRecord* asset = (assetId != 0) ? context_.world_.resource_->Record(assetId) : nullptr;
 
 		std::string label = asset ? std::filesystem::path(asset->path_.c_str()).filename().string() : "(空)";
 		ImGui::Selectable(label.c_str());

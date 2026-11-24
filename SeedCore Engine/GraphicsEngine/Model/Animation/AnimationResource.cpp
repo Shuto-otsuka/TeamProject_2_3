@@ -52,7 +52,7 @@ namespace SeedCore
 			return assetHandleMap_.at(assetID);
 		}
 
-		AssetRecord* asset = cache.GetAsset(assetID);
+		AssetRecord* asset = cache.Record(assetID);
 		if (!asset)
 		{
 			return Handle<Animation>::null();
@@ -110,7 +110,7 @@ namespace SeedCore
 	*/
 	Bool AnimationResource::Generate(const AssetContext& context, Uint32 sourceAssetID, DynamicArray<String>& writtenPaths)
 	{
-		AssetRecord* asset = context.cache_.GetAsset(sourceAssetID);
+		AssetRecord* asset = context.cache_.Record(sourceAssetID);
 		if (!asset)
 		{
 			return false;
@@ -118,7 +118,9 @@ namespace SeedCore
 
 		/// [EN] The clips are read straight from the source file, with the convention the model itself was imported with, so they drive the Crister's nodes in the same space.
 		/// [JP] クリップはソースファイルから直接読み、モデル自身を取り込んだのと同じ規約で変換する。Crister のノードを同じ空間で動かすため。
-		return loaders_.animationLoader_->SplitClips(asset->fullpath_, context.cache_.ReadAxisConvention(sourceAssetID), writtenPaths);
+		AssetMeta meta;
+		meta.Read(std::filesystem::path(asset->fullpath_.c_str()));
+		return loaders_.animationLoader_->SplitClips(asset->fullpath_, meta.axisConvention_, writtenPaths);
 	}
 
 	/**

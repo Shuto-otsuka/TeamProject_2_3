@@ -1140,7 +1140,7 @@ namespace SeedCore
 				list.Get()->ResourceBarrier(static_cast<Uint32>(pass.barriers_.size()), pass.barriers_.data());
 			}
 
-			if (stage.kind_ == RenderStageKind::Raster)
+			if (stage.kind_ == RenderStageKind::Raster || stage.kind_ == RenderStageKind::Callback)
 			{
 				StaticArray<D3D12_CPU_DESCRIPTOR_HANDLE, D3D12_SIMULTANEOUS_RENDER_TARGET_COUNT> targets{};
 				Uint32 targetCount = 0;

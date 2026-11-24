@@ -33,6 +33,7 @@ namespace SeedCore
 		core_.BootGraphics(flow, gameConfig_);
 		core_.BootAudio(flow, gameConfig_);
 		core_.BootFont(flow);
+		core_.BootEffekseer(flow);
 		core_.BootResource(flow);
 		core_.BootService(flow);
 		core_.BootPrefab(flow);

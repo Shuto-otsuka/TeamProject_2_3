@@ -3,6 +3,10 @@
 
 #include <GraphicsEngine/Shader/RootSignature.hlsli>
 
+#define SCENE_VIEW_KIND_EDITOR 0
+#define SCENE_VIEW_KIND_GAME 1
+#define SCENE_VIEW_KIND_CANVAS 2
+
 struct SceneConstantBuffer
 {
 	row_major float4x4 view_;
@@ -38,7 +42,7 @@ struct SceneConstantBuffer
 	uint show_flags_low_;
 	uint show_flags_high_;
 	uint debug_source_;
-	uint scene_constant_buffer_padding_;
+	uint view_kind_;
 };
 
 ConstantBuffer<SceneConstantBuffer> GetSceneConstantBuffer()

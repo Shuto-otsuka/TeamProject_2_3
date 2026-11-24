@@ -9,6 +9,7 @@
 #include <GraphicsEngine/Font/FontLoader.h>
 #include <GraphicsEngine/Movie/MovieLoader.h>
 #include <GraphicsEngine/Sky/SkymapLoader.h>
+#include <GraphicsEngine/Effect/EffectLoader.h>
 #include <GraphicsEngine/Effect/Effekseer/EffekseerLoader.h>
 
 namespace SeedCore
@@ -54,6 +55,10 @@ namespace SeedCore
 		/// [EN] Loads skybox/environment map assets.
 		/// [JP] スカイボックス/環境マップアセットを読み込む。
 		ResourcePtr<SkymapLoader> skymapLoader_;
+
+		/// [EN] Loads Engine-made effect (.zephyr) assets.
+		/// [JP] エンジン製のエフェクト（.zephyr）アセットを読み込む。
+		ResourcePtr<EffectLoader> effectLoader_;
 
 		/// [EN] Loads Effekseer effect (.efkefc) assets.
 		/// [JP] Effekseerエフェクト(.efkefc)アセットを読み込む。

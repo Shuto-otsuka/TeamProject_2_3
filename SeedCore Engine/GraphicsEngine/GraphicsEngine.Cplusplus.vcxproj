@@ -96,19 +96,23 @@
     <ClInclude Include="Debug\DebugViewStage.h" />
     <ClInclude Include="DLSS\DlssManager.h" />
     <ClInclude Include="Effect\Effect.h" />
+    <ClInclude Include="Effect\EffectAsset.h" />
     <ClInclude Include="Effect\EffectLoader.h" />
     <ClInclude Include="Effect\EffectResource.h" />
-    <ClInclude Include="Effect\Effekseer\EffekseerCache.h" />
+    <ClInclude Include="Effect\Effekseer\EffekseerAsset.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerEffect.h" />
+    <ClInclude Include="Effect\Effekseer\EffekseerFeature.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerFileInterface.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerLoader.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerManager.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerResource.h" />
+    <ClInclude Include="Effect\Effekseer\EffekseerStage.h" />
     <ClInclude Include="Effect\Zephyr\ParticleFeature.h" />
     <ClInclude Include="Effect\Zephyr\ParticleShader.h" />
     <ClInclude Include="Effect\Zephyr\ParticleStage.h" />
     <ClInclude Include="Effect\Zephyr\ZephyrModuleAssembler.h" />
     <ClInclude Include="Effect\Zephyr\ZephyrModuleRegistry.h" />
+    <ClInclude Include="Effect\Zephyr\ZephyrNodeRegistry.h" />
     <ClInclude Include="Environment\Celestial\Celestial.h" />
     <ClInclude Include="Environment\VolumetricCloud\VolumetricCloudFeature.h" />
     <ClInclude Include="Environment\VolumetricCloud\VolumetricCloudScapes.h" />
@@ -373,7 +377,7 @@
     <ClInclude Include="Shape\Primitive\Wireframe\PrimitiveWireframe.h" />
     <ClInclude Include="Sky\SkyFeature.h" />
     <ClInclude Include="Sky\Skymap.h" />
-    <ClInclude Include="Sky\SkymapCache.h" />
+    <ClInclude Include="Sky\SkymapAsset.h" />
     <ClInclude Include="Sky\SkymapLoader.h" />
     <ClInclude Include="Sky\SkymapResource.h" />
     <ClInclude Include="Sky\SkyShader.h" />
@@ -434,17 +438,21 @@
     <ClCompile Include="D3D12\Signature\RootSignature.cpp" />
     <ClCompile Include="Debug\DebugViewFeature.cpp" />
     <ClCompile Include="Debug\DebugViewStage.cpp" />
+    <ClCompile Include="Effect\EffectAsset.cpp" />
     <ClCompile Include="Effect\EffectLoader.cpp" />
     <ClCompile Include="Effect\EffectResource.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerEffect.cpp" />
+    <ClCompile Include="Effect\Effekseer\EffekseerFeature.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerFileInterface.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerLoader.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerManager.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerResource.cpp" />
+    <ClCompile Include="Effect\Effekseer\EffekseerStage.cpp" />
     <ClCompile Include="Effect\Zephyr\ParticleFeature.cpp" />
     <ClCompile Include="Effect\Zephyr\ParticleStage.cpp" />
     <ClCompile Include="Effect\Zephyr\ZephyrModuleAssembler.cpp" />
     <ClCompile Include="Effect\Zephyr\ZephyrModuleRegistry.cpp" />
+    <ClCompile Include="Effect\Zephyr\ZephyrNodeRegistry.cpp" />
     <ClCompile Include="Environment\VolumetricCloud\VolumetricCloudFeature.cpp" />
     <ClCompile Include="Environment\VolumetricCloud\VolumetricCloudStage.cpp" />
     <ClCompile Include="Environment\VolumetricStar\VolumetricStarFeature.cpp" />
@@ -680,7 +688,6 @@
     <ClCompile Include="Shape\Primitive\Wireframe\PrimitiveWireframe.cpp" />
     <ClCompile Include="Sky\SkyFeature.cpp" />
     <ClCompile Include="Sky\Skymap.cpp" />
-    <ClCompile Include="Sky\SkymapCache.cpp" />
     <ClCompile Include="Sky\SkymapLoader.cpp" />
     <ClCompile Include="Sky\SkymapResource.cpp" />
     <ClCompile Include="Sky\SkyStage.cpp" />
@@ -733,12 +740,42 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
+    <None Include="Effect\Zephyr\Module\ConeModule.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
     <None Include="Effect\Zephyr\Module\DragModule.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </None>
+    <None Include="Effect\Zephyr\Module\EffekseerModule.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
     <None Include="Effect\Zephyr\Module\GravityModule.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Effect\Zephyr\Module\PointModule.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Effect\Zephyr\Module\RandomRangeModule.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Effect\Zephyr\Module\Receiver.hlsli">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </None>
+    <None Include="Effect\Zephyr\Module\SphereModule.hlsli">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>

@@ -26,7 +26,7 @@ namespace SeedCore
 	* [EN]
 	* Serializable wrapper around a raw ".efkefc" byte blob plus every
 	* dependency (texture/model/material/wave/curve) it references, written
-	* as a ".effekseer" binary cache next to the source file (mirrors the
+	* as a ".effekseer" binary asset next to the source file (mirrors the
 	* ".crister" cache for models). Ships without exposing the original
 	* Effekseer project's raw ".efkefc"/".efkmodel"/texture source layout.
 	*
@@ -35,12 +35,12 @@ namespace SeedCore
 	* [JP]
 	* 生の ".efkefc" バイト列と、それが参照する全依存関係(テクスチャ/モデル/
 	* マテリアル/wave/curve)をまとめてラップするシリアライズ可能な
-	* 構造体。ソースファイルの隣に ".effekseer" バイナリキャッシュとして
+	* 構造体。ソースファイルの隣に ".effekseer" バイナリアセットとして
 	* 書き出す（モデルの ".crister" キャッシュと同じ構図）。元のEffekseer
 	* プロジェクトが持つ生の ".efkefc"/".efkmodel"/テクスチャのソース構成を
 	* 露出せずに出荷できる。
 	*/
-	struct EffekseerCache
+	struct EffekseerAsset
 	{
 		DynamicArray<Byte> data_;
 

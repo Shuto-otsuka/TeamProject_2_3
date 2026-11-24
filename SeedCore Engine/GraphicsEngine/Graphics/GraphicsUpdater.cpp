@@ -83,7 +83,7 @@ namespace SeedCore
 		Benchmark::End("Movie");
 
 		Benchmark::Begin("Effect");
-		std::get<EffectSystem>(systems_).Update(world, deltaTime);
+		std::get<EffectSystem>(systems_).Update(*resources.effectResource_, *resources.effekseerResource_, world, deltaTime);
 		Benchmark::End("Effect");
 
 		/// [EN] The celestial clock advances by the frame time and drives the sun's DirectionalLight before Light gathers the lights.

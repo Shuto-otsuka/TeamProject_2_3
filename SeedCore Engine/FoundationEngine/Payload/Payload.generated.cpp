@@ -9,6 +9,7 @@
 #include <GraphicsEngine/Constraint/ParentConstraint.h>
 #include <GraphicsEngine/Constraint/PositionConstraint.h>
 #include <GraphicsEngine/Constraint/RotationConstraint.h>
+#include <GraphicsEngine/Effect/Effect.h>
 #include <GraphicsEngine/Font/Text.h>
 #include <GraphicsEngine/Light/SkyLight.h>
 #include <GraphicsEngine/Model/Animation/Animator.h>
@@ -42,6 +43,7 @@ extern "C" int _force_payload_LookAtConstraint = 0;
 extern "C" int _force_payload_ParentConstraint = 0;
 extern "C" int _force_payload_PositionConstraint = 0;
 extern "C" int _force_payload_RotationConstraint = 0;
+extern "C" int _force_payload_Effect = 0;
 extern "C" int _force_payload_Text = 0;
 extern "C" int _force_payload_SkyLight = 0;
 extern "C" int _force_payload_Mesh = 0;
@@ -204,6 +206,19 @@ namespace SeedCore
 			}
 		};
 		static Register_RotationConstraint global_RotationConstraint_register;
+
+		// ---- GraphicsEngine/Effect/Effect.h ----
+		struct Register_Effect
+		{
+			Register_Effect()
+			{
+				PayloadRegistry::Register(String("Effect"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					Effect& obj = *static_cast<Effect*>(ptr);
+					outInfo.push_back({ String("エフェクト"), offsetof(Effect, effectID_), AttributeType::Int, PayloadType::Effect });
+				});
+			}
+		};
+		static Register_Effect global_Effect_register;
 
 		// ---- GraphicsEngine/Font/Text.h ----
 		struct Register_Text

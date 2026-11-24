@@ -52,7 +52,7 @@ namespace SeedCore
 			return assetHandleMap_.at(assetID);
 		}
 
-		AssetRecord* asset = cache.GetAsset(assetID);
+		AssetRecord* asset = cache.Record(assetID);
 		if (!asset)
 		{
 			return Handle<Font>::null();

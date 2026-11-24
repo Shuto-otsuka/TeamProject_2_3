@@ -3,6 +3,7 @@
 #include <FoundationEngine/Benchmark/Benchmark.h>
 #include <FoundationEngine/Application/Bootstrap.h>
 #include <FoundationEngine/Time/GameTimer.h>
+#include <FoundationEngine/File/FileLocator.h>
 
 namespace SeedCore
 {
@@ -40,6 +41,7 @@ namespace SeedCore
 		core_.BootGraphics(flow, gameConfig_);
 		core_.BootAudio(flow, editorConfig_);
 		core_.BootFont(flow);
+		core_.BootEffekseer(flow);
 
 		/// [EN] Editor-only step: ImGui needs the window and the graphics device.
 		/// [JP] エディタだけの手順。ImGui にはウィンドウとグラフィックスデバイスが要る。
@@ -118,7 +120,7 @@ namespace SeedCore
 				/// [JP] Scene が読み込まれていれば、前回開いていた Scene ファイルをエディタで開き直す。
 				if (!core_.GetScene().CurrentName().view().empty())
 				{
-					editorContext_.scene_.path_ = FilePath(std::filesystem::path(editorConfig_.lastScenePath_.str()), core_.GetResource().ProjectRootPath());
+					editorContext_.scene_.path_ = FilePath(std::filesystem::path(editorConfig_.lastScenePath_.str()), FileLocator::EngineRoot());
 				}
 				editor_ = MakePtr<Editor>(editorContext_);
 			});

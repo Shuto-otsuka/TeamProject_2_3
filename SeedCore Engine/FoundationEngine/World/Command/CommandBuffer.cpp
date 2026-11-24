@@ -152,8 +152,8 @@ namespace SeedCore
 
 				Actor parent = (parentID != EntityID{}) ? WorldAccessor::Make(world, parentID) : Actor();
 
-				Handle<PrefabBlueprint> handle = cache.GetPrefabPool().Load(command.assetID_, cache);
-				PrefabBlueprint* prefab = cache.GetPrefabPool().Get(handle);
+				Handle<PrefabBlueprint> handle = cache.Prefabs().Load(command.assetID_, cache);
+				PrefabBlueprint* prefab = cache.Prefabs().Get(handle);
 				if (prefab == nullptr)
 				{
 					break;
