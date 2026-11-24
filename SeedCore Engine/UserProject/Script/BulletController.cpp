@@ -383,6 +383,9 @@ void BulletController::UpdateStopTimer(float elapsedTime)
         float stopTimeDisplay = static_cast<float>(stopTimeInt) / 10.0f;
         //テキスト反映
         std::string stopTimeStr = std::format("Stop {:.1f}", stopTimeDisplay);
+        //実体化している弾であれば軽いか重いかを表示
+        if (rigidbody->bodyType_ == SeedCore::Rigidbody::BodyType::Dynamic)
+            GetActor().HasTag("BulletSmall") ? stopTimeStr += " 軽" : stopTimeStr += " 重";
         stopTimerText->text_ = SeedCore::String(stopTimeStr);
 
         //スクリーン座標変換&オフセットを適応

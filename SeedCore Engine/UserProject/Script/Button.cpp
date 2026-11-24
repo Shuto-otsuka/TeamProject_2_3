@@ -7,14 +7,14 @@ void Button::OnStart()
     myImage = GetActor().GetComponent<SeedCore::Image>();
     position = GetActor().GetComponent<SeedCore::Position>();
     scale = GetActor().GetComponent<SeedCore::Scale>();
-
-    //ポジション、スケール、イメージテクスチャからボタンの当たり判定の範囲を取得
-    minOffset = SeedCore::Vector2(position->x_ - myImage->pivot_.x, position->y_ - myImage->pivot_.y);
-    maxOffset = SeedCore::Vector2(minOffset.x + myImage->textureSize_.x * scale->x_, minOffset.y + myImage->textureSize_.y * scale->y_);
 }
 
 void Button::OnTick(float elapsedTime)
 {
+    //ポジション、スケール、イメージテクスチャからボタンの当たり判定の範囲を取得
+    minOffset = SeedCore::Vector2(position->x_ - myImage->pivot_.x, position->y_ - myImage->pivot_.y);
+    maxOffset = SeedCore::Vector2(minOffset.x + myImage->textureSize_.x * scale->x_, minOffset.y + myImage->textureSize_.y * scale->y_);
+
     SeedCore::Vector2 cursorPosition = SeedCore::Input::MousePoint();
     if (cursorPosition.x < minOffset.x || cursorPosition.x > maxOffset.x || cursorPosition.y < minOffset.y || cursorPosition.y > maxOffset.y)
     {

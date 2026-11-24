@@ -46,39 +46,7 @@
 					"fields": [
 						{
 							"bool": false,
-							"children": [
-								{
-									"bool": false,
-									"children": [],
-									"color": {
-										"a": 1.0,
-										"b": 1.0,
-										"g": 1.0,
-										"r": 1.0
-									},
-									"float": 0.0,
-									"int": 249555248,
-									"is_array": false,
-									"name": "[0]",
-									"string": "",
-									"type": 1,
-									"vector2": {
-										"x": 0.0,
-										"y": 0.0
-									},
-									"vector3": {
-										"x": 0.0,
-										"y": 0.0,
-										"z": 0.0
-									},
-									"vector4": {
-										"w": 0.0,
-										"x": 0.0,
-										"y": 0.0,
-										"z": 0.0
-									}
-								}
-							],
+							"children": [],
 							"color": {
 								"a": 1.0,
 								"b": 1.0,
@@ -109,39 +77,7 @@
 						},
 						{
 							"bool": false,
-							"children": [
-								{
-									"bool": false,
-									"children": [],
-									"color": {
-										"a": 1.0,
-										"b": 1.0,
-										"g": 1.0,
-										"r": 1.0
-									},
-									"float": 0.0,
-									"int": 0,
-									"is_array": false,
-									"name": "[0]",
-									"string": "player_M",
-									"type": 7,
-									"vector2": {
-										"x": 0.0,
-										"y": 0.0
-									},
-									"vector3": {
-										"x": 0.0,
-										"y": 0.0,
-										"z": 0.0
-									},
-									"vector4": {
-										"w": 0.0,
-										"x": 0.0,
-										"y": 0.0,
-										"z": 0.0
-									}
-								}
-							],
+							"children": [],
 							"color": {
 								"a": 1.0,
 								"b": 1.0,
@@ -681,7 +617,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 18.0,
+							"float": 15.0,
 							"int": 0,
 							"is_array": false,
 							"name": "ジャンプ力",
@@ -4163,7 +4099,7 @@
 												"g": 1.0,
 												"r": 1.0
 											},
-											"float": 0.25,
+											"float": 0.0,
 											"int": 0,
 											"is_array": false,
 											"name": "duration_",
@@ -4505,7 +4441,7 @@
 												"g": 1.0,
 												"r": 1.0
 											},
-											"float": 0.25,
+											"float": 0.0,
 											"int": 0,
 											"is_array": false,
 											"name": "duration_",
@@ -5004,7 +4940,7 @@
 												"g": 1.0,
 												"r": 1.0
 											},
-											"float": 0.25,
+											"float": 0.0,
 											"int": 0,
 											"is_array": false,
 											"name": "duration_",
@@ -10725,6 +10661,10 @@
 							}
 						}
 					]
+				},
+				{
+					"component": "Selected",
+					"fields": []
 				}
 			],
 			"layer": "Player",
@@ -10734,9 +10674,9 @@
 			"parentIndex": -1,
 			"persistentId": 6,
 			"position": {
-				"x": -1.0,
-				"y": 0.5,
-				"z": 32.0
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
 			},
 			"rotation": {
 				"w": 1.0,

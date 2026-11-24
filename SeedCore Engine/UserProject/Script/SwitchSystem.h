@@ -38,6 +38,9 @@ public:
 	SC_REFLECTION_CLAMPED_EX("クールタイム", 0.0f, 10000.0f)
 	float cooltime_ = 1.0f;
 
+	SC_REFLECTION_FIELD_EX("オンになるための最低押下時間")
+	float minPushTime_ = 0.0f;
+
 	SC_REFLECTION_FIELD_EX("判定範囲を描画するか")
 	bool isDebugAreaDraw_ = true;
 
@@ -46,17 +49,25 @@ public:
 
 	void OnTick(float elapsedTime);
 
-	void OnEditorTick(float elapsedTime);
+	void OnEditorTick(float elapsedTime); 
 
 public:
 	bool IsOn()const;
 
 private:
+	void WaitGaugeSetActive(bool active);
+
 	bool isOn_ = false;
 
 	bool wasInside_ = false;
 
 	float cooltimer_ = 0.0f;
+
+	float pushTimer_ = 0.0f;
+
+	float waitGaugeSizeXMax_ = 142.0f;
+
+	SeedCore::Actor waitGauge_;
 
 	SeedCore::Uint32 offMaterialID_ = 0;
 

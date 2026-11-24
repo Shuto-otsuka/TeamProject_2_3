@@ -359,7 +359,7 @@
 								"r": 1.0
 							},
 							"float": 0.0,
-							"int": 0,
+							"int": -1,
 							"is_array": false,
 							"name": "描画順",
 							"string": "",
@@ -536,6 +536,10 @@
 							}
 						}
 					]
+				},
+				{
+					"component": "Selected",
+					"fields": []
 				}
 			],
 			"layer": "Default",

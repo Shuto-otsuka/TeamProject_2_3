@@ -3,6 +3,8 @@
 #include <SeedCore/ScPhysics.h>
 #include <SeedCore/ScScene.h>
 #include <SeedCore/ScDebug.h>
+#include <SeedCore/ScPrefab.h>
+#include <SeedCore/ScScreen.h>
 
 using namespace SeedCore;
 
@@ -20,6 +22,14 @@ void SwitchSystem::OnStart()
 	if (pushAudioActor)pushAudio = pushAudioActor.GetComponent<SeedCore::AudioSource>();
 	SeedCore::Actor releaseAudioActor = GetWorld().GetActor("AudioButtonRelease");
 	if (releaseAudioActor)releaseAudio = releaseAudioActor.GetComponent<SeedCore::AudioSource>();
+
+	//起動待機ゲージ生成
+	waitGauge_ = Prefab::Spawn("SwitchWaitGauge.prefab");
+	if (waitGauge_)
+	{
+		SeedCore::Active* waitGaugeActive = waitGauge_.GetComponent<SeedCore::Active>();
+		waitGaugeActive->active_ = false;//最初非表示
+	}
 }
 
 void SwitchSystem::OnTick(float elapsedTime)
@@ -109,7 +119,48 @@ void SwitchSystem::OnTick(float elapsedTime)
 	{
 	case Mode::Momentary:
 		// 乗っている間のみOnなので常に代入
-		isOn_ = inside;
+		if (inside)
+		{
+			pushTimer_ += elapsedTime;
+			isOn_ = pushTimer_ >= minPushTime_;
+			if (waitGauge_)
+			{
+				if (pushTimer_ <= minPushTime_)
+				{
+					//ゲージを表示
+					WaitGaugeSetActive(true);
+					SeedCore::Vector2 gaugeScreenPos = SeedCore::ScreenSpace::WorldToScreen(position);
+					SeedCore::Position* waitGaugePosition = waitGauge_.GetComponent<SeedCore::Position>();
+					waitGaugePosition->x_ = gaugeScreenPos.x;
+					waitGaugePosition->y_ = gaugeScreenPos.y;
+
+					SeedCore::Actor waitGaugeInside = waitGauge_.Children().at(1);
+					if (waitGaugeInside)
+					{
+						//押された時間によってゲージのチャージ量を変化させる
+						SeedCore::Image* waitGaugeInsideImage = waitGaugeInside.GetComponent<SeedCore::Image>();
+						float gaugeRate = pushTimer_ / minPushTime_;
+						float gaugeSizeX = waitGaugeSizeXMax_ * gaugeRate;
+						waitGaugeInsideImage->textureSize_.x = gaugeSizeX;
+					}
+
+				}
+				else
+				{
+					//ゲージを非表示
+					WaitGaugeSetActive(false);
+				}
+			}
+		}
+		else
+		{
+			pushTimer_ = 0.0f;
+			isOn_ = false;
+
+			//ゲージを非表示
+			if (waitGauge_)
+				WaitGaugeSetActive(false);
+		}
 		break;
 	case Mode::Toggle:
 		// 押された瞬間に反転し、その瞬間からクールタイム開始
@@ -191,4 +242,18 @@ void SwitchSystem::OnEditorTick(float elapsedTime)
 bool SwitchSystem::IsOn()const
 {
 	return isOn_;
+}
+
+void SwitchSystem::WaitGaugeSetActive(bool active)
+{
+	if (!waitGauge_)return;
+
+	for (auto& waitGaugeChild : waitGauge_.Children())
+	{
+		SeedCore::Active* waitGaugeChildActive = waitGaugeChild.GetComponent<SeedCore::Active>();
+		waitGaugeChildActive->active_ = active;
+	}
+
+	SeedCore::Active* waitGaugeActive = waitGauge_.GetComponent<SeedCore::Active>();
+	waitGaugeActive->active_ = active;
 }

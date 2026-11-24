@@ -1,9 +1,12 @@
 #include "DoorSystem.h"
 #include "CircuitSystem.h"
 #include "AnnounceController.h"
+#include "PlayerController.h"
 
 #include <SeedCore/ScLog.h>
 #include <SeedCore/ScDebug.h>
+#include<SeedCore/ScPrefab.h>
+#include<SeedCore/ScScreen.h>
 
 using namespace SeedCore;
 
@@ -13,6 +16,9 @@ void DoorSystem::OnStart()
 	Actor actor = GetActor();
 
 	announceActor_ = GetWorld().GetActor("Announce");
+	player_ = GetWorld().GetActor("Player");
+	thirdPersonCameraActor_ = GetWorld().GetActor("CameraBrain");
+	firstPersonCameraActor_ = GetWorld().GetActor("FirstPersonCameraBrain");
 
 	// 行列を分解して自分の回転と位置をとる
 	Vector3 position, scale;
@@ -40,6 +46,90 @@ void DoorSystem::OnStart()
 	if (openAudioActor)openAudio = openAudioActor.GetComponent<SeedCore::AudioSource>();
 	SeedCore::Actor closeAudioActor = GetWorld().GetActor("AudioGateClose");
 	if (closeAudioActor)closeAudio = closeAudioActor.GetComponent<SeedCore::AudioSource>();
+
+	switchCountTextActor_ = SeedCore::Prefab::Spawn("SwitchCountText.prefab");
+}
+
+void DoorSystem::OnTick(float elapsedTime)
+{
+	//必要なスイッチがどれだけ押されてるかのテキストの表示
+
+	CircuitSystem* circuitSystem = circuitActor_.GetComponent<CircuitSystem>();
+
+	//テキストのアクターがないもしくは回路がないなら終了
+	if (!switchCountTextActor_ || !circuitSystem)return;
+
+	SeedCore::Active* switchCountTextActive = switchCountTextActor_.GetComponent<SeedCore::Active>();
+	//スイッチが複数必要で、すべて押さないと起動しないやつだけテキストを表示する
+	if (circuitSystem->GetNeedCount() < 2 || circuitSystem->logic_ != CircuitSystem::Logic::And)
+	{
+		switchCountTextActive->active_ = false;
+		return;
+	}
+
+	SeedCore::Position* myPosition = GetActor().GetComponent<SeedCore::Position>();
+	SeedCore::Position* cameraPosition = nullptr;
+	SeedCore::Vector3 cameraFront;
+	PlayerController* playerController = player_.GetComponent<PlayerController>();
+
+	if (playerController->IsFirstPerson())
+	{
+		cameraPosition = firstPersonCameraActor_.GetComponent<SeedCore::Position>();
+		cameraFront = firstPersonCameraActor_.WorldMatrix().Forward();
+	}
+	else
+	{
+		cameraPosition = thirdPersonCameraActor_.GetComponent<SeedCore::Position>();
+		cameraFront = thirdPersonCameraActor_.WorldMatrix().Forward();
+	}
+
+	SeedCore::Vector3 cameraToBullet = SeedCore::Transform::Vector(*myPosition) - SeedCore::Transform::Vector(*cameraPosition);
+	cameraToBullet.Normalize();
+	if (cameraFront.Dot(cameraToBullet) < 0.0f)
+	{
+		//カメラが爆弾と真反対の方向向いてたらテキストを表示しない
+		switchCountTextActive->active_ = false;
+	}
+	else
+	{
+		switchCountTextActive->active_ = true;
+
+		//テキストを表示したいワールド位置を算出
+		Vector3 position, scale;
+		Quaternion rotation;
+		Matrix worldMatrix = GetActor().WorldMatrix();
+		worldMatrix.Decompose(position, rotation, scale);
+		float worldPosY = position.y + ((3.0f * scale.y) / 2);
+		SeedCore::Vector3 textWorldPos = SeedCore::Vector3(position.x, worldPosY, position.z);
+
+		//スクリーン座標に変換
+		SeedCore::Vector2 textScreenPos = SeedCore::ScreenSpace::WorldToScreen(textWorldPos);
+		SeedCore::Position* switchCountTextPosition = switchCountTextActor_.GetComponent<SeedCore::Position>();
+		switchCountTextPosition->x_ = textScreenPos.x;
+		switchCountTextPosition->y_ = textScreenPos.y;
+
+		//必要なスイッチの数と今起動しているスイッチの数を取得
+		int needCount = circuitSystem->GetNeedCount();
+		//通電している場合起動しているスイッチの数を強制的に必要なスイッチの数とする
+		int onCount = circuitSystem->IsPowered() ? circuitSystem->GetNeedCount() : circuitSystem->GetOnCount();
+
+		//テキストをセット
+		SeedCore::Text* switchCountText = switchCountTextActor_.GetComponent<SeedCore::Text>();
+		if (switchCountText)
+		{
+			std::string text = std::to_string(onCount) + "/" + std::to_string(needCount);
+			switchCountText->text_ = SeedCore::String(text);
+			//必要数に達していたら色を変更
+			if (onCount >= needCount)
+			{
+				switchCountText->color_ = SeedCore::Color(1.0f, 1.0f, 0.0f, 1.0f);
+			}
+			else
+			{
+				switchCountText->color_ = SeedCore::Color(0.0f, 0.0f, 0.0f, 1.0f);
+			}
+		}
+	}
 }
 
 void DoorSystem::OnFixedTick(float elapsedTime)

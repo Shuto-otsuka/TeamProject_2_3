@@ -24,6 +24,7 @@ void CircuitSystem::OnStart()
 		if (findedActor)
 		{
 			cacheActors_.push_back(findedActor);
+			needCount_++;
 		}
 		else
 		{
@@ -69,6 +70,8 @@ void CircuitSystem::OnLateTick(float elapsedTime)
 			onCount++;
 		}
 	}
+
+	onCount_ = onCount;
 
 	switch (logic_)
 	{

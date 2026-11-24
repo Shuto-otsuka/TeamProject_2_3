@@ -26,6 +26,7 @@
 #include <UserProject/Script/StageSelectButtonController.h>
 #include <UserProject/Script/StopController.h>
 #include <UserProject/Script/SwitchSystem.h>
+#include <UserProject/Script/TitleChapterChangeSystem.h>
 #include <UserProject/Script/TitleLogoController.h>
 
 extern "C" int _force_reflection_AnnounceController = 0;
@@ -54,6 +55,7 @@ extern "C" int _force_reflection_PlayerController = 0;
 extern "C" int _force_reflection_StageSelectButtonController = 0;
 extern "C" int _force_reflection_StopController = 0;
 extern "C" int _force_reflection_SwitchSystem = 0;
+extern "C" int _force_reflection_TitleChapterChangeSystem = 0;
 extern "C" int _force_reflection_TitleLogoController = 0;
 
 namespace SeedCore
@@ -632,11 +634,26 @@ namespace SeedCore
 						fi.clampMax_ = 10000.0f;
 						outInfo.push_back(std::move(fi));
 					}
+					outInfo.push_back({ String("オンになるための最低押下時間"), offsetof(SwitchSystem, minPushTime_), AttributeType::Float });
 					outInfo.push_back({ String("判定範囲を描画するか"), offsetof(SwitchSystem, isDebugAreaDraw_), AttributeType::Bool });
 				});
 			}
 		};
 		static Register_SwitchSystem global_SwitchSystem_register;
+
+		// ---- UserProject/Script/TitleChapterChangeSystem.h ----
+		struct Register_TitleChapterChangeSystem
+		{
+			Register_TitleChapterChangeSystem()
+			{
+				ReflectionRegistry::Register(String("TitleChapterChangeSystem"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					TitleChapterChangeSystem& obj = *static_cast<TitleChapterChangeSystem*>(ptr);
+					outInfo.push_back({ String("最大チャプター数"), offsetof(TitleChapterChangeSystem, maxChapterNum), AttributeType::Int });
+					outInfo.push_back({ String("チャプタースクロール速度"), offsetof(TitleChapterChangeSystem, chapterScrollSpeed), AttributeType::Float });
+				});
+			}
+		};
+		static Register_TitleChapterChangeSystem global_TitleChapterChangeSystem_register;
 
 		// ---- UserProject/Script/TitleLogoController.h ----
 		struct Register_TitleLogoController

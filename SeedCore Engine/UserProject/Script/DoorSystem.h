@@ -23,6 +23,7 @@ public:
 
 public:
 	void OnStart();
+	void OnTick(float elapsedTime);
 
 	void OnFixedTick(float elapsedTime);
 
@@ -31,6 +32,10 @@ public:
 private:
 	SeedCore::Actor circuitActor_;
 	SeedCore::Actor announceActor_;
+	SeedCore::Actor switchCountTextActor_;
+	SeedCore::Actor player_;
+	SeedCore::Actor thirdPersonCameraActor_;
+	SeedCore::Actor firstPersonCameraActor_;
 
 	SeedCore::Vector3 cachePosition_ = { 0.0f,0.0f,0.0f };
 
