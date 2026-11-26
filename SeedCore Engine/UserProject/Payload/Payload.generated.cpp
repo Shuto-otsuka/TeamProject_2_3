@@ -40,6 +40,7 @@ namespace SeedCore
 					outInfo.push_back({ String("deathImage"), offsetof(AnnounceController, deathImage), AttributeType::Int, PayloadType::Texture });
 					outInfo.push_back({ String("openGateImage"), offsetof(AnnounceController, openGateImage), AttributeType::Int, PayloadType::Texture });
 					outInfo.push_back({ String("breakeWallImage"), offsetof(AnnounceController, breakeWallImage), AttributeType::Int, PayloadType::Texture });
+					outInfo.push_back({ String("switchOnImage"), offsetof(AnnounceController, switchOnImage), AttributeType::Int, PayloadType::Texture });
 				});
 			}
 		};

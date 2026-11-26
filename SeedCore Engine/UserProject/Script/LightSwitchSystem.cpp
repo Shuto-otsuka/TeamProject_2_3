@@ -1,4 +1,5 @@
 #include "UserProject/Script/LightSwitchSystem.h"
+#include "AnnounceController.h"
 
 #include <SeedCore/ScPhysics.h>
 #include <SeedCore/ScScene.h>
@@ -13,6 +14,7 @@ void LightSwitchSystem::OnStart()
 	onMaterialID_ = Scene::AssetID("switch_cube_M_E.material");
 
 	switchOnAudioActor_ = GetWorld().GetActor("AudioSwitchOn");
+	announceActor_ = GetWorld().GetActor("Announce");
 }
 
 void LightSwitchSystem::OnTick(float elapsedTime)
@@ -49,6 +51,13 @@ void LightSwitchSystem::OnTick(float elapsedTime)
 				if(switchOnAudio)switchOnAudio->Play();
 			}
 			inside = true;
+			if (!isOn_ && announceActor_)
+			{
+				//アナウンス
+				AnnounceController* announceController = announceActor_.GetComponent<AnnounceController>();
+				announceController->StartAnnounce(AnnounceController::Type::SWITCH_ON);
+			}
+			    
 			break;
 		}
 	}

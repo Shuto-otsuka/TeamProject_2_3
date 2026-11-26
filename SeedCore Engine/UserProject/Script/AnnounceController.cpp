@@ -62,6 +62,9 @@ void AnnounceController::StartAnnounce(Type type)
 	case AnnounceController::Type::BREAKE_WALL:
 		image->textureID_ = breakeWallImage;
 		break;
+	case AnnounceController::Type::SWITCH_ON:
+		image->textureID_ = switchOnImage;
+		break;
 	default:
 		break;
 	}

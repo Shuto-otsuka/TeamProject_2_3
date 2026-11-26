@@ -63,6 +63,7 @@ void BombExplosionController::SetParam(const SeedCore::Vector3& pos, float targe
 
     //目標サイズをセット
     //this->targetSize = targetSize;
+    targetSize *= effectSizeRate;
     scale->x_ = targetSize;
     scale->y_ = targetSize;
     scale->z_ = targetSize;

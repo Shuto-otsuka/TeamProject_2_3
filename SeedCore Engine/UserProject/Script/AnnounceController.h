@@ -19,7 +19,8 @@ public:
 		CHECK_POINT,
 		DEATH,
 		OPEN_GATE,
-		BREAKE_WALL
+		BREAKE_WALL,
+		SWITCH_ON
 	};
 
 	SC_PAYLOAD_FIELD(Texture)
@@ -40,6 +41,8 @@ public:
 		SeedCore::Uint32 openGateImage;
 	SC_PAYLOAD_FIELD(Texture)
 		SeedCore::Uint32 breakeWallImage;
+	SC_PAYLOAD_FIELD(Texture)
+		SeedCore::Uint32 switchOnImage;
 	SC_REFLECTION_FIELD()
 		float announceTime = 1.0f;
 	SC_REFLECTION_FIELD()

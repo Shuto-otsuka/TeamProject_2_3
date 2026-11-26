@@ -31,6 +31,7 @@ private:
 	float currentSize = 0.0f;
 	float targetSize = 0.0f;
 	float sizeRate = 0.0f;
+	float effectSizeRate = 0.18f;
 
 	bool isScaleUp = true;
 

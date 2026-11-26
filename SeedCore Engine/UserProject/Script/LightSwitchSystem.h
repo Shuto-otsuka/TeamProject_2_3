@@ -27,6 +27,8 @@ private:
 
 	SeedCore::Actor switchOnAudioActor_;
 
+	SeedCore::Actor announceActor_;
+
 	SeedCore::Uint32 offMaterialID_ = 0;
 
 	SeedCore::Uint32 onMaterialID_ = 0;
