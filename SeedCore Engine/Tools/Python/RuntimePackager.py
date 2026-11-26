@@ -3,79 +3,64 @@ import os
 import re
 import struct
 import shutil
-import json
 import hashlib
-import subprocess
 import concurrent.futures
-import ctypes
-from ctypes import wintypes
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 import Payload
+from Packager.Collect import IconCollect
+from Packager.Collect import PluginCollect
+from Packager.Collect import LogoCollect
+from Packager.Collect import CompilerCollect
+from Packager.Collect import VCRuntimeCollect
+from Packager.Collect import ShaderCollect
+from Packager.Collect import ConfigCollect
+from Packager.Collect import ScriptCollect
+from Packager.Collect import SceneCollect
+from Packager.Collect import PrefabCollect
+from Packager.Collect import EffectCollect
+from Packager.Collect import EffekseerCollect
+from Packager.Collect import ModelCollect
+from Packager.Collect import TextureCollect
+from Packager.Collect import AudioCollect
+from Packager.Collect import FontCollect
+from Packager.Collect import MovieCollect
+from Packager.Collect import SkymapCollect
+from Packager.Collect import AnimationCollect
+from Packager.Collect import MaterialCollect
+from Packager.Collect import SkeletonCollect
+from Packager.Collect import CollisionCollect
+from Packager.Collect import NavmeshCollect
 
 # .meta ファイルを持たない拡張子（ResourceCache::noMetaExtensions_ と同じ）。
-NO_META_EXTENSIONS = {".h", ".cpp", ".hlsli", ".hlsl"}
+NO_META_EXTENSIONS = {".h", ".cpp", ".cs", ".hlsli", ".hlsl", ".efkmodel", ".efkmat", ".efkcurve", ".scg"}
 
-# ゲームプレイコードが名前/パス/ID で Asset に辿り着く入口と、そのうち Asset を指す引数の位置。
-# スクリプトから ResourceCache には直接触れないため、名前解決(ResourceCache::Find)を
-# 経由する公開 API はこの3つだけ（Scene.h/.cpp, Prefab.h/.cpp 参照）。
-# Scene::Change の第2引数はローディングシーン版ではパス/ID、フェード版では秒数なので、
-# 解決できなかった場合も警告しない。
-ASSET_ENTRY_ARGUMENTS = {
-    "Scene::AssetID": (0,),
-    "Prefab::Spawn": (0,),
-    "Scene::Change": (0, 1),
-}
-ASSET_ENTRY_CALL_PATTERN = re.compile(r'\b(Scene::AssetID|Scene::Change|Prefab::Spawn)\s*\(')
-
-# 引数が文字列リテラル1つ、またはそれを String(...) / String::intern(...) /
-# std::filesystem::path(...) のような変換で包んだだけのものかを判定するパターン。
-WRAPPED_STRING_LITERAL_PATTERN = re.compile(r'^(?:[A-Za-z_][\w:]*\s*[({]\s*)*(?:u8|L|u|U)?"((?:[^"\\]|\\.)*)"\s*(?:[)}]\s*)*$')
-
-# Spawn(Uint32) / Change(Uint32) に Asset ID を数値リテラルで直接渡す呼び方。
-INTEGER_LITERAL_PATTERN = re.compile(r'^(0[xX][0-9a-fA-F]+|\d+)[uUlL]*$')
-
-# 引数が変数/メンバ/定数名だけのもの（a / a_ / this->a_ / obj.a / Ns::a）。
-IDENTIFIER_ARGUMENT_PATTERN = re.compile(r'^(?:this\s*->\s*)?[A-Za-z_]\w*(?:\s*(?:::|\.|->)\s*[A-Za-z_]\w*)*$')
-
-# 識別子が文字列リテラルで初期化/代入される箇所（name = "..." / name{"..."} / name("...")、
-# 右辺が String(...) 等で包まれていてもよい）と、#define NAME "..."。
-STRING_BINDING_PATTERN = re.compile(r'\b([A-Za-z_]\w*)\s*(?:=|\{|\()\s*(?:[A-Za-z_][\w:]*\s*[({]\s*)*(?:u8|L|u|U)?"((?:[^"\\]|\\.)*)"')
-STRING_DEFINE_PATTERN = re.compile(r'#\s*define\s+([A-Za-z_]\w*)\s+(?:u8|L|u|U)?"((?:[^"\\]|\\.)*)"')
-
-# Release の ShaderCompiler(GraphicsEngine/Shader/ShaderCompiler.cpp) と同じプロファイルとオプション。
-# シェーダ種別はファイル名の接尾辞で決まり、*RT.hlsl のように接尾辞で決まらないものは
-# 内容で判定する（[shader("...")] があれば DXR ライブラリ、[NumThreads] があれば CS）。
-SHADER_PROFILE_BY_SUFFIX = {
-    "VS": "vs_6_6",
-    "HS": "hs_6_6",
-    "DS": "ds_6_6",
-    "GS": "gs_6_6",
-    "PS": "ps_6_6",
-    "AS": "as_6_6",
-    "MS": "ms_6_6",
-    "CS": "cs_6_6",
-}
-SHADER_COMPILE_OPTIONS = ["-HV", "2021", "-Zi", "-Qstrip_debug", "-O3"]
-SHADER_LIBRARY_PATTERN = re.compile(r'\[\s*shader\s*\(\s*"', re.IGNORECASE)
-SHADER_NUMTHREADS_PATTERN = re.compile(r'\[\s*numthreads', re.IGNORECASE)
-
-# CS のエントリポイント = [NumThreads(...)] の付いた関数（属性は大文字小文字を区別しない）。
-# 1ファイルに複数のエントリを持つ CS（ブラー各パス、A-Trous 各パス等）もこれで全て拾う。
-SHADER_COMPUTE_ENTRY_PATTERN = re.compile(r'\[\s*numthreads\s*\([^)]*\)\s*\]\s*(?:\[[^\]]*\]\s*)*void\s+([A-Za-z_]\w*)\s*\(', re.IGNORECASE)
-
-# PS のエントリポイントは、パイプラインの記述(GraphicsEngine の *.h の struct)が
-# pixelFile_ と一緒に pixelEntryPoint_ で指定したもの（無ければ main）。
-# 1ファイルに複数のエントリを持つ PS（GeometryPS の Depth / Visibility 等）もこれで全て拾う。
-SHADER_PIXEL_FILE_PATTERN = re.compile(r'\bpixelFile_\s*=\s*ShaderPath::Engine\s*\(\s*"([^"]+)"\s*\)')
-SHADER_PIXEL_ENTRY_PATTERN = re.compile(r'\bpixelEntryPoint_\s*=\s*"([^"]+)"')
-SHADER_MAIN_PATTERN = re.compile(r'\bmain\s*\(')
-
-# エンジンが実行時に読むシェーダ = GraphicsEngine の C++ ソースに書かれた "GraphicsEngine/....hlsl"
-# の文字列（ShaderPath::Engine(...) でも、先頭に "../" の付いた直接のパスでも）。
-# 使われていない古いシェーダや開発中で未接続のシェーダは事前コンパイルしない。
-SHADER_REFERENCE_PATTERN = re.compile(r'"(?:\.\./)?(GraphicsEngine/[^"]+\.hlsl)"')
+COLLECTS = [
+    IconCollect,
+    PluginCollect,
+    LogoCollect,
+    CompilerCollect,
+    VCRuntimeCollect,
+    ShaderCollect,
+    ConfigCollect,
+    ScriptCollect,
+    SceneCollect,
+    PrefabCollect,
+    EffectCollect,
+    EffekseerCollect,
+    ModelCollect,
+    TextureCollect,
+    AudioCollect,
+    FontCollect,
+    MovieCollect,
+    SkymapCollect,
+    AnimationCollect,
+    MaterialCollect,
+    SkeletonCollect,
+    CollisionCollect,
+    NavmeshCollect,
+]
 
 
 def fnv1a(name):
@@ -238,7 +223,7 @@ def aes256_cbc_decrypt(key, data):
     return bytes(output[:-padding])
 
 
-def build_guid_map(project_root, user_project_root):
+def build_guid_map(key, project_root, user_project_root):
     """
     UserProject 以下を走査し、.meta を持つ全ファイルについて
     guid -> 実ファイルパス のマップと、
@@ -253,11 +238,6 @@ def build_guid_map(project_root, user_project_root):
     """
     guid_to_path = {}
     relpath_to_guid = {}
-
-    key = read_encryption_key(project_root)
-    if key is None:
-        print("警告: FoundationEngine/Prelude.h から SC_ENCRYPTION_KEY_SEED を読み取れませんでした — .meta を復号できないため、参照 Asset を解決できません")
-        return guid_to_path, relpath_to_guid
 
     for root, _, files in os.walk(user_project_root):
         for file in files:
@@ -387,493 +367,72 @@ def strip_comments(content):
     return ''.join(result)
 
 
-def build_filename_index(relpath_to_guid):
-    filename_to_guids = {}
-    for rel_path, guid in relpath_to_guid.items():
-        filename_to_guids.setdefault(os.path.basename(rel_path), set()).add(guid)
-    return filename_to_guids
+class PackageContext:
+    def __init__(self, project_root, output_dir, key):
+        self.project_root = project_root
+        self.user_project_root = os.path.join(project_root, "UserProject")
+        self.output_dir = output_dir
+        self.staging_dir = os.path.join(output_dir, "_Staging")
+        self.build_dir = os.path.join(project_root, "Runtime", "Build", "x64", "Release", "Cplusplus")
+        self.key = key
+        self.guid_to_path, self.relpath_to_guid = build_guid_map(key, project_root, self.user_project_root)
+        self.filename_to_guids = {}
+        for rel_path, guid in self.relpath_to_guid.items():
+            self.filename_to_guids.setdefault(os.path.basename(rel_path), set()).add(guid)
+        self.payload_map = Payload.collect_payload_field_names(project_root)
+        self.store = {}
 
+    @staticmethod
+    def fnv1a(name):
+        return fnv1a(name)
 
-def resolve_asset_name(name, relpath_to_guid, filename_to_guids):
-    """
-    ResourceCache::Find と同じ規則で name を Asset ID の集合へ解決する:
-    まずプロジェクトルート相対パスとして完全一致、外れたらファイル名だけで一致。
-    同名ファイルが複数ある場合、エンジンは最初に見つかった1つを使うが、
-    どれになるかは静的に決まらないため全候補を返す（パッケージには全て入れる）。
-    """
-    name = name.replace('\\\\', '\\').replace('\\', '/')
-    exact = relpath_to_guid.get(name)
-    if exact:
-        return {exact}
-    return set(filename_to_guids.get(os.path.basename(name), ()))
+    @staticmethod
+    def fields(raw):
+        return read_tagged_binary_fields(raw)
 
+    @staticmethod
+    def record(name, payload):
+        return struct.pack('<II', fnv1a(name), len(payload)) + payload
 
-def split_call_arguments(content, open_index):
-    arguments = []
-    current = []
-    depth = 0
-    index = open_index + 1
-    length = len(content)
+    @staticmethod
+    def strip_comments(content):
+        return strip_comments(content)
 
-    while index < length:
-        c = content[index]
+    def encrypt(self, data):
+        return aes256_cbc_encrypt(self.key, data)
 
-        if c == '"' or c == "'":
-            current.append(c)
-            index += 1
-            while index < length and content[index] != c:
-                if content[index] == '\\' and index + 1 < length:
-                    current.append(content[index])
-                    index += 1
-                current.append(content[index])
-                index += 1
-            if index < length:
-                current.append(content[index])
-            index += 1
-            continue
+    def decrypt(self, data):
+        return aes256_cbc_decrypt(self.key, data)
 
-        if c in '([{':
-            depth += 1
-        elif c in ')]}':
-            if depth == 0:
-                arguments.append(''.join(current).strip())
-                return arguments
-            depth -= 1
-        elif c == ',' and depth == 0:
-            arguments.append(''.join(current).strip())
-            current = []
-            index += 1
-            continue
-
-        current.append(c)
-        index += 1
-
-    return None
-
-
-def scan_source_for_asset_references(user_project_root, relpath_to_guid, filename_to_guids, guid_to_path):
-    """
-    UserProject 以下の .cpp/.h を走査し、ASSET_ENTRY_ARGUMENTS の入口
-    (Scene::AssetID / Scene::Change / Prefab::Spawn) に渡される Asset 引数を
-    静的に解決する。引数は括弧の対応を取って切り出し、次の形を解決できる:
-      - 文字列リテラル（String(...) 等の変換で包まれていてもよい）
-      - 文字列リテラルで初期化/代入される変数・メンバ・定数、#define 定数
-        （UserProject 全体から同名の束縛を集め、その全ての値を候補にする）
-      - Asset ID の数値リテラル（Spawn(Uint32) / Change(Uint32) 版）
-    インスペクタで設定される String フィールドの値は、ここではなく
-    collect_referenced_asset_ids がシーン/プレハブの保存値から拾う。
-    どれにも当てはまらない式や、解決先の Asset が無い引数は警告する。
-    """
-    sources = []
-    bindings = {}
-
-    for root, _, files in os.walk(user_project_root):
-        for file in files:
-            if not (file.endswith(".cpp") or file.endswith(".h")):
-                continue
-
-            full_path = os.path.join(root, file)
-            try:
-                with open(full_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    content = f.read()
-            except Exception:
-                continue
-
-            content = strip_comments(content)
-            sources.append((os.path.relpath(full_path, user_project_root), content))
-
-            for pattern in (STRING_BINDING_PATTERN, STRING_DEFINE_PATTERN):
-                for name, literal in pattern.findall(content):
-                    bindings.setdefault(name, set()).add(literal)
-
-    referenced_ids = set()
-
-    for rel_source_path, content in sources:
-        for match in ASSET_ENTRY_CALL_PATTERN.finditer(content):
-            entry = match.group(1)
-            line_number = content.count('\n', 0, match.start()) + 1
-
-            arguments = split_call_arguments(content, match.end() - 1)
-            if arguments is None:
-                continue
-
-            for argument_index in ASSET_ENTRY_ARGUMENTS[entry]:
-                if argument_index >= len(arguments) or not arguments[argument_index]:
-                    continue
-
-                argument = arguments[argument_index]
-                warn = argument_index == 0
-
-                literal_match = WRAPPED_STRING_LITERAL_PATTERN.match(argument)
-                integer_match = INTEGER_LITERAL_PATTERN.match(argument)
-
-                if literal_match:
-                    names = {literal_match.group(1)}
-                elif integer_match:
-                    text = integer_match.group(1)
-                    asset_id = (int(text, 16) if text[:2].lower() == "0x" else int(text, 10)) & 0xFFFFFFFF
-                    if asset_id in guid_to_path:
-                        referenced_ids.add(asset_id)
-                    elif warn:
-                        print(f"警告: {entry}() に渡された Asset ID {text} が既知の Asset と一致しません ({rel_source_path}:{line_number})")
-                    continue
-                elif IDENTIFIER_ARGUMENT_PATTERN.match(argument):
-                    names = bindings.get(re.split(r'::|\.|->', argument)[-1].strip(), set())
-                    if not names:
-                        if warn:
-                            print(f"警告: {entry}() の引数 {argument} の値を静的に解決できません ({rel_source_path}:{line_number}) — インスペクタで設定される値ならシーン/プレハブの保存値から拾います")
-                        continue
-                else:
-                    if warn:
-                        print(f"警告: {entry}() の引数 {argument} は静的に解決できない式です ({rel_source_path}:{line_number}) — RuntimePackager はこの Asset を自動検出できません")
-                    continue
-
-                resolved = set()
-                for name in names:
-                    resolved |= resolve_asset_name(name, relpath_to_guid, filename_to_guids)
-
-                if resolved:
-                    referenced_ids |= resolved
-                elif warn:
-                    print(f"警告: {entry}() の引数 {argument} が既知の Asset パスと一致しません ({rel_source_path}:{line_number})")
-
-    return referenced_ids
-
-
-def collect_referenced_asset_ids(scene_paths, payload_map, guid_to_path, relpath_to_guid, filename_to_guids, seed_ids):
-    """
-    scene_paths の各 .scene と、seed_ids（コードから参照された Asset）のうち
-    .scene/.prefab であるものを起点に、参照されている Asset ID を集める。
-    各ドキュメントからは次を拾う:
-      - payload_map（コンポーネント名 -> payload フィールド表示名の集合）に
-        載っているフィールドの Asset ID
-      - ネストされたプレハブ (nestedPrefabAssetID) と派生元プレハブ (basePrefabAssetID)
-      - インスペクタで設定された String フィールドのうち、既知 Asset の
-        パス/ファイル名に一致する値（スクリプトが Scene::Change / Prefab::Spawn /
-        Scene::AssetID へ渡す名前をインスペクタで持つ使い方）
-    集めた ID のうち .scene/.prefab のものは、Spawner 経由でもコード経由でも
-    同様に中身まで辿り、新たな参照が出なくなるまで繰り返す。
-    Asset ID は Uint32 だが、シーン JSON の "int" は符号付きで保存されるため
-    0xFFFFFFFF でマスクして戻す。
-    """
-    referenced_ids = set(seed_ids)
-    walked_paths = set()
-
-    def add_id(value):
-        asset_id = value & 0xFFFFFFFF
-        if asset_id:
-            referenced_ids.add(asset_id)
-
-    def walk_fields(fields, payload_names):
-        for field in fields:
-            string_value = field.get("string", "")
-            if string_value and '.' in os.path.basename(string_value):
-                referenced_ids.update(resolve_asset_name(string_value, relpath_to_guid, filename_to_guids))
-
-            if field.get("name") in payload_names:
-                if field.get("is_array"):
-                    for child in field.get("children", []):
-                        add_id(child.get("int", 0))
-                else:
-                    add_id(field.get("int", 0))
-
-            walk_fields(field.get("children", []), ())
-
-    def walk_document(path):
-        if path in walked_paths:
-            return
-        walked_paths.add(path)
-
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        except Exception:
-            print(f"シーン/プレハブの読み込みに失敗しました: {path}")
-            return
-
-        for node in data.get("nodes", []):
-            add_id(node.get("nestedPrefabAssetID", 0))
-            for comp in node.get("components", []):
-                walk_fields(comp.get("fields", []), payload_map.get(comp.get("component"), ()))
-
-        add_id(data.get("basePrefabAssetID", 0))
-
-    for scene_path in scene_paths:
-        walk_document(scene_path)
-
-    while True:
-        pending = [guid_to_path[asset_id] for asset_id in referenced_ids if asset_id in guid_to_path and os.path.splitext(guid_to_path[asset_id])[1].lower() in (".scene", ".prefab") and guid_to_path[asset_id] not in walked_paths]
-        if not pending:
-            break
-        for path in pending:
-            walk_document(path)
-
-    return referenced_ids
-
-
-def binary_record(name, payload):
-    return struct.pack('<II', fnv1a(name), len(payload)) + payload
-
-
-def precompile_shaders(project_root, output_dir):
-    """
-    GraphicsEngine 以下の .hlsl のうち、エンジンの C++ ソースから参照されているもの
-    (SHADER_REFERENCE_PATTERN)を、Release の ShaderCompiler と同じ
-    プロファイル/オプションで External/DXC/dxc.exe によりコンパイルし、
-    エンジンが読むキャッシュ形式
-    (CompiledShaderObject/Application/<ファイル名>.dx.cso) で output_dir へ書き出す。
-    キャッシュは BinaryOutputArchive の "entries" フィールドに
-    std::unordered_map<String, DynamicArray<Uint8>>（キー "プロファイル:エントリ"、
-    DXR ライブラリは "lib_6_6:main"）を入れ、AES-256-CBC で暗号化したもの。
-    実行時の機能レベル分岐(MS/VS、RT の有無)に関係なく全シェーダを含めるため、
-    どの GPU でもソース無しで動く。1つでも失敗したら None を返す。
-    """
-    dxc_path = os.path.join(project_root, "External", "DXC", "dxc.exe")
-    if not os.path.exists(dxc_path):
-        print(f"dxc.exe が見つかりません: {dxc_path}")
-        return None
-
-    key = read_encryption_key(project_root)
-    if key is None:
-        print("FoundationEngine/Prelude.h から SC_ENCRYPTION_KEY_SEED を読み取れませんでした — シェーダキャッシュを暗号化できません")
-        return None
-
-    pixel_entries = {}
-    referenced_shaders = set()
-    for root, _, files in os.walk(os.path.join(project_root, "GraphicsEngine")):
-        for file in files:
-            if not (file.endswith(".h") or file.endswith(".cpp")):
-                continue
-            with open(os.path.join(root, file), 'r', encoding='utf-8', errors='ignore') as f:
-                header = strip_comments(f.read())
-            for reference in SHADER_REFERENCE_PATTERN.findall(header):
-                referenced_shaders.add(os.path.normcase(os.path.normpath(os.path.join(project_root, reference))))
-            for description in re.split(r'\bstruct\b', header):
-                pixel_file = SHADER_PIXEL_FILE_PATTERN.search(description)
-                pixel_entry = SHADER_PIXEL_ENTRY_PATTERN.search(description)
-                if pixel_file and pixel_entry:
-                    pixel_path = os.path.normcase(os.path.normpath(os.path.join(project_root, pixel_file.group(1))))
-                    pixel_entries.setdefault(pixel_path, set()).add(pixel_entry.group(1))
-
-    zephyr_generated_dir = os.path.join(project_root, "GraphicsEngine", "Effect", "Zephyr", "Generated")
-    if os.path.isdir(zephyr_generated_dir):
-        for file in os.listdir(zephyr_generated_dir):
-            if file.lower().endswith(".hlsl"):
-                referenced_shaders.add(os.path.normcase(os.path.normpath(os.path.join(zephyr_generated_dir, file))))
-
-    jobs = []
-    unreferenced_count = 0
-    for root, _, files in os.walk(os.path.join(project_root, "GraphicsEngine")):
-        for file in files:
-            if not file.lower().endswith(".hlsl"):
-                continue
-
-            path = os.path.join(root, file)
-            if os.path.normcase(os.path.normpath(path)) not in referenced_shaders:
-                unreferenced_count += 1
-                continue
-
-            with open(path, 'r', encoding='utf-8', errors='ignore') as f:
-                source = strip_comments(f.read())
-
-            profile = SHADER_PROFILE_BY_SUFFIX.get(file[:-5][-2:])
-            if SHADER_LIBRARY_PATTERN.search(source):
-                jobs.append((path, "lib_6_6", "main"))
-            elif profile == "cs_6_6" or (profile is None and SHADER_NUMTHREADS_PATTERN.search(source)):
-                for entry in SHADER_COMPUTE_ENTRY_PATTERN.findall(source) or ["main"]:
-                    jobs.append((path, "cs_6_6", entry))
-            elif profile == "ps_6_6":
-                entries = set(pixel_entries.get(os.path.normcase(os.path.normpath(path)), ()))
-                if SHADER_MAIN_PATTERN.search(source) or not entries:
-                    entries.add("main")
-                for entry in sorted(entries):
-                    jobs.append((path, profile, entry))
-            elif profile:
-                jobs.append((path, profile, "main"))
-            else:
-                print(f"警告: シェーダ種別を判定できないため事前コンパイルしません: {os.path.relpath(path, project_root)}")
-
-    print(f"エンジンから参照されていないシェーダ {unreferenced_count} 件は事前コンパイルしません")
-
-    temp_dir = os.path.join(output_dir, "_ShaderTemp")
-    os.makedirs(temp_dir, exist_ok=True)
-
-    def compile_job(job_index):
-        path, profile, entry = jobs[job_index]
-        object_path = os.path.join(temp_dir, f"{job_index}.cso")
-        include_options = ["-I", project_root, "-I", os.path.join(project_root, "UserProject")]
-        arguments = [dxc_path, "-T", profile] + (["-enable-payload-qualifiers"] if profile == "lib_6_6" else ["-E", entry]) + SHADER_COMPILE_OPTIONS + include_options + [path, "-Fo", object_path]
-        result = subprocess.run(arguments, capture_output=True)
-        if result.returncode != 0 or not os.path.exists(object_path):
-            return job_index, None, result.stderr.decode("utf-8", "replace") + result.stdout.decode("utf-8", "replace")
-        with open(object_path, 'rb') as f:
-            data = f.read()
-        os.remove(object_path)
-        return job_index, data, ""
-
-    entries_by_file = {}
-    failed = False
-    with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
-        futures = [executor.submit(compile_job, job_index) for job_index in range(len(jobs))]
-        for completed_count, future in enumerate(concurrent.futures.as_completed(futures)):
-            job_index, data, message = future.result()
-            path, profile, entry = jobs[job_index]
-            print(f"@@detail {completed_count + 1} {len(jobs)} {os.path.basename(path)} ({profile}:{entry})")
-            if data is None:
-                print(f"シェーダのコンパイルに失敗しました: {os.path.relpath(path, project_root)} ({profile}:{entry})\n{message}")
-                failed = True
-                continue
-            entries_by_file.setdefault(path, {})[f"{profile}:{entry}"] = data
-
-    shutil.rmtree(temp_dir, ignore_errors=True)
-    if failed:
-        return None
-
-    shader_dir = os.path.join(output_dir, "CompiledShaderObject", "Application")
-    if os.path.exists(shader_dir):
-        shutil.rmtree(shader_dir)
-    os.makedirs(shader_dir)
-
-    generated_dir = os.path.normcase(os.path.normpath(os.path.join(project_root, "GraphicsEngine", "Effect", "Zephyr", "Generated")))
-
-    def cache_directory(path):
-        if os.path.normcase(os.path.dirname(os.path.normpath(path))) == generated_dir:
-            return os.path.join(shader_dir, "Zephyr")
-        return shader_dir
-
-    stems = {}
-    for path in entries_by_file:
-        stems.setdefault((cache_directory(path), os.path.basename(path)[:-5].lower()), []).append(os.path.relpath(path, project_root))
-    for paths in stems.values():
-        if len(paths) > 1:
-            print(f"同名のシェーダが複数あり、キャッシュファイル名が衝突します: {', '.join(paths)}")
+    def read_archive(self, path):
+        if not os.path.exists(path):
             return None
+        with open(path, 'rb') as f:
+            body = self.decrypt(f.read())
+        return read_tagged_binary_fields(body) if body is not None else None
 
-    for path, entries in entries_by_file.items():
-        map_payload = struct.pack('<I', len(entries))
-        for cache_key, data in entries.items():
-            entry_body = binary_record("key", cache_key.encode("utf-8")) + binary_record("value", struct.pack('<I', len(data)) + data)
-            map_payload += struct.pack('<I', len(entry_body)) + entry_body
+    def resolve(self, name):
+        """
+        ResourceCache::Find と同じ規則で name を Asset ID の集合へ解決する:
+        まずプロジェクトルート相対パスとして完全一致、外れたらファイル名だけで一致。
+        同名ファイルが複数ある場合、エンジンは最初に見つかった1つを使うが、
+        どれになるかは静的に決まらないため全候補を返す（パッケージには全て入れる）。
+        """
+        name = name.replace('\\\\', '\\').replace('\\', '/')
+        exact = self.relpath_to_guid.get(name)
+        if exact:
+            return {exact}
+        return set(self.filename_to_guids.get(os.path.basename(name), ()))
 
-        stem = os.path.basename(path)[:-5]
-        output_dir = cache_directory(path)
-        os.makedirs(output_dir, exist_ok=True)
-        with open(os.path.join(output_dir, f"{stem}.dx.cso"), 'wb') as f:
-            f.write(aes256_cbc_encrypt(key, binary_record("entries", map_payload)))
+    def place(self, path):
+        return os.path.relpath(path, self.project_root), path
 
-    return len(jobs)
-
-
-def read_executable_name(project_root):
-    """
-    GameConfig.scg の "executableName"（Editor の ConfigPanel「ゲーム設定」で
-    入力した、プレイヤーが起動するランチャー exe の名前）を、Windows の
-    ファイル名として使える形にして返す。使えない文字と制御文字を除き、
-    末尾のドット/空白と、入力されていれば ".exe" を落とす。空、または
-    予約デバイス名(CON, NUL, COM1 など)になった場合は "Launcher" を返す。
-    """
-    name = ""
-    config_path = os.path.join(project_root, "UserProject", "Assets", "Config", "GameConfig.scg")
-    key = read_encryption_key(project_root)
-    if key is not None and os.path.exists(config_path):
-        with open(config_path, 'rb') as f:
-            body = aes256_cbc_decrypt(key, f.read())
-        payload = read_tagged_binary_fields(body).get(fnv1a("executableName")) if body else None
-        if payload:
-            name = payload.decode("utf-8", "replace")
-
-    name = re.sub(r'[\\/:*?"<>|\x00-\x1f]', '', name).strip()
-    if name.lower().endswith(".exe"):
-        name = name[:-4]
-    name = name.rstrip(". ")
-
-    reserved = {"con", "prn", "aux", "nul"} | {f"com{index}" for index in range(1, 10)} | {f"lpt{index}" for index in range(1, 10)}
-    if not name or name.split(".")[0].lower() in reserved:
-        return "Launcher"
-    return name
-
-
-def read_application_icon(project_root):
-    """
-    Editor の ConfigPanel「アイコン設定」で選ばれたアイコン（IconConfig が
-    UserProject/Assets/Config/IconBindings.scg の "icon" フィールドに .ico を
-    まるごと保存したもの）を返す。未指定ならエンジン既定の
-    Runtime/Logo/SeedCore.ico を返す。
-    """
-    bindings_path = os.path.join(project_root, "UserProject", "Assets", "Config", "IconBindings.scg")
-    key = read_encryption_key(project_root)
-    if key is not None and os.path.exists(bindings_path):
-        with open(bindings_path, 'rb') as f:
-            body = aes256_cbc_decrypt(key, f.read())
-        payload = read_tagged_binary_fields(body).get(fnv1a("icon")) if body else None
-        if payload and len(payload) >= 4:
-            count = struct.unpack_from('<I', payload, 0)[0]
-            if count > 0 and len(payload) == 4 + count:
-                return payload[4:], "IconBindings.scg"
-
-    with open(os.path.join(project_root, "Runtime", "Logo", "SeedCore.ico"), 'rb') as f:
-        return f.read(), "デフォルト (Runtime/Logo/SeedCore.ico)"
-
-
-def embed_application_icon(exe_path, icon):
-    """
-    .ico の各画像を RT_ICON (ID 1..N) として、それらをまとめる
-    RT_GROUP_ICON (ID 1) と一緒に exe へ書き込む。エクスプローラーは最小 ID の
-    グループアイコンを exe のアイコンとして表示し、Runtime の Window は
-    LoadImage(自身の exe, ID 1) で同じものをウィンドウ/タスクバーに使う。
-    .ico 内の ICONDIRENTRY (16 バイト、末尾が画像オフセット) を、リソース用の
-    GRPICONDIRENTRY (14 バイト、末尾が RT_ICON の ID) に詰め替える。
-    """
-    reserved, icon_type, count = struct.unpack_from('<HHH', icon, 0)
-    if reserved != 0 or icon_type != 1 or count == 0 or len(icon) < 6 + count * 16:
-        print(f"アイコンの形式が不正です: {exe_path}")
-        return False
-
-    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    kernel32.BeginUpdateResourceW.argtypes = [wintypes.LPCWSTR, wintypes.BOOL]
-    kernel32.BeginUpdateResourceW.restype = wintypes.HANDLE
-    kernel32.UpdateResourceW.argtypes = [wintypes.HANDLE, wintypes.LPVOID, wintypes.LPVOID, wintypes.WORD, wintypes.LPVOID, wintypes.DWORD]
-    kernel32.UpdateResourceW.restype = wintypes.BOOL
-    kernel32.EndUpdateResourceW.argtypes = [wintypes.HANDLE, wintypes.BOOL]
-    kernel32.EndUpdateResourceW.restype = wintypes.BOOL
-
-    rt_icon = 3
-    rt_group_icon = 14
-    language_neutral = 0
-
-    handle = kernel32.BeginUpdateResourceW(exe_path, False)
-    if not handle:
-        print(f"exe のリソース更新を開始できませんでした ({ctypes.get_last_error()}): {exe_path}")
-        return False
-
-    group = struct.pack('<HHH', 0, 1, count)
-    for image_index in range(count):
-        width, height, color_count, entry_reserved, planes, bit_count, size, offset = struct.unpack_from('<BBBBHHII', icon, 6 + image_index * 16)
-        image = ctypes.create_string_buffer(icon[offset:offset + size], size)
-        if not kernel32.UpdateResourceW(handle, ctypes.c_void_p(rt_icon), ctypes.c_void_p(image_index + 1), language_neutral, image, size):
-            print(f"アイコン画像を書き込めませんでした ({ctypes.get_last_error()}): {exe_path}")
-            kernel32.EndUpdateResourceW(handle, True)
-            return False
-        group += struct.pack('<BBBBHHIH', width, height, color_count, entry_reserved, planes, bit_count, size, image_index + 1)
-
-    group_buffer = ctypes.create_string_buffer(group, len(group))
-    if not kernel32.UpdateResourceW(handle, ctypes.c_void_p(rt_group_icon), ctypes.c_void_p(1), language_neutral, group_buffer, len(group)):
-        print(f"グループアイコンを書き込めませんでした ({ctypes.get_last_error()}): {exe_path}")
-        kernel32.EndUpdateResourceW(handle, True)
-        return False
-
-    if not kernel32.EndUpdateResourceW(handle, False):
-        print(f"exe のリソース更新を確定できませんでした ({ctypes.get_last_error()}): {exe_path}")
-        return False
-
-    return True
-
-
-def copy_preserving_relative(src_path, src_root, dst_root):
-    rel = os.path.relpath(src_path, src_root)
-    dst_path = os.path.join(dst_root, rel)
-    os.makedirs(os.path.dirname(dst_path), exist_ok=True)
-    shutil.copy2(src_path, dst_path)
+    def asset(self, path):
+        files = [self.place(path)]
+        meta_path = path + ".meta"
+        if os.path.exists(meta_path):
+            files.append(self.place(meta_path))
+        return files
 
 
 def main():
@@ -885,173 +444,105 @@ def main():
 
     project_root = os.path.abspath(sys.argv[1])
     output_dir = os.path.abspath(sys.argv[2])
-    user_project_root = os.path.join(project_root, "UserProject")
+
+    key = read_encryption_key(project_root)
+    if key is None:
+        print("FoundationEngine/Prelude.h から SC_ENCRYPTION_KEY_SEED を読み取れませんでした")
+        return 1
 
     os.makedirs(output_dir, exist_ok=True)
+    context = PackageContext(project_root, output_dir, key)
+    shutil.rmtree(context.staging_dir, ignore_errors=True)
+    os.makedirs(context.staging_dir)
 
-    build_dir = os.path.join(project_root, "Runtime", "Build", "x64", "Release", "Cplusplus")
+    files = []
+    ids = set()
+    visited = set()
 
-    # --- Launcher.exe: パッケージルートに置く、プレイヤーが起動する薄い exe。GameConfig の実行ファイル名で置く ---
-    print("@@progress 1 10 Launcher コピー")
-    launcher_path = os.path.join(build_dir, "Launcher.exe")
-    if not os.path.exists(launcher_path):
-        print(f"Launcher.exe が見つかりません: {launcher_path}")
+    def normalize(path):
+        return os.path.normcase(os.path.normpath(path))
+
+    def run(executor, jobs):
+        futures = {executor.submit(module.collect, path, context): path for module, path in jobs}
+        for done_count, future in enumerate(concurrent.futures.as_completed(futures)):
+            result = future.result()
+            print(f"@@detail {done_count + 1} {len(jobs)} {os.path.basename(futures[future])}")
+            if result is None:
+                return False
+            files.extend(result[0])
+            ids.update(result[1])
+        return True
+
+    def package():
+        seeds = []
+        for module in COLLECTS:
+            paths = module.seed(context)
+            if paths is None:
+                return False
+            if paths:
+                seeds.append((module, paths))
+
+        step_count = len(seeds) + 2
+        with concurrent.futures.ThreadPoolExecutor(max_workers=os.cpu_count() or 4) as executor:
+            for step_index, (module, paths) in enumerate(seeds):
+                print(f"@@progress {step_index + 1} {step_count} {module.LABEL}")
+                jobs = []
+                for path in paths:
+                    if normalize(path) in visited:
+                        continue
+                    visited.add(normalize(path))
+                    jobs.append((module, path))
+                if not run(executor, jobs):
+                    return False
+                print(f"{module.LABEL} 完了 ({len(jobs)} 件)")
+
+            print(f"@@progress {step_count - 1} {step_count} 参照 Asset")
+            modules_by_extension = {extension: module for module in COLLECTS for extension in module.EXTENSIONS}
+            traced = set()
+            asset_count = 0
+            while True:
+                jobs = []
+                for asset_id in ids - traced:
+                    traced.add(asset_id)
+                    path = context.guid_to_path.get(asset_id)
+                    if not path or normalize(path) in visited:
+                        continue
+                    visited.add(normalize(path))
+                    module = modules_by_extension.get(os.path.splitext(path)[1].lower())
+                    if module is None:
+                        files.extend(context.asset(path))
+                        asset_count += 1
+                        continue
+                    jobs.append((module, path))
+                if not jobs:
+                    break
+                if not run(executor, jobs):
+                    return False
+                asset_count += len(jobs)
+            print(f"参照 Asset 完了 ({asset_count} 件)")
+
+        print(f"@@progress {step_count} {step_count} コピー")
+        destinations = {}
+        for destination, source in files:
+            existing = destinations.get(normalize(destination))
+            if existing and normalize(existing[1]) != normalize(source):
+                print(f"同梱先が衝突しています: {destination} ← {existing[1]}, {source}")
+                return False
+            destinations[normalize(destination)] = (destination, source)
+        for index, (destination, source) in enumerate(destinations.values()):
+            target = os.path.join(output_dir, destination)
+            os.makedirs(os.path.dirname(target), exist_ok=True)
+            shutil.copy2(source, target)
+            print(f"@@detail {index + 1} {len(destinations)} {os.path.basename(destination)}")
+        print(f"コピー完了 ({len(destinations)} 件)")
+        return True
+
+    succeeded = package()
+    shutil.rmtree(context.staging_dir, ignore_errors=True)
+    if not succeeded:
+        print("パッケージを中断しました")
         return 1
-    launcher_output_path = os.path.join(output_dir, f"{read_executable_name(project_root)}.exe")
-    shutil.copy2(launcher_path, launcher_output_path)
-    print(f"@@detail 1 1 {os.path.basename(launcher_output_path)}")
-    print(f"Launcher コピー完了: {launcher_output_path}")
 
-    # --- Plugins: Runtime.exe + エンジン / サードパーティ DLL + UserProject.Cplusplus.dll(プラグイン) ---
-    # ランチャーが Plugins\Runtime.exe を作業ディレクトリ Plugins\ で起動するので、
-    # SeedCore.Cplusplus.dll 等が隣で解決され、PluginHost は UserProject.Cplusplus.dll をこのフォルダから拾う。
-    print("@@progress 2 10 Plugins コピー")
-    exe_path = os.path.join(build_dir, "Runtime.exe")
-    if not os.path.exists(exe_path):
-        print(f"Runtime.exe が見つかりません: {exe_path}")
-        return 1
-
-    plugin_sources = [exe_path] + [os.path.join(build_dir, file) for file in os.listdir(build_dir) if file.lower().endswith(".cplusplus.dll")]
-    if not any(os.path.basename(path) == "UserProject.Cplusplus.dll" for path in plugin_sources):
-        print(f"UserProject.Cplusplus.dll が見つかりません: {os.path.join(build_dir, 'UserProject.Cplusplus.dll')}")
-        return 1
-
-    external_dir = os.path.join(project_root, "External")
-    external_dll_count = 0
-    for library in sorted(os.listdir(external_dir)):
-        dll_dir = os.path.join(external_dir, library, "Dll")
-        if not os.path.isdir(dll_dir):
-            continue
-        release_dll_dir = os.path.join(dll_dir, "Release")
-        if os.path.isdir(release_dll_dir):
-            dll_dir = release_dll_dir
-        for file in os.listdir(dll_dir):
-            if not file.lower().endswith(".dll"):
-                continue
-            plugin_sources.append(os.path.join(dll_dir, file))
-            external_dll_count += 1
-    if external_dll_count == 0:
-        print(f"サードパーティ DLL が見つかりません: {external_dir}")
-        return 1
-
-    plugins_dir = os.path.join(output_dir, "Plugins")
-    os.makedirs(plugins_dir, exist_ok=True)
-    for index, path in enumerate(plugin_sources):
-        shutil.copy2(path, os.path.join(plugins_dir, os.path.basename(path)))
-        print(f"@@detail {index + 1} {len(plugin_sources)} {os.path.basename(path)}")
-    print(f"Plugins コピー完了: {plugins_dir} (サードパーティ DLL {external_dll_count} 件)")
-
-    # --- アプリケーションアイコン: プレイヤーが起動するランチャー exe と、実行中にタスクバーへ出る Runtime.exe の両方へ埋め込む ---
-    print("@@progress 3 10 アイコン埋め込み")
-    icon, icon_source = read_application_icon(project_root)
-    icon_targets = (launcher_output_path, os.path.join(plugins_dir, "Runtime.exe"))
-    for index, exe in enumerate(icon_targets):
-        if not embed_application_icon(exe, icon):
-            return 1
-        print(f"@@detail {index + 1} {len(icon_targets)} {os.path.basename(exe)}")
-    print(f"アイコン埋め込み完了: {icon_source}")
-
-    # --- スプラッシュのロゴ: Runtime.exe は Plugins\ から ../Runtime/Logo/*.logo を読むので、パッケージ直下の Runtime\Logo へ置く ---
-    # SeedCore.ico は exe へ埋め込み済みなので同梱しない。
-    print("@@progress 4 10 ロゴ コピー")
-    logo_dir = os.path.join(project_root, "Runtime", "Logo")
-    logo_files = [file for file in os.listdir(logo_dir) if file.lower().endswith(".logo")] if os.path.isdir(logo_dir) else []
-    if not logo_files:
-        print(f"ロゴ (.logo) が見つかりません: {logo_dir}")
-        return 1
-    for index, file in enumerate(logo_files):
-        copy_preserving_relative(os.path.join(logo_dir, file), project_root, output_dir)
-        print(f"@@detail {index + 1} {len(logo_files)} {file}")
-    print(f"ロゴ コピー完了 ({len(logo_files)} 件)")
-
-    # --- DXC はビルド出力の版に関係なく External/DXC の版を同梱する（事前コンパイルと同じ版） ---
-    print("@@progress 5 10 DXC コピー")
-    dxc_files = ("dxcompiler.dll", "dxil.dll")
-    for index, file in enumerate(dxc_files):
-        dxc_dll = os.path.join(project_root, "External", "DXC", file)
-        if not os.path.exists(dxc_dll):
-            print(f"{file} が見つかりません: {dxc_dll}")
-            return 1
-        shutil.copy2(dxc_dll, os.path.join(plugins_dir, file))
-        print(f"@@detail {index + 1} {len(dxc_files)} {file}")
-
-    # --- VC++ ランタイムは Platform/VCRuntime の版を Runtime.exe の隣へ同梱する（プレイヤー側に再頒布パッケージが無くても起動できるように） ---
-    print("@@progress 6 10 VC++ ランタイム コピー")
-    vc_runtime_dir = os.path.join(project_root, "Platform", "VCRuntime")
-    vc_runtime_dlls = [file for file in os.listdir(vc_runtime_dir) if file.lower().endswith(".dll")] if os.path.isdir(vc_runtime_dir) else []
-    if not vc_runtime_dlls:
-        print(f"VC++ ランタイムが見つかりません: {vc_runtime_dir}")
-        return 1
-    for index, file in enumerate(vc_runtime_dlls):
-        shutil.copy2(os.path.join(vc_runtime_dir, file), os.path.join(plugins_dir, file))
-        print(f"@@detail {index + 1} {len(vc_runtime_dlls)} {file}")
-    print(f"VC++ ランタイム コピー完了 ({len(vc_runtime_dlls)} 件)")
-
-    # --- シェーダは毎回全て事前コンパイルし、ソース(.hlsl)無しで動くキャッシュとして同梱する ---
-    print("@@progress 7 10 シェーダ事前コンパイル")
-    shader_count = precompile_shaders(project_root, output_dir)
-    if shader_count is None:
-        print("シェーダの事前コンパイルに失敗したため、パッケージを中断しました")
-        return 1
-    print(f"シェーダ事前コンパイル完了 ({shader_count} 件)")
-
-    # --- Scene / Prefab は丸ごとコピー（フィルタしない） ---
-    print("@@progress 8 10 Scene/Prefab コピー")
-    scene_prefab_paths = []
-    scene_paths = []
-    for sub_dir in ("Scene", "Prefab"):
-        src_dir = os.path.join(user_project_root, "Assets", sub_dir)
-        if not os.path.isdir(src_dir):
-            continue
-        for root, _, files in os.walk(src_dir):
-            for file in files:
-                src_path = os.path.join(root, file)
-                scene_prefab_paths.append(src_path)
-                if sub_dir == "Scene" and file.endswith(".scene"):
-                    scene_paths.append(src_path)
-    for index, src_path in enumerate(scene_prefab_paths):
-        copy_preserving_relative(src_path, user_project_root, os.path.join(output_dir, "UserProject"))
-        print(f"@@detail {index + 1} {len(scene_prefab_paths)} {os.path.basename(src_path)}")
-    print(f"Scene/Prefab コピー完了 ({len(scene_paths)} 件のシーン)")
-
-    # --- Config の .scg（GameConfig / AudioBindings / InputBindings / LayerBindings 等）はそのままコピー ---
-    # IconBindings.scg は書き出し時に exe へ埋め込むための入力で、ゲームは exe のリソースから読むので同梱しない。
-    print("@@progress 9 10 Config コピー")
-    config_paths = []
-    config_dir = os.path.join(user_project_root, "Assets", "Config")
-    if os.path.isdir(config_dir):
-        for root, _, files in os.walk(config_dir):
-            for file in files:
-                if not file.lower().endswith(".scg") or file.lower() == "iconbindings.scg":
-                    continue
-                config_paths.append(os.path.join(root, file))
-    for index, config_path in enumerate(config_paths):
-        copy_preserving_relative(config_path, user_project_root, os.path.join(output_dir, "UserProject"))
-        print(f"@@detail {index + 1} {len(config_paths)} {os.path.basename(config_path)}")
-    print(f"Config コピー完了 ({len(config_paths)} 件)")
-
-    # --- 参照されている Asset のみコピー ---
-    print("@@progress 10 10 参照 Asset コピー")
-    guid_to_path, relpath_to_guid = build_guid_map(project_root, user_project_root)
-    filename_to_guids = build_filename_index(relpath_to_guid)
-    payload_map = Payload.collect_payload_field_names(project_root)
-
-    code_referenced_ids = scan_source_for_asset_references(user_project_root, relpath_to_guid, filename_to_guids, guid_to_path)
-    print(f"コードから動的参照している Asset を検出: {len(code_referenced_ids)} 件")
-
-    referenced_ids = collect_referenced_asset_ids(scene_paths, payload_map, guid_to_path, relpath_to_guid, filename_to_guids, code_referenced_ids)
-
-    asset_paths = [guid_to_path[asset_id] for asset_id in referenced_ids if guid_to_path.get(asset_id)]
-    for index, asset_path in enumerate(asset_paths):
-        copy_preserving_relative(asset_path, user_project_root, os.path.join(output_dir, "UserProject"))
-
-        meta_path = asset_path + ".meta"
-        if os.path.exists(meta_path):
-            copy_preserving_relative(meta_path, user_project_root, os.path.join(output_dir, "UserProject"))
-
-        print(f"@@detail {index + 1} {len(asset_paths)} {os.path.basename(asset_path)}")
-
-    print(f"参照 Asset コピー完了 ({len(asset_paths)} 件)")
     print(f"パッケージ完了: {output_dir}")
     return 0
 

@@ -3,8 +3,10 @@ import os
 import glob
 import xml.etree.ElementTree as ET
 
-from FieldType import REFLECTION_FIELD_TYPES, Enum
+from FieldType import DynamicArray, Enum, Scalar, StaticArray, Struct
 from FieldType.Field import EmitContext, FieldDecl
+
+REFLECTION_FIELD_TYPES = [Enum, Struct, Scalar, DynamicArray, StaticArray]
 
 STRUCT_PATTERN = re.compile(r'(struct|class)\s+(?:SEEDCORE_API\s+)?(\w+)')
 
