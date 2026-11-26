@@ -116,9 +116,9 @@ namespace SeedCore
 	void InspectorPanel::DrawName(Actor actor)
 	{
 		Float iconSize = ImGui::GetTextLineHeight();
-		ImTextureID lockIcon = lockedActor_ ? imguiTexture_.Icon(String("Misc/Lock")) : imguiTexture_.Icon(String("Misc/Unlock"));
+		Uint64 lockIcon = lockedActor_ ? imguiTexture_.Icon(String("Misc/Lock")) : imguiTexture_.Icon(String("Misc/Unlock"));
 
-		if (ImGui::ImageButton("##Lock", lockIcon, ImVec2(iconSize, iconSize)))
+		if (ImGui::ImageButton("##Lock", static_cast<ImTextureID>(lockIcon), ImVec2(iconSize, iconSize)))
 		{
 			lockedActor_ = lockedActor_ ? Actor() : actor;
 		}
@@ -252,7 +252,7 @@ namespace SeedCore
 		ImGui::SameLine();
 		Float tagAddIconHeight = ImGui::GetTextLineHeight();
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-		Bool addClicked = ImGui::ImageButton("##add", imguiTexture_.Icon(String("Misc/Plus")), ImVec2(tagAddIconHeight, tagAddIconHeight));
+		Bool addClicked = ImGui::ImageButton("##add", static_cast<ImTextureID>(imguiTexture_.Icon(String("Misc/Plus"))), ImVec2(tagAddIconHeight, tagAddIconHeight));
 		ImGui::PopStyleColor();
 
 		if (entered || addClicked)
@@ -456,7 +456,7 @@ namespace SeedCore
 		Float iconSize = ImGui::GetTextLineHeight();
 		Float contentX = headerMin.x + ImGui::GetTreeNodeToLabelSpacing();
 		Float iconY = headerMin.y + (headerHeight - iconSize) * 0.5f;
-		ImGui::GetWindowDrawList()->AddImage(GetComponentIcon(componentName), ImVec2(contentX, iconY), ImVec2(contentX + iconSize, iconY + iconSize));
+		ImGui::GetWindowDrawList()->AddImage(static_cast<ImTextureID>(GetComponentIcon(componentName)), ImVec2(contentX, iconY), ImVec2(contentX + iconSize, iconY + iconSize));
 
 		Float textY = headerMin.y + (headerHeight - ImGui::GetTextLineHeight()) * 0.5f;
 		ImGui::GetWindowDrawList()->AddText(ImVec2(contentX + iconSize + ImGui::GetStyle().ItemInnerSpacing.x, textY), ImGui::GetColorU32(ImGuiCol_Text), componentName.c_str());
@@ -546,7 +546,7 @@ namespace SeedCore
 			Float transformIconSize = ImGui::GetTextLineHeight();
 			Float transformContentX = transformHeaderMin.x + ImGui::GetTreeNodeToLabelSpacing();
 			Float transformIconY = transformHeaderMin.y + (transformHeaderHeight - transformIconSize) * 0.5f;
-			ImGui::GetWindowDrawList()->AddImage(imguiTexture_.Icon(String("Component/Transform")), ImVec2(transformContentX, transformIconY), ImVec2(transformContentX + transformIconSize, transformIconY + transformIconSize));
+			ImGui::GetWindowDrawList()->AddImage(static_cast<ImTextureID>(imguiTexture_.Icon(String("Component/Transform"))), ImVec2(transformContentX, transformIconY), ImVec2(transformContentX + transformIconSize, transformIconY + transformIconSize));
 
 			Float transformTextY = transformHeaderMin.y + (transformHeaderHeight - ImGui::GetTextLineHeight()) * 0.5f;
 			ImGui::GetWindowDrawList()->AddText(ImVec2(transformContentX + transformIconSize + ImGui::GetStyle().ItemInnerSpacing.x, transformTextY), ImGui::GetColorU32(ImGuiCol_Text), "Transform");
@@ -699,7 +699,7 @@ namespace SeedCore
 			Float componentBaseIconSize = ImGui::GetTextLineHeight();
 			Float componentBaseContentX = componentBaseHeaderMin.x + ImGui::GetTreeNodeToLabelSpacing();
 			Float componentBaseIconY = componentBaseHeaderMin.y + (componentBaseHeaderHeight - componentBaseIconSize) * 0.5f;
-			ImGui::GetWindowDrawList()->AddImage(GetComponentIcon(componentName), ImVec2(componentBaseContentX, componentBaseIconY), ImVec2(componentBaseContentX + componentBaseIconSize, componentBaseIconY + componentBaseIconSize));
+			ImGui::GetWindowDrawList()->AddImage(static_cast<ImTextureID>(GetComponentIcon(componentName)), ImVec2(componentBaseContentX, componentBaseIconY), ImVec2(componentBaseContentX + componentBaseIconSize, componentBaseIconY + componentBaseIconSize));
 
 			Float componentBaseTextY = componentBaseHeaderMin.y + (componentBaseHeaderHeight - ImGui::GetTextLineHeight()) * 0.5f;
 			ImGui::GetWindowDrawList()->AddText(ImVec2(componentBaseContentX + componentBaseIconSize + ImGui::GetStyle().ItemInnerSpacing.x, componentBaseTextY), ImGui::GetColorU32(ImGuiCol_Text), componentName.c_str());
@@ -781,7 +781,7 @@ namespace SeedCore
 			Float iconSize = ImGui::GetTextLineHeight();
 			Float contentX = headerMin.x + ImGui::GetTreeNodeToLabelSpacing();
 			Float iconY = headerMin.y + (headerHeight - iconSize) * 0.5f;
-			ImGui::GetWindowDrawList()->AddImage(GetComponentIcon(String("UnknownComponent")), ImVec2(contentX, iconY), ImVec2(contentX + iconSize, iconY + iconSize));
+			ImGui::GetWindowDrawList()->AddImage(static_cast<ImTextureID>(GetComponentIcon(String("UnknownComponent"))), ImVec2(contentX, iconY), ImVec2(contentX + iconSize, iconY + iconSize));
 
 			Float textY = headerMin.y + (headerHeight - ImGui::GetTextLineHeight()) * 0.5f;
 			ImGui::GetWindowDrawList()->AddText(ImVec2(contentX + iconSize + ImGui::GetStyle().ItemInnerSpacing.x, textY), ImGui::GetColorU32(ImGuiCol_Text), "Unknown Component");
@@ -1043,7 +1043,7 @@ namespace SeedCore
 					Float addButtonWidth = iconSize.x + ImGui::GetStyle().FramePadding.x * 2.0f;
 					ImGui::SameLine(ImGui::GetContentRegionMax().x - addButtonWidth);
 					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-					addClicked = ImGui::ImageButton("##add", imguiTexture_.Icon(String("Misc/Plus")), iconSize);
+					addClicked = ImGui::ImageButton("##add", static_cast<ImTextureID>(imguiTexture_.Icon(String("Misc/Plus"))), iconSize);
 					ImGui::PopStyleColor();
 				}
 
@@ -1075,7 +1075,7 @@ namespace SeedCore
 							Float removeButtonWidth = iconSize.x + ImGui::GetStyle().FramePadding.x * 2.0f;
 							ImGui::SameLine(ImGui::GetContentRegionMax().x - removeButtonWidth);
 							ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-							Bool removeClicked = ImGui::ImageButton("##remove", imguiTexture_.Icon(String("Misc/Cross")), iconSize);
+							Bool removeClicked = ImGui::ImageButton("##remove", static_cast<ImTextureID>(imguiTexture_.Icon(String("Misc/Cross"))), iconSize);
 							ImGui::PopStyleColor();
 							if (removeClicked)
 							{
@@ -1209,7 +1209,7 @@ namespace SeedCore
 						Float addButtonWidth = iconSize.x + ImGui::GetStyle().FramePadding.x * 2.0f;
 						ImGui::SameLine(ImGui::GetContentRegionMax().x - addButtonWidth);
 						ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-						addClicked = ImGui::ImageButton("##add", imguiTexture_.Icon(String("Misc/Plus")), iconSize);
+						addClicked = ImGui::ImageButton("##add", static_cast<ImTextureID>(imguiTexture_.Icon(String("Misc/Plus"))), iconSize);
 						ImGui::PopStyleColor();
 					}
 
@@ -1232,7 +1232,7 @@ namespace SeedCore
 								ImVec2 iconSize(iconHeight, iconHeight);
 								ImGui::PushID(static_cast<Int>(elementIndex));
 								ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-								Bool removeClicked = ImGui::ImageButton("##remove", imguiTexture_.Icon(String("Misc/Cross")), iconSize);
+								Bool removeClicked = ImGui::ImageButton("##remove", static_cast<ImTextureID>(imguiTexture_.Icon(String("Misc/Cross"))), iconSize);
 								ImGui::PopStyleColor();
 								if (removeClicked)
 								{
@@ -1579,7 +1579,7 @@ namespace SeedCore
 		}
 	}
 
-	ImTextureID InspectorPanel::GetComponentIcon(const String& componentName)const
+	Uint64 InspectorPanel::GetComponentIcon(const String& componentName)const
 	{
 		return imguiTexture_.Icon(String("Component/" + componentName.str()), String("Component/Custom"));
 	}

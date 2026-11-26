@@ -51,7 +51,7 @@
 
 		const Char* GetPayloadDropType(PayloadType assetType)const;
 
-		NODISCARD ImTextureID GetComponentIcon(const String& componentName)const;
+		NODISCARD Uint64 GetComponentIcon(const String& componentName)const;
 
 	private:
 		EditorContext& context_;

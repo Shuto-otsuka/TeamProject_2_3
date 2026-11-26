@@ -72,7 +72,7 @@ namespace SeedCore
 
 			Float iconY = cursor.y + (buttonHeight - iconSize.y) * 0.5f;
 			Float iconX = cursor.x + ImGui::GetStyle().FramePadding.x;
-			drawList->AddImage(imguiTexture_.Icon(icon), ImVec2(iconX, iconY), ImVec2(iconX + iconSize.x, iconY + iconSize.y));
+			drawList->AddImage(static_cast<ImTextureID>(imguiTexture_.Icon(icon)), ImVec2(iconX, iconY), ImVec2(iconX + iconSize.x, iconY + iconSize.y));
 
 			Float textX = iconX + iconSize.x + 4.0f;
 			Float textY = cursor.y + (buttonHeight - ImGui::GetTextLineHeight()) * 0.5f;
@@ -150,7 +150,7 @@ namespace SeedCore
 
 			ImVec2 logIconSize(14, 14);
 			Float iconY = position.y + (rowHeight - logIconSize.y) * 0.5f;
-			drawList->AddImage(imguiTexture_.Icon(icon), ImVec2(position.x + 4.0f, iconY), ImVec2(position.x + 4.0f + logIconSize.x, iconY + logIconSize.y));
+			drawList->AddImage(static_cast<ImTextureID>(imguiTexture_.Icon(icon)), ImVec2(position.x + 4.0f, iconY), ImVec2(position.x + 4.0f + logIconSize.x, iconY + logIconSize.y));
 
 			ImGui::SetCursorScreenPos(ImVec2(position.x + textOffsetX, position.y + 3.0f));
 			ImGui::PushStyleColor(ImGuiCol_Text, color);

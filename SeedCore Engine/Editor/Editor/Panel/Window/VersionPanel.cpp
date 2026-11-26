@@ -28,7 +28,7 @@ namespace SeedCore
 
 		Uint index = bindlessHeap->AllocateIndex();
 		TextureCreator::CreateTexturePath(d3d12Context.GetDevice(), d3d12Context.GetCopyQueue(), d3d12Context.GetLoadTransferLane(LoadThread::Main), bindlessHeap->Heap(), logoPath, logoResource_, index);
-		logoTextureId_ = static_cast<ImTextureID>(bindlessHeap->GPUHandle(index).ptr);
+		logoTextureId_ = static_cast<Uint64>(bindlessHeap->GPUHandle(index).ptr);
 
 		if (logoResource_)
 		{
@@ -108,7 +108,7 @@ namespace SeedCore
 				{
 					ImGui::SetCursorPosX(ImGui::GetCursorPosX() + offsetX);
 				}
-				ImGui::Image(logoTextureId_, ImVec2(displayWidth, displayHeight));
+				ImGui::Image(static_cast<ImTextureID>(logoTextureId_), ImVec2(displayWidth, displayHeight));
 			}
 
 			ImGui::Spacing();

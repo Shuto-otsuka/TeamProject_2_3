@@ -50,7 +50,7 @@ namespace SeedCore
 			{
 				roots.push_back(WorldAccessor::Make(*context_.world_.world_, root));
 			}
-			for (Actor root : roots)
+			for (const Actor& root : roots)
 			{
 				DrawActorNode(root);
 			}
@@ -230,7 +230,7 @@ namespace SeedCore
 
 		ImGui::PushID(static_cast<Int>(ActorAccessor::GetEntity(actor).GetID().index_));
 
-		ImTextureID icon;
+		Uint64 icon = 0;
 		const PrefabRegistry* prefabs = context_.world_.world_->GetService<PrefabRegistry>();
 		const PrefabRecord* prefabRecord = prefabs ? prefabs->Record(ActorAccessor::GetEntity(actor).GetID()) : nullptr;
 		if (prefabRecord && prefabRecord->fromPrefab_)
@@ -377,7 +377,7 @@ namespace SeedCore
 		}
 
 		ImGui::SameLine();
-		ImGui::Image(icon, ImVec2(iconSize, iconSize));
+		ImGui::Image(static_cast<ImTextureID>(icon), ImVec2(iconSize, iconSize));
 		ImGui::SameLine();
 		if (!actor.Active())
 		{
@@ -397,7 +397,7 @@ namespace SeedCore
 		}
 
 		ImGui::SameLine(ImGui::GetContentRegionAvail().x + ImGui::GetCursorPosX() - iconSize);
-		ImTextureID activeIcon = actor.Active() ? imguiTexture_.Icon(String("Hierarchy/ActorActive")) : imguiTexture_.Icon(String("Hierarchy/ActorNonActive"));
+		Uint64 activeIcon = actor.Active() ? imguiTexture_.Icon(String("Hierarchy/ActorActive")) : imguiTexture_.Icon(String("Hierarchy/ActorNonActive"));
 		ImVec2 activePosition = ImGui::GetCursorScreenPos();
 		Float activeYOffset = actor.Active() ? 2.0f : 0.0f;
 		Float activeY = activePosition.y + (ImGui::GetTextLineHeight() - iconSize) * 0.5f + activeYOffset;
@@ -406,7 +406,7 @@ namespace SeedCore
 			context_.scene_.history_.Push(MakePtr<ActorActiveCommand>(*context_.world_.world_, actor, !actor.Active()));
 			actor.Active(!actor.Active());
 		}
-		ImGui::GetWindowDrawList()->AddImage(activeIcon, ImVec2(activePosition.x, activeY), ImVec2(activePosition.x + iconSize, activeY + iconSize));
+		ImGui::GetWindowDrawList()->AddImage(static_cast<ImTextureID>(activeIcon), ImVec2(activePosition.x, activeY), ImVec2(activePosition.x + iconSize, activeY + iconSize));
 
 		if (opened)
 		{

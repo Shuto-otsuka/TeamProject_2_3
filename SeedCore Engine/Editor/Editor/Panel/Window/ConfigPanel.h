@@ -11,12 +11,24 @@ namespace SeedCore
 	class ConfigPanel
 	{
 	public:
+		enum class ConfigCategory
+		{
+			Editor,
+			Game,
+			Audio,
+			Icon,
+			Input,
+		};
+
+	public:
 		ConfigPanel(EditorContext& context, ImGuiTexture& imguiTexture);
 		~ConfigPanel() = default;
 
 		void Draw();
 
 		void Open();
+
+		void Open(ConfigCategory category);
 
 	private:
 		Bool DrawEditorConfigTab();
@@ -28,16 +40,6 @@ namespace SeedCore
 		Bool DrawIconConfigTab();
 
 		void DrawInputBindingTab();
-
-	private:
-		enum class ConfigCategory
-		{
-			Editor,
-			Game,
-			Audio,
-			Icon,
-			Input,
-		};
 
 	private:
 		EditorContext& context_;

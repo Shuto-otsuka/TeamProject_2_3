@@ -51,11 +51,11 @@ namespace SeedCore
 		void BuildDirectory();
 
 	private:
-		ImTextureID GetAssetIcon(const AssetRecord& asset)const;
+		Uint64 GetAssetIcon(const AssetRecord& asset)const;
 
-		ImTextureID GetSharingIcon(const AssetRecord& asset)const;
+		Uint64 GetSharingIcon(const AssetRecord& asset)const;
 
-		ImTextureID GetFolderIcon(const FolderNode& node)const;
+		Uint64 GetFolderIcon(const FolderNode& node)const;
 
 	private:
 		const Char* GetPayloadType(AssetType type)const;
@@ -152,6 +152,6 @@ namespace SeedCore
 
 		Float gridIconSize_ = 64.0f;
 
-		mutable FlatMap<Uint32, ImTextureID> thumbnailCache_;
+		mutable FlatMap<Uint32, Uint64> thumbnailCache_;
 	};
 }

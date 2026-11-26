@@ -4,7 +4,10 @@
 #include <Editor/Editor/Context/EditorContext.h>
 #include <Editor/Editor/ImGui/ImGuiRenderer.h>
 #include <Editor/Editor/ImGui/ImGuiTexture.h>
+#include <Editor/Editor/Panel/Window/BootScreenPanel.h>
+#include <Editor/Editor/Panel/Window/ConfigPanel.h>
 #include <Editor/Editor/Panel/Window/EffectGraphPanel.h>
+#include <Editor/Editor/Panel/Window/LayerSettingsPanel.h>
 #include <Editor/Editor/Panel/Window/MaterialViewerPanel.h>
 #include <Editor/Editor/Panel/Window/ModelTransformPanel.h>
 
@@ -102,7 +105,7 @@ namespace SeedCore
 
 			ImVec2 inputMin = ImGui::GetItemRectMin();
 			Float iconY = inputMin.y + (ImGui::GetItemRectSize().y - iconSize) * 0.5f;
-			ImGui::GetWindowDrawList()->AddImage(imguiTexture_.Icon(String("Misc/Search")), ImVec2(inputMin.x + paddingX, iconY), ImVec2(inputMin.x + paddingX + iconSize, iconY + iconSize));
+			ImGui::GetWindowDrawList()->AddImage(static_cast<ImTextureID>(imguiTexture_.Icon(String("Misc/Search"))), ImVec2(inputMin.x + paddingX, iconY), ImVec2(inputMin.x + paddingX + iconSize, iconY + iconSize));
 			ImGui::Separator();
 
 			if (searchFilter_.IsActive())
@@ -115,13 +118,13 @@ namespace SeedCore
 					}
 					ImGui::PushID(asset.assetID_);
 
-					ImGui::Image(GetAssetIcon(asset), ImVec2(iconSize, iconSize));
+					ImGui::Image(static_cast<ImTextureID>(GetAssetIcon(asset)), ImVec2(iconSize, iconSize));
 
-					if (ImTextureID sharingIcon = GetSharingIcon(asset))
+					if (Uint64 sharingIcon = GetSharingIcon(asset))
 					{
 						ImVec2 iconMin = ImGui::GetItemRectMin();
 						ImVec2 iconMax = ImGui::GetItemRectMax();
-						ImGui::GetWindowDrawList()->AddImage(sharingIcon, ImVec2((iconMin.x + iconMax.x) * 0.5f, (iconMin.y + iconMax.y) * 0.5f), iconMax);
+						ImGui::GetWindowDrawList()->AddImage(static_cast<ImTextureID>(sharingIcon), ImVec2((iconMin.x + iconMax.x) * 0.5f, (iconMin.y + iconMax.y) * 0.5f), iconMax);
 					}
 
 					ImGui::SameLine();
@@ -242,7 +245,7 @@ namespace SeedCore
 		DrawFolderMenu(node.path_);
 
 		ImGui::SameLine();
-		ImGui::Image(GetFolderIcon(node), ImVec2(ImGui::GetTextLineHeight(), ImGui::GetTextLineHeight()));
+		ImGui::Image(static_cast<ImTextureID>(GetFolderIcon(node)), ImVec2(ImGui::GetTextLineHeight(), ImGui::GetTextLineHeight()));
 		ImGui::SameLine();
 		if (!DrawRenameMenu(node.path_))
 		{
@@ -292,7 +295,7 @@ namespace SeedCore
 				DrawFolderMenu(child.path_);
 			}
 
-			drawList->AddImage(GetFolderIcon(child), iconMin, iconMax);
+			drawList->AddImage(static_cast<ImTextureID>(GetFolderIcon(child)), iconMin, iconMax);
 
 			ImGui::PopID();
 			ImGui::PopStyleVar();
@@ -332,11 +335,11 @@ namespace SeedCore
 				}
 			}
 
-			drawList->AddImage(GetAssetIcon(*asset), iconMin, iconMax);
+			drawList->AddImage(static_cast<ImTextureID>(GetAssetIcon(*asset)), iconMin, iconMax);
 
-			if (ImTextureID sharingIcon = GetSharingIcon(*asset))
+			if (Uint64 sharingIcon = GetSharingIcon(*asset))
 			{
-				drawList->AddImage(sharingIcon, ImVec2((iconMin.x + iconMax.x) * 0.5f, (iconMin.y + iconMax.y) * 0.5f), iconMax);
+				drawList->AddImage(static_cast<ImTextureID>(sharingIcon), ImVec2((iconMin.x + iconMax.x) * 0.5f, (iconMin.y + iconMax.y) * 0.5f), iconMax);
 			}
 
 			ImGui::PopID();
@@ -377,7 +380,7 @@ namespace SeedCore
 			ImGui::BeginGroup();
 
 			ImGui::PushID(child.path_.FilenameText().c_str());
-			ImGui::ImageButton("##folder", GetFolderIcon(child), ImVec2(gridIconSize_, gridIconSize_));
+			ImGui::ImageButton("##folder", static_cast<ImTextureID>(GetFolderIcon(child)), ImVec2(gridIconSize_, gridIconSize_));
 			if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
 			{
 				SelectDirectory(child.path_);
@@ -407,12 +410,12 @@ namespace SeedCore
 			ImGui::BeginGroup();
 
 			ImGui::PushID(asset->assetID_);
-			ImGui::ImageButton("##asset", GetAssetIcon(*asset), ImVec2(gridIconSize_, gridIconSize_));
+			ImGui::ImageButton("##asset", static_cast<ImTextureID>(GetAssetIcon(*asset)), ImVec2(gridIconSize_, gridIconSize_));
 
-			if (ImTextureID sharingIcon = GetSharingIcon(*asset))
+			if (Uint64 sharingIcon = GetSharingIcon(*asset))
 			{
 				ImVec2 badgeMax = ImGui::GetItemRectMax();
-				ImGui::GetWindowDrawList()->AddImage(sharingIcon, ImVec2(badgeMax.x - gridIconSize_ / 3.0f, badgeMax.y - gridIconSize_ / 3.0f), badgeMax);
+				ImGui::GetWindowDrawList()->AddImage(static_cast<ImTextureID>(sharingIcon), ImVec2(badgeMax.x - gridIconSize_ / 3.0f, badgeMax.y - gridIconSize_ / 3.0f), badgeMax);
 			}
 
 			if ((!context_.application_.resourceSync_ || !context_.application_.resourceSync_->RemoteOnly(asset->assetID_)) && ImGui::BeginDragDropSource())
@@ -451,7 +454,7 @@ namespace SeedCore
 
 		Bool preview = asset.type_ == AssetType::Texture && asset.isLoaded_;
 		Float iconSize = preview ? 128.0f : ImGui::GetTextLineHeight();
-		ImGui::Image(GetAssetIcon(asset), ImVec2(iconSize, iconSize));
+		ImGui::Image(static_cast<ImTextureID>(GetAssetIcon(asset)), ImVec2(iconSize, iconSize));
 		if (preview)
 		{
 			ImGui::Separator();
@@ -868,7 +871,7 @@ namespace SeedCore
 		}
 	}
 
-	ImTextureID ContentsDrawerPanel::GetAssetIcon(const AssetRecord& asset)const
+	Uint64 ContentsDrawerPanel::GetAssetIcon(const AssetRecord& asset)const
 	{
 		if (asset.type_ == AssetType::Texture && asset.isLoaded_)
 		{
@@ -886,7 +889,7 @@ namespace SeedCore
 
 				Uint descIndex = bindlessHeap.AllocateIndex();
 				context_.graphics_.graphics_->Device().Context().GetDevice()->CreateShaderResourceView(texture->Resource(), nullptr, bindlessHeap.CPUHandle(descIndex));
-				ImTextureID textureID = static_cast<ImTextureID>(bindlessHeap.GPUHandle(descIndex).ptr);
+				Uint64 textureID = static_cast<Uint64>(bindlessHeap.GPUHandle(descIndex).ptr);
 				thumbnailCache_.insert({ asset.assetID_, textureID });
 				return textureID;
 			}
@@ -923,8 +926,9 @@ namespace SeedCore
 			{ String(".movie"), String("Asset/Engine/Movie") },
 			{ String(".hdr"), String("Asset/Source/Sky") },
 			{ String(".skymap"), String("Asset/Engine/Sky") },
-			{ String(".prefab"), String("Hierarchy/Prefab") },
+			{ String(".prefab"), String("Asset/Engine/Prefab") },
 			{ String(".scene"), String("Asset/Engine/Scene") },
+			{ String(".scg"), String("Asset/Engine/Config") },
 			{ String(".h"), String("Asset/Source/Header") },
 			{ String(".cpp"), String("Asset/Source/CPlusPlus") },
 			{ String(".cs"), String("Asset/Source/CSharp") },
@@ -941,7 +945,7 @@ namespace SeedCore
 		return imguiTexture_.Icon(String("Asset/Source/Text"));
 	}
 
-	ImTextureID ContentsDrawerPanel::GetSharingIcon(const AssetRecord& asset)const
+	Uint64 ContentsDrawerPanel::GetSharingIcon(const AssetRecord& asset)const
 	{
 		if (!context_.application_.resourceSync_)
 		{
@@ -972,7 +976,7 @@ namespace SeedCore
 		return imguiTexture_.Icon(String("Sharing/Cloud"));
 	}
 
-	ImTextureID ContentsDrawerPanel::GetFolderIcon(const FolderNode& node)const
+	Uint64 ContentsDrawerPanel::GetFolderIcon(const FolderNode& node)const
 	{
 		return imguiTexture_.Icon(node.children_.empty() && node.assets_.empty() ? String("Folder/FolderNoItem") : String("Folder/FolderInItem"));
 	}
@@ -1313,6 +1317,38 @@ namespace SeedCore
 		if (asset.type_ == AssetType::Effect)
 		{
 			context_.panel_.tools_->Panel<EffectGraphPanel>().Open(asset.assetID_);
+			return;
+		}
+
+		std::filesystem::path assetFile(asset.path_.c_str());
+		if (assetFile.extension() == ".scg")
+		{
+			std::string name = assetFile.stem().string();
+			if (name == "LayerBindings")
+			{
+				context_.panel_.tools_->Panel<LayerSettingsPanel>().Open();
+				return;
+			}
+			if (name == "BootConfig")
+			{
+				context_.panel_.tools_->Panel<BootScreenPanel>().Open();
+				return;
+			}
+
+			ConfigPanel::ConfigCategory category = ConfigPanel::ConfigCategory::Game;
+			if (name == "AudioBindings")
+			{
+				category = ConfigPanel::ConfigCategory::Audio;
+			}
+			else if (name == "IconBindings")
+			{
+				category = ConfigPanel::ConfigCategory::Icon;
+			}
+			else if (name == "InputBindings")
+			{
+				category = ConfigPanel::ConfigCategory::Input;
+			}
+			context_.panel_.tools_->Panel<ConfigPanel>().Open(category);
 			return;
 		}
 

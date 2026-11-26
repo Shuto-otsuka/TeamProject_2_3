@@ -128,7 +128,7 @@ namespace SeedCore
 			ImGui::SameLine();
 			Float addIconHeight = ImGui::GetTextLineHeight();
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-			Bool addClicked = ImGui::ImageButton("##add", imguiTexture_.Icon(String("Misc/Plus")), ImVec2(addIconHeight, addIconHeight));
+			Bool addClicked = ImGui::ImageButton("##add", static_cast<ImTextureID>(imguiTexture_.Icon(String("Misc/Plus"))), ImVec2(addIconHeight, addIconHeight));
 			ImGui::PopStyleColor();
 
 			if (entered || addClicked)
@@ -195,7 +195,7 @@ namespace SeedCore
 					ImGui::TableNextColumn();
 					Float removeIconHeight = ImGui::GetTextLineHeight();
 					ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-					Bool removeClicked = ImGui::ImageButton("##remove", imguiTexture_.Icon(String("Misc/Cross")), ImVec2(removeIconHeight, removeIconHeight));
+					Bool removeClicked = ImGui::ImageButton("##remove", static_cast<ImTextureID>(imguiTexture_.Icon(String("Misc/Cross"))), ImVec2(removeIconHeight, removeIconHeight));
 					ImGui::PopStyleColor();
 					if (removeClicked)
 					{

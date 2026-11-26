@@ -21,7 +21,7 @@ namespace SeedCore
 		}
 
 		D3D12_GPU_DESCRIPTOR_HANDLE frameBufferHandle = context_.graphics_.graphics_->Display().View(RenderViewKind::Game);
-		ImTextureID displayTextureId = cameraSystem->ActiveCamera() ? ImTextureID(frameBufferHandle.ptr) : imguiTexture_.Icon(String("Warning/NonCamera"));
+		ImTextureID displayTextureID = cameraSystem->ActiveCamera() ? static_cast<ImTextureID>(frameBufferHandle.ptr) : static_cast<ImTextureID>(imguiTexture_.Icon(String("Warning/NonCamera")));
 
 		if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
 		{
@@ -78,9 +78,9 @@ namespace SeedCore
 		cameraSystem->Rect(Vector4(screenPos.x, screenPos.y, imageWidth, imageHeight));
 
 		ImGui::PushStyleVar(ImGuiStyleVar_ImageBorderSize, 0.0f);
-		if (displayTextureId != 0)
+		if (displayTextureID != 0)
 		{
-			ImGui::Image(displayTextureId, ImVec2(imageWidth, imageHeight));
+			ImGui::Image(displayTextureID, ImVec2(imageWidth, imageHeight));
 		}
 		else
 		{

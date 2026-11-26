@@ -22,7 +22,7 @@ namespace SeedCore
 
 		Bool open_ = false;
 
-		ImTextureID logoTextureId_ = 0;
+		Uint64 logoTextureId_ = 0;
 		Microsoft::WRL::ComPtr<ID3D12Resource> logoResource_;
 
 		Float logoWidth_ = 0.0f;

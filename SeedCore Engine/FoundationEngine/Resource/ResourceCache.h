@@ -119,6 +119,7 @@ namespace SeedCore
 			".hdr", ".skymap",
 			".prefab",
 			".scene",
+			".scg",
 			".h", ".cpp", ".cs", ".hlsli", ".hlsl",
 		};
 
@@ -155,7 +156,9 @@ namespace SeedCore
 
 			".efkmodel",
 			".efkmat",
-			",efkcurve",
+			".efkcurve",
+
+			".scg",
 		};
 
 		std::set<std::string_view> generatedExtensions_ =

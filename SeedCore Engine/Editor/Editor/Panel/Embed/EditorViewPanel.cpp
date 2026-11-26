@@ -67,7 +67,7 @@ namespace SeedCore
 			ImGui::PushStyleVar(ImGuiStyleVar_ImageBorderSize, 0.0f);
 			if (frameBufferHandle.ptr != 0)
 			{
-				ImGui::Image(ImTextureID(frameBufferHandle.ptr), ImVec2(imageWidth, imageHeight));
+				ImGui::Image(static_cast<ImTextureID>(frameBufferHandle.ptr), ImVec2(imageWidth, imageHeight));
 			}
 			else
 			{
@@ -248,7 +248,7 @@ namespace SeedCore
 		for (const ViewIcon& icon : icons_)
 		{
 			drawList->AddCircleFilled(ImVec2(icon.center_.x, icon.center_.y), half + 3.0f, IM_COL32(20, 20, 28, 170));
-			drawList->AddImage(imguiTexture_.Icon(icon.type_), ImVec2(icon.center_.x - half, icon.center_.y - half), ImVec2(icon.center_.x + half, icon.center_.y + half), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), icon.color_.ToPacked());
+			drawList->AddImage(static_cast<ImTextureID>(imguiTexture_.Icon(icon.type_)), ImVec2(icon.center_.x - half, icon.center_.y - half), ImVec2(icon.center_.x + half, icon.center_.y + half), ImVec2(0.0f, 0.0f), ImVec2(1.0f, 1.0f), icon.color_.ToPacked());
 			if (context_.selection_.Contains(icon.actor_))
 			{
 				drawList->AddCircle(ImVec2(icon.center_.x, icon.center_.y), half + 3.0f, IM_COL32(255, 200, 60, 255), 0, 2.0f);
