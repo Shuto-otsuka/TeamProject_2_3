@@ -14,32 +14,34 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Marks the soft body as waiting to be built when the actor has a
-	* Mesh with an asset assigned.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Actor にアセット付きの Mesh があれば、ソフトボディを構築待ちにする。
+	* メッシュが選ばれていれば、体を作る準備をする。
+	*
+	* @brief 作る準備をする
+	*
+	* [EN]
+	* If a mesh is chosen, gets ready to build the body.
+	*
+	* @brief Gets ready to build
 	*/
 	void Softbody::OnAwake()
 	{
-		/// [EN] Without a model there is nothing to build, so the soft body never waits.
-		/// [JP] モデルが無ければ構築するものが無いので、待ち状態にしない。
 		const Mesh* mesh = GetActor().GetComponent<Mesh>();
 		pending_ = mesh != nullptr && mesh->meshID_ != 0;
 	}
 
 	/**
-	* [EN]
-	* Reads the simulated vertex positions back and moves them into the
-	* actor's local space.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* シミュレーション後の頂点位置を読み戻し、Actor のローカル空間へ移す。
+	* 体の頂点の位置を、アクターから見た位置に直して覚える。
+	*
+	* @brief 頂点の位置を写す
+	* @param elapsedTime 前の物理の更新からの時間
+	*
+	* [EN]
+	* Reads the body's vertex positions and stores them relative to the actor.
+	*
+	* @brief Copies the vertex positions
+	* @param elapsedTime Time since the last physics update
 	*/
 	void Softbody::OnFixedTick(Float elapsedTime)
 	{
@@ -48,12 +50,10 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Jolt returns world positions.
-		/// [JP] Jolt はワールド位置を返す。
+		/// [JP] 頂点の位置を取り、アクターから見た位置に直す
+		/// [EN] Read the vertex positions and make them relative to the actor
 		GetActor().GetService<Physics>()->BodyVertex(bodyID_, vertexPositions_);
 
-		/// [EN] The render mesh is drawn with the actor's world matrix, so the positions are taken back to local space.
-		/// [JP] 描画メッシュは Actor のワールド行列で描かれるので、位置をローカル空間へ戻す。
 		Matrix inverseWorld = GetActor().WorldMatrix().Invert();
 		for (Vector3& position : vertexPositions_)
 		{
@@ -62,15 +62,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Destroys the body and returns to waiting, so the soft body is
-	* built again if the actor wakes up once more.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* ボディを破棄して構築待ちに戻す。Actor が再び起動すれば、
-	* ソフトボディはもう一度構築される。
+	* 体を消して、作り直せるようにする。
+	*
+	* @brief 体を消す
+	*
+	* [EN]
+	* Removes the body so it can be built again.
+	*
+	* @brief Removes the body
 	*/
 	void Softbody::OnDestroy()
 	{
@@ -79,29 +79,27 @@ namespace SeedCore
 			return;
 		}
 
+		/// [JP] 体を消して、メッシュがあればまた作れるようにする
+		/// [EN] Remove the body and allow it to be built again if there is a mesh
 		GetActor().GetService<Physics>()->DestroyBody(bodyID_);
 
-		/// [EN] An invalid ID and empty positions make the renderer fall back to the bind pose.
-		/// [JP] 無効な ID と空の頂点位置で、描画はバインドポーズへ戻る。
 		bodyID_ = ScInvalidBodyID;
 		vertexPositions_.clear();
 
-		/// [EN] Same condition as OnAwake.
-		/// [JP] OnAwake と同じ条件。
 		const Mesh* mesh = GetActor().GetComponent<Mesh>();
 		pending_ = mesh != nullptr && mesh->meshID_ != 0;
 	}
 
 	/**
-	* [EN]
-	* Destroys the body and returns to waiting, so the soft body is
-	* built again from the current settings.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* ボディを破棄して構築待ちに戻し、現在の設定でソフトボディが
-	* 作り直されるようにする。
+	* 設定が変わったので、体を作り直す。
+	*
+	* @brief 体を作り直す
+	*
+	* [EN]
+	* The settings changed, so the body is made again.
+	*
+	* @brief Remakes the body
 	*/
 	void Softbody::OnRevision()
 	{
@@ -110,17 +108,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Applies fields changed from code. An edit in the inspector runs
-	* OnRevision on its own, but a field written by a script takes
-	* effect only once this is called.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* コードから変えたフィールドを反映する。インスペクタでの編集は
-	* 自動で OnRevision が走るが、スクリプトから書き換えたフィールドは
-	* これを呼んだときに初めて効く。
+	* 体を作り直す。
+	*
+	* @brief 体を作り直す
+	*
+	* [EN]
+	* Remakes the body.
+	*
+	* @brief Remakes the body
 	*/
 	void Softbody::Dispatch()
 	{
@@ -128,50 +124,53 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Adds a force (N) for the next fixed step, spread evenly over the
-	* vertices. Does nothing until the body is built.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 次の固定ステップの間、力(N)を加える。力は頂点へ均等に分ける。
-	* ボディが構築されるまでは何もしない。
+	* 体に力をかける。
+	*
+	* @brief 力をかける
+	* @param force かける力
+	*
+	* [EN]
+	* Pushes the body with a force.
+	*
+	* @brief Adds a force
+	* @param force The force
 	*/
 	void Softbody::AddForce(const Vector3& force)
 	{
-		/// [EN] An invalid ID while the body is still pending is ignored by Physics.
-		/// [JP] 構築待ちの間の無効な ID は、Physics 側で無視される。
 		GetActor().GetService<Physics>()->AddForce(bodyID_, force);
 	}
 
 	/**
-	* [EN]
-	* Adds an impulse (kg·m/s), giving every movable vertex the same
-	* change of velocity at once. Does nothing until the body is built.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 力積(kg·m/s)を加え、動ける頂点すべてに同じ速度変化を一度に与える。
-	* ボディが構築されるまでは何もしない。
+	* 体を一瞬でぽんと押す。
+	*
+	* @brief 一瞬押す
+	* @param impulse 押す強さ
+	*
+	* [EN]
+	* Gives the body a quick shove.
+	*
+	* @brief Adds an impulse
+	* @param impulse How hard to shove
 	*/
 	void Softbody::AddImpulse(const Vector3& impulse)
 	{
-		/// [EN] An invalid ID while the body is still pending is ignored by Physics.
-		/// [JP] 構築待ちの間の無効な ID は、Physics 側で無視される。
 		GetActor().GetService<Physics>()->AddImpulse(bodyID_, impulse);
 	}
 
 	/**
-	* [EN]
-	* Returns the Jolt ID of the body; invalid until Build succeeds and
-	* after OnDestroy.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* ボディの Jolt ID を返す。Build が成功するまでと OnDestroy 後は無効な ID。
+	* 物理の体の番号を返す。
+	*
+	* @brief  体の番号を返す
+	* @return 体の番号。まだなければ無効な番号
+	*
+	* [EN]
+	* Returns the physics body number.
+	*
+	* @brief  Returns the body number
+	* @return The body number, or the invalid number if there is none yet
 	*/
 	ScBodyID Softbody::BodyID()const
 	{
@@ -179,17 +178,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns this step's simulated positions of the coarse proxy's
-	* vertices, in the actor's local space. SoftbodyMesh transfers their
-	* displacement onto the full-resolution render mesh.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* このステップでシミュレートした粗いプロキシの頂点位置を、Actor の
-	* ローカル空間で返す。SoftbodyMesh がその変位をフル解像度の描画
-	* メッシュへ移す。
+	* アクターから見た、今の頂点の位置を返す。
+	*
+	* @brief  頂点の位置を返す
+	* @return 頂点の位置の一覧
+	*
+	* [EN]
+	* Returns the current vertex positions relative to the actor.
+	*
+	* @brief  Returns the vertex positions
+	* @return The vertex positions
 	*/
 	const DynamicArray<Vector3>& Softbody::BodyVertex()const
 	{
@@ -197,53 +196,49 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Builds the body from the model's coarse proxy mesh, the actor's
-	* pose and this component's settings. Stays pending if it fails.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* モデルの粗いプロキシメッシュ、Actor の姿勢、このコンポーネントの
-	* 設定からボディを作る。失敗した場合は構築待ちのまま残る。
+	* 読み込んだモデルから、やわらかい体を作る。
+	*
+	* @brief 体を作る
+	* @param crister 形に使うモデル
+	*
+	* [EN]
+	* Builds the soft body from the loaded model.
+	*
+	* @brief Builds the body
+	* @param crister The model to build from
 	*/
 	void Softbody::Build(const Crister& crister)
 	{
 		Actor actor = GetActor();
 
-		/// [EN] Simulates the coarsest cluster of each SubMesh; the full-resolution mesh is far beyond what the solver is meant for.
-		/// [JP] 各 SubMesh の最も粗いクラスタをシミュレートする。フル解像度のメッシュはソルバが想定する規模を大きく超える。
+		/// [JP] モデルから、一番粗い頂点と三角形を取り出す
+		/// [EN] Take the coarsest vertices and triangles from the model
 		DynamicArray<Vertex> vertices;
 		SoftbodyDesc desc;
 
-		/// [EN] Reads the proxy mesh out of the model's CPU-side geometry.
-		/// [JP] モデルの CPU 側のジオメトリからプロキシメッシュを読み出す。
 		CristerExtractor extractor;
 		if (!extractor.CoarsestVertices(crister, vertices, desc.indices_))
 		{
 			return;
 		}
 
-		/// [EN] Only the positions are simulated.
-		/// [JP] シミュレートするのは位置だけ。
 		desc.positions_.reserve(vertices.size());
 		for (const Vertex& vertex : vertices)
 		{
 			desc.positions_.push_back(vertex.position_);
 		}
 
-		/// [EN] A soft body always moves, so it sits on the DYNAMIC layer of the actor's layer.
-		/// [JP] ソフトボディは常に動くので、Actor のレイヤーの DYNAMIC に置く。
+		/// [JP] 層と、伸び・ゆがみ・曲がりのやわらかさを決める。硬さが 1 で一番硬い
+		/// [EN] Set the layer and how soft stretching, shearing and bending are; a stiffness of 1 is the stiffest
 		desc.layer_ = Layers::Pack(Layers::DYNAMIC, actor.Layer());
 
-		/// [EN] Stiffness 1 becomes compliance 0 (rigid) and stiffness 0 becomes 1e-4 (soft).
-		/// [JP] 硬さ 1 はコンプライアンス 0(硬い)に、硬さ 0 は 1e-4(柔らかい)になる。
 		desc.edgeCompliance_ = (1.0f - Clamp(edgeStiffness_, 0.0f, 1.0f)) * 1.0e-4f;
 		desc.shearCompliance_ = (1.0f - Clamp(areaStiffness_, 0.0f, 1.0f)) * 1.0e-4f;
 		desc.bendCompliance_ = (1.0f - Clamp(bendStiffness_, 0.0f, 1.0f)) * 1.0e-4f;
 
-		/// [EN] Solver and material settings; gravity off is a gravity factor of 0.
-		/// [JP] ソルバと材質の設定。重力を切るのは、重力の倍率を 0 にすることと同じ。
+		/// [JP] 動きの設定をまとめる
+		/// [EN] Gather the motion settings
 		desc.numIterations_ = static_cast<Uint32>(iterationCount_);
 		desc.linearDamping_ = damping_;
 		desc.pressure_ = pressure_;
@@ -251,17 +246,13 @@ namespace SeedCore
 		desc.restitution_ = restitution_;
 		desc.gravityFactor_ = useGravity_ ? gravityScale_ : 0.0f;
 
-		/// [EN] Lets physics queries and contacts find their way back to the actor.
-		/// [JP] 物理クエリや接触から Actor へたどり着けるようにする。
 		desc.userData_ = ActorAccessor::GetEntity(actor).GetID();
 
-		/// [EN] Rotation holds a normalized quaternion, passed to the body as is.
-		/// [JP] Rotation は正規化済みクォータニオンを持つので、そのままボディへ渡す。
+		/// [JP] 親から見た位置と向きを、世界での位置と向きに直す
+		/// [EN] Turn the parent-relative position and facing into world ones
 		const Position* position = actor.GetComponent<Position>();
 		const Rotation* rotation = actor.GetComponent<Rotation>();
 
-		/// [EN] Position and Rotation are relative to the parent, so the body starts at their world pose; a root actor's parent space is the world itself.
-		/// [JP] Position と Rotation は親から見た値なので、ボディはそのワールドでの姿勢から始める。ルートの Actor にとって、親の空間はワールドそのもの。
 		Actor parentActor = actor.Parent();
 		Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
 		Vector3 parentScale;
@@ -272,8 +263,8 @@ namespace SeedCore
 		desc.position_ = Vector3::TransformPosition(position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f), parentMatrix);
 		desc.rotation_ = (rotation ? Transform::Quat(*rotation) : Quaternion::Identity) * parentRotation;
 
-		/// [EN] On failure the soft body stays pending and is tried again next frame.
-		/// [JP] 失敗したら構築待ちのまま残り、次のフレームで再び試す。
+		/// [JP] 体を作れたら、準備完了にする
+		/// [EN] Once the body is made, mark it as ready
 		bodyID_ = actor.GetService<Physics>()->CreateSoftbody(desc);
 		if (bodyID_ == ScInvalidBodyID)
 		{
@@ -284,13 +275,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Reports whether the soft body is still waiting for its model.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* ソフトボディがまだモデルを待っているかを返す。
+	* まだ体を作れていないかを返す。
+	*
+	* @brief  作る待ちか調べる
+	* @return まだなら true
+	*
+	* [EN]
+	* Returns whether the body still needs to be built.
+	*
+	* @brief  Checks if building is pending
+	* @return True if it is still pending
 	*/
 	Bool Softbody::Pending()const
 	{

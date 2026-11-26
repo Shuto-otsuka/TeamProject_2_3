@@ -26,33 +26,6 @@ struct DirectLightRatioBindings
 };
 ConstantBuffer<DirectLightRatioBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* DirectLight.Resolve: one thread per pixel. Rebuilds the surface from
-* the G-Buffer and its material (LoadSurfaceMaterial), finds the pixel's
-* cluster from its screen tile and its logarithmic depth slice, and sums the
-* unshadowed direct light of every point, spot and rectangle light in it. All
-* three share one smooth distance falloff to zero at range_; a spot fades
-* over softness_ inside its cone, and a rectangle lights only its front side,
-* from the point of the rectangle nearest to the surface. The sum is then
-* scaled by the punctual visibility ratio in RaytracingShadow.Visibility.y,
-* blended toward 1 by the shadow strength in RaytracingShadow.Constants
-* (0 leaves the light unshadowed, 1 applies the ratio as it is).
-* The background receives no light.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* DirectLight.Resolve。1 ピクセルに 1 スレッド。G-Buffer とマテリアル
-* （LoadSurfaceMaterial）から表面を組み立て、画面のタイルと対数の深さの
-* スライスからピクセルのクラスタを求め、そこに入る点光源・スポット・矩形
-* ライトの影なしの直接光を合計し、RaytracingShadow.Visibility.y の点光源の
-* 可視率を、RaytracingShadow.Constants の影の濃さで 1 との間を補間して掛ける
-* （0 で影なし、1 で可視率そのまま）。3 種類とも range_ で 0 になる同じ
-* なめらかな距離の減衰を使い、スポットはコーンの内側で softness_ の幅で
-* フェードし、矩形は表側だけを、表面にいちばん近い矩形上の点から照らす。
-* 背景には光を書かない。
-*/
 [numthreads(8, 8, 1)]
 void Ratio(uint3 id : SV_DispatchThreadID)
 {

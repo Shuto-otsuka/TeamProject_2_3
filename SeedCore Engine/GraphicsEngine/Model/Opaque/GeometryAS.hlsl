@@ -7,23 +7,6 @@
 groupshared GeometryPayload payload;
 groupshared uint survivor_count;
 
-/**
-* [EN]
-* One thread group per chunk (or per 32 entries of Geometry.OccludedMeshlets), one
-* thread per meshlet; the groups past the list's count (the dispatch is
-* rounded up to whole rows of 1024) launch nothing. The low byte of the
-* dispatch constant picks the list: the early draw tests the meshlets of
-* Culling.OpaqueChunks against the frustum, their normal cone and the previous
-* frame's Hi-Z, and records the ones only that Hi-Z hides in Geometry.OccludedMeshlets
-* (they are drawn early when it is full); the late draws test the meshlets of
-* Culling.OccludedChunks the same way against this frame's Hi-Z, and the
-* entries of Geometry.OccludedMeshlets against this frame's Hi-Z alone. The replay bit
-* repeats a depth draw's decisions for a later redraw without recording
-* anything; an occluded early meshlet is drawn by the replay only when
-* Geometry.OccludedMeshlets overflowed, which the depth test then sorts out. Skinned
-* instances have rest-pose bounds, so they skip every test. Every group ends
-* in exactly one DispatchMesh, launching one GeometryMS group per survivor.
-*/
 [NumThreads(32, 1, 1)]
 void main(uint gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 {

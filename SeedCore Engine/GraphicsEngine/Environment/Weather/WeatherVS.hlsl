@@ -1,18 +1,6 @@
 #include <GraphicsEngine/Environment/Weather/Weather.hlsli>
 #include <GraphicsEngine/Culling/FrustumCulling.hlsli>
 
-/**
-* [EN]
-* Weather.Draw for devices without mesh shaders: one DrawInstanced instance
-* per falling particle, 6 vertices (two triangles) each, placed exactly like
-* WeatherMS.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* メッシュシェーダーの無いデバイス用の Weather.Draw。落ちているパーティクル 1 個に
-* つき DrawInstanced のインスタンス 1 つ、6 頂点（2 三角形）。配置は WeatherMS と同じ。
-*/
 WeatherOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 {
 	WeatherOutput output = (WeatherOutput)0;

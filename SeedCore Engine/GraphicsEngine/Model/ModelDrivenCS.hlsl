@@ -71,19 +71,6 @@ float3x3 ModelInverseTranspose(float3x3 matrix_3x3)
     return float3x3(cofactor0, cofactor1, cofactor2) * inverse_determinant;
 }
 
-/**
-* [EN]
-* Writes the rows the CPU found changed into one of the Model's resident
-* tables. The dispatch constant picks the table (0 units, 1 meshes,
-* 2 clusters, 3 placements, 4 materials, 5 raytracing units); one thread
-* writes one row.
-*
-* [JP]
-* CPU が変わったと判定した行を、Model の常駐の表の 1 つへ書き込む。ディスパッチの
-* 定数が表を選ぶ（0 ユニット、1 メッシュ、2 クラスタ、3 配置、4 マテリアル、
-* 5 レイトレーシングのユニット）。
-* 1 スレッドが 1 行を書く。
-*/
 [numthreads(64, 1, 1)]
 void Update(uint3 id : SV_DispatchThreadID)
 {
@@ -158,19 +145,6 @@ void Update(uint3 id : SV_DispatchThreadID)
     }
 }
 
-/**
-* [EN]
-* First dispatch of Model.Submit.Expand, one thread per word of
-* Model.Streaming. Each sub-mesh row holds the finest LOD any view wants
-* (reset to "none") and the largest on-screen texel density any view wants
-* (reset to 0), which Expand narrows with atomics this frame.
-*
-* [JP]
-* Model.Submit.Expand の最初のディスパッチ。Model.Streaming の 1 ワードに 1 スレッド。
-* サブメッシュの行は、どれかのビューが望むいちばん細かい LOD（「無し」に戻す）と、
-* どれかのビューが望むいちばん大きい画面上のテクセル密度（0 に戻す）を持ち、
-* このフレームの Expand がアトミックで絞り込む。
-*/
 [numthreads(64, 1, 1)]
 void Clear(uint3 id : SV_DispatchThreadID)
 {
@@ -185,20 +159,6 @@ void Clear(uint3 id : SV_DispatchThreadID)
     streaming[id.x] = (id.x & 1) == 0 ? MODEL_INVALID : 0;
 }
 
-/**
-* [EN]
-* Second dispatch of Model.Submit.Expand. Appends the Softbody instances the CPU
-* built to Geometry's shared instance list, one thread per instance. The CPU
-* lays them out opaque, transparent in that order; each thread takes a
-* slot in its section with one InterlockedAdd and counts the instances that
-* do not fit as overflow.
-*
-* [JP]
-* Model.Submit.Expand の 2 つ目のディスパッチ。CPU が作った Softbody のインスタンスを、
-* Geometry の共有のインスタンスの一覧へ書き足す。1 インスタンスに 1 スレッド。
-* CPU はそれらを不透明・半透明の順に並べる。各スレッドは自分の区間の枠を
-* InterlockedAdd 1 回で取り、入りきらない分は溢れとして数える。
-*/
 [numthreads(64, 1, 1)]
 void Prepare(uint3 id : SV_DispatchThreadID)
 {
@@ -233,34 +193,6 @@ void Prepare(uint3 id : SV_DispatchThreadID)
     instances[section_base + slot] = softbodies[id.x];
 }
 
-/**
-* [EN]
-* Third dispatch of Model.Submit.Expand, one thread per unit slot. For every
-* sub-mesh of an active unit it drops the sub-mesh when no view's frustum
-* holds its bounds, records in Model.Streaming the LOD the closest view needs
-* and the largest on-screen texel density (whether or not they are resident,
-* so the CPU can stream them in a few frames later), picks the LOD cluster
-* the closest view needs among the resident ones (skinned sub-meshes stay on
-* LOD 0), and writes one
-* ModelStructuredBuffer per placement and per run of up to
-* MODEL_MESHLETS_PER_INSTANCE meshlets into its section (opaque or
-* transparent). A fur material writes that set once per layer, the base
-* surface plus fur_shell_count_ shells, each tagged with its layer index.
-* Each section is reserved with one InterlockedAdd per sub-mesh; what does
-* not fit is counted as overflow.
-*
-* [JP]
-* Model.Submit.Expand の 3 つ目のディスパッチ。ユニットの枠 1 つにつき 1 スレッド。
-* 有効なユニットのサブメッシュごとに、どのビューの視錐台にも境界が入らなければ
-* 落とし、いちばん近いビューが要る LOD と、いちばん大きい画面上のテクセル密度を
-* Model.Streaming に記録し（常駐しているかに関係なく。CPU が数フレーム後に常駐させる）、
-* 常駐しているクラスタの中から、いちばん近いビューが要る LOD を選び
-* （スキンのサブメッシュは LOD 0 のまま）、配置ごと・最大
-* MODEL_MESHLETS_PER_INSTANCE 個の meshlet ごとに ModelStructuredBuffer を 1 つずつ、
-* その区間（不透明か半透明）へ書く。Fur のマテリアルは、その組をベースの面と
-* fur_shell_count_ 枚のシェルの層ごとに 1 回ずつ書き、層の番号を付ける。各区間は
-* サブメッシュごとに InterlockedAdd 1 回で確保し、入りきらない分は溢れとして数える。
-*/
 [numthreads(64, 1, 1)]
 void Expand(uint3 id : SV_DispatchThreadID)
 {
@@ -460,28 +392,6 @@ void Expand(uint3 id : SV_DispatchThreadID)
     }
 }
 
-/**
-* [EN]
-* Deforms the raytracing proxy positions of animated Models into
-* BottomLevel.Vertices, at the offset BottomLevel.Table holds for the job's
-* BLAS key; a key with no offset this frame writes nothing. One job covers
-* one SubMesh's compact proxy vertex range (id.y picks the job, id.x the
-* vertex): morph
-* deltas are added first, then the skin matrix is applied, matching the
-* order the rasterized path uses. A non-finite result keeps the bind pose so
-* a broken pose never corrupts the dynamic BLAS.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* アニメーションする Model のレイトレーシング用プロキシの位置を、
-* BottomLevel.Vertices の中で、BottomLevel.Table がジョブの BLAS の key に対して
-* 持つオフセットの位置へ変形して書く。このフレームにオフセットが無い key は何も
-* 書かない。1 ジョブが 1 SubMesh のコンパクトなプロキシ頂点の範囲を
-* 受け持つ（id.y がジョブ、id.x が頂点）。ラスタライズの経路と同じ順で、先にモーフの
-* 差分を足し、次にスキンの行列を掛ける。結果が有限でなければバインドポーズのまま
-* にして、壊れたポーズが動的な BLAS を壊さないようにする。
-*/
 [numthreads(64, 1, 1)]
 void Deform(uint3 id : SV_DispatchThreadID)
 {
@@ -547,24 +457,6 @@ void Deform(uint3 id : SV_DispatchThreadID)
 	vertices[vertex_offset + deform.output_offset_ + id.x] = position;
 }
 
-/**
-* [EN]
-* Hands every Model unit that has a raytracing row to TopLevel.Instances,
-* one thread per unit. Each thread takes an instance slot with one
-* InterlockedAdd and writes the TLAS transform, the BLAS key and the
-* hit row raytracing shaders read: geometry buffers, the surface table and
-* where this unit's materials live in Model's material table. Units with no
-* BLAS or no meshes are skipped.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* レイトレーシングの行を持つ Model のユニットを、TopLevel.Instances へ渡す。
-* 1 ユニットに 1 スレッド。各スレッドは InterlockedAdd 1 回でインスタンスの枠を
-* 取り、TLAS の変換行列、BLAS の key、レイトレーシングのシェーダが読むヒットの行（ジオメトリの
-* バッファ、サーフェスの表、Model のマテリアルの表の中でこのユニットのマテリアル
-* がある場所）を書く。BLAS が無いユニットとメッシュが無いユニットは飛ばす。
-*/
 [numthreads(64, 1, 1)]
 void Raytracing(uint3 id : SV_DispatchThreadID)
 {

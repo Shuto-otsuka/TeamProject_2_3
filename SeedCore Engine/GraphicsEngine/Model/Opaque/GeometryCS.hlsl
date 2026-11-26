@@ -13,12 +13,6 @@ struct GeometryUpdateBindings
 };
 ConstantBuffer<GeometryUpdateBindings> update_bindings : register(b0, space1);
 
-/**
-* [EN]
-* Starts the frame's shared instance list: every section counter (opaque,
-* transparent, fur, overflow) goes back to zero, and each source then appends
-* its instances behind it.
-*/
 [numthreads(4, 1, 1)]
 void Update(uint3 id : SV_DispatchThreadID)
 {
@@ -26,16 +20,6 @@ void Update(uint3 id : SV_DispatchThreadID)
 	counts[id.x] = 0;
 }
 
-/**
-* [EN]
-* Builds one mip of the Hi-Z pyramid per dispatch; the dispatch constant is
-* the destination mip. Each thread writes one texel as the MINIMUM of its 2x2
-* source footprint, which under reversed-Z is the farthest surface, as the
-* conservative occlusion test needs. Mip 0 (half the render resolution)
-* reduces Depth; every later mip reduces the previous one through its UAV
-* (per-mip UAVs are contiguous from geometry_hi_z_). Odd source sizes
-* fold the extra edge row/column in, so no depth sample is dropped.
-*/
 [numthreads(8, 8, 1)]
 void Pyramid(uint3 id : SV_DispatchThreadID)
 {

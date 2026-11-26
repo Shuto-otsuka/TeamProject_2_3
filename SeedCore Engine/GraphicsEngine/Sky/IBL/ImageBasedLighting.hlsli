@@ -1,10 +1,6 @@
 #ifndef __IMAGE_BASED_LIGHTING_HLSL__
 #define __IMAGE_BASED_LIGHTING_HLSL__
 
-// Bindless IBL sampling. The environment / irradiance / prefilter cubes and the
-// BRDF lookup table are passed in as descriptor indices (Sky.Cubemap,
-// Sky.Diffuse, Sky.Specular and Sky.BRDF).
-
 #include <GraphicsEngine/Shader/Sampler.hlsli>
 
 float4 SampleGgxLookupTable(uint brdf_lut, float2 sample_point)
@@ -30,11 +26,10 @@ float4 SampleSpecularPrefilteredRadianceEnvironmentMap(uint specular_prefiltered
 	return specular_prefiltered.SampleLevel(sampler_linear_clamp, direction, lod);
 }
 
-// Environment cube sampled for the skybox background (mip 0).
 float4 SampleSkyboxEnvironment(uint sky_cubemap, float3 direction)
 {
 	TextureCube<float4> environment = ResourceDescriptorHeap[sky_cubemap];
 	return environment.SampleLevel(sampler_linear_clamp, direction, 0);
 }
 
-#endif // __IMAGE_BASED_LIGHTING_HLSL__
+#endif

@@ -14,4 +14,4 @@ struct RaytracingShadowConstantBuffer
 	uint history_valid_;
 };
 
-#endif // __RAYTRACING_SHADOW_HLSLI__
+#endif

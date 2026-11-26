@@ -1,18 +1,5 @@
 #include <GraphicsEngine/Texture/Billboard/TextureBillboard.hlsli>
 
-/**
-* [EN]
-* Texture.Billboard for devices without mesh shaders: one DrawInstanced
-* instance per entry of the billboard section of Texture.Draws, 6
-* vertices (two triangles) each, placed exactly like TextureBillboardMS.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* メッシュシェーダーの無いデバイス用の Texture.Billboard。Texture.Draws の
-* ビルボードの区間の 1 件につき DrawInstanced のインスタンス 1 つ、6 頂点
-* （2 三角形）。配置は TextureBillboardMS と同じ。
-*/
 TextureBillboardOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 {
 	ConstantBuffer<TextureConstantBuffer> constants = ResourceDescriptorHeap[bindings.texture_constants_];

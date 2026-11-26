@@ -66,7 +66,6 @@ namespace SeedCore
 			Vector3 eye = camera.Eye();
 			Float speed = moveSpeed_ * deltaTime;
 
-			/// [JP] Shift 押下中は移動速度に倍率を掛ける（Unreal風の高速移動）。
 			if (InputSystem::KeyState(InputSystem::Key::Shift))
 			{
 				speed *= shiftSpeedMultiplier_;
@@ -102,7 +101,6 @@ namespace SeedCore
 			camera.Up(up);
 		}
 
-		/// [JP] 中ボタンドラッグでパン（Unreal風）。掴んだ景色が指に追従する向き。
 		if (InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed))
 		{
 			Float dx = InputSystem::MouseMotion().x;
@@ -130,7 +128,6 @@ namespace SeedCore
 			}
 		}
 
-		/// [JP] Ctrl押下中のホイールはギズモのスナップ値変更に使うため（EditorWindowPanel::Draw参照）、右クリック押下中のホイールは移動速度変更に使うため（上記参照）、ここでのドリー移動からは除外する。
 		Float wheel = InputSystem::MouseWheel();
 		if (Abs(wheel) > 0.0f && !InputSystem::KeyState(InputSystem::Key::Control) && !rightMouseHeld)
 		{

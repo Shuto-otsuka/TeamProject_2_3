@@ -25,8 +25,6 @@ namespace SeedCore
 {
 	EngineCore::EngineCore() :executor_(std::thread::hardware_concurrency(), MakeWorkerInterface<JobScheduler>(benchmark_)), world_(MakePtr<World>()), joltManager_(MakePtr<JoltManager>()), dlssManager_(MakePtr<DlssManager>())
 	{
-		/// [EN] The engine is constructed on the main thread, which runs the frame loop, so the main thread's sections are recorded from here on.
-		/// [JP] エンジンはフレームループを回すメインスレッドで構築されるので、ここから先メインスレッドの区間が記録される。
 		benchmark_.Attach(String("Main"));
 		resource_.Benchmark(benchmark_);
 	}
@@ -278,8 +276,6 @@ namespace SeedCore
 
 	Bool EngineCore::Pump()
 	{
-		/// [EN] Window messages are measured too, since a slow message handler stalls the whole frame.
-		/// [JP] ウィンドウメッセージも測る。遅いメッセージ処理はフレーム全体を止めるため。
 		Benchmark::Begin("Pump");
 		MSG msg{};
 		while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
@@ -314,8 +310,6 @@ namespace SeedCore
 		graphics_.DrawSplashScreen(splashSystem_);
 		Benchmark::End("Splash");
 
-		/// [EN] The splash screen presents on its own and skips Present, so the frame is collected here instead.
-		/// [JP] スプラッシュ画面は自分で表示して Present を通らないので、ここでフレームを締める。
 		benchmark_.Collect();
 
 		return true;
@@ -361,16 +355,12 @@ namespace SeedCore
 		Float letterLeft = (clientWidth - letterWidth) * 0.5f;
 		Float letterTop = (clientHeight - letterHeight) * 0.5f;
 
-		/// [EN] The game view is drawn at the rectangle in client coordinates, and input reads it in screen coordinates.
-		/// [JP] ゲームビューはクライアント座標の矩形に描き、入力は同じ矩形をスクリーン座標で読む。
 		outputRect_ = Vector4(letterLeft, letterTop, letterWidth, letterHeight);
 		cameraSystem_.Rect(Vector4(static_cast<Float>(clientOrigin.x) + letterLeft, static_cast<Float>(clientOrigin.y) + letterTop, letterWidth, letterHeight));
 	}
 
 	void EngineCore::Begin()
 	{
-		/// [EN] Includes the wait for the GPU to free this frame's slot, so a GPU-bound frame shows up here.
-		/// [JP] GPU がこのフレームの枠を空けるのを待つ時間も含むので、GPU 律速のフレームはここに出る。
 		Benchmark::Begin("BeginFrame");
 		graphics_.Begin();
 		Benchmark::End("BeginFrame");
@@ -411,8 +401,6 @@ namespace SeedCore
 				Benchmark::End("Coroutine");
 			}
 
-			/// [EN] Physics covers both syncing the world into Jolt and every fixed step, since together they are the cost of simulating the bodies.
-			/// [JP] Physics にはワールドから Jolt への反映と全固定ステップの両方を含める。合わせて剛体を動かすコストになるため。
 			Benchmark::Begin("Physics");
 
 			Benchmark::Begin("ResolveMeshCollider");
@@ -431,8 +419,6 @@ namespace SeedCore
 			PhysicsSystem::ApplyCollider(*world_);
 			Benchmark::End("ApplyCollider");
 
-			/// [EN] Each fixed step is one call of these sections, so their call count is the number of fixed steps taken this frame.
-			/// [JP] 固定ステップ1回がこれらの区間の1呼び出しになるので、回数がこのフレームに進めた固定ステップ数になる。
 			while (timer.Step())
 			{
 				Benchmark::Begin("ApplyRigidbody");
@@ -494,8 +480,6 @@ namespace SeedCore
 
 	void EngineCore::Present()
 	{
-		/// [EN] Graphics::End has already presented the frame. Present is the last step of the frame in both the editor and the runtime, so every section of the frame has ended by here.
-		/// [JP] フレームの表示は Graphics::End で済んでいる。Present はエディタでもランタイムでもフレームの最後の手順なので、ここではフレームの区間が全て閉じている。
 		benchmark_.Collect();
 	}
 
@@ -569,15 +553,6 @@ namespace SeedCore
 		return cameraSystem_;
 	}
 
-	/**
-	* [EN]
-	* The CPU section measurements, collected once per frame in Present.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* CPU の区間計測。Present でフレームに1回集計される。
-	*/
 	BenchmarkSystem& EngineCore::GetBenchmark()
 	{
 		return benchmark_;

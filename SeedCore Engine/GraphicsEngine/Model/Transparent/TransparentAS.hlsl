@@ -6,26 +6,6 @@
 groupshared TransparentPayload payload;
 groupshared uint survivor_count;
 
-/**
-* [EN]
-* One thread group per chunk of Culling.TransparentChunks, one thread per
-* meshlet; the groups past the list's count (the dispatch is rounded up to
-* whole rows of 1024) launch nothing. Each meshlet is tested against the
-* frustum, its normal cone and the Hi-Z built from this frame's final depth;
-* skinned instances have rest-pose bounds, so they skip every test. Every
-* group ends in exactly one DispatchMesh, launching one TransparentMS group
-* per survivor.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Culling.TransparentChunks のチャンク 1 つにつき 1 スレッドグループ、meshlet 1 つに
-* つき 1 スレッド。一覧の件数より後ろのグループ（ディスパッチは 1024 の行単位に
-* 切り上がる）は何も起動しない。各 meshlet を視錐台・法線コーン・このフレームの
-* 最終の深度から作った Hi-Z で判定する。スキンのインスタンスは静止姿勢の境界しか
-* 持たないので、どの判定もしない。どのグループも最後に DispatchMesh をちょうど
-* 1 回呼び、残った 1 件につき TransparentMS を 1 グループ起動する。
-*/
 [NumThreads(32, 1, 1)]
 void main(uint gtid : SV_GroupThreadID, uint3 gid : SV_GroupID)
 {

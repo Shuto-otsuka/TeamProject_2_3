@@ -61,8 +61,6 @@ namespace SeedCore
 
 		Vector3 syncedDirection_ = { 0.0f, 0.0f, 1.0f };
 
-		/// [EN] Rotation last synchronized with direction_, retained as a Quaternion to avoid an Euler round trip.
-		/// [JP] direction_ と最後に同期した回転。Euler を往復しないよう Quaternion として保持する。
 		Quaternion syncedRotation_ = Quaternion::Identity;
 
 		Bool synced_ = false;

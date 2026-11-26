@@ -77,12 +77,6 @@ float4 SampleMaterialMappingGrad(Texture2D source_texture, SamplerState texture_
     return color;
 }
 
-/**
-* [EN]
-* Same as above for compute shaders, which have no ddx/ddy: the derivatives
-* are the differences to the mapping coordinates of the pixel one step right
-* (coordinate_x) and one step down (coordinate_y).
-*/
 float4 SampleMaterialMappingGrad(Texture2D source_texture, SamplerState texture_sampler, MaterialMappingCoordinate coordinate, MaterialMappingCoordinate coordinate_x, MaterialMappingCoordinate coordinate_y)
 {
 	float4 color = float4(0.0, 0.0, 0.0, 0.0);
@@ -133,12 +127,6 @@ float3 SampleNormalMappingGrad(Texture2D normal_texture, SamplerState texture_sa
     return normalize(result);
 }
 
-/**
-* [EN]
-* Compute-shader form of the triplanar normal sample, with derivatives taken
-* from the neighbouring pixels' mapping coordinates as in
-* SampleMaterialMappingGrad.
-*/
 float3 SampleNormalMappingGrad(Texture2D normal_texture, SamplerState texture_sampler, MaterialMappingCoordinate coordinate, MaterialMappingCoordinate coordinate_x, MaterialMappingCoordinate coordinate_y)
 {
 	float3 normal = coordinate.projection_normal_;
@@ -207,4 +195,4 @@ float3 SampleNormalMappingLevel(Texture2D normal_texture, SamplerState texture_s
     return normalize(result);
 }
 
-#endif // __MATERIAL_MAPPING_HLSL__
+#endif

@@ -5,20 +5,22 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Updates the shared listener from the actor's current world transform
-	* and the velocity calculated over deltaTime.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* アクターの現在のワールド変換と deltaTime から求めた速度で、共有
-	* リスナーを更新する。
+	* アクターの場所と向きを、音を聞く側に伝える。
+	*
+	* @brief 場所と向きを伝える
+	* @param deltaTime 前のフレームからの時間
+	*
+	* [EN]
+	* Tells the listener where the actor is and which way it faces.
+	*
+	* @brief Sends the position and facing
+	* @param deltaTime Time since the last frame
 	*/
 	void AudioListener::Apply(Float deltaTime)
 	{
-		/// [EN] Build the listener position and orientation from the actor's resolved world transform.
-		/// [JP] アクターの解決済みワールド変換から、リスナーの位置と向きを構成する。
+		/// [JP] アクターの場所と前と上の向きを取る
+		/// [EN] Get the actor's position and its front and up directions
 		const Matrix& worldMatrix = GetActor().WorldMatrix();
 
 		Vector3 position = worldMatrix.Translation();
@@ -29,8 +31,8 @@ namespace SeedCore
 		Vector3 up = Vector3::TransformDirection(Vector3::Up, worldMatrix);
 		up.Normalize();
 
-		/// [EN] Calculate world-space velocity from movement since the preceding update.
-		/// [JP] 前回の更新からの移動量をもとに、ワールド空間上の速度を求める。
+		/// [JP] 前のフレームからの動きで速さを出す
+		/// [EN] Work out the speed from how far it moved since last frame
 		Vector3 velocity = { 0.0f, 0.0f, 0.0f };
 		if (deltaTime > 0.0f)
 		{
@@ -38,8 +40,8 @@ namespace SeedCore
 		}
 		previousPosition_ = position;
 
-		/// [EN] Apply the Doppler scale and listener state to the World's audio context.
-		/// [JP] ドップラー倍率とリスナー状態を World の音響環境へ反映する。
+		/// [JP] 音を聞く側に伝える
+		/// [EN] Send it all to the listener
 		Audio& audio = *GetActor().GetService<Audio>();
 		audio.DopplerMultiplier(dopplerMultiplier_);
 		audio.UpdateListener(position, front, up, velocity);

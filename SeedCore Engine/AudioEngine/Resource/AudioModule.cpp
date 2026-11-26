@@ -4,13 +4,15 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Creates the loaders, then the audio resource on top of them.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* ローダーを生成し、その上に音声リソースを生成する。
+	* 読み込み係と管理係を作る。
+	*
+	* @brief 係を作る
+	*
+	* [EN]
+	* Makes the loader and the manager.
+	*
+	* @brief Makes the parts
 	*/
 	AudioModule::AudioModule() :resource_(loaders_)
 	{
@@ -18,13 +20,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Registers the audio resource with cache under AssetType::Audio.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 音声リソースを AssetType::Audio として cache へ登録する。
+	* 音のアセットを扱えるように、アセットの一覧に登録する。
+	*
+	* @brief アセットの一覧に登録する
+	* @param cache 登録するアセットの一覧
+	*
+	* [EN]
+	* Registers with the asset list so it can handle sound assets.
+	*
+	* @brief Registers with the asset list
+	* @param cache The asset list to register with
 	*/
 	void AudioModule::Install(ResourceCache& cache)
 	{
@@ -32,13 +38,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns the loader bundle.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* ローダーのまとまりを返す。
+	* 読み込み係を返す。
+	*
+	* @brief  読み込み係を返す
+	* @return 読み込み係
+	*
+	* [EN]
+	* Returns the loaders.
+	*
+	* @brief  Returns the loaders
+	* @return The loaders
 	*/
 	AudioLoaderSystem& AudioModule::Loaders()
 	{
@@ -46,13 +56,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns the audio resource.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 音声リソースを返す。
+	* 管理係を返す。
+	*
+	* @brief  管理係を返す
+	* @return 管理係
+	*
+	* [EN]
+	* Returns the manager.
+	*
+	* @brief  Returns the manager
+	* @return The manager
 	*/
 	AudioResource& AudioModule::Resource()
 	{

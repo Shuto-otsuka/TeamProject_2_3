@@ -27,32 +27,12 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Returns the full registry mapping reflected type names to their PayloadFunc.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* リフレクションされた型名をその PayloadFunc へ対応付ける、完全な
-	* レジストリを返す。
-	*/
 	FlatMap<String, PayloadRegistry::PayloadFunc>& PayloadRegistry::GetRegistry()
 	{
 		static FlatMap<String, PayloadFunc> instance;
 		return instance;
 	}
 
-	/**
-	* [EN]
-	* Registers function as the payload reflector for the type named name.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* name という名前の型に対するペイロードリフレクタとして function
-	* を登録する。
-	*/
 	void PayloadRegistry::Register(String name, PayloadFunc function)
 	{
 		GetRegistry()[name] = function;

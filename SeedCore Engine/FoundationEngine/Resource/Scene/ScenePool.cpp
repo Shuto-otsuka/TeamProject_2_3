@@ -4,19 +4,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Returns the handle for assetID's Scene, loading and parsing it
-	* from disk on first request; returns a null handle if the asset is
-	* unknown or fails to parse.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* assetID の Scene へのハンドルを返す。初回リクエスト時にはディスクから
-	* 読み込み・解析する。アセットが不明であるか解析に失敗した場合は
-	* null ハンドルを返す。
-	*/
 	Handle<SceneBlueprint> ScenePool::Load(Uint32 assetID, ResourceCache& cache)
 	{
 		auto it = loaded_.find(assetID);
@@ -38,8 +25,6 @@ namespace SeedCore
 			return Handle<SceneBlueprint>::null();
 		}
 
-		/// [EN] Parsing can throw (malformed file); treat any failure as "load failed" rather than propagating the exception.
-		/// [JP] 解析中に例外が投げられる可能性がある（不正な形式のファイル）。例外を伝播させるのではなく、あらゆる失敗を「読み込み失敗」として扱う。
 		try
 		{
 			if (!scene->Read(asset->fullpath_.c_str()))
@@ -58,33 +43,11 @@ namespace SeedCore
 		return handle;
 	}
 
-	/**
-	* [EN]
-	* Returns a pointer to the Scene identified by handle, or nullptr if
-	* handle is invalid/stale.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* handle が識別する Scene へのポインタを返す。handle が無効/失効
-	* していれば nullptr を返す。
-	*/
 	SceneBlueprint* ScenePool::Get(Handle<SceneBlueprint> handle)
 	{
 		return pool_.Get(handle);
 	}
 
-	/**
-	* [EN]
-	* Returns the pool's single scratch Scene, for temporary use outside
-	* the deduplicated pool.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 重複排除されたプールの外で一時的に使用するための、プール専用の
-	* 単一の作業用 Scene を返す。
-	*/
 	SceneBlueprint& ScenePool::GetScratch()
 	{
 		return scratch_;

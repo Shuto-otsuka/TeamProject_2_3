@@ -17,48 +17,9 @@ struct DepthOfFieldBlurBindings
 };
 ConstantBuffer<DepthOfFieldBlurBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* Reference:
-* - https://blog.voxagon.se/2018/05/04/bokeh-depth-of-field-in-single-pass.html
-* - https://www.4rknova.com/blog/2017/01/01/vogel
-*
-* Depth-of-field gather blur. Runs at native resolution, replacing the HDR
-* scene color with a circle-of-confusion (CoC) weighted blur: pixels within
-* focus_range_ of focus_distance_ (view-space distance from the camera)
-* stay sharp, pixels further away blur up to max_blur_radius_. Samples are
-* placed on a Vogel disk (golden-angle spiral) - the standard cheap
-* real-time gather-DoF sampling pattern, chosen because it distributes
-* DOF_SAMPLE_COUNT samples evenly across a disk with no banding, giving a
-* naturally round out-of-focus blur without a separable two-pass blur. This
-* is a single-pixel-CoC approximation (no neighbor-CoC search), the same
-* approximation level as every other lightweight effect in this
-* PostProcess/ folder - a sharp foreground object can bleed softly into a
-* blurred background and vice versa.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* 被写界深度のギャザーブラー。ネイティブ解像度で走り、HDRシーン色を
-* 錯乱円(CoC)加重ブラーへ置き換える: focus_distance_(カメラからの
-* ビュー空間距離)から focus_range_ 以内のピクセルはシャープなまま、それより
-* 遠いピクセルは max_blur_radius_ まで滲む。サンプルは Vogel ディスク
-* (黄金角スパイラル)上に配置する — DOF_SAMPLE_COUNT 個のサンプルを
-* バンディング無くディスク全体へ均等分布できる、安価なリアルタイム
-* ギャザー型DoFの定番パターンで、分離2パスブラーを使わずとも自然な丸い
-* ボケが得られる。このピクセル自身のCoCだけを見る近似(近傍CoC探索は
-* 行わない)で、この PostProcess/ フォルダの他の軽量エフェクトと同じ近似
-* レベル — シャープな手前の物体がぼけた背景ににじむ、あるいはその逆が
-* 起こりうる。
-*/
-
 #define DOF_SAMPLE_COUNT 16
 static const float GOLDEN_ANGLE = 2.39996323;
 
-/**
-* Reconstructs world position from UV + device depth (mul takes the row
-* vector on the left, this project's row_major convention).
-*/
 float3 DepthOfFieldReconstructWorldPosition(float2 uv, float depth, float4x4 inverse_view_projection)
 {
 	float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
@@ -67,10 +28,6 @@ float3 DepthOfFieldReconstructWorldPosition(float2 uv, float depth, float4x4 inv
 	return world_position.xyz / world_position.w;
 }
 
-/**
-* Linear view-space depth at a UV, used to derive this pixel's circle of
-* confusion.
-*/
 float DepthOfFieldLinearViewDepth(float2 uv, Texture2D<float> depth_texture, SceneConstantBuffer scene)
 {
 	float depth = depth_texture.SampleLevel(sampler_point_clamp, uv, 0);

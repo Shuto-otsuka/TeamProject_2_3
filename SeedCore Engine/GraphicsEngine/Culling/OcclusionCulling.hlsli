@@ -1,24 +1,6 @@
 #ifndef __OCCLUSION_CULLING_HLSL__
 #define __OCCLUSION_CULLING_HLSL__
 
-/**
-* [EN]
-* Sphere versus a Hi-Z pyramid. Each texel stores the MINIMUM depth of its
-* footprint, which under reversed-Z is the farthest surface there; the sphere
-* is occluded when even its nearest point is farther than all of it. The
-* sphere is bounded by its axis-aligned box, whose eight corners are
-* projected: their screen rectangle contains the sphere's projection however
-* close or off-center it is, and their largest depth is at least the
-* sphere's nearest depth, since view depth is linear over the box and peaks
-* at a corner. The rectangle is taken in mip 0 texels, widened by one texel
-* on its far side so that rounding never leaves out a covered texel, and
-* each coarser texel is found by shifting the mip 0 coordinate, which is
-* exactly the texel the pyramid reduced it into (the last row and column
-* fold in the odd remainder). The mip is chosen so the rectangle covers at
-* most 2x2 texels, and the four corner texels are compared. A corner behind the camera (the
-* camera inside the box or the box crossing the camera plane) counts as
-* visible.
-*/
 bool IsOccluded(float3 center, float radius, row_major float4x4 view_projection, uint hi_z)
 {
 	float2 ndc_min = float2(3.402823e38, 3.402823e38);
@@ -67,4 +49,4 @@ bool IsOccluded(float3 center, float radius, row_major float4x4 view_projection,
 	return nearest_depth < footprint_depth;
 }
 
-#endif // __OCCLUSION_CULLING_HLSL__
+#endif

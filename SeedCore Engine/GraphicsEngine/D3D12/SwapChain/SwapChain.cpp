@@ -37,8 +37,6 @@ namespace SeedCore
 
 		swapChain->Release();
 
-		/// [EN] Disables DXGI's automatic Alt+Enter fullscreen toggle (which would call SetFullscreenState on its own, bypassing FrameGenerationSuppress and risking the Present() deadlock DLSS-G warns about) so fullscreen switching is instead handled explicitly by the host.
-		/// [JP] DXGIの自動Alt+Enterフルスクリーン切り替えを無効化する(自動処理はFrameGenerationSuppressを経由せずSetFullscreenStateを呼んでしまい、DLSS-Gが警告するPresent()デッドロックのリスクがあるため)。フルスクリーン切り替えはホスト側で明示的に行う。
 		factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER);
 
 		descHeap_ = MakePtr<DescriptorHeap>();

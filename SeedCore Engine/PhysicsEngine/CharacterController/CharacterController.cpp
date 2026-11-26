@@ -16,25 +16,25 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Creates the virtual character from the actor transform and settings.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* アクターの変換と設定から仮想キャラクターを生成する。
+	* キャラクターと、ぶつかりを知らせる係を作る。
+	*
+	* @brief キャラクターを作る
+	*
+	* [EN]
+	* Creates the character and the part that reports its hits.
+	*
+	* @brief Creates the character
 	*/
 	void CharacterController::OnAwake()
 	{
-		/// [EN] Build the Jolt character description from the component and actor state.
-		/// [JP] コンポーネントとアクターの状態から Jolt キャラクター設定を構築する。
 		Actor actor = GetActor();
 
+		/// [JP] 親から見た位置と向きを、世界での位置と向きに直す
+		/// [EN] Turn the parent-relative position and facing into world ones
 		const Position* position = actor.GetComponent<Position>();
 		const Rotation* rotation = actor.GetComponent<Rotation>();
 
-		/// [EN] Position and Rotation are relative to the parent, so the character starts at their world pose; a root actor's parent space is the world itself.
-		/// [JP] Position と Rotation は親から見た値なので、キャラクターはそのワールドでの姿勢から始める。ルートの Actor にとって、親の空間はワールドそのもの。
 		Actor parentActor = actor.Parent();
 		Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
 		Vector3 parentScale;
@@ -42,6 +42,8 @@ namespace SeedCore
 		Vector3 parentTranslation;
 		parentMatrix.Decompose(parentTranslation, parentRotation, parentScale);
 
+		/// [JP] 設定をまとめて、キャラクターを作る
+		/// [EN] Gather the settings and create the character
 		CharacterDesc desc;
 		desc.position_ = Vector3::TransformPosition(position ? Vector3(position->x_, position->y_, position->z_) : Vector3(0.0f, 0.0f, 0.0f), parentMatrix);
 		desc.rotation_ = (rotation ? Transform::Quat(*rotation) : Quaternion::Identity) * parentRotation;
@@ -55,21 +57,27 @@ namespace SeedCore
 
 		character_ = actor.GetService<Physics>()->CreateCharacter(desc);
 
-		/// [EN] Forward character contacts to the owning entity in this World.
-		/// [JP] キャラクターの接触を、この World 内の所有エンティティへ転送する。
+		/// [JP] ぶつかりを知らせる係を作って、キャラクターにつなぐ
+		/// [EN] Create the hit reporter and connect it to the character
 		JoltCharacterContactListener* listener = new JoltCharacterContactListener(actor.GetWorld(), desc.userData_);
 		characterContactListener_ = listener;
 		listener->Attach(character_);
 	}
 
 	/**
-	* [EN]
-	* Advances character movement and writes the resulting transform to the actor.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* キャラクター移動を進め、結果の変換をアクターへ書き戻す。
+	* 入力に合わせて速さと向きを決め、キャラクターを1回分動かして、アクターに写す。
+	*
+	* @brief キャラクターを動かす
+	* @param elapsedTime 前の物理の更新からの時間
+	* @note  onCustomMove_ が登録されていれば、そちらに任せる
+	*
+	* [EN]
+	* Sets speed and facing from the input, moves the character one step and copies it to the actor.
+	*
+	* @brief Moves the character
+	* @param elapsedTime Time since the last physics update
+	* @note  If onCustomMove_ is set, movement is left to it
 	*/
 	void CharacterController::OnFixedTick(Float elapsedTime)
 	{
@@ -78,12 +86,10 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] A bound custom callback fully replaces the built-in movement path.
-		/// [JP] カスタムコールバックが設定されている場合は、標準移動処理を完全に置き換える。
+		/// [JP] 動きを自分で書く登録があれば、そちらに任せる
+		/// [EN] If custom movement is set, leave it to that
 		if (onCustomMove_.Bound())
 		{
-			/// [EN] The custom callback owns the velocity, so foothold tracking restarts once it is unbound.
-			/// [JP] 速度はカスタムコールバックが管理するため、解除後は足場の追従を最初からやり直す。
 			foothold_.bodyID_ = ScInvalidBodyID;
 			inheritedVelocity_ = Vector3(0.0f, 0.0f, 0.0f);
 
@@ -93,8 +99,8 @@ namespace SeedCore
 
 		Actor actor = GetActor();
 
-		/// [EN] Change capsule height only when the requested crouch state changes.
-		/// [JP] 要求されたしゃがみ状態が変わったときだけカプセル高を変更する。
+		/// [JP] しゃがむ・立つを切り替える。周りにぶつかるなら変えない
+		/// [EN] Switch between crouching and standing, unless it would hit something
 		if (crouch_ && !isCrouched_)
 		{
 			isCrouched_ = actor.GetService<Physics>()->CharacterHeight(character_, crouchHeight_, radius_);
@@ -104,14 +110,14 @@ namespace SeedCore
 			isCrouched_ = !actor.GetService<Physics>()->CharacterHeight(character_, height_, radius_);
 		}
 
-		/// [EN] Work in velocity relative to the foothold so input acceleration never acts on the carried velocity.
-		/// [JP] 入力による加減速が引き継いだ速度にかからないよう、足場に対する相対速度で計算する。
+		/// [JP] 今の速さから、足場の分を引いた自分の速さを出す
+		/// [EN] Take the foothold part out of the current speed to get its own speed
 		JPH::Vec3 currentVelocity = static_cast<JPH::CharacterVirtual*>(character_)->GetLinearVelocity();
 		Vector3 horizontalVelocity(currentVelocity.GetX() - inheritedVelocity_.x, 0.0f, currentVelocity.GetZ() - inheritedVelocity_.z);
 		Float verticalVelocity = currentVelocity.GetY() - inheritedVelocity_.y;
 
-		/// [EN] Normalize movement input while preserving values below full magnitude.
-		/// [JP] 最大未満の入力強度を保持しながら移動入力を正規化する。
+		/// [JP] 入力の向きと強さを出す
+		/// [EN] Work out the input direction and strength
 		Vector3 inputDirection = moveDirection_;
 		Float inputLength = inputDirection.Length();
 		if (inputLength > 0.0001f)
@@ -124,11 +130,11 @@ namespace SeedCore
 			inputLength = 0.0f;
 		}
 
+		/// [JP] 目標の速さに向けて、加速か減速の早さで近づける
+		/// [EN] Move toward the target speed at the speed-up or slow-down rate
 		Vector3 targetHorizontalVelocity = inputDirection * (Min(inputLength, 1.0f) * maxMoveSpeed_);
 		Float rate = (inputLength > 0.0001f) ? acceleration_ : deceleration_;
 
-		/// [EN] Approach the target horizontal velocity at the configured rate.
-		/// [JP] 設定された変化率で目標水平速度へ近づける。
 		Vector3 horizontalDelta = targetHorizontalVelocity - horizontalVelocity;
 		Float horizontalDeltaLength = horizontalDelta.Length();
 		Float maxDelta = rate * elapsedTime;
@@ -141,10 +147,10 @@ namespace SeedCore
 			horizontalVelocity = targetHorizontalVelocity;
 		}
 
+		/// [JP] 空中では横の動きを弱めていく
+		/// [EN] In the air, let sideways movement fade
 		Bool grounded = static_cast<JPH::CharacterVirtual*>(character_)->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround;
 
-		/// [EN] Air damping slows both the character's own motion and the inertia carried from the foothold.
-		/// [JP] 空気抵抗は、キャラクター自身の動きと足場から引き継いだ慣性の両方を減速させる。
 		if (!grounded)
 		{
 			Float airDamping = Max(0.0f, 1.0f - airDrag_ * elapsedTime);
@@ -153,40 +159,34 @@ namespace SeedCore
 			inheritedVelocity_.z *= airDamping;
 		}
 
+		/// [JP] 地面にいるときは、足場の動きを受け取る
+		/// [EN] On the ground, take on the foothold's motion
 		if (grounded && verticalVelocity <= 0.0f)
 		{
-			/// [EN] While standing, the foothold supplies the vertical motion, so the character's own vertical velocity restarts from rest.
-			/// [JP] 立っている間は足場が上下の動きを担うため、キャラクター自身の上下速度は静止から計算し直す。
 			verticalVelocity = 0.0f;
 
+			/// [JP] 足場が動いた分を速さにし、回った分だけキャラクターも回す
+			/// [EN] Turn the foothold's movement into speed and turn the character with it
 			if (foothold_.bodyID_ != ScInvalidBodyID && actor.GetService<Physics>()->BodyExists(foothold_.bodyID_) && elapsedTime > 0.0f)
 			{
 				Matrix footholdMatrix = actor.GetService<Physics>()->BodyTransform(foothold_.bodyID_);
 				Vector3 footholdPosition = footholdMatrix.Translation();
 				Quaternion footholdRotation = Quaternion::CreateFromRotationMatrix(footholdMatrix);
 
-				/// [EN] Carry the recorded local position along with the body's current transform; the exact displacement over this step becomes the inherited velocity, so no drift accumulates.
-				/// [JP] 記録したローカル位置をボディの現在の変換で運ぶ。このステップでの正確な移動量を引き継ぐ速度にするため、ずれが蓄積しない。
 				JPH::RVec3 characterPosition = static_cast<JPH::CharacterVirtual*>(character_)->GetPosition();
 				Vector3 carriedPosition = Vector3::Transform(foothold_.position_, footholdRotation) + footholdPosition;
 				Vector3 displacement = carriedPosition - Vector3(static_cast<Float>(characterPosition.GetX()), static_cast<Float>(characterPosition.GetY()), static_cast<Float>(characterPosition.GetZ()));
 				inheritedVelocity_ = displacement / elapsedTime;
 
-				/// [EN] World-space rotation of the body since the record: the recorded rotation undone, followed by the current one.
-				/// [JP] 記録時からのボディのワールド空間での回転。記録時の回転を戻し、現在の回転を続けて適用したもの。
 				Quaternion inverseRotation;
 				inverseRotation = foothold_.rotation_.Inverse();
 				Quaternion deltaRotation = inverseRotation * footholdRotation;
 
-				/// [EN] The shorter of the two equivalent quaternions keeps the extracted angle within half a turn.
-				/// [JP] 等価な2つのクォータニオンのうち短い方を使い、取り出す角度を半回転以内に収める。
 				if (deltaRotation.w < 0.0f)
 				{
 					deltaRotation = -deltaRotation;
 				}
 
-				/// [EN] Only the twist about the vertical axis turns the character; a tilting foothold must not tip it over.
-				/// [JP] キャラクターを回すのは垂直軸まわりのねじれ成分だけ。足場が傾いてもキャラクターは倒さない。
 				Float yawDelta = 2.0f * Atan2(deltaRotation.y, deltaRotation.w);
 				Quaternion yawRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitY, yawDelta);
 
@@ -194,34 +194,34 @@ namespace SeedCore
 				Quaternion turnedRotation = Quaternion(currentJoltRotation.GetX(), currentJoltRotation.GetY(), currentJoltRotation.GetZ(), currentJoltRotation.GetW()) * yawRotation;
 				static_cast<JPH::CharacterVirtual*>(character_)->SetRotation(JPH::Quat(turnedRotation.x, turnedRotation.y, turnedRotation.z, turnedRotation.w));
 
-				/// [EN] Turn the requested facing too, so the rotation step below does not undo the foothold's turn.
-				/// [JP] 下の回転処理が足場の回転を打ち消さないよう、要求中の正面方向も一緒に回す。
 				forwardDirection_ = Vector3::Transform(forwardDirection_, yawRotation);
 			}
 			else
 			{
-				/// [EN] On the first step on a new foothold there is no record yet, so its contact-point velocity stands in.
-				/// [JP] 新しい足場に乗った最初のステップは記録がないため、接地点の速度で代用する。
+				/// [JP] 前の足場がなければ、地面の速さをそのまま受け取る
+				/// [EN] Without the earlier foothold, just take the ground's speed
 				JPH::Vec3 groundVelocity = static_cast<JPH::CharacterVirtual*>(character_)->GetGroundVelocity();
 				inheritedVelocity_ = Vector3(groundVelocity.GetX(), groundVelocity.GetY(), groundVelocity.GetZ());
 			}
 		}
 		else
 		{
-			/// [EN] Once off the foothold, its vertical velocity becomes part of the character's own so gravity acts on the total.
-			/// [JP] 足場を離れたら、足場の上下速度をキャラクター自身の速度へ移し、重力が合計に対して働くようにする。
+			/// [JP] 空中では、上下の受け取った速さを自分の速さに移す
+			/// [EN] In the air, move the inherited up-down speed into its own speed
 			verticalVelocity += inheritedVelocity_.y;
 			inheritedVelocity_.y = 0.0f;
 		}
 
+		/// [JP] 重力をかけ、落ちる速さに上限をつける
+		/// [EN] Apply gravity and cap the falling speed
 		Vector3 gravity = actor.GetService<Physics>()->Gravity();
 		verticalVelocity += gravity.y * gravityScale_ * elapsedTime;
 		verticalVelocity = Max(verticalVelocity, -maxFallSpeed_);
 
 		static_cast<JPH::CharacterVirtual*>(character_)->SetLinearVelocity(JPH::Vec3(horizontalVelocity.x + inheritedVelocity_.x, verticalVelocity + inheritedVelocity_.y, horizontalVelocity.z + inheritedVelocity_.z));
 
-		/// [EN] Rotate toward the requested horizontal facing direction at a limited angular speed.
-		/// [JP] 角速度を制限しながら、要求された水平方向へ回転する。
+		/// [JP] 向きたい方向へ、決めた速さで少しずつ向く
+		/// [EN] Turn toward the facing direction at the set turn speed
 		Vector3 forwardXZ(forwardDirection_.x, 0.0f, forwardDirection_.z);
 		Float forwardLength = forwardXZ.Length();
 		if (forwardLength > 0.0001f)
@@ -242,16 +242,16 @@ namespace SeedCore
 			static_cast<JPH::CharacterVirtual*>(character_)->SetRotation(JPH::Quat(newRotation.x, newRotation.y, newRotation.z, newRotation.w));
 		}
 
-		/// [EN] Each contacted body dispatches at most one enter or stay per update.
-		/// [JP] 接触先ボディごとの Enter か Stay は、更新1回につき最大1回。
+		/// [JP] ぶつかりの記録を空にしてから、1回分動かす
+		/// [EN] Clear the hit record, then move one step
 		static_cast<JoltCharacterContactListener*>(characterContactListener_)->Begin();
 		actor.GetService<Physics>()->UpdateCharacter(character_, elapsedTime, ToRadians(maxSlopeAngle_), maxStepHeight_);
 
 		JPH::RVec3 outPosition = static_cast<JPH::CharacterVirtual*>(character_)->GetPosition();
 		JPH::Quat outRotation = static_cast<JPH::CharacterVirtual*>(character_)->GetRotation();
 
-		/// [EN] Record where the character now stands on its foothold, in the foothold's local space, for the next step to carry it from.
-		/// [JP] 次のステップで運ぶ基準として、キャラクターが今足場のどこに立っているかを足場のローカル空間で記録する。
+		/// [JP] 地面に立っていれば、次のために足場との位置関係を覚える
+		/// [EN] If standing on ground, remember where it is on the foothold for next time
 		ScBodyID groundBodyID = static_cast<JPH::CharacterVirtual*>(character_)->GetGroundBodyID().GetIndexAndSequenceNumber();
 		if (static_cast<JPH::CharacterVirtual*>(character_)->GetGroundState() == JPH::CharacterBase::EGroundState::OnGround && actor.GetService<Physics>()->BodyExists(groundBodyID))
 		{
@@ -273,14 +273,11 @@ namespace SeedCore
 			foothold_.bodyID_ = ScInvalidBodyID;
 		}
 
-		/// [EN] Synchronize the actor transform components with the simulated character pose.
-		/// [JP] シミュレーション後のキャラクター姿勢をアクターの変換コンポーネントへ同期する。
-
+		/// [JP] 動いた結果を、親から見た位置と向きに直してアクターに写す
+		/// [EN] Copy the result to the actor, relative to its parent
 		World& world = actor.GetWorld();
 		Entity entity = ActorAccessor::GetEntity(actor);
 
-		/// [EN] The character pose is in world space, while Position and Rotation are relative to the parent, so it is carried back by the inverse of the parent's world matrix.
-		/// [JP] キャラクターの姿勢はワールド空間にあり、Position と Rotation は親から見た値なので、親のワールド行列の逆で戻す。
 		Actor parentActor = actor.Parent();
 		Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
 		Vector3 parentScale;
@@ -305,16 +302,20 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Destroys the virtual character and releases its contact listener.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 仮想キャラクターを破棄し、接触リスナーを解放する。
+	* キャラクターと、ぶつかりを知らせる係を消す。
+	*
+	* @brief キャラクターを消す
+	*
+	* [EN]
+	* Removes the character and the hit reporter.
+	*
+	* @brief Removes the character
 	*/
 	void CharacterController::OnDestroy()
 	{
+		/// [JP] キャラクターと、ぶつかりを知らせる係を消す
+		/// [EN] Remove the character and the hit reporter
 		GetActor().GetService<Physics>()->DestroyCharacter(character_);
 		if (characterContactListener_)
 		{
@@ -324,20 +325,18 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Rebuilds the virtual character from the current settings, so a
-	* changed field takes effect. Does nothing while no character exists.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 現在の設定で仮想キャラクターを作り直し、変更したフィールドを
-	* 効かせる。キャラクターが無い間は何もしない。
+	* 設定が変わったので、キャラクターを作り直す。
+	*
+	* @brief 作り直す
+	*
+	* [EN]
+	* The settings changed, so the character is made again.
+	*
+	* @brief Remakes the character
 	*/
 	void CharacterController::OnRevision()
 	{
-		/// [EN] Before OnAwake or after OnDestroy there is no character to rebuild, and OnAwake builds it with the current settings anyway.
-		/// [JP] OnAwake 前や OnDestroy 後は作り直すキャラクターが無く、OnAwake がいずれ現在の設定で作る。
 		if (!character_)
 		{
 			return;
@@ -348,17 +347,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Applies fields changed from code. An edit in the inspector runs
-	* OnRevision on its own, but a field written by a script takes
-	* effect only once this is called.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* コードから変えたフィールドを反映する。インスペクタでの編集は
-	* 自動で OnRevision が走るが、スクリプトから書き換えたフィールドは
-	* これを呼んだときに初めて効く。
+	* キャラクターを作り直す。
+	*
+	* @brief 作り直す
+	*
+	* [EN]
+	* Remakes the character.
+	*
+	* @brief Remakes the character
 	*/
 	void CharacterController::Dispatch()
 	{
@@ -366,13 +363,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Sets the requested horizontal movement direction and magnitude.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 要求する水平移動の方向と大きさを設定する。
+	* 動きたい向きを決める。長さ 1 で一番速くなる。
+	*
+	* @brief 動く向きを決める
+	* @param moveDirection 動きたい向き
+	*
+	* [EN]
+	* Sets the direction to move in; a length of 1 means full speed.
+	*
+	* @brief Sets the move direction
+	* @param moveDirection The direction to move in
 	*/
 	void CharacterController::MoveDirection(const Vector3& moveDirection)
 	{
@@ -380,13 +381,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns the requested movement direction and magnitude.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 要求中の移動方向と大きさを返す。
+	* 動きたい向きを返す。
+	*
+	* @brief  動く向きを返す
+	* @return 動きたい向き
+	*
+	* [EN]
+	* Returns the direction to move in.
+	*
+	* @brief  Returns the move direction
+	* @return The direction to move in
 	*/
 	const Vector3& CharacterController::MoveDirection()const
 	{
@@ -394,13 +399,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Sets the horizontal direction the character should face.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* キャラクターが向く水平方向を設定する。
+	* 向きたい方向を決める。少しずつその方向を向く。
+	*
+	* @brief 向く方向を決める
+	* @param forwardDirection 向きたい方向
+	*
+	* [EN]
+	* Sets the direction to face; it turns toward it bit by bit.
+	*
+	* @brief Sets the facing direction
+	* @param forwardDirection The direction to face
 	*/
 	void CharacterController::ForwardDirection(const Vector3& forwardDirection)
 	{
@@ -408,13 +417,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns the requested facing direction.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 要求中の正面方向を返す。
+	* 向きたい方向を返す。
+	*
+	* @brief  向く方向を返す
+	* @return 向きたい方向
+	*
+	* [EN]
+	* Returns the direction to face.
+	*
+	* @brief  Returns the facing direction
+	* @return The direction to face
 	*/
 	const Vector3& CharacterController::ForwardDirection()const
 	{
@@ -422,13 +435,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Applies the configured upward jump velocity while on the ground.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 接地中に設定された上向きジャンプ速度を適用する。
+	* ジャンプする。
+	*
+	* @brief ジャンプする
+	*
+	* [EN]
+	* Jumps.
+	*
+	* @brief Jumps
 	*/
 	void CharacterController::Jump()
 	{
@@ -437,20 +452,24 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] The jump power is relative to the foothold, so jumping from a rising foothold goes higher.
-		/// [JP] ジャンプ力は足場に対する相対値なので、上昇中の足場から跳ぶとその分高く跳ぶ。
+		/// [JP] 横の速さはそのままに、上向きの速さをジャンプの強さにする
+		/// [EN] Keep the sideways speed and set the upward speed to the jump strength
 		JPH::Vec3 velocity = static_cast<JPH::CharacterVirtual*>(character_)->GetLinearVelocity();
 		static_cast<JPH::CharacterVirtual*>(character_)->SetLinearVelocity(JPH::Vec3(velocity.GetX(), inheritedVelocity_.y + jumpPower_, velocity.GetZ()));
 	}
 
 	/**
-	* [EN]
-	* Moves the character immediately and synchronizes the actor position.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* キャラクターを即座に移動し、アクターの位置を同期する。
+	* 決めた位置へすぐに移動する。
+	*
+	* @brief 瞬間移動する
+	* @param position 移動先（親から見た位置）
+	*
+	* [EN]
+	* Moves straight to a position at once.
+	*
+	* @brief Teleports
+	* @param position Where to go, relative to the parent
 	*/
 	void CharacterController::Teleport(const Vector3& position)
 	{
@@ -459,18 +478,18 @@ namespace SeedCore
 			return;
 		}
 
+		/// [JP] 親から見た位置を世界での位置に直して移動する
+		/// [EN] Turn the parent-relative position into a world one and move there
 		Actor actor = GetActor();
 		World& world = actor.GetWorld();
 		Entity entity = ActorAccessor::GetEntity(actor);
 
-		/// [EN] position is a Position, relative to the parent, so the character goes to that point in world space.
-		/// [JP] position は親から見た Position なので、キャラクターはその点のワールドでの位置へ移す。
 		Actor parentActor = actor.Parent();
 		Vector3 worldPosition = parentActor ? Vector3::TransformPosition(position, parentActor.WorldMatrix()) : position;
 		static_cast<JPH::CharacterVirtual*>(character_)->SetPosition(JPH::RVec3(worldPosition.x, worldPosition.y, worldPosition.z));
 
-		/// [EN] A teleport leaves the foothold behind, so neither its record nor its velocity carries over.
-		/// [JP] テレポートすると足場から離れるため、足場の記録も速度も引き継がない。
+		/// [JP] 足場の記録を消して、周りの情報を新しくする
+		/// [EN] Forget the foothold and refresh what is around it
 		foothold_.bodyID_ = ScInvalidBodyID;
 		inheritedVelocity_ = Vector3(0.0f, 0.0f, 0.0f);
 
@@ -484,13 +503,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Reports whether Jolt classifies the character as on the ground.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Jolt がキャラクターを接地状態と判定しているかを返す。
+	* 地面に立っているかを返す。
+	*
+	* @brief  地面にいるか調べる
+	* @return 地面にいれば true
+	*
+	* [EN]
+	* Returns whether it is standing on the ground.
+	*
+	* @brief  Checks if on the ground
+	* @return True if on the ground
 	*/
 	Bool CharacterController::OnGround()const
 	{
@@ -503,13 +526,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Reports whether an active contact has a wall-facing normal.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 有効な接触に壁方向の法線があるかを返す。
+	* 壁に触れているかを返す。
+	*
+	* @brief  壁に触れているか調べる
+	* @return 触れていれば true
+	*
+	* [EN]
+	* Returns whether it is touching a wall.
+	*
+	* @brief  Checks if touching a wall
+	* @return True if touching a wall
 	*/
 	Bool CharacterController::OnWall()const
 	{
@@ -518,6 +545,8 @@ namespace SeedCore
 			return false;
 		}
 
+		/// [JP] 横向きの面に触れていれば壁
+		/// [EN] A sideways surface it touches counts as a wall
 		for (const JPH::CharacterContact& contact : static_cast<JPH::CharacterVirtual*>(character_)->GetActiveContacts())
 		{
 			if (contact.mHadCollision && Abs(contact.mContactNormal.Dot(JPH::Vec3::sAxisY())) < wallNormalDotLimit_)
@@ -530,13 +559,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Reports whether an active contact faces downward from a ceiling.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 有効な接触に天井から下向きの法線があるかを返す。
+	* 天井に触れているかを返す。
+	*
+	* @brief  天井に触れているか調べる
+	* @return 触れていれば true
+	*
+	* [EN]
+	* Returns whether it is touching a ceiling.
+	*
+	* @brief  Checks if touching a ceiling
+	* @return True if touching a ceiling
 	*/
 	Bool CharacterController::OnCeiling()const
 	{
@@ -545,6 +578,8 @@ namespace SeedCore
 			return false;
 		}
 
+		/// [JP] 下向きの面に触れていれば天井
+		/// [EN] A downward surface it touches counts as a ceiling
 		for (const JPH::CharacterContact& contact : static_cast<JPH::CharacterVirtual*>(character_)->GetActiveContacts())
 		{
 			if (contact.mHadCollision && contact.mContactNormal.Dot(JPH::Vec3::sAxisY()) < -wallNormalDotLimit_)
@@ -557,13 +592,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Reports whether the grounded surface is inclined.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 接地面が傾斜しているかを返す。
+	* 坂の上に立っているかを返す。
+	*
+	* @brief  坂にいるか調べる
+	* @return 坂の上なら true
+	*
+	* [EN]
+	* Returns whether it is standing on a slope.
+	*
+	* @brief  Checks if on a slope
+	* @return True if on a slope
 	*/
 	Bool CharacterController::OnSlope()const
 	{
@@ -576,13 +615,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns the current ground-contact normal.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 現在の接地法線を返す。
+	* 立っている地面の向きを返す。
+	*
+	* @brief  地面の向きを返す
+	* @return 地面の向き。なければ真上
+	*
+	* [EN]
+	* Returns which way the ground underneath faces.
+	*
+	* @brief  Returns the ground normal
+	* @return The ground facing, or straight up if there is none
 	*/
 	Vector3 CharacterController::GroundNormal()const
 	{
@@ -596,13 +639,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns the first active wall-contact normal.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 最初に見つかった有効な壁接触法線を返す。
+	* 触れている壁の向きを返す。
+	*
+	* @brief  壁の向きを返す
+	* @return 壁の向き。なければ 0
+	*
+	* [EN]
+	* Returns which way the touched wall faces.
+	*
+	* @brief  Returns the wall normal
+	* @return The wall facing, or zero if there is none
 	*/
 	Vector3 CharacterController::WallNormal()const
 	{
@@ -621,13 +668,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns the first active ceiling-contact normal.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 最初に見つかった有効な天井接触法線を返す。
+	* 触れている天井の向きを返す。
+	*
+	* @brief  天井の向きを返す
+	* @return 天井の向き。なければ 0
+	*
+	* [EN]
+	* Returns which way the touched ceiling faces.
+	*
+	* @brief  Returns the ceiling normal
+	* @return The ceiling facing, or zero if there is none
 	*/
 	Vector3 CharacterController::CeilingNormal()const
 	{
@@ -646,13 +697,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Reports whether the crouched capsule is currently active.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* しゃがみ用カプセルが現在有効かを返す。
+	* しゃがんでいるかを返す。
+	*
+	* @brief  しゃがんでいるか調べる
+	* @return しゃがんでいれば true
+	*
+	* [EN]
+	* Returns whether it is crouching.
+	*
+	* @brief  Checks if crouching
+	* @return True if crouching
 	*/
 	Bool CharacterController::Crouching()const
 	{
@@ -660,13 +715,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Reports whether an unsupported character is moving downward.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 支持されていないキャラクターが下降中かを返す。
+	* 落ちている最中かを返す。
+	*
+	* @brief  落ちているか調べる
+	* @return 落ちていれば true
+	*
+	* [EN]
+	* Returns whether it is falling.
+	*
+	* @brief  Checks if falling
+	* @return True if falling
 	*/
 	Bool CharacterController::Falling()const
 	{
@@ -679,13 +738,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Reports whether the character ground state is in air.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* キャラクターの接地状態が空中かを返す。
+	* 空中にいるかを返す。
+	*
+	* @brief  空中にいるか調べる
+	* @return 空中なら true
+	*
+	* [EN]
+	* Returns whether it is in the air.
+	*
+	* @brief  Checks if in the air
+	* @return True if in the air
 	*/
 	Bool CharacterController::Flying()const
 	{
@@ -698,13 +761,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Reports whether the character is supported by a surface.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* キャラクターが面に支持されているかを返す。
+	* 何かに支えられて立っているかを返す。
+	*
+	* @brief  支えられているか調べる
+	* @return 支えられていれば true
+	*
+	* [EN]
+	* Returns whether something is holding it up.
+	*
+	* @brief  Checks if supported
+	* @return True if supported
 	*/
 	Bool CharacterController::Grounded()const
 	{
@@ -717,13 +784,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Reports whether an unsupported character is moving upward.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 支持されていないキャラクターが上昇中かを返す。
+	* 上に飛んでいる最中かを返す。
+	*
+	* @brief  ジャンプ中か調べる
+	* @return ジャンプ中なら true
+	*
+	* [EN]
+	* Returns whether it is moving up through the air.
+	*
+	* @brief  Checks if jumping
+	* @return True if jumping
 	*/
 	Bool CharacterController::Jumping()const
 	{
@@ -736,13 +807,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Reports whether a supported character has horizontal velocity.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 支持されたキャラクターに水平速度があるかを返す。
+	* 地面の上で動いているかを返す。
+	*
+	* @brief  走っているか調べる
+	* @return 動いていれば true
+	*
+	* [EN]
+	* Returns whether it is moving on the ground.
+	*
+	* @brief  Checks if running
+	* @return True if running
 	*/
 	Bool CharacterController::Running()const
 	{
@@ -751,19 +826,25 @@ namespace SeedCore
 			return false;
 		}
 
+		/// [JP] 横の速さが少しでもあれば動いている
+		/// [EN] Any sideways speed counts as moving
 		JPH::Vec3 velocity = static_cast<JPH::CharacterVirtual*>(character_)->GetLinearVelocity();
 		Float horizontalSpeedSquared = velocity.GetX() * velocity.GetX() + velocity.GetZ() * velocity.GetZ();
 		return horizontalSpeedSquared > 0.0001f;
 	}
 
 	/**
-	* [EN]
-	* Reports whether a supported character has no horizontal velocity.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 支持されたキャラクターに水平速度がないかを返す。
+	* 地面の上で止まっているかを返す。
+	*
+	* @brief  止まっているか調べる
+	* @return 止まっていれば true
+	*
+	* [EN]
+	* Returns whether it is standing still on the ground.
+	*
+	* @brief  Checks if stopped
+	* @return True if stopped
 	*/
 	Bool CharacterController::Stopped()const
 	{
@@ -772,6 +853,8 @@ namespace SeedCore
 			return false;
 		}
 
+		/// [JP] 横の速さがほぼなければ止まっている
+		/// [EN] Almost no sideways speed counts as stopped
 		JPH::Vec3 velocity = static_cast<JPH::CharacterVirtual*>(character_)->GetLinearVelocity();
 		Float horizontalSpeedSquared = velocity.GetX() * velocity.GetX() + velocity.GetZ() * velocity.GetZ();
 		return horizontalSpeedSquared <= 0.0001f;

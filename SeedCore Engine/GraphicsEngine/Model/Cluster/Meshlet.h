@@ -3,24 +3,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Mesh shader input for one meshlet: where its vertices start in the
-	* vertex index table and how many there are, and where its triangles
-	* start in the primitive index table (in bytes, three per triangle) and
-	* how many there are. Each vertex index entry holds a global vertex
-	* number; each primitive index byte holds a vertex number local to the
-	* meshlet (0 to 63).
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* メッシュレット1つ分の、メッシュシェーダーへの入力。頂点番号の表の
-	* どこから何個がこのメッシュレットの頂点か、三角形番号の表のどこから
-	* （バイト単位、三角形1つにつき3バイト）何個が三角形かを持つ。頂点番号の
-	* 表の各要素は全体での頂点番号、三角形番号の表の各バイトはメッシュレット内
-	* での頂点番号（0〜63）。
-	*/
 	struct MeshletDesc
 	{
 		Uint32 vertexOffset_ = 0;
@@ -39,21 +21,6 @@ namespace SeedCore
 	};
 	SC_STATIC_ASSERT(MeshletDesc, 16, "Model/Model.hlsli");
 
-	/**
-	* [EN]
-	* Culling bound for one MeshletDesc: a bounding sphere (center_/radius_)
-	* plus a normal cone (coneAxis_/coneCutoff_) for backface culling. One
-	* entry per MeshletDesc, in the same order. A coneCutoff_ of 0 or below
-	* means the meshlet's faces spread too widely for the cone test.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* MeshletDesc 1 つぶんのカリング用バウンド: バウンディングスフィア
-	* (center_/radius_) と、背面カリング用の法線コーン
-	* (coneAxis_/coneCutoff_)。MeshletDesc と同じ並びで 1 対 1。coneCutoff_
-	* が 0 以下なら、面の向きが広がりすぎていてコーンの判定には使えない。
-	*/
 	struct MeshletBound
 	{
 		Vector3 center_ = { 0,0,0 };

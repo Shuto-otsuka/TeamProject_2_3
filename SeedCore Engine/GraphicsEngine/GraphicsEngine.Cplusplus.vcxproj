@@ -100,9 +100,9 @@
     <ClInclude Include="Effect\EffectLoader.h" />
     <ClInclude Include="Effect\EffectResource.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerAsset.h" />
+    <ClInclude Include="Effect\Effekseer\EffekseerCacheLoader.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerEffect.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerFeature.h" />
-    <ClInclude Include="Effect\Effekseer\EffekseerFileInterface.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerLoader.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerManager.h" />
     <ClInclude Include="Effect\Effekseer\EffekseerResource.h" />
@@ -441,9 +441,9 @@
     <ClCompile Include="Effect\EffectAsset.cpp" />
     <ClCompile Include="Effect\EffectLoader.cpp" />
     <ClCompile Include="Effect\EffectResource.cpp" />
+    <ClCompile Include="Effect\Effekseer\EffekseerCacheLoader.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerEffect.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerFeature.cpp" />
-    <ClCompile Include="Effect\Effekseer\EffekseerFileInterface.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerLoader.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerManager.cpp" />
     <ClCompile Include="Effect\Effekseer\EffekseerResource.cpp" />

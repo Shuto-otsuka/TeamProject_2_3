@@ -5,33 +5,14 @@ namespace SeedCore
 {
 	class BenchmarkSystem;
 
-	/**
-	* [EN]
-	* Editor-wide application state shared by every panel: the shared-asset
-	* sync service, the UI frame counter and the request to quit.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 全パネルで共有する、エディタ全体のアプリケーション状態。共有アセットの
-	* 同期サービス、UI のフレーム番号、終了の要求を持つ。
-	*/
 	struct ApplicationContext
 	{
-		/// [EN] Shared-asset sync service owned by Editor; null until Editor is constructed.
-		/// [JP] Editor が所有する共有アセットの同期サービス。Editor の構築までは null。
 		ResourceSync* resourceSync_ = nullptr;
 
-		/// [EN] CPU section measurements owned by EngineCore; null until the editor boot step wires it.
-		/// [JP] EngineCore が所有する CPU の区間計測。エディタの起動手順でつなぐまでは null。
 		BenchmarkSystem* benchmark_ = nullptr;
 
-		/// [EN] Number of UI frames drawn so far, advanced once per frame by Engine.
-		/// [JP] これまでに描いた UI のフレーム数。Engine が毎フレーム1つ進める。
 		Uint64 uiFrame_ = 0;
 
-		/// [EN] Set when the editor receives a close request; MenuBarPanel turns it into the save-confirmation flow.
-		/// [JP] エディタが終了要求を受けたときに立つ。MenuBarPanel が保存確認のフローへ渡す。
 		Bool exitRequested_ = false;
 	};
 }

@@ -2,18 +2,6 @@
 #include <GraphicsEngine/Model/Material/MaterialMapping.hlsli>
 #include <GraphicsEngine/Debug/DebugView.hlsli>
 
-/**
-* [EN]
-* Depth passes (Geometry.DepthEarly / Geometry.DepthLate): writes nothing but
-* depth, and discards the pixels a masked material cuts out, so holes never
-* occlude what lies behind them. The base color alpha is sampled with the
-* material's mapping; non-stretch mappings take their inputs from the
-* deformed surface the geometry stage interpolates, facing the camera (the
-* face normal comes from the screen derivatives of the world position, taken
-* before any per-instance branch). A fur shell layer also keeps only the
-* strands that reach it: each texcoord cell hashes to a strand height, and a
-* layer above that height is cut out.
-*/
 void Depth(GeometryOutput input, GeometryPrimitive primitive)
 {
 	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.geometry_instances_];
@@ -63,13 +51,6 @@ void Depth(GeometryOutput input, GeometryPrimitive primitive)
 	}
 }
 
-/**
-* [EN]
-* Geometry.Visibility: re-rasterizes the early and late draws against the
-* finished depth (equal-or-nearer test, no depth write) and stores which
-* triangle covers each pixel plus its texcoord, after the same alpha and fur
-* strand cutouts as the depth passes.
-*/
 void Visibility(GeometryOutput input, GeometryPrimitive primitive, out uint2 visibility_id : SV_Target0, out float2 visibility_uv : SV_Target1)
 {
 	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[bindings.geometry_instances_];

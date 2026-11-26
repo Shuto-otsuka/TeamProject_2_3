@@ -14,4 +14,4 @@ struct RaytracingAmbientOcclusionConstantBuffer
 	uint raytracing_ambient_occlusion_constant_buffer_padding_1_;
 };
 
-#endif // __RAYTRACING_AMBIENT_OCCLUSION_HLSLI__
+#endif

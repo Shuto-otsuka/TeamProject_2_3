@@ -1,23 +1,6 @@
 #include <GraphicsEngine/Preview/Preview.hlsli>
 #include <GraphicsEngine/Culling/BackfaceCulling.hlsli>
 
-/**
-* [EN]
-* Preview.Draw.Mesh for devices without mesh shaders: one DrawInstanced
-* instance per entry of Preview.Meshlets, 124 triangles' worth of vertices
-* each, placed like PreviewMS. Vertices past the meshlet's triangle count go
-* outside the clip volume, and for a single-sided material every vertex
-* transforms all three corners of its triangle so it can collapse a
-* back-facing one itself.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* メッシュシェーダーが使えないデバイス向けの Preview.Draw.Mesh。Preview.Meshlets の
-* 1 件につき DrawInstanced の 1 インスタンスで、三角形 124 個分の頂点を PreviewMS と
-* 同じ位置に描く。meshlet の三角形数を超えた頂点はクリップ空間の外へ置き、片面の
-* マテリアルでは各頂点が三角形の 3 つの角を変換して、裏を向く三角形を自分で潰す。
-*/
 PreviewOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 {
 	StructuredBuffer<uint2> entries = ResourceDescriptorHeap[mesh_bindings.preview_meshlets_];

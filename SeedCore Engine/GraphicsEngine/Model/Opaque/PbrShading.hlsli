@@ -1,7 +1,5 @@
 #include "../../Light/BidirectionalReflectanceDistributionFunction.hlsli"
 
-// Charlie NDF for KHR_materials_sheen (fabric grazing-angle highlight).
-// sin(theta_h) is derived as sqrt(1 - cos^2).
 float CharlieDistribution(float roughness, float normal_dot_half)
 {
 	const float PI = 3.14159265358979;
@@ -12,18 +10,11 @@ float CharlieDistribution(float roughness, float normal_dot_half)
 	return (2.0 + inv_alpha) * pow(sin2h, inv_alpha * 0.5) / (2.0 * PI);
 }
 
-// Ashikhmin visibility term for KHR_materials_sheen.
 float AshikhminVisibility(float normal_dot_light, float normal_dot_view)
 {
 	return 1.0 / max(4.0 * (normal_dot_light + normal_dot_view - normal_dot_light * normal_dot_view), 1e-4);
 }
 
-// Physically-based direct light response: Cook-Torrance GGX specular + Lambertian
-// diffuse, plus optional KHR_materials_clearcoat (a second GGX lobe with fixed
-// dielectric F0, layered on top and attenuated by its own Fresnel) and
-// KHR_materials_sheen (an additive Charlie lobe, not energy-conserving against
-// the base layer - the full KHR spec instead scales the base by a sheen
-// directional-albedo LUT).
 float3 EvalDirectLight(float3 normal, float3 view, float3 light_direction, float3 diffuse_color, float3 f0, float roughness, float clearcoat, float clearcoat_roughness, float3 clearcoat_normal, float3 sheen_color, float sheen_roughness, float3 anisotropy_tangent, float3 anisotropy_bitangent, float anisotropy_strength)
 {
 	float normal_dot_light = max(dot(normal, light_direction), 0.0);
@@ -42,10 +33,6 @@ float3 EvalDirectLight(float3 normal, float3 view, float3 light_direction, float
 
 	float3 diffuse = BrdfLambertian(f0, f90, diffuse_color, view_dot_half);
 
-	// KHR_materials_anisotropy stretches the highlight along the tangent frame.
-	// Splits the single roughness into a tangent/bitangent pair; strength 0
-	// leaves them equal, which is exactly the isotropic lobe, so the branch
-	// only costs the materials that actually opt in.
 	float3 specular;
 	if (abs(anisotropy_strength) > 0.0)
 	{
@@ -66,14 +53,8 @@ float3 EvalDirectLight(float3 normal, float3 view, float3 light_direction, float
 
 	float3 base = diffuse + specular;
 
-	// Clearcoat: a second GGX lobe with a fixed dielectric F0 (IOR ~1.5 -> 0.04)
-	// layered on top; the base layer is attenuated by the coat Fresnel.
 	if (clearcoat > 0.0)
 	{
-		// The coat lobe uses its own normal (KHR_materials_clearcoat's
-		// clearcoatNormalTexture) - it is a separate layer and may be smooth
-		// where the base is bumpy. Equals the base normal when the material
-		// has no coat normal map.
 		float coat_normal_dot_light = max(dot(clearcoat_normal, light_direction), 0.0);
 		float coat_normal_dot_view = max(dot(clearcoat_normal, view), 0.001);
 		float coat_normal_dot_half = max(dot(clearcoat_normal, half_vector), 0.0);

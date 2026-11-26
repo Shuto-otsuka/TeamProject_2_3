@@ -7,330 +7,389 @@ namespace SeedCore
 	class Sound;
 
 	/**
-	* [EN]
-	* Thin wrapper over the CRI ADX2 player / 3D-positioning API, owned by
-	* the World and reached from components through Actor::GetService<Audio>(). It
-	* creates and tracks every player (one playback voice controller) and
-	* 3D source (one positional emitter) so that they can all be released
-	* together when the World goes away, and holds the single 3D listener
-	* that every 3D source is heard from. Every call taking a handle is a
-	* no-op for a null handle, so a component whose handle was never
-	* created (e.g. an actor that never became active) can call through
-	* safely.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* CRI ADX2 のプレイヤー / 3D ポジショニング API の薄いラッパー。World が
-	* 所有し、コンポーネントからは Actor::GetService<Audio>() で取得する。プレイヤー
-	* (1つの再生ボイスを制御する単位)と 3D ソース(1つの位置を持つ発音源)
-	* を生成・追跡し、World の破棄時にまとめて解放できるようにする。また、
-	* 全ての 3D ソースを聞き取る唯一の 3D リスナーを持つ。ハンドルを受け
-	* 取る関数は、ハンドルが null なら何もしない。そのため、ハンドルが
-	* 一度も作られていないコンポーネント(例: 一度もアクティブにならな
-	* かったアクター)からでも安全に呼び出せる。
+	* 音を鳴らすための窓口。
+	* プレイヤー（音を鳴らす役）と音源（音が出る場所）を作って管理する。
+	*
+	* @brief 音を鳴らすための窓口
+	*
+	* [EN]
+	* The front door for playing sound.
+	* It creates and keeps track of players (what plays a sound) and sources (where the sound comes from).
+	*
+	* @brief The front door for playing sound
 	*/
 	class SEEDCORE_API Audio
 	{
 	public:
 		/**
-		* [EN]
-		* Creates the shared 3D listener.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 共有の 3D リスナーを生成する。
+		* 音を聞く側（リスナー）を1つ作って準備する。
+		*
+		* @brief 音を聞く側を作って準備する
+		*
+		* [EN]
+		* Sets up by creating the one listener that hears the sound.
+		*
+		* @brief Creates the listener and gets ready
 		*/
 		Audio();
 
 		/**
-		* [EN]
-		* Stops and destroys every player, then destroys every 3D source and
-		* the listener. If the CRI library has already been finalized, the
-		* handles are already gone, so only the bookkeeping is cleared.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 全てのプレイヤーを停止して破棄し、続けて全ての 3D ソースとリスナー
-		* を破棄する。CRI ライブラリが既に終了している場合はハンドル自体が
-		* 無効になっているので、管理用の配列だけを空にする。
+		* 作ったプレイヤーと音源とリスナーを全部片付ける。
+		*
+		* @brief 作ったものを全部片付ける
+		*
+		* [EN]
+		* Cleans up every player, source and the listener it made.
+		*
+		* @brief Cleans up everything it made
 		*/
 		~Audio();
 
 	public:
 		/**
-		* [EN]
-		* Creates a player and tracks it for release on destruction. Returns
-		* null if CRI cannot create one.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* プレイヤーを生成し、破棄時に解放できるよう追跡する。CRI が生成に
-		* 失敗した場合は null を返す。
+		* 音を鳴らすプレイヤーを1つ作る。
+		*
+		* @brief  プレイヤーを作る
+		* @return 作ったプレイヤー。作れなかったら nullptr
+		*
+		* [EN]
+		* Makes one player that plays sound.
+		*
+		* @brief  Makes a player
+		* @return The new player, or nullptr if it could not be made
 		*/
 		ScAudioPlayerHandle CreatePlayer();
 
 		/**
-		* [EN]
-		* Stops, untracks and destroys a player.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* プレイヤーを停止し、追跡から外して破棄する。
+		* プレイヤーを止めてから消す。
+		*
+		* @brief プレイヤーを消す
+		* @param player 消すプレイヤー
+		*
+		* [EN]
+		* Stops a player and then removes it.
+		*
+		* @brief Removes a player
+		* @param player The player to remove
 		*/
 		void DestroyPlayer(ScAudioPlayerHandle player);
 
 		/**
-		* [EN]
-		* Creates a 3D source and tracks it for release on destruction.
-		* Returns null if CRI cannot create one.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 3D ソースを生成し、破棄時に解放できるよう追跡する。CRI が生成に
-		* 失敗した場合は null を返す。
+		* 音が出る場所（音源）を1つ作る。
+		*
+		* @brief  音源を作る
+		* @return 作った音源。作れなかったら nullptr
+		*
+		* [EN]
+		* Makes one place that sound comes from.
+		*
+		* @brief  Makes a source
+		* @return The new source, or nullptr if it could not be made
 		*/
 		ScAudioSourceHandle CreateSource();
 
 		/**
-		* [EN]
-		* Untracks and destroys a 3D source.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 3D ソースを追跡から外して破棄する。
+		* 音源を消す。
+		*
+		* @brief 音源を消す
+		* @param source 消す音源
+		*
+		* [EN]
+		* Removes a source.
+		*
+		* @brief Removes a source
+		* @param source The source to remove
 		*/
 		void DestroySource(ScAudioSourceHandle source);
 
 	public:
 		/**
-		* [EN]
-		* Plays the cue named cueName from a cue-sheet Sound (an ACB). Needs
-		* the ACF to be registered and the Sound's ACB to be loaded; logs a
-		* warning and does nothing otherwise. loop plays the cue's loop
-		* region forever; without it, loop regions authored in the cue are
-		* ignored and the cue plays through once.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* キューシートの Sound(ACB)から、cueName という名前のキューを再生
-		* する。ACF が登録済みで、Sound の ACB が読み込み済みである必要があり、
-		* そうでなければ警告を出して何もしない。loop なら、キューのループ区間
-		* を無限に繰り返す。loop でなければ、キューに設定されたループ区間を
-		* 無視して最後まで1回再生する。
+		* キューシートの中の音を、名前を指定して鳴らす。
+		*
+		* @brief 名前を指定してキューを鳴らす
+		* @param player  鳴らすプレイヤー
+		* @param sound   キューシートの音
+		* @param cueName 鳴らすキューの名前
+		* @param loop    くり返すなら true
+		* @note  ACF が登録されていないと鳴らない
+		*
+		* [EN]
+		* Plays a sound in a cue sheet by its name.
+		*
+		* @brief Plays a cue by name
+		* @param player  The player to use
+		* @param sound   The cue sheet sound
+		* @param cueName The name of the cue to play
+		* @param loop    True to repeat it
+		* @note  Nothing plays unless an ACF is registered
 		*/
 		void PlayCue(ScAudioPlayerHandle player, Sound& sound, const String& cueName, Bool loop);
 
 		/**
-		* [EN]
-		* Plays a raw .wav Sound on the player. The channel count and
-		* sampling rate are read from the file's "fmt " chunk; a file that is
-		* not RIFF/WAVE or has no usable "fmt " chunk is ignored. loop feeds
-		* the same buffer again every time the player asks for more data, so
-		* the wave repeats without a gap.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 生の .wav の Sound をプレイヤーで再生する。チャンネル数とサンプリング
-		* レートはファイルの "fmt " チャンクから読む。RIFF/WAVE でないファイルや、
-		* 使える "fmt " チャンクが無いファイルは無視する。loop なら、プレイヤー
-		* が次のデータを要求するたびに同じバッファをもう一度渡すので、波形が
-		* 途切れずに繰り返される。
+		* WAV の音をそのまま鳴らす。
+		*
+		* @brief WAV を鳴らす
+		* @param player 鳴らすプレイヤー
+		* @param sound  WAV の音
+		* @param loop   くり返すなら true
+		*
+		* [EN]
+		* Plays a WAV sound as it is.
+		*
+		* @brief Plays a WAV
+		* @param player The player to use
+		* @param sound  The WAV sound
+		* @param loop   True to repeat it
 		*/
 		void PlayWave(ScAudioPlayerHandle player, Sound& sound, Bool loop);
 
 		/**
-		* [EN]
-		* Stops every voice the player is playing.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* プレイヤーが再生中の全てのボイスを停止する。
+		* 音を止める。
+		*
+		* @brief 音を止める
+		* @param player 止めるプレイヤー
+		*
+		* [EN]
+		* Stops the sound.
+		*
+		* @brief Stops the sound
+		* @param player The player to stop
 		*/
 		void Stop(ScAudioPlayerHandle player);
 
 		/**
-		* [EN]
-		* Pauses the player's playback.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* プレイヤーの再生を一時停止する。
+		* 音を一時停止する。
+		*
+		* @brief 一時停止する
+		* @param player 一時停止するプレイヤー
+		*
+		* [EN]
+		* Pauses the sound.
+		*
+		* @brief Pauses
+		* @param player The player to pause
 		*/
 		void Pause(ScAudioPlayerHandle player);
 
 		/**
-		* [EN]
-		* Resumes every paused voice of the player.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* プレイヤーの一時停止中の全てのボイスを再開する。
+		* 一時停止した音を続きから鳴らす。
+		*
+		* @brief 再開する
+		* @param player 再開するプレイヤー
+		*
+		* [EN]
+		* Plays a paused sound again from where it stopped.
+		*
+		* @brief Resumes
+		* @param player The player to resume
 		*/
 		void Resume(ScAudioPlayerHandle player);
 
 	public:
 		/**
-		* [EN]
-		* Sets the player's volume (1 = unchanged) and applies it to the
-		* voices that are already playing, not only to the next Play.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* プレイヤーの音量(1 = そのまま)を設定し、次の再生からだけでなく、
-		* 既に再生中のボイスにも反映する。
+		* 音の大きさを変える。
+		*
+		* @brief 音量を変える
+		* @param player 変えるプレイヤー
+		* @param volume 音量。1 がそのままの大きさ
+		*
+		* [EN]
+		* Changes how loud the sound is.
+		*
+		* @brief Changes the volume
+		* @param player The player to change
+		* @param volume The volume; 1 is the normal loudness
 		*/
 		void Volume(ScAudioPlayerHandle player, Float volume);
 
 		/**
-		* [EN]
-		* Sets the player's pitch shift in cents (100 cents = one semitone,
-		* 0 = unchanged) and applies it to the voices that are already
-		* playing.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* プレイヤーのピッチ変化をセント単位で設定し(100 セント = 半音、
-		* 0 = そのまま)、既に再生中のボイスにも反映する。
+		* 音の高さを変える。
+		*
+		* @brief 音の高さを変える
+		* @param player 変えるプレイヤー
+		* @param cents  高さ。100 で半音上がる
+		*
+		* [EN]
+		* Changes how high the sound is.
+		*
+		* @brief Changes the pitch
+		* @param player The player to change
+		* @param cents  The pitch; 100 raises it by a half step
 		*/
 		void Pitch(ScAudioPlayerHandle player, Float cents);
 
 	public:
 		/**
-		* [EN]
-		* Makes the player positional: its voices are panned and attenuated
-		* from source's position as heard by the shared listener.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* プレイヤーを立体音響にする: そのボイスは、共有リスナーから見た
-		* source の位置に応じて定位と減衰がかかる。
+		* プレイヤーに音源をつなげて、音が場所から聞こえるようにする。
+		*
+		* @brief 音源をつなげる
+		* @param player つなげるプレイヤー
+		* @param source つなげる音源
+		*
+		* [EN]
+		* Connects a source to a player so the sound comes from a place.
+		*
+		* @brief Connects a source
+		* @param player The player to connect
+		* @param source The source to connect
 		*/
 		void AttachSource(ScAudioPlayerHandle player, ScAudioSourceHandle source);
 
 		/**
-		* [EN]
-		* Makes the player non-positional again: its 3D source and listener
-		* are cleared and panning goes back to the cue's own setting.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* プレイヤーを立体音響でない状態に戻す: 3D ソースとリスナーの割り当て
-		* を外し、定位はキュー自身の設定に戻る。
+		* 音源を外して、普通の（場所のない）音に戻す。
+		*
+		* @brief 音源を外す
+		* @param player 外すプレイヤー
+		*
+		* [EN]
+		* Takes the source off so it is a normal sound with no place again.
+		*
+		* @brief Disconnects the source
+		* @param player The player to disconnect
 		*/
 		void DetachSource(ScAudioPlayerHandle player);
 
 		/**
-		* [EN]
-		* Moves a 3D source to position with velocity (world units per
-		* second; the velocity drives the Doppler shift).
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 3D ソースを position へ移動し、速度 velocity(ワールド単位/秒。
-		* ドップラー効果の計算に使う)を設定する。
+		* 音源の場所と動く速さを更新する。
+		*
+		* @brief 音源の場所を更新する
+		* @param source   更新する音源
+		* @param position 音源の場所
+		* @param velocity 音源の動く速さ
+		*
+		* [EN]
+		* Updates where a source is and how fast it moves.
+		*
+		* @brief Updates the source position
+		* @param source   The source to update
+		* @param position Where the source is
+		* @param velocity How fast the source moves
 		*/
 		void UpdateSource(ScAudioSourceHandle source, const Vector3& position, const Vector3& velocity);
 
 		/**
-		* [EN]
-		* Moves the shared listener to position, facing front with up as its
-		* up direction, moving at velocity (world units per second).
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 共有リスナーを position へ移動し、front 方向を向き up を上方向とする
-		* 向きと、速度 velocity(ワールド単位/秒)を設定する。
+		* 音を聞く側の場所と向きと速さを更新する。
+		*
+		* @brief リスナーを更新する
+		* @param position 聞く側の場所
+		* @param front    前の向き
+		* @param up       上の向き
+		* @param velocity 動く速さ
+		*
+		* [EN]
+		* Updates where the listener is, which way it faces and how fast it moves.
+		*
+		* @brief Updates the listener
+		* @param position Where the listener is
+		* @param front    The forward direction
+		* @param up       The up direction
+		* @param velocity How fast it moves
 		*/
 		void UpdateListener(const Vector3& position, const Vector3& front, const Vector3& up, const Vector3& velocity);
 
 	public:
 		/**
-		* [EN]
-		* Sets a 3D source's distance attenuation: full volume up to
-		* minDistance from the listener, fading until it becomes silent at
-		* maxDistance.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 3D ソースの距離減衰を設定する: リスナーから minDistance までは
-		* 最大音量で、そこから小さくなり maxDistance で聞こえなくなる。
+		* 音が小さくなり始める距離と、聞こえなくなる距離を決める。
+		*
+		* @brief 聞こえる距離を決める
+		* @param source      決める音源
+		* @param minDistance 小さくなり始める距離
+		* @param maxDistance 聞こえなくなる距離
+		*
+		* [EN]
+		* Sets the distance where the sound starts getting quieter and where it can no longer be heard.
+		*
+		* @brief Sets the hearing distance
+		* @param source      The source to set
+		* @param minDistance Where it starts getting quieter
+		* @param maxDistance Where it can no longer be heard
 		*/
 		void AttenuationDistance(ScAudioSourceHandle source, Float minDistance, Float maxDistance);
 
 		/**
-		* [EN]
-		* Scales the Doppler shift heard by the shared listener (0 = no
-		* Doppler, 1 = physical strength).
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 共有リスナーに聞こえるドップラー効果の強さを倍率で設定する
-		* (0 = ドップラー無し、1 = 物理的な強さ)。
+		* 動いている音の高さが変わる強さ（ドップラー効果）を決める。
+		*
+		* @brief ドップラー効果の強さを決める
+		* @param multiplier 強さ。0 で効果なし
+		*
+		* [EN]
+		* Sets how strongly a moving sound changes pitch (the Doppler effect).
+		*
+		* @brief Sets the Doppler strength
+		* @param multiplier The strength; 0 turns it off
 		*/
 		void DopplerMultiplier(Float multiplier);
 
 	public:
 		/**
-		* [EN]
-		* Returns whether the player is currently playing. A paused player is
-		* still playing in CRI's sense and returns true; use Paused() to tell
-		* them apart. False for a null player.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* プレイヤーが現在再生中かどうかを返す。一時停止中のプレイヤーも CRI
-		* 上は再生中の扱いなので true を返す。区別するには Paused() を使う。
-		* プレイヤーが null なら false。
+		* 今鳴っているかを調べる。
+		*
+		* @brief  鳴っているか調べる
+		* @param  player 調べるプレイヤー
+		* @return 鳴っていたら true
+		*
+		* [EN]
+		* Checks whether it is playing right now.
+		*
+		* @brief  Checks if it is playing
+		* @param  player The player to check
+		* @return True if it is playing
 		*/
 		NODISCARD Bool Playing(ScAudioPlayerHandle player)const;
 
 		/**
-		* [EN]
-		* Returns whether the player is paused. False for a null player.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* プレイヤーが一時停止中かどうかを返す。プレイヤーが null なら false。
+		* 一時停止中かを調べる。
+		*
+		* @brief  一時停止中か調べる
+		* @param  player 調べるプレイヤー
+		* @return 一時停止中なら true
+		*
+		* [EN]
+		* Checks whether it is paused.
+		*
+		* @brief  Checks if it is paused
+		* @param  player The player to check
+		* @return True if it is paused
 		*/
 		NODISCARD Bool Paused(ScAudioPlayerHandle player)const;
 
 	private:
-		/// [EN] The CRI library owner, bound through Gateway at construction.
-		/// [JP] CRI ライブラリの所有者。生成時に Gateway から取得する。
+		/// [JP] 音のライブラリ（CRI）を動かしている係
+		/// [EN] The part that runs the sound library (CRI)
 		CriManager& criManager_;
 
-		/// [EN] The single 3D listener every 3D source is heard from.
-		/// [JP] 全ての 3D ソースを聞き取る、唯一の 3D リスナー。
+		/// [JP] 音を聞く側
+		/// [EN] The one that hears the sound
 		ScAudioListenerHandle listener_ = nullptr;
 
-		/// [EN] Every live player, destroyed together with this object.
-		/// [JP] 生存中の全プレイヤー。このオブジェクトと一緒に破棄する。
+		/// [JP] 作ったプレイヤーの一覧
+		/// [EN] Every player that was made
 		DynamicArray<ScAudioPlayerHandle> players_;
 
-		/// [EN] Every live 3D source, destroyed together with this object.
-		/// [JP] 生存中の全 3D ソース。このオブジェクトと一緒に破棄する。
+		/// [JP] 作った音源の一覧
+		/// [EN] Every source that was made
 		DynamicArray<ScAudioSourceHandle> sources_;
 	};
 }

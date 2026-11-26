@@ -1,19 +1,5 @@
 #include <GraphicsEngine/Preview/Preview.hlsli>
 
-/**
-* [EN]
-* Preview.Draw.Line: one thread group draws 32 lines of Preview.Lines, each
-* a quad of 4 vertices and 2 triangles widened to width_ pixels across the
-* screen-space direction of the line. A line with an end behind the camera is
-* placed outside the clip volume.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Preview.Draw.Line。1 スレッドグループが Preview.Lines の 32 本を描く。各線は
-* 4 頂点・2 三角形の四角形で、画面上の線の向きと直交する方向へ width_ ピクセル
-* 分だけ広げる。端がカメラの後ろにある線はクリップ空間の外へ置く。
-*/
 [NumThreads(128, 1, 1)]
 [OutputTopology("triangle")]
 void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices PreviewLineOutput verts[128], out indices uint3 tris[64])

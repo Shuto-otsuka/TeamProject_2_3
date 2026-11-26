@@ -3,38 +3,11 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Restores the captured field values onto componentData, a live
-	* instance of the type named componentName_, matched by field name.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 取得済みのフィールド値を、componentName_ という名前の型の生きた
-	* インスタンスである componentData へ、フィールド名で対応付けて復元する。
-	*/
 	void BlueprintComponent::Apply(void* componentData)const
 	{
 		ApplyFields(componentName_, componentData, fields_);
 	}
 
-	/**
-	* [EN]
-	* Captures every reflected field of componentData, a live instance
-	* of the type named componentName, into a new BlueprintComponent.
-	* Useful when a type's own storage is about to be destroyed (e.g.
-	* before a hot-reload) and only its field values need to survive.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* componentName という名前の型の生きたインスタンスである
-	* componentData の、リフレクションされた全フィールドを、新しい
-	* BlueprintComponent へ取得する。型自身のストレージがこれから破棄
-	* される場合（ホットリロード前など）に、フィールド値だけを残したい
-	* ときに使う。
-	*/
 	BlueprintComponent BlueprintComponent::Capture(const String& componentName, void* componentData)
 	{
 		BlueprintComponent serializedComponent{};
@@ -43,23 +16,6 @@ namespace SeedCore
 		return serializedComponent;
 	}
 
-	/**
-	* [EN]
-	* Recursively restores every reflected field of the type named
-	* typeName (rooted at data) from savedFields, matching by field
-	* name. Runs a first pass that grows every saved array field to
-	* its saved element count before any per-element pointer is
-	* read, then a second pass that actually applies each field's value.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* typeName という名前の型（data を起点とする）の、リフレクション
-	* された全フィールドを savedFields から復元する。フィールド名で
-	* 対応付ける。要素ごとのポインタを読む前に、保存済みの各配列
-	* フィールドをその保存済み要素数まで伸ばす第1パスを実行し、その後
-	* 実際に各フィールドの値を適用する第2パスを実行する。
-	*/
 	void BlueprintComponent::ApplyFields(const String& typeName, void* data, const DynamicArray<BlueprintField>& savedFields)
 	{
 		if (savedFields.empty())
@@ -67,8 +23,6 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] First pass: grow every saved array to its saved length before reading element pointers, since push_back may reallocate and invalidate earlier directPtr_ values.
-		/// [JP] 第1パス: 要素へのポインタを読む前に、保存された配列を保存時の要素数まで伸ばし切る。push_back は再確保で先に取った directPtr_ を無効にしうる。
 		{
 			DynamicArray<FieldInfo> fields;
 			Fields(typeName, data, fields);
@@ -96,8 +50,6 @@ namespace SeedCore
 			}
 		}
 
-		/// [EN] Second pass: re-collect field infos (now with grown arrays and therefore stable pointers) and actually apply each saved value.
-		/// [JP] 第2パス: フィールド情報を再収集し（配列は伸ばされ済みで、ポインタは安定している）、実際に各保存済みの値を適用する。
 		DynamicArray<FieldInfo> fields;
 		Fields(typeName, data, fields);
 
@@ -152,23 +104,8 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Writes match's saved value into ptr, based on field's
-	* AttributeType (the restore-side counterpart of CaptureScalar).
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* field の AttributeType に基づき、match の保存済みの値を ptr へ
-	* 書き込む（CaptureScalar の復元側に対応する処理）。
-	*/
 	void BlueprintComponent::ApplyScalar(const FieldInfo& field, void* ptr, const BlueprintField& match)
 	{
-		/// [EN] Skip a saved value whose type differs from the field's: each value kind has its own member, so reading by the current type would pick one never written.
-		///      Leaving the field untouched keeps its default.
-		/// [JP] 保存時の型と今のフィールドの型が違う値は適用しない。値の種類ごとに別のメンバがあるので、今の型で読むと書かれていないメンバを拾ってしまう。
-		///      触らなければ既定値のまま残る。
 		if (match.type_ != field.type_)
 		{
 			return;
@@ -206,23 +143,6 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Recursively captures every reflected field of the type named
-	* typeName (rooted at data) into outFields: array fields become
-	* one BlueprintField per element, nested-struct fields recurse
-	* via their own CaptureFields call, and everything else is
-	* captured as a plain scalar.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* typeName という名前の型（data を起点とする）の、リフレクション
-	* された全フィールドを outFields へ再帰的に取得する: 配列
-	* フィールドは要素ごとに1つの BlueprintField になり、ネストされた
-	* 構造体フィールドは自身の CaptureFields 呼び出しを介して再帰し、
-	* それ以外は単純なスカラーとして取得される。
-	*/
 	void BlueprintComponent::CaptureFields(const String& typeName, void* data, DynamicArray<BlueprintField>& outFields)
 	{
 		DynamicArray<FieldInfo> fields;
@@ -234,8 +154,6 @@ namespace SeedCore
 
 			if (field.array_.size_ > 0 || field.array_.add_)
 			{
-				/// [EN] An array field: its elements are laid out as the following N FieldInfo entries in the flat list, so consume and skip them here.
-				/// [JP] 配列フィールド: その要素はフラットなリスト内で続く N 個の FieldInfo エントリとして並んでいる。ここでそれらを消費し、スキップする。
 				Size count = field.array_.size_;
 
 				BlueprintField arrayField;
@@ -268,8 +186,6 @@ namespace SeedCore
 
 			if (!field.nestedTypeName_.view().empty())
 			{
-				/// [EN] Nested struct field: recurse, capturing its own fields as children rather than treating it as a scalar.
-				/// [JP] ネストされた構造体フィールド: スカラーとして扱う代わりに、その自身のフィールドを子として再帰的に取得する。
 				BlueprintField structField;
 				structField.name_ = field.name_;
 				CaptureFields(field.nestedTypeName_, ptr, structField.children_);
@@ -281,18 +197,6 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Captures a single non-array, non-nested field's current value
-	* from ptr into a new BlueprintField, based on field's AttributeType.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* field の AttributeType に基づき、ptr から単一の非配列・
-	* 非ネストフィールドの現在の値を、新しい BlueprintField へ
-	* 取得する。
-	*/
 	BlueprintField BlueprintComponent::CaptureScalar(const FieldInfo& field, void* ptr)
 	{
 		BlueprintField capturedField;
@@ -333,19 +237,6 @@ namespace SeedCore
 		return capturedField;
 	}
 
-	/**
-	* [EN]
-	* Fills fields with typeName's reflected fields (from
-	* ReflectionRegistry) and, if it's a payload type, its
-	* asset-reference fields too (from PayloadRegistry).
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* typeName のリフレクションされたフィールド（ReflectionRegistry
-	* から）を fields へ書き込む。それがペイロード型であれば、その
-	* アセット参照フィールド（PayloadRegistry から）も書き込む。
-	*/
 	void BlueprintComponent::Fields(const String& typeName, void* data, DynamicArray<FieldInfo>& fields)
 	{
 		auto& reflectionRegistry = ReflectionRegistry::GetRegistry();

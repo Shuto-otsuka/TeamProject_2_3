@@ -43,15 +43,6 @@ namespace SeedCore
 			return 0;
 		};
 
-		/// [EN] Only writes an entry for a channel that actually has keyframe
-		///      data for that node — a node animating rotation only (the
-		///      common case for skeletal joints) must NOT get a fabricated
-		///      translation/scale override; the caller falls back to that
-		///      node's own rest-pose value for whichever channels are absent.
-		/// [JP] 実際にキーフレームデータがあるチャンネルのみ書き込む — 回転だけ
-		///      アニメーションされるノード(スケルトンのジョイントで多いケース)に、
-		///      でっち上げのtranslation/scaleを与えてはいけない。呼び出し側が、
-		///      無いチャンネルはそのノード自身のレストポーズ値にフォールバックする。
 		for (const auto& [nodeIndex, times] : timelines_)
 		{
 			auto translationIt = translations_.find(nodeIndex);
@@ -180,14 +171,6 @@ namespace SeedCore
 			const DynamicArray<Float>& from = rows[index];
 			const DynamicArray<Float>& to = rows[index + 1];
 
-			/// [EN] Rows can differ in width if a channel was ever authored
-			///      against a different target count than the mesh has now
-			///      — fall back to the earlier row's weight, unlerped, for
-			///      any target index the later row doesn't cover.
-			/// [JP] チャンネルが現在のメッシュのターゲット数と異なる本数で
-			///      作成されていた場合、行ごとに幅が異なりうる — 後方の行が
-			///      カバーしないターゲットインデックスは、前方の行の
-			///      ウェイトをそのまま(補間せず)使う。
 			DynamicArray<Float>& blended = outWeights[nodeIndex];
 			blended.resize(from.size());
 			for (Size targetIndex = 0; targetIndex < from.size(); ++targetIndex)

@@ -2,15 +2,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Writes entityID's record, replacing whatever its slot held.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* entityID のレコードを書く。そのスロットにあったものは置き換える。
-	*/
 	void CollaborationRegistry::Add(EntityID entityID, String id)
 	{
 		if (entityID.index_ >= records_.size())

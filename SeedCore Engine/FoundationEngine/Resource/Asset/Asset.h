@@ -7,158 +7,64 @@ namespace SeedCore
 {
 	class ResourceCache;
 
-	/// [EN] Identifies which kind of asset a given AssetRecord entry represents, driving both file-extension classification during Scan and which resource manager handles loading/unloading it.
-	/// [JP] 各 AssetRecord エントリがどの種類のアセットを表すかを識別する。Scan 時のファイル拡張子分類と、読み込み/解放を担当するリソースマネージャの両方を決定する。
 	enum class AssetType
 	{
-		/// [EN] Image texture (.png/.jpg/.dds/...).
-		/// [JP] 画像テクスチャ（.png/.jpg/.dds/...）。
 		Texture,
 
-		/// [EN] 3D model (.gltf/.glb/.fbx/.crister).
-		/// [JP] 3Dモデル（.gltf/.glb/.fbx/.crister）。
 		Model,
 
-		/// [EN] Animation clip (.animation).
-		/// [JP] アニメーションクリップ（.animation）。
 		Animation,
 
-		/// [EN] Baked mesh collision geometry (.collision).
-		/// [JP] 焼き込み済みの衝突ジオメトリ（.collision）。
 		MeshCollision,
 
-		/// [EN] Standalone material (.material).
-		/// [JP] 単体マテリアル（.material）。
 		Material,
 
-		/// [EN] Standalone skeleton rig (.skeleton): sockets + root bone.
-		/// [JP] 単体スケルトンリグ（.skeleton）: ソケット + ルートボーン。
 		Skeleton,
 
-		/// [EN] Engine-made effect (.zephyr).
-		/// [JP] エンジン製のエフェクト（.zephyr）。
 		Effect,
 
-		/// [EN] Effekseer effect (.efkefc/.effekseer).
-		/// [JP] Effekseer のエフェクト（.efkefc/.effekseer）。
 		Effekseer,
 
-		/// [EN] Data exported from Houdini.
-		/// [JP] Houdini から書き出したデータ。
 		Houdini,
 
-		/// [EN] Audio (.wav/.mp3/.acb/.awb/.audio).
-		/// [JP] オーディオ（.wav/.mp3/.acb/.awb/.audio）。
 		Audio,
 
-		/// [EN] Font (.ttf/.otf/.ttc).
-		/// [JP] フォント（.ttf/.otf/.ttc）。
 		Font,
 
-		/// [EN] Movie (.mp4/.movie).
-		/// [JP] ムービー（.mp4/.movie）。
 		Movie,
 
-		/// [EN] Skybox/environment map (.hdr/.skymap).
-		/// [JP] スカイボックス/環境マップ（.hdr/.skymap）。
 		Skymap,
 
-		/// [EN] Actor prefab (.prefab).
-		/// [JP] Actor プレハブ（.prefab）。
 		Prefab,
 
-		/// [EN] Scene (.scene).
-		/// [JP] シーン（.scene）。
 		Scene,
 
-		/// [EN] Extension not recognized by Scan.
-		/// [JP] Scan が認識しない拡張子。
 		Unknown,
 	};
 
-	/**
-	* [EN]
-	* A single discovered project asset: its project-relative and
-	* absolute filesystem paths, classified type, stable GUID-derived
-	* ID, and whether it is currently loaded into a resource manager.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 発見された単一のプロジェクトアセット: プロジェクト相対パスと
-	* 絶対ファイルシステムパス、分類された種類、GUID から導出された
-	* 安定的な ID、および現在リソースマネージャへ読み込まれているか。
-	*/
 	struct AssetRecord
 	{
-		/// [EN] Path relative to the project root, with forward slashes.
-		/// [JP] プロジェクトルートからの相対パス（スラッシュ区切り）。
 		String path_;
 
-		/// [EN] Absolute filesystem path, with forward slashes.
-		/// [JP] 絶対ファイルシステムパス（スラッシュ区切り）。
 		String fullpath_;
 
-		/// [EN] The classified asset type.
-		/// [JP] 分類済みのアセット種別。
 		AssetType type_ = AssetType::Unknown;
 
-		/// [EN] Stable ID derived from the asset's .meta GUID (or a path hash for extensions that skip .meta files).
-		/// [JP] アセットの .meta GUID から導出される安定的な ID（.meta ファイルを持たない拡張子の場合はパスハッシュ）。
 		Uint32 assetID_ = 0;
 
-		/// [EN] Whether this asset is currently loaded into its resource manager.
-		/// [JP] このアセットが現在、対応するリソースマネージャへ読み込まれているかどうか。
 		Bool isLoaded_ = false;
 	};
 
-	/**
-	* [EN]
-	* Serializable sidecar metadata stored in an asset's .meta file:
-	* primarily its stable GUID, which survives file moves/renames
-	* (unlike a path-derived hash).
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* アセットの .meta ファイルに格納される、シリアライズ可能な
-	* サイドカーメタデータ。主にその安定的な GUID を保持し、これは
-	* （パス由来のハッシュとは異なり）ファイルの移動/リネームを経ても
-	* 変化しない。
-	*/
 	struct SEEDCORE_API AssetMeta
 	{
-		/// [EN] Meta file format version, for future migration.
-		/// [JP] メタファイルフォーマットのバージョン。将来のマイグレーション用。
 		Uint32 version_ = 2;
 
-		/// [EN] Stable identifier for this asset, persisted across file moves/renames.
-		/// [JP] このアセットの安定的な識別子。ファイルの移動/リネームを跨いで永続化される。
 		Uint32 guid_ = 0;
 
-		/// [EN] Axis convention of this Model asset: for .gltf/.glb it is applied on (re)import, for a .crister-only asset it records what is baked into the file.
-		///      Unused for other asset types.
-		/// [JP] この Model アセットの軸の規約。.gltf/.glb では(再)インポート時に適用し、.crister のみのアセットではファイルに焼き込まれた規約を記録する。
-		///      Model 以外のアセットでは使わない。
 		AxisConvention axisConvention_;
 
-		/// [EN] Total transform baked into this Model asset. Each new transform replaces the stored one rather than accumulating onto it.
-		///      Unused for other asset types.
-		/// [JP] この Model アセットに焼き込まれた合計のトランスフォーム。新しいトランスフォームは、保存済みのものへ積み上げず置き換える。
-		///      Model 以外のアセットでは使わない。
 		Matrix modelTransform_ = Matrix::Identity;
 
-		/**
-		* [EN]
-		* Serialization hook: reads/writes version_, guid_, axisConvention_,
-		* and modelTransform_.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* シリアライズ用フック: version_、guid_、axisConvention_、
-		* modelTransform_ を読み書きする。
-		*/
 		template<class Archive>
 		void Serialize(Archive& archive)
 		{
@@ -168,197 +74,38 @@ namespace SeedCore
 			archive.TryField("model_transform", modelTransform_);
 		}
 
-		/**
-		* [EN]
-		* Reads the ".meta" beside the asset file at filePath into this
-		* object and returns true. Returns false and leaves every field as it
-		* was when that ".meta" does not exist or cannot be read, so a caller
-		* sets the values it wants as defaults before reading.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* filePath のアセットファイルの隣にある ".meta" を、このオブジェクトへ
-		* 読み込んで true を返す。その ".meta" が無い、または読めない場合は
-		* false を返し、全てのフィールドを元のまま残す。なので呼び出し側は、
-		* 既定にしたい値を読む前に入れておく。
-		*/
 		Bool Read(const std::filesystem::path& filePath);
 
-		/**
-		* [EN]
-		* Writes this object to the ".meta" beside the asset file at
-		* filePath, replacing any existing one. Returns false when the write
-		* failed.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このオブジェクトを、filePath のアセットファイルの隣にある ".meta" へ
-		* 書き出す。既存のものは置き換える。書き込みに失敗した場合は false を
-		* 返す。
-		*/
 		Bool Write(const std::filesystem::path& filePath)const;
 	};
 
-	/**
-	* [EN]
-	* Which thread a load is running on. A resource manager that keeps
-	* per-thread state (such as one transfer lane per loading thread)
-	* picks it by this, since two threads must never share it.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 読み込みがどのスレッドで動いているか。スレッドごとの状態（読み込む
-	* スレッドごとの転送レーンなど）を持つリソースマネージャは、2つの
-	* スレッドが同じものを使わないよう、これで選ぶ。
-	*/
 	enum class LoadThread
 	{
-		/// [EN] The main thread: editor reloads, file watching and synchronous loads.
-		/// [JP] メインスレッド。エディタの読み直し、ファイルの監視、同期の読み込み。
 		Main,
 
-		/// [EN] The background worker driven by ResourceCache::Run.
-		/// [JP] ResourceCache::Run が動かすバックグラウンドのワーカー。
 		Async
 	};
 
-	/**
-	* [EN]
-	* What a resource manager is told about one load or release, gathered
-	* into a single argument so the Asset interface is the same for every
-	* asset type. It carries only what is common to every module; a
-	* manager receives its own module's dependencies (devices, queues,
-	* shaders) when it is constructed.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* リソースマネージャに伝える、アセット1件の読み込み/解放の情報を
-	* 1つの引数へまとめたもの。これにより Asset インターフェースは全
-	* アセット種別で同一の形になる。全モジュールに共通のものだけを運び、
-	* 各マネージャは自分のモジュールの依存（デバイス、キュー、シェーダー）
-	* を構築時に受け取る。
-	*/
 	struct AssetContext
 	{
-		/// [EN] Cache owning the asset table, for looking up the record behind an asset ID.
-		/// [JP] アセットテーブルを所有するキャッシュ。アセット ID に対応するレコードを引くために使う。
 		ResourceCache& cache_;
 
-		/// [EN] Thread the load is running on.
-		/// [JP] 読み込みが動いているスレッド。
 		LoadThread thread_ = LoadThread::Main;
 	};
 
-	/**
-	* [EN]
-	* The interface every resource manager implements so ResourceCache
-	* can drive loading and releasing without naming a single concrete
-	* manager: the cache looks a manager up by AssetType and calls these.
-	* Managers keep their own typed Load/Unload overloads for callers
-	* that already hold the concrete manager.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 全リソースマネージャが実装するインターフェース。これにより
-	* ResourceCache は具体的なマネージャを一切名指しせずに読み込みと解放を
-	* 駆動できる（キャッシュは AssetType でマネージャを引き、これらを呼ぶ）。
-	* 各マネージャは、具体型を既に持っている呼び出し側のために、自分の
-	* 型付き Load/Unload オーバーロードも併せ持つ。
-	*/
 	class SEEDCORE_API Asset
 	{
 	public:
-		/**
-		* [EN]
-		* Virtual so a manager owned through an Asset-typed ResourcePtr
-		* is destroyed as its concrete type.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Asset 型の ResourcePtr で所有されているマネージャが、具体型として
-		* 破棄されるようにするため virtual にしている。
-		*/
 		virtual ~Asset() = default;
 
-		/**
-		* [EN]
-		* Loads the asset registered under assetId into this manager.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* assetId に登録されているアセットを、このマネージャへ読み込む。
-		*/
 		virtual void Load(const AssetContext& context, Uint32 assetID) = 0;
 
-		/**
-		* [EN]
-		* Releases the asset registered under assetId from this manager.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* assetId に登録されているアセットを、このマネージャから解放する。
-		*/
 		virtual void Unload(Uint32 assetID) = 0;
 
-		/**
-		* [EN]
-		* Releases whatever this manager still holds after a per-asset
-		* Unload pass. Defaults to doing nothing, for managers whose
-		* Unload already leaves nothing behind.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* アセット単位の Unload パスの後に、このマネージャがまだ保持して
-		* いるものを解放する。既定では何もしない（Unload の時点で何も
-		* 残らないマネージャ向け）。
-		*/
 		virtual void Clear();
 
-		/**
-		* [EN]
-		* Writes the cache files this manager's asset type derives from the
-		* source asset sourceAssetID, appending the full path of every file
-		* it wrote to writtenPaths, and returns whether every write
-		* succeeded. This is the only place a cache file is written: Load
-		* only ever reads one. Defaults to writing nothing, for an asset
-		* type that keeps no cache file.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 元アセット sourceAssetID から、このマネージャのアセット種別が作る
-		* キャッシュファイルを書き出し、書いた全ファイルのフルパスを
-		* writtenPaths へ追加して、全ての書き込みが成功したかどうかを返す。
-		* キャッシュファイルを書くのはここだけで、Load は読むだけにする。
-		* 既定では何も書かない（キャッシュファイルを持たないアセット種別向け）。
-		*/
 		virtual Bool Generate(const AssetContext& context, Uint32 sourceAssetID, DynamicArray<String>& writtenPaths);
 
-		/**
-		* [EN]
-		* Writes the in-memory object loaded under assetID to filePath, so an
-		* edit made in memory becomes the file's contents, and returns
-		* whether it succeeded. Defaults to refusing, for an asset type whose
-		* loaded form cannot be written back (it lives on the GPU or in an
-		* external library).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* assetID で読み込まれているメモリ上のオブジェクトを filePath へ
-		* 書き出し、メモリ上での編集をファイルの内容にする。成功したかどうかを
-		* 返す。既定では断る（読み込んだ形が GPU 上や外部ライブラリ内にあり、
-		* 書き戻せないアセット種別向け）。
-		*/
 		virtual Bool Bake(const AssetContext& context, Uint32 assetID, String filePath);
 	};
 }

@@ -1,6 +1,3 @@
-// Phong: Lambertian N.L diffuse + energy-normalized R.V specular lobe
-// ((n+2)/(2*pi), the modified Phong BRDF). Skips the GGX/Fresnel/microfacet
-// terms entirely - roughness is only mapped down to a shininess exponent.
 float3 EvalDirectLightPhong(float3 normal, float3 view, float3 light_direction, float3 diffuse_color, float3 specular_color, float shininess)
 {
 	const float PI = 3.14159265358979;

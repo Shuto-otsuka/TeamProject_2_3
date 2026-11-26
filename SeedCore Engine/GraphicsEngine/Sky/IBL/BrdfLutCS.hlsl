@@ -7,19 +7,6 @@ struct SkyBrdfLutBindings
 };
 ConstantBuffer<SkyBrdfLutBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* Integrates the split-sum specular BRDF environment lookup table (the scale
-* and bias terms) into an RG texture. Environment-independent, so it is
-* generated once and shared by every skymap. One thread per LUT texel; the x
-* axis is N.V and the y axis is roughness.
-*
-* [JP]
-* 分割和の鏡面 BRDF 環境ルックアップテーブル（scale と bias 項）を RG
-* テクスチャへ積分する。環境に依存しないため 1 回だけ生成して全スカイマップで
-* 共有する。LUT テクセル 1 つにつき 1 スレッド。x 軸が N.V、y 軸が roughness。
-*/
-
 float GeometrySchlickGgxImageBasedLighting(float normal_dot_direction, float roughness)
 {
     float alpha = roughness;

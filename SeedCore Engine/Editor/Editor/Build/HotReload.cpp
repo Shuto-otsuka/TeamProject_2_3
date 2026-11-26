@@ -13,12 +13,8 @@ namespace SeedCore
 {
 	namespace
 	{
-		/// [EN] How long a source edit must stay unchanged before a build is triggered. Sits directly on the edit-to-reload path, so it's kept just long enough to outlast an editor's save (a single fast write, unlike a link).
-		/// [JP] ソース編集を検知してからビルドを開始するまでに、変化なしで待つ時間。編集からリロードまでの待ち時間に直接乗るため、エディタの保存(リンクとは違い一度の短い書き込み)を取りこぼさない範囲で短くしてある。
 		constexpr Uint64 SourceStableWindowMilliseconds = 150;
 
-		/// [EN] How often the UserProject source tree is rescanned, in milliseconds.
-		/// [JP] UserProject のソースツリーを再スキャンする間隔(ミリ秒)。
 		constexpr Uint64 SourceScanIntervalMilliseconds = 150;
 	}
 
@@ -114,8 +110,6 @@ namespace SeedCore
 				continue;
 			}
 
-			/// [EN] The codegen output is rewritten by the build itself, so counting it here would make every build's output look like a fresh source edit and trigger another build. The generated file is derived entirely from the sources already being scanned, so ignoring it loses no change detection.
-			/// [JP] コード生成の出力はビルド自身によって書き換えられるため、ここで数えるとビルドの出力が新しいソース編集に見えてしまい、さらにビルドを誘発してしまう。生成ファイルの内容はここでスキャン済みのソースから完全に導出されるので、無視しても変更検知は失われない。
 			std::wstring fileName = entry.path().filename().wstring();
 			if (fileName.ends_with(L".generated.cpp") || fileName.ends_with(L".generated.cs"))
 			{
@@ -226,23 +220,14 @@ namespace SeedCore
 		const Wchar* configuration = L"Release";
 #endif
 
-		/// [EN] UserProject.Cplusplus.vcxproj's OutDir/IntDir are defined in terms of $(SolutionDir), which MSBuild only auto-populates when building through Runtime.sln. Since this invokes the .vcxproj directly (bypassing the .sln), SolutionDir must be passed explicitly or the build silently lands outside Runtime\Build\ — where nothing here is watching it.
-		/// [JP] UserProject.Cplusplus.vcxproj の OutDir/IntDir は $(SolutionDir) を使って定義されているが、これは Runtime.sln 経由でビルドしたときだけ MSBuild が自動設定する。ここでは .sln を介さず .vcxproj を直接呼んでいるため、SolutionDir を明示的に渡さないと、ビルド成果物が誰も監視していない Runtime\Build\ 以外の場所へ静かに出力されてしまう。
 		std::filesystem::path solutionDir = UserProjectSourceDirectory().parent_path() / L"Runtime\\";
 
-		/// [EN] A trailing backslash immediately before the closing quote in a Windows command line escapes that quote (\" is read as a literal "), corrupting everything after it — double it so the parser sees one literal backslash followed by a properly closed quote.
-		/// [JP] Windowsのコマンドライン解析では、閉じ引用符の直前のバックスラッシュはその引用符をエスケープしてしまう(\" はリテラルな " と解釈される)ため、以降の解析が壊れる — バックスラッシュを2つにすることで、1つのリテラルなバックスラッシュ + 正しく閉じた引用符として解釈させる。
 		std::wstring solutionDirArgument = solutionDir.wstring();
 		if (!solutionDirArgument.empty() && solutionDirArgument.back() == L'\\')
 		{
 			solutionDirArgument.push_back(L'\\');
 		}
 
-		/// [EN] BuildProjectReferences=false is essential, not an optimization: UserProject.Cplusplus.vcxproj references SeedCore.Cplusplus.vcxproj, so a default build would walk the whole engine graph and relink SeedCore.Cplusplus.dll — which this very Editor process has loaded and therefore holds locked, making the link fail with LNK1104 and the auto-build fail forever. Skipping reference builds links UserProject.Cplusplus.dll against the already-built SeedCore.lib instead, which is exactly what a gameplay-script hot-reload needs (engine changes still require a normal full build from Visual Studio).
-		/// [JP] BuildProjectReferences=false は最適化ではなく必須: UserProject.Cplusplus.vcxproj は SeedCore.Cplusplus.vcxproj を参照しているため、既定のビルドではエンジン全体をたどって SeedCore.Cplusplus.dll を再リンクしてしまう — その SeedCore.Cplusplus.dll はこの Editor プロセス自身がロード中でロックされているので、リンクが LNK1104 で失敗し、自動ビルドが永久に失敗し続ける。参照プロジェクトのビルドを省くことで、代わりにビルド済みの SeedCore.lib に対して UserProject.Cplusplus.dll をリンクする — ゲームプレイスクリプトのホットリロードに必要なのはまさにこれ(エンジン側の変更は従来通り Visual Studio でのフルビルドが必要)。
-
-		/// [EN] A debugger attached to this process keeps UserProject.Cplusplus.pdb open for as long as the module is loaded — the shadow copy still names the original PDB path internally — so relinking to that same fixed path fails with LNK1201 on every reload. Giving each build its own PDB name sidesteps the lock entirely and keeps hot-reloaded gameplay code breakpoint-able. The debounce in Tick() is far longer than a tick's resolution, so the tick count cannot collide between two builds.
-		/// [JP] このプロセスにデバッガがアタッチされていると、モジュールがロードされている間 UserProject.Cplusplus.pdb は開かれたままになる(シャドウコピーも内部的には元のPDBパスを指しているため) — そのため同じ固定パスへ再リンクすると、リロードのたびに LNK1201 で失敗する。ビルドごとに別のPDB名を与えることでロックを完全に回避でき、ホットリロードしたゲームプレイコードにブレークポイントも張れるままになる。Tick() のデバウンス時間はティックの分解能より遥かに長いため、2つのビルドでティック値が衝突することはない。
 		std::wstring hotReloadPdbName = std::format(L"UserProject.Cplusplus_HotReload_{}", GetTickCount64());
 
 		std::wstring commandLine = std::format(L"\"{}\" \"{}\" /nologo /verbosity:minimal /p:Configuration={} /p:Platform=x64 /p:BuildProjectReferences=false /p:HotReloadPdbName={} /p:SolutionDir=\"{}\"", msbuildPath_.wstring(), UserProjectVcxprojPath().wstring(), configuration, hotReloadPdbName, solutionDirArgument);
@@ -343,8 +328,6 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] One final drain in case output arrived between the last Drain() and the process actually exiting.
-		/// [JP] 直前の Drain() 呼び出しからプロセス終了までの間に届いた出力を取りこぼさないよう、最後にもう一度読み出す。
 		Drain(task);
 
 		DWORD exitCode = 0;
@@ -359,8 +342,6 @@ namespace SeedCore
 		{
 			SC_LOG_NOTICE("HotReload: {} の自動ビルドが完了しました。", label);
 
-			/// [EN] The build process exiting is a stronger guarantee that the output is complete than any timestamp-stability window could be — every handle the build held is closed by then. Reloading on this instead of waiting for the write-time watcher to settle removes that wait from the edit-to-reload path entirely.
-			/// [JP] ビルドプロセスが終了したという事実は、出力が完全に書き終わっている保証として、タイムスタンプの安定待ちより強い(その時点でビルドが保持していたハンドルは全て閉じられている)。更新時刻監視の安定待ちを待たずにこれを合図としてリロードすることで、編集からリロードまでの待ち時間からその分を丸ごと削れる。
 			task.reloadRequested_ = true;
 		}
 		else
@@ -432,8 +413,6 @@ namespace SeedCore
 			cplusplusBuild_.reloadRequested_ = false;
 			cplusplusReloadDeferred_ = false;
 
-			/// [EN] The plugin may not have been present at Initialize (e.g. UserProject.Cplusplus.dll built for the first time during this session) — pick it up now that a build has produced it.
-			/// [JP] Initialize 時点ではプラグインが存在しなかった可能性がある(例: このセッション中に UserProject.Cplusplus.dll が初めてビルドされた) — ビルドが生成した今、拾い直す。
 			if (!userProjectPlugin_ && pluginHost_)
 			{
 				userProjectPlugin_ = pluginHost_->Find("UserProject.Cplusplus");

@@ -20,39 +20,33 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Adds LinearVelocity and AngularVelocity to the actor the moment
-	* this component is added, so the velocities the body is kept in step
-	* with exist before any script's OnAwake or OnStart reads them. A
-	* velocity the actor already has is kept as it is.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* このコンポーネントが追加された瞬間に、actor へ LinearVelocity と
-	* AngularVelocity を追加する。ボディと同期させる速度が、どの
-	* スクリプトの OnAwake・OnStart が読むより前に存在するようにする
-	* ため。actor が既に持っている速度はそのまま残す。
+	* つけたときに、速さの部品も一緒につける。
+	*
+	* @brief 速さの部品をつける
+	*
+	* [EN]
+	* When attached, it also adds the velocity parts.
+	*
+	* @brief Adds the velocity parts
 	*/
 	void Rigidbody::OnAttach()
 	{
-		/// [EN] AddComponent returns the existing instance when the actor already has one, so a velocity set before this component was added is not reset.
-		/// [JP] actor が既に持っていれば AddComponent は既存のものを返すので、このコンポーネントより先に設定された速度は初期化されない。
 		Actor actor = GetActor();
 		actor.AddComponent<LinearVelocity>();
 		actor.AddComponent<AngularVelocity>();
 	}
 
 	/**
-	* [EN]
-	* Removes LinearVelocity and AngularVelocity from the actor the moment
-	* this component is removed, undoing OnAttach.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* このコンポーネントが外される瞬間に、actor から LinearVelocity と
-	* AngularVelocity を外し、OnAttach を元に戻す。
+	* 外したときに、速さの部品も一緒に外す。
+	*
+	* @brief 速さの部品を外す
+	*
+	* [EN]
+	* When removed, it also removes the velocity parts.
+	*
+	* @brief Removes the velocity parts
 	*/
 	void Rigidbody::OnDetach()
 	{
@@ -62,24 +56,22 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Creates the body from the actor's collider shape, pose and this
-	* component's settings, and adds it to the simulation.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Actor のコライダーの形状と姿勢、このコンポーネントの設定からボディを作り、
-	* シミュレーションへ加える。
+	* 設定から物理の体を作る。
+	*
+	* @brief 体を作る
+	*
+	* [EN]
+	* Creates the physics body from the settings.
+	*
+	* @brief Creates the body
 	*/
 	void Rigidbody::OnAwake()
 	{
 		Actor actor = GetActor();
 
-		/// [EN] Borrows the shape of the first collider found; each call adds a reference this component owns.
-		/// [JP] 最初に見つかったコライダーの形状を借りる。呼ぶたびに、このコンポーネントが持つ参照が1つ増える。
-		/// [EN] A MeshCollider is not looked for: its shape arrives later and replaces the fallback sphere.
-		/// [JP] MeshCollider は探さない。その形状は後から届き、代わりの球と差し替わる。
+		/// [JP] 同じアクターのコライダーから形を取る
+		/// [EN] Take the shape from a collider on the same actor
 		shapeHandle_ = [&]() -> ScShapeHandle
 		{
 			if (BoxCollider* collider = actor.GetComponent<BoxCollider>())
@@ -107,10 +99,8 @@ namespace SeedCore
 				return collider->GetShapeHandle();
 			}
 
-			/// [EN] Without a collider the body still needs a shape, so a small sphere stands in.
-			/// [JP] コライダーが無くてもボディには形状が要るので、小さな球で代用する。
-			/// [EN] Like SphereCollider, the radius follows the largest axis of the actor's own Scale combined with its parent's scale.
-			/// [JP] SphereCollider と同じく、半径は Actor 自身の Scale と親のスケールを掛けたものの最も大きい軸に合わせる。
+			/// [JP] コライダーがなければ、大きさに合わせた球を作る
+			/// [EN] With no collider, make a sphere that fits the scale
 			const Scale* scale = actor.GetComponent<Scale>();
 			Actor parentActor = actor.Parent();
 			Vector3 parentScale = Vector3::One;
@@ -125,8 +115,8 @@ namespace SeedCore
 			return actor.GetService<Physics>()->CreateSphereShape(defaultShapeRadius_ * Max(Abs(worldScale.x), Abs(worldScale.y), Abs(worldScale.z)));
 		}();
 
-		/// [EN] Starts with every axis free and removes each frozen one.
-		/// [JP] 全ての軸を自由にした状態から、固定した軸を1つずつ外す。
+		/// [JP] 固定する向きを、動いてよい向きから外す
+		/// [EN] Remove the locked directions from the allowed ones
 		ScAllowedDOFs allowedDOFs = [&]() -> ScAllowedDOFs
 		{
 			ScAllowedDOFs dofs = ScAllowedDOFsAll;
@@ -158,8 +148,8 @@ namespace SeedCore
 			return dofs;
 		}();
 
-		/// [EN] Shape, pose and EntityID, then the motion type and the layer packed from it and the actor's layer.
-		/// [JP] 形状・姿勢・EntityID、続いて運動タイプと、それと Actor のレイヤーからパックしたレイヤー。
+		/// [JP] 設定をまとめる。動き方はあとで変えられるようにしておく
+		/// [EN] Gather the settings, and allow the motion type to change later
 		RigidbodyDesc desc;
 		desc.shape_ = shapeHandle_;
 		PhysicsSystem::ApplyTransform(actor, desc);
@@ -168,8 +158,6 @@ namespace SeedCore
 		desc.continuousCollision_ = continuousCollision_;
 		desc.layer_ = ToObjectLayer(bodyType_, actor.Layer());
 
-		/// [EN] Material and motion settings; gravity off is a gravity factor of 0.
-		/// [JP] 材質と運動の設定。重力を切るのは、重力の倍率を 0 にすることと同じ。
 		desc.mass_ = mass_;
 		desc.linearDamping_ = linearDrag_;
 		desc.angularDamping_ = angularDrag_;
@@ -179,19 +167,17 @@ namespace SeedCore
 		desc.allowedDOFs_ = allowedDOFs;
 		desc.isSensor_ = isTrigger_;
 
-		/// [EN] A trigger is marked in the layer as well, so the layer filters can let it meet static and kinematic bodies.
-		/// [JP] トリガーはレイヤーにも印を付け、レイヤーフィルターがスタティック・キネマティックのボディと組ませられるようにする。
+		/// [JP] 重なり用なら層に印をつける
+		/// [EN] Mark the layer for an overlap-only body
 		if (isTrigger_)
 		{
 			desc.layer_ |= Layers::SENSOR;
 		}
 
-		/// [EN] A canvas body lives on the z = 0 plane and only collides with other canvas bodies.
-		/// [JP] Canvas のボディは z = 0 の平面上にあり、他の Canvas のボディとだけ衝突する。
+		/// [JP] 2D なら平面だけで動くようにする
+		/// [EN] For 2D, keep it moving on the plane only
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			/// [EN] Only X/Y movement and rotation about Z remain; the 3D freeze settings are remapped below.
-			/// [JP] 残るのは X/Y の移動と Z 軸まわりの回転だけ。3D 用の固定設定は下で置き換える。
 			desc.layer_ |= Layers::PLANAR;
 			desc.allowedDOFs_ = ScAllowedDOFsPlane2D;
 
@@ -205,40 +191,32 @@ namespace SeedCore
 				desc.allowedDOFs_ &= ~ScAllowedDOFsTranslationY;
 			}
 
-			/// [EN] The canvas angle is the rotation about Z, so the Z freeze locks it.
-			/// [JP] Canvas の角度は Z 軸まわりの回転なので、Z の固定でそれを固定する。
 			if (freezeRotationZ_)
 			{
 				desc.allowedDOFs_ &= ~ScAllowedDOFsRotationZ;
 			}
 		}
 
+		/// [JP] 体を作って、今の速さを伝える
+		/// [EN] Create the body and send the current speed
 		bodyID_ = actor.GetService<Physics>()->CreateRigidbody(desc);
 
-		/// [EN] A LinearVelocity and AngularVelocity set before play become the body's initial velocity and angular velocity.
-		/// [JP] プレイ前に設定した LinearVelocity と AngularVelocity は、ボディの初速と初期の角速度になる。
 		ApplyLinearVelocity();
 		ApplyAngularVelocity();
 	}
 
 	/**
-	* [EN]
-	* Copies the simulated pose of the body back to the actor's
-	* Position and Rotation, its linear velocity back to LinearVelocity,
-	* and its angular velocity back to AngularVelocity. Both velocities
-	* leave out what the foothold gives. The step's damping slows the
-	* whole velocity, the foothold's part included, so that part is
-	* first scaled by the same factor to match what the body still
-	* carries.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* シミュレーション後のボディの姿勢を Actor の Position と Rotation へ、
-	* 速度を LinearVelocity へ、角速度を AngularVelocity へ書き戻す。
-	* どちらの速度も、足場が与えている分は除く。ステップの減衰は足場の分も
-	* 含めた速度全体を弱めるので、先に足場の分へ同じ割合を掛け、ボディが
-	* 実際にまだ持っている分と揃える。
+	* 物理の体の動きを、アクターの位置・向き・速さに写す。
+	*
+	* @brief 体の動きを写す
+	* @param elapsedTime 前の物理の更新からの時間
+	*
+	* [EN]
+	* Copies the physics body's motion into the actor's position, facing and velocity.
+	*
+	* @brief Copies the body's motion
+	* @param elapsedTime Time since the last physics update
 	*/
 	void Rigidbody::OnFixedTick(Float elapsedTime)
 	{
@@ -247,10 +225,8 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Jolt slows a Dynamic body's whole velocity by max(0, 1 - drag * elapsedTime) each step, so the part the foothold gave shrinks by that same factor.
-		/// [JP] Jolt は Dynamic のボディの速度全体を毎ステップ max(0, 1 - 抵抗 * elapsedTime) 倍に弱めるので、足場から受けた分も同じ割合で小さくなる。
-		/// [EN] Only a body ApplyFoothold carries holds a foothold's part, under the same conditions.
-		/// [JP] 足場の分を持つのは ApplyFoothold が運ぶボディだけなので、条件もそれと揃える。
+		/// [JP] 足場から受け取った速さも、空気の抵抗で弱めていく
+		/// [EN] Let the speed taken from the foothold fade with drag too
 		if (followFoothold_ && bodyType_ == BodyType::Dynamic && !isTrigger_)
 		{
 			inheritedLinearVelocity_ *= Max(0.0f, 1.0f - linearDrag_ * elapsedTime);
@@ -259,16 +235,12 @@ namespace SeedCore
 
 		Actor actor = GetActor();
 
-		/// [EN] The velocity after the step is copied back and remembered, so ApplyLinearVelocity can tell a LinearVelocity written by code from this one.
-		/// [JP] ステップ後の速度を書き戻して覚えておき、ApplyLinearVelocity がコードから書かれた LinearVelocity とこれを見分けられるようにする。
+		/// [JP] 体の速さから足場の分を引いて、速さの部品に写す。2D はピクセルに直す
+		/// [EN] Copy the body speed minus the foothold part into the velocity part; pixels for 2D
 		if (LinearVelocity* velocity = actor.GetComponent<LinearVelocity>())
 		{
-			/// [EN] What the foothold gives is left out, so LinearVelocity is the body's velocity relative to its foothold.
-			/// [JP] 足場が与えている分を除き、LinearVelocity を足場に対するボディの速度にする。
 			Vector3 bodyVelocity = actor.GetService<Physics>()->BodyLinearVelocity(bodyID_) - inheritedLinearVelocity_;
 
-			/// [EN] Canvas bodies go back from meters per second (Y up) to pixels per second (Y down).
-			/// [JP] Canvas のボディは、メートル毎秒(Y 上向き)からピクセル毎秒(Y 下向き)へ戻す。
 			if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 			{
 				syncedLinearVelocity_ = Vector3(bodyVelocity.x * pixelsPerMeter_, -bodyVelocity.y * pixelsPerMeter_, 0.0f);
@@ -283,16 +255,12 @@ namespace SeedCore
 			velocity->z_ = syncedLinearVelocity_.z;
 		}
 
-		/// [EN] The angular velocity after the step is copied back and remembered the same way, for ApplyAngularVelocity.
-		/// [JP] ステップ後の角速度も同じように書き戻して覚えておき、ApplyAngularVelocity が見分けられるようにする。
+		/// [JP] 回る速さも同じように写す
+		/// [EN] Copy the spin the same way
 		if (AngularVelocity* velocity = actor.GetComponent<AngularVelocity>())
 		{
-			/// [EN] What the foothold gives is left out, so AngularVelocity is the body's angular velocity relative to its foothold.
-			/// [JP] 足場が与えている分を除き、AngularVelocity を足場に対するボディの角速度にする。
 			Vector3 bodyAngularVelocity = actor.GetService<Physics>()->BodyAngularVelocity(bodyID_) - inheritedAngularVelocity_;
 
-			/// [EN] A canvas body only turns about Z; the flipped Y reverses the direction of the turn, and an angle needs no pixel conversion.
-			/// [JP] Canvas のボディは Z 軸まわりにしか回らない。Y の反転で回る向きが逆になり、角度にはピクセルへの換算は要らない。
 			if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 			{
 				syncedAngularVelocity_ = Vector3(0.0f, 0.0f, -bodyAngularVelocity.z);
@@ -307,8 +275,6 @@ namespace SeedCore
 			velocity->z_ = syncedAngularVelocity_.z;
 		}
 
-		/// [EN] With neither Position nor Rotation there is nothing to write back.
-		/// [JP] Position も Rotation も無ければ、書き戻す先が無い。
 		Position* position = actor.GetComponent<Position>();
 		Rotation* rotation = actor.GetComponent<Rotation>();
 		if (!position && !rotation)
@@ -316,12 +282,12 @@ namespace SeedCore
 			return;
 		}
 
+		/// [JP] 体の位置と向きを取り、親から見た位置と向きに直す
+		/// [EN] Read the body's position and facing and make them relative to the parent
 		Matrix bodyMatrix = actor.GetService<Physics>()->BodyTransform(bodyID_);
 		Vector3 outPosition = bodyMatrix.Translation();
 		Quaternion outRotation = Quaternion::CreateFromRotationMatrix(bodyMatrix);
 
-		/// [EN] The body pose is in world space, while Position and Rotation are relative to the parent, so it is carried back by the inverse of the parent's world matrix; a root actor's parent space is the world itself.
-		/// [JP] ボディの姿勢はワールド空間にあり、Position と Rotation は親から見た値なので、親のワールド行列の逆で戻す。ルートの Actor にとって、親の空間はワールドそのもの。
 		Actor parentActor = actor.Parent();
 		Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
 		Vector3 parentScale;
@@ -333,12 +299,10 @@ namespace SeedCore
 		Quaternion inverseParentRotation;
 		inverseParentRotation = parentRotation.Inverse();
 
-		/// [EN] Canvas bodies go back from meters (Y up) to pixels (Y down).
-		/// [JP] Canvas のボディは、メートル(Y 上向き)からピクセル(Y 下向き)へ戻す。
+		/// [JP] 2D はピクセルに戻し、Z の回転だけを使う
+		/// [EN] For 2D, turn back into pixels and use only the Z turn
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			/// [EN] The body only turns about Z, so the angle is 2·atan2(z, w), negated with the flipped Y and stored as a rotation about Z.
-			/// [JP] ボディは Z 軸まわりにしか回らないので、角度は 2·atan2(z, w)。Y の反転に合わせて符号を反転し、Z 軸まわりの回転として格納する。
 			Quaternion canvasRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -2.0f * std::atan2(outRotation.z, outRotation.w));
 
 			if (position)
@@ -356,13 +320,13 @@ namespace SeedCore
 			return;
 		}
 
+		/// [JP] 3D はそのまま書き込む
+		/// [EN] For 3D, write them as they are
 		if (position)
 		{
 			Transform::Vector(*position, Vector3::TransformPosition(outPosition, inverseParentMatrix));
 		}
 
-		/// [EN] Rotation is stored as a normalized quaternion.
-		/// [JP] Rotation は正規化済みクォータニオンで持つ。
 		if (rotation)
 		{
 			Transform::Quat(*rotation, outRotation * inverseParentRotation);
@@ -370,14 +334,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Destroys the body, releases the reference to its shape, and forgets
-	* what the foothold gave.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* ボディを破棄し、形状への参照を解放し、足場から受けていた分を忘れる。
+	* 物理の体を消す。
+	*
+	* @brief 体を消す
+	*
+	* [EN]
+	* Removes the physics body.
+	*
+	* @brief Removes the body
 	*/
 	void Rigidbody::OnDestroy()
 	{
@@ -386,35 +351,31 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Only this component's reference is released; the collider keeps its own.
-		/// [JP] 解放するのはこのコンポーネントの参照だけで、コライダーは自分の参照を持ち続ける。
+		/// [JP] 体と形を消して、足場の分の速さも消す
+		/// [EN] Remove the body and shape, and clear the foothold speed
 		Actor actor = GetActor();
 		actor.GetService<Physics>()->DestroyBody(bodyID_);
 		actor.GetService<Physics>()->ReleaseShape(shapeHandle_);
 
 		bodyID_ = ScInvalidBodyID;
 
-		/// [EN] A new body starts on no foothold, so it is given nothing yet.
-		/// [JP] 新しいボディは足場に乗っていない状態から始めるので、まだ何も受けていない。
 		inheritedLinearVelocity_ = Vector3::Zero;
 		inheritedAngularVelocity_ = Vector3::Zero;
 	}
 
 	/**
-	* [EN]
-	* Rebuilds the body from the current settings, so a changed field
-	* takes effect. Does nothing while no body exists.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 現在の設定でボディを作り直し、変更したフィールドを効かせる。
-	* ボディが無い間は何もしない。
+	* 設定が変わったので、体を作り直す。
+	*
+	* @brief 体を作り直す
+	*
+	* [EN]
+	* The settings changed, so the body is made again.
+	*
+	* @brief Remakes the body
 	*/
 	void Rigidbody::OnRevision()
 	{
-		/// [EN] Before OnAwake or after OnDestroy there is no body to rebuild, and OnAwake builds it with the current settings anyway.
-		/// [JP] OnAwake 前や OnDestroy 後は作り直すボディが無く、OnAwake がいずれ現在の設定で作る。
 		if (bodyID_ == ScInvalidBodyID)
 		{
 			return;
@@ -425,17 +386,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Applies fields changed from code. An edit in the inspector runs
-	* OnRevision on its own, but a field written by a script takes
-	* effect only once this is called.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* コードから変えたフィールドを反映する。インスペクタでの編集は
-	* 自動で OnRevision が走るが、スクリプトから書き換えたフィールドは
-	* これを呼んだときに初めて効く。
+	* 体を作り直す。
+	*
+	* @brief 体を作り直す
+	*
+	* [EN]
+	* Remakes the body.
+	*
+	* @brief Remakes the body
 	*/
 	void Rigidbody::Dispatch()
 	{
@@ -443,22 +402,24 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Adds a force (N) at the center of mass for the next fixed step.
-	* On a canvas body the force is given in pixels with Y down, and
-	* its Z is ignored. Only a Dynamic body is affected.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 次の固定ステップの間、重心に力(N)を加える。Canvas のボディでは
-	* 力をピクセル単位・Y 下向きで与え、Z は無視する。効くのは Dynamic
-	* のボディだけ。
+	* 体に力をかける。重さに合わせて少しずつ速くなる。
+	*
+	* @brief 力をかける
+	* @param force かける力。2D はピクセル単位
+	* @note  重さで動く体（Dynamic）にしか効かない
+	*
+	* [EN]
+	* Pushes the body with a force; it speeds up gradually, depending on its mass.
+	*
+	* @brief Adds a force
+	* @param force The force; pixels for 2D
+	* @note  Only works on a Dynamic body
 	*/
 	void Rigidbody::AddForce(const Vector3& force)
 	{
-		/// [EN] The body exists only between OnAwake and OnDestroy, and a force moves only a Dynamic body.
-		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、力で動くのは Dynamic のボディだけ。
+		/// [JP] 体がない・重さで動く体でないときは使えない
+		/// [EN] It cannot be used without a body or on a non-Dynamic body
 		if (bodyID_ == ScInvalidBodyID)
 		{
 			SC_LOG_ERROR("Rigidbody::AddForce を適用できません: ボディが生成されていません。");
@@ -473,8 +434,8 @@ namespace SeedCore
 
 		Actor actor = GetActor();
 
-		/// [EN] Canvas bodies go from pixels (Y down) to meters (Y up); the body stays on the z = 0 plane.
-		/// [JP] Canvas のボディは、ピクセル(Y 下向き)からメートル(Y 上向き)へ直す。ボディは z = 0 の平面上に留まる。
+		/// [JP] 2D はピクセルをメートルに直し、Y を逆にする
+		/// [EN] For 2D, turn pixels into meters and flip Y
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
 			actor.GetService<Physics>()->AddForce(bodyID_, Vector3(force.x / pixelsPerMeter_, -force.y / pixelsPerMeter_, 0.0f));
@@ -485,22 +446,24 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Adds an impulse (kg·m/s) at the center of mass, changing the
-	* velocity at once. On a canvas body the impulse is given in pixels
-	* with Y down, and its Z is ignored. Only a Dynamic body is affected.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 重心に力積(kg·m/s)を加え、速度を一度に変える。Canvas のボディでは
-	* 力積をピクセル単位・Y 下向きで与え、Z は無視する。効くのは Dynamic
-	* のボディだけ。
+	* 体を一瞬でぽんと押す。
+	*
+	* @brief 一瞬押す
+	* @param impulse 押す強さ。2D はピクセル単位
+	* @note  重さで動く体（Dynamic）にしか効かない
+	*
+	* [EN]
+	* Gives the body a quick shove.
+	*
+	* @brief Adds an impulse
+	* @param impulse How hard to shove; pixels for 2D
+	* @note  Only works on a Dynamic body
 	*/
 	void Rigidbody::AddImpulse(const Vector3& impulse)
 	{
-		/// [EN] The body exists only between OnAwake and OnDestroy, and an impulse moves only a Dynamic body.
-		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、力積で動くのは Dynamic のボディだけ。
+		/// [JP] 体がない・重さで動く体でないときは使えない
+		/// [EN] It cannot be used without a body or on a non-Dynamic body
 		if (bodyID_ == ScInvalidBodyID)
 		{
 			SC_LOG_ERROR("Rigidbody::AddImpulse を適用できません: ボディが生成されていません。");
@@ -515,8 +478,8 @@ namespace SeedCore
 
 		Actor actor = GetActor();
 
-		/// [EN] Canvas bodies go from pixels (Y down) to meters (Y up); the body stays on the z = 0 plane.
-		/// [JP] Canvas のボディは、ピクセル(Y 下向き)からメートル(Y 上向き)へ直す。ボディは z = 0 の平面上に留まる。
+		/// [JP] 2D はピクセルをメートルに直し、Y を逆にする
+		/// [EN] For 2D, turn pixels into meters and flip Y
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
 			actor.GetService<Physics>()->AddImpulse(bodyID_, Vector3(impulse.x / pixelsPerMeter_, -impulse.y / pixelsPerMeter_, 0.0f));
@@ -527,22 +490,24 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Adds a world-space torque (N·m) for the next fixed step. On a
-	* canvas body only Z is used, as the in-plane torque in the same
-	* direction as the canvas angle. Only a Dynamic body is affected.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 次の固定ステップの間、ワールド空間のトルク(N·m)を加える。Canvas の
-	* ボディでは Z だけを、Canvas の角度と同じ向きの平面内トルクとして使う。
-	* 効くのは Dynamic のボディだけ。
+	* 体を回そうとする力をかける。
+	*
+	* @brief 回す力をかける
+	* @param torque 回す力。2D は Z だけ使う
+	* @note  重さで動く体（Dynamic）にしか効かない
+	*
+	* [EN]
+	* Applies a turning force to the body.
+	*
+	* @brief Adds a torque
+	* @param torque The turning force; 2D uses only Z
+	* @note  Only works on a Dynamic body
 	*/
 	void Rigidbody::AddTorque(const Vector3& torque)
 	{
-		/// [EN] The body exists only between OnAwake and OnDestroy, and a torque turns only a Dynamic body.
-		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、トルクで回るのは Dynamic のボディだけ。
+		/// [JP] 体がない・重さで動く体でないときは使えない
+		/// [EN] It cannot be used without a body or on a non-Dynamic body
 		if (bodyID_ == ScInvalidBodyID)
 		{
 			SC_LOG_ERROR("Rigidbody::AddTorque を適用できません: ボディが生成されていません。");
@@ -557,10 +522,8 @@ namespace SeedCore
 
 		Actor actor = GetActor();
 
-		/// [EN] A canvas body only turns about Z, and the canvas angle runs opposite to the physics angle because of the flipped Y, so Z is negated.
-		/// [JP] Canvas のボディは Z 軸まわりにしか回らず、Y の反転により Canvas の角度は物理の角度と逆向きなので、Z を反転する。
-		/// [EN] Torque carries length squared (kg·m²/s²), so pixels come back to meters by dividing twice.
-		/// [JP] トルクは長さの2乗(kg·m²/s²)を含むので、ピクセルからメートルへは2回割って戻す。
+		/// [JP] 2D は Z の回転だけを、向きを逆にして使う
+		/// [EN] For 2D, use only the Z turn, reversed
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
 			actor.GetService<Physics>()->AddTorque(bodyID_, Vector3(0.0f, 0.0f, -torque.z / (pixelsPerMeter_ * pixelsPerMeter_)));
@@ -571,23 +534,24 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Adds a world-space angular impulse (N·m·s), changing the angular
-	* velocity at once. On a canvas body only Z is used, as the
-	* in-plane angular impulse in the same direction as the canvas angle.
-	* Only a Dynamic body is affected.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* ワールド空間の角力積(N·m·s)を加え、角速度を一度に変える。Canvas の
-	* ボディでは Z だけを、Canvas の角度と同じ向きの平面内の角力積として
-	* 使う。効くのは Dynamic のボディだけ。
+	* 体を一瞬でぽんと回す。
+	*
+	* @brief 一瞬回す
+	* @param angularImpulse 回す強さ。2D は Z だけ使う
+	* @note  重さで動く体（Dynamic）にしか効かない
+	*
+	* [EN]
+	* Gives the body a quick spin.
+	*
+	* @brief Adds a spin
+	* @param angularImpulse How hard to spin; 2D uses only Z
+	* @note  Only works on a Dynamic body
 	*/
 	void Rigidbody::AddSpin(const Vector3& angularImpulse)
 	{
-		/// [EN] The body exists only between OnAwake and OnDestroy, and an angular impulse turns only a Dynamic body.
-		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、角力積で回るのは Dynamic のボディだけ。
+		/// [JP] 体がない・重さで動く体でないときは使えない
+		/// [EN] It cannot be used without a body or on a non-Dynamic body
 		if (bodyID_ == ScInvalidBodyID)
 		{
 			SC_LOG_ERROR("Rigidbody::AddSpin を適用できません: ボディが生成されていません。");
@@ -602,10 +566,8 @@ namespace SeedCore
 
 		Actor actor = GetActor();
 
-		/// [EN] A canvas body only turns about Z, and the canvas angle runs opposite to the physics angle because of the flipped Y, so Z is negated.
-		/// [JP] Canvas のボディは Z 軸まわりにしか回らず、Y の反転により Canvas の角度は物理の角度と逆向きなので、Z を反転する。
-		/// [EN] Angular impulse carries length squared (kg·m²/s), so pixels come back to meters by dividing twice.
-		/// [JP] 角力積は長さの2乗(kg·m²/s)を含むので、ピクセルからメートルへは2回割って戻す。
+		/// [JP] 2D は Z の回転だけを、向きを逆にして使う
+		/// [EN] For 2D, use only the Z turn, reversed
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
 			actor.GetService<Physics>()->AddSpin(bodyID_, Vector3(0.0f, 0.0f, -angularImpulse.z / (pixelsPerMeter_ * pixelsPerMeter_)));
@@ -616,32 +578,28 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Moves the body so that it reaches the target position and rotation
-	* after elapsedTime, carrying along whatever stands on it. Call it
-	* every fixed step with that step's elapsedTime. On a canvas body the
-	* position is given in pixels with Y down and its Z is ignored, and
-	* only the rotation about Z is used. Only a Kinematic body is affected.
-	* The body moves and turns by the velocity and angular velocity this
-	* sets, which it keeps until the next call or until LinearVelocity or
-	* AngularVelocity is written, so the body does not stop at the target
-	* by itself.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* elapsedTime 後に目標の位置と回転へ着くようボディを動かし、上に乗って
-	* いるものも一緒に運ぶ。固定ステップごとに、そのステップの elapsedTime
-	* を渡して呼ぶ。Canvas のボディでは位置をピクセル単位・Y 下向きで与えて
-	* Z は無視し、回転は Z 軸まわりだけを使う。効くのは Kinematic のボディ
-	* だけ。ボディはこれが設定した速度と角速度で動き、それらは次の呼び出しか
-	* LinearVelocity・AngularVelocity への書き込みまで保たれるので、目標で
-	* 自然には止まらない。
+	* 次の位置と向きまで、この時間で動かす。毎フレーム呼んで使う。
+	*
+	* @brief 目標まで動かす
+	* @param targetPosition 目標の位置
+	* @param targetRotation 目標の向き
+	* @param elapsedTime    たどり着くまでの時間
+	* @note  プログラムで動かす体（Kinematic）にしか効かない
+	*
+	* [EN]
+	* Moves the body to its next position and facing over this time; call it every frame.
+	*
+	* @brief Moves to a target
+	* @param targetPosition The target position
+	* @param targetRotation The target facing
+	* @param elapsedTime    How long it has to get there
+	* @note  Only works on a Kinematic body
 	*/
 	void Rigidbody::MoveTarget(const Vector3& targetPosition, const Quaternion& targetRotation, Float elapsedTime)
 	{
-		/// [EN] The body exists only between OnAwake and OnDestroy, and only a Kinematic body follows a target.
-		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、目標に従うのは Kinematic のボディだけ。
+		/// [JP] 体がない・プログラムで動かす体でない・時間が 0 以下なら使えない
+		/// [EN] It cannot be used without a body, on a non-Kinematic body, or with no time
 		if (bodyID_ == ScInvalidBodyID)
 		{
 			SC_LOG_ERROR("Rigidbody::MoveTarget を適用できません: ボディが生成されていません。");
@@ -654,8 +612,6 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] The body's velocity is the distance divided by elapsedTime, so the step must have a positive length.
-		/// [JP] ボディの速度は距離を elapsedTime で割ったものなので、ステップの長さは正でなければならない。
 		if (elapsedTime <= 0.0f)
 		{
 			SC_LOG_ERROR("Rigidbody::MoveTarget を適用できません: elapsedTime は正の値が必要です (現在: {})。", elapsedTime);
@@ -664,12 +620,10 @@ namespace SeedCore
 
 		Actor actor = GetActor();
 
-		/// [EN] A canvas body goes from pixels (Y down) to meters (Y up) on the z = 0 plane.
-		/// [JP] Canvas のボディは、ピクセル(Y 下向き)から z = 0 平面上のメートル(Y 上向き)へ変換する。
+		/// [JP] 2D は位置と向きを物理の単位に直す
+		/// [EN] For 2D, convert the position and facing to physics units
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			/// [EN] The canvas angle is 2·atan2(z, w); it is negated with the flipped Y and rebuilt as a pure rotation about Z.
-			/// [JP] Canvas の角度は 2·atan2(z, w)。Y の反転に合わせて符号を反転し、Z 軸まわりだけの回転として作り直す。
 			Quaternion physicsRotation = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -2.0f * std::atan2(targetRotation.z, targetRotation.w));
 			actor.GetService<Physics>()->MoveTarget(bodyID_, Vector3(targetPosition.x / pixelsPerMeter_, -targetPosition.y / pixelsPerMeter_, 0.0f), physicsRotation, elapsedTime);
 			return;
@@ -679,30 +633,28 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Moves the body to the target position and rotation over duration
-	* seconds and stops it there, carrying along whatever stands on it.
-	* Call it once; each fixed step then advances the body by its share
-	* of the remaining distance, and the step after arrival sets the
-	* velocity and angular velocity back to zero. Calling it again while
-	* moving replaces the target. On a canvas body the position is given
-	* in pixels with Y down and its Z is ignored, and only the rotation
-	* about Z is used. Only a Kinematic body is affected.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* duration 秒かけて目標の位置と回転までボディを動かして止め、上に乗って
-	* いるものも一緒に運ぶ。呼ぶのは一度だけでよく、以降は固定ステップごとに
-	* 残りの距離のうちそのステップの分だけ進み、着いた次のステップで速度と
-	* 角速度を 0 に戻す。移動中にもう一度呼ぶと目標を置き換える。Canvas の
-	* ボディでは位置をピクセル単位・Y 下向きで与えて Z は無視し、回転は Z 軸
-	* まわりだけを使う。効くのは Kinematic のボディだけ。
+	* 目標の位置と向きまで、決めた時間をかけて自動で動かす。
+	*
+	* @brief 時間をかけて動かす
+	* @param targetPosition 目標の位置
+	* @param targetRotation 目標の向き
+	* @param duration       かける時間
+	* @note  プログラムで動かす体（Kinematic）にしか効かない
+	*
+	* [EN]
+	* Moves the body to a target position and facing on its own, over a set time.
+	*
+	* @brief Moves over time
+	* @param targetPosition The target position
+	* @param targetRotation The target facing
+	* @param duration       How long to take
+	* @note  Only works on a Kinematic body
 	*/
 	void Rigidbody::MoveTo(const Vector3& targetPosition, const Quaternion& targetRotation, Float duration)
 	{
-		/// [EN] The body exists only between OnAwake and OnDestroy, and only a Kinematic body follows a target.
-		/// [JP] ボディが存在するのは OnAwake から OnDestroy までの間だけで、目標に従うのは Kinematic のボディだけ。
+		/// [JP] 体がない・プログラムで動かす体でない・時間が 0 以下なら使えない
+		/// [EN] It cannot be used without a body, on a non-Kinematic body, or with no time
 		if (bodyID_ == ScInvalidBodyID)
 		{
 			SC_LOG_ERROR("Rigidbody::MoveTo を適用できません: ボディが生成されていません。");
@@ -715,8 +667,6 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Each step's velocity is the remaining distance divided by the remaining time, so the move must have a positive length.
-		/// [JP] 各ステップの速度は残りの距離を残り時間で割ったものなので、移動時間は正でなければならない。
 		if (duration <= 0.0f)
 		{
 			SC_LOG_ERROR("Rigidbody::MoveTo を適用できません: duration は正の値が必要です (現在: {})。", duration);
@@ -725,10 +675,8 @@ namespace SeedCore
 
 		Actor actor = GetActor();
 
-		/// [EN] The target is kept in physics space, so every step works on the body's own pose without converting again.
-		/// [JP] 目標は物理空間で持っておき、各ステップは変換し直さずにボディ自身の姿勢と比べる。
-		/// [EN] A canvas body goes from pixels (Y down) to meters (Y up) on the z = 0 plane, and its angle 2·atan2(z, w) is negated with the flipped Y.
-		/// [JP] Canvas のボディは、ピクセル(Y 下向き)から z = 0 平面上のメートル(Y 上向き)へ変換し、角度 2·atan2(z, w) は Y の反転に合わせて符号を反転する。
+		/// [JP] 目標を物理の単位で覚えて、動き始める
+		/// [EN] Remember the target in physics units and start moving
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
 			moveTargetPosition_ = Vector3(targetPosition.x / pixelsPerMeter_, -targetPosition.y / pixelsPerMeter_, 0.0f);
@@ -746,14 +694,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns the Jolt ID of the body; invalid before OnAwake and after
-	* OnDestroy.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* ボディの Jolt ID を返す。OnAwake 前と OnDestroy 後は無効な ID。
+	* 物理の体の番号を返す。
+	*
+	* @brief  体の番号を返す
+	* @return 体の番号。まだなければ無効な番号
+	*
+	* [EN]
+	* Returns the physics body number.
+	*
+	* @brief  Returns the body number
+	* @return The body number, or the invalid number if there is none yet
 	*/
 	ScBodyID Rigidbody::BodyID()const
 	{
@@ -761,45 +712,36 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Hands what code has changed since the last step (bodyType_,
-	* isTrigger_, and the actor's LinearVelocity and AngularVelocity) to
-	* the body, so it takes effect in the next step, and advances a move
-	* started by MoveTo by one step of elapsedTime. Called by
-	* PhysicsSystem before every fixed step.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Actor の LinearVelocity と AngularVelocity をボディへ渡し、MoveTo で
-	* 始めた移動を elapsedTime の1ステップ分進める。
-	* 固定ステップの前に PhysicsSystem から毎回呼ばれる。
+	* スクリプトが変えた速さと、自動の移動を体に伝える。
+	*
+	* @brief 速さと移動を伝える
+	* @param elapsedTime 前の物理の更新からの時間
+	*
+	* [EN]
+	* Sends speed changes made by scripts and the automatic move to the body.
+	*
+	* @brief Applies speed and movement
+	* @param elapsedTime Time since the last physics update
 	*/
 	void Rigidbody::Apply(Float elapsedTime)
 	{
 		ApplyLinearVelocity();
 		ApplyAngularVelocity();
 
-		/// [EN] The move comes last, so while it is in progress its velocity wins over a LinearVelocity or AngularVelocity written by code.
-		/// [JP] 移動は最後に行い、移動中はコードから書かれた LinearVelocity・AngularVelocity よりも移動の速度を優先する。
 		ApplyMove(elapsedTime);
 	}
 
 	/**
-	* [EN]
-	* Hands the actor's LinearVelocity to the body when it differs from
-	* the value last copied back. On a canvas body the velocity is in
-	* pixels per second with Y down, and its Z is ignored. The value is
-	* relative to the foothold, so the body receives it with what the
-	* foothold gives added. A Static body is not affected.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Actor の LinearVelocity が前回書き戻した値と違えばボディへ渡す。
-	* Canvas のボディでは速度をピクセル毎秒・Y 下向きで与え、Z は無視する。
-	* 値は足場に対するものなので、足場が与えている分を足してボディへ渡す。
-	* Static のボディには効かない。
+	* 速さの部品が変わっていたら、体の速さに写す。
+	*
+	* @brief 速さを体に写す
+	*
+	* [EN]
+	* If the velocity part changed, copies it to the body.
+	*
+	* @brief Applies the velocity
 	*/
 	void Rigidbody::ApplyLinearVelocity()
 	{
@@ -815,19 +757,17 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] A LinearVelocity equal to the last exchanged value was not touched by code, and the body keeps whatever velocity it has (including one from MoveTarget).
-		/// [JP] 最後にやり取りした値と同じ LinearVelocity はコードが触っていないので、ボディは今の速度(MoveTarget によるものも含む)を保つ。
+		/// [JP] スクリプトが変えていなければ何もしない
+		/// [EN] Do nothing if no script changed it
 		if (velocity->x_ == syncedLinearVelocity_.x && velocity->y_ == syncedLinearVelocity_.y && velocity->z_ == syncedLinearVelocity_.z)
 		{
 			return;
 		}
 
+		/// [JP] 変えた速さに足場の分を足して、体に伝える。2D はメートルに直す
+		/// [EN] Add the foothold part to the new speed and send it to the body; meters for 2D
 		syncedLinearVelocity_ = Vector3(velocity->x_, velocity->y_, velocity->z_);
 
-		/// [EN] The written velocity is relative to the foothold, so the body receives it with what the foothold gives added back.
-		/// [JP] 書かれた速度は足場に対する値なので、足場が与えている分を足し戻してボディへ渡す。
-		/// [EN] A canvas velocity goes from pixels per second (Y down) to meters per second (Y up) on the z = 0 plane.
-		/// [JP] Canvas の速度は、ピクセル毎秒(Y 下向き)から z = 0 平面上のメートル毎秒(Y 上向き)へ変換する。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
 			actor.GetService<Physics>()->BodyLinearVelocity(bodyID_, Vector3(syncedLinearVelocity_.x / pixelsPerMeter_, -syncedLinearVelocity_.y / pixelsPerMeter_, 0.0f) + inheritedLinearVelocity_);
@@ -838,21 +778,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Hands the actor's AngularVelocity to the body when it differs from
-	* the value last copied back. On a canvas body only Z is used, as the
-	* in-plane angular velocity in the same direction as the canvas
-	* angle. The value is relative to the foothold, so the body receives
-	* it with what the foothold gives added. A Static body is not
-	* affected.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Actor の AngularVelocity が前回書き戻した値と違えばボディへ渡す。
-	* Canvas のボディでは Z だけを、Canvas の角度と同じ向きの平面内の角速度
-	* として使う。値は足場に対するものなので、足場が与えている分を足して
-	* ボディへ渡す。Static のボディには効かない。
+	* 回る速さの部品が変わっていたら、体の回る速さに写す。
+	*
+	* @brief 回る速さを体に写す
+	*
+	* [EN]
+	* If the spin part changed, copies it to the body.
+	*
+	* @brief Applies the spin
 	*/
 	void Rigidbody::ApplyAngularVelocity()
 	{
@@ -868,19 +802,17 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] An AngularVelocity equal to the last exchanged value was not touched by code, and the body keeps whatever angular velocity it has (including one from MoveTarget).
-		/// [JP] 最後にやり取りした値と同じ AngularVelocity はコードが触っていないので、ボディは今の角速度(MoveTarget によるものも含む)を保つ。
+		/// [JP] スクリプトが変えていなければ何もしない
+		/// [EN] Do nothing if no script changed it
 		if (velocity->x_ == syncedAngularVelocity_.x && velocity->y_ == syncedAngularVelocity_.y && velocity->z_ == syncedAngularVelocity_.z)
 		{
 			return;
 		}
 
+		/// [JP] 変えた回る速さに足場の分を足して、体に伝える
+		/// [EN] Add the foothold part to the new spin and send it to the body
 		syncedAngularVelocity_ = Vector3(velocity->x_, velocity->y_, velocity->z_);
 
-		/// [EN] The written angular velocity is relative to the foothold, so the body receives it with what the foothold gives added back.
-		/// [JP] 書かれた角速度は足場に対する値なので、足場が与えている分を足し戻してボディへ渡す。
-		/// [EN] A canvas body only turns about Z; the flipped Y reverses the direction of the turn, and an angle needs no pixel conversion.
-		/// [JP] Canvas のボディは Z 軸まわりにしか回らない。Y の反転で回る向きが逆になり、角度にはピクセルへの換算は要らない。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
 			actor.GetService<Physics>()->BodyAngularVelocity(bodyID_, Vector3(0.0f, 0.0f, -syncedAngularVelocity_.z) + inheritedAngularVelocity_);
@@ -891,19 +823,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Advances a move started by MoveTo by one step of elapsedTime:
-	* targets the point that splits the remaining distance by this
-	* step's share of the remaining time, and once the time is used up,
-	* sets the velocity and angular velocity back to zero so the body
-	* stays at the target.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* MoveTo で始めた移動を elapsedTime の1ステップ分進める。残りの距離を、
-	* 残り時間に占めるこのステップの割合で分けた点を目標にし、時間を使い
-	* 切ったら速度と角速度を 0 に戻してボディを目標に留める。
+	* MoveTo で決めた目標に向けて、少しずつ動かす。
+	*
+	* @brief 目標へ少し動かす
+	* @param elapsedTime 前の物理の更新からの時間
+	*
+	* [EN]
+	* Moves a little toward the target set by MoveTo.
+	*
+	* @brief Steps toward the target
+	* @param elapsedTime Time since the last physics update
 	*/
 	void Rigidbody::ApplyMove(Float elapsedTime)
 	{
@@ -912,13 +842,13 @@ namespace SeedCore
 			return;
 		}
 
+		/// [JP] 動いていない、またはプログラムで動かす体でなければ終わる
+		/// [EN] Stop if it is not moving or not Kinematic
 		if (!moving_)
 		{
 			return;
 		}
 
-		/// [EN] A body switched away from Kinematic during the move no longer follows a target, so the move ends there.
-		/// [JP] 移動中に Kinematic 以外へ切り替えられたボディは目標に従わないので、移動はそこで終わる。
 		if (bodyType_ != BodyType::Kinematic)
 		{
 			moving_ = false;
@@ -927,8 +857,8 @@ namespace SeedCore
 
 		Physics& physics = *GetActor().GetService<Physics>();
 
-		/// [EN] The body reached the target in the last step; a kinematic body keeps its velocity until it is overwritten, so it is set back to zero here.
-		/// [JP] ボディは直前のステップで目標に着いている。Kinematic のボディは上書きされるまで速度を保つので、ここで 0 に戻す。
+		/// [JP] 時間が来たら止めて終わる
+		/// [EN] Once time is up, stop it and finish
 		if (moveRemainingTime_ <= 0.0f)
 		{
 			physics.BodyLinearVelocity(bodyID_, Vector3::Zero);
@@ -937,12 +867,12 @@ namespace SeedCore
 			return;
 		}
 
+		/// [JP] 残り時間に合わせて、目標までの一部だけ進める
+		/// [EN] Move part of the way to the target, based on the time left
 		Matrix bodyMatrix = physics.BodyTransform(bodyID_);
 		Vector3 currentPosition = bodyMatrix.Translation();
 		Quaternion currentRotation = Quaternion::CreateFromRotationMatrix(bodyMatrix);
 
-		/// [EN] This step covers elapsedTime out of the remaining time, so it goes that share of the way from the current pose; the last step's share is 1 and lands exactly on the target.
-		/// [JP] このステップは残り時間のうち elapsedTime の分を受け持つので、今の姿勢からその割合だけ進む。最後のステップは割合が 1 になり、ちょうど目標に着く。
 		Float ratio = std::min(elapsedTime / moveRemainingTime_, 1.0f);
 		Vector3 stepPosition = Vector3::Lerp(currentPosition, moveTargetPosition_, ratio);
 		Quaternion stepRotation = Quaternion::Slerp(currentRotation, moveTargetRotation_, ratio);
@@ -952,33 +882,20 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Carries the body along with the body it stands on for the coming
-	* step of elapsedTime. The velocity the foothold gave in the last
-	* step is swapped for the one it gives in this step, so only a
-	* change in the foothold's motion reaches the body and nothing
-	* builds up. In the air the horizontal velocity and the turn carried
-	* so far are kept, and the step's damping slows them along with the
-	* body's own, while the vertical velocity stays in the body's own.
-	* Called by PhysicsSystem after every Rigidbody has run Apply, so each
-	* foothold's velocity for the step is already set.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* これから進む elapsedTime の1ステップの間、乗っているボディと一緒に
-	* このボディを運ぶ。前のステップで足場から受けた速度を、このステップで
-	* 受ける速度に入れ替えるので、ボディに届くのは足場の動きの変化分だけで、
-	* 何も溜まっていかない。空中では、それまで受けていた水平の速度と回転を
-	* 残し、ステップの減衰がボディ自身の速度と一緒にそれを弱める。垂直の
-	* 速度はボディ自身の速度に残す。
-	* 全 Rigidbody の Apply が済み、各足場のこのステップの速度が決まった後に
-	* PhysicsSystem から呼ばれる。
+	* 動く足場に乗っていたら、足場の動きを体に足す。
+	*
+	* @brief 足場の動きを足す
+	* @param elapsedTime 前の物理の更新からの時間
+	*
+	* [EN]
+	* If it stands on a moving foothold, adds the foothold's motion to the body.
+	*
+	* @brief Adds the foothold motion
+	* @param elapsedTime Time since the last physics update
 	*/
 	void Rigidbody::ApplyFoothold(Float elapsedTime)
 	{
-		/// [EN] Only a solid Dynamic body that asks for it is carried, and the step must have a length to turn a displacement into a velocity.
-		/// [JP] 運ぶのは、それを求めている実体のある Dynamic のボディだけ。移動量を速度に直すため、ステップには長さが要る。
 		if (bodyID_ == ScInvalidBodyID || !followFoothold_ || bodyType_ != BodyType::Dynamic || isTrigger_ || elapsedTime <= 0.0f)
 		{
 			return;
@@ -987,25 +904,26 @@ namespace SeedCore
 		Actor actor = GetActor();
 		Physics& physics = *actor.GetService<Physics>();
 
+		/// [JP] 真下に足場があるかを探す
+		/// [EN] Look for a foothold right underneath
 		Vector3 nextLinearVelocity = { 0.0f, 0.0f, 0.0f };
 		Vector3 nextAngularVelocity = { 0.0f, 0.0f, 0.0f };
 
-		/// [EN] A short sweep is enough, since a body resting on its foothold is already touching it.
-		/// [JP] 足場の上で止まっているボディは既に触れているので、短い掃引で足りる。
 		ScBodyID footholdID;
 		physics.BodyFoothold(bodyID_, ToRadians(footholdSlopeAngle_), 0.05f, footholdID);
 
+		/// [JP] 足場があれば、足場がこの時間に動く分を速さにする
+		/// [EN] With a foothold, turn how far it moves in this time into speed
 		if (footholdID != ScInvalidBodyID)
 		{
-			/// [EN] The point of the foothold under the body's origin moves this far over the step; as a velocity, that is what carries the body exactly along, around a turn as well.
-			/// [JP] ボディの原点にある足場の点が、このステップでこれだけ動く。それを速度にしたものが、回転も含めてボディをちょうど運ぶ速度になる。
 			Vector3 displacement;
 			physics.BodyPointDisplacement(footholdID, physics.BodyTransform(bodyID_).Translation(), elapsedTime, displacement);
 			nextLinearVelocity = displacement / elapsedTime;
 
-			/// [EN] Only the turn about the up axis is passed on, so a tilting foothold does not tip the body over; a canvas body turns only about Z, so that axis is passed on instead.
-			/// [JP] 渡すのは上向きの軸まわりの回転だけで、足場が傾いてもボディは倒さない。Canvas のボディは Z 軸まわりにしか回らないので、代わりにその軸の回転を渡す。
 			Vector3 footholdAngularVelocity = physics.BodyAngularVelocity(footholdID);
+
+			/// [JP] 回転は、2D なら Z、3D なら Y だけ受け取る
+			/// [EN] Take only the Z turn for 2D, or the Y turn for 3D
 			if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 			{
 				nextAngularVelocity = Vector3(0.0f, 0.0f, footholdAngularVelocity.z);
@@ -1017,16 +935,14 @@ namespace SeedCore
 		}
 		else
 		{
-			/// [EN] In the air the horizontal velocity and the turn carried so far are kept as they are; the step's damping already slows them at the same rate as the body's own, so landing back on the same foothold does not give them twice.
-			/// [JP] 空中では、それまで受けていた水平の速度と回転をそのまま残す。ステップの減衰がボディ自身と同じ割合で既に弱めているので、同じ足場に戻っても二重に受けない。
-			/// [EN] The vertical part becomes the body's own, so gravity acts on the whole of it.
-			/// [JP] 垂直の分はボディ自身の速度になり、重力がその全体に働く。
+			/// [JP] 足場がなければ、横の速さだけを持ち越す
+			/// [EN] Without a foothold, carry over only the sideways speed
 			nextLinearVelocity = Vector3(inheritedLinearVelocity_.x, 0.0f, inheritedLinearVelocity_.z);
 			nextAngularVelocity = inheritedAngularVelocity_;
 		}
 
-		/// [EN] What the foothold gave in the last step is swapped for what it gives now, so only the change reaches the body.
-		/// [JP] 前のステップで足場から受けた分を今受ける分に入れ替え、ボディには変化分だけを届ける。
+		/// [JP] 前の足場の分を引いて、新しい足場の分を足す
+		/// [EN] Take off the old foothold part and add the new one
 		physics.BodyLinearVelocity(bodyID_, physics.BodyLinearVelocity(bodyID_) - inheritedLinearVelocity_ + nextLinearVelocity);
 		physics.BodyAngularVelocity(bodyID_, physics.BodyAngularVelocity(bodyID_) - inheritedAngularVelocity_ + nextAngularVelocity);
 

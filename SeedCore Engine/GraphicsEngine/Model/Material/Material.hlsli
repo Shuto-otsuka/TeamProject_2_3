@@ -7,11 +7,6 @@
 #include <GraphicsEngine/Shader/Sampler.hlsli>
 #include <GraphicsEngine/Shader/Vertex.hlsli>
 
-// Fully resolved material at one point of the G-Buffer surface, ready for
-// EvalDirectLightDispatch: weather (wetness, puddles, snow) and every KHR
-// material extension (specular, iridescence, transmission, clearcoat,
-// anisotropy, sheen) are already folded in. Shared by every pass that lights
-// the G-Buffer surface, so a light's response is identical between them.
 struct SurfaceMaterial
 {
 	float3 diffuse_color_;
@@ -30,22 +25,6 @@ struct SurfaceMaterial
 	float anisotropy_strength_;
 };
 
-// Builds a SurfaceMaterial from the G-Buffer values (Material.BaseColor,
-// Material.NormalRoughness), the surface's ModelStructuredBuffer and its
-// VisibilityUV. tangent_bits is Material.Tangent (PackTangentAngle's 16
-// bits), which rebuilds the tangent basis for the clearcoat normal map and the
-// anisotropy direction. wetness and snow_coverage are the weather's global
-// amounts. texcoord_dx/texcoord_dy are the texcoord's screen derivatives,
-// which pick the mip of every extension texture.
-//
-// Weather reshapes the base surface first, so the analytic terms and every
-// extension read the weathered surface: rain only wets faces that catch it
-// (weighted by normal.y), standing water further needs near-flat ground, and
-// snow covers upward faces. Roughness then stays at or above 0.045, because
-// the GGX peak 1 / (PI * alpha^2) with alpha = roughness^2 grows with the
-// fourth power as roughness falls and this floor keeps it inside half-float
-// range. A wet film raises grazing-angle reflectance and a puddle raises it
-// further, toward water.
 SurfaceMaterial LoadSurfaceMaterial(float3 base_color, float metallic, float roughness, float3 normal, float3 view, ModelStructuredBuffer instance, float2 texcoord, float2 texcoord_dx, float2 texcoord_dy, uint tangent_bits, float wetness, float snow_coverage)
 {
 	float up_facing = saturate(normal.y);
@@ -99,14 +78,10 @@ SurfaceMaterial LoadSurfaceMaterial(float3 base_color, float metallic, float rou
 		transmission_factor *= transmission_texture.SampleGrad(sampler_linear_wrap, texcoord, texcoord_dx, texcoord_dy).r;
 	}
 
-	// KHR_materials_ior/specular: the dielectric F0 follows from the IOR;
-	// metals use the base color instead.
 	float dielectric = (instance.texture_.ior_ - 1.0) / (instance.texture_.ior_ + 1.0);
 	dielectric *= dielectric;
 	float3 dielectric_f0 = saturate(dielectric * specular_color * specular_factor);
 
-	// KHR_materials_iridescence: an approximation (a phase shift driven by
-	// thickness and view angle, not thin-film interference) that tints F0.
 	if (iridescence_factor > 0.0)
 	{
 		float phase = iridescence_thickness * 0.01 * saturate(dot(normal, view)) + instance.extension_.iridescence_ior_;
@@ -114,8 +89,6 @@ SurfaceMaterial LoadSurfaceMaterial(float3 base_color, float metallic, float rou
 		dielectric_f0 = lerp(dielectric_f0, iridescence_shift, saturate(iridescence_factor));
 	}
 
-	// KHR_materials_transmission: transmitted light does not reflect
-	// diffusely; the see-through refraction itself is the Refraction feature's.
 	float3 diffuse_color = base_color * (1.0 - metallic) * (1.0 - transmission_factor);
 	float3 f0 = lerp(dielectric_f0, base_color, metallic);
 	f0 = lerp(f0, max(f0, 0.02), surface_wetness);
@@ -135,8 +108,6 @@ SurfaceMaterial LoadSurfaceMaterial(float3 base_color, float metallic, float rou
 		clearcoat_roughness *= clearcoat_roughness_texture.SampleGrad(sampler_linear_wrap, texcoord, texcoord_dx, texcoord_dy).g;
 	}
 
-	// KHR_materials_clearcoat: the coat carries its own normal map in the
-	// surface's tangent basis; only the coat normal changes, never the base.
 	float3 clearcoat_normal = normal;
 	if (instance.extension_.clearcoat_normal_texture_index_ != MODEL_INVALID)
 	{
@@ -150,9 +121,6 @@ SurfaceMaterial LoadSurfaceMaterial(float3 base_color, float metallic, float rou
 		clearcoat_normal = normalize(mul(clearcoat_normal_sample, float3x3(clearcoat_tangent, clearcoat_bitangent, normal)));
 	}
 
-	// KHR_materials_anisotropy: the direction is a tangent-space 2D vector made
-	// from anisotropyRotation and anisotropyTexture.rg; the strength is
-	// anisotropyStrength times anisotropyTexture.b.
 	float3 anisotropy_tangent = float3(1.0, 0.0, 0.0);
 	float3 anisotropy_bitangent = float3(0.0, 1.0, 0.0);
 	float anisotropy_strength = instance.extension_.anisotropy_;
@@ -205,4 +173,4 @@ SurfaceMaterial LoadSurfaceMaterial(float3 base_color, float metallic, float rou
 	return result;
 }
 
-#endif // __MATERIAL_HLSL__
+#endif

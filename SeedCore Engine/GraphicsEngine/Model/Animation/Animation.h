@@ -32,18 +32,6 @@ namespace SeedCore
 		}
 	};
 
-	/// [EN] A single point on the Timeline panel's editor-authored time-remap
-	///      curve: value_ is the actual clip sample time to play at when the
-	///      ruler reaches time_ (not a multiplier — a direct x-to-y time
-	///      mapping, Unity Motion Time / UE5 Sequencer Time Warp style).
-	///      time_ == value_ for every point is normal, unmodified speed.
-	///      Not part of the glTF-imported skeletal data.
-	/// [JP] Timelineパネルでエディタから作成するタイムリマップカーブの1点:
-	///      value_はルーラーがtime_に達した時に実際に再生すべきクリップの
-	///      サンプル時刻(倍率ではなく、x→yの直接的な時刻マッピング。Unityの
-	///      Motion TimeやUE5 SequencerのTime Warpと同じ考え方)。全点で
-	///      time_ == value_なら通常速度・無変化。glTFインポート由来の
-	///      スケルタルデータではない。
 	struct AnimationSpeedKeyframe
 	{
 		Float time_ = 0.0f;
@@ -57,12 +45,6 @@ namespace SeedCore
 		}
 	};
 
-	/// [EN] A single Timeline-panel notify marker (e.g. "play this sound" /
-	///      "spawn this VFX" at this point in the clip) — a time + free-text
-	///      label only, no value. Consumers resolve label_ themselves.
-	/// [JP] Timelineパネルの通知マーカー1つ(例: クリップのこの時刻で
-	///      「この効果音を鳴らす」「このVFXを出す」) — 時刻+自由記述ラベルの
-	///      みで値は持たない。label_の解釈は利用側に委ねる。
 	struct AnimationNotifyEvent
 	{
 		Float time_ = 0.0f;
@@ -92,34 +74,8 @@ namespace SeedCore
 		std::unordered_map<Int, DynamicArray<Quaternion>> rotations_;
 		std::unordered_map<Int, DynamicArray<Vector3>> translations_;
 
-		/// [EN] Morph target weight keyframes for the glTF "weights" target
-		///      path, keyed by target node index like timelines_/scales_/
-		///      rotations_/translations_ above. Each entry is one row per
-		///      timelines_[nodeIndex] keyframe, and each row holds one weight
-		///      per morph target on that node's mesh, in the mesh's own
-		///      target order (Crister::SubMesh::morphs_ order) — unflattened
-		///      at import time in AnimationLoader from glTF's single flat
-		///      weights accessor (which packs keyframeCount * targetCount
-		///      scalars back to back).
-		/// [JP] glTF の "weights" ターゲットパスによるモーフターゲット
-		///      ウェイトのキーフレーム。上の timelines_/scales_/rotations_/
-		///      translations_ と同じくターゲットノード番号をキーにする。各
-		///      エントリは timelines_[nodeIndex] のキーフレームごとに1行、
-		///      各行はそのノードのメッシュが持つモーフターゲット1つにつき
-		///      1ウェイト(メッシュ自身のターゲット順、Crister::SubMesh::
-		///      morphs_ の順序)を保持する — AnimationLoader でのインポート時に
-		///      glTF の単一フラットな weights アクセサ(keyframeCount *
-		///      targetCount 個のスカラーが連続で詰まっている)から展開される。
 		std::unordered_map<Int, DynamicArray<DynamicArray<Float>>> weights_;
 
-		/// [EN] Editor-authored, not glTF-imported — see AnimationSpeedKeyframe
-		///      / AnimationNotifyEvent. TimelinePanel edits these directly
-		///      through SpeedCurve()/NotifyEvents(); kept unsorted, callers
-		///      that need time order sort themselves.
-		/// [JP] エディタ作成データでglTFインポートではない — AnimationSpeed
-		///      Keyframe / AnimationNotifyEvent参照。TimelinePanelが
-		///      SpeedCurve()/NotifyEvents()経由で直接編集する。ソート済みは
-		///      保証しない、時刻順が必要な側で各自ソートすること。
 		DynamicArray<AnimationSpeedKeyframe> speedCurve_;
 		DynamicArray<AnimationNotifyEvent> notifyEvents_;
 

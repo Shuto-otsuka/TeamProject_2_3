@@ -5,41 +5,6 @@
 #include <GraphicsEngine/Illumination/Shadow/Raytracing/RaytracingShadow.hlsli>
 #include <GraphicsEngine/PostProcess/Outline/Outline.hlsli>
 
-/**
-* [EN]
-* Shades one transparent fragment forward and adds it to its pixel's list.
-* The material is read the same way the opaque material resolve reads it
-* (mapping, base color, normal map, metallic and roughness, emission). The
-* light is the sun, shadowed by a ray traced through TopLevel.Structure with
-* the settings in RaytracingShadow.Constants, the clustered punctual lights
-* and the sky's image based lighting. The shadow strength there blends the
-* sun's visibility toward 1 up to 1, and from 1 to 2 also darkens the sky
-* light where a surface facing the sun is in its shadow; a strength of 0,
-* sent when ray traced shadows are off, traces nothing. The color is
-* stored premultiplied by its alpha, together with the depth and this
-* layer's motion, and linked in front of the pixel's head with one atomic
-* exchange; fragments past the pool's capacity are dropped. When the
-* instance's actor is outlined, the fragment also records itself in
-* Outline.Mask as (depth << 17) | actor, so the nearest one per pixel
-* stays.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* 半透明のフラグメントを 1 つ前方で陰影付けし、そのピクセルのリストへ足す。
-* マテリアルは不透明のマテリアル解決と同じ読み方をする（マッピング、
-* ベースカラー、法線マップ、メタリックとラフネス、放射）。光は、
-* RaytracingShadow.Constants の設定で TopLevel.Structure へ飛ばすレイで
-* 影を取った太陽、クラスタの点光源類、
-* 空の IBL。そこの影の濃さは、1 までは太陽の可視率を 1 との間で補間し、
-* 1〜2 では太陽を向いた面が影に入ったところの空の光も暗くする（レイトレーシング
-* の影が切れているときは濃さ 0 が届き、レイは飛ばさない）。
-* 色はアルファを掛けた形で、深度とこの層の動きと一緒に置き、
-* ピクセルの先頭へ不可分な交換 1 回でつなぐ。プールの容量を超えた
-* フラグメントは捨てる。インスタンスのアクターが縁取られるときは、
-* (深度 << 17) | アクター として Outline.Mask にも記録し、ピクセルごとに
-* 一番手前のものが残る。
-*/
 [earlydepthstencil]
 void main(TransparentOutput input, bool front_face : SV_IsFrontFace)
 {

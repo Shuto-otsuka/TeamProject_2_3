@@ -6,13 +6,15 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Component that creates a circular 2D collider body for its actor.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* アクター用の円形 2D コライダーボディを生成するコンポーネント。
+	* アクターにつけると、円（2D）の形で当たり判定ができる部品。
+	*
+	* @brief 円（2D）の当たり判定
+	*
+	* [EN]
+	* Put it on an actor to give it collision shaped like a circle (2D).
+	*
+	* @brief Collision shaped like a circle (2D)
 	*/
 	class SEEDCORE_API CircleCollider :public SeedScript
 	{
@@ -20,120 +22,121 @@ namespace SeedCore
 		friend class PhysicsSystem;
 
 	public:
-		/// [EN] Radius of the circle.
-		/// [JP] 円の半径。
+		/// [JP] 半径
+		/// [EN] The radius
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("半径", 1.0f, 10000.0f)
 		Float radius_ = 50.0f;
 
-		/// [EN] Local offset of the circle center.
-		/// [JP] 円の中心のローカルオフセット。
+		/// [JP] アクターの中心からのずれ
+		/// [EN] How far it sits from the actor's center
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("中心オフセット")
 		Vector2 center_ = { 0.0f, 0.0f };
 
-		/// [EN] Whether this collider acts as a trigger.
-		/// [JP] このコライダーをトリガーとして扱うか。
+		/// [JP] ぶつからずに、重なったことだけを知らせるか
+		/// [EN] Whether it only reports overlaps instead of blocking
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("トリガー")
 		Bool isTrigger_ = false;
 
 	public:
 		/**
-		* [EN]
-		* Creates the circle shape and collider body.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 円形状とコライダーボディを生成する。
+		* 当たり判定の体を作る。
+		*
+		* @brief 当たり判定を作る
+		*
+		* [EN]
+		* Creates the collision body.
+		*
+		* @brief Creates the collision
 		*/
 		void OnAwake();
 
 		/**
-		* [EN]
-		* Destroys the collider body and releases its shape.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* コライダーボディを破棄し、形状を解放する。
+		* 当たり判定の体を消す。
+		*
+		* @brief 当たり判定を消す
+		*
+		* [EN]
+		* Removes the collision body.
+		*
+		* @brief Removes the collision
 		*/
 		void OnDestroy();
 
 		/**
-		* [EN]
-		* Rebuilds the collider body and its shape from the current
-		* settings, so a changed field takes effect.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 現在の設定からコライダーボディと形状を作り直し、変更した
-		* フィールドを効かせる。
+		* 設定が変わったので、当たり判定を作り直す。
+		*
+		* @brief 当たり判定を作り直す
+		*
+		* [EN]
+		* The settings changed, so the collision is made again.
+		*
+		* @brief Remakes the collision
 		*/
 		void OnRevision();
 
 	public:
 		/**
-		* [EN]
-		* Applies fields changed from code. An edit in the inspector runs
-		* OnRevision on its own, but a field written by a script takes
-		* effect only once this is called.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* コードから変えたフィールドを反映する。インスペクタでの編集は
-		* 自動で OnRevision が走るが、スクリプトから書き換えたフィールドは
-		* これを呼んだときに初めて効く。
+		* 当たり判定を作り直す。
+		*
+		* @brief 当たり判定を作り直す
+		*
+		* [EN]
+		* Remakes the collision.
+		*
+		* @brief Remakes the collision
 		*/
 		void Dispatch();
 
 	public:
 		/**
-		* [EN]
-		* Creates and returns a circle shape from the current settings, scaled
-		* by the X and Y of the actor's own Scale combined with its parent's
-		* scale. The radius follows the larger of X and Y.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 現在の設定に Actor 自身の Scale と親のスケールの X と Y を掛けた円形状を
-		* 生成して返す。半径は X と Y の大きい方に合わせる。
+		* 今の大きさに合わせた形を作って返す。
+		*
+		* @brief  形を作る
+		* @return 作った形
+		*
+		* [EN]
+		* Makes and returns a shape that fits the current size.
+		*
+		* @brief  Makes the shape
+		* @return The new shape
 		*/
 		ScShapeHandle GetShapeHandle()const;
 
 	private:
 		/**
-		* [EN]
-		* Moves the collider's own body to the actor's current pose, and
-		* rebuilds its shape when the actor's world scale has changed since
-		* the shape was made. Does nothing when a Rigidbody owns the body.
-		* Called every frame by PhysicsSystem::ApplyCollider.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* コライダー自身のボディを Actor の今の姿勢へ移し、形状を作ってから
-		* Actor のワールドスケールが変わっていれば形状を作り直す。ボディを
-		* Rigidbody が持っている場合は何もしない。
-		* PhysicsSystem::ApplyCollider から毎フレーム呼ばれる。
+		* アクターの位置と向きを当たり判定に伝える。
+		* 大きさが変わっていたら形も作り直す。
+		*
+		* @brief 位置と大きさを合わせる
+		*
+		* [EN]
+		* Sends the actor's position and facing to the collision.
+		* If the size changed, the shape is made again too.
+		*
+		* @brief Matches the position and size
 		*/
 		void Refresh();
 
 	private:
-		/// [EN] Jolt body identifier of the generated collider body.
-		/// [JP] 生成したコライダーボディの Jolt ボディ ID。
+		/// [JP] 物理エンジンの中での体の番号
+		/// [EN] The body number inside the physics engine
 		ScBodyID bodyID_ = ScInvalidBodyID;
 
-		/// [EN] Pool handle of the attached shape.
-		/// [JP] 取り付けた形状のプールハンドル。
+		/// [JP] 使っている形
+		/// [EN] The shape in use
 		ScShapeHandle shapeHandle_;
 
-		/// [EN] World scale of the actor when the current shape was made; a different scale means the shape no longer matches how the actor is drawn.
-		/// [JP] 今の形状を作ったときの Actor のワールドスケール。これと異なれば、形状は描画される Actor と合わなくなっている。
+		/// [JP] 形を作ったときの大きさ。変わったら作り直す
+		/// [EN] The scale the shape was made at; remake it if this changes
 		Vector3 shapeScale_ = { 0.0f, 0.0f, 0.0f };
 	};
 	REGISTER_COMPONENT(CircleCollider, "Physics/Collider");

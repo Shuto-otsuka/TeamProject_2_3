@@ -44,16 +44,6 @@ struct CullingTransparentBindings
 };
 ConstantBuffer<CullingTransparentBindings> transparent_bindings : register(b0, space1);
 
-/**
-* [EN]
-* First dispatch of Culling.Culling.Early (one thread). Clears the counts and
-* writes the fixed parts of the early, late and transparent indirect commands.
-* The top bit of the dispatch constant selects the layout: DispatchMesh with
-* 1024 groups per row (the row count grows as entries are appended), or the
-* fallback DrawInstanced with 124 triangles' worth of vertices per meshlet
-* instance. The mesh path also resets the chunk commands and the count at the
-* head of Geometry.OccludedMeshlets.
-*/
 [numthreads(1, 1, 1)]
 void Prepare(uint3 id : SV_DispatchThreadID)
 {
@@ -108,22 +98,6 @@ void Prepare(uint3 id : SV_DispatchThreadID)
 	}
 }
 
-/**
-* [EN]
-* Mesh path: one thread per chunk (instance) of the opaque section of
-* ModelInstances; the chunk's whole quantization box is tested against the
-* frustum, and a chunk hidden by the previous frame's Hi-Z goes to
-* Culling.OccludedChunks for the late amplification pass instead of
-* Culling.OpaqueChunks. The amplification shader then tests each meshlet.
-* Fallback path: one thread per meshlet of the same section (the low bits of
-* the dispatch constant are the section's end). Frustum and backface
-* rejections are final; a meshlet that survives them but is hidden by the
-* previous frame's Hi-Z goes to Culling.OccludedMeshlets so the late pass can test it
-* again against this frame's depth (when Culling.OccludedMeshlets is full it is drawn
-* early instead). Each visible meshlet widens the early command so it covers
-* its slot. Skinned instances have rest-pose bounds, so they skip every test
-* on both paths.
-*/
 [numthreads(64, 1, 1)]
 void Early(uint3 id : SV_DispatchThreadID)
 {
@@ -249,14 +223,6 @@ void Early(uint3 id : SV_DispatchThreadID)
 	InterlockedMax(arguments[CULLING_EARLY_ARGUMENTS * 4 + 1], slot + 1);
 }
 
-/**
-* [EN]
-* Fallback path only: one thread per entry of Culling.OccludedMeshlets. Tests the
-* meshlet again against the Hi-Z built from this frame's early depth, and
-* appends the ones now visible right after the early entries of the draw
-* list, widening the late command the same way as Early. The mesh path makes
-* this decision in the late amplification pass instead.
-*/
 [numthreads(64, 1, 1)]
 void Late(uint3 id : SV_DispatchThreadID)
 {
@@ -305,18 +271,6 @@ void Late(uint3 id : SV_DispatchThreadID)
 	InterlockedMax(arguments[CULLING_LATE_ARGUMENTS * 4 + 1], slot + 1);
 }
 
-/**
-* [EN]
-* Transparent instances are drawn once, after the opaque depth is complete,
-* so they are tested against the frustum and the Hi-Z built from this frame's
-* final depth in a single pass (the low bits of the dispatch constant are the
-* section's start). Mesh path: one thread per chunk, tested by its whole
-* quantization box; survivors are appended to Culling.TransparentChunks and
-* the amplification shader tests each meshlet. Fallback path: one thread per
-* meshlet, also tested by its normal cone, appended to
-* Culling.TransparentMeshlets. Survivors widen the transparent command; skinned
-* instances have rest-pose bounds and skip every test.
-*/
 [numthreads(64, 1, 1)]
 void Transparent(uint3 id : SV_DispatchThreadID)
 {

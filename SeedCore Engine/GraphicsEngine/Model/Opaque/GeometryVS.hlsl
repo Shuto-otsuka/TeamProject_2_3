@@ -1,15 +1,6 @@
 #include <GraphicsEngine/Model/Opaque/Geometry.hlsli>
 #include <GraphicsEngine/Culling/BackfaceCulling.hlsli>
 
-/**
-* [EN]
-* Fallback for devices without mesh shaders: one DrawInstanced instance per
-* entry of Culling.OpaqueMeshlets, 124 triangles' worth of vertices each. Vertices
-* past the meshlet's triangle count are placed outside the clip volume. For a
-* single-sided material every vertex transforms all three corners of its
-* triangle so it can collapse back-facing triangles itself, matching the mesh
-* path where the rasterizer culls nothing.
-*/
 void main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID, out GeometryOutput output, out GeometryPrimitive primitive)
 {
 	StructuredBuffer<uint2> opaque_meshlets = ResourceDescriptorHeap[bindings.culling_opaque_meshlets_];

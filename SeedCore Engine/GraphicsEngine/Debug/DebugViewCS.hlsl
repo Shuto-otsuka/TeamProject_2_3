@@ -73,14 +73,6 @@ struct DebugViewBoundsBindings
 };
 ConstantBuffer<DebugViewBoundsBindings> bounds_bindings : register(b0, space1);
 
-/**
-* [EN]
-* Zeroes the counters the debug producers add into before they run:
-* DebugView.Rays (every ray-traced effect adds one per traced ray),
-* Geometry.Debug (the meshlet overdraw pass adds one per fragment) and the
-* count at the head of Geometry.VisibleMeshlets (GeometryAS appends every meshlet it
-* keeps in the meshlet bounds view mode).
-*/
 [numthreads(8, 8, 1)]
 void Clear(uint3 id : SV_DispatchThreadID)
 {
@@ -102,17 +94,6 @@ void Clear(uint3 id : SV_DispatchThreadID)
 	}
 }
 
-/**
-* [EN]
-* Replaces HUD.Display with a debug image, one thread per display pixel; the
-* dispatch constant is the RenderViewMode. Render-resolution buffers are read
-* at the pixel under the display pixel. Scalar modes produce a value in [0,1]
-* that is shown on a blue-cyan-green-yellow-red heat ramp, id modes produce an
-* integer that is hashed into a stable color, and the rest write a color
-* directly. Buffer Overview splits the screen into a 3x3 grid of the buffer
-* modes. ReSTIR and denoiser modes read the effect SceneConstantBuffer's
-* debug_source_ selects. Surface modes leave the background black.
-*/
 [numthreads(8, 8, 1)]
 void Resolve(uint3 id : SV_DispatchThreadID)
 {
@@ -645,15 +626,6 @@ void Resolve(uint3 id : SV_DispatchThreadID)
 	display_color[id.xy] = float4(color, 1.0);
 }
 
-/**
-* [EN]
-* Meshlet bounds view mode: one thread per meshlet drawn in the view, early
-* and late - the entries GeometryAS recorded in Geometry.VisibleMeshlets on the mesh
-* path (dispatch constant 1), the view's draw list on the fallback path.
-* Projects the meshlet's bounding sphere to the display and draws its outline
-* into HUD.Display over the lit image, in a color hashed from the entry so
-* neighbouring meshlets stay apart.
-*/
 [numthreads(64, 1, 1)]
 void Bounds(uint3 id : SV_DispatchThreadID)
 {

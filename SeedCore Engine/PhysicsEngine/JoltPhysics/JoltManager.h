@@ -17,143 +17,176 @@ namespace SeedCore
 	class JoltConstraintPool;
 
 	/**
-	* [EN]
-	* Owns and coordinates the Jolt physics backend.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Jolt 物理バックエンドを所有し、連携させる。
+	* 物理エンジン（Jolt）を始めたり、毎フレーム動かしたり、終わらせたりする係。
+	*
+	* @brief 物理エンジンを動かす係
+	*
+	* [EN]
+	* Starts the physics engine (Jolt), runs it every frame and shuts it down.
+	*
+	* @brief Runs the physics engine
 	*/
 	class SEEDCORE_API JoltManager final
 	{
 	public:
 		/**
-		* [EN]
-		* Creates an uninitialized Jolt manager.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 未初期化の Jolt マネージャーを生成する。
+		* 中身を作る。
+		*
+		* @brief 中身を作る
+		*
+		* [EN]
+		* Makes the inner parts.
+		*
+		* @brief Makes the inner parts
 		*/
 		JoltManager();
 
 		/**
-		* [EN]
-		* Destroys the manager after explicit finalization. Defined in the
-		* .cpp, where Impl is a complete type.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 明示的な終了処理後にマネージャーを破棄する。Impl が完全型になる
-		* .cpp 側で定義する。
+		* 中身を片付ける。
+		*
+		* @brief 中身を片付ける
+		*
+		* [EN]
+		* Cleans up the inner parts.
+		*
+		* @brief Cleans up the inner parts
 		*/
 		~JoltManager();
 
-		/// [EN] Jolt and the Gateway hold pointers into the manager, so it is neither copied nor reassigned.
-		/// [JP] Jolt と Gateway がマネージャーの中を指すポインタを持つので、コピーも代入もしない。
 		JoltManager(const JoltManager&) = delete;
 		JoltManager& operator=(const JoltManager&) = delete;
 
 	public:
 		/**
-		* [EN]
-		* Initializes Jolt, connects it to the supplied job executor, and
-		* makes the manager reachable through the Gateway.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* Jolt を初期化して指定されたジョブエグゼキューターへ接続し、
-		* Gateway からマネージャーへ届くようにする。
+		* 物理エンジンを始める。
+		*
+		* @brief  始める
+		* @param  executor 物理の仕事を流す先
+		* @return うまくいったら true
+		*
+		* [EN]
+		* Starts the physics engine.
+		*
+		* @brief  Starts
+		* @param  executor Where physics jobs are sent
+		* @return True if it worked
 		*/
 		Bool Initialize(JobExecutor& executor);
 
 		/**
-		* [EN]
-		* Advances the physics simulation and dispatches queued contact
-		* events on world.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 物理シミュレーションを進め、キュー内の接触イベントを world へ通知する。
+		* 物理を1回分進めて、ぶつかったことを知らせる。
+		*
+		* @brief 物理を1回分進める
+		* @param elapsedTime 進める時間
+		* @param world       知らせる世界
+		*
+		* [EN]
+		* Steps the physics once and reports what hit.
+		*
+		* @brief Steps the physics
+		* @param elapsedTime How much time to step
+		* @param world       The world to report to
 		*/
 		void Execute(Float elapsedTime, World& world);
 
 		/**
-		* [EN]
-		* Releases physics resources and unregisters Jolt types.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 物理リソースを解放し、Jolt の型登録を解除する。
+		* 物理エンジンを終わらせる。
+		*
+		* @brief 終わらせる
+		*
+		* [EN]
+		* Shuts the physics engine down.
+		*
+		* @brief Shuts down
 		*/
 		void Finalize();
 
 		/**
-		* [EN]
-		* Returns the shape pool owned by this manager.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* このマネージャーが所有する形状プールを返す。
+		* 形をまとめて持つ係を返す。
+		*
+		* @brief  形の係を返す
+		* @return 形の係
+		*
+		* [EN]
+		* Returns the part that holds the shapes.
+		*
+		* @brief  Returns the shape pool
+		* @return The shape pool
 		*/
 		JoltShapePool& ShapePool();
 
 		/**
-		* [EN]
-		* Returns the constraint pool owned by this manager.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* このマネージャーが所有する拘束プールを返す。
+		* つなぎをまとめて持つ係を返す。
+		*
+		* @brief  つなぎの係を返す
+		* @return つなぎの係
+		*
+		* [EN]
+		* Returns the part that holds the joints.
+		*
+		* @brief  Returns the joint pool
+		* @return The joint pool
 		*/
 		JoltConstraintPool& ConstraintPool();
 
 		/**
-		* [EN]
-		* Returns Jolt's body interface.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* Jolt のボディインターフェースを返す。
+		* 体を作ったり動かしたりする窓口を返す。
+		*
+		* @brief  体の窓口を返す
+		* @return 体の窓口
+		*
+		* [EN]
+		* Returns the door for making and moving bodies.
+		*
+		* @brief  Returns the body interface
+		* @return The body interface
 		*/
 		JPH::BodyInterface& BodyInterface();
 
 		/**
-		* [EN]
-		* Returns the owned Jolt physics system.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 所有する Jolt 物理システムを返す。
+		* 物理エンジンそのものを返す。
+		*
+		* @brief  物理エンジンを返す
+		* @return 物理エンジン
+		*
+		* [EN]
+		* Returns the physics engine itself.
+		*
+		* @brief  Returns the physics engine
+		* @return The physics engine
 		*/
 		JPH::PhysicsSystem& PhysicsSystem();
 
 		/**
-		* [EN]
-		* Returns the temporary allocator used during physics updates.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 物理更新中に使う一時アロケーターを返す。
+		* 物理の計算で一時的に使うメモリを返す。
+		*
+		* @brief  一時メモリを返す
+		* @return 一時メモリ
+		*
+		* [EN]
+		* Returns the scratch memory used by the physics math.
+		*
+		* @brief  Returns the scratch memory
+		* @return The scratch memory
 		*/
 		JPH::TempAllocator& PhysicsAllocator();
 
 	private:
 		class Impl;
 
-		/// [EN] The Jolt backend itself, owned through a pointer so Jolt's headers stay out of this one.
-		/// [JP] Jolt のバックエンド本体。Jolt のヘッダをこのヘッダから外すため、ポインタ越しに所有する。
+		/// [JP] 中身
+		/// [EN] The inner parts
 		ResourcePtr<Impl> impl_;
 	};
 }

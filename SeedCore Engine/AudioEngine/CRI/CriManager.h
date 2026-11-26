@@ -6,226 +6,270 @@ namespace SeedCore
 	struct EditorConfig;
 
 	/**
-	* [EN]
-	* Owns and coordinates the CRI ADX runtime.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* CRI ADX ランタイムを所有し、連携させる。
+	* 音のライブラリ（CRI）を動かす係。
+	* 始める・毎フレーム動かす・終わる、と音量の管理をする。
+	*
+	* @brief 音のライブラリを動かす係
+	*
+	* [EN]
+	* Runs the sound library (CRI).
+	* It starts it, runs it every frame, shuts it down and keeps the volumes.
+	*
+	* @brief Runs the sound library
 	*/
 	class SEEDCORE_API CriManager final
 	{
 	public:
 		/**
-		* [EN]
-		* Constructs an uninitialized manager; Initialize does the work.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 未初期化の管理機構を作る。実際の準備は Initialize が行う。
+		* 中身を作る。
+		*
+		* @brief 中身を作る
+		*
+		* [EN]
+		* Makes the inner parts.
+		*
+		* @brief Makes the inner parts
 		*/
 		CriManager();
 
 		/**
-		* [EN]
-		* Destroys the manager; Finalize must already have shut CRI down.
-		* Defined in the .cpp, where Impl is a complete type.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 管理機構を破棄する。CRI の終了は、先に Finalize で済ませておく。
-		* Impl が完全型になる .cpp 側で定義する。
+		* 中身を片付ける。
+		*
+		* @brief 中身を片付ける
+		*
+		* [EN]
+		* Cleans up the inner parts.
+		*
+		* @brief Cleans up the inner parts
 		*/
 		~CriManager();
 
-		/// [EN] CRI and the Gateway hold pointers into the manager, so it is neither copied nor reassigned.
-		/// [JP] CRI と Gateway がマネージャーの中を指すポインタを持つので、コピーも代入もしない。
 		CriManager(const CriManager&) = delete;
 		CriManager& operator=(const CriManager&) = delete;
 
 	public:
 		/**
-		* [EN]
-		* Initializes CRI, loads the saved bindings, registers the ACF and
-		* applies the saved volumes, then allocates the voice pools and the
-		* streaming bandwidth manager. Returns false if any step fails.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* CRI を初期化し、保存済みの設定を読み、ACF を登録して保存済みの音量を
-		* 反映したあと、ボイスプールとストリーミング帯域の管理を確保する。
-		* どこかで失敗したら false を返す。
+		* ゲームの設定を使って、音のライブラリを始める。
+		*
+		* @brief  ゲーム用に始める
+		* @param  gameConfig ゲームの設定
+		* @return うまくいったら true
+		*
+		* [EN]
+		* Starts the sound library with the game settings.
+		*
+		* @brief  Starts for the game
+		* @param  gameConfig The game settings
+		* @return True if it worked
 		*/
 		Bool Initialize(const GameConfig& gameConfig);
 
 		/**
-		* [EN]
-		* Same as the GameConfig version, but also takes the .acf file that
-		* Atom Craft writes (editorConfig's acfPath_), so a rebuilt ACF
-		* replaces the saved copy.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* GameConfig 版と同じだが、Atom Craft が出力する .acf ファイル
-		* (editorConfig の acfPath_)も使い、ビルドし直した ACF で保存済みの
-		* ものを置き換える。
+		* エディタの設定を使って、音のライブラリを始める。
+		*
+		* @brief  エディタ用に始める
+		* @param  editorConfig エディタの設定
+		* @return うまくいったら true
+		*
+		* [EN]
+		* Starts the sound library with the editor settings.
+		*
+		* @brief  Starts for the editor
+		* @param  editorConfig The editor settings
+		* @return True if it worked
 		*/
 		Bool Initialize(const EditorConfig& editorConfig);
 
 		/**
-		* [EN]
-		* Runs CRI's per-frame server processing; called once every frame.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* CRI の毎フレームのサーバー処理を行う。毎フレーム1回呼ぶ。
+		* 音のライブラリを1フレーム分動かす。
+		*
+		* @brief 1フレーム分動かす
+		*
+		* [EN]
+		* Runs the sound library for one frame.
+		*
+		* @brief Runs one frame
 		*/
 		void Execute();
 
 		/**
-		* [EN]
-		* Releases the voice pools, the bandwidth manager and the ACF, and
-		* shuts CRI down. Does nothing if CRI was never initialized.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* ボイスプール、帯域の管理、ACF を解放し、CRI を終了する。CRI が
-		* 初期化されていなければ何もしない。
+		* 音のライブラリを終わらせる。
+		*
+		* @brief 終わらせる
+		*
+		* [EN]
+		* Shuts the sound library down.
+		*
+		* @brief Shuts down
 		*/
 		void Finalize();
 
 	public:
 		/**
-		* [EN]
-		* Sets the master volume and applies it to the master bus at once.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* マスター音量を設定し、すぐにマスターバスへ反映する。
+		* 全体の音量を変える。
+		*
+		* @brief 全体の音量を変える
+		* @param volume 音量
+		*
+		* [EN]
+		* Changes the overall volume.
+		*
+		* @brief Changes the overall volume
+		* @param volume The volume
 		*/
 		void MasterVolume(Float volume);
 
 		/**
-		* [EN]
-		* Returns the current master volume.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 現在のマスター音量を返す。
+		* 全体の音量を返す。
+		*
+		* @brief  全体の音量を返す
+		* @return 全体の音量
+		*
+		* [EN]
+		* Returns the overall volume.
+		*
+		* @brief  Returns the overall volume
+		* @return The overall volume
 		*/
 		NODISCARD Float MasterVolume()const;
 
 		/**
-		* [EN]
-		* Sets the master volume that ResetVolume returns to.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* ResetVolume で戻す先のマスター音量を設定する。
+		* 元に戻すときに使う、最初の全体の音量を決める。
+		*
+		* @brief 最初の全体の音量を決める
+		* @param volume 最初の音量
+		*
+		* [EN]
+		* Sets the starting overall volume used when resetting.
+		*
+		* @brief Sets the default overall volume
+		* @param volume The starting volume
 		*/
 		void DefaultMasterVolume(Float volume);
 
 		/**
-		* [EN]
-		* Returns the master volume that ResetVolume returns to.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* ResetVolume で戻す先のマスター音量を返す。
+		* 最初の全体の音量を返す。
+		*
+		* @brief  最初の全体の音量を返す
+		* @return 最初の音量
+		*
+		* [EN]
+		* Returns the starting overall volume.
+		*
+		* @brief  Returns the default overall volume
+		* @return The starting volume
 		*/
 		NODISCARD Float DefaultMasterVolume()const;
 
 		/**
-		* [EN]
-		* Sets the volume of a category (such as BGM or SE) and applies it
-		* at once.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* カテゴリ(BGM や SE など)の音量を設定し、すぐに反映する。
+		* 種類ごとの音量を変える。
+		*
+		* @brief 種類ごとの音量を変える
+		* @param category 種類の名前
+		* @param volume   音量
+		*
+		* [EN]
+		* Changes the volume of one category.
+		*
+		* @brief Changes a category volume
+		* @param category The category name
+		* @param volume   The volume
 		*/
 		void CategoryVolume(const String& category, Float volume);
 
 		/**
-		* [EN]
-		* Returns the volume of a category: the value set by the user, else
-		* the ACF's value, else 1.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* カテゴリの音量を返す。ユーザーが設定した値、無ければ ACF の値、
-		* それも無ければ 1。
+		* 種類ごとの音量を返す。
+		*
+		* @brief  種類ごとの音量を返す
+		* @param  category 種類の名前
+		* @return その種類の音量
+		*
+		* [EN]
+		* Returns the volume of one category.
+		*
+		* @brief  Returns a category volume
+		* @param  category The category name
+		* @return That category's volume
 		*/
 		NODISCARD Float CategoryVolume(const String& category)const;
 
 		/**
-		* [EN]
-		* Returns the names of the categories defined in the registered ACF.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 登録した ACF に定義されたカテゴリ名の一覧を返す。
+		* 音の種類の名前の一覧を返す。
+		*
+		* @brief  種類の一覧を返す
+		* @return 種類の名前の一覧
+		*
+		* [EN]
+		* Returns the list of category names.
+		*
+		* @brief  Returns the category list
+		* @return The category names
 		*/
 		NODISCARD const DynamicArray<String>& CategoryNameList()const;
 
 		/**
-		* [EN]
-		* Returns the master volume to its default and every category to the
-		* volume defined in the ACF.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* マスター音量を既定値に、全カテゴリを ACF で定めた音量に戻す。
+		* 音量を全部、最初の値に戻す。
+		*
+		* @brief 音量を元に戻す
+		*
+		* [EN]
+		* Puts every volume back to its starting value.
+		*
+		* @brief Resets the volumes
 		*/
 		void ResetVolume();
 
 	public:
 		/**
-		* [EN]
-		* Reads the ACF and the volumes from AudioBindings.scg. Returns false
-		* if the file cannot be read.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* AudioBindings.scg から ACF と音量を読み込む。ファイルを読めなければ
-		* false を返す。
+		* 保存してある音量をファイルから読む。
+		*
+		* @brief  音量を読む
+		* @return うまくいったら true
+		*
+		* [EN]
+		* Reads the saved volumes from a file.
+		*
+		* @brief  Loads the volumes
+		* @return True if it worked
 		*/
 		Bool Load();
 
 		/**
-		* [EN]
-		* Writes the ACF and the volumes to AudioBindings.scg. Returns false
-		* if the file cannot be written.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* ACF と音量を AudioBindings.scg へ書き出す。書き込めなければ
-		* false を返す。
+		* 今の音量をファイルに保存する。
+		*
+		* @brief  音量を保存する
+		* @return うまくいったら true
+		*
+		* [EN]
+		* Saves the current volumes to a file.
+		*
+		* @brief  Saves the volumes
+		* @return True if it worked
 		*/
 		Bool Save();
 
 	private:
 		class Impl;
 
-		/// [EN] The CRI runtime state, owned through a pointer so CRI's headers stay out of this one.
-		/// [JP] CRI ランタイムの状態。CRI のヘッダをこのヘッダから外すため、ポインタ越しに所有する。
+		/// [JP] 中身
+		/// [EN] The inner parts
 		ResourcePtr<Impl> impl_;
 	};
 }

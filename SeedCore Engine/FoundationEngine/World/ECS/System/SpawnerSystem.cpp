@@ -9,24 +9,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Advances every Spawner component's timers by deltaTime: records, on
-	* cmd, the destruction of any spawned instance whose lifeTime_ has
-	* elapsed (freeing its slot), then records a deferred prefab spawn
-	* whenever spawnInterval_ elapses and the live instance count hasn't
-	* yet reached maxCount_. A Spawner on an inactive actor is skipped, so
-	* its timers pause.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 全 Spawner コンポーネントのタイマーを deltaTime だけ進める:
-	* lifeTime_ が経過した生成済みインスタンスの破棄を cmd へ記録し(その
-	* 枠を空け)、その上で spawnInterval_ が経過し生存中インスタンス数が
-	* maxCount_ に達していない度に、プレハブの遅延生成を記録する。
-	* 非アクティブな actor の Spawner は飛ばすので、タイマーは止まる。
-	*/
 	void SpawnerSystem::Execute(CommandBuffer& cmd, World& world, Float deltaTime)
 	{
 		Query<Read<Spawner>> query(world);
@@ -40,8 +22,6 @@ namespace SeedCore
 
 				RuntimeState& state = runtimeState_[entityID];
 
-				/// [EN] Instances spawned last frame were tracked by the provisional EntityID cmd handed back; the flush that ran since then resolved it to a real one.
-				/// [JP] 前フレームに生成したインスタンスは cmd が返した暫定 EntityID で追跡していた。その後の flush で実際の EntityID へ解決済み。
 				for (SpawnedInstance& instance : state.instances_)
 				{
 					if (CommandBuffer::Provisional(instance.entityID_))
@@ -100,8 +80,6 @@ namespace SeedCore
 					return;
 				}
 
-				/// [EN] Spawn as a root-level actor (no parent) at the spawner's world position, so the spawned instance moves independently of the spawner.
-				/// [JP] ルートレベルの actor(親無し)として、スポナーのワールド位置に生成する。生成したインスタンスはスポナーとは独立して動く。
 				Vector3 spawnPosition = actor.WorldMatrix().Translation();
 				if (spawner.randomSpawn_)
 				{
@@ -118,17 +96,6 @@ namespace SeedCore
 			});
 	}
 
-	/**
-	* [EN]
-	* Forgets every Spawner's runtime progress (elapsed time, tracked
-	* live instances) without touching the actual Actors.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 全 Spawner のランタイム進行状況（経過時間、追跡中の生存
-	* インスタンス）を、実際の Actor には触れずに忘れる。
-	*/
 	void SpawnerSystem::Reset()
 	{
 		runtimeState_.clear();

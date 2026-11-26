@@ -3,26 +3,6 @@
 
 groupshared float4 clip_positions[64];
 
-/**
-* [EN]
-* One thread group per (instance, meshlet) entry TransparentAS kept, read from
-* its payload. Each vertex applies morph targets, then linear blend skinning,
-* then the world transform, for this frame and, with the second half of
-* ModelBones / ModelMorphWeights, for the previous one, and hands the pixel
-* shader the world and object space position, normal and tangent it shades
-* with. Single-sided triangles that face away are collapsed, since the
-* rasterizer itself culls nothing.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* TransparentAS が残した (インスタンス, meshlet) の 1 件につき 1 スレッドグループで、
-* その 1 件はペイロードから読む。各頂点はモーフ、次にスキン、次にワールド変換を、
-* このフレームの分と、ModelBones / ModelMorphWeights の後ろ半分で前のフレームの分を
-* 求め、ピクセルシェーダーが陰影付けに使うワールドとオブジェクト空間の位置・法線・
-* タンジェントを渡す。ラスタライザー自身は何もカリングしないので、片面で裏を向く
-* 三角形は潰す。
-*/
 [NumThreads(64, 1, 1)]
 [OutputTopology("triangle")]
 void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, in payload TransparentPayload payload, out vertices TransparentOutput verts[64], out indices uint3 tris[124])

@@ -22,11 +22,6 @@ float3 OctNormalDecode(float2 e)
 	return normalize(n);
 }
 
-// Orthonormal basis around a unit normal (Duff et al. branchless variant).
-// Deliberately a private copy rather than Noise.hlsli's BuildOrthonormalBasis:
-// this header is self-contained, and the tangent pack/unpack below only needs
-// the writer and the reader to agree with EACH OTHER, not with the sampling
-// code. Renamed so a shader including both headers still compiles.
 void NormalOrthonormalBasis(float3 normal, out float3 tangent, out float3 bitangent)
 {
 	float s = normal.z >= 0.0 ? 1.0 : -1.0;
@@ -36,11 +31,6 @@ void NormalOrthonormalBasis(float3 normal, out float3 tangent, out float3 bitang
 	bitangent = float3(b, s + normal.y * normal.y * a, -normal.y);
 }
 
-// Packs a tangent into ONE 16-bit UNORM channel (G-Buffer RT1.a). A tangent is
-// perpendicular to its normal, so it is fully described by a single rotation
-// angle within a reference frame built from that normal - no second channel
-// needed. The angle takes 15 bits (~0.011 degrees, far finer than a normal map
-// needs) and the handedness sign takes the top bit.
 float PackTangentAngle(float3 normal, float3 tangent, float handedness)
 {
 	float3 basis_tangent, basis_bitangent;
@@ -66,4 +56,4 @@ void UnpackTangentAngle(float3 normal, float packed, out float3 tangent, out flo
 	tangent = normalize(cos(angle) * basis_tangent + sin(angle) * basis_bitangent);
 }
 
-#endif // __NORMAL_HLSL__
+#endif

@@ -5,22 +5,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* For each full-resolution render vertex, finds the bindMaxWeights_
-	* nearest simulation-proxy vertices (by bind-pose distance) via brute
-	* force (both lists are small enough that a KD-tree wouldn't pay for
-	* itself at this one-time build cost) and weights them by inverse
-	* squared distance, normalised to sum to 1.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* フル解像度描画頂点ごとに、最も近いシミュレーション用プロキシ頂点
-	* （バインドポーズ距離）を bindMaxWeights_ 個、総当たりで見つける
-	* （どちらのリストも小さいため、この一度きりの構築コストで KD-tree は
-	* 割に合わない）。距離の逆二乗で重み付けし、合計が1になるよう正規化する。
-	*/
 	void SoftbodyMesh::BindRenderVerticesToProxy(const DynamicArray<Vertex>& renderVertices, const DynamicArray<Vertex>& proxyVertices, DynamicArray<VertexBinding>& outBindings)
 	{
 		outBindings.resize(renderVertices.size());
@@ -94,8 +78,6 @@ namespace SeedCore
 
 	Bool SoftbodyMesh::Create(ID3D12Device* device, BindlessHeap* bindlessHeap, const Crister& crister)
 	{
-		/// [EN] Reads both the full-resolution render mesh and the simulation proxy out of the model's CPU-side geometry.
-		/// [JP] モデルの CPU 側のジオメトリから、フル解像度の描画メッシュとシミュレーション用のプロキシの両方を読み出す。
 		CristerExtractor extractor;
 
 		DynamicArray<Uint32> indices;
@@ -110,8 +92,6 @@ namespace SeedCore
 			return false;
 		}
 
-		/// [EN] The whole render mesh is one group; Meshlet already pads the primitive indices to the 4-byte alignment ReadOnlyByteAddressBuffer needs.
-		/// [JP] 描画メッシュ全体を1つのまとまりとして詰める。ReadOnlyByteAddressBuffer が必要とする4バイト境界へは Meshlet がすでに揃えている。
 		Meshlet meshlet(indices);
 		meshlets_.assign(meshlet.Meshlets().begin(), meshlet.Meshlets().end());
 		vertexIndices_.assign(meshlet.VertexIndices().begin(), meshlet.VertexIndices().end());
@@ -185,21 +165,6 @@ namespace SeedCore
 			scratchVertices_[vertexIndex] = quantizer.EncodeVertex(vertex, positionMin_, positionExtent_, texcoordMin_, texcoordExtent_);
 		}
 
-		/// [EN] One conservative bound (this frame's whole-mesh AABB)
-		///      replicated to every meshlet — cheaper than per-meshlet
-		///      bounds and still correct (each meshlet's geometry is a
-		///      subset of the whole mesh, so the whole-mesh bound trivially
-		///      contains it too). coneCutoff_ <= 0 disables ModelAS.hlsl's
-		///      normal-cone culling (see its `bound.cone_cutoff_ > 0.0`
-		///      guard) since per-meshlet cones aren't computed here.
-		/// [JP] このフレームのメッシュ全体 AABB から得た1つの保守的な
-		///      バウンドを、全メシュレットへ複製する — メシュレットごとの
-		///      バウンドより安く、かつ正しい（各メシュレットのジオメトリは
-		///      メッシュ全体の部分集合なので、メッシュ全体のバウンドは
-		///      当然それも含む）。coneCutoff_ <= 0 は ModelAS.hlsl の
-		///      法線コーンカリングを無効化する（`bound.cone_cutoff_ > 0.0`
-		///      ガード参照）— メシュレットごとのコーンはここでは計算して
-		///      いないため。
 		MeshletBound bound;
 		bound.center_ = (positionMin_ + positionMax) * 0.5f;
 		bound.radius_ = (positionMax - positionMin_).Length() * 0.5f;

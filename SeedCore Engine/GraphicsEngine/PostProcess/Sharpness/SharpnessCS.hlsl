@@ -14,35 +14,6 @@ struct SharpnessResolveBindings
 };
 ConstantBuffer<SharpnessResolveBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* Reference:
-* - https://en.wikipedia.org/wiki/Unsharp_masking
-*
-* This is the textbook unsharp mask, not a published real-time technique -
-* there is no graphics paper behind it. Worth knowing that the modern
-* real-time standard for this slot is AMD FidelityFX CAS (Contrast Adaptive
-* Sharpening, https://gpuopen.com/fidelityfx-cas/), which varies sharpening
-* strength per pixel by local contrast so flat regions do not gain noise and
-* already-contrasty edges do not ring. This pass does neither - it applies
-* amount_ uniformly. If sharpening ever needs to be pushed hard enough that
-* halos or amplified noise show up, replacing this with CAS is the fix.
-*
-* Reads ToneMapping.Color (tone-mapped and sRGB-encoded) and applies a 5-tap
-* cross unsharp mask into Sharpness.Color, pushing each pixel away from its
-* 4-neighbor average by amount_ - the classic sharpen/edge-enhancement look.
-* When SharpnessSettings.enabled_ is off the Stage does not run and
-* Sharpness.Color passes ToneMapping.Color through.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* ToneMapping.Color（トーンマップ済み・sRGB エンコード済み）を読み、5 タップの
-* 十字アンシャープマスクを掛けて Sharpness.Color へ書く。各ピクセルを 4 近傍
-* 平均から amount_ ぶん引き離す — 典型的なシャープ/輪郭強調の見た目。
-* SharpnessSettings.enabled_ がオフなら Stage は走らず、Sharpness.Color は
-* ToneMapping.Color を素通しで指す。
-*/
 [numthreads(8, 8, 1)]
 void main(uint3 dtid : SV_DispatchThreadID)
 {

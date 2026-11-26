@@ -8,15 +8,15 @@ namespace SeedCore
 	class MeshCollision;
 
 	/**
-	* [EN]
-	* Component that builds a collider from a mesh-collision asset and either
-	* attaches it to a rigid body or creates a standalone collider body.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* メッシュコリジョンアセットから形状を構築し、Rigidbody へ取り付けるか、
-	* 単独のコライダーボディを生成するコンポーネント。
+	* アクターにつけると、メッシュの形で当たり判定ができる部品。
+	*
+	* @brief メッシュの当たり判定
+	*
+	* [EN]
+	* Put it on an actor to give it collision shaped like a mesh.
+	*
+	* @brief Collision shaped like a mesh
 	*/
 	class SEEDCORE_API MeshCollider :public SeedScript
 	{
@@ -24,109 +24,121 @@ namespace SeedCore
 		friend class PhysicsSystem;
 
 	public:
-		/// [EN] Asset ID of the mesh-collision data used to build the shape.
-		/// [JP] 形状の構築に使うメッシュコリジョンデータのアセット ID。
+		/// [JP] 当たり判定に使うメッシュのアセット番号
+		/// [EN] The asset number of the mesh used for collision
 		SC_PAYLOAD_FIELD_EX("コリジョンメッシュ", MeshCollision)
 		Uint32 meshID_ = 0;
 
-		/// [EN] Whether the mesh is converted to a convex hull.
-		/// [JP] メッシュを凸包へ変換するか。
+		/// [JP] 凸包（へこみのない形）にするか
+		/// [EN] Whether to wrap it into a convex shape with no dents
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("凸包にする")
 		Bool convex_ = false;
 
-		/// [EN] Whether a standalone collider body acts as a trigger.
-		/// [JP] 単独のコライダーボディをトリガーとして扱うか。
+		/// [JP] ぶつからずに、重なったことだけを知らせるか
+		/// [EN] Whether it only reports overlaps instead of blocking
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("トリガー")
 		Bool isTrigger_ = false;
 
 	public:
 		/**
-		* [EN]
-		* Marks the configured mesh asset for shape construction.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 設定されたメッシュアセットを形状構築待ちにする。
+		* 当たり判定の体を作る。
+		*
+		* @brief 当たり判定を作る
+		*
+		* [EN]
+		* Creates the collision body.
+		*
+		* @brief Creates the collision
 		*/
 		void OnAwake();
 
 		/**
-		* [EN]
-		* Destroys the standalone collider body and releases its shape.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 単独のコライダーボディを破棄し、形状を解放する。
+		* 当たり判定の体を消す。
+		*
+		* @brief 当たり判定を消す
+		*
+		* [EN]
+		* Removes the collision body.
+		*
+		* @brief Removes the collision
 		*/
 		void OnDestroy();
 
 		/**
-		* [EN]
-		* Releases the current body and shape and returns to waiting for
-		* the mesh, so the shape is built again from the current settings.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 今のボディと形状を解放してメッシュ待ちに戻し、現在の設定で
-		* 形状が作り直されるようにする。
+		* 設定が変わったので、当たり判定を作り直す。
+		*
+		* @brief 当たり判定を作り直す
+		*
+		* [EN]
+		* The settings changed, so the collision is made again.
+		*
+		* @brief Remakes the collision
 		*/
 		void OnRevision();
 
 	public:
 		/**
-		* [EN]
-		* Applies fields changed from code. An edit in the inspector runs
-		* OnRevision on its own, but a field written by a script takes
-		* effect only once this is called.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* コードから変えたフィールドを反映する。インスペクタでの編集は
-		* 自動で OnRevision が走るが、スクリプトから書き換えたフィールドは
-		* これを呼んだときに初めて効く。
+		* 当たり判定を作り直す。
+		*
+		* @brief 当たり判定を作り直す
+		*
+		* [EN]
+		* Remakes the collision.
+		*
+		* @brief Remakes the collision
 		*/
 		void Dispatch();
 
 	private:
 		/**
-		* [EN]
-		* Builds and applies a collision shape from resolved mesh data.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 解決済みメッシュデータから衝突形状を構築して適用する。
+		* 読み込んだメッシュから形を作って、当たり判定にする。
+		*
+		* @brief メッシュから当たり判定を作る
+		* @param meshCollision 形に使うメッシュ
+		* @note  動く Rigidbody では凸包になる
+		*
+		* [EN]
+		* Makes a shape from the loaded mesh and uses it for collision.
+		*
+		* @brief Makes the collision from a mesh
+		* @param meshCollision The mesh to build the shape from
+		* @note  A moving Rigidbody always gets a convex shape
 		*/
 		void Build(const MeshCollision& meshCollision);
 
 		/**
-		* [EN]
-		* Reports whether the configured mesh still needs to be built.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 設定されたメッシュをまだ構築する必要があるかを返す。
+		* まだ形を作れていないかを返す。
+		*
+		* @brief  形待ちか調べる
+		* @return まだなら true
+		*
+		* [EN]
+		* Returns whether the shape still needs to be made.
+		*
+		* @brief  Checks if the shape is pending
+		* @return True if it is still pending
 		*/
 		Bool Pending()const;
 
 	private:
-		/// [EN] Jolt body identifier used when this collider owns a standalone body.
-		/// [JP] このコライダーが単独ボディを所有するときに使う Jolt ボディ ID。
+		/// [JP] 物理エンジンの中での体の番号
+		/// [EN] The body number inside the physics engine
 		ScBodyID bodyID_ = ScInvalidBodyID;
 
-		/// [EN] Pool handle of the built collision shape.
-		/// [JP] 構築した衝突形状のプールハンドル。
+		/// [JP] 使っている形
+		/// [EN] The shape in use
 		ScShapeHandle shapeHandle_;
 
-		/// [EN] Whether mesh data must be resolved and built.
-		/// [JP] メッシュデータの解決と構築が必要か。
+		/// [JP] まだ形を作れていないか
+		/// [EN] Whether the shape still needs to be made
 		Bool pending_ = true;
 	};
 	REGISTER_COMPONENT(MeshCollider, "Physics/Collider");

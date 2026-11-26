@@ -23,4 +23,4 @@ struct ParticleQuadOutput
 	float4 color : COLOR0;
 };
 
-#endif // __PARTICLE_QUAD_HLSL__
+#endif

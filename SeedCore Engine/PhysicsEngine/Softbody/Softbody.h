@@ -7,19 +7,17 @@ namespace SeedCore
 	class Crister;
 
 	/**
-	* [EN]
-	* Component that simulates its actor's Mesh as a Jolt soft body. The
-	* body is built from a coarse proxy of the model once it has loaded,
-	* and each fixed step the proxy's vertices are read back in local
-	* space for SoftbodyMesh to deform the render mesh with.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Actor の Mesh を Jolt のソフトボディとしてシミュレートするコンポーネント。
-	* モデルの読み込み後に粗いプロキシからボディを作り、固定ステップごとに
-	* プロキシの頂点をローカル空間で読み戻す。SoftbodyMesh はそれで描画
-	* メッシュを変形させる。
+	* アクターにつけると、メッシュが布やゴムのようにやわらかく動く部品。
+	* 形は同じアクターの Mesh から作る。
+	*
+	* @brief やわらかい体の部品
+	*
+	* [EN]
+	* Put it on an actor to make its mesh move softly, like cloth or rubber.
+	* The shape is built from the Mesh on the same actor.
+	*
+	* @brief A soft body part
 	*/
 	class SEEDCORE_API Softbody :public SeedScript
 	{
@@ -27,255 +25,270 @@ namespace SeedCore
 		friend class PhysicsSystem;
 
 	public:
-		/// [EN] Mass in kilograms; not passed to the simulation yet.
-		/// [JP] 質量(kg)。まだシミュレーションには渡していない。
+		/// [JP] 重さ
+		/// [EN] The mass
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("質量", 0.001f, 100.0f)
 		Float mass_ = 1.0f;
 
-		/// [EN] Resistance to shearing of each face: 1 is rigid, 0 the softest.
-		/// [JP] 各面のせん断に対する硬さ。1 で硬く、0 で最も柔らかい。
+		/// [JP] 面の広がりにくさ
+		/// [EN] How hard the surface is to stretch
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("面積弾性力", 0.0f, 1.0f)
 		Float areaStiffness_ = 0.5f;
 
-		/// [EN] Resistance to volume change; not passed to the simulation yet.
-		/// [JP] 体積変化に対する硬さ。まだシミュレーションには渡していない。
+		/// [JP] 体積の変わりにくさ
+		/// [EN] How hard the volume is to change
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("体積弾性力", 0.0f, 1.0f)
 		Float volumeStiffness_ = 0.5f;
 
-		/// [EN] Damping that slows the vertices' velocity over time.
-		/// [JP] 頂点の速度を時間とともに弱める減衰。
+		/// [JP] 動きの止まりやすさ
+		/// [EN] How quickly its movement slows down
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("抵抗力", 0.0f, 1.0f)
 		Float damping_ = 0.5f;
 
-		/// [EN] Poisson's ratio of the material; not passed to the simulation yet.
-		/// [JP] 材質のポアソン比。まだシミュレーションには渡していない。
+		/// [JP] 引っ張ったときの細くなりやすさ
+		/// [EN] How much it thins when pulled
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("ポアソン比", 0.0f, 0.5f)
 		Float poissonRatio_ = 0.3f;
 
-		/// [EN] How far a vertex may drift from its bind pose; not passed to the simulation yet.
-		/// [JP] 頂点がバインドポーズから離れてよい距離。まだシミュレーションには渡していない。
+		/// [JP] 元の形から離れてよい距離
+		/// [EN] How far it may drift from its original shape
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("最大許容距離", 0.0f, 10.0f)
 		Float maxDistance_ = 0.0f;
 
-		/// [EN] Resistance to stretching along each edge: 1 is rigid, 0 the softest.
-		/// [JP] 各辺の伸びに対する硬さ。1 で硬く、0 で最も柔らかい。
+		/// [JP] 辺の伸びにくさ
+		/// [EN] How hard the edges are to stretch
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("辺補強係数", 0.0f, 1.0f)
 		Float edgeStiffness_ = 0.5f;
 
-		/// [EN] Resistance to bending between neighbouring faces: 1 is rigid, 0 the softest.
-		/// [JP] 隣り合う面の間の曲げに対する硬さ。1 で硬く、0 で最も柔らかい。
+		/// [JP] 曲がりにくさ
+		/// [EN] How hard it is to bend
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("曲耐性", 0.0f, 1.0f)
 		Float bendStiffness_ = 0.5f;
 
-		/// [EN] Pressure inside a closed mesh; positive inflates it, negative deflates it.
-		/// [JP] 閉じたメッシュの内部圧力。正で膨らみ、負でしぼむ。
+		/// [JP] 中から押す力（ふくらみ）
+		/// [EN] How hard it pushes out from inside
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("内部圧力", -10.0f, 10.0f)
 		Float pressure_ = 0.0f;
 
-		/// [EN] Friction coefficient: 0 slides freely, 1 grips strongly.
-		/// [JP] 摩擦係数。0 で滑り、1 で強く止まる。
+		/// [JP] すべりにくさ
+		/// [EN] How grippy it is
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("摩擦係数", 0.0f, 1.0f)
 		Float friction_ = 0.2f;
 
-		/// [EN] Restitution: 0 does not bounce, 1 bounces back with full speed.
-		/// [JP] 反発係数。0 で跳ねず、1 で速さを保って跳ね返る。
+		/// [JP] はね返りやすさ
+		/// [EN] How bouncy it is
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("反発係数", 0.0f, 1.0f)
 		Float restitution_ = 0.5f;
 
-		/// [EN] Whether world gravity acts on the body.
-		/// [JP] ワールドの重力をボディに働かせるか。
+		/// [JP] 重力を受けるか
+		/// [EN] Whether gravity pulls it
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_EX("重力")
 		Bool useGravity_ = true;
 
-		/// [EN] Multiplier on world gravity.
-		/// [JP] ワールドの重力に掛ける倍率。
+		/// [JP] 重力のかかり方の倍率
+		/// [EN] How strongly gravity pulls it
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_FIELD_CONDITION(useGravity_)
 		SC_REFLECTION_FIELD_EX("重力倍率")
 		Float gravityScale_ = 1.0f;
 
-		/// [EN] Number of substeps per physics step; not passed to the simulation yet.
-		/// [JP] 物理ステップ1回あたりのサブステップ数。まだシミュレーションには渡していない。
+		/// [JP] 1回の更新を何回に分けて計算するか
+		/// [EN] How many smaller steps each update is split into
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("サブステップ数", 1, 20)
 		Int subSteps_ = 4;
 
-		/// [EN] Solver iterations per step; more iterations hold the constraints more firmly.
-		/// [JP] ステップごとのソルバの反復回数。多いほど拘束がしっかり保たれる。
+		/// [JP] 形を整える計算のくり返し回数
+		/// [EN] How many times the shape is solved each step
 		SC_REFLECTION_FIELD_REVISION()
 		SC_REFLECTION_CLAMPED_EX("反復回数", 1, 10)
 		Int iterationCount_ = 4;
 
 	public:
 		/**
-		* [EN]
-		* Marks the soft body as waiting to be built when the actor has a
-		* Mesh with an asset assigned.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* Actor にアセット付きの Mesh があれば、ソフトボディを構築待ちにする。
+		* メッシュが選ばれていれば、体を作る準備をする。
+		*
+		* @brief 作る準備をする
+		*
+		* [EN]
+		* If a mesh is chosen, gets ready to build the body.
+		*
+		* @brief Gets ready to build
 		*/
 		void OnAwake();
 
 		/**
-		* [EN]
-		* Reads the simulated vertex positions back and moves them into the
-		* actor's local space.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* シミュレーション後の頂点位置を読み戻し、Actor のローカル空間へ移す。
+		* 体の頂点の位置を、アクターから見た位置に直して覚える。
+		*
+		* @brief 頂点の位置を写す
+		* @param elapsedTime 前の物理の更新からの時間
+		*
+		* [EN]
+		* Reads the body's vertex positions and stores them relative to the actor.
+		*
+		* @brief Copies the vertex positions
+		* @param elapsedTime Time since the last physics update
 		*/
 		void OnFixedTick(Float elapsedTime);
 
 		/**
-		* [EN]
-		* Destroys the body and returns to waiting, so the soft body is
-		* built again if the actor wakes up once more.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* ボディを破棄して構築待ちに戻す。Actor が再び起動すれば、
-		* ソフトボディはもう一度構築される。
+		* 体を消して、作り直せるようにする。
+		*
+		* @brief 体を消す
+		*
+		* [EN]
+		* Removes the body so it can be built again.
+		*
+		* @brief Removes the body
 		*/
 		void OnDestroy();
 
 		/**
-		* [EN]
-		* Destroys the body and returns to waiting, so the soft body is
-		* built again from the current settings.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* ボディを破棄して構築待ちに戻し、現在の設定でソフトボディが
-		* 作り直されるようにする。
+		* 設定が変わったので、体を作り直す。
+		*
+		* @brief 体を作り直す
+		*
+		* [EN]
+		* The settings changed, so the body is made again.
+		*
+		* @brief Remakes the body
 		*/
 		void OnRevision();
 
 	public:
 		/**
-		* [EN]
-		* Applies fields changed from code. An edit in the inspector runs
-		* OnRevision on its own, but a field written by a script takes
-		* effect only once this is called.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* コードから変えたフィールドを反映する。インスペクタでの編集は
-		* 自動で OnRevision が走るが、スクリプトから書き換えたフィールドは
-		* これを呼んだときに初めて効く。
+		* 体を作り直す。
+		*
+		* @brief 体を作り直す
+		*
+		* [EN]
+		* Remakes the body.
+		*
+		* @brief Remakes the body
 		*/
 		void Dispatch();
 
 	public:
 		/**
-		* [EN]
-		* Adds a force (N) for the next fixed step, spread evenly over the
-		* vertices. Does nothing until the body is built.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 次の固定ステップの間、力(N)を加える。力は頂点へ均等に分ける。
-		* ボディが構築されるまでは何もしない。
+		* 体に力をかける。
+		*
+		* @brief 力をかける
+		* @param force かける力
+		*
+		* [EN]
+		* Pushes the body with a force.
+		*
+		* @brief Adds a force
+		* @param force The force
 		*/
 		void AddForce(const Vector3& force);
 
 		/**
-		* [EN]
-		* Adds an impulse (kg·m/s), giving every movable vertex the same
-		* change of velocity at once. Does nothing until the body is built.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 力積(kg·m/s)を加え、動ける頂点すべてに同じ速度変化を一度に与える。
-		* ボディが構築されるまでは何もしない。
+		* 体を一瞬でぽんと押す。
+		*
+		* @brief 一瞬押す
+		* @param impulse 押す強さ
+		*
+		* [EN]
+		* Gives the body a quick shove.
+		*
+		* @brief Adds an impulse
+		* @param impulse How hard to shove
 		*/
 		void AddImpulse(const Vector3& impulse);
 
 	public:
 		/**
-		* [EN]
-		* Returns the Jolt ID of the body; invalid until Build succeeds and
-		* after OnDestroy.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* ボディの Jolt ID を返す。Build が成功するまでと OnDestroy 後は無効な ID。
+		* 物理の体の番号を返す。
+		*
+		* @brief  体の番号を返す
+		* @return 体の番号。まだなければ無効な番号
+		*
+		* [EN]
+		* Returns the physics body number.
+		*
+		* @brief  Returns the body number
+		* @return The body number, or the invalid number if there is none yet
 		*/
 		ScBodyID BodyID()const;
 
 		/**
-		* [EN]
-		* Returns this step's simulated positions of the coarse proxy's
-		* vertices, in the actor's local space. SoftbodyMesh transfers their
-		* displacement onto the full-resolution render mesh.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* このステップでシミュレートした粗いプロキシの頂点位置を、Actor の
-		* ローカル空間で返す。SoftbodyMesh がその変位をフル解像度の描画
-		* メッシュへ移す。
+		* アクターから見た、今の頂点の位置を返す。
+		*
+		* @brief  頂点の位置を返す
+		* @return 頂点の位置の一覧
+		*
+		* [EN]
+		* Returns the current vertex positions relative to the actor.
+		*
+		* @brief  Returns the vertex positions
+		* @return The vertex positions
 		*/
 		const DynamicArray<Vector3>& BodyVertex()const;
 
 	private:
 		/**
-		* [EN]
-		* Builds the body from the model's coarse proxy mesh, the actor's
-		* pose and this component's settings. Stays pending if it fails.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* モデルの粗いプロキシメッシュ、Actor の姿勢、このコンポーネントの
-		* 設定からボディを作る。失敗した場合は構築待ちのまま残る。
+		* 読み込んだモデルから、やわらかい体を作る。
+		*
+		* @brief 体を作る
+		* @param crister 形に使うモデル
+		*
+		* [EN]
+		* Builds the soft body from the loaded model.
+		*
+		* @brief Builds the body
+		* @param crister The model to build from
 		*/
 		void Build(const Crister& crister);
 
 		/**
-		* [EN]
-		* Reports whether the soft body is still waiting for its model.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* ソフトボディがまだモデルを待っているかを返す。
+		* まだ体を作れていないかを返す。
+		*
+		* @brief  作る待ちか調べる
+		* @return まだなら true
+		*
+		* [EN]
+		* Returns whether the body still needs to be built.
+		*
+		* @brief  Checks if building is pending
+		* @return True if it is still pending
 		*/
 		Bool Pending()const;
 
 	private:
-		/// [EN] Jolt ID of the body.
-		/// [JP] ボディの Jolt ID。
+		/// [JP] 物理の体の番号
+		/// [EN] The physics body number
 		ScBodyID bodyID_ = ScInvalidBodyID;
 
-		/// [EN] Simulated proxy vertex positions in the actor's local space, refreshed every fixed step.
-		/// [JP] Actor のローカル空間での、シミュレート済みプロキシ頂点位置。固定ステップごとに更新する。
+		/// [JP] アクターから見た、今の頂点の位置
+		/// [EN] The current vertex positions, relative to the actor
 		DynamicArray<Vector3> vertexPositions_;
 
-		/// [EN] Whether the body still has to be built once the model is loaded.
-		/// [JP] モデルの読み込み後に、まだボディを構築する必要があるか。
+		/// [JP] まだ体を作れていないか
+		/// [EN] Whether the body still needs to be built
 		Bool pending_ = true;
 	};
 	REGISTER_COMPONENT(Softbody, "Physics");

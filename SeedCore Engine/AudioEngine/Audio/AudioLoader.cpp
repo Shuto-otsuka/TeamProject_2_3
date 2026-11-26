@@ -10,18 +10,20 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Initializes COM and Media Foundation for MP3 decoding.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* MP3 のデコードに使う COM と Media Foundation を初期化する。
+	* 音のファイルを読む準備をする。
+	*
+	* @brief 読む準備をする
+	*
+	* [EN]
+	* Gets ready to read sound files.
+	*
+	* @brief Gets ready to read
 	*/
 	AudioLoader::AudioLoader()
 	{
-		/// [EN] Track successful initialization so this instance balances only the calls it owns.
-		/// [JP] このインスタンスが所有する初期化呼び出しだけを終了できるよう、成功状態を保持する。
+		/// [JP] mp3 を変換するために COM と Media Foundation を始める
+		/// [EN] Start COM and Media Foundation so mp3 files can be converted
 		HRESULT comResult = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
 		ownsComInitialize_ = (comResult == S_OK || comResult == S_FALSE);
 
@@ -35,16 +37,20 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Shuts down the facilities initialized by this loader.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* このローダーが初期化した機能を終了する。
+	* 読み込みに使ったものを片付ける。
+	*
+	* @brief 片付ける
+	*
+	* [EN]
+	* Cleans up what was used for reading.
+	*
+	* @brief Cleans up
 	*/
 	AudioLoader::~AudioLoader()
 	{
+		/// [JP] 始めたものだけを終わらせる
+		/// [EN] Shut down only what was started
 		if (mfStarted_)
 		{
 			MFShutdown();
@@ -57,26 +63,26 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Loads a Sound from filePath. A ".audio" path is read as the
-	* encrypted cache; a source (".wav"/".mp3"/".acb") is converted in
-	* memory, with an ".acb" streaming from the ".awb" beside it when
-	* there is one. Nothing is written. Returns a null handle on failure.
-	* thread is unused: a Sound needs no per-thread state.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* filePath から Sound を読み込む。".audio" は暗号化されたキャッシュ
-	* として読む。素材（".wav"/".mp3"/".acb"）はメモリ上で変換し、".acb"
-	* は隣に ".awb" があればそこからストリーミングする。何も書き出さない。
-	* 失敗時は null ハンドルを返す。thread は使わない（Sound はスレッド
-	* ごとの状態を持たないため）。
+	* ファイルを読み込んで音を作る。
+	*
+	* @brief  ファイルを読み込む
+	* @param  filePath 読むファイル
+	* @param  thread   読み込むスレッド
+	* @return 作った音のハンドル。失敗したら空
+	*
+	* [EN]
+	* Reads a file and makes a sound.
+	*
+	* @brief  Reads a file
+	* @param  filePath The file to read
+	* @param  thread   The thread to read on
+	* @return A handle to the new sound, or empty on failure
 	*/
 	Handle<Sound> AudioLoader::Load(String filePath, LoadThread thread)
 	{
-		/// [EN] A ".awb" is only the streamed half of an ".acb", so it is never loaded on its own.
-		/// [JP] ".awb" は ".acb" のストリーミング側でしかないため、単体では読み込まない。
+		/// [JP] AWB は単独では読まない（ACB と一緒に使う）
+		/// [EN] An AWB is never read on its own (it is used with its ACB)
 		std::filesystem::path fileFsPath(filePath.c_str());
 		std::string extension = fileFsPath.extension().string();
 		std::ranges::transform(extension, extension.begin(), [](Uchar c) { return static_cast<Char>(std::tolower(c)); });
@@ -86,8 +92,8 @@ namespace SeedCore
 			return Handle<Sound>::null();
 		}
 
-		/// [EN] Decode the file into its plain body, its kind, and the path CRI streams the AWB from.
-		/// [JP] ファイルを、平文の本体・その種別・CRI が AWB をストリーミングするパスへデコードする。
+		/// [JP] ファイルを鳴らせるデータに変える
+		/// [EN] Turn the file into playable data
 		SoundType type = SoundType::Wave;
 		DynamicArray<Byte> data;
 		String awbPath;
@@ -97,8 +103,8 @@ namespace SeedCore
 			return Handle<Sound>::null();
 		}
 
-		/// [EN] Store the plain body in a stable Sound slot addressed by the returned handle.
-		/// [JP] 平文の本体を、返却ハンドルで参照する安定した Sound スロットへ格納する。
+		/// [JP] 音を作ってデータを入れる
+		/// [EN] Make a sound and fill in the data
 		Handle<Sound> handle = pool_.Create();
 		Sound* sound = pool_.Get(handle);
 		if (!sound)
@@ -110,8 +116,8 @@ namespace SeedCore
 		sound->data_ = std::move(data);
 		sound->awbPath_ = awbPath;
 
-		/// [EN] Register cue-sheet data with CRI when the global ACF is available.
-		/// [JP] グローバル ACF を利用できる場合は、キューシートデータを CRI へ登録する。
+		/// [JP] キューシートなら音のライブラリに登録する
+		/// [EN] Register a cue sheet with the sound library
 		if (sound->type_ == SoundType::CueSheet)
 		{
 			CriAtomExAcfInfo acfInfo{};
@@ -135,18 +141,22 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Releases CRI data associated with a Sound and destroys its handle.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Sound に関連する CRI データを解放し、ハンドルを破棄する。
+	* 読み込んだ音を消す。
+	*
+	* @brief 音を消す
+	* @param handle 消す音のハンドル
+	*
+	* [EN]
+	* Throws away a loaded sound.
+	*
+	* @brief Removes a sound
+	* @param handle The handle of the sound to remove
 	*/
 	void AudioLoader::Clear(Handle<Sound>& handle)noexcept
 	{
-		/// [EN] Release the ACB before returning its backing Sound slot to the pool.
-		/// [JP] Sound の格納スロットをプールへ返す前に、ACB を解放する。
+		/// [JP] キューシートの登録を外してから音を消す
+		/// [EN] Unregister the cue sheet, then remove the sound
 		if (Sound* sound = pool_.Get(handle))
 		{
 			if (sound->acbHandle_)
@@ -160,18 +170,26 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Converts a supported audio source into an encrypted .audio cache.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 対応する音声素材を暗号化された .audio キャッシュへ変換する。
+	* 元のファイルを、すぐ読める形（キャッシュ）にして保存する。
+	*
+	* @brief  キャッシュを作る
+	* @param  sourcePath 元のファイル
+	* @param  cachePath  保存する場所
+	* @return うまくいったら true
+	*
+	* [EN]
+	* Saves the original file in a quick-to-read form (a cache).
+	*
+	* @brief  Makes a cache
+	* @param  sourcePath The original file
+	* @param  cachePath  Where to save it
+	* @return True if it worked
 	*/
 	Bool AudioLoader::Bake(String sourcePath, String cachePath)
 	{
-		/// [EN] Decode the source into the plain main body, the same bytes Load gives a Sound.
-		/// [JP] 素材を平文の本体データへデコードする。Load が Sound に渡すのと同じバイト列。
+		/// [JP] 元のファイルと、あれば AWB を読む
+		/// [EN] Read the original file and its AWB if there is one
 		SoundType type = SoundType::Wave;
 		DynamicArray<Byte> mainData;
 		String awbPath;
@@ -180,8 +198,6 @@ namespace SeedCore
 			return false;
 		}
 
-		/// [EN] Package the AWB beside an ".acb" as the optional streamed-data blob when present.
-		/// [JP] ".acb" の隣に AWB がある場合は、任意のストリームデータブロブとして格納する。
 		DynamicArray<Byte> streamData;
 		if (!awbPath.str().empty())
 		{
@@ -190,8 +206,8 @@ namespace SeedCore
 			std::memcpy(streamData.data(), streamBytes.data(), streamBytes.size());
 		}
 
-		/// [EN] Encrypt each populated blob with an independent initialization vector.
-		/// [JP] 格納する各ブロブを、それぞれ独立した初期化ベクトルで暗号化する。
+		/// [JP] 鍵と毎回違う初期値で、中身を暗号化する
+		/// [EN] Encrypt the contents with the key and a fresh starting value
 		static const DynamicArray<Byte> key = Sha256::Hash(reinterpret_cast<const Byte*>(SC_ENCRYPTION_KEY_SEED), std::strlen(SC_ENCRYPTION_KEY_SEED));
 		std::random_device randomDevice;
 
@@ -213,8 +229,8 @@ namespace SeedCore
 			streamCiphertext = Aes256::Encrypt(key, streamIv, streamData);
 		}
 
-		/// [EN] Calculate the container header and aligned blob layout.
-		/// [JP] コンテナのヘッダーと、境界調整したブロブ配置を算出する。
+		/// [JP] ファイルの中のどこに何を置くかを決める
+		/// [EN] Decide where each part goes in the file
 		Uint32 version = 1;
 		Uint32 typeValue = static_cast<Uint32>(type);
 		Uint32 blobCount = streamData.empty() ? 1 : 2;
@@ -228,8 +244,8 @@ namespace SeedCore
 		Uint64 streamEncryptedSize = streamCiphertext.empty() ? 0 : 16 + streamCiphertext.size();
 		Uint64 streamPlainSize = streamData.size();
 
-		/// [EN] Write metadata followed by the encrypted main and optional stream blobs.
-		/// [JP] メタデータに続けて、暗号化した本体と任意のストリームブロブを書き込む。
+		/// [JP] 見出し（種類や数）を書く
+		/// [EN] Write the header (kind and counts)
 		std::ofstream ofs(cachePath.c_str(), std::ios::binary);
 		if (!ofs)
 		{
@@ -242,6 +258,8 @@ namespace SeedCore
 		ofs.write(reinterpret_cast<const Char*>(&blobCount), 4);
 		ofs.write(reinterpret_cast<const Char*>(&reserved), 4);
 
+		/// [JP] それぞれの中身の場所と大きさを書く
+		/// [EN] Write where each part is and how big it is
 		Uint32 mainBlobID = 0;
 		ofs.write(reinterpret_cast<const Char*>(&mainBlobID), 4);
 		ofs.write(reinterpret_cast<const Char*>(&reserved), 4);
@@ -259,6 +277,8 @@ namespace SeedCore
 			ofs.write(reinterpret_cast<const Char*>(&streamPlainSize), 8);
 		}
 
+		/// [JP] 暗号化した中身を書く。AWB の分は区切りのいい場所から書く
+		/// [EN] Write the encrypted parts; the AWB part starts at a tidy boundary
 		ofs.write(mainIv.data(), static_cast<std::streamsize>(mainIv.size()));
 		ofs.write(mainCiphertext.data(), static_cast<std::streamsize>(mainCiphertext.size()));
 

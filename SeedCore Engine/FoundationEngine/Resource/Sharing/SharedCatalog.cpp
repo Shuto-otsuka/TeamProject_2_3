@@ -8,54 +8,18 @@ namespace SeedCore
 	template<typename Edit>
 	static Bool ModifyCatalog(GoogleDocument& document, const String& documentId, DynamicArray<SharedAsset>& assets, String& error, Edit&& edit);
 
-	/**
-	* [EN]
-	* Takes the document this catalog lives in.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* このカタログが置かれているドキュメントを受け取る。
-	*/
 	SharedCatalog::SharedCatalog(GoogleDocument& document, const String& documentId) : document_(document), documentId_(documentId)
 	{
 		/// No Code
 	}
 
-	/**
-	* [EN]
-	* Drops the in-memory copy; the catalog itself lives in the
-	* document and outlives any Editor.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* メモリ上の写しを捨てるだけ。カタログ自体はドキュメントにあり、
-	* どの Editor よりも長く残る。
-	*/
 	SharedCatalog::~SharedCatalog()
 	{
-		/// [EN] Nothing is written on the way out, so a crash mid-session leaves the catalog exactly as it was.
-		/// [JP] 終了時に書き込むものは無いため、作業中にクラッシュしてもカタログはそのままの状態で残る。
-
 		/// No Code
 	}
 
-	/**
-	* [EN]
-	* Re-reads the catalog so the Editor sees what the team currently
-	* has and at which revisions.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* カタログを読み直し、チームが今何を持っていて、それぞれどの
-	* Revision なのかを Editor へ反映する。
-	*/
 	Bool SharedCatalog::Refresh()
 	{
-		/// [EN] This read is what makes an asset another member published appear in this Editor's browser.
-		/// [JP] 他のメンバーが Publish したアセットが、この Editor のブラウザに現れるのは、この読み取りによる。
 		GoogleDocumentSnapshot snapshot = document_.Read(documentId_);
 		if (!snapshot.valid_)
 		{
@@ -63,41 +27,19 @@ namespace SeedCore
 			return false;
 		}
 
-		/// [EN] An empty or damaged document is taken as an empty catalog, which is also the state before the first publish.
-		/// [JP] 空や壊れたドキュメントは空のカタログとして扱う。これは最初の Publish より前の状態でもある。
 		nlohmann::json catalog = nlohmann::json::parse(snapshot.text_.str(), nullptr, false);
 		AdoptCatalog(catalog, assets_);
 		error_ = String();
 		return true;
 	}
 
-	/**
-	* [EN]
-	* Every asset in the catalog as of the last read.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 直近の読み取り時点でカタログにある全アセット。
-	*/
 	const DynamicArray<SharedAsset>& SharedCatalog::Assets()const
 	{
 		return assets_;
 	}
 
-	/**
-	* [EN]
-	* Looks an asset up by its shared identifier.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 共有識別子でアセットを引く。
-	*/
 	const SharedAsset* SharedCatalog::Find(const String& assetId)const
 	{
-		/// [EN] The catalog holds a few thousand entries at most, so a straight scan is cheaper than keeping an index in step.
-		/// [JP] カタログの項目はせいぜい数千なので、索引を維持するより素直に走査する方が安く済む。
 		for (const SharedAsset& asset : assets_)
 		{
 			if (asset.id_ == assetId)
@@ -108,19 +50,8 @@ namespace SeedCore
 		return nullptr;
 	}
 
-	/**
-	* [EN]
-	* Looks an asset up by the 32-bit identifier the engine uses locally.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* エンジンがローカルで使う32ビットの識別子でアセットを引く。
-	*/
 	const SharedAsset* SharedCatalog::Find(Uint32 runtimeId)const
 	{
-		/// [EN] This is the lookup the Editor's own panels need, since they know assets by that number rather than by the shared one.
-		/// [JP] Editor の各パネルが必要とするのはこちら。パネル側はアセットを共有識別子ではなくこの番号で知っているため。
 		for (const SharedAsset& asset : assets_)
 		{
 			if (asset.runtimeId_ == runtimeId)
@@ -131,19 +62,8 @@ namespace SeedCore
 		return nullptr;
 	}
 
-	/**
-	* [EN]
-	* Looks an asset up by its workspace path.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ワークスペース上の位置でアセットを引く。
-	*/
 	const SharedAsset* SharedCatalog::FindPath(const String& path)const
 	{
-		/// [EN] Paths are compared as written, since every one of them is produced the same way from the workspace root.
-		/// [JP] 位置は書かれたまま比較する。どれもワークスペースの起点から同じ方法で作られているため。
 		for (const SharedAsset& asset : assets_)
 		{
 			if (asset.path_ == path)
@@ -154,32 +74,15 @@ namespace SeedCore
 		return nullptr;
 	}
 
-	/**
-	* [EN]
-	* Adds a local asset to the catalog as revision 1. Fails when its
-	* path or its 32-bit identifier is already taken, which is how two
-	* members creating the same thing separately is caught.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ローカルのアセットを Revision 1 としてカタログへ加える。位置か
-	* 32ビット識別子が既に使われていれば失敗する。2人が別々に同じものを
-	* 作ってしまった場合は、これで検出できる。
-	*/
 	Bool SharedCatalog::Register(const SharedAsset& asset)
 	{
 		return ModifyCatalog(document_, documentId_, assets_, error_, [this, asset](nlohmann::json& catalog)
 		{
-			/// [EN] Both checks run against the freshly read catalog, so a member who published a moment ago is seen here.
-			/// [JP] 2つの確認は読み直したカタログに対して行う。直前に Publish したメンバーの分もここで見える。
 			for (auto& entry : catalog["assets"].items())
 			{
 				Bool samePath = entry.value().value("path", "") == asset.path_.str();
 				Bool sameRuntimeId = entry.value().value("runtimeId", Uint32(0)) == asset.runtimeId_;
 
-				/// [EN] A path clash means two members made assets at the same place; a number clash means their .meta files agree by accident.
-				/// [JP] 位置の衝突は2人が同じ場所にアセットを作ったということ。番号の衝突は .meta が偶然一致したということ。
 				if (samePath || sameRuntimeId)
 				{
 					error_ = String(std::format("\"{}\" は既に共有されています。", entry.value().value("path", "")));
@@ -187,8 +90,6 @@ namespace SeedCore
 				}
 			}
 
-			/// [EN] Files are written out one by one because each carries both where it belongs and which blob holds it.
-			/// [JP] ファイルは1つずつ書き出す。それぞれが、属する位置と中身を持つ blob の両方を持っているため。
 			nlohmann::json files = nlohmann::json::array();
 			for (const SharedFile& file : asset.files_)
 			{
@@ -201,8 +102,6 @@ namespace SeedCore
 				dependencies.push_back(dependency.str());
 			}
 
-			/// [EN] Revision starts at 1, so 0 can keep meaning "this Editor has never published it".
-			/// [JP] Revision は1から始める。0を「この Editor はまだ Publish していない」の意味に残しておくため。
 			nlohmann::json entry;
 			entry["path"] = asset.path_.str();
 			entry["runtimeId"] = asset.runtimeId_;
@@ -217,22 +116,6 @@ namespace SeedCore
 		});
 	}
 
-	/**
-	* [EN]
-	* Records new contents for an asset and moves it to the next
-	* revision, as long as the entry is still at baseRevision: the first
-	* publish made on a revision is the one that stands, and a later one
-	* made on the same revision is refused. revision receives the
-	* revision that was written.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* アセットの新しい中身を記録し、次の Revision へ進める。ただし項目が
-	* まだ baseRevision にある場合に限る。ある Revision を元にした公開は
-	* 先の1つが残り、同じ Revision を元にした後からの公開は断られる。
-	* revision には書き込んだ Revision が入る。
-	*/
 	Bool SharedCatalog::Publish(const String& assetId, const DynamicArray<SharedFile>& files, const DynamicArray<String>& dependencies, Uint64 baseRevision, Uint64& revision)
 	{
 		return ModifyCatalog(document_, documentId_, assets_, error_, [this, assetId, files, dependencies, baseRevision, &revision](nlohmann::json& catalog)
@@ -244,16 +127,12 @@ namespace SeedCore
 			}
 			nlohmann::json& entry = catalog["assets"][assetId.str()];
 
-			/// [EN] The check runs against the freshly read catalog, so a member who published a moment ago is seen here.
-			/// [JP] 確認は読み直したカタログに対して行うため、直前に公開したメンバーの分もここで見える。
 			if (entry.value("revision", Uint64(0)) != baseRevision)
 			{
 				error_ = String("他のメンバーが先に公開しているため公開しませんでした。「最新を取得」で取り込んでから編集し直してください。");
 				return false;
 			}
 
-			/// [EN] The file list is replaced rather than merged, since a publish describes the asset in full.
-			/// [JP] ファイル一覧は統合ではなく置き換えにする。Publish はアセットの全体を記述するものであるため。
 			nlohmann::json list = nlohmann::json::array();
 			for (const SharedFile& file : files)
 			{
@@ -268,27 +147,12 @@ namespace SeedCore
 			}
 			entry["dependencies"] = links;
 
-			/// [EN] Moving the number forward is what tells every other member that their copy is now behind.
-			/// [JP] この番号を進めることが、他の全メンバーに「手元の写しは古くなった」と伝える手段になる。
 			revision = entry.value("revision", Uint64(0)) + 1;
 			entry["revision"] = revision;
 			return true;
 		});
 	}
 
-	/**
-	* [EN]
-	* Removes an asset's entry from the catalog altogether. Members who
-	* already hold a copy keep it as an ordinary local file; the library
-	* simply stops knowing the asset.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* アセットの項目をカタログから丸ごと取り除く。既に写しを持っている
-	* メンバーの手元には、普通のローカルファイルとして残る。ライブラリが
-	* そのアセットを知らなくなるだけ。
-	*/
 	Bool SharedCatalog::Remove(const String& assetId)
 	{
 		return ModifyCatalog(document_, documentId_, assets_, error_, [this, assetId](nlohmann::json& catalog)
@@ -303,37 +167,14 @@ namespace SeedCore
 		});
 	}
 
-	/**
-	* [EN]
-	* The last failure, in a form that can be shown to the user.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 直近の失敗内容。ユーザーへそのまま表示できる形で返す。
-	*/
 	const String& SharedCatalog::Error()const
 	{
 		return error_;
 	}
 
-	/**
-	* [EN]
-	* Reads the catalog, applies edit to it, and writes it back,
-	* retrying from the fresh contents whenever another member wrote
-	* first.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* カタログを読み、edit を適用して書き戻す。他のメンバーが先に
-	* 書いていた場合は、新しい内容から読み直してやり直す。
-	*/
 	template<typename Edit>
 	static Bool ModifyCatalog(GoogleDocument& document, const String& documentId, DynamicArray<SharedAsset>& assets, String& error, Edit&& edit)
 	{
-		/// [EN] Two members publishing different assets at the same moment both belong here; one simply goes second.
-		/// [JP] 別々のアセットを同時に Publish する2人は、どちらもここを通る。片方が2周目に回るだけのこと。
 		for (Int attempt = 0; attempt < 5; ++attempt)
 		{
 			GoogleDocumentSnapshot snapshot = document.Read(documentId);
@@ -343,8 +184,6 @@ namespace SeedCore
 				return false;
 			}
 
-			/// [EN] The document is put into a known shape first, so the very first publish starts from an empty catalog.
-			/// [JP] まず決まった形に整えるため、最初の Publish でも空のカタログから始められる。
 			nlohmann::json catalog = nlohmann::json::parse(snapshot.text_.str(), nullptr, false);
 			if (!catalog.is_object())
 			{
@@ -356,23 +195,17 @@ namespace SeedCore
 				catalog["assets"] = nlohmann::json::object();
 			}
 
-			/// [EN] An entry carrying "deleted" stands for an asset the team no longer shares, so every write drops it and the path becomes free to share again.
-			/// [JP] "deleted" の付いた項目は、チームがもう共有していないアセットを表す。どの書き込みでも取り除き、その位置を再び共有できるようにする。
 			for (auto entry = catalog["assets"].begin(); entry != catalog["assets"].end();)
 			{
 				entry = entry->value("deleted", false) ? catalog["assets"].erase(entry) : std::next(entry);
 			}
 
-			/// [EN] An edit that refuses still leaves the freshly read catalog in memory, which is what the caller inspects next.
-			/// [JP] 編集が拒否された場合も、読み直したカタログはメモリに残る。呼び出し側が次に見るのはそれ。
 			if (!edit(catalog))
 			{
 				AdoptCatalog(catalog, assets);
 				return false;
 			}
 
-			/// [EN] The write carries the revision the read came from, so it is refused if anyone wrote in between.
-			/// [JP] 書き込みには読み取り時の版を添える。その間に誰かが書いていれば拒否される。
 			if (document.Write(documentId, snapshot, String(catalog.dump())))
 			{
 				AdoptCatalog(catalog, assets);
@@ -380,8 +213,6 @@ namespace SeedCore
 				return true;
 			}
 
-			/// [EN] Being refused over the document's own revision is not a conflict over the asset, so the attempt just starts over.
-			/// [JP] ドキュメント自体の版で拒否されたのはアセットの競合ではないので、単純にやり直す。
 			if (!document.Conflicted())
 			{
 				error = document.Error();
@@ -393,31 +224,16 @@ namespace SeedCore
 		return false;
 	}
 
-	/**
-	* [EN]
-	* Parses the document text into the in-memory asset list.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ドキュメントの本文を解釈して、メモリ上のアセット一覧にする。
-	*/
 	static void AdoptCatalog(const nlohmann::json& catalog, DynamicArray<SharedAsset>& assets)
 	{
-		/// [EN] The list is rebuilt from scratch, so an asset removed elsewhere disappears here too.
-		/// [JP] 一覧は毎回作り直す。他所で取り除かれたアセットは、こちらからも消える。
 		assets.clear();
 		if (!catalog.is_object() || !catalog.contains("assets") || !catalog["assets"].is_object())
 		{
 			return;
 		}
 
-		/// [EN] items() is used because the identifier is the key rather than a field inside the entry.
-		/// [JP] 識別子が項目の中ではなく見出しの側にあるため、items() を使う。
 		for (auto& entry : catalog["assets"].items())
 		{
-			/// [EN] An entry carrying "deleted" is not shared any more, and is read as if it were already gone.
-			/// [JP] "deleted" の付いた項目はもう共有されていないので、既に無いものとして読む。
 			if (entry.value().value("deleted", false))
 			{
 				continue;
@@ -432,8 +248,6 @@ namespace SeedCore
 			asset.scene_ = entry.value().value("scene", false);
 			asset.sceneDocumentId_ = String(entry.value().value("sceneDocumentId", ""));
 
-			/// [EN] A missing files array would mean a damaged catalog, so the loop is written to simply produce nothing.
-			/// [JP] files が無いのはカタログが壊れている場合なので、その時は何も作らずに済む書き方にしている。
 			if (entry.value().contains("files"))
 			{
 				for (const nlohmann::json& file : entry.value()["files"])

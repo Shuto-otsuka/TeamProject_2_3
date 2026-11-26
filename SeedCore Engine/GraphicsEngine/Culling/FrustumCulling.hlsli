@@ -1,13 +1,6 @@
 #ifndef __FRUSTUM_CULLING_HLSL__
 #define __FRUSTUM_CULLING_HLSL__
 
-/**
-* [EN]
-* Sphere versus view frustum. The six planes are taken straight from the
-* row-vector view-projection matrix; the two depth planes are near/far in
-* either order, so the test holds for both standard and reversed-Z
-* projections. Returns true when any part of the sphere is inside.
-*/
 bool IsInsideFrustum(float3 center, float radius, row_major float4x4 view_projection)
 {
 	float4 planes[6];
@@ -29,4 +22,4 @@ bool IsInsideFrustum(float3 center, float radius, row_major float4x4 view_projec
 	return true;
 }
 
-#endif // __FRUSTUM_CULLING_HLSL__
+#endif

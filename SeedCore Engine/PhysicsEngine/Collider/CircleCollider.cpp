@@ -8,21 +8,23 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Creates the circle shape and collider body.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 円形状とコライダーボディを生成する。
+	* 当たり判定の体を作る。
+	*
+	* @brief 当たり判定を作る
+	*
+	* [EN]
+	* Creates the collision body.
+	*
+	* @brief Creates the collision
 	*/
 	void CircleCollider::OnAwake()
 	{
 		shapeHandle_ = GetShapeHandle();
 		bodyID_ = PhysicsSystem::CreateColliderBody(GetActor(), shapeHandle_, isTrigger_);
 
-		/// [EN] Remembers the world scale the shape was made for, so Refresh only rebuilds it once the scale actually changes.
-		/// [JP] 形状を作ったときのワールドスケールを覚え、Refresh が実際にスケールが変わったときだけ作り直すようにする。
+		/// [JP] 作ったときの大きさを覚えておく
+		/// [EN] Remember the scale it was made at
 		Matrix worldMatrix = GetActor().WorldMatrix();
 		Quaternion worldRotation;
 		Vector3 worldTranslation;
@@ -30,13 +32,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Destroys the collider body and releases its shape.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* コライダーボディを破棄し、形状を解放する。
+	* 当たり判定の体を消す。
+	*
+	* @brief 当たり判定を消す
+	*
+	* [EN]
+	* Removes the collision body.
+	*
+	* @brief Removes the collision
 	*/
 	void CircleCollider::OnDestroy()
 	{
@@ -44,15 +48,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Rebuilds the collider body and its shape from the current
-	* settings, so a changed field takes effect.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 現在の設定からコライダーボディと形状を作り直し、変更した
-	* フィールドを効かせる。
+	* 設定が変わったので、当たり判定を作り直す。
+	*
+	* @brief 当たり判定を作り直す
+	*
+	* [EN]
+	* The settings changed, so the collision is made again.
+	*
+	* @brief Remakes the collision
 	*/
 	void CircleCollider::OnRevision()
 	{
@@ -61,17 +65,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Applies fields changed from code. An edit in the inspector runs
-	* OnRevision on its own, but a field written by a script takes
-	* effect only once this is called.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* コードから変えたフィールドを反映する。インスペクタでの編集は
-	* 自動で OnRevision が走るが、スクリプトから書き換えたフィールドは
-	* これを呼んだときに初めて効く。
+	* 当たり判定を作り直す。
+	*
+	* @brief 当たり判定を作り直す
+	*
+	* [EN]
+	* Remakes the collision.
+	*
+	* @brief Remakes the collision
 	*/
 	void CircleCollider::Dispatch()
 	{
@@ -79,24 +81,25 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Creates and returns a circle shape from the current settings, scaled
-	* by the X and Y of the actor's own Scale combined with its parent's
-	* scale. The radius follows the larger of X and Y.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 現在の設定に Actor 自身の Scale と親のスケールの X と Y を掛けた円形状を生成して
-	* 返す。半径は X と Y の大きい方に合わせる。
+	* 今の大きさに合わせた形を作って返す。
+	*
+	* @brief  形を作る
+	* @return 作った形
+	*
+	* [EN]
+	* Makes and returns a shape that fits the current size.
+	*
+	* @brief  Makes the shape
+	* @return The new shape
 	*/
 	ScShapeHandle CircleCollider::GetShapeHandle()const
 	{
 		Actor actor = GetActor();
 		const Scale* scale = actor.GetComponent<Scale>();
 
-		/// [EN] The parent's accumulated scale is taken from its world matrix and multiplied in per axis, so the shape matches how the actor is drawn; a root actor's parent scale is 1.
-		/// [JP] 親の累積スケールをそのワールド行列から取り出して軸ごとに掛け、描画される actor と形を合わせる。ルートの Actor の親スケールは 1。
+		/// [JP] 親の大きさもかけて、世界での大きさを出す
+		/// [EN] Multiply in the parent's scale to get the world scale
 		Actor parentActor = actor.Parent();
 		Vector3 parentScale = Vector3::One;
 		Quaternion parentRotation;
@@ -108,36 +111,30 @@ namespace SeedCore
 		}
 		Vector3 worldScale = Vector3(scale->x_, scale->y_, scale->z_) * parentScale;
 
-		/// [EN] A circle cannot stretch per axis, so the radius takes the larger of the X and Y scales.
-		/// [JP] 円は軸ごとには伸ばせないので、半径には X と Y の大きい方のスケールを使う。
+		/// [JP] 大きさに合わせて形の寸法を決める
+		/// [EN] Size the shape to match the scale
 		Float radius = radius_ * Max(Abs(worldScale.x), Abs(worldScale.y));
 
-		/// [EN] The offset is in local space, so it moves with the scale, sign included.
-		/// [JP] オフセットはローカル空間なので、符号も含めてスケールに合わせて動く。
 		Vector2 center(center_.x * worldScale.x, center_.y * worldScale.y);
 
 		return actor.GetService<Physics>()->CreateCircleShape(radius, center);
 	}
 
 	/**
-	* [EN]
-	* Moves the collider's own body to the actor's current pose, and
-	* rebuilds its shape when the actor's world scale has changed since
-	* the shape was made. Does nothing when a Rigidbody owns the body.
-	* Called every frame by PhysicsSystem::ApplyCollider.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* コライダー自身のボディを Actor の今の姿勢へ移し、形状を作ってから
-	* Actor のワールドスケールが変わっていれば形状を作り直す。ボディを
-	* Rigidbody が持っている場合は何もしない。
-	* PhysicsSystem::ApplyCollider から毎フレーム呼ばれる。
+	* アクターの位置と向きを当たり判定に伝える。
+	* 大きさが変わっていたら形も作り直す。
+	*
+	* @brief 位置と大きさを合わせる
+	*
+	* [EN]
+	* Sends the actor's position and facing to the collision.
+	* If the size changed, the shape is made again too.
+	*
+	* @brief Matches the position and size
 	*/
 	void CircleCollider::Refresh()
 	{
-		/// [EN] With a Rigidbody present, the body and its pose belong to the Rigidbody.
-		/// [JP] Rigidbody があれば、ボディとその姿勢は Rigidbody のもの。
 		if (bodyID_ == ScInvalidBodyID)
 		{
 			return;
@@ -146,14 +143,14 @@ namespace SeedCore
 		Actor actor = GetActor();
 		Physics& physics = *actor.GetService<Physics>();
 
-		/// [EN] The pose is converted to the canvas body's space the same way as at creation; the body does not move when the pose is unchanged.
-		/// [JP] 姿勢は生成時と同じ方法で Canvas のボディの空間へ変換する。姿勢が変わっていなければボディは動かない。
+		/// [JP] 位置と向きを伝える
+		/// [EN] Send the position and facing
 		RigidbodyDesc desc;
 		PhysicsSystem::ApplyTransform(actor, desc);
 		physics.BodyTransform(bodyID_, desc.position_, desc.rotation_);
 
-		/// [EN] The actor's world matrix carries its own scale combined with every ancestor's.
-		/// [JP] Actor のワールド行列には、自身のスケールと全ての祖先のスケールを合わせたものが入っている。
+		/// [JP] 大きさが変わっていなければここで終わる
+		/// [EN] Stop here if the scale has not changed
 		Matrix worldMatrix = actor.WorldMatrix();
 		Vector3 worldScale;
 		Quaternion worldRotation;
@@ -164,8 +161,8 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] The new shape is attached before the old one is released, so the body never points at a freed shape.
-		/// [JP] 古い形状を解放する前に新しい形状を取り付け、ボディが解放済みの形状を指すことが無いようにする。
+		/// [JP] 形を作り直して入れ替える
+		/// [EN] Remake the shape and swap it in
 		ScShapeHandle shapeHandle = GetShapeHandle();
 		physics.BodyShape(bodyID_, shapeHandle);
 		physics.ReleaseShape(shapeHandle_);

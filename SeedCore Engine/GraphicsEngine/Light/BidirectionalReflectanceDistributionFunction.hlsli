@@ -36,11 +36,6 @@ float3 BrdfSpecularGgx(float3 f0, float3 f90, float alpha_roughness, float view_
 	return fresnel * visibility * distribution;
 }
 
-// Anisotropic GGX (KHR_materials_anisotropy). The isotropic pair above assumes
-// one roughness in every tangent direction; these take a separate roughness
-// along the tangent and the bitangent, which stretches the highlight into the
-// streak seen on brushed metal and hair. Reduces exactly to the isotropic form
-// when alpha_tangent == alpha_bitangent, so callers can branch on strength.
 float DistributionGgxAnisotropic(float normal_dot_half, float tangent_dot_half, float bitangent_dot_half, float alpha_tangent, float alpha_bitangent)
 {
 	const float PI = 3.14159265358979;
@@ -114,4 +109,4 @@ float3 ImageBasedLightingRadianceGgx(uint brdf_lut, uint specular_prefiltered_cu
 	return specular_light * single_scattering;
 }
 
-#endif // __BIDIRECTIONAL_REFLECTANCE_DISTRIBUTION_FUNCTION_HLSL__
+#endif

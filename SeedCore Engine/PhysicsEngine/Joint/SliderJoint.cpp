@@ -9,13 +9,17 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Creates the configured slider constraint.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 設定されたスライダー拘束を生成する。
+	* 同じアクターの Rigidbody と相手をつなぐ。
+	*
+	* @brief つなぐ
+	* @note  同じアクターに Rigidbody が要る
+	*
+	* [EN]
+	* Joins this actor's Rigidbody to the other one.
+	*
+	* @brief Makes the joint
+	* @note  Needs a Rigidbody on the same actor
 	*/
 	void SliderJoint::OnStart()
 	{
@@ -26,8 +30,8 @@ namespace SeedCore
 
 		Actor actor = GetActor();
 
-		/// [EN] Resolve the owning body and optional connected body before creating the constraint.
-		/// [JP] 拘束の生成前に、所有ボディと任意の接続先ボディを解決する。
+		/// [JP] 自分の Rigidbody がなければつなげない
+		/// [EN] Nothing can be joined without our own Rigidbody
 		Rigidbody* selfBody = actor.GetComponent<Rigidbody>();
 		if (!selfBody)
 		{
@@ -35,6 +39,8 @@ namespace SeedCore
 			return;
 		}
 
+		/// [JP] 相手のアクターから Rigidbody を探す。なければ世界につなぐ
+		/// [EN] Find the other actor's Rigidbody, or join to the world if there is none
 		ScBodyID connectedBodyID = ScInvalidBodyID;
 		if (connectedActor_ != 0)
 		{
@@ -46,6 +52,8 @@ namespace SeedCore
 			}
 		}
 
+		/// [JP] 設定をまとめて、つなぎを作る
+		/// [EN] Gather the settings and make the joint
 		SliderJointDesc desc;
 		desc.axis_ = axis_;
 		desc.useLimits_ = useLimits_;
@@ -56,13 +64,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Destroys the created constraint.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 生成した拘束を破棄する。
+	* つなぎを外す。
+	*
+	* @brief つなぎを外す
+	*
+	* [EN]
+	* Removes the joint.
+	*
+	* @brief Removes the joint
 	*/
 	void SliderJoint::OnDestroy()
 	{

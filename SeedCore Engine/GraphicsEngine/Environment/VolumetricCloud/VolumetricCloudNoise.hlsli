@@ -1,21 +1,6 @@
 #ifndef __VOLUMETRIC_CLOUD_NOISE_HLSL__
 #define __VOLUMETRIC_CLOUD_NOISE_HLSL__
 
-/**
-* Reference:
-* - https://advances.realtimerendering.com/s2015/The%20Real-time%20Volumetric%20Cloudscapes%20of%20Horizon%20-%20Zero%20Dawn%20-%20ARTR.pdf
-*   (Schneider & Vos, "The Real-time Volumetric Cloudscapes of Horizon: Zero
-*   Dawn", SIGGRAPH 2015 - the Perlin-Worley combination TileablePerlinWorley
-*   implements below.)
-*
-* Tileable Worley (cellular) + Perlin (gradient) noise for baking cloud
-* density fields into wrap-sampled Texture3Ds. The regular Noise.hlsli
-* generators are NOT periodic, so they would seam when the texture wraps -
-* here the lattice is wrapped modulo the cell count, making every octave
-* exactly tileable.
-*/
-
-/// Deterministic float3 in [0,1)^3 from a lattice cell.
 float3 CloudCellHash(float3 cell)
 {
 	float3 p = float3(
@@ -25,24 +10,11 @@ float3 CloudCellHash(float3 cell)
 	return frac(sin(p) * 43758.5453123);
 }
 
-/**
-* Saturating linear remap - the standard combining operator for cloud noise.
-* Maps [low, high] onto [new_low, new_high] and clamps outside that window.
-*/
 float CloudRemap(float value, float low, float high, float new_low, float new_high)
 {
 	return new_low + saturate((value - low) / max(high - low, 0.0001)) * (new_high - new_low);
 }
 
-// ---------------------------------------------------------------------------
-// Worley (cellular)
-// ---------------------------------------------------------------------------
-
-/**
-* Tileable Worley noise. p in [0,1)^3, cells = lattice resolution (the tiling
-* period, must be an integer). Returns distance to the nearest feature point,
-* roughly [0,1].
-*/
 float TileableWorley(float3 p, float cells)
 {
 	float3 grid_position = p * cells;
@@ -72,15 +44,6 @@ float TileableWorley(float3 p, float cells)
 	return sqrt(min_distance_squared);
 }
 
-/**
-* Inverted-Worley FBM ("billow"): bright blobs on a dark background - the
-* puffy cauliflower component of a cumulus. base_cells doubles per octave so
-* every octave stays tileable.
-*
-* Keep (base_cells << octaves) at or below a quarter of the baked texture
-* resolution: the top octave needs about four voxels per cell, otherwise it
-* bakes to aliased hash noise rather than usable detail.
-*/
 float TileableWorleyFbm(float3 p, float base_cells, int octaves)
 {
 	float total = 0.0;
@@ -99,22 +62,12 @@ float TileableWorleyFbm(float3 p, float base_cells, int octaves)
 	return total / max(amplitude_sum, 0.0001);
 }
 
-// ---------------------------------------------------------------------------
-// Perlin (gradient)
-// ---------------------------------------------------------------------------
-
-/// Pseudo-random unit vector for a lattice cell. rsqrt is guarded because the
-/// hash can land arbitrarily close to the centre of the [-1,1] cube.
 float3 CloudCellGradient(float3 cell)
 {
 	float3 v = CloudCellHash(cell) * 2.0 - 1.0;
 	return v * rsqrt(max(dot(v, v), 0.0001));
 }
 
-/**
-* Tileable Perlin gradient noise, signed and roughly in [-0.7, 0.7].
-* Same wrapped lattice as TileableWorley, with the usual quintic fade.
-*/
 float TileablePerlin(float3 p, float cells)
 {
 	float3 grid_position = p * cells;
@@ -145,7 +98,6 @@ float TileablePerlin(float3 p, float cells)
 	return total;
 }
 
-/// Perlin FBM normalised into roughly [0,1] (mean near 0.5).
 float TileablePerlinFbm(float3 p, float base_cells, int octaves)
 {
 	float total = 0.0;
@@ -164,21 +116,6 @@ float TileablePerlinFbm(float3 p, float base_cells, int octaves)
 	return saturate(total / max(amplitude_sum, 0.0001) * 0.7 + 0.5);
 }
 
-// ---------------------------------------------------------------------------
-// Combined cloud base
-// ---------------------------------------------------------------------------
-
-/**
-* Perlin-Worley cloud base. Inverted Worley alone reads as uniform foam or
-* bubble wrap - every blob the same size, no connected structure. Perlin
-* supplies the large-scale billowing body that ties blobs into masses.
-*
-* The Perlin field is remapped into a multiplier centred on 1.0 before it
-* modulates the Worley field, so the product keeps the Worley field's mean.
-* That matters: CloudDensity's coverage remap is calibrated against this
-* field's average, so shifting the mean here would silently recalibrate the
-* coverage_ slider.
-*/
 float TileablePerlinWorley(float3 p, float base_cells, int octaves)
 {
 	float worley = TileableWorleyFbm(p, base_cells, octaves);
@@ -187,4 +124,4 @@ float TileablePerlinWorley(float3 p, float base_cells, int octaves)
 	return saturate(worley * CloudRemap(perlin, 0.25, 0.75, 0.55, 1.45));
 }
 
-#endif // __VOLUMETRIC_CLOUD_NOISE_HLSL__
+#endif

@@ -18,32 +18,6 @@ struct SkyResolveBindings
 };
 ConstantBuffer<SkyResolveBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* Sky.Resolve: draws the background into Sky.Radiance for every pixel with
-* no geometry. With a skymap the background is the cube itself. Without one
-* (dispatch constant 1) it is the procedural sky: the zenith/horizon gradient
-* with the sun disc, plus VolumetricStar.Radiance (stars lie behind the
-* clouds, so the cloud coverage hides them), then VolumetricCloud.Radiance
-* blended over it (rgb is already weighted by transmittance, a is the
-* coverage). A lightning strike brightens the whole sky for a moment and
-* draws the bolt near the peak of the flash: a jagged line of ten segments
-* from the top of the screen, each shifted sideways by a hash of the strike's
-* seed, glowing with the pixel's distance to the nearest segment. With
-* neither (dispatch constant 2) the background is a flat 0.2 gray.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Sky.Resolve。ジオメトリの無いピクセルの背景を Sky.Radiance へ描く。スカイマップが
-* あればキューブそのもの。無いとき（ディスパッチの定数 1）はプロシージャル空で、
-* 天頂と地平のグラデーションに太陽の円盤、VolumetricStar.Radiance を足し（星は雲の
-* 奥にあるので雲のカバレッジで隠れる）、その上に VolumetricCloud.Radiance を重ねる
-* （rgb は透過率を掛け済み、a はカバレッジ）。雷は空全体を一瞬明るくし、閃光の
-* ピークの近くで稲妻を描く。稲妻は画面の上から伸びる 10 本の線分の折れ線で、
-* 各線分は雷の種のハッシュで横にずらし、いちばん近い線分までの距離で光らせる。
-* どちらも無いとき（ディスパッチの定数 2）は、背景を 0.2 の灰色一色にする。
-*/
 [numthreads(8, 8, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {
@@ -63,8 +37,6 @@ void main(uint3 id : SV_DispatchThreadID)
 		return;
 	}
 
-	/// [EN] With neither a skymap nor the procedural sky (dispatch constant 2) the background is a flat 0.2 gray.
-	/// [JP] スカイマップもプロシージャル空も無いとき（ディスパッチの定数 2）は、背景を 0.2 の灰色一色にする。
 	if (dispatch_bindings.constants_ == 2)
 	{
 		radiance[id.xy] = float4(0.2, 0.2, 0.2, 1.0);

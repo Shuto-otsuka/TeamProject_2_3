@@ -21,59 +21,9 @@ struct BokehResolveBindings
 };
 ConstantBuffer<BokehResolveBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* Reference:
-* - https://blog.voxagon.se/2018/05/04/bokeh-depth-of-field-in-single-pass.html
-*
-* (BokehPolygonRadiusScale below is plain polar geometry for a regular
-* polygon, not a published rendering technique - no reference for it.)
-*
-* Bokeh highlight pass. Runs after DepthOfFieldCS.hlsl and read-modify-writes
-* the same native-res UAV (no resources of its own) - only meaningful when
-* both DepthOfFieldIndices.enabled_ and BokehIndices.enabled_ are set (see
-* PostProcessRenderer::Dispatch).
-*
-* DepthOfFieldCS.hlsl's plain Vogel-disk average already smears bright
-* out-of-focus points into soft circles, but averaging dilutes a single
-* bright sample among many dim ones, so distinct "bokeh circle" highlights
-* rarely show through. This pass fixes that the standard way: bright-pass
-* (highlight_threshold_) the ORIGINAL (pre-blur) scene color at sample points
-* traced along a blade_count_-sided polygon (the regular-polygon radius
-* formula below turns the circular Vogel disk boundary into a hexagon/
-* octagon/etc. outline, the classic aperture-blade look) scaled by this
-* pixel's own circle of confusion, and ADDS the result on top of
-* DepthOfFieldCS.hlsl's output instead of blending it in - so each bright
-* point keeps its own visible shaped highlight rather than being averaged
-* away.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* ボケハイライトパス。DepthOfFieldCS.hlsl の後に走り、同じネイティブ解像度
-* UAV を read-modify-write する(自前のリソースは持たない) —
-* DepthOfFieldIndices.enabled_ と BokehIndices.enabled_ の両方が立っている
-* 時だけ意味を持つ(PostProcessRenderer::Dispatch 参照)。
-*
-* DepthOfFieldCS.hlsl の単純な Vogel ディスク平均化でも、ピントの外れた
-* 明るい点は既にソフトな円へにじむが、平均化は1つの明るいサンプルを多数の
-* 暗いサンプルへ薄めてしまうため、はっきりした「ボケの円」ハイライトとして
-* 見えることは稀。このパスは定番の方法で直す: 元の(ぼかす前の)シーン色を
-* highlight_threshold_ でブライトパスし、blade_count_ 角形の輪郭
-* (下の正多角形の半径式が円形の Vogel ディスク境界を六角形/八角形などの
-* 輪郭へ変える — 絞り羽根の見た目)に沿ってこのピクセル自身の錯乱円で
-* スケールしたサンプル点を取り、その結果を DepthOfFieldCS.hlsl の出力へ
-* ブレンドではなく「加算」する — こうすることで、明るい点それぞれが平均化で
-* 薄まらず、独立した形のあるハイライトとして残る。
-*/
-
 #define BOKEH_SAMPLE_COUNT 12
 static const float BOKEH_TAU = 6.283185307;
 
-/**
-* Reconstructs world position from UV + device depth (mul takes the row
-* vector on the left, this project's row_major convention).
-*/
 float3 BokehReconstructWorldPosition(float2 uv, float depth, float4x4 inverse_view_projection)
 {
 	float4 ndc = float4(uv * 2.0 - 1.0, depth, 1.0);
@@ -82,10 +32,6 @@ float3 BokehReconstructWorldPosition(float2 uv, float depth, float4x4 inverse_vi
 	return world_position.xyz / world_position.w;
 }
 
-/**
-* Linear view-space depth at a UV, used to derive this pixel's circle of
-* confusion the same way DepthOfFieldCS.hlsl does.
-*/
 float BokehLinearViewDepth(float2 uv, Texture2D<float> depth_texture, SceneConstantBuffer scene)
 {
 	float depth = depth_texture.SampleLevel(sampler_point_clamp, uv, 0);
@@ -93,11 +39,6 @@ float BokehLinearViewDepth(float2 uv, Texture2D<float> depth_texture, SceneConst
 	return mul(float4(world_position, 1.0), scene.view_).z;
 }
 
-/**
-* Soft threshold weighting used before accumulating each polygon-outline
-* sample below. Fades to 0 as luminance approaches threshold from above,
-* rather than a hard cutoff.
-*/
 float3 BokehBrightPass(float3 color, float threshold)
 {
 	float luminance = dot(color, float3(0.2126, 0.7152, 0.0722));

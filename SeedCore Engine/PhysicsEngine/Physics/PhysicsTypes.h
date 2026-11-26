@@ -4,55 +4,83 @@
 
 namespace SeedCore
 {
-	/// [EN] Engine-facing identifier for a physics body. Jolt conversion is confined to Physics implementation files.
-	/// [JP] 物理ボディのエンジン側識別子。Jolt への変換は Physics の実装ファイル内に閉じる。
+	/// [JP] 物理エンジンの中の体の番号
+	/// [EN] A body number inside the physics engine
 	using ScBodyID = Uint32;
 
+	/// [JP] 「体がない」ことを表す番号
+	/// [EN] The number that means "no body"
 	inline constexpr ScBodyID ScInvalidBodyID = static_cast<ScBodyID>(-1);
 
-	/// [EN] Packed physics layer exposed by the engine-facing API.
-	/// [JP] エンジン側 API が公開するパック済み物理レイヤー。
+	/// [JP] 何と何がぶつかるかを決める層の番号
+	/// [EN] The layer number that decides what hits what
 	using ScObjectLayer = Uint16;
 
-	/// [EN] Engine-facing broad-phase layer index.
-	/// [JP] エンジン側のブロードフェーズレイヤー番号。
+	/// [JP] 大まかな当たり判定で使う層の番号
+	/// [EN] The layer number used for the rough first collision check
 	using ScBroadPhaseLayer = Uint8;
 
-	/// [EN] Opaque handle to the physics backend's virtual character.
-	/// [JP] 物理バックエンドの仮想キャラクターを指す不透明ハンドル。
+	/// [JP] キャラクターと、そのぶつかり通知を受ける係の目印
+	/// [EN] Handles to a character and to what receives its contacts
 	using ScCharacterHandle = void*;
 	using ScCharacterListenerHandle = void*;
 
-	/// [EN] Type tag for handles owned by the physics shape pool.
-	/// [JP] 物理形状プールが所有するハンドルの型タグ。
 	enum class ScShapeTag;
 
+	/// [JP] 当たり判定の形の目印
+	/// [EN] A handle to a collision shape
 	using ScShapeHandle = Handle<ScShapeTag>;
 
-	/// [EN] Type tag for handles owned by the physics constraint pool.
-	/// [JP] 物理拘束プールが所有するハンドルの型タグ。
 	enum class ScConstraintTag;
 
+	/// [JP] つなぎ（ジョイント）の目印
+	/// [EN] A handle to a joint
 	using ScConstraintHandle = Handle<ScConstraintTag>;
 
-	/// [EN] Engine-facing motion behavior for a rigid body.
-	/// [JP] 剛体のエンジン側運動種別。
+	/**
+	* [JP]
+	* 体の動き方の種類。
+	*
+	* @brief 体の動き方
+	*
+	* [EN]
+	* How a body moves.
+	*
+	* @brief How a body moves
+	*/
 	enum class ScMotionType : Uint8
 	{
+		/// [JP] 動かない
+		/// [EN] Never moves
 		Static,
+
+		/// [JP] プログラムで動かす。ぶつかっても押されない
+		/// [EN] Moved by code; it is not pushed by hits
 		Kinematic,
+
+		/// [JP] 重さや力で動く
+		/// [EN] Moved by weight and forces
 		Dynamic,
 	};
 
-	/// [EN] Bit mask describing the translation and rotation axes a body may use.
-	/// [JP] ボディが使用できる移動・回転軸を表すビットマスク。
+	/// [JP] 動いたり回ったりしてよい向きの組み合わせ
+	/// [EN] Which directions it may move and turn in
 	using ScAllowedDOFs = Uint8;
+
+	/// [JP] 全部の向き
+	/// [EN] Every direction
 	inline constexpr ScAllowedDOFs ScAllowedDOFsAll = 0b111111;
+
+	/// [JP] 1つの向きだけ。X・Y・Z の移動と回転
+	/// [EN] A single direction: moving or turning on X, Y or Z
 	inline constexpr ScAllowedDOFs ScAllowedDOFsTranslationX = 0b000001;
 	inline constexpr ScAllowedDOFs ScAllowedDOFsTranslationY = 0b000010;
 	inline constexpr ScAllowedDOFs ScAllowedDOFsTranslationZ = 0b000100;
 	inline constexpr ScAllowedDOFs ScAllowedDOFsRotationX = 0b001000;
 	inline constexpr ScAllowedDOFs ScAllowedDOFsRotationY = 0b010000;
 	inline constexpr ScAllowedDOFs ScAllowedDOFsRotationZ = 0b100000;
+
+	/// [JP] 2D 用。X と Y の移動と、Z の回転だけ
+	/// [EN] For 2D: only moving on X and Y and turning on Z
 	inline constexpr ScAllowedDOFs ScAllowedDOFsPlane2D = ScAllowedDOFsTranslationX | ScAllowedDOFsTranslationY | ScAllowedDOFsRotationZ;
 }

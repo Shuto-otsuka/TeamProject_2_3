@@ -22,8 +22,6 @@ namespace SeedCore
 		sceneConstantBuffer_->Update(buffer);
 	}
 
-	/// [EN] Frame-ring buffer: the index changes per frame — never cache it.
-	/// [JP] フレームリングバッファ: インデックスは毎フレーム変わる — キャッシュ禁止。
 	Uint SceneConstantSystem::GetIndex()const
 	{
 		return sceneConstantBuffer_->Index();

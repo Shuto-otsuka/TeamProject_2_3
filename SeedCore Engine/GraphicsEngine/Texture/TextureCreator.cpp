@@ -11,25 +11,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Creates a texture from the image file at filePath into resource and
-	* writes its shader resource view at textureIndex of heap, recording the
-	* upload into lane, which the caller has begun and submits. A ".icon",
-	* ".logo" or ".texture" file is read as a cache; any other file is read
-	* as the source image itself. Nothing is written: the cache is made by
-	* TextureResource::Generate.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* filePath の画像ファイルから resource にテクスチャを作り、heap の
-	* textureIndex にシェーダーリソースビューを書く。アップロードは lane に
-	* 積む（Begin と Submit は呼び出し側が行う）。".icon"・".logo"・
-	* ".texture" のファイルはキャッシュとして読み、それ以外はソース画像
-	* そのものとして読む。何も書かない（キャッシュは
-	* TextureResource::Generate が作る）。
-	*/
 	void TextureCreator::CreateTexturePath(SC_IN ID3D12Device* device, SC_IN D3D12TransferLane& lane, SC_IN ID3D12DescriptorHeap* heap, SC_IN String filePath, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
 	{
 		std::string extension = std::filesystem::path(filePath.str()).extension().string();
@@ -59,17 +40,6 @@ namespace SeedCore
 		CreateTextureMemory(device, lane, heap, data, resource, textureIndex);
 	}
 
-	/**
-	* [EN]
-	* Same as the lane overload, but begins transferLane on copyQueue, submits
-	* it and waits for the upload before returning.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* lane 版と同じだが、copyQueue 上で transferLane を Begin し、Submit して
-	* アップロードの完了を待ってから戻る。
-	*/
 	void TextureCreator::CreateTexturePath(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* copyQueue, SC_IN D3D12TransferLane* transferLane, SC_IN ID3D12DescriptorHeap* heap, SC_IN String filePath, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
 	{
 		transferLane->Begin(device, *copyQueue);
@@ -77,27 +47,6 @@ namespace SeedCore
 		copyQueue->WaitFor(transferLane->Submit(*copyQueue));
 	}
 
-	/**
-	* [EN]
-	* Creates a texture from DDS or WIC image bytes in data into resource and
-	* writes its shader resource view at textureIndex of heap, recording the
-	* upload of every subresource into lane, which the caller has begun and
-	* submits. The bytes are decoded with DirectXTex (DDS first, then WIC);
-	* the texture is created in the COMMON state, so the copy queue writes it
-	* and the graphics queue reads it without explicit transitions. resource
-	* is reset when the bytes cannot be decoded or the texture cannot be
-	* created.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* data の DDS か WIC の画像バイト列から resource にテクスチャを作り、heap の
-	* textureIndex にシェーダーリソースビューを書く。全サブリソースの
-	* アップロードは lane に積む（Begin と Submit は呼び出し側が行う）。
-	* デコードは DirectXTex で行う（DDS、次に WIC）。テクスチャは COMMON 状態で
-	* 作るので、コピーキューが書き、描画のキューが読むのに明示的な遷移が
-	* 要らない。デコードできないか作れなければ resource を空にする。
-	*/
 	void TextureCreator::CreateTextureMemory(SC_IN ID3D12Device* device, SC_IN D3D12TransferLane& lane, SC_IN ID3D12DescriptorHeap* heap, SC_IN const DynamicArray<Byte>& data, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
 	{
 		resource.Reset();
@@ -164,17 +113,6 @@ namespace SeedCore
 		device->CreateShaderResourceView(resource.Get(), &shaderResourceViewDesc, cpuHandle);
 	}
 
-	/**
-	* [EN]
-	* Same as the lane overload, but begins transferLane on copyQueue, submits
-	* it and waits for the upload before returning.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* lane 版と同じだが、copyQueue 上で transferLane を Begin し、Submit して
-	* アップロードの完了を待ってから戻る。
-	*/
 	void TextureCreator::CreateTextureMemory(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* copyQueue, SC_IN D3D12TransferLane* transferLane, SC_IN ID3D12DescriptorHeap* heap, SC_IN const DynamicArray<Byte>& data, SC_INOUT Microsoft::WRL::ComPtr<ID3D12Resource>& resource, SC_IN Uint textureIndex)
 	{
 		transferLane->Begin(device, *copyQueue);
@@ -182,40 +120,15 @@ namespace SeedCore
 		copyQueue->WaitFor(transferLane->Submit(*copyQueue));
 	}
 
-	/**
-	* [EN]
-	* Builds a texture from a baked BC7 bitmap: uploads every mip through
-	* transferLane on copyQueue, waits for it, and writes a shader
-	* resource view into a newly allocated index of heap. The texture is
-	* pinned, since it has no file streaming could reload it from. The
-	* returned texture has no resource when the bitmap is malformed or the
-	* GPU resource could not be created; it is handed to the loader with
-	* TextureLoader::Adopt.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 焼き込み済みの BC7 ビットマップからテクスチャを組み立てる。全ミップを
-	* copyQueue 上の transferLane でアップロードして完了を待ち、heap に
-	* 新しく確保した番号へシェーダーリソースビューを書く。読み直す元の
-	* ファイルが無いため、ストリーミングで追い出されないよう固定する。
-	* ビットマップが不正か GPU リソースを作れなかった場合、返すテクスチャは
-	* リソースを持たない。作ったテクスチャは TextureLoader::Adopt で
-	* ローダーへ渡す。
-	*/
-	Texture TextureCreator::CreateTextureBitmap(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* copyQueue, SC_IN D3D12TransferLane* transferLane, SC_IN BindlessHeap* heap, SC_IN const Bitmap& bitmap)
+	Texture TextureCreator::CreateTextureBitmap(SC_IN ID3D12Device* device, SC_IN D3D12CommandQueue* copyQueue, SC_IN D3D12TransferLane* transferLane, SC_IN BindlessHeap* heap, SC_IN const Bitmap& bitmap, SC_IN DXGI_FORMAT format)
 	{
 		Texture texture;
 
-		/// [EN] BC7 works in 4x4 blocks, so a dimension that is not a multiple of 4 cannot be a valid baked bitmap.
-		/// [JP] BC7 は 4x4 のブロック単位なので、4 の倍数でない大きさは正しく焼き込まれたビットマップではあり得ない。
 		if (bitmap.width_ <= 0 || bitmap.height_ <= 0 || bitmap.mipCount_ <= 0 || bitmap.width_ % 4 != 0 || bitmap.height_ % 4 != 0)
 		{
 			return texture;
 		}
 
-		/// [EN] Every mip is 16 bytes per 4x4 block, so the whole chain's size follows from the dimensions alone; data shorter than that is truncated.
-		/// [JP] どのミップも 4x4 ブロックあたり 16 バイトなので、チェーン全体の大きさは寸法だけで決まる。それより短いデータは途中で切れている。
 		Uint64 totalBytes = 0;
 		Uint32 mipWidth = static_cast<Uint32>(bitmap.width_);
 		Uint32 mipHeight = static_cast<Uint32>(bitmap.height_);
@@ -236,7 +149,7 @@ namespace SeedCore
 		textureDesc.Height = static_cast<Uint64>(bitmap.height_);
 		textureDesc.DepthOrArraySize = 1;
 		textureDesc.MipLevels = static_cast<Uint16>(bitmap.mipCount_);
-		textureDesc.Format = DXGI_FORMAT_BC7_UNORM;
+		textureDesc.Format = format;
 		textureDesc.SampleDesc.Count = 1;
 		textureDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 
@@ -250,8 +163,6 @@ namespace SeedCore
 			return texture;
 		}
 
-		/// [EN] Mips are packed back to back in mip order, so each one's offset is the running sum of the sizes before it.
-		/// [JP] ミップはミップ順に隙間なく詰まっているため、各ミップの位置はそれより前の大きさの累計になる。
 		transferLane->Begin(device, *copyQueue);
 		Uint64 offset = 0;
 		mipWidth = static_cast<Uint32>(bitmap.width_);
@@ -271,7 +182,7 @@ namespace SeedCore
 		texture.textureIndex_ = heap->AllocateIndex();
 
 		D3D12_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc{};
-		shaderResourceViewDesc.Format = DXGI_FORMAT_BC7_UNORM;
+		shaderResourceViewDesc.Format = format;
 		shaderResourceViewDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 		shaderResourceViewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 		shaderResourceViewDesc.Texture2D.MipLevels = static_cast<Uint>(bitmap.mipCount_);

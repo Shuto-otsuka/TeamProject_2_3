@@ -24,8 +24,6 @@ namespace SeedCore
 			}
 		}
 
-		/// [EN] Two picks are collinear (invalid combination) when they name the same underlying axis, regardless of sign.
-		/// [JP] 符号に関わらず同じ軸を指している場合、2つの選択は共線（無効な組み合わせ）とみなす。
 		Bool Collinear(const Vector3& a, const Vector3& b)
 		{
 			return (a == b) || (a == -b);
@@ -45,8 +43,6 @@ namespace SeedCore
 			return resolved;
 		}
 
-		/// [EN] Row-vector basis like the rest of the engine's Matrix use: row 0 Right, 1 Up, 2 Forward, 3 zero translation; v' = Vector3::TransformPosition(v, basis_).
-		/// [JP] エンジンの他の Matrix と同じ行ベクトルの基底。行0が Right、1が Up、2が Forward、3は平行移動無し。v' = Vector3::TransformPosition(v, basis_)。
 		resolved.basis_ = Matrix::Identity;
 		resolved.basis_._11 = right.x; 
 		resolved.basis_._12 = right.y; 

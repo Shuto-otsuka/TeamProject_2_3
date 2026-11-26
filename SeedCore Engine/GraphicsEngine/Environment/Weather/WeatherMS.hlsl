@@ -1,22 +1,6 @@
 #include <GraphicsEngine/Environment/Weather/Weather.hlsli>
 #include <GraphicsEngine/Culling/FrustumCulling.hlsli>
 
-/**
-* [EN]
-* Weather.Draw: one thread group draws 32 consecutive falling particles (the
-* rain prefix first, then the snow prefix), 4 vertices and 2 triangles each.
-* Each quad faces the camera; rain is stretched along its velocity by
-* streak_length_, snow stays square. A particle outside the view frustum is
-* placed outside the clip volume.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Weather.Draw。1 スレッドグループが落ちているパーティクルの連続する 32 個
-* （先に雨、続いて雪）を、1 個 4 頂点・2 三角形で描く。四角形はカメラを向き、
-* 雨は速度の向きへ streak_length_ の分だけ伸ばし、雪は正方形のまま。視錐台の
-* 外のパーティクルはクリップ空間の外へ置く。
-*/
 [NumThreads(128, 1, 1)]
 [OutputTopology("triangle")]
 void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices WeatherOutput verts[128], out indices uint3 tris[64])

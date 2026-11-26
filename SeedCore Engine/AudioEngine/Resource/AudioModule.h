@@ -8,80 +8,84 @@ namespace SeedCore
 	class ResourceCache;
 
 	/**
-	* [EN]
-	* AudioEngine's entry point for asset handling. Owns the engine's
-	* loaders and its audio resource and registers the resource with
-	* ResourceCache, so FoundationEngine drives loading through the Asset
-	* interface without knowing any AudioEngine type. The application owns
-	* one instance and must keep it alive until ResourceCache has been
-	* destroyed.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* AudioEngine のアセット処理の入口。エンジンのローダーと音声リソースを
-	* 所有し、リソースを ResourceCache へ登録する。これにより FoundationEngine
-	* は AudioEngine の型を一切知らずに、Asset インターフェース越しに読み込みを
-	* 駆動できる。アプリケーションが1つ所有し、ResourceCache が破棄されるまで
-	* 生存させておく必要がある。
+	* 音の読み込み係と管理係をまとめて、アセットの仕組みに登録する。
+	*
+	* @brief 音の仕組みをまとめる係
+	*
+	* [EN]
+	* Groups the sound loader and manager and registers them with the asset system.
+	*
+	* @brief Groups the sound parts
 	*/
 	class SEEDCORE_API AudioModule
 	{
 	public:
 		/**
-		* [EN]
-		* Creates the loaders, then the audio resource on top of them.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* ローダーを生成し、その上に音声リソースを生成する。
+		* 読み込み係と管理係を作る。
+		*
+		* @brief 係を作る
+		*
+		* [EN]
+		* Makes the loader and the manager.
+		*
+		* @brief Makes the parts
 		*/
 		AudioModule();
 
 		/**
-		* [EN]
-		* Registers the audio resource with cache under AssetType::Audio.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 音声リソースを AssetType::Audio として cache へ登録する。
+		* 音のアセットを扱えるように、アセットの一覧に登録する。
+		*
+		* @brief アセットの一覧に登録する
+		* @param cache 登録するアセットの一覧
+		*
+		* [EN]
+		* Registers with the asset list so it can handle sound assets.
+		*
+		* @brief Registers with the asset list
+		* @param cache The asset list to register with
 		*/
 		void Install(ResourceCache& cache);
 
 		/**
-		* [EN]
-		* Returns the loader bundle.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* ローダーのまとまりを返す。
+		* 読み込み係を返す。
+		*
+		* @brief  読み込み係を返す
+		* @return 読み込み係
+		*
+		* [EN]
+		* Returns the loaders.
+		*
+		* @brief  Returns the loaders
+		* @return The loaders
 		*/
 		NODISCARD AudioLoaderSystem& Loaders();
 
 		/**
-		* [EN]
-		* Returns the audio resource, for typed access from AudioEngine code.
-		* AudioEngine has a single resource, so it is returned directly
-		* rather than through a resource bundle.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 音声リソースを返す。AudioEngine のコードから型付きで使うため。
-		* AudioEngine のリソースは1種類なので、まとまりを介さず直接返す。
+		* 管理係を返す。
+		*
+		* @brief  管理係を返す
+		* @return 管理係
+		*
+		* [EN]
+		* Returns the manager.
+		*
+		* @brief  Returns the manager
+		* @return The manager
 		*/
 		NODISCARD AudioResource& Resource();
 
 	private:
-		/// [EN] Loaders; declared before resource_ so they are built first and destroyed last.
-		/// [JP] ローダー。resource_ より前に宣言しているので、先に生成され、最後に破棄される。
+		/// [JP] 音の読み込み係
+		/// [EN] The sound loaders
 		AudioLoaderSystem loaders_;
 
-		/// [EN] Audio resource, holding a reference into loaders_.
-		/// [JP] 音声リソース。loaders_ への参照を持つ。
+		/// [JP] 音の管理係
+		/// [EN] The sound manager
 		AudioResource resource_;
 	};
 }

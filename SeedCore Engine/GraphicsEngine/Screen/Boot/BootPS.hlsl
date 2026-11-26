@@ -111,21 +111,6 @@ float FillMask(float2 bar_uv, ConstantBuffer<BootConstantBuffer> constants)
 	return RadialFillMask(bar_uv, float2(0.5f, 0.5f), radial360_middles[origin], 2.0f * PI, progress, constants.clockwise_);
 }
 
-/**
-* [EN]
-* Boot.Draw: the loading screen. The background color, optionally the
-* background image fitted to cover the screen, then the bar image inside
-* bar_rect_ with only the filled share of it kept (linear, or radial over
-* 90, 180 or 360 degrees, with an optional wave on the linear edge), and the
-* frame image over it.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Boot.Draw。ローディング画面。背景色、使うなら画面を覆うように合わせた背景の絵、
-* その上に bar_rect_ の中へバーの絵を、埋まった分だけ残して描く（直線、または
-* 90・180・360 度の円形。直線の縁は波打たせることもできる）。最後に枠の絵を重ねる。
-*/
 float4 main(FullscreenOutput input) : SV_Target0
 {
 	ConstantBuffer<BootConstantBuffer> constants = ResourceDescriptorHeap[bindings.boot_constants_];

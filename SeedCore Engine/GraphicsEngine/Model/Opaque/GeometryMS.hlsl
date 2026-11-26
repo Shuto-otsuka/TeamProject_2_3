@@ -3,14 +3,6 @@
 
 groupshared float4 clip_positions[64];
 
-/**
-* [EN]
-* One thread group per (instance, meshlet) entry GeometryAS kept, read from
-* its payload. Each vertex applies morph targets, then linear blend skinning,
-* then the world transform; a fur shell layer is pushed out along the skinned
-* normal and droops towards world down as it rises. Single-sided triangles
-* that face away are collapsed, since the rasterizer itself culls nothing.
-*/
 [NumThreads(64, 1, 1)]
 [OutputTopology("triangle")]
 void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, in payload GeometryPayload payload, out vertices GeometryOutput verts[64], out indices uint3 tris[124], out primitives GeometryPrimitive prims[124])

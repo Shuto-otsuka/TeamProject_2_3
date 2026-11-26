@@ -1,6 +1,3 @@
-// Toon (cel) shading: N.L diffuse quantized into discrete bands, plus a
-// specular highlight cut to a hard edge by a threshold instead of a smooth
-// falloff.
 float3 EvalDirectLightToon(float3 normal, float3 view, float3 light_direction, float3 diffuse_color, float3 specular_color, float shininess)
 {
 	const float PI = 3.14159265358979;

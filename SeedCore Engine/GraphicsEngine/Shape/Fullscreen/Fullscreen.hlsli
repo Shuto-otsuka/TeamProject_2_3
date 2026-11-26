@@ -7,4 +7,4 @@ struct FullscreenOutput
     float2 texcoord : TEXCOORD0;
 };
 
-#endif // __FULLSCREEN_HLSL__
+#endif

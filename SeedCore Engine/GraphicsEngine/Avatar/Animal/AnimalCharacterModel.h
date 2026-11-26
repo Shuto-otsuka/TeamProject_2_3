@@ -30,23 +30,6 @@ namespace SeedCore
 		DynamicArray<Vector3> negativeDeltas_;
 	};
 
-	/**
-	* [EN]
-	* Loads a .ac parametric-animal asset. The file (format v3) holds several
-	* self-contained mesh groups (犬系 / 有蹄系 / ネコ系), each with its own
-	* topology, rig and morph axes. SetGroup() picks which one every accessor
-	* reads; the leading BlendAxisCount() axes of a group are the body-type
-	* blend and the rest are additive feature tweaks.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* .ac パラメトリック動物アセットを読み込む。ファイル(形式v3)は複数の
-	* 自己完結メッシュグループ(犬系 / 有蹄系 / ネコ系)を持ち、各々が独自の
-	* トポロジ・リグ・モーフ軸を持つ。SetGroup() で全アクセサが読むグループを
-	* 選ぶ。グループの先頭 BlendAxisCount() 本が体型ブレンド軸、残りが加算的な
-	* 部位調整軸。
-	*/
 	class SEEDCORE_API AnimalCharacterModel :public NonCopyable
 	{
 	public:

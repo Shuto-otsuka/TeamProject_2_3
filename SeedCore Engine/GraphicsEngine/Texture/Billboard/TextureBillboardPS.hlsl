@@ -4,28 +4,6 @@
 #include <GraphicsEngine/Illumination/VolumetricLight/Froxel.hlsli>
 #include <GraphicsEngine/PostProcess/Outline/Outline.hlsli>
 
-/**
-* [EN]
-* Texture.Billboard pixel shader: the quad's colour from ShadeTexture
-* (TextureShading.hlsli), premultiplied for the premultiplied blend into
-* Radiance.Color, then passed through the fog in front of it like a
-* transparent layer: scaled by the transmittance at its depth in VolumetricLight.Fog,
-* plus the light scattered in front of it weighted by its alpha. When the
-* unit's actor is outlined, the more opaque half of the quad also records
-* itself in Outline.Mask, keeping the nearest fragment per pixel; depth is
-* tested before the shader runs, so a hidden billboard records nothing.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Texture.Billboard のピクセルシェーダー。四角形の色を ShadeTexture
-* （TextureShading.hlsli）で求め、Radiance.Color へのプリマルチプライドの
-* ブレンドに合わせてアルファを掛けた色で返す。半透明の層と同じく手前のフォグを
-* 通し、VolumetricLight.Fog の自分の深度の透過率を掛けて、手前で散乱した光をアルファの分
-* だけ足す。ユニットのアクターが縁取られるときは、四角形のうち不透明寄りの部分が
-* Outline.Mask にも自分を記録し、ピクセルごとに一番手前のものが残る。深度は
-* シェーダーより先に判定するので、隠れたビルボードは何も記録しない。
-*/
 [earlydepthstencil]
 float4 main(TextureBillboardOutput input) : SV_Target0
 {

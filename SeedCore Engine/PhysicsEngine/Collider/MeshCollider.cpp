@@ -12,13 +12,15 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Marks the configured mesh asset for shape construction.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 設定されたメッシュアセットを形状構築待ちにする。
+	* 当たり判定の体を作る。
+	*
+	* @brief 当たり判定を作る
+	*
+	* [EN]
+	* Creates the collision body.
+	*
+	* @brief Creates the collision
 	*/
 	void MeshCollider::OnAwake()
 	{
@@ -26,13 +28,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Destroys the standalone collider body and releases its shape.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 単独のコライダーボディを破棄し、形状を解放する。
+	* 当たり判定の体を消す。
+	*
+	* @brief 当たり判定を消す
+	*
+	* [EN]
+	* Removes the collision body.
+	*
+	* @brief Removes the collision
 	*/
 	void MeshCollider::OnDestroy()
 	{
@@ -49,15 +53,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Releases the current body and shape and returns to waiting for
-	* the mesh, so the shape is built again from the current settings.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 今のボディと形状を解放してメッシュ待ちに戻し、現在の設定で
-	* 形状が作り直されるようにする。
+	* 設定が変わったので、当たり判定を作り直す。
+	*
+	* @brief 当たり判定を作り直す
+	*
+	* [EN]
+	* The settings changed, so the collision is made again.
+	*
+	* @brief Remakes the collision
 	*/
 	void MeshCollider::OnRevision()
 	{
@@ -66,17 +70,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Applies fields changed from code. An edit in the inspector runs
-	* OnRevision on its own, but a field written by a script takes
-	* effect only once this is called.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* コードから変えたフィールドを反映する。インスペクタでの編集は
-	* 自動で OnRevision が走るが、スクリプトから書き換えたフィールドは
-	* これを呼んだときに初めて効く。
+	* 当たり判定を作り直す。
+	*
+	* @brief 当たり判定を作り直す
+	*
+	* [EN]
+	* Remakes the collision.
+	*
+	* @brief Remakes the collision
 	*/
 	void MeshCollider::Dispatch()
 	{
@@ -84,28 +86,32 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Builds and applies a collision shape from resolved mesh data.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 解決済みメッシュデータから衝突形状を構築して適用する。
+	* 読み込んだメッシュから形を作って、当たり判定にする。
+	*
+	* @brief メッシュから当たり判定を作る
+	* @param meshCollision 形に使うメッシュ
+	* @note  動く Rigidbody では凸包になる
+	*
+	* [EN]
+	* Makes a shape from the loaded mesh and uses it for collision.
+	*
+	* @brief Makes the collision from a mesh
+	* @param meshCollision The mesh to build the shape from
+	* @note  A moving Rigidbody always gets a convex shape
 	*/
 	void MeshCollider::Build(const MeshCollision& meshCollision)
 	{
 		Actor actor = GetActor();
 		Rigidbody* rigidbody = actor.GetComponent<Rigidbody>();
 
-		/// [EN] A Rigidbody whose body is not created yet cannot take the shape; stay pending and retry next frame.
-		/// [JP] ボディがまだ無い Rigidbody には形状を渡せないので、構築待ちのまま次のフレームで再試行する。
 		if (rigidbody && rigidbody->BodyID() == ScInvalidBodyID)
 		{
 			return;
 		}
 
-		/// [EN] Dynamic rigid bodies require a convex collision representation.
-		/// [JP] 動的 Rigidbody には凸形状の衝突表現を使用する。
+		/// [JP] 動く Rigidbody には凹んだ形が使えないので凸包にする
+		/// [EN] A moving Rigidbody cannot use a dented shape, so make it convex
 		Bool convex = convex_;
 		if (!convex && rigidbody && rigidbody->bodyType_ == Rigidbody::BodyType::Dynamic)
 		{
@@ -113,9 +119,10 @@ namespace SeedCore
 			convex = true;
 		}
 
-		/// [EN] The baked vertices are in model space, so the actor's own Scale, multiplied per axis by the parent's accumulated scale from its world matrix, is applied to match the rendered mesh; a root actor's parent scale is 1.
-		/// [JP] 焼いた頂点はモデル空間なので、描画されるメッシュに合わせて、Actor 自身の Scale に親のワールド行列から取り出した累積スケールを軸ごとに掛けたものを掛ける。ルートの Actor の親スケールは 1。
 		const Scale* scale = actor.GetComponent<Scale>();
+
+		/// [JP] 親の大きさもかけて、世界での大きさを出す
+		/// [EN] Multiply in the parent's scale to get the world scale
 		Actor parentActor = actor.Parent();
 		Vector3 parentScale = Vector3::One;
 		Quaternion parentRotation;
@@ -127,8 +134,8 @@ namespace SeedCore
 		}
 		Vector3 scaleVector = Transform::Vector(*scale) * parentScale;
 
-		/// [EN] Build either a convex hull or triangle mesh from the resolved asset data.
-		/// [JP] 解決済みアセットデータから凸包または三角形メッシュを構築する。
+		/// [JP] 凸包かメッシュのまま形を作る
+		/// [EN] Make the shape, convex or as the mesh
 		shapeHandle_ = convex ? actor.GetService<Physics>()->CreateConvexShape(meshID_, meshCollision.Positions(), scaleVector) : actor.GetService<Physics>()->CreateMeshShape(meshID_, meshCollision.Positions(), meshCollision.Indices(), scaleVector);
 
 		if (shapeHandle_.empty())
@@ -138,8 +145,8 @@ namespace SeedCore
 
 		pending_ = false;
 
-		/// [EN] Replace an existing rigid-body shape; otherwise create a standalone collider body.
-		/// [JP] 既存の Rigidbody 形状を置き換え、なければ単独のコライダーボディを生成する。
+		/// [JP] Rigidbody があればそれに形をつけ、なければ当たり判定だけの体を作る
+		/// [EN] Give the shape to the Rigidbody if there is one, otherwise make a collision-only body
 		if (rigidbody)
 		{
 			actor.GetService<Physics>()->BodyShape(rigidbody->BodyID(), shapeHandle_);
@@ -150,13 +157,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Reports whether the configured mesh still needs to be built.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 設定されたメッシュをまだ構築する必要があるかを返す。
+	* まだ形を作れていないかを返す。
+	*
+	* @brief  形待ちか調べる
+	* @return まだなら true
+	*
+	* [EN]
+	* Returns whether the shape still needs to be made.
+	*
+	* @brief  Checks if the shape is pending
+	* @return True if it is still pending
 	*/
 	Bool MeshCollider::Pending()const
 	{

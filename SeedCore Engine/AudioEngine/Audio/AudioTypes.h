@@ -7,19 +7,19 @@ struct CriAtomExAcbTag;
 
 namespace SeedCore
 {
-	/// [EN] Opaque handle to an audio playback voice.
-	/// [JP] オーディオ再生ボイスを指す不透明ハンドル。
+	/// [JP] 音を鳴らすプレイヤーの目印
+	/// [EN] A handle to a player that plays sound
 	using ScAudioPlayerHandle = ::CriAtomExPlayerTag*;
 
-	/// [EN] Opaque handle to a positional 3D audio source.
-	/// [JP] 位置を持つ3D音源を指す不透明ハンドル。
+	/// [JP] 音が出る場所の目印
+	/// [EN] A handle to a place sound comes from
 	using ScAudioSourceHandle = ::CriAtomEx3dSourceObjTag*;
 
-	/// [EN] Opaque handle to the shared 3D audio listener.
-	/// [JP] 共有3Dオーディオリスナーを指す不透明ハンドル。
+	/// [JP] 音を聞く側の目印
+	/// [EN] A handle to the listener
 	using ScAudioListenerHandle = ::CriAtomEx3dListenerObjTag*;
 
-	/// [EN] Opaque handle to a loaded audio cue bank.
-	/// [JP] 読み込まれたオーディオキューバンクを指す不透明ハンドル。
+	/// [JP] キューシートの目印
+	/// [EN] A handle to a cue sheet
 	using ScAudioBankHandle = ::CriAtomExAcbTag*;
 }

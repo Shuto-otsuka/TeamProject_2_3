@@ -26,30 +26,29 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Writes the actor's pose and EntityID into desc. Canvas actors (with
-	* a Rect/CircleCollider) are converted from pixels to meters on the
-	* z = 0 plane; others use their world pose as is. Position and Rotation
-	* are relative to the parent, so they are carried into world space by
-	* the parent's world matrix first.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Actor の姿勢と EntityID を desc に書き込む。Canvas の Actor
-	* (Rect/CircleCollider 付き)はピクセルからメートルへ変換して z = 0 の
-	* 平面に置き、それ以外はワールドでの姿勢をそのまま使う。Position と
-	* Rotation は親から見た値なので、先に親のワールド行列でワールド空間へ移す。
+	* アクターの位置と向きを、物理の体の設定に書き込む。
+	*
+	* @brief 位置と向きを書き込む
+	* @param actor 位置を取るアクター
+	* @param desc  書き込む体の設定
+	* @note  2D の当たり判定は、ピクセルをメートルに直して Y を逆にする
+	*
+	* [EN]
+	* Writes the actor's position and facing into a body's settings.
+	*
+	* @brief Writes the position and facing
+	* @param actor The actor to read from
+	* @param desc  The body settings to write into
+	* @note  2D collision turns pixels into meters and flips Y
 	*/
 	void PhysicsSystem::ApplyTransform(Actor actor, RigidbodyDesc& desc)
 	{
-		/// [EN] An actor without Position or Rotation is placed at the origin with no rotation.
-		/// [JP] Position や Rotation を持たない Actor は、原点に回転無しで置く。
 		const Position* position = actor.GetComponent<Position>();
 		const Rotation* rotation = actor.GetComponent<Rotation>();
 
-		/// [EN] A root actor's parent space is the world itself.
-		/// [JP] ルートの Actor にとって、親の空間はワールドそのもの。
+		/// [JP] 親の位置と向きをかけて、世界での位置と向きを出す
+		/// [EN] Apply the parent's transform to get the world position and facing
 		Actor parentActor = actor.Parent();
 		Matrix parentMatrix = parentActor ? parentActor.WorldMatrix() : Matrix::Identity;
 		Vector3 parentScale;
@@ -60,16 +59,12 @@ namespace SeedCore
 		Vector3 origin = Vector3::TransformPosition(position ? Transform::Vector(*position) : Vector3::Zero, parentMatrix);
 		Quaternion worldRotation = (rotation ? Transform::Quat(*rotation) : Quaternion::Identity) * parentRotation;
 
-		/// [EN] A Rect or Circle collider marks the actor as a 2D canvas actor.
-		/// [JP] Rect か Circle のコライダーがあれば、2D Canvas の Actor として扱う。
+		/// [JP] 2D の当たり判定は、ピクセルをメートルに直し、Y を逆向きにする
+		/// [EN] For 2D collision, turn pixels into meters and flip Y
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
-			/// [EN] Number of canvas pixels in one physics meter.
-			/// [JP] 物理の1メートルに当たる Canvas のピクセル数。
 			SC_CONSTEX Float pixelsPerMeter = 100.0f;
 
-			/// [EN] Canvas Y points down and physics Y up, so Y and the canvas angle (the rotation about Z) are negated.
-			/// [JP] Canvas の Y は下向き、物理の Y は上向きなので、Y と Canvas の角度(Z 軸まわりの回転)の符号を反転する。
 			desc.position_ = Vector3{ origin.x / pixelsPerMeter, -origin.y / pixelsPerMeter, 0.0f };
 			desc.rotation_ = Quaternion::CreateFromAxisAngle(Vector3::UnitZ, -worldRotation.ToEuler().z);
 		}
@@ -79,26 +74,26 @@ namespace SeedCore
 			desc.rotation_ = worldRotation;
 		}
 
-		/// [EN] Lets physics queries and contacts find their way back to the actor.
-		/// [JP] 物理クエリや接触から Actor へたどり着けるようにする。
+		/// [JP] どのアクターの体か分かるように、番号を入れておく
+		/// [EN] Store the actor's number so we know whose body it is
 		desc.userData_ = ActorAccessor::GetEntity(actor).GetID();
 	}
 
 	/**
-	* [EN]
-	* Suspends the bodies of inactive actors and resumes those of active
-	* ones, then enables only the joints whose bodies are both present.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 無効な Actor のボディを停止し、有効な Actor のボディを再開したうえで、
-	* 両方のボディがそろっているジョイントだけを有効にする。
+	* アクターが動いているかに合わせて、体を止めたり動かしたりする。
+	*
+	* @brief 体の動く・止まるを合わせる
+	* @param world 調べる世界
+	*
+	* [EN]
+	* Pauses or wakes each body to match whether its actor is active.
+	*
+	* @brief Matches bodies to active actors
+	* @param world The world to check
 	*/
 	void PhysicsSystem::ApplyActive(World& world)
 	{
-		/// [EN] A world without a physics facade has no bodies to update.
-		/// [JP] 物理ファサードを持たないワールドには、更新するボディが無い。
 		if (!world.GetService<Physics>())
 		{
 			return;
@@ -106,20 +101,16 @@ namespace SeedCore
 
 		Physics& physics = *world.GetService<Physics>();
 
-		/// [EN] Walks every body, suspended ones included, so a reactivated actor gets its body back.
-		/// [JP] 停止中も含めた全ボディを回り、再び有効になった Actor にボディを戻す。
+		/// [JP] アクターが動いていれば体も動かし、止まっていれば体も止める
+		/// [EN] Wake the body if its actor is active, otherwise pause it
 		for (ScBodyID bodyID : physics.BodyList())
 		{
-			/// [EN] Bodies with no living actor behind them are left alone.
-			/// [JP] 生きている Actor が背後にいないボディには触れない。
 			Actor actor = WorldAccessor::Make(world, physics.BodyEntityID(bodyID));
 			if (!actor)
 			{
 				continue;
 			}
 
-			/// [EN] Both calls do nothing when the body is already in the wanted state.
-			/// [JP] ボディが既に望む状態なら、どちらの呼び出しも何もしない。
 			if (actor.Active())
 			{
 				physics.ResumeBody(bodyID);
@@ -130,33 +121,28 @@ namespace SeedCore
 			}
 		}
 
-		/// [EN] Joints follow the bodies, so they are refreshed after all bodies are settled.
-		/// [JP] ジョイントはボディに従うので、全ボディが決まってから更新する。
+		/// [JP] つなぎも合わせて更新する
+		/// [EN] Update the joints to match
 		physics.RefleshJoint();
 	}
 
 	/**
-	* [EN]
-	* Brings the body of every active actor's lone collider in line with
-	* the actor: moves it to the actor's current pose and rebuilds its
-	* shape when the actor's world scale has changed, so the collider
-	* follows an actor that moves or scales after it was created.
-	* MeshCollider is left out, since rebuilding a mesh shape is too
-	* costly to do whenever the scale changes. Called every frame.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 有効な全 Actor の単独のコライダーについて、ボディを Actor に合わせる。
-	* Actor の今の姿勢へボディを移し、Actor のワールドスケールが変わって
-	* いれば形状を作り直す。これにより、生成後に動いたり拡大縮小したり
-	* する Actor にコライダーが追従する。メッシュ形状の作り直しはスケールが
-	* 変わるたびに行うには重いため、MeshCollider は対象外。毎フレーム呼ばれる。
+	* 当たり判定の部品に、アクターの位置と大きさを伝える。
+	*
+	* @brief 当たり判定を更新する
+	* @param world 調べる世界
+	*
+	* [EN]
+	* Sends each collider its actor's position and size.
+	*
+	* @brief Updates the colliders
+	* @param world The world to check
 	*/
 	void PhysicsSystem::ApplyCollider(World& world)
 	{
-		/// [EN] An inactive actor's body is out of the simulation, so it is brought in line once the actor is active again.
-		/// [JP] 無効な Actor のボディはシミュレーション外なので、Actor が再び有効になってから合わせる。
+		/// [JP] 当たり判定の種類ごとに、動いているアクターのものを更新する
+		/// [EN] For each kind of collider, update those on active actors
 		DynamicArray<EntityID> rectColliderEntities;
 		Query<Read<RectCollider>>(world).ForEach([&](EntityID entityID, const RectCollider&) { rectColliderEntities.push_back(entityID); });
 		for (EntityID id : rectColliderEntities)
@@ -273,29 +259,28 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Hands what code has changed on every active actor's Rigidbody
-	* (bodyType_, isTrigger_, and the actor's LinearVelocity and
-	* AngularVelocity) to its body, advances each MoveTo by one step of
-	* elapsedTime, and then carries each body that follows its foothold
-	* along with it. Called before every fixed step.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 有効な全 Actor の Rigidbody について、コードが変えたもの(bodyType_ と
-	* isTrigger_ と、Actor の LinearVelocity と AngularVelocity)をボディへ
-	* 渡し、MoveTo による移動を elapsedTime の1ステップ分進めたうえで、
-	* 足場に追従するボディを足場と一緒に運ぶ。固定ステップの前に毎回呼ばれる。
+	* Rigidbody の部品を更新する。足場の動きはそのあとでまとめて当てはめる。
+	*
+	* @brief Rigidbody を更新する
+	* @param world       調べる世界
+	* @param elapsedTime 前のフレームからの時間
+	*
+	* [EN]
+	* Updates the Rigidbody parts; moving footholds are applied afterwards in one go.
+	*
+	* @brief Updates the Rigidbodies
+	* @param world       The world to check
+	* @param elapsedTime Time since the last frame
 	*/
 	void PhysicsSystem::ApplyRigidbody(World& world, Float elapsedTime)
 	{
+		/// [JP] まず全部の Rigidbody を更新する
+		/// [EN] First update every Rigidbody
 		DynamicArray<EntityID> rigidbodyEntities;
 		Query<Read<Rigidbody>>(world).ForEach([&](EntityID entityID, const Rigidbody&) { rigidbodyEntities.push_back(entityID); });
 		for (EntityID id : rigidbodyEntities)
 		{
-			/// [EN] An inactive actor's body is out of the simulation, so its changes wait until the actor is active again.
-			/// [JP] 無効な Actor のボディはシミュレーション外なので、その変更は Actor が再び有効になるまで待つ。
 			Actor actor = WorldAccessor::Make(world, id);
 			if (!actor || !actor.Active())
 			{
@@ -311,8 +296,8 @@ namespace SeedCore
 			rigidbody->Apply(elapsedTime);
 		}
 
-		/// [EN] Footholds come after every Apply, so each foothold's velocity for the step (including one set by MoveTo) is final before a body is carried by it.
-		/// [JP] 足場の処理は全ての Apply の後に行う。ボディを運ぶ前に、各足場のこのステップの速度(MoveTo によるものも含む)が決まっているようにするため。
+		/// [JP] そのあと足場の動きを当てはめる
+		/// [EN] Then apply the moving footholds
 		for (EntityID id : rigidbodyEntities)
 		{
 			Actor actor = WorldAccessor::Make(world, id);
@@ -332,47 +317,47 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Creates the static body of a collider on its own. Returns an
-	* invalid ID when the actor has a Rigidbody, which then owns the
-	* single body and borrows the collider's shape instead.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* コライダー単独の静的ボディを作る。Actor に Rigidbody がある場合は無効な
-	* ID を返す。その場合はボディを Rigidbody が1つだけ持ち、コライダーの
-	* 形状を借りる。
+	* Rigidbody がないアクター用に、当たり判定だけの動かない体を作る。
+	*
+	* @brief  当たり判定だけの体を作る
+	* @param  actor     体を作るアクター
+	* @param  shape     使う形
+	* @param  isTrigger 重なりを知らせるだけにするか
+	* @return 作った体の番号。Rigidbody があれば作らない
+	*
+	* [EN]
+	* Makes a still, collision-only body for an actor without a Rigidbody.
+	*
+	* @brief  Makes a collision-only body
+	* @param  actor     The actor to make it for
+	* @param  shape     The shape to use
+	* @param  isTrigger Whether it only reports overlaps
+	* @return The new body number; none is made if there is a Rigidbody
 	*/
 	ScBodyID PhysicsSystem::CreateColliderBody(Actor actor, ScShapeHandle shape, Bool isTrigger)
 	{
-		/// [EN] One actor gets one body; with a Rigidbody present, that body is the Rigidbody's.
-		/// [JP] 1つの Actor にボディは1つ。Rigidbody があれば、そのボディは Rigidbody のもの。
+		/// [JP] Rigidbody があれば、そちらが体を持つので作らない
+		/// [EN] With a Rigidbody, it already owns the body, so make nothing
 		if (actor.GetComponent<Rigidbody>())
 		{
 			return ScInvalidBodyID;
 		}
 
-		/// [EN] A lone collider is not simulated, so it is a static body on the actor's layer; every collider but MeshCollider is moved along with its actor by ApplyCollider.
-		/// [JP] 単独のコライダーはシミュレーションされないので、Actor のレイヤー上の静的ボディにする。MeshCollider 以外のコライダーは ApplyCollider が Actor に合わせて動かす。
+		/// [JP] 動かない体として設定し、2D や重なり用の層を足す
+		/// [EN] Set it up as a still body and add the 2D or overlap layers
 		RigidbodyDesc desc;
 		desc.shape_ = shape;
 		desc.motionType_ = ScMotionType::Static;
 		desc.layer_ = Layers::Pack(Layers::STATIC, actor.Layer());
 
-		/// [EN] Canvas colliders only collide with other canvas bodies.
-		/// [JP] Canvas のコライダーは、他の Canvas のボディとだけ衝突する。
 		if (actor.GetComponent<RectCollider>() || actor.GetComponent<CircleCollider>())
 		{
 			desc.layer_ |= Layers::PLANAR;
 		}
 
-		/// [EN] A trigger reports overlaps but does not push anything.
-		/// [JP] トリガーは重なりを知らせるだけで、何も押し返さない。
 		desc.isSensor_ = isTrigger;
 
-		/// [EN] A trigger is marked in the layer as well, so the layer filters can let it meet kinematic bodies.
-		/// [JP] トリガーはレイヤーにも印を付け、レイヤーフィルターがキネマティックのボディと組ませられるようにする。
 		if (isTrigger)
 		{
 			desc.layer_ |= Layers::SENSOR;
@@ -384,44 +369,51 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Destroys a collider's own body, if it has one, and releases its
-	* reference to the shape.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* コライダー自身のボディがあれば破棄し、形状への参照を解放する。
+	* 当たり判定だけの体と、その形を消す。
+	*
+	* @brief 当たり判定だけの体を消す
+	* @param actor  体を持つアクター
+	* @param bodyID 消す体の番号
+	* @param shape  返す形
+	*
+	* [EN]
+	* Removes a collision-only body and gives back its shape.
+	*
+	* @brief Removes a collision-only body
+	* @param actor  The actor that owns it
+	* @param bodyID The body number to remove
+	* @param shape  The shape to give back
 	*/
 	void PhysicsSystem::DestroyColliderBody(Actor actor, ScBodyID bodyID, ScShapeHandle shape)
 	{
-		/// [EN] A collider under a Rigidbody has no body of its own.
-		/// [JP] Rigidbody の下にあるコライダーは、自分のボディを持たない。
 		if (bodyID != ScInvalidBodyID)
 		{
 			actor.GetService<Physics>()->DestroyBody(bodyID);
 		}
 
-		/// [EN] The shape is released either way, since the collider holds its own reference.
-		/// [JP] コライダーは自分の参照を持っているので、形状はどちらの場合も解放する。
 		actor.GetService<Physics>()->ReleaseShape(shape);
 	}
 
 	/**
-	* [EN]
-	* Tells every component of the entity that a collision with the other
-	* entity began.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* エンティティの全コンポーネントへ、相手のエンティティとの衝突が
-	* 始まったことを伝える。
+	* ぶつかり始めたことを、アクターのスクリプトに知らせる。
+	*
+	* @brief ぶつかり始めを知らせる
+	* @param world         世界
+	* @param entityID      知らせるアクター
+	* @param otherEntityID ぶつかった相手
+	*
+	* [EN]
+	* Tells an actor's scripts that a hit has started.
+	*
+	* @brief Reports a hit starting
+	* @param world         The world
+	* @param entityID      The actor to tell
+	* @param otherEntityID What it hit
 	*/
 	void PhysicsSystem::DispatchCollisionEnter(World& world, EntityID entityID, EntityID otherEntityID)
 	{
-		/// [EN] Either actor may have been destroyed between the contact and its delivery.
-		/// [JP] 接触から配送までの間に、どちらかの Actor が破棄されていることがある。
 		Actor actor = WorldAccessor::Make(world, entityID);
 		Actor otherActor = WorldAccessor::Make(world, otherEntityID);
 		if (!actor || !otherActor)
@@ -429,8 +421,8 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Behaviours live in sparse sets, so the entity's sparse locations list them. Only their IDs are copied, and each is looked up again before the call, since a handler may add or remove components.
-		/// [JP] ビヘイビアはスパースセットにあるので、エンティティのスパースの場所が一覧になる。受け取った側がコンポーネントを付け外ししうるので、ID だけを写し、呼ぶ前にそれぞれ引き直す。
+		/// [JP] スクリプトの部品だけを集める
+		/// [EN] Gather only the script parts
 		DynamicArray<ComponentID> behaviours;
 		for (const SparseSetLocation& location : WorldAccessor::Entities(world).Record(entityID)->sparseSet_)
 		{
@@ -440,6 +432,8 @@ namespace SeedCore
 			}
 		}
 
+		/// [JP] 集めた部品に知らせる
+		/// [EN] Tell each of them
 		Entity entity = ActorAccessor::GetEntity(actor);
 		for (ComponentID id : behaviours)
 		{
@@ -449,21 +443,26 @@ namespace SeedCore
 			}
 		}
 	}
+
 	/**
-	* [EN]
-	* Tells every component of the entity that a collision with the other
-	* entity continues.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* エンティティの全コンポーネントへ、相手のエンティティとの衝突が
-	* 続いていることを伝える。
+	* ぶつかり続けていることを、アクターのスクリプトに知らせる。
+	*
+	* @brief ぶつかり中を知らせる
+	* @param world         世界
+	* @param entityID      知らせるアクター
+	* @param otherEntityID ぶつかっている相手
+	*
+	* [EN]
+	* Tells an actor's scripts that a hit is still going on.
+	*
+	* @brief Reports an ongoing hit
+	* @param world         The world
+	* @param entityID      The actor to tell
+	* @param otherEntityID What it is hitting
 	*/
 	void PhysicsSystem::DispatchCollisionStay(World& world, EntityID entityID, EntityID otherEntityID)
 	{
-		/// [EN] Either actor may have been destroyed between the contact and its delivery.
-		/// [JP] 接触から配送までの間に、どちらかの Actor が破棄されていることがある。
 		Actor actor = WorldAccessor::Make(world, entityID);
 		Actor otherActor = WorldAccessor::Make(world, otherEntityID);
 		if (!actor || !otherActor)
@@ -471,8 +470,8 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Behaviours live in sparse sets, so the entity's sparse locations list them. Only their IDs are copied, and each is looked up again before the call, since a handler may add or remove components.
-		/// [JP] ビヘイビアはスパースセットにあるので、エンティティのスパースの場所が一覧になる。受け取った側がコンポーネントを付け外ししうるので、ID だけを写し、呼ぶ前にそれぞれ引き直す。
+		/// [JP] スクリプトの部品だけを集める
+		/// [EN] Gather only the script parts
 		DynamicArray<ComponentID> behaviours;
 		for (const SparseSetLocation& location : WorldAccessor::Entities(world).Record(entityID)->sparseSet_)
 		{
@@ -482,6 +481,8 @@ namespace SeedCore
 			}
 		}
 
+		/// [JP] 集めた部品に知らせる
+		/// [EN] Tell each of them
 		Entity entity = ActorAccessor::GetEntity(actor);
 		for (ComponentID id : behaviours)
 		{
@@ -491,21 +492,26 @@ namespace SeedCore
 			}
 		}
 	}
+
 	/**
-	* [EN]
-	* Tells every component of the entity that a collision with the other
-	* entity ended.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* エンティティの全コンポーネントへ、相手のエンティティとの衝突が
-	* 終わったことを伝える。
+	* 離れたことを、アクターのスクリプトに知らせる。
+	*
+	* @brief 離れたことを知らせる
+	* @param world         世界
+	* @param entityID      知らせるアクター
+	* @param otherEntityID 離れた相手
+	*
+	* [EN]
+	* Tells an actor's scripts that a hit has ended.
+	*
+	* @brief Reports a hit ending
+	* @param world         The world
+	* @param entityID      The actor to tell
+	* @param otherEntityID What it stopped hitting
 	*/
 	void PhysicsSystem::DispatchCollisionExit(World& world, EntityID entityID, EntityID otherEntityID)
 	{
-		/// [EN] Either actor may have been destroyed between the contact and its delivery.
-		/// [JP] 接触から配送までの間に、どちらかの Actor が破棄されていることがある。
 		Actor actor = WorldAccessor::Make(world, entityID);
 		Actor otherActor = WorldAccessor::Make(world, otherEntityID);
 		if (!actor || !otherActor)
@@ -513,8 +519,8 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Behaviours live in sparse sets, so the entity's sparse locations list them. Only their IDs are copied, and each is looked up again before the call, since a handler may add or remove components.
-		/// [JP] ビヘイビアはスパースセットにあるので、エンティティのスパースの場所が一覧になる。受け取った側がコンポーネントを付け外ししうるので、ID だけを写し、呼ぶ前にそれぞれ引き直す。
+		/// [JP] スクリプトの部品だけを集める
+		/// [EN] Gather only the script parts
 		DynamicArray<ComponentID> behaviours;
 		for (const SparseSetLocation& location : WorldAccessor::Entities(world).Record(entityID)->sparseSet_)
 		{
@@ -524,6 +530,8 @@ namespace SeedCore
 			}
 		}
 
+		/// [JP] 集めた部品に知らせる
+		/// [EN] Tell each of them
 		Entity entity = ActorAccessor::GetEntity(actor);
 		for (ComponentID id : behaviours)
 		{
@@ -533,21 +541,26 @@ namespace SeedCore
 			}
 		}
 	}
+
 	/**
-	* [EN]
-	* Tells every component of the entity that the other entity entered a
-	* trigger.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* エンティティの全コンポーネントへ、相手のエンティティがトリガーに
-	* 入ったことを伝える。
+	* 重なり始めたことを、アクターのスクリプトに知らせる。
+	*
+	* @brief 重なり始めを知らせる
+	* @param world         世界
+	* @param entityID      知らせるアクター
+	* @param otherEntityID 重なった相手
+	*
+	* [EN]
+	* Tells an actor's scripts that an overlap has started.
+	*
+	* @brief Reports an overlap starting
+	* @param world         The world
+	* @param entityID      The actor to tell
+	* @param otherEntityID What it overlaps
 	*/
 	void PhysicsSystem::DispatchTriggerEnter(World& world, EntityID entityID, EntityID otherEntityID)
 	{
-		/// [EN] Either actor may have been destroyed between the contact and its delivery.
-		/// [JP] 接触から配送までの間に、どちらかの Actor が破棄されていることがある。
 		Actor actor = WorldAccessor::Make(world, entityID);
 		Actor otherActor = WorldAccessor::Make(world, otherEntityID);
 		if (!actor || !otherActor)
@@ -555,8 +568,8 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Behaviours live in sparse sets, so the entity's sparse locations list them. Only their IDs are copied, and each is looked up again before the call, since a handler may add or remove components.
-		/// [JP] ビヘイビアはスパースセットにあるので、エンティティのスパースの場所が一覧になる。受け取った側がコンポーネントを付け外ししうるので、ID だけを写し、呼ぶ前にそれぞれ引き直す。
+		/// [JP] スクリプトの部品だけを集める
+		/// [EN] Gather only the script parts
 		DynamicArray<ComponentID> behaviours;
 		for (const SparseSetLocation& location : WorldAccessor::Entities(world).Record(entityID)->sparseSet_)
 		{
@@ -566,6 +579,8 @@ namespace SeedCore
 			}
 		}
 
+		/// [JP] 集めた部品に知らせる
+		/// [EN] Tell each of them
 		Entity entity = ActorAccessor::GetEntity(actor);
 		for (ComponentID id : behaviours)
 		{
@@ -575,21 +590,26 @@ namespace SeedCore
 			}
 		}
 	}
+
 	/**
-	* [EN]
-	* Tells every component of the entity that the other entity stays in a
-	* trigger.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* エンティティの全コンポーネントへ、相手のエンティティがトリガーの中に
-	* 留まっていることを伝える。
+	* 重なり続けていることを、アクターのスクリプトに知らせる。
+	*
+	* @brief 重なり中を知らせる
+	* @param world         世界
+	* @param entityID      知らせるアクター
+	* @param otherEntityID 重なっている相手
+	*
+	* [EN]
+	* Tells an actor's scripts that an overlap is still going on.
+	*
+	* @brief Reports an ongoing overlap
+	* @param world         The world
+	* @param entityID      The actor to tell
+	* @param otherEntityID What it overlaps
 	*/
 	void PhysicsSystem::DispatchTriggerStay(World& world, EntityID entityID, EntityID otherEntityID)
 	{
-		/// [EN] Either actor may have been destroyed between the contact and its delivery.
-		/// [JP] 接触から配送までの間に、どちらかの Actor が破棄されていることがある。
 		Actor actor = WorldAccessor::Make(world, entityID);
 		Actor otherActor = WorldAccessor::Make(world, otherEntityID);
 		if (!actor || !otherActor)
@@ -597,8 +617,8 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Behaviours live in sparse sets, so the entity's sparse locations list them. Only their IDs are copied, and each is looked up again before the call, since a handler may add or remove components.
-		/// [JP] ビヘイビアはスパースセットにあるので、エンティティのスパースの場所が一覧になる。受け取った側がコンポーネントを付け外ししうるので、ID だけを写し、呼ぶ前にそれぞれ引き直す。
+		/// [JP] スクリプトの部品だけを集める
+		/// [EN] Gather only the script parts
 		DynamicArray<ComponentID> behaviours;
 		for (const SparseSetLocation& location : WorldAccessor::Entities(world).Record(entityID)->sparseSet_)
 		{
@@ -608,6 +628,8 @@ namespace SeedCore
 			}
 		}
 
+		/// [JP] 集めた部品に知らせる
+		/// [EN] Tell each of them
 		Entity entity = ActorAccessor::GetEntity(actor);
 		for (ComponentID id : behaviours)
 		{
@@ -617,21 +639,26 @@ namespace SeedCore
 			}
 		}
 	}
+
 	/**
-	* [EN]
-	* Tells every component of the entity that the other entity left a
-	* trigger.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* エンティティの全コンポーネントへ、相手のエンティティがトリガーから
-	* 出たことを伝える。
+	* 重なりが終わったことを、アクターのスクリプトに知らせる。
+	*
+	* @brief 重なりの終わりを知らせる
+	* @param world         世界
+	* @param entityID      知らせるアクター
+	* @param otherEntityID 離れた相手
+	*
+	* [EN]
+	* Tells an actor's scripts that an overlap has ended.
+	*
+	* @brief Reports an overlap ending
+	* @param world         The world
+	* @param entityID      The actor to tell
+	* @param otherEntityID What it stopped overlapping
 	*/
 	void PhysicsSystem::DispatchTriggerExit(World& world, EntityID entityID, EntityID otherEntityID)
 	{
-		/// [EN] Either actor may have been destroyed between the contact and its delivery.
-		/// [JP] 接触から配送までの間に、どちらかの Actor が破棄されていることがある。
 		Actor actor = WorldAccessor::Make(world, entityID);
 		Actor otherActor = WorldAccessor::Make(world, otherEntityID);
 		if (!actor || !otherActor)
@@ -639,8 +666,8 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Behaviours live in sparse sets, so the entity's sparse locations list them. Only their IDs are copied, and each is looked up again before the call, since a handler may add or remove components.
-		/// [JP] ビヘイビアはスパースセットにあるので、エンティティのスパースの場所が一覧になる。受け取った側がコンポーネントを付け外ししうるので、ID だけを写し、呼ぶ前にそれぞれ引き直す。
+		/// [JP] スクリプトの部品だけを集める
+		/// [EN] Gather only the script parts
 		DynamicArray<ComponentID> behaviours;
 		for (const SparseSetLocation& location : WorldAccessor::Entities(world).Record(entityID)->sparseSet_)
 		{
@@ -650,6 +677,8 @@ namespace SeedCore
 			}
 		}
 
+		/// [JP] 集めた部品に知らせる
+		/// [EN] Tell each of them
 		Entity entity = ActorAccessor::GetEntity(actor);
 		for (ComponentID id : behaviours)
 		{
@@ -659,16 +688,21 @@ namespace SeedCore
 			}
 		}
 	}
+
 	/**
-	* [EN]
-	* Builds every MeshCollider still waiting for its collision mesh,
-	* once the asset has finished loading. Called every frame.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 衝突メッシュを待っている MeshCollider を、アセットの読み込みが
-	* 終わったものから構築する。毎フレーム呼ばれる。
+	* メッシュの当たり判定がまだ形を作れていなければ、読み込んだメッシュを渡して作らせる。
+	*
+	* @brief メッシュの当たり判定を仕上げる
+	* @param meshCollisionResource メッシュを探す場所
+	* @param world                 部品を探す世界
+	*
+	* [EN]
+	* Hands loaded meshes to mesh colliders that have not made their shape yet.
+	*
+	* @brief Finishes the mesh colliders
+	* @param meshCollisionResource Where to look up meshes
+	* @param world                 The world to look for parts in
 	*/
 	void PhysicsSystem::ResolveMeshCollider(MeshCollisionResource& meshCollisionResource, World& world)
 	{
@@ -682,24 +716,22 @@ namespace SeedCore
 				continue;
 			}
 
-			/// [EN] Only colliders still waiting are processed; built ones are skipped.
-			/// [JP] 待っているコライダーだけを処理し、構築済みのものは飛ばす。
+			/// [JP] 形をまだ作れていない部品だけを扱う
+			/// [EN] Only handle parts that still need their shape
 			MeshCollider* collider = actor.GetComponent<MeshCollider>();
 			if (!collider || !collider->Pending())
 			{
 				continue;
 			}
 
-			/// [EN] An asset ID that is not registered yields no handle.
-			/// [JP] 登録されていないアセット ID ではハンドルが得られない。
+			/// [JP] メッシュがまだ読み込めていなければ、次のフレームでまた試す
+			/// [EN] If the mesh is not loaded yet, try again next frame
 			Handle<MeshCollision> handle = meshCollisionResource.GetHandle(collider->meshID_);
 			if (handle.empty())
 			{
 				continue;
 			}
 
-			/// [EN] Null while the asset is still loading; the collider stays pending and is tried again next frame.
-			/// [JP] 読み込み中は null。コライダーは待ちのまま残り、次のフレームで再び試す。
 			MeshCollision* meshCollision = meshCollisionResource.Resolve(handle);
 			if (!meshCollision)
 			{
@@ -711,15 +743,19 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Builds every Softbody still waiting for the model of its actor's
-	* Mesh, once the model has finished loading. Called every frame.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Actor の Mesh のモデルを待っている Softbody を、モデルの読み込みが
-	* 終わったものから構築する。毎フレーム呼ばれる。
+	* やわらかい体（Softbody）がまだ作れていなければ、読み込んだモデルを渡して作らせる。
+	*
+	* @brief Softbody を仕上げる
+	* @param modelResource モデルを探す場所
+	* @param world         部品を探す世界
+	*
+	* [EN]
+	* Hands loaded models to soft bodies that have not been built yet.
+	*
+	* @brief Finishes the soft bodies
+	* @param modelResource Where to look up models
+	* @param world         The world to look for parts in
 	*/
 	void PhysicsSystem::ResolveSoftbody(ModelResource& modelResource, World& world)
 	{
@@ -733,32 +769,28 @@ namespace SeedCore
 				continue;
 			}
 
-			/// [EN] Only soft bodies still waiting are processed; built ones are skipped.
-			/// [JP] 待っているソフトボディだけを処理し、構築済みのものは飛ばす。
+			/// [JP] まだ作れていない Softbody だけを扱う
+			/// [EN] Only handle soft bodies that are not built yet
 			Softbody* softbody = actor.GetComponent<Softbody>();
 			if (!softbody || !softbody->Pending())
 			{
 				continue;
 			}
 
-			/// [EN] The soft body takes its geometry from the Mesh on the same actor.
-			/// [JP] ソフトボディは、同じ Actor の Mesh から形を取る。
 			const Mesh* mesh = actor.GetComponent<Mesh>();
 			if (!mesh)
 			{
 				continue;
 			}
 
-			/// [EN] An asset ID that is not registered yields no handle.
-			/// [JP] 登録されていないアセット ID ではハンドルが得られない。
+			/// [JP] モデルがまだ読み込めていなければ、次のフレームでまた試す
+			/// [EN] If the model is not loaded yet, try again next frame
 			Handle<Crister> handle = modelResource.GetHandle(mesh->meshID_);
 			if (handle.empty())
 			{
 				continue;
 			}
 
-			/// [EN] Null while the model is still loading; the soft body stays pending and is tried again next frame.
-			/// [JP] 読み込み中は null。ソフトボディは待ちのまま残り、次のフレームで再び試す。
 			Crister* crister = modelResource.Resolve(handle);
 			if (!crister)
 			{

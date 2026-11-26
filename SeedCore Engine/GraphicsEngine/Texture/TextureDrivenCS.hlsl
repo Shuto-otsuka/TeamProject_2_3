@@ -19,17 +19,6 @@ struct TextureExpandBindings
 };
 ConstantBuffer<TextureExpandBindings> expand_bindings : register(b0, space1);
 
-/**
-* [EN]
-* Texture.Update: writes the rows the CPU found changed into Texture.Units
-* (dispatch constant 0) or Texture.Quads (1); one thread per row.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Texture.Update。CPU が変わったと判定した行を、Texture.Units（ディスパッチの
-* 定数が 0）か Texture.Quads（1）へ書く。1 スレッドが 1 行。
-*/
 [numthreads(64, 1, 1)]
 void Update(uint3 id : SV_DispatchThreadID)
 {
@@ -59,23 +48,6 @@ void Update(uint3 id : SV_DispatchThreadID)
 	}
 }
 
-/**
-* [EN]
-* Texture.Expand: one thread per quad slot. A quad of a drawn unit writes its
-* own index at Texture.Draws[draw_base_ + its position inside the unit].
-* The CPU chose every draw_base_ from the units' order, so the list comes out
-* in drawing order without sorting or atomics. A slot outside its unit's
-* current range is stale (the unit moved or shrank) and is skipped.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Texture.Expand。四角形の枠 1 つにつき 1 スレッド。描くユニットの四角形は、
-* 自分の番号を Texture.Draws[draw_base_ + ユニット内の位置] に書く。
-* draw_base_ は CPU がユニットの順番から決めているので、ソートも atomic も
-* 使わずに描く順番の並びになる。ユニットの今の範囲の外にある枠は古い
-* （ユニットが移ったか縮んだ）ので飛ばす。
-*/
 [numthreads(64, 1, 1)]
 void Expand(uint3 id : SV_DispatchThreadID)
 {

@@ -11,79 +11,86 @@ namespace SeedCore
 	class World;
 
 	/**
-	* [EN]
-	* Collects Jolt body-contact callbacks and dispatches SeedCore collision
-	* and trigger events on the active World.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Jolt のボディ接触コールバックを収集し、アクティブな World へ
-	* SeedCore の衝突・トリガーイベントを通知する。
+	* 物理エンジンから「ぶつかった」「離れた」の知らせを受け取り、あとでまとめてスクリプトに伝える係。
+	*
+	* @brief ぶつかりの知らせを集めて伝える係
+	*
+	* [EN]
+	* Receives "hit" and "separated" news from the physics engine and passes it to scripts later, all together.
+	*
+	* @brief Collects and reports hits
 	*/
 	class JoltContactListener final
 	{
 	public:
 		/**
-		* [EN]
-		* Creates a listener with no contacts recorded yet.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 接触をまだ何も記録していないリスナーを作る。
+		* 中身を作る。
+		*
+		* @brief 中身を作る
+		*
+		* [EN]
+		* Makes the inner parts.
+		*
+		* @brief Makes the inner parts
 		*/
 		JoltContactListener();
 
 		/**
-		* [EN]
-		* Defined in the .cpp, where Impl is a complete type.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* Impl が完全型になる .cpp 側で定義する。
+		* 中身を片付ける。
+		*
+		* @brief 中身を片付ける
+		*
+		* [EN]
+		* Cleans up the inner parts.
+		*
+		* @brief Cleans up the inner parts
 		*/
 		~JoltContactListener();
 
-		/// [EN] Jolt holds a raw pointer to the Impl once attached, so the listener is neither copied nor reassigned.
-		/// [JP] 取り付けた後は Jolt が Impl の生ポインタを持つので、リスナーはコピーも代入もしない。
 		JoltContactListener(const JoltContactListener&) = delete;
 		JoltContactListener& operator=(const JoltContactListener&) = delete;
 
 	public:
 		/**
-		* [EN]
-		* Registers this listener on the physics system, so body contacts
-		* start arriving here.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 物理システムにこのリスナーを登録し、ボディの接触がここへ届く
-		* ようにする。
+		* 物理エンジンに、知らせの受け取り先として登録する。
+		*
+		* @brief 受け取り先として登録する
+		* @param physicsSystem 登録する物理エンジン
+		*
+		* [EN]
+		* Registers itself with the physics engine as the place to send news.
+		*
+		* @brief Registers as the listener
+		* @param physicsSystem The physics engine to register with
 		*/
 		void Attach(JPH::PhysicsSystem& physicsSystem);
 
 		/**
-		* [EN]
-		* Decides which body pairs that lost their last contact really
-		* exited, then drains queued contacts and dispatches their
-		* collision or trigger events on world.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 最後の接触を失ったボディペアのうち本当に離れたものを判定し、その後
-		* キュー内の接触を取り出して衝突またはトリガーイベントを world へ通知する。
+		* 集めた知らせを、アクターのスクリプトにまとめて伝える。
+		*
+		* @brief 知らせを伝える
+		* @param physicsSystem 体の状態を調べる物理エンジン
+		* @param world         伝える世界
+		*
+		* [EN]
+		* Passes the collected news to the actors' scripts all together.
+		*
+		* @brief Reports the news
+		* @param physicsSystem The physics engine used to check bodies
+		* @param world         The world to report to
 		*/
 		void DispatchEvent(JPH::PhysicsSystem& physicsSystem, World& world);
 
 	private:
 		class Impl;
 
-		/// [EN] The listener Jolt actually calls, owned through a pointer so Jolt's headers stay out of this one.
-		/// [JP] Jolt が実際に呼ぶリスナー。Jolt のヘッダをこのヘッダから外すため、ポインタ越しに所有する。
+		/// [JP] 中身
+		/// [EN] The inner parts
 		ResourcePtr<Impl> impl_;
 	};
 }

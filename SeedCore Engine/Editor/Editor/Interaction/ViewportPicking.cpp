@@ -8,25 +8,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Finds the actor whose Bounds the ray hits closest to rayOrigin.
-	* Transforms the ray into each candidate's local space via its inverse
-	* world matrix so the local-space Bounds acts as an OBB, then converts
-	* the local hit back to world space to rank candidates by true
-	* world-space distance (raw local ray parameters are not comparable
-	* across actors with different scales).
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* レイが rayOrigin に最も近い位置で当たる Bounds を持つアクターを
-	* 探す。各候補の逆ワールド行列でレイをローカル空間へ変換し、ローカル
-	* 空間の Bounds を OBB として機能させ、ローカルのヒット点をワールド
-	* 空間へ変換し直してから真のワールド距離で候補を順位付けする(生の
-	* ローカルレイパラメータはスケールの異なるアクター間では比較できない
-	* ため)。
-	*/
 	Actor ViewportPicking::Pick(World& world, const Vector3& rayOrigin, const Vector3& rayDirection)
 	{
 		ComponentID boundsComponentID = ComponentRegistry::GetComponentID<Bounds>();
@@ -83,19 +64,6 @@ namespace SeedCore
 		return closestActor;
 	}
 
-	/**
-	* [EN]
-	* Slab-method ray/AABB test in the box's local space, doubling as an
-	* OBB test. outT is the entry point when the ray starts outside the
-	* box, or the exit point when it starts inside.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 箱のローカル空間でのスラブ法レイ/AABB 判定。OBB 判定としても機能
-	* する。outT はレイが箱の外から始まれば侵入点、内側から始まれば
-	* 脱出点。
-	*/
 	Bool ViewportPicking::RayIntersectsLocalAABB(const Vector3& rayOriginLocal, const Vector3& rayDirectionLocal, const Vector3& boundsMin, const Vector3& boundsMax, Float& outT)
 	{
 		Float origin[3] = { rayOriginLocal.x, rayOriginLocal.y, rayOriginLocal.z };
@@ -135,8 +103,6 @@ namespace SeedCore
 
 		if (tMax < 0.0f)
 		{
-			/// [EN] Whole box is behind the ray origin.
-			/// [JP] 箱全体がレイの起点より後ろにある。
 			return false;
 		}
 

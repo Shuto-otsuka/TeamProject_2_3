@@ -339,4 +339,4 @@ float3 RaytracingHitLighting(RaytracingHitTables tables, RaytracingHitLights lig
 	return lighting + punctual * lambert_normalization;
 }
 
-#endif // __RAYTRACING_HIT_HLSLI__
+#endif

@@ -1,7 +1,6 @@
 #ifndef __TEXTURE_HLSL__
 #define __TEXTURE_HLSL__
 
-// Mirrors the C++ TextureKind / TextureDisplay enums (Texture/TextureDriven.h).
 #define TEXTURE_KIND_TEXTURE 0
 #define TEXTURE_KIND_FONT 1
 #define TEXTURE_KIND_MOVIE 2
@@ -19,21 +18,8 @@
 
 #define TEXTURE_INVALID 0xFFFFFFFF
 
-// Sprites are laid out on a 1920x1080 canvas and scaled to the view's display.
 #define TEXTURE_CANVAS_HEIGHT 1080.0
 
-/**
-* [EN]
-* One actor's Image, Text or Movie component. world_ is the actor's world
-* matrix: sprites use its translation, z rotation and scale on the canvas,
-* billboards transform their quads by it. color_ tints everything; the font
-* style (outline, glow, shadow, unit_range_ = the atlas distance range in UV)
-* only matters to fonts, the scroll only to textures with
-* TEXTURE_UNIT_SCROLL. texture_index_ is the image, the font atlas or the
-* movie frame. The unit owns quads [quad_offset_, quad_offset_ +
-* quad_count_) and, when TEXTURE_UNIT_DRAWN is set, draws them at
-* Texture.Draws[draw_base_ + n].
-*/
 struct TextureUnitStructuredBuffer
 {
 	row_major float4x4 world_;
@@ -65,14 +51,6 @@ struct TextureUnitStructuredBuffer
 	uint texture_unit_padding_0_;
 };
 
-/**
-* [EN]
-* One quad of a unit. Corner c in {0,1}^2 lies at rect_min_ + c *
-* rect_size_ with c = (0,0) at the top-left of uv_min_..uv_max_: sprites
-* measure in canvas pixels with y down, billboards in local units with y up
-* (so their rect_size_.y is negative). TEXTURE_QUAD_SHADOW marks a text
-* shadow, drawn in the shadow colour.
-*/
 struct TextureQuadStructuredBuffer
 {
 	float2 rect_min_;
@@ -102,12 +80,6 @@ struct TextureQuadUpdate
 	TextureQuadStructuredBuffer data_;
 };
 
-/**
-* [EN]
-* sprite_count_ quads are drawn first from Texture.Draws[sprite_base_],
-* then billboard_count_ from billboard_base_. Texture.Expand walks quad_count_
-* quad slots.
-*/
 struct TextureConstantBuffer
 {
 	uint sprite_base_;
@@ -119,4 +91,4 @@ struct TextureConstantBuffer
 	uint3 texture_padding_0_;
 };
 
-#endif // __TEXTURE_HLSL__
+#endif

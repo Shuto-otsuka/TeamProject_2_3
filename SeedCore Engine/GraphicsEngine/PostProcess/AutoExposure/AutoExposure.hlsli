@@ -13,4 +13,4 @@ struct AutoExposureConstantBuffer
 	float3 auto_exposure_padding_0_;
 };
 
-#endif // __AUTO_EXPOSURE_HLSL__
+#endif

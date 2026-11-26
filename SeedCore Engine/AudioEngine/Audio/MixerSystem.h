@@ -3,94 +3,124 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Static interface for controlling and persisting the engine's master and
-	* category volume settings.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* エンジンのマスター音量とカテゴリ音量を制御し、保存するための
-	* static インターフェース。
+	* 全体の音量や、種類ごとの音量を変える係。
+	*
+	* @brief 音量をまとめて変える係
+	*
+	* [EN]
+	* Changes the overall volume and the volume of each kind of sound.
+	*
+	* @brief Changes volumes
 	*/
 	class SEEDCORE_API MixerSystem
 	{
 	public:
 		/**
-		* [EN]
-		* Sets the master volume multiplier.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* マスター音量の倍率を設定する。
+		* 全体の音量を変える。
+		*
+		* @brief 全体の音量を変える
+		* @param volume 音量
+		*
+		* [EN]
+		* Changes the overall volume.
+		*
+		* @brief Changes the overall volume
+		* @param volume The volume
 		*/
 		static void MasterVolume(Float volume);
 
 		/**
-		* [EN]
-		* Sets the volume multiplier for a named category.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 指定したカテゴリの音量倍率を設定する。
+		* 種類（カテゴリー）ごとの音量を変える。
+		*
+		* @brief 種類ごとの音量を変える
+		* @param category 種類の名前
+		* @param volume   音量
+		*
+		* [EN]
+		* Changes the volume of one kind (category) of sound.
+		*
+		* @brief Changes a category volume
+		* @param category The category name
+		* @param volume   The volume
 		*/
 		static void CategoryVolume(const String& category, Float volume);
 
 		/**
-		* [EN]
-		* Restores all volume settings to their defaults.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* すべての音量設定を既定値へ戻す。
+		* 音量を最初の値に戻す。
+		*
+		* @brief 音量を元に戻す
+		*
+		* [EN]
+		* Puts the volumes back to their starting values.
+		*
+		* @brief Resets the volumes
 		*/
 		static void ResetVolume();
 
 		/**
-		* [EN]
-		* Saves the current volume bindings.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 現在の音量設定を保存する。
+		* 今の音量をファイルに保存する。
+		*
+		* @brief  音量を保存する
+		* @return うまくいったら true
+		*
+		* [EN]
+		* Saves the current volumes to a file.
+		*
+		* @brief  Saves the volumes
+		* @return True if it worked
 		*/
 		static Bool Save();
 
 	public:
 		/**
-		* [EN]
-		* Returns the current master volume multiplier.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 現在のマスター音量倍率を返す。
+		* 全体の音量を返す。
+		*
+		* @brief  全体の音量を返す
+		* @return 全体の音量
+		*
+		* [EN]
+		* Returns the overall volume.
+		*
+		* @brief  Returns the overall volume
+		* @return The overall volume
 		*/
 		NODISCARD static Float MasterVolume();
 
 		/**
-		* [EN]
-		* Returns the current volume multiplier for a named category.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 指定したカテゴリの現在の音量倍率を返す。
+		* 種類ごとの音量を返す。
+		*
+		* @brief  種類ごとの音量を返す
+		* @param  category 種類の名前
+		* @return その種類の音量
+		*
+		* [EN]
+		* Returns the volume of one category.
+		*
+		* @brief  Returns a category volume
+		* @param  category The category name
+		* @return That category's volume
 		*/
 		NODISCARD static Float CategoryVolume(const String& category);
 
 		/**
-		* [EN]
-		* Returns the names of the available mixer categories.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 利用可能なミキサーカテゴリ名を返す。
+		* 音の種類の名前の一覧を返す。
+		*
+		* @brief  種類の一覧を返す
+		* @return 種類の名前の一覧
+		*
+		* [EN]
+		* Returns the list of category names.
+		*
+		* @brief  Returns the category list
+		* @return The category names
 		*/
 		NODISCARD static const DynamicArray<String>& CategoryNameList();
 	};

@@ -1,19 +1,5 @@
 #include <GraphicsEngine/Texture/Sprite/TextureSprite.hlsli>
 
-/**
-* [EN]
-* Texture.Sprite for devices without mesh shaders: one DrawInstanced
-* instance per entry of the sprite section of Texture.Draws, 6 vertices (two triangles) each, placed exactly
-* like TextureSpriteMS.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* メッシュシェーダーの無いデバイス用の Texture.Sprite。Texture.Draws の
-* スプライトの区間の 1 件につき
-* DrawInstanced のインスタンス 1 つ、6 頂点（2 三角形）。配置は TextureSpriteMS と
-* 同じ。
-*/
 TextureSpriteOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 {
 	ConstantBuffer<TextureConstantBuffer> constants = ResourceDescriptorHeap[bindings.texture_constants_];

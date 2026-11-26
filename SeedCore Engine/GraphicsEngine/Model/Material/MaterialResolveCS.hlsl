@@ -22,38 +22,6 @@ struct MaterialResolveBindings
 };
 ConstantBuffer<MaterialResolveBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* Final step of the material sort: one thread per entry of
-* Material.Pixels (rows of 65536 threads; the total sits after the
-* buckets). Rebuilds the covering triangle from the same buffers the geometry
-* passes read - morph targets, then skinning, for this frame and, with the
-* second half of ModelBones / ModelMorphWeights, for the previous one, then
-* the same fur shell push and droop as the geometry passes - and derives
-* perspective-correct barycentric weights for the pixel and for its right
-* and lower neighbours. The neighbours give the mapping coordinates'
-* screen derivatives, so every texture is sampled with SampleGrad at the
-* right mip. Writes the base color and metallic, the octahedral normal (12+12
-* bits) with roughness (8 bits), the tangent angle, the velocity, and the
-* emitted radiance that Material.Radiance starts from (emissive times its
-* strength; base color plus emissive for Unlit). Normals face the camera,
-* and the Flat shading model uses the geometric face normal.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* マテリアルソートの最後。Material.Pixels の 1 件につき 1 スレッド
-* (1 行 65536 スレッド。総数はバケットの後ろにある)。ジオメトリのパスと
-* 同じバッファから三角形を組み直し（モーフ、次にスキン。ModelBones /
-* ModelMorphWeights の後ろ半分で前のフレームの分も。そのあとジオメトリのパスと
-* 同じ Fur のシェルの押し出しと垂れ）、ピクセルと右隣・下隣の
-* パースペクティブ補正した重心座標を求める。隣の分がマッピングの座標の画面方向の
-* 微分になり、テクスチャはすべて正しいミップの SampleGrad で読む。ベースカラーと
-* メタリック、八面体法線（12+12 bit）とラフネス（8 bit）、タンジェントの角度、
-* 速度、Material.Radiance の初期値の放射（エミッシブ×強さ。Unlit はベースカラー＋
-* エミッシブ）を書く。法線はカメラの側へ向け、Flat のシェーディングモデルは
-* 三角形の面の法線を使う。
-*/
 [numthreads(64, 1, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {

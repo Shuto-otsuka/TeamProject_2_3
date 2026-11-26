@@ -9,8 +9,6 @@ namespace SeedCore
 			return false;
 		}
 
-		/// [EN] IDispatch::GetIDsOfNames takes a non-const OLECHAR** even though it never writes through it; the const_cast is only to satisfy that signature.
-		/// [JP] IDispatch::GetIDsOfNames は非constな OLECHAR** を取るが、実際にはそこへ書き込むことはない。const_cast はそのシグネチャに合わせるためだけのもの。
 		Wchar* nameNonConst = const_cast<Wchar*>(name);
 		DISPID dispID = 0;
 		if (FAILED(dispatch->GetIDsOfNames(IID_NULL, &nameNonConst, 1, LOCALE_USER_DEFAULT, &dispID)))
@@ -125,8 +123,6 @@ namespace SeedCore
 					std::wstring monikerName(displayName);
 					CoTaskMemFree(displayName);
 
-					/// [EN] DTE monikers look like "!VisualStudio.DTE.17.0:1234" (version, then the owning process's PID) — matching the "!VisualStudio.DTE" prefix catches every VS version without hardcoding one.
-					/// [JP] DTEのモニカ名は "!VisualStudio.DTE.17.0:1234"(バージョン、その後に所有プロセスのPID)のような形をしている — "!VisualStudio.DTE" という接頭辞で判定すれば、バージョンをハードコードせず全バージョンを拾える。
 					if (monikerName.starts_with(L"!VisualStudio.DTE"))
 					{
 						IUnknown* unknown = nullptr;
@@ -202,8 +198,6 @@ namespace SeedCore
 
 		if (!found)
 		{
-			/// [EN] The on-disk file already having this exact Include="name" is a strong (not perfect — a name could theoretically appear as some unrelated attribute value elsewhere, but Include="X" for a Filter is a distinctive enough substring in practice) signal that Visual Studio's live model just hasn't caught up with a change made outside it. Creating the filter here anyway would write a second <Filter> node for the same name.
-			/// [JP] ディスク上のファイルに既にこの Include="name" が存在するというのは、Visual Studioのライブなモデルが外部での変更にまだ追いついていないだけ、という強いシグナルになる(完璧ではない — 理論上どこか無関係な属性値として同じ文字列が出現しうるが、フィルタの Include="X" は実用上十分に特徴的な部分文字列)。それでもここでフィルタを作成してしまうと、同じ名前の <Filter> ノードが2つ目書き込まれてしまう。
 			std::wstring includeNeedle = L"Include=\"" + name + L"\"";
 			if (onDiskFiltersContent.contains(includeNeedle))
 			{
@@ -314,8 +308,6 @@ namespace SeedCore
 
 					if (project)
 					{
-						/// [EN] Project.ProjectItems.AddFromFile() (the generic EnvDTE path used previously) always adds at the project root with no <Filter> — Solution Explorer would show the file but never nested under Script/Script\Player like Tutorial's own files are. Project.Object exposes the native VC++ project model instead (VCProject, whose Filters really are the .vcxproj.filters <Filter> entries), so a file added through a VCFilter's own AddFile() lands in the vcxproj.filters with the matching <Filter> element already set.
-						/// [JP] Project.ProjectItems.AddFromFile()(以前使っていた汎用EnvDTE経路)は常にプロジェクトのルートへ、<Filter>指定無しで追加してしまう — Solution Explorerには出るが、Tutorial自身のファイルのように Script/Script\Player 配下にネストされることは無い。代わりに Project.Object はネイティブなVC++プロジェクトモデル(VCProject。その Filters は .vcxproj.filters の <Filter> エントリそのもの)を公開しており、VCFilter自身の AddFile() 経由で追加したファイルは、対応する <Filter> 要素が最初から設定された状態で .vcxproj.filters に載る。
 						IDispatch* vcProject = GetDispatchProperty(project, L"Object");
 						if (vcProject)
 						{
@@ -325,8 +317,6 @@ namespace SeedCore
 							std::filesystem::path relativeDirectoryPath = std::filesystem::relative(headerPath.parent_path(), userProjectRoot, relativeError);
 							std::wstring relativeDirectory = (!relativeError && relativeDirectoryPath != ".") ? relativeDirectoryPath.wstring() : std::wstring();
 
-							/// [EN] Read as raw bytes and widened one-to-one (not properly UTF-8 decoded) — fine here because every needle ever searched for (Include="Script", Include="Script\Player", ...) is pure ASCII, and UTF-8 encodes ASCII as single unchanged bytes with every multi-byte sequence's bytes all >= 0x80, so they can never coincide with an ASCII needle. A real UTF-8 decode isn't needed just to find one.
-							/// [JP] 生バイトのまま1バイト=1文字として幅を広げて読む(正しいUTF-8デコードではない) — ここでは問題ない。探すのは Include="Script"、Include="Script\Player" のような純ASCIIの文字列だけであり、UTF-8はASCIIを変化させず1バイトのまま符号化し、マルチバイト列のバイトは全て0x80以上になるため、ASCIIの探索文字列と一致することは絶対に無い。1つの文字列を探すだけなら、正しいUTF-8デコードは不要。
 							std::wstring onDiskFiltersContent;
 							{
 								std::ifstream filtersFile(userProjectRoot / "UserProject.Cplusplus.vcxproj.filters", std::ios::binary);
@@ -374,16 +364,12 @@ namespace SeedCore
 
 						if (success)
 						{
-							/// [EN] AddFile() alone marks the project dirty in memory; Save() flushes that to UserProject.Cplusplus.vcxproj/.filters on disk so the registration survives even if Visual Studio (or the whole machine) closes before the user's next manual save.
-							/// [JP] AddFile() だけではプロジェクトがメモリ上でダーティになるだけなので、Save() で UserProject.Cplusplus.vcxproj/.filters へ実際に書き出す。次にユーザーが手動保存するより前に Visual Studio(や PC 自体)が閉じても、登録内容が失われないようにするため。
 							VARIANT emptyPath;
 							VariantInit(&emptyPath);
 							emptyPath.vt = VT_BSTR;
 							emptyPath.bstrVal = SysAllocString(L"");
 							VARIANT saveResult;
 							VariantInit(&saveResult);
-							/// [EN] Result intentionally ignored: Save() failing here just means the in-memory registration (already visible in Solution Explorer) hasn't been flushed to disk yet — a real problem, but not one this function can do anything more about, and the caller has no fallback that would help either (the registration already exists in Visual Studio's own model at this point).
-							/// [JP] 結果は意図的に無視している: ここで Save() が失敗しても、メモリ上の登録(既にSolution Explorerには反映済み)がディスクへまだ書き出されていないというだけで、実害はあるがこの関数側でこれ以上できることは無く、呼び出し側にもこの時点では役立つフォールバックが無い(登録自体は既にVisual Studioのモデル内に存在するため)。
 							Bool saved = InvokeMember(project, L"Save", DISPATCH_METHOD, &emptyPath, &saveResult);
 							(void)saved;
 							VariantClear(&saveResult);
@@ -416,8 +402,6 @@ namespace SeedCore
 		IDispatch* dte = FindDTEForSolution(solutionPath);
 		if (dte)
 		{
-			/// [EN] ItemOperations.OpenFile's second parameter (the view kind) is optional, so passing only the path opens the file in its default editor.
-			/// [JP] ItemOperations.OpenFile の第2引数(ビューの種類)は省略できるので、パスだけを渡すと既定のエディタで開く。
 			IDispatch* itemOperations = GetDispatchProperty(dte, L"ItemOperations");
 			if (itemOperations)
 			{
@@ -435,8 +419,6 @@ namespace SeedCore
 				itemOperations->Release();
 			}
 
-			/// [EN] Windows only lets the foreground process hand the foreground to another, so this process allows it before asking Visual Studio to activate its window.
-			/// [JP] Windows は前面のプロセスだけが他のプロセスに前面を譲れるので、Visual Studio にウィンドウの有効化を頼む前に、このプロセスがそれを許可する。
 			IDispatch* mainWindow = success ? GetDispatchProperty(dte, L"MainWindow") : nullptr;
 			if (mainWindow)
 			{
@@ -444,8 +426,6 @@ namespace SeedCore
 
 				VARIANT activateResult;
 				VariantInit(&activateResult);
-				/// [EN] Result ignored: the file is already open, and a window that stays behind is only an inconvenience.
-				/// [JP] 結果は無視する。ファイルは既に開いており、ウィンドウが後ろに残っても不便なだけだから。
 				Bool activated = InvokeMember(mainWindow, L"Activate", DISPATCH_METHOD, nullptr, &activateResult);
 				(void)activated;
 				VariantClear(&activateResult);

@@ -8,16 +8,6 @@ struct SkyIrradianceBindings
 };
 ConstantBuffer<SkyIrradianceBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* Convolves the environment cube into a diffuse-irradiance cube by integrating
-* the cosine-weighted hemisphere around each output direction. One thread per
-* irradiance cube texel.
-*
-* [JP]
-* environment キューブを拡散 irradiance キューブへ畳み込む。各出力方向まわりの
-* コサイン重み半球を積分する。irradiance キューブテクセル 1 つにつき 1 スレッド。
-*/
 [numthreads(8, 8, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {

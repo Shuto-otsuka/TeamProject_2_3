@@ -14,7 +14,6 @@ namespace SeedCore
 			return from + (to - from) * t;
 		}
 
-		/// [JP] 雨の季節重み: 5〜7月がピーク、それ以外の月も0にはしない(毎月降る)。
 		Float RainSeasonalWeight(Uint32 monthOfYear)
 		{
 			if (monthOfYear == 5 || monthOfYear == 6 || monthOfYear == 7)
@@ -32,27 +31,6 @@ namespace SeedCore
 
 	void WeatherSystem::GetTarget(WeatherType type, VolumetricCloudScapes& target)
 	{
-		/// [EN] Deliberately does NOT touch skyZenithColor_/skyHorizonColor_:
-		///      those are CelestialSystem's time-of-day gradient, applied by
-		///      VolumetricCloudFeature every frame. If weather
-		///      set them to fixed absolute colors, a night sky under Clear
-		///      weather would get dragged back toward a fixed "daytime blue"
-		///      here, and any progress made by the lerp below would be wiped
-		///      out again next frame when Celestial rewrites them - weather
-		///      would never visibly change the sky. skyBrightness_ (and
-		///      coverage_/rain_, which darken the actual rendered clouds) are
-		///      pure multipliers/amounts with no such conflict, so they compose
-		///      correctly with the time-of-day color regardless of write order.
-		/// [JP] 意図的に skyZenithColor_/skyHorizonColor_ には触れない:
-		///      それらは CelestialSystem の時刻グラデーションであり、
-		///      VolumetricCloudFeature が毎フレーム反映する。もし
-		///      天候側が固定の絶対色を設定すると、Clear天候の夜空がここで
-		///      固定の「昼の青」へ引き戻され、下の補間が1フレーム分進んでも
-		///      次のフレームで Celestial に再び上書きされて消えてしまう -
-		///      天候が空の色に見た目上まったく反映されなくなる。
-		///      skyBrightness_(と、実際に描かれる雲を暗くする coverage_/
-		///      rain_)は純粋な乗数/量なので、書き込み順序に関係なく時刻の色と
-		///      正しく合成される。
 		switch (type)
 		{
 		case WeatherType::Clear:
@@ -119,7 +97,6 @@ namespace SeedCore
 			Float weight_;
 		};
 
-		/// [JP] forceXxx_ が true ならその天候の季節重みを無視して一定の重みにする。
 		Entry entries[] =
 		{
 			{ WeatherType::Clear, 3.0f },
@@ -181,31 +158,22 @@ namespace SeedCore
 				weatherType = weather.type_;
 				t = weather.transitionSeconds_ > 0.0f ? std::clamp(deltaTime / weather.transitionSeconds_, 0.0f, 1.0f) : 1.0f;
 
-				/// [JP] 濡れ具合: 雨/暴風(Storm)の間に上がり、止んだ後もゆっくり乾く。
 				Bool raining = weather.type_ == WeatherType::Rain || weather.type_ == WeatherType::Storm;
 				Float wetnessRampSpeed = 1.0f / 20.0f;
 				Float wetnessDecaySpeed = 1.0f / 90.0f;
 				weather.wetness_ += deltaTime * (raining ? wetnessRampSpeed : -wetnessDecaySpeed);
 				weather.wetness_ = std::clamp(weather.wetness_, 0.0f, 1.0f);
 
-				/// [JP] 積雪: 雪の間に積もり、止むと雪解け(季節外の強制の場合は速く溶ける)。
 				Bool snowing = weather.type_ == WeatherType::Snow;
 				Float snowRampSpeed = 1.0f / 60.0f;
 				Float snowMeltSpeed = SnowSeason(monthOfYear) ? (1.0f / 180.0f) : (1.0f / 40.0f);
 				weather.snowCoverage_ += deltaTime * (snowing ? snowRampSpeed : -snowMeltSpeed);
 				weather.snowCoverage_ = std::clamp(weather.snowCoverage_, 0.0f, 1.0f);
 
-				/// [JP] snowIntensity_: 「今降っているか」を素早く増減させ、画面の
-				///      降雪オーバーレイ(見た目)を駆動する。地面の積雪
-				///      (snowCoverage_)とは別の、速い方の信号。
 				const Float snowIntensityRate = 1.0f / 2.0f;
 				weather.snowIntensity_ += deltaTime * (snowing ? snowIntensityRate : -snowIntensityRate);
 				weather.snowIntensity_ = std::clamp(weather.snowIntensity_, 0.0f, 1.0f);
 
-				/// [JP] 雷: 天候ごとの1秒あたりの発生確率(ShootingStar と同じ
-				///      「chancePerSecond」方式)。Storm=0.005、それ以外=0
-				///      (Rainでは鳴らさない)。forceThunder_ が立っていれば
-				///      それ以外の天候でも Rain 相当の確率で許可する。
 				Float thunderChancePerSecond = 0.0f;
 				if (weather.type_ == WeatherType::Storm)
 				{

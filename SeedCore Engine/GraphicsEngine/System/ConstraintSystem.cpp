@@ -32,8 +32,6 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] A constrained actor's overridden matrix must propagate to every descendant (even unconstrained ones), so the dirty set includes each constrained actor's whole subtree, not just the constrained actors themselves.
-		/// [JP] コンストレイントを持つ actor の上書き済み行列は、全ての子孫(コンストレイント無しも含む)へ伝播する必要があるため、dirty集合はコンストレイントを持つ actor 自身だけでなく、その全サブツリーを含む。
 		std::unordered_set<EntityID> dirty;
 		for (EntityID id : constrainedEntities)
 		{
@@ -44,8 +42,6 @@ namespace SeedCore
 			}
 		}
 
-		/// [EN] Recompute starting only from each dirty actor whose real parent is not itself dirty, reusing that parent's TransformSystem-computed world matrix as the base.
-		/// [JP] dirtyな actor のうち、実際の親が dirty でないものだけを起点に再計算し、その親の TransformSystem 計算済みワールド行列をベースとして再利用する。
 		for (EntityID id : dirty)
 		{
 			Actor actor = WorldAccessor::Make(world, id);

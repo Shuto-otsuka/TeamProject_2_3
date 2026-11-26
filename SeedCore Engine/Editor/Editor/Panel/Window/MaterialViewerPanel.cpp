@@ -1,0 +1,549 @@
+#include <Editor/Editor/Panel/Window/MaterialViewerPanel.h>
+#include <Editor/Editor/Context/EditorContext.h>
+#include <Editor/Editor/ImGui/ImGuiCommon.h>
+#include <Editor/Editor/ImGui/ImGuiTexture.h>
+#include <Editor/Editor/ImGui/ImGuiRenderer.h>
+#include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
+#include <FoundationEngine/Input/InputSystem.h>
+#include <FoundationEngine/Resource/ResourceCache.h>
+#include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <FoundationEngine/World/World.h>
+#include <FoundationEngine/Log/Notice.h>
+#include <FoundationEngine/Log/Warning.h>
+#include <GraphicsEngine/Model/Material/Material.h>
+#include <GraphicsEngine/Model/Material/MaterialLoader.h>
+#include <GraphicsEngine/Model/Material/MaterialResource.h>
+#include <GraphicsEngine/Model/Material/MaterialBaker.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
+#include <GraphicsEngine/Model/Mesh.h>
+#include <GraphicsEngine/Model/ModelResource.h>
+#include <GraphicsEngine/D3D12/Context/D3D12Context.h>
+#include <GraphicsEngine/Camera/PreviewCamera.h>
+#include <GraphicsEngine/Camera/PreviewCameraController.h>
+#include <GraphicsEngine/Resource/GraphicsModule.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
+#include <GraphicsEngine/Preview/PreviewRequest.h>
+
+namespace SeedCore
+{
+	MaterialViewerPanel::MaterialViewerPanel(EditorContext& context, ImGuiTexture& imguiTexture) : context_(context), imguiTexture_(imguiTexture)
+	{
+		/// No Code
+	}
+
+	MaterialViewerPanel::~MaterialViewerPanel() = default;
+
+	void MaterialViewerPanel::Open()
+	{
+		open_ = true;
+		ImGui::SetWindowFocus("マテリアルビューア");
+	}
+
+	Bool MaterialViewerPanel::Focused()const
+	{
+		ImGuiWindow* window = ImGui::FindWindowByName("マテリアルビューア");
+		return open_ && window && !window->SkipItems;
+	}
+
+	void MaterialViewerPanel::Draw()
+	{
+		context_.preview_.material_.active_ = false;
+		context_.preview_.material_.surfaceAssetID_ = 0;
+
+		if (!open_)
+		{
+			return;
+		}
+
+		ResourceCache* resource = context_.world_.resource_;
+		auto slotLabel = [resource](const std::string& slotName, Uint32 assetID, Size slot) -> std::string
+		{
+			std::string_view slotText = slotName.empty() ? std::string_view("(名前なし)") : std::string_view(slotName);
+			if (assetID == 0)
+			{
+				return std::format("[{}] {} : (内蔵マテリアル)", slot, slotText);
+			}
+			AssetRecord* asset = resource->Record(assetID);
+			std::string name = asset ? std::filesystem::path(asset->path_.c_str()).stem().string() : std::to_string(assetID);
+			return std::format("[{}] {} : {}", slot, slotText, name);
+		};
+
+		Actor actor = context_.selection_.Primary();
+		Material* material = actor ? context_.world_.world_->GetComponent<Material>(ActorAccessor::GetEntity(actor)) : nullptr;
+
+		ImGuiWindow* editorViewWindow = ImGui::FindWindowByName("エディタービュー");
+		ImGuiID dockID = (editorViewWindow && editorViewWindow->DockId != 0) ? editorViewWindow->DockId : context_.graphics_.imgui_->DockSpaceID();
+		ImGui::DockBuilderDockWindow("マテリアルビューア", dockID);
+		ImGui::SetNextWindowSize(ImVec2(960, 720), ImGuiCond_FirstUseEver);
+
+		if (ImGui::Begin("マテリアルビューア", &open_))
+		{
+			const Mesh* mesh = actor ? context_.world_.world_->GetComponent<Mesh>(ActorAccessor::GetEntity(actor)) : nullptr;
+			ModelResource* modelResource = context_.graphics_.graphics_->Module().Resources().modelResource_.get();
+			Crister* crister = (mesh && mesh->meshID_ != 0) ? modelResource->Resolve(modelResource->GetHandle(mesh->meshID_)) : nullptr;
+
+			if (!material || !mesh || mesh->meshID_ == 0)
+			{
+				ImGui::TextDisabled("Material コンポーネントとメッシュを持つアクターを選択してください");
+			}
+			else if (!crister || crister->Surfaces().empty())
+			{
+				ImGui::TextDisabled("マテリアルスロットがありません");
+			}
+			else
+			{
+				std::span<const Surface> surfaces = crister->Surfaces();
+				if (selectedSlotIndex_ >= surfaces.size())
+				{
+					selectedSlotIndex_ = 0;
+				}
+
+				material->slotMaterialIDs_.resize(material->slotNames_.size(), 0);
+
+				DynamicArray<Uint32> slotAssetIDs(surfaces.size(), 0);
+				for (Size slot = 0; slot < surfaces.size(); slot++)
+				{
+					if (surfaces[slot].name_.empty())
+					{
+						continue;
+					}
+					for (Size index = 0; index < material->slotNames_.size(); index++)
+					{
+						if (material->slotNames_[index].str() == surfaces[slot].name_)
+						{
+							Uint32 assignedID = material->slotMaterialIDs_[index];
+							slotAssetIDs[slot] = std::ranges::contains(material->materialIDs_, assignedID) ? assignedID : 0;
+							break;
+						}
+					}
+				}
+
+				ImGui::SetNextItemWidth(240.0f);
+				if (ImGui::BeginCombo("メッシュ", slotLabel(surfaces[selectedSlotIndex_].name_, slotAssetIDs[selectedSlotIndex_], selectedSlotIndex_).c_str()))
+				{
+					for (Size slot = 0; slot < surfaces.size(); slot++)
+					{
+						if (ImGui::Selectable(slotLabel(surfaces[slot].name_, slotAssetIDs[slot], slot).c_str(), selectedSlotIndex_ == slot))
+						{
+							selectedSlotIndex_ = slot;
+						}
+					}
+					ImGui::EndCombo();
+				}
+
+				context_.preview_.material_.active_ = true;
+				context_.preview_.material_.meshAssetID_ = mesh->meshID_;
+				context_.preview_.material_.surfaceAssetID_ = slotAssetIDs[selectedSlotIndex_];
+
+				ImGui::Spacing();
+
+				ImVec2 previewSize = ImGui::GetContentRegionAvail();
+				previewSize.y = Max(previewSize.y, 100.0f);
+
+				context_.preview_.material_.camera_.Resize(previewSize.x, previewSize.y);
+
+				D3D12_GPU_DESCRIPTOR_HANDLE previewHandle = context_.graphics_.graphics_->PreviewDisplay(PreviewSlot::Material);
+				if (previewHandle.ptr != 0)
+				{
+					ImGui::Image(ImTextureID(previewHandle.ptr), previewSize);
+				}
+				else
+				{
+					ImGui::Dummy(previewSize);
+				}
+
+				Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
+				Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
+
+				if (ImGui::IsItemHovered())
+				{
+					if (orbitHeld || panHeld)
+					{
+						InputSystem::BeginMouseCapture();
+					}
+					context_.preview_.material_.cameraController_.Update(context_.preview_.material_.camera_, ImGui::GetIO().DeltaTime);
+				}
+
+				if (!orbitHeld && !panHeld)
+				{
+					InputSystem::EndMouseCapture();
+				}
+			}
+		}
+		ImGui::End();
+	}
+
+	void MaterialViewerPanel::Inspect()
+	{
+		Actor actor = context_.selection_.Primary();
+		Material* material = actor ? context_.world_.world_->GetComponent<Material>(ActorAccessor::GetEntity(actor)) : nullptr;
+		const Mesh* mesh = actor ? context_.world_.world_->GetComponent<Mesh>(ActorAccessor::GetEntity(actor)) : nullptr;
+
+		GraphicsModule& graphicsModule = context_.graphics_.graphics_->Module();
+		ResourceCache* cache = context_.world_.resource_;
+		ModelResource* modelResource = graphicsModule.Resources().modelResource_.get();
+		MaterialResource* materialResource = graphicsModule.Resources().materialResource_.get();
+		Crister* crister = (mesh && mesh->meshID_ != 0) ? modelResource->Resolve(modelResource->GetHandle(mesh->meshID_)) : nullptr;
+
+		if (!material || !crister || selectedSlotIndex_ >= crister->Surfaces().size())
+		{
+			ImGui::TextDisabled("マテリアルビューアでメッシュを選択してください");
+			return;
+		}
+
+		const std::string& slotName = crister->Surfaces()[selectedSlotIndex_].name_;
+		Uint32 surfaceAssetID = context_.preview_.material_.surfaceAssetID_;
+
+		AssetRecord* assignedAsset = surfaceAssetID != 0 ? cache->Record(surfaceAssetID) : nullptr;
+		std::string preview = assignedAsset ? std::filesystem::path(assignedAsset->path_.c_str()).stem().string() : std::string("(内蔵マテリアル)");
+		Uint32 newID = surfaceAssetID;
+
+		ImGui::BeginDisabled(slotName.empty());
+		if (ImGui::BeginCombo("マテリアル", preview.c_str()))
+		{
+			if (ImGui::Selectable("(内蔵マテリアル)", surfaceAssetID == 0))
+			{
+				newID = 0;
+			}
+			for (Size paletteIndex = 0; paletteIndex < material->materialIDs_.size(); paletteIndex++)
+			{
+				Uint32 paletteID = material->materialIDs_[paletteIndex];
+				AssetRecord* paletteAsset = paletteID != 0 ? cache->Record(paletteID) : nullptr;
+				if (!paletteAsset)
+				{
+					continue;
+				}
+				ImGui::PushID(static_cast<Int>(paletteIndex));
+				if (ImGui::Selectable(std::filesystem::path(paletteAsset->path_.c_str()).stem().string().c_str(), paletteID == surfaceAssetID))
+				{
+					newID = paletteID;
+				}
+				ImGui::PopID();
+			}
+			ImGui::EndCombo();
+		}
+		ImGui::EndDisabled();
+
+		if (newID != surfaceAssetID)
+		{
+			Size assignmentIndex = material->slotNames_.size();
+			for (Size index = 0; index < material->slotNames_.size(); index++)
+			{
+				if (material->slotNames_[index].str() == slotName)
+				{
+					assignmentIndex = index;
+					break;
+				}
+			}
+
+			if (newID == 0)
+			{
+				if (assignmentIndex < material->slotNames_.size())
+				{
+					material->slotNames_.erase(material->slotNames_.begin() + assignmentIndex);
+					material->slotMaterialIDs_.erase(material->slotMaterialIDs_.begin() + assignmentIndex);
+				}
+			}
+			else
+			{
+				if (assignmentIndex < material->slotNames_.size())
+				{
+					material->slotMaterialIDs_[assignmentIndex] = newID;
+				}
+				else
+				{
+					material->slotNames_.push_back(String(slotName));
+					material->slotMaterialIDs_.push_back(newID);
+				}
+				materialResource->Load(*cache, newID);
+			}
+
+			surfaceAssetID = newID;
+			context_.preview_.material_.surfaceAssetID_ = newID;
+		}
+
+		ImGui::Separator();
+
+		if (surfaceAssetID == 0)
+		{
+			ImGui::TextDisabled("内蔵マテリアルを使用中");
+			return;
+		}
+
+		if (editingAssetID_ != surfaceAssetID)
+		{
+			Handle<BakedSurface> handle = materialResource->GetHandle(surfaceAssetID);
+			if (handle.empty())
+			{
+				handle = materialResource->Load(*cache, surfaceAssetID);
+			}
+			BakedSurface* loaded = materialResource->Resolve(handle);
+			if (!loaded)
+			{
+				ImGui::TextDisabled("マテリアルを読み込めません");
+				return;
+			}
+			editingSurface_ = MakePtr<Surface>(loaded->surface_);
+			editingAssetID_ = surfaceAssetID;
+		}
+
+		Surface& surface = *editingSurface_;
+
+		BakedSurface* loadedMaterial = materialResource->Resolve(materialResource->GetHandle(surfaceAssetID));
+		AssetRecord* materialAsset = cache->Record(surfaceAssetID);
+		AssetContext assetContext{ *cache, LoadThread::Main };
+		MaterialBaker baker;
+
+		if (ImGui::Button("上書き保存"))
+		{
+			if (loadedMaterial && materialAsset)
+			{
+				loadedMaterial->surface_ = surface;
+
+				if (materialResource->Bake(assetContext, surfaceAssetID, materialAsset->fullpath_))
+				{
+					materialResource->Unload(surfaceAssetID);
+					materialResource->Load(*cache, surfaceAssetID);
+					SC_LOG_NOTICE("マテリアルビューア: 上書き保存しました: {}", materialAsset->fullpath_.c_str());
+				}
+				else
+				{
+					SC_LOG_WARNING("マテリアルビューア: 上書き保存に失敗しました: {}", materialAsset->fullpath_.c_str());
+				}
+			}
+			else
+			{
+				SC_LOG_WARNING("マテリアルビューア: 保存先のアセットが見つかりません: {}", surfaceAssetID);
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("複製して保存"))
+		{
+			if (loadedMaterial && materialAsset)
+			{
+				std::filesystem::path sourcePath(materialAsset->fullpath_.c_str());
+				std::filesystem::path newPath = sourcePath;
+				for (Int copyIndex = 2; std::filesystem::exists(newPath); copyIndex++)
+				{
+					newPath = sourcePath.parent_path() / (sourcePath.stem().string() + " (" + std::to_string(copyIndex) + ")" + sourcePath.extension().string());
+				}
+
+				Surface original = loadedMaterial->surface_;
+				loadedMaterial->surface_ = surface;
+				Bool written = materialResource->Bake(assetContext, surfaceAssetID, String(newPath.string()));
+				loadedMaterial->surface_ = original;
+
+				if (written)
+				{
+					cache->Reload();
+					SC_LOG_NOTICE("マテリアルビューア: 複製して保存しました: {}", newPath.string());
+				}
+				else
+				{
+					SC_LOG_WARNING("マテリアルビューア: 複製の保存に失敗しました: {}", newPath.string());
+				}
+			}
+			else
+			{
+				SC_LOG_WARNING("マテリアルビューア: 保存先のアセットが見つかりません: {}", surfaceAssetID);
+			}
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("テクスチャを同梱して保存"))
+		{
+			if (loadedMaterial && materialAsset)
+			{
+				loadedMaterial->surface_ = surface;
+				baker.BakeEmbedded(*crister, mesh->meshID_, *loadedMaterial);
+
+				if (materialResource->Bake(assetContext, surfaceAssetID, materialAsset->fullpath_))
+				{
+					surface = loadedMaterial->surface_;
+					SC_LOG_NOTICE("マテリアルビューア: テクスチャを同梱して保存しました（{} 枚）: {}", loadedMaterial->textures_.size(), materialAsset->fullpath_.c_str());
+					materialResource->Unload(surfaceAssetID);
+					materialResource->Load(*cache, surfaceAssetID);
+				}
+				else
+				{
+					SC_LOG_WARNING("マテリアルビューア: テクスチャ同梱の保存に失敗しました: {}", materialAsset->fullpath_.c_str());
+				}
+			}
+			else
+			{
+				SC_LOG_WARNING("マテリアルビューア: 保存先のアセットが見つかりません: {}", surfaceAssetID);
+			}
+		}
+
+		ImGui::Separator();
+
+		const Char* shadingModels = "PBR\0Unlit\0Phong\0Toon\0Lambert\0Flat\0Fur\0";
+		Int shadingModel = static_cast<Int>(surface.shadingModel_);
+		if (ImGui::Combo("シェーディングモデル", &shadingModel, shadingModels))
+		{
+			surface.shadingModel_ = static_cast<ShadingModel>(shadingModel);
+		}
+
+		if (surface.shadingModel_ == ShadingModel::Fur)
+		{
+			ImGui::SliderFloat("毛の長さ", &surface.furLength_, 0.0f, 0.2f, "%.3f m");
+			ImGui::SliderFloat("毛の密度", &surface.furDensity_, 0.0f, 4.0f);
+			ImGui::SliderInt("シェル数", &surface.furShellCount_, 1, 32);
+		}
+
+		const Char* materialMappings = "伸びる\0柄が増える\0Triplanar（オブジェクト）\0Triplanar（ワールド）\0";
+		Int materialMapping = static_cast<Int>(surface.materialMapping_);
+		if (ImGui::Combo("マッピング", &materialMapping, materialMappings))
+		{
+			surface.materialMapping_ = static_cast<MaterialMapping>(materialMapping);
+		}
+
+		if (surface.materialMapping_ != MaterialMapping::Stretch)
+		{
+			ImGui::SliderFloat("タイリング", &surface.tiling_, 0.01f, 16.0f, "%.2f");
+		}
+
+		if (surface.materialMapping_ == MaterialMapping::TriplanarObject || surface.materialMapping_ == MaterialMapping::TriplanarWorld)
+		{
+			ImGui::SliderFloat("ブレンドの鋭さ", &surface.triplanarSharpness_, 1.0f, 16.0f);
+		}
+
+		Bool doubleSided = surface.doubleSided_ != 0;
+		if (ImGui::Checkbox("両面描画", &doubleSided))
+		{
+			surface.doubleSided_ = doubleSided ? 1 : 0;
+		}
+
+		const Char* alphaModes = "OPAQUE\0MASK\0BLEND\0";
+		ImGui::Combo("アルファモード", &surface.alphaMode_, alphaModes);
+		if (surface.alphaMode_ == 1)
+		{
+			ImGui::SliderFloat("アルファカットオフ", &surface.alphaCutoff_, 0.0f, 1.0f);
+		}
+
+		ImGui::ColorEdit4("ベースカラー", &surface.baseColor_.r);
+		ImGui::SliderFloat("メタリック", &surface.metallic_, 0.0f, 1.0f);
+		ImGui::SliderFloat("ラフネス", &surface.roughness_, 0.0f, 1.0f);
+		ImGui::ColorEdit3("エミッシブ", surface.emissiveFactor_);
+
+		auto textureSlot = [cache](const Char* label, Uint32& assetID, Uint32 embeddedIndex)
+			{
+				AssetRecord* asset = assetID != 0 ? cache->Record(assetID) : nullptr;
+				std::string text = asset ? std::filesystem::path(asset->path_.c_str()).stem().string() : (embeddedIndex != SC_INVALID ? std::format("内蔵 #{}", embeddedIndex) : std::string("なし"));
+
+				ImGui::PushID(label);
+				ImGui::Button(text.c_str(), ImVec2(200.0f, 0.0f));
+				if (ImGui::BeginDragDropTarget())
+				{
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("ASSET_TEXTURE"))
+					{
+						assetID = static_cast<Uint32>(*static_cast<const Int*>(payload->Data));
+					}
+					ImGui::EndDragDropTarget();
+				}
+				ImGui::SameLine();
+				ImGui::BeginDisabled(assetID == 0);
+				if (ImGui::Button("クリア"))
+				{
+					assetID = 0;
+				}
+				ImGui::EndDisabled();
+				ImGui::SameLine();
+				ImGui::TextUnformatted(label);
+				ImGui::PopID();
+			};
+
+		ImGui::SeparatorText("テクスチャ");
+		textureSlot("ベースカラー", surface.baseColorTextureAssetID_, surface.baseColorTextureIndex_);
+		textureSlot("ノーマル", surface.normalTextureAssetID_, surface.normalTextureIndex_);
+		textureSlot("メタリック/ラフネス", surface.metallicRoughnessTextureAssetID_, surface.metallicRoughnessTextureIndex_);
+		textureSlot("オクルージョン", surface.occlusionTextureAssetID_, surface.occlusionTextureIndex_);
+		textureSlot("エミッシブ", surface.emissiveTextureAssetID_, surface.emissiveTextureIndex_);
+
+		if (ImGui::CollapsingHeader("拡張マテリアル", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			KHR& khr = surface.khr_;
+
+			if (ImGui::TreeNodeEx("発光", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::DragFloat("強さ", &khr.emissiveStrength_.emissiveStrength_, 0.01f, 0.0f, 100.0f);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("屈折率", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::DragFloat("屈折率", &khr.ior_.ior_, 0.01f, 1.0f, 3.0f);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("鏡面反射", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::SliderFloat("強さ", &khr.specular_.specularFactor_, 0.0f, 1.0f);
+				ImGui::ColorEdit3("色", khr.specular_.specularColorFactor_);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("クリアコート", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::SliderFloat("強さ", &khr.clearCoat_.clearCoatFactor_, 0.0f, 1.0f);
+				ImGui::SliderFloat("ラフネス", &khr.clearCoat_.clearCoatRoughnessFactor_, 0.0f, 1.0f);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("透過", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::SliderFloat("透過率", &khr.transmission_.transmissionFactor_, 0.0f, 1.0f);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("体積", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::DragFloat("厚み", &khr.volume_.thicknessFactor_, 0.001f, 0.0f, 10.0f);
+				Bool noAbsorption = khr.volume_.attenuationDistance_ >= FLT_MAX;
+				if (ImGui::Checkbox("吸収しない", &noAbsorption))
+				{
+					khr.volume_.attenuationDistance_ = noAbsorption ? FLT_MAX : 1.0f;
+				}
+				if (!noAbsorption)
+				{
+					ImGui::DragFloat("減衰距離", &khr.volume_.attenuationDistance_, 0.01f, 0.001f, 1000.0f, "%.3f m");
+				}
+				ImGui::ColorEdit3("減衰色", khr.volume_.attenuationColor_);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("布の光沢", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::ColorEdit3("色", khr.sheen_.sheenColorFactor_);
+				ImGui::SliderFloat("ラフネス", &khr.sheen_.sheenRoughnessFactor_, 0.0f, 1.0f);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("虹色の薄膜", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::SliderFloat("強さ", &khr.iridescence_.iridescenceFactor_, 0.0f, 1.0f);
+				ImGui::DragFloat("屈折率", &khr.iridescence_.iridescenceIor_, 0.01f, 1.0f, 3.0f);
+				ImGui::DragFloat("最小の厚み", &khr.iridescence_.iridescenceThicknessMinimum_, 1.0f, 0.0f, 2000.0f, "%.0f nm");
+				ImGui::DragFloat("最大の厚み", &khr.iridescence_.iridescenceThicknessMaximum_, 1.0f, 0.0f, 2000.0f, "%.0f nm");
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("異方性", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				ImGui::SliderFloat("強さ", &khr.anisotropy_.anisotropyStrength_, 0.0f, 1.0f);
+				ImGui::SliderAngle("向き", &khr.anisotropy_.anisotropyRotation_);
+				ImGui::TreePop();
+			}
+
+			if (ImGui::TreeNodeEx("ライティング", ImGuiTreeNodeFlags_DefaultOpen))
+			{
+				Bool unlit = khr.unlit_.unlit_ != 0;
+				if (ImGui::Checkbox("ライティングしない", &unlit))
+				{
+					khr.unlit_.unlit_ = unlit ? 1 : 0;
+				}
+				ImGui::TreePop();
+			}
+		}
+	}
+}

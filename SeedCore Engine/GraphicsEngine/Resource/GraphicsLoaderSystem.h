@@ -20,63 +20,28 @@ namespace SeedCore
 
 	struct SEEDCORE_API GraphicsLoaderSystem
 	{
-		/// [EN] Loads texture assets from disk and uploads them to the GPU.
-		/// [JP] ディスクからテクスチャアセットを読み込み、GPU へアップロードする。
 		ResourcePtr<TextureLoader> textureLoader_;
 
-		/// [EN] Loads 3D model assets (geometry/materials).
-		/// [JP] 3Dモデルアセット（ジオメトリ/マテリアル）を読み込む。
 		ResourcePtr<ModelLoader> modelLoader_;
 
-		/// [EN] Loads and splits animation clip data.
-		/// [JP] アニメーションクリップデータを読み込み、分割する。
 		ResourcePtr<AnimationLoader> animationLoader_;
 
-		/// [EN] Loads and bakes mesh collision geometry.
-		/// [JP] 衝突ジオメトリを読み込み、焼き込む。
 		ResourcePtr<MeshCollisionLoader> meshCollisionLoader_;
 
-		/// [EN] Loads and saves standalone ".material" assets.
-		/// [JP] 単体 ".material" アセットの読み書きを行う。
 		ResourcePtr<MaterialLoader> materialLoader_;
 
-		/// [EN] Loads and saves standalone ".skeleton" assets (rig: sockets + root bone).
-		/// [JP] 単体 ".skeleton" アセット（リグ: ソケット + ルートボーン）の読み書きを行う。
 		ResourcePtr<SkeletonLoader> skeletonLoader_;
 
-		/// [EN] Loads font assets (FreeType/HarfBuzz/MTSDF atlas).
-		/// [JP] フォントアセット（FreeType/HarfBuzz/MTSDF アトラス）を読み込む。
 		ResourcePtr<FontLoader> fontLoader_;
 
-		/// [EN] Loads movie assets (Media Foundation decoder + frame texture).
-		/// [JP] ムービーアセット（Media Foundation デコーダ + フレームテクスチャ）を読み込む。
 		ResourcePtr<MovieLoader> movieLoader_;
 
-		/// [EN] Loads skybox/environment map assets.
-		/// [JP] スカイボックス/環境マップアセットを読み込む。
 		ResourcePtr<SkymapLoader> skymapLoader_;
 
-		/// [EN] Loads Engine-made effect (.zephyr) assets.
-		/// [JP] エンジン製のエフェクト（.zephyr）アセットを読み込む。
 		ResourcePtr<EffectLoader> effectLoader_;
 
-		/// [EN] Loads Effekseer effect (.efkefc) assets.
-		/// [JP] Effekseerエフェクト(.efkefc)アセットを読み込む。
 		ResourcePtr<EffekseerLoader> effekseerLoader_;
 
-		/**
-		* [EN]
-		* Constructs the loader system, creating each format-specific loader
-		* and handing the GPU-backed ones the device context, bindless heap
-		* and GPU processor they create their objects with.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ローダーシステムを構築し、各フォーマット固有のローダーを生成する。
-		* GPU を使うローダーには、オブジェクトを作るためのデバイスの
-		* コンテキスト、バインドレスヒープ、GPU の加工器を渡す。
-		*/
 		GraphicsLoaderSystem(D3D12Context& context, BindlessHeap& heap, GraphicsProcessor& processor);
 	};
 }

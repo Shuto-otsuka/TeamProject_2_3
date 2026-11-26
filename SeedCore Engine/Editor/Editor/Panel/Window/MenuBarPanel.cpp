@@ -1,0 +1,467 @@
+#include <Editor/Editor/Panel/Window/MenuBarPanel.h>
+#include <Editor/Editor/Context/EditorContext.h>
+#include <Editor/Editor/Build/AtomCraft.h>
+#include <Editor/Editor/Panel/Window/AnimatorControllerPanel.h>
+#include <Editor/Editor/Panel/Window/AvatarPanel.h>
+#include <Editor/Editor/Panel/Window/BenchmarkPanel.h>
+#include <Editor/Editor/Panel/Window/BootScreenPanel.h>
+#include <Editor/Editor/Panel/Window/ConfigPanel.h>
+#include <Editor/Editor/Panel/Window/DiagnosticsPanel.h>
+#include <Editor/Editor/Panel/Window/LayerSettingsPanel.h>
+#include <Editor/Editor/Panel/Window/MaterialViewerPanel.h>
+#include <Editor/Editor/Panel/Window/ModelTransformPanel.h>
+#include <Editor/Editor/Panel/Window/ShortCutKeyPanel.h>
+#include <Editor/Editor/Panel/Window/SkeletonControllerPanel.h>
+#include <Editor/Editor/Panel/Window/SpecMemoPanel.h>
+#include <Editor/Editor/Panel/Window/TimelinePanel.h>
+#include <Editor/Editor/Panel/Window/TodoListPanel.h>
+#include <Editor/Editor/Panel/Window/VersionPanel.h>
+#include <FoundationEngine/File/FileDialog.h>
+#include <FoundationEngine/Resource/Config/EditorConfig.h>
+#include <GraphicsEngine/Model/Animation/Animator.h>
+#include <FoundationEngine/Log/Notice.h>
+#include <FoundationEngine/Log/Warning.h>
+#include <FoundationEngine/Resource/Scene/SceneSystem.h>
+#include <FoundationEngine/Resource/ResourceCache.h>
+#include <FoundationEngine/World/World.h>
+#include <FoundationEngine/Time/GameTimer.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/File/FileLocator.h>
+
+namespace SeedCore
+{
+	MenuBarPanel::MenuBarPanel(EditorContext& context, ImGuiTexture& imguiTexture) : context_(context), imguiTexture_(imguiTexture), graphicsMenuPanel_(context, imguiTexture)
+	{
+		/// No Code
+	}
+
+	void MenuBarPanel::Draw()
+	{
+		const Bool isPlaying = context_.world_.timer_->Playing();
+
+		if (context_.scene_.request_ != 0)
+		{
+			Uint32 assetID = context_.scene_.request_;
+			context_.scene_.request_ = 0;
+			if (!isPlaying)
+			{
+				RequestSceneSwitch(PendingSceneOp::OpenAsset, {}, assetID);
+			}
+		}
+
+		if (context_.application_.exitRequested_)
+		{
+			context_.application_.exitRequested_ = false;
+			RequestSceneSwitch(PendingSceneOp::Exit, {}, 0);
+		}
+
+		ImGuiIO& io = ImGui::GetIO();
+		if (!isPlaying && io.KeyCtrl && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_N, false))
+		{
+			RequestSceneSwitch(PendingSceneOp::New, {}, 0);
+		}
+		if (!isPlaying && io.KeyCtrl && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_O, false))
+		{
+			OpenScene();
+		}
+		if (!isPlaying && io.KeyCtrl && io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false))
+		{
+			SaveScene();
+		}
+		if (!isPlaying && io.KeyCtrl && !io.KeyShift && ImGui::IsKeyPressed(ImGuiKey_S, false))
+		{
+			OverwriteSaveScene();
+		}
+		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F1, false))
+		{
+			context_.panel_.tools_->Panel<ShortCutKeyPanel>().Open();
+		}
+		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F2, false))
+		{
+			context_.panel_.tools_->Panel<SpecMemoPanel>().Open();
+		}
+		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F3, false))
+		{
+			context_.panel_.docks_->Panel<DiagnosticsPanel>().ShowConsoleTab();
+		}
+		if (io.KeyAlt && ImGui::IsKeyPressed(ImGuiKey_F4, false))
+		{
+			RequestSceneSwitch(PendingSceneOp::Exit, {}, 0);
+		}
+		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F4, false))
+		{
+			context_.panel_.tools_->Panel<BenchmarkPanel>().Open();
+		}
+		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F8, false))
+		{
+			context_.panel_.tools_->Panel<TodoListPanel>().Open();
+		}
+		if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F9, false))
+		{
+			context_.panel_.tools_->Panel<VersionPanel>().Open();
+		}
+
+		if (ImGui::BeginMainMenuBar())
+		{
+			if (ImGui::BeginMenu("ファイル"))
+			{
+				ImGui::BeginDisabled(isPlaying);
+				if (ImGui::MenuItem("Runtimeビルドでexeを出力"))
+				{
+					BuildRuntime();
+				}
+				ImGui::Separator();
+				if (ImGui::MenuItem("新規", "Ctrl+N"))
+				{
+					RequestSceneSwitch(PendingSceneOp::New, {}, 0);
+				}
+				if (ImGui::MenuItem("開く", "Ctrl+O"))
+				{
+					OpenScene();
+				}
+				if (ImGui::MenuItem("保存", "Ctrl+Shift+S"))
+				{
+					SaveScene();
+				}
+				if (ImGui::MenuItem("上書き保存", "Ctrl+S"))
+				{
+					OverwriteSaveScene();
+				}
+				ImGui::EndDisabled();
+				ImGui::Separator();
+				if (ImGui::MenuItem("終了", "Alt+F4"))
+				{
+					RequestSceneSwitch(PendingSceneOp::Exit, {}, 0);
+				}
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("編集"))
+			{
+				if (ImGui::MenuItem("元に戻す", "Ctrl+Z", false, !isPlaying))
+				{
+					context_.scene_.history_.Undo();
+				}
+				if (ImGui::MenuItem("やり直す", "Ctrl+Y", false, !isPlaying))
+				{
+					context_.scene_.history_.Redo();
+				}
+				ImGui::Separator();
+				if (ImGui::MenuItem("レイヤー編集"))
+				{
+					context_.panel_.tools_->Panel<LayerSettingsPanel>().Open();
+				}
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("表示"))
+			{
+				if (ImGui::MenuItem("アニメーターコントローラー"))
+				{
+					Animator* animator = context_.selection_.Primary() ? const_cast<Animator*>(context_.selection_.Primary().GetComponent<Animator>()) : nullptr;
+					context_.panel_.tools_->Panel<AnimatorControllerPanel>().Open(animator);
+				}
+				if (ImGui::MenuItem("タイムライン"))
+				{
+					context_.panel_.tools_->Panel<TimelinePanel>().Open();
+				}
+				if (ImGui::MenuItem("スケルトンコントローラー"))
+				{
+					context_.panel_.tools_->Panel<SkeletonControllerPanel>().Open();
+				}
+				if (ImGui::MenuItem("マテリアルビューア"))
+				{
+					context_.panel_.tools_->Panel<MaterialViewerPanel>().Open();
+				}
+				if (ImGui::MenuItem("モデル変換"))
+				{
+					context_.panel_.tools_->Panel<ModelTransformPanel>().Open();
+				}
+				ImGui::EndMenu();
+			}
+
+			graphicsMenuPanel_.Draw();
+
+			if (ImGui::BeginMenu("ツール"))
+			{
+				if (ImGui::MenuItem("アバター生成"))
+				{
+					context_.panel_.tools_->Panel<AvatarPanel>().Open();
+				}
+				if (ImGui::MenuItem("起動ローディング画面"))
+				{
+					context_.panel_.tools_->Panel<BootScreenPanel>().Open();
+				}
+				if (ImGui::BeginMenu("CRI ADX2"))
+				{
+					if (ImGui::MenuItem("AtomCraft を開く"))
+					{
+						std::filesystem::path projectPath;
+						if (FileDialog::OpenFile(projectPath, std::filesystem::current_path(), L"Atom Craft Project (*.atmcproject)", L"*.atmcproject"))
+						{
+							AtomCraft::Open(context_.config_.editor_->atomCraftPath_, String(projectPath.generic_string()));
+						}
+					}
+					ImGui::EndMenu();
+				}
+				ImGui::EndMenu();
+			}
+
+			if (ImGui::BeginMenu("ヘルプ"))
+			{
+				if (ImGui::MenuItem("ショートカットキー一覧", "Ctrl+F1"))
+				{
+					context_.panel_.tools_->Panel<ShortCutKeyPanel>().Open();
+				}
+				if (ImGui::MenuItem("仕様メモ", "Ctrl+F2"))
+				{
+					context_.panel_.tools_->Panel<SpecMemoPanel>().Open();
+				}
+				ImGui::Separator();
+				if (ImGui::MenuItem("コンソール", "Ctrl+F3"))
+				{
+					context_.panel_.docks_->Panel<DiagnosticsPanel>().ShowConsoleTab();
+				}
+				if (ImGui::MenuItem("パフォーマンスプロファイラー", "Ctrl+F4"))
+				{
+					context_.panel_.tools_->Panel<BenchmarkPanel>().Open();
+				}
+				ImGui::Separator();
+				if (ImGui::MenuItem("ToDoリスト", "Ctrl+F8"))
+				{
+					context_.panel_.tools_->Panel<TodoListPanel>().Open();
+				}
+				if (ImGui::MenuItem("バージョン情報", "Ctrl+F9"))
+				{
+					context_.panel_.tools_->Panel<VersionPanel>().Open();
+				}
+				ImGui::Separator();
+				if (ImGui::MenuItem("エンジン/ゲーム構成設定"))
+				{
+					context_.panel_.tools_->Panel<ConfigPanel>().Open();
+				}
+				ImGui::EndMenu();
+			}
+
+			ImGui::EndMainMenuBar();
+		}
+
+		if (pendingSceneOp_ != PendingSceneOp::None && !ImGui::IsPopupOpen("未保存の変更"))
+		{
+			ImGui::OpenPopup("未保存の変更");
+		}
+
+		if (ImGui::BeginPopupModal("未保存の変更", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+		{
+			ImGui::Text("現在のシーンを保存しますか？");
+			ImGui::Separator();
+
+			if (ImGui::Button("保存"))
+			{
+				OverwriteSaveScene();
+				ExecutePendingSceneOp();
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("保存しない"))
+			{
+				ExecutePendingSceneOp();
+				ImGui::CloseCurrentPopup();
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("キャンセル"))
+			{
+				pendingSceneOp_ = PendingSceneOp::None;
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+
+		if (runtimeBuilder_.IsBuilding() && !ImGui::IsPopupOpen("Runtimeビルド中"))
+		{
+			ImGui::OpenPopup("Runtimeビルド中");
+		}
+
+		if (ImGui::BeginPopupModal("Runtimeビルド中", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove))
+		{
+			if (runtimeBuilder_.GetStage() == RuntimeBuildStage::Build)
+			{
+				ImGui::Text("ビルド中 (1/2)");
+			}
+			else
+			{
+				ImGui::Text("パッケージ化中 (2/2)");
+			}
+			ImGui::ProgressBar(runtimeBuilder_.GetProgress(), ImVec2(300, 0));
+
+			std::string statusText = runtimeBuilder_.GetStatusText();
+			ImGui::TextUnformatted(statusText.c_str());
+
+			std::string detailText = runtimeBuilder_.GetDetailText();
+			ImVec2 detailPosition = ImGui::GetCursorScreenPos();
+			Float detailHeight = ImGui::GetTextLineHeight();
+			ImGui::Dummy(ImVec2(300, detailHeight));
+			ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+			ImGui::RenderTextEllipsis(ImGui::GetWindowDrawList(), detailPosition, ImVec2(detailPosition.x + 300, detailPosition.y + detailHeight), detailPosition.x + 300, detailText.c_str(), detailText.c_str() + detailText.size(), nullptr);
+			ImGui::PopStyleColor();
+
+			if (!runtimeBuilder_.IsBuilding())
+			{
+				ImGui::CloseCurrentPopup();
+			}
+
+			ImGui::EndPopup();
+		}
+
+		Bool buildSuccess = false;
+		std::string buildLog;
+		if (runtimeBuilder_.ConsumeResult(buildSuccess, buildLog))
+		{
+			if (buildSuccess)
+			{
+				SC_LOG_NOTICE("Runtimeビルドが完了しました");
+			}
+			else
+			{
+				SC_LOG_WARNING("Runtimeビルドに失敗しました: {}", buildLog);
+			}
+		}
+	}
+
+	void MenuBarPanel::BuildRuntime()
+	{
+		if (runtimeBuilder_.IsBuilding())
+		{
+			return;
+		}
+
+		SC_LOG_NOTICE("Runtimeビルドを開始します");
+		runtimeBuilder_.BuildAsync(FileLocator::EngineRoot());
+	}
+
+	void MenuBarPanel::RequestSceneSwitch(PendingSceneOp op, const std::filesystem::path& path, Uint32 assetID)
+	{
+		pendingSceneOp_ = op;
+		pendingScenePath_ = path;
+		pendingSceneAssetID_ = assetID;
+
+		if ((WorldAccessor::Actors(*context_.world_.world_).Root() == EntityID{}))
+		{
+			ExecutePendingSceneOp();
+		}
+	}
+
+	void MenuBarPanel::ExecutePendingSceneOp()
+	{
+		PendingSceneOp op = pendingSceneOp_;
+		std::filesystem::path path = pendingScenePath_;
+		Uint32 assetID = pendingSceneAssetID_;
+
+		pendingSceneOp_ = PendingSceneOp::None;
+		pendingScenePath_.clear();
+		pendingSceneAssetID_ = 0;
+
+		switch (op)
+		{
+		case PendingSceneOp::New:
+			NewScene();
+			break;
+		case PendingSceneOp::OpenPath:
+		{
+			if (!context_.world_.sceneSystem_->Load(path))
+			{
+				SC_LOG_WARNING("シーンの読み込みに失敗しました: {}", path.string());
+				break;
+			}
+			context_.scene_.path_ = FilePath(path, FileLocator::EngineRoot());
+			context_.selection_.Clear();
+			context_.scene_.history_.Clear();
+			SC_LOG_NOTICE("シーンを読み込みました: {}", path.string());
+			break;
+		}
+		case PendingSceneOp::OpenAsset:
+		{
+			if (!context_.world_.sceneSystem_->Load(assetID))
+			{
+				SC_LOG_WARNING("シーンの読み込みに失敗しました(assetID: {})", assetID);
+				break;
+			}
+			context_.scene_.path_ = FilePath(context_.world_.resource_->Record(assetID)->fullpath_.c_str(), FileLocator::EngineRoot());
+			context_.selection_.Clear();
+			context_.scene_.history_.Clear();
+			SC_LOG_NOTICE("シーンを読み込みました: {}", context_.scene_.path_.FullPath().string());
+			break;
+		}
+		case PendingSceneOp::Exit:
+			PostQuitMessage(0);
+			break;
+		default:
+			break;
+		}
+	}
+
+	void MenuBarPanel::NewScene()
+	{
+		WorldAccessor::Clear(*context_.world_.world_);
+
+		context_.scene_.path_ = FilePath();
+		context_.selection_.Clear();
+		context_.scene_.history_.Clear();
+
+		SC_LOG_NOTICE("新規シーンを作成しました");
+	}
+
+	void MenuBarPanel::OpenScene()
+	{
+		std::filesystem::path sceneDir = FileLocator::EngineRoot() / "UserProject" / "Assets" / "Scene";
+		std::filesystem::create_directories(sceneDir);
+
+		std::filesystem::path selectedPath;
+		if (!FileDialog::OpenFile(selectedPath, sceneDir, L"Scene Files (*.scene)", L"*.scene"))
+		{
+			return;
+		}
+
+		RequestSceneSwitch(PendingSceneOp::OpenPath, selectedPath, 0);
+	}
+
+	void MenuBarPanel::SaveScene()
+	{
+		std::filesystem::path sceneDir = FileLocator::EngineRoot() / "UserProject" / "Assets" / "Scene";
+		std::filesystem::create_directories(sceneDir);
+
+		std::filesystem::path savePath;
+		if (!FileDialog::SaveFile(savePath, sceneDir, L"Scene Files (*.scene)", L"*.scene", L"scene"))
+		{
+			return;
+		}
+
+		if (!context_.world_.sceneSystem_->Save(savePath))
+		{
+			SC_LOG_WARNING("シーンの保存に失敗しました: {}", savePath.string());
+			return;
+		}
+
+		context_.scene_.path_ = FilePath(savePath, FileLocator::EngineRoot());
+
+		SC_LOG_NOTICE("シーンを保存しました: {}", savePath.string());
+	}
+
+	void MenuBarPanel::OverwriteSaveScene()
+	{
+		if (context_.scene_.path_.Empty())
+		{
+			SaveScene();
+			return;
+		}
+
+		if (!context_.world_.sceneSystem_->Save(context_.scene_.path_.FullPath()))
+		{
+			SC_LOG_WARNING("シーンの上書き保存に失敗しました: {}", context_.scene_.path_.FullPath().string());
+			return;
+		}
+
+		SC_LOG_NOTICE("シーンを上書き保存しました: {}", context_.scene_.path_.FullPath().string());
+	}
+}

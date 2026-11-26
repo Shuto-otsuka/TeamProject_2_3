@@ -3,7 +3,6 @@
 
 #include <GraphicsEngine/Shader/Scene.hlsli>
 
-/// [EN] Shape numbers, shared with the C++ ShapeKind.
 #define PRIMITIVE_SHAPE_BOX 0
 #define PRIMITIVE_SHAPE_SPHERE 1
 #define PRIMITIVE_SHAPE_CAPSULE 2
@@ -20,4 +19,4 @@
 
 #define PRIMITIVE_SHAPE_ARROW 12
 
-#endif // __PRIMITIVE_HLSL__
+#endif
