@@ -92,7 +92,37 @@ def seed(context):
 
     print(f"エンジンから参照されていないシェーダ {unreferenced_count} 件は事前コンパイルしません")
     context.store["shader"] = (dxc_path, pixel_entries, os.path.normcase(os.path.normpath(generated_dir)))
+
+    module_dir = os.path.join(project_root, "GraphicsEngine", "Effect", "Zephyr", "Module")
+    if os.path.isdir(module_dir):
+        paths.append(module_dir)
     return paths
+
+
+def collect_module(path, context):
+    files = []
+    annotations = []
+    for file in sorted(os.listdir(path), key=str.lower):
+        if not file.lower().endswith(".hlsli"):
+            continue
+        with open(os.path.join(path, file), 'r', encoding='utf-8', errors='ignore') as f:
+            lines = [line.rstrip('\r\n') for line in f if "// @" in line]
+        files.append(file.encode("utf-8"))
+        annotations.append("\n".join(lines).encode("utf-8"))
+
+    def strings(values):
+        payload = struct.pack('<I', len(values))
+        for value in values:
+            payload += struct.pack('<I', len(value)) + value
+        return payload
+
+    destination = os.path.join("CompiledShaderObject", "Application", "Zephyr", "Module.dx.cso")
+    staged_path = os.path.join(context.staging_dir, "Shader", "Module.dx.cso")
+    os.makedirs(os.path.dirname(staged_path), exist_ok=True)
+    with open(staged_path, 'wb') as f:
+        f.write(context.encrypt(context.record("files", strings(files)) + context.record("annotations", strings(annotations))))
+
+    return [(destination, staged_path)], set()
 
 
 def collect(path, context):
@@ -106,6 +136,9 @@ def collect(path, context):
     実行時の機能レベル分岐(MS/VS、RT の有無)に関係なく全シェーダを含めるため、
     どの GPU でもソース無しで動く。失敗したら None を返す。
     """
+    if os.path.isdir(path):
+        return collect_module(path, context)
+
     project_root = context.project_root
     dxc_path, pixel_entries, generated_dir = context.store["shader"]
     file = os.path.basename(path)
