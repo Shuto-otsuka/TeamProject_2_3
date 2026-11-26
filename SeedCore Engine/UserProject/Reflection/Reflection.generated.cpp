@@ -650,6 +650,9 @@ namespace SeedCore
 					TitleChapterChangeSystem& obj = *static_cast<TitleChapterChangeSystem*>(ptr);
 					outInfo.push_back({ String("最大チャプター数"), offsetof(TitleChapterChangeSystem, maxChapterNum), AttributeType::Int });
 					outInfo.push_back({ String("チャプタースクロール速度"), offsetof(TitleChapterChangeSystem, chapterScrollSpeed), AttributeType::Float });
+					outInfo.push_back({ String("左右ボタン最大サイズ"), offsetof(TitleChapterChangeSystem, maxButtonSize), AttributeType::Float });
+					outInfo.push_back({ String("左右ボタン最小サイズ"), offsetof(TitleChapterChangeSystem, minButtonSize), AttributeType::Float });
+					outInfo.push_back({ String("左右ボタンサイズ変更速度"), offsetof(TitleChapterChangeSystem, sizeChangeSpeed), AttributeType::Float });
 				});
 			}
 		};

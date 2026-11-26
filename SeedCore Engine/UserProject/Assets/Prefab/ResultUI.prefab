@@ -4,7 +4,12 @@
 		{
 			"active": false,
 			"collaborationId": "",
-			"components": [],
+			"components": [
+				{
+					"component": "Selected",
+					"fields": []
+				}
+			],
 			"layer": "Default",
 			"name": "ResultUI",
 			"nestedPrefabAssetID": 0,
@@ -1870,7 +1875,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 100.0,
+							"float": 70.0,
 							"int": 0,
 							"is_array": false,
 							"name": "文字サイズ",
@@ -1970,7 +1975,7 @@
 							"string": "",
 							"type": 4,
 							"vector2": {
-								"x": 35.0,
+								"x": 25.0,
 								"y": 0.0
 							},
 							"vector3": {
@@ -2368,7 +2373,7 @@
 			"persistentId": 22602,
 			"position": {
 				"x": -404.09783935546875,
-				"y": -16.7442626953125,
+				"y": 0.0,
 				"z": 0.0
 			},
 			"rotation": {
@@ -2431,7 +2436,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 100.0,
+							"float": 70.0,
 							"int": 0,
 							"is_array": false,
 							"name": "文字サイズ",
@@ -2531,7 +2536,7 @@
 							"string": "",
 							"type": 4,
 							"vector2": {
-								"x": 35.0,
+								"x": 25.0,
 								"y": 0.0
 							},
 							"vector3": {
@@ -2929,7 +2934,7 @@
 			"persistentId": 22603,
 			"position": {
 				"x": -75.37646484375,
-				"y": -16.7442626953125,
+				"y": 0.0,
 				"z": 0.0
 			},
 			"rotation": {
@@ -2992,7 +2997,7 @@
 								"g": 1.0,
 								"r": 1.0
 							},
-							"float": 100.0,
+							"float": 70.0,
 							"int": 0,
 							"is_array": false,
 							"name": "文字サイズ",
@@ -3092,7 +3097,7 @@
 							"string": "",
 							"type": 4,
 							"vector2": {
-								"x": 35.0,
+								"x": 25.0,
 								"y": 0.0
 							},
 							"vector3": {
@@ -3490,7 +3495,7 @@
 			"persistentId": 22604,
 			"position": {
 				"x": 330.82037353515625,
-				"y": -16.7442626953125,
+				"y": 0.0,
 				"z": 0.0
 			},
 			"rotation": {

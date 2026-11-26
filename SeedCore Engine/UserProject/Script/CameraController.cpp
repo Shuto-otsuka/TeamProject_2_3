@@ -133,7 +133,7 @@ void CameraController::ChangeCursorMode()
     else
     {
         //カーソル中央固定、隠す
-        SeedCore::Input::LockCursor(SeedCore::Vector2(960,540));
+        SeedCore::Input::LockCursor(SeedCore::Input::MousePoint());
         if (crossHairActive)crossHairActive->active_ = false;
         isCursorLock = true;
     }
