@@ -320,6 +320,45 @@ namespace SeedCore
 		{
 			if (buildSuccess)
 			{
+				std::string warning;
+				Size lineBegin = 0;
+				while (lineBegin <= buildLog.size())
+				{
+					Size lineEnd = buildLog.find('\n', lineBegin);
+					if (lineEnd == std::string::npos)
+					{
+						lineEnd = buildLog.size();
+					}
+					std::string_view line(buildLog.data() + lineBegin, lineEnd - lineBegin);
+					lineBegin = lineEnd + 1;
+					if (!line.empty() && line.back() == '\r')
+					{
+						line.remove_suffix(1);
+					}
+
+					if (!warning.empty() && line.starts_with("  "))
+					{
+						warning += "\n";
+						warning += line;
+						continue;
+					}
+
+					if (!warning.empty())
+					{
+						SC_LOG_WARNING("{}", warning);
+						warning.clear();
+					}
+
+					if (line.starts_with("警告:") || line.starts_with("[ERROR]"))
+					{
+						warning = line;
+					}
+				}
+				if (!warning.empty())
+				{
+					SC_LOG_WARNING("{}", warning);
+				}
+
 				SC_LOG_NOTICE("Runtimeビルドが完了しました");
 			}
 			else
