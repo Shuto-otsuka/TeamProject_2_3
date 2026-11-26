@@ -25,6 +25,7 @@ void PlayerController::OnStart()
     bulletNaviStart = world.GetActor("BulletStart");
     announceActor = world.GetActor("Announce");
     crossHair = world.GetActor("CrossHair");
+    chargeEffectActor = world.GetActor("ChargeEffect");
 
     position = GetActor().GetComponent<SeedCore::Position>();
     rotation = GetActor().GetComponent<SeedCore::Rotation>();
@@ -99,6 +100,17 @@ void PlayerController::OnTriggerEnter(SeedCore::Actor other)
         if (!checkPointAreaController->IsOn())
         {
             if (checkPointAudio)checkPointAudio->Play();
+
+            //エフェクト生成
+            SeedCore::Actor checkPointEffect = SeedCore::Prefab::Spawn("CheckPointEffect.prefab");
+            if (checkPointEffect)
+            {
+                SeedCore::Position* checkPointEffectPosition = checkPointEffect.GetComponent<SeedCore::Position>();
+                SeedCore::Vector3 checkPointPosition = hitActor.WorldMatrix().Translation();
+                checkPointEffectPosition->x_ = checkPointPosition.x;
+                checkPointEffectPosition->y_ = checkPointPosition.y;
+                checkPointEffectPosition->z_ = checkPointPosition.z;
+            }
         }
 
         //if (checkPointAreaController->GetStep() > beforeCheckPointStep)
@@ -600,6 +612,13 @@ void PlayerController::UpdateInputShot(float elapsedTime)
         hasGun = true;
         //チャージ音再生
         if(chargeAudio)chargeAudio->Play();
+
+        if (chargeEffectActor)
+        {
+            //エフェクト再生
+            SeedCore::Effect* chargeEffect = chargeEffectActor.GetComponent<SeedCore::Effect>();
+            chargeEffect->Play();
+        }
     }
 
     if (SeedCore::Input::MouseState(SeedCore::Input::MouseButton::Left, SeedCore::Input::IsPressed) && shotReady)
@@ -644,6 +663,13 @@ void PlayerController::UpdateInputShot(float elapsedTime)
         costGaugeAdd = 0;
 
         shotReady = false;
+
+        if (chargeEffectActor)
+        {
+            //エフェクト停止
+            SeedCore::Effect* chargeEffect = chargeEffectActor.GetComponent<SeedCore::Effect>();
+            chargeEffect->Stop(SeedCore::EffectStopFlag::Immediate);
+        }
     }
 
     //アニメーションフラグ切り替え

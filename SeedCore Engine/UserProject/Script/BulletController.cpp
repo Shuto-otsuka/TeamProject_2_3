@@ -102,12 +102,31 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
         {
             //重力エリアであれば停止
             Stop();
-            SC_LOG_NOTICE("うあああああ");
+            
+            //エフェクト生成
+            SeedCore::Actor stopEffect = SeedCore::Prefab::Spawn("StopEffect.prefab");
+            if (stopEffect)
+            {
+                SeedCore::Position* stopEffectPosition = stopEffect.GetComponent<SeedCore::Position>();
+                stopEffectPosition->x_ = position->x_;
+                stopEffectPosition->y_ = position->y_;
+                stopEffectPosition->z_ = position->z_;
+            }
         }
         else
         {
             //重力エリアじゃなければ消して終了
             Remove();
+
+            //エフェクト生成
+            SeedCore::Actor stopEffect = SeedCore::Prefab::Spawn("DisappearEffect.prefab");
+            if (stopEffect)
+            {
+                SeedCore::Position* stopEffectPosition = stopEffect.GetComponent<SeedCore::Position>();
+                stopEffectPosition->x_ = position->x_;
+                stopEffectPosition->y_ = position->y_;
+                stopEffectPosition->z_ = position->z_;
+            }
         }
         return;
     }
@@ -128,6 +147,17 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
                 //足場作れないエリアならどちらも消す
                 Remove();
                 hitBulletController->Remove();
+
+                //エフェクト生成
+                SeedCore::Actor stopEffect = SeedCore::Prefab::Spawn("DisappearEffect.prefab");
+                if (stopEffect)
+                {
+                    SeedCore::Position* stopEffectPosition = stopEffect.GetComponent<SeedCore::Position>();
+                    stopEffectPosition->x_ = position->x_;
+                    stopEffectPosition->y_ = position->y_;
+                    stopEffectPosition->z_ = position->z_;
+                }
+
                 return;
             }
             else
@@ -137,6 +167,17 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
                 if (aliveTimer > hitBulletController->GetAliveTimer())return;
 
                 hitBulletController->Stop();//停止
+
+                //エフェクト生成
+                SeedCore::Actor stopEffect = SeedCore::Prefab::Spawn("StopEffect.prefab");
+                if (stopEffect)
+                {
+                    SeedCore::Position* stopEffectPosition = stopEffect.GetComponent<SeedCore::Position>();
+                    stopEffectPosition->x_ = position->x_;
+                    stopEffectPosition->y_ = position->y_;
+                    stopEffectPosition->z_ = position->z_;
+                }
+
                 Remove();//自分は削除
 
                 if (stopAudio)stopAudio->Play();
@@ -152,6 +193,15 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
             {
                 //重力エリアであればRigidbodyをDynamicにして停止
                 Stop();
+                //エフェクト生成
+                SeedCore::Actor stopEffect = SeedCore::Prefab::Spawn("StopEffect.prefab");
+                if (stopEffect)
+                {
+                    SeedCore::Position* stopEffectPosition = stopEffect.GetComponent<SeedCore::Position>();
+                    stopEffectPosition->x_ = position->x_;
+                    stopEffectPosition->y_ = position->y_;
+                    stopEffectPosition->z_ = position->z_;
+                }
             }
             else
             {
@@ -197,6 +247,16 @@ void BulletController::OnTriggerEnter(SeedCore::Actor other)
         float stopTime = aliveTime - aliveTimer;
         //止める
         stopController->Stop(stopTime);
+
+        //エフェクト生成
+        SeedCore::Actor stopEffect = SeedCore::Prefab::Spawn("StopEffect.prefab");
+        if (stopEffect)
+        {
+            SeedCore::Position* stopEffectPosition = stopEffect.GetComponent<SeedCore::Position>();
+            stopEffectPosition->x_ = position->x_;
+            stopEffectPosition->y_ = position->y_;
+            stopEffectPosition->z_ = position->z_;
+        }
 
         //自分は動きを止めてギミックにくっついたという判定にする
         state = State::STICK;

@@ -6,6 +6,7 @@
 #include <SeedCore/ScMath.h>
 #include <SeedCore/ScInput.h>
 #include <SeedCore/ScScene.h>
+#include <SeedCore/ScPrefab.h>
 #include <FoundationEngine/Time/GameTimer.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
@@ -73,6 +74,16 @@ void GoalSystem::OnTick(float elapsedTime)
 				PlayerController* playerController = other.GetComponent<PlayerController>();
 				if (playerController)
 					playerController->Goal();
+				//エフェクト生成
+				SeedCore::Actor goalEffect = SeedCore::Prefab::Spawn("GoalEffect.prefab");
+				if (goalEffect)
+				{
+					SeedCore::Position* goalEffectPosition = goalEffect.GetComponent<SeedCore::Position>();
+					SeedCore::Vector3 position = GetActor().WorldMatrix().Translation();
+					goalEffectPosition->x_ = position.x;
+					goalEffectPosition->y_ = position.y;
+					goalEffectPosition->z_ = position.z;
+				}
 				break;
 			}
 		}

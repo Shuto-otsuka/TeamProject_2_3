@@ -8,6 +8,8 @@ void BombExplosionController::OnStart()
 
 void BombExplosionController::OnTick(float elapsedTime)
 {
+    //仮のエフェクト表現
+    /*
     this->position = GetActor().GetComponent<SeedCore::Position>();
     scale = GetActor().GetComponent<SeedCore::Scale>();
 
@@ -46,6 +48,7 @@ void BombExplosionController::OnTick(float elapsedTime)
     scale->x_ = currentSize;
     scale->y_ = currentSize;
     scale->z_ = currentSize;
+    */
 }
 
 void BombExplosionController::SetParam(const SeedCore::Vector3& pos, float targetSize)
@@ -59,5 +62,12 @@ void BombExplosionController::SetParam(const SeedCore::Vector3& pos, float targe
     scale = GetActor().GetComponent<SeedCore::Scale>();
 
     //目標サイズをセット
-    this->targetSize = targetSize;
+    //this->targetSize = targetSize;
+    scale->x_ = targetSize;
+    scale->y_ = targetSize;
+    scale->z_ = targetSize;
+
+    //エフェクト再生
+    SeedCore::Effect* myEffect = GetActor().GetComponent<SeedCore::Effect>();
+    myEffect->Play();
 }
