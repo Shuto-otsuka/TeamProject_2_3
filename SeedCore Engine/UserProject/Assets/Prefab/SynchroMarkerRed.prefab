@@ -1,0 +1,304 @@
+{
+	"basePrefabAssetID": 0,
+	"nodes": [
+		{
+			"active": true,
+			"collaborationId": "",
+			"components": [
+				{
+					"component": "Mesh",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": -312949379,
+							"is_array": false,
+							"name": "メッシュID",
+							"string": "",
+							"type": 1,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Material",
+					"fields": [
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": -495519869,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotMaterialIDs_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": 0,
+									"is_array": false,
+									"name": "[0]",
+									"string": "synchro_M",
+									"type": 7,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "slotNames_",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						},
+						{
+							"bool": false,
+							"children": [
+								{
+									"bool": false,
+									"children": [],
+									"color": {
+										"a": 1.0,
+										"b": 1.0,
+										"g": 1.0,
+										"r": 1.0
+									},
+									"float": 0.0,
+									"int": -495519869,
+									"is_array": false,
+									"name": "[0]",
+									"string": "",
+									"type": 1,
+									"vector2": {
+										"x": 0.0,
+										"y": 0.0
+									},
+									"vector3": {
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									},
+									"vector4": {
+										"w": 0.0,
+										"x": 0.0,
+										"y": 0.0,
+										"z": 0.0
+									}
+								}
+							],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": true,
+							"name": "マテリアル",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				},
+				{
+					"component": "Selected",
+					"fields": []
+				},
+				{
+					"component": "SynchroMarkerController",
+					"fields": [
+						{
+							"bool": false,
+							"children": [],
+							"color": {
+								"a": 1.0,
+								"b": 1.0,
+								"g": 1.0,
+								"r": 1.0
+							},
+							"float": 0.0,
+							"int": 0,
+							"is_array": false,
+							"name": "追従アクター",
+							"string": "",
+							"type": 0,
+							"vector2": {
+								"x": 0.0,
+								"y": 0.0
+							},
+							"vector3": {
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							},
+							"vector4": {
+								"w": 0.0,
+								"x": 0.0,
+								"y": 0.0,
+								"z": 0.0
+							}
+						}
+					]
+				}
+			],
+			"layer": "Default",
+			"name": "SynchroMarkerRed",
+			"nestedPrefabAssetID": 0,
+			"overrides": [],
+			"parentIndex": -1,
+			"persistentId": 44704,
+			"position": {
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
+			},
+			"rotation": {
+				"w": 1.0,
+				"x": 0.0,
+				"y": 0.0,
+				"z": 0.0
+			},
+			"scale": {
+				"x": 1.0,
+				"y": 1.0,
+				"z": 1.0
+			},
+			"tags": []
+		}
+	]
+}

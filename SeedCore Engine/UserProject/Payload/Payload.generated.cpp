@@ -8,6 +8,7 @@
 #include <UserProject/Script/FloorMoveSystem.h>
 #include <UserProject/Script/GoalSystem.h>
 #include <UserProject/Script/StopController.h>
+#include <UserProject/Script/SynchroMarkerController.h>
 
 extern "C" int _force_payload_AnnounceController = 0;
 extern "C" int _force_payload_BallReseterController = 0;
@@ -17,6 +18,7 @@ extern "C" int _force_payload_DoorSystem = 0;
 extern "C" int _force_payload_FloorMoveSystem = 0;
 extern "C" int _force_payload_GoalSystem = 0;
 extern "C" int _force_payload_StopController = 0;
+extern "C" int _force_payload_SynchroMarkerController = 0;
 
 namespace SeedCore
 {
@@ -176,6 +178,19 @@ namespace SeedCore
 			}
 		};
 		static Register_StopController global_StopController_register;
+
+		// ---- UserProject/Script/SynchroMarkerController.h ----
+		struct Register_SynchroMarkerController
+		{
+			Register_SynchroMarkerController()
+			{
+				PayloadRegistry::Register(String("SynchroMarkerController"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					SynchroMarkerController& obj = *static_cast<SynchroMarkerController*>(ptr);
+					outInfo.push_back({ String("追従アクター"), offsetof(SynchroMarkerController, followActorID), AttributeType::Int, PayloadType::Actor });
+				});
+			}
+		};
+		static Register_SynchroMarkerController global_SynchroMarkerController_register;
 
 	}
 }

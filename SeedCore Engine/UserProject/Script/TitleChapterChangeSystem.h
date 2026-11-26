@@ -13,11 +13,20 @@ public:
 		int maxChapterNum;
 	SC_REFLECTION_FIELD_EX("チャプタースクロール速度")
 		float chapterScrollSpeed;
+	SC_REFLECTION_FIELD_EX("左右ボタン最大サイズ")
+		float maxButtonSize;
+	SC_REFLECTION_FIELD_EX("左右ボタン最小サイズ")
+		float minButtonSize;
+	SC_REFLECTION_FIELD_EX("左右ボタンサイズ変更速度")
+		float sizeChangeSpeed;
 
 private:
 	SeedCore::Actor rightButtonActor;
 	SeedCore::Actor leftButtonActor;
 
 	int chapterNum = 0;
+
+	float leftButtonTargetSize = minButtonSize;
+	float rightButtonTargetSize = minButtonSize;
 };
 REGISTER_COMPONENT(TitleChapterChangeSystem);

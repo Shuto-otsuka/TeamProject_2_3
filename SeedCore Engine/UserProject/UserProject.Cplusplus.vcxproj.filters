@@ -151,6 +151,9 @@
     <ClCompile Include="Script\TitleChapterChangeSystem.cpp">
       <Filter>Script</Filter>
     </ClCompile>
+    <ClCompile Include="Script\SynchroMarkerController.cpp">
+      <Filter>Script</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Tutorial\ScTutorial.h">
@@ -256,6 +259,9 @@
       <Filter>Script</Filter>
     </ClInclude>
     <ClInclude Include="Script\TitleChapterChangeSystem.h">
+      <Filter>Script</Filter>
+    </ClInclude>
+    <ClInclude Include="Script\SynchroMarkerController.h">
       <Filter>Script</Filter>
     </ClInclude>
   </ItemGroup>

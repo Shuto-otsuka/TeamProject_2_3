@@ -53,6 +53,7 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Release|x64'">FoundationEngine/Prelude.h</PrecompiledHeaderFile>
     </ClCompile>
     <ClCompile Include="Reflection\Reflection.generated.cpp" />
+    <ClCompile Include="Script\SynchroMarkerController.cpp" />
     <ClCompile Include="Script\TitleChapterChangeSystem.cpp" />
     <ClCompile Include="Tutorial\ScTutorial.cpp" />
     <ClCompile Include="Script\AnnounceController.cpp" />
@@ -89,6 +90,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EntryPoint\EntryGame.h" />
+    <ClInclude Include="Script\SynchroMarkerController.h" />
     <ClInclude Include="Script\TitleChapterChangeSystem.h" />
     <ClInclude Include="Tutorial\ScTutorial.h" />
     <ClInclude Include="Script\AnnounceController.h" />
