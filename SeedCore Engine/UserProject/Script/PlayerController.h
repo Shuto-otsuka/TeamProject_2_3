@@ -164,6 +164,7 @@ private:
 	SeedCore::Actor bulletNaviStart;
 	SeedCore::Actor announceActor;
 	SeedCore::Actor crossHair;
+	SeedCore::Actor chargeEffectActor;
 	SeedCore::Position* position = nullptr;
 	SeedCore::Rotation* rotation = nullptr;
 	SeedCore::Rotation* firstPersonCameraBrainRotate;

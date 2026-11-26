@@ -27,7 +27,7 @@ public:
 private:
 	void ApplyResult();
 
-	SC_CONSTEX float directionTime_ = 0.4f;
+	SC_CONSTEX float directionTime_ = 1.0f;
 
 	bool isGoal_ = false;
 
