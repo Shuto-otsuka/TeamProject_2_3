@@ -7,13 +7,23 @@ namespace SeedCore
 	{
 		Uint32 emitter_ = 0;
 
+		Uint32 cycle_ = 0;
+
 		Uint32 node_ = 0;
 
 		Uint32 asset_ = 0;
 
-		Int32 handle_ = -1;
+		Int32 current_ = -1;
+
+		Int32 previous_ = -1;
 
 		Bool finished_ = false;
+	};
+
+	enum class EffectStopFlag :Uint8
+	{
+		Finish,
+		Immediate,
 	};
 
 	class Effect :public SeedScript
@@ -25,7 +35,25 @@ namespace SeedCore
 		SC_PAYLOAD_FIELD_EX("エフェクト", Effect)
 		Uint32 effectID_ = 0;
 
+		SC_REFLECTION_FIELD_EX("自動再生")
+		Bool autoPlay_ = true;
+
+	public:
+		SEEDCORE_API void OnAwake();
+
+		SEEDCORE_API void OnDestroy();
+
+	public:
+		SEEDCORE_API void Play();
+
+		SEEDCORE_API void Stop(EffectStopFlag flag = EffectStopFlag::Finish);
+
+	public:
+		SEEDCORE_API Bool Playing()const;
+
 	private:
+		Bool playing_ = false;
+
 		Float age_ = 0.0f;
 
 		Float delta_ = 0.0f;

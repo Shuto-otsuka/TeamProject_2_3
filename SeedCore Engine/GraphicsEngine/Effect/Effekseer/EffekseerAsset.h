@@ -14,28 +14,14 @@ namespace SeedCore
 		}
 	};
 
-	struct EffekseerFrame
-	{
-		DynamicArray<Byte> vertices_;
-
-		DynamicArray<Byte> faces_;
-
-		template<class Archive>
-		void Serialize(Archive& archive)
-		{
-			archive.Field("vertices", vertices_);
-			archive.Field("faces", faces_);
-		}
-	};
-
 	struct EffekseerModel
 	{
-		DynamicArray<EffekseerFrame> frames_;
+		DynamicArray<Byte> data_;
 
 		template<class Archive>
 		void Serialize(Archive& archive)
 		{
-			archive.Field("frames", frames_);
+			archive.Field("data", data_);
 		}
 	};
 

@@ -150,7 +150,7 @@ namespace SeedCore
 
 				Float iconHeight = ImGui::GetTextLineHeight();
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-				Bool removeClicked = ImGui::ImageButton("##remove", imguiTexture_.Icon(IconType::Remove), ImVec2(iconHeight, iconHeight));
+				Bool removeClicked = ImGui::ImageButton("##remove", imguiTexture_.Icon(String("Misc/Cross")), ImVec2(iconHeight, iconHeight));
 				ImGui::PopStyleColor();
 				if (removeClicked)
 				{

@@ -112,7 +112,7 @@ namespace SeedCore
 			".skeleton",
 			".navmesh",
 			".zephyr",
-			".efk", ".efkefc", ".effekseer",
+			".efk", ".efkefc", ".effekseer", ".efkmodel", ".efkmat", ".efkcurve",
 			".mp3", ".wav", ".acb", ".awb", ".audio",
 			".ttf", ".otf", ".ttc",
 			".mp4", ".movie",
@@ -151,7 +151,11 @@ namespace SeedCore
 			".cpp", 
 			".cs", 
 			".hlsli", 
-			".hlsl"
+			".hlsl",
+
+			".efkmodel",
+			".efkmat",
+			",efkcurve",
 		};
 
 		std::set<std::string_view> generatedExtensions_ =

@@ -28,9 +28,13 @@ namespace SeedCore
 					std::ranges::fill(effect.spawnCounts_, 0u);
 					for (const EffectPlayback& playback : effect.playbacks_)
 					{
-						if (playback.handle_ >= 0)
+						if (playback.current_ >= 0)
 						{
-							effekseerManager.Stop(playback.handle_);
+							effekseerManager.Stop(playback.current_, EffectStopFlag::Immediate);
+						}
+						if (playback.previous_ >= 0)
+						{
+							effekseerManager.Stop(playback.previous_, EffectStopFlag::Immediate);
 						}
 					}
 					effect.playbacks_.clear();
@@ -43,6 +47,11 @@ namespace SeedCore
 				effect.spawnCounts_.resize(asset->emitters_.size(), 0);
 				for (Size emitterIndex = 0;emitterIndex < asset->emitters_.size();++emitterIndex)
 				{
+					if (!effect.playing_)
+					{
+						effect.spawnCounts_[emitterIndex] = 0;
+						continue;
+					}
 					const EffectNode* receiver = asset->emitters_[emitterIndex].Find(String("Emitter"));
 					Float rate = receiver ? receiver->Value(String("Rate")).x : 0.0f;
 					effect.spawnAccumulators_[emitterIndex] += rate * deltaTime;
@@ -53,9 +62,13 @@ namespace SeedCore
 				SeedCore::erase_if(effect.playbacks_, [&](const EffectPlayback& playback)
 					{
 						Bool alive = playback.emitter_ < asset->emitters_.size() && asset->emitters_[playback.emitter_].enabled_ && std::ranges::any_of(asset->emitters_[playback.emitter_].nodes_, [&playback](const EffectNode& node) { return node.id_ == playback.node_ && node.type_ == String("Effekseer"); });
-						if (!alive && playback.handle_ >= 0)
+						if (!alive && playback.current_ >= 0)
 						{
-							effekseerManager.Stop(playback.handle_);
+							effekseerManager.Stop(playback.current_, EffectStopFlag::Immediate);
+						}
+						if (!alive && playback.previous_ >= 0)
+						{
+							effekseerManager.Stop(playback.previous_, EffectStopFlag::Immediate);
 						}
 						return !alive;
 					});
@@ -92,12 +105,18 @@ namespace SeedCore
 						Uint32 assetID = parameter != node.parameters_.end() ? parameter->asset_ : 0;
 						if (playback.asset_ != assetID)
 						{
-							if (playback.handle_ >= 0)
+							if (playback.current_ >= 0)
 							{
-								effekseerManager.Stop(playback.handle_);
+								effekseerManager.Stop(playback.current_, EffectStopFlag::Immediate);
 							}
+							if (playback.previous_ >= 0)
+							{
+								effekseerManager.Stop(playback.previous_, EffectStopFlag::Immediate);
+							}
+							playback.cycle_ = 0;
 							playback.asset_ = assetID;
-							playback.handle_ = -1;
+							playback.current_ = -1;
+							playback.previous_ = -1;
 							playback.finished_ = false;
 						}
 
@@ -109,28 +128,59 @@ namespace SeedCore
 						}
 
 						Bool loop = node.Value(String("Loop")).x != 0.0f;
-						if (playback.handle_ >= 0 && !effekseerManager.Playing(playback.handle_))
+						Float delay = node.Value(String("Delay")).x;
+						Float interval = node.Value(String("Interval")).x;
+						if (playback.previous_ >= 0 && !effekseerManager.Playing(playback.previous_))
 						{
-							playback.handle_ = -1;
-							playback.finished_ = !loop;
+							playback.previous_ = -1;
 						}
-						if (playback.handle_ < 0 && !playback.finished_ && effect.age_ >= node.Value(String("Delay")).x)
+						if (playback.current_ >= 0 && !effekseerManager.Playing(playback.current_))
 						{
-							playback.handle_ = effekseerManager.Play(source->Effect(), Vector3(0.0f, 0.0f, 0.0f));
+							playback.current_ = -1;
+							playback.finished_ = playback.finished_ || !loop;
 						}
-						if (playback.handle_ < 0)
+
+						if (effect.playing_ && !playback.finished_ && effect.age_ >= delay)
 						{
-							continue;
+							if (loop && interval > 0.0f)
+							{
+								Uint32 cycle = static_cast<Uint32>((effect.age_ - delay) / interval);
+								if (cycle >= playback.cycle_)
+								{
+									if (playback.current_ >= 0)
+									{
+										effekseerManager.Stop(playback.current_, EffectStopFlag::Finish);
+										playback.previous_ = playback.current_;
+									}
+									playback.current_ = effekseerManager.Play(source->Effect(), Vector3(0.0f, 0.0f, 0.0f));
+									playback.cycle_ = cycle + 1;
+								}
+							}
+							else if (playback.current_ < 0)
+							{
+								playback.current_ = effekseerManager.Play(source->Effect(), Vector3(0.0f, 0.0f, 0.0f));
+							}
 						}
 
 						Vector4 offset = node.Value(String("Offset"));
 						Vector4 rotation = node.Value(String("Rotation"));
 						Vector4 scale = node.Value(String("Scale"));
 						Vector4 color = node.Value(String("Color"));
-						Matrix local = Matrix::CreateTranslationRotationScale(offset.xyz, Quaternion::CreateFromYawPitchRoll(ToRadians(rotation.y), ToRadians(rotation.x), ToRadians(rotation.z)), scale.xyz);
-						effekseerManager.Transform(playback.handle_, local* worldMatrix);
-						effekseerManager.Speed(playback.handle_, node.Value(String("Speed")).x);
-						effekseerManager.Color(playback.handle_, Color(color));
+						Matrix matrix = Matrix::CreateTranslationRotationScale(offset.xyz, Quaternion::CreateFromYawPitchRoll(ToRadians(rotation.y), ToRadians(rotation.x), ToRadians(rotation.z)), scale.xyz) * worldMatrix;
+						Float speed = node.Value(String("Speed")).x;
+
+						auto apply = [&](Int32 handle)
+							{
+								if (handle < 0)
+								{
+									return;
+								}
+								effekseerManager.Transform(handle, matrix);
+								effekseerManager.Speed(handle, speed);
+								effekseerManager.Color(handle, Color(color));
+							};
+						apply(playback.current_);
+						apply(playback.previous_);
 					}
 				}
 			});

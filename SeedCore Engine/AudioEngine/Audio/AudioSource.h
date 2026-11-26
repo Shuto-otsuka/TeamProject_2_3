@@ -17,7 +17,7 @@ namespace SeedCore
 	*
 	* @brief A part that plays sound
 	*/
-	class SEEDCORE_API AudioSource :public SeedScript
+	class AudioSource :public SeedScript
 	{
 	private:
 		friend class AudioSystem;
@@ -82,7 +82,7 @@ namespace SeedCore
 		*
 		* @brief Gets the player and source ready
 		*/
-		void OnAwake();
+		SEEDCORE_API void OnAwake();
 
 		/**
 		* [JP]
@@ -95,7 +95,7 @@ namespace SeedCore
 		*
 		* @brief Cleans up the player and source
 		*/
-		void OnDestroy();
+		SEEDCORE_API void OnDestroy();
 
 		/**
 		* [JP]
@@ -108,7 +108,7 @@ namespace SeedCore
 		*
 		* @brief What the inspector shows
 		*/
-		void OnInspectorGUI();
+		SEEDCORE_API void OnInspectorGUI();
 
 	public:
 		/**
@@ -122,7 +122,7 @@ namespace SeedCore
 		*
 		* @brief Plays the sound
 		*/
-		void Play();
+		SEEDCORE_API void Play();
 
 		/**
 		* [JP]
@@ -137,7 +137,7 @@ namespace SeedCore
 		* @brief Plays a cue by name
 		* @param cueName The name of the cue to play
 		*/
-		void Play(const String& cueName);
+		SEEDCORE_API void Play(const String& cueName);
 
 		/**
 		* [JP]
@@ -150,7 +150,7 @@ namespace SeedCore
 		*
 		* @brief Stops the sound
 		*/
-		void Stop();
+		SEEDCORE_API void Stop();
 
 		/**
 		* [JP]
@@ -163,7 +163,7 @@ namespace SeedCore
 		*
 		* @brief Pauses
 		*/
-		void Pause();
+		SEEDCORE_API void Pause();
 
 		/**
 		* [JP]
@@ -176,7 +176,7 @@ namespace SeedCore
 		*
 		* @brief Resumes
 		*/
-		void Resume();
+		SEEDCORE_API void Resume();
 
 	public:
 		/**
@@ -192,7 +192,7 @@ namespace SeedCore
 		* @brief  Checks if it is playing
 		* @return True if it is playing
 		*/
-		Bool Playing()const;
+		SEEDCORE_API Bool Playing()const;
 
 	private:
 		/**

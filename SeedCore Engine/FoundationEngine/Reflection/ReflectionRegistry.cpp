@@ -20,6 +20,7 @@
 #pragma comment(linker, "/include:_force_reflection_ParentConstraint")
 #pragma comment(linker, "/include:_force_reflection_PositionConstraint")
 #pragma comment(linker, "/include:_force_reflection_RotationConstraint")
+#pragma comment(linker, "/include:_force_reflection_Effect")
 #pragma comment(linker, "/include:_force_reflection_SunSettings")
 #pragma comment(linker, "/include:_force_reflection_MoonSettings")
 #pragma comment(linker, "/include:_force_reflection_Celestial")

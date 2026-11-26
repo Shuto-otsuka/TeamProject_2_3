@@ -172,42 +172,42 @@ namespace SeedCore
 			ViewIcon icon;
 			if (actor.GetComponent<Camera>() || actor.GetComponent<CameraBrain>())
 			{
-				icon.type_ = IconType::ViewCamera;
+				icon.type_ = String("View/CameraView");
 				icon.color_ = Color::FromPacked(IM_COL32(255, 178, 127, 255));
 			}
 			else if (actor.GetComponent<PointLight>())
 			{
-				icon.type_ = IconType::ViewPointLight;
+				icon.type_ = String("View/PointLightView");
 				icon.color_ = Color::FromPacked(IM_COL32(90, 210, 255, 255));
 			}
 			else if (actor.GetComponent<SpotLight>())
 			{
-				icon.type_ = IconType::ViewSpotLight;
+				icon.type_ = String("View/SpotLightView");
 				icon.color_ = Color::FromPacked(IM_COL32(90, 210, 255, 255));
 			}
 			else if (actor.GetComponent<DirectionalLight>())
 			{
-				icon.type_ = IconType::ViewDirectionalLight;
+				icon.type_ = String("View/DirectionalLightView");
 				icon.color_ = Color::FromPacked(IM_COL32(90, 210, 255, 255));
 			}
 			else if (actor.GetComponent<RectangleLight>())
 			{
-				icon.type_ = IconType::ViewRectangleLight;
+				icon.type_ = String("View/RectangleLightView");
 				icon.color_ = Color::FromPacked(IM_COL32(90, 210, 255, 255));
 			}
 			else if (actor.GetComponent<SkyLight>())
 			{
-				icon.type_ = IconType::ViewSkyLight;
+				icon.type_ = String("View/SkyLightView");
 				icon.color_ = Color::FromPacked(IM_COL32(255, 210, 150, 255));
 			}
 			else if (actor.GetComponent<AudioSource>())
 			{
-				icon.type_ = IconType::ViewAudioSource;
+				icon.type_ = String("View/AudioSourceView");
 				icon.color_ = Color::FromPacked(IM_COL32(180, 224, 111, 255));
 			}
 			else if (actor.GetComponent<AudioListener>())
 			{
-				icon.type_ = IconType::ViewAudioListener;
+				icon.type_ = String("View/AudioListenerView");
 				icon.color_ = Color::FromPacked(IM_COL32(180, 224, 111, 255));
 			}
 			else if (actor.GetComponent<Mesh>() || actor.GetComponent<Effect>() || actor.GetComponent<Image>() || actor.GetComponent<Text>() || actor.GetComponent<Movie>())
@@ -216,7 +216,7 @@ namespace SeedCore
 			}
 			else
 			{
-				icon.type_ = IconType::ViewActor;
+				icon.type_ = String("View/ActorView");
 				icon.color_ = Color::FromPacked(IM_COL32(217, 122, 255, 255));
 			}
 

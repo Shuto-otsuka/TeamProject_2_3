@@ -438,6 +438,7 @@
     <ClCompile Include="D3D12\Signature\RootSignature.cpp" />
     <ClCompile Include="Debug\DebugViewFeature.cpp" />
     <ClCompile Include="Debug\DebugViewStage.cpp" />
+    <ClCompile Include="Effect\Effect.cpp" />
     <ClCompile Include="Effect\EffectAsset.cpp" />
     <ClCompile Include="Effect\EffectLoader.cpp" />
     <ClCompile Include="Effect\EffectResource.cpp" />

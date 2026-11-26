@@ -11,22 +11,23 @@
 #include <FoundationEngine/Bridge/CsharpHost.h>
 #include <FoundationEngine/Plugin/PluginHost.h>
 
-#include <AudioEngine/CRI/CriManager.h>
 #include <AudioEngine/Resource/AudioModule.h>
 
 #include <GraphicsEngine/Graphics/Graphics.h>
-#include <GraphicsEngine/Font/FontManager.h>
-#include <GraphicsEngine/Effect/Effekseer/EffekseerManager.h>
 #include <GraphicsEngine/System/CameraSystem.h>
 #include <GraphicsEngine/System/SplashSystem.h>
 
 namespace SeedCore
 {
 	struct Bootstrap;
-	class DlssManager;
-	class JoltManager;
 	struct GameConfig;
 	struct EditorConfig;
+
+	class DlssManager;
+	class JoltManager;
+	class CriManager;
+	class FontManager;
+	class EffekseerManager;
 
 	class GameTimer;
 
@@ -142,6 +143,12 @@ namespace SeedCore
 
 		ResourcePtr<DlssManager> dlssManager_;
 
+		ResourcePtr<CriManager> criManager_;
+
+		ResourcePtr<FontManager> fontManager_;
+
+		ResourcePtr<EffekseerManager> effekseerManager_;
+
 		Window window_;
 
 		JobExecutor executor_;
@@ -150,13 +157,7 @@ namespace SeedCore
 
 		ResourceCache resource_;
 
-		CriManager criManager_;
-
 		Graphics graphics_;
-
-		FontManager fontManager_;
-
-		EffekseerManager effekseerManager_;
 
 		AudioModule audioModule_;
 

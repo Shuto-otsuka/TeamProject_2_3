@@ -24,7 +24,7 @@ namespace SeedCore
 	class EffekseerModelLoader :public Effekseer::ModelLoader
 	{
 	public:
-		EffekseerModelLoader(Effekseer::Backend::GraphicsDeviceRef device);
+		EffekseerModelLoader(Effekseer::ModelLoaderRef loader);
 
 		~EffekseerModelLoader()override = default;
 
@@ -35,7 +35,7 @@ namespace SeedCore
 		void Unload(Effekseer::ModelRef data)override;
 
 	private:
-		Effekseer::Backend::GraphicsDeviceRef device_;
+		Effekseer::ModelLoaderRef loader_;
 	};
 
 	class EffekseerMaterialLoader :public Effekseer::MaterialLoader

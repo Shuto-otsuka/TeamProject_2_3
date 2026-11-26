@@ -37,7 +37,7 @@ namespace SeedCore
 			Vector2 center_ = { 0.0f,0.0f };
 			Color color_ = { 1.0f,1.0f,1.0f,1.0f };
 			Float depth_ = 0.0f;
-			IconType type_ = IconType::Actor;
+			String type_ = String("Hierarchy/Actor");
 		};
 
 	private:

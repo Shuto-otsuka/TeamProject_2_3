@@ -43,7 +43,7 @@ namespace SeedCore
 
 		ImVec2 iconSize(14, 14);
 
-		auto FilterButton = [&](const Char* id, IconType icon, Bool& flag, Uint32 count, const ImVec4& color)
+		auto FilterButton = [&](const Char* id, const String& icon, Bool& flag, Uint32 count, const ImVec4& color)
 		{
 			ImGui::PushStyleColor(ImGuiCol_Button, flag ? ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive) : ImVec4(0, 0, 0, 0));
 			ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImGui::GetStyleColorVec4(ImGuiCol_HeaderHovered));
@@ -81,11 +81,11 @@ namespace SeedCore
 			ImGui::PopStyleColor(2);
 		};
 
-		FilterButton("##WarningFilter", IconType::LogWarning, showWarning_, warningCount, ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
+		FilterButton("##WarningFilter", String("Log/Warning"), showWarning_, warningCount, ImVec4(1.0f, 0.8f, 0.2f, 1.0f));
 		ImGui::SameLine();
-		FilterButton("##ErrorFilter",   IconType::LogError,   showError_,   errorCount,   ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
+		FilterButton("##ErrorFilter",   String("Log/Error"),   showError_,   errorCount,   ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
 		ImGui::SameLine();
-		FilterButton("##NoticeFilter",  IconType::LogNotice,  showNotice_,  noticeCount,  ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+		FilterButton("##NoticeFilter",  String("Log/Notice"),  showNotice_,  noticeCount,  ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
 
 		ImGui::Separator();
 
@@ -123,20 +123,20 @@ namespace SeedCore
 			Float rowHeight = (textSize.y > 14.0f ? textSize.y : 14.0f) + 6.0f;
 
 			ImVec4 color;
-			IconType icon;
+			String icon;
 			switch (entry.level_)
 			{
 			case LogLevel::Error:
 				color = ImVec4(1.0f, 0.4f, 0.4f, 1.0f);
-				icon = IconType::LogError;
+				icon = String("Log/Error");
 				break;
 			case LogLevel::Warning:
 				color = ImVec4(1.0f, 0.8f, 0.2f, 1.0f);
-				icon = IconType::LogWarning;
+				icon = String("Log/Warning");
 				break;
 			default:
 				color = ImVec4(0.8f, 0.8f, 0.8f, 1.0f);
-				icon = IconType::LogNotice;
+				icon = String("Log/Notice");
 				break;
 			}
 

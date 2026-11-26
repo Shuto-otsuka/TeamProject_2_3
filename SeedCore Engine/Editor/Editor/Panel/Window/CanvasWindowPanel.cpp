@@ -43,7 +43,7 @@ namespace SeedCore
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, activeColor);
 
 		ImGui::PushStyleColor(ImGuiCol_Button, !context_.guizmo_.visible_ ? activeColor : transparent);
-		if (ImGui::ImageButton("##NonSelected", imguiTexture_.Icon(IconType::NonSelected), iconSize))
+		if (ImGui::ImageButton("##NonSelected", imguiTexture_.Icon(String("Viewport/NonSelected")), iconSize))
 		{
 			context_.guizmo_.visible_ = !context_.guizmo_.visible_;
 			context_.guizmo_.rectTool_ = false;
@@ -55,7 +55,7 @@ namespace SeedCore
 		ImGui::SameLine();
 
 		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && !context_.guizmo_.pivotEdit_ && op == ImGuizmo::TRANSLATE) ? activeColor : transparent);
-		if (ImGui::ImageButton("##Translate", imguiTexture_.Icon(IconType::Translate), iconSize))
+		if (ImGui::ImageButton("##Translate", imguiTexture_.Icon(String("Viewport/Translate")), iconSize))
 		{
 			context_.guizmo_.visible_ = true;
 			context_.guizmo_.rectTool_ = false;
@@ -67,7 +67,7 @@ namespace SeedCore
 		ImGui::SameLine();
 
 		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && !context_.guizmo_.pivotEdit_ && op == ImGuizmo::ROTATE) ? activeColor : transparent);
-		if (ImGui::ImageButton("##Rotate", imguiTexture_.Icon(IconType::Rotate), iconSize))
+		if (ImGui::ImageButton("##Rotate", imguiTexture_.Icon(String("Viewport/Rotate")), iconSize))
 		{
 			context_.guizmo_.visible_ = true;
 			context_.guizmo_.rectTool_ = false;
@@ -79,7 +79,7 @@ namespace SeedCore
 		ImGui::SameLine();
 
 		ImGui::PushStyleColor(ImGuiCol_Button, (!context_.guizmo_.rectTool_ && !context_.guizmo_.pivotEdit_ && op == ImGuizmo::SCALE) ? activeColor : transparent);
-		if (ImGui::ImageButton("##Scale", imguiTexture_.Icon(IconType::Scale), iconSize))
+		if (ImGui::ImageButton("##Scale", imguiTexture_.Icon(String("Viewport/Scale")), iconSize))
 		{
 			context_.guizmo_.visible_ = true;
 			context_.guizmo_.rectTool_ = false;
@@ -91,7 +91,7 @@ namespace SeedCore
 		ImGui::SameLine();
 
 		ImGui::PushStyleColor(ImGuiCol_Button, context_.guizmo_.pivotEdit_ ? activeColor : transparent);
-		if (ImGui::ImageButton("##Pivot", imguiTexture_.Icon(IconType::Pivot), iconSize))
+		if (ImGui::ImageButton("##Pivot", imguiTexture_.Icon(String("Viewport/Pivot")), iconSize))
 		{
 			context_.guizmo_.visible_ = true;
 			context_.guizmo_.rectTool_ = false;
@@ -106,7 +106,7 @@ namespace SeedCore
 		ImGui::SameLine();
 
 		ImGui::PushStyleColor(ImGuiCol_Button, context_.guizmo_.rectTool_ ? activeColor : transparent);
-		if (ImGui::ImageButton("##Rect", imguiTexture_.Icon(IconType::Rect), iconSize))
+		if (ImGui::ImageButton("##Rect", imguiTexture_.Icon(String("Viewport/Rect")), iconSize))
 		{
 			context_.guizmo_.visible_ = true;
 			context_.guizmo_.rectTool_ = true;
@@ -121,7 +121,7 @@ namespace SeedCore
 		ImGui::PushStyleColor(ImGuiCol_Button, transparent);
 		ImGui::PushStyleColor(ImGuiCol_ButtonHovered, hoverColor);
 		ImGui::PushStyleColor(ImGuiCol_ButtonActive, activeColor);
-		if (ImGui::ImageButton("##GizmoIcon2D", imguiTexture_.Icon(IconType::Guizmo), iconSize))
+		if (ImGui::ImageButton("##GizmoIcon2D", imguiTexture_.Icon(String("Viewport/Guizmo")), iconSize))
 		{
 			ImGui::OpenPopup("##GizmoSettings2D");
 		}

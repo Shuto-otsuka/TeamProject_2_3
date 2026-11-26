@@ -1,10 +1,4 @@
 #include <SeedCore/Engine/EngineCore.h>
-#include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
-#include <GraphicsEngine/DLSS/DlssManager.h>
-#include <GraphicsEngine/RenderGraph/RenderDevice.h>
-#include <GraphicsEngine/RenderGraph/RenderView.h>
-#include <GraphicsEngine/Resource/GraphicsModule.h>
-#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
 #include <FoundationEngine/Benchmark/Benchmark.h>
 #include <FoundationEngine/Resource/Config/GameConfig.h>
 #include <FoundationEngine/Resource/Config/EditorConfig.h>
@@ -15,15 +9,24 @@
 #include <FoundationEngine/Interop/QueryInstance.h>
 #include <FoundationEngine/Interop/RenderInstance.h>
 #include <FoundationEngine/World/Layer/LayerRegistry.h>
+#include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
+#include <GraphicsEngine/DLSS/DlssManager.h>
+#include <GraphicsEngine/RenderGraph/RenderDevice.h>
+#include <GraphicsEngine/RenderGraph/RenderView.h>
+#include <GraphicsEngine/Resource/GraphicsModule.h>
+#include <GraphicsEngine/Effect/Effekseer/EffekseerManager.h>
+#include <GraphicsEngine/Font/FontManager.h>
+#include <GraphicsEngine/Shape/Primitive/Diagnostic/DebugDraw.h>
 #include <PhysicsEngine/Physics/Physics.h>
 #include <PhysicsEngine/Physics/PhysicsSystem.h>
 #include <PhysicsEngine/JoltPhysics/JoltManager.h>
 #include <AudioEngine/Audio/Audio.h>
 #include <AudioEngine/Audio/AudioSystem.h>
+#include <AudioEngine/Cri/CriManager.h>
 
 namespace SeedCore
 {
-	EngineCore::EngineCore() :executor_(std::thread::hardware_concurrency(), MakeWorkerInterface<JobScheduler>(benchmark_)), world_(MakePtr<World>()), joltManager_(MakePtr<JoltManager>()), dlssManager_(MakePtr<DlssManager>())
+	EngineCore::EngineCore() :executor_(std::thread::hardware_concurrency(), MakeWorkerInterface<JobScheduler>(benchmark_)), world_(MakePtr<World>()), joltManager_(MakePtr<JoltManager>()), dlssManager_(MakePtr<DlssManager>()), criManager_(MakePtr<CriManager>()), fontManager_(MakePtr<FontManager>()), effekseerManager_(MakePtr<EffekseerManager>())
 	{
 		benchmark_.Attach(String("Main"));
 		resource_.Benchmark(benchmark_);
@@ -69,7 +72,7 @@ namespace SeedCore
 	{
 		audioTask_ = flow.emplace([this, gameConfig]()
 			{
-				if (!criManager_.Initialize(gameConfig))
+				if (!criManager_->Initialize(gameConfig))
 				{
 					failed_ = true;
 				}
@@ -81,7 +84,7 @@ namespace SeedCore
 	{
 		audioTask_ = flow.emplace([this, editorConfig]()
 			{
-				if (!criManager_.Initialize(editorConfig))
+				if (!criManager_->Initialize(editorConfig))
 				{
 					failed_ = true;
 				}
@@ -107,7 +110,7 @@ namespace SeedCore
 	{
 		fontTask_ = flow.emplace([this]()
 			{
-				if (!fontManager_.Initialize())
+				if (!fontManager_->Initialize())
 				{
 					failed_ = true;
 				}
@@ -119,7 +122,7 @@ namespace SeedCore
 	{
 		effekseerTask_ = flow.emplace([this]()
 			{
-				if (!effekseerManager_.Initialize(graphics_.Device().Context()))
+				if (!effekseerManager_->Initialize(graphics_.Device().Context()))
 				{
 					failed_ = true;
 				}
@@ -450,11 +453,11 @@ namespace SeedCore
 		}
 
 		Benchmark::Begin("CriAtom");
-		criManager_.Execute();
+		criManager_->Execute();
 		Benchmark::End("CriAtom");
 
 		Benchmark::Begin("Effekseer");
-		effekseerManager_.Execute(timer.ScaledDeltaTime());
+		effekseerManager_->Execute(timer.ScaledDeltaTime());
 		Benchmark::End("Effekseer");
 
 		Benchmark::End("Simulate");
@@ -493,8 +496,6 @@ namespace SeedCore
 		InputSystem::Finalize();
 
 		resource_.Finalize();
-		fontManager_.Finalize();
-		effekseerManager_.Finalize();
 
 		if (world_)
 		{
@@ -502,8 +503,10 @@ namespace SeedCore
 			world_ = nullptr;
 		}
 
+		fontManager_->Finalize();
+		effekseerManager_->Finalize();
 		joltManager_->Finalize();
-		criManager_.Finalize();
+		criManager_->Finalize();
 		dlssManager_->Finalize();
 		graphics_.Finalize();
 	}

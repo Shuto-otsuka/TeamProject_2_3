@@ -102,7 +102,7 @@ namespace SeedCore
 
 			ImVec2 inputMin = ImGui::GetItemRectMin();
 			Float iconY = inputMin.y + (ImGui::GetItemRectSize().y - iconSize) * 0.5f;
-			ImGui::GetWindowDrawList()->AddImage(imguiTexture_.Icon(IconType::Search), ImVec2(inputMin.x + paddingX, iconY), ImVec2(inputMin.x + paddingX + iconSize, iconY + iconSize));
+			ImGui::GetWindowDrawList()->AddImage(imguiTexture_.Icon(String("Misc/Search")), ImVec2(inputMin.x + paddingX, iconY), ImVec2(inputMin.x + paddingX + iconSize, iconY + iconSize));
 			ImGui::Separator();
 
 			if (searchFilter_.IsActive())
@@ -868,43 +868,6 @@ namespace SeedCore
 		}
 	}
 
-	ImTextureID ContentsDrawerPanel::GetAssetIcon(AssetType type)const
-	{
-		switch (type)
-		{
-		case AssetType::Model:
-			return imguiTexture_.Icon(IconType::Model);
-		case AssetType::Effect:
-		case AssetType::Effekseer:
-		case AssetType::Houdini:
-			return imguiTexture_.Icon(IconType::Effect);
-		case AssetType::Audio:
-			return imguiTexture_.Icon(IconType::Audio);
-		case AssetType::Font:
-			return imguiTexture_.Icon(IconType::Font);
-		case AssetType::Skymap:
-			return imguiTexture_.Icon(IconType::Sky);
-		case AssetType::Animation:
-			return imguiTexture_.Icon(IconType::Animation);
-		case AssetType::MeshCollision:
-			return imguiTexture_.Icon(IconType::MeshCollision);
-		case AssetType::Material:
-			return imguiTexture_.Icon(IconType::Material);
-		case AssetType::Skeleton:
-			return imguiTexture_.Icon(IconType::Skeleton);
-		case AssetType::Movie:
-			return imguiTexture_.Icon(IconType::Movie);
-		case AssetType::Prefab:
-			return imguiTexture_.Icon(IconType::Prefab);
-		case AssetType::Scene:
-			return imguiTexture_.Icon(IconType::Scene);
-		case AssetType::Texture:
-			FALLTHROUGH;
-		default:
-			return imguiTexture_.Icon(IconType::Text);
-		}
-	}
-
 	ImTextureID ContentsDrawerPanel::GetAssetIcon(const AssetRecord& asset)const
 	{
 		if (asset.type_ == AssetType::Texture && asset.isLoaded_)
@@ -929,25 +892,53 @@ namespace SeedCore
 			}
 		}
 
-		std::string extension = std::filesystem::path(asset.path_.c_str()).extension().string();
-		if (extension == ".h")
+		static const FlatMap<String, String> icons =
 		{
-			return imguiTexture_.Icon(IconType::Header);
-		}
-		if (extension == ".cpp")
-		{
-			return imguiTexture_.Icon(IconType::Cpp);
-		}
-		if (extension == ".cs")
-		{
-			return imguiTexture_.Icon(IconType::CSharp);
-		}
-		if (extension == ".hlsli" || extension == ".hlsl")
-		{
-			return imguiTexture_.Icon(IconType::Hlsl);
-		}
+			{ String(".texture"), String("Asset/Engine/Texture") },
+			{ String(".fbx"), String("Asset/Source/Model") },
+			{ String(".gltf"), String("Asset/Source/Model") },
+			{ String(".glb"), String("Asset/Source/Model") },
+			{ String(".crister"), String("Asset/Engine/Model") },
+			{ String(".animation"), String("Asset/Engine/Animation") },
+			{ String(".collision"), String("Asset/Engine/MeshCollision") },
+			{ String(".material"), String("Asset/Engine/Material") },
+			{ String(".skeleton"), String("Asset/Engine/Skeleton") },
+			{ String(".navmesh"), String("Asset/Engine/Navmesh") },
+			{ String(".zephyr"), String("Asset/Engine/Effect") },
+			{ String(".efk"), String("Asset/Source/Effekseer") },
+			{ String(".efkefc"), String("Asset/Source/Effekseer") },
+			{ String(".effekseer"), String("Asset/Engine/Effekseer") },
+			{ String(".efkmodel"), String("Asset/Source/EffekseerModel") },
+			{ String(".efkmat"), String("Asset/Source/EffekseerMaterial") },
+			{ String(".efkcurve"), String("Asset/Source/EffekseerCurve") },
+			{ String(".mp3"), String("Asset/Source/Audio") },
+			{ String(".wav"), String("Asset/Source/Audio") },
+			{ String(".acb"), String("Asset/Source/Audio") },
+			{ String(".awb"), String("Asset/Source/Audio") },
+			{ String(".audio"), String("Asset/Engine/Audio") },
+			{ String(".ttf"), String("Asset/Source/Font") },
+			{ String(".otf"), String("Asset/Source/Font") },
+			{ String(".ttc"), String("Asset/Source/Font") },
+			{ String(".mp4"), String("Asset/Source/Movie") },
+			{ String(".movie"), String("Asset/Engine/Movie") },
+			{ String(".hdr"), String("Asset/Source/Sky") },
+			{ String(".skymap"), String("Asset/Engine/Sky") },
+			{ String(".prefab"), String("Hierarchy/Prefab") },
+			{ String(".scene"), String("Asset/Engine/Scene") },
+			{ String(".h"), String("Asset/Source/Header") },
+			{ String(".cpp"), String("Asset/Source/CPlusPlus") },
+			{ String(".cs"), String("Asset/Source/CSharp") },
+			{ String(".hlsl"), String("Asset/Source/Hlsl") },
+			{ String(".hlsli"), String("Asset/Source/Hlsl") },
+		};
 
-		return GetAssetIcon(asset.type_);
+		String extension = String(std::filesystem::path(asset.path_.c_str()).extension().string());
+		auto found = icons.find(extension);
+		if (found != icons.end())
+		{
+			return imguiTexture_.Icon(found->second);
+		}
+		return imguiTexture_.Icon(String("Asset/Source/Text"));
 	}
 
 	ImTextureID ContentsDrawerPanel::GetSharingIcon(const AssetRecord& asset)const
@@ -965,25 +956,25 @@ namespace SeedCore
 
 		if (context_.application_.resourceSync_->Conflicted(asset.assetID_))
 		{
-			return imguiTexture_.Icon(IconType::SharedConflict);
+			return imguiTexture_.Icon(String("Sharing/CloudWarning"));
 		}
 
 		if (context_.application_.resourceSync_->Modified(asset.assetID_))
 		{
-			return imguiTexture_.Icon(IconType::SharedModified);
+			return imguiTexture_.Icon(String("Sharing/CloudUpload"));
 		}
 
 		if (context_.application_.resourceSync_->RemoteOnly(asset.assetID_))
 		{
-			return imguiTexture_.Icon(IconType::SharedOutdated);
+			return imguiTexture_.Icon(String("Sharing/CloudDownload"));
 		}
 
-		return imguiTexture_.Icon(IconType::SharedAsset);
+		return imguiTexture_.Icon(String("Sharing/Cloud"));
 	}
 
 	ImTextureID ContentsDrawerPanel::GetFolderIcon(const FolderNode& node)const
 	{
-		return imguiTexture_.Icon(node.children_.empty() && node.assets_.empty() ? IconType::FolderNoItem : IconType::FolderInItem);
+		return imguiTexture_.Icon(node.children_.empty() && node.assets_.empty() ? String("Folder/FolderNoItem") : String("Folder/FolderInItem"));
 	}
 
 	const Char* ContentsDrawerPanel::GetPayloadType(AssetType type)const

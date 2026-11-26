@@ -365,7 +365,7 @@ namespace SeedCore
 
 		ImGui::SameLine();
 
-		if (ImGui::ImageButton("##InitialSceneBrowse", imguiTexture_.Icon(IconType::FolderNoItem), ImVec2(folderIconSize, folderIconSize)))
+		if (ImGui::ImageButton("##InitialSceneBrowse", imguiTexture_.Icon(String("Folder/FolderNoItem")), ImVec2(folderIconSize, folderIconSize)))
 		{
 			std::filesystem::path projectRoot = FileLocator::EngineRoot();
 			std::filesystem::path sceneDirectory = projectRoot / "UserProject" / "Assets" / "Scene";
@@ -588,7 +588,7 @@ namespace SeedCore
 			ImGui::BeginDisabled(!canAdd);
 			Float addIconHeight = ImGui::GetTextLineHeight();
 			ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-			Bool addClicked = ImGui::ImageButton("##add", imguiTexture_.Icon(IconType::Add), ImVec2(addIconHeight, addIconHeight));
+			Bool addClicked = ImGui::ImageButton("##add", imguiTexture_.Icon(String("Misc/Plus")), ImVec2(addIconHeight, addIconHeight));
 			ImGui::PopStyleColor();
 			if (addClicked)
 			{
@@ -617,7 +617,7 @@ namespace SeedCore
 				ImGui::SameLine();
 				ImGui::SetCursorPosX(ImGui::GetWindowContentRegionMax().x - deleteWidth);
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-				Bool removeClicked = ImGui::ImageButton("##remove", imguiTexture_.Icon(IconType::Remove), ImVec2(removeIconHeight, removeIconHeight));
+				Bool removeClicked = ImGui::ImageButton("##remove", imguiTexture_.Icon(String("Misc/Cross")), ImVec2(removeIconHeight, removeIconHeight));
 				ImGui::PopStyleColor();
 				if (removeClicked)
 				{

@@ -51,8 +51,6 @@ namespace SeedCore
 		void BuildDirectory();
 
 	private:
-		ImTextureID GetAssetIcon(AssetType type)const;
-
 		ImTextureID GetAssetIcon(const AssetRecord& asset)const;
 
 		ImTextureID GetSharingIcon(const AssetRecord& asset)const;
@@ -93,23 +91,19 @@ namespace SeedCore
 		enum class ViewType
 		{
 			List,
-
 			Grid,
 		};
 
 		enum class ScriptType
 		{
 			Cpp,
-
 			Csharp,
 		};
 
 		enum class ClipboardType
 		{
 			None,
-
 			Cut,
-
 			Copy,
 		};
 

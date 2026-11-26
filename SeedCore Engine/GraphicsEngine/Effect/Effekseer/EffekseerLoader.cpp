@@ -157,22 +157,7 @@ namespace SeedCore
 
 		for (Int32 index = 0; index < source->GetModelCount(); ++index)
 		{
-			EffekseerModel& imported = asset.models_.emplace_back();
-			DynamicArray<Byte> fileBytes = readFile(source->GetModelPath(index));
-			if (fileBytes.empty())
-			{
-				continue;
-			}
-
-			Effekseer::Model model(fileBytes.data(), static_cast<Int32>(fileBytes.size()));
-			for (Int32 frameIndex = 0; frameIndex < model.GetFrameCount(); ++frameIndex)
-			{
-				EffekseerFrame& frame = imported.frames_.emplace_back();
-				const Byte* vertices = reinterpret_cast<const Byte*>(model.GetVertexes(frameIndex));
-				frame.vertices_.assign(vertices, vertices + static_cast<Size>(model.GetVertexCount(frameIndex)) * sizeof(Effekseer::Model::Vertex));
-				const Byte* faces = reinterpret_cast<const Byte*>(model.GetFaces(frameIndex));
-				frame.faces_.assign(faces, faces + static_cast<Size>(model.GetFaceCount(frameIndex)) * sizeof(Effekseer::Model::Face));
-			}
+			asset.models_.emplace_back().data_ = readFile(source->GetModelPath(index));
 		}
 
 		Effekseer::RefPtr<Effekseer::MaterialCompilerDX12> compiler = Effekseer::MakeRefPtr<Effekseer::MaterialCompilerDX12>();

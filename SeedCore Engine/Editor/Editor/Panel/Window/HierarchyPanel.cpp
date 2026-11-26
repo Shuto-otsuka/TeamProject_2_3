@@ -235,11 +235,11 @@ namespace SeedCore
 		const PrefabRecord* prefabRecord = prefabs ? prefabs->Record(ActorAccessor::GetEntity(actor).GetID()) : nullptr;
 		if (prefabRecord && prefabRecord->fromPrefab_)
 		{
-			icon = isChild ? imguiTexture_.Icon(IconType::PrefabChild) : imguiTexture_.Icon(IconType::Prefab);
+			icon = isChild ? imguiTexture_.Icon(String("Hierarchy/PrefabChild")) : imguiTexture_.Icon(String("Hierarchy/Prefab"));
 		}
 		else
 		{
-			icon = isChild ? imguiTexture_.Icon(IconType::ActorChild) : imguiTexture_.Icon(IconType::Actor);
+			icon = isChild ? imguiTexture_.Icon(String("Hierarchy/ActorChild")) : imguiTexture_.Icon(String("Hierarchy/Actor"));
 		}
 		Float iconSize = ImGui::GetTextLineHeight();
 
@@ -397,7 +397,7 @@ namespace SeedCore
 		}
 
 		ImGui::SameLine(ImGui::GetContentRegionAvail().x + ImGui::GetCursorPosX() - iconSize);
-		ImTextureID activeIcon = actor.Active() ? imguiTexture_.Icon(IconType::ActorActive) : imguiTexture_.Icon(IconType::ActorNonActive);
+		ImTextureID activeIcon = actor.Active() ? imguiTexture_.Icon(String("Hierarchy/ActorActive")) : imguiTexture_.Icon(String("Hierarchy/ActorNonActive"));
 		ImVec2 activePosition = ImGui::GetCursorScreenPos();
 		Float activeYOffset = actor.Active() ? 2.0f : 0.0f;
 		Float activeY = activePosition.y + (ImGui::GetTextLineHeight() - iconSize) * 0.5f + activeYOffset;

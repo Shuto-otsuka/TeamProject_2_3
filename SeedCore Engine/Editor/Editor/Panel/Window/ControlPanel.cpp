@@ -129,12 +129,12 @@ namespace SeedCore
 			if (isPlaying)
 			{
 				ImGui::BeginDisabled();
-				ImGui::ImageButton("##Play", imguiTexture_.Icon(IconType::Play), buttonSize);
+				ImGui::ImageButton("##Play", imguiTexture_.Icon(String("Toolbar/Play")), buttonSize);
 				ImGui::EndDisabled();
 			}
 			else
 			{
-				if (ImGui::ImageButton("##Play", imguiTexture_.Icon(IconType::Play), buttonSize))
+				if (ImGui::ImageButton("##Play", imguiTexture_.Icon(String("Toolbar/Play")), buttonSize))
 				{
 					context_.world_.sceneSystem_->Capture(playModeScene_);
 					playModeMasterVolume_ = MixerSystem::MasterVolume();
@@ -154,13 +154,13 @@ namespace SeedCore
 			if (!isPlaying)
 			{
 				ImGui::BeginDisabled();
-				ImGui::ImageButton("##Pause", imguiTexture_.Icon(IconType::Pause), buttonSize);
+				ImGui::ImageButton("##Pause", imguiTexture_.Icon(String("Toolbar/Pause")), buttonSize);
 				ImGui::EndDisabled();
 			}
 			else if (isPaused)
 			{
 				ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
-				if (ImGui::ImageButton("##Pause", imguiTexture_.Icon(IconType::Pause), buttonSize))
+				if (ImGui::ImageButton("##Pause", imguiTexture_.Icon(String("Toolbar/Pause")), buttonSize))
 				{
 					context_.world_.timer_->Resume();
 				}
@@ -168,7 +168,7 @@ namespace SeedCore
 			}
 			else
 			{
-				if (ImGui::ImageButton("##Pause", imguiTexture_.Icon(IconType::Pause), buttonSize))
+				if (ImGui::ImageButton("##Pause", imguiTexture_.Icon(String("Toolbar/Pause")), buttonSize))
 				{
 					context_.world_.timer_->Pause();
 				}
@@ -179,12 +179,12 @@ namespace SeedCore
 			if (!isPlaying)
 			{
 				ImGui::BeginDisabled();
-				ImGui::ImageButton("##Stop", imguiTexture_.Icon(IconType::Stop), buttonSize);
+				ImGui::ImageButton("##Stop", imguiTexture_.Icon(String("Toolbar/Stop")), buttonSize);
 				ImGui::EndDisabled();
 			}
 			else
 			{
-				if (ImGui::ImageButton("##Stop", imguiTexture_.Icon(IconType::Stop), buttonSize))
+				if (ImGui::ImageButton("##Stop", imguiTexture_.Icon(String("Toolbar/Stop")), buttonSize))
 				{
 					context_.world_.timer_->Stop();
 					context_.world_.sceneSystem_->Reset();

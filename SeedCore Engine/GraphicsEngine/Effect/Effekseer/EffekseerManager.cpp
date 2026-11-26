@@ -31,7 +31,7 @@ namespace SeedCore
 		manager_->SetModelRenderer(renderer_->CreateModelRenderer());
 
 		textureLoader_ = Effekseer::MakeRefPtr<EffekseerTextureLoader>(renderer_->GetGraphicsDevice());
-		modelLoader_ = Effekseer::MakeRefPtr<EffekseerModelLoader>(renderer_->GetGraphicsDevice());
+		modelLoader_ = Effekseer::MakeRefPtr<EffekseerModelLoader>(renderer_->CreateModelLoader());
 		materialLoader_ = Effekseer::MakeRefPtr<EffekseerMaterialLoader>(renderer_->CreateMaterialLoader());
 		curveLoader_ = Effekseer::MakeRefPtr<EffekseerCurveLoader>();
 
@@ -155,8 +155,13 @@ namespace SeedCore
 		return handle;
 	}
 
-	void EffekseerManager::Stop(Effekseer::Handle handle)
+	void EffekseerManager::Stop(Effekseer::Handle handle, EffectStopFlag flag)
 	{
+		if (flag == EffectStopFlag::Finish)
+		{
+			manager_->StopRoot(handle);
+			return;
+		}
 		manager_->StopEffect(handle);
 		SeedCore::erase_if(handles_, [handle](Effekseer::Handle candidate) { return candidate == handle; });
 	}
@@ -171,7 +176,7 @@ namespace SeedCore
 		Effekseer::Matrix43 value;
 		for (Int row = 0;row < 4;++row)
 		{
-			for (Int column = 0;column < 4;++column)
+			for (Int column = 0;column < 3;++column)
 			{
 				value.Value[row][column] = matrix.m[row][column];
 			}

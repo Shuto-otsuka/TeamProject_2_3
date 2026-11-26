@@ -40,27 +40,19 @@ namespace SeedCore
 
 namespace SeedCore
 {
-	EffekseerModelLoader::EffekseerModelLoader(Effekseer::Backend::GraphicsDeviceRef device) :device_(device)
+	EffekseerModelLoader::EffekseerModelLoader(Effekseer::ModelLoaderRef loader) :loader_(loader)
 	{
 		/// No Code
 	}
 
 	Effekseer::ModelRef EffekseerModelLoader::Create(const EffekseerModel& model)
 	{
-		if (model.frames_.empty())
+		if (model.data_.empty())
 		{
 			return nullptr;
 		}
 
-		const EffekseerFrame& frame = model.frames_.front();
-		Effekseer::CustomVector<Effekseer::Model::Vertex> vertices(frame.vertices_.size() / sizeof(Effekseer::Model::Vertex));
-		std::memcpy(vertices.data(), frame.vertices_.data(), frame.vertices_.size());
-		Effekseer::CustomVector<Effekseer::Model::Face> faces(frame.faces_.size() / sizeof(Effekseer::Model::Face));
-		std::memcpy(faces.data(), frame.faces_.data(), frame.faces_.size());
-
-		Effekseer::ModelRef result = Effekseer::MakeRefPtr<Effekseer::Model>(vertices, faces);
-		result->StoreBufferToGPU(device_.Get());
-		return result;
+		return loader_->Load(model.data_.data(), static_cast<Int32>(model.data_.size()));
 	}
 
 	Effekseer::ModelRef EffekseerModelLoader::Load(const Char16* path)
@@ -70,7 +62,7 @@ namespace SeedCore
 
 	void EffekseerModelLoader::Unload(Effekseer::ModelRef data)
 	{
-		/// No Code
+		loader_->Unload(data);
 	}
 }
 

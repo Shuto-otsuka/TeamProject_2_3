@@ -2271,6 +2271,9 @@
     <ClCompile Include="Effect\Effekseer\EffekseerCacheLoader.cpp">
       <Filter>Effect\Effekseer</Filter>
     </ClCompile>
+    <ClCompile Include="Effect\Effect.cpp">
+      <Filter>Effect</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Shader\Sampler.hlsli">

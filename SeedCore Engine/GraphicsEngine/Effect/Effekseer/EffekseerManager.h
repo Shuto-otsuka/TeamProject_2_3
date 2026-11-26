@@ -1,5 +1,6 @@
 #pragma once
 #include <GraphicsEngine/Effect/Effekseer/EffekseerCacheLoader.h>
+#include <GraphicsEngine/Effect/Effect.h>
 
 namespace SeedCore
 {
@@ -24,7 +25,7 @@ namespace SeedCore
 
 		Effekseer::Handle Play(const Effekseer::EffectRef& effect, const Vector3& position);
 
-		void Stop(Effekseer::Handle handle);
+		void Stop(Effekseer::Handle handle, EffectStopFlag flag);
 
 		NODISCARD Bool Playing(Effekseer::Handle handle);
 

@@ -80,7 +80,7 @@ namespace SeedCore
 		ImVec2 inputMin = ImGui::GetItemRectMin();
 		Float inputHeight = ImGui::GetItemRectSize().y;
 		Float iconY = inputMin.y + (inputHeight - iconSize) * 0.5f;
-		ImGui::GetWindowDrawList()->AddImage(imguiTexture_.Icon(IconType::Search), ImVec2(inputMin.x + originalPaddingX, iconY), ImVec2(inputMin.x + originalPaddingX + iconSize, iconY + iconSize));
+		ImGui::GetWindowDrawList()->AddImage(imguiTexture_.Icon(String("Misc/Search")), ImVec2(inputMin.x + originalPaddingX, iconY), ImVec2(inputMin.x + originalPaddingX + iconSize, iconY + iconSize));
 	}
 
 	void AddComponentPanel::DrawComponent(Actor actor)
@@ -217,7 +217,7 @@ namespace SeedCore
 		}
 
 		Float iconSize = ImGui::GetTextLineHeight();
-		ImGui::Image(imguiTexture_.Icon(ImGuiTexture::ComponentIconType(componentName)), ImVec2(iconSize, iconSize));
+		ImGui::Image(imguiTexture_.Icon(String("Component/" + componentName.str()), String("Component/Custom")), ImVec2(iconSize, iconSize));
 		ImGui::SameLine();
 
 		if (ImGui::Selectable(componentName.c_str(), false, ImGuiSelectableFlags_NoAutoClosePopups))

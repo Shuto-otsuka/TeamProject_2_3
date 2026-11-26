@@ -193,7 +193,7 @@ namespace SeedCore
 				ImGui::SameLine();
 				Float iconHeight = ImGui::GetTextLineHeight();
 				ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
-				if (ImGui::ImageButton("##Clear", imguiTexture_.Icon(IconType::Remove), ImVec2(iconHeight, iconHeight)))
+				if (ImGui::ImageButton("##Clear", imguiTexture_.Icon(String("Misc/Cross")), ImVec2(iconHeight, iconHeight)))
 				{
 					parameter.asset_ = 0;
 					changed = true;
