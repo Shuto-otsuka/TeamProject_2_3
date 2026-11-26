@@ -4,19 +4,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Returns the handle for assetID's Prefab, loading and parsing it
-	* from disk on first request; returns a null handle if the asset is
-	* unknown or fails to parse.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* assetID の Prefab へのハンドルを返す。初回リクエスト時にはディスクから
-	* 読み込み・解析する。アセットが不明であるか解析に失敗した場合は
-	* null ハンドルを返す。
-	*/
 	Handle<PrefabBlueprint> PrefabPool::Load(Uint32 assetID, ResourceCache& cache)
 	{
 		auto it = loaded_.find(assetID);
@@ -38,8 +25,6 @@ namespace SeedCore
 			return Handle<PrefabBlueprint>::null();
 		}
 
-		/// [EN] Parsing can throw (malformed JSON); treat any failure as "load failed" rather than propagating the exception.
-		/// [JP] 解析中に例外が投げられる可能性がある（不正な JSON）。例外を伝播させるのではなく、あらゆる失敗を「読み込み失敗」として扱う。
 		try
 		{
 			if (!prefab->Read(asset->fullpath_.c_str()))
@@ -58,17 +43,6 @@ namespace SeedCore
 		return handle;
 	}
 
-	/**
-	* [EN]
-	* Returns a pointer to the Prefab identified by handle, or nullptr
-	* if handle is invalid/stale.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* handle が識別する Prefab へのポインタを返す。handle が無効/失効
-	* していれば nullptr を返す。
-	*/
 	PrefabBlueprint* PrefabPool::Get(Handle<PrefabBlueprint> handle)
 	{
 		return pool_.Get(handle);

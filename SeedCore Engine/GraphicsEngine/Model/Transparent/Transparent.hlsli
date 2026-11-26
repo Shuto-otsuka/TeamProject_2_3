@@ -33,22 +33,11 @@ struct TransparentDrawBindings
 };
 ConstantBuffer<TransparentDrawBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* What TransparentAS hands to TransparentMS: one (instance, meshlet) entry per
-* mesh shader group it launches.
-*/
 struct TransparentPayload
 {
 	uint2 entries_[32];
 };
 
-/**
-* [EN]
-* One layer of a pixel's transparent list: the shaded color premultiplied by
-* its alpha (four halves), the reversed-Z depth, the next layer of the same
-* pixel and the screen-space motion of this layer (two halves).
-*/
 struct TransparentFragmentStructuredBuffer
 {
 	uint color_rg_;
@@ -58,12 +47,6 @@ struct TransparentFragmentStructuredBuffer
 	uint velocity_;
 };
 
-/**
-* [EN]
-* Per-vertex output of the transparent mesh shader and its vertex fallback:
-* everything the pixel shader needs to shade the surface forward, plus this
-* and the previous frame's clip positions for the motion vector.
-*/
 struct TransparentOutput
 {
 	float4 position : SV_Position;
@@ -79,4 +62,4 @@ struct TransparentOutput
 	nointerpolation uint instance_index : BLENDINDICES0;
 };
 
-#endif // __TRANSPARENT_HLSLI__
+#endif

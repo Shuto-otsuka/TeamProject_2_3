@@ -9,17 +9,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Recomputes world matrices for every actor in world, starting from
-	* each root (parentless) actor.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* world 内の全 actor のワールド行列を、各ルート（親を持たない）
-	* actor から開始して再計算する。
-	*/
 	void TransformSystem::Execute(World& world)
 	{
 		ActorRegistry& actors = WorldAccessor::Actors(world);
@@ -29,19 +18,6 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Computes actor's local transform (from its Position/Rotation/Scale
-	* components, if present) combined with parentMatrix, stores it as
-	* actor's world matrix, then recurses into actor's children.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* actor のローカルトランスフォーム（存在すれば Position/Rotation/
-	* Scale コンポーネントから）を parentMatrix と組み合わせて計算し、
-	* actor のワールド行列として保存した後、actor の子へ再帰する。
-	*/
 	void TransformSystem::UpdateActor(Actor actor, const Matrix& parentMatrix, World& world)
 	{
 		Position* position = actor.GetComponent<Position>();

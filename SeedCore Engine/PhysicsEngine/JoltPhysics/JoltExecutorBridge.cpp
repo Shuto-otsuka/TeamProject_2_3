@@ -9,100 +9,142 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* The Jolt job system behind JoltExecutorBridge: submits Jolt jobs to
-	* SeedCore's JobExecutor as JobTaskflow work.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* JoltExecutorBridge の奥にある Jolt のジョブシステム。Jolt ジョブを
-	* JobTaskflow の処理として SeedCore の JobExecutor へ投入する。
+	* JoltExecutorBridge の中身。物理エンジンの仕事を受け取り、エンジンの仕事として流す。
+	*
+	* @brief JoltExecutorBridge の中身
+	*
+	* [EN]
+	* The inside of JoltExecutorBridge; it takes physics jobs and runs them as engine jobs.
+	*
+	* @brief The inside of JoltExecutorBridge
 	*/
 	class JoltExecutorBridge::Impl final :public JPH::JobSystemWithBarrier
 	{
 	public:
 		/**
-		* [EN]
-		* Creates a bridge backed by the supplied executor and barrier capacity.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 指定されたエグゼキューターとバリア容量を使うブリッジを生成する。
+		* 仕事を流す先を覚えて準備する。
+		*
+		* @brief 準備する
+		* @param executor    仕事を流す先
+		* @param maxBarriers 同時に待てる区切りの数
+		*
+		* [EN]
+		* Remembers where to send jobs and gets ready.
+		*
+		* @brief Gets ready
+		* @param executor    Where jobs are sent
+		* @param maxBarriers How many wait points can be used at once
 		*/
 		explicit Impl(JobExecutor& executor, JPH::uint maxBarriers);
 
 		/**
-		* [EN]
-		* Returns the hardware concurrency exposed to Jolt's job scheduler.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* Jolt のジョブスケジューラーへ公開するハードウェア並行数を返す。
+		* 同時に動かせる仕事の数を返す。
+		*
+		* @brief  同時に動かせる数を返す
+		* @return CPU のスレッドの数
+		*
+		* [EN]
+		* Returns how many jobs can run at once.
+		*
+		* @brief  Returns how many can run at once
+		* @return The number of CPU threads
 		*/
 		Int GetMaxConcurrency()const override;
 
 		/**
-		* [EN]
-		* Allocates a Jolt job and queues it immediately when it has no dependencies.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* Jolt ジョブを確保し、依存関係がなければ即座にキューへ投入する。
+		* 仕事を作る。待つものがなければすぐ流す。
+		*
+		* @brief  仕事を作る
+		* @param  name            仕事の名前
+		* @param  color           調べるときの色
+		* @param  function        やること
+		* @param  dependencyCount 先に終わるのを待つ仕事の数
+		* @return 作った仕事
+		*
+		* [EN]
+		* Makes a job, and sends it at once if it has nothing to wait for.
+		*
+		* @brief  Makes a job
+		* @param  name            The job's name
+		* @param  color           The color used when debugging
+		* @param  function        What to do
+		* @param  dependencyCount How many jobs it waits for
+		* @return The new job
 		*/
 		JobHandle CreateJob(const Char* name, JPH::ColorArg color, const JobFunction& function, JPH::uint32 dependencyCount)override;
 
 	protected:
 		/**
-		* [EN]
-		* Submits one Jolt job to the SeedCore executor.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 1つの Jolt ジョブを SeedCore のエグゼキューターへ投入する。
+		* 仕事を1つ流す。
+		*
+		* @brief 仕事を1つ流す
+		* @param job 流す仕事
+		*
+		* [EN]
+		* Sends one job.
+		*
+		* @brief Sends one job
+		* @param job The job to send
 		*/
 		void QueueJob(Job* job)override;
 
 		/**
-		* [EN]
-		* Submits multiple Jolt jobs in one taskflow.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 複数の Jolt ジョブを1つのタスクフローへ投入する。
+		* 仕事をまとめて流す。
+		*
+		* @brief 仕事をまとめて流す
+		* @param jobs     流す仕事
+		* @param jobCount 仕事の数
+		*
+		* [EN]
+		* Sends several jobs together.
+		*
+		* @brief Sends several jobs
+		* @param jobs     The jobs to send
+		* @param jobCount How many there are
 		*/
 		void QueueJobs(Job** jobs, JPH::uint jobCount)override;
 
 		/**
-		* [EN]
-		* Deletes a Jolt job whose reference count reached zero.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 参照カウントがゼロになった Jolt ジョブを削除する。
+		* 終わった仕事を片付ける。
+		*
+		* @brief 仕事を片付ける
+		* @param job 片付ける仕事
+		*
+		* [EN]
+		* Cleans up a finished job.
+		*
+		* @brief Frees a job
+		* @param job The job to free
 		*/
 		void FreeJob(Job* job)override;
 
 	private:
-		/// [EN] SeedCore executor that runs submitted Jolt work.
-		/// [JP] 投入された Jolt 処理を実行する SeedCore エグゼキューター。
+		/// [JP] 仕事を流す先
+		/// [EN] Where jobs are sent
 		JobExecutor& executor_;
 	};
 
 	/**
-	* [EN]
-	* Creates a bridge backed by the supplied executor and barrier capacity.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 指定されたエグゼキューターとバリア容量を使うブリッジを生成する。
+	* 仕事を流す先を覚えて準備する。
+	*
+	* @brief 準備する
+	* @param executor    仕事を流す先
+	* @param maxBarriers 同時に待てる区切りの数
+	*
+	* [EN]
+	* Remembers where to send jobs and gets ready.
+	*
+	* @brief Gets ready
+	* @param executor    Where jobs are sent
+	* @param maxBarriers How many wait points can be used at once
 	*/
 	JoltExecutorBridge::Impl::Impl(JobExecutor& executor, JPH::uint maxBarriers) :JPH::JobSystemWithBarrier(maxBarriers), executor_(executor)
 	{
@@ -110,13 +152,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns the hardware concurrency exposed to Jolt's job scheduler.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Jolt のジョブスケジューラーへ公開するハードウェア並行数を返す。
+	* 同時に動かせる仕事の数を返す。
+	*
+	* @brief  同時に動かせる数を返す
+	* @return CPU のスレッドの数
+	*
+	* [EN]
+	* Returns how many jobs can run at once.
+	*
+	* @brief  Returns how many can run at once
+	* @return The number of CPU threads
 	*/
 	Int JoltExecutorBridge::Impl::GetMaxConcurrency()const
 	{
@@ -124,21 +170,31 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Allocates a Jolt job and queues it immediately when it has no dependencies.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Jolt ジョブを確保し、依存関係がなければ即座にキューへ投入する。
+	* 仕事を作る。待つものがなければすぐ流す。
+	*
+	* @brief  仕事を作る
+	* @param  name            仕事の名前
+	* @param  color           調べるときの色
+	* @param  function        やること
+	* @param  dependencyCount 先に終わるのを待つ仕事の数
+	* @return 作った仕事
+	*
+	* [EN]
+	* Makes a job, and sends it at once if it has nothing to wait for.
+	*
+	* @brief  Makes a job
+	* @param  name            The job's name
+	* @param  color           The color used when debugging
+	* @param  function        What to do
+	* @param  dependencyCount How many jobs it waits for
+	* @return The new job
 	*/
 	JoltExecutorBridge::Impl::JobHandle JoltExecutorBridge::Impl::CreateJob(const Char* inName, JPH::ColorArg inColor, const JobFunction& inJobFunction, JPH::uint32 inNumDependencies)
 	{
 		Job* job = new Job(inName, inColor, this, inJobFunction, inNumDependencies);
 		JobHandle handle(job);
 
-		/// [EN] A job with dependencies is queued later by Jolt, once the last one finishes.
-		/// [JP] 依存のあるジョブは、最後の依存が終わったときに Jolt が後から投入する。
 		if (inNumDependencies == 0)
 		{
 			QueueJob(job);
@@ -148,18 +204,22 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Submits one Jolt job to the SeedCore executor.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 1つの Jolt ジョブを SeedCore のエグゼキューターへ投入する。
+	* 仕事を1つ流す。
+	*
+	* @brief 仕事を1つ流す
+	* @param job 流す仕事
+	*
+	* [EN]
+	* Sends one job.
+	*
+	* @brief Sends one job
+	* @param job The job to send
 	*/
 	void JoltExecutorBridge::Impl::QueueJob(Job* inJob)
 	{
-		/// [EN] The task holds its own reference, released after the job runs, so the job outlives Jolt's handle if needed.
-		/// [JP] タスクが自分の参照を持ち、ジョブを実行した後で解放する。これで Jolt 側のハンドルが先に消えてもジョブは残る。
+		/// [JP] 終わるまで消えないように持っておき、1つの流れにして流す
+		/// [EN] Hold on to the job until it finishes and send it as one flow
 		inJob->AddRef();
 
 		ResourceRef<JobTaskflow> flow = MakeRef<JobTaskflow>();
@@ -169,8 +229,6 @@ namespace SeedCore
 				inJob->Release();
 			});
 
-		/// [EN] The completion callback captures the flow, keeping it alive until the executor is done with it.
-		/// [JP] 完了コールバックがフローを捕まえ、エグゼキューターが使い終わるまでフローを生かしておく。
 		executor_.Run(*flow, [flow]()
 			{
 				/// No Code
@@ -178,24 +236,28 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Submits multiple Jolt jobs in one taskflow.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 複数の Jolt ジョブを1つのタスクフローへ投入する。
+	* 仕事をまとめて流す。
+	*
+	* @brief 仕事をまとめて流す
+	* @param jobs     流す仕事
+	* @param jobCount 仕事の数
+	*
+	* [EN]
+	* Sends several jobs together.
+	*
+	* @brief Sends several jobs
+	* @param jobs     The jobs to send
+	* @param jobCount How many there are
 	*/
 	void JoltExecutorBridge::Impl::QueueJobs(Job** inJobs, JPH::uint inNumJobs)
 	{
-		/// [EN] The jobs have no order between them, so they go into one flow as independent tasks.
-		/// [JP] ジョブ同士に順序は無いので、独立したタスクとして1つのフローへ入れる。
+		/// [JP] 全部の仕事を1つの流れに入れて、まとめて流す
+		/// [EN] Put every job into one flow and send them together
 		ResourceRef<JobTaskflow> flow = MakeRef<JobTaskflow>();
 
 		for (JPH::uint index = 0; index < inNumJobs; ++index)
 		{
-			/// [EN] Each task holds its own reference, released after its job runs.
-			/// [JP] 各タスクが自分の参照を持ち、ジョブを実行した後で解放する。
 			Job* inJob = inJobs[index];
 			inJob->AddRef();
 			flow->emplace([inJob]()
@@ -205,8 +267,6 @@ namespace SeedCore
 				});
 		}
 
-		/// [EN] The completion callback captures the flow, keeping it alive until the executor is done with it.
-		/// [JP] 完了コールバックがフローを捕まえ、エグゼキューターが使い終わるまでフローを生かしておく。
 		executor_.Run(*flow, [flow]()
 			{
 				/// No Code
@@ -214,13 +274,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Deletes a Jolt job whose reference count reached zero.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 参照カウントがゼロになった Jolt ジョブを削除する。
+	* 終わった仕事を片付ける。
+	*
+	* @brief 仕事を片付ける
+	* @param job 片付ける仕事
+	*
+	* [EN]
+	* Cleans up a finished job.
+	*
+	* @brief Frees a job
+	* @param job The job to free
 	*/
 	void JoltExecutorBridge::Impl::FreeJob(Job* inJob)
 	{
@@ -228,39 +292,39 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Creates a bridge backed by the supplied executor and barrier capacity.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 指定されたエグゼキューターとバリア容量を使うブリッジを生成する。
+	* 仕事を流す先を受け取って準備する。
+	*
+	* @brief 準備する
+	* @param executor    仕事を流す先
+	* @param maxBarriers 同時に待てる区切りの数
+	*
+	* [EN]
+	* Takes where to send jobs and gets ready.
+	*
+	* @brief Gets ready
+	* @param executor    Where jobs are sent
+	* @param maxBarriers How many wait points can be used at once
 	*/
 	JoltExecutorBridge::JoltExecutorBridge(JobExecutor& executor, Uint32 maxBarriers) :impl_(MakePtr<Impl>(executor, static_cast<JPH::uint>(maxBarriers)))
 	{
 		/// No Code
 	}
 
-	/**
-	* [EN]
-	* Defined here, where Impl is a complete type.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Impl が完全型になるここで定義する。
-	*/
 	JoltExecutorBridge::~JoltExecutorBridge() = default;
 
 	/**
-	* [EN]
-	* Returns the bridge as the Jolt job system to hand to the physics
-	* update.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 物理の更新へ渡す Jolt のジョブシステムとして、ブリッジを返す。
+	* 物理エンジンに渡す、仕事の仕組みを返す。
+	*
+	* @brief  物理エンジン用の仕組みを返す
+	* @return 物理エンジンに渡す仕組み
+	*
+	* [EN]
+	* Returns the job system to hand to the physics engine.
+	*
+	* @brief  Returns the physics job system
+	* @return The job system for the physics engine
 	*/
 	JPH::JobSystem* JoltExecutorBridge::Native()
 	{

@@ -7,232 +7,266 @@ namespace SeedCore
 	class Sound;
 
 	/**
-	* [EN]
-	* Component that owns a playback voice and optionally positions it as a
-	* 3D sound source. It supports cue sheets, wave data and automatic playback.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 再生ボイスを所有し、必要に応じて 3D 音源として配置するコンポーネント。
-	* キューシート、波形データ、自動再生に対応する。
+	* アクターにつけると、そこから音が鳴る部品。
+	*
+	* @brief 音を鳴らす部品
+	*
+	* [EN]
+	* Put it on an actor and sound plays from there.
+	*
+	* @brief A part that plays sound
 	*/
-	class SEEDCORE_API AudioSource :public SeedScript
+	class AudioSource :public SeedScript
 	{
 	private:
 		friend class AudioSystem;
 
 	public:
-		/// [EN] Asset ID of the sound assigned to this source.
-		/// [JP] この音源へ割り当てるサウンドのアセット ID。
+		/// [JP] 鳴らす音のアセット番号
+		/// [EN] The asset number of the sound to play
 		SC_PAYLOAD_FIELD_EX("サウンド", Audio)
 		Uint32 soundID_ = 0;
 
-		/// [EN] Cue name selected when the assigned sound is a cue sheet.
-		/// [JP] 割り当てたサウンドがキューシートの場合に選択するキュー名。
+		/// [JP] キューシートのときに鳴らすキューの名前
+		/// [EN] The cue name to play for a cue sheet
 		SC_SERIALIZE_FIELD()
 		String cueName_;
 
-		/// [EN] Whether playback starts automatically after the sound is resolved.
-		/// [JP] サウンドの解決後に再生を自動で開始するか。
+		/// [JP] 始まったときに自動で鳴らすか
+		/// [EN] Whether it plays on its own when it starts
 		SC_REFLECTION_FIELD_EX("自動再生")
 		Bool autoPlay_ = false;
 
-		/// [EN] Whether playback repeats continuously.
-		/// [JP] 再生を繰り返すか。
+		/// [JP] くり返し鳴らすか
+		/// [EN] Whether it repeats
 		SC_REFLECTION_FIELD_EX("ループ再生")
 		Bool loop_ = false;
 
-		/// [EN] Playback volume multiplier.
-		/// [JP] 再生音量の倍率。
+		/// [JP] 音の大きさ
+		/// [EN] How loud it is
 		SC_REFLECTION_CLAMPED_EX("音量", 0.0f, 5.0f)
 		Float volume_ = 1.0f;
 
-		/// [EN] Playback pitch offset in semitones.
-		/// [JP] 半音単位の再生ピッチ差分。
+		/// [JP] 音の高さ（半音いくつ分）
+		/// [EN] The pitch, in half steps
 		SC_REFLECTION_CLAMPED_EX("ピッチ(半音)", -12.0f, 12.0f)
 		Float pitch_ = 0.0f;
 
-		/// [EN] Whether the playback voice is attached to a 3D source.
-		/// [JP] 再生ボイスを 3D 音源へ接続するか。
+		/// [JP] 場所によって聞こえ方を変えるか
+		/// [EN] Whether it sounds different depending on where it is
 		SC_REFLECTION_FIELD_EX("立体音響")
 		Bool spatial_ = true;
 
-		/// [EN] Distance at which spatial attenuation begins.
-		/// [JP] 空間減衰が始まる距離。
+		/// [JP] 音が小さくなり始める距離
+		/// [EN] Where the sound starts getting quieter
 		SC_REFLECTION_FIELD_CONDITION(spatial_)
 		SC_REFLECTION_CLAMPED_EX("減衰開始距離", 0.0f, 10000.0f)
 		Float minDistance_ = 1.0f;
 
-		/// [EN] Distance at which spatial attenuation reaches its far limit.
-		/// [JP] 空間減衰が遠距離側の限界へ達する距離。
+		/// [JP] 音が聞こえなくなる距離
+		/// [EN] Where the sound can no longer be heard
 		SC_REFLECTION_FIELD_CONDITION(spatial_)
 		SC_REFLECTION_CLAMPED_EX("減衰終了距離", 0.0f, 10000.0f)
 		Float maxDistance_ = 50.0f;
 
 	public:
 		/**
-		* [EN]
-		* Creates the playback voice and 3D source used by this component.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* このコンポーネントが使う再生ボイスと 3D 音源を生成する。
+		* 音を鳴らすプレイヤーと音源を用意する。
+		*
+		* @brief プレイヤーと音源を用意する
+		*
+		* [EN]
+		* Gets the player and source ready.
+		*
+		* @brief Gets the player and source ready
 		*/
-		void OnAwake();
+		SEEDCORE_API void OnAwake();
 
 		/**
-		* [EN]
-		* Destroys the playback voice and 3D source.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 再生ボイスと 3D 音源を破棄する。
+		* 用意したプレイヤーと音源を片付ける。
+		*
+		* @brief プレイヤーと音源を片付ける
+		*
+		* [EN]
+		* Cleans up the player and source.
+		*
+		* @brief Cleans up the player and source
 		*/
-		void OnDestroy();
+		SEEDCORE_API void OnDestroy();
 
 		/**
-		* [EN]
-		* Draws the cue selector for a loaded cue-sheet sound.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 読み込み済みのキューシート用にキュー選択 UI を描画する。
-		*/
-		void OnInspectorGUI();
-
-	public:
-		/**
+		* インスペクターに、キューの選択や再生ボタンを出す。
+		*
+		* @brief インスペクターの表示
+		*
 		* [EN]
-		* Starts playback using the configured sound and cue name.
+		* Shows the cue picker and play buttons in the inspector.
 		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 設定済みのサウンドとキュー名を使って再生を開始する。
+		* @brief What the inspector shows
 		*/
-		void Play();
-
-		/**
-		* [EN]
-		* Selects a cue name and starts playback.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* キュー名を選択して再生を開始する。
-		*/
-		void Play(const String& cueName);
-
-		/**
-		* [EN]
-		* Stops the current playback.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 現在の再生を停止する。
-		*/
-		void Stop();
-
-		/**
-		* [EN]
-		* Pauses the current playback.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 現在の再生を一時停止する。
-		*/
-		void Pause();
-
-		/**
-		* [EN]
-		* Resumes paused playback.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 一時停止中の再生を再開する。
-		*/
-		void Resume();
+		SEEDCORE_API void OnInspectorGUI();
 
 	public:
 		/**
-		* [EN]
-		* Reports whether this source is currently playing.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* この音源が現在再生中かを返す。
+		* 決めてある音を鳴らす。
+		*
+		* @brief 音を鳴らす
+		*
+		* [EN]
+		* Plays the chosen sound.
+		*
+		* @brief Plays the sound
 		*/
-		Bool Playing()const;
+		SEEDCORE_API void Play();
+
+		/**
+		* [JP]
+		* キューの名前を指定して鳴らす。
+		*
+		* @brief 名前を指定して鳴らす
+		* @param cueName 鳴らすキューの名前
+		*
+		* [EN]
+		* Plays a cue by its name.
+		*
+		* @brief Plays a cue by name
+		* @param cueName The name of the cue to play
+		*/
+		SEEDCORE_API void Play(const String& cueName);
+
+		/**
+		* [JP]
+		* 音を止める。
+		*
+		* @brief 音を止める
+		*
+		* [EN]
+		* Stops the sound.
+		*
+		* @brief Stops the sound
+		*/
+		SEEDCORE_API void Stop();
+
+		/**
+		* [JP]
+		* 音を一時停止する。
+		*
+		* @brief 一時停止する
+		*
+		* [EN]
+		* Pauses the sound.
+		*
+		* @brief Pauses
+		*/
+		SEEDCORE_API void Pause();
+
+		/**
+		* [JP]
+		* 一時停止した音を続きから鳴らす。
+		*
+		* @brief 再開する
+		*
+		* [EN]
+		* Plays a paused sound again.
+		*
+		* @brief Resumes
+		*/
+		SEEDCORE_API void Resume();
+
+	public:
+		/**
+		* [JP]
+		* 今鳴っているかを調べる。
+		*
+		* @brief  鳴っているか調べる
+		* @return 鳴っていたら true
+		*
+		* [EN]
+		* Checks whether it is playing.
+		*
+		* @brief  Checks if it is playing
+		* @return True if it is playing
+		*/
+		SEEDCORE_API Bool Playing()const;
 
 	private:
 		/**
-		* [EN]
-		* Replaces the resolved Sound and records the current asset ID.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 解決済み Sound を置き換え、現在のアセット ID を記録する。
+		* 読み込んだ音を受け取って、鳴らす準備をする。
+		*
+		* @brief 鳴らす準備をする
+		* @param sound 使う音。音がないときは nullptr
+		*
+		* [EN]
+		* Takes the loaded sound and gets ready to play it.
+		*
+		* @brief Gets ready to play
+		* @param sound The sound to use, or nullptr if there is none
 		*/
 		void Build(Sound* sound);
 
 		/**
-		* [EN]
-		* Applies the current transform and playback settings to the audio handles.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 現在の変換と再生設定をオーディオハンドルへ反映する。
+		* 毎フレーム、音源の場所や音量を伝える。
+		*
+		* @brief 場所や音量を伝える
+		* @param deltaTime 前のフレームからの時間
+		*
+		* [EN]
+		* Every frame, sends the source position, volume and so on.
+		*
+		* @brief Sends position and volume
+		* @param deltaTime Time since the last frame
 		*/
 		void Apply(Float deltaTime);
 
 		/**
-		* [EN]
-		* Reports whether the assigned sound ID still needs to be resolved.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 割り当てられたサウンド ID をまだ解決する必要があるかを返す。
+		* 音の準備がまだ終わっていないかを調べる。
+		*
+		* @brief  準備待ちか調べる
+		* @return まだ準備が必要なら true
+		*
+		* [EN]
+		* Checks whether the sound still needs to be set up.
+		*
+		* @brief  Checks if setup is still needed
+		* @return True if it still needs setting up
 		*/
 		Bool Pending()const;
 
 	private:
-		/// [EN] CRI playback voice controlled by this component.
-		/// [JP] このコンポーネントが制御する CRI 再生ボイス。
+		/// [JP] 音を鳴らすプレイヤー
+		/// [EN] The player that plays the sound
 		ScAudioPlayerHandle player_ = nullptr;
 
-		/// [EN] CRI 3D source used for spatial playback.
-		/// [JP] 空間再生に使う CRI 3D 音源。
+		/// [JP] 音が出る場所
+		/// [EN] Where the sound comes from
 		ScAudioSourceHandle source_ = nullptr;
 
-		/// [EN] Sound currently resolved from soundID_.
-		/// [JP] soundID_ から現在解決されている Sound。
+		/// [JP] 使っている音
+		/// [EN] The sound in use
 		Sound* sound_ = nullptr;
 
-		/// [EN] World-space position retained from the preceding source update.
-		/// [JP] 前回の音源更新時から保持するワールド空間上の位置。
+		/// [JP] 前のフレームの場所。動く速さを出すのに使う
+		/// [EN] Where it was last frame, used to work out how fast it moves
 		Vector3 previousPosition_ = { 0.0f, 0.0f, 0.0f };
 
-		/// [EN] Asset ID represented by sound_.
-		/// [JP] sound_ が表すアセット ID。
+		/// [JP] 準備に使った音の番号。変わったら準備し直す
+		/// [EN] The sound number it was set up with; set up again if it changes
 		Uint32 resolvedSoundID_ = 0;
 
-		/// [EN] Whether the player is currently attached to the 3D source.
-		/// [JP] プレイヤーが現在 3D 音源へ接続されているか。
+		/// [JP] 音源をプレイヤーにつないでいるか
+		/// [EN] Whether the source is connected to the player
 		Bool attached_ = false;
 
-		/// [EN] Whether automatic playback has already been requested for the current sound.
-		/// [JP] 現在のサウンドに対して自動再生を既に要求したか。
+		/// [JP] 自動再生をもう済ませたか
+		/// [EN] Whether the auto play has already happened
 		Bool autoPlayStarted_ = false;
 	};
 	REGISTER_COMPONENT(AudioSource, "Audio");

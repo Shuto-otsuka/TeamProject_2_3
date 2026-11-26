@@ -31,4 +31,4 @@ float3 RaytracingVolumetricLightFroxelToWorld(float3 froxel_coordinate, uint3 fr
 	return mul(float4(view_position, 1.0), inverse_view).xyz;
 }
 
-#endif // __RAYTRACING_VOLUMETRIC_LIGHT_HLSLI__
+#endif

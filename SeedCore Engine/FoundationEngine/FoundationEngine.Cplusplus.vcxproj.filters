@@ -499,6 +499,9 @@
     <ClCompile Include="Application\Bootstrap.cpp">
       <Filter>Application</Filter>
     </ClCompile>
+    <ClCompile Include="Utility\Widgets.cpp">
+      <Filter>Utility</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Log\DxFail.h">
@@ -1114,6 +1117,9 @@
     </ClInclude>
     <ClInclude Include="Math\Geometry\Ray.h">
       <Filter>Math\Geometry</Filter>
+    </ClInclude>
+    <ClInclude Include="Utility\Widgets.h">
+      <Filter>Utility</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

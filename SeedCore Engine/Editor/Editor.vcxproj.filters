@@ -22,28 +22,16 @@
     <Filter Include="Editor\Node">
       <UniqueIdentifier>{6adcd218-5396-471d-9d7f-d45885d35263}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Editor\Panel\Window">
+      <UniqueIdentifier>{27517461-a859-45f9-b990-a74070be9675}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Editor\Panel\Embed">
+      <UniqueIdentifier>{82c1c051-428f-426b-9eaf-f1e20ebe4bdc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Editor\ImGui\ImGuiRenderer.cpp">
       <Filter>Editor\ImGui</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\GameWindowPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\EditorWindowPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\HierarchyPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\ConsolePanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\ContentsDrawerPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\InspectorPanel.cpp">
-      <Filter>Editor\Panel</Filter>
     </ClCompile>
     <ClCompile Include="Editor\Editor.cpp">
       <Filter>Editor</Filter>
@@ -57,57 +45,12 @@
     <ClCompile Include="Editor\Main.cpp">
       <Filter>Editor</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\Panel\AddComponentPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\ControlPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\MenuBarPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\ImGui\ImGuiTexture.cpp">
       <Filter>Editor\ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\Panel\GuizmoPanel3D.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\GuizmoPanel2D.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
     <ClCompile Include="Prelude.cpp" />
-    <ClCompile Include="Editor\Panel\ProfilerPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\VersionPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\TodoListPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\SpecMemoPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\ShortCutKeyPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\CanvasViewPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\GraphicsMenuPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\Build\RuntimeBuilder.cpp">
       <Filter>Editor\Build</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\AnimatorControllerPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\TimelinePanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\ModelTransformPanel.cpp">
-      <Filter>Editor\Panel</Filter>
     </ClCompile>
     <ClCompile Include="Editor\Build\HotReload.cpp">
       <Filter>Editor\Build</Filter>
@@ -115,32 +58,8 @@
     <ClCompile Include="Editor\Build\VisualStudioAutomation.cpp">
       <Filter>Editor\Build</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\Panel\ConfigPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\LayerSettingsPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\MaterialViewerPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\SkeletonControllerPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\AvatarPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\Build\AtomCraft.cpp">
       <Filter>Editor\Build</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\DiagnosticsPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\BootScreenPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\ResourceSyncControlPanel.cpp">
-      <Filter>Editor\Panel</Filter>
     </ClCompile>
     <ClCompile Include="Editor\Context\SelectionContext.cpp">
       <Filter>Editor\Context</Filter>
@@ -151,17 +70,116 @@
     <ClCompile Include="Editor\Interaction\ActorEditing.cpp">
       <Filter>Editor\Interaction</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\Panel\BenchmarkPanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\ViewModePanel.cpp">
-      <Filter>Editor\Panel</Filter>
-    </ClCompile>
     <ClCompile Include="Editor\Node\NodeCanvas.cpp">
       <Filter>Editor\Node</Filter>
     </ClCompile>
-    <ClCompile Include="Editor\Panel\EffectGraphPanel.cpp">
+    <ClCompile Include="Editor\Panel\PanelGroup.cpp">
       <Filter>Editor\Panel</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\AnimatorControllerPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\AvatarPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\BootScreenPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\ConfigPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\ContentsDrawerPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\ControlPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\DiagnosticsPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\EditorWindowPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\EffectGraphPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\GameWindowPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\HierarchyPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\InspectorPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\LayerSettingsPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\MaterialViewerPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\MenuBarPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\ModelTransformPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\ShortCutKeyPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\SkeletonControllerPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\SpecMemoPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\TimelinePanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\TodoListPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\VersionPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Embed\AddComponentPanel.cpp">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Embed\CanvasViewPanel.cpp">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Embed\ConsolePanel.cpp">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Embed\GraphicsMenuPanel.cpp">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Embed\GuizmoPanel2D.cpp">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Embed\GuizmoPanel3D.cpp">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Embed\ResourceSyncControlPanel.cpp">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Embed\ViewModePanel.cpp">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Embed\EditorViewPanel.cpp">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Embed\GameViewPanel.cpp">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\CanvasWindowPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\FullscreenPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClCompile>
+    <ClCompile Include="Editor\Panel\Window\BenchmarkPanel.cpp">
+      <Filter>Editor\Panel\Window</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -170,24 +188,6 @@
     </ClInclude>
     <ClInclude Include="Editor\ImGui\ImGuiRenderer.h">
       <Filter>Editor\ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\GameWindowPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\EditorWindowPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\HierarchyPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\ConsolePanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\ContentsDrawerPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\InspectorPanel.h">
-      <Filter>Editor\Panel</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Editor.h">
       <Filter>Editor</Filter>
@@ -198,56 +198,11 @@
     <ClInclude Include="Editor\Framework.h">
       <Filter>Editor</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\Panel\AddComponentPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\ControlPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\MenuBarPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\ImGui\ImGuiTexture.h">
       <Filter>Editor\ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\Panel\GuizmoPanel3D.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\GuizmoPanel2D.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\ProfilerPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\VersionPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\TodoListPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\SpecMemoPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\ShortCutKeyPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\CanvasViewPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\GraphicsMenuPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\Build\RuntimeBuilder.h">
       <Filter>Editor\Build</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\AnimatorControllerPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\TimelinePanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\ModelTransformPanel.h">
-      <Filter>Editor\Panel</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Build\HotReload.h">
       <Filter>Editor\Build</Filter>
@@ -255,32 +210,8 @@
     <ClInclude Include="Editor\Build\VisualStudioAutomation.h">
       <Filter>Editor\Build</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\Panel\ConfigPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\LayerSettingsPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\MaterialViewerPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\SkeletonControllerPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\AvatarPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\Build\AtomCraft.h">
       <Filter>Editor\Build</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\DiagnosticsPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\BootScreenPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\ResourceSyncControlPanel.h">
-      <Filter>Editor\Panel</Filter>
     </ClInclude>
     <ClInclude Include="Editor\Context\ApplicationContext.h">
       <Filter>Editor\Context</Filter>
@@ -321,17 +252,119 @@
     <ClInclude Include="Editor\Interaction\ActorEditing.h">
       <Filter>Editor\Interaction</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\Panel\BenchmarkPanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
-    <ClInclude Include="Editor\Panel\ViewModePanel.h">
-      <Filter>Editor\Panel</Filter>
-    </ClInclude>
     <ClInclude Include="Editor\Node\NodeCanvas.h">
       <Filter>Editor\Node</Filter>
     </ClInclude>
-    <ClInclude Include="Editor\Panel\EffectGraphPanel.h">
+    <ClInclude Include="Editor\Panel\PanelGroup.h">
       <Filter>Editor\Panel</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\AnimatorControllerPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\AvatarPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\BootScreenPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\ConfigPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\ContentsDrawerPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\ControlPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\DiagnosticsPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\EditorWindowPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\EffectGraphPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\GameWindowPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\HierarchyPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\InspectorPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\LayerSettingsPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\MaterialViewerPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\MenuBarPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\ModelTransformPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\ShortCutKeyPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\SkeletonControllerPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\SpecMemoPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\TimelinePanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\TodoListPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\VersionPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Embed\AddComponentPanel.h">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Embed\CanvasViewPanel.h">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Embed\ConsolePanel.h">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Embed\GraphicsMenuPanel.h">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Embed\GuizmoPanel2D.h">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Embed\GuizmoPanel3D.h">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Embed\ResourceSyncControlPanel.h">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Embed\ViewModePanel.h">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Panel.h">
+      <Filter>Editor\Panel</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Embed\EditorViewPanel.h">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Embed\GameViewPanel.h">
+      <Filter>Editor\Panel\Embed</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\CanvasWindowPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\FullscreenPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="Editor\Panel\Window\BenchmarkPanel.h">
+      <Filter>Editor\Panel\Window</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

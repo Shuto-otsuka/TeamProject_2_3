@@ -147,8 +147,6 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Frames still in flight may sample the current atlas, so every update writes a new texture under a new index and hands the old pair to the heap's deferred release.
-		/// [JP] 実行中のフレームが今のアトラスを読んでいる可能性があるため、更新のたびに新しい番号で新しいテクスチャへ書き、古い組はヒープの遅延解放へ渡す。
 		if (atlasTextureIndexAllocated_)
 		{
 			bindlessHeap->Release(atlasTexture_, atlasTextureIndex_);
@@ -169,8 +167,6 @@ namespace SeedCore
 		resourceDesc.SampleDesc.Count = 1;
 		resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 
-		/// [EN] The texture starts in the COMMON state, so the copy queue writes it and the frame reads it without explicit transitions.
-		/// [JP] テクスチャは COMMON 状態で始まるので、コピーキューが書き、フレームが読むのに明示的な遷移は要らない。
 		if (FAILED(device->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_COMMON, nullptr, IID_PPV_ARGS(atlasTexture_.ReleaseAndGetAddressOf()))))
 		{
 			return;

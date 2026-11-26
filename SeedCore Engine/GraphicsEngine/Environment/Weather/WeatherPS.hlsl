@@ -2,21 +2,6 @@
 #include <GraphicsEngine/Shader/Sampler.hlsli>
 #include <GraphicsEngine/Illumination/VolumetricLight/Froxel.hlsli>
 
-/**
-* [EN]
-* Weather.Draw: shapes the quad into a particle. Rain is a thin streak with
-* a Gaussian falloff across its width and a linear falloff along its length;
-* snow is a soft round flake. The additive blend weights the color by alpha;
-* the light also fades through the fog between the particle and the camera
-* (the transmittance at its depth in VolumetricLight.Fog).
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Weather.Draw。四角形をパーティクルの形にする。雨は幅方向にガウスで、長さ方向に
-* 直線で薄くなる細い筋、雪は柔らかい丸い粒。加算ブレンドは色をアルファで重み付けする。
-* 光はパーティクルとカメラの間のフォグでも弱まる（VolumetricLight.Fog の自分の深度の透過率）。
-*/
 float4 main(WeatherOutput input) : SV_Target0
 {
 	float alpha;

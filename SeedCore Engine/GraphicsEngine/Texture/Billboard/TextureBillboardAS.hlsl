@@ -4,29 +4,6 @@
 groupshared TextureBillboardPayload payload;
 groupshared uint candidates[32];
 
-/**
-* [EN]
-* Texture.Billboard culling: one thread group per 32 consecutive entries of
-* the billboard section of Texture.Draws, one thread per quad. The quad's
-* four corners are placed in the world exactly as TextureBillboardMS places
-* them (facing the camera when the unit asks to), and the quad is kept when
-* the sphere around them touches the view frustum. The survivors are packed
-* in draw-list order so the premultiplied blend still layers them as
-* Texture.Expand ordered them, and the group ends in exactly one DispatchMesh,
-* launching one TextureBillboardMS group for all of them (none when nothing
-* survives).
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Texture.Billboard のカリング。Texture.Draws のビルボードの区間の連続する 32 件に
-* つき 1 スレッドグループ、四角形 1 つにつき 1 スレッド。四角形の 4 隅を
-* TextureBillboardMS と同じ式で（ユニットが求めればカメラに向けて）ワールドに置き、
-* それを囲む球が視錐台に触れていれば残す。残ったものは描画リストの順のまま詰める
-* ので、プリマルチプライドのブレンドは Texture.Expand が並べた順に重なる。どの
-* グループも最後に DispatchMesh をちょうど 1 回呼び、残った全部を
-* TextureBillboardMS の 1 グループで描く（何も残らなければ起動しない）。
-*/
 [NumThreads(32, 1, 1)]
 void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID)
 {

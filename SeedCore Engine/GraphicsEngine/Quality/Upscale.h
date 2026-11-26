@@ -25,14 +25,6 @@ namespace SeedCore
 		UpscaleMode mode_ = UpscaleMode::MaxQuality;
 	};
 
-	/// [EN] Standard NVIDIA DLSS per-dimension render/output ratios, shared by
-	///      both DLSS Ray Reconstruction and TAAU. Used to derive the native
-	///      render resolution from the target output resolution whichever of
-	///      the two upscale paths is active.
-	/// [JP] NVIDIA DLSS の標準的な次元ごとのレンダー/出力比率。DLSS Ray
-	///      Reconstruction・TAAU 双方で共有する。有効なアップスケール経路が
-	///      どちらであっても、目標出力解像度からネイティブレンダー解像度を
-	///      導出するのに使う。
 	inline Float UpscaleRenderScale(UpscaleMode mode)
 	{
 		switch (mode)

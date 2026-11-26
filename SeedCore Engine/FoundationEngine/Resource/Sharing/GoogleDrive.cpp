@@ -5,57 +5,18 @@ namespace SeedCore
 {
 	static Bool SendDrive(HttpClient& http, GoogleAuth& auth, String& error, const String& method, const String& url, const nlohmann::json& request, nlohmann::json& result);
 
-	/**
-	* [EN]
-	* Takes the transport and the sign-in that every request depends on.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* すべてのリクエストが依存する、通信手段とログイン情報を受け取る。
-	*/
 	GoogleDrive::GoogleDrive(HttpClient& http, GoogleAuth& auth) : http_(http), auth_(auth)
 	{
 		/// No Code
 	}
 
-	/**
-	* [EN]
-	* Nothing to undo: uploads and downloads finish before their call
-	* returns, and the transport and sign-in belong to someone else.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 後始末は要らない。アップロードもダウンロードも呼び出しが戻る前に
-	* 終わっており、通信手段とログイン情報の持ち主は別にいるため。
-	*/
 	GoogleDrive::~GoogleDrive()
 	{
-		/// [EN] An upload session abandoned by a crash is discarded by Drive on its own after about a week.
-		/// [JP] クラッシュで放置されたアップロードの窓口は、1週間ほどで Drive 側が自分で破棄する。
-
 		/// No Code
 	}
 
-	/**
-	* [EN]
-	* Returns the identifier of the child of parentId named name, or an
-	* empty string when the folder holds no such child.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* parentId の中にある name という名前の子の識別子を返す。該当する
-	* 子が無ければ空文字列を返す。
-	*/
 	String GoogleDrive::Find(const String& name, const String& parentId)
 	{
-		/// [EN] Drive has no lookup by path, so a search by name within one parent takes its place.
-		/// [JP] Drive にはパスで引く仕組みが無いため、親を1つ指定して名前で検索する形で代用する。
-
-		/// [EN] Quotes and backslashes are escaped, since left as they are they would break out of the string literals in the query.
-		/// [JP] 引用符と逆斜線は打ち消しておく。そのままだと、クエリ内の文字列リテラルを抜け出してしまうため。
 		std::string escapedName;
 		for (Char character : name.str())
 		{
@@ -75,20 +36,14 @@ namespace SeedCore
 			escapedParent += character;
 		}
 
-		/// [EN] trashed=false keeps a deleted leftover of the same name from being found.
-		/// [JP] trashed=false を付けるのは、同名の削除済みファイルが見つからないようにするため。
 		String query = String(std::format("name = '{}' and '{}' in parents and trashed = false", escapedName, escapedParent));
 
-		/// [EN] Only the identifier is wanted back, and one match is enough since names are unique in these folders.
-		/// [JP] 欲しいのは識別子だけ。これらのフォルダでは名前が一意なので、1件見つかれば十分。
 		nlohmann::json result;
 		if (!SendDrive(http_, auth_, error_, String("GET"), String(std::format("https://www.googleapis.com/drive/v3/files?q={}&fields=files(id)&pageSize=1", HttpClient::Escape(query).str())), nlohmann::json(), result))
 		{
 			return String();
 		}
 
-		/// [EN] An empty list is a normal answer: it simply means this content has not been uploaded yet.
-		/// [JP] 空の一覧も正常な応答で、この中身がまだアップロードされていないというだけのこと。
 		if (!result.contains("files") || result["files"].empty())
 		{
 			return String();
@@ -96,20 +51,6 @@ namespace SeedCore
 		return String(result["files"][0].value("id", ""));
 	}
 
-	/**
-	* [EN]
-	* Asks Drive whether the file named by fileId still exists outside
-	* the trash, and writes the answer to exists. Returns false only
-	* when no answer could be had, so a caller can tell a file that is
-	* gone from a request that failed.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* fileId のファイルが、ゴミ箱の外にまだ在るかを Drive に問い合わせ、
-	* 答えを exists に書く。false を返すのは答えが得られなかったときだけ。
-	* 呼び出し側が、ファイルが無いことと問い合わせの失敗を区別できる。
-	*/
 	Bool GoogleDrive::Exists(const String& fileId, Bool& exists)
 	{
 		String token = auth_.AccessToken();
@@ -119,17 +60,10 @@ namespace SeedCore
 			return false;
 		}
 
-		/// [EN] The request goes out directly rather than through Send, because a 404 here is an answer, not a failure, and Send does not pass the status on.
-		/// [JP] Send を通さず直接送る。ここでの 404 は失敗ではなく答えであり、Send はステータスを呼び出し側へ渡さないため。
-
-		/// [EN] Only the trashed flag is asked for, which is all the decision needs.
-		/// [JP] 求めるのは trashed の値だけ。判断に要るのはそれだけであるため。
 		DynamicArray<HttpHeader> headers;
 		headers.push_back(HttpHeader{ String("Authorization"), String(std::format("Bearer {}", token.str())) });
 		HttpResponse response = http_.Send(String("GET"), String(std::format("https://www.googleapis.com/drive/v3/files/{}?fields=trashed", fileId.str())), headers);
 
-		/// [EN] 404 means the file was deleted outright, or emptied from the trash.
-		/// [JP] 404 は、ファイルが完全に削除されたか、ゴミ箱から消されたということ。
 		if (response.status_ == 404)
 		{
 			error_ = String();
@@ -137,8 +71,6 @@ namespace SeedCore
 			return true;
 		}
 
-		/// [EN] A file that is still found but sits in the trash counts as gone, since nothing here reads from the trash.
-		/// [JP] まだ見つかってもゴミ箱に入っているファイルは、無いものとみなす。ここではゴミ箱から読むことが無いため。
 		if (response.status_ == 200)
 		{
 			nlohmann::json result = nlohmann::json::parse(response.body_.begin(), response.body_.end(), nullptr, false);
@@ -152,27 +84,12 @@ namespace SeedCore
 			return true;
 		}
 
-		/// [EN] Anything else - no connection, no permission, a server error - says nothing about the file, so no answer is given.
-		/// [JP] それ以外（接続できない・権限が無い・サーバーの異常）はファイルについて何も語らないので、答えを出さない。
 		error_ = response.status_ == 0 ? response.error_ : String(std::format("Drive へのアクセスに失敗しました ({})。", response.status_));
 		return false;
 	}
 
-	/**
-	* [EN]
-	* Lists what sits directly inside parentId. Used to walk the library's
-	* Assets folder and to sweep its blobs folder.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* parentId の直下にあるものを一覧する。ライブラリの Assets フォルダを
-	* 辿るのと、blobs フォルダを掃除するのに使う。
-	*/
 	Bool GoogleDrive::List(const String& parentId, DynamicArray<DriveEntry>& entries)
 	{
-		/// [EN] Quotes and backslashes are escaped, since left as they are they would break out of the string literal in the query.
-		/// [JP] 引用符と逆斜線は打ち消しておく。そのままだと、クエリ内の文字列リテラルを抜け出してしまうため。
 		std::string escapedParent;
 		for (Char character : parentId.str())
 		{
@@ -183,24 +100,13 @@ namespace SeedCore
 			escapedParent += character;
 		}
 
-		/// [EN] The hash is asked for here so that deciding whether a file is already held costs no download.
-		/// [JP] ここでハッシュまで求めておくことで、「既に持っているか」の判断にダウンロードが要らなくなる。
 		String query = String(std::format("'{}' in parents and trashed = false", escapedParent));
 
-		/// [EN] The blobs folder grows with every publish, so the listing follows Drive's pages until there are none left.
-		/// [JP] blobs フォルダは公開のたびに増えるため、Drive のページを最後まで辿って一覧する。
 		std::string pageToken;
 		do
 		{
-			/// [EN] 1000 is the most Drive returns in one page, which keeps the round trips for a large folder few.
-			/// [JP] 1000 は Drive が1ページで返す上限。大きなフォルダでも往復の回数を少なく抑えるため。
-
-			/// [EN] modifiedTime is asked for so the blob sweep can leave anything written moments ago alone.
-			/// [JP] modifiedTime を求めるのは、blob の掃除が書かれたばかりのものに手を出さずに済むようにするため。
 			std::string url = std::format("https://www.googleapis.com/drive/v3/files?q={}&fields=nextPageToken,files(id,name,mimeType,size,sha256Checksum,modifiedTime,capabilities/canTrash)&pageSize=1000", HttpClient::Escape(query).str());
 
-			/// [EN] Every page after the first names where the previous one stopped.
-			/// [JP] 2ページ目以降は、前のページが止まった位置を示して続きを求める。
 			if (!pageToken.empty())
 			{
 				url += std::format("&pageToken={}", HttpClient::Escape(String(pageToken)).str());
@@ -218,48 +124,27 @@ namespace SeedCore
 				entry.id_ = String(file.value("id", ""));
 				entry.name_ = String(file.value("name", ""));
 
-				/// [EN] Folders are told apart by their type rather than by their name, since a file may be named like one.
-				/// [JP] フォルダかどうかは名前ではなく種類で判断する。フォルダのような名前のファイルもあり得るため。
 				entry.folder_ = file.value("mimeType", "") == "application/vnd.google-apps.folder";
 				entry.hash_ = String(file.value("sha256Checksum", ""));
 
-				/// [EN] Drive reports the size as text, since it does not fit a JSON number for very large files.
-				/// [JP] Drive はサイズを文字列で返す。非常に大きいファイルでは JSON の数値に収まらないため。
 				entry.size_ = file.contains("size") ? std::strtoull(file["size"].get<std::string>().c_str(), nullptr, 10) : 0;
 				entry.modified_ = String(file.value("modifiedTime", ""));
 				entry.canTrash_ = file.contains("capabilities") && file["capabilities"].value("canTrash", false);
 				entries.push_back(entry);
 			}
 
-			/// [EN] The last page carries no token, which is what ends the loop.
-			/// [JP] 最後のページはトークンを持たない。それがループの終わりの合図になる。
 			pageToken = result.value("nextPageToken", "");
 		}
 		while (!pageToken.empty());
 		return true;
 	}
 
-	/**
-	* [EN]
-	* Creates a folder named name inside parentId and returns its
-	* identifier.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* parentId の中に name という名前のフォルダを作り、その識別子を
-	* 返す。
-	*/
 	String GoogleDrive::Folder(const String& name, const String& parentId)
 	{
-		/// [EN] In Drive a folder is an ordinary file that happens to carry the folder type.
-		/// [JP] Drive ではフォルダも普通のファイルで、種類がフォルダになっているだけ。
 		nlohmann::json request;
 		request["name"] = name.str();
 		request["mimeType"] = "application/vnd.google-apps.folder";
 
-		/// [EN] Parents is a list because a Drive file can sit in several folders at once.
-		/// [JP] 親が配列なのは、Drive のファイルが複数のフォルダに同時に属せるため。
 		request["parents"] = nlohmann::json::array({ parentId.str() });
 
 		nlohmann::json result;
@@ -270,23 +155,8 @@ namespace SeedCore
 		return String(result.value("id", ""));
 	}
 
-	/**
-	* [EN]
-	* Uploads source into parentId under name and returns the new
-	* file's identifier. The transfer is resumable, so a connection
-	* dropping midway does not mean starting over.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* source を parentId の中へ name という名前でアップロードし、新しい
-	* ファイルの識別子を返す。転送は再開可能なので、途中で接続が切れても
-	* 最初からやり直しにはならない。
-	*/
 	String GoogleDrive::Upload(const std::filesystem::path& source, const String& name, const String& parentId)
 	{
-		/// [EN] Drive is told the size up front, which is what lets it tell a finished upload from a truncated one.
-		/// [JP] 先に大きさを伝えておくことで、Drive 側は完了した転送と途中で切れた転送を区別できる。
 		std::error_code errorCode;
 		Uint64 size = std::filesystem::file_size(source, errorCode);
 		if (errorCode)
@@ -295,8 +165,6 @@ namespace SeedCore
 			return String();
 		}
 
-		/// [EN] The upload happens in two stages: a session is opened, then the contents are pushed into it.
-		/// [JP] アップロードは2段階。まず窓口を開き、その窓口へ中身を送り込む。
 		String token = auth_.AccessToken();
 		if (token.str().empty())
 		{
@@ -304,8 +172,6 @@ namespace SeedCore
 			return String();
 		}
 
-		/// [EN] The first request carries only the description of the file: its name and where it belongs.
-		/// [JP] 最初のリクエストが運ぶのはファイルの説明だけ。名前と、どこに属するか。
 		nlohmann::json request;
 		request["name"] = name.str();
 		request["parents"] = nlohmann::json::array({ parentId.str() });
@@ -313,8 +179,6 @@ namespace SeedCore
 		DynamicArray<Byte> payload(body.size());
 		std::memcpy(payload.data(), body.data(), body.size());
 
-		/// [EN] The two X-Upload headers let Drive refuse an oversized file before a single byte of content is sent.
-		/// [JP] 2つの X-Upload ヘッダにより、中身を1バイトも送らないうちに、大きすぎるファイルを Drive が断れる。
 		DynamicArray<HttpHeader> headers;
 		headers.push_back(HttpHeader{ String("Authorization"), String(std::format("Bearer {}", token.str())) });
 		headers.push_back(HttpHeader{ String("Content-Type"), String("application/json; charset=utf-8") });
@@ -322,8 +186,6 @@ namespace SeedCore
 		headers.push_back(HttpHeader{ String("X-Upload-Content-Length"), String(std::format("{}", size)) });
 		HttpResponse opened = http_.Send(String("POST"), String("https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable&fields=id"), headers, payload);
 
-		/// [EN] The session URL comes back in the Location header, and it already carries its own secret, so it needs no token.
-		/// [JP] 窓口のURLは Location ヘッダで返る。URL自体が固有の鍵を含むため、以後トークンは要らない。
 		if (opened.status_ != 200 || opened.location_.str().empty())
 		{
 			error_ = String(std::format("アップロードを開始できませんでした ({})。", opened.status_));
@@ -338,11 +200,6 @@ namespace SeedCore
 			return String();
 		}
 
-		/// [EN] Sending in pieces keeps memory flat and means a break costs only the piece in flight.
-		/// [JP] 分割して送ることでメモリの使用量が一定に保たれ、切断で失うのも送信中の1つ分だけで済む。
-
-		/// [EN] Drive requires every piece except the last to be a multiple of 256 KiB; 8 MiB is such a multiple.
-		/// [JP] Drive は最後以外の各片が 256KiB の倍数であることを求める。8MiB はその条件を満たす。
 		const Uint64 chunkSize = 8 * 1024 * 1024;
 		DynamicArray<Byte> chunk;
 		Uint64 offset = 0;
@@ -353,22 +210,16 @@ namespace SeedCore
 			chunk.resize(static_cast<Size>(length));
 			stream.read(chunk.data(), static_cast<std::streamsize>(length));
 
-			/// [EN] Content-Range states which slice of the whole file this piece is, so Drive can reassemble it.
-			/// [JP] Content-Range は、この片がファイル全体のどの範囲かを示す。Drive はこれを見て組み立て直す。
 			DynamicArray<HttpHeader> rangeHeaders;
 			rangeHeaders.push_back(HttpHeader{ String("Content-Range"), String(std::format("bytes {}-{}/{}", offset, offset + length - 1, size)) });
 			HttpResponse response = http_.Send(String("PUT"), session, rangeHeaders, chunk);
 
-			/// [EN] 308 means the piece landed and Drive is waiting for more; it is the normal answer mid-transfer.
-			/// [JP] 308 は「この片は届いた、続きを待っている」の意味。転送の途中では、これが普通の応答。
 			if (response.status_ == 308)
 			{
 				offset += length;
 				continue;
 			}
 
-			/// [EN] The last piece is answered with the finished file's description instead.
-			/// [JP] 最後の片に対しては、代わりに完成したファイルの情報が返る。
 			if (response.status_ == 200 || response.status_ == 201)
 			{
 				nlohmann::json result = nlohmann::json::parse(response.body_.begin(), response.body_.end(), nullptr, false);
@@ -380,23 +231,10 @@ namespace SeedCore
 			return String();
 		}
 
-		/// [EN] Reaching here means the file ended before Drive reported completion, so nothing usable was stored.
-		/// [JP] ここへ来るのは、Drive が完了を告げる前にファイルが尽きた場合。使える形では保存されていない。
 		error_ = String("アップロードが完了しませんでした。");
 		return String();
 	}
 
-	/**
-	* [EN]
-	* Downloads the file named by fileId to destination, writing it
-	* straight to disk rather than holding it in memory.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* fileId のファイルを destination へダウンロードする。メモリに
-	* 載せず、ディスクへ直接書き出す。
-	*/
 	Bool GoogleDrive::Fetch(const String& fileId, const std::filesystem::path& destination)
 	{
 		String token = auth_.AccessToken();
@@ -406,8 +244,6 @@ namespace SeedCore
 			return false;
 		}
 
-		/// [EN] alt=media is what asks for the file's contents; without it Drive answers with its metadata instead.
-		/// [JP] alt=media がファイルの中身を求める指定。これが無いと Drive は代わりに情報の方を返す。
 		DynamicArray<HttpHeader> headers;
 		headers.push_back(HttpHeader{ String("Authorization"), String(std::format("Bearer {}", token.str())) });
 		HttpResponse response = http_.Download(String("GET"), String(std::format("https://www.googleapis.com/drive/v3/files/{}?alt=media", fileId.str())), headers, destination);
@@ -418,64 +254,27 @@ namespace SeedCore
 			return true;
 		}
 
-		/// [EN] A partly written file would look like a valid asset later, so it is removed before reporting the failure.
-		/// [JP] 書きかけのファイルは後から正常なアセットに見えてしまうため、失敗を報告する前に消しておく。
 		std::error_code errorCode;
 		std::filesystem::remove(destination, errorCode);
 		error_ = response.error_.str().empty() ? String(std::format("ファイルの取得に失敗しました ({})。", response.status_)) : response.error_;
 		return false;
 	}
 
-	/**
-	* [EN]
-	* Moves the file named by fileId to the owner's trash. Used only to
-	* clean up content no revision refers to any more.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* fileId のファイルを、所有者のゴミ箱へ移す。どの Revision からも
-	* 参照されなくなった中身の掃除にだけ使う。
-	*/
 	Bool GoogleDrive::Trash(const String& fileId)
 	{
-		/// [EN] Trashing rather than deleting leaves a way back if the cleanup turns out to have been wrong.
-		/// [JP] 完全削除ではなくゴミ箱へ入れるのは、掃除の判断が誤っていた場合に戻せるようにするため。
 		nlohmann::json request;
 		request["trashed"] = true;
 		nlohmann::json result;
 		return SendDrive(http_, auth_, error_, String("PATCH"), String(std::format("https://www.googleapis.com/drive/v3/files/{}?fields=id", fileId.str())), request, result);
 	}
 
-	/**
-	* [EN]
-	* The last failure, in a form that can be shown to the user.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 直近の失敗内容。ユーザーへそのまま表示できる形で返す。
-	*/
 	const String& GoogleDrive::Error()const
 	{
 		return error_;
 	}
 
-	/**
-	* [EN]
-	* Sends one authenticated request to the Drive API and parses its
-	* JSON answer, recording any failure.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 認証付きのリクエストを Drive API へ1回送り、JSON の応答を解釈
-	* する。失敗した場合はその内容も記録する。
-	*/
 	static Bool SendDrive(HttpClient& http, GoogleAuth& auth, String& error, const String& method, const String& url, const nlohmann::json& request, nlohmann::json& result)
 	{
-		/// [EN] Asking for the token here is also what renews it, so callers never deal with expiry themselves.
-		/// [JP] ここでトークンを求める動作が更新も兼ねる。そのため呼び出し側が期限を気にすることはない。
 		String token = auth.AccessToken();
 		if (token.str().empty())
 		{
@@ -486,8 +285,6 @@ namespace SeedCore
 		DynamicArray<HttpHeader> headers;
 		headers.push_back(HttpHeader{ String("Authorization"), String(std::format("Bearer {}", token.str())) });
 
-		/// [EN] A search carries no body, which is why the request object is allowed to be null here.
-		/// [JP] 検索ではボディを送らない。request が null であってよいのはそのため。
 		DynamicArray<Byte> payload;
 		if (!request.is_null())
 		{
@@ -511,8 +308,6 @@ namespace SeedCore
 			return result.is_object();
 		}
 
-		/// [EN] 403 here usually means the member's own Drive is full, since uploads are charged to whoever sends them.
-		/// [JP] ここでの 403 は、たいていメンバー自身の Drive が一杯という意味。アップロードは送った本人の容量から引かれる。
 		std::string message = result.is_object() && result.contains("error") ? result["error"].value("message", "") : "";
 		error = String(std::format("Drive へのアクセスに失敗しました ({}): {}", response.status_, message));
 		return false;

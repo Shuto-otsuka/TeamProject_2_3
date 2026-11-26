@@ -6,185 +6,239 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* The CRI File System callbacks behind AudioByteStream, registered
-	* through criFs_SetSelectIoCallback. For an encrypted .audio cache, Read
-	* decrypts only the 16-byte blocks covering the requested range, so CRI
-	* can stream from the middle of the file without the whole AWB ever
-	* being decrypted to disk or memory. Only reading is supported; every
-	* read completes synchronously.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* AudioByteStream の奥にある CRI File System のコールバック群。
-	* criFs_SetSelectIoCallback で登録する。暗号化された .audio キャッシュ
-	* では、Read が要求範囲を覆う 16 バイトブロックだけを復号するので、AWB
-	* 全体をディスクやメモリに復号することなく、CRI がファイルの途中から
-	* ストリーミングできる。読み込みのみ対応し、読み込みは全て同期で完了する。
+	* 音のライブラリからファイルを読むときに呼ばれる関数をまとめたもの。
+	* エンジンが暗号化した .audio の中の AWB も、ここで復号しながら読む。
+	*
+	* @brief ファイルを読むための関数の集まり
+	*
+	* [EN]
+	* The functions the sound library calls when it reads a file.
+	* AWB data inside an engine-encrypted .audio is read here, decrypting as it goes.
+	*
+	* @brief The functions used to read files
 	*/
 	class AudioByteStream::Impl final
 	{
 	public:
 		/**
-		* [EN]
-		* CRI's device-selection callback: routes every path to the default
-		* device with this class's I/O interface.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* CRI のデバイス選択コールバック: 全てのパスを、このクラスの I/O
-		* インターフェースを持つ既定デバイスへ振り分ける。
+		* どのファイルでも、この読み方を使うように答える。
+		*
+		* @brief  読み方を選ぶ
+		* @param  path        読もうとしているファイル
+		* @param  deviceID    使う装置が入る
+		* @param  ioInterface 使う読み方が入る
+		* @return いつも成功
+		*
+		* [EN]
+		* Answers that every file should be read this way.
+		*
+		* @brief  Picks the reader
+		* @param  path        The file about to be read
+		* @param  deviceID    Gets the device to use
+		* @param  ioInterface Gets the reader to use
+		* @return Always succeeds
 		*/
 		static CriError CRIAPI SelectIo(const CriChar8* path, CriFsDeviceId* deviceID, CriFsIoInterfacePtr* ioInterface);
 
 		/**
-		* [EN]
-		* Reports whether the file behind path exists on disk (the
-		* "seedcore_audio://" prefix is stripped first).
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* path が指すファイルがディスク上に存在するかを返す
-		* ("seedcore_audio://" の接頭辞は先に取り除く)。
+		* ファイルがあるかを調べる。
+		*
+		* @brief  ファイルがあるか調べる
+		* @param  path   調べるファイル
+		* @param  result あれば CRI_TRUE が入る
+		* @return 調べられたかどうか
+		*
+		* [EN]
+		* Checks whether a file exists.
+		*
+		* @brief  Checks if a file exists
+		* @param  path   The file to check
+		* @param  result Gets CRI_TRUE if it exists
+		* @return Whether the check worked
 		*/
 		static CriFsIoError CRIAPI Exists(const CriChar8* path, CriBool* result);
 
 		/**
-		* [EN]
-		* Opens a file for reading. For an encrypted .audio cache it reads
-		* the header and blob table, locates the stream blob (id 1) and its
-		* IV, and exposes only that blob's plain contents as the file. A file
-		* that cannot be opened, or write access, yields a null handle.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* ファイルを読み込み用に開く。暗号化された .audio キャッシュでは、
-		* ヘッダとブロブ表を読んでストリーム用ブロブ(ID 1)と IV の位置を
-		* 求め、そのブロブの平文だけをファイルの中身として見せる。開けない
-		* ファイルや書き込みアクセスでは、null のハンドルを返す。
+		* ファイルを開く。暗号化されたものは、中の AWB の場所を調べておく。
+		*
+		* @brief  ファイルを開く
+		* @param  path       開くファイル
+		* @param  mode       開き方
+		* @param  access     読むか書くか
+		* @param  fileHandle 開いたファイルが入る
+		* @return 開けたかどうか
+		* @note   読むことしかできない
+		*
+		* [EN]
+		* Opens a file. For an encrypted one, it looks up where the AWB inside is.
+		*
+		* @brief  Opens a file
+		* @param  path       The file to open
+		* @param  mode       How to open it
+		* @param  access     Read or write
+		* @param  fileHandle Gets the opened file
+		* @return Whether it opened
+		* @note   It can only read
 		*/
 		static CriFsIoError CRIAPI Open(const CriChar8* path, CriFsFileMode mode, CriFsFileAccess access, CriFsFileHn* fileHandle);
 
 		/**
-		* [EN]
-		* Closes the OS handle and frees the File allocated by Open.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* OS のハンドルを閉じ、Open で確保した File を解放する。
+		* 開いたファイルを閉じる。
+		*
+		* @brief  ファイルを閉じる
+		* @param  fileHandle 閉じるファイル
+		* @return いつも成功
+		*
+		* [EN]
+		* Closes an opened file.
+		*
+		* @brief  Closes a file
+		* @param  fileHandle The file to close
+		* @return Always succeeds
 		*/
 		static CriFsIoError CRIAPI Close(CriFsFileHn fileHandle);
 
 		/**
-		* [EN]
-		* Returns the file's size as CRI sees it: the plain size of the
-		* stream blob for an encrypted cache, the disk size otherwise.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* CRI から見たファイルサイズを返す: 暗号化キャッシュならストリーム用
-		* ブロブの平文サイズ、そうでなければディスク上のサイズ。
+		* ファイルの大きさ（復号したあとの大きさ）を返す。
+		*
+		* @brief  ファイルの大きさを返す
+		* @param  fileHandle 調べるファイル
+		* @param  fileSize   大きさが入る
+		* @return 調べられたかどうか
+		*
+		* [EN]
+		* Returns the file size (the size after decrypting).
+		*
+		* @brief  Returns the file size
+		* @param  fileHandle The file to check
+		* @param  fileSize   Gets the size
+		* @return Whether it worked
 		*/
 		static CriFsIoError CRIAPI FileSize(CriFsFileHn fileHandle, CriSint64* fileSize);
 
 		/**
-		* [EN]
-		* Reads up to readSize bytes of plain data starting at offset into
-		* buffer, decrypting on the fly for an encrypted cache. The number
-		* of bytes actually read is kept for ReadSize.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* offset から最大 readSize バイトの平文を buffer へ読み込む。暗号化
-		* キャッシュでは読みながら復号する。実際に読めたバイト数は ReadSize
-		* のために保持しておく。
+		* ファイルの一部を読む。暗号化されていれば、その部分だけ復号する。
+		*
+		* @brief  ファイルの一部を読む
+		* @param  fileHandle 読むファイル
+		* @param  offset     読み始める場所
+		* @param  readSize   読みたい大きさ
+		* @param  buffer     読んだデータが入る
+		* @param  bufferSize buffer の大きさ
+		* @return 読めたかどうか
+		*
+		* [EN]
+		* Reads part of a file, decrypting only that part if it is encrypted.
+		*
+		* @brief  Reads part of a file
+		* @param  fileHandle The file to read
+		* @param  offset     Where to start reading
+		* @param  readSize   How much to read
+		* @param  buffer     Gets the data read
+		* @param  bufferSize The size of buffer
+		* @return Whether it read
 		*/
 		static CriFsIoError CRIAPI Read(CriFsFileHn fileHandle, CriSint64 offset, CriSint64 readSize, void* buffer, CriSint64 bufferSize);
 
 		/**
-		* [EN]
-		* Reports whether the last Read has finished. Always true, since
-		* Read completes synchronously.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 直前の Read が完了したかを返す。Read は同期で完了するので常に true。
+		* 読み込みが終わったかを答える。読み込みはすぐ終わるので、いつも終わっている。
+		*
+		* @brief  読み込みが終わったか答える
+		* @param  fileHandle 調べるファイル
+		* @param  result     終わっていれば CRI_TRUE が入る
+		* @return 調べられたかどうか
+		*
+		* [EN]
+		* Answers whether reading has finished; reading is instant, so it always has.
+		*
+		* @brief  Answers if reading is done
+		* @param  fileHandle The file to check
+		* @param  result     Gets CRI_TRUE when done
+		* @return Whether the check worked
 		*/
 		static CriFsIoError CRIAPI Complete(CriFsFileHn fileHandle, CriBool* result);
 
 		/**
-		* [EN]
-		* Returns how many bytes the last Read actually produced.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 直前の Read で実際に読めたバイト数を返す。
+		* 最後に読めた大きさを返す。
+		*
+		* @brief  読めた大きさを返す
+		* @param  fileHandle 調べるファイル
+		* @param  readSize   読めた大きさが入る
+		* @return 調べられたかどうか
+		*
+		* [EN]
+		* Returns how much was read last time.
+		*
+		* @brief  Returns the amount read
+		* @param  fileHandle The file to check
+		* @param  readSize   Gets the amount read
+		* @return Whether it worked
 		*/
 		static CriFsIoError CRIAPI ReadSize(CriFsFileHn fileHandle, CriSint64* readSize);
 
 	private:
 		/**
-		* [EN]
-		* The state behind one CriFsFileHn handed to CRI by Open.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* Open が CRI へ渡す CriFsFileHn 1つ分の状態。
+		* 開いているファイル1つ分の情報。
+		*
+		* @brief 開いているファイルの情報
+		*
+		* [EN]
+		* What we keep about one opened file.
+		*
+		* @brief Info about an opened file
 		*/
 		struct File
 		{
-			/// [EN] The OS file handle.
-			/// [JP] OS のファイルハンドル。
+			/// [JP] Windows のファイルの目印
+			/// [EN] The Windows file handle
 			HANDLE handle_ = INVALID_HANDLE_VALUE;
 
-			/// [EN] Whether this is an encrypted .audio cache rather than a plain file.
-			/// [JP] 普通のファイルではなく、暗号化された .audio キャッシュかどうか。
+			/// [JP] 暗号化されているか
+			/// [EN] Whether it is encrypted
 			Bool encrypted_ = false;
 
-			/// [EN] IV of the stream blob; decrypts its first ciphertext block.
-			/// [JP] ストリーム用ブロブの IV。最初の暗号文ブロックの復号に使う。
+			/// [JP] 復号に使う最初の値
+			/// [EN] The starting value used to decrypt
 			Byte iv_[16]{};
 
-			/// [EN] Offset in the file where the stream blob's ciphertext starts (after the IV).
-			/// [JP] ファイル内で、ストリーム用ブロブの暗号文(IV の後ろ)が始まる位置。
+			/// [JP] 暗号化された中身がファイルのどこから始まるか
+			/// [EN] Where the encrypted data starts in the file
 			Uint64 ciphertextOffset_ = 0;
 
-			/// [EN] Size of the stream blob's ciphertext, excluding the IV.
-			/// [JP] ストリーム用ブロブの暗号文のサイズ(IV を除く)。
+			/// [JP] 暗号化された中身の大きさ
+			/// [EN] The size of the encrypted data
 			Uint64 ciphertextSize_ = 0;
 
-			/// [EN] Size of the plain data CRI sees as the whole file.
-			/// [JP] CRI がファイル全体として見る、平文のサイズ。
+			/// [JP] 復号したあとの大きさ
+			/// [EN] The size after decrypting
 			Uint64 plainSize_ = 0;
 
-			/// [EN] Bytes produced by the last Read, returned by ReadSize.
-			/// [JP] 直前の Read で読めたバイト数。ReadSize が返す。
+			/// [JP] 最後に読めた大きさ
+			/// [EN] How much was read last time
 			Uint64 readSize_ = 0;
 		};
 
-		/// [EN] The I/O function table SelectIo hands to CRI.
-		/// [JP] SelectIo が CRI へ渡す、I/O 関数のテーブル。
+		/// [JP] 音のライブラリに渡す、読み方の一覧
+		/// [EN] The list of read functions given to the sound library
 		static CriFsIoInterface ioInterface_;
 	};
 
-	/// [EN] Slots follow CriFsIoInterface's member order; a null slot is an operation this device does not support.
-	/// [JP] 並びは CriFsIoInterface のメンバ順。null の枠は、このデバイスが対応しない操作。
+	/// [JP] 使う関数だけを入れ、使わないところは空にしておく
+	/// [EN] Fill in only the functions we use and leave the rest empty
 	CriFsIoInterface AudioByteStream::Impl::ioInterface_ =
 	{
 		&AudioByteStream::Impl::Exists,
 
-		/// [EN] Remove / Rename: this device is read-only.
-		/// [JP] Remove / Rename: このデバイスは読み込み専用。
 		nullptr,
 		nullptr,
 
@@ -194,14 +248,10 @@ namespace SeedCore
 		&AudioByteStream::Impl::Read,
 		&AudioByteStream::Impl::Complete,
 
-		/// [EN] CancelRead: Read is synchronous, so there is nothing in flight to cancel.
-		/// [JP] CancelRead: Read は同期なので、取り消す処理中の読み込みが無い。
 		nullptr,
 
 		&AudioByteStream::Impl::ReadSize,
 
-		/// [EN] Write / WriteComplete / CancelWrite / WriteSize / Flush / Resize: read-only.
-		/// [JP] Write / WriteComplete / CancelWrite / WriteSize / Flush / Resize: 読み込み専用のため。
 		nullptr,
 		nullptr,
 		nullptr,
@@ -209,28 +259,32 @@ namespace SeedCore
 		nullptr,
 		nullptr,
 
-		/// [EN] NativeFileHandle / ReadProgressCallback / ParallelRead: not provided.
-		/// [JP] NativeFileHandle / ReadProgressCallback / ParallelRead: 提供しない。
 		nullptr,
 		nullptr,
 		nullptr,
 	};
 
 	/**
-	* [EN]
-	* CRI's device-selection callback: routes every path to the default
-	* device with this class's I/O interface.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* CRI のデバイス選択コールバック: 全てのパスを、このクラスの I/O
-	* インターフェースを持つ既定デバイスへ振り分ける。
+	* どのファイルでも、この読み方を使うように答える。
+	*
+	* @brief  読み方を選ぶ
+	* @param  path        読もうとしているファイル
+	* @param  deviceID    使う装置が入る
+	* @param  ioInterface 使う読み方が入る
+	* @return いつも成功
+	*
+	* [EN]
+	* Answers that every file should be read this way.
+	*
+	* @brief  Picks the reader
+	* @param  path        The file about to be read
+	* @param  deviceID    Gets the device to use
+	* @param  ioInterface Gets the reader to use
+	* @return Always succeeds
 	*/
 	CriError CRIAPI AudioByteStream::Impl::SelectIo(const CriChar8* path, CriFsDeviceId* deviceID, CriFsIoInterfacePtr* ioInterface)
 	{
-		/// [EN] Plain and encrypted paths share one device; Open tells them apart by prefix.
-		/// [JP] 普通のパスと暗号化パスは同じデバイスを使う。区別は Open が接頭辞で行う。
 		if (deviceID)
 		{
 			*deviceID = CRIFS_DEFAULT_DEVICE;
@@ -245,13 +299,21 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Reports whether the file behind path exists on disk.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* path が指すファイルがディスク上に存在するかを返す。
+	* ファイルがあるかを調べる。
+	*
+	* @brief  ファイルがあるか調べる
+	* @param  path   調べるファイル
+	* @param  result あれば CRI_TRUE が入る
+	* @return 調べられたかどうか
+	*
+	* [EN]
+	* Checks whether a file exists.
+	*
+	* @brief  Checks if a file exists
+	* @param  path   The file to check
+	* @param  result Gets CRI_TRUE if it exists
+	* @return Whether the check worked
 	*/
 	CriFsIoError CRIAPI AudioByteStream::Impl::Exists(const CriChar8* path, CriBool* result)
 	{
@@ -262,15 +324,13 @@ namespace SeedCore
 
 		*result = CRI_FALSE;
 
-		/// [EN] A missing path is "does not exist", not an I/O failure.
-		/// [JP] パスが無いのは「存在しない」であって、I/O の失敗ではない。
 		if (!path)
 		{
 			return CRIFS_IO_ERROR_OK;
 		}
 
-		/// [EN] The prefix only marks encryption; the rest is an ordinary disk path.
-		/// [JP] 接頭辞は暗号化の目印にすぎず、残りは普通のディスク上のパス。
+		/// [JP] 暗号化のしるしがついていたら外して、本当のファイルの場所にする
+		/// [EN] Strip the encrypted marker to get the real file path
 		std::string_view pathView(path);
 		if (pathView.starts_with("seedcore_audio://"))
 		{
@@ -284,17 +344,27 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Opens a file for reading, locating the encrypted stream blob for a
-	* .audio cache. A file that cannot be opened, or write access, yields
-	* a null handle.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* ファイルを読み込み用に開く。.audio キャッシュでは、暗号化された
-	* ストリーム用ブロブの位置を求める。開けないファイルや書き込み
-	* アクセスでは、null のハンドルを返す。
+	* ファイルを開く。暗号化されたものは、中の AWB の場所を調べておく。
+	*
+	* @brief  ファイルを開く
+	* @param  path       開くファイル
+	* @param  mode       開き方
+	* @param  access     読むか書くか
+	* @param  fileHandle 開いたファイルが入る
+	* @return 開けたかどうか
+	* @note   読むことしかできない
+	*
+	* [EN]
+	* Opens a file. For an encrypted one, it looks up where the AWB inside is.
+	*
+	* @brief  Opens a file
+	* @param  path       The file to open
+	* @param  mode       How to open it
+	* @param  access     Read or write
+	* @param  fileHandle Gets the opened file
+	* @return Whether it opened
+	* @note   It can only read
 	*/
 	CriFsIoError CRIAPI AudioByteStream::Impl::Open(const CriChar8* path, CriFsFileMode mode, CriFsFileAccess access, CriFsFileHn* fileHandle)
 	{
@@ -305,8 +375,8 @@ namespace SeedCore
 
 		*fileHandle = nullptr;
 
-		/// [EN] CRI's contract: a recoverable failure returns OK with a null handle, not NG.
-		/// [JP] CRI の取り決め: 続行可能な失敗は NG ではなく、null ハンドルと OK を返す。
+		/// [JP] 書き込みには対応していないので、開かずに終わる
+		/// [EN] Writing is not supported, so finish without opening
 		if (!path || access == CRIFS_FILE_ACCESS_WRITE || access == CRIFS_FILE_ACCESS_READ_WRITE)
 		{
 			return CRIFS_IO_ERROR_OK;
@@ -319,8 +389,6 @@ namespace SeedCore
 			pathView.remove_prefix(std::strlen("seedcore_audio://"));
 		}
 
-		/// [EN] SEQUENTIAL_SCAN: CRI streams mostly forward, so let the OS read ahead.
-		/// [JP] SEQUENTIAL_SCAN: CRI はほぼ前方向にストリーミングするので、OS に先読みさせる。
 		String filePath(pathView);
 		HANDLE handle = CreateFileW(filePath.w_str().c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, nullptr);
 		if (handle == INVALID_HANDLE_VALUE)
@@ -328,14 +396,12 @@ namespace SeedCore
 			return CRIFS_IO_ERROR_OK;
 		}
 
-		/// [EN] Heap-allocated because CRI keeps the handle until Close, which deletes it.
-		/// [JP] CRI は Close までハンドルを保持するのでヒープに確保する。解放は Close で行う。
+		/// [JP] 暗号化されていないファイルなら、大きさを読んでそのまま使う
+		/// [EN] For a plain file, read its size and use it as it is
 		File* file = new File();
 		file->handle_ = handle;
 		file->encrypted_ = encrypted;
 
-		/// [EN] A plain file is exposed as-is: its disk size is the size CRI sees.
-		/// [JP] 普通のファイルはそのまま見せる: ディスク上のサイズが CRI から見たサイズ。
 		if (!encrypted)
 		{
 			LARGE_INTEGER fileSize{};
@@ -346,8 +412,8 @@ namespace SeedCore
 			return CRIFS_IO_ERROR_OK;
 		}
 
-		/// [EN] 24-byte header: magic "SCAUDIO\0", version, sound type, blob count, reserved.
-		/// [JP] 24 バイトのヘッダ: マジック "SCAUDIO\0"、バージョン、サウンド種別、ブロブ数、予約。
+		/// [JP] 見出しを読んで、エンジンのファイルかを確かめる
+		/// [EN] Read the header and check it is an engine file
 		Byte header[24]{};
 		DWORD readBytes = 0;
 		OVERLAPPED headerOverlapped{};
@@ -358,20 +424,16 @@ namespace SeedCore
 			return CRIFS_IO_ERROR_NG_INVALID_DATA;
 		}
 
-		/// [EN] The blob count sits at byte 16 of the header.
-		/// [JP] ブロブ数はヘッダの 16 バイト目にある。
 		Uint32 blobCount = 0;
 		std::memcpy(&blobCount, header + 16, 4);
 
-		/// [EN] Scan the blob table (at most 2 entries) for the stream blob, id 1.
-		/// [JP] ブロブ表(最大 2 件)から、ストリーム用ブロブ(ID 1)を探す。
+		/// [JP] 中身の一覧から AWB の場所と大きさを探す
+		/// [EN] Look through the parts list for where the AWB is and how big it is
 		Uint64 blobOffset = 0;
 		Uint64 blobEncryptedSize = 0;
 		Uint64 blobPlainSize = 0;
 		for (Uint32 blobIndex = 0; blobIndex < blobCount && blobIndex < 2; ++blobIndex)
 		{
-			/// [EN] 32-byte entry: id, reserved, offset, encrypted size (with IV), plain size.
-			/// [JP] 32 バイトの項目: ID、予約、位置、暗号化サイズ(IV 込み)、平文サイズ。
 			Byte entry[32]{};
 			OVERLAPPED entryOverlapped{};
 			entryOverlapped.Offset = static_cast<DWORD>(24 + blobIndex * 32);
@@ -382,8 +444,6 @@ namespace SeedCore
 				return CRIFS_IO_ERROR_NG_INVALID_DATA;
 			}
 
-			/// [EN] Blob 0 is the in-memory body (ACB / wave) that AudioLoader reads itself.
-			/// [JP] ブロブ 0 は AudioLoader が自分で読むメモリ上の本体(ACB / wave)。
 			Uint32 blobID = 0;
 			std::memcpy(&blobID, entry, 4);
 			if (blobID != 1)
@@ -396,8 +456,6 @@ namespace SeedCore
 			std::memcpy(&blobPlainSize, entry + 24, 8);
 		}
 
-		/// [EN] 16 bytes or less means no stream blob, or one holding only an IV.
-		/// [JP] 16 バイト以下は、ストリーム用ブロブが無いか、IV しか入っていない状態。
 		if (blobEncryptedSize <= 16)
 		{
 			CloseHandle(handle);
@@ -405,8 +463,8 @@ namespace SeedCore
 			return CRIFS_IO_ERROR_NG_NO_ENTRY;
 		}
 
-		/// [EN] The blob starts with its 16-byte IV, followed by the ciphertext.
-		/// [JP] ブロブは先頭 16 バイトが IV で、その後ろに暗号文が続く。
+		/// [JP] 復号に使う最初の値を読み、中身の場所を覚えておく
+		/// [EN] Read the starting value for decrypting and remember where the data is
 		OVERLAPPED ivOverlapped{};
 		ivOverlapped.Offset = static_cast<DWORD>(blobOffset & 0xFFFFFFFF);
 		ivOverlapped.OffsetHigh = static_cast<DWORD>(blobOffset >> 32);
@@ -426,18 +484,22 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Closes the OS handle and frees the File allocated by Open.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* OS のハンドルを閉じ、Open で確保した File を解放する。
+	* 開いたファイルを閉じる。
+	*
+	* @brief  ファイルを閉じる
+	* @param  fileHandle 閉じるファイル
+	* @return いつも成功
+	*
+	* [EN]
+	* Closes an opened file.
+	*
+	* @brief  Closes a file
+	* @param  fileHandle The file to close
+	* @return Always succeeds
 	*/
 	CriFsIoError CRIAPI AudioByteStream::Impl::Close(CriFsFileHn fileHandle)
 	{
-		/// [EN] A null handle is one Open failed to create; closing it is a no-op.
-		/// [JP] null のハンドルは Open が作れなかったもの。閉じても何もしない。
 		File* file = static_cast<File*>(fileHandle);
 		if (!file)
 		{
@@ -454,13 +516,21 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns the file's size as CRI sees it.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* CRI から見たファイルサイズを返す。
+	* ファイルの大きさ（復号したあとの大きさ）を返す。
+	*
+	* @brief  ファイルの大きさを返す
+	* @param  fileHandle 調べるファイル
+	* @param  fileSize   大きさが入る
+	* @return 調べられたかどうか
+	*
+	* [EN]
+	* Returns the file size (the size after decrypting).
+	*
+	* @brief  Returns the file size
+	* @param  fileHandle The file to check
+	* @param  fileSize   Gets the size
+	* @return Whether it worked
 	*/
 	CriFsIoError CRIAPI AudioByteStream::Impl::FileSize(CriFsFileHn fileHandle, CriSint64* fileSize)
 	{
@@ -470,22 +540,32 @@ namespace SeedCore
 			return CRIFS_IO_ERROR_NG;
 		}
 
-		/// [EN] For an encrypted cache this is the stream blob's plain size, not the .audio size.
-		/// [JP] 暗号化キャッシュでは、.audio のサイズではなくストリーム用ブロブの平文サイズ。
 		*fileSize = static_cast<CriSint64>(file->plainSize_);
 		return CRIFS_IO_ERROR_OK;
 	}
 
 	/**
-	* [EN]
-	* Reads up to readSize bytes of plain data starting at offset into
-	* buffer, decrypting on the fly for an encrypted cache.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* offset から最大 readSize バイトの平文を buffer へ読み込む。暗号化
-	* キャッシュでは読みながら復号する。
+	* ファイルの一部を読む。暗号化されていれば、その部分だけ復号する。
+	*
+	* @brief  ファイルの一部を読む
+	* @param  fileHandle 読むファイル
+	* @param  offset     読み始める場所
+	* @param  readSize   読みたい大きさ
+	* @param  buffer     読んだデータが入る
+	* @param  bufferSize buffer の大きさ
+	* @return 読めたかどうか
+	*
+	* [EN]
+	* Reads part of a file, decrypting only that part if it is encrypted.
+	*
+	* @brief  Reads part of a file
+	* @param  fileHandle The file to read
+	* @param  offset     Where to start reading
+	* @param  readSize   How much to read
+	* @param  buffer     Gets the data read
+	* @param  bufferSize The size of buffer
+	* @return Whether it read
 	*/
 	CriFsIoError CRIAPI AudioByteStream::Impl::Read(CriFsFileHn fileHandle, CriSint64 offset, CriSint64 readSize, void* buffer, CriSint64 bufferSize)
 	{
@@ -497,22 +577,20 @@ namespace SeedCore
 
 		file->readSize_ = 0;
 
-		/// [EN] Reading at or past the end is not an error; it just produces 0 bytes.
-		/// [JP] 末尾以降を読むのはエラーではなく、0 バイト読めたことになるだけ。
 		if (offset < 0 || readSize <= 0 || static_cast<Uint64>(offset) >= file->plainSize_)
 		{
 			return CRIFS_IO_ERROR_OK;
 		}
 
-		/// [EN] Clamp to both the end of the plain data and the caller's buffer.
-		/// [JP] 平文の末尾と、呼び出し側のバッファの大きさの両方で切り詰める。
+		/// [JP] ファイルの終わりや buffer を超えないように、読む大きさを決める
+		/// [EN] Decide how much to read without going past the file end or the buffer
 		Uint64 toRead = Min<Uint64>(static_cast<Uint64>(readSize), file->plainSize_ - static_cast<Uint64>(offset));
 		toRead = Min<Uint64>(toRead, static_cast<Uint64>(bufferSize));
 
 		DWORD readBytes = 0;
 
-		/// [EN] Plain file: one positioned read straight into the caller's buffer.
-		/// [JP] 普通のファイル: 位置を指定した1回の読み込みで、呼び出し側のバッファへ直接読む。
+		/// [JP] 暗号化されていなければそのまま読む
+		/// [EN] If it is not encrypted, just read it
 		if (!file->encrypted_)
 		{
 			OVERLAPPED overlapped{};
@@ -527,24 +605,18 @@ namespace SeedCore
 			return CRIFS_IO_ERROR_OK;
 		}
 
-		/// [EN] Widen the range to whole 16-byte AES blocks, but never past the ciphertext.
-		/// [JP] 範囲を 16 バイトの AES ブロック単位まで広げる。ただし暗号文の末尾は越えない。
+		/// [JP] 16 バイトの区切りに合わせて、読む範囲を広げる
+		/// [EN] Widen the range to line up with 16-byte blocks
 		Uint64 blockStart = (static_cast<Uint64>(offset) / 16) * 16;
 		Uint64 blockEnd = Min<Uint64>(((static_cast<Uint64>(offset) + toRead + 15) / 16) * 16, file->ciphertextSize_);
 
-		/// [EN] In CBC a block is decrypted with the previous ciphertext block as its IV.
-		/// [JP] CBC では、各ブロックは1つ前の暗号文ブロックを IV として復号する。
 		DynamicArray<Byte> chainIv(16);
 		if (blockStart == 0)
 		{
-			/// [EN] The very first block has no predecessor, so it uses the blob's own IV.
-			/// [JP] 最初のブロックには前が無いので、ブロブ自身の IV を使う。
 			std::memcpy(chainIv.data(), file->iv_, 16);
 		}
 		else
 		{
-			/// [EN] Otherwise read the 16 ciphertext bytes just before the range.
-			/// [JP] それ以外は、範囲の直前にある暗号文 16 バイトを読む。
 			Uint64 chainOffset = file->ciphertextOffset_ + blockStart - 16;
 			OVERLAPPED chainOverlapped{};
 			chainOverlapped.Offset = static_cast<DWORD>(chainOffset & 0xFFFFFFFF);
@@ -555,8 +627,8 @@ namespace SeedCore
 			}
 		}
 
-		/// [EN] Read only the ciphertext blocks covering the requested range.
-		/// [JP] 要求範囲を覆う暗号文ブロックだけを読む。
+		/// [JP] 暗号化された部分を読んで復号する
+		/// [EN] Read the encrypted part and decrypt it
 		DynamicArray<Byte> ciphertextChunk(static_cast<Size>(blockEnd - blockStart));
 		Uint64 chunkOffset = file->ciphertextOffset_ + blockStart;
 		OVERLAPPED chunkOverlapped{};
@@ -567,20 +639,16 @@ namespace SeedCore
 			return CRIFS_IO_ERROR_NG;
 		}
 
-		/// [EN] Same key as every other encrypted asset: SHA-256 of SC_ENCRYPTION_KEY_SEED.
-		/// [JP] 他の暗号化アセットと同じ鍵: SC_ENCRYPTION_KEY_SEED の SHA-256。
 		static const DynamicArray<Byte> key = Sha256::Hash(reinterpret_cast<const Byte*>(SC_ENCRYPTION_KEY_SEED), std::strlen(SC_ENCRYPTION_KEY_SEED));
 
-		/// [EN] Unpadded: a mid-stream chunk has no PKCS7 padding to strip.
-		/// [JP] パディング無しで復号: ストリーム途中の塊には、取り除く PKCS7 パディングが無い。
 		DynamicArray<Byte> decrypted = Aes256::DecryptUnpadded(key, chainIv, ciphertextChunk);
 		if (decrypted.empty())
 		{
 			return CRIFS_IO_ERROR_NG;
 		}
 
-		/// [EN] Drop the bytes before offset that were only decrypted to complete a block.
-		/// [JP] ブロックを揃えるためだけに復号した、offset より前のバイトは捨てる。
+		/// [JP] 復号した中から、頼まれた部分だけを写す
+		/// [EN] Copy out just the part that was asked for
 		Uint64 offsetInChunk = static_cast<Uint64>(offset) - blockStart;
 		std::memcpy(buffer, decrypted.data() + offsetInChunk, static_cast<Size>(toRead));
 
@@ -589,13 +657,21 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Reports whether the last Read has finished. Always true.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 直前の Read が完了したかを返す。常に true。
+	* 読み込みが終わったかを答える。読み込みはすぐ終わるので、いつも終わっている。
+	*
+	* @brief  読み込みが終わったか答える
+	* @param  fileHandle 調べるファイル
+	* @param  result     終わっていれば CRI_TRUE が入る
+	* @return 調べられたかどうか
+	*
+	* [EN]
+	* Answers whether reading has finished; reading is instant, so it always has.
+	*
+	* @brief  Answers if reading is done
+	* @param  fileHandle The file to check
+	* @param  result     Gets CRI_TRUE when done
+	* @return Whether the check worked
 	*/
 	CriFsIoError CRIAPI AudioByteStream::Impl::Complete(CriFsFileHn fileHandle, CriBool* result)
 	{
@@ -604,20 +680,26 @@ namespace SeedCore
 			return CRIFS_IO_ERROR_NG;
 		}
 
-		/// [EN] Read finishes before returning, so by now it is always complete.
-		/// [JP] Read は戻る前に終わっているので、この時点で必ず完了している。
 		*result = CRI_TRUE;
 		return CRIFS_IO_ERROR_OK;
 	}
 
 	/**
-	* [EN]
-	* Returns how many bytes the last Read actually produced.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 直前の Read で実際に読めたバイト数を返す。
+	* 最後に読めた大きさを返す。
+	*
+	* @brief  読めた大きさを返す
+	* @param  fileHandle 調べるファイル
+	* @param  readSize   読めた大きさが入る
+	* @return 調べられたかどうか
+	*
+	* [EN]
+	* Returns how much was read last time.
+	*
+	* @brief  Returns the amount read
+	* @param  fileHandle The file to check
+	* @param  readSize   Gets the amount read
+	* @return Whether it worked
 	*/
 	CriFsIoError CRIAPI AudioByteStream::Impl::ReadSize(CriFsFileHn fileHandle, CriSint64* readSize)
 	{
@@ -632,16 +714,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Registers this file I/O with CRI File System, so every file CRI
-	* opens from then on goes through it. Called before CRI is
-	* initialized.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* このファイル I/O を CRI File System に登録し、以後 CRI が開く全ての
-	* ファイルがここを通るようにする。CRI の初期化より前に呼ぶ。
+	* メモリから読む仕組みを音のライブラリに登録する。
+	*
+	* @brief 仕組みを登録する
+	*
+	* [EN]
+	* Registers the memory reader with the sound library.
+	*
+	* @brief Registers the reader
 	*/
 	void AudioByteStream::Install()
 	{
@@ -649,13 +730,15 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Removes the registration, so CRI no longer calls into this class.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 登録を外し、CRI がこのクラスを呼ばないようにする。
+	* 登録した仕組みを外す。
+	*
+	* @brief 仕組みを外す
+	*
+	* [EN]
+	* Removes the registered reader.
+	*
+	* @brief Removes the reader
 	*/
 	void AudioByteStream::Uninstall()
 	{

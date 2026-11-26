@@ -8,34 +8,6 @@ struct WeatherUpdateBindings
 };
 ConstantBuffer<WeatherUpdateBindings> update_bindings : register(b0, space1);
 
-/**
-* [EN]
-* Weather.Update: advances every rain and snow particle of this view, one
-* thread per entry of Weather.Particles (rain pool first, snow pool after
-* it). There is no collision here; the hardware depth test of Weather.Draw
-* hides whatever falls behind geometry. A particle that leaves the cylinder
-* around the camera (below by volume_height, or beyond volume_radius
-* horizontally) respawns at the top of the cylinder with a fresh random XZ
-* offset, so the volume always surrounds the camera. The hash chains off the
-* particle's previous seed so each respawn lands somewhere new. A dispatch
-* constant of 1 marks the view's first frame: every particle respawns and is
-* scattered over the whole cylinder height instead of the ceiling, so they
-* do not fall in one synchronized sheet. Snow additionally sways with a
-* phase taken from its own seed.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Weather.Update。このビューの雨と雪の全パーティクルを進める。Weather.Particles の
-* 1 件につき 1 スレッド（前に雨の枠、後ろに雪の枠）。衝突はここでは扱わず、
-* ジオメトリの奥に落ちた分は Weather.Draw のハードウェアの深度テストで隠れる。
-* カメラの周りの円柱（下は volume_height、水平は volume_radius）から出た
-* パーティクルは、円柱の天井へランダムな XZ のずれで出し直すので、ボリュームは
-* 常にカメラを囲む。ハッシュは前の種から繋ぐので、出し直すたびに違う場所になる。
-* ディスパッチの定数 1 はビューの最初のフレームの印で、全部を出し直し、天井では
-* なく円柱の高さ全体へ散らす（全部が 1 枚の幕のように揃って落ちないように）。
-* 雪はさらに、自分の種から取った位相で揺れる。
-*/
 [numthreads(64, 1, 1)]
 void Update(uint3 id : SV_DispatchThreadID)
 {

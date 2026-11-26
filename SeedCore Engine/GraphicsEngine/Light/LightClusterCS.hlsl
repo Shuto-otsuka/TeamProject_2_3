@@ -10,27 +10,6 @@ struct LightBuildBindings
 };
 ConstantBuffer<LightBuildBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* One thread per cluster of the view: tiles of LIGHT_CLUSTER_TILE_SIZE pixels
-* by LIGHT_CLUSTER_DEPTH_SLICES slices spaced logarithmically between the near
-* and far planes. The thread builds its cluster's view-space box from the
-* tile's corner rays at the slice's two depths, tests every light's range
-* sphere against it, and writes the count followed by the first
-* LIGHT_CLUSTER_MAX_LIGHTS hits straight into its own slot. Each cluster is
-* written by exactly one thread, so nothing is cleared beforehand and the
-* order of the indices is the same every frame.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* ビューのクラスタ 1 つにつき 1 スレッド。LIGHT_CLUSTER_TILE_SIZE ピクセルの
-* タイルと、近平面と遠平面の間を対数で分けた LIGHT_CLUSTER_DEPTH_SLICES 個の
-* 深さ。スレッドはタイルの角の視線と深さの 2 つの値から自分のクラスタの
-* ビュー空間の箱を作り、全ライトの範囲の球と当たりを調べて、数と先頭
-* LIGHT_CLUSTER_MAX_LIGHTS 件の番号を自分の欄へ直接書く。各クラスタを書くのは
-* 1 スレッドだけなので前のクリアが要らず、番号の並びは毎フレーム同じになる。
-*/
 [numthreads(64, 1, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {

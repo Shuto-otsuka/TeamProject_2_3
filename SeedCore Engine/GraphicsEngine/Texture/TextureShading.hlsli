@@ -4,22 +4,6 @@
 #include <GraphicsEngine/Texture/Texture.hlsli>
 #include <GraphicsEngine/Shader/Scene.hlsli>
 
-/**
-* [EN]
-* Colour of a Texture quad at texcoord, premultiplied by its alpha for the
-* premultiplied blend; shared by Texture.Sprite and Texture.Billboard. The
-* colour depends on the unit's kind.
-* - Texture: the image times the unit colour, its UV scrolling over time when
-*   TEXTURE_UNIT_SCROLL is set; nearly transparent pixels are discarded.
-* - Font: the MTSDF atlas. The median distance gives the fill, widened by
-*   outline_width_ for the outline, and the soft distance (alpha) gives the
-*   glow; the distance range in screen pixels follows from unit_range_ and the
-*   UV's screen derivatives. A shadow quad draws fill and outline in the
-*   shadow colour, without glow.
-* - Movie: the frame's colour times the unit colour, at the unit's alpha. A
-*   fullscreen movie keeps its aspect ratio inside the view and fills the
-*   letterbox bars with black.
-*/
 float4 ShadeTexture(TextureUnitStructuredBuffer unit, TextureQuadStructuredBuffer quad, float2 texcoord)
 {
 	SceneConstantBuffer scene = GetSceneConstantBuffer();
@@ -82,4 +66,4 @@ float4 ShadeTexture(TextureUnitStructuredBuffer unit, TextureQuadStructuredBuffe
 	return float4(color.rgb * color.a, color.a);
 }
 
-#endif // __TEXTURE_SHADING_HLSL__
+#endif

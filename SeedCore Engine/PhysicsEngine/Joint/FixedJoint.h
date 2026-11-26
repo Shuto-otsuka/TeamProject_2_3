@@ -5,53 +5,61 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Component that rigidly locks its actor to another rigid body or the world.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* アクターを別の剛体またはワールドへ固定するコンポーネント。
+	* 2つの体をくっつけて、一緒に動くようにする部品。
+	*
+	* @brief 体をくっつける部品
+	*
+	* [EN]
+	* A part that glues two bodies so they move together.
+	*
+	* @brief Glues two bodies
 	*/
 	class SEEDCORE_API FixedJoint :public SeedScript
 	{
 	public:
-		/// [EN] Whether the joint is created when the component starts.
-		/// [JP] コンポーネント開始時にジョイントを生成するか。
+		/// [JP] つなぐかどうか
+		/// [EN] Whether to join at all
 		SC_REFLECTION_FIELD_EX("有効")
 		Bool enabled_ = true;
 
-		/// [EN] Entity ID of the actor connected to this joint; zero connects to the world.
-		/// [JP] 接続先アクターのエンティティ ID。0 はワールドへ接続する。
+		/// [JP] つなぐ相手のアクター。0 なら世界につなぐ
+		/// [EN] The actor to join to; 0 joins to the world
 		SC_PAYLOAD_FIELD_EX("接続先アクター", Actor)
 		Uint32 connectedActor_ = 0;
 
 	public:
 		/**
-		* [EN]
-		* Creates the fixed constraint between the available bodies.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 利用可能なボディ間に固定拘束を生成する。
+		* 同じアクターの Rigidbody と相手をつなぐ。
+		*
+		* @brief つなぐ
+		* @note  同じアクターに Rigidbody が要る
+		*
+		* [EN]
+		* Joins this actor's Rigidbody to the other one.
+		*
+		* @brief Makes the joint
+		* @note  Needs a Rigidbody on the same actor
 		*/
 		void OnStart();
 
 		/**
-		* [EN]
-		* Destroys the created constraint.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 生成した拘束を破棄する。
+		* つなぎを外す。
+		*
+		* @brief つなぎを外す
+		*
+		* [EN]
+		* Removes the joint.
+		*
+		* @brief Removes the joint
 		*/
 		void OnDestroy();
 
 	private:
-		/// [EN] Pool handle of the created Jolt constraint.
-		/// [JP] 生成した Jolt 拘束のプールハンドル。
+		/// [JP] 物理エンジンの中のつなぎの目印
+		/// [EN] The handle of the joint inside the physics engine
 		ScConstraintHandle handle_;
 	};
 	REGISTER_COMPONENT(FixedJoint, "Physics/Joint");

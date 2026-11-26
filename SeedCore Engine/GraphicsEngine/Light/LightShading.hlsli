@@ -7,10 +7,6 @@
 #include <GraphicsEngine/Model/Opaque/ToonShading.hlsli>
 #include <GraphicsEngine/Model/Opaque/FurShading.hlsli>
 
-// Picks the per-shading-model direct light response for one light. Shared by
-// the deferred lighting of the primary surface and the ray-traced punctual
-// light estimate, so a punctual light's specular response is identical
-// between the two; only "how to shade against one direct light" lives here.
 float3 EvalDirectLightDispatch(uint shading_model, float3 normal, float3 view, float3 light_direction, float3 diffuse_color, float3 f0, float roughness, float clearcoat, float clearcoat_roughness, float3 clearcoat_normal, float3 sheen_color, float sheen_roughness, float3 anisotropy_tangent, float3 anisotropy_bitangent, float anisotropy_strength)
 {
 	const float PI = 3.14159265358979;
@@ -42,4 +38,4 @@ float3 EvalDirectLightDispatch(uint shading_model, float3 normal, float3 view, f
 	return EvalDirectLight(normal, view, light_direction, diffuse_color, f0, roughness, clearcoat, clearcoat_roughness, clearcoat_normal, sheen_color, sheen_roughness, anisotropy_tangent, anisotropy_bitangent, anisotropy_strength);
 }
 
-#endif // __LIGHT_SHADING_HLSL__
+#endif

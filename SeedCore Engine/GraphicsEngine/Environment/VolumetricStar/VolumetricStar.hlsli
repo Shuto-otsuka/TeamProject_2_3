@@ -3,34 +3,20 @@
 
 #include <GraphicsEngine/Shader/Noise.hlsli>
 
-/**
-* One currently-flying shooting star. Mirrors VolumetricStarMeteor in
-* Environment/VolumetricStar/VolumetricStarShader.h. Laid out as 4-scalar
-* (16-byte) cbuffer rows, same convention as VolumetricCloud.hlsli - keep the
-* C++ mirror row-for-row in sync.
-*/
 struct VolumetricStarMeteor
 {
 	float3 start_direction_;
 
-	/// 0 = just spawned, 1 = reached end_direction_/expired.
 	float progress_;
 
 	float3 end_direction_;
 	float brightness_;
 };
 
-/**
-* VolumetricStar.Constants: the star tuning, read by VolumetricStarCS.hlsl.
-* Must match the C++ mirror in
-* Environment/VolumetricStar/VolumetricStarShader.h byte-for-byte.
-*/
 struct VolumetricStarConstantBuffer
 {
-	/// Angular size (radians) of the star placement grid.
 	float cell_size_;
 
-	/// 0..1, chance a grid cell holds a star.
 	float density_;
 
 	float brightness_;
@@ -43,19 +29,14 @@ struct VolumetricStarConstantBuffer
 	float shooting_star_chance_per_second_;
 	float shooting_star_brightness_;
 
-	/// Angular half-width (radians) of a shooting star streak.
 	float shooting_star_width_;
 
 	uint max_concurrent_shooting_stars_;
 
-	/// Stamped by VolumetricStarFeature (not the UI), like
-	/// VolumetricCloud's procedural_sky_enabled_.
 	uint enabled_;
 
-	/// Strength of the soft halo outside the SDF star shape.
 	float glow_intensity_;
 
-	/// How fast the halo fades with SDF distance - higher = tighter glow.
 	float glow_falloff_;
 
 	VolumetricStarMeteor active_shooting_stars_[4];
@@ -64,9 +45,6 @@ struct VolumetricStarConstantBuffer
 static const float STAR_PI = 3.14159265358979;
 static const float STAR_TWO_PI = 6.28318530717959;
 
-/**
-* Builds an orthonormal basis around a unit normal (Duff et al.).
-*/
 void StarOrthonormalBasis(float3 normal, out float3 tangent, out float3 bitangent)
 {
 	float s = normal.z >= 0.0 ? 1.0 : -1.0;
@@ -76,25 +54,11 @@ void StarOrthonormalBasis(float3 normal, out float3 tangent, out float3 bitangen
 	bitangent = float3(b, s + normal.y * normal.y * a, -normal.y);
 }
 
-/**
-* GLSL-style mod (always non-negative for a positive y), as opposed to
-* HLSL's fmod which keeps the sign of x - StarSDF's angular folding needs
-* the non-negative form.
-*/
 float GlslMod(float x, float y)
 {
 	return x - y * floor(x / y);
 }
 
-/**
-* General N-pointed star SDF (Inigo Quilez, "2D Distance Functions" -
-* https://iquilezles.org/articles/distfunctions2d/). p is in
-* the shape's local space, centered on the star. r is the outer (tip)
-* radius, n the point count, m the spike sharpness (roughly in (2, n) -
-* closer to n gives fatter points, closer to 2 gives thin needles).
-* Negative inside the star, positive outside, zero on the outline - exact
-* distance, so a glow can just be a function of the returned value.
-*/
 float StarSDF(float2 p, float r, float n, float m)
 {
 	float an = STAR_PI / n;
@@ -109,18 +73,6 @@ float StarSDF(float2 p, float r, float n, float m)
 	return length(p) * sign(p.x);
 }
 
-/**
-* Procedural night sky: a latitude/longitude grid over the view direction,
-* one hashed star per occupied cell (checking the 3x3 neighborhood so a star
-* centered near a cell edge is not clipped). Distortion near the poles from
-* the lat/long parameterization is an accepted simplification - not
-* physically accurate, but stable (no seams) and cheap (no precomputed
-* buffer). Each star is a proper 5/6-point StarSDF shape (small, since real
-* stars read as pinpoints) plus a soft exponential glow so it still reads at
-* a distance; about 1/30 of stars get a distinct red/blue/green tint (like
-* Betelgeuse/Rigel) instead of the base tuning.color_, echoing how bright
-* real stars show visible color from their temperature.
-*/
 float3 StarFieldColor(float3 view_direction, float night_factor, float total_time, VolumetricStarConstantBuffer tuning)
 {
 	if (night_factor <= 0.0 || tuning.enabled_ == 0)
@@ -160,17 +112,12 @@ float3 StarFieldColor(float3 view_direction, float night_factor, float total_tim
 
 			float sdf_distance = StarSDF(delta, size, point_count, spike_sharpness);
 
-			/// Sharp-ish core fill for the SDF shape itself, plus a soft
-			/// exponential halo outside it - the actual "Glow".
 			float core = smoothstep(0.0, -size * 0.15, sdf_distance);
 			float glow = exp(-max(sdf_distance, 0.0) * tuning.glow_falloff_) * tuning.glow_intensity_;
 			float shape = max(core, glow);
 
 			float twinkle = 0.6 + 0.4 * sin(total_time * tuning.twinkle_speed_ + h.x * 123.4);
 
-			/// ~1/30 of stars take a distinct color instead of tuning.color_,
-			/// like bright real stars showing their temperature (Rigel=blue,
-			/// Betelgeuse=red).
 			float4 tint_hash = IQHash4(float3(neighbor_cell, 13.0));
 			float3 star_color = tuning.color_;
 			if (tint_hash.x < (1.0 / 30.0))
@@ -196,13 +143,6 @@ float3 StarFieldColor(float3 view_direction, float night_factor, float total_tim
 	return sum * night_factor;
 }
 
-/**
-* Moon disc with a phase-shaped terminator. phase: 0 = new moon (dark),
-* 0.5 = full moon (fully lit), 1 = new moon again. Uses the classic
-* "two overlapping circles" technique: an elliptical terminator curve inside
-* the disc's local 2D space, its horizontal offset driven by the illuminated
-* fraction derived from phase.
-*/
 float3 MoonDiscColor(float3 view_direction, float3 moon_direction, float moon_radius, float3 moon_color, float phase)
 {
 	float cos_angle = dot(view_direction, moon_direction);
@@ -219,11 +159,8 @@ float3 MoonDiscColor(float3 view_direction, float3 moon_direction, float moon_ra
 	float3 offset = view_direction - moon_direction * cos_angle;
 	float2 local = float2(dot(offset, tangent), dot(offset, bitangent)) / max(sin(moon_radius), 0.0001);
 
-	/// Illuminated fraction 0..1 from phase (0/1 = new, 0.5 = full).
 	float illuminated = 0.5 - 0.5 * cos(phase * STAR_TWO_PI);
 
-	/// shift 1 = terminator at the disc's own edge (nothing lit), -1 = at the
-	/// opposite edge (everything lit).
 	float shift = 1.0 - 2.0 * illuminated;
 
 	float terminator_x = shift * sqrt(saturate(1.0 - local.y * local.y));
@@ -239,11 +176,6 @@ float3 MoonDiscColor(float3 view_direction, float3 moon_direction, float moon_ra
 	return moon_color * smoothstep(0.0, 0.15, disc_mask + 0.85);
 }
 
-/**
-* Additive streaks for the active shooting star slots. Each streak is the
-* great-circle arc segment between its trailing edge (progress_ - trail
-* length) and its head (progress_), brightest at the head like a comet.
-*/
 float3 ShootingStarColor(float3 view_direction, VolumetricStarConstantBuffer tuning)
 {
 	float3 total = float3(0, 0, 0);
@@ -298,4 +230,4 @@ float3 ShootingStarColor(float3 view_direction, VolumetricStarConstantBuffer tun
 	return total;
 }
 
-#endif // __VOLUMETRIC_STAR_HLSL__
+#endif

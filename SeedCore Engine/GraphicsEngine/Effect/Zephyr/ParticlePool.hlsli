@@ -32,4 +32,4 @@ struct ParticleGroupStructuredBuffer
 	uint count_;
 };
 
-#endif // __PARTICLE_POOL_HLSL__
+#endif

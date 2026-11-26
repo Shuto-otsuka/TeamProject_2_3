@@ -3,13 +3,17 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Returns the stored sound representation.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 保持しているサウンド形式を返す。
+	* 音の種類を返す。
+	*
+	* @brief  音の種類を返す
+	* @return 音の種類
+	*
+	* [EN]
+	* Returns the kind of sound.
+	*
+	* @brief  Returns the kind
+	* @return The kind of sound
 	*/
 	SoundType Sound::Type()const
 	{
@@ -17,13 +21,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns the loaded ACB handle for a cue sheet.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* キューシート用に読み込まれた ACB ハンドルを返す。
+	* キューシートの目印を返す。
+	*
+	* @brief  キューシートを返す
+	* @return キューシートの目印。WAV なら nullptr
+	*
+	* [EN]
+	* Returns the cue sheet handle.
+	*
+	* @brief  Returns the cue sheet
+	* @return The cue sheet handle, or nullptr for a WAV
 	*/
 	ScAudioBankHandle Sound::AcbHandle()const
 	{
@@ -31,13 +39,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns writable access to the in-memory audio bytes.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* メモリ上の音声バイト列へ書き込み可能なポインターを返す。
+	* 音のデータの先頭を返す。
+	*
+	* @brief  データを返す
+	* @return データの先頭
+	*
+	* [EN]
+	* Returns the start of the sound data.
+	*
+	* @brief  Returns the data
+	* @return The start of the data
 	*/
 	void* Sound::Data()
 	{
@@ -45,13 +57,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns the size of the in-memory audio data in bytes.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* メモリ上の音声データのバイト数を返す。
+	* 音のデータの大きさを返す。
+	*
+	* @brief  データの大きさを返す
+	* @return データのバイト数
+	*
+	* [EN]
+	* Returns the size of the sound data.
+	*
+	* @brief  Returns the data size
+	* @return The data size in bytes
 	*/
 	Size Sound::DataSize()const
 	{
@@ -59,13 +75,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Returns the virtual path used to stream the associated AWB data.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 関連する AWB データのストリームに使う仮想パスを返す。
+	* 一緒に使う AWB ファイルの場所を返す。
+	*
+	* @brief  AWB の場所を返す
+	* @return AWB ファイルの場所
+	*
+	* [EN]
+	* Returns where the matching AWB file is.
+	*
+	* @brief  Returns the AWB path
+	* @return Where the AWB file is
 	*/
 	const String& Sound::AwbPath()const
 	{

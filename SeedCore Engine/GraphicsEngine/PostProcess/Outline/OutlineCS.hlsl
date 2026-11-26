@@ -40,19 +40,6 @@ struct OutlineCanvasBindings
 };
 ConstantBuffer<OutlineCanvasBindings> canvas_bindings : register(b0, space1);
 
-/**
-* [EN]
-* Outline.Update.Style: writes this frame's changed actor styles into
-* Outline.Styles, one update per thread. An actor that stopped being
-* outlined arrives as an all-zero style.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Outline.Update.Style。このフレームに変わったアクターの縁取りの設定を、
-* 1 スレッド 1 件で Outline.Styles へ書く。縁取られなくなったアクターは、
-* すべて 0 の設定として届く。
-*/
 [numthreads(64, 1, 1)]
 void Style(uint3 dtid : SV_DispatchThreadID)
 {
@@ -68,19 +55,6 @@ void Style(uint3 dtid : SV_DispatchThreadID)
 	styles[updates[dtid.x].index_] = updates[dtid.x].data_;
 }
 
-/**
-* [EN]
-* Outline.Update.Mask: empties the view's mask before the transparent,
-* billboard and sprite passes record their nearest outlined fragment into
-* it, and resets the widest outline on screen.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Outline.Update.Mask。半透明・ビルボード・スプライトのパスが一番手前の縁取る
-* フラグメントを記録する前に、ビューのマスクを空にし、画面上で一番太い縁取りを
-* 0 に戻す。
-*/
 [numthreads(8, 8, 1)]
 void Mask(uint3 dtid : SV_DispatchThreadID)
 {
@@ -100,40 +74,6 @@ void Mask(uint3 dtid : SV_DispatchThreadID)
 	mask[dtid.xy] = 0;
 }
 
-/**
-* [EN]
-* Outline.Resolve.Scene: decides, for every render-resolution pixel, which
-* actor covers it and how that actor is outlined. The actor is the nearest
-* outlined transparent, billboard or sprite fragment when the mask holds
-* one (it lies in front of the opaque surface), and
-* otherwise the opaque surface's instance from the visibility buffer. In an
-* editor view a selected actor takes the selection outline (orange, 3
-* render-resolution pixels); otherwise an actor with an Outline component takes its own.
-* An opaque actor that follows its shape also marks its inner edges: a
-* neighbour of the same actor that lies clearly behind it (a depth jump of
-* more than 5 percent of the distance) or faces a clearly different way
-* (normals more than about 45 degrees apart). Each pixel is written as
-* (color, width, actor + 1, OUTLINE_SOURCE_*); the widest width on screen
-* is reduced across the wave first and then into Outline.Widest, and since
-* widths are non-negative floats, an unsigned atomic max over asuint() is a
-* float max.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Outline.Resolve.Scene。描画解像度の各ピクセルについて、どのアクターが覆っているかと、
-* そのアクターをどう縁取るかを決める。アクターは、マスクに記録があれば一番手前の
-* 縁取る半透明・ビルボード・スプライトのフラグメント（不透明の面より手前にある）、
-* 無ければ Visibility バッファの不透明の面のインスタンス。
-* エディタのビューでは、選択中のアクターは選択の縁取り（オレンジ、描画解像度で 3 ピクセル）、
-* それ以外で Outline コンポーネントを持つアクターは自分の縁取りになる。
-* 形に沿う不透明のアクターは、内側の境目にも印を付ける。同じアクターの隣の
-* ピクセルが、はっきり奥にある（距離の 5% を超える深度の差）か、はっきり違う
-* 向きを向いている（法線のなす角がおよそ 45 度を超える）ところ。各ピクセルは
-* （色、幅、アクター + 1、OUTLINE_SOURCE_*）として書く。画面上で一番太い幅は、
-* まずウェーブ内で最大を取ってから Outline.Widest へ反映する。幅は負にならない
-* float なので、asuint() に対する符号なしのアトミック最大がそのまま float の最大になる。
-*/
 [numthreads(8, 8, 1)]
 void Resolve(uint3 dtid : SV_DispatchThreadID)
 {
@@ -228,24 +168,6 @@ void Resolve(uint3 dtid : SV_DispatchThreadID)
 	}
 }
 
-/**
-* [EN]
-* Outline.Resolve.Canvas: the canvas view's resolve. The canvas has no
-* scene geometry, so the only actors are the sprites recorded in the mask.
-* The canvas is an editor tool, so a selected actor always takes the
-* selection outline (orange, 3 render-resolution pixels); otherwise an actor with an Outline
-* component takes its own, following its outer edge only. Each pixel is
-* written and the widest width reduced the same way as Outline.Resolve.Scene.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Outline.Resolve.Canvas。キャンバスのビューの解決。キャンバスにはシーンの形が
-* 無いので、アクターはマスクに記録されたスプライトだけ。キャンバスはエディタの
-* 道具なので、選択中のアクターは常に選択の縁取り（オレンジ、描画解像度で 3 ピクセル）、
-* それ以外で Outline コンポーネントを持つアクターは自分の縁取りを外側だけに付ける。
-* 各ピクセルの書き方と一番太い幅の求め方は Outline.Resolve.Scene と同じ。
-*/
 [numthreads(8, 8, 1)]
 void Canvas(uint3 dtid : SV_DispatchThreadID)
 {

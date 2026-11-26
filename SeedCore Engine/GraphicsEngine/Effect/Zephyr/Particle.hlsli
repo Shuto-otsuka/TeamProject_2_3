@@ -40,4 +40,4 @@ struct ParticleShape
 	float3 normal_;
 };
 
-#endif // __PARTICLE_HLSL__
+#endif

@@ -14,4 +14,4 @@ struct RaytracingGlobalIlluminationConstantBuffer
 	uint history_valid_;
 };
 
-#endif // __RAYTRACING_GLOBAL_ILLUMINATION_HLSLI__
+#endif

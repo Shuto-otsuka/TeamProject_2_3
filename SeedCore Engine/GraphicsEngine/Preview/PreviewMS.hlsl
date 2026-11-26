@@ -3,22 +3,6 @@
 
 groupshared float4 clip_positions[64];
 
-/**
-* [EN]
-* Preview.Draw.Mesh: one thread group per entry of Preview.Meshlets (an
-* instance and one of its meshlets). Each vertex is skinned with
-* Preview.Bones when the instance has a skin, then moved by the world
-* transform; single-sided triangles that face away are collapsed, since the
-* rasterizer itself culls nothing.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Preview.Draw.Mesh。Preview.Meshlets の 1 件（インスタンスとその meshlet の 1 つ）に
-* つき 1 スレッドグループ。各頂点は、スキンのあるインスタンスなら Preview.Bones で
-* スキニングしてから、ワールドの変換で動かす。ラスタライザーは何もカリングしないので、
-* 片面で裏を向く三角形はここで潰す。
-*/
 [NumThreads(64, 1, 1)]
 [OutputTopology("triangle")]
 void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID, out vertices PreviewOutput verts[64], out indices uint3 tris[124])

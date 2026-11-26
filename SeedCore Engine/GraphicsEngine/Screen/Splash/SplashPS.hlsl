@@ -17,19 +17,6 @@ struct SplashDrawBindings
 };
 ConstantBuffer<SplashDrawBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* Splash.Draw: one splash image (warning, fiction, CRI logo, or the engine
-* logo for the time of day), fitted inside the screen with its aspect kept
-* and the rest black, faded by alpha_.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Splash.Draw。スプラッシュの絵 1 枚（注意・フィクション・CRI のロゴ、または
-* 時間帯に合わせたエンジンのロゴ）を、縦横比を保ったまま画面に収め、残りは黒にし、
-* alpha_ で薄める。
-*/
 float4 main(FullscreenOutput input) : SV_Target0
 {
 	ConstantBuffer<SplashConstantBuffer> constants = ResourceDescriptorHeap[bindings.splash_constants_];

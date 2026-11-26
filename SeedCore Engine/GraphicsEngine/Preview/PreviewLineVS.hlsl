@@ -1,18 +1,5 @@
 #include <GraphicsEngine/Preview/Preview.hlsli>
 
-/**
-* [EN]
-* Preview.Draw.Line for devices without mesh shaders: one DrawInstanced
-* instance per line of Preview.Lines, 6 vertices (two triangles) each,
-* placed exactly like PreviewLineMS.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* メッシュシェーダーが使えないデバイス向けの Preview.Draw.Line。Preview.Lines の
-* 1 本につき DrawInstanced の 1 インスタンス、6 頂点（2 三角形）。配置は
-* PreviewLineMS と同じ。
-*/
 PreviewLineOutput main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID)
 {
 	StructuredBuffer<PreviewLineStructuredBuffer> lines = ResourceDescriptorHeap[line_bindings.preview_lines_];

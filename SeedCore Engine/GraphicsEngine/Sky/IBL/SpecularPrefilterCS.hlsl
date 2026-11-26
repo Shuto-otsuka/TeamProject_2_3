@@ -8,21 +8,6 @@ struct SkyPrefilterBindings
 };
 ConstantBuffer<SkyPrefilterBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* Prefilters the environment cube for a single roughness level (one mip of the
-* prefiltered specular cube) using GGX importance sampling. One thread per
-* destination cube texel. At roughness 0 it copies the environment directly.
-* The dispatch constant holds the mip in its low 16 bits and the mip count in
-* its high 16 bits; the roughness of a mip is mip / (mip count - 1).
-*
-* [JP]
-* GGX 重点サンプリングで environment キューブを 1 つの roughness レベル
-* （プリフィルタ鏡面キューブの 1 ミップ）へプリフィルタする。出力キューブ
-* テクセル 1 つにつき 1 スレッド。roughness 0 では environment をそのままコピー。
-* ディスパッチの定数は、下位 16 ビットがミップ、上位 16 ビットがミップの数。
-* ミップの roughness は ミップ / (ミップの数 - 1)。
-*/
 [numthreads(8, 8, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {

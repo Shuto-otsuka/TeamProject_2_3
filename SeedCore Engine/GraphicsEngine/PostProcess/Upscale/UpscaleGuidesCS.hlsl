@@ -15,23 +15,6 @@ struct UpscaleGuidesBindings
 };
 ConstantBuffer<UpscaleGuidesBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* Writes the guides NVIDIA DLSS Ray Reconstruction expects: RGB=normal /
-* A=roughness decoded from Material.NormalRoughness (12-bit
-* octahedral normal and 8-bit roughness), the specular albedo from the
-* split-sum approximation, and the diffuse albedo. DLSS-RR wants a plain float
-* normal and roughness rather than the engine's packing, so this full-screen
-* pass runs once per view right before Upscale.DlssRayReconstruction.
-*
-* [JP]
-* NVIDIA DLSS Ray Reconstruction が要求するガイドを書く。RGB=法線 / A=ラフネスは
-* Material.NormalRoughness（12 ビットの八面体法線と 8 ビットのラフネス）
-* から戻したもの、スペキュラアルベドは split-sum の近似、それと拡散アルベド。
-* DLSS-RR はエンジン独自のパッキングではなく素の float の法線とラフネスを求める
-* ので、各ビューの Upscale.DlssRayReconstruction の直前に 1 回だけ走る全画面の
-* パス。
-*/
 float3 EnvBRDFApprox2(float3 specular_color, float alpha, float n_o_v)
 {
 	n_o_v = abs(n_o_v);

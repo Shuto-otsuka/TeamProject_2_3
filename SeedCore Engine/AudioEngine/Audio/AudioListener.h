@@ -4,17 +4,17 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Component that maps an actor's world-space position and orientation to
-	* the shared 3D audio listener. Its movement between updates supplies the
-	* listener velocity used for Doppler effects.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* アクターのワールド空間上の位置と向きを、共有の 3D オーディオリスナー
-	* へ反映するコンポーネント。更新間の移動から、ドップラー効果に使う
-	* リスナー速度を求める。
+	* アクターにつけると、そこが音を聞く場所になる。
+	* カメラにつけることが多い。
+	*
+	* @brief 音を聞く場所になる部品
+	*
+	* [EN]
+	* Put it on an actor and that spot becomes where sound is heard.
+	* Usually put on the camera.
+	*
+	* @brief A part that marks where sound is heard
 	*/
 	class SEEDCORE_API AudioListener :public SeedScript
 	{
@@ -22,28 +22,30 @@ namespace SeedCore
 		friend class AudioSystem;
 
 	public:
-		/// [EN] Scale applied to the Doppler effect of the shared listener.
-		/// [JP] 共有リスナーのドップラー効果に適用する倍率。
+		/// [JP] 動く音の高さが変わる強さ
+		/// [EN] How strongly a moving sound changes pitch
 		SC_REFLECTION_CLAMPED_EX("ドップラー倍率", 0.0f, 10.0f)
 		Float dopplerMultiplier_ = 1.0f;
 
 	private:
 		/**
-		* [EN]
-		* Updates the shared listener from the actor's current world transform
-		* and the velocity calculated over deltaTime.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* アクターの現在のワールド変換と deltaTime から求めた速度で、共有
-		* リスナーを更新する。
+		* アクターの場所と向きを、音を聞く側に伝える。
+		*
+		* @brief 場所と向きを伝える
+		* @param deltaTime 前のフレームからの時間
+		*
+		* [EN]
+		* Tells the listener where the actor is and which way it faces.
+		*
+		* @brief Sends the position and facing
+		* @param deltaTime Time since the last frame
 		*/
 		void Apply(Float deltaTime);
 
 	private:
-		/// [EN] World-space position retained from the preceding listener update.
-		/// [JP] 前回のリスナー更新時から保持するワールド空間上の位置。
+		/// [JP] 前のフレームの場所。動く速さを出すのに使う
+		/// [EN] Where it was last frame, used to work out how fast it moves
 		Vector3 previousPosition_ = { 0.0f, 0.0f, 0.0f };
 	};
 	REGISTER_COMPONENT(AudioListener, "Audio");

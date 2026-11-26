@@ -10,62 +10,73 @@ namespace SeedCore
 	class JobExecutor;
 
 	/**
-	* [EN]
-	* Adapts Jolt's job-system interface to SeedCore's JobExecutor.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Jolt のジョブシステムインターフェースを SeedCore の JobExecutor へ適合させる。
+	* 物理エンジンの仕事を、エンジンの仕事の仕組み（JobExecutor）で動かすためのつなぎ役。
+	*
+	* @brief 物理エンジンの仕事を流すつなぎ役
+	*
+	* [EN]
+	* The go-between that runs the physics engine's jobs on the engine's job system (JobExecutor).
+	*
+	* @brief Runs physics jobs on the job system
 	*/
 	class JoltExecutorBridge final
 	{
 	public:
 		/**
-		* [EN]
-		* Creates a bridge backed by the supplied executor and barrier capacity.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 指定されたエグゼキューターとバリア容量を使うブリッジを生成する。
+		* 仕事を流す先を受け取って準備する。
+		*
+		* @brief 準備する
+		* @param executor    仕事を流す先
+		* @param maxBarriers 同時に待てる区切りの数
+		*
+		* [EN]
+		* Takes where to send jobs and gets ready.
+		*
+		* @brief Gets ready
+		* @param executor    Where jobs are sent
+		* @param maxBarriers How many wait points can be used at once
 		*/
 		explicit JoltExecutorBridge(JobExecutor& executor, Uint32 maxBarriers = 8);
 
 		/**
-		* [EN]
-		* Defined in the .cpp, where Impl is a complete type.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* Impl が完全型になる .cpp 側で定義する。
+		* 中身を片付ける。
+		*
+		* @brief 片付ける
+		*
+		* [EN]
+		* Cleans up the inner parts.
+		*
+		* @brief Cleans up
 		*/
 		~JoltExecutorBridge();
 
-		/// [EN] Jolt holds a raw pointer to the Impl as its job system, so the bridge is neither copied nor reassigned.
-		/// [JP] Jolt が Impl の生ポインタをジョブシステムとして持つので、ブリッジはコピーも代入もしない。
 		JoltExecutorBridge(const JoltExecutorBridge&) = delete;
 		JoltExecutorBridge& operator=(const JoltExecutorBridge&) = delete;
 
 	public:
 		/**
-		* [EN]
-		* Returns the bridge as the Jolt job system to hand to the physics
-		* update.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 物理の更新へ渡す Jolt のジョブシステムとして、ブリッジを返す。
+		* 物理エンジンに渡す、仕事の仕組みを返す。
+		*
+		* @brief  物理エンジン用の仕組みを返す
+		* @return 物理エンジンに渡す仕組み
+		*
+		* [EN]
+		* Returns the job system to hand to the physics engine.
+		*
+		* @brief  Returns the physics job system
+		* @return The job system for the physics engine
 		*/
 		JPH::JobSystem* Native();
 
 	private:
 		class Impl;
 
-		/// [EN] The Jolt job system itself, owned through a pointer so Jolt's headers stay out of this one.
-		/// [JP] Jolt のジョブシステム本体。Jolt のヘッダをこのヘッダから外すため、ポインタ越しに所有する。
+		/// [JP] 中身
+		/// [EN] The inner parts
 		ResourcePtr<Impl> impl_;
 	};
 }

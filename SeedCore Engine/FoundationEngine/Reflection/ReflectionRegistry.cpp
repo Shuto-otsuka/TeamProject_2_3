@@ -20,6 +20,7 @@
 #pragma comment(linker, "/include:_force_reflection_ParentConstraint")
 #pragma comment(linker, "/include:_force_reflection_PositionConstraint")
 #pragma comment(linker, "/include:_force_reflection_RotationConstraint")
+#pragma comment(linker, "/include:_force_reflection_Effect")
 #pragma comment(linker, "/include:_force_reflection_SunSettings")
 #pragma comment(linker, "/include:_force_reflection_MoonSettings")
 #pragma comment(linker, "/include:_force_reflection_Celestial")
@@ -114,77 +115,28 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Returns the full registry mapping reflected type names to their ReflectFunc.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* リフレクションされた型名をその ReflectFunc へ対応付ける、完全な
-	* レジストリを返す。
-	*/
 	FlatMap<String, ReflectionRegistry::ReflectFunc>& ReflectionRegistry::GetRegistry()
 	{
 		static FlatMap<String, ReflectFunc> instance;
 		return instance;
 	}
 
-	/**
-	* [EN]
-	* Registers function as the reflector for the type named name.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* name という名前の型に対するリフレクタとして function を登録する。
-	*/
 	void ReflectionRegistry::Register(String name, ReflectFunc function)
 	{
 		GetRegistry()[name] = function;
 	}
 
-	/**
-	* [EN]
-	* Returns the full registry mapping enum type names to their entries.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 列挙型名をそのエントリ一覧へ対応付ける、完全なレジストリを返す。
-	*/
 	FlatMap<String, DynamicArray<EnumEntry>>& EnumRegistry::GetRegistry()
 	{
 		static FlatMap<String, DynamicArray<EnumEntry>> instance;
 		return instance;
 	}
 
-	/**
-	* [EN]
-	* Registers entries as the named/valued entries of the enum type typeName.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* typeName という列挙型の名前付きエントリ一覧として entries を
-	* 登録する。
-	*/
 	void EnumRegistry::Register(String typeName, DynamicArray<EnumEntry> entries)
 	{
 		GetRegistry()[typeName] = std::move(entries);
 	}
 
-	/**
-	* [EN]
-	* Returns the entries registered for typeName, or nullptr if that
-	* enum type is unregistered.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* typeName に対して登録されているエントリ一覧を返す。その列挙型が
-	* 未登録であれば nullptr を返す。
-	*/
 	const DynamicArray<EnumEntry>* EnumRegistry::GetEntries(const String& typeName)
 	{
 		auto& registry = GetRegistry();
@@ -196,40 +148,16 @@ namespace SeedCore
 		return nullptr;
 	}
 
-	/**
-	* [EN]
-	* Returns the full registry mapping component names to their
-	* callable functions.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* コンポーネント名を、その呼び出し可能な関数の一覧へ対応付ける、
-	* 完全なレジストリを返す。
-	*/
 	FlatMap<String, DynamicArray<FunctionInfo>>& FunctionRegistry::GetRegistry()
 	{
 		static FlatMap<String, DynamicArray<FunctionInfo>> instance;
 		return instance;
 	}
 
-	/**
-	* [EN]
-	* Adds function to the functions of the component named
-	* componentName, replacing a registered function of the same name.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* componentName という名前のコンポーネントの関数一覧へ function を
-	* 追加する。同じ名前の関数が登録済みであれば置き換える。
-	*/
 	void FunctionRegistry::Register(String componentName, FunctionInfo function)
 	{
 		DynamicArray<FunctionInfo>& functions = GetRegistry()[componentName];
 
-		/// [EN] A function name identifies one entry per component, so a re-registration (e.g. after a script reload) replaces the old entry instead of adding a second one.
-		/// [JP] 関数名はコンポーネントごとに 1 つのエントリを表すので、再登録（スクリプトのリロード後など）は 2 つ目を追加せず、古いエントリを置き換える。
 		erase_if(functions, [&function](const FunctionInfo& registered) { return registered.name_ == function.name_; });
 		functions.push_back(std::move(function));
 	}

@@ -1,3 +1,4 @@
+#include <External/Effekseer/Include/Effekseer/Model/Effekseer.ProceduralModelGenerator.h>
 #include <GraphicsEngine/Effect/Effekseer/EffekseerManager.h>
 #include <GraphicsEngine/D3D12/Context/D3D12Context.h>
 #include <GraphicsEngine/D3D12/Context/D3D12CommandQueue.h>
@@ -18,11 +19,10 @@ namespace SeedCore
 		memoryPool_ = EffekseerRenderer::CreateSingleFrameMemoryPool(renderer_->GetGraphicsDevice());
 		cmdList_ = EffekseerRenderer::CreateCommandList(renderer_->GetGraphicsDevice(), memoryPool_);
 		renderer_->SetCommandList(cmdList_);
+		renderer_->SetMaintainGammaColorInLinearColorSpace(true);
 
 		manager_ = Effekseer::Manager::Create(20000);
 		manager_->SetCoordinateSystem(Effekseer::CoordinateSystem::LH);
-
-		fileInterface_ = Effekseer::MakeRefPtr<EffekseerFileInterface>();
 
 		manager_->SetSpriteRenderer(renderer_->CreateSpriteRenderer());
 		manager_->SetRibbonRenderer(renderer_->CreateRibbonRenderer());
@@ -30,10 +30,19 @@ namespace SeedCore
 		manager_->SetTrackRenderer(renderer_->CreateTrackRenderer());
 		manager_->SetModelRenderer(renderer_->CreateModelRenderer());
 
-		manager_->SetTextureLoader(renderer_->CreateTextureLoader(fileInterface_));
-		manager_->SetModelLoader(renderer_->CreateModelLoader(fileInterface_));
-		manager_->SetMaterialLoader(renderer_->CreateMaterialLoader(fileInterface_));
-		manager_->SetCurveLoader(Effekseer::MakeRefPtr<Effekseer::CurveLoader>(fileInterface_));
+		textureLoader_ = Effekseer::MakeRefPtr<EffekseerTextureLoader>(renderer_->GetGraphicsDevice());
+		modelLoader_ = Effekseer::MakeRefPtr<EffekseerModelLoader>(renderer_->CreateModelLoader());
+		materialLoader_ = Effekseer::MakeRefPtr<EffekseerMaterialLoader>(renderer_->CreateMaterialLoader());
+		curveLoader_ = Effekseer::MakeRefPtr<EffekseerCurveLoader>();
+
+		cacheSetting_ = Effekseer::Setting::Create();
+		cacheSetting_->SetCoordinateSystem(manager_->GetSetting()->GetCoordinateSystem());
+		cacheSetting_->SetProceduralMeshGenerator(manager_->GetSetting()->GetProceduralMeshGenerator());
+		cacheSetting_->SetGpuParticleFactory(manager_->GetSetting()->GetGpuParticleFactory());
+		cacheSetting_->SetTextureLoader(textureLoader_);
+		cacheSetting_->SetModelLoader(modelLoader_);
+		cacheSetting_->SetMaterialLoader(materialLoader_);
+		cacheSetting_->SetCurveLoader(curveLoader_);
 
 		Gateway::BindEffekseerManager(this);
 		return true;
@@ -69,10 +78,14 @@ namespace SeedCore
 			handles_.clear();
 		}
 		manager_.Reset();
+		cacheSetting_.Reset();
+		curveLoader_.Reset();
+		materialLoader_.Reset();
+		modelLoader_.Reset();
+		textureLoader_.Reset();
 		cmdList_.Reset();
 		memoryPool_.Reset();
 		renderer_.Reset();
-		fileInterface_.Reset();
 	}
 
 	void EffekseerManager::Draw(D3D12CommandList& cmdList, const Matrix& view, const Matrix& projection)
@@ -97,6 +110,41 @@ namespace SeedCore
 		EffekseerRendererDX12::EndCommandList(cmdList_);
 	}
 
+	Effekseer::EffectRef EffekseerManager::Create(const EffekseerAsset& asset)
+	{
+		Effekseer::EffectRef effect = Effekseer::Effect::Create(cacheSetting_, asset.data_.data(), static_cast<Int32>(asset.data_.size()), 1.0f, nullptr);
+		if (effect == nullptr)
+		{
+			return nullptr;
+		}
+
+		auto setTexture = [this, &effect](const DynamicArray<EffekseerTexture>& textures, Effekseer::TextureType textureType)
+			{
+				for (Int32 index = 0;index < static_cast<Int32>(textures.size());++index)
+				{
+					effect->SetTexture(index, textureType, textureLoader_->Create(textures[index], textureType));
+				}
+			};
+		setTexture(asset.colorTextures_, Effekseer::TextureType::Color);
+		setTexture(asset.normalTextures_, Effekseer::TextureType::Normal);
+		setTexture(asset.distortionTextures_, Effekseer::TextureType::Distortion);
+
+		for (Int32 index = 0;index < static_cast<Int32>(asset.models_.size());++index)
+		{
+			effect->SetModel(index, modelLoader_->Create(asset.models_[index]));
+		}
+		for (Int32 index = 0;index < static_cast<Int32>(asset.materials_.size());++index)
+		{
+			effect->SetMaterial(index, materialLoader_->Create(asset.materials_[index]));
+		}
+		for (Int32 index = 0;index < static_cast<Int32>(asset.curves_.size());++index)
+		{
+			effect->SetCurve(index, curveLoader_->Create(asset.curves_[index]));
+		}
+
+		return effect;
+	}
+
 	Effekseer::Handle EffekseerManager::Play(const Effekseer::EffectRef& effect, const Vector3& position)
 	{
 		Effekseer::Handle handle = manager_->Play(effect, position.x, position.y, position.z);
@@ -107,8 +155,13 @@ namespace SeedCore
 		return handle;
 	}
 
-	void EffekseerManager::Stop(Effekseer::Handle handle)
+	void EffekseerManager::Stop(Effekseer::Handle handle, EffectStopFlag flag)
 	{
+		if (flag == EffectStopFlag::Finish)
+		{
+			manager_->StopRoot(handle);
+			return;
+		}
 		manager_->StopEffect(handle);
 		SeedCore::erase_if(handles_, [handle](Effekseer::Handle candidate) { return candidate == handle; });
 	}
@@ -123,7 +176,7 @@ namespace SeedCore
 		Effekseer::Matrix43 value;
 		for (Int row = 0;row < 4;++row)
 		{
-			for (Int column = 0;column < 4;++column)
+			for (Int column = 0;column < 3;++column)
 			{
 				value.Value[row][column] = matrix.m[row][column];
 			}
@@ -153,10 +206,5 @@ namespace SeedCore
 	Float EffekseerManager::GetTotalTime()const
 	{
 		return totalTime_;
-	}
-
-	EffekseerFileInterface& EffekseerManager::GetFileInterface()
-	{
-		return *fileInterface_.Get();
 	}
 }

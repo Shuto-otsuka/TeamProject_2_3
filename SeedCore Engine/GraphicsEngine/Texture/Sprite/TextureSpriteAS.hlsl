@@ -3,26 +3,6 @@
 groupshared TextureSpritePayload payload;
 groupshared uint candidates[32];
 
-/**
-* [EN]
-* Texture.Sprite culling: one thread group per 32 consecutive entries of the
-* sprite section of Texture.Draws, one thread per quad. A sprite quad is
-* placed exactly as TextureSpriteMS places it and kept when its clip-space
-* rectangle overlaps the view; a fullscreen quad is always kept. The
-* survivors are packed in draw-list order so the units' drawing order holds,
-* and the group ends in exactly one DispatchMesh, launching one
-* TextureSpriteMS group for all of them (none when nothing survives).
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Texture.Sprite のカリング。Texture.Draws のスプライトの区間の連続する 32 件に
-* つき 1 スレッドグループ、四角形 1 つにつき 1 スレッド。スプライトの四角形は
-* TextureSpriteMS と同じ式で置き、そのクリップ空間の矩形がビューと重なれば残す。
-* 全画面の四角形は常に残す。残ったものは描画リストの順のまま詰めるので、ユニットの
-* 描く順番が保たれる。どのグループも最後に DispatchMesh をちょうど 1 回呼び、残った
-* 全部を TextureSpriteMS の 1 グループで描く（何も残らなければ起動しない）。
-*/
 [NumThreads(32, 1, 1)]
 void main(uint gtid : SV_GroupThreadID, uint gid : SV_GroupID)
 {

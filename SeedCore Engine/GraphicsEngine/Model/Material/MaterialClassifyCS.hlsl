@@ -13,17 +13,6 @@ struct MaterialClassifyBindings
 };
 ConstantBuffer<MaterialClassifyBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* First dispatch of Material.Classify: clears every bucket count and the
-* total that follows them.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Material.Classify の最初のディスパッチ。全バケットの数と、その後ろの総数を
-* 0 にする。
-*/
 [numthreads(64, 1, 1)]
 void Prepare(uint3 id : SV_DispatchThreadID)
 {
@@ -34,26 +23,6 @@ void Prepare(uint3 id : SV_DispatchThreadID)
 	}
 }
 
-/**
-* [EN]
-* Material sort, pass 1/3. A foreground pixel counts itself into the bucket
-* (instance_index % MATERIAL_SORT_BUCKET_COUNT); Material.PrefixSum turns the
-* counts into offsets and Material.Scatter lays the pixels out bucket by
-* bucket, so neighbouring threads of Material.Resolve share instances and
-* textures. A background pixel instead gets its final values here: no
-* emitted radiance, and the velocity of a point at a pseudo-infinite distance
-* along its view ray, which isolates the camera rotation.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* マテリアルソート、パス 1/3。前景のピクセルは自分をバケット
-* (instance_index % MATERIAL_SORT_BUCKET_COUNT) に数える。Material.PrefixSum が
-* 数をオフセットへ変え、Material.Scatter がバケット順にピクセルを並べるので、
-* Material.Resolve の隣り合うスレッドがインスタンスとテクスチャを共有する。
-* 背景のピクセルはここで最終の値を書く。放射は 0、速度は視線の方向へ
-* 実質無限遠まで進めた点の速度で、カメラの回転だけを取り出す。
-*/
 [numthreads(8, 8, 1)]
 void Classify(uint3 id : SV_DispatchThreadID)
 {

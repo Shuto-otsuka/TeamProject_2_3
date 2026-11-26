@@ -140,8 +140,6 @@ namespace SeedCore
 			}
 			else
 			{
-				/// [EN] No pole was supplied, so keep the limb's current bend direction: project the mid joint's offset from the root-end line, then place the pole one bend-offset ahead of the mid joint along that same direction.
-				/// [JP] ポール未指定の場合はチェーンの現在の曲がり方向を維持する: mid ジョイントの root-end 直線に対するはみ出し方向を求め、その方向へ mid ジョイントからさらに1つ分オフセットした位置をポールとする。
 				Vector3 rootToEndAxis = originalPositions[2] - originalPositions[0];
 				Vector3 rootToMidOffset = originalPositions[1] - originalPositions[0];
 				Float rootToEndLengthSquared = rootToEndAxis.LengthSq();

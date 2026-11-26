@@ -11,17 +11,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Resolves this frame's camera for a render extent of
-	* renderWidth x renderHeight and rebuilds the scene constant buffer.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* renderWidth x renderHeight の描画サイズに対して今フレームのカメラを
-	* 解決し、シーン定数バッファを作り直す。
-	*/
 	void CameraSystem::Update(World& world, GameTimer& timer, Float renderWidth, Float renderHeight)
 	{
 		SyncCameraBrains(world, renderWidth / renderHeight);
@@ -36,62 +25,21 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Feeds the Editor's mouse/keyboard input to the free-fly camera.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Editor のマウス/キーボード入力をフリーカメラへ渡す。
-	*/
 	void CameraSystem::Navigate(Float deltaTime)
 	{
 		freeCameraController_.Update(freeCamera_, deltaTime);
 	}
 
-	/**
-	* [EN]
-	* Selects which camera the game view renders from.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ゲームビューがどのカメラで描画するかを選ぶ。
-	*/
 	void CameraSystem::Mode(CameraMode mode)
 	{
 		mode_ = mode;
 	}
 
-	/**
-	* [EN]
-	* Returns which camera the game view renders from.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ゲームビューがどのカメラで描画しているかを返す。
-	*/
 	CameraMode CameraSystem::Mode()const
 	{
 		return mode_;
 	}
 
-	/**
-	* [EN]
-	* Sets where the game image is displayed on the desktop, in desktop
-	* pixels (x = left, y = top, z = width, w = height). A degenerate size
-	* is ignored so the divisions in InputSystem::Update() stay finite.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ゲーム画像がデスクトップ上のどこに表示されているかを、
-	* デスクトップのピクセル座標(x = 左、y = 上、z = 幅、w = 高さ)で
-	* 設定する。InputSystem::Update() の除算が有限に収まるよう、大きさが0以下の
-	* ものは無視する。
-	*/
 	void CameraSystem::Rect(const Vector4& rect)
 	{
 		if (rect.z <= 0.0f || rect.w <= 0.0f)
@@ -102,67 +50,23 @@ namespace SeedCore
 		rect_ = rect;
 	}
 
-	/**
-	* [EN]
-	* Returns where the game image is displayed on the desktop, in
-	* desktop pixels (x = left, y = top, z = width, w = height).
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ゲーム画像がデスクトップ上のどこに表示されているかを、
-	* デスクトップのピクセル座標(x = 左、y = 上、z = 幅、w = 高さ)で返す。
-	*/
 	Vector4 CameraSystem::Rect()const
 	{
 		return rect_;
 	}
 
-	/**
-	* [EN]
-	* Whether an active Camera was found by the last Update().
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 直前の Update() でアクティブな Camera が見つかったかどうか。
-	*/
 	Bool CameraSystem::ActiveCamera()const
 	{
 		return hasActiveCamera_;
 	}
 
-	/**
-	* [EN]
-	* Returns the scene constant buffer built by the last Update().
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 直前の Update() で作られたシーン定数バッファを返す。
-	*/
 	const SceneConstantBuffer& CameraSystem::GetSceneConstantBuffer()const
 	{
 		return sceneConstantBuffer_;
 	}
 
-	/**
-	* [EN]
-	* Pushes the active lens and aspect ratio into every CameraBrain and
-	* keeps each brain's direction_ and its Rotation in sync, whichever
-	* side was edited.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* アクティブなレンズとアスペクト比を全 CameraBrain へ反映し、
-	* どちらが編集されたかに応じて各 brain の direction_ と Rotation を
-	* 同期させる。
-	*/
 	void CameraSystem::SyncCameraBrains(World& world, Float aspectRatio)
 	{
-		/// [EN] The first active Camera supplies the lens every brain reports.
-		/// [JP] 最初に見つかったアクティブな Camera のレンズを、全 brain に持たせる。
 		Float fieldOfView = 60.0f;
 		Bool lensFound = false;
 		Query<Read<Active>, Read<Camera>> lensQuery(world);
@@ -186,8 +90,6 @@ namespace SeedCore
 				Bool directionChanged = brain.synced_ && (brain.direction_ - brain.syncedDirection_).LengthSq() > 1e-10f;
 				Bool rotationChanged = !brain.synced_ || rotationQuaternion != brain.syncedRotation_;
 
-				/// [EN] direction_ was edited: rebuild pitch/yaw from it, keeping the current roll.
-				/// [JP] direction_ が編集された場合は、現在のロールを保ったまま、そこからピッチ/ヨーを作り直す。
 				if (directionChanged)
 				{
 					Vector3 direction = brain.direction_;
@@ -209,8 +111,6 @@ namespace SeedCore
 					Transform::Quat(rotation, synchronizedRotation);
 					rotationQuaternion = synchronizedRotation;
 				}
-				/// [EN] Rotation was edited: derive direction_ from its forward axis.
-				/// [JP] Rotation が編集された場合は、その前方軸から direction_ を求める。
 				else if (rotationChanged)
 				{
 					Matrix rotationMatrix = Matrix::CreateFromQuaternion(rotationQuaternion);
@@ -225,17 +125,6 @@ namespace SeedCore
 			});
 	}
 
-	/**
-	* [EN]
-	* Builds the scene constant buffer from the Editor's free-fly camera,
-	* taking only the lens settings from the game's active Camera.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Editor のフリーカメラからシーン定数バッファを作る。ゲームの
-	* アクティブな Camera からはレンズ設定だけを取る。
-	*/
 	void CameraSystem::UpdateFreeCamera(World& world, GameTimer& timer, Float renderWidth, Float renderHeight)
 	{
 		hasActiveCamera_ = false;
@@ -287,24 +176,10 @@ namespace SeedCore
 		previousNonJitterViewProjection_ = freeCamera_.NonJitterViewProjection();
 	}
 
-	/**
-	* [EN]
-	* Builds the scene constant buffer from the game's active Camera,
-	* blended through the highest-weight CameraBrain, and publishes it to
-	* ScreenSpace.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ゲームのアクティブな Camera から、最も weight の高い CameraBrain に
-	* よるブレンドを通してシーン定数バッファを作り、ScreenSpace へ公開する。
-	*/
 	void CameraSystem::UpdateUserCamera(World& world, GameTimer& timer, Float renderWidth, Float renderHeight)
 	{
 		hasActiveCamera_ = false;
 
-		/// [EN] The first active Camera supplies the lens and the default eye/orientation.
-		/// [JP] 最初に見つかったアクティブな Camera が、レンズと既定の視点/向きを決める。
 		const Camera* activeCamera = nullptr;
 		Vector3 eye = Vector3::Zero;
 		Quaternion orientation = Quaternion::Identity;
@@ -327,8 +202,6 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] The highest-weight active brain overrides eye/orientation; on a tie the current brain wins.
-		/// [JP] weight が最も高いアクティブな brain が視点/向きを上書きする。同じ weight なら現在の brain を優先する。
 		CameraBrain* activeBrain = nullptr;
 		EntityID activeBrainEntity;
 		Bool activeBrainCut = false;
@@ -358,8 +231,6 @@ namespace SeedCore
 				brainOrientation = Transform::Quat(rotation) * shakeRotation;
 			});
 
-		/// [EN] Switching brains starts a blend from last frame's eye/orientation; a cut drops any blend and resets motion history.
-		/// [JP] brain が切り替わったら前フレームの視点/向きからブレンドを始める。カットはブレンドを打ち切り、モーション履歴もリセットする。
 		Bool cut = false;
 		if (activeBrain)
 		{
@@ -386,8 +257,6 @@ namespace SeedCore
 			blendDuration_ = 0.0f;
 		}
 
-		/// [EN] Smoothstep blend from the previous brain's pose.
-		/// [JP] 前の brain の姿勢から smoothstep でブレンドする。
 		if (blendElapsed_ < blendDuration_)
 		{
 			blendElapsed_ += timer.ScaledDeltaTime();
@@ -408,8 +277,6 @@ namespace SeedCore
 
 		Matrix nonJitterProjection = Matrix::CreatePerspectiveFov(ToRadians(activeCamera->fieldOfView_), aspectRatio, activeCamera->farPlane_, activeCamera->nearPlane_);
 
-		/// [EN] Offset the projection by this frame's sub-pixel jitter for TAA/upscaling.
-		/// [JP] TAA/アップスケール用に、今フレームのサブピクセルジッター分だけ射影をずらす。
 		jitter_ = Halton23Jitter(frameIndex_);
 		++frameIndex_;
 

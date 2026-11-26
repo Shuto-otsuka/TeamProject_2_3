@@ -16,23 +16,12 @@ struct TextureBillboardBindings
 };
 ConstantBuffer<TextureBillboardBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* What TextureBillboardAS hands to TextureBillboardMS: the quads of its 32 that are
-* on screen, as indices into Texture.Quads, still in draw-list order.
-*/
 struct TextureBillboardPayload
 {
 	uint count_;
 	uint quads_[32];
 };
 
-/**
-* [EN]
-* Per-vertex output of TextureBillboardMS/TextureBillboardVS: the texcoord
-* inside the quad's UV range and the quad's index into Texture.Quads, from
-* which the pixel shader reads the quad and its unit.
-*/
 struct TextureBillboardOutput
 {
 	float4 position : SV_Position;
@@ -40,4 +29,4 @@ struct TextureBillboardOutput
 	nointerpolation uint quad_index : BLENDINDICES0;
 };
 
-#endif // __TEXTURE_BILLBOARD_HLSL__
+#endif

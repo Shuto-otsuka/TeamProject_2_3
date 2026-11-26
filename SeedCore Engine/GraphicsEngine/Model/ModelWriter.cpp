@@ -13,15 +13,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* The format, axis system and unit scale a preset stands for.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* プリセットが表す形式・軸系・単位の倍率。
-	*/
 	ExportProfile ModelWriter::Profile(ExportPreset preset)
 	{
 		ExportProfile profile{};
@@ -61,21 +52,6 @@ namespace SeedCore
 		return profile;
 	}
 
-	/**
-	* [EN]
-	* Writes crister to filePath in the format, axis system and unit scale
-	* of profile, creating the folder when needed. crister must hold
-	* uncompressed, LOD-free geometry (as ModelLoader leaves it for
-	* export). Returns false when the write failed.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* crister を profile の形式・軸系・単位の倍率で filePath へ書き出す。
-	* 必要ならフォルダを作る。crister は非圧縮・LOD 無しのジオメトリを
-	* 持っている必要がある（ModelLoader が書き出し用に残す形）。書き込みに
-	* 失敗した場合は false を返す。
-	*/
 	Bool ModelWriter::Write(const Crister& crister, const ExportProfile& profile, String filePath)
 	{
 		std::filesystem::path outputPath(filePath.c_str());
@@ -776,20 +752,6 @@ namespace SeedCore
 		return false;
 	}
 
-	/**
-	* [EN]
-	* Writes a tinygltf model built in memory (such as a baked avatar) to
-	* filePath in the format, axis system and unit scale of profile,
-	* creating the folder when needed. Returns false when the write
-	* failed.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* メモリ上で組み立てた tinygltf のモデル（焼き込んだアバターなど）を、
-	* profile の形式・軸系・単位の倍率で filePath へ書き出す。必要なら
-	* フォルダを作る。書き込みに失敗した場合は false を返す。
-	*/
 	Bool ModelWriter::Write(const tinygltf::Model& model, const ExportProfile& profile, String filePath)
 	{
 		std::filesystem::path outputPath(filePath.c_str());

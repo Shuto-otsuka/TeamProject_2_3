@@ -3,13 +3,15 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Creates every AudioEngine loader.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* AudioEngine の全ローダーを生成する。
+	* 読み込み係を作る。
+	*
+	* @brief 読み込み係を作る
+	*
+	* [EN]
+	* Makes the loaders.
+	*
+	* @brief Makes the loaders
 	*/
 	AudioLoaderSystem::AudioLoaderSystem()
 	{

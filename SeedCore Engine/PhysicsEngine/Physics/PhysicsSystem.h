@@ -10,217 +10,272 @@ namespace SeedCore
 	class ModelResource;
 
 	/**
-	* [EN]
-	* Glue between the ECS and the physics world: builds bodies from
-	* actors, keeps them in step with actor activity, delivers contact
-	* events to components, and finishes components that wait on assets.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* ECS と物理ワールドのつなぎ役。Actor からボディを作り、Actor の有効状態に
-	* ボディを合わせ、接触イベントをコンポーネントへ届け、アセット待ちの
-	* コンポーネントを仕上げる。
+	* 物理の部品をまとめて動かし、ぶつかったことをスクリプトに知らせる係。
+	*
+	* @brief 物理の部品をまとめて動かす係
+	*
+	* [EN]
+	* Runs the physics parts together and tells scripts when things hit.
+	*
+	* @brief Runs the physics parts
 	*/
 	class SEEDCORE_API PhysicsSystem
 	{
 	public:
 		/**
-		* [EN]
-		* Writes the actor's pose and EntityID into desc. Canvas actors (with
-		* a Rect/CircleCollider) are converted from pixels to meters on the
-		* z = 0 plane; others use their Position/Rotation as is.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* Actor の姿勢と EntityID を desc に書き込む。Canvas の Actor
-		* (Rect/CircleCollider 付き)はピクセルからメートルへ変換して z = 0 の
-		* 平面に置き、それ以外は Position/Rotation をそのまま使う。
+		* アクターの位置と向きを、物理の体の設定に書き込む。
+		*
+		* @brief 位置と向きを書き込む
+		* @param actor 位置を取るアクター
+		* @param desc  書き込む体の設定
+		* @note  2D の当たり判定は、ピクセルをメートルに直して Y を逆にする
+		*
+		* [EN]
+		* Writes the actor's position and facing into a body's settings.
+		*
+		* @brief Writes the position and facing
+		* @param actor The actor to read from
+		* @param desc  The body settings to write into
+		* @note  2D collision turns pixels into meters and flips Y
 		*/
 		static void ApplyTransform(Actor actor, RigidbodyDesc& desc);
 
 		/**
-		* [EN]
-		* Suspends the bodies of inactive actors and resumes those of active
-		* ones, then enables only the joints whose bodies are both present.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 無効な Actor のボディを停止し、有効な Actor のボディを再開したうえで、
-		* 両方のボディがそろっているジョイントだけを有効にする。
+		* アクターが動いているかに合わせて、体を止めたり動かしたりする。
+		*
+		* @brief 体の動く・止まるを合わせる
+		* @param world 調べる世界
+		*
+		* [EN]
+		* Pauses or wakes each body to match whether its actor is active.
+		*
+		* @brief Matches bodies to active actors
+		* @param world The world to check
 		*/
 		static void ApplyActive(World& world);
 
 		/**
-		* [EN]
-		* Brings the body of every active actor's lone collider in line with
-		* the actor: moves it to the actor's current pose and rebuilds its
-		* shape when the actor's world scale has changed, so the collider
-		* follows an actor that moves or scales after it was created.
-		* MeshCollider is left out, since rebuilding a mesh shape is too
-		* costly to do whenever the scale changes. Called every frame.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 有効な全 Actor の単独のコライダーについて、ボディを Actor に合わせる。
-		* Actor の今の姿勢へボディを移し、Actor のワールドスケールが変わって
-		* いれば形状を作り直す。これにより、生成後に動いたり拡大縮小したり
-		* する Actor にコライダーが追従する。メッシュ形状の作り直しはスケールが
-		* 変わるたびに行うには重いため、MeshCollider は対象外。毎フレーム呼ばれる。
+		* 当たり判定の部品に、アクターの位置と大きさを伝える。
+		*
+		* @brief 当たり判定を更新する
+		* @param world 調べる世界
+		*
+		* [EN]
+		* Sends each collider its actor's position and size.
+		*
+		* @brief Updates the colliders
+		* @param world The world to check
 		*/
 		static void ApplyCollider(World& world);
 
 		/**
-		* [EN]
-		* Hands what code has changed on every active actor's Rigidbody
-		* (bodyType_, isTrigger_, and the actor's LinearVelocity and
-		* AngularVelocity) to its body, advances each MoveTo by one step of
-		* elapsedTime, and then carries each body that follows its foothold
-		* along with it. Called before every fixed step.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 有効な全 Actor の Rigidbody について、コードが変えたもの(bodyType_ と
-		* isTrigger_ と、Actor の LinearVelocity と AngularVelocity)をボディへ
-		* 渡し、MoveTo による移動を elapsedTime の1ステップ分進めたうえで、
-		* 足場に追従するボディを足場と一緒に運ぶ。固定ステップの前に毎回呼ばれる。
+		* Rigidbody の部品を更新する。足場の動きはそのあとでまとめて当てはめる。
+		*
+		* @brief Rigidbody を更新する
+		* @param world       調べる世界
+		* @param elapsedTime 前のフレームからの時間
+		*
+		* [EN]
+		* Updates the Rigidbody parts; moving footholds are applied afterwards in one go.
+		*
+		* @brief Updates the Rigidbodies
+		* @param world       The world to check
+		* @param elapsedTime Time since the last frame
 		*/
 		static void ApplyRigidbody(World& world, Float elapsedTime);
 
 		/**
-		* [EN]
-		* Creates the static body of a collider on its own. Returns an
-		* invalid ID when the actor has a Rigidbody, which then owns the
-		* single body and borrows the collider's shape instead.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* コライダー単独の静的ボディを作る。Actor に Rigidbody がある場合は無効な
-		* ID を返す。その場合はボディを Rigidbody が1つだけ持ち、コライダーの
-		* 形状を借りる。
+		* Rigidbody がないアクター用に、当たり判定だけの動かない体を作る。
+		*
+		* @brief  当たり判定だけの体を作る
+		* @param  actor     体を作るアクター
+		* @param  shape     使う形
+		* @param  isTrigger 重なりを知らせるだけにするか
+		* @return 作った体の番号。Rigidbody があれば作らない
+		*
+		* [EN]
+		* Makes a still, collision-only body for an actor without a Rigidbody.
+		*
+		* @brief  Makes a collision-only body
+		* @param  actor     The actor to make it for
+		* @param  shape     The shape to use
+		* @param  isTrigger Whether it only reports overlaps
+		* @return The new body number; none is made if there is a Rigidbody
 		*/
 		static ScBodyID CreateColliderBody(Actor actor, ScShapeHandle shape, Bool isTrigger = false);
 
 		/**
-		* [EN]
-		* Destroys a collider's own body, if it has one, and releases its
-		* reference to the shape.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* コライダー自身のボディがあれば破棄し、形状への参照を解放する。
+		* 当たり判定だけの体と、その形を消す。
+		*
+		* @brief 当たり判定だけの体を消す
+		* @param actor  体を持つアクター
+		* @param bodyID 消す体の番号
+		* @param shape  返す形
+		*
+		* [EN]
+		* Removes a collision-only body and gives back its shape.
+		*
+		* @brief Removes a collision-only body
+		* @param actor  The actor that owns it
+		* @param bodyID The body number to remove
+		* @param shape  The shape to give back
 		*/
 		static void DestroyColliderBody(Actor actor, ScBodyID bodyID, ScShapeHandle shape);
 
 	public:
 		/**
-		* [EN]
-		* Tells every component of the entity that a collision with the other
-		* entity began.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* エンティティの全コンポーネントへ、相手のエンティティとの衝突が
-		* 始まったことを伝える。
+		* ぶつかり始めたことを、アクターのスクリプトに知らせる。
+		*
+		* @brief ぶつかり始めを知らせる
+		* @param world         世界
+		* @param entityID      知らせるアクター
+		* @param otherEntityID ぶつかった相手
+		*
+		* [EN]
+		* Tells an actor's scripts that a hit has started.
+		*
+		* @brief Reports a hit starting
+		* @param world         The world
+		* @param entityID      The actor to tell
+		* @param otherEntityID What it hit
 		*/
 		static void DispatchCollisionEnter(World& world, EntityID entityID, EntityID otherEntityID);
 
 		/**
-		* [EN]
-		* Tells every component of the entity that a collision with the other
-		* entity continues.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* エンティティの全コンポーネントへ、相手のエンティティとの衝突が
-		* 続いていることを伝える。
+		* ぶつかり続けていることを、アクターのスクリプトに知らせる。
+		*
+		* @brief ぶつかり中を知らせる
+		* @param world         世界
+		* @param entityID      知らせるアクター
+		* @param otherEntityID ぶつかっている相手
+		*
+		* [EN]
+		* Tells an actor's scripts that a hit is still going on.
+		*
+		* @brief Reports an ongoing hit
+		* @param world         The world
+		* @param entityID      The actor to tell
+		* @param otherEntityID What it is hitting
 		*/
 		static void DispatchCollisionStay(World& world, EntityID entityID, EntityID otherEntityID);
 
 		/**
-		* [EN]
-		* Tells every component of the entity that a collision with the other
-		* entity ended.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* エンティティの全コンポーネントへ、相手のエンティティとの衝突が
-		* 終わったことを伝える。
+		* 離れたことを、アクターのスクリプトに知らせる。
+		*
+		* @brief 離れたことを知らせる
+		* @param world         世界
+		* @param entityID      知らせるアクター
+		* @param otherEntityID 離れた相手
+		*
+		* [EN]
+		* Tells an actor's scripts that a hit has ended.
+		*
+		* @brief Reports a hit ending
+		* @param world         The world
+		* @param entityID      The actor to tell
+		* @param otherEntityID What it stopped hitting
 		*/
 		static void DispatchCollisionExit(World& world, EntityID entityID, EntityID otherEntityID);
 
 		/**
-		* [EN]
-		* Tells every component of the entity that the other entity entered a
-		* trigger.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* エンティティの全コンポーネントへ、相手のエンティティがトリガーに
-		* 入ったことを伝える。
+		* 重なり始めたことを、アクターのスクリプトに知らせる。
+		*
+		* @brief 重なり始めを知らせる
+		* @param world         世界
+		* @param entityID      知らせるアクター
+		* @param otherEntityID 重なった相手
+		*
+		* [EN]
+		* Tells an actor's scripts that an overlap has started.
+		*
+		* @brief Reports an overlap starting
+		* @param world         The world
+		* @param entityID      The actor to tell
+		* @param otherEntityID What it overlaps
 		*/
 		static void DispatchTriggerEnter(World& world, EntityID entityID, EntityID otherEntityID);
 
 		/**
-		* [EN]
-		* Tells every component of the entity that the other entity stays in a
-		* trigger.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* エンティティの全コンポーネントへ、相手のエンティティがトリガーの中に
-		* 留まっていることを伝える。
+		* 重なり続けていることを、アクターのスクリプトに知らせる。
+		*
+		* @brief 重なり中を知らせる
+		* @param world         世界
+		* @param entityID      知らせるアクター
+		* @param otherEntityID 重なっている相手
+		*
+		* [EN]
+		* Tells an actor's scripts that an overlap is still going on.
+		*
+		* @brief Reports an ongoing overlap
+		* @param world         The world
+		* @param entityID      The actor to tell
+		* @param otherEntityID What it overlaps
 		*/
 		static void DispatchTriggerStay(World& world, EntityID entityID, EntityID otherEntityID);
 
 		/**
-		* [EN]
-		* Tells every component of the entity that the other entity left a
-		* trigger.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* エンティティの全コンポーネントへ、相手のエンティティがトリガーから
-		* 出たことを伝える。
+		* 重なりが終わったことを、アクターのスクリプトに知らせる。
+		*
+		* @brief 重なりの終わりを知らせる
+		* @param world         世界
+		* @param entityID      知らせるアクター
+		* @param otherEntityID 離れた相手
+		*
+		* [EN]
+		* Tells an actor's scripts that an overlap has ended.
+		*
+		* @brief Reports an overlap ending
+		* @param world         The world
+		* @param entityID      The actor to tell
+		* @param otherEntityID What it stopped overlapping
 		*/
 		static void DispatchTriggerExit(World& world, EntityID entityID, EntityID otherEntityID);
 
 	public:
 		/**
-		* [EN]
-		* Builds every MeshCollider still waiting for its collision mesh,
-		* once the asset has finished loading. Called every frame.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 衝突メッシュを待っている MeshCollider を、アセットの読み込みが
-		* 終わったものから構築する。毎フレーム呼ばれる。
+		* メッシュの当たり判定がまだ形を作れていなければ、読み込んだメッシュを渡して作らせる。
+		*
+		* @brief メッシュの当たり判定を仕上げる
+		* @param meshCollisionResource メッシュを探す場所
+		* @param world                 部品を探す世界
+		*
+		* [EN]
+		* Hands loaded meshes to mesh colliders that have not made their shape yet.
+		*
+		* @brief Finishes the mesh colliders
+		* @param meshCollisionResource Where to look up meshes
+		* @param world                 The world to look for parts in
 		*/
 		static void ResolveMeshCollider(MeshCollisionResource& meshCollisionResource, World& world);
 
 		/**
-		* [EN]
-		* Builds every Softbody still waiting for the model of its actor's
-		* Mesh, once the model has finished loading. Called every frame.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* Actor の Mesh のモデルを待っている Softbody を、モデルの読み込みが
-		* 終わったものから構築する。毎フレーム呼ばれる。
+		* やわらかい体（Softbody）がまだ作れていなければ、読み込んだモデルを渡して作らせる。
+		*
+		* @brief Softbody を仕上げる
+		* @param modelResource モデルを探す場所
+		* @param world         部品を探す世界
+		*
+		* [EN]
+		* Hands loaded models to soft bodies that have not been built yet.
+		*
+		* @brief Finishes the soft bodies
+		* @param modelResource Where to look up models
+		* @param world         The world to look for parts in
 		*/
 		static void ResolveSoftbody(ModelResource& modelResource, World& world);
 	};

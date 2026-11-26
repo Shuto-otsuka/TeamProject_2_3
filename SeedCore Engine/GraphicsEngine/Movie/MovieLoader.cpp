@@ -34,23 +34,6 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Opens the video at filePath (a source, or a ".movie" cache) and
-	* returns the handle of the new Video, or a null handle when Media
-	* Foundation is unavailable or the video cannot be opened. A source
-	* is read as it is, a ".movie" cache through its decryption. thread
-	* is unused: the decoder keeps no per-thread state.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* filePath の動画（ソースか ".movie" キャッシュ）を開き、新しい Video の
-	* ハンドルを返す。Media Foundation が使えない、または動画を開けない
-	* 場合は null のハンドルを返す。ソースはそのまま、".movie" キャッシュは
-	* 復号を通して読む。thread は使わない（デコーダはスレッドごとの状態を
-	* 持たないため）。
-	*/
 	Handle<Video> MovieLoader::Load(String filePath, LoadThread thread)
 	{
 		if (!mfStarted_)
@@ -83,17 +66,6 @@ namespace SeedCore
 		return handle;
 	}
 
-	/**
-	* [EN]
-	* Tears the decoder and the GPU resources of the Video handle names
-	* down, then frees its slot.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* handle が示す Video のデコーダと GPU リソースを破棄してから、
-	* スロットを解放する。
-	*/
 	void MovieLoader::Clear(Handle<Video>& handle)noexcept
 	{
 		Video* video = pool_.Get(handle);
@@ -121,23 +93,6 @@ namespace SeedCore
 		pool_.Destroy(handle);
 	}
 
-	/**
-	* [EN]
-	* Writes the bytes of the source video at sourcePath, AES-256-CBC
-	* encrypted behind a random 16-byte IV, to the ".movie" cache at
-	* cachePath. The cache has no field framing, so the decoder can
-	* decrypt any requested range without parsing the whole file.
-	* Returns false when the source cannot be read or the write failed.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* sourcePath のソース動画のバイト列を、ランダムな 16 バイトの IV の後に
-	* AES-256-CBC で暗号化して、cachePath の ".movie" キャッシュへ書く。
-	* キャッシュはフィールド形式を持たないため、デコーダはファイル全体を
-	* 解析せずに任意の範囲を復号できる。ソースを読めない、または書き込みに
-	* 失敗した場合は false を返す。
-	*/
 	Bool MovieLoader::Bake(String sourcePath, String cachePath)
 	{
 		DynamicArray<Uint8> sourceBytes = FileUtility::LoadFileBinary(sourcePath);
@@ -149,12 +104,8 @@ namespace SeedCore
 		DynamicArray<Byte> plaintext(sourceBytes.size());
 		std::memcpy(plaintext.data(), sourceBytes.data(), sourceBytes.size());
 
-		/// [EN] The key is derived from the engine's key seed, the same one every other encrypted cache uses.
-		/// [JP] 鍵はエンジンの鍵シードから作る。他の暗号化キャッシュと同じもの。
 		DynamicArray<Byte> key = Sha256::Hash(reinterpret_cast<const Byte*>(SC_ENCRYPTION_KEY_SEED), std::strlen(SC_ENCRYPTION_KEY_SEED));
 
-		/// [EN] A fresh random IV per file, written in front of the ciphertext so the decoder can read it back.
-		/// [JP] ファイルごとに新しいランダムな IV。デコーダが読み戻せるよう、暗号文の前に書く。
 		DynamicArray<Byte> iv(16);
 		std::random_device randomDevice;
 		for (Byte& ivByte : iv)

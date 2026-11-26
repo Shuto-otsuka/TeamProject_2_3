@@ -12,41 +12,13 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Takes the device context skymaps are uploaded with and the
-	* bindless heap their textures are registered in.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* スカイマップをアップロードするデバイスのコンテキストと、テクスチャの
-	* 登録先のバインドレスヒープを受け取る。
-	*/
 	SkymapLoader::SkymapLoader(D3D12Context& context, BindlessHeap& heap) :context_(context), heap_(heap)
 	{
 		/// No Code
 	}
 
-	/**
-	* [EN]
-	* Reads the ".hdr" source or ".skymap" cache at filePath, uploads it
-	* through the copy queue on the transfer lane of thread and returns the
-	* handle of the new Skymap, or a null handle when it cannot be read or
-	* uploaded. Nothing is written.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* filePath の ".hdr" ソースか ".skymap" キャッシュを読み、thread の
-	* 転送レーンでコピーキューへアップロードして、新しい Skymap のハンドルを
-	* 返す。読めない、またはアップロードできない場合は null のハンドルを
-	* 返す。何も書き出さない。
-	*/
 	Handle<Skymap> SkymapLoader::Load(String filePath, LoadThread thread)
 	{
-		/// [EN] The GPU objects the upload below works with, taken from the dependencies this loader was built with.
-		/// [JP] 以下のアップロードが使う GPU のオブジェクト。このローダーが構築時に受け取った依存から取る。
 		ID3D12Device* device = context_.GetDevice();
 		D3D12CommandQueue* copyQueue = context_.GetCopyQueue();
 		D3D12TransferLane* transferLane = context_.GetLoadTransferLane(thread);
@@ -152,8 +124,6 @@ namespace SeedCore
 		GFSDK_Aftermath_DX12_UpdateResourceInfo(skymap->resource_.Get());
 #endif
 
-		/// [EN] The texture starts in the COMMON state, so the copy queue writes it and the sky generation reads it without explicit transitions.
-		/// [JP] テクスチャは COMMON 状態で始まるので、コピーキューが書き、空の生成が読むのに明示的な遷移は要らない。
 		transferLane->Begin(device, *copyQueue);
 		transferLane->GetStream().Upload(device, transferLane->GetCommandList(), skymap->resource_.Get(), 0, std::span<const std::byte>(static_cast<const std::byte*>(pixels),static_cast<Size>(rowPitch) * height));
 		copyQueue->WaitFor(transferLane->Submit(*copyQueue));
@@ -170,28 +140,11 @@ namespace SeedCore
 		return handle;
 	}
 
-	/**
-	* [EN]
-	* Hands the Skymap's texture to the heap's deferred release, then
-	* frees its slot.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Skymap のテクスチャをヒープの遅延解放へ渡してから、スロットを
-	* 解放する。
-	*/
 	void SkymapLoader::Clear(Handle<Skymap>& handle)noexcept
 	{
 		Skymap* skymap = pool_.Get(handle);
 		if (skymap)
 		{
-			/// [EN] pool_.Destroy below runs the Skymap's destructor right here,
-			///      so the equirect texture must be handed to the deferred ring
-			///      first - the frames still in flight are sampling it.
-			/// [JP] 下の pool_.Destroy はこの場で Skymap のデストラクタを走らせる
-			///      ため、先に equirect テクスチャを遅延回収リングへ渡す必要が
-			///      ある — インフライトのフレームがまだサンプリングしている。
 			heap_.Release(std::move(skymap->resource_), skymap->shaderResourceViewIndex_);
 			skymap->shaderResourceViewIndex_ = SC_INVALID;
 		}
@@ -199,21 +152,6 @@ namespace SeedCore
 		pool_.Destroy(handle);
 	}
 
-	/**
-	* [EN]
-	* Decodes the ".hdr" source at sourcePath and writes its pixels to the
-	* ".skymap" cache at cachePath, so the skymap can be shipped and
-	* loaded without the source. Returns false when the source cannot be
-	* decoded or the write failed.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* sourcePath の ".hdr" ソースをデコードし、そのピクセルを cachePath の
-	* ".skymap" キャッシュへ書く。ソース無しでスカイマップを配布・読み込み
-	* できるようにするため。ソースをデコードできない、または書き込みに
-	* 失敗した場合は false を返す。
-	*/
 	Bool SkymapLoader::Bake(String sourcePath, String cachePath)
 	{
 		DirectX::ScratchImage image;
@@ -229,8 +167,6 @@ namespace SeedCore
 			return false;
 		}
 
-		/// [EN] The asset records exactly what Load needs to recreate the texture without decoding the HDR again.
-		/// [JP] アセットには、HDR をデコードし直さずに Load がテクスチャを作り直すのに要るものをそのまま記録する。
 		SkymapAsset asset;
 		asset.format_ = static_cast<Uint32>(metadata.format);
 		asset.width_ = static_cast<Uint32>(metadata.width);

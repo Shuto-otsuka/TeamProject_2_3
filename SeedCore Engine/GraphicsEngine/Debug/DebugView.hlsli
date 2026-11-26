@@ -1,7 +1,6 @@
 #ifndef __DEBUG_VIEW_HLSL__
 #define __DEBUG_VIEW_HLSL__
 
-/// Values of RenderViewMode (RenderView.h), as written to SceneConstantBuffer::view_mode_.
 #define VIEW_MODE_LIT 0
 #define VIEW_MODE_UNLIT 1
 #define VIEW_MODE_WIREFRAME 2
@@ -66,25 +65,21 @@
 #define VIEW_MODE_UPSCALE_INPUT 61
 #define VIEW_MODE_UPSCALE_OUTPUT 62
 
-/// Values of RenderDebugSource, as written to SceneConstantBuffer::debug_source_.
 #define DEBUG_SOURCE_REFLECTION 0
 #define DEBUG_SOURCE_GLOBAL_ILLUMINATION 1
 #define DEBUG_SOURCE_SHADOW 2
 #define DEBUG_SOURCE_AMBIENT_OCCLUSION 3
 
-/// Low-word bits of RenderShowFlag, as written to SceneConstantBuffer::show_flags_low_.
 #define SHOW_FLAG_MODEL (1u << 0)
 #define SHOW_FLAG_PRIMITIVE (1u << 1)
 #define SHOW_FLAG_TRANSPARENT (1u << 2)
 #define SHOW_FLAG_FUR (1u << 3)
 #define SHOW_FLAG_DIRECT_LIGHT (1u << 9)
 
-/// Bits the visibility pass writes into Geometry.Debug: the pixel's meshlet was drawn by the late (occlusion re-test) pass.
 #define DEBUG_GEOMETRY_LATE 1u
 
-/// Bits a ReSTIR pass writes into its per-pixel reuse word: the temporal history was combined, the temporal history was rejected, and (from bit 8) how many spatial neighbours were combined.
 #define DEBUG_REUSE_TEMPORAL 1u
 #define DEBUG_REUSE_REJECTED 2u
 #define DEBUG_REUSE_SPATIAL_SHIFT 8u
 
-#endif // __DEBUG_VIEW_HLSL__
+#endif

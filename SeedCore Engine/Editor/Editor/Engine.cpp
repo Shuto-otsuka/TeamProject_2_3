@@ -7,24 +7,11 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Loads the settings, opens the window, and runs every boot step
-	* as one task graph. Returns false when the window cannot be made.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 設定を読み、ウィンドウを開き、全ての起動手順を1つのタスクグラフ
-	* として走らせる。ウィンドウを作れなければ false を返す。
-	*/
 	Bool Engine::Boot(const Bootstrap& bootstrap)
 	{
 		editorConfig_.Initialize();
 		gameConfig_.Initialize();
 
-		/// [EN] The window comes first and alone, since every later step draws into it or reads its handle.
-		/// [JP] 後の手順はどれもウィンドウへ描くかそのハンドルを読むので、ウィンドウだけを最初に作る。
 		if (!core_.BootWindow(bootstrap, editorConfig_))
 		{
 			return false;
@@ -32,8 +19,6 @@ namespace SeedCore
 
 		imgui_ = MakePtr<ImGuiRenderer>();
 
-		/// [EN] Each Boot call adds its step to the graph with the steps it waits on; nothing runs until Execute.
-		/// [JP] 各 Boot 呼び出しは、待つ手順と一緒に自分の手順をグラフへ足すだけで、Execute まで何も走らない。
 		JobTaskflow flow;
 		core_.BootPhysics(flow);
 		core_.BootDlss(flow);
@@ -43,8 +28,6 @@ namespace SeedCore
 		core_.BootFont(flow);
 		core_.BootEffekseer(flow);
 
-		/// [EN] Editor-only step: ImGui needs the window and the graphics device.
-		/// [JP] エディタだけの手順。ImGui にはウィンドウとグラフィックスデバイスが要る。
 		core_.BootImGui(flow, [this]()
 			{
 				imgui_->Initialize(core_.GetWindow(), core_.GetGraphics());
@@ -56,16 +39,12 @@ namespace SeedCore
 		core_.BootCsharp(flow);
 		core_.BootPlugin(flow);
 
-		/// [EN] Editor-only step: hot reload watches the native plugin and the C# host once both are loaded.
-		/// [JP] エディタだけの手順。ネイティブのプラグインと C# のホストが読み込まれてから、ホットリロードがそれらを見張る。
 		core_.BootHotReload(flow, [this]()
 			{
 				hotReload_.Initialize(core_.GetPlugin(), core_.GetCsharp());
 			});
 		core_.BootScene(flow, editorConfig_);
 
-		/// [EN] Editor-only last step: wires the editor context to the booted modules and creates the editor UI.
-		/// [JP] エディタだけの最後の手順。起動したモジュールにエディタのコンテキストをつなぎ、エディタの UI を作る。
 		core_.BootEditor(flow, [this]()
 			{
 				editorContext_.world_.world_ = &core_.GetWorld();
@@ -81,8 +60,6 @@ namespace SeedCore
 				editorContext_.graphics_.imgui_ = imgui_.get();
 				editorContext_.application_.benchmark_ = &core_.GetBenchmark();
 
-				/// [EN] The editor camera resumes where it was when the editor last closed.
-				/// [JP] エディタのカメラは、前回エディタを閉じたときの状態から再開する。
 				editorCamera_.Eye(editorConfig_.cameraEye_);
 				editorCamera_.Focus(editorConfig_.cameraFocus_);
 				editorCamera_.Up(editorConfig_.cameraUp_);
@@ -94,8 +71,6 @@ namespace SeedCore
 				editorCameraController_.PanSpeed(editorConfig_.cameraPanSpeed_);
 				editorCameraController_.ShiftSpeedMultiplier(editorConfig_.cameraShiftSpeedMultiplier_);
 
-				/// [EN] A missing or moved CRI Atom Craft is looked for again; a found path is saved so the search runs only once.
-				/// [JP] CRI Atom Craft が未設定か見つからなければ探し直し、見つかったパスは保存して探すのを1度で済ませる。
 				std::error_code atomCraftErrorCode;
 				if (editorConfig_.atomCraftPath_.view().empty() || !std::filesystem::exists(editorConfig_.atomCraftPath_.c_str(), atomCraftErrorCode))
 				{
@@ -111,13 +86,9 @@ namespace SeedCore
 					}
 				}
 
-				/// [EN] The editor applies the configured settings to Graphics every frame from these.
-				/// [JP] エディタは、これらの設定を毎フレーム Graphics へ反映する。
 				editorContext_.config_.game_ = &gameConfig_;
 				editorContext_.config_.editor_ = &editorConfig_;
 
-				/// [EN] With a scene loaded, the editor reopens the scene file that was open last time.
-				/// [JP] Scene が読み込まれていれば、前回開いていた Scene ファイルをエディタで開き直す。
 				if (!core_.GetScene().CurrentName().view().empty())
 				{
 					editorContext_.scene_.path_ = FilePath(std::filesystem::path(editorConfig_.lastScenePath_.str()), FileLocator::EngineRoot());
@@ -125,28 +96,15 @@ namespace SeedCore
 				editor_ = MakePtr<Editor>(editorContext_);
 			});
 
-		/// [EN] Runs the whole graph, pumping window messages while it works.
-		/// [JP] ウィンドウのメッセージを処理しながら、グラフ全体を走らせる。
 		core_.Execute(flow);
 
 		return true;
 	}
 
-	/**
-	* [EN]
-	* Runs the editor loop until the window's message queue ends.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ウィンドウのメッセージキューが終わるまでエディタのループを回す。
-	*/
 	void Engine::Run()
 	{
 		while (core_.Pump())
 		{
-			/// [EN] Closing the window does not end the loop directly; it is handed to the editor as an exit request.
-			/// [JP] ウィンドウを閉じる操作でループを直接終わらせず、終了要求としてエディタへ渡す。
 			if (core_.GetWindow().ConsumeClosing())
 			{
 				editorContext_.application_.exitRequested_ = true;
@@ -155,8 +113,6 @@ namespace SeedCore
 			core_.Tick();
 			core_.Input();
 
-			/// [EN] Reloaded code is swapped in before the frame, so this frame already runs the new code.
-			/// [JP] 読み直したコードはフレームの前に差し替え、このフレームから新しいコードで動かす。
 			Benchmark::Begin("HotReload");
 			hotReload_.Tick(core_.GetWorld());
 			Benchmark::End("HotReload");
@@ -165,23 +121,17 @@ namespace SeedCore
 			core_.GetPlugin().Tick(core_.GetWorld());
 			Benchmark::End("Plugin");
 
-			/// [EN] While the splash screen is up, the frame is spent loading assets instead.
-			/// [JP] スプラッシュ画面の間は、フレームをアセットの読み込みに使う。
 			if (core_.Splash())
 			{
 				continue;
 			}
 
-			/// [EN] The editor's own delta time drives editor-side work, which keeps going while the game is stopped.
-			/// [JP] エディタ自身の経過時間でエディタ側の処理を進め、ゲームが止まっていても動き続けるようにする。
 			Benchmark::Begin("EditorUpdate");
 			editor_->Tick(core_.GetWindow().GetTimer().Delta());
 			Benchmark::End("EditorUpdate");
 			core_.Begin();
 			core_.Simulate(core_.GetWindow().GetTimer().Delta());
 
-			/// [EN] Draw covers the view rendering and the panels; the sections inside it break it down further.
-			/// [JP] Draw はビューの描画とパネルを含む。内訳はその中の区間に出る。
 			Benchmark::Begin("Draw");
 			editor_->Draw();
 			Benchmark::End("Draw");
@@ -191,25 +141,10 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Saves the editor's camera, font scale and last scene, then
-	* releases the editor, ImGui and the core in that order.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* エディタのカメラ、フォント倍率、最後の Scene を保存し、続けて
-	* エディタ、ImGui、コアの順に解放する。
-	*/
 	void Engine::Shutdown()
 	{
-		/// [EN] The GPU must finish with every resource before any of them is released.
-		/// [JP] どのリソースを解放するよりも前に、GPU にそれらを使い終えさせる。
 		core_.GetGraphics().Wait();
 
-		/// [EN] ImGui exists only once boot got past the window, so a boot that failed there leaves the saved settings alone.
-		/// [JP] ImGui があるのはウィンドウの作成を越えて起動できたときだけ。そこで失敗した起動では、保存済みの設定に触れない。
 		if (imgui_)
 		{
 			editorConfig_.cameraEye_ = editorCamera_.Eye();
@@ -229,8 +164,6 @@ namespace SeedCore
 			editorConfig_.Save();
 		}
 
-		/// [EN] The editor goes before ImGui and the core, since its panels refer to both.
-		/// [JP] エディタのパネルは ImGui とコアの両方を参照しているので、エディタを先に解放する。
 		editor_ = nullptr;
 
 		if (imgui_)

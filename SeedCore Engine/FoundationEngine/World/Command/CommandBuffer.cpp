@@ -12,17 +12,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Records a deferred prefab instantiation at position and returns a
-	* provisional EntityID for the spawned root.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* position でのプレハブのインスタンス化を遅延記録し、生成される
-	* ルートの暫定 EntityID を返す。
-	*/
 	EntityID CommandBuffer::SpawnPrefab(Uint32 assetID, const Vector3& position, EntityID parent)
 	{
 		EntityID provisional = EntityID{ provisionalCount_++, ProvisionalGeneration };
@@ -38,15 +27,6 @@ namespace SeedCore
 		return provisional;
 	}
 
-	/**
-	* [EN]
-	* Records the destruction of id.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* id の破棄を記録する。
-	*/
 	void CommandBuffer::DestroyEntity(EntityID id)
 	{
 		Command command;
@@ -55,17 +35,6 @@ namespace SeedCore
 		commands_.push_back(command);
 	}
 
-	/**
-	* [EN]
-	* Type-erased AddComponent: copies the component at source into blob_
-	* and records the pending add.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 型消去版 AddComponent: source のコンポーネントを blob_ へコピーし、
-	* 保留中の追加を記録する。
-	*/
 	void CommandBuffer::AddComponent(EntityID id, ComponentID componentID, const void* source)
 	{
 		const ComponentMetadata& meta = ComponentRegistry::Get(componentID);
@@ -83,15 +52,6 @@ namespace SeedCore
 		commands_.push_back(command);
 	}
 
-	/**
-	* [EN]
-	* Records removing id's component registered under componentID.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* componentID に登録された id のコンポーネントの削除を記録する。
-	*/
 	void CommandBuffer::RemoveComponent(EntityID id, ComponentID componentID)
 	{
 		Command command;
@@ -101,35 +61,13 @@ namespace SeedCore
 		commands_.push_back(command);
 	}
 
-	/**
-	* [EN]
-	* Returns whether no commands are recorded.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* コマンドが1つも記録されていないかどうかを返す。
-	*/
 	Bool CommandBuffer::Empty()const
 	{
 		return commands_.empty();
 	}
 
-	/**
-	* [EN]
-	* Replays every recorded command against world in record order, then
-	* clears the command list while keeping the provisional-to-real map.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 記録された全コマンドを world に対して記録順で再生し、暫定→実際の
-	* 対応表を残したままコマンドリストをクリアする。
-	*/
 	void CommandBuffer::Flush(World& world, ResourceCache& cache)
 	{
-		/// [EN] resolved_ is not cleared here: a system that spawned last frame reads it on its next Execute, which runs before this frame's Flush. Provisional indices restart at 0 every Flush, so a reused index simply overwrites its stale entry; Clear/Reset wipe the map fully.
-		/// [JP] resolved_ はここではクリアしない: 前フレームに生成したシステムは、このフレームの Flush より前に走る次の Execute でこれを読む。暫定インデックスは Flush ごとに 0 から振り直されるため、再利用されたインデックスは古いエントリを上書きするだけ。完全な消去は Clear/Reset で行う。
 		for (const Command& command : commands_)
 		{
 			EntityID target = command.target_;
@@ -222,8 +160,6 @@ namespace SeedCore
 			}
 		}
 
-		/// [EN] Destruct the recorded component copies now that they have been replayed into the World.
-		/// [JP] 記録されたコンポーネントのコピーを、World へ再生し終えたこの時点で破棄する。
 		for (const Command& command : commands_)
 		{
 			if (command.kind_ == Kind::AddComponent)
@@ -238,17 +174,6 @@ namespace SeedCore
 		provisionalCount_ = 0;
 	}
 
-	/**
-	* [EN]
-	* Returns the real EntityID the provisional ID resolved to in the
-	* last Flush, or an invalid EntityID.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 暫定 ID が直近の Flush で解決された実際の EntityID を返す。無ければ
-	* 無効な EntityID を返す。
-	*/
 	EntityID CommandBuffer::Resolved(EntityID provisional)const
 	{
 		if (!Provisional(provisional))
@@ -260,15 +185,6 @@ namespace SeedCore
 		return (it != resolved_.end()) ? it->second : EntityID{};
 	}
 
-	/**
-	* [EN]
-	* Drops every recorded command and the provisional-to-real map.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 記録された全コマンドと、暫定→実際の対応表を破棄する。
-	*/
 	void CommandBuffer::Clear()
 	{
 		commands_.clear();
@@ -277,15 +193,6 @@ namespace SeedCore
 		provisionalCount_ = 0;
 	}
 
-	/**
-	* [EN]
-	* Returns whether id is a provisional ID handed out by a CommandBuffer.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* id が CommandBuffer が発行した暫定 ID かどうかを返す。
-	*/
 	Bool CommandBuffer::Provisional(EntityID id)
 	{
 		return id.generation_ == ProvisionalGeneration;

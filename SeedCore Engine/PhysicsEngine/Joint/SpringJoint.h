@@ -5,78 +5,86 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Component that connects two bodies with a damped distance spring.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 2つのボディを減衰付き距離ばねで接続するコンポーネント。
+	* ばねのように、伸び縮みしながらつなぐ部品。
+	*
+	* @brief ばねでつなぐ部品
+	*
+	* [EN]
+	* A part that joins two bodies like a spring that stretches and squeezes.
+	*
+	* @brief Joins bodies with a spring
 	*/
 	class SEEDCORE_API SpringJoint :public SeedScript
 	{
 	public:
-		/// [EN] Whether the joint is created when the component starts.
-		/// [JP] コンポーネント開始時にジョイントを生成するか。
+		/// [JP] つなぐかどうか
+		/// [EN] Whether to join at all
 		SC_REFLECTION_FIELD_EX("有効")
 		Bool enabled_ = true;
 
-		/// [EN] Entity ID of the connected actor; zero connects to the world.
-		/// [JP] 接続先アクターのエンティティ ID。0 はワールドへ接続する。
+		/// [JP] つなぐ相手のアクター。0 なら世界につなぐ
+		/// [EN] The actor to join to; 0 joins to the world
 		SC_PAYLOAD_FIELD_EX("接続先アクター", Actor)
 		Uint32 connectedActor_ = 0;
 
-		/// [EN] Joint anchor in the owning actor's local space.
-		/// [JP] 所有アクターのローカル空間におけるジョイントアンカー。
+		/// [JP] つなぐ点（自分から見た位置）
+		/// [EN] The joining point, seen from this actor
 		SC_REFLECTION_FIELD_EX("アンカー(ローカル)")
 		Vector3 anchor_ = { 0.0f, 0.0f, 0.0f };
 
-		/// [EN] Minimum permitted spring distance.
-		/// [JP] ばねが許容する最小距離。
+		/// [JP] 一番近づける距離
+		/// [EN] The closest it can get
 		SC_REFLECTION_CLAMPED_EX("最小距離", 0.0f, 1000.0f)
 		Float minDistance_ = 0.0f;
 
-		/// [EN] Maximum permitted spring distance.
-		/// [JP] ばねが許容する最大距離。
+		/// [JP] 一番離れられる距離
+		/// [EN] The farthest it can get
 		SC_REFLECTION_CLAMPED_EX("最大距離", 0.0f, 1000.0f)
 		Float maxDistance_ = 0.0f;
 
-		/// [EN] Spring oscillation frequency in hertz.
-		/// [JP] ヘルツ単位のばね振動周波数。
+		/// [JP] ばねの硬さ。大きいほど硬い
+		/// [EN] How stiff the spring is; bigger is stiffer
 		SC_REFLECTION_CLAMPED_EX("剛性(Hz)", 0.0f, 30.0f)
 		Float frequency_ = 2.0f;
 
-		/// [EN] Damping ratio applied to spring motion.
-		/// [JP] ばね運動へ適用する減衰比。
+		/// [JP] 揺れの止まりやすさ
+		/// [EN] How quickly the bouncing settles
 		SC_REFLECTION_CLAMPED_EX("減衰", 0.0f, 1.0f)
 		Float damping_ = 0.5f;
 
 	public:
 		/**
-		* [EN]
-		* Creates the configured spring constraint.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 設定されたばね拘束を生成する。
+		* 同じアクターの Rigidbody と相手をつなぐ。
+		*
+		* @brief つなぐ
+		* @note  同じアクターに Rigidbody が要る
+		*
+		* [EN]
+		* Joins this actor's Rigidbody to the other one.
+		*
+		* @brief Makes the joint
+		* @note  Needs a Rigidbody on the same actor
 		*/
 		void OnStart();
 
 		/**
-		* [EN]
-		* Destroys the created constraint.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 生成した拘束を破棄する。
+		* つなぎを外す。
+		*
+		* @brief つなぎを外す
+		*
+		* [EN]
+		* Removes the joint.
+		*
+		* @brief Removes the joint
 		*/
 		void OnDestroy();
 
 	private:
-		/// [EN] Pool handle of the created Jolt constraint.
-		/// [JP] 生成した Jolt 拘束のプールハンドル。
+		/// [JP] 物理エンジンの中のつなぎの目印
+		/// [EN] The handle of the joint inside the physics engine
 		ScConstraintHandle handle_;
 	};
 	REGISTER_COMPONENT(SpringJoint, "Physics/Joint");

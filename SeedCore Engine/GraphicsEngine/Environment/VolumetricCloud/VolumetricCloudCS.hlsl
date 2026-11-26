@@ -38,34 +38,6 @@ struct VolumetricCloudResolveBindings
 };
 ConstantBuffer<VolumetricCloudResolveBindings> resolve_bindings : register(b0, space1);
 
-/**
-* [EN]
-* VolumetricCloud.Build.Shape: bakes the cloud shape noise (low frequency)
-* into a Texture3D once. Instead
-* of the runtime raymarch computing Fbm/Worley every step, it just samples
-* this pre-baked texture through the wrap sampler (tileable, so no seams).
-* The content is Perlin-Worley - inverted Worley's "puffy blobs" modulated by
-* Perlin's large-scale billowing. Inverted Worley alone reads as a foam of
-* equal-sized bubbles with no sense of connected cloud masses.
-*
-* 128^3 at base_cells=4 with 4 octaves (4/8/16/32 cells). Even the top octave
-* keeps 4 voxels per cell - packing it tighter would bake to aliased hash
-* noise instead of usable detail.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* VolumetricCloud.Build.Shape。雲の形状ノイズ(低周波)を Texture3D へ一度だけベイクする。実行時のレイマーチ
-* が毎ステップ Fbm/Worley を計算する代わりに、この焼き込み済みテクスチャを
-* wrap サンプラーで読むだけで済むようにする(タイル可能なので継ぎ目なし)。
-* 中身は Perlin-Worley - 反転 Worley の「もこもこの塊」に Perlin の大きな
-* うねりを掛けたもの。反転 Worley 単体だと同じ大きさの粒が一面に並んだ
-* 泡状の見た目になり、雲の塊としてのつながりが出ないため。
-*
-* 128^3 に対して base_cells=4 の 4 オクターブ(4/8/16/32セル)。最上位
-* オクターブでも 1 セル 4 ボクセルを確保している - ここを詰めるとベイク時点で
-* エイリアスしたハッシュノイズになる。
-*/
 [numthreads(4, 4, 4)]
 void Shape(uint3 dtid : SV_DispatchThreadID)
 {
@@ -84,29 +56,6 @@ void Shape(uint3 dtid : SV_DispatchThreadID)
 	shape_output[dtid] = TileablePerlinWorley(uvw, 4.0, 4);
 }
 
-/**
-* [EN]
-* VolumetricCloud.Build.Detail: bakes the cloud detail noise (high
-* frequency) into a Texture3D once - a
-* finer inverted Worley FBM than the shape noise, used to erode the cloud
-* silhouette and carve puffy edges. Edge erosion is the Worley family's job,
-* so no Perlin is mixed in here; this stays pure inverted Worley.
-*
-* 64^3 at base_cells=4 with 3 octaves (4/8/16 cells). 4 voxels per cell even
-* at the top octave - keeping several voxels per cell even at the finest
-* octave avoids aliasing.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* VolumetricCloud.Build.Detail。雲のディテールノイズ(高周波)を Texture3D へ一度だけベイクする。形状ノイズ
-* より細かい反転 Worley FBM で、雲の輪郭を侵食してもこもこの縁を作るのに使う。
-* 縁の侵食は Worley 系の担当なので、こちらは Perlin を混ぜず反転 Worley のまま。
-*
-* 64^3 に対して base_cells=4 の 3 オクターブ(4/8/16セル)。最上位オクターブで
-* 1 セル 4 ボクセル - エイリアスを避けるため最上位でもセルあたり複数ボクセルを
-* 確保する。
-*/
 [numthreads(4, 4, 4)]
 void Detail(uint3 dtid : SV_DispatchThreadID)
 {
@@ -124,71 +73,6 @@ void Detail(uint3 dtid : SV_DispatchThreadID)
 
 	detail_output[dtid] = TileableWorleyFbm(uvw, 4.0, 3);
 }
-
-/**
-* [EN]
-* Reference:
-* - https://advances.realtimerendering.com/s2015/The%20Real-time%20Volumetric%20Cloudscapes%20of%20Horizon%20-%20Zero%20Dawn%20-%20ARTR.pdf
-*   (Schneider & Vos, "The Real-time Volumetric Cloudscapes of Horizon: Zero
-*   Dawn", SIGGRAPH 2015 Advances in Real-Time Rendering - the curved shell +
-*   weather-map + adaptive-stepping raymarch this pass is built on.)
-* - https://advances.realtimerendering.com/s2017/Nubis%20-%20Authoring%20Realtime%20Volumetric%20Cloudscapes%20with%20the%20Decima%20Engine%20-%20Final%20.pdf
-*   (Schneider, "Nubis: Authoring Real-Time Volumetric Cloudscapes with the
-*   Decima Engine", SIGGRAPH 2017 - the follow-up covering the detail-erosion
-*   and weather-authoring pipeline CloudDensity implements.)
-* - https://history.siggraph.org/wp-content/uploads/2022/10/2015-Talks-Wrenninge_Art-Directable-Multiple-Volumetric-Scattering.pdf
-*   (Wrenninge et al., "Art-Directable Multiple Volumetric Scattering",
-*   SIGGRAPH 2015 - the octave-stack multiple-scattering approximation
-*   CloudMultiScatterSetup/CloudSunLight implement, in VolumetricCloud.hlsli.)
-* - https://media.contentapi.ea.com/content/dam/eacom/frostbite/files/s2016_pbs_frostbite_sky_clouds.pdf
-*   (Hillaire, "Physically Based Sky, Atmosphere and Cloud Rendering in
-*   Frostbite", SIGGRAPH 2016 - the energy-conserving integration of each
-*   march segment and the phase normalized against isotropic scattering.)
-* - https://forums.unrealengine.com/t/implementing-the-nubis-cloud-density-model/234144
-*   (Community walkthrough of the Nubis density model - the order of the
-*   height-gradient multiply, the coverage remap and the erosion remap.)
-* - https://docs.unity3d.com/Packages/com.unity.render-pipelines.high-definition@17.0/manual/volumetric-clouds-volume-override-reference.html
-*   (Unity HDRP volumetric clouds - the artist-facing grouping of the cloud
-*   settings: shape, erosion, lighting, quality.)
-*
-* VolumetricCloud.Trace.March: volumetric cloud scapes (screen-space raymarch). Marches the view
-* ray through a curved cloud SHELL (a layer wrapped around a planet of
-* planet_radius_, so it bends down and converges at the horizon instead of
-* extending forever as a flat slab), sampling PRE-BAKED tileable Texture3Ds
-* (Perlin-Worley shape 128^3 + Worley detail 64^3, baked once by
-* VolumetricCloud.Build). A low-frequency slice of the shape volume
-* acts as a weather map so the sky gets large cloud masses and clear gaps.
-* Stepping is adaptive: coarse strides skip empty space, fine strides integrate
-* inside cloud, and both grow with distance in place of a mip chain. Lighting is
-* a dual-lobe phase with a Wrenninge multiple-scattering octave stack, a
-* Beer-powder term, a geometrically-stepped sun lightmarch that follows the real
-* path length through the layer, and a sky-gradient ambient term. Distant clouds
-* wash toward the horizon color (aerial perspective) and fade out at the march
-* limit. The march start is jittered per pixel with interleaved gradient noise
-* offset each frame through a 16-frame cycle, which VolumetricCloud.Trace.Resolve
-* averages over time. Writes VolumetricCloud.Raw (rgb the scattered light
-* already weighted by transmittance, a the coverage). Sky pixels only, no TLAS.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* VolumetricCloud.Trace.March。ボリューメトリック・クラウドスケープ(スクリーン空間レイマーチ)。
-* 視線を【曲率つきの雲シェル】(planet_radius_ の球殻。無限平板ではないので
-* 遠方で下がって地平線に収束する)に沿ってマーチし、【ベイク済み】タイル可能
-* Texture3D(Perlin-Worley 形状 128^3 + Worley ディテール 64^3、
-* VolumetricCloud.Build が一度だけ焼く)をサンプルする。形状
-* ボリュームの低周波スライスを weather map として使い、空に大きな雲の塊と
-* 晴れ間を作る。ステップは適応的 - 空(密度0)は粗ステップで飛ばし、雲の中だけ
-* 細ステップで積分し、どちらも距離に応じて伸ばして mip の代わりにする。
-* ライティングはデュアルローブ位相 + Wrenninge の多重散乱オクターブ +
-* Beer-powder + 層内の実光路長に沿った指数ステップのライトマーチ +
-* 空グラデーション環境光。遠景の雲は地平線色へ寄せ(空気遠近)、マーチ上限へ
-* 向けてフェードアウトする。マーチの開始位置はピクセルごとに Interleaved
-* Gradient Noise でずらし、16 フレームで一巡するよう毎フレーム回して、
-* VolumetricCloud.Trace.Resolve が時間方向に平均する。VolumetricCloud.Raw
-* (rgb は透過率を掛け済みの散乱光、a はカバレッジ)へ書く。空ピクセル限定、
-* TLAS 不使用。
-*/
 
 [numthreads(8, 8, 1)]
 void Trace(uint3 dtid : SV_DispatchThreadID)
@@ -360,45 +244,6 @@ void Trace(uint3 dtid : SV_DispatchThreadID)
 	output[pixel] = float4(scattering, alpha);
 }
 
-/**
-* [EN]
-* Reference:
-* - https://advances.realtimerendering.com/s2015/The%20Real-time%20Volumetric%20Cloudscapes%20of%20Horizon%20-%20Zero%20Dawn%20-%20ARTR.pdf
-*   (Schneider & Vos, SIGGRAPH 2015 - clouds are resolved over several frames
-*   by reprojecting the previous result, so each frame only adds a fraction
-*   of new samples.)
-* - https://media.contentapi.ea.com/content/dam/eacom/frostbite/files/s2016_pbs_frostbite_sky_clouds.pdf
-*   (Hillaire, SIGGRAPH 2016 - temporal reprojection of the cloud buffer,
-*   with the history clamped to the current neighborhood.)
-*
-* VolumetricCloud.Trace.Resolve: accumulates the jittered march over time.
-* The previous frame's pixel is found by projecting the view DIRECTION alone
-* through the previous view-projection: the clouds lie kilometers away, so
-* camera rotation is followed exactly while camera translation shifts them by
-* a negligible amount. The history is clamped to the min/max of the current
-* 3x3 neighborhood of VolumetricCloud.Raw, which keeps moving and changing
-* clouds free of trails, then 10% of the current value is blended in. With no
-* valid history (dispatch constant 0, first frame or clouds just switched on)
-* or when the reprojected pixel falls off screen, the current value is taken
-* as is. Non-sky pixels write 0. The result goes to VolumetricCloud.Accumulated
-* (next frame's history) and VolumetricCloud.Radiance, which SkyResolveCS.hlsl
-* blends over the procedural sky.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* VolumetricCloud.Trace.Resolve。ずらしながらマーチした結果を時間方向に蓄積する。
-* 前フレームでのピクセルは、視線の【方向だけ】を前フレームのビュー投影で投影して
-* 求める。雲は数 km 先にあるので、カメラの回転は正確に追従でき、平行移動による
-* ずれは無視できるほど小さい。前フレームの値は、今フレームの
-* VolumetricCloud.Raw の周囲 3x3 の最小値と最大値の範囲に押し込み、動いたり形が
-* 変わったりする雲に残像が残らないようにしてから、今フレームの値を 1 割混ぜる。
-* 前フレームが無い(ディスパッチの定数が 0。最初のフレームや雲を有効にした直後)
-* とき、または投影先が画面外のときは今フレームの値をそのまま使う。空以外の
-* ピクセルには 0 を書く。結果は VolumetricCloud.Accumulated(次フレームの履歴)と
-* VolumetricCloud.Radiance へ書き、SkyResolveCS.hlsl がプロシージャル空の上に
-* 合成する。
-*/
 [numthreads(8, 8, 1)]
 void Resolve(uint3 dtid : SV_DispatchThreadID)
 {

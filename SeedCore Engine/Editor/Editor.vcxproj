@@ -246,27 +246,42 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClCompile Include="Editor\Interaction\ActorEditing.cpp" />
     <ClCompile Include="Editor\Interaction\ViewportPicking.cpp" />
     <ClCompile Include="Editor\Node\NodeCanvas.cpp" />
-    <ClCompile Include="Editor\Panel\AnimatorControllerPanel.cpp" />
-    <ClCompile Include="Editor\Panel\AvatarPanel.cpp" />
-    <ClCompile Include="Editor\Panel\BenchmarkPanel.cpp" />
-    <ClCompile Include="Editor\Panel\BootScreenPanel.cpp" />
-    <ClCompile Include="Editor\Panel\CanvasViewPanel.cpp" />
-    <ClCompile Include="Editor\Panel\ConfigPanel.cpp" />
-    <ClCompile Include="Editor\Panel\DiagnosticsPanel.cpp" />
-    <ClCompile Include="Editor\Panel\EffectGraphPanel.cpp" />
-    <ClCompile Include="Editor\Panel\GraphicsMenuPanel.cpp" />
-    <ClCompile Include="Editor\Panel\LayerSettingsPanel.cpp" />
-    <ClCompile Include="Editor\Panel\MaterialViewerPanel.cpp" />
-    <ClCompile Include="Editor\Panel\ModelTransformPanel.cpp" />
-    <ClCompile Include="Editor\Panel\ProfilerPanel.cpp" />
-    <ClCompile Include="Editor\Panel\ResourceSyncControlPanel.cpp" />
-    <ClCompile Include="Editor\Panel\ShortCutKeyPanel.cpp" />
-    <ClCompile Include="Editor\Panel\SkeletonControllerPanel.cpp" />
-    <ClCompile Include="Editor\Panel\SpecMemoPanel.cpp" />
-    <ClCompile Include="Editor\Panel\TimelinePanel.cpp" />
-    <ClCompile Include="Editor\Panel\TodoListPanel.cpp" />
-    <ClCompile Include="Editor\Panel\VersionPanel.cpp" />
-    <ClCompile Include="Editor\Panel\ViewModePanel.cpp" />
+    <ClCompile Include="Editor\Panel\Embed\AddComponentPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Embed\CanvasViewPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Embed\ConsolePanel.cpp" />
+    <ClCompile Include="Editor\Panel\Embed\EditorViewPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Embed\GameViewPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Embed\GraphicsMenuPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Embed\GuizmoPanel2D.cpp" />
+    <ClCompile Include="Editor\Panel\Embed\GuizmoPanel3D.cpp" />
+    <ClCompile Include="Editor\Panel\Embed\ResourceSyncControlPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Embed\ViewModePanel.cpp" />
+    <ClCompile Include="Editor\Panel\PanelGroup.cpp" />
+    <ClCompile Include="Editor\Panel\Window\AnimatorControllerPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\AvatarPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\BenchmarkPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\BootScreenPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\CanvasWindowPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\ConfigPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\ContentsDrawerPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\ControlPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\DiagnosticsPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\EditorWindowPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\EffectGraphPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\FullscreenPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\GameWindowPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\HierarchyPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\InspectorPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\LayerSettingsPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\MaterialViewerPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\MenuBarPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\ModelTransformPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\ShortCutKeyPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\SkeletonControllerPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\SpecMemoPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\TimelinePanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\TodoListPanel.cpp" />
+    <ClCompile Include="Editor\Panel\Window\VersionPanel.cpp" />
     <ClCompile Include="Prelude.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">Create</PrecompiledHeader>
@@ -299,28 +314,6 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     </ClCompile>
     <ClCompile Include="Editor\Main.cpp">
     </ClCompile>
-    <ClCompile Include="Editor\Panel\AddComponentPanel.cpp">
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\ConsolePanel.cpp">
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\ContentsDrawerPanel.cpp">
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\ControlPanel.cpp">
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\EditorWindowPanel.cpp">
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\GameWindowPanel.cpp">
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\GuizmoPanel3D.cpp">
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\GuizmoPanel2D.cpp">
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\HierarchyPanel.cpp">
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\InspectorPanel.cpp">
-    </ClCompile>
-    <ClCompile Include="Editor\Panel\MenuBarPanel.cpp">
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Editor\Build\AtomCraft.h" />
@@ -347,38 +340,43 @@ xcopy /E /I /Y /D "$(SolutionDir)..\Platform\DotNET\Runtime" "$(OutDir)..\DotNET
     <ClInclude Include="Editor\Interaction\ActorEditing.h" />
     <ClInclude Include="Editor\Interaction\ViewportPicking.h" />
     <ClInclude Include="Editor\Node\NodeCanvas.h" />
-    <ClInclude Include="Editor\Panel\AddComponentPanel.h" />
-    <ClInclude Include="Editor\Panel\AnimatorControllerPanel.h" />
-    <ClInclude Include="Editor\Panel\AvatarPanel.h" />
-    <ClInclude Include="Editor\Panel\BenchmarkPanel.h" />
-    <ClInclude Include="Editor\Panel\BootScreenPanel.h" />
-    <ClInclude Include="Editor\Panel\CanvasViewPanel.h" />
-    <ClInclude Include="Editor\Panel\ConfigPanel.h" />
-    <ClInclude Include="Editor\Panel\ConsolePanel.h" />
-    <ClInclude Include="Editor\Panel\ContentsDrawerPanel.h" />
-    <ClInclude Include="Editor\Panel\ControlPanel.h" />
-    <ClInclude Include="Editor\Panel\DiagnosticsPanel.h" />
-    <ClInclude Include="Editor\Panel\EditorWindowPanel.h" />
-    <ClInclude Include="Editor\Panel\EffectGraphPanel.h" />
-    <ClInclude Include="Editor\Panel\GameWindowPanel.h" />
-    <ClInclude Include="Editor\Panel\GraphicsMenuPanel.h" />
-    <ClInclude Include="Editor\Panel\GuizmoPanel3D.h" />
-    <ClInclude Include="Editor\Panel\GuizmoPanel2D.h" />
-    <ClInclude Include="Editor\Panel\HierarchyPanel.h" />
-    <ClInclude Include="Editor\Panel\InspectorPanel.h" />
-    <ClInclude Include="Editor\Panel\LayerSettingsPanel.h" />
-    <ClInclude Include="Editor\Panel\MaterialViewerPanel.h" />
-    <ClInclude Include="Editor\Panel\MenuBarPanel.h" />
-    <ClInclude Include="Editor\Panel\ModelTransformPanel.h" />
-    <ClInclude Include="Editor\Panel\ProfilerPanel.h" />
-    <ClInclude Include="Editor\Panel\ResourceSyncControlPanel.h" />
-    <ClInclude Include="Editor\Panel\ShortCutKeyPanel.h" />
-    <ClInclude Include="Editor\Panel\SkeletonControllerPanel.h" />
-    <ClInclude Include="Editor\Panel\SpecMemoPanel.h" />
-    <ClInclude Include="Editor\Panel\TimelinePanel.h" />
-    <ClInclude Include="Editor\Panel\TodoListPanel.h" />
-    <ClInclude Include="Editor\Panel\VersionPanel.h" />
-    <ClInclude Include="Editor\Panel\ViewModePanel.h" />
+    <ClInclude Include="Editor\Panel\Embed\AddComponentPanel.h" />
+    <ClInclude Include="Editor\Panel\Embed\CanvasViewPanel.h" />
+    <ClInclude Include="Editor\Panel\Embed\ConsolePanel.h" />
+    <ClInclude Include="Editor\Panel\Embed\EditorViewPanel.h" />
+    <ClInclude Include="Editor\Panel\Embed\GameViewPanel.h" />
+    <ClInclude Include="Editor\Panel\Embed\GraphicsMenuPanel.h" />
+    <ClInclude Include="Editor\Panel\Embed\GuizmoPanel2D.h" />
+    <ClInclude Include="Editor\Panel\Embed\GuizmoPanel3D.h" />
+    <ClInclude Include="Editor\Panel\Embed\ResourceSyncControlPanel.h" />
+    <ClInclude Include="Editor\Panel\Embed\ViewModePanel.h" />
+    <ClInclude Include="Editor\Panel\Panel.h" />
+    <ClInclude Include="Editor\Panel\PanelGroup.h" />
+    <ClInclude Include="Editor\Panel\Window\AnimatorControllerPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\AvatarPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\BenchmarkPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\BootScreenPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\CanvasWindowPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\ConfigPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\ContentsDrawerPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\ControlPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\DiagnosticsPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\EditorWindowPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\EffectGraphPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\FullscreenPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\GameWindowPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\HierarchyPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\InspectorPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\LayerSettingsPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\MaterialViewerPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\MenuBarPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\ModelTransformPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\ShortCutKeyPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\SkeletonControllerPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\SpecMemoPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\TimelinePanel.h" />
+    <ClInclude Include="Editor\Panel\Window\TodoListPanel.h" />
+    <ClInclude Include="Editor\Panel\Window\VersionPanel.h" />
   </ItemGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <PostBuildEvent>

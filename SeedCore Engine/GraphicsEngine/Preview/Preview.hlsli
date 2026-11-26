@@ -4,11 +4,6 @@
 #include <GraphicsEngine/Model/Model.hlsli>
 #include <GraphicsEngine/Shader/Scene.hlsli>
 
-/**
-* [EN]
-* One line of Preview.Lines (bones, axes): world-space end points, the width
-* in pixels and the color.
-*/
 struct PreviewLineStructuredBuffer
 {
 	float3 start_;
@@ -32,11 +27,6 @@ struct PreviewLineBindings
 };
 ConstantBuffer<PreviewLineBindings> line_bindings : register(b0, space1);
 
-/**
-* [EN]
-* Per-vertex output of PreviewMS/PreviewVS: the texcoord and the instance
-* whose material the pixel shader reads.
-*/
 struct PreviewOutput
 {
 	float4 position : SV_Position;
@@ -44,14 +34,10 @@ struct PreviewOutput
 	nointerpolation uint instance_index : BLENDINDICES0;
 };
 
-/**
-* [EN]
-* Per-vertex output of PreviewLineMS/PreviewLineVS: the line's color.
-*/
 struct PreviewLineOutput
 {
 	float4 position : SV_Position;
 	float4 color : COLOR0;
 };
 
-#endif // __PREVIEW_HLSL__
+#endif

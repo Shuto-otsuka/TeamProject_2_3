@@ -14,12 +14,6 @@ namespace SeedCore
 
 		baseTexcoords_.assign(texcoords.begin(), texcoords.begin() + bodyVertexCount_);
 
-		/// [EN] Build meshlets per region so no meshlet straddles a region boundary -
-		///      the renderer can then draw one region (one texture) at a time.
-		///      With one region or none, the whole mesh is one region.
-		/// [JP] メッシュレットをリージョン単位で構築し、リージョン境界をまたがない
-		///      ようにする - レンダラーがリージョン(=テクスチャ)ごとに描ける。
-		///      リージョンが1つ以下なら、メッシュ全体を1つのリージョンにする。
 		regionCount_ = Max(Min(static_cast<Uint32>(regionTriangleRanges.size() / 2), maxRegionCount_), 1u);
 
 		Meshlet::TriangleRange triangleRanges[maxRegionCount_];
@@ -29,8 +23,6 @@ namespace SeedCore
 			triangleRanges[regionIndex].triangleCount_ = regionCount_ > 1 ? regionTriangleRanges[regionIndex * 2 + 1] : static_cast<Uint32>(triangles.size() / 3);
 		}
 
-		/// [EN] Meshlet also pads the primitive indices to the 4-byte alignment ReadOnlyByteAddressBuffer needs.
-		/// [JP] ReadOnlyByteAddressBuffer が必要とする4バイト境界へは Meshlet が揃える。
 		Meshlet meshlet(triangles, std::span<const Meshlet::TriangleRange>(triangleRanges, regionCount_));
 		meshlets_.assign(meshlet.Meshlets().begin(), meshlet.Meshlets().end());
 		vertexIndices_.assign(meshlet.VertexIndices().begin(), meshlet.VertexIndices().end());

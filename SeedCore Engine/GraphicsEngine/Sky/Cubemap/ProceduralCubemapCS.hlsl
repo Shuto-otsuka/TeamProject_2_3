@@ -14,25 +14,6 @@ struct SkyProceduralBindings
 };
 ConstantBuffer<SkyProceduralBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* Sky.Build.Procedural: renders the procedural sky (gradient + sun, see
-* VolumetricCloud.hlsli::ProceduralSkyColor) and the clouds onto the six
-* faces of Sky.Cubemap so the irradiance/prefilter convolution that follows
-* turns it into IBL - this is how the procedural sky lights the scene when no
-* skymap is bound. The background itself is not read from this cube: Sky.Resolve
-* draws the analytic sky (crisp sun disc) and the full-resolution clouds. The
-* dispatch constant carries the scene time (as float bits) that scrolls the
-* cloud wind.
-*
-* [JP]
-* Sky.Build.Procedural。プロシージャル空(グラデーション+太陽、
-* VolumetricCloud.hlsli::ProceduralSkyColor 参照)と雲を Sky.Cubemap の6面へ描き、
-* 続く irradiance/prefilter 畳み込みで IBL 化する — スカイマップ未バインド時に
-* プロシージャル空がシーンを照らす仕組み。背景そのものはこのキューブから読まず、
-* Sky.Resolve が解析的な空(シャープな太陽)とフル解像度の雲を描く。ディスパッチの
-* 定数は雲の風を流すシーンの時刻(float のビット列)。
-*/
 [numthreads(8, 8, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {
@@ -58,13 +39,6 @@ void main(uint3 id : SV_DispatchThreadID)
 
 	float3 color = ProceduralSkyColor(direction, sun_direction, sun_radiance, tuning);
 
-	// [JP] 雲もキューブへ焼き込む(縮小版レイマーチ: 固定24ステップ+
-	//      ライト3ステップ)。これで反射(prefilter経由)にも IBL にも雲が乗り、
-	//      雨雲にすると地上の環境光も暗くなる。キャプチャ視点は地上原点
-	//      (0,0,0)。時刻(風スクロール)はディスパッチの定数で渡される。
-	//      IBL は低周波なので適応ステップまでは持ち込まないが、積分式・シェル
-	//      形状・多重散乱はスクリーン側と揃える — でないとキューブ由来の環境光
-	//      だけが別の明るさになる。
 	if (direction.y > 0.001)
 	{
 		const uint capture_step_count = 24;
@@ -82,9 +56,6 @@ void main(uint3 id : SV_DispatchThreadID)
 		float t_exit;
 		if (CloudLayerInterval(ray_origin, direction, tuning, t_enter, t_exit))
 		{
-			// [JP] 固定ステップなので、区間が地平線側で数万単位まで伸びると
-			//      1ステップがノイズの特徴を飛び越える。焼き込みでは区間を
-			//      切ってステップ長を常識的な範囲に収める。
 			t_exit = min(t_exit, t_enter + layer_thickness * 8.0);
 
 			float3 cloud_albedo = lerp(tuning.cloud_albedo_, tuning.cloud_albedo_ * 0.35, saturate(tuning.rain_));
@@ -92,7 +63,6 @@ void main(uint3 id : SV_DispatchThreadID)
 			float step_length = (t_exit - t_enter) / float(capture_step_count);
 			float cos_theta = dot(direction, sun_direction);
 
-			// [JP] 位相はこの方向の間ずっと定数なのでループ外で一度だけ作る。
 			CloudMultiScatter multi_scatter = CloudMultiScatterSetup(cos_theta, tuning);
 
 			float3 scattering = float3(0, 0, 0);

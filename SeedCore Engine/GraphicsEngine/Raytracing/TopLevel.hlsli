@@ -26,4 +26,4 @@ struct TopLevelInstanceStructuredBuffer
 	TopLevelHitStructuredBuffer hit_;
 };
 
-#endif // __TOP_LEVEL_HLSLI__
+#endif

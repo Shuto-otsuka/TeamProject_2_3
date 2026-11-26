@@ -8,21 +8,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Binds the plugin directory to scan (the directory the executable
-	* lives in) and the ImGui context to forward to each plugin (the
-	* current one, null when no ImGui context exists, as in the runtime),
-	* then loads the plugins into world.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 走査するプラグインディレクトリ（実行ファイルが置かれている
-	* ディレクトリ）と、各プラグインへ渡す ImGui コンテキスト（現在の
-	* もの。ランタイムのように ImGui のコンテキストが無ければ null）を
-	* 束縛し、world へプラグインをロードする。
-	*/
 	Bool PluginHost::Initialize(World& world)
 	{
 		pluginDirectory_ = FileDirectory::ExecutableDirectory();
@@ -32,16 +17,6 @@ namespace SeedCore
 		return true;
 	}
 
-	/**
-	* [EN]
-	* Loads every gameplay plugin found in the plugin directory.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* プラグインディレクトリ内で見つかった全ゲームプレイプラグインを
-	* ロードする。
-	*/
 	void PluginHost::Load(World& world)
 	{
 		if (!std::filesystem::exists(pluginDirectory_))
@@ -53,15 +28,6 @@ namespace SeedCore
 		ScanAndLoad(world);
 	}
 
-	/**
-	* [EN]
-	* Unloads and releases every loaded plugin.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ロード済みの全プラグインをアンロードして解放する。
-	*/
 	void PluginHost::Unload(World& world)
 	{
 		for (Entry& entry : entries_)
@@ -71,19 +37,6 @@ namespace SeedCore
 		entries_.clear();
 	}
 
-	/**
-	* [EN]
-	* Once per frame: reloads any plugin whose source DLL has been rebuilt
-	* (after its write time has stopped changing), and picks up DLLs newly
-	* added to / removed from the plugin directory.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 毎フレーム: 元 DLL がリビルドされたプラグインを（更新時刻の変化が
-	* 止まった後で）リロードし、プラグインディレクトリに新たに追加/削除
-	* された DLL を反映する。
-	*/
 	void PluginHost::Tick(World& world)
 	{
 		Uint64 nowTick = GetTickCount64();
@@ -98,8 +51,6 @@ namespace SeedCore
 
 			if (writeTime == entry.pendingWriteTime_)
 			{
-				/// [EN] A reload re-registers every script type under new identifiers while the play snapshot still holds the old ones, so it waits until play stops.
-				/// [JP] リロードは全スクリプトの型を新しい識別子で登録し直すが、再生用のスナップショットは古い識別子を持ったままになる。そのため再生が止まるまで待つ。
 				if (world.GetService<GameTimer>()->Playing())
 				{
 					continue;
@@ -124,8 +75,6 @@ namespace SeedCore
 		}
 		lastRescanTick_ = nowTick;
 
-		/// [EN] Drop plugins whose source DLL has disappeared.
-		/// [JP] 元 DLL が消えたプラグインを外す。
 		SeedCore::erase_if(entries_, [&world](Entry& entry)
 		{
 			if (std::filesystem::exists(entry.module_->SourcePath()))
@@ -134,45 +83,19 @@ namespace SeedCore
 			}
 			entry.module_->Unload(world);
 
-			/// [EN] The module is dropped here and never loads again to restore what Unload took off, so its scripts stay on their Actors as unknown components until the DLL comes back.
-			/// [JP] このモジュールはここで捨てられ、Unload が外したものを復元する Load はもう来ない。そのため、DLL が戻るまでスクリプトを型の分からないコンポーネントとして Actor に残す。
 			entry.module_->Keep();
 			return true;
 		});
 
-		/// [EN] Load plugins newly dropped into the directory.
-		/// [JP] ディレクトリに新たに置かれたプラグインをロードする。
 		ScanAndLoad(world);
 	}
 
-	/**
-	* [EN]
-	* Returns the loaded plugin whose source DLL file name stem equals
-	* stem (e.g. "UserProject.Cplusplus"), or nullptr if none is loaded.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 元 DLL のファイル名 stem が stem（例: "UserProject.Cplusplus"）に一致する
-	* ロード済みプラグインを返す。無ければ nullptr。
-	*/
 	PluginModule* PluginHost::Find(const std::filesystem::path& stem)const
 	{
 		auto found = std::ranges::find(entries_, stem, [](const Entry& entry){ return entry.module_->SourcePath().stem(); });
 		return found != entries_.end() ? found->module_.get() : nullptr;
 	}
 
-	/**
-	* [EN]
-	* Reloads a single plugin now, bypassing the timestamp debounce, and
-	* clears that plugin's pending debounce state.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* タイムスタンプのデバウンスを飛ばして単一プラグインを今すぐリロード
-	* し、そのプラグインのデバウンス待ち状態をクリアする。
-	*/
 	void PluginHost::ReloadModule(World& world, PluginModule& module)
 	{
 		module.Reload(world, imguiContext_);
@@ -185,27 +108,8 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Scans the plugin directory (non-recursively) and loads every
-	* gameplay plugin (*.dll exporting SC_OnGameLoad / SC_OnGameUnload)
-	* that is not already loaded. Shadow copies and engine / third-party
-	* DLLs are skipped; a DLL that fails the plugin check is remembered in
-	* rejectedFileNames_ so a later rescan does not probe it again.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* プラグインディレクトリを（非再帰で）走査し、未ロードの全ゲーム
-	* プレイプラグイン（SC_OnGameLoad / SC_OnGameUnload をエクスポート
-	* する *.dll）をロードする。シャドウコピーとエンジン/サードパーティ
-	* DLL はスキップし、プラグインチェックに落ちた DLL は
-	* rejectedFileNames_ に記憶して以後の再スキャンで再プローブしない。
-	*/
 	void PluginHost::ScanAndLoad(World& world)
 	{
-		/// [EN] A shadow copy this host produced, named "<stem>_<digits>.dll".
-		/// [JP] この host が生成したシャドウコピー。"<stem>_<数字>.dll" という名前。
 		auto isShadowCopy = [](const std::filesystem::path& path) -> Bool
 		{
 			std::wstring stem = path.stem().wstring();
@@ -218,8 +122,6 @@ namespace SeedCore
 			return std::ranges::all_of(digits, [](wchar_t character){ return character >= L'0' && character <= L'9'; });
 		};
 
-		/// [EN] A gameplay plugin, not engine / third-party code sharing the directory. Already-loaded modules (e.g. SeedCore.Cplusplus.dll) are rejected at once; the rest are probed with DONT_RESOLVE_DLL_REFERENCES so no DllMain runs and no dependencies load.
-		/// [JP] ディレクトリを共有しているだけのエンジン/サードパーティコードではなく、ゲームプレイプラグインかどうか。既にロード済みのモジュール（例: SeedCore.Cplusplus.dll）は即除外し、残りは DONT_RESOLVE_DLL_REFERENCES でプローブするため DllMain は走らず依存もロードされない。
 		auto isPluginCandidate = [](const std::filesystem::path& path) -> Bool
 		{
 			if (GetModuleHandleW(path.filename().c_str()))

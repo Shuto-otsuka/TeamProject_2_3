@@ -7,12 +7,6 @@ namespace SeedCore
 {
 	void BC7CompressShader::Create(ShaderCache& shaderCache, ID3D12Device* device)
 	{
-		/// [EN] Root constants (TextureWidth/TextureHeight/BlockCountX/BlockCountY),
-		///      a root SRV for the packed-pixel input buffer, a root UAV for the
-		///      compressed-block output buffer. No descriptor table/heap involved.
-		/// [JP] ルート定数(TextureWidth/TextureHeight/BlockCountX/BlockCountY)、
-		///      パックしたピクセル入力バッファ用の root SRV、圧縮ブロック出力
-		///      バッファ用の root UAV。ディスクリプタテーブル/ヒープは使わない。
 		D3D12_ROOT_PARAMETER params[3]{};
 		params[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 		params[0].Constants.ShaderRegister = 0;

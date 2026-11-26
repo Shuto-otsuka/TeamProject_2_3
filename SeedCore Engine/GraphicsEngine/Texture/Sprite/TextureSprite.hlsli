@@ -15,23 +15,12 @@ struct TextureSpriteBindings
 };
 ConstantBuffer<TextureSpriteBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* What TextureSpriteAS hands to TextureSpriteMS: the quads of its 32 that are
-* on screen, as indices into Texture.Quads, still in draw-list order.
-*/
 struct TextureSpritePayload
 {
 	uint count_;
 	uint quads_[32];
 };
 
-/**
-* [EN]
-* Per-vertex output of TextureSpriteMS/TextureSpriteVS: the texcoord inside the
-* quad's UV range and the quad's index into Texture.Quads, from which the
-* pixel shader reads the quad and its unit.
-*/
 struct TextureSpriteOutput
 {
 	float4 position : SV_Position;
@@ -39,4 +28,4 @@ struct TextureSpriteOutput
 	nointerpolation uint quad_index : BLENDINDICES0;
 };
 
-#endif // __TEXTURE_SPRITE_HLSL__
+#endif

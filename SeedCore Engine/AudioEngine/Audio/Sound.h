@@ -4,35 +4,37 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Identifies the representation stored by a Sound resource.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Sound リソースが保持するデータ形式を表す。
+	* 音のデータの種類。
+	*
+	* @brief 音のデータの種類
+	*
+	* [EN]
+	* What kind of sound data it is.
+	*
+	* @brief The kind of sound data
 	*/
 	enum class SoundType :Uint32
 	{
-		/// [EN] CRI cue-sheet data loaded as an ACB.
-		/// [JP] ACB として読み込む CRI キューシートデータ。
+		/// [JP] キューシート（いくつもの音をまとめたもの）
+		/// [EN] A cue sheet (many sounds packed together)
 		CueSheet,
 
-		/// [EN] Waveform data played directly from memory.
-		/// [JP] メモリから直接再生する波形データ。
+		/// [JP] WAV の音1つ
+		/// [EN] A single WAV sound
 		Wave,
 	};
 
 	/**
-	* [EN]
-	* Loaded audio data together with optional CRI cue-sheet and streamed-AWB
-	* state. Instances are created and populated by AudioLoader.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 読み込み済み音声データと、任意の CRI キューシートおよびストリーム
-	* AWB の状態を保持する。インスタンスの生成と設定は AudioLoader が行う。
+	* 読み込んだ音のデータ。
+	*
+	* @brief 読み込んだ音
+	*
+	* [EN]
+	* The data of a loaded sound.
+	*
+	* @brief A loaded sound
 	*/
 	class SEEDCORE_API Sound :public NonCopyable
 	{
@@ -40,121 +42,105 @@ namespace SeedCore
 		friend class AudioLoader;
 
 	public:
-		/**
-		* [EN]
-		* Creates an empty wave Sound.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 空の波形 Sound を生成する。
-		*/
 		Sound() = default;
 
-		/**
-		* [EN]
-		* Destroys the stored Sound state.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 保持している Sound の状態を破棄する。
-		*/
 		~Sound() = default;
 
-		/**
-		* [EN]
-		* Moves loaded Sound state from another instance.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 別のインスタンスから読み込み済み Sound の状態を移動する。
-		*/
 		Sound(Sound&&)noexcept = default;
 
-		/**
-		* [EN]
-		* Replaces this instance with moved Sound state.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このインスタンスを、移動された Sound の状態で置き換える。
-		*/
 		Sound& operator=(Sound&&)noexcept = default;
 
 	public:
 		/**
-		* [EN]
-		* Returns the stored sound representation.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 保持しているサウンド形式を返す。
+		* 音の種類を返す。
+		*
+		* @brief  音の種類を返す
+		* @return 音の種類
+		*
+		* [EN]
+		* Returns the kind of sound.
+		*
+		* @brief  Returns the kind
+		* @return The kind of sound
 		*/
 		NODISCARD SoundType Type()const;
 
 		/**
-		* [EN]
-		* Returns the loaded ACB handle for a cue sheet.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* キューシート用に読み込まれた ACB ハンドルを返す。
+		* キューシートの目印を返す。
+		*
+		* @brief  キューシートを返す
+		* @return キューシートの目印。WAV なら nullptr
+		*
+		* [EN]
+		* Returns the cue sheet handle.
+		*
+		* @brief  Returns the cue sheet
+		* @return The cue sheet handle, or nullptr for a WAV
 		*/
 		NODISCARD ScAudioBankHandle AcbHandle()const;
 
 		/**
-		* [EN]
-		* Returns writable access to the in-memory audio bytes.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* メモリ上の音声バイト列へ書き込み可能なポインターを返す。
+		* 音のデータの先頭を返す。
+		*
+		* @brief  データを返す
+		* @return データの先頭
+		*
+		* [EN]
+		* Returns the start of the sound data.
+		*
+		* @brief  Returns the data
+		* @return The start of the data
 		*/
 		NODISCARD void* Data();
 
 		/**
-		* [EN]
-		* Returns the size of the in-memory audio data in bytes.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* メモリ上の音声データのバイト数を返す。
+		* 音のデータの大きさを返す。
+		*
+		* @brief  データの大きさを返す
+		* @return データのバイト数
+		*
+		* [EN]
+		* Returns the size of the sound data.
+		*
+		* @brief  Returns the data size
+		* @return The data size in bytes
 		*/
 		NODISCARD Size DataSize()const;
 
 		/**
-		* [EN]
-		* Returns the virtual path used to stream the associated AWB data.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 関連する AWB データのストリームに使う仮想パスを返す。
+		* 一緒に使う AWB ファイルの場所を返す。
+		*
+		* @brief  AWB の場所を返す
+		* @return AWB ファイルの場所
+		*
+		* [EN]
+		* Returns where the matching AWB file is.
+		*
+		* @brief  Returns the AWB path
+		* @return Where the AWB file is
 		*/
 		NODISCARD const String& AwbPath()const;
 
 	private:
-		/// [EN] Representation of the loaded audio data.
-		/// [JP] 読み込まれた音声データの形式。
+		/// [JP] 音の種類
+		/// [EN] The kind of sound
 		SoundType type_ = SoundType::Wave;
 
-		/// [EN] CRI ACB handle owned for cue-sheet playback.
-		/// [JP] キューシート再生用に所有する CRI ACB ハンドル。
+		/// [JP] キューシートの目印
+		/// [EN] The cue sheet handle
 		ScAudioBankHandle acbHandle_ = nullptr;
 
-		/// [EN] Decrypted ACB or wave data retained in memory.
-		/// [JP] メモリ上に保持する復号済み ACB または波形データ。
+		/// [JP] 音のデータ
+		/// [EN] The sound data
 		DynamicArray<Byte> data_;
 
-		/// [EN] Virtual path to an optional streamed AWB blob.
-		/// [JP] 任意のストリーム AWB ブロブを示す仮想パス。
+		/// [JP] 一緒に使う AWB ファイルの場所
+		/// [EN] Where the matching AWB file is
 		String awbPath_;
 	};
 }

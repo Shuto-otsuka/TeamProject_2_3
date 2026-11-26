@@ -6,23 +6,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Frame-ring constant buffer: one upload resource (and CBV) per frame in
-	* flight. Update writes the current frame's slot, Address / Index return
-	* the current slot, so the CPU never touches memory the GPU is still reading.
-	* Consequence: Update must be called every frame the buffer is used, and
-	* Index must be re-queried per frame (never cache it across frames).
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* フレームリング定数バッファ: インフライトフレーム数ぶんのアップロード
-	* リソース（と CBV）を持つ。Update は現在フレームのスロットに書き、
-	* Address / Index も現在スロットを返すため、GPU が読んでいる最中の
-	* メモリに CPU が触れることはない。その代わり、使用するフレームでは毎回
-	* Update を呼ぶこと、Index はフレームを跨いでキャッシュしないこと。
-	*/
 	template<typename T>
 	class StaticConstantBuffer :public NonCopyable
 	{

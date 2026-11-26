@@ -1,31 +1,5 @@
 #include <GraphicsEngine/Texture/Sprite/TextureSprite.hlsli>
 
-/**
-* [EN]
-* Texture.Sprite: one thread group draws the on-screen quads TextureSpriteAS
-* kept from 32 consecutive entries of the sprite section of Texture.Draws,
-* 4 vertices and 2 triangles per quad, in list order so the units' drawing
-* order holds. A fullscreen quad covers the whole view; a
-* sprite quad is placed on the 1920x1080 canvas by its unit's world matrix
-* (translation, z rotation - none for text - and scale). The game view scales
-* that canvas to its display height; the canvas view lifts it into canvas
-* world space (offset by 100000, Y flipped) and projects it through the canvas
-* camera, so panning and zooming move the sprites (the editor view draws no
-* sprites).
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Texture.Sprite。1 スレッドグループが、Texture.Draws のスプライトの区間の
-* 連続する 32 件から TextureSpriteAS が残した画面内の四角形を、
-* 1 四角形につき 4 頂点・2 三角形で描く。並びの順に描くので、ユニットの
-* 描く順番が保たれる。全画面の四角形はビュー全体を覆い、スプライトの
-* 四角形はユニットの世界行列（平行移動・z 回転・拡大）で 1920x1080 の
-* キャンバスに置く（テキストは回転しない）。ゲームのビューはそのキャンバスを表示の
-* 高さに合わせて広げ、キャンバスのビューはキャンバスのワールド空間（100000 ずらし、
-* Y 反転）へ移してキャンバスカメラで投影するので、パンとズームでスプライトが動く
-* （エディターのビューにはスプライトを描かない）。
-*/
 [NumThreads(128, 1, 1)]
 [OutputTopology("triangle")]
 void main(uint gtid : SV_GroupThreadID, in payload TextureSpritePayload payload, out vertices TextureSpriteOutput verts[128], out indices uint3 tris[64])

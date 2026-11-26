@@ -11,22 +11,23 @@
 #include <FoundationEngine/Bridge/CsharpHost.h>
 #include <FoundationEngine/Plugin/PluginHost.h>
 
-#include <AudioEngine/CRI/CriManager.h>
 #include <AudioEngine/Resource/AudioModule.h>
 
 #include <GraphicsEngine/Graphics/Graphics.h>
-#include <GraphicsEngine/Font/FontManager.h>
-#include <GraphicsEngine/Effect/Effekseer/EffekseerManager.h>
 #include <GraphicsEngine/System/CameraSystem.h>
 #include <GraphicsEngine/System/SplashSystem.h>
 
 namespace SeedCore
 {
 	struct Bootstrap;
-	class DlssManager;
-	class JoltManager;
 	struct GameConfig;
 	struct EditorConfig;
+
+	class DlssManager;
+	class JoltManager;
+	class CriManager;
+	class FontManager;
+	class EffekseerManager;
 
 	class GameTimer;
 
@@ -131,20 +132,9 @@ namespace SeedCore
 
 		NODISCARD CameraSystem& GetCamera();
 
-		/**
-		* [EN]
-		* The CPU section measurements, collected once per frame in Present.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* CPU の区間計測。Present でフレームに1回集計される。
-		*/
 		NODISCARD BenchmarkSystem& GetBenchmark();
 
 	private:
-		/// [EN] CPU section measurements. Declared first so it is built before executor_, whose worker threads attach to it as they start.
-		/// [JP] CPU の区間計測。executor_ のワーカースレッドが起動時に Attach するので、それより先に構築されるよう最初に宣言する。
 		BenchmarkSystem benchmark_;
 
 		ResourcePtr<World> world_;
@@ -152,6 +142,12 @@ namespace SeedCore
 		ResourcePtr<JoltManager> joltManager_;
 
 		ResourcePtr<DlssManager> dlssManager_;
+
+		ResourcePtr<CriManager> criManager_;
+
+		ResourcePtr<FontManager> fontManager_;
+
+		ResourcePtr<EffekseerManager> effekseerManager_;
 
 		Window window_;
 
@@ -161,13 +157,7 @@ namespace SeedCore
 
 		ResourceCache resource_;
 
-		CriManager criManager_;
-
 		Graphics graphics_;
-
-		FontManager fontManager_;
-
-		EffekseerManager effekseerManager_;
 
 		AudioModule audioModule_;
 

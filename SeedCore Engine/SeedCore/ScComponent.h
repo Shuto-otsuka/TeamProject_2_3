@@ -1,6 +1,5 @@
 #pragma once
 
-// FoundationEngine
 #include <FoundationEngine/World/ECS/Component/Active.h>
 #include <FoundationEngine/World/ECS/Component/Bounds.h>
 #include <FoundationEngine/World/ECS/Component/Lifetime.h>
@@ -13,7 +12,6 @@
 #include <FoundationEngine/World/ECS/Component/Transform.h>
 #include <FoundationEngine/World/ECS/Component/Velocity.h>
 
-// GraphicsEngine
 #include <GraphicsEngine/Camera/Camera.h>
 #include <GraphicsEngine/Camera/CameraBrain.h>
 #include <GraphicsEngine/Constraint/AttachmentConstraint.h>
@@ -38,7 +36,6 @@
 #include <GraphicsEngine/PostProcess/PostProcess.h>
 #include <GraphicsEngine/Texture/Image.h>
 
-// PhysicsEngine
 #include <PhysicsEngine/CharacterController/CharacterController.h>
 #include <PhysicsEngine/Collider/BoxCollider.h>
 #include <PhysicsEngine/Collider/CapsuleCollider.h>
@@ -54,11 +51,9 @@
 #include <PhysicsEngine/Rigidbody/Rigidbody.h>
 #include <PhysicsEngine/Softbody/Softbody.h>
 
-// AudioEngine
 #include <AudioEngine/Audio/AudioListener.h>
 #include <AudioEngine/Audio/AudioSource.h>
 
-// Actor
 #include <FoundationEngine/World/Actor/Actor.h>
 #include <FoundationEngine/World/ECS/Query/Query.h>
 #include <FoundationEngine/World/World.h>

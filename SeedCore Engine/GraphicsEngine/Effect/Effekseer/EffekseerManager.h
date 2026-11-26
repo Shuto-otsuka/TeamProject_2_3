@@ -1,5 +1,6 @@
 #pragma once
-#include <GraphicsEngine/Effect/Effekseer/EffekseerFileInterface.h>
+#include <GraphicsEngine/Effect/Effekseer/EffekseerCacheLoader.h>
+#include <GraphicsEngine/Effect/Effect.h>
 
 namespace SeedCore
 {
@@ -20,9 +21,11 @@ namespace SeedCore
 
 		void Draw(D3D12CommandList& cmdList, const Matrix& view, const Matrix& projection);
 
+		Effekseer::EffectRef Create(const EffekseerAsset& asset);
+
 		Effekseer::Handle Play(const Effekseer::EffectRef& effect, const Vector3& position);
 
-		void Stop(Effekseer::Handle handle);
+		void Stop(Effekseer::Handle handle, EffectStopFlag flag);
 
 		NODISCARD Bool Playing(Effekseer::Handle handle);
 
@@ -37,8 +40,6 @@ namespace SeedCore
 
 		NODISCARD Float GetTotalTime()const;
 
-		NODISCARD EffekseerFileInterface& GetFileInterface();
-
 	private:
 		Effekseer::ManagerRef manager_;
 
@@ -48,7 +49,15 @@ namespace SeedCore
 
 		Effekseer::RefPtr<EffekseerRenderer::CommandList> cmdList_;
 
-		Effekseer::RefPtr<EffekseerFileInterface> fileInterface_;
+		Effekseer::SettingRef cacheSetting_;
+
+		Effekseer::RefPtr<EffekseerTextureLoader> textureLoader_;
+
+		Effekseer::RefPtr<EffekseerModelLoader> modelLoader_;
+
+		Effekseer::RefPtr<EffekseerMaterialLoader> materialLoader_;
+
+		Effekseer::RefPtr<EffekseerCurveLoader> curveLoader_;
 
 		DynamicArray<Effekseer::Handle> handles_;
 

@@ -7,23 +7,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Frame-ring structured buffer: one upload resource (and SRV) per frame in
-	* flight so the CPU can write frame N while the GPU reads frame N-1.
-	* Update writes the current frame's slot; Index() returns the current
-	* frame's bindless SRV index and must be re-registered every frame (never
-	* cache it across frames).
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* フレームリング StructuredBuffer: インフライトフレーム数ぶんのアップロード
-	* リソース（と SRV）を持ち、GPU がフレーム N-1 を読んでいる間に CPU が
-	* フレーム N を書けるようにする。Update は現在フレームのスロットに書く。
-	* Index() は現在フレームの bindless SRV インデックスを返すため、毎フレーム
-	* 再登録すること（フレームを跨いでキャッシュしない）。
-	*/
 	template<typename T>
 	class ReadOnlyStructuredBuffer :public NonCopyable
 	{
@@ -118,28 +101,6 @@ namespace SeedCore
 		Uint elementCount_;
 	};
 
-	/**
-	* [EN]
-	* Frame-ring raw ByteAddressBuffer: same frame-ring-upload shape as
-	* ReadOnlyStructuredBuffer<T>, but the SRV is created RAW (R32_TYPELESS,
-	* D3D12_BUFFER_SRV_FLAG_RAW, StructureByteStride 0) instead of typed —
-	* for buffers an HLSL side reads via `ByteAddressBuffer` (e.g. Model.hlsli's
-	* packed 3-bytes-per-triangle primitive index buffer) rather than
-	* `StructuredBuffer<T>`. Capacity and every Update() size are in bytes and
-	* must be 4-byte aligned (raw buffers are described in 4-byte units).
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* フレームリング式の raw ByteAddressBuffer: ReadOnlyStructuredBuffer<T>
-	* と同じフレームリング アップロードの形だが、SRV は型付きではなく RAW
-	* (R32_TYPELESS、D3D12_BUFFER_SRV_FLAG_RAW、StructureByteStride 0) で
-	* 作成する — HLSL 側が `StructuredBuffer<T>` ではなく `ByteAddressBuffer`
-	* で読むバッファ用（例: Model.hlsli の三角形あたり3バイトに詰めた
-	* プリミティブインデックスバッファ）。容量と Update() のサイズは
-	* すべてバイト単位で、4バイト境界に揃っていること（raw バッファは
-	* 4バイト単位で記述されるため）。
-	*/
 	class ReadOnlyByteAddressBuffer :public NonCopyable
 	{
 	public:

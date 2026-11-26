@@ -104,6 +104,7 @@
     <ClCompile Include="Resource\Sharing\SharedCatalog.cpp" />
     <ClCompile Include="Resource\Sharing\SharedScene.cpp" />
     <ClCompile Include="Resource\Sharing\SharingWorker.cpp" />
+    <ClCompile Include="Utility\Widgets.cpp" />
     <ClCompile Include="World\Actor\Actor.cpp" />
     <ClCompile Include="World\Actor\ActorAccessor.cpp" />
     <ClCompile Include="World\Actor\ActorRegistry.cpp" />
@@ -259,6 +260,7 @@
     <ClInclude Include="Resource\Sharing\SharedScene.h" />
     <ClInclude Include="Resource\Sharing\SharingWorker.h" />
     <ClInclude Include="Utility\Keyword.h" />
+    <ClInclude Include="Utility\Widgets.h" />
     <ClInclude Include="World\Actor\Actor.h" />
     <ClInclude Include="World\Actor\ActorAccessor.h" />
     <ClInclude Include="World\Actor\ActorRegistry.h" />

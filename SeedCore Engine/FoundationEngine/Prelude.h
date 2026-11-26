@@ -91,6 +91,7 @@
 #include <memory_resource>
 #include <mutex>
 #include <new>
+#include <numbers>
 #include <numeric>
 #include <optional>
 #include <ostream>
@@ -203,6 +204,7 @@
 #include <FoundationEngine/Utility/ResourcePtr.h>
 #include <FoundationEngine/Utility/ResourceRef.h>
 #include <FoundationEngine/Utility/String.h>
+#include <FoundationEngine/Utility/Widgets.h>
 
 #include <FoundationEngine/Math/Algorithm.h>
 #include <FoundationEngine/Math/Vector/Vector2.h>

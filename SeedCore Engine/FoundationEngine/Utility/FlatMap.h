@@ -2,29 +2,10 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Open-addressing hash map (linear probing) with an STL-like interface.
-	* Capacity is always a power of two so bucket indices can be computed
-	* with a bitmask instead of a modulo. Deleted slots are tombstoned
-	* (SlotState::Deleted) rather than compacted immediately, so probing
-	* keeps working after erase.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* オープンアドレス法（線形探査）によるハッシュマップ。STLライクな
-	* インターフェースを持つ。容量は常に2の冪とし、バケットインデックスを
-	* 剰余ではなくビットマスクで計算できるようにしている。削除済みスロットは
-	* 即座に詰め直さずトゥームストーン（SlotState::Deleted）とするため、
-	* erase 後も探査が正しく機能する。
-	*/
 	template<typename Key, typename Value, typename Hash = std::hash<Key>, typename KeyEqual = std::equal_to<Key>>
 	class FlatMap
 	{
 	public:
-		/// [EN] Standard container typedefs, mirroring std::unordered_map's interface.
-		/// [JP] std::unordered_map のインターフェースに準じた標準コンテナ型定義。
 		using value_type = std::pair<Key, Value>;
 		using key_type = Key;
 		using mapped_type = Value;
@@ -36,110 +17,43 @@ namespace SeedCore
 		using const_reference = const value_type&;
 
 	private:
-		/// [EN] Occupancy state of a single bucket slot.
-		/// [JP] 単一バケットスロットの占有状態。
 		enum class SlotState :Uint8
 		{
-			/// [EN] Never used, or reset by clear(): probing stops here.
-			/// [JP] 未使用、または clear() でリセット済み: 探査はここで停止する。
 			Empty = 0,
 
-			/// [EN] Holds a live key/value pair.
-			/// [JP] 有効なキー/値ペアを保持している。
 			Occupied = 1,
 
-			/// [EN] Tombstone left by erase(): probing continues past it.
-			/// [JP] erase() が残したトゥームストーン: 探査はこれを通過して続行する。
 			Deleted = 2
 		};
 
-		/**
-		* [EN]
-		* A single bucket: its occupancy state plus the stored pair (if any).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 単一バケット。占有状態と（あれば）格納されたペアを保持する。
-		*/
 		struct Slot
 		{
-			/// [EN] Current occupancy state.
-			/// [JP] 現在の占有状態。
 			SlotState state_ = SlotState::Empty;
 
-			/// [EN] The stored key/value pair, engaged only when state_ is Occupied.
-			/// [JP] 格納されたキー/値ペア。state_ が Occupied のときのみ値を持つ。
 			std::optional<value_type> keyValue_;
 		};
 
-		/// [EN] Initial bucket count for a default-constructed map.
-		/// [JP] デフォルト構築されたマップの初期バケット数。
 		SC_CONSTEX size_type DefaultCapacity = 16;
 
-		/// [EN] Occupancy ratio above which the table is grown (see ensure_capacity).
-		/// [JP] これを超えるとテーブルを拡張する占有率のしきい値（ensure_capacity を参照）。
 		SC_CONSTEX Float MaxLoadFactor = 0.75f;
 
-		/// [EN] Backing bucket array; size is always a power of two.
-		/// [JP] バケット配列本体。サイズは常に2の冪。
 		DynamicArray<Slot> buckets_;
 
-		/// [EN] Number of live (Occupied) entries.
-		/// [JP] 有効（Occupied）なエントリ数。
 		size_type size_ = 0;
 
-		/// [EN] Number of non-Empty slots (Occupied + Deleted), used against MaxLoadFactor.
-		/// [JP] 非Emptyなスロット数（Occupied + Deleted）。MaxLoadFactor との比較に使う。
 		size_type occupied_ = 0;
 
-		/// [EN] Hash functor.
-		/// [JP] ハッシュ関数オブジェクト。
 		Hash hasher_;
 
-		/// [EN] Key equality functor.
-		/// [JP] キー等価比較関数オブジェクト。
 		KeyEqual keyEqual_;
 
-		/**
-		* [EN]
-		* Returns the starting bucket index for key (its hash masked to
-		* the current capacity).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* key の探査開始バケットインデックスを返す（そのハッシュ値を
-		* 現在の容量でマスクしたもの）。
-		*/
 		size_type bucket_index(const Key& key)const noexcept
 		{
-			/// [EN] With a power-of-two capacity, masking with capacity - 1 equals hash % capacity.
-			/// [JP] 容量が2の冪なので、capacity - 1 でのマスクは hash % capacity と等しい。
 			return hasher_(key) & (buckets_.size() - 1);
 		}
 
-		/**
-		* [EN]
-		* Linearly probes from bucket_index(key) for a slot matching key.
-		* Returns {index, true} if key is present at index. Returns
-		* {index, false} with index pointing at the first Deleted slot seen
-		* (or the first Empty slot / probe start if none), suitable for
-		* inserting key.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* bucket_index(key) から key に一致するスロットを線形探査する。
-		* key が index に存在すれば {index, true} を返す。存在しなければ
-		* {index, false} を返し、index は挿入に適したスロット
-		* （最初に見つかった Deleted スロット。なければ最初の Empty
-		* スロット/探査開始位置）を指す。
-		*/
 		std::pair<size_type, Bool> probe(const Key& key)const noexcept
 		{
-			/// [EN] capacity doubles as "no tombstone seen yet", since it is never a valid index.
-			/// [JP] capacity は有効なインデックスにならないので、「まだトゥームストーンを見ていない」の印を兼ねる。
 			const size_type capacity = buckets_.size();
 			const size_type bucketIndex = bucket_index(key);
 			size_type firstDeleted = capacity;
@@ -157,16 +71,12 @@ namespace SeedCore
 						return { index,true };
 					}
 					break;
-				/// [EN] The key may still lie beyond a tombstone, so probing continues; the first one is remembered as the insertion spot.
-				/// [JP] キーはトゥームストーンの先にあるかもしれないので探査を続ける。最初のものは挿入先として覚えておく。
 				case SlotState::Deleted:
 					if (firstDeleted == capacity)
 					{
 						firstDeleted = index;
 					}
 					break;
-				/// [EN] An Empty slot ends the chain: the key is not in the table.
-				/// [JP] Empty のスロットで連なりは終わる。キーは表に無い。
 				case SlotState::Empty:
 					FALLTHROUGH;
 				default:
@@ -174,27 +84,12 @@ namespace SeedCore
 					break;
 				}
 
-				/// [EN] Linear probing: the next slot, wrapping around at the end of the array.
-				/// [JP] 線形探査。次のスロットへ進み、配列の終わりでは先頭へ折り返す。
 				index = (index + 1) & (capacity - 1);
 			}
 
-			/// [EN] Every slot was visited without finding the key or an Empty slot.
-			/// [JP] キーも Empty のスロットも見つからないまま、全スロットを見終えた。
 			return { (firstDeleted != capacity) ? firstDeleted : bucketIndex,false };
 		}
 
-		/**
-		* [EN]
-		* Reallocates the bucket array to newCapacity and reinserts every
-		* live entry (dropping tombstones), rebuilding size_/occupied_.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* バケット配列を newCapacity で再確保し、有効な全エントリを
-		* （トゥームストーンを捨てて）再挿入し、size_/occupied_ を再構築する。
-		*/
 		void rehash(size_type newCapacity)
 		{
 			if (newCapacity < DefaultCapacity)
@@ -202,15 +97,11 @@ namespace SeedCore
 				newCapacity = DefaultCapacity;
 			}
 
-			/// [EN] After the swap, buckets_ is the fresh empty table and oldBackets holds the entries to move over.
-			/// [JP] 入れ替えた後は、buckets_ が新しい空の表、oldBackets が移す要素を持つ表になる。
 			DynamicArray<Slot> oldBackets(newCapacity);
 			std::swap(buckets_, oldBackets);
 			size_ = 0;
 			occupied_ = 0;
 
-			/// [EN] Only live entries are carried over, so every tombstone disappears in the rebuilt table.
-			/// [JP] 移すのは有効な要素だけなので、作り直した表からはトゥームストーンが全て消える。
 			for (auto& slot : oldBackets)
 			{
 				if (slot.state_ == SlotState::Occupied)
@@ -220,33 +111,14 @@ namespace SeedCore
 			}
 		}
 
-		/**
-		* [EN]
-		* Shared worker for every insertion path: probes for keyValue's
-		* key and, if absent, places it at the probed slot. Returns
-		* {index, false} if the key already existed (keyValue is discarded),
-		* or {index, true} if it was newly inserted.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 全ての挿入経路が共有するワーカー。keyValue のキーを探査し、
-		* 存在しなければ探査で見つかったスロットに配置する。キーが既に
-		* 存在すれば {index, false}（keyValue は破棄される）、新規挿入なら
-		* {index, true} を返す。
-		*/
 		std::pair<size_type, Bool>insert_implementation(value_type keyValue)
 		{
-			/// [EN] An existing key wins: the new pair is dropped and the stored value is left untouched.
-			/// [JP] 既存のキーが優先される。新しいペアは捨て、格納済みの値には触れない。
 			auto [index, found] = probe(keyValue.first);
 			if (found)
 			{
 				return{ index, false };
 			}
 
-			/// [EN] Reusing a tombstone does not add a non-Empty slot, so occupied_ only grows for an Empty one.
-			/// [JP] トゥームストーンを再利用しても非 Empty のスロットは増えないので、occupied_ は Empty を使ったときだけ増やす。
 			if (buckets_[index].state_ != SlotState::Deleted)
 			{
 				++occupied_;
@@ -258,29 +130,14 @@ namespace SeedCore
 			return { index,true };
 		}
 
-		/**
-		* [EN]
-		* Grows the table (doubling capacity via rehash) if inserting one
-		* more entry would exceed MaxLoadFactor.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* もう1エントリ挿入すると MaxLoadFactor を超える場合、テーブルを
-		* （rehash で容量を倍にして）拡張する。
-		*/
 		void ensure_capacity()
 		{
-			/// [EN] A moved-from map has no buckets at all and gets the default table back first.
-			/// [JP] ムーブ元になったマップはバケットを持たないので、まず既定の表を作り直す。
 			if (buckets_.size() == 0)
 			{
 				rehash(DefaultCapacity);
 				return;
 			}
 
-			/// [EN] Tombstones count toward the load, since they lengthen probe chains just like live entries.
-			/// [JP] トゥームストーンも有効な要素と同じく探査の連なりを長くするので、負荷に数える。
 			if (static_cast<Float>(occupied_ + 1) > MaxLoadFactor * static_cast<Float>(buckets_.size()))
 			{
 				rehash(buckets_.size() * 2);
@@ -290,22 +147,9 @@ namespace SeedCore
 	public:
 		struct ConstIterator;
 
-		/**
-		* [EN]
-		* Forward iterator over FlatMap entries, skipping Empty/Deleted
-		* slots. Iteration order follows bucket order, not insertion order.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* FlatMap の要素を走査する前方イテレータ。Empty/Deleted スロットは
-		* スキップする。走査順はバケット順であり、挿入順ではない。
-		*/
 		struct Iterator
 		{
 		public:
-			/// [EN] Standard iterator typedefs, so std algorithms can use this iterator.
-			/// [JP] 標準のイテレータ型定義。std のアルゴリズムからこのイテレータを使えるようにする。
 			using iterator_category = std::forward_iterator_tag;
 			using value_type = FlatMap::value_type;
 			using difference_type = FlatMap::difference_type;
@@ -313,31 +157,14 @@ namespace SeedCore
 			using reference = value_type&;
 
 		private:
-			/// [EN] The bucket array type the iterator walks.
-			/// [JP] イテレータが走査するバケット配列の型。
 			using SlotVector = DynamicArray<Slot>;
 
-			/// [EN] Backing bucket array this iterator walks.
-			/// [JP] このイテレータが走査するバケット配列本体。
 			SlotVector* slots_ = nullptr;
 
-			/// [EN] Current bucket index.
-			/// [JP] 現在のバケットインデックス。
 			size_type index_ = 0;
 
-			/**
-			* [EN]
-			* Advances index_ past any Empty/Deleted slots.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* index_ を Empty/Deleted スロットの先へ進める。
-			*/
 			void skip()
 			{
-				/// [EN] Stops on the first Occupied slot, or at the end of the array, which is the past-the-end position.
-				/// [JP] 最初の Occupied スロットか、配列の終わり（終端の次の位置）で止まる。
 				while (index_ < slots_->size() && (*slots_)[index_].state_ != SlotState::Occupied)
 				{
 					++index_;
@@ -345,72 +172,23 @@ namespace SeedCore
 			}
 
 		public:
-			/**
-			* [EN]
-			* Constructs a singular iterator that refers to no map; it must
-			* be assigned before use.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* どのマップも指さない単独のイテレータを構築する。使う前に代入が
-			* 必要。
-			*/
 			Iterator() = default;
 
-			/**
-			* [EN]
-			* Constructs an iterator over slots starting at index,
-			* immediately skipping to the first Occupied slot at or after it.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* slots に対する、index から始まるイテレータを構築する。
-			* 直ちに index 以降で最初の Occupied スロットまでスキップする。
-			*/
 			explicit Iterator(SlotVector* slots, size_type index) :slots_(slots), index_(index)
 			{
 				skip();
 			}
 
-			/**
-			* [EN]
-			* Returns a reference to the current key/value pair.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 現在のキー/値ペアへの参照を返す。
-			*/
 			reference operator*()const
 			{
 				return *(*slots_)[index_].keyValue_;
 			}
 
-			/**
-			* [EN]
-			* Returns a pointer to the current key/value pair.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 現在のキー/値ペアへのポインタを返す。
-			*/
 			pointer operator->()const
 			{
 				return &*(*slots_)[index_].keyValue_;
 			}
 
-			/**
-			* [EN]
-			* Advances to the next Occupied slot (pre-increment).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 次の Occupied スロットへ進める（前置インクリメント）。
-			*/
 			Iterator& operator++()
 			{
 				++index_;
@@ -418,15 +196,6 @@ namespace SeedCore
 				return *this;
 			}
 
-			/**
-			* [EN]
-			* Advances to the next Occupied slot (post-increment).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 次の Occupied スロットへ進める（後置インクリメント）。
-			*/
 			Iterator operator++(Int)
 			{
 				auto temporary = *this;
@@ -434,79 +203,30 @@ namespace SeedCore
 				return temporary;
 			}
 
-			/**
-			* [EN]
-			* Returns whether both iterators point to the same bucket index.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 両イテレータが同じバケットインデックスを指しているかを返す。
-			*/
 			Bool operator==(const Iterator& other)const noexcept
 			{
-				/// [EN] Only the index is compared; both iterators are assumed to walk the same map.
-				/// [JP] 比べるのはインデックスだけ。両方のイテレータが同じマップを走査している前提。
 				return index_ == other.index_;
 			}
 
-			/**
-			* [EN]
-			* Negation of operator==.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* operator== の否定。
-			*/
 			Bool operator!=(const Iterator& other)const noexcept
 			{
 				return !(*this == other);
 			}
 
-			/**
-			* [EN]
-			* Returns whether this iterator is dereferenceable (not past-the-end).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* このイテレータが逆参照可能か（終端を過ぎていないか）を返す。
-			*/
 			explicit operator Bool()const noexcept
 			{
 				return index_ < slots_->size();
 			}
 
-			/**
-			* [EN]
-			* Converts to a ConstIterator at the same position.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 同じ位置を指す ConstIterator に変換する。
-			*/
 			operator ConstIterator()const
 			{
 				return ConstIterator(slots_, index_);
 			}
 		};
 
-		/**
-		* [EN]
-		* Const forward iterator over FlatMap entries (see Iterator).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* FlatMap の要素を走査する const 前方イテレータ（Iterator を参照）。
-		*/
 		struct ConstIterator
 		{
 		public:
-			/// [EN] Standard iterator typedefs; pointer and reference are const.
-			/// [JP] 標準のイテレータ型定義。pointer と reference は const。
 			using iterator_category = std::forward_iterator_tag;
 			using value_type = FlatMap::value_type;
 			using difference_type = FlatMap::difference_type;
@@ -514,31 +234,14 @@ namespace SeedCore
 			using reference = const value_type&;
 
 		private:
-			/// [EN] The bucket array type the iterator walks, read-only.
-			/// [JP] イテレータが走査するバケット配列の型。読み取り専用。
 			using SlotVector = const DynamicArray<Slot>;
 
-			/// [EN] Backing bucket array this iterator walks.
-			/// [JP] このイテレータが走査するバケット配列本体。
 			SlotVector* slots_ = nullptr;
 
-			/// [EN] Current bucket index.
-			/// [JP] 現在のバケットインデックス。
 			size_type index_ = 0;
 
-			/**
-			* [EN]
-			* Advances index_ past any Empty/Deleted slots.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* index_ を Empty/Deleted スロットの先へ進める。
-			*/
 			void skip()
 			{
-				/// [EN] Stops on the first Occupied slot, or at the end of the array, which is the past-the-end position.
-				/// [JP] 最初の Occupied スロットか、配列の終わり（終端の次の位置）で止まる。
 				while (index_ < slots_->size() && (*slots_)[index_].state_ != SlotState::Occupied)
 				{
 					++index_;
@@ -546,72 +249,23 @@ namespace SeedCore
 			}
 
 		public:
-			/**
-			* [EN]
-			* Constructs a singular iterator that refers to no map; it must
-			* be assigned before use.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* どのマップも指さない単独のイテレータを構築する。使う前に代入が
-			* 必要。
-			*/
 			ConstIterator() = default;
 
-			/**
-			* [EN]
-			* Constructs an iterator over slots starting at index,
-			* immediately skipping to the first Occupied slot at or after it.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* slots に対する、index から始まるイテレータを構築する。
-			* 直ちに index 以降で最初の Occupied スロットまでスキップする。
-			*/
 			explicit ConstIterator(SlotVector* slots, size_type index) :slots_(slots), index_(index)
 			{
 				skip();
 			}
 
-			/**
-			* [EN]
-			* Returns a const reference to the current key/value pair.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 現在のキー/値ペアへの const 参照を返す。
-			*/
 			reference operator*()const
 			{
 				return *(*slots_)[index_].keyValue_;
 			}
 
-			/**
-			* [EN]
-			* Returns a const pointer to the current key/value pair.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 現在のキー/値ペアへの const ポインタを返す。
-			*/
 			pointer operator->()const
 			{
 				return &*(*slots_)[index_].keyValue_;
 			}
 
-			/**
-			* [EN]
-			* Advances to the next Occupied slot (pre-increment).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 次の Occupied スロットへ進める（前置インクリメント）。
-			*/
 			ConstIterator& operator++()
 			{
 				++index_;
@@ -619,15 +273,6 @@ namespace SeedCore
 				return *this;
 			}
 
-			/**
-			* [EN]
-			* Advances to the next Occupied slot (post-increment).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 次の Occupied スロットへ進める（後置インクリメント）。
-			*/
 			ConstIterator operator++(Int)
 			{
 				auto temporary = *this;
@@ -635,45 +280,16 @@ namespace SeedCore
 				return temporary;
 			}
 
-			/**
-			* [EN]
-			* Returns whether both iterators point to the same bucket index.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 両イテレータが同じバケットインデックスを指しているかを返す。
-			*/
 			Bool operator==(const ConstIterator& other)const noexcept
 			{
-				/// [EN] Only the index is compared; both iterators are assumed to walk the same map.
-				/// [JP] 比べるのはインデックスだけ。両方のイテレータが同じマップを走査している前提。
 				return index_ == other.index_;
 			}
 
-			/**
-			* [EN]
-			* Negation of operator==.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* operator== の否定。
-			*/
 			Bool operator!=(const ConstIterator& other)const noexcept
 			{
 				return !(*this == other);
 			}
 
-			/**
-			* [EN]
-			* Returns whether this iterator is dereferenceable (not past-the-end).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* このイテレータが逆参照可能か（終端を過ぎていないか）を返す。
-			*/
 			explicit operator Bool()const noexcept
 			{
 				return index_ < slots_->size();
@@ -681,55 +297,19 @@ namespace SeedCore
 		};
 
 	public:
-		/**
-		* [EN]
-		* Constructs an empty map with DefaultCapacity buckets already
-		* allocated.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* DefaultCapacity 個のバケットを確保済みの、空のマップを構築する。
-		*/
 		FlatMap() :buckets_(DefaultCapacity)
 		{
 			/// No Code
 		}
 
-		/**
-		* [EN]
-		* Constructs from an initializer list, sizing the initial bucket
-		* array to comfortably hold every entry (twice the entry count,
-		* rounded up to a power of two), then inserting them in list order.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 初期化子リストから構築する。初期バケット配列を全エントリを
-		* 余裕を持って収容できるサイズ（エントリ数の2倍を2の冪に切り上げた
-		* もの）にし、リスト順に挿入する。
-		*/
 		FlatMap(std::initializer_list<value_type> init) :buckets_(std::bit_ceil(Max(DefaultCapacity, static_cast<size_type>(init.size() * 2))))
 		{
-			/// [EN] The bucket count is a power of two, as bucket_index's mask requires.
-			/// [JP] バケット数は、bucket_index のマスクが必要とするとおり2の冪になっている。
 			for (auto& keyValue : init)
 			{
 				insert(keyValue);
 			}
 		}
 
-		/**
-		* [EN]
-		* Constructs from any input range of value_type-convertible
-		* elements, inserting them in range order.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* value_type に変換可能な要素の任意の入力範囲から構築する。
-		* 範囲の順に挿入する。
-		*/
 		template<std::ranges::input_range R>
 			requires std::convertible_to<std::ranges::range_value_t<R>, value_type>
 		explicit FlatMap(R&& range) :buckets_(DefaultCapacity)
@@ -740,180 +320,60 @@ namespace SeedCore
 			}
 		}
 
-		/**
-		* [EN]
-		* Copy and move use the member-wise defaults: the bucket array is
-		* copied or moved as a whole, tombstones included. A moved-from
-		* map has no buckets until its next insertion rebuilds the table.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* コピーとムーブはメンバーごとの既定のもの。バケット配列を
-		* トゥームストーンごと丸ごとコピー/ムーブする。ムーブ元のマップは、
-		* 次の挿入で表が作り直されるまでバケットを持たない。
-		*/
 		FlatMap(const FlatMap&) = default;
 		FlatMap(FlatMap&&) = default;
 		FlatMap& operator=(const FlatMap&) = default;
 		FlatMap& operator=(FlatMap&&) = default;
 
-		/**
-		* [EN]
-		* Destroys every entry along with the bucket array.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* バケット配列ごと、全要素を破棄する。
-		*/
 		~FlatMap() = default;
 
-		/**
-		* [EN]
-		* Returns an iterator to the first Occupied bucket.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 最初の Occupied バケットを指すイテレータを返す。
-		*/
 		Iterator begin()
 		{
-			/// [EN] The iterator skips forward from slot 0 to the first Occupied slot by itself.
-			/// [JP] イテレータ自身が、スロット 0 から最初の Occupied スロットまで進む。
 			return Iterator(&buckets_, 0);
 		}
 
-		/**
-		* [EN]
-		* Returns the past-the-end iterator.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 終端の次を指すイテレータを返す。
-		*/
 		Iterator end()
 		{
-			/// [EN] One past the last bucket is the past-the-end position.
-			/// [JP] 最後のバケットの1つ先が、終端の次の位置になる。
 			return Iterator(&buckets_, buckets_.size());
 		}
 
-		/**
-		* [EN]
-		* Const overload of begin().
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* begin() の const オーバーロード。
-		*/
 		ConstIterator begin()const
 		{
 			return ConstIterator(&buckets_, 0);
 		}
 
-		/**
-		* [EN]
-		* Const overload of end().
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* end() の const オーバーロード。
-		*/
 		ConstIterator end()const
 		{
 			return ConstIterator(&buckets_, buckets_.size());
 		}
 
-		/**
-		* [EN]
-		* Returns an explicitly const iterator to the first Occupied bucket.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 最初の Occupied バケットを指す、明示的な const イテレータを返す。
-		*/
 		ConstIterator cbegin()const
 		{
 			return begin();
 		}
 
-		/**
-		* [EN]
-		* Returns the explicitly const past-the-end iterator.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 終端の次を指す、明示的な const イテレータを返す。
-		*/
 		ConstIterator cend()const
 		{
 			return end();
 		}
 
-		/**
-		* [EN]
-		* Returns the number of stored entries.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 格納されている要素数を返す。
-		*/
 		size_type size()const noexcept
 		{
 			return size_;
 		}
 
-		/**
-		* [EN]
-		* Returns whether the map has no entries.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* マップに要素が1つもないかを返す。
-		*/
 		Bool empty()const noexcept
 		{
 			return size_ == 0;
 		}
 
-		/**
-		* [EN]
-		* Returns the current bucket array size (always a power of two).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 現在のバケット配列サイズを返す（常に2の冪）。
-		*/
 		size_type capacity()const noexcept
 		{
 			return buckets_.size();
 		}
 
-		/**
-		* [EN]
-		* Grows the bucket array (if needed) so that n entries fit without
-		* exceeding MaxLoadFactor.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* n 個のエントリが MaxLoadFactor を超えずに収まるよう、必要なら
-		* バケット配列を拡張する。
-		*/
 		void reserve(size_type n)
 		{
-			/// [EN] Enough buckets that n entries stay under MaxLoadFactor, rounded up to a power of two.
-			/// [JP] n 個の要素で MaxLoadFactor を超えないだけのバケット数を、2の冪に切り上げる。
 			size_type required = static_cast<size_type>(static_cast<Float>(n) / MaxLoadFactor) + 1;
 			size_type capacity = DefaultCapacity;
 
@@ -928,72 +388,26 @@ namespace SeedCore
 			}
 		}
 
-		/**
-		* [EN]
-		* Inserts a copy of keyValue if its key is not already present.
-		* Returns an iterator to the entry (new or existing) and whether
-		* insertion actually happened.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* keyValue のキーが未登録であれば、そのコピーを挿入する。
-		* エントリ（新規または既存）へのイテレータと、実際に挿入が
-		* 行われたかを返す。
-		*/
 		std::pair<Iterator, Bool> insert(const value_type& keyValue)
 		{
-			/// [EN] Grows before probing, so the probed index is still valid when the entry is placed.
-			/// [JP] 探査の前に広げるので、要素を置く時点でも探査したインデックスは有効なまま。
 			ensure_capacity();
 			auto [index, inserted] = insert_implementation(keyValue);
 			return { Iterator(&buckets_,index),inserted };
 		}
 
-		/**
-		* [EN]
-		* Move overload of insert.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* insert のムーブオーバーロード。
-		*/
 		std::pair<Iterator, Bool> insert(value_type&& keyValue)
 		{
-			/// [EN] Grows before probing, so the probed index is still valid when the entry is placed.
-			/// [JP] 探査の前に広げるので、要素を置く時点でも探査したインデックスは有効なまま。
 			ensure_capacity();
 			auto [index, inserted] = insert_implementation(std::move(keyValue));
 			return { Iterator(&buckets_,index),inserted };
 		}
 
-		/**
-		* [EN]
-		* Constructs a value_type from args and inserts it (see insert).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* args から value_type を構築して挿入する（insert を参照）。
-		*/
 		template<typename... Args>
 		std::pair<Iterator, Bool> emplace(Args&&... args)
 		{
-			/// [EN] The pair is built before the lookup, so it is constructed even when the key already exists.
-			/// [JP] ペアは探索の前に作るので、キーが既にある場合でも構築はされる。
 			return insert(value_type(std::forward<Args>(args)...));
 		}
 
-		/**
-		* [EN]
-		* Inserts every element of range in range order (see insert).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* range の全要素を範囲の順に挿入する（insert を参照）。
-		*/
 		template<std::ranges::input_range R>
 			requires std::convertible_to<std::ranges::range_value_t<R>, value_type>
 		void insert_range(R&& range)
@@ -1004,27 +418,12 @@ namespace SeedCore
 			}
 		}
 
-		/**
-		* [EN]
-		* Returns a reference to the value mapped to key, default-constructing
-		* and inserting one (via a copy of key) if not already present.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* key に対応する値への参照を返す。未登録であれば（key のコピーを
-		* 用いて）デフォルト構築した値を挿入する。
-		*/
 		Value& operator[](const Key& key)
 		{
 			ensure_capacity();
 			auto [index, found] = probe(key);
-			/// [EN] A missing key is inserted with a default-constructed value, as std::unordered_map does.
-			/// [JP] キーが無ければ、std::unordered_map と同じくデフォルト構築した値で挿入する。
 			if (!found)
 			{
-				/// [EN] Reusing a tombstone does not add a non-Empty slot, so occupied_ only grows for an Empty one.
-				/// [JP] トゥームストーンを再利用しても非 Empty のスロットは増えないので、occupied_ は Empty を使ったときだけ増やす。
 				if (buckets_[index].state_ != SlotState::Deleted)
 				{
 					++occupied_;
@@ -1036,25 +435,12 @@ namespace SeedCore
 			return buckets_[index].keyValue_->second;
 		}
 
-		/**
-		* [EN]
-		* Move overload of operator[].
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* operator[] のムーブオーバーロード。
-		*/
 		Value& operator[](const Key&& key)
 		{
 			ensure_capacity();
 			auto [index, found] = probe(key);
-			/// [EN] A missing key is inserted with a default-constructed value, as std::unordered_map does.
-			/// [JP] キーが無ければ、std::unordered_map と同じくデフォルト構築した値で挿入する。
 			if (!found)
 			{
-				/// [EN] Reusing a tombstone does not add a non-Empty slot, so occupied_ only grows for an Empty one.
-				/// [JP] トゥームストーンを再利用しても非 Empty のスロットは増えないので、occupied_ は Empty を使ったときだけ増やす。
 				if (buckets_[index].state_ != SlotState::Deleted)
 				{
 					++occupied_;
@@ -1066,21 +452,8 @@ namespace SeedCore
 			return buckets_[index].keyValue_->second;
 		}
 
-		/**
-		* [EN]
-		* Returns a reference to the value mapped to key. Throws
-		* std::out_of_range if not found.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* key に対応する値への参照を返す。見つからなければ
-		* std::out_of_range を送出する。
-		*/
 		Value& at(const Key& key)
 		{
-			/// [EN] Unlike operator[], a missing key is an error and nothing is inserted.
-			/// [JP] operator[] と違い、キーが無ければエラーで、何も挿入しない。
 			auto [index, found] = probe(key);
 			if (!found)
 			{
@@ -1089,19 +462,8 @@ namespace SeedCore
 			return buckets_[index].keyValue_->second;
 		}
 
-		/**
-		* [EN]
-		* Const overload of at.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* at の const オーバーロード。
-		*/
 		const Value& at(const Key& key)const
 		{
-			/// [EN] Unlike operator[], a missing key is an error and nothing is inserted.
-			/// [JP] operator[] と違い、キーが無ければエラーで、何も挿入しない。
 			auto [index, found] = probe(key);
 			if (!found)
 			{
@@ -1110,17 +472,6 @@ namespace SeedCore
 			return buckets_[index].keyValue_->second;
 		}
 
-		/**
-		* [EN]
-		* Removes the entry for key if present (tombstoning its slot).
-		* Returns whether an entry was removed.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* key に対応するエントリが存在すれば削除する（そのスロットを
-		* トゥームストーンにする）。エントリが削除されたかを返す。
-		*/
 		Bool erase(const Key& key)
 		{
 			auto [index, found] = probe(key);
@@ -1129,47 +480,22 @@ namespace SeedCore
 				return false;
 			}
 
-			/// [EN] The slot becomes a tombstone rather than Empty, so keys stored further along its chain are still found.
-			/// [JP] スロットは Empty ではなくトゥームストーンにする。同じ連なりの先にあるキーが見つからなくなるのを防ぐ。
 			buckets_[index].state_ = SlotState::Deleted;
 			buckets_[index].keyValue_.reset();
 			--size_;
 			return true;
 		}
 
-		/**
-		* [EN]
-		* Removes the entry pointed to by iterator, returning an iterator
-		* to the next entry.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* iterator が指すエントリを削除し、次のエントリへのイテレータを返す。
-		*/
 		Iterator erase(Iterator iterator)
 		{
-			/// [EN] Erasing only marks the slot, so the iterator's index stays valid and can simply move on.
-			/// [JP] 削除はスロットに印を付けるだけなので、イテレータのインデックスは有効なまま次へ進める。
 			const Key& key = iterator->first;
 			erase(key);
 			++iterator;
 			return iterator;
 		}
 
-		/**
-		* [EN]
-		* Removes every entry, resetting all buckets to Empty.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 全エントリを削除し、全バケットを Empty にリセットする。
-		*/
 		void clear()noexcept
 		{
-			/// [EN] Every slot, tombstones included, goes back to Empty; the bucket array keeps its size.
-			/// [JP] トゥームストーンも含めて全スロットを Empty に戻す。バケット配列の大きさはそのまま。
 			for (auto& slot : buckets_)
 			{
 				slot.state_ = SlotState::Empty;
@@ -1179,15 +505,6 @@ namespace SeedCore
 			occupied_ = 0;
 		}
 
-		/**
-		* [EN]
-		* Returns an iterator to the entry for key, or end() if not found.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* key に対応するエントリへのイテレータを返す。見つからなければ end()。
-		*/
 		Iterator find(const Key& key)
 		{
 			auto [index, found] = probe(key);
@@ -1198,15 +515,6 @@ namespace SeedCore
 			return Iterator(&buckets_, index);
 		}
 
-		/**
-		* [EN]
-		* Const overload of find.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* find の const オーバーロード。
-		*/
 		ConstIterator find(const Key& key)const
 		{
 			auto [index, found] = probe(key);
@@ -1217,50 +525,17 @@ namespace SeedCore
 			return ConstIterator(&buckets_, index);
 		}
 
-		/**
-		* [EN]
-		* Returns whether key is present.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* key が存在するかを返す。
-		*/
 		Bool contains(const Key& key)const noexcept
 		{
-			/// [EN] probe also reports where the key would go, which is not needed here.
-			/// [JP] probe はキーを置くべき位置も返すが、ここでは使わない。
 			auto [index, found] = probe(key);
 			return found;
 		}
 
-		/**
-		* [EN]
-		* Returns 1 if key is present, 0 otherwise (keys are unique, so
-		* never more than 1).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* key が存在すれば1、存在しなければ0を返す（キーは一意なので
-		* 2以上になることはない）。
-		*/
 		size_type count(const Key& key)const noexcept
 		{
 			return contains(key) ? 1 : 0;
 		}
 
-		/**
-		* [EN]
-		* Returns the current occupancy ratio (non-Empty slots, tombstones
-		* included, / capacity).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 現在の占有率（トゥームストーンを含む非 Empty のスロット数 /
-		* 容量）を返す。
-		*/
 		Float load_factor()const noexcept
 		{
 			return static_cast<Float>(occupied_) / static_cast<Float>(buckets_.size());

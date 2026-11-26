@@ -1,0 +1,256 @@
+#include <Editor/Editor/Panel/Window/SkeletonControllerPanel.h>
+#include <Editor/Editor/Context/EditorContext.h>
+#include <Editor/Editor/ImGui/ImGuiCommon.h>
+#include <Editor/Editor/ImGui/ImGuiRenderer.h>
+#include <GraphicsEngine/Model/Crister/Crister.h>
+#include <GraphicsEngine/Model/ModelResource.h>
+#include <GraphicsEngine/Model/Mesh.h>
+#include <GraphicsEngine/Camera/PreviewCamera.h>
+#include <GraphicsEngine/Camera/PreviewCameraController.h>
+#include <GraphicsEngine/Resource/GraphicsModule.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
+#include <GraphicsEngine/Preview/PreviewRequest.h>
+#include <FoundationEngine/Input/InputSystem.h>
+#include <FoundationEngine/Resource/ResourceCache.h>
+#include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+
+namespace SeedCore
+{
+	SkeletonControllerPanel::SkeletonControllerPanel(EditorContext& context, ImGuiTexture& imguiTexture) : context_(context), imguiTexture_(imguiTexture)
+	{
+		/// No Code
+	}
+
+	void SkeletonControllerPanel::Open()
+	{
+		open_ = true;
+		ImGui::SetWindowFocus("スケルトンコントローラー");
+	}
+
+	Bool SkeletonControllerPanel::Focused()const
+	{
+		ImGuiWindow* window = ImGui::FindWindowByName("スケルトンコントローラー");
+		return open_ && window && !window->SkipItems;
+	}
+
+	void SkeletonControllerPanel::Draw()
+	{
+		context_.preview_.skeletonController_.active_ = false;
+		context_.preview_.skeletonController_.nodeIndex_ = selectedNodeIndex_;
+		currentCrister_ = nullptr;
+
+		if (!open_)
+		{
+			return;
+		}
+
+		ImGuiWindow* editorViewWindow = ImGui::FindWindowByName("エディタービュー");
+		ImGuiID dockID = (editorViewWindow && editorViewWindow->DockId != 0) ? editorViewWindow->DockId : context_.graphics_.imgui_->DockSpaceID();
+		ImGui::DockBuilderDockWindow("スケルトンコントローラー", dockID);
+		ImGui::SetNextWindowSize(ImVec2(1280, 720), ImGuiCond_FirstUseEver);
+
+		if (ImGui::Begin("スケルトンコントローラー", &open_))
+		{
+			const Mesh* mesh = context_.selection_.Primary() ? context_.world_.world_->GetComponent<Mesh>(ActorAccessor::GetEntity(context_.selection_.Primary())) : nullptr;
+
+			if (!mesh || mesh->meshID_ == 0)
+			{
+				ImGui::TextDisabled("スケルタルメッシュを持つ Actor を選択してください");
+			}
+			else
+			{
+				ModelResource* modelResource = context_.graphics_.graphics_->Module().Resources().modelResource_.get();
+				Handle<Crister> handle = modelResource->GetHandle(mesh->meshID_);
+				currentCrister_ = handle.empty() ? nullptr : modelResource->Resolve(handle);
+
+				if (!currentCrister_)
+				{
+					ImGui::TextDisabled("モデルを読み込み中です...");
+				}
+				else
+				{
+					Float boneTreeWidth = ImGui::GetContentRegionAvail().x * boneTreeColumnWidthRatio_;
+
+					ImGui::BeginChild("##boneTreeColumn", ImVec2(boneTreeWidth, 0.0f), true);
+					{
+						DrawBoneList(*currentCrister_);
+					}
+					ImGui::EndChild();
+
+					ImGui::SameLine();
+
+					ImGui::BeginChild("##previewColumn", ImVec2(0.0f, 0.0f), true);
+					{
+						DrawPreview();
+					}
+					ImGui::EndChild();
+				}
+			}
+		}
+		ImGui::End();
+	}
+
+	void SkeletonControllerPanel::DrawBoneList(const Crister& crister)
+	{
+		if (ImGui::Selectable("Rig", selectedNodeIndex_ < 0))
+		{
+			selectedNodeIndex_ = -1;
+		}
+
+		ImGui::Separator();
+
+		std::span<const Node> nodes = crister.Nodes();
+
+		for (const Skin& skin : crister.Skins())
+		{
+			for (Int jointIndex : skin.joints_)
+			{
+				if (jointIndex < 0 || static_cast<Size>(jointIndex) >= nodes.size())
+				{
+					continue;
+				}
+
+				const Char* label = nodes[static_cast<Size>(jointIndex)].name_.c_str();
+				if (ImGui::Selectable(label, selectedNodeIndex_ == jointIndex))
+				{
+					selectedNodeIndex_ = jointIndex;
+				}
+			}
+		}
+	}
+
+	void SkeletonControllerPanel::DrawPreview()
+	{
+		const Mesh* mesh = context_.world_.world_->GetComponent<Mesh>(ActorAccessor::GetEntity(context_.selection_.Primary()));
+
+		context_.preview_.skeletonController_.active_ = true;
+		context_.preview_.skeletonController_.meshAssetID_ = mesh->meshID_;
+
+		ImVec2 previewSize = ImGui::GetContentRegionAvail();
+		previewSize.y = Max(previewSize.y, 100.0f);
+
+		context_.preview_.skeletonController_.camera_.Resize(previewSize.x, previewSize.y);
+
+		ImVec2 imagePosition = ImGui::GetCursorScreenPos();
+		D3D12_GPU_DESCRIPTOR_HANDLE previewHandle = context_.graphics_.graphics_->PreviewDisplay(PreviewSlot::Skeleton);
+		if (previewHandle.ptr != 0)
+		{
+			ImGui::Image(ImTextureID(previewHandle.ptr), previewSize);
+		}
+		else
+		{
+			ImGui::Dummy(previewSize);
+		}
+
+		Bool orbitHeld = InputSystem::MouseState(InputSystem::MouseButton::Left, InputSystem::IsPressed);
+		Bool panHeld = InputSystem::MouseState(InputSystem::MouseButton::Middle, InputSystem::IsPressed);
+
+		if (ImGui::IsItemHovered())
+		{
+			if (orbitHeld || panHeld)
+			{
+				InputSystem::BeginMouseCapture();
+			}
+
+			context_.preview_.skeletonController_.cameraController_.Update(context_.preview_.skeletonController_.camera_, ImGui::GetIO().DeltaTime);
+		}
+
+		if (!orbitHeld && !panHeld)
+		{
+			InputSystem::EndMouseCapture();
+		}
+
+		if (ImGui::IsItemHovered() && ImGui::IsMouseReleased(ImGuiMouseButton_Left) && !ImGui::IsMouseDragging(ImGuiMouseButton_Left, 4.0f) && currentCrister_)
+		{
+			Vector2 mousePosInImage(ImGui::GetMousePos().x - imagePosition.x, ImGui::GetMousePos().y - imagePosition.y);
+			Float ndcX = (mousePosInImage.x / previewSize.x) * 2.0f - 1.0f;
+			Float ndcY = 1.0f - (mousePosInImage.y / previewSize.y) * 2.0f;
+
+			Matrix inverseViewProjection = context_.preview_.skeletonController_.camera_.InverseViewProjection();
+			Vector4 unprojected = Vector4::Transform(Vector4(ndcX, ndcY, 0.5f, 1.0f), inverseViewProjection);
+			Vector3 worldPoint = unprojected.xyz / unprojected.w;
+
+			Vector3 rayOrigin = context_.preview_.skeletonController_.camera_.Eye();
+			Vector3 rayDirection = worldPoint - rayOrigin;
+			rayDirection.Normalize();
+
+			Int closestJointIndex = -1;
+			Float closestDistance = 0.08f;
+
+			std::span<const Node> nodes = currentCrister_->Nodes();
+			for (const Skin& skin : currentCrister_->Skins())
+			{
+				for (Int jointIndex : skin.joints_)
+				{
+					if (jointIndex < 0 || static_cast<Size>(jointIndex) >= nodes.size())
+					{
+						continue;
+					}
+
+					Vector3 jointPosition = nodes[static_cast<Size>(jointIndex)].globalTransform_.Translation();
+					Vector3 toJoint = jointPosition - rayOrigin;
+					Float projectedDistance = toJoint.Dot(rayDirection);
+					if (projectedDistance < 0.0f)
+					{
+						continue;
+					}
+
+					Vector3 closestPointOnRay = rayOrigin + rayDirection * projectedDistance;
+					Float perpendicularDistance = Vector3::Distance(closestPointOnRay, jointPosition);
+					if (perpendicularDistance < closestDistance)
+					{
+						closestDistance = perpendicularDistance;
+						closestJointIndex = jointIndex;
+					}
+				}
+			}
+
+			if (closestJointIndex >= 0)
+			{
+				selectedNodeIndex_ = closestJointIndex;
+			}
+		}
+	}
+
+	void SkeletonControllerPanel::Inspect()
+	{
+		if (!currentCrister_)
+		{
+			ImGui::TextDisabled("プレビュー中のモデルがありません");
+			return;
+		}
+
+		std::span<const Node> nodes = currentCrister_->Nodes();
+
+		if (selectedNodeIndex_ < 0 || static_cast<Size>(selectedNodeIndex_) >= nodes.size())
+		{
+			selectedNodeIndex_ = -1;
+
+			ImGui::TextDisabled("Rig");
+			ImGui::Separator();
+			ImGui::Text("ノード数: %zu", nodes.size());
+			ImGui::Text("スキン数: %zu", currentCrister_->Skins().size());
+			return;
+		}
+
+		const Node& node = nodes[static_cast<Size>(selectedNodeIndex_)];
+
+		ImGui::TextDisabled("Bone");
+		ImGui::Separator();
+		ImGui::Text("名前: %s", node.name_.c_str());
+
+		if (node.parentIndex_ >= 0 && static_cast<Size>(node.parentIndex_) < nodes.size())
+		{
+			ImGui::Text("親: %s", nodes[static_cast<Size>(node.parentIndex_)].name_.c_str());
+		}
+		else
+		{
+			ImGui::Text("親: なし");
+		}
+
+		Vector3 position = node.globalTransform_.Translation();
+		ImGui::Text("位置: (%.3f, %.3f, %.3f)", position.x, position.y, position.z);
+	}
+}

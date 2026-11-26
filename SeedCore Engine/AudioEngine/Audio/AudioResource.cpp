@@ -5,15 +5,17 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Binds the resource to the loader bundle it draws its audio loader
-	* from, starting with no asset loaded.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 音声のローダーを引くためのローダーのまとまりに、このリソースを
-	* 結び付ける。読み込み済みのアセットが無い状態から始まる。
+	* 読み込みに使う係を受け取る。
+	*
+	* @brief 読み込み係を受け取る
+	* @param loaders 読み込みに使う係
+	*
+	* [EN]
+	* Takes the loaders it reads with.
+	*
+	* @brief Takes the loaders
+	* @param loaders The loaders to read with
 	*/
 	AudioResource::AudioResource(AudioLoaderSystem& loaders) :loaders_(loaders)
 	{
@@ -21,13 +23,19 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Loads an audio asset through the generic asset context.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 汎用アセットコンテキストを通じて音声アセットを読み込む。
+	* アセットの番号の音を読み込む。
+	*
+	* @brief 音を読み込む
+	* @param context 読み込みに使う情報
+	* @param assetID 読み込むアセットの番号
+	*
+	* [EN]
+	* Loads the sound with this asset number.
+	*
+	* @brief Loads a sound
+	* @param context What to load with
+	* @param assetID The asset number to load
 	*/
 	void AudioResource::Load(const AssetContext& context, Uint32 assetID)
 	{
@@ -35,16 +43,28 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Loads an audio asset if needed and returns its cached Sound handle.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 必要に応じて音声アセットを読み込み、キャッシュ済みの Sound ハンドルを返す。
+	* アセットの番号の音を読み込む。もう読み込んでいたらそれを返す。
+	*
+	* @brief  音を読み込む
+	* @param  cache   アセットの一覧
+	* @param  assetID 読み込むアセットの番号
+	* @param  thread  読み込むスレッド
+	* @return 音のハンドル。失敗したら空
+	*
+	* [EN]
+	* Loads the sound with this asset number, or returns it if already loaded.
+	*
+	* @brief  Loads a sound
+	* @param  cache   The asset list
+	* @param  assetID The asset number to load
+	* @param  thread  The thread to load on
+	* @return A handle to the sound, or empty on failure
 	*/
 	Handle<Sound> AudioResource::Load(ResourceCache& cache, Uint32 assetID, LoadThread thread)
 	{
+		/// [JP] もう読み込んでいれば、それを返す
+		/// [EN] If it is already loaded, return that
 		if (assetHandleMap_.contains(assetID))
 		{
 			return assetHandleMap_.at(assetID);
@@ -56,6 +76,8 @@ namespace SeedCore
 			return Handle<Sound>::null();
 		}
 
+		/// [JP] ファイルを読み込んで、番号と一緒に覚えておく
+		/// [EN] Read the file and remember it with its number
 		Handle<Sound> handle = loaders_.audioLoader_->Load(asset->fullpath_, thread);
 		if (handle.empty())
 		{
@@ -68,15 +90,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Releases the Sound loaded for an asset ID and removes the mapping.
-	* Does nothing when the asset is not loaded.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* アセット ID に対して読み込まれた Sound を解放し、対応を削除する。
-	* 読み込まれていなければ何もしない。
+	* 読み込んだ音を消す。
+	*
+	* @brief 音を消す
+	* @param assetID 消すアセットの番号
+	*
+	* [EN]
+	* Unloads a sound.
+	*
+	* @brief Unloads a sound
+	* @param assetID The asset number to unload
 	*/
 	void AudioResource::Unload(Uint32 assetID)
 	{
@@ -92,20 +116,23 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Converts the audio source sourceAssetID into the encrypted .audio
-	* cache beside it, overwriting any existing one. Nothing is written
-	* for an asset that already is a cache, or for a ".awb" streamed
-	* alongside its ".acb". Returns false when the source cannot be
-	* converted or the write failed.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 音声素材 sourceAssetID を、その隣の暗号化された .audio キャッシュへ
-	* 変換する（既存があれば上書き）。既にキャッシュであるアセットと、
-	* ".acb" と一緒にストリーミングされる ".awb" には何も書かない。素材を
-	* 変換できない、または書き込みに失敗した場合は false を返す。
+	* 元の音のファイルから、すぐ読めるキャッシュを作る。
+	*
+	* @brief  キャッシュを作る
+	* @param  context       使う情報
+	* @param  sourceAssetID 元のアセットの番号
+	* @param  writtenPaths  書いたファイルの場所が入る
+	* @return うまくいったら true
+	*
+	* [EN]
+	* Makes a quick-to-read cache from the original sound file.
+	*
+	* @brief  Makes a cache
+	* @param  context       What to use
+	* @param  sourceAssetID The original asset number
+	* @param  writtenPaths  Gets the files that were written
+	* @return True if it worked
 	*/
 	Bool AudioResource::Generate(const AssetContext& context, Uint32 sourceAssetID, DynamicArray<String>& writtenPaths)
 	{
@@ -115,8 +142,8 @@ namespace SeedCore
 			return false;
 		}
 
-		/// [EN] A ".awb" is baked into the cache of the ".acb" beside it, so it has no cache of its own.
-		/// [JP] ".awb" は隣の ".acb" のキャッシュへ一緒に焼き込まれるため、自分のキャッシュを持たない。
+		/// [JP] もうキャッシュの形のファイルなら、作る必要はない
+		/// [EN] If the file is already a cache, there is nothing to make
 		std::filesystem::path sourcePath(asset->fullpath_.c_str());
 		std::string extension = sourcePath.extension().string();
 		std::ranges::transform(extension, extension.begin(), [](Uchar c) { return static_cast<Char>(std::tolower(c)); });
@@ -125,6 +152,8 @@ namespace SeedCore
 			return true;
 		}
 
+		/// [JP] 同じ場所に .audio のキャッシュを作る
+		/// [EN] Make a .audio cache next to it
 		std::filesystem::path cachePath = sourcePath;
 		cachePath.replace_extension(".audio");
 		if (!loaders_.audioLoader_->Bake(asset->fullpath_, String(cachePath.string())))
@@ -137,13 +166,19 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Resolves a Sound handle through the audio loader.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* オーディオローダーを通じて Sound ハンドルを解決する。
+	* ハンドルから音そのものを取り出す。
+	*
+	* @brief  音を取り出す
+	* @param  handle 取り出すハンドル
+	* @return 音。なければ nullptr
+	*
+	* [EN]
+	* Gets the sound itself from a handle.
+	*
+	* @brief  Gets the sound
+	* @param  handle The handle to look up
+	* @return The sound, or nullptr if there is none
 	*/
 	Sound* AudioResource::Resolve(const Handle<Sound>& handle)
 	{

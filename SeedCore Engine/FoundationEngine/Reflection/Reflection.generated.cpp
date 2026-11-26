@@ -17,6 +17,7 @@
 #include <GraphicsEngine/Constraint/ParentConstraint.h>
 #include <GraphicsEngine/Constraint/PositionConstraint.h>
 #include <GraphicsEngine/Constraint/RotationConstraint.h>
+#include <GraphicsEngine/Effect/Effect.h>
 #include <GraphicsEngine/Environment/Celestial/Celestial.h>
 #include <GraphicsEngine/Environment/VolumetricCloud/VolumetricCloudScapes.h>
 #include <GraphicsEngine/Environment/VolumetricStar/VolumetricStar.h>
@@ -85,6 +86,7 @@ extern "C" int _force_reflection_LookAtConstraint = 0;
 extern "C" int _force_reflection_ParentConstraint = 0;
 extern "C" int _force_reflection_PositionConstraint = 0;
 extern "C" int _force_reflection_RotationConstraint = 0;
+extern "C" int _force_reflection_Effect = 0;
 extern "C" int _force_reflection_SunSettings = 0;
 extern "C" int _force_reflection_MoonSettings = 0;
 extern "C" int _force_reflection_Celestial = 0;
@@ -802,6 +804,19 @@ namespace SeedCore
 			}
 		};
 		static Register_RotationConstraint global_RotationConstraint_register;
+
+		// ---- GraphicsEngine/Effect/Effect.h ----
+		struct Register_Effect
+		{
+			Register_Effect()
+			{
+				ReflectionRegistry::Register(String("Effect"), [](void* ptr, DynamicArray<FieldInfo>& outInfo) {
+					Effect& obj = *static_cast<Effect*>(ptr);
+					outInfo.push_back({ String("自動再生"), offsetof(Effect, autoPlay_), AttributeType::Bool });
+				});
+			}
+		};
+		static Register_Effect global_Effect_register;
 
 		// ---- GraphicsEngine/Environment/Celestial/Celestial.h ----
 		struct Register_SunSettings

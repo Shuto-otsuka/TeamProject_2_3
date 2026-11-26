@@ -1,21 +1,5 @@
 #include <GraphicsEngine/Texture/Billboard/TextureBillboard.hlsli>
 
-/**
-* [EN]
-* Texture.Billboard: one thread group draws the quads TextureBillboardAS kept
-* inside the frustum from 32 consecutive entries of the billboard section of
-* Texture.Draws, 4 vertices and 2 triangles per quad, in list order so the
-* premultiplied blend layers them as Texture.Expand ordered them.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Texture.Billboard。1 スレッドグループが、Texture.Draws のビルボードの区間の
-* 連続する 32 件から TextureBillboardAS が残した視錐台内の四角形を、
-* 1 四角形 4 頂点・2 三角形で描く。
-* リストの順に出すので、プリマルチプライドのブレンドは Texture.Expand が並べた
-* 順に重なる。
-*/
 [NumThreads(128, 1, 1)]
 [OutputTopology("triangle")]
 void main(uint gtid : SV_GroupThreadID, in payload TextureBillboardPayload payload, out vertices TextureBillboardOutput verts[128], out indices uint3 tris[64])

@@ -11,8 +11,6 @@ namespace SeedCore
 {
 	namespace
 	{
-		/// [EN] One keyframe of the day/night sky gradient.
-		/// [JP] 昼夜の空グラデーションのキーフレーム1つ分。
 		struct SkyGradientStop
 		{
 			Float elevationDegrees_;
@@ -20,11 +18,6 @@ namespace SeedCore
 			Color horizonColor_;
 		};
 
-		/// [EN] Night -> twilight -> sunrise/sunset -> day, keyed by sun elevation.
-		///      Independent of SunSettings (which colors the LIGHT hitting
-		///      surfaces, not the sky background itself).
-		/// [JP] 夜→薄明→朝焼け/夕焼け→昼、太陽の仰角でキー付け。SunSettings
-		///      (物体に当たる光の色)とは独立 - こちらは空背景そのものの色。
 		const SkyGradientStop skyGradientStops_[] =
 		{
 			{ -90.0f, Color(0.01f, 0.015f, 0.03f), Color(0.02f, 0.02f, 0.05f) },
@@ -205,7 +198,6 @@ namespace SeedCore
 		monthOfYear_ = celestial.monthOfYear_;
 		sunAngularRadius_ = sun.angularRadius_;
 
-		/// [JP] 太陽の軌道角: 6時に地平線から昇り、18時に地平線へ沈む単純な円軌道。
 		Float sunAngle = ((celestial.hourOfDay_ - 6.0f) / 24.0f) * Pi<Float>::Two;
 		Float sunElevation = Sin(sunAngle);
 		Float sunHorizontal = Cos(sunAngle);
@@ -213,7 +205,6 @@ namespace SeedCore
 		Vector3 sunDirection = Vector3(sunHorizontal, sunElevation, 0.0f);
 		sunDirection.Normalize();
 
-		/// [JP] 光の進行方向(ライトが指す向き)は、太陽の方向と反対。
 		result.sunDirection_ = -sunDirection;
 
 		Float sunElevationDegrees = ToDegrees(Asin(Clamp(sunElevation, -1.0f, 1.0f)));
@@ -224,7 +215,6 @@ namespace SeedCore
 		result.sunColor_ = Color::Lerp(horizonColor, zenithColor, Clamp(sunElevationDegrees / 45.0f, 0.0f, 1.0f));
 		result.sunIntensity_ = sun.maxIntensity_ * sunHeightFactor;
 
-		/// [JP] 月は太陽の反対側(180度オフセット)。
 		Vector3 moonDirection = -sunDirection;
 		result.moonDirection_ = -moonDirection;
 
@@ -235,14 +225,10 @@ namespace SeedCore
 		result.moonIntensity_ = moon.maxIntensity_ * moonHeightFactor;
 		result.moonAngularRadius_ = moon.angularRadius_;
 
-		/// [JP] 月齢: 月内の日数の進み具合をそのまま位相(0=新月, 0.5=満月, 1=新月)に写す。
 		Float daysPerMonth = Max<Float>(static_cast<Float>(celestial.daysPerMonth_), 1.0f);
 		Float monthProgress = (static_cast<Float>(celestial.dayOfMonth_ - 1) + (celestial.hourOfDay_ / 24.0f)) / daysPerMonth;
 		result.moonPhase_ = std::fmod(monthProgress, 1.0f);
 
-		/// [JP] 夜の強さ: sunHeightFactor(強度用、90度かけてなだらかに明るくなる)
-		///      とは別に、星は薄明が終わってすぐ見えなくなるべきなので、
-		///      minElevationDegrees_ から数度の間で急速にフェードさせる。
 		Float starFadeDegrees = 8.0f;
 		Float starHeightFactor = Clamp((sunElevationDegrees - sun.minElevationDegrees_) / starFadeDegrees, 0.0f, 1.0f);
 		result.nightFactor_ = 1.0f - starHeightFactor;

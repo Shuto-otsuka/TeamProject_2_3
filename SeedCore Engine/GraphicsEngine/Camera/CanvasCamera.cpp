@@ -74,8 +74,6 @@ namespace SeedCore
 
 	void CanvasCamera::FocusOn(Vector3 focusTarget)
 	{
-		/// [EN] Keep the current eye-to-focus offset (zoom / direction) and both Z values; only the XY of eye_/focus_ slides. Tick() runs the interpolation.
-		/// [JP] 現在の eye-focus オフセット（ズーム / 向き）と両者の Z を保ち、eye_/focus_ の XY だけをスライドさせる。補間は Tick() が行う。
 		Vector3 offset = eye_ - focus_;
 
 		focusStartEye_ = eye_;

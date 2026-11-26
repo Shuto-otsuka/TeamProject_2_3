@@ -14,4 +14,4 @@ struct RaytracingReflectionConstantBuffer
 	uint raytracing_reflection_constant_buffer_padding_0_;
 };
 
-#endif // __RAYTRACING_REFLECTION_HLSLI__
+#endif

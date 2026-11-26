@@ -3,9 +3,6 @@
 
 #include <GraphicsEngine/Shader/Normal.hlsli>
 
-// Mirrors the C++ ShadingModel enum (Model/Crister/CristerMaterial.h). Read from
-// ModelShading::shading_model_ and switched on by
-// Opaque/DeferredLightingPS.hlsl's direct-light dispatch.
 #define SHADING_MODEL_PBR 0
 #define SHADING_MODEL_UNLIT 1
 #define SHADING_MODEL_PHONG 2
@@ -14,36 +11,19 @@
 #define SHADING_MODEL_FLAT 5
 #define SHADING_MODEL_FUR 6
 
-// Mirrors the C++ MaterialMapping enum. Read from ModelShading::material_mapping_.
 #define MATERIAL_MAPPING_STRETCH 0
 #define MATERIAL_MAPPING_TILE 1
 #define MATERIAL_MAPPING_TRIPLANAR_OBJECT 2
 #define MATERIAL_MAPPING_TRIPLANAR_WORLD 3
 
-/**
-* [EN]
-* previous_world_ is this instance's own world matrix as of the previous
-* frame - used for velocity (MaterialResolveCS.hlsl/TransparentMS.hlsl)
-* so moving objects get correct motion vectors instead of only reflecting
-* camera motion. Per-bone skinning and morph deformation come from the
-* previous-frame bone palette / morph weights instead
-* (ModelShaderResourceIndices::previous_bone_matrix_index_/previous_morph_weight_index_).
-*/
-struct ModelTransform                     // 12 rows
+struct ModelTransform
 {
 	row_major float4x4 world_;
 	row_major float4x4 inverse_transpose_world_;
 	row_major float4x4 previous_world_;
 };
 
-/**
-* [EN]
-* Bindless SRVs of this instance's geometry buffers (compressed vertices,
-* meshlets, meshlet bounds, meshlet-local vertex indices, packed primitive
-* indices), plus meshlet_offset_/meshlet_count_ - this instance's range
-* into the shared meshlet buffers.
-*/
-struct ModelGeometry                      // 2 rows
+struct ModelGeometry
 {
 	uint vertex_buffer_index_;
 	uint meshlet_buffer_index_;
@@ -55,13 +35,7 @@ struct ModelGeometry                      // 2 rows
 	uint layer_;
 };
 
-/**
-* [EN]
-* Dequantisation AABB for CompressedModelVertex (per Crister), plus the
-* screen-space error in pixels of this instance's cluster as seen from the
-* closest view, and the cluster's level in its LOD chain (0 = most detailed).
-*/
-struct ModelStreaming                     // 3 rows
+struct ModelStreaming
 {
 	float3 position_min_;
 	float texcoord_min_u_;
@@ -74,63 +48,34 @@ struct ModelStreaming                     // 3 rows
 	uint lod_level_;
 };
 
-/**
-* [EN]
-* Per-instance shading parameters copied from the instance's material and
-* its actor. shading_model_ selects the lighting response
-* DeferredLightingPS.hlsl evaluates this instance with;
-* fur_length_/fur_density_/fur_shell_count_ are ShadingModel::Fur tuning.
-* double_sided_/blend_ route the instance to the culling lists and passes
-* that match its faces and alpha mode, and selected_ marks an actor the
-* editor has selected. material_mapping_/tiling_/triplanar_sharpness_
-* decide how the material's textures are placed (MaterialMapping.hlsli),
-* and actor_ is the entity index of the actor the instance belongs to,
-* which the outline looks its style up by (OutlineCS.hlsl).
-*/
-struct ModelShading                       // 3 rows
+struct ModelShading
 {
-	/// Lighting response the deferred lighting pass evaluates this instance with (SHADING_MODEL_*).
 	uint shading_model_;
 
-	/// Fur shell height in metres (SHADING_MODEL_FUR).
 	float fur_length_;
 
-	/// Per-strand hash-noise density of the fur (SHADING_MODEL_FUR).
 	float fur_density_;
 
-	/// Number of shell layers drawn above the base surface (SHADING_MODEL_FUR).
 	uint fur_shell_count_;
 
-	/// 1 when the material draws both faces; culling puts the instance in the double-sided list and skips back-face rejection.
 	uint double_sided_;
 
-	/// 1 when the material's alpha mode is BLEND; the instance is drawn by the transparent (OIT) pass instead of the opaque ones.
 	uint blend_;
 
-	/// 1 when the instance's actor is selected in the editor.
 	uint selected_;
 
-	/// How the material's textures are placed (MATERIAL_MAPPING_*).
 	uint material_mapping_;
 
-	/// Pattern repetitions per unit of scaled size; unused by MATERIAL_MAPPING_STRETCH.
 	float tiling_;
 
-	/// Exponent applied to the normal before it weights the three Triplanar projections.
 	float triplanar_sharpness_;
 
-	/// Entity index of the actor the instance belongs to, indexing Outline.Styles; MODEL_INVALID for an instance with no actor.
 	uint actor_;
 
 	uint model_shading_padding_0_;
 };
 
-/**
-* [EN]
-* skin_vertex_buffer_index_ is the bindless SRV of the CompressedModelSkin
-* buffer (0xFFFFFFFF for a static, unskinned instance).
-*/
-struct ModelSkining                       // 1 row
+struct ModelSkining
 {
 	uint skin_index_;
 	uint bone_offset_;
@@ -138,24 +83,7 @@ struct ModelSkining                       // 1 row
 	uint model_skining_padding_0_;
 };
 
-/**
-* [EN]
-* Raster morph blend (see the model mesh shaders and
-* Model/Material/MaterialResolveCS.hlsl/Model/Transparent/TransparentMS.hlsl).
-* morph_delta_offset_ is in float3 units into morph_delta_buffer_index_; morph_vertex_offset_/
-* morph_vertex_count_ are this SubMesh's Crister::vertices_ range start and
-* ORIGINAL (pre-LOD) vertex count; morph_weight_offset_ indexes into the
-* shared per-frame morph weight buffer. morph_target_count_ == 0 disables
-* blending entirely - always the case for a non-morphed instance, and also
-* for a morphed instance drawn from an own-page (streamed-in, non-pool)
-* cluster: only the LOD 0 shared vertex pool range is index-aligned with
-* morph_delta_buffer_index_/vertex_morph_source_buffer_index_'s
-* crister-wide numbering (see Crister::vertexMorphSource_'s comment), so
-* ModelRenderer leaves these zeroed for any other cluster and that
-* instance's coarser LOD renders its frozen bind-pose shape instead of
-* morphing.
-*/
-struct ModelMorphing                         // 2 rows
+struct ModelMorphing
 {
 	uint morph_delta_buffer_index_;
 	uint vertex_morph_source_buffer_index_;
@@ -168,16 +96,7 @@ struct ModelMorphing                         // 2 rows
 	uint model_morph_padding_0_;
 };
 
-/**
-* [EN]
-* Base PBR values and their matching bindless texture SRVs. ior_ is
-* KHR_materials_ior; emissive_strength_ is KHR_materials_emissive_strength.
-* All four base textures plus occlusion_texture_index_ are sampled by
-* Model/Opaque/DeferredLightingPS.hlsl using the model UV recovered from
-* the VisibilityBuffer (RT4.zw) - the deferred pass has no interpolated
-* texcoord of its own.
-*/
-struct ModelTexture                       // 5 rows
+struct ModelTexture
 {
 	float4 base_color_;
 	float metallic_;
@@ -197,14 +116,7 @@ struct ModelTexture                       // 5 rows
 	uint3 model_texture_padding_0_;
 };
 
-/**
-* [EN]
-* KHR extension material values/textures (specular, clearcoat, anisotropy,
-* transmission, volume, sheen, iridescence, unlit). Each texture multiplies
-* its matching factor per the glTF spec's channel convention; 0xFFFFFFFF
-* means absent.
-*/
-struct ModelExtension                     // 9 rows
+struct ModelExtension
 {
 	float specular_factor_;
 	float3 specular_color_;
@@ -237,16 +149,6 @@ struct ModelExtension                     // 9 rows
 	uint2 model_extension_padding_0_;
 };
 
-/**
-* [EN]
-* Per-instance StructuredBuffer element read by every Model pass (depth
-* prepass, shadow, G-buffer, deferred lighting, GI/reflection/refraction
-* raytracing, OIT). Grouped by concern so the cheap, frequently-run passes
-* (depth/shadow/culling) only ever touch transform_/geometry_/streaming_ -
-* those three sit contiguously at the front so they share the fewest cache
-* lines, while the material-heavy texture_/extension_ groups (used only by
-* the lighting passes) sit at the back.
-*/
 struct ModelStructuredBuffer
 {
 	ModelTransform transform_;
@@ -259,12 +161,6 @@ struct ModelStructuredBuffer
 	ModelExtension extension_;
 };
 
-/**
-* [EN]
-* Fully expanded vertex, produced by DecodeModelVertex from a
-* CompressedModelVertex. Skinning attributes live in the separate
-* CompressedModelSkin buffer (skinned models only), not here.
-*/
 struct ExpandedModelVertex
 {
 	float3 position_;
@@ -273,15 +169,6 @@ struct ExpandedModelVertex
 	float2 texcoord_;
 };
 
-/**
-* [EN]
-* Mirrors the C++ CompressedVertex (Model/Crister/CristerGeometry.h) - 16
-* bytes. position_xy_/position_z_texu_ pack position (UNORM in the instance's
-* position AABB) and texcoord u (UNORM in the instance's UV AABB) as 16-bit
-* fields; texv_tangent_ packs texcoord v plus an octahedral-encoded tangent
-* (x:8 y:7) and its handedness sign (bit 15); normal_ is the
-* octahedral-encoded normal (x:16 y:16).
-*/
 struct CompressedModelVertex
 {
 	uint position_xy_;
@@ -290,12 +177,6 @@ struct CompressedModelVertex
 	uint normal_;
 };
 
-/**
-* [EN]
-* Mirrors the C++ CompressedSkinVertex (Model/Crister/CristerGeometry.h) - 12
-* bytes. joints_xy_/joints_zw_ pack the four influencing joint indices as
-* 16-bit fields; weights_ packs their four blend weights as 8-bit UNORM.
-*/
 struct CompressedModelSkin
 {
 	uint joints_xy_;
@@ -303,23 +184,12 @@ struct CompressedModelSkin
 	uint weights_;
 };
 
-/**
-* [EN]
-* Unpacked skinning attributes, produced by DecodeSkinVertex from a
-* CompressedModelSkin. weights_ is renormalised because four 8-bit UNORM
-* values rarely sum to exactly one.
-*/
 struct ExpandedModelSkin
 {
 	uint4 joints_;
 	float4 weights_;
 };
 
-/**
-* [EN]
-* One meshlet's range into the shared vertex-index/primitive-index buffers
-* (ModelGeometry::vertex_indices_buffer_index_/primitive_indices_buffer_index_).
-*/
 struct ModelMeshlet
 {
 	uint vertex_offset_;
@@ -328,11 +198,6 @@ struct ModelMeshlet
 	uint triangle_count_;
 };
 
-/**
-* [EN]
-* Bounding sphere (center_/radius_) plus normal cone (cone_axis_/
-* cone_cutoff_) of one meshlet in object space, read by the meshlet culling.
-*/
 struct ModelMeshletBound
 {
 	float3 center_;
@@ -341,13 +206,6 @@ struct ModelMeshletBound
 	float cone_cutoff_;
 };
 
-/**
-* [EN]
-* Bone palette element (inverse bind matrix x joint global transform), stored
-* as the engine Matrix (row-major, row-vector convention). Kept as four
-* explicit row vectors so the layout does not depend on matrix-orientation
-* annotations inside structured buffers - see LoadBoneMatrix.
-*/
 struct ModelBoneMatrix
 {
 	float4 row0_;
@@ -356,11 +214,6 @@ struct ModelBoneMatrix
 	float4 row3_;
 };
 
-/**
-* [EN]
-* Dequantises a CompressedModelVertex with the instance's AABBs
-* (instance.streaming_). Matches the CPU encode in Crister.cpp exactly.
-*/
 ExpandedModelVertex DecodeModelVertex(CompressedModelVertex packed, ModelStructuredBuffer instance)
 {
 	ExpandedModelVertex vertex;
@@ -376,10 +229,6 @@ ExpandedModelVertex DecodeModelVertex(CompressedModelVertex packed, ModelStructu
 	return vertex;
 }
 
-/**
-* [EN]
-* Unpacks a CompressedModelSkin's joints/weights.
-*/
 ExpandedModelSkin DecodeSkinVertex(CompressedModelSkin packed)
 {
 	ExpandedModelSkin skin;
@@ -389,34 +238,16 @@ ExpandedModelSkin DecodeSkinVertex(CompressedModelSkin packed)
 	return skin;
 }
 
-/**
-* [EN]
-* Rebuilds the row-vector-convention matrix (use as mul(vector, matrix)).
-* The float4x4 vector constructor takes rows, so this is orientation-safe.
-*/
 float4x4 LoadBoneMatrix(ModelBoneMatrix bone)
 {
 	return float4x4(bone.row0_, bone.row1_, bone.row2_, bone.row3_);
 }
 
-/**
-* [EN]
-* Packs a triangle's Visibility-Buffer identity: x is the index into
-* ModelInstances plus one, so the cleared value 0 means no triangle covers
-* the pixel; y keeps the low 7 bits for triangle_in_meshlet_index
-* (meshlets emit at most 124 triangles) and the high bits for meshlet_index.
-* The texcoord is written separately to VisibilityUV.
-*/
 uint2 PackVisibilityID(uint instance_index, uint meshlet_index, uint triangle_in_meshlet_index)
 {
 	return uint2(instance_index + 1, (meshlet_index << 7) | (triangle_in_meshlet_index & 0x7F));
 }
 
-/**
-* [EN]
-* Unpacks the instance/meshlet/triangle-in-meshlet fields packed by
-* PackVisibilityID. Callers check packed.x for 0 (no triangle) first.
-*/
 void UnpackVisibilityID(uint2 packed, out uint instance_index, out uint meshlet_index, out uint triangle_in_meshlet_index)
 {
 	instance_index = packed.x - 1;
@@ -604,4 +435,4 @@ struct ModelExpandConstantBuffer
     uint2 model_expand_constant_buffer_padding_0_;
 };
 
-#endif // __MODEL_HLSL__
+#endif

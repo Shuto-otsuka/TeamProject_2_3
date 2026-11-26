@@ -13,38 +13,36 @@ static_assert(std::is_same_v<SeedCore::ScAudioBankHandle, CriAtomExAcbHn>);
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Creates the shared 3D listener.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 共有の 3D リスナーを生成する。
+	* 音を聞く側（リスナー）を1つ作って準備する。
+	*
+	* @brief 音を聞く側を作って準備する
+	*
+	* [EN]
+	* Sets up by creating the one listener that hears the sound.
+	*
+	* @brief Creates the listener and gets ready
 	*/
 	Audio::Audio() :criManager_(Gateway::GetCriManager())
 	{
-		/// [EN] One listener for the whole World; every 3D source attached later is heard from it.
-		/// [JP] World 全体で1つのリスナー。後から取り付ける 3D ソースは全てこれで聞き取る。
 		listener_ = criAtomEx3dListener_Create(nullptr, nullptr, 0);
 	}
 
 	/**
-	* [EN]
-	* Stops and destroys every player, then destroys every 3D source and
-	* the listener. If the CRI library has already been finalized, only the
-	* bookkeeping is cleared.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 全てのプレイヤーを停止して破棄し、続けて全ての 3D ソースとリスナー
-	* を破棄する。CRI ライブラリが既に終了している場合は、管理用の配列
-	* だけを空にする。
+	* 作ったプレイヤーと音源とリスナーを全部片付ける。
+	*
+	* @brief 作ったものを全部片付ける
+	*
+	* [EN]
+	* Cleans up every player, source and the listener it made.
+	*
+	* @brief Cleans up everything it made
 	*/
 	Audio::~Audio()
 	{
-		/// [EN] After CRI shutdown the handles are already invalid, so destroying them again would crash.
-		/// [JP] CRI 終了後はハンドルが既に無効で、もう一度破棄するとクラッシュするため。
+		/// [JP] 音のライブラリがもう止まっていたら、手元の記録だけ消して終わる
+		/// [EN] If the sound library is already stopped, just forget what we kept and finish
 		if (!criAtomEx_IsInitialized())
 		{
 			players_.clear();
@@ -53,8 +51,8 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Players first: a voice still playing may reference a 3D source.
-		/// [JP] プレイヤーを先に: 再生中のボイスが 3D ソースを参照している場合があるため。
+		/// [JP] プレイヤーを止めてから消す
+		/// [EN] Stop each player, then remove it
 		for (CriAtomExPlayerHn player : players_)
 		{
 			criAtomExPlayer_Stop(player);
@@ -62,6 +60,8 @@ namespace SeedCore
 		}
 		players_.clear();
 
+		/// [JP] 音源とリスナーも消す
+		/// [EN] Remove the sources and the listener too
 		for (CriAtomEx3dSourceHn source : sources_)
 		{
 			criAtomEx3dSource_Destroy(source);
@@ -76,20 +76,20 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Creates a player and tracks it for release on destruction. Returns
-	* null if CRI cannot create one.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* プレイヤーを生成し、破棄時に解放できるよう追跡する。CRI が生成に
-	* 失敗した場合は null を返す。
+	* 音を鳴らすプレイヤーを1つ作る。
+	*
+	* @brief  プレイヤーを作る
+	* @return 作ったプレイヤー。作れなかったら nullptr
+	*
+	* [EN]
+	* Makes one player that plays sound.
+	*
+	* @brief  Makes a player
+	* @return The new player, or nullptr if it could not be made
 	*/
 	CriAtomExPlayerHn Audio::CreatePlayer()
 	{
-		/// [EN] Default player settings, with CRI allocating the work memory itself.
-		/// [JP] 既定のプレイヤー設定。ワークメモリは CRI 側で確保させる。
 		CriAtomExPlayerHn player = criAtomExPlayer_Create(nullptr, nullptr, 0);
 		if (!player)
 		{
@@ -101,13 +101,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Stops, untracks and destroys a player.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* プレイヤーを停止し、追跡から外して破棄する。
+	* プレイヤーを止めてから消す。
+	*
+	* @brief プレイヤーを消す
+	* @param player 消すプレイヤー
+	*
+	* [EN]
+	* Stops a player and then removes it.
+	*
+	* @brief Removes a player
+	* @param player The player to remove
 	*/
 	void Audio::DestroyPlayer(CriAtomExPlayerHn player)
 	{
@@ -116,8 +120,6 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Untrack first so the destructor never destroys this handle a second time.
-		/// [JP] 先に追跡から外し、デストラクタがこのハンドルを二重に破棄しないようにする。
 		erase(players_, player);
 
 		criAtomExPlayer_Stop(player);
@@ -125,20 +127,20 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Creates a 3D source and tracks it for release on destruction.
-	* Returns null if CRI cannot create one.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 3D ソースを生成し、破棄時に解放できるよう追跡する。CRI が生成に
-	* 失敗した場合は null を返す。
+	* 音が出る場所（音源）を1つ作る。
+	*
+	* @brief  音源を作る
+	* @return 作った音源。作れなかったら nullptr
+	*
+	* [EN]
+	* Makes one place that sound comes from.
+	*
+	* @brief  Makes a source
+	* @return The new source, or nullptr if it could not be made
 	*/
 	CriAtomEx3dSourceHn Audio::CreateSource()
 	{
-		/// [EN] Default source settings, with CRI allocating the work memory itself.
-		/// [JP] 既定のソース設定。ワークメモリは CRI 側で確保させる。
 		CriAtomEx3dSourceHn source = criAtomEx3dSource_Create(nullptr, nullptr, 0);
 		if (!source)
 		{
@@ -150,13 +152,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Untracks and destroys a 3D source.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 3D ソースを追跡から外して破棄する。
+	* 音源を消す。
+	*
+	* @brief 音源を消す
+	* @param source 消す音源
+	*
+	* [EN]
+	* Removes a source.
+	*
+	* @brief Removes a source
+	* @param source The source to remove
 	*/
 	void Audio::DestroySource(CriAtomEx3dSourceHn source)
 	{
@@ -165,35 +171,43 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Untrack first so the destructor never destroys this handle a second time.
-		/// [JP] 先に追跡から外し、デストラクタがこのハンドルを二重に破棄しないようにする。
 		erase(sources_, source);
 
 		criAtomEx3dSource_Destroy(source);
 	}
 
 	/**
-	* [EN]
-	* Plays the cue named cueName from a cue-sheet Sound (an ACB). Needs the
-	* ACF to be registered and the Sound's ACB to be loaded; logs a warning
-	* and does nothing otherwise.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* キューシートの Sound(ACB)から、cueName という名前のキューを再生
-	* する。ACF が登録済みで、Sound の ACB が読み込み済みである必要があり、
-	* そうでなければ警告を出して何もしない。
+	* キューシートの中の音を、名前を指定して鳴らす。
+	*
+	* @brief 名前を指定してキューを鳴らす
+	* @param player  鳴らすプレイヤー
+	* @param sound   キューシートの音
+	* @param cueName 鳴らすキューの名前
+	* @param loop    くり返すなら true
+	* @note  ACF が登録されていないと鳴らない
+	*
+	* [EN]
+	* Plays a sound in a cue sheet by its name.
+	*
+	* @brief Plays a cue by name
+	* @param player  The player to use
+	* @param sound   The cue sheet sound
+	* @param cueName The name of the cue to play
+	* @param loop    True to repeat it
+	* @note  Nothing plays unless an ACF is registered
 	*/
 	void Audio::PlayCue(CriAtomExPlayerHn player, Sound& sound, const String& cueName, Bool loop)
 	{
+		/// [JP] プレイヤーとキューシートと名前がそろっていなければ鳴らさない
+		/// [EN] Do nothing unless there is a player, a cue sheet and a name
 		if (!player || sound.Type() != SoundType::CueSheet || cueName.view().empty())
 		{
 			return;
 		}
 
-		/// [EN] Cue playback needs the ACF (categories, buses, DSP) to be registered first.
-		/// [JP] キュー再生には、先に ACF(カテゴリ・バス・DSP)が登録されている必要がある。
+		/// [JP] ACF が登録されていないとキューシートは鳴らせない
+		/// [EN] A cue sheet cannot play unless an ACF is registered
 		CriAtomExAcfInfo acfInfo{};
 		if (criAtomExAcf_GetAcfInfo(&acfInfo) != CRI_TRUE)
 		{
@@ -201,20 +215,16 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] The cue sheet itself must already be loaded into CRI.
-		/// [JP] キューシート自体も CRI へ読み込み済みである必要がある。
 		if (!sound.AcbHandle())
 		{
 			SC_LOG_WARNING("Audio: ACBがCRIへ登録されていないため、キューシートを再生できません");
 			return;
 		}
 
-		/// [EN] Looping plays the cue's loop region forever; otherwise the loop region is skipped.
-		/// [JP] ループならキューのループ区間を無限に繰り返し、そうでなければループ区間を無視する。
+		/// [JP] くり返しの設定をしてから、名前でキューを選んで鳴らす
+		/// [EN] Set up looping, pick the cue by name and play it
 		criAtomExPlayer_LimitLoopCount(player, loop ? CRIATOMEXPLAYER_NO_LOOP_LIMITATION : CRIATOMEXPLAYER_IGNORE_LOOP);
 
-		/// [EN] Clear any wave-loop callback left from a previous PlayWave on this player.
-		/// [JP] このプレイヤーで以前に PlayWave した際の、波形ループ用コールバックを外す。
 		criAtomExPlayer_SetDataRequestCallback(player, nullptr, nullptr);
 
 		criAtomExPlayer_SetCueName(player, sound.AcbHandle(), cueName.c_str());
@@ -222,49 +232,47 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Plays a raw .wav Sound on the player. The channel count and sampling
-	* rate are read from the file's "fmt " chunk; a file that is not
-	* RIFF/WAVE or has no usable "fmt " chunk is ignored.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 生の .wav の Sound をプレイヤーで再生する。チャンネル数とサンプリング
-	* レートはファイルの "fmt " チャンクから読む。RIFF/WAVE でないファイルや、
-	* 使える "fmt " チャンクが無いファイルは無視する。
+	* WAV の音をそのまま鳴らす。
+	*
+	* @brief WAV を鳴らす
+	* @param player 鳴らすプレイヤー
+	* @param sound  WAV の音
+	* @param loop   くり返すなら true
+	*
+	* [EN]
+	* Plays a WAV sound as it is.
+	*
+	* @brief Plays a WAV
+	* @param player The player to use
+	* @param sound  The WAV sound
+	* @param loop   True to repeat it
 	*/
 	void Audio::PlayWave(CriAtomExPlayerHn player, Sound& sound, Bool loop)
 	{
-		/// [EN] 44 bytes is the smallest possible header (RIFF + "fmt " + "data").
-		/// [JP] 44 バイトは、ヘッダ(RIFF + "fmt " + "data")が取りうる最小の大きさ。
+		/// [JP] WAV のデータとして正しい形かを確かめる
+		/// [EN] Make sure the data really is a WAV
 		if (!player || sound.Type() != SoundType::Wave || !sound.Data() || sound.DataSize() < 44)
 		{
 			return;
 		}
 
-		/// [EN] Bytes 0-3 must be "RIFF" and bytes 8-11 must be "WAVE".
-		/// [JP] 0〜3 バイト目が "RIFF"、8〜11 バイト目が "WAVE" である必要がある。
 		const Byte* bytes = static_cast<const Byte*>(sound.Data());
 		if (std::memcmp(bytes, "RIFF", 4) != 0 || std::memcmp(bytes + 8, "WAVE", 4) != 0)
 		{
 			return;
 		}
 
-		/// [EN] Walk the chunks after the 12-byte RIFF header until "fmt " is found.
-		/// [JP] 12 バイトの RIFF ヘッダの後ろのチャンクを、"fmt " が見つかるまでたどる。
+		/// [JP] fmt の部分を探して、チャンネル数とサンプリングレートを読む
+		/// [EN] Find the fmt part and read the channel count and sample rate
 		Uint16 channels = 0;
 		Uint32 samplingRate = 0;
 		Size offset = 12;
 		while (offset + 8 <= sound.DataSize())
 		{
-			/// [EN] Each chunk is a 4-byte id followed by a 4-byte little-endian size.
-			/// [JP] 各チャンクは、4 バイトの ID と 4 バイトのリトルエンディアンのサイズで始まる。
 			Uint32 chunkSize = 0;
 			std::memcpy(&chunkSize, bytes + offset + 4, 4);
 
-			/// [EN] In "fmt ", the channel count is at +10 and the sampling rate at +12.
-			/// [JP] "fmt " の中では、チャンネル数が +10、サンプリングレートが +12 にある。
 			if (std::memcmp(bytes + offset, "fmt ", 4) == 0 && chunkSize >= 16)
 			{
 				std::memcpy(&channels, bytes + offset + 10, 2);
@@ -272,8 +280,6 @@ namespace SeedCore
 				break;
 			}
 
-			/// [EN] Chunks are padded to an even size, so an odd size skips one extra byte.
-			/// [JP] チャンクは偶数サイズに詰められるので、奇数サイズなら 1 バイト余分に飛ばす。
 			offset += 8 + static_cast<Size>(chunkSize) + (chunkSize & 1);
 		}
 
@@ -282,28 +288,32 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Hand the whole file to CRI, which parses the rest of the wave format itself.
-		/// [JP] ファイル全体を CRI に渡す。残りの波形フォーマットは CRI 側が解釈する。
+		/// [JP] 読んだ情報をプレイヤーに渡す
+		/// [EN] Hand what we read to the player
 		criAtomExPlayer_SetData(player, sound.Data(), static_cast<CriSint32>(sound.DataSize()));
 		criAtomExPlayer_SetFormat(player, CRIATOMEX_FORMAT_WAVE);
 		criAtomExPlayer_SetNumChannels(player, static_cast<CriSint32>(channels));
 		criAtomExPlayer_SetSamplingRate(player, static_cast<CriSint32>(samplingRate));
 
-		/// [EN] Looping: when the data runs out, feed the same buffer again for a gapless repeat.
-		/// [JP] ループ: データを使い切ったら同じバッファをもう一度渡し、途切れず繰り返す。
+		/// [JP] くり返すときは、終わったら同じデータをもう一度流す
+		/// [EN] When looping, feed the same data again once it ends
 		criAtomExPlayer_SetDataRequestCallback(player, loop ? static_cast<CriAtomExPlayerDataRequestCbFunc>([](void* obj, CriAtomExPlaybackId playbackID, CriAtomPlayerHn atomPlayer) { criAtomPlayer_SetPreviousDataAgain(atomPlayer); }) : nullptr, nullptr);
 
 		criAtomExPlayer_Start(player);
 	}
 
 	/**
-	* [EN]
-	* Stops every voice the player is playing.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* プレイヤーが再生中の全てのボイスを停止する。
+	* 音を止める。
+	*
+	* @brief 音を止める
+	* @param player 止めるプレイヤー
+	*
+	* [EN]
+	* Stops the sound.
+	*
+	* @brief Stops the sound
+	* @param player The player to stop
 	*/
 	void Audio::Stop(CriAtomExPlayerHn player)
 	{
@@ -316,13 +326,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Pauses the player's playback.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* プレイヤーの再生を一時停止する。
+	* 音を一時停止する。
+	*
+	* @brief 一時停止する
+	* @param player 一時停止するプレイヤー
+	*
+	* [EN]
+	* Pauses the sound.
+	*
+	* @brief Pauses
+	* @param player The player to pause
 	*/
 	void Audio::Pause(CriAtomExPlayerHn player)
 	{
@@ -335,13 +349,17 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Resumes every paused voice of the player.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* プレイヤーの一時停止中の全てのボイスを再開する。
+	* 一時停止した音を続きから鳴らす。
+	*
+	* @brief 再開する
+	* @param player 再開するプレイヤー
+	*
+	* [EN]
+	* Plays a paused sound again from where it stopped.
+	*
+	* @brief Resumes
+	* @param player The player to resume
 	*/
 	void Audio::Resume(CriAtomExPlayerHn player)
 	{
@@ -350,20 +368,23 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] ALL_PLAYBACK resumes paused voices and also starts ones held by criAtomExPlayer_Prepare.
-		/// [JP] ALL_PLAYBACK は、一時停止中のボイスに加え、Prepare で待機中のボイスも開始させる。
 		criAtomExPlayer_Resume(player, CRIATOMEX_RESUME_ALL_PLAYBACK);
 	}
 
 	/**
-	* [EN]
-	* Sets the player's volume and applies it to the voices that are
-	* already playing.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* プレイヤーの音量を設定し、既に再生中のボイスにも反映する。
+	* 音の大きさを変える。
+	*
+	* @brief 音量を変える
+	* @param player 変えるプレイヤー
+	* @param volume 音量。1 がそのままの大きさ
+	*
+	* [EN]
+	* Changes how loud the sound is.
+	*
+	* @brief Changes the volume
+	* @param player The player to change
+	* @param volume The volume; 1 is the normal loudness
 	*/
 	void Audio::Volume(CriAtomExPlayerHn player, Float volume)
 	{
@@ -372,22 +393,24 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Set only affects the next Start; UpdateAll pushes it to the voices already playing.
-		/// [JP] Set だけでは次の Start からしか効かないので、UpdateAll で再生中のボイスにも反映する。
 		criAtomExPlayer_SetVolume(player, volume);
 		criAtomExPlayer_UpdateAll(player);
 	}
 
 	/**
-	* [EN]
-	* Sets the player's pitch shift in cents and applies it to the voices
-	* that are already playing.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* プレイヤーのピッチ変化をセント単位で設定し、既に再生中のボイスにも
-	* 反映する。
+	* 音の高さを変える。
+	*
+	* @brief 音の高さを変える
+	* @param player 変えるプレイヤー
+	* @param cents  高さ。100 で半音上がる
+	*
+	* [EN]
+	* Changes how high the sound is.
+	*
+	* @brief Changes the pitch
+	* @param player The player to change
+	* @param cents  The pitch; 100 raises it by a half step
 	*/
 	void Audio::Pitch(CriAtomExPlayerHn player, Float cents)
 	{
@@ -396,22 +419,24 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Set only affects the next Start; UpdateAll pushes it to the voices already playing.
-		/// [JP] Set だけでは次の Start からしか効かないので、UpdateAll で再生中のボイスにも反映する。
 		criAtomExPlayer_SetPitch(player, cents);
 		criAtomExPlayer_UpdateAll(player);
 	}
 
 	/**
-	* [EN]
-	* Makes the player positional, heard from source's position by the
-	* shared listener.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* プレイヤーを立体音響にし、共有リスナーから source の位置で聞こえる
-	* ようにする。
+	* プレイヤーに音源をつなげて、音が場所から聞こえるようにする。
+	*
+	* @brief 音源をつなげる
+	* @param player つなげるプレイヤー
+	* @param source つなげる音源
+	*
+	* [EN]
+	* Connects a source to a player so the sound comes from a place.
+	*
+	* @brief Connects a source
+	* @param player The player to connect
+	* @param source The source to connect
 	*/
 	void Audio::AttachSource(CriAtomExPlayerHn player, CriAtomEx3dSourceHn source)
 	{
@@ -420,25 +445,25 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] A 3D voice needs both ends: the emitter (source) and the ear (listener).
-		/// [JP] 3D のボイスには、発音側(source)と聴取側(listener)の両方が必要。
 		criAtomExPlayer_Set3dSourceHn(player, source);
 		criAtomExPlayer_Set3dListenerHn(player, listener_);
 
-		/// [EN] Pan from the source's 3D position instead of the cue's authored panning.
-		/// [JP] キューに設定されたパンではなく、ソースの 3D 位置から定位を決める。
 		criAtomExPlayer_SetPanType(player, CRIATOMEX_PAN_TYPE_3D_POS);
 		criAtomExPlayer_UpdateAll(player);
 	}
 
 	/**
-	* [EN]
-	* Makes the player non-positional again.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* プレイヤーを立体音響でない状態に戻す。
+	* 音源を外して、普通の（場所のない）音に戻す。
+	*
+	* @brief 音源を外す
+	* @param player 外すプレイヤー
+	*
+	* [EN]
+	* Takes the source off so it is a normal sound with no place again.
+	*
+	* @brief Disconnects the source
+	* @param player The player to disconnect
 	*/
 	void Audio::DetachSource(CriAtomExPlayerHn player)
 	{
@@ -450,20 +475,26 @@ namespace SeedCore
 		criAtomExPlayer_Set3dSourceHn(player, nullptr);
 		criAtomExPlayer_Set3dListenerHn(player, nullptr);
 
-		/// [EN] AUTO goes back to whatever panning the cue itself was authored with.
-		/// [JP] AUTO は、キュー自身に設定されたパンの方式へ戻す。
 		criAtomExPlayer_SetPanType(player, CRIATOMEX_PAN_TYPE_AUTO);
 		criAtomExPlayer_UpdateAll(player);
 	}
 
 	/**
-	* [EN]
-	* Moves a 3D source to position with velocity.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 3D ソースを position へ移動し、速度 velocity を設定する。
+	* 音源の場所と動く速さを更新する。
+	*
+	* @brief 音源の場所を更新する
+	* @param source   更新する音源
+	* @param position 音源の場所
+	* @param velocity 音源の動く速さ
+	*
+	* [EN]
+	* Updates where a source is and how fast it moves.
+	*
+	* @brief Updates the source position
+	* @param source   The source to update
+	* @param position Where the source is
+	* @param velocity How fast the source moves
 	*/
 	void Audio::UpdateSource(CriAtomEx3dSourceHn source, const Vector3& position, const Vector3& velocity)
 	{
@@ -472,35 +503,41 @@ namespace SeedCore
 			return;
 		}
 
+		/// [JP] エンジンの形から音のライブラリの形に写す
+		/// [EN] Copy from the engine's format into the sound library's format
 		CriAtomExVector sourcePosition{};
 		sourcePosition.x = position.x;
 		sourcePosition.y = position.y;
 		sourcePosition.z = position.z;
 
-		/// [EN] Velocity is what CRI uses to compute the Doppler shift.
-		/// [JP] 速度は、CRI がドップラー効果を計算するために使う。
 		CriAtomExVector sourceVelocity{};
 		sourceVelocity.x = velocity.x;
 		sourceVelocity.y = velocity.y;
 		sourceVelocity.z = velocity.z;
 
-		/// [EN] The Set calls are only staged; Update applies them to the playing voices.
-		/// [JP] Set の呼び出しは溜めておくだけで、Update で再生中のボイスに反映される。
 		criAtomEx3dSource_SetPosition(source, &sourcePosition);
 		criAtomEx3dSource_SetVelocity(source, &sourceVelocity);
 		criAtomEx3dSource_Update(source);
 	}
 
 	/**
-	* [EN]
-	* Moves the shared listener to position, facing front with up as its up
-	* direction, moving at velocity.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 共有リスナーを position へ移動し、front 方向を向き up を上方向とする
-	* 向きと、速度 velocity を設定する。
+	* 音を聞く側の場所と向きと速さを更新する。
+	*
+	* @brief リスナーを更新する
+	* @param position 聞く側の場所
+	* @param front    前の向き
+	* @param up       上の向き
+	* @param velocity 動く速さ
+	*
+	* [EN]
+	* Updates where the listener is, which way it faces and how fast it moves.
+	*
+	* @brief Updates the listener
+	* @param position Where the listener is
+	* @param front    The forward direction
+	* @param up       The up direction
+	* @param velocity How fast it moves
 	*/
 	void Audio::UpdateListener(const Vector3& position, const Vector3& front, const Vector3& up, const Vector3& velocity)
 	{
@@ -509,13 +546,13 @@ namespace SeedCore
 			return;
 		}
 
+		/// [JP] 場所・前・上・速さを音のライブラリの形に写す
+		/// [EN] Copy position, front, up and velocity into the sound library's format
 		CriAtomExVector listenerPosition{};
 		listenerPosition.x = position.x;
 		listenerPosition.y = position.y;
 		listenerPosition.z = position.z;
 
-		/// [EN] Front and up together define which way is left/right for panning.
-		/// [JP] front と up の組で、パンにおける左右の向きが決まる。
 		CriAtomExVector listenerFront{};
 		listenerFront.x = front.x;
 		listenerFront.y = front.y;
@@ -526,15 +563,13 @@ namespace SeedCore
 		listenerUp.y = up.y;
 		listenerUp.z = up.z;
 
-		/// [EN] Velocity is what CRI uses to compute the Doppler shift.
-		/// [JP] 速度は、CRI がドップラー効果を計算するために使う。
 		CriAtomExVector listenerVelocity{};
 		listenerVelocity.x = velocity.x;
 		listenerVelocity.y = velocity.y;
 		listenerVelocity.z = velocity.z;
 
-		/// [EN] The Set calls are only staged; Update applies them to the playing voices.
-		/// [JP] Set の呼び出しは溜めておくだけで、Update で再生中のボイスに反映される。
+		/// [JP] 写した値をリスナーに渡して更新する
+		/// [EN] Hand the values to the listener and update it
 		criAtomEx3dListener_SetPosition(listener_, &listenerPosition);
 		criAtomEx3dListener_SetOrientation(listener_, &listenerFront, &listenerUp);
 		criAtomEx3dListener_SetVelocity(listener_, &listenerVelocity);
@@ -542,15 +577,21 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Sets a 3D source's distance attenuation: full volume up to
-	* minDistance, silent at maxDistance.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 3D ソースの距離減衰を設定する: minDistance までは最大音量で、
-	* maxDistance で聞こえなくなる。
+	* 音が小さくなり始める距離と、聞こえなくなる距離を決める。
+	*
+	* @brief 聞こえる距離を決める
+	* @param source      決める音源
+	* @param minDistance 小さくなり始める距離
+	* @param maxDistance 聞こえなくなる距離
+	*
+	* [EN]
+	* Sets the distance where the sound starts getting quieter and where it can no longer be heard.
+	*
+	* @brief Sets the hearing distance
+	* @param source      The source to set
+	* @param minDistance Where it starts getting quieter
+	* @param maxDistance Where it can no longer be heard
 	*/
 	void Audio::AttenuationDistance(CriAtomEx3dSourceHn source, Float minDistance, Float maxDistance)
 	{
@@ -559,20 +600,22 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] The Set call is only staged; Update applies it to the playing voices.
-		/// [JP] Set の呼び出しは溜めておくだけで、Update で再生中のボイスに反映される。
 		criAtomEx3dSource_SetMinMaxAttenuationDistance(source, minDistance, maxDistance);
 		criAtomEx3dSource_Update(source);
 	}
 
 	/**
-	* [EN]
-	* Scales the Doppler shift heard by the shared listener.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 共有リスナーに聞こえるドップラー効果の強さを倍率で設定する。
+	* 動いている音の高さが変わる強さ（ドップラー効果）を決める。
+	*
+	* @brief ドップラー効果の強さを決める
+	* @param multiplier 強さ。0 で効果なし
+	*
+	* [EN]
+	* Sets how strongly a moving sound changes pitch (the Doppler effect).
+	*
+	* @brief Sets the Doppler strength
+	* @param multiplier The strength; 0 turns it off
 	*/
 	void Audio::DopplerMultiplier(Float multiplier)
 	{
@@ -581,22 +624,24 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] The Set call is only staged; Update applies it to the playing voices.
-		/// [JP] Set の呼び出しは溜めておくだけで、Update で再生中のボイスに反映される。
 		criAtomEx3dListener_SetDopplerMultiplier(listener_, multiplier);
 		criAtomEx3dListener_Update(listener_);
 	}
 
 	/**
-	* [EN]
-	* Returns whether the player is currently playing (true while paused
-	* too). False for a null player.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* プレイヤーが現在再生中かどうかを返す(一時停止中も true)。
-	* プレイヤーが null なら false。
+	* 今鳴っているかを調べる。
+	*
+	* @brief  鳴っているか調べる
+	* @param  player 調べるプレイヤー
+	* @return 鳴っていたら true
+	*
+	* [EN]
+	* Checks whether it is playing right now.
+	*
+	* @brief  Checks if it is playing
+	* @param  player The player to check
+	* @return True if it is playing
 	*/
 	Bool Audio::Playing(CriAtomExPlayerHn player)const
 	{
@@ -605,19 +650,23 @@ namespace SeedCore
 			return false;
 		}
 
-		/// [EN] PREP (still buffering) and PLAYEND (finished) both count as not playing.
-		/// [JP] PREP(準備中)と PLAYEND(再生終了)は、どちらも再生中に含めない。
 		return criAtomExPlayer_GetStatus(player) == CRIATOMEXPLAYER_STATUS_PLAYING;
 	}
 
 	/**
-	* [EN]
-	* Returns whether the player is paused. False for a null player.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* プレイヤーが一時停止中かどうかを返す。プレイヤーが null なら false。
+	* 一時停止中かを調べる。
+	*
+	* @brief  一時停止中か調べる
+	* @param  player 調べるプレイヤー
+	* @return 一時停止中なら true
+	*
+	* [EN]
+	* Checks whether it is paused.
+	*
+	* @brief  Checks if it is paused
+	* @param  player The player to check
+	* @return True if it is paused
 	*/
 	Bool Audio::Paused(CriAtomExPlayerHn player)const
 	{

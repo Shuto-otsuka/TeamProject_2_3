@@ -2,43 +2,8 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Implementation details for ArtMap: an Adaptive Radix Tree (ART).
-	* Keys are converted to a byte sequence via KeyTraits and stored in a
-	* trie of byte-indexed nodes that grow/shrink between four node kinds
-	* (Node4/Node16/Node48/Node256) as their child count changes,
-	* keeping memory proportional to actual fan-out. Not intended to be
-	* used directly outside of ArtMap.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ArtMap の実装詳細: Adaptive Radix Tree（ART）。キーは KeyTraits
-	* でバイト列に変換され、バイトでインデックスされるノードのトライ木に
-	* 格納される。子の数が変化するにつれて4種類のノード
-	* （Node4/Node16/Node48/Node256）の間で成長/縮小し、
-	* 実際のファンアウトに比例したメモリ使用量を保つ。ArtMap 以外から
-	* 直接使うことは想定していない。
-	*/
 	namespace Art
 	{
-		/**
-		* [EN]
-		* Converts a key K to its byte representation for ART indexing.
-		* The primary template handles any trivially copyable type via a
-		* raw byte copy (not order-preserving for multi-byte values);
-		* specializations below handle strings and integers with
-		* order-preserving encodings.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ART でのインデックス付けのため、キー K をバイト表現に変換する。
-		* プライマリテンプレートは、trivially copyable な任意の型を生バイト
-		* コピーで扱う（複数バイト値の順序は保持されない）。以下の特殊化は
-		* 文字列と整数を順序保存エンコーディングで扱う。
-		*/
 		template <typename K, typename = void>
 		struct KeyTraits
 		{
@@ -46,26 +11,12 @@ namespace SeedCore
 
 			static DynamicArray<Uint8> to_bytes(const K& key)
 			{
-				/// [EN] The object representation is copied as-is, so the byte order follows the CPU's endianness.
-				/// [JP] オブジェクトの表現をそのままコピーするので、バイトの並びは CPU のエンディアンに従う。
 				DynamicArray<Uint8> _out(sizeof(K));
 				std::memcpy(_out.data(), &key, sizeof(K));
 				return _out;
 			}
 		};
 
-		/**
-		* [EN]
-		* KeyTraits for String: UTF-8 bytes plus a trailing NUL
-		* (so no encoded key is ever a byte-prefix of another).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* String 用の KeyTraits: UTF-8 バイト列と末尾のNUL
-		* （これにより、あるエンコード済みキーが別のキーの
-		* バイトプレフィックスになることがなくなる）。
-		*/
 		template <>
 		struct KeyTraits<String>
 		{
@@ -73,22 +24,11 @@ namespace SeedCore
 			{
 				DynamicArray<Uint8> _out(str.str().size() + 1);
 				std::memcpy(_out.data(), str.str().data(), str.str().size());
-				/// [EN] The trailing NUL ends every key the same way, so one string key never runs into the path of a longer one.
-				/// [JP] 末尾の NUL で全てのキーを同じ形で終わらせ、ある文字列キーが、それより長いキーの経路の途中に来ないようにする。
 				_out.back() = 0;
 				return _out;
 			}
 		};
 
-		/**
-		* [EN]
-		* KeyTraits for std::string, same NUL-terminated encoding as String.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* std::string 用の KeyTraits。String と同じNUL終端エンコーディング。
-		*/
 		template <>
 		struct KeyTraits<std::string>
 		{
@@ -96,22 +36,11 @@ namespace SeedCore
 			{
 				DynamicArray<Uint8> _out(str.size() + 1);
 				std::memcpy(_out.data(), str.data(), str.size());
-				/// [EN] The trailing NUL ends every key the same way, so one string key never runs into the path of a longer one.
-				/// [JP] 末尾の NUL で全てのキーを同じ形で終わらせ、ある文字列キーが、それより長いキーの経路の途中に来ないようにする。
 				_out.back() = 0;
 				return _out;
 			}
 		};
 
-		/**
-		* [EN]
-		* KeyTraits for std::string_view, same NUL-terminated encoding as String.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* std::string_view 用の KeyTraits。String と同じNUL終端エンコーディング。
-		*/
 		template <>
 		struct KeyTraits<std::string_view>
 		{
@@ -119,51 +48,25 @@ namespace SeedCore
 			{
 				DynamicArray<Uint8> _out(str.size() + 1);
 				std::memcpy(_out.data(), str.data(), str.size());
-				/// [EN] The trailing NUL ends every key the same way, so one string key never runs into the path of a longer one.
-				/// [JP] 末尾の NUL で全てのキーを同じ形で終わらせ、ある文字列キーが、それより長いキーの経路の途中に来ないようにする。
 				_out.back() = 0;
 				return _out;
 			}
 		};
 
-		/**
-		* [EN]
-		* KeyTraits for a pre-encoded byte key: passed through unchanged.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* エンコード済みバイト列キー用の KeyTraits: そのまま返す。
-		*/
 		template <>
 		struct KeyTraits<DynamicArray<Uint8>>
 		{
 			static DynamicArray<Uint8> to_bytes(const DynamicArray<Uint8>& key)
 			{
-				/// [EN] No terminator is added, so these keys must not be byte-prefixes of one another.
-				/// [JP] 終端は足さないので、これらのキーは互いのバイト上の接頭辞になってはならない。
 				return key;
 			}
 		};
 
-		/**
-		* [EN]
-		* KeyTraits for unsigned integers: big-endian bytes, so
-		* lexicographic byte order matches numeric order.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 符号なし整数用の KeyTraits: ビッグエンディアンのバイト列にする
-		* ことで、辞書式バイト順が数値順と一致するようにする。
-		*/
 		template <std::unsigned_integral U>
 		struct KeyTraits<U>
 		{
 			static DynamicArray<Uint8> to_bytes(U key)
 			{
-				/// [EN] Most significant byte first, so comparing bytes left to right compares the numbers.
-				/// [JP] 最上位バイトから並べるので、バイトを左から比べれば数値の大小を比べたことになる。
 				DynamicArray<Uint8> _out(sizeof(U));
 				for (Size index = sizeof(U); index-- > 0;)
 				{
@@ -173,119 +76,43 @@ namespace SeedCore
 			}
 		};
 
-		/**
-		* [EN]
-		* KeyTraits for signed integers: flips the sign bit before
-		* encoding as unsigned, so negative values sort before
-		* non-negative ones in byte order.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 符号付き整数用の KeyTraits: 符号なしとしてエンコードする前に
-		* 符号ビットを反転することで、負の値がバイト順で非負の値より
-		* 前にくるようにする。
-		*/
 		template <std::signed_integral S>
 		struct KeyTraits<S>
 		{
 			static DynamicArray<Uint8> to_bytes(S key)
 			{
-				/// [EN] Flipping the top bit maps the signed range onto the unsigned range in the same order.
-				/// [JP] 最上位ビットを反転すると、符号付きの範囲が、同じ順序のまま符号なしの範囲へ写る。
 				using U = std::make_unsigned_t<S>;
 				U u = static_cast<U>(key) ^ (U(1) << (sizeof(U) * 8 - 1));
 				return KeyTraits<U>::to_bytes(u);
 			}
 		};
 
-		/// [EN] Maximum inline path-compressed prefix length stored per node.
-		/// [JP] ノードごとに格納される、パス圧縮された接頭辞のインライン最大長。
 		SC_CONSTEX Size MAX_PREFIX = 8;
 
-		/// [EN] Discriminates the concrete type behind a NodePtr.
-		/// [JP] NodePtr の背後にある実際の型を判別する。
 		enum class NodeType : Uint8
 		{
-			/// [EN] Inner node with up to 4 children.
-			/// [JP] 子を最大4つ持つ内部ノード。
 			Node4,
 
-			/// [EN] Inner node with up to 16 children.
-			/// [JP] 子を最大16持つ内部ノード。
 			Node16,
 
-			/// [EN] Inner node with up to 48 children, found through a 256-entry index.
-			/// [JP] 子を最大48持ち、256要素の索引から引く内部ノード。
 			Node48,
 
-			/// [EN] Inner node with one slot for every possible byte.
-			/// [JP] あらゆるバイト値に1つずつスロットを持つ内部ノード。
 			Node256,
 
-			/// [EN] Terminal node holding one key/value pair.
-			/// [JP] キーと値の組を1つ持つ終端ノード。
 			Leaf
 		};
 
-		/**
-		* [EN]
-		* Common header shared by every inner node type (and inherited,
-		* unused, by Leaf), holding the path-compressed prefix and
-		* child count.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 全ての内部ノード型に共通するヘッダ（Leaf も継承するが未使用）。
-		* パス圧縮された接頭辞と子の数を保持する。
-		*/
 		struct NodeBase
 		{
-			/**
-			* [EN]
-			* Records which concrete node type this is; set once and never
-			* changed (a node that changes kind is replaced by a new one).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 具体的にどの種類のノードかを記録する。一度決めたら変わらない
-			* （種類が変わるノードは新しいものに置き換える）。
-			*/
 			explicit NodeBase(NodeType type) : type_(type)
 			{
 				/// No Code
 			}
 
-			/**
-			* [EN]
-			* Virtual destructor, so a node can be deleted through a
-			* NodeBase pointer.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 仮想デストラクタ。NodeBase のポインタ経由でノードを delete
-			* できるようにする。
-			*/
 			virtual ~NodeBase() = default;
 
-			/**
-			* [EN]
-			* Returns how many bytes of this node's stored prefix match
-			* key starting at depth (up to MAX_PREFIX).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* このノードに格納された接頭辞のうち、depth から始まる key と
-			* 一致するバイト数を返す（MAX_PREFIX まで）。
-			*/
 			Uint32 check_prefix(std::span<const Uint8> key, Uint32 depth)const noexcept
 			{
-				/// [EN] Stops at the first mismatch, the end of the stored prefix, or the end of the key, whichever comes first.
-				/// [JP] 最初の不一致、格納された接頭辞の終わり、キーの終わりのうち、最も早いところで止まる。
 				Uint32 match = 0;
 				const Uint32 limit = static_cast<Uint32>(Min<Uint32>(prefixLength_, MAX_PREFIX));
 				for (; match < limit && depth + match < key.size(); ++match)
@@ -298,68 +125,29 @@ namespace SeedCore
 				return match;
 			}
 
-			/// [EN] Concrete node kind, discriminating the pointee behind a NodePtr.
-			/// [JP] 具体的なノード種別。NodePtr の背後にある実体を判別する。
 			NodeType type_;
 
-			/// [EN] Number of valid bytes in prefix_; kept at most MAX_PREFIX, longer shared runs are split across chained nodes.
-			/// [JP] prefix_ の有効バイト数。MAX_PREFIX 以下に保ち、それより長い共通部分は連なったノードに分けて持つ。
 			Uint8 prefixLength_ = 0;
 
-			/// [EN] Inline path-compressed key-byte prefix shared by all descendants.
-			/// [JP] 全子孫が共有する、パス圧縮されたインラインのキーバイト接頭辞。
 			Uint8 prefix_[MAX_PREFIX] = {};
 
-			/// [EN] Number of children currently stored in this node.
-			/// [JP] このノードに現在格納されている子の数。
 			Uint16 numberChildren_ = 0;
 		};
 
-		/**
-		* [EN]
-		* Terminal node holding one key/value pair.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 1つのキー/値ペアを保持する末端ノード。
-		*/
 		template <typename K, typename V>
 		struct Leaf final : NodeBase
 		{
-			/**
-			* [EN]
-			* Constructs a leaf owning key and value.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* key と value を持つ葉を構築する。
-			*/
 			Leaf(K key, V value) : NodeBase(NodeType::Leaf), pair_(std::move(key), std::move(value))
 			{
 				/// No Code
 			}
 
-			/**
-			* [EN]
-			* Returns whether this leaf's encoded key equals key.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* このリーフのエンコード済みキーが key と等しいかを返す。
-			*/
 			template <typename Traits>
 			Bool matches(std::span<const Uint8> key)const noexcept
 			{
-				/// [EN] The leaf stores the original key, so it is encoded again for the comparison.
-				/// [JP] 葉は元のキーを持っているので、比べるためにもう一度符号化する。
 				return std::ranges::equal(Traits::to_bytes(pair_.first), key);
 			}
 
-			/// [EN] The stored key/value pair.
-			/// [JP] 格納されているキー/値ペア。
 			std::pair<const K, V> pair_;
 		};
 
@@ -368,46 +156,15 @@ namespace SeedCore
 		struct Node48;
 		struct Node256;
 
-		/// [EN] Raw pointer to any NodeBase-derived node (inner node or Leaf); each node is owned by its parent slot, or by ArtMap::root_.
-		/// [JP] NodeBase 派生ノード（内部ノードまたは Leaf）への生ポインタ。各ノードは親のスロット、または ArtMap::root_ が所有する。
 		using NodePtr = NodeBase*;
 
-		/**
-		* [EN]
-		* Inner node holding up to 4 children in parallel sorted arrays
-		* (linear scan for lookup; smallest/cheapest node kind).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 最大4個の子を、並列なソート済み配列に保持する内部ノード
-		* （検索は線形走査; 最も小さく安価なノード種別）。
-		*/
 		struct Node4 final : NodeBase
 		{
-			/**
-			* [EN]
-			* Constructs an empty Node4.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 空の Node4 を構築する。
-			*/
 			Node4() : NodeBase(NodeType::Node4)
 			{
 				/// No Code
 			}
 
-			/**
-			* [EN]
-			* Returns a pointer to the child slot for byte, or nullptr if absent.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* byte に対応する子スロットへのポインタを返す。存在しなければ nullptr。
-			*/
 			NodePtr* find(Uint8 byte)noexcept
 			{
 				for (Uint16 index = 0; index < numberChildren_; ++index)
@@ -420,27 +177,13 @@ namespace SeedCore
 				return nullptr;
 			}
 
-			/**
-			* [EN]
-			* Inserts child keyed by byte, keeping keys_ sorted (linear shift).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* byte をキーとして child を挿入する。keys_ のソート順は
-			*      線形シフトにより維持される。
-			*/
 			void add(Uint8 byte, NodePtr child)
 			{
-				/// [EN] A full node ignores the add; Art::add grows it to the next kind before calling this.
-				/// [JP] 満杯のノードは追加を無視する。Art::add は、これを呼ぶ前に次の種類へ広げる。
 				if (numberChildren_ >= 4)
 				{
 					return;
 				}
 				Uint8 index = static_cast<Uint8>(numberChildren_);
-				/// [EN] Insertion sort step: larger keys shift right by one until the slot for byte is found.
-				/// [JP] 挿入ソートの1手。byte の入る位置が見つかるまで、大きいキーを1つずつ右へずらす。
 				while (index > 0 && keys_[index - 1] > byte)
 				{
 					keys_[index] = keys_[index - 1];
@@ -452,23 +195,12 @@ namespace SeedCore
 				++numberChildren_;
 			}
 
-			/**
-			* [EN]
-			* Removes the child keyed by byte, if present, compacting the arrays.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* byte をキーとする子が存在すれば削除し、配列を詰める。
-			*/
 			void remove(Uint8 byte)
 			{
 				for (Uint16 index = 0; index < numberChildren_; ++index)
 				{
 					if (keys_[index] == byte)
 					{
-						/// [EN] Later entries shift left by one, keeping both arrays sorted and packed.
-						/// [JP] 後ろの要素を1つ左へずらし、両方の配列をソート済みで詰まった状態に保つ。
 						std::copy(keys_.begin() + index + 1, keys_.begin() + numberChildren_, keys_.begin() + index);
 						std::copy(children_.begin() + index + 1, children_.begin() + numberChildren_, children_.begin() + index);
 						--numberChildren_;
@@ -477,83 +209,28 @@ namespace SeedCore
 				}
 			}
 
-			/**
-			* [EN]
-			* Returns the child with the smallest key byte, or nullptr if empty.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 最小のキーバイトを持つ子を返す。空なら nullptr。
-			*/
 			NodePtr first()noexcept
 			{
-				/// [EN] keys_ is sorted, so the smallest key sits in slot 0.
-				/// [JP] keys_ はソート済みなので、最小のキーはスロット 0 にある。
 				return numberChildren_ ? children_[0] : nullptr;
 			}
 
-			/**
-			* [EN]
-			* Returns the child with the largest key byte, or nullptr if empty.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 最大のキーバイトを持つ子を返す。空なら nullptr。
-			*/
 			NodePtr last()noexcept
 			{
-				/// [EN] keys_ is sorted, so the largest key sits in the last used slot.
-				/// [JP] keys_ はソート済みなので、最大のキーは最後に使っているスロットにある。
 				return numberChildren_ ? children_[numberChildren_ - 1] : nullptr;
 			}
 
-			/// [EN] Sorted key bytes, parallel to children_.
-			/// [JP] children_ と対をなす、ソート済みのキーバイト列。
 			StaticArray<Uint8, 4> keys_{};
 
-			/// [EN] Child pointers, parallel to keys_.
-			/// [JP] keys_ と対をなす子ポインタ列。
 			StaticArray<NodePtr, 4> children_{};
 		};
 
-		/**
-		* [EN]
-		* Inner node holding up to 16 children, same shape as Node4
-		* (sorted parallel arrays, linear-scan lookup) at a larger capacity.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 最大16個の子を保持する内部ノード。Node4 と同じ構造
-		* (ソート済み並列配列、線形走査検索) で容量のみ大きい。
-		*/
 		struct Node16 final : NodeBase
 		{
-			/**
-			* [EN]
-			* Constructs an empty Node16.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 空の Node16 を構築する。
-			*/
 			Node16() : NodeBase(NodeType::Node16)
 			{
 				/// No Code
 			}
 
-			/**
-			* [EN]
-			* Returns a pointer to the child slot for byte, or nullptr if absent.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* byte に対応する子スロットへのポインタを返す。存在しなければ nullptr。
-			*/
 			NodePtr* find(Uint8 byte)noexcept
 			{
 				for (Uint16 index = 0; index < numberChildren_; ++index)
@@ -566,27 +243,13 @@ namespace SeedCore
 				return nullptr;
 			}
 
-			/**
-			* [EN]
-			* Inserts child keyed by byte, keeping keys_ sorted (linear shift).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* byte をキーとして child を挿入する。keys_ のソート順は
-			*      線形シフトにより維持される。
-			*/
 			void add(Uint8 byte, NodePtr child)
 			{
-				/// [EN] A full node ignores the add; Art::add grows it to the next kind before calling this.
-				/// [JP] 満杯のノードは追加を無視する。Art::add は、これを呼ぶ前に次の種類へ広げる。
 				if (numberChildren_ >= 16)
 				{
 					return;
 				}
 				Uint16 index = numberChildren_;
-				/// [EN] Insertion sort step: larger keys shift right by one until the slot for byte is found.
-				/// [JP] 挿入ソートの1手。byte の入る位置が見つかるまで、大きいキーを1つずつ右へずらす。
 				while (index > 0 && keys_[index - 1] > byte)
 				{
 					keys_[index] = keys_[index - 1];
@@ -598,23 +261,12 @@ namespace SeedCore
 				++numberChildren_;
 			}
 
-			/**
-			* [EN]
-			* Removes the child keyed by byte, if present, compacting the arrays.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* byte をキーとする子が存在すれば削除し、配列を詰める。
-			*/
 			void remove(Uint8 byte)
 			{
 				for (Uint16 index = 0; index < numberChildren_; ++index)
 				{
 					if (keys_[index] == byte)
 					{
-						/// [EN] Later entries shift left by one, keeping both arrays sorted and packed.
-						/// [JP] 後ろの要素を1つ左へずらし、両方の配列をソート済みで詰まった状態に保つ。
 						std::copy(keys_.begin() + index + 1, keys_.begin() + numberChildren_, keys_.begin() + index);
 						std::copy(children_.begin() + index + 1, children_.begin() + numberChildren_, children_.begin() + index);
 						--numberChildren_;
@@ -623,57 +275,18 @@ namespace SeedCore
 				}
 			}
 
-			/// [EN] Sorted key bytes, parallel to children_.
-			/// [JP] children_ と対をなす、ソート済みのキーバイト列。
 			StaticArray<Uint8, 16> keys_{};
 
-			/// [EN] Child pointers, parallel to keys_.
-			/// [JP] keys_ と対をなす子ポインタ列。
 			StaticArray<NodePtr, 16> children_{};
 		};
 
-		/**
-		* [EN]
-		* Inner node holding up to 48 children. Trades a 256-entry
-		* byte-to-slot index for O(1) lookup while keeping
-		* children_ compact (only 48 slots) by reusing freed slots.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 最大48個の子を保持する内部ノード。256エントリの
-		* バイト→スロットのインデックスを使うことで O(1) 検索を
-		* 実現しつつ、解放されたスロットを再利用して children_ を
-		* コンパクト（48スロットのみ）に保つ。
-		*/
 		struct Node48 final : NodeBase
 		{
-			/**
-			* [EN]
-			* Constructs an empty Node48, with every byte marked absent in
-			* index_.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 空の Node48 を構築する。index_ の全バイトを「無し」にしておく。
-			*/
 			Node48() : NodeBase(NodeType::Node48)
 			{
-				/// [EN] 0xFF can never be a real slot, since there are only 48.
-				/// [JP] スロットは48個しかないので、0xFF が本物のスロット番号になることは無い。
 				index_.fill(0xFF);
 			}
 
-			/**
-			* [EN]
-			* Returns a pointer to the child slot for byte, or nullptr if absent.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* byte に対応する子スロットへのポインタを返す。存在しなければ nullptr。
-			*/
 			NodePtr* find(Uint8 byte)noexcept
 			{
 				if (index_[byte] == 0xFF)
@@ -683,26 +296,13 @@ namespace SeedCore
 				return &children_[index_[byte]];
 			}
 
-			/**
-			* [EN]
-			* Inserts child keyed by byte into the first free children_ slot.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* byte をキーとして child を、children_ の最初の空きスロットに挿入する。
-			*/
 			void add(Uint8 byte, NodePtr child)
 			{
-				/// [EN] A full node ignores the add; Art::add grows it to Node256 before calling this.
-				/// [JP] 満杯のノードは追加を無視する。Art::add は、これを呼ぶ前に Node256 へ広げる。
 				if (numberChildren_ >= 48)
 				{
 					return;
 				}
 
-				/// [EN] Slots freed by remove are null, so the first null slot is reused.
-				/// [JP] remove で空いたスロットは null なので、最初の null のスロットを使い回す。
 				Uint8 slot = 0;
 				while (slot < 48 && children_[slot] != nullptr)
 				{
@@ -717,70 +317,26 @@ namespace SeedCore
 				++numberChildren_;
 			}
 
-			/**
-			* [EN]
-			* Removes the child keyed by byte, freeing its slot.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* byte をキーとする子を削除し、そのスロットを解放する。
-			*/
 			void remove(Uint8 byte)
 			{
-				/// [EN] The slot is nulled so add can find it again as free.
-				/// [JP] スロットを null にしておき、add が空きとして再び見つけられるようにする。
 				Uint8 slot = index_[byte];
 				children_[slot] = nullptr;
 				index_[byte] = 0xFF;
 				--numberChildren_;
 			}
 
-			/// [EN] Maps a key byte to its slot in children_, or 0xFF if unused.
-			/// [JP] キーバイトを children_ 内のスロットへ写像する。未使用なら 0xFF。
 			StaticArray<Uint8, 256> index_;
 
-			/// [EN] Child pointers, sparsely populated and indexed via index_.
-			/// [JP] index_ 経由でアクセスされる、疎に埋まった子ポインタ列。
 			StaticArray<NodePtr, 48>  children_{};
 		};
 
-		/**
-		* [EN]
-		* Inner node holding up to 256 children, directly indexed by
-		* key byte (no separate index table needed).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 最大256個の子を保持する内部ノード。キーバイトで直接
-		* インデックスされる（別途インデックステーブルは不要）。
-		*/
 		struct Node256 final : NodeBase
 		{
-			/**
-			* [EN]
-			* Constructs an empty Node256.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 空の Node256 を構築する。
-			*/
 			Node256() : NodeBase(NodeType::Node256)
 			{
 				/// No Code
 			}
 
-			/**
-			* [EN]
-			* Returns a pointer to the child slot for byte, or nullptr if absent.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* byte に対応する子スロットへのポインタを返す。存在しなければ nullptr。
-			*/
 			NodePtr* find(Uint8 byte)noexcept
 			{
 				if (!children_[byte])
@@ -790,58 +346,23 @@ namespace SeedCore
 				return &children_[byte];
 			}
 
-			/**
-			* [EN]
-			* Sets the child keyed by byte directly (index == key byte).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* byte をキーとする子を直接設定する（インデックス == キーバイト）。
-			*/
 			void add(Uint8 byte, NodePtr child)
 			{
-				/// [EN] Every byte has its own slot, so this node can never be full.
-				/// [JP] 全てのバイトが専用のスロットを持つので、このノードが満杯になることは無い。
 				children_[byte] = child;
 				++numberChildren_;
 			}
 
-			/**
-			* [EN]
-			* Clears the child keyed by byte.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* byte をキーとする子をクリアする。
-			*/
 			void remove(Uint8 byte)
 			{
 				children_[byte] = nullptr;
 				--numberChildren_;
 			}
 
-			/// [EN] Child pointers, directly indexed by key byte (nullptr = absent).
-			/// [JP] キーバイトで直接インデックスされる子ポインタ列（nullptr = 不在）。
 			StaticArray<NodePtr, 256> children_{};
 		};
 
-		/**
-		* [EN]
-		* Promotes a Node4 to a Node16 (called once its 4 slots fill up),
-		* copying the prefix and all children/keys.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Node4 を Node16 に昇格する（4スロットが埋まった時点で呼ばれる）。
-		* 接頭辞と全ての子/キーをコピーする。
-		*/
 		inline Node16* grow(Node4* node)
 		{
-			/// [EN] Both kinds use sorted parallel arrays, so the entries are copied over as they are.
-			/// [JP] どちらの種類もソート済みの並んだ配列を使うので、要素はそのままコピーする。
 			auto* node16 = new Node16();
 			node16->prefixLength_ = node->prefixLength_;
 			node16->numberChildren_ = node->numberChildren_;
@@ -851,25 +372,12 @@ namespace SeedCore
 			return node16;
 		}
 
-		/**
-		* [EN]
-		* Promotes a Node16 to a Node48 (called once its 16 slots fill
-		* up), copying the prefix and re-inserting all children via add.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Node16 を Node48 に昇格する（16スロットが埋まった時点で
-		* 呼ばれる）。接頭辞をコピーし、全ての子を add 経由で再挿入する。
-		*/
 		inline Node48* grow(Node16* node)
 		{
 			auto* node48 = new Node48();
 			node48->prefixLength_ = node->prefixLength_;
 			node48->numberChildren_ = node->numberChildren_;
 			std::memcpy(node48->prefix_, node->prefix_, node->prefixLength_);
-			/// [EN] add raises the count again for every child, so the count is set back to the real number afterwards.
-			/// [JP] add は子ごとに数をさらに増やすので、その後で本当の数に戻す。
 			for (Uint16 index = 0; index < node->numberChildren_; ++index)
 			{
 				node48->add(node->keys_[index], node->children_[index]);
@@ -878,25 +386,12 @@ namespace SeedCore
 			return node48;
 		}
 
-		/**
-		* [EN]
-		* Promotes a Node48 to a Node256 (called once its 48 slots fill
-		* up), copying the prefix and directly placing each child by its key byte.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Node48 を Node256 に昇格する（48スロットが埋まった時点で
-		* 呼ばれる）。接頭辞をコピーし、各子をそのキーバイトの位置に直接配置する。
-		*/
 		inline Node256* grow(Node48* node)
 		{
 			auto* node256 = new Node256();
 			node256->prefixLength_ = node->prefixLength_;
 			node256->numberChildren_ = node->numberChildren_;
 			std::memcpy(node256->prefix_, node->prefix_, node->prefixLength_);
-			/// [EN] Each child moves from its indexed slot to the slot named by its key byte.
-			/// [JP] 各子を、索引で引いたスロットから、キーのバイトが示すスロットへ移す。
 			for (Int b = 0; b < 256; ++b)
 			{
 				if (node->index_[b] != 0xFF)
@@ -907,21 +402,8 @@ namespace SeedCore
 			return node256;
 		}
 
-		/**
-		* [EN]
-		* Demotes a Node16 to a Node4 (called once its child count
-		* drops low enough), copying the prefix and all children/keys.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Node16 を Node4 に降格する（子の数が十分少なくなった時点で
-		* 呼ばれる）。接頭辞と全ての子/キーをコピーする。
-		*/
 		inline Node4* shrink(Node16* node)
 		{
-			/// [EN] Called with at most 3 children left, so everything fits into the 4 slots.
-			/// [JP] 残りの子が3つ以下のときに呼ばれるので、全て4つのスロットに収まる。
 			auto* node4 = new Node4();
 			node4->prefixLength_ = node->prefixLength_;
 			node4->numberChildren_ = node->numberChildren_;
@@ -931,21 +413,8 @@ namespace SeedCore
 			return node4;
 		}
 
-		/**
-		* [EN]
-		* Demotes a Node48 to a Node16 (called once its child count
-		* drops low enough), copying the prefix and re-inserting all children via add.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Node48 を Node16 に降格する（子の数が十分少なくなった時点で
-		* 呼ばれる）。接頭辞をコピーし、全ての子を add 経由で再挿入する。
-		*/
 		inline Node16* shrink(Node48* node)
 		{
-			/// [EN] Walking bytes in order and adding one by one keeps the Node16 arrays sorted.
-			/// [JP] バイト順に辿って1つずつ足すので、Node16 の配列はソート済みのまま。
 			auto* node16 = new Node16();
 			node16->prefixLength_ = node->prefixLength_;
 			std::memcpy(node16->prefix_, node->prefix_, node->prefixLength_);
@@ -959,21 +428,8 @@ namespace SeedCore
 			return node16;
 		}
 
-		/**
-		* [EN]
-		* Demotes a Node256 to a Node48 (called once its child count
-		* drops low enough), copying the prefix and re-inserting all children via add.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Node256 を Node48 に降格する（子の数が十分少なくなった時点で
-		* 呼ばれる）。接頭辞をコピーし、全ての子を add 経由で再挿入する。
-		*/
 		inline Node48* shrink(Node256* node)
 		{
-			/// [EN] add counts the children itself, so numberChildren_ starts at zero here.
-			/// [JP] add が子の数を自分で数えるので、ここでは numberChildren_ は 0 から始まる。
 			auto* node48 = new Node48();
 			node48->prefixLength_ = node->prefixLength_;
 			std::memcpy(node48->prefix_, node->prefix_, node->prefixLength_);
@@ -987,38 +443,14 @@ namespace SeedCore
 			return node48;
 		}
 
-		/**
-		* [EN]
-		* Casts a NodePtr known to be a Leaf<K, V> to its concrete type.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* Leaf<K, V> であることが分かっている NodePtr を、具体的な型にキャストする。
-		*/
 		template <typename K, typename V>
 		Leaf<K, V>* as_leaf(NodePtr ptr)
 		{
-			/// [EN] Unchecked: the caller has already tested type_ == NodeType::Leaf.
-			/// [JP] 確認はしない。呼び出し側が type_ == NodeType::Leaf を確かめ済み。
 			return static_cast<Leaf<K, V>*>(ptr);
 		}
 
-		/**
-		* [EN]
-		* Dispatches to the concrete inner node type's find, looking up
-		* the child slot for byte.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 具体的な内部ノード型の find にディスパッチし、byte に対応する
-		* 子スロットを検索する。
-		*/
 		inline NodePtr* find(NodePtr node, Uint8 byte)
 		{
-			/// [EN] A pointer to the slot is returned, so callers can also replace the child in place.
-			/// [JP] スロットへのポインタを返すので、呼び出し側はその場で子を置き換えることもできる。
 			switch (node->type_)
 			{
 			case NodeType::Node4:
@@ -1034,19 +466,6 @@ namespace SeedCore
 			}
 		}
 
-		/**
-		* [EN]
-		* Adds child keyed by byte to the concrete inner node behind
-		* nodeRef, promoting it to the next larger node kind (via grow)
-		* first if it is already at capacity. May replace nodeRef in place.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* nodeRef の背後にある具体的な内部ノードに、byte をキーとして
-		* child を追加する。既に容量いっぱいであれば、先に（grow 経由で）
-		* 次の大きいノード種別に昇格する。nodeRef はその場で置き換えられ得る。
-		*/
 		inline void add(NodePtr& nodeRef, Uint8 byte, NodePtr child)
 		{
 			switch (nodeRef->type_)
@@ -1059,8 +478,6 @@ namespace SeedCore
 					node4->add(byte, child);
 					return;
 				}
-				/// [EN] The old node is replaced in its parent's slot through nodeRef, then freed.
-				/// [JP] 古いノードは nodeRef を通して親のスロットで置き換え、その後解放する。
 				auto* node16 = grow(node4);
 				delete node4;
 				nodeRef = node16;
@@ -1103,21 +520,6 @@ namespace SeedCore
 			}
 		}
 
-		/**
-		* [EN]
-		* Removes the child keyed by byte from the concrete inner node
-		* behind nodeRef, demoting it to the next smaller node kind (via
-		* shrink) if its child count drops below that kind's threshold.
-		* May replace nodeRef in place.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* nodeRef の背後にある具体的な内部ノードから、byte をキーとする
-		* 子を削除する。子の数がその種別のしきい値を下回った場合、
-		* （shrink 経由で）次の小さいノード種別に降格する。nodeRef は
-		* その場で置き換えられ得る。
-		*/
 		inline void remove(NodePtr& nodeRef, Uint8 byte)
 		{
 			switch (nodeRef->type_)
@@ -1130,8 +532,6 @@ namespace SeedCore
 				auto* node16 = static_cast<Node16*>(nodeRef);
 				node16->remove(byte);
 
-				/// [EN] The shrink thresholds sit well below the grow thresholds, so a node does not flip between kinds on alternating add/remove.
-				/// [JP] 縮める閾値は広げる閾値よりかなり下にあるので、追加と削除を繰り返しても種類が行ったり来たりしない。
 				if (node16->numberChildren_ <= 3)
 				{
 					auto* node4 = shrink(node16);
@@ -1169,19 +569,6 @@ namespace SeedCore
 			}
 		}
 
-		/**
-		* [EN]
-		* Descends via each node's smallest-key child until reaching a
-		* Leaf, returning the leaf with the lexicographically smallest
-		* key under node (or nullptr if node is null).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 各ノードの最小キーの子を辿って Leaf に到達し、node 以下で
-		* 辞書式に最小のキーを持つリーフを返す（node が null なら
-		* nullptr）。
-		*/
 		template <typename K, typename V>
 		Leaf<K, V>* minimum(NodePtr node)
 		{
@@ -1195,8 +582,6 @@ namespace SeedCore
 				return as_leaf<K, V>(node);
 			}
 
-			/// [EN] Each kind yields its smallest-byte child, and the search recurses into it.
-			/// [JP] 各種類から最小バイトの子を取り出し、そこへ再帰的に下りる。
 			switch (node->type_)
 			{
 			case NodeType::Node4:
@@ -1232,17 +617,6 @@ namespace SeedCore
 			}
 		}
 
-		/**
-		* [EN]
-		* Recursively deletes node and its entire subtree (all inner
-		* nodes and leaves). No-op for a null node.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* node とそのサブツリー全体（全ての内部ノードとリーフ）を
-		* 再帰的に削除する。node が null の場合は何もしない。
-		*/
 		template <typename K, typename V>
 		void destroy(NodePtr node)
 		{
@@ -1251,8 +625,6 @@ namespace SeedCore
 				return;
 			}
 
-			/// [EN] A leaf is deleted through its full type, so K and V are destroyed properly.
-			/// [JP] 葉は完全な型を通して delete するので、K と V が正しく破棄される。
 			if (node->type_ == NodeType::Leaf)
 			{
 				delete as_leaf<K, V>(node);
@@ -1283,8 +655,6 @@ namespace SeedCore
 			}
 			case NodeType::Node48:
 			{
-				/// [EN] Node48 children are visited through index_ in byte order, since children_ itself is not sorted.
-				/// [JP] children_ 自体はソートされていないので、Node48 の子は index_ を通してバイト順に辿る。
 				auto* node48 = static_cast<Node48*>(node);
 				for (Int b = 0; b < 256; ++b)
 				{
@@ -1311,17 +681,6 @@ namespace SeedCore
 			}
 		}
 
-		/**
-		* [EN]
-		* Recursively visits every Leaf under node in key order,
-		* invoking function(leaf) for each one.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* node 以下の全ての Leaf をキー順に再帰的に訪問し、それぞれに
-		* 対して function(leaf) を呼び出す。
-		*/
 		template <typename K, typename V, typename F>
 		void traverse(NodePtr node, F&& function)
 		{
@@ -1330,8 +689,6 @@ namespace SeedCore
 				return;
 			}
 
-			/// [EN] Children are visited in byte order, which is what makes the overall visit follow key order.
-			/// [JP] 子をバイト順に訪ねるので、全体の訪問順がキーの順になる。
 			if (node->type_ == NodeType::Leaf)
 			{
 				function(*as_leaf<K, V>(node));
@@ -1384,45 +741,13 @@ namespace SeedCore
 			}
 		}
 
-		/**
-		* [EN]
-		* One frame of iterative in-order traversal state: a node being
-		* visited plus the index of the next child to explore.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 反復的なイン・オーダー走査状態の1フレーム。訪問中のノードと、
-		* 次に探索する子のインデックスを保持する。
-		*/
 		struct StackFrame
 		{
-			/// [EN] Node currently being visited.
-			/// [JP] 現在訪問中のノード。
 			NodePtr node_ = nullptr;
 
-			/// [EN] Index of the next child of node_ to explore.
-			/// [JP] node_ の次に探索すべき子のインデックス。
 			Int cursor_ = 0;
 		};
 
-		/**
-		* [EN]
-		* Advances an explicit-stack, iterative in-order traversal
-		* (ArtMap::Iterator/ConstIterator's underlying mechanism):
-		* pushes deeper into the tree from the top frame until a Leaf is
-		* reached, popping exhausted frames along the way. Returns the next
-		* leaf in key order, or nullptr once the stack is empty.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 明示的スタックによる反復的なイン・オーダー走査を1歩進める
-		* （ArtMap::Iterator/ConstIterator の内部機構）。Leaf に
-		* 到達するまでトップのフレームから木を深く push し、途中で
-		* 使い切ったフレームを pop する。キー順で次のリーフを返す。
-		* スタックが空になれば nullptr。
-		*/
 		template <typename K, typename V>
 		Leaf<K, V>* descend(DynamicArray<StackFrame>& stack)
 		{
@@ -1430,15 +755,11 @@ namespace SeedCore
 			{
 				auto& [node, cursor] = stack.back();
 
-				/// [EN] A leaf on top of the stack is the next entry; the caller pops it before asking for the one after.
-				/// [JP] スタックの一番上が葉なら、それが次の要素。呼び出し側は、その次を求める前にそれを取り除く。
 				if (node->type_ == NodeType::Leaf)
 				{
 					return as_leaf<K, V>(node);
 				}
 
-				/// [EN] cursor remembers how far this node's children have been visited, and moves past the child handed out.
-				/// [JP] cursor はこのノードの子をどこまで訪ねたかを覚え、渡した子の先へ進む。
 				NodePtr next = nullptr;
 
 				switch (node->type_)
@@ -1491,8 +812,6 @@ namespace SeedCore
 					break;
 				}
 
-				/// [EN] Go down into the next child, or pop the node once all its children are done.
-				/// [JP] 次の子へ下りる。子を全て訪ね終えたノードは取り除く。
 				if (next)
 				{
 					stack.push_back({ next, 0 });
@@ -1509,83 +828,30 @@ namespace SeedCore
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Ordered associative container (key/value map) backed by an Adaptive
-	* Radix Tree (see the Art namespace). Compared to a hash map, keys
-	* are stored/iterated in sorted byte order and support efficient
-	* prefix_search; Traits (defaulting to Art::KeyTraits<K>)
-	* controls how K is encoded to bytes for indexing.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Adaptive Radix Tree（Art 名前空間を参照）を裏付けとする、順序付き
-	* 連想コンテナ（キー/値マップ）。ハッシュマップと比べ、キーはソート
-	* されたバイト順で格納/反復され、効率的な prefix_search をサポート
-	* する。Traits（既定は Art::KeyTraits<K>）が、インデックス付けの
-	* ために K をどうバイトへエンコードするかを制御する。
-	*/
 	template <typename K, typename V, typename Traits = Art::KeyTraits<K>>
 	class ArtMap
 	{
 	private:
-		/// [EN] Short names for the Art types this map is built from.
-		/// [JP] このマップを組み立てている Art の型の短い名前。
 		using Leaf = Art::Leaf<K, V>;
 		using NodePtr = Art::NodePtr;
 
-		/// [EN] Encoded key, mapped value, and the stored pair type that prefix_search returns pointers to.
-		/// [JP] 符号化したキー、対応する値、prefix_search がポインタを返す、格納された組の型。
 		using KeyType = DynamicArray<Uint8>;
 		using MappedType = V;
 		using ValueType = std::pair<const K, MappedType>;
 
 	public:
-		/**
-		* [EN]
-		* Forward iterator over ArtMap entries in key order.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ArtMap の要素をキー順に走査する前方イテレータ。
-		*/
 		struct Iterator
 		{
-			/// [EN] Standard iterator typedefs, so std algorithms can use this iterator.
-			/// [JP] 標準のイテレータ型定義。std のアルゴリズムからこのイテレータを使えるようにする。
 			using iterator_category = std::forward_iterator_tag;
 			using value_type = std::pair<const K, V>;
 			using difference_type = std::ptrdiff_t;
 			using pointer = value_type*;
 			using reference = value_type&;
 
-			/**
-			* [EN]
-			* Constructs the past-the-end iterator (empty stack, no current
-			* entry).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 終端の次を指すイテレータを構築する（空のスタック、今の要素無し）。
-			*/
 			Iterator() = default;
 
-			/**
-			* [EN]
-			* Constructs an iterator positioned at the first (smallest-key) entry under root.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* root 以下の最初の（最小キーの）要素を指すイテレータを構築する。
-			*/
 			explicit Iterator(NodePtr root)
 			{
-				/// [EN] An empty tree leaves the iterator at end.
-				/// [JP] 木が空なら、イテレータは終端のままにする。
 				if (root)
 				{
 					stack_.push_back({ root, 0 });
@@ -1593,61 +859,23 @@ namespace SeedCore
 				}
 			}
 
-			/**
-			* [EN]
-			* Returns a reference to the current key/value pair.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 現在のキー/値ペアへの参照を返す。
-			*/
 			reference operator*()const
 			{
 				return current_->pair_;
 			}
 
-			/**
-			* [EN]
-			* Returns a pointer to the current key/value pair.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 現在のキー/値ペアへのポインタを返す。
-			*/
 			pointer operator->()const
 			{
 				return &current_->pair_;
 			}
 
-			/**
-			* [EN]
-			* Advances to the next entry in key order (pre-increment).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* キー順で次の要素へ進める（前置インクリメント）。
-			*/
 			Iterator& operator++()
 			{
-				/// [EN] The top frame is the current leaf; popping it lets descend continue from its parent.
-				/// [JP] 一番上のフレームは今の葉。それを取り除くと、descend がその親から続きを探せる。
 				stack_.pop_back();
 				advance();
 				return *this;
 			}
 
-			/**
-			* [EN]
-			* Advances to the next entry in key order (post-increment).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* キー順で次の要素へ進める（後置インクリメント）。
-			*/
 			Iterator operator++(Int)
 			{
 				Iterator temporary = *this;
@@ -1655,102 +883,39 @@ namespace SeedCore
 				return temporary;
 			}
 
-			/**
-			* [EN]
-			* Returns whether both iterators point to the same entry (or are both end).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 両イテレータが同じ要素を指しているか（または両方とも終端か）を返す。
-			*/
 			Bool operator==(const Iterator& other)const noexcept
 			{
 				return current_ == other.current_;
 			}
 
-			/**
-			* [EN]
-			* Negation of operator==.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* operator== の否定。
-			*/
 			Bool operator!=(const Iterator& other)const noexcept
 			{
 				return !(*this == other);
 			}
 
 		private:
-			/// [EN] Traversal stack driving advance().
-			/// [JP] advance() を駆動する走査スタック。
 			DynamicArray<Art::StackFrame> stack_;
 
-			/// [EN] The entry this iterator currently points to (nullptr at end).
-			/// [JP] このイテレータが現在指す要素（終端では nullptr）。
 			Leaf* current_ = nullptr;
 
-			/**
-			* [EN]
-			* Moves current_ to the next leaf via Art::descend.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* Art::descend 経由で current_ を次のリーフへ進める。
-			*/
 			void advance()
 			{
 				current_ = Art::descend<K, V>(stack_);
 			}
 		};
 
-		/**
-		* [EN]
-		* Const forward iterator over ArtMap entries in key order (see Iterator).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ArtMap の要素をキー順に走査する const 前方イテレータ（Iterator を参照）。
-		*/
 		struct ConstIterator
 		{
-			/// [EN] Standard iterator typedefs; pointer and reference are const.
-			/// [JP] 標準のイテレータ型定義。pointer と reference は const。
 			using iterator_category = std::forward_iterator_tag;
 			using value_type = std::pair<const K, V>;
 			using difference_type = std::ptrdiff_t;
 			using pointer = const value_type*;
 			using reference = const value_type&;
 
-			/**
-			* [EN]
-			* Constructs the past-the-end iterator (empty stack, no current
-			* entry).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 終端の次を指すイテレータを構築する（空のスタック、今の要素無し）。
-			*/
 			ConstIterator() = default;
 
-			/**
-			* [EN]
-			* Constructs a const iterator positioned at the first (smallest-key) entry under root.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* root 以下の最初の（最小キーの）要素を指す const イテレータを構築する。
-			*/
 			explicit ConstIterator(NodePtr root)
 			{
-				/// [EN] An empty tree leaves the iterator at end.
-				/// [JP] 木が空なら、イテレータは終端のままにする。
 				if (root)
 				{
 					stack_.push_back({ root, 0 });
@@ -1758,75 +923,28 @@ namespace SeedCore
 				}
 			}
 
-			/**
-			* [EN]
-			* Converts a mutable Iterator to a ConstIterator at the same position.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 可変の Iterator を、同じ位置を指す ConstIterator に変換する。
-			*/
 			ConstIterator(const Iterator& it) : stack_(it.stack_), current_(it.current_)
 			{
 				/// No Code
 			}
 
-			/**
-			* [EN]
-			* Returns a const reference to the current key/value pair.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 現在のキー/値ペアへの const 参照を返す。
-			*/
 			reference operator*()const
 			{
 				return  current_->pair_;
 			}
 
-			/**
-			* [EN]
-			* Returns a const pointer to the current key/value pair.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 現在のキー/値ペアへの const ポインタを返す。
-			*/
 			pointer operator->()const
 			{
 				return &current_->pair_;
 			}
 
-			/**
-			* [EN]
-			* Advances to the next entry in key order (pre-increment).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* キー順で次の要素へ進める（前置インクリメント）。
-			*/
 			ConstIterator& operator++()
 			{
-				/// [EN] The top frame is the current leaf; popping it lets descend continue from its parent.
-				/// [JP] 一番上のフレームは今の葉。それを取り除くと、descend がその親から続きを探せる。
 				stack_.pop_back();
 				advance();
 				return *this;
 			}
 
-			/**
-			* [EN]
-			* Advances to the next entry in key order (post-increment).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* キー順で次の要素へ進める（後置インクリメント）。
-			*/
 			ConstIterator operator++(Int)
 			{
 				ConstIterator temporary = *this;
@@ -1834,52 +952,21 @@ namespace SeedCore
 				return temporary;
 			}
 
-			/**
-			* [EN]
-			* Returns whether both iterators point to the same entry (or are both end).
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* 両イテレータが同じ要素を指しているか（または両方とも終端か）を返す。
-			*/
 			Bool operator==(const ConstIterator& other)const noexcept
 			{
 				return current_ == other.current_;
 			}
 
-			/**
-			* [EN]
-			* Negation of operator==.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* operator== の否定。
-			*/
 			Bool operator!=(const ConstIterator& other)const noexcept
 			{
 				return !(*this == other);
 			}
 
 		private:
-			/// [EN] Traversal stack driving advance().
-			/// [JP] advance() を駆動する走査スタック。
 			DynamicArray<Art::StackFrame> stack_;
 
-			/// [EN] The entry this iterator currently points to (nullptr at end).
-			/// [JP] このイテレータが現在指す要素（終端では nullptr）。
 			Leaf* current_ = nullptr;
 
-			/**
-			* [EN]
-			* Moves current_ to the next leaf via Art::descend.
-			*
-			* ---------------------------------------------------------------------
-			*
-			* [JP]
-			* Art::descend 経由で current_ を次のリーフへ進める。
-			*/
 			void advance()
 			{
 				current_ = Art::descend<K, V>(stack_);
@@ -1887,66 +974,22 @@ namespace SeedCore
 		};
 
 	public:
-		/**
-		* [EN]
-		* Constructs an empty map; no node is allocated until the first
-		* insertion.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 空のマップを構築する。最初の挿入までノードは1つも確保しない。
-		*/
 		ArtMap() = default;
 
-		/**
-		* [EN]
-		* Destroys every stored entry.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 格納されている全要素を破棄する。
-		*/
 		~ArtMap()
 		{
 			Art::destroy<K, V>(root_);
 		}
 
-		/// [EN] Copying would need a deep copy of the whole tree, which is not provided.
-		/// [JP] コピーには木全体の深いコピーが必要になるが、それは用意していない。
 		ArtMap(const ArtMap&) = delete;
 		ArtMap& operator=(const ArtMap&) = delete;
 
-		/**
-		* [EN]
-		* Move-constructs by taking ownership of o's tree, leaving o empty.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* o の木の所有権を奪ってムーブ構築し、o は空になる。
-		*/
 		ArtMap(ArtMap&& o)noexcept : root_(o.root_), size_(o.size_)
 		{
-			/// [EN] o lets go of the tree, so only this map deletes it.
-			/// [JP] o が木を手放すので、それを削除するのはこのマップだけになる。
 			o.root_ = nullptr;
 			o.size_ = 0;
 		}
 
-		/**
-		* [EN]
-		* Constructs from an initializer list of key/value pairs, inserted
-		* in list order (later duplicates of an existing key are ignored,
-		* per insert's semantics).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* キー/値ペアの初期化子リストから構築する。リストの順に挿入する
-		* （insert の仕様により、既存キーの後続の重複は無視される）。
-		*/
 		ArtMap(std::initializer_list<std::pair<const K, V>> init) :root_(nullptr), size_(0)
 		{
 			for (const auto& pair : init)
@@ -1955,21 +998,8 @@ namespace SeedCore
 			}
 		}
 
-		/**
-		* [EN]
-		* Move-assigns by discarding this map's tree and taking ownership
-		* of o's, leaving o empty.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このマップの木を破棄し、o の木の所有権を奪ってムーブ代入する。
-		* o は空になる。
-		*/
 		ArtMap& operator=(ArtMap&& o)noexcept
 		{
-			/// [EN] Self-assignment is skipped, since destroying first would delete the tree about to be taken over.
-			/// [JP] 自己代入は飛ばす。先に破棄すると、これから引き取る木を削除してしまうため。
 			if (this != &o)
 			{
 				Art::destroy<K, V>(root_);
@@ -1981,15 +1011,6 @@ namespace SeedCore
 			return *this;
 		}
 
-		/**
-		* [EN]
-		* Clears this map, then inserts every pair from init in list order.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* このマップをクリアしたうえで、init の全ペアをリスト順に挿入する。
-		*/
 		ArtMap& operator=(std::initializer_list<std::pair<const K, V>> init)
 		{
 			clear();
@@ -2000,79 +1021,26 @@ namespace SeedCore
 			return *this;
 		}
 
-		/**
-		* [EN]
-		* Inserts key/value if key is not already present. Returns
-		* true if inserted, false if key already existed (existing
-		* value left unchanged).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* key が未登録であれば key/value を挿入する。挿入した場合
-		* true、key が既に存在した場合は false を返す（既存の値は
-		* 変更しない）。
-		*/
 		Bool insert(const K& key, V value)
 		{
-			/// [EN] The tree is indexed by the encoded bytes, so the key is encoded once up front.
-			/// [JP] 木は符号化したバイトで引くので、キーは最初に1回だけ符号化する。
 			auto keyBite = Traits::to_bytes(key);
 			return insert_implementation(root_, key, keyBite, std::move(value), 0);
 		}
 
-		/**
-		* [EN]
-		* Inserts key/value, overwriting the existing value if key is
-		* already present.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* key/value を挿入する。key が既に存在する場合は既存の値を
-		* 上書きする。
-		*/
 		void upsert(const K& key, V value)
 		{
-			/// [EN] The tree is indexed by the encoded bytes, so the key is encoded once up front.
-			/// [JP] 木は符号化したバイトで引くので、キーは最初に1回だけ符号化する。
 			auto keyBite = Traits::to_bytes(key);
 			upsert_implementation(root_, key, keyBite, std::move(value), 0);
 		}
 
-		/**
-		* [EN]
-		* Invokes callback(const Leaf*) for every entry whose encoded key
-		* starts with prefix's encoded bytes, without allocating a result array.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* エンコード済みキーが prefix のエンコード済みバイト列で始まる
-		* 全要素について callback(const Leaf*) を呼び出す。結果配列の
-		* 確保は行わない。
-		*/
 		template<class F>
 		void prefix_search(const K& prefix, F&& callback)const
 		{
 			prefix_search_implementation(prefix, std::forward<F>(callback));
 		}
 
-		/**
-		* [EN]
-		* Returns pointers to every entry whose encoded key starts with
-		* prefix's encoded bytes.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* エンコード済みキーが prefix のエンコード済みバイト列で始まる
-		* 全要素へのポインタを返す。
-		*/
 		DynamicArray<const ValueType*> prefix_search(const K& prefix)const
 		{
-			/// [EN] Collects the matches into an array, for callers that want the results rather than a callback.
-			/// [JP] コールバックではなく結果そのものが欲しい呼び出し側のために、一致したものを配列へ集める。
 			DynamicArray<const ValueType*> result;
 
 			prefix_search_implementation(prefix, [&](const Leaf* leaf) {result.push_back(&leaf->pair_);});
@@ -2080,22 +1048,9 @@ namespace SeedCore
 			return result;
 		}
 
-		/**
-		* [EN]
-		* Returns a copy of the value stored for key, or std::nullopt if not found.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* key に対応する値のコピーを返す。見つからなければ std::nullopt。
-		*/
 		std::optional<V> find(const K& key)const
 		{
-			/// [EN] The tree is indexed by the encoded bytes, so the key is encoded once up front.
-			/// [JP] 木は符号化したバイトで引くので、キーは最初に1回だけ符号化する。
 			auto keyBite = Traits::to_bytes(key);
-			/// [EN] The value is copied out, so the caller never holds a reference into the tree.
-			/// [JP] 値はコピーして返すので、呼び出し側が木の中への参照を持つことは無い。
 			Leaf* leaf = find_leaf(keyBite);
 			if (!leaf)
 			{
@@ -2104,21 +1059,8 @@ namespace SeedCore
 			return leaf->pair_.second;
 		}
 
-		/**
-		* [EN]
-		* Returns a reference to the value stored for key. Throws
-		* std::out_of_range if not found.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* key に対応する値への参照を返す。見つからなければ
-		* std::out_of_range を送出する。
-		*/
 		V& at(const K& key)
 		{
-			/// [EN] The tree is indexed by the encoded bytes, so the key is encoded once up front.
-			/// [JP] 木は符号化したバイトで引くので、キーは最初に1回だけ符号化する。
 			auto keyBite = Traits::to_bytes(key);
 			Leaf* leaf = find_leaf(keyBite);
 			if (!leaf)
@@ -2128,19 +1070,8 @@ namespace SeedCore
 			return leaf->pair_.second;
 		}
 
-		/**
-		* [EN]
-		* Const overload of at.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* at の const オーバーロード。
-		*/
 		const V& at(const K& key)const
 		{
-			/// [EN] The tree is indexed by the encoded bytes, so the key is encoded once up front.
-			/// [JP] 木は符号化したバイトで引くので、キーは最初に1回だけ符号化する。
 			auto keyBite = Traits::to_bytes(key);
 			const Leaf* leaf = find_leaf(keyBite);
 			if (!leaf)
@@ -2150,199 +1081,72 @@ namespace SeedCore
 			return leaf->pair_.second;
 		}
 
-		/**
-		* [EN]
-		* Returns whether key is present.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* key が存在するかを返す。
-		*/
 		Bool contains(const K& key)const
 		{
-			/// [EN] The tree is indexed by the encoded bytes, so the key is encoded once up front.
-			/// [JP] 木は符号化したバイトで引くので、キーは最初に1回だけ符号化する。
 			auto keyBite = Traits::to_bytes(key);
 			return find_leaf(keyBite) != nullptr;
 		}
 
-		/**
-		* [EN]
-		* Removes key if present, rebalancing (shrinking) ancestor nodes
-		* as needed. Returns whether an entry was removed.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* key が存在すれば削除し、必要に応じて祖先ノードを再調整
-		* （縮小）する。要素が削除されたかを返す。
-		*/
 		Bool erase(const K& key)
 		{
-			/// [EN] The tree is indexed by the encoded bytes, so the key is encoded once up front.
-			/// [JP] 木は符号化したバイトで引くので、キーは最初に1回だけ符号化する。
 			auto keyBite = Traits::to_bytes(key);
-			/// [EN] The worker reports through removed, since its own return path is used for restructuring.
-			/// [JP] 作業関数は removed を通して結果を伝える。戻り道は木の組み替えに使っているため。
 			Bool removed = false;
 			erase_implementation(root_, keyBite, 0, removed);
 			return removed;
 		}
 
-		/**
-		* [EN]
-		* Returns the number of stored entries.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 格納されている要素数を返す。
-		*/
 		NODISCARD Size size()const noexcept
 		{
 			return size_;
 		}
 
-		/**
-		* [EN]
-		* Returns whether the map has no entries.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* マップに要素が1つもないかを返す。
-		*/
 		NODISCARD Bool empty()const noexcept
 		{
 			return size_ == 0;
 		}
 
-		/**
-		* [EN]
-		* Removes every entry.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 全要素を削除する。
-		*/
 		void clear()
 		{
-			/// [EN] Every node is deleted, and the map returns to the default-constructed state.
-			/// [JP] 全ノードを削除し、マップはデフォルト構築した状態に戻る。
 			Art::destroy<K, V>(root_);
 			root_ = nullptr;
 			size_ = 0;
 		}
 
-		/**
-		* [EN]
-		* Returns an iterator to the first entry (smallest key).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 最初の要素（最小キー）を指すイテレータを返す。
-		*/
 		Iterator begin()
 		{
 			return Iterator(root_);
 		}
 
-		/**
-		* [EN]
-		* Returns the past-the-end iterator.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 終端の次を指すイテレータを返す。
-		*/
 		Iterator end()
 		{
-			/// [EN] End is the iterator with no current entry, which is also where every walk finishes.
-			/// [JP] 終端は今の要素を持たないイテレータで、どの走査も最後はそこに行き着く。
 			return Iterator();
 		}
 
-		/**
-		* [EN]
-		* Const overload of begin().
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* begin() の const オーバーロード。
-		*/
 		ConstIterator begin()const
 		{
 			return ConstIterator(root_);
 		}
 
-		/**
-		* [EN]
-		* Const overload of end().
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* end() の const オーバーロード。
-		*/
 		ConstIterator end()const
 		{
 			return ConstIterator();
 		}
 
-		/**
-		* [EN]
-		* Returns an explicitly const iterator to the first entry (smallest key).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 最初の要素（最小キー）を指す、明示的な const イテレータを返す。
-		*/
 		ConstIterator cbegin()const
 		{
 			return ConstIterator(root_);
 		}
 
-		/**
-		* [EN]
-		* Returns the explicitly const past-the-end iterator.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 終端の次を指す、明示的な const イテレータを返す。
-		*/
 		ConstIterator cend()const
 		{
 			return ConstIterator();
 		}
 
 	private:
-		/// [EN] Root of the ART, or nullptr if the map is empty.
-		/// [JP] ART のルート。マップが空なら nullptr。
 		NodePtr root_ = nullptr;
 
-		/// [EN] Number of stored entries.
-		/// [JP] 格納されている要素数。
 		Size size_ = 0;
 
-		/**
-		* [EN]
-		* Walks the tree from the root, following the byte at each depth,
-		* to locate the leaf whose encoded key equals key. Returns
-		* nullptr if not found.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ルートから木を辿り、各深さのバイトに従って進み、エンコード済み
-		* キーが key と等しいリーフを探す。見つからなければ nullptr。
-		*/
 		Leaf* find_leaf(std::span<const Uint8> key)const
 		{
 			NodePtr node = root_;
@@ -2350,16 +1154,12 @@ namespace SeedCore
 
 			while (node)
 			{
-				/// [EN] Inner nodes only compare parts of the key, so a reached leaf is checked against the whole key.
-				/// [JP] 内部ノードはキーの一部しか比べないので、たどり着いた葉はキー全体と照合する。
 				if (node->type_ == Art::NodeType::Leaf)
 				{
 					auto* leaf = Art::as_leaf<K, V>(node);
 					return leaf->template matches<Traits>(key) ? leaf : nullptr;
 				}
- 
-				/// [EN] A prefix mismatch means no key under this node can equal key.
-				/// [JP] 接頭辞が合わなければ、このノードの下にある key と等しいキーは無い。
+
 				Uint32 prefix = node->check_prefix(key, depth);
 				if (prefix < node->prefixLength_)
 				{
@@ -2371,8 +1171,6 @@ namespace SeedCore
 					return nullptr;
 				}
 
-				/// [EN] The byte right after the prefix picks the child, which consumes one more byte of the key.
-				/// [JP] 接頭辞の直後のバイトで子を選び、キーをもう1バイト進める。
 				NodePtr* child = Art::find(node, key[depth]);
 				if (!child)
 				{
@@ -2384,21 +1182,6 @@ namespace SeedCore
 			return nullptr;
 		}
 
-		/**
-		* [EN]
-		* Walks the tree from the root to find the subtree node whose
-		* encoded key path exactly covers prefix (i.e. the root of the
-		* subtree containing every entry whose key starts with prefix).
-		* Returns nullptr if no entry has that prefix.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* ルートから木を辿り、エンコード済みキー経路がちょうど prefix を
-		* 覆うサブツリーのノード（すなわち、キーが prefix で始まる
-		* 全要素を含むサブツリーのルート）を探す。その接頭辞を持つ要素が
-		* なければ nullptr。
-		*/
 		NodePtr find_prefix_node(std::span<const Uint8> prefix)const
 		{
 			NodePtr node = root_;
@@ -2406,8 +1189,6 @@ namespace SeedCore
 
 			while (node)
 			{
-				/// [EN] Reaching a leaf ends the walk: the leaf is the answer only if its key actually starts with prefix.
-				/// [JP] 葉に着いたら終わり。そのキーが本当に prefix で始まる場合だけ、それが答えになる。
 				if (node->type_ == Art::NodeType::Leaf)
 				{
 					auto* leaf = Art::as_leaf<K, V>(node);
@@ -2426,8 +1207,6 @@ namespace SeedCore
 					return nullptr;
 				}
 
-				/// [EN] prefix running out inside this node's own prefix means every key below starts with it.
-				/// [JP] prefix がこのノード自身の接頭辞の途中で尽きたなら、その下の全てのキーは prefix で始まる。
 				Uint32 matched = node->check_prefix(prefix, depth);
 
 				if (depth + matched == prefix.size())
@@ -2460,25 +1239,8 @@ namespace SeedCore
 			return nullptr;
 		}
 
-		/**
-		* [EN]
-		* Recursive worker for insert: descends/splits nodes as needed to
-		* place a new leaf for originalKey/value at key[depth..],
-		* stopping without modification if an equal key already exists.
-		* Returns whether a new entry was inserted.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* insert の再帰ワーカー。originalKey/value の新しいリーフを
-		* key[depth..] の位置に配置するため、必要に応じてノードを降下・
-		* 分割する。等しいキーが既に存在する場合は変更せずに終了する。
-		* 新しい要素が挿入されたかを返す。
-		*/
 		Bool insert_implementation(NodePtr& node, const K& originalKey, std::span<const Uint8> key, V value, Uint32 depth)
 		{
-			/// [EN] An empty slot simply receives the new leaf.
-			/// [JP] 空いたスロットには、そのまま新しい葉を入れる。
 			if (!node) 
 			{
 				node = new Leaf(originalKey, std::move(value));
@@ -2488,16 +1250,12 @@ namespace SeedCore
 
 			if (node->type_ == Art::NodeType::Leaf)
 			{
-				/// [EN] Same key: insert does not overwrite, so nothing changes.
-				/// [JP] 同じキーなら、insert は上書きしないので何も変えない。
 				auto* existing = Art::as_leaf<K, V>(node);
 				if (existing->template matches<Traits>(key))
 				{
 					return false;
 				}
 
-				/// [EN] Two different keys meet at a leaf: a Node4 replaces it, holding their shared bytes as its prefix.
-				/// [JP] 違う2つのキーが葉で出会ったら、共通のバイトを接頭辞に持つ Node4 で置き換える。
 				auto* newNode = new Art::Node4();
 				Uint32 common = 0;
 				auto existingBytes = Traits::to_bytes(existing->pair_.first);
@@ -2506,16 +1264,12 @@ namespace SeedCore
 					++common;
 				}
 
-				/// [EN] Only up to MAX_PREFIX shared bytes fit into one node's prefix.
-				/// [JP] 1つのノードの接頭辞に入る共通のバイトは、MAX_PREFIX までだけ。
 				const Uint32 effectiveCommon = Min<Uint32>(common, static_cast<Uint32>(Art::MAX_PREFIX));
 				newNode->prefixLength_ = static_cast<Uint8>(effectiveCommon);
 				std::memcpy(newNode->prefix_, existingBytes.data() + depth, effectiveCommon);
 
 				Uint32 splitDepth = depth + effectiveCommon;
 
-				/// [EN] A longer shared run continues in a chained child: the next shared byte leads to the old leaf, and the insert recurses there.
-				/// [JP] それより長い共通部分は連なった子で続ける。次の共通バイトで古い葉へつなぎ、そこへ再帰的に挿入する。
 				if (common > Art::MAX_PREFIX)
 				{
 					Uint8 sharedByte = existingBytes[splitDepth];
@@ -2525,8 +1279,6 @@ namespace SeedCore
 					return insert_implementation(*slot, originalKey, key, std::move(value), splitDepth + 1);
 				}
 
-				/// [EN] The first differing byte of each key decides which child of the new Node4 it hangs under.
-				/// [JP] それぞれのキーの最初に異なるバイトで、新しい Node4 のどの子に下がるかが決まる。
 				Uint8 oldByte = (splitDepth < existingBytes.size()) ? existingBytes[splitDepth] : 0;
 				Uint8 newByte = (splitDepth < key.size()) ? key[splitDepth] : 0;
 
@@ -2539,8 +1291,6 @@ namespace SeedCore
 				return true;
 			}
 
-			/// [EN] The key leaves this node's prefix partway: a new Node4 takes the matched part, and this node keeps the rest.
-			/// [JP] キーがこのノードの接頭辞の途中で外れる。合った部分を新しい Node4 が持ち、このノードには残りを持たせる。
 			Uint32 prefix = node->check_prefix(key, depth);
 			if (prefix < node->prefixLength_) 
 			{
@@ -2548,15 +1298,11 @@ namespace SeedCore
 				newNode->prefixLength_ = static_cast<Uint8>(prefix);
 				std::memcpy(newNode->prefix_, node->prefix_, prefix);
 
-				/// [EN] The remaining prefix is rebuilt from any leaf below, since every key under this node shares it.
-				/// [JP] 残りの接頭辞は、下にある任意の葉から作り直す。このノードの下のキーは全てそれを共有しているため。
 				auto* anyLeaf = Art::minimum<K, V>(node);
 				auto anyBytes = Traits::to_bytes(anyLeaf->pair_.first);
 				Uint8 oldByte = node->prefix_[prefix];
 				newNode->add(oldByte, node);
 
-				/// [EN] The matched part and the branching byte now live in the parent, so they are dropped from this node's prefix.
-				/// [JP] 合った部分と分岐のバイトは親へ移ったので、このノードの接頭辞からは外す。
 				node->prefixLength_ -= (prefix + 1);
 				std::memmove(node->prefix_, anyBytes.data() + depth + prefix + 1, Min<Uint32>(node->prefixLength_, Art::MAX_PREFIX));
 
@@ -2569,8 +1315,6 @@ namespace SeedCore
 				return true;
 			}
 
-			/// [EN] The whole prefix matched: continue into the child for the next byte, or add a new leaf there.
-			/// [JP] 接頭辞は全て合った。次のバイトの子へ進むか、そこに新しい葉を足す。
 			depth += node->prefixLength_;
 			if (depth >= key.size())
 			{
@@ -2588,19 +1332,6 @@ namespace SeedCore
 			return true;
 		}
 
-		/**
-		* [EN]
-		* Recursive worker for upsert: like insert_implementation, but
-		* overwrites the existing leaf's value in place when key already
-		* exists instead of leaving it unchanged.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* upsert の再帰ワーカー。insert_implementation と似ているが、
-		* key が既に存在する場合は変更せずに終えるのではなく、既存リーフの
-		* 値をその場で上書きする。
-		*/
 		void upsert_implementation(NodePtr& node, const K& originalKey, std::span<const Uint8> key, V value, Uint32 depth)
 		{
 			if (!node) 
@@ -2613,23 +1344,17 @@ namespace SeedCore
 			if (node->type_ == Art::NodeType::Leaf)
 			{
 				auto* existing = Art::as_leaf<K, V>(node);
-				/// [EN] The only difference from insert: an existing key gets its value replaced.
-				/// [JP] insert との違いはここだけ。既存のキーなら値を置き換える。
 				if (existing->template matches<Traits>(key))
 				{
 					existing->pair_.second = std::move(value);
 					return;
 				}
 
-				/// [EN] The leaf holds a different key, so the new key is added by splitting it the same way insert does.
-				/// [JP] 葉には別のキーが入っているので、insert と同じ方法で葉を分けて新しいキーを足す。
 				Bool added = insert_implementation(node, originalKey, key, std::move(value), depth);
 				(void)added;
 				return;
 			}
 
-			/// [EN] A prefix mismatch means the key is new, so it is inserted the usual way.
-			/// [JP] 接頭辞が合わなければキーは新しいものなので、通常の方法で挿入する。
 			Uint32 prefix = node->check_prefix(key, depth);
 			if (prefix < node->prefixLength_) 
 			{
@@ -2654,21 +1379,6 @@ namespace SeedCore
 			++size_;
 		}
 
-		/**
-		* [EN]
-		* Recursive worker for erase: descends to the leaf matching key,
-		* deletes it, sets removed to true if found, and on the way back
-		* up path-compresses any ancestor left with a single child (merging
-		* its prefix with that child's).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* erase の再帰ワーカー。key に一致するリーフまで降下して削除し、
-		* 見つかった場合は removed を true にする。呼び出し元へ戻る際、
-		* 子が1つだけになった祖先ノードがあればパス圧縮する（その子の
-		* 接頭辞と結合する）。
-		*/
 		void erase_implementation(NodePtr& node, std::span<const Uint8> key, Uint32 depth, Bool& removed)
 		{
 			if (!node)
@@ -2676,8 +1386,6 @@ namespace SeedCore
 				return;
 			}
 
-			/// [EN] Only reached when the root itself is the leaf; deeper leaves are handled from their parent below.
-			/// [JP] ここへ来るのは根そのものが葉の場合だけ。深い位置の葉は、下で親の側から扱う。
 			if (node->type_ == Art::NodeType::Leaf)
 			{
 				auto* leaf = Art::as_leaf<K, V>(node);
@@ -2708,8 +1416,6 @@ namespace SeedCore
 				return;
 			}
 
-			/// [EN] A leaf child is removed here, so the parent's slot can be taken out of the node at the same time.
-			/// [JP] 葉の子はここで消す。そうすれば、親のノードからスロットも同時に外せる。
 			if ((*child)->type_ == Art::NodeType::Leaf) 
 			{
 				auto* leaf = Art::as_leaf<K, V>(*child);
@@ -2727,8 +1433,6 @@ namespace SeedCore
 				erase_implementation(*child, key, depth + 1, removed);
 			}
 
-			/// [EN] A node left with a single child adds nothing, so it is merged into that child on the way back up.
-			/// [JP] 子が1つだけになったノードは役に立たないので、戻り道でその子と一つにまとめる。
 			if (removed && node)
 			{
 				if (node->numberChildren_ == 1)
@@ -2800,8 +1504,6 @@ namespace SeedCore
 
 					if (onlyChild != nullptr)
 					{
-						/// [EN] An inner child takes over this node's prefix, its own key byte and its own prefix, if that still fits.
-						/// [JP] 内部ノードの子には、このノードの接頭辞、自分のキーのバイト、自分の接頭辞をつないで渡す。入りきる場合に限る。
 						if (onlyChild->type_ != Art::NodeType::Leaf)
 						{
 							Uint32 newPrefixLength = node->prefixLength_ + 1 + onlyChild->prefixLength_;
@@ -2832,8 +1534,6 @@ namespace SeedCore
 								delete oldNode;
 							}
 						}
-						/// [EN] A leaf child simply moves up, since leaves compare the whole key and need no prefix.
-						/// [JP] 葉の子はそのまま上へ移す。葉はキー全体を比べるので、接頭辞は要らない。
 						else
 						{
 							NodePtr oldNode = node;
@@ -2845,19 +1545,6 @@ namespace SeedCore
 			}
 		}
 
-		/**
-		* [EN]
-		* Shared worker for both prefix_search overloads: locates the
-		* subtree covering prefix via find_prefix_node, then visits
-		* every leaf under it in key order, invoking callback(const Leaf*).
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 両方の prefix_search オーバーロードで共有されるワーカー。
-		* find_prefix_node で prefix を覆うサブツリーを探し、その下の
-		* 全リーフをキー順に訪問して callback(const Leaf*) を呼び出す。
-		*/
 		template<class F>
 		void prefix_search_implementation(const K& prefix, F&& callback)const
 		{
@@ -2870,8 +1557,6 @@ namespace SeedCore
 				return;
 			}
 
-			/// [EN] The same stack walk the iterators use, started at the subtree root, visits matches in key order.
-			/// [JP] イテレータと同じスタックでの走査を部分木の根から始め、一致するものをキーの順に訪ねる。
 			DynamicArray<Art::StackFrame> stack;
 			stack.push_back({ node, 0 });
 

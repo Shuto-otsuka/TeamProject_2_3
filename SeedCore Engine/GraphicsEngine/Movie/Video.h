@@ -6,19 +6,6 @@ namespace SeedCore
 {
 	class BindlessHeap;
 
-	/**
-	* [EN]
-	* One loaded movie asset: the Media Foundation decoder, the frame
-	* texture it uploads into, and the playback state driven by MovieSystem.
-	* Opened and torn down by MovieLoader.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 読み込み済みのムービーアセット1つ: Media Foundation のデコーダ、
-	* フレームをアップロードするテクスチャ、および MovieSystem が駆動する
-	* 再生状態。MovieLoader が開いて破棄する。
-	*/
 	class Video :public NonCopyable
 	{
 		friend class MovieLoader;

@@ -13,191 +13,216 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* The Jolt contact listener behind JoltContactListener. Jolt reports
-	* contacts per sub-shape pair; they are merged per body pair, so each
-	* pair of entities gets one enter, at most one stay per step, and one
-	* exit.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* JoltContactListener の奥にある Jolt の接触リスナー。Jolt は接触を
-	* サブシェイプのペアごとに報告するが、ここではボディペアごとにまとめ、
-	* エンティティの組ごとに Enter を1回、Stay を1ステップ最大1回、Exit を1回通知する。
+	* JoltContactListener の中身。物理エンジンから知らせを受け取って貯めておく。
+	*
+	* @brief JoltContactListener の中身
+	*
+	* [EN]
+	* The inside of JoltContactListener; it receives news from the physics engine and stores it.
+	*
+	* @brief The inside of JoltContactListener
 	*/
 	class JoltContactListener::Impl final :public JPH::ContactListener
 	{
 	private:
 		/**
-		* [EN]
-		* Identifies the lifecycle phase of a queued contact event.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* キューへ積む接触イベントのライフサイクル段階を表す。
+		* 知らせの種類。
+		*
+		* @brief 知らせの種類
+		*
+		* [EN]
+		* The kind of news.
+		*
+		* @brief The kind of news
 		*/
 		enum class ContactEventKind
 		{
-			/// [EN] Contact began during the physics update.
-			/// [JP] 物理更新中に接触が始まった。
+			/// [JP] ぶつかり始めた
+			/// [EN] Started hitting
 			Enter,
 
-			/// [EN] Contact continued during the physics update.
-			/// [JP] 物理更新中に接触が継続した。
+			/// [JP] ぶつかり続けている
+			/// [EN] Still hitting
 			Stay,
 
-			/// [EN] Contact ended during the physics update.
-			/// [JP] 物理更新中に接触が終了した。
+			/// [JP] 離れた
+			/// [EN] Separated
 			Exit,
 		};
 
 		/**
-		* [EN]
-		* Deferred contact notification transferred from physics callbacks.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 物理コールバックから引き渡される遅延接触通知。
+		* 伝える知らせ1つ分。
+		*
+		* @brief 知らせ1つ
+		*
+		* [EN]
+		* One piece of news to pass on.
+		*
+		* @brief One piece of news
 		*/
 		struct ContactEvent
 		{
-			/// [EN] Entity represented by the first body.
-			/// [JP] 1つ目のボディが表すエンティティ。
+			/// [JP] 1つめのアクター
+			/// [EN] The first actor
 			EntityID entityID_;
 
-			/// [EN] Entity represented by the second body.
-			/// [JP] 2つ目のボディが表すエンティティ。
+			/// [JP] 2つめのアクター
+			/// [EN] The second actor
 			EntityID otherEntityID_;
 
-			/// [EN] Lifecycle phase dispatched for this contact.
-			/// [JP] この接触で通知するライフサイクル段階。
+			/// [JP] 知らせの種類
+			/// [EN] The kind of news
 			ContactEventKind kind_ = ContactEventKind::Enter;
 
-			/// [EN] Whether either contacted body is a sensor.
-			/// [JP] 接触したボディのいずれかがセンサーか。
+			/// [JP] 重なりだけを知らせるものか
+			/// [EN] Whether it is an overlap-only contact
 			Bool isSensor_ = false;
 		};
 
 		/**
-		* [EN]
-		* Contact state of one body pair. Jolt reports contacts per
-		* sub-shape pair, so one body pair can hold several at once.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 1組のボディペアの接触状態。Jolt は接触をサブシェイプのペアごとに
-		* 報告するので、1組のボディペアが同時に複数の接触を持つことがある。
+		* ぶつかっている2つの体の組の記録。
+		*
+		* @brief ぶつかっている組
+		*
+		* [EN]
+		* A record of two bodies that are touching.
+		*
+		* @brief A touching pair
 		*/
 		struct ContactPair
 		{
-			/// [EN] Entities represented by the two bodies, the one with the smaller body ID first.
-			/// [JP] 2つのボディが表すエンティティ。ボディ ID が小さいほうが first。
+			/// [JP] 2つのアクター
+			/// [EN] The two actors
 			std::pair<EntityID, EntityID> entityIDs_;
 
-			/// [EN] Whether either body is a sensor.
-			/// [JP] どちらかのボディがセンサーか。
+			/// [JP] 重なりだけを知らせるものか
+			/// [EN] Whether it is an overlap-only contact
 			Bool isSensor_ = false;
 
-			/// [EN] Number of sub-shape pairs currently in contact.
-			/// [JP] 現在接触しているサブシェイプのペア数。
+			/// [JP] 触れている部分の数。0 になったら離れた
+			/// [EN] How many parts are touching; 0 means they separated
 			Uint32 contactCount_ = 0;
 		};
 
 	public:
 		/**
-		* [EN]
-		* Decides which body pairs that lost their last contact really
-		* exited, then drains queued contacts and dispatches their
-		* collision or trigger events.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 最後の接触を失ったボディペアのうち本当に離れたものを判定し、その後
-		* キュー内の接触を取り出して衝突またはトリガーイベントを通知する。
+		* 貯めた知らせを、アクターのスクリプトにまとめて伝える。
+		*
+		* @brief 知らせを伝える
+		* @param bodyInterface 体の状態を調べる窓口
+		* @param world         伝える世界
+		* @note  眠っている体の組は、離れたことにしない
+		*
+		* [EN]
+		* Passes the stored news to the actors' scripts all together.
+		*
+		* @brief Reports the news
+		* @param bodyInterface The door used to check bodies
+		* @param world         The world to report to
+		* @note  Pairs whose bodies are asleep are not treated as separated
 		*/
 		void DispatchEvent(const JPH::BodyInterface& bodyInterface, World& world);
 
 		/**
-		* [EN]
-		* Queues an enter event when the first sub-shape contact of a body
-		* pair is added, and a stay event when another one is added to a
-		* pair already in contact or to a resting pair picking its contact
-		* back up.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* ボディペアで最初のサブシェイプの接触が追加されたときに Enter イベントを、
-		* 既に接触中のペアへさらに追加されたとき、または休止中のペアが接触を
-		* 取り戻したときに Stay イベントをキューへ積む。
+		* 物理エンジンが「ぶつかり始めた」と知らせてきたときに呼ばれる。
+		*
+		* @brief ぶつかり始めを受け取る
+		* @param body1    1つめの体
+		* @param body2    2つめの体
+		* @param manifold ぶつかった場所の情報
+		* @param settings ぶつかり方の設定
+		*
+		* [EN]
+		* Called when the physics engine says two bodies started touching.
+		*
+		* @brief Receives a hit starting
+		* @param body1    The first body
+		* @param body2    The second body
+		* @param manifold Where they touched
+		* @param settings How the contact behaves
 		*/
 		void OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)override;
 
 		/**
-		* [EN]
-		* Queues a stay event for a body pair still in contact, at most once
-		* per step.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 接触が続いているボディペアの Stay イベントを、1ステップにつき最大1回
-		* キューへ積む。
+		* 物理エンジンが「ぶつかり続けている」と知らせてきたときに呼ばれる。
+		*
+		* @brief ぶつかり中を受け取る
+		* @param body1    1つめの体
+		* @param body2    2つめの体
+		* @param manifold ぶつかった場所の情報
+		* @param settings ぶつかり方の設定
+		*
+		* [EN]
+		* Called when the physics engine says two bodies are still touching.
+		*
+		* @brief Receives an ongoing hit
+		* @param body1    The first body
+		* @param body2    The second body
+		* @param manifold Where they touch
+		* @param settings How the contact behaves
 		*/
 		void OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)override;
 
 		/**
-		* [EN]
-		* Marks a body pair as resting when its last sub-shape contact is
-		* removed. Whether it exited or only fell asleep is decided in
-		* DispatchEvent.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* ボディペアの最後のサブシェイプの接触が削除されたとき、そのペアを休止中
-		* にする。離れたのか眠っただけなのかは DispatchEvent で判定する。
+		* 物理エンジンが「離れた」と知らせてきたときに呼ばれる。
+		*
+		* @brief 離れたことを受け取る
+		* @param subShapePair 離れた2つの体の組
+		*
+		* [EN]
+		* Called when the physics engine says two bodies separated.
+		*
+		* @brief Receives a separation
+		* @param subShapePair The pair of bodies that separated
 		*/
 		void OnContactRemoved(const JPH::SubShapeIDPair& subShapePair)override;
 
 	private:
-		/// [EN] Synchronizes callback writes, which Jolt makes from its worker threads, with event dispatch.
-		/// [JP] Jolt のワーカースレッドから来るコールバックの書き込みと、イベント通知を同期する。
+		/// [JP] 物理エンジンは別のスレッドから知らせてくるので、守りながら触る
+		/// [EN] The physics engine calls from other threads, so guard access
 		std::mutex mutex_;
 
-		/// [EN] Contact events waiting for dispatch on the World.
-		/// [JP] World への通知を待つ接触イベント。
+		/// [JP] まだ伝えていない知らせ
+		/// [EN] News not passed on yet
 		DynamicArray<ContactEvent> pendingEvents_;
 
-		/// [EN] Body pairs in contact, keyed by both body IDs packed into one value, the smaller ID in the upper half.
-		/// [JP] 接触中のボディペア。キーは2つのボディ ID を1つの値へまとめたもので、小さいほうの ID を上位側に置く。
+		/// [JP] 今ぶつかっている組
+		/// [EN] The pairs touching right now
 		std::unordered_map<Uint64, ContactPair> contactPairs_;
 
-		/// [EN] Body pairs that already queued an enter or stay event during the current step.
-		/// [JP] 現在のステップで既に Enter か Stay のイベントを積んだボディペア。
+		/// [JP] このフレームでもう伝えた組。同じ知らせを2回出さない
+		/// [EN] Pairs already reported this frame, so nothing is sent twice
 		std::unordered_set<Uint64> notifiedPairs_;
 
-		/// [EN] Body pairs whose last contact was removed, kept while either body sleeps; they exit once both are awake without the contact coming back.
-		/// [JP] 最後の接触が削除されたボディペア。どちらかが眠っている間は保持し、両方が起きても接触が戻らなければ Exit する。
+		/// [JP] 触れている部分がなくなった組。眠っているだけかを次で確かめる
+		/// [EN] Pairs with nothing touching; next time we check whether they are just asleep
 		std::unordered_set<Uint64> restingPairs_;
 	};
 
 	/**
-	* [EN]
-	* Decides which body pairs that lost their last contact really
-	* exited, then drains queued contacts and dispatches their
-	* collision or trigger events.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 最後の接触を失ったボディペアのうち本当に離れたものを判定し、その後
-	* キュー内の接触を取り出して衝突またはトリガーイベントを通知する。
+	* 貯めた知らせを、アクターのスクリプトにまとめて伝える。
+	*
+	* @brief 知らせを伝える
+	* @param bodyInterface 体の状態を調べる窓口
+	* @param world         伝える世界
+	* @note  眠っている体の組は、離れたことにしない
+	*
+	* [EN]
+	* Passes the stored news to the actors' scripts all together.
+	*
+	* @brief Reports the news
+	* @param bodyInterface The door used to check bodies
+	* @param world         The world to report to
+	* @note  Pairs whose bodies are asleep are not treated as separated
 	*/
 	void JoltContactListener::Impl::DispatchEvent(const JPH::BodyInterface& bodyInterface, World& world)
 	{
@@ -205,8 +230,8 @@ namespace SeedCore
 		{
 			std::lock_guard<std::mutex> lock(mutex_);
 
-			/// [EN] A sleeping body loses all its contacts, so a resting pair exits only once neither body is asleep.
-			/// [JP] 眠ったボディは接触をすべて失うので、休止中のペアが Exit するのは、どちらのボディも眠っていないときだけ。
+			/// [JP] 触れなくなった組が、本当に離れたのか眠っているだけかを確かめる
+			/// [EN] Check whether a pair that stopped touching really separated or is just asleep
 			for (auto restingIt = restingPairs_.begin(); restingIt != restingPairs_.end();)
 			{
 				Uint64 pairKey = *restingIt;
@@ -217,17 +242,11 @@ namespace SeedCore
 					continue;
 				}
 
-				/// [EN] The key holds the smaller body ID in its upper half and the larger one in its lower half.
-				/// [JP] キーの上位側に小さいほうのボディ ID、下位側に大きいほうのボディ ID が入っている。
 				JPH::BodyID body1ID(static_cast<Uint32>(pairKey >> 32));
 				JPH::BodyID body2ID(static_cast<Uint32>(pairKey));
 
-				/// [EN] A destroyed or removed body ends the contact for good.
-				/// [JP] 破棄された、またはシミュレーションから外されたボディとの接触は、そこで終わる。
 				Bool bothAdded = bodyInterface.IsAdded(body1ID) && bodyInterface.IsAdded(body2ID);
 
-				/// [EN] A static body is never active, so only a non-static body that is not active is asleep.
-				/// [JP] スタティックのボディは常に非アクティブなので、眠っているのはスタティック以外で非アクティブなボディだけ。
 				Bool asleep = bothAdded && ((bodyInterface.GetMotionType(body1ID) != JPH::EMotionType::Static && !bodyInterface.IsActive(body1ID)) || (bodyInterface.GetMotionType(body2ID) != JPH::EMotionType::Static && !bodyInterface.IsActive(body2ID)));
 
 				if (asleep)
@@ -236,26 +255,22 @@ namespace SeedCore
 					continue;
 				}
 
-				/// [EN] Both bodies are awake and the contact did not come back, so the pair really separated.
-				/// [JP] 両方のボディが起きていて接触が戻らなかったので、ペアは本当に離れた。
 				const ContactPair& pair = pairIt->second;
 				pendingEvents_.push_back(ContactEvent{ pair.entityIDs_.first, pair.entityIDs_.second, ContactEventKind::Exit, pair.isSensor_ });
 				contactPairs_.erase(pairIt);
 				restingIt = restingPairs_.erase(restingIt);
 			}
 
-			/// [EN] Move pending events to local storage while holding the callback mutex.
-			/// [JP] コールバック用ミューテックスの保持中に、保留イベントをローカルへ移す。
+			/// [JP] 貯めた知らせを取り出して空にする
+			/// [EN] Take out the stored news and empty the store
 			events.assign(pendingEvents_.begin(), pendingEvents_.end());
 			pendingEvents_.clear();
 
-			/// [EN] Each step dispatches at most one enter or stay per body pair, so the record starts over here.
-			/// [JP] 1ステップにつきボディペアごとの Enter か Stay は最大1回なので、記録はここでやり直す。
 			notifiedPairs_.clear();
 		}
 
-		/// [EN] Dispatch each phase symmetrically to both participating entities.
-		/// [JP] 各段階のイベントを、参加する両方のエンティティへ対称に通知する。
+		/// [JP] 種類ごとに、両方のアクターへ知らせる
+		/// [EN] Tell both actors, by kind of news
 		for (const ContactEvent& event : events)
 		{
 			switch (event.kind_)
@@ -301,35 +316,40 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Queues an enter event when the first sub-shape contact of a body
-	* pair is added, and a stay event when another one is added to a
-	* pair already in contact or to a resting pair picking its contact
-	* back up.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* ボディペアで最初のサブシェイプの接触が追加されたときに Enter イベントを、
-	* 既に接触中のペアへさらに追加されたとき、または休止中のペアが接触を
-	* 取り戻したときに Stay イベントをキューへ積む。
+	* 物理エンジンが「ぶつかり始めた」と知らせてきたときに呼ばれる。
+	*
+	* @brief ぶつかり始めを受け取る
+	* @param body1    1つめの体
+	* @param body2    2つめの体
+	* @param manifold ぶつかった場所の情報
+	* @param settings ぶつかり方の設定
+	*
+	* [EN]
+	* Called when the physics engine says two bodies started touching.
+	*
+	* @brief Receives a hit starting
+	* @param body1    The first body
+	* @param body2    The second body
+	* @param manifold Where they touched
+	* @param settings How the contact behaves
 	*/
 	void JoltContactListener::Impl::OnContactAdded(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)
 	{
-		/// [EN] Both body IDs packed into one key; Jolt always passes the smaller ID as body1, so a pair keeps the same key.
-		/// [JP] 2つのボディ ID を1つのキーへまとめる。Jolt は常に小さいほうの ID を body1 として渡すので、同じペアは同じキーになる。
+		/// [JP] 2つの体の番号から、組を表す鍵を作る
+		/// [EN] Make a key for the pair from the two body numbers
 		Uint64 pairKey = (static_cast<Uint64>(body1.GetID().GetIndexAndSequenceNumber()) << 32) | body2.GetID().GetIndexAndSequenceNumber();
 
 		std::lock_guard<std::mutex> lock(mutex_);
 
 		ContactPair& pair = contactPairs_[pairKey];
 
-		/// [EN] A resting pair whose body woke up still in contact picks the contact back up instead of entering anew.
-		/// [JP] 接触したまま起きた休止中のペアは、新たに Enter せず接触を取り戻す。
+		/// [JP] 眠っていただけの組が戻ってきたなら、始まりとしては扱わない
+		/// [EN] A pair that was only asleep coming back is not a new start
 		Bool resumed = pair.contactCount_ == 0 && restingPairs_.erase(pairKey) > 0;
 
-		/// [EN] The first sub-shape contact enters the pair; the entities and sensor flag are kept for the removal callback, which only gives body IDs.
-		/// [JP] 最初のサブシェイプの接触でペアが Enter する。削除コールバックはボディ ID しか渡さないので、エンティティとセンサーの区分はここで保持する。
+		/// [JP] 初めてなら始まりを、そうでなければ続いていることを1回だけ知らせる
+		/// [EN] Report a start the first time, otherwise report ongoing just once
 		if (pair.contactCount_ == 0 && !resumed)
 		{
 			pair.entityIDs_ = { std::bit_cast<EntityID>(static_cast<Uint64>(body1.GetUserData())), std::bit_cast<EntityID>(static_cast<Uint64>(body2.GetUserData())) };
@@ -338,8 +358,6 @@ namespace SeedCore
 			notifiedPairs_.insert(pairKey);
 			pendingEvents_.push_back(ContactEvent{ pair.entityIDs_.first, pair.entityIDs_.second, ContactEventKind::Enter, pair.isSensor_ });
 		}
-		/// [EN] Another sub-shape touching a pair already in contact, or a resting pair picking its contact back up, means the pair is staying.
-		/// [JP] 既に接触中のペアで別のサブシェイプが触れたのも、休止中のペアが接触を取り戻したのも、ペアとしては接触が続いているということ。
 		else if (notifiedPairs_.insert(pairKey).second)
 		{
 			pendingEvents_.push_back(ContactEvent{ pair.entityIDs_.first, pair.entityIDs_.second, ContactEventKind::Stay, pair.isSensor_ });
@@ -349,20 +367,26 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Queues a stay event for a body pair still in contact, at most once
-	* per step.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 接触が続いているボディペアの Stay イベントを、1ステップにつき最大1回
-	* キューへ積む。
+	* 物理エンジンが「ぶつかり続けている」と知らせてきたときに呼ばれる。
+	*
+	* @brief ぶつかり中を受け取る
+	* @param body1    1つめの体
+	* @param body2    2つめの体
+	* @param manifold ぶつかった場所の情報
+	* @param settings ぶつかり方の設定
+	*
+	* [EN]
+	* Called when the physics engine says two bodies are still touching.
+	*
+	* @brief Receives an ongoing hit
+	* @param body1    The first body
+	* @param body2    The second body
+	* @param manifold Where they touch
+	* @param settings How the contact behaves
 	*/
 	void JoltContactListener::Impl::OnContactPersisted(const JPH::Body& body1, const JPH::Body& body2, const JPH::ContactManifold& manifold, JPH::ContactSettings& settings)
 	{
-		/// [EN] Both body IDs packed into one key; Jolt always passes the smaller ID as body1, so a pair keeps the same key.
-		/// [JP] 2つのボディ ID を1つのキーへまとめる。Jolt は常に小さいほうの ID を body1 として渡すので、同じペアは同じキーになる。
 		Uint64 pairKey = (static_cast<Uint64>(body1.GetID().GetIndexAndSequenceNumber()) << 32) | body2.GetID().GetIndexAndSequenceNumber();
 
 		std::lock_guard<std::mutex> lock(mutex_);
@@ -373,8 +397,8 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Every touching sub-shape reports a persisted contact, but the pair stays only once per step.
-		/// [JP] 触れているサブシェイプごとに継続の報告が来るが、ペアの Stay は1ステップに1回だけ。
+		/// [JP] このフレームでまだ伝えていなければ、続いていることを知らせる
+		/// [EN] Report ongoing if it has not been reported this frame
 		if (notifiedPairs_.insert(pairKey).second)
 		{
 			const ContactPair& pair = it->second;
@@ -383,21 +407,20 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Marks a body pair as resting when its last sub-shape contact is
-	* removed. Whether it exited or only fell asleep is decided in
-	* DispatchEvent.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* ボディペアの最後のサブシェイプの接触が削除されたとき、そのペアを休止中
-	* にする。離れたのか眠っただけなのかは DispatchEvent で判定する。
+	* 物理エンジンが「離れた」と知らせてきたときに呼ばれる。
+	*
+	* @brief 離れたことを受け取る
+	* @param subShapePair 離れた2つの体の組
+	*
+	* [EN]
+	* Called when the physics engine says two bodies separated.
+	*
+	* @brief Receives a separation
+	* @param subShapePair The pair of bodies that separated
 	*/
 	void JoltContactListener::Impl::OnContactRemoved(const JPH::SubShapeIDPair& subShapePair)
 	{
-		/// [EN] Both body IDs packed into one key, in the same order as the added and persisted callbacks.
-		/// [JP] 2つのボディ ID を1つのキーへまとめる。順序は追加・継続のコールバックと同じ。
 		Uint64 pairKey = (static_cast<Uint64>(subShapePair.GetBody1ID().GetIndexAndSequenceNumber()) << 32) | subShapePair.GetBody2ID().GetIndexAndSequenceNumber();
 
 		std::lock_guard<std::mutex> lock(mutex_);
@@ -408,8 +431,8 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] The pair stops touching only when its last touching sub-shape lets go.
-		/// [JP] ペアの接触が途切れるのは、最後に触れていたサブシェイプが離れたときだけ。
+		/// [JP] 触れている部分がまだあれば、離れていない
+		/// [EN] If some part still touches, they have not separated
 		ContactPair& pair = it->second;
 		--pair.contactCount_;
 		if (pair.contactCount_ > 0)
@@ -417,46 +440,41 @@ namespace SeedCore
 			return;
 		}
 
-		/// [EN] Bodies cannot be inspected during this callback, so whether the pair separated or a body only fell asleep is decided in DispatchEvent.
-		/// [JP] このコールバック中はボディを調べられないので、ペアが離れたのかボディが眠っただけなのかは DispatchEvent で判定する。
+		/// [JP] 離れたかどうかは、次にまとめて伝えるときに確かめる
+		/// [EN] Whether they really separated is checked at the next report
 		restingPairs_.insert(pairKey);
 	}
 
 	/**
-	* [EN]
-	* Creates a listener with no contacts recorded yet.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 接触をまだ何も記録していないリスナーを作る。
+	* 中身を作る。
+	*
+	* @brief 中身を作る
+	*
+	* [EN]
+	* Makes the inner parts.
+	*
+	* @brief Makes the inner parts
 	*/
 	JoltContactListener::JoltContactListener() :impl_(MakePtr<Impl>())
 	{
 		/// No Code
 	}
 
-	/**
-	* [EN]
-	* Defined here, where Impl is a complete type.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Impl が完全型になるここで定義する。
-	*/
 	JoltContactListener::~JoltContactListener() = default;
 
 	/**
-	* [EN]
-	* Registers this listener on the physics system, so body contacts
-	* start arriving here.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 物理システムにこのリスナーを登録し、ボディの接触がここへ届く
-	* ようにする。
+	* 物理エンジンに、知らせの受け取り先として登録する。
+	*
+	* @brief 受け取り先として登録する
+	* @param physicsSystem 登録する物理エンジン
+	*
+	* [EN]
+	* Registers itself with the physics engine as the place to send news.
+	*
+	* @brief Registers as the listener
+	* @param physicsSystem The physics engine to register with
 	*/
 	void JoltContactListener::Attach(JPH::PhysicsSystem& physicsSystem)
 	{
@@ -464,16 +482,19 @@ namespace SeedCore
 	}
 
 	/**
-	* [EN]
-	* Decides which body pairs that lost their last contact really
-	* exited, then drains queued contacts and dispatches their
-	* collision or trigger events on world.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 最後の接触を失ったボディペアのうち本当に離れたものを判定し、その後
-	* キュー内の接触を取り出して衝突またはトリガーイベントを world へ通知する。
+	* 集めた知らせを、アクターのスクリプトにまとめて伝える。
+	*
+	* @brief 知らせを伝える
+	* @param physicsSystem 体の状態を調べる物理エンジン
+	* @param world         伝える世界
+	*
+	* [EN]
+	* Passes the collected news to the actors' scripts all together.
+	*
+	* @brief Reports the news
+	* @param physicsSystem The physics engine used to check bodies
+	* @param world         The world to report to
 	*/
 	void JoltContactListener::DispatchEvent(JPH::PhysicsSystem& physicsSystem, World& world)
 	{

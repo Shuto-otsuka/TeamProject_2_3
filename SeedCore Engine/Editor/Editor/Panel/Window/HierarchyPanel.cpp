@@ -1,0 +1,546 @@
+#include <Editor/Editor/Panel/Window/HierarchyPanel.h>
+#include <Editor/Editor/Context/EditorContext.h>
+#include <Editor/Editor/ImGui/ImGuiRenderer.h>
+#include <Editor/Editor/ImGui/ImGuiTexture.h>
+#include <Editor/Editor/Interaction/ActorEditing.h>
+#include <FoundationEngine/World/World.h>
+#include <FoundationEngine/World/Actor/Actor.h>
+#include <FoundationEngine/World/ECS/Component/Name.h>
+#include <FoundationEngine/World/Command/ActorCommand.h>
+#include <FoundationEngine/World/Command/CompoundCommand.h>
+#include <FoundationEngine/Resource/Blueprint/BlueprintNode.h>
+#include <FoundationEngine/Resource/Prefab/PrefabBlueprint.h>
+#include <FoundationEngine/Resource/Prefab/PrefabSystem.h>
+#include <FoundationEngine/Resource/ResourceCache.h>
+#include <FoundationEngine/File/FileDialog.h>
+#include <GraphicsEngine/Camera/EditorCamera.h>
+#include <GraphicsEngine/Camera/CanvasCamera.h>
+#include <GraphicsEngine/Graphics/Graphics.h>
+#include <GraphicsEngine/Texture/Image.h>
+#include <GraphicsEngine/Font/Text.h>
+#include <GraphicsEngine/Movie/Movie.h>
+#include <GraphicsEngine/Model/Animation/Animator.h>
+#include <GraphicsEngine/D3D12/SwapChain/GraphicsResolution.h>
+#include <FoundationEngine/World/ECS/Component/Bounds.h>
+#include <FoundationEngine/World/Actor/ActorAccessor.h>
+#include <FoundationEngine/World/WorldAccessor.h>
+#include <FoundationEngine/Resource/Prefab/PrefabRegistry.h>
+#include <FoundationEngine/File/FileLocator.h>
+
+namespace SeedCore
+{
+	HierarchyPanel::HierarchyPanel(EditorContext& context, ImGuiTexture& imguiTexture) : context_(context), imguiTexture_(imguiTexture)
+	{
+		/// No Code
+	}
+
+	void HierarchyPanel::Draw()
+	{
+		ImGuiID dockspaceID = context_.graphics_.imgui_->DockSpaceID();
+		ImGui::SetNextWindowDockID(dockspaceID, ImGuiCond_FirstUseEver);
+
+		if (ImGui::Begin("ヒエラルキー"))
+		{
+			rows_.clear();
+			pendingClickActor_ = Actor();
+
+			DynamicArray<Actor> roots;
+			ActorRegistry& actorRegistry = WorldAccessor::Actors(*context_.world_.world_);
+			for (EntityID root = actorRegistry.Root(); root != EntityID{}; root = actorRegistry.Record(root)->nextSibling_)
+			{
+				roots.push_back(WorldAccessor::Make(*context_.world_.world_, root));
+			}
+			for (Actor root : roots)
+			{
+				DrawActorNode(root);
+			}
+
+			Float buttonHeight = ImGui::GetFrameHeightWithSpacing() + 20.0f + 8.0f;
+			ImVec2 remaining = ImGui::GetContentRegionAvail();
+			remaining.y -= buttonHeight;
+			if (remaining.y < 24.0f)
+			{
+				remaining.y = 24.0f;
+			}
+			ImGui::InvisibleButton("##HierarchyDrop", remaining);
+
+			if (ImGui::BeginDragDropTarget())
+			{
+				if (const ImGuiPayload* preview = ImGui::AcceptDragDropPayload("HIERARCHY_ACTOR", ImGuiDragDropFlags_AcceptPeekOnly))
+				{
+					ImVec2 min = ImGui::GetItemRectMin();
+					ImVec2 max = ImGui::GetItemRectMax();
+					ImGui::GetWindowDrawList()->AddRectFilled(min, max, IM_COL32(100, 180, 255, 50));
+					ImGui::GetWindowDrawList()->AddRect(min, max, IM_COL32(100, 180, 255, 200), 0.0f, 0, 2.0f);
+
+					if (preview->IsDelivery())
+					{
+						Actor dropped = *static_cast<const Actor*>(preview->Data);
+						Actor oldParent = dropped.Parent();
+						Uint32 oldParentId = oldParent ? WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(oldParent).GetID())->persistentID_ : 0;
+						Uint32 oldPrevSiblingId = PrevSiblingPersistentId(dropped);
+						dropped.Parent(Actor());
+						context_.scene_.history_.Push(MakePtr<ActorReparentCommand>(*context_.world_.world_, WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(dropped).GetID())->persistentID_, oldParentId, oldPrevSiblingId, 0));
+					}
+				}
+
+				if (const ImGuiPayload* prefabPayload = ImGui::AcceptDragDropPayload("ASSET_PREFAB"))
+				{
+					Uint32 assetID = *static_cast<const Uint32*>(prefabPayload->Data);
+					Handle<PrefabBlueprint> handle = context_.world_.resource_->Prefabs().Load(assetID, *context_.world_.resource_);
+					PrefabBlueprint* prefab = context_.world_.resource_->Prefabs().Get(handle);
+					if (prefab)
+					{
+						prefab->Instantiate(*context_.world_.world_, *context_.world_.resource_, Actor(), assetID);
+					}
+				}
+
+				ImGui::EndDragDropTarget();
+			}
+
+			if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left) && !ImGui::IsDragDropActive())
+			{
+				marqueeActive_ = true;
+				marqueeStart_ = ImGui::GetMousePos();
+				marqueeScrollY_ = ImGui::GetScrollY();
+			}
+
+			if (marqueeActive_)
+			{
+				ImVec2 current = ImGui::GetMousePos();
+
+				ImVec2 adjustedStart(marqueeStart_.x, marqueeStart_.y - (ImGui::GetScrollY() - marqueeScrollY_));
+
+				Float autoScrollMargin = 32.0f;
+				Float autoScrollSpeed = 900.0f;
+				ImVec2 windowMin = ImGui::GetWindowPos();
+				ImVec2 windowMax(windowMin.x + ImGui::GetWindowSize().x, windowMin.y + ImGui::GetWindowSize().y);
+				if (current.y < windowMin.y + autoScrollMargin)
+				{
+					Float depth = (windowMin.y + autoScrollMargin) - current.y;
+					ImGui::SetScrollY(ImGui::GetScrollY() - autoScrollSpeed * (depth / autoScrollMargin) * ImGui::GetIO().DeltaTime);
+				}
+				else if (current.y > windowMax.y - autoScrollMargin)
+				{
+					Float depth = current.y - (windowMax.y - autoScrollMargin);
+					ImGui::SetScrollY(ImGui::GetScrollY() + autoScrollSpeed * (depth / autoScrollMargin) * ImGui::GetIO().DeltaTime);
+				}
+
+				ImVec2 rectMin(Min(adjustedStart.x, current.x), Min(adjustedStart.y, current.y));
+				ImVec2 rectMax(Max(adjustedStart.x, current.x), Max(adjustedStart.y, current.y));
+
+				ImGui::GetWindowDrawList()->AddRectFilled(rectMin, rectMax, IM_COL32(100, 180, 255, 40));
+				ImGui::GetWindowDrawList()->AddRect(rectMin, rectMax, IM_COL32(100, 180, 255, 200));
+
+				if (!ImGui::IsMouseDown(ImGuiMouseButton_Left))
+				{
+					context_.selection_.Clear();
+					for (const RowRect& row : rows_)
+					{
+						Bool overlaps = !(row.max_.x < rectMin.x || row.min_.x > rectMax.x || row.max_.y < rectMin.y || row.min_.y > rectMax.y);
+						if (overlaps)
+						{
+							context_.selection_.Add(row.actor_);
+						}
+					}
+
+					rangeAnchor_ = context_.selection_.Primary();
+
+					marqueeActive_ = false;
+				}
+			}
+
+			if (pendingClickActor_)
+			{
+				HandleNodeSelection(pendingClickActor_, pendingClickCtrl_, pendingClickShift_);
+				pendingClickActor_ = Actor();
+			}
+
+			if (ImGui::BeginPopupContextItem("HierarchyContext"))
+			{
+				if (ImGui::MenuItem("空のActorを作成"))
+				{
+					String uniqueName = GetUniqueName();
+					Actor actor = context_.world_.world_->CreateActor(uniqueName);
+					DynamicArray<BlueprintNode> nodes;
+					BlueprintNode::Capture(actor, nodes);
+					context_.scene_.history_.Push(MakePtr<ActorCreateCommand>(*context_.world_.world_, *context_.world_.resource_, nodes));
+				}
+				ImGui::EndPopup();
+			}
+
+			if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows))
+			{
+				ImGuiIO& io = ImGui::GetIO();
+				if (io.KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_D, false))
+				{
+					ActorEditing::DuplicationSelection(context_);
+					rangeAnchor_ = context_.selection_.Primary();
+				}
+				if (ImGui::IsKeyPressed(ImGuiKey_Delete, false))
+				{
+					ActorEditing::DeleteSelection(context_);
+				}
+			}
+
+			ImGui::Dummy(ImVec2(0.0f, 8.0f));
+			ImGui::Separator();
+			ImGui::Dummy(ImVec2(0.0f, 4.0f));
+
+			Float availableWidth = ImGui::GetContentRegionAvail().x;
+			Float buttonWidth = 200.0f;
+			ImGui::SetCursorPosX((availableWidth - buttonWidth) * 0.5f);
+
+			if (ImGui::Button("空のActorを追加", ImVec2(buttonWidth, 0)))
+			{
+				String uniqueName = GetUniqueName();
+				Actor actor = context_.world_.world_->CreateActor(uniqueName);
+				DynamicArray<BlueprintNode> nodes;
+				BlueprintNode::Capture(actor, nodes);
+				context_.scene_.history_.Push(MakePtr<ActorCreateCommand>(*context_.world_.world_, *context_.world_.resource_, nodes));
+			}
+
+			ImGui::Dummy(ImVec2(0.0f, 8.0f));
+		}
+		ImGui::End();
+	}
+
+	void HierarchyPanel::DrawActorNode(Actor actor)
+	{
+		const Char* label = "Actor";
+		const Name* name = actor.GetComponent<Name>();
+		if (name && !name->name_.str().empty())
+		{
+			label = name->name_.c_str();
+		}
+
+		Bool selected = Selected(actor);
+		Bool hasChildren = !actor.Children().empty();
+		Bool isChild = static_cast<Bool>(actor.Parent());
+
+		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth | ImGuiTreeNodeFlags_AllowOverlap;
+		if (selected)
+		{
+			flags |= ImGuiTreeNodeFlags_Selected;
+		}
+		if (!hasChildren)
+		{
+			flags |= ImGuiTreeNodeFlags_Leaf;
+		}
+
+		ImGui::PushID(static_cast<Int>(ActorAccessor::GetEntity(actor).GetID().index_));
+
+		ImTextureID icon;
+		const PrefabRegistry* prefabs = context_.world_.world_->GetService<PrefabRegistry>();
+		const PrefabRecord* prefabRecord = prefabs ? prefabs->Record(ActorAccessor::GetEntity(actor).GetID()) : nullptr;
+		if (prefabRecord && prefabRecord->fromPrefab_)
+		{
+			icon = isChild ? imguiTexture_.Icon(String("Hierarchy/PrefabChild")) : imguiTexture_.Icon(String("Hierarchy/Prefab"));
+		}
+		else
+		{
+			icon = isChild ? imguiTexture_.Icon(String("Hierarchy/ActorChild")) : imguiTexture_.Icon(String("Hierarchy/Actor"));
+		}
+		Float iconSize = ImGui::GetTextLineHeight();
+
+		Bool opened = ImGui::TreeNodeEx("##actor", flags);
+		Bool treeClicked = ImGui::IsItemClicked() && !ImGui::IsItemToggledOpen();
+
+		if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left))
+		{
+			const Matrix& worldMatrix = actor.WorldMatrix();
+
+			const Image* image = actor.GetComponent<Image>();
+			const Text* text = actor.GetComponent<Text>();
+			const Movie* movie = actor.GetComponent<Movie>();
+			Bool isCanvasActor = (image && image->viewType_ == Image::ViewType::Sprite) || (text && text->viewType_ == Text::ViewType::Sprite) || (movie && movie->displayMode_ == Movie::DisplayMode::Sprite);
+
+			if (isCanvasActor && context_.view_.canvas_.camera_)
+			{
+				Vector3 canvasTarget = Vector3(100000.0f + worldMatrix._41, 100000.0f + (ScResolution::SC_CANVAS.Height - worldMatrix._42), 100000.0f);
+				context_.view_.canvas_.camera_->FocusOn(canvasTarget);
+
+				ImGui::SetWindowFocus("キャンバスビュー");
+			}
+			else if (context_.view_.editor_.camera_)
+			{
+				Bool skinned = actor.GetComponent<Animator>() != nullptr;
+
+				Float radius = 0.0f;
+				Vector3 target = worldMatrix.Translation();
+
+				const Bounds* bounds = actor.GetComponent<Bounds>();
+				if (bounds && !skinned)
+				{
+					Float worldScale = Max(Max(Vector3(worldMatrix._11, worldMatrix._12, worldMatrix._13).Length(), Vector3(worldMatrix._21, worldMatrix._22, worldMatrix._23).Length()), Vector3(worldMatrix._31, worldMatrix._32, worldMatrix._33).Length());
+					radius = bounds->extent_.Length() * worldScale;
+					target = Vector3::TransformPosition(bounds->center_, worldMatrix);
+				}
+
+				context_.view_.editor_.camera_->FocusOn(target, radius);
+
+				ImGui::SetWindowFocus("エディタービュー");
+			}
+		}
+
+		rows_.push_back({ actor, ImGui::GetItemRectMin(), ImGui::GetItemRectMax() });
+
+		if (ImGui::BeginDragDropSource())
+		{
+			ImGui::SetDragDropPayload("HIERARCHY_ACTOR", &actor, sizeof(Actor));
+			ImGui::Text("%s", label);
+			ImGui::EndDragDropSource();
+		}
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* preview = ImGui::AcceptDragDropPayload("HIERARCHY_ACTOR", ImGuiDragDropFlags_AcceptPeekOnly))
+			{
+				Actor dropped = *static_cast<const Actor*>(preview->Data);
+				Bool canDrop = dropped != actor;
+				for (Actor ancestor = actor.Parent(); ancestor && canDrop; ancestor = ancestor.Parent())
+				{
+					canDrop = ancestor != dropped;
+				}
+
+				ImVec2 min = ImGui::GetItemRectMin();
+				ImVec2 max = ImGui::GetItemRectMax();
+
+				if (!canDrop)
+				{
+					ImGui::GetWindowDrawList()->AddRect(min, max, IM_COL32(255, 60, 60, 255), 0.0f, 0, 2.0f);
+				}
+				else
+				{
+					ImGui::GetWindowDrawList()->AddRectFilled(min, max, IM_COL32(100, 180, 255, 50));
+					ImGui::GetWindowDrawList()->AddRect(min, max, IM_COL32(100, 180, 255, 200), 0.0f, 0, 2.0f);
+
+					if (preview->IsDelivery())
+					{
+						Actor oldParent = dropped.Parent();
+						Uint32 oldParentId = oldParent ? WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(oldParent).GetID())->persistentID_ : 0;
+						Uint32 oldPrevSiblingId = PrevSiblingPersistentId(dropped);
+						dropped.Parent(actor);
+						context_.scene_.history_.Push(MakePtr<ActorReparentCommand>(*context_.world_.world_, WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(dropped).GetID())->persistentID_, oldParentId, oldPrevSiblingId, WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(actor).GetID())->persistentID_));
+					}
+				}
+			}
+
+			if (const ImGuiPayload* prefabPayload = ImGui::AcceptDragDropPayload("ASSET_PREFAB"))
+			{
+				Uint32 assetID = *static_cast<const Uint32*>(prefabPayload->Data);
+				Handle<PrefabBlueprint> handle = context_.world_.resource_->Prefabs().Load(assetID, *context_.world_.resource_);
+				PrefabBlueprint* prefab = context_.world_.resource_->Prefabs().Get(handle);
+				if (prefab)
+				{
+					prefab->Instantiate(*context_.world_.world_, *context_.world_.resource_, actor, assetID);
+				}
+			}
+
+			ImGui::EndDragDropTarget();
+		}
+
+		if (ImGui::BeginPopupContextItem("##ActorContext"))
+		{
+			if (ImGui::MenuItem("Prefab として保存"))
+			{
+				SaveAsPrefab(actor);
+			}
+			if (ImGui::MenuItem("複製"))
+			{
+				if (!Selected(actor))
+				{
+					HandleNodeSelection(actor, false, false);
+				}
+				ActorEditing::DuplicationSelection(context_);
+				rangeAnchor_ = context_.selection_.Primary();
+			}
+			if (ImGui::MenuItem("Actorを削除"))
+			{
+				if (Selected(actor))
+				{
+					ActorEditing::DeleteSelection(context_);
+				}
+				else
+				{
+					ActorEditing::DeleteActor(context_, actor);
+				}
+				ImGui::EndPopup();
+				if (opened)
+				{
+					ImGui::TreePop();
+				}
+				ImGui::PopID();
+				return;
+			}
+			ImGui::EndPopup();
+		}
+
+		ImGui::SameLine();
+		ImGui::Image(icon, ImVec2(iconSize, iconSize));
+		ImGui::SameLine();
+		if (!actor.Active())
+		{
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+		}
+		ImGui::Text("%s", label);
+		if (!actor.Active())
+		{
+			ImGui::PopStyleColor();
+		}
+
+		if (treeClicked || ImGui::IsItemClicked())
+		{
+			pendingClickActor_ = actor;
+			pendingClickCtrl_ = ImGui::GetIO().KeyCtrl;
+			pendingClickShift_ = ImGui::GetIO().KeyShift;
+		}
+
+		ImGui::SameLine(ImGui::GetContentRegionAvail().x + ImGui::GetCursorPosX() - iconSize);
+		ImTextureID activeIcon = actor.Active() ? imguiTexture_.Icon(String("Hierarchy/ActorActive")) : imguiTexture_.Icon(String("Hierarchy/ActorNonActive"));
+		ImVec2 activePosition = ImGui::GetCursorScreenPos();
+		Float activeYOffset = actor.Active() ? 2.0f : 0.0f;
+		Float activeY = activePosition.y + (ImGui::GetTextLineHeight() - iconSize) * 0.5f + activeYOffset;
+		if (ImGui::InvisibleButton("##Active", ImVec2(iconSize, ImGui::GetTextLineHeight())))
+		{
+			context_.scene_.history_.Push(MakePtr<ActorActiveCommand>(*context_.world_.world_, actor, !actor.Active()));
+			actor.Active(!actor.Active());
+		}
+		ImGui::GetWindowDrawList()->AddImage(activeIcon, ImVec2(activePosition.x, activeY), ImVec2(activePosition.x + iconSize, activeY + iconSize));
+
+		if (opened)
+		{
+			for (Actor child : actor.Children())
+			{
+				DrawActorNode(child);
+			}
+			ImGui::TreePop();
+		}
+
+		ImGui::PopID();
+	}
+
+	void HierarchyPanel::SaveAsPrefab(Actor actor)
+	{
+		std::filesystem::path prefabDir = FileLocator::EngineRoot() / "UserProject" / "Assets" / "Prefab";
+		std::filesystem::create_directories(prefabDir);
+
+		std::filesystem::path savedPath;
+		if (!FileDialog::SaveFile(savedPath, prefabDir, L"Prefab Files (*.prefab)", L"*.prefab", L"prefab"))
+		{
+			return;
+		}
+
+		if (!PrefabSystem::Save(actor, savedPath))
+		{
+			return;
+		}
+
+		context_.world_.resource_->Reload();
+
+		std::string relative = std::filesystem::relative(savedPath, FileLocator::EngineRoot()).string();
+		std::ranges::replace(relative, '\\', '/');
+		Uint32 newAssetID = context_.world_.resource_->Find(String(relative));
+		if (newAssetID != 0)
+		{
+			PrefabRegistry* prefabs = context_.world_.world_->AddService<PrefabRegistry>();
+			EntityID actorID = ActorAccessor::GetEntity(actor).GetID();
+			const PrefabRecord* prefabRecord = prefabs->Record(actorID);
+			prefabs->Add(actorID, newAssetID, prefabRecord ? prefabRecord->fromPrefab_ : false);
+		}
+	}
+
+	String HierarchyPanel::GetUniqueName()
+	{
+		String baseName = String("Empty Actor");
+		String uniqueName = baseName;
+
+		Int index = 1;
+
+		while (true)
+		{
+			Bool exists = false;
+			ActorRegistry& actorRegistry = WorldAccessor::Actors(*context_.world_.world_);
+			for (EntityID actorID = actorRegistry.Root(); actorID != EntityID{} && !exists; actorID = actorRegistry.Next(actorID))
+			{
+				const Name* name = WorldAccessor::Make(*context_.world_.world_, actorID).GetComponent<Name>();
+				exists = name && name->name_ == uniqueName;
+			}
+
+			if (!exists)
+			{
+				break;
+			}
+
+			uniqueName = String(baseName.str() + "(" + std::to_string(index++) + ")");
+		}
+
+		return uniqueName;
+	}
+
+	Bool HierarchyPanel::Selected(Actor actor)const
+	{
+		return context_.selection_.Contains(actor);
+	}
+
+	void HierarchyPanel::HandleNodeSelection(Actor actor, Bool ctrl, Bool shift)
+	{
+		if (shift && rangeAnchor_)
+		{
+			Size anchorIndex = SIZE_MAX;
+			Size targetIndex = SIZE_MAX;
+
+			for (Size rowIndex = 0; rowIndex < rows_.size(); ++rowIndex)
+			{
+				if (rows_[rowIndex].actor_ == rangeAnchor_)
+				{
+					anchorIndex = rowIndex;
+				}
+				if (rows_[rowIndex].actor_ == actor)
+				{
+					targetIndex = rowIndex;
+				}
+			}
+
+			if (anchorIndex != SIZE_MAX && targetIndex != SIZE_MAX)
+			{
+				Size lo = Min(anchorIndex, targetIndex);
+				Size hi = Max(anchorIndex, targetIndex);
+
+				context_.selection_.Clear();
+				for (Size rowIndex = lo; rowIndex <= hi; ++rowIndex)
+				{
+					context_.selection_.Add(rows_[rowIndex].actor_);
+				}
+			}
+		}
+		else if (ctrl)
+		{
+			context_.selection_.Toggle(actor);
+			rangeAnchor_ = actor;
+		}
+		else
+		{
+			context_.selection_.Select(actor);
+			rangeAnchor_ = actor;
+		}
+	}
+
+	Uint32 HierarchyPanel::PrevSiblingPersistentId(Actor actor)const
+	{
+		Actor parent = actor.Parent();
+		if (!parent)
+		{
+			return 0;
+		}
+
+		const DynamicArray<Actor>& siblings = parent.Children();
+		auto it = std::ranges::find(siblings, actor);
+		if (it == siblings.end() || it == siblings.begin())
+		{
+			return 0;
+		}
+
+		return WorldAccessor::Actors(*context_.world_.world_).Record(ActorAccessor::GetEntity(*(it - 1)).GetID())->persistentID_;
+	}
+}

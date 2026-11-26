@@ -16,28 +16,6 @@ struct ToneMappingResolveBindings
 };
 ConstantBuffer<ToneMappingResolveBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* The display pass: reads the exposed and graded HDR color (ColorGrading.Color,
-* which passes PostProcess.Color through when grading is off), applies the
-* selected tone curve (or none - clamp only), and encodes to sRGB into
-* ToneMapping.Color. Runs every frame regardless of
-* ToneMappingSettings.enabled_ - that toggles only whether the CURVE applies -
-* because the sRGB encode is not optional: the views are shown through
-* R8G8B8A8_UNORM targets with no hardware sRGB view anywhere in this engine,
-* so this is the only place a linear HDR value is gamma-encoded for display.
-*
-* [JP]
-* 表示パス: 露出とグレーディング済みの HDR カラー（ColorGrading.Color。
-* グレーディングが無効なら PostProcess.Color を素通しで指す）を読み、選択された
-* トーンカーブ（またはカーブ無し=クランプのみ）を掛け、sRGB へエンコードして
-* ToneMapping.Color へ書く。ToneMappingSettings.enabled_ に関わらず毎フレーム
-* 走る — それが切り替えるのは【カーブ】の適用有無だけ。sRGB エンコードは
-* 省略できない: ビューは R8G8B8A8_UNORM のターゲットで表示され、このエンジン
-* にはハードウェア sRGB ビューがどこにも無いので、リニアな HDR 値が表示用に
-* ガンマエンコードされる場所はここが唯一。
-*/
-
 [numthreads(8, 8, 1)]
 void main(uint3 dtid : SV_DispatchThreadID)
 {
@@ -72,8 +50,6 @@ void main(uint3 dtid : SV_DispatchThreadID)
 		{
 			color = PbrNeutralToneMap(color);
 		}
-		/// [EN] mode == 0 (None): no curve, only the saturate below applies.
-		/// [JP] mode == 0 (None): カーブ無し、下の saturate だけがかかる。
 	}
 
 	color = saturate(color);

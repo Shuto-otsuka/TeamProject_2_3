@@ -6,45 +6,16 @@ namespace SeedCore
 	Matrix ScreenSpace::view_ = Matrix::Identity;
 	Matrix ScreenSpace::projection_ = Matrix::Identity;
 
-	/**
-	* [EN]
-	* Converts pixelPosition (1920x1080 game screen pixels, the same
-	* space as Input::MousePoint()) into a world-space Ray from the
-	* current camera's near plane through pixelPosition, suitable for
-	* passing straight into Physics::Raycast()/Spherecast().
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* pixelPosition(1920x1080 のゲーム画面のピクセル座標。
-	* Input::MousePoint() と同じ座標系)を、現在のカメラの近平面から pixelPosition を通る
-	* ワールド空間の Ray へ変換する。
-	* Physics::Raycast()/Spherecast() にそのまま渡せる。
-	*/
 	Ray ScreenSpace::ScreenToWorld(const Vector2& pixelPosition)
 	{
-		/// [EN] Game screen pixel -> position on the game screen, normalized to [0, 1].
-		/// [JP] ゲーム画面のピクセル座標→ゲーム画面上の位置を[0, 1]に正規化したもの。
 		Float normalizedX = pixelPosition.x / ScResolution::SC_CANVAS.Width;
 		Float normalizedY = pixelPosition.y / ScResolution::SC_CANVAS.Height;
 
-		/// [EN] Normalized -> NDC: X maps [0, 1] to [-1, 1], Y maps [0, 1]
-		///      to [1, -1] (screen Y grows downward, NDC Y grows upward).
-		/// [JP] 正規化座標→NDC: Xは[0, 1]を[-1, 1]へ、Yは[0, 1]を[1, -1]へ
-		///      写す(スクリーンYは下向き、NDCのYは上向きに増えるため)。
 		Float ndcX = normalizedX * 2.0f - 1.0f;
 		Float ndcY = 1.0f - normalizedY * 2.0f;
 
 		Matrix inverseViewProjection = (view_ * projection_).Invert();
 
-		/// [EN] Vector3::Transform divides by w (unlike Vector4::Transform),
-		///      so these already come back as ordinary world-space points -
-		///      one on the near plane, one on the far plane, both under
-		///      the same (ndcX, ndcY) screen column.
-		/// [JP] Vector3::Transform は(Vector4::Transformと違って)wで
-		///      除算するため、これらは既に通常のワールド空間の点として
-		///      返ってくる - 同じ(ndcX, ndcY)のスクリーン列上の、近平面上の
-		///      点と遠平面上の点。
 		Vector3 nearPoint = Vector3::TransformCoordinate(Vector3(ndcX, ndcY, 1.0f), inverseViewProjection);
 		
 		Vector3 cameraPosition = view_.Invert().Translation();
@@ -59,43 +30,15 @@ namespace SeedCore
 		return ray;
 	}
 
-	/**
-	* [EN]
-	* Converts worldPosition into 1920x1080 game screen pixels (the
-	* same space as Input::MousePoint()) under the current camera.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* worldPosition を、現在のカメラでの 1920x1080 のゲーム画面のピクセル座標
-	* (Input::MousePoint() と同じ座標系)へ変換する。
-	*/
 	Vector2 ScreenSpace::WorldToScreen(const Vector3& worldPosition)
 	{
 		Vector3 clipPosition = Vector3::TransformCoordinate(worldPosition, view_ * projection_);
 
-		/// [EN] NDC -> position on the game screen, in its pixels.
-		/// [JP] NDC→ゲーム画面上の位置を、そのピクセル単位で表したもの。
 		Float pixelX = (clipPosition.x * 0.5f + 0.5f) * ScResolution::SC_CANVAS.Width;
 		Float pixelY = (1.0f - (clipPosition.y * 0.5f + 0.5f)) * ScResolution::SC_CANVAS.Height;
 		return Vector2(pixelX, pixelY);
 	}
 
-	/**
-	* [EN]
-	* Called by CameraSystem once per frame (after computing the game's
-	* active Camera's view/projection) to publish the values
-	* ScreenToWorld()/WorldToScreen() use - not meant to be called from
-	* gameplay code.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* CameraSystem が毎フレーム(ゲームのアクティブな Camera の
-	* view/projection を計算した後に)呼び出し、
-	* ScreenToWorld()/WorldToScreen() が使う値を公開する - ゲームプレイ
-	* コードから呼ぶことは想定していない。
-	*/
 	void ScreenSpace::SetCurrentView(const Matrix& view, const Matrix& projection)
 	{
 		view_ = view;

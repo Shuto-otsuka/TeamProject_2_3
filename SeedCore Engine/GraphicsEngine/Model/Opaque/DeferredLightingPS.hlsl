@@ -32,54 +32,6 @@ struct DeferredLightingResolveBindings
 };
 ConstantBuffer<DeferredLightingResolveBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* DeferredLighting.Resolve: adds the light reaching the G-Buffer surface onto
-* Radiance, which Material already started with the emitted radiance.
-* The sum is the sun through the surface's BRDF, scaled by the sun
-* visibility in RaytracingShadow.Visibility.x (LoadSurfaceMaterial, with
-* the texcoord's derivatives taken from the right and lower neighbours of the
-* same instance, and Weather.Constants' wetness and snow cover), the sunlight seen through thin back-lit surfaces
-* (RaytracingSubsurfaceScattering.Transmittance), the indirect light, the
-* refracted light, the punctual lights' DirectLight.Radiance and a lightning
-* strike's flash lighting the diffuse color. The indirect
-* diffuse is the sky irradiance darkened by the occlusion (the ray-traced
-* openness times the material's occlusion texture, and for fur the
-* self-shadowing that fades from the skin to the tips), replaced by
-* RaytracingGlobalIllumination.Radiance by its alpha. The indirect specular is
-* the prefiltered sky darkened by the matching specular occlusion, replaced
-* by RaytracingReflection.Radiance by its alpha (the reflection strength).
-* The refracted light RaytracingRefraction.Radiance is weighted by its alpha,
-* the transmission factor and the transmitted share of the Fresnel term.
-* The shadow strength in RaytracingShadow.Constants blends the sun
-* visibility toward 1 up to 1, and from 1 to 2 also darkens the indirect
-* light where a surface facing the sun is in its shadow, until the umbra is
-* black at 2. Unlit surfaces and the background receive nothing. The additive blend weights the output by its alpha, so
-* the light is returned with alpha 1.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* DeferredLighting.Resolve。G-Buffer の表面に届く光を、Material が放射を初期値
-* として書いた Radiance へ足す。足すのは、表面の BRDF
-* （LoadSurfaceMaterial。UV の微分は同じインスタンスの右隣と下隣から求め、
-* Weather.Constants の濡れと積雪を渡す）
-* を通し RaytracingShadow.Visibility.x の太陽の可視率を掛けた太陽、薄く
-* 裏から照らされた面を透ける太陽の光（RaytracingSubsurfaceScattering.
-* Transmittance）、間接光、屈折光、点光源の DirectLight.Radiance、拡散色を照らす雷の
-* 閃光。間接の拡散は
-* 遮蔽（レイトレの開放度とマテリアルの occlusion テクスチャの積。Fur は根元から
-* 毛先へ薄れる自己遮蔽も掛ける）で暗くした
-* 空の放射照度で、RaytracingGlobalIllumination.Radiance をそのアルファの分
-* だけ置き換える。間接の鏡面は対応するスペキュラオクルージョンで暗くした
-* 事前フィルタの空で、RaytracingReflection.Radiance をそのアルファ（反射の
-* 強さ）の分だけ置き換える。屈折光 RaytracingRefraction.Radiance は、その
-* アルファ・透過係数・フレネルの透過分で重み付けする。RaytracingShadow.Constants
-* の影の濃さは、1 までは太陽の可視率を 1 との間で補間し、1〜2 では太陽を向いた
-* 面が影に入ったところの間接光も暗くして、2 で本影が真っ黒になる。Unlit の表面と背景には
-* 何も足さない。加算ブレンドは出力をアルファで重み付けするので、光はアルファ 1
-* で返す。
-*/
 float4 main(FullscreenOutput input) : SV_Target0
 {
 	uint2 pixel = uint2(input.position.xy);

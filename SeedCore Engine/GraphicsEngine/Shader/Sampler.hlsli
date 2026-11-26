@@ -10,4 +10,4 @@ SamplerState sampler_linear_mirror : register(s5);
 SamplerState sampler_border_black  : register(s6);
 SamplerState sampler_border_white  : register(s7);
 
-#endif // __SAMPLER_HLSL__
+#endif

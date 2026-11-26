@@ -12,19 +12,6 @@ struct MaterialScatterBindings
 };
 ConstantBuffer<MaterialScatterBindings> bindings : register(b0, space1);
 
-/**
-* [EN]
-* Material sort, pass 3/3: every foreground pixel claims the next slot of its
-* bucket (the offsets from Material.PrefixSum become running write cursors
-* here) and stores its linear pixel position there.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* マテリアルソート、パス 3/3。前景のピクセルは自分のバケットの次の位置を確保し
-* (Material.PrefixSum のオフセットがここで書き込み位置に変わる)、そこへ自分の
-* 線形のピクセル位置を書く。
-*/
 [numthreads(8, 8, 1)]
 void main(uint3 id : SV_DispatchThreadID)
 {

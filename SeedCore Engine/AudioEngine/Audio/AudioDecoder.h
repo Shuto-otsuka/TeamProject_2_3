@@ -4,40 +4,39 @@
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Turns an audio file into the plain bytes a Sound holds. A ".audio"
-	* cache is decrypted; a source (".wav"/".mp3"/".acb") is converted in
-	* memory into the same bytes its cache would hold.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* 音声ファイルを、Sound が持つ平文のバイト列にする。".audio"
-	* キャッシュは復号し、素材（".wav"/".mp3"/".acb"）はそのキャッシュが
-	* 持つのと同じバイト列へメモリ上で変換する。
+	* 色々な形式の音のファイルを、鳴らせる形に変える。
+	*
+	* @brief 音のファイルを鳴らせる形に変える
+	*
+	* [EN]
+	* Turns sound files of many formats into a form that can be played.
+	*
+	* @brief Turns sound files into a playable form
 	*/
 	class AudioDecoder
 	{
 	public:
 		/**
-		* [EN]
-		* Decodes the audio file at filePath. type receives whether the
-		* bytes are a cue sheet or a wave, data the plain body, and awbPath
-		* the path CRI streams the AWB from (empty when there is none): the
-		* cache itself for a ".audio" holding a stream blob, or the plain
-		* ".awb" beside an ".acb". An ".mp3" is decoded to PCM and wrapped
-		* in a wave container. Returns false when the file cannot be read
-		* or its extension is not supported.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* filePath の音声ファイルをデコードする。type にはキューシートか
-		* 波形か、data には平文の本体、awbPath には CRI が AWB を
-		* ストリーミングするパス（無ければ空）が入る。awbPath は、ストリーム
-		* ブロブを持つ ".audio" ならキャッシュ自身、".acb" なら隣の素の
-		* ".awb"。".mp3" は PCM へデコードして wave コンテナに包む。ファイルを
-		* 読めない、または拡張子が対応していない場合は false を返す。
+		* ファイルを読んで、鳴らせるデータにする。
+		*
+		* @brief  ファイルを鳴らせるデータにする
+		* @param  filePath 読むファイル
+		* @param  type     読んだ音の種類が入る
+		* @param  data     読んだデータが入る
+		* @param  awbPath  一緒に使う AWB ファイルの場所が入る
+		* @return うまくいったら true
+		*
+		* [EN]
+		* Reads a file and turns it into playable data.
+		*
+		* @brief  Turns a file into playable data
+		* @param  filePath The file to read
+		* @param  type     Gets the kind of sound read
+		* @param  data     Gets the data read
+		* @param  awbPath  Gets where the matching AWB file is
+		* @return True if it worked
 		*/
 		static Bool Decode(String filePath, SoundType& type, DynamicArray<Byte>& data, String& awbPath);
 	};

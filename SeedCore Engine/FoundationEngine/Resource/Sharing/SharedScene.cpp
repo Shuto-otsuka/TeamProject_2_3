@@ -5,49 +5,16 @@ namespace SeedCore
 {
 	static void AdoptScene(const nlohmann::json& scene, DynamicArray<ScenePart>& parts);
 
-	/**
-	* [EN]
-	* Takes the document holding one shared scene's pieces.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 共有 Scene 1つ分の断片を保持しているドキュメントを受け取る。
-	*/
 	SharedScene::SharedScene(GoogleDocument& document, const String& documentId) : document_(document), documentId_(documentId)
 	{
 		/// No Code
 	}
 
-	/**
-	* [EN]
-	* Drops the in-memory copy; the pieces themselves live in the
-	* document.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* メモリ上の写しを捨てるだけ。断片自体はドキュメントにある。
-	*/
 	SharedScene::~SharedScene()
 	{
-		/// [EN] A scene closed without publishing leaves the document untouched, and the local edits stay on disk.
-		/// [JP] Publish せずに Scene を閉じてもドキュメントは変わらず、ローカルの編集はディスクに残る。
-
 		/// No Code
 	}
 
-	/**
-	* [EN]
-	* Re-reads the scene so the Editor sees which pieces other members
-	* have moved on.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Scene を読み直し、他のメンバーがどの断片を進めたのかを Editor へ
-	* 反映する。
-	*/
 	Bool SharedScene::Refresh()
 	{
 		GoogleDocumentSnapshot snapshot = document_.Read(documentId_);
@@ -57,44 +24,19 @@ namespace SeedCore
 			return false;
 		}
 
-		/// [EN] A scene that has never been published reads as an empty document, which is simply a scene with no pieces yet.
-		/// [JP] 一度も Publish されていない Scene は空のドキュメントとして読める。断片がまだ無い Scene というだけのこと。
 		nlohmann::json scene = nlohmann::json::parse(snapshot.text_.str(), nullptr, false);
 		AdoptScene(scene, parts_);
 		error_ = String();
 		return true;
 	}
 
-	/**
-	* [EN]
-	* Every piece of the scene as of the last read, removed ones
-	* included.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 直近の読み取り時点における Scene の全断片。削除済みのものも
-	* 含む。
-	*/
 	const DynamicArray<ScenePart>& SharedScene::Parts()const
 	{
 		return parts_;
 	}
 
-	/**
-	* [EN]
-	* Looks one piece up by its scope, or nullptr when the scene has no
-	* such piece.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 範囲を指定して断片を1つ引く。該当が無ければ nullptr。
-	*/
 	const ScenePart* SharedScene::Find(const String& scope)const
 	{
-		/// [EN] A scene holds a few pieces per entity plus two more, so a straight scan stays cheap even for a large scene.
-		/// [JP] Scene が持つ断片は Entity ごとに数個と、それに2つ足した程度なので、大きな Scene でも素直な走査で足りる。
 		for (const ScenePart& part : parts_)
 		{
 			if (part.scope_ == scope)
@@ -105,64 +47,23 @@ namespace SeedCore
 		return nullptr;
 	}
 
-	/**
-	* [EN]
-	* Publishes several pieces at once in one write, as long as every
-	* piece is still at the revision its change was made on: the first
-	* publish of a piece is the one that stands, and when any piece has
-	* moved on nothing is written. Every piece moves one revision past
-	* what the library had.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 複数の断片を1回の書き込みでまとめて Publish する。ただし全ての断片が、
-	* その変更の元にした Revision のままである場合に限る。断片は先に公開
-	* されたものが残り、1つでも先へ進んだ断片があれば何も書かない。各断片
-	* は、ライブラリにあった Revision の1つ先へ進む。
-	*/
 	Bool SharedScene::Publish(const DynamicArray<ScenePartChange>& changes)
 	{
 		if (changes.empty())
 		{
-			/// [EN] Saving a scene without touching anything is normal, and there is then nothing to tell the team.
-			/// [JP] 何も触らずに Scene を保存することは普通にあり、その場合チームへ伝えることは何も無い。
 			return true;
 		}
 
 		return Modify(changes);
 	}
 
-	/**
-	* [EN]
-	* The last failure, in a form that can be shown to the user.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 直近の失敗内容。ユーザーへそのまま表示できる形で返す。
-	*/
 	const String& SharedScene::Error()const
 	{
 		return error_;
 	}
 
-	/**
-	* [EN]
-	* Reads the scene, applies edit to it, and writes it back,
-	* retrying from the fresh contents whenever another member wrote
-	* first.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Scene を読み、edit を適用して書き戻す。他のメンバーが先に書いて
-	* いた場合は、新しい内容から読み直してやり直す。
-	*/
 	Bool SharedScene::Modify(const DynamicArray<ScenePartChange>& changes)
 	{
-		/// [EN] Members in one scene write to this same document, so losing a round here is expected rather than rare.
-		/// [JP] 同じ Scene にいるメンバーはこの同じドキュメントへ書くので、ここで1周負けるのは珍しくない。
 		for (Int attempt = 0; attempt < 5; ++attempt)
 		{
 			GoogleDocumentSnapshot snapshot = document_.Read(documentId_);
@@ -172,8 +73,6 @@ namespace SeedCore
 				return false;
 			}
 
-			/// [EN] The document is put into a known shape first, so the first publish of a scene starts from no pieces.
-			/// [JP] まず決まった形に整えるため、Scene の最初の Publish でも断片が無い状態から始められる。
 			nlohmann::json scene = nlohmann::json::parse(snapshot.text_.str(), nullptr, false);
 			if (!scene.is_object())
 			{
@@ -185,8 +84,6 @@ namespace SeedCore
 				scene["parts"] = nlohmann::json::object();
 			}
 
-			/// [EN] Every piece is checked before any is written, so the library never ends up holding half of one member's change.
-			/// [JP] どれかを書く前に全ての断片を確かめる。1人の変更が半分だけライブラリに載ることのないようにするため。
 			for (const ScenePartChange& change : changes)
 			{
 				Uint64 current = 0;
@@ -221,8 +118,6 @@ namespace SeedCore
 				return true;
 			}
 
-			/// [EN] Losing the document's own revision only means another piece was published at the same moment.
-			/// [JP] ドキュメント自体の版で負けたのは、同じ瞬間に別の断片が Publish されたというだけのこと。
 			if (!document_.Conflicted())
 			{
 				error_ = document_.Error();
@@ -234,27 +129,14 @@ namespace SeedCore
 		return false;
 	}
 
-	/**
-	* [EN]
-	* Parses the document text into the in-memory piece list.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ドキュメントの本文を解釈して、メモリ上の断片一覧にする。
-	*/
 	static void AdoptScene(const nlohmann::json& scene, DynamicArray<ScenePart>& parts)
 	{
-		/// [EN] The list is rebuilt from scratch, so a piece removed by someone else disappears from this Editor too.
-		/// [JP] 一覧は毎回作り直す。他の誰かが削除した断片は、この Editor からも消える。
 		parts.clear();
 		if (!scene.is_object() || !scene.contains("parts") || !scene["parts"].is_object())
 		{
 			return;
 		}
 
-		/// [EN] items() is used because the scope is the key rather than a field inside the entry.
-		/// [JP] 範囲が項目の中ではなく見出しの側にあるため、items() を使う。
 		for (auto& entry : scene["parts"].items())
 		{
 			ScenePart part;
@@ -262,8 +144,6 @@ namespace SeedCore
 			part.revision_ = entry.value().value("revision", Uint64(0));
 			part.hash_ = String(entry.value().value("hash", ""));
 
-			/// [EN] A piece written into the document arrives with this read, and one kept in Drive leaves this empty.
-			/// [JP] ドキュメントに書かれた断片はこの読み取りで一緒に届き、Drive に置かれた断片ではここが空になる。
 			part.data_ = String(entry.value().value("data", ""));
 			part.driveId_ = String(entry.value().value("driveId", ""));
 			part.size_ = entry.value().value("size", Uint64(0));

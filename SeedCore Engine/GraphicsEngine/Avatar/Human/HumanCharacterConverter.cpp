@@ -91,10 +91,6 @@ namespace SeedCore
 		std::span<const Uint32> triangles = model.Triangles();
 		std::span<const Char* const> regionNames = HumanCharacterModel::RegionNames();
 
-		/// [EN] One primitive + material per region so each region's own [0,1] UV
-		///      atlas maps to its own base-colour texture on export.
-		/// [JP] リージョンごとに1プリミティブ+1マテリアル - 各リージョン固有の
-		///      [0,1] UV アトラスが個別のベースカラーテクスチャに対応する。
 		for (Uint32 regionIndex = 0; regionIndex < humanCharacterRegionCount; regionIndex++)
 		{
 			const HumanCharacterRegionRange& regionRange = model.RegionTriangleRange(regionIndex);

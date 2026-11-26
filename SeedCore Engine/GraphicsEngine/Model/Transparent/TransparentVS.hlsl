@@ -1,24 +1,6 @@
 #include <GraphicsEngine/Model/Transparent/Transparent.hlsli>
 #include <GraphicsEngine/Culling/BackfaceCulling.hlsli>
 
-/**
-* [EN]
-* Fallback for devices without mesh shaders: one DrawInstanced instance per
-* entry of Culling.TransparentMeshlets, 124 triangles' worth of vertices each.
-* Vertices past the meshlet's triangle count are placed outside the clip
-* volume. For a single-sided material every vertex transforms all three
-* corners of its triangle so it can collapse back-facing triangles itself,
-* matching the mesh path where the rasterizer culls nothing.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* メッシュシェーダーが使えないデバイス向けの代わり。Culling.TransparentMeshlets の
-* 1 件につき DrawInstanced の 1 インスタンスで、三角形 124 個分の頂点を描く。
-* メッシュレットの三角形数を超えた頂点はクリップ空間の外へ置く。片面の
-* マテリアルでは、各頂点が三角形の 3 つの角をすべて変換し、裏を向く三角形を
-* 自分で潰す。ラスタライザーが何もカリングしないメッシュの経路と合わせるため。
-*/
 void main(uint vertex_id : SV_VertexID, uint instance_id : SV_InstanceID, out TransparentOutput output)
 {
 	StructuredBuffer<uint2> transparent_meshlets = ResourceDescriptorHeap[bindings.culling_transparent_meshlets_];

@@ -6,20 +6,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Keeps component on actor as an unknown one, adding the holder
-	* when the actor has none yet. A component already kept under the
-	* same name is replaced, since one actor carries one of each type.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* component を、型の分からないものとして actor に保持させる。actor
-	* がまだ保持用のコンポーネントを持っていなければ追加する。同じ名前で
-	* 既に保持しているものは置き換える。1つの actor が持つのは型ごとに
-	* 1つであるため。
-	*/
 	void UnknownComponent::Keep(Actor actor, const BlueprintComponent& component)
 	{
 		ComponentID id = ComponentRegistry::GetComponentID<UnknownComponent>();
@@ -41,19 +27,6 @@ namespace SeedCore
 		unknown->components_.push_back(component);
 	}
 
-	/**
-	* [EN]
-	* Turns every kept component whose type has since been registered
-	* back into the real component, restoring its saved values, and
-	* removes the holder from actors left with nothing unknown.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 保持しているコンポーネントのうち、その後に型が登録されたものを
-	* 本来のコンポーネントへ戻し、保存済みの値を復元する。型の分からない
-	* ものが残らなかった actor からは、保持用のコンポーネントを外す。
-	*/
 	void UnknownComponent::Resolve(World& world)
 	{
 		ComponentID id = ComponentRegistry::GetComponentID<UnknownComponent>();
@@ -72,8 +45,6 @@ namespace SeedCore
 				continue;
 			}
 
-			/// [EN] The list is copied out first, since adding the real components may move this actor's storage and leave the holder pointer stale.
-			/// [JP] 先に一覧を写し取る。本来のコンポーネントを足すと actor の格納場所が動き、保持用のコンポーネントへのポインタが古くなり得るため。
 			DynamicArray<BlueprintComponent> kept = unknown->components_;
 			DynamicArray<BlueprintComponent> remaining;
 			for (const BlueprintComponent& component : kept)
@@ -96,8 +67,6 @@ namespace SeedCore
 				}
 			}
 
-			/// [EN] Nothing changed when every kept component is still unknown, so the holder is left exactly as it was.
-			/// [JP] 保持しているものが全て未だ不明なら何も変わっていないので、保持用のコンポーネントはそのままにする。
 			if (remaining.size() == kept.size())
 			{
 				continue;

@@ -15,15 +15,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Keeps the device and the asset module. Nothing touches the GPU until a slot is first asked for.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* デバイスとアセットモジュールを受け取る。スロットが初めて求められるまで GPU には触らない。
-	*/
 	GraphicsPreview::GraphicsPreview(RenderDevice& device, GraphicsModule& module) :device_(device), module_(module)
 	{
 		/// No Code
@@ -31,15 +22,6 @@ namespace SeedCore
 
 	GraphicsPreview::~GraphicsPreview() = default;
 
-	/**
-	* [EN]
-	* Releases every slot's output texture and renderer; the device must be idle.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 全スロットの出力テクスチャとレンダラーを解放する。デバイスは待機済みであること。
-	*/
 	void GraphicsPreview::Finalize()
 	{
 		for (Slot& slot : slots_)
@@ -49,15 +31,6 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Asks for slot to be drawn this frame with request, seen from camera at totalTime.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* slot をこのフレームに request で描くよう求める。camera から totalTime の時刻で見る。
-	*/
 	void GraphicsPreview::Add(PreviewSlot slot, const PreviewRequest& request, const PreviewCamera& camera, Float totalTime)
 	{
 		Slot& entry = slots_[static_cast<Size>(slot)];
@@ -101,15 +74,6 @@ namespace SeedCore
 		scene.displaySize_ = scene.screenSize_;
 	}
 
-	/**
-	* [EN]
-	* Asks for the boot screen slot to be drawn this frame with request, at a screen of width by height.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* ブート画面のスロットをこのフレームに request で描くよう求める。画面の大きさは width × height。
-	*/
 	void GraphicsPreview::Add(const BootRequest& request, Uint32 width, Uint32 height)
 	{
 		Slot& entry = slots_[static_cast<Size>(PreviewSlot::Boot)];
@@ -119,8 +83,6 @@ namespace SeedCore
 		width = Max(width, 1u);
 		height = Max(height, 1u);
 
-		/// [EN] The boot screen reads only the view's size, so the view carries no camera.
-		/// [JP] ブート画面はビューの大きさだけを読むので、ビューにカメラは持たせない。
 		RenderView& view = entry.view_;
 		view = RenderView{};
 		view.kind_ = RenderViewKind::Editor;
@@ -132,19 +94,6 @@ namespace SeedCore
 		view.outputRect_ = Vector4(0.0f, 0.0f, static_cast<Float>(width), static_cast<Float>(height));
 	}
 
-	/**
-	* [EN]
-	* Draws every slot asked for since the last call; later calls in the same frame do nothing.
-	* A slot's renderer is made on its first request and its output texture whenever the view's
-	* size changes, cleared once and left ready for the panel to sample.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* 前回の呼び出しから求められた全スロットを描く。同じフレームの 2 回目以降は何もしない。
-	* スロットのレンダラーは最初の求めで作り、出力テクスチャはビューの大きさが変わるたびに
-	* 作り、1 回クリアしてパネルが読める状態にしておく。
-	*/
 	void GraphicsPreview::Render()
 	{
 		D3D12CommandList& cmdList = *device_.Context().GetDirectList();
@@ -156,8 +105,6 @@ namespace SeedCore
 			}
 			slot.requested_ = false;
 
-			/// [EN] The boot screen slot draws with the Screen feature set, the same features that draw it on the back buffer before the game starts.
-			/// [JP] ブート画面のスロットは、ゲーム開始前にバックバッファへ描くのと同じ Screen の組の Feature で描く。
 			Bool boot = &slot == &slots_[static_cast<Size>(PreviewSlot::Boot)];
 			if (!slot.renderer_)
 			{
@@ -210,15 +157,6 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Returns the handle of slot's output texture, or a null handle before it is first drawn.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* slot の出力テクスチャのハンドルを返す。初めて描くまでは空のハンドル。
-	*/
 	D3D12_GPU_DESCRIPTOR_HANDLE GraphicsPreview::Display(PreviewSlot slot)const
 	{
 		const RenderGraphAllocation& output = slots_[static_cast<Size>(slot)].output_;

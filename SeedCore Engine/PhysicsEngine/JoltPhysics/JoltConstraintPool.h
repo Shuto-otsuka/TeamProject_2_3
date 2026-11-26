@@ -11,134 +11,133 @@ namespace JPH
 namespace SeedCore
 {
 	/**
-	* [EN]
-	* Owns Jolt constraints in reusable generational slots and keeps their
-	* registration with a Jolt physics system synchronized.
-	*
-	* ---------------------------------------------------------------------
-	*
 	* [JP]
-	* Jolt 拘束を再利用可能な世代付きスロットで所有し、Jolt 物理システムへの
-	* 登録状態を同期する。
+	* つなぎ（ジョイント）をまとめて持ち、番号で出し入れする係。
+	* 消した番号は使い回し、古い番号を使っても間違えないようにする。
+	*
+	* @brief つなぎをまとめて持つ係
+	*
+	* [EN]
+	* Holds joints together and hands them out by number.
+	* Freed numbers are reused, and an old number is safely ignored.
+	*
+	* @brief Holds the joints
 	*/
 	class JoltConstraintPool
 	{
 	public:
-		/**
-		* [EN]
-		* Creates an empty constraint pool.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 空の拘束プールを生成する。
-		*/
 		JoltConstraintPool() = default;
 
 		/**
-		* [EN]
-		* Destroys the pool storage.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* プールのストレージを破棄する。
+		* 持っているつなぎを全部手放す。
+		*
+		* @brief つなぎを手放す
+		*
+		* [EN]
+		* Lets go of every joint it holds.
+		*
+		* @brief Lets go of the joints
 		*/
 		~JoltConstraintPool();
 
-		/**
-		* [EN]
-		* Disables copying so constraint ownership remains unique.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 拘束の所有権を一意に保つためコピーを禁止する。
-		*/
 		JoltConstraintPool(const JoltConstraintPool&) = delete;
 
-		/**
-		* [EN]
-		* Disables copy assignment so constraint ownership remains unique.
-		*
-		* ---------------------------------------------------------------------
-		*
-		* [JP]
-		* 拘束の所有権を一意に保つためコピー代入を禁止する。
-		*/
 		JoltConstraintPool& operator=(const JoltConstraintPool&) = delete;
 
 		/**
-		* [EN]
-		* Registers a constraint and returns its generational handle.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 拘束を登録し、その世代付きハンドルを返す。
+		* つなぎを物理エンジンに入れて、番号をつけて持つ。
+		*
+		* @brief  つなぎを足す
+		* @param  system     入れる物理エンジン
+		* @param  constraint 足すつなぎ
+		* @return つけた番号。つなぎがなければ空
+		*
+		* [EN]
+		* Puts a joint into the physics engine and keeps it under a number.
+		*
+		* @brief  Adds a joint
+		* @param  system     The physics engine to add it to
+		* @param  constraint The joint to add
+		* @return Its number, or empty if there was no joint
 		*/
 		ScConstraintHandle Add(JPH::PhysicsSystem& system, JPH::Constraint* constraint);
 
 		/**
-		* [EN]
-		* Removes and releases the constraint referenced by a valid handle.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 有効なハンドルが参照する拘束を削除して解放する。
+		* 番号のつなぎを物理エンジンから外して手放す。
+		*
+		* @brief つなぎを外す
+		* @param system 外す物理エンジン
+		* @param handle 外すつなぎの番号
+		*
+		* [EN]
+		* Takes the numbered joint out of the physics engine and lets it go.
+		*
+		* @brief Removes a joint
+		* @param system The physics engine to remove it from
+		* @param handle The number of the joint to remove
 		*/
 		void Release(JPH::PhysicsSystem& system, ScConstraintHandle handle);
 
 		/**
-		* [EN]
-		* Removes every live constraint and clears all pool storage.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* すべての有効な拘束を削除し、プールのストレージを空にする。
+		* つなぎを全部外して、空にする。
+		*
+		* @brief 全部外す
+		* @param system 外す物理エンジン
+		*
+		* [EN]
+		* Removes every joint and empties the pool.
+		*
+		* @brief Removes everything
+		* @param system The physics engine to remove them from
 		*/
 		void Clear(JPH::PhysicsSystem& system);
 
 		/**
-		* [EN]
-		* Enables constraints whose two bodies currently participate in the world.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 両方のボディが現在ワールドへ参加している拘束を有効にする。
+		* つないでいる体が両方とも世界にいるときだけ、つなぎを効かせる。
+		*
+		* @brief つなぎの有効・無効を合わせる
+		*
+		* [EN]
+		* Turns each joint on only while both of its bodies are in the world.
+		*
+		* @brief Turns joints on or off
 		*/
 		void Refresh();
 
 	private:
 		/**
-		* [EN]
-		* Stores one constraint reference and the generation of its slot.
-		*
-		* ---------------------------------------------------------------------
-		*
 		* [JP]
-		* 1つの拘束参照と、そのスロットの世代を保持する。
+		* つなぎ1つ分の入れ物。
+		*
+		* @brief つなぎの入れ物
+		*
+		* [EN]
+		* A box that holds one joint.
+		*
+		* @brief A joint slot
 		*/
 		struct Slot
 		{
-			/// [EN] Reference-counted constraint occupying this slot.
-			/// [JP] このスロットを使用している参照カウント付き拘束。
+			/// [JP] 入っているつなぎ。空なら nullptr
+			/// [EN] The joint inside, or nullptr when empty
 			JPH::Constraint* constraint_ = nullptr;
 
-			/// [EN] Generation used to reject stale handles.
-			/// [JP] 古いハンドルを拒否するための世代。
+			/// [JP] 使い回した回数。古い番号を見分けるのに使う
+			/// [EN] How many times it was reused, to spot old numbers
 			Uint64 generation_ = 0;
 		};
 
-		/// [EN] Constraint slots indexed by generational handles.
-		/// [JP] 世代付きハンドルのインデックスで参照する拘束スロット。
+		/// [JP] つなぎの入れ物の一覧
+		/// [EN] Every joint slot
 		DynamicArray<Slot> slots_;
 
-		/// [EN] Vacant slot indices available for reuse.
-		/// [JP] 再利用可能な空きスロットのインデックス。
+		/// [JP] 空いている入れ物の番号
+		/// [EN] The numbers of empty slots
 		DynamicArray<Uint64> freeIndices_;
 	};
 }

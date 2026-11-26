@@ -3,15 +3,6 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Kind of a LightList entry. Mirrors LIGHT_TYPE_* in Light/Light.hlsli.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* LightList の 1 件の種類。Light/Light.hlsli の LIGHT_TYPE_* と対応する。
-	*/
 	enum class LightType :Uint32
 	{
 		Point,
@@ -19,17 +10,6 @@ namespace SeedCore
 		Rect,
 	};
 
-	/**
-	* [EN]
-	* One entry of LightList, shared by point, spot and rectangle lights and
-	* told apart by type_ - see Light.hlsli's LightStructuredBuffer.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* LightList の 1 件。点光源・スポットライト・矩形ライトで共通にし、type_ で
-	* 区別する。Light.hlsli の LightStructuredBuffer を参照。
-	*/
 	struct LightStructuredBuffer
 	{
 		Vector3 position_ = { 0.0f, 0.0f, 0.0f };
@@ -54,17 +34,6 @@ namespace SeedCore
 	};
 	SC_STATIC_ASSERT(LightStructuredBuffer, 96, "Light/Light.hlsli");
 
-	/**
-	* [EN]
-	* LightConstants: the sun and moon, the light count, the night factor and
-	* the sky light's intensity - see Light.hlsli's LightConstantBuffer.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* LightConstants。太陽と月、ライトの数、夜の度合い、空の光の強さ。
-	* Light.hlsli の LightConstantBuffer を参照。
-	*/
 	struct LightConstantBuffer
 	{
 		Vector3 sunDirection_ = { 0.0f, -1.0f, 0.0f };

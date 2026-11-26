@@ -522,9 +522,6 @@
     <ClInclude Include="Effect\Effekseer\EffekseerManager.h">
       <Filter>Effect\Effekseer</Filter>
     </ClInclude>
-    <ClInclude Include="Effect\Effekseer\EffekseerFileInterface.h">
-      <Filter>Effect\Effekseer</Filter>
-    </ClInclude>
     <ClInclude Include="Movie\MovieLoader.h">
       <Filter>Movie</Filter>
     </ClInclude>
@@ -1482,6 +1479,9 @@
     <ClInclude Include="Effect\Effekseer\EffekseerStage.h">
       <Filter>Effect\Effekseer</Filter>
     </ClInclude>
+    <ClInclude Include="Effect\Effekseer\EffekseerCacheLoader.h">
+      <Filter>Effect\Effekseer</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3D12\Context\D3D12Adapter.cpp">
@@ -1627,9 +1627,6 @@
       <Filter>Effect\Effekseer</Filter>
     </ClCompile>
     <ClCompile Include="Effect\Effekseer\EffekseerManager.cpp">
-      <Filter>Effect\Effekseer</Filter>
-    </ClCompile>
-    <ClCompile Include="Effect\Effekseer\EffekseerFileInterface.cpp">
       <Filter>Effect\Effekseer</Filter>
     </ClCompile>
     <ClCompile Include="Movie\MovieLoader.cpp">
@@ -2270,6 +2267,12 @@
     </ClCompile>
     <ClCompile Include="Effect\Effekseer\EffekseerStage.cpp">
       <Filter>Effect\Effekseer</Filter>
+    </ClCompile>
+    <ClCompile Include="Effect\Effekseer\EffekseerCacheLoader.cpp">
+      <Filter>Effect\Effekseer</Filter>
+    </ClCompile>
+    <ClCompile Include="Effect\Effect.cpp">
+      <Filter>Effect</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

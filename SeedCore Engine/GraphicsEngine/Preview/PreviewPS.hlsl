@@ -1,19 +1,6 @@
 #include <GraphicsEngine/Preview/Preview.hlsli>
 #include <GraphicsEngine/Shader/Sampler.hlsli>
 
-/**
-* [EN]
-* Preview.Draw.Mesh pixel shader, unlit: the material's base color factor
-* times its base color texture, cut out below the alpha cutoff, encoded to
-* sRGB for the RGBA8 output the panel shows.
-*
-* ---------------------------------------------------------------------
-*
-* [JP]
-* Preview.Draw.Mesh のピクセルシェーダー（Unlit）。マテリアルのベースカラーの係数に
-* ベースカラーのテクスチャを掛け、アルファの切り抜き値を下回る所は切り抜き、パネルが
-* 表示する RGBA8 の出力に合わせて sRGB にして返す。
-*/
 float4 main(PreviewOutput input) : SV_Target0
 {
 	StructuredBuffer<ModelStructuredBuffer> instances = ResourceDescriptorHeap[mesh_bindings.preview_instances_];

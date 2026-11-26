@@ -28,60 +28,18 @@
 
 namespace SeedCore
 {
-	/**
-	* [EN]
-	* Takes the device context models are uploaded with, the bindless
-	* heap their buffers and textures are registered in, and the GPU
-	* processor that BC7-compresses their textures.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* モデルをアップロードするデバイスのコンテキスト、バッファと
-	* テクスチャの登録先のバインドレスヒープ、テクスチャを BC7 圧縮する
-	* GPU の加工器を受け取る。
-	*/
 	ModelLoader::ModelLoader(D3D12Context& context, BindlessHeap& heap, GraphicsProcessor& processor) :context_(context), heap_(heap), processor_(processor)
 	{
 		/// No Code
 	}
 
-	/**
-	* [EN]
-	* Loads a 3D model from filePath and uploads it on thread's transfer
-	* lane. Returns a handle to the loaded Crister, or a null handle on
-	* failure. A ".crister" path is read as the baked cache; a source
-	* (glTF/GLB/FBX) is parsed, converted with the axis convention in its
-	* own ".meta", and baked in memory. Nothing is written.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* filePath から 3D モデルを読み込み、thread の転送レーンで
-	* アップロードする。読み込まれた Crister へのハンドルを返す。失敗時は
-	* null ハンドル。".crister" は焼き込み済みのキャッシュとして読む。
-	* ソース（glTF/GLB/FBX）は解析し、自身の ".meta" にある座標系規約で
-	* 変換して、メモリ上で焼き込む。何も書き出さない。
-	*/
 	Handle<Crister> ModelLoader::Load(String filePath, LoadThread thread)
 	{
 		return Import(filePath, thread, false);
 	}
 
-	/**
-	* [EN]
-	* Releases a Crister's GPU residency and returns the handle to the
-	* pool.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Crister の GPU 常駐分を解放し、ハンドルをプールに返却する。
-	*/
 	void ModelLoader::Clear(Handle<Crister>& handle)noexcept
 	{
-		/// [EN] A Crister that was never uploaded (one loaded for export) has nothing to release, which Release itself checks.
-		/// [JP] 一度もアップロードしていない Crister（書き出し用に読み込んだもの）には解放するものが無く、それは Release 自身が確かめる。
 		if (Crister* crister = pool_.Get(handle))
 		{
 			crister->Residency().Release(&heap_);
@@ -89,17 +47,6 @@ namespace SeedCore
 		pool_.Destroy(handle);
 	}
 
-	/**
-	* [EN]
-	* Serializes crister to filePath as a ".crister" cache (overwriting
-	* any existing one). Returns false when the write failed.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* crister を ".crister" キャッシュとして filePath へ直列化する
-	* （既存があれば上書き）。書き込みに失敗した場合は false を返す。
-	*/
 	Bool ModelLoader::Bake(Crister& crister, String filePath)
 	{
 		BinaryOutputArchive archive;
@@ -107,46 +54,8 @@ namespace SeedCore
 		return archive.Write(filePath);
 	}
 
-	/**
-	* [EN]
-	* The body of Load: returns a handle to the resulting Crister object.
-	*
-	* Flow:
-	*   1. A ".crister" path is deserialised as the baked cache (fast path).
-	*   2. Otherwise, parse the glTF/GLB with tinygltf or the FBX with the
-	*      FBX SDK, extract all data (scenes, nodes, meshes, materials,
-	*      skins, textures), convert it with the axis convention in the
-	*      source's ".meta", then generate meshlets + LOD hierarchy and
-	*      compress in memory.
-	*   3. Upload GPU resources via CristerResidency::Upload.
-	*
-	* When forExport is set, a source stops right after extraction:
-	* geometry, materials and images stay uncompressed and LOD-free for
-	* ModelExporter, with no GPU upload; a ".crister" is decoded back to
-	* full-precision geometry instead.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* Load の本体。結果の Crister オブジェクトへのハンドルを返す。
-	*
-	* フロー:
-	*   1. ".crister" は焼き込み済みのキャッシュとしてデシリアライズする
-	*      （高速パス）。
-	*   2. それ以外は glTF/GLB を tinygltf で、FBX を FBX SDK で解析し、全データ
-	*      （シーン、ノード、メッシュ、マテリアル、スキン、テクスチャ）を抽出して
-	*      ソースの ".meta" にある座標系規約で変換した後、メシュレット + LOD
-	*      階層を生成し、メモリ上で圧縮する。
-	*   3. CristerResidency::Upload で GPU リソースをアップロードする。
-	*
-	* forExport のとき、ソースは抽出の直後で止め、ジオメトリ・マテリアル・
-	* 画像を非圧縮・LOD 無しのまま ModelExporter へ渡し、GPU アップロードも
-	* しない。".crister" は代わりにフル精度のジオメトリへデコードし直す。
-	*/
 	Handle<Crister> ModelLoader::Import(String filePath, LoadThread thread, Bool forExport)
 	{
-		/// [EN] The GPU objects every step below works with, taken from the dependencies this loader was built with; the transfer lane is the loading thread's own.
-		/// [JP] 以下の各段階が使う GPU のオブジェクト。このローダーが構築時に受け取った依存から取る。転送レーンは読み込むスレッド専用のもの。
 		ID3D12Device* device = context_.GetDevice();
 		D3D12CommandQueue* cmdQueue = context_.GetDirectQueue();
 		D3D12CommandQueue* copyQueue = context_.GetCopyQueue();
@@ -154,8 +63,6 @@ namespace SeedCore
 		BindlessHeap* heap = &heap_;
 		GraphicsProcessor& processor = processor_;
 
-		/// [EN] A source is converted with the axis convention recorded in its own ".meta"; a missing or older ".meta" yields the default convention.
-		/// [JP] ソースは自身の ".meta" に記録された座標系規約で変換する。".meta" が無いか古ければ既定の規約になる。
 		AssetMeta meta;
 		meta.Read(std::filesystem::path(filePath.c_str()));
 		AxisConvention axisConvention = meta.axisConvention_;
@@ -193,8 +100,6 @@ namespace SeedCore
 
 				if (forExport)
 				{
-					/// [EN] An export needs full-precision, non-meshlet geometry, so the baked data is decoded back.
-					/// [JP] 書き出しにはフル精度でメッシュレットでないジオメトリが要るので、焼き込んだデータをデコードし直す。
 					CristerQuantizer quantizer;
 					quantizer.Reconstruct(*crister);
 				}
@@ -207,8 +112,6 @@ namespace SeedCore
 
 		if (!loadedFromCache)
 		{
-			/// [EN] Slow path: parse the original source file (glTF/GLB via tinygltf, FBX via the FBX SDK).
-			/// [JP] 低速パス: 元のソースファイルを解析する（glTF/GLB は tinygltf、FBX は FBX SDK）。
 			std::string pathString = path.string();
 
 			ModelFormat format = ModelFormat::Gltf;
@@ -282,8 +185,6 @@ namespace SeedCore
 				ConvertFlatConvention(source);
 			}
 
-			/// [EN] Extract all data from the source into Crister's flat arrays.
-			/// [JP] ソースから全データを Crister のフラット配列に抽出する。
 			FetchStages(source, *crister);
 			FetchNodes(source, *crister);
 			FetchMaterials(source, *crister);
@@ -305,36 +206,17 @@ namespace SeedCore
 				source.fbx_.scene_ = nullptr;
 			}
 
-			/// [EN] Export loads stop here: vertices_ / vertexIndices_ / subMeshes_ /
-			///      nodes_ / skins_ / surfaces_ / bitmaps_ stay uncompressed and
-			///      LOD-free for ModelExporter, with no GPU upload or cache write.
-			/// [JP] エクスポート用ロードはここで止まる: vertices_ 等を非圧縮・LOD 無し
-			///      のまま ModelExporter へ渡す。GPU アップロードもキャッシュ書き出しもしない。
 			if (forExport)
 			{
 				return handle;
 			}
 
-			/// [EN] Generate meshlets and LOD hierarchy from the extracted mesh data.
-			/// [JP] 抽出したメッシュデータからメシュレットと LOD 階層を生成する。
 			CristerClusterizer clusterizer;
 			clusterizer.BuildMeshlets(*crister);
 
-			/// [EN] Quantise vertices_ (now including LOD-duplicated copies) into
-			///      the GPU format and bake it into the cache, freeing vertices_.
-			/// [JP] vertices_（LOD 複製後の最終集合）を GPU フォーマットへ量子化し
-			///      キャッシュへ焼き込む。vertices_ はここで解放される。
 			CristerQuantizer quantizer;
 			quantizer.BakeMesh(*crister);
 
-			/// [EN] Downsample/dilate/BC7-compress every texture in memory.
-			///      Independent of BakeMesh; order between the two doesn't
-			///      matter. Writing the result as a ".crister" cache is
-			///      ModelResource::Generate's job.
-			/// [JP] 全テクスチャをメモリ上でダウンサンプル/dilation/BC7 圧縮する。
-			///      BakeMesh とは独立しており、両者の順序は問わない。結果を
-			///      ".crister" キャッシュとして書き出すのは ModelResource::Generate
-			///      の役目。
 			CristerCompressor compressor;
 			compressor.BakeBitmap(device, cmdQueue, processor, crister->material_.bitmaps_);
 		}
@@ -344,8 +226,6 @@ namespace SeedCore
 			return handle;
 		}
 
-		/// [EN] Record every upload on transferLane, submit it to the copy queue and wait on this thread, so the model is complete on the GPU when Load returns. Only the loading thread waits; the frames keep running on the direct queue.
-		/// [JP] すべてのアップロードを transferLane に記録して Copy キューへ投入し、このスレッドで完了を待つ。これで Load から戻った時点でモデルは GPU 上に揃っている。待つのはロードするスレッドだけで、フレームは Direct キューで動き続ける。
 		transferLane->Begin(device, *copyQueue);
 		crister->Residency().Upload(*crister, device, *transferLane, heap);
 		copyQueue->WaitFor(transferLane->Submit(*copyQueue));
@@ -353,17 +233,6 @@ namespace SeedCore
 		return handle;
 	}
 
-	/**
-	* [EN]
-	* Extracts scene data from the glTF model. Each scene contains a list
-	* of root node indices. Also records which scene is the default.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* glTF モデルからシーンデータを抽出する。各シーンにはルートノードの
-	* インデックスリストが含まれる。デフォルトシーンも記録する。
-	*/
 	void ModelLoader::FetchStages(const ModelSource& source, Crister& crister)
 	{
 		switch (source.format_)
@@ -404,29 +273,6 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Extracts node hierarchy from the glTF model.
-	*
-	* Each glTF node can store its transform in one of two ways:
-	*   - A 4×4 matrix (decomposed into S/R/T here)
-	*   - Separate scale, rotation (quaternion), and translation arrays
-	*
-	* After extraction, CumulateTransforms is called to compute the
-	* global (world-space) transform for each node by walking the tree.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* glTF モデルからノード階層を抽出する。
-	*
-	* 各 glTF ノードはトランスフォームを 2 通りのどちらかで格納する:
-	*   - 4×4 行列（ここで S/R/T に分解）
-	*   - スケール、回転（クォータニオン）、平行移動の個別配列
-	*
-	* 抽出後、CumulateTransforms を呼んでツリーを走査し、各ノードの
-	* グローバル（ワールド空間）トランスフォームを計算する。
-	*/
 	void ModelLoader::FetchNodes(const ModelSource& source, Crister& crister)
 	{
 		switch (source.format_)
@@ -443,14 +289,6 @@ namespace SeedCore
 				node.mesh_ = gltfNode.mesh;
 				node.children_ = gltfNode.children;
 
-				/// [EN] KHR_lights_punctual: the per-node light reference isn't a
-				///      first-class tinygltf::Node member, so read it from the
-				///      node's own extensions map. Resolved into world-space
-				///      light data later, by FetchLights (after ConvertAxisConvention).
-				/// [JP] KHR_lights_punctual: ノードごとのライト参照は tinygltf::Node
-				///      の正式なメンバではないため、ノード自身の extensions マップ
-				///      から読む。ワールド空間のライトデータへの解決は後段の
-				///      FetchLights（ConvertAxisConvention の後）で行う。
 				if (auto it = gltfNode.extensions.find("KHR_lights_punctual"); it != gltfNode.extensions.end())
 				{
 					if (it->second.Has("light"))
@@ -461,15 +299,6 @@ namespace SeedCore
 
 				if (!gltfNode.matrix.empty())
 				{
-					/// [EN] The node stores a full 4×4 matrix. Decompose into scale/rotation/translation.
-					/// [JP] ノードが 4×4 行列を格納している。スケール/回転/平行移動に分解する。
-					/// [EN] Sequential copy is correct (same reasoning as the inverse bind
-					///      matrices in FetchSkins): glTF column-major data maps directly onto the
-					///      engine's row-major row-vector Matrix. Verified against a reference
-					///      implementation. Do NOT swap the indices.
-					/// [JP] 連番コピーで正しい（FetchSkins の逆バインド行列と同じ理屈）:
-					///      glTF の column-major データはエンジンの row-major 行ベクトル Matrix に
-					///      そのまま対応する。参照実装と照合済み。インデックスを入れ替えないこと。
 					Matrix matrix{};
 					for (Size row = 0;row < 4;row++)
 					{
@@ -487,8 +316,6 @@ namespace SeedCore
 				}
 				else
 				{
-					/// [EN] The node stores separate S/R/T components. Copy them directly.
-					/// [JP] ノードが S/R/T を個別に格納している。そのままコピーする。
 					if (gltfNode.scale.size() == 3)
 					{
 						node.scale_.x = static_cast<Float>(gltfNode.scale[0]);
@@ -585,45 +412,6 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Extracts all mesh primitives from the glTF model.
-	*
-	* Each glTF mesh contains one or more "primitives" (sub-meshes), each
-	* with its own material and vertex attributes. This function:
-	*
-	*   1. Reads vertex attributes (POSITION, NORMAL, TANGENT, TEXCOORD_0,
-	*      JOINTS_0, WEIGHTS_0) from the glTF binary buffers.
-	*   2. Reads the index buffer. If the primitive has no index buffer
-	*      (non-indexed), generates sequential indices (0, 1, 2, ...).
-	*   3. Records indexOffset_ and indexCount_ on each SubMesh so
-	*      BuildMeshlets knows which slice of vertexIndices_ belongs to
-	*      which SubMesh.
-	*
-	* glTF stores joint indices and weights with varying component types
-	* (UNSIGNED_INT, UNSIGNED_SHORT, UNSIGNED_BYTE, FLOAT), so they are
-	* read with type-specific code instead of the generic fetchAttribute
-	* lambda.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* glTF モデルから全メッシュプリミティブを抽出する。
-	*
-	* 各 glTF メッシュには 1 つ以上の「プリミティブ」（サブメッシュ）が
-	* 含まれ、それぞれが独自のマテリアルと頂点属性を持つ。この関数は:
-	*
-	*   1. glTF バイナリバッファから頂点属性（POSITION, NORMAL, TANGENT,
-	*      TEXCOORD_0, JOINTS_0, WEIGHTS_0）を読み取る。
-	*   2. インデックスバッファを読み取る。プリミティブにインデックスバッファが
-	*      ない場合（非インデックス）、連番インデックス (0, 1, 2, ...) を生成する。
-	*   3. 各 SubMesh に indexOffset_ と indexCount_ を記録し、
-	*      BuildMeshlets が vertexIndices_ のどの範囲が対応するかを知れるようにする。
-	*
-	* glTF はジョイントインデックスとウェイトを様々なコンポーネント型
-	* （UNSIGNED_INT, UNSIGNED_SHORT, UNSIGNED_BYTE, FLOAT）で格納するため、
-	* 汎用の fetchAttribute ラムダではなく型別コードで読み取る。
-	*/
 	void ModelLoader::FetchMeshes(const ModelSource& source, Crister& crister)
 	{
 		switch (source.format_)
@@ -632,20 +420,6 @@ namespace SeedCore
 		{
 			const tinygltf::Model& model = *source.gltf_.model_;
 
-			/// [EN] Lazily-created shared default material, used when a primitive has
-			///      no material (gltfPrimitive.material == -1). Per the glTF spec this
-			///      is a valid state that must fall back to a default material, not be
-			///      reinterpreted as an index: assigning -1 directly into the Uint32
-			///      surfaceIndex_ would wrap to 0xFFFFFFFF and cause an out-of-bounds
-			///      read wherever surfaces[subMesh.surfaceIndex_] is looked up
-			///      (ModelMesh, PreviewFeature).
-			/// [JP] プリミティブがマテリアルを持たない場合（gltfPrimitive.material == -1）
-			///      に使う、遅延生成の共有デフォルトマテリアル。glTF 仕様上これは正当な
-			///      状態でありデフォルトマテリアルへフォールバックすべきで、そのまま
-			///      インデックスとして解釈してはならない: -1 を Uint32 の surfaceIndex_
-			///      にそのまま代入すると 0xFFFFFFFF にラップし、
-			///      surfaces[subMesh.surfaceIndex_] を引く所（ModelMesh、PreviewFeature）で
-			///      範囲外アクセスを引き起こす。
 			Int defaultSurfaceIndex = -1;
 
 			for (Size meshIndex = 0; meshIndex < model.meshes.size(); meshIndex++)
@@ -680,16 +454,6 @@ namespace SeedCore
 					Size baseVertex = crister.geometry_.vertices_.size();
 					crister.geometry_.vertices_.resize(baseVertex + vertexCount);
 
-					/// [EN] Identity-initialise this range of vertexMorphSource_:
-					///      each of these ORIGINAL vertices is its own source
-					///      (see vertexMorphSource_'s comment). BuildMeshlets
-					///      propagates this forward for any LOD-duplicated copy
-					///      it appends later.
-					/// [JP] vertexMorphSource_ のこの範囲を恒等初期化する:
-					///      これらのオリジナル頂点はそれぞれ自分自身が
-					///      ソースになる(vertexMorphSource_ のコメント参照)。
-					///      BuildMeshlets が後で追加する LOD 複製コピーへは
-					///      これを伝播する。
 					crister.geometry_.vertexMorphSource_.resize(baseVertex + vertexCount);
 					for (Size index = 0; index < vertexCount; index++)
 					{
@@ -699,29 +463,6 @@ namespace SeedCore
 					subMesh.vertexOffset_ = vertexOffset;
 					subMesh.vertexCount_ = static_cast<Uint32>(vertexCount);
 
-					/**
-					* [EN]
-					* Decodes a single scalar component of a glTF accessor into a
-					* Float, honouring componentType and the "normalized" flag.
-					* POSITION/NORMAL/TANGENT/TEXCOORD_0 are FLOAT in a plain glTF
-					* export, but KHR_mesh_quantization (emitted by size-optimising
-					* exporters such as gltfpack — used by some marketplace
-					* pipelines, e.g. Epic's Fab) stores POSITION as normalized
-					* BYTE/SHORT and NORMAL/TANGENT/TEXCOORD_0 as normalized
-					* BYTE/UNSIGNED_BYTE/SHORT/UNSIGNED_SHORT to shrink the file.
-					*
-					* ---------------------------------------------------------------------
-					*
-					* [JP]
-					* glTF アクセサの1コンポーネントを、componentType と
-					* "normalized" フラグに従って Float にデコードする。
-					* POSITION/NORMAL/TANGENT/TEXCOORD_0 は素の glTF では FLOAT だが、
-					* KHR_mesh_quantization（gltfpack のようなサイズ最適化エクスポータ
-					* — 一部マーケットプレイスのパイプライン、例えば Epic の Fab が使用
-					* — が出力する）はファイルサイズを縮小するため POSITION を正規化
-					* BYTE/SHORT、NORMAL/TANGENT/TEXCOORD_0 を正規化
-					* BYTE/UNSIGNED_BYTE/SHORT/UNSIGNED_SHORT で格納する。
-					*/
 					auto decodeComponent = [](const Uchar* bytes, Int componentType, Bool normalized) -> Float
 						{
 							switch (componentType)
@@ -753,39 +494,6 @@ namespace SeedCore
 							}
 						};
 
-					/**
-					* [EN]
-					* Generic attribute fetcher. Decodes every component of a glTF
-					* accessor into the corresponding Float-based member of each
-					* Vertex struct, for any componentType the glTF spec allows on
-					* these attributes (see decodeComponent above) — not just
-					* FLOAT. The previous implementation always memcpy'd
-					* sizeof(VectorN) raw bytes assuming a FLOAT accessor; against
-					* a quantized (non-FLOAT) accessor this silently reinterpreted
-					* unrelated integer bit patterns as floats instead of failing,
-					* corrupting the mesh (e.g. into a flattened, plank-like shape)
-					* without ever throwing.
-					*
-					* - source:         pointer into the raw glTF buffer
-					* - sourceStride:   byte stride between consecutive elements in the glTF buffer
-					* - componentCount: number of scalar components (2/3/4), matching the member's Vector width
-					*
-					* ---------------------------------------------------------------------
-					*
-					* [JP]
-					* 汎用属性フェッチャー。glTF アクセサの全コンポーネントを、これらの
-					* 属性で glTF 仕様が許容する任意の componentType について
-					* （上記 decodeComponent 参照）各 Vertex 構造体の対応する Float
-					* ベースのメンバーへデコードする — FLOAT に限らない。以前の実装は
-					* FLOAT アクセサを前提に sizeof(VectorN) の生バイトを常に memcpy
-					* しており、量子化された（非 FLOAT の）アクセサに対しては失敗する
-					* ことなく無関係な整数ビットパターンを float として黙って
-					* 再解釈し、メッシュを（例えば板状に潰れた形へ）破壊していた。
-					*
-					* - source:         glTF 生バッファへのポインタ
-					* - sourceStride:   glTF バッファ内の連続する要素間のバイトストライド
-					* - componentCount: スカラーコンポーネント数（2/3/4）、メンバーの Vector 幅と一致
-					*/
 					auto fetchAttribute = [&](const std::string& name, auto memberPtr, Size componentCount)
 						{
 							auto it = gltfPrimitive.attributes.find(name);
@@ -824,10 +532,6 @@ namespace SeedCore
 					fetchAttribute("TANGENT", &Vertex::tangent_, 4);
 					fetchAttribute("TEXCOORD_0", &Vertex::texcoord_, 2);
 
-					/// [EN] JOINTS_0: joint indices need type-specific handling because glTF allows
-					///      UNSIGNED_INT, UNSIGNED_SHORT, or UNSIGNED_BYTE storage.
-					/// [JP] JOINTS_0: ジョイントインデックスは glTF が UNSIGNED_INT, UNSIGNED_SHORT,
-					///      UNSIGNED_BYTE を許容するため、型別の処理が必要。
 					{
 						auto it = gltfPrimitive.attributes.find("JOINTS_0");
 						if (it != gltfPrimitive.attributes.end())
@@ -858,10 +562,6 @@ namespace SeedCore
 						}
 					}
 
-					/// [EN] WEIGHTS_0: bone weights can be FLOAT, UNSIGNED_SHORT (normalised to 0-65535),
-					///      or UNSIGNED_BYTE (normalised to 0-255). Normalise to [0, 1] range.
-					/// [JP] WEIGHTS_0: ボーンウェイトは FLOAT, UNSIGNED_SHORT（0-65535 に正規化）,
-					///      UNSIGNED_BYTE（0-255 に正規化）がありうる。[0, 1] 範囲に正規化する。
 					{
 						auto it = gltfPrimitive.attributes.find("WEIGHTS_0");
 						if (it != gltfPrimitive.attributes.end())
@@ -892,35 +592,6 @@ namespace SeedCore
 						}
 					}
 
-					/**
-					* [EN]
-					* Morph targets: gltfPrimitive.targets has one entry per morph
-					* target, each a name->accessor-index map (only "POSITION" is
-					* honoured here — normal/tangent morphing is not supported).
-					* Deltas are decoded with the same decodeComponent used for
-					* POSITION/NORMAL/TANGENT/TEXCOORD_0 above, so a quantized
-					* (KHR_mesh_quantization) morph accessor decodes correctly
-					* instead of being misread as FLOAT. Target names come from
-					* the common exporter convention mesh.extras.targetNames (a
-					* JSON array of strings, in target order, e.g. as written by
-					* Blender's glTF exporter); a target without a matching name
-					* falls back to "Morph_<index>".
-					*
-					* ---------------------------------------------------------------------
-					*
-					* [JP]
-					* モーフターゲット: gltfPrimitive.targets はモーフターゲット
-					* 1つにつき1エントリで、それぞれが name->アクセサインデックスの
-					* map ("POSITION" のみ対応 — 法線/接線のモーフィングは非対応)。
-					* デルタは上の POSITION/NORMAL/TANGENT/TEXCOORD_0 と同じ
-					* decodeComponent でデコードするため、量子化された
-					* (KHR_mesh_quantization) モーフアクセサも FLOAT として誤読
-					* されず正しくデコードされる。ターゲット名は一般的な
-					* エクスポーター慣例である mesh.extras.targetNames（ターゲット順
-					* の文字列 JSON 配列、例えば Blender の glTF エクスポーターが
-					* 出力する）から取得する。一致する名前が無いターゲットは
-					* "Morph_<index>" にフォールバックする。
-					*/
 					const tinygltf::Value& targetNames = gltfMesh.extras.Has("targetNames") ? gltfMesh.extras.Get("targetNames") : tinygltf::Value();
 					for (Size targetIndex = 0;targetIndex < gltfPrimitive.targets.size();targetIndex++)
 					{
@@ -963,18 +634,10 @@ namespace SeedCore
 						}
 					}
 
-					/// [EN] Record where this SubMesh's indices begin in vertexIndices_.
-					/// [JP] この SubMesh のインデックスが vertexIndices_ 内のどこから始まるかを記録する。
 					subMesh.indexOffset_ = static_cast<Uint32>(crister.geometry_.vertexIndices_.size());
 
 					if (gltfPrimitive.indices > -1)
 					{
-						/// [EN] Indexed primitive: read the index buffer with type-specific handling.
-						///      glTF index buffers can be UNSIGNED_INT, UNSIGNED_SHORT, or UNSIGNED_BYTE.
-						///      Each index is offset by vertexOffset to produce a global index into crister.vertices_.
-						/// [JP] インデックス付きプリミティブ: 型別にインデックスバッファを読み取る。
-						///      glTF インデックスバッファは UNSIGNED_INT, UNSIGNED_SHORT, UNSIGNED_BYTE がありうる。
-						///      各インデックスに vertexOffset を加え、crister.vertices_ へのグローバルインデックスにする。
 						const tinygltf::Accessor& accessor = model.accessors.at(gltfPrimitive.indices);
 						const tinygltf::BufferView& bufferView = model.bufferViews.at(accessor.bufferView);
 						const Uchar* source = model.buffers.at(bufferView.buffer).data.data() + bufferView.byteOffset + accessor.byteOffset;
@@ -1002,14 +665,6 @@ namespace SeedCore
 					}
 					else
 					{
-						/// [EN] Non-indexed primitive: generate sequential indices (0, 1, 2, ...).
-						///      Some glTF files omit the index buffer entirely when every vertex
-						///      is unique (no sharing). We create identity indices so the rest of
-						///      the pipeline can assume an index buffer always exists.
-						/// [JP] 非インデックスプリミティブ: 連番インデックス (0, 1, 2, ...) を生成する。
-						///      一部の glTF ファイルは全頂点がユニーク（共有なし）の場合、インデックス
-						///      バッファを完全に省略する。パイプラインの残りがインデックスバッファの
-						///      存在を仮定できるよう、恒等インデックスを作成する。
 						Size indexBase = crister.geometry_.vertexIndices_.size();
 						crister.geometry_.vertexIndices_.resize(indexBase + vertexCount);
 						for (Size index = 0;index < vertexCount;index++)
@@ -1254,37 +909,6 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Extracts PBR material data from the glTF model.
-	*
-	* Each material includes:
-	*   - Base color, metallic, roughness (PBR metallic-roughness model)
-	*   - Emissive factor
-	*   - Alpha mode (OPAQUE=0, MASK=1, BLEND=2) and cutoff
-	*   - Texture indices for base color, normal, metallic-roughness,
-	*     occlusion, and emissive maps (0xFFFFFFFF if not present)
-	*
-	* Note: glTF "texture" objects reference "image" objects via a source
-	* index. We resolve to the image index directly so that the texture
-	* indices match crister.bitmaps_ (which is populated from images).
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* glTF モデルから PBR マテリアルデータを抽出する。
-	*
-	* 各マテリアルに含まれるもの:
-	*   - ベースカラー、メタリック、ラフネス（PBR metallic-roughness モデル）
-	*   - エミッシブファクター
-	*   - アルファモード（OPAQUE=0, MASK=1, BLEND=2）とカットオフ
-	*   - ベースカラー、法線、メタリックラフネス、オクルージョン、エミッシブ各マップの
-	*     テクスチャインデックス（存在しなければ 0xFFFFFFFF）
-	*
-	* 注: glTF の "texture" オブジェクトは source インデックスを介して
-	* "image" オブジェクトを参照する。crister.bitmaps_（image から構築）と
-	* 一致するよう、image インデックスに直接解決する。
-	*/
 	void ModelLoader::FetchMaterials(const ModelSource& source, Crister& crister)
 	{
 		switch (source.format_)
@@ -1334,9 +958,6 @@ namespace SeedCore
 					material.emissiveTextureIndex_ = model.textures[gltfMaterial.emissiveTexture.index].source;
 				}
 
-				/// [JP] KHR_materials_* 拡張を読む。フィールドが無ければ struct の
-				///      デフォルト（中立値）のまま。テクスチャは { "index": N } を
-				///      model.textures[N].source で image インデックスに解決する。
 				auto extFloat = [](const tinygltf::Value& value, const Char* key, Float fallback) -> Float
 				{
 					return value.Has(key) ? static_cast<Float>(value.Get(key).GetNumberAsDouble()) : fallback;
@@ -1408,13 +1029,6 @@ namespace SeedCore
 					transmission.transmissionFactor_ = extFloat(it->second, "transmissionFactor", 0.0f);
 					transmission.transmissionTextureIndex_ = extTexture(it->second, "transmissionTexture");
 
-					/// [JP] KHR_materials_transmission の仕様上、拡張に対応する実装は
-					///      alphaMode の宣言(BLENDなど)を無視して常にOPAQUE扱いする
-					///      決まりになっている(BLEND宣言は拡張未対応ビューア向けの
-					///      フォールバックに過ぎない)。ここで上書きしないと
-					///      ModelRenderer.cpp の alphaMode_ != 2 判定で OIT
-					///      (未対応のunlitアルファブレンド)側へ回ってしまい、
-					///      Refraction/KHR拡張のライティングが一切乗らず真っ黒になる。
 					if (transmission.transmissionFactor_ > 0.0f)
 					{
 						material.alphaMode_ = 0;
@@ -1540,8 +1154,6 @@ namespace SeedCore
 						}
 					}
 
-					/// [EN] In FBX a texture connected to the diffuse/base color slot replaces the slot's color value rather than multiplying it, so the factor becomes white.
-					/// [JP] FBX ではディフューズ/ベースカラーのスロットに接続されたテクスチャはスロットのカラー値を置き換える（乗算しない）ため、係数は白にする。
 					material.baseColorTextureIndex_ = resolveTexture(diffuseProperty);
 					if (material.baseColorTextureIndex_ == 0xFFFFFFFF)
 					{
@@ -1620,31 +1232,6 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Extracts skeleton (skin) data from the glTF model.
-	*
-	* Each skin contains:
-	*   - A list of joint node indices
-	*   - An array of inverse bind matrices (one per joint)
-	*
-	* The inverse bind matrix transforms a vertex from model space into
-	* the local space of the bone. At runtime, the final bone matrix is:
-	*   finalMatrix = inverseBindMatrix * jointGlobalTransform
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* glTF モデルからスケルトン（スキン）データを抽出する。
-	*
-	* 各スキンに含まれるもの:
-	*   - ジョイントノードインデックスのリスト
-	*   - 逆バインド行列の配列（ジョイントごとに 1 つ）
-	*
-	* 逆バインド行列は頂点をモデル空間からボーンのローカル空間に変換する。
-	* ランタイムでの最終ボーン行列は:
-	*   finalMatrix = inverseBindMatrix * jointGlobalTransform
-	*/
 	void ModelLoader::FetchSkins(const ModelSource& source, Crister& crister)
 	{
 		switch (source.format_)
@@ -1664,13 +1251,6 @@ namespace SeedCore
 					const tinygltf::BufferView& bufferView = model.bufferViews.at(accessor.bufferView);
 					skin.inverseBindMatrices_.resize(accessor.count);
 
-					/// [EN] Raw copy is correct: glTF's column-major storage of its column-vector
-					///      matrices coincides byte-for-byte with the engine's row-major storage of
-					///      the equivalent row-vector matrices. Verified against an independent
-					///      reference implementation (palette error < 1e-5). Do NOT transpose here.
-					/// [JP] 生コピーで正しい: glTF の列ベクトル規約行列の column-major 格納は、
-					///      等価な行ベクトル規約行列の row-major 格納とバイト単位で一致する。
-					///      独立した参照実装と照合済み（パレット誤差 < 1e-5）。ここで転置しないこと。
 					memcpy(skin.inverseBindMatrices_.data(), model.buffers.at(bufferView.buffer).data.data() + bufferView.byteOffset + accessor.byteOffset, accessor.count * sizeof(Matrix));
 				}
 			}
@@ -1731,28 +1311,6 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Resolves SubMesh → skin association.
-	*
-	* FetchMeshes flattens all primitives of all glTF meshes into
-	* crister.subMeshes_ in order, so the SubMesh range of glTF mesh M is
-	* [prefix(M), prefix(M) + primitiveCount(M)). A mesh is skinned when a
-	* node references it together with a skin; per the glTF spec, the
-	* transform of such a node is ignored and only joint transforms apply.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* SubMesh → スキンの対応を解決する。
-	*
-	* FetchMeshes は全 glTF メッシュの全プリミティブを順番に
-	* crister.subMeshes_ へフラット化するため、glTF メッシュ M の SubMesh
-	* 範囲は [prefix(M), prefix(M) + primitiveCount(M))。メッシュはノードが
-	* skin と一緒に参照しているときスキンドとなる。glTF 仕様では、そのような
-	* ノードのトランスフォームは無視され、ジョイントのトランスフォームのみが
-	* 適用される。
-	*/
 	void ModelLoader::ResolveSubMeshSkins(const ModelSource& source, Crister& crister)
 	{
 		switch (source.format_)
@@ -1761,8 +1319,6 @@ namespace SeedCore
 		{
 			const tinygltf::Model& model = *source.gltf_.model_;
 
-			/// [EN] Prefix sum of primitive counts = SubMesh offset per glTF mesh.
-			/// [JP] プリミティブ数の累積和 = glTF メッシュごとの SubMesh オフセット。
 			DynamicArray<Uint32> subMeshOffsets;
 			subMeshOffsets.reserve(model.meshes.size());
 			Uint32 offset = 0;
@@ -1795,25 +1351,6 @@ namespace SeedCore
 		}
 	}
 
-	/**
-	* [EN]
-	* Copies raw texture image data from the glTF model into Crister's
-	* texture array. This is a data packing step only — actual GPU texture
-	* creation happens later in CristerResidency::Upload.
-	*
-	* tinygltf has already decoded the image data (PNG/JPEG → raw pixels)
-	* by the time we access it, so we just copy the decoded buffer.
-	*
-	* ---------------------------------------------------------------------
-	*
-	* [JP]
-	* glTF モデルの生テクスチャ画像データを Crister のテクスチャ配列にコピーする。
-	* これはデータを詰めるだけのステップであり、実際の GPU テクスチャ作成は
-	* CristerResidency::Upload で行う。
-	*
-	* tinygltf はアクセス時点で既に画像データをデコード済み
-	* （PNG/JPEG → 生ピクセル）なので、デコード済みバッファをコピーするだけ。
-	*/
 	void ModelLoader::FetchTexture(const ModelSource& source, Crister& crister)
 	{
 		switch (source.format_)
@@ -2032,12 +1569,6 @@ namespace SeedCore
 
 				const tinygltf::Light& gltfLight = model.lights[node.light_];
 
-				/// [EN] This engine's directional light is authored per-scene (see
-				///      DirectionalLight component), not embedded per-model, so
-				///      directional KHR lights are intentionally skipped here.
-				/// [JP] このエンジンのディレクショナルライトはモデル単位ではなく
-				///      シーン単位で設定するため（DirectionalLight コンポーネント参照）、
-				///      ディレクショナルの KHR ライトはここで意図的にスキップする。
 				if (gltfLight.type == "directional")
 				{
 					continue;
@@ -2046,14 +1577,6 @@ namespace SeedCore
 				PunctualLight light{};
 				light.type_ = (gltfLight.type == "spot") ? PunctualLight::Type::Spot : PunctualLight::Type::Point;
 
-				/// [EN] Position = world translation of the referencing node.
-				///      Direction: glTF punctual lights shine down local -Z; the
-				///      node's world -Z axis is the third row of its (row-major,
-				///      row-vector) global transform, negated.
-				/// [JP] 位置 = 参照ノードのワールド平行移動。向き: glTF のパンクチュアル
-				///      ライトはローカル -Z 方向に照射する。ノードのワールド -Z 軸は
-				///      グローバルトランスフォーム（row-major, 行ベクトル規約）の
-				///      3行目を反転したもの。
 				const Matrix& worldTransform = node.globalTransform_;
 				light.position_ = worldTransform.Translation();
 
@@ -2070,12 +1593,6 @@ namespace SeedCore
 
 				light.intensity_ = static_cast<Float>(gltfLight.intensity);
 
-				/// [EN] glTF: range == 0 (or unset) means "unbounded". This engine's
-				///      attenuation shader (AttenuateDistance, Light.hlsli) divides
-				///      by range, so an unbounded light needs a finite fallback.
-				/// [JP] glTF: range == 0（未設定）は「無制限」を意味する。このエンジンの
-				///      減衰シェーダ(AttenuateDistance, Light.hlsli)は range で除算する
-				///      ため、無制限ライトには有限のフォールバック値が必要。
 				constexpr Float unboundedRangeFallback = 10.0f;
 				Float range = static_cast<Float>(gltfLight.range);
 				light.range_ = (range > 0.0f) ? range : unboundedRangeFallback;
