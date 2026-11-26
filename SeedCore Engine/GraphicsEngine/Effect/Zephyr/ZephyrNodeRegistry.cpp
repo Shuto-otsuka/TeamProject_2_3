@@ -1,4 +1,5 @@
 #include <GraphicsEngine/Effect/Zephyr/ZephyrNodeRegistry.h>
+#include <FoundationEngine/Serialization/Binary/BinaryArchive.h>
 #include <FoundationEngine/File/FileLocator.h>
 #include <FoundationEngine/Log/Error.h>
 
@@ -37,19 +38,44 @@ namespace SeedCore
 						return false;
 					};
 
-				DynamicArray<ZephyrNodeDefinition> table;
+				DynamicArray<std::pair<std::string, std::string>> sources;
 				std::filesystem::path folder = FileLocator::EngineRoot() / "GraphicsEngine/Effect/Zephyr/Module";
 				std::error_code error;
-				for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(folder, error))
+				if (std::filesystem::is_directory(folder, error))
 				{
-					if (entry.path().extension() != ".hlsli")
+					for (const std::filesystem::directory_entry& entry : std::filesystem::directory_iterator(folder, error))
 					{
-						continue;
-					}
+						if (entry.path().extension() != ".hlsli")
+						{
+							continue;
+						}
 
-					std::string filename = entry.path().filename().string();
+						std::ifstream file(entry.path(), std::ios::binary);
+						sources.emplace_back(entry.path().filename().string(), std::string((std::istreambuf_iterator<Char>(file)), std::istreambuf_iterator<Char>()));
+					}
+				}
+				else
+				{
+					BinaryInputArchive archive;
+					DynamicArray<String> files;
+					DynamicArray<String> annotations;
+					if (archive.Read(String((FileLocator::EngineRoot() / "CompiledShaderObject/Application/Zephyr/Module.dx.cso").string())))
+					{
+						archive.TryField("files", files);
+						archive.TryField("annotations", annotations);
+					}
+					for (Size index = 0;index < files.size() && index < annotations.size();++index)
+					{
+						sources.emplace_back(files[index].str(), annotations[index].str());
+					}
+				}
+
+				DynamicArray<ZephyrNodeDefinition> table;
+				for (const std::pair<std::string, std::string>& source : sources)
+				{
+					const std::string& filename = source.first;
 					std::string include = "GraphicsEngine/Effect/Zephyr/Module/" + filename;
-					std::ifstream file(entry.path());
+					std::istringstream file(source.second);
 					std::string line;
 					Size lineNumber = 0;
 					Size current = SIZE_MAX;
